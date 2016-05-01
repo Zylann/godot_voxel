@@ -7,22 +7,25 @@
 #include "voxel.h"
 #include "voxel_buffer.h"
 
+class VoxelLibrary;
+
 class VoxelMeshBuilder : public Reference {
     OBJ_TYPE(VoxelMeshBuilder, Reference);
 
-    static const unsigned int MAX_VOXEL_TYPES = 256; // Required limit because voxel types are stored in 8 bits
+public:
     static const unsigned int MAX_MATERIALS = 8; // Arbitrary. Tweak if needed.
 
-    Ref<Voxel> _voxel_types[MAX_VOXEL_TYPES];
+private:
+    Ref<VoxelLibrary> _library;
     Ref<Material> _materials[MAX_MATERIALS];
     SurfaceTool _surface_tool[MAX_MATERIALS];
 
 public:
-
     VoxelMeshBuilder();
 
-    void add_voxel_type(Ref<Voxel> voxel);
     void set_material(Ref<Material> material, unsigned int id);
+
+    void set_library(Ref<VoxelLibrary> library);
 
     Ref<Mesh> build(Ref<VoxelBuffer> buffer_ref);
     

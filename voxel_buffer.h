@@ -18,6 +18,7 @@ class VoxelBuffer : public Reference {
     struct Channel {
         // Allocated when the channel is populated.
         // Array of array of arrays, in order [z][x][y] because it makes vertical-wise access faster (the engine is Y-up).
+        // SUGG: move to flat storage?
         uint8_t *** data;
 
         uint8_t defval; // Default value when data is null
@@ -60,6 +61,7 @@ public:
     void set_voxel_v(int value, Vector3 pos, unsigned int channel_index = 0);
 
     void fill(int defval, unsigned int channel_index = 0);
+    //void fill_min_max(int value, int x0, int y0, int z0, int x1, int y1, int z1, unsigned int channel_index = 0);
 
     bool is_uniform(unsigned int channel_index = 0);
 

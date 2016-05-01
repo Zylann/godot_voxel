@@ -1,4 +1,5 @@
 #include "voxel_mesh_builder.h"
+#include "voxel_library.h"
 
 static const Vector3i g_side_normals[Voxel::SIDE_COUNT] = {
     Vector3i(-1, 0, 0),
@@ -13,12 +14,9 @@ VoxelMeshBuilder::VoxelMeshBuilder() {
 
 }
 
-void VoxelMeshBuilder::add_voxel_type(Ref<Voxel> voxel) {
-    ERR_FAIL_COND(voxel.is_null());
-    ERR_FAIL_COND(voxel->get_id() >= MAX_VOXEL_TYPES);
-    ERR_FAIL_COND(voxel->get_material_id() >= MAX_MATERIALS);
-    unsigned int id = voxel->get_id();
-    _voxel_types[id] = voxel;
+void VoxelMeshBuilder::set_library(Ref<VoxelLibrary> library) {
+    ERR_FAIL_COND(library.is_null());
+    _library = library;
 }
 
 void VoxelMeshBuilder::set_material(Ref<Material> material, unsigned int id) {
@@ -29,8 +27,10 @@ void VoxelMeshBuilder::set_material(Ref<Material> material, unsigned int id) {
 
 Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
     ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<Mesh>());
+    ERR_FAIL_COND_V(_library.is_null(), Ref<Mesh>());
 
     const VoxelBuffer & buffer = **buffer_ref;
+    const VoxelLibrary & library = **_library;
 
     for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
         _surface_tool[i].begin(Mesh::PRIMITIVE_TRIANGLES);
@@ -44,9 +44,9 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
 
                 int voxel_id = buffer.get_voxel_local(x, y, z, 0);
 
-                if (voxel_id != 0 && !_voxel_types[voxel_id].is_null()) {
+                if (voxel_id != 0 && library.has_voxel(voxel_id)) {
 
-                    const Voxel & voxel = **_voxel_types[voxel_id];
+                    const Voxel & voxel = library.get_voxel_const(voxel_id);
 
                     SurfaceTool & st = _surface_tool[voxel.get_material_id()];
 
@@ -68,12 +68,14 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
                             // TODO Better face visibility test
                             if (neighbor_voxel_id == 0) {
 
-                                DVector<Vector3>::Read r = vertices.read();
+                                DVector<Vector3>::Read rv = vertices.read();
+                                DVector<Vector2>::Read rt = voxel.get_model_side_uv(side).read();
                                 Vector3 pos(x - 1, y - 1, z - 1);
 
                                 for (unsigned int i = 0; i < vertices.size(); ++i) {
                                     st.add_normal(Vector3(normal.x, normal.y, normal.z));
-                                    st.add_vertex(r[i] + pos);
+                                    st.add_uv(rt[i]);
+                                    st.add_vertex(rv[i] + pos);
                                 }
                             }
                         }
@@ -85,10 +87,12 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
                         const DVector<Vector3> & vertices = voxel.get_model_vertices();
                         DVector<Vector3>::Read rv = voxel.get_model_vertices().read();
                         DVector<Vector3>::Read rn = voxel.get_model_normals().read();
+                        DVector<Vector2>::Read rt = voxel.get_model_uv().read();
                         Vector3 pos(x - 1, y - 1, z - 1);
 
                         for (unsigned int i = 0; i < vertices.size(); ++i) {
                             st.add_normal(rn[i]);
+                            st.add_uv(rt[i]);
                             st.add_vertex(rv[i] + pos);
                         }
                     }
@@ -115,8 +119,8 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
 
 void VoxelMeshBuilder::_bind_methods() {
 
-    ObjectTypeDB::bind_method(_MD("add_voxel_type", "voxel"), &VoxelMeshBuilder::add_voxel_type);
     ObjectTypeDB::bind_method(_MD("set_material", "material", "id"), &VoxelMeshBuilder::set_material);
+    ObjectTypeDB::bind_method(_MD("set_library", "voxel_library"), &VoxelMeshBuilder::set_library);
     ObjectTypeDB::bind_method(_MD("build", "voxel_buffer"), &VoxelMeshBuilder::build);
 
 }
