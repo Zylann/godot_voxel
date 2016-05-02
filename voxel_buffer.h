@@ -17,11 +17,11 @@ class VoxelBuffer : public Reference {
 
     struct Channel {
         // Allocated when the channel is populated.
-        // Array of array of arrays, in order [z][x][y] because it makes vertical-wise access faster (the engine is Y-up).
-        // SUGG: move to flat storage?
-        uint8_t *** data;
+        // Flat array, in order [z][x][y] because it allows faster vertical-wise access (the engine is Y-up).
+        uint8_t * data;
 
-        uint8_t defval; // Default value when data is null
+        // Default value when data is null
+        uint8_t defval;
         
         Channel() : data(NULL), defval(0) {}
     };
@@ -73,6 +73,14 @@ public:
         return x < _size.x
             && y < _size.y
             && z < _size.x;
+    }
+
+    _FORCE_INLINE_ unsigned int index(unsigned int x, unsigned int y, unsigned int z) const {
+        return (z * _size.z + x) * _size.x + y;
+    }
+
+    _FORCE_INLINE_ unsigned int get_volume() {
+        return _size.x * _size.y * _size.z;
     }
 
 private:

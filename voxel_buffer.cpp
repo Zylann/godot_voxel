@@ -1,4 +1,8 @@
 #include "voxel_buffer.h"
+#include <string.h>
+
+//#define VOXEL_AT(_data, x, y, z) data[z][x][y]
+#define VOXEL_AT(_data, _x, _y, _z) _data[index(_x,_y,_z)]
 
 
 VoxelBuffer::VoxelBuffer() {
@@ -52,7 +56,7 @@ int VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index) cons
     const Channel & channel = _channels[channel_index];
 
     if (validate_local_pos(x, y, z) && channel.data) {
-        return channel.data[z][x][y];
+        return VOXEL_AT(channel.data, x,y,z);
     }
     else {
         return channel.defval;
@@ -65,7 +69,7 @@ int VoxelBuffer::get_voxel_local(int x, int y, int z, unsigned int channel_index
     const Channel & channel = _channels[channel_index];
 
     if (validate_local_pos(x, y, z) && channel.data) {
-        return channel.data[z][x][y];
+        return VOXEL_AT(channel.data, x, y, z);
     }
     else {
         return channel.defval;
@@ -87,7 +91,7 @@ void VoxelBuffer::set_voxel(int value, int x, int y, int z, unsigned int channel
         if (channel.data == NULL) {
             create_channel(channel_index, _size);
         }
-        channel.data[z][x][y] = value;
+        VOXEL_AT(channel.data, x, y, z) = value;
     }
 }
 
@@ -97,17 +101,9 @@ void VoxelBuffer::set_voxel_v(int value, Vector3 pos, unsigned int channel_index
 
 void VoxelBuffer::fill(int defval, unsigned int channel_index) {
     ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
-
-    Channel & channel = _channels[channel_index];
-    
-    for (unsigned int z = 0; z < _size.z; ++z) {
-        for (unsigned int x = 0; x < _size.x; ++x) {
-            uint8_t * column = channel.data[z][x];
-            for (unsigned int y = 0; y < _size.y; ++y) {
-                column[y] = defval;
-            }
-        }
-    }
+    Channel & channel = _channels[channel_index];    
+    unsigned int volume = get_volume();
+    memset(channel.data, defval, volume);
 }
 
 bool VoxelBuffer::is_uniform(unsigned int channel_index) {
@@ -116,24 +112,22 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) {
     Channel & channel = _channels[channel_index];
     if (channel.data == NULL)
         return true;
-    uint8_t voxel = channel.data[0][0][0];
-    for (unsigned int z = 0; z < _size.z; ++z) {
-        for (unsigned int x = 0; x < _size.x; ++x) {
-            uint8_t * column = channel.data[z][x];
-            for (unsigned int y = 0; y < _size.y; ++y) {
-                if (column[y] != voxel) {
-                    return false;
-                }
-            }
+    
+    uint8_t voxel = channel.data[0];
+    unsigned int volume = get_volume();
+    for (unsigned int i = 0; i < volume; ++i) {
+        if (channel.data[i] != voxel) {
+            return false;
         }
     }
+
     return true;
 }
 
 void VoxelBuffer::optimize() {
     for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
         if (_channels[i].data && is_uniform(i)) {
-            clear_channel(i, _channels[i].data[0][0][0]);
+            clear_channel(i, _channels[i].data[0]);
         }
     }
 }
@@ -141,35 +135,15 @@ void VoxelBuffer::optimize() {
 void VoxelBuffer::create_channel(int i, Vector3i size, uint8_t defval) {
 
     Channel & channel = _channels[i];
-    channel.data = (uint8_t***)memalloc(size.z * sizeof(uint8_t**));
-
-    for (unsigned int z = 0; z < size.z; ++z) {
-
-        uint8_t ** plane = (uint8_t**)memalloc(size.x * sizeof(uint8_t*));
-        channel.data[z] = plane;
-
-        for (unsigned int x = 0; x < size.x; ++x) {
-
-            uint8_t * column = (uint8_t*)memalloc(size.y * sizeof(uint8_t));
-            plane[x] = column;
-
-            for (unsigned int y = 0; y < size.y; ++y) {
-                column[y] = defval;
-            }
-        }
-    }
+    unsigned int volume = size.x * size.y * size.z;
+    channel.data = (uint8_t*)memalloc(volume * sizeof(uint8_t));
+    
+    memset(channel.data, defval, volume);
 }
 
 void VoxelBuffer::delete_channel(int i, Vector3i size) {
 
-    Channel & channel = _channels[i];
-    
-    for (unsigned int z = 0; z < size.z; ++z) {
-        for (unsigned int x = 0; x < size.x; ++x) {
-            memfree(channel.data[z][x]);
-        }
-        memfree(channel.data[z]);
-    }
+    Channel & channel = _channels[i];    
     memfree(channel.data);
     channel.data = NULL;
 }

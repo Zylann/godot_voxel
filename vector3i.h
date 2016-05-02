@@ -22,6 +22,22 @@ struct Vector3i {
         return *this;
     }
 
+    Vector3i operator+(const Vector3i & other) {
+        return Vector3i(x + other.x, y + other.y, z + other.z);
+    }
+
+    Vector3i operator-(const Vector3i & other) {
+        return Vector3i(x - other.x, y - other.y, z - other.z);
+    }
+
+    Vector3i operator*(int n) {
+        return Vector3i(x * n, y * n, z * n);
+    }
+
+    Vector3i operator/(int n) {
+        return Vector3i(x / n, y / n, z / n);
+    }
+
     bool operator==(const Vector3i & other) {
         return x == other.x && y == other.y && z == other.z;
     }
