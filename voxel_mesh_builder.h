@@ -19,6 +19,8 @@ private:
     Ref<VoxelLibrary> _library;
     Ref<Material> _materials[MAX_MATERIALS];
     SurfaceTool _surface_tool[MAX_MATERIALS];
+    float _baked_occlusion_darkness;
+    bool _bake_occlusion;
 
 public:
     VoxelMeshBuilder();
@@ -26,6 +28,10 @@ public:
     void set_material(Ref<Material> material, unsigned int id);
 
     void set_library(Ref<VoxelLibrary> library);
+
+    void set_occlusion_darkness(float darkness);
+    
+    void set_occlusion_enabled(bool enable);
 
     Ref<Mesh> build(Ref<VoxelBuffer> buffer_ref);
     

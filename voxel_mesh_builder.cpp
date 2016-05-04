@@ -1,6 +1,50 @@
 #include "voxel_mesh_builder.h"
 #include "voxel_library.h"
 
+
+// The following tables respect the following conventions
+//
+//    7-------6
+//   /|      /|
+//  / |     / |  Corners
+// 4-------5  |
+// |  3----|--2
+// | /     | /   y z
+// |/      |/    |/
+// 0-------1     o--x
+//
+//
+//     o---10----o
+//    /|        /|
+//  11 7       9 6   Edges
+//  /  |      /  |
+// o----8----o   |
+// |   o---2-|---o
+// 4  /      5  /  
+// | 3       | 1
+// |/        |/
+// o----0----o
+//
+// Sides are ordered according to the Voxel::Side enum.
+//
+
+static const unsigned int CORNER_COUNT = 8;
+static const unsigned int EDGE_COUNT = 12;
+
+static const Vector3 g_corner_position[CORNER_COUNT] = {
+    Vector3(0, 0, 0),
+    Vector3(1, 0, 0),
+    Vector3(1, 0, 1),
+    Vector3(0, 0, 1),
+    Vector3(0, 1, 0),
+    Vector3(1, 1, 0),
+    Vector3(1, 1, 1),
+    Vector3(0, 1, 1)
+};
+
+static const unsigned int g_side_coord[Voxel::SIDE_COUNT] = { 0, 0, 1, 1, 2, 2 };
+static const unsigned int g_side_sign[Voxel::SIDE_COUNT] = { 0, 1, 0, 1, 0, 1 };
+
 static const Vector3i g_side_normals[Voxel::SIDE_COUNT] = {
     Vector3i(-1, 0, 0),
     Vector3i(1, 0, 0),
@@ -10,7 +54,73 @@ static const Vector3i g_side_normals[Voxel::SIDE_COUNT] = {
     Vector3i(0, 0, 1),
 };
 
-VoxelMeshBuilder::VoxelMeshBuilder() {
+static const unsigned int g_side_corners[Voxel::SIDE_COUNT][4] = {
+    { 0, 3, 7, 4 },
+    { 1, 2, 6, 5 },
+    { 0, 1, 2, 3 },
+    { 4, 5, 6, 7 },
+    { 0, 1, 5, 4 },
+    { 3, 2, 6, 7 }
+};
+
+static const unsigned int g_side_edges[Voxel::SIDE_COUNT][4] = {
+    { 3, 7, 11, 4 },
+    { 1, 6, 9, 5 },
+    { 0, 1, 2, 3 },
+    { 8, 9, 10, 11 },
+    { 0, 5, 8, 4 },
+    { 2, 6, 10, 7 }
+};
+
+// 3---2
+// | / | {0,1,2,0,2,3}
+// 0---1
+//static const unsigned int g_vertex_to_corner[Voxel::SIDE_COUNT][6] = {
+//    { 0, 3, 7, 0, 7, 4 },
+//    { 2, 1, 5, 2, 5, 6 },
+//    { 0, 1, 2, 0, 2, 3 },
+//    { 7, 6, 5, 7, 5, 4 },
+//    { 1, 0, 4 ,1, 4, 5 },
+//    { 3, 2, 6, 3, 6, 7 }
+//};
+
+static const Vector3i g_corner_inormals[CORNER_COUNT] = {
+    Vector3i(-1, -1, -1),
+    Vector3i(1, -1, -1),
+    Vector3i(1, -1, 1),
+    Vector3i(-1, -1, 1),
+
+    Vector3i(-1, 1, -1),
+    Vector3i(1, 1, -1),
+    Vector3i(1, 1, 1),
+    Vector3i(-1, 1, 1)
+};
+
+static const Vector3i g_edge_inormals[EDGE_COUNT] = {
+    Vector3i(0, -1, -1),
+    Vector3i(1, -1, 0),
+    Vector3i(0, -1, 1),
+    Vector3i(-1, -1, 0),
+
+    Vector3i(-1, 0, -1),
+    Vector3i(1, 0, -1),
+    Vector3i(1, 0, 1),
+    Vector3i(-1, 0, 1),
+
+    Vector3i(0, 1, -1),
+    Vector3i(1, 1, 0),
+    Vector3i(0, 1, 1),
+    Vector3i(-1, 1, 0)
+};
+
+static const unsigned int g_edge_corners[EDGE_COUNT][2] = {
+    { 0, 1 }, { 1, 2 }, { 2, 3 }, {3, 0},
+    { 0, 4 }, { 1, 5 }, { 2, 6 }, {3, 7},
+    { 4, 5 }, { 5, 6 }, { 6, 7 }, {7, 4}
+};
+
+
+VoxelMeshBuilder::VoxelMeshBuilder(): _baked_occlusion_darkness(0.75), _bake_occlusion(true) {
 
 }
 
@@ -25,6 +135,20 @@ void VoxelMeshBuilder::set_material(Ref<Material> material, unsigned int id) {
     _surface_tool[id].set_material(material);
 }
 
+void VoxelMeshBuilder::set_occlusion_darkness(float darkness) {
+    _baked_occlusion_darkness = darkness;
+    if (_baked_occlusion_darkness < 0.0)
+        _baked_occlusion_darkness = 0.0;
+    else if (_baked_occlusion_darkness >= 1.0)
+        _baked_occlusion_darkness = 1.0;
+}
+   
+void VoxelMeshBuilder::set_occlusion_enabled(bool enable) {
+    _bake_occlusion = enable;
+}
+
+inline Color Color_greyscale(float c) { return Color(c, c, c); }
+
 Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
     ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<Mesh>());
     ERR_FAIL_COND_V(_library.is_null(), Ref<Mesh>());
@@ -35,6 +159,10 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
     for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
         _surface_tool[i].begin(Mesh::PRIMITIVE_TRIANGLES);
     }
+
+    float baked_occlusion_darkness;
+    if (_bake_occlusion)
+        baked_occlusion_darkness = _baked_occlusion_darkness / 3.0;
 
     // Iterate 3D padded data to extract voxel faces.
     // This is the most intensive job in this class, so all required data should be as fit as possible.
@@ -68,14 +196,73 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
                             // TODO Better face visibility test
                             if (neighbor_voxel_id == 0) {
 
+                                // The face is visible
+
+                                int shaded_corner[8] = { 0 };
+
+                                if (_bake_occlusion) {
+
+                                    // Combinatory solution for https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
+
+                                    for (unsigned int j = 0; j < 4; ++j) {
+                                        unsigned int edge = g_side_edges[side][j];
+                                        Vector3i edge_normal = g_edge_inormals[edge];
+                                        unsigned ex = x + edge_normal.x;
+                                        unsigned ey = y + edge_normal.y;
+                                        unsigned ez = z + edge_normal.z;
+                                        if (buffer.get_voxel_local(ex, ey, ez) != 0) {
+                                            shaded_corner[g_edge_corners[edge][0]] += 1;
+                                            shaded_corner[g_edge_corners[edge][1]] += 1;
+                                        }
+                                    }
+                                    for (unsigned int j = 0; j < 4; ++j) {
+                                        unsigned int corner = g_side_corners[side][j];
+                                        if (shaded_corner[corner] == 2) {
+                                            shaded_corner[corner] = 3;
+                                        }
+                                        else {
+                                            Vector3i corner_normal = g_corner_inormals[corner];
+                                            unsigned int cx = x + corner_normal.x;
+                                            unsigned int cy = y + corner_normal.y;
+                                            unsigned int cz = z + corner_normal.z;
+                                            if (buffer.get_voxel_local(cx, cy, cz) != 0) {
+                                                shaded_corner[corner] += 1;
+                                            }
+                                        }
+                                    }
+                                }
+
                                 DVector<Vector3>::Read rv = vertices.read();
                                 DVector<Vector2>::Read rt = voxel.get_model_side_uv(side).read();
                                 Vector3 pos(x - 1, y - 1, z - 1);
 
                                 for (unsigned int i = 0; i < vertices.size(); ++i) {
+                                    Vector3 v = rv[i];
+
+                                    if (_bake_occlusion) {
+                                        // General purpose occlusion colouring.
+                                        // TODO Optimize for cubes
+                                        // TODO Fix occlusion inconsistency caused by triangles orientation
+                                        float shade = 0;
+                                        for (unsigned int j = 0; j < 4; ++j) {
+                                            unsigned int corner = g_side_corners[side][j];
+                                            if (shaded_corner[corner]) {
+                                                float s = baked_occlusion_darkness * static_cast<float>(shaded_corner[corner]);
+                                                float k = 1.0 - g_corner_position[corner].distance_to(v);
+                                                if (k < 0.0)
+                                                    k = 0.0;
+                                                s *= k;
+                                                if (s > shade)
+                                                    shade = s;
+                                            }
+                                        }
+                                        float gs = 1.0 - shade;
+                                        st.add_color(Color(gs, gs, gs));
+                                    }
+
                                     st.add_normal(Vector3(normal.x, normal.y, normal.z));
                                     st.add_uv(rt[i]);
-                                    st.add_vertex(rv[i] + pos);
+                                    st.add_vertex(v + pos);
                                 }
                             }
                         }
@@ -121,6 +308,8 @@ void VoxelMeshBuilder::_bind_methods() {
 
     ObjectTypeDB::bind_method(_MD("set_material", "material", "id"), &VoxelMeshBuilder::set_material);
     ObjectTypeDB::bind_method(_MD("set_library", "voxel_library"), &VoxelMeshBuilder::set_library);
+    ObjectTypeDB::bind_method(_MD("set_occlusion_enabled", "enable"), &VoxelMeshBuilder::set_occlusion_enabled);
+    ObjectTypeDB::bind_method(_MD("set_occlusion_darkness", "value"), &VoxelMeshBuilder::set_occlusion_darkness);
     ObjectTypeDB::bind_method(_MD("build", "voxel_buffer"), &VoxelMeshBuilder::build);
 
 }
