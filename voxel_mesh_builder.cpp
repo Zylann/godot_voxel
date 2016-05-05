@@ -149,6 +149,22 @@ void VoxelMeshBuilder::set_occlusion_enabled(bool enable) {
 
 inline Color Color_greyscale(float c) { return Color(c, c, c); }
 
+inline bool is_face_visible(const VoxelLibrary & lib, const Voxel & vt, int other_voxel_id) {
+    if (other_voxel_id == 0) // air
+        return true;
+    if (lib.has_voxel(other_voxel_id)) {
+        const Voxel & other_vt = lib.get_voxel_const(other_voxel_id);
+        return other_vt.is_transparent() && vt.get_id() != other_voxel_id;
+    }
+    return true;
+}
+
+inline bool is_transparent(const VoxelLibrary & lib, int voxel_id) {
+    if (lib.has_voxel(voxel_id))
+        return lib.get_voxel_const(voxel_id).is_transparent();
+    return true;
+}
+
 Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
     ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<Mesh>());
     ERR_FAIL_COND_V(_library.is_null(), Ref<Mesh>());
@@ -194,7 +210,7 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
 
                             int neighbor_voxel_id = buffer.get_voxel_local(nx, ny, nz, 0);
                             // TODO Better face visibility test
-                            if (neighbor_voxel_id == 0) {
+                            if (is_face_visible(library, voxel, neighbor_voxel_id)) {
 
                                 // The face is visible
 
@@ -210,7 +226,7 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
                                         unsigned ex = x + edge_normal.x;
                                         unsigned ey = y + edge_normal.y;
                                         unsigned ez = z + edge_normal.z;
-                                        if (buffer.get_voxel_local(ex, ey, ez) != 0) {
+                                        if (!is_transparent(library, buffer.get_voxel_local(ex, ey, ez))) {
                                             shaded_corner[g_edge_corners[edge][0]] += 1;
                                             shaded_corner[g_edge_corners[edge][1]] += 1;
                                         }
@@ -225,7 +241,7 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
                                             unsigned int cx = x + corner_normal.x;
                                             unsigned int cy = y + corner_normal.y;
                                             unsigned int cz = z + corner_normal.z;
-                                            if (buffer.get_voxel_local(cx, cy, cz) != 0) {
+                                            if (!is_transparent(library, buffer.get_voxel_local(cx, cy, cz))) {
                                                 shaded_corner[corner] += 1;
                                             }
                                         }

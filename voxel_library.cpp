@@ -1,7 +1,7 @@
 #include "voxel_library.h"
 
 VoxelLibrary::VoxelLibrary() : Reference(), _atlas_size(1) {
-
+    create_voxel(0, "air")->set_transparent(true);
 }
 
 VoxelLibrary::~VoxelLibrary() {

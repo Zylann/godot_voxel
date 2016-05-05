@@ -3,7 +3,7 @@
 #include "voxel_mesh_builder.h"
 
 Voxel::Voxel() : Reference(), 
-    _id(0), 
+    _id(-1), 
     _material_id(0), 
     _is_transparent(false), 
     _library(NULL), 
@@ -12,7 +12,11 @@ Voxel::Voxel() : Reference(),
 
 Ref<Voxel> Voxel::set_id(int id) {
     ERR_FAIL_COND_V(id < 0 || id >= 256, Ref<Voxel>(this));
+    // Cannot modify ID after creation
+    ERR_FAIL_COND_V(_id != -1, Ref<Voxel>(this));
+
     _id = id;
+
     return Ref<Voxel>(this); 
 }
 
@@ -172,6 +176,9 @@ void Voxel::_bind_methods() {
 
     ObjectTypeDB::bind_method(_MD("set_transparent:Voxel", "color"), &Voxel::set_transparent, DEFVAL(true));
     ObjectTypeDB::bind_method(_MD("is_transparent"), &Voxel::is_transparent);
+
+    ObjectTypeDB::bind_method(_MD("set_material_id", "id"), &Voxel::set_material_id);
+    ObjectTypeDB::bind_method(_MD("get_material_id"), &Voxel::get_material_id);
 
     ObjectTypeDB::bind_method(_MD("set_cube_geometry:Voxel", "height"), &Voxel::set_cube_geometry, DEFVAL(1.f));
     ObjectTypeDB::bind_method(_MD("set_cube_uv_all_sides:Voxel", "atlas_pos"), &Voxel::set_cube_uv_all_sides);

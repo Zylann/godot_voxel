@@ -36,6 +36,7 @@ public:
     Ref<Mesh> build(Ref<VoxelBuffer> buffer_ref);
     
 protected:
+
     static void _bind_methods();
 
 };
