@@ -180,6 +180,14 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
     if (_bake_occlusion)
         baked_occlusion_darkness = _baked_occlusion_darkness / 3.0;
 
+    // The technique is Culled faces.
+    // Could be improved with greedy meshing: https://0fps.net/2012/06/30/meshing-in-a-minecraft-game/
+    // However I don't feel it's worth it yet:
+    // - Not so much gain for organic worlds with lots of texture variations
+    // - Works well with cubes but not with any shape
+    // - Slower
+    // => Could be implemented in a separate class?
+
     // Iterate 3D padded data to extract voxel faces.
     // This is the most intensive job in this class, so all required data should be as fit as possible.
     for (unsigned int z = 1; z < buffer.get_size_z()-1; ++z) {
