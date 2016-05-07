@@ -1,5 +1,5 @@
-#ifndef VOXEL_MESH_BUILDER
-#define VOXEL_MESH_BUILDER
+#ifndef VOXEL_MESHER
+#define VOXEL_MESHER
 
 #include <reference.h>
 #include <scene/resources/mesh.h>
@@ -9,8 +9,8 @@
 
 class VoxelLibrary;
 
-class VoxelMeshBuilder : public Reference {
-    OBJ_TYPE(VoxelMeshBuilder, Reference);
+class VoxelMesher : public Reference {
+    OBJ_TYPE(VoxelMesher, Reference);
 
 public:
     static const unsigned int MAX_MATERIALS = 8; // Arbitrary. Tweak if needed.
@@ -23,7 +23,7 @@ private:
     bool _bake_occlusion;
 
 public:
-    VoxelMeshBuilder();
+    VoxelMesher();
 
     void set_material(Ref<Material> material, unsigned int id);
 
@@ -42,4 +42,4 @@ protected:
 };
 
 
-#endif // VOXEL_MESH_BUILDER
+#endif // VOXEL_MESHER

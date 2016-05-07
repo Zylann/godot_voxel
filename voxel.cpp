@@ -1,6 +1,6 @@
 #include "voxel.h"
 #include "voxel_library.h"
-#include "voxel_mesh_builder.h"
+#include "voxel_mesher.h"
 
 Voxel::Voxel() : Reference(), 
     _id(-1), 
@@ -21,7 +21,7 @@ Ref<Voxel> Voxel::set_id(int id) {
 }
 
 Ref<Voxel> Voxel::set_material_id(unsigned int id) {
-    ERR_FAIL_COND_V(id >= VoxelMeshBuilder::MAX_MATERIALS, Ref<Voxel>(this));
+    ERR_FAIL_COND_V(id >= VoxelMesher::MAX_MATERIALS, Ref<Voxel>(this));
     _material_id = id;
     return Ref<Voxel>(this);
 }

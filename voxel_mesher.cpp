@@ -1,4 +1,4 @@
-#include "voxel_mesh_builder.h"
+#include "voxel_mesher.h"
 #include "voxel_library.h"
 
 
@@ -120,22 +120,22 @@ static const unsigned int g_edge_corners[EDGE_COUNT][2] = {
 };
 
 
-VoxelMeshBuilder::VoxelMeshBuilder(): _baked_occlusion_darkness(0.75), _bake_occlusion(true) {
+VoxelMesher::VoxelMesher(): _baked_occlusion_darkness(0.75), _bake_occlusion(true) {
 
 }
 
-void VoxelMeshBuilder::set_library(Ref<VoxelLibrary> library) {
+void VoxelMesher::set_library(Ref<VoxelLibrary> library) {
     ERR_FAIL_COND(library.is_null());
     _library = library;
 }
 
-void VoxelMeshBuilder::set_material(Ref<Material> material, unsigned int id) {
+void VoxelMesher::set_material(Ref<Material> material, unsigned int id) {
     ERR_FAIL_COND(id >= MAX_MATERIALS);
     _materials[id] = material;
     _surface_tool[id].set_material(material);
 }
 
-void VoxelMeshBuilder::set_occlusion_darkness(float darkness) {
+void VoxelMesher::set_occlusion_darkness(float darkness) {
     _baked_occlusion_darkness = darkness;
     if (_baked_occlusion_darkness < 0.0)
         _baked_occlusion_darkness = 0.0;
@@ -143,7 +143,7 @@ void VoxelMeshBuilder::set_occlusion_darkness(float darkness) {
         _baked_occlusion_darkness = 1.0;
 }
    
-void VoxelMeshBuilder::set_occlusion_enabled(bool enable) {
+void VoxelMesher::set_occlusion_enabled(bool enable) {
     _bake_occlusion = enable;
 }
 
@@ -165,7 +165,7 @@ inline bool is_transparent(const VoxelLibrary & lib, int voxel_id) {
     return true;
 }
 
-Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
+Ref<Mesh> VoxelMesher::build(Ref<VoxelBuffer> buffer_ref) {
     ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<Mesh>());
     ERR_FAIL_COND_V(_library.is_null(), Ref<Mesh>());
 
@@ -328,13 +328,13 @@ Ref<Mesh> VoxelMeshBuilder::build(Ref<VoxelBuffer> buffer_ref) {
     return mesh_ref;
 }
 
-void VoxelMeshBuilder::_bind_methods() {
+void VoxelMesher::_bind_methods() {
 
-    ObjectTypeDB::bind_method(_MD("set_material", "material", "id"), &VoxelMeshBuilder::set_material);
-    ObjectTypeDB::bind_method(_MD("set_library", "voxel_library"), &VoxelMeshBuilder::set_library);
-    ObjectTypeDB::bind_method(_MD("set_occlusion_enabled", "enable"), &VoxelMeshBuilder::set_occlusion_enabled);
-    ObjectTypeDB::bind_method(_MD("set_occlusion_darkness", "value"), &VoxelMeshBuilder::set_occlusion_darkness);
-    ObjectTypeDB::bind_method(_MD("build", "voxel_buffer"), &VoxelMeshBuilder::build);
+    ObjectTypeDB::bind_method(_MD("set_material", "material", "id"), &VoxelMesher::set_material);
+    ObjectTypeDB::bind_method(_MD("set_library", "voxel_library"), &VoxelMesher::set_library);
+    ObjectTypeDB::bind_method(_MD("set_occlusion_enabled", "enable"), &VoxelMesher::set_occlusion_enabled);
+    ObjectTypeDB::bind_method(_MD("set_occlusion_darkness", "value"), &VoxelMesher::set_occlusion_darkness);
+    ObjectTypeDB::bind_method(_MD("build", "voxel_buffer"), &VoxelMesher::build);
 
 }
 
