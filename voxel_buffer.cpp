@@ -49,27 +49,10 @@ void VoxelBuffer::clear_channel(unsigned int channel_index, int clear_value) {
 int VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index) const {
     ERR_FAIL_INDEX_V(channel_index,  MAX_CHANNELS, 0);
     
-    x -= _offset.x;
-    y -= _offset.y;
-    z -= _offset.z;
-
     const Channel & channel = _channels[channel_index];
 
-    if (validate_local_pos(x, y, z) && channel.data) {
+    if (validate_pos(x, y, z) && channel.data) {
         return VOXEL_AT(channel.data, x,y,z);
-    }
-    else {
-        return channel.defval;
-    }
-}
-
-int VoxelBuffer::get_voxel_local(int x, int y, int z, unsigned int channel_index) const {
-    ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, 0);
-    
-    const Channel & channel = _channels[channel_index];
-
-    if (validate_local_pos(x, y, z) && channel.data) {
-        return VOXEL_AT(channel.data, x, y, z);
     }
     else {
         return channel.defval;
@@ -78,12 +61,7 @@ int VoxelBuffer::get_voxel_local(int x, int y, int z, unsigned int channel_index
 
 void VoxelBuffer::set_voxel(int value, int x, int y, int z, unsigned int channel_index) {
     ERR_FAIL_INDEX(channel_index,  MAX_CHANNELS);
-
-    x -= _offset.x;
-    y -= _offset.y;
-    z -= _offset.z;
-
-    ERR_FAIL_COND(!validate_local_pos(x, y, z));
+    ERR_FAIL_COND(!validate_pos(x, y, z));
 
     Channel & channel = _channels[channel_index];
 
@@ -254,16 +232,9 @@ void VoxelBuffer::_bind_methods() {
     ObjectTypeDB::bind_method(_MD("get_size_y"), &VoxelBuffer::get_size_y);
     ObjectTypeDB::bind_method(_MD("get_size_z"), &VoxelBuffer::get_size_z);
 
-    ObjectTypeDB::bind_method(_MD("get_offset_x"), &VoxelBuffer::get_offset_x);
-    ObjectTypeDB::bind_method(_MD("get_offset_y"), &VoxelBuffer::get_offset_y);
-    ObjectTypeDB::bind_method(_MD("get_offset_z"), &VoxelBuffer::get_offset_z);
-    ObjectTypeDB::bind_method(_MD("get_offset"), &VoxelBuffer::_get_offset_binding);
-
-    ObjectTypeDB::bind_method(_MD("set_offset", "x", "y", "z"), &VoxelBuffer::_set_offset_binding);
-
-    ObjectTypeDB::bind_method(_MD("set_voxel", "value", "x", "y", "z", "channel"), &VoxelBuffer::set_voxel, DEFVAL(0));
+    ObjectTypeDB::bind_method(_MD("set_voxel", "value", "x", "y", "z", "channel"), &VoxelBuffer::_set_voxel_binding, DEFVAL(0));
     ObjectTypeDB::bind_method(_MD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::set_voxel_v, DEFVAL(0));
-    ObjectTypeDB::bind_method(_MD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel, DEFVAL(0));
+    ObjectTypeDB::bind_method(_MD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::_get_voxel_binding, DEFVAL(0));
 
     ObjectTypeDB::bind_method(_MD("fill", "value", "channel"), &VoxelBuffer::fill, DEFVAL(0));
     ObjectTypeDB::bind_method(_MD("fill_area", "value", "min", "max", "channel"), &VoxelBuffer::_fill_area_binding, DEFVAL(0));

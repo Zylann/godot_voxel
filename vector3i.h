@@ -5,9 +5,14 @@
 
 struct Vector3i {
 
-    int x;
-    int y;
-    int z;
+    union {
+        struct {
+            int x;
+            int y;
+            int z;
+        };
+        int coords[3];
+    };
 
     _FORCE_INLINE_ Vector3i() : x(0), y(0), z(0) {}
 
@@ -34,28 +39,20 @@ struct Vector3i {
         return *this;
     }
 
-    _FORCE_INLINE_ Vector3i operator+(const Vector3i & other) const {
-        return Vector3i(x + other.x, y + other.y, z + other.z);
+    _FORCE_INLINE_ void operator+=(const Vector3i & other) {
+        x += other.x;
+        y += other.y;
+        z += other.z;
     }
 
-    _FORCE_INLINE_ Vector3i operator-(const Vector3i & other) const {
-        return Vector3i(x - other.x, y - other.y, z - other.z);
+    _FORCE_INLINE_ void operator-=(const Vector3i & other) {
+        x -= other.x;
+        y -= other.y;
+        z -= other.z;
     }
 
-    _FORCE_INLINE_ Vector3i operator*(int n) const {
-        return Vector3i(x * n, y * n, z * n);
-    }
-
-    _FORCE_INLINE_ Vector3i operator/(int n) const {
-        return Vector3i(x / n, y / n, z / n);
-    }
-
-    _FORCE_INLINE_ bool operator==(const Vector3i & other) const {
-        return x == other.x && y == other.y && z == other.z;
-    }
-
-    _FORCE_INLINE_ bool operator!=(const Vector3i & other) const {
-        return x != other.x && y != other.y && z != other.z;
+    _FORCE_INLINE_ int & operator[](unsigned int i) {
+        return coords[i];
     }
 
     void clamp_to(const Vector3i min, const Vector3i max) {
@@ -68,8 +65,48 @@ struct Vector3i {
         if (z >= max.z) z = max.z;
     }
 
+    _FORCE_INLINE_ bool is_contained_in(const Vector3i & min, const Vector3i & max) {
+        return x >= min.x && y >= min.y && z >= min.z
+            && x < max.x && y < max.y && z < max.z;
+    }
+
+    _FORCE_INLINE_ Vector3i wrap(const Vector3i & size) {
+        return Vector3i(
+            x % size.x,
+            y % size.y,
+            z % size.z
+        );
+    }
 
 };
+
+_FORCE_INLINE_ Vector3i operator+(const Vector3i a, const Vector3i & b) {
+    return Vector3i(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+_FORCE_INLINE_ Vector3i operator-(const Vector3i & a, const Vector3i & b) {
+    return Vector3i(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+_FORCE_INLINE_ Vector3i operator*(const Vector3i & a, int n) {
+    return Vector3i(a.x * n, a.y * n, a.z * n);
+}
+
+_FORCE_INLINE_ Vector3i operator*(int n, const Vector3i & a) {
+    return Vector3i(a.x * n, a.y * n, a.z * n);
+}
+
+_FORCE_INLINE_ Vector3i operator/(const Vector3i & a, int n) {
+    return Vector3i(a.x / n, a.y / n, a.z / n);
+}
+
+_FORCE_INLINE_ bool operator==(const Vector3i & a, const Vector3i & b) {
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+_FORCE_INLINE_ bool operator!=(const Vector3i & a, const Vector3i & b) {
+    return a.x != b.x && a.y != b.y && a.z != b.z;
+}
 
 struct Vector3iHasher {
 	static _FORCE_INLINE_ uint32_t hash(const Vector3i & v) {
