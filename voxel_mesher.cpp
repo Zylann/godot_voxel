@@ -165,11 +165,14 @@ inline bool is_transparent(const VoxelLibrary & lib, int voxel_id) {
     return true;
 }
 
-Ref<Mesh> VoxelMesher::build(Ref<VoxelBuffer> buffer_ref) {
+Ref<Mesh> VoxelMesher::build_ref(Ref<VoxelBuffer> buffer_ref) {
     ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<Mesh>());
+    return build(**buffer_ref);
+}
+
+Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
     ERR_FAIL_COND_V(_library.is_null(), Ref<Mesh>());
 
-    const VoxelBuffer & buffer = **buffer_ref;
     const VoxelLibrary & library = **_library;
 
     for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
@@ -335,7 +338,6 @@ void VoxelMesher::_bind_methods() {
     ObjectTypeDB::bind_method(_MD("set_library", "voxel_library"), &VoxelMesher::set_library);
     ObjectTypeDB::bind_method(_MD("set_occlusion_enabled", "enable"), &VoxelMesher::set_occlusion_enabled);
     ObjectTypeDB::bind_method(_MD("set_occlusion_darkness", "value"), &VoxelMesher::set_occlusion_darkness);
-    ObjectTypeDB::bind_method(_MD("build", "voxel_buffer"), &VoxelMesher::build);
+    ObjectTypeDB::bind_method(_MD("build", "voxel_buffer"), &VoxelMesher::build_ref);
 
 }
-

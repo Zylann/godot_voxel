@@ -28,8 +28,20 @@ struct Vector3i {
         z = Math::floor(f.z);
     }
 
-    _FORCE_INLINE_ Vector3 to_vec3() {
+    _FORCE_INLINE_ Vector3 to_vec3() const {
         return Vector3(x, y, z);
+    }
+
+    _FORCE_INLINE_ int volume() const {
+        return x*y*z;
+    }
+
+    _FORCE_INLINE_ int length_sq() const {
+        return x*x + y*y + z*z;
+    }
+
+    _FORCE_INLINE_ float length() const {
+        return Math::sqrt(length_sq());
     }
 
     _FORCE_INLINE_ Vector3i & operator=(const Vector3i & other) {
@@ -60,9 +72,9 @@ struct Vector3i {
         if (y < min.y) y = min.y;
         if (z < min.z) z = min.z;
 
-        if (x >= max.x) x = max.x;
-        if (y >= max.y) y = max.y;
-        if (z >= max.z) z = max.z;
+        if (x >= max.x) x = max.x - 1;
+        if (y >= max.y) y = max.y - 1;
+        if (z >= max.z) z = max.z - 1;
     }
 
     _FORCE_INLINE_ bool is_contained_in(const Vector3i & min, const Vector3i & max) {
@@ -76,6 +88,21 @@ struct Vector3i {
             y % size.y,
             z % size.z
         );
+    }
+
+    static void sort_min_max(Vector3i & a, Vector3i & b) {
+        sort_min_max(a.x, b.x);
+        sort_min_max(a.y, b.y);
+        sort_min_max(a.z, b.z);
+    }
+
+private:
+    static _FORCE_INLINE_ void sort_min_max(int & a, int & b) {
+        if (a > b) {
+            int temp = a;
+            a = b;
+            b = a;
+        }
     }
 
 };

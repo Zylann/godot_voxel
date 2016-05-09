@@ -93,20 +93,24 @@ void VoxelBuffer::fill(int defval, unsigned int channel_index) {
 void VoxelBuffer::fill_area(int defval, Vector3i min, Vector3i max, unsigned int channel_index) {
     ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
+    Vector3i::sort_min_max(min, max);
+
     min.clamp_to(Vector3i(0, 0, 0), _size);
-    max.clamp_to(Vector3i(0, 0, 0), _size);
+    max.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1,1,1));
     Vector3i area_size = max - min;
 
     Channel & channel = _channels[channel_index];
-    if (channel.data == NULL && channel.defval == defval)
-        return;
-    else
-        create_channel(channel_index, _size);
+    if (channel.data == NULL) {
+        if (channel.defval == defval)
+            return;
+        else
+            create_channel(channel_index, _size);
+    }
 
     Vector3i pos;
     for (pos.z = min.z; pos.z < max.z; ++pos.z) {
         for (pos.x = min.x; pos.x < max.x; ++pos.x) {
-            unsigned int dst_ri = row_index(pos.x, pos.y, pos.z);
+            unsigned int dst_ri = index(pos.x, pos.y, pos.z);
             memset(&channel.data[dst_ri], defval, area_size.y * sizeof(uint8_t));
         }
     }
@@ -164,12 +168,14 @@ void VoxelBuffer::copy_from(const VoxelBuffer & other, Vector3i src_min, Vector3
     Channel & channel = _channels[channel_index];
     const Channel & other_channel = other._channels[channel_index];
 
+    Vector3i::sort_min_max(src_min, src_max);
+
     src_min.clamp_to(Vector3i(0, 0, 0), other._size);
-    src_max.clamp_to(Vector3i(0, 0, 0), other._size);
+    src_max.clamp_to(Vector3i(0, 0, 0), other._size + Vector3i(1,1,1));
 
     dst_min.clamp_to(Vector3i(0, 0, 0), _size);
     Vector3i area_size = src_max - src_min;
-    Vector3i dst_max = src_min + area_size;
+    //Vector3i dst_max = dst_min + area_size;
 
     if (area_size == _size) {
         copy_from(other, channel_index);
@@ -184,8 +190,8 @@ void VoxelBuffer::copy_from(const VoxelBuffer & other, Vector3i src_min, Vector3
             for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
                 for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
                     // Row direction is Y
-                    unsigned int src_ri = other.row_index(pos.x + src_min.x, pos.y + src_min.y, pos.z + src_min.z);
-                    unsigned int dst_ri = row_index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
+                    unsigned int src_ri = other.index(pos.x + src_min.x, pos.y + src_min.y, pos.z + src_min.z);
+                    unsigned int dst_ri = index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
                     memcpy(&channel.data[dst_ri], &other_channel.data[src_ri], area_size.y * sizeof(uint8_t));
                 }
             }
@@ -198,7 +204,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer & other, Vector3i src_min, Vector3
             Vector3i pos;
             for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
                 for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
-                    unsigned int dst_ri = row_index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
+                    unsigned int dst_ri = index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
                     memset(&channel.data[dst_ri], other_channel.defval, area_size.y * sizeof(uint8_t));
                 }
             }
