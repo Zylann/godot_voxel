@@ -110,7 +110,7 @@ void VoxelBuffer::fill_area(int defval, Vector3i min, Vector3i max, unsigned int
     Vector3i pos;
     for (pos.z = min.z; pos.z < max.z; ++pos.z) {
         for (pos.x = min.x; pos.x < max.x; ++pos.x) {
-            unsigned int dst_ri = index(pos.x, pos.y, pos.z);
+            unsigned int dst_ri = index(pos.x, pos.y + min.y, pos.z);
             memset(&channel.data[dst_ri], defval, area_size.y * sizeof(uint8_t));
         }
     }
