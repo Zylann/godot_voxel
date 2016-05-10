@@ -101,7 +101,7 @@ private:
         if (a > b) {
             int temp = a;
             a = b;
-            b = a;
+            b = temp;
         }
     }
 
