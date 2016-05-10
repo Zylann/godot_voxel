@@ -319,12 +319,16 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
     }
 
     // Commit mesh
-    Ref<Mesh> mesh_ref = _surface_tool[0].commit();
-    _surface_tool[0].clear();
-    for (unsigned int i = 1; i < MAX_MATERIALS; ++i) {
+    Ref<Mesh> mesh_ref;
+    for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
         if (_materials[i].is_valid()) {
             SurfaceTool & st = _surface_tool[i];
-            st.commit(mesh_ref);
+            
+            // Index mesh to reduce memory usage and make upload to VRAM faster
+            // TODO actually, we could make it indexed from the ground up without using SurfaceTool, so we also save time!
+            st.index();
+
+            mesh_ref = st.commit(mesh_ref);
             st.clear();
         }
     }
