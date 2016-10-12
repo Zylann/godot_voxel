@@ -5,6 +5,14 @@ C++ module for creating cube-esque voxel worlds in Godot Engine.
 
 ![Example screenshot](screenshots/2016_05_04_0319_w800.png)
 
+Setup
+------
+
+Install the contents of the repo in a folder under "modules/", named "voxel".
+
+IMPORTANT: if you clone the repo, Git will create the folder as the repo name, "godot_voxel". But because Godot SCons scripts consider the folder name as the module's name, it will generate wrong function calls, so you must rename the folder "voxel".
+
+
 Features
 ---------
 
