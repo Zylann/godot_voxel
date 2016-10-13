@@ -6,8 +6,7 @@
 #include <scene/resources/surface_tool.h>
 #include "voxel.h"
 #include "voxel_buffer.h"
-
-class VoxelLibrary;
+#include "voxel_library.h"
 
 class VoxelMesher : public Reference {
     OBJ_TYPE(VoxelMesher, Reference);
