@@ -65,12 +65,13 @@ void VoxelBuffer::set_voxel(int value, int x, int y, int z, unsigned int channel
 
     Channel & channel = _channels[channel_index];
 
-    if (channel.defval != value) {
+    //FIX: if VOXEL_AT(channel.data, x, y, z) is not channel.defval we have to set that voxel nethertheless
+    //if (channel.defval != value) {
         if (channel.data == NULL) {
             create_channel(channel_index, _size);
         }
         VOXEL_AT(channel.data, x, y, z) = value;
-    }
+    //}
 }
 
 void VoxelBuffer::set_voxel_v(int value, Vector3 pos, unsigned int channel_index) {
