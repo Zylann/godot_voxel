@@ -138,8 +138,8 @@ _FORCE_INLINE_ bool operator!=(const Vector3i & a, const Vector3i & b) {
 struct Vector3iHasher {
 	static _FORCE_INLINE_ uint32_t hash(const Vector3i & v) {
 		uint32_t hash = hash_djb2_one_32(v.x);
-		hash = hash_djb2_one_32(v.y);
-		return hash_djb2_one_32(v.z);
+		hash = hash_djb2_one_32(v.y, hash);
+		return hash_djb2_one_32(v.z, hash);
     }
 };
 
