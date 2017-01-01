@@ -33,7 +33,7 @@ VoxelBlock::~VoxelBlock() {
 }
 
 // Helper
-VoxelBlock * VoxelBlock::create(VoxelMap & map, Vector3i bpos, VoxelBuffer * buffer) {
+VoxelBlock * VoxelBlock::create(Vector3i bpos, VoxelBuffer * buffer) {
     VoxelBlock * block = memnew(VoxelBlock);
     block->pos = bpos;
     if (buffer) {
@@ -53,7 +53,7 @@ void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
     Vector3i bpos = voxel_to_block(pos);
 	VoxelBlock * block = get_block(bpos);
     if (block == NULL) {
-		block = VoxelBlock::create(*this, bpos);
+		block = VoxelBlock::create(bpos);
 		set_block(bpos, block);
     }
     block->voxels->set_voxel(value, pos - block_to_voxel(bpos), c);
@@ -92,7 +92,7 @@ void VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
     ERR_FAIL_COND(buffer.is_null());
     VoxelBlock * block = get_block(bpos);
     if (block == NULL) {
-        block = VoxelBlock::create(*this, bpos, *buffer);
+		block = VoxelBlock::create(bpos, *buffer);
         set_block(bpos, block);
     }
     else {

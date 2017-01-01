@@ -22,7 +22,7 @@ public:
 
     MeshInstance * get_mesh_instance(const Node & root);
 
-    static VoxelBlock * create(VoxelMap & map, Vector3i bpos, VoxelBuffer * buffer = 0);
+	static VoxelBlock * create(Vector3i bpos, VoxelBuffer * buffer = 0);
 
     ~VoxelBlock();
 
