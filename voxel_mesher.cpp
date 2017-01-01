@@ -120,9 +120,10 @@ static const unsigned int g_edge_corners[EDGE_COUNT][2] = {
 };
 
 
-VoxelMesher::VoxelMesher(): _baked_occlusion_darkness(0.75), _bake_occlusion(true) {
-
-}
+VoxelMesher::VoxelMesher():
+	_baked_occlusion_darkness(0.75),
+	_bake_occlusion(true)
+{}
 
 void VoxelMesher::set_library(Ref<VoxelLibrary> library) {
     ERR_FAIL_COND(library.is_null());
@@ -133,6 +134,11 @@ void VoxelMesher::set_material(Ref<Material> material, unsigned int id) {
     ERR_FAIL_COND(id >= MAX_MATERIALS);
     _materials[id] = material;
     _surface_tool[id].set_material(material);
+}
+
+Ref<Material> VoxelMesher::get_material(unsigned int id) const {
+	ERR_FAIL_COND_V(id >= MAX_MATERIALS, Ref<Material>());
+	return _materials[id];
 }
 
 void VoxelMesher::set_occlusion_darkness(float darkness) {
@@ -338,10 +344,18 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
 
 void VoxelMesher::_bind_methods() {
 
-    ObjectTypeDB::bind_method(_MD("set_material", "material", "id"), &VoxelMesher::set_material);
+	ObjectTypeDB::bind_method(_MD("set_material", "material", "id"), &VoxelMesher::set_material);
+	ObjectTypeDB::bind_method(_MD("get_material:Material", "id"), &VoxelMesher::get_material);
+
     ObjectTypeDB::bind_method(_MD("set_library", "voxel_library"), &VoxelMesher::set_library);
+	ObjectTypeDB::bind_method(_MD("get_library:VoxelLibrary"), &VoxelMesher::get_library);
+
     ObjectTypeDB::bind_method(_MD("set_occlusion_enabled", "enable"), &VoxelMesher::set_occlusion_enabled);
+	ObjectTypeDB::bind_method(_MD("get_occlusion_enabled"), &VoxelMesher::get_occlusion_enabled);
+
     ObjectTypeDB::bind_method(_MD("set_occlusion_darkness", "value"), &VoxelMesher::set_occlusion_darkness);
-    ObjectTypeDB::bind_method(_MD("build", "voxel_buffer"), &VoxelMesher::build_ref);
+	ObjectTypeDB::bind_method(_MD("get_occlusion_darkness"), &VoxelMesher::get_occlusion_darkness);
+
+	ObjectTypeDB::bind_method(_MD("build", "voxel_buffer"), &VoxelMesher::build_ref);
 
 }

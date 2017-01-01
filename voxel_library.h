@@ -24,12 +24,14 @@ public:
 	_FORCE_INLINE_ bool has_voxel(int id) const { return _voxel_types[id].is_valid(); }
 	_FORCE_INLINE_ const Voxel & get_voxel_const(int id) const { return **_voxel_types[id]; }
 
+protected:
+	static void _bind_methods();
+
+	Ref<Voxel> _get_voxel_bind(int id);
+
 private:
 	Ref<Voxel> _voxel_types[MAX_VOXEL_TYPES];
 	int _atlas_size;
-
-protected:
-	static void _bind_methods();
 
 };
 
