@@ -51,9 +51,10 @@ VoxelBlock * VoxelBlock::create(VoxelMap & map, Vector3i bpos, VoxelBuffer * buf
 
 void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
     Vector3i bpos = voxel_to_block(pos);
-    VoxelBlock * block = get_block(pos);
+	VoxelBlock * block = get_block(bpos);
     if (block == NULL) {
-        set_block(bpos, VoxelBlock::create(*this, bpos));
+		block = VoxelBlock::create(*this, bpos);
+		set_block(bpos, block);
     }
     block->voxels->set_voxel(value, pos - block_to_voxel(bpos), c);
 }
