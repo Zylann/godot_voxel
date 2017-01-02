@@ -19,11 +19,4 @@ protected:
 };
 
 
-class VoxelProviderTest : public VoxelProvider {
-	OBJ_TYPE(VoxelProviderTest, VoxelProvider)
-public:
-	virtual void load_block(Ref<VoxelBuffer> out_buffer, Vector3i block_pos);
-};
-
-
 #endif // VOXEL_PROVIDER_H

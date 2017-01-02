@@ -44,11 +44,3 @@ void VoxelProvider::_bind_methods() {
 }
 
 
-void VoxelProviderTest::load_block(Ref<VoxelBuffer> out_buffer, Vector3i block_pos) {
-	ERR_FAIL_COND(out_buffer.is_null());
-	//Vector3i voxel_pos = VoxelMap::block_to_voxel(block_pos);
-	if(block_pos.y < 0) {
-		out_buffer->fill(1);
-	}
-}
-

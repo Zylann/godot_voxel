@@ -4,6 +4,7 @@
 #include "voxel_library.h"
 #include "voxel_map.h"
 #include "voxel_terrain.h"
+#include "voxel_provider_test.h"
 
 void register_voxel_types() {
 
