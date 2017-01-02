@@ -10,19 +10,32 @@ Voxel::Voxel() : Reference(),
 	_color(1.f, 1.f, 1.f)
 {}
 
+Ref<Voxel> Voxel::set_name(String name) {
+	_name = name;
+	return Ref<Voxel>(this);
+}
+
 Ref<Voxel> Voxel::set_id(int id) {
 	ERR_FAIL_COND_V(id < 0 || id >= 256, Ref<Voxel>(this));
 	// Cannot modify ID after creation
 	ERR_FAIL_COND_V(_id != -1, Ref<Voxel>(this));
-
 	_id = id;
+	return Ref<Voxel>(this);
+}
 
+Ref<Voxel> Voxel::set_color(Color color) {
+	_color = color;
 	return Ref<Voxel>(this);
 }
 
 Ref<Voxel> Voxel::set_material_id(unsigned int id) {
 	ERR_FAIL_COND_V(id >= VoxelMesher::MAX_MATERIALS, Ref<Voxel>(this));
 	_material_id = id;
+	return Ref<Voxel>(this);
+}
+
+Ref<Voxel> Voxel::set_transparent(bool t) {
+	_is_transparent = t;
 	return Ref<Voxel>(this);
 }
 

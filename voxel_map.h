@@ -39,19 +39,6 @@ private:
 // Infinite voxel storage by means of octants like Gridmap
 class VoxelMap : public Reference {
 	OBJ_TYPE(VoxelMap, Reference)
-
-	// Voxel values that will be returned if access is out of map bounds
-	uint8_t _default_voxel[VoxelBuffer::MAX_CHANNELS];
-
-	// Blocks stored with a spatial hash in all 3D directions
-	HashMap<Vector3i, Ref<VoxelBlock>, Vector3iHasher> _blocks;
-
-	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
-	// To prevent too much hashing, this reference is checked before.
-	VoxelBlock * _last_accessed_block;
-
-	//IVoxelMapObserver * _observer;
-
 public:
 	VoxelMap();
 	~VoxelMap();
@@ -111,6 +98,18 @@ private:
 	void _get_buffer_copy_binding(Vector3 pos, Ref<VoxelBuffer> dst_buffer_ref, unsigned int channel = 0);
 	void _set_block_buffer_binding(Vector3 bpos, Ref<VoxelBuffer> buffer) { set_block_buffer(Vector3i(bpos), buffer); }
 
+private:
+	// Voxel values that will be returned if access is out of map bounds
+	uint8_t _default_voxel[VoxelBuffer::MAX_CHANNELS];
+
+	// Blocks stored with a spatial hash in all 3D directions
+	HashMap<Vector3i, Ref<VoxelBlock>, Vector3iHasher> _blocks;
+
+	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
+	// To prevent too much hashing, this reference is checked before.
+	VoxelBlock * _last_accessed_block;
+
+	//IVoxelMapObserver * _observer;
 };
 
 //class VoxelSector {

@@ -23,45 +23,23 @@ public:
 		SIDE_COUNT
 	};
 
-private:
-	VoxelLibrary * _library;
-
-	// Identifiers
-	int _id;
-	String _name;
-
-	// Properties
-	int _material_id;
-	bool _is_transparent;
-
-	// Model
-	Color _color;
-	DVector<Vector3> _model_vertices;
-	DVector<Vector3> _model_normals;
-	DVector<Vector2> _model_uv;
-	DVector<Vector3> _model_side_vertices[SIDE_COUNT];
-	DVector<Vector2> _model_side_uv[SIDE_COUNT];
-
-	// TODO Child voxel types
-
-public:
 	Voxel();
 
 	// Properties
 
-	_FORCE_INLINE_ Ref<Voxel> set_name(String name) { _name = name; return Ref<Voxel>(this); }
+	Ref<Voxel> set_name(String name);
 	_FORCE_INLINE_ String get_name() const { return _name; }
 
 	Ref<Voxel> set_id(int id);
 	_FORCE_INLINE_ int get_id() const { return _id; }
 
-	_FORCE_INLINE_ Ref<Voxel> set_color(Color color) { _color = color; return Ref<Voxel>(this); }
+	Ref<Voxel> set_color(Color color);
 	_FORCE_INLINE_ Color get_color() const { return _color; }
 
 	Ref<Voxel> set_material_id(unsigned int id);
 	_FORCE_INLINE_ unsigned int get_material_id() const { return _material_id; }
 
-	_FORCE_INLINE_ Ref<Voxel> set_transparent(bool t = true) { _is_transparent = t; return Ref<Voxel>(this); }
+	Ref<Voxel> set_transparent(bool t = true);
 	_FORCE_INLINE_ bool is_transparent() const { return _is_transparent; }
 
 	// Built-in geometry generators
@@ -85,6 +63,27 @@ protected:
 	Ref<Voxel> _set_cube_uv_sides(const Vector2 atlas_pos[6]);
 
 	static void _bind_methods();
+
+private:
+	VoxelLibrary * _library;
+
+	// Identifiers
+	int _id;
+	String _name;
+
+	// Properties
+	int _material_id;
+	bool _is_transparent;
+
+	// Model
+	Color _color;
+	DVector<Vector3> _model_vertices;
+	DVector<Vector3> _model_normals;
+	DVector<Vector2> _model_uv;
+	DVector<Vector3> _model_side_vertices[SIDE_COUNT];
+	DVector<Vector2> _model_side_uv[SIDE_COUNT];
+
+	// TODO Child voxel types
 
 };
 

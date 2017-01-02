@@ -16,27 +16,6 @@ public:
 	// Arbitrary value, 8 should be enough. Tweak for your needs.
 	static const int MAX_CHANNELS = 8;
 
-private:
-
-	struct Channel {
-		// Allocated when the channel is populated.
-		// Flat array, in order [z][x][y] because it allows faster vertical-wise access (the engine is Y-up).
-		uint8_t * data;
-
-		// Default value when data is null
-		uint8_t defval;
-
-		Channel() : data(NULL), defval(0) {}
-	};
-
-	// Each channel can store arbitary data.
-	// For example, you can decide to store colors (R, G, B, A), gameplay types (type, state, light) or both.
-	Channel _channels[MAX_CHANNELS];
-
-	// How many voxels are there in the three directions. All populated channels have the same size.
-	Vector3i _size;
-
-public:
 	VoxelBuffer();
 	~VoxelBuffer();
 
@@ -97,6 +76,25 @@ protected:
 	void _copy_from_binding(Ref<VoxelBuffer> other, unsigned int channel);
 	void _copy_from_area_binding(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, unsigned int channel);
 	_FORCE_INLINE_ void _fill_area_binding(int defval, Vector3 min, Vector3 max, unsigned int channel_index) { fill_area(defval, Vector3i(min), Vector3i(max), channel_index); }
+
+private:
+	struct Channel {
+		// Allocated when the channel is populated.
+		// Flat array, in order [z][x][y] because it allows faster vertical-wise access (the engine is Y-up).
+		uint8_t * data;
+
+		// Default value when data is null
+		uint8_t defval;
+
+		Channel() : data(NULL), defval(0) {}
+	};
+
+	// Each channel can store arbitary data.
+	// For example, you can decide to store colors (R, G, B, A), gameplay types (type, state, light) or both.
+	Channel _channels[MAX_CHANNELS];
+
+	// How many voxels are there in the three directions. All populated channels have the same size.
+	Vector3i _size;
 
 };
 
