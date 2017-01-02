@@ -89,12 +89,6 @@ void VoxelTerrain::update_blocks() {
 
 		if (!_map->has_block(block_pos)) {
 
-			// Get script
-			ScriptInstance * script = get_script_instance();
-			if (script == NULL) {
-				return;
-			}
-
 			// Create buffer
 			Ref<VoxelBuffer> buffer_ref = Ref<VoxelBuffer>(memnew(VoxelBuffer));
 			const Vector3i block_size(VoxelBlock::SIZE, VoxelBlock::SIZE, VoxelBlock::SIZE);
