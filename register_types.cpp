@@ -13,6 +13,8 @@ void register_voxel_types() {
 	ObjectTypeDB::register_type<VoxelLibrary>();
 	ObjectTypeDB::register_type<VoxelMap>();
 	ObjectTypeDB::register_type<VoxelTerrain>();
+	ObjectTypeDB::register_type<VoxelProvider>();
+	ObjectTypeDB::register_type<VoxelProviderTest>();
 
 }
 

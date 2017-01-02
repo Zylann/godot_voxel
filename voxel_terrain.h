@@ -4,6 +4,7 @@
 #include <scene/main/node.h>
 #include "voxel_map.h"
 #include "voxel_mesher.h"
+#include "voxel_provider.h"
 
 // Infinite static terrain made of voxels.
 // It is loaded around VoxelTerrainStreamers.
@@ -19,12 +20,15 @@ class VoxelTerrain : public Node /*, public IVoxelMapObserver*/ {
 
 	Vector<Vector3i> _block_update_queue;
 	Ref<VoxelMesher> _mesher;
+	Ref<VoxelProvider> _provider;
 
 public:
 	VoxelTerrain();
 
-	void force_load_blocks(Vector3i center, Vector3i extents);
+	void set_provider(Ref<VoxelProvider> provider);
+	Ref<VoxelProvider> get_provider();
 
+	void force_load_blocks(Vector3i center, Vector3i extents);
 	int get_block_update_count();
 
 	Ref<VoxelMesher> get_mesher() { return _mesher; }

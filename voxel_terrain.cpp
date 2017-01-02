@@ -8,11 +8,21 @@ VoxelTerrain::VoxelTerrain(): Node(), _min_y(-4), _max_y(4) {
 	_mesher = Ref<VoxelMesher>(memnew(VoxelMesher));
 }
 
+// Sorts distance to world origin
+// TODO Use distance to camera
 struct BlockUpdateComparator0 {
 	inline bool operator()(const Vector3i & a, const Vector3i & b) const {
 		return a.length_sq() > b.length_sq();
 	}
 };
+
+void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
+	_provider = provider;
+}
+
+Ref<VoxelProvider> VoxelTerrain::get_provider() {
+	return _provider;
+}
 
 void VoxelTerrain::force_load_blocks(Vector3i center, Vector3i extents) {
 	//Vector3i min = center - extents;
@@ -88,14 +98,12 @@ void VoxelTerrain::update_blocks() {
 			// Create buffer
 			Ref<VoxelBuffer> buffer_ref = Ref<VoxelBuffer>(memnew(VoxelBuffer));
 			const Vector3i block_size(VoxelBlock::SIZE, VoxelBlock::SIZE, VoxelBlock::SIZE);
-			buffer_ref->create(block_size.x, block_size.y, block_size.y);
+			buffer_ref->create(block_size.x, block_size.y, block_size.z);
 
-			// Call script to generate buffer
-			Variant arg1 = buffer_ref;
-			Variant arg2 = block_pos.to_vec3();
-			const Variant * args[2] = { &arg1, &arg2 };
-			Variant::CallError err; // wut
-			script->call_multilevel("_generate_block", args, 2);
+			// Query voxel provider
+			if(!_provider.is_null()) {
+				_provider->emerge_block(buffer_ref, block_pos);
+			}
 
 			// Check script return
 			ERR_FAIL_COND(buffer_ref->get_size() != block_size);
@@ -116,7 +124,6 @@ void VoxelTerrain::update_blocks() {
 				}
 			}
 			//update_block_mesh(block_pos);
-
 		}
 
 		// Pop request
@@ -183,6 +190,9 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 //}
 
 void VoxelTerrain::_bind_methods() {
+
+	ObjectTypeDB::bind_method(_MD("set_provider", "provider:VoxelProvider"), &VoxelTerrain::set_provider);
+	ObjectTypeDB::bind_method(_MD("get_provider:VoxelProvider"), &VoxelTerrain::get_provider);
 
 	ObjectTypeDB::bind_method(_MD("get_block_update_count"), &VoxelTerrain::get_block_update_count);
 	ObjectTypeDB::bind_method(_MD("get_mesher:VoxelMesher"), &VoxelTerrain::get_mesher);
