@@ -1,23 +1,9 @@
 #include "voxel_map.h"
+#include "core/os/os.h"
 
-VoxelMap::VoxelMap() : _last_accessed_block(NULL) {
-	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
-		_default_voxel[i] = 0;
-	}
-}
-
-VoxelMap::~VoxelMap() {
-
-}
-
-int VoxelMap::get_voxel(Vector3i pos, unsigned int c) {
-	Vector3i bpos = voxel_to_block(pos);
-	VoxelBlock * block = get_block(bpos);
-	if (block == NULL) {
-		return _default_voxel[c];
-	}
-	return block->voxels->get_voxel(pos - block_to_voxel(bpos), c);
-}
+//----------------------------------------------------------------------------
+// VoxelBlock
+//----------------------------------------------------------------------------
 
 MeshInstance * VoxelBlock::get_mesh_instance(const Node & root) {
 	if (mesh_instance_path.is_empty())
@@ -26,10 +12,6 @@ MeshInstance * VoxelBlock::get_mesh_instance(const Node & root) {
 	if (n == NULL)
 		return NULL;
 	return n->cast_to<MeshInstance>();
-}
-
-VoxelBlock::~VoxelBlock() {
-
 }
 
 // Helper
@@ -47,6 +29,32 @@ VoxelBlock * VoxelBlock::create(Vector3i bpos, VoxelBuffer * buffer) {
 	block->voxels = Ref<VoxelBuffer>(buffer);
 	//block->map = &map;
 	return block;
+}
+
+VoxelBlock::VoxelBlock(): voxels(NULL) {
+}
+
+//----------------------------------------------------------------------------
+// VoxelMap
+//----------------------------------------------------------------------------
+
+VoxelMap::VoxelMap() : _last_accessed_block(NULL) {
+	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
+		_default_voxel[i] = 0;
+	}
+}
+
+VoxelMap::~VoxelMap() {
+	clear();
+}
+
+int VoxelMap::get_voxel(Vector3i pos, unsigned int c) {
+	Vector3i bpos = voxel_to_block(pos);
+	VoxelBlock * block = get_block(bpos);
+	if (block == NULL) {
+		return _default_voxel[c];
+	}
+	return block->voxels->get_voxel(pos - block_to_voxel(bpos), c);
 }
 
 void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
@@ -73,9 +81,9 @@ VoxelBlock * VoxelMap::get_block(Vector3i bpos) {
 	if (_last_accessed_block && _last_accessed_block->pos == bpos) {
 		return _last_accessed_block;
 	}
-	Ref<VoxelBlock> * p = _blocks.getptr(bpos);
+	VoxelBlock ** p = _blocks.getptr(bpos);
 	if (p) {
-		_last_accessed_block = p->ptr();
+		_last_accessed_block = *p;
 		return _last_accessed_block;
 	}
 	return NULL;
@@ -187,22 +195,21 @@ void VoxelMap::remove_blocks_not_in_area(Vector3i min, Vector3i max) {
 	Vector3i::sort_min_max(min, max);
 
 	Vector<Vector3i> to_remove;
-	Vector3i * key = NULL;
+	const Vector3i * key = NULL;
 
-	while (_blocks.next(key)) {
+	while (key = _blocks.next(key)) {
 
-		Ref<VoxelBlock> & block_ref = _blocks.get(*key);
-		ERR_FAIL_COND(block_ref.is_null()); // Should never trigger
-		VoxelBlock & block = **block_ref;
+		VoxelBlock * block_ref = _blocks.get(*key);
+		ERR_FAIL_COND(block_ref == NULL); // Should never trigger
 
-		if (!block.pos.is_contained_in(min, max)) {
+		if (block_ref->pos.is_contained_in(min, max)) {
 
 			//if (_observer)
 			//    _observer->block_removed(block);
 
 			to_remove.push_back(*key);
 
-			if (&block == _last_accessed_block)
+			if (block_ref == _last_accessed_block)
 				_last_accessed_block = NULL;
 		}
 	}
@@ -211,6 +218,20 @@ void VoxelMap::remove_blocks_not_in_area(Vector3i min, Vector3i max) {
 		_blocks.erase(to_remove[i]);
 	}
 }
+
+void VoxelMap::clear() {
+	const Vector3i * key = NULL;
+	while (key = _blocks.next(key)) {
+		VoxelBlock * block_ref = _blocks.get(*key);
+		if(block_ref == NULL) {
+			OS::get_singleton()->printerr("Unexpected NULL in VoxelMap::clear()");
+		}
+		memdelete(block_ref);
+	}
+	_blocks.clear();
+	_last_accessed_block = NULL;
+}
+
 
 void VoxelMap::_bind_methods() {
 

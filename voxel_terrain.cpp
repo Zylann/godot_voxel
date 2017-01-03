@@ -126,11 +126,11 @@ void VoxelTerrain::update_blocks() {
 }
 
 void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
-	Ref<VoxelBlock> block_ref = _map->get_block_ref(block_pos);
-	if (block_ref.is_null()) {
+	VoxelBlock * block = _map->get_block(block_pos);
+	if (block == NULL) {
 		return;
 	}
-	if (block_ref->voxels->is_uniform(0) && block_ref->voxels->get_voxel(0, 0, 0, 0) == 0) {
+	if (block->voxels->is_uniform(0) && block->voxels->get_voxel(0, 0, 0, 0) == 0) {
 		return;
 	}
 
@@ -161,14 +161,14 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	// Build mesh (that part is the most CPU-intensive)
 	Ref<Mesh> mesh = _mesher->build(nbuffer);
 
-	MeshInstance * mesh_instance = block_ref->get_mesh_instance(*this);
+	MeshInstance * mesh_instance = block->get_mesh_instance(*this);
 	if (mesh_instance == NULL) {
 		// Create and spawn mesh
 		mesh_instance = memnew(MeshInstance);
 		mesh_instance->set_mesh(mesh);
 		mesh_instance->set_translation(VoxelMap::block_to_voxel(block_pos).to_vec3());
 		add_child(mesh_instance);
-		block_ref->mesh_instance_path = mesh_instance->get_path();
+		block->mesh_instance_path = mesh_instance->get_path();
 	}
 	else {
 		// Update mesh
