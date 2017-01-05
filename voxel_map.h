@@ -17,7 +17,7 @@ public:
 	Vector3i pos;
 	NodePath mesh_instance_path;
 
-	static VoxelBlock * create(Vector3i bpos, VoxelBuffer * buffer = 0);
+	static VoxelBlock * create(Vector3i bpos, Ref<VoxelBuffer> buffer);
 
 	MeshInstance * get_mesh_instance(const Node & root);
 

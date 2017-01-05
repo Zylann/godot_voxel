@@ -15,18 +15,15 @@ MeshInstance * VoxelBlock::get_mesh_instance(const Node & root) {
 }
 
 // Helper
-VoxelBlock * VoxelBlock::create(Vector3i bpos, VoxelBuffer * buffer) {
+VoxelBlock * VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer) {
+	const int bs = VoxelBlock::SIZE;
+	ERR_FAIL_COND_V(buffer.is_null(), NULL);
+	ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), NULL);
+
 	VoxelBlock * block = memnew(VoxelBlock);
 	block->pos = bpos;
-	if (buffer) {
-		const int bs = VoxelBlock::SIZE;
-		ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), NULL);
-	}
-	else {
-		buffer = memnew(VoxelBuffer);
-	}
-	ERR_FAIL_COND_V(buffer == NULL, NULL);
-	block->voxels = Ref<VoxelBuffer>(buffer);
+
+	block->voxels = buffer;
 	//block->map = &map;
 	return block;
 }
@@ -58,12 +55,21 @@ int VoxelMap::get_voxel(Vector3i pos, unsigned int c) {
 }
 
 void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
+
 	Vector3i bpos = voxel_to_block(pos);
 	VoxelBlock * block = get_block(bpos);
+
 	if (block == NULL) {
-		block = VoxelBlock::create(bpos);
+
+		Ref<VoxelBuffer> buffer(memnew(VoxelBuffer));
+		buffer->create(VoxelBlock::SIZE, VoxelBlock::SIZE, VoxelBlock::SIZE);
+		buffer->set_default_values(_default_voxel);
+
+		block = VoxelBlock::create(bpos, buffer);
+
 		set_block(bpos, block);
 	}
+
 	block->voxels->set_voxel(value, pos - block_to_voxel(bpos), c);
 }
 
@@ -90,6 +96,7 @@ VoxelBlock * VoxelMap::get_block(Vector3i bpos) {
 }
 
 void VoxelMap::set_block(Vector3i bpos, VoxelBlock * block) {
+	ERR_FAIL_COND(block == NULL);
 	if (_last_accessed_block == NULL || _last_accessed_block->pos == bpos) {
 		_last_accessed_block = block;
 	}

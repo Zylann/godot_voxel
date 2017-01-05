@@ -20,6 +20,7 @@ public:
 	int get_block_update_count();
 
 	Ref<VoxelMesher> get_mesher() { return _mesher; }
+	Ref<VoxelMap> get_map() { return _map; }
 
 protected:
 	void _notification(int p_what);

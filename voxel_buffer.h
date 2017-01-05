@@ -25,6 +25,8 @@ public:
 
 	_FORCE_INLINE_ Vector3i get_size() const { return _size; }
 
+	void set_default_values(uint8_t values[MAX_CHANNELS]);
+
 	int get_voxel(int x, int y, int z, unsigned int channel_index=0) const;
 	void set_voxel(int value, int x, int y, int z, unsigned int channel_index=0);
 	void set_voxel_v(int value, Vector3 pos, unsigned int channel_index = 0);
@@ -62,7 +64,7 @@ public:
 private:
 	void create_channel_noinit(int i, Vector3i size);
 	void create_channel(int i, Vector3i size, uint8_t defval=0);
-	void delete_channel(int i, Vector3i size);
+	void delete_channel(int i);
 
 protected:
 	static void _bind_methods();
