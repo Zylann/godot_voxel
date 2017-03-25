@@ -40,8 +40,8 @@ struct Vector3i {
 		return x*x + y*y + z*z;
 	}
 
-	_FORCE_INLINE_ float length() const {
-		return Math::sqrt(length_sq());
+	_FORCE_INLINE_ real_t length() const {
+		return Math::sqrt((real_t)length_sq());
 	}
 
 	_FORCE_INLINE_ Vector3i & operator=(const Vector3i & other) {

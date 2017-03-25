@@ -99,7 +99,7 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 
 	for (unsigned int side = 0; side < SIDE_COUNT; ++side) {
 		_model_side_vertices[side].resize(6);
-		DVector<Vector3>::Write w = _model_side_vertices[side].write();
+		PoolVector<Vector3>::Write w = _model_side_vertices[side].write();
 		for (unsigned int i = 0; i < 6; ++i) {
 			w[i] = vertices[side][i];
 		}
@@ -138,7 +138,7 @@ Ref<Voxel> Voxel::_set_cube_uv_sides(const Vector2 atlas_pos[6]) {
 
 	for (unsigned int side = 0; side < SIDE_COUNT; ++side) {
 		_model_side_uv[side].resize(6);
-		DVector<Vector2>::Write w = _model_side_uv[side].write();
+		PoolVector<Vector2>::Write w = _model_side_uv[side].write();
 		for (unsigned int i = 0; i < 6; ++i) {
 			w[i] = (atlas_pos[side] + uv[uv6[side][i]]) * s;
 		}
@@ -178,24 +178,24 @@ Ref<Voxel> Voxel::set_cube_uv_tbs_sides(Vector2 top_atlas_pos, Vector2 side_atla
 
 void Voxel::_bind_methods() {
 
-	ObjectTypeDB::bind_method(_MD("set_name:Voxel", "name"), &Voxel::set_name);
-	ObjectTypeDB::bind_method(_MD("get_name"), &Voxel::get_name);
+	ClassDB::bind_method(D_METHOD("set_name:Voxel", "name"), &Voxel::set_name);
+	ClassDB::bind_method(D_METHOD("get_name"), &Voxel::get_name);
 
-	ObjectTypeDB::bind_method(_MD("set_id:Voxel", "id"), &Voxel::set_id);
-	ObjectTypeDB::bind_method(_MD("get_id"), &Voxel::get_id);
+	ClassDB::bind_method(D_METHOD("set_id:Voxel", "id"), &Voxel::set_id);
+	ClassDB::bind_method(D_METHOD("get_id"), &Voxel::get_id);
 
-	ObjectTypeDB::bind_method(_MD("set_color:Voxel", "color"), &Voxel::set_color);
-	ObjectTypeDB::bind_method(_MD("get_color"), &Voxel::get_color);
+	ClassDB::bind_method(D_METHOD("set_color:Voxel", "color"), &Voxel::set_color);
+	ClassDB::bind_method(D_METHOD("get_color"), &Voxel::get_color);
 
-	ObjectTypeDB::bind_method(_MD("set_transparent:Voxel", "color"), &Voxel::set_transparent, DEFVAL(true));
-	ObjectTypeDB::bind_method(_MD("is_transparent"), &Voxel::is_transparent);
+	ClassDB::bind_method(D_METHOD("set_transparent:Voxel", "color"), &Voxel::set_transparent, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("is_transparent"), &Voxel::is_transparent);
 
-	ObjectTypeDB::bind_method(_MD("set_material_id", "id"), &Voxel::set_material_id);
-	ObjectTypeDB::bind_method(_MD("get_material_id"), &Voxel::get_material_id);
+	ClassDB::bind_method(D_METHOD("set_material_id", "id"), &Voxel::set_material_id);
+	ClassDB::bind_method(D_METHOD("get_material_id"), &Voxel::get_material_id);
 
-	ObjectTypeDB::bind_method(_MD("set_cube_geometry:Voxel", "height"), &Voxel::set_cube_geometry, DEFVAL(1.f));
-	ObjectTypeDB::bind_method(_MD("set_cube_uv_all_sides:Voxel", "atlas_pos"), &Voxel::set_cube_uv_all_sides);
-	ObjectTypeDB::bind_method(_MD("set_cube_uv_tbs_sides:Voxel", "top_atlas_pos", "side_atlas_pos", "bottom_atlas_pos"), &Voxel::set_cube_uv_tbs_sides);
+	ClassDB::bind_method(D_METHOD("set_cube_geometry:Voxel", "height"), &Voxel::set_cube_geometry, DEFVAL(1.f));
+	ClassDB::bind_method(D_METHOD("set_cube_uv_all_sides:Voxel", "atlas_pos"), &Voxel::set_cube_uv_all_sides);
+	ClassDB::bind_method(D_METHOD("set_cube_uv_tbs_sides:Voxel", "top_atlas_pos", "side_atlas_pos", "bottom_atlas_pos"), &Voxel::set_cube_uv_tbs_sides);
 
 }
 

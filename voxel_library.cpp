@@ -1,7 +1,9 @@
 #include "voxel_library.h"
 
 VoxelLibrary::VoxelLibrary() : Reference(), _atlas_size(1) {
+	// Defaults
 	create_voxel(0, "air")->set_transparent(true);
+	create_voxel(1, "solid")->set_transparent(false)->set_cube_geometry();
 }
 
 VoxelLibrary::~VoxelLibrary() {
@@ -34,10 +36,10 @@ Ref<Voxel> VoxelLibrary::_get_voxel_bind(int id) {
 
 void VoxelLibrary::_bind_methods() {
 
-	ObjectTypeDB::bind_method(_MD("create_voxel:Voxel", "id", "name"), &VoxelLibrary::create_voxel);
-	ObjectTypeDB::bind_method(_MD("get_voxel", "id"), &VoxelLibrary::_get_voxel_bind);
+	ClassDB::bind_method(D_METHOD("create_voxel:Voxel", "id", "name"), &VoxelLibrary::create_voxel);
+	ClassDB::bind_method(D_METHOD("get_voxel", "id"), &VoxelLibrary::_get_voxel_bind);
 
-	ObjectTypeDB::bind_method(_MD("set_atlas_size", "square_size"), &VoxelLibrary::set_atlas_size);
+	ClassDB::bind_method(D_METHOD("set_atlas_size", "square_size"), &VoxelLibrary::set_atlas_size);
 
 }
 

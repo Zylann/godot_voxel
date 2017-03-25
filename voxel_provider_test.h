@@ -5,7 +5,7 @@
 
 
 class VoxelProviderTest : public VoxelProvider {
-	OBJ_TYPE(VoxelProviderTest, VoxelProvider)
+	GDCLASS(VoxelProviderTest, VoxelProvider)
 
 public:
 	enum Mode {

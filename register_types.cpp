@@ -8,14 +8,14 @@
 
 void register_voxel_types() {
 
-	ObjectTypeDB::register_type<Voxel>();
-	ObjectTypeDB::register_type<VoxelBuffer>();
-	ObjectTypeDB::register_type<VoxelMesher>();
-	ObjectTypeDB::register_type<VoxelLibrary>();
-	ObjectTypeDB::register_type<VoxelMap>();
-	ObjectTypeDB::register_type<VoxelTerrain>();
-	ObjectTypeDB::register_type<VoxelProvider>();
-	ObjectTypeDB::register_type<VoxelProviderTest>();
+	ClassDB::register_class<Voxel>();
+	ClassDB::register_class<VoxelBuffer>();
+	ClassDB::register_class<VoxelMesher>();
+	ClassDB::register_class<VoxelLibrary>();
+	ClassDB::register_class<VoxelMap>();
+	ClassDB::register_class<VoxelTerrain>();
+	ClassDB::register_class<VoxelProvider>();
+	ClassDB::register_class<VoxelProviderTest>();
 
 }
 

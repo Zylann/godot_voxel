@@ -186,19 +186,19 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 
 void VoxelTerrain::_bind_methods() {
 
-	ObjectTypeDB::bind_method(_MD("set_provider", "provider:VoxelProvider"), &VoxelTerrain::set_provider);
-	ObjectTypeDB::bind_method(_MD("get_provider:VoxelProvider"), &VoxelTerrain::get_provider);
+	ClassDB::bind_method(D_METHOD("set_provider", "provider:VoxelProvider"), &VoxelTerrain::set_provider);
+	ClassDB::bind_method(D_METHOD("get_provider:VoxelProvider"), &VoxelTerrain::get_provider);
 
-	ObjectTypeDB::bind_method(_MD("get_block_update_count"), &VoxelTerrain::get_block_update_count);
-	ObjectTypeDB::bind_method(_MD("get_mesher:VoxelMesher"), &VoxelTerrain::get_mesher);
+	ClassDB::bind_method(D_METHOD("get_block_update_count"), &VoxelTerrain::get_block_update_count);
+	ClassDB::bind_method(D_METHOD("get_mesher:VoxelMesher"), &VoxelTerrain::get_mesher);
 
-	ObjectTypeDB::bind_method(_MD("get_map:VoxelMap"), &VoxelTerrain::get_map);
+	ClassDB::bind_method(D_METHOD("get_map:VoxelMap"), &VoxelTerrain::get_map);
 
 	// TODO Make those two static in VoxelMap?
-	ObjectTypeDB::bind_method(_MD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
-	ObjectTypeDB::bind_method(_MD("block_to_voxel", "block_pos"), &VoxelTerrain::_block_to_voxel_binding);
+	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
+	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_block_to_voxel_binding);
 
-	ObjectTypeDB::bind_method(_MD("force_load_blocks", "center", "extents"), &VoxelTerrain::_force_load_blocks_binding);
+	ClassDB::bind_method(D_METHOD("force_load_blocks", "center", "extents"), &VoxelTerrain::_force_load_blocks_binding);
 
 }
 

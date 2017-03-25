@@ -9,7 +9,7 @@
 #include "voxel_library.h"
 
 class VoxelMesher : public Reference {
-	OBJ_TYPE(VoxelMesher, Reference)
+	GDCLASS(VoxelMesher, Reference)
 
 public:
 	static const unsigned int MAX_MATERIALS = 8; // Arbitrary. Tweak if needed.

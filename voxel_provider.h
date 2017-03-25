@@ -6,7 +6,7 @@
 
 
 class VoxelProvider : public Reference {
-	OBJ_TYPE(VoxelProvider, Reference)
+	GDCLASS(VoxelProvider, Reference)
 public:
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i block_pos);
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i block_pos);

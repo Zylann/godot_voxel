@@ -38,8 +38,8 @@ void VoxelProvider::_immerge_block(Ref<VoxelBuffer> buffer, Vector3 block_pos) {
 
 void VoxelProvider::_bind_methods() {
 
-	ObjectTypeDB::bind_method(_MD("emerge_block", "out_buffer:VoxelBuffer", "block_pos:Vector3"), &VoxelProvider::_emerge_block);
-	ObjectTypeDB::bind_method(_MD("immerge_block", "buffer:VoxelBuffer", "block_pos:Vector3"), &VoxelProvider::_immerge_block);
+	ClassDB::bind_method(D_METHOD("emerge_block", "out_buffer:VoxelBuffer", "block_pos:Vector3"), &VoxelProvider::_emerge_block);
+	ClassDB::bind_method(D_METHOD("immerge_block", "buffer:VoxelBuffer", "block_pos:Vector3"), &VoxelProvider::_immerge_block);
 
 }
 

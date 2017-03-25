@@ -10,7 +10,7 @@
 // Note: for float storage (marching cubes for example), you can map [0..256] to [0..1] and save 3 bytes per cell
 
 class VoxelBuffer : public Reference {
-	OBJ_TYPE(VoxelBuffer, Reference)
+	GDCLASS(VoxelBuffer, Reference)
 
 public:
 	// Arbitrary value, 8 should be enough. Tweak for your needs.

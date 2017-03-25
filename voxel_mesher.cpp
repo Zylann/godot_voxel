@@ -218,7 +218,7 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
                     // Sides
                     for (unsigned int side = 0; side < Voxel::SIDE_COUNT; ++side) {
 
-                        const DVector<Vector3> & vertices = voxel.get_model_side_vertices(side);
+						const PoolVector<Vector3> & vertices = voxel.get_model_side_vertices(side);
                         if (vertices.size() != 0) {
 
                             Vector3i normal = g_side_normals[side];
@@ -266,8 +266,8 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
                                     }
                                 }
 
-                                DVector<Vector3>::Read rv = vertices.read();
-                                DVector<Vector2>::Read rt = voxel.get_model_side_uv(side).read();
+								PoolVector<Vector3>::Read rv = vertices.read();
+								PoolVector<Vector2>::Read rt = voxel.get_model_side_uv(side).read();
                                 Vector3 pos(x - 1, y - 1, z - 1);
 
                                 for (unsigned int i = 0; i < vertices.size(); ++i) {
@@ -305,10 +305,10 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
                     // Inside
                     if (voxel.get_model_vertices().size() != 0) {
 
-                        const DVector<Vector3> & vertices = voxel.get_model_vertices();
-                        DVector<Vector3>::Read rv = voxel.get_model_vertices().read();
-                        DVector<Vector3>::Read rn = voxel.get_model_normals().read();
-                        DVector<Vector2>::Read rt = voxel.get_model_uv().read();
+						const PoolVector<Vector3> & vertices = voxel.get_model_vertices();
+						PoolVector<Vector3>::Read rv = voxel.get_model_vertices().read();
+						PoolVector<Vector3>::Read rn = voxel.get_model_normals().read();
+						PoolVector<Vector2>::Read rt = voxel.get_model_uv().read();
                         Vector3 pos(x - 1, y - 1, z - 1);
 
                         for (unsigned int i = 0; i < vertices.size(); ++i) {
@@ -344,18 +344,18 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
 
 void VoxelMesher::_bind_methods() {
 
-	ObjectTypeDB::bind_method(_MD("set_material", "material", "id"), &VoxelMesher::set_material);
-	ObjectTypeDB::bind_method(_MD("get_material:Material", "id"), &VoxelMesher::get_material);
+	ClassDB::bind_method(D_METHOD("set_material", "material", "id"), &VoxelMesher::set_material);
+	ClassDB::bind_method(D_METHOD("get_material:Material", "id"), &VoxelMesher::get_material);
 
-    ObjectTypeDB::bind_method(_MD("set_library", "voxel_library"), &VoxelMesher::set_library);
-	ObjectTypeDB::bind_method(_MD("get_library:VoxelLibrary"), &VoxelMesher::get_library);
+	ClassDB::bind_method(D_METHOD("set_library", "voxel_library"), &VoxelMesher::set_library);
+	ClassDB::bind_method(D_METHOD("get_library:VoxelLibrary"), &VoxelMesher::get_library);
 
-    ObjectTypeDB::bind_method(_MD("set_occlusion_enabled", "enable"), &VoxelMesher::set_occlusion_enabled);
-	ObjectTypeDB::bind_method(_MD("get_occlusion_enabled"), &VoxelMesher::get_occlusion_enabled);
+	ClassDB::bind_method(D_METHOD("set_occlusion_enabled", "enable"), &VoxelMesher::set_occlusion_enabled);
+	ClassDB::bind_method(D_METHOD("get_occlusion_enabled"), &VoxelMesher::get_occlusion_enabled);
 
-    ObjectTypeDB::bind_method(_MD("set_occlusion_darkness", "value"), &VoxelMesher::set_occlusion_darkness);
-	ObjectTypeDB::bind_method(_MD("get_occlusion_darkness"), &VoxelMesher::get_occlusion_darkness);
+	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesher::set_occlusion_darkness);
+	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesher::get_occlusion_darkness);
 
-	ObjectTypeDB::bind_method(_MD("build", "voxel_buffer"), &VoxelMesher::build_ref);
+	ClassDB::bind_method(D_METHOD("build", "voxel_buffer"), &VoxelMesher::build_ref);
 
 }

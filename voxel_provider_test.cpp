@@ -93,17 +93,17 @@ void VoxelProviderTest::generate_block_waves(VoxelBuffer & out_buffer, Vector3i 
 
 void VoxelProviderTest::_bind_methods() {
 
-	ObjectTypeDB::bind_method(_MD("set_mode", "mode"), &VoxelProviderTest::set_mode);
-	ObjectTypeDB::bind_method(_MD("get_mode"), &VoxelProviderTest::get_mode);
+	ClassDB::bind_method(D_METHOD("set_mode", "mode"), &VoxelProviderTest::set_mode);
+	ClassDB::bind_method(D_METHOD("get_mode"), &VoxelProviderTest::get_mode);
 
-	ObjectTypeDB::bind_method(_MD("set_voxel_type", "id"), &VoxelProviderTest::set_voxel_type);
-	ObjectTypeDB::bind_method(_MD("get_voxel_type"), &VoxelProviderTest::get_voxel_type);
+	ClassDB::bind_method(D_METHOD("set_voxel_type", "id"), &VoxelProviderTest::set_voxel_type);
+	ClassDB::bind_method(D_METHOD("get_voxel_type"), &VoxelProviderTest::get_voxel_type);
 
-	ObjectTypeDB::bind_method(_MD("set_pattern_size", "size"), &VoxelProviderTest::_set_pattern_size);
-	ObjectTypeDB::bind_method(_MD("get_pattern_size"), &VoxelProviderTest::_get_pattern_size);
+	ClassDB::bind_method(D_METHOD("set_pattern_size", "size"), &VoxelProviderTest::_set_pattern_size);
+	ClassDB::bind_method(D_METHOD("get_pattern_size"), &VoxelProviderTest::_get_pattern_size);
 
-	ObjectTypeDB::bind_method(_MD("set_pattern_offset", "offset"), &VoxelProviderTest::_set_pattern_offset);
-	ObjectTypeDB::bind_method(_MD("get_pattern_offset"), &VoxelProviderTest::_get_pattern_offset);
+	ClassDB::bind_method(D_METHOD("set_pattern_offset", "offset"), &VoxelProviderTest::_set_pattern_offset);
+	ClassDB::bind_method(D_METHOD("get_pattern_offset"), &VoxelProviderTest::_get_pattern_offset);
 
 	BIND_CONSTANT(MODE_FLAT);
 	BIND_CONSTANT(MODE_WAVES);

@@ -239,24 +239,24 @@ void VoxelBuffer::delete_channel(int i) {
 
 void VoxelBuffer::_bind_methods() {
 
-	ObjectTypeDB::bind_method(_MD("create", "sx", "sy", "sz"), &VoxelBuffer::create);
-	ObjectTypeDB::bind_method(_MD("clear"), &VoxelBuffer::clear);
+	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::create);
+	ClassDB::bind_method(D_METHOD("clear"), &VoxelBuffer::clear);
 
-	ObjectTypeDB::bind_method(_MD("get_size_x"), &VoxelBuffer::get_size_x);
-	ObjectTypeDB::bind_method(_MD("get_size_y"), &VoxelBuffer::get_size_y);
-	ObjectTypeDB::bind_method(_MD("get_size_z"), &VoxelBuffer::get_size_z);
+	ClassDB::bind_method(D_METHOD("get_size_x"), &VoxelBuffer::get_size_x);
+	ClassDB::bind_method(D_METHOD("get_size_y"), &VoxelBuffer::get_size_y);
+	ClassDB::bind_method(D_METHOD("get_size_z"), &VoxelBuffer::get_size_z);
 
-	ObjectTypeDB::bind_method(_MD("set_voxel", "value", "x", "y", "z", "channel"), &VoxelBuffer::_set_voxel_binding, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::set_voxel_v, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::_get_voxel_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "channel"), &VoxelBuffer::_set_voxel_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::set_voxel_v, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::_get_voxel_binding, DEFVAL(0));
 
-	ObjectTypeDB::bind_method(_MD("fill", "value", "channel"), &VoxelBuffer::fill, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("fill_area", "value", "min", "max", "channel"), &VoxelBuffer::_fill_area_binding, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("copy_from", "other:VoxelBuffer", "channel"), &VoxelBuffer::_copy_from_binding, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("copy_from_area", "other:VoxelBuffer", "src_min", "src_max", "dst_min", "channel"), &VoxelBuffer::_copy_from_area_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("fill", "value", "channel"), &VoxelBuffer::fill, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("fill_area", "value", "min", "max", "channel"), &VoxelBuffer::_fill_area_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("copy_from", "other:VoxelBuffer", "channel"), &VoxelBuffer::_copy_from_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("copy_from_area", "other:VoxelBuffer", "src_min", "src_max", "dst_min", "channel"), &VoxelBuffer::_copy_from_area_binding, DEFVAL(0));
 
-	ObjectTypeDB::bind_method(_MD("is_uniform", "channel"), &VoxelBuffer::is_uniform, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("optimize"), &VoxelBuffer::optimize);
+	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::optimize);
 
 }
 

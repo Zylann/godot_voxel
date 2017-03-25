@@ -9,7 +9,7 @@
 // Infinite static terrain made of voxels.
 // It is loaded around VoxelTerrainStreamers.
 class VoxelTerrain : public Node /*, public IVoxelMapObserver*/ {
-	OBJ_TYPE(VoxelTerrain, Node)
+	GDCLASS(VoxelTerrain, Node)
 public:
 	VoxelTerrain();
 

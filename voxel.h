@@ -9,7 +9,7 @@ class VoxelLibrary;
 // A voxel can be a simple coloured cube, or a more complex model.
 // Important: it is recommended that you create voxels from a library rather than using new().
 class Voxel : public Reference {
-	OBJ_TYPE(Voxel, Reference)
+	GDCLASS(Voxel, Reference)
 
 public:
 	enum Side {
@@ -51,11 +51,11 @@ public:
 
 	// Getters for native usage only
 
-	const DVector<Vector3> & get_model_vertices() const { return _model_vertices; }
-	const DVector<Vector3> & get_model_normals() const { return _model_normals; }
-	const DVector<Vector2> & get_model_uv() const { return _model_uv; }
-	const DVector<Vector3> & get_model_side_vertices(unsigned int side) const { return _model_side_vertices[side]; }
-	const DVector<Vector2> & get_model_side_uv(unsigned int side) const { return _model_side_uv[side]; }
+	const PoolVector<Vector3> & get_model_vertices() const { return _model_vertices; }
+	const PoolVector<Vector3> & get_model_normals() const { return _model_normals; }
+	const PoolVector<Vector2> & get_model_uv() const { return _model_uv; }
+	const PoolVector<Vector3> & get_model_side_vertices(unsigned int side) const { return _model_side_vertices[side]; }
+	const PoolVector<Vector2> & get_model_side_uv(unsigned int side) const { return _model_side_uv[side]; }
 
 	void set_library_ptr(VoxelLibrary * lib) { _library = lib; }
 
@@ -77,11 +77,11 @@ private:
 
 	// Model
 	Color _color;
-	DVector<Vector3> _model_vertices;
-	DVector<Vector3> _model_normals;
-	DVector<Vector2> _model_uv;
-	DVector<Vector3> _model_side_vertices[SIDE_COUNT];
-	DVector<Vector2> _model_side_uv[SIDE_COUNT];
+	PoolVector<Vector3> _model_vertices;
+	PoolVector<Vector3> _model_normals;
+	PoolVector<Vector2> _model_uv;
+	PoolVector<Vector3> _model_side_vertices[SIDE_COUNT];
+	PoolVector<Vector2> _model_side_uv[SIDE_COUNT];
 
 	// TODO Child voxel types
 

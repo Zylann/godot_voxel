@@ -5,7 +5,7 @@
 #include "voxel.h"
 
 class VoxelLibrary : public Reference {
-	OBJ_TYPE(VoxelLibrary, Reference)
+	GDCLASS(VoxelLibrary, Reference)
 
 public:
 	static const unsigned int MAX_VOXEL_TYPES = 256; // Required limit because voxel types are stored in 8 bits

@@ -16,6 +16,7 @@ public:
 	Ref<VoxelBuffer> voxels; // SIZE*SIZE*SIZE voxels
 	Vector3i pos;
 	NodePath mesh_instance_path;
+	//NodePath body_path; // TODO
 
 	static VoxelBlock * create(Vector3i bpos, Ref<VoxelBuffer> buffer);
 
@@ -29,7 +30,7 @@ private:
 
 // Infinite voxel storage by means of octants like Gridmap
 class VoxelMap : public Reference {
-	OBJ_TYPE(VoxelMap, Reference)
+	GDCLASS(VoxelMap, Reference)
 public:
 	// Converts voxel coodinates into block coordinates
 	static _FORCE_INLINE_ Vector3i voxel_to_block(Vector3i pos) {

@@ -242,16 +242,16 @@ void VoxelMap::clear() {
 
 void VoxelMap::_bind_methods() {
 
-	ObjectTypeDB::bind_method(_MD("get_voxel", "x", "y", "z", "c"), &VoxelMap::_get_voxel_binding, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("set_voxel", "value", "x", "y", "z", "c"), &VoxelMap::_set_voxel_binding, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("get_default_voxel", "channel"), &VoxelMap::get_default_voxel, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("set_default_voxel", "value", "channel"), &VoxelMap::set_default_voxel, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("has_block", "x", "y", "z"), &VoxelMap::_has_block_binding);
-	ObjectTypeDB::bind_method(_MD("get_buffer_copy", "min_pos", "out_buffer:VoxelBuffer", "channel"), &VoxelMap::_get_buffer_copy_binding, DEFVAL(0));
-	ObjectTypeDB::bind_method(_MD("set_block_buffer", "block_pos", "buffer:VoxelBuffer"), &VoxelMap::_set_block_buffer_binding);
-	ObjectTypeDB::bind_method(_MD("voxel_to_block", "voxel_pos"), &VoxelMap::_voxel_to_block_binding);
-	ObjectTypeDB::bind_method(_MD("block_to_voxel", "block_pos"), &VoxelMap::_block_to_voxel_binding);
-	ObjectTypeDB::bind_method(_MD("get_block_size"), &VoxelMap::get_block_size);
+	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "c"), &VoxelMap::_get_voxel_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "c"), &VoxelMap::_set_voxel_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_default_voxel", "channel"), &VoxelMap::get_default_voxel, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_default_voxel", "value", "channel"), &VoxelMap::set_default_voxel, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("has_block", "x", "y", "z"), &VoxelMap::_has_block_binding);
+	ClassDB::bind_method(D_METHOD("get_buffer_copy", "min_pos", "out_buffer:VoxelBuffer", "channel"), &VoxelMap::_get_buffer_copy_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_block_buffer", "block_pos", "buffer:VoxelBuffer"), &VoxelMap::_set_block_buffer_binding);
+	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelMap::_voxel_to_block_binding);
+	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelMap::_block_to_voxel_binding);
+	ClassDB::bind_method(D_METHOD("get_block_size"), &VoxelMap::get_block_size);
 
 	//ADD_PROPERTY(PropertyInfo(Variant::INT, "iterations"), _SCS("set_iterations"), _SCS("get_iterations"));
 
