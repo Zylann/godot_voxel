@@ -2,6 +2,7 @@
 #define VOXEL_VECTOR3I_H
 
 #include <core/math/vector3.h>
+#include <core/hashfuncs.h>
 
 struct Vector3i {
 
