@@ -14,6 +14,15 @@ MeshInstance * VoxelBlock::get_mesh_instance(const Node & root) {
 	return n->cast_to<MeshInstance>();
 }
 
+StaticBody * VoxelBlock::get_physics_body(const Node & root) {
+	if (mesh_instance_path.is_empty())
+		return NULL;
+	Node * n = root.get_node(body_path);
+	if (n == NULL)
+		return NULL;
+	return n->cast_to<StaticBody>();
+}
+
 // Helper
 VoxelBlock * VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer) {
 	const int bs = VoxelBlock::SIZE;

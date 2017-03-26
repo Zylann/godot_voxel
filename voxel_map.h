@@ -4,6 +4,7 @@
 #include <scene/main/node.h>
 #include <core/hash_map.h>
 #include <scene/3d/mesh_instance.h>
+#include <scene/3d/physics_body.h>
 #include "voxel_buffer.h"
 
 
@@ -16,11 +17,12 @@ public:
 	Ref<VoxelBuffer> voxels; // SIZE*SIZE*SIZE voxels
 	Vector3i pos;
 	NodePath mesh_instance_path;
-	//NodePath body_path; // TODO
+	NodePath body_path; // TODO
 
 	static VoxelBlock * create(Vector3i bpos, Ref<VoxelBuffer> buffer);
 
 	MeshInstance * get_mesh_instance(const Node & root);
+	StaticBody * get_physics_body(const Node & root);
 
 private:
 	VoxelBlock();

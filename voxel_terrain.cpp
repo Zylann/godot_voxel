@@ -2,7 +2,7 @@
 #include <scene/3d/mesh_instance.h>
 #include <os/os.h>
 
-VoxelTerrain::VoxelTerrain(): Node(), _min_y(-4), _max_y(4) {
+VoxelTerrain::VoxelTerrain(): Node(), _min_y(-4), _max_y(4), _generate_collisions(true) {
 
 	_map = Ref<VoxelMap>(memnew(VoxelMap));
 	_mesher = Ref<VoxelMesher>(memnew(VoxelMesher));
@@ -22,6 +22,10 @@ void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
 
 Ref<VoxelProvider> VoxelTerrain::get_provider() {
 	return _provider;
+}
+
+void VoxelTerrain::set_generate_collisions(bool enabled) {
+	_generate_collisions = enabled;
 }
 
 void VoxelTerrain::force_load_blocks(Vector3i center, Vector3i extents) {
@@ -159,6 +163,8 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	//    wprintf(os.c_str());
 	//}
 
+	Vector3 block_node_pos = VoxelMap::block_to_voxel(block_pos).to_vec3();
+
 	// Build mesh (that part is the most CPU-intensive)
 	Ref<Mesh> mesh = _mesher->build(nbuffer);
 
@@ -167,13 +173,35 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 		// Create and spawn mesh
 		mesh_instance = memnew(MeshInstance);
 		mesh_instance->set_mesh(mesh);
-		mesh_instance->set_translation(VoxelMap::block_to_voxel(block_pos).to_vec3());
+		mesh_instance->set_translation(block_node_pos);
 		add_child(mesh_instance);
 		block->mesh_instance_path = mesh_instance->get_path();
 	}
 	else {
 		// Update mesh
 		mesh_instance->set_mesh(mesh);
+
+	}
+
+	if(get_tree()->is_editor_hint() == false && _generate_collisions) {
+
+		// Generate collisions
+		// TODO Need to select only specific surfaces because some may not have collisions
+		Ref<Shape> shape = mesh->create_trimesh_shape();
+
+		StaticBody * body = block->get_physics_body(*this);
+		if(body == NULL) {
+			// Create body
+			body = memnew(StaticBody);
+			body->set_translation(block_node_pos);
+			body->add_shape(shape);
+			add_child(body);
+			block->body_path = body->get_path();
+		}
+		else {
+			// Update body
+			body->set_shape(0, shape);
+		}
 	}
 }
 
@@ -191,6 +219,9 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_block_update_count"), &VoxelTerrain::get_block_update_count);
 	ClassDB::bind_method(D_METHOD("get_mesher:VoxelMesher"), &VoxelTerrain::get_mesher);
+
+	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelTerrain::get_generate_collisions);
+	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelTerrain::set_generate_collisions);
 
 	ClassDB::bind_method(D_METHOD("get_map:VoxelMap"), &VoxelTerrain::get_map);
 

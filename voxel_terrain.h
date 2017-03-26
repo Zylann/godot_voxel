@@ -6,6 +6,9 @@
 #include "voxel_mesher.h"
 #include "voxel_provider.h"
 
+// TODO
+//#define VOXEL_TERRAIN_PROFILING
+
 // Infinite static terrain made of voxels.
 // It is loaded around VoxelTerrainStreamers.
 class VoxelTerrain : public Node /*, public IVoxelMapObserver*/ {
@@ -18,6 +21,9 @@ public:
 
 	void force_load_blocks(Vector3i center, Vector3i extents);
 	int get_block_update_count();
+
+	void set_generate_collisions(bool enabled);
+	bool get_generate_collisions() { return _generate_collisions; }
 
 	Ref<VoxelMesher> get_mesher() { return _mesher; }
 	Ref<VoxelMap> get_map() { return _map; }
@@ -50,6 +56,8 @@ private:
 	Vector<Vector3i> _block_update_queue;
 	Ref<VoxelMesher> _mesher;
 	Ref<VoxelProvider> _provider;
+
+	bool _generate_collisions;
 
 };
 
