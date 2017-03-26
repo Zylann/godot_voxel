@@ -27,6 +27,7 @@ public:
 
 	Ref<VoxelMesher> get_mesher() { return _mesher; }
 	Ref<VoxelMap> get_map() { return _map; }
+	Ref<VoxelLibrary> get_voxel_library();
 
 protected:
 	void _notification(int p_what);
@@ -44,6 +45,7 @@ protected:
 	Vector3 _voxel_to_block_binding(Vector3 pos) { return Vector3i(VoxelMap::voxel_to_block(pos)).to_vec3(); }
 	Vector3 _block_to_voxel_binding(Vector3 pos) { return Vector3i(VoxelMap::block_to_voxel(pos)).to_vec3(); }
 	void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
+	Variant _raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance);
 
 private:
 	// Parameters

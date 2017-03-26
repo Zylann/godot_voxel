@@ -1,6 +1,7 @@
 #include "voxel_terrain.h"
 #include <scene/3d/mesh_instance.h>
 #include <os/os.h>
+#include "voxel_raycast.h"
 
 VoxelTerrain::VoxelTerrain(): Node(), _min_y(-4), _max_y(4), _generate_collisions(true) {
 
@@ -22,6 +23,10 @@ void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
 
 Ref<VoxelProvider> VoxelTerrain::get_provider() {
 	return _provider;
+}
+
+Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() {
+	return _mesher->get_library();
 }
 
 void VoxelTerrain::set_generate_collisions(bool enabled) {
@@ -212,6 +217,46 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 //    }
 //}
 
+static bool _raycast_binding_predicate(Vector3i pos, void *context) {
+
+	ERR_FAIL_COND_V(context == NULL, false);
+	VoxelTerrain * terrain = (VoxelTerrain*)context;
+
+	Ref<VoxelLibrary> lib_ref = terrain->get_voxel_library();
+	if(lib_ref.is_null())
+		return false;
+	const VoxelLibrary & lib = **lib_ref;
+
+	Ref<VoxelMap> map = terrain->get_map();
+	// TODO In the future we may want to query more channels
+	int v = map->get_voxel(pos, 0);
+	if(lib.has_voxel(v) == false)
+		return false;
+
+	const Voxel & voxel = lib.get_voxel_const(v);
+	return !voxel.is_transparent();
+}
+
+Variant VoxelTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance) {
+
+	// TODO Transform input if the terrain is rotated (in the future it can be made a Spatial node)
+
+	Vector3i hit_pos;
+	Vector3i prev_pos;
+
+	if(voxel_raycast(origin, direction, _raycast_binding_predicate, this, max_distance, hit_pos, prev_pos)) {
+
+		Dictionary hit = Dictionary();
+		hit["position"] = hit_pos.to_vec3();
+		hit["prev_position"] = prev_pos.to_vec3();
+		return hit;
+	}
+	else {
+		return Variant(); // Null dictionary, no alloc
+	}
+}
+
+
 void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_provider", "provider:VoxelProvider"), &VoxelTerrain::set_provider);
@@ -230,6 +275,8 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_block_to_voxel_binding);
 
 	ClassDB::bind_method(D_METHOD("force_load_blocks", "center", "extents"), &VoxelTerrain::_force_load_blocks_binding);
+
+	ClassDB::bind_method(D_METHOD("raycast:Dictionary", "origin", "direction", "max_distance"), &VoxelTerrain::_raycast_binding, DEFVAL(100));
 
 }
 
