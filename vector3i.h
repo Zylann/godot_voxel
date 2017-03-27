@@ -45,6 +45,8 @@ struct Vector3i {
 		return Math::sqrt((real_t)length_sq());
 	}
 
+	_FORCE_INLINE_ int distance_sq(const Vector3i & other) const;
+
 	_FORCE_INLINE_ Vector3i & operator=(const Vector3i & other) {
 		x = other.x;
 		y = other.y;
@@ -134,6 +136,10 @@ _FORCE_INLINE_ bool operator==(const Vector3i & a, const Vector3i & b) {
 
 _FORCE_INLINE_ bool operator!=(const Vector3i & a, const Vector3i & b) {
 	return a.x != b.x && a.y != b.y && a.z != b.z;
+}
+
+_FORCE_INLINE_ int Vector3i::distance_sq(const Vector3i & other) const {
+	return (other - *this).length_sq();
 }
 
 struct Vector3iHasher {

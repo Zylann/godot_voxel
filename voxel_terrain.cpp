@@ -9,11 +9,12 @@ VoxelTerrain::VoxelTerrain(): Node(), _min_y(-4), _max_y(4), _generate_collision
 	_mesher = Ref<VoxelMesher>(memnew(VoxelMesher));
 }
 
-// Sorts distance to world origin
-// TODO Use distance to camera
-struct BlockUpdateComparator0 {
+Vector3i g_viewer_block_pos; // TODO UGLY! Lambdas or pointers needed...
+
+// Sorts distance to viewer
+struct BlockUpdateComparator {
 	inline bool operator()(const Vector3i & a, const Vector3i & b) const {
-		return a.length_sq() > b.length_sq();
+		return a.distance_sq(g_viewer_block_pos) > b.distance_sq(g_viewer_block_pos);
 	}
 };
 
@@ -33,24 +34,47 @@ void VoxelTerrain::set_generate_collisions(bool enabled) {
 	_generate_collisions = enabled;
 }
 
-void VoxelTerrain::force_load_blocks(Vector3i center, Vector3i extents) {
-	//Vector3i min = center - extents;
-	//Vector3i max = center + extents + Vector3i(1,1,1);
-	//Vector3i size = max - min;
+void VoxelTerrain::set_viewer_path(NodePath path) {
+	if(!path.is_empty())
+		ERR_FAIL_COND(get_viewer(path) == NULL);
+	_viewer_path = path;
+}
 
-	_block_update_queue.clear();
+NodePath VoxelTerrain::get_viewer_path() {
+	return _viewer_path;
+}
 
+Spatial * VoxelTerrain::get_viewer(NodePath path) {
+	if(path.is_empty())
+		return NULL;
+	Node * node = get_node(path);
+	if(node == NULL)
+		return NULL;
+	return node->cast_to<Spatial>();
+}
+
+//void VoxelTerrain::clear_update_queue() {
+//	_block_update_queue.clear();
+//	_dirty_blocks.clear();
+//}
+
+void VoxelTerrain::make_block_dirty(Vector3i bpos) {
+	if(_dirty_blocks.has(bpos) == false) {
+		_block_update_queue.push_back(bpos);
+		_dirty_blocks[bpos] = true;
+	}
+}
+
+void VoxelTerrain::make_blocks_dirty(Vector3i min, Vector3i size) {
+	Vector3i max = min + size;
 	Vector3i pos;
-	for (pos.z = -extents.z; pos.z <= extents.z; ++pos.z) {
-		for (pos.x = -extents.x; pos.x <= extents.x; ++pos.x) {
-			for (pos.y = -extents.y; pos.y <= extents.y; ++pos.y) {
-				_block_update_queue.push_back(pos);
+	for(pos.z = min.z; pos.z < max.z; ++pos.z) {
+		for(pos.y = min.y; pos.y < max.y; ++pos.y) {
+			for(pos.x = min.x; pos.x < max.x; ++pos.x) {
+				make_block_dirty(pos);
 			}
 		}
 	}
-
-	_block_update_queue.sort_custom<BlockUpdateComparator0>();
-
 }
 
 int VoxelTerrain::get_block_update_count() {
@@ -87,12 +111,23 @@ void VoxelTerrain::update_blocks() {
 	uint32_t time_before = os.get_ticks_msec();
 	uint32_t max_time = 1000 / 60;
 
+	// Get viewer location
+	Spatial * viewer = get_viewer(_viewer_path);
+	if(viewer)
+		g_viewer_block_pos = VoxelMap::voxel_to_block(viewer->get_translation());
+	else
+		g_viewer_block_pos = Vector3i();
+
+	// Sort updates so nearest blocks are done first
+	_block_update_queue.sort_custom<BlockUpdateComparator>();
+
+	// Update a bunch of blocks until none are left or too much time elapsed
 	while (!_block_update_queue.empty() && (os.get_ticks_msec() - time_before) < max_time) {
+
 		//printf("Remaining: %i\n", _block_update_queue.size());
 
 		// TODO Move this to a thread
 		// TODO Have VoxelTerrainGenerator in C++
-		// TODO Keep track of MeshInstances!
 
 		// Get request
 		Vector3i block_pos = _block_update_queue[_block_update_queue.size() - 1];
@@ -132,6 +167,7 @@ void VoxelTerrain::update_blocks() {
 
 		// Pop request
 		_block_update_queue.resize(_block_update_queue.size() - 1);
+		_dirty_blocks.erase(block_pos);
 	}
 }
 
@@ -149,29 +185,12 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	nbuffer.create(VoxelBlock::SIZE + 2, VoxelBlock::SIZE + 2, VoxelBlock::SIZE + 2);
 	_map->get_buffer_copy(VoxelMap::block_to_voxel(block_pos) - Vector3i(1, 1, 1), nbuffer);
 
-	// TEST
-	//if (block_pos == Vector3i(0, 0, 0)) {
-	//    printf(">>>\n");
-	//    String os;
-	//    for (unsigned int y = 0; y < nbuffer.get_size().y; ++y) {
-	//        for (unsigned int z = 0; z < nbuffer.get_size().z; ++z) {
-	//            for (unsigned int x = 0; x < nbuffer.get_size().x; ++x) {
-	//                if (nbuffer.get_voxel(x, y, z) == 0)
-	//                    os += '-';
-	//                else
-	//                    os += 'O';
-	//            }
-	//            os += '\n';
-	//        }
-	//        os += '\n';
-	//    }
-	//    wprintf(os.c_str());
-	//}
-
 	Vector3 block_node_pos = VoxelMap::block_to_voxel(block_pos).to_vec3();
 
 	// Build mesh (that part is the most CPU-intensive)
 	Ref<Mesh> mesh = _mesher->build(nbuffer);
+
+	// TODO Don't use nodes! Use servers directly, it's faster
 
 	MeshInstance * mesh_instance = block->get_mesh_instance(*this);
 	if (mesh_instance == NULL) {
@@ -185,7 +204,6 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	else {
 		// Update mesh
 		mesh_instance->set_mesh(mesh);
-
 	}
 
 	if(get_tree()->is_editor_hint() == false && _generate_collisions) {
@@ -256,6 +274,18 @@ Variant VoxelTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t
 	}
 }
 
+//void VoxelTerrain::set_voxel_immediate(Vector3 pos, int value, int c) {
+//	Vector3i vpos = pos;
+
+//	_map->set_voxel(value, vpos, c);
+
+
+//}
+
+//int VoxelTerrain::get_voxel(Vector3 pos, int c) {
+//	return _map->get_voxel(pos, c);
+//}
+
 
 void VoxelTerrain::_bind_methods() {
 
@@ -268,13 +298,17 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelTerrain::get_generate_collisions);
 	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelTerrain::set_generate_collisions);
 
+	ClassDB::bind_method(D_METHOD("get_viewer"), &VoxelTerrain::get_viewer_path);
+	ClassDB::bind_method(D_METHOD("set_viewer", "path"), &VoxelTerrain::set_viewer_path);
+
 	ClassDB::bind_method(D_METHOD("get_map:VoxelMap"), &VoxelTerrain::get_map);
 
 	// TODO Make those two static in VoxelMap?
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
 	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_block_to_voxel_binding);
 
-	ClassDB::bind_method(D_METHOD("force_load_blocks", "center", "extents"), &VoxelTerrain::_force_load_blocks_binding);
+	ClassDB::bind_method(D_METHOD("make_block_dirty", "pos"), &VoxelTerrain::_make_block_dirty_binding);
+	ClassDB::bind_method(D_METHOD("make_blocks_dirty", "min", "size"), &VoxelTerrain::_make_blocks_dirty_binding);
 
 	ClassDB::bind_method(D_METHOD("raycast:Dictionary", "origin", "direction", "max_distance"), &VoxelTerrain::_raycast_binding, DEFVAL(100));
 
