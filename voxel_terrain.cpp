@@ -59,10 +59,16 @@ Spatial * VoxelTerrain::get_viewer(NodePath path) {
 //}
 
 void VoxelTerrain::make_block_dirty(Vector3i bpos) {
-	if(_dirty_blocks.has(bpos) == false) {
+	// TODO Immediate update viewer distance
+	if(is_block_dirty(bpos) == false) {
+		//OS::get_singleton()->print("Dirty (%i, %i, %i)", bpos.x, bpos.y, bpos.z);
 		_block_update_queue.push_back(bpos);
 		_dirty_blocks[bpos] = true;
 	}
+}
+
+bool VoxelTerrain::is_block_dirty(Vector3i bpos) {
+	return _dirty_blocks.has(bpos);
 }
 
 void VoxelTerrain::make_blocks_dirty(Vector3i min, Vector3i size) {
@@ -75,6 +81,31 @@ void VoxelTerrain::make_blocks_dirty(Vector3i min, Vector3i size) {
 			}
 		}
 	}
+}
+
+void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
+
+	// Update the block in which the voxel is
+	Vector3i bpos = VoxelMap::voxel_to_block(pos);
+	make_block_dirty(bpos);
+
+	// Update neighbor blocks if the voxel is touching a boundary
+
+	Vector3i rpos = VoxelMap::to_local(pos);
+
+	if(rpos.x == 0)
+		make_block_dirty(bpos - Vector3i(1,0,0));
+	if(rpos.y == 0)
+		make_block_dirty(bpos - Vector3i(0,1,0));
+	if(rpos.z == 0)
+		make_block_dirty(bpos - Vector3i(0,0,1));
+
+	if(rpos.x == VoxelBlock::SIZE-1)
+		make_block_dirty(bpos + Vector3i(1,0,0));
+	if(rpos.y == VoxelBlock::SIZE-1)
+		make_block_dirty(bpos + Vector3i(0,1,0));
+	if(rpos.z == VoxelBlock::SIZE-1)
+		make_block_dirty(bpos + Vector3i(0,0,1));
 }
 
 int VoxelTerrain::get_block_update_count() {
@@ -125,12 +156,15 @@ void VoxelTerrain::update_blocks() {
 	while (!_block_update_queue.empty() && (os.get_ticks_msec() - time_before) < max_time) {
 
 		//printf("Remaining: %i\n", _block_update_queue.size());
+		//float time_before = os.get_ticks_usec();
 
 		// TODO Move this to a thread
 		// TODO Have VoxelTerrainGenerator in C++
 
 		// Get request
 		Vector3i block_pos = _block_update_queue[_block_update_queue.size() - 1];
+
+		bool entire_block_changed = false;
 
 		if (!_map->has_block(block_pos)) {
 			// Create buffer
@@ -147,23 +181,33 @@ void VoxelTerrain::update_blocks() {
 
 				// Store buffer
 				_map->set_block_buffer(block_pos, buffer_ref);
+
+				entire_block_changed = true;
 			}
 		}
 
-		// Update meshes
-		Vector3i ndir;
-		for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
-			for (ndir.x = -1; ndir.x < 2; ++ndir.x) {
-				for (ndir.y = -1; ndir.y < 2; ++ndir.y) {
-					Vector3i npos = block_pos + ndir;
-					// TODO What if the map is really composed of empty blocks?
-					if (_map->is_block_surrounded(npos)) {
-						update_block_mesh(npos);
+		// Update views (mesh/collisions)
+
+		if(entire_block_changed) {
+			// All neighbors have to be checked
+			Vector3i ndir;
+			for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
+				for (ndir.x = -1; ndir.x < 2; ++ndir.x) {
+					for (ndir.y = -1; ndir.y < 2; ++ndir.y) {
+						Vector3i npos = block_pos + ndir;
+						// TODO What if the map is really composed of empty blocks?
+						if (_map->is_block_surrounded(npos)) {
+							update_block_mesh(npos);
+						}
 					}
 				}
 			}
 		}
-		//update_block_mesh(block_pos);
+		else {
+			// Only update the block, neighbors will probably follow if needed
+			update_block_mesh(block_pos);
+			//OS::get_singleton()->print("Update (%i, %i, %i)\n", block_pos.x, block_pos.y, block_pos.z);
+		}
 
 		// Pop request
 		_block_update_queue.resize(_block_update_queue.size() - 1);
@@ -176,7 +220,19 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	if (block == NULL) {
 		return;
 	}
+
 	if (block->voxels->is_uniform(0) && block->voxels->get_voxel(0, 0, 0, 0) == 0) {
+		// Optimization: the block contains nothing
+
+		MeshInstance * mesh_instance = block->get_mesh_instance(*this);
+		if(mesh_instance) {
+			mesh_instance->set_mesh(Ref<Mesh>());
+		}
+		StaticBody * body = block->get_physics_body(*this);
+		if(body) {
+			body->set_shape(0, Ref<Mesh>());
+		}
+
 		return;
 	}
 
@@ -188,10 +244,10 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	Vector3 block_node_pos = VoxelMap::block_to_voxel(block_pos).to_vec3();
 
 	// Build mesh (that part is the most CPU-intensive)
+	// TODO Re-use existing meshes to optimize memory cost
 	Ref<Mesh> mesh = _mesher->build(nbuffer);
 
 	// TODO Don't use nodes! Use servers directly, it's faster
-
 	MeshInstance * mesh_instance = block->get_mesh_instance(*this);
 	if (mesh_instance == NULL) {
 		// Create and spawn mesh
@@ -274,19 +330,6 @@ Variant VoxelTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t
 	}
 }
 
-//void VoxelTerrain::set_voxel_immediate(Vector3 pos, int value, int c) {
-//	Vector3i vpos = pos;
-
-//	_map->set_voxel(value, vpos, c);
-
-
-//}
-
-//int VoxelTerrain::get_voxel(Vector3 pos, int c) {
-//	return _map->get_voxel(pos, c);
-//}
-
-
 void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_provider", "provider:VoxelProvider"), &VoxelTerrain::set_provider);
@@ -301,7 +344,7 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_viewer"), &VoxelTerrain::get_viewer_path);
 	ClassDB::bind_method(D_METHOD("set_viewer", "path"), &VoxelTerrain::set_viewer_path);
 
-	ClassDB::bind_method(D_METHOD("get_map:VoxelMap"), &VoxelTerrain::get_map);
+	ClassDB::bind_method(D_METHOD("get_storage:VoxelMap"), &VoxelTerrain::get_map);
 
 	// TODO Make those two static in VoxelMap?
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
@@ -309,6 +352,7 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("make_block_dirty", "pos"), &VoxelTerrain::_make_block_dirty_binding);
 	ClassDB::bind_method(D_METHOD("make_blocks_dirty", "min", "size"), &VoxelTerrain::_make_blocks_dirty_binding);
+	ClassDB::bind_method(D_METHOD("make_voxel_dirty", "pos"), &VoxelTerrain::_make_voxel_dirty_binding);
 
 	ClassDB::bind_method(D_METHOD("raycast:Dictionary", "origin", "direction", "max_distance"), &VoxelTerrain::_raycast_binding, DEFVAL(100));
 

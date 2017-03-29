@@ -1,9 +1,6 @@
 #include "voxel_buffer.h"
 #include <string.h>
 
-//#define VOXEL_AT(_data, x, y, z) data[z][x][y]
-#define VOXEL_AT(_data, _x, _y, _z) _data[index(_x,_y,_z)]
-
 
 VoxelBuffer::VoxelBuffer() {
 
@@ -59,7 +56,7 @@ int VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index) cons
 	const Channel & channel = _channels[channel_index];
 
 	if (validate_pos(x, y, z) && channel.data) {
-		return VOXEL_AT(channel.data, x,y,z);
+		return channel.data[index(x,y,z)];
 	}
 	else {
 		return channel.defval;
@@ -72,11 +69,14 @@ void VoxelBuffer::set_voxel(int value, int x, int y, int z, unsigned int channel
 
 	Channel & channel = _channels[channel_index];
 
-	if (channel.defval != value) {
-		if (channel.data == NULL) {
+	if (channel.data == NULL) {
+		if (channel.defval != value) {
 			create_channel(channel_index, _size);
+			channel.data[index(x, y, z)] = value;
 		}
-		VOXEL_AT(channel.data, x, y, z) = value;
+	}
+	else {
+		channel.data[index(x, y, z)] = value;
 	}
 }
 
@@ -170,6 +170,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer & other, unsigned int channel_inde
 }
 
 void VoxelBuffer::copy_from(const VoxelBuffer & other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index) {
+
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
 	Channel & channel = _channels[channel_index];

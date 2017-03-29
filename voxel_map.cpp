@@ -60,7 +60,7 @@ int VoxelMap::get_voxel(Vector3i pos, unsigned int c) {
 	if (block == NULL) {
 		return _default_voxel[c];
 	}
-	return block->voxels->get_voxel(pos - block_to_voxel(bpos), c);
+	return block->voxels->get_voxel(VoxelMap::to_local(pos), c);
 }
 
 void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
@@ -79,7 +79,7 @@ void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
 		set_block(bpos, block);
 	}
 
-	block->voxels->set_voxel(value, pos - block_to_voxel(bpos), c);
+	block->voxels->set_voxel(value, VoxelMap::to_local(pos), c);
 }
 
 void VoxelMap::set_default_voxel(int value, unsigned int channel) {
@@ -253,6 +253,8 @@ void VoxelMap::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "c"), &VoxelMap::_get_voxel_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "c"), &VoxelMap::_set_voxel_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_voxel_v", "pos", "c"), &VoxelMap::_get_voxel_v_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "c"), &VoxelMap::_set_voxel_v_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_default_voxel", "channel"), &VoxelMap::get_default_voxel, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_default_voxel", "value", "channel"), &VoxelMap::set_default_voxel, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("has_block", "x", "y", "z"), &VoxelMap::_has_block_binding);
