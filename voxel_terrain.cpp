@@ -83,29 +83,122 @@ void VoxelTerrain::make_blocks_dirty(Vector3i min, Vector3i size) {
 	}
 }
 
+inline int get_border_index(int x, int max) {
+	return x == 0 ? 0 : x != max ? 1 : 2;
+}
+
 void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 
 	// Update the block in which the voxel is
 	Vector3i bpos = VoxelMap::voxel_to_block(pos);
 	make_block_dirty(bpos);
+	//OS::get_singleton()->print("Dirty (%i, %i, %i)\n", bpos.x, bpos.y, bpos.z);
 
 	// Update neighbor blocks if the voxel is touching a boundary
 
 	Vector3i rpos = VoxelMap::to_local(pos);
 
+	bool check_corners = _mesher->get_occlusion_enabled();
+
+	const int max = VoxelBlock::SIZE-1;
+
 	if(rpos.x == 0)
 		make_block_dirty(bpos - Vector3i(1,0,0));
+	else
+	if(rpos.x == max)
+		make_block_dirty(bpos + Vector3i(1,0,0));
+
 	if(rpos.y == 0)
 		make_block_dirty(bpos - Vector3i(0,1,0));
+	else
+	if(rpos.y == max)
+		make_block_dirty(bpos + Vector3i(0,1,0));
+
 	if(rpos.z == 0)
 		make_block_dirty(bpos - Vector3i(0,0,1));
-
-	if(rpos.x == VoxelBlock::SIZE-1)
-		make_block_dirty(bpos + Vector3i(1,0,0));
-	if(rpos.y == VoxelBlock::SIZE-1)
-		make_block_dirty(bpos + Vector3i(0,1,0));
-	if(rpos.z == VoxelBlock::SIZE-1)
+	else
+	if(rpos.z == max)
 		make_block_dirty(bpos + Vector3i(0,0,1));
+
+	// We might want to update blocks in corners in order to update ambient occlusion
+	if(check_corners) {
+
+		//       24------25------26
+		//       /|              /|
+		//      / |             / |
+		//    21  |           23  |
+		//    /  15           /  17
+		//   /    |          /    |
+		// 18------19------20     |
+		//  |     |         |     |
+		//  |     6-------7-|-----8
+		//  |    /          |    /
+		//  9   /          11   /
+		//  |  3            |  5
+		//  | /             | /      y z
+		//  |/              |/       |/
+		//  0-------1-------2        o--x
+
+		// I'm not good at writing piles of ifs
+
+		static const int normals[27][3] = {
+			{-1,-1,-1}, { 0,-1,-1}, { 1,-1,-1},
+			{-1,-1, 0}, { 0,-1, 0}, { 1,-1, 0},
+			{-1,-1, 1}, { 0,-1, 1}, { 1,-1, 1},
+
+			{-1, 0,-1}, { 0, 0,-1}, { 1, 0,-1},
+			{-1, 0, 0}, { 0, 0, 0}, { 1, 0, 0},
+			{-1, 0, 1}, { 0, 0, 1}, { 1, 0, 1},
+
+			{-1, 1,-1}, { 0, 1,-1}, { 1, 1,-1},
+			{-1, 1, 0}, { 0, 1, 0}, { 1, 1, 0},
+			{-1, 1, 1}, { 0, 1, 1}, { 1, 1, 1}
+		};
+		static const int ce_counts[27] = {
+			4, 1, 4,
+			1, 0, 1,
+			4, 1, 4,
+
+			1, 0, 1,
+			0, 0, 0,
+			1, 0, 1,
+
+			4, 1, 4,
+			1, 0, 1,
+			4, 1, 4
+		};
+		static const int ce_indexes_lut[27][4] = {
+			{0, 1, 3, 9}, {1}, {2, 1, 5, 11},
+			{3}, {}, {5},
+			{6, 3, 7, 15}, {7}, {8, 7, 5, 17},
+
+			{9}, {}, {11},
+			{}, {}, {},
+			{15}, {}, {17},
+
+			{18, 9, 19, 21}, {19}, {20, 11, 19, 23},
+			{21}, {}, {23},
+			{24, 15, 21, 25}, {25}, {26, 17, 23, 25}
+		};
+
+		int m = get_border_index(rpos.x, max)
+				+ 3*get_border_index(rpos.z, max)
+				+ 9*get_border_index(rpos.y, max);
+
+		const int * ce_indexes = ce_indexes_lut[m];
+		int ce_count = ce_counts[m];
+		//OS::get_singleton()->print("m=%i, rpos=(%i, %i, %i)\n", m, rpos.x, rpos.y, rpos.z);
+
+		for(int i = 0; i < ce_count; ++i) {
+			// TODO Because it's about ambient occlusion across 1 voxel only,
+			// we could optimize it even more by looking at neighbor voxels,
+			// and discard the update if we know it won't change anything
+			const int * normal = normals[ce_indexes[i]];
+			Vector3i nbpos(bpos.x + normal[0], bpos.y + normal[1], bpos.z + normal[2]);
+			//OS::get_singleton()->print("Corner dirty (%i, %i, %i)\n", nbpos.x, nbpos.y, nbpos.z);
+			make_block_dirty(nbpos);
+		}
+	}
 }
 
 int VoxelTerrain::get_block_update_count() {
