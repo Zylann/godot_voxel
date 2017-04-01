@@ -16,26 +16,31 @@ IMPORTANT: if you clone the repo, Git will create the folder as the repo name, "
 Features
 ---------
 
+- Fully editable terrain (see demo: https://github.com/Zylann/voxelgame)
 - Compact voxel storage using 8-bit channels like images
+- Data segmentation using blocks of 16x16x16 voxels (so the world can be theoretically infinite)
 - Calculates meshes based on grid of voxels. Only visible faces are generated.
-- Vertex-based ambient occlusion (comes for free at the cost of slower mesh generation)
-- Voxels can be of any shape, not just cubes (not fully accessible yet but present in code)
+- Vertex-based ambient occlusion on voxel edges (comes for free at the cost of slower mesh generation)
+- Mesh-based physics based on Godot (high generation cost but works at decent speed)
+- Simple interface for deferred terrain generators (block by block)
+- Optional profiling information
 
 
 Ideas TODO
 -----------
 
-- VoxelMap node for infinite voxel terrain
+- Automatic terrain generation (currently not automatic)
+- Voxels can be of any shape, not just cubes (not fully accessible yet but present in code)
 - VoxelStreamer node to put on players so terrains know which voxels to load around them
-- Physics!
-- Make voxels editable
 - Support internal threading
-- Support saving and loading
+- Support saving and loading through helper classes
 - Promote classes to Node and Resource for better editor experience
-- Interface for terrain generation modules (I don't plan to integrate a noise library in this module, unless it's integrated in Godot core)
-- Support structure generation (anything that is bigger than one voxel)
-- Convert any imported meshes to Voxel-compatible meshes (to comply with a few optimizations)
+- Helpers for structure generation (anything that is bigger than one voxel)
+- Convert any imported meshes to Voxel-ready meshes (to comply with a few optimizations)
 - Generate Mesh resources from voxels so they can be used in the editor as MeshInstances
 - Import resources from other editors like Magicka-voxel
 - Volumetric grid algorithms: fluids, pathfinding, lighting...
+- Smooth meshes with the Transvoxel algorithm
+- Seam-free level of detail (LOD)
+- Ability to bake terrains if we don't want them to be editable in game
 
