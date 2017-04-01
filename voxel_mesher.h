@@ -7,6 +7,7 @@
 #include "voxel.h"
 #include "voxel_buffer.h"
 #include "voxel_library.h"
+#include "zprofiling.h"
 
 class VoxelMesher : public Reference {
 	GDCLASS(VoxelMesher, Reference)
@@ -41,6 +42,10 @@ private:
 	float _baked_occlusion_darkness;
 	bool _bake_occlusion;
 
+#ifdef VOXEL_PROFILING
+	ZProfiler _zprofiler;
+	Dictionary get_profiling_info() const { return _zprofiler.get_all_serialized_info(); }
+#endif
 };
 
 

@@ -243,13 +243,14 @@ void VoxelTerrain::update_blocks() {
 		g_viewer_block_pos = Vector3i();
 
 	// Sort updates so nearest blocks are done first
+	VOXEL_PROFILE_BEGIN("block_update_sorting")
 	_block_update_queue.sort_custom<BlockUpdateComparator>();
+	VOXEL_PROFILE_END("block_update_sorting")
 
 	// Update a bunch of blocks until none are left or too much time elapsed
 	while (!_block_update_queue.empty() && (os.get_ticks_msec() - time_before) < max_time) {
 
 		//printf("Remaining: %i\n", _block_update_queue.size());
-		//float time_before = os.get_ticks_usec();
 
 		// TODO Move this to a thread
 		// TODO Have VoxelTerrainGenerator in C++
@@ -262,15 +263,23 @@ void VoxelTerrain::update_blocks() {
 		if (!_map->has_block(block_pos)) {
 			// Create buffer
 			if(!_provider.is_null()) {
+
+				VOXEL_PROFILE_BEGIN("voxel_buffer_creation_gen")
+
 				Ref<VoxelBuffer> buffer_ref = Ref<VoxelBuffer>(memnew(VoxelBuffer));
 				const Vector3i block_size(VoxelBlock::SIZE, VoxelBlock::SIZE, VoxelBlock::SIZE);
 				buffer_ref->create(block_size.x, block_size.y, block_size.z);
+
+				VOXEL_PROFILE_END("voxel_buffer_creation_gen")
+				VOXEL_PROFILE_BEGIN("block_generation")
 
 				// Query voxel provider
 				_provider->emerge_block(buffer_ref, block_pos);
 
 				// Check script return
 				ERR_FAIL_COND(buffer_ref->get_size() != block_size);
+
+				VOXEL_PROFILE_END("block_generation")
 
 				// Store buffer
 				_map->set_block_buffer(block_pos, buffer_ref);
@@ -329,16 +338,23 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 		return;
 	}
 
+	VOXEL_PROFILE_BEGIN("voxel_buffer_creation_extract")
 	// Create buffer padded with neighbor voxels
 	VoxelBuffer nbuffer;
 	nbuffer.create(VoxelBlock::SIZE + 2, VoxelBlock::SIZE + 2, VoxelBlock::SIZE + 2);
+	VOXEL_PROFILE_END("voxel_buffer_creation_extract")
+
+	VOXEL_PROFILE_BEGIN("block_extraction")
 	_map->get_buffer_copy(VoxelMap::block_to_voxel(block_pos) - Vector3i(1, 1, 1), nbuffer);
+	VOXEL_PROFILE_END("block_extraction")
 
 	Vector3 block_node_pos = VoxelMap::block_to_voxel(block_pos).to_vec3();
 
 	// Build mesh (that part is the most CPU-intensive)
 	// TODO Re-use existing meshes to optimize memory cost
+	//VOXEL_PROFILE_BEGIN("meshing")
 	Ref<Mesh> mesh = _mesher->build(nbuffer);
+	//VOXEL_PROFILE_END("meshing")
 
 	// TODO Don't use nodes! Use servers directly, it's faster
 	MeshInstance * mesh_instance = block->get_mesh_instance(*this);
@@ -352,14 +368,18 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	}
 	else {
 		// Update mesh
+		VOXEL_PROFILE_BEGIN("mesh_instance_set_mesh")
 		mesh_instance->set_mesh(mesh);
+		VOXEL_PROFILE_END("mesh_instance_set_mesh")
 	}
 
 	if(get_tree()->is_editor_hint() == false && _generate_collisions) {
 
 		// Generate collisions
 		// TODO Need to select only specific surfaces because some may not have collisions
+		VOXEL_PROFILE_BEGIN("create_trimesh_shape")
 		Ref<Shape> shape = mesh->create_trimesh_shape();
+		VOXEL_PROFILE_END("create_trimesh_shape")
 
 		StaticBody * body = block->get_physics_body(*this);
 		if(body == NULL) {
@@ -372,7 +392,9 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 		}
 		else {
 			// Update body
+			VOXEL_PROFILE_BEGIN("body_set_shape")
 			body->set_shape(0, shape);
+			VOXEL_PROFILE_END("body_set_shape")
 		}
 	}
 }
@@ -448,6 +470,10 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("make_voxel_dirty", "pos"), &VoxelTerrain::_make_voxel_dirty_binding);
 
 	ClassDB::bind_method(D_METHOD("raycast:Dictionary", "origin", "direction", "max_distance"), &VoxelTerrain::_raycast_binding, DEFVAL(100));
+
+#ifdef VOXEL_PROFILING
+	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelTerrain::get_profiling_info);
+#endif
 
 }
 

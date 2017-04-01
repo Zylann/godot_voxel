@@ -5,9 +5,7 @@
 #include "voxel_map.h"
 #include "voxel_mesher.h"
 #include "voxel_provider.h"
-
-// TODO
-//#define VOXEL_TERRAIN_PROFILING
+#include "zprofiling.h"
 
 // Infinite static terrain made of voxels.
 // It is loaded around VoxelTerrainStreamers.
@@ -87,6 +85,11 @@ private:
 	NodePath _viewer_path;
 
 	bool _generate_collisions;
+
+#ifdef VOXEL_PROFILING
+	ZProfiler _zprofiler;
+	Dictionary get_profiling_info() { return _zprofiler.get_all_serialized_info(); }
+#endif
 
 };
 

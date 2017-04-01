@@ -197,6 +197,8 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
     // - Slower
     // => Could be implemented in a separate class?
 
+	VOXEL_PROFILE_BEGIN("mesher_face_extraction")
+
     // Iterate 3D padded data to extract voxel faces.
     // This is the most intensive job in this class, so all required data should be as fit as possible.
     const Vector3i buffer_size = buffer.get_size();
@@ -324,6 +326,8 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
         }
     }
 
+	VOXEL_PROFILE_END("mesher_face_extraction")
+
     // Commit mesh
     Ref<Mesh> mesh_ref;
     for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
@@ -332,10 +336,15 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
             
             // Index mesh to reduce memory usage and make upload to VRAM faster
             // TODO actually, we could make it indexed from the ground up without using SurfaceTool, so we also save time!
-            st.index();
+			VOXEL_PROFILE_BEGIN("mesher_surfacetool_index")
+			st.index();
+			VOXEL_PROFILE_END("mesher_surfacetool_index")
 
-            mesh_ref = st.commit(mesh_ref);
-            st.clear();
+			VOXEL_PROFILE_BEGIN("mesher_surfacetool_commit")
+			mesh_ref = st.commit(mesh_ref);
+			VOXEL_PROFILE_END("mesher_surfacetool_commit")
+
+			st.clear();
         }
     }
 
@@ -347,7 +356,7 @@ void VoxelMesher::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_material", "material", "id"), &VoxelMesher::set_material);
 	ClassDB::bind_method(D_METHOD("get_material:Material", "id"), &VoxelMesher::get_material);
 
-	ClassDB::bind_method(D_METHOD("set_library", "voxel_library"), &VoxelMesher::set_library);
+	ClassDB::bind_method(D_METHOD("set_library", "voxel_library:VoxelLibrary"), &VoxelMesher::set_library);
 	ClassDB::bind_method(D_METHOD("get_library:VoxelLibrary"), &VoxelMesher::get_library);
 
 	ClassDB::bind_method(D_METHOD("set_occlusion_enabled", "enable"), &VoxelMesher::set_occlusion_enabled);
@@ -356,6 +365,9 @@ void VoxelMesher::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesher::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesher::get_occlusion_darkness);
 
-	ClassDB::bind_method(D_METHOD("build", "voxel_buffer"), &VoxelMesher::build_ref);
+	ClassDB::bind_method(D_METHOD("build:Mesh", "voxel_buffer:VoxelBuffer"), &VoxelMesher::build_ref);
 
+#ifdef VOXEL_PROFILING
+	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelMesher::get_profiling_info);
+#endif
 }
