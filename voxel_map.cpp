@@ -170,8 +170,7 @@ bool VoxelMap::is_block_surrounded(Vector3i pos) const {
 	return true;
 }
 
-void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer & dst_buffer, unsigned int channel) {
-	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
+void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer & dst_buffer, unsigned int channels_mask) {
 
 	Vector3i max_pos = min_pos + dst_buffer.get_size();
 
@@ -179,30 +178,38 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer & dst_buffer, unsig
 	Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1,1,1)) + Vector3i(1,1,1);
 	ERR_FAIL_COND((max_block_pos - min_block_pos) != Vector3(3, 3, 3));
 
-	Vector3i bpos;
-	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
-		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
-			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
+	for(unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
 
-				VoxelBlock * block = get_block(bpos);
-				if (block) {
+		if(((1 << channel) & channels_mask) == 0) {
+			continue;
+		}
 
-					VoxelBuffer & src_buffer = **block->voxels;
-					Vector3i offset = block_to_voxel(bpos);
-					// Note: copy_from takes care of clamping the area if it's on an edge
-					dst_buffer.copy_from(src_buffer, min_pos - offset, max_pos - offset, offset - min_pos, channel);
+		Vector3i bpos;
+		for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
+			for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
+				for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
+
+					VoxelBlock * block = get_block(bpos);
+					if (block) {
+
+						VoxelBuffer & src_buffer = **block->voxels;
+						Vector3i offset = block_to_voxel(bpos);
+						// Note: copy_from takes care of clamping the area if it's on an edge
+						dst_buffer.copy_from(src_buffer, min_pos - offset, max_pos - offset, offset - min_pos, channel);
+					}
+					else {
+						Vector3i offset = block_to_voxel(bpos);
+						dst_buffer.fill_area(
+							_default_voxel[channel],
+							offset - min_pos,
+							offset - min_pos + Vector3i(VoxelBlock::SIZE,VoxelBlock::SIZE, VoxelBlock::SIZE)
+						);
+					}
+
 				}
-				else {
-					Vector3i offset = block_to_voxel(bpos);
-					dst_buffer.fill_area(
-						_default_voxel[channel],
-						offset - min_pos,
-						offset - min_pos + Vector3i(VoxelBlock::SIZE,VoxelBlock::SIZE, VoxelBlock::SIZE)
-					);
-				}
-
 			}
 		}
+
 	}
 }
 

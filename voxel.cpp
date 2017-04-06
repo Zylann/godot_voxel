@@ -197,5 +197,9 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_cube_uv_all_sides:Voxel", "atlas_pos"), &Voxel::set_cube_uv_all_sides);
 	ClassDB::bind_method(D_METHOD("set_cube_uv_tbs_sides:Voxel", "top_atlas_pos", "side_atlas_pos", "bottom_atlas_pos"), &Voxel::set_cube_uv_tbs_sides);
 
+	BIND_CONSTANT( CHANNEL_TYPE )
+	BIND_CONSTANT( CHANNEL_ISOLEVEL )
+	BIND_CONSTANT( CHANNEL_DATA )
+
 }
 

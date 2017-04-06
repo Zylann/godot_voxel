@@ -23,6 +23,15 @@ public:
 		SIDE_COUNT
 	};
 
+	enum ChannelMode {
+		// For mapping to a Voxel type
+		CHANNEL_TYPE = 0,
+		// Distance to surface for smooth voxels
+		CHANNEL_ISOLEVEL,
+		// Arbitrary data not used by the module
+		CHANNEL_DATA
+	};
+
 	Voxel();
 
 	// Properties
@@ -86,6 +95,9 @@ private:
 	// TODO Child voxel types
 
 };
+
+VARIANT_ENUM_CAST(Voxel::ChannelMode)
+
 
 #endif // VOXEL_TYPE_H
 

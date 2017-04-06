@@ -9,6 +9,8 @@
 #include "voxel_library.h"
 #include "zprofiling.h"
 
+
+// TODO Should be renamed VoxelMesherCubic or something like that
 class VoxelMesher : public Reference {
 	GDCLASS(VoxelMesher, Reference)
 
@@ -29,8 +31,8 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const { return _bake_occlusion; }
 
-	Ref<Mesh> build(const VoxelBuffer & buffer_ref);
-	Ref<Mesh> build_ref(Ref<VoxelBuffer> buffer_ref);
+	Ref<Mesh> build(const VoxelBuffer & buffer_ref, unsigned int channel, Vector3i min, Vector3i max, Ref<Mesh> mesh=Ref<Mesh>());
+	Ref<Mesh> build_ref(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Ref<Mesh> mesh=Ref<Mesh>());
 
 protected:
 	static void _bind_methods();

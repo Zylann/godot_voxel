@@ -66,10 +66,6 @@ private:
 	int get_voxel(Vector3 pos, int c);
 
 private:
-	// Parameters
-	int _min_y; // In blocks, not voxels
-	int _max_y;
-
 	// Voxel storage
 	Ref<VoxelMap> _map;
 
@@ -80,6 +76,9 @@ private:
 	HashMap<Vector3i, bool, Vector3iHasher> _dirty_blocks; // only the key is relevant
 
 	Ref<VoxelMesher> _mesher;
+	// TODO I'm not sure it will stay here... refactoring ahead
+	Ref<VoxelMesherSmooth> _mesher_smooth;
+
 	Ref<VoxelProvider> _provider;
 
 	NodePath _viewer_path;

@@ -3,10 +3,11 @@
 #include <os/os.h>
 #include "voxel_raycast.h"
 
-VoxelTerrain::VoxelTerrain(): Node(), _min_y(-4), _max_y(4), _generate_collisions(true) {
+VoxelTerrain::VoxelTerrain(): Node(), _generate_collisions(true) {
 
 	_map = Ref<VoxelMap>(memnew(VoxelMap));
 	_mesher = Ref<VoxelMesher>(memnew(VoxelMesher));
+	_mesher_smooth = Ref<VoxelMesherSmooth>(memnew(VoxelMesherSmooth));
 }
 
 Vector3i g_viewer_block_pos; // TODO UGLY! Lambdas or pointers needed...
@@ -232,9 +233,6 @@ void VoxelTerrain::_process() {
 void VoxelTerrain::update_blocks() {
 	OS & os = *OS::get_singleton();
 
-	uint32_t time_before = os.get_ticks_msec();
-	uint32_t max_time = 1000 / 60;
-
 	// Get viewer location
 	Spatial * viewer = get_viewer(_viewer_path);
 	if(viewer)
@@ -246,6 +244,9 @@ void VoxelTerrain::update_blocks() {
 	VOXEL_PROFILE_BEGIN("block_update_sorting")
 	_block_update_queue.sort_custom<BlockUpdateComparator>();
 	VOXEL_PROFILE_END("block_update_sorting")
+
+	uint32_t time_before = os.get_ticks_msec();
+	uint32_t max_time = 1000 / 60;
 
 	// Update a bunch of blocks until none are left or too much time elapsed
 	while (!_block_update_queue.empty() && (os.get_ticks_msec() - time_before) < max_time) {
@@ -317,84 +318,100 @@ void VoxelTerrain::update_blocks() {
 	}
 }
 
+
+static inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
+	if(mesh_ref.is_null())
+		return true;
+	Mesh & mesh = **mesh_ref;
+	if(mesh.get_surface_count() == 0)
+		return true;
+	if(mesh.surface_get_array_len(Mesh::ARRAY_VERTEX) == 0)
+		return true;
+	return false;
+}
+
+
 void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
+
 	VoxelBlock * block = _map->get_block(block_pos);
 	if (block == NULL) {
-		return;
-	}
-
-	if (block->voxels->is_uniform(0) && block->voxels->get_voxel(0, 0, 0, 0) == 0) {
-		// Optimization: the block contains nothing
-
-		MeshInstance * mesh_instance = block->get_mesh_instance(*this);
-		if(mesh_instance) {
-			mesh_instance->set_mesh(Ref<Mesh>());
-		}
-		StaticBody * body = block->get_physics_body(*this);
-		if(body) {
-			body->set_shape(0, Ref<Mesh>());
-		}
-
 		return;
 	}
 
 	VOXEL_PROFILE_BEGIN("voxel_buffer_creation_extract")
 	// Create buffer padded with neighbor voxels
 	VoxelBuffer nbuffer;
-	nbuffer.create(VoxelBlock::SIZE + 2, VoxelBlock::SIZE + 2, VoxelBlock::SIZE + 2);
+	// TODO Make the buffer re-usable
+	// TODO Padding set to 3 at the moment because Transvoxel works on 2x2 cells.
+	// It should change for a smarter padding (if smooth isn't used for example).
+	nbuffer.create(VoxelBlock::SIZE + 3, VoxelBlock::SIZE + 3, VoxelBlock::SIZE + 3);
 	VOXEL_PROFILE_END("voxel_buffer_creation_extract")
 
 	VOXEL_PROFILE_BEGIN("block_extraction")
-	_map->get_buffer_copy(VoxelMap::block_to_voxel(block_pos) - Vector3i(1, 1, 1), nbuffer);
+	_map->get_buffer_copy(VoxelMap::block_to_voxel(block_pos) - Vector3i(1, 1, 1), nbuffer, 0x3);
 	VOXEL_PROFILE_END("block_extraction")
 
 	Vector3 block_node_pos = VoxelMap::block_to_voxel(block_pos).to_vec3();
 
-	// Build mesh (that part is the most CPU-intensive)
-	// TODO Re-use existing meshes to optimize memory cost
-	//VOXEL_PROFILE_BEGIN("meshing")
-	Ref<Mesh> mesh = _mesher->build(nbuffer);
-	//VOXEL_PROFILE_END("meshing")
+	// TODO Re-use existing meshes to optimize memory cost	
 
-	// TODO Don't use nodes! Use servers directly, it's faster
+	// Build cubic parts of the mesh
+	Ref<Mesh> mesh = _mesher->build(nbuffer, Voxel::CHANNEL_TYPE, Vector3i(0,0,0), nbuffer.get_size()-Vector3(1,1,1));
+	// Build smooth parts of the mesh
+	_mesher_smooth->build(nbuffer, Voxel::CHANNEL_ISOLEVEL, mesh);
+
 	MeshInstance * mesh_instance = block->get_mesh_instance(*this);
-	if (mesh_instance == NULL) {
-		// Create and spawn mesh
-		mesh_instance = memnew(MeshInstance);
-		mesh_instance->set_mesh(mesh);
-		mesh_instance->set_translation(block_node_pos);
-		add_child(mesh_instance);
-		block->mesh_instance_path = mesh_instance->get_path();
+	StaticBody * body = block->get_physics_body(*this);
+
+	if(is_mesh_empty(mesh)) {
+		if(mesh_instance) {
+			mesh_instance->set_mesh(Ref<Mesh>());
+		}
+		if(body) {
+			body->set_shape(0, Ref<Shape>());
+		}
 	}
 	else {
-		// Update mesh
-		VOXEL_PROFILE_BEGIN("mesh_instance_set_mesh")
-		mesh_instance->set_mesh(mesh);
-		VOXEL_PROFILE_END("mesh_instance_set_mesh")
-	}
+		// The mesh exist and it has vertices
 
-	if(get_tree()->is_editor_hint() == false && _generate_collisions) {
-
-		// Generate collisions
-		// TODO Need to select only specific surfaces because some may not have collisions
-		VOXEL_PROFILE_BEGIN("create_trimesh_shape")
-		Ref<Shape> shape = mesh->create_trimesh_shape();
-		VOXEL_PROFILE_END("create_trimesh_shape")
-
-		StaticBody * body = block->get_physics_body(*this);
-		if(body == NULL) {
-			// Create body
-			body = memnew(StaticBody);
-			body->set_translation(block_node_pos);
-			body->add_shape(shape);
-			add_child(body);
-			block->body_path = body->get_path();
+		// TODO Don't use nodes! Use servers directly, it's faster
+		if (mesh_instance == NULL) {
+			// Create and spawn mesh
+			mesh_instance = memnew(MeshInstance);
+			mesh_instance->set_mesh(mesh);
+			mesh_instance->set_translation(block_node_pos);
+			add_child(mesh_instance);
+			block->mesh_instance_path = mesh_instance->get_path();
 		}
 		else {
-			// Update body
-			VOXEL_PROFILE_BEGIN("body_set_shape")
-			body->set_shape(0, shape);
-			VOXEL_PROFILE_END("body_set_shape")
+			// Update mesh
+			VOXEL_PROFILE_BEGIN("mesh_instance_set_mesh")
+			mesh_instance->set_mesh(mesh);
+			VOXEL_PROFILE_END("mesh_instance_set_mesh")
+		}
+
+		if(get_tree()->is_editor_hint() == false && _generate_collisions) {
+
+			// Generate collisions
+			// TODO Need to select only specific surfaces because some may not have collisions
+			VOXEL_PROFILE_BEGIN("create_trimesh_shape")
+			Ref<Shape> shape = mesh->create_trimesh_shape();
+			VOXEL_PROFILE_END("create_trimesh_shape")
+
+			if(body == NULL) {
+				// Create body
+				body = memnew(StaticBody);
+				body->set_translation(block_node_pos);
+				body->add_shape(shape);
+				add_child(body);
+				block->body_path = body->get_path();
+			}
+			else {
+				// Update body
+				VOXEL_PROFILE_BEGIN("body_set_shape")
+				body->set_shape(0, shape);
+				VOXEL_PROFILE_END("body_set_shape")
+			}
 		}
 	}
 }

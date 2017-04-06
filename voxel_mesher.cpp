@@ -1,6 +1,6 @@
 #include "voxel_mesher.h"
 #include "voxel_library.h"
-
+#include "voxel_mesher_smooth.h"
 
 // The following tables respect the following conventions
 //
@@ -148,7 +148,7 @@ void VoxelMesher::set_occlusion_darkness(float darkness) {
     else if (_baked_occlusion_darkness >= 1.0)
         _baked_occlusion_darkness = 1.0;
 }
-   
+
 void VoxelMesher::set_occlusion_enabled(bool enable) {
     _bake_occlusion = enable;
 }
@@ -171,13 +171,16 @@ inline bool is_transparent(const VoxelLibrary & lib, int voxel_id) {
     return true;
 }
 
-Ref<Mesh> VoxelMesher::build_ref(Ref<VoxelBuffer> buffer_ref) {
+Ref<Mesh> VoxelMesher::build_ref(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Ref<Mesh> mesh) {
     ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<Mesh>());
-    return build(**buffer_ref);
+	VoxelBuffer & buffer = **buffer_ref;
+	mesh = build(buffer, channel, Vector3i(), buffer.get_size(), mesh);
+	return mesh;
 }
 
-Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
+Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer, unsigned int channel, Vector3i min, Vector3i max, Ref<Mesh> mesh) {
     ERR_FAIL_COND_V(_library.is_null(), Ref<Mesh>());
+	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Ref<Mesh>());
 
     const VoxelLibrary & library = **_library;
 
@@ -199,12 +202,17 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
 
 	VOXEL_PROFILE_BEGIN("mesher_face_extraction")
 
+	// Data must be padded, hence the off-by-one
+	Vector3i::sort_min_max(min, max);
+	const Vector3i pad(1,1,1);
+	min.clamp_to(pad, max);
+	max.clamp_to(min, buffer.get_size()-pad);
+
     // Iterate 3D padded data to extract voxel faces.
     // This is the most intensive job in this class, so all required data should be as fit as possible.
-    const Vector3i buffer_size = buffer.get_size();
-    for (unsigned int z = 1; z < buffer_size.z-1; ++z) {
-        for (unsigned int x = 1; x < buffer_size.x-1; ++x) {
-            for (unsigned int y = 1; y < buffer_size.y-1; ++y) {
+	for (unsigned int z = min.z; z < max.z; ++z) {
+		for (unsigned int x = min.x; x < max.x; ++x) {
+			for (unsigned int y = min.y; y < max.y; ++y) {
 
                 int voxel_id = buffer.get_voxel(x, y, z, 0);
 
@@ -228,7 +236,7 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
                             unsigned ny = y + normal.y;
                             unsigned nz = z + normal.z;
 
-                            int neighbor_voxel_id = buffer.get_voxel(nx, ny, nz, 0);
+							int neighbor_voxel_id = buffer.get_voxel(nx, ny, nz, channel);
                             // TODO Better face visibility test
                             if (is_face_visible(library, voxel, neighbor_voxel_id)) {
 
@@ -329,16 +337,20 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
 	VOXEL_PROFILE_END("mesher_face_extraction")
 
     // Commit mesh
-    Ref<Mesh> mesh_ref;
+
+	Ref<Mesh> mesh_ref = mesh;
+	if(mesh.is_null())
+		mesh_ref = Ref<Mesh>(memnew(Mesh));
+
     for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
         if (_materials[i].is_valid()) {
             SurfaceTool & st = _surface_tool[i];
             
             // Index mesh to reduce memory usage and make upload to VRAM faster
             // TODO actually, we could make it indexed from the ground up without using SurfaceTool, so we also save time!
-			VOXEL_PROFILE_BEGIN("mesher_surfacetool_index")
-			st.index();
-			VOXEL_PROFILE_END("mesher_surfacetool_index")
+			//VOXEL_PROFILE_BEGIN("mesher_surfacetool_index")
+			//st.index();
+			//VOXEL_PROFILE_END("mesher_surfacetool_index")
 
 			VOXEL_PROFILE_BEGIN("mesher_surfacetool_commit")
 			mesh_ref = st.commit(mesh_ref);
@@ -348,7 +360,7 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer) {
         }
     }
 
-    return mesh_ref;
+	return mesh_ref;
 }
 
 void VoxelMesher::_bind_methods() {
@@ -365,7 +377,7 @@ void VoxelMesher::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesher::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesher::get_occlusion_darkness);
 
-	ClassDB::bind_method(D_METHOD("build:Mesh", "voxel_buffer:VoxelBuffer"), &VoxelMesher::build_ref);
+	ClassDB::bind_method(D_METHOD("build:Mesh", "voxel_buffer:VoxelBuffer", "channel", "existing_mesh:Mesh"), &VoxelMesher::build_ref);
 
 #ifdef VOXEL_PROFILING
 	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelMesher::get_profiling_info);

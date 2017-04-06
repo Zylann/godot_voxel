@@ -1,5 +1,6 @@
 #include "voxel_buffer.h"
 #include <string.h>
+#include <math_funcs.h>
 
 
 VoxelBuffer::VoxelBuffer() {
@@ -123,10 +124,10 @@ void VoxelBuffer::fill_area(int defval, Vector3i min, Vector3i max, unsigned int
 	}
 }
 
-bool VoxelBuffer::is_uniform(unsigned int channel_index) {
+bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, true);
 
-	Channel & channel = _channels[channel_index];
+	const Channel & channel = _channels[channel_index];
 	if (channel.data == NULL)
 		return true;
 
@@ -248,8 +249,10 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_size_z"), &VoxelBuffer::get_size_z);
 
 	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "channel"), &VoxelBuffer::_set_voxel_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_voxel_iso", "value", "x", "y", "z", "channel"), &VoxelBuffer::_set_voxel_iso_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::set_voxel_v, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::_get_voxel_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_voxel_iso", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel_iso, DEFVAL(0));
 
 	ClassDB::bind_method(D_METHOD("fill", "value", "channel"), &VoxelBuffer::fill, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("fill_area", "value", "min", "max", "channel"), &VoxelBuffer::_fill_area_binding, DEFVAL(0));
