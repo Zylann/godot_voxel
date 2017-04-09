@@ -4,6 +4,7 @@
 #include <scene/main/node.h>
 #include "voxel_map.h"
 #include "voxel_mesher.h"
+#include "voxel_mesher_smooth.h"
 #include "voxel_provider.h"
 #include "zprofiling.h"
 

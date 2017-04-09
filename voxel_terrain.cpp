@@ -423,24 +423,36 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 //    }
 //}
 
-static bool _raycast_binding_predicate(Vector3i pos, void *context) {
+struct _VoxelTerrainRaycastContext {
+	VoxelTerrain & terrain;
+	//unsigned int channel_mask;
+};
 
-	ERR_FAIL_COND_V(context == NULL, false);
-	VoxelTerrain * terrain = (VoxelTerrain*)context;
+static bool _raycast_binding_predicate(Vector3i pos, void *context_ptr) {
 
-	Ref<VoxelLibrary> lib_ref = terrain->get_voxel_library();
+	ERR_FAIL_COND_V(context_ptr == NULL, false);
+	_VoxelTerrainRaycastContext * context = (_VoxelTerrainRaycastContext*)context_ptr;
+	VoxelTerrain & terrain = context->terrain;
+
+	//unsigned int channel = context->channel;
+
+	Ref<VoxelMap> map = terrain.get_map();
+	int v0 = map->get_voxel(pos, Voxel::CHANNEL_TYPE);
+
+	Ref<VoxelLibrary> lib_ref = terrain.get_voxel_library();
 	if(lib_ref.is_null())
 		return false;
 	const VoxelLibrary & lib = **lib_ref;
 
-	Ref<VoxelMap> map = terrain->get_map();
-	// TODO In the future we may want to query more channels
-	int v = map->get_voxel(pos, 0);
-	if(lib.has_voxel(v) == false)
+	if(lib.has_voxel(v0) == false)
 		return false;
 
-	const Voxel & voxel = lib.get_voxel_const(v);
-	return !voxel.is_transparent();
+	const Voxel & voxel = lib.get_voxel_const(v0);
+	if(voxel.is_transparent() == false)
+		return true;
+
+	int v1 = map->get_voxel(pos, Voxel::CHANNEL_ISOLEVEL);
+	return v1 - 128 >= 0;
 }
 
 Variant VoxelTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance) {
@@ -450,7 +462,9 @@ Variant VoxelTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t
 	Vector3i hit_pos;
 	Vector3i prev_pos;
 
-	if(voxel_raycast(origin, direction, _raycast_binding_predicate, this, max_distance, hit_pos, prev_pos)) {
+	_VoxelTerrainRaycastContext context = { *this };
+
+	if(voxel_raycast(origin, direction, _raycast_binding_predicate, &context, max_distance, hit_pos, prev_pos)) {
 
 		Dictionary hit = Dictionary();
 		hit["position"] = hit_pos.to_vec3();

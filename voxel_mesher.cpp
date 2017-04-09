@@ -1,6 +1,5 @@
 #include "voxel_mesher.h"
 #include "voxel_library.h"
-#include "voxel_mesher_smooth.h"
 
 // The following tables respect the following conventions
 //
