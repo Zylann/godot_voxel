@@ -170,16 +170,16 @@ inline bool is_transparent(const VoxelLibrary & lib, int voxel_id) {
     return true;
 }
 
-Ref<Mesh> VoxelMesher::build_ref(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Ref<Mesh> mesh) {
-    ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<Mesh>());
+Ref<ArrayMesh> VoxelMesher::build_ref(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Ref<ArrayMesh> mesh) {
+	ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<ArrayMesh>());
 	VoxelBuffer & buffer = **buffer_ref;
 	mesh = build(buffer, channel, Vector3i(), buffer.get_size(), mesh);
 	return mesh;
 }
 
-Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer, unsigned int channel, Vector3i min, Vector3i max, Ref<Mesh> mesh) {
-    ERR_FAIL_COND_V(_library.is_null(), Ref<Mesh>());
-	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Ref<Mesh>());
+Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer & buffer, unsigned int channel, Vector3i min, Vector3i max, Ref<ArrayMesh> mesh) {
+	ERR_FAIL_COND_V(_library.is_null(), Ref<ArrayMesh>());
+	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Ref<ArrayMesh>());
 
     const VoxelLibrary & library = **_library;
 
@@ -337,9 +337,9 @@ Ref<Mesh> VoxelMesher::build(const VoxelBuffer & buffer, unsigned int channel, V
 
     // Commit mesh
 
-	Ref<Mesh> mesh_ref = mesh;
+	Ref<ArrayMesh> mesh_ref = mesh;
 	if(mesh.is_null())
-		mesh_ref = Ref<Mesh>(memnew(Mesh));
+		mesh_ref = Ref<ArrayMesh>(memnew(ArrayMesh));
 
     for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
         if (_materials[i].is_valid()) {

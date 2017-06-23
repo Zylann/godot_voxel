@@ -10,8 +10,8 @@ class VoxelMesherSmooth : public Reference {
 public:
 	VoxelMesherSmooth();
 
-	Ref<Mesh> build_ref(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<Mesh> mesh=Ref<Mesh>());
-	Ref<Mesh> build(const VoxelBuffer & voxels, unsigned int channel, Ref<Mesh> mesh=Ref<Mesh>());
+	Ref<ArrayMesh> build_ref(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh=Ref<ArrayMesh>());
+	Ref<ArrayMesh> build(const VoxelBuffer & voxels, unsigned int channel, Ref<ArrayMesh> mesh=Ref<ArrayMesh>());
 
 protected:
 	static void _bind_methods();

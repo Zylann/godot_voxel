@@ -70,18 +70,18 @@ VoxelMesherSmooth::ReuseCell::ReuseCell() {
 VoxelMesherSmooth::VoxelMesherSmooth() {
 }
 
-Ref<Mesh> VoxelMesherSmooth::build_ref(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<Mesh> mesh) {
+Ref<ArrayMesh> VoxelMesherSmooth::build_ref(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh) {
 
-	ERR_FAIL_COND_V(voxels_ref.is_null(), Ref<Mesh>());
+	ERR_FAIL_COND_V(voxels_ref.is_null(), Ref<ArrayMesh>());
 
 	VoxelBuffer & voxels = **voxels_ref;
 
 	return build(voxels, channel, mesh);
 }
 
-Ref<Mesh> VoxelMesherSmooth::build(const VoxelBuffer & voxels, unsigned int channel, Ref<Mesh> mesh) {
+Ref<ArrayMesh> VoxelMesherSmooth::build(const VoxelBuffer & voxels, unsigned int channel, Ref<ArrayMesh> mesh) {
 
-	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Ref<Mesh>());
+	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Ref<ArrayMesh>());
 
 	// Initialize dynamic memory:
 	// These vectors are re-used.
@@ -100,7 +100,7 @@ Ref<Mesh> VoxelMesherSmooth::build(const VoxelBuffer & voxels, unsigned int chan
 
 	if(m_output_vertices.size() == 0) {
 		// The mesh can be empty
-		return Ref<Mesh>();
+		return Ref<ArrayMesh>();
 	}
 
 	PoolVector<Vector3> vertices;
@@ -120,7 +120,7 @@ Ref<Mesh> VoxelMesherSmooth::build(const VoxelBuffer & voxels, unsigned int chan
 	arrays[Mesh::ARRAY_INDEX] = indices;
 
 	if(mesh.is_null())
-		mesh = Ref<Mesh>(memnew(Mesh));
+		mesh = Ref<ArrayMesh>(memnew(ArrayMesh));
 
 	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
 

@@ -31,8 +31,8 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const { return _bake_occlusion; }
 
-	Ref<Mesh> build(const VoxelBuffer & buffer_ref, unsigned int channel, Vector3i min, Vector3i max, Ref<Mesh> mesh=Ref<Mesh>());
-	Ref<Mesh> build_ref(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Ref<Mesh> mesh=Ref<Mesh>());
+	Ref<ArrayMesh> build(const VoxelBuffer & buffer_ref, unsigned int channel, Vector3i min, Vector3i max, Ref<ArrayMesh> mesh=Ref<Mesh>());
+	Ref<ArrayMesh> build_ref(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Ref<ArrayMesh> mesh=Ref<ArrayMesh>());
 
 protected:
 	static void _bind_methods();

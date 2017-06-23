@@ -356,7 +356,7 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	// TODO Re-use existing meshes to optimize memory cost	
 
 	// Build cubic parts of the mesh
-	Ref<Mesh> mesh = _mesher->build(nbuffer, Voxel::CHANNEL_TYPE, Vector3i(0,0,0), nbuffer.get_size()-Vector3(1,1,1));
+	Ref<ArrayMesh> mesh = _mesher->build(nbuffer, Voxel::CHANNEL_TYPE, Vector3i(0,0,0), nbuffer.get_size()-Vector3(1,1,1));
 	// Build smooth parts of the mesh
 	_mesher_smooth->build(nbuffer, Voxel::CHANNEL_ISOLEVEL, mesh);
 
