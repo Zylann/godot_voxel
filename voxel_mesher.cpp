@@ -132,7 +132,6 @@ void VoxelMesher::set_library(Ref<VoxelLibrary> library) {
 void VoxelMesher::set_material(Ref<Material> material, unsigned int id) {
     ERR_FAIL_COND(id >= MAX_MATERIALS);
     _materials[id] = material;
-    _surface_tool[id].set_material(material);
 }
 
 Ref<Material> VoxelMesher::get_material(unsigned int id) const {
@@ -185,7 +184,8 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer & buffer, unsigned int chann
 
     for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
         _surface_tool[i].begin(Mesh::PRIMITIVE_TRIANGLES);
-    }
+		_surface_tool[i].set_material(_materials[i]);
+	}
 
     float baked_occlusion_darkness;
     if (_bake_occlusion)
