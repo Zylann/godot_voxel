@@ -1,12 +1,11 @@
 #ifndef VOXEL_MAP_H
 #define VOXEL_MAP_H
 
-#include <scene/main/node.h>
+#include "voxel_buffer.h"
 #include <core/hash_map.h>
 #include <scene/3d/mesh_instance.h>
 #include <scene/3d/physics_body.h>
-#include "voxel_buffer.h"
-
+#include <scene/main/node.h>
 
 // Fixed-size voxel container used in VoxelMap. Used internally.
 class VoxelBlock {
@@ -19,15 +18,13 @@ public:
 	Vector3i pos;
 	NodePath mesh_instance_path;
 
-	static VoxelBlock * create(Vector3i bpos, Ref<VoxelBuffer> buffer);
+	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer);
 
-	MeshInstance * get_mesh_instance(const Node & root);
+	MeshInstance *get_mesh_instance(const Node &root);
 
 private:
 	VoxelBlock();
-
 };
-
 
 // Infinite voxel storage by means of octants like Gridmap
 class VoxelMap : public Reference {
@@ -36,18 +33,16 @@ public:
 	// Converts voxel coodinates into block coordinates
 	static _FORCE_INLINE_ Vector3i voxel_to_block(Vector3i pos) {
 		return Vector3i(
-			pos.x >> VoxelBlock::SIZE_POW2,
-			pos.y >> VoxelBlock::SIZE_POW2,
-			pos.z >> VoxelBlock::SIZE_POW2
-		);
+				pos.x >> VoxelBlock::SIZE_POW2,
+				pos.y >> VoxelBlock::SIZE_POW2,
+				pos.z >> VoxelBlock::SIZE_POW2);
 	}
 
 	static _FORCE_INLINE_ Vector3i to_local(Vector3i pos) {
 		return Vector3i(
-			pos.x & VoxelBlock::SIZE_MASK,
-			pos.y & VoxelBlock::SIZE_MASK,
-			pos.z & VoxelBlock::SIZE_MASK
-		);
+				pos.x & VoxelBlock::SIZE_MASK,
+				pos.y & VoxelBlock::SIZE_MASK,
+				pos.z & VoxelBlock::SIZE_MASK);
 	}
 
 	// Converts block coodinates into voxel coordinates
@@ -61,27 +56,26 @@ public:
 	int get_voxel(Vector3i pos, unsigned int c = 0);
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
 
-	void set_default_voxel(int value, unsigned int channel=0);
-	int get_default_voxel(unsigned int channel=0);
+	void set_default_voxel(int value, unsigned int channel = 0);
+	int get_default_voxel(unsigned int channel = 0);
 
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
-	void get_buffer_copy(Vector3i min_pos, VoxelBuffer & dst_buffer, unsigned int channels_mask = 1);
+	void get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask = 1);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
 	void set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer);
 
 	void remove_blocks_not_in_area(Vector3i min, Vector3i max);
 
-	VoxelBlock * get_block(Vector3i bpos);
+	VoxelBlock *get_block(Vector3i bpos);
 
 	bool has_block(Vector3i pos) const;
 	bool is_block_surrounded(Vector3i pos) const;
 
 	void clear();
 
-
 private:
-	void set_block(Vector3i bpos, VoxelBlock * block);
+	void set_block(Vector3i bpos, VoxelBlock *block);
 
 	_FORCE_INLINE_ int get_block_size() const { return VoxelBlock::SIZE; }
 
@@ -103,13 +97,11 @@ private:
 	uint8_t _default_voxel[VoxelBuffer::MAX_CHANNELS];
 
 	// Blocks stored with a spatial hash in all 3D directions
-	HashMap<Vector3i, VoxelBlock*, Vector3iHasher> _blocks;
+	HashMap<Vector3i, VoxelBlock *, Vector3iHasher> _blocks;
 
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
 	// To prevent too much hashing, this reference is checked before.
-	VoxelBlock * _last_accessed_block;
-
+	VoxelBlock *_last_accessed_block;
 };
 
 #endif // VOXEL_MAP_H
-

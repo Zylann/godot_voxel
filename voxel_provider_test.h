@@ -3,7 +3,6 @@
 
 #include "voxel_provider.h"
 
-
 class VoxelProviderTest : public VoxelProvider {
 	GDCLASS(VoxelProviderTest, VoxelProvider)
 
@@ -30,8 +29,8 @@ public:
 	void set_pattern_offset(Vector3i offset);
 
 protected:
-	void generate_block_flat(VoxelBuffer & out_buffer, Vector3i block_pos);
-	void generate_block_waves(VoxelBuffer & out_buffer, Vector3i block_pos);
+	void generate_block_flat(VoxelBuffer &out_buffer, Vector3i block_pos);
+	void generate_block_waves(VoxelBuffer &out_buffer, Vector3i block_pos);
 
 	static void _bind_methods();
 
@@ -48,6 +47,4 @@ private:
 	Vector3i _pattern_size;
 };
 
-
 #endif // VOXEL_PROVIDER_TEST_H
-

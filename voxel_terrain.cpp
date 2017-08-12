@@ -1,9 +1,10 @@
 #include "voxel_terrain.h"
-#include <scene/3d/mesh_instance.h>
-#include <os/os.h>
 #include "voxel_raycast.h"
+#include <os/os.h>
+#include <scene/3d/mesh_instance.h>
 
-VoxelTerrain::VoxelTerrain(): Node(), _generate_collisions(true) {
+VoxelTerrain::VoxelTerrain()
+	: Node(), _generate_collisions(true) {
 
 	_map = Ref<VoxelMap>(memnew(VoxelMap));
 	_mesher = Ref<VoxelMesher>(memnew(VoxelMesher));
@@ -14,7 +15,7 @@ Vector3i g_viewer_block_pos; // TODO UGLY! Lambdas or pointers needed...
 
 // Sorts distance to viewer
 struct BlockUpdateComparator {
-	inline bool operator()(const Vector3i & a, const Vector3i & b) const {
+	inline bool operator()(const Vector3i &a, const Vector3i &b) const {
 		return a.distance_sq(g_viewer_block_pos) > b.distance_sq(g_viewer_block_pos);
 	}
 };
@@ -36,7 +37,7 @@ void VoxelTerrain::set_generate_collisions(bool enabled) {
 }
 
 void VoxelTerrain::set_viewer_path(NodePath path) {
-	if(!path.is_empty())
+	if (!path.is_empty())
 		ERR_FAIL_COND(get_viewer(path) == NULL);
 	_viewer_path = path;
 }
@@ -45,11 +46,11 @@ NodePath VoxelTerrain::get_viewer_path() {
 	return _viewer_path;
 }
 
-Spatial * VoxelTerrain::get_viewer(NodePath path) {
-	if(path.is_empty())
+Spatial *VoxelTerrain::get_viewer(NodePath path) {
+	if (path.is_empty())
 		return NULL;
-	Node * node = get_node(path);
-	if(node == NULL)
+	Node *node = get_node(path);
+	if (node == NULL)
 		return NULL;
 	return node->cast_to<Spatial>();
 }
@@ -61,7 +62,7 @@ Spatial * VoxelTerrain::get_viewer(NodePath path) {
 
 void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 	// TODO Immediate update viewer distance
-	if(is_block_dirty(bpos) == false) {
+	if (is_block_dirty(bpos) == false) {
 		//OS::get_singleton()->print("Dirty (%i, %i, %i)", bpos.x, bpos.y, bpos.z);
 		_block_update_queue.push_back(bpos);
 		_dirty_blocks[bpos] = true;
@@ -75,9 +76,9 @@ bool VoxelTerrain::is_block_dirty(Vector3i bpos) {
 void VoxelTerrain::make_blocks_dirty(Vector3i min, Vector3i size) {
 	Vector3i max = min + size;
 	Vector3i pos;
-	for(pos.z = min.z; pos.z < max.z; ++pos.z) {
-		for(pos.y = min.y; pos.y < max.y; ++pos.y) {
-			for(pos.x = min.x; pos.x < max.x; ++pos.x) {
+	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
+		for (pos.y = min.y; pos.y < max.y; ++pos.y) {
+			for (pos.x = min.x; pos.x < max.x; ++pos.x) {
 				make_block_dirty(pos);
 			}
 		}
@@ -101,28 +102,25 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 
 	bool check_corners = _mesher->get_occlusion_enabled();
 
-	const int max = VoxelBlock::SIZE-1;
+	const int max = VoxelBlock::SIZE - 1;
 
-	if(rpos.x == 0)
-		make_block_dirty(bpos - Vector3i(1,0,0));
-	else
-	if(rpos.x == max)
-		make_block_dirty(bpos + Vector3i(1,0,0));
+	if (rpos.x == 0)
+		make_block_dirty(bpos - Vector3i(1, 0, 0));
+	else if (rpos.x == max)
+		make_block_dirty(bpos + Vector3i(1, 0, 0));
 
-	if(rpos.y == 0)
-		make_block_dirty(bpos - Vector3i(0,1,0));
-	else
-	if(rpos.y == max)
-		make_block_dirty(bpos + Vector3i(0,1,0));
+	if (rpos.y == 0)
+		make_block_dirty(bpos - Vector3i(0, 1, 0));
+	else if (rpos.y == max)
+		make_block_dirty(bpos + Vector3i(0, 1, 0));
 
-	if(rpos.z == 0)
-		make_block_dirty(bpos - Vector3i(0,0,1));
-	else
-	if(rpos.z == max)
-		make_block_dirty(bpos + Vector3i(0,0,1));
+	if (rpos.z == 0)
+		make_block_dirty(bpos - Vector3i(0, 0, 1));
+	else if (rpos.z == max)
+		make_block_dirty(bpos + Vector3i(0, 0, 1));
 
 	// We might want to update blocks in corners in order to update ambient occlusion
-	if(check_corners) {
+	if (check_corners) {
 
 		//       24------25------26
 		//       /|              /|
@@ -143,17 +141,17 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 		// I'm not good at writing piles of ifs
 
 		static const int normals[27][3] = {
-			{-1,-1,-1}, { 0,-1,-1}, { 1,-1,-1},
-			{-1,-1, 0}, { 0,-1, 0}, { 1,-1, 0},
-			{-1,-1, 1}, { 0,-1, 1}, { 1,-1, 1},
+			{ -1, -1, -1 }, { 0, -1, -1 }, { 1, -1, -1 },
+			{ -1, -1, 0 }, { 0, -1, 0 }, { 1, -1, 0 },
+			{ -1, -1, 1 }, { 0, -1, 1 }, { 1, -1, 1 },
 
-			{-1, 0,-1}, { 0, 0,-1}, { 1, 0,-1},
-			{-1, 0, 0}, { 0, 0, 0}, { 1, 0, 0},
-			{-1, 0, 1}, { 0, 0, 1}, { 1, 0, 1},
+			{ -1, 0, -1 }, { 0, 0, -1 }, { 1, 0, -1 },
+			{ -1, 0, 0 }, { 0, 0, 0 }, { 1, 0, 0 },
+			{ -1, 0, 1 }, { 0, 0, 1 }, { 1, 0, 1 },
 
-			{-1, 1,-1}, { 0, 1,-1}, { 1, 1,-1},
-			{-1, 1, 0}, { 0, 1, 0}, { 1, 1, 0},
-			{-1, 1, 1}, { 0, 1, 1}, { 1, 1, 1}
+			{ -1, 1, -1 }, { 0, 1, -1 }, { 1, 1, -1 },
+			{ -1, 1, 0 }, { 0, 1, 0 }, { 1, 1, 0 },
+			{ -1, 1, 1 }, { 0, 1, 1 }, { 1, 1, 1 }
 		};
 		static const int ce_counts[27] = {
 			4, 1, 4,
@@ -169,32 +167,30 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 			4, 1, 4
 		};
 		static const int ce_indexes_lut[27][4] = {
-			{0, 1, 3, 9}, {1}, {2, 1, 5, 11},
-			{3}, {}, {5},
-			{6, 3, 7, 15}, {7}, {8, 7, 5, 17},
+			{ 0, 1, 3, 9 }, { 1 }, { 2, 1, 5, 11 },
+			{ 3 }, {}, { 5 },
+			{ 6, 3, 7, 15 }, { 7 }, { 8, 7, 5, 17 },
 
-			{9}, {}, {11},
+			{ 9 }, {}, { 11 },
 			{}, {}, {},
-			{15}, {}, {17},
+			{ 15 }, {}, { 17 },
 
-			{18, 9, 19, 21}, {19}, {20, 11, 19, 23},
-			{21}, {}, {23},
-			{24, 15, 21, 25}, {25}, {26, 17, 23, 25}
+			{ 18, 9, 19, 21 }, { 19 }, { 20, 11, 19, 23 },
+			{ 21 }, {}, { 23 },
+			{ 24, 15, 21, 25 }, { 25 }, { 26, 17, 23, 25 }
 		};
 
-		int m = get_border_index(rpos.x, max)
-				+ 3*get_border_index(rpos.z, max)
-				+ 9*get_border_index(rpos.y, max);
+		int m = get_border_index(rpos.x, max) + 3 * get_border_index(rpos.z, max) + 9 * get_border_index(rpos.y, max);
 
-		const int * ce_indexes = ce_indexes_lut[m];
+		const int *ce_indexes = ce_indexes_lut[m];
 		int ce_count = ce_counts[m];
 		//OS::get_singleton()->print("m=%i, rpos=(%i, %i, %i)\n", m, rpos.x, rpos.y, rpos.z);
 
-		for(int i = 0; i < ce_count; ++i) {
+		for (int i = 0; i < ce_count; ++i) {
 			// TODO Because it's about ambient occlusion across 1 voxel only,
 			// we could optimize it even more by looking at neighbor voxels,
 			// and discard the update if we know it won't change anything
-			const int * normal = normals[ce_indexes[i]];
+			const int *normal = normals[ce_indexes[i]];
 			Vector3i nbpos(bpos.x + normal[0], bpos.y + normal[1], bpos.z + normal[2]);
 			//OS::get_singleton()->print("Corner dirty (%i, %i, %i)\n", nbpos.x, nbpos.y, nbpos.z);
 			make_block_dirty(nbpos);
@@ -210,19 +206,19 @@ void VoxelTerrain::_notification(int p_what) {
 
 	switch (p_what) {
 
-	case NOTIFICATION_ENTER_TREE:
-		set_process(true);
-		break;
+		case NOTIFICATION_ENTER_TREE:
+			set_process(true);
+			break;
 
-	case NOTIFICATION_PROCESS:
-		_process();
-		break;
+		case NOTIFICATION_PROCESS:
+			_process();
+			break;
 
-	case NOTIFICATION_EXIT_TREE:
-		break;
+		case NOTIFICATION_EXIT_TREE:
+			break;
 
-	default:
-		break;
+		default:
+			break;
 	}
 }
 
@@ -231,11 +227,11 @@ void VoxelTerrain::_process() {
 }
 
 void VoxelTerrain::update_blocks() {
-	OS & os = *OS::get_singleton();
+	OS &os = *OS::get_singleton();
 
 	// Get viewer location
-	Spatial * viewer = get_viewer(_viewer_path);
-	if(viewer)
+	Spatial *viewer = get_viewer(_viewer_path);
+	if (viewer)
 		g_viewer_block_pos = VoxelMap::voxel_to_block(viewer->get_translation());
 	else
 		g_viewer_block_pos = Vector3i();
@@ -263,7 +259,7 @@ void VoxelTerrain::update_blocks() {
 
 		if (!_map->has_block(block_pos)) {
 			// Create buffer
-			if(!_provider.is_null()) {
+			if (!_provider.is_null()) {
 
 				VOXEL_PROFILE_BEGIN("voxel_buffer_creation_gen")
 
@@ -291,7 +287,7 @@ void VoxelTerrain::update_blocks() {
 
 		// Update views (mesh/collisions)
 
-		if(entire_block_changed) {
+		if (entire_block_changed) {
 			// All neighbors have to be checked
 			Vector3i ndir;
 			for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
@@ -305,8 +301,7 @@ void VoxelTerrain::update_blocks() {
 					}
 				}
 			}
-		}
-		else {
+		} else {
 			// Only update the block, neighbors will probably follow if needed
 			update_block_mesh(block_pos);
 			//OS::get_singleton()->print("Update (%i, %i, %i)\n", block_pos.x, block_pos.y, block_pos.z);
@@ -318,23 +313,21 @@ void VoxelTerrain::update_blocks() {
 	}
 }
 
-
 static inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
-	if(mesh_ref.is_null())
+	if (mesh_ref.is_null())
 		return true;
-	Mesh & mesh = **mesh_ref;
-	if(mesh.get_surface_count() == 0)
+	Mesh &mesh = **mesh_ref;
+	if (mesh.get_surface_count() == 0)
 		return true;
 	// TODO Shouldn't it have an index to the surface rather than just the type? Oo
-	if(mesh.surface_get_array_len(Mesh::ARRAY_VERTEX) == 0)
+	if (mesh.surface_get_array_len(Mesh::ARRAY_VERTEX) == 0)
 		return true;
 	return false;
 }
 
-
 void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 
-	VoxelBlock * block = _map->get_block(block_pos);
+	VoxelBlock *block = _map->get_block(block_pos);
 	if (block == NULL) {
 		return;
 	}
@@ -354,21 +347,20 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 
 	Vector3 block_node_pos = VoxelMap::block_to_voxel(block_pos).to_vec3();
 
-	// TODO Re-use existing meshes to optimize memory cost	
+	// TODO Re-use existing meshes to optimize memory cost
 
 	// Build cubic parts of the mesh
-	Ref<ArrayMesh> mesh = _mesher->build(nbuffer, Voxel::CHANNEL_TYPE, Vector3i(0,0,0), nbuffer.get_size()-Vector3(1,1,1));
+	Ref<ArrayMesh> mesh = _mesher->build(nbuffer, Voxel::CHANNEL_TYPE, Vector3i(0, 0, 0), nbuffer.get_size() - Vector3(1, 1, 1));
 	// Build smooth parts of the mesh
 	_mesher_smooth->build(nbuffer, Voxel::CHANNEL_ISOLEVEL, mesh);
 
-	MeshInstance * mesh_instance = block->get_mesh_instance(*this);
+	MeshInstance *mesh_instance = block->get_mesh_instance(*this);
 
-	if(is_mesh_empty(mesh)) {
-		if(mesh_instance) {
+	if (is_mesh_empty(mesh)) {
+		if (mesh_instance) {
 			mesh_instance->set_mesh(Ref<Mesh>());
 		}
-	}
-	else {
+	} else {
 		// The mesh exist and it has vertices
 
 		// TODO Don't use nodes! Use servers directly, it's faster
@@ -379,15 +371,14 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 			mesh_instance->set_translation(block_node_pos);
 			add_child(mesh_instance);
 			block->mesh_instance_path = mesh_instance->get_path();
-		}
-		else {
+		} else {
 			// Update mesh
 			VOXEL_PROFILE_BEGIN("mesh_instance_set_mesh")
 			mesh_instance->set_mesh(mesh);
 			VOXEL_PROFILE_END("mesh_instance_set_mesh")
 		}
 
-		if(get_tree()->is_editor_hint() == false && _generate_collisions) {
+		if (get_tree()->is_editor_hint() == false && _generate_collisions) {
 
 			// TODO Generate collisions using PhysicsServer
 			// TODO Need to select only specific surfaces because some may not have collisions
@@ -403,15 +394,15 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 //}
 
 struct _VoxelTerrainRaycastContext {
-	VoxelTerrain & terrain;
+	VoxelTerrain &terrain;
 	//unsigned int channel_mask;
 };
 
 static bool _raycast_binding_predicate(Vector3i pos, void *context_ptr) {
 
 	ERR_FAIL_COND_V(context_ptr == NULL, false);
-	_VoxelTerrainRaycastContext * context = (_VoxelTerrainRaycastContext*)context_ptr;
-	VoxelTerrain & terrain = context->terrain;
+	_VoxelTerrainRaycastContext *context = (_VoxelTerrainRaycastContext *)context_ptr;
+	VoxelTerrain &terrain = context->terrain;
 
 	//unsigned int channel = context->channel;
 
@@ -419,15 +410,15 @@ static bool _raycast_binding_predicate(Vector3i pos, void *context_ptr) {
 	int v0 = map->get_voxel(pos, Voxel::CHANNEL_TYPE);
 
 	Ref<VoxelLibrary> lib_ref = terrain.get_voxel_library();
-	if(lib_ref.is_null())
+	if (lib_ref.is_null())
 		return false;
-	const VoxelLibrary & lib = **lib_ref;
+	const VoxelLibrary &lib = **lib_ref;
 
-	if(lib.has_voxel(v0) == false)
+	if (lib.has_voxel(v0) == false)
 		return false;
 
-	const Voxel & voxel = lib.get_voxel_const(v0);
-	if(voxel.is_transparent() == false)
+	const Voxel &voxel = lib.get_voxel_const(v0);
+	if (voxel.is_transparent() == false)
 		return true;
 
 	int v1 = map->get_voxel(pos, Voxel::CHANNEL_ISOLEVEL);
@@ -443,14 +434,13 @@ Variant VoxelTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t
 
 	_VoxelTerrainRaycastContext context = { *this };
 
-	if(voxel_raycast(origin, direction, _raycast_binding_predicate, &context, max_distance, hit_pos, prev_pos)) {
+	if (voxel_raycast(origin, direction, _raycast_binding_predicate, &context, max_distance, hit_pos, prev_pos)) {
 
 		Dictionary hit = Dictionary();
 		hit["position"] = hit_pos.to_vec3();
 		hit["prev_position"] = prev_pos.to_vec3();
 		return hit;
-	}
-	else {
+	} else {
 		return Variant(); // Null dictionary, no alloc
 	}
 }
@@ -484,6 +474,4 @@ void VoxelTerrain::_bind_methods() {
 #ifdef VOXEL_PROFILING
 	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelTerrain::get_profiling_info);
 #endif
-
 }
-

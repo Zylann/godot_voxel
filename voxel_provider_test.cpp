@@ -3,7 +3,6 @@
 
 VARIANT_ENUM_CAST(VoxelProviderTest::Mode)
 
-
 VoxelProviderTest::VoxelProviderTest() {
 	_mode = MODE_FLAT;
 	_voxel_type = 1;
@@ -34,57 +33,57 @@ void VoxelProviderTest::set_pattern_offset(Vector3i offset) {
 void VoxelProviderTest::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i block_pos) {
 	ERR_FAIL_COND(out_buffer.is_null());
 
-	switch(_mode) {
+	switch (_mode) {
 
-	case MODE_FLAT:
-		generate_block_flat(**out_buffer, block_pos);
-		break;
+		case MODE_FLAT:
+			generate_block_flat(**out_buffer, block_pos);
+			break;
 
-	case MODE_WAVES:
-		generate_block_waves(**out_buffer, block_pos);
-		break;
+		case MODE_WAVES:
+			generate_block_waves(**out_buffer, block_pos);
+			break;
 	}
 }
 
-void VoxelProviderTest::generate_block_flat(VoxelBuffer & out_buffer, Vector3i block_pos) {
+void VoxelProviderTest::generate_block_flat(VoxelBuffer &out_buffer, Vector3i block_pos) {
 
 	// TODO Don't expect a block pos, but a voxel pos!
 	Vector3i size = out_buffer.get_size();
 	Vector3i origin = VoxelMap::block_to_voxel(block_pos);
 
 	int rh = _pattern_offset.y - origin.y;
-	if(rh > size.y)
+	if (rh > size.y)
 		rh = size.y;
 
-	for(int rz = 0; rz < size.z; ++rz) {
-		for(int rx = 0; rx < size.x; ++rx) {
-			for(int ry = 0; ry < rh; ++ry) {
+	for (int rz = 0; rz < size.z; ++rz) {
+		for (int rx = 0; rx < size.x; ++rx) {
+			for (int ry = 0; ry < rh; ++ry) {
 				out_buffer.set_voxel(_voxel_type, rx, ry, rz, 0);
 			}
 		}
 	}
 }
 
-void VoxelProviderTest::generate_block_waves(VoxelBuffer & out_buffer, Vector3i block_pos) {
+void VoxelProviderTest::generate_block_waves(VoxelBuffer &out_buffer, Vector3i block_pos) {
 
 	Vector3i size = out_buffer.get_size();
 	Vector3i origin = VoxelMap::block_to_voxel(block_pos) + _pattern_offset;
 	float amplitude = static_cast<float>(_pattern_size.y);
-	float period_x = 1.f/static_cast<float>(_pattern_size.x);
-	float period_z = 1.f/static_cast<float>(_pattern_size.z);
+	float period_x = 1.f / static_cast<float>(_pattern_size.x);
+	float period_z = 1.f / static_cast<float>(_pattern_size.z);
 
-	for(int rz = 0; rz < size.z; ++rz) {
-		for(int rx = 0; rx < size.x; ++rx) {
+	for (int rz = 0; rz < size.z; ++rz) {
+		for (int rx = 0; rx < size.x; ++rx) {
 
 			float x = origin.x + rx;
 			float z = origin.z + rz;
 
-			int h = _pattern_offset.y + amplitude * (Math::cos(x*period_x) + Math::sin(z*period_z));
+			int h = _pattern_offset.y + amplitude * (Math::cos(x * period_x) + Math::sin(z * period_z));
 			int rh = h - origin.y;
-			if(rh > size.y)
+			if (rh > size.y)
 				rh = size.y;
 
-			for(int ry = 0; ry < rh; ++ry) {
+			for (int ry = 0; ry < rh; ++ry) {
 				out_buffer.set_voxel(_voxel_type, rx, ry, rz, 0);
 			}
 		}
@@ -108,4 +107,3 @@ void VoxelProviderTest::_bind_methods() {
 	BIND_CONSTANT(MODE_FLAT);
 	BIND_CONSTANT(MODE_WAVES);
 }
-

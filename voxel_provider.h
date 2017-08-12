@@ -4,7 +4,6 @@
 #include "reference.h"
 #include "voxel_buffer.h"
 
-
 class VoxelProvider : public Reference {
 	GDCLASS(VoxelProvider, Reference)
 public:
@@ -17,6 +16,5 @@ protected:
 	void _emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 block_pos);
 	void _immerge_block(Ref<VoxelBuffer> buffer, Vector3 block_pos);
 };
-
 
 #endif // VOXEL_PROVIDER_H

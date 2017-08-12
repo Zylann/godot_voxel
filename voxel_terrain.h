@@ -1,12 +1,12 @@
 #ifndef VOXEL_TERRAIN_H
 #define VOXEL_TERRAIN_H
 
-#include <scene/main/node.h>
 #include "voxel_map.h"
 #include "voxel_mesher.h"
 #include "voxel_mesher_smooth.h"
 #include "voxel_provider.h"
 #include "zprofiling.h"
+#include <scene/main/node.h>
 
 // Infinite static terrain made of voxels.
 // It is loaded around VoxelTerrainStreamers.
@@ -46,7 +46,7 @@ private:
 	void update_blocks();
 	void update_block_mesh(Vector3i block_pos);
 
-	Spatial * get_viewer(NodePath path);
+	Spatial *get_viewer(NodePath path);
 
 	// Observer events
 	//void block_removed(VoxelBlock & block);
@@ -90,8 +90,6 @@ private:
 	ZProfiler _zprofiler;
 	Dictionary get_profiling_info() { return _zprofiler.get_all_serialized_info(); }
 #endif
-
 };
 
 #endif // VOXEL_TERRAIN_H
-

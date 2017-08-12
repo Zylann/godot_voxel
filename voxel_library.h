@@ -1,8 +1,8 @@
 #ifndef VOXEL_LIBRARY_H
 #define VOXEL_LIBRARY_H
 
-#include <reference.h>
 #include "voxel.h"
+#include <reference.h>
 
 class VoxelLibrary : public Reference {
 	GDCLASS(VoxelLibrary, Reference)
@@ -22,7 +22,7 @@ public:
 	// Internal getters
 
 	_FORCE_INLINE_ bool has_voxel(int id) const { return _voxel_types[id].is_valid(); }
-	_FORCE_INLINE_ const Voxel & get_voxel_const(int id) const { return **_voxel_types[id]; }
+	_FORCE_INLINE_ const Voxel &get_voxel_const(int id) const { return **_voxel_types[id]; }
 
 protected:
 	static void _bind_methods();
@@ -32,8 +32,6 @@ protected:
 private:
 	Ref<Voxel> _voxel_types[MAX_VOXEL_TYPES];
 	int _atlas_size;
-
 };
 
 #endif // VOXEL_LIBRARY_H
-

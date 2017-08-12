@@ -1,14 +1,13 @@
 #ifndef VOXEL_MESHER
 #define VOXEL_MESHER
 
-#include <reference.h>
-#include <scene/resources/mesh.h>
-#include <scene/resources/surface_tool.h>
 #include "voxel.h"
 #include "voxel_buffer.h"
 #include "voxel_library.h"
 #include "zprofiling.h"
-
+#include <reference.h>
+#include <scene/resources/mesh.h>
+#include <scene/resources/surface_tool.h>
 
 // TODO Should be renamed VoxelMesherCubic or something like that
 class VoxelMesher : public Reference {
@@ -31,8 +30,8 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const { return _bake_occlusion; }
 
-	Ref<ArrayMesh> build(const VoxelBuffer & buffer_ref, unsigned int channel, Vector3i min, Vector3i max, Ref<ArrayMesh> mesh=Ref<Mesh>());
-	Ref<ArrayMesh> build_ref(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Ref<ArrayMesh> mesh=Ref<ArrayMesh>());
+	Ref<ArrayMesh> build(const VoxelBuffer &buffer_ref, unsigned int channel, Vector3i min, Vector3i max, Ref<ArrayMesh> mesh = Ref<Mesh>());
+	Ref<ArrayMesh> build_ref(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Ref<ArrayMesh> mesh = Ref<ArrayMesh>());
 
 protected:
 	static void _bind_methods();
@@ -49,6 +48,5 @@ private:
 	Dictionary get_profiling_info() const { return _zprofiler.get_all_serialized_info(); }
 #endif
 };
-
 
 #endif // VOXEL_MESHER

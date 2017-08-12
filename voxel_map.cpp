@@ -5,22 +5,22 @@
 // VoxelBlock
 //----------------------------------------------------------------------------
 
-MeshInstance * VoxelBlock::get_mesh_instance(const Node & root) {
+MeshInstance *VoxelBlock::get_mesh_instance(const Node &root) {
 	if (mesh_instance_path.is_empty())
 		return NULL;
-	Node * n = root.get_node(mesh_instance_path);
+	Node *n = root.get_node(mesh_instance_path);
 	if (n == NULL)
 		return NULL;
 	return n->cast_to<MeshInstance>();
 }
 
 // Helper
-VoxelBlock * VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer) {
+VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer) {
 	const int bs = VoxelBlock::SIZE;
 	ERR_FAIL_COND_V(buffer.is_null(), NULL);
 	ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), NULL);
 
-	VoxelBlock * block = memnew(VoxelBlock);
+	VoxelBlock *block = memnew(VoxelBlock);
 	block->pos = bpos;
 
 	block->voxels = buffer;
@@ -28,14 +28,16 @@ VoxelBlock * VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer) {
 	return block;
 }
 
-VoxelBlock::VoxelBlock(): voxels(NULL) {
+VoxelBlock::VoxelBlock()
+	: voxels(NULL) {
 }
 
 //----------------------------------------------------------------------------
 // VoxelMap
 //----------------------------------------------------------------------------
 
-VoxelMap::VoxelMap() : _last_accessed_block(NULL) {
+VoxelMap::VoxelMap()
+	: _last_accessed_block(NULL) {
 	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
 		_default_voxel[i] = 0;
 	}
@@ -47,7 +49,7 @@ VoxelMap::~VoxelMap() {
 
 int VoxelMap::get_voxel(Vector3i pos, unsigned int c) {
 	Vector3i bpos = voxel_to_block(pos);
-	VoxelBlock * block = get_block(bpos);
+	VoxelBlock *block = get_block(bpos);
 	if (block == NULL) {
 		return _default_voxel[c];
 	}
@@ -57,7 +59,7 @@ int VoxelMap::get_voxel(Vector3i pos, unsigned int c) {
 void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
 
 	Vector3i bpos = voxel_to_block(pos);
-	VoxelBlock * block = get_block(bpos);
+	VoxelBlock *block = get_block(bpos);
 
 	if (block == NULL) {
 
@@ -83,11 +85,11 @@ int VoxelMap::get_default_voxel(unsigned int channel) {
 	return _default_voxel[channel];
 }
 
-VoxelBlock * VoxelMap::get_block(Vector3i bpos) {
+VoxelBlock *VoxelMap::get_block(Vector3i bpos) {
 	if (_last_accessed_block && _last_accessed_block->pos == bpos) {
 		return _last_accessed_block;
 	}
-	VoxelBlock ** p = _blocks.getptr(bpos);
+	VoxelBlock **p = _blocks.getptr(bpos);
 	if (p) {
 		_last_accessed_block = *p;
 		return _last_accessed_block;
@@ -95,7 +97,7 @@ VoxelBlock * VoxelMap::get_block(Vector3i bpos) {
 	return NULL;
 }
 
-void VoxelMap::set_block(Vector3i bpos, VoxelBlock * block) {
+void VoxelMap::set_block(Vector3i bpos, VoxelBlock *block) {
 	ERR_FAIL_COND(block == NULL);
 	if (_last_accessed_block == NULL || _last_accessed_block->pos == bpos) {
 		_last_accessed_block = block;
@@ -105,12 +107,11 @@ void VoxelMap::set_block(Vector3i bpos, VoxelBlock * block) {
 
 void VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
 	ERR_FAIL_COND(buffer.is_null());
-	VoxelBlock * block = get_block(bpos);
+	VoxelBlock *block = get_block(bpos);
 	if (block == NULL) {
 		block = VoxelBlock::create(bpos, *buffer);
 		set_block(bpos, block);
-	}
-	else {
+	} else {
 		block->voxels = buffer;
 	}
 }
@@ -120,35 +121,35 @@ bool VoxelMap::has_block(Vector3i pos) const {
 }
 
 Vector3i g_moore_neighboring_3d[26] = {
-	Vector3i(-1,-1,-1),
-	Vector3i(0,-1,-1),
-	Vector3i(1,-1,-1),
-	Vector3i(-1,-1,0),
-	Vector3i(0,-1,0),
-	Vector3i(1,-1,0),
-	Vector3i(-1,-1,1),
-	Vector3i(0,-1,1),
-	Vector3i(1,-1,1),
+	Vector3i(-1, -1, -1),
+	Vector3i(0, -1, -1),
+	Vector3i(1, -1, -1),
+	Vector3i(-1, -1, 0),
+	Vector3i(0, -1, 0),
+	Vector3i(1, -1, 0),
+	Vector3i(-1, -1, 1),
+	Vector3i(0, -1, 1),
+	Vector3i(1, -1, 1),
 
-	Vector3i(-1,0,-1),
-	Vector3i(0,0,-1),
-	Vector3i(1,0,-1),
-	Vector3i(-1,0,0),
+	Vector3i(-1, 0, -1),
+	Vector3i(0, 0, -1),
+	Vector3i(1, 0, -1),
+	Vector3i(-1, 0, 0),
 	//Vector3i(0,0,0),
-	Vector3i(1,0,0),
-	Vector3i(-1,0,1),
-	Vector3i(0,0,1),
-	Vector3i(1,0,1),
+	Vector3i(1, 0, 0),
+	Vector3i(-1, 0, 1),
+	Vector3i(0, 0, 1),
+	Vector3i(1, 0, 1),
 
-	Vector3i(-1,1,-1),
-	Vector3i(0,1,-1),
-	Vector3i(1,1,-1),
-	Vector3i(-1,1,0),
-	Vector3i(0,1,0),
-	Vector3i(1,1,0),
-	Vector3i(-1,1,1),
-	Vector3i(0,1,1),
-	Vector3i(1,1,1),
+	Vector3i(-1, 1, -1),
+	Vector3i(0, 1, -1),
+	Vector3i(1, 1, -1),
+	Vector3i(-1, 1, 0),
+	Vector3i(0, 1, 0),
+	Vector3i(1, 1, 0),
+	Vector3i(-1, 1, 1),
+	Vector3i(0, 1, 1),
+	Vector3i(1, 1, 1),
 };
 
 bool VoxelMap::is_block_surrounded(Vector3i pos) const {
@@ -161,17 +162,17 @@ bool VoxelMap::is_block_surrounded(Vector3i pos) const {
 	return true;
 }
 
-void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer & dst_buffer, unsigned int channels_mask) {
+void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) {
 
 	Vector3i max_pos = min_pos + dst_buffer.get_size();
 
 	Vector3i min_block_pos = voxel_to_block(min_pos);
-	Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1,1,1)) + Vector3i(1,1,1);
+	Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1, 1, 1)) + Vector3i(1, 1, 1);
 	ERR_FAIL_COND((max_block_pos - min_block_pos) != Vector3(3, 3, 3));
 
-	for(unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
+	for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
 
-		if(((1 << channel) & channels_mask) == 0) {
+		if (((1 << channel) & channels_mask) == 0) {
 			continue;
 		}
 
@@ -180,27 +181,23 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer & dst_buffer, unsig
 			for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 				for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
 
-					VoxelBlock * block = get_block(bpos);
+					VoxelBlock *block = get_block(bpos);
 					if (block) {
 
-						VoxelBuffer & src_buffer = **block->voxels;
+						VoxelBuffer &src_buffer = **block->voxels;
 						Vector3i offset = block_to_voxel(bpos);
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_from(src_buffer, min_pos - offset, max_pos - offset, offset - min_pos, channel);
-					}
-					else {
+					} else {
 						Vector3i offset = block_to_voxel(bpos);
 						dst_buffer.fill_area(
-							_default_voxel[channel],
-							offset - min_pos,
-							offset - min_pos + Vector3i(VoxelBlock::SIZE,VoxelBlock::SIZE, VoxelBlock::SIZE)
-						);
+								_default_voxel[channel],
+								offset - min_pos,
+								offset - min_pos + Vector3i(VoxelBlock::SIZE, VoxelBlock::SIZE, VoxelBlock::SIZE));
 					}
-
 				}
 			}
 		}
-
 	}
 }
 
@@ -209,11 +206,11 @@ void VoxelMap::remove_blocks_not_in_area(Vector3i min, Vector3i max) {
 	Vector3i::sort_min_max(min, max);
 
 	Vector<Vector3i> to_remove;
-	const Vector3i * key = NULL;
+	const Vector3i *key = NULL;
 
 	while (key = _blocks.next(key)) {
 
-		VoxelBlock * block_ref = _blocks.get(*key);
+		VoxelBlock *block_ref = _blocks.get(*key);
 		ERR_FAIL_COND(block_ref == NULL); // Should never trigger
 
 		if (block_ref->pos.is_contained_in(min, max)) {
@@ -234,10 +231,10 @@ void VoxelMap::remove_blocks_not_in_area(Vector3i min, Vector3i max) {
 }
 
 void VoxelMap::clear() {
-	const Vector3i * key = NULL;
+	const Vector3i *key = NULL;
 	while (key = _blocks.next(key)) {
-		VoxelBlock * block_ref = _blocks.get(*key);
-		if(block_ref == NULL) {
+		VoxelBlock *block_ref = _blocks.get(*key);
+		if (block_ref == NULL) {
 			OS::get_singleton()->printerr("Unexpected NULL in VoxelMap::clear()");
 		}
 		memdelete(block_ref);
@@ -245,7 +242,6 @@ void VoxelMap::clear() {
 	_blocks.clear();
 	_last_accessed_block = NULL;
 }
-
 
 void VoxelMap::_bind_methods() {
 
@@ -263,12 +259,9 @@ void VoxelMap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_block_size"), &VoxelMap::get_block_size);
 
 	//ADD_PROPERTY(PropertyInfo(Variant::INT, "iterations"), _SCS("set_iterations"), _SCS("get_iterations"));
-
 }
-
 
 void VoxelMap::_get_buffer_copy_binding(Vector3 pos, Ref<VoxelBuffer> dst_buffer_ref, unsigned int channel) {
 	ERR_FAIL_COND(dst_buffer_ref.is_null());
 	get_buffer_copy(Vector3i(pos), **dst_buffer_ref, channel);
 }
-

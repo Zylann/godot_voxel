@@ -60,13 +60,13 @@ public:
 
 	// Getters for native usage only
 
-	const PoolVector<Vector3> & get_model_vertices() const { return _model_vertices; }
-	const PoolVector<Vector3> & get_model_normals() const { return _model_normals; }
-	const PoolVector<Vector2> & get_model_uv() const { return _model_uv; }
-	const PoolVector<Vector3> & get_model_side_vertices(unsigned int side) const { return _model_side_vertices[side]; }
-	const PoolVector<Vector2> & get_model_side_uv(unsigned int side) const { return _model_side_uv[side]; }
+	const PoolVector<Vector3> &get_model_vertices() const { return _model_vertices; }
+	const PoolVector<Vector3> &get_model_normals() const { return _model_normals; }
+	const PoolVector<Vector2> &get_model_uv() const { return _model_uv; }
+	const PoolVector<Vector3> &get_model_side_vertices(unsigned int side) const { return _model_side_vertices[side]; }
+	const PoolVector<Vector2> &get_model_side_uv(unsigned int side) const { return _model_side_uv[side]; }
 
-	void set_library_ptr(VoxelLibrary * lib) { _library = lib; }
+	void set_library_ptr(VoxelLibrary *lib) { _library = lib; }
 
 protected:
 	Ref<Voxel> _set_cube_uv_sides(const Vector2 atlas_pos[6]);
@@ -74,7 +74,7 @@ protected:
 	static void _bind_methods();
 
 private:
-	VoxelLibrary * _library;
+	VoxelLibrary *_library;
 
 	// Identifiers
 	int _id;
@@ -93,11 +93,8 @@ private:
 	PoolVector<Vector2> _model_side_uv[SIDE_COUNT];
 
 	// TODO Child voxel types
-
 };
 
 VARIANT_ENUM_CAST(Voxel::ChannelMode)
 
-
 #endif // VOXEL_TYPE_H
-

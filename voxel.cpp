@@ -2,13 +2,13 @@
 #include "voxel_library.h"
 #include "voxel_mesher.h"
 
-Voxel::Voxel() : Reference(),
-	_id(-1),
-	_material_id(0),
-	_is_transparent(false),
-	_library(NULL),
-	_color(1.f, 1.f, 1.f)
-{}
+Voxel::Voxel()
+	: Reference(),
+	  _id(-1),
+	  _material_id(0),
+	  _is_transparent(false),
+	  _library(NULL),
+	  _color(1.f, 1.f, 1.f) {}
 
 Ref<Voxel> Voxel::set_name(String name) {
 	_name = name;
@@ -41,60 +41,48 @@ Ref<Voxel> Voxel::set_transparent(bool t) {
 
 Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 	const Vector3 vertices[SIDE_COUNT][6] = {
-		{
-			// LEFT
-			Vector3(0, 0, 0),
-			Vector3(0, sy, 0),
-			Vector3(0, sy, 1),
-			Vector3(0, 0, 0),
-			Vector3(0, sy, 1),
-			Vector3(0, 0, 1),
-		},
-		{
-			// RIGHT
-			Vector3(1, 0, 0),
-			Vector3(1, sy, 1),
-			Vector3(1, sy, 0),
-			Vector3(1, 0, 0),
-			Vector3(1, 0, 1),
-			Vector3(1, sy, 1)
-		},
-		{
-			// BOTTOM
-			Vector3(0, 0, 0),
-			Vector3(1, 0, 1),
-			Vector3(1, 0, 0),
-			Vector3(0, 0, 0),
-			Vector3(0, 0, 1),
-			Vector3(1, 0, 1)
-		},
-		{
-			// TOP
-			Vector3(0, sy, 0),
-			Vector3(1, sy, 0),
-			Vector3(1, sy, 1),
-			Vector3(0, sy, 0),
-			Vector3(1, sy, 1),
-			Vector3(0, sy, 1)
-		},
-		{
-			// BACK
-			Vector3(0, 0, 0),
-			Vector3(1, 0, 0),
-			Vector3(1, sy, 0),
-			Vector3(0, 0, 0),
-			Vector3(1, sy, 0),
-			Vector3(0, sy, 0),
-		},
-		{
-			// FRONT
-			Vector3(1, 0, 1),
-			Vector3(0, 0, 1),
-			Vector3(1, sy, 1),
-			Vector3(0, 0, 1),
-			Vector3(0, sy, 1),
-			Vector3(1, sy, 1)
-		}
+		{ // LEFT
+				Vector3(0, 0, 0),
+				Vector3(0, sy, 0),
+				Vector3(0, sy, 1),
+				Vector3(0, 0, 0),
+				Vector3(0, sy, 1),
+				Vector3(0, 0, 1) },
+		{ // RIGHT
+				Vector3(1, 0, 0),
+				Vector3(1, sy, 1),
+				Vector3(1, sy, 0),
+				Vector3(1, 0, 0),
+				Vector3(1, 0, 1),
+				Vector3(1, sy, 1) },
+		{ // BOTTOM
+				Vector3(0, 0, 0),
+				Vector3(1, 0, 1),
+				Vector3(1, 0, 0),
+				Vector3(0, 0, 0),
+				Vector3(0, 0, 1),
+				Vector3(1, 0, 1) },
+		{ // TOP
+				Vector3(0, sy, 0),
+				Vector3(1, sy, 0),
+				Vector3(1, sy, 1),
+				Vector3(0, sy, 0),
+				Vector3(1, sy, 1),
+				Vector3(0, sy, 1) },
+		{ // BACK
+				Vector3(0, 0, 0),
+				Vector3(1, 0, 0),
+				Vector3(1, sy, 0),
+				Vector3(0, 0, 0),
+				Vector3(1, sy, 0),
+				Vector3(0, sy, 0) },
+		{ // FRONT
+				Vector3(1, 0, 1),
+				Vector3(0, 0, 1),
+				Vector3(1, sy, 1),
+				Vector3(0, 0, 1),
+				Vector3(0, sy, 1),
+				Vector3(1, sy, 1) }
 	};
 
 	for (unsigned int side = 0; side < SIDE_COUNT; ++side) {
@@ -121,17 +109,17 @@ Ref<Voxel> Voxel::_set_cube_uv_sides(const Vector2 atlas_pos[6]) {
 
 	const int uv6[SIDE_COUNT][6] = {
 		// LEFT
-		{ 2,0,1,2,1,3 },
+		{ 2, 0, 1, 2, 1, 3 },
 		// RIGHT
-		{ 2,1,0,2,3,1 },
+		{ 2, 1, 0, 2, 3, 1 },
 		// BOTTOM
-		{ 0,3,1,0,2,3 },
+		{ 0, 3, 1, 0, 2, 3 },
 		// TOP
-		{ 0,1,3,0,3,2 },
+		{ 0, 1, 3, 0, 3, 2 },
 		// BACK
-		{ 2,3,1,2,1,0 },
+		{ 2, 3, 1, 2, 1, 0 },
 		// FRONT
-		{ 3,2,1,2,0,1 }
+		{ 3, 2, 1, 2, 0, 1 }
 	};
 
 	float s = 1.0 / (float)_library->get_atlas_size();
@@ -197,9 +185,7 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_cube_uv_all_sides", "atlas_pos"), &Voxel::set_cube_uv_all_sides);
 	ClassDB::bind_method(D_METHOD("set_cube_uv_tbs_sides", "top_atlas_pos", "side_atlas_pos", "bottom_atlas_pos"), &Voxel::set_cube_uv_tbs_sides);
 
-	BIND_CONSTANT( CHANNEL_TYPE )
-	BIND_CONSTANT( CHANNEL_ISOLEVEL )
-	BIND_CONSTANT( CHANNEL_DATA )
-
+	BIND_CONSTANT(CHANNEL_TYPE)
+	BIND_CONSTANT(CHANNEL_ISOLEVEL)
+	BIND_CONSTANT(CHANNEL_DATA)
 }
-

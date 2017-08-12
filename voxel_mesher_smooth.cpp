@@ -3,7 +3,6 @@
 #include "transvoxel_tables.cpp"
 #include <os/os.h>
 
-
 inline float tof(int8_t v) {
 	return static_cast<float>(v) / 256.f;
 }
@@ -42,27 +41,26 @@ const Vector3i g_corner_dirs[8] = {
 inline Vector3i dir_to_prev_vec(uint8_t dir) {
 	//return g_corner_dirs[mask] - Vector3(1,1,1);
 	return Vector3i(
-		-(dir & 1),
-		-((dir >> 1) & 1),
-		-((dir >> 2) & 1)
-	);
+			-(dir & 1),
+			-((dir >> 1) & 1),
+			-((dir >> 2) & 1));
 }
 
-template<typename T>
-void copy_to(PoolVector<T> & to, Vector<T> & from) {
+template <typename T>
+void copy_to(PoolVector<T> &to, Vector<T> &from) {
 
 	to.resize(from.size());
 
 	PoolVector<T>::Write w = to.write();
 
-	for(unsigned int i = 0; i < from.size(); ++i) {
+	for (unsigned int i = 0; i < from.size(); ++i) {
 		w[i] = from[i];
 	}
 }
 
 VoxelMesherSmooth::ReuseCell::ReuseCell() {
 	case_index = 0;
-	for(unsigned int i = 0; i < 4; ++i) {
+	for (unsigned int i = 0; i < 4; ++i) {
 		vertices[i] = -1;
 	}
 }
@@ -74,12 +72,12 @@ Ref<ArrayMesh> VoxelMesherSmooth::build_ref(Ref<VoxelBuffer> voxels_ref, unsigne
 
 	ERR_FAIL_COND_V(voxels_ref.is_null(), Ref<ArrayMesh>());
 
-	VoxelBuffer & voxels = **voxels_ref;
+	VoxelBuffer &voxels = **voxels_ref;
 
 	return build(voxels, channel, mesh);
 }
 
-Ref<ArrayMesh> VoxelMesherSmooth::build(const VoxelBuffer & voxels, unsigned int channel, Ref<ArrayMesh> mesh) {
+Ref<ArrayMesh> VoxelMesherSmooth::build(const VoxelBuffer &voxels, unsigned int channel, Ref<ArrayMesh> mesh) {
 
 	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Ref<ArrayMesh>());
 
@@ -93,12 +91,12 @@ Ref<ArrayMesh> VoxelMesherSmooth::build(const VoxelBuffer & voxels, unsigned int
 	m_output_indices.clear();
 
 	build_mesh(voxels, channel);
-//	OS::get_singleton()->print("vertices: %i, normals: %i, indices: %i\n",
-//							   m_output_vertices.size(),
-//							   m_output_normals.size(),
-//							   m_output_indices.size());
+	//	OS::get_singleton()->print("vertices: %i, normals: %i, indices: %i\n",
+	//							   m_output_vertices.size(),
+	//							   m_output_normals.size(),
+	//							   m_output_indices.size());
 
-	if(m_output_vertices.size() == 0) {
+	if (m_output_vertices.size() == 0) {
 		// The mesh can be empty
 		return Ref<ArrayMesh>();
 	}
@@ -114,12 +112,12 @@ Ref<ArrayMesh> VoxelMesherSmooth::build(const VoxelBuffer & voxels, unsigned int
 	Array arrays;
 	arrays.resize(Mesh::ARRAY_MAX);
 	arrays[Mesh::ARRAY_VERTEX] = vertices;
-	if(m_output_normals.size() != 0) {
+	if (m_output_normals.size() != 0) {
 		arrays[Mesh::ARRAY_NORMAL] = normals;
 	}
 	arrays[Mesh::ARRAY_INDEX] = indices;
 
-	if(mesh.is_null())
+	if (mesh.is_null())
 		mesh = Ref<ArrayMesh>(memnew(ArrayMesh));
 
 	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
@@ -127,7 +125,7 @@ Ref<ArrayMesh> VoxelMesherSmooth::build(const VoxelBuffer & voxels, unsigned int
 	return mesh;
 }
 
-void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int channel) {
+void VoxelMesherSmooth::build_mesh(const VoxelBuffer &voxels, unsigned int channel) {
 
 	// Each 2x2 voxel group is a "cell"
 
@@ -139,8 +137,8 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 	// Prepare vertex reuse cache
 	m_block_size = block_size;
 	unsigned int deck_area = block_size.x * block_size.y;
-	for(int i = 0; i < 2; ++i) {
-		if(m_cache[i].size() != deck_area) {
+	for (int i = 0; i < 2; ++i) {
+		if (m_cache[i].size() != deck_area) {
 			m_cache[i].clear(); // Clear any previous data
 			m_cache[i].resize(deck_area);
 		}
@@ -148,42 +146,41 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 
 	// Iterate all cells with padding (expected to be neighbors)
 	Vector3i pos;
-	for(pos.z = PAD.z; pos.z < block_size.z - 2; ++pos.z) {
-		for(pos.y = PAD.y; pos.y < block_size.y - 2; ++pos.y) {
-			for(pos.x = PAD.x; pos.x < block_size.x - 2; ++pos.x) {
+	for (pos.z = PAD.z; pos.z < block_size.z - 2; ++pos.z) {
+		for (pos.y = PAD.y; pos.y < block_size.y - 2; ++pos.y) {
+			for (pos.x = PAD.x; pos.x < block_size.x - 2; ++pos.x) {
 
 				// Get the value of cells.
 				// Negative values are "solid" and positive are "air".
 				// Due to raw cells being unsigned 8-bit, they get converted to signed.
 				int8_t cell_samples[8] = {
-					tos(voxels.get_voxel( pos.x,   pos.y,   pos.z,   channel )),
-					tos(voxels.get_voxel( pos.x+1, pos.y,   pos.z,   channel )),
-					tos(voxels.get_voxel( pos.x,   pos.y+1, pos.z,   channel )),
-					tos(voxels.get_voxel( pos.x+1, pos.y+1, pos.z,   channel )),
-					tos(voxels.get_voxel( pos.x,   pos.y,   pos.z+1, channel )),
-					tos(voxels.get_voxel( pos.x+1, pos.y,   pos.z+1, channel )),
-					tos(voxels.get_voxel( pos.x,   pos.y+1, pos.z+1, channel )),
-					tos(voxels.get_voxel( pos.x+1, pos.y+1, pos.z+1, channel ))
+					tos(voxels.get_voxel(pos.x, pos.y, pos.z, channel)),
+					tos(voxels.get_voxel(pos.x + 1, pos.y, pos.z, channel)),
+					tos(voxels.get_voxel(pos.x, pos.y + 1, pos.z, channel)),
+					tos(voxels.get_voxel(pos.x + 1, pos.y + 1, pos.z, channel)),
+					tos(voxels.get_voxel(pos.x, pos.y, pos.z + 1, channel)),
+					tos(voxels.get_voxel(pos.x + 1, pos.y, pos.z + 1, channel)),
+					tos(voxels.get_voxel(pos.x, pos.y + 1, pos.z + 1, channel)),
+					tos(voxels.get_voxel(pos.x + 1, pos.y + 1, pos.z + 1, channel))
 				};
 
 				// Concatenate the sign of cell values to obtain the case code.
 				// Index 0 is the less significant bit, and index 7 is the most significant bit.
-				uint8_t case_code =
-						 sign(cell_samples[0])
-					  | (sign(cell_samples[1]) << 1)
-					  | (sign(cell_samples[2]) << 2)
-					  | (sign(cell_samples[3]) << 3)
-					  | (sign(cell_samples[4]) << 4)
-					  | (sign(cell_samples[5]) << 5)
-					  | (sign(cell_samples[6]) << 6)
-					  | (sign(cell_samples[7]) << 7);
+				uint8_t case_code = sign(cell_samples[0]);
+				case_code |= (sign(cell_samples[1]) << 1);
+				case_code |= (sign(cell_samples[2]) << 2);
+				case_code |= (sign(cell_samples[3]) << 3);
+				case_code |= (sign(cell_samples[4]) << 4);
+				case_code |= (sign(cell_samples[5]) << 5);
+				case_code |= (sign(cell_samples[6]) << 6);
+				case_code |= (sign(cell_samples[7]) << 7);
 
 				{
-					ReuseCell & rc = get_reuse_cell(pos);
+					ReuseCell &rc = get_reuse_cell(pos);
 					rc.case_index = case_code;
 				}
 
-				if(case_code == 0 || case_code == 255) {
+				if (case_code == 0 || case_code == 255) {
 					// If the case_code is 0 or 255, there is no triangulation to do
 					continue;
 				}
@@ -191,18 +188,13 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 				// TODO We might not always need all of them
 				// Compute normals
 				Vector3 corner_normals[8];
-				for(unsigned int i = 0; i < 8; ++i) {
+				for (unsigned int i = 0; i < 8; ++i) {
 
 					Vector3i p = pos + g_corner_dirs[i];
 
-					float nx = tof(tos(voxels.get_voxel(p - Vector3i(1,0,0), channel)))
-							 - tof(tos(voxels.get_voxel(p + Vector3i(1,0,0), channel)));
-
-					float ny = tof(tos(voxels.get_voxel(p - Vector3i(0,1,0), channel)))
-							 - tof(tos(voxels.get_voxel(p + Vector3i(0,1,0), channel)));
-
-					float nz = tof(tos(voxels.get_voxel(p - Vector3i(0,0,1), channel)))
-							 - tof(tos(voxels.get_voxel(p + Vector3i(0,0,1), channel)));
+					float nx = tof(tos(voxels.get_voxel(p - Vector3i(1, 0, 0), channel))) - tof(tos(voxels.get_voxel(p + Vector3i(1, 0, 0), channel)));
+					float ny = tof(tos(voxels.get_voxel(p - Vector3i(0, 1, 0), channel))) - tof(tos(voxels.get_voxel(p + Vector3i(0, 1, 0), channel)));
+					float nz = tof(tos(voxels.get_voxel(p - Vector3i(0, 0, 1), channel))) - tof(tos(voxels.get_voxel(p + Vector3i(0, 0, 1), channel)));
 
 					corner_normals[i] = Vector3(nx, ny, nz);
 					corner_normals[i].normalize();
@@ -214,9 +206,7 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 				// While iterating through the cells in a block, a 3-bit mask is maintained whose bits indicate
 				// whether corresponding bits in a direction code are valid
 				uint8_t direction_validity_mask =
-					   (pos.x > 1 ? 1 : 0)
-					| ((pos.y > 1 ? 1 : 0) << 1)
-					| ((pos.z > 1 ? 1 : 0) << 2);
+						(pos.x > 1 ? 1 : 0) | ((pos.y > 1 ? 1 : 0) << 1) | ((pos.z > 1 ? 1 : 0) << 2);
 
 				uint8_t regular_cell_class_index = Transvoxel::regularCellClass[case_code];
 				Transvoxel::RegularCellData regular_cell_class = Transvoxel::regularCellData[regular_cell_class_index];
@@ -226,7 +216,7 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 				int cell_mesh_indices[12];
 
 				// For each vertex in the case
-				for(unsigned int i = 0; i < vertex_count; ++i) {
+				for (unsigned int i = 0; i < vertex_count; ++i) {
 
 					// The case index maps to a list of 16-bit codes providing information about the edges on which the vertices lie.
 					// The low byte of each 16-bit code contains the corner indexes of the edge’s endpoints in one nibble each,
@@ -260,7 +250,7 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 					Vector3i p0 = pos + g_corner_dirs[v0];
 					Vector3i p1 = pos + g_corner_dirs[v1];
 
-					if(t & 0xff) {
+					if (t & 0xff) {
 						//OS::get_singleton()->print("A");
 						// Vertex lies in the interior of the edge.
 
@@ -275,11 +265,11 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 
 						bool can_reuse = (reuse_dir & direction_validity_mask) == reuse_dir;
 
-						if(can_reuse) {
+						if (can_reuse) {
 							Vector3i cache_pos = pos + dir_to_prev_vec(reuse_dir);
-							ReuseCell & prev_cell = get_reuse_cell(cache_pos);
+							ReuseCell &prev_cell = get_reuse_cell(cache_pos);
 
-							if(prev_cell.case_index == 0 || prev_cell.case_index == 255) {
+							if (prev_cell.case_index == 0 || prev_cell.case_index == 255) {
 								// TODO I don't think this can happen for non-corner vertices.
 								cell_mesh_indices[i] = -1;
 							} else {
@@ -288,26 +278,26 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 							}
 						}
 
-						if(!can_reuse || cell_mesh_indices[i] == -1) {
+						if (!can_reuse || cell_mesh_indices[i] == -1) {
 							// Going to create a new vertice
 
 							cell_mesh_indices[i] = m_output_vertices.size();
 
 							Vector3 pi = p0.to_vec3() * t0 + p1.to_vec3() * t1;
 
-							Vector3 primary = pi;//pos.to_vec3() + pi;
+							Vector3 primary = pi; //pos.to_vec3() + pi;
 							Vector3 normal = corner_normals[v0] * t0 + corner_normals[v1] * t1;
 
 							emit_vertex(primary, normal);
 
 							if (reuse_dir & 8) {
 								// Store the generated vertex so that other cells can reuse it.
-								ReuseCell & rc = get_reuse_cell(pos);
+								ReuseCell &rc = get_reuse_cell(pos);
 								rc.vertices[reuse_vertex_index] = cell_mesh_indices[i];
 							}
 						}
 
-					} else if(t == 0 && v1 == 7) {
+					} else if (t == 0 && v1 == 7) {
 
 						//OS::get_singleton()->print("B");
 						// This cell owns the vertex, so it should be created.
@@ -315,12 +305,12 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 						cell_mesh_indices[i] = m_output_vertices.size();
 
 						Vector3 pi = p0.to_vec3() * t0 + p1.to_vec3() * t1;
-						Vector3 primary = pi;//pos.to_vec3() + pi;
+						Vector3 primary = pi; //pos.to_vec3() + pi;
 						Vector3 normal = corner_normals[v0] * t0 + corner_normals[v1] * t1;
 
 						emit_vertex(primary, normal);
 
-						ReuseCell & rc = get_reuse_cell(pos);
+						ReuseCell &rc = get_reuse_cell(pos);
 						rc.vertices[0] = cell_mesh_indices[i];
 
 					} else {
@@ -335,7 +325,7 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 						bool can_reuse = (reuse_dir & direction_validity_mask) == reuse_dir;
 
 						// Note: the only difference with similar code above is that we take vertice 0 in the `else`
-						if(can_reuse) {
+						if (can_reuse) {
 							Vector3i cache_pos = pos + dir_to_prev_vec(reuse_dir);
 							ReuseCell prev_cell = get_reuse_cell(cache_pos);
 
@@ -348,11 +338,11 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 							}
 						}
 
-						if(!can_reuse || cell_mesh_indices[i] < 0) {
+						if (!can_reuse || cell_mesh_indices[i] < 0) {
 							cell_mesh_indices[i] = m_output_vertices.size();
 
 							Vector3 pi = p0.to_vec3() * t0 + p1.to_vec3() * t1;
-							Vector3 primary = pi;//pos.to_vec3() + pi;
+							Vector3 primary = pi; //pos.to_vec3() + pi;
 							Vector3 normal = corner_normals[v0] * t0 + corner_normals[v1] * t1;
 
 							emit_vertex(primary, normal);
@@ -377,23 +367,18 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer & voxels, unsigned int chan
 	//OS::get_singleton()->print("\n");
 }
 
-
-VoxelMesherSmooth::ReuseCell & VoxelMesherSmooth::get_reuse_cell(Vector3i pos) {
+VoxelMesherSmooth::ReuseCell &VoxelMesherSmooth::get_reuse_cell(Vector3i pos) {
 	int j = pos.z & 1;
 	int i = pos.y * m_block_size.y + pos.x;
 	return m_cache[j][i];
 }
-
 
 void VoxelMesherSmooth::emit_vertex(Vector3 primary, Vector3 normal) {
 	m_output_vertices.push_back(primary - PAD.to_vec3());
 	m_output_normals.push_back(normal);
 }
 
-
 void VoxelMesherSmooth::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("build", "voxels", "channel", "existing_mesh"), &VoxelMesherSmooth::build_ref, DEFVAL(Variant()));
-
 }
-

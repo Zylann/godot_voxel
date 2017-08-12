@@ -40,7 +40,7 @@ ZProfileVar::ZProfileVar() {
 	total_time = 0.f;
 	hits = 0;
 	_begin_time = 0.f;
-	for(unsigned int i = 0; i < BUFFERED_TIME_COUNT; ++i)
+	for (unsigned int i = 0; i < BUFFERED_TIME_COUNT; ++i)
 		buffered_times[i] = 0;
 	buffered_time_index = 0;
 }
@@ -52,17 +52,14 @@ void ZProfileVar::begin(uint64_t time) {
 void ZProfileVar::end(uint64_t time) {
 	instant_time = time - _begin_time;
 
-	if(hits == 0)
-	{
+	if (hits == 0) {
 		min_time = instant_time;
 		max_time = instant_time;
-	}
-	else
-	{
-		if(instant_time < min_time)
+	} else {
+		if (instant_time < min_time)
 			min_time = instant_time;
 
-		if(instant_time > max_time)
+		if (instant_time > max_time)
 			max_time = instant_time;
 	}
 
@@ -70,7 +67,7 @@ void ZProfileVar::end(uint64_t time) {
 
 	buffered_times[buffered_time_index] = instant_time;
 	++buffered_time_index;
-	if(buffered_time_index >= BUFFERED_TIME_COUNT)
+	if (buffered_time_index >= BUFFERED_TIME_COUNT)
 		buffered_time_index = 0;
 
 	++hits;
@@ -86,7 +83,7 @@ Dictionary ZProfileVar::serialize() {
 	d["hits"] = hits;
 
 	Array a;
-	for(unsigned int i = 0; i < BUFFERED_TIME_COUNT; ++i) {
+	for (unsigned int i = 0; i < BUFFERED_TIME_COUNT; ++i) {
 		a.append(buffered_times[i]);
 	}
 	d["buffered_times"] = a;
@@ -103,47 +100,44 @@ Dictionary ZProfileVar::serialize() {
 //}
 
 ZProfiler::~ZProfiler() {
-	const String * key = NULL;
+	const String *key = NULL;
 	while (key = _vars.next(key)) {
-		ZProfileVar * v = _vars.get(*key);
+		ZProfileVar *v = _vars.get(*key);
 		memdelete(v);
 	}
 }
 
-ZProfileVar * ZProfiler::get_var(String key) {
-	ZProfileVar * v = NULL;
-	ZProfileVar ** pv = _vars.getptr(key);
-	if(pv == NULL) {
+ZProfileVar *ZProfiler::get_var(String key) {
+	ZProfileVar *v = NULL;
+	ZProfileVar **pv = _vars.getptr(key);
+	if (pv == NULL) {
 		v = memnew(ZProfileVar);
 		_vars[key] = v;
-	}
-	else {
+	} else {
 		v = *pv;
 	}
 	return v;
 }
 
 void ZProfiler::begin(String key) {
-	ZProfileVar * v = get_var(key);
+	ZProfileVar *v = get_var(key);
 	v->begin(get_time());
 }
 
 void ZProfiler::end(String key) {
 	uint64_t time = get_time();
-	ZProfileVar * v = get_var(key);
+	ZProfileVar *v = get_var(key);
 	v->end(time);
 }
 
 Dictionary ZProfiler::get_all_serialized_info() const {
 	Dictionary d;
-	const String * key = NULL;
+	const String *key = NULL;
 	while (key = _vars.next(key)) {
-		ZProfileVar * v = _vars.get(*key);
+		ZProfileVar *v = _vars.get(*key);
 		d[*key] = v->serialize();
 	}
 	return d;
 }
 
-
 #endif // VOXEL_PROFILING
-

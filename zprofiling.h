@@ -5,9 +5,9 @@
 
 #ifdef VOXEL_PROFILING
 
-#include <ustring.h>
 #include <dictionary.h>
 #include <hash_map.h>
+#include <ustring.h>
 
 #define VOXEL_PROFILE_BEGIN(_key) _zprofiler.begin(_key);
 #define VOXEL_PROFILE_END(_key) _zprofiler.end(_key);
@@ -26,9 +26,9 @@ public:
 
 private:
 	//ZProfiler();
-	ZProfileVar * get_var(String key);
+	ZProfileVar *get_var(String key);
 
-	HashMap<String, ZProfileVar*> _vars;
+	HashMap<String, ZProfileVar *> _vars;
 };
 
 #else
