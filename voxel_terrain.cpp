@@ -361,14 +361,10 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	_mesher_smooth->build(nbuffer, Voxel::CHANNEL_ISOLEVEL, mesh);
 
 	MeshInstance * mesh_instance = block->get_mesh_instance(*this);
-	StaticBody * body = block->get_physics_body(*this);
 
 	if(is_mesh_empty(mesh)) {
 		if(mesh_instance) {
 			mesh_instance->set_mesh(Ref<Mesh>());
-		}
-		if(body) {
-			body->set_shape(0, Ref<Shape>());
 		}
 	}
 	else {
@@ -392,26 +388,8 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 
 		if(get_tree()->is_editor_hint() == false && _generate_collisions) {
 
-			// Generate collisions
+			// TODO Generate collisions using PhysicsServer
 			// TODO Need to select only specific surfaces because some may not have collisions
-			VOXEL_PROFILE_BEGIN("create_trimesh_shape")
-			Ref<Shape> shape = mesh->create_trimesh_shape();
-			VOXEL_PROFILE_END("create_trimesh_shape")
-
-			if(body == NULL) {
-				// Create body
-				body = memnew(StaticBody);
-				body->set_translation(block_node_pos);
-				body->add_shape(shape);
-				add_child(body);
-				block->body_path = body->get_path();
-			}
-			else {
-				// Update body
-				VOXEL_PROFILE_BEGIN("body_set_shape")
-				body->set_shape(0, shape);
-				VOXEL_PROFILE_END("body_set_shape")
-			}
 		}
 	}
 }
