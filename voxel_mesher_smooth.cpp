@@ -393,9 +393,7 @@ void VoxelMesherSmooth::emit_vertex(Vector3 primary, Vector3 normal) {
 
 void VoxelMesherSmooth::_bind_methods() {
 
-	ClassDB::bind_method(
-		D_METHOD("build:Mesh", "voxels:VoxelBuffer", "channel", "existing_mesh:Mesh"),
-		&VoxelMesherSmooth::build_ref, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("build", "voxels", "channel", "existing_mesh"), &VoxelMesherSmooth::build_ref, DEFVAL(Variant()));
 
 }
 

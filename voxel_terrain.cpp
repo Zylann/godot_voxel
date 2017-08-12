@@ -478,11 +478,11 @@ Variant VoxelTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t
 
 void VoxelTerrain::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_provider", "provider:VoxelProvider"), &VoxelTerrain::set_provider);
-	ClassDB::bind_method(D_METHOD("get_provider:VoxelProvider"), &VoxelTerrain::get_provider);
+	ClassDB::bind_method(D_METHOD("set_provider", "provider"), &VoxelTerrain::set_provider);
+	ClassDB::bind_method(D_METHOD("get_provider"), &VoxelTerrain::get_provider);
 
 	ClassDB::bind_method(D_METHOD("get_block_update_count"), &VoxelTerrain::get_block_update_count);
-	ClassDB::bind_method(D_METHOD("get_mesher:VoxelMesher"), &VoxelTerrain::get_mesher);
+	ClassDB::bind_method(D_METHOD("get_mesher"), &VoxelTerrain::get_mesher);
 
 	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelTerrain::get_generate_collisions);
 	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelTerrain::set_generate_collisions);
@@ -490,7 +490,7 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_viewer"), &VoxelTerrain::get_viewer_path);
 	ClassDB::bind_method(D_METHOD("set_viewer", "path"), &VoxelTerrain::set_viewer_path);
 
-	ClassDB::bind_method(D_METHOD("get_storage:VoxelMap"), &VoxelTerrain::get_map);
+	ClassDB::bind_method(D_METHOD("get_storage"), &VoxelTerrain::get_map);
 
 	// TODO Make those two static in VoxelMap?
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
@@ -500,7 +500,7 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("make_blocks_dirty", "min", "size"), &VoxelTerrain::_make_blocks_dirty_binding);
 	ClassDB::bind_method(D_METHOD("make_voxel_dirty", "pos"), &VoxelTerrain::_make_voxel_dirty_binding);
 
-	ClassDB::bind_method(D_METHOD("raycast:Dictionary", "origin", "direction", "max_distance"), &VoxelTerrain::_raycast_binding, DEFVAL(100));
+	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance"), &VoxelTerrain::_raycast_binding, DEFVAL(100));
 
 #ifdef VOXEL_PROFILING
 	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelTerrain::get_profiling_info);

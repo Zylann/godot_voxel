@@ -347,9 +347,9 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer & buffer, unsigned int chann
             
             // Index mesh to reduce memory usage and make upload to VRAM faster
             // TODO actually, we could make it indexed from the ground up without using SurfaceTool, so we also save time!
-			//VOXEL_PROFILE_BEGIN("mesher_surfacetool_index")
-			//st.index();
-			//VOXEL_PROFILE_END("mesher_surfacetool_index")
+//			VOXEL_PROFILE_BEGIN("mesher_surfacetool_index")
+//			st.index();
+//			VOXEL_PROFILE_END("mesher_surfacetool_index")
 
 			VOXEL_PROFILE_BEGIN("mesher_surfacetool_commit")
 			mesh_ref = st.commit(mesh_ref);
@@ -365,10 +365,10 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer & buffer, unsigned int chann
 void VoxelMesher::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_material", "material", "id"), &VoxelMesher::set_material);
-	ClassDB::bind_method(D_METHOD("get_material:Material", "id"), &VoxelMesher::get_material);
+	ClassDB::bind_method(D_METHOD("get_material", "id"), &VoxelMesher::get_material);
 
-	ClassDB::bind_method(D_METHOD("set_library", "voxel_library:VoxelLibrary"), &VoxelMesher::set_library);
-	ClassDB::bind_method(D_METHOD("get_library:VoxelLibrary"), &VoxelMesher::get_library);
+	ClassDB::bind_method(D_METHOD("set_library", "voxel_library"), &VoxelMesher::set_library);
+	ClassDB::bind_method(D_METHOD("get_library"), &VoxelMesher::get_library);
 
 	ClassDB::bind_method(D_METHOD("set_occlusion_enabled", "enable"), &VoxelMesher::set_occlusion_enabled);
 	ClassDB::bind_method(D_METHOD("get_occlusion_enabled"), &VoxelMesher::get_occlusion_enabled);
@@ -376,7 +376,7 @@ void VoxelMesher::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesher::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesher::get_occlusion_darkness);
 
-	ClassDB::bind_method(D_METHOD("build:Mesh", "voxel_buffer:VoxelBuffer", "channel", "existing_mesh:Mesh"), &VoxelMesher::build_ref);
+	ClassDB::bind_method(D_METHOD("build", "voxel_buffer", "channel", "existing_mesh"), &VoxelMesher::build_ref);
 
 #ifdef VOXEL_PROFILING
 	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelMesher::get_profiling_info);

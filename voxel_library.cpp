@@ -36,7 +36,7 @@ Ref<Voxel> VoxelLibrary::_get_voxel_bind(int id) {
 
 void VoxelLibrary::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("create_voxel:Voxel", "id", "name"), &VoxelLibrary::create_voxel);
+	ClassDB::bind_method(D_METHOD("create_voxel", "id", "name"), &VoxelLibrary::create_voxel);
 	ClassDB::bind_method(D_METHOD("get_voxel", "id"), &VoxelLibrary::_get_voxel_bind);
 
 	ClassDB::bind_method(D_METHOD("set_atlas_size", "square_size"), &VoxelLibrary::set_atlas_size);

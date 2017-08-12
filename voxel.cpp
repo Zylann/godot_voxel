@@ -178,24 +178,24 @@ Ref<Voxel> Voxel::set_cube_uv_tbs_sides(Vector2 top_atlas_pos, Vector2 side_atla
 
 void Voxel::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_name:Voxel", "name"), &Voxel::set_name);
+	ClassDB::bind_method(D_METHOD("set_name", "name"), &Voxel::set_name);
 	ClassDB::bind_method(D_METHOD("get_name"), &Voxel::get_name);
 
-	ClassDB::bind_method(D_METHOD("set_id:Voxel", "id"), &Voxel::set_id);
+	ClassDB::bind_method(D_METHOD("set_id", "id"), &Voxel::set_id);
 	ClassDB::bind_method(D_METHOD("get_id"), &Voxel::get_id);
 
-	ClassDB::bind_method(D_METHOD("set_color:Voxel", "color"), &Voxel::set_color);
+	ClassDB::bind_method(D_METHOD("set_color", "color"), &Voxel::set_color);
 	ClassDB::bind_method(D_METHOD("get_color"), &Voxel::get_color);
 
-	ClassDB::bind_method(D_METHOD("set_transparent:Voxel", "color"), &Voxel::set_transparent, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("set_transparent", "color"), &Voxel::set_transparent, DEFVAL(true));
 	ClassDB::bind_method(D_METHOD("is_transparent"), &Voxel::is_transparent);
 
 	ClassDB::bind_method(D_METHOD("set_material_id", "id"), &Voxel::set_material_id);
 	ClassDB::bind_method(D_METHOD("get_material_id"), &Voxel::get_material_id);
 
-	ClassDB::bind_method(D_METHOD("set_cube_geometry:Voxel", "height"), &Voxel::set_cube_geometry, DEFVAL(1.f));
-	ClassDB::bind_method(D_METHOD("set_cube_uv_all_sides:Voxel", "atlas_pos"), &Voxel::set_cube_uv_all_sides);
-	ClassDB::bind_method(D_METHOD("set_cube_uv_tbs_sides:Voxel", "top_atlas_pos", "side_atlas_pos", "bottom_atlas_pos"), &Voxel::set_cube_uv_tbs_sides);
+	ClassDB::bind_method(D_METHOD("set_cube_geometry", "height"), &Voxel::set_cube_geometry, DEFVAL(1.f));
+	ClassDB::bind_method(D_METHOD("set_cube_uv_all_sides", "atlas_pos"), &Voxel::set_cube_uv_all_sides);
+	ClassDB::bind_method(D_METHOD("set_cube_uv_tbs_sides", "top_atlas_pos", "side_atlas_pos", "bottom_atlas_pos"), &Voxel::set_cube_uv_tbs_sides);
 
 	BIND_CONSTANT( CHANNEL_TYPE )
 	BIND_CONSTANT( CHANNEL_ISOLEVEL )
