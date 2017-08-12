@@ -246,7 +246,7 @@ void VoxelTerrain::update_blocks() {
 	VOXEL_PROFILE_END("block_update_sorting")
 
 	uint32_t time_before = os.get_ticks_msec();
-	uint32_t max_time = 1000 / 60;
+	uint32_t max_time = 1000 / 120;
 
 	// Update a bunch of blocks until none are left or too much time elapsed
 	while (!_block_update_queue.empty() && (os.get_ticks_msec() - time_before) < max_time) {
@@ -325,6 +325,7 @@ static inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
 	Mesh & mesh = **mesh_ref;
 	if(mesh.get_surface_count() == 0)
 		return true;
+	// TODO Shouldn't it have an index to the surface rather than just the type? Oo
 	if(mesh.surface_get_array_len(Mesh::ARRAY_VERTEX) == 0)
 		return true;
 	return false;
