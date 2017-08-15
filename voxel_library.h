@@ -39,7 +39,6 @@ protected:
 
 private:
 	Ref<Voxel> _voxel_types[MAX_VOXEL_TYPES];
-	int _max_count;
 	int _atlas_size;
 };
 

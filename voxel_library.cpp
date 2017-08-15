@@ -27,7 +27,6 @@ void VoxelLibrary::load_default() {
 	create_voxel(1, "solid")
 			->set_transparent(false)
 			->set_geometry_type(Voxel::GEOMETRY_CUBE);
-	_max_count = 2;
 }
 
 // TODO Add a way to add voxels
@@ -52,6 +51,7 @@ bool VoxelLibrary::_set(const StringName &p_name, const Variant &p_value) {
 			_voxel_types[idx] = voxel;
 			if(voxel.is_valid()) {
 				voxel->set_library(Ref<VoxelLibrary>(this));
+				voxel->set_id(idx);
 			}
 			// Note: if the voxel is set to null, we could set the previous one's library reference to null.
 			// however it Voxels use a weak reference, so it's not really needed
@@ -105,9 +105,6 @@ Ref<Voxel> VoxelLibrary::create_voxel(int id, String name) {
 	voxel->set_id(id);
 	voxel->set_voxel_name(name);
 	_voxel_types[id] = voxel;
-	if(id >= _max_count) {
-		_max_count = id + 1;
-	}
 	return voxel;
 }
 
