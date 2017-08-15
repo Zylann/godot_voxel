@@ -51,7 +51,7 @@ void copy_to(PoolVector<T> &to, Vector<T> &from) {
 
 	to.resize(from.size());
 
-	PoolVector<T>::Write w = to.write();
+	typename PoolVector<T>::Write w = to.write();
 
 	for (unsigned int i = 0; i < from.size(); ++i) {
 		w[i] = from[i];
