@@ -2,10 +2,10 @@
 #define VOXEL_LIBRARY_H
 
 #include "voxel.h"
-#include <reference.h>
+#include <resource.h>
 
-class VoxelLibrary : public Reference {
-	GDCLASS(VoxelLibrary, Reference)
+class VoxelLibrary : public Resource {
+	GDCLASS(VoxelLibrary, Resource)
 
 public:
 	static const unsigned int MAX_VOXEL_TYPES = 256; // Required limit because voxel types are stored in 8 bits
@@ -19,6 +19,10 @@ public:
 	// Use this factory rather than creating voxels from scratch
 	Ref<Voxel> create_voxel(int id, String name);
 
+	int get_voxel_count() const;
+
+	void load_default();
+
 	// Internal getters
 
 	_FORCE_INLINE_ bool has_voxel(int id) const { return _voxel_types[id].is_valid(); }
@@ -27,10 +31,15 @@ public:
 protected:
 	static void _bind_methods();
 
+	bool _set(const StringName &p_name, const Variant &p_value);
+	bool _get(const StringName &p_name, Variant &r_ret) const;
+	void _get_property_list(List<PropertyInfo> *p_list) const;
+
 	Ref<Voxel> _get_voxel_bind(int id);
 
 private:
 	Ref<Voxel> _voxel_types[MAX_VOXEL_TYPES];
+	int _max_count;
 	int _atlas_size;
 };
 

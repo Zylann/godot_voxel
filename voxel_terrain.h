@@ -16,11 +16,13 @@ public:
 	VoxelTerrain();
 
 	void set_provider(Ref<VoxelProvider> provider);
-	Ref<VoxelProvider> get_provider();
+	Ref<VoxelProvider> get_provider() const;
+
+	void set_voxel_library(Ref<VoxelLibrary> library);
+	Ref<VoxelLibrary> get_voxel_library() const;
 
 	void force_load_blocks(Vector3i center, Vector3i extents);
 	int get_block_update_count();
-	//void clear_update_queue();
 
 	void make_block_dirty(Vector3i bpos);
 	void make_blocks_dirty(Vector3i min, Vector3i size);
@@ -28,25 +30,36 @@ public:
 	bool is_block_dirty(Vector3i bpos);
 
 	void set_generate_collisions(bool enabled);
-	bool get_generate_collisions() { return _generate_collisions; }
+	bool get_generate_collisions() const { return _generate_collisions; }
+
+	int get_view_distance() const;
+	void set_view_distance(int distance_in_voxels);
 
 	void set_viewer_path(NodePath path);
-	NodePath get_viewer_path();
+	NodePath get_viewer_path() const;
+
+	void set_material(int id, Ref<Material> material);
+	Ref<Material> get_material(int id) const;
 
 	Ref<VoxelMesher> get_mesher() { return _mesher; }
 	Ref<VoxelMap> get_map() { return _map; }
-	Ref<VoxelLibrary> get_voxel_library();
 
 protected:
 	void _notification(int p_what);
 
 private:
+	bool _set(const StringName &p_name, const Variant &p_value);
+	bool _get(const StringName &p_name, Variant &r_ret) const;
+	void _get_property_list(List<PropertyInfo> *p_list) const;
+
 	void _process();
 
 	void update_blocks();
 	void update_block_mesh(Vector3i block_pos);
 
-	Spatial *get_viewer(NodePath path);
+	void make_all_view_dirty();
+
+	Spatial *get_viewer(NodePath path) const;
 
 	// Observer events
 	//void block_removed(VoxelBlock & block);
@@ -69,6 +82,9 @@ private:
 private:
 	// Voxel storage
 	Ref<VoxelMap> _map;
+
+	// How many blocks to load around the viewer
+	int _view_distance_blocks;
 
 	// TODO Terrains only need to handle the visible portion of voxels, which reduces the bounds blocks to handle.
 	// Therefore, could a simple grid be better to use than a hashmap?

@@ -9,6 +9,8 @@ VoxelTerrain::VoxelTerrain()
 	_map = Ref<VoxelMap>(memnew(VoxelMap));
 	_mesher = Ref<VoxelMesher>(memnew(VoxelMesher));
 	_mesher_smooth = Ref<VoxelMesherSmooth>(memnew(VoxelMesherSmooth));
+
+	_view_distance_blocks = 8;
 }
 
 Vector3i g_viewer_block_pos; // TODO UGLY! Lambdas or pointers needed...
@@ -20,20 +22,85 @@ struct BlockUpdateComparator {
 	}
 };
 
-void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
-	_provider = provider;
+// TODO See if there is a way to specify materials in voxels directly?
+
+bool VoxelTerrain::_set(const StringName &p_name, const Variant &p_value) {
+
+	if (p_name.operator String().begins_with("material/")) {
+		int idx = p_name.operator String().get_slicec('/', 1).to_int();
+		if (idx >= VoxelMesher::MAX_MATERIALS || idx < 0)
+			return false;
+		set_material(idx, p_value);
+		return true;
+	}
+
+	return false;
 }
 
-Ref<VoxelProvider> VoxelTerrain::get_provider() {
+bool VoxelTerrain::_get(const StringName &p_name, Variant &r_ret) const {
+
+	if (p_name.operator String().begins_with("material/")) {
+		int idx = p_name.operator String().get_slicec('/', 1).to_int();
+		if (idx >= VoxelMesher::MAX_MATERIALS || idx < 0)
+			return false;
+		r_ret = get_material(idx);
+		return true;
+	}
+
+	return false;
+}
+
+void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
+
+	for (int i = 0; i < VoxelMesher::MAX_MATERIALS; ++i) {
+		p_list->push_back(PropertyInfo(Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,SpatialMaterial"));
+	}
+}
+
+void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
+	if(provider != _provider) {
+		_provider = provider;
+		make_all_view_dirty();
+	}
+}
+
+Ref<VoxelProvider> VoxelTerrain::get_provider() const {
 	return _provider;
 }
 
-Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() {
+Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
 	return _mesher->get_library();
+}
+
+void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
+	if(library != _mesher->get_library()) {
+
+#ifdef TOOLS_ENABLED
+		if(library->get_voxel_count() == 0) {
+			library->load_default();
+		}
+#endif
+		_mesher->set_library(library);
+		make_all_view_dirty();
+	}
 }
 
 void VoxelTerrain::set_generate_collisions(bool enabled) {
 	_generate_collisions = enabled;
+}
+
+int VoxelTerrain::get_view_distance() const {
+	return _view_distance_blocks * VoxelBlock::SIZE;
+}
+
+void VoxelTerrain::set_view_distance(int distance_in_voxels) {
+	ERR_FAIL_COND(distance_in_voxels < 0)
+	int d = distance_in_voxels / VoxelBlock::SIZE;
+	if(d != _view_distance_blocks) {
+		_view_distance_blocks = d;
+		make_all_view_dirty();
+		// TODO Immerge blocks too far away
+	}
 }
 
 void VoxelTerrain::set_viewer_path(NodePath path) {
@@ -42,17 +109,26 @@ void VoxelTerrain::set_viewer_path(NodePath path) {
 	_viewer_path = path;
 }
 
-NodePath VoxelTerrain::get_viewer_path() {
+NodePath VoxelTerrain::get_viewer_path() const {
 	return _viewer_path;
 }
 
-Spatial *VoxelTerrain::get_viewer(NodePath path) {
+Spatial *VoxelTerrain::get_viewer(NodePath path) const {
 	if (path.is_empty())
 		return NULL;
 	Node *node = get_node(path);
 	if (node == NULL)
 		return NULL;
 	return node->cast_to<Spatial>();
+}
+
+void VoxelTerrain::set_material(int id, Ref<Material> material) {
+	// TODO Update existing block surfaces
+	_mesher->set_material(material, id);
+}
+
+Ref<Material> VoxelTerrain::get_material(int id) const {
+	return _mesher->get_material(id);
 }
 
 //void VoxelTerrain::clear_update_queue() {
@@ -83,6 +159,12 @@ void VoxelTerrain::make_blocks_dirty(Vector3i min, Vector3i size) {
 			}
 		}
 	}
+}
+
+void VoxelTerrain::make_all_view_dirty() {
+	Vector3i radius(_view_distance_blocks, _view_distance_blocks, _view_distance_blocks);
+	// TODO Take viewer and fixed range into account
+	make_blocks_dirty(-radius, 2*radius);
 }
 
 inline int get_border_index(int x, int max) {
@@ -217,6 +299,11 @@ void VoxelTerrain::_notification(int p_what) {
 		case NOTIFICATION_EXIT_TREE:
 			break;
 
+		case NOTIFICATION_READY:
+			// TODO This should also react to viewer movement
+			make_all_view_dirty();
+			break;
+
 		default:
 			break;
 	}
@@ -258,6 +345,7 @@ void VoxelTerrain::update_blocks() {
 		bool entire_block_changed = false;
 
 		if (!_map->has_block(block_pos)) {
+			// The block's data isn't loaded yet
 			// Create buffer
 			if (!_provider.is_null()) {
 
@@ -274,6 +362,7 @@ void VoxelTerrain::update_blocks() {
 				_provider->emerge_block(buffer_ref, block_pos);
 
 				// Check script return
+				// TODO Shouldn't halt execution though, as it can bring the map in an invalid state!
 				ERR_FAIL_COND(buffer_ref->get_size() != block_size);
 
 				VOXEL_PROFILE_END("block_generation")
@@ -316,11 +405,10 @@ void VoxelTerrain::update_blocks() {
 static inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
 	if (mesh_ref.is_null())
 		return true;
-	Mesh &mesh = **mesh_ref;
+	const Mesh &mesh = **mesh_ref;
 	if (mesh.get_surface_count() == 0)
 		return true;
-	// TODO Shouldn't it have an index to the surface rather than just the type? Oo
-	if (mesh.surface_get_array_len(Mesh::ARRAY_VERTEX) == 0)
+	if (mesh.surface_get_array_len(0) == 0)
 		return true;
 	return false;
 }
@@ -450,14 +538,20 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_provider", "provider"), &VoxelTerrain::set_provider);
 	ClassDB::bind_method(D_METHOD("get_provider"), &VoxelTerrain::get_provider);
 
+	ClassDB::bind_method(D_METHOD("set_voxel_library", "library"), &VoxelTerrain::set_voxel_library);
+	ClassDB::bind_method(D_METHOD("get_voxel_library"), &VoxelTerrain::get_voxel_library);
+
+	ClassDB::bind_method(D_METHOD("set_view_distance", "distance_in_voxels"), &VoxelTerrain::set_view_distance);
+	ClassDB::bind_method(D_METHOD("get_view_distance"), &VoxelTerrain::get_view_distance);
+
 	ClassDB::bind_method(D_METHOD("get_block_update_count"), &VoxelTerrain::get_block_update_count);
 	ClassDB::bind_method(D_METHOD("get_mesher"), &VoxelTerrain::get_mesher);
 
 	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelTerrain::get_generate_collisions);
 	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelTerrain::set_generate_collisions);
 
-	ClassDB::bind_method(D_METHOD("get_viewer"), &VoxelTerrain::get_viewer_path);
-	ClassDB::bind_method(D_METHOD("set_viewer", "path"), &VoxelTerrain::set_viewer_path);
+	ClassDB::bind_method(D_METHOD("get_viewer_path"), &VoxelTerrain::get_viewer_path);
+	ClassDB::bind_method(D_METHOD("set_viewer_path", "path"), &VoxelTerrain::set_viewer_path);
 
 	ClassDB::bind_method(D_METHOD("get_storage"), &VoxelTerrain::get_map);
 
@@ -474,4 +568,10 @@ void VoxelTerrain::_bind_methods() {
 #ifdef VOXEL_PROFILING
 	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelTerrain::get_profiling_info);
 #endif
+
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelProvider"), "set_provider", "get_provider");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"), "set_voxel_library", "get_voxel_library");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
 }

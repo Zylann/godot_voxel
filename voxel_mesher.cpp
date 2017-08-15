@@ -123,7 +123,6 @@ VoxelMesher::VoxelMesher()
 	  _bake_occlusion(true) {}
 
 void VoxelMesher::set_library(Ref<VoxelLibrary> library) {
-	ERR_FAIL_COND(library.is_null());
 	_library = library;
 }
 
@@ -339,21 +338,19 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 		mesh_ref = Ref<ArrayMesh>(memnew(ArrayMesh));
 
 	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
-		if (_materials[i].is_valid()) {
-			SurfaceTool &st = _surface_tool[i];
+		SurfaceTool &st = _surface_tool[i];
 
-			// Index mesh to reduce memory usage and make upload to VRAM faster
-			// TODO actually, we could make it indexed from the ground up without using SurfaceTool, so we also save time!
-			//			VOXEL_PROFILE_BEGIN("mesher_surfacetool_index")
-			//			st.index();
-			//			VOXEL_PROFILE_END("mesher_surfacetool_index")
+		// Index mesh to reduce memory usage and make upload to VRAM faster
+		// TODO actually, we could make it indexed from the ground up without using SurfaceTool, so we also save time!
+		//			VOXEL_PROFILE_BEGIN("mesher_surfacetool_index")
+		//			st.index();
+		//			VOXEL_PROFILE_END("mesher_surfacetool_index")
 
-			VOXEL_PROFILE_BEGIN("mesher_surfacetool_commit")
-			mesh_ref = st.commit(mesh_ref);
-			VOXEL_PROFILE_END("mesher_surfacetool_commit")
+		VOXEL_PROFILE_BEGIN("mesher_surfacetool_commit")
+		mesh_ref = st.commit(mesh_ref);
+		VOXEL_PROFILE_END("mesher_surfacetool_commit")
 
-			st.clear();
-		}
+		st.clear();
 	}
 
 	return mesh_ref;

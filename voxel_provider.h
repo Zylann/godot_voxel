@@ -1,11 +1,11 @@
 #ifndef VOXEL_PROVIDER_H
 #define VOXEL_PROVIDER_H
 
-#include "reference.h"
+#include <resource.h>
 #include "voxel_buffer.h"
 
-class VoxelProvider : public Reference {
-	GDCLASS(VoxelProvider, Reference)
+class VoxelProvider : public Resource {
+	GDCLASS(VoxelProvider, Resource)
 public:
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i block_pos);
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i block_pos);

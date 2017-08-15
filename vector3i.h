@@ -68,6 +68,10 @@ struct Vector3i {
 		z -= other.z;
 	}
 
+	_FORCE_INLINE_ Vector3i operator-() const {
+		return Vector3i(-x, -y, -z);
+	}
+
 	_FORCE_INLINE_ int &operator[](unsigned int i) {
 		return coords[i];
 	}
