@@ -7,7 +7,6 @@
 #include "zprofiling.h"
 #include <reference.h>
 #include <scene/resources/mesh.h>
-#include <scene/resources/surface_tool.h>
 
 // TODO Should be renamed VoxelMesherCubic or something like that
 class VoxelMesher : public Reference {
@@ -37,9 +36,17 @@ protected:
 	static void _bind_methods();
 
 private:
+	struct Arrays {
+		Vector<Vector3> positions;
+		Vector<Vector3> normals;
+		Vector<Vector2> uvs;
+		Vector<Color> colors;
+		Vector<int> indices;
+	};
+
 	Ref<VoxelLibrary> _library;
 	Ref<Material> _materials[MAX_MATERIALS];
-	SurfaceTool _surface_tool[MAX_MATERIALS];
+	Arrays _arrays[MAX_MATERIALS];
 	float _baked_occlusion_darkness;
 	bool _bake_occlusion;
 

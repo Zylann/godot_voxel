@@ -1,6 +1,7 @@
 #include "voxel.h"
 #include "voxel_library.h"
 #include "voxel_mesher.h"
+#include "cube_tables.h"
 
 #define STRLEN(x) (sizeof(x) / sizeof(x[0]))
 
@@ -128,13 +129,17 @@ void Voxel::set_geometry_type(GeometryType type) {
 
 		case GEOMETRY_NONE: {
 			// Clear all geometry
-			_model_vertices.resize(0);
+			_model_positions.resize(0);
 			_model_normals.resize(0);
-			_model_uv.resize(0);
+			_model_uvs.resize(0);
+			_model_indices.resize(0);
+
 			for (int side = 0; side < SIDE_COUNT; ++side) {
-				_model_side_vertices[side].resize(0);
-				_model_side_uv[side].resize(0);
+				_model_side_positions[side].resize(0);
+				_model_side_uvs[side].resize(0);
+				_model_side_indices[side].resize(0);
 			}
+
 		} break;
 
 		case GEOMETRY_CUBE:
@@ -167,56 +172,27 @@ VoxelLibrary *Voxel::get_library() const {
 
 Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 	sy = 1.0 + sy;
-	const Vector3 vertices[SIDE_COUNT][6] = {
-		{ // LEFT
-				Vector3(0, 0, 0),
-				Vector3(0, sy, 0),
-				Vector3(0, sy, 1),
-				Vector3(0, 0, 0),
-				Vector3(0, sy, 1),
-				Vector3(0, 0, 1) },
-		{ // RIGHT
-				Vector3(1, 0, 0),
-				Vector3(1, sy, 1),
-				Vector3(1, sy, 0),
-				Vector3(1, 0, 0),
-				Vector3(1, 0, 1),
-				Vector3(1, sy, 1) },
-		{ // BOTTOM
-				Vector3(0, 0, 0),
-				Vector3(1, 0, 1),
-				Vector3(1, 0, 0),
-				Vector3(0, 0, 0),
-				Vector3(0, 0, 1),
-				Vector3(1, 0, 1) },
-		{ // TOP
-				Vector3(0, sy, 0),
-				Vector3(1, sy, 0),
-				Vector3(1, sy, 1),
-				Vector3(0, sy, 0),
-				Vector3(1, sy, 1),
-				Vector3(0, sy, 1) },
-		{ // BACK
-				Vector3(0, 0, 0),
-				Vector3(1, 0, 0),
-				Vector3(1, sy, 0),
-				Vector3(0, 0, 0),
-				Vector3(1, sy, 0),
-				Vector3(0, sy, 0) },
-		{ // FRONT
-				Vector3(1, 0, 1),
-				Vector3(0, 0, 1),
-				Vector3(1, sy, 1),
-				Vector3(0, 0, 1),
-				Vector3(0, sy, 1),
-				Vector3(1, sy, 1) }
-	};
 
 	for (unsigned int side = 0; side < SIDE_COUNT; ++side) {
-		_model_side_vertices[side].resize(6);
-		PoolVector<Vector3>::Write w = _model_side_vertices[side].write();
-		for (unsigned int i = 0; i < 6; ++i) {
-			w[i] = vertices[side][i];
+
+		{
+			_model_side_positions[side].resize(4);
+			PoolVector<Vector3>::Write w = _model_side_positions[side].write();
+			for (unsigned int i = 0; i < 4; ++i) {
+				int corner = CubeTables::g_side_corners[side][i];
+				Vector3 p = CubeTables::g_corner_position[corner];
+				if(p.y > 0.9)
+					p.y = sy;
+				w[i] = p;
+			}
+		}
+
+		{
+			_model_side_indices[side].resize(6);
+			PoolVector<int>::Write w = _model_side_indices[side].write();
+			for (unsigned int i = 0; i < 6; ++i) {
+				w[i] = CubeTables::g_side_quad_triangles[side][i];
+			}
 		}
 	}
 
@@ -242,34 +218,17 @@ void Voxel::update_cube_uv_sides() {
 	const Vector2 uv[4] = {
 		Vector2(e, e),
 		Vector2(1.f - e, e),
-		Vector2(e, 1.f - e),
 		Vector2(1.f - e, 1.f - e),
-	};
-
-	// TODO The only reason why there are 6 entries per array is because SurfaceTool is used to access them.
-	// in the near future, there should be only 4, to account for one quad!
-	const int uv6[SIDE_COUNT][6] = {
-		// LEFT
-		{ 2, 0, 1, 2, 1, 3 },
-		// RIGHT
-		{ 2, 1, 0, 2, 3, 1 },
-		// BOTTOM
-		{ 0, 3, 1, 0, 2, 3 },
-		// TOP
-		{ 0, 1, 3, 0, 3, 2 },
-		// BACK
-		{ 2, 3, 1, 2, 1, 0 },
-		// FRONT
-		{ 3, 2, 1, 2, 0, 1 }
+		Vector2(e, 1.f - e),
 	};
 
 	float s = 1.0 / (float)library->get_atlas_size();
 
 	for (unsigned int side = 0; side < SIDE_COUNT; ++side) {
-		_model_side_uv[side].resize(6);
-		PoolVector<Vector2>::Write w = _model_side_uv[side].write();
-		for (unsigned int i = 0; i < 6; ++i) {
-			w[i] = (_cube_tiles[side] + uv[uv6[side][i]]) * s;
+		_model_side_uvs[side].resize(4);
+		PoolVector<Vector2>::Write w = _model_side_uvs[side].write();
+		for (unsigned int i = 0; i < 4; ++i) {
+			w[i] = (_cube_tiles[side] + uv[i]) * s;
 		}
 	}
 }

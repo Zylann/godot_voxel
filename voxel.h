@@ -65,11 +65,14 @@ public:
 
 	// Getters for native usage only
 
-	const PoolVector<Vector3> &get_model_vertices() const { return _model_vertices; }
+	const PoolVector<Vector3> &get_model_positions() const { return _model_positions; }
 	const PoolVector<Vector3> &get_model_normals() const { return _model_normals; }
-	const PoolVector<Vector2> &get_model_uv() const { return _model_uv; }
-	const PoolVector<Vector3> &get_model_side_vertices(unsigned int side) const { return _model_side_vertices[side]; }
-	const PoolVector<Vector2> &get_model_side_uv(unsigned int side) const { return _model_side_uv[side]; }
+	const PoolVector<Vector2> &get_model_uv() const { return _model_uvs; }
+	const PoolVector<int> &get_model_indices() const { return _model_indices; }
+
+	const PoolVector<Vector3> &get_model_side_positions(unsigned int side) const { return _model_side_positions[side]; }
+	const PoolVector<Vector2> &get_model_side_uv(unsigned int side) const { return _model_side_uvs[side]; }
+	const PoolVector<int> &get_model_side_indices(unsigned int side) const { return _model_side_indices[side]; }
 
 	void set_library(Ref<VoxelLibrary> lib);
 
@@ -104,13 +107,18 @@ private:
 	Vector2 _cube_tiles[SIDE_COUNT];
 
 	// Model
-	PoolVector<Vector3> _model_vertices;
+	PoolVector<Vector3> _model_positions;
 	PoolVector<Vector3> _model_normals;
-	PoolVector<Vector2> _model_uv;
-	PoolVector<Vector3> _model_side_vertices[SIDE_COUNT];
-	PoolVector<Vector2> _model_side_uv[SIDE_COUNT];
+	PoolVector<Vector2> _model_uvs;
+	PoolVector<int> _model_indices;
+	// Model sides:
+	// They are separated because this way we can occlude them easily.
+	// Due to these defining cube side triangles, normals are known already.
+	PoolVector<Vector3> _model_side_positions[SIDE_COUNT];
+	PoolVector<Vector2> _model_side_uvs[SIDE_COUNT];
+	PoolVector<int> _model_side_indices[SIDE_COUNT];
 
-	// TODO Child voxel types
+	// TODO Child voxel types?
 };
 
 VARIANT_ENUM_CAST(Voxel::ChannelMode)

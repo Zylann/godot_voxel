@@ -1,122 +1,20 @@
 #include "voxel_mesher.h"
 #include "voxel_library.h"
+#include "cube_tables.h"
 
-// The following tables respect the following conventions
-//
-//    7-------6
-//   /|      /|
-//  / |     / |  Corners
-// 4-------5  |
-// |  3----|--2
-// | /     | /   y z
-// |/      |/    |/
-// 0-------1     o--x
-//
-//
-//     o---10----o
-//    /|        /|
-//  11 7       9 6   Edges
-//  /  |      /  |
-// o----8----o   |
-// |   o---2-|---o
-// 4  /      5  /
-// | 3       | 1
-// |/        |/
-// o----0----o
-//
-// Sides are ordered according to the Voxel::Side enum.
-//
 
-static const unsigned int CORNER_COUNT = 8;
-static const unsigned int EDGE_COUNT = 12;
+template <typename T>
+void copy_to(PoolVector<T> &to, const Vector<T> &from) {
 
-static const Vector3 g_corner_position[CORNER_COUNT] = {
-	Vector3(0, 0, 0),
-	Vector3(1, 0, 0),
-	Vector3(1, 0, 1),
-	Vector3(0, 0, 1),
-	Vector3(0, 1, 0),
-	Vector3(1, 1, 0),
-	Vector3(1, 1, 1),
-	Vector3(0, 1, 1)
-};
+	to.resize(from.size());
 
-static const unsigned int g_side_coord[Voxel::SIDE_COUNT] = { 0, 0, 1, 1, 2, 2 };
-static const unsigned int g_side_sign[Voxel::SIDE_COUNT] = { 0, 1, 0, 1, 0, 1 };
+	typename PoolVector<T>::Write w = to.write();
 
-static const Vector3i g_side_normals[Voxel::SIDE_COUNT] = {
-	Vector3i(-1, 0, 0),
-	Vector3i(1, 0, 0),
-	Vector3i(0, -1, 0),
-	Vector3i(0, 1, 0),
-	Vector3i(0, 0, -1),
-	Vector3i(0, 0, 1),
-};
+	for (unsigned int i = 0; i < from.size(); ++i) {
+		w[i] = from[i];
+	}
+}
 
-static const unsigned int g_side_corners[Voxel::SIDE_COUNT][4] = {
-	{ 0, 3, 7, 4 },
-	{ 1, 2, 6, 5 },
-	{ 0, 1, 2, 3 },
-	{ 4, 5, 6, 7 },
-	{ 0, 1, 5, 4 },
-	{ 3, 2, 6, 7 }
-};
-
-static const unsigned int g_side_edges[Voxel::SIDE_COUNT][4] = {
-	{ 3, 7, 11, 4 },
-	{ 1, 6, 9, 5 },
-	{ 0, 1, 2, 3 },
-	{ 8, 9, 10, 11 },
-	{ 0, 5, 8, 4 },
-	{ 2, 6, 10, 7 }
-};
-
-// 3---2
-// | / | {0,1,2,0,2,3}
-// 0---1
-//static const unsigned int g_vertex_to_corner[Voxel::SIDE_COUNT][6] = {
-//    { 0, 3, 7, 0, 7, 4 },
-//    { 2, 1, 5, 2, 5, 6 },
-//    { 0, 1, 2, 0, 2, 3 },
-//    { 7, 6, 5, 7, 5, 4 },
-//    { 1, 0, 4 ,1, 4, 5 },
-//    { 3, 2, 6, 3, 6, 7 }
-//};
-
-static const Vector3i g_corner_inormals[CORNER_COUNT] = {
-	Vector3i(-1, -1, -1),
-	Vector3i(1, -1, -1),
-	Vector3i(1, -1, 1),
-	Vector3i(-1, -1, 1),
-
-	Vector3i(-1, 1, -1),
-	Vector3i(1, 1, -1),
-	Vector3i(1, 1, 1),
-	Vector3i(-1, 1, 1)
-};
-
-static const Vector3i g_edge_inormals[EDGE_COUNT] = {
-	Vector3i(0, -1, -1),
-	Vector3i(1, -1, 0),
-	Vector3i(0, -1, 1),
-	Vector3i(-1, -1, 0),
-
-	Vector3i(-1, 0, -1),
-	Vector3i(1, 0, -1),
-	Vector3i(1, 0, 1),
-	Vector3i(-1, 0, 1),
-
-	Vector3i(0, 1, -1),
-	Vector3i(1, 1, 0),
-	Vector3i(0, 1, 1),
-	Vector3i(-1, 1, 0)
-};
-
-static const unsigned int g_edge_corners[EDGE_COUNT][2] = {
-	{ 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 },
-	{ 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 },
-	{ 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 }
-};
 
 VoxelMesher::VoxelMesher()
 	: _baked_occlusion_darkness(0.75),
@@ -182,8 +80,12 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 	const VoxelLibrary &library = **_library;
 
 	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
-		_surface_tool[i].begin(Mesh::PRIMITIVE_TRIANGLES);
-		_surface_tool[i].set_material(_materials[i]);
+		Arrays &a = _arrays[i];
+		a.positions.clear();
+		a.normals.clear();
+		a.uvs.clear();
+		a.colors.clear();
+		a.indices.clear();
 	}
 
 	float baked_occlusion_darkness;
@@ -206,19 +108,23 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 	min.clamp_to(pad, max);
 	max.clamp_to(min, buffer.get_size() - pad);
 
+	int index_offset = 0;
+
 	// Iterate 3D padded data to extract voxel faces.
 	// This is the most intensive job in this class, so all required data should be as fit as possible.
 	for (unsigned int z = min.z; z < max.z; ++z) {
 		for (unsigned int x = min.x; x < max.x; ++x) {
 			for (unsigned int y = min.y; y < max.y; ++y) {
 
+				// TODO In this intensive routine, there is a way to make voxel access fastest by getting a pointer to the channel,
+				// and using offset lookup to get neighbors rather than going through get_voxel validations
 				int voxel_id = buffer.get_voxel(x, y, z, 0);
 
 				if (voxel_id != 0 && library.has_voxel(voxel_id)) {
 
 					const Voxel &voxel = library.get_voxel_const(voxel_id);
 
-					SurfaceTool &st = _surface_tool[voxel.get_material_id()];
+					Arrays &arrays = _arrays[voxel.get_material_id()];
 
 					// Hybrid approach: extract cube faces and decimate those that aren't visible,
 					// and still allow voxels to have geometry that is not a cube
@@ -226,10 +132,12 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 					// Sides
 					for (unsigned int side = 0; side < Voxel::SIDE_COUNT; ++side) {
 
-						const PoolVector<Vector3> &vertices = voxel.get_model_side_vertices(side);
-						if (vertices.size() != 0) {
+						const PoolVector<Vector3> &positions = voxel.get_model_side_positions(side);
+						int vertex_count = positions.size();
 
-							Vector3i normal = g_side_normals[side];
+						if (vertex_count != 0) {
+
+							Vector3i normal = CubeTables::g_side_normals[side];
 							unsigned nx = x + normal.x;
 							unsigned ny = y + normal.y;
 							unsigned nz = z + normal.z;
@@ -247,22 +155,22 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 									// Combinatory solution for https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
 
 									for (unsigned int j = 0; j < 4; ++j) {
-										unsigned int edge = g_side_edges[side][j];
-										Vector3i edge_normal = g_edge_inormals[edge];
+										unsigned int edge = CubeTables::g_side_edges[side][j];
+										Vector3i edge_normal = CubeTables::g_edge_inormals[edge];
 										unsigned ex = x + edge_normal.x;
 										unsigned ey = y + edge_normal.y;
 										unsigned ez = z + edge_normal.z;
 										if (!is_transparent(library, buffer.get_voxel(ex, ey, ez))) {
-											shaded_corner[g_edge_corners[edge][0]] += 1;
-											shaded_corner[g_edge_corners[edge][1]] += 1;
+											shaded_corner[CubeTables::g_edge_corners[edge][0]] += 1;
+											shaded_corner[CubeTables::g_edge_corners[edge][1]] += 1;
 										}
 									}
 									for (unsigned int j = 0; j < 4; ++j) {
-										unsigned int corner = g_side_corners[side][j];
+										unsigned int corner = CubeTables::g_side_corners[side][j];
 										if (shaded_corner[corner] == 2) {
 											shaded_corner[corner] = 3;
 										} else {
-											Vector3i corner_normal = g_corner_inormals[corner];
+											Vector3i corner_normal = CubeTables::g_corner_inormals[corner];
 											unsigned int cx = x + corner_normal.x;
 											unsigned int cy = y + corner_normal.y;
 											unsigned int cz = z + corner_normal.z;
@@ -273,11 +181,12 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 									}
 								}
 
-								PoolVector<Vector3>::Read rv = vertices.read();
+								PoolVector<Vector3>::Read rv = positions.read();
 								PoolVector<Vector2>::Read rt = voxel.get_model_side_uv(side).read();
+
 								Vector3 pos(x - 1, y - 1, z - 1);
 
-								for (unsigned int i = 0; i < vertices.size(); ++i) {
+								for (unsigned int i = 0; i < vertex_count; ++i) {
 									Vector3 v = rv[i];
 
 									if (_bake_occlusion) {
@@ -286,10 +195,10 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 										// TODO Fix occlusion inconsistency caused by triangles orientation
 										float shade = 0;
 										for (unsigned int j = 0; j < 4; ++j) {
-											unsigned int corner = g_side_corners[side][j];
+											unsigned int corner = CubeTables::g_side_corners[side][j];
 											if (shaded_corner[corner]) {
 												float s = baked_occlusion_darkness * static_cast<float>(shaded_corner[corner]);
-												float k = 1.0 - g_corner_position[corner].distance_to(v);
+												float k = 1.0 - CubeTables::g_corner_position[corner].distance_to(v);
 												if (k < 0.0)
 													k = 0.0;
 												s *= k;
@@ -298,31 +207,61 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 											}
 										}
 										float gs = 1.0 - shade;
-										st.add_color(Color(gs, gs, gs));
+										arrays.colors.push_back(Color(gs, gs, gs));
 									}
 
-									st.add_normal(Vector3(normal.x, normal.y, normal.z));
-									st.add_uv(rt[i]);
-									st.add_vertex(v + pos);
+									// TODO Investigate wether those vectors can be replaced by a simpler, faster one for PODs
+									// TODO Resize beforehands rather than push_back (even if the vector is preallocated)
+									arrays.normals.push_back(Vector3(normal.x, normal.y, normal.z));
+									arrays.uvs.push_back(rt[i]);
+									arrays.positions.push_back(v + pos);
 								}
+
+								const PoolVector<int> &side_indices = voxel.get_model_side_indices(side);
+								PoolVector<int>::Read ri = side_indices.read();
+								unsigned int index_count = side_indices.size();
+
+								for(unsigned int i = 0; i < index_count; ++i) {
+									arrays.indices.push_back(index_offset + ri[i]);
+								}
+
+								index_offset += vertex_count;
 							}
 						}
 					}
 
 					// Inside
-					if (voxel.get_model_vertices().size() != 0) {
+					if (voxel.get_model_positions().size() != 0) {
 
-						const PoolVector<Vector3> &vertices = voxel.get_model_vertices();
-						PoolVector<Vector3>::Read rv = voxel.get_model_vertices().read();
+						const PoolVector<Vector3> &vertices = voxel.get_model_positions();
+						int vertex_count = vertices.size();
+
+						PoolVector<Vector3>::Read rv = vertices.read();
 						PoolVector<Vector3>::Read rn = voxel.get_model_normals().read();
 						PoolVector<Vector2>::Read rt = voxel.get_model_uv().read();
+
 						Vector3 pos(x - 1, y - 1, z - 1);
 
-						for (unsigned int i = 0; i < vertices.size(); ++i) {
-							st.add_normal(rn[i]);
-							st.add_uv(rt[i]);
-							st.add_vertex(rv[i] + pos);
+						for (unsigned int i = 0; i < vertex_count; ++i) {
+							arrays.normals.push_back(rn[i]);
+							arrays.uvs.push_back(rt[i]);
+							arrays.positions.push_back(rv[i] + pos);
 						}
+
+						if(_bake_occlusion) {
+							// TODO handle ambient occlusion on inner parts
+							arrays.colors.push_back(Color(1,1,1));
+						}
+
+						const PoolVector<int> &indices = voxel.get_model_indices();
+						PoolVector<int>::Read ri = indices.read();
+						unsigned int index_count = indices.size();
+
+						for(unsigned int i = 0; i < index_count; ++i) {
+							arrays.indices.push_back(index_offset + ri[i]);
+						}
+
+						index_offset += vertex_count;
 					}
 				}
 			}
@@ -337,21 +276,48 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 	if (mesh.is_null())
 		mesh_ref = Ref<ArrayMesh>(memnew(ArrayMesh));
 
-	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
-		SurfaceTool &st = _surface_tool[i];
+	VOXEL_PROFILE_BEGIN("mesher_add_surfaces")
 
-		// Index mesh to reduce memory usage and make upload to VRAM faster
-		// TODO actually, we could make it indexed from the ground up without using SurfaceTool, so we also save time!
-		//			VOXEL_PROFILE_BEGIN("mesher_surfacetool_index")
-		//			st.index();
-		//			VOXEL_PROFILE_END("mesher_surfacetool_index")
+//	print_line(String("Made mesh v: ") + String::num(_arrays[0].positions.size())
+//			+ String(", i: ") + String::num(_arrays[0].indices.size()));
 
-		VOXEL_PROFILE_BEGIN("mesher_surfacetool_commit")
-		mesh_ref = st.commit(mesh_ref);
-		VOXEL_PROFILE_END("mesher_surfacetool_commit")
+	int surface = 0;
+	for(int i = 0; i < MAX_MATERIALS; ++i) {
 
-		st.clear();
+		const Arrays &arrays = _arrays[i];
+		if(arrays.positions.size() != 0) {
+
+			Array mesh_arrays;
+			mesh_arrays.resize(Mesh::ARRAY_MAX);
+
+			{
+				PoolVector<Vector3> positions;
+				PoolVector<Vector2> uvs;
+				PoolVector<Vector3> normals;
+				PoolVector<Color> colors;
+				PoolVector<int> indices;
+
+				copy_to(positions, arrays.positions);
+				copy_to(uvs, arrays.uvs);
+				copy_to(normals, arrays.normals);
+				copy_to(colors, arrays.colors);
+				copy_to(indices, arrays.indices);
+
+				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
+				mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
+				mesh_arrays[Mesh::ARRAY_NORMAL] = normals;
+				mesh_arrays[Mesh::ARRAY_COLOR] = colors;
+				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
+			}
+
+			mesh_ref->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, mesh_arrays);
+			mesh_ref->surface_set_material(surface, _materials[i]);
+
+			++surface;
+		}
 	}
+
+	VOXEL_PROFILE_END("mesher_add_surfaces")
 
 	return mesh_ref;
 }
