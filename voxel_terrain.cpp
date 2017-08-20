@@ -2,6 +2,7 @@
 #include "voxel_raycast.h"
 #include <os/os.h>
 #include <scene/3d/mesh_instance.h>
+#include <engine.h>
 
 
 VoxelTerrain::VoxelTerrain()
@@ -472,7 +473,7 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 			VOXEL_PROFILE_END("mesh_instance_set_mesh")
 		}
 
-		if (get_tree()->is_editor_hint() == false && _generate_collisions) {
+		if (Engine::get_singleton()->is_editor_hint() == false && _generate_collisions) {
 
 			// TODO Generate collisions using PhysicsServer
 			// TODO Need to select only specific surfaces because some may not have collisions
