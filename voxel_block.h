@@ -12,14 +12,18 @@ class VoxelBlock {
 public:
 	Ref<VoxelBuffer> voxels; // SIZE*SIZE*SIZE voxels
 	Vector3i pos;
-	NodePath mesh_instance_path;
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size);
 
-	MeshInstance *get_mesh_instance(const Node &root);
+	void set_mesh(Ref<Mesh> mesh, Ref<World> world);
 
 private:
 	VoxelBlock();
+
+	Vector3i _position_in_voxels;
+
+	Ref<Mesh> _mesh;
+	RID _mesh_instance;
 };
 
 #endif // VOXEL_BLOCK_H

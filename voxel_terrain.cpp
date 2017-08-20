@@ -6,7 +6,7 @@
 
 
 VoxelTerrain::VoxelTerrain()
-	: Node(), _generate_collisions(true) {
+	: Spatial(), _generate_collisions(true) {
 
 	_map = Ref<VoxelMap>(memnew(VoxelMap));
 	_mesher = Ref<VoxelMesher>(memnew(VoxelMesher));
@@ -306,6 +306,8 @@ void VoxelTerrain::_notification(int p_what) {
 			make_all_view_dirty();
 			break;
 
+		// TODO Listen for transform changes
+
 		default:
 			break;
 	}
@@ -440,8 +442,6 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(1, 1, 1), nbuffer, 0x3);
 	VOXEL_PROFILE_END("block_extraction")
 
-	Vector3 block_node_pos = _map->block_to_voxel(block_pos).to_vec3();
-
 	// TODO Re-use existing meshes to optimize memory cost
 
 	// Build cubic parts of the mesh
@@ -449,36 +449,11 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	// Build smooth parts of the mesh
 	_mesher_smooth->build(nbuffer, Voxel::CHANNEL_ISOLEVEL, mesh);
 
-	MeshInstance *mesh_instance = block->get_mesh_instance(*this);
+	if(is_mesh_empty(mesh))
+		mesh = Ref<Mesh>();
 
-	if (is_mesh_empty(mesh)) {
-		if (mesh_instance) {
-			mesh_instance->set_mesh(Ref<Mesh>());
-		}
-	} else {
-		// The mesh exist and it has vertices
-
-		// TODO Don't use nodes! Use servers directly, it's faster
-		if (mesh_instance == NULL) {
-			// Create and spawn mesh
-			mesh_instance = memnew(MeshInstance);
-			mesh_instance->set_mesh(mesh);
-			mesh_instance->set_translation(block_node_pos);
-			add_child(mesh_instance);
-			block->mesh_instance_path = mesh_instance->get_path();
-		} else {
-			// Update mesh
-			VOXEL_PROFILE_BEGIN("mesh_instance_set_mesh")
-			mesh_instance->set_mesh(mesh);
-			VOXEL_PROFILE_END("mesh_instance_set_mesh")
-		}
-
-		if (Engine::get_singleton()->is_editor_hint() == false && _generate_collisions) {
-
-			// TODO Generate collisions using PhysicsServer
-			// TODO Need to select only specific surfaces because some may not have collisions
-		}
-	}
+	Ref<World> world = get_world();
+	block->set_mesh(mesh, world);
 }
 
 //void VoxelTerrain::block_removed(VoxelBlock & block) {

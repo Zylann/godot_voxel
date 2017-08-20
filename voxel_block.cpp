@@ -1,14 +1,5 @@
 #include "voxel_block.h"
 
-MeshInstance *VoxelBlock::get_mesh_instance(const Node &root) {
-	if (mesh_instance_path.is_empty())
-		return NULL;
-	Node *n = root.get_node(mesh_instance_path);
-	if (n == NULL)
-		return NULL;
-	return n->cast_to<MeshInstance>();
-}
-
 // Helper
 VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size) {
 	const int bs = size;
@@ -17,6 +8,7 @@ VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned 
 
 	VoxelBlock *block = memnew(VoxelBlock);
 	block->pos = bpos;
+	block->_position_in_voxels = bpos * size;
 
 	block->voxels = buffer;
 	//block->map = &map;
@@ -25,5 +17,42 @@ VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned 
 
 VoxelBlock::VoxelBlock()
 	: voxels(NULL) {
+
+	VisualServer &vs = *VisualServer::get_singleton();
+
+	if (_mesh_instance.is_valid()) {
+		vs.free(_mesh_instance);
+		_mesh_instance = RID();
+	}
 }
 
+void VoxelBlock::set_mesh(Ref<Mesh> mesh, Ref<World> world) {
+
+	VisualServer &vs = *VisualServer::get_singleton();
+
+	if(mesh.is_valid()) {
+
+		if(_mesh_instance.is_valid() == false) {
+			// Create instance if it doesn't exist
+			ERR_FAIL_COND(world.is_null());
+			_mesh_instance = vs.instance_create();
+			vs.instance_set_scenario(_mesh_instance, world->get_scenario());
+		}
+
+		vs.instance_set_base(_mesh_instance, mesh.is_valid() ? mesh->get_rid() : RID());
+
+		Transform local_transform(Basis(), _position_in_voxels.to_vec3());
+		vs.instance_set_transform(_mesh_instance, local_transform);
+		// TODO The day VoxelTerrain becomes a Spatial, this transform will need to be updatable separately
+
+	} else {
+
+		if(_mesh_instance.is_valid()) {
+			// Delete instance if it exists
+			vs.free(_mesh_instance);
+			_mesh_instance = RID();
+		}
+	}
+
+	_mesh = mesh;
+}
