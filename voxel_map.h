@@ -2,25 +2,10 @@
 #define VOXEL_MAP_H
 
 #include "voxel_buffer.h"
+#include "voxel_block.h"
+
 #include <core/hash_map.h>
-#include <scene/3d/mesh_instance.h>
-#include <scene/3d/physics_body.h>
 #include <scene/main/node.h>
-
-// Fixed-size voxel container used in VoxelMap. Used internally.
-class VoxelBlock {
-public:
-	Ref<VoxelBuffer> voxels; // SIZE*SIZE*SIZE voxels
-	Vector3i pos;
-	NodePath mesh_instance_path;
-
-	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size);
-
-	MeshInstance *get_mesh_instance(const Node &root);
-
-private:
-	VoxelBlock();
-};
 
 // Infinite voxel storage by means of octants like Gridmap
 class VoxelMap : public Reference {
