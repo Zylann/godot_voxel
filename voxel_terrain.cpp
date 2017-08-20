@@ -102,6 +102,7 @@ void VoxelTerrain::set_view_distance(int distance_in_voxels) {
 		_view_distance_blocks = d;
 		make_all_view_dirty();
 		// TODO Immerge blocks too far away
+		// TODO Cancel updates that are scheduled too far away
 	}
 }
 
@@ -545,7 +546,6 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_storage"), &VoxelTerrain::get_map);
 
-	// TODO Make those two static in VoxelMap?
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
 	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_block_to_voxel_binding);
 

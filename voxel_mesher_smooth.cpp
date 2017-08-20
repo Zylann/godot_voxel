@@ -129,6 +129,11 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer &voxels, unsigned int chann
 
 	// Each 2x2 voxel group is a "cell"
 
+	if(voxels.is_uniform(channel)) {
+		// Nothing to extract, because constant isolevels never cross the surface
+		return;
+	}
+
 	const Vector3i block_size = voxels.get_size();
 	// TODO No lod yet, but it's planned
 	const int lod_index = 0;
