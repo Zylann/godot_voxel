@@ -137,5 +137,38 @@ const unsigned int g_edge_corners[EDGE_COUNT][2] = {
 	{ 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 }
 };
 
+// Order is irrelevant
+const Vector3i g_moore_neighboring_3d[26] = {
+	Vector3i(-1, -1, -1),
+	Vector3i(0, -1, -1),
+	Vector3i(1, -1, -1),
+	Vector3i(-1, -1, 0),
+	Vector3i(0, -1, 0),
+	Vector3i(1, -1, 0),
+	Vector3i(-1, -1, 1),
+	Vector3i(0, -1, 1),
+	Vector3i(1, -1, 1),
+
+	Vector3i(-1, 0, -1),
+	Vector3i(0, 0, -1),
+	Vector3i(1, 0, -1),
+	Vector3i(-1, 0, 0),
+	//Vector3i(0,0,0),
+	Vector3i(1, 0, 0),
+	Vector3i(-1, 0, 1),
+	Vector3i(0, 0, 1),
+	Vector3i(1, 0, 1),
+
+	Vector3i(-1, 1, -1),
+	Vector3i(0, 1, -1),
+	Vector3i(1, 1, -1),
+	Vector3i(-1, 1, 0),
+	Vector3i(0, 1, 0),
+	Vector3i(1, 1, 0),
+	Vector3i(-1, 1, 1),
+	Vector3i(0, 1, 1),
+	Vector3i(1, 1, 1),
+};
+
 } // namespace CubeTables
 

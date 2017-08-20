@@ -28,6 +28,8 @@ extern const Vector3i g_edge_inormals[EDGE_COUNT];
 
 extern const unsigned int g_edge_corners[EDGE_COUNT][2];
 
+extern const Vector3i g_moore_neighboring_3d[26];
+
 } // namespace CubeTables
 
 

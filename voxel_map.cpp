@@ -1,5 +1,6 @@
 #include "voxel_map.h"
 #include "core/os/os.h"
+#include "cube_tables.h"
 
 //----------------------------------------------------------------------------
 // VoxelBlock
@@ -134,41 +135,9 @@ bool VoxelMap::has_block(Vector3i pos) const {
 	return /*(_last_accessed_block != NULL && _last_accessed_block->pos == pos) ||*/ _blocks.has(pos);
 }
 
-Vector3i g_moore_neighboring_3d[26] = {
-	Vector3i(-1, -1, -1),
-	Vector3i(0, -1, -1),
-	Vector3i(1, -1, -1),
-	Vector3i(-1, -1, 0),
-	Vector3i(0, -1, 0),
-	Vector3i(1, -1, 0),
-	Vector3i(-1, -1, 1),
-	Vector3i(0, -1, 1),
-	Vector3i(1, -1, 1),
-
-	Vector3i(-1, 0, -1),
-	Vector3i(0, 0, -1),
-	Vector3i(1, 0, -1),
-	Vector3i(-1, 0, 0),
-	//Vector3i(0,0,0),
-	Vector3i(1, 0, 0),
-	Vector3i(-1, 0, 1),
-	Vector3i(0, 0, 1),
-	Vector3i(1, 0, 1),
-
-	Vector3i(-1, 1, -1),
-	Vector3i(0, 1, -1),
-	Vector3i(1, 1, -1),
-	Vector3i(-1, 1, 0),
-	Vector3i(0, 1, 0),
-	Vector3i(1, 1, 0),
-	Vector3i(-1, 1, 1),
-	Vector3i(0, 1, 1),
-	Vector3i(1, 1, 1),
-};
-
 bool VoxelMap::is_block_surrounded(Vector3i pos) const {
 	for (unsigned int i = 0; i < 26; ++i) {
-		Vector3i bpos = pos + g_moore_neighboring_3d[i];
+		Vector3i bpos = pos + CubeTables::g_moore_neighboring_3d[i];
 		if (!has_block(bpos)) {
 			return false;
 		}
