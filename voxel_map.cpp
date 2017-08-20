@@ -25,7 +25,7 @@ void VoxelMap::set_block_size_pow2(unsigned int p) {
 
 	_block_size_pow2 = p;
 	_block_size = 1 << _block_size_pow2;
-	_block_size_mask = _block_size_pow2 - 1;
+	_block_size_mask = _block_size - 1;
 }
 
 int VoxelMap::get_voxel(Vector3i pos, unsigned int c) {
