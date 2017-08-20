@@ -3,6 +3,7 @@
 #include <os/os.h>
 #include <scene/3d/mesh_instance.h>
 
+
 VoxelTerrain::VoxelTerrain()
 	: Node(), _generate_collisions(true) {
 
@@ -90,12 +91,12 @@ void VoxelTerrain::set_generate_collisions(bool enabled) {
 }
 
 int VoxelTerrain::get_view_distance() const {
-	return _view_distance_blocks * VoxelBlock::SIZE;
+	return _view_distance_blocks * _map->get_block_size();
 }
 
 void VoxelTerrain::set_view_distance(int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0)
-	int d = distance_in_voxels / VoxelBlock::SIZE;
+	int d = distance_in_voxels / _map->get_block_size();
 	if(d != _view_distance_blocks) {
 		_view_distance_blocks = d;
 		make_all_view_dirty();
@@ -174,17 +175,17 @@ inline int get_border_index(int x, int max) {
 void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 
 	// Update the block in which the voxel is
-	Vector3i bpos = VoxelMap::voxel_to_block(pos);
+	Vector3i bpos = _map->voxel_to_block(pos);
 	make_block_dirty(bpos);
 	//OS::get_singleton()->print("Dirty (%i, %i, %i)\n", bpos.x, bpos.y, bpos.z);
 
 	// Update neighbor blocks if the voxel is touching a boundary
 
-	Vector3i rpos = VoxelMap::to_local(pos);
+	Vector3i rpos = _map->to_local(pos);
 
 	bool check_corners = _mesher->get_occlusion_enabled();
 
-	const int max = VoxelBlock::SIZE - 1;
+	const int max = _map->get_block_size() - 1;
 
 	if (rpos.x == 0)
 		make_block_dirty(bpos - Vector3i(1, 0, 0));
@@ -316,10 +317,12 @@ void VoxelTerrain::_process() {
 void VoxelTerrain::update_blocks() {
 	OS &os = *OS::get_singleton();
 
+	ERR_FAIL_COND(_map.is_null());
+
 	// Get viewer location
 	Spatial *viewer = get_viewer(_viewer_path);
 	if (viewer)
-		g_viewer_block_pos = VoxelMap::voxel_to_block(viewer->get_translation());
+		g_viewer_block_pos = _map->voxel_to_block(viewer->get_translation());
 	else
 		g_viewer_block_pos = Vector3i();
 
@@ -330,6 +333,9 @@ void VoxelTerrain::update_blocks() {
 
 	uint32_t time_before = os.get_ticks_msec();
 	uint32_t max_time = 1000 / 120;
+
+	const unsigned int bs = _map->get_block_size();
+	const Vector3i block_size(bs, bs, bs);
 
 	// Update a bunch of blocks until none are left or too much time elapsed
 	while (!_block_update_queue.empty() && (os.get_ticks_msec() - time_before) < max_time) {
@@ -352,7 +358,6 @@ void VoxelTerrain::update_blocks() {
 				VOXEL_PROFILE_BEGIN("voxel_buffer_creation_gen")
 
 				Ref<VoxelBuffer> buffer_ref = Ref<VoxelBuffer>(memnew(VoxelBuffer));
-				const Vector3i block_size(VoxelBlock::SIZE, VoxelBlock::SIZE, VoxelBlock::SIZE);
 				buffer_ref->create(block_size.x, block_size.y, block_size.z);
 
 				VOXEL_PROFILE_END("voxel_buffer_creation_gen")
@@ -426,14 +431,15 @@ void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
 	// TODO Make the buffer re-usable
 	// TODO Padding set to 3 at the moment because Transvoxel works on 2x2 cells.
 	// It should change for a smarter padding (if smooth isn't used for example).
-	nbuffer.create(VoxelBlock::SIZE + 3, VoxelBlock::SIZE + 3, VoxelBlock::SIZE + 3);
+	unsigned int block_size = _map->get_block_size();
+	nbuffer.create(block_size + 3, block_size + 3, block_size + 3);
 	VOXEL_PROFILE_END("voxel_buffer_creation_extract")
 
 	VOXEL_PROFILE_BEGIN("block_extraction")
-	_map->get_buffer_copy(VoxelMap::block_to_voxel(block_pos) - Vector3i(1, 1, 1), nbuffer, 0x3);
+	_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(1, 1, 1), nbuffer, 0x3);
 	VOXEL_PROFILE_END("block_extraction")
 
-	Vector3 block_node_pos = VoxelMap::block_to_voxel(block_pos).to_vec3();
+	Vector3 block_node_pos = _map->block_to_voxel(block_pos).to_vec3();
 
 	// TODO Re-use existing meshes to optimize memory cost
 
@@ -531,6 +537,14 @@ Variant VoxelTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t
 	} else {
 		return Variant(); // Null dictionary, no alloc
 	}
+}
+
+Vector3 VoxelTerrain::_voxel_to_block_binding(Vector3 pos) {
+	return Vector3i(_map->voxel_to_block(pos)).to_vec3();
+}
+
+Vector3 VoxelTerrain::_block_to_voxel_binding(Vector3 pos) {
+	return Vector3i(_map->block_to_voxel(pos)).to_vec3();
 }
 
 void VoxelTerrain::_bind_methods() {

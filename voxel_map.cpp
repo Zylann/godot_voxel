@@ -15,8 +15,8 @@ MeshInstance *VoxelBlock::get_mesh_instance(const Node &root) {
 }
 
 // Helper
-VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer) {
-	const int bs = VoxelBlock::SIZE;
+VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size) {
+	const int bs = size;
 	ERR_FAIL_COND_V(buffer.is_null(), NULL);
 	ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), NULL);
 
@@ -38,6 +38,10 @@ VoxelBlock::VoxelBlock()
 
 VoxelMap::VoxelMap()
 	: _last_accessed_block(NULL) {
+
+	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
+	set_block_size_pow2(4);
+
 	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
 		_default_voxel[i] = 0;
 	}
@@ -45,6 +49,16 @@ VoxelMap::VoxelMap()
 
 VoxelMap::~VoxelMap() {
 	clear();
+}
+
+void VoxelMap::set_block_size_pow2(unsigned int p) {
+
+	// Limit to 8, 16, 32
+	ERR_FAIL_COND(p < 3 || p > 5);
+
+	_block_size_pow2 = p;
+	_block_size = 1 << _block_size_pow2;
+	_block_size_mask = _block_size_pow2 - 1;
 }
 
 int VoxelMap::get_voxel(Vector3i pos, unsigned int c) {
@@ -64,10 +78,10 @@ void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
 	if (block == NULL) {
 
 		Ref<VoxelBuffer> buffer(memnew(VoxelBuffer));
-		buffer->create(VoxelBlock::SIZE, VoxelBlock::SIZE, VoxelBlock::SIZE);
+		buffer->create(_block_size, _block_size, _block_size);
 		buffer->set_default_values(_default_voxel);
 
-		block = VoxelBlock::create(bpos, buffer);
+		block = VoxelBlock::create(bpos, buffer, _block_size);
 
 		set_block(bpos, block);
 	}
@@ -109,7 +123,7 @@ void VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
 	ERR_FAIL_COND(buffer.is_null());
 	VoxelBlock *block = get_block(bpos);
 	if (block == NULL) {
-		block = VoxelBlock::create(bpos, *buffer);
+		block = VoxelBlock::create(bpos, *buffer, _block_size);
 		set_block(bpos, block);
 	} else {
 		block->voxels = buffer;
@@ -170,6 +184,8 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 	Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1, 1, 1)) + Vector3i(1, 1, 1);
 	ERR_FAIL_COND((max_block_pos - min_block_pos) != Vector3(3, 3, 3));
 
+	const Vector3i block_size_v(_block_size, _block_size, _block_size);
+
 	for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
 
 		if (((1 << channel) & channels_mask) == 0) {
@@ -188,12 +204,13 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 						Vector3i offset = block_to_voxel(bpos);
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_from(src_buffer, min_pos - offset, max_pos - offset, offset - min_pos, channel);
+
 					} else {
 						Vector3i offset = block_to_voxel(bpos);
 						dst_buffer.fill_area(
 								_default_voxel[channel],
 								offset - min_pos,
-								offset - min_pos + Vector3i(VoxelBlock::SIZE, VoxelBlock::SIZE, VoxelBlock::SIZE));
+								offset - min_pos + block_size_v);
 					}
 				}
 			}

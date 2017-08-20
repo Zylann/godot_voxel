@@ -67,8 +67,8 @@ private:
 	static void _bind_methods();
 
 	// Convenience
-	Vector3 _voxel_to_block_binding(Vector3 pos) { return Vector3i(VoxelMap::voxel_to_block(pos)).to_vec3(); }
-	Vector3 _block_to_voxel_binding(Vector3 pos) { return Vector3i(VoxelMap::block_to_voxel(pos)).to_vec3(); }
+	Vector3 _voxel_to_block_binding(Vector3 pos);
+	Vector3 _block_to_voxel_binding(Vector3 pos);
 	void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
 	void _make_block_dirty_binding(Vector3 bpos) { make_block_dirty(bpos); }
 	void _make_blocks_dirty_binding(Vector3 min, Vector3 size) { make_blocks_dirty(min, size); }

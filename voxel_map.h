@@ -10,15 +10,11 @@
 // Fixed-size voxel container used in VoxelMap. Used internally.
 class VoxelBlock {
 public:
-	static const int SIZE_POW2 = 4; // 3=>8, 4=>16, 5=>32...
-	static const int SIZE = 1 << SIZE_POW2;
-	static const int SIZE_MASK = 0xf;
-
 	Ref<VoxelBuffer> voxels; // SIZE*SIZE*SIZE voxels
 	Vector3i pos;
 	NodePath mesh_instance_path;
 
-	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer);
+	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size);
 
 	MeshInstance *get_mesh_instance(const Node &root);
 
@@ -31,27 +27,31 @@ class VoxelMap : public Reference {
 	GDCLASS(VoxelMap, Reference)
 public:
 	// Converts voxel coodinates into block coordinates
-	static _FORCE_INLINE_ Vector3i voxel_to_block(Vector3i pos) {
+	_FORCE_INLINE_ Vector3i voxel_to_block(Vector3i pos) const {
 		return Vector3i(
-				pos.x >> VoxelBlock::SIZE_POW2,
-				pos.y >> VoxelBlock::SIZE_POW2,
-				pos.z >> VoxelBlock::SIZE_POW2);
+				pos.x >> _block_size_pow2,
+				pos.y >> _block_size_pow2,
+				pos.z >> _block_size_pow2);
 	}
 
-	static _FORCE_INLINE_ Vector3i to_local(Vector3i pos) {
+	_FORCE_INLINE_ Vector3i to_local(Vector3i pos) const {
 		return Vector3i(
-				pos.x & VoxelBlock::SIZE_MASK,
-				pos.y & VoxelBlock::SIZE_MASK,
-				pos.z & VoxelBlock::SIZE_MASK);
+				pos.x & _block_size_mask,
+				pos.y & _block_size_mask,
+				pos.z & _block_size_mask);
 	}
 
 	// Converts block coodinates into voxel coordinates
-	static _FORCE_INLINE_ Vector3i block_to_voxel(Vector3i bpos) {
-		return bpos * VoxelBlock::SIZE;
+	_FORCE_INLINE_ Vector3i block_to_voxel(Vector3i bpos) const {
+		return bpos * _block_size;
 	}
 
 	VoxelMap();
 	~VoxelMap();
+
+	_FORCE_INLINE_ unsigned int get_block_size() const { return _block_size; }
+	_FORCE_INLINE_ unsigned int get_block_size_pow2() const { return _block_size_pow2; }
+	_FORCE_INLINE_ unsigned int get_block_size_mask() const { return _block_size_mask; }
 
 	int get_voxel(Vector3i pos, unsigned int c = 0);
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
@@ -77,7 +77,7 @@ public:
 private:
 	void set_block(Vector3i bpos, VoxelBlock *block);
 
-	_FORCE_INLINE_ int get_block_size() const { return VoxelBlock::SIZE; }
+	void set_block_size_pow2(unsigned int p);
 
 	static void _bind_methods();
 
@@ -102,6 +102,10 @@ private:
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
 	// To prevent too much hashing, this reference is checked before.
 	VoxelBlock *_last_accessed_block;
+
+	unsigned int _block_size;
+	unsigned int _block_size_pow2;
+	unsigned int _block_size_mask;
 };
 
 #endif // VOXEL_MAP_H

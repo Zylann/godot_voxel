@@ -121,6 +121,10 @@ _FORCE_INLINE_ Vector3i operator-(const Vector3i &a, const Vector3i &b) {
 	return Vector3i(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
+_FORCE_INLINE_ Vector3i operator*(const Vector3i &a, const Vector3i &b) {
+	return Vector3i(a.x * b.x, a.y * b.y, a.z * b.z);
+}
+
 _FORCE_INLINE_ Vector3i operator*(const Vector3i &a, int n) {
 	return Vector3i(a.x * n, a.y * n, a.z * n);
 }
