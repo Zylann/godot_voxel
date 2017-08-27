@@ -142,7 +142,7 @@ _FORCE_INLINE_ bool operator==(const Vector3i &a, const Vector3i &b) {
 }
 
 _FORCE_INLINE_ bool operator!=(const Vector3i &a, const Vector3i &b) {
-	return a.x != b.x && a.y != b.y && a.z != b.z;
+	return a.x != b.x || a.y != b.y || a.z != b.z;
 }
 
 _FORCE_INLINE_ int Vector3i::distance_sq(const Vector3i &other) const {
