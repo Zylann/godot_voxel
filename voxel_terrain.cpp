@@ -122,7 +122,7 @@ Spatial *VoxelTerrain::get_viewer(NodePath path) const {
 	Node *node = get_node(path);
 	if (node == NULL)
 		return NULL;
-	return node->cast_to<Spatial>();
+	return Object::cast_to<Spatial>(node);
 }
 
 void VoxelTerrain::set_material(int id, Ref<Material> material) {

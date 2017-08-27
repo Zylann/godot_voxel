@@ -166,7 +166,7 @@ void Voxel::set_library(Ref<VoxelLibrary> lib) {
 VoxelLibrary *Voxel::get_library() const {
 	Object *v = _library.get_ref();
 	if (v)
-		return v->cast_to<VoxelLibrary>();
+		return Object::cast_to<VoxelLibrary>(v);
 	return NULL;
 }
 
