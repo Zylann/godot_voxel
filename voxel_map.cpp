@@ -153,43 +153,14 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 	}
 }
 
-void VoxelMap::remove_blocks_not_in_area(Vector3i min, Vector3i max) {
-
-	Vector3i::sort_min_max(min, max);
-
-	Vector<Vector3i> to_remove;
-	const Vector3i *key = NULL;
-
-	while (key = _blocks.next(key)) {
-
-		VoxelBlock *block_ref = _blocks.get(*key);
-		ERR_FAIL_COND(block_ref == NULL); // Should never trigger
-
-		if (block_ref->pos.is_contained_in(min, max)) {
-
-			//if (_observer)
-			//    _observer->block_removed(block);
-
-			to_remove.push_back(*key);
-
-			if (block_ref == _last_accessed_block)
-				_last_accessed_block = NULL;
-		}
-	}
-
-	for (unsigned int i = 0; i < to_remove.size(); ++i) {
-		_blocks.erase(to_remove[i]);
-	}
-}
-
 void VoxelMap::clear() {
 	const Vector3i *key = NULL;
 	while (key = _blocks.next(key)) {
-		VoxelBlock *block_ref = _blocks.get(*key);
-		if (block_ref == NULL) {
+		VoxelBlock *block_ptr = _blocks.get(*key);
+		if (block_ptr == NULL) {
 			OS::get_singleton()->printerr("Unexpected NULL in VoxelMap::clear()");
 		}
-		memdelete(block_ref);
+		memdelete(block_ptr);
 	}
 	_blocks.clear();
 	_last_accessed_block = NULL;

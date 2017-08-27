@@ -57,9 +57,11 @@ private:
 	void update_blocks();
 	void update_block_mesh(Vector3i block_pos);
 
-	void make_all_view_dirty();
+	void make_all_view_dirty_deferred();
 
 	Spatial *get_viewer(NodePath path) const;
+
+	void immerge_block(Vector3i bpos);
 
 	// Observer events
 	//void block_removed(VoxelBlock & block);
@@ -99,6 +101,8 @@ private:
 	Ref<VoxelProvider> _provider;
 
 	NodePath _viewer_path;
+	Vector3i _last_viewer_block_pos;
+	int _last_view_distance_blocks;
 
 	bool _generate_collisions;
 

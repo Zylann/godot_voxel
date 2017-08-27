@@ -1,5 +1,6 @@
 #include "voxel_terrain.h"
 #include "voxel_raycast.h"
+#include "rect3i.h"
 #include <os/os.h>
 #include <scene/3d/mesh_instance.h>
 #include <engine.h>
@@ -13,9 +14,11 @@ VoxelTerrain::VoxelTerrain()
 	_mesher_smooth = Ref<VoxelMesherSmooth>(memnew(VoxelMesherSmooth));
 
 	_view_distance_blocks = 8;
+	_last_view_distance_blocks = 0;
 }
 
-Vector3i g_viewer_block_pos; // TODO UGLY! Lambdas or pointers needed...
+// TODO UGLY! Lambdas or pointers needed... DO NOT use this outside of lambdas!
+Vector3i g_viewer_block_pos;
 
 // Sorts distance to viewer
 struct BlockUpdateComparator {
@@ -62,7 +65,8 @@ void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
 	if(provider != _provider) {
 		_provider = provider;
-		make_all_view_dirty();
+		// The whole map might change, so make all area dirty
+		make_all_view_dirty_deferred();
 	}
 }
 
@@ -83,7 +87,9 @@ void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
 		}
 #endif
 		_mesher->set_library(library);
-		make_all_view_dirty();
+
+		// Voxel appearance might completely change
+		make_all_view_dirty_deferred();
 	}
 }
 
@@ -99,16 +105,13 @@ void VoxelTerrain::set_view_distance(int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0)
 	int d = distance_in_voxels / _map->get_block_size();
 	if(d != _view_distance_blocks) {
+		print_line(String("View distance changed from ") + String::num(_view_distance_blocks) + String(" blocks to ") + String::num(d));
 		_view_distance_blocks = d;
-		make_all_view_dirty();
-		// TODO Immerge blocks too far away
-		// TODO Cancel updates that are scheduled too far away
+		// Blocks too far away will be removed in _process, same for blocks to load
 	}
 }
 
 void VoxelTerrain::set_viewer_path(NodePath path) {
-	if (!path.is_empty())
-		ERR_FAIL_COND(get_viewer(path) == NULL);
 	_viewer_path = path;
 }
 
@@ -148,6 +151,18 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 	}
 }
 
+void VoxelTerrain::immerge_block(Vector3i bpos) {
+
+	ERR_FAIL_COND(_map.is_null());
+
+	// TODO Schedule block saving when supported
+	_map->remove_block(bpos, VoxelMap::NoAction());
+
+	_dirty_blocks.erase(bpos);
+	// Blocks in the update queue will be cancelled in _process,
+	// because it's too expensive to linear-search all blocks for each block
+}
+
 bool VoxelTerrain::is_block_dirty(Vector3i bpos) {
 	return _dirty_blocks.has(bpos);
 }
@@ -164,10 +179,14 @@ void VoxelTerrain::make_blocks_dirty(Vector3i min, Vector3i size) {
 	}
 }
 
-void VoxelTerrain::make_all_view_dirty() {
-	Vector3i radius(_view_distance_blocks, _view_distance_blocks, _view_distance_blocks);
-	// TODO Take viewer and fixed range into account
-	make_blocks_dirty(-radius, 2*radius);
+void VoxelTerrain::make_all_view_dirty_deferred() {
+	// This trick will regenerate all chunks in view, according to the view distance found during block updates.
+	// The point of doing this instead of immediately scheduling updates is that it will
+	// always use an up-to-date view distance, which is not necessarily loaded yet on initialization.
+	_last_view_distance_blocks = 0;
+
+//	Vector3i radius(_view_distance_blocks, _view_distance_blocks, _view_distance_blocks);
+//	make_blocks_dirty(-radius, 2*radius);
 }
 
 inline int get_border_index(int x, int max) {
@@ -302,12 +321,13 @@ void VoxelTerrain::_notification(int p_what) {
 		case NOTIFICATION_EXIT_TREE:
 			break;
 
-		case NOTIFICATION_READY:
-			// TODO This should also react to viewer movement
-			make_all_view_dirty();
-			break;
+//		case NOTIFICATION_READY:
+//			break;
 
 		// TODO Listen for transform changes
+		// TODO Listen for NOTIFICATION_VISIBILITY_CHANGED
+		// TODO Listen for NOTIFICATION_ENTER_WORLD
+		// TODO Listen for NOTIFICATION_EXIT_WORLD
 
 		default:
 			break;
@@ -319,19 +339,79 @@ void VoxelTerrain::_process() {
 }
 
 void VoxelTerrain::update_blocks() {
+
 	OS &os = *OS::get_singleton();
+	Engine &engine = *Engine::get_singleton();
 
 	ERR_FAIL_COND(_map.is_null());
 
 	// Get viewer location
-	Spatial *viewer = get_viewer(_viewer_path);
-	if (viewer)
-		g_viewer_block_pos = _map->voxel_to_block(viewer->get_translation());
-	else
-		g_viewer_block_pos = Vector3i();
+	// TODO Transform to local (Spatial Transform)
+	Vector3i viewer_block_pos;
+	if(engine.is_editor_hint()) {
+		// TODO Use editor's camera here
+		viewer_block_pos = Vector3i();
+	} else {
+		Spatial *viewer = get_viewer(_viewer_path);
+		if (viewer)
+			viewer_block_pos = _map->voxel_to_block(viewer->get_translation());
+		else
+			viewer_block_pos = Vector3i();
+	}
+
+	{
+		// Find out which blocks need to appear and which need to be unloaded
+
+		//Vector3i viewer_block_pos_delta = _last_viewer_block_pos - viewer_block_pos;
+		Rect3i new_box = Rect3i::from_center_extents(viewer_block_pos, Vector3i(_view_distance_blocks));
+		Rect3i prev_box = Rect3i::from_center_extents(_last_viewer_block_pos, Vector3i(_last_view_distance_blocks));
+
+		if(prev_box != new_box) {
+			//print_line(String("Loaded area changed: from ") + prev_box.to_string() + String(" to ") + new_box.to_string());
+
+			Rect3i bounds = Rect3i::get_bounding_box(prev_box, new_box);
+			Vector3i max = bounds.pos + bounds.size;
+
+			// TODO There should be a way to only iterate relevant blocks
+			Vector3i pos;
+			for(pos.z = bounds.pos.z; pos.z < max.z; ++pos.z) {
+				for(pos.y = bounds.pos.y; pos.y < max.y; ++pos.y) {
+					for(pos.x = bounds.pos.x; pos.x < max.x; ++pos.x) {
+
+						bool prev_contains = prev_box.contains(pos);
+						bool new_contains = new_box.contains(pos);
+
+						if(prev_contains && !new_contains) {
+							// Unload block
+							immerge_block(pos);
+
+						} else if(!prev_contains && new_contains) {
+							// Load or update block
+							make_block_dirty(pos);
+						}
+					}
+				}
+			}
+		}
+
+		// Eliminate blocks in queue that aren't needed
+		for(int i = 0; i < _block_update_queue.size(); ++i) {
+			const Vector3i bpos = _block_update_queue[i];
+			if(!new_box.contains(bpos)) {
+				int last = _block_update_queue.size() - 1;
+				_block_update_queue[i] = _block_update_queue[last];
+				_block_update_queue.resize(last);
+				--i;
+			}
+		}
+	}
+
+	_last_view_distance_blocks = _view_distance_blocks;
+	_last_viewer_block_pos = viewer_block_pos;
 
 	// Sort updates so nearest blocks are done first
 	VOXEL_PROFILE_BEGIN("block_update_sorting")
+	g_viewer_block_pos = viewer_block_pos;
 	_block_update_queue.sort_custom<BlockUpdateComparator>();
 	VOXEL_PROFILE_END("block_update_sorting")
 
@@ -409,6 +489,8 @@ void VoxelTerrain::update_blocks() {
 		_block_update_queue.resize(_block_update_queue.size() - 1);
 		_dirty_blocks.erase(block_pos);
 	}
+
+	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") + String::num(_block_update_queue.size()));
 }
 
 static inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {

@@ -125,8 +125,10 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 
 	const Channel &channel = _channels[channel_index];
 	if (channel.data == NULL)
+		// Channel has been optimized
 		return true;
 
+	// Channel isn't optimized, so must look at each voxel
 	uint8_t voxel = channel.data[0];
 	unsigned int volume = get_volume();
 	for (unsigned int i = 0; i < volume; ++i) {
