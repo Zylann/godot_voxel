@@ -306,6 +306,28 @@ int VoxelTerrain::get_block_update_count() {
 	return _block_update_queue.size();
 }
 
+struct EnterWorldAction {
+	World *world;
+	EnterWorldAction(World *w) : world(w) {}
+	void operator()(VoxelBlock *block) {
+		block->enter_world(world);
+	}
+};
+
+struct ExitWorldAction {
+	void operator()(VoxelBlock *block) {
+		block->exit_world();
+	}
+};
+
+struct SetVisibilityAction {
+	bool visible;
+	SetVisibilityAction(bool v) : visible(v) {}
+	void operator()(VoxelBlock *block) {
+		block->set_visible(visible);
+	}
+};
+
 void VoxelTerrain::_notification(int p_what) {
 
 	switch (p_what) {
@@ -321,13 +343,22 @@ void VoxelTerrain::_notification(int p_what) {
 		case NOTIFICATION_EXIT_TREE:
 			break;
 
-//		case NOTIFICATION_READY:
-//			break;
+		case NOTIFICATION_ENTER_WORLD: {
+			ERR_FAIL_COND(_map.is_null());
+			_map->for_all_blocks(EnterWorldAction(*get_world()));
+		} break;
+
+		case NOTIFICATION_EXIT_WORLD:
+			ERR_FAIL_COND(_map.is_null());
+			_map->for_all_blocks(ExitWorldAction());
+			break;
+
+		case NOTIFICATION_VISIBILITY_CHANGED:
+			ERR_FAIL_COND(_map.is_null());
+			_map->for_all_blocks(SetVisibilityAction(is_visible()));
+			break;
 
 		// TODO Listen for transform changes
-		// TODO Listen for NOTIFICATION_VISIBILITY_CHANGED
-		// TODO Listen for NOTIFICATION_ENTER_WORLD
-		// TODO Listen for NOTIFICATION_EXIT_WORLD
 
 		default:
 			break;

@@ -56,3 +56,26 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Ref<World> world) {
 
 	_mesh = mesh;
 }
+
+void VoxelBlock::enter_world(World *world) {
+	if(_mesh_instance.is_valid()) {
+		VisualServer &vs = *VisualServer::get_singleton();
+		vs.instance_set_scenario(_mesh_instance, world->get_scenario());
+	}
+}
+
+void VoxelBlock::exit_world() {
+	if(_mesh_instance.is_valid()) {
+		VisualServer &vs = *VisualServer::get_singleton();
+		vs.instance_set_scenario(_mesh_instance, RID());
+	}
+}
+
+void VoxelBlock::set_visible(bool visible) {
+	if(_mesh_instance.is_valid()) {
+		VisualServer &vs = *VisualServer::get_singleton();
+		vs.instance_set_visible(_mesh_instance, visible);
+	}
+}
+
+

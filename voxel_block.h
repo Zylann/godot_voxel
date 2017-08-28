@@ -17,6 +17,10 @@ public:
 
 	void set_mesh(Ref<Mesh> mesh, Ref<World> world);
 
+	void enter_world(World *world);
+	void exit_world();
+	void set_visible(bool visible);
+
 private:
 	VoxelBlock();
 
