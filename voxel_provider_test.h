@@ -14,7 +14,7 @@ public:
 
 	VoxelProviderTest();
 
-	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i block_pos);
+	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin);
 
 	void set_mode(Mode mode);
 	Mode get_mode() const { return _mode; }
@@ -29,8 +29,8 @@ public:
 	void set_pattern_offset(Vector3i offset);
 
 protected:
-	void generate_block_flat(VoxelBuffer &out_buffer, Vector3i block_pos);
-	void generate_block_waves(VoxelBuffer &out_buffer, Vector3i block_pos);
+	void generate_block_flat(VoxelBuffer &out_buffer, Vector3i origin);
+	void generate_block_waves(VoxelBuffer &out_buffer, Vector3i origin);
 
 	static void _bind_methods();
 

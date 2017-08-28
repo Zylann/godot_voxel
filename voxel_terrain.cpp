@@ -458,7 +458,6 @@ void VoxelTerrain::update_blocks() {
 		//printf("Remaining: %i\n", _block_update_queue.size());
 
 		// TODO Move this to a thread
-		// TODO Have VoxelTerrainGenerator in C++
 
 		// Get request
 		Vector3i block_pos = _block_update_queue[_block_update_queue.size() - 1];
@@ -479,7 +478,7 @@ void VoxelTerrain::update_blocks() {
 				VOXEL_PROFILE_BEGIN("block_generation")
 
 				// Query voxel provider
-				_provider->emerge_block(buffer_ref, block_pos);
+				_provider->emerge_block(buffer_ref, _map->block_to_voxel(block_pos));
 
 				// Check script return
 				// TODO Shouldn't halt execution though, as it can bring the map in an invalid state!

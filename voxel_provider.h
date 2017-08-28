@@ -7,14 +7,14 @@
 class VoxelProvider : public Resource {
 	GDCLASS(VoxelProvider, Resource)
 public:
-	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i block_pos);
-	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i block_pos);
+	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels);
+	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels);
 
 protected:
 	static void _bind_methods();
 
-	void _emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 block_pos);
-	void _immerge_block(Ref<VoxelBuffer> buffer, Vector3 block_pos);
+	void _emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels);
+	void _immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels);
 };
 
 #endif // VOXEL_PROVIDER_H
