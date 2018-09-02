@@ -430,7 +430,7 @@ void VoxelTerrain::update_blocks() {
 			const Vector3i bpos = _block_update_queue[i];
 			if(!new_box.contains(bpos)) {
 				int last = _block_update_queue.size() - 1;
-				_block_update_queue[i] = _block_update_queue[last];
+				_block_update_queue.write[i] = _block_update_queue[last];
 				_block_update_queue.resize(last);
 				--i;
 			}

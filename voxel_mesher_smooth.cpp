@@ -375,7 +375,7 @@ void VoxelMesherSmooth::build_mesh(const VoxelBuffer &voxels, unsigned int chann
 VoxelMesherSmooth::ReuseCell &VoxelMesherSmooth::get_reuse_cell(Vector3i pos) {
 	int j = pos.z & 1;
 	int i = pos.y * m_block_size.y + pos.x;
-	return m_cache[j][i];
+	return m_cache[j].write[i];
 }
 
 void VoxelMesherSmooth::emit_vertex(Vector3 primary, Vector3 normal) {

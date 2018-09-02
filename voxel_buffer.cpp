@@ -85,8 +85,17 @@ void VoxelBuffer::fill(int defval, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
 	Channel &channel = _channels[channel_index];
-	if (channel.data == NULL && channel.defval == defval)
-		return;
+	if (channel.data == NULL) {
+		// Channel is already optimized and uniform
+		if(channel.defval == defval) {
+			// No change
+			return;
+		} else {
+			// Just change default value
+			channel.defval = defval;
+			return;
+		}
+	}
 	else
 		create_channel_noinit(channel_index, _size);
 
@@ -131,7 +140,7 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 	// Channel isn't optimized, so must look at each voxel
 	uint8_t voxel = channel.data[0];
 	unsigned int volume = get_volume();
-	for (unsigned int i = 0; i < volume; ++i) {
+	for (unsigned int i = 1; i < volume; ++i) {
 		if (channel.data[i] != voxel) {
 			return false;
 		}

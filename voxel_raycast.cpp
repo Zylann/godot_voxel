@@ -1,8 +1,6 @@
 #include "voxel_raycast.h"
 #include <math_funcs.h>
 
-const float g_infinite = 9999999;
-
 bool voxel_raycast(
 		Vector3 ray_origin,
 		Vector3 ray_direction,
@@ -11,6 +9,9 @@ bool voxel_raycast(
 		real_t max_distance,
 		Vector3i &out_hit_pos,
 		Vector3i &out_prev_pos) {
+
+	const float g_infinite = 9999999;
+
 	// Equation : p + v*t
 	// p : ray start position (ray.pos)
 	// v : ray orientation vector (ray.dir)

@@ -123,8 +123,8 @@ void VoxelProviderTest::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "pattern_size"), "set_pattern_size", "get_pattern_size");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "pattern_offset"), "set_pattern_offset", "get_pattern_offset");
 
-	BIND_CONSTANT(MODE_FLAT);
-	BIND_CONSTANT(MODE_WAVES);
+	BIND_ENUM_CONSTANT(MODE_FLAT);
+	BIND_ENUM_CONSTANT(MODE_WAVES);
 }
 
 
