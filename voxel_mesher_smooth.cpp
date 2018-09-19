@@ -1,7 +1,7 @@
 
 #include "voxel_mesher_smooth.h"
 #include "transvoxel_tables.cpp"
-#include <os/os.h>
+#include <core/os/os.h>
 
 inline float tof(int8_t v) {
 	return static_cast<float>(v) / 256.f;

@@ -5,9 +5,9 @@
 
 #ifdef VOXEL_PROFILING
 
-#include <dictionary.h>
-#include <hash_map.h>
-#include <ustring.h>
+#include <core/dictionary.h>
+#include <core/hash_map.h>
+#include <core/ustring.h>
 
 #define VOXEL_PROFILE_BEGIN(_key) _zprofiler.begin(_key);
 #define VOXEL_PROFILE_END(_key) _zprofiler.end(_key);

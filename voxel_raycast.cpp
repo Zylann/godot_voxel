@@ -1,5 +1,5 @@
 #include "voxel_raycast.h"
-#include <math_funcs.h>
+#include <core/math/math_funcs.h>
 
 bool voxel_raycast(
 		Vector3 ray_origin,

@@ -1,7 +1,7 @@
 #ifndef VOXEL_TYPE_H
 #define VOXEL_TYPE_H
 
-#include <resource.h>
+#include <core/resource.h>
 
 class VoxelLibrary;
 

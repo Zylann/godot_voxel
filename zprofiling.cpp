@@ -1,7 +1,7 @@
 #include "zprofiling.h"
 
 #ifdef VOXEL_PROFILING
-#include <os/os.h>
+#include <core/os/os.h>
 
 //-----------------------------------------------------------------------------
 class ZProfileVar {

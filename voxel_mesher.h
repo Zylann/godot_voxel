@@ -5,7 +5,7 @@
 #include "voxel_buffer.h"
 #include "voxel_library.h"
 #include "zprofiling.h"
-#include <reference.h>
+#include <core/reference.h>
 #include <scene/resources/mesh.h>
 
 // TODO Should be renamed VoxelMesherCubic or something like that

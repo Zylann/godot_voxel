@@ -1,5 +1,5 @@
 #include "voxel_buffer.h"
-#include <math_funcs.h>
+#include <core/math/math_funcs.h>
 #include <string.h>
 
 VoxelBuffer::VoxelBuffer() {

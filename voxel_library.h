@@ -2,7 +2,7 @@
 #define VOXEL_LIBRARY_H
 
 #include "voxel.h"
-#include <resource.h>
+#include <core/resource.h>
 
 class VoxelLibrary : public Resource {
 	GDCLASS(VoxelLibrary, Resource)

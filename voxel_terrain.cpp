@@ -1,9 +1,9 @@
 #include "voxel_terrain.h"
 #include "voxel_raycast.h"
 #include "rect3i.h"
-#include <os/os.h>
+#include <core/os/os.h>
 #include <scene/3d/mesh_instance.h>
-#include <engine.h>
+#include <core/engine.h>
 
 
 VoxelTerrain::VoxelTerrain()

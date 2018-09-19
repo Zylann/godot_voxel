@@ -1,7 +1,7 @@
 #ifndef CUBE_TABLES_H
 #define CUBE_TABLES_H
 
-#include <vector3.h>
+#include <core/math/vector3.h>
 #include "vector3i.h"
 #include "voxel.h"
 
