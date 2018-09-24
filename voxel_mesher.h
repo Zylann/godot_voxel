@@ -8,7 +8,7 @@
 #include <core/reference.h>
 #include <scene/resources/mesh.h>
 
-// TODO Should be renamed VoxelMesherCubic or something like that
+// TODO Should be renamed VoxelMesherModel or something like that
 class VoxelMesher : public Reference {
 	GDCLASS(VoxelMesher, Reference)
 
@@ -16,9 +16,6 @@ public:
 	static const unsigned int MAX_MATERIALS = 8; // Arbitrary. Tweak if needed.
 
 	VoxelMesher();
-
-	void set_material(Ref<Material> material, unsigned int id);
-	Ref<Material> get_material(unsigned int id) const;
 
 	void set_library(Ref<VoxelLibrary> library);
 	Ref<VoxelLibrary> get_library() const { return _library; }
@@ -29,8 +26,8 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const { return _bake_occlusion; }
 
-	Ref<ArrayMesh> build(const VoxelBuffer &buffer_ref, unsigned int channel, Vector3i min, Vector3i max, Ref<ArrayMesh> mesh = Ref<Mesh>());
-	Ref<ArrayMesh> build_ref(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Ref<ArrayMesh> mesh = Ref<ArrayMesh>());
+	Array build(const VoxelBuffer &buffer_ref, unsigned int channel, Vector3i min, Vector3i max);
+	Ref<ArrayMesh> build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Array materials, Ref<ArrayMesh> mesh = Ref<ArrayMesh>());
 
 protected:
 	static void _bind_methods();
@@ -45,7 +42,6 @@ private:
 	};
 
 	Ref<VoxelLibrary> _library;
-	Ref<Material> _materials[MAX_MATERIALS];
 	Arrays _arrays[MAX_MATERIALS];
 	float _baked_occlusion_darkness;
 	bool _bake_occlusion;

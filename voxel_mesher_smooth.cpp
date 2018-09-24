@@ -68,18 +68,29 @@ VoxelMesherSmooth::ReuseCell::ReuseCell() {
 VoxelMesherSmooth::VoxelMesherSmooth() {
 }
 
-Ref<ArrayMesh> VoxelMesherSmooth::build_ref(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh) {
+Ref<ArrayMesh> VoxelMesherSmooth::build_mesh(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh) {
 
 	ERR_FAIL_COND_V(voxels_ref.is_null(), Ref<ArrayMesh>());
 
-	VoxelBuffer &voxels = **voxels_ref;
+	VoxelBuffer &buffer = **voxels_ref;
+	Array surfaces = build(buffer, channel);
 
-	return build(voxels, channel, mesh);
+	if(mesh.is_null())
+		mesh.instance();
+
+	//int surface = mesh->get_surface_count();
+	for(int i = 0; i < surfaces.size(); ++i) {
+		Array arrays = surfaces[i];
+		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+		//mesh->surface_set_material(surface, _materials[i]);
+	}
+
+	return mesh;
 }
 
-Ref<ArrayMesh> VoxelMesherSmooth::build(const VoxelBuffer &voxels, unsigned int channel, Ref<ArrayMesh> mesh) {
+Array VoxelMesherSmooth::build(const VoxelBuffer &voxels, unsigned int channel) {
 
-	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Ref<ArrayMesh>());
+	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Array());
 
 	// Initialize dynamic memory:
 	// These vectors are re-used.
@@ -90,7 +101,7 @@ Ref<ArrayMesh> VoxelMesherSmooth::build(const VoxelBuffer &voxels, unsigned int 
 	m_output_normals.clear();
 	m_output_indices.clear();
 
-	build_mesh(voxels, channel);
+	build_internal(voxels, channel);
 	//	OS::get_singleton()->print("vertices: %i, normals: %i, indices: %i\n",
 	//							   m_output_vertices.size(),
 	//							   m_output_normals.size(),
@@ -98,7 +109,7 @@ Ref<ArrayMesh> VoxelMesherSmooth::build(const VoxelBuffer &voxels, unsigned int 
 
 	if (m_output_vertices.size() == 0) {
 		// The mesh can be empty
-		return Ref<ArrayMesh>();
+		return Array();
 	}
 
 	PoolVector<Vector3> vertices;
@@ -117,15 +128,13 @@ Ref<ArrayMesh> VoxelMesherSmooth::build(const VoxelBuffer &voxels, unsigned int 
 	}
 	arrays[Mesh::ARRAY_INDEX] = indices;
 
-	if (mesh.is_null())
-		mesh = Ref<ArrayMesh>(memnew(ArrayMesh));
+	Array surfaces;
+	surfaces.append(arrays);
 
-	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
-
-	return mesh;
+	return surfaces;
 }
 
-void VoxelMesherSmooth::build_mesh(const VoxelBuffer &voxels, unsigned int channel) {
+void VoxelMesherSmooth::build_internal(const VoxelBuffer &voxels, unsigned int channel) {
 
 	// Each 2x2 voxel group is a "cell"
 
@@ -385,5 +394,5 @@ void VoxelMesherSmooth::emit_vertex(Vector3 primary, Vector3 normal) {
 
 void VoxelMesherSmooth::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("build", "voxels", "channel", "existing_mesh"), &VoxelMesherSmooth::build_ref, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("build", "voxels", "channel", "existing_mesh"), &VoxelMesherSmooth::build_mesh, DEFVAL(Variant()));
 }

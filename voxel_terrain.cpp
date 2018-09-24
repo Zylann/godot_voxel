@@ -1,6 +1,11 @@
 #include "voxel_terrain.h"
+#include "voxel_map.h"
+#include "voxel_block.h"
+#include "voxel_provider_thread.h"
 #include "voxel_raycast.h"
-#include "rect3i.h"
+#include "voxel_provider_test.h"
+#include "utility.h"
+
 #include <core/os/os.h>
 #include <scene/3d/mesh_instance.h>
 #include <core/engine.h>
@@ -10,22 +15,22 @@ VoxelTerrain::VoxelTerrain()
 	: Spatial(), _generate_collisions(true) {
 
 	_map = Ref<VoxelMap>(memnew(VoxelMap));
-	_mesher = Ref<VoxelMesher>(memnew(VoxelMesher));
-	_mesher_smooth = Ref<VoxelMesherSmooth>(memnew(VoxelMesherSmooth));
 
 	_view_distance_blocks = 8;
 	_last_view_distance_blocks = 0;
+
+	_provider_thread = NULL;
+	_block_updater = NULL;
 }
 
-// TODO UGLY! Lambdas or pointers needed... DO NOT use this outside of lambdas!
-Vector3i g_viewer_block_pos;
-
-// Sorts distance to viewer
-struct BlockUpdateComparator {
-	inline bool operator()(const Vector3i &a, const Vector3i &b) const {
-		return a.distance_sq(g_viewer_block_pos) > b.distance_sq(g_viewer_block_pos);
+VoxelTerrain::~VoxelTerrain() {
+	if(_provider_thread) {
+		memdelete(_provider_thread);
 	}
-};
+	if(_block_updater) {
+		memdelete(_block_updater);
+	}
+}
 
 // TODO See if there is a way to specify materials in voxels directly?
 
@@ -33,8 +38,7 @@ bool VoxelTerrain::_set(const StringName &p_name, const Variant &p_value) {
 
 	if (p_name.operator String().begins_with("material/")) {
 		int idx = p_name.operator String().get_slicec('/', 1).to_int();
-		if (idx >= VoxelMesher::MAX_MATERIALS || idx < 0)
-			return false;
+		ERR_FAIL_COND_V(idx >= VoxelMesher::MAX_MATERIALS || idx < 0, false);
 		set_material(idx, p_value);
 		return true;
 	}
@@ -46,8 +50,7 @@ bool VoxelTerrain::_get(const StringName &p_name, Variant &r_ret) const {
 
 	if (p_name.operator String().begins_with("material/")) {
 		int idx = p_name.operator String().get_slicec('/', 1).to_int();
-		if (idx >= VoxelMesher::MAX_MATERIALS || idx < 0)
-			return false;
+		ERR_FAIL_COND_V(idx >= VoxelMesher::MAX_MATERIALS || idx < 0, false);
 		r_ret = get_material(idx);
 		return true;
 	}
@@ -64,8 +67,20 @@ void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 
 void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
 	if(provider != _provider) {
+
+		if(_provider_thread) {
+			memdelete(_provider_thread);
+			_provider_thread = NULL;
+		}
+
 		_provider = provider;
+		_provider_thread = memnew(VoxelProviderThread(_provider, _map->get_block_size_pow2()));
+//		Ref<VoxelProviderTest> test;
+//		test.instance();
+//		_provider_thread = memnew(VoxelProviderThread(test, _map->get_block_size_pow2()));
+
 		// The whole map might change, so make all area dirty
+		// TODO Actually, we should regenerate the whole map, not just update all its blocks
 		make_all_view_dirty_deferred();
 	}
 }
@@ -75,18 +90,29 @@ Ref<VoxelProvider> VoxelTerrain::get_provider() const {
 }
 
 Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
-	return _mesher->get_library();
+	return _library;
 }
 
 void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
-	if(library != _mesher->get_library()) {
+
+	if (library != _library) {
 
 #ifdef TOOLS_ENABLED
-		if(library->get_voxel_count() == 0) {
+		if (library->get_voxel_count() == 0) {
 			library->load_default();
 		}
 #endif
-		_mesher->set_library(library);
+		_library = library;
+
+		if(_block_updater) {
+			memdelete(_block_updater);
+			_block_updater = NULL;
+		}
+
+		// TODO Thread-safe way to change those parameters
+		VoxelMeshUpdater::MeshingParams params;
+
+		_block_updater = memnew(VoxelMeshUpdater(_library, params));
 
 		// Voxel appearance might completely change
 		make_all_view_dirty_deferred();
@@ -130,24 +156,34 @@ Spatial *VoxelTerrain::get_viewer(NodePath path) const {
 
 void VoxelTerrain::set_material(int id, Ref<Material> material) {
 	// TODO Update existing block surfaces
-	_mesher->set_material(material, id);
+	ERR_FAIL_COND(id < 0 || id >= VoxelMesher::MAX_MATERIALS);
+	_materials[id] = material;
 }
 
 Ref<Material> VoxelTerrain::get_material(int id) const {
-	return _mesher->get_material(id);
+	ERR_FAIL_COND_V(id < 0 || id >= VoxelMesher::MAX_MATERIALS, Ref<Material>());
+	return _materials[id];
 }
 
-//void VoxelTerrain::clear_update_queue() {
-//	_block_update_queue.clear();
-//	_dirty_blocks.clear();
-//}
-
 void VoxelTerrain::make_block_dirty(Vector3i bpos) {
-	// TODO Immediate update viewer distance
+	// TODO Immediate update viewer distance?
+
 	if (is_block_dirty(bpos) == false) {
+
+		if(_map->has_block(bpos)) {
+
+			_blocks_pending_update.push_back(bpos);
+			_dirty_blocks[bpos] = BLOCK_UPDATE;
+
+		} else {
+			_blocks_pending_load.push_back(bpos);
+			_dirty_blocks[bpos] = BLOCK_LOAD;
+		}
+
 		//OS::get_singleton()->print("Dirty (%i, %i, %i)", bpos.x, bpos.y, bpos.z);
-		_block_update_queue.push_back(bpos);
-		_dirty_blocks[bpos] = true;
+
+		// TODO What if a block is made dirty, goes through threaded update, then gets changed again before it gets updated?
+		// this will make the second change ignored, which is not correct!
 	}
 }
 
@@ -163,21 +199,42 @@ void VoxelTerrain::immerge_block(Vector3i bpos) {
 	// because it's too expensive to linear-search all blocks for each block
 }
 
-bool VoxelTerrain::is_block_dirty(Vector3i bpos) {
+Dictionary VoxelTerrain::get_statistics() const {
+
+	Dictionary provider;
+	provider["min_time"] = _stats.provider.min_time;
+	provider["max_time"] = _stats.provider.max_time;
+	provider["remaining_blocks"] = _stats.provider.remaining_blocks;
+
+	Dictionary updater;
+	updater["min_time"] = _stats.updater.min_time;
+	updater["max_time"] = _stats.updater.max_time;
+	updater["remaining_blocks"] = _stats.updater.remaining_blocks;
+	updater["updated_blocks"] = _stats.updated_blocks;
+	updater["mesh_alloc_time"] = _stats.mesh_alloc_time;
+
+	Dictionary d;
+	d["provider"] = provider;
+	d["updater"] = updater;
+
+	return d;
+}
+
+bool VoxelTerrain::is_block_dirty(Vector3i bpos) const {
 	return _dirty_blocks.has(bpos);
 }
 
-void VoxelTerrain::make_blocks_dirty(Vector3i min, Vector3i size) {
-	Vector3i max = min + size;
-	Vector3i pos;
-	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
-		for (pos.y = min.y; pos.y < max.y; ++pos.y) {
-			for (pos.x = min.x; pos.x < max.x; ++pos.x) {
-				make_block_dirty(pos);
-			}
-		}
-	}
-}
+//void VoxelTerrain::make_blocks_dirty(Vector3i min, Vector3i size) {
+//	Vector3i max = min + size;
+//	Vector3i pos;
+//	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
+//		for (pos.y = min.y; pos.y < max.y; ++pos.y) {
+//			for (pos.x = min.x; pos.x < max.x; ++pos.x) {
+//				make_block_dirty(pos);
+//			}
+//		}
+//	}
+//}
 
 void VoxelTerrain::make_all_view_dirty_deferred() {
 	// This trick will regenerate all chunks in view, according to the view distance found during block updates.
@@ -204,7 +261,8 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 
 	Vector3i rpos = _map->to_local(pos);
 
-	bool check_corners = _mesher->get_occlusion_enabled();
+	// TODO Thread-safe way of getting this parameter
+	bool check_corners = true;//_mesher->get_occlusion_enabled();
 
 	const int max = _map->get_block_size() - 1;
 
@@ -302,10 +360,6 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 	}
 }
 
-int VoxelTerrain::get_block_update_count() {
-	return _block_update_queue.size();
-}
-
 struct EnterWorldAction {
 	World *world;
 	EnterWorldAction(World *w) : world(w) {}
@@ -365,11 +419,31 @@ void VoxelTerrain::_notification(int p_what) {
 	}
 }
 
-void VoxelTerrain::_process() {
-	update_blocks();
+void VoxelTerrain::remove_positions_outside_box(Vector<Vector3i> &positions, Rect3i box, HashMap<Vector3i, VoxelTerrain::BlockDirtyState, Vector3iHasher> &state_map) {
+	for(int i = 0; i < positions.size(); ++i) {
+		const Vector3i bpos = positions[i];
+		if(!box.contains(bpos)) {
+			int last = positions.size() - 1;
+			positions.write[i] = positions[last];
+			positions.resize(last);
+			state_map.erase(bpos);
+			--i;
+		}
+	}
 }
 
-void VoxelTerrain::update_blocks() {
+static inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
+	if (mesh_ref.is_null())
+		return true;
+	const Mesh &mesh = **mesh_ref;
+	if (mesh.get_surface_count() == 0)
+		return true;
+	if (mesh.surface_get_array_len(0) == 0)
+		return true;
+	return false;
+}
+
+void VoxelTerrain::_process() {
 
 	OS &os = *OS::get_singleton();
 	Engine &engine = *Engine::get_singleton();
@@ -390,9 +464,8 @@ void VoxelTerrain::update_blocks() {
 			viewer_block_pos = Vector3i();
 	}
 
+	// Find out which blocks need to appear and which need to be unloaded
 	{
-		// Find out which blocks need to appear and which need to be unloaded
-
 		//Vector3i viewer_block_pos_delta = _last_viewer_block_pos - viewer_block_pos;
 		Rect3i new_box = Rect3i::from_center_extents(viewer_block_pos, Vector3i(_view_distance_blocks));
 		Rect3i prev_box = Rect3i::from_center_extents(_last_viewer_block_pos, Vector3i(_last_view_distance_blocks));
@@ -425,148 +498,197 @@ void VoxelTerrain::update_blocks() {
 			}
 		}
 
-		// Eliminate blocks in queue that aren't needed
-		for(int i = 0; i < _block_update_queue.size(); ++i) {
-			const Vector3i bpos = _block_update_queue[i];
-			if(!new_box.contains(bpos)) {
-				int last = _block_update_queue.size() - 1;
-				_block_update_queue.write[i] = _block_update_queue[last];
-				_block_update_queue.resize(last);
-				--i;
-			}
-		}
+		// Eliminate pending blocks that aren't needed
+		remove_positions_outside_box(_blocks_pending_load, new_box, _dirty_blocks);
+		remove_positions_outside_box(_blocks_pending_update, new_box, _dirty_blocks);
 	}
 
 	_last_view_distance_blocks = _view_distance_blocks;
 	_last_viewer_block_pos = viewer_block_pos;
 
-	// Sort updates so nearest blocks are done first
-	VOXEL_PROFILE_BEGIN("block_update_sorting")
-	g_viewer_block_pos = viewer_block_pos;
-	_block_update_queue.sort_custom<BlockUpdateComparator>();
-	VOXEL_PROFILE_END("block_update_sorting")
+	// Send block loading requests
+	{
+		VoxelProviderThread::InputData input;
 
-	uint32_t time_before = os.get_ticks_msec();
-	uint32_t max_time = 1000 / 120;
+		input.priority_block_position = viewer_block_pos;
+		input.blocks_to_emerge.append_array(_blocks_pending_load);
+		//input.blocks_to_immerge.append_array();
 
-	const unsigned int bs = _map->get_block_size();
-	const Vector3i block_size(bs, bs, bs);
+		//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
+		_blocks_pending_load.clear();
 
-	// Update a bunch of blocks until none are left or too much time elapsed
-	while (!_block_update_queue.empty() && (os.get_ticks_msec() - time_before) < max_time) {
+		_provider_thread->push(input);
+	}
 
-		//printf("Remaining: %i\n", _block_update_queue.size());
+	// Get block loading responses
+	{
+		const unsigned int bs = _map->get_block_size();
+		const Vector3i block_size(bs, bs, bs);
 
-		// TODO Move this to a thread
+		VoxelProviderThread::OutputData output;
+		_provider_thread->pop(output);
+		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 
-		// Get request
-		Vector3i block_pos = _block_update_queue[_block_update_queue.size() - 1];
+		_stats.provider = output.stats;
 
-		bool entire_block_changed = false;
+		for(int i = 0; i < output.emerged_blocks.size(); ++i) {
 
-		if (!_map->has_block(block_pos)) {
-			// The block's data isn't loaded yet
-			// Create buffer
-			if (!_provider.is_null()) {
+			const VoxelProviderThread::EmergeOutput &o = output.emerged_blocks[i];
 
-				VOXEL_PROFILE_BEGIN("voxel_buffer_creation_gen")
+			// Check return
+			// TODO Shouldn't halt execution though, as it can bring the map in an invalid state!
+			ERR_FAIL_COND(o.voxels->get_size() != block_size);
 
-				Ref<VoxelBuffer> buffer_ref = Ref<VoxelBuffer>(memnew(VoxelBuffer));
-				buffer_ref->create(block_size.x, block_size.y, block_size.z);
+			// TODO Discard blocks out of range
 
-				VOXEL_PROFILE_END("voxel_buffer_creation_gen")
-				VOXEL_PROFILE_BEGIN("block_generation")
+			// Store buffer
+			Vector3i block_pos = _map->voxel_to_block(o.origin_in_voxels);
+			bool update_neighbors = !_map->has_block(block_pos);
+			_map->set_block_buffer(block_pos, o.voxels);
 
-				// Query voxel provider
-				_provider->emerge_block(buffer_ref, _map->block_to_voxel(block_pos));
+			// Trigger mesh updates
+			if (update_neighbors) {
+				// All neighbors have to be checked
+				Vector3i ndir;
+				// TODO Cache blocks in a small local grid on the stack to reduce hashing
+				for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
+					for (ndir.x = -1; ndir.x < 2; ++ndir.x) {
+						for (ndir.y = -1; ndir.y < 2; ++ndir.y) {
+							Vector3i npos = block_pos + ndir;
+							// TODO What if the map is really composed of empty blocks?
+							if (_map->is_block_surrounded(npos)) {
 
-				// Check script return
-				// TODO Shouldn't halt execution though, as it can bring the map in an invalid state!
-				ERR_FAIL_COND(buffer_ref->get_size() != block_size);
+								VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(npos);
+								if (state && *state == BLOCK_UPDATE) {
+									// Assuming it is scheduled to be updated already.
+									continue;
+								}
 
-				VOXEL_PROFILE_END("block_generation")
-
-				// Store buffer
-				_map->set_block_buffer(block_pos, buffer_ref);
-
-				entire_block_changed = true;
-			}
-		}
-
-		// Update views (mesh/collisions)
-
-		if (entire_block_changed) {
-			// All neighbors have to be checked
-			Vector3i ndir;
-			for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
-				for (ndir.x = -1; ndir.x < 2; ++ndir.x) {
-					for (ndir.y = -1; ndir.y < 2; ++ndir.y) {
-						Vector3i npos = block_pos + ndir;
-						// TODO What if the map is really composed of empty blocks?
-						if (_map->is_block_surrounded(npos)) {
-							update_block_mesh(npos);
+								_dirty_blocks[npos] = BLOCK_UPDATE;
+								_blocks_pending_update.push_back(npos);
+							}
 						}
 					}
 				}
+			} else {
+				// Only update the block, neighbors will probably follow if needed
+				_dirty_blocks[block_pos] = BLOCK_UPDATE;
+				_blocks_pending_update.push_back(block_pos);
+				//OS::get_singleton()->print("Update (%i, %i, %i)\n", block_pos.x, block_pos.y, block_pos.z);
 			}
-		} else {
-			// Only update the block, neighbors will probably follow if needed
-			update_block_mesh(block_pos);
-			//OS::get_singleton()->print("Update (%i, %i, %i)\n", block_pos.x, block_pos.y, block_pos.z);
+		}
+	}
+
+	// Send mesh updates
+	{
+		VoxelMeshUpdater::Input input;
+
+		for(int i = 0; i < _blocks_pending_update.size(); ++i) {
+			Vector3i block_pos = _blocks_pending_update[i];
+
+			VoxelBlock *block = _map->get_block(block_pos);
+			if (block == NULL) {
+				continue;
+			}
+
+			// Create buffer padded with neighbor voxels
+			Ref<VoxelBuffer> nbuffer;
+			nbuffer.instance();
+			// TODO Make the buffer re-usable
+			// TODO Padding set to 3 at the moment because Transvoxel works on 2x2 cells.
+			// It should change for a smarter padding (if smooth isn't used for example).
+			unsigned int block_size = _map->get_block_size();
+			nbuffer->create(block_size + 3, block_size + 3, block_size + 3);
+
+			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(1, 1, 1), **nbuffer, 0x3);
+
+			VoxelMeshUpdater::InputBlock iblock;
+			iblock.voxels = nbuffer;
+			iblock.position = block_pos;
+			input.blocks.push_back(iblock);
 		}
 
-		// Pop request
-		_block_update_queue.resize(_block_update_queue.size() - 1);
-		_dirty_blocks.erase(block_pos);
+		_block_updater->push(input);
+		_blocks_pending_update.clear();
+	}
+
+	// Get mesh updates
+	{
+		VoxelMeshUpdater::Output output;
+		_block_updater->pop(output);
+
+		_stats.updater = output.stats;
+		_stats.updated_blocks = output.blocks.size();
+
+		Ref<World> world = get_world();
+
+		uint32_t time_before = os.get_ticks_msec();
+
+		for (int i = 0; i < output.blocks.size(); ++i) {
+			const VoxelMeshUpdater::OutputBlock &ob = output.blocks[i];
+
+			VoxelBlock *block = _map->get_block(ob.position);
+			if (block == NULL) {
+				clear_block_update_state(ob.position);
+				continue;
+			}
+
+			// Note: I allocate the mesh here because Godot doesn't supports doing it in another thread without hanging the main one.
+			// Hopefully Vulkan will improve this?
+
+			Ref<ArrayMesh> mesh;
+			mesh.instance();
+
+			int surface_index = 0;
+			for (int i = 0; i < ob.model_surfaces.size(); ++i) {
+
+				Array surface = ob.model_surfaces[i];
+				if (surface.empty())
+					continue;
+
+				mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surface);
+				mesh->surface_set_material(surface_index, _materials[i]);
+
+
+				++surface_index;
+			}
+
+			for(int i = 0; i < ob.smooth_surfaces.size(); ++i) {
+
+				Array surface = ob.smooth_surfaces[i];
+				if (surface.empty())
+					continue;
+
+				mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surface);
+				// No material supported yet
+				++surface_index;
+			}
+
+			if (is_mesh_empty(mesh))
+				mesh = Ref<Mesh>();
+
+			block->set_mesh(mesh, world);
+			clear_block_update_state(ob.position);
+		}
+
+		uint32_t time_taken = os.get_ticks_msec() - time_before;
+		_stats.mesh_alloc_time = time_taken;
 	}
 
 	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") + String::num(_block_update_queue.size()));
 }
 
-static inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
-	if (mesh_ref.is_null())
-		return true;
-	const Mesh &mesh = **mesh_ref;
-	if (mesh.get_surface_count() == 0)
-		return true;
-	if (mesh.surface_get_array_len(0) == 0)
-		return true;
-	return false;
-}
-
-void VoxelTerrain::update_block_mesh(Vector3i block_pos) {
-
-	VoxelBlock *block = _map->get_block(block_pos);
-	if (block == NULL) {
-		return;
+// To be called once a block is updated
+void VoxelTerrain::clear_block_update_state(Vector3i block_pos) {
+	VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(block_pos);
+	if (state) {
+		if (*state == BLOCK_UPDATE)
+			_dirty_blocks.erase(block_pos);
+		else
+			;//print_line("Block update found non-update state");
+	} else {
+		;//print_line("Block update found no update state");
 	}
-
-	VOXEL_PROFILE_BEGIN("voxel_buffer_creation_extract")
-	// Create buffer padded with neighbor voxels
-	VoxelBuffer nbuffer;
-	// TODO Make the buffer re-usable
-	// TODO Padding set to 3 at the moment because Transvoxel works on 2x2 cells.
-	// It should change for a smarter padding (if smooth isn't used for example).
-	unsigned int block_size = _map->get_block_size();
-	nbuffer.create(block_size + 3, block_size + 3, block_size + 3);
-	VOXEL_PROFILE_END("voxel_buffer_creation_extract")
-
-	VOXEL_PROFILE_BEGIN("block_extraction")
-	_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(1, 1, 1), nbuffer, 0x3);
-	VOXEL_PROFILE_END("block_extraction")
-
-	// TODO Re-use existing meshes to optimize memory cost
-
-	// Build cubic parts of the mesh
-	Ref<ArrayMesh> mesh = _mesher->build(nbuffer, Voxel::CHANNEL_TYPE, Vector3i(0, 0, 0), nbuffer.get_size() - Vector3(1, 1, 1));
-	// Build smooth parts of the mesh
-	_mesher_smooth->build(nbuffer, Voxel::CHANNEL_ISOLEVEL, mesh);
-
-	if(is_mesh_empty(mesh))
-		mesh = Ref<Mesh>();
-
-	Ref<World> world = get_world();
-	block->set_mesh(mesh, world);
 }
 
 //void VoxelTerrain::block_removed(VoxelBlock & block) {
@@ -647,9 +769,6 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_view_distance", "distance_in_voxels"), &VoxelTerrain::set_view_distance);
 	ClassDB::bind_method(D_METHOD("get_view_distance"), &VoxelTerrain::get_view_distance);
 
-	ClassDB::bind_method(D_METHOD("get_block_update_count"), &VoxelTerrain::get_block_update_count);
-	ClassDB::bind_method(D_METHOD("get_mesher"), &VoxelTerrain::get_mesher);
-
 	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelTerrain::get_generate_collisions);
 	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelTerrain::set_generate_collisions);
 
@@ -661,15 +780,13 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
 	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_block_to_voxel_binding);
 
-	ClassDB::bind_method(D_METHOD("make_block_dirty", "pos"), &VoxelTerrain::_make_block_dirty_binding);
-	ClassDB::bind_method(D_METHOD("make_blocks_dirty", "min", "size"), &VoxelTerrain::_make_blocks_dirty_binding);
+	//ClassDB::bind_method(D_METHOD("make_block_dirty", "pos"), &VoxelTerrain::_make_block_dirty_binding);
+	//ClassDB::bind_method(D_METHOD("make_blocks_dirty", "min", "size"), &VoxelTerrain::_make_blocks_dirty_binding);
 	ClassDB::bind_method(D_METHOD("make_voxel_dirty", "pos"), &VoxelTerrain::_make_voxel_dirty_binding);
 
 	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance"), &VoxelTerrain::_raycast_binding, DEFVAL(100));
 
-#ifdef VOXEL_PROFILING
-	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelTerrain::get_profiling_info);
-#endif
+	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::get_statistics);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelProvider"), "set_provider", "get_provider");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"), "set_voxel_library", "get_voxel_library");

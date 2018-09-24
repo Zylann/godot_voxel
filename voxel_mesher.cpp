@@ -1,20 +1,7 @@
 #include "voxel_mesher.h"
 #include "voxel_library.h"
 #include "cube_tables.h"
-
-
-template <typename T>
-void copy_to(PoolVector<T> &to, const Vector<T> &from) {
-
-	to.resize(from.size());
-
-	typename PoolVector<T>::Write w = to.write();
-
-	for (unsigned int i = 0; i < from.size(); ++i) {
-		w[i] = from[i];
-	}
-}
-
+#include "utility.h"
 
 VoxelMesher::VoxelMesher()
 	: _baked_occlusion_darkness(0.75),
@@ -22,16 +9,6 @@ VoxelMesher::VoxelMesher()
 
 void VoxelMesher::set_library(Ref<VoxelLibrary> library) {
 	_library = library;
-}
-
-void VoxelMesher::set_material(Ref<Material> material, unsigned int id) {
-	ERR_FAIL_COND(id >= MAX_MATERIALS);
-	_materials[id] = material;
-}
-
-Ref<Material> VoxelMesher::get_material(unsigned int id) const {
-	ERR_FAIL_COND_V(id >= MAX_MATERIALS, Ref<Material>());
-	return _materials[id];
 }
 
 void VoxelMesher::set_occlusion_darkness(float darkness) {
@@ -66,16 +43,33 @@ inline bool is_transparent(const VoxelLibrary &lib, int voxel_id) {
 	return true;
 }
 
-Ref<ArrayMesh> VoxelMesher::build_ref(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Ref<ArrayMesh> mesh) {
+Ref<ArrayMesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Array materials, Ref<ArrayMesh> mesh) {
 	ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<ArrayMesh>());
+
 	VoxelBuffer &buffer = **buffer_ref;
-	mesh = build(buffer, channel, Vector3i(), buffer.get_size(), mesh);
+	Array surfaces = build(buffer, channel, Vector3i(), buffer.get_size());
+
+	if(mesh.is_null())
+		mesh.instance();
+
+	int surface = mesh->get_surface_count();
+	for(int i = 0; i < surfaces.size(); ++i) {
+
+		Array arrays = surfaces[i];
+		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+
+		Ref<Material> material = materials[i];
+		if(material.is_valid()) {
+			mesh->surface_set_material(surface, material);
+		}
+	}
+
 	return mesh;
 }
 
-Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector3i min, Vector3i max, Ref<ArrayMesh> mesh) {
-	ERR_FAIL_COND_V(_library.is_null(), Ref<ArrayMesh>());
-	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Ref<ArrayMesh>());
+Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector3i min, Vector3i max) {
+	ERR_FAIL_COND_V(_library.is_null(), Array());
+	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Array());
 
 	const VoxelLibrary &library = **_library;
 
@@ -99,8 +93,6 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 	// - Works well with cubes but not with any shape
 	// - Slower
 	// => Could be implemented in a separate class?
-
-	VOXEL_PROFILE_BEGIN("mesher_face_extraction")
 
 	// Data must be padded, hence the off-by-one
 	Vector3i::sort_min_max(min, max);
@@ -268,24 +260,17 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 		}
 	}
 
-	VOXEL_PROFILE_END("mesher_face_extraction")
-
 	// Commit mesh
-
-	Ref<ArrayMesh> mesh_ref = mesh;
-	if (mesh.is_null())
-		mesh_ref = Ref<ArrayMesh>(memnew(ArrayMesh));
-
-	VOXEL_PROFILE_BEGIN("mesher_add_surfaces")
 
 //	print_line(String("Made mesh v: ") + String::num(_arrays[0].positions.size())
 //			+ String(", i: ") + String::num(_arrays[0].indices.size()));
 
-	int surface = 0;
-	for(int i = 0; i < MAX_MATERIALS; ++i) {
+	Array surfaces;
+
+	for (int i = 0; i < MAX_MATERIALS; ++i) {
 
 		const Arrays &arrays = _arrays[i];
-		if(arrays.positions.size() != 0) {
+		if (arrays.positions.size() != 0) {
 
 			Array mesh_arrays;
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
@@ -310,22 +295,14 @@ Ref<ArrayMesh> VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channe
 				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
 			}
 
-			mesh_ref->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, mesh_arrays);
-			mesh_ref->surface_set_material(surface, _materials[i]);
-
-			++surface;
+			surfaces.append(mesh_arrays);
 		}
 	}
 
-	VOXEL_PROFILE_END("mesher_add_surfaces")
-
-	return mesh_ref;
+	return surfaces;
 }
 
 void VoxelMesher::_bind_methods() {
-
-	ClassDB::bind_method(D_METHOD("set_material", "material", "id"), &VoxelMesher::set_material);
-	ClassDB::bind_method(D_METHOD("get_material", "id"), &VoxelMesher::get_material);
 
 	ClassDB::bind_method(D_METHOD("set_library", "voxel_library"), &VoxelMesher::set_library);
 	ClassDB::bind_method(D_METHOD("get_library"), &VoxelMesher::get_library);
@@ -336,7 +313,7 @@ void VoxelMesher::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesher::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesher::get_occlusion_darkness);
 
-	ClassDB::bind_method(D_METHOD("build", "voxel_buffer", "channel", "existing_mesh"), &VoxelMesher::build_ref);
+	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "channel", "materials", "existing_mesh"), &VoxelMesher::build_mesh);
 
 #ifdef VOXEL_PROFILING
 	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelMesher::get_profiling_info);

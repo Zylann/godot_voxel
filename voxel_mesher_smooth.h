@@ -10,8 +10,8 @@ class VoxelMesherSmooth : public Reference {
 public:
 	VoxelMesherSmooth();
 
-	Ref<ArrayMesh> build_ref(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh = Ref<ArrayMesh>());
-	Ref<ArrayMesh> build(const VoxelBuffer &voxels, unsigned int channel, Ref<ArrayMesh> mesh = Ref<ArrayMesh>());
+	Ref<ArrayMesh> build_mesh(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh = Ref<ArrayMesh>());
+	Array build(const VoxelBuffer &voxels, unsigned int channel);
 
 protected:
 	static void _bind_methods();
@@ -23,7 +23,7 @@ private:
 		ReuseCell();
 	};
 
-	void build_mesh(const VoxelBuffer &voxels, unsigned int channel);
+	void build_internal(const VoxelBuffer &voxels, unsigned int channel);
 	ReuseCell &get_reuse_cell(Vector3i pos);
 	void emit_vertex(Vector3 primary, Vector3 normal);
 

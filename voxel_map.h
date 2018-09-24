@@ -2,21 +2,27 @@
 #define VOXEL_MAP_H
 
 #include "voxel_buffer.h"
-#include "voxel_block.h"
 
 #include <core/hash_map.h>
 #include <scene/main/node.h>
+
+class VoxelBlock;
 
 // Infinite voxel storage by means of octants like Gridmap
 class VoxelMap : public Reference {
 	GDCLASS(VoxelMap, Reference)
 public:
-	// Converts voxel coodinates into block coordinates
-	_FORCE_INLINE_ Vector3i voxel_to_block(Vector3i pos) const {
+	// Converts voxel coodinates into block coordinates.
+	// Don't use division because it introduces an offset in negative coordinates.
+	static _FORCE_INLINE_ Vector3i voxel_to_block_b(Vector3i pos, int block_size_pow2) {
 		return Vector3i(
-				pos.x >> _block_size_pow2,
-				pos.y >> _block_size_pow2,
-				pos.z >> _block_size_pow2);
+				pos.x >> block_size_pow2,
+				pos.y >> block_size_pow2,
+				pos.z >> block_size_pow2);
+	}
+
+	_FORCE_INLINE_ Vector3i voxel_to_block(Vector3i pos) const {
+		return voxel_to_block_b(pos, _block_size_pow2);
 	}
 
 	_FORCE_INLINE_ Vector3i to_local(Vector3i pos) const {

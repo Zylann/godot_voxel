@@ -1,12 +1,17 @@
 #ifndef VOXEL_TERRAIN_H
 #define VOXEL_TERRAIN_H
 
-#include "voxel_map.h"
-#include "voxel_mesher.h"
-#include "voxel_mesher_smooth.h"
-#include "voxel_provider.h"
+#include "vector3i.h"
 #include "zprofiling.h"
-#include <scene/main/node.h>
+#include "voxel_provider.h"
+#include "voxel_provider_thread.h"
+#include "voxel_mesh_updater.h"
+#include "rect3i.h"
+
+#include <scene/3d/spatial.h>
+
+class VoxelMap;
+class VoxelLibrary;
 
 // Infinite static terrain made of voxels.
 // It is loaded around VoxelTerrainStreamers.
@@ -14,6 +19,7 @@ class VoxelTerrain : public Spatial /*, public IVoxelMapObserver*/ {
 	GDCLASS(VoxelTerrain, Spatial)
 public:
 	VoxelTerrain();
+	~VoxelTerrain();
 
 	void set_provider(Ref<VoxelProvider> provider);
 	Ref<VoxelProvider> get_provider() const;
@@ -21,13 +27,10 @@ public:
 	void set_voxel_library(Ref<VoxelLibrary> library);
 	Ref<VoxelLibrary> get_voxel_library() const;
 
-	void force_load_blocks(Vector3i center, Vector3i extents);
-	int get_block_update_count();
-
 	void make_block_dirty(Vector3i bpos);
-	void make_blocks_dirty(Vector3i min, Vector3i size);
+	//void make_blocks_dirty(Vector3i min, Vector3i size);
 	void make_voxel_dirty(Vector3i pos);
-	bool is_block_dirty(Vector3i bpos);
+	bool is_block_dirty(Vector3i bpos) const;
 
 	void set_generate_collisions(bool enabled);
 	bool get_generate_collisions() const { return _generate_collisions; }
@@ -41,8 +44,17 @@ public:
 	void set_material(int id, Ref<Material> material);
 	Ref<Material> get_material(int id) const;
 
-	Ref<VoxelMesher> get_mesher() { return _mesher; }
 	Ref<VoxelMap> get_map() { return _map; }
+
+	struct Stats {
+		VoxelMeshUpdater::Stats updater;
+		VoxelProviderThread::Stats provider;
+		uint32_t mesh_alloc_time;
+		uint32_t updated_blocks;
+
+		Stats(): mesh_alloc_time(0), updated_blocks(0)
+		{ }
+	};
 
 protected:
 	void _notification(int p_what);
@@ -54,32 +66,37 @@ private:
 
 	void _process();
 
-	void update_blocks();
-	void update_block_mesh(Vector3i block_pos);
-
 	void make_all_view_dirty_deferred();
+
+	enum BlockDirtyState {
+		BLOCK_LOAD,
+		BLOCK_UPDATE
+	};
 
 	Spatial *get_viewer(NodePath path) const;
 
 	void immerge_block(Vector3i bpos);
 
-	// Observer events
-	//void block_removed(VoxelBlock & block);
+	Dictionary get_statistics() const;
 
 	static void _bind_methods();
 
 	// Convenience
 	Vector3 _voxel_to_block_binding(Vector3 pos);
 	Vector3 _block_to_voxel_binding(Vector3 pos);
-	void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
-	void _make_block_dirty_binding(Vector3 bpos) { make_block_dirty(bpos); }
-	void _make_blocks_dirty_binding(Vector3 min, Vector3 size) { make_blocks_dirty(min, size); }
+	//void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
+	//void _make_block_dirty_binding(Vector3 bpos) { make_block_dirty(bpos); }
+	//void _make_blocks_dirty_binding(Vector3 min, Vector3 size) { make_blocks_dirty(min, size); }
 	void _make_voxel_dirty_binding(Vector3 pos) { make_voxel_dirty(pos); }
 
 	Variant _raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance);
 
 	void set_voxel(Vector3 pos, int value, int c);
 	int get_voxel(Vector3 pos, int c);
+
+	void clear_block_update_state(Vector3i block_pos);
+
+	static void remove_positions_outside_box(Vector<Vector3i> &positions, Rect3i box, HashMap<Vector3i, BlockDirtyState, Vector3iHasher> &state_map);
 
 private:
 	// Voxel storage
@@ -91,14 +108,15 @@ private:
 	// TODO Terrains only need to handle the visible portion of voxels, which reduces the bounds blocks to handle.
 	// Therefore, could a simple grid be better to use than a hashmap?
 
-	Vector<Vector3i> _block_update_queue;
-	HashMap<Vector3i, bool, Vector3iHasher> _dirty_blocks; // only the key is relevant
-
-	Ref<VoxelMesher> _mesher;
-	// TODO I'm not sure it will stay here... refactoring ahead
-	Ref<VoxelMesherSmooth> _mesher_smooth;
+	Vector<Vector3i> _blocks_pending_load;
+	Vector<Vector3i> _blocks_pending_update;
+	HashMap<Vector3i, BlockDirtyState, Vector3iHasher> _dirty_blocks; // only the key is relevant
 
 	Ref<VoxelProvider> _provider;
+	VoxelProviderThread *_provider_thread;
+
+	Ref<VoxelLibrary> _library;
+	VoxelMeshUpdater *_block_updater;
 
 	NodePath _viewer_path;
 	Vector3i _last_viewer_block_pos;
@@ -106,10 +124,9 @@ private:
 
 	bool _generate_collisions;
 
-#ifdef VOXEL_PROFILING
-	ZProfiler _zprofiler;
-	Dictionary get_profiling_info() { return _zprofiler.get_all_serialized_info(); }
-#endif
+	Ref<Material> _materials[VoxelMesher::MAX_MATERIALS];
+
+	Stats _stats;
 };
 
 #endif // VOXEL_TERRAIN_H
