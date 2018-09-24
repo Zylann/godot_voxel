@@ -9,6 +9,7 @@ namespace CubeTables {
 
 const unsigned int CORNER_COUNT = 8;
 const unsigned int EDGE_COUNT = 12;
+const unsigned int MOORE_NEIGHBORING_3D_COUNT = 26;
 
 extern const Vector3 g_corner_position[CORNER_COUNT];
 
@@ -28,7 +29,7 @@ extern const Vector3i g_edge_inormals[EDGE_COUNT];
 
 extern const unsigned int g_edge_corners[EDGE_COUNT][2];
 
-extern const Vector3i g_moore_neighboring_3d[26];
+extern const Vector3i g_moore_neighboring_3d[MOORE_NEIGHBORING_3D_COUNT];
 
 } // namespace CubeTables
 

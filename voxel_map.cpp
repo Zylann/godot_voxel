@@ -1,6 +1,8 @@
 #include "voxel_map.h"
-#include "core/os/os.h"
+#include "voxel_block.h"
 #include "cube_tables.h"
+
+#include "core/os/os.h"
 
 
 VoxelMap::VoxelMap()
@@ -102,7 +104,7 @@ bool VoxelMap::has_block(Vector3i pos) const {
 }
 
 bool VoxelMap::is_block_surrounded(Vector3i pos) const {
-	for (unsigned int i = 0; i < 26; ++i) {
+	for (unsigned int i = 0; i < CubeTables::MOORE_NEIGHBORING_3D_COUNT; ++i) {
 		Vector3i bpos = pos + CubeTables::g_moore_neighboring_3d[i];
 		if (!has_block(bpos)) {
 			return false;

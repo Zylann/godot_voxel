@@ -138,7 +138,7 @@ const unsigned int g_edge_corners[EDGE_COUNT][2] = {
 };
 
 // Order is irrelevant
-const Vector3i g_moore_neighboring_3d[26] = {
+const Vector3i g_moore_neighboring_3d[MOORE_NEIGHBORING_3D_COUNT] = {
 	Vector3i(-1, -1, -1),
 	Vector3i(0, -1, -1),
 	Vector3i(1, -1, -1),
