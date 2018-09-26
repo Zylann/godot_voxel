@@ -18,6 +18,15 @@ class VoxelLibrary;
 class VoxelTerrain : public Spatial /*, public IVoxelMapObserver*/ {
 	GDCLASS(VoxelTerrain, Spatial)
 public:
+
+	enum BlockDirtyState {
+		BLOCK_NONE,
+		BLOCK_LOAD,
+		BLOCK_UPDATE_NOT_SENT,
+		BLOCK_UPDATE_SENT,
+		BLOCK_IDLE
+	};
+
 	VoxelTerrain();
 	~VoxelTerrain();
 
@@ -50,9 +59,17 @@ public:
 		VoxelMeshUpdater::Stats updater;
 		VoxelProviderThread::Stats provider;
 		uint32_t mesh_alloc_time;
-		uint32_t updated_blocks;
+		int updated_blocks;
+		int dropped_provider_blocks;
+		int dropped_updater_blocks;
+		int remaining_main_thread_blocks;
 
-		Stats(): mesh_alloc_time(0), updated_blocks(0)
+		Stats():
+			mesh_alloc_time(0),
+			updated_blocks(0),
+			dropped_provider_blocks(0),
+			dropped_updater_blocks(0),
+			remaining_main_thread_blocks(0)
 		{ }
 	};
 
@@ -67,11 +84,6 @@ private:
 	void _process();
 
 	void make_all_view_dirty_deferred();
-
-	enum BlockDirtyState {
-		BLOCK_LOAD,
-		BLOCK_UPDATE
-	};
 
 	Spatial *get_viewer(NodePath path) const;
 
@@ -93,8 +105,7 @@ private:
 
 	void set_voxel(Vector3 pos, int value, int c);
 	int get_voxel(Vector3 pos, int c);
-
-	void clear_block_update_state(Vector3i block_pos);
+	BlockDirtyState get_block_state(Vector3 p_bpos) const;
 
 	static void remove_positions_outside_box(Vector<Vector3i> &positions, Rect3i box, HashMap<Vector3i, BlockDirtyState, Vector3iHasher> &state_map);
 
@@ -110,7 +121,8 @@ private:
 
 	Vector<Vector3i> _blocks_pending_load;
 	Vector<Vector3i> _blocks_pending_update;
-	HashMap<Vector3i, BlockDirtyState, Vector3iHasher> _dirty_blocks; // only the key is relevant
+	HashMap<Vector3i, BlockDirtyState, Vector3iHasher> _dirty_blocks; // TODO Rename _block_states
+	Vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
 
 	Ref<VoxelProvider> _provider;
 	VoxelProviderThread *_provider_thread;
@@ -128,5 +140,7 @@ private:
 
 	Stats _stats;
 };
+
+VARIANT_ENUM_CAST(VoxelTerrain::BlockDirtyState)
 
 #endif // VOXEL_TERRAIN_H

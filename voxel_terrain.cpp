@@ -168,23 +168,32 @@ Ref<Material> VoxelTerrain::get_material(int id) const {
 void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 	// TODO Immediate update viewer distance?
 
-	if (is_block_dirty(bpos) == false) {
+	VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(bpos);
+
+	if(state == NULL) {
+		// The block is not dirty, so it will either be loaded or updated
 
 		if(_map->has_block(bpos)) {
 
 			_blocks_pending_update.push_back(bpos);
-			_dirty_blocks[bpos] = BLOCK_UPDATE;
+			_dirty_blocks[bpos] = BLOCK_UPDATE_NOT_SENT;
 
 		} else {
 			_blocks_pending_load.push_back(bpos);
 			_dirty_blocks[bpos] = BLOCK_LOAD;
 		}
 
-		//OS::get_singleton()->print("Dirty (%i, %i, %i)", bpos.x, bpos.y, bpos.z);
-
-		// TODO What if a block is made dirty, goes through threaded update, then gets changed again before it gets updated?
-		// this will make the second change ignored, which is not correct!
+	} else if(*state == BLOCK_UPDATE_SENT) {
+		// The updater is already processing the block,
+		// but the block was modified again so we schedule another update
+		*state = BLOCK_UPDATE_NOT_SENT;
+		_blocks_pending_update.push_back(bpos);
 	}
+
+	//OS::get_singleton()->print("Dirty (%i, %i, %i)", bpos.x, bpos.y, bpos.z);
+
+	// TODO What if a block is made dirty, goes through threaded update, then gets changed again before it gets updated?
+	// this will make the second change ignored, which is not correct!
 }
 
 void VoxelTerrain::immerge_block(Vector3i bpos) {
@@ -205,6 +214,7 @@ Dictionary VoxelTerrain::get_statistics() const {
 	provider["min_time"] = _stats.provider.min_time;
 	provider["max_time"] = _stats.provider.max_time;
 	provider["remaining_blocks"] = _stats.provider.remaining_blocks;
+	provider["dropped_blocks"] = _stats.dropped_provider_blocks;
 
 	Dictionary updater;
 	updater["min_time"] = _stats.updater.min_time;
@@ -212,6 +222,8 @@ Dictionary VoxelTerrain::get_statistics() const {
 	updater["remaining_blocks"] = _stats.updater.remaining_blocks;
 	updater["updated_blocks"] = _stats.updated_blocks;
 	updater["mesh_alloc_time"] = _stats.mesh_alloc_time;
+	updater["dropped_blocks"] = _stats.dropped_updater_blocks;
+	updater["remaining_main_thread_blocks"] = _stats.remaining_main_thread_blocks;
 
 	Dictionary d;
 	d["provider"] = provider;
@@ -530,10 +542,19 @@ void VoxelTerrain::_process() {
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 
 		_stats.provider = output.stats;
+		_stats.dropped_provider_blocks = 0;
 
 		for(int i = 0; i < output.emerged_blocks.size(); ++i) {
 
 			const VoxelProviderThread::EmergeOutput &o = output.emerged_blocks[i];
+			Vector3i block_pos = _map->voxel_to_block(o.origin_in_voxels);
+
+			VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(block_pos);
+			if(state == NULL || *state != BLOCK_LOAD) {
+				// That block was not requested, drop it
+				++_stats.dropped_provider_blocks;
+				continue;
+			}
 
 			// Check return
 			// TODO Shouldn't halt execution though, as it can bring the map in an invalid state!
@@ -542,7 +563,6 @@ void VoxelTerrain::_process() {
 			// TODO Discard blocks out of range
 
 			// Store buffer
-			Vector3i block_pos = _map->voxel_to_block(o.origin_in_voxels);
 			bool update_neighbors = !_map->has_block(block_pos);
 			_map->set_block_buffer(block_pos, o.voxels);
 
@@ -558,13 +578,12 @@ void VoxelTerrain::_process() {
 							// TODO What if the map is really composed of empty blocks?
 							if (_map->is_block_surrounded(npos)) {
 
-								VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(npos);
-								if (state && *state == BLOCK_UPDATE) {
+								if (state && *state == BLOCK_UPDATE_NOT_SENT || *state == BLOCK_UPDATE_SENT) {
 									// Assuming it is scheduled to be updated already.
 									continue;
 								}
 
-								_dirty_blocks[npos] = BLOCK_UPDATE;
+								_dirty_blocks[npos] = BLOCK_UPDATE_NOT_SENT;
 								_blocks_pending_update.push_back(npos);
 							}
 						}
@@ -572,7 +591,7 @@ void VoxelTerrain::_process() {
 				}
 			} else {
 				// Only update the block, neighbors will probably follow if needed
-				_dirty_blocks[block_pos] = BLOCK_UPDATE;
+				_dirty_blocks[block_pos] = BLOCK_UPDATE_NOT_SENT;
 				_blocks_pending_update.push_back(block_pos);
 				//OS::get_singleton()->print("Update (%i, %i, %i)\n", block_pos.x, block_pos.y, block_pos.z);
 			}
@@ -606,6 +625,11 @@ void VoxelTerrain::_process() {
 			iblock.voxels = nbuffer;
 			iblock.position = block_pos;
 			input.blocks.push_back(iblock);
+
+			VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(block_pos);
+			CRASH_COND(state == NULL);
+			CRASH_COND(*state != BLOCK_UPDATE_NOT_SENT);
+			*state = BLOCK_UPDATE_SENT;
 		}
 
 		_block_updater->push(input);
@@ -614,27 +638,40 @@ void VoxelTerrain::_process() {
 
 	// Get mesh updates
 	{
-		VoxelMeshUpdater::Output output;
-		_block_updater->pop(output);
+		{
+			VoxelMeshUpdater::Output output;
+			_block_updater->pop(output);
 
-		_stats.updater = output.stats;
-		_stats.updated_blocks = output.blocks.size();
+			_stats.updater = output.stats;
+			_stats.updated_blocks = output.blocks.size();
+			_stats.dropped_updater_blocks = 0;
+
+			_blocks_pending_main_thread_update.append_array(output.blocks);
+		}
 
 		Ref<World> world = get_world();
-
 		uint32_t time_before = os.get_ticks_msec();
+		uint32_t timeout = os.get_ticks_msec() + 10;
+		int queue_index = 0;
 
-		for (int i = 0; i < output.blocks.size(); ++i) {
-			const VoxelMeshUpdater::OutputBlock &ob = output.blocks[i];
+		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
+		// This also proved to be very slow compared to the meshing process itself... hopefully Vulkan will improve this?
+
+		for (; queue_index < _blocks_pending_main_thread_update.size() && os.get_ticks_msec() < timeout; ++queue_index) {
+
+			const VoxelMeshUpdater::OutputBlock &ob = _blocks_pending_main_thread_update[queue_index];
+
+			VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(ob.position);
+			if (state && *state == BLOCK_UPDATE_SENT) {
+				_dirty_blocks.erase(ob.position);
+			}
 
 			VoxelBlock *block = _map->get_block(ob.position);
 			if (block == NULL) {
-				clear_block_update_state(ob.position);
+				// That block is no longer loaded, drop the result
+				++_stats.dropped_updater_blocks;
 				continue;
 			}
-
-			// Note: I allocate the mesh here because Godot doesn't supports doing it in another thread without hanging the main one.
-			// Hopefully Vulkan will improve this?
 
 			Ref<ArrayMesh> mesh;
 			mesh.instance();
@@ -648,7 +685,6 @@ void VoxelTerrain::_process() {
 
 				mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
-
 
 				++surface_index;
 			}
@@ -668,27 +704,15 @@ void VoxelTerrain::_process() {
 				mesh = Ref<Mesh>();
 
 			block->set_mesh(mesh, world);
-			clear_block_update_state(ob.position);
 		}
+
+		shift_up(_blocks_pending_main_thread_update, queue_index);
 
 		uint32_t time_taken = os.get_ticks_msec() - time_before;
 		_stats.mesh_alloc_time = time_taken;
 	}
 
 	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") + String::num(_block_update_queue.size()));
-}
-
-// To be called once a block is updated
-void VoxelTerrain::clear_block_update_state(Vector3i block_pos) {
-	VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(block_pos);
-	if (state) {
-		if (*state == BLOCK_UPDATE)
-			_dirty_blocks.erase(block_pos);
-		else
-			;//print_line("Block update found non-update state");
-	} else {
-		;//print_line("Block update found no update state");
-	}
 }
 
 //void VoxelTerrain::block_removed(VoxelBlock & block) {
@@ -758,6 +782,19 @@ Vector3 VoxelTerrain::_block_to_voxel_binding(Vector3 pos) {
 	return Vector3i(_map->block_to_voxel(pos)).to_vec3();
 }
 
+// For debugging purpose
+VoxelTerrain::BlockDirtyState VoxelTerrain::get_block_state(Vector3 p_bpos) const {
+	Vector3i bpos = p_bpos;
+	const VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(bpos);
+	if(state) {
+		return *state;
+	} else {
+		if(!_map->has_block(bpos))
+			return BLOCK_NONE;
+		return BLOCK_IDLE;
+	}
+}
+
 void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_provider", "provider"), &VoxelTerrain::set_provider);
@@ -787,10 +824,17 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance"), &VoxelTerrain::_raycast_binding, DEFVAL(100));
 
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::get_statistics);
+	ClassDB::bind_method(D_METHOD("get_block_state", "block_pos"), &VoxelTerrain::get_block_state);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelProvider"), "set_provider", "get_provider");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"), "set_voxel_library", "get_voxel_library");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
+
+	BIND_ENUM_CONSTANT(BLOCK_NONE);
+	BIND_ENUM_CONSTANT(BLOCK_LOAD);
+	BIND_ENUM_CONSTANT(BLOCK_UPDATE_NOT_SENT);
+	BIND_ENUM_CONSTANT(BLOCK_UPDATE_SENT);
+	BIND_ENUM_CONSTANT(BLOCK_IDLE);
 }
