@@ -578,8 +578,9 @@ void VoxelTerrain::_process() {
 							// TODO What if the map is really composed of empty blocks?
 							if (_map->is_block_surrounded(npos)) {
 
-								if (state && *state == BLOCK_UPDATE_NOT_SENT || *state == BLOCK_UPDATE_SENT) {
+								if (state && *state == BLOCK_UPDATE_NOT_SENT) {
 									// Assuming it is scheduled to be updated already.
+									// In case of BLOCK_UPDATE_SENT, we'll have to resend it.
 									continue;
 								}
 

@@ -147,7 +147,7 @@ void VoxelMeshUpdater::thread_func() {
 			}
 
 			uint32_t time = OS::get_singleton()->get_ticks_msec();
-			if (time >= sync_time) {
+			if (time >= sync_time || _input.blocks.empty()) {
 
 				thread_sync(queue_index, stats);
 

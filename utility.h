@@ -3,6 +3,7 @@
 
 #include <core/vector.h>
 #include <core/dvector.h>
+#include <core/ustring.h>
 #include "vector3i.h"
 
 // Takes elements starting from a given position and moves them at the beginning,
@@ -38,6 +39,10 @@ void copy_to(PoolVector<T> &to, const Vector<T> &from) {
 	for (unsigned int i = 0; i < from.size(); ++i) {
 		w[i] = from[i];
 	}
+}
+
+inline String ptr2s(const void *p) {
+	return String::num_uint64((uint64_t)p, 16);
 }
 
 #endif // HEADER_VOXEL_UTILITY_H

@@ -40,7 +40,7 @@ void VoxelProviderThread::push(const InputData &input) {
 	{
 		MutexLock lock(_input_mutex);
 
-		// TODO If the same update is sent twice, keep only the latest one
+		// TODO If the same request is sent twice, keep only the latest one
 
 		_shared_input.blocks_to_emerge.append_array(input.blocks_to_emerge);
 		_shared_input.blocks_to_immerge.append_array(input.blocks_to_immerge);
@@ -125,7 +125,7 @@ void VoxelProviderThread::thread_func() {
 			}
 
 			uint32_t time = OS::get_singleton()->get_ticks_msec();
-			if (time >= sync_time) {
+			if (time >= sync_time || _input.is_empty()) {
 
 				thread_sync(emerge_index, stats);
 
