@@ -31,7 +31,7 @@ What this module doesn't provides
 -----------------------------------
 
 - Level of detail (not a priority for my project)
-- Game specific features such as cave generation or procedural trees
+- Game specific features such as cave generation or procedural trees (though it might include tools to help doing them)
 - Editor tools (only a few things are exposed)
 - Import and export of voxel formats
 - For reasons why I don't work on X or Y, see https://github.com/Zylann/godot_voxel/issues/17
