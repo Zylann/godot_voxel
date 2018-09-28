@@ -21,6 +21,9 @@ VoxelTerrain::VoxelTerrain()
 
 	_provider_thread = NULL;
 	_block_updater = NULL;
+
+	_generate_collisions = false;
+	_run_in_editor = false;
 }
 
 VoxelTerrain::~VoxelTerrain() {
@@ -403,7 +406,8 @@ void VoxelTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_PROCESS:
-			_process();
+			if (!Engine::get_singleton()->is_editor_hint() || _run_in_editor)
+				_process();
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
@@ -656,7 +660,8 @@ void VoxelTerrain::_process() {
 		int queue_index = 0;
 
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
-		// This also proved to be very slow compared to the meshing process itself... hopefully Vulkan will improve this?
+		// This also proved to be very slow compared to the meshing process itself...
+		// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
 
 		for (; queue_index < _blocks_pending_main_thread_update.size() && os.get_ticks_msec() < timeout; ++queue_index) {
 

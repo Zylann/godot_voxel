@@ -135,6 +135,7 @@ private:
 	int _last_view_distance_blocks;
 
 	bool _generate_collisions;
+	bool _run_in_editor;
 
 	Ref<Material> _materials[VoxelMesher::MAX_MATERIALS];
 
