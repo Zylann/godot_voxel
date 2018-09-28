@@ -36,7 +36,8 @@ void VoxelProvider::_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_vo
 }
 
 void VoxelProvider::_bind_methods() {
+	// Note: C++ inheriting classes don't need to re-bind these, because they are bindings that call the actual virtual methods
 
-	ClassDB::bind_method(D_METHOD("emerge_block", "out_buffer", "block_pos"), &VoxelProvider::_emerge_block);
-	ClassDB::bind_method(D_METHOD("immerge_block", "buffer", "block_pos"), &VoxelProvider::_immerge_block);
+	ClassDB::bind_method(D_METHOD("emerge_block", "out_buffer", "origin_in_voxels"), &VoxelProvider::_emerge_block);
+	ClassDB::bind_method(D_METHOD("immerge_block", "buffer", "origin_in_voxels"), &VoxelProvider::_immerge_block);
 }

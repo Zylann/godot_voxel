@@ -5,6 +5,7 @@
 #include "voxel_map.h"
 #include "voxel_terrain.h"
 #include "voxel_provider_test.h"
+#include "voxel_provider_image.h"
 #include "voxel_mesher_smooth.h"
 
 void register_voxel_types() {
@@ -17,6 +18,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelTerrain>();
 	ClassDB::register_class<VoxelProvider>();
 	ClassDB::register_class<VoxelProviderTest>();
+	ClassDB::register_class<VoxelProviderImage>();
 	ClassDB::register_class<VoxelMesherSmooth>();
 
 }
