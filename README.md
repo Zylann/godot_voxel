@@ -13,35 +13,25 @@ Install the contents of the repo in a folder under "modules/", named "voxel".
 IMPORTANT: if you clone the repo, Git will create the folder as the repo name, "godot_voxel". But because Godot SCons scripts consider the folder name as the module's name, it will generate wrong function calls, so you must rename the folder "voxel".
 
 
-Features
----------
+What this module provides
+---------------------------
 
-- Fully editable terrain (see demo: https://github.com/Zylann/voxelgame)
-- Compact voxel storage using 8-bit channels like images
+- Fully editable terrain as long as you call the right functions (see demo: https://github.com/Zylann/voxelgame)
+- Voxel storage using 8-bit channels like images for any general purpose
 - Data segmentation using blocks of 16x16x16 voxels (so the world can be theoretically infinite)
-- Support for minecraft-style terrain using voxel types
-- Support for smooth terrain using Transvoxel http://transvoxel.org/
-- Vertex-based ambient occlusion on voxel edges (only cubic mode, comes for free at the cost of slower mesh generation)
-- Mesh-based physics based on Godot (high generation cost but works at decent speed)
-- Simple interface for deferred terrain generators (block by block)
-- Optional profiling information
+- Main development oriented for minecraft-style terrain by using voxels as types
+- Experimental support for smooth terrain using Transvoxel http://transvoxel.org/, by using voxels as isolevels
+- Vertex-based ambient occlusion on voxel edges
+- Simple interface for deferred terrain generators (block by block using threads)
+- Uses threads to stream terrain as the camera moves
+- Optional performance statistics
 
 
-Ideas TODO
------------
+What this module doesn't provides
+-----------------------------------
 
-- Automatic terrain generation (currently not automatic)
-- Voxels can be of any shape, not just cubes (not fully accessible yet but present in code)
-- Dynamic voxel loading (finite or infinite maps)
-- Support internal threading
-- Support saving and loading through helper classes
-- Promote classes to Node and Resource for better editor experience
-- Helpers for structure generation (anything that is bigger than one voxel)
-- Convert any imported meshes to Voxel-ready meshes (to comply with a few optimizations)
-- Generate Mesh resources from voxels so they can be used in the editor as MeshInstances
-- Import resources from other editors like Magicka-voxel
-- Volumetric grid algorithms: fluids, pathfinding, lighting...
-- Seam-free level of detail (LOD)
-- Ability to bake terrains if we don't want them to be editable in game
-- Migrate to DLScript (needs reworks to keep low overhead, but that would be really, really nice)
-
+- Level of detail (not a priority for my project)
+- Game specific features such as cave generation or procedural trees
+- Editor tools (only a few things are exposed)
+- Import and export of voxel formats
+- For reasons why I don't work on X or Y, see https://github.com/Zylann/godot_voxel/issues/17
