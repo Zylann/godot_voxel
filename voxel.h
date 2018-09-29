@@ -92,7 +92,7 @@ protected:
 	//Ref<Voxel> set_xquad_geometry(Vector2 atlas_pos);
 
 private:
-	WeakRef _library;
+	ObjectID _library;
 
 	// Identifiers
 	int _id;

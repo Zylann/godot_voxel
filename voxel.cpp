@@ -5,14 +5,15 @@
 
 #define STRLEN(x) (sizeof(x) / sizeof(x[0]))
 
-Voxel::Voxel()
-	: Resource(),
-	  _id(-1),
-	  _material_id(0),
-	  _is_transparent(false),
-	  _color(1.f, 1.f, 1.f),
-	  _geometry_type(GEOMETRY_NONE),
-	  _cube_geometry_padding_y(0) {}
+Voxel::Voxel():
+	_library(0),
+	_id(-1),
+	_material_id(0),
+	_is_transparent(false),
+	_color(1.f, 1.f, 1.f),
+	_geometry_type(GEOMETRY_NONE),
+	_cube_geometry_padding_y(0)
+{}
 
 static Voxel::Side name_to_side(const String &s) {
 	if (s == "left")
@@ -158,13 +159,18 @@ Voxel::GeometryType Voxel::get_geometry_type() const {
 }
 
 void Voxel::set_library(Ref<VoxelLibrary> lib) {
-	_library.set_ref(lib);
+	if(lib.is_null())
+		_library = 0;
+	else
+		_library = lib->get_instance_id();
 	// Update model UVs because atlas size is defined by the library
 	update_cube_uv_sides();
 }
 
 VoxelLibrary *Voxel::get_library() const {
-	Object *v = _library.get_ref();
+	if(_library == 0)
+		return NULL;
+	Object *v = ObjectDB::get_instance(_library);
 	if (v)
 		return Object::cast_to<VoxelLibrary>(v);
 	return NULL;
