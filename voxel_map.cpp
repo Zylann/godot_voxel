@@ -17,6 +17,7 @@ VoxelMap::VoxelMap()
 }
 
 VoxelMap::~VoxelMap() {
+	print_line("Destroying VoxelMap");
 	clear();
 }
 

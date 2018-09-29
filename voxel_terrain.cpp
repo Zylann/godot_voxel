@@ -27,6 +27,7 @@ VoxelTerrain::VoxelTerrain()
 }
 
 VoxelTerrain::~VoxelTerrain() {
+	print_line("Destroying VoxelTerrain");
 	if(_provider_thread) {
 		memdelete(_provider_thread);
 	}
@@ -231,6 +232,13 @@ Dictionary VoxelTerrain::get_statistics() const {
 	Dictionary d;
 	d["provider"] = provider;
 	d["updater"] = updater;
+
+	// Breakdown of time spent in _process
+	d["time_detect_required_blocks"] = _stats.time_detect_required_blocks;
+	d["time_send_load_requests"] = _stats.time_send_load_requests;
+	d["time_process_load_responses"] = _stats.time_process_load_responses;
+	d["time_send_update_requests"] = _stats.time_send_update_requests;
+	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
 	return d;
 }
@@ -466,6 +474,8 @@ void VoxelTerrain::_process() {
 
 	ERR_FAIL_COND(_map.is_null());
 
+	uint64_t time_before = os.get_ticks_usec();
+
 	// Get viewer location
 	// TODO Transform to local (Spatial Transform)
 	Vector3i viewer_block_pos;
@@ -519,8 +529,12 @@ void VoxelTerrain::_process() {
 		remove_positions_outside_box(_blocks_pending_update, new_box, _dirty_blocks);
 	}
 
+	_stats.time_detect_required_blocks = os.get_ticks_usec() - time_before;
+
 	_last_view_distance_blocks = _view_distance_blocks;
 	_last_viewer_block_pos = viewer_block_pos;
+
+	time_before = os.get_ticks_usec();
 
 	// Send block loading requests
 	{
@@ -535,6 +549,9 @@ void VoxelTerrain::_process() {
 
 		_provider_thread->push(input);
 	}
+
+	_stats.time_send_load_requests = os.get_ticks_usec() - time_before;
+	time_before = os.get_ticks_usec();
 
 	// Get block loading responses
 	{
@@ -603,6 +620,9 @@ void VoxelTerrain::_process() {
 		}
 	}
 
+	_stats.time_process_load_responses = os.get_ticks_usec() - time_before;
+	time_before = os.get_ticks_usec();
+
 	// Send mesh updates
 	{
 		VoxelMeshUpdater::Input input;
@@ -640,6 +660,9 @@ void VoxelTerrain::_process() {
 		_block_updater->push(input);
 		_blocks_pending_update.clear();
 	}
+
+	_stats.time_send_update_requests = os.get_ticks_usec() - time_before;
+	time_before = os.get_ticks_usec();
 
 	// Get mesh updates
 	{
@@ -717,6 +740,8 @@ void VoxelTerrain::_process() {
 		uint32_t time_taken = os.get_ticks_msec() - time_before;
 		_stats.mesh_alloc_time = time_taken;
 	}
+
+	_stats.time_process_update_responses = os.get_ticks_usec() - time_before;
 
 	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") + String::num(_block_update_queue.size()));
 }
