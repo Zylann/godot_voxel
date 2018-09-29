@@ -635,6 +635,25 @@ void VoxelTerrain::_process() {
 				continue;
 			}
 
+			CRASH_COND(block->voxels.is_null());
+
+			VoxelTerrain::BlockDirtyState *block_state = _dirty_blocks.getptr(block_pos);
+			CRASH_COND(block_state == NULL);
+			CRASH_COND(*block_state != BLOCK_UPDATE_NOT_SENT);
+
+			int air_type = 0;
+			if(block->voxels->is_uniform(Voxel::CHANNEL_TYPE) && block->voxels->get_voxel(0, 0, 0, Voxel::CHANNEL_TYPE) == air_type) {
+
+				// The block contains empty voxels
+				block->set_mesh(Ref<Mesh>(), Ref<World>());
+				_dirty_blocks.erase(block_pos);
+
+				// Optional, but I guess it might spare some memory
+				block->voxels->clear_channel(Voxel::CHANNEL_TYPE, air_type);
+
+				continue;
+			}
+
 			// Create buffer padded with neighbor voxels
 			Ref<VoxelBuffer> nbuffer;
 			nbuffer.instance();
@@ -651,10 +670,7 @@ void VoxelTerrain::_process() {
 			iblock.position = block_pos;
 			input.blocks.push_back(iblock);
 
-			VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(block_pos);
-			CRASH_COND(state == NULL);
-			CRASH_COND(*state != BLOCK_UPDATE_NOT_SENT);
-			*state = BLOCK_UPDATE_SENT;
+			*block_state = BLOCK_UPDATE_SENT;
 		}
 
 		_block_updater->push(input);
