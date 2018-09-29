@@ -6,7 +6,7 @@
 #include "voxel_terrain.h"
 #include "voxel_provider_test.h"
 #include "voxel_provider_image.h"
-#include "voxel_mesher_smooth.h"
+#include "transvoxel/voxel_mesher_smooth.h"
 
 void register_voxel_types() {
 

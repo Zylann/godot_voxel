@@ -7,7 +7,7 @@
 
 #include "voxel_buffer.h"
 #include "voxel_mesher.h"
-#include "voxel_mesher_smooth.h"
+#include "transvoxel/voxel_mesher_smooth.h"
 
 class VoxelMeshUpdater {
 public:
