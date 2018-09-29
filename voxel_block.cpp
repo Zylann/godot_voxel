@@ -16,7 +16,7 @@ VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned 
 }
 
 VoxelBlock::VoxelBlock()
-	: voxels(NULL) {
+	: voxels(NULL), _mesh_update_count(0) {
 
 	VisualServer &vs = *VisualServer::get_singleton();
 
@@ -55,6 +55,11 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Ref<World> world) {
 	}
 
 	_mesh = mesh;
+	++_mesh_update_count;
+
+//	if(_mesh_update_count > 1) {
+//		print_line(String("Block {0} was updated {1} times").format(varray(pos.to_vec3(), _mesh_update_count)));
+//	}
 }
 
 void VoxelBlock::enter_world(World *world) {

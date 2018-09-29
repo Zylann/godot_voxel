@@ -28,6 +28,7 @@ private:
 
 	Ref<Mesh> _mesh;
 	RID _mesh_instance;
+	int _mesh_update_count;
 };
 
 #endif // VOXEL_BLOCK_H
