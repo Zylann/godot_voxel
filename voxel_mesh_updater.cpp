@@ -20,6 +20,8 @@ VoxelMeshUpdater::VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams para
 	_thread_exit = false;
 	_semaphore = Semaphore::create();
 	_thread = Thread::create(_thread_func, this);
+
+	_needs_sort = true;
 }
 
 VoxelMeshUpdater::~VoxelMeshUpdater() {
@@ -73,6 +75,10 @@ void VoxelMeshUpdater::push(const Input &input) {
 				_shared_input.blocks.push_back(input.blocks[i]);
 				_block_indexes[pos] = j;
 			}
+		}
+
+		if(_shared_input.priority_position != input.priority_position || input.blocks.size() > 0) {
+			_needs_sort = true;
 		}
 
 		_shared_input.priority_position = input.priority_position;
@@ -202,6 +208,7 @@ void VoxelMeshUpdater::thread_sync(int queue_index, Stats stats) {
 	}
 
 	stats.remaining_blocks = _input.blocks.size();
+	bool needs_sort;
 
 	{
 		// Get input
@@ -212,6 +219,9 @@ void VoxelMeshUpdater::thread_sync(int queue_index, Stats stats) {
 
 		_shared_input.blocks.clear();
 		_block_indexes.clear();
+
+		needs_sort = _needs_sort;
+		_needs_sort = false;
 	}
 
 	if(!_output.blocks.empty()) {
@@ -226,7 +236,7 @@ void VoxelMeshUpdater::thread_sync(int queue_index, Stats stats) {
 		_output.blocks.clear();
 	}
 
-	if (!_input.blocks.empty()) {
+	if (!_input.blocks.empty() && needs_sort) {
 		// Re-sort priority
 
 		SortArray<VoxelMeshUpdater::InputBlock, BlockUpdateComparator> sorter;

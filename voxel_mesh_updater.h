@@ -70,6 +70,8 @@ private:
 private:
 	Input _shared_input;
 	Mutex *_input_mutex;
+	HashMap<Vector3i, int, Vector3iHasher> _block_indexes;
+	bool _needs_sort;
 
 	Output _shared_output;
 	Mutex *_output_mutex;
@@ -78,7 +80,6 @@ private:
 	Ref<VoxelMesherSmooth> _smooth_mesher;
 
 	Input _input;
-	HashMap<Vector3i, int, Vector3iHasher> _block_indexes;
 	Output _output;
 	Semaphore *_semaphore;
 	Thread *_thread;
