@@ -2,6 +2,15 @@
 #include "voxel_library.h"
 #include "cube_tables.h"
 #include "utility.h"
+#include <core/os/os.h>
+
+template <typename T>
+void raw_copy_to(PoolVector<T> &to, const Vector<T> &from) {
+	to.resize(from.size());
+	typename PoolVector<T>::Write w = to.write();
+	memcpy(w.ptr(), from.ptr(), from.size() * sizeof(T));
+}
+
 
 VoxelMesher::VoxelMesher()
 	: _baked_occlusion_darkness(0.75),
@@ -68,6 +77,8 @@ Ref<ArrayMesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int
 }
 
 Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector3i min, Vector3i max) {
+	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+
 	ERR_FAIL_COND_V(_library.is_null(), Array());
 	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Array());
 
@@ -101,6 +112,9 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 	max.clamp_to(min, buffer.get_size() - pad);
 
 	int index_offset = 0;
+
+	uint64_t time_prep = OS::get_singleton()->get_ticks_usec() - time_before;
+	time_before = OS::get_singleton()->get_ticks_usec();
 
 	// Iterate 3D padded data to extract voxel faces.
 	// This is the most intensive job in this class, so all required data should be as fit as possible.
@@ -260,6 +274,9 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 		}
 	}
 
+	uint64_t time_meshing = OS::get_singleton()->get_ticks_usec() - time_before;
+	time_before = OS::get_singleton()->get_ticks_usec();
+
 	// Commit mesh
 
 //	print_line(String("Made mesh v: ") + String::num(_arrays[0].positions.size())
@@ -282,11 +299,11 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 				PoolVector<Color> colors;
 				PoolVector<int> indices;
 
-				copy_to(positions, arrays.positions);
-				copy_to(uvs, arrays.uvs);
-				copy_to(normals, arrays.normals);
-				copy_to(colors, arrays.colors);
-				copy_to(indices, arrays.indices);
+				raw_copy_to(positions, arrays.positions);
+				raw_copy_to(uvs, arrays.uvs);
+				raw_copy_to(normals, arrays.normals);
+				raw_copy_to(colors, arrays.colors);
+				raw_copy_to(indices, arrays.indices);
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
@@ -298,6 +315,10 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 			surfaces.append(mesh_arrays);
 		}
 	}
+
+	uint64_t time_commit = OS::get_singleton()->get_ticks_usec() - time_before;
+
+	//print_line(String("P: {0}, M: {1}, C: {2}").format(varray(time_prep, time_meshing, time_commit)));
 
 	return surfaces;
 }
