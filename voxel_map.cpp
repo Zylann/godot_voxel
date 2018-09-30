@@ -76,6 +76,7 @@ VoxelBlock *VoxelMap::get_block(Vector3i bpos) {
 	VoxelBlock **p = _blocks.getptr(bpos);
 	if (p) {
 		_last_accessed_block = *p;
+		CRASH_COND(_last_accessed_block == NULL); // The map should not contain null blocks
 		return _last_accessed_block;
 	}
 	return NULL;

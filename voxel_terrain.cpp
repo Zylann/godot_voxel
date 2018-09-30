@@ -554,6 +554,7 @@ void VoxelTerrain::_process() {
 	time_before = os.get_ticks_usec();
 
 	// Get block loading responses
+	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
 	{
 		const unsigned int bs = _map->get_block_size();
 		const Vector3i block_size(bs, bs, bs);
@@ -570,11 +571,13 @@ void VoxelTerrain::_process() {
 			const VoxelProviderThread::EmergeOutput &o = output.emerged_blocks[i];
 			Vector3i block_pos = _map->voxel_to_block(o.origin_in_voxels);
 
-			VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(block_pos);
-			if(state == NULL || *state != BLOCK_LOAD) {
-				// That block was not requested, drop it
-				++_stats.dropped_provider_blocks;
-				continue;
+			{
+				VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(block_pos);
+				if(state == NULL || *state != BLOCK_LOAD) {
+					// That block was not requested, drop it
+					++_stats.dropped_provider_blocks;
+					continue;
+				}
 			}
 
 			// Check return
@@ -589,9 +592,8 @@ void VoxelTerrain::_process() {
 
 			// Trigger mesh updates
 			if (update_neighbors) {
-				// All neighbors have to be checked
+				// All neighbors have to be checked. If they are now surrounded, they can be updated
 				Vector3i ndir;
-				// TODO Cache blocks in a small local grid on the stack to reduce hashing
 				for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
 					for (ndir.x = -1; ndir.x < 2; ++ndir.x) {
 						for (ndir.y = -1; ndir.y < 2; ++ndir.y) {
@@ -599,6 +601,7 @@ void VoxelTerrain::_process() {
 							// TODO What if the map is really composed of empty blocks?
 							if (_map->is_block_surrounded(npos)) {
 
+								VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(npos);
 								if (state && *state == BLOCK_UPDATE_NOT_SENT) {
 									// Assuming it is scheduled to be updated already.
 									// In case of BLOCK_UPDATE_SENT, we'll have to resend it.
@@ -611,6 +614,7 @@ void VoxelTerrain::_process() {
 						}
 					}
 				}
+
 			} else {
 				// Only update the block, neighbors will probably follow if needed
 				_dirty_blocks[block_pos] = BLOCK_UPDATE_NOT_SENT;
