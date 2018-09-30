@@ -130,37 +130,37 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 	int row_size = buffer.get_size().y;
 	int deck_size = buffer.get_size().x * row_size;
 
-	int side_neighbor_lut[Voxel::SIDE_COUNT];
-	side_neighbor_lut[Voxel::SIDE_LEFT] = -row_size;
-	side_neighbor_lut[Voxel::SIDE_RIGHT] = row_size;
-	side_neighbor_lut[Voxel::SIDE_BACK] = -deck_size;
-	side_neighbor_lut[Voxel::SIDE_FRONT] = deck_size;
-	side_neighbor_lut[Voxel::SIDE_BOTTOM] = -1;
-	side_neighbor_lut[Voxel::SIDE_TOP] = 1;
+	int side_neighbor_lut[Cube::SIDE_COUNT];
+	side_neighbor_lut[Cube::SIDE_LEFT] = -row_size;
+	side_neighbor_lut[Cube::SIDE_RIGHT] = row_size;
+	side_neighbor_lut[Cube::SIDE_BACK] = -deck_size;
+	side_neighbor_lut[Cube::SIDE_FRONT] = deck_size;
+	side_neighbor_lut[Cube::SIDE_BOTTOM] = -1;
+	side_neighbor_lut[Cube::SIDE_TOP] = 1;
 
-	int edge_neighbor_lut[Voxel::EDGE_COUNT];
-	edge_neighbor_lut[Voxel::EDGE_BOTTOM_BACK] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_BACK];
-	edge_neighbor_lut[Voxel::EDGE_BOTTOM_FRONT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_FRONT];
-	edge_neighbor_lut[Voxel::EDGE_BOTTOM_LEFT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_LEFT];
-	edge_neighbor_lut[Voxel::EDGE_BOTTOM_RIGHT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_RIGHT];
-	edge_neighbor_lut[Voxel::EDGE_BACK_LEFT] = side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_LEFT];
-	edge_neighbor_lut[Voxel::EDGE_BACK_RIGHT] = side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_RIGHT];
-	edge_neighbor_lut[Voxel::EDGE_FRONT_LEFT] = side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_LEFT];
-	edge_neighbor_lut[Voxel::EDGE_FRONT_RIGHT] = side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_RIGHT];
-	edge_neighbor_lut[Voxel::EDGE_TOP_BACK] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_BACK];
-	edge_neighbor_lut[Voxel::EDGE_TOP_FRONT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_FRONT];
-	edge_neighbor_lut[Voxel::EDGE_TOP_LEFT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_LEFT];
-	edge_neighbor_lut[Voxel::EDGE_TOP_RIGHT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_RIGHT];
+	int edge_neighbor_lut[Cube::EDGE_COUNT];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_BACK] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_BACK];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_FRONT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_FRONT];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_LEFT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_LEFT];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_RIGHT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	edge_neighbor_lut[Cube::EDGE_BACK_LEFT] = side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_LEFT];
+	edge_neighbor_lut[Cube::EDGE_BACK_RIGHT] = side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	edge_neighbor_lut[Cube::EDGE_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
+	edge_neighbor_lut[Cube::EDGE_FRONT_RIGHT] = side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	edge_neighbor_lut[Cube::EDGE_TOP_BACK] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_BACK];
+	edge_neighbor_lut[Cube::EDGE_TOP_FRONT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_FRONT];
+	edge_neighbor_lut[Cube::EDGE_TOP_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_LEFT];
+	edge_neighbor_lut[Cube::EDGE_TOP_RIGHT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_RIGHT];
 
-	int corner_neighbor_lut[Voxel::CORNER_COUNT];
-	corner_neighbor_lut[Voxel::CORNER_BOTTOM_BACK_LEFT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_LEFT];
-	corner_neighbor_lut[Voxel::CORNER_BOTTOM_BACK_RIGHT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_RIGHT];
-	corner_neighbor_lut[Voxel::CORNER_BOTTOM_FRONT_RIGHT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_RIGHT];
-	corner_neighbor_lut[Voxel::CORNER_BOTTOM_FRONT_LEFT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_LEFT];
-	corner_neighbor_lut[Voxel::CORNER_TOP_BACK_LEFT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_LEFT];
-	corner_neighbor_lut[Voxel::CORNER_TOP_BACK_RIGHT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_RIGHT];
-	corner_neighbor_lut[Voxel::CORNER_TOP_FRONT_RIGHT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_RIGHT];
-	corner_neighbor_lut[Voxel::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_LEFT];
+	int corner_neighbor_lut[Cube::CORNER_COUNT];
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_LEFT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_LEFT];
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_RIGHT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_RIGHT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
+	corner_neighbor_lut[Cube::CORNER_TOP_BACK_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_LEFT];
+	corner_neighbor_lut[Cube::CORNER_TOP_BACK_RIGHT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_RIGHT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
 
 	uint64_t time_prep = OS::get_singleton()->get_ticks_usec() - time_before;
 	time_before = OS::get_singleton()->get_ticks_usec();
@@ -185,7 +185,7 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 					// and still allow voxels to have geometry that is not a cube
 
 					// Sides
-					for (unsigned int side = 0; side < Voxel::SIDE_COUNT; ++side) {
+					for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 
 						const PoolVector<Vector3> &positions = voxel.get_model_side_positions(side);
 						int vertex_count = positions.size();
@@ -206,15 +206,15 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 									// Combinatory solution for https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
 
 									for (unsigned int j = 0; j < 4; ++j) {
-										unsigned int edge = CubeTables::g_side_edges[side][j];
+										unsigned int edge = Cube::g_side_edges[side][j];
 										int edge_neighbor_id = type_buffer[voxel_index + edge_neighbor_lut[edge]];
 										if (!is_transparent(library, edge_neighbor_id)) {
-											shaded_corner[CubeTables::g_edge_corners[edge][0]] += 1;
-											shaded_corner[CubeTables::g_edge_corners[edge][1]] += 1;
+											shaded_corner[Cube::g_edge_corners[edge][0]] += 1;
+											shaded_corner[Cube::g_edge_corners[edge][1]] += 1;
 										}
 									}
 									for (unsigned int j = 0; j < 4; ++j) {
-										unsigned int corner = CubeTables::g_side_corners[side][j];
+										unsigned int corner = Cube::g_side_corners[side][j];
 										if (shaded_corner[corner] == 2) {
 											shaded_corner[corner] = 3;
 										} else {
@@ -254,7 +254,7 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 									arrays.normals.resize(arrays.normals.size() + vertex_count);
 									Vector3 *w = arrays.normals.ptrw() + append_index;
 									for (unsigned int i = 0; i < vertex_count; ++i) {
-										w[i] = CubeTables::g_side_normals[side].to_vec3();
+										w[i] = Cube::g_side_normals[side].to_vec3();
 									}
 								}
 
@@ -273,10 +273,10 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 										// TODO Fix occlusion inconsistency caused by triangles orientation? Not sure if worth it
 										float shade = 0;
 										for (unsigned int j = 0; j < 4; ++j) {
-											unsigned int corner = CubeTables::g_side_corners[side][j];
+											unsigned int corner = Cube::g_side_corners[side][j];
 											if (shaded_corner[corner]) {
 												float s = baked_occlusion_darkness * static_cast<float>(shaded_corner[corner]);
-												float k = 1.0 - CubeTables::g_corner_position[corner].distance_to(v);
+												float k = 1.0 - Cube::g_corner_position[corner].distance_to(v);
 												if (k < 0.0)
 													k = 0.0;
 												s *= k;

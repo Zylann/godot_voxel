@@ -105,8 +105,8 @@ bool VoxelMap::has_block(Vector3i pos) const {
 }
 
 bool VoxelMap::is_block_surrounded(Vector3i pos) const {
-	for (unsigned int i = 0; i < CubeTables::MOORE_NEIGHBORING_3D_COUNT; ++i) {
-		Vector3i bpos = pos + CubeTables::g_moore_neighboring_3d[i];
+	for (unsigned int i = 0; i < Cube::MOORE_NEIGHBORING_3D_COUNT; ++i) {
+		Vector3i bpos = pos + Cube::g_moore_neighboring_3d[i];
 		if (!has_block(bpos)) {
 			return false;
 		}

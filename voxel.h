@@ -2,6 +2,7 @@
 #define VOXEL_TYPE_H
 
 #include <core/resource.h>
+#include "cube_tables.h"
 
 class VoxelLibrary;
 
@@ -12,52 +13,6 @@ class Voxel : public Resource {
 	GDCLASS(Voxel, Resource)
 
 public:
-	// TODO Move enums to CubeTables
-
-	// Index convention used in some lookup tables
-	enum Side {
-		SIDE_LEFT = 0,
-		SIDE_RIGHT,
-		SIDE_BOTTOM,
-		SIDE_TOP,
-		SIDE_BACK,
-		SIDE_FRONT,
-
-		SIDE_COUNT
-	};
-
-	// Index convention used in some lookup tables
-	enum Edge {
-		EDGE_BOTTOM_BACK,
-		EDGE_BOTTOM_RIGHT,
-		EDGE_BOTTOM_FRONT,
-		EDGE_BOTTOM_LEFT,
-		EDGE_BACK_LEFT,
-		EDGE_BACK_RIGHT,
-		EDGE_FRONT_RIGHT,
-		EDGE_FRONT_LEFT,
-		EDGE_TOP_BACK,
-		EDGE_TOP_RIGHT,
-		EDGE_TOP_FRONT,
-		EDGE_TOP_LEFT,
-
-		EDGE_COUNT
-	};
-
-	// Index convention used in some lookup tables
-	enum Corner {
-		CORNER_BOTTOM_BACK_LEFT,
-		CORNER_BOTTOM_BACK_RIGHT,
-		CORNER_BOTTOM_FRONT_RIGHT,
-		CORNER_BOTTOM_FRONT_LEFT,
-		CORNER_TOP_BACK_LEFT,
-		CORNER_TOP_BACK_RIGHT,
-		CORNER_TOP_FRONT_RIGHT,
-		CORNER_TOP_FRONT_LEFT,
-
-		CORNER_COUNT
-	};
-
 	enum ChannelMode {
 		// For mapping to a Voxel type
 		CHANNEL_TYPE = 0,
@@ -139,7 +94,7 @@ private:
 	Color _color;
 	GeometryType _geometry_type;
 	float _cube_geometry_padding_y;
-	Vector2 _cube_tiles[SIDE_COUNT];
+	Vector2 _cube_tiles[Cube::SIDE_COUNT];
 
 	// Model
 	PoolVector<Vector3> _model_positions;
@@ -149,9 +104,9 @@ private:
 	// Model sides:
 	// They are separated because this way we can occlude them easily.
 	// Due to these defining cube side triangles, normals are known already.
-	PoolVector<Vector3> _model_side_positions[SIDE_COUNT];
-	PoolVector<Vector2> _model_side_uvs[SIDE_COUNT];
-	PoolVector<int> _model_side_indices[SIDE_COUNT];
+	PoolVector<Vector3> _model_side_positions[Cube::SIDE_COUNT];
+	PoolVector<Vector2> _model_side_uvs[Cube::SIDE_COUNT];
+	PoolVector<int> _model_side_indices[Cube::SIDE_COUNT];
 
 	// TODO Child voxel types?
 };

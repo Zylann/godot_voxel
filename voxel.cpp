@@ -1,7 +1,6 @@
 #include "voxel.h"
 #include "voxel_library.h"
 #include "voxel_mesher.h"
-#include "cube_tables.h"
 
 #define STRLEN(x) (sizeof(x) / sizeof(x[0]))
 
@@ -15,20 +14,20 @@ Voxel::Voxel():
 	_cube_geometry_padding_y(0)
 {}
 
-static Voxel::Side name_to_side(const String &s) {
+static Cube::Side name_to_side(const String &s) {
 	if (s == "left")
-		return Voxel::SIDE_LEFT;
+		return Cube::SIDE_LEFT;
 	if (s == "right")
-		return Voxel::SIDE_RIGHT;
+		return Cube::SIDE_RIGHT;
 	if (s == "top")
-		return Voxel::SIDE_TOP;
+		return Cube::SIDE_TOP;
 	if (s == "bottom")
-		return Voxel::SIDE_BOTTOM;
+		return Cube::SIDE_BOTTOM;
 	if (s == "front")
-		return Voxel::SIDE_FRONT;
+		return Cube::SIDE_FRONT;
 	if (s == "back")
-		return Voxel::SIDE_BACK;
-	return Voxel::SIDE_COUNT; // Invalid
+		return Cube::SIDE_BACK;
+	return Cube::SIDE_COUNT; // Invalid
 }
 
 bool Voxel::_set(const StringName &p_name, const Variant &p_value) {
@@ -39,8 +38,8 @@ bool Voxel::_set(const StringName &p_name, const Variant &p_value) {
 	if (name.begins_with("cube_tiles/")) {
 
 		String s = name.substr(STRLEN("cube_tiles/"), name.length());
-		Voxel::Side side = name_to_side(s);
-		if (side != Voxel::SIDE_COUNT) {
+		Cube::Side side = name_to_side(s);
+		if (side != Cube::SIDE_COUNT) {
 			Vector2 v = p_value;
 			set_cube_uv_side(side, v);
 			return true;
@@ -63,8 +62,8 @@ bool Voxel::_get(const StringName &p_name, Variant &r_ret) const {
 	if (name.begins_with("cube_tiles/")) {
 
 		String s = name.substr(STRLEN("cube_tiles/"), name.length());
-		Voxel::Side side = name_to_side(s);
-		if (side != Voxel::SIDE_COUNT) {
+		Cube::Side side = name_to_side(s);
+		if (side != Cube::SIDE_COUNT) {
 			r_ret = _cube_tiles[side];
 			return true;
 		}
@@ -135,7 +134,7 @@ void Voxel::set_geometry_type(GeometryType type) {
 			_model_uvs.resize(0);
 			_model_indices.resize(0);
 
-			for (int side = 0; side < SIDE_COUNT; ++side) {
+			for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
 				_model_side_positions[side].resize(0);
 				_model_side_uvs[side].resize(0);
 				_model_side_indices[side].resize(0);
@@ -179,14 +178,14 @@ VoxelLibrary *Voxel::get_library() const {
 Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 	sy = 1.0 + sy;
 
-	for (unsigned int side = 0; side < SIDE_COUNT; ++side) {
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 
 		{
 			_model_side_positions[side].resize(4);
 			PoolVector<Vector3>::Write w = _model_side_positions[side].write();
 			for (unsigned int i = 0; i < 4; ++i) {
-				int corner = CubeTables::g_side_corners[side][i];
-				Vector3 p = CubeTables::g_corner_position[corner];
+				int corner = Cube::g_side_corners[side][i];
+				Vector3 p = Cube::g_corner_position[corner];
 				if(p.y > 0.9)
 					p.y = sy;
 				w[i] = p;
@@ -197,7 +196,7 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 			_model_side_indices[side].resize(6);
 			PoolVector<int>::Write w = _model_side_indices[side].write();
 			for (unsigned int i = 0; i < 6; ++i) {
-				w[i] = CubeTables::g_side_quad_triangles[side][i];
+				w[i] = Cube::g_side_quad_triangles[side][i];
 			}
 		}
 	}
@@ -230,7 +229,7 @@ void Voxel::update_cube_uv_sides() {
 
 	float s = 1.0 / (float)library->get_atlas_size();
 
-	for (unsigned int side = 0; side < SIDE_COUNT; ++side) {
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 		_model_side_uvs[side].resize(4);
 		PoolVector<Vector2>::Write w = _model_side_uvs[side].write();
 		for (unsigned int i = 0; i < 4; ++i) {

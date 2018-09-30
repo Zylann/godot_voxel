@@ -1,6 +1,6 @@
 #include "cube_tables.h"
 
-namespace CubeTables {
+namespace Cube {
 
 // The following tables respect the following conventions
 //
@@ -45,7 +45,7 @@ const Vector3 g_corner_position[CORNER_COUNT] = {
 	Vector3(0, 1, 1)
 };
 
-const int g_side_quad_triangles[Voxel::SIDE_COUNT][6] = {
+const int g_side_quad_triangles[SIDE_COUNT][6] = {
 	// LEFT
 	{ 0, 1, 2, 0, 2, 3 },
 	// RIGHT
@@ -60,10 +60,10 @@ const int g_side_quad_triangles[Voxel::SIDE_COUNT][6] = {
 	{ 0, 1, 2, 0, 2, 3 },
 };
 
-const unsigned int g_side_coord[Voxel::SIDE_COUNT] = { 0, 0, 1, 1, 2, 2 };
-const unsigned int g_side_sign[Voxel::SIDE_COUNT] = { 0, 1, 0, 1, 0, 1 };
+const unsigned int g_side_coord[SIDE_COUNT] = { 0, 0, 1, 1, 2, 2 };
+const unsigned int g_side_sign[SIDE_COUNT] = { 0, 1, 0, 1, 0, 1 };
 
-const Vector3i g_side_normals[Voxel::SIDE_COUNT] = {
+const Vector3i g_side_normals[SIDE_COUNT] = {
 	Vector3i(-1, 0, 0),
 	Vector3i(1, 0, 0),
 	Vector3i(0, -1, 0),
@@ -73,7 +73,7 @@ const Vector3i g_side_normals[Voxel::SIDE_COUNT] = {
 };
 
 // Corners have same winding, relative to the face's normal
-const unsigned int g_side_corners[Voxel::SIDE_COUNT][4] = {
+const unsigned int g_side_corners[SIDE_COUNT][4] = {
 	{ 3, 0, 4, 7 },
 	{ 1, 2, 6, 5 },
 	{ 1, 0, 3, 2 },
@@ -82,7 +82,7 @@ const unsigned int g_side_corners[Voxel::SIDE_COUNT][4] = {
 	{ 2, 3, 7, 6 }
 };
 
-const unsigned int g_side_edges[Voxel::SIDE_COUNT][4] = {
+const unsigned int g_side_edges[SIDE_COUNT][4] = {
 	{ 3, 7, 11, 4 },
 	{ 1, 6, 9, 5 },
 	{ 0, 1, 2, 3 },
