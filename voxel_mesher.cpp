@@ -13,7 +13,7 @@ void raw_copy_to(PoolVector<T> &to, const Vector<T> &from) {
 
 
 VoxelMesher::VoxelMesher()
-	: _baked_occlusion_darkness(0.75),
+	: _baked_occlusion_darkness(0.8),
 	  _bake_occlusion(true) {}
 
 void VoxelMesher::set_library(Ref<VoxelLibrary> library) {
