@@ -26,6 +26,7 @@ namespace CubeTables {
 // o----0----o
 //
 // Sides are ordered according to the Voxel::Side enum.
+// Edges are ordered according to the Voxel::Edge enum (only g_edge_inormals!).
 //
 
 //static const unsigned int CORNER_COUNT = 8;

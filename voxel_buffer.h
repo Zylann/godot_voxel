@@ -78,6 +78,8 @@ public:
 		return _size.x * _size.y * _size.z;
 	}
 
+	uint8_t *get_channel_raw(unsigned int channel_index) const;
+
 private:
 	void create_channel_noinit(int i, Vector3i size);
 	void create_channel(int i, Vector3i size, uint8_t defval = 0);

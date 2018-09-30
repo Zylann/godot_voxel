@@ -12,6 +12,9 @@ class Voxel : public Resource {
 	GDCLASS(Voxel, Resource)
 
 public:
+	// TODO Move enums to CubeTables
+
+	// Index convention used in some lookup tables
 	enum Side {
 		SIDE_LEFT = 0,
 		SIDE_RIGHT,
@@ -21,6 +24,38 @@ public:
 		SIDE_FRONT,
 
 		SIDE_COUNT
+	};
+
+	// Index convention used in some lookup tables
+	enum Edge {
+		EDGE_BOTTOM_BACK,
+		EDGE_BOTTOM_RIGHT,
+		EDGE_BOTTOM_FRONT,
+		EDGE_BOTTOM_LEFT,
+		EDGE_BACK_LEFT,
+		EDGE_BACK_RIGHT,
+		EDGE_FRONT_RIGHT,
+		EDGE_FRONT_LEFT,
+		EDGE_TOP_BACK,
+		EDGE_TOP_RIGHT,
+		EDGE_TOP_FRONT,
+		EDGE_TOP_LEFT,
+
+		EDGE_COUNT
+	};
+
+	// Index convention used in some lookup tables
+	enum Corner {
+		CORNER_BOTTOM_BACK_LEFT,
+		CORNER_BOTTOM_BACK_RIGHT,
+		CORNER_BOTTOM_FRONT_RIGHT,
+		CORNER_BOTTOM_FRONT_LEFT,
+		CORNER_TOP_BACK_LEFT,
+		CORNER_TOP_BACK_RIGHT,
+		CORNER_TOP_FRONT_RIGHT,
+		CORNER_TOP_FRONT_LEFT,
+
+		CORNER_COUNT
 	};
 
 	enum ChannelMode {

@@ -113,18 +113,67 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 
 	int index_offset = 0;
 
+	// Iterate 3D padded data to extract voxel faces.
+	// This is the most intensive job in this class, so all required data should be as fit as possible.
+
+	// The buffer we receive MUST be dense (i.e not compressed, and channels allocated).
+	// That means we can use raw pointers to voxel data inside instead of using the higher-level getters,
+	// and then save a lot of time.
+
+	uint8_t *type_buffer = buffer.get_channel_raw(Voxel::CHANNEL_TYPE);
+	CRASH_COND(type_buffer == NULL); // *italian pointy hand*
+	//CRASH_COND(memarr_len(type_buffer) != buffer.get_volume() * sizeof(uint8_t));
+
+	// Build lookup tables so to speed up voxel access.
+	// These are values to add to an address in order to get given neighbor.
+
+	int row_size = buffer.get_size().y;
+	int deck_size = buffer.get_size().x * row_size;
+
+	int side_neighbor_lut[Voxel::SIDE_COUNT];
+	side_neighbor_lut[Voxel::SIDE_LEFT] = -row_size;
+	side_neighbor_lut[Voxel::SIDE_RIGHT] = row_size;
+	side_neighbor_lut[Voxel::SIDE_BACK] = -deck_size;
+	side_neighbor_lut[Voxel::SIDE_FRONT] = deck_size;
+	side_neighbor_lut[Voxel::SIDE_BOTTOM] = -1;
+	side_neighbor_lut[Voxel::SIDE_TOP] = 1;
+
+	int edge_neighbor_lut[Voxel::EDGE_COUNT];
+	edge_neighbor_lut[Voxel::EDGE_BOTTOM_BACK] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_BACK];
+	edge_neighbor_lut[Voxel::EDGE_BOTTOM_FRONT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_FRONT];
+	edge_neighbor_lut[Voxel::EDGE_BOTTOM_LEFT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_LEFT];
+	edge_neighbor_lut[Voxel::EDGE_BOTTOM_RIGHT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_RIGHT];
+	edge_neighbor_lut[Voxel::EDGE_BACK_LEFT] = side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_LEFT];
+	edge_neighbor_lut[Voxel::EDGE_BACK_RIGHT] = side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_RIGHT];
+	edge_neighbor_lut[Voxel::EDGE_FRONT_LEFT] = side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_LEFT];
+	edge_neighbor_lut[Voxel::EDGE_FRONT_RIGHT] = side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_RIGHT];
+	edge_neighbor_lut[Voxel::EDGE_TOP_BACK] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_BACK];
+	edge_neighbor_lut[Voxel::EDGE_TOP_FRONT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_FRONT];
+	edge_neighbor_lut[Voxel::EDGE_TOP_LEFT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_LEFT];
+	edge_neighbor_lut[Voxel::EDGE_TOP_RIGHT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_RIGHT];
+
+	int corner_neighbor_lut[Voxel::CORNER_COUNT];
+	corner_neighbor_lut[Voxel::CORNER_BOTTOM_BACK_LEFT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_LEFT];
+	corner_neighbor_lut[Voxel::CORNER_BOTTOM_BACK_RIGHT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_RIGHT];
+	corner_neighbor_lut[Voxel::CORNER_BOTTOM_FRONT_RIGHT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_RIGHT];
+	corner_neighbor_lut[Voxel::CORNER_BOTTOM_FRONT_LEFT] = side_neighbor_lut[Voxel::SIDE_BOTTOM] + side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_LEFT];
+	corner_neighbor_lut[Voxel::CORNER_TOP_BACK_LEFT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_LEFT];
+	corner_neighbor_lut[Voxel::CORNER_TOP_BACK_RIGHT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_BACK] + side_neighbor_lut[Voxel::SIDE_RIGHT];
+	corner_neighbor_lut[Voxel::CORNER_TOP_FRONT_RIGHT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_RIGHT];
+	corner_neighbor_lut[Voxel::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Voxel::SIDE_TOP] + side_neighbor_lut[Voxel::SIDE_FRONT] + side_neighbor_lut[Voxel::SIDE_LEFT];
+
 	uint64_t time_prep = OS::get_singleton()->get_ticks_usec() - time_before;
 	time_before = OS::get_singleton()->get_ticks_usec();
 
-	// Iterate 3D padded data to extract voxel faces.
-	// This is the most intensive job in this class, so all required data should be as fit as possible.
 	for (unsigned int z = min.z; z < max.z; ++z) {
 		for (unsigned int x = min.x; x < max.x; ++x) {
 			for (unsigned int y = min.y; y < max.y; ++y) {
+				// min and max are chosen such that you can visit 1 neighbor away from the current voxel without size check
 
 				// TODO In this intensive routine, there is a way to make voxel access fastest by getting a pointer to the channel,
 				// and using offset lookup to get neighbors rather than going through get_voxel validations
-				int voxel_id = buffer.get_voxel(x, y, z, 0);
+				int voxel_index = y + x * row_size + z * deck_size;
+				int voxel_id = type_buffer[voxel_index];
 
 				if (voxel_id != 0 && library.has_voxel(voxel_id)) {
 
@@ -143,12 +192,8 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 
 						if (vertex_count != 0) {
 
-							Vector3i normal = CubeTables::g_side_normals[side];
-							unsigned nx = x + normal.x;
-							unsigned ny = y + normal.y;
-							unsigned nz = z + normal.z;
+							int neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
-							int neighbor_voxel_id = buffer.get_voxel(nx, ny, nz, channel);
 							// TODO Better face visibility test
 							if (is_face_visible(library, voxel, neighbor_voxel_id)) {
 
@@ -162,11 +207,8 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 
 									for (unsigned int j = 0; j < 4; ++j) {
 										unsigned int edge = CubeTables::g_side_edges[side][j];
-										Vector3i edge_normal = CubeTables::g_edge_inormals[edge];
-										unsigned ex = x + edge_normal.x;
-										unsigned ey = y + edge_normal.y;
-										unsigned ez = z + edge_normal.z;
-										if (!is_transparent(library, buffer.get_voxel(ex, ey, ez))) {
+										int edge_neighbor_id = type_buffer[voxel_index + edge_neighbor_lut[edge]];
+										if (!is_transparent(library, edge_neighbor_id)) {
 											shaded_corner[CubeTables::g_edge_corners[edge][0]] += 1;
 											shaded_corner[CubeTables::g_edge_corners[edge][1]] += 1;
 										}
@@ -176,11 +218,8 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 										if (shaded_corner[corner] == 2) {
 											shaded_corner[corner] = 3;
 										} else {
-											Vector3i corner_normal = CubeTables::g_corner_inormals[corner];
-											unsigned int cx = x + corner_normal.x;
-											unsigned int cy = y + corner_normal.y;
-											unsigned int cz = z + corner_normal.z;
-											if (!is_transparent(library, buffer.get_voxel(cx, cy, cz))) {
+											int corner_neigbor_id = type_buffer[voxel_index + corner_neighbor_lut[corner]];
+											if (!is_transparent(library, corner_neigbor_id)) {
 												shaded_corner[corner] += 1;
 											}
 										}
@@ -190,15 +229,48 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 								PoolVector<Vector3>::Read rv = positions.read();
 								PoolVector<Vector2>::Read rt = voxel.get_model_side_uv(side).read();
 
+								// Subtracting 1 because the data is padded
 								Vector3 pos(x - 1, y - 1, z - 1);
 
-								for (unsigned int i = 0; i < vertex_count; ++i) {
-									Vector3 v = rv[i];
+								// Append vertices of the faces in one go, don't use push_back
 
-									if (_bake_occlusion) {
+								{
+									int append_index = arrays.positions.size();
+									arrays.positions.resize(arrays.positions.size() + vertex_count);
+									Vector3 *w = arrays.positions.ptrw() + append_index;
+									for (unsigned int i = 0; i < vertex_count; ++i) {
+										w[i] = rv[i] + pos;
+									}
+								}
+
+								{
+									int append_index = arrays.uvs.size();
+									arrays.uvs.resize(arrays.uvs.size() + vertex_count);
+									memcpy(arrays.uvs.ptrw() + append_index, rt.ptr(), vertex_count * sizeof(Vector2));
+								}
+
+								{
+									int append_index = arrays.normals.size();
+									arrays.normals.resize(arrays.normals.size() + vertex_count);
+									Vector3 *w = arrays.normals.ptrw() + append_index;
+									for (unsigned int i = 0; i < vertex_count; ++i) {
+										w[i] = CubeTables::g_side_normals[side].to_vec3();
+									}
+								}
+
+								if (_bake_occlusion) {
+									// Use color array
+
+									int append_index = arrays.colors.size();
+									arrays.colors.resize(arrays.colors.size() + vertex_count);
+									Color *w = arrays.colors.ptrw() + append_index;
+
+									for (unsigned int i = 0; i < vertex_count; ++i) {
+										Vector3 v = rv[i];
+
 										// General purpose occlusion colouring.
 										// TODO Optimize for cubes
-										// TODO Fix occlusion inconsistency caused by triangles orientation
+										// TODO Fix occlusion inconsistency caused by triangles orientation? Not sure if worth it
 										float shade = 0;
 										for (unsigned int j = 0; j < 4; ++j) {
 											unsigned int corner = CubeTables::g_side_corners[side][j];
@@ -213,22 +285,21 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 											}
 										}
 										float gs = 1.0 - shade;
-										arrays.colors.push_back(Color(gs, gs, gs));
+										w[i] = Color(gs, gs, gs);
 									}
-
-									// TODO Investigate wether those vectors can be replaced by a simpler, faster one for PODs
-									// TODO Resize beforehands rather than push_back (even if the vector is preallocated)
-									arrays.normals.push_back(Vector3(normal.x, normal.y, normal.z));
-									arrays.uvs.push_back(rt[i]);
-									arrays.positions.push_back(v + pos);
 								}
 
 								const PoolVector<int> &side_indices = voxel.get_model_side_indices(side);
 								PoolVector<int>::Read ri = side_indices.read();
 								unsigned int index_count = side_indices.size();
 
-								for(unsigned int i = 0; i < index_count; ++i) {
-									arrays.indices.push_back(index_offset + ri[i]);
+								{
+									int i = arrays.indices.size();
+									arrays.indices.resize(arrays.indices.size() + index_count);
+									int *w = arrays.indices.ptrw();
+									for(unsigned int j = 0; j < index_count; ++j) {
+										w[i++] = index_offset + ri[j];
+									}
 								}
 
 								index_offset += vertex_count;
@@ -238,6 +309,7 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 
 					// Inside
 					if (voxel.get_model_positions().size() != 0) {
+						// TODO Get rid of push_backs
 
 						const PoolVector<Vector3> &vertices = voxel.get_model_positions();
 						int vertex_count = vertices.size();
@@ -283,6 +355,8 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 //			+ String(", i: ") + String::num(_arrays[0].indices.size()));
 
 	Array surfaces;
+
+	// TODO We could return a single byte array and use Mesh::add_surface down the line?
 
 	for (int i = 0; i < MAX_MATERIALS; ++i) {
 

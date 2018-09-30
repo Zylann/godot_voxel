@@ -1,4 +1,5 @@
 #include "voxel_buffer.h"
+
 #include <core/math/math_funcs.h>
 #include <string.h>
 
@@ -223,6 +224,12 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 			}
 		}
 	}
+}
+
+uint8_t *VoxelBuffer::get_channel_raw(unsigned int channel_index) const {
+	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, NULL);
+	const Channel &channel = _channels[channel_index];
+	return channel.data;
 }
 
 void VoxelBuffer::create_channel(int i, Vector3i size, uint8_t defval) {

@@ -5,6 +5,7 @@
 #include "vector3i.h"
 #include "voxel.h"
 
+// TODO Rename Cube, as we may move enums in there because they are related
 namespace CubeTables {
 
 const unsigned int CORNER_COUNT = 8;
