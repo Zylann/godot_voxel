@@ -39,6 +39,7 @@ public:
 	void make_block_dirty(Vector3i bpos);
 	//void make_blocks_dirty(Vector3i min, Vector3i size);
 	void make_voxel_dirty(Vector3i pos);
+	void make_area_dirty(Rect3i box);
 	bool is_block_dirty(Vector3i bpos) const;
 
 	void set_generate_collisions(bool enabled);
@@ -107,12 +108,9 @@ private:
 	Vector3 _voxel_to_block_binding(Vector3 pos);
 	Vector3 _block_to_voxel_binding(Vector3 pos);
 	//void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
-	//void _make_block_dirty_binding(Vector3 bpos) { make_block_dirty(bpos); }
-	//void _make_blocks_dirty_binding(Vector3 min, Vector3 size) { make_blocks_dirty(min, size); }
 	void _make_voxel_dirty_binding(Vector3 pos) { make_voxel_dirty(pos); }
-
+	void _make_area_dirty_binding(AABB aabb);
 	Variant _raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance);
-
 	void set_voxel(Vector3 pos, int value, int c);
 	int get_voxel(Vector3 pos, int c);
 	BlockDirtyState get_block_state(Vector3 p_bpos) const;

@@ -383,6 +383,52 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 	}
 }
 
+void VoxelTerrain::make_area_dirty(Rect3i box) {
+
+	Vector3i min_pos = box.pos;
+	Vector3i max_pos = box.pos + box.size - Vector3(1, 1, 1);
+
+	// TODO Thread-safe way of getting this parameter
+	bool check_corners = true;//_mesher->get_occlusion_enabled();
+	if (check_corners) {
+
+		min_pos -= Vector3i(1, 1, 1);
+		max_pos += Vector3i(1, 1, 1);
+
+	} else {
+
+		Vector3i min_rpos = _map->to_local(min_pos);
+		if (min_rpos.x == 0)
+			--min_pos.x;
+		if (min_rpos.y == 0)
+			--min_pos.y;
+		if (min_rpos.z == 0)
+			--min_pos.z;
+
+		const int max = _map->get_block_size() - 1;
+		Vector3i max_rpos = _map->to_local(max_pos);
+		if (max_rpos.x == max)
+			++max_pos.x;
+		if (max_rpos.y == max)
+			++max_pos.y;
+		if (max_rpos.z == max)
+			++max_pos.z;
+	}
+
+	Vector3i min_block_pos = _map->voxel_to_block(min_pos);
+	Vector3i max_block_pos = _map->voxel_to_block(max_pos);
+
+	Vector3i bpos;
+	for (bpos.z = min_block_pos.z; bpos.z <= max_block_pos.z; ++bpos.z) {
+		for (bpos.x = min_block_pos.x; bpos.x <= max_block_pos.x; ++bpos.x) {
+			for (bpos.y = min_block_pos.y; bpos.y <= max_block_pos.y; ++bpos.y) {
+
+				make_block_dirty(bpos);
+			}
+		}
+	}
+}
+
 struct EnterWorldAction {
 	World *world;
 	EnterWorldAction(World *w) : world(w) {}
@@ -805,6 +851,10 @@ static bool _raycast_binding_predicate(Vector3i pos, void *context_ptr) {
 	return v1 - 128 >= 0;
 }
 
+void VoxelTerrain::_make_area_dirty_binding(AABB aabb) {
+	make_area_dirty(Rect3i(aabb.position, aabb.size));
+}
+
 Variant VoxelTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance) {
 
 	// TODO Transform input if the terrain is rotated (in the future it can be made a Spatial node)
@@ -868,9 +918,8 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
 	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_block_to_voxel_binding);
 
-	//ClassDB::bind_method(D_METHOD("make_block_dirty", "pos"), &VoxelTerrain::_make_block_dirty_binding);
-	//ClassDB::bind_method(D_METHOD("make_blocks_dirty", "min", "size"), &VoxelTerrain::_make_blocks_dirty_binding);
 	ClassDB::bind_method(D_METHOD("make_voxel_dirty", "pos"), &VoxelTerrain::_make_voxel_dirty_binding);
+	ClassDB::bind_method(D_METHOD("make_area_dirty", "aabb"), &VoxelTerrain::_make_area_dirty_binding);
 
 	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance"), &VoxelTerrain::_raycast_binding, DEFVAL(100));
 
