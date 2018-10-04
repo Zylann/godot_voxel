@@ -37,7 +37,7 @@ bool Voxel::_set(const StringName &p_name, const Variant &p_value) {
 	// TODO Eventualy these could be Rect2 for maximum flexibility?
 	if (name.begins_with("cube_tiles/")) {
 
-		String s = name.substr(STRLEN("cube_tiles/"), name.length());
+		String s = name.substr(STRLEN("cube_tiles/") - 1, name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			Vector2 v = p_value;
@@ -61,7 +61,7 @@ bool Voxel::_get(const StringName &p_name, Variant &r_ret) const {
 
 	if (name.begins_with("cube_tiles/")) {
 
-		String s = name.substr(STRLEN("cube_tiles/"), name.length());
+		String s = name.substr(STRLEN("cube_tiles/") - 1, name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			r_ret = _cube_tiles[side];
