@@ -46,6 +46,8 @@ public:
 	void set_voxel(int value, int x, int y, int z, unsigned int channel_index = 0);
 	void set_voxel_v(int value, Vector3 pos, unsigned int channel_index = 0);
 
+	void try_set_voxel(int x, int y, int z, int value, unsigned int channel_index = 0);
+
 	_FORCE_INLINE_ void set_voxel_iso(real_t value, int x, int y, int z, unsigned int channel_index = 0) { set_voxel(iso_to_byte(value), x, y, z, channel_index); }
 	_FORCE_INLINE_ real_t get_voxel_iso(int x, int y, int z, unsigned int channel_index = 0) const { return byte_to_iso(get_voxel(x, y, z, channel_index)); }
 

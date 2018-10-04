@@ -78,6 +78,24 @@ void VoxelBuffer::set_voxel(int value, int x, int y, int z, unsigned int channel
 	}
 }
 
+// This version does not cause errors if out of bounds. Use only if it's okay to be outside.
+void VoxelBuffer::try_set_voxel(int x, int y, int z, int value, unsigned int channel_index) {
+	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
+	if(!validate_pos(x, y, z))
+		return;
+
+	Channel &channel = _channels[channel_index];
+
+	if (channel.data == NULL) {
+		if (channel.defval != value) {
+			create_channel(channel_index, _size);
+			channel.data[index(x, y, z)] = value;
+		}
+	} else {
+		channel.data[index(x, y, z)] = value;
+	}
+}
+
 void VoxelBuffer::set_voxel_v(int value, Vector3 pos, unsigned int channel_index) {
 	set_voxel(value, pos.x, pos.y, pos.z, channel_index);
 }
@@ -109,9 +127,12 @@ void VoxelBuffer::fill_area(int defval, Vector3i min, Vector3i max, unsigned int
 
 	Vector3i::sort_min_max(min, max);
 
-	min.clamp_to(Vector3i(0, 0, 0), _size);
+	min.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1, 1, 1));
 	max.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1, 1, 1));
 	Vector3i area_size = max - min;
+
+	if(area_size.x == 0 || area_size.y == 0 || area_size.z == 0)
+		return;
 
 	Channel &channel = _channels[channel_index];
 	if (channel.data == NULL) {
@@ -122,9 +143,11 @@ void VoxelBuffer::fill_area(int defval, Vector3i min, Vector3i max, unsigned int
 	}
 
 	Vector3i pos;
+	int volume = get_volume();
 	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
 		for (pos.x = min.x; pos.x < max.x; ++pos.x) {
 			unsigned int dst_ri = index(pos.x, pos.y + min.y, pos.z);
+			CRASH_COND(dst_ri >= volume);
 			memset(&channel.data[dst_ri], defval, area_size.y * sizeof(uint8_t));
 		}
 	}

@@ -84,6 +84,7 @@ struct Vector3i {
 		if (y < min.y) y = min.y;
 		if (z < min.z) z = min.z;
 
+		// TODO Not sure it should clamp like that...
 		if (x >= max.x) x = max.x - 1;
 		if (y >= max.y) y = max.y - 1;
 		if (z >= max.z) z = max.z - 1;
