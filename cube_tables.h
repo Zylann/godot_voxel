@@ -54,8 +54,8 @@ extern const Vector3 g_corner_position[CORNER_COUNT];
 
 extern const int g_side_quad_triangles[SIDE_COUNT][6];
 
-extern const unsigned int g_side_coord[SIDE_COUNT];
-extern const unsigned int g_side_sign[SIDE_COUNT];
+//extern const unsigned int g_side_coord[SIDE_COUNT];
+//extern const unsigned int g_side_sign[SIDE_COUNT];
 
 extern const Vector3i g_side_normals[SIDE_COUNT];
 

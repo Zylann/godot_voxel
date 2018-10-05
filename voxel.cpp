@@ -220,14 +220,19 @@ void Voxel::update_cube_uv_sides() {
 	}
 
 	float e = 0.001;
+	// Winding is the same as the one chosen in Cube:: vertices
+	// I am confused. I read in at least 3 OpenGL tutorials that texture coordinates start at bottom-left (0,0).
+	// But even though Godot is said to follow OpenGL's convention, the engine starts at top-left!
 	const Vector2 uv[4] = {
-		Vector2(e, e),
-		Vector2(1.f - e, e),
-		Vector2(1.f - e, 1.f - e),
 		Vector2(e, 1.f - e),
+		Vector2(1.f - e, 1.f - e),
+		Vector2(1.f - e, e),
+		Vector2(e, e),
 	};
 
-	float s = 1.0 / (float)library->get_atlas_size();
+	float atlas_size = (float)library->get_atlas_size();
+	CRASH_COND(atlas_size <= 0);
+	float s = 1.0 / atlas_size;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 		_model_side_uvs[side].resize(4);

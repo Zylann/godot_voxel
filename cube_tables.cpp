@@ -9,9 +9,9 @@ namespace Cube {
 //  / |     / |  Corners
 // 4-------5  |
 // |  3----|--2
-// | /     | /   y z
-// |/      |/    |/
-// 0-------1     o--x
+// | /     | /     y z
+// |/      |/      |/   OpenGL axis convention
+// 0-------1    x--o
 //
 //
 //     o---10----o
@@ -29,47 +29,37 @@ namespace Cube {
 // Edges are ordered according to the Voxel::Edge enum (only g_edge_inormals!).
 //
 
-//static const unsigned int CORNER_COUNT = 8;
-//static const unsigned int EDGE_COUNT = 12;
-
-// Order doesn't technically matter here, they are for reading convenience.
-// If you need a special ordering, combine index with other tables
+// Ordered as per the cube corners diagram
 const Vector3 g_corner_position[CORNER_COUNT] = {
-	Vector3(0, 0, 0),
 	Vector3(1, 0, 0),
-	Vector3(1, 0, 1),
+	Vector3(0, 0, 0),
 	Vector3(0, 0, 1),
-	Vector3(0, 1, 0),
+	Vector3(1, 0, 1),
 	Vector3(1, 1, 0),
-	Vector3(1, 1, 1),
-	Vector3(0, 1, 1)
+	Vector3(0, 1, 0),
+	Vector3(0, 1, 1),
+	Vector3(1, 1, 1)
 };
 
 const int g_side_quad_triangles[SIDE_COUNT][6] = {
-	// LEFT
-	{ 0, 1, 2, 0, 2, 3 },
-	// RIGHT
-	{ 0, 1, 2, 0, 2, 3 },
-	// BOTTOM
-	{ 0, 1, 2, 0, 2, 3 },
-	// TOP
-	{ 0, 1, 2, 0, 2, 3 },
-	// BACK
-	{ 0, 1, 2, 0, 2, 3 },
-	// FRONT
-	{ 0, 1, 2, 0, 2, 3 },
+	{ 0, 2, 1, 0, 3, 2 }, // LEFT (+x)
+	{ 0, 2, 1, 0, 3, 2 }, // RIGHT (-x)
+	{ 0, 2, 1, 0, 3, 2 }, // BOTTOM (-y)
+	{ 0, 2, 1, 0, 3, 2 }, // TOP (+y)
+	{ 0, 2, 1, 0, 3, 2 }, // BACK (-z)
+	{ 0, 2, 1, 0, 3, 2 }, // FRONT (+z)
 };
 
-const unsigned int g_side_coord[SIDE_COUNT] = { 0, 0, 1, 1, 2, 2 };
-const unsigned int g_side_sign[SIDE_COUNT] = { 0, 1, 0, 1, 0, 1 };
+//const unsigned int g_side_coord[SIDE_COUNT] = { 0, 0, 1, 1, 2, 2 };
+//const unsigned int g_side_sign[SIDE_COUNT] = { 0, 1, 0, 1, 0, 1 };
 
 const Vector3i g_side_normals[SIDE_COUNT] = {
-	Vector3i(-1, 0, 0),
-	Vector3i(1, 0, 0),
-	Vector3i(0, -1, 0),
-	Vector3i(0, 1, 0),
-	Vector3i(0, 0, -1),
-	Vector3i(0, 0, 1),
+	Vector3i(1, 0, 0), // LEFT
+	Vector3i(-1, 0, 0), // RIGHT
+	Vector3i(0, -1, 0), // BOTTOM
+	Vector3i(0, 1, 0), // TOP
+	Vector3i(0, 0, -1), // BACK
+	Vector3i(0, 0, 1), // FRONT
 };
 
 // Corners have same winding, relative to the face's normal
@@ -104,32 +94,32 @@ const unsigned int g_side_edges[SIDE_COUNT][4] = {
 //};
 
 const Vector3i g_corner_inormals[CORNER_COUNT] = {
-	Vector3i(-1, -1, -1),
 	Vector3i(1, -1, -1),
-	Vector3i(1, -1, 1),
+	Vector3i(-1, -1, -1),
 	Vector3i(-1, -1, 1),
+	Vector3i(1, -1, 1),
 
-	Vector3i(-1, 1, -1),
 	Vector3i(1, 1, -1),
-	Vector3i(1, 1, 1),
-	Vector3i(-1, 1, 1)
+	Vector3i(-1, 1, -1),
+	Vector3i(-1, 1, 1),
+	Vector3i(1, 1, 1)
 };
 
 const Vector3i g_edge_inormals[EDGE_COUNT] = {
 	Vector3i(0, -1, -1),
-	Vector3i(1, -1, 0),
-	Vector3i(0, -1, 1),
 	Vector3i(-1, -1, 0),
+	Vector3i(0, -1, 1),
+	Vector3i(1, -1, 0),
 
-	Vector3i(-1, 0, -1),
 	Vector3i(1, 0, -1),
-	Vector3i(1, 0, 1),
+	Vector3i(-1, 0, -1),
 	Vector3i(-1, 0, 1),
+	Vector3i(1, 0, 1),
 
 	Vector3i(0, 1, -1),
-	Vector3i(1, 1, 0),
+	Vector3i(-1, 1, 0),
 	Vector3i(0, 1, 1),
-	Vector3i(-1, 1, 0)
+	Vector3i(1, 1, 0)
 };
 
 const unsigned int g_edge_corners[EDGE_COUNT][2] = {

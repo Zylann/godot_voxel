@@ -131,8 +131,8 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 	int deck_size = buffer.get_size().x * row_size;
 
 	int side_neighbor_lut[Cube::SIDE_COUNT];
-	side_neighbor_lut[Cube::SIDE_LEFT] = -row_size;
-	side_neighbor_lut[Cube::SIDE_RIGHT] = row_size;
+	side_neighbor_lut[Cube::SIDE_LEFT] = row_size;
+	side_neighbor_lut[Cube::SIDE_RIGHT] = -row_size;
 	side_neighbor_lut[Cube::SIDE_BACK] = -deck_size;
 	side_neighbor_lut[Cube::SIDE_FRONT] = deck_size;
 	side_neighbor_lut[Cube::SIDE_BOTTOM] = -1;
@@ -362,6 +362,14 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 
 		const Arrays &arrays = _arrays[i];
 		if (arrays.positions.size() != 0) {
+
+			/*print_line("Arrays:");
+			for(int i = 0; i < arrays.positions.size(); ++i)
+				print_line(String("  P {0}").format(varray(arrays.positions[i])));
+			for(int i = 0; i < arrays.normals.size(); ++i)
+				print_line(String("  N {0}").format(varray(arrays.normals[i])));
+			for(int i = 0; i < arrays.uvs.size(); ++i)
+				print_line(String("  UV {0}").format(varray(arrays.uvs[i])));*/
 
 			Array mesh_arrays;
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
