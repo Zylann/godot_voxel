@@ -118,7 +118,7 @@ void VoxelProviderTest::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_pattern_offset", "offset"), &VoxelProviderTest::_set_pattern_offset);
 	ClassDB::bind_method(D_METHOD("get_pattern_offset"), &VoxelProviderTest::_get_pattern_offset);
 
-	ADD_PROPERTYNZ(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Flat,Waves"), "set_mode", "get_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Flat,Waves"), "set_mode", "get_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_type", PROPERTY_HINT_RANGE, "0,255,1"), "set_voxel_type", "get_voxel_type");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "pattern_size"), "set_pattern_size", "get_pattern_size");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "pattern_offset"), "set_pattern_offset", "get_pattern_offset");
