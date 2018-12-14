@@ -121,7 +121,18 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 	// and then save a lot of time.
 
 	uint8_t *type_buffer = buffer.get_channel_raw(Voxel::CHANNEL_TYPE);
-	CRASH_COND(type_buffer == NULL); // *italian pointy hand*
+	//       _
+	//      | \
+	//     /\ \\
+	//    / /|\\\
+	//    | |\ \\\
+	//    | \_\ \\|
+	//    |    |  )
+	//     \   |  |
+	//      \    /
+	CRASH_COND(type_buffer == NULL);
+
+
 	//CRASH_COND(memarr_len(type_buffer) != buffer.get_volume() * sizeof(uint8_t));
 
 	// Build lookup tables so to speed up voxel access.
