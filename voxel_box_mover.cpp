@@ -81,7 +81,7 @@ static Vector3 get_motion(AABB box, Vector3 motion, const Vector<AABB> &other_bo
 	Vector<AABB> colliding_boxes;
 	for(int i = 0; i < other_boxes.size(); ++i) {
 		AABB other = other_boxes[i];
-		if(expanded_box.intersects(other_boxes[i]));
+		if(expanded_box.intersects(other_boxes[i]))
 			colliding_boxes.push_back(other);
 	}
 
