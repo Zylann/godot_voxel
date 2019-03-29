@@ -2,7 +2,6 @@
 #define HEADER_VOXEL_UTILITY_H
 
 #include <core/vector.h>
-#include <core/dvector.h>
 #include <core/ustring.h>
 #include "vector3i.h"
 
