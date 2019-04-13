@@ -1,10 +1,9 @@
 #ifndef HEADER_VOXEL_UTILITY_H
 #define HEADER_VOXEL_UTILITY_H
 
-#include <core/vector.h>
-#include <core/dvector.h>
-#include <core/ustring.h>
 #include "vector3i.h"
+#include <core/ustring.h>
+#include <core/vector.h>
 
 // Takes elements starting from a given position and moves them at the beginning,
 // then shrink the array to fit them. Other elements are discarded.
