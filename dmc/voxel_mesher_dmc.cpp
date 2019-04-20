@@ -16,7 +16,7 @@ enum Channels {
 	CHANNEL_GRADIENT_Z
 };
 
-const int CHUNK_SIZE = 16;
+const int CHUNK_SIZE = 8;
 const float ISO_LEVEL = 0.0;
 
 struct HermiteValue {
@@ -286,6 +286,10 @@ bool can_split(OctreeNode *node, const VoxelBuffer &voxels, float geometric_erro
 	return false;
 }
 
+inline Vector3 get_center(const OctreeNode *node) {
+	return node->origin.to_vec3() + 0.5 * Vector3(node->size, node->size, node->size);
+}
+
 // TODO There is an issue with this:
 // the split policy assumes we have a real distance field, but this is not really the case.
 // For example, if the volume is empty and a player places a tiny sphere in the middle,
@@ -303,8 +307,7 @@ void generate_octree_top_down(OctreeNode *node, const VoxelBuffer &voxels, float
 
 	} else {
 
-		Vector3i center = node->origin + Vector3i(node->size / 2);
-		node->center_value = get_hermite_value(voxels, center.x, center.y, center.z);
+		node->center_value = get_interpolated_hermite_value(voxels, get_center(node));
 	}
 }
 
@@ -490,10 +493,6 @@ inline bool is_border_back(const OctreeNode *node) {
 
 inline bool is_border_front(const OctreeNode *node) {
 	return node->origin.z + node->size == CHUNK_SIZE;
-}
-
-inline Vector3 get_center(const OctreeNode *node) {
-	return node->origin.to_vec3() + 0.5 * Vector3(node->size, node->size, node->size);
 }
 
 inline Vector3 get_center_back(const OctreeNode *node) {
