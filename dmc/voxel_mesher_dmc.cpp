@@ -18,6 +18,7 @@ enum Channels {
 
 const int CHUNK_SIZE = 8;
 const float ISO_LEVEL = 0.0;
+const float NEAR_SURFACE_FACTOR = 2.0;
 
 struct HermiteValue {
 	float value; // Signed "distance" to surface
@@ -397,9 +398,8 @@ inline bool is_surface_near(OctreeNode *node) {
 	}
 
 	const float sqrt3 = 1.7320508075688772;
-	const float near_factor = 2.f;
 
-	return Math::abs(node->center_value.value) < node->size * sqrt3 * near_factor;
+	return Math::abs(node->center_value.value) < node->size * sqrt3 * NEAR_SURFACE_FACTOR;
 }
 
 struct DualCell {
@@ -446,7 +446,9 @@ Ref<ArrayMesh> generate_debug_dual_grid_mesh(const DualGrid &grid) {
 		int vi = positions.size();
 
 		for (int j = 0; j < 8; ++j) {
-			positions.push_back(cell.corners[j]);
+			//			Vector3 p = Vector3(g_octant_position[j][0], g_octant_position[j][1], g_octant_position[j][2]);
+			//			Vector3 n = (Vector3(0.5, 0.5, 0.5) - p).normalized();
+			positions.push_back(cell.corners[j]); // + n * 0.01);
 		}
 
 		for (int j = 0; j < Cube::EDGE_COUNT; ++j) {
@@ -912,7 +914,7 @@ void edge_proc_x(DualGrid &grid, OctreeNode *n0, OctreeNode *n1, OctreeNode *n2,
 	const bool n2_has_children = n2->has_children();
 	const bool n3_has_children = n3->has_children();
 
-	if (!(n0_has_children || n0_has_children || n2_has_children || n3_has_children)) {
+	if (!(n0_has_children || n1_has_children || n2_has_children || n3_has_children)) {
 		return;
 	}
 
@@ -977,8 +979,8 @@ void edge_proc_z(DualGrid &grid, OctreeNode *n0, OctreeNode *n1, OctreeNode *n2,
 	OctreeNode *c6 = n1_has_children ? n1->children[3] : n1;
 	OctreeNode *c7 = n0_has_children ? n0->children[2] : n0;
 
-	edge_proc_y(grid, c0, c1, c2, c3);
-	edge_proc_y(grid, c4, c5, c6, c7);
+	edge_proc_z(grid, c7, c6, c2, c3);
+	edge_proc_z(grid, c4, c5, c1, c0);
 
 	vert_proc(grid, c0, c1, c2, c3, c4, c5, c6, c7);
 }
