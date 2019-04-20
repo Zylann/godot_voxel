@@ -311,6 +311,10 @@ Ref<ArrayMesh> generate_debug_octree_mesh(OctreeNode *root) {
 	add_cube.max_depth = get_max_depth.max_depth;
 	foreach_node(root, add_cube);
 
+	if (arrays.positions.size() == 0) {
+		return Ref<ArrayMesh>();
+	}
+
 	Array surface;
 	surface.resize(Mesh::ARRAY_MAX);
 	surface[Mesh::ARRAY_VERTEX] = arrays.positions;
@@ -373,14 +377,20 @@ Ref<ArrayMesh> generate_debug_dual_grid_mesh(const DualGrid &grid) {
 
 		const DualCell &cell = grid.cells[i];
 
+		int vi = positions.size();
+
 		for (int j = 0; j < 8; ++j) {
 			positions.push_back(cell.corners[j]);
 		}
+
+		for (int j = 0; j < Cube::EDGE_COUNT; ++j) {
+			indices.push_back(vi + Cube::g_edge_corners[j][0]);
+			indices.push_back(vi + Cube::g_edge_corners[j][1]);
+		}
 	}
 
-	for (int i = 0; i < positions.size(); ++i) {
-		indices.push_back(i);
-		indices.push_back(i + 1);
+	if (positions.size() == 0) {
+		return Ref<ArrayMesh>();
 	}
 
 	Array surface;
