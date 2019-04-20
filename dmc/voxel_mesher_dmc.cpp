@@ -1,5 +1,8 @@
 #include "voxel_mesher_dmc.h"
 #include "../cube_tables.h"
+#include "../utility.h"
+#include "marching_cubes_tables.h"
+#include <map>
 #include <vector>
 
 // Algorithm taken from https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/
@@ -14,13 +17,14 @@ enum Channels {
 };
 
 const int CHUNK_SIZE = 16;
+const float ISO_LEVEL = 0.0;
 
 struct HermiteValue {
 	float value; // Signed "distance" to surface
 	Vector3 gradient; // "Normal" of the volume
 
 	HermiteValue() :
-			value(0) {
+			value(1.0) {
 	}
 };
 
@@ -102,19 +106,46 @@ void split(OctreeNode *node) {
 	}
 }
 
-inline float interpolate(float v0, float v1, float v2, float v3, float v4, float v5, float v6, float v7, Vector3 position) {
+// Trilinear interpolation between corner values of a cube.
+// Cube points respect the same position as in the ASCII schema.
+template <typename T>
+inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4, const T v5, const T v6, const T v7, Vector3 position) {
 
-	float one_min_x = 1.f - position.x;
-	float one_min_y = 1.f - position.y;
-	float one_min_z = 1.f - position.z;
-	float one_min_x_one_min_y = one_min_x * one_min_y;
-	float x_one_min_y = position.x * one_min_y;
+	const float one_min_x = 1.f - position.x;
+	const float one_min_y = 1.f - position.y;
+	const float one_min_z = 1.f - position.z;
+	const float one_min_x_one_min_y = one_min_x * one_min_y;
+	const float x_one_min_y = position.x * one_min_y;
 
-	float res = one_min_z * (v0 * one_min_x_one_min_y + v1 * x_one_min_y + v4 * one_min_x * position.y);
+	T res = one_min_z * (v0 * one_min_x_one_min_y + v1 * x_one_min_y + v4 * one_min_x * position.y);
 	res += position.z * (v3 * one_min_x_one_min_y + v2 * x_one_min_y + v7 * one_min_x * position.y);
 	res += position.x * position.y * (v5 * one_min_z + v6 * position.z);
 
 	return res;
+}
+
+inline Vector3 interpolate(const Vector3 &v0, const Vector3 &v1, const HermiteValue &val0, const HermiteValue &val1, Vector3 &out_normal) {
+
+	if (Math::abs(val0.value - ISO_LEVEL) <= FLT_EPSILON) {
+		out_normal = val0.gradient;
+		return v0;
+	}
+
+	if (Math::abs(val1.value - ISO_LEVEL) <= FLT_EPSILON) {
+		out_normal = val1.gradient;
+		return v1;
+	}
+
+	if (Math::abs(val1.value - val0.value) <= FLT_EPSILON) {
+		out_normal = val0.gradient;
+		return v0;
+	}
+
+	float mu = (ISO_LEVEL - val0.value) / (val1.value - val0.value);
+	out_normal = val0.gradient + mu * (val1.gradient - val0.gradient);
+	out_normal.normalize();
+
+	return v0 + mu * (v1 - v0);
 }
 
 inline HermiteValue get_hermite_value(const VoxelBuffer &voxels, int x, int y, int z) {
@@ -124,6 +155,35 @@ inline HermiteValue get_hermite_value(const VoxelBuffer &voxels, int x, int y, i
 	v.gradient.x = voxels.get_voxel_iso(x, y, z, CHANNEL_GRADIENT_X);
 	v.gradient.y = voxels.get_voxel_iso(x, y, z, CHANNEL_GRADIENT_Y);
 	v.gradient.z = voxels.get_voxel_iso(x, y, z, CHANNEL_GRADIENT_Z);
+	return v;
+}
+
+inline HermiteValue get_interpolated_hermite_value(const VoxelBuffer &voxels, Vector3 pos) {
+
+	int x0 = static_cast<int>(pos.x);
+	int y0 = static_cast<int>(pos.y);
+	int z0 = static_cast<int>(pos.z);
+
+	int x1 = static_cast<int>(Math::ceil(pos.x));
+	int y1 = static_cast<int>(Math::ceil(pos.y));
+	int z1 = static_cast<int>(Math::ceil(pos.z));
+
+	HermiteValue v0 = get_hermite_value(voxels, x0, y0, z0);
+	HermiteValue v1 = get_hermite_value(voxels, x1, y0, z0);
+	HermiteValue v2 = get_hermite_value(voxels, x1, y0, z1);
+	HermiteValue v3 = get_hermite_value(voxels, x0, y0, z1);
+
+	HermiteValue v4 = get_hermite_value(voxels, x0, y1, z0);
+	HermiteValue v5 = get_hermite_value(voxels, x1, y1, z0);
+	HermiteValue v6 = get_hermite_value(voxels, x1, y1, z1);
+	HermiteValue v7 = get_hermite_value(voxels, x0, y1, z1);
+
+	Vector3 rpos = pos - Vector3(x0, y0, z0);
+
+	HermiteValue v;
+	v.value = interpolate(v0.value, v1.value, v2.value, v3.value, v4.value, v5.value, v6.value, v7.value, rpos);
+	v.gradient = interpolate(v0.gradient, v1.gradient, v2.gradient, v3.gradient, v4.gradient, v5.gradient, v6.gradient, v7.gradient, rpos);
+
 	return v;
 }
 
@@ -262,23 +322,18 @@ Ref<ArrayMesh> generate_debug_octree_mesh(OctreeNode *root) {
 
 	struct GetMaxDepth {
 		int max_depth;
-		void operator()(OctreeNode *node, int depth) {
+		void operator()(OctreeNode *_, int depth) {
 			if (depth > max_depth) {
 				max_depth = depth;
 			}
 		}
 	};
 
-	GetMaxDepth get_max_depth;
-	foreach_node(root, get_max_depth);
-
 	struct Arrays {
 		PoolVector3Array positions;
 		PoolColorArray colors;
 		PoolIntArray indices;
 	};
-
-	Arrays arrays;
 
 	struct AddCube {
 		Arrays *arrays;
@@ -306,6 +361,10 @@ Ref<ArrayMesh> generate_debug_octree_mesh(OctreeNode *root) {
 		}
 	};
 
+	GetMaxDepth get_max_depth;
+	foreach_node(root, get_max_depth);
+
+	Arrays arrays;
 	AddCube add_cube;
 	add_cube.arrays = &arrays;
 	add_cube.max_depth = get_max_depth.max_depth;
@@ -343,6 +402,10 @@ inline bool is_surface_near(OctreeNode *node) {
 struct DualCell {
 	Vector3 corners[8];
 	HermiteValue values[8];
+	bool has_values;
+
+	DualCell() :
+			has_values(false) {}
 
 	inline void set_corner(int i, Vector3 vertex, HermiteValue value) {
 		CRASH_COND(i < 0 || i >= 8);
@@ -836,6 +899,7 @@ void vert_proc(DualGrid &grid, OctreeNode *n0, OctreeNode *n1, OctreeNode *n2, O
 		cell.set_corner(5, get_center(n5), n5->center_value);
 		cell.set_corner(6, get_center(n6), n6->center_value);
 		cell.set_corner(7, get_center(n7), n7->center_value);
+		cell.has_values = true;
 		grid.cells.push_back(cell);
 
 		create_border_cells(grid, n0, n1, n2, n3, n4, n5, n6, n7);
@@ -1053,7 +1117,176 @@ void node_proc(DualGrid &grid, OctreeNode *node) {
 	vert_proc(grid, children[0], children[1], children[2], children[3], children[4], children[5], children[6], children[7]);
 }
 
-Ref<ArrayMesh> polygonize(const VoxelBuffer &voxels, float geometric_error) {
+class MeshBuilder {
+public:
+	void add_vertex(Vector3 position, Vector3 normal) {
+
+		int i = 0;
+
+		if (_position_to_index.find(position) != _position_to_index.end()) {
+
+			i = _position_to_index[position];
+
+		} else {
+
+			i = _positions.size();
+			_position_to_index[position] = i;
+
+			_positions.push_back(position);
+			_normals.push_back(normal);
+		}
+
+		_indices.push_back(i);
+	}
+
+	Ref<ArrayMesh> commit(bool wireframe) {
+
+		if (_positions.size() == 0) {
+			return Ref<ArrayMesh>();
+		}
+
+		ERR_FAIL_COND_V(_indices.size() % 3 != 0, Ref<ArrayMesh>());
+
+		if (wireframe) {
+
+			// Debug purpose, no effort to be fast here
+			std::vector<int> wireframe_indices;
+
+			for (int i = 0; i < _indices.size(); i += 3) {
+
+				wireframe_indices.push_back(_indices[i]);
+				wireframe_indices.push_back(_indices[i + 1]);
+
+				wireframe_indices.push_back(_indices[i + 1]);
+				wireframe_indices.push_back(_indices[i + 2]);
+
+				wireframe_indices.push_back(_indices[i + 2]);
+				wireframe_indices.push_back(_indices[i]);
+			}
+
+			_indices = wireframe_indices;
+		}
+
+		PoolVector3Array positions;
+		PoolVector3Array normals;
+		PoolIntArray indices;
+
+		raw_copy_to(positions, _positions);
+		raw_copy_to(normals, _normals);
+		raw_copy_to(indices, _indices);
+
+		Array surface;
+		surface.resize(Mesh::ARRAY_MAX);
+		surface[Mesh::ARRAY_VERTEX] = positions;
+		surface[Mesh::ARRAY_NORMAL] = normals;
+		surface[Mesh::ARRAY_INDEX] = indices;
+
+		Ref<ArrayMesh> mesh;
+		mesh.instance();
+		mesh->add_surface_from_arrays(wireframe ? Mesh::PRIMITIVE_LINES : Mesh::PRIMITIVE_TRIANGLES, surface);
+
+		return mesh;
+	}
+
+private:
+	std::vector<Vector3> _positions;
+	std::vector<Vector3> _normals;
+	std::vector<int> _indices;
+	std::map<Vector3, int> _position_to_index;
+};
+
+Ref<ArrayMesh> polygonize_dual_grid(const DualGrid &grid, const VoxelBuffer &voxels, bool wireframe) {
+
+	MeshBuilder mesh_builder;
+
+	for (int dci = 0; dci < grid.cells.size(); ++dci) {
+
+		const DualCell &cell = grid.cells[dci];
+		const Vector3 *corners = cell.corners;
+
+		// Polygonize using regular marching cubes
+		unsigned char case_index = 0;
+		HermiteValue values[8];
+
+		for (int i = 0; i < 8; ++i) {
+			if (cell.has_values) {
+				values[i] = cell.values[i];
+			} else {
+				values[i] = get_interpolated_hermite_value(voxels, corners[i]);
+			}
+			if (values[i].value >= ISO_LEVEL) {
+				case_index |= 1 << i;
+			}
+		}
+
+		int edge = MarchingCubes::mc_edges[case_index];
+
+		if (!edge) {
+			// Nothing intersects
+			continue;
+		}
+
+		// Find the intersection vertices
+		Vector3 intersection_points[12];
+		Vector3 intersection_normals[12];
+		if (edge & 1) {
+			intersection_points[0] = interpolate(corners[0], corners[1], values[0], values[1], intersection_normals[0]);
+		}
+		if (edge & 2) {
+			intersection_points[1] = interpolate(corners[1], corners[2], values[1], values[2], intersection_normals[1]);
+		}
+		if (edge & 4) {
+			intersection_points[2] = interpolate(corners[2], corners[3], values[2], values[3], intersection_normals[2]);
+		}
+		if (edge & 8) {
+			intersection_points[3] = interpolate(corners[3], corners[0], values[3], values[0], intersection_normals[3]);
+		}
+		if (edge & 16) {
+			intersection_points[4] = interpolate(corners[4], corners[5], values[4], values[5], intersection_normals[4]);
+		}
+		if (edge & 32) {
+			intersection_points[5] = interpolate(corners[5], corners[6], values[5], values[6], intersection_normals[5]);
+		}
+		if (edge & 64) {
+			intersection_points[6] = interpolate(corners[6], corners[7], values[6], values[7], intersection_normals[6]);
+		}
+		if (edge & 128) {
+			intersection_points[7] = interpolate(corners[7], corners[4], values[7], values[4], intersection_normals[7]);
+		}
+		if (edge & 256) {
+			intersection_points[8] = interpolate(corners[0], corners[4], values[0], values[4], intersection_normals[8]);
+		}
+		if (edge & 512) {
+			intersection_points[9] = interpolate(corners[1], corners[5], values[1], values[5], intersection_normals[9]);
+		}
+		if (edge & 1024) {
+			intersection_points[10] = interpolate(corners[2], corners[6], values[2], values[6], intersection_normals[10]);
+		}
+		if (edge & 2048) {
+			intersection_points[11] = interpolate(corners[3], corners[7], values[3], values[7], intersection_normals[11]);
+		}
+
+		// Create the triangles according to the table.
+		for (int i = 0; MarchingCubes::mc_triangles[case_index][i] != -1; i += 3) {
+
+			mesh_builder.add_vertex(
+					intersection_points[MarchingCubes::mc_triangles[case_index][i]],
+					intersection_normals[MarchingCubes::mc_triangles[case_index][i]]);
+
+			mesh_builder.add_vertex(
+					intersection_points[MarchingCubes::mc_triangles[case_index][i + 1]],
+					intersection_normals[MarchingCubes::mc_triangles[case_index][i + 1]]);
+
+			mesh_builder.add_vertex(
+					intersection_points[MarchingCubes::mc_triangles[case_index][i + 2]],
+					intersection_normals[MarchingCubes::mc_triangles[case_index][i + 2]]);
+		}
+	}
+
+	return mesh_builder.commit(wireframe);
+}
+
+Ref<ArrayMesh> polygonize(const VoxelBuffer &voxels, float geometric_error, VoxelMesherDMC::Mode mode) {
 
 	int padding = 1;
 	int chunk_size = CHUNK_SIZE;
@@ -1067,22 +1300,35 @@ Ref<ArrayMesh> polygonize(const VoxelBuffer &voxels, float geometric_error) {
 	root.origin = Vector3i();
 	root.size = chunk_size;
 	generate_octree_top_down(&root, voxels, geometric_error);
-	//return generate_debug_octree_mesh(&root);
+
+	if (mode == VoxelMesherDMC::MODE_DEBUG_OCTREE) {
+		return generate_debug_octree_mesh(&root);
+	}
 
 	DualGrid grid;
 	node_proc(grid, &root);
-	return generate_debug_dual_grid_mesh(grid);
+	// TODO Handle non-subdivided octree
+	if (mode == VoxelMesherDMC::MODE_DEBUG_DUAL_GRID) {
+		return generate_debug_dual_grid_mesh(grid);
+	}
 
-	// TODO
+	return polygonize_dual_grid(grid, voxels, mode == VoxelMesherDMC::MODE_WIREFRAME);
+	// TODO Marching squares skirts
 }
 
 } // namespace dmc
 
-Ref<ArrayMesh> VoxelMesherDMC::build_mesh(Ref<VoxelBuffer> voxels, real_t geometric_error) {
+Ref<ArrayMesh> VoxelMesherDMC::build_mesh(Ref<VoxelBuffer> voxels, real_t geometric_error, Mode mode) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
-	return dmc::polygonize(**voxels, geometric_error);
+	return dmc::polygonize(**voxels, geometric_error, mode);
 }
 
 void VoxelMesherDMC::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "geometric_error"), &VoxelMesherDMC::build_mesh);
+
+	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "geometric_error", "mode"), &VoxelMesherDMC::build_mesh, DEFVAL(MODE_NORMAL));
+
+	BIND_ENUM_CONSTANT(MODE_NORMAL);
+	BIND_ENUM_CONSTANT(MODE_WIREFRAME);
+	BIND_ENUM_CONSTANT(MODE_DEBUG_OCTREE);
+	BIND_ENUM_CONSTANT(MODE_DEBUG_DUAL_GRID);
 }

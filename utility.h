@@ -4,6 +4,7 @@
 #include "vector3i.h"
 #include <core/ustring.h>
 #include <core/vector.h>
+#include <vector>
 
 // Takes elements starting from a given position and moves them at the beginning,
 // then shrink the array to fit them. Other elements are discarded.
@@ -42,6 +43,13 @@ void copy_to(PoolVector<T> &to, const Vector<T> &from) {
 
 inline String ptr2s(const void *p) {
 	return String::num_uint64((uint64_t)p, 16);
+}
+
+template <typename T>
+void raw_copy_to(PoolVector<T> &to, const std::vector<T> &from) {
+	to.resize(from.size());
+	typename PoolVector<T>::Write w = to.write();
+	memcpy(w.ptr(), from.data(), from.size() * sizeof(T));
 }
 
 #endif // HEADER_VOXEL_UTILITY_H
