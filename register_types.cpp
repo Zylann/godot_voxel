@@ -1,13 +1,14 @@
 #include "register_types.h"
+#include "dmc/voxel_mesher_dmc.h"
+#include "transvoxel/voxel_mesher_smooth.h"
+#include "voxel_box_mover.h"
 #include "voxel_buffer.h"
-#include "voxel_mesher.h"
 #include "voxel_library.h"
 #include "voxel_map.h"
-#include "voxel_terrain.h"
-#include "voxel_provider_test.h"
+#include "voxel_mesher.h"
 #include "voxel_provider_image.h"
-#include "voxel_box_mover.h"
-#include "transvoxel/voxel_mesher_smooth.h"
+#include "voxel_provider_test.h"
+#include "voxel_terrain.h"
 
 void register_voxel_types() {
 
@@ -23,9 +24,8 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelMesherSmooth>();
 	ClassDB::register_class<VoxelBoxMover>();
 
+	ClassDB::register_class<VoxelMesherDMC>();
 }
 
 void unregister_voxel_types() {
-
 }
-

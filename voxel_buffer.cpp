@@ -81,7 +81,7 @@ void VoxelBuffer::set_voxel(int value, int x, int y, int z, unsigned int channel
 // This version does not cause errors if out of bounds. Use only if it's okay to be outside.
 void VoxelBuffer::try_set_voxel(int x, int y, int z, int value, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
-	if(!validate_pos(x, y, z))
+	if (!validate_pos(x, y, z))
 		return;
 
 	Channel &channel = _channels[channel_index];
@@ -106,7 +106,7 @@ void VoxelBuffer::fill(int defval, unsigned int channel_index) {
 	Channel &channel = _channels[channel_index];
 	if (channel.data == NULL) {
 		// Channel is already optimized and uniform
-		if(channel.defval == defval) {
+		if (channel.defval == defval) {
 			// No change
 			return;
 		} else {
@@ -114,8 +114,7 @@ void VoxelBuffer::fill(int defval, unsigned int channel_index) {
 			channel.defval = defval;
 			return;
 		}
-	}
-	else
+	} else
 		create_channel_noinit(channel_index, _size);
 
 	unsigned int volume = get_volume();
@@ -131,7 +130,7 @@ void VoxelBuffer::fill_area(int defval, Vector3i min, Vector3i max, unsigned int
 	max.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1, 1, 1));
 	Vector3i area_size = max - min;
 
-	if(area_size.x == 0 || area_size.y == 0 || area_size.z == 0)
+	if (area_size.x == 0 || area_size.y == 0 || area_size.z == 0)
 		return;
 
 	Channel &channel = _channels[channel_index];

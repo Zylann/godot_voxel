@@ -110,8 +110,9 @@ private:
 		// Default value when data is null
 		uint8_t defval;
 
-		Channel()
-			: data(NULL), defval(0) {}
+		Channel() :
+				data(NULL),
+				defval(0) {}
 	};
 
 	// Each channel can store arbitary data.
