@@ -15,10 +15,11 @@ public:
 		MODE_DEBUG_DUAL_GRID
 	};
 
-	Ref<ArrayMesh> build_mesh(Ref<VoxelBuffer> voxels, real_t geometric_error, Mode mode);
+	Ref<ArrayMesh> build_mesh(const VoxelBuffer &voxels, real_t geometric_error, Mode mode);
 
 protected:
 	static void _bind_methods();
+	Ref<ArrayMesh> _build_mesh_b(Ref<VoxelBuffer> voxels, real_t geometric_error, Mode mode);
 
 private:
 	dmc::MeshBuilder _mesh_builder;

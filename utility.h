@@ -53,4 +53,22 @@ void raw_copy_to(PoolVector<T> &to, const std::vector<T> &from) {
 	memcpy(w.ptr(), from.data(), from.size() * sizeof(T));
 }
 
+// Trilinear interpolation between corner values of a cube.
+// Cube points respect the same position as in octree_utility.h
+template <typename T>
+inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4, const T v5, const T v6, const T v7, Vector3 position) {
+
+	const float one_min_x = 1.f - position.x;
+	const float one_min_y = 1.f - position.y;
+	const float one_min_z = 1.f - position.z;
+	const float one_min_x_one_min_y = one_min_x * one_min_y;
+	const float x_one_min_y = position.x * one_min_y;
+
+	T res = one_min_z * (v0 * one_min_x_one_min_y + v1 * x_one_min_y + v4 * one_min_x * position.y);
+	res += position.z * (v3 * one_min_x_one_min_y + v2 * x_one_min_y + v7 * one_min_x * position.y);
+	res += position.x * position.y * (v5 * one_min_z + v6 * position.z);
+
+	return res;
+}
+
 #endif // HEADER_VOXEL_UTILITY_H

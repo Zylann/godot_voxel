@@ -39,8 +39,9 @@ void VoxelBuffer::clear() {
 
 void VoxelBuffer::clear_channel(unsigned int channel_index, int clear_value) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
-	if (_channels[channel_index].data)
+	if (_channels[channel_index].data) {
 		delete_channel(channel_index);
+	}
 	_channels[channel_index].defval = clear_value;
 }
 
@@ -81,8 +82,9 @@ void VoxelBuffer::set_voxel(int value, int x, int y, int z, unsigned int channel
 // This version does not cause errors if out of bounds. Use only if it's okay to be outside.
 void VoxelBuffer::try_set_voxel(int x, int y, int z, int value, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
-	if (!validate_pos(x, y, z))
+	if (!validate_pos(x, y, z)) {
 		return;
+	}
 
 	Channel &channel = _channels[channel_index];
 
@@ -114,8 +116,9 @@ void VoxelBuffer::fill(int defval, unsigned int channel_index) {
 			channel.defval = defval;
 			return;
 		}
-	} else
+	} else {
 		create_channel_noinit(channel_index, _size);
+	}
 
 	unsigned int volume = get_volume();
 	memset(channel.data, defval, volume);
@@ -130,15 +133,17 @@ void VoxelBuffer::fill_area(int defval, Vector3i min, Vector3i max, unsigned int
 	max.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1, 1, 1));
 	Vector3i area_size = max - min;
 
-	if (area_size.x == 0 || area_size.y == 0 || area_size.z == 0)
+	if (area_size.x == 0 || area_size.y == 0 || area_size.z == 0) {
 		return;
+	}
 
 	Channel &channel = _channels[channel_index];
 	if (channel.data == NULL) {
-		if (channel.defval == defval)
+		if (channel.defval == defval) {
 			return;
-		else
+		} else {
 			create_channel(channel_index, _size);
+		}
 	}
 
 	Vector3i pos;
@@ -156,9 +161,10 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, true);
 
 	const Channel &channel = _channels[channel_index];
-	if (channel.data == NULL)
+	if (channel.data == NULL) {
 		// Channel has been optimized
 		return true;
+	}
 
 	// Channel isn't optimized, so must look at each voxel
 	uint8_t voxel = channel.data[0];
@@ -172,6 +178,7 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 	return true;
 }
 
+// TODO Rename compress_uniform_channels()
 void VoxelBuffer::optimize() {
 	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
 		if (_channels[i].data && is_uniform(i)) {
@@ -272,20 +279,13 @@ void VoxelBuffer::delete_channel(int i) {
 	channel.data = NULL;
 }
 
-void VoxelBuffer::compute_gradients(unsigned int isolevel_channel, unsigned int first_gradient_channel) {
+void VoxelBuffer::compute_gradients() {
 
-	ERR_FAIL_COND(isolevel_channel >= MAX_CHANNELS);
-	ERR_FAIL_COND(first_gradient_channel + 2 >= MAX_CHANNELS);
+	const Channel &iso_channel = _channels[CHANNEL_ISOLEVEL];
 
-	int gradient_x_channel = first_gradient_channel;
-	int gradient_y_channel = first_gradient_channel + 1;
-	int gradient_z_channel = first_gradient_channel + 2;
-
-	ERR_FAIL_COND(gradient_x_channel == isolevel_channel);
-	ERR_FAIL_COND(gradient_y_channel == isolevel_channel);
-	ERR_FAIL_COND(gradient_z_channel == isolevel_channel);
-
-	const Channel &iso_channel = _channels[isolevel_channel];
+	const int gradient_x_channel = CHANNEL_GRADIENT_X;
+	const int gradient_y_channel = CHANNEL_GRADIENT_Y;
+	const int gradient_z_channel = CHANNEL_GRADIENT_Z;
 
 	if (iso_channel.data == nullptr) {
 
@@ -310,22 +310,29 @@ void VoxelBuffer::compute_gradients(unsigned int isolevel_channel, unsigned int 
 		Channel &gy_channel = _channels[gradient_y_channel];
 		Channel &gz_channel = _channels[gradient_z_channel];
 
-		int max_z = _size.z - 1;
-		int max_x = _size.x - 1;
-		int max_y = _size.y - 1;
+		const int padding = 1;
 
-		int lookup_left = -_size.x;
-		int lookup_right = -lookup_left;
-		int lookup_back = -_size.z * _size.x;
-		int lookup_front = -lookup_back;
-		int lookup_down = -1;
-		int lookup_up = -lookup_down;
+		const int min_x = padding;
+		const int min_y = padding;
+		const int min_z = padding;
 
-		for (int z = 1; z < max_z; ++z) {
-			for (int x = 1; x < max_x; ++x) {
-				for (int y = 1; y < max_y; ++y) {
+		const int max_z = _size.z - padding;
+		const int max_x = _size.x - padding;
+		const int max_y = _size.y - padding;
 
-					int i = index(x, y, z);
+		const int lookup_left = -_size.x;
+		const int lookup_right = -lookup_left;
+		const int lookup_back = -_size.z * _size.x;
+		const int lookup_front = -lookup_back;
+		const int lookup_down = -1;
+		const int lookup_up = -lookup_down;
+
+		for (int z = min_z; z < max_z; ++z) {
+			for (int x = min_x; x < max_x; ++x) {
+
+				int i = index(x, min_y, z);
+
+				for (int y = min_y; y < max_y; ++y) {
 
 					Vector3 v(
 							byte_to_iso(iso_channel.data[i + lookup_right]) - byte_to_iso(iso_channel.data[i + lookup_left]),
@@ -337,6 +344,8 @@ void VoxelBuffer::compute_gradients(unsigned int isolevel_channel, unsigned int 
 					gx_channel.data[i] = iso_to_byte(v.x);
 					gy_channel.data[i] = iso_to_byte(v.y);
 					gz_channel.data[i] = iso_to_byte(v.z);
+
+					++i;
 				}
 			}
 		}
@@ -365,7 +374,17 @@ void VoxelBuffer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::optimize);
-	ClassDB::bind_method(D_METHOD("compute_gradients", "isolevel_channel", "first_gradient_channel"), &VoxelBuffer::compute_gradients);
+	ClassDB::bind_method(D_METHOD("compute_gradients"), &VoxelBuffer::compute_gradients);
+
+	BIND_ENUM_CONSTANT(CHANNEL_TYPE);
+	BIND_ENUM_CONSTANT(CHANNEL_ISOLEVEL);
+	BIND_ENUM_CONSTANT(CHANNEL_GRADIENT_X);
+	BIND_ENUM_CONSTANT(CHANNEL_GRADIENT_Y);
+	BIND_ENUM_CONSTANT(CHANNEL_GRADIENT_Z);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA2);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA3);
+	BIND_ENUM_CONSTANT(MAX_CHANNELS);
 }
 
 void VoxelBuffer::_copy_from_binding(Ref<VoxelBuffer> other, unsigned int channel) {

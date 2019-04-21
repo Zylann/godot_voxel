@@ -13,8 +13,18 @@ class VoxelBuffer : public Reference {
 	GDCLASS(VoxelBuffer, Reference)
 
 public:
-	// Arbitrary value, 8 should be enough. Tweak for your needs.
-	static const int MAX_CHANNELS = 8;
+	enum ChannelId {
+		CHANNEL_TYPE = 0,
+		CHANNEL_ISOLEVEL,
+		CHANNEL_GRADIENT_X,
+		CHANNEL_GRADIENT_Y,
+		CHANNEL_GRADIENT_Z,
+		CHANNEL_DATA,
+		CHANNEL_DATA2,
+		CHANNEL_DATA3,
+		// Arbitrary value, 8 should be enough. Tweak for your needs.
+		MAX_CHANNELS
+	};
 
 	// Converts -1..1 float into 0..255 integer
 	static inline int iso_to_byte(real_t iso) {
@@ -38,7 +48,7 @@ public:
 	void clear();
 	void clear_channel(unsigned int channel_index, int clear_value = 0);
 
-	_FORCE_INLINE_ Vector3i get_size() const { return _size; }
+	_FORCE_INLINE_ const Vector3i &get_size() const { return _size; }
 
 	void set_default_values(uint8_t values[MAX_CHANNELS]);
 
@@ -72,17 +82,18 @@ public:
 		return (z * _size.z + x) * _size.x + y;
 	}
 
-	_FORCE_INLINE_ unsigned int row_index(unsigned int x, unsigned int y, unsigned int z) const {
-		return (z * _size.z + x) * _size.x;
-	}
+	//	_FORCE_INLINE_ unsigned int row_index(unsigned int x, unsigned int y, unsigned int z) const {
+	//		return (z * _size.z + x) * _size.x;
+	//	}
 
+	// TODO Rename get_cells_count()
 	_FORCE_INLINE_ unsigned int get_volume() const {
 		return _size.x * _size.y * _size.z;
 	}
 
 	uint8_t *get_channel_raw(unsigned int channel_index) const;
 
-	void compute_gradients(unsigned int isolevel_index, unsigned int first_gradient_channel);
+	void compute_gradients();
 
 private:
 	void create_channel_noinit(int i, Vector3i size);
@@ -124,5 +135,7 @@ private:
 	// How many voxels are there in the three directions. All populated channels have the same size.
 	Vector3i _size;
 };
+
+VARIANT_ENUM_CAST(VoxelBuffer::ChannelId)
 
 #endif // VOXEL_BUFFER_H
