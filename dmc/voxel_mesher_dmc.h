@@ -2,12 +2,8 @@
 #define VOXEL_MESHER_DMC_H
 
 #include "../voxel_buffer.h"
+#include "mesh_builder.h"
 #include "scene/resources/mesh.h"
-
-namespace dmc {
-
-Ref<ArrayMesh> polygonize(const VoxelBuffer &voxels, float geometric_error);
-}
 
 class VoxelMesherDMC : public Reference {
 	GDCLASS(VoxelMesherDMC, Reference)
@@ -23,6 +19,9 @@ public:
 
 protected:
 	static void _bind_methods();
+
+private:
+	dmc::MeshBuilder _mesh_builder;
 };
 
 VARIANT_ENUM_CAST(VoxelMesherDMC::Mode)

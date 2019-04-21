@@ -1,9 +1,7 @@
 #include "voxel_mesher_dmc.h"
 #include "../cube_tables.h"
-#include "../utility.h"
 #include "marching_cubes_tables.h"
-#include <map>
-#include <vector>
+#include "mesh_builder.h"
 
 // Algorithm taken from https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/
 
@@ -1118,87 +1116,7 @@ void node_proc(DualGrid &grid, OctreeNode *node) {
 	vert_proc(grid, children[0], children[1], children[2], children[3], children[4], children[5], children[6], children[7]);
 }
 
-class MeshBuilder {
-public:
-	void add_vertex(Vector3 position, Vector3 normal) {
-
-		int i = 0;
-
-		if (_position_to_index.find(position) != _position_to_index.end()) {
-
-			i = _position_to_index[position];
-
-		} else {
-
-			i = _positions.size();
-			_position_to_index[position] = i;
-
-			_positions.push_back(position);
-			_normals.push_back(normal);
-		}
-
-		_indices.push_back(i);
-	}
-
-	Ref<ArrayMesh> commit(bool wireframe) {
-
-		if (_positions.size() == 0) {
-			return Ref<ArrayMesh>();
-		}
-
-		ERR_FAIL_COND_V(_indices.size() % 3 != 0, Ref<ArrayMesh>());
-
-		if (wireframe) {
-
-			// Debug purpose, no effort to be fast here
-			std::vector<int> wireframe_indices;
-
-			for (int i = 0; i < _indices.size(); i += 3) {
-
-				wireframe_indices.push_back(_indices[i]);
-				wireframe_indices.push_back(_indices[i + 1]);
-
-				wireframe_indices.push_back(_indices[i + 1]);
-				wireframe_indices.push_back(_indices[i + 2]);
-
-				wireframe_indices.push_back(_indices[i + 2]);
-				wireframe_indices.push_back(_indices[i]);
-			}
-
-			_indices = wireframe_indices;
-		}
-
-		PoolVector3Array positions;
-		PoolVector3Array normals;
-		PoolIntArray indices;
-
-		raw_copy_to(positions, _positions);
-		raw_copy_to(normals, _normals);
-		raw_copy_to(indices, _indices);
-
-		Array surface;
-		surface.resize(Mesh::ARRAY_MAX);
-		surface[Mesh::ARRAY_VERTEX] = positions;
-		surface[Mesh::ARRAY_NORMAL] = normals;
-		surface[Mesh::ARRAY_INDEX] = indices;
-
-		Ref<ArrayMesh> mesh;
-		mesh.instance();
-		mesh->add_surface_from_arrays(wireframe ? Mesh::PRIMITIVE_LINES : Mesh::PRIMITIVE_TRIANGLES, surface);
-
-		return mesh;
-	}
-
-private:
-	std::vector<Vector3> _positions;
-	std::vector<Vector3> _normals;
-	std::vector<int> _indices;
-	std::map<Vector3, int> _position_to_index;
-};
-
-Ref<ArrayMesh> polygonize_dual_grid(const DualGrid &grid, const VoxelBuffer &voxels, bool wireframe) {
-
-	MeshBuilder mesh_builder;
+Ref<ArrayMesh> polygonize_dual_grid(const DualGrid &grid, const VoxelBuffer &voxels, bool wireframe, MeshBuilder &mesh_builder) {
 
 	for (int dci = 0; dci < grid.cells.size(); ++dci) {
 
@@ -1287,7 +1205,7 @@ Ref<ArrayMesh> polygonize_dual_grid(const DualGrid &grid, const VoxelBuffer &vox
 	return mesh_builder.commit(wireframe);
 }
 
-Ref<ArrayMesh> polygonize(const VoxelBuffer &voxels, float geometric_error, VoxelMesherDMC::Mode mode) {
+Ref<ArrayMesh> polygonize(const VoxelBuffer &voxels, float geometric_error, VoxelMesherDMC::Mode mode, MeshBuilder &mesh_builder) {
 
 	int padding = 1;
 	int chunk_size = CHUNK_SIZE;
@@ -1313,15 +1231,17 @@ Ref<ArrayMesh> polygonize(const VoxelBuffer &voxels, float geometric_error, Voxe
 		return generate_debug_dual_grid_mesh(grid);
 	}
 
-	return polygonize_dual_grid(grid, voxels, mode == VoxelMesherDMC::MODE_WIREFRAME);
+	Ref<ArrayMesh> mesh = polygonize_dual_grid(grid, voxels, mode == VoxelMesherDMC::MODE_WIREFRAME, mesh_builder);
 	// TODO Marching squares skirts
+
+	return mesh;
 }
 
 } // namespace dmc
 
 Ref<ArrayMesh> VoxelMesherDMC::build_mesh(Ref<VoxelBuffer> voxels, real_t geometric_error, Mode mode) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
-	return dmc::polygonize(**voxels, geometric_error, mode);
+	return dmc::polygonize(**voxels, geometric_error, mode, _mesh_builder);
 }
 
 void VoxelMesherDMC::_bind_methods() {
