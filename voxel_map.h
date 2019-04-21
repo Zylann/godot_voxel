@@ -6,7 +6,7 @@
 #include <core/hash_map.h>
 #include <scene/main/node.h>
 
-// Infinite voxel storage by means of octants like Gridmap
+// Infinite voxel storage by means of octants like Gridmap, within a constant LOD
 class VoxelMap : public Reference {
 	GDCLASS(VoxelMap, Reference)
 public:
@@ -60,10 +60,10 @@ public:
 
 	template <typename Action_T>
 	void remove_block(Vector3i bpos, Action_T pre_delete) {
-		if(_last_accessed_block && _last_accessed_block->pos == bpos)
+		if (_last_accessed_block && _last_accessed_block->pos == bpos)
 			_last_accessed_block = NULL;
 		VoxelBlock **pptr = _blocks.getptr(bpos);
-		if(pptr) {
+		if (pptr) {
 			VoxelBlock *block = *pptr;
 			ERR_FAIL_COND(block == NULL);
 			pre_delete(block);

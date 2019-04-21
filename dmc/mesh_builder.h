@@ -8,13 +8,14 @@
 
 namespace dmc {
 
-// Faster than SurfaceTool, only does what is needed
+// Faster than SurfaceTool, only does what is needed to build a smooth mesh
 class MeshBuilder {
 public:
 	inline void add_vertex(Vector3 position, Vector3 normal) {
 
 		int i = 0;
 
+		// TODO Debug this to see if it's effectively indexing
 		if (_position_to_index.find(position) != _position_to_index.end()) {
 
 			i = _position_to_index[position];

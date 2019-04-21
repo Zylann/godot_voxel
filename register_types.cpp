@@ -1,6 +1,6 @@
 #include "register_types.h"
 #include "dmc/voxel_mesher_dmc.h"
-#include "transvoxel/voxel_mesher_smooth.h"
+#include "transvoxel/voxel_mesher_transvoxel.h"
 #include "voxel_box_mover.h"
 #include "voxel_buffer.h"
 #include "voxel_library.h"
@@ -21,7 +21,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelProvider>();
 	ClassDB::register_class<VoxelProviderTest>();
 	ClassDB::register_class<VoxelProviderImage>();
-	ClassDB::register_class<VoxelMesherSmooth>();
+	ClassDB::register_class<VoxelMesherTransvoxel>();
 	ClassDB::register_class<VoxelBoxMover>();
 
 	ClassDB::register_class<VoxelMesherDMC>();

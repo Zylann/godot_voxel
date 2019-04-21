@@ -3,6 +3,7 @@
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
 
+// Dual marching cubes
 // Algorithm taken from https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/
 
 namespace dmc {

@@ -4,11 +4,11 @@
 #include "../voxel_buffer.h"
 #include <scene/resources/mesh.h>
 
-class VoxelMesherSmooth : public Reference {
-	GDCLASS(VoxelMesherSmooth, Reference)
+class VoxelMesherTransvoxel : public Reference {
+	GDCLASS(VoxelMesherTransvoxel, Reference)
 
 public:
-	VoxelMesherSmooth();
+	VoxelMesherTransvoxel();
 
 	Ref<ArrayMesh> build_mesh(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh = Ref<ArrayMesh>());
 	Array build(const VoxelBuffer &voxels, unsigned int channel);

@@ -1,5 +1,5 @@
 
-#include "voxel_mesher_smooth.h"
+#include "voxel_mesher_transvoxel.h"
 #include "transvoxel_tables.cpp"
 #include <core/os/os.h>
 
@@ -58,28 +58,28 @@ void copy_to(PoolVector<T> &to, Vector<T> &from) {
 	}
 }
 
-VoxelMesherSmooth::ReuseCell::ReuseCell() {
+VoxelMesherTransvoxel::ReuseCell::ReuseCell() {
 	case_index = 0;
 	for (unsigned int i = 0; i < 4; ++i) {
 		vertices[i] = -1;
 	}
 }
 
-VoxelMesherSmooth::VoxelMesherSmooth() {
+VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
 }
 
-Ref<ArrayMesh> VoxelMesherSmooth::build_mesh(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh) {
+Ref<ArrayMesh> VoxelMesherTransvoxel::build_mesh(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh) {
 
 	ERR_FAIL_COND_V(voxels_ref.is_null(), Ref<ArrayMesh>());
 
 	VoxelBuffer &buffer = **voxels_ref;
 	Array surfaces = build(buffer, channel);
 
-	if(mesh.is_null())
+	if (mesh.is_null())
 		mesh.instance();
 
 	//int surface = mesh->get_surface_count();
-	for(int i = 0; i < surfaces.size(); ++i) {
+	for (int i = 0; i < surfaces.size(); ++i) {
 		Array arrays = surfaces[i];
 		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
 		//mesh->surface_set_material(surface, _materials[i]);
@@ -88,7 +88,7 @@ Ref<ArrayMesh> VoxelMesherSmooth::build_mesh(Ref<VoxelBuffer> voxels_ref, unsign
 	return mesh;
 }
 
-Array VoxelMesherSmooth::build(const VoxelBuffer &voxels, unsigned int channel) {
+Array VoxelMesherTransvoxel::build(const VoxelBuffer &voxels, unsigned int channel) {
 
 	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Array());
 
@@ -134,11 +134,11 @@ Array VoxelMesherSmooth::build(const VoxelBuffer &voxels, unsigned int channel) 
 	return surfaces;
 }
 
-void VoxelMesherSmooth::build_internal(const VoxelBuffer &voxels, unsigned int channel) {
+void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned int channel) {
 
 	// Each 2x2 voxel group is a "cell"
 
-	if(voxels.is_uniform(channel)) {
+	if (voxels.is_uniform(channel)) {
 		// Nothing to extract, because constant isolevels never cross the threshold and describe no surface
 		return;
 	}
@@ -381,18 +381,18 @@ void VoxelMesherSmooth::build_internal(const VoxelBuffer &voxels, unsigned int c
 	//OS::get_singleton()->print("\n");
 }
 
-VoxelMesherSmooth::ReuseCell &VoxelMesherSmooth::get_reuse_cell(Vector3i pos) {
+VoxelMesherTransvoxel::ReuseCell &VoxelMesherTransvoxel::get_reuse_cell(Vector3i pos) {
 	int j = pos.z & 1;
 	int i = pos.y * m_block_size.y + pos.x;
 	return m_cache[j].write[i];
 }
 
-void VoxelMesherSmooth::emit_vertex(Vector3 primary, Vector3 normal) {
+void VoxelMesherTransvoxel::emit_vertex(Vector3 primary, Vector3 normal) {
 	m_output_vertices.push_back(primary - PAD.to_vec3());
 	m_output_normals.push_back(normal);
 }
 
-void VoxelMesherSmooth::_bind_methods() {
+void VoxelMesherTransvoxel::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("build", "voxels", "channel", "existing_mesh"), &VoxelMesherSmooth::build_mesh, DEFVAL(Variant()));
+	ClassDB::bind_method(D_METHOD("build", "voxels", "channel", "existing_mesh"), &VoxelMesherTransvoxel::build_mesh, DEFVAL(Variant()));
 }

@@ -7,7 +7,7 @@
 
 #include "voxel_buffer.h"
 #include "voxel_mesher.h"
-#include "transvoxel/voxel_mesher_smooth.h"
+#include "transvoxel/voxel_mesher_transvoxel.h"
 
 class VoxelMeshUpdater {
 public:
@@ -77,7 +77,7 @@ private:
 	Mutex *_output_mutex;
 
 	Ref<VoxelMesher> _model_mesher;
-	Ref<VoxelMesherSmooth> _smooth_mesher;
+	Ref<VoxelMesherTransvoxel> _smooth_mesher;
 
 	Input _input;
 	Output _output;
