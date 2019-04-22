@@ -98,7 +98,7 @@ public:
 
 private:
 	void create_channel_noinit(int i, Vector3i size);
-	void create_channel(int i, Vector3i size, uint8_t defval = 0);
+	void create_channel(int i, Vector3i size, uint8_t defval);
 	void delete_channel(int i);
 
 protected:

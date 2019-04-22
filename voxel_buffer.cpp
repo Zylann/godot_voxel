@@ -19,9 +19,10 @@ void VoxelBuffer::create(int sx, int sy, int sz) {
 		for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
 			Channel &channel = _channels[i];
 			if (channel.data) {
+				// Channel already contained data
 				// TODO Optimize with realloc
 				delete_channel(i);
-				create_channel(i, new_size);
+				create_channel(i, new_size, channel.defval);
 			}
 		}
 		_size = new_size;
@@ -71,7 +72,8 @@ void VoxelBuffer::set_voxel(int value, int x, int y, int z, unsigned int channel
 
 	if (channel.data == NULL) {
 		if (channel.defval != value) {
-			create_channel(channel_index, _size);
+			// Allocate channel with same initial values as defval
+			create_channel(channel_index, _size, channel.defval);
 			channel.data[index(x, y, z)] = value;
 		}
 	} else {
@@ -90,7 +92,7 @@ void VoxelBuffer::try_set_voxel(int x, int y, int z, int value, unsigned int cha
 
 	if (channel.data == NULL) {
 		if (channel.defval != value) {
-			create_channel(channel_index, _size);
+			create_channel(channel_index, _size, channel.defval);
 			channel.data[index(x, y, z)] = value;
 		}
 	} else {
@@ -142,7 +144,7 @@ void VoxelBuffer::fill_area(int defval, Vector3i min, Vector3i max, unsigned int
 		if (channel.defval == defval) {
 			return;
 		} else {
-			create_channel(channel_index, _size);
+			create_channel(channel_index, _size, channel.defval);
 		}
 	}
 
@@ -227,7 +229,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 	} else {
 		if (other_channel.data) {
 			if (channel.data == NULL) {
-				create_channel(channel_index, _size);
+				create_channel(channel_index, _size, channel.defval);
 			}
 			// Copy row by row
 			Vector3i pos;
@@ -241,7 +243,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 			}
 		} else if (channel.defval != other_channel.defval) {
 			if (channel.data == NULL) {
-				create_channel(channel_index, _size);
+				create_channel(channel_index, _size, channel.defval);
 			}
 			// Set row by row
 			Vector3i pos;
