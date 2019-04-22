@@ -2,8 +2,32 @@
 #define VOXEL_MESHER_DMC_H
 
 #include "../voxel_buffer.h"
+#include "hermite_value.h"
 #include "mesh_builder.h"
 #include "scene/resources/mesh.h"
+
+namespace dmc {
+
+struct DualCell {
+	Vector3 corners[8];
+	HermiteValue values[8];
+	bool has_values;
+
+	DualCell() :
+			has_values(false) {}
+
+	inline void set_corner(int i, Vector3 vertex, HermiteValue value) {
+		CRASH_COND(i < 0 || i >= 8);
+		corners[i] = vertex;
+		values[i] = value;
+	}
+};
+
+struct DualGrid {
+	std::vector<DualCell> cells;
+};
+
+} // namespace dmc
 
 class VoxelMesherDMC : public Reference {
 	GDCLASS(VoxelMesherDMC, Reference)
@@ -24,6 +48,7 @@ protected:
 
 private:
 	dmc::MeshBuilder _mesh_builder;
+	dmc::DualGrid _dual_grid;
 
 	struct Stats {
 		real_t octree_build_time;

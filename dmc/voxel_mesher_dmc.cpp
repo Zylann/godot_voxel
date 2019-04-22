@@ -1,6 +1,5 @@
 #include "voxel_mesher_dmc.h"
 #include "../cube_tables.h"
-#include "hermite_value.h"
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
 #include "octree_utility.h"
@@ -363,47 +362,6 @@ Ref<ArrayMesh> generate_debug_octree_mesh(OctreeNode *root) {
 	return mesh;
 }
 
-struct DualCell {
-	Vector3 corners[8];
-	HermiteValue values[8];
-	bool has_values;
-
-	DualCell() :
-			has_values(false) {}
-
-	inline void set_corner(int i, Vector3 vertex, HermiteValue value) {
-		CRASH_COND(i < 0 || i >= 8);
-		corners[i] = vertex;
-		values[i] = value;
-	}
-};
-
-struct DualGrid {
-	std::vector<DualCell> cells;
-
-	inline void add_cell(
-			const Vector3 c0,
-			const Vector3 c1,
-			const Vector3 c2,
-			const Vector3 c3,
-			const Vector3 c4,
-			const Vector3 c5,
-			const Vector3 c6,
-			const Vector3 c7) {
-
-		DualCell cell;
-		cell.corners[0] = c0;
-		cell.corners[1] = c1;
-		cell.corners[2] = c2;
-		cell.corners[3] = c3;
-		cell.corners[4] = c4;
-		cell.corners[5] = c5;
-		cell.corners[6] = c6;
-		cell.corners[7] = c7;
-		cells.push_back(cell);
-	}
-};
-
 Ref<ArrayMesh> generate_debug_dual_grid_mesh(const DualGrid &grid) {
 
 	PoolVector3Array positions;
@@ -676,6 +634,29 @@ private:
 	void face_proc_xz(OctreeNode *n0, OctreeNode *n1);
 };
 
+inline void add_cell(DualGrid &grid,
+		const Vector3 c0,
+		const Vector3 c1,
+		const Vector3 c2,
+		const Vector3 c3,
+		const Vector3 c4,
+		const Vector3 c5,
+		const Vector3 c6,
+		const Vector3 c7) {
+
+	DualCell cell;
+	cell.corners[0] = c0;
+	cell.corners[1] = c1;
+	cell.corners[2] = c2;
+	cell.corners[3] = c3;
+	cell.corners[4] = c4;
+	cell.corners[5] = c5;
+	cell.corners[6] = c6;
+	cell.corners[7] = c7;
+	cell.has_values = false;
+	grid.cells.push_back(cell);
+}
+
 void DualGridGenerator::create_border_cells(
 		const OctreeNode *n0,
 		const OctreeNode *n1,
@@ -692,26 +673,26 @@ void DualGridGenerator::create_border_cells(
 
 	if (is_border_back(n0) && is_border_back(n1) && is_border_back(n4) && is_border_back(n5)) {
 
-		grid.add_cell(
+		add_cell(grid,
 				get_center_back(n0), get_center_back(n1), get_center(n1), get_center(n0),
 				get_center_back(n4), get_center_back(n5), get_center(n5), get_center(n4));
 
 		// Generate back edge border cells
 		if (is_border_top(n4, _octree_root_size) && is_border_top(n5, _octree_root_size)) {
 
-			grid.add_cell(
+			add_cell(grid,
 					get_center_back(n4), get_center_back(n5), get_center(n5), get_center(n4),
 					get_center_back_top(n4), get_center_back_top(n5), get_center_top(n5), get_center_top(n4));
 
 			// Generate back top corner cells
 			if (is_border_left(n4)) {
-				grid.add_cell(
+				add_cell(grid,
 						get_center_back_left(n4), get_center_back(n4), get_center(n4), get_center_left(n4),
 						get_corner4(n4), get_center_back_top(n4), get_center_top(n4), get_center_left_top(n4));
 			}
 
 			if (is_border_right(n4, _octree_root_size)) {
-				grid.add_cell(
+				add_cell(grid,
 						get_center_back(n5), get_center_back_right(n5), get_center_right(n5), get_center(n5),
 						get_center_back_top(n5), get_corner5(n5), get_center_right_top(n5), get_center_top(n5));
 			}
@@ -719,18 +700,18 @@ void DualGridGenerator::create_border_cells(
 
 		if (is_border_bottom(n0) && is_border_bottom(n1)) {
 
-			grid.add_cell(
+			add_cell(grid,
 					get_center_back_bottom(n0), get_center_back_bottom(n1), get_center_bottom(n1), get_center_bottom(n0),
 					get_center_back(n0), get_center_back(n1), get_center(n1), get_center(n0));
 
 			// Generate back bottom corner cells
 			if (is_border_left(n0)) {
-				grid.add_cell(n0->origin.to_vec3(), get_center_back_bottom(n0), get_center_bottom(n0), get_center_left_bottom(n0),
+				add_cell(grid, n0->origin.to_vec3(), get_center_back_bottom(n0), get_center_bottom(n0), get_center_left_bottom(n0),
 						get_center_back_left(n0), get_center_back(n0), get_center(n0), get_center_left(n0));
 			}
 
 			if (is_border_right(n1, _octree_root_size)) {
-				grid.add_cell(get_center_back_bottom(n1), get_corner1(n1), get_center_right_bottom(n1), get_center_bottom(n1),
+				add_cell(grid, get_center_back_bottom(n1), get_corner1(n1), get_center_right_bottom(n1), get_center_bottom(n1),
 						get_center_back(n1), get_center_back_right(n1), get_center_right(n1), get_center(n1));
 			}
 		}
@@ -741,26 +722,26 @@ void DualGridGenerator::create_border_cells(
 			is_border_front(n6, _octree_root_size) &&
 			is_border_front(n7, _octree_root_size)) {
 
-		grid.add_cell(
+		add_cell(grid,
 				get_center(n3), get_center(n2), get_center_front(n2), get_center_front(n3),
 				get_center(n7), get_center(n6), get_center_front(n6), get_center_front(n7));
 
 		// Generate front edge border cells
 		if (is_border_top(n6, _octree_root_size) && is_border_top(n7, _octree_root_size)) {
 
-			grid.add_cell(
+			add_cell(grid,
 					get_center(n7), get_center(n6), get_center_front(n6), get_center_front(n7),
 					get_center_top(n7), get_center_top(n6), get_center_front_top(n6), get_center_front_top(n7));
 
 			// Generate back bottom corner cells
 			if (is_border_left(n7)) {
-				grid.add_cell(
+				add_cell(grid,
 						get_center_left(n7), get_center(n7), get_center_front(n7), get_center_front_left(n7),
 						get_center_left_top(n7), get_center_top(n7), get_center_front_top(n7), get_corner7(n7));
 			}
 
 			if (is_border_right(n6, _octree_root_size)) {
-				grid.add_cell(
+				add_cell(grid,
 						get_center(n6), get_center_right(n6), get_center_front_right(n6), get_center_front(n6),
 						get_center_top(n6), get_center_right_top(n6), get_corner6(n6), get_center_front_top(n6));
 			}
@@ -768,18 +749,18 @@ void DualGridGenerator::create_border_cells(
 
 		if (is_border_bottom(n3) && is_border_bottom(n2)) {
 
-			grid.add_cell(
+			add_cell(grid,
 					get_center_bottom(n3), get_center_bottom(n2), get_center_front_bottom(n2), get_center_front_bottom(n3),
 					get_center(n3), get_center(n2), get_center_front(n2), get_center_front(n3));
 
 			// Generate back bottom corner cells
 			if (is_border_left(n3)) {
-				grid.add_cell(
+				add_cell(grid,
 						get_center_left_bottom(n3), get_center_bottom(n3), get_center_front_bottom(n3), get_corner3(n3),
 						get_center_left(n3), get_center(n3), get_center_front(n3), get_center_front_left(n3));
 			}
 			if (is_border_right(n2, _octree_root_size)) {
-				grid.add_cell(get_center_bottom(n2), get_center_right_bottom(n2), get_corner2(n2), get_center_front_bottom(n2),
+				add_cell(grid, get_center_bottom(n2), get_center_right_bottom(n2), get_corner2(n2), get_center_front_bottom(n2),
 						get_center(n2), get_center_right(n2), get_center_front_right(n2), get_center_front(n2));
 			}
 		}
@@ -787,31 +768,31 @@ void DualGridGenerator::create_border_cells(
 
 	if (is_border_left(n0) && is_border_left(n3) && is_border_left(n4) && is_border_left(n7)) {
 
-		grid.add_cell(
+		add_cell(grid,
 				get_center_left(n0), get_center(n0), get_center(n3), get_center_left(n3),
 				get_center_left(n4), get_center(n4), get_center(n7), get_center_left(n7));
 
 		// Generate left edge border cells
 		if (is_border_top(n4, _octree_root_size) && is_border_top(n7, _octree_root_size)) {
-			grid.add_cell(
+			add_cell(grid,
 					get_center_left(n4), get_center(n4), get_center(n7), get_center_left(n7),
 					get_center_left_top(n4), get_center_top(n4), get_center_top(n7), get_center_left_top(n7));
 		}
 
 		if (is_border_bottom(n0) && is_border_bottom(n3)) {
-			grid.add_cell(
+			add_cell(grid,
 					get_center_left_bottom(n0), get_center_bottom(n0), get_center_bottom(n3), get_center_left_bottom(n3),
 					get_center_left(n0), get_center(n0), get_center(n3), get_center_left(n3));
 		}
 
 		if (is_border_back(n0) && is_border_back(n4)) {
-			grid.add_cell(
+			add_cell(grid,
 					get_center_back_left(n0), get_center_back(n0), get_center(n0), get_center_left(n0),
 					get_center_back_left(n4), get_center_back(n4), get_center(n4), get_center_left(n4));
 		}
 
 		if (is_border_front(n3, _octree_root_size) && is_border_front(n7, _octree_root_size)) {
-			grid.add_cell(
+			add_cell(grid,
 					get_center_left(n3), get_center(n3), get_center_front(n3), get_center_front_left(n3),
 					get_center_left(n7), get_center(n7), get_center_front(n7), get_center_front_left(n7));
 		}
@@ -822,31 +803,31 @@ void DualGridGenerator::create_border_cells(
 			is_border_right(n5, _octree_root_size) &&
 			is_border_right(n6, _octree_root_size)) {
 
-		grid.add_cell(
+		add_cell(grid,
 				get_center(n1), get_center_right(n1), get_center_right(n2), get_center(n2),
 				get_center(n5), get_center_right(n5), get_center_right(n6), get_center(n6));
 
 		// Generate right edge border cells
 		if (is_border_top(n5, _octree_root_size) && is_border_top(n6, _octree_root_size)) {
-			grid.add_cell(
+			add_cell(grid,
 					get_center(n5), get_center_right(n5), get_center_right(n6), get_center(n6),
 					get_center_top(n5), get_center_right_top(n5), get_center_right_top(n6), get_center_top(n6));
 		}
 
 		if (is_border_bottom(n1) && is_border_bottom(n2)) {
-			grid.add_cell(
+			add_cell(grid,
 					get_center_bottom(n1), get_center_right_bottom(n1), get_center_right_bottom(n2), get_center_bottom(n2),
 					get_center(n1), get_center_right(n1), get_center_right(n2), get_center(n2));
 		}
 
 		if (is_border_back(n1) && is_border_back(n5)) {
-			grid.add_cell(
+			add_cell(grid,
 					get_center_back(n1), get_center_back_right(n1), get_center_right(n1), get_center(n1),
 					get_center_back(n5), get_center_back_right(n5), get_center_right(n5), get_center(n5));
 		}
 
 		if (is_border_front(n2, _octree_root_size) && is_border_front(n6, _octree_root_size)) {
-			grid.add_cell(
+			add_cell(grid,
 					get_center(n2), get_center_right(n2), get_center_front_right(n2), get_center_front(n2),
 					get_center(n6), get_center_right(n6), get_center_front_right(n6), get_center_front(n6));
 		}
@@ -857,13 +838,13 @@ void DualGridGenerator::create_border_cells(
 			is_border_top(n6, _octree_root_size) &&
 			is_border_top(n7, _octree_root_size)) {
 
-		grid.add_cell(
+		add_cell(grid,
 				get_center(n4), get_center(n5), get_center(n6), get_center(n7),
 				get_center_top(n4), get_center_top(n5), get_center_top(n6), get_center_top(n7));
 	}
 
 	if (is_border_bottom(n0) && is_border_bottom(n1) && is_border_bottom(n2) && is_border_bottom(n3)) {
-		grid.add_cell(
+		add_cell(grid,
 				get_center_bottom(n0), get_center_bottom(n1), get_center_bottom(n2), get_center_bottom(n3),
 				get_center(n0), get_center(n1), get_center(n2), get_center(n3));
 	}
@@ -1312,42 +1293,46 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 	root->size = chunk_size;
 	dmc::generate_octree_top_down(root, voxels_access, geometric_error);
 #endif
+	// TODO OctreeNode pool to stop allocating. Or, flat octree?
 
 	_stats.octree_build_time = OS::get_singleton()->get_ticks_usec() - time_before;
 
-	if (root == nullptr) {
-		return Ref<ArrayMesh>();
-	}
-	// TODO OctreeNode pool to stop allocating. Or, flat octree?
+	Ref<ArrayMesh> mesh;
 
-	if (mode == VoxelMesherDMC::MODE_DEBUG_OCTREE) {
-		Ref<ArrayMesh> mesh = dmc::generate_debug_octree_mesh(root);
+	if (root != nullptr) {
+
+		if (mode == VoxelMesherDMC::MODE_DEBUG_OCTREE) {
+			mesh = dmc::generate_debug_octree_mesh(root);
+
+		} else {
+
+			time_before = OS::get_singleton()->get_ticks_usec();
+
+			dmc::DualGridGenerator dual_grid_generator(_dual_grid, root->size);
+			dual_grid_generator.node_proc(root);
+			// TODO Handle non-subdivided octree
+
+			_stats.dualgrid_derivation_time = OS::get_singleton()->get_ticks_usec() - time_before;
+
+			if (mode == VoxelMesherDMC::MODE_DEBUG_DUAL_GRID) {
+				mesh = dmc::generate_debug_dual_grid_mesh(_dual_grid);
+
+			} else {
+
+				time_before = OS::get_singleton()->get_ticks_usec();
+				dmc::polygonize_dual_grid(_dual_grid, voxels_access, _mesh_builder);
+				_stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
+
+				time_before = OS::get_singleton()->get_ticks_usec();
+				mesh = _mesh_builder.commit(mode == VoxelMesherDMC::MODE_WIREFRAME);
+				_stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
+			}
+
+			_dual_grid.cells.clear();
+		}
+
 		memdelete(root);
-		return mesh;
 	}
-
-	time_before = OS::get_singleton()->get_ticks_usec();
-
-	dmc::DualGrid grid;
-	dmc::DualGridGenerator dual_grid_generator(grid, root->size);
-	dual_grid_generator.node_proc(root);
-
-	_stats.dualgrid_derivation_time = OS::get_singleton()->get_ticks_usec() - time_before;
-
-	memdelete(root);
-
-	// TODO Handle non-subdivided octree
-	if (mode == VoxelMesherDMC::MODE_DEBUG_DUAL_GRID) {
-		return dmc::generate_debug_dual_grid_mesh(grid);
-	}
-
-	time_before = OS::get_singleton()->get_ticks_usec();
-	dmc::polygonize_dual_grid(grid, voxels_access, _mesh_builder);
-	_stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
-
-	time_before = OS::get_singleton()->get_ticks_usec();
-	Ref<ArrayMesh> mesh = _mesh_builder.commit(mode == VoxelMesherDMC::MODE_WIREFRAME);
-	_stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
 
 	// TODO Marching squares skirts
 
