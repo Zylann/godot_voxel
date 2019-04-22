@@ -4,9 +4,44 @@
 #include "../voxel_buffer.h"
 #include "hermite_value.h"
 #include "mesh_builder.h"
+#include "object_pool.h"
 #include "scene/resources/mesh.h"
 
 namespace dmc {
+
+struct OctreeNode;
+typedef ObjectPool<OctreeNode> OctreeNodePool;
+
+// Octree used only for dual grid construction
+struct OctreeNode {
+
+	Vector3i origin;
+	int size; // Nodes are cubic
+	HermiteValue center_value;
+	OctreeNode *children[8];
+
+	OctreeNode() {
+		init();
+	}
+
+	inline void init() {
+		for (int i = 0; i < 8; ++i) {
+			children[i] = nullptr;
+		}
+	}
+
+	void recycle(OctreeNodePool &pool) {
+		for (int i = 0; i < 8; ++i) {
+			if (children[i]) {
+				pool.recycle(children[i]);
+			}
+		}
+	}
+
+	inline bool has_children() const {
+		return children[0] != nullptr;
+	}
+};
 
 struct DualCell {
 	Vector3 corners[8];
@@ -49,6 +84,7 @@ protected:
 private:
 	dmc::MeshBuilder _mesh_builder;
 	dmc::DualGrid _dual_grid;
+	dmc::OctreeNodePool _octree_node_pool;
 
 	struct Stats {
 		real_t octree_build_time;

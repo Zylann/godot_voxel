@@ -16,49 +16,7 @@ const float SURFACE_ISO_LEVEL = 0.0;
 const float NEAR_SURFACE_FACTOR = 2.0;
 const float SQRT3 = 1.7320508075688772;
 
-// Octree used only for dual grid construction
-struct OctreeNode {
-
-	Vector3i origin;
-	int size; // Nodes are cubic
-	HermiteValue center_value;
-	OctreeNode *children[8];
-
-	OctreeNode() {
-		for (int i = 0; i < 8; ++i) {
-			children[i] = nullptr;
-		}
-	}
-
-	~OctreeNode() {
-		for (int i = 0; i < 8; ++i) {
-			if (children[i]) {
-				memdelete(children[i]);
-			}
-		}
-	}
-
-	inline bool has_children() const {
-		return children[0] != nullptr;
-	}
-};
-
-void split(OctreeNode *node) {
-
-	CRASH_COND(node->has_children());
-	CRASH_COND(node->size == 1);
-
-	for (int i = 0; i < 8; ++i) {
-
-		OctreeNode *child = memnew(OctreeNode);
-		const int *v = OctreeUtility::g_octant_position[i];
-		child->size = node->size / 2;
-		child->origin = node->origin + Vector3i(v[0], v[1], v[2]) * child->size;
-
-		node->children[i] = child;
-	}
-}
-
+// Helper to modify padded voxel data
 struct VoxelAccess {
 
 	const VoxelBuffer &buffer;
@@ -190,28 +148,63 @@ inline Vector3 get_center(const OctreeNode *node) {
 	return node->origin.to_vec3() + 0.5 * Vector3(node->size, node->size, node->size);
 }
 
-void generate_octree_top_down(OctreeNode *node, const VoxelAccess &voxels, float geometric_error) {
+class OctreeBuilderTopDown {
+public:
+	OctreeBuilderTopDown(const VoxelAccess &voxels, float geometry_error, OctreeNodePool &pool) :
+			_voxels(voxels),
+			_geometry_error(geometry_error),
+			_pool(pool) {
+	}
 
-	if (can_split(node->origin, node->size, voxels, geometric_error)) {
+	OctreeNode *build(Vector3i origin, int size) {
+		OctreeNode *root = _pool.create();
+		root->origin = origin;
+		root->size = size;
+		build(root);
+		return root;
+	}
 
-		split(node);
+private:
+	void build(OctreeNode *node) {
+		if (can_split(node->origin, node->size, _voxels, _geometry_error)) {
+			split(node);
+			for (int i = 0; i < 8; ++i) {
+				build(node->children[i]);
+			}
+		} else {
+			node->center_value = _voxels.get_interpolated_hermite_value(get_center(node));
+		}
+	}
+
+	void split(OctreeNode *node) {
+
+		CRASH_COND(node->has_children());
+		CRASH_COND(node->size == 1);
 
 		for (int i = 0; i < 8; ++i) {
-			generate_octree_top_down(node->children[i], voxels, geometric_error);
+
+			OctreeNode *child = _pool.create();
+			const int *v = OctreeUtility::g_octant_position[i];
+			child->size = node->size / 2;
+			child->origin = node->origin + Vector3i(v[0], v[1], v[2]) * child->size;
+
+			node->children[i] = child;
 		}
-
-	} else {
-
-		node->center_value = voxels.get_interpolated_hermite_value(get_center(node));
 	}
-}
+
+private:
+	const VoxelAccess &_voxels;
+	const float _geometry_error;
+	OctreeNodePool &_pool;
+};
 
 // Builds the octree bottom-up, to ensure that no detail can be missed by a top-down approach.
 class OctreeBuilderBottomUp {
 public:
-	OctreeBuilderBottomUp(const VoxelAccess &voxels, float geometry_error) :
+	OctreeBuilderBottomUp(const VoxelAccess &voxels, float geometry_error, OctreeNodePool &pool) :
 			_voxels(voxels),
-			_geometry_error(geometry_error) {
+			_geometry_error(geometry_error),
+			_pool(pool) {
 	}
 
 	OctreeNode *build(Vector3i node_origin, int node_size) const {
@@ -235,7 +228,7 @@ public:
 			// No nodes, test if the 8 octants are worth existing (this could be leaves)
 			if (can_split(node_origin, node_size, _voxels, _geometry_error)) {
 
-				node = memnew(OctreeNode);
+				node = _pool.create();
 				node->origin = node_origin;
 				node->size = node_size;
 
@@ -252,7 +245,7 @@ public:
 			// Some child nodes were deemed worthy of existence,
 			// create their siblings at the same detail level
 
-			node = memnew(OctreeNode);
+			node = _pool.create();
 			node->origin = node_origin;
 			node->size = node_size;
 
@@ -271,7 +264,7 @@ public:
 private:
 	inline OctreeNode *create_child(Vector3i parent_origin, int parent_size, int i) const {
 		const int *dir = OctreeUtility::g_octant_position[i];
-		OctreeNode *child = memnew(OctreeNode);
+		OctreeNode *child = _pool.create();
 		child->size = parent_size / 2;
 		child->origin = parent_origin + child->size * Vector3i(dir[0], dir[1], dir[2]);
 		child->center_value = _voxels.get_interpolated_hermite_value(get_center(child));
@@ -281,6 +274,7 @@ private:
 private:
 	const VoxelAccess &_voxels;
 	const float _geometry_error;
+	OctreeNodePool &_pool;
 };
 
 template <typename Action_T>
@@ -1285,13 +1279,11 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 	// because all voxels are queried.
 	//
 #ifdef BUILD_OCTREE_BOTTOM_UP
-	dmc::OctreeBuilderBottomUp octree_builder(voxels_access, geometric_error);
+	dmc::OctreeBuilderBottomUp octree_builder(voxels_access, geometric_error, _octree_node_pool);
 	dmc::OctreeNode *root = octree_builder.build(Vector3i(), chunk_size);
 #else
-	dmc::OctreeNode *root = memnew(dmc::OctreeNode);
-	root->origin = Vector3i();
-	root->size = chunk_size;
-	dmc::generate_octree_top_down(root, voxels_access, geometric_error);
+	dmc::OctreeBuilderTopDown octree_builder(voxels_access, geometric_error, _octree_node_pool);
+	dmc::OctreeNode *root = octree_builder.build(Vector3i(), chunk_size);
 #endif
 	// TODO OctreeNode pool to stop allocating. Or, flat octree?
 
@@ -1331,7 +1323,7 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 			_dual_grid.cells.clear();
 		}
 
-		memdelete(root);
+		root->recycle(_octree_node_pool);
 	}
 
 	// TODO Marching squares skirts
