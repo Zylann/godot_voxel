@@ -206,16 +206,6 @@ void generate_octree_top_down(OctreeNode *node, const VoxelAccess &voxels, float
 	}
 }
 
-template <typename Action_T>
-void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
-	a(root, depth);
-	for (int i = 0; i < 8; ++i) {
-		if (root->children[i]) {
-			foreach_node(root->children[i], a, depth + 1);
-		}
-	}
-}
-
 // Builds the octree bottom-up, to ensure that no detail can be missed by a top-down approach.
 class OctreeBuilderBottomUp {
 public:
@@ -292,6 +282,16 @@ private:
 	const VoxelAccess &_voxels;
 	const float _geometry_error;
 };
+
+template <typename Action_T>
+void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
+	a(root, depth);
+	for (int i = 0; i < 8; ++i) {
+		if (root->children[i]) {
+			foreach_node(root->children[i], a, depth + 1);
+		}
+	}
+}
 
 Ref<ArrayMesh> generate_debug_octree_mesh(OctreeNode *root) {
 
