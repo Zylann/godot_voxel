@@ -8,9 +8,9 @@
 namespace dmc {
 
 struct HermiteValue {
-	// TODO Rename isolevel
+	// TODO Rename distance, or change usage to be a density
 	float value; // Signed "distance" to surface
-	Vector3 gradient; // "Normal" of the volume
+	Vector3 gradient; // Derivation of the density
 
 	HermiteValue() :
 			value(1.0) {

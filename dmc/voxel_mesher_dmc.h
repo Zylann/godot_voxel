@@ -16,6 +16,7 @@ public:
 	};
 
 	Ref<ArrayMesh> build_mesh(const VoxelBuffer &voxels, real_t geometric_error, Mode mode);
+	Dictionary get_stats() const;
 
 protected:
 	static void _bind_methods();
@@ -23,6 +24,15 @@ protected:
 
 private:
 	dmc::MeshBuilder _mesh_builder;
+
+	struct Stats {
+		real_t octree_build_time;
+		real_t dualgrid_derivation_time;
+		real_t meshing_time;
+		real_t commit_time;
+	};
+
+	Stats _stats;
 };
 
 VARIANT_ENUM_CAST(VoxelMesherDMC::Mode)

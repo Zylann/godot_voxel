@@ -4,6 +4,7 @@
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
 #include "octree_utility.h"
+#include <core/os/os.h>
 
 // Dual marching cubes
 // Algorithm taken from https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/
@@ -1174,7 +1175,7 @@ inline Vector3 interpolate(const Vector3 &v0, const Vector3 &v1, const HermiteVa
 	return v0 + mu * (v1 - v0);
 }
 
-Ref<ArrayMesh> polygonize_dual_grid(const DualGrid &grid, const VoxelAccess &voxels, bool wireframe, MeshBuilder &mesh_builder) {
+void polygonize_dual_grid(const DualGrid &grid, const VoxelAccess &voxels, MeshBuilder &mesh_builder) {
 
 	for (int dci = 0; dci < grid.cells.size(); ++dci) {
 
@@ -1259,8 +1260,6 @@ Ref<ArrayMesh> polygonize_dual_grid(const DualGrid &grid, const VoxelAccess &vox
 					intersection_normals[MarchingCubes::mc_triangles[case_index][i + 2]]);
 		}
 	}
-
-	return mesh_builder.commit(wireframe);
 }
 
 } // namespace dmc
@@ -1285,6 +1284,8 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 
 	// Construct an intermediate to handle padding transparently
 	dmc::VoxelAccess voxels_access(voxels, Vector3i(padding));
+
+	real_t time_before = OS::get_singleton()->get_ticks_usec();
 
 	// In an ideal world, a tiny sphere placed in the middle of an empty SDF volume will
 	// cause corners data to change so that they indicate distance to it.
@@ -1312,6 +1313,8 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 	dmc::generate_octree_top_down(root, voxels_access, geometric_error);
 #endif
 
+	_stats.octree_build_time = OS::get_singleton()->get_ticks_usec() - time_before;
+
 	if (root == nullptr) {
 		return Ref<ArrayMesh>();
 	}
@@ -1323,16 +1326,29 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 		return mesh;
 	}
 
+	time_before = OS::get_singleton()->get_ticks_usec();
+
 	dmc::DualGrid grid;
 	dmc::DualGridGenerator dual_grid_generator(grid, root->size);
 	dual_grid_generator.node_proc(root);
+
+	_stats.dualgrid_derivation_time = OS::get_singleton()->get_ticks_usec() - time_before;
+
 	memdelete(root);
+
 	// TODO Handle non-subdivided octree
 	if (mode == VoxelMesherDMC::MODE_DEBUG_DUAL_GRID) {
 		return dmc::generate_debug_dual_grid_mesh(grid);
 	}
 
-	Ref<ArrayMesh> mesh = dmc::polygonize_dual_grid(grid, voxels_access, mode == VoxelMesherDMC::MODE_WIREFRAME, _mesh_builder);
+	time_before = OS::get_singleton()->get_ticks_usec();
+	dmc::polygonize_dual_grid(grid, voxels_access, _mesh_builder);
+	_stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
+
+	time_before = OS::get_singleton()->get_ticks_usec();
+	Ref<ArrayMesh> mesh = _mesh_builder.commit(mode == VoxelMesherDMC::MODE_WIREFRAME);
+	_stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
+
 	// TODO Marching squares skirts
 
 	return mesh;
@@ -1343,9 +1359,19 @@ Ref<ArrayMesh> VoxelMesherDMC::_build_mesh_b(Ref<VoxelBuffer> voxels, real_t geo
 	return build_mesh(**voxels, geometric_error, mode);
 }
 
+Dictionary VoxelMesherDMC::get_stats() const {
+	Dictionary d;
+	d["octree_build_time"] = _stats.octree_build_time;
+	d["dualgrid_derivation_time"] = _stats.dualgrid_derivation_time;
+	d["meshing_time"] = _stats.meshing_time;
+	d["commit_time"] = _stats.commit_time;
+	return d;
+}
+
 void VoxelMesherDMC::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "geometric_error", "mode"), &VoxelMesherDMC::_build_mesh_b, DEFVAL(MODE_NORMAL));
+	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelMesherDMC::get_stats);
 
 	BIND_ENUM_CONSTANT(MODE_NORMAL);
 	BIND_ENUM_CONSTANT(MODE_WIREFRAME);
