@@ -58,6 +58,7 @@ void MeshBuilder::clear() {
 	_normals.clear();
 	_indices.clear();
 	_position_to_index.clear();
+	_reused_vertices = 0;
 }
 
 } // namespace dmc
