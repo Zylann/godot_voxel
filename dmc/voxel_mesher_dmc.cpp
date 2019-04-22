@@ -405,24 +405,24 @@ inline bool is_border_left(const OctreeNode *node) {
 	return node->origin.x == 0;
 }
 
-inline bool is_border_right(const OctreeNode *node, int rootSize) {
-	return node->origin.x + node->size == rootSize;
+inline bool is_border_right(const OctreeNode *node, int root_size) {
+	return node->origin.x + node->size == root_size;
 }
 
 inline bool is_border_bottom(const OctreeNode *node) {
 	return node->origin.y == 0;
 }
 
-inline bool is_border_top(const OctreeNode *node, int rootSize) {
-	return node->origin.y + node->size == rootSize;
+inline bool is_border_top(const OctreeNode *node, int root_size) {
+	return node->origin.y + node->size == root_size;
 }
 
 inline bool is_border_back(const OctreeNode *node) {
 	return node->origin.z == 0;
 }
 
-inline bool is_border_front(const OctreeNode *node, int rootSize) {
-	return node->origin.z + node->size == rootSize;
+inline bool is_border_front(const OctreeNode *node, int root_size) {
+	return node->origin.z + node->size == root_size;
 }
 
 inline Vector3 get_center_back(const OctreeNode *node) {
