@@ -71,4 +71,12 @@ inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4,
 	return res;
 }
 
+inline float min(const float &a, const float &b) {
+	return a < b ? a : b;
+}
+
+inline float max(const float &a, const float &b) {
+	return a > b ? a : b;
+}
+
 #endif // HEADER_VOXEL_UTILITY_H

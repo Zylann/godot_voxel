@@ -3,6 +3,7 @@
 #include "transvoxel/voxel_mesher_transvoxel.h"
 #include "voxel_box_mover.h"
 #include "voxel_buffer.h"
+#include "voxel_isosurface_tool.h"
 #include "voxel_library.h"
 #include "voxel_map.h"
 #include "voxel_mesher.h"
@@ -23,8 +24,8 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelProviderImage>();
 	ClassDB::register_class<VoxelMesherTransvoxel>();
 	ClassDB::register_class<VoxelBoxMover>();
-
 	ClassDB::register_class<VoxelMesherDMC>();
+	ClassDB::register_class<VoxelIsoSurfaceTool>();
 }
 
 void unregister_voxel_types() {
