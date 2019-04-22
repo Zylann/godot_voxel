@@ -65,6 +65,7 @@ public:
 	_FORCE_INLINE_ void set_voxel(int value, const Vector3i pos, unsigned int channel_index = 0) { set_voxel(value, pos.x, pos.y, pos.z, channel_index); }
 
 	void fill(int defval, unsigned int channel_index = 0);
+	_FORCE_INLINE_ void fill_iso(float value, unsigned int channel = 0) { fill(iso_to_byte(value), channel); }
 	void fill_area(int defval, Vector3i min, Vector3i max, unsigned int channel_index = 0);
 
 	bool is_uniform(unsigned int channel_index = 0) const;
