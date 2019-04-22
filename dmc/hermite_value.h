@@ -17,19 +17,28 @@ struct HermiteValue {
 	}
 };
 
-inline HermiteValue get_hermite_value(const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
+inline float get_isolevel_clamped(const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
 
 	x = x >= voxels.get_size().x ? voxels.get_size().x - 1 : x;
-	x = x >= voxels.get_size().y ? voxels.get_size().y - 1 : x;
-	x = x >= voxels.get_size().z ? voxels.get_size().z - 1 : x;
+	y = y >= voxels.get_size().y ? voxels.get_size().y - 1 : y;
+	z = z >= voxels.get_size().z ? voxels.get_size().z - 1 : z;
+
+	return voxels.get_voxel(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
+}
+
+inline HermiteValue get_hermite_value(const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
 
 	HermiteValue v;
 
 	v.value = voxels.get_voxel_iso(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
-	// TODO It looks like this gradient should not be a normalized vector!
-	v.gradient.x = voxels.get_voxel_iso(x, y, z, VoxelBuffer::CHANNEL_GRADIENT_X);
-	v.gradient.y = voxels.get_voxel_iso(x, y, z, VoxelBuffer::CHANNEL_GRADIENT_Y);
-	v.gradient.z = voxels.get_voxel_iso(x, y, z, VoxelBuffer::CHANNEL_GRADIENT_Z);
+
+	Vector3 gradient;
+
+	gradient.x = get_isolevel_clamped(voxels, x + 1, y, z) - get_isolevel_clamped(voxels, x - 1, y, z);
+	gradient.y = get_isolevel_clamped(voxels, x, y + 1, z) - get_isolevel_clamped(voxels, x, y - 1, z);
+	gradient.z = get_isolevel_clamped(voxels, x, y, z + 1) - get_isolevel_clamped(voxels, x, y, z - 1);
+
+	v.gradient = gradient;
 
 	return v;
 }
@@ -43,6 +52,8 @@ inline HermiteValue get_interpolated_hermite_value(const VoxelBuffer &voxels, Ve
 	int x1 = static_cast<int>(Math::ceil(pos.x));
 	int y1 = static_cast<int>(Math::ceil(pos.y));
 	int z1 = static_cast<int>(Math::ceil(pos.z));
+
+	// TODO There are lots of hidden grid accesses here, could be optimized
 
 	HermiteValue v0 = get_hermite_value(voxels, x0, y0, z0);
 	HermiteValue v1 = get_hermite_value(voxels, x1, y0, z0);

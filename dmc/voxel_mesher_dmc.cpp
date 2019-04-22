@@ -92,11 +92,11 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 	int channel = VoxelBuffer::CHANNEL_ISOLEVEL;
 
 	// Don't split if nothing is inside, i.e isolevel distance is greater than the size of the cube we are in
-	//	Vector3i center_pos = node_origin + Vector3i(node_size / 2);
-	//	HermiteValue center_value = voxels.get_hermite_value(center_pos.x, center_pos.y, center_pos.z);
-	//	if (Math::abs(center_value.value) > SQRT3 * (float)node_size) {
-	//		return false;
-	//	}
+	Vector3i center_pos = node_origin + Vector3i(node_size / 2);
+	HermiteValue center_value = voxels.get_hermite_value(center_pos.x, center_pos.y, center_pos.z);
+	if (Math::abs(center_value.value) > SQRT3 * (float)node_size) {
+		return false;
+	}
 
 	// Fighting with Clang-format here /**/
 

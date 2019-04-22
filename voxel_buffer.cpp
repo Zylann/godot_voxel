@@ -281,79 +281,6 @@ void VoxelBuffer::delete_channel(int i) {
 	channel.data = NULL;
 }
 
-void VoxelBuffer::compute_gradients() {
-
-	const Channel &iso_channel = _channels[CHANNEL_ISOLEVEL];
-
-	const int gradient_x_channel = CHANNEL_GRADIENT_X;
-	const int gradient_y_channel = CHANNEL_GRADIENT_Y;
-	const int gradient_z_channel = CHANNEL_GRADIENT_Z;
-
-	if (iso_channel.data == nullptr) {
-
-		// The channel is uniform, gradient will be zero
-		fill(0, gradient_x_channel);
-		fill(0, gradient_y_channel);
-		fill(0, gradient_z_channel);
-
-	} else {
-
-		if (_channels[gradient_x_channel].data == nullptr) {
-			create_channel_noinit(gradient_x_channel, _size);
-		}
-		if (_channels[gradient_y_channel].data == nullptr) {
-			create_channel_noinit(gradient_y_channel, _size);
-		}
-		if (_channels[gradient_z_channel].data == nullptr) {
-			create_channel_noinit(gradient_z_channel, _size);
-		}
-
-		Channel &gx_channel = _channels[gradient_x_channel];
-		Channel &gy_channel = _channels[gradient_y_channel];
-		Channel &gz_channel = _channels[gradient_z_channel];
-
-		const int padding = 1;
-
-		const int min_x = padding;
-		const int min_y = padding;
-		const int min_z = padding;
-
-		const int max_z = _size.z - padding;
-		const int max_x = _size.x - padding;
-		const int max_y = _size.y - padding;
-
-		const int lookup_left = -_size.x;
-		const int lookup_right = -lookup_left;
-		const int lookup_back = -_size.z * _size.x;
-		const int lookup_front = -lookup_back;
-		const int lookup_down = -1;
-		const int lookup_up = -lookup_down;
-
-		for (int z = min_z; z < max_z; ++z) {
-			for (int x = min_x; x < max_x; ++x) {
-
-				int i = index(x, min_y, z);
-
-				for (int y = min_y; y < max_y; ++y) {
-
-					Vector3 v(
-							byte_to_iso(iso_channel.data[i + lookup_right]) - byte_to_iso(iso_channel.data[i + lookup_left]),
-							byte_to_iso(iso_channel.data[i + lookup_up]) - byte_to_iso(iso_channel.data[i + lookup_down]),
-							byte_to_iso(iso_channel.data[i + lookup_front]) - byte_to_iso(iso_channel.data[i + lookup_back]));
-
-					v.normalize();
-
-					gx_channel.data[i] = iso_to_byte(v.x);
-					gy_channel.data[i] = iso_to_byte(v.y);
-					gz_channel.data[i] = iso_to_byte(v.z);
-
-					++i;
-				}
-			}
-		}
-	}
-}
-
 void VoxelBuffer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::create);
@@ -377,16 +304,15 @@ void VoxelBuffer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::optimize);
-	ClassDB::bind_method(D_METHOD("compute_gradients"), &VoxelBuffer::compute_gradients);
 
 	BIND_ENUM_CONSTANT(CHANNEL_TYPE);
 	BIND_ENUM_CONSTANT(CHANNEL_ISOLEVEL);
-	BIND_ENUM_CONSTANT(CHANNEL_GRADIENT_X);
-	BIND_ENUM_CONSTANT(CHANNEL_GRADIENT_Y);
-	BIND_ENUM_CONSTANT(CHANNEL_GRADIENT_Z);
-	BIND_ENUM_CONSTANT(CHANNEL_DATA);
 	BIND_ENUM_CONSTANT(CHANNEL_DATA2);
 	BIND_ENUM_CONSTANT(CHANNEL_DATA3);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA4);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA5);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA6);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA7);
 	BIND_ENUM_CONSTANT(MAX_CHANNELS);
 }
 

@@ -16,15 +16,22 @@ public:
 	enum ChannelId {
 		CHANNEL_TYPE = 0,
 		CHANNEL_ISOLEVEL,
-		CHANNEL_GRADIENT_X,
-		CHANNEL_GRADIENT_Y,
-		CHANNEL_GRADIENT_Z,
-		CHANNEL_DATA,
 		CHANNEL_DATA2,
 		CHANNEL_DATA3,
+		CHANNEL_DATA4,
+		CHANNEL_DATA5,
+		CHANNEL_DATA6,
+		CHANNEL_DATA7,
 		// Arbitrary value, 8 should be enough. Tweak for your needs.
 		MAX_CHANNELS
 	};
+
+	// TODO Quantification options
+	//	enum ChannelFormat {
+	//		FORMAT_I8_Q255U, // 0..255 integer
+	//		FORMAT_F8_Q1S, // -1..1 float stored in 8 bits
+	//		FORMAT_F16_Q128S // -128..128 float stored in 16 bits
+	//	};
 
 	// Converts -1..1 float into 0..255 integer
 	static inline int iso_to_byte(real_t iso) {
@@ -93,8 +100,6 @@ public:
 	}
 
 	uint8_t *get_channel_raw(unsigned int channel_index) const;
-
-	void compute_gradients();
 
 private:
 	void create_channel_noinit(int i, Vector3i size);
