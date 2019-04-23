@@ -1280,6 +1280,8 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels) {
 	// - Gradients must be precalculated
 	// - The non-padded area size is cubic and power of two
 
+	_stats = { 0 };
+
 	int padding = 1;
 	const Vector3i buffer_size = voxels.get_size();
 	// Taking previous power of two because the algorithm uses an integer cubic octree, and data should be padded
