@@ -54,6 +54,11 @@ inline HermiteValue get_interpolated_hermite_value(const VoxelBuffer &voxels, Ve
 	int z1 = static_cast<int>(Math::ceil(pos.z));
 
 	// TODO There are lots of hidden grid accesses here, could be optimized
+	//
+	//   x x     x: accessed once, only because of gradient computation
+	// x X X x   X: accessed for both value and gradient, multiple times for gradient
+	// x X X x
+	//   x x     (and this, in 3D)
 
 	HermiteValue v0 = get_hermite_value(voxels, x0, y0, z0);
 	HermiteValue v1 = get_hermite_value(voxels, x1, y0, z0);

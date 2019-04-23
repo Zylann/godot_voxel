@@ -76,7 +76,8 @@ public:
 
 	enum OctreeMode {
 		OCTREE_BOTTOM_UP,
-		OCTREE_TOP_DOWN
+		OCTREE_TOP_DOWN,
+		OCTREE_NONE
 	};
 
 	VoxelMesherDMC();
