@@ -67,24 +67,43 @@ struct DualGrid {
 class VoxelMesherDMC : public Reference {
 	GDCLASS(VoxelMesherDMC, Reference)
 public:
-	enum Mode {
-		MODE_NORMAL,
-		MODE_WIREFRAME,
-		MODE_DEBUG_OCTREE,
-		MODE_DEBUG_DUAL_GRID
+	enum MeshMode {
+		MESH_NORMAL,
+		MESH_WIREFRAME,
+		MESH_DEBUG_OCTREE,
+		MESH_DEBUG_DUAL_GRID
 	};
 
-	Ref<ArrayMesh> build_mesh(const VoxelBuffer &voxels, real_t geometric_error, Mode mode);
+	enum OctreeMode {
+		OCTREE_BOTTOM_UP,
+		OCTREE_TOP_DOWN
+	};
+
+	VoxelMesherDMC();
+
+	void set_mesh_mode(MeshMode mode);
+	MeshMode get_mesh_mode() const;
+
+	void set_octree_mode(OctreeMode mode);
+	OctreeMode get_octree_mode() const;
+
+	void set_geometric_error(real_t geometric_error);
+	float get_geometric_error() const;
+
+	Ref<ArrayMesh> build_mesh(const VoxelBuffer &voxels);
 	Dictionary get_stats() const;
 
 protected:
 	static void _bind_methods();
-	Ref<ArrayMesh> _build_mesh_b(Ref<VoxelBuffer> voxels, real_t geometric_error, Mode mode);
+	Ref<ArrayMesh> _build_mesh_b(Ref<VoxelBuffer> voxels);
 
 private:
 	dmc::MeshBuilder _mesh_builder;
 	dmc::DualGrid _dual_grid;
 	dmc::OctreeNodePool _octree_node_pool;
+	real_t _geometric_error;
+	MeshMode _mesh_mode;
+	OctreeMode _octree_mode;
 
 	struct Stats {
 		real_t octree_build_time;
@@ -96,6 +115,7 @@ private:
 	Stats _stats;
 };
 
-VARIANT_ENUM_CAST(VoxelMesherDMC::Mode)
+VARIANT_ENUM_CAST(VoxelMesherDMC::OctreeMode)
+VARIANT_ENUM_CAST(VoxelMesherDMC::MeshMode)
 
 #endif // VOXEL_MESHER_DMC_H

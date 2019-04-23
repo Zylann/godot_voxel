@@ -1241,7 +1241,39 @@ void polygonize_dual_grid(const DualGrid &grid, const VoxelAccess &voxels, MeshB
 
 #define BUILD_OCTREE_BOTTOM_UP
 
-Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geometric_error, Mode mode) {
+VoxelMesherDMC::VoxelMesherDMC() {
+
+	_geometric_error = 0.1;
+	_mesh_mode = MESH_NORMAL;
+	_octree_mode = OCTREE_BOTTOM_UP;
+	_stats = { 0 };
+}
+
+void VoxelMesherDMC::set_mesh_mode(MeshMode mode) {
+	_mesh_mode = mode;
+}
+
+VoxelMesherDMC::MeshMode VoxelMesherDMC::get_mesh_mode() const {
+	return _mesh_mode;
+}
+
+void VoxelMesherDMC::set_octree_mode(OctreeMode mode) {
+	_octree_mode = mode;
+}
+
+VoxelMesherDMC::OctreeMode VoxelMesherDMC::get_octree_mode() const {
+	return _octree_mode;
+}
+
+void VoxelMesherDMC::set_geometric_error(real_t geometric_error) {
+	_geometric_error = geometric_error;
+}
+
+float VoxelMesherDMC::get_geometric_error() const {
+	return _geometric_error;
+}
+
+Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels) {
 
 	// Requirements:
 	// - Voxel data must be padded
@@ -1278,14 +1310,18 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 	// Building the octree bottom-up ensures to always catch voxels of any size, but will be a bit slower
 	// because all voxels are queried.
 	//
-#ifdef BUILD_OCTREE_BOTTOM_UP
-	dmc::OctreeBuilderBottomUp octree_builder(voxels_access, geometric_error, _octree_node_pool);
-	dmc::OctreeNode *root = octree_builder.build(Vector3i(), chunk_size);
-#else
-	dmc::OctreeBuilderTopDown octree_builder(voxels_access, geometric_error, _octree_node_pool);
-	dmc::OctreeNode *root = octree_builder.build(Vector3i(), chunk_size);
-#endif
-	// TODO OctreeNode pool to stop allocating. Or, flat octree?
+	// TODO This option might disappear once I find a good enough solution
+	dmc::OctreeNode *root;
+	if (_octree_mode == OCTREE_BOTTOM_UP) {
+
+		dmc::OctreeBuilderBottomUp octree_builder(voxels_access, _geometric_error, _octree_node_pool);
+		root = octree_builder.build(Vector3i(), chunk_size);
+
+	} else {
+
+		dmc::OctreeBuilderTopDown octree_builder(voxels_access, _geometric_error, _octree_node_pool);
+		root = octree_builder.build(Vector3i(), chunk_size);
+	}
 
 	_stats.octree_build_time = OS::get_singleton()->get_ticks_usec() - time_before;
 
@@ -1293,7 +1329,7 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 
 	if (root != nullptr) {
 
-		if (mode == VoxelMesherDMC::MODE_DEBUG_OCTREE) {
+		if (_mesh_mode == MESH_DEBUG_OCTREE) {
 			mesh = dmc::generate_debug_octree_mesh(root);
 
 		} else {
@@ -1306,7 +1342,7 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 
 			_stats.dualgrid_derivation_time = OS::get_singleton()->get_ticks_usec() - time_before;
 
-			if (mode == VoxelMesherDMC::MODE_DEBUG_DUAL_GRID) {
+			if (_mesh_mode == MESH_DEBUG_DUAL_GRID) {
 				mesh = dmc::generate_debug_dual_grid_mesh(_dual_grid);
 
 			} else {
@@ -1316,7 +1352,7 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 				_stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
 
 				time_before = OS::get_singleton()->get_ticks_usec();
-				mesh = _mesh_builder.commit(mode == VoxelMesherDMC::MODE_WIREFRAME);
+				mesh = _mesh_builder.commit(_mesh_mode == MESH_WIREFRAME);
 				_stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
 			}
 
@@ -1331,9 +1367,9 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels, real_t geom
 	return mesh;
 }
 
-Ref<ArrayMesh> VoxelMesherDMC::_build_mesh_b(Ref<VoxelBuffer> voxels, real_t geometric_error, Mode mode) {
+Ref<ArrayMesh> VoxelMesherDMC::_build_mesh_b(Ref<VoxelBuffer> voxels) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
-	return build_mesh(**voxels, geometric_error, mode);
+	return build_mesh(**voxels);
 }
 
 Dictionary VoxelMesherDMC::get_stats() const {
@@ -1347,11 +1383,23 @@ Dictionary VoxelMesherDMC::get_stats() const {
 
 void VoxelMesherDMC::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "geometric_error", "mode"), &VoxelMesherDMC::_build_mesh_b, DEFVAL(MODE_NORMAL));
+	ClassDB::bind_method(D_METHOD("set_mesh_mode", "mode"), &VoxelMesherDMC::set_mesh_mode);
+	ClassDB::bind_method(D_METHOD("get_mesh_mode"), &VoxelMesherDMC::get_mesh_mode);
+
+	ClassDB::bind_method(D_METHOD("set_octree_mode", "mode"), &VoxelMesherDMC::set_octree_mode);
+	ClassDB::bind_method(D_METHOD("get_octree_mode"), &VoxelMesherDMC::get_octree_mode);
+
+	ClassDB::bind_method(D_METHOD("set_geometric_error", "error"), &VoxelMesherDMC::set_geometric_error);
+	ClassDB::bind_method(D_METHOD("get_geometric_error"), &VoxelMesherDMC::get_geometric_error);
+
+	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer"), &VoxelMesherDMC::_build_mesh_b);
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelMesherDMC::get_stats);
 
-	BIND_ENUM_CONSTANT(MODE_NORMAL);
-	BIND_ENUM_CONSTANT(MODE_WIREFRAME);
-	BIND_ENUM_CONSTANT(MODE_DEBUG_OCTREE);
-	BIND_ENUM_CONSTANT(MODE_DEBUG_DUAL_GRID);
+	BIND_ENUM_CONSTANT(MESH_NORMAL);
+	BIND_ENUM_CONSTANT(MESH_WIREFRAME);
+	BIND_ENUM_CONSTANT(MESH_DEBUG_OCTREE);
+	BIND_ENUM_CONSTANT(MESH_DEBUG_DUAL_GRID);
+
+	BIND_ENUM_CONSTANT(OCTREE_BOTTOM_UP);
+	BIND_ENUM_CONSTANT(OCTREE_TOP_DOWN);
 }
