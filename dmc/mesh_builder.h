@@ -2,8 +2,8 @@
 #define MESH_BUILDER_H
 
 #include "../utility.h"
+#include <core/map.h>
 #include <scene/resources/mesh.h>
-#include <map>
 #include <vector>
 
 namespace dmc {
@@ -18,15 +18,17 @@ public:
 
 		int i = 0;
 
-		if (_position_to_index.find(position) != _position_to_index.end()) {
+		Map<Vector3, int>::Element *e = _position_to_index.find(position);
 
-			i = _position_to_index[position];
+		if (e) {
+
+			i = e->get();
 			++_reused_vertices;
 
 		} else {
 
 			i = _positions.size();
-			_position_to_index[position] = i;
+			_position_to_index.insert(position, i);
 
 			_positions.push_back(position);
 			_normals.push_back(normal);
@@ -44,7 +46,7 @@ private:
 	std::vector<Vector3> _positions;
 	std::vector<Vector3> _normals;
 	std::vector<int> _indices;
-	std::map<Vector3, int> _position_to_index;
+	Map<Vector3, int> _position_to_index;
 	int _reused_vertices;
 };
 
