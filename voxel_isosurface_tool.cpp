@@ -166,7 +166,7 @@ void VoxelIsoSurfaceTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius", "op"), &VoxelIsoSurfaceTool::do_sphere, DEFVAL(OP_ADD));
 	ClassDB::bind_method(D_METHOD("do_plane", "plane", "op"), &VoxelIsoSurfaceTool::do_plane, DEFVAL(OP_ADD));
 	ClassDB::bind_method(D_METHOD("do_cube", "transform", "extents", "op"), &VoxelIsoSurfaceTool::do_cube, DEFVAL(OP_ADD));
-	ClassDB::bind_method(D_METHOD("do_heightmap", "heightmap", "offset", "vertical_scale", "op"), &VoxelIsoSurfaceTool::do_cube, DEFVAL(OP_ADD));
+	ClassDB::bind_method(D_METHOD("do_heightmap", "heightmap", "offset", "vertical_scale", "op"), &VoxelIsoSurfaceTool::do_heightmap, DEFVAL(OP_ADD));
 
 	BIND_ENUM_CONSTANT(OP_ADD);
 	BIND_ENUM_CONSTANT(OP_SUBTRACT);
