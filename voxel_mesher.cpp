@@ -1,7 +1,7 @@
 #include "voxel_mesher.h"
-#include "voxel_library.h"
 #include "cube_tables.h"
 #include "utility.h"
+#include "voxel_library.h"
 #include <core/os/os.h>
 
 template <typename T>
@@ -11,10 +11,9 @@ void raw_copy_to(PoolVector<T> &to, const Vector<T> &from) {
 	memcpy(w.ptr(), from.ptr(), from.size() * sizeof(T));
 }
 
-
-VoxelMesher::VoxelMesher()
-	: _baked_occlusion_darkness(0.8),
-	  _bake_occlusion(true) {}
+VoxelMesher::VoxelMesher() :
+		_baked_occlusion_darkness(0.8),
+		_bake_occlusion(true) {}
 
 void VoxelMesher::set_library(Ref<VoxelLibrary> library) {
 	_library = library;
@@ -58,17 +57,17 @@ Ref<ArrayMesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int
 	VoxelBuffer &buffer = **buffer_ref;
 	Array surfaces = build(buffer, channel, Vector3i(), buffer.get_size());
 
-	if(mesh.is_null())
+	if (mesh.is_null())
 		mesh.instance();
 
 	int surface = mesh->get_surface_count();
-	for(int i = 0; i < surfaces.size(); ++i) {
+	for (int i = 0; i < surfaces.size(); ++i) {
 
 		Array arrays = surfaces[i];
 		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
 
 		Ref<Material> material = materials[i];
-		if(material.is_valid()) {
+		if (material.is_valid()) {
 			mesh->surface_set_material(surface, material);
 		}
 	}
@@ -131,7 +130,6 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 	//     \   |  |
 	//      \    /
 	CRASH_COND(type_buffer == NULL);
-
 
 	//CRASH_COND(memarr_len(type_buffer) != buffer.get_volume() * sizeof(uint8_t));
 
@@ -308,7 +306,7 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 									int i = arrays.indices.size();
 									arrays.indices.resize(arrays.indices.size() + index_count);
 									int *w = arrays.indices.ptrw();
-									for(unsigned int j = 0; j < index_count; ++j) {
+									for (unsigned int j = 0; j < index_count; ++j) {
 										w[i++] = index_offset + ri[j];
 									}
 								}
@@ -337,16 +335,16 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 							arrays.positions.push_back(rv[i] + pos);
 						}
 
-						if(_bake_occlusion) {
+						if (_bake_occlusion) {
 							// TODO handle ambient occlusion on inner parts
-							arrays.colors.push_back(Color(1,1,1));
+							arrays.colors.push_back(Color(1, 1, 1));
 						}
 
 						const PoolVector<int> &indices = voxel.get_model_indices();
 						PoolVector<int>::Read ri = indices.read();
 						unsigned int index_count = indices.size();
 
-						for(unsigned int i = 0; i < index_count; ++i) {
+						for (unsigned int i = 0; i < index_count; ++i) {
 							arrays.indices.push_back(index_offset + ri[i]);
 						}
 
@@ -362,8 +360,8 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 
 	// Commit mesh
 
-//	print_line(String("Made mesh v: ") + String::num(_arrays[0].positions.size())
-//			+ String(", i: ") + String::num(_arrays[0].indices.size()));
+	//	print_line(String("Made mesh v: ") + String::num(_arrays[0].positions.size())
+	//			+ String(", i: ") + String::num(_arrays[0].indices.size()));
 
 	Array surfaces;
 

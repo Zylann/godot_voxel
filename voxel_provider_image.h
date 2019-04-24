@@ -4,6 +4,7 @@
 #include "voxel_provider.h"
 #include <core/image.h>
 
+// TODO Rename VoxelProviderHeightmap
 // Provides infinite tiling heightmap based on an image
 class VoxelProviderImage : public VoxelProvider {
 	GDCLASS(VoxelProviderImage, VoxelProvider)

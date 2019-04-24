@@ -1,12 +1,11 @@
 #include "voxel_map.h"
-#include "voxel_block.h"
 #include "cube_tables.h"
+#include "voxel_block.h"
 
 #include "core/os/os.h"
 
-
-VoxelMap::VoxelMap()
-	: _last_accessed_block(NULL) {
+VoxelMap::VoxelMap() :
+		_last_accessed_block(NULL) {
 
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
 	set_block_size_pow2(4);

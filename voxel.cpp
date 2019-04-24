@@ -4,15 +4,14 @@
 
 #define STRLEN(x) (sizeof(x) / sizeof(x[0]))
 
-Voxel::Voxel():
-	_library(0),
-	_id(-1),
-	_material_id(0),
-	_is_transparent(false),
-	_color(1.f, 1.f, 1.f),
-	_geometry_type(GEOMETRY_NONE),
-	_cube_geometry_padding_y(0)
-{}
+Voxel::Voxel() :
+		_library(0),
+		_id(-1),
+		_material_id(0),
+		_is_transparent(false),
+		_color(1.f, 1.f, 1.f),
+		_geometry_type(GEOMETRY_NONE),
+		_cube_geometry_padding_y(0) {}
 
 static Cube::Side name_to_side(const String &s) {
 	if (s == "left")
@@ -158,7 +157,7 @@ Voxel::GeometryType Voxel::get_geometry_type() const {
 }
 
 void Voxel::set_library(Ref<VoxelLibrary> lib) {
-	if(lib.is_null())
+	if (lib.is_null())
 		_library = 0;
 	else
 		_library = lib->get_instance_id();
@@ -167,7 +166,7 @@ void Voxel::set_library(Ref<VoxelLibrary> lib) {
 }
 
 VoxelLibrary *Voxel::get_library() const {
-	if(_library == 0)
+	if (_library == 0)
 		return NULL;
 	Object *v = ObjectDB::get_instance(_library);
 	if (v)
@@ -186,7 +185,7 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 			for (unsigned int i = 0; i < 4; ++i) {
 				int corner = Cube::g_side_corners[side][i];
 				Vector3 p = Cube::g_corner_position[corner];
-				if(p.y > 0.9)
+				if (p.y > 0.9)
 					p.y = sy;
 				w[i] = p;
 			}
@@ -213,7 +212,7 @@ void Voxel::set_cube_uv_side(int side, Vector2 tile_pos) {
 void Voxel::update_cube_uv_sides() {
 	VoxelLibrary *library = get_library();
 	//ERR_FAIL_COND(library == NULL);
-	if(library == NULL) {
+	if (library == NULL) {
 		// Not an error, the Voxel might have been created before the library, and can't be used without anyways
 		print_line("VoxelLibrary not set yet");
 		return;

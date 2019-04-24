@@ -1,8 +1,8 @@
 #ifndef VOXEL_PROVIDER_H
 #define VOXEL_PROVIDER_H
 
-#include <core/resource.h>
 #include "voxel_buffer.h"
+#include <core/resource.h>
 
 class VoxelProvider : public Resource {
 	GDCLASS(VoxelProvider, Resource)

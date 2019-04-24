@@ -37,7 +37,11 @@ public:
 		uint64_t max_time;
 		int remaining_blocks;
 
-		Stats() : first(true), min_time(0), max_time(0), remaining_blocks(0) {}
+		Stats() :
+				first(true),
+				min_time(0),
+				max_time(0),
+				remaining_blocks(0) {}
 	};
 
 	struct OutputData {

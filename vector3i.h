@@ -15,14 +15,20 @@ struct Vector3i {
 		int coords[3];
 	};
 
-	_FORCE_INLINE_ Vector3i()
-		: x(0), y(0), z(0) {}
+	_FORCE_INLINE_ Vector3i() :
+			x(0),
+			y(0),
+			z(0) {}
 
-	_FORCE_INLINE_ Vector3i(int xyz)
-		: x(xyz), y(xyz), z(xyz) {}
+	_FORCE_INLINE_ Vector3i(int xyz) :
+			x(xyz),
+			y(xyz),
+			z(xyz) {}
 
-	_FORCE_INLINE_ Vector3i(int px, int py, int pz)
-		: x(px), y(py), z(pz) {}
+	_FORCE_INLINE_ Vector3i(int px, int py, int pz) :
+			x(px),
+			y(py),
+			z(pz) {}
 
 	_FORCE_INLINE_ Vector3i(const Vector3i &other) {
 		*this = other;

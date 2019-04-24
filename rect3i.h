@@ -7,18 +7,21 @@
 class Rect3i {
 
 public:
-
 	Vector3i pos;
 	Vector3i size;
 
 	Rect3i() {}
 
-	Rect3i(Vector3i p_pos, Vector3i p_size) : pos(p_pos), size(p_size) {}
+	Rect3i(Vector3i p_pos, Vector3i p_size) :
+			pos(p_pos),
+			size(p_size) {}
 
-	Rect3i(const Rect3i &other) : pos(other.pos), size(other.size) {}
+	Rect3i(const Rect3i &other) :
+			pos(other.pos),
+			size(other.size) {}
 
 	static inline Rect3i from_center_extents(Vector3i center, Vector3i extents) {
-		return Rect3i(center - extents, 2*extents);
+		return Rect3i(center - extents, 2 * extents);
 	}
 
 	static inline Rect3i get_bounding_box(Rect3i a, Rect3i b) {
@@ -41,12 +44,12 @@ public:
 
 	bool inline contains(Vector3i p_pos) const {
 		Vector3i end = pos + size;
-		return p_pos.x >= pos.x
-			&& p_pos.y >= pos.y
-			&& p_pos.z >= pos.z
-			&& p_pos.x < end.x
-			&& p_pos.y < end.y
-			&& p_pos.z < end.z;
+		return p_pos.x >= pos.x &&
+			   p_pos.y >= pos.y &&
+			   p_pos.z >= pos.z &&
+			   p_pos.x < end.x &&
+			   p_pos.y < end.y &&
+			   p_pos.z < end.z;
 	}
 
 	String to_string() const {
@@ -68,10 +71,9 @@ public:
 			return false;
 		return true;
 	}
-
 };
 
-inline bool operator!=(const Rect3i & a, const Rect3i & b) {
+inline bool operator!=(const Rect3i &a, const Rect3i &b) {
 	return a.pos != b.pos || a.size != b.size;
 }
 

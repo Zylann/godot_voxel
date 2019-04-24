@@ -1,13 +1,13 @@
 #ifndef VOXEL_MESH_UPDATER_H
 #define VOXEL_MESH_UPDATER_H
 
-#include <core/vector.h>
 #include <core/os/semaphore.h>
 #include <core/os/thread.h>
+#include <core/vector.h>
 
+#include "transvoxel/voxel_mesher_transvoxel.h"
 #include "voxel_buffer.h"
 #include "voxel_mesher.h"
-#include "transvoxel/voxel_mesher_transvoxel.h"
 
 class VoxelMeshUpdater {
 public:
@@ -37,7 +37,11 @@ public:
 		uint64_t max_time;
 		uint32_t remaining_blocks;
 
-		Stats() : first(true), min_time(0), max_time(0), remaining_blocks(0) {}
+		Stats() :
+				first(true),
+				min_time(0),
+				max_time(0),
+				remaining_blocks(0) {}
 	};
 
 	struct Output {
@@ -49,8 +53,9 @@ public:
 		bool baked_ao;
 		float baked_ao_darkness;
 
-		MeshingParams(): baked_ao(true), baked_ao_darkness(0.75)
-		{ }
+		MeshingParams() :
+				baked_ao(true),
+				baked_ao_darkness(0.75) {}
 	};
 
 	VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams params);

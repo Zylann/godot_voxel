@@ -1,18 +1,18 @@
 #include "voxel_terrain.h"
-#include "voxel_map.h"
+#include "utility.h"
 #include "voxel_block.h"
+#include "voxel_map.h"
+#include "voxel_provider_test.h"
 #include "voxel_provider_thread.h"
 #include "voxel_raycast.h"
-#include "voxel_provider_test.h"
-#include "utility.h"
 
+#include <core/engine.h>
 #include <core/os/os.h>
 #include <scene/3d/mesh_instance.h>
-#include <core/engine.h>
 
-
-VoxelTerrain::VoxelTerrain()
-	: Spatial(), _generate_collisions(true) {
+VoxelTerrain::VoxelTerrain() :
+		Spatial(),
+		_generate_collisions(true) {
 
 	_map = Ref<VoxelMap>(memnew(VoxelMap));
 
@@ -28,10 +28,10 @@ VoxelTerrain::VoxelTerrain()
 
 VoxelTerrain::~VoxelTerrain() {
 	print_line("Destroying VoxelTerrain");
-	if(_provider_thread) {
+	if (_provider_thread) {
 		memdelete(_provider_thread);
 	}
-	if(_block_updater) {
+	if (_block_updater) {
 		memdelete(_block_updater);
 	}
 }
@@ -70,18 +70,18 @@ void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 }
 
 void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
-	if(provider != _provider) {
+	if (provider != _provider) {
 
-		if(_provider_thread) {
+		if (_provider_thread) {
 			memdelete(_provider_thread);
 			_provider_thread = NULL;
 		}
 
 		_provider = provider;
 		_provider_thread = memnew(VoxelProviderThread(_provider, _map->get_block_size_pow2()));
-//		Ref<VoxelProviderTest> test;
-//		test.instance();
-//		_provider_thread = memnew(VoxelProviderThread(test, _map->get_block_size_pow2()));
+		//		Ref<VoxelProviderTest> test;
+		//		test.instance();
+		//		_provider_thread = memnew(VoxelProviderThread(test, _map->get_block_size_pow2()));
 
 		// The whole map might change, so make all area dirty
 		// TODO Actually, we should regenerate the whole map, not just update all its blocks
@@ -108,7 +108,7 @@ void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
 #endif
 		_library = library;
 
-		if(_block_updater) {
+		if (_block_updater) {
 			memdelete(_block_updater);
 			_block_updater = NULL;
 		}
@@ -134,7 +134,7 @@ int VoxelTerrain::get_view_distance() const {
 void VoxelTerrain::set_view_distance(int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0)
 	int d = distance_in_voxels / _map->get_block_size();
-	if(d != _view_distance_blocks) {
+	if (d != _view_distance_blocks) {
 		print_line(String("View distance changed from ") + String::num(_view_distance_blocks) + String(" blocks to ") + String::num(d));
 		_view_distance_blocks = d;
 		// Blocks too far away will be removed in _process, same for blocks to load
@@ -174,10 +174,10 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 
 	VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(bpos);
 
-	if(state == NULL) {
+	if (state == NULL) {
 		// The block is not dirty, so it will either be loaded or updated
 
-		if(_map->has_block(bpos)) {
+		if (_map->has_block(bpos)) {
 
 			_blocks_pending_update.push_back(bpos);
 			_dirty_blocks[bpos] = BLOCK_UPDATE_NOT_SENT;
@@ -187,7 +187,7 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 			_dirty_blocks[bpos] = BLOCK_LOAD;
 		}
 
-	} else if(*state == BLOCK_UPDATE_SENT) {
+	} else if (*state == BLOCK_UPDATE_SENT) {
 		// The updater is already processing the block,
 		// but the block was modified again so we schedule another update
 		*state = BLOCK_UPDATE_NOT_SENT;
@@ -265,8 +265,8 @@ void VoxelTerrain::make_all_view_dirty_deferred() {
 	// always use an up-to-date view distance, which is not necessarily loaded yet on initialization.
 	_last_view_distance_blocks = 0;
 
-//	Vector3i radius(_view_distance_blocks, _view_distance_blocks, _view_distance_blocks);
-//	make_blocks_dirty(-radius, 2*radius);
+	//	Vector3i radius(_view_distance_blocks, _view_distance_blocks, _view_distance_blocks);
+	//	make_blocks_dirty(-radius, 2*radius);
 }
 
 inline int get_border_index(int x, int max) {
@@ -285,7 +285,7 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 	Vector3i rpos = _map->to_local(pos);
 
 	// TODO Thread-safe way of getting this parameter
-	bool check_corners = true;//_mesher->get_occlusion_enabled();
+	bool check_corners = true; //_mesher->get_occlusion_enabled();
 
 	const int max = _map->get_block_size() - 1;
 
@@ -389,7 +389,7 @@ void VoxelTerrain::make_area_dirty(Rect3i box) {
 	Vector3i max_pos = box.pos + box.size - Vector3(1, 1, 1);
 
 	// TODO Thread-safe way of getting this parameter
-	bool check_corners = true;//_mesher->get_occlusion_enabled();
+	bool check_corners = true; //_mesher->get_occlusion_enabled();
 	if (check_corners) {
 
 		min_pos -= Vector3i(1, 1, 1);
@@ -431,7 +431,8 @@ void VoxelTerrain::make_area_dirty(Rect3i box) {
 
 struct EnterWorldAction {
 	World *world;
-	EnterWorldAction(World *w) : world(w) {}
+	EnterWorldAction(World *w) :
+			world(w) {}
 	void operator()(VoxelBlock *block) {
 		block->enter_world(world);
 	}
@@ -445,7 +446,8 @@ struct ExitWorldAction {
 
 struct SetVisibilityAction {
 	bool visible;
-	SetVisibilityAction(bool v) : visible(v) {}
+	SetVisibilityAction(bool v) :
+			visible(v) {}
 	void operator()(VoxelBlock *block) {
 		block->set_visible(visible);
 	}
@@ -482,7 +484,7 @@ void VoxelTerrain::_notification(int p_what) {
 			_map->for_all_blocks(SetVisibilityAction(is_visible()));
 			break;
 
-		// TODO Listen for transform changes
+			// TODO Listen for transform changes
 
 		default:
 			break;
@@ -490,9 +492,9 @@ void VoxelTerrain::_notification(int p_what) {
 }
 
 void VoxelTerrain::remove_positions_outside_box(Vector<Vector3i> &positions, Rect3i box, HashMap<Vector3i, VoxelTerrain::BlockDirtyState, Vector3iHasher> &state_map) {
-	for(int i = 0; i < positions.size(); ++i) {
+	for (int i = 0; i < positions.size(); ++i) {
 		const Vector3i bpos = positions[i];
-		if(!box.contains(bpos)) {
+		if (!box.contains(bpos)) {
 			int last = positions.size() - 1;
 			positions.write[i] = positions[last];
 			positions.resize(last);
@@ -525,7 +527,7 @@ void VoxelTerrain::_process() {
 	// Get viewer location
 	// TODO Transform to local (Spatial Transform)
 	Vector3i viewer_block_pos;
-	if(engine.is_editor_hint()) {
+	if (engine.is_editor_hint()) {
 		// TODO Use editor's camera here
 		viewer_block_pos = Vector3i();
 	} else {
@@ -542,7 +544,7 @@ void VoxelTerrain::_process() {
 		Rect3i new_box = Rect3i::from_center_extents(viewer_block_pos, Vector3i(_view_distance_blocks));
 		Rect3i prev_box = Rect3i::from_center_extents(_last_viewer_block_pos, Vector3i(_last_view_distance_blocks));
 
-		if(prev_box != new_box) {
+		if (prev_box != new_box) {
 			//print_line(String("Loaded area changed: from ") + prev_box.to_string() + String(" to ") + new_box.to_string());
 
 			Rect3i bounds = Rect3i::get_bounding_box(prev_box, new_box);
@@ -550,18 +552,18 @@ void VoxelTerrain::_process() {
 
 			// TODO There should be a way to only iterate relevant blocks
 			Vector3i pos;
-			for(pos.z = bounds.pos.z; pos.z < max.z; ++pos.z) {
-				for(pos.y = bounds.pos.y; pos.y < max.y; ++pos.y) {
-					for(pos.x = bounds.pos.x; pos.x < max.x; ++pos.x) {
+			for (pos.z = bounds.pos.z; pos.z < max.z; ++pos.z) {
+				for (pos.y = bounds.pos.y; pos.y < max.y; ++pos.y) {
+					for (pos.x = bounds.pos.x; pos.x < max.x; ++pos.x) {
 
 						bool prev_contains = prev_box.contains(pos);
 						bool new_contains = new_box.contains(pos);
 
-						if(prev_contains && !new_contains) {
+						if (prev_contains && !new_contains) {
 							// Unload block
 							immerge_block(pos);
 
-						} else if(!prev_contains && new_contains) {
+						} else if (!prev_contains && new_contains) {
 							// Load or update block
 							make_block_dirty(pos);
 						}
@@ -612,14 +614,14 @@ void VoxelTerrain::_process() {
 		_stats.provider = output.stats;
 		_stats.dropped_provider_blocks = 0;
 
-		for(int i = 0; i < output.emerged_blocks.size(); ++i) {
+		for (int i = 0; i < output.emerged_blocks.size(); ++i) {
 
 			const VoxelProviderThread::EmergeOutput &o = output.emerged_blocks[i];
 			Vector3i block_pos = _map->voxel_to_block(o.origin_in_voxels);
 
 			{
 				VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(block_pos);
-				if(state == NULL || *state != BLOCK_LOAD) {
+				if (state == NULL || *state != BLOCK_LOAD) {
 					// That block was not requested, drop it
 					++_stats.dropped_provider_blocks;
 					continue;
@@ -677,7 +679,7 @@ void VoxelTerrain::_process() {
 	{
 		VoxelMeshUpdater::Input input;
 
-		for(int i = 0; i < _blocks_pending_update.size(); ++i) {
+		for (int i = 0; i < _blocks_pending_update.size(); ++i) {
 			Vector3i block_pos = _blocks_pending_update[i];
 
 			VoxelBlock *block = _map->get_block(block_pos);
@@ -692,7 +694,7 @@ void VoxelTerrain::_process() {
 			CRASH_COND(*block_state != BLOCK_UPDATE_NOT_SENT);
 
 			int air_type = 0;
-			if(block->voxels->is_uniform(Voxel::CHANNEL_TYPE) && block->voxels->get_voxel(0, 0, 0, Voxel::CHANNEL_TYPE) == air_type) {
+			if (block->voxels->is_uniform(Voxel::CHANNEL_TYPE) && block->voxels->get_voxel(0, 0, 0, Voxel::CHANNEL_TYPE) == air_type) {
 
 				// The block contains empty voxels
 				block->set_mesh(Ref<Mesh>(), Ref<World>());
@@ -784,7 +786,7 @@ void VoxelTerrain::_process() {
 				++surface_index;
 			}
 
-			for(int i = 0; i < ob.smooth_surfaces.size(); ++i) {
+			for (int i = 0; i < ob.smooth_surfaces.size(); ++i) {
 
 				Array surface = ob.smooth_surfaces[i];
 				if (surface.empty())
@@ -887,10 +889,10 @@ Vector3 VoxelTerrain::_block_to_voxel_binding(Vector3 pos) {
 VoxelTerrain::BlockDirtyState VoxelTerrain::get_block_state(Vector3 p_bpos) const {
 	Vector3i bpos = p_bpos;
 	const VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(bpos);
-	if(state) {
+	if (state) {
 		return *state;
 	} else {
-		if(!_map->has_block(bpos))
+		if (!_map->has_block(bpos))
 			return BLOCK_NONE;
 		return BLOCK_IDLE;
 	}

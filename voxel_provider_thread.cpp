@@ -1,11 +1,10 @@
-#include "core/os/os.h"
-#include "core/os/thread.h"
-#include "core/os/semaphore.h"
 #include "voxel_provider_thread.h"
-#include "voxel_provider.h"
-#include "voxel_map.h"
+#include "core/os/os.h"
+#include "core/os/semaphore.h"
+#include "core/os/thread.h"
 #include "utility.h"
-
+#include "voxel_map.h"
+#include "voxel_provider.h"
 
 VoxelProviderThread::VoxelProviderThread(Ref<VoxelProvider> provider, int block_size_pow2) {
 
@@ -50,7 +49,7 @@ void VoxelProviderThread::push(const InputData &input) {
 	}
 
 	// Notify the thread it should run
-	if(should_run) {
+	if (should_run) {
 		_semaphore->post();
 	}
 }
@@ -65,13 +64,13 @@ void VoxelProviderThread::pop(OutputData &out_data) {
 }
 
 void VoxelProviderThread::_thread_func(void *p_self) {
-	VoxelProviderThread *self = reinterpret_cast<VoxelProviderThread*>(p_self);
+	VoxelProviderThread *self = reinterpret_cast<VoxelProviderThread *>(p_self);
 	self->thread_func();
 }
 
 void VoxelProviderThread::thread_func() {
 
-	while(!_thread_exit) {
+	while (!_thread_exit) {
 
 		uint32_t sync_interval = 100.0; // milliseconds
 		uint32_t sync_time = OS::get_singleton()->get_ticks_msec() + sync_interval;
@@ -81,18 +80,18 @@ void VoxelProviderThread::thread_func() {
 
 		thread_sync(emerge_index, stats);
 
-		while(!_input.is_empty() && !_thread_exit) {
+		while (!_input.is_empty() && !_thread_exit) {
 			//print_line(String("Thread runs: {0}").format(varray(_input.blocks_to_emerge.size())));
 
 			// TODO Block saving
 			_input.blocks_to_immerge.clear();
 
-			if(!_input.blocks_to_emerge.empty()) {
+			if (!_input.blocks_to_emerge.empty()) {
 
 				Vector3i block_pos = _input.blocks_to_emerge[emerge_index];
 				++emerge_index;
 
-				if(emerge_index >= _input.blocks_to_emerge.size()) {
+				if (emerge_index >= _input.blocks_to_emerge.size()) {
 					_input.blocks_to_emerge.clear();
 				}
 
@@ -107,14 +106,14 @@ void VoxelProviderThread::thread_func() {
 				uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
 
 				// Do some stats
-				if(stats.first) {
+				if (stats.first) {
 					stats.first = false;
 					stats.min_time = time_taken;
 					stats.max_time = time_taken;
 				} else {
-					if(time_taken < stats.min_time)
+					if (time_taken < stats.min_time)
 						stats.min_time = time_taken;
-					if(time_taken > stats.max_time)
+					if (time_taken > stats.max_time)
 						stats.max_time = time_taken;
 				}
 
@@ -135,7 +134,7 @@ void VoxelProviderThread::thread_func() {
 			}
 		}
 
-		if(_thread_exit)
+		if (_thread_exit)
 			break;
 
 		// Wait for future wake-up
@@ -183,8 +182,8 @@ void VoxelProviderThread::thread_sync(int emerge_index, Stats stats) {
 
 	stats.remaining_blocks = _input.blocks_to_emerge.size();
 
-//	print_line(String("VoxelProviderThread: posting {0} blocks, {1} remaining ; cost [{2}..{3}] usec")
-//			   .format(varray(_output.size(), _input.blocks_to_emerge.size(), stats.min_time, stats.max_time)));
+	//	print_line(String("VoxelProviderThread: posting {0} blocks, {1} remaining ; cost [{2}..{3}] usec")
+	//			   .format(varray(_output.size(), _input.blocks_to_emerge.size(), stats.min_time, stats.max_time)));
 
 	{
 		// Post output
@@ -202,5 +201,3 @@ void VoxelProviderThread::thread_sync(int emerge_index, Stats stats) {
 		sorter.sort(_input.blocks_to_emerge.ptrw(), _input.blocks_to_emerge.size());
 	}
 }
-
-

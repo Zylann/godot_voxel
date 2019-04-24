@@ -1,6 +1,6 @@
-#include <core/os/os.h>
 #include "voxel_mesh_updater.h"
 #include "utility.h"
+#include <core/os/os.h>
 
 VoxelMeshUpdater::VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams params) {
 
@@ -43,7 +43,7 @@ void VoxelMeshUpdater::push(const Input &input) {
 	{
 		MutexLock lock(_input_mutex);
 
-		for(int i = 0; i < input.blocks.size(); ++i) {
+		for (int i = 0; i < input.blocks.size(); ++i) {
 
 			Vector3i pos = input.blocks[i].position;
 
@@ -64,7 +64,7 @@ void VoxelMeshUpdater::push(const Input &input) {
 
 			int *index = _block_indexes.getptr(pos);
 
-			if(index) {
+			if (index) {
 				// The block is already in the update queue, replace it
 				++replaced_blocks;
 				_shared_input.blocks.write[*index] = input.blocks[i];
@@ -77,7 +77,7 @@ void VoxelMeshUpdater::push(const Input &input) {
 			}
 		}
 
-		if(_shared_input.priority_position != input.priority_position || input.blocks.size() > 0) {
+		if (_shared_input.priority_position != input.priority_position || input.blocks.size() > 0) {
 			_needs_sort = true;
 		}
 
@@ -85,7 +85,7 @@ void VoxelMeshUpdater::push(const Input &input) {
 		should_run = !_shared_input.is_empty();
 	}
 
-	if(replaced_blocks > 0)
+	if (replaced_blocks > 0)
 		print_line(String("VoxelMeshUpdater: {0} blocks already in queue were replaced").format(varray(replaced_blocks)));
 
 	if (should_run) {
@@ -103,7 +103,7 @@ void VoxelMeshUpdater::pop(Output &output) {
 }
 
 void VoxelMeshUpdater::_thread_func(void *p_self) {
-	VoxelMeshUpdater *self = reinterpret_cast<VoxelMeshUpdater*>(p_self);
+	VoxelMeshUpdater *self = reinterpret_cast<VoxelMeshUpdater *>(p_self);
 	self->thread_func();
 }
 
@@ -143,9 +143,9 @@ void VoxelMeshUpdater::thread_func() {
 					stats.min_time = time_taken;
 					stats.max_time = time_taken;
 				} else {
-					if(time_taken < stats.min_time)
+					if (time_taken < stats.min_time)
 						stats.min_time = time_taken;
-					if(time_taken > stats.max_time)
+					if (time_taken > stats.max_time)
 						stats.max_time = time_taken;
 				}
 
@@ -224,10 +224,10 @@ void VoxelMeshUpdater::thread_sync(int queue_index, Stats stats) {
 		_needs_sort = false;
 	}
 
-	if(!_output.blocks.empty()) {
+	if (!_output.blocks.empty()) {
 
-//		print_line(String("VoxelMeshUpdater: posting {0} blocks, {1} remaining ; cost [{2}..{3}] usec")
-//				   .format(varray(_output.blocks.size(), _input.blocks.size(), stats.min_time, stats.max_time)));
+		//		print_line(String("VoxelMeshUpdater: posting {0} blocks, {1} remaining ; cost [{2}..{3}] usec")
+		//				   .format(varray(_output.blocks.size(), _input.blocks.size(), stats.min_time, stats.max_time)));
 
 		// Post output
 		MutexLock lock(_output_mutex);
@@ -244,4 +244,3 @@ void VoxelMeshUpdater::thread_sync(int queue_index, Stats stats) {
 		sorter.sort(_input.blocks.ptrw(), _input.blocks.size());
 	}
 }
-

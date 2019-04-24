@@ -1,12 +1,12 @@
 #ifndef VOXEL_TERRAIN_H
 #define VOXEL_TERRAIN_H
 
+#include "rect3i.h"
 #include "vector3i.h"
-#include "zprofiling.h"
+#include "voxel_mesh_updater.h"
 #include "voxel_provider.h"
 #include "voxel_provider_thread.h"
-#include "voxel_mesh_updater.h"
-#include "rect3i.h"
+#include "zprofiling.h"
 
 #include <scene/3d/spatial.h>
 
@@ -15,10 +15,9 @@ class VoxelLibrary;
 
 // Infinite static terrain made of voxels.
 // It is loaded around VoxelTerrainStreamers.
-class VoxelTerrain : public Spatial /*, public IVoxelMapObserver*/ {
+class VoxelTerrain : public Spatial {
 	GDCLASS(VoxelTerrain, Spatial)
 public:
-
 	enum BlockDirtyState {
 		BLOCK_NONE,
 		BLOCK_LOAD,
@@ -70,18 +69,17 @@ public:
 		uint64_t time_send_update_requests;
 		uint64_t time_process_update_responses;
 
-		Stats():
-			mesh_alloc_time(0),
-			updated_blocks(0),
-			dropped_provider_blocks(0),
-			dropped_updater_blocks(0),
-			remaining_main_thread_blocks(0),
-			time_detect_required_blocks(0),
-			time_send_load_requests(0),
-			time_process_load_responses(0),
-			time_send_update_requests(0),
-			time_process_update_responses(0)
-		{ }
+		Stats() :
+				mesh_alloc_time(0),
+				updated_blocks(0),
+				dropped_provider_blocks(0),
+				dropped_updater_blocks(0),
+				remaining_main_thread_blocks(0),
+				time_detect_required_blocks(0),
+				time_send_load_requests(0),
+				time_process_load_responses(0),
+				time_send_update_requests(0),
+				time_process_update_responses(0) {}
 	};
 
 protected:

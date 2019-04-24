@@ -75,11 +75,11 @@ void VoxelProviderTest::generate_block_waves(VoxelBuffer &out_buffer, Vector3i o
 
 	//out_buffer.fill(0, 1); // TRANSVOXEL TEST
 
-	if(origin.y + size.y < Math::floor(_pattern_offset.y - 1.5*amplitude)) {
+	if (origin.y + size.y < Math::floor(_pattern_offset.y - 1.5 * amplitude)) {
 		// Everything is ground
 		out_buffer.fill(_voxel_type);
 
-	} else if(origin.y > Math::ceil(_pattern_offset.y + 1.5*amplitude)) {
+	} else if (origin.y > Math::ceil(_pattern_offset.y + 1.5 * amplitude)) {
 		// Everything is air
 		return;
 
@@ -126,5 +126,3 @@ void VoxelProviderTest::_bind_methods() {
 	BIND_ENUM_CONSTANT(MODE_FLAT);
 	BIND_ENUM_CONSTANT(MODE_WAVES);
 }
-
-

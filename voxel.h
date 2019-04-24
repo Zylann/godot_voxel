@@ -1,8 +1,8 @@
 #ifndef VOXEL_TYPE_H
 #define VOXEL_TYPE_H
 
-#include <core/resource.h>
 #include "cube_tables.h"
+#include <core/resource.h>
 
 class VoxelLibrary;
 

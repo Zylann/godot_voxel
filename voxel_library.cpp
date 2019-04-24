@@ -1,7 +1,8 @@
 #include "voxel_library.h"
 
 VoxelLibrary::VoxelLibrary() :
-	Resource(), _atlas_size(1) {
+		Resource(),
+		_atlas_size(1) {
 }
 
 VoxelLibrary::~VoxelLibrary() {
@@ -15,8 +16,8 @@ VoxelLibrary::~VoxelLibrary() {
 
 int VoxelLibrary::get_voxel_count() const {
 	int count = 0;
-	for(int i = 0; i < MAX_VOXEL_TYPES; ++i) {
-		if(_voxel_types[i].is_valid())
+	for (int i = 0; i < MAX_VOXEL_TYPES; ++i) {
+		if (_voxel_types[i].is_valid())
 			++count;
 	}
 	return count;
@@ -33,23 +34,23 @@ void VoxelLibrary::load_default() {
 
 bool VoxelLibrary::_set(const StringName &p_name, const Variant &p_value) {
 
-//	if(p_name == "voxels/max") {
+	//	if(p_name == "voxels/max") {
 
-//		int v = p_value;
-//		_max_count = CLAMP(v, 0, MAX_VOXEL_TYPES);
-//		for(int i = _max_count; i < MAX_VOXEL_TYPES; ++i) {
-//			_voxel_types[i] = Ref<Voxel>();
-//			return true;
-//		}
+	//		int v = p_value;
+	//		_max_count = CLAMP(v, 0, MAX_VOXEL_TYPES);
+	//		for(int i = _max_count; i < MAX_VOXEL_TYPES; ++i) {
+	//			_voxel_types[i] = Ref<Voxel>();
+	//			return true;
+	//		}
 
-//	} else
+	//	} else
 	if (p_name.operator String().begins_with("voxels/")) {
 
 		int idx = p_name.operator String().get_slicec('/', 1).to_int();
 		if (idx >= 0 && idx < MAX_VOXEL_TYPES) {
 			Ref<Voxel> voxel = p_value;
 			_voxel_types[idx] = voxel;
-			if(voxel.is_valid()) {
+			if (voxel.is_valid()) {
 				voxel->set_library(Ref<VoxelLibrary>(this));
 				voxel->set_id(idx);
 			}
@@ -64,12 +65,12 @@ bool VoxelLibrary::_set(const StringName &p_name, const Variant &p_value) {
 
 bool VoxelLibrary::_get(const StringName &p_name, Variant &r_ret) const {
 
-//	if(p_name == "voxels/max") {
+	//	if(p_name == "voxels/max") {
 
-//		r_ret = _max_count;
-//		return true;
+	//		r_ret = _max_count;
+	//		return true;
 
-//	} else
+	//	} else
 	if (p_name.operator String().begins_with("voxels/")) {
 
 		int idx = p_name.operator String().get_slicec('/', 1).to_int();
@@ -87,10 +88,9 @@ void VoxelLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
 	//p_list->push_back(PropertyInfo(Variant::INT, "voxels/max"));
 
 	//for(int i = 0; i < _max_count; ++i) {
-	for(int i = 0; i < MAX_VOXEL_TYPES; ++i) {
+	for (int i = 0; i < MAX_VOXEL_TYPES; ++i) {
 		p_list->push_back(PropertyInfo(Variant::OBJECT, "voxels/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "Voxel"));
 	}
-
 }
 
 void VoxelLibrary::set_atlas_size(int s) {
@@ -123,5 +123,3 @@ void VoxelLibrary::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "atlas_size"), "set_atlas_size", "get_atlas_size");
 }
-
-
