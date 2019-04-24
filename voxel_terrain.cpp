@@ -517,6 +517,11 @@ static inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
 
 void VoxelTerrain::_process() {
 
+	// TODO Should be able to run without library, tho!
+	if (_library.is_null()) {
+		return;
+	}
+
 	OS &os = *OS::get_singleton();
 	Engine &engine = *Engine::get_singleton();
 
