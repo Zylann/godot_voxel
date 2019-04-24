@@ -8,7 +8,7 @@
 #include <core/reference.h>
 #include <scene/resources/mesh.h>
 
-// TODO Should be renamed VoxelMesherModel or something like that
+// TODO Should be renamed VoxelMesherBlocky or something like that
 class VoxelMesher : public Reference {
 	GDCLASS(VoxelMesher, Reference)
 

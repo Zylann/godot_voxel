@@ -129,7 +129,12 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 	//    |    |  )
 	//     \   |  |
 	//      \    /
-	CRASH_COND(type_buffer == NULL);
+	if (type_buffer == nullptr) {
+		// No data to read, the channel is probably uniform
+		// TODO This is an invalid behavior IF sending a full block of uniformly opaque cubes,
+		// however not likely for terrains because with neighbor padding, such a case means no face would be generated anyways
+		return Array();
+	}
 
 	//CRASH_COND(memarr_len(type_buffer) != buffer.get_volume() * sizeof(uint8_t));
 
