@@ -2,7 +2,7 @@
 #define RECT3I_H
 
 #include "vector3i.h"
-//#include <math_funcs.h>
+#include <core/variant.h>
 
 class Rect3i {
 
