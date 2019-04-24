@@ -2,6 +2,7 @@
 #define VOXEL_ISOSURFACE_TOOL_H
 
 #include "voxel_buffer.h"
+#include <core/image.h>
 
 class VoxelIsoSurfaceTool : public Reference {
 	GDCLASS(VoxelIsoSurfaceTool, Reference)
@@ -26,6 +27,7 @@ public:
 	void do_sphere(Vector3 center, real_t radius, Operation op);
 	void do_plane(Plane plane, Operation op);
 	void do_cube(Transform transform, Vector3 extents, Operation op);
+	void do_heightmap(Ref<Image> heightmap, Vector3 offset, real_t vertical_scale, Operation op);
 
 protected:
 	static void _bind_methods();

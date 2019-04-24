@@ -114,10 +114,42 @@ void VoxelIsoSurfaceTool::do_cube(Transform transform, Vector3 extents, Operatio
 			for (int y = 0; y < buffer.get_size().y; ++y) {
 
 				Vector3 pos = inv_transform.xform(Vector3(x, y, z));
-				do_op(buffer, x, y, z, sdf_cube(pos, extents), op);
+				do_op(buffer, x, y, z, sdf_cube(pos, extents) * _iso_scale, op);
 			}
 		}
 	}
+}
+
+void VoxelIsoSurfaceTool::do_heightmap(Ref<Image> heightmap, Vector3 offset, real_t vertical_scale, Operation op) {
+
+	ERR_FAIL_COND(_buffer.is_null());
+	VoxelBuffer &buffer = **_buffer;
+
+	ERR_FAIL_COND(heightmap.is_null());
+	Image &im = **heightmap;
+
+	offset += _offset;
+
+	im.lock();
+
+	for (int z = 0; z < buffer.get_size().z; ++z) {
+		for (int x = 0; x < buffer.get_size().x; ++x) {
+
+			int px = int(Math::fmod(x + offset.x, im.get_width()));
+			int py = int(Math::fmod(z + offset.z, im.get_height()));
+
+			float h = im.get_pixel(px, py).r * vertical_scale + offset.y;
+
+			for (int y = 0; y < buffer.get_size().y; ++y) {
+
+				// Not a true distance to heightmap, but might be enough
+				float d = (y - h) * _iso_scale;
+				do_op(buffer, x, y, z, d, op);
+			}
+		}
+	}
+
+	im.unlock();
 }
 
 void VoxelIsoSurfaceTool::_bind_methods() {
@@ -134,6 +166,7 @@ void VoxelIsoSurfaceTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius", "op"), &VoxelIsoSurfaceTool::do_sphere, DEFVAL(OP_ADD));
 	ClassDB::bind_method(D_METHOD("do_plane", "plane", "op"), &VoxelIsoSurfaceTool::do_plane, DEFVAL(OP_ADD));
 	ClassDB::bind_method(D_METHOD("do_cube", "transform", "extents", "op"), &VoxelIsoSurfaceTool::do_cube, DEFVAL(OP_ADD));
+	ClassDB::bind_method(D_METHOD("do_heightmap", "heightmap", "offset", "vertical_scale", "op"), &VoxelIsoSurfaceTool::do_cube, DEFVAL(OP_ADD));
 
 	BIND_ENUM_CONSTANT(OP_ADD);
 	BIND_ENUM_CONSTANT(OP_SUBTRACT);
