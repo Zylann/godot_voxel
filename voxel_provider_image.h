@@ -14,7 +14,7 @@ public:
 	void set_image(Ref<Image> im);
 	Ref<Image> get_image() const;
 
-	void set_channel(int channel);
+	void set_channel(VoxelBuffer::ChannelId channel);
 	int get_channel() const;
 
 	void emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels);

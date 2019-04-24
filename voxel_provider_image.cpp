@@ -1,6 +1,7 @@
 #include "voxel_provider_image.h"
 
-VoxelProviderImage::VoxelProviderImage(): _channel(0) {
+VoxelProviderImage::VoxelProviderImage() :
+		_channel(0) {
 }
 
 void VoxelProviderImage::set_image(Ref<Image> im) {
@@ -11,7 +12,7 @@ Ref<Image> VoxelProviderImage::get_image() const {
 	return _image;
 }
 
-void VoxelProviderImage::set_channel(int channel) {
+void VoxelProviderImage::set_channel(VoxelBuffer::ChannelId channel) {
 	_channel = channel;
 }
 
@@ -46,13 +47,23 @@ void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i or
 		while (x < bs) {
 
 			Color c = image.get_pixel((ox + x) & im_wm, (oz + z) & im_hm);
-			int h = int(c.r * 200.0) - 50;
-			h -= oy;
-			if (h > 0) {
-				if (h > bs) {
-					h = bs;
+			float h = c.r * 200.0 - 50;
+
+			if (_channel == VoxelBuffer::CHANNEL_ISOLEVEL) {
+
+				for (int y = 0; y < bs; ++y) {
+					out_buffer.set_voxel_iso((oy + y) - h, x, y, z, _channel);
 				}
-				out_buffer.fill_area(dirt, Vector3(x, 0, z), Vector3(x + 1, h, z + 1), _channel);
+
+			} else {
+				h -= oy;
+				int ih = int(h);
+				if (ih > 0) {
+					if (ih > bs) {
+						ih = bs;
+					}
+					out_buffer.fill_area(dirt, Vector3(x, 0, z), Vector3(x + 1, ih, z + 1), _channel);
+				}
 			}
 
 			x += 1;
@@ -75,5 +86,3 @@ void VoxelProviderImage::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, "Image"), "set_image", "get_image");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel"), "set_channel", "get_channel");
 }
-
-
