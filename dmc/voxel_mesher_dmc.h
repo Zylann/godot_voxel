@@ -91,12 +91,13 @@ public:
 	void set_geometric_error(real_t geometric_error);
 	float get_geometric_error() const;
 
-	Ref<ArrayMesh> build_mesh(const VoxelBuffer &voxels);
+	Array build(const VoxelBuffer &voxels);
+	Ref<ArrayMesh> build_mesh(Ref<VoxelBuffer> voxels);
+
 	Dictionary get_stats() const;
 
 protected:
 	static void _bind_methods();
-	Ref<ArrayMesh> _build_mesh_b(Ref<VoxelBuffer> voxels);
 
 private:
 	dmc::MeshBuilder _mesh_builder;

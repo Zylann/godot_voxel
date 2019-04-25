@@ -2,13 +2,13 @@
 
 namespace dmc {
 
-Ref<ArrayMesh> MeshBuilder::commit(bool wireframe) {
+Array MeshBuilder::commit(bool wireframe) {
 
 	if (_positions.size() == 0) {
-		return Ref<ArrayMesh>();
+		return Array();
 	}
 
-	ERR_FAIL_COND_V(_indices.size() % 3 != 0, Ref<ArrayMesh>());
+	ERR_FAIL_COND_V(_indices.size() % 3 != 0, Array());
 
 	if (wireframe) {
 
@@ -46,11 +46,7 @@ Ref<ArrayMesh> MeshBuilder::commit(bool wireframe) {
 	surface[Mesh::ARRAY_NORMAL] = normals;
 	surface[Mesh::ARRAY_INDEX] = indices;
 
-	Ref<ArrayMesh> mesh;
-	mesh.instance();
-	mesh->add_surface_from_arrays(wireframe ? Mesh::PRIMITIVE_LINES : Mesh::PRIMITIVE_TRIANGLES, surface);
-
-	return mesh;
+	return surface;
 }
 
 void MeshBuilder::clear() {

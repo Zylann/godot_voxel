@@ -7,12 +7,14 @@ VoxelMeshUpdater::VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams para
 	CRASH_COND(library.is_null());
 	//CRASH_COND(params.materials.size() == 0);
 
-	_model_mesher.instance();
-	_model_mesher->set_library(library);
-	_model_mesher->set_occlusion_enabled(params.baked_ao);
-	_model_mesher->set_occlusion_darkness(params.baked_ao_darkness);
+	_blocky_mesher.instance();
+	_blocky_mesher->set_library(library);
+	_blocky_mesher->set_occlusion_enabled(params.baked_ao);
+	_blocky_mesher->set_occlusion_darkness(params.baked_ao_darkness);
 
-	_smooth_mesher.instance();
+	_dmc_mesher.instance();
+	_dmc_mesher->set_geometric_error(0.05);
+	_dmc_mesher->set_octree_mode(VoxelMesherDMC::OCTREE_NONE);
 
 	_input_mutex = Mutex::create();
 	_output_mutex = Mutex::create();
@@ -176,9 +178,9 @@ void VoxelMeshUpdater::process_block(const InputBlock &block, OutputBlock &outpu
 	CRASH_COND(block.voxels.is_null());
 
 	// Build cubic parts of the mesh
-	output.model_surfaces = _model_mesher->build(**block.voxels, Voxel::CHANNEL_TYPE, Vector3i(0, 0, 0), block.voxels->get_size() - Vector3(1, 1, 1));
+	output.model_surfaces = _blocky_mesher->build(**block.voxels, Voxel::CHANNEL_TYPE, Vector3i(0, 0, 0), block.voxels->get_size() - Vector3(1, 1, 1));
 	// Build smooth parts of the mesh
-	output.smooth_surfaces = _smooth_mesher->build(**block.voxels, Voxel::CHANNEL_ISOLEVEL);
+	output.smooth_surfaces = _dmc_mesher->build(**block.voxels);
 
 	output.position = block.position;
 }

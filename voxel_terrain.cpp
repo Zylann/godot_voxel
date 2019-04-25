@@ -536,6 +536,7 @@ void VoxelTerrain::_process() {
 		// TODO Use editor's camera here
 		viewer_block_pos = Vector3i();
 	} else {
+		// TODO Use viewport camera, much easier
 		Spatial *viewer = get_viewer(_viewer_path);
 		if (viewer)
 			viewer_block_pos = _map->voxel_to_block(viewer->get_translation());
@@ -699,7 +700,10 @@ void VoxelTerrain::_process() {
 			CRASH_COND(*block_state != BLOCK_UPDATE_NOT_SENT);
 
 			int air_type = 0;
-			if (block->voxels->is_uniform(Voxel::CHANNEL_TYPE) && block->voxels->get_voxel(0, 0, 0, Voxel::CHANNEL_TYPE) == air_type) {
+			if (
+					block->voxels->is_uniform(Voxel::CHANNEL_TYPE) &&
+					block->voxels->is_uniform(Voxel::CHANNEL_ISOLEVEL) &&
+					block->voxels->get_voxel(0, 0, 0, Voxel::CHANNEL_TYPE) == air_type) {
 
 				// The block contains empty voxels
 				block->set_mesh(Ref<Mesh>(), Ref<World>());
@@ -718,7 +722,8 @@ void VoxelTerrain::_process() {
 			// TODO Padding set to 3 at the moment because Transvoxel works on 2x2 cells.
 			// It should change for a smarter padding (if smooth isn't used for example).
 			unsigned int block_size = _map->get_block_size();
-			nbuffer->create(block_size + 3, block_size + 3, block_size + 3);
+			//nbuffer->create(block_size + 3, block_size + 3, block_size + 3);
+			nbuffer->create(block_size + 2, block_size + 2, block_size + 2);
 
 			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(1, 1, 1), **nbuffer, 0x3);
 
@@ -782,9 +787,11 @@ void VoxelTerrain::_process() {
 			for (int i = 0; i < ob.model_surfaces.size(); ++i) {
 
 				Array surface = ob.model_surfaces[i];
-				if (surface.empty())
+				if (surface.empty()) {
 					continue;
+				}
 
+				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
 				mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
 
@@ -794,16 +801,21 @@ void VoxelTerrain::_process() {
 			for (int i = 0; i < ob.smooth_surfaces.size(); ++i) {
 
 				Array surface = ob.smooth_surfaces[i];
-				if (surface.empty())
+				if (surface.empty()) {
 					continue;
+				}
 
+				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
+				// TODO Problem here, the mesher could be configured to output wireframe! Need to output some MeshData struct instead
 				mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surface);
+				mesh->surface_set_material(surface_index, _materials[i]);
 				// No material supported yet
 				++surface_index;
 			}
 
-			if (is_mesh_empty(mesh))
+			if (is_mesh_empty(mesh)) {
 				mesh = Ref<Mesh>();
+			}
 
 			block->set_mesh(mesh, world);
 		}

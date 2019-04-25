@@ -5,7 +5,7 @@
 #include <core/os/thread.h>
 #include <core/vector.h>
 
-#include "transvoxel/voxel_mesher_transvoxel.h"
+#include "dmc/voxel_mesher_dmc.h"
 #include "voxel_buffer.h"
 #include "voxel_mesher.h"
 
@@ -81,8 +81,8 @@ private:
 	Output _shared_output;
 	Mutex *_output_mutex;
 
-	Ref<VoxelMesher> _model_mesher;
-	Ref<VoxelMesherTransvoxel> _smooth_mesher;
+	Ref<VoxelMesher> _blocky_mesher;
+	Ref<VoxelMesherDMC> _dmc_mesher;
 
 	Input _input;
 	Output _output;

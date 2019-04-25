@@ -37,7 +37,7 @@ public:
 		_indices.push_back(i);
 	}
 
-	Ref<ArrayMesh> commit(bool wireframe);
+	Array commit(bool wireframe);
 	void clear();
 
 	int get_reused_vertex_count() const { return _reused_vertices; }

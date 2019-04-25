@@ -287,7 +287,7 @@ void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
 	}
 }
 
-Ref<ArrayMesh> generate_debug_octree_mesh(OctreeNode *root) {
+Array generate_debug_octree_mesh(OctreeNode *root) {
 
 	struct GetMaxDepth {
 		int max_depth;
@@ -340,7 +340,7 @@ Ref<ArrayMesh> generate_debug_octree_mesh(OctreeNode *root) {
 	foreach_node(root, add_cube);
 
 	if (arrays.positions.size() == 0) {
-		return Ref<ArrayMesh>();
+		return Array();
 	}
 
 	Array surface;
@@ -349,14 +349,10 @@ Ref<ArrayMesh> generate_debug_octree_mesh(OctreeNode *root) {
 	surface[Mesh::ARRAY_COLOR] = arrays.colors;
 	surface[Mesh::ARRAY_INDEX] = arrays.indices;
 
-	Ref<ArrayMesh> mesh;
-	mesh.instance();
-	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, surface);
-
-	return mesh;
+	return surface;
 }
 
-Ref<ArrayMesh> generate_debug_dual_grid_mesh(const DualGrid &grid) {
+Array generate_debug_dual_grid_mesh(const DualGrid &grid) {
 
 	PoolVector3Array positions;
 	PoolIntArray indices;
@@ -380,7 +376,7 @@ Ref<ArrayMesh> generate_debug_dual_grid_mesh(const DualGrid &grid) {
 	}
 
 	if (positions.size() == 0) {
-		return Ref<ArrayMesh>();
+		return Array();
 	}
 
 	Array surface;
@@ -388,11 +384,7 @@ Ref<ArrayMesh> generate_debug_dual_grid_mesh(const DualGrid &grid) {
 	surface[Mesh::ARRAY_VERTEX] = positions;
 	surface[Mesh::ARRAY_INDEX] = indices;
 
-	Ref<ArrayMesh> mesh;
-	mesh.instance();
-	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, surface);
-
-	return mesh;
+	return surface;
 }
 
 inline bool is_border_left(const OctreeNode *node) {
@@ -1325,7 +1317,7 @@ float VoxelMesherDMC::get_geometric_error() const {
 	return _geometric_error;
 }
 
-Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels) {
+Array VoxelMesherDMC::build(const VoxelBuffer &voxels) {
 
 	// Requirements:
 	// - Voxel data must be padded
@@ -1339,9 +1331,9 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels) {
 	// Taking previous power of two because the algorithm uses an integer cubic octree, and data should be padded
 	int chunk_size = previous_power_of_2(MIN(MIN(buffer_size.x, buffer_size.y), buffer_size.z));
 
-	ERR_FAIL_COND_V(voxels.get_size().x < chunk_size + padding * 2, Ref<ArrayMesh>());
-	ERR_FAIL_COND_V(voxels.get_size().y < chunk_size + padding * 2, Ref<ArrayMesh>());
-	ERR_FAIL_COND_V(voxels.get_size().z < chunk_size + padding * 2, Ref<ArrayMesh>());
+	ERR_FAIL_COND_V(voxels.get_size().x < chunk_size + padding * 2, Array());
+	ERR_FAIL_COND_V(voxels.get_size().y < chunk_size + padding * 2, Array());
+	ERR_FAIL_COND_V(voxels.get_size().z < chunk_size + padding * 2, Array());
 
 	// Construct an intermediate to handle padding transparently
 	dmc::VoxelAccess voxels_access(voxels, Vector3i(padding));
@@ -1379,12 +1371,12 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels) {
 
 	_stats.octree_build_time = OS::get_singleton()->get_ticks_usec() - time_before;
 
-	Ref<ArrayMesh> mesh;
+	Array surface;
 
 	if (root != nullptr) {
 
 		if (_mesh_mode == MESH_DEBUG_OCTREE) {
-			mesh = dmc::generate_debug_octree_mesh(root);
+			surface = dmc::generate_debug_octree_mesh(root);
 
 		} else {
 
@@ -1397,7 +1389,7 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels) {
 			_stats.dualgrid_derivation_time = OS::get_singleton()->get_ticks_usec() - time_before;
 
 			if (_mesh_mode == MESH_DEBUG_DUAL_GRID) {
-				mesh = dmc::generate_debug_dual_grid_mesh(_dual_grid);
+				surface = dmc::generate_debug_dual_grid_mesh(_dual_grid);
 
 			} else {
 
@@ -1421,18 +1413,42 @@ Ref<ArrayMesh> VoxelMesherDMC::build_mesh(const VoxelBuffer &voxels) {
 		_stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
 	}
 
-	time_before = OS::get_singleton()->get_ticks_usec();
-	mesh = _mesh_builder.commit(_mesh_mode == MESH_WIREFRAME);
-	_stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
+	if (surface.empty()) {
+		time_before = OS::get_singleton()->get_ticks_usec();
+		surface = _mesh_builder.commit(_mesh_mode == MESH_WIREFRAME);
+		_stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
+	}
 
 	// TODO Marching squares skirts
 
-	return mesh;
+	// surfaces[material][array_type], for now single material
+	Array surfaces;
+	surfaces.append(surface);
+	return surfaces;
 }
 
-Ref<ArrayMesh> VoxelMesherDMC::_build_mesh_b(Ref<VoxelBuffer> voxels) {
+Ref<ArrayMesh> VoxelMesherDMC::build_mesh(Ref<VoxelBuffer> voxels) {
+
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
-	return build_mesh(**voxels);
+
+	Array surfaces = build(**voxels);
+
+	if (surfaces.empty()) {
+		return Ref<ArrayMesh>();
+	}
+
+	Ref<ArrayMesh> mesh;
+	mesh.instance();
+
+	for (int i = 0; i < surfaces.size(); ++i) {
+		if (_mesh_mode == MESH_NORMAL) {
+			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surfaces[i]);
+		} else {
+			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, surfaces[i]);
+		}
+	}
+
+	return mesh;
 }
 
 Dictionary VoxelMesherDMC::get_stats() const {
@@ -1455,7 +1471,7 @@ void VoxelMesherDMC::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_geometric_error", "error"), &VoxelMesherDMC::set_geometric_error);
 	ClassDB::bind_method(D_METHOD("get_geometric_error"), &VoxelMesherDMC::get_geometric_error);
 
-	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer"), &VoxelMesherDMC::_build_mesh_b);
+	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer"), &VoxelMesherDMC::build_mesh);
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelMesherDMC::get_stats);
 
 	BIND_ENUM_CONSTANT(MESH_NORMAL);
