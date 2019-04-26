@@ -87,11 +87,11 @@ public:
 	}
 
 	_FORCE_INLINE_ unsigned int index(unsigned int x, unsigned int y, unsigned int z) const {
-		return (z * _size.z + x) * _size.x + y;
+		return y + _size.y * (x + _size.x * z);
 	}
 
 	//	_FORCE_INLINE_ unsigned int row_index(unsigned int x, unsigned int y, unsigned int z) const {
-	//		return (z * _size.z + x) * _size.x;
+	//		return _size.y * (x + _size.x * z);
 	//	}
 
 	// TODO Rename get_cells_count()
