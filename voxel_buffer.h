@@ -76,7 +76,7 @@ public:
 	_FORCE_INLINE_ void fill_iso(float value, unsigned int channel = 0) { fill(iso_to_byte(value), channel); }
 	void fill_area(int defval, Vector3i min, Vector3i max, unsigned int channel_index = 0);
 
-	bool is_uniform(unsigned int channel_index = 0) const;
+	bool is_uniform(unsigned int channel_index) const;
 
 	void optimize();
 
