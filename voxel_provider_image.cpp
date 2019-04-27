@@ -20,6 +20,27 @@ int VoxelProviderImage::get_channel() const {
 	return _channel;
 }
 
+namespace {
+
+inline int umod(int a, int b) {
+	return ((unsigned int)a - (a < 0)) % (unsigned int)b;
+}
+
+inline float get_height_repeat(Image &im, int x, int y) {
+	return im.get_pixel(umod(x, im.get_width()), umod(y, im.get_height())).r;
+}
+
+inline float get_height_blurred(Image &im, int x, int y) {
+	float h = get_height_repeat(im, x, y);
+	h += get_height_repeat(im, x + 1, y);
+	h += get_height_repeat(im, x - 1, y);
+	h += get_height_repeat(im, x, y + 1);
+	h += get_height_repeat(im, x, y - 1);
+	return h * 0.2f;
+}
+
+} // namespace
+
 void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels) {
 
 	int ox = origin_in_voxels.x;
@@ -31,11 +52,6 @@ void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i or
 
 	image.lock();
 
-	int im_w = image.get_width();
-	int im_h = image.get_height();
-	int im_wm = im_w - 1;
-	int im_hm = im_h - 1;
-
 	int x = 0;
 	int z = 0;
 
@@ -46,16 +62,16 @@ void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i or
 	while (z < bs) {
 		while (x < bs) {
 
-			Color c = image.get_pixel((ox + x) & im_wm, (oz + z) & im_hm);
-			float h = c.r * 200.0 - 50;
-
 			if (_channel == VoxelBuffer::CHANNEL_ISOLEVEL) {
+
+				float h = get_height_blurred(image, ox + x, oz + z) * 200.0 - 50;
 
 				for (int y = 0; y < bs; ++y) {
 					out_buffer.set_voxel_iso((oy + y) - h, x, y, z, _channel);
 				}
 
 			} else {
+				float h = get_height_repeat(image, ox + x, oz + z) * 200.0 - 50;
 				h -= oy;
 				int ih = int(h);
 				if (ih > 0) {
