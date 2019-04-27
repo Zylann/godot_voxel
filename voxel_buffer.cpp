@@ -4,7 +4,7 @@
 #include <string.h>
 
 VoxelBuffer::VoxelBuffer() {
-	_channels[CHANNEL_ISOLEVEL].defval = 1.0;
+	_channels[CHANNEL_ISOLEVEL].defval = 255;
 }
 
 VoxelBuffer::~VoxelBuffer() {

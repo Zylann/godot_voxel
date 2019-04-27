@@ -14,7 +14,7 @@ VoxelMap::VoxelMap() :
 		_default_voxel[i] = 0;
 	}
 
-	_default_voxel[VoxelBuffer::CHANNEL_ISOLEVEL] = 1.0;
+	_default_voxel[VoxelBuffer::CHANNEL_ISOLEVEL] = 255;
 }
 
 VoxelMap::~VoxelMap() {
