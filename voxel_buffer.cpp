@@ -287,6 +287,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::create);
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelBuffer::clear);
 
+	ClassDB::bind_method(D_METHOD("get_size"), &VoxelBuffer::_get_size_binding);
 	ClassDB::bind_method(D_METHOD("get_size_x"), &VoxelBuffer::get_size_x);
 	ClassDB::bind_method(D_METHOD("get_size_y"), &VoxelBuffer::get_size_y);
 	ClassDB::bind_method(D_METHOD("get_size_z"), &VoxelBuffer::get_size_z);

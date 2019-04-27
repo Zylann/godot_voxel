@@ -112,6 +112,7 @@ protected:
 	_FORCE_INLINE_ int get_size_x() const { return _size.x; }
 	_FORCE_INLINE_ int get_size_y() const { return _size.y; }
 	_FORCE_INLINE_ int get_size_z() const { return _size.z; }
+	_FORCE_INLINE_ Vector3 _get_size_binding() const { return _size.to_vec3(); }
 
 	_FORCE_INLINE_ int _get_voxel_binding(int x, int y, int z, unsigned int channel) const { return get_voxel(x, y, z, channel); }
 	_FORCE_INLINE_ void _set_voxel_binding(int value, int x, int y, int z, unsigned int channel) { set_voxel(value, x, y, z, channel); }
