@@ -38,10 +38,10 @@ int VoxelMap::get_voxel(Vector3i pos, unsigned int c) {
 	if (block == NULL) {
 		return _default_voxel[c];
 	}
-	return block->voxels->get_voxel(VoxelMap::to_local(pos), c);
+	return block->voxels->get_voxel(to_local(pos), c);
 }
 
-void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
+VoxelBlock *VoxelMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
 
 	Vector3i bpos = voxel_to_block(pos);
 	VoxelBlock *block = get_block(bpos);
@@ -57,7 +57,33 @@ void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
 		set_block(bpos, block);
 	}
 
-	block->voxels->set_voxel(value, VoxelMap::to_local(pos), c);
+	return block;
+}
+
+void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
+
+	VoxelBlock *block = get_or_create_block_at_voxel_pos(pos);
+	block->voxels->set_voxel(value, to_local(pos), c);
+}
+
+float VoxelMap::get_voxel_f(int x, int y, int z, unsigned int c) {
+
+	Vector3i pos(x, y, z);
+	Vector3i bpos = voxel_to_block(pos);
+	VoxelBlock *block = get_block(bpos);
+	if (block == NULL) {
+		return _default_voxel[c];
+	}
+	Vector3i lpos = to_local(pos);
+	return block->voxels->get_voxel_iso(lpos.x, lpos.y, lpos.z, c);
+}
+
+void VoxelMap::set_voxel_f(real_t value, int x, int y, int z, unsigned int c) {
+
+	Vector3i pos(x, y, z);
+	VoxelBlock *block = get_or_create_block_at_voxel_pos(pos);
+	Vector3i lpos = to_local(pos);
+	block->voxels->set_voxel_iso(value, lpos.x, lpos.y, lpos.z, c);
 }
 
 void VoxelMap::set_default_voxel(int value, unsigned int channel) {
@@ -177,6 +203,8 @@ void VoxelMap::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "c"), &VoxelMap::_get_voxel_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "c"), &VoxelMap::_set_voxel_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "c"), &VoxelMap::_get_voxel_binding, DEFVAL(VoxelBuffer::CHANNEL_ISOLEVEL));
+	ClassDB::bind_method(D_METHOD("set_voxel_f", "value", "x", "y", "z", "c"), &VoxelMap::_set_voxel_binding, DEFVAL(VoxelBuffer::CHANNEL_ISOLEVEL));
 	ClassDB::bind_method(D_METHOD("get_voxel_v", "pos", "c"), &VoxelMap::_get_voxel_v_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "c"), &VoxelMap::_set_voxel_v_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_default_voxel", "channel"), &VoxelMap::get_default_voxel, DEFVAL(0));

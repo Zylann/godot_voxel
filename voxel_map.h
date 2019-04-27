@@ -45,6 +45,9 @@ public:
 	int get_voxel(Vector3i pos, unsigned int c = 0);
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
 
+	float get_voxel_f(int x, int y, int z, unsigned int c = VoxelBuffer::CHANNEL_ISOLEVEL);
+	void set_voxel_f(real_t value, int x, int y, int z, unsigned int c = VoxelBuffer::CHANNEL_ISOLEVEL);
+
 	void set_default_voxel(int value, unsigned int channel = 0);
 	int get_default_voxel(unsigned int channel = 0);
 
@@ -122,6 +125,7 @@ public:
 
 private:
 	void set_block(Vector3i bpos, VoxelBlock *block);
+	VoxelBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
 
 	void set_block_size_pow2(unsigned int p);
 
