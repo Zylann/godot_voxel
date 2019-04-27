@@ -13,6 +13,8 @@ VoxelMap::VoxelMap() :
 	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
 		_default_voxel[i] = 0;
 	}
+
+	_default_voxel[VoxelBuffer::CHANNEL_ISOLEVEL] = 1.0;
 }
 
 VoxelMap::~VoxelMap() {
