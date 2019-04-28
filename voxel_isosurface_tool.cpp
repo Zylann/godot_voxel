@@ -42,7 +42,7 @@ inline void do_op(VoxelBuffer &buffer, int x, int y, int z, float d1, VoxelIsoSu
 			break;
 
 		case VoxelIsoSurfaceTool::OP_SUBTRACT:
-			res = MAX(d1, buffer.get_voxel_iso(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL));
+			res = MAX(1.0 - d1, buffer.get_voxel_iso(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL));
 			break;
 
 		case VoxelIsoSurfaceTool::OP_SET:
