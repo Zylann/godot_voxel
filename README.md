@@ -23,7 +23,7 @@ What this module provides
 - Voxel storage using 8-bit channels like images for any general purpose
 - Data paging using blocks of 16x16x16 voxels, so the world can be streamed with threads as you move
 - Minecraft-style terrain with voxels as types, with multiple materials and baked ambient occlusion
-- Smooth terrain with voxels as distance field (using extensions of marching cubes on a distance field)
+- Smooth terrain with voxels as distance field (using extensions of marching cubes)
 - Simple interface for custom terrain generators (block by block using threads)
 
 
