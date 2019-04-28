@@ -866,8 +866,8 @@ static bool _raycast_binding_predicate(Vector3i pos, void *context_ptr) {
 	if (voxel.is_transparent() == false)
 		return true;
 
-	int v1 = map->get_voxel(pos, Voxel::CHANNEL_ISOLEVEL);
-	return v1 - 128 >= 0;
+	float v1 = map->get_voxel_f(pos.x, pos.y, pos.z, Voxel::CHANNEL_ISOLEVEL);
+	return v1 < 0;
 }
 
 void VoxelTerrain::_make_area_dirty_binding(AABB aabb) {
