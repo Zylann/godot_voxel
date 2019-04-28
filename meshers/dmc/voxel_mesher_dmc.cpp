@@ -1317,7 +1317,7 @@ float VoxelMesherDMC::get_geometric_error() const {
 	return _geometric_error;
 }
 
-Array VoxelMesherDMC::build(const VoxelBuffer &voxels) {
+void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) {
 
 	// Requirements:
 	// - Voxel data must be padded
@@ -1328,17 +1328,18 @@ Array VoxelMesherDMC::build(const VoxelBuffer &voxels) {
 
 	if (voxels.is_uniform(VoxelBuffer::CHANNEL_ISOLEVEL)) {
 		// That won't produce any polygon
-		return Array();
+		return;
 	}
 
-	int padding = 2;
+	ERR_FAIL_COND(padding < MINIMUM_PADDING);
+
 	const Vector3i buffer_size = voxels.get_size();
 	// Taking previous power of two because the algorithm uses an integer cubic octree, and data should be padded
 	int chunk_size = previous_power_of_2(MIN(MIN(buffer_size.x, buffer_size.y), buffer_size.z));
 
-	ERR_FAIL_COND_V(voxels.get_size().x < chunk_size + padding * 2, Array());
-	ERR_FAIL_COND_V(voxels.get_size().y < chunk_size + padding * 2, Array());
-	ERR_FAIL_COND_V(voxels.get_size().z < chunk_size + padding * 2, Array());
+	ERR_FAIL_COND(voxels.get_size().x < chunk_size + padding * 2);
+	ERR_FAIL_COND(voxels.get_size().y < chunk_size + padding * 2);
+	ERR_FAIL_COND(voxels.get_size().z < chunk_size + padding * 2);
 
 	// Construct an intermediate to handle padding transparently
 	dmc::VoxelAccess voxels_access(voxels, Vector3i(padding));
@@ -1427,33 +1428,17 @@ Array VoxelMesherDMC::build(const VoxelBuffer &voxels) {
 	// TODO Marching squares skirts
 
 	// surfaces[material][array_type], for now single material
-	Array surfaces;
-	surfaces.append(surface);
-	return surfaces;
+	output.surfaces.push_back(surface);
+
+	if (_mesh_mode == MESH_NORMAL) {
+		output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
+	} else {
+		output.primitive_type = Mesh::PRIMITIVE_LINES;
+	}
 }
 
-Ref<ArrayMesh> VoxelMesherDMC::build_mesh(Ref<VoxelBuffer> voxels) {
-
-	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
-
-	Array surfaces = build(**voxels);
-
-	if (surfaces.empty()) {
-		return Ref<ArrayMesh>();
-	}
-
-	Ref<ArrayMesh> mesh;
-	mesh.instance();
-
-	for (int i = 0; i < surfaces.size(); ++i) {
-		if (_mesh_mode == MESH_NORMAL) {
-			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surfaces[i]);
-		} else {
-			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, surfaces[i]);
-		}
-	}
-
-	return mesh;
+int VoxelMesherDMC::get_minimum_padding() const {
+	return MINIMUM_PADDING;
 }
 
 Dictionary VoxelMesherDMC::get_stats() const {
@@ -1476,7 +1461,6 @@ void VoxelMesherDMC::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_geometric_error", "error"), &VoxelMesherDMC::set_geometric_error);
 	ClassDB::bind_method(D_METHOD("get_geometric_error"), &VoxelMesherDMC::get_geometric_error);
 
-	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer"), &VoxelMesherDMC::build_mesh);
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelMesherDMC::get_stats);
 
 	BIND_ENUM_CONSTANT(MESH_NORMAL);

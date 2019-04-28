@@ -98,7 +98,6 @@ private:
 
 	void make_all_view_dirty_deferred();
 	void reset_updater();
-	int get_block_padding() const;
 
 	Spatial *get_viewer(NodePath path) const;
 

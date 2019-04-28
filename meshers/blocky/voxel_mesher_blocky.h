@@ -3,14 +3,13 @@
 
 #include "../../util/zprofiling.h"
 #include "../../voxel.h"
-#include "../../voxel_buffer.h"
 #include "../../voxel_library.h"
+#include "../voxel_mesher.h"
 #include <core/reference.h>
 #include <scene/resources/mesh.h>
 
-// TODO Should be renamed VoxelMesherBlocky or something like that
-class VoxelMesherBlocky : public Reference {
-	GDCLASS(VoxelMesherBlocky, Reference)
+class VoxelMesherBlocky : public VoxelMesher {
+	GDCLASS(VoxelMesherBlocky, VoxelMesher)
 
 public:
 	static const unsigned int MAX_MATERIALS = 8; // Arbitrary. Tweak if needed.
@@ -27,13 +26,14 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const { return _bake_occlusion; }
 
-	Array build(const VoxelBuffer &buffer_ref, unsigned int channel, int padding);
-	Ref<ArrayMesh> build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Array materials, Ref<ArrayMesh> mesh = Ref<ArrayMesh>());
+	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) override;
+	int get_minimum_padding() const override;
 
 protected:
 	static void _bind_methods();
 
 private:
+	// TODO Replace those with std::vector, it's faster
 	struct Arrays {
 		Vector<Vector3> positions;
 		Vector<Vector3> normals;

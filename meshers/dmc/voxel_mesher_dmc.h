@@ -1,7 +1,7 @@
 #ifndef VOXEL_MESHER_DMC_H
 #define VOXEL_MESHER_DMC_H
 
-#include "../../voxel_buffer.h"
+#include "../voxel_mesher.h"
 #include "hermite_value.h"
 #include "mesh_builder.h"
 #include "object_pool.h"
@@ -64,9 +64,11 @@ struct DualGrid {
 
 } // namespace dmc
 
-class VoxelMesherDMC : public Reference {
-	GDCLASS(VoxelMesherDMC, Reference)
+class VoxelMesherDMC : public VoxelMesher {
+	GDCLASS(VoxelMesherDMC, VoxelMesher)
 public:
+	static const int MINIMUM_PADDING = 2;
+
 	enum MeshMode {
 		MESH_NORMAL,
 		MESH_WIREFRAME,
@@ -91,8 +93,8 @@ public:
 	void set_geometric_error(real_t geometric_error);
 	float get_geometric_error() const;
 
-	Array build(const VoxelBuffer &voxels);
-	Ref<ArrayMesh> build_mesh(Ref<VoxelBuffer> voxels);
+	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) override;
+	int get_minimum_padding() const override;
 
 	Dictionary get_stats() const;
 

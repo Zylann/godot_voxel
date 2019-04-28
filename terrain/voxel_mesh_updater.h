@@ -26,8 +26,8 @@ public:
 	};
 
 	struct OutputBlock {
-		Array model_surfaces;
-		Array smooth_surfaces;
+		VoxelMesher::Output blocky_surfaces;
+		VoxelMesher::Output smooth_surfaces;
 		Vector3i position;
 	};
 
@@ -65,6 +65,8 @@ public:
 
 	void push(const Input &input);
 	void pop(Output &output);
+
+	int get_required_padding() const;
 
 private:
 	static void _thread_func(void *p_self);

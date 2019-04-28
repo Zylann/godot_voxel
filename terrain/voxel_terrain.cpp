@@ -286,15 +286,6 @@ void VoxelTerrain::reset_updater() {
 	_block_updater = memnew(VoxelMeshUpdater(_library, params));
 }
 
-int VoxelTerrain::get_block_padding() const {
-	// How many neighbor voxels we should pad for mesh updates to be seamless
-	// TODO Generalize padding retrieval, or split terrain systems because blocky and smooth are two different beasts
-	// - Blocky needs padding of 1
-	// - Transvoxel needs padding of 2
-	// - DMC needs padding of 2
-	return _smooth_meshing_enabled ? 2 : 1;
-}
-
 inline int get_border_index(int x, int max) {
 	return x == 0 ? 0 : x != max ? 1 : 2;
 }
@@ -757,7 +748,7 @@ void VoxelTerrain::_process() {
 
 			// TODO Make the buffer re-usable
 			unsigned int block_size = _map->get_block_size();
-			unsigned int padding = get_block_padding();
+			unsigned int padding = _block_updater->get_required_padding();
 			nbuffer->create(block_size + 2 * padding, block_size + 2 * padding, block_size + 2 * padding);
 
 			unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_ISOLEVEL);
@@ -820,30 +811,30 @@ void VoxelTerrain::_process() {
 			mesh.instance();
 
 			int surface_index = 0;
-			for (int i = 0; i < ob.model_surfaces.size(); ++i) {
+			for (int i = 0; i < ob.blocky_surfaces.surfaces.size(); ++i) {
 
-				Array surface = ob.model_surfaces[i];
+				Array surface = ob.blocky_surfaces.surfaces[i];
 				if (surface.empty()) {
 					continue;
 				}
 
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-				mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surface);
+				mesh->add_surface_from_arrays(ob.blocky_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
 
 				++surface_index;
 			}
 
-			for (int i = 0; i < ob.smooth_surfaces.size(); ++i) {
+			for (int i = 0; i < ob.smooth_surfaces.surfaces.size(); ++i) {
 
-				Array surface = ob.smooth_surfaces[i];
+				Array surface = ob.smooth_surfaces.surfaces[i];
 				if (surface.empty()) {
 					continue;
 				}
 
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
 				// TODO Problem here, the mesher could be configured to output wireframe! Need to output some MeshData struct instead
-				mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surface);
+				mesh->add_surface_from_arrays(ob.smooth_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				// No material supported yet
 				++surface_index;

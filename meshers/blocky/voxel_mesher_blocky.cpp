@@ -4,31 +4,13 @@
 #include "../../voxel_library.h"
 #include <core/os/os.h>
 
+namespace {
+
 template <typename T>
 void raw_copy_to(PoolVector<T> &to, const Vector<T> &from) {
 	to.resize(from.size());
 	typename PoolVector<T>::Write w = to.write();
 	memcpy(w.ptr(), from.ptr(), from.size() * sizeof(T));
-}
-
-VoxelMesherBlocky::VoxelMesherBlocky() :
-		_baked_occlusion_darkness(0.8),
-		_bake_occlusion(true) {}
-
-void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {
-	_library = library;
-}
-
-void VoxelMesherBlocky::set_occlusion_darkness(float darkness) {
-	_baked_occlusion_darkness = darkness;
-	if (_baked_occlusion_darkness < 0.0)
-		_baked_occlusion_darkness = 0.0;
-	else if (_baked_occlusion_darkness >= 1.0)
-		_baked_occlusion_darkness = 1.0;
-}
-
-void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
-	_bake_occlusion = enable;
 }
 
 inline Color Color_greyscale(float c) {
@@ -51,36 +33,35 @@ inline bool is_transparent(const VoxelLibrary &lib, int voxel_id) {
 	return true;
 }
 
-Ref<ArrayMesh> VoxelMesherBlocky::build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Array materials, Ref<ArrayMesh> mesh) {
-	ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<ArrayMesh>());
+} // namespace
 
-	VoxelBuffer &buffer = **buffer_ref;
-	Array surfaces = build(buffer, channel, MINIMUM_PADDING);
+VoxelMesherBlocky::VoxelMesherBlocky() :
+		_baked_occlusion_darkness(0.8),
+		_bake_occlusion(true) {}
 
-	if (mesh.is_null())
-		mesh.instance();
-
-	int surface = mesh->get_surface_count();
-	for (int i = 0; i < surfaces.size(); ++i) {
-
-		Array arrays = surfaces[i];
-		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
-
-		Ref<Material> material = materials[i];
-		if (material.is_valid()) {
-			mesh->surface_set_material(surface, material);
-		}
-	}
-
-	return mesh;
+void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {
+	_library = library;
 }
 
-Array VoxelMesherBlocky::build(const VoxelBuffer &buffer, unsigned int channel, int padding) {
+void VoxelMesherBlocky::set_occlusion_darkness(float darkness) {
+	_baked_occlusion_darkness = darkness;
+	if (_baked_occlusion_darkness < 0.0)
+		_baked_occlusion_darkness = 0.0;
+	else if (_baked_occlusion_darkness >= 1.0)
+		_baked_occlusion_darkness = 1.0;
+}
+
+void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
+	_bake_occlusion = enable;
+}
+
+void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &buffer, int padding) {
 	//uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
-	ERR_FAIL_COND_V(_library.is_null(), Array());
-	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Array());
-	ERR_FAIL_COND_V(padding < MINIMUM_PADDING, Array());
+	ERR_FAIL_COND(_library.is_null());
+	ERR_FAIL_COND(padding < MINIMUM_PADDING);
+
+	const int channel = VoxelBuffer::CHANNEL_TYPE;
 
 	const VoxelLibrary &library = **_library;
 
@@ -118,7 +99,7 @@ Array VoxelMesherBlocky::build(const VoxelBuffer &buffer, unsigned int channel, 
 	// That means we can use raw pointers to voxel data inside instead of using the higher-level getters,
 	// and then save a lot of time.
 
-	uint8_t *type_buffer = buffer.get_channel_raw(Voxel::CHANNEL_TYPE);
+	uint8_t *type_buffer = buffer.get_channel_raw(channel);
 	//       _
 	//      | \
 	//     /\ \\
@@ -132,7 +113,7 @@ Array VoxelMesherBlocky::build(const VoxelBuffer &buffer, unsigned int channel, 
 		// No data to read, the channel is probably uniform
 		// TODO This is an invalid behavior IF sending a full block of uniformly opaque cubes,
 		// however not likely for terrains because with neighbor padding, such a case means no face would be generated anyways
-		return Array();
+		return;
 	}
 
 	//CRASH_COND(memarr_len(type_buffer) != buffer.get_volume() * sizeof(uint8_t));
@@ -367,8 +348,6 @@ Array VoxelMesherBlocky::build(const VoxelBuffer &buffer, unsigned int channel, 
 	//	print_line(String("Made mesh v: ") + String::num(_arrays[0].positions.size())
 	//			+ String(", i: ") + String::num(_arrays[0].indices.size()));
 
-	Array surfaces;
-
 	// TODO We could return a single byte array and use Mesh::add_surface down the line?
 
 	for (int i = 0; i < MAX_MATERIALS; ++i) {
@@ -407,15 +386,19 @@ Array VoxelMesherBlocky::build(const VoxelBuffer &buffer, unsigned int channel, 
 				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
 			}
 
-			surfaces.append(mesh_arrays);
+			output.surfaces.push_back(mesh_arrays);
 		}
 	}
+
+	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 
 	//uint64_t time_commit = OS::get_singleton()->get_ticks_usec() - time_before;
 
 	//print_line(String("P: {0}, M: {1}, C: {2}").format(varray(time_prep, time_meshing, time_commit)));
+}
 
-	return surfaces;
+int VoxelMesherBlocky::get_minimum_padding() const {
+	return MINIMUM_PADDING;
 }
 
 void VoxelMesherBlocky::_bind_methods() {
@@ -428,8 +411,6 @@ void VoxelMesherBlocky::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
-
-	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "channel", "materials", "existing_mesh"), &VoxelMesherBlocky::build_mesh);
 
 #ifdef VOXEL_PROFILING
 	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelMesherBlocky::get_profiling_info);

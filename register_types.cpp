@@ -34,6 +34,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelIsoSurfaceTool>();
 
 	// Meshers
+	ClassDB::register_class<VoxelMesher>();
 	ClassDB::register_class<VoxelMesherBlocky>();
 	ClassDB::register_class<VoxelMesherTransvoxel>();
 	ClassDB::register_class<VoxelMesherDMC>();

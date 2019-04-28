@@ -107,6 +107,17 @@ void VoxelMeshUpdater::pop(Output &output) {
 	_shared_output.blocks.clear();
 }
 
+int VoxelMeshUpdater::get_required_padding() const {
+
+	int padding = _blocky_mesher->get_minimum_padding();
+
+	if (_dmc_mesher.is_valid()) {
+		padding = max(padding, _dmc_mesher->get_minimum_padding());
+	}
+
+	return padding;
+}
+
 void VoxelMeshUpdater::_thread_func(void *p_self) {
 	VoxelMeshUpdater *self = reinterpret_cast<VoxelMeshUpdater *>(p_self);
 	self->thread_func();
@@ -181,17 +192,12 @@ void VoxelMeshUpdater::process_block(const InputBlock &block, OutputBlock &outpu
 
 	CRASH_COND(block.voxels.is_null());
 
-	int padding = 1;
-	if (_dmc_mesher.is_valid()) {
-		padding = 2;
-	}
+	int padding = get_required_padding();
 
-	// Build cubic parts of the mesh
-	output.model_surfaces = _blocky_mesher->build(**block.voxels, Voxel::CHANNEL_TYPE, padding);
+	_blocky_mesher->build(output.blocky_surfaces, **block.voxels, padding);
 
 	if (_dmc_mesher.is_valid()) {
-		// Build smooth parts of the mesh
-		output.smooth_surfaces = _dmc_mesher->build(**block.voxels);
+		_dmc_mesher->build(output.smooth_surfaces, **block.voxels, padding);
 	}
 
 	output.position = block.position;

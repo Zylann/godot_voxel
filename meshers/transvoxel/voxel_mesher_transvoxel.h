@@ -1,17 +1,17 @@
 #ifndef VOXEL_MESHER_SMOOTH_H
 #define VOXEL_MESHER_SMOOTH_H
 
-#include "../../voxel_buffer.h"
+#include "../voxel_mesher.h"
 #include <scene/resources/mesh.h>
 
-class VoxelMesherTransvoxel : public Reference {
-	GDCLASS(VoxelMesherTransvoxel, Reference)
+class VoxelMesherTransvoxel : public VoxelMesher {
+	GDCLASS(VoxelMesherTransvoxel, VoxelMesher)
 
 public:
-	VoxelMesherTransvoxel();
+	static const int MINIMUM_PADDING = 2;
 
-	Ref<ArrayMesh> build_mesh(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh = Ref<ArrayMesh>());
-	Array build(const VoxelBuffer &voxels, unsigned int channel);
+	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) override;
+	int get_minimum_padding() const override;
 
 protected:
 	static void _bind_methods();

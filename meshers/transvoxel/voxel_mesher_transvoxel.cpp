@@ -3,6 +3,8 @@
 #include "transvoxel_tables.cpp"
 #include <core/os/os.h>
 
+namespace {
+
 inline float tof(int8_t v) {
 	return static_cast<float>(v) / 256.f;
 }
@@ -58,6 +60,8 @@ void copy_to(PoolVector<T> &to, Vector<T> &from) {
 	}
 }
 
+} // namespace
+
 VoxelMesherTransvoxel::ReuseCell::ReuseCell() {
 	case_index = 0;
 	for (unsigned int i = 0; i < 4; ++i) {
@@ -65,32 +69,15 @@ VoxelMesherTransvoxel::ReuseCell::ReuseCell() {
 	}
 }
 
-VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
+int VoxelMesherTransvoxel::get_minimum_padding() const {
+	return MINIMUM_PADDING;
 }
 
-Ref<ArrayMesh> VoxelMesherTransvoxel::build_mesh(Ref<VoxelBuffer> voxels_ref, unsigned int channel, Ref<ArrayMesh> mesh) {
+void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) {
 
-	ERR_FAIL_COND_V(voxels_ref.is_null(), Ref<ArrayMesh>());
+	ERR_FAIL_COND(padding < MINIMUM_PADDING);
 
-	VoxelBuffer &buffer = **voxels_ref;
-	Array surfaces = build(buffer, channel);
-
-	if (mesh.is_null())
-		mesh.instance();
-
-	//int surface = mesh->get_surface_count();
-	for (int i = 0; i < surfaces.size(); ++i) {
-		Array arrays = surfaces[i];
-		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
-		//mesh->surface_set_material(surface, _materials[i]);
-	}
-
-	return mesh;
-}
-
-Array VoxelMesherTransvoxel::build(const VoxelBuffer &voxels, unsigned int channel) {
-
-	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Array());
+	int channel = VoxelBuffer::CHANNEL_ISOLEVEL;
 
 	// Initialize dynamic memory:
 	// These vectors are re-used.
@@ -109,7 +96,7 @@ Array VoxelMesherTransvoxel::build(const VoxelBuffer &voxels, unsigned int chann
 
 	if (m_output_vertices.size() == 0) {
 		// The mesh can be empty
-		return Array();
+		return;
 	}
 
 	PoolVector<Vector3> vertices;
@@ -128,10 +115,8 @@ Array VoxelMesherTransvoxel::build(const VoxelBuffer &voxels, unsigned int chann
 	}
 	arrays[Mesh::ARRAY_INDEX] = indices;
 
-	Array surfaces;
-	surfaces.append(arrays);
-
-	return surfaces;
+	output.surfaces.push_back(arrays);
+	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 }
 
 void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned int channel) {
@@ -393,6 +378,4 @@ void VoxelMesherTransvoxel::emit_vertex(Vector3 primary, Vector3 normal) {
 }
 
 void VoxelMesherTransvoxel::_bind_methods() {
-
-	ClassDB::bind_method(D_METHOD("build", "voxels", "channel", "existing_mesh"), &VoxelMesherTransvoxel::build_mesh, DEFVAL(Variant()));
 }
