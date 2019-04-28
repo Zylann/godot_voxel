@@ -7,6 +7,7 @@
 #include "../voxel_mesher.h"
 #include <core/reference.h>
 #include <scene/resources/mesh.h>
+#include <vector>
 
 class VoxelMesherBlocky : public VoxelMesher {
 	GDCLASS(VoxelMesherBlocky, VoxelMesher)
@@ -33,13 +34,14 @@ protected:
 	static void _bind_methods();
 
 private:
-	// TODO Replace those with std::vector, it's faster
+	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
+	// See why: https://github.com/godotengine/godot/issues/24731
 	struct Arrays {
-		Vector<Vector3> positions;
-		Vector<Vector3> normals;
-		Vector<Vector2> uvs;
-		Vector<Color> colors;
-		Vector<int> indices;
+		std::vector<Vector3> positions;
+		std::vector<Vector3> normals;
+		std::vector<Vector2> uvs;
+		std::vector<Color> colors;
+		std::vector<int> indices;
 	};
 
 	Ref<VoxelLibrary> _library;

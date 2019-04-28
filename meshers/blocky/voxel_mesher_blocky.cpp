@@ -231,7 +231,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 								{
 									int append_index = arrays.positions.size();
 									arrays.positions.resize(arrays.positions.size() + vertex_count);
-									Vector3 *w = arrays.positions.ptrw() + append_index;
+									Vector3 *w = arrays.positions.data() + append_index;
 									for (unsigned int i = 0; i < vertex_count; ++i) {
 										w[i] = rv[i] + pos;
 									}
@@ -240,13 +240,13 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 								{
 									int append_index = arrays.uvs.size();
 									arrays.uvs.resize(arrays.uvs.size() + vertex_count);
-									memcpy(arrays.uvs.ptrw() + append_index, rt.ptr(), vertex_count * sizeof(Vector2));
+									memcpy(arrays.uvs.data() + append_index, rt.ptr(), vertex_count * sizeof(Vector2));
 								}
 
 								{
 									int append_index = arrays.normals.size();
 									arrays.normals.resize(arrays.normals.size() + vertex_count);
-									Vector3 *w = arrays.normals.ptrw() + append_index;
+									Vector3 *w = arrays.normals.data() + append_index;
 									for (unsigned int i = 0; i < vertex_count; ++i) {
 										w[i] = Cube::g_side_normals[side].to_vec3();
 									}
@@ -257,7 +257,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 
 									int append_index = arrays.colors.size();
 									arrays.colors.resize(arrays.colors.size() + vertex_count);
-									Color *w = arrays.colors.ptrw() + append_index;
+									Color *w = arrays.colors.data() + append_index;
 
 									for (unsigned int i = 0; i < vertex_count; ++i) {
 										Vector3 v = rv[i];
@@ -290,7 +290,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 								{
 									int i = arrays.indices.size();
 									arrays.indices.resize(arrays.indices.size() + index_count);
-									int *w = arrays.indices.ptrw();
+									int *w = arrays.indices.data();
 									for (unsigned int j = 0; j < index_count; ++j) {
 										w[i++] = index_offset + ri[j];
 									}
