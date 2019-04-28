@@ -1,8 +1,8 @@
 #include "voxel_mesher_dmc.h"
-#include "../cube_tables.h"
+#include "../../cube_tables.h"
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
-#include "octree_utility.h"
+#include "octree_tables.h"
 #include <core/os/os.h>
 
 // Dual marching cubes
@@ -184,7 +184,7 @@ private:
 		for (int i = 0; i < 8; ++i) {
 
 			OctreeNode *child = _pool.create();
-			const int *v = OctreeUtility::g_octant_position[i];
+			const int *v = OctreeTables::g_octant_position[i];
 			child->size = node->size / 2;
 			child->origin = node->origin + Vector3i(v[0], v[1], v[2]) * child->size;
 
@@ -215,7 +215,7 @@ public:
 		// Go all the way down, except leaves because we can't reason bottom-up on them
 		if (node_size > 2) {
 			for (int i = 0; i < 8; ++i) {
-				const int *dir = OctreeUtility::g_octant_position[i];
+				const int *dir = OctreeTables::g_octant_position[i];
 				int child_size = node_size / 2;
 				children[i] = build(node_origin + child_size * Vector3i(dir[0], dir[1], dir[2]), child_size);
 				any_node |= children[i] != nullptr;
@@ -263,7 +263,7 @@ public:
 
 private:
 	inline OctreeNode *create_child(Vector3i parent_origin, int parent_size, int i) const {
-		const int *dir = OctreeUtility::g_octant_position[i];
+		const int *dir = OctreeTables::g_octant_position[i];
 		OctreeNode *child = _pool.create();
 		child->size = parent_size / 2;
 		child->origin = parent_origin + child->size * Vector3i(dir[0], dir[1], dir[2]);

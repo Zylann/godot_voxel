@@ -1,7 +1,7 @@
 #ifndef VOXEL_MESHER_SMOOTH_H
 #define VOXEL_MESHER_SMOOTH_H
 
-#include "../voxel_buffer.h"
+#include "../../voxel_buffer.h"
 #include <scene/resources/mesh.h>
 
 class VoxelMesherTransvoxel : public Reference {

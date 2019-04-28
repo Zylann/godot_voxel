@@ -1,7 +1,7 @@
 #ifndef VOXEL_BUFFER_H
 #define VOXEL_BUFFER_H
 
-#include "vector3i.h"
+#include "math/vector3i.h"
 #include <core/reference.h>
 #include <core/vector.h>
 

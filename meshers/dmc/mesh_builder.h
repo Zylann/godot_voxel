@@ -1,7 +1,7 @@
 #ifndef MESH_BUILDER_H
 #define MESH_BUILDER_H
 
-#include "../utility.h"
+#include "../../util/utility.h"
 #include <core/map.h>
 #include <scene/resources/mesh.h>
 #include <vector>

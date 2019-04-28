@@ -1,12 +1,12 @@
 #ifndef VOXEL_TERRAIN_H
 #define VOXEL_TERRAIN_H
 
-#include "rect3i.h"
-#include "vector3i.h"
+#include "../math/rect3i.h"
+#include "../math/vector3i.h"
+#include "../providers/voxel_provider.h"
+#include "../util/zprofiling.h"
 #include "voxel_mesh_updater.h"
-#include "voxel_provider.h"
 #include "voxel_provider_thread.h"
-#include "zprofiling.h"
 
 #include <scene/3d/spatial.h>
 
@@ -150,7 +150,7 @@ private:
 	bool _run_in_editor;
 	bool _smooth_meshing_enabled;
 
-	Ref<Material> _materials[VoxelMesher::MAX_MATERIALS];
+	Ref<Material> _materials[VoxelMesherBlocky::MAX_MATERIALS];
 
 	Stats _stats;
 };

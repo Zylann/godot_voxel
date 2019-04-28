@@ -1,5 +1,4 @@
 #include "voxel_provider_test.h"
-#include "voxel_map.h"
 
 VARIANT_ENUM_CAST(VoxelProviderTest::Mode)
 

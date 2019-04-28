@@ -1,22 +1,22 @@
-#ifndef VOXEL_MESHER
-#define VOXEL_MESHER
+#ifndef VOXEL_MESHER_BLOCKY_H
+#define VOXEL_MESHER_BLOCKY_H
 
-#include "voxel.h"
-#include "voxel_buffer.h"
-#include "voxel_library.h"
-#include "zprofiling.h"
+#include "../../util/zprofiling.h"
+#include "../../voxel.h"
+#include "../../voxel_buffer.h"
+#include "../../voxel_library.h"
 #include <core/reference.h>
 #include <scene/resources/mesh.h>
 
 // TODO Should be renamed VoxelMesherBlocky or something like that
-class VoxelMesher : public Reference {
-	GDCLASS(VoxelMesher, Reference)
+class VoxelMesherBlocky : public Reference {
+	GDCLASS(VoxelMesherBlocky, Reference)
 
 public:
 	static const unsigned int MAX_MATERIALS = 8; // Arbitrary. Tweak if needed.
 	static const int MINIMUM_PADDING = 1;
 
-	VoxelMesher();
+	VoxelMesherBlocky();
 
 	void set_library(Ref<VoxelLibrary> library);
 	Ref<VoxelLibrary> get_library() const { return _library; }
@@ -53,4 +53,4 @@ private:
 #endif
 };
 
-#endif // VOXEL_MESHER
+#endif // VOXEL_MESHER_BLOCKY_H

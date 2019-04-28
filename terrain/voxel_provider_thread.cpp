@@ -1,10 +1,11 @@
 #include "voxel_provider_thread.h"
-#include "core/os/os.h"
-#include "core/os/semaphore.h"
-#include "core/os/thread.h"
-#include "utility.h"
+#include "../providers/voxel_provider.h"
+#include "../util/utility.h"
 #include "voxel_map.h"
-#include "voxel_provider.h"
+
+#include <core/os/os.h>
+#include <core/os/semaphore.h>
+#include <core/os/thread.h>
 
 VoxelProviderThread::VoxelProviderThread(Ref<VoxelProvider> provider, int block_size_pow2) {
 

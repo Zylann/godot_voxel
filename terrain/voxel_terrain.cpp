@@ -1,10 +1,10 @@
 #include "voxel_terrain.h"
-#include "utility.h"
+#include "../providers/voxel_provider_test.h"
+#include "../util/utility.h"
+#include "../util/voxel_raycast.h"
 #include "voxel_block.h"
 #include "voxel_map.h"
-#include "voxel_provider_test.h"
 #include "voxel_provider_thread.h"
-#include "voxel_raycast.h"
 
 #include <core/engine.h>
 #include <core/os/os.h>
@@ -41,7 +41,7 @@ bool VoxelTerrain::_set(const StringName &p_name, const Variant &p_value) {
 
 	if (p_name.operator String().begins_with("material/")) {
 		int idx = p_name.operator String().get_slicec('/', 1).to_int();
-		ERR_FAIL_COND_V(idx >= VoxelMesher::MAX_MATERIALS || idx < 0, false);
+		ERR_FAIL_COND_V(idx >= VoxelMesherBlocky::MAX_MATERIALS || idx < 0, false);
 		set_material(idx, p_value);
 		return true;
 	}
@@ -53,7 +53,7 @@ bool VoxelTerrain::_get(const StringName &p_name, Variant &r_ret) const {
 
 	if (p_name.operator String().begins_with("material/")) {
 		int idx = p_name.operator String().get_slicec('/', 1).to_int();
-		ERR_FAIL_COND_V(idx >= VoxelMesher::MAX_MATERIALS || idx < 0, false);
+		ERR_FAIL_COND_V(idx >= VoxelMesherBlocky::MAX_MATERIALS || idx < 0, false);
 		r_ret = get_material(idx);
 		return true;
 	}
@@ -63,7 +63,7 @@ bool VoxelTerrain::_get(const StringName &p_name, Variant &r_ret) const {
 
 void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 
-	for (int i = 0; i < VoxelMesher::MAX_MATERIALS; ++i) {
+	for (int i = 0; i < VoxelMesherBlocky::MAX_MATERIALS; ++i) {
 		p_list->push_back(PropertyInfo(Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,SpatialMaterial"));
 	}
 }
@@ -151,12 +151,12 @@ Spatial *VoxelTerrain::get_viewer(NodePath path) const {
 
 void VoxelTerrain::set_material(int id, Ref<Material> material) {
 	// TODO Update existing block surfaces
-	ERR_FAIL_COND(id < 0 || id >= VoxelMesher::MAX_MATERIALS);
+	ERR_FAIL_COND(id < 0 || id >= VoxelMesherBlocky::MAX_MATERIALS);
 	_materials[id] = material;
 }
 
 Ref<Material> VoxelTerrain::get_material(int id) const {
-	ERR_FAIL_COND_V(id < 0 || id >= VoxelMesher::MAX_MATERIALS, Ref<Material>());
+	ERR_FAIL_COND_V(id < 0 || id >= VoxelMesherBlocky::MAX_MATERIALS, Ref<Material>());
 	return _materials[id];
 }
 

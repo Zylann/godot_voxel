@@ -1,5 +1,5 @@
 #include "voxel_provider.h"
-#include "voxel_map.h"
+#include <core/script_language.h>
 
 void VoxelProvider::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels) {
 	ERR_FAIL_COND(out_buffer.is_null());

@@ -1,7 +1,7 @@
 #ifndef VOXEL_BLOCK_H
 #define VOXEL_BLOCK_H
 
-#include "voxel_buffer.h"
+#include "../voxel_buffer.h"
 
 #include <scene/3d/mesh_instance.h>
 #include <scene/3d/physics_body.h>

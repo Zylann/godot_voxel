@@ -1,11 +1,11 @@
 #ifndef VOXEL_MESHER_DMC_H
 #define VOXEL_MESHER_DMC_H
 
-#include "../voxel_buffer.h"
+#include "../../voxel_buffer.h"
 #include "hermite_value.h"
 #include "mesh_builder.h"
 #include "object_pool.h"
-#include "scene/resources/mesh.h"
+#include <scene/resources/mesh.h>
 
 namespace dmc {
 

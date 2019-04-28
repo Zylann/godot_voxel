@@ -1,8 +1,8 @@
 #ifndef CUBE_TABLES_H
 #define CUBE_TABLES_H
 
+#include "math/vector3i.h"
 #include <core/math/vector3.h>
-#include "vector3i.h"
 
 namespace Cube {
 
@@ -71,7 +71,6 @@ extern const unsigned int g_edge_corners[EDGE_COUNT][2];
 const unsigned int MOORE_NEIGHBORING_3D_COUNT = 26;
 extern const Vector3i g_moore_neighboring_3d[MOORE_NEIGHBORING_3D_COUNT];
 
-} // namespace CubeTables
-
+} // namespace Cube
 
 #endif // CUBE_TABLES_H

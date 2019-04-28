@@ -5,9 +5,9 @@
 #include <core/os/thread.h>
 #include <core/vector.h>
 
-#include "dmc/voxel_mesher_dmc.h"
-#include "voxel_buffer.h"
-#include "voxel_mesher.h"
+#include "../meshers/blocky/voxel_mesher_blocky.h"
+#include "../meshers/dmc/voxel_mesher_dmc.h"
+#include "../voxel_buffer.h"
 
 class VoxelMeshUpdater {
 public:
@@ -83,7 +83,7 @@ private:
 	Output _shared_output;
 	Mutex *_output_mutex;
 
-	Ref<VoxelMesher> _blocky_mesher;
+	Ref<VoxelMesherBlocky> _blocky_mesher;
 	Ref<VoxelMesherDMC> _dmc_mesher;
 
 	Input _input;

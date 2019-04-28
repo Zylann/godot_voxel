@@ -1,7 +1,7 @@
 #ifndef HEADER_VOXEL_UTILITY_H
 #define HEADER_VOXEL_UTILITY_H
 
-#include "vector3i.h"
+#include "../math/vector3i.h"
 #include <core/pool_vector.h>
 #include <core/ustring.h>
 #include <core/vector.h>
@@ -54,7 +54,7 @@ void raw_copy_to(PoolVector<T> &to, const std::vector<T> &from) {
 }
 
 // Trilinear interpolation between corner values of a cube.
-// Cube points respect the same position as in octree_utility.h
+// Cube points respect the same position as in octree_tables.h
 template <typename T>
 inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4, const T v5, const T v6, const T v7, Vector3 position) {
 

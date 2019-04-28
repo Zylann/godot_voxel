@@ -1,4 +1,4 @@
-#include "vector3i.h"
+#include "../math/vector3i.h"
 #include <core/math/vector3.h>
 
 // TODO that could be a template function

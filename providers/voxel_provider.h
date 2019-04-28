@@ -1,7 +1,7 @@
 #ifndef VOXEL_PROVIDER_H
 #define VOXEL_PROVIDER_H
 
-#include "voxel_buffer.h"
+#include "../voxel_buffer.h"
 #include <core/resource.h>
 
 class VoxelProvider : public Resource {

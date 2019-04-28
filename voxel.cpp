@@ -1,6 +1,6 @@
 #include "voxel.h"
+#include "meshers/blocky/voxel_mesher_blocky.h" // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
 #include "voxel_library.h"
-#include "voxel_mesher.h"
 
 #define STRLEN(x) (sizeof(x) / sizeof(x[0]))
 
@@ -110,7 +110,7 @@ Ref<Voxel> Voxel::set_color(Color color) {
 }
 
 Ref<Voxel> Voxel::set_material_id(unsigned int id) {
-	ERR_FAIL_COND_V(id >= VoxelMesher::MAX_MATERIALS, Ref<Voxel>(this));
+	ERR_FAIL_COND_V(id >= VoxelMesherBlocky::MAX_MATERIALS, Ref<Voxel>(this));
 	_material_id = id;
 	return Ref<Voxel>(this);
 }

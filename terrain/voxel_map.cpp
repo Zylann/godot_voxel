@@ -1,5 +1,5 @@
 #include "voxel_map.h"
-#include "cube_tables.h"
+#include "../cube_tables.h"
 #include "voxel_block.h"
 
 #include "core/os/os.h"

@@ -1,5 +1,5 @@
 #include "voxel_isosurface_tool.h"
-#include "utility.h"
+#include "util/utility.h"
 
 VoxelIsoSurfaceTool::VoxelIsoSurfaceTool() {
 	_iso_scale = 1.0;

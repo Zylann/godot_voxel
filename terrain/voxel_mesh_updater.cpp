@@ -1,5 +1,5 @@
 #include "voxel_mesh_updater.h"
-#include "utility.h"
+#include "../util/utility.h"
 #include <core/os/os.h>
 
 VoxelMeshUpdater::VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams params) {

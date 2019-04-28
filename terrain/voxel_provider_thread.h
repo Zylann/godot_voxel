@@ -1,8 +1,8 @@
 #ifndef VOXEL_PROVIDER_THREAD_H
 #define VOXEL_PROVIDER_THREAD_H
 
-#include "core/resource.h"
-#include "vector3i.h"
+#include "../math/vector3i.h"
+#include <core/resource.h>
 
 class VoxelProvider;
 class VoxelBuffer;

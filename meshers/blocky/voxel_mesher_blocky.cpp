@@ -1,7 +1,7 @@
-#include "voxel_mesher.h"
-#include "cube_tables.h"
-#include "utility.h"
-#include "voxel_library.h"
+#include "voxel_mesher_blocky.h"
+#include "../../cube_tables.h"
+#include "../../util/utility.h"
+#include "../../voxel_library.h"
 #include <core/os/os.h>
 
 template <typename T>
@@ -11,15 +11,15 @@ void raw_copy_to(PoolVector<T> &to, const Vector<T> &from) {
 	memcpy(w.ptr(), from.ptr(), from.size() * sizeof(T));
 }
 
-VoxelMesher::VoxelMesher() :
+VoxelMesherBlocky::VoxelMesherBlocky() :
 		_baked_occlusion_darkness(0.8),
 		_bake_occlusion(true) {}
 
-void VoxelMesher::set_library(Ref<VoxelLibrary> library) {
+void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {
 	_library = library;
 }
 
-void VoxelMesher::set_occlusion_darkness(float darkness) {
+void VoxelMesherBlocky::set_occlusion_darkness(float darkness) {
 	_baked_occlusion_darkness = darkness;
 	if (_baked_occlusion_darkness < 0.0)
 		_baked_occlusion_darkness = 0.0;
@@ -27,7 +27,7 @@ void VoxelMesher::set_occlusion_darkness(float darkness) {
 		_baked_occlusion_darkness = 1.0;
 }
 
-void VoxelMesher::set_occlusion_enabled(bool enable) {
+void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
 	_bake_occlusion = enable;
 }
 
@@ -51,7 +51,7 @@ inline bool is_transparent(const VoxelLibrary &lib, int voxel_id) {
 	return true;
 }
 
-Ref<ArrayMesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Array materials, Ref<ArrayMesh> mesh) {
+Ref<ArrayMesh> VoxelMesherBlocky::build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Array materials, Ref<ArrayMesh> mesh) {
 	ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<ArrayMesh>());
 
 	VoxelBuffer &buffer = **buffer_ref;
@@ -75,7 +75,7 @@ Ref<ArrayMesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int
 	return mesh;
 }
 
-Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, int padding) {
+Array VoxelMesherBlocky::build(const VoxelBuffer &buffer, unsigned int channel, int padding) {
 	//uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
 	ERR_FAIL_COND_V(_library.is_null(), Array());
@@ -418,20 +418,20 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, int pa
 	return surfaces;
 }
 
-void VoxelMesher::_bind_methods() {
+void VoxelMesherBlocky::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_library", "voxel_library"), &VoxelMesher::set_library);
-	ClassDB::bind_method(D_METHOD("get_library"), &VoxelMesher::get_library);
+	ClassDB::bind_method(D_METHOD("set_library", "voxel_library"), &VoxelMesherBlocky::set_library);
+	ClassDB::bind_method(D_METHOD("get_library"), &VoxelMesherBlocky::get_library);
 
-	ClassDB::bind_method(D_METHOD("set_occlusion_enabled", "enable"), &VoxelMesher::set_occlusion_enabled);
-	ClassDB::bind_method(D_METHOD("get_occlusion_enabled"), &VoxelMesher::get_occlusion_enabled);
+	ClassDB::bind_method(D_METHOD("set_occlusion_enabled", "enable"), &VoxelMesherBlocky::set_occlusion_enabled);
+	ClassDB::bind_method(D_METHOD("get_occlusion_enabled"), &VoxelMesherBlocky::get_occlusion_enabled);
 
-	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesher::set_occlusion_darkness);
-	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesher::get_occlusion_darkness);
+	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
+	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
 
-	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "channel", "materials", "existing_mesh"), &VoxelMesher::build_mesh);
+	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "channel", "materials", "existing_mesh"), &VoxelMesherBlocky::build_mesh);
 
 #ifdef VOXEL_PROFILING
-	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelMesher::get_profiling_info);
+	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelMesherBlocky::get_profiling_info);
 #endif
 }

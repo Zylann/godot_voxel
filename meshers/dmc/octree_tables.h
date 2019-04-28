@@ -1,7 +1,7 @@
-#ifndef OCTREE_UTILITY_H
-#define OCTREE_UTILITY_H
+#ifndef OCTREE_TABLES_H
+#define OCTREE_TABLES_H
 
-namespace OctreeUtility {
+namespace OctreeTables {
 
 //  Corners:                                    Octants:
 //
@@ -40,6 +40,6 @@ const int g_octant_position[8][3]{
 	{ 0, 1, 1 }
 };
 
-} // namespace OctreeUtility
+} // namespace OctreeTables
 
-#endif // OCTREE_UTILITY_H
+#endif // OCTREE_TABLES_H
