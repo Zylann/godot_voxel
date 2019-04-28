@@ -10,9 +10,7 @@
 #include <core/os/os.h>
 #include <scene/3d/mesh_instance.h>
 
-VoxelTerrain::VoxelTerrain() :
-		Spatial(),
-		_generate_collisions(true) {
+VoxelTerrain::VoxelTerrain() {
 
 	_map = Ref<VoxelMap>(memnew(VoxelMap));
 
@@ -24,6 +22,7 @@ VoxelTerrain::VoxelTerrain() :
 
 	_generate_collisions = false;
 	_run_in_editor = false;
+	_smooth_meshing_enabled = false;
 }
 
 VoxelTerrain::~VoxelTerrain() {
@@ -108,15 +107,7 @@ void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
 #endif
 		_library = library;
 
-		if (_block_updater) {
-			memdelete(_block_updater);
-			_block_updater = NULL;
-		}
-
-		// TODO Thread-safe way to change those parameters
-		VoxelMeshUpdater::MeshingParams params;
-
-		_block_updater = memnew(VoxelMeshUpdater(_library, params));
+		reset_updater();
 
 		// Voxel appearance might completely change
 		make_all_view_dirty_deferred();
@@ -167,6 +158,18 @@ void VoxelTerrain::set_material(int id, Ref<Material> material) {
 Ref<Material> VoxelTerrain::get_material(int id) const {
 	ERR_FAIL_COND_V(id < 0 || id >= VoxelMesher::MAX_MATERIALS, Ref<Material>());
 	return _materials[id];
+}
+
+bool VoxelTerrain::is_smooth_meshing_enabled() const {
+	return _smooth_meshing_enabled;
+}
+
+void VoxelTerrain::set_smooth_meshing_enabled(bool enabled) {
+	if (_smooth_meshing_enabled != enabled) {
+		_smooth_meshing_enabled = enabled;
+		reset_updater();
+		make_all_view_dirty_deferred();
+	}
 }
 
 void VoxelTerrain::make_block_dirty(Vector3i bpos) {
@@ -267,6 +270,29 @@ void VoxelTerrain::make_all_view_dirty_deferred() {
 
 	//	Vector3i radius(_view_distance_blocks, _view_distance_blocks, _view_distance_blocks);
 	//	make_blocks_dirty(-radius, 2*radius);
+}
+
+void VoxelTerrain::reset_updater() {
+
+	if (_block_updater) {
+		memdelete(_block_updater);
+		_block_updater = NULL;
+	}
+
+	// TODO Thread-safe way to change those parameters
+	VoxelMeshUpdater::MeshingParams params;
+	params.smooth_surface = _smooth_meshing_enabled;
+
+	_block_updater = memnew(VoxelMeshUpdater(_library, params));
+}
+
+int VoxelTerrain::get_block_padding() const {
+	// How many neighbor voxels we should pad for mesh updates to be seamless
+	// TODO Generalize padding retrieval, or split terrain systems because blocky and smooth are two different beasts
+	// - Blocky needs padding of 1
+	// - Transvoxel needs padding of 2
+	// - DMC needs padding of 2
+	return _smooth_meshing_enabled ? 2 : 1;
 }
 
 inline int get_border_index(int x, int max) {
@@ -688,44 +714,54 @@ void VoxelTerrain::_process() {
 		for (int i = 0; i < _blocks_pending_update.size(); ++i) {
 			Vector3i block_pos = _blocks_pending_update[i];
 
-			VoxelBlock *block = _map->get_block(block_pos);
-			if (block == NULL) {
-				continue;
-			}
+			// Check if the block is worth meshing
+			// Smooth meshing works on more neighbors, so checking a single block isn't enough to ignore it,
+			// but that will slow down meshing a lot.
+			// TODO This is one reason to separate terrain systems between blocky and smooth (other reason is LOD)
+			if (!_smooth_meshing_enabled) {
+				VoxelBlock *block = _map->get_block(block_pos);
+				if (block == NULL) {
+					continue;
+				} else {
+					CRASH_COND(block->voxels.is_null());
 
-			CRASH_COND(block->voxels.is_null());
+					int air_type = 0;
+					if (
+							block->voxels->is_uniform(Voxel::CHANNEL_TYPE) &&
+							block->voxels->is_uniform(Voxel::CHANNEL_ISOLEVEL) &&
+							block->voxels->get_voxel(0, 0, 0, Voxel::CHANNEL_TYPE) == air_type) {
+
+						VoxelTerrain::BlockDirtyState *block_state = _dirty_blocks.getptr(block_pos);
+						CRASH_COND(block_state == NULL);
+						CRASH_COND(*block_state != BLOCK_UPDATE_NOT_SENT);
+
+						// The block contains empty voxels
+						block->set_mesh(Ref<Mesh>(), Ref<World>());
+						_dirty_blocks.erase(block_pos);
+
+						// Optional, but I guess it might spare some memory
+						block->voxels->clear_channel(Voxel::CHANNEL_TYPE, air_type);
+
+						continue;
+					}
+				}
+			}
 
 			VoxelTerrain::BlockDirtyState *block_state = _dirty_blocks.getptr(block_pos);
 			CRASH_COND(block_state == NULL);
 			CRASH_COND(*block_state != BLOCK_UPDATE_NOT_SENT);
 
-			int air_type = 0;
-			if (
-					block->voxels->is_uniform(Voxel::CHANNEL_TYPE) &&
-					block->voxels->is_uniform(Voxel::CHANNEL_ISOLEVEL) &&
-					block->voxels->get_voxel(0, 0, 0, Voxel::CHANNEL_TYPE) == air_type) {
-
-				// The block contains empty voxels
-				block->set_mesh(Ref<Mesh>(), Ref<World>());
-				_dirty_blocks.erase(block_pos);
-
-				// Optional, but I guess it might spare some memory
-				block->voxels->clear_channel(Voxel::CHANNEL_TYPE, air_type);
-
-				continue;
-			}
-
 			// Create buffer padded with neighbor voxels
 			Ref<VoxelBuffer> nbuffer;
 			nbuffer.instance();
-			// TODO Make the buffer re-usable
-			// TODO Padding set to 3 at the moment because Transvoxel works on 2x2 cells.
-			// It should change for a smarter padding (if smooth isn't used for example).
-			unsigned int block_size = _map->get_block_size();
-			//nbuffer->create(block_size + 3, block_size + 3, block_size + 3);
-			nbuffer->create(block_size + 2, block_size + 2, block_size + 2);
 
-			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(1, 1, 1), **nbuffer, 0x3);
+			// TODO Make the buffer re-usable
+			unsigned int block_size = _map->get_block_size();
+			unsigned int padding = get_block_padding();
+			nbuffer->create(block_size + 2 * padding, block_size + 2 * padding, block_size + 2 * padding);
+
+			unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_ISOLEVEL);
+			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(padding), **nbuffer, channels_mask);
 
 			VoxelMeshUpdater::InputBlock iblock;
 			iblock.voxels = nbuffer;
@@ -932,6 +968,9 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_viewer_path"), &VoxelTerrain::get_viewer_path);
 	ClassDB::bind_method(D_METHOD("set_viewer_path", "path"), &VoxelTerrain::set_viewer_path);
 
+	ClassDB::bind_method(D_METHOD("is_smooth_meshing_enabled"), &VoxelTerrain::is_smooth_meshing_enabled);
+	ClassDB::bind_method(D_METHOD("set_smooth_meshing_enabled", "enabled"), &VoxelTerrain::set_smooth_meshing_enabled);
+
 	ClassDB::bind_method(D_METHOD("get_storage"), &VoxelTerrain::get_map);
 
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
@@ -950,6 +989,7 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "smooth_meshing_enabled"), "set_smooth_meshing_enabled", "is_smooth_meshing_enabled");
 
 	BIND_ENUM_CONSTANT(BLOCK_NONE);
 	BIND_ENUM_CONSTANT(BLOCK_LOAD);

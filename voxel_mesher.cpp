@@ -55,7 +55,7 @@ Ref<ArrayMesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int
 	ERR_FAIL_COND_V(buffer_ref.is_null(), Ref<ArrayMesh>());
 
 	VoxelBuffer &buffer = **buffer_ref;
-	Array surfaces = build(buffer, channel, Vector3i(), buffer.get_size());
+	Array surfaces = build(buffer, channel, MINIMUM_PADDING);
 
 	if (mesh.is_null())
 		mesh.instance();
@@ -75,11 +75,12 @@ Ref<ArrayMesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int
 	return mesh;
 }
 
-Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector3i min, Vector3i max) {
-	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, int padding) {
+	//uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
 	ERR_FAIL_COND_V(_library.is_null(), Array());
 	ERR_FAIL_COND_V(channel >= VoxelBuffer::MAX_CHANNELS, Array());
+	ERR_FAIL_COND_V(padding < MINIMUM_PADDING, Array());
 
 	const VoxelLibrary &library = **_library;
 
@@ -105,10 +106,8 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 	// => Could be implemented in a separate class?
 
 	// Data must be padded, hence the off-by-one
-	Vector3i::sort_min_max(min, max);
-	const Vector3i pad(1, 1, 1);
-	min.clamp_to(pad, max);
-	max.clamp_to(min, buffer.get_size() - pad);
+	Vector3i min = Vector3i(padding);
+	Vector3i max = buffer.get_size() - Vector3i(padding);
 
 	int index_offset = 0;
 
@@ -176,8 +175,8 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_RIGHT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
 	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
 
-	uint64_t time_prep = OS::get_singleton()->get_ticks_usec() - time_before;
-	time_before = OS::get_singleton()->get_ticks_usec();
+	//uint64_t time_prep = OS::get_singleton()->get_ticks_usec() - time_before;
+	//time_before = OS::get_singleton()->get_ticks_usec();
 
 	for (unsigned int z = min.z; z < max.z; ++z) {
 		for (unsigned int x = min.x; x < max.x; ++x) {
@@ -360,8 +359,8 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 		}
 	}
 
-	uint64_t time_meshing = OS::get_singleton()->get_ticks_usec() - time_before;
-	time_before = OS::get_singleton()->get_ticks_usec();
+	//uint64_t time_meshing = OS::get_singleton()->get_ticks_usec() - time_before;
+	//time_before = OS::get_singleton()->get_ticks_usec();
 
 	// Commit mesh
 
@@ -412,7 +411,7 @@ Array VoxelMesher::build(const VoxelBuffer &buffer, unsigned int channel, Vector
 		}
 	}
 
-	uint64_t time_commit = OS::get_singleton()->get_ticks_usec() - time_before;
+	//uint64_t time_commit = OS::get_singleton()->get_ticks_usec() - time_before;
 
 	//print_line(String("P: {0}, M: {1}, C: {2}").format(varray(time_prep, time_meshing, time_commit)));
 

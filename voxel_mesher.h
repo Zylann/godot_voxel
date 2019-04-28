@@ -14,6 +14,7 @@ class VoxelMesher : public Reference {
 
 public:
 	static const unsigned int MAX_MATERIALS = 8; // Arbitrary. Tweak if needed.
+	static const int MINIMUM_PADDING = 1;
 
 	VoxelMesher();
 
@@ -26,7 +27,7 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const { return _bake_occlusion; }
 
-	Array build(const VoxelBuffer &buffer_ref, unsigned int channel, Vector3i min, Vector3i max);
+	Array build(const VoxelBuffer &buffer_ref, unsigned int channel, int padding);
 	Ref<ArrayMesh> build_mesh(Ref<VoxelBuffer> buffer_ref, unsigned int channel, Array materials, Ref<ArrayMesh> mesh = Ref<ArrayMesh>());
 
 protected:

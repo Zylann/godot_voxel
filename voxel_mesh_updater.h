@@ -52,10 +52,12 @@ public:
 	struct MeshingParams {
 		bool baked_ao;
 		float baked_ao_darkness;
+		bool smooth_surface;
 
 		MeshingParams() :
 				baked_ao(true),
-				baked_ao_darkness(0.75) {}
+				baked_ao_darkness(0.75),
+				smooth_surface(false) {}
 	};
 
 	VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams params);

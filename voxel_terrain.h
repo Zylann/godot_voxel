@@ -13,8 +13,9 @@
 class VoxelMap;
 class VoxelLibrary;
 
-// Infinite static terrain made of voxels.
-// It is loaded around VoxelTerrainStreamers.
+// Infinite paged terrain made of voxel blocks.
+// Voxels are polygonized around the viewer.
+// Data is streamed using a VoxelProvider.
 class VoxelTerrain : public Spatial {
 	GDCLASS(VoxelTerrain, Spatial)
 public:
@@ -52,6 +53,9 @@ public:
 
 	void set_material(int id, Ref<Material> material);
 	Ref<Material> get_material(int id) const;
+
+	bool is_smooth_meshing_enabled() const;
+	void set_smooth_meshing_enabled(bool enabled);
 
 	Ref<VoxelMap> get_map() { return _map; }
 
@@ -93,6 +97,8 @@ private:
 	void _process();
 
 	void make_all_view_dirty_deferred();
+	void reset_updater();
+	int get_block_padding() const;
 
 	Spatial *get_viewer(NodePath path) const;
 
@@ -142,6 +148,7 @@ private:
 
 	bool _generate_collisions;
 	bool _run_in_editor;
+	bool _smooth_meshing_enabled;
 
 	Ref<Material> _materials[VoxelMesher::MAX_MATERIALS];
 

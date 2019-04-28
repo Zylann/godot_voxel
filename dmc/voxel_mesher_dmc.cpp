@@ -1326,7 +1326,12 @@ Array VoxelMesherDMC::build(const VoxelBuffer &voxels) {
 
 	_stats = { 0 };
 
-	int padding = 1;
+	if (voxels.is_uniform(VoxelBuffer::CHANNEL_ISOLEVEL)) {
+		// That won't produce any polygon
+		return Array();
+	}
+
+	int padding = 2;
 	const Vector3i buffer_size = voxels.get_size();
 	// Taking previous power of two because the algorithm uses an integer cubic octree, and data should be padded
 	int chunk_size = previous_power_of_2(MIN(MIN(buffer_size.x, buffer_size.y), buffer_size.z));
