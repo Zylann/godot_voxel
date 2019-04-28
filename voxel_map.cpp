@@ -207,8 +207,8 @@ void VoxelMap::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "c"), &VoxelMap::_get_voxel_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "c"), &VoxelMap::_set_voxel_binding, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "c"), &VoxelMap::_get_voxel_binding, DEFVAL(VoxelBuffer::CHANNEL_ISOLEVEL));
-	ClassDB::bind_method(D_METHOD("set_voxel_f", "value", "x", "y", "z", "c"), &VoxelMap::_set_voxel_binding, DEFVAL(VoxelBuffer::CHANNEL_ISOLEVEL));
+	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "c"), &VoxelMap::get_voxel_f, DEFVAL(VoxelBuffer::CHANNEL_ISOLEVEL));
+	ClassDB::bind_method(D_METHOD("set_voxel_f", "value", "x", "y", "z", "c"), &VoxelMap::set_voxel_f, DEFVAL(VoxelBuffer::CHANNEL_ISOLEVEL));
 	ClassDB::bind_method(D_METHOD("get_voxel_v", "pos", "c"), &VoxelMap::_get_voxel_v_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "c"), &VoxelMap::_set_voxel_v_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_default_voxel", "channel"), &VoxelMap::get_default_voxel, DEFVAL(0));
