@@ -170,7 +170,11 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 						VoxelBuffer &src_buffer = **block->voxels;
 						Vector3i offset = block_to_voxel(bpos);
 						// Note: copy_from takes care of clamping the area if it's on an edge
-						dst_buffer.copy_from(src_buffer, min_pos - offset, max_pos - offset, offset - min_pos, channel);
+						dst_buffer.copy_from(src_buffer,
+								min_pos - offset,
+								max_pos - offset,
+								offset - min_pos,
+								channel);
 
 					} else {
 						Vector3i offset = block_to_voxel(bpos);

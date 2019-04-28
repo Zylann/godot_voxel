@@ -13,6 +13,7 @@ class Voxel : public Resource {
 	GDCLASS(Voxel, Resource)
 
 public:
+	// TODO Conflicts with VoxelBuffer::ChannelId, we need to have only one enum
 	enum ChannelMode {
 		// For mapping to a Voxel type
 		CHANNEL_TYPE = 0,

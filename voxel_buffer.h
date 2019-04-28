@@ -28,7 +28,7 @@ public:
 
 	// TODO Quantification options
 	//	enum ChannelFormat {
-	//		FORMAT_I8_Q255U, // 0..255 integer
+	//		FORMAT_I8_Q256U, // 0..255 integer
 	//		FORMAT_F8_Q1S, // -1..1 float stored in 8 bits
 	//		FORMAT_F16_Q128S // -128..128 float stored in 16 bits
 	//	};

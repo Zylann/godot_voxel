@@ -89,8 +89,9 @@ void VoxelMeshUpdater::push(const Input &input) {
 		should_run = !_shared_input.is_empty();
 	}
 
-	if (replaced_blocks > 0)
+	if (replaced_blocks > 0) {
 		print_line(String("VoxelMeshUpdater: {0} blocks already in queue were replaced").format(varray(replaced_blocks)));
+	}
 
 	if (should_run) {
 		_semaphore->post();
@@ -167,8 +168,9 @@ void VoxelMeshUpdater::thread_func() {
 			}
 		}
 
-		if (_thread_exit)
+		if (_thread_exit) {
 			break;
+		}
 
 		// Wait for future wake-up
 		_semaphore->wait();
