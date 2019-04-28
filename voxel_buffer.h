@@ -65,15 +65,14 @@ public:
 
 	void try_set_voxel(int x, int y, int z, int value, unsigned int channel_index = 0);
 
-	// TODO Rename set_voxel_iso to set_voxel_f etc.
-	_FORCE_INLINE_ void set_voxel_iso(real_t value, int x, int y, int z, unsigned int channel_index = 0) { set_voxel(iso_to_byte(value), x, y, z, channel_index); }
-	_FORCE_INLINE_ real_t get_voxel_iso(int x, int y, int z, unsigned int channel_index = 0) const { return byte_to_iso(get_voxel(x, y, z, channel_index)); }
+	_FORCE_INLINE_ void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index = 0) { set_voxel(iso_to_byte(value), x, y, z, channel_index); }
+	_FORCE_INLINE_ real_t get_voxel_f(int x, int y, int z, unsigned int channel_index = 0) const { return byte_to_iso(get_voxel(x, y, z, channel_index)); }
 
 	_FORCE_INLINE_ int get_voxel(const Vector3i pos, unsigned int channel_index = 0) const { return get_voxel(pos.x, pos.y, pos.z, channel_index); }
 	_FORCE_INLINE_ void set_voxel(int value, const Vector3i pos, unsigned int channel_index = 0) { set_voxel(value, pos.x, pos.y, pos.z, channel_index); }
 
 	void fill(int defval, unsigned int channel_index = 0);
-	_FORCE_INLINE_ void fill_iso(float value, unsigned int channel = 0) { fill(iso_to_byte(value), channel); }
+	_FORCE_INLINE_ void fill_f(float value, unsigned int channel = 0) { fill(iso_to_byte(value), channel); }
 	void fill_area(int defval, Vector3i min, Vector3i max, unsigned int channel_index = 0);
 
 	bool is_uniform(unsigned int channel_index) const;
@@ -120,7 +119,7 @@ protected:
 	void _copy_from_binding(Ref<VoxelBuffer> other, unsigned int channel);
 	void _copy_from_area_binding(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, unsigned int channel);
 	_FORCE_INLINE_ void _fill_area_binding(int defval, Vector3 min, Vector3 max, unsigned int channel_index) { fill_area(defval, Vector3i(min), Vector3i(max), channel_index); }
-	_FORCE_INLINE_ void _set_voxel_iso_binding(real_t value, int x, int y, int z, unsigned int channel) { set_voxel_iso(value, x, y, z, channel); }
+	_FORCE_INLINE_ void _set_voxel_f_binding(real_t value, int x, int y, int z, unsigned int channel) { set_voxel_f(value, x, y, z, channel); }
 
 private:
 	struct Channel {

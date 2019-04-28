@@ -75,7 +75,7 @@ float VoxelMap::get_voxel_f(int x, int y, int z, unsigned int c) {
 		return _default_voxel[c];
 	}
 	Vector3i lpos = to_local(pos);
-	return block->voxels->get_voxel_iso(lpos.x, lpos.y, lpos.z, c);
+	return block->voxels->get_voxel_f(lpos.x, lpos.y, lpos.z, c);
 }
 
 void VoxelMap::set_voxel_f(real_t value, int x, int y, int z, unsigned int c) {
@@ -83,7 +83,7 @@ void VoxelMap::set_voxel_f(real_t value, int x, int y, int z, unsigned int c) {
 	Vector3i pos(x, y, z);
 	VoxelBlock *block = get_or_create_block_at_voxel_pos(pos);
 	Vector3i lpos = to_local(pos);
-	block->voxels->set_voxel_iso(value, lpos.x, lpos.y, lpos.z, c);
+	block->voxels->set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
 }
 
 void VoxelMap::set_default_voxel(int value, unsigned int channel) {

@@ -58,15 +58,15 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 
 	// Fighting with Clang-format here /**/
 
-	float v0 = voxels.buffer.get_voxel_iso(origin.x, /*  */ origin.y, /*  */ origin.z, /*  */ channel); // 0
-	float v1 = voxels.buffer.get_voxel_iso(origin.x + step, origin.y, /*  */ origin.z, /*  */ channel); // 1
-	float v2 = voxels.buffer.get_voxel_iso(origin.x + step, origin.y, /*  */ origin.z + step, channel); // 2
-	float v3 = voxels.buffer.get_voxel_iso(origin.x, /*  */ origin.y, /*  */ origin.z + step, channel); // 3
+	float v0 = voxels.buffer.get_voxel_f(origin.x, /*  */ origin.y, /*  */ origin.z, /*  */ channel); // 0
+	float v1 = voxels.buffer.get_voxel_f(origin.x + step, origin.y, /*  */ origin.z, /*  */ channel); // 1
+	float v2 = voxels.buffer.get_voxel_f(origin.x + step, origin.y, /*  */ origin.z + step, channel); // 2
+	float v3 = voxels.buffer.get_voxel_f(origin.x, /*  */ origin.y, /*  */ origin.z + step, channel); // 3
 
-	float v4 = voxels.buffer.get_voxel_iso(origin.x, /*  */ origin.y + step, origin.z, /*  */ channel); // 4
-	float v5 = voxels.buffer.get_voxel_iso(origin.x + step, origin.y + step, origin.z, /*  */ channel); // 5
-	float v6 = voxels.buffer.get_voxel_iso(origin.x + step, origin.y + step, origin.z + step, channel); // 6
-	float v7 = voxels.buffer.get_voxel_iso(origin.x, /*  */ origin.y + step, origin.z + step, channel); // 7
+	float v4 = voxels.buffer.get_voxel_f(origin.x, /*  */ origin.y + step, origin.z, /*  */ channel); // 4
+	float v5 = voxels.buffer.get_voxel_f(origin.x + step, origin.y + step, origin.z, /*  */ channel); // 5
+	float v6 = voxels.buffer.get_voxel_f(origin.x + step, origin.y + step, origin.z + step, channel); // 6
+	float v7 = voxels.buffer.get_voxel_f(origin.x, /*  */ origin.y + step, origin.z + step, channel); // 7
 
 	int hstep = step / 2;
 

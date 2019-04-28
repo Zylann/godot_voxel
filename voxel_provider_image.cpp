@@ -67,7 +67,7 @@ void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i or
 				float h = get_height_blurred(image, ox + x, oz + z) * 200.0 - 50;
 
 				for (int y = 0; y < bs; ++y) {
-					out_buffer.set_voxel_iso((oy + y) - h, x, y, z, _channel);
+					out_buffer.set_voxel_f((oy + y) - h, x, y, z, _channel);
 				}
 
 			} else {

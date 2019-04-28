@@ -293,13 +293,13 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_size_z"), &VoxelBuffer::get_size_z);
 
 	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "channel"), &VoxelBuffer::_set_voxel_binding, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("set_voxel_iso", "value", "x", "y", "z", "channel"), &VoxelBuffer::_set_voxel_iso_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_voxel_f", "value", "x", "y", "z", "channel"), &VoxelBuffer::_set_voxel_f_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::set_voxel_v, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::_get_voxel_binding, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("get_voxel_iso", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel_iso, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel_f, DEFVAL(0));
 
 	ClassDB::bind_method(D_METHOD("fill", "value", "channel"), &VoxelBuffer::fill, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("fill_iso", "value", "channel"), &VoxelBuffer::fill_iso, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("fill_f", "value", "channel"), &VoxelBuffer::fill_f, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("fill_area", "value", "min", "max", "channel"), &VoxelBuffer::_fill_area_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("copy_from", "other", "channel"), &VoxelBuffer::_copy_from_binding, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("copy_from_area", "other", "src_min", "src_max", "dst_min", "channel"), &VoxelBuffer::_copy_from_area_binding, DEFVAL(0));

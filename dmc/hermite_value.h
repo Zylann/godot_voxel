@@ -30,7 +30,7 @@ inline HermiteValue get_hermite_value(const VoxelBuffer &voxels, unsigned int x,
 
 	HermiteValue v;
 
-	v.value = voxels.get_voxel_iso(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
+	v.value = voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
 
 	Vector3 gradient;
 
