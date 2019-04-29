@@ -508,7 +508,11 @@ void VoxelTerrain::_notification(int p_what) {
 	}
 }
 
-void VoxelTerrain::remove_positions_outside_box(Vector<Vector3i> &positions, Rect3i box, HashMap<Vector3i, VoxelTerrain::BlockDirtyState, Vector3iHasher> &state_map) {
+static void remove_positions_outside_box(
+		Vector<Vector3i> &positions,
+		Rect3i box,
+		HashMap<Vector3i, VoxelTerrain::BlockDirtyState, Vector3iHasher> &state_map) {
+
 	for (int i = 0; i < positions.size(); ++i) {
 		const Vector3i bpos = positions[i];
 		if (!box.contains(bpos)) {

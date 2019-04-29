@@ -118,8 +118,6 @@ private:
 	int get_voxel(Vector3 pos, int c);
 	BlockDirtyState get_block_state(Vector3 p_bpos) const;
 
-	static void remove_positions_outside_box(Vector<Vector3i> &positions, Rect3i box, HashMap<Vector3i, BlockDirtyState, Vector3iHasher> &state_map);
-
 private:
 	// Voxel storage
 	Ref<VoxelMap> _map;
