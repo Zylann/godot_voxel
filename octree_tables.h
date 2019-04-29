@@ -27,6 +27,7 @@ namespace OctreeTables {
 //   |/              |/              |/              |/
 //   1---------------8---------------0          X----o
 
+// The order is important for some algorithms (DMC)
 const int g_octant_position[8][3]{
 
 	{ 0, 0, 0 },
