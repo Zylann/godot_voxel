@@ -186,6 +186,7 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 			_dirty_blocks[bpos] = BLOCK_UPDATE_NOT_SENT;
 
 		} else {
+
 			_blocks_pending_load.push_back(bpos);
 			_dirty_blocks[bpos] = BLOCK_LOAD;
 		}
@@ -605,8 +606,13 @@ void VoxelTerrain::_process() {
 		VoxelProviderThread::InputData input;
 
 		input.priority_block_position = viewer_block_pos;
-		input.blocks_to_emerge.append_array(_blocks_pending_load);
-		//input.blocks_to_immerge.append_array();
+
+		for (int i = 0; i < _blocks_pending_load.size(); ++i) {
+			VoxelProviderThread::EmergeInput input_block;
+			input_block.block_position = _blocks_pending_load[i];
+			input_block.lod = 0;
+			input.blocks_to_emerge.push_back(input_block);
+		}
 
 		//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
 		_blocks_pending_load.clear();

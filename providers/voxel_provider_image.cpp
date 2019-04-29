@@ -41,7 +41,12 @@ inline float get_height_blurred(Image &im, int x, int y) {
 
 } // namespace
 
-void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels) {
+void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod) {
+
+	if (lod != 0) {
+		// TODO Handle higher lods
+		return;
+	}
 
 	int ox = origin_in_voxels.x;
 	int oy = origin_in_voxels.y;

@@ -29,22 +29,27 @@ void VoxelProviderTest::set_pattern_offset(Vector3i offset) {
 	_pattern_offset = offset;
 }
 
-void VoxelProviderTest::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin) {
+void VoxelProviderTest::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin, int lod) {
 	ERR_FAIL_COND(out_buffer.is_null());
+
+	if (lod != 0) {
+		// TODO Handle higher lods
+		return;
+	}
 
 	switch (_mode) {
 
 		case MODE_FLAT:
-			generate_block_flat(**out_buffer, origin);
+			generate_block_flat(**out_buffer, origin, lod);
 			break;
 
 		case MODE_WAVES:
-			generate_block_waves(**out_buffer, origin);
+			generate_block_waves(**out_buffer, origin, lod);
 			break;
 	}
 }
 
-void VoxelProviderTest::generate_block_flat(VoxelBuffer &out_buffer, Vector3i origin) {
+void VoxelProviderTest::generate_block_flat(VoxelBuffer &out_buffer, Vector3i origin, int lod) {
 
 	// TODO Don't expect a block pos, but a voxel pos!
 	Vector3i size = out_buffer.get_size();
@@ -62,7 +67,7 @@ void VoxelProviderTest::generate_block_flat(VoxelBuffer &out_buffer, Vector3i or
 	}
 }
 
-void VoxelProviderTest::generate_block_waves(VoxelBuffer &out_buffer, Vector3i origin) {
+void VoxelProviderTest::generate_block_waves(VoxelBuffer &out_buffer, Vector3i origin, int lod) {
 
 	// TODO Don't expect a block pos, but a voxel pos!
 	Vector3i size = out_buffer.get_size();

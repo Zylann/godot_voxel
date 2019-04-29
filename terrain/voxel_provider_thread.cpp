@@ -89,7 +89,7 @@ void VoxelProviderThread::thread_func() {
 
 			if (!_input.blocks_to_emerge.empty()) {
 
-				Vector3i block_pos = _input.blocks_to_emerge[emerge_index];
+				EmergeInput block = _input.blocks_to_emerge[emerge_index];
 				++emerge_index;
 
 				if (emerge_index >= _input.blocks_to_emerge.size()) {
@@ -101,9 +101,9 @@ void VoxelProviderThread::thread_func() {
 				buffer->create(bs, bs, bs);
 
 				// Query voxel provider
-				Vector3i block_origin_in_voxels = block_pos * bs;
+				Vector3i block_origin_in_voxels = block.block_position * bs;
 				uint64_t time_before = OS::get_singleton()->get_ticks_usec();
-				_voxel_provider->emerge_block(buffer, block_origin_in_voxels);
+				_voxel_provider->emerge_block(buffer, block_origin_in_voxels, block.lod);
 				uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
 
 				// Do some stats
@@ -148,9 +148,12 @@ void VoxelProviderThread::thread_func() {
 // Sorts distance to viewer
 // The closest block will be the first one in the array
 struct BlockPositionComparator {
+	// In LOD0 block coordinates
 	Vector3i center;
-	inline bool operator()(const Vector3i &a, const Vector3i &b) const {
-		return a.distance_sq(center) < b.distance_sq(center);
+	inline bool operator()(const VoxelProviderThread::EmergeInput &a, const VoxelProviderThread::EmergeInput &b) const {
+		int da = (a.block_position * (1 << a.lod)).distance_sq(center);
+		int db = (b.block_position * (1 << b.lod)).distance_sq(center);
+		return da < db;
 	}
 };
 
@@ -197,7 +200,7 @@ void VoxelProviderThread::thread_sync(int emerge_index, Stats stats) {
 	if (!_input.blocks_to_emerge.empty()) {
 		// Re-sort priority
 
-		SortArray<Vector3i, BlockPositionComparator> sorter;
+		SortArray<EmergeInput, BlockPositionComparator> sorter;
 		sorter.compare.center = _input.priority_block_position;
 		sorter.sort(_input.blocks_to_emerge.ptrw(), _input.blocks_to_emerge.size());
 	}

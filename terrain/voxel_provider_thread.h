@@ -14,11 +14,17 @@ public:
 	struct ImmergeInput {
 		Vector3i origin;
 		Ref<VoxelBuffer> voxels;
+		int lod = 0;
+	};
+
+	struct EmergeInput {
+		Vector3i block_position;
+		int lod = 0;
 	};
 
 	struct InputData {
 		Vector<ImmergeInput> blocks_to_immerge;
-		Vector<Vector3i> blocks_to_emerge;
+		Vector<EmergeInput> blocks_to_emerge;
 		Vector3i priority_block_position;
 
 		inline bool is_empty() {
@@ -29,19 +35,14 @@ public:
 	struct EmergeOutput {
 		Ref<VoxelBuffer> voxels;
 		Vector3i origin_in_voxels;
+		int lod = 0;
 	};
 
 	struct Stats {
-		bool first;
-		uint64_t min_time;
-		uint64_t max_time;
-		int remaining_blocks;
-
-		Stats() :
-				first(true),
-				min_time(0),
-				max_time(0),
-				remaining_blocks(0) {}
+		bool first = true;
+		uint64_t min_time = 0;
+		uint64_t max_time = 0;
+		int remaining_blocks = 0;
 	};
 
 	struct OutputData {
