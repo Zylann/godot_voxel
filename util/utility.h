@@ -5,6 +5,7 @@
 #include <core/pool_vector.h>
 #include <core/ustring.h>
 #include <core/vector.h>
+#include <scene/resources/mesh.h>
 #include <vector>
 
 // Takes elements starting from a given position and moves them at the beginning,
@@ -77,6 +78,17 @@ inline float min(const float &a, const float &b) {
 
 inline float max(const float &a, const float &b) {
 	return a > b ? a : b;
+}
+
+inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
+	if (mesh_ref.is_null())
+		return true;
+	const Mesh &mesh = **mesh_ref;
+	if (mesh.get_surface_count() == 0)
+		return true;
+	if (mesh.surface_get_array_len(0) == 0)
+		return true;
+	return false;
 }
 
 #endif // HEADER_VOXEL_UTILITY_H

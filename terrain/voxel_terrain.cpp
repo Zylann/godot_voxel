@@ -525,17 +525,6 @@ static void remove_positions_outside_box(
 	}
 }
 
-static inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
-	if (mesh_ref.is_null())
-		return true;
-	const Mesh &mesh = **mesh_ref;
-	if (mesh.get_surface_count() == 0)
-		return true;
-	if (mesh.surface_get_array_len(0) == 0)
-		return true;
-	return false;
-}
-
 void VoxelTerrain::_process() {
 
 	// TODO Should be able to run without library, tho!
