@@ -285,6 +285,8 @@ void VoxelTerrain::reset_updater() {
 	params.smooth_surface = _smooth_meshing_enabled;
 
 	_block_updater = memnew(VoxelMeshUpdater(_library, params));
+
+	// TODO Revert any pending update states!
 }
 
 inline int get_border_index(int x, int max) {
@@ -447,6 +449,8 @@ void VoxelTerrain::make_area_dirty(Rect3i box) {
 	}
 }
 
+namespace {
+
 struct EnterWorldAction {
 	World *world;
 	EnterWorldAction(World *w) :
@@ -470,6 +474,8 @@ struct SetVisibilityAction {
 		block->set_visible(visible);
 	}
 };
+
+} // namespace
 
 void VoxelTerrain::_notification(int p_what) {
 
@@ -820,7 +826,6 @@ void VoxelTerrain::_process() {
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
 				mesh->add_surface_from_arrays(ob.blocky_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
-
 				++surface_index;
 			}
 
@@ -832,10 +837,8 @@ void VoxelTerrain::_process() {
 				}
 
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-				// TODO Problem here, the mesher could be configured to output wireframe! Need to output some MeshData struct instead
 				mesh->add_surface_from_arrays(ob.smooth_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
-				// No material supported yet
 				++surface_index;
 			}
 

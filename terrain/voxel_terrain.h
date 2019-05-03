@@ -14,17 +14,17 @@ class VoxelMap;
 class VoxelLibrary;
 
 // Infinite paged terrain made of voxel blocks.
-// Voxels are polygonized around the viewer.
+// Voxels are polygonized around the viewer by distance in a large cubic space.
 // Data is streamed using a VoxelProvider.
 class VoxelTerrain : public Spatial {
 	GDCLASS(VoxelTerrain, Spatial)
 public:
 	enum BlockDirtyState {
-		BLOCK_NONE,
-		BLOCK_LOAD,
-		BLOCK_UPDATE_NOT_SENT,
-		BLOCK_UPDATE_SENT,
-		BLOCK_IDLE
+		BLOCK_NONE, // There is no block
+		BLOCK_LOAD, // The block is loading
+		BLOCK_UPDATE_NOT_SENT, // The block needs an update but wasn't sent yet
+		BLOCK_UPDATE_SENT, // The block needs an update which was sent
+		BLOCK_IDLE // The block is up to date
 	};
 
 	VoxelTerrain();
