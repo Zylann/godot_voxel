@@ -43,11 +43,6 @@ inline float get_height_blurred(Image &im, int x, int y) {
 
 void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod) {
 
-	if (lod != 0) {
-		// TODO Handle higher lods
-		return;
-	}
-
 	int ox = origin_in_voxels.x;
 	int oy = origin_in_voxels.y;
 	int oz = origin_in_voxels.z;
@@ -64,19 +59,26 @@ void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i or
 
 	int dirt = 1;
 
+	float hbase = 50.0;
+	float hspan = 200.0;
+
 	while (z < bs) {
 		while (x < bs) {
 
+			int lx = x << lod;
+			int lz = z << lod;
+
 			if (_channel == VoxelBuffer::CHANNEL_ISOLEVEL) {
 
-				float h = get_height_blurred(image, ox + x, oz + z) * 200.0 - 50;
+				float h = get_height_blurred(image, ox + lx, oz + lz) * hspan - hbase;
 
 				for (int y = 0; y < bs; ++y) {
-					out_buffer.set_voxel_f((oy + y) - h, x, y, z, _channel);
+					int ly = y << lod;
+					out_buffer.set_voxel_f((oy + ly) - h, x, y, z, _channel);
 				}
 
 			} else {
-				float h = get_height_repeat(image, ox + x, oz + z) * 200.0 - 50;
+				float h = get_height_repeat(image, ox + lx, oz + lz) * hspan - hbase;
 				h -= oy;
 				int ih = int(h);
 				if (ih > 0) {
