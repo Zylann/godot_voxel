@@ -4,13 +4,12 @@
 
 VoxelMeshUpdater::VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams params) {
 
-	CRASH_COND(library.is_null());
-	//CRASH_COND(params.materials.size() == 0);
-
-	_blocky_mesher.instance();
-	_blocky_mesher->set_library(library);
-	_blocky_mesher->set_occlusion_enabled(params.baked_ao);
-	_blocky_mesher->set_occlusion_darkness(params.baked_ao_darkness);
+	if (library.is_valid()) {
+		_blocky_mesher.instance();
+		_blocky_mesher->set_library(library);
+		_blocky_mesher->set_occlusion_enabled(params.baked_ao);
+		_blocky_mesher->set_occlusion_darkness(params.baked_ao_darkness);
+	}
 
 	if (params.smooth_surface) {
 		_dmc_mesher.instance();
@@ -109,7 +108,11 @@ void VoxelMeshUpdater::pop(Output &output) {
 
 int VoxelMeshUpdater::get_required_padding() const {
 
-	int padding = _blocky_mesher->get_minimum_padding();
+	int padding = 0;
+
+	if (_blocky_mesher.is_valid()) {
+		padding = max(padding, _blocky_mesher->get_minimum_padding());
+	}
 
 	if (_dmc_mesher.is_valid()) {
 		padding = max(padding, _dmc_mesher->get_minimum_padding());
@@ -194,7 +197,9 @@ void VoxelMeshUpdater::process_block(const InputBlock &block, OutputBlock &outpu
 
 	int padding = get_required_padding();
 
-	_blocky_mesher->build(output.blocky_surfaces, **block.voxels, padding);
+	if (_blocky_mesher.is_valid()) {
+		_blocky_mesher->build(output.blocky_surfaces, **block.voxels, padding);
+	}
 
 	if (_dmc_mesher.is_valid()) {
 		_dmc_mesher->build(output.smooth_surfaces, **block.voxels, padding);
