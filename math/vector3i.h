@@ -155,6 +155,27 @@ _FORCE_INLINE_ bool operator!=(const Vector3i &a, const Vector3i &b) {
 	return a.x != b.x || a.y != b.y || a.z != b.z;
 }
 
+_FORCE_INLINE_ Vector3i operator<<(const Vector3i &a, int b) {
+	return Vector3i(a.x << b, a.y << b, a.z << b);
+}
+
+_FORCE_INLINE_ Vector3i operator>>(const Vector3i &a, int b) {
+	return Vector3i(a.x >> b, a.y >> b, a.z >> b);
+}
+
+_FORCE_INLINE_ bool operator<(const Vector3i &a, const Vector3i &b) {
+
+	if (a.x == b.x) {
+		if (a.y == b.y) {
+			return a.z < b.z;
+		} else {
+			return a.y < b.y;
+		}
+	} else {
+		return a.x < b.x;
+	}
+}
+
 _FORCE_INLINE_ int Vector3i::distance_sq(const Vector3i &other) const {
 	return (other - *this).length_sq();
 }
