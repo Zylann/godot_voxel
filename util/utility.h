@@ -22,6 +22,18 @@ void shift_up(Vector<T> &v, int pos) {
 	v.resize(remaining);
 }
 
+template <typename T>
+void shift_up(std::vector<T> &v, int pos) {
+
+	int j = 0;
+	for (int i = pos; i < v.size(); ++i, ++j) {
+		v[j] = v[i];
+	}
+
+	int remaining = v.size() - pos;
+	v.resize(remaining);
+}
+
 // Pops the last element of the vector and place it at the given position.
 // (The element that was at this position is the one removed).
 template <typename T>

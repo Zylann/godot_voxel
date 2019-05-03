@@ -8,7 +8,7 @@ VoxelMap::VoxelMap() :
 		_last_accessed_block(NULL) {
 
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
-	set_block_size_pow2(4);
+	set_block_size_pow2(DEFAULT_BLOCK_SIZE_PO2);
 
 	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
 		_default_voxel[i] = 0;
@@ -32,6 +32,14 @@ void VoxelMap::set_block_size_pow2(unsigned int p) {
 	_block_size_mask = _block_size - 1;
 }
 
+void VoxelMap::set_lod_index(int lod) {
+	_lod_index = lod;
+}
+
+unsigned int VoxelMap::get_lod_index() const {
+	return _lod_index;
+}
+
 int VoxelMap::get_voxel(Vector3i pos, unsigned int c) {
 	Vector3i bpos = voxel_to_block(pos);
 	VoxelBlock *block = get_block(bpos);
@@ -52,7 +60,7 @@ VoxelBlock *VoxelMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
 		buffer->create(_block_size, _block_size, _block_size);
 		buffer->set_default_values(_default_voxel);
 
-		block = VoxelBlock::create(bpos, buffer, _block_size);
+		block = VoxelBlock::create(bpos, buffer, _block_size, _lod_index);
 
 		set_block(bpos, block);
 	}
@@ -109,6 +117,19 @@ VoxelBlock *VoxelMap::get_block(Vector3i bpos) {
 	return NULL;
 }
 
+const VoxelBlock *VoxelMap::get_block(Vector3i bpos) const {
+	if (_last_accessed_block && _last_accessed_block->pos == bpos) {
+		return _last_accessed_block;
+	}
+	const VoxelBlock *const *p = _blocks.getptr(bpos);
+	if (p) {
+		const VoxelBlock *block = *p;
+		CRASH_COND(block == NULL); // The map should not contain null blocks
+		return block;
+	}
+	return NULL;
+}
+
 void VoxelMap::set_block(Vector3i bpos, VoxelBlock *block) {
 	ERR_FAIL_COND(block == NULL);
 	if (_last_accessed_block == NULL || _last_accessed_block->pos == bpos) {
@@ -121,7 +142,7 @@ void VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
 	ERR_FAIL_COND(buffer.is_null());
 	VoxelBlock *block = get_block(bpos);
 	if (block == NULL) {
-		block = VoxelBlock::create(bpos, *buffer, _block_size);
+		block = VoxelBlock::create(bpos, *buffer, _block_size, _lod_index);
 		set_block(bpos, block);
 	} else {
 		block->voxels = buffer;

@@ -1,5 +1,6 @@
 #include "voxel_mesh_updater.h"
 #include "../util/utility.h"
+#include "voxel_lod_terrain.h"
 #include <core/os/os.h>
 
 VoxelMeshUpdater::VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams params) {
@@ -48,7 +49,7 @@ void VoxelMeshUpdater::push(const Input &input) {
 
 		for (int i = 0; i < input.blocks.size(); ++i) {
 
-			Vector3i pos = input.blocks[i].position;
+			const InputBlock &block = input.blocks[i];
 
 			// If a block is exactly on the priority position, update it instantly on the main thread
 			// This is to eliminate latency for player's actions, assuming updating a block isn't slower than a frame
@@ -65,18 +66,19 @@ void VoxelMeshUpdater::push(const Input &input) {
 				continue;
 			}*/
 
-			int *index = _block_indexes.getptr(pos);
+			CRASH_COND(block.lod >= MAX_LOD)
+			int *index = _block_indexes[block.lod].getptr(block.position);
 
 			if (index) {
 				// The block is already in the update queue, replace it
 				++replaced_blocks;
-				_shared_input.blocks.write[*index] = input.blocks[i];
+				_shared_input.blocks.write[*index] = block;
 
 			} else {
 
 				int j = _shared_input.blocks.size();
-				_shared_input.blocks.push_back(input.blocks[i]);
-				_block_indexes[pos] = j;
+				_shared_input.blocks.push_back(block);
+				_block_indexes[block.lod][block.position] = j;
 			}
 		}
 
@@ -191,6 +193,32 @@ void VoxelMeshUpdater::thread_func() {
 	}
 }
 
+static void scale_mesh_data(VoxelMesher::Output &data, float factor) {
+
+	for (int i = 0; i < data.surfaces.size(); ++i) {
+		Array &surface = data.surfaces.write[i]; // There is COW here too but should not happen, hopefully
+
+		if (surface.empty()) {
+			continue;
+		}
+
+		PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX]; // Array of Variants here, implicit cast going on
+
+		// Now dear COW, let's make sure there is only ONE ref to that PoolVector,
+		// so you won't trash performance with pointless allocations
+		surface[Mesh::ARRAY_VERTEX] = Variant();
+
+		PoolVector3Array::Write w = positions.write();
+		int len = positions.size();
+		for (int j = 0; j < len; ++j) {
+			w[j] = w[j] * factor;
+		}
+
+		// Thank you
+		surface[Mesh::ARRAY_VERTEX] = positions;
+	}
+}
+
 void VoxelMeshUpdater::process_block(const InputBlock &block, OutputBlock &output) {
 
 	CRASH_COND(block.voxels.is_null());
@@ -206,6 +234,13 @@ void VoxelMeshUpdater::process_block(const InputBlock &block, OutputBlock &outpu
 	}
 
 	output.position = block.position;
+	output.lod = block.lod;
+
+	if (block.lod > 0) {
+		float factor = 1 << block.lod;
+		scale_mesh_data(output.blocky_surfaces, factor);
+		scale_mesh_data(output.smooth_surfaces, factor);
+	}
 }
 
 // Sorts distance to viewer
@@ -243,7 +278,10 @@ void VoxelMeshUpdater::thread_sync(int queue_index, Stats stats) {
 		_input.priority_position = _shared_input.priority_position;
 
 		_shared_input.blocks.clear();
-		_block_indexes.clear();
+
+		for (unsigned int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+			_block_indexes[lod_index].clear();
+		}
 
 		needs_sort = _needs_sort;
 		_needs_sort = false;

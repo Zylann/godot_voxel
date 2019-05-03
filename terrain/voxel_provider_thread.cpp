@@ -101,7 +101,7 @@ void VoxelProviderThread::thread_func() {
 				buffer->create(bs, bs, bs);
 
 				// Query voxel provider
-				Vector3i block_origin_in_voxels = block.block_position * bs;
+				Vector3i block_origin_in_voxels = block.block_position * (bs << block.lod);
 				uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 				_voxel_provider->emerge_block(buffer, block_origin_in_voxels, block.lod);
 				uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
@@ -120,7 +120,9 @@ void VoxelProviderThread::thread_func() {
 
 				EmergeOutput eo;
 				eo.origin_in_voxels = block_origin_in_voxels;
+				eo.block_position = block.block_position;
 				eo.voxels = buffer;
+				eo.lod = block.lod;
 				_output.push_back(eo);
 			}
 

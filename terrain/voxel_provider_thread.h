@@ -34,7 +34,8 @@ public:
 
 	struct EmergeOutput {
 		Ref<VoxelBuffer> voxels;
-		Vector3i origin_in_voxels;
+		Vector3i origin_in_voxels; // TODO Remove this, redundant now
+		Vector3i block_position;
 		int lod = 0;
 	};
 

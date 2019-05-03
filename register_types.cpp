@@ -5,6 +5,7 @@
 #include "providers/voxel_provider_image.h"
 #include "providers/voxel_provider_test.h"
 #include "terrain/voxel_box_mover.h"
+#include "terrain/voxel_lod_terrain.h"
 #include "terrain/voxel_map.h"
 #include "terrain/voxel_terrain.h"
 #include "voxel_buffer.h"
@@ -23,6 +24,7 @@ void register_voxel_types() {
 
 	// Nodes
 	ClassDB::register_class<VoxelTerrain>();
+	ClassDB::register_class<VoxelLodTerrain>();
 
 	// Providers
 	ClassDB::register_class<VoxelProvider>();

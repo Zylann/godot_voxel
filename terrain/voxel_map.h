@@ -10,6 +10,8 @@
 class VoxelMap : public Reference {
 	GDCLASS(VoxelMap, Reference)
 public:
+	static const int DEFAULT_BLOCK_SIZE_PO2 = 4;
+
 	// Converts voxel coodinates into block coordinates.
 	// Don't use division because it introduces an offset in negative coordinates.
 	static _FORCE_INLINE_ Vector3i voxel_to_block_b(Vector3i pos, int block_size_pow2) {
@@ -41,6 +43,9 @@ public:
 	_FORCE_INLINE_ unsigned int get_block_size() const { return _block_size; }
 	_FORCE_INLINE_ unsigned int get_block_size_pow2() const { return _block_size_pow2; }
 	_FORCE_INLINE_ unsigned int get_block_size_mask() const { return _block_size_mask; }
+
+	void set_lod_index(int lod);
+	unsigned int get_lod_index() const;
 
 	int get_voxel(Vector3i pos, unsigned int c = 0);
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
@@ -106,6 +111,7 @@ public:
 	}*/
 
 	VoxelBlock *get_block(Vector3i bpos);
+	const VoxelBlock *get_block(Vector3i bpos) const;
 
 	bool has_block(Vector3i pos) const;
 	bool is_block_surrounded(Vector3i pos) const;
@@ -146,6 +152,7 @@ private:
 	// Voxel values that will be returned if access is out of map bounds
 	uint8_t _default_voxel[VoxelBuffer::MAX_CHANNELS];
 
+	// TODO Consider using OAHashMap
 	// Blocks stored with a spatial hash in all 3D directions
 	HashMap<Vector3i, VoxelBlock *, Vector3iHasher> _blocks;
 
@@ -156,6 +163,8 @@ private:
 	unsigned int _block_size;
 	unsigned int _block_size_pow2;
 	unsigned int _block_size_mask;
+
+	unsigned int _lod_index = 0;
 };
 
 #endif // VOXEL_MAP_H

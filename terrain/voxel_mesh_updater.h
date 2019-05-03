@@ -11,9 +11,12 @@
 
 class VoxelMeshUpdater {
 public:
+	static const int MAX_LOD = 32; // Like VoxelLodTerrain
+
 	struct InputBlock {
 		Ref<VoxelBuffer> voxels;
 		Vector3i position;
+		unsigned int lod = 0;
 	};
 
 	struct Input {
@@ -29,6 +32,7 @@ public:
 		VoxelMesher::Output blocky_surfaces;
 		VoxelMesher::Output smooth_surfaces;
 		Vector3i position;
+		unsigned int lod = 0;
 	};
 
 	struct Stats {
@@ -79,7 +83,7 @@ private:
 private:
 	Input _shared_input;
 	Mutex *_input_mutex;
-	HashMap<Vector3i, int, Vector3iHasher> _block_indexes;
+	HashMap<Vector3i, int, Vector3iHasher> _block_indexes[MAX_LOD];
 	bool _needs_sort;
 
 	Output _shared_output;

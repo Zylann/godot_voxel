@@ -1,14 +1,15 @@
 #include "voxel_block.h"
 
 // Helper
-VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size) {
+VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index) {
 	const int bs = size;
 	ERR_FAIL_COND_V(buffer.is_null(), NULL);
 	ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), NULL);
 
 	VoxelBlock *block = memnew(VoxelBlock);
 	block->pos = bpos;
-	block->_position_in_voxels = bpos * size;
+	block->lod_index = p_lod_index;
+	block->_position_in_voxels = bpos * (size << p_lod_index);
 
 	block->voxels = buffer;
 	//block->map = &map;
@@ -63,6 +64,10 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Ref<World> world) {
 	//	}
 }
 
+bool VoxelBlock::has_mesh() const {
+	return _mesh.is_valid();
+}
+
 void VoxelBlock::enter_world(World *world) {
 	if (_mesh_instance.is_valid()) {
 		VisualServer &vs = *VisualServer::get_singleton();
@@ -82,4 +87,9 @@ void VoxelBlock::set_visible(bool visible) {
 		VisualServer &vs = *VisualServer::get_singleton();
 		vs.instance_set_visible(_mesh_instance, visible);
 	}
+	_visible = visible;
+}
+
+bool VoxelBlock::is_visible() const {
+	return _visible;
 }
