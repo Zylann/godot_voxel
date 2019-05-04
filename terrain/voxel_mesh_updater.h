@@ -36,16 +36,10 @@ public:
 	};
 
 	struct Stats {
-		bool first;
-		uint64_t min_time;
-		uint64_t max_time;
-		uint32_t remaining_blocks;
-
-		Stats() :
-				first(true),
-				min_time(0),
-				max_time(0),
-				remaining_blocks(0) {}
+		bool first = true;
+		uint64_t min_time = 0;
+		uint64_t max_time = 0;
+		uint32_t remaining_blocks = 0;
 	};
 
 	struct Output {
@@ -54,14 +48,9 @@ public:
 	};
 
 	struct MeshingParams {
-		bool baked_ao;
-		float baked_ao_darkness;
-		bool smooth_surface;
-
-		MeshingParams() :
-				baked_ao(true),
-				baked_ao_darkness(0.75),
-				smooth_surface(false) {}
+		bool baked_ao = true;
+		float baked_ao_darkness = 0.75;
+		bool smooth_surface = false;
 	};
 
 	VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams params);
