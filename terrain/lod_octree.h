@@ -104,6 +104,13 @@ public:
 		action(action, &_root, _max_depth);
 	}
 
+	static inline Vector3i get_child_position(Vector3i parent_position, int i) {
+		return Vector3i(
+				parent_position.x * 2 + OctreeTables::g_octant_position[i][0],
+				parent_position.y * 2 + OctreeTables::g_octant_position[i][1],
+				parent_position.z * 2 + OctreeTables::g_octant_position[i][2]);
+	}
+
 private:
 	template <typename A>
 	void foreach_node(A action, Node *node, int lod) {
@@ -133,10 +140,7 @@ private:
 
 					Node *child = _pool.create();
 
-					child->position.x = node->position.x * 2 + OctreeTables::g_octant_position[i][0];
-					child->position.y = node->position.y * 2 + OctreeTables::g_octant_position[i][1];
-					child->position.z = node->position.z * 2 + OctreeTables::g_octant_position[i][2];
-
+					child->position = get_child_position(node->position, i);
 					child->block = create_action(child, lod - 1);
 
 					node->children[i] = child;

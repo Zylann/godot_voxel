@@ -679,13 +679,7 @@ void VoxelLodTerrain::_process() {
 
 				// Can only subdivide if higher detail meshes are ready to be shown, otherwise it will produce holes
 				for (int i = 0; i < 8; ++i) {
-
-					Vector3i child_pos = node->position;
-
-					child_pos.x = node->position.x * 2 + OctreeTables::g_octant_position[i][0];
-					child_pos.y = node->position.y * 2 + OctreeTables::g_octant_position[i][1];
-					child_pos.z = node->position.z * 2 + OctreeTables::g_octant_position[i][2];
-
+					Vector3i child_pos = LodOctree<bool>::get_child_position(node->position, i);
 					VoxelBlock *block = lod.map->get_block(child_pos);
 					if (block == nullptr || !block->has_been_meshed) {
 						return false;

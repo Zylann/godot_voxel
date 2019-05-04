@@ -110,7 +110,6 @@ private:
 
 		// Members for memory caching
 		std::vector<Vector3i> blocks_to_load;
-		//std::vector<Vector3i> blocks_to_update;
 	};
 
 	Lod _lods[MAX_LOD];
