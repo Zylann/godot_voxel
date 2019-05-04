@@ -12,8 +12,8 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	_lods[0].map.instance();
 
-	set_lod_count(4);
-	set_lod_split_scale(2);
+	set_lod_count(8);
+	set_lod_split_scale(3);
 
 	reset_updater();
 }
@@ -660,6 +660,7 @@ void VoxelLodTerrain::_process() {
 
 			block->set_mesh(mesh, world);
 			block->set_visible(lod.blocks_in_meshing_area.has(ob.position));
+			block->has_been_meshed = true;
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
@@ -667,23 +668,59 @@ void VoxelLodTerrain::_process() {
 
 	// Find out which blocks need to be shown
 	{
-		struct ShowAction {
+		struct SubdivideAction {
 			VoxelLodTerrain *self;
-			bool operator()(LodOctree<bool>::Node *node, int lod_index) {
+
+			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
+				CRASH_COND(lod_index == 0);
+
+				unsigned int child_lod_index = lod_index - 1;
+				Lod &lod = self->_lods[child_lod_index];
+
+				// Can only subdivide if higher detail meshes are ready to be shown, otherwise it will produce holes
+				for (int i = 0; i < 8; ++i) {
+
+					Vector3i child_pos = node->position;
+
+					child_pos.x = node->position.x * 2 + OctreeTables::g_octant_position[i][0];
+					child_pos.y = node->position.y * 2 + OctreeTables::g_octant_position[i][1];
+					child_pos.z = node->position.z * 2 + OctreeTables::g_octant_position[i][2];
+
+					VoxelBlock *block = lod.map->get_block(child_pos);
+					if (block == nullptr || !block->has_been_meshed) {
+						return false;
+					}
+				}
+				return true;
+			}
+
+			bool operator()(LodOctree<bool>::Node *node, unsigned int lod_index) {
 				Lod &lod = self->_lods[lod_index];
 				Vector3i bpos = node->position;
 				lod.blocks_in_meshing_area.insert(bpos);
 				VoxelBlock *block = lod.map->get_block(bpos);
-				if (block != nullptr) {
-					block->set_visible(true);
-				}
+				CRASH_COND(block == nullptr);
+				block->set_visible(true);
 				return true;
 			}
 		};
 
-		struct HideAction {
+		struct UnsubdivideAction {
 			VoxelLodTerrain *self;
-			void operator()(LodOctree<bool>::Node *node, int lod_index) {
+
+			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
+				// Can only unsubdivide if the parent mesh is ready
+				Lod &lod = self->_lods[lod_index];
+				VoxelBlock *block = lod.map->get_block(node->position);
+				if (block == nullptr) {
+					// Ok, that block got unloaded? Might happen if you teleport away
+					return true;
+				} else {
+					return block->has_been_meshed;
+				}
+			}
+
+			void operator()(LodOctree<bool>::Node *node, unsigned int lod_index) {
 				Lod &lod = self->_lods[lod_index];
 				Vector3i bpos = node->position;
 				lod.blocks_in_meshing_area.erase(bpos);
@@ -694,13 +731,13 @@ void VoxelLodTerrain::_process() {
 			}
 		};
 
-		ShowAction show_action;
-		show_action.self = this;
+		SubdivideAction subdivide_action;
+		subdivide_action.self = this;
 
-		HideAction hide_action;
-		hide_action.self = this;
+		UnsubdivideAction unsubdivide_action;
+		unsubdivide_action.self = this;
 
-		_lod_octree.update(viewer_pos, show_action, hide_action);
+		_lod_octree.update(viewer_pos, subdivide_action, unsubdivide_action);
 	}
 }
 

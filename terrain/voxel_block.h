@@ -13,6 +13,10 @@ public:
 	Vector3i pos; // TODO Rename position
 	unsigned int lod_index = 0;
 
+	// The mesh might be null, but we don't know if it's actually empty or if it's loading.
+	// This boolean tells if we attempted to mesh this block at least once.
+	bool has_been_meshed = false;
+
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 
 	void set_mesh(Ref<Mesh> mesh, Ref<World> world);

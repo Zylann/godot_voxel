@@ -126,7 +126,8 @@ private:
 
 		if (!node->has_children()) {
 
-			if (lod > 0 && world_center.distance_to(view_pos) < split_distance) {
+			// If it's not the last LOD, if close enough and custom conditions get fulfilled
+			if (lod > 0 && world_center.distance_to(view_pos) < split_distance && create_action.can_do(node, lod)) {
 				// Split
 				for (int i = 0; i < 8; ++i) {
 
@@ -160,7 +161,7 @@ private:
 				no_split_child |= child->has_children();
 			}
 
-			if (no_split_child && world_center.distance_to(view_pos) > split_distance) {
+			if (no_split_child && world_center.distance_to(view_pos) > split_distance && destroy_action.can_do(node, lod)) {
 				// Join
 				if (node->has_children()) {
 
