@@ -3,7 +3,8 @@ Voxel Tools for Godot
 
 C++ module for creating volumetric worlds in Godot Engine.
 
-![Example screenshot](screenshots/2016_05_04_0319_w800.png)
+![Blocky example screenshot](screenshots/2016_05_04_0319_w800.png)
+![Smooth example screenshot](screenshots/2019_05_05_1944_w800.png)
 
 Setup
 ------
