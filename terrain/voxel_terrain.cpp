@@ -218,16 +218,10 @@ void VoxelTerrain::immerge_block(Vector3i bpos) {
 
 Dictionary VoxelTerrain::get_statistics() const {
 
-	Dictionary provider;
-	provider["min_time"] = _stats.provider.min_time;
-	provider["max_time"] = _stats.provider.max_time;
-	provider["remaining_blocks"] = _stats.provider.remaining_blocks;
+	Dictionary provider = VoxelProviderThread::to_dictionary(_stats.provider);
 	provider["dropped_blocks"] = _stats.dropped_provider_blocks;
 
-	Dictionary updater;
-	updater["min_time"] = _stats.updater.min_time;
-	updater["max_time"] = _stats.updater.max_time;
-	updater["remaining_blocks"] = _stats.updater.remaining_blocks;
+	Dictionary updater = VoxelMeshUpdater::to_dictionary(_stats.updater);
 	updater["updated_blocks"] = _stats.updated_blocks;
 	updater["mesh_alloc_time"] = _stats.mesh_alloc_time;
 	updater["dropped_blocks"] = _stats.dropped_updater_blocks;

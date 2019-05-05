@@ -57,6 +57,8 @@ public:
 	void push(const InputData &input);
 	void pop(OutputData &out_data);
 
+	static Dictionary to_dictionary(const Stats &stats);
+
 private:
 	static void _thread_func(void *p_self);
 

@@ -207,3 +207,11 @@ void VoxelProviderThread::thread_sync(int emerge_index, Stats stats) {
 		sorter.sort(_input.blocks_to_emerge.ptrw(), _input.blocks_to_emerge.size());
 	}
 }
+
+Dictionary VoxelProviderThread::to_dictionary(const Stats &stats) {
+	Dictionary d;
+	d["min_time"] = stats.min_time;
+	d["max_time"] = stats.max_time;
+	d["remaining_blocks"] = stats.remaining_blocks;
+	return d;
+}

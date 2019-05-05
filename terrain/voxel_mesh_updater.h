@@ -61,6 +61,8 @@ public:
 
 	int get_required_padding() const;
 
+	static Dictionary to_dictionary(const Stats &stats);
+
 private:
 	static void _thread_func(void *p_self);
 	void thread_func();

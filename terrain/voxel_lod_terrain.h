@@ -5,11 +5,11 @@
 #include "lod_octree.h"
 #include "voxel_map.h"
 #include "voxel_mesh_updater.h"
+#include "voxel_provider_thread.h"
 #include <core/set.h>
 #include <scene/3d/spatial.h>
 
 class VoxelMap;
-class VoxelProviderThread;
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
@@ -52,6 +52,18 @@ public:
 	BlockState get_block_state(Vector3 bpos, unsigned int lod_index) const;
 	bool is_block_meshed(Vector3 bpos, unsigned int lod_index) const;
 	bool is_block_shown(Vector3 bpos, unsigned int lod_index) const;
+
+	struct Stats {
+		VoxelMeshUpdater::Stats updater;
+		VoxelProviderThread::Stats provider;
+		uint64_t time_request_blocks_to_load = 0;
+		uint64_t time_process_load_responses = 0;
+		uint64_t time_request_blocks_to_update = 0;
+		uint64_t time_process_update_responses = 0;
+		uint64_t time_process_lod = 0;
+	};
+
+	Dictionary get_stats() const;
 
 protected:
 	static void _bind_methods();
@@ -113,6 +125,8 @@ private:
 	};
 
 	Lod _lods[MAX_LOD];
+
+	Stats _stats;
 };
 
 VARIANT_ENUM_CAST(VoxelLodTerrain::BlockState)

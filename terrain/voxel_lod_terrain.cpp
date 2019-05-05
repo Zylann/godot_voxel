@@ -1,10 +1,10 @@
 #include "voxel_lod_terrain.h"
 #include "../math/rect3i.h"
+#include "../util/profiling_clock.h"
 #include "voxel_map.h"
 #include "voxel_mesh_updater.h"
 #include "voxel_provider_thread.h"
 #include <core/engine.h>
-#include <core/os/os.h>
 
 VoxelLodTerrain::VoxelLodTerrain() {
 
@@ -13,7 +13,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	_lods[0].map.instance();
 
 	set_lod_count(8);
-	set_lod_split_scale(3);
+	set_lod_split_scale(4);
 
 	reset_updater();
 }
@@ -382,6 +382,8 @@ void VoxelLodTerrain::_process() {
 	Vector3 viewer_pos = get_viewer_pos();
 	Vector3i viewer_block_pos = _lods[0].map->voxel_to_block(viewer_pos);
 
+	ProfilingClock profiling_clock;
+
 	// Here we go...
 
 	// Find out which blocks _data_ need to be loaded
@@ -466,12 +468,15 @@ void VoxelLodTerrain::_process() {
 		_provider_thread->push(input);
 	}
 
+	_stats.time_request_blocks_to_load = profiling_clock.restart();
+
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters.
 	// It should only happen on first load, though.
 	{
 		VoxelProviderThread::OutputData output;
 		_provider_thread->pop(output);
+		_stats.provider = output.stats;
 
 		for (int i = 0; i < output.emerged_blocks.size(); ++i) {
 
@@ -541,6 +546,8 @@ void VoxelLodTerrain::_process() {
 		}
 	}
 
+	_stats.time_process_load_responses = profiling_clock.restart();
+
 	// Send mesh updates
 	{
 		VoxelMeshUpdater::Input input;
@@ -587,11 +594,14 @@ void VoxelLodTerrain::_process() {
 		_block_updater->push(input);
 	}
 
+	_stats.time_request_blocks_to_update = profiling_clock.restart();
+
 	// Receive mesh updates
 	{
 		{
 			VoxelMeshUpdater::Output output;
 			_block_updater->pop(output);
+			_stats.updater = output.stats;
 
 			for (unsigned int i = 0; i < output.blocks.size(); ++i) {
 				const VoxelMeshUpdater::OutputBlock &ob = output.blocks[i];
@@ -666,6 +676,8 @@ void VoxelLodTerrain::_process() {
 		shift_up(_blocks_pending_main_thread_update, queue_index);
 	}
 
+	_stats.time_process_update_responses = profiling_clock.restart();
+
 	// Find out which blocks need to be shown
 	{
 		struct SubdivideAction {
@@ -733,6 +745,25 @@ void VoxelLodTerrain::_process() {
 
 		_lod_octree.update(viewer_pos, subdivide_action, unsubdivide_action);
 	}
+
+	_stats.time_process_lod = profiling_clock.restart();
+}
+
+Dictionary VoxelLodTerrain::get_stats() const {
+
+	Dictionary process;
+	process["time_request_blocks_to_load"] = _stats.time_request_blocks_to_load;
+	process["time_process_load_responses"] = _stats.time_process_load_responses;
+	process["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
+	process["time_process_update_responses"] = _stats.time_process_update_responses;
+	process["time_process_lod"] = _stats.time_process_lod;
+
+	Dictionary d;
+	d["provider"] = VoxelProviderThread::to_dictionary(_stats.provider);
+	d["updater"] = VoxelMeshUpdater::to_dictionary(_stats.updater);
+	d["process"] = process;
+
+	return d;
 }
 
 void VoxelLodTerrain::_bind_methods() {
@@ -752,6 +783,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_block_state", "block_pos", "lod"), &VoxelLodTerrain::get_block_state);
 	ClassDB::bind_method(D_METHOD("is_block_meshed", "block_pos", "lod"), &VoxelLodTerrain::is_block_meshed);
 	ClassDB::bind_method(D_METHOD("is_block_shown", "block_pos", "lod"), &VoxelLodTerrain::is_block_shown);
+	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelLodTerrain::get_stats);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelProvider"), "set_provider", "get_provider");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
