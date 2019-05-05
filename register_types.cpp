@@ -3,6 +3,7 @@
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "providers/voxel_provider_image.h"
+#include "providers/voxel_provider_noise.h"
 #include "providers/voxel_provider_test.h"
 #include "terrain/voxel_box_mover.h"
 #include "terrain/voxel_lod_terrain.h"
@@ -30,6 +31,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelProvider>();
 	ClassDB::register_class<VoxelProviderTest>();
 	ClassDB::register_class<VoxelProviderImage>();
+	ClassDB::register_class<VoxelProviderNoise>();
 
 	// Helpers
 	ClassDB::register_class<VoxelBoxMover>();
