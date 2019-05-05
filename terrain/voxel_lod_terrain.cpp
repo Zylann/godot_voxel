@@ -682,6 +682,7 @@ void VoxelLodTerrain::_process() {
 	{
 		struct SubdivideAction {
 			VoxelLodTerrain *self;
+			int non_meshed_blocks = 0;
 
 			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
 				CRASH_COND(lod_index == 0);
@@ -693,7 +694,11 @@ void VoxelLodTerrain::_process() {
 				for (int i = 0; i < 8; ++i) {
 					Vector3i child_pos = LodOctree<bool>::get_child_position(node->position, i);
 					VoxelBlock *block = lod.map->get_block(child_pos);
-					if (block == nullptr || !block->has_been_meshed) {
+					if (block == nullptr) {
+						return false;
+					}
+					if (!block->has_been_meshed) {
+						++non_meshed_blocks;
 						return false;
 					}
 				}
@@ -713,6 +718,7 @@ void VoxelLodTerrain::_process() {
 
 		struct UnsubdivideAction {
 			VoxelLodTerrain *self;
+			int non_meshed_blocks = 0;
 
 			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
 				// Can only unsubdivide if the parent mesh is ready
@@ -721,8 +727,12 @@ void VoxelLodTerrain::_process() {
 				if (block == nullptr) {
 					// Ok, that block got unloaded? Might happen if you teleport away
 					return true;
+				}
+				if (block->has_been_meshed) {
+					return true;
 				} else {
-					return block->has_been_meshed;
+					++non_meshed_blocks;
+					return false;
 				}
 			}
 
@@ -744,6 +754,10 @@ void VoxelLodTerrain::_process() {
 		unsubdivide_action.self = this;
 
 		_lod_octree.update(viewer_pos, subdivide_action, unsubdivide_action);
+
+		// Ideally, this stat should stabilize to zero.
+		// If not, something in the meshing process prevents LODs to properly show up and should be fixed.
+		_stats.blocked_lods = subdivide_action.non_meshed_blocks + unsubdivide_action.non_meshed_blocks;
 	}
 
 	_stats.time_process_lod = profiling_clock.restart();
@@ -762,6 +776,7 @@ Dictionary VoxelLodTerrain::get_stats() const {
 	d["provider"] = VoxelProviderThread::to_dictionary(_stats.provider);
 	d["updater"] = VoxelMeshUpdater::to_dictionary(_stats.updater);
 	d["process"] = process;
+	d["blocked_lods"] = _stats.blocked_lods;
 
 	return d;
 }

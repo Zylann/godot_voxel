@@ -61,6 +61,7 @@ public:
 		uint64_t time_request_blocks_to_update = 0;
 		uint64_t time_process_update_responses = 0;
 		uint64_t time_process_lod = 0;
+		int blocked_lods = 0;
 	};
 
 	Dictionary get_stats() const;
