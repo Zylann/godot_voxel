@@ -23,7 +23,7 @@ inline float get_isolevel_clamped(const VoxelBuffer &voxels, unsigned int x, uns
 	y = y >= voxels.get_size().y ? voxels.get_size().y - 1 : y;
 	z = z >= voxels.get_size().z ? voxels.get_size().z - 1 : z;
 
-	return voxels.get_voxel(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
+	return voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
 }
 
 inline HermiteValue get_hermite_value(const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
