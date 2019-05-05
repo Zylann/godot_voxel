@@ -1426,11 +1426,6 @@ void polygonize_volume_directly(const VoxelBuffer &voxels, Vector3i min, Vector3
 #define BUILD_OCTREE_BOTTOM_UP
 
 VoxelMesherDMC::VoxelMesherDMC() {
-
-	_geometric_error = 0.1;
-	_mesh_mode = MESH_NORMAL;
-	_octree_mode = OCTREE_BOTTOM_UP;
-	_stats = { 0 };
 }
 
 void VoxelMesherDMC::set_mesh_mode(MeshMode mode) {
@@ -1457,6 +1452,14 @@ float VoxelMesherDMC::get_geometric_error() const {
 	return _geometric_error;
 }
 
+void VoxelMesherDMC::set_seam_mode(SeamMode mode) {
+	_seam_mode = mode;
+}
+
+VoxelMesherDMC::SeamMode VoxelMesherDMC::get_seam_mode() const {
+	return _seam_mode;
+}
+
 void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) {
 
 	// Requirements:
@@ -1481,7 +1484,15 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 	ERR_FAIL_COND(voxels.get_size().z < chunk_size + padding * 2);
 
 	// TODO Option for this in case LOD is not used
-	bool skirts_enabled = true;
+	bool skirts_enabled = _seam_mode == SEAM_MARCHING_SQUARE_SKIRTS;
+	// Marching square skirts are a cheap way to hide LOD cracks,
+	// however they might still be visible because of shadow mapping, and cause potential issues when used for physics.
+	// Maybe a shader with a `light()` function can prevent shadows from being applied to these,
+	// but in longer term, proper seams remain a better solution.
+	// Unfortunately, such seams require the ability to quickly swap index buffers of the mesh using OpenGL/Vulkan,
+	// which is not possible with current Godot's VisualServer without forking the whole lot (dang!),
+	// and we are forced to at least re-upload the mesh entirely or have 16 versions of it just swapping seams...
+	// So we can't improve this further until Godot's API gives us that possibility, or other approaches like skirts need to be taken.
 
 	// Construct an intermediate to handle padding transparently
 	dmc::VoxelAccess voxels_access(voxels, Vector3i(padding));
@@ -1601,6 +1612,9 @@ void VoxelMesherDMC::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_geometric_error", "error"), &VoxelMesherDMC::set_geometric_error);
 	ClassDB::bind_method(D_METHOD("get_geometric_error"), &VoxelMesherDMC::get_geometric_error);
 
+	ClassDB::bind_method(D_METHOD("set_seam_mode", "mode"), &VoxelMesherDMC::set_seam_mode);
+	ClassDB::bind_method(D_METHOD("get_seam_mode"), &VoxelMesherDMC::get_seam_mode);
+
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelMesherDMC::get_stats);
 
 	BIND_ENUM_CONSTANT(MESH_NORMAL);
@@ -1611,4 +1625,7 @@ void VoxelMesherDMC::_bind_methods() {
 	BIND_ENUM_CONSTANT(OCTREE_BOTTOM_UP);
 	BIND_ENUM_CONSTANT(OCTREE_TOP_DOWN);
 	BIND_ENUM_CONSTANT(OCTREE_NONE);
+
+	BIND_ENUM_CONSTANT(SEAM_NONE);
+	BIND_ENUM_CONSTANT(SEAM_MARCHING_SQUARE_SKIRTS);
 }

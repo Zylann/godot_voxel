@@ -16,6 +16,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams para
 		_dmc_mesher.instance();
 		_dmc_mesher->set_geometric_error(0.05);
 		_dmc_mesher->set_octree_mode(VoxelMesherDMC::OCTREE_NONE);
+		_dmc_mesher->set_seam_mode(VoxelMesherDMC::SEAM_MARCHING_SQUARE_SKIRTS);
 	}
 
 	_input_mutex = Mutex::create();

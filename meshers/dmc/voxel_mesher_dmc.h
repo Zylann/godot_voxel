@@ -46,10 +46,7 @@ struct OctreeNode {
 struct DualCell {
 	Vector3 corners[8];
 	HermiteValue values[8];
-	bool has_values;
-
-	DualCell() :
-			has_values(false) {}
+	bool has_values = false;
 
 	inline void set_corner(int i, Vector3 vertex, HermiteValue value) {
 		CRASH_COND(i < 0 || i >= 8);
@@ -64,6 +61,7 @@ struct DualGrid {
 
 } // namespace dmc
 
+// Mesher extending Marching Cubes using a dual grid.
 class VoxelMesherDMC : public VoxelMesher {
 	GDCLASS(VoxelMesherDMC, VoxelMesher)
 public:
@@ -76,10 +74,18 @@ public:
 		MESH_DEBUG_DUAL_GRID
 	};
 
+	// TODO Rename SimplifyMode because octree isn't the only way
 	enum OctreeMode {
 		OCTREE_BOTTOM_UP,
 		OCTREE_TOP_DOWN,
 		OCTREE_NONE
+	};
+
+	enum SeamMode {
+		SEAM_NONE, // No seam management
+		SEAM_MARCHING_SQUARE_SKIRTS, // Marching square skirts
+		// SEAM_OVERLAP // Polygonize extra voxels with lower isolevel
+		// SEAM_JUNCTION_TRIANGLES // Extra triangles for alternate borders, requires index buffer switching
 	};
 
 	VoxelMesherDMC();
@@ -93,6 +99,9 @@ public:
 	void set_geometric_error(real_t geometric_error);
 	float get_geometric_error() const;
 
+	void set_seam_mode(SeamMode mode);
+	SeamMode get_seam_mode() const;
+
 	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) override;
 	int get_minimum_padding() const override;
 
@@ -105,15 +114,16 @@ private:
 	dmc::MeshBuilder _mesh_builder;
 	dmc::DualGrid _dual_grid;
 	dmc::OctreeNodePool _octree_node_pool;
-	real_t _geometric_error;
-	MeshMode _mesh_mode;
-	OctreeMode _octree_mode;
+	real_t _geometric_error = 0.1;
+	MeshMode _mesh_mode = MESH_NORMAL;
+	OctreeMode _octree_mode = OCTREE_BOTTOM_UP;
+	SeamMode _seam_mode = SEAM_NONE;
 
 	struct Stats {
-		real_t octree_build_time;
-		real_t dualgrid_derivation_time;
-		real_t meshing_time;
-		real_t commit_time;
+		real_t octree_build_time = 0;
+		real_t dualgrid_derivation_time = 0;
+		real_t meshing_time = 0;
+		real_t commit_time = 0;
 	};
 
 	Stats _stats;
@@ -121,5 +131,6 @@ private:
 
 VARIANT_ENUM_CAST(VoxelMesherDMC::OctreeMode)
 VARIANT_ENUM_CAST(VoxelMesherDMC::MeshMode)
+VARIANT_ENUM_CAST(VoxelMesherDMC::SeamMode)
 
 #endif // VOXEL_MESHER_DMC_H
