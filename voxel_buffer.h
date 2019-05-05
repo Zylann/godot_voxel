@@ -54,6 +54,7 @@ public:
 	void create(int sx, int sy, int sz);
 	void clear();
 	void clear_channel(unsigned int channel_index, int clear_value = 0);
+	_FORCE_INLINE_ void clear_channel_f(unsigned int channel_index, float clear_value = 0) { clear_channel(channel_index, iso_to_byte(clear_value)); }
 
 	_FORCE_INLINE_ const Vector3i &get_size() const { return _size; }
 
