@@ -7,6 +7,7 @@
 
 // Dual marching cubes
 // Algorithm taken from https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/
+// Partially based on Ogre's implementation, adapted for requirements of this module with a few extras
 
 namespace dmc {
 
@@ -1142,6 +1143,134 @@ inline Vector3 interpolate(const Vector3 &v0, const Vector3 &v1, const HermiteVa
 	return v0 + mu * (v1 - v0);
 }
 
+void polygonize_cell_marching_squares(const Vector3 *cube_corners, const HermiteValue *cube_values, float max_distance, MeshBuilder &mesh_builder, const int *corner_map) {
+
+	// Note:
+	// Using Ogre's implementation directly resulted in inverted result, because it expects density values instead of SDF,
+	// So I had to flip a few things around in order to make it work
+
+	unsigned char square_index = 0;
+	HermiteValue values[4];
+
+	// Find out the case.
+	for (size_t i = 0; i < 4; ++i) {
+		values[i] = cube_values[corner_map[i]];
+		if (values[i].value <= SURFACE_ISO_LEVEL) {
+			square_index |= 1 << i;
+		}
+	}
+
+	// Don't generate triangles if we are completely inside and far enough away from the surface
+	max_distance = -max_distance;
+	if (square_index == 15 &&
+			values[0].value <= max_distance &&
+			values[1].value <= max_distance &&
+			values[2].value <= max_distance &&
+			values[3].value <= max_distance) {
+		return;
+	}
+
+	int edge = MarchingCubes::ms_edges[square_index];
+
+	// Find the intersection vertices.
+	Vector3 intersection_points[8];
+	Vector3 intersection_normals[8];
+
+	intersection_points[0] = cube_corners[corner_map[0]];
+	intersection_points[2] = cube_corners[corner_map[1]];
+	intersection_points[4] = cube_corners[corner_map[2]];
+	intersection_points[6] = cube_corners[corner_map[3]];
+
+	HermiteValue inner_val;
+
+	inner_val = values[0]; // mSrc->getValueAndGradient(intersection_points[0]);
+	intersection_normals[0] = inner_val.gradient.normalized(); // * (inner_val.value + 1.0);
+
+	inner_val = values[1]; // mSrc->getValueAndGradient(intersection_points[2]);
+	intersection_normals[2] = inner_val.gradient.normalized(); // * (inner_val.value + 1.0);
+
+	inner_val = values[2]; // mSrc->getValueAndGradient(intersection_points[4]);
+	intersection_normals[4] = inner_val.gradient.normalized(); // * (inner_val.value + 1.0);
+
+	inner_val = values[3]; // mSrc->getValueAndGradient(intersection_points[6]);
+	intersection_normals[6] = inner_val.gradient.normalized(); // * (inner_val.value + 1.0);
+
+	if (edge & 1) {
+		intersection_points[1] = interpolate(cube_corners[corner_map[0]], cube_corners[corner_map[1]], values[0], values[1], intersection_normals[1]);
+	}
+	if (edge & 2) {
+		intersection_points[3] = interpolate(cube_corners[corner_map[1]], cube_corners[corner_map[2]], values[1], values[2], intersection_normals[3]);
+	}
+	if (edge & 4) {
+		intersection_points[5] = interpolate(cube_corners[corner_map[2]], cube_corners[corner_map[3]], values[2], values[3], intersection_normals[5]);
+	}
+	if (edge & 8) {
+		intersection_points[7] = interpolate(cube_corners[corner_map[3]], cube_corners[corner_map[0]], values[3], values[0], intersection_normals[7]);
+	}
+
+	// Ambigous case handling, 5 = 0 2 and 10 = 1 3
+	/*if (squareIndex == 5 || squareIndex == 10)
+			{
+				Vector3 avg = (corners[corner_map[0]] + corners[corner_map[1]] + corners[corner_map[2]] + corners[corner_map[3]]) / (Real)4.0;
+				// Lets take the alternative.
+				if (mSrc->getValue(avg) >= ISO_LEVEL)
+				{
+					squareIndex = squareIndex == 5 ? 16 : 17;
+				}
+			}*/
+
+	// Create the triangles according to the table.
+	for (int i = 0; MarchingCubes::mc_triangles[square_index][i] != -1; i += 3) {
+
+		mesh_builder.add_vertex(
+				intersection_points[MarchingCubes::ms_triangles[square_index][i]],
+				intersection_normals[MarchingCubes::ms_triangles[square_index][i]]);
+
+		mesh_builder.add_vertex(
+				intersection_points[MarchingCubes::ms_triangles[square_index][i + 2]],
+				intersection_normals[MarchingCubes::ms_triangles[square_index][i + 2]]);
+
+		mesh_builder.add_vertex(
+				intersection_points[MarchingCubes::ms_triangles[square_index][i + 1]],
+				intersection_normals[MarchingCubes::ms_triangles[square_index][i + 1]]);
+	}
+}
+
+namespace MarchingSquares {
+
+static const int g_corner_map_front[4] = { 7, 6, 2, 3 };
+static const int g_corner_map_back[4] = { 5, 4, 0, 1 };
+static const int g_corner_map_left[4] = { 4, 7, 3, 0 };
+static const int g_corner_map_right[4] = { 6, 5, 1, 2 };
+static const int g_corner_map_top[4] = { 4, 5, 6, 7 };
+static const int g_corner_map_bottom[4] = { 3, 2, 1, 0 };
+
+} // namespace MarchingSquares
+
+void add_marching_squares_skirts(const Vector3 *corners, const HermiteValue *values, MeshBuilder &mesh_builder, Vector3 min_pos, Vector3 max_pos) {
+
+	float max_distance = 0.5f; // Max distance to the isosurface
+
+	if (corners[0].z == min_pos.z) {
+		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_back);
+	}
+	if (corners[2].z == max_pos.z) {
+		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_front);
+	}
+	if (corners[0].x == min_pos.x) {
+		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_left);
+	}
+	if (corners[1].x == max_pos.x) {
+		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_right);
+	}
+	if (corners[5].y == max_pos.y) {
+		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_top);
+	}
+	if (corners[0].y == min_pos.y) {
+		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_bottom);
+	}
+}
+
 void polygonize_cell_marching_cubes(const Vector3 *corners, const HermiteValue *values, MeshBuilder &mesh_builder) {
 
 	unsigned char case_index = 0;
@@ -1218,7 +1347,7 @@ void polygonize_cell_marching_cubes(const Vector3 *corners, const HermiteValue *
 	return;
 }
 
-void polygonize_dual_cell(const DualCell &cell, const VoxelAccess &voxels, MeshBuilder &mesh_builder) {
+void polygonize_dual_cell(const DualCell &cell, const VoxelAccess &voxels, MeshBuilder &mesh_builder, bool skirts_enabled) {
 
 	const Vector3 *corners = cell.corners;
 	HermiteValue values[8];
@@ -1232,22 +1361,29 @@ void polygonize_dual_cell(const DualCell &cell, const VoxelAccess &voxels, MeshB
 	}
 
 	polygonize_cell_marching_cubes(corners, values, mesh_builder);
-}
 
-inline void polygonize_dual_grid(const DualGrid &grid, const VoxelAccess &voxels, MeshBuilder &mesh_builder) {
-
-	for (int i = 0; i < grid.cells.size(); ++i) {
-		polygonize_dual_cell(grid.cells[i], voxels, mesh_builder);
+	if (skirts_enabled) {
+		add_marching_squares_skirts(corners, values, mesh_builder, Vector3(), (voxels.buffer.get_size() + voxels.offset).to_vec3());
 	}
 }
 
-void polygonize_volume_directly(const VoxelBuffer &voxels, Vector3i min, Vector3i size, MeshBuilder &mesh_builder) {
+inline void polygonize_dual_grid(const DualGrid &grid, const VoxelAccess &voxels, MeshBuilder &mesh_builder, bool skirts_enabled) {
+
+	for (int i = 0; i < grid.cells.size(); ++i) {
+		polygonize_dual_cell(grid.cells[i], voxels, mesh_builder, skirts_enabled);
+	}
+}
+
+void polygonize_volume_directly(const VoxelBuffer &voxels, Vector3i min, Vector3i size, MeshBuilder &mesh_builder, bool skirts_enabled) {
 
 	Vector3 corners[8];
 	HermiteValue values[8];
 
 	const Vector3i max = min + size;
 	const Vector3 minf = min.to_vec3();
+
+	const Vector3 min_vertex_pos = Vector3();
+	const Vector3 max_vertex_pos = (voxels.get_size() - 2 * min).to_vec3();
 
 	for (int z = min.z; z < max.z; ++z) {
 		for (int x = min.x; x < max.x; ++x) {
@@ -1276,6 +1412,10 @@ void polygonize_volume_directly(const VoxelBuffer &voxels, Vector3i min, Vector3
 				}
 
 				polygonize_cell_marching_cubes(corners, values, mesh_builder);
+
+				if (skirts_enabled) {
+					add_marching_squares_skirts(corners, values, mesh_builder, min_vertex_pos, max_vertex_pos);
+				}
 			}
 		}
 	}
@@ -1321,7 +1461,6 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 
 	// Requirements:
 	// - Voxel data must be padded
-	// - Gradients must be precalculated
 	// - The non-padded area size is cubic and power of two
 
 	_stats = { 0 };
@@ -1340,6 +1479,9 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 	ERR_FAIL_COND(voxels.get_size().x < chunk_size + padding * 2);
 	ERR_FAIL_COND(voxels.get_size().y < chunk_size + padding * 2);
 	ERR_FAIL_COND(voxels.get_size().z < chunk_size + padding * 2);
+
+	// TODO Option for this in case LOD is not used
+	bool skirts_enabled = true;
 
 	// Construct an intermediate to handle padding transparently
 	dmc::VoxelAccess voxels_access(voxels, Vector3i(padding));
@@ -1400,7 +1542,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 			} else {
 
 				time_before = OS::get_singleton()->get_ticks_usec();
-				dmc::polygonize_dual_grid(_dual_grid, voxels_access, _mesh_builder);
+				dmc::polygonize_dual_grid(_dual_grid, voxels_access, _mesh_builder, skirts_enabled);
 				_stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
 			}
 
@@ -1415,7 +1557,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 		// This is essentially regular marching cubes.
 
 		time_before = OS::get_singleton()->get_ticks_usec();
-		dmc::polygonize_volume_directly(voxels, Vector3i(padding), Vector3i(chunk_size), _mesh_builder);
+		dmc::polygonize_volume_directly(voxels, Vector3i(padding), Vector3i(chunk_size), _mesh_builder, skirts_enabled);
 		_stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
 	}
 
@@ -1424,8 +1566,6 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 		surface = _mesh_builder.commit(_mesh_mode == MESH_WIREFRAME);
 		_stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
 	}
-
-	// TODO Marching squares skirts
 
 	// surfaces[material][array_type], for now single material
 	output.surfaces.push_back(surface);

@@ -13,7 +13,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	_lods[0].map.instance();
 
 	set_lod_count(8);
-	set_lod_split_scale(4);
+	set_lod_split_scale(3);
 
 	reset_updater();
 }
