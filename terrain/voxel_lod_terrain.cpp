@@ -786,6 +786,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_provider", "provider"), &VoxelLodTerrain::set_provider);
 	ClassDB::bind_method(D_METHOD("get_provider"), &VoxelLodTerrain::get_provider);
 
+	ClassDB::bind_method(D_METHOD("set_material", "material"), &VoxelLodTerrain::set_material);
+	ClassDB::bind_method(D_METHOD("get_material"), &VoxelLodTerrain::get_material);
+
 	ClassDB::bind_method(D_METHOD("set_view_distance", "distance_in_voxels"), &VoxelLodTerrain::set_view_distance);
 	ClassDB::bind_method(D_METHOD("get_view_distance"), &VoxelLodTerrain::get_view_distance);
 
@@ -795,6 +798,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_lod_count", "lod_count"), &VoxelLodTerrain::set_lod_count);
 	ClassDB::bind_method(D_METHOD("get_lod_count"), &VoxelLodTerrain::get_lod_count);
 
+	ClassDB::bind_method(D_METHOD("set_lod_split_scale", "lod_split_scale"), &VoxelLodTerrain::set_lod_split_scale);
+	ClassDB::bind_method(D_METHOD("get_lod_split_scale"), &VoxelLodTerrain::get_lod_split_scale);
+
 	ClassDB::bind_method(D_METHOD("get_block_state", "block_pos", "lod"), &VoxelLodTerrain::get_block_state);
 	ClassDB::bind_method(D_METHOD("is_block_meshed", "block_pos", "lod"), &VoxelLodTerrain::is_block_meshed);
 	ClassDB::bind_method(D_METHOD("is_block_shown", "block_pos", "lod"), &VoxelLodTerrain::is_block_shown);
@@ -802,7 +808,10 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelProvider"), "set_provider", "get_provider");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"), "set_material", "get_material");
 
 	BIND_ENUM_CONSTANT(BLOCK_NONE);
 	BIND_ENUM_CONSTANT(BLOCK_LOAD);
