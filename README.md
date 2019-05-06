@@ -25,6 +25,7 @@ What this module provides
 - Data paging using blocks of 16x16x16 voxels, so the world can be streamed with threads as you move
 - Minecraft-style terrain with voxels as types, with multiple materials and baked ambient occlusion
 - Smooth terrain with voxels as distance field (using extensions of marching cubes)
+- Level of detail for smooth terrain (no edition support yet)
 - Simple interface for custom terrain generators (block by block using threads)
 
 
@@ -32,7 +33,6 @@ What this module doesn't provides
 -----------------------------------
 
 - Level of detail for blocky terrain
-- Level of detail for smooth terrain (not YET)
 - Game specific features such as cave generation or procedural trees (though it might include tools to help doing them)
 - Editor tools (only a few things are exposed)
 - Import and export of voxel formats
