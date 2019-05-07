@@ -198,44 +198,55 @@ NodePath VoxelLodTerrain::get_viewer_path() const {
 	return _viewer_path;
 }
 
-VoxelLodTerrain::BlockState VoxelLodTerrain::get_block_state(Vector3 bpos, unsigned int lod_index) const {
-	ERR_FAIL_COND_V(lod_index >= get_lod_count(), BLOCK_NONE);
+int VoxelLodTerrain::get_block_region_extent() const {
+	// This is the radius of blocks around the viewer in which we may load them.
+	// It depends on the LOD split scale, which tells how close to a block we need to be for it to subdivide.
+	// Each LOD is fractal so that value is the same for each of them.
+	return static_cast<int>(_lod_octree.get_split_scale()) * 2 + 2;
+}
+
+Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, unsigned int lod_index) const {
+	// Gets some info useful for debugging
+	Dictionary d;
+	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
+
 	const Lod &lod = _lods[lod_index];
-	Vector3i ibpos(bpos);
-	const Map<Vector3i, BlockState>::Element *state = lod.block_states.find(ibpos);
-	if (state) {
-		return state->value();
+	Vector3i bpos(fbpos);
+
+	BlockState state;
+	const Map<Vector3i, BlockState>::Element *E = lod.block_states.find(bpos);
+	if (E) {
+		state = E->value();
 	} else {
-		if (lod.map->has_block(ibpos)) {
-			return BLOCK_IDLE;
+		if (lod.map->has_block(bpos)) {
+			state = BLOCK_IDLE;
 		} else {
-			return BLOCK_NONE;
+			state = BLOCK_NONE;
 		}
 	}
+
+	bool in_show_area = lod.blocks_in_meshing_area.has(bpos);
+
+	bool meshed = false;
+	bool visible = false;
+	const VoxelBlock *block = lod.map->get_block(bpos);
+	if (block) {
+		meshed = block->has_been_meshed;
+		visible = block->is_visible();
+	}
+
+	d["state"] = state;
+	d["in_show_area"] = in_show_area;
+	d["meshed"] = meshed;
+	d["visible"] = visible;
+	return d;
 }
 
-bool VoxelLodTerrain::is_block_meshed(Vector3 bpos, unsigned int lod_index) const {
-	ERR_FAIL_COND_V(lod_index >= get_lod_count(), false);
+Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, unsigned int lod_index) const {
+	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3());
 	const Lod &lod = _lods[lod_index];
-	Vector3i ibpos(bpos);
-	const VoxelBlock *block = lod.map->get_block(ibpos);
-	if (block) {
-		return block->has_mesh();
-	} else {
-		return false;
-	}
-}
-
-bool VoxelLodTerrain::is_block_shown(Vector3 bpos, unsigned int lod_index) const {
-	ERR_FAIL_COND_V(lod_index >= get_lod_count(), false);
-	const Lod &lod = _lods[lod_index];
-	Vector3i ibpos(bpos);
-	const VoxelBlock *block = lod.map->get_block(ibpos);
-	if (block) {
-		return block->is_visible();
-	} else {
-		return false;
-	}
+	Vector3i bpos = lod.map->voxel_to_block(Vector3i(vpos)) >> lod_index;
+	return bpos.to_vec3();
 }
 
 void VoxelLodTerrain::_notification(int p_what) {
@@ -389,7 +400,7 @@ void VoxelLodTerrain::_process() {
 	// Find out which blocks _data_ need to be loaded
 	{
 		// This should be the same distance relatively to each LOD
-		int view_distance_blocks_within_lod = static_cast<int>(_lod_octree.get_split_scale()) * 2 + 1;
+		int view_distance_blocks_within_lod = get_block_region_extent();
 
 		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 			Lod &lod = _lods[lod_index];
@@ -708,6 +719,7 @@ void VoxelLodTerrain::_process() {
 			bool operator()(LodOctree<bool>::Node *node, unsigned int lod_index) {
 				Lod &lod = self->_lods[lod_index];
 				Vector3i bpos = node->position;
+				// TODO Meshing area is useless because now we prevent the octree from changing if blocks aren't available
 				lod.blocks_in_meshing_area.insert(bpos);
 				VoxelBlock *block = lod.map->get_block(bpos);
 				CRASH_COND(block == nullptr);
@@ -801,10 +813,10 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_lod_split_scale", "lod_split_scale"), &VoxelLodTerrain::set_lod_split_scale);
 	ClassDB::bind_method(D_METHOD("get_lod_split_scale"), &VoxelLodTerrain::get_lod_split_scale);
 
-	ClassDB::bind_method(D_METHOD("get_block_state", "block_pos", "lod"), &VoxelLodTerrain::get_block_state);
-	ClassDB::bind_method(D_METHOD("is_block_meshed", "block_pos", "lod"), &VoxelLodTerrain::is_block_meshed);
-	ClassDB::bind_method(D_METHOD("is_block_shown", "block_pos", "lod"), &VoxelLodTerrain::is_block_shown);
+	ClassDB::bind_method(D_METHOD("get_block_region_extent"), &VoxelLodTerrain::get_block_region_extent);
+	ClassDB::bind_method(D_METHOD("get_block_info", "block_pos", "lod"), &VoxelLodTerrain::get_block_info);
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelLodTerrain::get_stats);
+	ClassDB::bind_method(D_METHOD("voxel_to_block_position"), &VoxelLodTerrain::voxel_to_block_position);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelProvider"), "set_provider", "get_provider");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");

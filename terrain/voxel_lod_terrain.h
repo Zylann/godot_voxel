@@ -49,9 +49,9 @@ public:
 	void set_viewer_path(NodePath path);
 	NodePath get_viewer_path() const;
 
-	BlockState get_block_state(Vector3 bpos, unsigned int lod_index) const;
-	bool is_block_meshed(Vector3 bpos, unsigned int lod_index) const;
-	bool is_block_shown(Vector3 bpos, unsigned int lod_index) const;
+	int get_block_region_extent() const;
+	Dictionary get_block_info(Vector3 fbpos, unsigned int lod_index) const;
+	Vector3 voxel_to_block_position(Vector3 vpos, unsigned int lod_index) const;
 
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
@@ -81,8 +81,6 @@ private:
 	void reset_updater();
 	Vector3 get_viewer_pos() const;
 	void make_block_dirty(Vector3i bpos, unsigned int lod_index);
-
-	void debug_print_lods();
 
 	template <typename A>
 	void for_all_blocks(A &action) {
