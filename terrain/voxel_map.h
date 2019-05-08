@@ -60,7 +60,7 @@ public:
 	void get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask = 1);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
-	void set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer);
+	VoxelBlock *set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer);
 
 	struct NoAction {
 		inline void operator()(VoxelBlock *block) {}
@@ -76,7 +76,7 @@ public:
 			ERR_FAIL_COND(block == NULL);
 			pre_delete(block);
 			memdelete(block);
-			_blocks.erase(bpos);
+			remove_block_internal(bpos);
 		}
 	}
 
@@ -118,6 +118,8 @@ public:
 
 	void clear();
 
+	int get_block_count() const;
+
 	template <typename Op_T>
 	void for_all_blocks(Op_T op) {
 		const Vector3i *key = NULL;
@@ -132,6 +134,7 @@ public:
 private:
 	void set_block(Vector3i bpos, VoxelBlock *block);
 	VoxelBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
+	void remove_block_internal(Vector3i bpos);
 
 	void set_block_size_pow2(unsigned int p);
 

@@ -164,8 +164,6 @@ void VoxelLodTerrain::set_lod_count(unsigned int p_lod_count) {
 
 			Lod &lod = _lods[lod_index];
 
-			lod.blocks_in_meshing_area.clear();
-
 			// Instance new maps if we have more lods, or clear them otherwise
 			if (lod_index < get_lod_count()) {
 
@@ -225,8 +223,6 @@ Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, unsigned int lod_index
 		}
 	}
 
-	bool in_show_area = lod.blocks_in_meshing_area.has(bpos);
-
 	bool meshed = false;
 	bool visible = false;
 	const VoxelBlock *block = lod.map->get_block(bpos);
@@ -236,7 +232,6 @@ Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, unsigned int lod_index
 	}
 
 	d["state"] = state;
-	d["in_show_area"] = in_show_area;
 	d["meshed"] = meshed;
 	d["visible"] = visible;
 	return d;
@@ -329,41 +324,6 @@ Vector3 VoxelLodTerrain::get_viewer_pos() const {
 	return Vector3();
 }
 
-void VoxelLodTerrain::make_block_dirty(Vector3i bpos, unsigned int lod_index) {
-
-	CRASH_COND(lod_index >= get_lod_count());
-
-	// TODO Immediate update viewer distance?
-
-	Lod &lod = _lods[lod_index];
-
-	Map<Vector3i, BlockState>::Element *state = lod.block_states.find(bpos);
-
-	if (state == NULL) {
-		// The block is not dirty, so it will either be loaded or updated
-
-		if (lod.map->has_block(bpos)) {
-
-			lod.blocks_pending_update.push_back(bpos);
-			lod.block_states.insert(bpos, BLOCK_UPDATE_NOT_SENT);
-
-		} else {
-
-			lod.blocks_to_load.push_back(bpos);
-			lod.block_states.insert(bpos, BLOCK_LOAD);
-		}
-
-	} else if (state->value() == BLOCK_UPDATE_SENT) {
-		// The updater is already processing the block,
-		// but the block was modified again so we schedule another update
-		state->value() = BLOCK_UPDATE_NOT_SENT;
-		lod.blocks_pending_update.push_back(bpos);
-
-	} else if (state->value() == BLOCK_UPDATE_NOT_SENT) {
-		WARN_PRINT("Block already marked as BLOCK_UPDATE_NOT_SENT");
-	}
-}
-
 static void remove_positions_outside_box(
 		std::vector<Vector3i> &positions,
 		Rect3i box,
@@ -377,6 +337,34 @@ static void remove_positions_outside_box(
 			positions.resize(last);
 			state_map.erase(bpos);
 			--i;
+		}
+	}
+}
+
+void VoxelLodTerrain::load_block_and_neighbors(const Vector3i &p_bpos, unsigned int lod_index) {
+	CRASH_COND(lod_index >= get_lod_count());
+	Lod &lod = _lods[lod_index];
+
+	Vector3i bpos;
+
+	for (int y = -1; y < 2; ++y) {
+		for (int z = -1; z < 2; ++z) {
+			for (int x = -1; x < 2; ++x) {
+
+				bpos.x = p_bpos.x + x;
+				bpos.y = p_bpos.y + y;
+				bpos.z = p_bpos.z + z;
+
+				VoxelBlock *block = lod.map->get_block(bpos);
+
+				if (block == nullptr) {
+					Map<Vector3i, BlockState>::Element *E = lod.block_states.find(bpos);
+					if (E == nullptr) {
+						lod.blocks_to_load.push_back(bpos);
+						lod.block_states.insert(bpos, BLOCK_LOAD);
+					}
+				}
+			}
 		}
 	}
 }
@@ -397,10 +385,10 @@ void VoxelLodTerrain::_process() {
 
 	// Here we go...
 
-	// Find out which blocks _data_ need to be loaded
+	// Remove blocks falling out of block region extent
 	{
 		// This should be the same distance relatively to each LOD
-		int view_distance_blocks_within_lod = get_block_region_extent();
+		int block_region_extent = get_block_region_extent();
 
 		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 			Lod &lod = _lods[lod_index];
@@ -411,13 +399,8 @@ void VoxelLodTerrain::_process() {
 			int block_size_po2 = _lods[0].map->get_block_size_pow2() + lod_index;
 			Vector3i viewer_block_pos_within_lod = VoxelMap::voxel_to_block_b(viewer_pos, block_size_po2);
 
-			Rect3i new_box = Rect3i::from_center_extents(
-					viewer_block_pos_within_lod,
-					Vector3i(view_distance_blocks_within_lod));
-
-			Rect3i prev_box = Rect3i::from_center_extents(
-					lod.last_viewer_block_pos,
-					Vector3i(lod.last_view_distance_blocks));
+			Rect3i new_box = Rect3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(block_region_extent));
+			Rect3i prev_box = Rect3i::from_center_extents(lod.last_viewer_block_pos, Vector3i(lod.last_view_distance_blocks));
 
 			// Eliminate pending blocks that aren't needed
 			remove_positions_outside_box(lod.blocks_to_load, new_box, lod.block_states);
@@ -442,10 +425,6 @@ void VoxelLodTerrain::_process() {
 							if (prev_contains && !new_contains) {
 								// Unload block
 								immerge_block(pos, lod_index);
-
-							} else if (!prev_contains && new_contains) {
-								// Load or update block
-								make_block_dirty(pos, lod_index);
 							}
 						}
 					}
@@ -453,8 +432,103 @@ void VoxelLodTerrain::_process() {
 			}
 
 			lod.last_viewer_block_pos = viewer_block_pos_within_lod;
-			lod.last_view_distance_blocks = view_distance_blocks_within_lod;
+			lod.last_view_distance_blocks = block_region_extent;
 		}
+	}
+
+	// Find which blocks we need to load and see
+	{
+		struct SubdivideAction {
+			VoxelLodTerrain *self;
+			int blocked_count = 0;
+
+			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
+				CRASH_COND(lod_index == 0);
+
+				unsigned int child_lod_index = lod_index - 1;
+				Lod &lod = self->_lods[child_lod_index];
+
+				bool can = true;
+
+				// Can only subdivide if higher detail meshes are ready to be shown, otherwise it will produce holes
+				for (int i = 0; i < 8; ++i) {
+					Vector3i child_pos = LodOctree<bool>::get_child_position(node->position, i);
+					VoxelBlock *block = lod.map->get_block(child_pos);
+
+					if (block == nullptr) {
+						can = false;
+						self->load_block_and_neighbors(child_pos, child_lod_index);
+
+					} else if (!block->has_been_meshed) {
+						can = false;
+					}
+				}
+
+				if (!can) {
+					++blocked_count;
+				}
+
+				return can;
+			}
+
+			bool operator()(LodOctree<bool>::Node *node, unsigned int lod_index) {
+				Lod &lod = self->_lods[lod_index];
+				Vector3i bpos = node->position;
+				VoxelBlock *block = lod.map->get_block(bpos);
+				CRASH_COND(block == nullptr);
+				block->set_visible(true);
+				return true;
+			}
+		};
+
+		struct UnsubdivideAction {
+			VoxelLodTerrain *self;
+			int blocked_count = 0;
+
+			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
+				// Can only unsubdivide if the parent mesh is ready
+				Lod &lod = self->_lods[lod_index];
+				const Vector3i &bpos = node->position;
+				VoxelBlock *block = lod.map->get_block(bpos);
+
+				bool can = true;
+
+				if (block == nullptr) {
+					can = false;
+					self->load_block_and_neighbors(bpos, lod_index);
+
+				} else if (!block->has_been_meshed) {
+					can = false;
+				}
+
+				if (!can) {
+					++blocked_count;
+				}
+
+				return can;
+			}
+
+			void operator()(LodOctree<bool>::Node *node, unsigned int lod_index) {
+				Lod &lod = self->_lods[lod_index];
+				const Vector3i &bpos = node->position;
+				VoxelBlock *block = lod.map->get_block(bpos);
+				if (block) {
+					block->set_visible(false);
+				}
+			}
+		};
+
+		SubdivideAction subdivide_action;
+		subdivide_action.self = this;
+
+		UnsubdivideAction unsubdivide_action;
+		unsubdivide_action.self = this;
+
+		_lod_octree.update(viewer_pos, subdivide_action, unsubdivide_action);
+
+		// Ideally, this stat should stabilize to zero.
+		// If not, something in the meshing process prevents LODs to properly show up and should be fixed.
+		_stats.blocked_lods = subdivide_action.blocked_count + unsubdivide_action.blocked_count;
 	}
 
 	// Send block loading requests
@@ -476,6 +550,7 @@ void VoxelLodTerrain::_process() {
 			lod.blocks_to_load.clear();
 		}
 
+		//print_line(String("Sending {0}").format(varray(input.blocks_to_emerge.size())));
 		_provider_thread->push(input);
 	}
 
@@ -488,6 +563,8 @@ void VoxelLodTerrain::_process() {
 		VoxelProviderThread::OutputData output;
 		_provider_thread->pop(output);
 		_stats.provider = output.stats;
+
+		//print_line(String("Loaded {0} blocks").format(varray(output.emerged_blocks.size())));
 
 		for (int i = 0; i < output.emerged_blocks.size(); ++i) {
 
@@ -514,7 +591,10 @@ void VoxelLodTerrain::_process() {
 
 			// Store buffer
 			bool check_neighbors = !lod.map->has_block(eo.block_position);
-			lod.map->set_block_buffer(eo.block_position, eo.voxels);
+			VoxelBlock *block = lod.map->set_block_buffer(eo.block_position, eo.voxels);
+			//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
+			// The block will be made visible only by LodOctree
+			block->set_visible(false);
 
 			lod.block_states.erase(state);
 
@@ -602,6 +682,7 @@ void VoxelLodTerrain::_process() {
 			lod.blocks_pending_update.clear();
 		}
 
+		//print_line(String("Sending {0} updates").format(varray(input.blocks.size())));
 		_block_updater->push(input);
 	}
 
@@ -680,7 +761,6 @@ void VoxelLodTerrain::_process() {
 			}
 
 			block->set_mesh(mesh, world);
-			block->set_visible(lod.blocks_in_meshing_area.has(ob.position));
 			block->has_been_meshed = true;
 		}
 
@@ -688,89 +768,6 @@ void VoxelLodTerrain::_process() {
 	}
 
 	_stats.time_process_update_responses = profiling_clock.restart();
-
-	// Find out which blocks need to be shown
-	{
-		struct SubdivideAction {
-			VoxelLodTerrain *self;
-			int non_meshed_blocks = 0;
-
-			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
-				CRASH_COND(lod_index == 0);
-
-				unsigned int child_lod_index = lod_index - 1;
-				Lod &lod = self->_lods[child_lod_index];
-
-				// Can only subdivide if higher detail meshes are ready to be shown, otherwise it will produce holes
-				for (int i = 0; i < 8; ++i) {
-					Vector3i child_pos = LodOctree<bool>::get_child_position(node->position, i);
-					VoxelBlock *block = lod.map->get_block(child_pos);
-					if (block == nullptr) {
-						return false;
-					}
-					if (!block->has_been_meshed) {
-						++non_meshed_blocks;
-						return false;
-					}
-				}
-				return true;
-			}
-
-			bool operator()(LodOctree<bool>::Node *node, unsigned int lod_index) {
-				Lod &lod = self->_lods[lod_index];
-				Vector3i bpos = node->position;
-				// TODO Meshing area is useless because now we prevent the octree from changing if blocks aren't available
-				lod.blocks_in_meshing_area.insert(bpos);
-				VoxelBlock *block = lod.map->get_block(bpos);
-				CRASH_COND(block == nullptr);
-				block->set_visible(true);
-				return true;
-			}
-		};
-
-		struct UnsubdivideAction {
-			VoxelLodTerrain *self;
-			int non_meshed_blocks = 0;
-
-			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
-				// Can only unsubdivide if the parent mesh is ready
-				Lod &lod = self->_lods[lod_index];
-				VoxelBlock *block = lod.map->get_block(node->position);
-				if (block == nullptr) {
-					// Ok, that block got unloaded? Might happen if you teleport away
-					return true;
-				}
-				if (block->has_been_meshed) {
-					return true;
-				} else {
-					++non_meshed_blocks;
-					return false;
-				}
-			}
-
-			void operator()(LodOctree<bool>::Node *node, unsigned int lod_index) {
-				Lod &lod = self->_lods[lod_index];
-				Vector3i bpos = node->position;
-				lod.blocks_in_meshing_area.erase(bpos);
-				VoxelBlock *block = lod.map->get_block(bpos);
-				if (block) {
-					block->set_visible(false);
-				}
-			}
-		};
-
-		SubdivideAction subdivide_action;
-		subdivide_action.self = this;
-
-		UnsubdivideAction unsubdivide_action;
-		unsubdivide_action.self = this;
-
-		_lod_octree.update(viewer_pos, subdivide_action, unsubdivide_action);
-
-		// Ideally, this stat should stabilize to zero.
-		// If not, something in the meshing process prevents LODs to properly show up and should be fixed.
-		_stats.blocked_lods = subdivide_action.non_meshed_blocks + unsubdivide_action.non_meshed_blocks;
-	}
 
 	_stats.time_process_lod = profiling_clock.restart();
 }

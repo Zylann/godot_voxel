@@ -80,7 +80,7 @@ private:
 	void immerge_block(Vector3i block_pos, unsigned int lod_index);
 	void reset_updater();
 	Vector3 get_viewer_pos() const;
-	void make_block_dirty(Vector3i bpos, unsigned int lod_index);
+	void load_block_and_neighbors(const Vector3i &p_bpos, unsigned int lod_index);
 
 	template <typename A>
 	void for_all_blocks(A &action) {
@@ -110,10 +110,6 @@ private:
 
 		Map<Vector3i, BlockState> block_states;
 		std::vector<Vector3i> blocks_pending_update;
-
-		// Reflects LodOctree but only in this LOD
-		// TODO Would be nice to use LodOctree directly!
-		Set<Vector3i> blocks_in_meshing_area;
 
 		// These are relative to this LOD, in block coordinates
 		Vector3i last_viewer_block_pos;

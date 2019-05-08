@@ -138,8 +138,13 @@ void VoxelMap::set_block(Vector3i bpos, VoxelBlock *block) {
 	_blocks.set(bpos, block);
 }
 
-void VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
-	ERR_FAIL_COND(buffer.is_null());
+void VoxelMap::remove_block_internal(Vector3i bpos) {
+	// This function assumes the block is already freed
+	_blocks.erase(bpos);
+}
+
+VoxelBlock *VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
+	ERR_FAIL_COND_V(buffer.is_null(), nullptr);
 	VoxelBlock *block = get_block(bpos);
 	if (block == NULL) {
 		block = VoxelBlock::create(bpos, *buffer, _block_size, _lod_index);
@@ -147,6 +152,7 @@ void VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
 	} else {
 		block->voxels = buffer;
 	}
+	return block;
 }
 
 bool VoxelMap::has_block(Vector3i pos) const {
@@ -222,6 +228,10 @@ void VoxelMap::clear() {
 	}
 	_blocks.clear();
 	_last_accessed_block = NULL;
+}
+
+int VoxelMap::get_block_count() const {
+	return _blocks.size();
 }
 
 void VoxelMap::_bind_methods() {
