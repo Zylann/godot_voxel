@@ -19,6 +19,8 @@ public:
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 
+	~VoxelBlock();
+
 	void set_mesh(Ref<Mesh> mesh, Ref<World> world);
 	bool has_mesh() const;
 
@@ -34,7 +36,7 @@ private:
 
 	Ref<Mesh> _mesh;
 	RID _mesh_instance;
-	int _mesh_update_count;
+	int _mesh_update_count = 0;
 	bool _visible = true;
 };
 

@@ -12,14 +12,14 @@ VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned 
 	block->_position_in_voxels = bpos * (size << p_lod_index);
 
 	block->voxels = buffer;
-	//block->map = &map;
 	return block;
 }
 
 VoxelBlock::VoxelBlock() :
-		voxels(NULL),
-		_mesh_update_count(0) {
+		voxels(NULL) {
+}
 
+VoxelBlock::~VoxelBlock() {
 	VisualServer &vs = *VisualServer::get_singleton();
 
 	if (_mesh_instance.is_valid()) {
