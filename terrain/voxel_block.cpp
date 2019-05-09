@@ -10,8 +10,8 @@ VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned 
 	block->pos = bpos;
 	block->lod_index = p_lod_index;
 	block->_position_in_voxels = bpos * (size << p_lod_index);
-
 	block->voxels = buffer;
+
 	return block;
 }
 
@@ -66,6 +66,22 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Ref<World> world) {
 
 bool VoxelBlock::has_mesh() const {
 	return _mesh.is_valid();
+}
+
+void VoxelBlock::set_mesh_state(MeshState ms) {
+	_mesh_state = ms;
+}
+
+VoxelBlock::MeshState VoxelBlock::get_mesh_state() const {
+	return _mesh_state;
+}
+
+void VoxelBlock::mark_been_meshed() {
+	_has_been_meshed = true;
+}
+
+bool VoxelBlock::has_been_meshed() const {
+	return _has_been_meshed;
 }
 
 void VoxelBlock::enter_world(World *world) {

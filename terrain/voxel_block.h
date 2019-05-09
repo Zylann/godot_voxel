@@ -19,11 +19,6 @@ public:
 	Ref<VoxelBuffer> voxels;
 	Vector3i pos; // TODO Rename position
 	unsigned int lod_index = 0;
-	MeshState mesh_state = MESH_NEVER_UPDATED;
-
-	// The mesh might be null, but we don't know if it's actually empty or if it's loading.
-	// This boolean tells if we attempted to mesh this block at least once.
-	bool has_been_meshed = false;
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 
@@ -31,6 +26,12 @@ public:
 
 	void set_mesh(Ref<Mesh> mesh, Ref<World> world);
 	bool has_mesh() const;
+
+	void set_mesh_state(MeshState ms);
+	MeshState get_mesh_state() const;
+
+	void mark_been_meshed();
+	bool has_been_meshed() const;
 
 	void enter_world(World *world);
 	void exit_world();
@@ -46,6 +47,12 @@ private:
 	RID _mesh_instance;
 	int _mesh_update_count = 0;
 	bool _visible = true;
+
+	MeshState _mesh_state = MESH_NEVER_UPDATED;
+
+	// The mesh might be null, but we don't know if it's actually empty or if it's loading.
+	// This boolean tells if we attempted to mesh this block at least once.
+	bool _has_been_meshed = false;
 };
 
 #endif // VOXEL_BLOCK_H

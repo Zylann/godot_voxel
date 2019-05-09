@@ -211,7 +211,7 @@ Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, unsigned int lod_index
 	int loading_state = 0;
 	const VoxelBlock *block = lod.map->get_block(bpos);
 	if (block) {
-		meshed = block->has_been_meshed;
+		meshed = block->has_been_meshed();
 		visible = block->is_visible();
 		loading_state = 2;
 	} else if (lod.loading_blocks.has(bpos)) {
@@ -445,7 +445,7 @@ void VoxelLodTerrain::_process() {
 						can = false;
 						self->load_block_and_neighbors(child_pos, child_lod_index);
 
-					} else if (!block->has_been_meshed) {
+					} else if (!block->has_been_meshed()) {
 						// TODO There is a case where a whole region of map cannot load,
 						// because we end here everytime instead of the above.
 						can = false;
@@ -485,7 +485,7 @@ void VoxelLodTerrain::_process() {
 					can = false;
 					self->load_block_and_neighbors(bpos, lod_index);
 
-				} else if (!block->has_been_meshed) {
+				} else if (!block->has_been_meshed()) {
 					can = false;
 				}
 
@@ -571,6 +571,8 @@ void VoxelLodTerrain::_process() {
 				continue;
 			}
 
+			lod.loading_blocks.erase(E);
+
 			if (eo.voxels->get_size() != lod.map->get_block_size()) {
 				// Voxel block size is incorrect, drop it
 				ERR_PRINT("Block size obtained from provider is different from expected size");
@@ -584,8 +586,6 @@ void VoxelLodTerrain::_process() {
 			// The block will be made visible only by LodOctree
 			block->set_visible(false);
 
-			lod.loading_blocks.erase(E);
-
 			// if the block is surrounded or any of its neighbors becomes surrounded, and are marked to mesh,
 			// it should be added to meshing requests
 			if (check_neighbors) {
@@ -594,20 +594,23 @@ void VoxelLodTerrain::_process() {
 				for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
 					for (ndir.x = -1; ndir.x < 2; ++ndir.x) {
 						for (ndir.y = -1; ndir.y < 2; ++ndir.y) {
+
 							Vector3i npos = eo.block_position + ndir;
+							VoxelBlock *nblock = lod.map->get_block(npos);
+
+							if (nblock == nullptr) {
+								continue;
+							}
 
 							if (lod.map->is_block_surrounded(npos)) {
 
-								VoxelBlock *nblock = lod.map->get_block(npos);
-								CRASH_COND(nblock == nullptr);
-
-								if (nblock->mesh_state == VoxelBlock::MESH_UPDATE_NOT_SENT) {
+								if (nblock->get_mesh_state() == VoxelBlock::MESH_UPDATE_NOT_SENT) {
 									// Assuming it is scheduled to be updated already.
 									// In case of BLOCK_UPDATE_SENT, we'll have to resend it.
 									continue;
 								}
 
-								nblock->mesh_state = VoxelBlock::MESH_UPDATE_NOT_SENT;
+								nblock->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
 								lod.blocks_pending_update.push_back(npos);
 							}
 						}
@@ -616,7 +619,7 @@ void VoxelLodTerrain::_process() {
 
 			} else {
 				// Only update the block, neighbors will probably follow if needed
-				block->mesh_state = VoxelBlock::MESH_UPDATE_NOT_SENT;
+				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
 				lod.blocks_pending_update.push_back(eo.block_position);
 			}
 		}
@@ -636,7 +639,7 @@ void VoxelLodTerrain::_process() {
 
 				VoxelBlock *block = lod.map->get_block(block_pos);
 				CRASH_COND(block == nullptr);
-				CRASH_COND(block->mesh_state != VoxelBlock::MESH_UPDATE_NOT_SENT);
+				CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
 				// TODO Perhaps we could do a bit of early-rejection before spending time in buffer copy?
 
@@ -661,7 +664,7 @@ void VoxelLodTerrain::_process() {
 				iblock.lod = lod_index;
 				input.blocks.push_back(iblock);
 
-				block->mesh_state = VoxelBlock::MESH_UPDATE_SENT;
+				block->set_mesh_state(VoxelBlock::MESH_UPDATE_SENT);
 			}
 
 			lod.blocks_pending_update.clear();
@@ -718,8 +721,8 @@ void VoxelLodTerrain::_process() {
 				continue;
 			}
 
-			if (block->mesh_state == VoxelBlock::MESH_UPDATE_SENT) {
-				block->mesh_state = VoxelBlock::MESH_UP_TO_DATE;
+			if (block->get_mesh_state() == VoxelBlock::MESH_UPDATE_SENT) {
+				block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
 			}
 
 			Ref<ArrayMesh> mesh;
@@ -745,7 +748,7 @@ void VoxelLodTerrain::_process() {
 			}
 
 			block->set_mesh(mesh, world);
-			block->has_been_meshed = true;
+			block->mark_been_meshed();
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
