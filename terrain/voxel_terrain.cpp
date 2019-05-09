@@ -960,8 +960,8 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_storage"), &VoxelTerrain::get_map);
 
-	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
-	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_block_to_voxel_binding);
+	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos", "lod_index"), &VoxelTerrain::_voxel_to_block_binding);
+	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos", "lod_index"), &VoxelTerrain::_block_to_voxel_binding);
 
 	ClassDB::bind_method(D_METHOD("make_voxel_dirty", "pos"), &VoxelTerrain::_make_voxel_dirty_binding);
 	ClassDB::bind_method(D_METHOD("make_area_dirty", "aabb"), &VoxelTerrain::_make_area_dirty_binding);
