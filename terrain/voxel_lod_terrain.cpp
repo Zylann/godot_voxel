@@ -112,12 +112,7 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, unsigned int lod_index) 
 	// TODO Schedule block saving when supported
 	lod.map->remove_block(block_pos, VoxelMap::NoAction());
 
-	BlockState state = BLOCK_NONE;
-	Map<Vector3i, BlockState>::Element *E = lod.block_states.find(block_pos);
-	if (E) {
-		state = E->value();
-		lod.block_states.erase(E);
-	}
+	lod.loading_blocks.erase(block_pos);
 
 	// Blocks in the update queue will be cancelled in _process,
 	// because it's too expensive to linear-search all blocks for each block
@@ -211,27 +206,19 @@ Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, unsigned int lod_index
 	const Lod &lod = _lods[lod_index];
 	Vector3i bpos(fbpos);
 
-	BlockState state;
-	const Map<Vector3i, BlockState>::Element *E = lod.block_states.find(bpos);
-	if (E) {
-		state = E->value();
-	} else {
-		if (lod.map->has_block(bpos)) {
-			state = BLOCK_IDLE;
-		} else {
-			state = BLOCK_NONE;
-		}
-	}
-
 	bool meshed = false;
 	bool visible = false;
+	int loading_state = 0;
 	const VoxelBlock *block = lod.map->get_block(bpos);
 	if (block) {
 		meshed = block->has_been_meshed;
 		visible = block->is_visible();
+		loading_state = 2;
+	} else if (lod.loading_blocks.has(bpos)) {
+		loading_state = 1;
 	}
 
-	d["state"] = state;
+	d["loading"] = loading_state;
 	d["meshed"] = meshed;
 	d["visible"] = visible;
 	return d;
@@ -324,23 +311,6 @@ Vector3 VoxelLodTerrain::get_viewer_pos() const {
 	return Vector3();
 }
 
-static void remove_positions_outside_box(
-		std::vector<Vector3i> &positions,
-		Rect3i box,
-		Map<Vector3i, VoxelLodTerrain::BlockState> &state_map) {
-
-	for (int i = 0; i < positions.size(); ++i) {
-		const Vector3i bpos = positions[i];
-		if (!box.contains(bpos)) {
-			int last = positions.size() - 1;
-			positions[i] = positions[last];
-			positions.resize(last);
-			state_map.erase(bpos);
-			--i;
-		}
-	}
-}
-
 void VoxelLodTerrain::load_block_and_neighbors(const Vector3i &p_bpos, unsigned int lod_index) {
 	CRASH_COND(lod_index >= get_lod_count());
 	Lod &lod = _lods[lod_index];
@@ -358,13 +328,29 @@ void VoxelLodTerrain::load_block_and_neighbors(const Vector3i &p_bpos, unsigned 
 				VoxelBlock *block = lod.map->get_block(bpos);
 
 				if (block == nullptr) {
-					Map<Vector3i, BlockState>::Element *E = lod.block_states.find(bpos);
-					if (E == nullptr) {
+					if (!lod.loading_blocks.has(bpos)) {
 						lod.blocks_to_load.push_back(bpos);
-						lod.block_states.insert(bpos, BLOCK_LOAD);
+						lod.loading_blocks.insert(bpos);
 					}
 				}
 			}
+		}
+	}
+}
+
+static void remove_positions_outside_box(
+		std::vector<Vector3i> &positions,
+		Rect3i box,
+		Set<Vector3i> &position_set) {
+
+	for (int i = 0; i < positions.size(); ++i) {
+		const Vector3i bpos = positions[i];
+		if (!box.contains(bpos)) {
+			int last = positions.size() - 1;
+			positions[i] = positions[last];
+			positions.resize(last);
+			position_set.erase(bpos);
+			--i;
 		}
 	}
 }
@@ -403,8 +389,8 @@ void VoxelLodTerrain::_process() {
 			Rect3i prev_box = Rect3i::from_center_extents(lod.last_viewer_block_pos, Vector3i(lod.last_view_distance_blocks));
 
 			// Eliminate pending blocks that aren't needed
-			remove_positions_outside_box(lod.blocks_to_load, new_box, lod.block_states);
-			remove_positions_outside_box(lod.blocks_pending_update, new_box, lod.block_states);
+			remove_positions_outside_box(lod.blocks_to_load, new_box, lod.loading_blocks);
+			remove_positions_outside_box(lod.blocks_pending_update, new_box, lod.loading_blocks);
 
 			if (prev_box != new_box) {
 
@@ -460,6 +446,8 @@ void VoxelLodTerrain::_process() {
 						self->load_block_and_neighbors(child_pos, child_lod_index);
 
 					} else if (!block->has_been_meshed) {
+						// TODO There is a case where a whole region of map cannot load,
+						// because we end here everytime instead of the above.
 						can = false;
 					}
 				}
@@ -577,8 +565,8 @@ void VoxelLodTerrain::_process() {
 
 			Lod &lod = _lods[eo.lod];
 
-			Map<Vector3i, BlockState>::Element *state = lod.block_states.find(eo.block_position);
-			if (state == nullptr || state->value() != BLOCK_LOAD) {
+			Set<Vector3i>::Element *E = lod.loading_blocks.find(eo.block_position);
+			if (E == nullptr) {
 				// That block was not requested, or is no longer needed. drop it...
 				continue;
 			}
@@ -596,7 +584,7 @@ void VoxelLodTerrain::_process() {
 			// The block will be made visible only by LodOctree
 			block->set_visible(false);
 
-			lod.block_states.erase(state);
+			lod.loading_blocks.erase(E);
 
 			// if the block is surrounded or any of its neighbors becomes surrounded, and are marked to mesh,
 			// it should be added to meshing requests
@@ -610,19 +598,16 @@ void VoxelLodTerrain::_process() {
 
 							if (lod.map->is_block_surrounded(npos)) {
 
-								Map<Vector3i, BlockState>::Element *state = lod.block_states.find(npos);
-								if (state && state->value() == BLOCK_UPDATE_NOT_SENT) {
+								VoxelBlock *nblock = lod.map->get_block(npos);
+								CRASH_COND(nblock == nullptr);
+
+								if (nblock->mesh_state == VoxelBlock::MESH_UPDATE_NOT_SENT) {
 									// Assuming it is scheduled to be updated already.
 									// In case of BLOCK_UPDATE_SENT, we'll have to resend it.
 									continue;
 								}
 
-								if (state) {
-									state->value() = BLOCK_UPDATE_NOT_SENT;
-								} else {
-									lod.block_states.insert(npos, BLOCK_UPDATE_NOT_SENT);
-								}
-
+								nblock->mesh_state = VoxelBlock::MESH_UPDATE_NOT_SENT;
 								lod.blocks_pending_update.push_back(npos);
 							}
 						}
@@ -631,7 +616,7 @@ void VoxelLodTerrain::_process() {
 
 			} else {
 				// Only update the block, neighbors will probably follow if needed
-				lod.block_states[eo.block_position] = BLOCK_UPDATE_NOT_SENT;
+				block->mesh_state = VoxelBlock::MESH_UPDATE_NOT_SENT;
 				lod.blocks_pending_update.push_back(eo.block_position);
 			}
 		}
@@ -649,9 +634,9 @@ void VoxelLodTerrain::_process() {
 			for (int i = 0; i < lod.blocks_pending_update.size(); ++i) {
 				Vector3i block_pos = lod.blocks_pending_update[i];
 
-				Map<Vector3i, BlockState>::Element *block_state = lod.block_states.find(block_pos);
-				CRASH_COND(block_state == NULL);
-				CRASH_COND(block_state->value() != BLOCK_UPDATE_NOT_SENT);
+				VoxelBlock *block = lod.map->get_block(block_pos);
+				CRASH_COND(block == nullptr);
+				CRASH_COND(block->mesh_state != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
 				// TODO Perhaps we could do a bit of early-rejection before spending time in buffer copy?
 
@@ -676,7 +661,7 @@ void VoxelLodTerrain::_process() {
 				iblock.lod = lod_index;
 				input.blocks.push_back(iblock);
 
-				block_state->value() = BLOCK_UPDATE_SENT;
+				block->mesh_state = VoxelBlock::MESH_UPDATE_SENT;
 			}
 
 			lod.blocks_pending_update.clear();
@@ -727,15 +712,14 @@ void VoxelLodTerrain::_process() {
 
 			Lod &lod = _lods[ob.lod];
 
-			Map<Vector3i, BlockState>::Element *state = lod.block_states.find(ob.position);
-			if (state && state->value() == BLOCK_UPDATE_SENT) {
-				lod.block_states.erase(state);
-			}
-
 			VoxelBlock *block = lod.map->get_block(ob.position);
 			if (block == NULL) {
 				// That block is no longer loaded, drop the result
 				continue;
+			}
+
+			if (block->mesh_state == VoxelBlock::MESH_UPDATE_SENT) {
+				block->mesh_state = VoxelBlock::MESH_UP_TO_DATE;
 			}
 
 			Ref<ArrayMesh> mesh;
@@ -821,10 +805,4 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"), "set_material", "get_material");
-
-	BIND_ENUM_CONSTANT(BLOCK_NONE);
-	BIND_ENUM_CONSTANT(BLOCK_LOAD);
-	BIND_ENUM_CONSTANT(BLOCK_UPDATE_NOT_SENT);
-	BIND_ENUM_CONSTANT(BLOCK_UPDATE_SENT);
-	BIND_ENUM_CONSTANT(BLOCK_IDLE);
 }

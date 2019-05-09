@@ -20,14 +20,6 @@ class VoxelLodTerrain : public Spatial {
 public:
 	static const int MAX_LOD = 32;
 
-	enum BlockState {
-		BLOCK_NONE, // There is no block
-		BLOCK_LOAD, // The block is loading
-		BLOCK_UPDATE_NOT_SENT, // The block needs an update but wasn't sent yet
-		BLOCK_UPDATE_SENT, // The block needs an update which was sent
-		BLOCK_IDLE // The block is up to date
-	};
-
 	VoxelLodTerrain();
 	~VoxelLodTerrain();
 
@@ -107,8 +99,7 @@ private:
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
 		Ref<VoxelMap> map;
-
-		Map<Vector3i, BlockState> block_states;
+		Set<Vector3i> loading_blocks;
 		std::vector<Vector3i> blocks_pending_update;
 
 		// These are relative to this LOD, in block coordinates
@@ -123,7 +114,5 @@ private:
 
 	Stats _stats;
 };
-
-VARIANT_ENUM_CAST(VoxelLodTerrain::BlockState)
 
 #endif // VOXEL_LOD_TERRAIN_HPP

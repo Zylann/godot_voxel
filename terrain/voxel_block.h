@@ -9,9 +9,17 @@
 // Internal structure holding a reference to mesh visuals, physics and a block of voxel data.
 class VoxelBlock {
 public:
+	enum MeshState {
+		MESH_NEVER_UPDATED = 0,
+		MESH_UP_TO_DATE,
+		MESH_UPDATE_NOT_SENT, // The mesh is out of date, but no update request have been sent
+		MESH_UPDATE_SENT // The mesh is out of date, and an update request is pending
+	};
+
 	Ref<VoxelBuffer> voxels;
 	Vector3i pos; // TODO Rename position
 	unsigned int lod_index = 0;
+	MeshState mesh_state = MESH_NEVER_UPDATED;
 
 	// The mesh might be null, but we don't know if it's actually empty or if it's loading.
 	// This boolean tells if we attempted to mesh this block at least once.
