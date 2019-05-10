@@ -38,6 +38,10 @@ public:
 	void set_visible(bool visible);
 	bool is_visible() const;
 
+	inline bool is_mesh_update_scheduled() {
+		return _mesh_state == MESH_UPDATE_NOT_SENT || _mesh_state == MESH_UPDATE_SENT;
+	}
+
 private:
 	VoxelBlock();
 

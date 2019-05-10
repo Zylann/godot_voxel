@@ -72,7 +72,8 @@ private:
 	void immerge_block(Vector3i block_pos, unsigned int lod_index);
 	void reset_updater();
 	Vector3 get_viewer_pos() const;
-	void load_block_and_neighbors(const Vector3i &p_bpos, unsigned int lod_index);
+	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, unsigned int lod_index);
+	bool check_block_loaded_and_updated(const Vector3i &p_bpos, unsigned int lod_index);
 
 	template <typename A>
 	void for_all_blocks(A &action) {

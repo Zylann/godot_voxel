@@ -311,7 +311,7 @@ Vector3 VoxelLodTerrain::get_viewer_pos() const {
 	return Vector3();
 }
 
-void VoxelLodTerrain::load_block_and_neighbors(const Vector3i &p_bpos, unsigned int lod_index) {
+void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos, unsigned int lod_index) {
 	CRASH_COND(lod_index >= get_lod_count());
 	Lod &lod = _lods[lod_index];
 
@@ -336,6 +336,34 @@ void VoxelLodTerrain::load_block_and_neighbors(const Vector3i &p_bpos, unsigned 
 			}
 		}
 	}
+}
+
+bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, unsigned int lod_index) {
+	CRASH_COND(lod_index >= get_lod_count());
+	Lod &lod = _lods[lod_index];
+
+	VoxelBlock *block = lod.map->get_block(p_bpos);
+
+	if (block == nullptr) {
+		try_schedule_loading_with_neighbors(p_bpos, lod_index);
+		return false;
+	}
+
+	if (!block->has_been_meshed()) {
+		if (!block->is_mesh_update_scheduled()) {
+			if (lod.map->is_block_surrounded(block->pos)) {
+
+				lod.blocks_pending_update.push_back(block->pos);
+				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
+
+			} else {
+				try_schedule_loading_with_neighbors(p_bpos, lod_index);
+			}
+		}
+		return false;
+	}
+
+	return true;
 }
 
 static void remove_positions_outside_box(
@@ -430,32 +458,16 @@ void VoxelLodTerrain::_process() {
 
 			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
 				CRASH_COND(lod_index == 0);
-
 				unsigned int child_lod_index = lod_index - 1;
-				Lod &lod = self->_lods[child_lod_index];
-
 				bool can = true;
-
 				// Can only subdivide if higher detail meshes are ready to be shown, otherwise it will produce holes
 				for (int i = 0; i < 8; ++i) {
 					Vector3i child_pos = LodOctree<bool>::get_child_position(node->position, i);
-					VoxelBlock *block = lod.map->get_block(child_pos);
-
-					if (block == nullptr) {
-						can = false;
-						self->load_block_and_neighbors(child_pos, child_lod_index);
-
-					} else if (!block->has_been_meshed()) {
-						// TODO There is a case where a whole region of map cannot load,
-						// because we end here everytime instead of the above.
-						can = false;
-					}
+					can &= self->check_block_loaded_and_updated(child_pos, child_lod_index);
 				}
-
 				if (!can) {
 					++blocked_count;
 				}
-
 				return can;
 			}
 
@@ -464,6 +476,7 @@ void VoxelLodTerrain::_process() {
 				Vector3i bpos = node->position;
 				VoxelBlock *block = lod.map->get_block(bpos);
 				CRASH_COND(block == nullptr);
+				CRASH_COND(!block->has_been_meshed()); // Never show a block that hasn't been meshed
 				block->set_visible(true);
 				return true;
 			}
@@ -475,24 +488,11 @@ void VoxelLodTerrain::_process() {
 
 			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
 				// Can only unsubdivide if the parent mesh is ready
-				Lod &lod = self->_lods[lod_index];
 				const Vector3i &bpos = node->position;
-				VoxelBlock *block = lod.map->get_block(bpos);
-
-				bool can = true;
-
-				if (block == nullptr) {
-					can = false;
-					self->load_block_and_neighbors(bpos, lod_index);
-
-				} else if (!block->has_been_meshed()) {
-					can = false;
-				}
-
+				bool can = self->check_block_loaded_and_updated(bpos, lod_index);
 				if (!can) {
 					++blocked_count;
 				}
-
 				return can;
 			}
 
@@ -580,48 +580,10 @@ void VoxelLodTerrain::_process() {
 			}
 
 			// Store buffer
-			bool check_neighbors = !lod.map->has_block(eo.block_position);
 			VoxelBlock *block = lod.map->set_block_buffer(eo.block_position, eo.voxels);
 			//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
-			// The block will be made visible only by LodOctree
+			// The block will be made visible and meshed only by LodOctree
 			block->set_visible(false);
-
-			// if the block is surrounded or any of its neighbors becomes surrounded, and are marked to mesh,
-			// it should be added to meshing requests
-			if (check_neighbors) {
-				// The block was not there before, so its Moore neighbors may be surrounded now.
-				Vector3i ndir;
-				for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
-					for (ndir.x = -1; ndir.x < 2; ++ndir.x) {
-						for (ndir.y = -1; ndir.y < 2; ++ndir.y) {
-
-							Vector3i npos = eo.block_position + ndir;
-							VoxelBlock *nblock = lod.map->get_block(npos);
-
-							if (nblock == nullptr) {
-								continue;
-							}
-
-							if (lod.map->is_block_surrounded(npos)) {
-
-								if (nblock->get_mesh_state() == VoxelBlock::MESH_UPDATE_NOT_SENT) {
-									// Assuming it is scheduled to be updated already.
-									// In case of BLOCK_UPDATE_SENT, we'll have to resend it.
-									continue;
-								}
-
-								nblock->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
-								lod.blocks_pending_update.push_back(npos);
-							}
-						}
-					}
-				}
-
-			} else {
-				// Only update the block, neighbors will probably follow if needed
-				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
-				lod.blocks_pending_update.push_back(eo.block_position);
-			}
 		}
 	}
 
