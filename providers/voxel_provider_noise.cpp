@@ -42,7 +42,32 @@ void VoxelProviderNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i orig
 
 	} else {
 
+		FloatBuffer3D &noise_buffer = _noise_buffer;
+		const int noise_buffer_step = 2;
+
+		Vector3i noise_buffer_size = buffer.get_size() / noise_buffer_step + Vector3i(1);
+		if (noise_buffer.get_size() != noise_buffer_size) {
+			noise_buffer.create(noise_buffer_size);
+		}
+
+		// Cache noise at lower grid resolution and interpolate after, much cheaper
+		for (int z = 0; z < noise_buffer.get_size().z; ++z) {
+			for (int x = 0; x < noise_buffer.get_size().x; ++x) {
+				for (int y = 0; y < noise_buffer.get_size().y; ++y) {
+
+					float lx = origin_in_voxels.x + (x << lod) * noise_buffer_step;
+					float ly = origin_in_voxels.y + (y << lod) * noise_buffer_step;
+					float lz = origin_in_voxels.z + (z << lod) * noise_buffer_step;
+
+					float n = noise.get_noise_3d(lx, ly, lz);
+
+					noise_buffer.set(x, y, z, n);
+				}
+			}
+		}
+
 		float iso_scale = noise.get_period() * 0.1;
+		float noise_buffer_scale = 1.f / static_cast<float>(noise_buffer_step);
 
 		for (int z = 0; z < buffer.get_size().z; ++z) {
 			for (int x = 0; x < buffer.get_size().x; ++x) {
@@ -50,13 +75,8 @@ void VoxelProviderNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i orig
 
 					float ly = origin_in_voxels.y + (y << lod);
 
-					float n = noise.get_noise_3d(
-							origin_in_voxels.x + (x << lod),
-							ly,
-							origin_in_voxels.z + (z << lod));
-
+					float n = noise_buffer.get_trilinear(x * noise_buffer_scale, y * noise_buffer_scale, z * noise_buffer_scale);
 					float t = (ly - _height_start) / _height_range;
-
 					float d = (n + 2.0 * t - 1.0) * iso_scale;
 
 					buffer.set_voxel_f(d, x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);

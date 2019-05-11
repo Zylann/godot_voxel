@@ -1,6 +1,7 @@
 #ifndef VOXEL_PROVIDER_NOISE_H
 #define VOXEL_PROVIDER_NOISE_H
 
+#include "../util/float_buffer_3d.h"
 #include "voxel_provider.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
@@ -23,6 +24,7 @@ protected:
 
 private:
 	Ref<OpenSimplexNoise> _noise;
+	FloatBuffer3D _noise_buffer;
 	float _height_start = 0;
 	float _height_range = 300;
 };
