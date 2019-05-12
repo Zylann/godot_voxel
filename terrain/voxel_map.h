@@ -80,36 +80,6 @@ public:
 		}
 	}
 
-	/*template <typename Action_T>
-	void remove_blocks_not_in_area(Vector3i min, Vector3i max, Action_T pre_delete = NoAction()) {
-
-		Vector3i::sort_min_max(min, max);
-
-		Vector<Vector3i> to_remove;
-		const Vector3i *key = NULL;
-
-		while (key = _blocks.next(key)) {
-
-			VoxelBlock *block_ptr = _blocks.get(*key);
-			ERR_FAIL_COND(block_ptr == NULL); // Should never trigger
-
-			if (block_ptr->pos.is_contained_in(min, max)) {
-
-				to_remove.push_back(*key);
-
-				if (block_ptr == _last_accessed_block)
-					_last_accessed_block = NULL;
-
-				pre_delete(block_ptr);
-				memdelete(block_ptr);
-			}
-		}
-
-		for (unsigned int i = 0; i < to_remove.size(); ++i) {
-			_blocks.erase(to_remove[i]);
-		}
-	}*/
-
 	VoxelBlock *get_block(Vector3i bpos);
 	const VoxelBlock *get_block(Vector3i bpos) const;
 
