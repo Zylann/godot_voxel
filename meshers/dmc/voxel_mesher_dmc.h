@@ -83,7 +83,7 @@ public:
 
 	enum SeamMode {
 		SEAM_NONE, // No seam management
-		SEAM_MARCHING_SQUARE_SKIRTS, // Marching square skirts
+		SEAM_MARCHING_SQUARE_SKIRTS,
 		// SEAM_OVERLAP // Polygonize extra voxels with lower isolevel
 		// SEAM_JUNCTION_TRIANGLES // Extra triangles for alternate borders, requires index buffer switching
 	};
