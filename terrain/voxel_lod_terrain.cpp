@@ -397,6 +397,9 @@ void VoxelLodTerrain::_process() {
 
 	ProfilingClock profiling_clock;
 
+	_stats.dropped_block_loads = 0;
+	_stats.dropped_block_meshs = 0;
+
 	// Here we go...
 
 	// Remove blocks falling out of block region extent
@@ -560,6 +563,7 @@ void VoxelLodTerrain::_process() {
 
 			if (eo.lod >= get_lod_count()) {
 				// That block was requested at a time where LOD was higher... drop it
+				++_stats.dropped_block_loads;
 				continue;
 			}
 
@@ -568,6 +572,7 @@ void VoxelLodTerrain::_process() {
 			Set<Vector3i>::Element *E = lod.loading_blocks.find(eo.block_position);
 			if (E == nullptr) {
 				// That block was not requested, or is no longer needed. drop it...
+				++_stats.dropped_block_loads;
 				continue;
 			}
 
@@ -576,6 +581,7 @@ void VoxelLodTerrain::_process() {
 			if (eo.voxels->get_size() != lod.map->get_block_size()) {
 				// Voxel block size is incorrect, drop it
 				ERR_PRINT("Block size obtained from provider is different from expected size");
+				++_stats.dropped_block_loads;
 				continue;
 			}
 
@@ -650,6 +656,7 @@ void VoxelLodTerrain::_process() {
 
 				if (ob.lod >= get_lod_count()) {
 					// Sorry, LOD configuration changed, drop that mesh
+					++_stats.dropped_block_meshs;
 					continue;
 				}
 
@@ -672,6 +679,7 @@ void VoxelLodTerrain::_process() {
 
 			if (ob.lod >= get_lod_count()) {
 				// Sorry, LOD configuration changed, drop that mesh
+				++_stats.dropped_block_meshs;
 				continue;
 			}
 
@@ -680,6 +688,7 @@ void VoxelLodTerrain::_process() {
 			VoxelBlock *block = lod.map->get_block(ob.position);
 			if (block == NULL) {
 				// That block is no longer loaded, drop the result
+				++_stats.dropped_block_meshs;
 				continue;
 			}
 
@@ -735,6 +744,8 @@ Dictionary VoxelLodTerrain::get_stats() const {
 	d["updater"] = VoxelMeshUpdater::to_dictionary(_stats.updater);
 	d["process"] = process;
 	d["blocked_lods"] = _stats.blocked_lods;
+	d["dropped_block_loads"] = _stats.dropped_block_loads;
+	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 
 	return d;
 }

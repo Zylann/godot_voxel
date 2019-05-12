@@ -54,6 +54,8 @@ public:
 		uint64_t time_process_update_responses = 0;
 		uint64_t time_process_lod = 0;
 		int blocked_lods = 0;
+		int dropped_block_loads = 0;
+		int dropped_block_meshs = 0;
 	};
 
 	Dictionary get_stats() const;
