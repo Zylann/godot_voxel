@@ -103,4 +103,9 @@ inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
 	return false;
 }
 
+template <typename T>
+inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
+	dst.insert(dst.end(), src.begin(), src.end());
+}
+
 #endif // HEADER_VOXEL_UTILITY_H

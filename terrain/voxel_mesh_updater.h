@@ -20,8 +20,10 @@ public:
 	};
 
 	struct Input {
-		Vector<InputBlock> blocks;
-		Vector3i priority_position;
+		std::vector<InputBlock> blocks;
+		Vector3i priority_position; // In LOD0 block coordinates
+		int exclusive_region_extent = 0;
+		bool use_exclusive_region = false;
 
 		bool is_empty() const {
 			return blocks.empty();

@@ -1,8 +1,9 @@
 #ifndef VOXEL_PROVIDER_THREAD_H
 #define VOXEL_PROVIDER_THREAD_H
 
-#include "../math/vector3i.h"
+#include "../math/rect3i.h"
 #include <core/resource.h>
+#include <vector>
 
 class VoxelProvider;
 class VoxelBuffer;
@@ -23,9 +24,11 @@ public:
 	};
 
 	struct InputData {
-		Vector<ImmergeInput> blocks_to_immerge;
-		Vector<EmergeInput> blocks_to_emerge;
-		Vector3i priority_block_position;
+		std::vector<ImmergeInput> blocks_to_immerge;
+		std::vector<EmergeInput> blocks_to_emerge;
+		Vector3i priority_block_position; // In LOD0 block coordinates
+		int exclusive_region_extent = 0;
+		bool use_exclusive_region = false;
 
 		inline bool is_empty() {
 			return blocks_to_emerge.empty() && blocks_to_immerge.empty();

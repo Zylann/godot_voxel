@@ -73,7 +73,7 @@ void VoxelMeshUpdater::push(const Input &input) {
 			if (index) {
 				// The block is already in the update queue, replace it
 				++replaced_blocks;
-				_shared_input.blocks.write[*index] = block;
+				_shared_input.blocks[*index] = block;
 
 			} else {
 
@@ -88,6 +88,12 @@ void VoxelMeshUpdater::push(const Input &input) {
 		}
 
 		_shared_input.priority_position = input.priority_position;
+
+		if (input.use_exclusive_region) {
+			_shared_input.use_exclusive_region = true;
+			_shared_input.exclusive_region_extent = input.exclusive_region_extent;
+		}
+
 		should_run = !_shared_input.is_empty();
 	}
 
@@ -209,10 +215,12 @@ static void scale_mesh_data(VoxelMesher::Output &data, float factor) {
 		// so you won't trash performance with pointless allocations
 		surface[Mesh::ARRAY_VERTEX] = Variant();
 
-		PoolVector3Array::Write w = positions.write();
-		int len = positions.size();
-		for (int j = 0; j < len; ++j) {
-			w[j] = w[j] * factor;
+		{
+			PoolVector3Array::Write w = positions.write();
+			int len = positions.size();
+			for (int j = 0; j < len; ++j) {
+				w[j] = w[j] * factor;
+			}
 		}
 
 		// Thank you
@@ -282,8 +290,14 @@ void VoxelMeshUpdater::thread_sync(int queue_index, Stats stats) {
 		// Get input
 		MutexLock lock(_input_mutex);
 
-		_input.blocks.append_array(_shared_input.blocks);
+		append_array(_input.blocks, _shared_input.blocks);
+
 		_input.priority_position = _shared_input.priority_position;
+
+		if (_shared_input.use_exclusive_region) {
+			_input.use_exclusive_region = true;
+			_input.exclusive_region_extent = _shared_input.exclusive_region_extent;
+		}
 
 		_shared_input.blocks.clear();
 
@@ -307,12 +321,39 @@ void VoxelMeshUpdater::thread_sync(int queue_index, Stats stats) {
 		_output.blocks.clear();
 	}
 
+	// Cancel blocks outside exclusive region
+	//int dropped_count = 0;
+	if (_input.use_exclusive_region) {
+		for (int i = 0; i < _input.blocks.size(); ++i) {
+			const InputBlock &ib = _input.blocks[i];
+
+			Rect3i box = Rect3i::from_center_extents(_input.priority_position >> ib.lod, Vector3i(_input.exclusive_region_extent));
+
+			if (!box.contains(ib.position)) {
+
+				Vector3i shifted_block_pos = _input.blocks.back().position;
+
+				_input.blocks[i] = _input.blocks.back();
+				_input.blocks.pop_back();
+
+				_block_indexes[ib.lod].erase(ib.position);
+				_block_indexes[ib.lod][shifted_block_pos] = i;
+
+				//++dropped_count;
+			}
+		}
+	}
+
+	//	if (dropped_count > 0) {
+	//		print_line(String("Dropped {0} blocks to mesh from thread").format(varray(dropped_count)));
+	//	}
+
 	if (!_input.blocks.empty() && needs_sort) {
 		// Re-sort priority
 
 		SortArray<VoxelMeshUpdater::InputBlock, BlockUpdateComparator> sorter;
 		sorter.compare.center = _input.priority_position;
-		sorter.sort(_input.blocks.ptrw(), _input.blocks.size());
+		sorter.sort(_input.blocks.data(), _input.blocks.size());
 	}
 }
 

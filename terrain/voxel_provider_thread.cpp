@@ -42,9 +42,14 @@ void VoxelProviderThread::push(const InputData &input) {
 
 		// TODO If the same request is sent twice, keep only the latest one
 
-		_shared_input.blocks_to_emerge.append_array(input.blocks_to_emerge);
-		_shared_input.blocks_to_immerge.append_array(input.blocks_to_immerge);
+		append_array(_shared_input.blocks_to_emerge, input.blocks_to_emerge);
+		append_array(_shared_input.blocks_to_immerge, input.blocks_to_immerge);
 		_shared_input.priority_block_position = input.priority_block_position;
+
+		if (input.use_exclusive_region) {
+			_shared_input.use_exclusive_region = true;
+			_shared_input.exclusive_region_extent = input.exclusive_region_extent;
+		}
 
 		should_run = !_shared_input.is_empty();
 	}
@@ -112,10 +117,12 @@ void VoxelProviderThread::thread_func() {
 					stats.min_time = time_taken;
 					stats.max_time = time_taken;
 				} else {
-					if (time_taken < stats.min_time)
+					if (time_taken < stats.min_time) {
 						stats.min_time = time_taken;
-					if (time_taken > stats.max_time)
+					}
+					if (time_taken > stats.max_time) {
 						stats.max_time = time_taken;
+					}
 				}
 
 				EmergeOutput eo;
@@ -137,8 +144,9 @@ void VoxelProviderThread::thread_func() {
 			}
 		}
 
-		if (_thread_exit)
+		if (_thread_exit) {
 			break;
+		}
 
 		// Wait for future wake-up
 		_semaphore->wait();
@@ -183,12 +191,18 @@ void VoxelProviderThread::thread_sync(int emerge_index, Stats stats) {
 		// Get input
 		MutexLock lock(_input_mutex);
 
-		_input.blocks_to_emerge.append_array(_shared_input.blocks_to_emerge);
-		_input.blocks_to_immerge.append_array(_shared_input.blocks_to_immerge);
+		append_array(_input.blocks_to_emerge, _shared_input.blocks_to_emerge);
+		append_array(_input.blocks_to_immerge, _shared_input.blocks_to_immerge);
 		_input.priority_block_position = _shared_input.priority_block_position;
+
+		if (_shared_input.use_exclusive_region) {
+			_input.use_exclusive_region = true;
+			_input.exclusive_region_extent = _shared_input.exclusive_region_extent;
+		}
 
 		_shared_input.blocks_to_emerge.clear();
 		_shared_input.blocks_to_immerge.clear();
+		_shared_input.use_exclusive_region = false;
 	}
 
 	stats.remaining_blocks = _input.blocks_to_emerge.size();
@@ -204,12 +218,32 @@ void VoxelProviderThread::thread_sync(int emerge_index, Stats stats) {
 		_output.clear();
 	}
 
+	// Cancel blocks outside exclusive region
+	//int dropped_count = 0;
+	if (_input.use_exclusive_region) {
+		for (int i = 0; i < _input.blocks_to_emerge.size(); ++i) {
+			const EmergeInput &ei = _input.blocks_to_emerge[i];
+
+			Rect3i box = Rect3i::from_center_extents(_input.priority_block_position >> ei.lod, Vector3i(_input.exclusive_region_extent));
+
+			if (!box.contains(ei.block_position)) {
+				_input.blocks_to_emerge[i] = _input.blocks_to_emerge.back();
+				_input.blocks_to_emerge.pop_back();
+				//++dropped_count;
+			}
+		}
+	}
+
+	//	if (dropped_count > 0) {
+	//		print_line(String("Dropped {0} blocks to load from thread").format(varray(dropped_count)));
+	//	}
+
 	if (!_input.blocks_to_emerge.empty()) {
 		// Re-sort priority
 
 		SortArray<EmergeInput, BlockPositionComparator> sorter;
 		sorter.compare.center = _input.priority_block_position;
-		sorter.sort(_input.blocks_to_emerge.ptrw(), _input.blocks_to_emerge.size());
+		sorter.sort(_input.blocks_to_emerge.data(), _input.blocks_to_emerge.size());
 	}
 }
 

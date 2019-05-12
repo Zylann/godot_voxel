@@ -527,6 +527,8 @@ void VoxelLodTerrain::_process() {
 		VoxelProviderThread::InputData input;
 
 		input.priority_block_position = viewer_block_pos;
+		input.use_exclusive_region = true;
+		input.exclusive_region_extent = get_block_region_extent();
 
 		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 			Lod &lod = _lods[lod_index];
@@ -598,6 +600,9 @@ void VoxelLodTerrain::_process() {
 	// Send mesh updates
 	{
 		VoxelMeshUpdater::Input input;
+		input.priority_position = viewer_block_pos;
+		input.use_exclusive_region = true;
+		input.exclusive_region_extent = get_block_region_extent();
 
 		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 			Lod &lod = _lods[lod_index];
