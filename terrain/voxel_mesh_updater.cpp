@@ -247,9 +247,16 @@ void VoxelMeshUpdater::process_block(const InputBlock &block, OutputBlock &outpu
 // Sorts distance to viewer
 // The closest block will be the first one in the array
 struct BlockUpdateComparator {
-	Vector3i center;
+	Vector3i center; // In LOD0 block coordinates
 	inline bool operator()(const VoxelMeshUpdater::InputBlock &a, const VoxelMeshUpdater::InputBlock &b) const {
-		return a.position.distance_sq(center) < b.position.distance_sq(center);
+		if (a.lod == b.lod) {
+			int da = (a.position * (1 << a.lod)).distance_sq(center);
+			int db = (b.position * (1 << b.lod)).distance_sq(center);
+			return da < db;
+		} else {
+			// Load highest lods first because they are needed for the octree to subdivide
+			return a.lod > b.lod;
+		}
 	}
 };
 

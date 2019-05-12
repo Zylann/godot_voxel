@@ -153,9 +153,14 @@ struct BlockPositionComparator {
 	// In LOD0 block coordinates
 	Vector3i center;
 	inline bool operator()(const VoxelProviderThread::EmergeInput &a, const VoxelProviderThread::EmergeInput &b) const {
-		int da = (a.block_position * (1 << a.lod)).distance_sq(center);
-		int db = (b.block_position * (1 << b.lod)).distance_sq(center);
-		return da < db;
+		if (a.lod == b.lod) {
+			int da = (a.block_position * (1 << a.lod)).distance_sq(center);
+			int db = (b.block_position * (1 << b.lod)).distance_sq(center);
+			return da < db;
+		} else {
+			// Load highest lods first because they are needed for the octree to subdivide
+			return a.lod > b.lod;
+		}
 	}
 };
 
