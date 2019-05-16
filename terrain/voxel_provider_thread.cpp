@@ -78,13 +78,13 @@ void VoxelProviderThread::thread_func() {
 
 	while (!_thread_exit) {
 
-		uint32_t sync_interval = 100.0; // milliseconds
+		uint32_t sync_interval = 500.0; // milliseconds
 		uint32_t sync_time = OS::get_singleton()->get_ticks_msec() + sync_interval;
 
 		int emerge_index = 0;
 		Stats stats;
 
-		thread_sync(emerge_index, stats);
+		thread_sync(emerge_index, stats, stats.sort_time);
 
 		while (!_input.is_empty() && !_thread_exit) {
 			//print_line(String("Thread runs: {0}").format(varray(_input.blocks_to_emerge.size())));
@@ -136,11 +136,13 @@ void VoxelProviderThread::thread_func() {
 			uint32_t time = OS::get_singleton()->get_ticks_msec();
 			if (time >= sync_time || _input.is_empty()) {
 
-				thread_sync(emerge_index, stats);
+				uint64_t sort_time;
+				thread_sync(emerge_index, stats, sort_time);
 
 				sync_time = OS::get_singleton()->get_ticks_msec() + sync_interval;
 				emerge_index = 0;
 				stats = Stats();
+				stats.sort_time = sort_time;
 			}
 		}
 
@@ -172,7 +174,7 @@ struct BlockPositionComparator {
 	}
 };
 
-void VoxelProviderThread::thread_sync(int emerge_index, Stats stats) {
+void VoxelProviderThread::thread_sync(int emerge_index, Stats stats, uint64_t &out_sort_time) {
 
 	if (!_input.blocks_to_emerge.empty()) {
 		// Cleanup emerge vector
@@ -238,6 +240,8 @@ void VoxelProviderThread::thread_sync(int emerge_index, Stats stats) {
 	//		print_line(String("Dropped {0} blocks to load from thread").format(varray(dropped_count)));
 	//	}
 
+	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+
 	if (!_input.blocks_to_emerge.empty()) {
 		// Re-sort priority
 
@@ -245,6 +249,8 @@ void VoxelProviderThread::thread_sync(int emerge_index, Stats stats) {
 		sorter.compare.center = _input.priority_block_position;
 		sorter.sort(_input.blocks_to_emerge.data(), _input.blocks_to_emerge.size());
 	}
+
+	out_sort_time = OS::get_singleton()->get_ticks_usec() - time_before;
 }
 
 Dictionary VoxelProviderThread::to_dictionary(const Stats &stats) {
@@ -252,5 +258,6 @@ Dictionary VoxelProviderThread::to_dictionary(const Stats &stats) {
 	d["min_time"] = stats.min_time;
 	d["max_time"] = stats.max_time;
 	d["remaining_blocks"] = stats.remaining_blocks;
+	d["sort_time"] = stats.sort_time;
 	return d;
 }

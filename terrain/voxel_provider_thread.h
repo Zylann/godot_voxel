@@ -47,6 +47,7 @@ public:
 		uint64_t min_time = 0;
 		uint64_t max_time = 0;
 		int remaining_blocks = 0;
+		uint64_t sort_time = 0;
 	};
 
 	struct OutputData {
@@ -66,7 +67,7 @@ private:
 	static void _thread_func(void *p_self);
 
 	void thread_func();
-	void thread_sync(int emerge_index, Stats stats);
+	void thread_sync(int emerge_index, Stats stats, uint64_t &out_sort_time);
 
 private:
 	InputData _shared_input;
