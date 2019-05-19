@@ -549,10 +549,11 @@ void VoxelTerrain::_process() {
 	} else {
 		// TODO Use viewport camera, much easier
 		Spatial *viewer = get_viewer(_viewer_path);
-		if (viewer)
+		if (viewer) {
 			viewer_block_pos = _map->voxel_to_block(viewer->get_translation());
-		else
+		} else {
 			viewer_block_pos = Vector3i();
+		}
 	}
 
 	// Find out which blocks need to appear and which need to be unloaded

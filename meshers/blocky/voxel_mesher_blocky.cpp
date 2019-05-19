@@ -28,8 +28,9 @@ inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_
 }
 
 inline bool is_transparent(const VoxelLibrary &lib, int voxel_id) {
-	if (lib.has_voxel(voxel_id))
+	if (lib.has_voxel(voxel_id)) {
 		return lib.get_voxel_const(voxel_id).is_transparent();
+	}
 	return true;
 }
 
@@ -45,10 +46,11 @@ void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {
 
 void VoxelMesherBlocky::set_occlusion_darkness(float darkness) {
 	_baked_occlusion_darkness = darkness;
-	if (_baked_occlusion_darkness < 0.0)
+	if (_baked_occlusion_darkness < 0.0) {
 		_baked_occlusion_darkness = 0.0;
-	else if (_baked_occlusion_darkness >= 1.0)
+	} else if (_baked_occlusion_darkness >= 1.0) {
 		_baked_occlusion_darkness = 1.0;
+	}
 }
 
 void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
