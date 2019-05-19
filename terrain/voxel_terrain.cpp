@@ -544,6 +544,7 @@ void VoxelTerrain::_process() {
 	// Get viewer location
 	// TODO Transform to local (Spatial Transform)
 	Vector3i viewer_block_pos;
+	Vector3 viewer_direction;
 	if (engine.is_editor_hint()) {
 		// TODO Use editor's camera here
 		viewer_block_pos = Vector3i();
@@ -552,6 +553,7 @@ void VoxelTerrain::_process() {
 		Spatial *viewer = get_viewer(_viewer_path);
 		if (viewer) {
 			viewer_block_pos = _map->voxel_to_block(viewer->get_translation());
+			viewer_direction = -viewer->get_global_transform().basis.get_axis(Vector3::AXIS_Z);
 		} else {
 			viewer_block_pos = Vector3i();
 		}
@@ -702,6 +704,8 @@ void VoxelTerrain::_process() {
 	// Send mesh updates
 	{
 		VoxelMeshUpdater::Input input;
+		input.priority_position = viewer_block_pos;
+		input.priority_direction = viewer_direction;
 
 		for (int i = 0; i < _blocks_pending_update.size(); ++i) {
 			Vector3i block_pos = _blocks_pending_update[i];

@@ -28,6 +28,7 @@ public:
 		InputBlockData_T data;
 		Vector3i position; // In LOD0 block coordinates
 		unsigned int lod = 0;
+		float sort_heuristic = 0; // Used internally, no need to be set
 	};
 
 	// Specialization must be copyable
@@ -40,8 +41,10 @@ public:
 	struct Input {
 		std::vector<InputBlock> blocks;
 		Vector3i priority_position; // In LOD0 block coordinates
+		Vector3 priority_direction; // Where the viewer is looking at
 		int exclusive_region_extent = 0; // Region beyond which the processor is allowed to discard requests
 		bool use_exclusive_region = false;
+		int max_lod_index = 0;
 
 		bool is_empty() const {
 			return blocks.empty();
@@ -381,21 +384,19 @@ private:
 		}
 	}
 
-	// TODO Precalculate a heuristic on all blocks instead of a comparator, it will be faster
-	// Sorts distance to viewer
-	// The closest block will be the first one in the array
+	static inline float get_priority_heuristic(const InputBlock &a, const Vector3i &viewer_block_pos, const Vector3 &viewer_direction, int max_lod) {
+		int f = 1 << a.lod;
+		Vector3i p = a.position * f;
+		float d = Math::sqrt(p.distance_sq(viewer_block_pos) + 0.1f);
+		float dp = viewer_direction.dot(viewer_block_pos.to_vec3() / d);
+		// Higher lod indexes come first to allow the octree to subdivide.
+		// Then comes distance, which is modified by how much in view the block is
+		return (max_lod - a.lod) * 10000.f + d + (1.f - dp) * 4.f;
+	}
+
 	struct BlockUpdateComparator {
-		Vector3i center; // In LOD0 block coordinates
 		inline bool operator()(const InputBlock &a, const InputBlock &b) const {
-			// TODO Give a higher priority to blocks in frustrum
-			if (a.lod == b.lod) {
-				int da = (a.position * (1 << a.lod)).distance_sq(center);
-				int db = (b.position * (1 << b.lod)).distance_sq(center);
-				return da < db;
-			} else {
-				// Load highest lods first because they are needed for the octree to subdivide
-				return a.lod > b.lod;
-			}
+			return a.sort_heuristic < b.sort_heuristic;
 		}
 	};
 
@@ -486,9 +487,17 @@ private:
 		uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
 		if (!data.input.blocks.empty() && needs_sort) {
+
+			for (auto it = data.input.blocks.begin(); it != data.input.blocks.end(); ++it) {
+				InputBlock &ib = *it;
+				ib.sort_heuristic = get_priority_heuristic(ib,
+						data.input.priority_position,
+						data.input.priority_direction,
+						data.input.max_lod_index);
+			}
+
 			// Re-sort priority
 			SortArray<InputBlock, BlockUpdateComparator> sorter;
-			sorter.compare.center = data.input.priority_position;
 			sorter.sort(data.input.blocks.data(), data.input.blocks.size());
 		}
 

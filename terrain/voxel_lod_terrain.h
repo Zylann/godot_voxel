@@ -73,7 +73,7 @@ private:
 	Spatial *get_viewer() const;
 	void immerge_block(Vector3i block_pos, unsigned int lod_index);
 	void reset_updater();
-	Vector3 get_viewer_pos() const;
+	Vector3 get_viewer_pos(Vector3 &out_direction) const;
 	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, unsigned int lod_index);
 	bool check_block_loaded_and_updated(const Vector3i &p_bpos, unsigned int lod_index);
 

@@ -293,7 +293,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 	}
 }
 
-Vector3 VoxelLodTerrain::get_viewer_pos() const {
+Vector3 VoxelLodTerrain::get_viewer_pos(Vector3 &out_direction) const {
 
 	if (Engine::get_singleton()->is_editor_hint()) {
 
@@ -302,10 +302,10 @@ Vector3 VoxelLodTerrain::get_viewer_pos() const {
 
 	} else {
 
-		// TODO Use viewport camera, much easier
 		Spatial *viewer = get_viewer();
 
 		if (viewer) {
+			out_direction = -viewer->get_global_transform().basis.get_axis(Vector3::AXIS_Z);
 			return viewer->get_global_transform().origin;
 		}
 	}
@@ -394,7 +394,8 @@ void VoxelLodTerrain::_process() {
 
 	OS &os = *OS::get_singleton();
 
-	Vector3 viewer_pos = get_viewer_pos();
+	Vector3 viewer_direction;
+	Vector3 viewer_pos = get_viewer_pos(viewer_direction);
 	Vector3i viewer_block_pos = _lods[0].map->voxel_to_block(viewer_pos);
 
 	ProfilingClock profiling_clock;
@@ -603,6 +604,7 @@ void VoxelLodTerrain::_process() {
 	{
 		VoxelMeshUpdater::Input input;
 		input.priority_position = viewer_block_pos;
+		input.priority_direction = viewer_direction;
 		input.use_exclusive_region = true;
 		input.exclusive_region_extent = get_block_region_extent();
 
