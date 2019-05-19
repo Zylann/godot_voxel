@@ -9,87 +9,52 @@
 #include "../meshers/dmc/voxel_mesher_dmc.h"
 #include "../voxel_buffer.h"
 
+#include "block_thread_manager.h"
+
 class VoxelMeshUpdater {
 public:
-	static const int MAX_LOD = 32; // Like VoxelLodTerrain
-
-	struct InputBlock {
+	struct InputBlockData {
 		Ref<VoxelBuffer> voxels;
-		Vector3i position;
-		unsigned int lod = 0;
 	};
 
-	struct Input {
-		std::vector<InputBlock> blocks;
-		Vector3i priority_position; // In LOD0 block coordinates
-		int exclusive_region_extent = 0;
-		bool use_exclusive_region = false;
-
-		bool is_empty() const {
-			return blocks.empty();
-		}
-	};
-
-	struct OutputBlock {
+	struct OutputBlockData {
 		VoxelMesher::Output blocky_surfaces;
 		VoxelMesher::Output smooth_surfaces;
-		Vector3i position;
-		unsigned int lod = 0;
 	};
 
-	struct Stats {
-		bool first = true;
-		uint64_t min_time = 0;
-		uint64_t max_time = 0;
-		uint32_t remaining_blocks = 0;
-	};
+	struct Processor {
+		void process_block(const InputBlockData &input, OutputBlockData &output, Vector3i block_position, unsigned int lod);
+		int get_required_padding();
 
-	struct Output {
-		Vector<OutputBlock> blocks;
-		Stats stats;
+		Ref<VoxelMesher> blocky_mesher;
+		Ref<VoxelMesher> smooth_mesher;
 	};
 
 	struct MeshingParams {
+		Ref<VoxelLibrary> library;
 		bool baked_ao = true;
 		float baked_ao_darkness = 0.75;
 		bool smooth_surface = false;
 	};
 
-	VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams params);
+	typedef VoxelBlockThreadManager<InputBlockData, OutputBlockData, Processor> Mgr;
+	typedef Mgr::InputBlock InputBlock;
+	typedef Mgr::OutputBlock OutputBlock;
+	typedef Mgr::Input Input;
+	typedef Mgr::Output Output;
+	typedef Mgr::Stats Stats;
+
+	VoxelMeshUpdater(unsigned int thread_count, MeshingParams params);
 	~VoxelMeshUpdater();
 
-	void push(const Input &input);
-	void pop(Output &output);
+	void push(const Input &input) { _mgr->push(input); }
+	void pop(Output &output) { _mgr->pop(output); }
 
-	int get_required_padding() const;
-
-	static Dictionary to_dictionary(const Stats &stats);
+	int get_required_padding() const { return _required_padding; }
 
 private:
-	static void _thread_func(void *p_self);
-	void thread_func();
-
-	void thread_sync(int queue_index, Stats stats);
-
-	void process_block(const InputBlock &block, OutputBlock &output);
-
-private:
-	Input _shared_input;
-	Mutex *_input_mutex;
-	HashMap<Vector3i, int, Vector3iHasher> _block_indexes[MAX_LOD];
-	bool _needs_sort;
-
-	Output _shared_output;
-	Mutex *_output_mutex;
-
-	Ref<VoxelMesherBlocky> _blocky_mesher;
-	Ref<VoxelMesherDMC> _dmc_mesher;
-
-	Input _input;
-	Output _output;
-	Semaphore *_semaphore;
-	Thread *_thread;
-	bool _thread_exit;
+	Mgr *_mgr = nullptr;
+	int _required_padding = 0;
 };
 
 #endif // VOXEL_MESH_UPDATER_H

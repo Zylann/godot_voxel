@@ -377,5 +377,9 @@ void VoxelMesherTransvoxel::emit_vertex(Vector3 primary, Vector3 normal) {
 	m_output_normals.push_back(normal);
 }
 
+VoxelMesher *VoxelMesherTransvoxel::clone() {
+	return memnew(VoxelMesherTransvoxel);
+}
+
 void VoxelMesherTransvoxel::_bind_methods() {
 }

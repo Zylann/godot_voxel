@@ -107,6 +107,8 @@ public:
 
 	Dictionary get_stats() const;
 
+	VoxelMesher *clone() override;
+
 protected:
 	static void _bind_methods();
 

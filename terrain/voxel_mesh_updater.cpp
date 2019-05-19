@@ -3,203 +3,6 @@
 #include "voxel_lod_terrain.h"
 #include <core/os/os.h>
 
-VoxelMeshUpdater::VoxelMeshUpdater(Ref<VoxelLibrary> library, MeshingParams params) {
-
-	if (library.is_valid()) {
-		_blocky_mesher.instance();
-		_blocky_mesher->set_library(library);
-		_blocky_mesher->set_occlusion_enabled(params.baked_ao);
-		_blocky_mesher->set_occlusion_darkness(params.baked_ao_darkness);
-	}
-
-	if (params.smooth_surface) {
-		_dmc_mesher.instance();
-		_dmc_mesher->set_geometric_error(0.05);
-		_dmc_mesher->set_octree_mode(VoxelMesherDMC::OCTREE_NONE);
-		_dmc_mesher->set_seam_mode(VoxelMesherDMC::SEAM_MARCHING_SQUARE_SKIRTS);
-	}
-
-	_input_mutex = Mutex::create();
-	_output_mutex = Mutex::create();
-
-	_thread_exit = false;
-	_semaphore = Semaphore::create();
-	_thread = Thread::create(_thread_func, this);
-
-	_needs_sort = true;
-}
-
-VoxelMeshUpdater::~VoxelMeshUpdater() {
-
-	_thread_exit = true;
-	_semaphore->post();
-	Thread::wait_to_finish(_thread);
-	memdelete(_thread);
-	memdelete(_semaphore);
-	memdelete(_input_mutex);
-	memdelete(_output_mutex);
-}
-
-void VoxelMeshUpdater::push(const Input &input) {
-
-	bool should_run = false;
-	int replaced_blocks = 0;
-
-	{
-		MutexLock lock(_input_mutex);
-
-		for (int i = 0; i < input.blocks.size(); ++i) {
-
-			const InputBlock &block = input.blocks[i];
-
-			// If a block is exactly on the priority position, update it instantly on the main thread
-			// This is to eliminate latency for player's actions, assuming updating a block isn't slower than a frame
-			/*if (pos == _shared_input.priority_position) {
-
-				OutputBlock ob;
-				process_block(_shared_input.blocks[i], ob);
-
-				{
-					MutexLock lock2(_output_mutex);
-					_shared_output.blocks.push_back(ob);
-				}
-
-				continue;
-			}*/
-
-			CRASH_COND(block.lod >= MAX_LOD)
-			int *index = _block_indexes[block.lod].getptr(block.position);
-
-			if (index) {
-				// The block is already in the update queue, replace it
-				++replaced_blocks;
-				_shared_input.blocks[*index] = block;
-
-			} else {
-
-				int j = _shared_input.blocks.size();
-				_shared_input.blocks.push_back(block);
-				_block_indexes[block.lod][block.position] = j;
-			}
-		}
-
-		if (_shared_input.priority_position != input.priority_position || input.blocks.size() > 0) {
-			_needs_sort = true;
-		}
-
-		_shared_input.priority_position = input.priority_position;
-
-		if (input.use_exclusive_region) {
-			_shared_input.use_exclusive_region = true;
-			_shared_input.exclusive_region_extent = input.exclusive_region_extent;
-		}
-
-		should_run = !_shared_input.is_empty();
-	}
-
-	if (replaced_blocks > 0) {
-		print_line(String("VoxelMeshUpdater: {0} blocks already in queue were replaced").format(varray(replaced_blocks)));
-	}
-
-	if (should_run) {
-		_semaphore->post();
-	}
-}
-
-void VoxelMeshUpdater::pop(Output &output) {
-
-	MutexLock lock(_output_mutex);
-
-	output.blocks.append_array(_shared_output.blocks);
-	output.stats = _shared_output.stats;
-	_shared_output.blocks.clear();
-}
-
-int VoxelMeshUpdater::get_required_padding() const {
-
-	int padding = 0;
-
-	if (_blocky_mesher.is_valid()) {
-		padding = max(padding, _blocky_mesher->get_minimum_padding());
-	}
-
-	if (_dmc_mesher.is_valid()) {
-		padding = max(padding, _dmc_mesher->get_minimum_padding());
-	}
-
-	return padding;
-}
-
-void VoxelMeshUpdater::_thread_func(void *p_self) {
-	VoxelMeshUpdater *self = reinterpret_cast<VoxelMeshUpdater *>(p_self);
-	self->thread_func();
-}
-
-void VoxelMeshUpdater::thread_func() {
-
-	while (!_thread_exit) {
-
-		uint32_t sync_interval = 50.0; // milliseconds
-		uint32_t sync_time = OS::get_singleton()->get_ticks_msec() + sync_interval;
-
-		int queue_index = 0;
-		Stats stats;
-
-		thread_sync(queue_index, stats);
-
-		while (!_input.blocks.empty() && !_thread_exit) {
-
-			if (!_input.blocks.empty()) {
-
-				InputBlock block = _input.blocks[queue_index];
-				++queue_index;
-
-				if (queue_index >= _input.blocks.size()) {
-					_input.blocks.clear();
-				}
-
-				uint64_t time_before = OS::get_singleton()->get_ticks_usec();
-
-				OutputBlock ob;
-				process_block(block, ob);
-
-				uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
-
-				// Do some stats
-				if (stats.first) {
-					stats.first = false;
-					stats.min_time = time_taken;
-					stats.max_time = time_taken;
-				} else {
-					if (time_taken < stats.min_time)
-						stats.min_time = time_taken;
-					if (time_taken > stats.max_time)
-						stats.max_time = time_taken;
-				}
-
-				_output.blocks.push_back(ob);
-			}
-
-			uint32_t time = OS::get_singleton()->get_ticks_msec();
-			if (time >= sync_time || _input.blocks.empty()) {
-
-				thread_sync(queue_index, stats);
-
-				sync_time = OS::get_singleton()->get_ticks_msec() + sync_interval;
-				queue_index = 0;
-				stats = Stats();
-			}
-		}
-
-		if (_thread_exit) {
-			break;
-		}
-
-		// Wait for future wake-up
-		_semaphore->wait();
-	}
-}
-
 static void scale_mesh_data(VoxelMesher::Output &data, float factor) {
 
 	for (int i = 0; i < data.surfaces.size(); ++i) {
@@ -228,139 +31,82 @@ static void scale_mesh_data(VoxelMesher::Output &data, float factor) {
 	}
 }
 
-void VoxelMeshUpdater::process_block(const InputBlock &block, OutputBlock &output) {
+VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams params) {
 
-	CRASH_COND(block.voxels.is_null());
+	Ref<VoxelMesherBlocky> blocky_mesher;
+	Ref<VoxelMesherDMC> smooth_mesher;
 
-	int padding = get_required_padding();
-
-	if (_blocky_mesher.is_valid()) {
-		_blocky_mesher->build(output.blocky_surfaces, **block.voxels, padding);
+	if (params.library.is_valid()) {
+		blocky_mesher.instance();
+		blocky_mesher->set_library(params.library);
+		blocky_mesher->set_occlusion_enabled(params.baked_ao);
+		blocky_mesher->set_occlusion_darkness(params.baked_ao_darkness);
 	}
 
-	if (_dmc_mesher.is_valid()) {
-		_dmc_mesher->build(output.smooth_surfaces, **block.voxels, padding);
+	if (params.smooth_surface) {
+		smooth_mesher.instance();
+		smooth_mesher->set_geometric_error(0.05);
+		smooth_mesher->set_octree_mode(VoxelMesherDMC::OCTREE_NONE);
+		smooth_mesher->set_seam_mode(VoxelMesherDMC::SEAM_MARCHING_SQUARE_SKIRTS);
 	}
 
-	output.position = block.position;
-	output.lod = block.lod;
+	Processor processors[Mgr::MAX_LOD];
 
-	if (block.lod > 0) {
-		float factor = 1 << block.lod;
-		scale_mesh_data(output.blocky_surfaces, factor);
-		scale_mesh_data(output.smooth_surfaces, factor);
-	}
-}
-
-// Sorts distance to viewer
-// The closest block will be the first one in the array
-struct BlockUpdateComparator {
-	Vector3i center; // In LOD0 block coordinates
-	inline bool operator()(const VoxelMeshUpdater::InputBlock &a, const VoxelMeshUpdater::InputBlock &b) const {
-		if (a.lod == b.lod) {
-			int da = (a.position * (1 << a.lod)).distance_sq(center);
-			int db = (b.position * (1 << b.lod)).distance_sq(center);
-			return da < db;
+	for (int i = 0; i < thread_count; ++i) {
+		Processor &p = processors[i];
+		if (i == 0) {
+			p.blocky_mesher = blocky_mesher;
+			p.smooth_mesher = smooth_mesher;
+			_required_padding = p.get_required_padding();
 		} else {
-			// Load highest lods first because they are needed for the octree to subdivide
-			return a.lod > b.lod;
-		}
-	}
-};
-
-void VoxelMeshUpdater::thread_sync(int queue_index, Stats stats) {
-
-	if (!_input.blocks.empty()) {
-		// Cleanup input vector
-
-		if (queue_index >= _input.blocks.size()) {
-			_input.blocks.clear();
-
-		} else if (queue_index > 0) {
-
-			// Shift up remaining items since we use a Vector
-			shift_up(_input.blocks, queue_index);
-		}
-	}
-
-	stats.remaining_blocks = _input.blocks.size();
-	bool needs_sort;
-
-	{
-		// Get input
-		MutexLock lock(_input_mutex);
-
-		append_array(_input.blocks, _shared_input.blocks);
-
-		_input.priority_position = _shared_input.priority_position;
-
-		if (_shared_input.use_exclusive_region) {
-			_input.use_exclusive_region = true;
-			_input.exclusive_region_extent = _shared_input.exclusive_region_extent;
-		}
-
-		_shared_input.blocks.clear();
-
-		for (unsigned int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
-			_block_indexes[lod_index].clear();
-		}
-
-		needs_sort = _needs_sort;
-		_needs_sort = false;
-	}
-
-	if (!_output.blocks.empty()) {
-
-		//		print_line(String("VoxelMeshUpdater: posting {0} blocks, {1} remaining ; cost [{2}..{3}] usec")
-		//				   .format(varray(_output.blocks.size(), _input.blocks.size(), stats.min_time, stats.max_time)));
-
-		// Post output
-		MutexLock lock(_output_mutex);
-		_shared_output.blocks.append_array(_output.blocks);
-		_shared_output.stats = stats;
-		_output.blocks.clear();
-	}
-
-	// Cancel blocks outside exclusive region
-	//int dropped_count = 0;
-	if (_input.use_exclusive_region) {
-		for (int i = 0; i < _input.blocks.size(); ++i) {
-			const InputBlock &ib = _input.blocks[i];
-
-			Rect3i box = Rect3i::from_center_extents(_input.priority_position >> ib.lod, Vector3i(_input.exclusive_region_extent));
-
-			if (!box.contains(ib.position)) {
-
-				Vector3i shifted_block_pos = _input.blocks.back().position;
-
-				_input.blocks[i] = _input.blocks.back();
-				_input.blocks.pop_back();
-
-				_block_indexes[ib.lod].erase(ib.position);
-				_block_indexes[ib.lod][shifted_block_pos] = i;
-
-				//++dropped_count;
+			// Need to clone them because they are not thread-safe.
+			// Also thanks to the wonders of ref_pointer() being private we trigger extra refs/unrefs for no reason
+			if (blocky_mesher.is_valid()) {
+				p.blocky_mesher = Ref<VoxelMesher>(blocky_mesher->clone());
+			}
+			if (smooth_mesher.is_valid()) {
+				p.smooth_mesher = Ref<VoxelMesher>(smooth_mesher->clone());
 			}
 		}
 	}
 
-	//	if (dropped_count > 0) {
-	//		print_line(String("Dropped {0} blocks to mesh from thread").format(varray(dropped_count)));
-	//	}
+	_mgr = memnew(Mgr(thread_count, 50, processors));
+}
 
-	if (!_input.blocks.empty() && needs_sort) {
-		// Re-sort priority
-
-		SortArray<VoxelMeshUpdater::InputBlock, BlockUpdateComparator> sorter;
-		sorter.compare.center = _input.priority_position;
-		sorter.sort(_input.blocks.data(), _input.blocks.size());
+VoxelMeshUpdater::~VoxelMeshUpdater() {
+	if (_mgr) {
+		memdelete(_mgr);
 	}
 }
 
-Dictionary VoxelMeshUpdater::to_dictionary(const Stats &stats) {
-	Dictionary d;
-	d["min_time"] = stats.min_time;
-	d["max_time"] = stats.max_time;
-	d["remaining_blocks"] = stats.remaining_blocks;
-	return d;
+int VoxelMeshUpdater::Processor::get_required_padding() {
+	int padding = 0;
+	if (blocky_mesher.is_valid()) {
+		padding = max(padding, blocky_mesher->get_minimum_padding());
+	}
+	if (smooth_mesher.is_valid()) {
+		padding = max(padding, smooth_mesher->get_minimum_padding());
+	}
+	return padding;
+}
+
+void VoxelMeshUpdater::Processor::process_block(const InputBlockData &input, OutputBlockData &output, Vector3i block_position, unsigned int lod) {
+
+	const InputBlockData &block = input;
+	CRASH_COND(block.voxels.is_null());
+
+	int padding = get_required_padding();
+
+	if (blocky_mesher.is_valid()) {
+		blocky_mesher->build(output.blocky_surfaces, **block.voxels, padding);
+	}
+	if (smooth_mesher.is_valid()) {
+		smooth_mesher->build(output.smooth_surfaces, **block.voxels, padding);
+	}
+
+	if (lod > 0) {
+		float factor = 1 << lod;
+		scale_mesh_data(output.blocky_surfaces, factor);
+		scale_mesh_data(output.smooth_surfaces, factor);
+	}
 }

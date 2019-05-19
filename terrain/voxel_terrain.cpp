@@ -221,7 +221,7 @@ Dictionary VoxelTerrain::get_statistics() const {
 	Dictionary provider = VoxelProviderThread::to_dictionary(_stats.provider);
 	provider["dropped_blocks"] = _stats.dropped_provider_blocks;
 
-	Dictionary updater = VoxelMeshUpdater::to_dictionary(_stats.updater);
+	Dictionary updater = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
 	updater["updated_blocks"] = _stats.updated_blocks;
 	updater["mesh_alloc_time"] = _stats.mesh_alloc_time;
 	updater["dropped_blocks"] = _stats.dropped_updater_blocks;
@@ -277,8 +277,9 @@ void VoxelTerrain::reset_updater() {
 	// TODO Thread-safe way to change those parameters
 	VoxelMeshUpdater::MeshingParams params;
 	params.smooth_surface = _smooth_meshing_enabled;
+	params.library = _library;
 
-	_block_updater = memnew(VoxelMeshUpdater(_library, params));
+	_block_updater = memnew(VoxelMeshUpdater(1, params));
 
 	// TODO Revert any pending update states!
 }
@@ -755,7 +756,7 @@ void VoxelTerrain::_process() {
 			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(padding), **nbuffer, channels_mask);
 
 			VoxelMeshUpdater::InputBlock iblock;
-			iblock.voxels = nbuffer;
+			iblock.data.voxels = nbuffer;
 			iblock.position = block_pos;
 			input.blocks.push_back(iblock);
 
@@ -811,28 +812,29 @@ void VoxelTerrain::_process() {
 			mesh.instance();
 
 			int surface_index = 0;
-			for (int i = 0; i < ob.blocky_surfaces.surfaces.size(); ++i) {
+			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
+			for (int i = 0; i < data.blocky_surfaces.surfaces.size(); ++i) {
 
-				Array surface = ob.blocky_surfaces.surfaces[i];
+				Array surface = data.blocky_surfaces.surfaces[i];
 				if (surface.empty()) {
 					continue;
 				}
 
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-				mesh->add_surface_from_arrays(ob.blocky_surfaces.primitive_type, surface);
+				mesh->add_surface_from_arrays(data.blocky_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
 			}
 
-			for (int i = 0; i < ob.smooth_surfaces.surfaces.size(); ++i) {
+			for (int i = 0; i < data.smooth_surfaces.surfaces.size(); ++i) {
 
-				Array surface = ob.smooth_surfaces.surfaces[i];
+				Array surface = data.smooth_surfaces.surfaces[i];
 				if (surface.empty()) {
 					continue;
 				}
 
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-				mesh->add_surface_from_arrays(ob.smooth_surfaces.primitive_type, surface);
+				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
 			}

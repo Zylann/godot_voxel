@@ -13,6 +13,8 @@ public:
 	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) override;
 	int get_minimum_padding() const override;
 
+	VoxelMesher *clone() override;
+
 protected:
 	static void _bind_methods();
 

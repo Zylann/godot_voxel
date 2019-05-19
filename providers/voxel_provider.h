@@ -4,6 +4,8 @@
 #include "../voxel_buffer.h"
 #include <core/resource.h>
 
+// Provides access to a source of paged voxel data.
+// Must be implemented in a multi-thread-safe way.
 class VoxelProvider : public Resource {
 	GDCLASS(VoxelProvider, Resource)
 public:

@@ -1592,6 +1592,15 @@ int VoxelMesherDMC::get_minimum_padding() const {
 	return MINIMUM_PADDING;
 }
 
+VoxelMesher *VoxelMesherDMC::clone() {
+	VoxelMesherDMC *c = memnew(VoxelMesherDMC);
+	c->set_mesh_mode(_mesh_mode);
+	c->set_octree_mode(_octree_mode);
+	c->set_geometric_error(_geometric_error);
+	c->set_seam_mode(_seam_mode);
+	return c;
+}
+
 Dictionary VoxelMesherDMC::get_stats() const {
 	Dictionary d;
 	d["octree_build_time"] = _stats.octree_build_time;

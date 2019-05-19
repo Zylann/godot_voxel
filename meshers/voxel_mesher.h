@@ -15,6 +15,9 @@ public:
 	virtual void build(Output &output, const VoxelBuffer &voxels, int padding);
 	virtual int get_minimum_padding() const;
 
+	// Must be cloneable so can be used by more than one thread
+	virtual VoxelMesher *clone();
+
 	Ref<Mesh> build_mesh(Ref<VoxelBuffer> voxels);
 
 protected:

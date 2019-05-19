@@ -6,6 +6,8 @@
 #include "voxel_provider_thread.h"
 #include <core/engine.h>
 
+const uint32_t MAIN_THREAD_MESHING_BUDGET_MS = 8;
+
 VoxelLodTerrain::VoxelLodTerrain() {
 
 	print_line("Construct VoxelLodTerrain");
@@ -133,7 +135,7 @@ void VoxelLodTerrain::reset_updater() {
 	VoxelMeshUpdater::MeshingParams params;
 	params.smooth_surface = true;
 
-	_block_updater = memnew(VoxelMeshUpdater(Ref<VoxelLibrary>(), params));
+	_block_updater = memnew(VoxelMeshUpdater(2, params));
 
 	// TODO Revert any pending update states!
 }
@@ -632,7 +634,7 @@ void VoxelLodTerrain::_process() {
 				lod.map->get_buffer_copy(lod.map->block_to_voxel(block_pos) - Vector3i(padding), **nbuffer, channels_mask);
 
 				VoxelMeshUpdater::InputBlock iblock;
-				iblock.voxels = nbuffer;
+				iblock.data.voxels = nbuffer;
 				iblock.position = block_pos;
 				iblock.lod = lod_index;
 				input.blocks.push_back(iblock);
@@ -670,7 +672,7 @@ void VoxelLodTerrain::_process() {
 		}
 
 		Ref<World> world = get_world();
-		uint32_t timeout = os.get_ticks_msec() + 10; // Allocate milliseconds max to upload meshes
+		uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS; // Allocate milliseconds max to upload meshes
 
 		int queue_index = 0;
 
@@ -705,15 +707,16 @@ void VoxelLodTerrain::_process() {
 			mesh.instance();
 
 			int surface_index = 0;
-			for (int i = 0; i < ob.smooth_surfaces.surfaces.size(); ++i) {
+			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
+			for (int i = 0; i < data.smooth_surfaces.surfaces.size(); ++i) {
 
-				Array surface = ob.smooth_surfaces.surfaces[i];
+				Array surface = data.smooth_surfaces.surfaces[i];
 				if (surface.empty()) {
 					continue;
 				}
 
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-				mesh->add_surface_from_arrays(ob.smooth_surfaces.primitive_type, surface);
+				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _material);
 				// No multi-material supported yet
 				++surface_index;
@@ -746,7 +749,7 @@ Dictionary VoxelLodTerrain::get_stats() const {
 
 	Dictionary d;
 	d["provider"] = VoxelProviderThread::to_dictionary(_stats.provider);
-	d["updater"] = VoxelMeshUpdater::to_dictionary(_stats.updater);
+	d["updater"] = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
 	d["process"] = process;
 	d["blocked_lods"] = _stats.blocked_lods;
 	d["dropped_block_loads"] = _stats.dropped_block_loads;

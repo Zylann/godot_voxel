@@ -403,6 +403,14 @@ int VoxelMesherBlocky::get_minimum_padding() const {
 	return MINIMUM_PADDING;
 }
 
+VoxelMesher *VoxelMesherBlocky::clone() {
+	VoxelMesherBlocky *c = memnew(VoxelMesherBlocky);
+	c->set_library(_library);
+	c->set_occlusion_darkness(_baked_occlusion_darkness);
+	c->set_occlusion_enabled(_bake_occlusion);
+	return c;
+}
+
 void VoxelMesherBlocky::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_library", "voxel_library"), &VoxelMesherBlocky::set_library);

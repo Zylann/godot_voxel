@@ -28,6 +28,10 @@ int VoxelMesher::get_minimum_padding() const {
 	return 0;
 }
 
+VoxelMesher *VoxelMesher::clone() {
+	return nullptr;
+}
+
 void VoxelMesher::_bind_methods() {
 
 	// Shortcut if you want to generate a mesh directly from a fixed grid of voxels.
