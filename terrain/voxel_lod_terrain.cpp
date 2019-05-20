@@ -368,22 +368,22 @@ bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, uns
 	return true;
 }
 
-static void remove_positions_outside_box(
-		std::vector<Vector3i> &positions,
-		Rect3i box,
-		Set<Vector3i> &position_set) {
+//static void remove_positions_outside_box(
+//		std::vector<Vector3i> &positions,
+//		Rect3i box,
+//		Set<Vector3i> &position_set) {
 
-	for (int i = 0; i < positions.size(); ++i) {
-		const Vector3i bpos = positions[i];
-		if (!box.contains(bpos)) {
-			int last = positions.size() - 1;
-			positions[i] = positions[last];
-			positions.resize(last);
-			position_set.erase(bpos);
-			--i;
-		}
-	}
-}
+//	for (int i = 0; i < positions.size(); ++i) {
+//		const Vector3i bpos = positions[i];
+//		if (!box.contains(bpos)) {
+//			int last = positions.size() - 1;
+//			positions[i] = positions[last];
+//			positions.resize(last);
+//			position_set.erase(bpos);
+//			--i;
+//		}
+//	}
+//}
 
 void VoxelLodTerrain::_process() {
 
@@ -423,8 +423,13 @@ void VoxelLodTerrain::_process() {
 			Rect3i prev_box = Rect3i::from_center_extents(lod.last_viewer_block_pos, Vector3i(lod.last_view_distance_blocks));
 
 			// Eliminate pending blocks that aren't needed
-			remove_positions_outside_box(lod.blocks_to_load, new_box, lod.loading_blocks);
-			remove_positions_outside_box(lod.blocks_pending_update, new_box, lod.loading_blocks);
+
+			// No need to do it on those arrays, they are always clear at this point.
+			// Let's assert so it will pop on your face the day that assumption changes
+			CRASH_COND(!lod.blocks_to_load.empty());
+			CRASH_COND(!lod.blocks_pending_update.empty());
+			//remove_positions_outside_box(lod.blocks_to_load, new_box, lod.loading_blocks);
+			//remove_positions_outside_box(lod.blocks_pending_update, new_box, lod.loading_blocks);
 
 			if (prev_box != new_box) {
 
