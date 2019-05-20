@@ -391,7 +391,7 @@ private:
 		float dp = viewer_direction.dot(viewer_block_pos.to_vec3() / d);
 		// Higher lod indexes come first to allow the octree to subdivide.
 		// Then comes distance, which is modified by how much in view the block is
-		return (max_lod - a.lod) * 10000.f + d + (1.f - dp) * 4.f;
+		return (max_lod - a.lod) * 10000.f + d + (1.f - dp) * 4.f * f;
 	}
 
 	struct BlockUpdateComparator {
