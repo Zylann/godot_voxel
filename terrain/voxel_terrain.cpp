@@ -77,10 +77,7 @@ void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
 		}
 
 		_provider = provider;
-		_provider_thread = memnew(VoxelProviderThread(_provider, _map->get_block_size_pow2()));
-		//		Ref<VoxelProviderTest> test;
-		//		test.instance();
-		//		_provider_thread = memnew(VoxelProviderThread(test, _map->get_block_size_pow2()));
+		_provider_thread = memnew(VoxelDataLoader(1, _provider, _map->get_block_size_pow2()));
 
 		// The whole map might change, so make all area dirty
 		// TODO Actually, we should regenerate the whole map, not just update all its blocks
@@ -218,7 +215,7 @@ void VoxelTerrain::immerge_block(Vector3i bpos) {
 
 Dictionary VoxelTerrain::get_statistics() const {
 
-	Dictionary provider = VoxelProviderThread::to_dictionary(_stats.provider);
+	Dictionary provider = VoxelDataLoader::Mgr::to_dictionary(_stats.provider);
 	provider["dropped_blocks"] = _stats.dropped_provider_blocks;
 
 	Dictionary updater = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
@@ -607,15 +604,16 @@ void VoxelTerrain::_process() {
 
 	// Send block loading requests
 	{
-		VoxelProviderThread::InputData input;
+		VoxelDataLoader::Input input;
 
-		input.priority_block_position = viewer_block_pos;
+		input.priority_position = viewer_block_pos;
+		input.priority_direction = viewer_direction;
 
 		for (int i = 0; i < _blocks_pending_load.size(); ++i) {
-			VoxelProviderThread::EmergeInput input_block;
-			input_block.block_position = _blocks_pending_load[i];
+			VoxelDataLoader::InputBlock input_block;
+			input_block.position = _blocks_pending_load[i];
 			input_block.lod = 0;
-			input.blocks_to_emerge.push_back(input_block);
+			input.blocks.push_back(input_block);
 		}
 
 		//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
@@ -633,17 +631,17 @@ void VoxelTerrain::_process() {
 		const unsigned int bs = _map->get_block_size();
 		const Vector3i block_size(bs, bs, bs);
 
-		VoxelProviderThread::OutputData output;
+		VoxelDataLoader::Output output;
 		_provider_thread->pop(output);
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 
 		_stats.provider = output.stats;
 		_stats.dropped_provider_blocks = 0;
 
-		for (int i = 0; i < output.emerged_blocks.size(); ++i) {
+		for (int i = 0; i < output.blocks.size(); ++i) {
 
-			const VoxelProviderThread::EmergeOutput &o = output.emerged_blocks[i];
-			Vector3i block_pos = _map->voxel_to_block(o.origin_in_voxels);
+			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
+			Vector3i block_pos = ob.position;
 
 			{
 				VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(block_pos);
@@ -654,15 +652,25 @@ void VoxelTerrain::_process() {
 				}
 			}
 
+			if (ob.drop_hint) {
+				// That block was dropped by the data loader thread, but we were still expecting it...
+				// This is not good, because it means the loader is out of sync due to a bug.
+				// TODO Implement recovery like `VoxelLodTerrain`?
+				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
+								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
+				++_stats.dropped_provider_blocks;
+				continue;
+			}
+
 			// Check return
 			// TODO Shouldn't halt execution though, as it can bring the map in an invalid state!
-			ERR_FAIL_COND(o.voxels->get_size() != block_size);
+			ERR_FAIL_COND(ob.data.voxels_loaded->get_size() != block_size);
 
 			// TODO Discard blocks out of range
 
 			// Store buffer
 			bool update_neighbors = !_map->has_block(block_pos);
-			_map->set_block_buffer(block_pos, o.voxels);
+			_map->set_block_buffer(block_pos, ob.data.voxels_loaded);
 
 			// Trigger mesh updates
 			if (update_neighbors) {
@@ -808,6 +816,14 @@ void VoxelTerrain::_process() {
 			VoxelBlock *block = _map->get_block(ob.position);
 			if (block == NULL) {
 				// That block is no longer loaded, drop the result
+				++_stats.dropped_updater_blocks;
+				continue;
+			}
+
+			if (ob.drop_hint) {
+				// That block is loaded, but its meshing request was dropped.
+				// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
+				print_line("Received a block mesh drop while we were still expecting it");
 				++_stats.dropped_updater_blocks;
 				continue;
 			}

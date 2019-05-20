@@ -62,7 +62,7 @@ void VoxelLodTerrain::set_provider(Ref<VoxelProvider> p_provider) {
 		}
 
 		_provider = p_provider;
-		_provider_thread = memnew(VoxelProviderThread(_provider, get_block_size_pow2()));
+		_provider_thread = memnew(VoxelDataLoader(1, _provider, get_block_size_pow2()));
 
 		// The whole map might change, so make all area dirty
 		// TODO Actually, we should regenerate the whole map, not just update all its blocks
@@ -526,15 +526,15 @@ void VoxelLodTerrain::_process() {
 		_lod_octree.update(viewer_pos, subdivide_action, unsubdivide_action);
 
 		// Ideally, this stat should stabilize to zero.
-		// If not, something in the meshing process prevents LODs to properly show up and should be fixed.
+		// If not, something in block management prevents LODs to properly show up and should be fixed.
 		_stats.blocked_lods = subdivide_action.blocked_count + unsubdivide_action.blocked_count;
 	}
 
 	// Send block loading requests
 	{
-		VoxelProviderThread::InputData input;
-
-		input.priority_block_position = viewer_block_pos;
+		VoxelDataLoader::Input input;
+		input.priority_position = viewer_block_pos;
+		input.priority_direction = viewer_direction;
 		input.use_exclusive_region = true;
 		input.exclusive_region_extent = get_block_region_extent();
 
@@ -542,10 +542,10 @@ void VoxelLodTerrain::_process() {
 			Lod &lod = _lods[lod_index];
 
 			for (int i = 0; i < lod.blocks_to_load.size(); ++i) {
-				VoxelProviderThread::EmergeInput input_block;
-				input_block.block_position = lod.blocks_to_load[i];
+				VoxelDataLoader::InputBlock input_block;
+				input_block.position = lod.blocks_to_load[i];
 				input_block.lod = lod_index;
-				input.blocks_to_emerge.push_back(input_block);
+				input.blocks.push_back(input_block);
 			}
 
 			lod.blocks_to_load.clear();
@@ -561,25 +561,25 @@ void VoxelLodTerrain::_process() {
 	// Note: if block loading is too fast, this can cause stutters.
 	// It should only happen on first load, though.
 	{
-		VoxelProviderThread::OutputData output;
+		VoxelDataLoader::Output output;
 		_provider_thread->pop(output);
 		_stats.provider = output.stats;
 
 		//print_line(String("Loaded {0} blocks").format(varray(output.emerged_blocks.size())));
 
-		for (int i = 0; i < output.emerged_blocks.size(); ++i) {
+		for (int i = 0; i < output.blocks.size(); ++i) {
 
-			const VoxelProviderThread::EmergeOutput &eo = output.emerged_blocks[i];
+			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
 
-			if (eo.lod >= get_lod_count()) {
+			if (ob.lod >= get_lod_count()) {
 				// That block was requested at a time where LOD was higher... drop it
 				++_stats.dropped_block_loads;
 				continue;
 			}
 
-			Lod &lod = _lods[eo.lod];
+			Lod &lod = _lods[ob.lod];
 
-			Set<Vector3i>::Element *E = lod.loading_blocks.find(eo.block_position);
+			Set<Vector3i>::Element *E = lod.loading_blocks.find(ob.position);
 			if (E == nullptr) {
 				// That block was not requested, or is no longer needed. drop it...
 				++_stats.dropped_block_loads;
@@ -588,7 +588,17 @@ void VoxelLodTerrain::_process() {
 
 			lod.loading_blocks.erase(E);
 
-			if (eo.voxels->get_size() != lod.map->get_block_size()) {
+			if (ob.drop_hint) {
+				// That block was dropped by the data loader thread, but we were still expecting it...
+				// This is not good, because it means the loader is out of sync due to a bug.
+				// We can recover with the removal from `loading_blocks` so it will be re-queried again later...
+				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
+								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
+				++_stats.dropped_block_loads;
+				continue;
+			}
+
+			if (ob.data.voxels_loaded->get_size() != lod.map->get_block_size()) {
 				// Voxel block size is incorrect, drop it
 				ERR_PRINT("Block size obtained from provider is different from expected size");
 				++_stats.dropped_block_loads;
@@ -596,7 +606,7 @@ void VoxelLodTerrain::_process() {
 			}
 
 			// Store buffer
-			VoxelBlock *block = lod.map->set_block_buffer(eo.block_position, eo.voxels);
+			VoxelBlock *block = lod.map->set_block_buffer(ob.position, ob.data.voxels_loaded);
 			//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
 			// The block will be made visible and meshed only by LodOctree
 			block->set_visible(false);
@@ -706,6 +716,14 @@ void VoxelLodTerrain::_process() {
 				continue;
 			}
 
+			if (ob.drop_hint) {
+				// That block is loaded, but its meshing request was dropped.
+				// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
+				print_line("Received a block mesh drop while we were still expecting it");
+				++_stats.dropped_block_meshs;
+				continue;
+			}
+
 			if (block->get_mesh_state() == VoxelBlock::MESH_UPDATE_SENT) {
 				block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
 			}
@@ -755,7 +773,7 @@ Dictionary VoxelLodTerrain::get_stats() const {
 	process["time_process_lod"] = _stats.time_process_lod;
 
 	Dictionary d;
-	d["provider"] = VoxelProviderThread::to_dictionary(_stats.provider);
+	d["provider"] = VoxelDataLoader::Mgr::to_dictionary(_stats.provider);
 	d["updater"] = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
 	d["process"] = process;
 	d["blocked_lods"] = _stats.blocked_lods;

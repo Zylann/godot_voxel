@@ -36,6 +36,10 @@ public:
 		OutputBlockData_T data;
 		Vector3i position; // In LOD0 block coordinates
 		unsigned int lod = 0;
+		// True if the block was actually dropped.
+		// Ideally the requester will agree that it doesn't need that block anymore,
+		// but in cases it still does (bad case), it will have to query it again.
+		bool drop_hint = false;
 	};
 
 	struct Input {
@@ -70,14 +74,17 @@ public:
 	// Creates and starts jobs.
 	// Processors are given as array because you could decide to either re-use the same one,
 	// or have clones depending on them being stateless or not.
-	VoxelBlockThreadManager(unsigned int job_count, unsigned int sync_interval_ms, Processor_T *processors) {
+	VoxelBlockThreadManager(unsigned int job_count, unsigned int sync_interval_ms, Processor_T *processors, bool duplicate_rejection = true) {
 
 		CRASH_COND(job_count < 1);
 		CRASH_COND(job_count >= MAX_JOBS);
 		_job_count = job_count;
 
 		for (unsigned int i = 0; i < MAX_JOBS; ++i) {
-			_jobs[i].job_index = i;
+			JobData &job = _jobs[i];
+			job.job_index = i;
+			job.duplicate_rejection = duplicate_rejection;
+			job.sync_interval_ms = sync_interval_ms;
 		}
 
 		for (unsigned int i = 0; i < _job_count; ++i) {
@@ -90,7 +97,6 @@ public:
 			job.semaphore = Semaphore::create();
 			job.thread = Thread::create(_thread_func, &job);
 			job.needs_sort = true;
-			job.sync_interval_ms = sync_interval_ms;
 			job.processor = processors[i];
 		}
 	}
@@ -161,7 +167,6 @@ public:
 
 		// Dispatch equal count of remaining requests.
 		// Remainder is dispatched too until consumed through the first jobs.
-		// Then unlock each job.
 		int base_count = (input.blocks.size() - i) / _job_count;
 		int remainder = (input.blocks.size() - i) % _job_count;
 		for (int job_index = 0; job_index < _job_count && i < input.blocks.size(); ++job_index) {
@@ -180,6 +185,12 @@ public:
 				replaced_blocks += push_block_requests(job, input.blocks, i, count);
 				i += count;
 			}
+		}
+
+		// Set remaining data on all jobs, unlock inputs and resume
+		for (int job_index = 0; job_index < _job_count; ++job_index) {
+
+			JobData &job = _jobs[job_index];
 
 			if (job.shared_input.priority_position != input.priority_position || input.blocks.size() > 0) {
 				job.needs_sort = true;
@@ -191,12 +202,6 @@ public:
 				job.shared_input.use_exclusive_region = true;
 				job.shared_input.exclusive_region_extent = input.exclusive_region_extent;
 			}
-		}
-
-		// Unlock inputs and resume
-		for (int job_index = 0; job_index < _job_count; ++job_index) {
-
-			JobData &job = _jobs[job_index];
 
 			bool should_run = !job.shared_input.is_empty();
 
@@ -266,6 +271,7 @@ private:
 		Thread *thread = nullptr;
 		uint32_t sync_interval_ms = 100;
 		uint32_t job_index = -1;
+		bool duplicate_rejection = false;
 
 		Processor_T processor;
 	};
@@ -285,22 +291,29 @@ private:
 		CRASH_COND(end > input_blocks.size());
 
 		for (int i = begin; i < end; ++i) {
+
 			const InputBlock &block = input_blocks[i];
-
 			CRASH_COND(block.lod >= MAX_LOD)
-			int *index = job.block_indexes[block.lod].getptr(block.position);
 
-			// TODO When using more than one thread, duplicate rejection is less effective... is it relevant to keep it at all?
-			if (index) {
-				// The block is already in the update queue, replace it
-				++replaced_blocks;
-				job.shared_input.blocks[*index] = block;
+			if (job.duplicate_rejection) {
+
+				int *index = job.block_indexes[block.lod].getptr(block.position);
+
+				// TODO When using more than one thread, duplicate rejection is less effective... is it relevant to keep it at all?
+				if (index) {
+					// The block is already in the update queue, replace it
+					++replaced_blocks;
+					job.shared_input.blocks[*index] = block;
+
+				} else {
+					// Append new block request
+					int j = job.shared_input.blocks.size();
+					job.shared_input.blocks.push_back(block);
+					job.block_indexes[block.lod][block.position] = j;
+				}
 
 			} else {
-				// Append new block request
-				int j = job.shared_input.blocks.size();
 				job.shared_input.blocks.push_back(block);
-				job.block_indexes[block.lod][block.position] = j;
 			}
 		}
 
@@ -434,8 +447,10 @@ private:
 
 			data.shared_input.blocks.clear();
 
-			for (unsigned int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
-				data.block_indexes[lod_index].clear();
+			if (data.duplicate_rejection) {
+				for (unsigned int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+					data.block_indexes[lod_index].clear();
+				}
 			}
 
 			needs_sort = data.needs_sort;
@@ -466,13 +481,29 @@ private:
 
 				if (!box.contains(ib.position)) {
 
-					Vector3i shifted_block_pos = data.input.blocks.back().position;
+					// Indicate the caller that we dropped that block.
+					// This can help troubleshoot bugs in some situations.
+					OutputBlock ob;
+					ob.position = ib.position;
+					ob.lod = ib.lod;
+					ob.drop_hint = true;
+					data.output.blocks.push_back(ob);
 
-					data.input.blocks[i] = data.input.blocks.back();
+					// We'll put that block in replacement of the dropped one and pop the last cell,
+					// so we don't need to shift every following blocks
+					const InputBlock &shifted_block = data.input.blocks.back();
+
+					if (data.duplicate_rejection) {
+						data.block_indexes[ib.lod].erase(ib.position);
+						data.block_indexes[shifted_block.lod][shifted_block.position] = i;
+					}
+
+					// Do this last because it invalidates `ib`
+					data.input.blocks[i] = shifted_block;
 					data.input.blocks.pop_back();
 
-					data.block_indexes[ib.lod].erase(ib.position);
-					data.block_indexes[ib.lod][shifted_block_pos] = i;
+					// Move back to redo this index, since we replaced the current block
+					--i;
 
 					//++dropped_count;
 				}

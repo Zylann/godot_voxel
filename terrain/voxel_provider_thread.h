@@ -1,90 +1,44 @@
-#ifndef VOXEL_PROVIDER_THREAD_H
-#define VOXEL_PROVIDER_THREAD_H
+#ifndef VOXEL_DATA_LOADER_H
+#define VOXEL_DATA_LOADER_H
 
-#include "../math/rect3i.h"
-#include <core/resource.h>
-#include <vector>
+#include "block_thread_manager.h"
 
 class VoxelProvider;
 class VoxelBuffer;
-class Thread;
-class Semaphore;
 
-class VoxelProviderThread {
+// TODO Rename file
+class VoxelDataLoader {
 public:
-	struct ImmergeInput {
-		Vector3i origin;
-		Ref<VoxelBuffer> voxels;
-		int lod = 0;
+	struct InputBlockData {
+		Ref<VoxelBuffer> voxels_to_save;
 	};
 
-	struct EmergeInput {
-		Vector3i block_position;
-		int lod = 0;
+	struct OutputBlockData {
+		Ref<VoxelBuffer> voxels_loaded;
 	};
 
-	struct InputData {
-		std::vector<ImmergeInput> blocks_to_immerge;
-		std::vector<EmergeInput> blocks_to_emerge;
-		Vector3i priority_block_position; // In LOD0 block coordinates
-		int exclusive_region_extent = 0;
-		bool use_exclusive_region = false;
+	struct Processor {
+		void process_block(const InputBlockData &input, OutputBlockData &output, Vector3i block_position, unsigned int lod);
 
-		inline bool is_empty() {
-			return blocks_to_emerge.empty() && blocks_to_immerge.empty();
-		}
+		Ref<VoxelProvider> provider;
+		int block_size_pow2 = 0;
 	};
 
-	struct EmergeOutput {
-		Ref<VoxelBuffer> voxels;
-		Vector3i origin_in_voxels; // TODO Remove this, redundant now
-		Vector3i block_position;
-		int lod = 0;
-	};
+	typedef VoxelBlockThreadManager<InputBlockData, OutputBlockData, Processor> Mgr;
+	typedef Mgr::InputBlock InputBlock;
+	typedef Mgr::OutputBlock OutputBlock;
+	typedef Mgr::Input Input;
+	typedef Mgr::Output Output;
+	typedef Mgr::Stats Stats;
 
-	struct Stats {
-		bool first = true;
-		uint64_t min_time = 0;
-		uint64_t max_time = 0;
-		int remaining_blocks = 0;
-		uint64_t sort_time = 0;
-	};
+	VoxelDataLoader(int thread_count, Ref<VoxelProvider> provider, int block_size_pow2);
+	~VoxelDataLoader();
 
-	struct OutputData {
-		Vector<EmergeOutput> emerged_blocks;
-		Stats stats;
-	};
-
-	VoxelProviderThread(Ref<VoxelProvider> provider, int block_size_pow2);
-	~VoxelProviderThread();
-
-	void push(const InputData &input);
-	void pop(OutputData &out_data);
-
-	static Dictionary to_dictionary(const Stats &stats);
+	void push(const Input &input) { _mgr->push(input); }
+	void pop(Output &output) { _mgr->pop(output); }
 
 private:
-	static void _thread_func(void *p_self);
-
-	void thread_func();
-	void thread_sync(int emerge_index, Stats stats, uint64_t &out_sort_time);
-
-private:
-	InputData _shared_input;
-	Mutex *_input_mutex;
-
-	Vector<EmergeOutput> _shared_output;
-	Stats _shared_stats;
-	Mutex *_output_mutex;
-
-	Semaphore *_semaphore;
-	bool _thread_exit;
-	Thread *_thread;
-	InputData _input;
-	Vector<EmergeOutput> _output;
-	int _block_size_pow2;
-
-	Ref<VoxelProvider> _voxel_provider;
+	Mgr *_mgr = nullptr;
 };
 
-#endif // VOXEL_PROVIDER_THREAD_H
+#endif // VOXEL_DATA_LOADER_H

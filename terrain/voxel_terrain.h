@@ -62,7 +62,7 @@ public:
 
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
-		VoxelProviderThread::Stats provider;
+		VoxelDataLoader::Stats provider;
 		uint32_t mesh_alloc_time;
 		int updated_blocks;
 		int dropped_provider_blocks;
@@ -135,7 +135,7 @@ private:
 	Vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
 
 	Ref<VoxelProvider> _provider;
-	VoxelProviderThread *_provider_thread;
+	VoxelDataLoader *_provider_thread;
 
 	Ref<VoxelLibrary> _library;
 	VoxelMeshUpdater *_block_updater;
