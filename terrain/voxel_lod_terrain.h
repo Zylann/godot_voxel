@@ -111,6 +111,11 @@ private:
 
 		// Members for memory caching
 		std::vector<Vector3i> blocks_to_load;
+
+#ifdef TOOLS_ENABLED
+		// TODO Debug, may be removed in the future
+		HashMap<Vector3i, int, Vector3iHasher> debug_unexpected_load_drop_time;
+#endif
 	};
 
 	Lod _lods[MAX_LOD];

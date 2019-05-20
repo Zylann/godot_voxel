@@ -220,6 +220,15 @@ Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, unsigned int lod_index
 		loading_state = 1;
 	}
 
+#ifdef TOOLS_ENABLED
+	int debug_unexpected_drop_time = -10000;
+	const int *ptr = lod.debug_unexpected_load_drop_time.getptr(bpos);
+	if (ptr) {
+		debug_unexpected_drop_time = *ptr;
+	}
+	d["debug_unexpected_drop_time"] = debug_unexpected_drop_time;
+#endif
+
 	d["loading"] = loading_state;
 	d["meshed"] = meshed;
 	d["visible"] = visible;
@@ -594,6 +603,9 @@ void VoxelLodTerrain::_process() {
 				// We can recover with the removal from `loading_blocks` so it will be re-queried again later...
 				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
 								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
+#ifdef TOOLS_ENABLED
+				lod.debug_unexpected_load_drop_time[ob.position] = OS::get_singleton()->get_ticks_msec();
+#endif
 				++_stats.dropped_block_loads;
 				continue;
 			}
