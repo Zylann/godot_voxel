@@ -1249,7 +1249,7 @@ static const int g_corner_map_bottom[4] = { 3, 2, 1, 0 };
 
 void add_marching_squares_skirts(const Vector3 *corners, const HermiteValue *values, MeshBuilder &mesh_builder, Vector3 min_pos, Vector3 max_pos) {
 
-	float max_distance = 0.1f; // Max distance to the isosurface
+	float max_distance = 0.2f; // Max distance to the isosurface
 
 	if (corners[0].z == min_pos.z) {
 		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_back);
