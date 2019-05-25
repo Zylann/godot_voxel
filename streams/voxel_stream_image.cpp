@@ -1,4 +1,4 @@
-#include "voxel_provider_image.h"
+#include "voxel_stream_image.h"
 
 VoxelStreamImage::VoxelStreamImage() :
 		_channel(0) {

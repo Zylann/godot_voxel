@@ -4,7 +4,6 @@
 #include "../voxel_buffer.h"
 #include <core/resource.h>
 
-// TODO Rename VoxelStream
 // Provides access to a source of paged voxel data.
 // Must be implemented in a multi-thread-safe way.
 class VoxelStream : public Resource {
@@ -20,4 +19,4 @@ protected:
 	void _immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
 };
 
-#endif // VOXEL_PROVIDER_H
+#endif // VOXEL_STREAM_H

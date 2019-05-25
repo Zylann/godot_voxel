@@ -1,7 +1,7 @@
 #ifndef VOXEL_TERRAIN_SYSTEM_H
 #define VOXEL_TERRAIN_SYSTEM_H
 
-#include "../providers/voxel_provider.h"
+#include "../streams/voxel_stream.h"
 #include "voxel_data_loader.h"
 #include "voxel_map.h"
 #include "voxel_mesh_updater.h"

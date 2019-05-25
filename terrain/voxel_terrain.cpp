@@ -1,5 +1,5 @@
 #include "voxel_terrain.h"
-#include "../providers/voxel_provider_test.h"
+#include "../streams/voxel_stream_test.h"
 #include "../util/utility.h"
 #include "../util/voxel_raycast.h"
 #include "voxel_block.h"

@@ -1,7 +1,7 @@
-#ifndef VOXEL_PROVIDER_TEST_H
-#define VOXEL_PROVIDER_TEST_H
+#ifndef VOXEL_STREAM_TEST_H
+#define VOXEL_STREAM_TEST_H
 
-#include "voxel_provider.h"
+#include "voxel_stream.h"
 
 class VoxelStreamTest : public VoxelStream {
 	GDCLASS(VoxelStreamTest, VoxelStream)
@@ -47,4 +47,4 @@ private:
 	Vector3i _pattern_size;
 };
 
-#endif // VOXEL_PROVIDER_TEST_H
+#endif // VOXEL_STREAM_TEST_H

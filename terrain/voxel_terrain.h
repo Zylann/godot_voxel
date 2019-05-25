@@ -3,7 +3,7 @@
 
 #include "../math/rect3i.h"
 #include "../math/vector3i.h"
-#include "../providers/voxel_provider.h"
+#include "../streams/voxel_stream.h"
 #include "../util/zprofiling.h"
 #include "voxel_data_loader.h"
 #include "voxel_mesh_updater.h"

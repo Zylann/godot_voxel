@@ -1,5 +1,5 @@
 #include "voxel_data_loader.h"
-#include "../providers/voxel_provider.h"
+#include "../streams/voxel_stream.h"
 #include "../util/utility.h"
 
 VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> provider, int block_size_pow2) {

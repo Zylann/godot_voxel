@@ -1,4 +1,4 @@
-#include "voxel_provider.h"
+#include "voxel_stream.h"
 #include <core/script_language.h>
 
 void VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {

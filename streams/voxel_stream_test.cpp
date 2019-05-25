@@ -1,4 +1,4 @@
-#include "voxel_provider_test.h"
+#include "voxel_stream_test.h"
 
 VARIANT_ENUM_CAST(VoxelStreamTest::Mode)
 

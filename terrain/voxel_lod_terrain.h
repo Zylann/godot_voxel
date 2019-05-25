@@ -1,7 +1,7 @@
 #ifndef VOXEL_LOD_TERRAIN_HPP
 #define VOXEL_LOD_TERRAIN_HPP
 
-#include "../providers/voxel_provider.h"
+#include "../streams/voxel_stream.h"
 #include "lod_octree.h"
 #include "voxel_data_loader.h"
 #include "voxel_map.h"

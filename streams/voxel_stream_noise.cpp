@@ -1,4 +1,4 @@
-#include "voxel_provider_noise.h"
+#include "voxel_stream_noise.h"
 
 void VoxelStreamNoise::set_noise(Ref<OpenSimplexNoise> noise) {
 	_noise = noise;

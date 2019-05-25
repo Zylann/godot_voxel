@@ -1,7 +1,7 @@
-#ifndef HEADER_VOXEL_PROVIDER_IMAGE
-#define HEADER_VOXEL_PROVIDER_IMAGE
+#ifndef HEADER_VOXEL_STREAM_IMAGE
+#define HEADER_VOXEL_STREAM_IMAGE
 
-#include "voxel_provider.h"
+#include "voxel_stream.h"
 #include <core/image.h>
 
 // Provides infinite tiling heightmap based on an image
@@ -26,4 +26,4 @@ private:
 	int _channel;
 };
 
-#endif // HEADER_VOXEL_PROVIDER_IMAGE
+#endif // HEADER_VOXEL_STREAM_IMAGE
