@@ -181,8 +181,7 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 	return true;
 }
 
-// TODO Rename compress_uniform_channels()
-void VoxelBuffer::optimize() {
+void VoxelBuffer::compress_uniform_channels() {
 	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
 		if (_channels[i].data && is_uniform(i)) {
 			clear_channel(i, _channels[i].data[0]);
@@ -305,7 +304,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("copy_from_area", "other", "src_min", "src_max", "dst_min", "channel"), &VoxelBuffer::_copy_from_area_binding, DEFVAL(0));
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);
-	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::optimize);
+	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::compress_uniform_channels);
 
 	BIND_ENUM_CONSTANT(CHANNEL_TYPE);
 	BIND_ENUM_CONSTANT(CHANNEL_ISOLEVEL);

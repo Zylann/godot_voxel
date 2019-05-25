@@ -78,7 +78,7 @@ public:
 
 	bool is_uniform(unsigned int channel_index) const;
 
-	void optimize();
+	void compress_uniform_channels();
 
 	void copy_from(const VoxelBuffer &other, unsigned int channel_index = 0);
 	void copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index = 0);
