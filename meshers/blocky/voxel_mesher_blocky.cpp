@@ -166,8 +166,6 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 			for (unsigned int y = min.y; y < max.y; ++y) {
 				// min and max are chosen such that you can visit 1 neighbor away from the current voxel without size check
 
-				// TODO In this intensive routine, there is a way to make voxel access fastest by getting a pointer to the channel,
-				// and using offset lookup to get neighbors rather than going through get_voxel validations
 				int voxel_index = y + x * row_size + z * deck_size;
 				int voxel_id = type_buffer[voxel_index];
 

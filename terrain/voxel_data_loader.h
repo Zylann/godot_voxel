@@ -6,7 +6,6 @@
 class VoxelProvider;
 class VoxelBuffer;
 
-// TODO Rename file
 class VoxelDataLoader {
 public:
 	struct InputBlockData {

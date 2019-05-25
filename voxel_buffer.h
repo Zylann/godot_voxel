@@ -95,7 +95,6 @@ public:
 	//		return _size.y * (x + _size.x * z);
 	//	}
 
-	// TODO Rename get_cells_count()
 	_FORCE_INLINE_ unsigned int get_volume() const {
 		return _size.x * _size.y * _size.z;
 	}
