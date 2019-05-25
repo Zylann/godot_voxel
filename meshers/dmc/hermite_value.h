@@ -8,12 +8,11 @@
 namespace dmc {
 
 struct HermiteValue {
-	// TODO Rename distance, or change usage to be a density
-	float value; // Signed "distance" to surface
+	float sdf; // Signed "distance" to surface
 	Vector3 gradient; // Derivation of the density
 
 	HermiteValue() :
-			value(1.0) {
+			sdf(1.0) {
 	}
 };
 
@@ -30,7 +29,7 @@ inline HermiteValue get_hermite_value(const VoxelBuffer &voxels, unsigned int x,
 
 	HermiteValue v;
 
-	v.value = voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
+	v.sdf = voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
 
 	Vector3 gradient;
 
@@ -73,7 +72,7 @@ inline HermiteValue get_interpolated_hermite_value(const VoxelBuffer &voxels, Ve
 	Vector3 rpos = pos - Vector3(x0, y0, z0);
 
 	HermiteValue v;
-	v.value = ::interpolate(v0.value, v1.value, v2.value, v3.value, v4.value, v5.value, v6.value, v7.value, rpos);
+	v.sdf = ::interpolate(v0.sdf, v1.sdf, v2.sdf, v3.sdf, v4.sdf, v5.sdf, v6.sdf, v7.sdf, rpos);
 	v.gradient = ::interpolate(v0.gradient, v1.gradient, v2.gradient, v3.gradient, v4.gradient, v5.gradient, v6.gradient, v7.gradient, rpos);
 
 	return v;

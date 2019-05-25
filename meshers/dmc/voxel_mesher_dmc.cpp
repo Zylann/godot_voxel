@@ -53,7 +53,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 	// Don't split if nothing is inside, i.e isolevel distance is greater than the size of the cube we are in
 	Vector3i center_pos = node_origin + Vector3i(node_size / 2);
 	HermiteValue center_value = voxels.get_hermite_value(center_pos.x, center_pos.y, center_pos.z);
-	if (Math::abs(center_value.value) > SQRT3 * (float)node_size) {
+	if (Math::abs(center_value.sdf) > SQRT3 * (float)node_size) {
 		return false;
 	}
 
@@ -136,7 +136,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 		if (gradient_magnitude < FLT_EPSILON) {
 			gradient_magnitude = 1.0;
 		}
-		error += Math::abs(value.value - interpolated_value) / gradient_magnitude;
+		error += Math::abs(value.sdf - interpolated_value) / gradient_magnitude;
 		if (error >= geometric_error) {
 			return true;
 		}
@@ -838,10 +838,10 @@ void DualGridGenerator::create_border_cells(
 }
 
 inline bool is_surface_near(OctreeNode *node) {
-	if (node->center_value.value == 0) {
+	if (node->center_value.sdf == 0) {
 		return true;
 	}
-	return Math::abs(node->center_value.value) < node->size * SQRT3 * NEAR_SURFACE_FACTOR;
+	return Math::abs(node->center_value.sdf) < node->size * SQRT3 * NEAR_SURFACE_FACTOR;
 }
 
 void DualGridGenerator::vert_proc(
@@ -1121,22 +1121,22 @@ void DualGridGenerator::node_proc(OctreeNode *node) {
 
 inline Vector3 interpolate(const Vector3 &v0, const Vector3 &v1, const HermiteValue &val0, const HermiteValue &val1, Vector3 &out_normal) {
 
-	if (Math::abs(val0.value - SURFACE_ISO_LEVEL) <= FLT_EPSILON) {
+	if (Math::abs(val0.sdf - SURFACE_ISO_LEVEL) <= FLT_EPSILON) {
 		out_normal = val0.gradient;
 		return v0;
 	}
 
-	if (Math::abs(val1.value - SURFACE_ISO_LEVEL) <= FLT_EPSILON) {
+	if (Math::abs(val1.sdf - SURFACE_ISO_LEVEL) <= FLT_EPSILON) {
 		out_normal = val1.gradient;
 		return v1;
 	}
 
-	if (Math::abs(val1.value - val0.value) <= FLT_EPSILON) {
+	if (Math::abs(val1.sdf - val0.sdf) <= FLT_EPSILON) {
 		out_normal = val0.gradient;
 		return v0;
 	}
 
-	float mu = (SURFACE_ISO_LEVEL - val0.value) / (val1.value - val0.value);
+	float mu = (SURFACE_ISO_LEVEL - val0.sdf) / (val1.sdf - val0.sdf);
 	out_normal = val0.gradient + mu * (val1.gradient - val0.gradient);
 	out_normal.normalize();
 
@@ -1155,7 +1155,7 @@ void polygonize_cell_marching_squares(const Vector3 *cube_corners, const Hermite
 	// Find out the case.
 	for (size_t i = 0; i < 4; ++i) {
 		values[i] = cube_values[corner_map[i]];
-		if (values[i].value <= SURFACE_ISO_LEVEL) {
+		if (values[i].sdf <= SURFACE_ISO_LEVEL) {
 			square_index |= 1 << i;
 		}
 	}
@@ -1163,10 +1163,10 @@ void polygonize_cell_marching_squares(const Vector3 *cube_corners, const Hermite
 	// Don't generate triangles if we are completely inside and far enough away from the surface
 	max_distance = -max_distance;
 	if (square_index == 15 &&
-			values[0].value <= max_distance &&
-			values[1].value <= max_distance &&
-			values[2].value <= max_distance &&
-			values[3].value <= max_distance) {
+			values[0].sdf <= max_distance &&
+			values[1].sdf <= max_distance &&
+			values[2].sdf <= max_distance &&
+			values[3].sdf <= max_distance) {
 		return;
 	}
 
@@ -1276,7 +1276,7 @@ void polygonize_cell_marching_cubes(const Vector3 *corners, const HermiteValue *
 	unsigned char case_index = 0;
 
 	for (int i = 0; i < 8; ++i) {
-		if (values[i].value >= SURFACE_ISO_LEVEL) {
+		if (values[i].sdf >= SURFACE_ISO_LEVEL) {
 			case_index |= 1 << i;
 		}
 	}
