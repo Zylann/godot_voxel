@@ -107,5 +107,6 @@ void VoxelProviderImage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelProviderImage::get_channel);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, "Image"), "set_image", "get_image");
+	// TODO Enum hint
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel"), "set_channel", "get_channel");
 }

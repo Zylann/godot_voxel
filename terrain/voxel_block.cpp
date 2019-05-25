@@ -29,6 +29,10 @@ VoxelBlock::~VoxelBlock() {
 }
 
 void VoxelBlock::set_mesh(Ref<Mesh> mesh, Ref<World> world) {
+	// TODO Don't add mesh instance to the world if it's not visible.
+	// I suspect Godot is trying to include invisible mesh instances into the culling process,
+	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
+	// This needs investigation.
 
 	VisualServer &vs = *VisualServer::get_singleton();
 

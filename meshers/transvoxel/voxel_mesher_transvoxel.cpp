@@ -3,6 +3,9 @@
 #include "transvoxel_tables.cpp"
 #include <core/os/os.h>
 
+// This is a very partial implementation, it is barely equivalent to marching cubes.
+// It doesn't include transition cells.
+
 namespace {
 
 inline float tof(int8_t v) {
