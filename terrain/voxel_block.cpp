@@ -7,7 +7,7 @@ VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned 
 	ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), NULL);
 
 	VoxelBlock *block = memnew(VoxelBlock);
-	block->pos = bpos;
+	block->position = bpos;
 	block->lod_index = p_lod_index;
 	block->_position_in_voxels = bpos * (size << p_lod_index);
 	block->voxels = buffer;

@@ -361,9 +361,9 @@ bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, uns
 
 	if (!block->has_been_meshed()) {
 		if (!block->is_mesh_update_scheduled()) {
-			if (lod.map->is_block_surrounded(block->pos)) {
+			if (lod.map->is_block_surrounded(block->position)) {
 
-				lod.blocks_pending_update.push_back(block->pos);
+				lod.blocks_pending_update.push_back(block->position);
 				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
 
 			} else {

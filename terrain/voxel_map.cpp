@@ -105,7 +105,7 @@ int VoxelMap::get_default_voxel(unsigned int channel) {
 }
 
 VoxelBlock *VoxelMap::get_block(Vector3i bpos) {
-	if (_last_accessed_block && _last_accessed_block->pos == bpos) {
+	if (_last_accessed_block && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
 	VoxelBlock **p = _blocks.getptr(bpos);
@@ -118,7 +118,7 @@ VoxelBlock *VoxelMap::get_block(Vector3i bpos) {
 }
 
 const VoxelBlock *VoxelMap::get_block(Vector3i bpos) const {
-	if (_last_accessed_block && _last_accessed_block->pos == bpos) {
+	if (_last_accessed_block && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
 	const VoxelBlock *const *p = _blocks.getptr(bpos);
@@ -132,7 +132,7 @@ const VoxelBlock *VoxelMap::get_block(Vector3i bpos) const {
 
 void VoxelMap::set_block(Vector3i bpos, VoxelBlock *block) {
 	ERR_FAIL_COND(block == NULL);
-	if (_last_accessed_block == NULL || _last_accessed_block->pos == bpos) {
+	if (_last_accessed_block == NULL || _last_accessed_block->position == bpos) {
 		_last_accessed_block = block;
 	}
 	_blocks.set(bpos, block);
