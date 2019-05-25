@@ -46,7 +46,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 	if (params.smooth_surface) {
 		smooth_mesher.instance();
 		smooth_mesher->set_geometric_error(0.05);
-		smooth_mesher->set_octree_mode(VoxelMesherDMC::OCTREE_NONE);
+		smooth_mesher->set_simplify_mode(VoxelMesherDMC::SIMPLIFY_NONE);
 		smooth_mesher->set_seam_mode(VoxelMesherDMC::SEAM_MARCHING_SQUARE_SKIRTS);
 	}
 

@@ -1436,12 +1436,12 @@ VoxelMesherDMC::MeshMode VoxelMesherDMC::get_mesh_mode() const {
 	return _mesh_mode;
 }
 
-void VoxelMesherDMC::set_octree_mode(OctreeMode mode) {
-	_octree_mode = mode;
+void VoxelMesherDMC::set_simplify_mode(SimplifyMode mode) {
+	_simplify_mode = mode;
 }
 
-VoxelMesherDMC::OctreeMode VoxelMesherDMC::get_octree_mode() const {
-	return _octree_mode;
+VoxelMesherDMC::SimplifyMode VoxelMesherDMC::get_simplify_mode() const {
+	return _simplify_mode;
 }
 
 void VoxelMesherDMC::set_geometric_error(real_t geometric_error) {
@@ -1517,12 +1517,12 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 	//
 	// TODO This option might disappear once I find a good enough solution
 	dmc::OctreeNode *root = nullptr;
-	if (_octree_mode == OCTREE_BOTTOM_UP) {
+	if (_simplify_mode == SIMPLIFY_OCTREE_BOTTOM_UP) {
 
 		dmc::OctreeBuilderBottomUp octree_builder(voxels_access, _geometric_error, _octree_node_pool);
 		root = octree_builder.build(Vector3i(), chunk_size);
 
-	} else if (_octree_mode == OCTREE_TOP_DOWN) {
+	} else if (_simplify_mode == SIMPLIFY_OCTREE_TOP_DOWN) {
 
 		dmc::OctreeBuilderTopDown octree_builder(voxels_access, _geometric_error, _octree_node_pool);
 		root = octree_builder.build(Vector3i(), chunk_size);
@@ -1562,7 +1562,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 
 		root->recycle(_octree_node_pool);
 
-	} else if (_octree_mode == OCTREE_NONE) {
+	} else if (_simplify_mode == SIMPLIFY_NONE) {
 
 		// We throw away adaptivity for meshing speed.
 		// This is essentially regular marching cubes.
@@ -1595,7 +1595,7 @@ int VoxelMesherDMC::get_minimum_padding() const {
 VoxelMesher *VoxelMesherDMC::clone() {
 	VoxelMesherDMC *c = memnew(VoxelMesherDMC);
 	c->set_mesh_mode(_mesh_mode);
-	c->set_octree_mode(_octree_mode);
+	c->set_simplify_mode(_simplify_mode);
 	c->set_geometric_error(_geometric_error);
 	c->set_seam_mode(_seam_mode);
 	return c;
@@ -1615,8 +1615,8 @@ void VoxelMesherDMC::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_mesh_mode", "mode"), &VoxelMesherDMC::set_mesh_mode);
 	ClassDB::bind_method(D_METHOD("get_mesh_mode"), &VoxelMesherDMC::get_mesh_mode);
 
-	ClassDB::bind_method(D_METHOD("set_octree_mode", "mode"), &VoxelMesherDMC::set_octree_mode);
-	ClassDB::bind_method(D_METHOD("get_octree_mode"), &VoxelMesherDMC::get_octree_mode);
+	ClassDB::bind_method(D_METHOD("set_simplify_mode", "mode"), &VoxelMesherDMC::set_simplify_mode);
+	ClassDB::bind_method(D_METHOD("get_simplify_mode"), &VoxelMesherDMC::get_simplify_mode);
 
 	ClassDB::bind_method(D_METHOD("set_geometric_error", "error"), &VoxelMesherDMC::set_geometric_error);
 	ClassDB::bind_method(D_METHOD("get_geometric_error"), &VoxelMesherDMC::get_geometric_error);
@@ -1631,9 +1631,9 @@ void VoxelMesherDMC::_bind_methods() {
 	BIND_ENUM_CONSTANT(MESH_DEBUG_OCTREE);
 	BIND_ENUM_CONSTANT(MESH_DEBUG_DUAL_GRID);
 
-	BIND_ENUM_CONSTANT(OCTREE_BOTTOM_UP);
-	BIND_ENUM_CONSTANT(OCTREE_TOP_DOWN);
-	BIND_ENUM_CONSTANT(OCTREE_NONE);
+	BIND_ENUM_CONSTANT(SIMPLIFY_OCTREE_BOTTOM_UP);
+	BIND_ENUM_CONSTANT(SIMPLIFY_OCTREE_TOP_DOWN);
+	BIND_ENUM_CONSTANT(SIMPLIFY_NONE);
 
 	BIND_ENUM_CONSTANT(SEAM_NONE);
 	BIND_ENUM_CONSTANT(SEAM_MARCHING_SQUARE_SKIRTS);

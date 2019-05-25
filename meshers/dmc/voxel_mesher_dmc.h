@@ -74,11 +74,10 @@ public:
 		MESH_DEBUG_DUAL_GRID
 	};
 
-	// TODO Rename SimplifyMode because octree isn't the only way
-	enum OctreeMode {
-		OCTREE_BOTTOM_UP,
-		OCTREE_TOP_DOWN,
-		OCTREE_NONE
+	enum SimplifyMode {
+		SIMPLIFY_OCTREE_BOTTOM_UP,
+		SIMPLIFY_OCTREE_TOP_DOWN,
+		SIMPLIFY_NONE
 	};
 
 	enum SeamMode {
@@ -93,8 +92,8 @@ public:
 	void set_mesh_mode(MeshMode mode);
 	MeshMode get_mesh_mode() const;
 
-	void set_octree_mode(OctreeMode mode);
-	OctreeMode get_octree_mode() const;
+	void set_simplify_mode(SimplifyMode mode);
+	SimplifyMode get_simplify_mode() const;
 
 	void set_geometric_error(real_t geometric_error);
 	float get_geometric_error() const;
@@ -118,7 +117,7 @@ private:
 	dmc::OctreeNodePool _octree_node_pool;
 	real_t _geometric_error = 0.1;
 	MeshMode _mesh_mode = MESH_NORMAL;
-	OctreeMode _octree_mode = OCTREE_BOTTOM_UP;
+	SimplifyMode _simplify_mode = SIMPLIFY_OCTREE_BOTTOM_UP;
 	SeamMode _seam_mode = SEAM_NONE;
 
 	struct Stats {
@@ -131,7 +130,7 @@ private:
 	Stats _stats;
 };
 
-VARIANT_ENUM_CAST(VoxelMesherDMC::OctreeMode)
+VARIANT_ENUM_CAST(VoxelMesherDMC::SimplifyMode)
 VARIANT_ENUM_CAST(VoxelMesherDMC::MeshMode)
 VARIANT_ENUM_CAST(VoxelMesherDMC::SeamMode)
 
