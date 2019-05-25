@@ -19,7 +19,7 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelProvider> provider, 
 	}
 
 	// TODO Re-enable duplicate rejection, was turned off to investigate some bugs
-	_mgr = memnew(Mgr(thread_count, 500, processors, false));
+	_mgr = memnew(Mgr(thread_count, 500, processors, true));
 }
 
 VoxelDataLoader::~VoxelDataLoader() {
