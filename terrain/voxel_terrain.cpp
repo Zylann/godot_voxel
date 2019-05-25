@@ -16,7 +16,7 @@ VoxelTerrain::VoxelTerrain() {
 	_view_distance_blocks = 8;
 	_last_view_distance_blocks = 0;
 
-	_provider_thread = NULL;
+	_stream_thread = NULL;
 	_block_updater = NULL;
 
 	_generate_collisions = false;
@@ -26,8 +26,8 @@ VoxelTerrain::VoxelTerrain() {
 
 VoxelTerrain::~VoxelTerrain() {
 	print_line("Destroying VoxelTerrain");
-	if (_provider_thread) {
-		memdelete(_provider_thread);
+	if (_stream_thread) {
+		memdelete(_stream_thread);
 	}
 	if (_block_updater) {
 		memdelete(_block_updater);
@@ -67,16 +67,16 @@ void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 	}
 }
 
-void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
-	if (provider != _provider) {
+void VoxelTerrain::set_stream(Ref<VoxelStream> provider) {
+	if (provider != _stream) {
 
-		if (_provider_thread) {
-			memdelete(_provider_thread);
-			_provider_thread = NULL;
+		if (_stream_thread) {
+			memdelete(_stream_thread);
+			_stream_thread = NULL;
 		}
 
-		_provider = provider;
-		_provider_thread = memnew(VoxelDataLoader(1, _provider, _map->get_block_size_pow2()));
+		_stream = provider;
+		_stream_thread = memnew(VoxelDataLoader(1, _stream, _map->get_block_size_pow2()));
 
 		// The whole map might change, so make all area dirty
 		// TODO Actually, we should regenerate the whole map, not just update all its blocks
@@ -84,8 +84,8 @@ void VoxelTerrain::set_provider(Ref<VoxelProvider> provider) {
 	}
 }
 
-Ref<VoxelProvider> VoxelTerrain::get_provider() const {
-	return _provider;
+Ref<VoxelStream> VoxelTerrain::get_stream() const {
+	return _stream;
 }
 
 Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
@@ -215,7 +215,7 @@ void VoxelTerrain::immerge_block(Vector3i bpos) {
 Dictionary VoxelTerrain::get_statistics() const {
 
 	Dictionary provider = VoxelDataLoader::Mgr::to_dictionary(_stats.provider);
-	provider["dropped_blocks"] = _stats.dropped_provider_blocks;
+	provider["dropped_blocks"] = _stats.dropped_stream_blocks;
 
 	Dictionary updater = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
 	updater["updated_blocks"] = _stats.updated_blocks;
@@ -618,7 +618,7 @@ void VoxelTerrain::_process() {
 		//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
 		_blocks_pending_load.clear();
 
-		_provider_thread->push(input);
+		_stream_thread->push(input);
 	}
 
 	_stats.time_send_load_requests = os.get_ticks_usec() - time_before;
@@ -631,11 +631,11 @@ void VoxelTerrain::_process() {
 		const Vector3i block_size(bs, bs, bs);
 
 		VoxelDataLoader::Output output;
-		_provider_thread->pop(output);
+		_stream_thread->pop(output);
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 
 		_stats.provider = output.stats;
-		_stats.dropped_provider_blocks = 0;
+		_stats.dropped_stream_blocks = 0;
 
 		for (int i = 0; i < output.blocks.size(); ++i) {
 
@@ -646,7 +646,7 @@ void VoxelTerrain::_process() {
 				VoxelTerrain::BlockDirtyState *state = _dirty_blocks.getptr(block_pos);
 				if (state == NULL || *state != BLOCK_LOAD) {
 					// That block was not requested, drop it
-					++_stats.dropped_provider_blocks;
+					++_stats.dropped_stream_blocks;
 					continue;
 				}
 			}
@@ -657,7 +657,7 @@ void VoxelTerrain::_process() {
 				// TODO Implement recovery like `VoxelLodTerrain`?
 				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
 								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
-				++_stats.dropped_provider_blocks;
+				++_stats.dropped_stream_blocks;
 				continue;
 			}
 
@@ -962,8 +962,8 @@ VoxelTerrain::BlockDirtyState VoxelTerrain::get_block_state(Vector3 p_bpos) cons
 
 void VoxelTerrain::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_provider", "provider"), &VoxelTerrain::set_provider);
-	ClassDB::bind_method(D_METHOD("get_provider"), &VoxelTerrain::get_provider);
+	ClassDB::bind_method(D_METHOD("set_stream", "provider"), &VoxelTerrain::set_stream);
+	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelTerrain::get_stream);
 
 	ClassDB::bind_method(D_METHOD("set_voxel_library", "library"), &VoxelTerrain::set_voxel_library);
 	ClassDB::bind_method(D_METHOD("get_voxel_library"), &VoxelTerrain::get_voxel_library);
@@ -993,7 +993,7 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::get_statistics);
 	ClassDB::bind_method(D_METHOD("get_block_state", "block_pos"), &VoxelTerrain::get_block_state);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelProvider"), "set_provider", "get_provider");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"), "set_voxel_library", "get_voxel_library");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");

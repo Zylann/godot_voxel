@@ -15,7 +15,7 @@ class VoxelLibrary;
 
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.
-// Data is streamed using a VoxelProvider.
+// Data is streamed using a VoxelStream.
 class VoxelTerrain : public Spatial {
 	GDCLASS(VoxelTerrain, Spatial)
 public:
@@ -31,8 +31,8 @@ public:
 	VoxelTerrain();
 	~VoxelTerrain();
 
-	void set_provider(Ref<VoxelProvider> provider);
-	Ref<VoxelProvider> get_provider() const;
+	void set_stream(Ref<VoxelStream> provider);
+	Ref<VoxelStream> get_stream() const;
 
 	void set_voxel_library(Ref<VoxelLibrary> library);
 	Ref<VoxelLibrary> get_voxel_library() const;
@@ -65,7 +65,7 @@ public:
 		VoxelDataLoader::Stats provider;
 		uint32_t mesh_alloc_time;
 		int updated_blocks;
-		int dropped_provider_blocks;
+		int dropped_stream_blocks;
 		int dropped_updater_blocks;
 		int remaining_main_thread_blocks;
 		uint64_t time_detect_required_blocks;
@@ -77,7 +77,7 @@ public:
 		Stats() :
 				mesh_alloc_time(0),
 				updated_blocks(0),
-				dropped_provider_blocks(0),
+				dropped_stream_blocks(0),
 				dropped_updater_blocks(0),
 				remaining_main_thread_blocks(0),
 				time_detect_required_blocks(0),
@@ -134,8 +134,8 @@ private:
 	HashMap<Vector3i, BlockDirtyState, Vector3iHasher> _dirty_blocks; // TODO Rename _block_states
 	Vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
 
-	Ref<VoxelProvider> _provider;
-	VoxelDataLoader *_provider_thread;
+	Ref<VoxelStream> _stream;
+	VoxelDataLoader *_stream_thread;
 
 	Ref<VoxelLibrary> _library;
 	VoxelMeshUpdater *_block_updater;

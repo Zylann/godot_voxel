@@ -3,7 +3,7 @@
 
 #include "block_thread_manager.h"
 
-class VoxelProvider;
+class VoxelStream;
 class VoxelBuffer;
 
 class VoxelDataLoader {
@@ -19,7 +19,7 @@ public:
 	struct Processor {
 		void process_block(const InputBlockData &input, OutputBlockData &output, Vector3i block_position, unsigned int lod);
 
-		Ref<VoxelProvider> provider;
+		Ref<VoxelStream> provider;
 		int block_size_pow2 = 0;
 	};
 
@@ -30,7 +30,7 @@ public:
 	typedef Mgr::Output Output;
 	typedef Mgr::Stats Stats;
 
-	VoxelDataLoader(int thread_count, Ref<VoxelProvider> provider, int block_size_pow2);
+	VoxelDataLoader(int thread_count, Ref<VoxelStream> provider, int block_size_pow2);
 	~VoxelDataLoader();
 
 	void push(const Input &input) { _mgr->push(input); }

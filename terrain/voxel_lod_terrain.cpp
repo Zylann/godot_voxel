@@ -23,8 +23,8 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 
 	print_line("Destroy VoxelLodTerrain");
 
-	if (_provider_thread) {
-		memdelete(_provider_thread);
+	if (_stream_thread) {
+		memdelete(_stream_thread);
 	}
 
 	if (_block_updater) {
@@ -40,8 +40,8 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 	_material = p_material;
 }
 
-Ref<VoxelProvider> VoxelLodTerrain::get_provider() const {
-	return _provider;
+Ref<VoxelStream> VoxelLodTerrain::get_stream() const {
+	return _stream;
 }
 
 int VoxelLodTerrain::get_block_size() const {
@@ -52,16 +52,16 @@ int VoxelLodTerrain::get_block_size_pow2() const {
 	return _lods[0].map->get_block_size_pow2();
 }
 
-void VoxelLodTerrain::set_provider(Ref<VoxelProvider> p_provider) {
-	if (p_provider != _provider) {
+void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
+	if (p_stream != _stream) {
 
-		if (_provider_thread) {
-			memdelete(_provider_thread);
-			_provider_thread = nullptr;
+		if (_stream_thread) {
+			memdelete(_stream_thread);
+			_stream_thread = nullptr;
 		}
 
-		_provider = p_provider;
-		_provider_thread = memnew(VoxelDataLoader(1, _provider, get_block_size_pow2()));
+		_stream = p_stream;
+		_stream_thread = memnew(VoxelDataLoader(1, _stream, get_block_size_pow2()));
 
 		// The whole map might change, so make all area dirty
 		// TODO Actually, we should regenerate the whole map, not just update all its blocks
@@ -560,7 +560,7 @@ void VoxelLodTerrain::_process() {
 		}
 
 		//print_line(String("Sending {0}").format(varray(input.blocks_to_emerge.size())));
-		_provider_thread->push(input);
+		_stream_thread->push(input);
 	}
 
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
@@ -570,7 +570,7 @@ void VoxelLodTerrain::_process() {
 	// It should only happen on first load, though.
 	{
 		VoxelDataLoader::Output output;
-		_provider_thread->pop(output);
+		_stream_thread->pop(output);
 		_stats.provider = output.stats;
 
 		//print_line(String("Loaded {0} blocks").format(varray(output.emerged_blocks.size())));
@@ -796,8 +796,8 @@ Dictionary VoxelLodTerrain::get_stats() const {
 
 void VoxelLodTerrain::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_provider", "provider"), &VoxelLodTerrain::set_provider);
-	ClassDB::bind_method(D_METHOD("get_provider"), &VoxelLodTerrain::get_provider);
+	ClassDB::bind_method(D_METHOD("set_stream", "provider"), &VoxelLodTerrain::set_stream);
+	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelLodTerrain::get_stream);
 
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &VoxelLodTerrain::set_material);
 	ClassDB::bind_method(D_METHOD("get_material"), &VoxelLodTerrain::get_material);
@@ -819,7 +819,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelLodTerrain::get_stats);
 	ClassDB::bind_method(D_METHOD("voxel_to_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_block_position);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelProvider"), "set_provider", "get_provider");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");

@@ -3,8 +3,8 @@
 
 #include "voxel_provider.h"
 
-class VoxelProviderTest : public VoxelProvider {
-	GDCLASS(VoxelProviderTest, VoxelProvider)
+class VoxelStreamTest : public VoxelStream {
+	GDCLASS(VoxelStreamTest, VoxelStream)
 
 public:
 	enum Mode {
@@ -12,7 +12,7 @@ public:
 		MODE_WAVES
 	};
 
-	VoxelProviderTest();
+	VoxelStreamTest();
 
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin, int lod);
 

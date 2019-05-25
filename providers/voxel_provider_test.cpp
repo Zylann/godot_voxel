@@ -1,35 +1,35 @@
 #include "voxel_provider_test.h"
 
-VARIANT_ENUM_CAST(VoxelProviderTest::Mode)
+VARIANT_ENUM_CAST(VoxelStreamTest::Mode)
 
-VoxelProviderTest::VoxelProviderTest() {
+VoxelStreamTest::VoxelStreamTest() {
 	_mode = MODE_WAVES;
 	_voxel_type = 1;
 	_pattern_size = Vector3i(10, 10, 10);
 }
 
-void VoxelProviderTest::set_mode(Mode mode) {
+void VoxelStreamTest::set_mode(Mode mode) {
 	_mode = mode;
 }
 
-void VoxelProviderTest::set_voxel_type(int t) {
+void VoxelStreamTest::set_voxel_type(int t) {
 	_voxel_type = t;
 }
 
-int VoxelProviderTest::get_voxel_type() const {
+int VoxelStreamTest::get_voxel_type() const {
 	return _voxel_type;
 }
 
-void VoxelProviderTest::set_pattern_size(Vector3i size) {
+void VoxelStreamTest::set_pattern_size(Vector3i size) {
 	ERR_FAIL_COND(size.x < 1 || size.y < 1 || size.z < 1);
 	_pattern_size = size;
 }
 
-void VoxelProviderTest::set_pattern_offset(Vector3i offset) {
+void VoxelStreamTest::set_pattern_offset(Vector3i offset) {
 	_pattern_offset = offset;
 }
 
-void VoxelProviderTest::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin, int lod) {
+void VoxelStreamTest::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin, int lod) {
 	ERR_FAIL_COND(out_buffer.is_null());
 
 	if (lod != 0) {
@@ -49,7 +49,7 @@ void VoxelProviderTest::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origi
 	}
 }
 
-void VoxelProviderTest::generate_block_flat(VoxelBuffer &out_buffer, Vector3i origin, int lod) {
+void VoxelStreamTest::generate_block_flat(VoxelBuffer &out_buffer, Vector3i origin, int lod) {
 
 	// TODO Don't expect a block pos, but a voxel pos!
 	Vector3i size = out_buffer.get_size();
@@ -67,7 +67,7 @@ void VoxelProviderTest::generate_block_flat(VoxelBuffer &out_buffer, Vector3i or
 	}
 }
 
-void VoxelProviderTest::generate_block_waves(VoxelBuffer &out_buffer, Vector3i origin, int lod) {
+void VoxelStreamTest::generate_block_waves(VoxelBuffer &out_buffer, Vector3i origin, int lod) {
 
 	// TODO Don't expect a block pos, but a voxel pos!
 	Vector3i size = out_buffer.get_size();
@@ -108,19 +108,19 @@ void VoxelProviderTest::generate_block_waves(VoxelBuffer &out_buffer, Vector3i o
 	}
 }
 
-void VoxelProviderTest::_bind_methods() {
+void VoxelStreamTest::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_mode", "mode"), &VoxelProviderTest::set_mode);
-	ClassDB::bind_method(D_METHOD("get_mode"), &VoxelProviderTest::get_mode);
+	ClassDB::bind_method(D_METHOD("set_mode", "mode"), &VoxelStreamTest::set_mode);
+	ClassDB::bind_method(D_METHOD("get_mode"), &VoxelStreamTest::get_mode);
 
-	ClassDB::bind_method(D_METHOD("set_voxel_type", "id"), &VoxelProviderTest::set_voxel_type);
-	ClassDB::bind_method(D_METHOD("get_voxel_type"), &VoxelProviderTest::get_voxel_type);
+	ClassDB::bind_method(D_METHOD("set_voxel_type", "id"), &VoxelStreamTest::set_voxel_type);
+	ClassDB::bind_method(D_METHOD("get_voxel_type"), &VoxelStreamTest::get_voxel_type);
 
-	ClassDB::bind_method(D_METHOD("set_pattern_size", "size"), &VoxelProviderTest::_set_pattern_size);
-	ClassDB::bind_method(D_METHOD("get_pattern_size"), &VoxelProviderTest::_get_pattern_size);
+	ClassDB::bind_method(D_METHOD("set_pattern_size", "size"), &VoxelStreamTest::_set_pattern_size);
+	ClassDB::bind_method(D_METHOD("get_pattern_size"), &VoxelStreamTest::_get_pattern_size);
 
-	ClassDB::bind_method(D_METHOD("set_pattern_offset", "offset"), &VoxelProviderTest::_set_pattern_offset);
-	ClassDB::bind_method(D_METHOD("get_pattern_offset"), &VoxelProviderTest::_get_pattern_offset);
+	ClassDB::bind_method(D_METHOD("set_pattern_offset", "offset"), &VoxelStreamTest::_set_pattern_offset);
+	ClassDB::bind_method(D_METHOD("get_pattern_offset"), &VoxelStreamTest::_get_pattern_offset);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Flat,Waves"), "set_mode", "get_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_type", PROPERTY_HINT_RANGE, "0,255,1"), "set_voxel_type", "get_voxel_type");

@@ -28,10 +28,10 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelLodTerrain>();
 
 	// Providers
-	ClassDB::register_class<VoxelProvider>();
-	ClassDB::register_class<VoxelProviderTest>();
-	ClassDB::register_class<VoxelProviderImage>();
-	ClassDB::register_class<VoxelProviderNoise>();
+	ClassDB::register_class<VoxelStream>();
+	ClassDB::register_class<VoxelStreamTest>();
+	ClassDB::register_class<VoxelStreamImage>();
+	ClassDB::register_class<VoxelStreamNoise>();
 
 	// Helpers
 	ClassDB::register_class<VoxelBoxMover>();

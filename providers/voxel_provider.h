@@ -1,5 +1,5 @@
-#ifndef VOXEL_PROVIDER_H
-#define VOXEL_PROVIDER_H
+#ifndef VOXEL_STREAM_H
+#define VOXEL_STREAM_H
 
 #include "../voxel_buffer.h"
 #include <core/resource.h>
@@ -7,8 +7,8 @@
 // TODO Rename VoxelStream
 // Provides access to a source of paged voxel data.
 // Must be implemented in a multi-thread-safe way.
-class VoxelProvider : public Resource {
-	GDCLASS(VoxelProvider, Resource)
+class VoxelStream : public Resource {
+	GDCLASS(VoxelStream, Resource)
 public:
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);

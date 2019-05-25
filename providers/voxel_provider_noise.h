@@ -5,8 +5,8 @@
 #include "voxel_provider.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
-class VoxelProviderNoise : public VoxelProvider {
-	GDCLASS(VoxelProviderNoise, VoxelProvider)
+class VoxelStreamNoise : public VoxelStream {
+	GDCLASS(VoxelStreamNoise, VoxelStream)
 public:
 	void set_noise(Ref<OpenSimplexNoise> noise);
 	Ref<OpenSimplexNoise> get_noise() const;

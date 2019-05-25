@@ -23,7 +23,7 @@ public:
 
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
-		VoxelProviderThread::Stats provider;
+		VoxelStreamThread::Stats provider;
 		uint64_t time_request_blocks_to_load = 0;
 		uint64_t time_process_load_responses = 0;
 		uint64_t time_request_blocks_to_update = 0;
@@ -33,8 +33,8 @@ public:
 	};
 
 private:
-	Ref<VoxelProvider> _provider;
-	VoxelProviderThread *_provider_thread = nullptr;
+	Ref<VoxelStream> _stream;
+	VoxelStreamThread *_stream_thread = nullptr;
 	VoxelMeshUpdater *_block_updater = nullptr;
 	std::vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
 

@@ -1,22 +1,22 @@
 #include "voxel_provider_image.h"
 
-VoxelProviderImage::VoxelProviderImage() :
+VoxelStreamImage::VoxelStreamImage() :
 		_channel(0) {
 }
 
-void VoxelProviderImage::set_image(Ref<Image> im) {
+void VoxelStreamImage::set_image(Ref<Image> im) {
 	_image = im;
 }
 
-Ref<Image> VoxelProviderImage::get_image() const {
+Ref<Image> VoxelStreamImage::get_image() const {
 	return _image;
 }
 
-void VoxelProviderImage::set_channel(VoxelBuffer::ChannelId channel) {
+void VoxelStreamImage::set_channel(VoxelBuffer::ChannelId channel) {
 	_channel = channel;
 }
 
-int VoxelProviderImage::get_channel() const {
+int VoxelStreamImage::get_channel() const {
 	return _channel;
 }
 
@@ -41,7 +41,7 @@ inline float get_height_blurred(Image &im, int x, int y) {
 
 } // namespace
 
-void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod) {
 
 	int ox = origin_in_voxels.x;
 	int oy = origin_in_voxels.y;
@@ -98,13 +98,13 @@ void VoxelProviderImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i or
 	image.unlock();
 }
 
-void VoxelProviderImage::_bind_methods() {
+void VoxelStreamImage::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_image", "image"), &VoxelProviderImage::set_image);
-	ClassDB::bind_method(D_METHOD("get_image"), &VoxelProviderImage::get_image);
+	ClassDB::bind_method(D_METHOD("set_image", "image"), &VoxelStreamImage::set_image);
+	ClassDB::bind_method(D_METHOD("get_image"), &VoxelStreamImage::get_image);
 
-	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelProviderImage::set_channel);
-	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelProviderImage::get_channel);
+	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelStreamImage::set_channel);
+	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelStreamImage::get_channel);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, "Image"), "set_image", "get_image");
 	// TODO Enum hint

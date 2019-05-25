@@ -14,7 +14,7 @@ class VoxelMap;
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
 // Voxels are polygonized around the viewer by distance in a very large sphere, usually extending beyond far clip.
-// Data is streamed using a VoxelProvider, which must support LOD.
+// Data is streamed using a VoxelStream, which must support LOD.
 class VoxelLodTerrain : public Spatial {
 	GDCLASS(VoxelLodTerrain, Spatial)
 public:
@@ -26,8 +26,8 @@ public:
 	Ref<Material> get_material() const;
 	void set_material(Ref<Material> p_material);
 
-	Ref<VoxelProvider> get_provider() const;
-	void set_provider(Ref<VoxelProvider> p_provider);
+	Ref<VoxelStream> get_stream() const;
+	void set_stream(Ref<VoxelStream> p_stream);
 
 	int get_view_distance() const;
 	void set_view_distance(int p_distance_in_voxels);
@@ -92,8 +92,8 @@ private:
 
 	NodePath _viewer_path;
 
-	Ref<VoxelProvider> _provider;
-	VoxelDataLoader *_provider_thread = nullptr;
+	Ref<VoxelStream> _stream;
+	VoxelDataLoader *_stream_thread = nullptr;
 	VoxelMeshUpdater *_block_updater = nullptr;
 	std::vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
 

@@ -5,10 +5,10 @@
 #include <core/image.h>
 
 // Provides infinite tiling heightmap based on an image
-class VoxelProviderImage : public VoxelProvider {
-	GDCLASS(VoxelProviderImage, VoxelProvider)
+class VoxelStreamImage : public VoxelStream {
+	GDCLASS(VoxelStreamImage, VoxelStream)
 public:
-	VoxelProviderImage();
+	VoxelStreamImage();
 
 	void set_image(Ref<Image> im);
 	Ref<Image> get_image() const;

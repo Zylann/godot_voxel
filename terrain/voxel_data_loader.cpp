@@ -2,7 +2,7 @@
 #include "../providers/voxel_provider.h"
 #include "../util/utility.h"
 
-VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelProvider> provider, int block_size_pow2) {
+VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> provider, int block_size_pow2) {
 
 	Processor processors[Mgr::MAX_JOBS];
 
