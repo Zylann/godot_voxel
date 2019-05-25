@@ -5,8 +5,8 @@
 #include "../math/vector3i.h"
 #include "../providers/voxel_provider.h"
 #include "../util/zprofiling.h"
+#include "voxel_data_loader.h"
 #include "voxel_mesh_updater.h"
-#include "voxel_provider_thread.h"
 
 #include <scene/3d/spatial.h>
 

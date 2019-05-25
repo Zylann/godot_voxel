@@ -3,9 +3,9 @@
 
 #include "../providers/voxel_provider.h"
 #include "lod_octree.h"
+#include "voxel_data_loader.h"
 #include "voxel_map.h"
 #include "voxel_mesh_updater.h"
-#include "voxel_provider_thread.h"
 #include <core/set.h>
 #include <scene/3d/spatial.h>
 

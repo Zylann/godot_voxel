@@ -4,7 +4,6 @@
 #include "../util/voxel_raycast.h"
 #include "voxel_block.h"
 #include "voxel_map.h"
-#include "voxel_provider_thread.h"
 
 #include <core/engine.h>
 #include <core/os/os.h>

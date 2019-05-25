@@ -1,4 +1,4 @@
-#include "voxel_provider_thread.h"
+#include "voxel_data_loader.h"
 #include "../providers/voxel_provider.h"
 #include "../util/utility.h"
 

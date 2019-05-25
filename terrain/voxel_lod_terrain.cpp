@@ -3,7 +3,6 @@
 #include "../util/profiling_clock.h"
 #include "voxel_map.h"
 #include "voxel_mesh_updater.h"
-#include "voxel_provider_thread.h"
 #include <core/engine.h>
 
 const uint32_t MAIN_THREAD_MESHING_BUDGET_MS = 8;
