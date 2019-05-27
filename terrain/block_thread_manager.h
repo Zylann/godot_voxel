@@ -27,8 +27,9 @@ public:
 	struct InputBlock {
 		InputBlockData_T data;
 		Vector3i position; // In LOD0 block coordinates
-		unsigned int lod = 0;
-		float sort_heuristic = 0; // Used internally, no need to be set
+		uint8_t lod = 0;
+		bool can_be_discarded = true; // If false, will always be processed, even if the thread is told to exit
+		float sort_heuristic = 0; // If non-zero, will be added to the final heuristic
 	};
 
 	// Specialization must be copyable
@@ -145,7 +146,7 @@ public:
 		int i = 0;
 
 		// We don't use a "weakest team gets it" dispatch for speed,
-		// So use median count to prioritize only jobs under that median and not just the highest.
+		// So prioritize only jobs under median workload count and not just the highest.
 		int median_pending_count = lowest_pending_count + (highest_pending_count - lowest_pending_count) / 2;
 
 		// Dispatch to jobs with least pending requests
@@ -337,7 +338,8 @@ private:
 
 			thread_sync(data, queue_index, stats, stats.sorting_time);
 
-			while (!data.input.blocks.empty() && !data.thread_exit) {
+			// Continue to run as long as there are queries to process
+			while (!data.input.blocks.empty()) {
 
 				if (!data.input.blocks.empty()) {
 
@@ -348,31 +350,36 @@ private:
 						data.input.blocks.clear();
 					}
 
-					uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+					// If the thread has been told to exit, we'll discard all queries,
+					// except those that were marked as non-discardable (such as save queries)
+					if (!data.thread_exit || !block.can_be_discarded) {
 
-					OutputBlock ob;
-					// Implemented in specialization
-					data.processor.process_block(block.data, ob.data, block.position, block.lod);
-					ob.position = block.position;
-					ob.lod = block.lod;
+						uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
-					uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
+						OutputBlock ob;
+						// Implemented in specialization
+						data.processor.process_block(block.data, ob.data, block.position, block.lod);
+						ob.position = block.position;
+						ob.lod = block.lod;
 
-					// Do some stats
-					if (stats.first) {
-						stats.first = false;
-						stats.min_time = time_taken;
-						stats.max_time = time_taken;
-					} else {
-						if (time_taken < stats.min_time) {
+						uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
+
+						// Do some stats
+						if (stats.first) {
+							stats.first = false;
 							stats.min_time = time_taken;
-						}
-						if (time_taken > stats.max_time) {
 							stats.max_time = time_taken;
+						} else {
+							if (time_taken < stats.min_time) {
+								stats.min_time = time_taken;
+							}
+							if (time_taken > stats.max_time) {
+								stats.max_time = time_taken;
+							}
 						}
-					}
 
-					data.output.blocks.push_back(ob);
+						data.output.blocks.push_back(ob);
+					}
 				}
 
 				uint32_t time = OS::get_singleton()->get_ticks_msec();
@@ -477,6 +484,10 @@ private:
 			for (int i = 0; i < data.input.blocks.size(); ++i) {
 				const InputBlock &ib = data.input.blocks[i];
 
+				if (!ib.can_be_discarded) {
+					continue;
+				}
+
 				Rect3i box = Rect3i::from_center_extents(data.input.priority_position >> ib.lod, Vector3i(data.input.exclusive_region_extent));
 
 				if (!box.contains(ib.position)) {
@@ -521,7 +532,8 @@ private:
 
 			for (auto it = data.input.blocks.begin(); it != data.input.blocks.end(); ++it) {
 				InputBlock &ib = *it;
-				ib.sort_heuristic = get_priority_heuristic(ib,
+				// Gets added so it can be modified by queries
+				ib.sort_heuristic += get_priority_heuristic(ib,
 						data.input.priority_position,
 						data.input.priority_direction,
 						data.input.max_lod_index);

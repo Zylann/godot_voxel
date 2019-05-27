@@ -59,7 +59,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 			p.smooth_mesher = smooth_mesher;
 			_required_padding = p.get_required_padding();
 		} else {
-			// Need to clone them because they are not thread-safe.
+			// Need to clone them because they are not thread-safe due to memory pooling.
 			// Also thanks to the wonders of ref_pointer() being private we trigger extra refs/unrefs for no reason
 			if (blocky_mesher.is_valid()) {
 				p.blocky_mesher = Ref<VoxelMesher>(blocky_mesher->clone());

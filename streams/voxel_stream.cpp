@@ -29,6 +29,14 @@ void VoxelStream::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxe
 	}
 }
 
+bool VoxelStream::is_thread_safe() const {
+	return false;
+}
+
+bool VoxelStream::is_cloneable() const {
+	return false;
+}
+
 void VoxelStream::_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	emerge_block(out_buffer, Vector3i(origin_in_voxels), lod);

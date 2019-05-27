@@ -2,9 +2,11 @@
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "streams/voxel_stream_file.h"
 #include "streams/voxel_stream_image.h"
 #include "streams/voxel_stream_noise.h"
 #include "streams/voxel_stream_test.h"
+#include "streams/voxel_stream_vxb.h"
 #include "terrain/voxel_box_mover.h"
 #include "terrain/voxel_lod_terrain.h"
 #include "terrain/voxel_map.h"
@@ -27,11 +29,13 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelTerrain>();
 	ClassDB::register_class<VoxelLodTerrain>();
 
-	// Providers
+	// Streams
 	ClassDB::register_class<VoxelStream>();
 	ClassDB::register_class<VoxelStreamTest>();
 	ClassDB::register_class<VoxelStreamImage>();
 	ClassDB::register_class<VoxelStreamNoise>();
+	ClassDB::register_class<VoxelStreamFile>();
+	ClassDB::register_class<VoxelStreamVXB>();
 
 	// Helpers
 	ClassDB::register_class<VoxelBoxMover>();

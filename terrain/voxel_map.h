@@ -68,8 +68,9 @@ public:
 
 	template <typename Action_T>
 	void remove_block(Vector3i bpos, Action_T pre_delete) {
-		if (_last_accessed_block && _last_accessed_block->position == bpos)
+		if (_last_accessed_block && _last_accessed_block->position == bpos) {
 			_last_accessed_block = NULL;
+		}
 		VoxelBlock **pptr = _blocks.getptr(bpos);
 		if (pptr) {
 			VoxelBlock *block = *pptr;

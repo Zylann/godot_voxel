@@ -26,6 +26,11 @@ VoxelTerrain::VoxelTerrain() {
 
 VoxelTerrain::~VoxelTerrain() {
 	print_line("Destroying VoxelTerrain");
+
+	// Schedule saving of all modified blocks,
+	// without copy because we are destroying the map anyways
+	save_all_modified_blocks(false);
+
 	if (_stream_thread) {
 		memdelete(_stream_thread);
 	}
@@ -176,10 +181,13 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 	if (state == NULL) {
 		// The block is not dirty, so it will either be loaded or updated
 
-		if (_map->has_block(bpos)) {
+		VoxelBlock *block = _map->get_block(bpos);
+
+		if (block != nullptr) {
 
 			_blocks_pending_update.push_back(bpos);
 			_dirty_blocks[bpos] = BLOCK_UPDATE_NOT_SENT;
+			block->modified = true;
 
 		} else {
 
@@ -200,16 +208,42 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 	// this will make the second change ignored, which is not correct!
 }
 
+namespace {
+struct ScheduleSaveAction {
+
+	std::vector<VoxelDataLoader::InputBlock> &blocks_to_save;
+	bool with_copy;
+
+	void operator()(VoxelBlock *block) {
+		if (block->modified) {
+			VoxelDataLoader::InputBlock b;
+			b.data.voxels_to_save = with_copy ? block->voxels->duplicate() : block->voxels;
+			b.position = block->position;
+			// Modify heuristic so it doesn't get processed too soon
+			b.sort_heuristic = 2 << block->lod_index;
+			blocks_to_save.push_back(b);
+			block->modified = false;
+		}
+	}
+};
+} // namespace
+
 void VoxelTerrain::immerge_block(Vector3i bpos) {
 
 	ERR_FAIL_COND(_map.is_null());
 
-	// TODO Schedule block saving when supported
-	_map->remove_block(bpos, VoxelMap::NoAction());
+	// Note: no need to copy the block because it gets removed from the map anyways
+	_map->remove_block(bpos, ScheduleSaveAction{ _blocks_to_save, false });
 
 	_dirty_blocks.erase(bpos);
 	// Blocks in the update queue will be cancelled in _process,
 	// because it's too expensive to linear-search all blocks for each block
+}
+
+void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
+
+	// That may cause a stutter, so should be used when the player won't notice
+	_map->for_all_blocks(ScheduleSaveAction{ _blocks_to_save, with_copy });
 }
 
 Dictionary VoxelTerrain::get_statistics() const {
@@ -615,8 +649,13 @@ void VoxelTerrain::_process() {
 			input.blocks.push_back(input_block);
 		}
 
+		for (int i = 0; i < _blocks_to_save.size(); ++i) {
+			input.blocks.push_back(_blocks_to_save[i]);
+		}
+
 		//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
 		_blocks_pending_load.clear();
+		_blocks_to_save.clear();
 
 		_stream_thread->push(input);
 	}

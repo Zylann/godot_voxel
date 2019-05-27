@@ -103,6 +103,7 @@ private:
 	Spatial *get_viewer(NodePath path) const;
 
 	void immerge_block(Vector3i bpos);
+	void save_all_modified_blocks(bool with_copy);
 
 	Dictionary get_statistics() const;
 
@@ -133,6 +134,8 @@ private:
 	Vector<Vector3i> _blocks_pending_update;
 	HashMap<Vector3i, BlockDirtyState, Vector3iHasher> _dirty_blocks; // TODO Rename _block_states
 	Vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
+
+	std::vector<VoxelDataLoader::InputBlock> _blocks_to_save;
 
 	Ref<VoxelStream> _stream;
 	VoxelDataLoader *_stream_thread;

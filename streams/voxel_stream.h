@@ -12,6 +12,9 @@ public:
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
 
+	virtual bool is_thread_safe() const;
+	virtual bool is_cloneable() const;
+
 protected:
 	static void _bind_methods();
 

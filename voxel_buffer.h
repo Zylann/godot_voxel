@@ -26,6 +26,13 @@ public:
 		MAX_CHANNELS
 	};
 
+	enum Compression {
+		COMPRESSION_NONE = 0,
+		COMPRESSION_UNIFORM,
+		//COMPRESSION_RLE,
+		COMPRESSION_COUNT
+	};
+
 	// TODO Quantification options
 	//	enum ChannelFormat {
 	//		FORMAT_I8_Q256U, // 0..255 integer
@@ -34,7 +41,8 @@ public:
 	//	};
 
 	// Converts -1..1 float into 0..255 integer
-	static inline int iso_to_byte(real_t iso) {
+	static inline int
+	iso_to_byte(real_t iso) {
 		int v = static_cast<int>(128.f * iso + 128.f);
 		if (v > 255)
 			return 255;
@@ -79,9 +87,15 @@ public:
 	bool is_uniform(unsigned int channel_index) const;
 
 	void compress_uniform_channels();
+	void decompress_channel(unsigned int channel_index);
+	Compression get_channel_compression(unsigned int channel_index) const;
+
+	void grab_channel_data(uint8_t *in_buffer, unsigned int channel_index, Compression compression);
 
 	void copy_from(const VoxelBuffer &other, unsigned int channel_index = 0);
 	void copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index = 0);
+
+	Ref<VoxelBuffer> duplicate() const;
 
 	_FORCE_INLINE_ bool validate_pos(unsigned int x, unsigned int y, unsigned int z) const {
 		return x < _size.x && y < _size.y && z < _size.z;

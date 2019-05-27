@@ -85,6 +85,10 @@ struct Vector3i {
 		return coords[i];
 	}
 
+	_FORCE_INLINE_ const int &operator[](unsigned int i) const {
+		return coords[i];
+	}
+
 	void clamp_to(const Vector3i min, const Vector3i max) {
 		if (x < min.x) x = min.x;
 		if (y < min.y) y = min.y;

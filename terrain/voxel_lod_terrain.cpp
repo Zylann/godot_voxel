@@ -414,6 +414,7 @@ void VoxelLodTerrain::_process() {
 	// Here we go...
 
 	// Remove blocks falling out of block region extent
+	// TODO Could it actually be enough to have a rolling update on all blocks?
 	{
 		// This should be the same distance relatively to each LOD
 		int block_region_extent = get_block_region_extent();

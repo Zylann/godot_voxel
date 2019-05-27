@@ -189,6 +189,38 @@ void VoxelBuffer::compress_uniform_channels() {
 	}
 }
 
+void VoxelBuffer::decompress_channel(unsigned int channel_index) {
+	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
+	Channel channel = _channels[channel_index];
+	if (channel.data == nullptr) {
+		create_channel(channel_index, _size, channel.defval);
+	}
+}
+
+VoxelBuffer::Compression VoxelBuffer::get_channel_compression(unsigned int channel_index) const {
+	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, VoxelBuffer::COMPRESSION_NONE);
+	Channel channel = _channels[channel_index];
+	if (channel.data == nullptr) {
+		return COMPRESSION_UNIFORM;
+	}
+	return COMPRESSION_NONE;
+}
+
+void VoxelBuffer::grab_channel_data(uint8_t *in_buffer, unsigned int channel_index, Compression compression) {
+	CRASH_COND(channel_index >= MAX_CHANNELS);
+
+	// Only case supported at the moment
+	CRASH_COND(in_buffer == nullptr);
+	CRASH_COND(compression != COMPRESSION_NONE);
+
+	Channel &channel = _channels[channel_index];
+	if (channel.data) {
+		delete_channel(channel_index);
+	}
+	// Takes ownership of the provided buffer
+	channel.data = in_buffer;
+}
+
 void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 	ERR_FAIL_COND(other._size == _size);
@@ -255,6 +287,12 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 			}
 		}
 	}
+}
+
+Ref<VoxelBuffer> VoxelBuffer::duplicate() const {
+	VoxelBuffer *d = memnew(VoxelBuffer);
+	d->copy_from(*this);
+	return Ref<VoxelBuffer>(d);
 }
 
 uint8_t *VoxelBuffer::get_channel_raw(unsigned int channel_index) const {

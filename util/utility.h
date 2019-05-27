@@ -108,4 +108,20 @@ inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
 	dst.insert(dst.end(), src.begin(), src.end());
 }
 
+inline int udiv(int x, int d) {
+	if (x < 0) {
+		return (x + d - 1) / d;
+	} else {
+		return x / d;
+	}
+}
+
+inline int umod(int x, int d) {
+	if (x < 0) {
+		return static_cast<uint32_t>(x - 1) % d;
+	} else {
+		return x % d;
+	}
+}
+
 #endif // HEADER_VOXEL_UTILITY_H
