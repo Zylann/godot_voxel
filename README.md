@@ -1,35 +1,26 @@
 Voxel Tools for Godot
 =========================
 
-C++ module for creating volumetric worlds in Godot Engine.
+A C++ module for creating volumetric worlds in Godot Engine.
 
-![Blocky example screenshot](screenshots/2016_05_04_0319_w800.png)
-![Smooth example screenshot](screenshots/2019_05_05_1944_w800.png)
+<img src="doc/images/blocky_screenshot.png" width="800" />
+<img src="doc/images/smooth_screenshot.png" width="800" />
+<img src="doc/images/textured-terrain.jpg" width="800" />
 
-Setup
-------
-
-You need to get the source of Godot 3.1+ and recompile it with this module.
-
-Install the contents of the repo in a folder under "modules/", named "voxel".
-
-IMPORTANT: if you clone the repo, Git will create the folder as the repo name, "godot_voxel". But because Godot SCons scripts consider the folder name as the module's name, it will generate wrong function calls, so you must rename the folder "voxel".
-For more info about Godot modules, see http://docs.godotengine.org/en/3.1/development/cpp/custom_modules_in_cpp.html
-
-
-What this module provides
+Features
 ---------------------------
 
-- Fully editable terrain as long as you call the right functions (see demo: https://github.com/Zylann/voxelgame)
-- Voxel storage using 8-bit channels like images for any general purpose
-- Data paging using blocks of 16x16x16 voxels, so the world can be streamed with threads as you move
-- Minecraft-style terrain with voxels as types, with multiple materials and baked ambient occlusion
-- Smooth terrain with voxels as distance field (using extensions of marching cubes)
-- Level of detail for smooth terrain (no edition support yet)
-- Simple interface for custom terrain generators (block by block using threads)
+- Realtime editable, 3D based terrain (Unlike a hightmap based terrain, this allows for overhangs, tunnels, and user creation/destruction)
+- Full collision support
+- Infinite terrains made by paging sections in and out
+- Voxel data is streamed from a variety of sources, which includes the ability to write your own
+- Minecraft-style blocky voxel terrain, with multiple materials and baked ambient occlusion
+- Smooth terrain using Dual Marching Cubes
+- Levels of details for smooth terrain (though not user editable yet)
+- Voxel storage using 8-bit channels for any general purpose
 
 
-What this module doesn't provides
+What This Module Doesn't Provide
 -----------------------------------
 
 - Level of detail for blocky terrain
@@ -37,7 +28,21 @@ What this module doesn't provides
 - Editor tools (only a few things are exposed)
 - Import and export of voxel formats
 
+
+How To Install And Use
+-------------------------
+
+Voxel Tools is a custom C++ module for Godot 3.1+. It must be compiled into the engine to work. 
+
+Please see the [Getting Started Guide](doc/01_get-started.md) guide for instructions, or the [the demo](https://github.com/Zylann/voxelgame) for working examples.
+
+
 Roadmap
 ---------
 
-I work on this module whenever I want and add things I'd like to have, so the roadmap is pretty much depending on my personal agenda.
+These are some ideas that may or may not be implemented in the future:
+
+* LOD (in development)
+* Support general voxel use (not just terrains)
+* Transvoxel and other meshing algorithms
+* GPU Offloading (Maybe when Godot 4+ supports compute shaders)
