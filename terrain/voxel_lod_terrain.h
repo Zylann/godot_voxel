@@ -47,7 +47,7 @@ public:
 
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
-		VoxelDataLoader::Stats provider;
+		VoxelDataLoader::Stats stream;
 		uint64_t time_request_blocks_to_load = 0;
 		uint64_t time_process_load_responses = 0;
 		uint64_t time_request_blocks_to_update = 0;

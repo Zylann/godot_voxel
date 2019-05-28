@@ -2,7 +2,7 @@
 #include "../streams/voxel_stream.h"
 #include "../util/utility.h"
 
-VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> provider, int block_size_pow2) {
+VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int block_size_pow2) {
 
 	Processor processors[Mgr::MAX_JOBS];
 
@@ -12,9 +12,9 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> provider, in
 		Processor &p = processors[i];
 		p.block_size_pow2 = block_size_pow2;
 		if (i == 0) {
-			p.provider = provider;
+			p.stream = stream;
 		} else {
-			p.provider = provider->duplicate();
+			p.stream = stream->duplicate();
 		}
 	}
 
@@ -36,7 +36,7 @@ void VoxelDataLoader::Processor::process_block(const InputBlockData &input, Outp
 	buffer->create(bs, bs, bs);
 
 	Vector3i block_origin_in_voxels = block_position * (bs << lod);
-	provider->emerge_block(buffer, block_origin_in_voxels, lod);
+	stream->emerge_block(buffer, block_origin_in_voxels, lod);
 
 	output.voxels_loaded = buffer;
 }
