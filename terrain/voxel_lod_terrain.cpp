@@ -572,7 +572,7 @@ void VoxelLodTerrain::_process() {
 	{
 		VoxelDataLoader::Output output;
 		_stream_thread->pop(output);
-		_stats.provider = output.stats;
+		_stats.stream = output.stats;
 
 		//print_line(String("Loaded {0} blocks").format(varray(output.emerged_blocks.size())));
 
@@ -612,7 +612,7 @@ void VoxelLodTerrain::_process() {
 
 			if (ob.data.voxels_loaded->get_size() != lod.map->get_block_size()) {
 				// Voxel block size is incorrect, drop it
-				ERR_PRINT("Block size obtained from provider is different from expected size");
+				ERR_PRINT("Block size obtained from stream is different from expected size");
 				++_stats.dropped_block_loads;
 				continue;
 			}
@@ -785,7 +785,7 @@ Dictionary VoxelLodTerrain::get_stats() const {
 	process["time_process_lod"] = _stats.time_process_lod;
 
 	Dictionary d;
-	d["provider"] = VoxelDataLoader::Mgr::to_dictionary(_stats.provider);
+	d["stream"] = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);
 	d["updater"] = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
 	d["process"] = process;
 	d["blocked_lods"] = _stats.blocked_lods;
@@ -797,7 +797,7 @@ Dictionary VoxelLodTerrain::get_stats() const {
 
 void VoxelLodTerrain::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_stream", "provider"), &VoxelLodTerrain::set_stream);
+	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelLodTerrain::get_stream);
 
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &VoxelLodTerrain::set_material);
@@ -820,7 +820,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelLodTerrain::get_stats);
 	ClassDB::bind_method(D_METHOD("voxel_to_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_block_position);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");

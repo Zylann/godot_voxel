@@ -31,7 +31,7 @@ public:
 	VoxelTerrain();
 	~VoxelTerrain();
 
-	void set_stream(Ref<VoxelStream> provider);
+	void set_stream(Ref<VoxelStream> stream);
 	Ref<VoxelStream> get_stream() const;
 
 	void set_voxel_library(Ref<VoxelLibrary> library);
@@ -62,7 +62,7 @@ public:
 
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
-		VoxelDataLoader::Stats provider;
+		VoxelDataLoader::Stats stream;
 		uint32_t mesh_alloc_time;
 		int updated_blocks;
 		int dropped_stream_blocks;

@@ -72,15 +72,15 @@ void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 	}
 }
 
-void VoxelTerrain::set_stream(Ref<VoxelStream> provider) {
-	if (provider != _stream) {
+void VoxelTerrain::set_stream(Ref<VoxelStream> stream) {
+	if (stream != _stream) {
 
 		if (_stream_thread) {
 			memdelete(_stream_thread);
 			_stream_thread = NULL;
 		}
 
-		_stream = provider;
+		_stream = stream;
 		_stream_thread = memnew(VoxelDataLoader(1, _stream, _map->get_block_size_pow2()));
 
 		// The whole map might change, so make all area dirty
@@ -248,8 +248,8 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
 
 Dictionary VoxelTerrain::get_statistics() const {
 
-	Dictionary provider = VoxelDataLoader::Mgr::to_dictionary(_stats.provider);
-	provider["dropped_blocks"] = _stats.dropped_stream_blocks;
+	Dictionary stream = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);
+	stream["dropped_blocks"] = _stats.dropped_stream_blocks;
 
 	Dictionary updater = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
 	updater["updated_blocks"] = _stats.updated_blocks;
@@ -258,7 +258,7 @@ Dictionary VoxelTerrain::get_statistics() const {
 	updater["remaining_main_thread_blocks"] = _stats.remaining_main_thread_blocks;
 
 	Dictionary d;
-	d["provider"] = provider;
+	d["stream"] = stream;
 	d["updater"] = updater;
 
 	// Breakdown of time spent in _process
@@ -673,7 +673,7 @@ void VoxelTerrain::_process() {
 		_stream_thread->pop(output);
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 
-		_stats.provider = output.stats;
+		_stats.stream = output.stats;
 		_stats.dropped_stream_blocks = 0;
 
 		for (int i = 0; i < output.blocks.size(); ++i) {
@@ -1001,7 +1001,7 @@ VoxelTerrain::BlockDirtyState VoxelTerrain::get_block_state(Vector3 p_bpos) cons
 
 void VoxelTerrain::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_stream", "provider"), &VoxelTerrain::set_stream);
+	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelTerrain::get_stream);
 
 	ClassDB::bind_method(D_METHOD("set_voxel_library", "library"), &VoxelTerrain::set_voxel_library);
@@ -1032,7 +1032,7 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::get_statistics);
 	ClassDB::bind_method(D_METHOD("get_block_state", "block_pos"), &VoxelTerrain::get_block_state);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "provider", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"), "set_voxel_library", "get_voxel_library");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
