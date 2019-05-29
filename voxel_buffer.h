@@ -26,6 +26,9 @@ public:
 		MAX_CHANNELS
 	};
 
+	// TODO use C++17 inline to initialize right here...
+	static const char *CHANNEL_ID_HINT_STRING;
+
 	// TODO Quantification options
 	//	enum ChannelFormat {
 	//		FORMAT_I8_Q256U, // 0..255 integer
