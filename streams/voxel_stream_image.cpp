@@ -1,7 +1,7 @@
 #include "voxel_stream_image.h"
 
 VoxelStreamImage::VoxelStreamImage() :
-		_channel(0) {
+		_channel(VoxelBuffer::CHANNEL_TYPE) {
 }
 
 void VoxelStreamImage::set_image(Ref<Image> im) {
@@ -16,7 +16,7 @@ void VoxelStreamImage::set_channel(VoxelBuffer::ChannelId channel) {
 	_channel = channel;
 }
 
-int VoxelStreamImage::get_channel() const {
+VoxelBuffer::ChannelId VoxelStreamImage::get_channel() const {
 	return _channel;
 }
 
@@ -107,6 +107,5 @@ void VoxelStreamImage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelStreamImage::get_channel);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, "Image"), "set_image", "get_image");
-	// TODO Enum hint
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel"), "set_channel", "get_channel");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
 }

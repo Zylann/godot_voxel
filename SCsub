@@ -1,12 +1,25 @@
 Import('env')
+Import('env_modules')
 
-env.add_source_files(env.modules_sources, "*.cpp")
-env.add_source_files(env.modules_sources, "meshers/blocky/*.cpp")
-env.add_source_files(env.modules_sources, "meshers/transvoxel/*.cpp")
-env.add_source_files(env.modules_sources, "meshers/dmc/*.cpp")
-env.add_source_files(env.modules_sources, "meshers/*.cpp")
-env.add_source_files(env.modules_sources, "streams/*.cpp")
-env.add_source_files(env.modules_sources, "util/*.cpp")
-env.add_source_files(env.modules_sources, "terrain/*.cpp")
-env.add_source_files(env.modules_sources, "math/*.cpp")
+env_voxel = env_modules.Clone()
 
+files = [
+	"*.cpp",
+	"meshers/blocky/*.cpp",
+	"meshers/transvoxel/*.cpp",
+	"meshers/dmc/*.cpp",
+	"meshers/*.cpp",
+	"streams/*.cpp",
+	"util/*.cpp",
+	"terrain/*.cpp",
+	"math/*.cpp"
+]
+
+for f in files:
+	env_voxel.add_source_files(env.modules_sources, f)
+
+# Doesn't work, because reasons
+#if env.msvc:
+#	env_voxel.Append(CXXFLAGS=['/std:c++17'])
+#else:
+#	env_voxel.Append(CXXFLAGS=['-std=c++17'])

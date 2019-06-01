@@ -14,7 +14,7 @@ public:
 	Ref<Image> get_image() const;
 
 	void set_channel(VoxelBuffer::ChannelId channel);
-	int get_channel() const;
+	VoxelBuffer::ChannelId get_channel() const;
 
 	void emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod);
 
@@ -23,7 +23,7 @@ private:
 
 private:
 	Ref<Image> _image;
-	int _channel;
+	VoxelBuffer::ChannelId _channel;
 };
 
 #endif // HEADER_VOXEL_STREAM_IMAGE

@@ -26,6 +26,9 @@ public:
 		MAX_CHANNELS
 	};
 
+	// TODO use C++17 inline to initialize right here...
+	static const char *CHANNEL_ID_HINT_STRING;
+
 	enum Compression {
 		COMPRESSION_NONE = 0,
 		COMPRESSION_UNIFORM,

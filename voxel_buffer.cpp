@@ -3,6 +3,8 @@
 #include <core/math/math_funcs.h>
 #include <string.h>
 
+const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Data2,Data3,Data4,Data5,Data6,Data7";
+
 VoxelBuffer::VoxelBuffer() {
 	_channels[CHANNEL_ISOLEVEL].defval = 255;
 }
