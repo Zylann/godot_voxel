@@ -27,13 +27,14 @@ VoxelTerrain::VoxelTerrain() {
 VoxelTerrain::~VoxelTerrain() {
 	print_line("Destroying VoxelTerrain");
 
-	// Schedule saving of all modified blocks,
-	// without copy because we are destroying the map anyways
-	save_all_modified_blocks(false);
-
 	if (_stream_thread) {
+		// Schedule saving of all modified blocks,
+		// without copy because we are destroying the map anyways
+		save_all_modified_blocks(false);
+
 		memdelete(_stream_thread);
 	}
+
 	if (_block_updater) {
 		memdelete(_block_updater);
 	}
@@ -249,6 +250,8 @@ void VoxelTerrain::immerge_block(Vector3i bpos) {
 }
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
+
+	ERR_FAIL_COND(_stream_thread == nullptr);
 
 	// That may cause a stutter, so should be used when the player won't notice
 	_map->for_all_blocks(ScheduleSaveAction{ _blocks_to_save, with_copy });
