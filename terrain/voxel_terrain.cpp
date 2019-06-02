@@ -219,8 +219,7 @@ struct ScheduleSaveAction {
 			VoxelDataLoader::InputBlock b;
 			b.data.voxels_to_save = with_copy ? block->voxels->duplicate() : block->voxels;
 			b.position = block->position;
-			// Modify heuristic so it doesn't get processed too soon
-			b.sort_heuristic = 2 << block->lod_index;
+			b.can_be_discarded = false;
 			blocks_to_save.push_back(b);
 			block->modified = false;
 		}

@@ -532,8 +532,8 @@ private:
 
 			for (auto it = data.input.blocks.begin(); it != data.input.blocks.end(); ++it) {
 				InputBlock &ib = *it;
-				// Gets added so it can be modified by queries
-				ib.sort_heuristic += get_priority_heuristic(ib,
+				// Set or override previous heuristic based on new infos
+				ib.sort_heuristic = get_priority_heuristic(ib,
 						data.input.priority_position,
 						data.input.priority_direction,
 						data.input.max_lod_index);
