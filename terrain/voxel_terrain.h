@@ -104,6 +104,8 @@ private:
 
 	void immerge_block(Vector3i bpos);
 	void save_all_modified_blocks(bool with_copy);
+	void get_viewer_block_pos_and_direction(Vector3i &out_block_pos, Vector3 &out_direction);
+	void send_block_data_requests();
 
 	Dictionary get_statistics() const;
 

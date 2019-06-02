@@ -12,7 +12,13 @@ public:
 		Ref<VoxelBuffer> voxels_to_save;
 	};
 
+	enum RequestType {
+		TYPE_SAVE = 0,
+		TYPE_LOAD
+	};
+
 	struct OutputBlockData {
+		RequestType type;
 		Ref<VoxelBuffer> voxels_loaded;
 	};
 

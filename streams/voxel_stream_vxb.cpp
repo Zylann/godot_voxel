@@ -41,14 +41,15 @@ void VoxelStreamVXB::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_i
 	ERR_FAIL_COND(lod >= _meta.lod_count);
 	ERR_FAIL_COND(_meta.block_size != out_buffer->get_size());
 
-	Vector3i block_pos = get_block_position(origin_in_voxels);
+	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
 	String file_path = get_block_file_path(block_pos, lod);
 
 	FileAccess *f = nullptr;
 	{
 		Error err;
 		f = open_file(file_path, FileAccess::READ, err);
-		if (f == nullptr && err == ERR_FILE_NOT_FOUND) {
+		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
+		if (f == nullptr && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
 			emerge_block_fallback(out_buffer, origin_in_voxels, lod);
 			return;
 		}
@@ -109,8 +110,10 @@ void VoxelStreamVXB::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_v
 		ERR_FAIL_COND(err != OK);
 	}
 
-	Vector3i block_pos = get_block_position(origin_in_voxels);
+	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
 	String file_path = get_block_file_path(block_pos, lod);
+
+	//print_line(String("Saving VXB {0}").format(varray(block_pos.to_vec3())));
 
 	{
 		Error err = check_directory_created(file_path.get_base_dir());
@@ -193,7 +196,7 @@ Error VoxelStreamVXB::save_meta() {
 		f->store_8(FORMAT_VERSION);
 
 		f->store_8(_meta.lod_count);
-		store_vec3u8(f, _meta.block_size);
+		store_vec3u32(f, _meta.block_size);
 
 		memdelete(f);
 	}
@@ -212,6 +215,13 @@ Error VoxelStreamVXB::load_meta() {
 	{
 		Error err;
 		FileAccess *f = open_file(meta_path, FileAccess::READ, err);
+		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
+		if (!_meta.saved && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
+			// This is a new terrain, save the meta we have and consider it current
+			Error save_err = save_meta();
+			ERR_FAIL_COND_V(save_err != OK, save_err);
+			return OK;
+		}
 		ERR_FAIL_COND_V(f == nullptr, err);
 
 		AutoDeleteFile auto_delete_f = { f };
@@ -226,7 +236,6 @@ Error VoxelStreamVXB::load_meta() {
 	}
 
 	meta.loaded = true;
-
 	_meta = meta;
 	return OK;
 }
@@ -242,10 +251,10 @@ String VoxelStreamVXB::get_block_file_path(const Vector3i &block_pos, unsigned i
 		if (block_pos[i] >= 0) {
 			path += '+';
 		}
-		path += String::num_uint64(block_pos[i]);
+		path += String::num_int64(block_pos[i]);
 	}
 	path += BLOCK_FILE_EXTENSION;
-	return path;
+	return _directory_path.plus_file(path);
 }
 
 Vector3i VoxelStreamVXB::get_block_position(const Vector3i &origin_in_voxels) const {

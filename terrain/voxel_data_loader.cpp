@@ -8,10 +8,16 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int 
 
 	Processor processors[Mgr::MAX_JOBS];
 
+	for (unsigned int i = 0; i < Mgr::MAX_JOBS; ++i) {
+		Processor &p = processors[i];
+		p.block_size_pow2 = block_size_pow2;
+	}
+
 	if (stream->is_thread_safe()) {
 
 		for (unsigned int i = 0; i < thread_count; ++i) {
-			processors[i].stream = stream;
+			Processor &p = processors[i];
+			p.stream = stream;
 		}
 
 	} else if (stream->is_cloneable()) {
@@ -20,7 +26,6 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int 
 		// but won't be as useful for file and network streams
 		for (int i = 0; i < thread_count; ++i) {
 			Processor &p = processors[i];
-			p.block_size_pow2 = block_size_pow2;
 			if (i == 0) {
 				p.stream = stream;
 			} else {
@@ -42,6 +47,7 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int 
 }
 
 VoxelDataLoader::~VoxelDataLoader() {
+	print_line("Destroying VoxelDataLoader");
 	if (_mgr) {
 		memdelete(_mgr);
 	}
@@ -50,12 +56,21 @@ VoxelDataLoader::~VoxelDataLoader() {
 void VoxelDataLoader::Processor::process_block(const InputBlockData &input, OutputBlockData &output, Vector3i block_position, unsigned int lod) {
 
 	int bs = 1 << block_size_pow2;
-	Ref<VoxelBuffer> buffer;
-	buffer.instance();
-	buffer->create(bs, bs, bs);
-
 	Vector3i block_origin_in_voxels = block_position * (bs << lod);
-	stream->emerge_block(buffer, block_origin_in_voxels, lod);
 
-	output.voxels_loaded = buffer;
+	if (input.voxels_to_save.is_null()) {
+
+		Ref<VoxelBuffer> buffer;
+		buffer.instance();
+		buffer->create(bs, bs, bs);
+
+		stream->emerge_block(buffer, block_origin_in_voxels, lod);
+		output.type = TYPE_LOAD;
+		output.voxels_loaded = buffer;
+
+	} else {
+
+		stream->immerge_block(input.voxels_to_save, block_origin_in_voxels, lod);
+		output.type = TYPE_SAVE;
+	}
 }

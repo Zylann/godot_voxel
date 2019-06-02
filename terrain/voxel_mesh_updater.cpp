@@ -74,6 +74,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 }
 
 VoxelMeshUpdater::~VoxelMeshUpdater() {
+	print_line("Destroying VoxelMeshUpdater");
 	if (_mgr) {
 		memdelete(_mgr);
 	}

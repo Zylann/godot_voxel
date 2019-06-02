@@ -142,11 +142,16 @@ NodePath VoxelTerrain::get_viewer_path() const {
 }
 
 Spatial *VoxelTerrain::get_viewer(NodePath path) const {
-	if (path.is_empty())
+	if (path.is_empty()) {
 		return NULL;
+	}
+	if (!is_inside_tree()) {
+		return NULL;
+	}
 	Node *node = get_node(path);
-	if (node == NULL)
+	if (node == NULL) {
 		return NULL;
+	}
 	return Object::cast_to<Spatial>(node);
 }
 
@@ -187,7 +192,11 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 
 			_blocks_pending_update.push_back(bpos);
 			_dirty_blocks[bpos] = BLOCK_UPDATE_NOT_SENT;
-			block->modified = true;
+
+			if (!block->modified) {
+				print_line(String("Marking block {0} as modified").format(varray(bpos.to_vec3())));
+				block->modified = true;
+			}
 
 		} else {
 
@@ -243,6 +252,9 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
 
 	// That may cause a stutter, so should be used when the player won't notice
 	_map->for_all_blocks(ScheduleSaveAction{ _blocks_to_save, with_copy });
+
+	// And flush immediately
+	send_block_data_requests();
 }
 
 Dictionary VoxelTerrain::get_statistics() const {
@@ -556,6 +568,55 @@ static void remove_positions_outside_box(
 	}
 }
 
+void VoxelTerrain::get_viewer_block_pos_and_direction(Vector3i &out_block_pos, Vector3 &out_direction) {
+
+	if (Engine::get_singleton()->is_editor_hint()) {
+
+		// TODO Use editor's camera here
+		out_block_pos = Vector3i();
+		out_direction = Vector3(0, -1, 0);
+
+	} else {
+		// TODO Use viewport camera, much easier
+		Spatial *viewer = get_viewer(_viewer_path);
+		if (viewer) {
+
+			out_block_pos = _map->voxel_to_block(viewer->get_translation());
+			out_direction = -viewer->get_global_transform().basis.get_axis(Vector3::AXIS_Z);
+
+		} else {
+
+			out_block_pos = _last_viewer_block_pos;
+			out_direction = Vector3(0, -1, 0);
+		}
+	}
+}
+
+void VoxelTerrain::send_block_data_requests() {
+
+	VoxelDataLoader::Input input;
+
+	get_viewer_block_pos_and_direction(input.priority_position, input.priority_direction);
+
+	for (int i = 0; i < _blocks_pending_load.size(); ++i) {
+		VoxelDataLoader::InputBlock input_block;
+		input_block.position = _blocks_pending_load[i];
+		input_block.lod = 0;
+		input.blocks.push_back(input_block);
+	}
+
+	for (int i = 0; i < _blocks_to_save.size(); ++i) {
+		print_line(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position.to_vec3())));
+		input.blocks.push_back(_blocks_to_save[i]);
+	}
+
+	//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
+	_blocks_pending_load.clear();
+	_blocks_to_save.clear();
+
+	_stream_thread->push(input);
+}
+
 void VoxelTerrain::_process() {
 
 	// TODO Should be able to run without library, tho!
@@ -564,29 +625,17 @@ void VoxelTerrain::_process() {
 	}
 
 	OS &os = *OS::get_singleton();
-	Engine &engine = *Engine::get_singleton();
 
 	ERR_FAIL_COND(_map.is_null());
 
+	// TODO Use ProfilingClock
 	uint64_t time_before = os.get_ticks_usec();
 
 	// Get viewer location
 	// TODO Transform to local (Spatial Transform)
 	Vector3i viewer_block_pos;
 	Vector3 viewer_direction;
-	if (engine.is_editor_hint()) {
-		// TODO Use editor's camera here
-		viewer_block_pos = Vector3i();
-	} else {
-		// TODO Use viewport camera, much easier
-		Spatial *viewer = get_viewer(_viewer_path);
-		if (viewer) {
-			viewer_block_pos = _map->voxel_to_block(viewer->get_translation());
-			viewer_direction = -viewer->get_global_transform().basis.get_axis(Vector3::AXIS_Z);
-		} else {
-			viewer_block_pos = Vector3i();
-		}
-	}
+	get_viewer_block_pos_and_direction(viewer_block_pos, viewer_direction);
 
 	// Find out which blocks need to appear and which need to be unloaded
 	{
@@ -634,30 +683,7 @@ void VoxelTerrain::_process() {
 
 	time_before = os.get_ticks_usec();
 
-	// Send block loading requests
-	{
-		VoxelDataLoader::Input input;
-
-		input.priority_position = viewer_block_pos;
-		input.priority_direction = viewer_direction;
-
-		for (int i = 0; i < _blocks_pending_load.size(); ++i) {
-			VoxelDataLoader::InputBlock input_block;
-			input_block.position = _blocks_pending_load[i];
-			input_block.lod = 0;
-			input.blocks.push_back(input_block);
-		}
-
-		for (int i = 0; i < _blocks_to_save.size(); ++i) {
-			input.blocks.push_back(_blocks_to_save[i]);
-		}
-
-		//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
-		_blocks_pending_load.clear();
-		_blocks_to_save.clear();
-
-		_stream_thread->push(input);
-	}
+	send_block_data_requests();
 
 	_stats.time_send_load_requests = os.get_ticks_usec() - time_before;
 	time_before = os.get_ticks_usec();
@@ -678,6 +704,11 @@ void VoxelTerrain::_process() {
 		for (int i = 0; i < output.blocks.size(); ++i) {
 
 			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
+
+			if (ob.data.type != VoxelDataLoader::TYPE_LOAD) {
+				continue;
+			}
+
 			Vector3i block_pos = ob.position;
 
 			{
