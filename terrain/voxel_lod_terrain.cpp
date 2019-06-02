@@ -1,6 +1,7 @@
 #include "voxel_lod_terrain.h"
 #include "../math/rect3i.h"
 #include "../util/profiling_clock.h"
+#include "../util/voxel_raycast.h"
 #include "voxel_map.h"
 #include "voxel_mesh_updater.h"
 #include <core/engine.h>
@@ -784,6 +785,43 @@ void VoxelLodTerrain::_process() {
 	_stats.time_process_lod = profiling_clock.restart();
 }
 
+struct _VoxelLodTerrainRaycastContext {
+	VoxelLodTerrain &terrain;
+	//unsigned int channel_mask;
+};
+
+static bool _raycast_binding_predicate(Vector3i pos, void *context_ptr) {
+
+	ERR_FAIL_COND_V(context_ptr == NULL, false);
+	_VoxelLodTerrainRaycastContext *context = (_VoxelLodTerrainRaycastContext *)context_ptr;
+	VoxelLodTerrain &terrain = context->terrain;
+
+	Ref<VoxelMap> map = terrain.get_map();
+
+	float v1 = map->get_voxel_f(pos.x, pos.y, pos.z, Voxel::CHANNEL_ISOLEVEL);
+	return v1 < 0;
+}
+
+Variant VoxelLodTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance) {
+
+	// TODO Transform input if the terrain is rotated (in the future it can be made a Spatial node)
+
+	Vector3i hit_pos;
+	Vector3i prev_pos;
+
+	_VoxelLodTerrainRaycastContext context = { *this };
+
+	if (voxel_raycast(origin, direction, _raycast_binding_predicate, &context, max_distance, hit_pos, prev_pos)) {
+
+		Dictionary hit = Dictionary();
+		hit["position"] = hit_pos.to_vec3();
+		hit["prev_position"] = prev_pos.to_vec3();
+		return hit;
+	} else {
+		return Variant(); // Null dictionary, no alloc
+	}
+}
+
 Dictionary VoxelLodTerrain::get_stats() const {
 
 	Dictionary process;
@@ -828,6 +866,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_block_info", "block_pos", "lod"), &VoxelLodTerrain::get_block_info);
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelLodTerrain::get_stats);
 	ClassDB::bind_method(D_METHOD("voxel_to_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_block_position);
+
+	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance"), &VoxelLodTerrain::_raycast_binding, DEFVAL(100));
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");

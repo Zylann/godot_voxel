@@ -45,6 +45,8 @@ public:
 	Dictionary get_block_info(Vector3 fbpos, unsigned int lod_index) const;
 	Vector3 voxel_to_block_position(Vector3 vpos, unsigned int lod_index) const;
 
+	Ref<VoxelMap> get_map() { return _lods[0].map; }
+
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
 		VoxelDataLoader::Stats stream;
@@ -76,6 +78,7 @@ private:
 	Vector3 get_viewer_pos(Vector3 &out_direction) const;
 	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, unsigned int lod_index);
 	bool check_block_loaded_and_updated(const Vector3i &p_bpos, unsigned int lod_index);
+	Variant _raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance);
 
 	template <typename A>
 	void for_all_blocks(A &action) {
