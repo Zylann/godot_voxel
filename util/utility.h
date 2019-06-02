@@ -110,7 +110,7 @@ inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
 
 inline int udiv(int x, int d) {
 	if (x < 0) {
-		return (x + d - 1) / d;
+		return (x - d + 1) / d;
 	} else {
 		return x / d;
 	}
