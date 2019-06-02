@@ -63,6 +63,7 @@ public:
 		uint64_t sorting_time = 0;
 		uint32_t remaining_blocks[MAX_JOBS];
 		uint32_t thread_count = 0;
+		uint32_t dropped_count = 0;
 	};
 
 	struct Output {
@@ -242,6 +243,7 @@ public:
 		d["min_time"] = stats.min_time;
 		d["max_time"] = stats.max_time;
 		d["sorting_time"] = stats.sorting_time;
+		d["dropped_count"] = stats.dropped_count;
 		Array remaining_blocks;
 		remaining_blocks.resize(stats.thread_count);
 		for (int i = 0; i < stats.thread_count; ++i) {
@@ -282,6 +284,7 @@ private:
 		a.min_time = MIN(a.min_time, b.min_time);
 		a.remaining_blocks[job_index] = b.remaining_blocks[job_index];
 		a.sorting_time += b.sorting_time;
+		a.dropped_count += b.dropped_count;
 	}
 
 	int push_block_requests(JobData &job, const std::vector<InputBlock> &input_blocks, int begin, int count) {
@@ -336,7 +339,7 @@ private:
 			int queue_index = 0;
 			Stats stats;
 
-			thread_sync(data, queue_index, stats, stats.sorting_time);
+			thread_sync(data, queue_index, stats, stats.sorting_time, stats.dropped_count);
 
 			// Continue to run as long as there are queries to process
 			while (!data.input.blocks.empty()) {
@@ -386,12 +389,14 @@ private:
 				if (time >= sync_time || data.input.blocks.empty()) {
 
 					uint64_t sort_time;
-					thread_sync(data, queue_index, stats, sort_time);
+					unsigned int dropped_count;
+					thread_sync(data, queue_index, stats, sort_time, dropped_count);
 
 					sync_time = OS::get_singleton()->get_ticks_msec() + data.sync_interval_ms;
 					queue_index = 0;
 					stats = Stats();
 					stats.sorting_time = sort_time;
+					stats.dropped_count = dropped_count;
 				}
 			}
 
@@ -420,7 +425,7 @@ private:
 		}
 	};
 
-	static void thread_sync(JobData &data, int queue_index, Stats stats, uint64_t &out_sort_time) {
+	static void thread_sync(JobData &data, int queue_index, Stats stats, uint64_t &out_sort_time, unsigned int &out_dropped_count) {
 
 		if (!data.input.blocks.empty()) {
 			// Cleanup input vector
@@ -479,7 +484,7 @@ private:
 		// Cancel blocks outside exclusive region.
 		// We do this early because if the player keeps moving forward,
 		// we would keep accumulating requests forever, and that means slower sorting and memory waste
-		//int dropped_count = 0;
+		int dropped_count = 0;
 		if (data.input.use_exclusive_region) {
 			for (int i = 0; i < data.input.blocks.size(); ++i) {
 				const InputBlock &ib = data.input.blocks[i];
@@ -516,15 +521,15 @@ private:
 					// Move back to redo this index, since we replaced the current block
 					--i;
 
-					//++dropped_count;
+					++dropped_count;
 				}
 			}
 		}
 
-		// TODO Make it part of stats?
-		//	if (dropped_count > 0) {
-		//		print_line(String("Dropped {0} blocks to mesh from thread").format(varray(dropped_count)));
-		//	}
+		if (dropped_count > 0) {
+			print_line(String("Dropped {0} blocks from thread").format(varray(dropped_count)));
+			out_dropped_count = dropped_count;
+		}
 
 		uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
