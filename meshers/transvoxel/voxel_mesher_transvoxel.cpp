@@ -133,8 +133,8 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 	const Vector3i block_size = voxels.get_size();
 	// TODO No lod yet, but it's planned
-	const int lod_index = 0;
-	const int lod_scale = 1 << lod_index;
+	//const int lod_index = 0;
+	//const int lod_scale = 1 << lod_index;
 
 	// Prepare vertex reuse cache
 	m_block_size = block_size;

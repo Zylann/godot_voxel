@@ -76,7 +76,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 		a.indices.clear();
 	}
 
-	float baked_occlusion_darkness;
+	float baked_occlusion_darkness=0;
 	if (_bake_occlusion)
 		baked_occlusion_darkness = _baked_occlusion_darkness / 3.0;
 
@@ -102,7 +102,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	// and then save a lot of time.
 
 	uint8_t *type_buffer = buffer.get_channel_raw(channel);
-	//       _
+	/*       _
 	//      | \
 	//     /\ \\
 	//    / /|\\\
@@ -111,6 +111,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	//    |    |  )
 	//     \   |  |
 	//      \    /
+	*/
 	if (type_buffer == nullptr) {
 		// No data to read, the channel is probably uniform
 		// TODO This is an invalid behavior IF sending a full block of uniformly opaque cubes,
