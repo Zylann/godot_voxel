@@ -101,7 +101,7 @@ Dictionary ZProfileVar::serialize() {
 
 ZProfiler::~ZProfiler() {
 	const String *key = NULL;
-	while (key = _vars.next(key)) {
+	while ((key = _vars.next(key))) {
 		ZProfileVar *v = _vars.get(*key);
 		memdelete(v);
 	}
@@ -133,7 +133,7 @@ void ZProfiler::end(String key) {
 Dictionary ZProfiler::get_all_serialized_info() const {
 	Dictionary d;
 	const String *key = NULL;
-	while (key = _vars.next(key)) {
+	while ((key = _vars.next(key))) {
 		ZProfileVar *v = _vars.get(*key);
 		d[*key] = v->serialize();
 	}
