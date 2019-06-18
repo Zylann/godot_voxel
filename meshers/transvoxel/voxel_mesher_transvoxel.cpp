@@ -58,7 +58,7 @@ void copy_to(PoolVector<T> &to, Vector<T> &from) {
 
 	typename PoolVector<T>::Write w = to.write();
 
-	for (unsigned int i = 0; i < from.size(); ++i) {
+	for (unsigned int i = 0; i < (unsigned int)from.size(); ++i) {
 		w[i] = from[i];
 	}
 }
@@ -140,7 +140,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 	m_block_size = block_size;
 	unsigned int deck_area = block_size.x * block_size.y;
 	for (int i = 0; i < 2; ++i) {
-		if (m_cache[i].size() != deck_area) {
+		if ((unsigned int)m_cache[i].size() != deck_area) {
 			m_cache[i].clear(); // Clear any previous data
 			m_cache[i].resize(deck_area);
 		}

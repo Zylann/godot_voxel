@@ -64,7 +64,7 @@ public:
 		_max_depth = lod_count - 1;
 	}
 
-	int get_lod_count() const {
+	unsigned int get_lod_count() const {
 		return _max_depth + 1;
 	}
 

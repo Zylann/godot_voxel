@@ -358,7 +358,7 @@ Array generate_debug_dual_grid_mesh(const DualGrid &grid) {
 	PoolVector3Array positions;
 	PoolIntArray indices;
 
-	for (int i = 0; i < grid.cells.size(); ++i) {
+	for (unsigned int i = 0; i < grid.cells.size(); ++i) {
 
 		const DualCell &cell = grid.cells[i];
 
@@ -1369,7 +1369,7 @@ void polygonize_dual_cell(const DualCell &cell, const VoxelAccess &voxels, MeshB
 
 inline void polygonize_dual_grid(const DualGrid &grid, const VoxelAccess &voxels, MeshBuilder &mesh_builder, bool skirts_enabled) {
 
-	for (int i = 0; i < grid.cells.size(); ++i) {
+	for (unsigned int i = 0; i < grid.cells.size(); ++i) {
 		polygonize_dual_cell(grid.cells[i], voxels, mesh_builder, skirts_enabled);
 	}
 }

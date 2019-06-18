@@ -18,9 +18,9 @@ struct HermiteValue {
 
 inline float get_isolevel_clamped(const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
 
-	x = x >= voxels.get_size().x ? voxels.get_size().x - 1 : x;
-	y = y >= voxels.get_size().y ? voxels.get_size().y - 1 : y;
-	z = z >= voxels.get_size().z ? voxels.get_size().z - 1 : z;
+	x = x >= (unsigned int)voxels.get_size().x ? voxels.get_size().x - 1 : x;
+	y = y >= (unsigned int)voxels.get_size().y ? voxels.get_size().y - 1 : y;
+	z = z >= (unsigned int)voxels.get_size().z ? voxels.get_size().z - 1 : z;
 
 	return voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
 }
