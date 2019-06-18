@@ -154,7 +154,8 @@ void VoxelLodTerrain::set_lod_count(unsigned int p_lod_count) {
 	if (get_lod_count() != p_lod_count) {
 
 		int bs = get_block_size();
-		_lod_octree.create_from_lod_count(bs, p_lod_count, LodOctree<bool>::NoDestroyAction());
+		LodOctree<bool>::NoDestroyAction nda;
+		_lod_octree.create_from_lod_count(bs, p_lod_count, nda);
 
 		for (int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
 
@@ -283,15 +284,24 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_ENTER_WORLD:
-			for_all_blocks(EnterWorldAction(*get_world()));
+			{
+				EnterWorldAction ewa(*get_world());
+				for_all_blocks(ewa);
+			}
 			break;
 
 		case NOTIFICATION_EXIT_WORLD:
-			for_all_blocks(ExitWorldAction());
+			{
+				ExitWorldAction ewa;
+				for_all_blocks(ewa);
+			}
 			break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
-			for_all_blocks(SetVisibilityAction(is_visible()));
+			{
+				SetVisibilityAction sva(is_visible());
+				for_all_blocks(sva);
+			}
 			break;
 
 			// TODO Listen for transform changes

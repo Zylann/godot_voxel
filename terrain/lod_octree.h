@@ -47,7 +47,7 @@ public:
 		_base_size = 0;
 	}
 
-	static void compute_lod_count(int base_size, int full_size) {
+	static int compute_lod_count(int base_size, int full_size) {
 		int po = 0;
 		while (full_size > base_size) {
 			full_size = full_size >> 1;
