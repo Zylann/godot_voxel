@@ -585,7 +585,7 @@ void VoxelLodTerrain::_process() {
 
 		//print_line(String("Loaded {0} blocks").format(varray(output.emerged_blocks.size())));
 
-		for (unsigned int i = 0; i < (unsigned int)output.blocks.size(); ++i) {
+		for (int i = 0; i < output.blocks.size(); ++i) {
 
 			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
 
@@ -696,7 +696,7 @@ void VoxelLodTerrain::_process() {
 			_block_updater->pop(output);
 			_stats.updater = output.stats;
 
-			for (unsigned int i = 0; i < (unsigned int)output.blocks.size(); ++i) {
+			for (int i = 0; i < output.blocks.size(); ++i) {
 				const VoxelMeshUpdater::OutputBlock &ob = output.blocks[i];
 
 				if (ob.lod >= get_lod_count()) {
@@ -754,7 +754,7 @@ void VoxelLodTerrain::_process() {
 
 			unsigned int surface_index = 0;
 			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
-			for (unsigned int i = 0; i < (unsigned int)data.smooth_surfaces.surfaces.size(); ++i) {
+			for (int i = 0; i < data.smooth_surfaces.surfaces.size(); ++i) {
 
 				Array surface = data.smooth_surfaces.surfaces[i];
 				if (surface.empty()) {

@@ -86,8 +86,8 @@ public:
 	void copy_from(const VoxelBuffer &other, unsigned int channel_index = 0);
 	void copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index = 0);
 
-	_FORCE_INLINE_ bool validate_pos(int x, int y, int z) const {
-		return x < _size.x && y < _size.y && z < _size.z;
+	_FORCE_INLINE_ bool validate_pos(unsigned int x, unsigned int y, unsigned int z) const {
+		return x < (unsigned) _size.x && y < (unsigned) _size.y && z < (unsigned) _size.z;
 	}
 
 	_FORCE_INLINE_ unsigned int index(unsigned int x, unsigned int y, unsigned int z) const {
