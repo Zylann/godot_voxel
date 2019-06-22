@@ -2,6 +2,7 @@
 #include "../streams/voxel_stream_test.h"
 #include "../util/utility.h"
 #include "../util/voxel_raycast.h"
+#include "../util/profiling_clock.h"
 #include "voxel_block.h"
 #include "voxel_map.h"
 
@@ -535,7 +536,7 @@ void VoxelTerrain::_process() {
 
 	ERR_FAIL_COND(_map.is_null());
 
-	uint64_t time_before = os.get_ticks_usec();
+	ProfilingClock profiling_clock;
 
 	// Get viewer location
 	// TODO Transform to local (Spatial Transform)
@@ -594,12 +595,10 @@ void VoxelTerrain::_process() {
 		remove_positions_outside_box(_blocks_pending_update, new_box, _dirty_blocks);
 	}
 
-	_stats.time_detect_required_blocks = os.get_ticks_usec() - time_before;
+	_stats.time_detect_required_blocks = profiling_clock.restart(); 
 
 	_last_view_distance_blocks = _view_distance_blocks;
 	_last_viewer_block_pos = viewer_block_pos;
-
-	time_before = os.get_ticks_usec();
 
 	// Send block loading requests
 	{
@@ -621,8 +620,7 @@ void VoxelTerrain::_process() {
 		_stream_thread->push(input);
 	}
 
-	_stats.time_send_load_requests = os.get_ticks_usec() - time_before;
-	time_before = os.get_ticks_usec();
+	_stats.time_send_load_requests = profiling_clock.restart();
 
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
@@ -705,8 +703,7 @@ void VoxelTerrain::_process() {
 		}
 	}
 
-	_stats.time_process_load_responses = os.get_ticks_usec() - time_before;
-	time_before = os.get_ticks_usec();
+	_stats.time_process_load_responses = profiling_clock.restart();
 
 	// Send mesh updates
 	{
@@ -778,8 +775,7 @@ void VoxelTerrain::_process() {
 		_blocks_pending_update.clear();
 	}
 
-	_stats.time_send_update_requests = os.get_ticks_usec() - time_before;
-	time_before = os.get_ticks_usec();
+	_stats.time_send_update_requests = profiling_clock.restart();
 
 	// Get mesh updates
 	{
@@ -795,7 +791,7 @@ void VoxelTerrain::_process() {
 		}
 
 		Ref<World> world = get_world();
-		uint32_t time_before = os.get_ticks_msec();
+		ProfilingClock profiling_mesh_clock;
 		uint32_t timeout = os.get_ticks_msec() + 10;
 		int queue_index = 0;
 
@@ -867,11 +863,10 @@ void VoxelTerrain::_process() {
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
 
-		uint32_t time_taken = os.get_ticks_msec() - time_before;
-		_stats.mesh_alloc_time = time_taken;
+		_stats.mesh_alloc_time = profiling_mesh_clock.restart();
 	}
 
-	_stats.time_process_update_responses = os.get_ticks_usec() - time_before;
+	_stats.time_process_update_responses = profiling_clock.restart();
 
 	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") + String::num(_block_update_queue.size()));
 }
