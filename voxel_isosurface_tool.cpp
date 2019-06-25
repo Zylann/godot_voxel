@@ -33,7 +33,7 @@ namespace {
 
 inline void do_op(VoxelBuffer &buffer, int x, int y, int z, float d1, VoxelIsoSurfaceTool::Operation op) {
 
-	float res=0;
+	float res;
 
 	switch (op) {
 
@@ -47,6 +47,10 @@ inline void do_op(VoxelBuffer &buffer, int x, int y, int z, float d1, VoxelIsoSu
 
 		case VoxelIsoSurfaceTool::OP_SET:
 			res = d1;
+			break;
+
+		default:
+			res = 0;
 			break;
 	}
 
