@@ -52,8 +52,8 @@ public:
 	void set_viewer_path(NodePath path);
 	NodePath get_viewer_path() const;
 
-	void set_material(int id, Ref<Material> material);
-	Ref<Material> get_material(int id) const;
+	void set_material(unsigned int id, Ref<Material> material);
+	Ref<Material> get_material(unsigned int id) const;
 
 	bool is_smooth_meshing_enabled() const;
 	void set_smooth_meshing_enabled(bool enabled);

@@ -220,7 +220,7 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 
 void VoxelMap::clear() {
 	const Vector3i *key = NULL;
-	while (key = _blocks.next(key)) {
+	while ((key = _blocks.next(key))) {
 		VoxelBlock *block_ptr = _blocks.get(*key);
 		if (block_ptr == NULL) {
 			OS::get_singleton()->printerr("Unexpected NULL in VoxelMap::clear()");

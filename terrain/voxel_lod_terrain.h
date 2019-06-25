@@ -36,7 +36,7 @@ public:
 	float get_lod_split_scale() const;
 
 	void set_lod_count(unsigned int p_lod_count);
-	int get_lod_count() const;
+	unsigned int get_lod_count() const;
 
 	void set_viewer_path(NodePath path);
 	NodePath get_viewer_path() const;
@@ -67,8 +67,8 @@ protected:
 	void _process();
 
 private:
-	int get_block_size() const;
-	int get_block_size_pow2() const;
+	unsigned int get_block_size() const;
+	unsigned int get_block_size_pow2() const;
 	void make_all_view_dirty_deferred();
 	Spatial *get_viewer() const;
 	void immerge_block(Vector3i block_pos, unsigned int lod_index);

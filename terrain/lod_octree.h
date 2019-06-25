@@ -47,7 +47,7 @@ public:
 		_base_size = 0;
 	}
 
-	static void compute_lod_count(int base_size, int full_size) {
+	static int compute_lod_count(int base_size, int full_size) {
 		int po = 0;
 		while (full_size > base_size) {
 			full_size = full_size >> 1;
@@ -64,7 +64,7 @@ public:
 		_max_depth = lod_count - 1;
 	}
 
-	int get_lod_count() const {
+	unsigned int get_lod_count() const {
 		return _max_depth + 1;
 	}
 

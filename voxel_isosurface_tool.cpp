@@ -48,6 +48,10 @@ inline void do_op(VoxelBuffer &buffer, int x, int y, int z, float d1, VoxelIsoSu
 		case VoxelIsoSurfaceTool::OP_SET:
 			res = d1;
 			break;
+
+		default:
+			res = 0;
+			break;
 	}
 
 	buffer.set_voxel_f(res, x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
