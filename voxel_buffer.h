@@ -101,7 +101,7 @@ public:
 	Ref<VoxelBuffer> duplicate() const;
 
 	_FORCE_INLINE_ bool validate_pos(unsigned int x, unsigned int y, unsigned int z) const {
-		return x < _size.x && y < _size.y && z < _size.z;
+		return x < (unsigned) _size.x && y < (unsigned) _size.y && z < (unsigned) _size.z;
 	}
 
 	_FORCE_INLINE_ unsigned int index(unsigned int x, unsigned int y, unsigned int z) const {

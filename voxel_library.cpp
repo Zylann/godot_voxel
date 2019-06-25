@@ -16,7 +16,7 @@ VoxelLibrary::~VoxelLibrary() {
 
 int VoxelLibrary::get_voxel_count() const {
 	int count = 0;
-	for (int i = 0; i < MAX_VOXEL_TYPES; ++i) {
+	for (unsigned int i = 0; i < MAX_VOXEL_TYPES; ++i) {
 		if (_voxel_types[i].is_valid())
 			++count;
 	}
@@ -46,7 +46,7 @@ bool VoxelLibrary::_set(const StringName &p_name, const Variant &p_value) {
 	//	} else
 	if (p_name.operator String().begins_with("voxels/")) {
 
-		int idx = p_name.operator String().get_slicec('/', 1).to_int();
+		unsigned int idx = p_name.operator String().get_slicec('/', 1).to_int();
 		if (idx >= 0 && idx < MAX_VOXEL_TYPES) {
 			Ref<Voxel> voxel = p_value;
 			_voxel_types[idx] = voxel;
@@ -73,7 +73,7 @@ bool VoxelLibrary::_get(const StringName &p_name, Variant &r_ret) const {
 	//	} else
 	if (p_name.operator String().begins_with("voxels/")) {
 
-		int idx = p_name.operator String().get_slicec('/', 1).to_int();
+		unsigned int idx = p_name.operator String().get_slicec('/', 1).to_int();
 		if (idx >= 0 && idx < MAX_VOXEL_TYPES) {
 			r_ret = _voxel_types[idx];
 			return true;
@@ -88,7 +88,7 @@ void VoxelLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
 	//p_list->push_back(PropertyInfo(Variant::INT, "voxels/max"));
 
 	//for(int i = 0; i < _max_count; ++i) {
-	for (int i = 0; i < MAX_VOXEL_TYPES; ++i) {
+	for (unsigned int i = 0; i < MAX_VOXEL_TYPES; ++i) {
 		p_list->push_back(PropertyInfo(Variant::OBJECT, "voxels/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "Voxel"));
 	}
 }
@@ -98,7 +98,7 @@ void VoxelLibrary::set_atlas_size(int s) {
 	_atlas_size = s;
 }
 
-Ref<Voxel> VoxelLibrary::create_voxel(int id, String name) {
+Ref<Voxel> VoxelLibrary::create_voxel(unsigned int id, String name) {
 	ERR_FAIL_COND_V(id < 0 || id >= MAX_VOXEL_TYPES, Ref<Voxel>());
 	Ref<Voxel> voxel(memnew(Voxel));
 	voxel->set_library(Ref<VoxelLibrary>(this));
@@ -108,7 +108,7 @@ Ref<Voxel> VoxelLibrary::create_voxel(int id, String name) {
 	return voxel;
 }
 
-Ref<Voxel> VoxelLibrary::_get_voxel_bind(int id) {
+Ref<Voxel> VoxelLibrary::_get_voxel_bind(unsigned int id) {
 	ERR_FAIL_COND_V(id < 0 || id >= MAX_VOXEL_TYPES, Ref<Voxel>());
 	return _voxel_types[id];
 }

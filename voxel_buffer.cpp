@@ -152,7 +152,7 @@ void VoxelBuffer::fill_area(int defval, Vector3i min, Vector3i max, unsigned int
 	}
 
 	Vector3i pos;
-	int volume = get_volume();
+	unsigned int volume = get_volume();
 	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
 		for (pos.x = min.x; pos.x < max.x; ++pos.x) {
 			unsigned int dst_ri = index(pos.x, pos.y + min.y, pos.z);

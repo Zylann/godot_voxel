@@ -10,8 +10,15 @@ void VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_v
 		Variant arg2 = origin_in_voxels.to_vec3();
 		Variant arg3 = lod;
 		const Variant *args[3] = { &arg1, &arg2, &arg3 };
-		//Variant::CallError err; // wut
-		script->call("emerge_block", args, 3);
+		Variant::CallError err;
+		script->call("emerge_block", args, 3, err);
+		if (err.error != Variant::CallError::CALL_OK) {
+			ERR_EXPLAIN(String("voxel_stream.cpp:emerge_block gave an error: ") + String::num(err.error)
+				+ String(" Argument: ") + String::num(err.argument)
+				+ String(" Expected type: ") + String(Variant::get_type_name(err.expected)));
+			ERR_FAIL();
+			// This had to be explicitely logged due to the usual GD debugger not working with threads
+		}
 	}
 }
 
@@ -24,8 +31,15 @@ void VoxelStream::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxe
 		Variant arg2 = origin_in_voxels.to_vec3();
 		Variant arg3 = lod;
 		const Variant *args[3] = { &arg1, &arg2, &arg3 };
-		//Variant::CallError err; // wut
-		script->call("immerge_block", args, 3);
+		Variant::CallError err;
+		script->call("immerge_block", args, 3, err);
+		if (err.error != Variant::CallError::CALL_OK) {
+			ERR_EXPLAIN(String("voxel_stream.cpp:immerge_block gave an error: ") + String::num(err.error)
+				+ String(" Argument: ") + String::num(err.argument)
+				+ String(" Expected type: ") + String(Variant::get_type_name(err.expected)));
+			ERR_FAIL();
+			// This had to be explicitely logged due to the usual GD debugger not working with threads
+		}
 	}
 }
 

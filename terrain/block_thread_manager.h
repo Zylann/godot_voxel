@@ -129,12 +129,12 @@ public:
 
 		CRASH_COND(_job_count < 1);
 
-		int replaced_blocks = 0;
-		int highest_pending_count = 0;
-		int lowest_pending_count = 0;
+		unsigned int replaced_blocks = 0;
+		unsigned int highest_pending_count = 0;
+		unsigned int lowest_pending_count = 0;
 
 		// Lock all inputs and gather their pending work counts
-		for (int job_index = 0; job_index < _job_count; ++job_index) {
+		for (unsigned int job_index = 0; job_index < _job_count; ++job_index) {
 
 			JobData &job = _jobs[job_index];
 
@@ -144,19 +144,19 @@ public:
 			lowest_pending_count = MIN(lowest_pending_count, job.shared_input.blocks.size());
 		}
 
-		int i = 0;
+		unsigned int i = 0;
 
 		// We don't use a "weakest team gets it" dispatch for speed,
 		// So prioritize only jobs under median workload count and not just the highest.
-		int median_pending_count = lowest_pending_count + (highest_pending_count - lowest_pending_count) / 2;
+		unsigned int median_pending_count = lowest_pending_count + (highest_pending_count - lowest_pending_count) / 2;
 
 		// Dispatch to jobs with least pending requests
-		for (int job_index = 0; job_index < _job_count && i < input.blocks.size(); ++job_index) {
+		for (unsigned int job_index = 0; job_index < _job_count && i < input.blocks.size(); ++job_index) {
 
 			JobData &job = _jobs[job_index];
-			int pending_count = job.shared_input.blocks.size();
+			unsigned int pending_count = job.shared_input.blocks.size();
 
-			int count = MIN(median_pending_count - pending_count, input.blocks.size());
+			unsigned int count = MIN(median_pending_count - pending_count, input.blocks.size());
 
 			if (count > 0) {
 				if (i + count > input.blocks.size()) {
@@ -169,13 +169,13 @@ public:
 
 		// Dispatch equal count of remaining requests.
 		// Remainder is dispatched too until consumed through the first jobs.
-		int base_count = (input.blocks.size() - i) / _job_count;
-		int remainder = (input.blocks.size() - i) % _job_count;
-		for (int job_index = 0; job_index < _job_count && i < input.blocks.size(); ++job_index) {
+		unsigned int base_count = (input.blocks.size() - i) / _job_count;
+		unsigned int remainder = (input.blocks.size() - i) % _job_count;
+		for (unsigned int job_index = 0; job_index < _job_count && i < input.blocks.size(); ++job_index) {
 
 			JobData &job = _jobs[job_index];
 
-			int count = base_count;
+			unsigned int count = base_count;
 			if (remainder > 0) {
 				++count;
 				--remainder;
@@ -190,7 +190,7 @@ public:
 		}
 
 		// Set remaining data on all jobs, unlock inputs and resume
-		for (int job_index = 0; job_index < _job_count; ++job_index) {
+		for (unsigned int job_index = 0; job_index < _job_count; ++job_index) {
 
 			JobData &job = _jobs[job_index];
 
@@ -246,7 +246,7 @@ public:
 		d["dropped_count"] = stats.dropped_count;
 		Array remaining_blocks;
 		remaining_blocks.resize(stats.thread_count);
-		for (int i = 0; i < stats.thread_count; ++i) {
+		for (unsigned int i = 0; i < stats.thread_count; ++i) {
 			remaining_blocks[i] = stats.remaining_blocks[i];
 		}
 		d["remaining_blocks_per_thread"] = remaining_blocks;
@@ -287,14 +287,14 @@ private:
 		a.dropped_count += b.dropped_count;
 	}
 
-	int push_block_requests(JobData &job, const std::vector<InputBlock> &input_blocks, int begin, int count) {
+	unsigned int push_block_requests(JobData &job, const std::vector<InputBlock> &input_blocks, int begin, int count) {
 		// The job's input must have been locked first
 
-		int replaced_blocks = 0;
-		int end = begin + count;
+		unsigned int replaced_blocks = 0;
+		unsigned int end = begin + count;
 		CRASH_COND(end > input_blocks.size());
 
-		for (int i = begin; i < end; ++i) {
+		for (unsigned int i = begin; i < end; ++i) {
 
 			const InputBlock &block = input_blocks[i];
 			CRASH_COND(block.lod >= MAX_LOD)
@@ -336,7 +336,7 @@ private:
 
 			uint32_t sync_time = OS::get_singleton()->get_ticks_msec() + data.sync_interval_ms;
 
-			int queue_index = 0;
+			unsigned int queue_index = 0;
 			Stats stats;
 
 			thread_sync(data, queue_index, stats, stats.sorting_time, stats.dropped_count);
@@ -425,7 +425,7 @@ private:
 		}
 	};
 
-	static void thread_sync(JobData &data, int queue_index, Stats stats, uint64_t &out_sort_time, unsigned int &out_dropped_count) {
+	static void thread_sync(JobData &data, unsigned int queue_index, Stats stats, uint64_t &out_sort_time, unsigned int &out_dropped_count) {
 
 		if (!data.input.blocks.empty()) {
 			// Cleanup input vector
@@ -486,7 +486,7 @@ private:
 		// we would keep accumulating requests forever, and that means slower sorting and memory waste
 		int dropped_count = 0;
 		if (data.input.use_exclusive_region) {
-			for (int i = 0; i < data.input.blocks.size(); ++i) {
+			for (unsigned int i = 0; i < data.input.blocks.size(); ++i) {
 				const InputBlock &ib = data.input.blocks[i];
 
 				if (!ib.can_be_discarded) {

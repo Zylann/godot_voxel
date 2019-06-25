@@ -15,7 +15,7 @@ Array MeshBuilder::commit(bool wireframe) {
 		// Debug purpose, no effort to be fast here
 		std::vector<int> wireframe_indices;
 
-		for (int i = 0; i < _indices.size(); i += 3) {
+		for (unsigned int i = 0; i < _indices.size(); i += 3) {
 
 			wireframe_indices.push_back(_indices[i]);
 			wireframe_indices.push_back(_indices[i + 1]);

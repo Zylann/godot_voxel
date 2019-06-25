@@ -94,7 +94,7 @@ public:
 	template <typename Op_T>
 	void for_all_blocks(Op_T op) {
 		const Vector3i *key = NULL;
-		while (key = _blocks.next(key)) {
+		while ((key = _blocks.next(key))) {
 			VoxelBlock *block = _blocks.get(*key);
 			if (block != NULL) {
 				op(block);

@@ -58,7 +58,7 @@ void copy_to(PoolVector<T> &to, Vector<T> &from) {
 
 	typename PoolVector<T>::Write w = to.write();
 
-	for (unsigned int i = 0; i < from.size(); ++i) {
+	for (unsigned int i = 0; i < (unsigned int)from.size(); ++i) {
 		w[i] = from[i];
 	}
 }
@@ -133,14 +133,14 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 	const Vector3i block_size = voxels.get_size();
 	// TODO No lod yet, but it's planned
-	const int lod_index = 0;
-	const int lod_scale = 1 << lod_index;
+	//const int lod_index = 0;
+	//const int lod_scale = 1 << lod_index;
 
 	// Prepare vertex reuse cache
 	m_block_size = block_size;
 	unsigned int deck_area = block_size.x * block_size.y;
 	for (int i = 0; i < 2; ++i) {
-		if (m_cache[i].size() != deck_area) {
+		if ((unsigned int)m_cache[i].size() != deck_area) {
 			m_cache[i].clear(); // Clear any previous data
 			m_cache[i].resize(deck_area);
 		}

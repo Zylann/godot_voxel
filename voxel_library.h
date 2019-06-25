@@ -17,7 +17,7 @@ public:
 	void set_atlas_size(int s);
 
 	// Use this factory rather than creating voxels from scratch
-	Ref<Voxel> create_voxel(int id, String name);
+	Ref<Voxel> create_voxel(unsigned int id, String name);
 
 	int get_voxel_count() const;
 
@@ -35,7 +35,7 @@ protected:
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
-	Ref<Voxel> _get_voxel_bind(int id);
+	Ref<Voxel> _get_voxel_bind(unsigned int id);
 
 private:
 	Ref<Voxel> _voxel_types[MAX_VOXEL_TYPES];

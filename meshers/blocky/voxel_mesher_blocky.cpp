@@ -76,7 +76,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 		a.indices.clear();
 	}
 
-	float baked_occlusion_darkness;
+	float baked_occlusion_darkness=0;
 	if (_bake_occlusion)
 		baked_occlusion_darkness = _baked_occlusion_darkness / 3.0;
 
@@ -102,7 +102,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	// and then save a lot of time.
 
 	uint8_t *type_buffer = buffer.get_channel_raw(channel);
-	//       _
+	/*       _
 	//      | \
 	//     /\ \\
 	//    / /|\\\
@@ -111,6 +111,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	//    |    |  )
 	//     \   |  |
 	//      \    /
+	*/
 	if (type_buffer == nullptr) {
 		// No data to read, the channel is probably uniform
 		// TODO This is an invalid behavior IF sending a full block of uniformly opaque cubes,
@@ -161,9 +162,9 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	//uint64_t time_prep = OS::get_singleton()->get_ticks_usec() - time_before;
 	//time_before = OS::get_singleton()->get_ticks_usec();
 
-	for (unsigned int z = min.z; z < max.z; ++z) {
-		for (unsigned int x = min.x; x < max.x; ++x) {
-			for (unsigned int y = min.y; y < max.y; ++y) {
+	for (unsigned int z = min.z; z < (unsigned int)max.z; ++z) {
+		for (unsigned int x = min.x; x < (unsigned int)max.x; ++x) {
+			for (unsigned int y = min.y; y < (unsigned int)max.y; ++y) {
 				// min and max are chosen such that you can visit 1 neighbor away from the current voxel without size check
 
 				int voxel_index = y + x * row_size + z * deck_size;
@@ -182,7 +183,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 					for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 
 						const PoolVector<Vector3> &positions = voxel.get_model_side_positions(side);
-						int vertex_count = positions.size();
+						unsigned int vertex_count = positions.size();
 
 						if (vertex_count != 0) {
 
@@ -306,7 +307,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 						// TODO Get rid of push_backs
 
 						const PoolVector<Vector3> &vertices = voxel.get_model_positions();
-						int vertex_count = vertices.size();
+						unsigned int vertex_count = vertices.size();
 
 						PoolVector<Vector3>::Read rv = vertices.read();
 						PoolVector<Vector3>::Read rn = voxel.get_model_normals().read();
@@ -350,7 +351,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 
 	// TODO We could return a single byte array and use Mesh::add_surface down the line?
 
-	for (int i = 0; i < MAX_MATERIALS; ++i) {
+	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
 
 		const Arrays &arrays = _arrays[i];
 		if (arrays.positions.size() != 0) {

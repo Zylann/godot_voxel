@@ -44,11 +44,11 @@ Ref<VoxelStream> VoxelLodTerrain::get_stream() const {
 	return _stream;
 }
 
-int VoxelLodTerrain::get_block_size() const {
+unsigned int VoxelLodTerrain::get_block_size() const {
 	return _lods[0].map->get_block_size();
 }
 
-int VoxelLodTerrain::get_block_size_pow2() const {
+unsigned int VoxelLodTerrain::get_block_size_pow2() const {
 	return _lods[0].map->get_block_size_pow2();
 }
 
@@ -70,7 +70,7 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 }
 
 void VoxelLodTerrain::make_all_view_dirty_deferred() {
-	for (int i = 0; i < get_lod_count(); ++i) {
+	for (unsigned int i = 0; i < get_lod_count(); ++i) {
 		Lod &lod = _lods[i];
 		lod.last_view_distance_blocks = 0;
 	}
@@ -153,10 +153,11 @@ void VoxelLodTerrain::set_lod_count(unsigned int p_lod_count) {
 
 	if (get_lod_count() != p_lod_count) {
 
-		int bs = get_block_size();
-		_lod_octree.create_from_lod_count(bs, p_lod_count, LodOctree<bool>::NoDestroyAction());
+		unsigned int bs = get_block_size();
+		LodOctree<bool>::NoDestroyAction nda;
+		_lod_octree.create_from_lod_count(bs, p_lod_count, nda);
 
-		for (int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+		for (unsigned int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
 
 			Lod &lod = _lods[lod_index];
 
@@ -180,7 +181,7 @@ void VoxelLodTerrain::set_lod_count(unsigned int p_lod_count) {
 	}
 }
 
-int VoxelLodTerrain::get_lod_count() const {
+unsigned int VoxelLodTerrain::get_lod_count() const {
 	return _lod_octree.get_lod_count();
 }
 
@@ -283,15 +284,24 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_ENTER_WORLD:
-			for_all_blocks(EnterWorldAction(*get_world()));
+			{
+				EnterWorldAction ewa(*get_world());
+				for_all_blocks(ewa);
+			}
 			break;
 
 		case NOTIFICATION_EXIT_WORLD:
-			for_all_blocks(ExitWorldAction());
+			{
+				ExitWorldAction ewa;
+				for_all_blocks(ewa);
+			}
 			break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
-			for_all_blocks(SetVisibilityAction(is_visible()));
+			{
+				SetVisibilityAction sva(is_visible());
+				for_all_blocks(sva);
+			}
 			break;
 
 			// TODO Listen for transform changes
@@ -381,7 +391,7 @@ bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, uns
 //		Rect3i box,
 //		Set<Vector3i> &position_set) {
 
-//	for (int i = 0; i < positions.size(); ++i) {
+//	for (unsigned int i = 0; i < positions.size(); ++i) {
 //		const Vector3i bpos = positions[i];
 //		if (!box.contains(bpos)) {
 //			int last = positions.size() - 1;
@@ -425,7 +435,7 @@ void VoxelLodTerrain::_process() {
 			// Each LOD keeps a box of loaded blocks, and only some of the blocks will get polygonized.
 			// The player can edit them so changes can be propagated to lower lods.
 
-			int block_size_po2 = _lods[0].map->get_block_size_pow2() + lod_index;
+			unsigned int block_size_po2 = _lods[0].map->get_block_size_pow2() + lod_index;
 			Vector3i viewer_block_pos_within_lod = VoxelMap::voxel_to_block_b(viewer_pos, block_size_po2);
 
 			Rect3i new_box = Rect3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(block_region_extent));
@@ -474,7 +484,7 @@ void VoxelLodTerrain::_process() {
 	{
 		struct SubdivideAction {
 			VoxelLodTerrain *self;
-			int blocked_count = 0;
+			unsigned int blocked_count = 0;
 
 			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
 				CRASH_COND(lod_index == 0);
@@ -504,7 +514,7 @@ void VoxelLodTerrain::_process() {
 
 		struct UnsubdivideAction {
 			VoxelLodTerrain *self;
-			int blocked_count = 0;
+			unsigned int blocked_count = 0;
 
 			bool can_do(LodOctree<bool>::Node *node, unsigned int lod_index) {
 				// Can only unsubdivide if the parent mesh is ready
@@ -550,7 +560,7 @@ void VoxelLodTerrain::_process() {
 		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 			Lod &lod = _lods[lod_index];
 
-			for (int i = 0; i < lod.blocks_to_load.size(); ++i) {
+			for (unsigned int i = 0; i < lod.blocks_to_load.size(); ++i) {
 				VoxelDataLoader::InputBlock input_block;
 				input_block.position = lod.blocks_to_load[i];
 				input_block.lod = lod_index;
@@ -638,7 +648,7 @@ void VoxelLodTerrain::_process() {
 		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 			Lod &lod = _lods[lod_index];
 
-			for (int i = 0; i < lod.blocks_pending_update.size(); ++i) {
+			for (unsigned int i = 0; i < lod.blocks_pending_update.size(); ++i) {
 				Vector3i block_pos = lod.blocks_pending_update[i];
 
 				VoxelBlock *block = lod.map->get_block(block_pos);
@@ -687,7 +697,7 @@ void VoxelLodTerrain::_process() {
 			_block_updater->pop(output);
 			_stats.updater = output.stats;
 
-			for (unsigned int i = 0; i < output.blocks.size(); ++i) {
+			for (int i = 0; i < output.blocks.size(); ++i) {
 				const VoxelMeshUpdater::OutputBlock &ob = output.blocks[i];
 
 				if (ob.lod >= get_lod_count()) {
@@ -703,7 +713,7 @@ void VoxelLodTerrain::_process() {
 		Ref<World> world = get_world();
 		uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS; // Allocate milliseconds max to upload meshes
 
-		int queue_index = 0;
+		unsigned int queue_index = 0;
 
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
 		// This also proved to be very slow compared to the meshing process itself...
@@ -743,7 +753,7 @@ void VoxelLodTerrain::_process() {
 			Ref<ArrayMesh> mesh;
 			mesh.instance();
 
-			int surface_index = 0;
+			unsigned int surface_index = 0;
 			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
 			for (int i = 0; i < data.smooth_surfaces.surfaces.size(); ++i) {
 

@@ -52,7 +52,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 
 	Processor processors[Mgr::MAX_LOD];
 
-	for (int i = 0; i < thread_count; ++i) {
+	for (unsigned int i = 0; i < thread_count; ++i) {
 		Processor &p = processors[i];
 		if (i == 0) {
 			p.blocky_mesher = blocky_mesher;

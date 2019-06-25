@@ -1,5 +1,6 @@
 #include "voxel_terrain.h"
 #include "../streams/voxel_stream_test.h"
+#include "../util/profiling_clock.h"
 #include "../util/utility.h"
 #include "../util/voxel_raycast.h"
 #include "voxel_block.h"
@@ -45,7 +46,7 @@ VoxelTerrain::~VoxelTerrain() {
 bool VoxelTerrain::_set(const StringName &p_name, const Variant &p_value) {
 
 	if (p_name.operator String().begins_with("material/")) {
-		int idx = p_name.operator String().get_slicec('/', 1).to_int();
+		unsigned int idx = p_name.operator String().get_slicec('/', 1).to_int();
 		ERR_FAIL_COND_V(idx >= VoxelMesherBlocky::MAX_MATERIALS || idx < 0, false);
 		set_material(idx, p_value);
 		return true;
@@ -57,7 +58,7 @@ bool VoxelTerrain::_set(const StringName &p_name, const Variant &p_value) {
 bool VoxelTerrain::_get(const StringName &p_name, Variant &r_ret) const {
 
 	if (p_name.operator String().begins_with("material/")) {
-		int idx = p_name.operator String().get_slicec('/', 1).to_int();
+		unsigned int idx = p_name.operator String().get_slicec('/', 1).to_int();
 		ERR_FAIL_COND_V(idx >= VoxelMesherBlocky::MAX_MATERIALS || idx < 0, false);
 		r_ret = get_material(idx);
 		return true;
@@ -68,7 +69,7 @@ bool VoxelTerrain::_get(const StringName &p_name, Variant &r_ret) const {
 
 void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 
-	for (int i = 0; i < VoxelMesherBlocky::MAX_MATERIALS; ++i) {
+	for (unsigned int i = 0; i < VoxelMesherBlocky::MAX_MATERIALS; ++i) {
 		p_list->push_back(PropertyInfo(Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,SpatialMaterial"));
 	}
 }
@@ -156,13 +157,13 @@ Spatial *VoxelTerrain::get_viewer(NodePath path) const {
 	return Object::cast_to<Spatial>(node);
 }
 
-void VoxelTerrain::set_material(int id, Ref<Material> material) {
+void VoxelTerrain::set_material(unsigned int id, Ref<Material> material) {
 	// TODO Update existing block surfaces
 	ERR_FAIL_COND(id < 0 || id >= VoxelMesherBlocky::MAX_MATERIALS);
 	_materials[id] = material;
 }
 
-Ref<Material> VoxelTerrain::get_material(int id) const {
+Ref<Material> VoxelTerrain::get_material(unsigned int id) const {
 	ERR_FAIL_COND_V(id < 0 || id >= VoxelMesherBlocky::MAX_MATERIALS, Ref<Material>());
 	return _materials[id];
 }
@@ -631,8 +632,7 @@ void VoxelTerrain::_process() {
 
 	ERR_FAIL_COND(_map.is_null());
 
-	// TODO Use ProfilingClock
-	uint64_t time_before = os.get_ticks_usec();
+	ProfilingClock profiling_clock;
 
 	// Get viewer location
 	// TODO Transform to local (Spatial Transform)
@@ -679,17 +679,14 @@ void VoxelTerrain::_process() {
 		remove_positions_outside_box(_blocks_pending_update, new_box, _dirty_blocks);
 	}
 
-	_stats.time_detect_required_blocks = os.get_ticks_usec() - time_before;
+	_stats.time_detect_required_blocks = profiling_clock.restart();
 
 	_last_view_distance_blocks = _view_distance_blocks;
 	_last_viewer_block_pos = viewer_block_pos;
 
-	time_before = os.get_ticks_usec();
-
 	send_block_data_requests();
 
-	_stats.time_send_load_requests = os.get_ticks_usec() - time_before;
-	time_before = os.get_ticks_usec();
+	_stats.time_send_load_requests = profiling_clock.restart();
 
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
@@ -777,8 +774,7 @@ void VoxelTerrain::_process() {
 		}
 	}
 
-	_stats.time_process_load_responses = os.get_ticks_usec() - time_before;
-	time_before = os.get_ticks_usec();
+	_stats.time_process_load_responses = profiling_clock.restart();
 
 	// Send mesh updates
 	{
@@ -850,8 +846,7 @@ void VoxelTerrain::_process() {
 		_blocks_pending_update.clear();
 	}
 
-	_stats.time_send_update_requests = os.get_ticks_usec() - time_before;
-	time_before = os.get_ticks_usec();
+	_stats.time_send_update_requests = profiling_clock.restart();
 
 	// Get mesh updates
 	{
@@ -867,7 +862,7 @@ void VoxelTerrain::_process() {
 		}
 
 		Ref<World> world = get_world();
-		uint32_t time_before = os.get_ticks_msec();
+		ProfilingClock profiling_mesh_clock;
 		uint32_t timeout = os.get_ticks_msec() + 10;
 		int queue_index = 0;
 
@@ -939,11 +934,10 @@ void VoxelTerrain::_process() {
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
 
-		uint32_t time_taken = os.get_ticks_msec() - time_before;
-		_stats.mesh_alloc_time = time_taken;
+		_stats.mesh_alloc_time = profiling_mesh_clock.restart();
 	}
 
-	_stats.time_process_update_responses = os.get_ticks_usec() - time_before;
+	_stats.time_process_update_responses = profiling_clock.restart();
 
 	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") + String::num(_block_update_queue.size()));
 }
