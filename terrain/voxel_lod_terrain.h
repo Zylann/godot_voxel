@@ -45,7 +45,7 @@ public:
 	Dictionary get_block_info(Vector3 fbpos, unsigned int lod_index) const;
 	Vector3 voxel_to_block_position(Vector3 vpos, unsigned int lod_index) const;
 
-	Ref<VoxelMap> get_map() { return _lods[0].map; }
+	Ref<VoxelMap> get_map(unsigned int lod_index) { return _lods[lod_index].map; }
 
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;

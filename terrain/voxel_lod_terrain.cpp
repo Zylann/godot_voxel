@@ -796,10 +796,27 @@ static bool _raycast_binding_predicate(Vector3i pos, void *context_ptr) {
 	_VoxelLodTerrainRaycastContext *context = (_VoxelLodTerrainRaycastContext *)context_ptr;
 	VoxelLodTerrain &terrain = context->terrain;
 
-	Ref<VoxelMap> map = terrain.get_map();
 
-	float v1 = map->get_voxel_f(pos.x, pos.y, pos.z, Voxel::CHANNEL_ISOLEVEL);
-	return v1 < 0;
+	float value = 0.0;
+
+	int lods = terrain.get_lod_count();
+	//printf("Lod-Raycast: Lod count=%d\n", lods);
+	for (int i = 0; i < lods; i++) {
+		//printf("Lod-Raycast: Getting map %d\n", i);
+		Ref<VoxelMap> map = terrain.get_map(i);
+		if (map != nullptr) {
+			//printf("Lod-Raycast: Found map %d\n", i);
+			float v1 = map->get_voxel_f(pos.x, pos.y, pos.z, Voxel::CHANNEL_ISOLEVEL);
+			//printf("Lod-Raycast: Ray cast value v1: %f\n", v1);
+			value = v1;
+			if (v1 < 0) {
+				//printf("Lod-Raycast: Found on map %d, value %f\n", i, value);
+				return true;
+			}
+		}
+	}
+	return false;
+
 }
 
 Variant VoxelLodTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance) {
