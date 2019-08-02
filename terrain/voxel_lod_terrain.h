@@ -23,6 +23,9 @@ public:
 	VoxelLodTerrain();
 	~VoxelLodTerrain();
 
+	void set_generate_collision(bool enabled);
+	bool get_generate_collision() const;
+
 	Ref<Material> get_material() const;
 	void set_material(Ref<Material> p_material);
 
@@ -108,6 +111,8 @@ private:
 	VoxelDataLoader *_stream_thread = nullptr;
 	VoxelMeshUpdater *_block_updater = nullptr;
 	std::vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
+
+	bool _generate_collision;
 
 	Ref<Material> _material;
 

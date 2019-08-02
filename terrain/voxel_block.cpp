@@ -20,6 +20,7 @@ VoxelBlock::VoxelBlock() {
 }
 
 VoxelBlock::~VoxelBlock() {
+	destroy_collision();
 }
 
 void VoxelBlock::set_mesh(Ref<Mesh> mesh, Ref<World> world) {
@@ -85,10 +86,73 @@ void VoxelBlock::set_world(World *world) {
 void VoxelBlock::set_visible(bool visible) {
 	if (_mesh_instance.is_valid()) {
 		_mesh_instance.set_visible(visible);
+
+		// Turn on or off collision with visibility
+		if (_static_body) {
+			if (_static_body->get_child_count() > 0) {
+				CollisionShape* cshape = (CollisionShape*)_static_body->get_child(0);
+				if (cshape) {
+					cshape->set_disabled(!visible);
+				}
+			}
+		}
 	}
 	_visible = visible;
 }
 
 bool VoxelBlock::is_visible() const {
 	return _visible;
+}
+
+void VoxelBlock::generate_collision(Node* parent) {
+
+	// Destroy any existing collision
+	destroy_collision();
+
+	if (! _mesh_instance.is_valid()) {
+		return;
+	}
+
+	Ref<Shape> shape = _mesh_instance.get_mesh()->create_trimesh_shape();	// memnew() allocation
+	if (shape.is_null()) {
+		return;
+	}
+
+	_static_body = memnew(StaticBody);
+	CollisionShape *cshape = memnew(CollisionShape);
+	cshape->set_shape(shape);
+	_static_body->add_child(cshape);
+
+	// Align the collision shape with the mesh
+	_static_body->set_translation(_position_in_voxels.to_vec3());
+
+	// Add the collision to the Node tree
+	_parent = parent;
+	_parent->add_child(_static_body);
+}
+
+void VoxelBlock::destroy_collision() {
+
+	// If a mesh has been created for this block
+	if (_static_body != NULL) {
+
+		// If VoxelTerrain child count == 0, then it has been deleted and perhaps everything else has been too
+		// If > 0, then Terrain is active and paging, so delete nodes as normal
+		if (_parent->get_child_count() > 0) {
+			_parent->remove_child(_static_body);
+
+			if (_static_body->get_child_count() > 0) {
+				CollisionShape* cshape = (CollisionShape*)_static_body->get_child(0);
+				if (cshape) {
+					Ref<Shape> shape = cshape->get_shape();	// From create_trimesh_shape()
+					memdelete(cshape);
+					shape.unref();
+				}
+			}
+
+			memdelete(_static_body);
+			_static_body = NULL;
+		}
+	}
+
 }

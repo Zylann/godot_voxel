@@ -20,6 +20,8 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	set_lod_count(8);
 	set_lod_split_scale(3);
+
+	_generate_collision = true;
 }
 
 VoxelLodTerrain::~VoxelLodTerrain() {
@@ -33,6 +35,14 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 	if (_block_updater) {
 		memdelete(_block_updater);
 	}
+}
+
+void VoxelLodTerrain::set_generate_collision(bool enabled) {
+	_generate_collision = enabled;
+}
+
+bool VoxelLodTerrain::get_generate_collision() const {
+	return _generate_collision;
 }
 
 Ref<Material> VoxelLodTerrain::get_material() const {
@@ -890,6 +900,10 @@ void VoxelLodTerrain::_process() {
 
 			block->set_mesh(mesh, world);
 			block->mark_been_meshed();
+
+			if (_generate_collision) {
+				block->generate_collision(this);
+			}
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
@@ -925,6 +939,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelLodTerrain::get_stream);
 
+	ClassDB::bind_method(D_METHOD("get_generate_collision"), &VoxelLodTerrain::get_generate_collision);
+	ClassDB::bind_method(D_METHOD("set_generate_collision", "enabled"), &VoxelLodTerrain::set_generate_collision);
+
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &VoxelLodTerrain::set_material);
 	ClassDB::bind_method(D_METHOD("get_material"), &VoxelLodTerrain::get_material);
 
@@ -952,5 +969,6 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collision"), "set_generate_collision", "get_generate_collision");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"), "set_material", "get_material");
 }

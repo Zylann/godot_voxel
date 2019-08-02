@@ -25,7 +25,7 @@ VoxelTerrain::VoxelTerrain() {
 	_stream_thread = NULL;
 	_block_updater = NULL;
 
-	_generate_collisions = false;
+	_generate_collision = true;
 	_run_in_editor = false;
 	_smooth_meshing_enabled = false;
 }
@@ -197,8 +197,12 @@ void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
 	make_all_view_dirty_deferred();
 }
 
-void VoxelTerrain::set_generate_collisions(bool enabled) {
-	_generate_collisions = enabled;
+void VoxelTerrain::set_generate_collision(bool enabled) {
+	_generate_collision = enabled;
+}
+
+bool VoxelTerrain::get_generate_collision() const {
+	return _generate_collision;
 }
 
 int VoxelTerrain::get_view_distance() const {
@@ -1059,6 +1063,10 @@ void VoxelTerrain::_process() {
 			}
 
 			block->set_mesh(mesh, world);
+
+			if (_generate_collision) {
+				block->generate_collision(this);
+			}
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
@@ -1169,8 +1177,8 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_view_distance", "distance_in_voxels"), &VoxelTerrain::set_view_distance);
 	ClassDB::bind_method(D_METHOD("get_view_distance"), &VoxelTerrain::get_view_distance);
 
-	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelTerrain::get_generate_collisions);
-	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelTerrain::set_generate_collisions);
+	ClassDB::bind_method(D_METHOD("get_generate_collision"), &VoxelTerrain::get_generate_collision);
+	ClassDB::bind_method(D_METHOD("set_generate_collision", "enabled"), &VoxelTerrain::set_generate_collision);
 
 	ClassDB::bind_method(D_METHOD("get_viewer_path"), &VoxelTerrain::get_viewer_path);
 	ClassDB::bind_method(D_METHOD("set_viewer_path", "path"), &VoxelTerrain::set_viewer_path);
@@ -1197,7 +1205,7 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"), "set_voxel_library", "get_voxel_library");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collision"), "set_generate_collision", "get_generate_collision");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "smooth_meshing_enabled"), "set_smooth_meshing_enabled", "is_smooth_meshing_enabled");
 
 	BIND_ENUM_CONSTANT(BLOCK_NONE);

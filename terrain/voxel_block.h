@@ -4,6 +4,9 @@
 #include "../util/direct_mesh_instance.h"
 #include "../voxel_buffer.h"
 
+#include <scene/3d/collision_shape.h>
+#include <scene/3d/physics_body.h>
+
 // Internal structure holding a reference to mesh visuals, physics and a block of voxel data.
 class VoxelBlock {
 public:
@@ -40,6 +43,9 @@ public:
 		return _mesh_state == MESH_UPDATE_NOT_SENT || _mesh_state == MESH_UPDATE_SENT;
 	}
 
+	void generate_collision(Node* parent);
+	void destroy_collision();
+
 private:
 	VoxelBlock();
 
@@ -54,6 +60,9 @@ private:
 	// The mesh might be null, but we don't know if it's actually empty or if it's loading.
 	// This boolean tells if we attempted to mesh this block at least once.
 	bool _has_been_meshed = false;
+
+	StaticBody* _static_body = NULL;
+	Node* _parent = NULL;
 };
 
 #endif // VOXEL_BLOCK_H

@@ -46,8 +46,8 @@ public:
 	void make_area_dirty(Rect3i box);
 	bool is_block_dirty(Vector3i bpos) const;
 
-	void set_generate_collisions(bool enabled);
-	bool get_generate_collisions() const { return _generate_collisions; }
+	void set_generate_collision(bool enabled);
+	bool get_generate_collision() const;
 
 	int get_view_distance() const;
 	void set_view_distance(int distance_in_voxels);
@@ -158,7 +158,7 @@ private:
 	Vector3i _last_viewer_block_pos;
 	int _last_view_distance_blocks;
 
-	bool _generate_collisions;
+	bool _generate_collision;
 	bool _run_in_editor;
 	bool _smooth_meshing_enabled;
 
