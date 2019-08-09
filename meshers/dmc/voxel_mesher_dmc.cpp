@@ -1466,7 +1466,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 	// - Voxel data must be padded
 	// - The non-padded area size is cubic and power of two
 
-	_stats = { 0 };
+	_stats = { };
 
 	if (voxels.is_uniform(VoxelBuffer::CHANNEL_ISOLEVEL)) {
 		// That won't produce any polygon
