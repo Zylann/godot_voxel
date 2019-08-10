@@ -10,7 +10,7 @@ A C++ module for creating volumetric worlds in Godot Engine.
 Features
 ---------------------------
 
-- Realtime editable, 3D based terrain (Unlike a hightmap based terrain, this allows for overhangs, tunnels, and user creation/destruction)
+- Realtime editable, 3D based terrain (Unlike a heightmap based terrain, this allows for overhangs, tunnels, and user creation/destruction)
 - Full collision support
 - Infinite terrains made by paging sections in and out
 - Voxel data is streamed from a variety of sources, which includes the ability to write your own
