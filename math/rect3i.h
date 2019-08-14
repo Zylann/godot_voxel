@@ -16,6 +16,10 @@ public:
 			pos(p_pos),
 			size(p_size) {}
 
+	Rect3i(int ox, int oy, int oz, int sx, int sy, int sz) :
+			pos(ox, oy, oz),
+			size(sz, sy, sz) {}
+
 	Rect3i(const Rect3i &other) :
 			pos(other.pos),
 			size(other.size) {}

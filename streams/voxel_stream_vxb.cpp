@@ -66,37 +66,7 @@ void VoxelStreamVXB::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_i
 			ERR_FAIL_COND(err != OK);
 		}
 
-		// Read buffer
-		for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
-
-			uint8_t compression_value = f->get_8();
-			ERR_FAIL_COND(compression_value >= VoxelBuffer::COMPRESSION_COUNT);
-			VoxelBuffer::Compression compression = (VoxelBuffer::Compression)compression_value;
-
-			switch (compression) {
-
-				case VoxelBuffer::COMPRESSION_NONE: {
-					uint32_t expected_len = _meta.block_size.volume() * sizeof(uint8_t);
-					// TODO Optimize allocations here
-					uint8_t *buffer = (uint8_t *)memalloc(expected_len);
-					uint32_t read_len = f->get_buffer(buffer, expected_len);
-					if (read_len != expected_len) {
-						memdelete(buffer);
-						ERR_PRINT("Unexpected end of file");
-						return;
-					}
-					out_buffer->grab_channel_data(buffer, channel_index, compression);
-				} break;
-
-				case VoxelBuffer::COMPRESSION_UNIFORM:
-					out_buffer->clear_channel(channel_index, f->get_8());
-					break;
-
-				default:
-					ERR_PRINT("Unhandled compression mode");
-					return;
-			}
-		}
+		read_voxel_buffer(f, out_buffer);
 	}
 }
 
@@ -134,30 +104,7 @@ void VoxelStreamVXB::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_v
 		f->store_buffer((uint8_t *)FORMAT_BLOCK_MAGIC, 4);
 		f->store_8(FORMAT_VERSION);
 
-		for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
-
-			VoxelBuffer::Compression compression = buffer->get_channel_compression(channel_index);
-			f->store_8(static_cast<uint8_t>(compression));
-
-			switch (compression) {
-
-				case VoxelBuffer::COMPRESSION_NONE: {
-					uint8_t *data = buffer->get_channel_raw(channel_index);
-					CRASH_COND(data == nullptr);
-					uint32_t len = _meta.block_size.volume() * sizeof(uint8_t);
-					f->store_buffer(data, len);
-				} break;
-
-				case VoxelBuffer::COMPRESSION_UNIFORM: {
-					int v = buffer->get_voxel(Vector3i(), channel_index);
-					f->store_8((uint8_t)v);
-				} break;
-
-				default:
-					ERR_PRINT("Unhandled compression mode");
-					return;
-			}
-		}
+		write_voxel_buffer(f, buffer);
 	}
 }
 
@@ -258,11 +205,7 @@ String VoxelStreamVXB::get_block_file_path(const Vector3i &block_pos, unsigned i
 }
 
 Vector3i VoxelStreamVXB::get_block_position(const Vector3i &origin_in_voxels) const {
-	Vector3i block_pos;
-	block_pos.x = udiv(origin_in_voxels.x, _meta.block_size.x);
-	block_pos.y = udiv(origin_in_voxels.y, _meta.block_size.y);
-	block_pos.z = udiv(origin_in_voxels.z, _meta.block_size.z);
-	return block_pos;
+	return origin_in_voxels.udiv(_meta.block_size);
 }
 
 void VoxelStreamVXB::_bind_methods() {

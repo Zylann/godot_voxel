@@ -1,6 +1,7 @@
 #ifndef VOXEL_VECTOR3I_H
 #define VOXEL_VECTOR3I_H
 
+#include "../util/utility.h"
 #include <core/hashfuncs.h>
 #include <core/math/vector3.h>
 
@@ -115,6 +116,14 @@ struct Vector3i {
 		sort_min_max(a.x, b.x);
 		sort_min_max(a.y, b.y);
 		sort_min_max(a.z, b.z);
+	}
+
+	inline Vector3i udiv(const Vector3i d) const {
+		return Vector3i(::udiv(x, d.x), ::udiv(y, d.y), ::udiv(z, d.z));
+	}
+
+	inline Vector3i umod(const Vector3i d) const {
+		return Vector3i(::umod(x, d.x), ::umod(y, d.y), ::umod(z, d.z));
 	}
 
 private:

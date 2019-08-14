@@ -9,8 +9,17 @@
 class VoxelStream : public Resource {
 	GDCLASS(VoxelStream, Resource)
 public:
+	struct BlockRequest {
+		Ref<VoxelBuffer> voxel_buffer;
+		Vector3i origin_in_voxels;
+		int lod;
+	};
+
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
+
+	virtual void emerge_blocks(Vector<BlockRequest> &p_blocks);
+	virtual void immerge_blocks(Vector<BlockRequest> &p_blocks);
 
 	virtual bool is_thread_safe() const;
 	virtual bool is_cloneable() const;

@@ -80,6 +80,7 @@ inline Error check_directory_created(const String &directory_path) {
 	return OK;
 }
 
+// TODO Obsolete, use FileAccessRef
 struct AutoDeleteFile {
 	FileAccess *f = nullptr;
 	~AutoDeleteFile() {
