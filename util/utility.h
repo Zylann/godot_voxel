@@ -115,12 +115,9 @@ inline int udiv(int x, int d) {
 	}
 }
 
+// `wrapi` with zero min
 inline int umod(int x, int d) {
-	if (x < 0) {
-		return static_cast<uint32_t>(x - 1) % d;
-	} else {
-		return x % d;
-	}
+	return ((x % d) + d) % d;
 }
 
 #endif // HEADER_VOXEL_UTILITY_H
