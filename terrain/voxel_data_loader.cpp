@@ -42,7 +42,6 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int 
 		processors[0].stream = stream;
 	}
 
-	// TODO Re-enable duplicate rejection, was turned off to investigate some bugs
 	_mgr = memnew(Mgr(thread_count, 500, processors, true));
 }
 

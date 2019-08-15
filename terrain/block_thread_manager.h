@@ -64,6 +64,12 @@ public:
 		uint32_t remaining_blocks[MAX_JOBS];
 		uint32_t thread_count = 0;
 		uint32_t dropped_count = 0;
+
+		Stats() {
+			for (int i = 0; i < MAX_JOBS; ++i) {
+				remaining_blocks[i] = 0;
+			}
+		}
 	};
 
 	struct Output {
