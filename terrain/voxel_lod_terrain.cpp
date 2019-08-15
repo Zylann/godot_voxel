@@ -283,26 +283,20 @@ void VoxelLodTerrain::_notification(int p_what) {
 		case NOTIFICATION_EXIT_TREE:
 			break;
 
-		case NOTIFICATION_ENTER_WORLD:
-			{
-				EnterWorldAction ewa(*get_world());
-				for_all_blocks(ewa);
-			}
-			break;
+		case NOTIFICATION_ENTER_WORLD: {
+			EnterWorldAction ewa(*get_world());
+			for_all_blocks(ewa);
+		} break;
 
-		case NOTIFICATION_EXIT_WORLD:
-			{
-				ExitWorldAction ewa;
-				for_all_blocks(ewa);
-			}
-			break;
+		case NOTIFICATION_EXIT_WORLD: {
+			ExitWorldAction ewa;
+			for_all_blocks(ewa);
+		} break;
 
-		case NOTIFICATION_VISIBILITY_CHANGED:
-			{
-				SetVisibilityAction sva(is_visible());
-				for_all_blocks(sva);
-			}
-			break;
+		case NOTIFICATION_VISIBILITY_CHANGED: {
+			SetVisibilityAction sva(is_visible());
+			for_all_blocks(sva);
+		} break;
 
 			// TODO Listen for transform changes
 
