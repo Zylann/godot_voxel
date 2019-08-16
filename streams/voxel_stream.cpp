@@ -76,6 +76,10 @@ void VoxelStream::_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxe
 	immerge_block(buffer, Vector3i(origin_in_voxels), lod);
 }
 
+VoxelStream::Stats VoxelStream::get_stats() const {
+	return _stats;
+}
+
 void VoxelStream::_bind_methods() {
 	// Note: C++ inheriting classes don't need to re-bind these, because they are bindings that call the actual virtual methods
 

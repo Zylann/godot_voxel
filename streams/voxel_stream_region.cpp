@@ -396,6 +396,7 @@ Error VoxelStreamRegion::save_meta() {
 
 	Error err;
 	FileAccessRef f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
+	++_stats.file_opens;
 	if (!f) {
 		print_error(String("Could not save {0}").format(varray(meta_path)));
 		return err;
@@ -422,6 +423,7 @@ Error VoxelStreamRegion::load_meta() {
 	{
 		Error err;
 		FileAccessRef f = FileAccess::open(meta_path, FileAccess::READ, &err);
+		++_stats.file_opens;
 		if (!f) {
 			//print_error(String("Could not load {0}").format(varray(meta_path)));
 			return err;
@@ -523,6 +525,7 @@ VoxelStreamRegion::CachedRegion *VoxelStreamRegion::open_region(const Vector3i r
 	String fpath = get_region_file_path(region_pos, lod);
 	Error existing_file_err;
 	FileAccess *existing_f = FileAccess::open(fpath, FileAccess::READ_WRITE, &existing_file_err);
+	++_stats.file_opens;
 	// TODO Cache the fact the file doesnt exist, so we won't need to do a system call to actually check it every time
 	// TODO No need to read the header again when it has been read once, we assume no other process will modify region files
 
@@ -541,6 +544,7 @@ VoxelStreamRegion::CachedRegion *VoxelStreamRegion::open_region(const Vector3i r
 
 		Error file_err;
 		FileAccess *f = FileAccess::open(fpath, FileAccess::WRITE_READ, &file_err);
+		++_stats.file_opens;
 		ERR_FAIL_COND_V_MSG(!f, nullptr, "Failed to write file " + fpath + ", error " + String::num_int64(file_err));
 		ERR_FAIL_COND_V_MSG(file_err != OK, nullptr, "Error " + String::num_int64(file_err));
 

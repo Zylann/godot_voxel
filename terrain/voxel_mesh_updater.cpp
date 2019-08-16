@@ -69,7 +69,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 			}
 		}
 
-		processors[i] = [this, blocky_mesher, smooth_mesher](const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs) {
+		processors[i] = [this, blocky_mesher, smooth_mesher](const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Mgr::ProcessorStats &_) {
 			this->process_blocks_thread_func(inputs, outputs, blocky_mesher, smooth_mesher, this->_required_padding);
 		};
 	}

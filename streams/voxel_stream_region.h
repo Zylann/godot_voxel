@@ -139,7 +139,7 @@ private:
 	bool _meta_loaded = false;
 	bool _meta_saved = false;
 	std::vector<CachedRegion *> _region_cache;
-	int _max_open_regions = MIN(4, FOPEN_MAX);
+	int _max_open_regions = MIN(8, FOPEN_MAX);
 };
 
 #endif // VOXEL_STREAM_REGION_H

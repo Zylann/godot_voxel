@@ -59,7 +59,12 @@ public:
 		}
 	};
 
+	struct ProcessorStats {
+		int file_opens = 0;
+	};
+
 	struct Stats {
+		// Generic stats
 		bool first = true;
 		uint64_t min_time = 0;
 		uint64_t max_time = 0;
@@ -67,6 +72,8 @@ public:
 		uint32_t remaining_blocks[MAX_JOBS];
 		uint32_t thread_count = 0;
 		uint32_t dropped_count = 0;
+		// Processor-specific
+		ProcessorStats processor;
 
 		Stats() {
 			for (int i = 0; i < MAX_JOBS; ++i) {
@@ -80,7 +87,7 @@ public:
 		Stats stats;
 	};
 
-	typedef std::function<void(ArraySlice<InputBlock>, ArraySlice<OutputBlock>)> BlockProcessingFunc;
+	typedef std::function<void(ArraySlice<InputBlock>, ArraySlice<OutputBlock>, ProcessorStats &)> BlockProcessingFunc;
 
 	// TODO Make job count dynamic, don't start threads in constructor
 
@@ -270,6 +277,7 @@ public:
 			remaining_blocks[i] = stats.remaining_blocks[i];
 		}
 		d["remaining_blocks_per_thread"] = remaining_blocks;
+		d["file_opens"] = stats.processor.file_opens;
 		return d;
 	}
 
@@ -301,11 +309,14 @@ private:
 	};
 
 	static void merge_stats(Stats &a, const Stats &b, int job_index) {
+
 		a.max_time = MAX(a.max_time, b.max_time);
 		a.min_time = MIN(a.min_time, b.min_time);
 		a.remaining_blocks[job_index] = b.remaining_blocks[job_index];
 		a.sorting_time += b.sorting_time;
 		a.dropped_count += b.dropped_count;
+
+		a.processor.file_opens += b.processor.file_opens;
 	}
 
 	unsigned int push_block_requests(JobData &job, const std::vector<InputBlock> &input_blocks, int begin, int count) {
@@ -398,7 +409,8 @@ private:
 
 						data.processor(
 								ArraySlice<InputBlock>(&data.input.blocks[0], input_begin, input_begin + batch_count),
-								ArraySlice<OutputBlock>(&data.output.blocks.write[0], output_begin, output_begin + batch_count));
+								ArraySlice<OutputBlock>(&data.output.blocks.write[0], output_begin, output_begin + batch_count),
+								stats.processor);
 
 						uint64_t time_taken = (OS::get_singleton()->get_ticks_usec() - time_before) / batch_count;
 

@@ -10,8 +10,8 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int 
 
 	Mgr::BlockProcessingFunc processors[Mgr::MAX_JOBS];
 
-	processors[0] = [this, stream](ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs) {
-		this->process_blocks_thread_func(inputs, outputs, stream);
+	processors[0] = [this, stream](ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Mgr::ProcessorStats &stats) {
+		this->process_blocks_thread_func(inputs, outputs, stream, stats);
 	};
 
 	if (thread_count > 1) {
@@ -27,8 +27,8 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int 
 			// but won't be as useful for file and network streams
 			for (int i = 1; i < thread_count; ++i) {
 				stream = stream->duplicate();
-				processors[i] = [this, stream](ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs) {
-					this->process_blocks_thread_func(inputs, outputs, stream);
+				processors[i] = [this, stream](ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Mgr::ProcessorStats &stats) {
+					this->process_blocks_thread_func(inputs, outputs, stream, stats);
 				};
 			}
 
@@ -38,7 +38,7 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int 
 		}
 	}
 
-	int batch_count = 32;
+	int batch_count = 128;
 	int sync_interval_ms = 500;
 
 	_block_size_pow2 = block_size_pow2;
@@ -53,7 +53,7 @@ VoxelDataLoader::~VoxelDataLoader() {
 }
 
 // Can run in multiple threads
-void VoxelDataLoader::process_blocks_thread_func(const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Ref<VoxelStream> stream) {
+void VoxelDataLoader::process_blocks_thread_func(const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Ref<VoxelStream> stream, Mgr::ProcessorStats &stats) {
 
 	CRASH_COND(inputs.size() != outputs.size());
 
@@ -88,6 +88,8 @@ void VoxelDataLoader::process_blocks_thread_func(const ArraySlice<InputBlock> in
 
 	stream->emerge_blocks(emerge_requests);
 	stream->immerge_blocks(immerge_requests);
+
+	stats.file_opens = stream->get_stats().file_opens;
 
 	// Assumes the stream won't change output order
 	int iload = 0;

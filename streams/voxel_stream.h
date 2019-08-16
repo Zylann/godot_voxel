@@ -15,6 +15,10 @@ public:
 		int lod;
 	};
 
+	struct Stats {
+		int file_opens = 0;
+	};
+
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
 
@@ -25,11 +29,15 @@ public:
 	virtual bool is_thread_safe() const;
 	virtual bool is_cloneable() const;
 
+	Stats get_stats() const;
+
 protected:
 	static void _bind_methods();
 
 	void _emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
 	void _immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
+
+	Stats _stats;
 };
 
 #endif // VOXEL_STREAM_H

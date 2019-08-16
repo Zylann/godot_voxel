@@ -36,7 +36,7 @@ public:
 	void pop(Output &output) { _mgr->pop(output); }
 
 private:
-	void process_blocks_thread_func(const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Ref<VoxelStream> stream);
+	void process_blocks_thread_func(const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Ref<VoxelStream> stream, Mgr::ProcessorStats &stats);
 
 	Mgr *_mgr = nullptr;
 	int _block_size_pow2 = 0;
