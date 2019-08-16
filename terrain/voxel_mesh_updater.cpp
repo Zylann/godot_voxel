@@ -36,11 +36,14 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 	Ref<VoxelMesherBlocky> blocky_mesher;
 	Ref<VoxelMesherDMC> smooth_mesher;
 
+	_required_padding = 0;
+
 	if (params.library.is_valid()) {
 		blocky_mesher.instance();
 		blocky_mesher->set_library(params.library);
 		blocky_mesher->set_occlusion_enabled(params.baked_ao);
 		blocky_mesher->set_occlusion_darkness(params.baked_ao_darkness);
+		_required_padding = max(_required_padding, blocky_mesher->get_minimum_padding());
 	}
 
 	if (params.smooth_surface) {
@@ -48,26 +51,27 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 		smooth_mesher->set_geometric_error(0.05);
 		smooth_mesher->set_simplify_mode(VoxelMesherDMC::SIMPLIFY_NONE);
 		smooth_mesher->set_seam_mode(VoxelMesherDMC::SEAM_MARCHING_SQUARE_SKIRTS);
+		_required_padding = max(_required_padding, smooth_mesher->get_minimum_padding());
 	}
 
-	Processor processors[Mgr::MAX_LOD];
+	Mgr::BlockProcessingFunc processors[Mgr::MAX_LOD];
 
 	for (unsigned int i = 0; i < thread_count; ++i) {
-		Processor &p = processors[i];
-		if (i == 0) {
-			p.blocky_mesher = blocky_mesher;
-			p.smooth_mesher = smooth_mesher;
-			_required_padding = p.get_required_padding();
-		} else {
+
+		if (i > 0) {
 			// Need to clone them because they are not thread-safe due to memory pooling.
 			// Also thanks to the wonders of ref_pointer() being private we trigger extra refs/unrefs for no reason
 			if (blocky_mesher.is_valid()) {
-				p.blocky_mesher = Ref<VoxelMesher>(blocky_mesher->clone());
+				blocky_mesher = Ref<VoxelMesher>(blocky_mesher->clone());
 			}
 			if (smooth_mesher.is_valid()) {
-				p.smooth_mesher = Ref<VoxelMesher>(smooth_mesher->clone());
+				smooth_mesher = Ref<VoxelMesher>(smooth_mesher->clone());
 			}
 		}
+
+		processors[i] = [this, blocky_mesher, smooth_mesher](const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs) {
+			this->process_blocks_thread_func(inputs, outputs, blocky_mesher, smooth_mesher, this->_required_padding);
+		};
 	}
 
 	_mgr = memnew(Mgr(thread_count, 50, processors));
@@ -80,34 +84,34 @@ VoxelMeshUpdater::~VoxelMeshUpdater() {
 	}
 }
 
-int VoxelMeshUpdater::Processor::get_required_padding() {
-	int padding = 0;
-	if (blocky_mesher.is_valid()) {
-		padding = max(padding, blocky_mesher->get_minimum_padding());
-	}
-	if (smooth_mesher.is_valid()) {
-		padding = max(padding, smooth_mesher->get_minimum_padding());
-	}
-	return padding;
-}
+void VoxelMeshUpdater::process_blocks_thread_func(
+		const ArraySlice<InputBlock> inputs,
+		ArraySlice<OutputBlock> outputs,
+		Ref<VoxelMesher> blocky_mesher,
+		Ref<VoxelMesher> smooth_mesher,
+		int padding) {
 
-void VoxelMeshUpdater::Processor::process_block(const InputBlockData &input, OutputBlockData &output, Vector3i block_position, unsigned int lod) {
+	CRASH_COND(inputs.size() != outputs.size());
 
-	const InputBlockData &block = input;
-	CRASH_COND(block.voxels.is_null());
+	for (int i = 0; i < inputs.size(); ++i) {
 
-	int padding = get_required_padding();
+		const InputBlock &ib = inputs[i];
+		const InputBlockData &block = ib.data;
+		OutputBlockData &output = outputs[i].data;
 
-	if (blocky_mesher.is_valid()) {
-		blocky_mesher->build(output.blocky_surfaces, **block.voxels, padding);
-	}
-	if (smooth_mesher.is_valid()) {
-		smooth_mesher->build(output.smooth_surfaces, **block.voxels, padding);
-	}
+		CRASH_COND(block.voxels.is_null());
 
-	if (lod > 0) {
-		float factor = 1 << lod;
-		scale_mesh_data(output.blocky_surfaces, factor);
-		scale_mesh_data(output.smooth_surfaces, factor);
+		if (blocky_mesher.is_valid()) {
+			blocky_mesher->build(output.blocky_surfaces, **block.voxels, padding);
+		}
+		if (smooth_mesher.is_valid()) {
+			smooth_mesher->build(output.smooth_surfaces, **block.voxels, padding);
+		}
+
+		if (ib.lod > 0) {
+			float factor = 1 << ib.lod;
+			scale_mesh_data(output.blocky_surfaces, factor);
+			scale_mesh_data(output.smooth_surfaces, factor);
+		}
 	}
 }

@@ -18,6 +18,7 @@ public:
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
 
+	// Note: vector is passed by ref for performance. Don't reorder it.
 	virtual void emerge_blocks(Vector<BlockRequest> &p_blocks);
 	virtual void immerge_blocks(Vector<BlockRequest> &p_blocks);
 

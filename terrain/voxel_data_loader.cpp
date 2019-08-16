@@ -6,43 +6,43 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int 
 
 	CRASH_COND(stream.is_null());
 
-	Processor processors[Mgr::MAX_JOBS];
+	// TODO I'm not sure it's worth to configure more than one thread for voxel streams
 
-	for (unsigned int i = 0; i < Mgr::MAX_JOBS; ++i) {
-		Processor &p = processors[i];
-		p.block_size_pow2 = block_size_pow2;
-	}
+	Mgr::BlockProcessingFunc processors[Mgr::MAX_JOBS];
 
-	if (stream->is_thread_safe()) {
+	processors[0] = [this, stream](ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs) {
+		this->process_blocks_thread_func(inputs, outputs, stream);
+	};
 
-		for (unsigned int i = 0; i < thread_count; ++i) {
-			Processor &p = processors[i];
-			p.stream = stream;
-		}
+	if (thread_count > 1) {
+		if (stream->is_thread_safe()) {
 
-	} else if (stream->is_cloneable()) {
-
-		// Note: more than one thread can make sense for generators,
-		// but won't be as useful for file and network streams
-		for (int i = 0; i < thread_count; ++i) {
-			Processor &p = processors[i];
-			if (i == 0) {
-				p.stream = stream;
-			} else {
-				p.stream = stream->duplicate();
+			for (unsigned int i = 1; i < thread_count; ++i) {
+				processors[i] = processors[0];
 			}
-		}
 
-	} else {
+		} else if (stream->is_cloneable()) {
 
-		if (thread_count > 1) {
+			// Note: more than one thread can make sense for generators,
+			// but won't be as useful for file and network streams
+			for (int i = 1; i < thread_count; ++i) {
+				stream = stream->duplicate();
+				processors[i] = [this, stream](ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs) {
+					this->process_blocks_thread_func(inputs, outputs, stream);
+				};
+			}
+
+		} else {
 			ERR_PRINT("Thread count set to higher than 1, but the stream is neither thread-safe nor cloneable. Capping back to 1 thread.");
 			thread_count = 1;
 		}
-		processors[0].stream = stream;
 	}
 
-	_mgr = memnew(Mgr(thread_count, 500, processors, true));
+	int batch_count = 32;
+	int sync_interval_ms = 500;
+
+	_block_size_pow2 = block_size_pow2;
+	_mgr = memnew(Mgr(thread_count, sync_interval_ms, processors, true, batch_count));
 }
 
 VoxelDataLoader::~VoxelDataLoader() {
@@ -52,24 +52,78 @@ VoxelDataLoader::~VoxelDataLoader() {
 	}
 }
 
-void VoxelDataLoader::Processor::process_block(const InputBlockData &input, OutputBlockData &output, Vector3i block_position, unsigned int lod) {
+// Can run in multiple threads
+void VoxelDataLoader::process_blocks_thread_func(const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Ref<VoxelStream> stream) {
 
-	int bs = 1 << block_size_pow2;
-	Vector3i block_origin_in_voxels = block_position * (bs << lod);
+	CRASH_COND(inputs.size() != outputs.size());
 
-	if (input.voxels_to_save.is_null()) {
+	Vector<VoxelStream::BlockRequest> emerge_requests;
+	Vector<VoxelStream::BlockRequest> immerge_requests;
 
-		Ref<VoxelBuffer> buffer;
-		buffer.instance();
-		buffer->create(bs, bs, bs);
+	for (size_t i = 0; i < inputs.size(); ++i) {
 
-		stream->emerge_block(buffer, block_origin_in_voxels, lod);
-		output.type = TYPE_LOAD;
-		output.voxels_loaded = buffer;
+		const InputBlock &ib = inputs[i];
 
-	} else {
+		int bs = 1 << _block_size_pow2;
+		Vector3i block_origin_in_voxels = ib.position * (bs << ib.lod);
 
-		stream->immerge_block(input.voxels_to_save, block_origin_in_voxels, lod);
-		output.type = TYPE_SAVE;
+		if (ib.data.voxels_to_save.is_null()) {
+
+			VoxelStream::BlockRequest r;
+			r.voxel_buffer.instance();
+			r.voxel_buffer->create(bs, bs, bs);
+			r.origin_in_voxels = block_origin_in_voxels;
+			r.lod = ib.lod;
+			emerge_requests.push_back(r);
+
+		} else {
+
+			VoxelStream::BlockRequest r;
+			r.voxel_buffer = ib.data.voxels_to_save;
+			r.origin_in_voxels = block_origin_in_voxels;
+			r.lod = ib.lod;
+			immerge_requests.push_back(r);
+		}
 	}
+
+	stream->emerge_blocks(emerge_requests);
+	stream->immerge_blocks(immerge_requests);
+
+	// Assumes the stream won't change output order
+	int iload = 0;
+	for (size_t i = 0; i < outputs.size(); ++i) {
+
+		const InputBlock &ib = inputs[i];
+		OutputBlockData &output = outputs[i].data;
+
+		if (ib.data.voxels_to_save.is_null()) {
+			output.type = TYPE_LOAD;
+			output.voxels_loaded = emerge_requests.write[iload].voxel_buffer;
+			++iload;
+
+		} else {
+			output.type = TYPE_SAVE;
+		}
+	}
+
+	// If unordered responses were allowed
+	//
+	//	size_t j = 0;
+	//	for (size_t i = 0; i < emerge_requests.size(); ++i) {
+	//		VoxelStream::BlockRequest &r = emerge_requests.write[i];
+	//		OutputBlock &ob = outputs[j];
+	//		ob.position = r.origin_in_voxels >> (_block_size_pow2 + r.lod);
+	//		ob.lod = r.lod;
+	//		ob.data.type = TYPE_LOAD;
+	//		ob.data.voxels_loaded = r.voxel_buffer;
+	//		++j;
+	//	}
+	//	for (size_t i = 0; i < immerge_requests.size(); ++i) {
+	//		VoxelStream::BlockRequest &r = immerge_requests.write[i];
+	//		OutputBlock &ob = outputs[j];
+	//		ob.position = r.origin_in_voxels >> (_block_size_pow2 + r.lod);
+	//		ob.lod = r.lod;
+	//		ob.data.type = TYPE_SAVE;
+	//		++j;
+	//	}
 }

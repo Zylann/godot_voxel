@@ -22,14 +22,7 @@ public:
 		Ref<VoxelBuffer> voxels_loaded;
 	};
 
-	struct Processor {
-		void process_block(const InputBlockData &input, OutputBlockData &output, Vector3i block_position, unsigned int lod);
-
-		Ref<VoxelStream> stream;
-		int block_size_pow2 = 0;
-	};
-
-	typedef VoxelBlockThreadManager<InputBlockData, OutputBlockData, Processor> Mgr;
+	typedef VoxelBlockThreadManager<InputBlockData, OutputBlockData> Mgr;
 	typedef Mgr::InputBlock InputBlock;
 	typedef Mgr::OutputBlock OutputBlock;
 	typedef Mgr::Input Input;
@@ -43,7 +36,10 @@ public:
 	void pop(Output &output) { _mgr->pop(output); }
 
 private:
+	void process_blocks_thread_func(const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Ref<VoxelStream> stream);
+
 	Mgr *_mgr = nullptr;
+	int _block_size_pow2 = 0;
 };
 
 #endif // VOXEL_DATA_LOADER_H

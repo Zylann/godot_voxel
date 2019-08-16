@@ -27,37 +27,51 @@ VoxelStreamRegion::~VoxelStreamRegion() {
 
 void VoxelStreamRegion::emerge_blocks(Vector<BlockRequest> &p_blocks) {
 
-	// In order to minimize opening/closing files, requests are grouped according to their region
+	// In order to minimize opening/closing files, requests are grouped according to their region.
+
+	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
+	Vector<BlockRequest> sorted_blocks;
+	sorted_blocks.append_array(p_blocks);
 
 	SortArray<BlockRequest, BlockRequestComparator> sorter;
 	sorter.compare.self = this;
-	sorter.sort(p_blocks.ptrw(), p_blocks.size());
+	sorter.sort(sorted_blocks.ptrw(), sorted_blocks.size());
 
-	for (int i = 0; i < p_blocks.size(); ++i) {
-		BlockRequest &r = p_blocks.write[i];
-		emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+	Vector<BlockRequest> fallback_requests;
+
+	for (int i = 0; i < sorted_blocks.size(); ++i) {
+		BlockRequest &r = sorted_blocks.write[i];
+		EmergeResult result = _emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		if (result == EMERGE_OK_FALLBACK) {
+			fallback_requests.push_back(r);
+		}
 	}
+
+	emerge_blocks_fallback(fallback_requests);
 }
 
 void VoxelStreamRegion::immerge_blocks(Vector<BlockRequest> &p_blocks) {
 
+	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
+	Vector<BlockRequest> sorted_blocks;
+	sorted_blocks.append_array(p_blocks);
+
 	SortArray<BlockRequest, BlockRequestComparator> sorter;
 	sorter.compare.self = this;
-	sorter.sort(p_blocks.ptrw(), p_blocks.size());
+	sorter.sort(sorted_blocks.ptrw(), sorted_blocks.size());
 
-	for (int i = 0; i < p_blocks.size(); ++i) {
-		BlockRequest &r = p_blocks.write[i];
-		immerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+	for (int i = 0; i < sorted_blocks.size(); ++i) {
+		BlockRequest &r = sorted_blocks.write[i];
+		_immerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 	}
 }
 
-void VoxelStreamRegion::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStreamRegion::EmergeResult VoxelStreamRegion::_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 
-	ERR_FAIL_COND(out_buffer.is_null());
+	ERR_FAIL_COND_V(out_buffer.is_null(), EMERGE_FAILED);
 
 	if (_directory_path.empty()) {
-		emerge_block_fallback(out_buffer, origin_in_voxels, lod);
-		return;
+		return EMERGE_OK_FALLBACK;
 	}
 
 	if (!_meta_loaded) {
@@ -68,25 +82,23 @@ void VoxelStreamRegion::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origi
 				// New data folder, save it for first time
 				//print_line("Writing meta file");
 				Error save_err = save_meta();
-				ERR_FAIL_COND(save_err != OK);
+				ERR_FAIL_COND_V(save_err != OK, EMERGE_FAILED);
 			} else {
-				return;
+				return EMERGE_FAILED;
 			}
 		}
 	}
 
 	CRASH_COND(!_meta_loaded);
-	ERR_FAIL_COND(lod >= _meta.lod_count);
-	ERR_FAIL_COND(_meta.block_size != out_buffer->get_size());
+	ERR_FAIL_COND_V(lod >= _meta.lod_count, EMERGE_FAILED);
+	ERR_FAIL_COND_V(_meta.block_size != out_buffer->get_size(), EMERGE_FAILED);
 
 	Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
 	Vector3i region_pos = get_region_position_from_blocks(block_pos);
 
 	CachedRegion *cache = open_region(region_pos, lod, false);
 	if (cache == nullptr || !cache->file_exists) {
-		// TODO Don't do that here, can't batch otherwise
-		emerge_block_fallback(out_buffer, origin_in_voxels, lod);
-		return;
+		return EMERGE_OK_FALLBACK;
 	}
 
 	Vector3i block_rpos = block_pos.umod(_meta.region_size);
@@ -94,8 +106,7 @@ void VoxelStreamRegion::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origi
 	const BlockInfo &block_info = cache->header.blocks[lut_index];
 
 	if (block_info.data == 0) {
-		emerge_block_fallback(out_buffer, origin_in_voxels, lod);
-		return;
+		return EMERGE_OK_FALLBACK;
 	}
 
 	int sector_index = block_info.get_sector_index();
@@ -111,7 +122,10 @@ void VoxelStreamRegion::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origi
 	CRASH_COND(f->eof_reached());
 
 	// TODO In the future, compressed storage will require to read channel sizes too
-	ERR_FAIL_COND_MSG(!read_voxel_buffer(f, out_buffer), String("Failed to read block {0} at region {1}").format(varray(block_pos.to_vec3(), region_pos.to_vec3())));
+	ERR_FAIL_COND_V_MSG(!read_voxel_buffer(f, out_buffer), EMERGE_FAILED,
+			String("Failed to read block {0} at region {1}").format(varray(block_pos.to_vec3(), region_pos.to_vec3())));
+
+	return EMERGE_OK;
 }
 
 void VoxelStreamRegion::pad_to_sector_size(FileAccess *f) {
@@ -128,7 +142,7 @@ void VoxelStreamRegion::pad_to_sector_size(FileAccess *f) {
 	}
 }
 
-void VoxelStreamRegion::immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamRegion::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod) {
 
 	ERR_FAIL_COND(_directory_path.empty());
 	ERR_FAIL_COND(voxel_buffer.is_null());
@@ -468,6 +482,9 @@ void VoxelStreamRegion::clear_cache() {
 
 String VoxelStreamRegion::get_region_file_path(const Vector3i &region_pos, unsigned int lod) const {
 
+	// TODO Separate lods in other region files is a bad idea
+	// Better append them to the same regions so we don't re-create more file switching.
+	// If a block spans a larger area, it will remain in the region where its origin is.
 	Array a;
 	a.resize(5);
 	a[0] = lod;
@@ -490,8 +507,6 @@ VoxelStreamRegion::CachedRegion *VoxelStreamRegion::get_region_from_cache(const 
 }
 
 VoxelStreamRegion::CachedRegion *VoxelStreamRegion::open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
-
-	// TODO Close other regions if exceeding FOPEN_MAX, which is only 20 on Windows!
 
 	ERR_FAIL_COND_V(!_meta_loaded, nullptr);
 	ERR_FAIL_COND_V(lod < 0, nullptr);

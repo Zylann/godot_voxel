@@ -3,9 +3,12 @@
 
 #include "../math/rect3i.h"
 #include "../math/vector3i.h"
+#include "../util/array_slice.h"
 #include "../util/utility.h"
 #include <core/os/os.h>
 #include <core/os/semaphore.h>
+#include <algorithm>
+#include <functional>
 #include <vector>
 
 // Base structure for an asynchronous block processing manager using threads.
@@ -17,7 +20,7 @@
 // - Merges duplicate requests
 // - Cancels requests that become out of range
 // - Takes some stats
-template <typename InputBlockData_T, typename OutputBlockData_T, typename Processor_T>
+template <typename InputBlockData_T, typename OutputBlockData_T>
 class VoxelBlockThreadManager {
 public:
 	static const int MAX_LOD = 32; // Like VoxelLodTerrain
@@ -29,7 +32,7 @@ public:
 		Vector3i position; // In LOD0 block coordinates
 		uint8_t lod = 0;
 		bool can_be_discarded = true; // If false, will always be processed, even if the thread is told to exit
-		float sort_heuristic = 0; // If non-zero, will be added to the final heuristic
+		float sort_heuristic = 0;
 	};
 
 	// Specialization must be copyable
@@ -77,22 +80,33 @@ public:
 		Stats stats;
 	};
 
+	typedef std::function<void(ArraySlice<InputBlock>, ArraySlice<OutputBlock>)> BlockProcessingFunc;
+
 	// TODO Make job count dynamic, don't start threads in constructor
 
 	// Creates and starts jobs.
 	// Processors are given as array because you could decide to either re-use the same one,
 	// or have clones depending on them being stateless or not.
-	VoxelBlockThreadManager(unsigned int job_count, unsigned int sync_interval_ms, Processor_T *processors, bool duplicate_rejection = true) {
+	VoxelBlockThreadManager(
+			unsigned int job_count,
+			unsigned int sync_interval_ms,
+			BlockProcessingFunc *processors,
+			bool duplicate_rejection = true,
+			unsigned int batch_count = 1) {
 
 		CRASH_COND(job_count < 1);
 		CRASH_COND(job_count >= MAX_JOBS);
 		_job_count = job_count;
+
+		CRASH_COND(batch_count == 0);
+		_batch_count = batch_count;
 
 		for (unsigned int i = 0; i < MAX_JOBS; ++i) {
 			JobData &job = _jobs[i];
 			job.job_index = i;
 			job.duplicate_rejection = duplicate_rejection;
 			job.sync_interval_ms = sync_interval_ms;
+			job.batch_count = batch_count;
 		}
 
 		for (unsigned int i = 0; i < _job_count; ++i) {
@@ -281,8 +295,9 @@ private:
 		uint32_t sync_interval_ms = 100;
 		uint32_t job_index = -1;
 		bool duplicate_rejection = false;
+		int batch_count = 0;
 
-		Processor_T processor;
+		BlockProcessingFunc processor;
 	};
 
 	static void merge_stats(Stats &a, const Stats &b, int job_index) {
@@ -352,26 +367,40 @@ private:
 
 				if (!data.input.blocks.empty()) {
 
-					InputBlock block = data.input.blocks[queue_index];
-					++queue_index;
-
-					if (queue_index >= data.input.blocks.size()) {
-						data.input.blocks.clear();
+					if (data.thread_exit) {
+						// Remove all queries except those that can't be discarded
+						std::remove_if(data.input.blocks.begin(), data.input.blocks.end(),
+								[](const InputBlock &b) {
+									return b.can_be_discarded;
+								});
 					}
 
-					// If the thread has been told to exit, we'll discard all queries,
-					// except those that were marked as non-discardable (such as save queries)
-					if (!data.thread_exit || !block.can_be_discarded) {
+					int input_begin = queue_index;
+					int batch_count = data.batch_count;
+
+					if (input_begin + batch_count > data.input.blocks.size()) {
+						batch_count = data.input.blocks.size() - input_begin;
+					}
+
+					if (batch_count > 0) {
 
 						uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
-						OutputBlock ob;
-						// Implemented in specialization
-						data.processor.process_block(block.data, ob.data, block.position, block.lod);
-						ob.position = block.position;
-						ob.lod = block.lod;
+						int output_begin = data.output.blocks.size();
+						data.output.blocks.resize(data.output.blocks.size() + batch_count);
 
-						uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
+						for (int i = 0; i < batch_count; ++i) {
+							InputBlock &ib = data.input.blocks[input_begin + i];
+							OutputBlock &ob = data.output.blocks.write[output_begin + i];
+							ob.position = ib.position;
+							ob.lod = ib.lod;
+						}
+
+						data.processor(
+								ArraySlice<InputBlock>(&data.input.blocks[0], input_begin, input_begin + batch_count),
+								ArraySlice<OutputBlock>(&data.output.blocks.write[0], output_begin, output_begin + batch_count));
+
+						uint64_t time_taken = (OS::get_singleton()->get_ticks_usec() - time_before) / batch_count;
 
 						// Do some stats
 						if (stats.first) {
@@ -386,8 +415,11 @@ private:
 								stats.max_time = time_taken;
 							}
 						}
+					}
 
-						data.output.blocks.push_back(ob);
+					queue_index += batch_count;
+					if (queue_index >= data.input.blocks.size()) {
+						data.input.blocks.clear();
 					}
 				}
 
@@ -560,6 +592,7 @@ private:
 
 	JobData _jobs[MAX_JOBS];
 	unsigned int _job_count = 0;
+	unsigned int _batch_count = 0;
 };
 
 #endif // VOXEL_BLOCK_THREAD_MANAGER_H

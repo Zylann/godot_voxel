@@ -19,9 +19,6 @@ public:
 	VoxelStreamRegion();
 	~VoxelStreamRegion();
 
-	void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod) override;
-
 	void emerge_blocks(Vector<BlockRequest> &p_blocks) override;
 	void immerge_blocks(Vector<BlockRequest> &p_blocks) override;
 
@@ -34,6 +31,15 @@ protected:
 private:
 	struct CachedRegion;
 	struct RegionHeader;
+
+	enum EmergeResult {
+		EMERGE_OK,
+		EMERGE_OK_FALLBACK,
+		EMERGE_FAILED
+	};
+
+	EmergeResult _emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
+	void _immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod);
 
 	Error save_meta();
 	Error load_meta();

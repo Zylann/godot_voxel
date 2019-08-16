@@ -22,14 +22,6 @@ public:
 		VoxelMesher::Output smooth_surfaces;
 	};
 
-	struct Processor {
-		void process_block(const InputBlockData &input, OutputBlockData &output, Vector3i block_position, unsigned int lod);
-		int get_required_padding();
-
-		Ref<VoxelMesher> blocky_mesher;
-		Ref<VoxelMesher> smooth_mesher;
-	};
-
 	struct MeshingParams {
 		Ref<VoxelLibrary> library;
 		bool baked_ao = true;
@@ -37,7 +29,7 @@ public:
 		bool smooth_surface = false;
 	};
 
-	typedef VoxelBlockThreadManager<InputBlockData, OutputBlockData, Processor> Mgr;
+	typedef VoxelBlockThreadManager<InputBlockData, OutputBlockData> Mgr;
 	typedef Mgr::InputBlock InputBlock;
 	typedef Mgr::OutputBlock OutputBlock;
 	typedef Mgr::Input Input;
@@ -53,6 +45,12 @@ public:
 	int get_required_padding() const { return _required_padding; }
 
 private:
+	void process_blocks_thread_func(const ArraySlice<InputBlock> inputs,
+			ArraySlice<OutputBlock> outputs,
+			Ref<VoxelMesher> blocky_mesher,
+			Ref<VoxelMesher> smooth_mesher,
+			int padding);
+
 	Mgr *_mgr = nullptr;
 	int _required_padding = 0;
 };

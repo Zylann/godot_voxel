@@ -227,6 +227,7 @@ struct ScheduleSaveAction {
 
 	void operator()(VoxelBlock *block) {
 		if (block->modified) {
+			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelDataLoader::InputBlock b;
 			b.data.voxels_to_save = with_copy ? block->voxels->duplicate() : block->voxels;
 			b.position = block->position;
@@ -739,6 +740,11 @@ void VoxelTerrain::_process() {
 			// Store buffer
 			bool update_neighbors = !_map->has_block(block_pos);
 			_map->set_block_buffer(block_pos, ob.data.voxels_loaded);
+
+			// TODO The following code appears to have order-dependency with block loading.
+			// i.e if block loading responses arrive in a different order they were requested in,
+			// some blocks will be stuck in LOAD. For now I made it so no re-ordering happens,
+			// but it needs to be made more robust
 
 			// Trigger mesh updates
 			if (update_neighbors) {

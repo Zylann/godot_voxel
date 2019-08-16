@@ -132,6 +132,7 @@ const VoxelBlock *VoxelMap::get_block(Vector3i bpos) const {
 
 void VoxelMap::set_block(Vector3i bpos, VoxelBlock *block) {
 	ERR_FAIL_COND(block == NULL);
+	CRASH_COND(bpos != block->position);
 	if (_last_accessed_block == NULL || _last_accessed_block->position == bpos) {
 		_last_accessed_block = block;
 	}
