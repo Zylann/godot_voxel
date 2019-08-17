@@ -58,16 +58,18 @@ void VoxelStreamVXB::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_i
 	ERR_FAIL_COND(f == nullptr);
 
 	{
-		AutoDeleteFile auto_delete_f = { f };
-
 		{
 			uint8_t version;
 			Error err = check_magic_and_version(f, FORMAT_VERSION, FORMAT_BLOCK_MAGIC, version);
 			ERR_FAIL_COND(err != OK);
 		}
 
-		read_voxel_buffer(f, out_buffer);
+		uint32_t size_to_read = f->get_32();
+		ERR_FAIL_COND(!_block_serializer.decompress_and_deserialize(f, size_to_read, **out_buffer));
 	}
+
+	f->close();
+	memdelete(f);
 }
 
 void VoxelStreamVXB::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
@@ -99,12 +101,15 @@ void VoxelStreamVXB::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_v
 		}
 		ERR_FAIL_COND(f == nullptr);
 
-		AutoDeleteFile auto_delete_f = { f };
-
 		f->store_buffer((uint8_t *)FORMAT_BLOCK_MAGIC, 4);
 		f->store_8(FORMAT_VERSION);
 
-		write_voxel_buffer(f, buffer);
+		const std::vector<uint8_t> &data = _block_serializer.serialize_and_compress(**buffer);
+		f->store_32(data.size());
+		f->store_buffer(data.data(), data.size());
+
+		f->close();
+		memdelete(f);
 	}
 }
 

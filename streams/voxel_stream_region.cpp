@@ -117,12 +117,10 @@ VoxelStreamRegion::EmergeResult VoxelStreamRegion::_emerge_block(Ref<VoxelBuffer
 
 	f->seek(blocks_begin_offset + sector_index * _meta.sector_size);
 
-	// TODO Unused yet. Will serve for compression.
 	int block_data_size = f->get_32();
 	CRASH_COND(f->eof_reached());
 
-	// TODO In the future, compressed storage will require to read channel sizes too
-	ERR_FAIL_COND_V_MSG(!read_voxel_buffer(f, out_buffer), EMERGE_FAILED,
+	ERR_FAIL_COND_V_MSG(!_block_serializer.decompress_and_deserialize(f, block_data_size, **out_buffer), EMERGE_FAILED,
 			String("Failed to read block {0} at region {1}").format(varray(block_pos.to_vec3(), region_pos.to_vec3())));
 
 	return EMERGE_OK;
@@ -174,10 +172,10 @@ void VoxelStreamRegion::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i o
 		// Check position matches the sectors rule
 		CRASH_COND((block_offset - blocks_begin_offset) % _meta.sector_size != 0);
 
-		int written_size = get_voxel_buffer_size_in_bytes(voxel_buffer);
-		f->store_32(written_size);
-		written_size += sizeof(int);
-		write_voxel_buffer(f, voxel_buffer);
+		const std::vector<uint8_t> &data = _block_serializer.serialize_and_compress(**voxel_buffer);
+		f->store_32(data.size());
+		int written_size = sizeof(int) + data.size();
+		f->store_buffer(data.data(), data.size());
 
 		int end_pos = f->get_position();
 		CRASH_COND(written_size != (end_pos - block_offset));
@@ -201,7 +199,8 @@ void VoxelStreamRegion::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i o
 		int old_sector_count = block_info.get_sector_count();
 		CRASH_COND(old_sector_count < 1);
 
-		int written_size = get_voxel_buffer_size_in_bytes(voxel_buffer) + sizeof(int);
+		const std::vector<uint8_t> &data = _block_serializer.serialize_and_compress(**voxel_buffer);
+		int written_size = sizeof(int) + data.size();
 
 		int new_sector_count = get_sector_count_from_bytes(written_size);
 		CRASH_COND(new_sector_count < 1);
@@ -217,8 +216,8 @@ void VoxelStreamRegion::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i o
 			int block_offset = blocks_begin_offset + old_sector_index * _meta.sector_size;
 			f->seek(block_offset);
 
-			f->store_32(written_size - sizeof(int));
-			write_voxel_buffer(f, voxel_buffer);
+			f->store_32(data.size());
+			f->store_buffer(data.data(), data.size());
 
 			int end_pos = f->get_position();
 			CRASH_COND(written_size != (end_pos - block_offset));
@@ -233,8 +232,8 @@ void VoxelStreamRegion::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i o
 			int block_offset = blocks_begin_offset + cache->sectors.size() * _meta.sector_size;
 			f->seek(block_offset);
 
-			f->store_32(written_size - sizeof(int));
-			write_voxel_buffer(f, voxel_buffer);
+			f->store_32(data.size());
+			f->store_buffer(data.data(), data.size());
 
 			int end_pos = f->get_position();
 			CRASH_COND(written_size != (end_pos - block_offset));

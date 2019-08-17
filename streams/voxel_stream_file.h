@@ -1,6 +1,7 @@
 #ifndef VOXEL_STREAM_FILE_H
 #define VOXEL_STREAM_FILE_H
 
+#include "voxel_block_serializer.h"
 #include "voxel_stream.h"
 
 class FileAccess;
@@ -24,10 +25,7 @@ protected:
 	void emerge_block_fallback(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
 	void emerge_blocks_fallback(Vector<BlockRequest> &requests);
 
-	// Helpers
-	uint32_t get_voxel_buffer_size_in_bytes(Ref<VoxelBuffer> buffer) const;
-	bool read_voxel_buffer(FileAccess *f, Ref<VoxelBuffer> out_voxel_buffer);
-	void write_voxel_buffer(FileAccess *f, Ref<VoxelBuffer> voxel_buffer);
+	VoxelBlockSerializer _block_serializer;
 
 private:
 	Ref<VoxelStream> _fallback_stream;

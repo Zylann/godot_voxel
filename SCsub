@@ -12,7 +12,8 @@ files = [
 	"streams/*.cpp",
 	"util/*.cpp",
 	"terrain/*.cpp",
-	"math/*.cpp"
+	"math/*.cpp",
+	"lz4/*.c"
 ]
 
 for f in files:
