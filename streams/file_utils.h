@@ -80,15 +80,6 @@ inline Error check_directory_created(const String &directory_path) {
 	return OK;
 }
 
-// TODO Obsolete, use FileAccessRef
-struct AutoDeleteFile {
-	FileAccess *f = nullptr;
-	~AutoDeleteFile() {
-		CRASH_COND(f == nullptr);
-		memdelete(f);
-	}
-};
-
 inline FileAccess *open_file(const String &path, FileAccess::ModeFlags mode, Error &out_error) {
 
 	FileAccess *fa = FileAccess::create_for_path(path);

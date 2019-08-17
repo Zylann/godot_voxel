@@ -166,7 +166,7 @@ Error VoxelStreamVXB::load_meta() {
 	Meta meta;
 	{
 		Error err;
-		FileAccess *f = open_file(meta_path, FileAccess::READ, err);
+		FileAccessRef f = open_file(meta_path, FileAccess::READ, err);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
 		if (!_meta.saved && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
 			// This is a new terrain, save the meta we have and consider it current
@@ -174,11 +174,9 @@ Error VoxelStreamVXB::load_meta() {
 			ERR_FAIL_COND_V(save_err != OK, save_err);
 			return OK;
 		}
-		ERR_FAIL_COND_V(f == nullptr, err);
+		ERR_FAIL_COND_V(!f, err);
 
-		AutoDeleteFile auto_delete_f = { f };
-
-		err = check_magic_and_version(f, FORMAT_VERSION, FORMAT_META_MAGIC, meta.version);
+		err = check_magic_and_version(f.f, FORMAT_VERSION, FORMAT_META_MAGIC, meta.version);
 		if (err != OK) {
 			return err;
 		}
