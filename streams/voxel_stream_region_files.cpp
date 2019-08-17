@@ -1,4 +1,4 @@
-#include "voxel_stream_region.h"
+#include "voxel_stream_region_files.h"
 #include "../math/rect3i.h"
 #include "../util/utility.h"
 #include "file_utils.h"
@@ -13,7 +13,7 @@ const char *META_FILE_NAME = "meta.vxrm";
 const int MAGIC_AND_VERSION_SIZE = 4 + 1;
 } // namespace
 
-VoxelStreamRegion::VoxelStreamRegion() {
+VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.version = FORMAT_VERSION;
 	_meta.block_size = Vector3i(16, 16, 16);
 	_meta.region_size = Vector3i(16, 16, 16);
@@ -21,11 +21,11 @@ VoxelStreamRegion::VoxelStreamRegion() {
 	_meta.lod_count = 1;
 }
 
-VoxelStreamRegion::~VoxelStreamRegion() {
+VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
 	clear_cache();
 }
 
-void VoxelStreamRegion::emerge_blocks(Vector<BlockRequest> &p_blocks) {
+void VoxelStreamRegionFiles::emerge_blocks(Vector<BlockRequest> &p_blocks) {
 
 	// In order to minimize opening/closing files, requests are grouped according to their region.
 
@@ -50,7 +50,7 @@ void VoxelStreamRegion::emerge_blocks(Vector<BlockRequest> &p_blocks) {
 	emerge_blocks_fallback(fallback_requests);
 }
 
-void VoxelStreamRegion::immerge_blocks(Vector<BlockRequest> &p_blocks) {
+void VoxelStreamRegionFiles::immerge_blocks(Vector<BlockRequest> &p_blocks) {
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
 	Vector<BlockRequest> sorted_blocks;
@@ -66,7 +66,7 @@ void VoxelStreamRegion::immerge_blocks(Vector<BlockRequest> &p_blocks) {
 	}
 }
 
-VoxelStreamRegion::EmergeResult VoxelStreamRegion::_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 
 	ERR_FAIL_COND_V(out_buffer.is_null(), EMERGE_FAILED);
 
@@ -126,7 +126,7 @@ VoxelStreamRegion::EmergeResult VoxelStreamRegion::_emerge_block(Ref<VoxelBuffer
 	return EMERGE_OK;
 }
 
-void VoxelStreamRegion::pad_to_sector_size(FileAccess *f) {
+void VoxelStreamRegionFiles::pad_to_sector_size(FileAccess *f) {
 	int blocks_begin_offset = get_region_header_size();
 	int rpos = f->get_position() - blocks_begin_offset;
 	if (rpos == 0) {
@@ -140,7 +140,7 @@ void VoxelStreamRegion::pad_to_sector_size(FileAccess *f) {
 	}
 }
 
-void VoxelStreamRegion::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod) {
 
 	ERR_FAIL_COND(_directory_path.empty());
 	ERR_FAIL_COND(voxel_buffer.is_null());
@@ -250,7 +250,7 @@ void VoxelStreamRegion::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i o
 	}
 }
 
-void VoxelStreamRegion::remove_sectors_from_block(CachedRegion *p_region, Vector3i block_rpos, int p_sector_count) {
+void VoxelStreamRegionFiles::remove_sectors_from_block(CachedRegion *p_region, Vector3i block_rpos, int p_sector_count) {
 
 	// Removes sectors from a block, starting from the last ones.
 	// So if a block has 5 sectors and we remove 2, the first 3 will be preserved.
@@ -325,11 +325,11 @@ void VoxelStreamRegion::remove_sectors_from_block(CachedRegion *p_region, Vector
 	}
 }
 
-String VoxelStreamRegion::get_directory() const {
+String VoxelStreamRegionFiles::get_directory() const {
 	return _directory_path;
 }
 
-void VoxelStreamRegion::set_directory(String dirpath) {
+void VoxelStreamRegionFiles::set_directory(String dirpath) {
 	if (_directory_path != dirpath) {
 		_directory_path = dirpath.strip_edges();
 		_meta_loaded = false;
@@ -369,7 +369,7 @@ static bool from_json_varray(Array a, Vector3i &v) {
 	return true;
 }
 
-Error VoxelStreamRegion::save_meta() {
+Error VoxelStreamRegionFiles::save_meta() {
 
 	ERR_FAIL_COND_V(_directory_path == "", ERR_INVALID_PARAMETER);
 
@@ -409,7 +409,7 @@ Error VoxelStreamRegion::save_meta() {
 	return OK;
 }
 
-Error VoxelStreamRegion::load_meta() {
+Error VoxelStreamRegionFiles::load_meta() {
 
 	ERR_FAIL_COND_V(_directory_path == "", ERR_INVALID_PARAMETER);
 
@@ -463,15 +463,15 @@ Error VoxelStreamRegion::load_meta() {
 	return OK;
 }
 
-Vector3i VoxelStreamRegion::get_block_position_from_voxels(const Vector3i &origin_in_voxels) const {
+Vector3i VoxelStreamRegionFiles::get_block_position_from_voxels(const Vector3i &origin_in_voxels) const {
 	return origin_in_voxels.udiv(_meta.block_size);
 }
 
-Vector3i VoxelStreamRegion::get_region_position_from_blocks(const Vector3i &block_position) const {
+Vector3i VoxelStreamRegionFiles::get_region_position_from_blocks(const Vector3i &block_position) const {
 	return block_position.udiv(_meta.region_size);
 }
 
-void VoxelStreamRegion::clear_cache() {
+void VoxelStreamRegionFiles::clear_cache() {
 	// Clears the cache without saving anything
 	for (int i = 0; i < _region_cache.size(); ++i) {
 		CachedRegion *cache = _region_cache[i];
@@ -481,7 +481,7 @@ void VoxelStreamRegion::clear_cache() {
 	_region_cache.clear();
 }
 
-String VoxelStreamRegion::get_region_file_path(const Vector3i &region_pos, unsigned int lod) const {
+String VoxelStreamRegionFiles::get_region_file_path(const Vector3i &region_pos, unsigned int lod) const {
 
 	// TODO Separate lods in other region files is a bad idea
 	// Better append them to the same regions so we don't re-create more file switching.
@@ -495,7 +495,7 @@ String VoxelStreamRegion::get_region_file_path(const Vector3i &region_pos, unsig
 	return _directory_path.plus_file(String("regions/lod{0}/r.{1}.{2}.{3}.vxr").format(a));
 }
 
-VoxelStreamRegion::CachedRegion *VoxelStreamRegion::get_region_from_cache(const Vector3i pos, int lod) const {
+VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::get_region_from_cache(const Vector3i pos, int lod) const {
 	// A linear search might be better than a Map data structure,
 	// because it's unlikely to have more than about 10 regions cached at a time
 	for (int i = 0; i < _region_cache.size(); ++i) {
@@ -507,7 +507,7 @@ VoxelStreamRegion::CachedRegion *VoxelStreamRegion::get_region_from_cache(const 
 	return nullptr;
 }
 
-VoxelStreamRegion::CachedRegion *VoxelStreamRegion::open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
+VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
 
 	ERR_FAIL_COND_V(!_meta_loaded, nullptr);
 	ERR_FAIL_COND_V(lod < 0, nullptr);
@@ -625,7 +625,7 @@ VoxelStreamRegion::CachedRegion *VoxelStreamRegion::open_region(const Vector3i r
 	return cache;
 }
 
-void VoxelStreamRegion::save_header(CachedRegion *p_region) {
+void VoxelStreamRegionFiles::save_header(CachedRegion *p_region) {
 
 	CRASH_COND(p_region->file_access == nullptr);
 
@@ -636,7 +636,7 @@ void VoxelStreamRegion::save_header(CachedRegion *p_region) {
 	p_region->file_access->store_buffer((const uint8_t *)header.blocks.data(), header.blocks.size() * sizeof(BlockInfo));
 }
 
-void VoxelStreamRegion::close_region(CachedRegion *region) {
+void VoxelStreamRegionFiles::close_region(CachedRegion *region) {
 
 	if (region->file_access) {
 		FileAccess *f = region->file_access;
@@ -650,7 +650,7 @@ void VoxelStreamRegion::close_region(CachedRegion *region) {
 	}
 }
 
-void VoxelStreamRegion::close_oldest_region() {
+void VoxelStreamRegionFiles::close_oldest_region() {
 	// Close region assumed to be the least recently used
 
 	if (_region_cache.size() == 0) {
@@ -676,28 +676,28 @@ void VoxelStreamRegion::close_oldest_region() {
 	memdelete(region);
 }
 
-unsigned int VoxelStreamRegion::get_block_index_in_header(const Vector3i &rpos) const {
+unsigned int VoxelStreamRegionFiles::get_block_index_in_header(const Vector3i &rpos) const {
 	return rpos.get_zxy_index(_meta.region_size);
 }
 
-Vector3i VoxelStreamRegion::get_block_position_from_index(int i) const {
+Vector3i VoxelStreamRegionFiles::get_block_position_from_index(int i) const {
 	return Vector3i::from_zxy_index(i, _meta.region_size);
 }
 
-int VoxelStreamRegion::get_sector_count_from_bytes(int size_in_bytes) const {
+int VoxelStreamRegionFiles::get_sector_count_from_bytes(int size_in_bytes) const {
 	return (size_in_bytes - 1) / _meta.sector_size + 1;
 }
 
-int VoxelStreamRegion::get_region_header_size() const {
+int VoxelStreamRegionFiles::get_region_header_size() const {
 	// Which file offset blocks data is starting
 	// magic + version + blockinfos
 	return MAGIC_AND_VERSION_SIZE + _meta.region_size.volume() * sizeof(BlockInfo);
 }
 
-void VoxelStreamRegion::_bind_methods() {
+void VoxelStreamRegionFiles::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_directory", "directory"), &VoxelStreamRegion::set_directory);
-	ClassDB::bind_method(D_METHOD("get_directory"), &VoxelStreamRegion::get_directory);
+	ClassDB::bind_method(D_METHOD("set_directory", "directory"), &VoxelStreamRegionFiles::set_directory);
+	ClassDB::bind_method(D_METHOD("get_directory"), &VoxelStreamRegionFiles::get_directory);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "directory"), "set_directory", "get_directory");
 }

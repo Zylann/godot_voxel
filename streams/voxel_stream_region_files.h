@@ -13,11 +13,11 @@ class FileAccess;
 // because it allows to keep using the same file handles and avoid switching.
 // Inspired by https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game
 //
-class VoxelStreamRegion : public VoxelStreamFile {
-	GDCLASS(VoxelStreamRegion, VoxelStreamFile)
+class VoxelStreamRegionFiles : public VoxelStreamFile {
+	GDCLASS(VoxelStreamRegionFiles, VoxelStreamFile)
 public:
-	VoxelStreamRegion();
-	~VoxelStreamRegion();
+	VoxelStreamRegionFiles();
+	~VoxelStreamRegionFiles();
 
 	void emerge_blocks(Vector<BlockRequest> &p_blocks) override;
 	void immerge_blocks(Vector<BlockRequest> &p_blocks) override;
@@ -62,10 +62,10 @@ private:
 
 	// Orders block requests so those querying the same regions get grouped together
 	struct BlockRequestComparator {
-		VoxelStreamRegion *self = nullptr;
+		VoxelStreamRegionFiles *self = nullptr;
 
 		// operator<
-		_FORCE_INLINE_ bool operator()(const VoxelStreamRegion::BlockRequest &a, const VoxelStreamRegion::BlockRequest &b) const {
+		_FORCE_INLINE_ bool operator()(const VoxelStreamRegionFiles::BlockRequest &a, const VoxelStreamRegionFiles::BlockRequest &b) const {
 			if (a.lod < b.lod) {
 				return true;
 			} else if (a.lod > b.lod) {
