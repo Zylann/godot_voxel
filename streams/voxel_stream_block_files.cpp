@@ -1,4 +1,4 @@
-#include "voxel_stream_vxb.h"
+#include "voxel_stream_block_files.h"
 #include "../util/utility.h"
 #include "file_utils.h"
 #include <core/os/dir_access.h>
@@ -13,7 +13,7 @@ const char *META_FILE_NAME = "meta.vxbm";
 const char *BLOCK_FILE_EXTENSION = ".vxb";
 } // namespace
 
-VoxelStreamVXB::VoxelStreamVXB() {
+VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 	// Defaults
 	_meta.block_size = DEFAULT_BLOCK_SIZE;
 	_meta.lod_count = 1;
@@ -22,7 +22,7 @@ VoxelStreamVXB::VoxelStreamVXB() {
 
 // TODO Have configurable block size
 
-void VoxelStreamVXB::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 
 	ERR_FAIL_COND(out_buffer.is_null());
 
@@ -72,7 +72,7 @@ void VoxelStreamVXB::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_i
 	memdelete(f);
 }
 
-void VoxelStreamVXB::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
 
 	ERR_FAIL_COND(_directory_path.empty());
 	ERR_FAIL_COND(buffer.is_null());
@@ -113,18 +113,18 @@ void VoxelStreamVXB::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_v
 	}
 }
 
-String VoxelStreamVXB::get_directory() const {
+String VoxelStreamBlockFiles::get_directory() const {
 	return _directory_path;
 }
 
-void VoxelStreamVXB::set_directory(String dirpath) {
+void VoxelStreamBlockFiles::set_directory(String dirpath) {
 	if (_directory_path != dirpath) {
 		_directory_path = dirpath;
 		_meta.loaded = false;
 	}
 }
 
-Error VoxelStreamVXB::save_meta() {
+Error VoxelStreamBlockFiles::save_meta() {
 
 	CRASH_COND(_directory_path.empty());
 
@@ -158,7 +158,7 @@ Error VoxelStreamVXB::save_meta() {
 	return OK;
 }
 
-Error VoxelStreamVXB::load_meta() {
+Error VoxelStreamBlockFiles::load_meta() {
 	CRASH_COND(_directory_path.empty());
 
 	String meta_path = _directory_path.plus_file(META_FILE_NAME);
@@ -190,7 +190,7 @@ Error VoxelStreamVXB::load_meta() {
 	return OK;
 }
 
-String VoxelStreamVXB::get_block_file_path(const Vector3i &block_pos, unsigned int lod) const {
+String VoxelStreamBlockFiles::get_block_file_path(const Vector3i &block_pos, unsigned int lod) const {
 	// TODO This is probably extremely inefficient, also given the nature of Godot strings
 
 	// Save under a folder, because there could be other kinds of data to store in this terrain
@@ -207,14 +207,14 @@ String VoxelStreamVXB::get_block_file_path(const Vector3i &block_pos, unsigned i
 	return _directory_path.plus_file(path);
 }
 
-Vector3i VoxelStreamVXB::get_block_position(const Vector3i &origin_in_voxels) const {
+Vector3i VoxelStreamBlockFiles::get_block_position(const Vector3i &origin_in_voxels) const {
 	return origin_in_voxels.udiv(_meta.block_size);
 }
 
-void VoxelStreamVXB::_bind_methods() {
+void VoxelStreamBlockFiles::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_directory", "directory"), &VoxelStreamVXB::set_directory);
-	ClassDB::bind_method(D_METHOD("get_directory"), &VoxelStreamVXB::get_directory);
+	ClassDB::bind_method(D_METHOD("set_directory", "directory"), &VoxelStreamBlockFiles::set_directory);
+	ClassDB::bind_method(D_METHOD("get_directory"), &VoxelStreamBlockFiles::get_directory);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "directory"), "set_directory", "get_directory");
 }

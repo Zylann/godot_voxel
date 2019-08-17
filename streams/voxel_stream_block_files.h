@@ -1,5 +1,5 @@
-#ifndef VOXEL_STREAM_VXB_H
-#define VOXEL_STREAM_VXB_H
+#ifndef VOXEL_STREAM_BLOCK_FILES_H
+#define VOXEL_STREAM_BLOCK_FILES_H
 
 #include "voxel_stream_file.h"
 
@@ -7,10 +7,10 @@ class FileAccess;
 
 // Loads and saves blocks to the filesystem, under a directory.
 // Each block gets its own file, which may produce a lot of them, but it makes it simple to implement.
-class VoxelStreamVXB : public VoxelStreamFile {
-	GDCLASS(VoxelStreamVXB, VoxelStreamFile)
+class VoxelStreamBlockFiles : public VoxelStreamFile {
+	GDCLASS(VoxelStreamBlockFiles, VoxelStreamFile)
 public:
-	VoxelStreamVXB();
+	VoxelStreamBlockFiles();
 
 	void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
 	void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) override;
@@ -42,4 +42,4 @@ private:
 	Meta _meta;
 };
 
-#endif // VOXEL_STREAM_VXB_H
+#endif // VOXEL_STREAM_BLOCK_FILES_H
