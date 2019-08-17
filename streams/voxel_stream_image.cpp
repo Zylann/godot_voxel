@@ -22,12 +22,12 @@ VoxelBuffer::ChannelId VoxelStreamImage::get_channel() const {
 
 namespace {
 
-inline int umod(int a, int b) {
+inline int wrap(int a, int b) {
 	return ((unsigned int)a - (a < 0)) % (unsigned int)b;
 }
 
 inline float get_height_repeat(Image &im, int x, int y) {
-	return im.get_pixel(umod(x, im.get_width()), umod(y, im.get_height())).r;
+	return im.get_pixel(wrap(x, im.get_width()), wrap(y, im.get_height())).r;
 }
 
 inline float get_height_blurred(Image &im, int x, int y) {

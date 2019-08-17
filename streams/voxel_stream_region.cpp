@@ -101,7 +101,7 @@ VoxelStreamRegion::EmergeResult VoxelStreamRegion::_emerge_block(Ref<VoxelBuffer
 		return EMERGE_OK_FALLBACK;
 	}
 
-	Vector3i block_rpos = block_pos.umod(_meta.region_size);
+	Vector3i block_rpos = block_pos.wrap(_meta.region_size);
 	int lut_index = get_block_index_in_header(block_rpos);
 	const BlockInfo &block_info = cache->header.blocks[lut_index];
 
@@ -152,7 +152,7 @@ void VoxelStreamRegion::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i o
 
 	Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
 	Vector3i region_pos = get_region_position_from_blocks(block_pos);
-	Vector3i block_rpos = block_pos.umod(_meta.region_size);
+	Vector3i block_rpos = block_pos.wrap(_meta.region_size);
 	//print_line(String("Immerging block {0} r {1}").format(varray(block_pos.to_vec3(), region_pos.to_vec3())));
 
 	CachedRegion *cache = open_region(region_pos, lod, true);
@@ -262,7 +262,7 @@ void VoxelStreamRegion::remove_sectors_from_block(CachedRegion *p_region, Vector
 	int blocks_begin_offset = get_region_header_size();
 	int old_end_offset = blocks_begin_offset + p_region->sectors.size() * _meta.sector_size;
 
-	int block_index = get_block_index_in_header(block_rpos);
+	unsigned int block_index = get_block_index_in_header(block_rpos);
 	BlockInfo &block_info = p_region->header.blocks[block_index];
 
 	int src_offset = blocks_begin_offset + (block_info.get_sector_index() + block_info.get_sector_count()) * _meta.sector_size;
@@ -676,18 +676,12 @@ void VoxelStreamRegion::close_oldest_region() {
 	memdelete(region);
 }
 
-int VoxelStreamRegion::get_block_index_in_header(const Vector3i &rpos) const {
-	// rpos is the block position relative to the region
-	return rpos.y + _meta.region_size.y * (rpos.x + _meta.region_size.x * rpos.z); // ZXY
+unsigned int VoxelStreamRegion::get_block_index_in_header(const Vector3i &rpos) const {
+	return rpos.get_zxy_index(_meta.region_size);
 }
 
 Vector3i VoxelStreamRegion::get_block_position_from_index(int i) const {
-	// TODO Move these indexing and de-indexing techniques to a single utility function
-	Vector3i pos;
-	pos.y = i % _meta.region_size.y;
-	pos.x = (i / _meta.region_size.y) % _meta.region_size.x;
-	pos.z = i / (_meta.region_size.y * _meta.region_size.x);
-	return pos;
+	return Vector3i::from_zxy_index(i, _meta.region_size);
 }
 
 int VoxelStreamRegion::get_sector_count_from_bytes(int size_in_bytes) const {

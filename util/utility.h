@@ -116,7 +116,7 @@ inline int udiv(int x, int d) {
 }
 
 // `wrapi` with zero min
-inline int umod(int x, int d) {
+inline int wrap(int x, int d) {
 	return ((x % d) + d) % d;
 }
 

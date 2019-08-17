@@ -105,13 +105,6 @@ struct Vector3i {
 		return x >= min.x && y >= min.y && z >= min.z && x < max.x && y < max.y && z < max.z;
 	}
 
-	_FORCE_INLINE_ Vector3i wrap(const Vector3i &size) {
-		return Vector3i(
-				x % size.x,
-				y % size.y,
-				z % size.z);
-	}
-
 	static void sort_min_max(Vector3i &a, Vector3i &b) {
 		sort_min_max(a.x, b.x);
 		sort_min_max(a.y, b.y);
@@ -122,8 +115,20 @@ struct Vector3i {
 		return Vector3i(::udiv(x, d.x), ::udiv(y, d.y), ::udiv(z, d.z));
 	}
 
-	inline Vector3i umod(const Vector3i d) const {
-		return Vector3i(::umod(x, d.x), ::umod(y, d.y), ::umod(z, d.z));
+	inline Vector3i wrap(const Vector3i d) const {
+		return Vector3i(::wrap(x, d.x), ::wrap(y, d.y), ::wrap(z, d.z));
+	}
+
+	inline unsigned int get_zxy_index(const Vector3i area_size) const {
+		return y + area_size.y * (x + area_size.x * z); // ZXY
+	}
+
+	static inline Vector3i from_zxy_index(unsigned int i, const Vector3i area_size) {
+		Vector3i pos;
+		pos.y = i % area_size.y;
+		pos.x = (i / area_size.y) % area_size.x;
+		pos.z = i / (area_size.y * area_size.x);
+		return pos;
 	}
 
 private:

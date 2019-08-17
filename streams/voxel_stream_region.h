@@ -49,7 +49,7 @@ private:
 	String get_region_file_path(const Vector3i &region_pos, unsigned int lod) const;
 	CachedRegion *open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found);
 	void close_region(CachedRegion *cache);
-	int get_block_index_in_header(const Vector3i &rpos) const;
+	unsigned int get_block_index_in_header(const Vector3i &rpos) const;
 	Vector3i get_block_position_from_index(int i) const;
 	int get_sector_count_from_bytes(int size_in_bytes) const;
 	int get_region_header_size() const;
