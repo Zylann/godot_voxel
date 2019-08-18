@@ -47,7 +47,7 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 	FileAccess *f = nullptr;
 	{
 		Error err;
-		f = open_file(file_path, FileAccess::READ, err);
+		f = open_file(file_path, FileAccess::READ, &err);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
 		if (f == nullptr && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
 			emerge_block_fallback(out_buffer, origin_in_voxels, lod);
@@ -97,7 +97,7 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 		{
 			Error err;
 			// Create file if not exists, always truncate
-			f = open_file(file_path, FileAccess::WRITE, err);
+			f = open_file(file_path, FileAccess::WRITE, &err);
 		}
 		ERR_FAIL_COND(f == nullptr);
 
@@ -141,7 +141,7 @@ Error VoxelStreamBlockFiles::save_meta() {
 
 	{
 		Error err;
-		FileAccess *f = open_file(meta_path, FileAccess::WRITE, err);
+		FileAccess *f = open_file(meta_path, FileAccess::WRITE, &err);
 		ERR_FAIL_COND_V(f == nullptr, err);
 
 		f->store_buffer((uint8_t *)FORMAT_META_MAGIC, 4);
@@ -166,7 +166,7 @@ Error VoxelStreamBlockFiles::load_meta() {
 	Meta meta;
 	{
 		Error err;
-		FileAccessRef f = open_file(meta_path, FileAccess::READ, err);
+		FileAccessRef f = open_file(meta_path, FileAccess::READ, &err);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
 		if (!_meta.saved && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
 			// This is a new terrain, save the meta we have and consider it current

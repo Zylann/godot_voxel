@@ -60,7 +60,8 @@ public:
 	};
 
 	struct ProcessorStats {
-		int file_opens = 0;
+		int file_openings = 0;
+		int time_spent_opening_files = 0;
 	};
 
 	struct Stats {
@@ -277,7 +278,8 @@ public:
 			remaining_blocks[i] = stats.remaining_blocks[i];
 		}
 		d["remaining_blocks_per_thread"] = remaining_blocks;
-		d["file_opens"] = stats.processor.file_opens;
+		d["file_openings"] = stats.processor.file_openings;
+		d["time_spent_opening_files"] = stats.processor.time_spent_opening_files;
 		return d;
 	}
 
@@ -316,7 +318,8 @@ private:
 		a.sorting_time += b.sorting_time;
 		a.dropped_count += b.dropped_count;
 
-		a.processor.file_opens += b.processor.file_opens;
+		a.processor.file_openings += b.processor.file_openings;
+		a.processor.time_spent_opening_files += b.processor.time_spent_opening_files;
 	}
 
 	unsigned int push_block_requests(JobData &job, const std::vector<InputBlock> &input_blocks, int begin, int count) {

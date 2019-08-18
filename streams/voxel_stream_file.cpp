@@ -1,5 +1,6 @@
 #include "voxel_stream_file.h"
 #include <core/os/file_access.h>
+#include <core/os/os.h>
 
 void VoxelStreamFile::set_save_fallback_output(bool enabled) {
 	_save_fallback_output = enabled;
@@ -43,6 +44,15 @@ void VoxelStreamFile::emerge_blocks_fallback(Vector<VoxelStreamFile::BlockReques
 			immerge_blocks(requests);
 		}
 	}
+}
+
+FileAccess *VoxelStreamFile::open_file(const String &fpath, int mode_flags, Error *err) {
+	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+	FileAccess *f = FileAccess::open(fpath, mode_flags, err);
+	uint64_t time_spent = OS::get_singleton()->get_ticks_usec() - time_before;
+	_stats.time_spent_opening_files += time_spent;
+	++_stats.file_openings;
+	return f;
 }
 
 void VoxelStreamFile::_bind_methods() {

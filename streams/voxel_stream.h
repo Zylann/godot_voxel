@@ -16,7 +16,8 @@ public:
 	};
 
 	struct Stats {
-		int file_opens = 0;
+		int file_openings = 0;
+		int time_spent_opening_files = 0;
 	};
 
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);

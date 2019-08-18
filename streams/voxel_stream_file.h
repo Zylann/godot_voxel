@@ -25,6 +25,8 @@ protected:
 	void emerge_block_fallback(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
 	void emerge_blocks_fallback(Vector<BlockRequest> &requests);
 
+	FileAccess *open_file(const String &fpath, int mode_flags, Error *err);
+
 	VoxelBlockSerializer _block_serializer;
 
 private:

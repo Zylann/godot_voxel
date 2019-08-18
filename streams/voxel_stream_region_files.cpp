@@ -394,8 +394,7 @@ Error VoxelStreamRegionFiles::save_meta() {
 	String meta_path = _directory_path.plus_file(META_FILE_NAME);
 
 	Error err;
-	FileAccessRef f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
-	++_stats.file_opens;
+	FileAccessRef f = open_file(meta_path, FileAccess::WRITE, &err);
 	if (!f) {
 		print_error(String("Could not save {0}").format(varray(meta_path)));
 		return err;
@@ -421,8 +420,7 @@ Error VoxelStreamRegionFiles::load_meta() {
 
 	{
 		Error err;
-		FileAccessRef f = FileAccess::open(meta_path, FileAccess::READ, &err);
-		++_stats.file_opens;
+		FileAccessRef f = open_file(meta_path, FileAccess::READ, &err);
 		if (!f) {
 			//print_error(String("Could not load {0}").format(varray(meta_path)));
 			return err;
@@ -483,9 +481,6 @@ void VoxelStreamRegionFiles::clear_cache() {
 
 String VoxelStreamRegionFiles::get_region_file_path(const Vector3i &region_pos, unsigned int lod) const {
 
-	// TODO Separate lods in other region files is a bad idea
-	// Better append them to the same regions so we don't re-create more file switching.
-	// If a block spans a larger area, it will remain in the region where its origin is.
 	Array a;
 	a.resize(5);
 	a[0] = lod;
@@ -523,8 +518,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 
 	String fpath = get_region_file_path(region_pos, lod);
 	Error existing_file_err;
-	FileAccess *existing_f = FileAccess::open(fpath, FileAccess::READ_WRITE, &existing_file_err);
-	++_stats.file_opens;
+	FileAccess *existing_f = open_file(fpath, FileAccess::READ_WRITE, &existing_file_err);
 	// TODO Cache the fact the file doesnt exist, so we won't need to do a system call to actually check it every time
 	// TODO No need to read the header again when it has been read once, we assume no other process will modify region files
 
@@ -542,8 +536,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 		}
 
 		Error file_err;
-		FileAccess *f = FileAccess::open(fpath, FileAccess::WRITE_READ, &file_err);
-		++_stats.file_opens;
+		FileAccess *f = open_file(fpath, FileAccess::WRITE_READ, &file_err);
 		ERR_FAIL_COND_V_MSG(!f, nullptr, "Failed to write file " + fpath + ", error " + String::num_int64(file_err));
 		ERR_FAIL_COND_V_MSG(file_err != OK, nullptr, "Error " + String::num_int64(file_err));
 
