@@ -188,6 +188,8 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 			cache->sectors.push_back(block_rpos);
 		}
 
+		cache->header_modified = true;
+
 		//print_line(String("Block saved flen={0}").format(varray(f->get_len())));
 
 	} else {
@@ -211,6 +213,7 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 			if (new_sector_count < old_sector_count) {
 				// The block now uses less sectors, we can compact others.
 				remove_sectors_from_block(cache, block_rpos, old_sector_count - new_sector_count);
+				cache->header_modified = true;
 			}
 
 			int block_offset = blocks_begin_offset + old_sector_index * _meta.sector_size;
@@ -244,6 +247,8 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 			for (int i = 0; i < new_sector_count; ++i) {
 				cache->sectors.push_back(block_rpos);
 			}
+
+			cache->header_modified = true;
 		}
 
 		block_info.set_sector_count(new_sector_count);
@@ -627,6 +632,7 @@ void VoxelStreamRegionFiles::save_header(CachedRegion *p_region) {
 
 	// TODO Deal with endianess
 	p_region->file_access->store_buffer((const uint8_t *)header.blocks.data(), header.blocks.size() * sizeof(BlockInfo));
+	p_region->header_modified = false;
 }
 
 void VoxelStreamRegionFiles::close_region(CachedRegion *region) {
@@ -634,9 +640,11 @@ void VoxelStreamRegionFiles::close_region(CachedRegion *region) {
 	if (region->file_access) {
 		FileAccess *f = region->file_access;
 
-		// TODO Only save header if it actually changed
-		f->seek(MAGIC_AND_VERSION_SIZE);
-		save_header(region);
+		// This is really important because the OS can optimize file closing if we didn't write anything
+		if (region->header_modified) {
+			f->seek(MAGIC_AND_VERSION_SIZE);
+			save_header(region);
+		}
 
 		memdelete(region->file_access);
 		region->file_access = nullptr;

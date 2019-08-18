@@ -2,7 +2,6 @@
 #define VOXEL_STREAM_REGION_H
 
 #include "voxel_stream_file.h"
-//#include <core/map.h>
 
 class FileAccess;
 
@@ -124,6 +123,7 @@ private:
 		bool file_exists = false;
 		FileAccess *file_access = NULL;
 		RegionHeader header;
+		bool header_modified = false;
 
 		// List of sectors in the order they appear in the file,
 		// and which position their block is. The same block can span multiple sectors.
