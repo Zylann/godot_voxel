@@ -26,6 +26,7 @@ VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
 }
 
 void VoxelStreamRegionFiles::emerge_blocks(Vector<BlockRequest> &p_blocks) {
+	VOXEL_PROFILE_SCOPE(profile_scope);
 
 	// In order to minimize opening/closing files, requests are grouped according to their region.
 
@@ -51,6 +52,7 @@ void VoxelStreamRegionFiles::emerge_blocks(Vector<BlockRequest> &p_blocks) {
 }
 
 void VoxelStreamRegionFiles::immerge_blocks(Vector<BlockRequest> &p_blocks) {
+	VOXEL_PROFILE_SCOPE(profile_scope);
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
 	Vector<BlockRequest> sorted_blocks;
@@ -68,6 +70,7 @@ void VoxelStreamRegionFiles::immerge_blocks(Vector<BlockRequest> &p_blocks) {
 
 VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 
+	VOXEL_PROFILE_SCOPE(profile_scope);
 	ERR_FAIL_COND_V(out_buffer.is_null(), EMERGE_FAILED);
 
 	if (_directory_path.empty()) {
@@ -141,6 +144,7 @@ void VoxelStreamRegionFiles::pad_to_sector_size(FileAccess *f) {
 }
 
 void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod) {
+	VOXEL_PROFILE_SCOPE(profile_scope);
 
 	ERR_FAIL_COND(_directory_path.empty());
 	ERR_FAIL_COND(voxel_buffer.is_null());
@@ -256,6 +260,7 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 }
 
 void VoxelStreamRegionFiles::remove_sectors_from_block(CachedRegion *p_region, Vector3i block_rpos, int p_sector_count) {
+	VOXEL_PROFILE_SCOPE(profile_scope);
 
 	// Removes sectors from a block, starting from the last ones.
 	// So if a block has 5 sectors and we remove 2, the first 3 will be preserved.
@@ -509,6 +514,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::get_region_from_ca
 
 VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
 
+	VOXEL_PROFILE_SCOPE(profile_scope);
 	ERR_FAIL_COND_V(!_meta_loaded, nullptr);
 	ERR_FAIL_COND_V(lod < 0, nullptr);
 
@@ -534,6 +540,8 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 			//print_error(String("Could not open file {0}").format(varray(fpath)));
 			return nullptr;
 		}
+
+		VOXEL_PROFILE_SCOPE(profile_create_new_file);
 
 		Error dir_err = check_directory_created(fpath.get_base_dir());
 		if (dir_err != OK) {
@@ -562,6 +570,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 
 	} else {
 		// Read existing
+		VOXEL_PROFILE_SCOPE(profile_read_existing);
 
 		uint8_t version;
 		if (check_magic_and_version(existing_f, FORMAT_VERSION, FORMAT_REGION_MAGIC, version) != OK) {
@@ -625,6 +634,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 
 void VoxelStreamRegionFiles::save_header(CachedRegion *p_region) {
 
+	VOXEL_PROFILE_SCOPE(profile_scope);
 	CRASH_COND(p_region->file_access == nullptr);
 
 	RegionHeader &header = p_region->header;
@@ -636,6 +646,7 @@ void VoxelStreamRegionFiles::save_header(CachedRegion *p_region) {
 }
 
 void VoxelStreamRegionFiles::close_region(CachedRegion *region) {
+	VOXEL_PROFILE_SCOPE(profile_scope);
 
 	if (region->file_access) {
 		FileAccess *f = region->file_access;

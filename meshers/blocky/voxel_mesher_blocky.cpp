@@ -76,7 +76,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 		a.indices.clear();
 	}
 
-	float baked_occlusion_darkness=0;
+	float baked_occlusion_darkness = 0;
 	if (_bake_occlusion)
 		baked_occlusion_darkness = _baked_occlusion_darkness / 3.0;
 
@@ -420,8 +420,4 @@ void VoxelMesherBlocky::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
-
-#ifdef VOXEL_PROFILING
-	ClassDB::bind_method(D_METHOD("get_profiling_info"), &VoxelMesherBlocky::get_profiling_info);
-#endif
 }

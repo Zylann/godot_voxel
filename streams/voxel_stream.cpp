@@ -1,6 +1,12 @@
 #include "voxel_stream.h"
 #include <core/script_language.h>
 
+VoxelStream::VoxelStream() {
+#ifdef VOXEL_PROFILING
+	_zprofiler.set_profiler_name(get_class() + String::num_int64((int64_t)this));
+#endif
+}
+
 void VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND(out_buffer.is_null());
 	ScriptInstance *script = get_script_instance();

@@ -1,6 +1,7 @@
 #ifndef VOXEL_STREAM_H
 #define VOXEL_STREAM_H
 
+#include "../util/zprofiling.h"
 #include "../voxel_buffer.h"
 #include <core/resource.h>
 
@@ -19,6 +20,8 @@ public:
 		int file_openings = 0;
 		int time_spent_opening_files = 0;
 	};
+
+	VoxelStream();
 
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
@@ -39,6 +42,8 @@ protected:
 	void _immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
 
 	Stats _stats;
+
+	VOXEL_PROFILER_DECLARE;
 };
 
 #endif // VOXEL_STREAM_H
