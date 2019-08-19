@@ -44,7 +44,7 @@ private:
 	Error load_meta();
 	Vector3i get_block_position_from_voxels(const Vector3i &origin_in_voxels) const;
 	Vector3i get_region_position_from_blocks(const Vector3i &block_position) const;
-	void clear_cache();
+	void close_all_regions();
 	String get_region_file_path(const Vector3i &region_pos, unsigned int lod) const;
 	CachedRegion *open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found);
 	void close_region(CachedRegion *cache);
@@ -58,6 +58,16 @@ private:
 	void close_oldest_region();
 	void save_header(CachedRegion *p_region);
 	void pad_to_sector_size(FileAccess *f);
+
+	struct Meta {
+		uint8_t version = -1;
+		uint8_t lod_count = 0;
+		Vector3i block_size; // How many voxels in a block
+		Vector3i region_size; // How many blocks in one region
+		int sector_size = 0; // Blocks are stored at offsets multiple of that size
+	};
+
+	void convert_files(Meta new_meta);
 
 	// Orders block requests so those querying the same regions get grouped together
 	struct BlockRequestComparator {
@@ -76,15 +86,6 @@ private:
 			Vector3i rpos_b = self->get_region_position_from_blocks(bpos_b);
 			return rpos_a < rpos_b;
 		}
-	};
-
-	struct Meta {
-		uint8_t version = -1;
-		uint8_t lod_count = 0;
-		Vector3i block_size; // How many voxels in a block
-		Vector3i region_size; // How many blocks in one region
-		int sector_size = 0; // Blocks are stored at offsets multiple of that size
-		// TODO World boundary
 	};
 
 	struct BlockInfo {

@@ -11,10 +11,12 @@ const uint8_t FORMAT_VERSION = 1;
 const char *FORMAT_REGION_MAGIC = "VXR_";
 const char *META_FILE_NAME = "meta.vxrm";
 const int MAGIC_AND_VERSION_SIZE = 4 + 1;
+const char *REGION_FILE_EXTENSION = "vxr";
 } // namespace
 
 VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.version = FORMAT_VERSION;
+	// TODO Enforce power of two
 	_meta.block_size = Vector3i(16, 16, 16);
 	_meta.region_size = Vector3i(16, 16, 16);
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
@@ -22,7 +24,7 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 }
 
 VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
-	clear_cache();
+	close_all_regions();
 }
 
 void VoxelStreamRegionFiles::emerge_blocks(Vector<BlockRequest> &p_blocks) {
@@ -479,8 +481,7 @@ Vector3i VoxelStreamRegionFiles::get_region_position_from_blocks(const Vector3i 
 	return block_position.udiv(_meta.region_size);
 }
 
-void VoxelStreamRegionFiles::clear_cache() {
-	// Clears the cache without saving anything
+void VoxelStreamRegionFiles::close_all_regions() {
 	for (int i = 0; i < _region_cache.size(); ++i) {
 		CachedRegion *cache = _region_cache[i];
 		close_region(cache);
@@ -497,7 +498,8 @@ String VoxelStreamRegionFiles::get_region_file_path(const Vector3i &region_pos, 
 	a[1] = region_pos.x;
 	a[2] = region_pos.y;
 	a[3] = region_pos.z;
-	return _directory_path.plus_file(String("regions/lod{0}/r.{1}.{2}.{3}.vxr").format(a));
+	a[4] = REGION_FILE_EXTENSION;
+	return _directory_path.plus_file(String("regions/lod{0}/r.{1}.{2}.{3}.{4}").format(a));
 }
 
 VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::get_region_from_cache(const Vector3i pos, int lod) const {
@@ -704,6 +706,182 @@ int VoxelStreamRegionFiles::get_region_header_size() const {
 	// Which file offset blocks data is starting
 	// magic + version + blockinfos
 	return MAGIC_AND_VERSION_SIZE + _meta.region_size.volume() * sizeof(BlockInfo);
+}
+
+static inline int convert_block_coordinate(int p_x, int old_size, int new_size) {
+	return ::udiv(p_x * old_size, new_size);
+}
+
+static Vector3i convert_block_coordinates(Vector3i pos, Vector3i old_size, Vector3i new_size) {
+	return Vector3i(
+			convert_block_coordinate(pos.x, old_size.x, new_size.x),
+			convert_block_coordinate(pos.y, old_size.y, new_size.y),
+			convert_block_coordinate(pos.z, old_size.z, new_size.z));
+}
+
+void VoxelStreamRegionFiles::convert_files(Meta new_meta) {
+	// TODO Untested.
+	// I wrote it because it would be too bad to loose large voxel worlds because of a setting change, so one day we may need it
+
+	print_line("Converting region files");
+	// This can be a very long and slow operation. Better run this in a thread.
+
+	ERR_FAIL_COND(!_meta_saved);
+	ERR_FAIL_COND(!_meta_loaded);
+	ERR_FAIL_COND(!_meta.block_size.all_members_equal());
+	ERR_FAIL_COND(!new_meta.block_size.all_members_equal());
+
+	close_all_regions();
+
+	Ref<VoxelStreamRegionFiles> old_stream;
+	old_stream.instance();
+	// Keep file cache to a minimum for the old stream, we'll query all blocks once anyways
+	old_stream->_max_open_regions = MAX(1, FOPEN_MAX);
+
+	// Backup current folder by renaming it, leaving the current name vacant
+	{
+		DirAccessRef da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
+		ERR_FAIL_COND(!da);
+		int i = 0;
+		String old_dir;
+		while (true) {
+			if (i == 0) {
+				old_dir = _directory_path + "_old";
+			} else {
+				old_dir = _directory_path + "_old" + String::num_int64(i);
+			}
+			if (da->exists(old_dir)) {
+				++i;
+			} else {
+				Error err = da->rename(_directory_path, old_dir);
+				ERR_FAIL_COND(err != OK);
+				break;
+			}
+		}
+
+		old_stream->set_directory(old_dir);
+		print_line("Data backed up as " + old_dir);
+	}
+
+	struct PositionAndLod {
+		Vector3i position;
+		int lod;
+	};
+
+	std::vector<PositionAndLod> old_region_list;
+	Meta old_meta = old_stream->_meta;
+
+	// Get list of all regions from the old stream
+	{
+		for (int lod = 0; lod < old_meta.lod_count; ++lod) {
+
+			String lod_folder = old_stream->_directory_path.plus_file("regions").plus_file("lod") + String::num_int64(lod);
+			String ext = String(".") + REGION_FILE_EXTENSION;
+
+			DirAccessRef da = DirAccess::open(lod_folder);
+			if (!da) {
+				continue;
+			}
+
+			da->list_dir_begin();
+
+			while (true) {
+				String fname = da->get_next();
+				if (fname == "") {
+					break;
+				}
+				if (da->current_is_dir()) {
+					continue;
+				}
+				if (fname.ends_with(ext)) {
+					Vector<String> parts = fname.split(".");
+					// r.x.y.z.ext
+					ERR_FAIL_COND(parts.size() < 4);
+					PositionAndLod p;
+					p.position.x = parts[1].to_int();
+					p.position.y = parts[2].to_int();
+					p.position.z = parts[3].to_int();
+					old_region_list.push_back(p);
+				}
+			}
+
+			da->list_dir_end();
+		}
+	}
+
+	_meta = new_meta;
+
+	Ref<VoxelBuffer> old_block;
+	old_block.instance();
+	old_block->create(old_meta.block_size.x, old_meta.block_size.y, old_meta.block_size.z);
+
+	Ref<VoxelBuffer> new_block;
+	new_block.instance();
+	new_block->create(_meta.block_size.x, _meta.block_size.y, _meta.block_size.z);
+
+	// Read all blocks from the old stream and write them into the new one
+
+	for (int i = 0; i < old_region_list.size(); ++i) {
+		PositionAndLod region_info = old_region_list[i];
+
+		const CachedRegion *region = old_stream->open_region(region_info.position, region_info.lod, false);
+		if (region == nullptr) {
+			continue;
+		}
+
+		print_line(String("Converting region lod{0}/{1}").format(varray(region_info.lod, region_info.position.to_vec3())));
+
+		const RegionHeader &header = region->header;
+		for (int j = 0; j < header.blocks.size(); ++j) {
+			const BlockInfo bi = header.blocks[j];
+			if (bi.data == 0) {
+				continue;
+			}
+
+			// Load block from old stream
+			Vector3i block_rpos = old_stream->get_block_position_from_index(j);
+			Vector3i block_pos = block_rpos + region_info.position * old_meta.region_size;
+			old_stream->emerge_block(old_block, block_pos * old_meta.block_size << region_info.lod, region_info.lod);
+
+			// Save it in the new one
+			if (old_meta.block_size == _meta.block_size) {
+				immerge_block(old_block, block_pos * _meta.block_size << region_info.lod, region_info.lod);
+
+			} else {
+				Vector3i new_block_pos = convert_block_coordinates(block_pos, old_meta.block_size, _meta.block_size);
+
+				// TODO Support any size? Assuming cubic blocks here
+				if (old_meta.block_size.x < _meta.block_size.x) {
+
+					Vector3i ratio = _meta.block_size / old_meta.block_size;
+					Vector3i rel = block_pos % ratio;
+
+					// Copy to a sub-area of one block
+					emerge_block(new_block, new_block_pos * _meta.block_size << region_info.lod, region_info.lod);
+					new_block->copy_from(**old_block, Vector3i(), old_block->get_size(), rel * old_block->get_size(), 0);
+					immerge_block(new_block, new_block_pos * _meta.block_size << region_info.lod, region_info.lod);
+
+				} else {
+
+					// Copy to multiple blocks
+					Vector3i area = _meta.block_size / old_meta.block_size;
+					Vector3i rpos;
+					for (rpos.z = 0; rpos.z < area.z; ++rpos.z) {
+						for (rpos.x = 0; rpos.x < area.x; ++rpos.x) {
+							for (rpos.y = 0; rpos.y < area.y; ++rpos.y) {
+								Vector3i src_min = rpos * new_block->get_size();
+								Vector3i src_max = src_min + new_block->get_size();
+								new_block->copy_from(**old_block, src_min, src_max, Vector3i(), 0);
+								immerge_block(new_block, (new_block_pos + rpos) * _meta.block_size << region_info.lod, region_info.lod);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	print_line("Done converting region files");
 }
 
 void VoxelStreamRegionFiles::_bind_methods() {

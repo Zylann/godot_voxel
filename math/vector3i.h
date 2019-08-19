@@ -131,6 +131,10 @@ struct Vector3i {
 		return pos;
 	}
 
+	bool all_members_equal() const {
+		return x == y && y == z;
+	}
+
 private:
 	static _FORCE_INLINE_ void sort_min_max(int &a, int &b) {
 		if (a > b) {
@@ -165,6 +169,10 @@ _FORCE_INLINE_ Vector3i operator/(const Vector3i &a, int n) {
 	return Vector3i(a.x / n, a.y / n, a.z / n);
 }
 
+_FORCE_INLINE_ Vector3i operator/(const Vector3i &a, const Vector3i &d) {
+	return Vector3i(a.x / d.x, a.y / d.y, a.z / d.z);
+}
+
 _FORCE_INLINE_ bool operator==(const Vector3i &a, const Vector3i &b) {
 	return a.x == b.x && a.y == b.y && a.z == b.z;
 }
@@ -179,6 +187,10 @@ _FORCE_INLINE_ Vector3i operator<<(const Vector3i &a, int b) {
 
 _FORCE_INLINE_ Vector3i operator>>(const Vector3i &a, int b) {
 	return Vector3i(a.x >> b, a.y >> b, a.z >> b);
+}
+
+inline Vector3i operator%(const Vector3i &a, const Vector3i &b) {
+	return Vector3i(a.x % b.x, a.y % b.y, a.z % b.z);
 }
 
 _FORCE_INLINE_ bool operator<(const Vector3i &a, const Vector3i &b) {
