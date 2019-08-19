@@ -80,27 +80,4 @@ inline Error check_directory_created(const String &directory_path) {
 	return OK;
 }
 
-inline FileAccess *open_file(const String &path, FileAccess::ModeFlags mode, Error &out_error) {
-
-	FileAccess *fa = FileAccess::create_for_path(path);
-	if (fa == nullptr) {
-		out_error = ERR_FILE_NO_PERMISSION;
-		return nullptr;
-	}
-
-	// Godot does NOT return FILE_NOT_FOUND if the file doesnt exist, so I tried to workaround it.
-	// Unfortunately, `exist()` just calls `open()` anyways... back to square one.
-	//
-	//	if (!fa->exists(path)) {
-	//		out_error = ERR_FILE_NOT_FOUND;
-	//		memdelete(fa);
-	//		return nullptr;
-	//	}
-
-	FileAccess *f = fa->open(path, mode, &out_error);
-	memdelete(fa);
-
-	return f;
-}
-
 #endif // FILE_UTILS_H
