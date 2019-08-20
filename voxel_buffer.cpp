@@ -249,6 +249,11 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 	Channel &channel = _channels[channel_index];
 	const Channel &other_channel = other._channels[channel_index];
 
+	if (channel.data == nullptr && other_channel.data == nullptr && channel.defval == other_channel.defval) {
+		// No action needed
+		return;
+	}
+
 	Vector3i::sort_min_max(src_min, src_max);
 
 	src_min.clamp_to(Vector3i(0, 0, 0), other._size);

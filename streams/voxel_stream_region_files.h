@@ -18,11 +18,22 @@ public:
 	VoxelStreamRegionFiles();
 	~VoxelStreamRegionFiles();
 
+	void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
+	void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) override;
+
 	void emerge_blocks(Vector<BlockRequest> &p_blocks) override;
 	void immerge_blocks(Vector<BlockRequest> &p_blocks) override;
 
 	String get_directory() const;
 	void set_directory(String dirpath);
+
+	Vector3i get_region_size() const;
+	Vector3 get_region_size_v() const;
+	int get_block_size() const;
+	int get_lod_count() const;
+	int get_sector_size() const;
+
+	void apply_settings(Dictionary d);
 
 protected:
 	static void _bind_methods();
@@ -67,6 +78,7 @@ private:
 		int sector_size = 0; // Blocks are stored at offsets multiple of that size
 	};
 
+	static bool check_meta(const Meta &meta);
 	void convert_files(Meta new_meta);
 
 	// Orders block requests so those querying the same regions get grouped together
