@@ -287,6 +287,7 @@ private:
 	struct JobData {
 
 		// Data accessed from other threads, so they need mutexes
+		//------------------------
 		Input shared_input;
 		Output shared_output;
 		Mutex *input_mutex = nullptr;
@@ -297,6 +298,7 @@ private:
 		bool needs_sort = false;
 		// Only read by the thread
 		bool thread_exit = false;
+		//------------------------
 
 		Input input;
 		Output output;
@@ -323,7 +325,7 @@ private:
 	}
 
 	unsigned int push_block_requests(JobData &job, const std::vector<InputBlock> &input_blocks, int begin, int count) {
-		// The job's input must have been locked first
+		// The job's input mutex must have been locked first!
 
 		unsigned int replaced_blocks = 0;
 		unsigned int end = begin + count;
@@ -342,6 +344,7 @@ private:
 				if (index) {
 					// The block is already in the update queue, replace it
 					++replaced_blocks;
+					CRASH_COND(*index < 0 || *index >= job.shared_input.blocks.size());
 					job.shared_input.blocks[*index] = block;
 
 				} else {
@@ -404,6 +407,7 @@ private:
 						data.output.blocks.resize(data.output.blocks.size() + batch_count);
 
 						for (int i = 0; i < batch_count; ++i) {
+							CRASH_COND(input_begin + i < 0 || input_begin + i >= data.input.blocks.size());
 							InputBlock &ib = data.input.blocks[input_begin + i];
 							OutputBlock &ob = data.output.blocks.write[output_begin + i];
 							ob.position = ib.position;
@@ -563,6 +567,11 @@ private:
 					const InputBlock &shifted_block = data.input.blocks.back();
 
 					if (data.duplicate_rejection) {
+						// Remove cancelled blocks from duplicate rejection's index cache.
+						// Needs to lock because it's shared with main thread when inputs get pushed
+						MutexLock lock(data.input_mutex);
+						CRASH_COND(ib.lod >= MAX_LOD);
+						CRASH_COND(shifted_block.lod >= MAX_LOD);
 						data.block_indexes[ib.lod].erase(ib.position);
 						data.block_indexes[shifted_block.lod][shifted_block.position] = i;
 					}
