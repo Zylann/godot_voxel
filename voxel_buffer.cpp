@@ -225,7 +225,7 @@ void VoxelBuffer::grab_channel_data(uint8_t *in_buffer, unsigned int channel_ind
 
 void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
-	ERR_FAIL_COND(other._size == _size);
+	ERR_FAIL_COND(other._size != _size);
 
 	Channel &channel = _channels[channel_index];
 	const Channel &other_channel = other._channels[channel_index];
@@ -263,8 +263,10 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 	Vector3i area_size = src_max - src_min;
 	//Vector3i dst_max = dst_min + area_size;
 
-	if (area_size == _size) {
+	if (area_size == _size && area_size == other._size) {
+		// Equivalent of full copy between two blocks of same size
 		copy_from(other, channel_index);
+
 	} else {
 		if (other_channel.data) {
 			if (channel.data == NULL) {
