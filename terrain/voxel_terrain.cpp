@@ -403,7 +403,7 @@ void VoxelTerrain::start_updater() {
 	params.smooth_surface = _smooth_meshing_enabled;
 	params.library = _library;
 
-	_block_updater = memnew(VoxelMeshUpdater(2, params));
+	_block_updater = memnew(VoxelMeshUpdater(1, params));
 }
 
 void VoxelTerrain::stop_updater() {
