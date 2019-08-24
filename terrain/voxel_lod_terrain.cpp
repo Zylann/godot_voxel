@@ -227,8 +227,10 @@ void VoxelLodTerrain::stop_updater() {
 		Lod &lod = _lods[i];
 		lod.blocks_pending_update.clear();
 
-		ResetMeshStateAction a;
-		lod.map->for_all_blocks(a);
+		if (lod.map.is_valid()) {
+			ResetMeshStateAction a;
+			lod.map->for_all_blocks(a);
+		}
 	}
 }
 
