@@ -18,6 +18,8 @@ public:
 	String get_directory() const;
 	void set_directory(String dirpath);
 
+	int get_block_size_po2() const override;
+
 protected:
 	static void _bind_methods();
 
@@ -32,14 +34,12 @@ private:
 	struct Meta {
 		uint8_t version = -1;
 		uint8_t lod_count = 0;
-		Vector3i block_size; // How many voxels in a block
-
-		// Non-serialized
-		bool loaded = false;
-		bool saved = false;
+		uint8_t block_size_po2 = 0; // How many voxels in a block
 	};
 
 	Meta _meta;
+	bool _meta_loaded = false;
+	bool _meta_saved = false;
 };
 
 #endif // VOXEL_STREAM_BLOCK_FILES_H

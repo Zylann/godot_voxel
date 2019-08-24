@@ -8,7 +8,7 @@ VoxelMap::VoxelMap() :
 		_last_accessed_block(NULL) {
 
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
-	set_block_size_pow2(DEFAULT_BLOCK_SIZE_PO2);
+	set_block_size_pow2(4);
 
 	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
 		_default_voxel[i] = 0;
@@ -22,18 +22,28 @@ VoxelMap::~VoxelMap() {
 	clear();
 }
 
+void VoxelMap::create(unsigned int block_size_po2, int lod_index) {
+	clear();
+	set_block_size_pow2(block_size_po2);
+	set_lod_index(lod_index);
+}
+
 void VoxelMap::set_block_size_pow2(unsigned int p) {
 
-	// Limit to 8, 16, 32
-	ERR_FAIL_COND(p < 3 || p > 5);
+	ERR_FAIL_COND_MSG(p < 1, "Block size is too small");
+	ERR_FAIL_COND_MSG(p > 8, "Block size is too big");
 
 	_block_size_pow2 = p;
 	_block_size = 1 << _block_size_pow2;
 	_block_size_mask = _block_size - 1;
 }
 
-void VoxelMap::set_lod_index(int lod) {
-	_lod_index = lod;
+void VoxelMap::set_lod_index(int lod_index) {
+
+	ERR_FAIL_COND_MSG(lod_index < 0, "LOD index can't be negative");
+	ERR_FAIL_COND_MSG(lod_index >= 32, "LOD index is too big");
+
+	_lod_index = lod_index;
 }
 
 unsigned int VoxelMap::get_lod_index() const {

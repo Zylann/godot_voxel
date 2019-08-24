@@ -31,8 +31,11 @@ public:
 	VoxelTerrain();
 	~VoxelTerrain();
 
-	void set_stream(Ref<VoxelStream> stream);
+	void set_stream(Ref<VoxelStream> p_stream);
 	Ref<VoxelStream> get_stream() const;
+
+	unsigned int get_block_size_pow2() const;
+	void set_block_size_po2(unsigned int p_block_size_po2);
 
 	void set_voxel_library(Ref<VoxelLibrary> library);
 	Ref<VoxelLibrary> get_voxel_library() const;
@@ -97,8 +100,14 @@ private:
 
 	void _process();
 
+	void _on_stream_params_changed();
+	void _set_block_size_po2(int p_block_size_po2);
 	void make_all_view_dirty_deferred();
-	void reset_updater();
+	void start_updater();
+	void stop_updater();
+	void start_streamer();
+	void stop_streamer();
+	void reset_map();
 
 	Spatial *get_viewer(NodePath path) const;
 

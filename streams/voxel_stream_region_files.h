@@ -29,11 +29,19 @@ public:
 
 	Vector3i get_region_size() const;
 	Vector3 get_region_size_v() const;
-	int get_block_size() const;
-	int get_lod_count() const;
+	int get_region_size_po2() const;
+
 	int get_sector_size() const;
 
-	void apply_settings(Dictionary d);
+	int get_block_size_po2() const override;
+	int get_lod_count() const override;
+
+	void set_block_size_po2(int p_block_size_po2);
+	void set_region_size_po2(int p_region_size_po2);
+	void set_sector_size(int p_sector_size);
+	void set_lod_count(int p_lod_count);
+
+	void convert_files(Dictionary d);
 
 protected:
 	static void _bind_methods();
@@ -73,13 +81,13 @@ private:
 	struct Meta {
 		uint8_t version = -1;
 		uint8_t lod_count = 0;
-		Vector3i block_size; // How many voxels in a block
-		Vector3i region_size; // How many blocks in one region
+		uint8_t block_size_po2 = 0; // How many voxels in a cubic block
+		uint8_t region_size_po2 = 0; // How many blocks in one cubic region
 		int sector_size = 0; // Blocks are stored at offsets multiple of that size
 	};
 
 	static bool check_meta(const Meta &meta);
-	void convert_files(Meta new_meta);
+	void _convert_files(Meta new_meta);
 
 	// Orders block requests so those querying the same regions get grouped together
 	struct BlockRequestComparator {

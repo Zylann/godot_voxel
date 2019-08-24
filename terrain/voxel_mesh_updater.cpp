@@ -33,6 +33,8 @@ static void scale_mesh_data(VoxelMesher::Output &data, float factor) {
 
 VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams params) {
 
+	print_line("Constructing VoxelMeshUpdater");
+
 	Ref<VoxelMesherBlocky> blocky_mesher;
 	Ref<VoxelMesherDMC> smooth_mesher;
 

@@ -5,7 +5,6 @@
 #include <core/os/file_access.h>
 
 namespace {
-const Vector3i DEFAULT_BLOCK_SIZE(16, 16, 16);
 const uint8_t FORMAT_VERSION = 1;
 const char *FORMAT_META_MAGIC = "VXBM";
 const char *FORMAT_BLOCK_MAGIC = "VXB_";
@@ -15,7 +14,7 @@ const char *BLOCK_FILE_EXTENSION = ".vxb";
 
 VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 	// Defaults
-	_meta.block_size = DEFAULT_BLOCK_SIZE;
+	_meta.block_size_po2 = 4;
 	_meta.lod_count = 1;
 	_meta.version = FORMAT_VERSION;
 }
@@ -31,15 +30,18 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 		return;
 	}
 
-	if (!_meta.loaded) {
+	if (!_meta_loaded) {
 		if (load_meta() != OK) {
 			return;
 		}
 	}
 
-	CRASH_COND(!_meta.loaded);
+	CRASH_COND(!_meta_loaded);
+
+	const Vector3i block_size(1 << _meta.block_size_po2);
+
 	ERR_FAIL_COND(lod >= _meta.lod_count);
-	ERR_FAIL_COND(_meta.block_size != out_buffer->get_size());
+	ERR_FAIL_COND(block_size != out_buffer->get_size());
 
 	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
 	String file_path = get_block_file_path(block_pos, lod);
@@ -77,7 +79,7 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 	ERR_FAIL_COND(_directory_path.empty());
 	ERR_FAIL_COND(buffer.is_null());
 
-	if (!_meta.saved) {
+	if (!_meta_saved) {
 		Error err = save_meta();
 		ERR_FAIL_COND(err != OK);
 	}
@@ -120,8 +122,12 @@ String VoxelStreamBlockFiles::get_directory() const {
 void VoxelStreamBlockFiles::set_directory(String dirpath) {
 	if (_directory_path != dirpath) {
 		_directory_path = dirpath;
-		_meta.loaded = false;
+		_meta_loaded = false;
 	}
+}
+
+int VoxelStreamBlockFiles::get_block_size_po2() const {
+	return _meta.block_size_po2;
 }
 
 Error VoxelStreamBlockFiles::save_meta() {
@@ -148,13 +154,13 @@ Error VoxelStreamBlockFiles::save_meta() {
 		f->store_8(FORMAT_VERSION);
 
 		f->store_8(_meta.lod_count);
-		store_vec3u32(f, _meta.block_size);
+		f->store_8(_meta.block_size_po2);
 
 		memdelete(f);
 	}
 
-	_meta.loaded = true;
-	_meta.saved = true;
+	_meta_loaded = true;
+	_meta_saved = true;
 	return OK;
 }
 
@@ -168,7 +174,7 @@ Error VoxelStreamBlockFiles::load_meta() {
 		Error err;
 		FileAccessRef f = open_file(meta_path, FileAccess::READ, &err);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
-		if (!_meta.saved && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
+		if (!_meta_saved && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
 			// This is a new terrain, save the meta we have and consider it current
 			Error save_err = save_meta();
 			ERR_FAIL_COND_V(save_err != OK, save_err);
@@ -182,10 +188,13 @@ Error VoxelStreamBlockFiles::load_meta() {
 		}
 
 		meta.lod_count = f->get_8();
-		meta.block_size = get_vec3u32(f);
+		meta.block_size_po2 = f->get_8();
+
+		ERR_FAIL_COND_V(meta.lod_count < 1 || meta.lod_count > 32, ERR_INVALID_DATA);
+		ERR_FAIL_COND_V(meta.block_size_po2 < 1 || meta.block_size_po2 > 8, ERR_INVALID_DATA);
 	}
 
-	meta.loaded = true;
+	_meta_loaded = true;
 	_meta = meta;
 	return OK;
 }
@@ -208,7 +217,7 @@ String VoxelStreamBlockFiles::get_block_file_path(const Vector3i &block_pos, uns
 }
 
 Vector3i VoxelStreamBlockFiles::get_block_position(const Vector3i &origin_in_voxels) const {
-	return origin_in_voxels.udiv(_meta.block_size);
+	return origin_in_voxels >> _meta.block_size_po2;
 }
 
 void VoxelStreamBlockFiles::_bind_methods() {

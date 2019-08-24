@@ -10,8 +10,6 @@
 class VoxelMap : public Reference {
 	GDCLASS(VoxelMap, Reference)
 public:
-	static const int DEFAULT_BLOCK_SIZE_PO2 = 4;
-
 	// Converts voxel coodinates into block coordinates.
 	// Don't use division because it introduces an offset in negative coordinates.
 	static _FORCE_INLINE_ Vector3i voxel_to_block_b(Vector3i pos, int block_size_pow2) {
@@ -40,11 +38,13 @@ public:
 	VoxelMap();
 	~VoxelMap();
 
+	void create(unsigned int block_size_po2, int lod_index);
+
 	_FORCE_INLINE_ unsigned int get_block_size() const { return _block_size; }
 	_FORCE_INLINE_ unsigned int get_block_size_pow2() const { return _block_size_pow2; }
 	_FORCE_INLINE_ unsigned int get_block_size_mask() const { return _block_size_mask; }
 
-	void set_lod_index(int lod);
+	void set_lod_index(int lod_index);
 	unsigned int get_lod_index() const;
 
 	int get_voxel(Vector3i pos, unsigned int c = 0);
@@ -91,6 +91,7 @@ public:
 
 	int get_block_count() const;
 
+	// TODO Use lambda
 	template <typename Op_T>
 	void for_all_blocks(Op_T op) {
 		const Vector3i *key = NULL;

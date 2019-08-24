@@ -2,12 +2,12 @@
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_file.h"
 #include "streams/voxel_stream_image.h"
 #include "streams/voxel_stream_noise.h"
 #include "streams/voxel_stream_region_files.h"
 #include "streams/voxel_stream_test.h"
-#include "streams/voxel_stream_block_files.h"
 #include "terrain/voxel_box_mover.h"
 #include "terrain/voxel_lod_terrain.h"
 #include "terrain/voxel_map.h"
@@ -51,4 +51,5 @@ void register_voxel_types() {
 }
 
 void unregister_voxel_types() {
+	// lol
 }

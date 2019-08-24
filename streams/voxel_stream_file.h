@@ -19,6 +19,11 @@ public:
 	Ref<VoxelStream> get_fallback_stream() const;
 	void set_fallback_stream(Ref<VoxelStream> stream);
 
+	// File streams are likely to impose a specific block size,
+	// and changing it can be very expensive so the API is usually specific too
+	virtual int get_block_size_po2() const;
+	virtual int get_lod_count() const;
+
 protected:
 	static void _bind_methods();
 
@@ -30,6 +35,8 @@ protected:
 	VoxelBlockSerializer _block_serializer;
 
 private:
+	Vector3 _get_block_size() const;
+
 	Ref<VoxelStream> _fallback_stream;
 	bool _save_fallback_output = true;
 };

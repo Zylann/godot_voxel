@@ -35,8 +35,8 @@ public:
 	void set_lod_split_scale(float p_lod_split_scale);
 	float get_lod_split_scale() const;
 
-	void set_lod_count(unsigned int p_lod_count);
-	unsigned int get_lod_count() const;
+	void set_lod_count(int p_lod_count);
+	int get_lod_count() const;
 
 	void set_viewer_path(NodePath path);
 	NodePath get_viewer_path() const;
@@ -44,6 +44,9 @@ public:
 	int get_block_region_extent() const;
 	Dictionary get_block_info(Vector3 fbpos, unsigned int lod_index) const;
 	Vector3 voxel_to_block_position(Vector3 vpos, unsigned int lod_index) const;
+
+	unsigned int get_block_size_pow2() const;
+	void set_block_size_po2(unsigned int p_block_size_po2);
 
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
@@ -68,14 +71,23 @@ protected:
 
 private:
 	unsigned int get_block_size() const;
-	unsigned int get_block_size_pow2() const;
 	void make_all_view_dirty_deferred();
 	Spatial *get_viewer() const;
 	void immerge_block(Vector3i block_pos, unsigned int lod_index);
-	void reset_updater();
+
+	void start_updater();
+	void stop_updater();
+	void start_streamer();
+	void stop_streamer();
+	void reset_maps();
+
 	Vector3 get_viewer_pos(Vector3 &out_direction) const;
 	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, unsigned int lod_index);
 	bool check_block_loaded_and_updated(const Vector3i &p_bpos, unsigned int lod_index);
+	void _set_lod_count(int p_lod_count);
+	void _set_block_size_po2(int p_block_size_po2);
+
+	void _on_stream_params_changed();
 
 	template <typename A>
 	void for_all_blocks(A &action) {

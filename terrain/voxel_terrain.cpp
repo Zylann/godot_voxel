@@ -1,4 +1,5 @@
 #include "voxel_terrain.h"
+#include "../streams/voxel_stream_file.h"
 #include "../streams/voxel_stream_test.h"
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
@@ -6,11 +7,15 @@
 #include "voxel_block.h"
 #include "voxel_map.h"
 
+#include <core/core_string_names.h>
 #include <core/engine.h>
 #include <core/os/os.h>
 #include <scene/3d/mesh_instance.h>
 
 VoxelTerrain::VoxelTerrain() {
+	// Note: don't do anything heavy in the constructor.
+	// Godot may create and destroy dozens of instances of all node types on startup,
+	// due to how ClassDB gets its default values.
 
 	_map = Ref<VoxelMap>(memnew(VoxelMap));
 
@@ -74,25 +79,92 @@ void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 	}
 }
 
-void VoxelTerrain::set_stream(Ref<VoxelStream> stream) {
-	if (stream != _stream) {
-
-		if (_stream_thread) {
-			memdelete(_stream_thread);
-			_stream_thread = NULL;
-		}
-
-		_stream = stream;
-		_stream_thread = memnew(VoxelDataLoader(1, _stream, _map->get_block_size_pow2()));
-
-		// The whole map might change, so make all area dirty
-		// TODO Actually, we should regenerate the whole map, not just update all its blocks
-		make_all_view_dirty_deferred();
+void VoxelTerrain::set_stream(Ref<VoxelStream> p_stream) {
+	if (p_stream == _stream) {
+		return;
 	}
+
+	if (_stream.is_valid()) {
+		if (_stream->is_connected(CoreStringNames::get_singleton()->changed, this, "_on_stream_params_changed")) {
+			_stream->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_stream_params_changed");
+		}
+	}
+
+	_stream = p_stream;
+
+	if (_stream.is_valid()) {
+		_stream->connect(CoreStringNames::get_singleton()->changed, this, "_on_stream_params_changed");
+	}
+
+	_on_stream_params_changed();
 }
 
 Ref<VoxelStream> VoxelTerrain::get_stream() const {
 	return _stream;
+}
+
+void VoxelTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
+
+	ERR_FAIL_COND(p_block_size_po2 < 1);
+	ERR_FAIL_COND(p_block_size_po2 > 32);
+
+	unsigned int block_size_po2 = p_block_size_po2;
+	Ref<VoxelStreamFile> file_stream = _stream;
+	if (file_stream.is_valid()) {
+		block_size_po2 = file_stream->get_block_size_po2();
+	}
+
+	if (block_size_po2 == get_block_size_pow2()) {
+		return;
+	}
+
+	bool updater_was_running = _block_updater != nullptr;
+
+	stop_streamer();
+	stop_updater();
+
+	reset_map();
+	_set_block_size_po2(p_block_size_po2);
+
+	if (_stream.is_valid()) {
+		start_streamer();
+	}
+	if (updater_was_running) {
+		start_updater();
+	}
+}
+
+void VoxelTerrain::_set_block_size_po2(int p_block_size_po2) {
+	_map->create(p_block_size_po2, 0);
+}
+
+unsigned int VoxelTerrain::get_block_size_pow2() const {
+	return _map->get_block_size_pow2();
+}
+
+void VoxelTerrain::_on_stream_params_changed() {
+	stop_streamer();
+
+	bool was_updater_running = _block_updater != nullptr;
+	stop_updater();
+
+	Ref<VoxelStreamFile> file_stream = _stream;
+	if (file_stream.is_valid()) {
+
+		int stream_block_size_po2 = file_stream->get_block_size_po2();
+		_set_block_size_po2(stream_block_size_po2);
+	}
+
+	if (_stream.is_valid()) {
+		start_streamer();
+	}
+	if (was_updater_running) {
+		start_updater();
+	}
+
+	// The whole map might change, so make all area dirty
+	// TODO Actually, we should regenerate the whole map, not just update all its blocks
+	make_all_view_dirty_deferred();
 }
 
 Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
@@ -101,20 +173,28 @@ Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
 
 void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
 
-	if (library != _library) {
+	if (library == _library) {
+		return;
+	}
 
 #ifdef TOOLS_ENABLED
-		if (library->get_voxel_count() == 0) {
-			library->load_default();
-		}
-#endif
-		_library = library;
-
-		reset_updater();
-
-		// Voxel appearance might completely change
-		make_all_view_dirty_deferred();
+	if (library->get_voxel_count() == 0) {
+		library->load_default();
 	}
+#endif
+
+	_library = library;
+
+	bool updater_was_running = _block_updater != nullptr;
+
+	stop_updater();
+
+	if (updater_was_running) {
+		start_updater();
+	}
+
+	// Voxel appearance might completely change
+	make_all_view_dirty_deferred();
 }
 
 void VoxelTerrain::set_generate_collisions(bool enabled) {
@@ -175,7 +255,8 @@ bool VoxelTerrain::is_smooth_meshing_enabled() const {
 void VoxelTerrain::set_smooth_meshing_enabled(bool enabled) {
 	if (_smooth_meshing_enabled != enabled) {
 		_smooth_meshing_enabled = enabled;
-		reset_updater();
+		stop_updater();
+		start_updater();
 		make_all_view_dirty_deferred();
 	}
 }
@@ -313,21 +394,69 @@ void VoxelTerrain::make_all_view_dirty_deferred() {
 	//	make_blocks_dirty(-radius, 2*radius);
 }
 
-void VoxelTerrain::reset_updater() {
+void VoxelTerrain::start_updater() {
 
-	if (_block_updater) {
-		memdelete(_block_updater);
-		_block_updater = NULL;
-	}
+	ERR_FAIL_COND(_block_updater != nullptr);
 
 	// TODO Thread-safe way to change those parameters
 	VoxelMeshUpdater::MeshingParams params;
 	params.smooth_surface = _smooth_meshing_enabled;
 	params.library = _library;
 
-	_block_updater = memnew(VoxelMeshUpdater(1, params));
+	_block_updater = memnew(VoxelMeshUpdater(2, params));
+}
 
-	// TODO Revert any pending update states!
+void VoxelTerrain::stop_updater() {
+
+	struct ResetMeshStateAction {
+		void operator()(VoxelBlock *block) {
+			if (block->get_mesh_state() == VoxelBlock::MESH_UPDATE_SENT) {
+				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
+			}
+		}
+	};
+
+	if (_block_updater) {
+		memdelete(_block_updater);
+		_block_updater = NULL;
+	}
+
+	_blocks_pending_main_thread_update.clear();
+	_blocks_pending_update.clear();
+
+	ResetMeshStateAction a;
+	_map->for_all_blocks(a);
+
+	// TODO This will be redundant with the thing above
+	const Vector3i *key = NULL;
+	while ((key = _dirty_blocks.next(key))) {
+		BlockDirtyState *s = _dirty_blocks.getptr(*key);
+		if (*s == BLOCK_UPDATE_SENT) {
+			*s = BLOCK_UPDATE_NOT_SENT;
+		}
+	}
+}
+
+void VoxelTerrain::start_streamer() {
+
+	ERR_FAIL_COND(_stream_thread != nullptr);
+	ERR_FAIL_COND(_stream.is_null());
+
+	_stream_thread = memnew(VoxelDataLoader(1, _stream, get_block_size_pow2()));
+}
+
+void VoxelTerrain::stop_streamer() {
+
+	if (_stream_thread) {
+		memdelete(_stream_thread);
+		_stream_thread = nullptr;
+	}
+
+	_blocks_pending_load.clear();
+}
+
+void VoxelTerrain::reset_map() {
+	_map->create(get_block_size_pow2(), 0);
 }
 
 inline int get_border_index(int x, int max) {
@@ -490,48 +619,50 @@ void VoxelTerrain::make_area_dirty(Rect3i box) {
 	}
 }
 
-namespace {
-
-struct EnterWorldAction {
-	World *world;
-	EnterWorldAction(World *w) :
-			world(w) {}
-	void operator()(VoxelBlock *block) {
-		block->enter_world(world);
-	}
-};
-
-struct ExitWorldAction {
-	void operator()(VoxelBlock *block) {
-		block->exit_world();
-	}
-};
-
-struct SetVisibilityAction {
-	bool visible;
-	SetVisibilityAction(bool v) :
-			visible(v) {}
-	void operator()(VoxelBlock *block) {
-		block->set_visible(visible);
-	}
-};
-
-} // namespace
-
 void VoxelTerrain::_notification(int p_what) {
+
+	struct EnterWorldAction {
+		World *world;
+		EnterWorldAction(World *w) :
+				world(w) {}
+		void operator()(VoxelBlock *block) {
+			block->enter_world(world);
+		}
+	};
+
+	struct ExitWorldAction {
+		void operator()(VoxelBlock *block) {
+			block->exit_world();
+		}
+	};
+
+	struct SetVisibilityAction {
+		bool visible;
+		SetVisibilityAction(bool v) :
+				visible(v) {}
+		void operator()(VoxelBlock *block) {
+			block->set_visible(visible);
+		}
+	};
 
 	switch (p_what) {
 
 		case NOTIFICATION_ENTER_TREE:
+			if (_block_updater == nullptr) {
+				start_updater();
+			}
 			set_process(true);
 			break;
 
 		case NOTIFICATION_PROCESS:
-			if (!Engine::get_singleton()->is_editor_hint() || _run_in_editor)
+			if (!Engine::get_singleton()->is_editor_hint() || _run_in_editor) {
 				_process();
+			}
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
+			stop_updater();
+			stop_streamer();
 			break;
 
 		case NOTIFICATION_ENTER_WORLD: {
@@ -1067,6 +1198,8 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::get_statistics);
 	ClassDB::bind_method(D_METHOD("get_block_state", "block_pos"), &VoxelTerrain::get_block_state);
+
+	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelTerrain::_on_stream_params_changed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"), "set_voxel_library", "get_voxel_library");

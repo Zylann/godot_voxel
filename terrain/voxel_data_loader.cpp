@@ -4,6 +4,7 @@
 
 VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int block_size_pow2) {
 
+	print_line("Constructing VoxelDataLoader");
 	CRASH_COND(stream.is_null());
 
 	// TODO I'm not sure it's worth to configure more than one thread for voxel streams
