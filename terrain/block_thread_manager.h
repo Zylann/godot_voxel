@@ -107,7 +107,6 @@ public:
 		_job_count = job_count;
 
 		CRASH_COND(batch_count == 0);
-		_batch_count = batch_count;
 
 		for (unsigned int i = 0; i < MAX_JOBS; ++i) {
 			JobData &job = _jobs[i];
@@ -616,7 +615,6 @@ private:
 
 	JobData _jobs[MAX_JOBS];
 	unsigned int _job_count = 0;
-	unsigned int _batch_count = 0;
 };
 
 #endif // VOXEL_BLOCK_THREAD_MANAGER_H
