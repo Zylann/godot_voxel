@@ -45,7 +45,7 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Ref<World> world) {
 			vs.instance_set_scenario(_mesh_instance, world->get_scenario());
 		}
 
-		vs.instance_set_base(_mesh_instance, mesh.is_valid() ? mesh->get_rid() : RID());
+		vs.instance_set_base(_mesh_instance, mesh->get_rid());
 
 		Transform local_transform(Basis(), _position_in_voxels.to_vec3());
 		vs.instance_set_transform(_mesh_instance, local_transform);
