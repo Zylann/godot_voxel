@@ -1,6 +1,6 @@
 #include "voxel_block_serializer.h"
-#include "../lz4/lz4.h"
 #include "../math/vector3i.h"
+#include "../thirdparty/lz4/lz4.h"
 #include "../voxel_buffer.h"
 #include <core/os/file_access.h>
 

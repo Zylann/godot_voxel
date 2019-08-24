@@ -13,7 +13,7 @@ files = [
 	"util/*.cpp",
 	"terrain/*.cpp",
 	"math/*.cpp",
-	"lz4/*.c"
+	"thirdparty/lz4/*.c"
 ]
 
 for f in files:
