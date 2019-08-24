@@ -408,8 +408,6 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
-			stop_updater();
-			stop_streamer();
 			break;
 
 		case NOTIFICATION_ENTER_WORLD: {
