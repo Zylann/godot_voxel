@@ -11,29 +11,14 @@ _Godot version: 3.2_
 
 ## Constants:
 
-#### » BlockDirtyState.BLOCK_NONE = 0
-
-
-#### » BlockDirtyState.BLOCK_LOAD = 1
-
-
-#### » BlockDirtyState.BLOCK_UPDATE_NOT_SENT = 2
-
-
-#### » BlockDirtyState.BLOCK_UPDATE_SENT = 3
-
-
-#### » BlockDirtyState.BLOCK_IDLE = 4
-
-
 
 ## Properties:
 
-#### » bool generate_collision
+#### » bool generate_collisions
 
-`set_generate_collision (value)` setter
+`set_generate_collisions (value)` setter
 
-`get_generate_collision ()` getter
+`get_generate_collisions ()` getter
 
 
 #### » bool smooth_meshing_enabled
@@ -77,9 +62,6 @@ _Godot version: 3.2_
 #### » Vector3 block_to_voxel ( Vector3 block_pos ) 
 
 
-#### » int get_block_state ( Vector3 block_pos )  const
-
-
 #### » Material get_material ( int id )  const
 
 
@@ -112,4 +94,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 02, 2019_
+_Generated on Aug 25, 2019_

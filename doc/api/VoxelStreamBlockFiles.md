@@ -1,6 +1,6 @@
-# Class: VoxelStreamImage
+# Class: VoxelStreamBlockFiles
 
-Inherits: VoxelStream
+Inherits: VoxelStreamFile
 
 _Godot version: 3.2_
 
@@ -14,18 +14,11 @@ _Godot version: 3.2_
 
 ## Properties:
 
-#### » int VoxelBuffer.ChannelId.channel
+#### » String directory
 
-`set_channel (value)` setter
+`set_directory (value)` setter
 
-`get_channel ()` getter
-
-
-#### » Image image
-
-`set_image (value)` setter
-
-`get_image ()` getter
+`get_directory ()` getter
 
 
 

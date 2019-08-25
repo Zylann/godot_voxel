@@ -14,11 +14,18 @@ _Godot version: 3.2_
 
 ## Properties:
 
-#### » bool generate_collision
+#### » int collision_lod_count
 
-`set_generate_collision (value)` setter
+`set_collision_lod_count (value)` setter
 
-`get_generate_collision ()` getter
+`get_collision_lod_count ()` getter
+
+
+#### » bool generate_collisions
+
+`set_generate_collisions (value)` setter
+
+`get_generate_collisions ()` getter
 
 
 #### » int lod_count
@@ -86,4 +93,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 02, 2019_
+_Generated on Aug 25, 2019_
