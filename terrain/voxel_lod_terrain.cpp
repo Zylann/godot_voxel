@@ -885,6 +885,9 @@ void VoxelLodTerrain::_process() {
 			Ref<ArrayMesh> mesh;
 			mesh.instance();
 
+			// TODO Allow multiple collision surfaces
+			Array collidable_surface;
+
 			unsigned int surface_index = 0;
 			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
 			for (int i = 0; i < data.smooth_surfaces.surfaces.size(); ++i) {
@@ -895,6 +898,14 @@ void VoxelLodTerrain::_process() {
 				}
 
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
+				if (!is_surface_triangulated(surface)) {
+					continue;
+				}
+
+				if (collidable_surface.empty()) {
+					collidable_surface = surface;
+				}
+
 				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _material);
 				// No multi-material supported yet
@@ -910,7 +921,7 @@ void VoxelLodTerrain::_process() {
 				has_collision = ob.lod < _collision_lod_count;
 			}
 
-			block->set_mesh(mesh, this, has_collision, get_tree()->is_debugging_collisions_hint());
+			block->set_mesh(mesh, this, has_collision, collidable_surface, get_tree()->is_debugging_collisions_hint());
 			block->mark_been_meshed();
 		}
 

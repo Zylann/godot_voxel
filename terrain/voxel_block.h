@@ -26,7 +26,7 @@ public:
 
 	~VoxelBlock();
 
-	void set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, bool debug_collision);
+	void set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Array surface_arrays, bool debug_collision);
 	bool has_mesh() const;
 
 	void set_mesh_state(MeshState ms);

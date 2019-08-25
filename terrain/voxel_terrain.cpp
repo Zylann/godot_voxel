@@ -920,7 +920,7 @@ void VoxelTerrain::_process() {
 						CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
 						// The block contains empty voxels
-						block->set_mesh(Ref<Mesh>(), this, _generate_collisions, get_tree()->is_debugging_collisions_hint());
+						block->set_mesh(Ref<Mesh>(), this, _generate_collisions, Array(), get_tree()->is_debugging_collisions_hint());
 						block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
 
 						// Optional, but I guess it might spare some memory
@@ -1010,6 +1010,9 @@ void VoxelTerrain::_process() {
 			Ref<ArrayMesh> mesh;
 			mesh.instance();
 
+			// TODO Allow multiple collision surfaces
+			Array collidable_surface;
+
 			int surface_index = 0;
 			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
 			for (int i = 0; i < data.blocky_surfaces.surfaces.size(); ++i) {
@@ -1020,6 +1023,14 @@ void VoxelTerrain::_process() {
 				}
 
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
+				if (!is_surface_triangulated(surface)) {
+					continue;
+				}
+
+				if (collidable_surface.empty()) {
+					collidable_surface = surface;
+				}
+
 				mesh->add_surface_from_arrays(data.blocky_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
@@ -1033,6 +1044,10 @@ void VoxelTerrain::_process() {
 				}
 
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
+				if (!is_surface_triangulated(surface)) {
+					continue;
+				}
+
 				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
@@ -1042,7 +1057,7 @@ void VoxelTerrain::_process() {
 				mesh = Ref<Mesh>();
 			}
 
-			block->set_mesh(mesh, this, _generate_collisions, get_tree()->is_debugging_collisions_hint());
+			block->set_mesh(mesh, this, _generate_collisions, collidable_surface, get_tree()->is_debugging_collisions_hint());
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);

@@ -91,6 +91,12 @@ inline float max(const float &a, const float &b) {
 	return a > b ? a : b;
 }
 
+inline bool is_surface_triangulated(Array surface) {
+	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
+	PoolIntArray indices = surface[Mesh::ARRAY_INDEX];
+	return positions.size() >= 3 && indices.size() >= 3;
+}
+
 inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
 	if (mesh_ref.is_null())
 		return true;
