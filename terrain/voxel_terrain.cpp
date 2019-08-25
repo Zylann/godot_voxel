@@ -345,7 +345,6 @@ Dictionary VoxelTerrain::get_statistics() const {
 	updater["updated_blocks"] = _stats.updated_blocks;
 	updater["mesh_alloc_time"] = _stats.mesh_alloc_time;
 	updater["dropped_blocks"] = _stats.dropped_updater_blocks;
-	updater["remaining_main_thread_blocks"] = _stats.remaining_main_thread_blocks;
 
 	Dictionary d;
 	d["stream"] = stream;
@@ -357,6 +356,8 @@ Dictionary VoxelTerrain::get_statistics() const {
 	d["time_process_load_responses"] = _stats.time_process_load_responses;
 	d["time_send_update_requests"] = _stats.time_send_update_requests;
 	d["time_process_update_responses"] = _stats.time_process_update_responses;
+
+	d["remaining_main_thread_blocks"] = _blocks_pending_main_thread_update.size();
 
 	return d;
 }

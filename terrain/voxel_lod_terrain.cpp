@@ -926,6 +926,7 @@ Dictionary VoxelLodTerrain::get_stats() const {
 	process["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
 	process["time_process_update_responses"] = _stats.time_process_update_responses;
 	process["time_process_lod"] = _stats.time_process_lod;
+	process["remaining_main_thread_blocks"] = _blocks_pending_main_thread_update.size();
 
 	Dictionary d;
 	d["stream"] = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);

@@ -60,7 +60,6 @@ public:
 		int updated_blocks;
 		int dropped_stream_blocks;
 		int dropped_updater_blocks;
-		int remaining_main_thread_blocks;
 		uint64_t time_detect_required_blocks;
 		uint64_t time_send_load_requests;
 		uint64_t time_process_load_responses;
@@ -72,7 +71,6 @@ public:
 				updated_blocks(0),
 				dropped_stream_blocks(0),
 				dropped_updater_blocks(0),
-				remaining_main_thread_blocks(0),
 				time_detect_required_blocks(0),
 				time_send_load_requests(0),
 				time_process_load_responses(0),
