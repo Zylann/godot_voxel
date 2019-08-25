@@ -725,14 +725,16 @@ void VoxelLodTerrain::_process() {
 
 			Lod &lod = _lods[ob.lod];
 
-			Set<Vector3i>::Element *E = lod.loading_blocks.find(ob.position);
-			if (E == nullptr) {
-				// That block was not requested, or is no longer needed. drop it...
-				++_stats.dropped_block_loads;
-				continue;
-			}
+			{
+				Set<Vector3i>::Element *E = lod.loading_blocks.find(ob.position);
+				if (E == nullptr) {
+					// That block was not requested, or is no longer needed. drop it...
+					++_stats.dropped_block_loads;
+					continue;
+				}
 
-			lod.loading_blocks.erase(E);
+				lod.loading_blocks.erase(E);
+			}
 
 			if (ob.drop_hint) {
 				// That block was dropped by the data loader thread, but we were still expecting it...
@@ -839,7 +841,6 @@ void VoxelLodTerrain::_process() {
 
 		Ref<World> world = get_world();
 		uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS; // Allocate milliseconds max to upload meshes
-
 		unsigned int queue_index = 0;
 
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.

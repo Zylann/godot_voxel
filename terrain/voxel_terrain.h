@@ -19,15 +19,6 @@ class VoxelLibrary;
 class VoxelTerrain : public Spatial {
 	GDCLASS(VoxelTerrain, Spatial)
 public:
-	// TODO Remove this, it's obsoleted by VoxelBlock::MeshState
-	enum BlockDirtyState {
-		BLOCK_NONE, // There is no block
-		BLOCK_LOAD, // The block is loading
-		BLOCK_UPDATE_NOT_SENT, // The block needs an update but wasn't sent yet
-		BLOCK_UPDATE_SENT, // The block needs an update which was sent
-		BLOCK_IDLE // The block is up to date
-	};
-
 	VoxelTerrain();
 	~VoxelTerrain();
 
@@ -44,7 +35,6 @@ public:
 	//void make_blocks_dirty(Vector3i min, Vector3i size);
 	void make_voxel_dirty(Vector3i pos);
 	void make_area_dirty(Rect3i box);
-	bool is_block_dirty(Vector3i bpos) const;
 
 	void set_generate_collisions(bool enabled);
 	bool get_generate_collisions() const { return _generate_collisions; }
@@ -129,7 +119,6 @@ private:
 	Variant _raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance);
 	void set_voxel(Vector3 pos, int value, int c);
 	int get_voxel(Vector3 pos, int c);
-	BlockDirtyState get_block_state(Vector3 p_bpos) const;
 
 private:
 	// Voxel storage
@@ -141,9 +130,9 @@ private:
 	// TODO Terrains only need to handle the visible portion of voxels, which reduces the bounds blocks to handle.
 	// Therefore, could a simple grid be better to use than a hashmap?
 
+	Set<Vector3i> _loading_blocks;
 	Vector<Vector3i> _blocks_pending_load;
 	Vector<Vector3i> _blocks_pending_update;
-	HashMap<Vector3i, BlockDirtyState, Vector3iHasher> _dirty_blocks; // TODO Rename _block_states
 	Vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
 
 	std::vector<VoxelDataLoader::InputBlock> _blocks_to_save;
@@ -166,7 +155,5 @@ private:
 
 	Stats _stats;
 };
-
-VARIANT_ENUM_CAST(VoxelTerrain::BlockDirtyState)
 
 #endif // VOXEL_TERRAIN_H

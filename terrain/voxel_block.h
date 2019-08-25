@@ -13,8 +13,8 @@ public:
 	enum MeshState {
 		MESH_NEVER_UPDATED = 0,
 		MESH_UP_TO_DATE,
-		MESH_UPDATE_NOT_SENT, // The mesh is out of date, but no update request have been sent
-		MESH_UPDATE_SENT // The mesh is out of date, and an update request is pending
+		MESH_UPDATE_NOT_SENT, // The mesh is out of date and was marked for update, but no request have been sent yet
+		MESH_UPDATE_SENT // The mesh is out of date, and an update request was sent, pending response
 	};
 
 	Ref<VoxelBuffer> voxels;
