@@ -1,10 +1,21 @@
 # Collision
 
-Physics based collision is enabled by default.
+Physics based collision is enabled by default. It provides both raycasting and collision detection.
 
-You can turn it on or off by setting the `generate_collision` option on any of the terrain nodes. Or you can enable or disable it in code.
+You can turn it on or off by setting the `generate_collisions` option on any of the terrain nodes. Or you can enable or disable it in code.
 
 The collision is built along with the mesh. So any blocks that have already been built will not be affected by the setting unless they are regenerated.
+
+
+## Debugging
+
+You can also turn on the collision wire mesh for debugging. In the editor, look under the Debug menu for `Visible Collision Shapes`.
+
+![heightmap](https://user-images.githubusercontent.com/632766/62386300-61ab9c00-b592-11e9-8f01-3f454593dd91.gif)
+
+
+
+# Alternatives To Physics Based Collision
 
 There are some alternative collision related tools available:
 
@@ -28,43 +39,28 @@ func _physics_process(delta):
 	velocity = motion / delta
 ```
 
-## Raycasting (Blocky or Smooth)
+## Raycasting 
 
-You can manually send out raycasts from your character to see how far away from the terrain it is. You can also do this with any of your objects.
+You may want to use raycasts when collision has not been enabled. For instance picking the terrain with the mouse cursor. `VoxelTerrain` supports a rudimentary raycast. `VoxelLODTerrain` does not.
 
-_Note: Raycasting in VoxelLodTerrain requires the merging of [PR #29](https://github.com/Zylann/godot_voxel/pull/29), which is a work in progress. It works fine on LOD 0, but not the others._
+Returned values are blocky, integer grid positions, while physics based raycasting will return fine-grained floating point positions.
 
-Here's an example of how it can work. For a character 2 units tall, this runs a raycast directly down to prevent the character from sinking into the ground. `on_ground` is a boolean that tells the jump function whether it can fire or not. 
-```
-# Apply gravity to downward velocity
-velocity.y += delta*GRAVITY
-# But clamp it if we hit the ground
-if terrain.raycast(head_position, Vector3(0,-1,0), PLAYER_HEIGHT):
-	velocity.y = clamp(velocity.y, 0, 999999999)
-	on_ground = true 
-```
+The usage is simple: `terrain.raycast(start_postion, direction, max_distance)`
 
-Then for lateral motion, you can test with something like this. We run a raycast at foot/knee level, then a little higher up (head level, since the granularity provided by the raycast is not very fine). 
-
-If it's clear at head level, but not at foot level then we're looking at a sloped terrain. We move the character up a little bit to help it traverse the terrain. It is a little rough, but serves as a working example. 
-```
-func test_and_move(pos, dir) -> Vector3:
-	# If raycast hits at knee level (-1.5)
-	if terrain.raycast(Vector3(pos.x, pos.y-1.5, pos.z), dir, 1):
-	
-		# Then test at head level and move character up a little if clear
-		if !terrain.raycast(pos, dir, 1) :
-			translate(Vector3(0,.15,0))
-			return dir
-		
-		# Both hit, can't move	
-		return Vector3(0,0,0)
-	
-	# Otherwise, free to move	
-	else:
-		return dir
+Upon success, it returns a dictionary with the following values:
 
 ```
+hit["position"] - Vector3 integer position where the ray hit 
+hit["prev_position"] - Previous Vector3 integer position the ray occupied before it hit
+```
+
+On failure, it will return an empty dictionary:`Variant()`. You can logically test this result:
+
+```
+if terrain.raycast(...): 
+	do something
+```
+
 
 ---
 * [Next Page](06_custom-streams.md)
