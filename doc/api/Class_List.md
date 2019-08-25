@@ -14,11 +14,14 @@ These classes are exposed to GDScript. This information is also available within
 * [VoxelMesherDMC.md](VoxelMesherDMC.md)
 * [VoxelMesherTransvoxel.md](VoxelMesherTransvoxel.md)
 * [VoxelStream.md](VoxelStream.md)
+* [VoxelStreamBlockFiles.md](VoxelStreamBlockFiles.md)
+* [VoxelStreamFile.md](VoxelStreamFile.md)
 * [VoxelStreamImage.md](VoxelStreamImage.md)
 * [VoxelStreamNoise.md](VoxelStreamNoise.md)
+* [VoxelStreamRegionFiles.md](VoxelStreamRegionFiles.md)
 * [VoxelStreamTest.md](VoxelStreamTest.md)
 * [VoxelTerrain.md](VoxelTerrain.md)
 
 ---
 * [Doc Index](../01_get-started.md)
-_Generated on Aug 02, 2019_
+_Generated on Aug 25, 2019_
