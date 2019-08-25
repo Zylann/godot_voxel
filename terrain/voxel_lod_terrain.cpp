@@ -368,18 +368,12 @@ Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, unsigned int lod_
 
 void VoxelLodTerrain::_notification(int p_what) {
 
-	struct EnterWorldAction {
+	struct SetWorldAction {
 		World *world;
-		EnterWorldAction(World *w) :
+		SetWorldAction(World *w) :
 				world(w) {}
 		void operator()(VoxelBlock *block) {
-			block->enter_world(world);
-		}
-	};
-
-	struct ExitWorldAction {
-		void operator()(VoxelBlock *block) {
-			block->exit_world();
+			block->set_world(world);
 		}
 	};
 
@@ -411,12 +405,12 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_ENTER_WORLD: {
-			EnterWorldAction ewa(*get_world());
+			SetWorldAction ewa(*get_world());
 			for_all_blocks(ewa);
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD: {
-			ExitWorldAction ewa;
+			SetWorldAction ewa(nullptr);
 			for_all_blocks(ewa);
 		} break;
 

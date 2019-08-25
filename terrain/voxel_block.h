@@ -1,10 +1,8 @@
 #ifndef VOXEL_BLOCK_H
 #define VOXEL_BLOCK_H
 
+#include "../util/direct_mesh_instance.h"
 #include "../voxel_buffer.h"
-
-#include <scene/3d/mesh_instance.h>
-#include <scene/3d/physics_body.h>
 
 // Internal structure holding a reference to mesh visuals, physics and a block of voxel data.
 class VoxelBlock {
@@ -34,8 +32,7 @@ public:
 	void mark_been_meshed();
 	bool has_been_meshed() const;
 
-	void enter_world(World *world);
-	void exit_world();
+	void set_world(World *world);
 	void set_visible(bool visible);
 	bool is_visible() const;
 
@@ -48,11 +45,10 @@ private:
 
 	Vector3i _position_in_voxels;
 
-	Ref<Mesh> _mesh;
-	RID _mesh_instance;
+	DirectMeshInstance _mesh_instance;
+
 	int _mesh_update_count = 0;
 	bool _visible = true;
-
 	MeshState _mesh_state = MESH_NEVER_UPDATED;
 
 	// The mesh might be null, but we don't know if it's actually empty or if it's loading.

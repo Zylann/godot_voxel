@@ -621,18 +621,12 @@ void VoxelTerrain::make_area_dirty(Rect3i box) {
 
 void VoxelTerrain::_notification(int p_what) {
 
-	struct EnterWorldAction {
+	struct SetWorldAction {
 		World *world;
-		EnterWorldAction(World *w) :
+		SetWorldAction(World *w) :
 				world(w) {}
 		void operator()(VoxelBlock *block) {
-			block->enter_world(world);
-		}
-	};
-
-	struct ExitWorldAction {
-		void operator()(VoxelBlock *block) {
-			block->exit_world();
+			block->set_world(world);
 		}
 	};
 
@@ -665,12 +659,12 @@ void VoxelTerrain::_notification(int p_what) {
 
 		case NOTIFICATION_ENTER_WORLD: {
 			ERR_FAIL_COND(_map.is_null());
-			_map->for_all_blocks(EnterWorldAction(*get_world()));
+			_map->for_all_blocks(SetWorldAction(*get_world()));
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD:
 			ERR_FAIL_COND(_map.is_null());
-			_map->for_all_blocks(ExitWorldAction());
+			_map->for_all_blocks(SetWorldAction(nullptr));
 			break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
