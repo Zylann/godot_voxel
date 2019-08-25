@@ -38,6 +38,13 @@ public:
 	void set_lod_count(int p_lod_count);
 	int get_lod_count() const;
 
+	void set_generate_collisions(bool enabled);
+	bool get_generate_collisions() const { return _generate_collisions; }
+
+	// Sets up to which amount of LODs collision will generate. -1 means all of them.
+	void set_collision_lod_count(int lod_count);
+	int get_collision_lod_count() const;
+
 	void set_viewer_path(NodePath path);
 	NodePath get_viewer_path() const;
 
@@ -110,6 +117,9 @@ private:
 	std::vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
 
 	Ref<Material> _material;
+
+	bool _generate_collisions = true;
+	int _collision_lod_count = -1;
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {

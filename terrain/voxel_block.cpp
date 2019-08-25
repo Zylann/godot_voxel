@@ -1,5 +1,5 @@
 #include "voxel_block.h"
-#include <scene/resources/world.h>
+#include <scene/3d/spatial.h>
 
 // Helper
 VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index) {
@@ -22,7 +22,7 @@ VoxelBlock::VoxelBlock() {
 VoxelBlock::~VoxelBlock() {
 }
 
-void VoxelBlock::set_mesh(Ref<Mesh> mesh, Ref<World> world) {
+void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, bool debug_collision) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
@@ -30,22 +30,46 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Ref<World> world) {
 
 	if (mesh.is_valid()) {
 
+		ERR_FAIL_COND(node == nullptr);
+		Ref<World> world = node->get_world();
+		ERR_FAIL_COND(world.is_null());
+
 		if (!_mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
-			ERR_FAIL_COND(world.is_null());
 			_mesh_instance.create();
 			_mesh_instance.set_world(*world);
 		}
 
+		Transform transform(Basis(), _position_in_voxels.to_vec3());
+
 		_mesh_instance.set_mesh(mesh);
-		_mesh_instance.set_transform(Transform(Basis(), _position_in_voxels.to_vec3()));
+		_mesh_instance.set_transform(transform);
 		// TODO The day VoxelTerrain becomes a Spatial, this transform will need to be updatable separately
+
+		if (generate_collision) {
+			Ref<Shape> shape = mesh->create_trimesh_shape();
+
+			if (!_static_body.is_valid()) {
+				_static_body.create();
+				_static_body.set_world(*world);
+				_static_body.set_attached_object(node);
+				_static_body.set_transform(transform);
+			} else {
+				_static_body.remove_shape(0);
+			}
+			_static_body.add_shape(shape);
+			_static_body.set_debug(debug_collision, *world);
+		}
 
 	} else {
 
 		if (_mesh_instance.is_valid()) {
 			// Delete instance if it exists
 			_mesh_instance.destroy();
+		}
+
+		if (_static_body.is_valid()) {
+			_static_body.destroy();
 		}
 	}
 
@@ -80,11 +104,17 @@ void VoxelBlock::set_world(World *world) {
 	if (_mesh_instance.is_valid()) {
 		_mesh_instance.set_world(world);
 	}
+	if (_static_body.is_valid()) {
+		_static_body.set_world(world);
+	}
 }
 
 void VoxelBlock::set_visible(bool visible) {
 	if (_mesh_instance.is_valid()) {
 		_mesh_instance.set_visible(visible);
+	}
+	if (_static_body.is_valid()) {
+		_static_body.set_shape_enabled(0, visible);
 	}
 	_visible = visible;
 }

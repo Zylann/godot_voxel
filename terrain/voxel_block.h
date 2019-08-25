@@ -2,7 +2,10 @@
 #define VOXEL_BLOCK_H
 
 #include "../util/direct_mesh_instance.h"
+#include "../util/direct_static_body.h"
 #include "../voxel_buffer.h"
+
+class Spatial;
 
 // Internal structure holding a reference to mesh visuals, physics and a block of voxel data.
 class VoxelBlock {
@@ -23,7 +26,7 @@ public:
 
 	~VoxelBlock();
 
-	void set_mesh(Ref<Mesh> mesh, Ref<World> world);
+	void set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, bool debug_collision);
 	bool has_mesh() const;
 
 	void set_mesh_state(MeshState ms);
@@ -46,6 +49,7 @@ private:
 	Vector3i _position_in_voxels;
 
 	DirectMeshInstance _mesh_instance;
+	DirectStaticBody _static_body;
 
 	int _mesh_update_count = 0;
 	bool _visible = true;

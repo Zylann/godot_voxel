@@ -309,6 +309,18 @@ int VoxelLodTerrain::get_lod_count() const {
 	return _lod_octree.get_lod_count();
 }
 
+void VoxelLodTerrain::set_generate_collisions(bool enabled) {
+	_generate_collisions = enabled;
+}
+
+void VoxelLodTerrain::set_collision_lod_count(int lod_count) {
+	_collision_lod_count = CLAMP(lod_count, -1, get_lod_count());
+}
+
+int VoxelLodTerrain::get_collision_lod_count() const {
+	return _collision_lod_count;
+}
+
 void VoxelLodTerrain::set_viewer_path(NodePath path) {
 	_viewer_path = path;
 }
@@ -888,7 +900,12 @@ void VoxelLodTerrain::_process() {
 				mesh = Ref<Mesh>();
 			}
 
-			block->set_mesh(mesh, world);
+			bool has_collision = _generate_collisions;
+			if (has_collision && _collision_lod_count != -1) {
+				has_collision = ob.lod < _collision_lod_count;
+			}
+
+			block->set_mesh(mesh, this, has_collision, get_tree()->is_debugging_collisions_hint());
 			block->mark_been_meshed();
 		}
 
@@ -931,6 +948,12 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_view_distance", "distance_in_voxels"), &VoxelLodTerrain::set_view_distance);
 	ClassDB::bind_method(D_METHOD("get_view_distance"), &VoxelLodTerrain::get_view_distance);
 
+	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelLodTerrain::get_generate_collisions);
+	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelLodTerrain::set_generate_collisions);
+
+	ClassDB::bind_method(D_METHOD("get_collision_lod_count"), &VoxelLodTerrain::get_collision_lod_count);
+	ClassDB::bind_method(D_METHOD("set_collision_lod_count", "count"), &VoxelLodTerrain::set_collision_lod_count);
+
 	ClassDB::bind_method(D_METHOD("get_viewer_path"), &VoxelLodTerrain::get_viewer_path);
 	ClassDB::bind_method(D_METHOD("set_viewer_path", "path"), &VoxelLodTerrain::set_viewer_path);
 
@@ -953,4 +976,6 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"), "set_material", "get_material");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"), "set_collision_lod_count", "get_collision_lod_count");
 }

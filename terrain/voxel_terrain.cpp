@@ -25,7 +25,6 @@ VoxelTerrain::VoxelTerrain() {
 	_stream_thread = NULL;
 	_block_updater = NULL;
 
-	_generate_collisions = false;
 	_run_in_editor = false;
 	_smooth_meshing_enabled = false;
 }
@@ -936,7 +935,7 @@ void VoxelTerrain::_process() {
 						CRASH_COND(*block_state != BLOCK_UPDATE_NOT_SENT);
 
 						// The block contains empty voxels
-						block->set_mesh(Ref<Mesh>(), Ref<World>());
+						block->set_mesh(Ref<Mesh>(), this, _generate_collisions, get_tree()->is_debugging_collisions_hint());
 						_dirty_blocks.erase(block_pos);
 
 						// Optional, but I guess it might spare some memory
@@ -1058,7 +1057,7 @@ void VoxelTerrain::_process() {
 				mesh = Ref<Mesh>();
 			}
 
-			block->set_mesh(mesh, world);
+			block->set_mesh(mesh, this, _generate_collisions, get_tree()->is_debugging_collisions_hint());
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);

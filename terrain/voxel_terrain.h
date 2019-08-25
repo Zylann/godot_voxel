@@ -158,7 +158,7 @@ private:
 	Vector3i _last_viewer_block_pos;
 	int _last_view_distance_blocks;
 
-	bool _generate_collisions;
+	bool _generate_collisions = true;
 	bool _run_in_editor;
 	bool _smooth_meshing_enabled;
 
