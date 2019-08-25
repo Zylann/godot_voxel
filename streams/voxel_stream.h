@@ -33,7 +33,7 @@ public:
 	virtual bool is_thread_safe() const;
 	virtual bool is_cloneable() const;
 
-	Stats get_stats() const;
+	Stats get_statistics() const;
 
 protected:
 	static void _bind_methods();

@@ -82,7 +82,7 @@ void VoxelStream::_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxe
 	immerge_block(buffer, Vector3i(origin_in_voxels), lod);
 }
 
-VoxelStream::Stats VoxelStream::get_stats() const {
+VoxelStream::Stats VoxelStream::get_statistics() const {
 	return _stats;
 }
 

@@ -104,7 +104,7 @@ public:
 	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) override;
 	int get_minimum_padding() const override;
 
-	Dictionary get_stats() const;
+	Dictionary get_statistics() const;
 
 	VoxelMesher *clone() override;
 

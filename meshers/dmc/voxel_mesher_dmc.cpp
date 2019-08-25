@@ -1466,7 +1466,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 	// - Voxel data must be padded
 	// - The non-padded area size is cubic and power of two
 
-	_stats = { };
+	_stats = {};
 
 	if (voxels.is_uniform(VoxelBuffer::CHANNEL_ISOLEVEL)) {
 		// That won't produce any polygon
@@ -1601,7 +1601,7 @@ VoxelMesher *VoxelMesherDMC::clone() {
 	return c;
 }
 
-Dictionary VoxelMesherDMC::get_stats() const {
+Dictionary VoxelMesherDMC::get_statistics() const {
 	Dictionary d;
 	d["octree_build_time"] = _stats.octree_build_time;
 	d["dualgrid_derivation_time"] = _stats.dualgrid_derivation_time;
@@ -1624,7 +1624,7 @@ void VoxelMesherDMC::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_seam_mode", "mode"), &VoxelMesherDMC::set_seam_mode);
 	ClassDB::bind_method(D_METHOD("get_seam_mode"), &VoxelMesherDMC::get_seam_mode);
 
-	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelMesherDMC::get_stats);
+	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelMesherDMC::get_statistics);
 
 	BIND_ENUM_CONSTANT(MESH_NORMAL);
 	BIND_ENUM_CONSTANT(MESH_WIREFRAME);

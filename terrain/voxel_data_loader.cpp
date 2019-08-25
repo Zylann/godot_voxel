@@ -90,7 +90,7 @@ void VoxelDataLoader::process_blocks_thread_func(const ArraySlice<InputBlock> in
 	stream->emerge_blocks(emerge_requests);
 	stream->immerge_blocks(immerge_requests);
 
-	VoxelStream::Stats stream_stats = stream->get_stats();
+	VoxelStream::Stats stream_stats = stream->get_statistics();
 	stats.file_openings = stream_stats.file_openings;
 	stats.time_spent_opening_files = stream_stats.time_spent_opening_files;
 

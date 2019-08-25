@@ -68,7 +68,7 @@ public:
 		int dropped_block_meshs = 0;
 	};
 
-	Dictionary get_stats() const;
+	Dictionary get_statistics() const;
 
 protected:
 	static void _bind_methods();

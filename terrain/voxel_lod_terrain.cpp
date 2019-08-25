@@ -918,7 +918,7 @@ void VoxelLodTerrain::_process() {
 	_stats.time_process_lod = profiling_clock.restart();
 }
 
-Dictionary VoxelLodTerrain::get_stats() const {
+Dictionary VoxelLodTerrain::get_statistics() const {
 
 	Dictionary process;
 	process["time_request_blocks_to_load"] = _stats.time_request_blocks_to_load;
@@ -967,7 +967,7 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_block_region_extent"), &VoxelLodTerrain::get_block_region_extent);
 	ClassDB::bind_method(D_METHOD("get_block_info", "block_pos", "lod"), &VoxelLodTerrain::get_block_info);
-	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelLodTerrain::get_stats);
+	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::get_statistics);
 	ClassDB::bind_method(D_METHOD("voxel_to_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_block_position);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
