@@ -338,26 +338,21 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
 
 Dictionary VoxelTerrain::get_statistics() const {
 
-	Dictionary stream = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);
-	stream["dropped_blocks"] = _stats.dropped_stream_blocks;
-
-	Dictionary updater = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
-	updater["updated_blocks"] = _stats.updated_blocks;
-	updater["mesh_alloc_time"] = _stats.mesh_alloc_time;
-	updater["dropped_blocks"] = _stats.dropped_updater_blocks;
-
 	Dictionary d;
-	d["stream"] = stream;
-	d["updater"] = updater;
+	d["stream"] = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);
+	d["updater"] = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
 
 	// Breakdown of time spent in _process
 	d["time_detect_required_blocks"] = _stats.time_detect_required_blocks;
-	d["time_send_load_requests"] = _stats.time_send_load_requests;
+	d["time_request_blocks_to_load"] = _stats.time_request_blocks_to_load;
 	d["time_process_load_responses"] = _stats.time_process_load_responses;
-	d["time_send_update_requests"] = _stats.time_send_update_requests;
+	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
 	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
 	d["remaining_main_thread_blocks"] = _blocks_pending_main_thread_update.size();
+	d["dropped_block_loads"] = _stats.dropped_block_loads;
+	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
+	d["updated_blocks"] = _stats.updated_blocks;
 
 	return d;
 }
@@ -740,6 +735,9 @@ void VoxelTerrain::_process() {
 
 	ProfilingClock profiling_clock;
 
+	_stats.dropped_block_loads = 0;
+	_stats.dropped_block_meshs = 0;
+
 	// Get viewer location
 	// TODO Transform to local (Spatial Transform)
 	Vector3i viewer_block_pos;
@@ -792,7 +790,7 @@ void VoxelTerrain::_process() {
 
 	send_block_data_requests();
 
-	_stats.time_send_load_requests = profiling_clock.restart();
+	_stats.time_request_blocks_to_load = profiling_clock.restart();
 
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
@@ -805,7 +803,6 @@ void VoxelTerrain::_process() {
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 
 		_stats.stream = output.stats;
-		_stats.dropped_stream_blocks = 0;
 
 		for (int i = 0; i < output.blocks.size(); ++i) {
 
@@ -822,7 +819,7 @@ void VoxelTerrain::_process() {
 
 				if (E == nullptr) {
 					// That block was not requested, drop it
-					++_stats.dropped_stream_blocks;
+					++_stats.dropped_block_loads;
 					continue;
 				}
 
@@ -834,14 +831,14 @@ void VoxelTerrain::_process() {
 				// This is not good, because it means the loader is out of sync due to a bug.
 				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
 								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
-				++_stats.dropped_stream_blocks;
+				++_stats.dropped_block_loads;
 				continue;
 			}
 
 			if (ob.data.voxels_loaded->get_size() != _map->get_block_size()) {
 				// Voxel block size is incorrect, drop it
 				ERR_PRINT("Block size obtained from stream is different from expected size");
-				++_stats.dropped_stream_blocks;
+				++_stats.dropped_block_loads;
 				continue;
 			}
 
@@ -967,7 +964,7 @@ void VoxelTerrain::_process() {
 		_blocks_pending_update.clear();
 	}
 
-	_stats.time_send_update_requests = profiling_clock.restart();
+	_stats.time_request_blocks_to_update = profiling_clock.restart();
 
 	// Get mesh updates
 	{
@@ -977,7 +974,6 @@ void VoxelTerrain::_process() {
 
 			_stats.updater = output.stats;
 			_stats.updated_blocks = output.blocks.size();
-			_stats.dropped_updater_blocks = 0;
 
 			_blocks_pending_main_thread_update.append_array(output.blocks);
 		}
@@ -999,7 +995,7 @@ void VoxelTerrain::_process() {
 			VoxelBlock *block = _map->get_block(ob.position);
 			if (block == NULL) {
 				// That block is no longer loaded, drop the result
-				++_stats.dropped_updater_blocks;
+				++_stats.dropped_block_meshs;
 				continue;
 			}
 
@@ -1007,7 +1003,7 @@ void VoxelTerrain::_process() {
 				// That block is loaded, but its meshing request was dropped.
 				// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
 				print_line("Received a block mesh drop while we were still expecting it");
-				++_stats.dropped_updater_blocks;
+				++_stats.dropped_block_meshs;
 				continue;
 			}
 
@@ -1050,8 +1046,6 @@ void VoxelTerrain::_process() {
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
-
-		_stats.mesh_alloc_time = profiling_mesh_clock.restart();
 	}
 
 	_stats.time_process_update_responses = profiling_clock.restart();

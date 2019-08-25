@@ -676,6 +676,8 @@ void VoxelLodTerrain::_process() {
 		_stats.blocked_lods = subdivide_action.blocked_count + unsubdivide_action.blocked_count;
 	}
 
+	_stats.time_detect_required_blocks = profiling_clock.restart();
+
 	// Send block loading requests
 	{
 		VoxelDataLoader::Input input;
@@ -824,7 +826,9 @@ void VoxelLodTerrain::_process() {
 		{
 			VoxelMeshUpdater::Output output;
 			_block_updater->pop(output);
+
 			_stats.updater = output.stats;
+			_stats.updated_blocks = output.blocks.size();
 
 			for (int i = 0; i < output.blocks.size(); ++i) {
 				const VoxelMeshUpdater::OutputBlock &ob = output.blocks[i];
@@ -914,27 +918,26 @@ void VoxelLodTerrain::_process() {
 	}
 
 	_stats.time_process_update_responses = profiling_clock.restart();
-
-	_stats.time_process_lod = profiling_clock.restart();
 }
 
 Dictionary VoxelLodTerrain::get_statistics() const {
 
-	Dictionary process;
-	process["time_request_blocks_to_load"] = _stats.time_request_blocks_to_load;
-	process["time_process_load_responses"] = _stats.time_process_load_responses;
-	process["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
-	process["time_process_update_responses"] = _stats.time_process_update_responses;
-	process["time_process_lod"] = _stats.time_process_lod;
-	process["remaining_main_thread_blocks"] = _blocks_pending_main_thread_update.size();
-
 	Dictionary d;
 	d["stream"] = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);
 	d["updater"] = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
-	d["process"] = process;
-	d["blocked_lods"] = _stats.blocked_lods;
+
+	// Breakdown of time spent in _process
+	d["time_detect_required_blocks"] = _stats.time_detect_required_blocks;
+	d["time_request_blocks_to_load"] = _stats.time_request_blocks_to_load;
+	d["time_process_load_responses"] = _stats.time_process_load_responses;
+	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
+	d["time_process_update_responses"] = _stats.time_process_update_responses;
+
+	d["remaining_main_thread_blocks"] = _blocks_pending_main_thread_update.size();
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
+	d["updated_blocks"] = _stats.updated_blocks;
+	d["blocked_lods"] = _stats.blocked_lods;
 
 	return d;
 }

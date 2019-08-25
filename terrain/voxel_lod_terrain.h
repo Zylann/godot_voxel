@@ -58,14 +58,15 @@ public:
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
 		VoxelDataLoader::Stats stream;
+		int blocked_lods = 0;
+		int updated_blocks = 0;
+		int dropped_block_loads = 0;
+		int dropped_block_meshs = 0;
+		uint64_t time_detect_required_blocks = 0;
 		uint64_t time_request_blocks_to_load = 0;
 		uint64_t time_process_load_responses = 0;
 		uint64_t time_request_blocks_to_update = 0;
 		uint64_t time_process_update_responses = 0;
-		uint64_t time_process_lod = 0;
-		int blocked_lods = 0;
-		int dropped_block_loads = 0;
-		int dropped_block_meshs = 0;
 	};
 
 	Dictionary get_statistics() const;
