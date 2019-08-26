@@ -75,13 +75,10 @@ def generate_api_docs_from_classes_xml(xml_path, output_path, verbose=False):
     print("Generated %d files in %s." % (count, output_path))
 
 
-def update_classes_xml(godot_executable, verbose=False):
-
-    # TODO Not sure if cleanest
-    path_to_godot_repo_root = os.path.realpath(__file__)
+def update_classes_xml(godot_executable, path, verbose=False):
 
     # Dump XML files from Godot
-    args = [godot_executable, ' --doctool ',  path_to_godot_repo_root]
+    args = [godot_executable, ' --doctool ',  path]
     if verbose:
         print("Running: ", args)
     result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -175,7 +172,7 @@ def main():
         if verbose:
             print("Found Godot at: %s" % godot_executable)
 
-        update_classes_xml(godot_executable, verbose)
+        update_classes_xml(godot_executable, godot_repo_root, verbose)
 
     generate_api_docs_from_classes_xml(xml_path, output_path, verbose)
 
