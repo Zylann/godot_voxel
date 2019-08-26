@@ -1048,6 +1048,10 @@ void VoxelTerrain::_process() {
 					continue;
 				}
 
+				if (collidable_surface.empty()) {
+					collidable_surface = surface;
+				}
+
 				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
