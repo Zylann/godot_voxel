@@ -24,4 +24,4 @@ These classes are exposed to GDScript. This information is also available within
 
 ---
 * [Doc Index](../01_get-started.md)
-_Generated on Aug 25, 2019_
+_Generated on Aug 26, 2019_

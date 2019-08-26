@@ -79,7 +79,7 @@ _Godot version: 3.2_
 #### » int get_block_region_extent (  )  const
 
 
-#### » Dictionary get_stats (  )  const
+#### » Dictionary get_statistics (  )  const
 
 
 #### » Vector3 voxel_to_block_position ( Vector3 lod_index, int arg1 )  const
@@ -93,4 +93,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 25, 2019_
+_Generated on Aug 26, 2019_

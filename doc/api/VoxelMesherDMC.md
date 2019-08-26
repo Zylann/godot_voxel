@@ -56,7 +56,7 @@ _Godot version: 3.2_
 #### » int get_simplify_mode (  )  const
 
 
-#### » Dictionary get_stats (  )  const
+#### » Dictionary get_statistics (  )  const
 
 
 #### » void set_geometric_error ( float error ) 
@@ -79,4 +79,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 25, 2019_
+_Generated on Aug 26, 2019_

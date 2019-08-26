@@ -96,4 +96,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 25, 2019_
+_Generated on Aug 26, 2019_
