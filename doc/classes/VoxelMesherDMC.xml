@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelMesherDMC" inherits="VoxelMesher" category="Core" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_geometric_error" qualifiers="const">
+			<return type="float">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_mesh_mode" qualifiers="const">
+			<return type="int" enum="VoxelMesherDMC.MeshMode">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_seam_mode" qualifiers="const">
+			<return type="int" enum="VoxelMesherDMC.SeamMode">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_simplify_mode" qualifiers="const">
+			<return type="int" enum="VoxelMesherDMC.SimplifyMode">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_statistics" qualifiers="const">
+			<return type="Dictionary">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="set_geometric_error">
+			<return type="void">
+			</return>
+			<argument index="0" name="error" type="float">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_mesh_mode">
+			<return type="void">
+			</return>
+			<argument index="0" name="mode" type="int" enum="VoxelMesherDMC.MeshMode">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_seam_mode">
+			<return type="void">
+			</return>
+			<argument index="0" name="mode" type="int" enum="VoxelMesherDMC.SeamMode">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_simplify_mode">
+			<return type="void">
+			</return>
+			<argument index="0" name="mode" type="int" enum="VoxelMesherDMC.SimplifyMode">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="MESH_NORMAL" value="0" enum="MeshMode">
+		</constant>
+		<constant name="MESH_WIREFRAME" value="1" enum="MeshMode">
+		</constant>
+		<constant name="MESH_DEBUG_OCTREE" value="2" enum="MeshMode">
+		</constant>
+		<constant name="MESH_DEBUG_DUAL_GRID" value="3" enum="MeshMode">
+		</constant>
+		<constant name="SIMPLIFY_OCTREE_BOTTOM_UP" value="0" enum="SimplifyMode">
+		</constant>
+		<constant name="SIMPLIFY_OCTREE_TOP_DOWN" value="1" enum="SimplifyMode">
+		</constant>
+		<constant name="SIMPLIFY_NONE" value="2" enum="SimplifyMode">
+		</constant>
+		<constant name="SEAM_NONE" value="0" enum="SeamMode">
+		</constant>
+		<constant name="SEAM_MARCHING_SQUARE_SKIRTS" value="1" enum="SeamMode">
+		</constant>
+	</constants>
+</class>

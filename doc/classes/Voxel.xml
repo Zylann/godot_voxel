@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Voxel" inherits="Resource" category="Core" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_id" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="set_color">
+			<return type="Voxel">
+			</return>
+			<argument index="0" name="color" type="Color">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_id">
+			<return type="Voxel">
+			</return>
+			<argument index="0" name="id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_material_id">
+			<return type="Voxel">
+			</return>
+			<argument index="0" name="id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_transparent">
+			<return type="Voxel">
+			</return>
+			<argument index="0" name="transparent" type="bool" default="true">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_voxel_name">
+			<return type="Voxel">
+			</return>
+			<argument index="0" name="name" type="String">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="color" type="Color" setter="set_color" getter="get_color" default="Color( 1, 1, 1, 1 )">
+		</member>
+		<member name="geometry_type" type="int" setter="set_geometry_type" getter="get_geometry_type" enum="Voxel.GeometryType" default="0">
+		</member>
+		<member name="material_id" type="int" setter="set_material_id" getter="get_material_id" default="0">
+		</member>
+		<member name="transparent" type="bool" setter="set_transparent" getter="is_transparent" default="false">
+		</member>
+		<member name="voxel_name" type="String" setter="set_voxel_name" getter="get_voxel_name" default="&quot;&quot;">
+		</member>
+	</members>
+	<constants>
+		<constant name="GEOMETRY_NONE" value="0" enum="GeometryType">
+		</constant>
+		<constant name="GEOMETRY_CUBE" value="1" enum="GeometryType">
+		</constant>
+		<constant name="GEOMETRY_MAX" value="2" enum="GeometryType">
+		</constant>
+		<constant name="CHANNEL_TYPE" value="0" enum="ChannelMode">
+		</constant>
+		<constant name="CHANNEL_ISOLEVEL" value="1" enum="ChannelMode">
+		</constant>
+		<constant name="CHANNEL_DATA" value="2" enum="ChannelMode">
+		</constant>
+	</constants>
+</class>

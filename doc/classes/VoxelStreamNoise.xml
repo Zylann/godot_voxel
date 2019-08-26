@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelStreamNoise" inherits="VoxelStream" category="Core" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" default="300.0">
+		</member>
+		<member name="height_start" type="float" setter="set_height_start" getter="get_height_start" default="0.0">
+		</member>
+		<member name="noise" type="OpenSimplexNoise" setter="set_noise" getter="get_noise">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

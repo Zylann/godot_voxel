@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelStreamFile" inherits="VoxelStream" category="Core" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_block_size" qualifiers="const">
+			<return type="Vector3">
+			</return>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="fallback_stream" type="VoxelStream" setter="set_fallback_stream" getter="get_fallback_stream">
+		</member>
+		<member name="save_fallback_output" type="bool" setter="set_save_fallback_output" getter="get_save_fallback_output" default="true">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

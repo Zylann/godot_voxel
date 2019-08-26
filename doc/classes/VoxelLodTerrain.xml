@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelLodTerrain" inherits="Spatial" category="Core" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_block_info" qualifiers="const">
+			<return type="Dictionary">
+			</return>
+			<argument index="0" name="block_pos" type="Vector3">
+			</argument>
+			<argument index="1" name="lod" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_block_region_extent" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_statistics" qualifiers="const">
+			<return type="Dictionary">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="voxel_to_block_position" qualifiers="const">
+			<return type="Vector3">
+			</return>
+			<argument index="0" name="lod_index" type="Vector3">
+			</argument>
+			<argument index="1" name="arg1" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="collision_lod_count" type="int" setter="set_collision_lod_count" getter="get_collision_lod_count" default="-1">
+		</member>
+		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
+		</member>
+		<member name="lod_count" type="int" setter="set_lod_count" getter="get_lod_count" default="8">
+		</member>
+		<member name="lod_split_scale" type="float" setter="set_lod_split_scale" getter="get_lod_split_scale" default="3.0">
+		</member>
+		<member name="material" type="Material" setter="set_material" getter="get_material">
+		</member>
+		<member name="stream" type="VoxelStream" setter="set_stream" getter="get_stream">
+		</member>
+		<member name="view_distance" type="int" setter="set_view_distance" getter="get_view_distance" default="0">
+		</member>
+		<member name="viewer_path" type="NodePath" setter="set_viewer_path" getter="get_viewer_path" default="NodePath(&quot;&quot;)">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

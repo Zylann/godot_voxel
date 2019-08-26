@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelStreamRegionFiles" inherits="VoxelStreamFile" category="Core" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="convert_files">
+			<return type="void">
+			</return>
+			<argument index="0" name="new_settings" type="Dictionary">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_block_size_po2" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_region_size" qualifiers="const">
+			<return type="Vector3">
+			</return>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="block_size_po2" type="int" setter="set_block_size_po2" getter="get_region_size_po2" default="4">
+		</member>
+		<member name="directory" type="String" setter="set_directory" getter="get_directory" default="&quot;&quot;">
+		</member>
+		<member name="lod_count" type="int" setter="set_lod_count" getter="get_lod_count" default="1">
+		</member>
+		<member name="region_size_po2" type="int" setter="set_region_size_po2" getter="get_region_size_po2" default="4">
+		</member>
+		<member name="sector_size" type="int" setter="set_sector_size" getter="get_sector_size" default="512">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

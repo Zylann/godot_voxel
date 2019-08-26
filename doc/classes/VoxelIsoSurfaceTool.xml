@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelIsoSurfaceTool" inherits="Reference" category="Core" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="do_cube">
+			<return type="void">
+			</return>
+			<argument index="0" name="transform" type="Transform">
+			</argument>
+			<argument index="1" name="extents" type="Vector3">
+			</argument>
+			<argument index="2" name="op" type="int" enum="VoxelIsoSurfaceTool.Operation" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="do_heightmap">
+			<return type="void">
+			</return>
+			<argument index="0" name="heightmap" type="Image">
+			</argument>
+			<argument index="1" name="offset" type="Vector3">
+			</argument>
+			<argument index="2" name="vertical_scale" type="float">
+			</argument>
+			<argument index="3" name="op" type="int" enum="VoxelIsoSurfaceTool.Operation" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="do_plane">
+			<return type="void">
+			</return>
+			<argument index="0" name="plane" type="Plane">
+			</argument>
+			<argument index="1" name="op" type="int" enum="VoxelIsoSurfaceTool.Operation" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="do_sphere">
+			<return type="void">
+			</return>
+			<argument index="0" name="center" type="Vector3">
+			</argument>
+			<argument index="1" name="radius" type="float">
+			</argument>
+			<argument index="2" name="op" type="int" enum="VoxelIsoSurfaceTool.Operation" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_buffer" qualifiers="const">
+			<return type="VoxelBuffer">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_iso_scale" qualifiers="const">
+			<return type="float">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_offset" qualifiers="const">
+			<return type="Vector3">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="set_buffer">
+			<return type="void">
+			</return>
+			<argument index="0" name="voxel_buffer" type="VoxelBuffer">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_iso_scale">
+			<return type="void">
+			</return>
+			<argument index="0" name="iso_scale" type="float">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_offset">
+			<return type="void">
+			</return>
+			<argument index="0" name="offset" type="Vector3">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="OP_ADD" value="0" enum="Operation">
+		</constant>
+		<constant name="OP_SUBTRACT" value="1" enum="Operation">
+		</constant>
+		<constant name="OP_SET" value="2" enum="Operation">
+		</constant>
+	</constants>
+</class>
