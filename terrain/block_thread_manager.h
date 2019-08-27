@@ -293,7 +293,7 @@ private:
 		Mutex *output_mutex = nullptr;
 		// Indexes which blocks are present in shared_input,
 		// so if we push a duplicate request with the same coordinates, we can discard it without a linear search
-		HashMap<Vector3i, int, Vector3iHasher> block_indexes[MAX_LOD];
+		HashMap<Vector3i, int, Vector3iHasher> shared_input_block_indexes[MAX_LOD];
 		bool needs_sort = false;
 		// Only read by the thread
 		bool thread_exit = false;
@@ -337,7 +337,7 @@ private:
 
 			if (job.duplicate_rejection) {
 
-				int *index = job.block_indexes[block.lod].getptr(block.position);
+				int *index = job.shared_input_block_indexes[block.lod].getptr(block.position);
 
 				// TODO When using more than one thread, duplicate rejection is less effective... is it relevant to keep it at all?
 				if (index) {
@@ -350,7 +350,7 @@ private:
 					// Append new block request
 					int j = job.shared_input.blocks.size();
 					job.shared_input.blocks.push_back(block);
-					job.block_indexes[block.lod][block.position] = j;
+					job.shared_input_block_indexes[block.lod][block.position] = j;
 				}
 
 			} else {
@@ -516,8 +516,9 @@ private:
 			data.shared_input.blocks.clear();
 
 			if (data.duplicate_rejection) {
+				// We emptied shared input, empty shared_input_block_indexes then
 				for (unsigned int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
-					data.block_indexes[lod_index].clear();
+					data.shared_input_block_indexes[lod_index].clear();
 				}
 			}
 
@@ -564,16 +565,6 @@ private:
 					// We'll put that block in replacement of the dropped one and pop the last cell,
 					// so we don't need to shift every following blocks
 					const InputBlock &shifted_block = data.input.blocks.back();
-
-					if (data.duplicate_rejection) {
-						// Remove cancelled blocks from duplicate rejection's index cache.
-						// Needs to lock because it's shared with main thread when inputs get pushed
-						MutexLock lock(data.input_mutex);
-						CRASH_COND(ib.lod >= MAX_LOD);
-						CRASH_COND(shifted_block.lod >= MAX_LOD);
-						data.block_indexes[ib.lod].erase(ib.position);
-						data.block_indexes[shifted_block.lod][shifted_block.position] = i;
-					}
 
 					// Do this last because it invalidates `ib`
 					data.input.blocks[i] = shifted_block;
