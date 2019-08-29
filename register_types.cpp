@@ -48,8 +48,15 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelMesherBlocky>();
 	ClassDB::register_class<VoxelMesherTransvoxel>();
 	ClassDB::register_class<VoxelMesherDMC>();
+
+#ifdef TOOLS_ENABLED
+	VoxelDebug::create_debug_box_mesh();
+#endif
 }
 
 void unregister_voxel_types() {
-	// lol
+
+#ifdef TOOLS_ENABLED
+	VoxelDebug::free_debug_box_mesh();
+#endif
 }

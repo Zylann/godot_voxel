@@ -60,7 +60,7 @@ public:
 		return String("(o:{0}, s:{1})").format(varray(pos.to_vec3(), size.to_vec3()));
 	}
 
-	bool intersects(Rect3i other) {
+	bool intersects(Rect3i other) const {
 		if (pos.x > other.pos.x + other.size.x)
 			return false;
 		if (pos.y > other.pos.y + other.size.y)
@@ -74,6 +74,58 @@ public:
 		if (other.pos.z > pos.z + size.z)
 			return false;
 		return true;
+	}
+
+	struct NoAction {
+		inline void operator()(const Vector3i pos) {}
+	};
+
+	template <typename A>
+	inline void for_each_cell(A &a) const {
+		Vector3i max = pos + size;
+		Vector3i p;
+		for (p.z = pos.z; p.z < max.z; ++p.z) {
+			for (p.y = pos.y; p.y < max.y; ++p.y) {
+				for (p.x = pos.x; p.x < max.x; ++p.x) {
+					a(p);
+				}
+			}
+		}
+	}
+
+	template <typename A, typename B>
+	static void check_enters_and_exits(const Rect3i &old_box, const Rect3i &new_box, A &exit_action, B &enter_action) {
+
+		if (old_box.intersects(new_box)) {
+
+			Rect3i bounds = Rect3i::get_bounding_box(old_box, new_box);
+			Vector3i max = bounds.pos + bounds.size;
+
+			// TODO There is a better way by checking all the possible cases
+
+			Vector3i pos;
+			for (pos.z = bounds.pos.z; pos.z < max.z; ++pos.z) {
+				for (pos.y = bounds.pos.y; pos.y < max.y; ++pos.y) {
+					for (pos.x = bounds.pos.x; pos.x < max.x; ++pos.x) {
+
+						bool old_contains = old_box.contains(pos);
+						bool new_contains = new_box.contains(pos);
+
+						if (old_contains && !new_contains) {
+							exit_action(pos);
+
+						} else if (!old_contains && new_contains) {
+							enter_action(pos);
+						}
+					}
+				}
+			}
+
+		} else {
+
+			old_box.for_each_cell(exit_action);
+			new_box.for_each_cell(enter_action);
+		}
 	}
 };
 

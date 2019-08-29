@@ -126,4 +126,12 @@ inline int wrap(int x, int d) {
 	return ((x % d) + d) % d;
 }
 
+#if TOOLS_ENABLED
+namespace VoxelDebug {
+void create_debug_box_mesh();
+void free_debug_box_mesh();
+Ref<Mesh> get_debug_box_mesh();
+}
+#endif
+
 #endif // HEADER_VOXEL_UTILITY_H

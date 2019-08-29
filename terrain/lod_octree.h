@@ -96,7 +96,19 @@ public:
 
 	template <typename A, typename B>
 	void update(Vector3 view_pos, A &create_action, B &destroy_action) {
-		update(&_root, _max_depth, view_pos, create_action, destroy_action);
+
+		if (_root.block || _root.has_children()) {
+			update(&_root, _max_depth, view_pos, create_action, destroy_action);
+
+		} else {
+			// Treat the root in a slightly different way the first time.
+			// `can_do` takes child lod into account, but here it's like it is child of nothing.
+			// Careful when handling that case
+			if (create_action.can_do_root(_max_depth)) {
+				//print_line(String::num_int64((int64_t)this, 16) + String("Create LOD {0} pos {1} (root)").format(varray(_max_depth, _root.position.to_vec3())));
+				_root.block = create_action(&_root, _max_depth);
+			}
+		}
 	}
 
 	template <typename A>
@@ -134,13 +146,14 @@ private:
 		if (!node->has_children()) {
 
 			// If it's not the last LOD, if close enough and custom conditions get fulfilled
-			if (lod > 0 && world_center.distance_to(view_pos) < split_distance && create_action.can_do(node, lod)) {
+			if (lod > 0 && world_center.distance_to(view_pos) < split_distance && create_action.can_do_children(node, lod - 1)) {
 				// Split
 				for (int i = 0; i < 8; ++i) {
 
 					Node *child = _pool.create();
 
 					child->position = get_child_position(node->position, i);
+					//print_line(String::num_int64((int64_t)this, 16) + String("Create LOD {0} pos {1} (subdiv)").format(varray(lod - 1, child->position.to_vec3())));
 					child->block = create_action(child, lod - 1);
 
 					node->children[i] = child;
@@ -150,6 +163,7 @@ private:
 				}
 
 				if (node->block) {
+					//print_line(String::num_int64((int64_t)this, 16) + String("Destroy LOD {0} pos {1}").format(varray(lod, node->position.to_vec3())));
 					destroy_action(node, lod);
 					node->block = T();
 				}
@@ -157,20 +171,21 @@ private:
 
 		} else {
 
-			bool no_split_child = true;
+			bool has_split_child = false;
 
 			for (int i = 0; i < 8; ++i) {
 				Node *child = node->children[i];
 				update(child, lod - 1, view_pos, create_action, destroy_action);
-				no_split_child |= child->has_children();
+				has_split_child |= child->has_children();
 			}
 
-			if (no_split_child && world_center.distance_to(view_pos) > split_distance && destroy_action.can_do(node, lod)) {
+			if (!has_split_child && world_center.distance_to(view_pos) > split_distance && destroy_action.can_do(node, lod)) {
 				// Join
 				if (node->has_children()) {
 
 					for (int i = 0; i < 8; ++i) {
 						Node *child = node->children[i];
+						//print_line(String::num_int64((int64_t)this, 16) + String("Destroy LOD {0} pos {1} (join)").format(varray(lod - 1, child->position.to_vec3())));
 						destroy_action(child, lod - 1);
 						child->block = T();
 						_pool.recycle(child);
@@ -178,7 +193,10 @@ private:
 
 					node->children[0] = nullptr;
 
+					// If this is true, means the parent wasn't properly split.
+					// When subdividing a node, that node's block must be destroyed as it is replaced by its children.
 					CRASH_COND(node->block);
+
 					node->block = create_action(node, lod);
 				}
 			}
@@ -201,6 +219,7 @@ private:
 		} else {
 			if (node->block) {
 				destroy_action(node, lod);
+				//print_line(String::num_int64((int64_t)this, 16) + String("Cleanup LOD {0} pos {1}").format(varray(lod, node->position.to_vec3())));
 				node->block = T();
 			}
 		}
@@ -210,6 +229,7 @@ private:
 	int _max_depth = 0;
 	float _base_size = 16;
 	float _split_scale = 2.0;
+	// TODO May be worth making this pool external for sharing purpose
 	ObjectPool<Node> _pool;
 };
 

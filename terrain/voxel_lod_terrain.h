@@ -30,7 +30,7 @@ public:
 	void set_stream(Ref<VoxelStream> p_stream);
 
 	int get_view_distance() const;
-	void set_view_distance(int p_distance_in_voxels);
+	void set_view_distance(unsigned int p_distance_in_voxels);
 
 	void set_lod_split_scale(float p_lod_split_scale);
 	float get_lod_split_scale() const;
@@ -106,9 +106,25 @@ private:
 		}
 	}
 
-	// TODO Dare having a grid of octrees for infinite world?
+	struct OctreeItem {
+		LodOctree<bool> octree;
+#ifdef TOOLS_ENABLED
+		Spatial *debug_box = nullptr;
+#endif
+	};
+
+#ifdef TOOLS_ENABLED
+	void create_octree_debug_box(OctreeItem &item, Vector3i pos);
+	void destroy_octree_debug_box(OctreeItem &item, Vector3i pos);
+#endif
+
+	// This terrain type is a sparse grid of octrees.
+	// Indexed by a grid coordinate whose step is the size of the highest-LOD block
 	// This octree doesn't hold any data... hence bool.
-	LodOctree<bool> _lod_octree;
+	Map<Vector3i, OctreeItem> _lod_octrees;
+	// In which octree the viewer was on last frame
+	Vector3i _last_viewer_octree_position;
+	unsigned int _last_octree_region_extent = 0;
 
 	NodePath _viewer_path;
 
@@ -142,6 +158,9 @@ private:
 	};
 
 	Lod _lods[MAX_LOD];
+	int _lod_count = 0;
+	float _lod_split_scale = 0.f;
+	unsigned int _view_distance_voxels = 512;
 
 	Stats _stats;
 };

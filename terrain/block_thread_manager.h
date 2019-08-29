@@ -29,7 +29,7 @@ public:
 	// Specialization must be copyable
 	struct InputBlock {
 		InputBlockData_T data;
-		Vector3i position; // In LOD0 block coordinates
+		Vector3i position; // In LOD-relative block coordinates
 		uint8_t lod = 0;
 		bool can_be_discarded = true; // If false, will always be processed, even if the thread is told to exit
 		float sort_heuristic = 0;
@@ -38,7 +38,7 @@ public:
 	// Specialization must be copyable
 	struct OutputBlock {
 		OutputBlockData_T data;
-		Vector3i position; // In LOD0 block coordinates
+		Vector3i position; // In LOD-relative block coordinates
 		unsigned int lod = 0;
 		// True if the block was actually dropped.
 		// Ideally the requester will agree that it doesn't need that block anymore,
