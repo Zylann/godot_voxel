@@ -456,6 +456,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED: {
+			// TODO This is wrong, some blocks NEED to remain hidden
 			SetVisibilityAction sva(is_visible());
 			for_all_blocks(sva);
 		} break;
@@ -695,14 +696,6 @@ void VoxelLodTerrain::_process() {
 					a.self = self;
 					a.block_offset_lod0 = block_pos_maxlod << last_lod_index;
 					item.octree.clear(a);
-
-					// TODO Is it really needed? I think the clear() above has code doing that... and yet it looks like it doesnt
-					// Cleanup root as well
-					// Lod &lod = self->_lods[last_lod_index];
-					// VoxelBlock *block = lod.map->get_block(block_pos_maxlod);
-					// if (block) {
-					// 	block->set_visible(false);
-					// }
 
 					self->_lod_octrees.erase(E);
 				}
