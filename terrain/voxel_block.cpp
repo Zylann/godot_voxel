@@ -73,6 +73,7 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision
 			// Create instance if it doesn't exist
 			_mesh_instance.create();
 			_mesh_instance.set_world(*world);
+			_mesh_instance.set_visible(_visible);
 		}
 
 		Transform transform(Basis(), _position_in_voxels.to_vec3());
@@ -94,6 +95,7 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision
 			}
 			_static_body.add_shape(shape);
 			_static_body.set_debug(debug_collision, *world);
+			_static_body.set_shape_enabled(0, _visible);
 		}
 
 	} else {
