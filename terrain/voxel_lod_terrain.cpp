@@ -852,11 +852,9 @@ void VoxelLodTerrain::_process() {
 		VoxelDataLoader::Input input;
 		input.priority_position = viewer_block_pos;
 		input.priority_direction = viewer_direction;
-
-		// TODO Temporarily turned off, need to fix it because beyond a given LOD, it needs to be different!
-		//input.use_exclusive_region = true;
-		input.use_exclusive_region = false;
-
+		input.use_exclusive_region = true;
+		// The last LOD may spread until end of view distance, it should not be discarded
+		input.exclusive_region_max_lod = get_lod_count() - 1;
 		input.exclusive_region_extent = get_block_region_extent();
 
 		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
@@ -946,11 +944,8 @@ void VoxelLodTerrain::_process() {
 		VoxelMeshUpdater::Input input;
 		input.priority_position = viewer_block_pos;
 		input.priority_direction = viewer_direction;
-
-		// TODO Temporarily turned off, need to fix it because beyond a given LOD, it needs to be different!
-		//input.use_exclusive_region = true;
-		input.use_exclusive_region = false;
-
+		input.use_exclusive_region = true;
+		input.exclusive_region_max_lod = get_lod_count() - 1;
 		input.exclusive_region_extent = get_block_region_extent();
 
 		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
