@@ -102,10 +102,7 @@ public:
 
 		} else {
 			// Treat the root in a slightly different way the first time.
-			// `can_do` takes child lod into account, but here it's like it is child of nothing.
-			// Careful when handling that case
 			if (create_action.can_do_root(_max_depth)) {
-				//print_line(String::num_int64((int64_t)this, 16) + String("Create LOD {0} pos {1} (root)").format(varray(_max_depth, _root.position.to_vec3())));
 				_root.block = create_action(&_root, _max_depth);
 			}
 		}
@@ -153,7 +150,6 @@ private:
 					Node *child = _pool.create();
 
 					child->position = get_child_position(node->position, i);
-					//print_line(String::num_int64((int64_t)this, 16) + String("Create LOD {0} pos {1} (subdiv)").format(varray(lod - 1, child->position.to_vec3())));
 					child->block = create_action(child, lod - 1);
 
 					node->children[i] = child;
@@ -163,7 +159,6 @@ private:
 				}
 
 				if (node->block) {
-					//print_line(String::num_int64((int64_t)this, 16) + String("Destroy LOD {0} pos {1}").format(varray(lod, node->position.to_vec3())));
 					destroy_action(node, lod);
 					node->block = T();
 				}
@@ -185,7 +180,6 @@ private:
 
 					for (int i = 0; i < 8; ++i) {
 						Node *child = node->children[i];
-						//print_line(String::num_int64((int64_t)this, 16) + String("Destroy LOD {0} pos {1} (join)").format(varray(lod - 1, child->position.to_vec3())));
 						destroy_action(child, lod - 1);
 						child->block = T();
 						_pool.recycle(child);
@@ -219,7 +213,6 @@ private:
 		} else {
 			if (node->block) {
 				destroy_action(node, lod);
-				//print_line(String::num_int64((int64_t)this, 16) + String("Cleanup LOD {0} pos {1}").format(varray(lod, node->position.to_vec3())));
 				node->block = T();
 			}
 		}
