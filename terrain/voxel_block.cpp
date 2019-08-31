@@ -147,15 +147,30 @@ void VoxelBlock::set_world(World *world) {
 }
 
 void VoxelBlock::set_visible(bool visible) {
+	if (_visible && visible) {
+		return;
+	}
+	_visible = visible;
+	_set_visible(_visible && _parent_visible);
+}
+
+bool VoxelBlock::is_visible() const {
+	return _visible;
+}
+
+void VoxelBlock::_set_visible(bool visible) {
 	if (_mesh_instance.is_valid()) {
 		_mesh_instance.set_visible(visible);
 	}
 	if (_static_body.is_valid()) {
 		_static_body.set_shape_enabled(0, visible);
 	}
-	_visible = visible;
 }
 
-bool VoxelBlock::is_visible() const {
-	return _visible;
+void VoxelBlock::set_parent_visible(bool parent_visible) {
+	if (_parent_visible && parent_visible) {
+		return;
+	}
+	_parent_visible = parent_visible;
+	_set_visible(_visible && _parent_visible);
 }

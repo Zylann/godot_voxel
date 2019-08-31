@@ -418,12 +418,12 @@ void VoxelLodTerrain::_notification(int p_what) {
 		}
 	};
 
-	struct SetVisibilityAction {
+	struct SetParentVisibilityAction {
 		bool visible;
-		SetVisibilityAction(bool v) :
+		SetParentVisibilityAction(bool v) :
 				visible(v) {}
 		void operator()(VoxelBlock *block) {
-			block->set_visible(visible);
+			block->set_parent_visible(visible);
 		}
 	};
 
@@ -456,8 +456,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED: {
-			// TODO This is wrong, some blocks NEED to remain hidden
-			SetVisibilityAction sva(is_visible());
+			SetParentVisibilityAction sva(is_visible());
 			for_all_blocks(sva);
 		} break;
 
@@ -934,6 +933,7 @@ void VoxelLodTerrain::_process() {
 			//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
 			// The block will be made visible and meshed only by LodOctree
 			block->set_visible(false);
+			block->set_parent_visible(is_visible());
 		}
 	}
 

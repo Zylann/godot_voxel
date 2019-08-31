@@ -39,12 +39,16 @@ public:
 	void set_visible(bool visible);
 	bool is_visible() const;
 
+	void set_parent_visible(bool parent_visible);
+
 	inline bool is_mesh_update_scheduled() {
 		return _mesh_state == MESH_UPDATE_NOT_SENT || _mesh_state == MESH_UPDATE_SENT;
 	}
 
 private:
 	VoxelBlock();
+
+	void _set_visible(bool visible);
 
 	Vector3i _position_in_voxels;
 
@@ -53,6 +57,7 @@ private:
 
 	int _mesh_update_count = 0;
 	bool _visible = true;
+	bool _parent_visible = true;
 	MeshState _mesh_state = MESH_NEVER_UPDATED;
 
 	// The mesh might be null, but we don't know if it's actually empty or if it's loading.
