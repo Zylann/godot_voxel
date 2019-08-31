@@ -706,11 +706,13 @@ void VoxelLodTerrain::_process() {
 				void operator()(const Vector3i &pos) {
 					CRASH_COND(self->_lod_octrees.has(pos));
 
+					// Create new octree
 					Map<Vector3i, OctreeItem>::Element *E = self->_lod_octrees.insert(pos, OctreeItem());
 					CRASH_COND(E == nullptr);
 					OctreeItem &item = E->value();
 					LodOctree<bool>::NoDestroyAction nda;
 					item.octree.create_from_lod_count(block_size, self->get_lod_count(), nda);
+					item.octree.set_split_scale(_lod_split_scale);
 
 #ifdef TOOLS_ENABLED
 					self->create_octree_debug_box(item, pos);
