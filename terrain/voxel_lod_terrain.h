@@ -9,6 +9,8 @@
 #include <core/set.h>
 #include <scene/3d/spatial.h>
 
+//#define VOXEL_DEBUG_BOXES
+
 class VoxelMap;
 
 // Paged terrain made of voxel blocks of variable level of detail.
@@ -108,12 +110,12 @@ private:
 
 	struct OctreeItem {
 		LodOctree<bool> octree;
-#ifdef TOOLS_ENABLED
+#ifdef VOXEL_DEBUG_BOXES
 		Spatial *debug_box = nullptr;
 #endif
 	};
 
-#ifdef TOOLS_ENABLED
+#ifdef VOXEL_DEBUG_BOXES
 	void create_octree_debug_box(OctreeItem &item, Vector3i pos);
 	void destroy_octree_debug_box(OctreeItem &item, Vector3i pos);
 #endif

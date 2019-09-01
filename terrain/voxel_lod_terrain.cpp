@@ -7,7 +7,7 @@
 #include <core/core_string_names.h>
 #include <core/engine.h>
 
-#ifdef TOOLS_ENABLED
+#ifdef VOXEL_DEBUG_BOXES
 #include <scene/3d/mesh_instance.h>
 #endif
 
@@ -301,7 +301,7 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 		OctreeItem &item = E->value();
 		item.octree.create_from_lod_count(get_block_size(), p_lod_count, nda);
-#ifdef TOOLS_ENABLED
+#ifdef VOXEL_DEBUG_BOXES
 		destroy_octree_debug_box(item, E->key());
 		create_octree_debug_box(item, E->key());
 #endif
@@ -686,7 +686,7 @@ void VoxelLodTerrain::_process() {
 					OctreeItem &item = E->value();
 					Vector3i block_pos_maxlod = E->key();
 
-#ifdef TOOLS_ENABLED
+#ifdef VOXEL_DEBUG_BOXES
 					self->destroy_octree_debug_box(item, block_pos_maxlod);
 #endif
 
@@ -720,7 +720,7 @@ void VoxelLodTerrain::_process() {
 					item.octree.create_from_lod_count(block_size, self->get_lod_count(), nda);
 					item.octree.set_split_scale(self->_lod_split_scale);
 
-#ifdef TOOLS_ENABLED
+#ifdef VOXEL_DEBUG_BOXES
 					self->create_octree_debug_box(item, pos);
 #endif
 				}
@@ -1173,7 +1173,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"), "set_collision_lod_count", "get_collision_lod_count");
 }
 
-#ifdef TOOLS_ENABLED
+#ifdef VOXEL_DEBUG_BOXES
 
 void VoxelLodTerrain::create_octree_debug_box(OctreeItem &item, Vector3i pos) {
 	CRASH_COND(item.debug_box != nullptr);
