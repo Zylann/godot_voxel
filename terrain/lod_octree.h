@@ -3,14 +3,13 @@
 
 #include "../math/vector3i.h"
 #include "../octree_tables.h"
-#include "../util/object_pool.h"
 
 // Octree designed to handle level of detail.
 template <class T>
 class LodOctree {
 public:
 	static const unsigned int NO_CHILDREN = -1;
-	static const unsigned int ROOT_INDEX = -1;
+	static const unsigned int ROOT_INDEX = -1; // Root node isn't stored in pool
 	static const unsigned int MAX_LOD = 32;
 
 	struct Node {
@@ -48,6 +47,7 @@ public:
 		// Warning: the returned pointer may be invalidated later by `allocate_children`. Use with care.
 		inline Node *get_node(unsigned int i) {
 			CRASH_COND(i >= _nodes.size());
+			CRASH_COND(i == ROOT_INDEX);
 			return &_nodes[i];
 		}
 
@@ -155,11 +155,6 @@ public:
 		}
 	}
 
-	// template <typename A>
-	// void foreach_node(A &action) {
-	// 	action(action, &_root, _max_depth);
-	// }
-
 	static inline Vector3i get_child_position(Vector3i parent_position, int i) {
 		return Vector3i(
 				parent_position.x * 2 + OctreeTables::g_octant_position[i][0],
@@ -168,16 +163,6 @@ public:
 	}
 
 private:
-	// template <typename A>
-	// void foreach_node(A action, Node *node, int lod) {
-	// 	action(node, lod);
-	// 	if (node->has_children()) {
-	// 		for (int i = 0; i < 8; ++i) {
-	// 			foreach_node(action, node->children[i], lod - 1);
-	// 		}
-	// 	}
-	// }
-
 	inline Node *get_node(unsigned int index) {
 		if (index == ROOT_INDEX) {
 			return &_root;

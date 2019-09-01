@@ -585,6 +585,7 @@ void VoxelLodTerrain::_process() {
 	// Here we go...
 
 	// Remove blocks falling out of block region extent
+	// TODO Obsoleted by octree grid?
 	{
 		// TODO Could it actually be enough to have a rolling update on all blocks?
 
@@ -644,7 +645,7 @@ void VoxelLodTerrain::_process() {
 
 	// Create and remove octrees in a grid around the viewer
 	{
-		// TODO Investigate if multi-octree can produce cracks in the terrain
+		// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
 		// TODO Need to work when lod count changes at runtime
 
 		unsigned int octree_size_po2 = get_block_size_pow2() + get_lod_count() - 1;
@@ -711,6 +712,7 @@ void VoxelLodTerrain::_process() {
 					CRASH_COND(self->_lod_octrees.has(pos));
 
 					// Create new octree
+					// TODO Use ObjectPool to store them, deletion won't be cheap
 					Map<Vector3i, OctreeItem>::Element *E = self->_lod_octrees.insert(pos, OctreeItem());
 					CRASH_COND(E == nullptr);
 					OctreeItem &item = E->value();
