@@ -49,8 +49,8 @@ public:
 	NodePath get_viewer_path() const;
 
 	int get_block_region_extent() const;
-	Dictionary get_block_info(Vector3 fbpos, unsigned int lod_index) const;
-	Vector3 voxel_to_block_position(Vector3 vpos, unsigned int lod_index) const;
+	Dictionary get_block_info(Vector3 fbpos, int lod_index) const;
+	Vector3 voxel_to_block_position(Vector3 vpos, int lod_index) const;
 
 	unsigned int get_block_size_pow2() const;
 	void set_block_size_po2(unsigned int p_block_size_po2);
@@ -81,7 +81,7 @@ private:
 	unsigned int get_block_size() const;
 	void make_all_view_dirty_deferred();
 	Spatial *get_viewer() const;
-	void immerge_block(Vector3i block_pos, unsigned int lod_index);
+	void immerge_block(Vector3i block_pos, int lod_index);
 
 	void start_updater();
 	void stop_updater();
@@ -90,8 +90,8 @@ private:
 	void reset_maps();
 
 	Vector3 get_viewer_pos(Vector3 &out_direction) const;
-	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, unsigned int lod_index);
-	bool check_block_loaded_and_updated(const Vector3i &p_bpos, unsigned int lod_index);
+	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index);
+	bool check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index);
 	void _set_lod_count(int p_lod_count);
 	void _set_block_size_po2(int p_block_size_po2);
 

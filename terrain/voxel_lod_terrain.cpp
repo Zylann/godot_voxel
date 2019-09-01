@@ -145,7 +145,7 @@ void VoxelLodTerrain::_set_block_size_po2(int p_block_size_po2) {
 }
 
 void VoxelLodTerrain::make_all_view_dirty_deferred() {
-	for (unsigned int i = 0; i < get_lod_count(); ++i) {
+	for (int i = 0; i < get_lod_count(); ++i) {
 		Lod &lod = _lods[i];
 		lod.last_view_distance_blocks = 0;
 	}
@@ -176,7 +176,7 @@ Spatial *VoxelLodTerrain::get_viewer() const {
 	return Object::cast_to<Spatial>(node);
 }
 
-void VoxelLodTerrain::immerge_block(Vector3i block_pos, unsigned int lod_index) {
+void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 
 	ERR_FAIL_COND(lod_index >= get_lod_count());
 	ERR_FAIL_COND(_lods[lod_index].map.is_null());
@@ -365,9 +365,10 @@ int VoxelLodTerrain::get_block_region_extent() const {
 	return static_cast<int>(_lod_split_scale) * 2 + 2;
 }
 
-Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, unsigned int lod_index) const {
+Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, int lod_index) const {
 	// Gets some info useful for debugging
 	Dictionary d;
+	ERR_FAIL_COND_V(lod_index < 0, d);
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
 
 	const Lod &lod = _lods[lod_index];
@@ -400,7 +401,8 @@ Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, unsigned int lod_index
 	return d;
 }
 
-Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, unsigned int lod_index) const {
+Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, int lod_index) const {
+	ERR_FAIL_COND_V(lod_index < 0, Vector3());
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3());
 	const Lod &lod = _lods[lod_index];
 	Vector3i bpos = lod.map->voxel_to_block(Vector3i(vpos)) >> lod_index;
@@ -487,7 +489,8 @@ Vector3 VoxelLodTerrain::get_viewer_pos(Vector3 &out_direction) const {
 	return Vector3();
 }
 
-void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos, unsigned int lod_index) {
+void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index) {
+	CRASH_COND(lod_index < 0);
 	CRASH_COND(lod_index >= get_lod_count());
 	Lod &lod = _lods[lod_index];
 
@@ -514,7 +517,8 @@ void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos
 	}
 }
 
-bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, unsigned int lod_index) {
+bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index) {
+	CRASH_COND(lod_index < 0);
 	CRASH_COND(lod_index >= get_lod_count());
 	Lod &lod = _lods[lod_index];
 
@@ -587,7 +591,7 @@ void VoxelLodTerrain::_process() {
 		// This should be the same distance relatively to each LOD
 		int block_region_extent = get_block_region_extent();
 
-		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
+		for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 			Lod &lod = _lods[lod_index];
 
 			// Each LOD keeps a box of loaded blocks, and only some of the blocks will get polygonized.
@@ -712,7 +716,7 @@ void VoxelLodTerrain::_process() {
 					OctreeItem &item = E->value();
 					LodOctree<bool>::NoDestroyAction nda;
 					item.octree.create_from_lod_count(block_size, self->get_lod_count(), nda);
-					item.octree.set_split_scale(_lod_split_scale);
+					item.octree.set_split_scale(self->_lod_split_scale);
 
 #ifdef TOOLS_ENABLED
 					self->create_octree_debug_box(item, pos);
@@ -858,7 +862,7 @@ void VoxelLodTerrain::_process() {
 		input.exclusive_region_max_lod = get_lod_count() - 1;
 		input.exclusive_region_extent = get_block_region_extent();
 
-		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
+		for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 			Lod &lod = _lods[lod_index];
 
 			for (unsigned int i = 0; i < lod.blocks_to_load.size(); ++i) {
@@ -950,7 +954,7 @@ void VoxelLodTerrain::_process() {
 		input.exclusive_region_max_lod = get_lod_count() - 1;
 		input.exclusive_region_extent = get_block_region_extent();
 
-		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
+		for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 			Lod &lod = _lods[lod_index];
 
 			for (unsigned int i = 0; i < lod.blocks_pending_update.size(); ++i) {

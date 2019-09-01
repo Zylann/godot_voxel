@@ -39,7 +39,7 @@ public:
 	struct OutputBlock {
 		OutputBlockData_T data;
 		Vector3i position; // In LOD-relative block coordinates
-		unsigned int lod = 0;
+		uint8_t lod = 0;
 		// True if the block was actually dropped.
 		// Ideally the requester will agree that it doesn't need that block anymore,
 		// but in cases it still does (bad case), it will have to query it again.
