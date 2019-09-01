@@ -661,10 +661,10 @@ void VoxelLodTerrain::_process() {
 				VoxelLodTerrain *self;
 				Vector3i block_offset_lod0;
 
-				void operator()(LodOctree<bool>::Node *node, unsigned int lod_index) {
+				void operator()(LodOctree<bool>::Node *node, Vector3i node_pos, unsigned int lod_index) {
 					Lod &lod = self->_lods[lod_index];
 
-					Vector3i bpos = node->position;
+					Vector3i bpos = node_pos;
 					bpos += block_offset_lod0 >> lod_index;
 
 					VoxelBlock *block = lod.map->get_block(bpos);
@@ -758,7 +758,7 @@ void VoxelLodTerrain::_process() {
 					return self->check_block_loaded_and_updated(offset, lod_index);
 				}
 
-				bool can_do_children(LodOctree<bool>::Node *node, unsigned int child_lod_index) {
+				bool can_do_children(LodOctree<bool>::Node *node, Vector3i node_pos, unsigned int child_lod_index) {
 
 					Vector3i offset = block_offset_lod0 >> child_lod_index;
 					bool can = true;
@@ -767,7 +767,7 @@ void VoxelLodTerrain::_process() {
 					for (int i = 0; i < 8; ++i) {
 
 						// Get block pos local-to-region
-						Vector3i child_pos = LodOctree<bool>::get_child_position(node->position, i);
+						Vector3i child_pos = LodOctree<bool>::get_child_position(node_pos, i);
 
 						// Convert to local-to-terrain
 						child_pos += offset;
@@ -783,11 +783,11 @@ void VoxelLodTerrain::_process() {
 					return can;
 				}
 
-				bool operator()(LodOctree<bool>::Node *node, unsigned int lod_index) {
+				bool operator()(LodOctree<bool>::Node *node, Vector3i node_pos, unsigned int lod_index) {
 
 					Lod &lod = self->_lods[lod_index];
 
-					Vector3i bpos = node->position;
+					Vector3i bpos = node_pos;
 					bpos += block_offset_lod0 >> lod_index;
 
 					VoxelBlock *block = lod.map->get_block(bpos);
@@ -805,10 +805,10 @@ void VoxelLodTerrain::_process() {
 				Vector3i block_offset_lod0;
 				unsigned int blocked_count = 0;
 
-				bool can_do(LodOctree<bool>::Node *node, unsigned int parent_lod_index) {
+				bool can_do(LodOctree<bool>::Node *node, Vector3i node_pos, unsigned int parent_lod_index) {
 
 					// Can only unsubdivide if the parent mesh is ready
-					Vector3i bpos = node->position;
+					Vector3i bpos = node_pos;
 					bpos += block_offset_lod0 >> parent_lod_index;
 
 					bool can = self->check_block_loaded_and_updated(bpos, parent_lod_index);
@@ -820,11 +820,11 @@ void VoxelLodTerrain::_process() {
 					return can;
 				}
 
-				void operator()(LodOctree<bool>::Node *node, unsigned int lod_index) {
+				void operator()(LodOctree<bool>::Node *node, Vector3i node_pos, unsigned int lod_index) {
 
 					Lod &lod = self->_lods[lod_index];
 
-					Vector3i bpos = node->position;
+					Vector3i bpos = node_pos;
 					bpos += block_offset_lod0 >> lod_index;
 
 					VoxelBlock *block = lod.map->get_block(bpos);

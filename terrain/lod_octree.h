@@ -5,6 +5,7 @@
 #include "../octree_tables.h"
 #include "../util/object_pool.h"
 
+// Octree designed to handle level of detail.
 template <class T>
 class LodOctree {
 public:
@@ -14,9 +15,10 @@ public:
 		// It needs to be booleanizable, where `true` means presence of data, and `false` means no data.
 		// Typically a pointer, but can be a straight boolean too.
 		T block;
-		// Position divided by chunk size at the current LOD,
+
+		// Node positions are calculated on the fly to save memory,
+		// and divided by chunk size at the current LOD,
 		// so it is sequential within each LOD, which makes it usable for grid storage
-		Vector3i position;
 
 		Node() {
 			init();
@@ -27,7 +29,6 @@ public:
 		}
 
 		inline void init() {
-			position = Vector3i();
 			block = T();
 			children[0] = nullptr;
 			//			for (int i = 0; i < 8; ++i) {
@@ -37,12 +38,12 @@ public:
 	};
 
 	struct NoDestroyAction {
-		inline void operator()(Node *node, int lod) {}
+		inline void operator()(Node *node, Vector3i node_pos, int lod) {}
 	};
 
 	template <typename A>
 	void clear(A &destroy_action) {
-		join_all_recursively(&_root, _max_depth, destroy_action);
+		join_all_recursively(&_root, Vector3i(), _max_depth, destroy_action);
 		_max_depth = 0;
 		_base_size = 0;
 	}
@@ -98,12 +99,12 @@ public:
 	void update(Vector3 view_pos, A &create_action, B &destroy_action) {
 
 		if (_root.block || _root.has_children()) {
-			update(&_root, _max_depth, view_pos, create_action, destroy_action);
+			update(&_root, Vector3i(), _max_depth, view_pos, create_action, destroy_action);
 
 		} else {
 			// Treat the root in a slightly different way the first time.
 			if (create_action.can_do_root(_max_depth)) {
-				_root.block = create_action(&_root, _max_depth);
+				_root.block = create_action(&_root, Vector3i(), _max_depth);
 			}
 		}
 	}
@@ -132,25 +133,24 @@ private:
 	}
 
 	template <typename A, typename B>
-	void update(Node *node, int lod, Vector3 view_pos, A &create_action, B &destroy_action) {
+	void update(Node *node, Vector3i node_pos, int lod, Vector3 view_pos, A &create_action, B &destroy_action) {
 		// This function should be called regularly over frames.
 
 		int lod_factor = get_lod_factor(lod);
 		int chunk_size = _base_size * lod_factor;
-		Vector3 world_center = static_cast<real_t>(chunk_size) * (node->position.to_vec3() + Vector3(0.5, 0.5, 0.5));
+		Vector3 world_center = static_cast<real_t>(chunk_size) * (node_pos.to_vec3() + Vector3(0.5, 0.5, 0.5));
 		float split_distance = chunk_size * _split_scale;
 
 		if (!node->has_children()) {
 
 			// If it's not the last LOD, if close enough and custom conditions get fulfilled
-			if (lod > 0 && world_center.distance_to(view_pos) < split_distance && create_action.can_do_children(node, lod - 1)) {
+			if (lod > 0 && world_center.distance_to(view_pos) < split_distance && create_action.can_do_children(node, node_pos, lod - 1)) {
 				// Split
 				for (int i = 0; i < 8; ++i) {
 
 					Node *child = _pool.create();
 
-					child->position = get_child_position(node->position, i);
-					child->block = create_action(child, lod - 1);
+					child->block = create_action(child, get_child_position(node_pos, i), lod - 1);
 
 					node->children[i] = child;
 					// If the node needs to split more, we'll ask more recycling at the next frame...
@@ -159,7 +159,7 @@ private:
 				}
 
 				if (node->block) {
-					destroy_action(node, lod);
+					destroy_action(node, node_pos, lod);
 					node->block = T();
 				}
 			}
@@ -170,17 +170,17 @@ private:
 
 			for (int i = 0; i < 8; ++i) {
 				Node *child = node->children[i];
-				update(child, lod - 1, view_pos, create_action, destroy_action);
+				update(child, get_child_position(node_pos, i), lod - 1, view_pos, create_action, destroy_action);
 				has_split_child |= child->has_children();
 			}
 
-			if (!has_split_child && world_center.distance_to(view_pos) > split_distance && destroy_action.can_do(node, lod)) {
+			if (!has_split_child && world_center.distance_to(view_pos) > split_distance && destroy_action.can_do(node, node_pos, lod)) {
 				// Join
 				if (node->has_children()) {
 
 					for (int i = 0; i < 8; ++i) {
 						Node *child = node->children[i];
-						destroy_action(child, lod - 1);
+						destroy_action(child, get_child_position(node_pos, i), lod - 1);
 						child->block = T();
 						_pool.recycle(child);
 					}
@@ -191,28 +191,28 @@ private:
 					// When subdividing a node, that node's block must be destroyed as it is replaced by its children.
 					CRASH_COND(node->block);
 
-					node->block = create_action(node, lod);
+					node->block = create_action(node, node_pos, lod);
 				}
 			}
 		}
 	}
 
 	template <typename A>
-	void join_all_recursively(Node *node, int lod, A &destroy_action) {
+	void join_all_recursively(Node *node, Vector3i node_pos, int lod, A &destroy_action) {
 
 		if (node->has_children()) {
 			Node **children = node->children;
 
 			for (int i = 0; i < 8; ++i) {
 				Node *child = children[i];
-				join_all_recursively(child, lod - 1, destroy_action);
+				join_all_recursively(child, get_child_position(node_pos, i), lod - 1, destroy_action);
 				_pool.recycle(child);
 				children[0] = nullptr;
 			}
 
 		} else {
 			if (node->block) {
-				destroy_action(node, lod);
+				destroy_action(node, node_pos, lod);
 				node->block = T();
 			}
 		}
