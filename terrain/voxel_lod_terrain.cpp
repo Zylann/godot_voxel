@@ -646,7 +646,6 @@ void VoxelLodTerrain::_process() {
 	// Create and remove octrees in a grid around the viewer
 	{
 		// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
-		// TODO Need to work when lod count changes at runtime
 
 		unsigned int octree_size_po2 = get_block_size_pow2() + get_lod_count() - 1;
 		unsigned int octree_region_extent = 1 + _view_distance_voxels / (1 << octree_size_po2);
@@ -654,7 +653,7 @@ void VoxelLodTerrain::_process() {
 		Vector3i viewer_octree_pos = VoxelMap::voxel_to_block_b(viewer_pos, octree_size_po2);
 
 		Rect3i new_box = Rect3i::from_center_extents(viewer_octree_pos, Vector3i(octree_region_extent));
-		Rect3i prev_box = Rect3i::from_center_extents(_last_viewer_octree_position, Vector3i(_last_octree_region_extent));
+		Rect3i prev_box = _last_octree_region_box;
 
 		if (new_box != prev_box) {
 
@@ -736,8 +735,7 @@ void VoxelLodTerrain::_process() {
 			Rect3i::check_cell_enters_and_exits(prev_box, new_box, exit_action, enter_action);
 		}
 
-		_last_viewer_octree_position = viewer_octree_pos;
-		_last_octree_region_extent = octree_region_extent;
+		_last_octree_region_box = new_box;
 	}
 
 	// Find which blocks we need to load and see, within each octree

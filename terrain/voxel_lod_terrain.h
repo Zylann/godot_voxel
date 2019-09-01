@@ -124,9 +124,7 @@ private:
 	// Indexed by a grid coordinate whose step is the size of the highest-LOD block
 	// This octree doesn't hold any data... hence bool.
 	Map<Vector3i, OctreeItem> _lod_octrees;
-	// In which octree the viewer was on last frame
-	Vector3i _last_viewer_octree_position;
-	unsigned int _last_octree_region_extent = 0;
+	Rect3i _last_octree_region_box;
 
 	NodePath _viewer_path;
 
