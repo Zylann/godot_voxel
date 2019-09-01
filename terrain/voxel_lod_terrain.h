@@ -9,6 +9,8 @@
 #include <core/set.h>
 #include <scene/3d/spatial.h>
 
+//#define VOXEL_DEBUG_BOXES
+
 class VoxelMap;
 
 // Paged terrain made of voxel blocks of variable level of detail.
@@ -30,7 +32,7 @@ public:
 	void set_stream(Ref<VoxelStream> p_stream);
 
 	int get_view_distance() const;
-	void set_view_distance(int p_distance_in_voxels);
+	void set_view_distance(unsigned int p_distance_in_voxels);
 
 	void set_lod_split_scale(float p_lod_split_scale);
 	float get_lod_split_scale() const;
@@ -49,8 +51,8 @@ public:
 	NodePath get_viewer_path() const;
 
 	int get_block_region_extent() const;
-	Dictionary get_block_info(Vector3 fbpos, unsigned int lod_index) const;
-	Vector3 voxel_to_block_position(Vector3 vpos, unsigned int lod_index) const;
+	Dictionary get_block_info(Vector3 fbpos, int lod_index) const;
+	Vector3 voxel_to_block_position(Vector3 vpos, int lod_index) const;
 
 	unsigned int get_block_size_pow2() const;
 	void set_block_size_po2(unsigned int p_block_size_po2);
@@ -81,7 +83,7 @@ private:
 	unsigned int get_block_size() const;
 	void make_all_view_dirty_deferred();
 	Spatial *get_viewer() const;
-	void immerge_block(Vector3i block_pos, unsigned int lod_index);
+	void immerge_block(Vector3i block_pos, int lod_index);
 
 	void start_updater();
 	void stop_updater();
@@ -90,8 +92,8 @@ private:
 	void reset_maps();
 
 	Vector3 get_viewer_pos(Vector3 &out_direction) const;
-	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, unsigned int lod_index);
-	bool check_block_loaded_and_updated(const Vector3i &p_bpos, unsigned int lod_index);
+	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index);
+	bool check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index);
 	void _set_lod_count(int p_lod_count);
 	void _set_block_size_po2(int p_block_size_po2);
 
@@ -106,9 +108,23 @@ private:
 		}
 	}
 
-	// TODO Dare having a grid of octrees for infinite world?
+	struct OctreeItem {
+		LodOctree<bool> octree;
+#ifdef VOXEL_DEBUG_BOXES
+		Spatial *debug_box = nullptr;
+#endif
+	};
+
+#ifdef VOXEL_DEBUG_BOXES
+	void create_octree_debug_box(OctreeItem &item, Vector3i pos);
+	void destroy_octree_debug_box(OctreeItem &item, Vector3i pos);
+#endif
+
+	// This terrain type is a sparse grid of octrees.
+	// Indexed by a grid coordinate whose step is the size of the highest-LOD block
 	// This octree doesn't hold any data... hence bool.
-	LodOctree<bool> _lod_octree;
+	Map<Vector3i, OctreeItem> _lod_octrees;
+	Rect3i _last_octree_region_box;
 
 	NodePath _viewer_path;
 
@@ -142,6 +158,9 @@ private:
 	};
 
 	Lod _lods[MAX_LOD];
+	int _lod_count = 0;
+	float _lod_split_scale = 0.f;
+	unsigned int _view_distance_voxels = 512;
 
 	Stats _stats;
 };

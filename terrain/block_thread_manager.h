@@ -29,7 +29,7 @@ public:
 	// Specialization must be copyable
 	struct InputBlock {
 		InputBlockData_T data;
-		Vector3i position; // In LOD0 block coordinates
+		Vector3i position; // In LOD-relative block coordinates
 		uint8_t lod = 0;
 		bool can_be_discarded = true; // If false, will always be processed, even if the thread is told to exit
 		float sort_heuristic = 0;
@@ -38,8 +38,8 @@ public:
 	// Specialization must be copyable
 	struct OutputBlock {
 		OutputBlockData_T data;
-		Vector3i position; // In LOD0 block coordinates
-		unsigned int lod = 0;
+		Vector3i position; // In LOD-relative block coordinates
+		uint8_t lod = 0;
 		// True if the block was actually dropped.
 		// Ideally the requester will agree that it doesn't need that block anymore,
 		// but in cases it still does (bad case), it will have to query it again.
@@ -51,6 +51,7 @@ public:
 		Vector3i priority_position; // In LOD0 block coordinates
 		Vector3 priority_direction; // Where the viewer is looking at
 		int exclusive_region_extent = 0; // Region beyond which the processor is allowed to discard requests
+		int exclusive_region_max_lod = MAX_LOD; // LOD beyond which exclusive region won't be used
 		bool use_exclusive_region = false;
 		int max_lod_index = 0;
 
@@ -230,6 +231,7 @@ public:
 			if (input.use_exclusive_region) {
 				job.shared_input.use_exclusive_region = true;
 				job.shared_input.exclusive_region_extent = input.exclusive_region_extent;
+				job.shared_input.exclusive_region_max_lod = input.exclusive_region_max_lod;
 			}
 
 			bool should_run = !job.shared_input.is_empty();
@@ -511,6 +513,7 @@ private:
 			if (data.shared_input.use_exclusive_region) {
 				data.input.use_exclusive_region = true;
 				data.input.exclusive_region_extent = data.shared_input.exclusive_region_extent;
+				data.input.exclusive_region_max_lod = data.shared_input.exclusive_region_max_lod;
 			}
 
 			data.shared_input.blocks.clear();
@@ -546,7 +549,7 @@ private:
 			for (unsigned int i = 0; i < data.input.blocks.size(); ++i) {
 				const InputBlock &ib = data.input.blocks[i];
 
-				if (!ib.can_be_discarded) {
+				if (!ib.can_be_discarded || ib.lod >= data.input.exclusive_region_max_lod) {
 					continue;
 				}
 

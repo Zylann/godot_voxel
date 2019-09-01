@@ -607,12 +607,12 @@ void VoxelTerrain::_notification(int p_what) {
 		}
 	};
 
-	struct SetVisibilityAction {
+	struct SetParentVisibilityAction {
 		bool visible;
-		SetVisibilityAction(bool v) :
+		SetParentVisibilityAction(bool v) :
 				visible(v) {}
 		void operator()(VoxelBlock *block) {
-			block->set_visible(visible);
+			block->set_parent_visible(visible);
 		}
 	};
 
@@ -646,7 +646,7 @@ void VoxelTerrain::_notification(int p_what) {
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
 			ERR_FAIL_COND(_map.is_null());
-			_map->for_all_blocks(SetVisibilityAction(is_visible()));
+			_map->for_all_blocks(SetParentVisibilityAction(is_visible()));
 			break;
 
 			// TODO Listen for transform changes
@@ -1062,6 +1062,7 @@ void VoxelTerrain::_process() {
 			}
 
 			block->set_mesh(mesh, this, _generate_collisions, collidable_surface, get_tree()->is_debugging_collisions_hint());
+			block->set_parent_visible(is_visible());
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
