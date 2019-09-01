@@ -708,6 +708,7 @@ void VoxelLodTerrain::_process() {
 				VoxelLodTerrain *self;
 				int block_size;
 				void operator()(const Vector3i &pos) {
+					// That's a new cell we are entering, shouldn't be anything there
 					CRASH_COND(self->_lod_octrees.has(pos));
 
 					// Create new octree
@@ -731,7 +732,7 @@ void VoxelLodTerrain::_process() {
 			enter_action.self = this;
 			enter_action.block_size = get_block_size();
 
-			Rect3i::check_enters_and_exits(prev_box, new_box, exit_action, enter_action);
+			Rect3i::check_cell_enters_and_exits(prev_box, new_box, exit_action, enter_action);
 		}
 
 		_last_viewer_octree_position = viewer_octree_pos;

@@ -61,18 +61,24 @@ public:
 	}
 
 	bool intersects(Rect3i other) const {
-		if (pos.x > other.pos.x + other.size.x)
+		if (pos.x > other.pos.x + other.size.x) {
 			return false;
-		if (pos.y > other.pos.y + other.size.y)
+		}
+		if (pos.y > other.pos.y + other.size.y) {
 			return false;
-		if (pos.z > other.pos.z + other.size.z)
+		}
+		if (pos.z > other.pos.z + other.size.z) {
 			return false;
-		if (other.pos.x > pos.x + size.x)
+		}
+		if (other.pos.x > pos.x + size.x) {
 			return false;
-		if (other.pos.y > pos.y + size.y)
+		}
+		if (other.pos.y > pos.y + size.y) {
 			return false;
-		if (other.pos.z > pos.z + size.z)
+		}
+		if (other.pos.z > pos.z + size.z) {
 			return false;
+		}
 		return true;
 	}
 
@@ -81,7 +87,7 @@ public:
 	};
 
 	template <typename A>
-	inline void for_each_cell(A &a) const {
+	inline void for_each_cell(A a) const {
 		Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
@@ -93,39 +99,74 @@ public:
 		}
 	}
 
-	template <typename A, typename B>
-	static void check_enters_and_exits(const Rect3i &old_box, const Rect3i &new_box, A &exit_action, B &enter_action) {
+	template <typename A>
+	static void difference(Rect3i a, Rect3i b, A action) {
 
-		if (old_box.intersects(new_box)) {
-
-			Rect3i bounds = Rect3i::get_bounding_box(old_box, new_box);
-			Vector3i max = bounds.pos + bounds.size;
-
-			// TODO There is a better way by checking all the possible cases
-
-			Vector3i pos;
-			for (pos.z = bounds.pos.z; pos.z < max.z; ++pos.z) {
-				for (pos.y = bounds.pos.y; pos.y < max.y; ++pos.y) {
-					for (pos.x = bounds.pos.x; pos.x < max.x; ++pos.x) {
-
-						bool old_contains = old_box.contains(pos);
-						bool new_contains = new_box.contains(pos);
-
-						if (old_contains && !new_contains) {
-							exit_action(pos);
-
-						} else if (!old_contains && new_contains) {
-							enter_action(pos);
-						}
-					}
-				}
-			}
-
-		} else {
-
-			old_box.for_each_cell(exit_action);
-			new_box.for_each_cell(enter_action);
+		if (!a.intersects(b)) {
+			action(a);
+			return;
 		}
+
+		Vector3i a_min = a.pos;
+		Vector3i b_min = b.pos;
+		Vector3i a_max = a.pos + a.size;
+		Vector3i b_max = b.pos + b.size;
+
+		if (a_min.x < b_min.x) {
+			Vector3i a_rect_size(b_min.x - a_min.x, a.size.y, a.size.z);
+			action(Rect3i(a_min, a_rect_size));
+			a_min.x = b_min.x;
+			a.pos.x = b.pos.x;
+			a.size.x = a_max.x - a_min.x;
+		}
+		if (a_min.y < b_min.y) {
+			Vector3i a_rect_size(a.size.x, b_min.y - a_min.y, a.size.z);
+			action(Rect3i(a_min, a_rect_size));
+			a_min.y = b_min.y;
+			a.pos.y = b.pos.y;
+			a.size.y = a_max.y - a_min.y;
+		}
+		if (a_min.z < b_min.z) {
+			Vector3i a_rect_size(a.size.x, a.size.y, b_min.z - a_min.z);
+			action(Rect3i(a_min, a_rect_size));
+			a_min.z = b_min.z;
+			a.pos.z = b.pos.z;
+			a.size.z = a_max.z - a_min.z;
+		}
+
+		if (a_max.x > b_max.x) {
+			Vector3i a_rect_pos(b_max.x, a_min.y, a_min.z);
+			Vector3i a_rect_size(a_max.x - b_max.x, a.size.y, a.size.z);
+			action(Rect3i(a_rect_pos, a_rect_size));
+			a_max.x = b_max.x;
+			a.size.x = a_max.x - a_min.x;
+		}
+		if (a_max.y > b_max.y) {
+			Vector3i a_rect_pos(a_min.x, b_max.y, a_min.z);
+			Vector3i a_rect_size(a.size.x, a_max.y - b_max.y, a.size.z);
+			action(Rect3i(a_rect_pos, a_rect_size));
+			a_max.y = b_max.y;
+			a.size.y = a_max.y - a_min.y;
+		}
+		if (a_max.z > b_max.z) {
+			Vector3i a_rect_pos(a_min.x, a_min.y, b_max.z);
+			Vector3i a_rect_size(a.size.x, a.size.y, a_max.z - b_max.z);
+			action(Rect3i(a_rect_pos, a_rect_size));
+		}
+	}
+
+	template <typename A, typename B>
+	static inline void check_cell_enters_and_exits(const Rect3i &old_box, const Rect3i &new_box, A exit_action, B enter_action) {
+
+		// For all cells of the old box that are not in new box
+		difference(old_box, new_box, [=](const Rect3i rect) {
+			rect.for_each_cell(exit_action);
+		});
+
+		// For all cells of the new box that are not in old box
+		difference(new_box, old_box, [=](const Rect3i rect) {
+			rect.for_each_cell(enter_action);
+		});
 	}
 };
 
