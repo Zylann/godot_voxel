@@ -546,23 +546,6 @@ bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, int
 	return true;
 }
 
-//static void remove_positions_outside_box(
-//		std::vector<Vector3i> &positions,
-//		Rect3i box,
-//		Set<Vector3i> &position_set) {
-
-//	for (unsigned int i = 0; i < positions.size(); ++i) {
-//		const Vector3i bpos = positions[i];
-//		if (!box.contains(bpos)) {
-//			int last = positions.size() - 1;
-//			positions[i] = positions[last];
-//			positions.resize(last);
-//			position_set.erase(bpos);
-//			--i;
-//		}
-//	}
-//}
-
 void VoxelLodTerrain::_process() {
 
 	if (get_lod_count() == 0) {
@@ -610,32 +593,13 @@ void VoxelLodTerrain::_process() {
 			// Let's assert so it will pop on your face the day that assumption changes
 			CRASH_COND(!lod.blocks_to_load.empty());
 			CRASH_COND(!lod.blocks_pending_update.empty());
-			//remove_positions_outside_box(lod.blocks_to_load, new_box, lod.loading_blocks);
-			//remove_positions_outside_box(lod.blocks_pending_update, new_box, lod.loading_blocks);
 
 			if (prev_box != new_box) {
-
-				Rect3i bounds = Rect3i::get_bounding_box(prev_box, new_box);
-				Vector3i max = bounds.pos + bounds.size;
-
-				// TODO This will explode if the player teleports!
-				// There is a smarter way to only iterate relevant blocks
-
-				Vector3i pos;
-				for (pos.z = bounds.pos.z; pos.z < max.z; ++pos.z) {
-					for (pos.y = bounds.pos.y; pos.y < max.y; ++pos.y) {
-						for (pos.x = bounds.pos.x; pos.x < max.x; ++pos.x) {
-
-							bool prev_contains = prev_box.contains(pos);
-							bool new_contains = new_box.contains(pos);
-
-							if (prev_contains && !new_contains) {
-								// Unload block
-								immerge_block(pos, lod_index);
-							}
-						}
-					}
-				}
+				Rect3i::difference(prev_box, new_box, [this, lod_index](Rect3i out_of_range_box) {
+					out_of_range_box.for_each_cell([=](Vector3i pos) {
+						immerge_block(pos, lod_index);
+					});
+				});
 			}
 
 			lod.last_viewer_block_pos = viewer_block_pos_within_lod;
