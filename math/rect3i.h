@@ -100,12 +100,14 @@ public:
 	}
 
 	template <typename A>
-	static void difference(Rect3i a, Rect3i b, A action) {
+	void difference(const Rect3i &b, A action) {
 
-		if (!a.intersects(b)) {
-			action(a);
+		if (!intersects(b)) {
+			action(*this);
 			return;
 		}
+
+		Rect3i a = *this;
 
 		Vector3i a_min = a.pos;
 		Vector3i b_min = b.pos;
@@ -153,20 +155,6 @@ public:
 			Vector3i a_rect_size(a.size.x, a.size.y, a_max.z - b_max.z);
 			action(Rect3i(a_rect_pos, a_rect_size));
 		}
-	}
-
-	template <typename A, typename B>
-	static inline void check_cell_enters_and_exits(const Rect3i &old_box, const Rect3i &new_box, A exit_action, B enter_action) {
-
-		// For all cells of the old box that are not in new box
-		difference(old_box, new_box, [=](const Rect3i rect) {
-			rect.for_each_cell(exit_action);
-		});
-
-		// For all cells of the new box that are not in old box
-		difference(new_box, old_box, [=](const Rect3i rect) {
-			rect.for_each_cell(enter_action);
-		});
 	}
 };
 

@@ -595,7 +595,7 @@ void VoxelLodTerrain::_process() {
 			CRASH_COND(!lod.blocks_pending_update.empty());
 
 			if (prev_box != new_box) {
-				Rect3i::difference(prev_box, new_box, [this, lod_index](Rect3i out_of_range_box) {
+				prev_box.difference(new_box, [this, lod_index](Rect3i out_of_range_box) {
 					out_of_range_box.for_each_cell([=](Vector3i pos) {
 						immerge_block(pos, lod_index);
 					});
@@ -696,7 +696,13 @@ void VoxelLodTerrain::_process() {
 			enter_action.self = this;
 			enter_action.block_size = get_block_size();
 
-			Rect3i::check_cell_enters_and_exits(prev_box, new_box, exit_action, enter_action);
+			prev_box.difference(new_box, [exit_action](Rect3i out_of_range_box) {
+				out_of_range_box.for_each_cell(exit_action);
+			});
+
+			new_box.difference(prev_box, [enter_action](Rect3i box_to_load) {
+				box_to_load.for_each_cell(enter_action);
+			});
 		}
 
 		_last_octree_region_box = new_box;
@@ -982,7 +988,6 @@ void VoxelLodTerrain::_process() {
 			}
 		}
 
-		Ref<World> world = get_world();
 		uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS; // Allocate milliseconds max to upload meshes
 		unsigned int queue_index = 0;
 

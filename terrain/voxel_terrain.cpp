@@ -746,36 +746,25 @@ void VoxelTerrain::_process() {
 
 	// Find out which blocks need to appear and which need to be unloaded
 	{
-		//Vector3i viewer_block_pos_delta = _last_viewer_block_pos - viewer_block_pos;
 		Rect3i new_box = Rect3i::from_center_extents(viewer_block_pos, Vector3i(_view_distance_blocks));
 		Rect3i prev_box = Rect3i::from_center_extents(_last_viewer_block_pos, Vector3i(_last_view_distance_blocks));
 
 		if (prev_box != new_box) {
 			//print_line(String("Loaded area changed: from ") + prev_box.to_string() + String(" to ") + new_box.to_string());
 
-			Rect3i bounds = Rect3i::get_bounding_box(prev_box, new_box);
-			Vector3i max = bounds.pos + bounds.size;
+			prev_box.difference(new_box, [this](Rect3i out_of_range_box) {
+				out_of_range_box.for_each_cell([=](Vector3i bpos) {
+					// Unload block
+					immerge_block(bpos);
+				});
+			});
 
-			// TODO There should be a way to only iterate relevant blocks
-			Vector3i pos;
-			for (pos.z = bounds.pos.z; pos.z < max.z; ++pos.z) {
-				for (pos.y = bounds.pos.y; pos.y < max.y; ++pos.y) {
-					for (pos.x = bounds.pos.x; pos.x < max.x; ++pos.x) {
-
-						bool prev_contains = prev_box.contains(pos);
-						bool new_contains = new_box.contains(pos);
-
-						if (prev_contains && !new_contains) {
-							// Unload block
-							immerge_block(pos);
-
-						} else if (!prev_contains && new_contains) {
-							// Load or update block
-							make_block_dirty(pos);
-						}
-					}
-				}
-			}
+			new_box.difference(prev_box, [this](Rect3i box_to_load) {
+				box_to_load.for_each_cell([=](Vector3i bpos) {
+					// Load or update block
+					make_block_dirty(bpos);
+				});
+			});
 		}
 
 		// Eliminate pending blocks that aren't needed
@@ -795,9 +784,6 @@ void VoxelTerrain::_process() {
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
 	{
-		const unsigned int bs = _map->get_block_size();
-		const Vector3i block_size(bs, bs, bs);
-
 		VoxelDataLoader::Output output;
 		_stream_thread->pop(output);
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
@@ -978,11 +964,8 @@ void VoxelTerrain::_process() {
 			_blocks_pending_main_thread_update.append_array(output.blocks);
 		}
 
-		Ref<World> world = get_world();
 		uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS;
 		int queue_index = 0;
-
-		ProfilingClock profiling_mesh_clock;
 
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
 		// This also proved to be very slow compared to the meshing process itself...
@@ -1072,13 +1055,6 @@ void VoxelTerrain::_process() {
 
 	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") + String::num(_block_update_queue.size()));
 }
-
-//void VoxelTerrain::block_removed(VoxelBlock & block) {
-//    MeshInstance * mesh_instance = block.get_mesh_instance(*this);
-//    if (mesh_instance) {
-//        mesh_instance->queue_delete();
-//    }
-//}
 
 struct _VoxelTerrainRaycastContext {
 	VoxelTerrain &terrain;
