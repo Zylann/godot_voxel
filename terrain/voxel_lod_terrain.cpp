@@ -152,7 +152,7 @@ void VoxelLodTerrain::make_all_view_dirty_deferred() {
 }
 
 int VoxelLodTerrain::get_view_distance() const {
-	return 0;
+	return _view_distance_voxels;
 }
 
 void VoxelLodTerrain::set_view_distance(unsigned int p_distance_in_voxels) {
