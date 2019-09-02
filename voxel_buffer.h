@@ -118,6 +118,8 @@ public:
 
 	uint8_t *get_channel_raw(unsigned int channel_index) const;
 
+	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
+
 private:
 	void create_channel_noinit(int i, Vector3i size);
 	void create_channel(int i, Vector3i size, uint8_t defval);

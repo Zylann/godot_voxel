@@ -328,6 +328,54 @@ void VoxelBuffer::delete_channel(int i) {
 	channel.data = NULL;
 }
 
+void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const {
+
+	// TODO Align input to multiple of two
+
+	src_min.clamp_to(Vector3i(), _size);
+	src_max.clamp_to(Vector3i(), _size);
+
+	Vector3i dst_max = dst_min + (src_max - src_min) >> 2;
+
+	dst_min.clamp_to(Vector3i(), dst._size);
+	dst_max.clamp_to(Vector3i(), dst._size);
+
+	for (int channel_index = 0; channel_index < MAX_CHANNELS; ++channel_index) {
+
+		const Channel &src_channel = _channels[channel_index];
+		const Channel &dst_channel = _channels[channel_index];
+
+		if (src_channel.data == nullptr && dst_channel.data == nullptr && src_channel.defval == dst_channel.defval) {
+			// No action needed
+			continue;
+		}
+
+		// Nearest-neighbor downscaling
+
+		Vector3i pos;
+		for (pos.z = dst_min.z; pos.z < dst_max.z; ++pos.z) {
+			for (pos.x = dst_min.x; pos.x < dst_max.x; ++pos.x) {
+				for (pos.y = dst_min.y; pos.y < dst_max.y; ++pos.y) {
+
+					Vector3i src_pos = src_min + (pos - dst_min) << 2;
+
+					// TODO Remove check once it works
+					CRASH_COND(!validate_pos(src_pos.x, src_pos.y, src_pos.z));
+
+					int v;
+					if (src_channel.data) {
+						v = src_channel.data[index(src_pos.x, src_pos.y, src_pos.z)];
+					} else {
+						v = src_channel.defval;
+					}
+
+					dst.set_voxel(v, pos, channel_index);
+				}
+			}
+		}
+	}
+}
+
 void VoxelBuffer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::create);

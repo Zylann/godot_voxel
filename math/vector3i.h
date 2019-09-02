@@ -90,12 +90,12 @@ struct Vector3i {
 		return coords[i];
 	}
 
+	// Clamps between min and max, where max is excluded
 	void clamp_to(const Vector3i min, const Vector3i max) {
 		if (x < min.x) x = min.x;
 		if (y < min.y) y = min.y;
 		if (z < min.z) z = min.z;
 
-		// TODO Not sure it should clamp like that...
 		if (x >= max.x) x = max.x - 1;
 		if (y >= max.y) y = max.y - 1;
 		if (z >= max.z) z = max.z - 1;
