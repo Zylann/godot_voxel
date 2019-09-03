@@ -13,10 +13,7 @@ public:
 	// Converts voxel coodinates into block coordinates.
 	// Don't use division because it introduces an offset in negative coordinates.
 	static _FORCE_INLINE_ Vector3i voxel_to_block_b(Vector3i pos, int block_size_pow2) {
-		return Vector3i(
-				pos.x >> block_size_pow2,
-				pos.y >> block_size_pow2,
-				pos.z >> block_size_pow2);
+		return pos >> block_size_pow2;
 	}
 
 	_FORCE_INLINE_ Vector3i voxel_to_block(Vector3i pos) const {
@@ -47,11 +44,11 @@ public:
 	void set_lod_index(int lod_index);
 	unsigned int get_lod_index() const;
 
-	int get_voxel(Vector3i pos, unsigned int c = 0);
+	int get_voxel(Vector3i pos, unsigned int c = 0) const;
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
 
-	float get_voxel_f(int x, int y, int z, unsigned int c = VoxelBuffer::CHANNEL_ISOLEVEL);
-	void set_voxel_f(real_t value, int x, int y, int z, unsigned int c = VoxelBuffer::CHANNEL_ISOLEVEL);
+	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_ISOLEVEL) const;
+	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_ISOLEVEL);
 
 	void set_default_voxel(int value, unsigned int channel = 0);
 	int get_default_voxel(unsigned int channel = 0);
@@ -112,16 +109,18 @@ private:
 
 	static void _bind_methods();
 
-	_FORCE_INLINE_ int _get_voxel_binding(int x, int y, int z, unsigned int c = 0) { return get_voxel(Vector3i(x, y, z), c); }
-	_FORCE_INLINE_ void _set_voxel_binding(int value, int x, int y, int z, unsigned int c = 0) { set_voxel(value, Vector3i(x, y, z), c); }
-	_FORCE_INLINE_ int _get_voxel_v_binding(Vector3 pos, unsigned int c = 0) { return get_voxel(Vector3i(pos), c); }
-	_FORCE_INLINE_ void _set_voxel_v_binding(int value, Vector3 pos, unsigned int c = 0) { set_voxel(value, Vector3i(pos), c); }
-	_FORCE_INLINE_ bool _has_block_binding(int x, int y, int z) { return has_block(Vector3i(x, y, z)); }
-	_FORCE_INLINE_ Vector3 _voxel_to_block_binding(Vector3 pos) const { return voxel_to_block(Vector3i(pos)).to_vec3(); }
-	_FORCE_INLINE_ Vector3 _block_to_voxel_binding(Vector3 pos) const { return block_to_voxel(Vector3i(pos)).to_vec3(); }
-	bool _is_block_surrounded(Vector3 pos) const { return is_block_surrounded(Vector3i(pos)); }
-	void _get_buffer_copy_binding(Vector3 pos, Ref<VoxelBuffer> dst_buffer_ref, unsigned int channel = 0);
-	void _set_block_buffer_binding(Vector3 bpos, Ref<VoxelBuffer> buffer) { set_block_buffer(Vector3i(bpos), buffer); }
+	int _b_get_voxel(int x, int y, int z, unsigned int c) { return get_voxel(Vector3i(x, y, z), c); }
+	void _b_set_voxel(int value, int x, int y, int z, unsigned int c) { set_voxel(value, Vector3i(x, y, z), c); }
+	void _b_get_voxel_f(float value, int x, int y, int z, unsigned int c) { return set_voxel_f(value, Vector3i(x, y, z), c); }
+	float _b_set_voxel_f(int x, int y, int z, unsigned int c) { return get_voxel_f(Vector3i(x, y, z), c); }
+	int _b_get_voxel_v(Vector3 pos, unsigned int c) { return get_voxel(Vector3i(pos), c); }
+	void _b_set_voxel_v(int value, Vector3 pos, unsigned int c) { set_voxel(value, Vector3i(pos), c); }
+	bool _b_has_block(int x, int y, int z) { return has_block(Vector3i(x, y, z)); }
+	Vector3 _b_voxel_to_block(Vector3 pos) const { return voxel_to_block(Vector3i(pos)).to_vec3(); }
+	Vector3 _b_block_to_voxel(Vector3 pos) const { return block_to_voxel(Vector3i(pos)).to_vec3(); }
+	bool _b_is_block_surrounded(Vector3 pos) const { return is_block_surrounded(Vector3i(pos)); }
+	void _b_get_buffer_copy(Vector3 pos, Ref<VoxelBuffer> dst_buffer_ref, unsigned int channel = 0);
+	void _b_set_block_buffer(Vector3 bpos, Ref<VoxelBuffer> buffer) { set_block_buffer(Vector3i(bpos), buffer); }
 
 private:
 	// Voxel values that will be returned if access is out of map bounds
@@ -133,7 +132,7 @@ private:
 
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
 	// To prevent too much hashing, this reference is checked before.
-	VoxelBlock *_last_accessed_block;
+	mutable VoxelBlock *_last_accessed_block;
 
 	unsigned int _block_size;
 	unsigned int _block_size_pow2;

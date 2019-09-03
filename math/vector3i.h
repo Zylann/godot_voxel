@@ -111,6 +111,10 @@ struct Vector3i {
 		sort_min_max(a.z, b.z);
 	}
 
+	inline Vector3i udiv(int d) const {
+		return Vector3i(::udiv(x, d), ::udiv(y, d), ::udiv(z, d));
+	}
+
 	inline Vector3i udiv(const Vector3i d) const {
 		return Vector3i(::udiv(x, d.x), ::udiv(y, d.y), ::udiv(z, d.z));
 	}
@@ -133,6 +137,10 @@ struct Vector3i {
 
 	bool all_members_equal() const {
 		return x == y && y == z;
+	}
+
+	static inline Vector3i min(const Vector3i a, const Vector3i b) {
+		return Vector3i(::min(a.x, b.x), ::min(a.y, b.y), ::min(a.z, b.z));
 	}
 
 private:

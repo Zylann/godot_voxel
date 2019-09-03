@@ -1,7 +1,8 @@
 #ifndef VOXEL_BUFFER_H
 #define VOXEL_BUFFER_H
 
-#include "math/vector3i.h"
+#include "math/rect3i.h"
+#include "voxel_tool.h"
 #include <core/reference.h>
 #include <core/vector.h>
 
@@ -119,6 +120,29 @@ public:
 	uint8_t *get_channel_raw(unsigned int channel_index) const;
 
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
+	Ref<VoxelTool> get_voxel_tool() const;
+
+	// TODO Make this work, would be awesome for perf
+	//
+	//	template <typename F>
+	//	void read_write_action(Rect3i box, Vector3i offset, unsigned int channel_index, F f) {
+	//		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
+	//		box.clip(Rect3i(Vector3i(), _size));
+	//		Vector3i min_pos = box.pos;
+	//		Vector3i max_pos = box.pos + box.size;
+	//		Vector3i pos;
+	//		for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
+	//			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
+	//				for (pos.y = min_pos.y; pos.y < max_pos.y; ++pos.y) {
+	//					int v0 = get_voxel(pos, channel_index);
+	//					int v1 = f(pos + offset, v0);
+	//					if (v0 != v1) {
+	//						set_voxel(v1, pos, channel_index);
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
 
 private:
 	void create_channel_noinit(int i, Vector3i size);

@@ -1069,7 +1069,7 @@ static bool _raycast_binding_predicate(Vector3i pos, void *context_ptr) {
 
 	//unsigned int channel = context->channel;
 
-	Ref<VoxelMap> map = terrain.get_map();
+	Ref<VoxelMap> map = terrain.get_storage();
 	int v0 = map->get_voxel(pos, Voxel::CHANNEL_TYPE);
 
 	Ref<VoxelLibrary> lib_ref = terrain.get_voxel_library();
@@ -1084,7 +1084,7 @@ static bool _raycast_binding_predicate(Vector3i pos, void *context_ptr) {
 	if (voxel.is_transparent() == false)
 		return true;
 
-	float v1 = map->get_voxel_f(pos.x, pos.y, pos.z, Voxel::CHANNEL_ISOLEVEL);
+	float v1 = map->get_voxel_f(pos, Voxel::CHANNEL_ISOLEVEL);
 	return v1 < 0;
 }
 
@@ -1143,7 +1143,7 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_smooth_meshing_enabled"), &VoxelTerrain::is_smooth_meshing_enabled);
 	ClassDB::bind_method(D_METHOD("set_smooth_meshing_enabled", "enabled"), &VoxelTerrain::set_smooth_meshing_enabled);
 
-	ClassDB::bind_method(D_METHOD("get_storage"), &VoxelTerrain::get_map);
+	ClassDB::bind_method(D_METHOD("get_storage"), &VoxelTerrain::get_storage);
 
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
 	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_block_to_voxel_binding);

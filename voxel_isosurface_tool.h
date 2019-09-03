@@ -4,6 +4,7 @@
 #include "voxel_buffer.h"
 #include <core/image.h>
 
+// TODO Will be obsoleted by VoxelTool
 class VoxelIsoSurfaceTool : public Reference {
 	GDCLASS(VoxelIsoSurfaceTool, Reference)
 public:

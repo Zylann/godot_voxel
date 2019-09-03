@@ -20,7 +20,9 @@ public:
 	Ref<VoxelBuffer> voxels;
 	Vector3i position;
 	unsigned int lod_index = 0;
-	bool modified = false; // Indicates if this block should be saved
+
+	// Indicates if this block is different from the time it was loaded (should be saved)
+	bool modified = false;
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 
@@ -35,7 +37,11 @@ public:
 	void mark_been_meshed();
 	bool has_been_meshed() const;
 
+	void set_needs_lodding(bool need_lodding);
+	inline bool get_needs_lodding() const { return _needs_lodding; }
+
 	void set_world(World *world);
+
 	void set_visible(bool visible);
 	bool is_visible() const;
 
@@ -63,6 +69,9 @@ private:
 	// The mesh might be null, but we don't know if it's actually empty or if it's loading.
 	// This boolean tells if we attempted to mesh this block at least once.
 	bool _has_been_meshed = false;
+
+	// The block was edited, which requires its LOD counterparts to be recomputed
+	bool _needs_lodding = false;
 };
 
 #endif // VOXEL_BLOCK_H

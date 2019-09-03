@@ -2,6 +2,7 @@
 #include "../math/rect3i.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/profiling_clock.h"
+#include "../voxel_tool_lod_terrain.h"
 #include "voxel_map.h"
 #include "voxel_mesh_updater.h"
 #include <core/core_string_names.h>
@@ -22,6 +23,8 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	_lods[0].map.instance();
 
+	// TODO Being able to set a LOD smaller than the stream is probably a bad idea,
+	// Because it prevents edits from propagating up to the last one, they will be left out of sync
 	set_lod_count(4);
 	set_lod_split_scale(3);
 }
@@ -106,7 +109,10 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 
 	// The whole map might change, so make all area dirty
 	// TODO Actually, we should regenerate the whole map, not just update all its blocks
-	make_all_view_dirty_deferred();
+	for (int i = 0; i < get_lod_count(); ++i) {
+		Lod &lod = _lods[i];
+		lod.last_view_distance_blocks = 0;
+	}
 }
 
 void VoxelLodTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
@@ -144,11 +150,32 @@ void VoxelLodTerrain::_set_block_size_po2(int p_block_size_po2) {
 	_lods[0].map->create(p_block_size_po2, 0);
 }
 
-void VoxelLodTerrain::make_all_view_dirty_deferred() {
-	for (int i = 0; i < get_lod_count(); ++i) {
-		Lod &lod = _lods[i];
-		lod.last_view_distance_blocks = 0;
+// Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.
+// The provided box must be at LOD0 coordinates.
+void VoxelLodTerrain::post_edit_area(Rect3i p_box) {
+
+	Rect3i box = p_box.padded(1);
+	Rect3i bbox = box.downscaled(get_block_size());
+
+	bbox.for_each_cell([this](Vector3i block_pos_lod0) {
+		post_edit_block_lod0(block_pos_lod0);
+	});
+}
+
+void VoxelLodTerrain::post_edit_block_lod0(Vector3i block_pos_lod0) {
+
+	Lod &lod0 = _lods[0];
+	VoxelBlock *block = lod0.map->get_block(block_pos_lod0);
+	ERR_FAIL_COND(block == nullptr);
+
+	if (!block->get_needs_lodding()) {
+		block->set_needs_lodding(true);
+		lod0.blocks_pending_lodding.push_back(block_pos_lod0);
 	}
+}
+
+Ref<VoxelTool> VoxelLodTerrain::get_voxel_tool() {
+	return Ref<VoxelToolLodTerrain>(memnew(VoxelToolLodTerrain(this, _lods[0].map)));
 }
 
 int VoxelLodTerrain::get_view_distance() const {
@@ -559,15 +586,20 @@ void VoxelLodTerrain::_process() {
 	Vector3 viewer_pos = get_viewer_pos(viewer_direction);
 	Vector3i viewer_block_pos = _lods[0].map->voxel_to_block(viewer_pos);
 
-	ProfilingClock profiling_clock;
-
 	_stats.dropped_block_loads = 0;
 	_stats.dropped_block_meshs = 0;
 	_stats.blocked_lods = 0;
 
 	// Here we go...
 
-	// Remove blocks falling out of block region extent
+	// Update pending LOD data modifications due to edits.
+	// These are deferred from edits so we can batch them.
+	// It has to happen first because blocks can be unloaded afterwards.
+	flush_pending_lod_edits();
+
+	ProfilingClock profiling_clock;
+
+	// Unload blocks falling out of block region extent
 	// TODO Obsoleted by octree grid?
 	{
 		// TODO Could it actually be enough to have a rolling update on all blocks?
@@ -1075,6 +1107,60 @@ void VoxelLodTerrain::_process() {
 	_stats.time_process_update_responses = profiling_clock.restart();
 }
 
+void VoxelLodTerrain::flush_pending_lod_edits() {
+
+	// Only LOD0 is editable at the moment, so we'll downscale from there
+	Lod &lod0 = _lods[0];
+
+	for (int i = 0; i < lod0.blocks_pending_lodding.size(); ++i) {
+		Vector3i block_pos_lod0 = lod0.blocks_pending_lodding[i];
+
+		Vector3i bpos = block_pos_lod0;
+		int half_bs = get_block_size();
+		VoxelBlock *prev_block = nullptr;
+
+		for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+
+			Lod &lod = _lods[lod_index];
+			VoxelBlock *block = lod.map->get_block(bpos);
+			// The block and its lower LODs are expected to be available.
+			// Otherwise it means the function was called too late
+			CRASH_COND(block == nullptr);
+
+			// Mark block for remesh
+			if (block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT) {
+				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
+				lod.blocks_pending_update.push_back(bpos);
+			}
+
+			// Mark block as modified
+			if (!block->modified) {
+				print_line(String("Marking block {0}[lod{1}] as modified").format(varray(bpos.to_vec3(), lod_index)));
+				block->modified = true;
+			}
+
+			block->set_needs_lodding(false);
+
+			if (lod_index != 0) {
+
+				Vector3i prev_bpos = bpos;
+				Vector3i rel = prev_bpos - ((bpos >> 2) << 2); // Yup, you read it right... could implement `&` for vectors tho
+
+				// Update lower LOD
+				// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
+				VoxelBuffer *voxels = *block->voxels;
+				CRASH_COND(voxels == nullptr);
+				// TODO Try to narrow to edited region instead of taking whole block
+				prev_block->voxels->downscale_to(*voxels, Vector3i(), prev_block->voxels->get_size(), rel * half_bs);
+			}
+
+			prev_block = block;
+		}
+	}
+
+	lod0.blocks_pending_lodding.clear();
+}
+
 Dictionary VoxelLodTerrain::get_statistics() const {
 
 	Dictionary d;
@@ -1127,6 +1213,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_block_info", "block_pos", "lod"), &VoxelLodTerrain::get_block_info);
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::get_statistics);
 	ClassDB::bind_method(D_METHOD("voxel_to_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_block_position);
+
+	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelLodTerrain::get_voxel_tool);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 

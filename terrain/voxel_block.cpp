@@ -174,3 +174,7 @@ void VoxelBlock::set_parent_visible(bool parent_visible) {
 	_parent_visible = parent_visible;
 	_set_visible(_visible && _parent_visible);
 }
+
+void VoxelBlock::set_needs_lodding(bool need_lodding) {
+	_needs_lodding = need_lodding;
+}

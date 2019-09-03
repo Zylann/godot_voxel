@@ -118,7 +118,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelT
 
 	// Collect collisions with the terrain
 
-	Ref<VoxelMap> voxels_ref = terrain->get_map();
+	Ref<VoxelMap> voxels_ref = terrain->get_storage();
 	ERR_FAIL_COND_V(voxels_ref.is_null(), Vector3());
 	VoxelMap &voxels = **voxels_ref;
 

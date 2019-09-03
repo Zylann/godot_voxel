@@ -1,4 +1,5 @@
 #include "voxel_buffer.h"
+#include "voxel_tool_buffer.h"
 
 #include <core/math/math_funcs.h>
 #include <string.h>
@@ -193,7 +194,7 @@ void VoxelBuffer::compress_uniform_channels() {
 
 void VoxelBuffer::decompress_channel(unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
-	Channel channel = _channels[channel_index];
+	Channel &channel = _channels[channel_index];
 	if (channel.data == nullptr) {
 		create_channel(channel_index, _size, channel.defval);
 	}
@@ -201,7 +202,7 @@ void VoxelBuffer::decompress_channel(unsigned int channel_index) {
 
 VoxelBuffer::Compression VoxelBuffer::get_channel_compression(unsigned int channel_index) const {
 	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, VoxelBuffer::COMPRESSION_NONE);
-	Channel channel = _channels[channel_index];
+	const Channel &channel = _channels[channel_index];
 	if (channel.data == nullptr) {
 		return COMPRESSION_UNIFORM;
 	}
@@ -374,6 +375,10 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 			}
 		}
 	}
+}
+
+Ref<VoxelTool> VoxelBuffer::get_voxel_tool() const {
+	return Ref<VoxelTool>(memnew(VoxelToolBuffer(Ref<VoxelBuffer>(this))));
 }
 
 void VoxelBuffer::_bind_methods() {

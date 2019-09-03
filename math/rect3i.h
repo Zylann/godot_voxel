@@ -4,6 +4,7 @@
 #include "vector3i.h"
 #include <core/variant.h>
 
+// TODO Could be renamed to something more sensical, like Box3i
 class Rect3i {
 
 public:
@@ -26,6 +27,10 @@ public:
 
 	static inline Rect3i from_center_extents(Vector3i center, Vector3i extents) {
 		return Rect3i(center - extents, 2 * extents);
+	}
+
+	static inline Rect3i from_min_max(Vector3i p_min, Vector3i p_max) {
+		return Rect3i(p_min, p_max - p_min);
 	}
 
 	static inline Rect3i get_bounding_box(Rect3i a, Rect3i b) {
@@ -100,7 +105,7 @@ public:
 	}
 
 	template <typename A>
-	void difference(const Rect3i &b, A action) {
+	void difference(const Rect3i &b, A action) const {
 
 		if (!intersects(b)) {
 			action(*this);
@@ -155,6 +160,30 @@ public:
 			Vector3i a_rect_size(a.size.x, a.size.y, a_max.z - b_max.z);
 			action(Rect3i(a_rect_pos, a_rect_size));
 		}
+	}
+
+	inline Rect3i padded(int m) const {
+		return Rect3i(
+				pos.x - m,
+				pos.y - m,
+				pos.z - m,
+				size.x + 2 * m,
+				size.y + 2 * m,
+				size.z + 2 * m);
+	}
+
+	inline Rect3i downscaled(int step_size) const {
+		Rect3i o;
+		o.pos = pos.udiv(step_size);
+		Vector3i max_pos = (pos + size - Vector3i(1)).udiv(step_size);
+		o.size = max_pos - o.pos + Vector3i(1);
+		return o;
+	}
+
+	inline void clip(const Rect3i lim) {
+		const Vector3i max_pos = lim.pos + lim.size;
+		pos.clamp_to(lim.pos, max_pos);
+		size = Vector3i::min(size, max_pos - pos);
 	}
 };
 

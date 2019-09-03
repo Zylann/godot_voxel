@@ -2,6 +2,7 @@
 #define VOXEL_LOD_TERRAIN_HPP
 
 #include "../streams/voxel_stream.h"
+#include "../voxel_tool.h"
 #include "lod_octree.h"
 #include "voxel_data_loader.h"
 #include "voxel_map.h"
@@ -57,6 +58,12 @@ public:
 	unsigned int get_block_size_pow2() const;
 	void set_block_size_po2(unsigned int p_block_size_po2);
 
+	// These must be called after an edit
+	void post_edit_area(Rect3i p_box);
+	void post_edit_block_lod0(Vector3i bpos);
+
+	Ref<VoxelTool> get_voxel_tool();
+
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
 		VoxelDataLoader::Stats stream;
@@ -81,7 +88,6 @@ protected:
 
 private:
 	unsigned int get_block_size() const;
-	void make_all_view_dirty_deferred();
 	Spatial *get_viewer() const;
 	void immerge_block(Vector3i block_pos, int lod_index);
 
@@ -98,6 +104,8 @@ private:
 	void _set_block_size_po2(int p_block_size_po2);
 
 	void _on_stream_params_changed();
+
+	void flush_pending_lod_edits();
 
 	template <typename A>
 	void for_all_blocks(A &action) {
@@ -143,6 +151,9 @@ private:
 		Ref<VoxelMap> map;
 		Set<Vector3i> loading_blocks;
 		std::vector<Vector3i> blocks_pending_update;
+
+		// Blocks that were edited and need their LOD counterparts to be updated
+		std::vector<Vector3i> blocks_pending_lodding;
 
 		// These are relative to this LOD, in block coordinates
 		Vector3i last_viewer_block_pos;
