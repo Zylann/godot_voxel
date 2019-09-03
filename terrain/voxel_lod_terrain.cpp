@@ -155,9 +155,9 @@ int VoxelLodTerrain::get_view_distance() const {
 	return _view_distance_voxels;
 }
 
-void VoxelLodTerrain::set_view_distance(unsigned int p_distance_in_voxels) {
+void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
 
-	ERR_FAIL_COND(p_distance_in_voxels == 0);
+	ERR_FAIL_COND(p_distance_in_voxels <= 0);
 	ERR_FAIL_COND(p_distance_in_voxels > 8192);
 
 	// Note: this is a hint distance, the terrain will attempt to have this radius filled with loaded voxels.

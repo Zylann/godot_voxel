@@ -32,7 +32,7 @@ public:
 	void set_stream(Ref<VoxelStream> p_stream);
 
 	int get_view_distance() const;
-	void set_view_distance(unsigned int p_distance_in_voxels);
+	void set_view_distance(int p_distance_in_voxels);
 
 	void set_lod_split_scale(float p_lod_split_scale);
 	float get_lod_split_scale() const;
