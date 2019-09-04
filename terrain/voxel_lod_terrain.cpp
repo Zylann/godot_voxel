@@ -611,10 +611,11 @@ void VoxelLodTerrain::_process() {
 	{
 		// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
 
-		unsigned int octree_size_po2 = get_block_size_pow2() + get_lod_count() - 1;
-		unsigned int octree_region_extent = 1 + _view_distance_voxels / (1 << octree_size_po2);
+		const unsigned int octree_size_po2 = get_block_size_pow2() + get_lod_count() - 1;
+		const unsigned int octree_size = 1 << octree_size_po2;
+		const unsigned int octree_region_extent = 1 + _view_distance_voxels / (1 << octree_size_po2);
 
-		Vector3i viewer_octree_pos = VoxelMap::voxel_to_block_b(viewer_pos, octree_size_po2);
+		Vector3i viewer_octree_pos = (Vector3i(viewer_pos) + Vector3i(octree_size / 2)) >> octree_size_po2;
 
 		Rect3i new_box = Rect3i::from_center_extents(viewer_octree_pos, Vector3i(octree_region_extent));
 		Rect3i prev_box = _last_octree_region_box;
