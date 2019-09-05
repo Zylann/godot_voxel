@@ -1,5 +1,6 @@
 #include "voxel_tool_lod_terrain.h"
 #include "terrain/voxel_lod_terrain.h"
+#include "terrain/voxel_map.h"
 
 VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain, Ref<VoxelMap> map) {
 	ERR_FAIL_COND(terrain == nullptr);

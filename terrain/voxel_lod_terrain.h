@@ -1,11 +1,8 @@
 #ifndef VOXEL_LOD_TERRAIN_HPP
 #define VOXEL_LOD_TERRAIN_HPP
 
-#include "../streams/voxel_stream.h"
-#include "../voxel_tool.h"
 #include "lod_octree.h"
 #include "voxel_data_loader.h"
-#include "voxel_map.h"
 #include "voxel_mesh_updater.h"
 #include <core/set.h>
 #include <scene/3d/spatial.h>
@@ -13,6 +10,8 @@
 //#define VOXEL_DEBUG_BOXES
 
 class VoxelMap;
+class VoxelTool;
+class VoxelStream;
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.

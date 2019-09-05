@@ -15,6 +15,7 @@
 #include "voxel_buffer.h"
 #include "voxel_isosurface_tool.h"
 #include "voxel_library.h"
+#include "voxel_tool.h"
 
 void register_voxel_types() {
 

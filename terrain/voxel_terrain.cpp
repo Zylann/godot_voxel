@@ -1,6 +1,5 @@
 #include "voxel_terrain.h"
 #include "../streams/voxel_stream_file.h"
-#include "../streams/voxel_stream_test.h"
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
 #include "../util/voxel_raycast.h"

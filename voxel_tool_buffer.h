@@ -1,8 +1,9 @@
 #ifndef VOXEL_TOOL_BUFFER_H
 #define VOXEL_TOOL_BUFFER_H
 
-#include "voxel_buffer.h"
 #include "voxel_tool.h"
+
+class VoxelBuffer;
 
 class VoxelToolBuffer : public VoxelTool {
 	GDCLASS(VoxelToolBuffer, VoxelTool)

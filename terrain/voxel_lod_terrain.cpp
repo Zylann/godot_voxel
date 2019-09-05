@@ -4,7 +4,6 @@
 #include "../util/profiling_clock.h"
 #include "../voxel_tool_lod_terrain.h"
 #include "voxel_map.h"
-#include "voxel_mesh_updater.h"
 #include <core/core_string_names.h>
 #include <core/engine.h>
 

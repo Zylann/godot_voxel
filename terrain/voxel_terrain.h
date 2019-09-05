@@ -3,7 +3,6 @@
 
 #include "../math/rect3i.h"
 #include "../math/vector3i.h"
-#include "../streams/voxel_stream.h"
 #include "../util/zprofiling.h"
 #include "voxel_data_loader.h"
 #include "voxel_mesh_updater.h"
@@ -12,6 +11,7 @@
 
 class VoxelMap;
 class VoxelLibrary;
+class VoxelStream;
 
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.

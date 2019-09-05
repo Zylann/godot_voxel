@@ -1,9 +1,10 @@
 #ifndef VOXEL_TOOL_H
 #define VOXEL_TOOL_H
 
-//#include "voxel_buffer.h"
 #include "math/rect3i.h"
 #include <core/reference.h>
+
+class VoxelBuffer;
 
 // High-level generic voxel edition utility.
 // Ease of use comes at cost.
@@ -41,7 +42,7 @@ public:
 
 	// TODO I had to hack Reference here instead of VoxelTool, could not get it to compile otherwise...
 	// One of VoxelBuffer's methods builds a Ref<VoxelTool>. I can't predeclare it either way because of Ref<T>...
-	void paste(Vector3i pos, Ref<Reference> p_voxels, int mask_value);
+	void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, int mask_value);
 
 	// TODO VoxelRaycastResult?
 	Dictionary raycast(Vector3 pos, Vector3 dir);

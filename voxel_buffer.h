@@ -2,9 +2,10 @@
 #define VOXEL_BUFFER_H
 
 #include "math/rect3i.h"
-#include "voxel_tool.h"
 #include <core/reference.h>
 #include <core/vector.h>
+
+class VoxelTool;
 
 // Dense voxels data storage.
 // Organized in 8-bit channels like images, all optional.

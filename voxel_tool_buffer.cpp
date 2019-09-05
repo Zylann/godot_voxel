@@ -1,4 +1,5 @@
 #include "voxel_tool_buffer.h"
+#include "voxel_buffer.h"
 
 // TODO Implement VoxelBuffer version
 

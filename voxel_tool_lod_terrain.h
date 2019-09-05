@@ -1,9 +1,10 @@
 #ifndef VOXEL_TOOL_LOD_TERRAIN_H
 #define VOXEL_TOOL_LOD_TERRAIN_H
 
-#include "terrain/voxel_map.h"
+#include "voxel_tool.h"
 
 class VoxelLodTerrain;
+class VoxelMap;
 
 class VoxelToolLodTerrain : public VoxelTool {
 	GDCLASS(VoxelToolLodTerrain, VoxelTool)
