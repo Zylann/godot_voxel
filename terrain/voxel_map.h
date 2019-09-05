@@ -111,8 +111,8 @@ private:
 
 	int _b_get_voxel(int x, int y, int z, unsigned int c) { return get_voxel(Vector3i(x, y, z), c); }
 	void _b_set_voxel(int value, int x, int y, int z, unsigned int c) { set_voxel(value, Vector3i(x, y, z), c); }
-	void _b_get_voxel_f(float value, int x, int y, int z, unsigned int c) { return set_voxel_f(value, Vector3i(x, y, z), c); }
-	float _b_set_voxel_f(int x, int y, int z, unsigned int c) { return get_voxel_f(Vector3i(x, y, z), c); }
+	float _b_get_voxel_f(int x, int y, int z, unsigned int c) { return get_voxel_f(Vector3i(x, y, z), c); }
+	void _b_set_voxel_f(float value, int x, int y, int z, unsigned int c) { set_voxel_f(value, Vector3i(x, y, z), c); }
 	int _b_get_voxel_v(Vector3 pos, unsigned int c) { return get_voxel(Vector3i(pos), c); }
 	void _b_set_voxel_v(int value, Vector3 pos, unsigned int c) { set_voxel(value, Vector3i(pos), c); }
 	bool _b_has_block(int x, int y, int z) { return has_block(Vector3i(x, y, z)); }
