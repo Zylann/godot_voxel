@@ -27,6 +27,14 @@ int VoxelTool::get_channel() const {
 	return _channel;
 }
 
+void VoxelTool::set_mode(Mode mode) {
+	_mode = mode;
+}
+
+VoxelTool::Mode VoxelTool::get_mode() const {
+	return _mode;
+}
+
 Dictionary VoxelTool::raycast(Vector3 pos, Vector3 dir) {
 	ERR_PRINT("Not implemented");
 	return Dictionary();
@@ -182,6 +190,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_channel", "v"), &VoxelTool::set_channel);
 	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelTool::get_channel);
 
+	ClassDB::bind_method(D_METHOD("set_mode", "m"), &VoxelTool::set_mode);
+	ClassDB::bind_method(D_METHOD("get_mode"), &VoxelTool::get_mode);
+
 	ClassDB::bind_method(D_METHOD("set_eraser_value", "v"), &VoxelTool::set_eraser_value);
 	ClassDB::bind_method(D_METHOD("get_eraser_value"), &VoxelTool::get_eraser_value);
 
@@ -194,8 +205,9 @@ void VoxelTool::_bind_methods() {
 	// TODO Implement the rest
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "value"), "set_value", "get_value");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel"), "set_channel", "get_channel");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "eraser_value"), "set_eraser_value", "get_eraser_value");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Add,Remove,Set"), "set_mode", "get_mode");
 
 	BIND_ENUM_CONSTANT(MODE_ADD);
 	BIND_ENUM_CONSTANT(MODE_ERASE);

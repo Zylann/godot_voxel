@@ -14,7 +14,7 @@ class VoxelTool : public Reference {
 public:
 	enum Mode {
 		MODE_ADD,
-		MODE_ERASE,
+		MODE_ERASE, // TODO Rename REMOVE
 		MODE_SET
 	};
 
@@ -23,6 +23,9 @@ public:
 
 	void set_channel(int channel);
 	int get_channel() const;
+
+	void set_mode(Mode mode);
+	Mode get_mode() const;
 
 	void set_eraser_value(int value);
 	int get_eraser_value() const;
