@@ -11,18 +11,17 @@ class Spatial;
 class VoxelBlock {
 public:
 	enum MeshState {
-		MESH_NEVER_UPDATED = 0,
+		MESH_NEVER_UPDATED = 0, // TODO Redundant with MESH_NEED_UPDATE?
 		MESH_UP_TO_DATE,
-		MESH_UPDATE_NOT_SENT, // The mesh is out of date and was marked for update, but no request have been sent yet
+		MESH_NEED_UPDATE, // The mesh is out of date but was not yet scheduled for update
+		MESH_UPDATE_NOT_SENT, // The mesh is out of date and was scheduled for update, but no request have been sent yet
 		MESH_UPDATE_SENT // The mesh is out of date, and an update request was sent, pending response
 	};
 
 	Ref<VoxelBuffer> voxels;
 	Vector3i position;
 	unsigned int lod_index = 0;
-
-	// Indicates if this block is different from the time it was loaded (should be saved)
-	bool modified = false;
+	bool test = false;
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 
@@ -34,9 +33,6 @@ public:
 	void set_mesh_state(MeshState ms);
 	MeshState get_mesh_state() const;
 
-	void mark_been_meshed();
-	bool has_been_meshed() const;
-
 	void set_needs_lodding(bool need_lodding);
 	inline bool get_needs_lodding() const { return _needs_lodding; }
 
@@ -47,15 +43,15 @@ public:
 
 	void set_parent_visible(bool parent_visible);
 
-	inline bool is_mesh_update_scheduled() {
-		return _mesh_state == MESH_UPDATE_NOT_SENT || _mesh_state == MESH_UPDATE_SENT;
-	}
+	bool is_modified() const;
+	void set_modified(bool modified);
 
 private:
 	VoxelBlock();
 
 	void _set_visible(bool visible);
 
+private:
 	Vector3i _position_in_voxels;
 
 	DirectMeshInstance _mesh_instance;
@@ -66,12 +62,11 @@ private:
 	bool _parent_visible = true;
 	MeshState _mesh_state = MESH_NEVER_UPDATED;
 
-	// The mesh might be null, but we don't know if it's actually empty or if it's loading.
-	// This boolean tells if we attempted to mesh this block at least once.
-	bool _has_been_meshed = false;
-
 	// The block was edited, which requires its LOD counterparts to be recomputed
 	bool _needs_lodding = false;
+
+	// Indicates if this block is different from the time it was loaded (should be saved)
+	bool _modified = false;
 };
 
 #endif // VOXEL_BLOCK_H

@@ -129,14 +129,6 @@ VoxelBlock::MeshState VoxelBlock::get_mesh_state() const {
 	return _mesh_state;
 }
 
-void VoxelBlock::mark_been_meshed() {
-	_has_been_meshed = true;
-}
-
-bool VoxelBlock::has_been_meshed() const {
-	return _has_been_meshed;
-}
-
 void VoxelBlock::set_world(World *world) {
 	if (_mesh_instance.is_valid()) {
 		_mesh_instance.set_world(world);
@@ -177,4 +169,12 @@ void VoxelBlock::set_parent_visible(bool parent_visible) {
 
 void VoxelBlock::set_needs_lodding(bool need_lodding) {
 	_needs_lodding = need_lodding;
+}
+
+bool VoxelBlock::is_modified() const {
+	return _modified;
+}
+
+void VoxelBlock::set_modified(bool modified) {
+	_modified = modified;
 }

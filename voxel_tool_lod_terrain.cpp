@@ -11,8 +11,7 @@ VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain, Ref<VoxelMap>
 
 bool VoxelToolLodTerrain::is_area_editable(const Rect3i &box) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, false);
-	// TODO
-	return false;
+	return _map->is_area_fully_loaded(box.padded(1));
 }
 
 int VoxelToolLodTerrain::_get_voxel(Vector3i pos) {

@@ -105,6 +105,22 @@ public:
 	}
 
 	template <typename A>
+	inline bool all_cells_match(A a) const {
+		Vector3i max = pos + size;
+		Vector3i p;
+		for (p.z = pos.z; p.z < max.z; ++p.z) {
+			for (p.y = pos.y; p.y < max.y; ++p.y) {
+				for (p.x = pos.x; p.x < max.x; ++p.x) {
+					if (!a(p)) {
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	template <typename A>
 	void difference(const Rect3i &b, A action) const {
 
 		if (!intersects(b)) {

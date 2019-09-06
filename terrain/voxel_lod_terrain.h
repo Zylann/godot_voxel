@@ -12,6 +12,7 @@
 class VoxelMap;
 class VoxelTool;
 class VoxelStream;
+class VoxelBlock;
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
@@ -99,6 +100,7 @@ private:
 	Vector3 get_viewer_pos(Vector3 &out_direction) const;
 	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index);
 	bool check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index);
+	bool check_block_loaded_and_updated(VoxelBlock *block);
 	void _set_lod_count(int p_lod_count);
 	void _set_block_size_po2(int p_block_size_po2);
 

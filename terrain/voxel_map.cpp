@@ -245,6 +245,13 @@ int VoxelMap::get_block_count() const {
 	return _blocks.size();
 }
 
+bool VoxelMap::is_area_fully_loaded(const Rect3i voxels_box) const {
+	Rect3i block_box = voxels_box.downscaled(get_block_size());
+	return block_box.all_cells_match([this](Vector3i pos) {
+		return has_block(pos);
+	});
+}
+
 void VoxelMap::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "c"), &VoxelMap::_b_get_voxel, DEFVAL(0));

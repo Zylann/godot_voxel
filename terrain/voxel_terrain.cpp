@@ -279,9 +279,9 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 		block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
 		_blocks_pending_update.push_back(bpos);
 
-		if (!block->modified) {
+		if (!block->is_modified()) {
 			print_line(String("Marking block {0} as modified").format(varray(bpos.to_vec3())));
-			block->modified = true;
+			block->set_modified(true);
 		}
 	}
 
@@ -298,14 +298,14 @@ struct ScheduleSaveAction {
 	bool with_copy;
 
 	void operator()(VoxelBlock *block) {
-		if (block->modified) {
+		if (block->is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelDataLoader::InputBlock b;
 			b.data.voxels_to_save = with_copy ? block->voxels->duplicate() : block->voxels;
 			b.position = block->position;
 			b.can_be_discarded = false;
 			blocks_to_save.push_back(b);
-			block->modified = false;
+			block->set_modified(false);
 		}
 	}
 };

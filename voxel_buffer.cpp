@@ -33,6 +33,10 @@ void VoxelBuffer::create(int sx, int sy, int sz) {
 	}
 }
 
+void VoxelBuffer::create(Vector3i size) {
+	create(size.x, size.y, size.z);
+}
+
 void VoxelBuffer::clear() {
 	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
 		Channel &channel = _channels[i];
@@ -102,10 +106,6 @@ void VoxelBuffer::try_set_voxel(int x, int y, int z, int value, unsigned int cha
 	} else {
 		channel.data[index(x, y, z)] = value;
 	}
-}
-
-void VoxelBuffer::set_voxel_v(int value, Vector3 pos, unsigned int channel_index) {
-	set_voxel(value, pos.x, pos.y, pos.z, channel_index);
 }
 
 void VoxelBuffer::fill(int defval, unsigned int channel_index) {
@@ -301,6 +301,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 
 Ref<VoxelBuffer> VoxelBuffer::duplicate() const {
 	VoxelBuffer *d = memnew(VoxelBuffer);
+	d->create(_size);
 	d->copy_from(*this);
 	return Ref<VoxelBuffer>(d);
 }
@@ -334,17 +335,17 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 	// TODO Align input to multiple of two
 
 	src_min.clamp_to(Vector3i(), _size);
-	src_max.clamp_to(Vector3i(), _size);
+	src_max.clamp_to(Vector3i(), _size + Vector3i(1));
 
-	Vector3i dst_max = dst_min + (src_max - src_min) >> 2;
+	Vector3i dst_max = dst_min + ((src_max - src_min) >> 1);
 
 	dst_min.clamp_to(Vector3i(), dst._size);
-	dst_max.clamp_to(Vector3i(), dst._size);
+	dst_max.clamp_to(Vector3i(), dst._size + Vector3i(1));
 
 	for (int channel_index = 0; channel_index < MAX_CHANNELS; ++channel_index) {
 
 		const Channel &src_channel = _channels[channel_index];
-		const Channel &dst_channel = _channels[channel_index];
+		const Channel &dst_channel = dst._channels[channel_index];
 
 		if (src_channel.data == nullptr && dst_channel.data == nullptr && src_channel.defval == dst_channel.defval) {
 			// No action needed
@@ -358,7 +359,7 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 			for (pos.x = dst_min.x; pos.x < dst_max.x; ++pos.x) {
 				for (pos.y = dst_min.y; pos.y < dst_max.y; ++pos.y) {
 
-					Vector3i src_pos = src_min + (pos - dst_min) << 2;
+					Vector3i src_pos = src_min + ((pos - dst_min) << 1);
 
 					// TODO Remove check once it works
 					CRASH_COND(!validate_pos(src_pos.x, src_pos.y, src_pos.z));
@@ -381,27 +382,88 @@ Ref<VoxelTool> VoxelBuffer::get_voxel_tool() const {
 	return Ref<VoxelTool>(memnew(VoxelToolBuffer(Ref<VoxelBuffer>(this))));
 }
 
+bool VoxelBuffer::equals(const VoxelBuffer *p_other) const {
+	CRASH_COND(p_other == nullptr);
+
+	if (p_other->_size != _size) {
+		return false;
+	}
+
+	for (int channel_index = 0; channel_index < MAX_CHANNELS; ++channel_index) {
+
+		const Channel &channel = _channels[channel_index];
+		const Channel &other_channel = p_other->_channels[channel_index];
+
+		if ((channel.data == nullptr) != (other_channel.data == nullptr)) {
+			// Note: they could still logically be equal if one channel contains uniform voxel memory
+			return false;
+		}
+
+		if (channel.data == nullptr) {
+			if (channel.defval != other_channel.defval) {
+				return false;
+			}
+
+		} else {
+			unsigned int volume = _size.volume();
+			for (unsigned int i = 0; i < volume; ++i) {
+				if (channel.data[i] != other_channel.data[i]) {
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+#ifdef TOOLS_ENABLED
+
+Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
+	Image *im = memnew(Image);
+	im->create(_size.x, _size.z, false, Image::FORMAT_RGB8);
+	im->lock();
+	Vector3i pos;
+	for (pos.z = 0; pos.z < _size.z; ++pos.z) {
+		for (pos.x = 0; pos.x < _size.x; ++pos.x) {
+			for (pos.y = _size.y - 1; pos.y >= 0; --pos.y) {
+				float v = get_voxel_f(pos.x, pos.y, pos.z, CHANNEL_ISOLEVEL);
+				if (v < 0.0) {
+					break;
+				}
+			}
+			float h = pos.y;
+			float c = h / _size.y;
+			im->set_pixel(pos.x, pos.z, Color(c, c, c));
+		}
+	}
+	im->unlock();
+	return Ref<Image>(im);
+}
+
+#endif
+
 void VoxelBuffer::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::create);
+	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::_b_create);
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelBuffer::clear);
 
-	ClassDB::bind_method(D_METHOD("get_size"), &VoxelBuffer::_get_size_binding);
+	ClassDB::bind_method(D_METHOD("get_size"), &VoxelBuffer::_b_get_size);
 	ClassDB::bind_method(D_METHOD("get_size_x"), &VoxelBuffer::get_size_x);
 	ClassDB::bind_method(D_METHOD("get_size_y"), &VoxelBuffer::get_size_y);
 	ClassDB::bind_method(D_METHOD("get_size_z"), &VoxelBuffer::get_size_z);
 
-	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "channel"), &VoxelBuffer::_set_voxel_binding, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("set_voxel_f", "value", "x", "y", "z", "channel"), &VoxelBuffer::_set_voxel_f_binding, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::set_voxel_v, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::_get_voxel_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "channel"), &VoxelBuffer::_b_set_voxel, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_voxel_f", "value", "x", "y", "z", "channel"), &VoxelBuffer::_b_set_voxel_f, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::_b_set_voxel_v, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::_b_get_voxel, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel_f, DEFVAL(0));
 
 	ClassDB::bind_method(D_METHOD("fill", "value", "channel"), &VoxelBuffer::fill, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("fill_f", "value", "channel"), &VoxelBuffer::fill_f, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("fill_area", "value", "min", "max", "channel"), &VoxelBuffer::_fill_area_binding, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("copy_from", "other", "channel"), &VoxelBuffer::_copy_from_binding, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("copy_from_area", "other", "src_min", "src_max", "dst_min", "channel"), &VoxelBuffer::_copy_from_area_binding, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("fill_area", "value", "min", "max", "channel"), &VoxelBuffer::_b_fill_area, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("copy_from", "other", "channel"), &VoxelBuffer::_b_copy_from, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("copy_from_area", "other", "src_min", "src_max", "dst_min", "channel"), &VoxelBuffer::_b_copy_from_area, DEFVAL(0));
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);
 	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::compress_uniform_channels);
@@ -417,12 +479,12 @@ void VoxelBuffer::_bind_methods() {
 	BIND_ENUM_CONSTANT(MAX_CHANNELS);
 }
 
-void VoxelBuffer::_copy_from_binding(Ref<VoxelBuffer> other, unsigned int channel) {
+void VoxelBuffer::_b_copy_from(Ref<VoxelBuffer> other, unsigned int channel) {
 	ERR_FAIL_COND(other.is_null());
 	copy_from(**other, channel);
 }
 
-void VoxelBuffer::_copy_from_area_binding(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, unsigned int channel) {
+void VoxelBuffer::_b_copy_from_area(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, unsigned int channel) {
 	ERR_FAIL_COND(other.is_null());
 	copy_from(**other, Vector3i(src_min), Vector3i(src_max), Vector3i(dst_min), channel);
 }

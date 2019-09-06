@@ -35,13 +35,13 @@ public:
 
 	// The following methods represent one edit each. Pick the correct one for the job.
 	// For example, using `do_box` will be more efficient than calling `do_point` many times.
-	void set_voxel(Vector3i pos, int v);
-	void set_voxel_f(Vector3i pos, float v);
-	void do_point(Vector3i pos);
-	void do_line(Vector3i begin, Vector3i end);
-	void do_circle(Vector3i pos, int radius, Vector3i direction);
-	void do_sphere(Vector3 center, float radius);
-	void do_box(Vector3i begin, Vector3i end);
+	virtual void set_voxel(Vector3i pos, int v);
+	virtual void set_voxel_f(Vector3i pos, float v);
+	virtual void do_point(Vector3i pos);
+	virtual void do_line(Vector3i begin, Vector3i end);
+	virtual void do_circle(Vector3i pos, int radius, Vector3i direction);
+	virtual void do_sphere(Vector3 center, float radius);
+	virtual void do_box(Vector3i begin, Vector3i end);
 
 	// TODO I had to hack Reference here instead of VoxelTool, could not get it to compile otherwise...
 	// One of VoxelBuffer's methods builds a Ref<VoxelTool>. I can't predeclare it either way because of Ref<T>...

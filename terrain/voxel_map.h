@@ -100,6 +100,8 @@ public:
 		}
 	}
 
+	bool is_area_fully_loaded(const Rect3i voxels_box) const;
+
 private:
 	void set_block(Vector3i bpos, VoxelBlock *block);
 	VoxelBlock *get_or_create_block_at_voxel_pos(Vector3i pos);

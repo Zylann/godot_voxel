@@ -174,7 +174,10 @@ void VoxelLodTerrain::post_edit_block_lod0(Vector3i block_pos_lod0) {
 }
 
 Ref<VoxelTool> VoxelLodTerrain::get_voxel_tool() {
-	return Ref<VoxelToolLodTerrain>(memnew(VoxelToolLodTerrain(this, _lods[0].map)));
+	VoxelToolLodTerrain *vt = memnew(VoxelToolLodTerrain(this, _lods[0].map));
+	// Set to most commonly used channel on this kind of terrain
+	vt->set_channel(VoxelBuffer::CHANNEL_ISOLEVEL);
+	return Ref<VoxelTool>(vt);
 }
 
 int VoxelLodTerrain::get_view_distance() const {
@@ -405,7 +408,7 @@ Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, int lod_index) const {
 	int loading_state = 0;
 	const VoxelBlock *block = lod.map->get_block(bpos);
 	if (block) {
-		meshed = block->has_been_meshed();
+		meshed = !block->has_mesh() && block->get_mesh_state() != VoxelBlock::MESH_UP_TO_DATE;
 		visible = block->is_visible();
 		loading_state = 2;
 	} else if (lod.loading_blocks.has(bpos)) {
@@ -546,8 +549,8 @@ void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos
 bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index) {
 	CRASH_COND(lod_index < 0);
 	CRASH_COND(lod_index >= get_lod_count());
-	Lod &lod = _lods[lod_index];
 
+	Lod &lod = _lods[lod_index];
 	VoxelBlock *block = lod.map->get_block(p_bpos);
 
 	if (block == nullptr) {
@@ -555,21 +558,57 @@ bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, int
 		return false;
 	}
 
-	if (!block->has_been_meshed()) {
-		if (!block->is_mesh_update_scheduled()) {
+	return check_block_loaded_and_updated(block);
+}
+
+bool VoxelLodTerrain::check_block_loaded_and_updated(VoxelBlock *block) {
+	CRASH_COND(block == nullptr);
+	Lod &lod = _lods[block->lod_index];
+
+	if (block->test) {
+		print_line(String("Oh hi test {0} lod{1} state {2}").format(varray(block->position.to_vec3(), block->lod_index, block->get_mesh_state())));
+	}
+
+	switch (block->get_mesh_state()) {
+
+		case VoxelBlock::MESH_NEVER_UPDATED:
+		case VoxelBlock::MESH_NEED_UPDATE:
 			if (lod.map->is_block_surrounded(block->position)) {
 
 				lod.blocks_pending_update.push_back(block->position);
 				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
+				if (block->test)
+					print_line("Scheduled");
 
 			} else {
-				try_schedule_loading_with_neighbors(p_bpos, lod_index);
+				if (block->test)
+					print_line("Need neighbors");
+				try_schedule_loading_with_neighbors(block->position, block->lod_index);
 			}
-		}
-		return false;
+			return false;
+
+		case VoxelBlock::MESH_UPDATE_NOT_SENT:
+		case VoxelBlock::MESH_UPDATE_SENT:
+			if (block->test)
+				print_line("No need");
+			return false;
+
+		default: // MESH_UP_TO_DATE
+			break;
 	}
 
 	return true;
+}
+
+template <typename T, typename F>
+inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
+	for (unsigned int i = 0; i < vec.size(); ++i) {
+		if (predicate(vec[i])) {
+			vec[i] = vec.back();
+			vec.pop_back();
+			--i;
+		}
+	}
 }
 
 void VoxelLodTerrain::_process() {
@@ -620,10 +659,9 @@ void VoxelLodTerrain::_process() {
 
 			// Eliminate pending blocks that aren't needed
 
-			// No need to do it on those arrays, they are always clear at this point.
+			// This vector must be empty at this point.
 			// Let's assert so it will pop on your face the day that assumption changes
 			CRASH_COND(!lod.blocks_to_load.empty());
-			CRASH_COND(!lod.blocks_pending_update.empty());
 
 			if (prev_box != new_box) {
 				prev_box.difference(new_box, [this, lod_index](Rect3i out_of_range_box) {
@@ -632,6 +670,20 @@ void VoxelLodTerrain::_process() {
 					});
 				});
 			}
+
+			// Cancel block updates that are not within the padded region (since neighbors are always required to remesh)
+			Rect3i padded_new_box = new_box.padded(-1);
+			unordered_remove_if(lod.blocks_pending_update, [&lod, padded_new_box](Vector3i bpos) {
+				if (padded_new_box.contains(bpos)) {
+					return false;
+				} else {
+					VoxelBlock *block = lod.map->get_block(bpos);
+					if (block != nullptr) {
+						block->set_mesh_state(VoxelBlock::MESH_NEED_UPDATE);
+					}
+					return true;
+				}
+			});
 
 			lod.last_viewer_block_pos = viewer_block_pos_within_lod;
 			lod.last_view_distance_blocks = block_region_extent;
@@ -793,7 +845,8 @@ void VoxelLodTerrain::_process() {
 					VoxelBlock *block = lod.map->get_block(bpos);
 
 					CRASH_COND(block == nullptr);
-					CRASH_COND(!block->has_been_meshed()); // Never show a block that hasn't been meshed
+					// Never show a block that hasn't been meshed
+					CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UP_TO_DATE);
 
 					block->set_visible(true);
 					return true;
@@ -961,6 +1014,7 @@ void VoxelLodTerrain::_process() {
 
 				VoxelBlock *block = lod.map->get_block(block_pos);
 				CRASH_COND(block == nullptr);
+				// All blocks we get here must be in the scheduled state
 				CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
 				// TODO Perhaps we could do a bit of early-rejection before spending time in buffer copy?
@@ -1098,7 +1152,8 @@ void VoxelLodTerrain::_process() {
 			}
 
 			block->set_mesh(mesh, this, has_collision, collidable_surface, get_tree()->is_debugging_collisions_hint());
-			block->mark_been_meshed();
+			if (block->test)
+				print_line(String("test mesh updated {0} lod{1} state {2}").format(varray(block->position.to_vec3(), block->lod_index, block->get_mesh_state())));
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
@@ -1116,9 +1171,10 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 		Vector3i block_pos_lod0 = lod0.blocks_pending_lodding[i];
 
 		Vector3i bpos = block_pos_lod0;
-		int half_bs = get_block_size();
+		int half_bs = get_block_size() >> 1;
 		VoxelBlock *prev_block = nullptr;
 
+		// TODO Optimize this with a second pass, some blocks will be updated multiple times
 		for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 
 			Lod &lod = _lods[lod_index];
@@ -1127,24 +1183,60 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 			// Otherwise it means the function was called too late
 			CRASH_COND(block == nullptr);
 
-			// Mark block for remesh
+			// DEBUG
+			//			{
+			//				Rect3i dbox = Rect3i::from_center_extents(bpos, Vector3i(4, 4, 4));
+			//				Vector3i min_pos = dbox.pos;
+			//				Vector3i max_pos = dbox.pos + dbox.size;
+			//				Vector3i pos(0, bpos.y, 0);
+			//				String s;
+			//				for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
+			//					for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
+			//						if (pos == bpos) {
+			//							if (lod.map->has_block(pos)) {
+			//								s += "X ";
+			//							} else {
+			//								s += "x ";
+			//							}
+			//						} else {
+			//							if (lod.map->has_block(pos)) {
+			//								s += "O ";
+			//							} else {
+			//								s += "- ";
+			//							}
+			//						}
+			//					}
+			//					s += "\n";
+			//				}
+			//print_line(String("----lod{0}----").format(varray(lod_index)));
+			//				print_line(s);
+			//			}
+
 			if (block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT) {
-				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
-				lod.blocks_pending_update.push_back(bpos);
+				if (block->is_visible()) {
+					// Schedule an update
+					block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
+					lod.blocks_pending_update.push_back(bpos);
+				} else {
+					// Just mark it as needing update, so the visibility system will schedule its update when needed
+					block->set_mesh_state(VoxelBlock::MESH_NEED_UPDATE);
+					print_line("Need update");
+					if (lod_index > 0)
+						block->test = true;
+				}
 			}
 
 			// Mark block as modified
-			if (!block->modified) {
+			if (!block->is_modified()) {
 				print_line(String("Marking block {0}[lod{1}] as modified").format(varray(bpos.to_vec3(), lod_index)));
-				block->modified = true;
+				block->set_modified(true);
 			}
 
 			block->set_needs_lodding(false);
 
 			if (lod_index != 0) {
 
-				Vector3i prev_bpos = bpos;
-				Vector3i rel = prev_bpos - ((bpos >> 2) << 2); // Yup, you read it right... could implement `&` for vectors tho
+				Vector3i rel = prev_block->position - (bpos << 1); // Yup, you read it right... could implement `&` for vectors tho
 
 				// Update lower LOD
 				// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
@@ -1154,7 +1246,14 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 				prev_block->voxels->downscale_to(*voxels, Vector3i(), prev_block->voxels->get_size(), rel * half_bs);
 			}
 
+			// DEBUG
+			//			Ref<Image> im = block->voxels->debug_print_sdf_to_image_top_down();
+			//			im->resize(im->get_width() * 4, im->get_height() * 4, Image::INTERPOLATE_NEAREST);
+			//			im->save_png(String("vb_op{0}_lod{1}_block{2}.{3}.{4}.png")
+			//								 .format(varray(i, lod_index, bpos.x, bpos.y, bpos.z)));
+
 			prev_block = block;
+			bpos = bpos >> 1;
 		}
 	}
 

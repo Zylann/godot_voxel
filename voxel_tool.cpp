@@ -50,18 +50,22 @@ float VoxelTool::get_voxel_f(Vector3i pos) {
 
 void VoxelTool::set_voxel(Vector3i pos, int v) {
 	Rect3i box(pos, Vector3i(1));
-	if (is_area_editable(box)) {
-		_set_voxel(pos, v);
-		_post_edit(box);
+	if (!is_area_editable(box)) {
+		print_line("Area not editable");
+		return;
 	}
+	_set_voxel(pos, v);
+	_post_edit(box);
 }
 
 void VoxelTool::set_voxel_f(Vector3i pos, float v) {
 	Rect3i box(pos, Vector3i(1));
-	if (is_area_editable(box)) {
-		_set_voxel_f(pos, v);
-		_post_edit(box);
+	if (!is_area_editable(box)) {
+		print_line("Area not editable");
+		return;
 	}
+	_set_voxel_f(pos, v);
+	_post_edit(box);
 }
 
 void VoxelTool::do_point(Vector3i pos) {
@@ -137,6 +141,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 	Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius * 2.0)));
 
 	if (!is_area_editable(box)) {
+		print_line("Area not editable");
 		return;
 	}
 

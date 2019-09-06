@@ -65,6 +65,7 @@ public:
 	~VoxelBuffer();
 
 	void create(int sx, int sy, int sz);
+	void create(Vector3i size);
 	void clear();
 	void clear_channel(unsigned int channel_index, int clear_value = 0);
 	_FORCE_INLINE_ void clear_channel_f(unsigned int channel_index, float clear_value = 0) { clear_channel(channel_index, iso_to_byte(clear_value)); }
@@ -75,7 +76,6 @@ public:
 
 	int get_voxel(int x, int y, int z, unsigned int channel_index = 0) const;
 	void set_voxel(int value, int x, int y, int z, unsigned int channel_index = 0);
-	void set_voxel_v(int value, Vector3 pos, unsigned int channel_index = 0);
 
 	void try_set_voxel(int x, int y, int z, int value, unsigned int channel_index = 0);
 
@@ -123,6 +123,8 @@ public:
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 	Ref<VoxelTool> get_voxel_tool() const;
 
+	bool equals(const VoxelBuffer *p_other) const;
+
 	// TODO Make this work, would be awesome for perf
 	//
 	//	template <typename F>
@@ -145,6 +147,13 @@ public:
 	//		}
 	//	}
 
+#ifdef TOOLS_ENABLED
+
+	// Debugging
+	Ref<Image> debug_print_sdf_to_image_top_down();
+
+#endif
+
 private:
 	void create_channel_noinit(int i, Vector3i size);
 	void create_channel(int i, Vector3i size, uint8_t defval);
@@ -156,14 +165,17 @@ protected:
 	_FORCE_INLINE_ int get_size_x() const { return _size.x; }
 	_FORCE_INLINE_ int get_size_y() const { return _size.y; }
 	_FORCE_INLINE_ int get_size_z() const { return _size.z; }
-	_FORCE_INLINE_ Vector3 _get_size_binding() const { return _size.to_vec3(); }
 
-	_FORCE_INLINE_ int _get_voxel_binding(int x, int y, int z, unsigned int channel) const { return get_voxel(x, y, z, channel); }
-	_FORCE_INLINE_ void _set_voxel_binding(int value, int x, int y, int z, unsigned int channel) { set_voxel(value, x, y, z, channel); }
-	void _copy_from_binding(Ref<VoxelBuffer> other, unsigned int channel);
-	void _copy_from_area_binding(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, unsigned int channel);
-	_FORCE_INLINE_ void _fill_area_binding(int defval, Vector3 min, Vector3 max, unsigned int channel_index) { fill_area(defval, Vector3i(min), Vector3i(max), channel_index); }
-	_FORCE_INLINE_ void _set_voxel_f_binding(real_t value, int x, int y, int z, unsigned int channel) { set_voxel_f(value, x, y, z, channel); }
+	// Bindings
+	_FORCE_INLINE_ Vector3 _b_get_size() const { return _size.to_vec3(); }
+	void _b_create(int x, int y, int z) { create(x, y, z); }
+	_FORCE_INLINE_ int _b_get_voxel(int x, int y, int z, unsigned int channel) const { return get_voxel(x, y, z, channel); }
+	_FORCE_INLINE_ void _b_set_voxel(int value, int x, int y, int z, unsigned int channel) { set_voxel(value, x, y, z, channel); }
+	void _b_copy_from(Ref<VoxelBuffer> other, unsigned int channel);
+	void _b_copy_from_area(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, unsigned int channel);
+	_FORCE_INLINE_ void _b_fill_area(int defval, Vector3 min, Vector3 max, unsigned int channel_index) { fill_area(defval, Vector3i(min), Vector3i(max), channel_index); }
+	_FORCE_INLINE_ void _b_set_voxel_f(real_t value, int x, int y, int z, unsigned int channel) { set_voxel_f(value, x, y, z, channel); }
+	void _b_set_voxel_v(int value, Vector3 pos, unsigned int channel_index = 0) { set_voxel(value, pos.x, pos.y, pos.z, channel_index); }
 
 private:
 	struct Channel {
