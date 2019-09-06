@@ -349,7 +349,7 @@ Dictionary VoxelTerrain::get_statistics() const {
 	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
 	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
-	d["remaining_main_thread_blocks"] = _blocks_pending_main_thread_update.size();
+	d["remaining_main_thread_blocks"] = (int)_blocks_pending_main_thread_update.size();
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;
@@ -714,7 +714,7 @@ void VoxelTerrain::send_block_data_requests() {
 		input.blocks.push_back(input_block);
 	}
 
-	for (int i = 0; i < _blocks_to_save.size(); ++i) {
+	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
 		print_line(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position.to_vec3())));
 		input.blocks.push_back(_blocks_to_save[i]);
 	}

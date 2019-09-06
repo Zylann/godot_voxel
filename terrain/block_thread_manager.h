@@ -345,12 +345,12 @@ private:
 				if (index) {
 					// The block is already in the update queue, replace it
 					++replaced_blocks;
-					CRASH_COND(*index < 0 || *index >= job.shared_input.blocks.size());
+					CRASH_COND(*index < 0 || *index >= (int)job.shared_input.blocks.size());
 					job.shared_input.blocks[*index] = block;
 
 				} else {
 					// Append new block request
-					int j = job.shared_input.blocks.size();
+					unsigned int j = job.shared_input.blocks.size();
 					job.shared_input.blocks.push_back(block);
 					job.shared_input_block_indexes[block.lod][block.position] = j;
 				}
@@ -393,8 +393,8 @@ private:
 								});
 					}
 
-					int input_begin = queue_index;
-					int batch_count = data.batch_count;
+					unsigned int input_begin = queue_index;
+					unsigned int batch_count = data.batch_count;
 
 					if (input_begin + batch_count > data.input.blocks.size()) {
 						batch_count = data.input.blocks.size() - input_begin;
@@ -404,10 +404,10 @@ private:
 
 						uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
-						int output_begin = data.output.blocks.size();
+						unsigned int output_begin = data.output.blocks.size();
 						data.output.blocks.resize(data.output.blocks.size() + batch_count);
 
-						for (int i = 0; i < batch_count; ++i) {
+						for (unsigned int i = 0; i < batch_count; ++i) {
 							CRASH_COND(input_begin + i < 0 || input_begin + i >= data.input.blocks.size());
 							InputBlock &ib = data.input.blocks[input_begin + i];
 							OutputBlock &ob = data.output.blocks.write[output_begin + i];

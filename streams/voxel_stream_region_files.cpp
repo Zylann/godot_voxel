@@ -136,15 +136,15 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(Ref<V
 		return EMERGE_OK_FALLBACK;
 	}
 
-	int sector_index = block_info.get_sector_index();
-	//int sector_count = block_info.get_sector_count();
+	unsigned int sector_index = block_info.get_sector_index();
+	//unsigned int sector_count = block_info.get_sector_count();
 	int blocks_begin_offset = get_region_header_size();
 
 	FileAccess *f = cache->file_access;
 
 	f->seek(blocks_begin_offset + sector_index * _meta.sector_size);
 
-	int block_data_size = f->get_32();
+	unsigned int block_data_size = f->get_32();
 	CRASH_COND(f->eof_reached());
 
 	ERR_FAIL_COND_V_MSG(!_block_serializer.decompress_and_deserialize(f, block_data_size, **out_buffer), EMERGE_FAILED,
@@ -217,7 +217,7 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 		block_info.set_sector_index((block_offset - blocks_begin_offset) / _meta.sector_size);
 		block_info.set_sector_count(get_sector_count_from_bytes(written_size));
 
-		for (int i = 0; i < block_info.get_sector_count(); ++i) {
+		for (unsigned int i = 0; i < block_info.get_sector_count(); ++i) {
 			cache->sectors.push_back(block_rpos);
 		}
 
@@ -288,7 +288,7 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 	}
 }
 
-void VoxelStreamRegionFiles::remove_sectors_from_block(CachedRegion *p_region, Vector3i block_rpos, int p_sector_count) {
+void VoxelStreamRegionFiles::remove_sectors_from_block(CachedRegion *p_region, Vector3i block_rpos, unsigned int p_sector_count) {
 	VOXEL_PROFILE_SCOPE(profile_scope);
 
 	// Removes sectors from a block, starting from the last ones.
@@ -342,7 +342,7 @@ void VoxelStreamRegionFiles::remove_sectors_from_block(CachedRegion *p_region, V
 			p_region->sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count() - p_sector_count),
 			p_region->sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count()));
 
-	int old_sector_index = block_info.get_sector_index();
+	unsigned int old_sector_index = block_info.get_sector_index();
 
 	// Reduce sectors of current block in header.
 	if (block_info.get_sector_count() > p_sector_count) {
@@ -355,7 +355,7 @@ void VoxelStreamRegionFiles::remove_sectors_from_block(CachedRegion *p_region, V
 	// Shift sector index of following blocks
 	if (old_sector_index < p_region->sectors.size()) {
 		RegionHeader &header = p_region->header;
-		for (int i = 0; i < header.blocks.size(); ++i) {
+		for (unsigned int i = 0; i < header.blocks.size(); ++i) {
 			BlockInfo &b = header.blocks[i];
 			if (b.data != 0 && b.get_sector_index() > old_sector_index) {
 				b.set_sector_index(b.get_sector_index() - p_sector_count);
@@ -516,7 +516,7 @@ Vector3i VoxelStreamRegionFiles::get_region_position_from_blocks(const Vector3i 
 }
 
 void VoxelStreamRegionFiles::close_all_regions() {
-	for (int i = 0; i < _region_cache.size(); ++i) {
+	for (unsigned int i = 0; i < _region_cache.size(); ++i) {
 		CachedRegion *cache = _region_cache[i];
 		close_region(cache);
 		memdelete(cache);
@@ -539,7 +539,7 @@ String VoxelStreamRegionFiles::get_region_file_path(const Vector3i &region_pos, 
 VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::get_region_from_cache(const Vector3i pos, int lod) const {
 	// A linear search might be better than a Map data structure,
 	// because it's unlikely to have more than about 10 regions cached at a time
-	for (int i = 0; i < _region_cache.size(); ++i) {
+	for (unsigned int i = 0; i < _region_cache.size(); ++i) {
 		CachedRegion *r = _region_cache[i];
 		if (r->position == pos && r->lod == lod) {
 			return r;
@@ -642,7 +642,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 	// Filter only present blocks and keep the index around because it represents the 3D position of the block
 	RegionHeader &header = cache->header;
 	std::vector<BlockInfoAndIndex> blocks_sorted_by_offset;
-	for (int i = 0; i < header.blocks.size(); ++i) {
+	for (unsigned int i = 0; i < header.blocks.size(); ++i) {
 		const BlockInfo b = header.blocks[i];
 		if (b.data != 0) {
 			BlockInfoAndIndex p;
@@ -657,10 +657,10 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 				return a.b.get_sector_index() < b.b.get_sector_index();
 			});
 
-	for (int i = 0; i < blocks_sorted_by_offset.size(); ++i) {
+	for (unsigned int i = 0; i < blocks_sorted_by_offset.size(); ++i) {
 		const BlockInfoAndIndex b = blocks_sorted_by_offset[i];
 		Vector3i bpos = get_block_position_from_index(b.i);
-		for (int j = 0; j < b.b.get_sector_count(); ++j) {
+		for (unsigned int j = 0; j < b.b.get_sector_count(); ++j) {
 			cache->sectors.push_back(bpos);
 		}
 	}
@@ -711,7 +711,7 @@ void VoxelStreamRegionFiles::close_oldest_region() {
 	uint64_t oldest_time = 0;
 	uint64_t now = OS::get_singleton()->get_ticks_usec();
 
-	for (int i = 0; i < _region_cache.size(); ++i) {
+	for (unsigned int i = 0; i < _region_cache.size(); ++i) {
 		CachedRegion *r = _region_cache[i];
 		uint64_t time = now - r->last_opened;
 		if (time >= oldest_time) {
@@ -861,7 +861,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	// Read all blocks from the old stream and write them into the new one
 
-	for (int i = 0; i < old_region_list.size(); ++i) {
+	for (unsigned int i = 0; i < old_region_list.size(); ++i) {
 		PositionAndLod region_info = old_region_list[i];
 
 		const CachedRegion *region = old_stream->open_region(region_info.position, region_info.lod, false);
@@ -872,7 +872,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 		print_line(String("Converting region lod{0}/{1}").format(varray(region_info.lod, region_info.position.to_vec3())));
 
 		const RegionHeader &header = region->header;
-		for (int j = 0; j < header.blocks.size(); ++j) {
+		for (unsigned int j = 0; j < header.blocks.size(); ++j) {
 			const BlockInfo bi = header.blocks[j];
 			if (bi.data == 0) {
 				continue;
