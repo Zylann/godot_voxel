@@ -1164,95 +1164,80 @@ void VoxelLodTerrain::_process() {
 void VoxelLodTerrain::flush_pending_lod_edits() {
 	// Propagates edits performed so far to other LODs.
 	// These LODs must be currently in memory, otherwise terrain data will miss it.
+	// This is currently ensured by the fact we load blocks in a "pyramidal" way,
+	// i.e there is no way for a block to be loaded if its parent LOD isn't loaded already.
+	// In the future we may implement storing of edits to be applied later if blocks can't be found.
 
 	//ProfilingClock profiling_clock;
 
-	// Only LOD0 is editable at the moment, so we'll downscale from there
-	Lod &lod0 = _lods[0];
-
-	for (int i = 0; i < lod0.blocks_pending_lodding.size(); ++i) {
-		Vector3i block_pos_lod0 = lod0.blocks_pending_lodding[i];
-
-		Vector3i bpos = block_pos_lod0;
-		int half_bs = get_block_size() >> 1;
-		VoxelBlock *prev_block = nullptr;
-
-		// TODO Optimize this with a second pass, some blocks will be updated multiple times
-		for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
-
-			Lod &lod = _lods[lod_index];
-			VoxelBlock *block = lod.map->get_block(bpos);
-			// The block and its lower LODs are expected to be available.
-			// Otherwise it means the function was called too lat
-			CRASH_COND(block == nullptr);
-
-			// DEBUG
-			//			{
-			//				Rect3i dbox = Rect3i::from_center_extents(bpos, Vector3i(4, 4, 4));
-			//				Vector3i min_pos = dbox.pos;
-			//				Vector3i max_pos = dbox.pos + dbox.size;
-			//				Vector3i pos(0, bpos.y, 0);
-			//				String s;
-			//				for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
-			//					for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
-			//						if (pos == bpos) {
-			//							if (lod.map->has_block(pos)) {
-			//								s += "X ";
-			//							} else {
-			//								s += "x ";
-			//							}
-			//						} else {
-			//							if (lod.map->has_block(pos)) {
-			//								s += "O ";
-			//							} else {
-			//								s += "- ";
-			//							}
-			//						}
-			//					}
-			//					s += "\n";
-			//				}
-			//print_line(String("----lod{0}----").format(varray(lod_index)));
-			//				print_line(s);
-			//			}
-
+	struct L {
+		static inline void schedule_update(VoxelBlock *block, std::vector<Vector3i> &blocks_pending_update) {
 			if (block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT) {
 				if (block->is_visible()) {
 					// Schedule an update
 					block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
-					lod.blocks_pending_update.push_back(bpos);
+					blocks_pending_update.push_back(block->position);
 				} else {
 					// Just mark it as needing update, so the visibility system will schedule its update when needed
 					block->set_mesh_state(VoxelBlock::MESH_NEED_UPDATE);
 				}
 			}
-
-			block->set_modified(true);
-			block->set_needs_lodding(false);
-
-			if (lod_index != 0) {
-
-				Vector3i rel = prev_block->position - (bpos << 1);
-
-				// Update lower LOD
-				// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
-				VoxelBuffer *voxels = *block->voxels;
-				CRASH_COND(voxels == nullptr);
-				// TODO Try to narrow to edited region instead of taking whole block
-				prev_block->voxels->downscale_to(*voxels, Vector3i(), prev_block->voxels->get_size(), rel * half_bs);
-			}
-
-			// DEBUG
-			//			Ref<Image> im = block->voxels->debug_print_sdf_to_image_top_down();
-			//			im->resize(im->get_width() * 4, im->get_height() * 4, Image::INTERPOLATE_NEAREST);
-			//			im->save_png(String("vb_op{0}_lod{1}_block{2}.{3}.{4}.png")
-			//								 .format(varray(i, lod_index, bpos.x, bpos.y, bpos.z)));
-
-			prev_block = block;
-			bpos = bpos >> 1;
 		}
+	};
+
+	// Make sure LOD0 gets updates even if _lod_count is 1
+	Lod &lod0 = _lods[0];
+	for (int i = 0; i < lod0.blocks_pending_lodding.size(); ++i) {
+		Vector3i bpos = lod0.blocks_pending_lodding[i];
+		VoxelBlock *block = lod0.map->get_block(bpos);
+		block->set_needs_lodding(false);
+		L::schedule_update(block, lod0.blocks_pending_update);
 	}
 
-	lod0.blocks_pending_lodding.clear();
+	int half_bs = get_block_size() >> 1;
+
+	// Process downscales upwards in pairs of consecutive LODs.
+	// This ensures we don't process multiple times the same blocks.
+	// Only LOD0 is editable at the moment, so we'll downscale from there
+	for (int dst_lod_index = 1; dst_lod_index < _lod_count; ++dst_lod_index) {
+		Lod &src_lod = _lods[dst_lod_index - 1];
+		Lod &dst_lod = _lods[dst_lod_index];
+
+		for (int i = 0; i < src_lod.blocks_pending_lodding.size(); ++i) {
+			Vector3i src_bpos = src_lod.blocks_pending_lodding[i];
+			Vector3i dst_bpos = src_bpos >> 1;
+
+			VoxelBlock *src_block = src_lod.map->get_block(src_bpos);
+			VoxelBlock *dst_block = dst_lod.map->get_block(dst_bpos);
+
+			// The block and its lower LODs are expected to be available.
+			// Otherwise it means the function was called too late
+			CRASH_COND(src_block == nullptr);
+			CRASH_COND(dst_block == nullptr);
+			CRASH_COND(src_block->voxels.is_null());
+			CRASH_COND(dst_block->voxels.is_null());
+
+			L::schedule_update(dst_block, dst_lod.blocks_pending_update);
+
+			src_block->set_needs_lodding(false);
+
+			dst_block->set_modified(true);
+
+			if (dst_lod_index != _lod_count - 1 && !dst_block->get_needs_lodding()) {
+				dst_block->set_needs_lodding(true);
+				dst_lod.blocks_pending_lodding.push_back(dst_bpos);
+			}
+
+			Vector3i rel = src_bpos - (dst_bpos << 1);
+
+			// Update lower LOD
+			// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
+			// TODO Try to narrow to edited region instead of taking whole block
+			src_block->voxels->downscale_to(**dst_block->voxels, Vector3i(), src_block->voxels->get_size(), rel * half_bs);
+		}
+
+		src_lod.blocks_pending_lodding.clear();
+	}
 
 	//	uint64_t time_spent = profiling_clock.restart();
 	//	if (time_spent > 10) {
