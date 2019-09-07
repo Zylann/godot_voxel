@@ -176,5 +176,8 @@ bool VoxelBlock::is_modified() const {
 }
 
 void VoxelBlock::set_modified(bool modified) {
+	//	if (_modified != modified) {
+	//		print_line(String("Marking block {0}[lod{1}] as modified").format(varray(bpos.to_vec3(), lod_index)));
+	//	}
 	_modified = modified;
 }

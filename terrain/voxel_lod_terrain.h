@@ -21,6 +21,7 @@ class VoxelBlock;
 class VoxelLodTerrain : public Spatial {
 	GDCLASS(VoxelLodTerrain, Spatial)
 public:
+	// TODO Put this in a constant outside, I had to re-declare it in various places
 	static const int MAX_LOD = 32;
 
 	VoxelLodTerrain();
@@ -97,7 +98,7 @@ private:
 	void stop_streamer();
 	void reset_maps();
 
-	Vector3 get_viewer_pos(Vector3 &out_direction) const;
+	void get_viewer_pos_and_direction(Vector3 &out_viewer_pos, Vector3 &out_direction) const;
 	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index);
 	bool check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index);
 	bool check_block_loaded_and_updated(VoxelBlock *block);
@@ -107,6 +108,8 @@ private:
 	void _on_stream_params_changed();
 
 	void flush_pending_lod_edits();
+	void save_all_modified_blocks(bool with_copy);
+	void send_block_data_requests();
 
 	template <typename A>
 	void for_all_blocks(A &action) {
@@ -141,6 +144,7 @@ private:
 	VoxelDataLoader *_stream_thread = nullptr;
 	VoxelMeshUpdater *_block_updater = nullptr;
 	std::vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
+	std::vector<VoxelDataLoader::InputBlock> _blocks_to_save;
 
 	Ref<Material> _material;
 

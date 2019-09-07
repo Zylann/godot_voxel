@@ -33,6 +33,10 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 	print_line("Destroy VoxelLodTerrain");
 
 	if (_stream_thread) {
+		// Schedule saving of all modified blocks,
+		// without copy because we are destroying the map anyways
+		save_all_modified_blocks(false);
+
 		memdelete(_stream_thread);
 	}
 
@@ -167,6 +171,8 @@ void VoxelLodTerrain::post_edit_block_lod0(Vector3i block_pos_lod0) {
 	VoxelBlock *block = lod0.map->get_block(block_pos_lod0);
 	ERR_FAIL_COND(block == nullptr);
 
+	block->set_modified(true);
+
 	if (!block->get_needs_lodding()) {
 		block->set_needs_lodding(true);
 		lod0.blocks_pending_lodding.push_back(block_pos_lod0);
@@ -195,6 +201,9 @@ void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
 }
 
 Spatial *VoxelLodTerrain::get_viewer() const {
+	if (!is_inside_tree()) {
+		return nullptr;
+	}
 	if (_viewer_path.is_empty()) {
 		return nullptr;
 	}
@@ -203,26 +212,6 @@ Spatial *VoxelLodTerrain::get_viewer() const {
 		return nullptr;
 	}
 	return Object::cast_to<Spatial>(node);
-}
-
-void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
-
-	ERR_FAIL_COND(lod_index >= get_lod_count());
-	ERR_FAIL_COND(_lods[lod_index].map.is_null());
-
-	Lod &lod = _lods[lod_index];
-
-	// TODO Schedule block saving if modified, it's supported now!
-	lod.map->remove_block(block_pos, VoxelMap::NoAction());
-
-	lod.loading_blocks.erase(block_pos);
-
-	// Blocks in the update queue will be cancelled in _process,
-	// because it's too expensive to linear-search all blocks for each block
-
-	// No need to remove things from blocks_pending_load,
-	// This vector is filled and cleared immediately in the main process.
-	// It is a member only to re-use its capacity memory over frames.
 }
 
 void VoxelLodTerrain::start_updater() {
@@ -498,24 +487,30 @@ void VoxelLodTerrain::_notification(int p_what) {
 	}
 }
 
-Vector3 VoxelLodTerrain::get_viewer_pos(Vector3 &out_direction) const {
+void VoxelLodTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const {
 
 	if (Engine::get_singleton()->is_editor_hint()) {
 
 		// TODO Use editor's camera here
-		return Vector3();
+		out_pos = Vector3();
+		out_direction = Vector3(0, -1, 0);
 
 	} else {
-
+		// TODO Have option to use viewport camera
 		Spatial *viewer = get_viewer();
-
 		if (viewer) {
-			out_direction = -viewer->get_global_transform().basis.get_axis(Vector3::AXIS_Z);
-			return viewer->get_global_transform().origin;
+
+			Transform gt = viewer->get_global_transform();
+			out_pos = gt.origin;
+			out_direction = -gt.basis.get_axis(Vector3::AXIS_Z);
+
+		} else {
+
+			// TODO Just remember last viewer pos
+			out_pos = (_lods[0].last_viewer_block_pos << _lods[0].map->get_block_size_pow2()).to_vec3();
+			out_direction = Vector3(0, -1, 0);
 		}
 	}
-
-	return Vector3();
 }
 
 void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index) {
@@ -565,10 +560,6 @@ bool VoxelLodTerrain::check_block_loaded_and_updated(VoxelBlock *block) {
 	CRASH_COND(block == nullptr);
 	Lod &lod = _lods[block->lod_index];
 
-	if (block->test) {
-		print_line(String("Oh hi test {0} lod{1} state {2}").format(varray(block->position.to_vec3(), block->lod_index, block->get_mesh_state())));
-	}
-
 	switch (block->get_mesh_state()) {
 
 		case VoxelBlock::MESH_NEVER_UPDATED:
@@ -577,20 +568,14 @@ bool VoxelLodTerrain::check_block_loaded_and_updated(VoxelBlock *block) {
 
 				lod.blocks_pending_update.push_back(block->position);
 				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
-				if (block->test)
-					print_line("Scheduled");
 
 			} else {
-				if (block->test)
-					print_line("Need neighbors");
 				try_schedule_loading_with_neighbors(block->position, block->lod_index);
 			}
 			return false;
 
 		case VoxelBlock::MESH_UPDATE_NOT_SENT:
 		case VoxelBlock::MESH_UPDATE_SENT:
-			if (block->test)
-				print_line("No need");
 			return false;
 
 		default: // MESH_UP_TO_DATE
@@ -611,6 +596,44 @@ inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
 	}
 }
 
+void VoxelLodTerrain::send_block_data_requests() {
+
+	VoxelDataLoader::Input input;
+
+	Vector3 viewer_pos;
+	get_viewer_pos_and_direction(viewer_pos, input.priority_direction);
+	input.priority_position = _lods[0].map->voxel_to_block(Vector3i(viewer_pos));
+
+	input.use_exclusive_region = true;
+	// The last LOD may spread until end of view distance, it should not be discarded
+	input.exclusive_region_max_lod = get_lod_count() - 1;
+	input.exclusive_region_extent = get_block_region_extent();
+
+	for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
+		Lod &lod = _lods[lod_index];
+
+		for (unsigned int i = 0; i < lod.blocks_to_load.size(); ++i) {
+			VoxelDataLoader::InputBlock input_block;
+			input_block.position = lod.blocks_to_load[i];
+			input_block.lod = lod_index;
+			input.blocks.push_back(input_block);
+		}
+
+		lod.blocks_to_load.clear();
+	}
+
+	for (int i = 0; i < _blocks_to_save.size(); ++i) {
+		print_line(String("Requesting save of block {0} lod {1}")
+						   .format(varray(_blocks_to_save[i].position.to_vec3(), _blocks_to_save[i].lod)));
+		input.blocks.push_back(_blocks_to_save[i]);
+	}
+
+	_blocks_to_save.clear();
+
+	//print_line(String("Sending {0}").format(varray(input.blocks_to_emerge.size())));
+	_stream_thread->push(input);
+}
+
 void VoxelLodTerrain::_process() {
 
 	if (get_lod_count() == 0) {
@@ -620,9 +643,12 @@ void VoxelLodTerrain::_process() {
 
 	OS &os = *OS::get_singleton();
 
+	// Get viewer location
+	// TODO Transform to local (Spatial Transform)
+	Vector3 viewer_pos;
 	Vector3 viewer_direction;
-	Vector3 viewer_pos = get_viewer_pos(viewer_direction);
-	Vector3i viewer_block_pos = _lods[0].map->voxel_to_block(viewer_pos);
+	get_viewer_pos_and_direction(viewer_pos, viewer_direction);
+	Vector3i viewer_block_pos = _lods[0].map->voxel_to_block(Vector3i(viewer_pos));
 
 	_stats.dropped_block_loads = 0;
 	_stats.dropped_block_meshs = 0;
@@ -904,32 +930,7 @@ void VoxelLodTerrain::_process() {
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
 
-	// Send block loading requests
-	{
-		VoxelDataLoader::Input input;
-		input.priority_position = viewer_block_pos;
-		input.priority_direction = viewer_direction;
-		input.use_exclusive_region = true;
-		// The last LOD may spread until end of view distance, it should not be discarded
-		input.exclusive_region_max_lod = get_lod_count() - 1;
-		input.exclusive_region_extent = get_block_region_extent();
-
-		for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
-			Lod &lod = _lods[lod_index];
-
-			for (unsigned int i = 0; i < lod.blocks_to_load.size(); ++i) {
-				VoxelDataLoader::InputBlock input_block;
-				input_block.position = lod.blocks_to_load[i];
-				input_block.lod = lod_index;
-				input.blocks.push_back(input_block);
-			}
-
-			lod.blocks_to_load.clear();
-		}
-
-		//print_line(String("Sending {0}").format(varray(input.blocks_to_emerge.size())));
-		_stream_thread->push(input);
-	}
+	send_block_data_requests();
 
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
 
@@ -1152,8 +1153,6 @@ void VoxelLodTerrain::_process() {
 			}
 
 			block->set_mesh(mesh, this, has_collision, collidable_surface, get_tree()->is_debugging_collisions_hint());
-			if (block->test)
-				print_line(String("test mesh updated {0} lod{1} state {2}").format(varray(block->position.to_vec3(), block->lod_index, block->get_mesh_state())));
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
@@ -1163,6 +1162,10 @@ void VoxelLodTerrain::_process() {
 }
 
 void VoxelLodTerrain::flush_pending_lod_edits() {
+	// Propagates edits performed so far to other LODs.
+	// These LODs must be currently in memory, otherwise terrain data will miss it.
+
+	//ProfilingClock profiling_clock;
 
 	// Only LOD0 is editable at the moment, so we'll downscale from there
 	Lod &lod0 = _lods[0];
@@ -1180,7 +1183,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 			Lod &lod = _lods[lod_index];
 			VoxelBlock *block = lod.map->get_block(bpos);
 			// The block and its lower LODs are expected to be available.
-			// Otherwise it means the function was called too late
+			// Otherwise it means the function was called too lat
 			CRASH_COND(block == nullptr);
 
 			// DEBUG
@@ -1220,23 +1223,15 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 				} else {
 					// Just mark it as needing update, so the visibility system will schedule its update when needed
 					block->set_mesh_state(VoxelBlock::MESH_NEED_UPDATE);
-					print_line("Need update");
-					if (lod_index > 0)
-						block->test = true;
 				}
 			}
 
-			// Mark block as modified
-			if (!block->is_modified()) {
-				print_line(String("Marking block {0}[lod{1}] as modified").format(varray(bpos.to_vec3(), lod_index)));
-				block->set_modified(true);
-			}
-
+			block->set_modified(true);
 			block->set_needs_lodding(false);
 
 			if (lod_index != 0) {
 
-				Vector3i rel = prev_block->position - (bpos << 1); // Yup, you read it right... could implement `&` for vectors tho
+				Vector3i rel = prev_block->position - (bpos << 1);
 
 				// Update lower LOD
 				// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
@@ -1258,6 +1253,67 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 	}
 
 	lod0.blocks_pending_lodding.clear();
+
+	//	uint64_t time_spent = profiling_clock.restart();
+	//	if (time_spent > 10) {
+	//		print_line(String("Took {0} us to update lods").format(varray(time_spent)));
+	//	}
+}
+
+namespace {
+struct ScheduleSaveAction {
+
+	std::vector<VoxelDataLoader::InputBlock> &blocks_to_save;
+	bool with_copy;
+
+	void operator()(VoxelBlock *block) {
+		if (block->is_modified()) {
+			print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
+			VoxelDataLoader::InputBlock b;
+			b.data.voxels_to_save = with_copy ? block->voxels->duplicate() : block->voxels;
+			b.position = block->position;
+			b.can_be_discarded = false;
+			b.lod = block->lod_index;
+			blocks_to_save.push_back(b);
+			block->set_modified(false);
+		}
+	}
+};
+} // namespace
+
+void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
+
+	ERR_FAIL_COND(lod_index >= get_lod_count());
+	ERR_FAIL_COND(_lods[lod_index].map.is_null());
+
+	Lod &lod = _lods[lod_index];
+
+	// TODO Schedule block saving if modified, it's supported now!
+	lod.map->remove_block(block_pos, ScheduleSaveAction{ _blocks_to_save, false });
+
+	lod.loading_blocks.erase(block_pos);
+
+	// Blocks in the update queue will be cancelled in _process,
+	// because it's too expensive to linear-search all blocks for each block
+
+	// No need to remove things from blocks_pending_load,
+	// This vector is filled and cleared immediately in the main process.
+	// It is a member only to re-use its capacity memory over frames.
+}
+
+void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
+
+	ERR_FAIL_COND(_stream_thread == nullptr);
+
+	flush_pending_lod_edits();
+
+	for (int i = 0; i < _lod_count; ++i) {
+		// That may cause a stutter, so should be used when the player won't notice
+		_lods[i].map->for_all_blocks(ScheduleSaveAction{ _blocks_to_save, with_copy });
+	}
+
+	// And flush immediately
+	send_block_data_requests();
 }
 
 Dictionary VoxelLodTerrain::get_statistics() const {

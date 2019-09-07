@@ -21,7 +21,6 @@ public:
 	Ref<VoxelBuffer> voxels;
 	Vector3i position;
 	unsigned int lod_index = 0;
-	bool test = false;
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 

@@ -223,16 +223,16 @@ NodePath VoxelTerrain::get_viewer_path() const {
 	return _viewer_path;
 }
 
-Spatial *VoxelTerrain::get_viewer(NodePath path) const {
-	if (path.is_empty()) {
-		return NULL;
-	}
+Spatial *VoxelTerrain::get_viewer() const {
 	if (!is_inside_tree()) {
-		return NULL;
+		return nullptr;
 	}
-	Node *node = get_node(path);
-	if (node == NULL) {
-		return NULL;
+	if (_viewer_path.is_empty()) {
+		return nullptr;
+	}
+	Node *node = get_node(_viewer_path);
+	if (node == nullptr) {
+		return nullptr;
 	}
 	return Object::cast_to<Spatial>(node);
 }
@@ -672,25 +672,27 @@ static void remove_positions_outside_box(
 	}
 }
 
-void VoxelTerrain::get_viewer_block_pos_and_direction(Vector3i &out_block_pos, Vector3 &out_direction) {
+void VoxelTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const {
 
 	if (Engine::get_singleton()->is_editor_hint()) {
 
 		// TODO Use editor's camera here
-		out_block_pos = Vector3i();
+		out_pos = Vector3();
 		out_direction = Vector3(0, -1, 0);
 
 	} else {
-		// TODO Use viewport camera, much easier
-		Spatial *viewer = get_viewer(_viewer_path);
+		// TODO Have option to use viewport camera
+		Spatial *viewer = get_viewer();
 		if (viewer) {
 
-			out_block_pos = _map->voxel_to_block(viewer->get_translation());
-			out_direction = -viewer->get_global_transform().basis.get_axis(Vector3::AXIS_Z);
+			Transform gt = viewer->get_global_transform();
+			out_pos = gt.origin;
+			out_direction = -gt.basis.get_axis(Vector3::AXIS_Z);
 
 		} else {
 
-			out_block_pos = _last_viewer_block_pos;
+			// TODO Just remember last viewer pos
+			out_pos = (_last_viewer_block_pos << _map->get_block_size_pow2()).to_vec3();
 			out_direction = Vector3(0, -1, 0);
 		}
 	}
@@ -700,7 +702,9 @@ void VoxelTerrain::send_block_data_requests() {
 
 	VoxelDataLoader::Input input;
 
-	get_viewer_block_pos_and_direction(input.priority_position, input.priority_direction);
+	Vector3 viewer_pos;
+	get_viewer_pos_and_direction(viewer_pos, input.priority_direction);
+	input.priority_position = _map->voxel_to_block(Vector3i(viewer_pos));
 
 	for (int i = 0; i < _blocks_pending_load.size(); ++i) {
 		VoxelDataLoader::InputBlock input_block;
@@ -739,9 +743,10 @@ void VoxelTerrain::_process() {
 
 	// Get viewer location
 	// TODO Transform to local (Spatial Transform)
-	Vector3i viewer_block_pos;
+	Vector3 viewer_pos;
 	Vector3 viewer_direction;
-	get_viewer_block_pos_and_direction(viewer_block_pos, viewer_direction);
+	get_viewer_pos_and_direction(viewer_pos, viewer_direction);
+	Vector3i viewer_block_pos = _map->voxel_to_block(Vector3i(viewer_pos));
 
 	// Find out which blocks need to appear and which need to be unloaded
 	{
@@ -929,10 +934,7 @@ void VoxelTerrain::_process() {
 			// TODO Make the buffer re-usable
 			unsigned int block_size = _map->get_block_size();
 			unsigned int padding = _block_updater->get_required_padding();
-			nbuffer->create(
-					block_size + 2 * padding,
-					block_size + 2 * padding,
-					block_size + 2 * padding);
+			nbuffer->create(Vector3i(block_size + 2 * padding));
 
 			unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_ISOLEVEL);
 			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(padding), **nbuffer, channels_mask);
