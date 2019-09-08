@@ -12,6 +12,7 @@
 class VoxelMap;
 class VoxelLibrary;
 class VoxelStream;
+class VoxelTool;
 
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.
@@ -52,6 +53,7 @@ public:
 	void set_smooth_meshing_enabled(bool enabled);
 
 	Ref<VoxelMap> get_storage() { return _map; }
+	Ref<VoxelTool> get_voxel_tool();
 
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
@@ -96,15 +98,10 @@ private:
 
 	static void _bind_methods();
 
-	// Convenience
-	Vector3 _voxel_to_block_binding(Vector3 pos);
-	Vector3 _block_to_voxel_binding(Vector3 pos);
+	// Bindings
+	Vector3 _b_voxel_to_block(Vector3 pos);
+	Vector3 _b_block_to_voxel(Vector3 pos);
 	//void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
-	void _make_voxel_dirty_binding(Vector3 pos) { make_voxel_dirty(pos); }
-	void _make_area_dirty_binding(AABB aabb);
-	Variant _raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance);
-	void set_voxel(Vector3 pos, int value, int c);
-	int get_voxel(Vector3 pos, int c);
 
 private:
 	// Voxel storage

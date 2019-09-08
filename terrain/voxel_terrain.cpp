@@ -3,6 +3,7 @@
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
 #include "../util/voxel_raycast.h"
+#include "../voxel_tool_terrain.h"
 #include "voxel_block.h"
 #include "voxel_map.h"
 
@@ -18,7 +19,7 @@ VoxelTerrain::VoxelTerrain() {
 	// Godot may create and destroy dozens of instances of all node types on startup,
 	// due to how ClassDB gets its default values.
 
-	_map = Ref<VoxelMap>(memnew(VoxelMap));
+	_map.instance();
 
 	_view_distance_blocks = 8;
 	_last_view_distance_blocks = 0;
@@ -1057,67 +1058,15 @@ void VoxelTerrain::_process() {
 	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") + String::num(_block_update_queue.size()));
 }
 
-struct _VoxelTerrainRaycastContext {
-	VoxelTerrain &terrain;
-	//unsigned int channel_mask;
-};
-
-static bool _raycast_binding_predicate(Vector3i pos, void *context_ptr) {
-
-	ERR_FAIL_COND_V(context_ptr == NULL, false);
-	_VoxelTerrainRaycastContext *context = (_VoxelTerrainRaycastContext *)context_ptr;
-	VoxelTerrain &terrain = context->terrain;
-
-	//unsigned int channel = context->channel;
-
-	Ref<VoxelMap> map = terrain.get_storage();
-	int v0 = map->get_voxel(pos, Voxel::CHANNEL_TYPE);
-
-	Ref<VoxelLibrary> lib_ref = terrain.get_voxel_library();
-	if (lib_ref.is_null())
-		return false;
-	const VoxelLibrary &lib = **lib_ref;
-
-	if (lib.has_voxel(v0) == false)
-		return false;
-
-	const Voxel &voxel = lib.get_voxel_const(v0);
-	if (voxel.is_transparent() == false)
-		return true;
-
-	float v1 = map->get_voxel_f(pos, Voxel::CHANNEL_ISOLEVEL);
-	return v1 < 0;
+Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
+	return Ref<VoxelTool>(memnew(VoxelToolTerrain(this, _map)));
 }
 
-void VoxelTerrain::_make_area_dirty_binding(AABB aabb) {
-	make_area_dirty(Rect3i(aabb.position, aabb.size));
-}
-
-Variant VoxelTerrain::_raycast_binding(Vector3 origin, Vector3 direction, real_t max_distance) {
-
-	// TODO Transform input if the terrain is rotated (in the future it can be made a Spatial node)
-
-	Vector3i hit_pos;
-	Vector3i prev_pos;
-
-	_VoxelTerrainRaycastContext context = { *this };
-
-	if (voxel_raycast(origin, direction, _raycast_binding_predicate, &context, max_distance, hit_pos, prev_pos)) {
-
-		Dictionary hit = Dictionary();
-		hit["position"] = hit_pos.to_vec3();
-		hit["prev_position"] = prev_pos.to_vec3();
-		return hit;
-	} else {
-		return Variant(); // Null dictionary, no alloc
-	}
-}
-
-Vector3 VoxelTerrain::_voxel_to_block_binding(Vector3 pos) {
+Vector3 VoxelTerrain::_b_voxel_to_block(Vector3 pos) {
 	return Vector3i(_map->voxel_to_block(pos)).to_vec3();
 }
 
-Vector3 VoxelTerrain::_block_to_voxel_binding(Vector3 pos) {
+Vector3 VoxelTerrain::_b_block_to_voxel(Vector3 pos) {
 	return Vector3i(_map->block_to_voxel(pos)).to_vec3();
 }
 
@@ -1144,17 +1093,11 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_smooth_meshing_enabled"), &VoxelTerrain::is_smooth_meshing_enabled);
 	ClassDB::bind_method(D_METHOD("set_smooth_meshing_enabled", "enabled"), &VoxelTerrain::set_smooth_meshing_enabled);
 
-	ClassDB::bind_method(D_METHOD("get_storage"), &VoxelTerrain::get_storage);
-
-	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_voxel_to_block_binding);
-	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_block_to_voxel_binding);
-
-	ClassDB::bind_method(D_METHOD("make_voxel_dirty", "pos"), &VoxelTerrain::_make_voxel_dirty_binding);
-	ClassDB::bind_method(D_METHOD("make_area_dirty", "aabb"), &VoxelTerrain::_make_area_dirty_binding);
-
-	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance"), &VoxelTerrain::_raycast_binding, DEFVAL(100));
+	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_b_voxel_to_block);
+	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_b_block_to_voxel);
 
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::get_statistics);
+	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelTerrain::get_voxel_tool);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelTerrain::_on_stream_params_changed);
 

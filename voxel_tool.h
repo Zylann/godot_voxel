@@ -6,6 +6,20 @@
 
 class VoxelBuffer;
 
+// This class exists only to make the script API nicer.
+class VoxelRaycastResult : public Reference {
+	GDCLASS(VoxelRaycastResult, Reference)
+public:
+	Vector3i position;
+	Vector3i previous_position;
+
+private:
+	Vector3 _b_get_position() const;
+	Vector3 _b_get_previous_position() const;
+
+	static void _bind_methods();
+};
+
 // High-level generic voxel edition utility.
 // Ease of use comes at cost.
 // It's not a class to instantiate alone, get it from the voxel objects you want to work with
@@ -43,12 +57,9 @@ public:
 	virtual void do_sphere(Vector3 center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
 
-	// TODO I had to hack Reference here instead of VoxelTool, could not get it to compile otherwise...
-	// One of VoxelBuffer's methods builds a Ref<VoxelTool>. I can't predeclare it either way because of Ref<T>...
-	void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, int mask_value);
+	virtual void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, int mask_value);
 
-	// TODO VoxelRaycastResult?
-	Dictionary raycast(Vector3 pos, Vector3 dir);
+	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance);
 
 	// Checks if an edit affecting the given box can be applied, fully or partially
 	virtual bool is_area_editable(const Rect3i &box) const;
@@ -70,7 +81,7 @@ private:
 	float _b_get_voxel_f(Vector3 pos) { return get_voxel_f(Vector3i(pos)); }
 	void _b_set_voxel(Vector3 pos, int v) { set_voxel(Vector3i(pos), v); }
 	void _b_set_voxel_f(Vector3 pos, float v) { set_voxel_f(Vector3i(pos), v); }
-	Dictionary _b_raycast(Vector3 pos, Vector3 dir) { return raycast(pos, dir); }
+	Ref<VoxelRaycastResult> _b_raycast(Vector3 pos, Vector3 dir, float max_distance) { return raycast(pos, dir, max_distance); }
 	void _b_do_point(Vector3 pos) { do_point(Vector3i(pos)); }
 	void _b_do_line(Vector3i begin, Vector3i end) { do_line(Vector3i(begin), Vector3i(end)); }
 	void _b_do_circle(Vector3 pos, float radius, Vector3 direction) { do_circle(Vector3i(pos), radius, Vector3i(direction)); }

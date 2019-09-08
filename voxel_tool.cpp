@@ -2,6 +2,24 @@
 #include "terrain/voxel_lod_terrain.h"
 #include "voxel_buffer.h"
 
+Vector3 VoxelRaycastResult::_b_get_position() const {
+	return position.to_vec3();
+}
+
+Vector3 VoxelRaycastResult::_b_get_previous_position() const {
+	return previous_position.to_vec3();
+}
+
+void VoxelRaycastResult::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_position"), &VoxelRaycastResult::_b_get_position);
+	ClassDB::bind_method(D_METHOD("get_previous_position"), &VoxelRaycastResult::_b_get_previous_position);
+
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "position"), "", "get_position");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "previous_position"), "", "get_previous_position");
+}
+
+//----------------------------------------
+
 void VoxelTool::set_value(int val) {
 	_value = val;
 }
@@ -35,9 +53,9 @@ VoxelTool::Mode VoxelTool::get_mode() const {
 	return _mode;
 }
 
-Dictionary VoxelTool::raycast(Vector3 pos, Vector3 dir) {
+Ref<VoxelRaycastResult> VoxelTool::raycast(Vector3 pos, Vector3 dir, float max_distance) {
 	ERR_PRINT("Not implemented");
-	return Dictionary();
+	return Ref<VoxelRaycastResult>();
 }
 
 int VoxelTool::get_voxel(Vector3i pos) {
@@ -207,7 +225,8 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_f", "pos", "v"), &VoxelTool::_b_set_voxel_f);
 	ClassDB::bind_method(D_METHOD("do_point", "pos"), &VoxelTool::_b_do_point);
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere);
-	// TODO Implement the rest
+
+	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance"), &VoxelTool::_b_raycast, DEFVAL(10.0));
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "value"), "set_value", "get_value");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
