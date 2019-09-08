@@ -92,9 +92,9 @@ void VoxelTool::do_point(Vector3i pos) {
 		return;
 	}
 	if (_channel == VoxelBuffer::CHANNEL_ISOLEVEL) {
-		_set_voxel_f(pos, _mode == MODE_ERASE ? 1.0 : -1.0);
+		_set_voxel_f(pos, _mode == MODE_REMOVE ? 1.0 : -1.0);
 	} else {
-		_set_voxel(pos, _mode == MODE_ERASE ? _eraser_value : _value);
+		_set_voxel(pos, _mode == MODE_REMOVE ? _eraser_value : _value);
 	}
 	_post_edit(box);
 }
@@ -138,7 +138,7 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 			res = min(src_value, dst_value);
 			break;
 
-		case VoxelTool::MODE_ERASE:
+		case VoxelTool::MODE_REMOVE:
 			res = max(1.0 - src_value, dst_value);
 			break;
 
@@ -172,7 +172,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 
 	} else {
 
-		int value = _mode == MODE_ERASE ? _eraser_value : _value;
+		int value = _mode == MODE_REMOVE ? _eraser_value : _value;
 
 		box.for_each_cell([this, center, radius, value](Vector3i pos) {
 			float d = pos.to_vec3().distance_to(center);
@@ -234,6 +234,6 @@ void VoxelTool::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Add,Remove,Set"), "set_mode", "get_mode");
 
 	BIND_ENUM_CONSTANT(MODE_ADD);
-	BIND_ENUM_CONSTANT(MODE_ERASE);
+	BIND_ENUM_CONSTANT(MODE_REMOVE);
 	BIND_ENUM_CONSTANT(MODE_SET);
 }

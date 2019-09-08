@@ -28,7 +28,7 @@ class VoxelTool : public Reference {
 public:
 	enum Mode {
 		MODE_ADD,
-		MODE_ERASE, // TODO Rename REMOVE
+		MODE_REMOVE,
 		MODE_SET
 	};
 
