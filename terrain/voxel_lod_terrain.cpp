@@ -1273,7 +1273,6 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 
 	Lod &lod = _lods[lod_index];
 
-	// TODO Schedule block saving if modified, it's supported now!
 	lod.map->remove_block(block_pos, ScheduleSaveAction{ _blocks_to_save, false });
 
 	lod.loading_blocks.erase(block_pos);
