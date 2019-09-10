@@ -8,6 +8,7 @@ class VoxelMesher : public Reference {
 	GDCLASS(VoxelMesher, Reference)
 public:
 	struct Output {
+		// Each surface correspond to a different material
 		Vector<Array> surfaces;
 		Mesh::PrimitiveType primitive_type;
 	};

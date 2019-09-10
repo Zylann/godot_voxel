@@ -388,6 +388,10 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 			}
 
 			output.surfaces.push_back(mesh_arrays);
+
+		} else {
+			// Empty
+			output.surfaces.push_back(Array());
 		}
 	}
 
