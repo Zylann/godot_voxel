@@ -92,7 +92,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	Vector3i min = Vector3i(padding);
 	Vector3i max = buffer.get_size() - Vector3i(padding);
 
-	int index_offset = 0;
+	int index_offsets[MAX_MATERIALS] = { 0 };
 
 	// Iterate 3D padded data to extract voxel faces.
 	// This is the most intensive job in this class, so all required data should be as fit as possible.
@@ -175,6 +175,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 					const Voxel &voxel = library.get_voxel_const(voxel_id);
 
 					Arrays &arrays = _arrays[voxel.get_material_id()];
+					int &index_offset = index_offsets[voxel.get_material_id()];
 
 					// Hybrid approach: extract cube faces and decimate those that aren't visible,
 					// and still allow voxels to have geometry that is not a cube
