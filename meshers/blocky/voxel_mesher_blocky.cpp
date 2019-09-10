@@ -18,8 +18,9 @@ inline Color Color_greyscale(float c) {
 }
 
 inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_voxel_id) {
-	if (other_voxel_id == 0) // air
+	if (other_voxel_id == 0) { // air
 		return true;
+	}
 	if (lib.has_voxel(other_voxel_id)) {
 		const Voxel &other_vt = lib.get_voxel_const(other_voxel_id);
 		return other_vt.is_transparent() && vt.get_id() != other_voxel_id;
@@ -77,8 +78,9 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	}
 
 	float baked_occlusion_darkness = 0;
-	if (_bake_occlusion)
+	if (_bake_occlusion) {
 		baked_occlusion_darkness = _baked_occlusion_darkness / 3.0;
+	}
 
 	// The technique is Culled faces.
 	// Could be improved with greedy meshing: https://0fps.net/2012/06/30/meshing-in-a-minecraft-game/
@@ -167,8 +169,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 			for (unsigned int y = min.y; y < (unsigned int)max.y; ++y) {
 				// min and max are chosen such that you can visit 1 neighbor away from the current voxel without size check
 
-				int voxel_index = y + x * row_size + z * deck_size;
-				int voxel_id = type_buffer[voxel_index];
+				const int voxel_index = y + x * row_size + z * deck_size;
+				const int voxel_id = type_buffer[voxel_index];
 
 				if (voxel_id != 0 && library.has_voxel(voxel_id)) {
 
@@ -184,11 +186,11 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 					for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 
 						const PoolVector<Vector3> &positions = voxel.get_model_side_positions(side);
-						unsigned int vertex_count = positions.size();
+						const unsigned int vertex_count = positions.size();
 
 						if (vertex_count != 0) {
 
-							int neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
+							const int neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
 							// TODO Better face visibility test
 							if (is_face_visible(library, voxel, neighbor_voxel_id)) {
