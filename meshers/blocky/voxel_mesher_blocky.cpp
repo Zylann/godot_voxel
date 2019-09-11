@@ -13,10 +13,6 @@ void raw_copy_to(PoolVector<T> &to, const Vector<T> &from) {
 	memcpy(w.ptr(), from.ptr(), from.size() * sizeof(T));
 }
 
-inline Color Color_greyscale(float c) {
-	return Color(c, c, c);
-}
-
 inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_voxel_id) {
 	if (other_voxel_id == 0) { // air
 		return true;
@@ -233,7 +229,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 								// Append vertices of the faces in one go, don't use push_back
 
 								{
-									int append_index = arrays.positions.size();
+									const int append_index = arrays.positions.size();
 									arrays.positions.resize(arrays.positions.size() + vertex_count);
 									Vector3 *w = arrays.positions.data() + append_index;
 									for (unsigned int i = 0; i < vertex_count; ++i) {
@@ -242,13 +238,13 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 								}
 
 								{
-									int append_index = arrays.uvs.size();
+									const int append_index = arrays.uvs.size();
 									arrays.uvs.resize(arrays.uvs.size() + vertex_count);
 									memcpy(arrays.uvs.data() + append_index, rt.ptr(), vertex_count * sizeof(Vector2));
 								}
 
 								{
-									int append_index = arrays.normals.size();
+									const int append_index = arrays.normals.size();
 									arrays.normals.resize(arrays.normals.size() + vertex_count);
 									Vector3 *w = arrays.normals.data() + append_index;
 									for (unsigned int i = 0; i < vertex_count; ++i) {
@@ -256,40 +252,49 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 									}
 								}
 
-								if (_bake_occlusion) {
-									// Use color array
-
-									int append_index = arrays.colors.size();
+								{
+									const int append_index = arrays.colors.size();
 									arrays.colors.resize(arrays.colors.size() + vertex_count);
 									Color *w = arrays.colors.data() + append_index;
+									const Color modulate_color = voxel.get_color();
 
-									for (unsigned int i = 0; i < vertex_count; ++i) {
-										Vector3 v = rv[i];
+									if (_bake_occlusion) {
 
-										// General purpose occlusion colouring.
-										// TODO Optimize for cubes
-										// TODO Fix occlusion inconsistency caused by triangles orientation? Not sure if worth it
-										float shade = 0;
-										for (unsigned int j = 0; j < 4; ++j) {
-											unsigned int corner = Cube::g_side_corners[side][j];
-											if (shaded_corner[corner]) {
-												float s = baked_occlusion_darkness * static_cast<float>(shaded_corner[corner]);
-												float k = 1.0 - Cube::g_corner_position[corner].distance_to(v);
-												if (k < 0.0)
-													k = 0.0;
-												s *= k;
-												if (s > shade)
-													shade = s;
+										for (unsigned int i = 0; i < vertex_count; ++i) {
+											Vector3 v = rv[i];
+
+											// General purpose occlusion colouring.
+											// TODO Optimize for cubes
+											// TODO Fix occlusion inconsistency caused by triangles orientation? Not sure if worth it
+											float shade = 0;
+											for (unsigned int j = 0; j < 4; ++j) {
+												unsigned int corner = Cube::g_side_corners[side][j];
+												if (shaded_corner[corner]) {
+													float s = baked_occlusion_darkness * static_cast<float>(shaded_corner[corner]);
+													float k = 1.0 - Cube::g_corner_position[corner].distance_to(v);
+													if (k < 0.0) {
+														k = 0.0;
+													}
+													s *= k;
+													if (s > shade) {
+														shade = s;
+													}
+												}
 											}
+											float gs = 1.0 - shade;
+											w[i] = Color(gs, gs, gs) * modulate_color;
 										}
-										float gs = 1.0 - shade;
-										w[i] = Color(gs, gs, gs);
+
+									} else {
+										for (unsigned int i = 0; i < vertex_count; ++i) {
+											w[i] = modulate_color;
+										}
 									}
 								}
 
 								const PoolVector<int> &side_indices = voxel.get_model_side_indices(side);
 								PoolVector<int>::Read ri = side_indices.read();
-								unsigned int index_count = side_indices.size();
+								const unsigned int index_count = side_indices.size();
 
 								{
 									int i = arrays.indices.size();
@@ -311,6 +316,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 
 						const PoolVector<Vector3> &vertices = voxel.get_model_positions();
 						unsigned int vertex_count = vertices.size();
+						const Color modulate_color = voxel.get_color();
 
 						PoolVector<Vector3>::Read rv = vertices.read();
 						PoolVector<Vector3>::Read rn = voxel.get_model_normals().read();
@@ -322,11 +328,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 							arrays.normals.push_back(rn[i]);
 							arrays.uvs.push_back(rt[i]);
 							arrays.positions.push_back(rv[i] + pos);
-						}
-
-						if (_bake_occlusion) {
 							// TODO handle ambient occlusion on inner parts
-							arrays.colors.push_back(Color(1, 1, 1));
+							arrays.colors.push_back(modulate_color);
 						}
 
 						const PoolVector<int> &indices = voxel.get_model_indices();
