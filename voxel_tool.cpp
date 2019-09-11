@@ -156,7 +156,7 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 
 void VoxelTool::do_sphere(Vector3 center, float radius) {
 
-	Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius * 2.0)));
+	Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
 		print_line("Area not editable");
