@@ -177,7 +177,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 		box.for_each_cell([this, center, radius, value](Vector3i pos) {
 			float d = pos.to_vec3().distance_to(center);
 			if (d <= radius) {
-				set_voxel(pos, value);
+				_set_voxel(pos, value);
 			}
 		});
 	}
