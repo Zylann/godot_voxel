@@ -43,6 +43,7 @@ void register_voxel_types() {
 	// Helpers
 	ClassDB::register_class<VoxelBoxMover>();
 	ClassDB::register_class<VoxelIsoSurfaceTool>();
+	ClassDB::register_class<VoxelRaycastResult>();
 	ClassDB::register_class<VoxelTool>();
 
 	// Meshers
