@@ -1,6 +1,7 @@
 #include "voxel_map.h"
 #include "../cube_tables.h"
 #include "voxel_block.h"
+#include "../error_macros.h"
 
 #include "core/os/os.h"
 
