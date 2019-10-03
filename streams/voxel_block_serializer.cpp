@@ -5,7 +5,7 @@
 #include <core/os/file_access.h>
 
 namespace {
-const int BLOCK_TRAILING_MAGIC = 0x900df00d;
+const unsigned int BLOCK_TRAILING_MAGIC = 0x900df00d;
 const int BLOCK_TRAILING_MAGIC_SIZE = 4;
 } // namespace
 
@@ -155,7 +155,7 @@ bool VoxelBlockSerializer::decompress_and_deserialize(const std::vector<uint8_t>
 
 	_data.resize(decompressed_size);
 
-	int actually_decompressed_size = LZ4_decompress_safe(
+	unsigned int actually_decompressed_size = LZ4_decompress_safe(
 			(const char *)p_data.data() + header_size,
 			(char *)_data.data(),
 			p_data.size() - header_size,
@@ -175,7 +175,7 @@ bool VoxelBlockSerializer::decompress_and_deserialize(FileAccess *f, unsigned in
 	ERR_FAIL_COND_V(f == nullptr, false);
 
 	_compressed_data.resize(size_to_read);
-	int read_size = f->get_buffer(_compressed_data.data(), size_to_read);
+	unsigned int read_size = f->get_buffer(_compressed_data.data(), size_to_read);
 	ERR_FAIL_COND_V(read_size != size_to_read, false);
 
 	return decompress_and_deserialize(_compressed_data, out_voxel_buffer);

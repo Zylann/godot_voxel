@@ -2,7 +2,7 @@
 #include "../streams/voxel_stream.h"
 #include "../util/utility.h"
 
-VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int block_size_pow2) {
+VoxelDataLoader::VoxelDataLoader(unsigned int thread_count, Ref<VoxelStream> stream, unsigned int block_size_pow2) {
 
 	print_line("Constructing VoxelDataLoader");
 	CRASH_COND(stream.is_null());
@@ -26,7 +26,7 @@ VoxelDataLoader::VoxelDataLoader(int thread_count, Ref<VoxelStream> stream, int 
 
 			// Note: more than one thread can make sense for generators,
 			// but won't be as useful for file and network streams
-			for (int i = 1; i < thread_count; ++i) {
+			for (unsigned int i = 1; i < thread_count; ++i) {
 				stream = stream->duplicate();
 				processors[i] = [this, stream](ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Mgr::ProcessorStats &stats) {
 					this->process_blocks_thread_func(inputs, outputs, stream, stats);

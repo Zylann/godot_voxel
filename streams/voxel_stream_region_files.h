@@ -72,7 +72,7 @@ private:
 	int get_sector_count_from_bytes(int size_in_bytes) const;
 	int get_region_header_size() const;
 	CachedRegion *get_region_from_cache(const Vector3i pos, int lod) const;
-	void remove_sectors_from_block(CachedRegion *p_region, Vector3i block_rpos, int p_sector_count);
+	void remove_sectors_from_block(CachedRegion *p_region, Vector3i block_rpos, unsigned int p_sector_count);
 	int get_sectors_count(const RegionHeader &header) const;
 	void close_oldest_region();
 	void save_header(CachedRegion *p_region);
@@ -160,7 +160,7 @@ private:
 	bool _meta_loaded = false;
 	bool _meta_saved = false;
 	std::vector<CachedRegion *> _region_cache;
-	int _max_open_regions = MIN(8, FOPEN_MAX);
+	unsigned int _max_open_regions = MIN(8, FOPEN_MAX);
 };
 
 #endif // VOXEL_STREAM_REGION_H

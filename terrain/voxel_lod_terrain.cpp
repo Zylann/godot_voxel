@@ -621,7 +621,7 @@ void VoxelLodTerrain::send_block_data_requests() {
 		lod.blocks_to_load.clear();
 	}
 
-	for (int i = 0; i < _blocks_to_save.size(); ++i) {
+	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
 		print_line(String("Requesting save of block {0} lod {1}")
 						   .format(varray(_blocks_to_save[i].position.to_vec3(), _blocks_to_save[i].lod)));
 		input.blocks.push_back(_blocks_to_save[i]);
@@ -1186,7 +1186,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 
 	// Make sure LOD0 gets updates even if _lod_count is 1
 	Lod &lod0 = _lods[0];
-	for (int i = 0; i < lod0.blocks_pending_lodding.size(); ++i) {
+	for (unsigned int i = 0; i < lod0.blocks_pending_lodding.size(); ++i) {
 		Vector3i bpos = lod0.blocks_pending_lodding[i];
 		VoxelBlock *block = lod0.map->get_block(bpos);
 		block->set_needs_lodding(false);
@@ -1202,7 +1202,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 		Lod &src_lod = _lods[dst_lod_index - 1];
 		Lod &dst_lod = _lods[dst_lod_index];
 
-		for (int i = 0; i < src_lod.blocks_pending_lodding.size(); ++i) {
+		for (unsigned int i = 0; i < src_lod.blocks_pending_lodding.size(); ++i) {
 			Vector3i src_bpos = src_lod.blocks_pending_lodding[i];
 			Vector3i dst_bpos = src_bpos >> 1;
 
@@ -1312,7 +1312,7 @@ Dictionary VoxelLodTerrain::get_statistics() const {
 	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
 	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
-	d["remaining_main_thread_blocks"] = _blocks_pending_main_thread_update.size();
+	d["remaining_main_thread_blocks"] = (int)_blocks_pending_main_thread_update.size();
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;

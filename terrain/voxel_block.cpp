@@ -16,7 +16,6 @@ static Ref<ConcavePolygonShape> create_concave_polygon_shape(Array surface_array
 	ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape>());
 
 	int face_points_count = indices.size();
-	int face_count = face_points_count / 3;
 
 	PoolVector<Vector3> face_points;
 	face_points.resize(face_points_count);

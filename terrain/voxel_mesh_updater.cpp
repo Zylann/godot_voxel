@@ -95,7 +95,7 @@ void VoxelMeshUpdater::process_blocks_thread_func(
 
 	CRASH_COND(inputs.size() != outputs.size());
 
-	for (int i = 0; i < inputs.size(); ++i) {
+	for (unsigned int i = 0; i < inputs.size(); ++i) {
 
 		const InputBlock &ib = inputs[i];
 		const InputBlockData &block = ib.data;
