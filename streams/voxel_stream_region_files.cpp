@@ -1,4 +1,5 @@
 #include "voxel_stream_region_files.h"
+#include "../error_macros.h"
 #include "../math/rect3i.h"
 #include "../util/utility.h"
 #include "file_utils.h"

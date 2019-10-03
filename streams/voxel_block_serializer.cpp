@@ -1,4 +1,5 @@
 #include "voxel_block_serializer.h"
+#include "../error_macros.h"
 #include "../math/vector3i.h"
 #include "../thirdparty/lz4/lz4.h"
 #include "../voxel_buffer.h"
