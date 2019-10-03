@@ -111,15 +111,6 @@ private:
 	void save_all_modified_blocks(bool with_copy);
 	void send_block_data_requests();
 
-	template <typename A>
-	void for_all_blocks(A &action) {
-		for (int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
-			if (_lods[lod_index].map.is_valid()) {
-				_lods[lod_index].map->for_all_blocks(action);
-			}
-		}
-	}
-
 	struct OctreeItem {
 		LodOctree<bool> octree;
 #ifdef VOXEL_DEBUG_BOXES

@@ -429,24 +429,6 @@ Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, int lod_index) co
 
 void VoxelLodTerrain::_notification(int p_what) {
 
-	struct SetWorldAction {
-		World *world;
-		SetWorldAction(World *w) :
-				world(w) {}
-		void operator()(VoxelBlock *block) {
-			block->set_world(world);
-		}
-	};
-
-	struct SetParentVisibilityAction {
-		bool visible;
-		SetParentVisibilityAction(bool v) :
-				visible(v) {}
-		void operator()(VoxelBlock *block) {
-			block->set_parent_visible(visible);
-		}
-	};
-
 	switch (p_what) {
 
 		case NOTIFICATION_ENTER_TREE:
@@ -466,18 +448,35 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_ENTER_WORLD: {
-			SetWorldAction ewa(*get_world());
-			for_all_blocks(ewa);
+			World *world = *get_world();
+			for (int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+				if (_lods[lod_index].map.is_valid()) {
+					_lods[lod_index].map->for_all_blocks([world](VoxelBlock *block) {
+						block->set_world(world);
+					});
+				}
+			}
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD: {
-			SetWorldAction ewa(nullptr);
-			for_all_blocks(ewa);
+			for (int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+				if (_lods[lod_index].map.is_valid()) {
+					_lods[lod_index].map->for_all_blocks([](VoxelBlock *block) {
+						block->set_world(nullptr);
+					});
+				}
+			}
 		} break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED: {
-			SetParentVisibilityAction sva(is_visible());
-			for_all_blocks(sva);
+			bool visible = is_visible();
+			for (int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+				if (_lods[lod_index].map.is_valid()) {
+					_lods[lod_index].map->for_all_blocks([visible](VoxelBlock *block) {
+						block->set_parent_visible(visible);
+					});
+				}
+			}
 		} break;
 
 			// TODO Listen for transform changes

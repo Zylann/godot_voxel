@@ -88,7 +88,6 @@ public:
 
 	int get_block_count() const;
 
-	// TODO Use lambda
 	template <typename Op_T>
 	void for_all_blocks(Op_T op) {
 		const Vector3i *key = NULL;
