@@ -16,14 +16,14 @@ Features
 - Voxel data is streamed from a variety of sources, which includes the ability to write your own
 - Minecraft-style blocky voxel terrain, with multiple materials and baked ambient occlusion
 - Smooth terrain using Dual Marching Cubes
-- Levels of details for smooth terrain (though not user editable yet)
+- Levels of detail for smooth terrain
 - Voxel storage using 8-bit channels for any general purpose
 
 
 What This Module Doesn't Provide
 -----------------------------------
 
-- Level of detail for blocky terrain
+- Levels of detail for blocky terrain
 - Game specific features such as cave generation or procedural trees (though it might include tools to help doing them)
 - Editor tools (only a few things are exposed)
 - Import and export of voxel formats
@@ -34,7 +34,7 @@ How To Install And Use
 
 Voxel Tools is a custom C++ module for Godot 3.1+. It must be compiled into the engine to work. 
 
-Please see the [Getting Started Guide](doc/01_get-started.md) guide for instructions, or the [the demo](https://github.com/Zylann/voxelgame) for working examples.
+Please see the [Getting Started Guide](doc/01_get-started.md) for instructions, or [Zylann's demos](https://github.com/Zylann/voxelgame) and [TinmanJuggernaut's demo](https://github.com/tinmanjuggernaut/voxelgame) for working examples.
 
 
 Roadmap
