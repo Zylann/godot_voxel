@@ -76,6 +76,16 @@ int VoxelMesherTransvoxel::get_minimum_padding() const {
 	return MINIMUM_PADDING;
 }
 
+namespace {
+// Wrapped to invert SDF data, Transvoxel apparently works backwards?
+inline uint8_t get_voxel(const VoxelBuffer &vb, int x, int y, int z, int channel) {
+	return 255 - vb.get_voxel(x, y, z, channel);
+}
+inline uint8_t get_voxel(const VoxelBuffer &vb, Vector3i pos, int channel) {
+	return get_voxel(vb, pos.x, pos.y, pos.z, channel);
+}
+} // namespace
+
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) {
 
 	ERR_FAIL_COND(padding < MINIMUM_PADDING);
@@ -156,14 +166,14 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 				// Negative values are "solid" and positive are "air".
 				// Due to raw cells being unsigned 8-bit, they get converted to signed.
 				int8_t cell_samples[8] = {
-					tos(voxels.get_voxel(pos.x, pos.y, pos.z, channel)),
-					tos(voxels.get_voxel(pos.x + 1, pos.y, pos.z, channel)),
-					tos(voxels.get_voxel(pos.x, pos.y + 1, pos.z, channel)),
-					tos(voxels.get_voxel(pos.x + 1, pos.y + 1, pos.z, channel)),
-					tos(voxels.get_voxel(pos.x, pos.y, pos.z + 1, channel)),
-					tos(voxels.get_voxel(pos.x + 1, pos.y, pos.z + 1, channel)),
-					tos(voxels.get_voxel(pos.x, pos.y + 1, pos.z + 1, channel)),
-					tos(voxels.get_voxel(pos.x + 1, pos.y + 1, pos.z + 1, channel))
+					tos(get_voxel(voxels, pos.x, pos.y, pos.z, channel)),
+					tos(get_voxel(voxels, pos.x + 1, pos.y, pos.z, channel)),
+					tos(get_voxel(voxels, pos.x, pos.y + 1, pos.z, channel)),
+					tos(get_voxel(voxels, pos.x + 1, pos.y + 1, pos.z, channel)),
+					tos(get_voxel(voxels, pos.x, pos.y, pos.z + 1, channel)),
+					tos(get_voxel(voxels, pos.x + 1, pos.y, pos.z + 1, channel)),
+					tos(get_voxel(voxels, pos.x, pos.y + 1, pos.z + 1, channel)),
+					tos(get_voxel(voxels, pos.x + 1, pos.y + 1, pos.z + 1, channel))
 				};
 
 				// Concatenate the sign of cell values to obtain the case code.
@@ -194,9 +204,9 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 					Vector3i p = pos + g_corner_dirs[i];
 
-					float nx = tof(tos(voxels.get_voxel(p - Vector3i(1, 0, 0), channel))) - tof(tos(voxels.get_voxel(p + Vector3i(1, 0, 0), channel)));
-					float ny = tof(tos(voxels.get_voxel(p - Vector3i(0, 1, 0), channel))) - tof(tos(voxels.get_voxel(p + Vector3i(0, 1, 0), channel)));
-					float nz = tof(tos(voxels.get_voxel(p - Vector3i(0, 0, 1), channel))) - tof(tos(voxels.get_voxel(p + Vector3i(0, 0, 1), channel)));
+					float nx = tof(tos(get_voxel(voxels, p - Vector3i(1, 0, 0), channel))) - tof(tos(get_voxel(voxels, p + Vector3i(1, 0, 0), channel)));
+					float ny = tof(tos(get_voxel(voxels, p - Vector3i(0, 1, 0), channel))) - tof(tos(get_voxel(voxels, p + Vector3i(0, 1, 0), channel)));
+					float nz = tof(tos(get_voxel(voxels, p - Vector3i(0, 0, 1), channel))) - tof(tos(get_voxel(voxels, p + Vector3i(0, 0, 1), channel)));
 
 					corner_normals[i] = Vector3(nx, ny, nz);
 					corner_normals[i].normalize();
