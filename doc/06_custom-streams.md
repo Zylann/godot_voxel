@@ -28,13 +28,16 @@ func _ready():
 	add_child(terrain)
 ```
 
-![Custom Data Stream](images/custom-stream.jpg)
+<img src="images/custom-stream.jpg" width="800" />
 
-`VoxelBuffer.fill()` is probably not what you want to use. Emerge_block generally gives you a block of 16x16x16 cubes to fill all at once, so you probably want to use `VoxelBuffer.set_voxel()` to specify each one. See the API here or in the editor for up to date function definitions.
+Though `VoxelBuffer.fill()` is probably not what you want to use, the above is a quick example. Emerge_block generally gives you a block of 16x16x16 cubes to fill all at once, so you probably want to use `VoxelBuffer.set_voxel()` to specify each one.
 
-You should review the [C++ code](../streams) for the built-in streams to see how they utilize the API to fill the buffers one voxel at a time.
+In the fps_demo, there is a [custom gdscript stream](https://github.com/tinmanjuggernaut/voxelgame/blob/master/project/fps_demo/scripts/MyStream.gd) that makes a sine wave. This was copied from the [C++ version](../streams/voxel_stream_test.cpp), which runs a lot faster. 
+
+<img src="images/custom-stream-sine.jpg" width="800" />
+
 
 
 ---
-* [Next Page](07_api-overview.md)
+* [Next Page](07_performance-tips.md)
 * [Doc Index](01_get-started.md)

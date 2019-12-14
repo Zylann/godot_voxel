@@ -11,13 +11,13 @@ The collision is built along with the mesh. So any blocks that have already been
 
 You can also turn on the collision wire mesh for debugging. In the editor, look under the Debug menu for `Visible Collision Shapes`.
 
-![heightmap](https://user-images.githubusercontent.com/632766/62386300-61ab9c00-b592-11e9-8f01-3f454593dd91.gif)
+<img src="images/debug-collision-shapes.gif" />
 
 
 
 # Alternatives To Physics Based Collision
 
-There are some alternative collision related tools available:
+Though physics based collision is recommended, there might be times when alternative methods are desired. 
 
 ## Axis Aligned Bounding Box (Blocky only)
 

@@ -38,14 +38,17 @@ Rather than writing your own shader from scratch, especially with triplanar mapp
 
 If you want to start without a texture and just want to use a color, try turning down roughness, or adding some metalic to give the surface some reflectivity. This will allow light to reflect off the curves of the terrain in the distance. Otherwise you'll just see an undifferentiated mass of color.
 
-Also, VoxelTerrain adds Ambient Occlusion to the vertex colors (blocky only). You can add this to your material by enabling the `Vertex Color/Use As Albedo` flag in your material.
+## Enable Built-In Ambient Occlusion
+VoxelTerrain adds Ambient Occlusion to the vertex colors on blocky terrains. You can add this to your material by enabling the `Vertex Color/Use As Albedo` flag in your material. Below is what that looks like on an otherwise plain white material. AO can also be added to any terrain using the AO feature built in to materials.
+<img src="https://github.com/tinmanjuggernaut/voxelgame/raw/master/screenshots/blocky-vertex-color.jpg" width="800" />
 
-### How To View Live Changes To Materials
+
+## How To View Live Changes To Materials
 You can't see the terrain in the viewport, so there are two options to view your material live while making changes:
-* Add a sphere or cube with the same material, then adjust the material. This option is OK, but the UV scale is usually different than the terrain, so it's not ideal.
-* Run your scene, focus the camera on the terrain, move the window to the side, and adjust the material in the editor window. All edits to a SpatialMaterial (or shader parameters if using a ShaderMaterial) will update live.
+* Add a sphere or cube with the same material, then adjust the material in the editor. This option is OK, but the UV scale is usually different than the terrain, so it's not ideal.
+* Run your scene, focus the camera on the terrain, reduce the game window and move it to the side, then move the editor window to the other side. With both the editor and game displayed simultaneously, you can adjust the material in the inspector panel and it will update live. All edits to a SpatialMaterial or the shader parameters of your ShaderMaterial will update live. Editing your shader code will not update live. (Though it may be possible to trigger the engine to recompile your shader code.)
 
-### Convert To Shader Code
+## Convert To Shader Code
 
 The SpatialMaterial is a very good base, but can only go so far. If you need further customization, you'll want to convert it to shader code.
 
@@ -59,15 +62,15 @@ Note, you can't edit the shader code and see live changes. You must stop and res
 
 ## Advanced Shading
 
-What if you want to have multiple materials, such as grass on the top and rock on the sides?
+One of the best ways to learn about shaders is to pick apart and experiment with other's shader code.
 
-What if you want to have two materials, each with their own triplanar mapped albedo normal and AO maps, then blend them together based on if their normal faces the upward direction or the sides?
+Here's a shader that supports two materials, such as grass on the top and rock on the sides, each with triplanar mapped albedo, normal and AO maps, then blended together based on if their normal faces the upward direction or the sides.
 
-You can find a working example of that in this [development demo](https://github.com/tinmanjuggernaut/voxelgame/tree/fps_demo/project), under fps_demo, or see the [shader](https://github.com/tinmanjuggernaut/voxelgame/blob/fps_demo/project/fps_demo/materials/triplanar.shader) itself. (*Editor-* update these links after publishing demo)
+You can find a working example in the [fps demo](https://github.com/tinmanjuggernaut/voxelgame), or see the [shader](https://github.com/tinmanjuggernaut/voxelgame/blob/master/project/fps_demo/materials/triplanar.shader) itself. 
 
 In the shader parameters, add your two albedo maps, and optionally normal, and AO maps. Then play with the `AB Mix 1` and `AB Mix 2` sliders to adjust how the top and sides blend together. The other settings should be self explanatory. The screenshot below also has a little bit of fog and far DOF added.
 
-![textured terrain](images/textured-terrain.jpg)
+<img src="images/textured-terrain.jpg" width="800" />
 
 
 ---
