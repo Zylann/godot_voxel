@@ -1123,16 +1123,19 @@ inline Vector3 interpolate(const Vector3 &v0, const Vector3 &v1, const HermiteVa
 
 	if (Math::abs(val0.sdf - SURFACE_ISO_LEVEL) <= FLT_EPSILON) {
 		out_normal = val0.gradient;
+		out_normal.normalize();
 		return v0;
 	}
 
 	if (Math::abs(val1.sdf - SURFACE_ISO_LEVEL) <= FLT_EPSILON) {
 		out_normal = val1.gradient;
+		out_normal.normalize();
 		return v1;
 	}
 
 	if (Math::abs(val1.sdf - val0.sdf) <= FLT_EPSILON) {
 		out_normal = val0.gradient;
+		out_normal.normalize();
 		return v0;
 	}
 
