@@ -378,8 +378,11 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 	}
 }
 
-Ref<VoxelTool> VoxelBuffer::get_voxel_tool() const {
-	return Ref<VoxelTool>(memnew(VoxelToolBuffer(Ref<VoxelBuffer>(this))));
+Ref<VoxelTool> VoxelBuffer::get_voxel_tool() {
+	// I can't make this function `const`, because `Ref<T>` has no constructor taking a `const T*`.
+	// The compiler would then choose Ref<T>(const Variant&), which fumbles `this` into a null pointer
+	Ref<VoxelBuffer> vb(this);
+	return Ref<VoxelTool>(memnew(VoxelToolBuffer(vb)));
 }
 
 bool VoxelBuffer::equals(const VoxelBuffer *p_other) const {
@@ -458,6 +461,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::_b_set_voxel_v, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::_b_get_voxel, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel_f, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelBuffer::get_voxel_tool);
 
 	ClassDB::bind_method(D_METHOD("fill", "value", "channel"), &VoxelBuffer::fill, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("fill_f", "value", "channel"), &VoxelBuffer::fill_f, DEFVAL(0));

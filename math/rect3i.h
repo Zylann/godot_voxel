@@ -201,6 +201,13 @@ public:
 		pos.clamp_to(lim.pos, max_pos);
 		size = Vector3i::min(size, max_pos - pos);
 	}
+
+	inline bool encloses(const Rect3i &other) const {
+		return pos.x <= other.pos.x &&
+			   pos.y <= other.pos.y &&
+			   pos.x + size.x >= other.pos.x + other.size.x &&
+			   pos.y + size.y >= other.pos.y + other.size.y;
+	}
 };
 
 inline bool operator!=(const Rect3i &a, const Rect3i &b) {

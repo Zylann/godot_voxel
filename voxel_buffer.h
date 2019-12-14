@@ -121,7 +121,7 @@ public:
 	uint8_t *get_channel_raw(unsigned int channel_index) const;
 
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
-	Ref<VoxelTool> get_voxel_tool() const;
+	Ref<VoxelTool> get_voxel_tool();
 
 	bool equals(const VoxelBuffer *p_other) const;
 
