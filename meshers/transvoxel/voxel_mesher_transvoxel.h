@@ -1,5 +1,5 @@
-#ifndef VOXEL_MESHER_SMOOTH_H
-#define VOXEL_MESHER_SMOOTH_H
+#ifndef VOXEL_MESHER_TRANSVOXEL_H
+#define VOXEL_MESHER_TRANSVOXEL_H
 
 #include "../voxel_mesher.h"
 #include <scene/resources/mesh.h>
@@ -41,4 +41,4 @@ private:
 	Vector<int> m_output_indices;
 };
 
-#endif // VOXEL_MESHER_SMOOTH_H
+#endif // VOXEL_MESHER_TRANSVOXEL_H
