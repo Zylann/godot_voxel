@@ -386,7 +386,7 @@ VoxelMesherTransvoxel::ReuseCell &VoxelMesherTransvoxel::get_reuse_cell(Vector3i
 }
 
 void VoxelMesherTransvoxel::emit_vertex(Vector3 primary, Vector3 normal) {
-	m_output_vertices.push_back(primary - PAD.to_vec3());
+	m_output_vertices.push_back(primary - Vector3(MINIMUM_PADDING, MINIMUM_PADDING, MINIMUM_PADDING));
 	m_output_normals.push_back(normal);
 }
 
