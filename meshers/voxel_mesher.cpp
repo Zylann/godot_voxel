@@ -37,4 +37,5 @@ void VoxelMesher::_bind_methods() {
 	// Shortcut if you want to generate a mesh directly from a fixed grid of voxels.
 	// Useful for testing the different meshers.
 	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer"), &VoxelMesher::build_mesh);
+	ClassDB::bind_method(D_METHOD("get_minimum_padding"), &VoxelMesher::get_minimum_padding);
 }
