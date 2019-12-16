@@ -1223,7 +1223,7 @@ void polygonize_cell_marching_squares(const Vector3 *cube_corners, const Hermite
 			}*/
 
 	// Create the triangles according to the table.
-	for (int i = 0; MarchingCubes::mc_triangles[square_index][i] != -1; i += 3) {
+	for (int i = 0; MarchingCubes::ms_triangles[square_index][i] != -1; i += 3) {
 
 		mesh_builder.add_vertex(
 				intersection_points[MarchingCubes::ms_triangles[square_index][i]],
