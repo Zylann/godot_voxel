@@ -1,6 +1,7 @@
 #ifndef VOXEL_MESHER_TRANSVOXEL_H
 #define VOXEL_MESHER_TRANSVOXEL_H
 
+#include "../../cube_tables.h"
 #include "../voxel_mesher.h"
 #include <scene/resources/mesh.h>
 
@@ -20,25 +21,42 @@ protected:
 
 private:
 	struct ReuseCell {
-		int vertices[4];
-		int case_index;
-		ReuseCell();
+		int vertices[4] = { -1 };
+		int case_index = 0;
+	};
+
+	struct ReuseTransitionCell {
+		int vertices[9] = { -1 };
+		int case_index = 0;
+	};
+
+	struct TransitionVoxels {
+		const VoxelBuffer *full_resolution_neighbor_voxels[Cube::SIDE_COUNT] = { nullptr };
 	};
 
 	void build_internal(const VoxelBuffer &voxels, unsigned int channel);
+	void build_transitions(const TransitionVoxels &p_voxels, unsigned int channel);
+	void build_transition(const VoxelBuffer &voxels, unsigned int channel);
+	Ref<ArrayMesh> build_transition_mesh(Ref<VoxelBuffer> voxels);
+	void reset_reuse_cells(Vector3i block_size);
+	void reset_reuse_cells_2d(Vector3i block_size);
 	ReuseCell &get_reuse_cell(Vector3i pos);
-	void emit_vertex(Vector3 primary, Vector3 normal);
+	ReuseTransitionCell &get_reuse_cell_2d(int x, int y);
+	int emit_vertex(Vector3 primary, Vector3 normal);
+	void clear_output();
+	void fill_surface_arrays(Array &arrays);
 
 private:
 	const Vector3i PAD = Vector3i(1, 1, 1);
 
-	Vector<ReuseCell> m_cache[2];
-	Vector3i m_block_size;
+	std::vector<ReuseCell> _cache[2];
+	std::vector<ReuseTransitionCell> _cache_2d[2];
+	Vector3i _block_size;
 
-	Vector<Vector3> m_output_vertices;
-	//Vector<Vector3> m_output_vertices_secondary;
-	Vector<Vector3> m_output_normals;
-	Vector<int> m_output_indices;
+	std::vector<Vector3> _output_vertices;
+	//Vector<Vector3> _output_vertices_secondary;
+	std::vector<Vector3> _output_normals;
+	std::vector<int> _output_indices;
 };
 
 #endif // VOXEL_MESHER_TRANSVOXEL_H

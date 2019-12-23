@@ -7,6 +7,11 @@
 
 struct Vector3i {
 
+	static const unsigned int AXIS_X = 0;
+	static const unsigned int AXIS_Y = 1;
+	static const unsigned int AXIS_Z = 2;
+	static const unsigned int AXIS_COUNT = 3;
+
 	union {
 		struct {
 			int x;
