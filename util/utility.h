@@ -131,7 +131,7 @@ namespace VoxelDebug {
 void create_debug_box_mesh();
 void free_debug_box_mesh();
 Ref<Mesh> get_debug_box_mesh();
-}
+} // namespace VoxelDebug
 #endif
 
 #endif // HEADER_VOXEL_UTILITY_H

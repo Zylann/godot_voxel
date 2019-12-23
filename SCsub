@@ -8,6 +8,7 @@ files = [
 	"meshers/blocky/*.cpp",
 	"meshers/transvoxel/*.cpp",
 	"meshers/dmc/*.cpp",
+	"meshers/mc/*.cpp",
 	"meshers/*.cpp",
 	"streams/*.cpp",
 	"util/*.cpp",
