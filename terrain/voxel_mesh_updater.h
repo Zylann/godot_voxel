@@ -6,7 +6,6 @@
 #include <core/vector.h>
 
 #include "../meshers/blocky/voxel_mesher_blocky.h"
-#include "../meshers/dmc/voxel_mesher_dmc.h"
 #include "../voxel_buffer.h"
 
 #include "block_thread_manager.h"

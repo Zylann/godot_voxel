@@ -1,4 +1,5 @@
 #include "voxel_mesh_updater.h"
+#include "../meshers/dmc/voxel_mesher_dmc.h"
 #include "../util/utility.h"
 #include "voxel_lod_terrain.h"
 #include <core/os/os.h>
