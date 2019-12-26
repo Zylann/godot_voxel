@@ -10,7 +10,8 @@ public:
 	struct Output {
 		// Each surface correspond to a different material
 		Vector<Array> surfaces;
-		Mesh::PrimitiveType primitive_type;
+		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
+		unsigned int compression_flags = Mesh::ARRAY_COMPRESS_DEFAULT;
 	};
 
 	virtual void build(Output &output, const VoxelBuffer &voxels, int padding);

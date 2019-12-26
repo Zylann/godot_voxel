@@ -88,10 +88,16 @@ struct Vector3i {
 	}
 
 	_FORCE_INLINE_ int &operator[](unsigned int i) {
+#if TOOLS_ENABLED
+		CRASH_COND(i >= AXIS_COUNT);
+#endif
 		return coords[i];
 	}
 
 	_FORCE_INLINE_ const int &operator[](unsigned int i) const {
+#if TOOLS_ENABLED
+		CRASH_COND(i >= AXIS_COUNT);
+#endif
 		return coords[i];
 	}
 

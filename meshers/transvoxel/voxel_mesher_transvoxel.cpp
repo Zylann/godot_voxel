@@ -2,10 +2,16 @@
 #include "transvoxel_tables.cpp"
 #include <core/os/os.h>
 
-// This is a very partial implementation, it is barely equivalent to marching cubes.
-// It doesn't include transition cells.
-
 namespace {
+
+static const float TRANSITION_CELL_SCALE = 0.25;
+static const unsigned int MESH_COMPRESSION_FLAGS =
+		Mesh::ARRAY_COMPRESS_NORMAL |
+		Mesh::ARRAY_COMPRESS_TANGENT |
+		//Mesh::ARRAY_COMPRESS_COLOR | // Using color as 4 full floats to transfer extra attributes for now...
+		Mesh::ARRAY_COMPRESS_TEX_UV |
+		Mesh::ARRAY_COMPRESS_TEX_UV2 |
+		Mesh::ARRAY_COMPRESS_WEIGHTS;
 
 inline float tof(int8_t v) {
 	return static_cast<float>(v) / 256.f;
@@ -114,6 +120,31 @@ inline Vector3 get_gradient_normal(uint8_t left, uint8_t right, uint8_t bottom, 
 	return Vector3(gx, gy, gz).normalized();
 }
 
+inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &min_pos, const Vector3i &max_pos) {
+
+	uint8_t mask = 0;
+
+	//  1: -X
+	//  2: +X
+	//  4: -Y
+	//  8: +Y
+	// 16: -Z
+	// 32: +Z
+
+	for (int i = 0; i < Vector3i::AXIS_COUNT; i++) {
+		// Close to negative face.
+		if (pos[i] == min_pos[i]) {
+			mask |= (1 << (i * 2));
+		}
+		// Close to positive face.
+		if (pos[i] == max_pos[i]) {
+			mask |= (1 << (i * 2 + 1));
+		}
+	}
+
+	return mask;
+}
+
 } // namespace
 
 int VoxelMesherTransvoxel::get_minimum_padding() const {
@@ -121,20 +152,24 @@ int VoxelMesherTransvoxel::get_minimum_padding() const {
 }
 
 void VoxelMesherTransvoxel::clear_output() {
+	// Important: memory is NOT deallocated. I rely on vectors keeping their capacity.
+	// This is extremely important for performance, while Godot Vector on the same usage caused 50% slowdown.
 	_output_indices.clear();
 	_output_normals.clear();
 	_output_vertices.clear();
-	//m_output_vertices_secondary.clear();
+	_output_extra.clear();
 }
 
 void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays) {
 
 	PoolVector<Vector3> vertices;
 	PoolVector<Vector3> normals;
+	PoolVector<Color> extra;
 	PoolVector<int> indices;
 
 	raw_copy_to(vertices, _output_vertices);
 	raw_copy_to(normals, _output_normals);
+	raw_copy_to(extra, _output_extra);
 	raw_copy_to(indices, _output_indices);
 
 	arrays.resize(Mesh::ARRAY_MAX);
@@ -142,12 +177,11 @@ void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays) {
 	if (_output_normals.size() != 0) {
 		arrays[Mesh::ARRAY_NORMAL] = normals;
 	}
+	arrays[Mesh::ARRAY_COLOR] = extra;
 	arrays[Mesh::ARRAY_INDEX] = indices;
 }
 
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) {
-
-	ERR_FAIL_COND(padding < MINIMUM_PADDING);
 
 	int channel = VoxelBuffer::CHANNEL_ISOLEVEL;
 
@@ -156,6 +190,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer
 	// We don't know in advance how much geometry we are going to produce.
 	// Once capacity is big enough, no more memory should be allocated
 	clear_output();
+
+	ERR_FAIL_COND(padding < MINIMUM_PADDING);
 
 	build_internal(voxels, channel);
 	//	OS::get_singleton()->print("vertices: %i, normals: %i, indices: %i\n",
@@ -173,6 +209,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer
 
 	output.surfaces.push_back(arrays);
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
+	output.compression_flags = MESH_COMPRESSION_FLAGS;
 }
 
 // TODO For testing at the moment
@@ -193,7 +230,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> vox
 	Array arrays;
 	fill_surface_arrays(arrays);
 	mesh.instance();
-	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays, Array(), MESH_COMPRESSION_FLAGS);
 	return mesh;
 }
 
@@ -231,8 +268,6 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 		Vector3i(1, 1, 1)
 	};
 
-	// Each 2x2 voxel group is a "cell"
-
 	if (voxels.is_uniform(channel)) {
 		// Nothing to extract, because constant isolevels never cross the threshold and describe no surface
 		return;
@@ -243,27 +278,32 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 	// Prepare vertex reuse cache
 	reset_reuse_cells(block_size);
 
+	// We iterate 2x2 voxel groups, which the paper calls "cells".
+	// We also reach one voxel further to compute normals, so we adjust the iterated area
 	Vector3i min_pos = PAD;
+	Vector3i max_pos = block_size - Vector3i(1) - PAD;
+	// TODO Change the Mesher API to allow different min and max paddings. Here 1 on min, 2 on max
+
+	FixedArray<int8_t, 8> cell_samples;
+	FixedArray<Vector3, 8> corner_normals;
 
 	// Iterate all cells with padding (expected to be neighbors)
 	Vector3i pos;
-	for (pos.z = min_pos.z; pos.z < block_size.z - 2; ++pos.z) {
-		for (pos.y = min_pos.y; pos.y < block_size.y - 2; ++pos.y) {
-			for (pos.x = min_pos.x; pos.x < block_size.x - 2; ++pos.x) {
+	for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
+		for (pos.y = min_pos.y; pos.y < max_pos.y; ++pos.y) {
+			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
 
 				// Get the value of cells.
 				// Negative values are "solid" and positive are "air".
 				// Due to raw cells being unsigned 8-bit, they get converted to signed.
-				int8_t cell_samples[8] = {
-					tos(get_voxel(voxels, pos.x, pos.y, pos.z, channel)),
-					tos(get_voxel(voxels, pos.x + 1, pos.y, pos.z, channel)),
-					tos(get_voxel(voxels, pos.x, pos.y + 1, pos.z, channel)),
-					tos(get_voxel(voxels, pos.x + 1, pos.y + 1, pos.z, channel)),
-					tos(get_voxel(voxels, pos.x, pos.y, pos.z + 1, channel)),
-					tos(get_voxel(voxels, pos.x + 1, pos.y, pos.z + 1, channel)),
-					tos(get_voxel(voxels, pos.x, pos.y + 1, pos.z + 1, channel)),
-					tos(get_voxel(voxels, pos.x + 1, pos.y + 1, pos.z + 1, channel))
-				};
+				cell_samples[0] = tos(get_voxel(voxels, pos.x, pos.y, pos.z, channel));
+				cell_samples[1] = tos(get_voxel(voxels, pos.x + 1, pos.y, pos.z, channel));
+				cell_samples[2] = tos(get_voxel(voxels, pos.x, pos.y + 1, pos.z, channel));
+				cell_samples[3] = tos(get_voxel(voxels, pos.x + 1, pos.y + 1, pos.z, channel));
+				cell_samples[4] = tos(get_voxel(voxels, pos.x, pos.y, pos.z + 1, channel));
+				cell_samples[5] = tos(get_voxel(voxels, pos.x + 1, pos.y, pos.z + 1, channel));
+				cell_samples[6] = tos(get_voxel(voxels, pos.x, pos.y + 1, pos.z + 1, channel));
+				cell_samples[7] = tos(get_voxel(voxels, pos.x + 1, pos.y + 1, pos.z + 1, channel));
 
 				// Concatenate the sign of cell values to obtain the case code.
 				// Index 0 is the less significant bit, and index 7 is the most significant bit.
@@ -290,7 +330,6 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 				// TODO We might not always need all of them
 				// Compute normals
-				Vector3 corner_normals[8];
 				for (unsigned int i = 0; i < 8; ++i) {
 
 					Vector3i p = pos + g_corner_dirs[i];
@@ -313,12 +352,12 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						((pos.y > min_pos.y ? 1 : 0) << 1) |
 						((pos.z > min_pos.z ? 1 : 0) << 2);
 
-				uint8_t regular_cell_class_index = Transvoxel::regularCellClass[case_code];
-				Transvoxel::RegularCellData regular_cell_class = Transvoxel::regularCellData[regular_cell_class_index];
-				uint8_t triangle_count = regular_cell_class.geometryCounts & 0x0f;
-				uint8_t vertex_count = (regular_cell_class.geometryCounts & 0xf0) >> 4;
+				uint8_t regular_cell_class_index = Transvoxel::get_regular_cell_class(case_code);
+				Transvoxel::RegularCellData regular_cell_data = Transvoxel::get_regular_cell_data(regular_cell_class_index);
+				uint8_t triangle_count = regular_cell_data.geometryCounts & 0x0f;
+				uint8_t vertex_count = (regular_cell_data.geometryCounts & 0xf0) >> 4;
 
-				int cell_vertex_indices[12];
+				FixedArray<int, 12> cell_vertex_indices(-1);
 
 				// For each vertex in the case
 				for (unsigned int i = 0; i < vertex_count; ++i) {
@@ -326,7 +365,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 					// The case index maps to a list of 16-bit codes providing information about the edges on which the vertices lie.
 					// The low byte of each 16-bit code contains the corner indexes of the edge’s endpoints in one nibble each,
 					// and the high byte contains the mapping code shown in Figure 3.8(b)
-					unsigned short rvd = Transvoxel::regularVertexData[case_code][i];
+					unsigned short rvd = Transvoxel::get_regular_vertex_data(case_code, i);
 					uint8_t edge_code_low = rvd & 0xff;
 					uint8_t edge_code_high = (rvd >> 8) & 0xff;
 
@@ -356,7 +395,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 					Vector3i p1 = pos + g_corner_dirs[v1];
 
 					if (t & 0xff) {
-						// Vertex lies in the interior of the edge.
+						// Vertex is between p0 and p1 (inside the edge)
 
 						// Each edge of a cell is assigned an 8-bit code, as shown in Figure 3.8(b),
 						// that provides a mapping to a preceding cell and the coincident edge on that preceding cell
@@ -366,6 +405,11 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						// from the x, y, and/or z coordinate, respectively.
 						uint8_t reuse_dir = (edge_code_high >> 4) & 0xf;
 						uint8_t reuse_vertex_index = edge_code_high & 0xf;
+
+						// TODO Some re-use opportunities are missed on negative sides of the block,
+						// but I don't really know how to fix it...
+						// You can check by "shaking" every vertex randomly in a shader based on its index,
+						// you will see vertices touching the -X, -Y or -Z sides of the block aren't connected
 
 						bool present = (reuse_dir & direction_validity_mask) == reuse_dir;
 
@@ -399,7 +443,11 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 							// TODO Implement secondary position.
 							// It is needed in order to make space for transition meshes inside the vertex shader
 
-							cell_vertex_indices[i] = emit_vertex(primary, normal);
+							uint8_t border_mask0 = get_border_mask(p0, min_pos, max_pos);
+							uint8_t border_mask1 = get_border_mask(p1, min_pos, max_pos);
+							uint8_t border_mask = border_mask0 & border_mask1;
+
+							cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask);
 
 							if (reuse_dir & 8) {
 								// Store the generated vertex so that other cells can reuse it.
@@ -409,19 +457,22 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						}
 
 					} else if (t == 0 && v1 == 7) {
-
+						// t == 0: the vertex is on p1
+						// v1 == 7: p1 on the max corner of the cell
 						// This cell owns the vertex, so it should be created.
 
-						Vector3 pi = p0.to_vec3() * t0 + p1.to_vec3() * t1;
-						Vector3 primary = pi; //pos.to_vec3() + pi;
-						Vector3 normal = corner_normals[v0] * t0 + corner_normals[v1] * t1;
+						Vector3 primary = p1.to_vec3(); //p0.to_vec3() * t0 + p1.to_vec3() * t1;
+						Vector3 normal = corner_normals[v1]; // corner_normals[v0] * t0 + corner_normals[v1] * t1;
+						uint8_t border_mask = get_border_mask(p1, min_pos, max_pos);
+						// TODO Compute secondary
 
-						cell_vertex_indices[i] = emit_vertex(primary, normal);
+						cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask);
 
 						ReuseCell &rc = get_reuse_cell(pos);
 						rc.vertices[0] = cell_vertex_indices[i];
 
 					} else {
+						// The vertex is either on p0 or p1
 						// Always try to reuse previous vertices in these cases
 
 						// A 3-bit direction code leading to the proper cell can easily be obtained by
@@ -447,19 +498,22 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 						if (!present || cell_vertex_indices[i] < 0) {
 
-							Vector3 pi = p0.to_vec3() * t0 + p1.to_vec3() * t1;
-							Vector3 primary = pi; //pos.to_vec3() + pi;
+							// TODO Interpolation is useless, just pick either
+							Vector3 primary = p0.to_vec3() * t0 + p1.to_vec3() * t1;
 							Vector3 normal = corner_normals[v0] * t0 + corner_normals[v1] * t1;
+							// TODO Compute secondary
 
-							cell_vertex_indices[i] = emit_vertex(primary, normal);
+							uint8_t border_mask = get_border_mask(t == 0 ? p1 : p0, min_pos, max_pos);
+
+							cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask);
 						}
 					}
 
-				} // for each cell vertice
+				} // for each cell vertex
 
 				for (int t = 0; t < triangle_count; ++t) {
 					for (int i = 0; i < 3; ++i) {
-						int index = cell_vertex_indices[regular_cell_class.vertexIndex[t * 3 + i]];
+						int index = cell_vertex_indices[regular_cell_data.get_vertex_index(t * 3 + i)];
 						_output_indices.push_back(index);
 					}
 				}
@@ -566,22 +620,30 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 	reset_reuse_cells_2d(block_size);
 
 	// This part works in "face space", which is mainly 2D along the X and Y axes.
-	// In this space, -Z points towards the full resolution cells, while +Z points towards half-resolution cells.
+	// In this space, -Z points towards the half resolution cells, while +Z points towards full-resolution cells.
 	// Conversion is used to map this space to block space using a direction enum.
 
-	//Vector3i min_hpos = PAD;
-	Vector3i min_fpos = PAD;
+	// Note: I made a few changes compared to the paper.
+	// Instead of making transition meshes go from low-res blocks to high-res blocks,
+	// I do the opposite, going from high-res to low-res. It's easier because half-res voxels are available for free,
+	// if we compute the transition meshes right after the regular mesh, with the same voxel data.
 
 	// Padding takes into account the fact our kernel is 3x3 on full-res side (max voxels being shared with next),
 	// And that we may look one voxel further to compute normals
-	for (int fy = min_fpos.y; fy < block_size.y - 3; fy += 2) {
-		for (int fx = min_fpos.x; fx < block_size.x - 3; fx += 2) {
+	Vector3i min_fpos = PAD;
+	Vector3i max_fpos = block_size - Vector3i(2) - PAD;
+	Vector3i max_fpos_b = block_size - Vector3i(1) - PAD; // For border mask calculation
+
+	FixedArray<int8_t, 13> cell_samples;
+	FixedArray<Vector3i, 13> cell_positions;
+	FixedArray<Vector3, 13> cell_normals;
+
+	for (int fy = min_fpos.y; fy < max_fpos.y; fy += 2) {
+		for (int fx = min_fpos.x; fx < max_fpos.x; fx += 2) {
 
 			const int fz = min_fpos.z;
 
 			const VoxelBuffer &fvoxels = p_voxels;
-
-			int8_t cell_samples[13];
 
 			//  6---7---8
 			//  |   |   |
@@ -614,8 +676,6 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			cell_samples[0xB] = cell_samples[6];
 			cell_samples[0xC] = cell_samples[8];
 
-			// TODO Eventually we should divide these positions by 2 in the final mesh
-			Vector3i cell_positions[13];
 			cell_positions[0] = Vector3i(fx, fy, fz);
 			cell_positions[1] = Vector3i(fx + 1, fy, fz);
 			cell_positions[2] = Vector3i(fx + 2, fy, fz);
@@ -625,13 +685,12 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			cell_positions[6] = Vector3i(fx, fy + 2, fz);
 			cell_positions[7] = Vector3i(fx + 1, fy + 2, fz);
 			cell_positions[8] = Vector3i(fx + 2, fy + 2, fz);
-			cell_positions[0x9] = Vector3i(fx, fy, fz + 1);
-			cell_positions[0xA] = Vector3i(fx + 2, fy, fz + 1);
-			cell_positions[0xB] = Vector3i(fx, fy + 2, fz + 1);
-			cell_positions[0xC] = Vector3i(fx + 2, fy + 2, fz + 1);
+			cell_positions[0x9] = cell_positions[0];
+			cell_positions[0xA] = cell_positions[2];
+			cell_positions[0xB] = cell_positions[6];
+			cell_positions[0xC] = cell_positions[8];
 
 			// TODO We may not need all of them!
-			Vector3 cell_normals[13];
 			for (unsigned int i = 0; i < 9; ++i) {
 
 				Vector3i p = cell_positions[i];
@@ -667,30 +726,27 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 
 			get_reuse_cell_2d(fx, fy).case_index = case_code;
 
-			const uint8_t cell_class = Transvoxel::transitionCellClass[case_code];
-			const uint16_t *vertex_data = Transvoxel::transitionVertexData[case_code];
+			const uint8_t cell_class = Transvoxel::get_transition_cell_class(case_code);
 
 			CRASH_COND((cell_class & 0x7f) > 55);
 
-			const Transvoxel::TransitionCellData cell_data = Transvoxel::transitionCellData[cell_class & 0x7f];
-			const bool flip_triangles = ((cell_class >> 7) != 0);
+			const Transvoxel::TransitionCellData cell_data = Transvoxel::get_transition_cell_data(cell_class & 0x7f);
+			const bool flip_triangles = ((cell_class & 128) != 0);
 
 			unsigned int vertex_count = cell_data.GetVertexCount();
-			CRASH_COND(vertex_count > 12);
-			int cell_vertex_indices[12] = { -1 };
+			FixedArray<int, 12> cell_vertex_indices(-1);
+			CRASH_COND(vertex_count > cell_vertex_indices.size());
 
 			uint8_t direction_validity_mask = (fx > min_fpos.x ? 1 : 0) | ((fy > min_fpos.y ? 1 : 0) << 1);
 
 			for (unsigned int i = 0; i < vertex_count; ++i) {
 
-				uint16_t edge_code = vertex_data[i];
+				uint16_t edge_code = Transvoxel::get_transition_vertex_data(case_code, i);
 				uint8_t index_vertex_a = (edge_code >> 4) & 0xf;
 				uint8_t index_vertex_b = (edge_code & 0xf);
-				CRASH_COND(index_vertex_a > 12);
-				CRASH_COND(index_vertex_b > 12);
 
-				int8_t sample_a = cell_samples[index_vertex_a]; // d0 and d1 in the paper
-				int8_t sample_b = cell_samples[index_vertex_b];
+				int sample_a = cell_samples[index_vertex_a]; // d0 and d1 in the paper
+				int sample_b = cell_samples[index_vertex_b];
 				// TODO Zero-division is not mentionned in the paper??
 				ERR_FAIL_COND(sample_a == sample_b);
 				ERR_FAIL_COND(sample_a == 0 && sample_b == 0);
@@ -708,7 +764,6 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 					// (i.e t is either 0 or 257, meaning it's either directly on vertex a or vertex b)
 
 					uint8_t vertex_index_to_reuse_or_create = (edge_code >> 8) & 0xf;
-					CRASH_COND(vertex_index_to_reuse_or_create > 9);
 
 					// The bit values 1 and 2 in this nibble indicate that we must subtract one from the x or y coordinate, respectively,
 					// and these two bits are never simultaneously set. The bit value 4 indicates that a new vertex is to be created on an interior edge
@@ -748,9 +803,18 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 
 						Vector3 primary = p0 * t0 + p1 * t1;
 						Vector3 normal = n0 * t0 + n1 * t1;
-						// TODO Compute secondary and delta
+						// TODO Compute secondary
 
-						cell_vertex_indices[i] = emit_vertex(primary, normal);
+						bool fullres_side = (index_vertex_a < 9 || index_vertex_b < 9);
+
+						uint8_t border_mask = 0;
+						if (fullres_side) {
+							uint8_t border_mask0 = get_border_mask(cell_positions[index_vertex_a], min_fpos, max_fpos_b);
+							uint8_t border_mask1 = get_border_mask(cell_positions[index_vertex_b], min_fpos, max_fpos_b);
+							border_mask = border_mask0 & border_mask1;
+						}
+
+						cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask);
 
 						if (reuse_direction & 0x8) {
 							// The vertex can be re-used later
@@ -764,12 +828,10 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 					// Try to reuse corner vertex from a preceding cell.
 					// Use the reuse information in transitionCornerData.
 
-					uint8_t index_vertex = (t == 0 ? index_vertex_a : index_vertex_b);
-					uint8_t corner_data = Transvoxel::transitionCornerData[index_vertex];
-
+					uint8_t index_vertex = (t == 0 ? index_vertex_b : index_vertex_a);
+					CRASH_COND(index_vertex >= 13);
+					uint8_t corner_data = Transvoxel::get_transition_corner_data(index_vertex);
 					uint8_t vertex_index_to_reuse_or_create = (corner_data & 0xf);
-					CRASH_COND(vertex_index_to_reuse_or_create > 9);
-
 					uint8_t reuse_direction = ((corner_data >> 4) & 0xf);
 
 					bool present = (reuse_direction & direction_validity_mask) == reuse_direction;
@@ -795,11 +857,18 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 
 						Vector3 primary = cell_positions[index_vertex].to_vec3();
 						Vector3 normal = cell_normals[index_vertex];
-						// TODO Compute secondary and delta
+						// TODO Compute secondary
 
-						cell_vertex_indices[i] = emit_vertex(primary, normal);
+						bool fullres_side = (index_vertex < 9);
 
-						// We are on a corner so the vertex will always be re-usable later
+						// If the vertex is on the half-res side (in our implementation, it's the side of the block),
+						// then we make the mask 0 so that the vertex is never moved. We only move the full-res side to
+						// connect with the regular mesh, which will also be moved by the same amount to fit the transition mesh.
+						uint8_t border_mask = fullres_side ? get_border_mask(cell_positions[index_vertex], min_fpos, max_fpos_b) : 0;
+
+						cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask);
+
+						// We are on a corner so the vertex will be re-usable later
 						ReuseTransitionCell &r = get_reuse_cell_2d(fx, fy);
 						r.vertices[vertex_index_to_reuse_or_create] = cell_vertex_indices[i];
 					}
@@ -810,19 +879,14 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			unsigned int triangle_count = cell_data.GetTriangleCount();
 
 			for (unsigned int ti = 0; ti < triangle_count; ++ti) {
-				CRASH_COND(ti * 3 + 2 >= 36);
-
 				if (flip_triangles) {
-
-					_output_indices.push_back(cell_vertex_indices[cell_data.vertexIndex[ti * 3 + 2]]);
-					_output_indices.push_back(cell_vertex_indices[cell_data.vertexIndex[ti * 3 + 1]]);
 					_output_indices.push_back(cell_vertex_indices[cell_data.vertexIndex[ti * 3]]);
-
+					_output_indices.push_back(cell_vertex_indices[cell_data.vertexIndex[ti * 3 + 1]]);
+					_output_indices.push_back(cell_vertex_indices[cell_data.vertexIndex[ti * 3 + 2]]);
 				} else {
-
-					_output_indices.push_back(cell_vertex_indices[cell_data.vertexIndex[ti * 3]]);
-					_output_indices.push_back(cell_vertex_indices[cell_data.vertexIndex[ti * 3 + 1]]);
 					_output_indices.push_back(cell_vertex_indices[cell_data.vertexIndex[ti * 3 + 2]]);
+					_output_indices.push_back(cell_vertex_indices[cell_data.vertexIndex[ti * 3 + 1]]);
+					_output_indices.push_back(cell_vertex_indices[cell_data.vertexIndex[ti * 3]]);
 				}
 			}
 
@@ -833,14 +897,14 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 void VoxelMesherTransvoxel::reset_reuse_cells(Vector3i block_size) {
 	_block_size = block_size;
 	unsigned int deck_area = block_size.x * block_size.y;
-	for (int i = 0; i < 2; ++i) {
+	for (int i = 0; i < _cache.size(); ++i) {
 		_cache[i].clear();
 		_cache[i].resize(deck_area);
 	}
 }
 
 void VoxelMesherTransvoxel::reset_reuse_cells_2d(Vector3i block_size) {
-	for (int i = 0; i < 2; ++i) {
+	for (int i = 0; i < _cache_2d.size(); ++i) {
 		_cache_2d[i].clear();
 		_cache_2d[i].resize(block_size.x);
 	}
@@ -849,7 +913,6 @@ void VoxelMesherTransvoxel::reset_reuse_cells_2d(Vector3i block_size) {
 VoxelMesherTransvoxel::ReuseCell &VoxelMesherTransvoxel::get_reuse_cell(Vector3i pos) {
 	unsigned int j = pos.z & 1;
 	unsigned int i = pos.y * _block_size.y + pos.x;
-	CRASH_COND(j >= 2);
 	CRASH_COND(i >= _cache[j].size());
 	return _cache[j][i];
 }
@@ -857,16 +920,16 @@ VoxelMesherTransvoxel::ReuseCell &VoxelMesherTransvoxel::get_reuse_cell(Vector3i
 VoxelMesherTransvoxel::ReuseTransitionCell &VoxelMesherTransvoxel::get_reuse_cell_2d(int x, int y) {
 	unsigned int j = y & 1;
 	unsigned int i = x;
-	CRASH_COND(j >= 2);
 	CRASH_COND(i >= _cache_2d[j].size());
 	return _cache_2d[j][i];
 }
 
-int VoxelMesherTransvoxel::emit_vertex(Vector3 primary, Vector3 normal) {
-	// Could have been offset by 1, but using 2 instead because the VoxelMesher API expects a symetric padding at the moment
+int VoxelMesherTransvoxel::emit_vertex(Vector3 primary, Vector3 normal, uint8_t border_mask) {
 	int vi = _output_vertices.size();
-	_output_vertices.push_back(primary - Vector3(MINIMUM_PADDING, MINIMUM_PADDING, MINIMUM_PADDING));
+	_output_vertices.push_back(primary - PAD.to_vec3());
 	_output_normals.push_back(normal);
+	// TODO Implement secondary properly
+	_output_extra.push_back(Color(primary.x, primary.y, primary.z, border_mask));
 	return vi;
 }
 

@@ -15,7 +15,7 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels) {
 	mesh.instance();
 
 	for (int i = 0; i < output.surfaces.size(); ++i) {
-		mesh->add_surface_from_arrays(output.primitive_type, output.surfaces[i]);
+		mesh->add_surface_from_arrays(output.primitive_type, output.surfaces[i], Array(), output.compression_flags);
 	}
 
 	return mesh;

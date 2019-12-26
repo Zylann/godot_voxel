@@ -2,6 +2,7 @@
 #define VOXEL_MESHER_TRANSVOXEL_H
 
 #include "../../cube_tables.h"
+#include "../../util/fixed_array.h"
 #include "../voxel_mesher.h"
 #include <scene/resources/mesh.h>
 
@@ -21,13 +22,19 @@ protected:
 
 private:
 	struct ReuseCell {
-		int vertices[4] = { -1 };
+		FixedArray<int, 4> vertices;
 		int case_index = 0;
+		ReuseCell() {
+			vertices.fill(-1);
+		}
 	};
 
 	struct ReuseTransitionCell {
-		int vertices[9] = { -1 };
+		FixedArray<int, 12> vertices;
 		int case_index = 0;
+		ReuseTransitionCell() {
+			vertices.fill(-1);
+		}
 	};
 
 	struct TransitionVoxels {
@@ -42,20 +49,20 @@ private:
 	void reset_reuse_cells_2d(Vector3i block_size);
 	ReuseCell &get_reuse_cell(Vector3i pos);
 	ReuseTransitionCell &get_reuse_cell_2d(int x, int y);
-	int emit_vertex(Vector3 primary, Vector3 normal);
+	int emit_vertex(Vector3 primary, Vector3 normal, uint8_t border_mask);
 	void clear_output();
 	void fill_surface_arrays(Array &arrays);
 
 private:
 	const Vector3i PAD = Vector3i(1, 1, 1);
 
-	std::vector<ReuseCell> _cache[2];
-	std::vector<ReuseTransitionCell> _cache_2d[2];
+	FixedArray<std::vector<ReuseCell>, 2> _cache;
+	FixedArray<std::vector<ReuseTransitionCell>, 2> _cache_2d;
 	Vector3i _block_size;
 
 	std::vector<Vector3> _output_vertices;
-	//Vector<Vector3> _output_vertices_secondary;
 	std::vector<Vector3> _output_normals;
+	std::vector<Color> _output_extra;
 	std::vector<int> _output_indices;
 };
 

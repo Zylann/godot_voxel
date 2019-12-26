@@ -1136,7 +1136,7 @@ void VoxelLodTerrain::_process() {
 					collidable_surface = surface;
 				}
 
-				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface);
+				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface, Array(), data.smooth_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _material);
 				// No multi-material supported yet
 				++surface_index;
