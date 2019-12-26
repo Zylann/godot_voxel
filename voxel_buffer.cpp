@@ -468,6 +468,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fill_area", "value", "min", "max", "channel"), &VoxelBuffer::_b_fill_area, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("copy_from", "other", "channel"), &VoxelBuffer::_b_copy_from, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("copy_from_area", "other", "src_min", "src_max", "dst_min", "channel"), &VoxelBuffer::_b_copy_from_area, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("downscale_to", "dst", "src_min", "src_max", "dst_min"), &VoxelBuffer::_b_downscale_to);
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);
 	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::compress_uniform_channels);
@@ -491,4 +492,9 @@ void VoxelBuffer::_b_copy_from(Ref<VoxelBuffer> other, unsigned int channel) {
 void VoxelBuffer::_b_copy_from_area(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, unsigned int channel) {
 	ERR_FAIL_COND(other.is_null());
 	copy_from(**other, Vector3i(src_min), Vector3i(src_max), Vector3i(dst_min), channel);
+}
+
+void VoxelBuffer::_b_downscale_to(Ref<VoxelBuffer> dst, Vector3 src_min, Vector3 src_max, Vector3 dst_min) const {
+	ERR_FAIL_COND(dst.is_null());
+	downscale_to(**dst, Vector3i(src_min), Vector3i(src_max), Vector3i(dst_min));
 }

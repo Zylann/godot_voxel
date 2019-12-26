@@ -17,7 +17,7 @@ class VoxelBuffer : public Reference {
 public:
 	enum ChannelId {
 		CHANNEL_TYPE = 0,
-		CHANNEL_ISOLEVEL,
+		CHANNEL_ISOLEVEL, // TODO Rename SDF
 		CHANNEL_DATA2,
 		CHANNEL_DATA3,
 		CHANNEL_DATA4,
@@ -176,6 +176,7 @@ protected:
 	_FORCE_INLINE_ void _b_fill_area(int defval, Vector3 min, Vector3 max, unsigned int channel_index) { fill_area(defval, Vector3i(min), Vector3i(max), channel_index); }
 	_FORCE_INLINE_ void _b_set_voxel_f(real_t value, int x, int y, int z, unsigned int channel) { set_voxel_f(value, x, y, z, channel); }
 	void _b_set_voxel_v(int value, Vector3 pos, unsigned int channel_index = 0) { set_voxel(value, pos.x, pos.y, pos.z, channel_index); }
+	void _b_downscale_to(Ref<VoxelBuffer> dst, Vector3 src_min, Vector3 src_max, Vector3 dst_min) const;
 
 private:
 	struct Channel {
