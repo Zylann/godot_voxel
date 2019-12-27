@@ -49,7 +49,7 @@ private:
 	void reset_reuse_cells_2d(Vector3i block_size);
 	ReuseCell &get_reuse_cell(Vector3i pos);
 	ReuseTransitionCell &get_reuse_cell_2d(int x, int y);
-	int emit_vertex(Vector3 primary, Vector3 normal, uint8_t border_mask);
+	int emit_vertex(Vector3 primary, Vector3 normal, uint16_t border_mask, Vector3 secondary);
 	void clear_output();
 	void fill_surface_arrays(Array &arrays);
 
