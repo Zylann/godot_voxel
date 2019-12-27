@@ -42,7 +42,7 @@ struct RegularCellData {
 	unsigned char geometryCounts; // High nibble is vertex count, low nibble is triangle count.
 	unsigned char vertexIndex[15]; // Groups of 3 indexes giving the triangulation.
 
-	inline unsigned char get_vertex_index(unsigned int i) {
+	inline unsigned char get_vertex_index(unsigned int i) const {
 		CRASH_COND(i >= 15);
 		return vertexIndex[i];
 	}

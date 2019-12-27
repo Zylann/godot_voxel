@@ -74,6 +74,26 @@ Vector3 get_border_offset(Vector3 pos, int lod, Vector3i block_size, Vector3i mi
 	return delta;
 }
 
+inline Vector3 project_border_offset(Vector3 delta, Vector3 normal) {
+
+	// Secondary position can be obtained with the following formula:
+	//
+	// | x |   | 1 - nx²   ,  -nx * ny  ,  -nx * nz |   | Δx |
+	// | y | + | -nx * ny  ,  1 - ny²   ,  -ny * nz | * | Δy |
+	// | z |   | -nx * nz  ,  -ny * nz  ,  1 - nz²  |   | Δz |
+
+	return Vector3(
+			(1 - normal.x * normal.x) * delta.x /**/ - normal.y * normal.x * delta.y /*     */ - normal.z * normal.x * delta.z,
+			/**/ -normal.x * normal.y * delta.x + (1 - normal.y * normal.y) * delta.y /*    */ - normal.z * normal.y * delta.z,
+			/**/ -normal.x * normal.z * delta.x /**/ - normal.y * normal.z * delta.y /**/ + (1 - normal.z * normal.z) * delta.z);
+}
+
+inline Vector3 get_secondary_position(Vector3 primary, Vector3 normal, int lod, Vector3i block_size, Vector3i min_pos) {
+	Vector3 delta = get_border_offset(primary, lod, block_size, min_pos);
+	delta = project_border_offset(delta, normal);
+	return primary + delta;
+}
+
 // TODO Use this to prevent some cases of null normals
 inline Vector3 get_gradient_normal(uint8_t left, uint8_t right, uint8_t bottom, uint8_t top, uint8_t back, uint8_t front, uint8_t middle) {
 
@@ -422,10 +442,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 							uint16_t border_mask = cell_border_mask;
 
 							if (cell_border_mask > 0) {
-
-								Vector3 delta = get_border_offset(primary, 0, block_size, min_pos);
-								secondary = primary + delta;
-
+								secondary = get_secondary_position(primary, normal, 0, block_size, min_pos);
 								border_mask |= (get_border_mask(p0, min_pos, max_pos) & get_border_mask(p1, min_pos, max_pos)) << 6;
 							}
 
@@ -448,10 +465,9 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 						Vector3 secondary;
 						uint16_t border_mask = cell_border_mask;
-						if (cell_border_mask > 0) {
-							Vector3 delta = get_border_offset(primary, 0, block_size, min_pos);
-							secondary = primary + delta;
 
+						if (cell_border_mask > 0) {
+							secondary = get_secondary_position(primary, normal, 0, block_size, min_pos);
 							border_mask |= get_border_mask(p1, min_pos, max_pos) << 6;
 						}
 
@@ -494,10 +510,9 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 							// TODO This bit of code is repeated several times, factor it?
 							Vector3 secondary;
 							uint16_t border_mask = cell_border_mask;
-							if (cell_border_mask > 0) {
-								Vector3 delta = get_border_offset(primary, 0, block_size, min_pos);
-								secondary = primary + delta;
 
+							if (cell_border_mask > 0) {
+								secondary = get_secondary_position(primary, normal, 0, block_size, min_pos);
 								border_mask |= get_border_mask(t == 0 ? p1 : p0, min_pos, max_pos) << 6;
 							}
 
@@ -807,9 +822,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 						Vector3 secondary;
 						if (fullres_side) {
 
-							Vector3 delta = get_border_offset(primary, 0, block_size, min_fpos);
-							secondary = primary + delta;
-
+							secondary = get_secondary_position(primary, normal, 0, block_size, min_fpos);
 							border_mask |= (get_border_mask(p0, min_fpos, max_fpos_b) & get_border_mask(p1, min_fpos, max_fpos_b)) << 6;
 
 						} else {
@@ -869,9 +882,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 						Vector3 secondary;
 						if (fullres_side) {
 
-							Vector3 delta = get_border_offset(primary, 0, block_size, min_fpos);
-							secondary = primary + delta;
-
+							secondary = get_secondary_position(primary, normal, 0, block_size, min_fpos);
 							border_mask |= get_border_mask(cell_positions[index_vertex], min_fpos, max_fpos_b) << 6;
 
 						} else {
