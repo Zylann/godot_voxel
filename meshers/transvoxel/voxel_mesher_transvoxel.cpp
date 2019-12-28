@@ -209,13 +209,13 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer
 }
 
 // TODO For testing at the moment
-Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> voxels) {
+Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> voxels, int direction) {
 
 	clear_output();
 
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
-	build_transition(**voxels, VoxelBuffer::CHANNEL_ISOLEVEL);
+	build_transition(**voxels, VoxelBuffer::CHANNEL_ISOLEVEL, direction);
 
 	Ref<ArrayMesh> mesh;
 
@@ -270,15 +270,18 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 	}
 
 	const Vector3i block_size = voxels.get_size();
+	const Vector3i block_size_without_padding = block_size - 3 * PAD;
 
 	// Prepare vertex reuse cache
 	reset_reuse_cells(block_size);
 
 	// We iterate 2x2 voxel groups, which the paper calls "cells".
 	// We also reach one voxel further to compute normals, so we adjust the iterated area
-	Vector3i min_pos = PAD;
-	Vector3i max_pos = block_size - Vector3i(1) - PAD;
+	const Vector3i min_pos = PAD;
+	const Vector3i max_pos = block_size - Vector3i(1) - PAD;
+	const Vector3i max_pos_c = max_pos - Vector3i(1);
 	// TODO Change the Mesher API to allow different min and max paddings. Here 1 on min, 2 on max
+	// TODO Also abstract positions with padding, it can get quite confusing when one is used but not the other...
 
 	FixedArray<int8_t, 8> cell_samples;
 	FixedArray<Vector3, 8> corner_normals;
@@ -355,7 +358,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 				FixedArray<int, 12> cell_vertex_indices(-1);
 
-				uint8_t cell_border_mask = get_border_mask(pos, min_pos, max_pos);
+				uint8_t cell_border_mask = get_border_mask(pos, min_pos, max_pos_c);
 
 				// For each vertex in the case
 				for (unsigned int i = 0; i < vertex_count; ++i) {
@@ -442,7 +445,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 							uint16_t border_mask = cell_border_mask;
 
 							if (cell_border_mask > 0) {
-								secondary = get_secondary_position(primary, normal, 0, block_size, min_pos);
+								secondary = get_secondary_position(primary, normal, 0, block_size_without_padding, min_pos);
 								border_mask |= (get_border_mask(p0, min_pos, max_pos) & get_border_mask(p1, min_pos, max_pos)) << 6;
 							}
 
@@ -467,7 +470,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						uint16_t border_mask = cell_border_mask;
 
 						if (cell_border_mask > 0) {
-							secondary = get_secondary_position(primary, normal, 0, block_size, min_pos);
+							secondary = get_secondary_position(primary, normal, 0, block_size_without_padding, min_pos);
 							border_mask |= get_border_mask(p1, min_pos, max_pos) << 6;
 						}
 
@@ -512,7 +515,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 							uint16_t border_mask = cell_border_mask;
 
 							if (cell_border_mask > 0) {
-								secondary = get_secondary_position(primary, normal, 0, block_size, min_pos);
+								secondary = get_secondary_position(primary, normal, 0, block_size_without_padding, min_pos);
 								border_mask |= get_border_mask(t == 0 ? p1 : p0, min_pos, max_pos) << 6;
 							}
 
@@ -540,15 +543,6 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 void VoxelMesherTransvoxel::build_transitions(const TransitionVoxels &p_voxels, unsigned int channel) {
 
-	//	const unsigned int side_to_axis[6] = {
-	//		Vector3i::AXIS_X,
-	//		Vector3i::AXIS_X,
-	//		Vector3i::AXIS_Y,
-	//		Vector3i::AXIS_Y,
-	//		Vector3i::AXIS_Z,
-	//		Vector3i::AXIS_Z
-	//	};
-
 	//  o---o---o---o---o-------o
 	//  |   |   |   |   |       |
 	//  o---o---o---o---o       |
@@ -569,49 +563,88 @@ void VoxelMesherTransvoxel::build_transitions(const TransitionVoxels &p_voxels, 
 		const VoxelBuffer *n = p_voxels.full_resolution_neighbor_voxels[dir];
 
 		if (n != nullptr) {
-			build_transition(*n, channel);
+			build_transition(*n, channel, dir);
 		}
 	}
 }
 
-void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsigned int channel) {
+void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsigned int channel, int direction) {
 
-	//    y
-	//    |
-	//    |       OpenGL axis convention
-	//    o---x
+	//    y            y
+	//    |            | z
+	//    |            |/     OpenGL axis convention
+	//    o---x    x---o
 	//   /
 	//  z
 
 	struct L {
-
-		// Convert from face-space into block-space coordinates considering which face we are working on.
+		// Convert from face-space to block-space coordinates, considering which face we are working on.
 		static inline Vector3i face_to_block(int x, int y, int z, int dir, const Vector3i &bs) {
 
-			// TODO Include padding?
+			// There are several possible solutions to this, because we can rotate the axes.
+			// We'll take configurations where XY map different axes at the same relative orientations,
+			// so only Z is flipped in half cases.
 			switch (dir) {
 
-				case Cube::SIDE_LEFT: // -x
-					return Vector3i(-z, y, bs.z - x);
+				case Cube::SIDE_NEGATIVE_X:
+					return Vector3i(z, x, y);
 
-				case Cube::SIDE_RIGHT: // +x
-					return Vector3i(bs.x + z, y, x);
+				case Cube::SIDE_POSITIVE_X:
+					return Vector3i(bs.x - 1 - z, y, x);
 
-				case Cube::SIDE_BOTTOM: // -y
-					return Vector3i(x, -z, bs.z - y);
+				case Cube::SIDE_NEGATIVE_Y:
+					return Vector3i(y, z, x);
 
-				case Cube::SIDE_TOP: // +y
-					return Vector3i(x, bs.y + z, y);
+				case Cube::SIDE_POSITIVE_Y:
+					return Vector3i(x, bs.y - 1 - z, y);
 
-				case Cube::SIDE_BACK: // +z
-					return Vector3i(bs.x - x, y, bs.z + z);
+				case Cube::SIDE_NEGATIVE_Z:
+					return Vector3i(x, y, z);
 
-				case Cube::SIDE_FRONT: // -z
-					return Vector3i(x, y, -z);
+				case Cube::SIDE_POSITIVE_Z:
+					return Vector3i(y, x, bs.z - 1 - z);
 
 				default:
 					CRASH_COND(true);
 					return Vector3i();
+			}
+		}
+		// I took the choice of supporting non-cubic area, so...
+		static inline void get_face_axes(int &ax, int &ay, int dir) {
+			switch (dir) {
+
+				case Cube::SIDE_NEGATIVE_X:
+					ax = Vector3i::AXIS_Y;
+					ay = Vector3i::AXIS_Z;
+					break;
+
+				case Cube::SIDE_POSITIVE_X:
+					ax = Vector3i::AXIS_Z;
+					ay = Vector3i::AXIS_Y;
+					break;
+
+				case Cube::SIDE_NEGATIVE_Y:
+					ax = Vector3i::AXIS_Z;
+					ay = Vector3i::AXIS_X;
+					break;
+
+				case Cube::SIDE_POSITIVE_Y:
+					ax = Vector3i::AXIS_X;
+					ay = Vector3i::AXIS_Z;
+					break;
+
+				case Cube::SIDE_NEGATIVE_Z:
+					ax = Vector3i::AXIS_X;
+					ay = Vector3i::AXIS_Y;
+					break;
+
+				case Cube::SIDE_POSITIVE_Z:
+					ax = Vector3i::AXIS_Y;
+					ay = Vector3i::AXIS_X;
+					break;
+
+				default:
+					CRASH_COND(true);
 			}
 		}
 	};
@@ -622,6 +655,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 	}
 
 	const Vector3i block_size = p_voxels.get_size();
+	const Vector3i block_size_without_padding = block_size - 3 * PAD;
 	//const Vector3i half_block_size = block_size / 2;
 
 	ERR_FAIL_COND(block_size.x < 3);
@@ -630,7 +664,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 
 	reset_reuse_cells_2d(block_size);
 
-	// This part works in "face space", which is mainly 2D along the X and Y axes.
+	// This part works in "face space", which is 2D along local X and Y axes.
 	// In this space, -Z points towards the half resolution cells, while +Z points towards full-resolution cells.
 	// Conversion is used to map this space to block space using a direction enum.
 
@@ -639,22 +673,45 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 	// I do the opposite, going from high-res to low-res. It's easier because half-res voxels are available for free,
 	// if we compute the transition meshes right after the regular mesh, with the same voxel data.
 
-	// Padding takes into account the fact our kernel is 3x3 on full-res side (max voxels being shared with next),
-	// And that we may look one voxel further to compute normals
-	Vector3i min_fpos = PAD;
-	Vector3i max_fpos = block_size - Vector3i(2) - PAD;
-	Vector3i max_fpos_b = block_size - Vector3i(1) - PAD; // For border mask calculation
+	// This represents the actual box of voxels we are working on.
+	// It also represents positions of the minimum and maximum vertices that can be generated.
+	// Padding is present to allow reaching 1 voxel further for calculating normals
+	const Vector3i min_pos = PAD;
+	const Vector3i max_pos = block_size - Vector3i(1) - PAD;
+
+	int axis_x, axis_y;
+	L::get_face_axes(axis_x, axis_y, direction);
+	const int min_fpos_x = min_pos[axis_x];
+	const int min_fpos_y = min_pos[axis_y];
+	const int max_fpos_x = max_pos[axis_x] - 1; // Another -1 here, because the 2D kernel is 3x3
+	const int max_fpos_y = max_pos[axis_y] - 1;
 
 	FixedArray<int8_t, 13> cell_samples;
 	FixedArray<Vector3i, 13> cell_positions;
 	FixedArray<Vector3, 13> cell_normals;
 
-	for (int fy = min_fpos.y; fy < max_fpos.y; fy += 2) {
-		for (int fx = min_fpos.x; fx < max_fpos.x; fx += 2) {
+	// Iterating in face space
+	for (int fy = min_fpos_y; fy < max_fpos_y; fy += 2) {
+		for (int fx = min_fpos_x; fx < max_fpos_x; fx += 2) {
 
-			const int fz = min_fpos.z;
+			const int fz = PAD.x;
 
 			const VoxelBuffer &fvoxels = p_voxels;
+
+			// Cell positions in block space
+			cell_positions[0] = L::face_to_block(fx, fy, fz, direction, block_size);
+			cell_positions[1] = L::face_to_block(fx + 1, fy, fz, direction, block_size);
+			cell_positions[2] = L::face_to_block(fx + 2, fy, fz, direction, block_size);
+			cell_positions[3] = L::face_to_block(fx, fy + 1, fz, direction, block_size);
+			cell_positions[4] = L::face_to_block(fx + 1, fy + 1, fz, direction, block_size);
+			cell_positions[5] = L::face_to_block(fx + 2, fy + 1, fz, direction, block_size);
+			cell_positions[6] = L::face_to_block(fx, fy + 2, fz, direction, block_size);
+			cell_positions[7] = L::face_to_block(fx + 1, fy + 2, fz, direction, block_size);
+			cell_positions[8] = L::face_to_block(fx + 2, fy + 2, fz, direction, block_size);
+			cell_positions[0x9] = cell_positions[0];
+			cell_positions[0xA] = cell_positions[2];
+			cell_positions[0xB] = cell_positions[6];
+			cell_positions[0xC] = cell_positions[8];
 
 			//  6---7---8
 			//  |   |   |
@@ -665,15 +722,9 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			// TODO Double-check positions and transforms. I understand what's needed (contrary to what's next ._.) but it's boring to do, so I botched it
 
 			// Full-resolution samples 0..8
-			cell_samples[0] = tos(get_voxel(fvoxels, fx, fy, fz, channel));
-			cell_samples[1] = tos(get_voxel(fvoxels, fx + 1, fy, fz, channel));
-			cell_samples[2] = tos(get_voxel(fvoxels, fx + 2, fy, fz, channel));
-			cell_samples[3] = tos(get_voxel(fvoxels, fx, fy + 1, fz, channel));
-			cell_samples[4] = tos(get_voxel(fvoxels, fx + 1, fy + 1, fz, channel));
-			cell_samples[5] = tos(get_voxel(fvoxels, fx + 2, fy + 1, fz, channel));
-			cell_samples[6] = tos(get_voxel(fvoxels, fx, fy + 2, fz, channel));
-			cell_samples[7] = tos(get_voxel(fvoxels, fx + 1, fy + 2, fz, channel));
-			cell_samples[8] = tos(get_voxel(fvoxels, fx + 2, fy + 2, fz, channel));
+			for (unsigned int i = 0; i < 9; ++i) {
+				cell_samples[i] = tos(get_voxel(fvoxels, cell_positions[i], channel));
+			}
 
 			//  B-------C
 			//  |       |
@@ -686,20 +737,6 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			cell_samples[0xA] = cell_samples[2];
 			cell_samples[0xB] = cell_samples[6];
 			cell_samples[0xC] = cell_samples[8];
-
-			cell_positions[0] = Vector3i(fx, fy, fz);
-			cell_positions[1] = Vector3i(fx + 1, fy, fz);
-			cell_positions[2] = Vector3i(fx + 2, fy, fz);
-			cell_positions[3] = Vector3i(fx, fy + 1, fz);
-			cell_positions[4] = Vector3i(fx + 1, fy + 1, fz);
-			cell_positions[5] = Vector3i(fx + 2, fy + 1, fz);
-			cell_positions[6] = Vector3i(fx, fy + 2, fz);
-			cell_positions[7] = Vector3i(fx + 1, fy + 2, fz);
-			cell_positions[8] = Vector3i(fx + 2, fy + 2, fz);
-			cell_positions[0x9] = cell_positions[0];
-			cell_positions[0xA] = cell_positions[2];
-			cell_positions[0xB] = cell_positions[6];
-			cell_positions[0xC] = cell_positions[8];
 
 			// TODO We may not need all of them!
 			for (unsigned int i = 0; i < 9; ++i) {
@@ -748,8 +785,10 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			FixedArray<int, 12> cell_vertex_indices(-1);
 			CRASH_COND(vertex_count > cell_vertex_indices.size());
 
-			uint8_t direction_validity_mask = (fx > min_fpos.x ? 1 : 0) | ((fy > min_fpos.y ? 1 : 0) << 1);
-			uint8_t cell_border_mask = get_border_mask(Vector3i(fx, fy, fz), min_fpos, max_fpos_b);
+			uint8_t direction_validity_mask = (fx > min_fpos_x ? 1 : 0) | ((fy > min_fpos_y ? 1 : 0) << 1);
+
+			// Using max_pos instead of cell max pos because we are really dealing with vertices on block sides here
+			uint8_t cell_border_mask = get_border_mask(cell_positions[0], min_pos, max_pos);
 
 			for (unsigned int i = 0; i < vertex_count; ++i) {
 
@@ -822,8 +861,8 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 						Vector3 secondary;
 						if (fullres_side) {
 
-							secondary = get_secondary_position(primary, normal, 0, block_size, min_fpos);
-							border_mask |= (get_border_mask(p0, min_fpos, max_fpos_b) & get_border_mask(p1, min_fpos, max_fpos_b)) << 6;
+							secondary = get_secondary_position(primary, normal, 0, block_size_without_padding, min_pos);
+							border_mask |= (get_border_mask(p0, min_pos, max_pos) & get_border_mask(p1, min_pos, max_pos)) << 6;
 
 						} else {
 							// If the vertex is on the half-res side (in our implementation, it's the side of the block),
@@ -882,8 +921,8 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 						Vector3 secondary;
 						if (fullres_side) {
 
-							secondary = get_secondary_position(primary, normal, 0, block_size, min_fpos);
-							border_mask |= get_border_mask(cell_positions[index_vertex], min_fpos, max_fpos_b) << 6;
+							secondary = get_secondary_position(primary, normal, 0, block_size_without_padding, min_pos);
+							border_mask |= get_border_mask(cell_positions[index_vertex], min_pos, max_pos) << 6;
 
 						} else {
 							border_mask = 0;
@@ -967,5 +1006,5 @@ VoxelMesher *VoxelMesherTransvoxel::clone() {
 }
 
 void VoxelMesherTransvoxel::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer"), &VoxelMesherTransvoxel::build_transition_mesh);
+	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"), &VoxelMesherTransvoxel::build_transition_mesh);
 }

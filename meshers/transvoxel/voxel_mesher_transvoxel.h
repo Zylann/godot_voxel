@@ -43,8 +43,8 @@ private:
 
 	void build_internal(const VoxelBuffer &voxels, unsigned int channel);
 	void build_transitions(const TransitionVoxels &p_voxels, unsigned int channel);
-	void build_transition(const VoxelBuffer &voxels, unsigned int channel);
-	Ref<ArrayMesh> build_transition_mesh(Ref<VoxelBuffer> voxels);
+	void build_transition(const VoxelBuffer &voxels, unsigned int channel, int direction);
+	Ref<ArrayMesh> build_transition_mesh(Ref<VoxelBuffer> voxels, int direction);
 	void reset_reuse_cells(Vector3i block_size);
 	void reset_reuse_cells_2d(Vector3i block_size);
 	ReuseCell &get_reuse_cell(Vector3i pos);

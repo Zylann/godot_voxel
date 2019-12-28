@@ -12,10 +12,20 @@ enum Side {
 	SIDE_RIGHT,
 	SIDE_BOTTOM,
 	SIDE_TOP,
+	// TODO I would like to swap the Z ones because it's inconsistent with coordinates...
 	SIDE_BACK,
 	SIDE_FRONT,
 
 	SIDE_COUNT
+};
+// Alias to the above for clarity, using OpenGL axis convention
+enum SideAxis {
+	SIDE_NEGATIVE_X = 0,
+	SIDE_POSITIVE_X,
+	SIDE_NEGATIVE_Y,
+	SIDE_POSITIVE_Y,
+	SIDE_POSITIVE_Z,
+	SIDE_NEGATIVE_Z
 };
 
 // Index convention used in some lookup tables
