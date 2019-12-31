@@ -42,7 +42,11 @@ void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin
 
 	} else {
 
-		FloatBuffer3D &noise_buffer = _noise_buffer;
+		// TODO Proper noise optimization
+		// Prefetching was much faster, but it introduced LOD inconsistencies into the data itself, causing cracks.
+		// Need to implement it properly, or use a different noise library.
+
+		/*FloatBuffer3D &noise_buffer = _noise_buffer;
 		const int noise_buffer_step = 2;
 
 		Vector3i noise_buffer_size = buffer.get_size() / noise_buffer_step + Vector3i(1);
@@ -64,18 +68,21 @@ void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin
 					noise_buffer.set(x, y, z, n);
 				}
 			}
-		}
+		}*/
 
 		float iso_scale = noise.get_period() * 0.1;
-		float noise_buffer_scale = 1.f / static_cast<float>(noise_buffer_step);
+		//float noise_buffer_scale = 1.f / static_cast<float>(noise_buffer_step);
 
 		for (int z = 0; z < buffer.get_size().z; ++z) {
 			for (int x = 0; x < buffer.get_size().x; ++x) {
 				for (int y = 0; y < buffer.get_size().y; ++y) {
 
+					float lx = origin_in_voxels.x + (x << lod);
 					float ly = origin_in_voxels.y + (y << lod);
+					float lz = origin_in_voxels.z + (z << lod);
 
-					float n = noise_buffer.get_trilinear(x * noise_buffer_scale, y * noise_buffer_scale, z * noise_buffer_scale);
+					//float n = noise_buffer.get_trilinear(x * noise_buffer_scale, y * noise_buffer_scale, z * noise_buffer_scale);
+					float n = noise.get_noise_3d(lx, ly, lz);
 					float t = (ly - _height_start) / _height_range;
 					float d = (n + 2.0 * t - 1.0) * iso_scale;
 
