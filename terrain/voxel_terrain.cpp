@@ -934,11 +934,12 @@ void VoxelTerrain::_process() {
 
 			// TODO Make the buffer re-usable
 			unsigned int block_size = _map->get_block_size();
-			unsigned int padding = _block_updater->get_required_padding();
-			nbuffer->create(Vector3i(block_size + 2 * padding));
+			unsigned int min_padding = _block_updater->get_minimum_padding();
+			unsigned int max_padding = _block_updater->get_maximum_padding();
+			nbuffer->create(Vector3i(block_size + min_padding + max_padding));
 
 			unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_ISOLEVEL);
-			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(padding), **nbuffer, channels_mask);
+			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(min_padding), **nbuffer, channels_mask);
 
 			VoxelMeshUpdater::InputBlock iblock;
 			iblock.data.voxels = nbuffer;

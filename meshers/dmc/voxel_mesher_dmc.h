@@ -65,7 +65,7 @@ struct DualGrid {
 class VoxelMesherDMC : public VoxelMesher {
 	GDCLASS(VoxelMesherDMC, VoxelMesher)
 public:
-	static const int MINIMUM_PADDING = 2;
+	static const int PADDING = 2;
 
 	enum MeshMode {
 		MESH_NORMAL,
@@ -101,8 +101,7 @@ public:
 	void set_seam_mode(SeamMode mode);
 	SeamMode get_seam_mode() const;
 
-	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) override;
-	int get_minimum_padding() const override;
+	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels) override;
 
 	Dictionary get_statistics() const;
 

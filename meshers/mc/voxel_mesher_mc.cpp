@@ -69,13 +69,11 @@ inline int8_t increase(int8_t v, int8_t a) {
 
 } // namespace
 
-int VoxelMesherMC::get_minimum_padding() const {
-	return MINIMUM_PADDING;
+VoxelMesherMC::VoxelMesherMC() {
+	set_padding(MIN_PADDING, MAX_PADDING);
 }
 
-void VoxelMesherMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) {
-
-	ERR_FAIL_COND(padding < MINIMUM_PADDING);
+void VoxelMesherMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxels) {
 
 	int channel = VoxelBuffer::CHANNEL_ISOLEVEL;
 
@@ -141,9 +139,8 @@ void VoxelMesherMC::build_internal(const VoxelBuffer &voxels, unsigned int chann
 	// The algorithm works with a 2x2 kernel and needs extra neighbors for normals,
 	// so it looks 1 voxel away in negative axes, and 2 voxels away in positive axes.
 	Vector3i pos;
-	// Could have been offset by 1, but using 2 instead because the VoxelMesher API expects a symetric padding at the moment
-	Vector3i min_pos(2);
-	Vector3i max_pos(block_size - Vector3i(2));
+	Vector3i min_pos(get_minimum_padding());
+	Vector3i max_pos(block_size - Vector3i(get_maximum_padding()));
 
 	if (_seam_mode == SEAM_OVERLAP) {
 		// When this is enabled, the algorithm may detect if it's on a border,
@@ -440,8 +437,7 @@ VoxelMesherMC::ReuseCell &VoxelMesherMC::get_reuse_cell(Vector3i pos) {
 }
 
 void VoxelMesherMC::emit_vertex(Vector3 primary, Vector3 normal) {
-	// Could have been offset by 1, but using 2 instead because the VoxelMesher API expects a symetric padding at the moment
-	_output_vertices.push_back(primary - Vector3(MINIMUM_PADDING, MINIMUM_PADDING, MINIMUM_PADDING));
+	_output_vertices.push_back(primary - Vector3(MIN_PADDING, MIN_PADDING, MIN_PADDING));
 	_output_normals.push_back(normal);
 }
 

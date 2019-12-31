@@ -35,7 +35,9 @@ inline bool is_transparent(const VoxelLibrary &lib, int voxel_id) {
 
 VoxelMesherBlocky::VoxelMesherBlocky() :
 		_baked_occlusion_darkness(0.8),
-		_bake_occlusion(true) {}
+		_bake_occlusion(true) {
+	set_padding(PADDING, PADDING);
+}
 
 void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {
 	_library = library;
@@ -54,14 +56,12 @@ void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
 	_bake_occlusion = enable;
 }
 
-void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &buffer, int padding) {
+void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &buffer) {
 	//uint64_t time_before = OS::get_singleton()->get_ticks_usec();
-
-	ERR_FAIL_COND(_library.is_null());
-	ERR_FAIL_COND(padding < MINIMUM_PADDING);
 
 	const int channel = VoxelBuffer::CHANNEL_TYPE;
 
+	ERR_FAIL_COND(_library.is_null());
 	const VoxelLibrary &library = **_library;
 
 	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
@@ -87,8 +87,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	// => Could be implemented in a separate class?
 
 	// Data must be padded, hence the off-by-one
-	Vector3i min = Vector3i(padding);
-	Vector3i max = buffer.get_size() - Vector3i(padding);
+	Vector3i min = Vector3i(get_minimum_padding());
+	Vector3i max = buffer.get_size() - Vector3i(get_maximum_padding());
 
 	int index_offsets[MAX_MATERIALS] = { 0 };
 
@@ -406,10 +406,6 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	//uint64_t time_commit = OS::get_singleton()->get_ticks_usec() - time_before;
 
 	//print_line(String("P: {0}, M: {1}, C: {2}").format(varray(time_prep, time_meshing, time_commit)));
-}
-
-int VoxelMesherBlocky::get_minimum_padding() const {
-	return MINIMUM_PADDING;
 }
 
 VoxelMesher *VoxelMesherBlocky::clone() {

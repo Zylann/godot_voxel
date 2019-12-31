@@ -18,14 +18,14 @@ enum Side {
 
 	SIDE_COUNT
 };
-// Alias to the above for clarity, using OpenGL axis convention
+// Alias to the above for clarity, fixing some interpretation problems regarding the side_normals table...
 enum SideAxis {
-	SIDE_NEGATIVE_X = 0,
-	SIDE_POSITIVE_X,
+	SIDE_POSITIVE_X = 0,
+	SIDE_NEGATIVE_X,
 	SIDE_NEGATIVE_Y,
 	SIDE_POSITIVE_Y,
-	SIDE_POSITIVE_Z,
-	SIDE_NEGATIVE_Z
+	SIDE_NEGATIVE_Z,
+	SIDE_POSITIVE_Z
 };
 
 // Index convention used in some lookup tables

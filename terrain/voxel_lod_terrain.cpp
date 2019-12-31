@@ -13,6 +13,46 @@
 
 const uint32_t MAIN_THREAD_MESHING_BUDGET_MS = 8;
 
+namespace {
+
+Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType primitive, int compression_flags,
+		Ref<Material> material, Array *collidable_surface) {
+
+	Ref<ArrayMesh> mesh;
+	mesh.instance();
+
+	unsigned int surface_index = 0;
+	for (int i = 0; i < surfaces.size(); ++i) {
+
+		Array surface = surfaces[i];
+		if (surface.empty()) {
+			continue;
+		}
+
+		CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
+		if (!is_surface_triangulated(surface)) {
+			continue;
+		}
+
+		if (collidable_surface != nullptr && collidable_surface->empty()) {
+			*collidable_surface = surface;
+		}
+
+		mesh->add_surface_from_arrays(primitive, surface, Array(), compression_flags);
+		mesh->surface_set_material(surface_index, material);
+		// No multi-material supported yet
+		++surface_index;
+	}
+
+	if (is_mesh_empty(mesh)) {
+		mesh = Ref<Mesh>();
+	}
+
+	return mesh;
+}
+
+} // namespace
+
 VoxelLodTerrain::VoxelLodTerrain() {
 	// Note: don't do anything heavy in the constructor.
 	// Godot may create and destroy dozens of instances of all node types on startup,
@@ -817,6 +857,8 @@ void VoxelLodTerrain::_process() {
 		_last_octree_region_box = new_box;
 	}
 
+	CRASH_COND(_blocks_pending_transition_update.size() != 0);
+
 	// Find which blocks we need to load and see, within each octree
 	{
 		// TODO Maintain a vector to make iteration faster?
@@ -874,6 +916,8 @@ void VoxelLodTerrain::_process() {
 					CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UP_TO_DATE);
 
 					block->set_visible(true);
+					self->add_transition_update(block);
+					self->add_transition_updates_around(bpos, lod_index);
 					return true;
 				}
 			};
@@ -906,6 +950,7 @@ void VoxelLodTerrain::_process() {
 					VoxelBlock *block = lod.map->get_block(bpos);
 					if (block) {
 						block->set_visible(false);
+						self->add_transition_updates_around(bpos, lod_index);
 					}
 				}
 			};
@@ -925,7 +970,11 @@ void VoxelLodTerrain::_process() {
 			// If not, something in block management prevents LODs to properly show up and should be fixed.
 			_stats.blocked_lods += subdivide_action.blocked_count + unsubdivide_action.blocked_count;
 		}
+
+		process_transition_updates();
 	}
+
+	CRASH_COND(_blocks_pending_transition_update.size() != 0);
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
 
@@ -992,6 +1041,12 @@ void VoxelLodTerrain::_process() {
 			// The block will be made visible and meshed only by LodOctree
 			block->set_visible(false);
 			block->set_parent_visible(is_visible());
+
+			Ref<ShaderMaterial> shader_material = _material;
+			if (shader_material.is_valid() && block->get_shader_material().is_null()) {
+				Ref<ShaderMaterial> sm = shader_material->duplicate(false);
+				block->set_shader_material(sm);
+			}
 		}
 	}
 
@@ -1023,16 +1078,14 @@ void VoxelLodTerrain::_process() {
 				Ref<VoxelBuffer> nbuffer;
 				nbuffer.instance();
 
-				// TODO Make the buffer re-usable
+				// TODO Make the buffer re-usable, or pool memory
 				unsigned int block_size = lod.map->get_block_size();
-				unsigned int padding = _block_updater->get_required_padding();
-				nbuffer->create(
-						block_size + 2 * padding,
-						block_size + 2 * padding,
-						block_size + 2 * padding);
+				unsigned int min_padding = _block_updater->get_minimum_padding();
+				unsigned int max_padding = _block_updater->get_maximum_padding();
+				nbuffer->create(Vector3i(block_size + min_padding + max_padding));
 
 				unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_ISOLEVEL);
-				lod.map->get_buffer_copy(lod.map->block_to_voxel(block_pos) - Vector3i(padding), **nbuffer, channels_mask);
+				lod.map->get_buffer_copy(lod.map->block_to_voxel(block_pos) - Vector3i(min_padding), **nbuffer, channels_mask);
 
 				VoxelMeshUpdater::InputBlock iblock;
 				iblock.data.voxels = nbuffer;
@@ -1112,39 +1165,15 @@ void VoxelLodTerrain::_process() {
 				block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
 			}
 
-			Ref<ArrayMesh> mesh;
-			mesh.instance();
+			const VoxelMesher::Output mesh_data = ob.data.smooth_surfaces;
 
 			// TODO Allow multiple collision surfaces
 			Array collidable_surface;
-
-			unsigned int surface_index = 0;
-			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
-			for (int i = 0; i < data.smooth_surfaces.surfaces.size(); ++i) {
-
-				Array surface = data.smooth_surfaces.surfaces[i];
-				if (surface.empty()) {
-					continue;
-				}
-
-				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-				if (!is_surface_triangulated(surface)) {
-					continue;
-				}
-
-				if (collidable_surface.empty()) {
-					collidable_surface = surface;
-				}
-
-				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface, Array(), data.smooth_surfaces.compression_flags);
-				mesh->surface_set_material(surface_index, _material);
-				// No multi-material supported yet
-				++surface_index;
-			}
-
-			if (is_mesh_empty(mesh)) {
-				mesh = Ref<Mesh>();
-			}
+			Ref<ArrayMesh> mesh = build_mesh(
+					mesh_data.surfaces,
+					mesh_data.primitive_type,
+					mesh_data.compression_flags,
+					_material, &collidable_surface);
 
 			bool has_collision = _generate_collisions;
 			if (has_collision && _collision_lod_count != -1) {
@@ -1152,6 +1181,17 @@ void VoxelLodTerrain::_process() {
 			}
 
 			block->set_mesh(mesh, this, has_collision, collidable_surface, get_tree()->is_debugging_collisions_hint());
+
+			for (int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
+
+				Ref<ArrayMesh> transition_mesh = build_mesh(
+						mesh_data.transition_surfaces[dir],
+						mesh_data.primitive_type,
+						mesh_data.compression_flags,
+						_material, nullptr);
+
+				block->set_transition_mesh(transition_mesh, dir, get_world());
+			}
 		}
 
 		shift_up(_blocks_pending_main_thread_update, queue_index);
@@ -1297,6 +1337,79 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 
 	// And flush immediately
 	send_block_data_requests();
+}
+
+void VoxelLodTerrain::add_transition_update(VoxelBlock *block) {
+	if (!block->pending_transition_update) {
+		_blocks_pending_transition_update.push_back(block);
+		block->pending_transition_update = true;
+	}
+}
+
+void VoxelLodTerrain::add_transition_updates_around(Vector3i block_pos, int lod_index) {
+
+	Lod &lod = _lods[lod_index];
+	CRASH_COND(lod.map.is_null());
+
+	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+
+		Vector3i npos = block_pos + Cube::g_side_normals[dir];
+		VoxelBlock *nblock = lod.map->get_block(npos);
+
+		if (nblock != nullptr && nblock->is_visible()) {
+			add_transition_update(nblock);
+		}
+	}
+}
+
+void VoxelLodTerrain::process_transition_updates() {
+
+	for (unsigned int i = 0; i < _blocks_pending_transition_update.size(); ++i) {
+
+		VoxelBlock *block = _blocks_pending_transition_update[i];
+		CRASH_COND(block == nullptr);
+
+		if (block->is_visible()) {
+			block->set_transition_mask(get_transition_mask(block->position, block->lod_index));
+		}
+
+		block->pending_transition_update = false;
+	}
+
+	_blocks_pending_transition_update.clear();
+}
+
+uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) {
+
+	uint8_t transition_mask = 0;
+
+	if (lod_index + 1 >= _lods.size()) {
+		return transition_mask;
+	}
+
+	Lod &lower_lod = _lods[lod_index + 1];
+
+	if (!lower_lod.map.is_valid()) {
+		return transition_mask;
+	}
+
+	Vector3i lpos = block_pos >> 1;
+
+	// Check for lower-LOD blocks around
+	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+		Vector3i lnpos = (block_pos + Cube::g_side_normals[dir]) >> 1;
+
+		if (lnpos != lpos) {
+			VoxelBlock *nblock = lower_lod.map->get_block(lnpos);
+
+			if (nblock != nullptr && nblock->is_visible()) {
+				// The block has a visible neighbor of lower LOD
+				transition_mask |= (1 << dir);
+			}
+		}
+	}
+
+	return transition_mask;
 }
 
 Dictionary VoxelLodTerrain::get_statistics() const {

@@ -94,28 +94,6 @@ inline Vector3 get_secondary_position(Vector3 primary, Vector3 normal, int lod, 
 	return primary + delta;
 }
 
-// TODO Use this to prevent some cases of null normals
-inline Vector3 get_gradient_normal(uint8_t left, uint8_t right, uint8_t bottom, uint8_t top, uint8_t back, uint8_t front, uint8_t middle) {
-
-	float gx, gy, gz;
-
-	if (left == right && bottom == top && back == front) {
-		// Sided gradient, but can't be zero
-		float m = tof(tos(middle));
-		gx = tof(tos(left)) - m;
-		gy = tof(tos(bottom)) - m;
-		gz = tof(tos(back)) - m;
-
-	} else {
-		// Symetric gradient
-		gx = tof(tos(left)) - tof(tos(right));
-		gy = tof(tos(bottom)) - tof(tos(top));
-		gz = tof(tos(back)) - tof(tos(front));
-	}
-
-	return Vector3(gx, gy, gz).normalized();
-}
-
 inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &min_pos, const Vector3i &max_pos) {
 
 	uint8_t mask = 0;
@@ -143,8 +121,8 @@ inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &min_pos, con
 
 } // namespace
 
-int VoxelMesherTransvoxel::get_minimum_padding() const {
-	return MINIMUM_PADDING;
+VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
+	set_padding(MIN_PADDING, MAX_PADDING);
 }
 
 void VoxelMesherTransvoxel::clear_output() {
@@ -177,7 +155,7 @@ void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays) {
 	arrays[Mesh::ARRAY_INDEX] = indices;
 }
 
-void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) {
+void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer &voxels) {
 
 	int channel = VoxelBuffer::CHANNEL_ISOLEVEL;
 
@@ -187,23 +165,32 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer
 	// Once capacity is big enough, no more memory should be allocated
 	clear_output();
 
-	ERR_FAIL_COND(padding < MINIMUM_PADDING);
-
 	build_internal(voxels, channel);
-	//	OS::get_singleton()->print("vertices: %i, normals: %i, indices: %i\n",
-	//							   m_output_vertices.size(),
-	//							   m_output_normals.size(),
-	//							   m_output_indices.size());
 
 	if (_output_vertices.size() == 0) {
 		// The mesh can be empty
 		return;
 	}
 
-	Array arrays;
-	fill_surface_arrays(arrays);
+	Array regular_arrays;
+	fill_surface_arrays(regular_arrays);
+	output.surfaces.push_back(regular_arrays);
 
-	output.surfaces.push_back(arrays);
+	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+
+		clear_output();
+
+		build_transition(voxels, channel, dir);
+
+		if (_output_vertices.size() == 0) {
+			continue;
+		}
+
+		Array transition_arrays;
+		fill_surface_arrays(transition_arrays);
+		output.transition_surfaces[dir].push_back(transition_arrays);
+	}
+
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 	output.compression_flags = MESH_COMPRESSION_FLAGS;
 }
@@ -270,15 +257,15 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 	}
 
 	const Vector3i block_size = voxels.get_size();
-	const Vector3i block_size_without_padding = block_size - 3 * PAD;
+	const Vector3i block_size_without_padding = block_size - 3 * Vector3i(MIN_PADDING);
 
 	// Prepare vertex reuse cache
 	reset_reuse_cells(block_size);
 
 	// We iterate 2x2 voxel groups, which the paper calls "cells".
 	// We also reach one voxel further to compute normals, so we adjust the iterated area
-	const Vector3i min_pos = PAD;
-	const Vector3i max_pos = block_size - Vector3i(1) - PAD;
+	const Vector3i min_pos = Vector3i(MIN_PADDING);
+	const Vector3i max_pos = block_size - Vector3i(MAX_PADDING);
 	const Vector3i max_pos_c = max_pos - Vector3i(1);
 	// TODO Change the Mesher API to allow different min and max paddings. Here 1 on min, 2 on max
 	// TODO Also abstract positions with padding, it can get quite confusing when one is used but not the other...
@@ -433,10 +420,11 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 							// TODO Implement surface shifting interpolation (see other places we interpolate too).
 							// See issue https://github.com/Zylann/godot_voxel/issues/60
 							// Seen in the paper, it fixes "steps" between LODs on flat surfaces.
+							// It is using a binary search through higher lods to find the zero-crossing edge.
 							// I did not do it here, because our data model is such that when we have low-resolution voxels,
 							// we cannot just have a look at the high-res ones, because they are not in memory.
 							// However, it might be possible on low-res blocks bordering high-res ones due to neighboring rules,
-							// or with a different storage strategy.
+							// or by falling back on the generator that was used to produce the volume.
 
 							Vector3 primary = p0.to_vec3() * t0 + p1.to_vec3() * t1;
 							Vector3 normal = corner_normals[v0] * t0 + corner_normals[v1] * t1;
@@ -655,7 +643,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 	}
 
 	const Vector3i block_size = p_voxels.get_size();
-	const Vector3i block_size_without_padding = block_size - 3 * PAD;
+	const Vector3i block_size_without_padding = block_size - Vector3i(MIN_PADDING + MAX_PADDING);
 	//const Vector3i half_block_size = block_size / 2;
 
 	ERR_FAIL_COND(block_size.x < 3);
@@ -676,8 +664,8 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 	// This represents the actual box of voxels we are working on.
 	// It also represents positions of the minimum and maximum vertices that can be generated.
 	// Padding is present to allow reaching 1 voxel further for calculating normals
-	const Vector3i min_pos = PAD;
-	const Vector3i max_pos = block_size - Vector3i(1) - PAD;
+	const Vector3i min_pos = Vector3i(MIN_PADDING);
+	const Vector3i max_pos = block_size - Vector3i(MAX_PADDING);
 
 	int axis_x, axis_y;
 	L::get_face_axes(axis_x, axis_y, direction);
@@ -694,7 +682,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 	for (int fy = min_fpos_y; fy < max_fpos_y; fy += 2) {
 		for (int fx = min_fpos_x; fx < max_fpos_x; fx += 2) {
 
-			const int fz = PAD.x;
+			const int fz = MIN_PADDING;
 
 			const VoxelBuffer &fvoxels = p_voxels;
 
@@ -718,8 +706,6 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			//  3---4---5
 			//  |   |   |
 			//  0---1---2
-
-			// TODO Double-check positions and transforms. I understand what's needed (contrary to what's next ._.) but it's boring to do, so I botched it
 
 			// Full-resolution samples 0..8
 			for (unsigned int i = 0; i < 9; ++i) {
@@ -991,8 +977,8 @@ int VoxelMesherTransvoxel::emit_vertex(Vector3 primary, Vector3 normal, uint16_t
 	int vi = _output_vertices.size();
 
 	// TODO Unpad positions in calling code, as it may simplify border offset
-	primary -= PAD.to_vec3();
-	secondary -= PAD.to_vec3();
+	primary -= Vector3(MIN_PADDING, MIN_PADDING, MIN_PADDING);
+	secondary -= Vector3(MIN_PADDING, MIN_PADDING, MIN_PADDING);
 
 	_output_vertices.push_back(primary);
 	_output_normals.push_back(normal);

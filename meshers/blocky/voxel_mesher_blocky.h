@@ -14,7 +14,7 @@ class VoxelMesherBlocky : public VoxelMesher {
 
 public:
 	static const unsigned int MAX_MATERIALS = 8; // Arbitrary. Tweak if needed.
-	static const int MINIMUM_PADDING = 1;
+	static const int PADDING = 1;
 
 	VoxelMesherBlocky();
 
@@ -27,8 +27,7 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const { return _bake_occlusion; }
 
-	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) override;
-	int get_minimum_padding() const override;
+	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels) override;
 
 	VoxelMesher *clone() override;
 

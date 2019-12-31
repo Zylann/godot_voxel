@@ -10,10 +10,12 @@ class VoxelMesherTransvoxel : public VoxelMesher {
 	GDCLASS(VoxelMesherTransvoxel, VoxelMesher)
 
 public:
-	static const int MINIMUM_PADDING = 2;
+	static const int MIN_PADDING = 1;
+	static const int MAX_PADDING = 2;
 
-	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) override;
-	int get_minimum_padding() const override;
+	VoxelMesherTransvoxel();
+
+	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels) override;
 
 	VoxelMesher *clone() override;
 
@@ -54,8 +56,6 @@ private:
 	void fill_surface_arrays(Array &arrays);
 
 private:
-	const Vector3i PAD = Vector3i(1, 1, 1);
-
 	FixedArray<std::vector<ReuseCell>, 2> _cache;
 	FixedArray<std::vector<ReuseTransitionCell>, 2> _cache_2d;
 	Vector3i _block_size;

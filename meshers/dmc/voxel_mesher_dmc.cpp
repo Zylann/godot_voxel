@@ -1429,6 +1429,7 @@ void polygonize_volume_directly(const VoxelBuffer &voxels, Vector3i min, Vector3
 #define BUILD_OCTREE_BOTTOM_UP
 
 VoxelMesherDMC::VoxelMesherDMC() {
+	set_padding(PADDING, PADDING);
 }
 
 void VoxelMesherDMC::set_mesh_mode(MeshMode mode) {
@@ -1463,7 +1464,7 @@ VoxelMesherDMC::SeamMode VoxelMesherDMC::get_seam_mode() const {
 	return _seam_mode;
 }
 
-void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) {
+void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxels) {
 
 	// Requirements:
 	// - Voxel data must be padded
@@ -1476,15 +1477,13 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 		return;
 	}
 
-	ERR_FAIL_COND(padding < MINIMUM_PADDING);
-
 	const Vector3i buffer_size = voxels.get_size();
 	// Taking previous power of two because the algorithm uses an integer cubic octree, and data should be padded
 	int chunk_size = previous_power_of_2(MIN(MIN(buffer_size.x, buffer_size.y), buffer_size.z));
 
-	ERR_FAIL_COND(voxels.get_size().x < chunk_size + padding * 2);
-	ERR_FAIL_COND(voxels.get_size().y < chunk_size + padding * 2);
-	ERR_FAIL_COND(voxels.get_size().z < chunk_size + padding * 2);
+	ERR_FAIL_COND(voxels.get_size().x < chunk_size + PADDING * 2);
+	ERR_FAIL_COND(voxels.get_size().y < chunk_size + PADDING * 2);
+	ERR_FAIL_COND(voxels.get_size().z < chunk_size + PADDING * 2);
 
 	// TODO Option for this in case LOD is not used
 	bool skirts_enabled = _seam_mode == SEAM_MARCHING_SQUARE_SKIRTS;
@@ -1498,7 +1497,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 	// So we can't improve this further until Godot's API gives us that possibility, or other approaches like skirts need to be taken.
 
 	// Construct an intermediate to handle padding transparently
-	dmc::VoxelAccess voxels_access(voxels, Vector3i(padding));
+	dmc::VoxelAccess voxels_access(voxels, Vector3i(PADDING));
 
 	real_t time_before = OS::get_singleton()->get_ticks_usec();
 
@@ -1571,7 +1570,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 		// This is essentially regular marching cubes.
 
 		time_before = OS::get_singleton()->get_ticks_usec();
-		dmc::polygonize_volume_directly(voxels, Vector3i(padding), Vector3i(chunk_size), _mesh_builder, skirts_enabled);
+		dmc::polygonize_volume_directly(voxels, Vector3i(PADDING), Vector3i(chunk_size), _mesh_builder, skirts_enabled);
 		_stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
 	}
 
@@ -1589,10 +1588,6 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 	} else {
 		output.primitive_type = Mesh::PRIMITIVE_LINES;
 	}
-}
-
-int VoxelMesherDMC::get_minimum_padding() const {
-	return MINIMUM_PADDING;
 }
 
 VoxelMesher *VoxelMesherDMC::clone() {

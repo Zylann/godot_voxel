@@ -4,20 +4,22 @@
 #include "../voxel_mesher.h"
 
 // Simple marching cubes.
-// Implementation is simplified from Transvoxel.
+// Implementation is simplified from old Transvoxel code.
 class VoxelMesherMC : public VoxelMesher {
 	GDCLASS(VoxelMesherMC, VoxelMesher)
 
 public:
-	static const int MINIMUM_PADDING = 2;
+	static const int MIN_PADDING = 1;
+	static const int MAX_PADDING = 2;
 
 	enum SeamMode {
 		SEAM_NONE,
 		SEAM_OVERLAP
 	};
 
-	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels, int padding) override;
-	int get_minimum_padding() const override;
+	VoxelMesherMC();
+
+	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels) override;
 
 	void set_seam_mode(SeamMode mode);
 	SeamMode get_seam_mode() const;

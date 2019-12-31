@@ -1,13 +1,13 @@
 #include "voxel_mesh_updater.h"
-#include "../meshers/dmc/voxel_mesher_dmc.h"
+#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../util/utility.h"
 #include "voxel_lod_terrain.h"
 #include <core/os/os.h>
 
-static void scale_mesh_data(VoxelMesher::Output &data, float factor) {
+static void scale_mesh_data(Vector<Array> &surfaces, float factor) {
 
-	for (int i = 0; i < data.surfaces.size(); ++i) {
-		Array &surface = data.surfaces.write[i]; // There is COW here too but should not happen, hopefully
+	for (int i = 0; i < surfaces.size(); ++i) {
+		Array &surface = surfaces.write[i]; // There is COW here too but should not happen, hopefully
 
 		if (surface.empty()) {
 			continue;
@@ -37,24 +37,24 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 	print_line("Constructing VoxelMeshUpdater");
 
 	Ref<VoxelMesherBlocky> blocky_mesher;
-	Ref<VoxelMesherDMC> smooth_mesher;
+	Ref<VoxelMesherTransvoxel> smooth_mesher;
 
-	_required_padding = 0;
+	_minimum_padding = 0;
+	_maximum_padding = 0;
 
 	if (params.library.is_valid()) {
 		blocky_mesher.instance();
 		blocky_mesher->set_library(params.library);
 		blocky_mesher->set_occlusion_enabled(params.baked_ao);
 		blocky_mesher->set_occlusion_darkness(params.baked_ao_darkness);
-		_required_padding = max(_required_padding, blocky_mesher->get_minimum_padding());
+		_minimum_padding = max(_minimum_padding, blocky_mesher->get_minimum_padding());
+		_maximum_padding = max(_maximum_padding, blocky_mesher->get_maximum_padding());
 	}
 
 	if (params.smooth_surface) {
 		smooth_mesher.instance();
-		smooth_mesher->set_geometric_error(0.05);
-		smooth_mesher->set_simplify_mode(VoxelMesherDMC::SIMPLIFY_NONE);
-		smooth_mesher->set_seam_mode(VoxelMesherDMC::SEAM_MARCHING_SQUARE_SKIRTS);
-		_required_padding = max(_required_padding, smooth_mesher->get_minimum_padding());
+		_minimum_padding = max(_minimum_padding, smooth_mesher->get_minimum_padding());
+		_maximum_padding = max(_maximum_padding, smooth_mesher->get_maximum_padding());
 	}
 
 	Mgr::BlockProcessingFunc processors[Mgr::MAX_LOD];
@@ -73,7 +73,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 		}
 
 		processors[i] = [this, blocky_mesher, smooth_mesher](const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Mgr::ProcessorStats &_) {
-			this->process_blocks_thread_func(inputs, outputs, blocky_mesher, smooth_mesher, this->_required_padding);
+			this->process_blocks_thread_func(inputs, outputs, blocky_mesher, smooth_mesher);
 		};
 	}
 
@@ -91,8 +91,7 @@ void VoxelMeshUpdater::process_blocks_thread_func(
 		const ArraySlice<InputBlock> inputs,
 		ArraySlice<OutputBlock> outputs,
 		Ref<VoxelMesher> blocky_mesher,
-		Ref<VoxelMesher> smooth_mesher,
-		int padding) {
+		Ref<VoxelMesher> smooth_mesher) {
 
 	CRASH_COND(inputs.size() != outputs.size());
 
@@ -105,16 +104,20 @@ void VoxelMeshUpdater::process_blocks_thread_func(
 		CRASH_COND(block.voxels.is_null());
 
 		if (blocky_mesher.is_valid()) {
-			blocky_mesher->build(output.blocky_surfaces, **block.voxels, padding);
+			blocky_mesher->build(output.blocky_surfaces, **block.voxels);
 		}
 		if (smooth_mesher.is_valid()) {
-			smooth_mesher->build(output.smooth_surfaces, **block.voxels, padding);
+			smooth_mesher->build(output.smooth_surfaces, **block.voxels);
 		}
 
 		if (ib.lod > 0) {
+			// TODO Make this optional if the mesher can factor in the upscale already
 			float factor = 1 << ib.lod;
-			scale_mesh_data(output.blocky_surfaces, factor);
-			scale_mesh_data(output.smooth_surfaces, factor);
+			scale_mesh_data(output.blocky_surfaces.surfaces, factor);
+			scale_mesh_data(output.smooth_surfaces.surfaces, factor);
+			for (int i = 0; i < output.smooth_surfaces.transition_surfaces.size(); ++i) {
+				scale_mesh_data(output.smooth_surfaces.transition_surfaces[i], factor);
+			}
 		}
 	}
 }

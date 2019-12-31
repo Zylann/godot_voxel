@@ -41,17 +41,18 @@ public:
 	void push(const Input &input) { _mgr->push(input); }
 	void pop(Output &output) { _mgr->pop(output); }
 
-	int get_required_padding() const { return _required_padding; }
+	int get_minimum_padding() const { return _minimum_padding; }
+	int get_maximum_padding() const { return _maximum_padding; }
 
 private:
 	void process_blocks_thread_func(const ArraySlice<InputBlock> inputs,
 			ArraySlice<OutputBlock> outputs,
 			Ref<VoxelMesher> blocky_mesher,
-			Ref<VoxelMesher> smooth_mesher,
-			int padding);
+			Ref<VoxelMesher> smooth_mesher);
 
 	Mgr *_mgr = nullptr;
-	int _required_padding = 0;
+	int _minimum_padding = 0;
+	int _maximum_padding = 0;
 };
 
 #endif // VOXEL_MESH_UPDATER_H

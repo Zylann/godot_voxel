@@ -111,6 +111,11 @@ private:
 	void save_all_modified_blocks(bool with_copy);
 	void send_block_data_requests();
 
+	void add_transition_update(VoxelBlock *block);
+	void add_transition_updates_around(Vector3i block_pos, int lod_index);
+	void process_transition_updates();
+	uint8_t get_transition_mask(Vector3i block_pos, int lod_index);
+
 	struct OctreeItem {
 		LodOctree<bool> octree;
 #ifdef VOXEL_DEBUG_BOXES
@@ -136,6 +141,9 @@ private:
 	VoxelMeshUpdater *_block_updater = nullptr;
 	std::vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
 	std::vector<VoxelDataLoader::InputBlock> _blocks_to_save;
+
+	// Only populated and then cleared inside _process, so lifetime of pointers should be valid
+	std::vector<VoxelBlock *> _blocks_pending_transition_update;
 
 	Ref<Material> _material;
 
@@ -164,7 +172,7 @@ private:
 #endif
 	};
 
-	Lod _lods[MAX_LOD];
+	FixedArray<Lod, MAX_LOD> _lods;
 	int _lod_count = 0;
 	float _lod_split_scale = 0.f;
 	unsigned int _view_distance_voxels = 512;
