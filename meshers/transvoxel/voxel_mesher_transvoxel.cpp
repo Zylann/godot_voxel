@@ -229,28 +229,6 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 		}
 	};
 
-	//
-	//    6-------7
-	//   /|      /|
-	//  / |     / |  Corners
-	// 4-------5  |
-	// |  2----|--3
-	// | /     | /   z y
-	// |/      |/    |/
-	// 0-------1     o--x
-	//
-
-	static const Vector3i g_corner_dirs[8] = {
-		Vector3i(0, 0, 0),
-		Vector3i(1, 0, 0),
-		Vector3i(0, 1, 0),
-		Vector3i(1, 1, 0),
-		Vector3i(0, 0, 1),
-		Vector3i(1, 0, 1),
-		Vector3i(0, 1, 1),
-		Vector3i(1, 1, 1)
-	};
-
 	if (voxels.is_uniform(channel)) {
 		// Nothing to extract, because constant isolevels never cross the threshold and describe no surface
 		return;
@@ -272,6 +250,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 	FixedArray<int8_t, 8> cell_samples;
 	FixedArray<Vector3, 8> corner_normals;
+	FixedArray<Vector3i, 8> corner_positions;
 
 	// Iterate all cells with padding (expected to be neighbors)
 	Vector3i pos;
@@ -279,17 +258,30 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 		for (pos.y = min_pos.y; pos.y < max_pos.y; ++pos.y) {
 			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
 
+				//    6-------7
+				//   /|      /|
+				//  / |     / |  Corners
+				// 4-------5  |
+				// |  2----|--3
+				// | /     | /   z y
+				// |/      |/    |/
+				// 0-------1     o--x
+				//
+				corner_positions[0] = Vector3i(pos.x, pos.y, pos.z);
+				corner_positions[1] = Vector3i(pos.x + 1, pos.y, pos.z);
+				corner_positions[2] = Vector3i(pos.x, pos.y + 1, pos.z);
+				corner_positions[3] = Vector3i(pos.x + 1, pos.y + 1, pos.z);
+				corner_positions[4] = Vector3i(pos.x, pos.y, pos.z + 1);
+				corner_positions[5] = Vector3i(pos.x + 1, pos.y, pos.z + 1);
+				corner_positions[6] = Vector3i(pos.x, pos.y + 1, pos.z + 1);
+				corner_positions[7] = Vector3i(pos.x + 1, pos.y + 1, pos.z + 1);
+
 				// Get the value of cells.
 				// Negative values are "solid" and positive are "air".
 				// Due to raw cells being unsigned 8-bit, they get converted to signed.
-				cell_samples[0] = tos(get_voxel(voxels, pos.x, pos.y, pos.z, channel));
-				cell_samples[1] = tos(get_voxel(voxels, pos.x + 1, pos.y, pos.z, channel));
-				cell_samples[2] = tos(get_voxel(voxels, pos.x, pos.y + 1, pos.z, channel));
-				cell_samples[3] = tos(get_voxel(voxels, pos.x + 1, pos.y + 1, pos.z, channel));
-				cell_samples[4] = tos(get_voxel(voxels, pos.x, pos.y, pos.z + 1, channel));
-				cell_samples[5] = tos(get_voxel(voxels, pos.x + 1, pos.y, pos.z + 1, channel));
-				cell_samples[6] = tos(get_voxel(voxels, pos.x, pos.y + 1, pos.z + 1, channel));
-				cell_samples[7] = tos(get_voxel(voxels, pos.x + 1, pos.y + 1, pos.z + 1, channel));
+				for (unsigned int i = 0; i < corner_positions.size(); ++i) {
+					cell_samples[i] = tos(get_voxel(voxels, corner_positions[i], channel));
+				}
 
 				// Concatenate the sign of cell values to obtain the case code.
 				// Index 0 is the less significant bit, and index 7 is the most significant bit.
@@ -316,16 +308,18 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 				// TODO We might not always need all of them
 				// Compute normals
-				for (unsigned int i = 0; i < 8; ++i) {
+				for (unsigned int i = 0; i < corner_positions.size(); ++i) {
 
-					Vector3i p = pos + g_corner_dirs[i];
+					Vector3i p = corner_positions[i];
 
-					float nx = tof(tos(get_voxel(voxels, p - Vector3i(1, 0, 0), channel))) - tof(tos(get_voxel(voxels, p + Vector3i(1, 0, 0), channel)));
-					float ny = tof(tos(get_voxel(voxels, p - Vector3i(0, 1, 0), channel))) - tof(tos(get_voxel(voxels, p + Vector3i(0, 1, 0), channel)));
-					float nz = tof(tos(get_voxel(voxels, p - Vector3i(0, 0, 1), channel))) - tof(tos(get_voxel(voxels, p + Vector3i(0, 0, 1), channel)));
+					float nx = tof(tos(get_voxel(voxels, p.x - 1, p.y, p.z, channel)));
+					float ny = tof(tos(get_voxel(voxels, p.x, p.y - 1, p.z, channel)));
+					float nz = tof(tos(get_voxel(voxels, p.x, p.y, p.z - 1, channel)));
+					float px = tof(tos(get_voxel(voxels, p.x + 1, p.y, p.z, channel)));
+					float py = tof(tos(get_voxel(voxels, p.x, p.y + 1, p.z, channel)));
+					float pz = tof(tos(get_voxel(voxels, p.x, p.y, p.z + 1, channel)));
 
-					corner_normals[i] = Vector3(nx, ny, nz);
-					corner_normals[i].normalize();
+					corner_normals[i] = get_gradient_normal(nx, px, ny, py, nz, pz, cell_samples[i]);
 				}
 
 				// For cells occurring along the minimal boundaries of a block,
@@ -379,8 +373,8 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 					float t0 = static_cast<float>(t) / 256.f;
 					float t1 = static_cast<float>(0x100 - t) / 256.f;
 
-					Vector3i p0 = pos + g_corner_dirs[v0];
-					Vector3i p1 = pos + g_corner_dirs[v1];
+					Vector3i p0 = corner_positions[v0];
+					Vector3i p1 = corner_positions[v1];
 
 					if (t & 0xff) {
 						// Vertex is between p0 and p1 (inside the edge)
@@ -729,12 +723,14 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 
 				Vector3i p = cell_positions[i];
 
-				float nx = tof(tos(get_voxel(fvoxels, p - Vector3i(1, 0, 0), channel))) - tof(tos(get_voxel(fvoxels, p + Vector3i(1, 0, 0), channel)));
-				float ny = tof(tos(get_voxel(fvoxels, p - Vector3i(0, 1, 0), channel))) - tof(tos(get_voxel(fvoxels, p + Vector3i(0, 1, 0), channel)));
-				float nz = tof(tos(get_voxel(fvoxels, p - Vector3i(0, 0, 1), channel))) - tof(tos(get_voxel(fvoxels, p + Vector3i(0, 0, 1), channel)));
+				float nx = tof(tos(get_voxel(fvoxels, p.x - 1, p.y, p.z, channel)));
+				float ny = tof(tos(get_voxel(fvoxels, p.x, p.y - 1, p.z, channel)));
+				float nz = tof(tos(get_voxel(fvoxels, p.x, p.y, p.z - 1, channel)));
+				float px = tof(tos(get_voxel(fvoxels, p.x + 1, p.y, p.z, channel)));
+				float py = tof(tos(get_voxel(fvoxels, p.x, p.y + 1, p.z, channel)));
+				float pz = tof(tos(get_voxel(fvoxels, p.x, p.y, p.z + 1, channel)));
 
-				cell_normals[i] = Vector3(nx, ny, nz);
-				cell_normals[i].normalize();
+				cell_normals[i] = get_gradient_normal(nx, px, ny, py, nz, pz, cell_samples[i]);
 			}
 			cell_normals[0x9] = cell_normals[0];
 			cell_normals[0xA] = cell_normals[2];
