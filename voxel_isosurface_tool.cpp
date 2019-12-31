@@ -100,7 +100,7 @@ namespace {
 inline float sdf_cube(Vector3 pos, Vector3 extents) {
 
 	Vector3 d = pos.abs() - extents;
-	return min(max(d.x, max(d.y, d.z)), 0.0) + Vector3(max(d.x, 0), max(d.y, 0), max(d.z, 0)).length();
+	return min(max(d.x, max(d.y, d.z)), 0.f) + Vector3(max(d.x, 0.f), max(d.y, 0.f), max(d.z, 0.f)).length();
 }
 
 } // namespace

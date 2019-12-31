@@ -139,7 +139,7 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 			break;
 
 		case VoxelTool::MODE_REMOVE:
-			res = max(1.0 - src_value, dst_value);
+			res = max(1.f - src_value, dst_value);
 			break;
 
 		case VoxelTool::MODE_SET:

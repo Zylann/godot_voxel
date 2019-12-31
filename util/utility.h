@@ -87,7 +87,8 @@ inline float min(const float &a, const float &b) {
 	return a < b ? a : b;
 }
 
-inline float max(const float &a, const float &b) {
+template <typename T>
+inline float max(const T a, const T b) {
 	return a > b ? a : b;
 }
 
