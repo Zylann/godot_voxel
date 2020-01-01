@@ -294,10 +294,9 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 				case_code |= (sign(cell_samples[6]) << 6);
 				case_code |= (sign(cell_samples[7]) << 7);
 
-				{
-					ReuseCell &rc = get_reuse_cell(pos);
-					rc.case_index = case_code;
-				}
+				ReuseCell &current_reuse_cell = get_reuse_cell(pos);
+				// Mark as unusable for now
+				current_reuse_cell.vertices[0] = -1;
 
 				if (case_code == 0 || case_code == 255) {
 					// If the case_code is 0 or 255, there is no triangulation to do
@@ -398,14 +397,8 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						if (present) {
 							Vector3i cache_pos = pos + L::dir_to_prev_vec(reuse_dir);
 							ReuseCell &prev_cell = get_reuse_cell(cache_pos);
-
-							if (prev_cell.case_index == 0 || prev_cell.case_index == 255) {
-								// TODO I don't think this can happen for non-corner vertices.
-								cell_vertex_indices[i] = -1;
-							} else {
-								// Will reuse a previous vertice
-								cell_vertex_indices[i] = prev_cell.vertices[reuse_vertex_index];
-							}
+							// Will reuse a previous vertice
+							cell_vertex_indices[i] = prev_cell.vertices[reuse_vertex_index];
 						}
 
 						if (!present || cell_vertex_indices[i] == -1) {
@@ -435,8 +428,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 							if (reuse_dir & 8) {
 								// Store the generated vertex so that other cells can reuse it.
-								ReuseCell &rc = get_reuse_cell(pos);
-								rc.vertices[reuse_vertex_index] = cell_vertex_indices[i];
+								current_reuse_cell.vertices[reuse_vertex_index] = cell_vertex_indices[i];
 							}
 						}
 
@@ -458,8 +450,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 						cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask, secondary);
 
-						ReuseCell &rc = get_reuse_cell(pos);
-						rc.vertices[0] = cell_vertex_indices[i];
+						current_reuse_cell.vertices[0] = cell_vertex_indices[i];
 
 					} else {
 						// The vertex is either on p0 or p1
@@ -476,14 +467,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						if (present) {
 							Vector3i cache_pos = pos + L::dir_to_prev_vec(reuse_dir);
 							ReuseCell prev_cell = get_reuse_cell(cache_pos);
-
-							// The previous cell might not have any geometry, and we
-							// might therefore have to create a new vertex anyway.
-							if (prev_cell.case_index == 0 || prev_cell.case_index == 255) {
-								cell_vertex_indices[i] = -1;
-							} else {
-								cell_vertex_indices[i] = prev_cell.vertices[0];
-							}
+							cell_vertex_indices[i] = prev_cell.vertices[0];
 						}
 
 						if (!present || cell_vertex_indices[i] < 0) {
@@ -747,14 +731,16 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			case_code |= (sign(cell_samples[3]) << 7);
 			case_code |= (sign(cell_samples[4]) << 8);
 
+			ReuseTransitionCell &current_reuse_cell = get_reuse_cell_2d(fx, fy);
+			// Mark current cell unused for now
+			current_reuse_cell.vertices[0] = -1;
+
 			if (case_code == 0 || case_code == 511) {
 				// The cell contains no triangles.
 				continue;
 			}
 
 			CRASH_COND(case_code > 511);
-
-			get_reuse_cell_2d(fx, fy).case_index = case_code;
 
 			const uint8_t cell_class = Transvoxel::get_transition_cell_class(case_code);
 
@@ -813,16 +799,9 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 					if (present) {
 						// The previous cell is available. Retrieve the cached cell
 						// from which to retrieve the reused vertex index from.
-
 						const ReuseTransitionCell &prev = get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
-
-						if (prev.case_index == 0 || prev.case_index == 511) {
-							// Previous cell does not contain any geometry.
-							cell_vertex_indices[i] = -1;
-						} else {
-							// Reuse the vertex index from the previous cell.
-							cell_vertex_indices[i] = prev.vertices[vertex_index_to_reuse_or_create];
-						}
+						// Reuse the vertex index from the previous cell.
+						cell_vertex_indices[i] = prev.vertices[vertex_index_to_reuse_or_create];
 					}
 
 					if (!present || cell_vertex_indices[i] == -1) {
@@ -878,17 +857,9 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 					if (present) {
 						// The previous cell is available. Retrieve the cached cell
 						// from which to retrieve the reused vertex index from.
-
 						const ReuseTransitionCell &prev = get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
-
-						if (prev.case_index == 0 || prev.case_index == 511) {
-							// Previous cell had no geometry
-							cell_vertex_indices[i] = -1;
-
-						} else {
-							// Reuse the vertex index from the previous cell.
-							cell_vertex_indices[i] = prev.vertices[vertex_index_to_reuse_or_create];
-						}
+						// Reuse the vertex index from the previous cell.
+						cell_vertex_indices[i] = prev.vertices[vertex_index_to_reuse_or_create];
 					}
 
 					if (!present || cell_vertex_indices[i] == -1) {
@@ -942,15 +913,21 @@ void VoxelMesherTransvoxel::reset_reuse_cells(Vector3i block_size) {
 	_block_size = block_size;
 	unsigned int deck_area = block_size.x * block_size.y;
 	for (int i = 0; i < _cache.size(); ++i) {
-		_cache[i].clear();
-		_cache[i].resize(deck_area);
+		std::vector<ReuseCell> &deck = _cache[i];
+		deck.resize(deck_area);
+		for (int j = 0; j < deck.size(); ++j) {
+			deck[j].vertices.fill(-1);
+		}
 	}
 }
 
 void VoxelMesherTransvoxel::reset_reuse_cells_2d(Vector3i block_size) {
 	for (int i = 0; i < _cache_2d.size(); ++i) {
-		_cache_2d[i].clear();
-		_cache_2d[i].resize(block_size.x);
+		std::vector<ReuseTransitionCell> &row = _cache_2d[i];
+		row.resize(block_size.x);
+		for (int j = 0; j < row.size(); ++j) {
+			row[j].vertices.fill(-1);
+		}
 	}
 }
 

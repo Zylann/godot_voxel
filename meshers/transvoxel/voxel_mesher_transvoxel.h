@@ -25,18 +25,10 @@ protected:
 private:
 	struct ReuseCell {
 		FixedArray<int, 4> vertices;
-		int case_index = 0;
-		ReuseCell() {
-			vertices.fill(-1);
-		}
 	};
 
 	struct ReuseTransitionCell {
 		FixedArray<int, 12> vertices;
-		int case_index = 0;
-		ReuseTransitionCell() {
-			vertices.fill(-1);
-		}
 	};
 
 	struct TransitionVoxels {
