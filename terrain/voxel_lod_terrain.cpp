@@ -227,7 +227,7 @@ void VoxelLodTerrain::post_edit_block_lod0(Vector3i block_pos_lod0) {
 Ref<VoxelTool> VoxelLodTerrain::get_voxel_tool() {
 	VoxelToolLodTerrain *vt = memnew(VoxelToolLodTerrain(this, _lods[0].map));
 	// Set to most commonly used channel on this kind of terrain
-	vt->set_channel(VoxelBuffer::CHANNEL_ISOLEVEL);
+	vt->set_channel(VoxelBuffer::CHANNEL_SDF);
 	return Ref<VoxelTool>(vt);
 }
 
@@ -1137,7 +1137,7 @@ void VoxelLodTerrain::_process() {
 
 				{
 					VOXEL_PROFILE_SCOPE(profile_process_send_mesh_updates_block_copy);
-					unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_ISOLEVEL);
+					unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_SDF);
 					lod.map->get_buffer_copy(lod.map->block_to_voxel(block_pos) - Vector3i(min_padding), **nbuffer, channels_mask);
 				}
 

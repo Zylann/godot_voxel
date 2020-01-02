@@ -38,11 +38,11 @@ inline void do_op(VoxelBuffer &buffer, int x, int y, int z, float d1, VoxelIsoSu
 	switch (op) {
 
 		case VoxelIsoSurfaceTool::OP_ADD:
-			res = MIN(d1, buffer.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL));
+			res = MIN(d1, buffer.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_SDF));
 			break;
 
 		case VoxelIsoSurfaceTool::OP_SUBTRACT:
-			res = MAX(1.0 - d1, buffer.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL));
+			res = MAX(1.0 - d1, buffer.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_SDF));
 			break;
 
 		case VoxelIsoSurfaceTool::OP_SET:
@@ -54,7 +54,7 @@ inline void do_op(VoxelBuffer &buffer, int x, int y, int z, float d1, VoxelIsoSu
 			break;
 	}
 
-	buffer.set_voxel_f(res, x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
+	buffer.set_voxel_f(res, x, y, z, VoxelBuffer::CHANNEL_SDF);
 }
 
 } // namespace

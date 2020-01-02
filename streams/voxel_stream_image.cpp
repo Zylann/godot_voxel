@@ -68,7 +68,7 @@ void VoxelStreamImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i orig
 			int lx = x << lod;
 			int lz = z << lod;
 
-			if (_channel == VoxelBuffer::CHANNEL_ISOLEVEL) {
+			if (_channel == VoxelBuffer::CHANNEL_SDF) {
 
 				float h = get_height_blurred(image, ox + lx, oz + lz) * hspan - hbase;
 

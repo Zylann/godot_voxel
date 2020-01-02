@@ -904,7 +904,7 @@ void VoxelTerrain::_process() {
 					int air_type = 0;
 					if (
 							block->voxels->is_uniform(VoxelBuffer::CHANNEL_TYPE) &&
-							block->voxels->is_uniform(VoxelBuffer::CHANNEL_ISOLEVEL) &&
+							block->voxels->is_uniform(VoxelBuffer::CHANNEL_SDF) &&
 							block->voxels->get_voxel(0, 0, 0, VoxelBuffer::CHANNEL_TYPE) == air_type) {
 
 						// If we got here, it must have been because of scheduling an update
@@ -938,7 +938,7 @@ void VoxelTerrain::_process() {
 			unsigned int max_padding = _block_updater->get_maximum_padding();
 			nbuffer->create(Vector3i(block_size + min_padding + max_padding));
 
-			unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_ISOLEVEL);
+			unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_SDF);
 			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(min_padding), **nbuffer, channels_mask);
 
 			VoxelMeshUpdater::InputBlock iblock;

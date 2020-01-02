@@ -13,7 +13,7 @@
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Data2,Data3,Data4,Data5,Data6,Data7";
 
 VoxelBuffer::VoxelBuffer() {
-	_channels[CHANNEL_ISOLEVEL].defval = 255;
+	_channels[CHANNEL_SDF].defval = 255;
 }
 
 VoxelBuffer::~VoxelBuffer() {
@@ -445,7 +445,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 	for (pos.z = 0; pos.z < _size.z; ++pos.z) {
 		for (pos.x = 0; pos.x < _size.x; ++pos.x) {
 			for (pos.y = _size.y - 1; pos.y >= 0; --pos.y) {
-				float v = get_voxel_f(pos.x, pos.y, pos.z, CHANNEL_ISOLEVEL);
+				float v = get_voxel_f(pos.x, pos.y, pos.z, CHANNEL_SDF);
 				if (v < 0.0) {
 					break;
 				}
@@ -489,7 +489,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::compress_uniform_channels);
 
 	BIND_ENUM_CONSTANT(CHANNEL_TYPE);
-	BIND_ENUM_CONSTANT(CHANNEL_ISOLEVEL);
+	BIND_ENUM_CONSTANT(CHANNEL_SDF);
 	BIND_ENUM_CONSTANT(CHANNEL_DATA2);
 	BIND_ENUM_CONSTANT(CHANNEL_DATA3);
 	BIND_ENUM_CONSTANT(CHANNEL_DATA4);

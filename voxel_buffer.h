@@ -17,7 +17,7 @@ class VoxelBuffer : public Reference {
 public:
 	enum ChannelId {
 		CHANNEL_TYPE = 0,
-		CHANNEL_ISOLEVEL, // TODO Rename SDF
+		CHANNEL_SDF,
 		CHANNEL_DATA2,
 		CHANNEL_DATA3,
 		CHANNEL_DATA4,

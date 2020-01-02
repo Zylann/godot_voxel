@@ -47,7 +47,7 @@ static bool cb_raycast_predicate(Vector3i pos, void *context_ptr) {
 	if (voxel.is_transparent() == false)
 		return true;
 
-	float v1 = map->get_voxel_f(pos, VoxelBuffer::CHANNEL_ISOLEVEL);
+	float v1 = map->get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
 	return v1 < 0;
 }
 

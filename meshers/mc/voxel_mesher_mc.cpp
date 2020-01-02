@@ -75,7 +75,7 @@ VoxelMesherMC::VoxelMesherMC() {
 
 void VoxelMesherMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxels) {
 
-	int channel = VoxelBuffer::CHANNEL_ISOLEVEL;
+	int channel = VoxelBuffer::CHANNEL_SDF;
 
 	// Initialize dynamic memory:
 	// These vectors are re-used.

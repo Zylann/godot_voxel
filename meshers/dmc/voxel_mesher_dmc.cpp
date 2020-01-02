@@ -48,7 +48,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 
 	Vector3i origin = node_origin + voxels.offset;
 	int step = node_size;
-	int channel = VoxelBuffer::CHANNEL_ISOLEVEL;
+	int channel = VoxelBuffer::CHANNEL_SDF;
 
 	// Don't split if nothing is inside, i.e isolevel distance is greater than the size of the cube we are in
 	Vector3i center_pos = node_origin + Vector3i(node_size / 2);
@@ -1472,7 +1472,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 
 	_stats = {};
 
-	if (voxels.is_uniform(VoxelBuffer::CHANNEL_ISOLEVEL)) {
+	if (voxels.is_uniform(VoxelBuffer::CHANNEL_SDF)) {
 		// That won't produce any polygon
 		return;
 	}

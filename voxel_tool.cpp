@@ -91,7 +91,7 @@ void VoxelTool::do_point(Vector3i pos) {
 	if (!is_area_editable(box)) {
 		return;
 	}
-	if (_channel == VoxelBuffer::CHANNEL_ISOLEVEL) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		_set_voxel_f(pos, _mode == MODE_REMOVE ? 1.0 : -1.0);
 	} else {
 		_set_voxel(pos, _mode == MODE_REMOVE ? _eraser_value : _value);
@@ -163,7 +163,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 		return;
 	}
 
-	if (_channel == VoxelBuffer::CHANNEL_ISOLEVEL) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 
 		box.for_each_cell([this, center, radius](Vector3i pos) {
 			float d = pos.to_vec3().distance_to(center) - radius;

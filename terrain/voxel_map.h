@@ -47,8 +47,8 @@ public:
 	int get_voxel(Vector3i pos, unsigned int c = 0) const;
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
 
-	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_ISOLEVEL) const;
-	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_ISOLEVEL);
+	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_SDF) const;
+	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_SDF);
 
 	void set_default_voxel(int value, unsigned int channel = 0);
 	int get_default_voxel(unsigned int channel = 0);

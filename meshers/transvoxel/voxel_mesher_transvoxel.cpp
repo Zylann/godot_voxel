@@ -157,7 +157,7 @@ void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays) {
 
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer &voxels) {
 
-	int channel = VoxelBuffer::CHANNEL_ISOLEVEL;
+	int channel = VoxelBuffer::CHANNEL_SDF;
 
 	// Initialize dynamic memory:
 	// These vectors are re-used.
@@ -202,7 +202,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> vox
 
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
-	build_transition(**voxels, VoxelBuffer::CHANNEL_ISOLEVEL, direction);
+	build_transition(**voxels, VoxelBuffer::CHANNEL_SDF, direction);
 
 	Ref<ArrayMesh> mesh;
 

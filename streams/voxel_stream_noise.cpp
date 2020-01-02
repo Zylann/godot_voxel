@@ -34,11 +34,11 @@ void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin
 
 	if (origin_in_voxels.y > _height_start + _height_range) {
 
-		buffer.clear_channel_f(VoxelBuffer::CHANNEL_ISOLEVEL, 100.0);
+		buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 100.0);
 
 	} else if (origin_in_voxels.y + (buffer.get_size().y << lod) < _height_start) {
 
-		buffer.clear_channel_f(VoxelBuffer::CHANNEL_ISOLEVEL, -100.0);
+		buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, -100.0);
 
 	} else {
 
@@ -86,7 +86,7 @@ void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin
 					float t = (ly - _height_start) / _height_range;
 					float d = (n + 2.0 * t - 1.0) * iso_scale;
 
-					buffer.set_voxel_f(d, x, y, z, VoxelBuffer::CHANNEL_ISOLEVEL);
+					buffer.set_voxel_f(d, x, y, z, VoxelBuffer::CHANNEL_SDF);
 					// TODO Support for blocky voxels
 				}
 			}
