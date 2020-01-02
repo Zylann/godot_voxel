@@ -96,6 +96,8 @@ void VoxelStreamImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i orig
 	}
 
 	image.unlock();
+
+	out_buffer.compress_uniform_channels();
 }
 
 void VoxelStreamImage::_bind_methods() {
