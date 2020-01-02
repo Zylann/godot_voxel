@@ -54,12 +54,22 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelMesherDMC>();
 	ClassDB::register_class<VoxelMesherMC>();
 
+
+#ifdef VOXEL_PROFILING
+	ZProfiler::create_singleton();
+#endif
+
 #ifdef TOOLS_ENABLED
 	VoxelDebug::create_debug_box_mesh();
 #endif
 }
 
 void unregister_voxel_types() {
+
+
+#ifdef VOXEL_PROFILING
+	ZProfiler::destroy_singleton();
+#endif
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::free_debug_box_mesh();

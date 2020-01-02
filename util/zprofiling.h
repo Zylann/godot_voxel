@@ -5,8 +5,8 @@
 
 #ifdef VOXEL_PROFILING
 
-#include <core/ustring.h>
 #include <array>
+#include <string>
 
 #define VOXEL_STRINGIFY_(a) #a
 #define VOXEL_STRINGIFY(a) VOXEL_STRINGIFY_(a)
@@ -28,10 +28,16 @@ public:
 	ZProfiler();
 	~ZProfiler();
 
-	void set_profiler_name(String name);
+	void set_profiler_name(std::string name);
 
 	void begin(const char *description);
 	void end();
+
+	// Don't use this inside threads, use local instances
+	static void create_singleton();
+	static void free_singleton();
+	static ZProfiler *get_singleton();
+	static bool is_singleton_available();
 
 private:
 	struct Event {
@@ -53,7 +59,7 @@ private:
 		unsigned int write_index = 0;
 	};
 
-	String _profiler_name;
+	std::string _profiler_name;
 	std::array<Page *, 1024> _pages;
 	int _current_page = 0;
 };
