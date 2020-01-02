@@ -146,6 +146,7 @@ private:
 	std::vector<VoxelBlock *> _blocks_pending_transition_update;
 
 	Ref<Material> _material;
+	std::vector<Ref<ShaderMaterial> > _shader_material_pool;
 
 	bool _generate_collisions = true;
 	int _collision_lod_count = -1;

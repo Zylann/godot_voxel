@@ -1072,7 +1072,21 @@ void VoxelLodTerrain::_process() {
 			Ref<ShaderMaterial> shader_material = _material;
 			if (shader_material.is_valid() && block->get_shader_material().is_null()) {
 				VOXEL_PROFILE_SCOPE(profile_process_get_loading_responses_duplicate_material);
-				Ref<ShaderMaterial> sm = shader_material->duplicate(false);
+
+				// Pooling shader materials is necessary for now, to avoid stuttering in the editor.
+				// Due to a signal used to keep the inspector up to date, even though these
+				// material copies will never be seen in the inspector
+				// See https://github.com/godotengine/godot/issues/34741
+				Ref<ShaderMaterial> sm;
+				if (_shader_material_pool.size() > 0) {
+					sm = _shader_material_pool.back();
+					_shader_material_pool.pop_back();
+				} else {
+					sm = shader_material->duplicate(false);
+				}
+
+				// Set individual shader material, because each block can have dynamic parameters,
+				// used to smooth seams without re-uploading meshes and allow to implement LOD fading
 				block->set_shader_material(sm);
 			}
 		}
@@ -1339,11 +1353,19 @@ namespace {
 struct ScheduleSaveAction {
 
 	std::vector<VoxelDataLoader::InputBlock> &blocks_to_save;
+	std::vector<Ref<ShaderMaterial> > &shader_materials;
 	bool with_copy;
 
 	void operator()(VoxelBlock *block) {
+
+		Ref<ShaderMaterial> sm = block->get_shader_material();
+		if (sm.is_valid()) {
+			shader_materials.push_back(sm);
+			block->set_shader_material(Ref<ShaderMaterial>());
+		}
+
 		if (block->is_modified()) {
-			print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
+			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelDataLoader::InputBlock b;
 			b.data.voxels_to_save = with_copy ? block->voxels->duplicate() : block->voxels;
 			b.position = block->position;
@@ -1365,7 +1387,7 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 
 	Lod &lod = _lods[lod_index];
 
-	lod.map->remove_block(block_pos, ScheduleSaveAction{ _blocks_to_save, false });
+	lod.map->remove_block(block_pos, ScheduleSaveAction{ _blocks_to_save, _shader_material_pool, false });
 
 	lod.loading_blocks.erase(block_pos);
 
@@ -1385,7 +1407,7 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 
 	for (int i = 0; i < _lod_count; ++i) {
 		// That may cause a stutter, so should be used when the player won't notice
-		_lods[i].map->for_all_blocks(ScheduleSaveAction{ _blocks_to_save, with_copy });
+		_lods[i].map->for_all_blocks(ScheduleSaveAction{ _blocks_to_save, _shader_material_pool, with_copy });
 	}
 
 	// And flush immediately
