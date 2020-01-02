@@ -33,7 +33,7 @@ static bool cb_raycast_predicate(Vector3i pos, void *context_ptr) {
 	//unsigned int channel = context->channel;
 
 	Ref<VoxelMap> map = terrain.get_storage();
-	int v0 = map->get_voxel(pos, Voxel::CHANNEL_TYPE);
+	int v0 = map->get_voxel(pos, VoxelBuffer::CHANNEL_TYPE);
 
 	Ref<VoxelLibrary> lib_ref = terrain.get_voxel_library();
 	if (lib_ref.is_null())
@@ -47,7 +47,7 @@ static bool cb_raycast_predicate(Vector3i pos, void *context_ptr) {
 	if (voxel.is_transparent() == false)
 		return true;
 
-	float v1 = map->get_voxel_f(pos, Voxel::CHANNEL_ISOLEVEL);
+	float v1 = map->get_voxel_f(pos, VoxelBuffer::CHANNEL_ISOLEVEL);
 	return v1 < 0;
 }
 
