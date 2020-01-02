@@ -3,7 +3,7 @@
 
 VoxelStream::VoxelStream() {
 #ifdef VOXEL_PROFILING
-	_zprofiler.set_profiler_name(get_class() + String::num_int64((int64_t)this));
+	_zprofiler.set_profiler_name("VoxelStream" + std::to_string((int64_t)this));
 #endif
 }
 
@@ -19,9 +19,9 @@ void VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_v
 		Variant::CallError err;
 		script->call("emerge_block", args, 3, err);
 		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-			"voxel_stream.cpp:emerge_block gave an error: " + String::num(err.error) +
-			", Argument: " + String::num(err.argument) +
-			", Expected type: " + Variant::get_type_name(err.expected));
+				"voxel_stream.cpp:emerge_block gave an error: " + String::num(err.error) +
+						", Argument: " + String::num(err.argument) +
+						", Expected type: " + Variant::get_type_name(err.expected));
 		// This had to be explicitely logged due to the usual GD debugger not working with threads
 	}
 }
@@ -38,9 +38,9 @@ void VoxelStream::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxe
 		Variant::CallError err;
 		script->call("immerge_block", args, 3, err);
 		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-			"voxel_stream.cpp:immerge_block gave an error: " + String::num(err.error) +
-			" Argument: " + String::num(err.argument) +
-			" Expected type: " + Variant::get_type_name(err.expected));
+				"voxel_stream.cpp:immerge_block gave an error: " + String::num(err.error) +
+						" Argument: " + String::num(err.argument) +
+						" Expected type: " + Variant::get_type_name(err.expected));
 		// This had to be explicitely logged due to the usual GD debugger not working with threads
 	}
 }

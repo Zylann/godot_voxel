@@ -178,6 +178,10 @@ private:
 	unsigned int _view_distance_voxels = 512;
 
 	Stats _stats;
+
+#ifdef VOXEL_PROFILING
+	ZProfiler &_zprofiler;
+#endif
 };
 
 #endif // VOXEL_LOD_TERRAIN_HPP
