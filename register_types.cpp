@@ -16,6 +16,7 @@
 #include "voxel_buffer.h"
 #include "voxel_isosurface_tool.h"
 #include "voxel_library.h"
+#include "voxel_memory_pool.h"
 #include "voxel_tool.h"
 
 void register_voxel_types() {
@@ -54,6 +55,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelMesherDMC>();
 	ClassDB::register_class<VoxelMesherMC>();
 
+	VoxelMemoryPool::create_singleton();
 
 #ifdef VOXEL_PROFILING
 	ZProfiler::create_singleton();
@@ -66,6 +68,7 @@ void register_voxel_types() {
 
 void unregister_voxel_types() {
 
+	VoxelMemoryPool::destroy_singleton();
 
 #ifdef VOXEL_PROFILING
 	ZProfiler::destroy_singleton();

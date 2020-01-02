@@ -1,3 +1,9 @@
+#define VOXEL_BUFFER_USE_MEMORY_POOL
+
+#ifdef VOXEL_BUFFER_USE_MEMORY_POOL
+#include "voxel_memory_pool.h"
+#endif
+
 #include "voxel_buffer.h"
 #include "voxel_tool_buffer.h"
 
@@ -307,7 +313,7 @@ Ref<VoxelBuffer> VoxelBuffer::duplicate() const {
 }
 
 uint8_t *VoxelBuffer::get_channel_raw(unsigned int channel_index) const {
-	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, NULL);
+	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, nullptr);
 	const Channel &channel = _channels[channel_index];
 	return channel.data;
 }
@@ -320,14 +326,23 @@ void VoxelBuffer::create_channel(int i, Vector3i size, uint8_t defval) {
 void VoxelBuffer::create_channel_noinit(int i, Vector3i size) {
 	Channel &channel = _channels[i];
 	unsigned int volume = size.x * size.y * size.z;
+#ifdef VOXEL_BUFFER_USE_MEMORY_POOL
+	channel.data = VoxelMemoryPool::get_singleton()->allocate(volume);
+#else
 	channel.data = (uint8_t *)memalloc(volume * sizeof(uint8_t));
+#endif
 }
 
 void VoxelBuffer::delete_channel(int i) {
 	Channel &channel = _channels[i];
-	ERR_FAIL_COND(channel.data == NULL);
+	ERR_FAIL_COND(channel.data == nullptr);
+	unsigned int volume = _size.volume();
+#ifdef VOXEL_BUFFER_USE_MEMORY_POOL
+	VoxelMemoryPool::get_singleton()->recycle(channel.data, volume);
+#else
 	memfree(channel.data);
-	channel.data = NULL;
+#endif
+	channel.data = nullptr;
 }
 
 void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const {
