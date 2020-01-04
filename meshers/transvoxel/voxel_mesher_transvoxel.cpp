@@ -205,7 +205,6 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		}
 
 		Array transition_arrays;
-		scale_output(lod_scale);
 		if (input.lod > 0) {
 			scale_output(1 << input.lod);
 		}
