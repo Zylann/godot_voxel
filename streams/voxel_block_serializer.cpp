@@ -46,8 +46,6 @@ const std::vector<uint8_t> &VoxelBlockSerializer::serialize(VoxelBuffer &voxel_b
 	CRASH_COND(_file_access_memory.open_custom(_data.data(), _data.size()) != OK);
 	FileAccessMemory *f = &_file_access_memory;
 
-	Vector3i size_in_voxels = voxel_buffer.get_size();
-
 	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
 
 		VoxelBuffer::Compression compression = voxel_buffer.get_channel_compression(channel_index);
@@ -56,15 +54,19 @@ const std::vector<uint8_t> &VoxelBlockSerializer::serialize(VoxelBuffer &voxel_b
 		switch (compression) {
 
 			case VoxelBuffer::COMPRESSION_NONE: {
-				uint8_t *data = voxel_buffer.get_channel_raw(channel_index);
+				uint32_t size_in_bytes;
+				uint8_t *data = voxel_buffer.get_channel_raw(channel_index, &size_in_bytes);
 				CRASH_COND(data == nullptr);
-				uint32_t len = size_in_voxels.volume() * sizeof(uint8_t);
-				f->store_buffer(data, len);
+				f->store_buffer(data, size_in_bytes);
 			} break;
 
 			case VoxelBuffer::COMPRESSION_UNIFORM: {
 				int v = voxel_buffer.get_voxel(Vector3i(), channel_index);
 				f->store_8((uint8_t)v);
+				// TODO Support for larger depths
+				if (VoxelBuffer::get_depth_bit_count(voxel_buffer.get_channel_depth(channel_index) > 8)) {
+					ERR_PRINT("Uniform compression serialization doesn't support more than 8 bit depth");
+				}
 			} break;
 
 			default:
@@ -82,8 +84,6 @@ bool VoxelBlockSerializer::deserialize(const std::vector<uint8_t> &p_data, Voxel
 	CRASH_COND(_file_access_memory.open_custom(p_data.data(), p_data.size()) != OK);
 	FileAccessMemory *f = &_file_access_memory;
 
-	Vector3i size_in_voxels = out_voxel_buffer.get_size();
-
 	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
 
 		uint8_t compression_value = f->get_8();
@@ -93,16 +93,19 @@ bool VoxelBlockSerializer::deserialize(const std::vector<uint8_t> &p_data, Voxel
 		switch (compression) {
 
 			case VoxelBuffer::COMPRESSION_NONE: {
-				uint32_t expected_len = size_in_voxels.volume() * sizeof(uint8_t);
-				// TODO Optimize allocations here
-				uint8_t *buffer = (uint8_t *)memalloc(expected_len);
-				uint32_t read_len = f->get_buffer(buffer, expected_len);
-				if (read_len != expected_len) {
-					memdelete(buffer);
+
+				//out_voxel_buffer.set_channel_depth(channel_index, VoxelBuffer::DEPTH_8_BIT);
+				out_voxel_buffer.decompress_channel(channel_index);
+
+				uint32_t size_in_bytes;
+				uint8_t *buffer = out_voxel_buffer.get_channel_raw(channel_index, &size_in_bytes);
+
+				uint32_t read_len = f->get_buffer(buffer, size_in_bytes);
+				if (read_len != size_in_bytes) {
 					ERR_PRINT("Unexpected end of file");
 					return false;
 				}
-				out_voxel_buffer.grab_channel_data(buffer, channel_index, compression);
+
 			} break;
 
 			case VoxelBuffer::COMPRESSION_UNIFORM:

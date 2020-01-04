@@ -92,6 +92,17 @@ inline float max(const T a, const T b) {
 	return a > b ? a : b;
 }
 
+template <typename T>
+inline T clamp(const T x, const T min_value, const T max_value) {
+	if (x < min_value) {
+		return min_value;
+	}
+	if (x >= max_value) {
+		return max_value;
+	}
+	return x;
+}
+
 inline bool is_surface_triangulated(Array surface) {
 	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
 	PoolIntArray indices = surface[Mesh::ARRAY_INDEX];

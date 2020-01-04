@@ -2,15 +2,15 @@
 #define VOXEL_BUFFER_H
 
 #include "math/rect3i.h"
+#include "util/fixed_array.h"
 #include <core/reference.h>
 #include <core/vector.h>
 
 class VoxelTool;
 
 // Dense voxels data storage.
-// Organized in 8-bit channels like images, all optional.
-// Note: for float storage (marching cubes for example), you can map [0..256] to [0..1] and save 3 bytes per cell
-
+// Organized in channels of configurable bit depth.
+// Values can be interpreted either as unsigned integers or normalized floats.
 class VoxelBuffer : public Reference {
 	GDCLASS(VoxelBuffer, Reference)
 
@@ -38,28 +38,15 @@ public:
 		COMPRESSION_COUNT
 	};
 
-	// TODO Quantification options
-	//	enum ChannelFormat {
-	//		FORMAT_I8_Q256U, // 0..255 integer
-	//		FORMAT_F8_Q1S, // -1..1 float stored in 8 bits
-	//		FORMAT_F16_Q128S // -128..128 float stored in 16 bits
-	//	};
-
-	// Converts -1..1 float into 0..255 integer
-	static inline int
-	iso_to_byte(real_t iso) {
-		int v = static_cast<int>(128.f * iso + 128.f);
-		if (v > 255)
-			return 255;
-		else if (v < 0)
-			return 0;
-		return v;
-	}
-
-	// Converts 0..255 integer into -1..1 float
-	static inline real_t byte_to_iso(int b) {
-		return static_cast<float>(b - 128) / 128.f;
-	}
+	enum Depth {
+		DEPTH_1_BIT = 0,
+		DEPTH_8_BIT,
+		DEPTH_16_BIT,
+		DEPTH_24_BIT,
+		DEPTH_32_BIT,
+		DEPTH_64_BIT,
+		DEPTH_COUNT
+	};
 
 	VoxelBuffer();
 	~VoxelBuffer();
@@ -67,27 +54,27 @@ public:
 	void create(int sx, int sy, int sz);
 	void create(Vector3i size);
 	void clear();
-	void clear_channel(unsigned int channel_index, int clear_value = 0);
-	_FORCE_INLINE_ void clear_channel_f(unsigned int channel_index, float clear_value = 0) { clear_channel(channel_index, iso_to_byte(clear_value)); }
+	void clear_channel(unsigned int channel_index, uint64_t clear_value = 0);
+	void clear_channel_f(unsigned int channel_index, real_t clear_value);
 
 	_FORCE_INLINE_ const Vector3i &get_size() const { return _size; }
 
-	void set_default_values(uint8_t values[MAX_CHANNELS]);
+	void set_default_values(FixedArray<uint64_t, VoxelBuffer::MAX_CHANNELS> values);
 
-	int get_voxel(int x, int y, int z, unsigned int channel_index = 0) const;
-	void set_voxel(int value, int x, int y, int z, unsigned int channel_index = 0);
+	uint64_t get_voxel(int x, int y, int z, unsigned int channel_index = 0) const;
+	void set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index = 0);
 
 	void try_set_voxel(int x, int y, int z, int value, unsigned int channel_index = 0);
 
-	_FORCE_INLINE_ void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index = 0) { set_voxel(iso_to_byte(value), x, y, z, channel_index); }
-	_FORCE_INLINE_ real_t get_voxel_f(int x, int y, int z, unsigned int channel_index = 0) const { return byte_to_iso(get_voxel(x, y, z, channel_index)); }
+	real_t get_voxel_f(int x, int y, int z, unsigned int channel_index = 0) const;
+	void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index = 0);
 
-	_FORCE_INLINE_ int get_voxel(const Vector3i pos, unsigned int channel_index = 0) const { return get_voxel(pos.x, pos.y, pos.z, channel_index); }
+	_FORCE_INLINE_ uint64_t get_voxel(const Vector3i pos, unsigned int channel_index = 0) const { return get_voxel(pos.x, pos.y, pos.z, channel_index); }
 	_FORCE_INLINE_ void set_voxel(int value, const Vector3i pos, unsigned int channel_index = 0) { set_voxel(value, pos.x, pos.y, pos.z, channel_index); }
 
-	void fill(int defval, unsigned int channel_index = 0);
-	_FORCE_INLINE_ void fill_f(float value, unsigned int channel = 0) { fill(iso_to_byte(value), channel); }
-	void fill_area(int defval, Vector3i min, Vector3i max, unsigned int channel_index = 0);
+	void fill(uint64_t defval, unsigned int channel_index = 0);
+	void fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigned int channel_index = 0);
+	void fill_f(real_t value, unsigned int channel = 0);
 
 	bool is_uniform(unsigned int channel_index) const;
 
@@ -95,10 +82,11 @@ public:
 	void decompress_channel(unsigned int channel_index);
 	Compression get_channel_compression(unsigned int channel_index) const;
 
-	void grab_channel_data(uint8_t *in_buffer, unsigned int channel_index, Compression compression);
+	static uint32_t get_size_in_bytes_for_volume(Vector3i size, Depth depth);
 
-	void copy_from(const VoxelBuffer &other, unsigned int channel_index = 0);
-	void copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index = 0);
+	void copy_from(const VoxelBuffer &other);
+	void copy_from(const VoxelBuffer &other, unsigned int channel_index);
+	void copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index);
 
 	Ref<VoxelBuffer> duplicate() const;
 
@@ -118,12 +106,16 @@ public:
 		return _size.x * _size.y * _size.z;
 	}
 
-	uint8_t *get_channel_raw(unsigned int channel_index) const;
+	uint8_t *get_channel_raw(unsigned int channel_index, uint32_t *out_size_in_bytes = nullptr) const;
 
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 	Ref<VoxelTool> get_voxel_tool();
 
 	bool equals(const VoxelBuffer *p_other) const;
+
+	void set_channel_depth(unsigned int channel_index, Depth new_depth);
+	Depth get_channel_depth(unsigned int channel_index) const;
+	static uint32_t get_depth_bit_count(Depth d) const;
 
 	// TODO Make this work, would be awesome for perf
 	//
@@ -156,50 +148,51 @@ public:
 
 private:
 	void create_channel_noinit(int i, Vector3i size);
-	void create_channel(int i, Vector3i size, uint8_t defval);
+	void create_channel(int i, Vector3i size, uint64_t defval);
 	void delete_channel(int i);
 
 protected:
 	static void _bind_methods();
 
-	_FORCE_INLINE_ int get_size_x() const { return _size.x; }
-	_FORCE_INLINE_ int get_size_y() const { return _size.y; }
-	_FORCE_INLINE_ int get_size_z() const { return _size.z; }
+	int get_size_x() const { return _size.x; }
+	int get_size_y() const { return _size.y; }
+	int get_size_z() const { return _size.z; }
 
 	// Bindings
-	_FORCE_INLINE_ Vector3 _b_get_size() const { return _size.to_vec3(); }
+	Vector3 _b_get_size() const { return _size.to_vec3(); }
 	void _b_create(int x, int y, int z) { create(x, y, z); }
-	_FORCE_INLINE_ int _b_get_voxel(int x, int y, int z, unsigned int channel) const { return get_voxel(x, y, z, channel); }
-	_FORCE_INLINE_ void _b_set_voxel(int value, int x, int y, int z, unsigned int channel) { set_voxel(value, x, y, z, channel); }
-	void _b_copy_from(Ref<VoxelBuffer> other, unsigned int channel);
-	void _b_copy_from_area(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, unsigned int channel);
-	_FORCE_INLINE_ void _b_fill_area(int defval, Vector3 min, Vector3 max, unsigned int channel_index) { fill_area(defval, Vector3i(min), Vector3i(max), channel_index); }
-	_FORCE_INLINE_ void _b_set_voxel_f(real_t value, int x, int y, int z, unsigned int channel) { set_voxel_f(value, x, y, z, channel); }
-	void _b_set_voxel_v(int value, Vector3 pos, unsigned int channel_index = 0) { set_voxel(value, pos.x, pos.y, pos.z, channel_index); }
+	uint64_t _b_get_voxel(int x, int y, int z, unsigned int channel) const { return get_voxel(x, y, z, channel); }
+	void _b_set_voxel(uint64_t value, int x, int y, int z, unsigned int channel) { set_voxel(value, x, y, z, channel); }
+	void _b_copy_channel_from(Ref<VoxelBuffer> other, unsigned int channel);
+	void _b_copy_channel_from_area(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, unsigned int channel);
+	void _b_fill_area(uint64_t defval, Vector3 min, Vector3 max, unsigned int channel_index) { fill_area(defval, Vector3i(min), Vector3i(max), channel_index); }
+	void _b_set_voxel_f(real_t value, int x, int y, int z, unsigned int channel) { set_voxel_f(value, x, y, z, channel); }
+	void _b_set_voxel_v(uint64_t value, Vector3 pos, unsigned int channel_index = 0) { set_voxel(value, pos.x, pos.y, pos.z, channel_index); }
 	void _b_downscale_to(Ref<VoxelBuffer> dst, Vector3 src_min, Vector3 src_max, Vector3 dst_min) const;
 
 private:
 	struct Channel {
 		// Allocated when the channel is populated.
 		// Flat array, in order [z][x][y] because it allows faster vertical-wise access (the engine is Y-up).
-		uint8_t *data;
+		uint8_t *data = nullptr;
 
 		// Default value when data is null
-		uint8_t defval;
+		uint64_t defval = 0;
 
-		Channel() :
-				data(NULL),
-				defval(0) {}
+		Depth depth = DEPTH_8_BIT;
+
+		uint32_t size_in_bytes = 0;
 	};
 
 	// Each channel can store arbitary data.
 	// For example, you can decide to store colors (R, G, B, A), gameplay types (type, state, light) or both.
-	Channel _channels[MAX_CHANNELS];
+	FixedArray<Channel, MAX_CHANNELS> _channels;
 
 	// How many voxels are there in the three directions. All populated channels have the same size.
 	Vector3i _size;
 };
 
 VARIANT_ENUM_CAST(VoxelBuffer::ChannelId)
+VARIANT_ENUM_CAST(VoxelBuffer::Depth)
 
 #endif // VOXEL_BUFFER_H

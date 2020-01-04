@@ -165,6 +165,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer
 	// Once capacity is big enough, no more memory should be allocated
 	clear_output();
 
+	ERR_FAIL_COND(voxels.get_channel_depth(channel) != VoxelBuffer::DEPTH_8_BIT);
+
 	build_internal(voxels, channel);
 
 	if (_output_vertices.size() == 0) {

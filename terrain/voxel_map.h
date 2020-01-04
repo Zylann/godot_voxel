@@ -1,6 +1,7 @@
 #ifndef VOXEL_MAP_H
 #define VOXEL_MAP_H
 
+#include "../util/fixed_array.h"
 #include "voxel_block.h"
 
 #include <core/hash_map.h>
@@ -125,7 +126,7 @@ private:
 
 private:
 	// Voxel values that will be returned if access is out of map bounds
-	uint8_t _default_voxel[VoxelBuffer::MAX_CHANNELS];
+	FixedArray<uint64_t, VoxelBuffer::MAX_CHANNELS> _default_voxel;
 
 	// TODO Consider using OAHashMap
 	// Blocks stored with a spatial hash in all 3D directions

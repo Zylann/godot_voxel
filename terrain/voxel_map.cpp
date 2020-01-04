@@ -10,10 +10,7 @@ VoxelMap::VoxelMap() :
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
 	set_block_size_pow2(4);
 
-	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
-		_default_voxel[i] = 0;
-	}
-
+	_default_voxel.fill(0);
 	_default_voxel[VoxelBuffer::CHANNEL_SDF] = 255;
 }
 
