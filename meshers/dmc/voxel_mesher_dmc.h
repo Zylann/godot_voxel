@@ -101,7 +101,7 @@ public:
 	void set_seam_mode(SeamMode mode);
 	SeamMode get_seam_mode() const;
 
-	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels) override;
+	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
 	Dictionary get_statistics() const;
 

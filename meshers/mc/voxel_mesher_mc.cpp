@@ -73,7 +73,7 @@ VoxelMesherMC::VoxelMesherMC() {
 	set_padding(MIN_PADDING, MAX_PADDING);
 }
 
-void VoxelMesherMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxels) {
+void VoxelMesherMC::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 
 	int channel = VoxelBuffer::CHANNEL_SDF;
 
@@ -85,6 +85,7 @@ void VoxelMesherMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxels
 	_output_normals.clear();
 	_output_indices.clear();
 
+	const VoxelBuffer &voxels = input.voxels;
 	build_internal(voxels, channel);
 	//	OS::get_singleton()->print("vertices: %i, normals: %i, indices: %i\n",
 	//							   m_output_vertices.size(),

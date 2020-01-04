@@ -9,6 +9,11 @@
 class VoxelMesher : public Reference {
 	GDCLASS(VoxelMesher, Reference)
 public:
+	struct Input {
+		const VoxelBuffer &voxels;
+		int lod = 0;
+	};
+
 	struct Output {
 		// Each surface correspond to a different material
 		Vector<Array> surfaces;
@@ -17,7 +22,7 @@ public:
 		unsigned int compression_flags = Mesh::ARRAY_COMPRESS_DEFAULT;
 	};
 
-	virtual void build(Output &output, const VoxelBuffer &voxels);
+	virtual void build(Output &output, const Input &voxels);
 
 	// Get how many neighbor voxels need to be accessed around the meshed area.
 	// If this is not respected, the mesher might produce seams at the edges, or an error

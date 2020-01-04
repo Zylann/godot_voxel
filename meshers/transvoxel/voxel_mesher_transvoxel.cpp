@@ -155,7 +155,20 @@ void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays) {
 	arrays[Mesh::ARRAY_INDEX] = indices;
 }
 
-void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer &voxels) {
+void VoxelMesherTransvoxel::scale_output(float factor) {
+
+	for (auto it = _output_vertices.begin(); it != _output_vertices.end(); ++it) {
+		*it *= factor;
+	}
+	for (auto it = _output_extra.begin(); it != _output_extra.end(); ++it) {
+		Color &c = *it;
+		c.r *= factor;
+		c.g *= factor;
+		c.b *= factor;
+	}
+}
+
+void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 
 	int channel = VoxelBuffer::CHANNEL_SDF;
 
@@ -165,6 +178,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer
 	// Once capacity is big enough, no more memory should be allocated
 	clear_output();
 
+	const VoxelBuffer &voxels = input.voxels;
 	build_internal(voxels, channel);
 
 	if (_output_vertices.size() == 0) {
@@ -173,6 +187,10 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer
 	}
 
 	Array regular_arrays;
+	// TODO Bake LOD into the algorithm. It wasn't so far because it wasn't in the API
+	if (input.lod > 0) {
+		scale_output(1 << input.lod);
+	}
 	fill_surface_arrays(regular_arrays);
 	output.surfaces.push_back(regular_arrays);
 
@@ -187,6 +205,10 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelBuffer
 		}
 
 		Array transition_arrays;
+		scale_output(lod_scale);
+		if (input.lod > 0) {
+			scale_output(1 << input.lod);
+		}
 		fill_surface_arrays(transition_arrays);
 		output.transition_surfaces[dir].push_back(transition_arrays);
 	}

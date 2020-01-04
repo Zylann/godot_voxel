@@ -263,6 +263,7 @@ void VoxelBlock::set_transition_mask(uint8_t m) {
 		tm |= bits[Cube::SIDE_NEGATIVE_Z] << 4;
 		tm |= bits[Cube::SIDE_POSITIVE_Z] << 5;
 
+		// TODO Use a StringName, VoxelStringNames
 		_shader_material->set_shader_param("u_transition_mask", tm);
 	}
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {

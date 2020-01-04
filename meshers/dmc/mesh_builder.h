@@ -37,6 +37,7 @@ public:
 		_indices.push_back(i);
 	}
 
+	void scale(float scale);
 	Array commit(bool wireframe);
 	void clear();
 
