@@ -1080,6 +1080,9 @@ void VoxelLodTerrain::_process() {
 				Ref<ShaderMaterial> sm;
 				if (_shader_material_pool.size() > 0) {
 					sm = _shader_material_pool.back();
+					// The joys of pooling materials
+					// TODO Use StringName
+					sm->set_shader_param("u_transition_mask", 0);
 					_shader_material_pool.pop_back();
 				} else {
 					sm = shader_material->duplicate(false);
@@ -1431,7 +1434,7 @@ void VoxelLodTerrain::add_transition_updates_around(Vector3i block_pos, int lod_
 		Vector3i npos = block_pos + Cube::g_side_normals[dir];
 		VoxelBlock *nblock = lod.map->get_block(npos);
 
-		if (nblock != nullptr && nblock->is_visible()) {
+		if (nblock != nullptr) {
 			add_transition_update(nblock);
 		}
 	}
