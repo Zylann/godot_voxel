@@ -15,7 +15,7 @@ public:
 
 	VoxelMesherTransvoxel();
 
-	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels) override;
+	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
 	VoxelMesher *clone() override;
 
@@ -46,6 +46,7 @@ private:
 	int emit_vertex(Vector3 primary, Vector3 normal, uint16_t border_mask, Vector3 secondary);
 	void clear_output();
 	void fill_surface_arrays(Array &arrays);
+	void scale_output(float factor);
 
 private:
 	FixedArray<std::vector<ReuseCell>, 2> _cache;

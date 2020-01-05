@@ -5,7 +5,8 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
 	Output output;
-	build(output, **voxels);
+	Input input = { **voxels, 0 };
+	build(output, input);
 
 	if (output.surfaces.empty()) {
 		return Ref<ArrayMesh>();
@@ -21,7 +22,7 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels) {
 	return mesh;
 }
 
-void VoxelMesher::build(Output &output, const VoxelBuffer &voxels) {
+void VoxelMesher::build(Output &output, const Input &input) {
 
 	ERR_PRINT("Not implemented");
 }

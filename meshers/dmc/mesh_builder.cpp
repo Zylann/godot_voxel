@@ -49,6 +49,12 @@ Array MeshBuilder::commit(bool wireframe) {
 	return surface;
 }
 
+void MeshBuilder::scale(float scale) {
+	for (auto it = _positions.begin(); it != _positions.end(); ++it) {
+		*it *= scale;
+	}
+}
+
 void MeshBuilder::clear() {
 	_positions.clear();
 	_normals.clear();

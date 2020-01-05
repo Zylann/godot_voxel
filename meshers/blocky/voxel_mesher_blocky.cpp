@@ -56,7 +56,7 @@ void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
 	_bake_occlusion = enable;
 }
 
-void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &buffer) {
+void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	//uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
 	const int channel = VoxelBuffer::CHANNEL_TYPE;
@@ -86,9 +86,16 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	// - Slower
 	// => Could be implemented in a separate class?
 
+	const VoxelBuffer &voxels = input.voxels;
+#ifdef TOOLS_ENABLED
+	if (input.lod != 0) {
+		WARN_PRINT("VoxelMesherBlocky received lod != 0, it is not supported");
+	}
+#endif
+
 	// Data must be padded, hence the off-by-one
 	Vector3i min = Vector3i(get_minimum_padding());
-	Vector3i max = buffer.get_size() - Vector3i(get_maximum_padding());
+	Vector3i max = voxels.get_size() - Vector3i(get_maximum_padding());
 
 	int index_offsets[MAX_MATERIALS] = { 0 };
 
@@ -101,7 +108,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 
 	ERR_FAIL_COND(buffer.get_channel_depth(channel) != VoxelBuffer::DEPTH_8_BIT);
 	ERR_FAIL_COND(buffer.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE);
-	uint8_t *type_buffer = buffer.get_channel_raw(channel);
+	const uint8_t *type_buffer = buffer.get_channel_raw(channel);
 	/*       _
 	//      | \
 	//     /\ \\
@@ -124,8 +131,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelBuffer &bu
 	// Build lookup tables so to speed up voxel access.
 	// These are values to add to an address in order to get given neighbor.
 
-	int row_size = buffer.get_size().y;
-	int deck_size = buffer.get_size().x * row_size;
+	int row_size = voxels.get_size().y;
+	int deck_size = voxels.get_size().x * row_size;
 
 	int side_neighbor_lut[Cube::SIDE_COUNT];
 	side_neighbor_lut[Cube::SIDE_LEFT] = row_size;

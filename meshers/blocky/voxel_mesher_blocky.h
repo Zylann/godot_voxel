@@ -27,7 +27,7 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const { return _bake_occlusion; }
 
-	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels) override;
+	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
 	VoxelMesher *clone() override;
 

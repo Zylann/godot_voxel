@@ -288,7 +288,15 @@ void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
 	}
 }
 
-Array generate_debug_octree_mesh(OctreeNode *root) {
+inline void scale_positions(PoolVector3Array &positions, float scale) {
+	PoolVector3Array::Write w = positions.write();
+	const uint32_t size = positions.size();
+	for (unsigned int i = 0; i < size; ++i) {
+		w[i] *= scale;
+	}
+}
+
+Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 
 	struct GetMaxDepth {
 		int max_depth;
@@ -344,6 +352,10 @@ Array generate_debug_octree_mesh(OctreeNode *root) {
 		return Array();
 	}
 
+	if (scale != 1) {
+		scale_positions(arrays.positions, scale);
+	}
+
 	Array surface;
 	surface.resize(Mesh::ARRAY_MAX);
 	surface[Mesh::ARRAY_VERTEX] = arrays.positions;
@@ -353,7 +365,7 @@ Array generate_debug_octree_mesh(OctreeNode *root) {
 	return surface;
 }
 
-Array generate_debug_dual_grid_mesh(const DualGrid &grid) {
+Array generate_debug_dual_grid_mesh(const DualGrid &grid, int scale) {
 
 	PoolVector3Array positions;
 	PoolIntArray indices;
@@ -378,6 +390,10 @@ Array generate_debug_dual_grid_mesh(const DualGrid &grid) {
 
 	if (positions.size() == 0) {
 		return Array();
+	}
+
+	if (scale != 1) {
+		scale_positions(positions, scale);
 	}
 
 	Array surface;
@@ -1464,13 +1480,15 @@ VoxelMesherDMC::SeamMode VoxelMesherDMC::get_seam_mode() const {
 	return _seam_mode;
 }
 
-void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxels) {
+void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 
 	// Requirements:
 	// - Voxel data must be padded
 	// - The non-padded area size is cubic and power of two
 
 	_stats = {};
+
+	const VoxelBuffer &voxels = input.voxels;
 
 	if (voxels.is_uniform(VoxelBuffer::CHANNEL_SDF)) {
 		// That won't produce any polygon
@@ -1537,7 +1555,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 	if (root != nullptr) {
 
 		if (_mesh_mode == MESH_DEBUG_OCTREE) {
-			surface = dmc::generate_debug_octree_mesh(root);
+			surface = dmc::generate_debug_octree_mesh(root, 1 << input.lod);
 
 		} else {
 
@@ -1550,7 +1568,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 			_stats.dualgrid_derivation_time = OS::get_singleton()->get_ticks_usec() - time_before;
 
 			if (_mesh_mode == MESH_DEBUG_DUAL_GRID) {
-				surface = dmc::generate_debug_dual_grid_mesh(_dual_grid);
+				surface = dmc::generate_debug_dual_grid_mesh(_dual_grid, 1 << input.lod);
 
 			} else {
 
@@ -1576,6 +1594,9 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelBuffer &voxel
 
 	if (surface.empty()) {
 		time_before = OS::get_singleton()->get_ticks_usec();
+		if (input.lod > 0) {
+			_mesh_builder.scale(1 << input.lod);
+		}
 		surface = _mesh_builder.commit(_mesh_mode == MESH_WIREFRAME);
 		_stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
 	}

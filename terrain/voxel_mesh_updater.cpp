@@ -4,34 +4,6 @@
 #include "voxel_lod_terrain.h"
 #include <core/os/os.h>
 
-static void scale_mesh_data(Vector<Array> &surfaces, float factor) {
-
-	for (int i = 0; i < surfaces.size(); ++i) {
-		Array &surface = surfaces.write[i]; // There is COW here too but should not happen, hopefully
-
-		if (surface.empty()) {
-			continue;
-		}
-
-		PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX]; // Array of Variants here, implicit cast going on
-
-		// Now dear COW, let's make sure there is only ONE ref to that PoolVector,
-		// so you won't trash performance with pointless allocations
-		surface[Mesh::ARRAY_VERTEX] = Variant();
-
-		{
-			PoolVector3Array::Write w = positions.write();
-			int len = positions.size();
-			for (int j = 0; j < len; ++j) {
-				w[j] = w[j] * factor;
-			}
-		}
-
-		// Thank you
-		surface[Mesh::ARRAY_VERTEX] = positions;
-	}
-}
-
 VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams params) {
 
 	print_line("Constructing VoxelMeshUpdater");
@@ -103,21 +75,13 @@ void VoxelMeshUpdater::process_blocks_thread_func(
 
 		CRASH_COND(block.voxels.is_null());
 
+		VoxelMesher::Input input = { **block.voxels, ib.lod };
+
 		if (blocky_mesher.is_valid()) {
-			blocky_mesher->build(output.blocky_surfaces, **block.voxels);
+			blocky_mesher->build(output.blocky_surfaces, input);
 		}
 		if (smooth_mesher.is_valid()) {
-			smooth_mesher->build(output.smooth_surfaces, **block.voxels);
-		}
-
-		if (ib.lod > 0) {
-			// TODO Make this optional if the mesher can factor in the upscale already
-			float factor = 1 << ib.lod;
-			scale_mesh_data(output.blocky_surfaces.surfaces, factor);
-			scale_mesh_data(output.smooth_surfaces.surfaces, factor);
-			for (int i = 0; i < output.smooth_surfaces.transition_surfaces.size(); ++i) {
-				scale_mesh_data(output.smooth_surfaces.transition_surfaces[i], factor);
-			}
+			smooth_mesher->build(output.smooth_surfaces, input);
 		}
 	}
 }

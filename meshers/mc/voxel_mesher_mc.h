@@ -3,6 +3,7 @@
 
 #include "../voxel_mesher.h"
 
+// TODO Remove it.
 // Simple marching cubes.
 // Implementation is simplified from old Transvoxel code.
 class VoxelMesherMC : public VoxelMesher {
@@ -19,7 +20,7 @@ public:
 
 	VoxelMesherMC();
 
-	void build(VoxelMesher::Output &output, const VoxelBuffer &voxels) override;
+	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
 	void set_seam_mode(SeamMode mode);
 	SeamMode get_seam_mode() const;

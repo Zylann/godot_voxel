@@ -80,6 +80,7 @@ public:
 	};
 
 	Dictionary get_statistics() const;
+	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
 
 protected:
 	static void _bind_methods();

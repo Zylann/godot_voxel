@@ -201,7 +201,7 @@ void VoxelBlock::set_world(World *world) {
 }
 
 void VoxelBlock::set_visible(bool visible) {
-	if (_visible && visible) {
+	if (_visible == visible) {
 		return;
 	}
 	_visible = visible;
@@ -263,11 +263,12 @@ void VoxelBlock::set_transition_mask(uint8_t m) {
 		tm |= bits[Cube::SIDE_NEGATIVE_Z] << 4;
 		tm |= bits[Cube::SIDE_POSITIVE_Z] << 5;
 
+		// TODO Use a StringName, VoxelStringNames
 		_shader_material->set_shader_param("u_transition_mask", tm);
 	}
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		DirectMeshInstance &mi = _transition_mesh_instances[dir];
-		if (diff & (1 << dir) && mi.is_valid()) {
+		if ((diff & (1 << dir)) && mi.is_valid()) {
 			mi.set_visible(_visible & _is_transition_visible(dir));
 		}
 	}
