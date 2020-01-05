@@ -1512,6 +1512,35 @@ Dictionary VoxelLodTerrain::get_statistics() const {
 	return d;
 }
 
+Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const {
+
+	Vector3 pos = world_origin;
+	Vector3 dir = world_direction;
+	float max_distance = 256;
+	float step = 2.f;
+	float distance = 0.f;
+
+	Array hits;
+	while (distance < max_distance && hits.size() == 0) {
+		for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+			const Lod &lod = _lods[lod_index];
+			Vector3i bpos = lod.map->voxel_to_block(Vector3i(pos)) >> lod_index;
+			const VoxelBlock *block = lod.map->get_block(bpos);
+			if (block != nullptr && block->is_visible() && block->has_mesh()) {
+				Dictionary d;
+				d["position"] = block->position.to_vec3();
+				d["lod"] = block->lod_index;
+				d["transition_mask"] = block->get_transition_mask();
+				hits.append(d);
+			}
+		}
+		distance += step;
+		pos += dir * step;
+	}
+
+	return hits;
+}
+
 void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
@@ -1544,6 +1573,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("voxel_to_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_block_position);
 
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelLodTerrain::get_voxel_tool);
+
+	ClassDB::bind_method(D_METHOD("debug_raycast_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_block);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 
