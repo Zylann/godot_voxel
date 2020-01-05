@@ -43,7 +43,7 @@ protected:
 
 	Stats _stats;
 
-	VOXEL_PROFILER_DECLARE;
+	VOXEL_PROFILER_DECLARE
 };
 
 #endif // VOXEL_STREAM_H
