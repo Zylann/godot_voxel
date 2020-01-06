@@ -64,7 +64,7 @@ const std::vector<uint8_t> &VoxelBlockSerializer::serialize(VoxelBuffer &voxel_b
 				int v = voxel_buffer.get_voxel(Vector3i(), channel_index);
 				f->store_8((uint8_t)v);
 				// TODO Support for larger depths
-				if (VoxelBuffer::get_depth_bit_count(voxel_buffer.get_channel_depth(channel_index) > 8)) {
+				if (VoxelBuffer::get_depth_bit_count(voxel_buffer.get_channel_depth(channel_index)) > 8) {
 					ERR_PRINT("Uniform compression serialization doesn't support more than 8 bit depth");
 				}
 			} break;

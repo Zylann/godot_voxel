@@ -106,6 +106,7 @@ public:
 		return _size.x * _size.y * _size.z;
 	}
 
+	// TODO Return an ArraySlice
 	uint8_t *get_channel_raw(unsigned int channel_index, uint32_t *out_size_in_bytes = nullptr) const;
 
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
@@ -115,7 +116,7 @@ public:
 
 	void set_channel_depth(unsigned int channel_index, Depth new_depth);
 	Depth get_channel_depth(unsigned int channel_index) const;
-	static uint32_t get_depth_bit_count(Depth d) const;
+	static uint32_t get_depth_bit_count(Depth d);
 
 	// TODO Make this work, would be awesome for perf
 	//

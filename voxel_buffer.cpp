@@ -785,7 +785,7 @@ VoxelBuffer::Depth VoxelBuffer::get_channel_depth(unsigned int channel_index) co
 	return _channels[channel_index].depth;
 }
 
-uint32_t VoxelBuffer::get_depth_bit_count(Depth d) const {
+uint32_t VoxelBuffer::get_depth_bit_count(Depth d) {
 	return ::get_depth_bit_count(d);
 }
 

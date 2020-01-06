@@ -106,9 +106,9 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// That means we can use raw pointers to voxel data inside instead of using the higher-level getters,
 	// and then save a lot of time.
 
-	ERR_FAIL_COND(buffer.get_channel_depth(channel) != VoxelBuffer::DEPTH_8_BIT);
-	ERR_FAIL_COND(buffer.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE);
-	const uint8_t *type_buffer = buffer.get_channel_raw(channel);
+	ERR_FAIL_COND(voxels.get_channel_depth(channel) != VoxelBuffer::DEPTH_8_BIT);
+	ERR_FAIL_COND(voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE);
+	const uint8_t *type_buffer = voxels.get_channel_raw(channel);
 	/*       _
 	//      | \
 	//     /\ \\
