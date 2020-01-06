@@ -11,7 +11,7 @@ class VoxelMesher : public Reference {
 public:
 	struct Input {
 		const VoxelBuffer &voxels;
-		int lod = 0;
+		int lod; // = 0; // Not initialized because it confused GCC
 	};
 
 	struct Output {
