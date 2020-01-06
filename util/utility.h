@@ -127,27 +127,27 @@ inline int wrap(int x, int d) {
 	return ((x % d) + d) % d;
 }
 
-inline Vector3 get_gradient_normal(float left, float right, float bottom, float top, float back, float front, float middle) {
+//inline Vector3 get_gradient_normal(float left, float right, float bottom, float top, float back, float front, float middle) {
 
-	float gx, gy, gz;
+//	float gx, gy, gz;
 
-	// Float equality, but based on the assumption these come from voxels. Voxels are quantized integer values.
-	if (left == right && bottom == top && back == front) {
-		// Sided gradient
-		// Won't be zero in cells that have triangles in them
-		gx = left - middle;
-		gy = bottom - middle;
-		gz = back - middle;
+//	// Float equality, but based on the assumption these come from voxels. Voxels are quantized integer values.
+//	if (left == right && bottom == top && back == front) {
+//		// Sided gradient
+//		// Won't be zero in cells that have triangles in them
+//		gx = left - middle;
+//		gy = bottom - middle;
+//		gz = back - middle;
 
-	} else {
-		// Symetric gradient
-		gx = left - right;
-		gy = bottom - top;
-		gz = back - front;
-	}
+//	} else {
+//		// Symetric gradient
+//		gx = left - right;
+//		gy = bottom - top;
+//		gz = back - front;
+//	}
 
-	return Vector3(gx, gy, gz).normalized();
-}
+//	return Vector3(gx, gy, gz).normalized();
+//}
 
 #if TOOLS_ENABLED
 namespace VoxelDebug {
