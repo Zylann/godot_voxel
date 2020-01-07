@@ -2,9 +2,6 @@
 #include <core/script_language.h>
 
 VoxelStream::VoxelStream() {
-#ifdef VOXEL_PROFILING
-	_zprofiler.set_profiler_name("VoxelStream" + std::to_string((int64_t)this));
-#endif
 }
 
 void VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {

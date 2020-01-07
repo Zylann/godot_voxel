@@ -42,8 +42,6 @@ protected:
 	void _immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
 
 	Stats _stats;
-
-	VOXEL_PROFILER_DECLARE
 };
 
 #endif // VOXEL_STREAM_H

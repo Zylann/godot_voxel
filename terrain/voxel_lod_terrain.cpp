@@ -53,12 +53,7 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 
 } // namespace
 
-VoxelLodTerrain::VoxelLodTerrain()
-#ifdef VOXEL_PROFILING
-		:
-		_zprofiler(*ZProfiler::get_singleton())
-#endif
-{
+VoxelLodTerrain::VoxelLodTerrain() {
 	// Note: don't do anything heavy in the constructor.
 	// Godot may create and destroy dozens of instances of all node types on startup,
 	// due to how ClassDB gets its default values.

@@ -1,41 +1,28 @@
 #include "zprofiling.h"
 
 #ifdef VOXEL_PROFILING
-#include <core/hash_map.h>
 #include <core/os/os.h>
 #include <fstream>
+#include <sstream>
+#include <thread>
+#include <unordered_map>
 
 namespace {
-ZProfiler *g_profiler = nullptr;
+thread_local ZProfiler g_profiler;
 }
 
-void ZProfiler::create_singleton() {
-	CRASH_COND(g_profiler != nullptr);
-	g_profiler = new ZProfiler();
-}
-
-void ZProfiler::free_singleton() {
-	CRASH_COND(g_profiler == nullptr);
-	ZProfiler *p = g_profiler;
-	g_profiler = nullptr;
-	delete p;
-}
-
-ZProfiler *ZProfiler::get_singleton() {
-	CRASH_COND(g_profiler == nullptr);
+ZProfiler &ZProfiler::get_thread_profiler() {
 	return g_profiler;
-}
-
-bool ZProfiler::is_singleton_available() {
-	return g_profiler != nullptr;
 }
 
 inline uint64_t get_time() {
 	return OS::get_singleton()->get_ticks_usec();
-	//return OS::get_singleton()->get_ticks_msec();
 }
 
 ZProfiler::ZProfiler() {
+	std::stringstream ss;
+	ss << std::this_thread::get_id();
+	_profiler_name = ss.str();
 	for (int i = 0; i < _pages.size(); ++i) {
 		_pages[i] = new Page();
 	}
@@ -79,7 +66,7 @@ void ZProfiler::push_event(Event e) {
 		if (page.write_index >= page.events.size()) {
 			++_current_page;
 			if (_current_page >= _pages.size()) {
-				print_error("ZProfiler end of capacity");
+				printf("ZProfiler end of capacity\n");
 			}
 		}
 	}
@@ -87,10 +74,10 @@ void ZProfiler::push_event(Event e) {
 
 void ZProfiler::dump() {
 
-	print_line("Dumping ZProfiler data");
+	printf("Dumping ZProfiler data\n");
 
 	unsigned short next_index = 1;
-	HashMap<const char *, unsigned short> string_index;
+	std::unordered_map<const char *, unsigned short> string_index;
 
 	for (int i = 0; i < _pages.size(); ++i) {
 		const Page &page = *_pages[i];
@@ -102,9 +89,9 @@ void ZProfiler::dump() {
 				continue;
 			}
 
-			const unsigned short *index = string_index.getptr(event.description);
-			if (index == nullptr) {
-				string_index[event.description] = next_index;
+			auto it = string_index.find(event.description);
+			if (it == string_index.end()) {
+				string_index.insert(std::make_pair(event.description, next_index));
 				++next_index;
 			}
 		}
@@ -116,17 +103,15 @@ void ZProfiler::dump() {
 	uint16_t string_index_size = string_index.size();
 	ofs.write((char *)&string_index_size, sizeof(uint16_t));
 
-	{
-		const char *const *key = nullptr;
-		while ((key = string_index.next(key))) {
+	for (auto it = string_index.begin(); it != string_index.end(); ++it) {
 
-			uint16_t p = string_index.get(*key);
-			uint32_t len = std::strlen(*key);
+		const char *key = it->first;
+		uint16_t p = it->second;
+		uint32_t len = std::strlen(key);
 
-			ofs.write((char *)&p, sizeof(uint16_t));
-			ofs.write((char *)&len, sizeof(uint32_t));
-			ofs.write(*key, len);
-		}
+		ofs.write((char *)&p, sizeof(uint16_t));
+		ofs.write((char *)&len, sizeof(uint32_t));
+		ofs.write(key, len);
 	}
 
 	int page_count = _current_page + 1;
@@ -159,7 +144,7 @@ void ZProfiler::dump() {
 
 			unsigned short desc_index = 0;
 			if (event.description != nullptr) {
-				desc_index = string_index.get(event.description);
+				desc_index = string_index[event.description];
 			}
 
 			ofs.write((char *)&event.time, sizeof(uint32_t));
