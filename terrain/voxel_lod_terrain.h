@@ -115,7 +115,7 @@ private:
 	void add_transition_update(VoxelBlock *block);
 	void add_transition_updates_around(Vector3i block_pos, int lod_index);
 	void process_transition_updates();
-	uint8_t get_transition_mask(Vector3i block_pos, int lod_index);
+	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
 
 	struct OctreeItem {
 		LodOctree<bool> octree;
