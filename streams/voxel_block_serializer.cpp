@@ -2,6 +2,7 @@
 #include "../math/vector3i.h"
 #include "../thirdparty/lz4/lz4.h"
 #include "../voxel_buffer.h"
+#include "../voxel_memory_pool.h"
 #include <core/os/file_access.h>
 
 namespace {
@@ -95,7 +96,11 @@ bool VoxelBlockSerializer::deserialize(const std::vector<uint8_t> &p_data, Voxel
 			case VoxelBuffer::COMPRESSION_NONE: {
 				uint32_t expected_len = size_in_voxels.volume() * sizeof(uint8_t);
 				// TODO Optimize allocations here
-				uint8_t *buffer = (uint8_t *)memalloc(expected_len);
+
+				//uint8_t *buffer = (uint8_t *)memalloc(expected_len);
+				// TODO TEMPORARY FIX, I got rid of grab_channel_data in the `depth` branch, this will go away once merged
+				uint8_t *buffer = VoxelMemoryPool::get_singleton()->allocate(expected_len);
+
 				uint32_t read_len = f->get_buffer(buffer, expected_len);
 				if (read_len != expected_len) {
 					memdelete(buffer);
