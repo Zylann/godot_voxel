@@ -71,6 +71,19 @@ VoxelBlock::VoxelBlock() {
 VoxelBlock::~VoxelBlock() {
 }
 
+void VoxelBlock::set_world(Ref<World> p_world) {
+	if (_world != p_world) {
+		_world = p_world;
+
+		// To update world. I replaced visibility by presence in world because Godot 3 culling performance is horrible
+		_set_visible(_visible && _parent_visible);
+
+		if (_static_body.is_valid()) {
+			_static_body.set_world(*p_world);
+		}
+	}
+}
+
 void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Array surface_arrays, bool debug_collision) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
@@ -80,16 +93,14 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision
 	if (mesh.is_valid()) {
 
 		ERR_FAIL_COND(node == nullptr);
-		Ref<World> world = node->get_world();
-		ERR_FAIL_COND(world.is_null());
+		ERR_FAIL_COND(node->get_world() != _world);
 
 		Transform transform(Basis(), _position_in_voxels.to_vec3());
 
 		if (!_mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
 			_mesh_instance.create();
-			_mesh_instance.set_world(*world);
-			_mesh_instance.set_visible(_visible);
+			set_mesh_instance_visible(_mesh_instance, _visible && _parent_visible);
 		}
 
 		_mesh_instance.set_mesh(mesh);
@@ -108,14 +119,14 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision
 
 			if (!_static_body.is_valid()) {
 				_static_body.create();
-				_static_body.set_world(*world);
+				_static_body.set_world(*_world);
 				_static_body.set_attached_object(node);
 				_static_body.set_transform(transform);
 			} else {
 				_static_body.remove_shape(0);
 			}
 			_static_body.add_shape(shape);
-			_static_body.set_debug(debug_collision, *world);
+			_static_body.set_debug(debug_collision, *_world);
 			_static_body.set_shape_enabled(0, _visible);
 		}
 
@@ -138,19 +149,16 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision
 	//	}
 }
 
-void VoxelBlock::set_transition_mesh(Ref<Mesh> mesh, int side, Ref<World> world) {
+void VoxelBlock::set_transition_mesh(Ref<Mesh> mesh, int side) {
 
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
 
-		ERR_FAIL_COND(world.is_null());
-
 		if (!mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
 			mesh_instance.create();
-			mesh_instance.set_world(*world);
-			mesh_instance.set_visible(_visible && _is_transition_visible(side));
+			set_mesh_instance_visible(mesh_instance, _visible && _parent_visible && _is_transition_visible(side));
 		}
 
 		Transform transform(Basis(), _position_in_voxels.to_vec3());
@@ -186,20 +194,6 @@ VoxelBlock::MeshState VoxelBlock::get_mesh_state() const {
 	return _mesh_state;
 }
 
-void VoxelBlock::set_world(World *world) {
-	if (_mesh_instance.is_valid()) {
-		_mesh_instance.set_world(world);
-	}
-	for (int i = 0; i < _transition_mesh_instances.size(); ++i) {
-		if (_transition_mesh_instances[i].is_valid()) {
-			_transition_mesh_instances[i].set_world(world);
-		}
-	}
-	if (_static_body.is_valid()) {
-		_static_body.set_world(world);
-	}
-}
-
 void VoxelBlock::set_visible(bool visible) {
 	if (_visible == visible) {
 		return;
@@ -214,11 +208,12 @@ bool VoxelBlock::is_visible() const {
 
 void VoxelBlock::_set_visible(bool visible) {
 	if (_mesh_instance.is_valid()) {
-		_mesh_instance.set_visible(visible);
+		set_mesh_instance_visible(_mesh_instance, visible);
 	}
-	for (int dir = 0; dir < _transition_mesh_instances.size(); ++dir) {
-		if (_transition_mesh_instances[dir].is_valid()) {
-			_transition_mesh_instances[dir].set_visible(visible & _is_transition_visible(dir));
+	for (unsigned int dir = 0; dir < _transition_mesh_instances.size(); ++dir) {
+		DirectMeshInstance &mi = _transition_mesh_instances[dir];
+		if (mi.is_valid()) {
+			set_mesh_instance_visible(mi, visible && _is_transition_visible(dir));
 		}
 	}
 	if (_static_body.is_valid()) {
@@ -269,7 +264,7 @@ void VoxelBlock::set_transition_mask(uint8_t m) {
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		DirectMeshInstance &mi = _transition_mesh_instances[dir];
 		if ((diff & (1 << dir)) && mi.is_valid()) {
-			mi.set_visible(_visible & _is_transition_visible(dir));
+			set_mesh_instance_visible(mi, _visible && _parent_visible && _is_transition_visible(dir));
 		}
 	}
 }
