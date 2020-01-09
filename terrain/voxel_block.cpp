@@ -296,3 +296,54 @@ void VoxelBlock::set_modified(bool modified) {
 	//	}
 	_modified = modified;
 }
+
+bool VoxelBlock::update_fading(float speed) {
+
+	if (_shader_material.is_null()) {
+		return true;
+	}
+
+	bool finished = false;
+
+	// x is progress in 0..1
+	// y is direction: 1 fades in, 0 fades out
+	Vector2 p;
+
+	switch (fading_state) {
+
+		case VoxelBlock::FADING_IN:
+			fading_progress += speed;
+			if (fading_progress >= 1.f) {
+				fading_progress = 1.f;
+				fading_state = VoxelBlock::FADING_NONE;
+				finished = true;
+			}
+			p.x = fading_progress;
+			p.y = 1.f;
+			break;
+
+		case VoxelBlock::FADING_OUT:
+			fading_progress -= speed;
+			if (fading_progress <= 0.f) {
+				fading_progress = 0.f;
+				fading_state = VoxelBlock::FADING_NONE;
+				finished = true;
+				set_visible(false);
+			}
+			p.x = 1.f - fading_progress;
+			p.y = 0.f;
+			break;
+
+		case FADING_NONE:
+			p.x = 1.f;
+			p.y = active ? 1.f : 0.f;
+
+		default:
+			CRASH_NOW();
+			break;
+	}
+
+	_shader_material->set_shader_param("u_lod_fade", p);
+
+	return finished;
+}

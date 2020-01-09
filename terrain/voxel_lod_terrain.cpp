@@ -792,7 +792,7 @@ void VoxelLodTerrain::_process() {
 
 					VoxelBlock *block = lod.map->get_block(bpos);
 					if (block) {
-						block->set_visible(false);
+						self->set_block_active(block, false);
 					}
 				}
 			};
@@ -930,7 +930,7 @@ void VoxelLodTerrain::_process() {
 					// Never show a block that hasn't been meshed
 					CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UP_TO_DATE);
 
-					block->set_visible(true);
+					self->set_block_active(block, true);
 					self->add_transition_update(block);
 					self->add_transition_updates_around(bpos, lod_index);
 					return true;
@@ -964,7 +964,7 @@ void VoxelLodTerrain::_process() {
 
 					VoxelBlock *block = lod.map->get_block(bpos);
 					if (block) {
-						block->set_visible(false);
+						self->set_block_active(block, false);
 						self->add_transition_updates_around(bpos, lod_index);
 					}
 				}
@@ -1061,7 +1061,7 @@ void VoxelLodTerrain::_process() {
 			VoxelBlock *block = lod.map->set_block_buffer(ob.position, ob.data.voxels_loaded);
 			//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
 			// The block will be made visible and meshed only by LodOctree
-			block->set_visible(false);
+			set_block_active(block, false);
 			block->set_parent_visible(is_visible());
 
 			Ref<ShaderMaterial> shader_material = _material;
@@ -1260,6 +1260,8 @@ void VoxelLodTerrain::_process() {
 		}
 	}
 
+	process_fading_blocks();
+
 	_stats.time_process_update_responses = profiling_clock.restart();
 }
 
@@ -1388,6 +1390,7 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 	lod.map->remove_block(block_pos, ScheduleSaveAction{ _blocks_to_save, _shader_material_pool, false });
 
 	lod.loading_blocks.erase(block_pos);
+	lod.fading_blocks.erase(block_pos);
 
 	// Blocks in the update queue will be cancelled in _process,
 	// because it's too expensive to linear-search all blocks for each block
@@ -1485,7 +1488,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 
 		const VoxelBlock *nblock = lod.map->get_block(npos);
 
-		if (nblock != nullptr && nblock->is_visible()) {
+		if (nblock != nullptr && nblock->is_active()) {
 			visible_neighbors_of_same_lod |= (1 << dir);
 		}
 	}
@@ -1506,7 +1509,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 			if (lower_neighbor_pos != lower_pos) {
 				const VoxelBlock *lower_neighbor_block = lower_lod.map->get_block(lower_neighbor_pos);
 
-				if (lower_neighbor_block != nullptr && lower_neighbor_block->is_visible()) {
+				if (lower_neighbor_block != nullptr && lower_neighbor_block->is_active()) {
 					// The block has a visible neighbor of lower LOD
 					transition_mask |= dir_mask;
 					continue;
@@ -1529,7 +1532,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 				const Lod &upper_lod = _lods[lod_index - 1];
 				const VoxelBlock *upper_neighbor_block = upper_lod.map->get_block(upper_neighbor_pos);
 
-				if (upper_neighbor_block == nullptr || upper_neighbor_block->is_visible() == false) {
+				if (upper_neighbor_block == nullptr || upper_neighbor_block->is_active() == false) {
 					// The block has no visible neighbor yet. World border? Assume lower LOD.
 					transition_mask |= dir_mask;
 				}
@@ -1538,6 +1541,44 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 	}
 
 	return transition_mask;
+}
+
+void VoxelLodTerrain::set_block_active(VoxelBlock *block, bool active) {
+	if (block->is_active() == active) {
+		return;
+	}
+	block->set_active(active);
+	if (active) {
+		block->set_visible(true);
+		if (block->fading_state != VoxelBlock::FADING_IN) {
+			block->fading_state = VoxelBlock::FADING_IN;
+			_lods[block->lod_index].fading_blocks.insert(block->position, block);
+		}
+	} else {
+		if (block->fading_state != VoxelBlock::FADING_OUT) {
+			block->fading_state = VoxelBlock::FADING_OUT;
+			_lods[block->lod_index].fading_blocks.insert(block->position, block);
+		}
+	}
+}
+
+void VoxelLodTerrain::process_fading_blocks() {
+	const float speed = 4.f * 1.f / 60.f;
+	for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+		Lod &lod = _lods[lod_index];
+		Map<Vector3i, VoxelBlock *>::Element *e = lod.fading_blocks.front();
+		while (e) {
+			VoxelBlock *block = e->value();
+			bool finished = block->update_fading(speed);
+			if (finished) {
+				Map<Vector3i, VoxelBlock *>::Element *next = e->next();
+				lod.fading_blocks.erase(e);
+				e = next;
+			} else {
+				e = e->next();
+			}
+		}
+	}
 }
 
 Dictionary VoxelLodTerrain::get_statistics() const {

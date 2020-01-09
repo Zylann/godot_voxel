@@ -117,6 +117,9 @@ private:
 	void process_transition_updates();
 	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
 
+	void set_block_active(VoxelBlock *block, bool active);
+	void process_fading_blocks();
+
 	struct OctreeItem {
 		LodOctree<bool> octree;
 #ifdef VOXEL_DEBUG_BOXES
@@ -152,11 +155,17 @@ private:
 	bool _generate_collisions = true;
 	int _collision_lod_count = -1;
 
+	struct FadingState {
+		bool visibility_target = false;
+		float progress = 0.f;
+	};
+
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
 		Ref<VoxelMap> map;
 		Set<Vector3i> loading_blocks;
 		std::vector<Vector3i> blocks_pending_update;
+		Map<Vector3i, VoxelBlock *> fading_blocks;
 
 		// Blocks that were edited and need their LOD counterparts to be updated
 		std::vector<Vector3i> blocks_pending_lodding;

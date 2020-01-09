@@ -22,10 +22,19 @@ public:
 		MESH_UPDATE_SENT // The mesh is out of date, and an update request was sent, pending response
 	};
 
+	enum FadingState {
+		FADING_NONE,
+		FADING_IN,
+		FADING_OUT
+	};
+
 	Ref<VoxelBuffer> voxels;
 	Vector3i position;
 	unsigned int lod_index = 0;
 	bool pending_transition_update = false;
+	FadingState fading_state = FADING_NONE;
+	float fading_progress = 1.f;
+	bool active = false;
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 
@@ -45,6 +54,9 @@ public:
 
 	void set_world(World *world);
 
+	inline bool is_active() const { return active; }
+	inline void set_active(bool p_active) { active = p_active; }
+
 	void set_visible(bool visible);
 	bool is_visible() const;
 
@@ -53,6 +65,8 @@ public:
 	void set_transition_mask(uint8_t m);
 	//void set_transition_bit(uint8_t side, bool value);
 	inline uint8_t get_transition_mask() const { return _transition_mask; }
+
+	bool update_fading(float speed);
 
 	// Voxel data
 
