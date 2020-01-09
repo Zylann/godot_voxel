@@ -1063,6 +1063,7 @@ void VoxelLodTerrain::_process() {
 			// The block will be made visible and meshed only by LodOctree
 			block->set_visible(false);
 			block->set_parent_visible(is_visible());
+			block->set_world(get_world());
 
 			Ref<ShaderMaterial> shader_material = _material;
 			if (shader_material.is_valid() && block->get_shader_material().is_null()) {
@@ -1249,7 +1250,7 @@ void VoxelLodTerrain::_process() {
 							mesh_data.compression_flags,
 							_material, nullptr);
 
-					block->set_transition_mesh(transition_mesh, dir, get_world());
+					block->set_transition_mesh(transition_mesh, dir);
 				}
 			}
 		}
