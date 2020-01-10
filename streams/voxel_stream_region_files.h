@@ -1,6 +1,7 @@
 #ifndef VOXEL_STREAM_REGION_H
 #define VOXEL_STREAM_REGION_H
 
+#include "../util/fixed_array.h"
 #include "voxel_stream_file.h"
 
 class FileAccess;
@@ -83,6 +84,7 @@ private:
 		uint8_t lod_count = 0;
 		uint8_t block_size_po2 = 0; // How many voxels in a cubic block
 		uint8_t region_size_po2 = 0; // How many blocks in one cubic region
+		FixedArray<VoxelBuffer::Depth, VoxelBuffer::MAX_CHANNELS> channel_depths;
 		int sector_size = 0; // Blocks are stored at offsets multiple of that size
 	};
 

@@ -48,6 +48,8 @@ public:
 		DEPTH_COUNT
 	};
 
+	static const Depth DEFAULT_CHANNEL_DEPTH = DEPTH_8_BIT;
+
 	VoxelBuffer();
 	~VoxelBuffer();
 
@@ -180,7 +182,7 @@ private:
 		// Default value when data is null
 		uint64_t defval = 0;
 
-		Depth depth = DEPTH_8_BIT;
+		Depth depth = DEFAULT_CHANNEL_DEPTH;
 
 		uint32_t size_in_bytes = 0;
 	};

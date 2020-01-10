@@ -7,7 +7,8 @@
 #include <algorithm>
 
 namespace {
-const uint8_t FORMAT_VERSION = 1;
+const uint8_t FORMAT_VERSION = 2;
+const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
 const char *FORMAT_REGION_MAGIC = "VXR_";
 const char *META_FILE_NAME = "meta.vxrm";
 const int MAGIC_AND_VERSION_SIZE = 4 + 1;
@@ -20,6 +21,10 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.region_size_po2 = 4;
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
 	_meta.lod_count = 1;
+
+	for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
+		_meta.channel_depths[i] = VoxelBuffer::DEFAULT_CHANNEL_DEPTH;
+	}
 }
 
 VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
@@ -181,6 +186,11 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 	if (!_meta_saved) {
 		Error err = save_meta();
 		ERR_FAIL_COND(err != OK);
+	}
+
+	// Verify format
+	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
+		ERR_FAIL_COND(voxel_buffer->get_channel_depth(i) != _meta.channel_depths[i]);
 	}
 
 	Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
@@ -410,6 +420,14 @@ static bool from_json_varray(Array a, Vector3i &v) {
 	return true;
 }
 
+static bool depth_from_json_variant(Variant &v, VoxelBuffer::Depth &d) {
+	uint8_t n;
+	ERR_FAIL_COND_V(!u8_from_json_variant(v, n), false);
+	ERR_FAIL_INDEX_V(n, VoxelBuffer::DEPTH_COUNT, false);
+	d = (VoxelBuffer::Depth)n;
+	return true;
+}
+
 Error VoxelStreamRegionFiles::save_meta() {
 
 	ERR_FAIL_COND_V(_directory_path == "", ERR_INVALID_PARAMETER);
@@ -420,6 +438,13 @@ Error VoxelStreamRegionFiles::save_meta() {
 	d["region_size_po2"] = _meta.region_size_po2;
 	d["lod_count"] = _meta.lod_count;
 	d["sector_size"] = _meta.sector_size;
+
+	Array channel_depths;
+	channel_depths.resize(_meta.channel_depths.size());
+	for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
+		channel_depths[i] = _meta.channel_depths[i];
+	}
+	d["channel_depths"] = channel_depths;
 
 	String json = JSON::print(d, "\t", true);
 
@@ -447,6 +472,19 @@ Error VoxelStreamRegionFiles::save_meta() {
 	_meta_loaded = true;
 
 	return OK;
+}
+
+static void migrate_region_meta_data(Dictionary &data) {
+
+	if (data["version"] == Variant(FORMAT_VERSION_LEGACY_1)) {
+		Array depths;
+		depths.resize(VoxelBuffer::MAX_CHANNELS);
+		for (int i = 0; i < depths.size(); ++i) {
+			depths[i] = VoxelBuffer::DEFAULT_CHANNEL_DEPTH;
+		}
+		data["channel_depths"] = depths;
+		data["version"] = FORMAT_VERSION;
+	}
 }
 
 Error VoxelStreamRegionFiles::load_meta() {
@@ -482,6 +520,7 @@ Error VoxelStreamRegionFiles::load_meta() {
 	}
 
 	Dictionary d = res;
+	migrate_region_meta_data(d);
 	Meta meta;
 	ERR_FAIL_COND_V(!u8_from_json_variant(d["version"], meta.version), ERR_PARSE_ERROR);
 	ERR_FAIL_COND_V(!u8_from_json_variant(d["block_size_po2"], meta.block_size_po2), ERR_PARSE_ERROR);
@@ -490,6 +529,13 @@ Error VoxelStreamRegionFiles::load_meta() {
 	ERR_FAIL_COND_V(!s32_from_json_variant(d["sector_size"], meta.sector_size), ERR_PARSE_ERROR);
 
 	ERR_FAIL_COND_V(meta.version < 0, ERR_PARSE_ERROR);
+
+	Array channel_depths_data = d["channel_depths"];
+	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBuffer::MAX_CHANNELS, ERR_PARSE_ERROR);
+	for (int i = 0; i < channel_depths_data.size(); ++i) {
+		ERR_FAIL_COND_V(depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), ERR_PARSE_ERROR);
+	}
+
 	ERR_FAIL_COND_V(!check_meta(meta), ERR_INVALID_PARAMETER);
 
 	_meta = meta;
