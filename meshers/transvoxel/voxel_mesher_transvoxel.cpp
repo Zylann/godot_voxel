@@ -119,6 +119,16 @@ inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &min_pos, con
 	return mask;
 }
 
+inline Vector3 normalized_not_null(Vector3 n) {
+	real_t lengthsq = n.length_squared();
+	if (lengthsq == 0) {
+		return Vector3(0, 1, 0);
+	} else {
+		real_t length = Math::sqrt(lengthsq);
+		return Vector3(n.x / length, n.y / length, n.z / length);
+	}
+}
+
 } // namespace
 
 VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
@@ -272,7 +282,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 	// TODO Also abstract positions with padding, it can get quite confusing when one is used but not the other...
 
 	FixedArray<int8_t, 8> cell_samples;
-	FixedArray<Vector3, 8> corner_normals;
+	FixedArray<Vector3, 8> corner_gradients;
 	FixedArray<Vector3i, 8> corner_positions;
 
 	// Iterate all cells with padding (expected to be neighbors)
@@ -341,7 +351,8 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 					float py = tof(tos(get_voxel(voxels, p.x, p.y + 1, p.z, channel)));
 					float pz = tof(tos(get_voxel(voxels, p.x, p.y, p.z + 1, channel)));
 
-					corner_normals[i] = get_gradient_normal(nx, px, ny, py, nz, pz, cell_samples[i]);
+					//get_gradient_normal(nx, px, ny, py, nz, pz, cell_samples[i]);
+					corner_gradients[i] = Vector3(nx - px, ny - py, nz - pz);
 				}
 
 				// For cells occurring along the minimal boundaries of a block,
@@ -437,7 +448,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 							// or by falling back on the generator that was used to produce the volume.
 
 							Vector3 primary = p0.to_vec3() * t0 + p1.to_vec3() * t1;
-							Vector3 normal = corner_normals[v0] * t0 + corner_normals[v1] * t1;
+							Vector3 normal = normalized_not_null(corner_gradients[v0] * t0 + corner_gradients[v1] * t1);
 
 							Vector3 secondary;
 							uint16_t border_mask = cell_border_mask;
@@ -461,7 +472,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						// This cell owns the vertex, so it should be created.
 
 						Vector3 primary = p1.to_vec3(); //p0.to_vec3() * t0 + p1.to_vec3() * t1;
-						Vector3 normal = corner_normals[v1]; // corner_normals[v0] * t0 + corner_normals[v1] * t1;
+						Vector3 normal = normalized_not_null(corner_gradients[v1]); // corner_normals[v0] * t0 + corner_normals[v1] * t1;
 
 						Vector3 secondary;
 						uint16_t border_mask = cell_border_mask;
@@ -497,7 +508,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 							// TODO Interpolation is useless, just pick either
 							Vector3 primary = p0.to_vec3() * t0 + p1.to_vec3() * t1;
-							Vector3 normal = corner_normals[v0] * t0 + corner_normals[v1] * t1;
+							Vector3 normal = normalized_not_null(corner_gradients[v0] * t0 + corner_gradients[v1] * t1);
 
 							// TODO This bit of code is repeated several times, factor it?
 							Vector3 secondary;
@@ -677,7 +688,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 
 	FixedArray<int8_t, 13> cell_samples;
 	FixedArray<Vector3i, 13> cell_positions;
-	FixedArray<Vector3, 13> cell_normals;
+	FixedArray<Vector3, 13> cell_gradients;
 
 	// Iterating in face space
 	for (int fy = min_fpos_y; fy < max_fpos_y; fy += 2) {
@@ -737,12 +748,12 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 				float py = tof(tos(get_voxel(fvoxels, p.x, p.y + 1, p.z, channel)));
 				float pz = tof(tos(get_voxel(fvoxels, p.x, p.y, p.z + 1, channel)));
 
-				cell_normals[i] = get_gradient_normal(nx, px, ny, py, nz, pz, cell_samples[i]);
+				cell_gradients[i] = Vector3(nx - px, ny - py, nz - pz);
 			}
-			cell_normals[0x9] = cell_normals[0];
-			cell_normals[0xA] = cell_normals[2];
-			cell_normals[0xB] = cell_normals[6];
-			cell_normals[0xC] = cell_normals[8];
+			cell_gradients[0x9] = cell_gradients[0];
+			cell_gradients[0xA] = cell_gradients[2];
+			cell_gradients[0xB] = cell_gradients[6];
+			cell_gradients[0xC] = cell_gradients[8];
 
 			uint16_t case_code = sign(cell_samples[0]);
 			case_code |= (sign(cell_samples[1]) << 1);
@@ -833,11 +844,11 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 						const Vector3 p0 = cell_positions[index_vertex_a].to_vec3();
 						const Vector3 p1 = cell_positions[index_vertex_b].to_vec3();
 
-						const Vector3 n0 = cell_normals[index_vertex_a];
-						const Vector3 n1 = cell_normals[index_vertex_b];
+						const Vector3 n0 = cell_gradients[index_vertex_a];
+						const Vector3 n1 = cell_gradients[index_vertex_b];
 
 						Vector3 primary = p0 * t0 + p1 * t1;
-						Vector3 normal = n0 * t0 + n1 * t1;
+						Vector3 normal = normalized_not_null(n0 * t0 + n1 * t1);
 
 						bool fullres_side = (index_vertex_a < 9 || index_vertex_b < 9);
 						uint16_t border_mask = cell_border_mask;
@@ -889,7 +900,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 						// Going to create a new vertex
 
 						Vector3 primary = cell_positions[index_vertex].to_vec3();
-						Vector3 normal = cell_normals[index_vertex];
+						Vector3 normal = normalized_not_null(cell_gradients[index_vertex]);
 
 						bool fullres_side = (index_vertex < 9);
 						uint16_t border_mask = cell_border_mask;

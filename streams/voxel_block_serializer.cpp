@@ -2,6 +2,7 @@
 #include "../math/vector3i.h"
 #include "../thirdparty/lz4/lz4.h"
 #include "../voxel_buffer.h"
+#include "../voxel_memory_pool.h"
 #include <core/os/file_access.h>
 
 namespace {

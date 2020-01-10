@@ -33,8 +33,9 @@ public:
 
 	// Visuals and physics
 
+	void set_world(Ref<World> p_world);
 	void set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Array surface_arrays, bool debug_collision);
-	void set_transition_mesh(Ref<Mesh> mesh, int side, Ref<World> world);
+	void set_transition_mesh(Ref<Mesh> mesh, int side);
 	bool has_mesh() const;
 
 	void set_shader_material(Ref<ShaderMaterial> material);
@@ -42,8 +43,6 @@ public:
 
 	void set_mesh_state(MeshState ms);
 	MeshState get_mesh_state() const;
-
-	void set_world(World *world);
 
 	void set_visible(bool visible);
 	bool is_visible() const;
@@ -66,8 +65,15 @@ private:
 	VoxelBlock();
 
 	void _set_visible(bool visible);
-	void _update_transition_visibility();
 	inline bool _is_transition_visible(int side) const { return _transition_mask & (1 << side); }
+
+	inline void set_mesh_instance_visible(DirectMeshInstance &mi, bool visible) {
+		if (visible) {
+			mi.set_world(*_world);
+		} else {
+			mi.set_world(nullptr);
+		}
+	}
 
 private:
 	Vector3i _position_in_voxels;
@@ -76,6 +82,7 @@ private:
 	DirectMeshInstance _mesh_instance;
 	FixedArray<DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
 	DirectStaticBody _static_body;
+	Ref<World> _world;
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
 	Ref<Material> _debug_material;

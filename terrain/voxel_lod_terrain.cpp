@@ -53,12 +53,7 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 
 } // namespace
 
-VoxelLodTerrain::VoxelLodTerrain()
-#ifdef VOXEL_PROFILING
-		:
-		_zprofiler(*ZProfiler::get_singleton())
-#endif
-{
+VoxelLodTerrain::VoxelLodTerrain() {
 	// Note: don't do anything heavy in the constructor.
 	// Godot may create and destroy dozens of instances of all node types on startup,
 	// due to how ClassDB gets its default values.
@@ -1068,6 +1063,7 @@ void VoxelLodTerrain::_process() {
 			// The block will be made visible and meshed only by LodOctree
 			block->set_visible(false);
 			block->set_parent_visible(is_visible());
+			block->set_world(get_world());
 
 			Ref<ShaderMaterial> shader_material = _material;
 			if (shader_material.is_valid() && block->get_shader_material().is_null()) {
@@ -1254,7 +1250,7 @@ void VoxelLodTerrain::_process() {
 							mesh_data.compression_flags,
 							_material, nullptr);
 
-					block->set_transition_mesh(transition_mesh, dir, get_world());
+					block->set_transition_mesh(transition_mesh, dir);
 				}
 			}
 		}
@@ -1438,6 +1434,8 @@ void VoxelLodTerrain::add_transition_updates_around(Vector3i block_pos, int lod_
 			add_transition_update(nblock);
 		}
 	}
+	// TODO If a block appears at lod, neighbor blocks at lod-1 need to be updated.
+	// or maybe get_transition_mask needs a different approach that also looks at higher lods?
 }
 
 void VoxelLodTerrain::process_transition_updates() {
@@ -1457,7 +1455,7 @@ void VoxelLodTerrain::process_transition_updates() {
 	_blocks_pending_transition_update.clear();
 }
 
-uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) {
+uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) const {
 
 	uint8_t transition_mask = 0;
 
@@ -1465,24 +1463,77 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 		return transition_mask;
 	}
 
-	Lod &lower_lod = _lods[lod_index + 1];
+	const Lod &lower_lod = _lods[lod_index + 1];
 
 	if (!lower_lod.map.is_valid()) {
 		return transition_mask;
 	}
 
-	Vector3i lpos = block_pos >> 1;
+	Vector3i lower_pos = block_pos >> 1;
+	Vector3i upper_pos = block_pos << 1;
 
-	// Check for lower-LOD blocks around
+	const Lod &lod = _lods[lod_index];
+	CRASH_COND(!lod.map.is_valid());
+
+	// Based on octree rules, and the fact it must have run before, check neighbor blocks of same LOD:
+	// If one is missing or not visible, it means either of the following:
+	// - The neighbor at lod+1 is visible or not loaded (there must be a transition)
+	// - The neighbor at lod-1 is visible (no transition)
+
+	uint8_t visible_neighbors_of_same_lod = 0;
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-		Vector3i lnpos = (block_pos + Cube::g_side_normals[dir]) >> 1;
+		Vector3i npos = block_pos + Cube::g_side_normals[dir];
 
-		if (lnpos != lpos) {
-			VoxelBlock *nblock = lower_lod.map->get_block(lnpos);
+		const VoxelBlock *nblock = lod.map->get_block(npos);
 
-			if (nblock != nullptr && nblock->is_visible()) {
-				// The block has a visible neighbor of lower LOD
-				transition_mask |= (1 << dir);
+		if (nblock != nullptr && nblock->is_visible()) {
+			visible_neighbors_of_same_lod |= (1 << dir);
+		}
+	}
+
+	if (visible_neighbors_of_same_lod != 0b111111) {
+		// At least one neighbor isn't visible.
+		// Check for neighbors at different LOD (there can be only one kind on a given side)
+		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+			int dir_mask = (1 << dir);
+
+			if (visible_neighbors_of_same_lod & dir_mask) {
+				continue;
+			}
+
+			const Vector3i side_normal = Cube::g_side_normals[dir];
+			const Vector3i lower_neighbor_pos = (block_pos + side_normal) >> 1;
+
+			if (lower_neighbor_pos != lower_pos) {
+				const VoxelBlock *lower_neighbor_block = lower_lod.map->get_block(lower_neighbor_pos);
+
+				if (lower_neighbor_block != nullptr && lower_neighbor_block->is_visible()) {
+					// The block has a visible neighbor of lower LOD
+					transition_mask |= dir_mask;
+					continue;
+				}
+			}
+
+			if (lod_index > 0) {
+				// Check upper LOD neighbors.
+				// There are always 4 on each side, checking any is enough
+
+				Vector3i upper_neighbor_pos = upper_pos;
+				for (int i = 0; i < Vector3i::AXIS_COUNT; ++i) {
+					if (side_normal[i] == -1) {
+						--upper_neighbor_pos[i];
+					} else if (side_normal[i] == 1) {
+						upper_neighbor_pos[i] += 2;
+					}
+				}
+
+				const Lod &upper_lod = _lods[lod_index - 1];
+				const VoxelBlock *upper_neighbor_block = upper_lod.map->get_block(upper_neighbor_pos);
+
+				if (upper_neighbor_block == nullptr || upper_neighbor_block->is_visible() == false) {
+					// The block has no visible neighbor yet. World border? Assume lower LOD.
+					transition_mask |= dir_mask;
+				}
 			}
 		}
 	}
@@ -1531,6 +1582,7 @@ Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_d
 				d["position"] = block->position.to_vec3();
 				d["lod"] = block->lod_index;
 				d["transition_mask"] = block->get_transition_mask();
+				d["recomputed_transition_mask"] = get_transition_mask(block->position, block->lod_index);
 				hits.append(d);
 			}
 		}

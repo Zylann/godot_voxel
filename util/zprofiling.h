@@ -13,11 +13,9 @@
 #define VOXEL_LINE_STR VOXEL_STRINGIFY(__LINE__)
 #define VOXEL_FILE_LINE_STR __FILE__ ": " VOXEL_LINE_STR
 
-#define VOXEL_PROFILER_DECLARE ZProfiler _zprofiler
-
-#define VOXEL_PROFILE_BEGIN_K(_key) _zprofiler.begin(_key)
-#define VOXEL_PROFILE_END_K(_key) _zprofiler.end(_key)
-#define VOXEL_PROFILE_SCOPE_K(_scopename, _key) ZProfilerScope _scopename(_zprofiler, _key)
+#define VOXEL_PROFILE_BEGIN_K(_key) ZProfiler::get_thread_profiler().begin(_key)
+#define VOXEL_PROFILE_END_K(_key) ZProfiler::get_thread_profiler().end(_key)
+#define VOXEL_PROFILE_SCOPE_K(_scopename, _key) ZProfilerScope _scopename(_key)
 
 #define VOXEL_PROFILE_BEGIN() VOXEL_PROFILE_BEGIN_K(VOXEL_FILE_LINE_STR)
 #define VOXEL_PROFILE_END() VOXEL_PROFILE_END_K(VOXEL_FILE_LINE_STR)
@@ -33,11 +31,8 @@ public:
 	void begin(const char *description);
 	void end();
 
-	// Don't use this inside threads, use local instances
-	static void create_singleton();
-	static void free_singleton();
-	static ZProfiler *get_singleton();
-	static bool is_singleton_available();
+	// Gets profiler for the current executing thread
+	static ZProfiler &get_thread_profiler();
 
 private:
 	struct Event {
@@ -65,14 +60,12 @@ private:
 };
 
 struct ZProfilerScope {
-	ZProfilerScope(ZProfiler &profiler, const char *description) {
-		_profiler = &profiler;
-		profiler.begin(description);
+	ZProfilerScope(const char *description) {
+		ZProfiler::get_thread_profiler().begin(description);
 	}
 	~ZProfilerScope() {
-		_profiler->end();
+		ZProfiler::get_thread_profiler().end();
 	}
-	ZProfiler *_profiler;
 };
 
 #else
