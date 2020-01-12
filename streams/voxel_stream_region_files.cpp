@@ -147,8 +147,8 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(Ref<V
 	unsigned int block_data_size = f->get_32();
 	CRASH_COND(f->eof_reached());
 
-	ERR_FAIL_COND_V_MSG(!_block_serializer.decompress_and_deserialize(f, block_data_size, **out_buffer), EMERGE_FAILED,
-			String("Failed to read block {0} at region {1}").format(varray(block_pos.to_vec3(), region_pos.to_vec3())));
+	ERR_EXPLAIN(String("Failed to read block {0} at region {1}").format(varray(block_pos.to_vec3(), region_pos.to_vec3())));
+	ERR_FAIL_COND_V(!_block_serializer.decompress_and_deserialize(f, block_data_size, **out_buffer), EMERGE_FAILED);
 
 	return EMERGE_OK;
 }
@@ -588,8 +588,12 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 
 		Error file_err;
 		FileAccess *f = open_file(fpath, FileAccess::WRITE_READ, &file_err);
-		ERR_FAIL_COND_V_MSG(!f, nullptr, "Failed to write file " + fpath + ", error " + String::num_int64(file_err));
-		ERR_FAIL_COND_V_MSG(file_err != OK, nullptr, "Error " + String::num_int64(file_err));
+
+		ERR_EXPLAIN("Failed to write file " + fpath + ", error " + String::num_int64(file_err));
+		ERR_FAIL_COND_V(!f, nullptr);
+
+		ERR_EXPLAIN("Error " + String::num_int64(file_err));
+		ERR_FAIL_COND_V(file_err != OK, nullptr);
 
 		f->store_buffer((uint8_t *)FORMAT_REGION_MAGIC, 4);
 		f->store_8(FORMAT_VERSION);
@@ -791,9 +795,9 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 				++i;
 			} else {
 				Error err = da->rename(_directory_path, old_dir);
-				ERR_FAIL_COND_MSG(err != OK,
-						String("Failed to rename '{0}' to '{1}', error {2}")
+				ERR_EXPLAIN(String("Failed to rename '{0}' to '{1}', error {2}")
 								.format(varray(_directory_path, old_dir, err)));
+				ERR_FAIL_COND(err != OK);
 				break;
 			}
 		}
@@ -837,7 +841,8 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 				if (fname.ends_with(ext)) {
 					Vector<String> parts = fname.split(".");
 					// r.x.y.z.ext
-					ERR_FAIL_COND_MSG(parts.size() < 4, String("Found invalid region file: '{0}'").format(varray(fname)));
+					ERR_EXPLAIN(String("Found invalid region file: '{0}'").format(varray(fname)));
+					ERR_FAIL_COND(parts.size() < 4);
 					PositionAndLod p;
 					p.position.x = parts[1].to_int();
 					p.position.y = parts[2].to_int();
@@ -980,7 +985,8 @@ void VoxelStreamRegionFiles::set_region_size_po2(int p_region_size_po2) {
 	if (_meta.region_size_po2 == p_region_size_po2) {
 		return;
 	}
-	ERR_FAIL_COND_MSG(_meta_loaded, "Can't change existing region size without heavy conversion. Use convert_files().");
+	ERR_EXPLAIN("Can't change existing region size without heavy conversion. Use convert_files().");
+	ERR_FAIL_COND(_meta_loaded);
 	ERR_FAIL_COND(p_region_size_po2 < 1);
 	ERR_FAIL_COND(p_region_size_po2 > 8);
 	_meta.region_size_po2 = p_region_size_po2;
@@ -991,7 +997,8 @@ void VoxelStreamRegionFiles::set_block_size_po2(int p_block_size_po2) {
 	if (_meta.block_size_po2 == p_block_size_po2) {
 		return;
 	}
-	ERR_FAIL_COND_MSG(_meta_loaded, "Can't change existing block size without heavy conversion. Use convert_files().");
+	ERR_EXPLAIN("Can't change existing block size without heavy conversion. Use convert_files().");
+	ERR_FAIL_COND(_meta_loaded);
 	ERR_FAIL_COND(p_block_size_po2 < 1);
 	ERR_FAIL_COND(p_block_size_po2 > 8);
 	_meta.block_size_po2 = p_block_size_po2;
@@ -1002,7 +1009,8 @@ void VoxelStreamRegionFiles::set_sector_size(int p_sector_size) {
 	if (_meta.sector_size == p_sector_size) {
 		return;
 	}
-	ERR_FAIL_COND_MSG(_meta_loaded, "Can't change existing sector size without heavy conversion. Use convert_files().");
+	ERR_EXPLAIN("Can't change existing sector size without heavy conversion. Use convert_files().");
+	ERR_FAIL_COND(_meta_loaded);
 	ERR_FAIL_COND(p_sector_size < 256);
 	ERR_FAIL_COND(p_sector_size > 65536);
 	_meta.sector_size = p_sector_size;
@@ -1013,7 +1021,8 @@ void VoxelStreamRegionFiles::set_lod_count(int p_lod_count) {
 	if (_meta.lod_count == p_lod_count) {
 		return;
 	}
-	ERR_FAIL_COND_MSG(_meta_loaded, "Can't change existing LOD count without heavy conversion. Use convert_files().");
+	ERR_EXPLAIN("Can't change existing LOD count without heavy conversion. Use convert_files().");
+	ERR_FAIL_COND(_meta_loaded);
 	ERR_FAIL_COND(p_lod_count < 1);
 	ERR_FAIL_COND(p_lod_count > 32);
 	_meta.lod_count = p_lod_count;
@@ -1029,7 +1038,8 @@ void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 	meta.sector_size = int(d["sector_size"]);
 	meta.lod_count = int(d["lod_count"]);
 
-	ERR_FAIL_COND_MSG(!check_meta(meta), "Invalid setting");
+	ERR_EXPLAIN("Invalid setting");
+	ERR_FAIL_COND(!check_meta(meta));
 
 	if (!_meta_loaded) {
 

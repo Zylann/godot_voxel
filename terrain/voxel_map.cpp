@@ -30,8 +30,11 @@ void VoxelMap::create(unsigned int block_size_po2, int lod_index) {
 
 void VoxelMap::set_block_size_pow2(unsigned int p) {
 
-	ERR_FAIL_COND_MSG(p < 1, "Block size is too small");
-	ERR_FAIL_COND_MSG(p > 8, "Block size is too big");
+	ERR_EXPLAIN("Block size is too small");
+	ERR_FAIL_COND(p < 1);
+
+	ERR_EXPLAIN("Block size is too big");
+	ERR_FAIL_COND(p > 8);
 
 	_block_size_pow2 = p;
 	_block_size = 1 << _block_size_pow2;
@@ -40,8 +43,11 @@ void VoxelMap::set_block_size_pow2(unsigned int p) {
 
 void VoxelMap::set_lod_index(int lod_index) {
 
-	ERR_FAIL_COND_MSG(lod_index < 0, "LOD index can't be negative");
-	ERR_FAIL_COND_MSG(lod_index >= 32, "LOD index is too big");
+	ERR_EXPLAIN("LOD index can't be negative");
+	ERR_FAIL_COND(lod_index < 0);
+
+	ERR_EXPLAIN("LOD index is too big");
+	ERR_FAIL_COND(lod_index >= 32);
 
 	_lod_index = lod_index;
 }

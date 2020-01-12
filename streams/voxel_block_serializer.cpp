@@ -88,7 +88,8 @@ bool VoxelBlockSerializer::deserialize(const std::vector<uint8_t> &p_data, Voxel
 	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
 
 		uint8_t compression_value = f->get_8();
-		ERR_FAIL_COND_V_MSG(compression_value >= VoxelBuffer::COMPRESSION_COUNT, false, "At offset 0x" + String::num_int64(f->get_position() - 1, 16));
+		ERR_EXPLAIN("At offset 0x" + String::num_int64(f->get_position() - 1, 16));
+		ERR_FAIL_COND_V(compression_value >= VoxelBuffer::COMPRESSION_COUNT, false);
 		VoxelBuffer::Compression compression = (VoxelBuffer::Compression)compression_value;
 
 		switch (compression) {
@@ -121,7 +122,8 @@ bool VoxelBlockSerializer::deserialize(const std::vector<uint8_t> &p_data, Voxel
 	}
 
 	// Failure at this indicates file corruption
-	ERR_FAIL_COND_V_MSG(f->get_32() != BLOCK_TRAILING_MAGIC, false, "At offset 0x" + String::num_int64(f->get_position() - 4, 16));
+	ERR_EXPLAIN("At offset 0x" + String::num_int64(f->get_position() - 4, 16));
+	ERR_FAIL_COND_V(f->get_32() != BLOCK_TRAILING_MAGIC, false);
 	return true;
 }
 
@@ -166,11 +168,11 @@ bool VoxelBlockSerializer::decompress_and_deserialize(const std::vector<uint8_t>
 			p_data.size() - header_size,
 			_data.size());
 
-	ERR_FAIL_COND_V_MSG(actually_decompressed_size < 0, false,
-			String("LZ4 decompression error {0}").format(varray(actually_decompressed_size)));
+	ERR_EXPLAIN(String("LZ4 decompression error {0}").format(varray(actually_decompressed_size)));
+	ERR_FAIL_COND_V(actually_decompressed_size < 0, false);
 
-	ERR_FAIL_COND_V_MSG(actually_decompressed_size != decompressed_size, false,
-			String("Expected {0} bytes, obtained {1}").format(varray(decompressed_size, actually_decompressed_size)));
+	ERR_EXPLAIN(String("Expected {0} bytes, obtained {1}").format(varray(decompressed_size, actually_decompressed_size)));
+	ERR_FAIL_COND_V(actually_decompressed_size != decompressed_size, false);
 
 	return deserialize(_data, out_voxel_buffer);
 }

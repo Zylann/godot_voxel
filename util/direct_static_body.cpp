@@ -45,7 +45,7 @@ void DirectStaticBody::set_transform(Transform transform) {
 
 void DirectStaticBody::add_shape(Ref<Shape> shape) {
 	ERR_FAIL_COND(!_body.is_valid());
-	PhysicsServer::get_singleton()->body_add_shape(_body, shape->get_rid(), Transform(), false);
+	PhysicsServer::get_singleton()->body_add_shape(_body, shape->get_rid(), Transform());
 	// No use case for multishape yet
 	_shape = shape;
 
