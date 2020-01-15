@@ -282,7 +282,7 @@ void VoxelLodTerrain::stop_updater() {
 
 	_blocks_pending_main_thread_update.clear();
 
-	for (int i = 0; i < MAX_LOD; ++i) {
+	for (int i = 0; i < _lods.size(); ++i) {
 
 		Lod &lod = _lods[i];
 		lod.blocks_pending_update.clear();
@@ -309,7 +309,7 @@ void VoxelLodTerrain::stop_streamer() {
 		_stream_thread = nullptr;
 	}
 
-	for (int i = 0; i < MAX_LOD; ++i) {
+	for (int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
 		lod.blocks_to_load.clear();
 	}
@@ -339,7 +339,7 @@ float VoxelLodTerrain::get_lod_split_scale() const {
 
 void VoxelLodTerrain::set_lod_count(int p_lod_count) {
 
-	ERR_FAIL_COND(p_lod_count >= MAX_LOD);
+	ERR_FAIL_COND(p_lod_count >= VoxelConstants::MAX_LOD);
 	ERR_FAIL_COND(p_lod_count < 1);
 
 	if (get_lod_count() != p_lod_count) {
@@ -349,7 +349,7 @@ void VoxelLodTerrain::set_lod_count(int p_lod_count) {
 
 void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 
-	CRASH_COND(p_lod_count >= MAX_LOD);
+	CRASH_COND(p_lod_count >= VoxelConstants::MAX_LOD);
 	CRASH_COND(p_lod_count < 1);
 
 	_lod_count = p_lod_count;
@@ -371,7 +371,7 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 void VoxelLodTerrain::reset_maps() {
 	// Clears all blocks and reconfigures maps to account for new LOD count and block sizes
 
-	for (int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+	for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 
 		Lod &lod = _lods[lod_index];
 
@@ -453,7 +453,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 
 		case NOTIFICATION_ENTER_WORLD: {
 			World *world = *get_world();
-			for (int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+			for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([world](VoxelBlock *block) {
 						block->set_world(world);
@@ -463,7 +463,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD: {
-			for (int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+			for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([](VoxelBlock *block) {
 						block->set_world(nullptr);
@@ -474,7 +474,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 
 		case NOTIFICATION_VISIBILITY_CHANGED: {
 			bool visible = is_visible();
-			for (int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+			for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([visible](VoxelBlock *block) {
 						block->set_parent_visible(visible);

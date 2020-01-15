@@ -21,9 +21,6 @@ class VoxelBlock;
 class VoxelLodTerrain : public Spatial {
 	GDCLASS(VoxelLodTerrain, Spatial)
 public:
-	// TODO Put this in a constant outside, I had to re-declare it in various places
-	static const int MAX_LOD = 32;
-
 	VoxelLodTerrain();
 	~VoxelLodTerrain();
 
@@ -176,7 +173,7 @@ private:
 #endif
 	};
 
-	FixedArray<Lod, MAX_LOD> _lods;
+	FixedArray<Lod, VoxelConstants::MAX_LOD> _lods;
 	int _lod_count = 0;
 	float _lod_split_scale = 0.f;
 	unsigned int _view_distance_voxels = 512;

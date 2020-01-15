@@ -9,7 +9,7 @@ VoxelDataLoader::VoxelDataLoader(unsigned int thread_count, Ref<VoxelStream> str
 
 	// TODO I'm not sure it's worth to configure more than one thread for voxel streams
 
-	Mgr::BlockProcessingFunc processors[Mgr::MAX_JOBS];
+	FixedArray<Mgr::BlockProcessingFunc, Mgr::MAX_JOBS> processors;
 
 	processors[0] = [this, stream](ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Mgr::ProcessorStats &stats) {
 		this->process_blocks_thread_func(inputs, outputs, stream, stats);

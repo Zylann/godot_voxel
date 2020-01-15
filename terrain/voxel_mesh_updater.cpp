@@ -29,7 +29,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 		_maximum_padding = max(_maximum_padding, smooth_mesher->get_maximum_padding());
 	}
 
-	Mgr::BlockProcessingFunc processors[Mgr::MAX_LOD];
+	FixedArray<Mgr::BlockProcessingFunc, VoxelConstants::MAX_LOD> processors;
 
 	for (unsigned int i = 0; i < thread_count; ++i) {
 
