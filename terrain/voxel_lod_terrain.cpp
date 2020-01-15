@@ -321,7 +321,7 @@ void VoxelLodTerrain::set_lod_split_scale(float p_lod_split_scale) {
 		return;
 	}
 
-	_lod_split_scale = p_lod_split_scale;
+	_lod_split_scale = CLAMP(p_lod_split_scale, VoxelConstants::MINIMUM_LOD_SPLIT_SCALE, VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE);
 
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 
@@ -421,42 +421,6 @@ int VoxelLodTerrain::get_block_region_extent() const {
 	// It depends on the LOD split scale, which tells how close to a block we need to be for it to subdivide.
 	// Each LOD is fractal so that value is the same for each of them.
 	return static_cast<int>(_lod_split_scale) * 2 + 2;
-}
-
-Dictionary VoxelLodTerrain::get_block_info(Vector3 fbpos, int lod_index) const {
-	// Gets some info useful for debugging
-	Dictionary d;
-	ERR_FAIL_COND_V(lod_index < 0, d);
-	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
-
-	const Lod &lod = _lods[lod_index];
-	Vector3i bpos(fbpos);
-
-	bool meshed = false;
-	bool visible = false;
-	int loading_state = 0;
-	const VoxelBlock *block = lod.map->get_block(bpos);
-	if (block) {
-		meshed = !block->has_mesh() && block->get_mesh_state() != VoxelBlock::MESH_UP_TO_DATE;
-		visible = block->is_visible();
-		loading_state = 2;
-	} else if (lod.loading_blocks.has(bpos)) {
-		loading_state = 1;
-	}
-
-#ifdef TOOLS_ENABLED
-	int debug_unexpected_drop_time = -10000;
-	const int *ptr = lod.debug_unexpected_load_drop_time.getptr(bpos);
-	if (ptr) {
-		debug_unexpected_drop_time = *ptr;
-	}
-	d["debug_unexpected_drop_time"] = debug_unexpected_drop_time;
-#endif
-
-	d["loading"] = loading_state;
-	d["meshed"] = meshed;
-	d["visible"] = visible;
-	return d;
 }
 
 Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, int lod_index) const {
@@ -1012,6 +976,12 @@ void VoxelLodTerrain::_process() {
 
 		//print_line(String("Loaded {0} blocks").format(varray(output.emerged_blocks.size())));
 
+#ifdef TOOLS_ENABLED
+		for (int i = 0; i < _lod_count; ++i) {
+			_lods[i].debug_unexpected_block_drops.clear();
+		}
+#endif
+
 		for (int i = 0; i < output.blocks.size(); ++i) {
 
 			VOXEL_PROFILE_SCOPE(profile_process_get_loading_responses_block);
@@ -1039,12 +1009,14 @@ void VoxelLodTerrain::_process() {
 
 			if (ob.drop_hint) {
 				// That block was dropped by the data loader thread, but we were still expecting it...
-				// This is not good, because it means the loader is out of sync due to a bug.
-				// We can recover with the removal from `loading_blocks` so it will be re-queried again later...
-				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
-								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
+				// This is most likely caused by the loader not keeping up with the speed at which the player is moving.
+				// We should recover with the removal from `loading_blocks` so it will be re-queried again later...
+
+				//				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
+				//								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
+
 #ifdef TOOLS_ENABLED
-				lod.debug_unexpected_load_drop_time[ob.position] = OS::get_singleton()->get_ticks_msec();
+				lod.debug_unexpected_block_drops.push_back(ob.position);
 #endif
 				++_stats.dropped_block_loads;
 				continue;
@@ -1563,6 +1535,8 @@ Dictionary VoxelLodTerrain::get_statistics() const {
 	return d;
 }
 
+// DEBUG LAND
+
 Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const {
 
 	Vector3 pos = world_origin;
@@ -1581,8 +1555,6 @@ Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_d
 				Dictionary d;
 				d["position"] = block->position.to_vec3();
 				d["lod"] = block->lod_index;
-				d["transition_mask"] = block->get_transition_mask();
-				d["recomputed_transition_mask"] = get_transition_mask(block->position, block->lod_index);
 				hits.append(d);
 			}
 		}
@@ -1591,6 +1563,60 @@ Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_d
 	}
 
 	return hits;
+}
+
+Array VoxelLodTerrain::debug_get_last_unexpected_block_drops() const {
+
+	Array lods;
+	lods.resize(_lod_count);
+
+	for (int i = 0; i < _lod_count; ++i) {
+		const Lod &lod = _lods[i];
+
+		Array drops;
+		drops.resize(lod.debug_unexpected_block_drops.size());
+
+		for (int j = 0; j < lod.debug_unexpected_block_drops.size(); ++j) {
+			drops[j] = lod.debug_unexpected_block_drops[j].to_vec3();
+		}
+
+		lods[i] = drops;
+	}
+
+	return lods;
+}
+
+Dictionary VoxelLodTerrain::debug_get_block_info(Vector3 fbpos, int lod_index) const {
+
+	// Gets some info useful for debugging
+	Dictionary d;
+	ERR_FAIL_COND_V(lod_index < 0, d);
+	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
+
+	const Lod &lod = _lods[lod_index];
+	Vector3i bpos(fbpos);
+
+	bool meshed = false;
+	bool visible = false;
+	int loading_state = 0;
+	const VoxelBlock *block = lod.map->get_block(bpos);
+
+	if (block) {
+
+		meshed = !block->has_mesh() && block->get_mesh_state() != VoxelBlock::MESH_UP_TO_DATE;
+		visible = block->is_visible();
+		loading_state = 2;
+		d["transition_mask"] = block->get_transition_mask();
+		d["recomputed_transition_mask"] = get_transition_mask(block->position, block->lod_index);
+
+	} else if (lod.loading_blocks.has(bpos)) {
+		loading_state = 1;
+	}
+
+	d["loading"] = loading_state;
+	d["meshed"] = meshed;
+	d["visible"] = visible;
+	return d;
 }
 
 void VoxelLodTerrain::_bind_methods() {
@@ -1620,13 +1646,14 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_lod_split_scale"), &VoxelLodTerrain::get_lod_split_scale);
 
 	ClassDB::bind_method(D_METHOD("get_block_region_extent"), &VoxelLodTerrain::get_block_region_extent);
-	ClassDB::bind_method(D_METHOD("get_block_info", "block_pos", "lod"), &VoxelLodTerrain::get_block_info);
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::get_statistics);
 	ClassDB::bind_method(D_METHOD("voxel_to_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_block_position);
 
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelLodTerrain::get_voxel_tool);
 
 	ClassDB::bind_method(D_METHOD("debug_raycast_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_block);
+	ClassDB::bind_method(D_METHOD("debug_get_block_info", "block_pos", "lod"), &VoxelLodTerrain::debug_get_block_info);
+	ClassDB::bind_method(D_METHOD("debug_get_last_unexpected_block_drops"), &VoxelLodTerrain::debug_get_last_unexpected_block_drops);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 

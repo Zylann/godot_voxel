@@ -3,6 +3,7 @@
 
 #include "../math/vector3i.h"
 #include "../octree_tables.h"
+#include "../voxel_constants.h"
 
 // Octree designed to handle level of detail.
 template <class T>
@@ -10,7 +11,6 @@ class LodOctree {
 public:
 	static const unsigned int NO_CHILDREN = -1;
 	static const unsigned int ROOT_INDEX = -1; // Root node isn't stored in pool
-	static const unsigned int MAX_LOD = 32;
 
 	struct Node {
 		// Index to first child node within the node pool.
@@ -105,7 +105,7 @@ public:
 
 	template <typename A>
 	void create_from_lod_count(int base_size, unsigned int lod_count, A &destroy_action) {
-		ERR_FAIL_COND(lod_count > MAX_LOD);
+		ERR_FAIL_COND(lod_count > VoxelConstants::MAX_LOD);
 		clear(destroy_action);
 		_base_size = base_size;
 		_max_depth = lod_count - 1;
@@ -119,15 +119,13 @@ public:
 	// The lower, the shorter LODs will spread and lower the quality.
 	void set_split_scale(float p_split_scale) {
 
-		const float minv = 2.0;
-		const float maxv = 5.0;
-
 		// Split scale must be greater than a threshold,
 		// otherwise lods will decimate too fast and it will look messy
-		if (p_split_scale < minv) {
-			p_split_scale = minv;
-		} else if (p_split_scale > maxv) {
-			p_split_scale = maxv;
+		if (p_split_scale < VoxelConstants::MINIMUM_LOD_SPLIT_SCALE) {
+			p_split_scale = VoxelConstants::MINIMUM_LOD_SPLIT_SCALE;
+
+		} else if (p_split_scale > VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE) {
+			p_split_scale = VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE;
 		}
 
 		_split_scale = p_split_scale;
