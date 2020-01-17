@@ -1,4 +1,5 @@
 #include "voxel_stream.h"
+#include "../voxel_string_names.h"
 #include <core/script_language.h>
 
 VoxelStream::VoxelStream() {
@@ -14,7 +15,7 @@ void VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_v
 		Variant arg3 = lod;
 		const Variant *args[3] = { &arg1, &arg2, &arg3 };
 		Variant::CallError err;
-		script->call("emerge_block", args, 3, err);
+		script->call(VoxelStringNames::get_singleton()->emerge_block, args, 3, err);
 		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
 				"voxel_stream.cpp:emerge_block gave an error: " + String::num(err.error) +
 						", Argument: " + String::num(err.argument) +
@@ -33,7 +34,7 @@ void VoxelStream::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxe
 		Variant arg3 = lod;
 		const Variant *args[3] = { &arg1, &arg2, &arg3 };
 		Variant::CallError err;
-		script->call("immerge_block", args, 3, err);
+		script->call(VoxelStringNames::get_singleton()->immerge_block, args, 3, err);
 		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
 				"voxel_stream.cpp:immerge_block gave an error: " + String::num(err.error) +
 						" Argument: " + String::num(err.argument) +

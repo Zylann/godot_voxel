@@ -16,6 +16,7 @@
 #include "voxel_buffer.h"
 #include "voxel_library.h"
 #include "voxel_memory_pool.h"
+#include "voxel_string_names.h"
 #include "voxel_tool.h"
 
 void register_voxel_types() {
@@ -54,6 +55,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelMesherMC>();
 
 	VoxelMemoryPool::create_singleton();
+	VoxelStringNames::create_singleton();
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::create_debug_box_mesh();
@@ -63,6 +65,7 @@ void register_voxel_types() {
 void unregister_voxel_types() {
 
 	VoxelMemoryPool::destroy_singleton();
+	VoxelStringNames::destroy_singleton();
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::free_debug_box_mesh();

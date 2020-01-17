@@ -2,8 +2,10 @@
 #include "../math/rect3i.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/profiling_clock.h"
+#include "../voxel_string_names.h"
 #include "../voxel_tool_lod_terrain.h"
 #include "voxel_map.h"
+
 #include <core/core_string_names.h>
 #include <core/engine.h>
 
@@ -1049,8 +1051,7 @@ void VoxelLodTerrain::_process() {
 				if (_shader_material_pool.size() > 0) {
 					sm = _shader_material_pool.back();
 					// The joys of pooling materials
-					// TODO Use StringName
-					sm->set_shader_param("u_transition_mask", 0);
+					sm->set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, 0);
 					_shader_material_pool.pop_back();
 				} else {
 					sm = shader_material->duplicate(false);

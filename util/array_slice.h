@@ -4,6 +4,7 @@
 #include "fixed_array.h"
 #include <core/error_macros.h>
 
+// View into an array, referencing a pointer and a size.
 template <typename T>
 class ArraySlice {
 public:
