@@ -4,7 +4,10 @@
 #include "../math/rect3i.h"
 #include "../math/vector3i.h"
 #include "../util/array_slice.h"
+#include "../util/fixed_array.h"
 #include "../util/utility.h"
+#include "../voxel_constants.h"
+
 #include <core/os/os.h>
 #include <core/os/semaphore.h>
 #include <algorithm>
@@ -23,7 +26,6 @@
 template <typename InputBlockData_T, typename OutputBlockData_T>
 class VoxelBlockThreadManager {
 public:
-	static const int MAX_LOD = 32; // Like VoxelLodTerrain
 	static const int MAX_JOBS = 8; // Arbitrary, should be enough
 
 	// Specialization must be copyable
@@ -51,7 +53,7 @@ public:
 		Vector3i priority_position; // In LOD0 block coordinates
 		Vector3 priority_direction; // Where the viewer is looking at
 		int exclusive_region_extent = 0; // Region beyond which the processor is allowed to discard requests
-		int exclusive_region_max_lod = MAX_LOD; // LOD beyond which exclusive region won't be used
+		int exclusive_region_max_lod = VoxelConstants::MAX_LOD; // LOD beyond which exclusive region won't be used
 		bool use_exclusive_region = false;
 		int max_lod_index = 0;
 
@@ -99,7 +101,7 @@ public:
 	VoxelBlockThreadManager(
 			unsigned int job_count,
 			unsigned int sync_interval_ms,
-			BlockProcessingFunc *processors,
+			ArraySlice<BlockProcessingFunc> processors,
 			bool duplicate_rejection = true,
 			unsigned int batch_count = 1) {
 
@@ -295,7 +297,7 @@ private:
 		Mutex *output_mutex = nullptr;
 		// Indexes which blocks are present in shared_input,
 		// so if we push a duplicate request with the same coordinates, we can discard it without a linear search
-		HashMap<Vector3i, int, Vector3iHasher> shared_input_block_indexes[MAX_LOD];
+		FixedArray<HashMap<Vector3i, int, Vector3iHasher>, VoxelConstants::MAX_LOD> shared_input_block_indexes;
 		bool needs_sort = false;
 		// Only read by the thread
 		bool thread_exit = false;
@@ -335,7 +337,7 @@ private:
 		for (unsigned int i = begin; i < end; ++i) {
 
 			const InputBlock &block = input_blocks[i];
-			CRASH_COND(block.lod >= MAX_LOD)
+			CRASH_COND(block.lod >= VoxelConstants::MAX_LOD);
 
 			if (job.duplicate_rejection) {
 
@@ -520,7 +522,7 @@ private:
 
 			if (data.duplicate_rejection) {
 				// We emptied shared input, empty shared_input_block_indexes then
-				for (unsigned int lod_index = 0; lod_index < MAX_LOD; ++lod_index) {
+				for (unsigned int lod_index = 0; lod_index < data.shared_input_block_indexes.size(); ++lod_index) {
 					data.shared_input_block_indexes[lod_index].clear();
 				}
 			}

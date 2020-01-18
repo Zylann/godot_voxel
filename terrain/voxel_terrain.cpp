@@ -839,6 +839,7 @@ void VoxelTerrain::_process() {
 			VoxelBlock *block = _map->get_block(block_pos);
 			bool update_neighbors = block == nullptr;
 			block = _map->set_block_buffer(block_pos, ob.data.voxels_loaded);
+			block->set_world(get_world());
 
 			// TODO The following code appears to have order-dependency with block loading.
 			// i.e if block loading responses arrive in a different order they were requested in,

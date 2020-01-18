@@ -1,5 +1,14 @@
 #include "voxel_stream_noise.h"
 
+void VoxelStreamNoise::set_channel(VoxelBuffer::ChannelId channel) {
+	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
+	_channel = channel;
+}
+
+VoxelBuffer::ChannelId VoxelStreamNoise::get_channel() const {
+	return _channel;
+}
+
 void VoxelStreamNoise::set_noise(Ref<OpenSimplexNoise> noise) {
 	_noise = noise;
 }
@@ -34,11 +43,21 @@ void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin
 
 	if (origin_in_voxels.y > _height_start + _height_range) {
 
-		buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 100.0);
+		if (_channel == VoxelBuffer::CHANNEL_SDF) {
+			buffer.clear_channel_f(_channel, 100.0);
+		}
+		else if (_channel == VoxelBuffer::CHANNEL_TYPE) {
+			buffer.clear_channel(_channel, 0);
+		}
 
 	} else if (origin_in_voxels.y + (buffer.get_size().y << lod) < _height_start) {
 
-		buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, -100.0);
+		if (_channel == VoxelBuffer::CHANNEL_SDF) {
+			buffer.clear_channel_f(_channel, -100.0);
+		}
+		else if (_channel == VoxelBuffer::CHANNEL_TYPE) {
+			buffer.clear_channel(_channel, 1);
+		}
 
 	} else {
 
@@ -73,9 +92,11 @@ void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin
 		float iso_scale = noise.get_period() * 0.1;
 		//float noise_buffer_scale = 1.f / static_cast<float>(noise_buffer_step);
 
-		for (int z = 0; z < buffer.get_size().z; ++z) {
-			for (int x = 0; x < buffer.get_size().x; ++x) {
-				for (int y = 0; y < buffer.get_size().y; ++y) {
+		Vector3i size = buffer.get_size();
+
+		for (int z = 0; z < size.z; ++z) {
+			for (int x = 0; x < size.x; ++x) {
+				for (int y = 0; y < size.y; ++y) {
 
 					float lx = origin_in_voxels.x + (x << lod);
 					float ly = origin_in_voxels.y + (y << lod);
@@ -86,8 +107,12 @@ void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin
 					float t = (ly - _height_start) / _height_range;
 					float d = (n + 2.0 * t - 1.0) * iso_scale;
 
-					buffer.set_voxel_f(d, x, y, z, VoxelBuffer::CHANNEL_SDF);
-					// TODO Support for blocky voxels
+					if (_channel == VoxelBuffer::CHANNEL_SDF) {
+						buffer.set_voxel_f(d, x, y, z, _channel);
+					}
+					else if (_channel == VoxelBuffer::CHANNEL_TYPE && d < 0) {
+						buffer.set_voxel(1, x, y, z, _channel);
+					}
 				}
 			}
 		}
@@ -105,7 +130,11 @@ void VoxelStreamNoise::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_height_range", "hrange"), &VoxelStreamNoise::set_height_range);
 	ClassDB::bind_method(D_METHOD("get_height_range"), &VoxelStreamNoise::get_height_range);
 
+	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelStreamNoise::set_channel);
+	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelStreamNoise::get_channel);
+
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise"), "set_noise", "get_noise");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "height_start"), "set_height_start", "get_height_start");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "height_range"), "set_height_range", "get_height_range");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
 }

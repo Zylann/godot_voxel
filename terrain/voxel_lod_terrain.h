@@ -21,9 +21,6 @@ class VoxelBlock;
 class VoxelLodTerrain : public Spatial {
 	GDCLASS(VoxelLodTerrain, Spatial)
 public:
-	// TODO Put this in a constant outside, I had to re-declare it in various places
-	static const int MAX_LOD = 32;
-
 	VoxelLodTerrain();
 	~VoxelLodTerrain();
 
@@ -53,7 +50,6 @@ public:
 	NodePath get_viewer_path() const;
 
 	int get_block_region_extent() const;
-	Dictionary get_block_info(Vector3 fbpos, int lod_index) const;
 	Vector3 voxel_to_block_position(Vector3 vpos, int lod_index) const;
 
 	unsigned int get_block_size_pow2() const;
@@ -80,7 +76,10 @@ public:
 	};
 
 	Dictionary get_statistics() const;
+
 	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
+	Array debug_get_last_unexpected_block_drops() const;
+	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
 
 protected:
 	static void _bind_methods();
@@ -170,11 +169,11 @@ private:
 
 #ifdef TOOLS_ENABLED
 		// TODO Debug, may be removed in the future
-		HashMap<Vector3i, int, Vector3iHasher> debug_unexpected_load_drop_time;
+		std::vector<Vector3i> debug_unexpected_block_drops;
 #endif
 	};
 
-	FixedArray<Lod, MAX_LOD> _lods;
+	FixedArray<Lod, VoxelConstants::MAX_LOD> _lods;
 	int _lod_count = 0;
 	float _lod_split_scale = 0.f;
 	unsigned int _view_distance_voxels = 512;

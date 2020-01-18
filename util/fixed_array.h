@@ -34,6 +34,10 @@ public:
 		return _data[i];
 	}
 
+	inline T *data() {
+		return _data;
+	}
+
 	inline unsigned int size() const {
 		return N;
 	}

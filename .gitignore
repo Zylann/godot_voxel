@@ -2,3 +2,4 @@
 *.pyc
 *.o
 *.autosave
+*.bc

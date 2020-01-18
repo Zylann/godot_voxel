@@ -1,15 +1,23 @@
 #ifndef ARRAY_SLICE_H
 #define ARRAY_SLICE_H
 
+#include "fixed_array.h"
 #include <core/error_macros.h>
 
+// View into an array, referencing a pointer and a size.
 template <typename T>
 class ArraySlice {
 public:
-	ArraySlice(T *p_ptr, size_t p_begin, size_t p_end) {
+	inline ArraySlice(T *p_ptr, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end <= p_begin);
 		_ptr = p_ptr + p_begin;
 		_size = p_end - p_begin;
+	}
+
+	template <unsigned int N>
+	inline ArraySlice(FixedArray<T, N> &a) {
+		_ptr = a.data();
+		_size = a.size();
 	}
 
 	inline T &operator[](size_t i) {
@@ -28,6 +36,14 @@ public:
 
 	inline size_t size() const {
 		return _size;
+	}
+
+	inline T *data() {
+		return _ptr;
+	}
+
+	inline const T *data() const {
+		return _ptr;
 	}
 
 private:

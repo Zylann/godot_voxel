@@ -35,7 +35,7 @@ inline uint8_t get_voxel(const VoxelBuffer &vb, Vector3i pos, int channel) {
 	return get_voxel(vb, pos.x, pos.y, pos.z, channel);
 }
 
-Vector3 get_border_offset(Vector3 pos, int lod, Vector3i block_size, Vector3i min_pos) {
+Vector3 get_border_offset(const Vector3 pos, const int lod, const Vector3i block_size) {
 
 	// When transition meshes are inserted between blocks of different LOD, we need to make space for them.
 	// Secondary vertex positions can be calculated by linearly transforming positions inside boundary cells
@@ -56,7 +56,7 @@ Vector3 get_border_offset(Vector3 pos, int lod, Vector3i block_size, Vector3i mi
 
 	for (unsigned int i = 0; i < Vector3i::AXIS_COUNT; ++i) {
 
-		const float p = pos[i] - min_pos[i];
+		const float p = pos[i];
 		const float s = block_size[i];
 
 		if (p < p2k) {
@@ -88,13 +88,13 @@ inline Vector3 project_border_offset(Vector3 delta, Vector3 normal) {
 			/**/ -normal.x * normal.z * delta.x /**/ - normal.y * normal.z * delta.y /**/ + (1 - normal.z * normal.z) * delta.z);
 }
 
-inline Vector3 get_secondary_position(Vector3 primary, Vector3 normal, int lod, Vector3i block_size, Vector3i min_pos) {
-	Vector3 delta = get_border_offset(primary, lod, block_size, min_pos);
+inline Vector3 get_secondary_position(const Vector3 primary, const Vector3 normal, const int lod, const Vector3i block_size) {
+	Vector3 delta = get_border_offset(primary, lod, block_size);
 	delta = project_border_offset(delta, normal);
 	return primary + delta;
 }
 
-inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &min_pos, const Vector3i &max_pos) {
+inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &block_size) {
 
 	uint8_t mask = 0;
 
@@ -107,11 +107,11 @@ inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &min_pos, con
 
 	for (int i = 0; i < Vector3i::AXIS_COUNT; i++) {
 		// Close to negative face.
-		if (pos[i] == min_pos[i]) {
+		if (pos[i] == 0) {
 			mask |= (1 << (i * 2));
 		}
 		// Close to positive face.
-		if (pos[i] == max_pos[i]) {
+		if (pos[i] == block_size[i]) {
 			mask |= (1 << (i * 2 + 1));
 		}
 	}
@@ -268,7 +268,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 	}
 
 	const Vector3i block_size = voxels.get_size();
-	const Vector3i block_size_without_padding = block_size - 3 * Vector3i(MIN_PADDING);
+	const Vector3i block_size_without_padding = block_size - Vector3i(MIN_PADDING + MAX_PADDING);
 
 	// Prepare vertex reuse cache
 	reset_reuse_cells(block_size);
@@ -277,9 +277,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 	// We also reach one voxel further to compute normals, so we adjust the iterated area
 	const Vector3i min_pos = Vector3i(MIN_PADDING);
 	const Vector3i max_pos = block_size - Vector3i(MAX_PADDING);
-	const Vector3i max_pos_c = max_pos - Vector3i(1);
-	// TODO Change the Mesher API to allow different min and max paddings. Here 1 on min, 2 on max
-	// TODO Also abstract positions with padding, it can get quite confusing when one is used but not the other...
+	//const Vector3i max_pos_c = max_pos - Vector3i(1);
 
 	FixedArray<int8_t, 8> cell_samples;
 	FixedArray<Vector3, 8> corner_gradients;
@@ -300,6 +298,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 				// |/      |/    |/
 				// 0-------1     o--x
 				//
+				// Warning: temporarily includes padding. It is undone later.
 				corner_positions[0] = Vector3i(pos.x, pos.y, pos.z);
 				corner_positions[1] = Vector3i(pos.x + 1, pos.y, pos.z);
 				corner_positions[2] = Vector3i(pos.x, pos.y + 1, pos.z);
@@ -353,6 +352,9 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 					//get_gradient_normal(nx, px, ny, py, nz, pz, cell_samples[i]);
 					corner_gradients[i] = Vector3(nx - px, ny - py, nz - pz);
+
+					// Undo padding here. From this point, corner positions are actual positions.
+					corner_positions[i] -= min_pos;
 				}
 
 				// For cells occurring along the minimal boundaries of a block,
@@ -372,7 +374,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 				FixedArray<int, 12> cell_vertex_indices(-1);
 
-				uint8_t cell_border_mask = get_border_mask(pos, min_pos, max_pos_c);
+				uint8_t cell_border_mask = get_border_mask(pos - min_pos, block_size_without_padding - Vector3i(1));
 
 				// For each vertex in the case
 				for (unsigned int i = 0; i < vertex_count; ++i) {
@@ -405,6 +407,9 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 					float t0 = static_cast<float>(t) / 256.f;
 					float t1 = static_cast<float>(0x100 - t) / 256.f;
+					int ti0 = t;
+					int ti1 = 0x100 - t;
+					const float fixed_factor = 1.f / 256.f;
 
 					Vector3i p0 = corner_positions[v0];
 					Vector3i p1 = corner_positions[v1];
@@ -447,18 +452,19 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 							// However, it might be possible on low-res blocks bordering high-res ones due to neighboring rules,
 							// or by falling back on the generator that was used to produce the volume.
 
-							Vector3 primary = p0.to_vec3() * t0 + p1.to_vec3() * t1;
+							Vector3i primary = p0 * ti0 + p1 * ti1;
+							Vector3 primaryf = primary.to_vec3() * fixed_factor;
 							Vector3 normal = normalized_not_null(corner_gradients[v0] * t0 + corner_gradients[v1] * t1);
 
 							Vector3 secondary;
 							uint16_t border_mask = cell_border_mask;
 
 							if (cell_border_mask > 0) {
-								secondary = get_secondary_position(primary, normal, 0, block_size_without_padding, min_pos);
-								border_mask |= (get_border_mask(p0, min_pos, max_pos) & get_border_mask(p1, min_pos, max_pos)) << 6;
+								secondary = get_secondary_position(primaryf, normal, 0, block_size_without_padding);
+								border_mask |= (get_border_mask(p0, block_size_without_padding) & get_border_mask(p1, block_size_without_padding)) << 6;
 							}
 
-							cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask, secondary);
+							cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
 
 							if (reuse_dir & 8) {
 								// Store the generated vertex so that other cells can reuse it.
@@ -471,18 +477,19 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						// v1 == 7: p1 on the max corner of the cell
 						// This cell owns the vertex, so it should be created.
 
-						Vector3 primary = p1.to_vec3(); //p0.to_vec3() * t0 + p1.to_vec3() * t1;
-						Vector3 normal = normalized_not_null(corner_gradients[v1]); // corner_normals[v0] * t0 + corner_normals[v1] * t1;
+						Vector3i primary = p1;
+						Vector3 primaryf = primary.to_vec3();
+						Vector3 normal = normalized_not_null(corner_gradients[v1]);
 
 						Vector3 secondary;
 						uint16_t border_mask = cell_border_mask;
 
 						if (cell_border_mask > 0) {
-							secondary = get_secondary_position(primary, normal, 0, block_size_without_padding, min_pos);
-							border_mask |= get_border_mask(p1, min_pos, max_pos) << 6;
+							secondary = get_secondary_position(primaryf, normal, 0, block_size_without_padding);
+							border_mask |= get_border_mask(p1, block_size_without_padding) << 6;
 						}
 
-						cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask, secondary);
+						cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
 
 						current_reuse_cell.vertices[0] = cell_vertex_indices[i];
 
@@ -506,20 +513,20 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 						if (!present || cell_vertex_indices[i] < 0) {
 
-							// TODO Interpolation is useless, just pick either
-							Vector3 primary = p0.to_vec3() * t0 + p1.to_vec3() * t1;
-							Vector3 normal = normalized_not_null(corner_gradients[v0] * t0 + corner_gradients[v1] * t1);
+							Vector3i primary = t == 0 ? p1 : p0;
+							Vector3 primaryf = primary.to_vec3();
+							Vector3 normal = normalized_not_null(corner_gradients[t == 0 ? v1 : v0]);
 
 							// TODO This bit of code is repeated several times, factor it?
 							Vector3 secondary;
 							uint16_t border_mask = cell_border_mask;
 
 							if (cell_border_mask > 0) {
-								secondary = get_secondary_position(primary, normal, 0, block_size_without_padding, min_pos);
-								border_mask |= get_border_mask(t == 0 ? p1 : p0, min_pos, max_pos) << 6;
+								secondary = get_secondary_position(primaryf, normal, 0, block_size_without_padding);
+								border_mask |= get_border_mask(primary, block_size_without_padding) << 6;
 							}
 
-							cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask, secondary);
+							cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
 						}
 					}
 
@@ -535,10 +542,6 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 			} // x
 		} // y
 	} // z
-
-	// TODO For the second part, take a look at:
-	// - https://github.com/Phyronnaz/VoxelPlugin/blob/master/Source/Voxel/Private/VoxelRender/Polygonizers/VoxelMCPolygonizer.cpp
-	// - https://github.com/BinaryConstruct/Transvoxel-XNA/blob/master/Transvoxel/SurfaceExtractor/ported/TransvoxelExtractor.cs
 }
 
 void VoxelMesherTransvoxel::build_transitions(const TransitionVoxels &p_voxels, unsigned int channel) {
@@ -699,6 +702,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			const VoxelBuffer &fvoxels = p_voxels;
 
 			// Cell positions in block space
+			// Warning: temporarily includes padding. It is undone later.
 			cell_positions[0] = L::face_to_block(fx, fy, fz, direction, block_size);
 			cell_positions[1] = L::face_to_block(fx + 1, fy, fz, direction, block_size);
 			cell_positions[2] = L::face_to_block(fx + 2, fy, fz, direction, block_size);
@@ -755,6 +759,11 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			cell_gradients[0xB] = cell_gradients[6];
 			cell_gradients[0xC] = cell_gradients[8];
 
+			// Undo padding in cell positions, since we don't need to use them to access the buffer anymore
+			for (unsigned int i = 0; i < cell_positions.size(); ++i) {
+				cell_positions[i] -= min_pos;
+			}
+
 			uint16_t case_code = sign(cell_samples[0]);
 			case_code |= (sign(cell_samples[1]) << 1);
 			case_code |= (sign(cell_samples[2]) << 2);
@@ -789,17 +798,16 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 
 			uint8_t direction_validity_mask = (fx > min_fpos_x ? 1 : 0) | ((fy > min_fpos_y ? 1 : 0) << 1);
 
-			// Using max_pos instead of cell max pos because we are really dealing with vertices on block sides here
-			uint8_t cell_border_mask = get_border_mask(cell_positions[0], min_pos, max_pos);
+			uint8_t cell_border_mask = get_border_mask(cell_positions[0], block_size_without_padding);
 
 			for (unsigned int i = 0; i < vertex_count; ++i) {
 
-				uint16_t edge_code = Transvoxel::get_transition_vertex_data(case_code, i);
-				uint8_t index_vertex_a = (edge_code >> 4) & 0xf;
-				uint8_t index_vertex_b = (edge_code & 0xf);
+				const uint16_t edge_code = Transvoxel::get_transition_vertex_data(case_code, i);
+				const uint8_t index_vertex_a = (edge_code >> 4) & 0xf;
+				const uint8_t index_vertex_b = (edge_code & 0xf);
 
-				int sample_a = cell_samples[index_vertex_a]; // d0 and d1 in the paper
-				int sample_b = cell_samples[index_vertex_b];
+				const int sample_a = cell_samples[index_vertex_a]; // d0 and d1 in the paper
+				const int sample_b = cell_samples[index_vertex_b];
 				// TODO Zero-division is not mentionned in the paper??
 				ERR_FAIL_COND(sample_a == sample_b);
 				ERR_FAIL_COND(sample_a == 0 && sample_b == 0);
@@ -807,10 +815,13 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 				// Get interpolation position
 				// We use an 8-bit fraction, allowing the new vertex to be located at one of 257 possible
 				// positions  along  the  edge  when  both  endpoints  are included.
-				int t = (sample_b << 8) / (sample_b - sample_a);
+				const int t = (sample_b << 8) / (sample_b - sample_a);
 
-				float t0 = static_cast<float>(t) / 256.f;
-				float t1 = static_cast<float>(0x100 - t) / 256.f;
+				const float t0 = static_cast<float>(t) / 256.f;
+				const float t1 = static_cast<float>(0x100 - t) / 256.f;
+				const int ti0 = t;
+				const int ti1 = 0x100 - t;
+				const float fixed_factor = 1.f / 256.f;
 
 				if (t & 0xff) {
 					// Vertex lies in the interior of the edge.
@@ -841,13 +852,14 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 					if (!present || cell_vertex_indices[i] == -1) {
 						// Going to create a new vertex
 
-						const Vector3 p0 = cell_positions[index_vertex_a].to_vec3();
-						const Vector3 p1 = cell_positions[index_vertex_b].to_vec3();
+						const Vector3i p0 = cell_positions[index_vertex_a];
+						const Vector3i p1 = cell_positions[index_vertex_b];
 
 						const Vector3 n0 = cell_gradients[index_vertex_a];
 						const Vector3 n1 = cell_gradients[index_vertex_b];
 
-						Vector3 primary = p0 * t0 + p1 * t1;
+						Vector3i primary = p0 * ti0 + p1 * ti1;
+						Vector3 primaryf = primary.to_vec3() * fixed_factor;
 						Vector3 normal = normalized_not_null(n0 * t0 + n1 * t1);
 
 						bool fullres_side = (index_vertex_a < 9 || index_vertex_b < 9);
@@ -856,8 +868,8 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 						Vector3 secondary;
 						if (fullres_side) {
 
-							secondary = get_secondary_position(primary, normal, 0, block_size_without_padding, min_pos);
-							border_mask |= (get_border_mask(p0, min_pos, max_pos) & get_border_mask(p1, min_pos, max_pos)) << 6;
+							secondary = get_secondary_position(primaryf, normal, 0, block_size_without_padding);
+							border_mask |= (get_border_mask(p0, block_size_without_padding) & get_border_mask(p1, block_size_without_padding)) << 6;
 
 						} else {
 							// If the vertex is on the half-res side (in our implementation, it's the side of the block),
@@ -866,7 +878,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 							border_mask = 0;
 						}
 
-						cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask, secondary);
+						cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
 
 						if (reuse_direction & 0x8) {
 							// The vertex can be re-used later
@@ -899,7 +911,8 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 					if (!present || cell_vertex_indices[i] == -1) {
 						// Going to create a new vertex
 
-						Vector3 primary = cell_positions[index_vertex].to_vec3();
+						Vector3i primary = cell_positions[index_vertex];
+						Vector3 primaryf = primary.to_vec3();
 						Vector3 normal = normalized_not_null(cell_gradients[index_vertex]);
 
 						bool fullres_side = (index_vertex < 9);
@@ -908,14 +921,14 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 						Vector3 secondary;
 						if (fullres_side) {
 
-							secondary = get_secondary_position(primary, normal, 0, block_size_without_padding, min_pos);
-							border_mask |= get_border_mask(cell_positions[index_vertex], min_pos, max_pos) << 6;
+							secondary = get_secondary_position(primaryf, normal, 0, block_size_without_padding);
+							border_mask |= get_border_mask(primary, block_size_without_padding) << 6;
 
 						} else {
 							border_mask = 0;
 						}
 
-						cell_vertex_indices[i] = emit_vertex(primary, normal, border_mask, secondary);
+						cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
 
 						// We are on a corner so the vertex will be re-usable later
 						ReuseTransitionCell &r = get_reuse_cell_2d(fx, fy);
@@ -982,10 +995,6 @@ VoxelMesherTransvoxel::ReuseTransitionCell &VoxelMesherTransvoxel::get_reuse_cel
 int VoxelMesherTransvoxel::emit_vertex(Vector3 primary, Vector3 normal, uint16_t border_mask, Vector3 secondary) {
 
 	int vi = _output_vertices.size();
-
-	// TODO Unpad positions in calling code, as it may simplify border offset
-	primary -= Vector3(MIN_PADDING, MIN_PADDING, MIN_PADDING);
-	secondary -= Vector3(MIN_PADDING, MIN_PADDING, MIN_PADDING);
 
 	_output_vertices.push_back(primary);
 	_output_normals.push_back(normal);
