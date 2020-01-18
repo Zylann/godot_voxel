@@ -109,6 +109,7 @@ public:
 	}
 
 	// TODO Return an ArraySlice
+	// TODO Have a template version based on channel depth
 	uint8_t *get_channel_raw(unsigned int channel_index, uint32_t *out_size_in_bytes = nullptr) const;
 
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;

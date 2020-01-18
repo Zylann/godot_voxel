@@ -31,10 +31,6 @@ public:
 
 	VoxelMesher *clone() override;
 
-protected:
-	static void _bind_methods();
-
-private:
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
 	struct Arrays {
@@ -45,8 +41,12 @@ private:
 		std::vector<int> indices;
 	};
 
+protected:
+	static void _bind_methods();
+
+private:
 	Ref<VoxelLibrary> _library;
-	Arrays _arrays[MAX_MATERIALS];
+	FixedArray<Arrays, MAX_MATERIALS> _arrays_per_material;
 	float _baked_occlusion_darkness;
 	bool _bake_occlusion;
 };

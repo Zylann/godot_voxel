@@ -1,5 +1,6 @@
 #include "voxel_mesher_blocky.h"
 #include "../../cube_tables.h"
+#include "../../util/array_slice.h"
 #include "../../util/utility.h"
 #include "../../voxel_library.h"
 #include <core/os/os.h>
@@ -33,108 +34,27 @@ inline bool is_transparent(const VoxelLibrary &lib, int voxel_id) {
 
 } // namespace
 
-VoxelMesherBlocky::VoxelMesherBlocky() :
-		_baked_occlusion_darkness(0.8),
-		_bake_occlusion(true) {
-	set_padding(PADDING, PADDING);
-}
-
-void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {
-	_library = library;
-}
-
-void VoxelMesherBlocky::set_occlusion_darkness(float darkness) {
-	_baked_occlusion_darkness = darkness;
-	if (_baked_occlusion_darkness < 0.0) {
-		_baked_occlusion_darkness = 0.0;
-	} else if (_baked_occlusion_darkness >= 1.0) {
-		_baked_occlusion_darkness = 1.0;
-	}
-}
-
-void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
-	_bake_occlusion = enable;
-}
-
-void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	//uint64_t time_before = OS::get_singleton()->get_ticks_usec();
-
-	const int channel = VoxelBuffer::CHANNEL_TYPE;
-
-	ERR_FAIL_COND(_library.is_null());
-	const VoxelLibrary &library = **_library;
-
-	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
-		Arrays &a = _arrays[i];
-		a.positions.clear();
-		a.normals.clear();
-		a.uvs.clear();
-		a.colors.clear();
-		a.indices.clear();
-	}
-
-	float baked_occlusion_darkness = 0;
-	if (_bake_occlusion) {
-		baked_occlusion_darkness = _baked_occlusion_darkness / 3.0;
-	}
-
-	// The technique is Culled faces.
-	// Could be improved with greedy meshing: https://0fps.net/2012/06/30/meshing-in-a-minecraft-game/
-	// However I don't feel it's worth it yet:
-	// - Not so much gain for organic worlds with lots of texture variations
-	// - Works well with cubes but not with any shape
-	// - Slower
-	// => Could be implemented in a separate class?
-
-	const VoxelBuffer &voxels = input.voxels;
-#ifdef TOOLS_ENABLED
-	if (input.lod != 0) {
-		WARN_PRINT("VoxelMesherBlocky received lod != 0, it is not supported");
-	}
-#endif
-
-	// Data must be padded, hence the off-by-one
-	Vector3i min = Vector3i(get_minimum_padding());
-	Vector3i max = voxels.get_size() - Vector3i(get_maximum_padding());
-
-	int index_offsets[MAX_MATERIALS] = { 0 };
-
-	// Iterate 3D padded data to extract voxel faces.
-	// This is the most intensive job in this class, so all required data should be as fit as possible.
-
-	// The buffer we receive MUST be dense (i.e not compressed, and channels allocated).
-	// That means we can use raw pointers to voxel data inside instead of using the higher-level getters,
-	// and then save a lot of time.
-
-	ERR_FAIL_COND(voxels.get_channel_depth(channel) != VoxelBuffer::DEPTH_8_BIT);
-	ERR_FAIL_COND(voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE);
-	const uint8_t *type_buffer = voxels.get_channel_raw(channel);
-	/*       _
-	//      | \
-	//     /\ \\
-	//    / /|\\\
-	//    | |\ \\\
-	//    | \_\ \\|
-	//    |    |  )
-	//     \   |  |
-	//      \    /
-	*/
-	if (type_buffer == nullptr) {
-		// No data to read, the channel is probably uniform
-		// TODO This is an invalid behavior IF sending a full block of uniformly opaque cubes,
-		// however not likely for terrains because with neighbor padding, such a case means no face would be generated anyways
-		return;
-	}
-
-	//CRASH_COND(memarr_len(type_buffer) != buffer.get_volume() * sizeof(uint8_t));
+template <typename Type_T>
+static void generate_blocky_mesh(
+		FixedArray<VoxelMesherBlocky::Arrays, VoxelMesherBlocky::MAX_MATERIALS> &out_arrays_per_material,
+		const ArraySlice<Type_T> type_buffer,
+		const Vector3i block_size,
+		const VoxelLibrary &library,
+		bool bake_occlusion, float baked_occlusion_darkness) {
 
 	// Build lookup tables so to speed up voxel access.
 	// These are values to add to an address in order to get given neighbor.
 
-	int row_size = voxels.get_size().y;
-	int deck_size = voxels.get_size().x * row_size;
+	int row_size = block_size.y;
+	int deck_size = block_size.x * row_size;
 
-	int side_neighbor_lut[Cube::SIDE_COUNT];
+	// Data must be padded, hence the off-by-one
+	Vector3i min = Vector3i(VoxelMesherBlocky::PADDING);
+	Vector3i max = block_size - Vector3i(VoxelMesherBlocky::PADDING);
+
+	int index_offsets[VoxelMesherBlocky::MAX_MATERIALS] = { 0 };
+
+	FixedArray<int, Cube::SIDE_COUNT> side_neighbor_lut;
 	side_neighbor_lut[Cube::SIDE_LEFT] = row_size;
 	side_neighbor_lut[Cube::SIDE_RIGHT] = -row_size;
 	side_neighbor_lut[Cube::SIDE_BACK] = -deck_size;
@@ -142,7 +62,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	side_neighbor_lut[Cube::SIDE_BOTTOM] = -1;
 	side_neighbor_lut[Cube::SIDE_TOP] = 1;
 
-	int edge_neighbor_lut[Cube::EDGE_COUNT];
+	FixedArray<int, Cube::EDGE_COUNT> edge_neighbor_lut;
 	edge_neighbor_lut[Cube::EDGE_BOTTOM_BACK] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_BACK];
 	edge_neighbor_lut[Cube::EDGE_BOTTOM_FRONT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_FRONT];
 	edge_neighbor_lut[Cube::EDGE_BOTTOM_LEFT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_LEFT];
@@ -156,15 +76,47 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	edge_neighbor_lut[Cube::EDGE_TOP_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_LEFT];
 	edge_neighbor_lut[Cube::EDGE_TOP_RIGHT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_RIGHT];
 
-	int corner_neighbor_lut[Cube::CORNER_COUNT];
-	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_LEFT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_LEFT];
-	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_RIGHT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_RIGHT];
-	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_RIGHT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
-	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
-	corner_neighbor_lut[Cube::CORNER_TOP_BACK_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_LEFT];
-	corner_neighbor_lut[Cube::CORNER_TOP_BACK_RIGHT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_RIGHT];
-	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_RIGHT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
-	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
+	FixedArray<int, Cube::CORNER_COUNT> corner_neighbor_lut;
+
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_LEFT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_BACK] +
+			side_neighbor_lut[Cube::SIDE_LEFT];
+
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_RIGHT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_BACK] +
+			side_neighbor_lut[Cube::SIDE_RIGHT];
+
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_RIGHT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_FRONT] +
+			side_neighbor_lut[Cube::SIDE_RIGHT];
+
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_LEFT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_FRONT] +
+			side_neighbor_lut[Cube::SIDE_LEFT];
+
+	corner_neighbor_lut[Cube::CORNER_TOP_BACK_LEFT] =
+			side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_BACK] +
+			side_neighbor_lut[Cube::SIDE_LEFT];
+
+	corner_neighbor_lut[Cube::CORNER_TOP_BACK_RIGHT] =
+			side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_BACK] +
+			side_neighbor_lut[Cube::SIDE_RIGHT];
+
+	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_RIGHT] =
+			side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_FRONT] +
+			side_neighbor_lut[Cube::SIDE_RIGHT];
+
+	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] =
+			side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_FRONT] +
+			side_neighbor_lut[Cube::SIDE_LEFT];
 
 	//uint64_t time_prep = OS::get_singleton()->get_ticks_usec() - time_before;
 	//time_before = OS::get_singleton()->get_ticks_usec();
@@ -181,7 +133,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 					const Voxel &voxel = library.get_voxel_const(voxel_id);
 
-					Arrays &arrays = _arrays[voxel.get_material_id()];
+					VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[voxel.get_material_id()];
 					int &index_offset = index_offsets[voxel.get_material_id()];
 
 					// Hybrid approach: extract cube faces and decimate those that aren't visible,
@@ -204,7 +156,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 								int shaded_corner[8] = { 0 };
 
-								if (_bake_occlusion) {
+								if (bake_occlusion) {
 
 									// Combinatory solution for https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
 
@@ -267,7 +219,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 									Color *w = arrays.colors.data() + append_index;
 									const Color modulate_color = voxel.get_color();
 
-									if (_bake_occlusion) {
+									if (bake_occlusion) {
 
 										for (unsigned int i = 0; i < vertex_count; ++i) {
 											Vector3 v = rv[i];
@@ -355,29 +307,119 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 			}
 		}
 	}
+}
 
-	//uint64_t time_meshing = OS::get_singleton()->get_ticks_usec() - time_before;
-	//time_before = OS::get_singleton()->get_ticks_usec();
+VoxelMesherBlocky::VoxelMesherBlocky() :
+		_baked_occlusion_darkness(0.8),
+		_bake_occlusion(true) {
+	set_padding(PADDING, PADDING);
+}
 
-	// Commit mesh
+void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {
+	_library = library;
+}
 
-	//	print_line(String("Made mesh v: ") + String::num(_arrays[0].positions.size())
-	//			+ String(", i: ") + String::num(_arrays[0].indices.size()));
+void VoxelMesherBlocky::set_occlusion_darkness(float darkness) {
+	_baked_occlusion_darkness = darkness;
+	if (_baked_occlusion_darkness < 0.0) {
+		_baked_occlusion_darkness = 0.0;
+	} else if (_baked_occlusion_darkness >= 1.0) {
+		_baked_occlusion_darkness = 1.0;
+	}
+}
+
+void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
+	_bake_occlusion = enable;
+}
+
+void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+
+	const int channel = VoxelBuffer::CHANNEL_TYPE;
+
+	ERR_FAIL_COND(_library.is_null());
+	const VoxelLibrary &library = **_library;
+
+	for (unsigned int i = 0; i < _arrays_per_material.size(); ++i) {
+		Arrays &a = _arrays_per_material[i];
+		a.positions.clear();
+		a.normals.clear();
+		a.uvs.clear();
+		a.colors.clear();
+		a.indices.clear();
+	}
+
+	float baked_occlusion_darkness = 0;
+	if (_bake_occlusion) {
+		baked_occlusion_darkness = _baked_occlusion_darkness / 3.0;
+	}
+
+	// The technique is Culled faces.
+	// Could be improved with greedy meshing: https://0fps.net/2012/06/30/meshing-in-a-minecraft-game/
+	// However I don't feel it's worth it yet:
+	// - Not so much gain for organic worlds with lots of texture variations
+	// - Works well with cubes but not with any shape
+	// - Slower
+	// => Could be implemented in a separate class?
+
+	const VoxelBuffer &voxels = input.voxels;
+#ifdef TOOLS_ENABLED
+	if (input.lod != 0) {
+		WARN_PRINT("VoxelMesherBlocky received lod != 0, it is not supported");
+	}
+#endif
+
+	// Iterate 3D padded data to extract voxel faces.
+	// This is the most intensive job in this class, so all required data should be as fit as possible.
+
+	// The buffer we receive MUST be dense (i.e not compressed, and channels allocated).
+	// That means we can use raw pointers to voxel data inside instead of using the higher-level getters,
+	// and then save a lot of time.
+
+	ERR_FAIL_COND(voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE);
+	const uint8_t *type_buffer = voxels.get_channel_raw(channel);
+	//       _
+	//      | \
+	//     /\ \\
+	//    / /|\\\
+	//    | |\ \\\
+	//    | \_\ \\|
+	//    |    |  )
+	//     \   |  |
+	//      \    /
+	//
+	if (type_buffer == nullptr) {
+		// No data to read, the channel is probably uniform
+		// TODO This is an invalid behavior IF sending a full block of uniformly opaque cubes,
+		// however not likely for terrains because with neighbor padding, such a case means no face would be generated anyways
+		return;
+	}
+
+	const Vector3i block_size = voxels.get_size();
+	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
+
+	switch (channel_depth) {
+
+		case VoxelBuffer::DEPTH_8_BIT:
+			generate_blocky_mesh(_arrays_per_material, ArraySlice<const uint8_t>(type_buffer, 0, block_size.volume()),
+					block_size, library, _bake_occlusion, baked_occlusion_darkness);
+			break;
+
+		case VoxelBuffer::DEPTH_16_BIT:
+			generate_blocky_mesh(_arrays_per_material, ArraySlice<const uint16_t>((const uint16_t *)type_buffer, 0, block_size.volume()),
+					block_size, library, _bake_occlusion, baked_occlusion_darkness);
+			break;
+
+		default:
+			ERR_PRINT("Unsupported voxel depth");
+			return;
+	}
 
 	// TODO We could return a single byte array and use Mesh::add_surface down the line?
 
 	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
 
-		const Arrays &arrays = _arrays[i];
+		const Arrays &arrays = _arrays_per_material[i];
 		if (arrays.positions.size() != 0) {
-
-			/*print_line("Arrays:");
-			for(int i = 0; i < arrays.positions.size(); ++i)
-				print_line(String("  P {0}").format(varray(arrays.positions[i])));
-			for(int i = 0; i < arrays.normals.size(); ++i)
-				print_line(String("  N {0}").format(varray(arrays.normals[i])));
-			for(int i = 0; i < arrays.uvs.size(); ++i)
-				print_line(String("  UV {0}").format(varray(arrays.uvs[i])));*/
 
 			Array mesh_arrays;
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
@@ -411,10 +453,6 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	}
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
-
-	//uint64_t time_commit = OS::get_singleton()->get_ticks_usec() - time_before;
-
-	//print_line(String("P: {0}, M: {1}, C: {2}").format(varray(time_prep, time_meshing, time_commit)));
 }
 
 VoxelMesher *VoxelMesherBlocky::clone() {

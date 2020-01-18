@@ -8,6 +8,7 @@ class VoxelLibrary : public Resource {
 	GDCLASS(VoxelLibrary, Resource)
 
 public:
+	// TODO Lift that limit to 65536 and use a vector to store them
 	static const unsigned int MAX_VOXEL_TYPES = 256; // Required limit because voxel types are stored in 8 bits
 
 	VoxelLibrary();
