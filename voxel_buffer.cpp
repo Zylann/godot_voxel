@@ -88,7 +88,7 @@ inline uint64_t real_to_raw_voxel(real_t value, VoxelBuffer::Depth depth) {
 	}
 }
 
-inline uint64_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
+inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	// Depths below 32 are normalized between -1 and 1
 	switch (depth) {
 		case VoxelBuffer::DEPTH_1_BIT:
