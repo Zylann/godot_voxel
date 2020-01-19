@@ -42,6 +42,37 @@ void unordered_remove(Vector<T> &v, unsigned int pos) {
 	v.resize(last);
 }
 
+// Removes all items satisfying the given predicate.
+// This can change the size of the container, and original order of items is not preserved.
+template <typename T, typename F>
+inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
+	for (unsigned int i = 0; i < vec.size(); ++i) {
+		if (predicate(vec[i])) {
+			vec[i] = vec.back();
+			vec.pop_back();
+			--i;
+		}
+	}
+}
+
+// Removes all items satisfying the given predicate.
+// This can reduce the size of the container. Items are moved to preserve order.
+//template <typename T, typename F>
+//inline void remove_if(std::vector<T> &vec, F predicate) {
+//	unsigned int j = 0;
+//	for (unsigned int i = 0; i < vec.size(); ++i) {
+//		if (predicate(vec[i])) {
+//			continue;
+//		} else {
+//			if (i != j) {
+//				vec[j] = vec[i];
+//			}
+//			++j;
+//		}
+//	}
+//	vec.resize(j);
+//}
+
 template <typename T>
 void copy_to(PoolVector<T> &to, const Vector<T> &from) {
 
@@ -126,28 +157,6 @@ inline int udiv(int x, int d) {
 inline int wrap(int x, int d) {
 	return ((x % d) + d) % d;
 }
-
-//inline Vector3 get_gradient_normal(float left, float right, float bottom, float top, float back, float front, float middle) {
-
-//	float gx, gy, gz;
-
-//	// Float equality, but based on the assumption these come from voxels. Voxels are quantized integer values.
-//	if (left == right && bottom == top && back == front) {
-//		// Sided gradient
-//		// Won't be zero in cells that have triangles in them
-//		gx = left - middle;
-//		gy = bottom - middle;
-//		gz = back - middle;
-
-//	} else {
-//		// Symetric gradient
-//		gx = left - right;
-//		gy = bottom - top;
-//		gz = back - front;
-//	}
-
-//	return Vector3(gx, gy, gz).normalized();
-//}
 
 #if TOOLS_ENABLED
 namespace VoxelDebug {

@@ -590,17 +590,6 @@ bool VoxelLodTerrain::check_block_loaded_and_updated(VoxelBlock *block) {
 	return true;
 }
 
-template <typename T, typename F>
-inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
-	for (unsigned int i = 0; i < vec.size(); ++i) {
-		if (predicate(vec[i])) {
-			vec[i] = vec.back();
-			vec.pop_back();
-			--i;
-		}
-	}
-}
-
 void VoxelLodTerrain::send_block_data_requests() {
 
 	VoxelDataLoader::Input input;

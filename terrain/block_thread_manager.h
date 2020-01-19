@@ -388,8 +388,13 @@ private:
 				if (!data.input.blocks.empty()) {
 
 					if (data.thread_exit) {
-						// Remove all queries except those that can't be discarded
-						std::remove_if(data.input.blocks.begin(), data.input.blocks.end(),
+						// Flush inputs we processed already
+						shift_up(data.input.blocks, queue_index);
+						queue_index = 0;
+
+						// Remove all remaining queries except those that can't be discarded.
+						// Since the thread is exiting, we don't care anymore about sorting.
+						unordered_remove_if(data.input.blocks,
 								[](const InputBlock &b) {
 									return b.can_be_discarded;
 								});
@@ -418,7 +423,7 @@ private:
 						}
 
 						data.processor(
-								ArraySlice<InputBlock>(&data.input.blocks[0], input_begin, input_begin + batch_count),
+								ArraySlice<InputBlock>(data.input.blocks, input_begin, input_begin + batch_count),
 								ArraySlice<OutputBlock>(&data.output.blocks.write[0], output_begin, output_begin + batch_count),
 								stats.processor);
 
