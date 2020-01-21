@@ -80,11 +80,11 @@ void VoxelStreamImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i orig
 	bool use_sdf = channel == VoxelBuffer::CHANNEL_SDF;
 
 	if (oy > get_height_base() + get_height_range()) {
-		// We are above the highest ground can go (default is air)
+		// The bottom of the block is above the highest ground can go (default is air)
 		return;
 	}
-	if (oy + bs.y < get_height_base()) {
-		// We are below the lowest ground can go
+	if (oy + (bs.y << lod) < get_height_base()) {
+		// The top of the block is below the lowest ground can go
 		out_buffer.clear_channel(_channel, use_sdf ? 0 : dirt);
 		return;
 	}

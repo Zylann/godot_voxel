@@ -113,16 +113,16 @@ public:
 		switch (mode) {
 
 			case SDF_VERTICAL: {
-				float h = get_height_blurred(height_func, fx, fz);
+				float h = height_func(fx, fz);
 				int gy = gy0;
 				for (int y = 0; y < size_y; ++y, gy += stride) {
 					float sdf = gy - h;
 					output_func(y, sdf);
 				}
-			}
+			} break;
 
 			case SDF_VERTICAL_AVERAGE: {
-				float h = height_func(fx, fz);
+				float h = get_height_blurred(height_func, fx, fz);
 				int gy = gy0;
 				for (int y = 0; y < size_y; ++y, gy += stride) {
 					float sdf = gy - h;
@@ -222,7 +222,7 @@ public:
 
 		get_column_stateless(output_func,
 				[&](int x, int z) { return _cache.get_local(x, z); },
-				settings.mode, grid_x, world_y0, grid_z, stride, grid_size_y);
+				mode, grid_x, world_y0, grid_z, stride, grid_size_y);
 	}
 
 private:
