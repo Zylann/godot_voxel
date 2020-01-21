@@ -23,8 +23,8 @@ public:
 	void set_sdf_mode(SdfMode mode);
 	SdfMode get_sdf_mode() const;
 
-	void set_height_base(float base);
-	float get_height_base() const;
+	void set_height_start(float start);
+	float get_height_start() const;
 
 	void set_height_range(float range);
 	float get_height_range() const;
@@ -37,11 +37,11 @@ protected:
 		const Vector3i bs = out_buffer.get_size();
 		bool use_sdf = channel == VoxelBuffer::CHANNEL_SDF;
 
-		if (oy > get_height_base() + get_height_range()) {
+		if (oy > get_height_start() + get_height_range()) {
 			// The bottom of the block is above the highest ground can go (default is air)
 			return;
 		}
-		if (oy + (bs.y << lod) < get_height_base()) {
+		if (oy + (bs.y << lod) < get_height_start()) {
 			// The top of the block is below the lowest ground can go
 			out_buffer.clear_channel(_channel, use_sdf ? 0 : _matter_type);
 			return;
