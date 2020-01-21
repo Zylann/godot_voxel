@@ -1,6 +1,7 @@
 #ifndef HEADER_VOXEL_STREAM_IMAGE
 #define HEADER_VOXEL_STREAM_IMAGE
 
+#include "../util/heightmap_sdf.h"
 #include "voxel_stream.h"
 #include <core/image.h>
 
@@ -11,13 +12,11 @@ public:
 	VoxelStreamImage();
 
 	enum SdfMode {
-		SDF_VERTICAL = 0, // Lowest quality, fastest
-		SDF_VERTICAL_AVERAGE,
-		SDF_SEGMENT,
-		SDF_MODE_COUNT
+		SDF_VERTICAL = HeightmapSdf::SDF_VERTICAL,
+		SDF_VERTICAL_AVERAGE = HeightmapSdf::SDF_VERTICAL_AVERAGE,
+		SDF_SEGMENT = HeightmapSdf::SDF_SEGMENT,
+		SDF_MODE_COUNT = HeightmapSdf::SDF_MODE_COUNT
 	};
-
-	static const char *SDF_MODE_HINT_STRING;
 
 	void set_image(Ref<Image> im);
 	Ref<Image> get_image() const;
@@ -28,6 +27,12 @@ public:
 	void set_sdf_mode(SdfMode mode);
 	SdfMode get_sdf_mode() const;
 
+	void set_height_base(float base);
+	float get_height_base() const;
+
+	void set_height_range(float range);
+	float get_height_range() const;
+
 	void emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod);
 
 private:
@@ -35,8 +40,9 @@ private:
 
 private:
 	Ref<Image> _image;
+	HeightmapSdf _heightmap;
 	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_TYPE;
-	SdfMode _sdf_mode = SDF_VERTICAL_AVERAGE;
+	bool _cache_dirty = true;
 };
 
 VARIANT_ENUM_CAST(VoxelStreamImage::SdfMode)
