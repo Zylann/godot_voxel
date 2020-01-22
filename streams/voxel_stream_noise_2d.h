@@ -12,6 +12,9 @@ public:
 	void set_noise(Ref<OpenSimplexNoise> noise);
 	Ref<OpenSimplexNoise> get_noise() const;
 
+	void set_curve(Ref<Curve> curve);
+	Ref<Curve> get_curve() const;
+
 	void emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod);
 
 private:
@@ -19,6 +22,7 @@ private:
 
 private:
 	Ref<OpenSimplexNoise> _noise;
+	Ref<Curve> _curve;
 };
 
 #endif // VOXEL_STREAM_NOISE_2D_H
