@@ -7,8 +7,6 @@
 #include <core/set.h>
 #include <scene/3d/spatial.h>
 
-//#define VOXEL_DEBUG_BOXES
-
 class VoxelMap;
 class VoxelTool;
 class VoxelStream;
@@ -80,6 +78,7 @@ public:
 	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
 	Array debug_get_last_unexpected_block_drops() const;
 	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
+	Array debug_get_octrees() const;
 
 protected:
 	static void _bind_methods();
@@ -117,16 +116,8 @@ private:
 	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
 
 	struct OctreeItem {
-		LodOctree<bool> octree;
-#ifdef VOXEL_DEBUG_BOXES
-		Spatial *debug_box = nullptr;
-#endif
+		LodOctree octree;
 	};
-
-#ifdef VOXEL_DEBUG_BOXES
-	void create_octree_debug_box(OctreeItem &item, Vector3i pos);
-	void destroy_octree_debug_box(OctreeItem &item, Vector3i pos);
-#endif
 
 	// This terrain type is a sparse grid of octrees.
 	// Indexed by a grid coordinate whose step is the size of the highest-LOD block

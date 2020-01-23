@@ -6,7 +6,6 @@
 #include "../voxel_constants.h"
 
 // Octree designed to handle level of detail.
-template <class T>
 class LodOctree {
 public:
 	static const unsigned int NO_CHILDREN = -1;
@@ -19,9 +18,8 @@ public:
 		// Could have used a pointer but an index is enough, occupies half memory and is immune to realloc
 		unsigned int first_child;
 
-		// Whatever data to associate to the node, when it's a leaf.
-		// It needs to be booleanizable, where `true` means presence of data, and `false` means no data.
-		T block;
+		// No userdata... I removed it because it was never actually used.
+		// May add it back if the need comes again.
 
 		// Node positions are calculated on the fly to save memory,
 		// and divided by chunk size at the current LOD,
@@ -36,11 +34,102 @@ public:
 		}
 
 		inline void init() {
-			block = T();
 			first_child = NO_CHILDREN;
 		}
 	};
 
+	struct NoDestroyAction {
+		inline void operator()(Vector3i node_pos, int lod) {}
+	};
+
+	template <typename DestroyAction_T>
+	void clear(DestroyAction_T &destroy_action) {
+		join_all_recursively(&_root, Vector3i(), _max_depth, destroy_action);
+		_is_root_created = false;
+		_max_depth = 0;
+		_base_size = 0;
+	}
+
+	static int compute_lod_count(int base_size, int full_size) {
+		int po = 0;
+		while (full_size > base_size) {
+			full_size = full_size >> 1;
+			po += 1;
+		}
+		return po;
+	}
+
+	template <typename DestroyAction_T>
+	void create_from_lod_count(int base_size, unsigned int lod_count, DestroyAction_T &destroy_action) {
+		ERR_FAIL_COND(lod_count > VoxelConstants::MAX_LOD);
+		clear(destroy_action);
+		_base_size = base_size;
+		_max_depth = lod_count - 1;
+	}
+
+	unsigned int get_lod_count() const {
+		return _max_depth + 1;
+	}
+
+	// The higher, the longer LODs will spread and higher the quality.
+	// The lower, the shorter LODs will spread and lower the quality.
+	void set_split_scale(float p_split_scale) {
+
+		// Split scale must be greater than a threshold,
+		// otherwise lods will decimate too fast and it will look messy
+		if (p_split_scale < VoxelConstants::MINIMUM_LOD_SPLIT_SCALE) {
+			p_split_scale = VoxelConstants::MINIMUM_LOD_SPLIT_SCALE;
+
+		} else if (p_split_scale > VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE) {
+			p_split_scale = VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE;
+		}
+
+		_split_scale = p_split_scale;
+	}
+
+	float get_split_scale() const {
+		return _split_scale;
+	}
+
+	static inline int get_lod_factor(int lod) {
+		return 1 << lod;
+	}
+
+	// Signature examples
+	struct DefaultUpdateActions {
+		void create_child(Vector3i node_pos, int lod) {} // Occurs on split
+		void destroy_child(Vector3i node_pos, int lod) {} // Occurs on merge
+		void show_parent(Vector3i node_pos, int lod) {} // Occurs on merge
+		void hide_parent(Vector3i node_pos, int lod) {} // Occurs on split
+		bool can_create_root(int lod) { return true; }
+		bool can_split(Vector3i node_pos, int child_lod_index) { return true; }
+		bool can_join(Vector3i node_pos, int lod) { return true; }
+	};
+
+	template <typename UpdateActions_T>
+	void update(Vector3 view_pos, UpdateActions_T &actions) {
+
+		if (_is_root_created || _root.has_children()) {
+			update(ROOT_INDEX, Vector3i(), _max_depth, view_pos, actions);
+
+		} else {
+			// TODO I don't like this much
+			// Treat the root in a slightly different way the first time.
+			if (actions.can_create_root(_max_depth)) {
+				actions.create_child(Vector3i(), _max_depth);
+				_is_root_created = true;
+			}
+		}
+	}
+
+	static inline Vector3i get_child_position(Vector3i parent_position, int i) {
+		return Vector3i(
+				parent_position.x * 2 + OctreeTables::g_octant_position[i][0],
+				parent_position.y * 2 + OctreeTables::g_octant_position[i][1],
+				parent_position.z * 2 + OctreeTables::g_octant_position[i][2]);
+	}
+
+private:
 	// This pool treats nodes as packs of 8 so they can be addressed by only knowing the first child
 	class NodePool {
 	public:
@@ -83,84 +172,6 @@ public:
 		std::vector<unsigned int> _free_indexes;
 	};
 
-	struct NoDestroyAction {
-		inline void operator()(Node *node, Vector3i node_pos, int lod) {}
-	};
-
-	template <typename A>
-	void clear(A &destroy_action) {
-		join_all_recursively(&_root, Vector3i(), _max_depth, destroy_action);
-		_max_depth = 0;
-		_base_size = 0;
-	}
-
-	static int compute_lod_count(int base_size, int full_size) {
-		int po = 0;
-		while (full_size > base_size) {
-			full_size = full_size >> 1;
-			po += 1;
-		}
-		return po;
-	}
-
-	template <typename A>
-	void create_from_lod_count(int base_size, unsigned int lod_count, A &destroy_action) {
-		ERR_FAIL_COND(lod_count > VoxelConstants::MAX_LOD);
-		clear(destroy_action);
-		_base_size = base_size;
-		_max_depth = lod_count - 1;
-	}
-
-	unsigned int get_lod_count() const {
-		return _max_depth + 1;
-	}
-
-	// The higher, the longer LODs will spread and higher the quality.
-	// The lower, the shorter LODs will spread and lower the quality.
-	void set_split_scale(float p_split_scale) {
-
-		// Split scale must be greater than a threshold,
-		// otherwise lods will decimate too fast and it will look messy
-		if (p_split_scale < VoxelConstants::MINIMUM_LOD_SPLIT_SCALE) {
-			p_split_scale = VoxelConstants::MINIMUM_LOD_SPLIT_SCALE;
-
-		} else if (p_split_scale > VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE) {
-			p_split_scale = VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE;
-		}
-
-		_split_scale = p_split_scale;
-	}
-
-	float get_split_scale() const {
-		return _split_scale;
-	}
-
-	static inline int get_lod_factor(int lod) {
-		return 1 << lod;
-	}
-
-	template <typename A, typename B>
-	void update(Vector3 view_pos, A &create_action, B &destroy_action) {
-
-		if (_root.block || _root.has_children()) {
-			update(ROOT_INDEX, Vector3i(), _max_depth, view_pos, create_action, destroy_action);
-
-		} else {
-			// Treat the root in a slightly different way the first time.
-			if (create_action.can_do_root(_max_depth)) {
-				_root.block = create_action(&_root, Vector3i(), _max_depth);
-			}
-		}
-	}
-
-	static inline Vector3i get_child_position(Vector3i parent_position, int i) {
-		return Vector3i(
-				parent_position.x * 2 + OctreeTables::g_octant_position[i][0],
-				parent_position.y * 2 + OctreeTables::g_octant_position[i][1],
-				parent_position.z * 2 + OctreeTables::g_octant_position[i][2]);
-	}
-
-private:
 	inline Node *get_node(unsigned int index) {
 		if (index == ROOT_INDEX) {
 			return &_root;
@@ -169,8 +180,8 @@ private:
 		}
 	}
 
-	template <typename A, typename B>
-	void update(unsigned int node_index, Vector3i node_pos, int lod, Vector3 view_pos, A &create_action, B &destroy_action) {
+	template <typename UpdateActions_T>
+	void update(unsigned int node_index, Vector3i node_pos, int lod, Vector3 view_pos, UpdateActions_T &actions) {
 		// This function should be called regularly over frames.
 
 		int lod_factor = get_lod_factor(lod);
@@ -182,7 +193,7 @@ private:
 		if (!node->has_children()) {
 
 			// If it's not the last LOD, if close enough and custom conditions get fulfilled
-			if (lod > 0 && world_center.distance_to(view_pos) < split_distance && create_action.can_do_children(node, node_pos, lod - 1)) {
+			if (lod > 0 && world_center.distance_to(view_pos) < split_distance && actions.can_split(node_pos, lod - 1)) {
 				// Split
 
 				unsigned int first_child = _pool.allocate_children();
@@ -191,20 +202,13 @@ private:
 				node->first_child = first_child;
 
 				for (unsigned int i = 0; i < 8; ++i) {
-
-					Node *child = _pool.get_node(first_child + i);
-
-					child->block = create_action(child, get_child_position(node_pos, i), lod - 1);
-
+					actions.create_child(get_child_position(node_pos, i), lod - 1);
 					// If the node needs to split more, we'll ask more recycling at the next frame...
 					// That means the initialization of the game should do some warm up and fetch all leaves,
 					// otherwise it's gonna be rough
 				}
 
-				if (node->block) {
-					destroy_action(node, node_pos, lod);
-					node->block = T();
-				}
+				actions.hide_parent(node_pos, lod);
 			}
 
 		} else {
@@ -214,38 +218,32 @@ private:
 
 			for (unsigned int i = 0; i < 8; ++i) {
 				unsigned int child_index = first_child + i;
-				update(child_index, get_child_position(node_pos, i), lod - 1, view_pos, create_action, destroy_action);
+				update(child_index, get_child_position(node_pos, i), lod - 1, view_pos, actions);
 				has_split_child |= _pool.get_node(child_index)->has_children();
 			}
 
 			// Get node again because `update` may invalidate the pointer
 			node = get_node(node_index);
 
-			if (!has_split_child && world_center.distance_to(view_pos) > split_distance && destroy_action.can_do(node, node_pos, lod)) {
+			if (!has_split_child && world_center.distance_to(view_pos) > split_distance && actions.can_join(node_pos, lod)) {
 				// Join
 				if (node->has_children()) {
 
 					for (unsigned int i = 0; i < 8; ++i) {
-						Node *child = _pool.get_node(first_child + i);
-						destroy_action(child, get_child_position(node_pos, i), lod - 1);
-						child->block = T();
+						actions.destroy_child(get_child_position(node_pos, i), lod - 1);
 					}
 
 					_pool.recycle_children(first_child);
 					node->first_child = NO_CHILDREN;
 
-					// If this is true, means the parent wasn't properly split.
-					// When subdividing a node, that node's block must be destroyed as it is replaced by its children.
-					CRASH_COND(node->block);
-
-					node->block = create_action(node, node_pos, lod);
+					actions.show_parent(node_pos, lod);
 				}
 			}
 		}
 	}
 
-	template <typename A>
-	void join_all_recursively(Node *node, Vector3i node_pos, int lod, A &destroy_action) {
+	template <typename DestroyAction_T>
+	void join_all_recursively(Node *node, Vector3i node_pos, int lod, DestroyAction_T &destroy_action) {
 		// We can use pointers here because we won't allocate new nodes,
 		// and won't shrink the node pool either
 
@@ -260,13 +258,13 @@ private:
 			_pool.recycle_children(first_child);
 			node->first_child = NO_CHILDREN;
 
-		} else if (node->block) {
-			destroy_action(node, node_pos, lod);
-			node->block = T();
+		} else {
+			destroy_action(node_pos, lod);
 		}
 	}
 
 	Node _root;
+	bool _is_root_created = false;
 	int _max_depth = 0;
 	float _base_size = 16;
 	float _split_scale = 2.0;
