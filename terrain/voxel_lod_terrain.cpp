@@ -511,8 +511,6 @@ void VoxelLodTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &ou
 }
 
 void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index) {
-	CRASH_COND(lod_index < 0);
-	CRASH_COND(lod_index >= get_lod_count());
 	Lod &lod = _lods[lod_index];
 
 	Vector3i bpos;
@@ -539,21 +537,16 @@ void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos
 }
 
 bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index) {
-	CRASH_COND(lod_index < 0);
-	CRASH_COND(lod_index >= get_lod_count());
-
 	Lod &lod = _lods[lod_index];
 	VoxelBlock *block = lod.map->get_block(p_bpos);
-
 	if (block == nullptr) {
 		try_schedule_loading_with_neighbors(p_bpos, lod_index);
 		return false;
 	}
-
-	return check_block_loaded_and_updated(block);
+	return check_block_mesh_updated(block);
 }
 
-bool VoxelLodTerrain::check_block_loaded_and_updated(VoxelBlock *block) {
+bool VoxelLodTerrain::check_block_mesh_updated(VoxelBlock *block) {
 	CRASH_COND(block == nullptr);
 	Lod &lod = _lods[block->lod_index];
 
@@ -575,7 +568,11 @@ bool VoxelLodTerrain::check_block_loaded_and_updated(VoxelBlock *block) {
 		case VoxelBlock::MESH_UPDATE_SENT:
 			return false;
 
-		default: // MESH_UP_TO_DATE
+		case VoxelBlock::MESH_UP_TO_DATE:
+			return true;
+
+		default:
+			CRASH_NOW();
 			break;
 	}
 
@@ -909,9 +906,27 @@ void VoxelLodTerrain::_process() {
 				}
 
 				bool can_join(Vector3i node_pos, int parent_lod_index) {
-					// There will always be a parent because we never destroy them when they split,
-					// and we never create a child without creating a parent first.
-					return true;
+					// Can only unsubdivide if the parent mesh is ready
+					Lod &lod = self->_lods[parent_lod_index];
+
+					Vector3i bpos = node_pos + (block_offset_lod0 >> parent_lod_index);
+					VoxelBlock *block = lod.map->get_block(bpos);
+
+					if (block == nullptr) {
+						// The block got unloaded. Exceptionally, we can join.
+						// There will always be a grand-parent because we never destroy them when they split,
+						// and we never create a child without creating a parent first.
+						return true;
+					}
+
+					// The block is loaded but the mesh isn't up to date, we need to ping and wait.
+					bool can = self->check_block_mesh_updated(block);
+
+					if (!can) {
+						++blocked_count;
+					}
+
+					return can;
 				}
 			};
 
