@@ -126,6 +126,34 @@ inline Vector3 normalized_not_null(Vector3 n) {
 	}
 }
 
+// TODO Use this to deep-sample and get rid of terracing in non-edited areas.
+// But before we can, LOD must be baked into the algorithm rather than being a post-process.
+template <typename Distance_F>
+inline Vector3 binary_search_interpolate(int s0, int s1, Vector3i p0, Vector3i p1, int initial_lod_index, Distance_F distance_func) {
+
+	int lod = initial_lod_index;
+	for (; lod > 0; --lod) {
+
+		Vector3i pm = (p0 + p1) >> 1;
+		int8_t sm = distance_func(pm);
+
+		// Determine which of the sub-intervals that contain
+		// the intersection with the isosurface.
+		if (sign(s0) != sign(sm)) {
+			p1 = pm;
+			s1 = sm;
+		} else {
+			p0 = pm;
+			s0 = sm;
+		}
+	}
+
+	int t0 = (s1 << 8) / (s1 - s0);
+	int t1 = 0x0100 - t;
+
+	return (p0 * t0 + p1 * t1).to_vec3() * FIXED_FACTOR;
+}
+
 } // namespace
 
 VoxelMesherTransvoxel::VoxelMesherTransvoxel() {

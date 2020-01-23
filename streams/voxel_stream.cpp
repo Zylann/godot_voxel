@@ -58,6 +58,10 @@ void VoxelStream::immerge_blocks(Vector<VoxelStream::BlockRequest> &p_blocks) {
 	}
 }
 
+void VoxelStream::get_single_sdf(Vector3i position, float &value) const {
+	ERR_PRINT("Not implemented");
+}
+
 bool VoxelStream::is_thread_safe() const {
 	return false;
 }
