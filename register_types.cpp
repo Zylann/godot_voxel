@@ -5,8 +5,10 @@
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_file.h"
+#include "streams/voxel_stream_heightmap.h"
 #include "streams/voxel_stream_image.h"
 #include "streams/voxel_stream_noise.h"
+#include "streams/voxel_stream_noise_2d.h"
 #include "streams/voxel_stream_region_files.h"
 #include "streams/voxel_stream_test.h"
 #include "terrain/voxel_box_mover.h"
@@ -36,8 +38,10 @@ void register_voxel_types() {
 	// Streams
 	ClassDB::register_class<VoxelStream>();
 	ClassDB::register_class<VoxelStreamTest>();
+	ClassDB::register_class<VoxelStreamHeightmap>();
 	ClassDB::register_class<VoxelStreamImage>();
 	ClassDB::register_class<VoxelStreamNoise>();
+	ClassDB::register_class<VoxelStreamNoise2D>();
 	ClassDB::register_class<VoxelStreamFile>();
 	ClassDB::register_class<VoxelStreamBlockFiles>();
 	ClassDB::register_class<VoxelStreamRegionFiles>();
