@@ -35,9 +35,8 @@ private:
 		const VoxelBuffer *full_resolution_neighbor_voxels[Cube::SIDE_COUNT] = { nullptr };
 	};
 
-	void build_internal(const VoxelBuffer &voxels, unsigned int channel);
-	void build_transitions(const TransitionVoxels &p_voxels, unsigned int channel);
-	void build_transition(const VoxelBuffer &voxels, unsigned int channel, int direction);
+	void build_internal(const VoxelBuffer &voxels, unsigned int channel, int lod_index);
+	void build_transition(const VoxelBuffer &voxels, unsigned int channel, int direction, int lod_index);
 	Ref<ArrayMesh> build_transition_mesh(Ref<VoxelBuffer> voxels, int direction);
 	void reset_reuse_cells(Vector3i block_size);
 	void reset_reuse_cells_2d(Vector3i block_size);
@@ -46,7 +45,6 @@ private:
 	int emit_vertex(Vector3 primary, Vector3 normal, uint16_t border_mask, Vector3 secondary);
 	void clear_output();
 	void fill_surface_arrays(Array &arrays);
-	void scale_output(float factor);
 
 private:
 	FixedArray<std::vector<ReuseCell>, 2> _cache;

@@ -3,14 +3,24 @@
 
 #include "fixed_array.h"
 #include <core/error_macros.h>
+#include <vector>
 
 // View into an array, referencing a pointer and a size.
 template <typename T>
 class ArraySlice {
 public:
+	// TODO Get rid of unsafe constructor, use specialized ones
 	inline ArraySlice(T *p_ptr, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end <= p_begin);
 		_ptr = p_ptr + p_begin;
+		_size = p_end - p_begin;
+	}
+
+	inline ArraySlice(std::vector<T> &vec, size_t p_begin, size_t p_end) {
+		CRASH_COND(p_end <= p_begin);
+		CRASH_COND(p_begin >= vec.size());
+		CRASH_COND(p_end > vec.size()); // `>` because p_end is typically `p_begin + size`
+		_ptr = &vec[p_begin];
 		_size = p_end - p_begin;
 	}
 

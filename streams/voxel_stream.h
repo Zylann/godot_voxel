@@ -23,11 +23,19 @@ public:
 
 	VoxelStream();
 
+	// Queries a block of voxels beginning at the given world-space voxel position and LOD.
+	// If you use LOD, the result at a given coordinate must always remain the same regardless of it.
+	// In other words, voxels values must solely depend on their coordinates or fixed parameters.
 	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
+
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
 
 	// Note: vector is passed by ref for performance. Don't reorder it.
 	virtual void emerge_blocks(Vector<BlockRequest> &p_blocks);
+
+	// Returns multiple blocks of voxels to the stream.
+	// Generators usually don't implement it.
+	// This function is recommended if you save to files, because you can batch their access.
 	virtual void immerge_blocks(Vector<BlockRequest> &p_blocks);
 
 	virtual bool is_thread_safe() const;

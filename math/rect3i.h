@@ -196,10 +196,24 @@ public:
 		return o;
 	}
 
+	static inline void clip_range(int &pos, int &size, int lim_pos, int lim_size) {
+
+		int max_pos = pos + size;
+		int lim_max_pos = lim_pos + lim_size;
+
+		pos = CLAMP(pos, lim_pos, lim_max_pos);
+		max_pos = CLAMP(max_pos, lim_pos, lim_max_pos);
+
+		size = max_pos - pos;
+		if (size < 0) {
+			size = 0;
+		}
+	}
+
 	inline void clip(const Rect3i lim) {
-		const Vector3i max_pos = lim.pos + lim.size;
-		pos.clamp_to(lim.pos, max_pos);
-		size = Vector3i::min(size, max_pos - pos);
+		clip_range(pos.x, size.x, lim.pos.x, lim.size.x);
+		clip_range(pos.y, size.y, lim.pos.y, lim.size.y);
+		clip_range(pos.z, size.z, lim.pos.z, lim.size.z);
 	}
 
 	inline bool encloses(const Rect3i &other) const {
