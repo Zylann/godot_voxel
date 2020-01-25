@@ -10,6 +10,8 @@
 
 #include "block_thread_manager.h"
 
+class VoxelStream;
+
 class VoxelMeshUpdater {
 public:
 	struct InputBlockData {
@@ -23,6 +25,7 @@ public:
 
 	struct MeshingParams {
 		Ref<VoxelLibrary> library;
+		Ref<VoxelStream> generator;
 		bool baked_ao = true;
 		float baked_ao_darkness = 0.75;
 		bool smooth_surface = false;
@@ -48,7 +51,7 @@ private:
 	void process_blocks_thread_func(const ArraySlice<InputBlock> inputs,
 			ArraySlice<OutputBlock> outputs,
 			Ref<VoxelMesher> blocky_mesher,
-			Ref<VoxelMesher> smooth_mesher);
+			Ref<VoxelMesher> smooth_mesher, Ref<VoxelStream> generator);
 
 	Mgr *_mgr = nullptr;
 	int _minimum_padding = 0;

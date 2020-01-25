@@ -1,4 +1,5 @@
 #include "voxel_mesher_transvoxel.h"
+#include "../../streams/voxel_stream.h"
 #include "transvoxel_tables.cpp"
 #include <core/os/os.h>
 
@@ -135,7 +136,7 @@ inline Vector3 binary_search_interpolate(int s0, int s1, Vector3i p0, Vector3i p
 	for (; lod > 0; --lod) {
 
 		Vector3i pm = (p0 + p1) >> 1;
-		int8_t sm = distance_func(pm);
+		int sm = distance_func(pm);
 
 		// Determine which of the sub-intervals that contain
 		// the intersection with the isosurface.
@@ -149,7 +150,7 @@ inline Vector3 binary_search_interpolate(int s0, int s1, Vector3i p0, Vector3i p
 	}
 
 	int t0 = (s1 << 8) / (s1 - s0);
-	int t1 = 0x0100 - t;
+	int t1 = 0x0100 - t0;
 
 	return (p0 * t0 + p1 * t1).to_vec3() * FIXED_FACTOR;
 }
@@ -201,7 +202,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	clear_output();
 
 	const VoxelBuffer &voxels = input.voxels;
-	build_internal(voxels, channel, input.lod);
+	build_internal(voxels, input.generator, channel, input.lod, input.origin);
 
 	if (_output_vertices.size() == 0) {
 		// The mesh can be empty
@@ -216,7 +217,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 		clear_output();
 
-		build_transition(voxels, channel, dir, input.lod);
+		build_transition(voxels, input.generator, channel, dir, input.lod);
 
 		if (_output_vertices.size() == 0) {
 			continue;
@@ -238,7 +239,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> vox
 
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
-	build_transition(**voxels, VoxelBuffer::CHANNEL_SDF, direction, 0);
+	build_transition(**voxels, nullptr, VoxelBuffer::CHANNEL_SDF, direction, 0);
 
 	Ref<ArrayMesh> mesh;
 
@@ -253,7 +254,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> vox
 	return mesh;
 }
 
-void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned int channel, int lod_index) {
+void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, VoxelStream *generator, unsigned int channel, int lod_index, Vector3i origin) {
 
 	struct L {
 		inline static Vector3i dir_to_prev_vec(uint8_t dir) {
@@ -409,11 +410,6 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 					// positions  along  the  edge  when  both  endpoints  are included.
 					int t = (sample1 << 8) / (sample1 - sample0);
 
-					float t0 = static_cast<float>(t) / 256.f;
-					float t1 = static_cast<float>(0x100 - t) / 256.f;
-					int ti0 = t;
-					int ti1 = 0x100 - t;
-
 					const Vector3i p0 = corner_positions[v0];
 					const Vector3i p1 = corner_positions[v1];
 
@@ -455,8 +451,23 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 							// However, it might be possible on low-res blocks bordering high-res ones due to neighboring rules,
 							// or by falling back on the generator that was used to produce the volume.
 
-							Vector3i primary = p0 * ti0 + p1 * ti1;
-							Vector3 primaryf = primary.to_vec3() * FIXED_FACTOR;
+							float t0 = static_cast<float>(t) / 256.f;
+							float t1 = static_cast<float>(0x100 - t) / 256.f;
+							int ti0 = t;
+							int ti1 = 0x100 - t;
+
+							Vector3 primaryf;
+							if (generator != nullptr) {
+								primaryf = binary_search_interpolate(sample0, sample1, p0, p1, lod_index,
+										[generator, origin](const Vector3i &lp) {
+											float sdf;
+											generator->get_single_sdf(origin + lp, sdf);
+											return tos(255 - VoxelBuffer::iso_to_byte(sdf));
+										});
+							} else {
+								primaryf = (p0 * ti0 + p1 * ti1).to_vec3() * FIXED_FACTOR;
+							}
+
 							Vector3 normal = normalized_not_null(corner_gradients[v0] * t0 + corner_gradients[v1] * t1);
 
 							Vector3 secondary;
@@ -547,7 +558,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 	} // z
 }
 
-void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsigned int channel, int direction, int lod_index) {
+void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, VoxelStream *generator, unsigned int channel, int direction, int lod_index) {
 
 	//    y            y
 	//    |            | z

@@ -16,6 +16,7 @@ public:
 	Ref<Curve> get_curve() const;
 
 	void emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod);
+	void get_single_sdf(Vector3i position, float &value) override;
 
 private:
 	static void _bind_methods();

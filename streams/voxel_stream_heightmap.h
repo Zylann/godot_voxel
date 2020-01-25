@@ -30,6 +30,23 @@ public:
 	float get_height_range() const;
 
 protected:
+	void copy_heightmap_settings_from(const VoxelStreamHeightmap &other);
+
+	template <typename Height_F>
+	void generate_single_sdf(float &sdf, Height_F height_func, int px, int py, int pz) {
+		if (_channel != VoxelBuffer::CHANNEL_SDF) {
+			sdf = 1.f;
+			return;
+		}
+		HeightmapSdf::get_column_stateless(
+				[&sdf](int ly, float v) {
+					sdf = v;
+				},
+				[&height_func, this](int lx, int lz) { return _heightmap.settings.range.xform(height_func(lx, lz)); },
+				_heightmap.settings.mode,
+				px, py, pz, 1, 1);
+	}
+
 	template <typename Height_F>
 	void generate(VoxelBuffer &out_buffer, Height_F height_func, int ox, int oy, int oz, int lod) {
 

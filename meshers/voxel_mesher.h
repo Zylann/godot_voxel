@@ -6,11 +6,15 @@
 #include "../voxel_buffer.h"
 #include <scene/resources/mesh.h>
 
+class VoxelStream;
+
 class VoxelMesher : public Reference {
 	GDCLASS(VoxelMesher, Reference)
 public:
 	struct Input {
 		const VoxelBuffer &voxels;
+		VoxelStream *generator;
+		Vector3i origin;
 		int lod; // = 0; // Not initialized because it confused GCC
 	};
 

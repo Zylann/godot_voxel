@@ -1,5 +1,6 @@
 #include "voxel_mesh_updater.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "../streams/voxel_stream.h"
 #include "../util/utility.h"
 #include "voxel_lod_terrain.h"
 #include <core/os/os.h>
@@ -10,6 +11,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 
 	Ref<VoxelMesherBlocky> blocky_mesher;
 	Ref<VoxelMesherTransvoxel> smooth_mesher;
+	Ref<VoxelStream> generator;
 
 	_minimum_padding = 0;
 	_maximum_padding = 0;
@@ -33,6 +35,11 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 
 	for (unsigned int i = 0; i < thread_count; ++i) {
 
+		if (params.generator.is_valid()) {
+			// TODO Duplicating sub-resources too because of https://github.com/godotengine/godot/issues/35539
+			generator = params.generator->duplicate(true);
+		}
+
 		if (i > 0) {
 			// Need to clone them because they are not thread-safe due to memory pooling.
 			// Also thanks to the wonders of ref_pointer() being private we trigger extra refs/unrefs for no reason
@@ -44,8 +51,8 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 			}
 		}
 
-		processors[i] = [this, blocky_mesher, smooth_mesher](const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Mgr::ProcessorStats &_) {
-			this->process_blocks_thread_func(inputs, outputs, blocky_mesher, smooth_mesher);
+		processors[i] = [this, blocky_mesher, smooth_mesher, generator](const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Mgr::ProcessorStats &_) {
+			this->process_blocks_thread_func(inputs, outputs, blocky_mesher, smooth_mesher, generator);
 		};
 	}
 
@@ -63,7 +70,8 @@ void VoxelMeshUpdater::process_blocks_thread_func(
 		const ArraySlice<InputBlock> inputs,
 		ArraySlice<OutputBlock> outputs,
 		Ref<VoxelMesher> blocky_mesher,
-		Ref<VoxelMesher> smooth_mesher) {
+		Ref<VoxelMesher> smooth_mesher,
+		Ref<VoxelStream> generator) {
 
 	CRASH_COND(inputs.size() != outputs.size());
 
@@ -75,7 +83,10 @@ void VoxelMeshUpdater::process_blocks_thread_func(
 
 		CRASH_COND(block.voxels.is_null());
 
-		VoxelMesher::Input input = { **block.voxels, ib.lod };
+		Vector3i bs = block.voxels->get_size() - Vector3i(_minimum_padding + _maximum_padding);
+		Vector3i origin_in_voxels = ib.position * (bs << ib.lod);
+
+		VoxelMesher::Input input = { **block.voxels, *generator, origin_in_voxels, ib.lod };
 
 		if (blocky_mesher.is_valid()) {
 			blocky_mesher->build(output.blocky_surfaces, input);

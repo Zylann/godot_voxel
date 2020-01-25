@@ -39,7 +39,7 @@ public:
 	virtual void immerge_blocks(Vector<BlockRequest> &p_blocks);
 
 	// TODO This should not be there. I'd like to make generators their own base class.
-	virtual void get_single_sdf(Vector3i position, float &value) const;
+	virtual void get_single_sdf(Vector3i position, float &value);
 
 	virtual bool is_thread_safe() const;
 	virtual bool is_cloneable() const;

@@ -40,6 +40,24 @@ void VoxelStreamNoise2D::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i or
 	out_buffer.compress_uniform_channels();
 }
 
+void VoxelStreamNoise2D::get_single_sdf(Vector3i position, float &value) {
+
+	ERR_FAIL_COND(_noise.is_null());
+
+	OpenSimplexNoise &noise = **_noise;
+
+	if (_curve.is_null()) {
+		VoxelStreamHeightmap::generate_single_sdf(value,
+				[&noise](int x, int z) { return 0.5 + 0.5 * noise.get_noise_2d(x, z); },
+				position.x, position.y, position.z);
+	} else {
+		Curve &curve = **_curve;
+		VoxelStreamHeightmap::generate_single_sdf(value,
+				[&noise, &curve](int x, int z) { return curve.interpolate_baked(0.5 + 0.5 * noise.get_noise_2d(x, z)); },
+				position.x, position.y, position.z);
+	}
+}
+
 void VoxelStreamNoise2D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_noise", "noise"), &VoxelStreamNoise2D::set_noise);

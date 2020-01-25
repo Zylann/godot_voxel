@@ -36,7 +36,52 @@ void VoxelStreamImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i orig
 
 	image.unlock();
 
+	// TODO TESTING
+	//	for (int z = 0; z < out_buffer.get_size().z; ++z) {
+	//		for (int x = 0; x < out_buffer.get_size().x; ++x) {
+	//			for (int y = 0; y < out_buffer.get_size().y; ++y) {
+	//				Vector3i p = origin_in_voxels + (Vector3i(x, y, z) << lod);
+	//				float sdf;
+	//				get_single_sdf(p, sdf);
+	//				out_buffer.set_voxel_f(sdf, x, y, z, get_channel());
+	//			}
+	//		}
+	//	}
+
 	out_buffer.compress_uniform_channels();
+}
+
+void VoxelStreamImage::get_single_sdf(Vector3i position, float &value) {
+
+	ERR_FAIL_COND(_image.is_null());
+
+	Image &image = **_image;
+
+	image.lock();
+
+	VoxelStreamHeightmap::generate_single_sdf(value,
+			[&image](int x, int z) { return get_height_repeat(image, x, z); },
+			position.x, position.y, position.z);
+
+	image.unlock();
+}
+
+bool VoxelStreamImage::is_cloneable() const {
+	return true;
+}
+
+Ref<Resource> VoxelStreamImage::duplicate(bool p_subresources) const {
+	Ref<VoxelStreamImage> d;
+	d.instance();
+	if (_image.is_valid()) {
+		Ref<Image> image = _image;
+		if (p_subresources) {
+			image = image->duplicate();
+		}
+		d->set_image(image);
+	}
+	d->copy_heightmap_settings_from(*this);
+	return d;
 }
 
 void VoxelStreamImage::_bind_methods() {

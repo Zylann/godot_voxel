@@ -45,6 +45,13 @@ float VoxelStreamHeightmap::get_height_range() const {
 	return _heightmap.settings.range.span;
 }
 
+void VoxelStreamHeightmap::copy_heightmap_settings_from(const VoxelStreamHeightmap &other) {
+	set_channel(other.get_channel());
+	set_sdf_mode(other.get_sdf_mode());
+	set_height_range(other.get_height_range());
+	set_height_start(other.get_height_start());
+}
+
 void VoxelStreamHeightmap::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelStreamHeightmap::set_channel);

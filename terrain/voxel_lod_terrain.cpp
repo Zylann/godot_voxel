@@ -259,6 +259,7 @@ void VoxelLodTerrain::start_updater() {
 	// TODO Thread-safe way to change those parameters
 	VoxelMeshUpdater::MeshingParams params;
 	params.smooth_surface = true;
+	params.generator = _stream;
 
 	_block_updater = memnew(VoxelMeshUpdater(2, params));
 }

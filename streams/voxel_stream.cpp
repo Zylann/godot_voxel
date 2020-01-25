@@ -58,7 +58,7 @@ void VoxelStream::immerge_blocks(Vector<VoxelStream::BlockRequest> &p_blocks) {
 	}
 }
 
-void VoxelStream::get_single_sdf(Vector3i position, float &value) const {
+void VoxelStream::get_single_sdf(Vector3i position, float &value) {
 	ERR_PRINT("Not implemented");
 }
 

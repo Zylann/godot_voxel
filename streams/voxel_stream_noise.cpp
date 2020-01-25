@@ -104,7 +104,7 @@ void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin
 
 	} else {
 
-		const float iso_scale = noise.get_period() * 0.1;
+		const float iso_scale = 1.f; //noise.get_period() * 0.1;
 		const Vector3i size = buffer.get_size();
 		const float height_range_inv = 1.f / _height_range;
 		const float one_minus_persistence = 1.f - noise.get_persistence();
@@ -155,6 +155,20 @@ void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin
 			}
 		}
 	}
+}
+
+void VoxelStreamNoise::get_single_sdf(Vector3i position, float &value) {
+
+	OpenSimplexNoise &noise = **_noise;
+	const float iso_scale = noise.get_period() * 0.1;
+	const float height_range_inv = 1.f / _height_range;
+	const float one_minus_persistence = 1.f - noise.get_persistence();
+
+	float t = (position.y - _height_start) * height_range_inv;
+	float bias = 2.0 * t - 1.0;
+
+	float n = get_shaped_noise(noise, position.x, position.y, position.z, one_minus_persistence, bias);
+	value = (n + bias) * iso_scale;
 }
 
 void VoxelStreamNoise::_bind_methods() {

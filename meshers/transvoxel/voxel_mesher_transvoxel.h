@@ -6,6 +6,8 @@
 #include "../voxel_mesher.h"
 #include <scene/resources/mesh.h>
 
+class VoxelStream;
+
 class VoxelMesherTransvoxel : public VoxelMesher {
 	GDCLASS(VoxelMesherTransvoxel, VoxelMesher)
 
@@ -35,8 +37,8 @@ private:
 		const VoxelBuffer *full_resolution_neighbor_voxels[Cube::SIDE_COUNT] = { nullptr };
 	};
 
-	void build_internal(const VoxelBuffer &voxels, unsigned int channel, int lod_index);
-	void build_transition(const VoxelBuffer &voxels, unsigned int channel, int direction, int lod_index);
+	void build_internal(const VoxelBuffer &voxels, VoxelStream *generator, unsigned int channel, int lod_index, Vector3i origin);
+	void build_transition(const VoxelBuffer &voxels, VoxelStream *generator, unsigned int channel, int direction, int lod_index);
 	Ref<ArrayMesh> build_transition_mesh(Ref<VoxelBuffer> voxels, int direction);
 	void reset_reuse_cells(Vector3i block_size);
 	void reset_reuse_cells_2d(Vector3i block_size);
