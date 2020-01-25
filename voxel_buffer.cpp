@@ -30,13 +30,11 @@ inline void free_channel_data(uint8_t *data, uint32_t size) {
 }
 
 uint32_t g_depth_bit_counts[] = {
-	1, 8, 16, 24, 32, 64
+	8, 16, 32, 64
 };
 uint64_t g_depth_max_values[] = {
-	1, // 1
 	0xff, // 8
 	0xffff, // 16
-	0xffffff, // 24
 	0xffffffff, // 32
 	0xffffffffffffffff // 64
 };
@@ -64,14 +62,10 @@ static_assert(sizeof(uint64_t) == sizeof(double), "uint64_t and double cannot be
 
 inline uint64_t real_to_raw_voxel(real_t value, VoxelBuffer::Depth depth) {
 	switch (depth) {
-		case VoxelBuffer::DEPTH_1_BIT:
-			return value > 0;
 		case VoxelBuffer::DEPTH_8_BIT:
 			return clamp(static_cast<int>(128.f * value + 128.f), 0, 0xff);
 		case VoxelBuffer::DEPTH_16_BIT:
 			return clamp(static_cast<int>(0x7fff * value + 0x7fff), 0, 0xffff);
-		case VoxelBuffer::DEPTH_24_BIT:
-			return clamp(static_cast<int>(0x7fffff * value + 0x7fffff), 0, 0xffffff);
 		case VoxelBuffer::DEPTH_32_BIT: {
 			MarshallFloat m;
 			m.f = value;
@@ -91,14 +85,10 @@ inline uint64_t real_to_raw_voxel(real_t value, VoxelBuffer::Depth depth) {
 inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	// Depths below 32 are normalized between -1 and 1
 	switch (depth) {
-		case VoxelBuffer::DEPTH_1_BIT:
-			return value ? 1 : -1;
 		case VoxelBuffer::DEPTH_8_BIT:
 			return (static_cast<real_t>(value) - 0x7f) / 0x7f;
 		case VoxelBuffer::DEPTH_16_BIT:
 			return (static_cast<real_t>(value) - 0x7fff) / 0x7fff;
-		case VoxelBuffer::DEPTH_24_BIT:
-			return (static_cast<real_t>(value) - 0x7fffff) / 0x7fffff;
 		case VoxelBuffer::DEPTH_32_BIT: {
 			MarshallFloat m;
 			m.i = value;
@@ -190,18 +180,11 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 
 		switch (channel.depth) {
 
-			case DEPTH_1_BIT:
-				return channel.data[i >> 3] >> (i & 7);
-
 			case DEPTH_8_BIT:
 				return channel.data[i];
 
 			case DEPTH_16_BIT:
 				return ((uint16_t *)channel.data)[i];
-
-			case DEPTH_24_BIT:
-				// TODO Byte order consistency?
-				return channel.data[i * 3] | (channel.data[i * 3 + 1] << 8) | (channel.data[i * 3 + 2] << 16);
 
 			case DEPTH_32_BIT:
 				return ((uint32_t *)channel.data)[i];
@@ -244,29 +227,12 @@ void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int ch
 
 		switch (channel.depth) {
 
-			case DEPTH_1_BIT: {
-				uint8_t prev = channel.data[i >> 3];
-				uint8_t m = 1 << (i & 7);
-				if (value) {
-					channel.data[i >> 3] = prev | m;
-				} else {
-					channel.data[i >> 3] = prev & ~m;
-				}
-				break;
-			}
-
 			case DEPTH_8_BIT:
 				channel.data[i] = value;
 				break;
 
 			case DEPTH_16_BIT:
 				((uint16_t *)channel.data)[i] = value;
-				break;
-
-			case DEPTH_24_BIT:
-				channel.data[i * 3] = value & 0xff;
-				channel.data[i * 3 + 1] = (value >> 8) & 0xff;
-				channel.data[i * 3 + 2] = (value >> 16) & 0xff;
 				break;
 
 			case DEPTH_32_BIT:
@@ -328,10 +294,6 @@ void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
 
 	switch (channel.depth) {
 
-		case DEPTH_1_BIT:
-			memset(channel.data, defval ? 0xff : 0, channel.size_in_bytes);
-			break;
-
 		case DEPTH_8_BIT:
 			memset(channel.data, defval, channel.size_in_bytes);
 			break;
@@ -341,18 +303,6 @@ void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
 				((uint16_t *)channel.data)[i] = defval;
 			}
 			break;
-
-		case DEPTH_24_BIT: {
-			uint8_t b0 = defval & 0xff;
-			uint8_t b1 = (defval >> 8) & 0xff;
-			uint8_t b2 = (defval >> 16) & 0xff;
-			for (uint32_t i = 0; i < volume; ++i) {
-				uint8_t *p = channel.data + (i * 3);
-				p[0] = b0;
-				p[1] = b1;
-				p[2] = b2;
-			}
-		} break;
 
 		case DEPTH_32_BIT:
 			for (uint32_t i = 0; i < volume; ++i) {
@@ -429,14 +379,6 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 					}
 					break;
 
-				// TODO Implement optimized versions
-				case DEPTH_1_BIT:
-				case DEPTH_24_BIT:
-					for (unsigned int y = min.y; y < max.y; ++y) {
-						set_voxel(defval, pos.x, y, pos.z, channel_index);
-					}
-					break;
-
 				default:
 					CRASH_NOW();
 					break;
@@ -475,14 +417,10 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 
 	// Channel isn't optimized, so must look at each voxel
 	switch (channel.depth) {
-		case DEPTH_1_BIT:
-			return ::is_uniform<uint8_t>(channel.data, volume >> 3);
 		case DEPTH_8_BIT:
 			return ::is_uniform<uint8_t>(channel.data, volume);
 		case DEPTH_16_BIT:
 			return ::is_uniform<uint16_t>(channel.data, volume);
-		case DEPTH_24_BIT:
-			return ::is_uniform<uint8_t>(channel.data, volume * 3);
 		case DEPTH_32_BIT:
 			return ::is_uniform<uint32_t>(channel.data, volume);
 		case DEPTH_64_BIT:
@@ -643,15 +581,7 @@ uint32_t VoxelBuffer::get_size_in_bytes_for_volume(Vector3i size, Depth depth) {
 	// Calculate appropriate size based on bit depth
 	const unsigned int volume = size.x * size.y * size.z;
 	const unsigned int bits = volume * ::get_depth_bit_count(depth);
-
 	unsigned int size_in_bytes = (bits >> 3);
-
-	if (depth == DEPTH_1_BIT && (size_in_bytes * 8) < volume) {
-		// Volume is not a multiple of 8, adjust padding to fit
-		size_in_bytes += 1;
-		CRASH_COND(size_in_bytes * 8 < volume);
-	}
-
 	return size_in_bytes;
 }
 
@@ -855,10 +785,8 @@ void VoxelBuffer::_bind_methods() {
 	BIND_ENUM_CONSTANT(CHANNEL_DATA7);
 	BIND_ENUM_CONSTANT(MAX_CHANNELS);
 
-	BIND_ENUM_CONSTANT(DEPTH_1_BIT);
 	BIND_ENUM_CONSTANT(DEPTH_8_BIT);
 	BIND_ENUM_CONSTANT(DEPTH_16_BIT);
-	BIND_ENUM_CONSTANT(DEPTH_24_BIT);
 	BIND_ENUM_CONSTANT(DEPTH_32_BIT);
 	BIND_ENUM_CONSTANT(DEPTH_64_BIT);
 	BIND_ENUM_CONSTANT(DEPTH_COUNT);

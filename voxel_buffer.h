@@ -39,10 +39,8 @@ public:
 	};
 
 	enum Depth {
-		DEPTH_1_BIT = 0,
 		DEPTH_8_BIT,
 		DEPTH_16_BIT,
-		DEPTH_24_BIT,
 		DEPTH_32_BIT,
 		DEPTH_64_BIT,
 		DEPTH_COUNT
