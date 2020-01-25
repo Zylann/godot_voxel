@@ -156,6 +156,10 @@ Error VoxelStreamBlockFiles::save_meta() {
 		f->store_8(_meta.lod_count);
 		f->store_8(_meta.block_size_po2);
 
+		for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
+			f->store_8(_meta.channel_depths[i]);
+		}
+
 		memdelete(f);
 	}
 
@@ -189,6 +193,12 @@ Error VoxelStreamBlockFiles::load_meta() {
 
 		meta.lod_count = f->get_8();
 		meta.block_size_po2 = f->get_8();
+
+		for (unsigned int i = 0; i < meta.channel_depths.size(); ++i) {
+			uint8_t depth = f->get_8();
+			ERR_FAIL_COND_V(depth >= VoxelBuffer::DEPTH_COUNT, ERR_INVALID_DATA);
+			meta.channel_depths[i] = (VoxelBuffer::Depth)depth;
+		}
 
 		ERR_FAIL_COND_V(meta.lod_count < 1 || meta.lod_count > 32, ERR_INVALID_DATA);
 		ERR_FAIL_COND_V(meta.block_size_po2 < 1 || meta.block_size_po2 > 8, ERR_INVALID_DATA);
