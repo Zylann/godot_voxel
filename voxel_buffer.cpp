@@ -563,13 +563,14 @@ Ref<VoxelBuffer> VoxelBuffer::duplicate() const {
 	return Ref<VoxelBuffer>(d);
 }
 
-uint8_t *VoxelBuffer::get_channel_raw(unsigned int channel_index, uint32_t *out_size_in_bytes) const {
-	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, nullptr);
+bool VoxelBuffer::get_channel_raw(unsigned int channel_index, ArraySlice<uint8_t> &slice) const {
 	const Channel &channel = _channels[channel_index];
-	if (out_size_in_bytes != nullptr) {
-		*out_size_in_bytes = channel.size_in_bytes;
+	if (channel.data != nullptr) {
+		slice = ArraySlice<uint8_t>(channel.data, 0, channel.size_in_bytes);
+		return true;
 	}
-	return channel.data;
+	slice = ArraySlice<uint8_t>();
+	return false;
 }
 
 void VoxelBuffer::create_channel(int i, Vector3i size, uint64_t defval) {

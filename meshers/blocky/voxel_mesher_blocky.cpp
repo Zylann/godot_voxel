@@ -376,18 +376,18 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// and then save a lot of time.
 
 	ERR_FAIL_COND(voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE);
-	const uint8_t *type_buffer = voxels.get_channel_raw(channel);
-	//       _
-	//      | \
-	//     /\ \\
-	//    / /|\\\
-	//    | |\ \\\
-	//    | \_\ \\|
-	//    |    |  )
-	//     \   |  |
-	//      \    /
-	//
-	if (type_buffer == nullptr) {
+	ArraySlice<uint8_t> raw_channel;
+	if (!voxels.get_channel_raw(channel, raw_channel)) {
+		//       _
+		//      | \
+		//     /\ \\
+		//    / /|\\\
+		//    | |\ \\\
+		//    | \_\ \\|
+		//    |    |  )
+		//     \   |  |
+		//      \    /
+		//
 		// No data to read, the channel is probably uniform
 		// TODO This is an invalid behavior IF sending a full block of uniformly opaque cubes,
 		// however not likely for terrains because with neighbor padding, such a case means no face would be generated anyways
@@ -400,12 +400,12 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	switch (channel_depth) {
 
 		case VoxelBuffer::DEPTH_8_BIT:
-			generate_blocky_mesh(_arrays_per_material, ArraySlice<const uint8_t>(type_buffer, 0, block_size.volume()),
+			generate_blocky_mesh(_arrays_per_material, raw_channel,
 					block_size, library, _bake_occlusion, baked_occlusion_darkness);
 			break;
 
 		case VoxelBuffer::DEPTH_16_BIT:
-			generate_blocky_mesh(_arrays_per_material, ArraySlice<const uint16_t>((const uint16_t *)type_buffer, 0, block_size.volume()),
+			generate_blocky_mesh(_arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(),
 					block_size, library, _bake_occlusion, baked_occlusion_darkness);
 			break;
 

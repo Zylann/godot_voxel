@@ -9,6 +9,11 @@
 template <typename T>
 class ArraySlice {
 public:
+	inline ArraySlice() :
+			_ptr(nullptr),
+			_size(0) {
+	}
+
 	// TODO Get rid of unsafe constructor, use specialized ones
 	inline ArraySlice(T *p_ptr, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end <= p_begin);
@@ -28,6 +33,15 @@ public:
 	inline ArraySlice(FixedArray<T, N> &a) {
 		_ptr = a.data();
 		_size = a.size();
+	}
+
+	template <typename U>
+	ArraySlice<U> reinterpret_cast_to() const {
+		const size_t size_in_bytes = _size * sizeof(T);
+#ifdef TOOLS_ENABLED
+		CRASH_COND(size_in_bytes % sizeof(U) != 0);
+#endif
+		return ArraySlice<U>((U *)_ptr, 0, size_in_bytes / sizeof(U));
 	}
 
 	inline T &operator[](size_t i) {

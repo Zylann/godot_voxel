@@ -55,10 +55,9 @@ const std::vector<uint8_t> &VoxelBlockSerializer::serialize(VoxelBuffer &voxel_b
 		switch (compression) {
 
 			case VoxelBuffer::COMPRESSION_NONE: {
-				uint32_t size_in_bytes;
-				uint8_t *data = voxel_buffer.get_channel_raw(channel_index, &size_in_bytes);
-				CRASH_COND(data == nullptr);
-				f->store_buffer(data, size_in_bytes);
+				ArraySlice<uint8_t> data;
+				CRASH_COND(!voxel_buffer.get_channel_raw(channel_index, data));
+				f->store_buffer(data.data(), data.size());
 			} break;
 
 			case VoxelBuffer::COMPRESSION_UNIFORM: {
@@ -95,14 +94,13 @@ bool VoxelBlockSerializer::deserialize(const std::vector<uint8_t> &p_data, Voxel
 
 			case VoxelBuffer::COMPRESSION_NONE: {
 
-				//out_voxel_buffer.set_channel_depth(channel_index, VoxelBuffer::DEPTH_8_BIT);
 				out_voxel_buffer.decompress_channel(channel_index);
 
-				uint32_t size_in_bytes;
-				uint8_t *buffer = out_voxel_buffer.get_channel_raw(channel_index, &size_in_bytes);
+				ArraySlice<uint8_t> buffer;
+				CRASH_COND(!out_voxel_buffer.get_channel_raw(channel_index, buffer));
 
-				uint32_t read_len = f->get_buffer(buffer, size_in_bytes);
-				if (read_len != size_in_bytes) {
+				uint32_t read_len = f->get_buffer(buffer.data(), buffer.size());
+				if (read_len != buffer.size()) {
 					ERR_PRINT("Unexpected end of file");
 					return false;
 				}

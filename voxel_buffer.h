@@ -2,6 +2,7 @@
 #define VOXEL_BUFFER_H
 
 #include "math/rect3i.h"
+#include "util/array_slice.h"
 #include "util/fixed_array.h"
 #include <core/reference.h>
 #include <core/vector.h>
@@ -106,9 +107,8 @@ public:
 		return _size.x * _size.y * _size.z;
 	}
 
-	// TODO Return an ArraySlice
 	// TODO Have a template version based on channel depth
-	uint8_t *get_channel_raw(unsigned int channel_index, uint32_t *out_size_in_bytes = nullptr) const;
+	bool get_channel_raw(unsigned int channel_index, ArraySlice<uint8_t> &slice) const;
 
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 	Ref<VoxelTool> get_voxel_tool();
