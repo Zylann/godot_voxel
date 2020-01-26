@@ -478,7 +478,9 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index
 		if (channel.data == NULL) {
 			create_channel_noinit(channel_index, _size);
 		}
-		memcpy(channel.data, other_channel.data, get_volume() * sizeof(uint8_t));
+		CRASH_COND(channel.size_in_bytes != other_channel.size_in_bytes);
+		memcpy(channel.data, other_channel.data, channel.size_in_bytes);
+
 	} else if (channel.data) {
 		delete_channel(channel_index);
 	}
