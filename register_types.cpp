@@ -68,7 +68,12 @@ void register_voxel_types() {
 
 void unregister_voxel_types() {
 
+	unsigned int used_blocks = VoxelMemoryPool::get_singleton()->debug_get_used_blocks();
+	if (used_blocks > 0) {
+		ERR_PRINT(String("VoxelMemoryPool: {0} memory blocks are still used when unregistering the module. Recycling leak?").format(varray(used_blocks)));
+	}
 	VoxelMemoryPool::destroy_singleton();
+
 	VoxelStringNames::destroy_singleton();
 
 #ifdef TOOLS_ENABLED

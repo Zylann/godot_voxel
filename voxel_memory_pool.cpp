@@ -28,7 +28,9 @@ VoxelMemoryPool::VoxelMemoryPool() {
 }
 
 VoxelMemoryPool::~VoxelMemoryPool() {
+#ifdef TOOLS_ENABLED
 	debug_print();
+#endif
 	clear();
 	memdelete(_mutex);
 }
@@ -43,6 +45,7 @@ uint8_t *VoxelMemoryPool::allocate(uint32_t size) {
 	} else {
 		block = (uint8_t *)memalloc(size * sizeof(uint8_t));
 	}
+	++_used_blocks;
 	return block;
 }
 
@@ -52,6 +55,7 @@ void VoxelMemoryPool::recycle(uint8_t *block, uint32_t size) {
 	// Check recycling before having allocated
 	CRASH_COND(pool == nullptr);
 	pool->blocks.push_back(block);
+	--_used_blocks;
 }
 
 void VoxelMemoryPool::clear() {
@@ -79,6 +83,11 @@ void VoxelMemoryPool::debug_print() {
 		print_line(String("Pool {0} for size {1}: {2} blocks").format(varray(i, *key, pool->blocks.size())));
 		++i;
 	}
+}
+
+unsigned int VoxelMemoryPool::debug_get_used_blocks() const {
+	MutexLock lock(_mutex);
+	return _used_blocks;
 }
 
 VoxelMemoryPool::Pool *VoxelMemoryPool::get_or_create_pool(uint32_t size) {

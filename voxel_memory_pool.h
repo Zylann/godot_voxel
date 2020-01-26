@@ -24,14 +24,16 @@ public:
 
 	uint8_t *allocate(uint32_t size);
 	void recycle(uint8_t *block, uint32_t size);
-	void clear();
 
 	void debug_print();
+	unsigned int debug_get_used_blocks() const;
 
 private:
 	Pool *get_or_create_pool(uint32_t size);
+	void clear();
 
 	HashMap<uint32_t, Pool *> _pools;
+	unsigned int _used_blocks = 0;
 	Mutex *_mutex = nullptr;
 };
 
