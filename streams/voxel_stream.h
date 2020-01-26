@@ -2,20 +2,15 @@
 #define VOXEL_STREAM_H
 
 #include "../util/zprofiling.h"
-#include "../voxel_buffer.h"
+#include "voxel_block_request.h"
 #include <core/resource.h>
 
-// Provides access to a source of paged voxel data.
+// Provides access to a source of paged voxel data, which may load and save.
 // Must be implemented in a multi-thread-safe way.
+// If you are looking for a more specialized API to generate voxels, use VoxelGenerator.
 class VoxelStream : public Resource {
 	GDCLASS(VoxelStream, Resource)
 public:
-	struct BlockRequest {
-		Ref<VoxelBuffer> voxel_buffer;
-		Vector3i origin_in_voxels;
-		int lod;
-	};
-
 	struct Stats {
 		int file_openings = 0;
 		int time_spent_opening_files = 0;
@@ -31,12 +26,12 @@ public:
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
 
 	// Note: vector is passed by ref for performance. Don't reorder it.
-	virtual void emerge_blocks(Vector<BlockRequest> &p_blocks);
+	virtual void emerge_blocks(Vector<VoxelBlockRequest> &p_blocks);
 
 	// Returns multiple blocks of voxels to the stream.
 	// Generators usually don't implement it.
 	// This function is recommended if you save to files, because you can batch their access.
-	virtual void immerge_blocks(Vector<BlockRequest> &p_blocks);
+	virtual void immerge_blocks(Vector<VoxelBlockRequest> &p_blocks);
 
 	virtual bool is_thread_safe() const;
 	virtual bool is_cloneable() const;

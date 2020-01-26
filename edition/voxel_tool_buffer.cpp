@@ -1,5 +1,5 @@
 #include "voxel_tool_buffer.h"
-#include "voxel_buffer.h"
+#include "../voxel_buffer.h"
 
 VoxelToolBuffer::VoxelToolBuffer(Ref<VoxelBuffer> vb) {
 	ERR_FAIL_COND(vb.is_null());

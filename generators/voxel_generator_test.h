@@ -1,20 +1,21 @@
-#ifndef VOXEL_STREAM_TEST_H
-#define VOXEL_STREAM_TEST_H
+#ifndef VOXEL_GENERATOR_TEST_H
+#define VOXEL_GENERATOR_TEST_H
 
-#include "voxel_stream.h"
+#include "voxel_generator.h"
 
-class VoxelStreamTest : public VoxelStream {
-	GDCLASS(VoxelStreamTest, VoxelStream)
+class VoxelGeneratorTest : public VoxelGenerator {
+	GDCLASS(VoxelGeneratorTest, VoxelGenerator)
 
 public:
 	enum Mode {
 		MODE_FLAT,
-		MODE_WAVES
+		MODE_WAVES,
+		MODE_COUNT
 	};
 
-	VoxelStreamTest();
+	VoxelGeneratorTest();
 
-	virtual void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin, int lod);
+	void generate_block(VoxelBlockRequest &input) override;
 
 	void set_mode(Mode mode);
 	Mode get_mode() const { return _mode; }
@@ -47,4 +48,4 @@ private:
 	Vector3i _pattern_size;
 };
 
-#endif // VOXEL_STREAM_TEST_H
+#endif // VOXEL_GENERATOR_TEST_H

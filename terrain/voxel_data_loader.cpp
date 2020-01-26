@@ -58,8 +58,8 @@ void VoxelDataLoader::process_blocks_thread_func(const ArraySlice<InputBlock> in
 
 	CRASH_COND(inputs.size() != outputs.size());
 
-	Vector<VoxelStream::BlockRequest> emerge_requests;
-	Vector<VoxelStream::BlockRequest> immerge_requests;
+	Vector<VoxelBlockRequest> emerge_requests;
+	Vector<VoxelBlockRequest> immerge_requests;
 
 	for (size_t i = 0; i < inputs.size(); ++i) {
 
@@ -70,7 +70,7 @@ void VoxelDataLoader::process_blocks_thread_func(const ArraySlice<InputBlock> in
 
 		if (ib.data.voxels_to_save.is_null()) {
 
-			VoxelStream::BlockRequest r;
+			VoxelBlockRequest r;
 			r.voxel_buffer.instance();
 			r.voxel_buffer->create(bs, bs, bs);
 			r.origin_in_voxels = block_origin_in_voxels;
@@ -79,7 +79,7 @@ void VoxelDataLoader::process_blocks_thread_func(const ArraySlice<InputBlock> in
 
 		} else {
 
-			VoxelStream::BlockRequest r;
+			VoxelBlockRequest r;
 			r.voxel_buffer = ib.data.voxels_to_save;
 			r.origin_in_voxels = block_origin_in_voxels;
 			r.lod = ib.lod;

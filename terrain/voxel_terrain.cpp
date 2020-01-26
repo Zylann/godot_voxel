@@ -1,9 +1,8 @@
 #include "voxel_terrain.h"
+#include "../edition/voxel_tool_terrain.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
-#include "../util/voxel_raycast.h"
-#include "../voxel_tool_terrain.h"
 #include "voxel_block.h"
 #include "voxel_map.h"
 

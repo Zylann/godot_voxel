@@ -22,8 +22,8 @@ public:
 	void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
 	void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) override;
 
-	void emerge_blocks(Vector<BlockRequest> &p_blocks) override;
-	void immerge_blocks(Vector<BlockRequest> &p_blocks) override;
+	void emerge_blocks(Vector<VoxelBlockRequest> &p_blocks) override;
+	void immerge_blocks(Vector<VoxelBlockRequest> &p_blocks) override;
 
 	String get_directory() const;
 	void set_directory(String dirpath);
@@ -96,7 +96,7 @@ private:
 		VoxelStreamRegionFiles *self = nullptr;
 
 		// operator<
-		_FORCE_INLINE_ bool operator()(const VoxelStreamRegionFiles::BlockRequest &a, const VoxelStreamRegionFiles::BlockRequest &b) const {
+		_FORCE_INLINE_ bool operator()(const VoxelBlockRequest &a, const VoxelBlockRequest &b) const {
 			if (a.lod < b.lod) {
 				return true;
 			} else if (a.lod > b.lod) {

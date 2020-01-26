@@ -1,38 +1,38 @@
-#include "voxel_stream_noise.h"
+#include "voxel_generator_noise.h"
 
-void VoxelStreamNoise::set_channel(VoxelBuffer::ChannelId channel) {
+void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId channel) {
 	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
 	_channel = channel;
 }
 
-VoxelBuffer::ChannelId VoxelStreamNoise::get_channel() const {
+VoxelBuffer::ChannelId VoxelGeneratorNoise::get_channel() const {
 	return _channel;
 }
 
-void VoxelStreamNoise::set_noise(Ref<OpenSimplexNoise> noise) {
+void VoxelGeneratorNoise::set_noise(Ref<OpenSimplexNoise> noise) {
 	_noise = noise;
 }
 
-Ref<OpenSimplexNoise> VoxelStreamNoise::get_noise() const {
+Ref<OpenSimplexNoise> VoxelGeneratorNoise::get_noise() const {
 	return _noise;
 }
 
-void VoxelStreamNoise::set_height_start(real_t y) {
+void VoxelGeneratorNoise::set_height_start(real_t y) {
 	_height_start = y;
 }
 
-real_t VoxelStreamNoise::get_height_start() const {
+real_t VoxelGeneratorNoise::get_height_start() const {
 	return _height_start;
 }
 
-void VoxelStreamNoise::set_height_range(real_t hrange) {
+void VoxelGeneratorNoise::set_height_range(real_t hrange) {
 	if (hrange < 0.1f) {
 		hrange = 0.1f;
 	}
 	_height_range = hrange;
 }
 
-real_t VoxelStreamNoise::get_height_range() const {
+real_t VoxelGeneratorNoise::get_height_range() const {
 	return _height_range;
 }
 
@@ -70,13 +70,15 @@ static inline float get_shaped_noise(OpenSimplexNoise &noise, float x, float y, 
 	return sum / max;
 }
 
-void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 
-	ERR_FAIL_COND(out_buffer.is_null());
+	ERR_FAIL_COND(input.voxel_buffer.is_null());
 	ERR_FAIL_COND(_noise.is_null());
 
 	OpenSimplexNoise &noise = **_noise;
-	VoxelBuffer &buffer = **out_buffer;
+	VoxelBuffer &buffer = **input.voxel_buffer;
+	Vector3i origin_in_voxels = input.origin_in_voxels;
+	int lod = input.lod;
 
 	int isosurface_lower_bound = static_cast<int>(Math::floor(_height_start));
 	int isosurface_upper_bound = static_cast<int>(Math::ceil(_height_start + _height_range));
@@ -157,19 +159,19 @@ void VoxelStreamNoise::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin
 	}
 }
 
-void VoxelStreamNoise::_bind_methods() {
+void VoxelGeneratorNoise::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_noise", "noise"), &VoxelStreamNoise::set_noise);
-	ClassDB::bind_method(D_METHOD("get_noise"), &VoxelStreamNoise::get_noise);
+	ClassDB::bind_method(D_METHOD("set_noise", "noise"), &VoxelGeneratorNoise::set_noise);
+	ClassDB::bind_method(D_METHOD("get_noise"), &VoxelGeneratorNoise::get_noise);
 
-	ClassDB::bind_method(D_METHOD("set_height_start", "hstart"), &VoxelStreamNoise::set_height_start);
-	ClassDB::bind_method(D_METHOD("get_height_start"), &VoxelStreamNoise::get_height_start);
+	ClassDB::bind_method(D_METHOD("set_height_start", "hstart"), &VoxelGeneratorNoise::set_height_start);
+	ClassDB::bind_method(D_METHOD("get_height_start"), &VoxelGeneratorNoise::get_height_start);
 
-	ClassDB::bind_method(D_METHOD("set_height_range", "hrange"), &VoxelStreamNoise::set_height_range);
-	ClassDB::bind_method(D_METHOD("get_height_range"), &VoxelStreamNoise::get_height_range);
+	ClassDB::bind_method(D_METHOD("set_height_range", "hrange"), &VoxelGeneratorNoise::set_height_range);
+	ClassDB::bind_method(D_METHOD("get_height_range"), &VoxelGeneratorNoise::get_height_range);
 
-	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelStreamNoise::set_channel);
-	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelStreamNoise::get_channel);
+	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorNoise::set_channel);
+	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorNoise::get_channel);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise"), "set_noise", "get_noise");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "height_start"), "set_height_start", "get_height_start");
