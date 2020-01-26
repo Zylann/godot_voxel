@@ -1,4 +1,5 @@
 #include "register_types.h"
+#include "edition/voxel_tool.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
@@ -18,7 +19,6 @@
 #include "voxel_library.h"
 #include "voxel_memory_pool.h"
 #include "voxel_string_names.h"
-#include "voxel_tool.h"
 
 void register_voxel_types() {
 

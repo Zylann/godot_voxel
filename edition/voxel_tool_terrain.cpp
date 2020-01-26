@@ -1,7 +1,7 @@
 #include "voxel_tool_terrain.h"
-#include "terrain/voxel_map.h"
-#include "terrain/voxel_terrain.h"
-#include "util/voxel_raycast.h"
+#include "../terrain/voxel_map.h"
+#include "../terrain/voxel_terrain.h"
+#include "../util/voxel_raycast.h"
 
 VoxelToolTerrain::VoxelToolTerrain(VoxelTerrain *terrain, Ref<VoxelMap> map) {
 	ERR_FAIL_COND(terrain == nullptr);

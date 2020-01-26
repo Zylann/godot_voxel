@@ -1,9 +1,9 @@
 #include "voxel_lod_terrain.h"
+#include "../edition/voxel_tool_lod_terrain.h"
 #include "../math/rect3i.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/profiling_clock.h"
 #include "../voxel_string_names.h"
-#include "../voxel_tool_lod_terrain.h"
 #include "voxel_map.h"
 
 #include <core/core_string_names.h>

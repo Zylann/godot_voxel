@@ -1,6 +1,6 @@
 #include "voxel_tool.h"
-#include "terrain/voxel_lod_terrain.h"
-#include "voxel_buffer.h"
+#include "../terrain/voxel_lod_terrain.h"
+#include "../voxel_buffer.h"
 
 Vector3 VoxelRaycastResult::_b_get_position() const {
 	return position.to_vec3();
