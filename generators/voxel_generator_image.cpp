@@ -67,7 +67,9 @@ void VoxelGeneratorImage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_image", "image"), &VoxelGeneratorImage::set_image);
 	ClassDB::bind_method(D_METHOD("get_image"), &VoxelGeneratorImage::get_image);
 
-	// TODO Expose blur option!
+	ClassDB::bind_method(D_METHOD("blur_enabled", "enable"), &VoxelGeneratorImage::set_blur_enabled);
+	ClassDB::bind_method(D_METHOD("blur_enabled"), &VoxelGeneratorImage::is_blur_enabled);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, "Image"), "set_image", "get_image");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "blur_enabled"), "set_blur_enabled", "is_blur_enabled");
 }
