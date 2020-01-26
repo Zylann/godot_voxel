@@ -13,6 +13,9 @@ public:
 	void set_image(Ref<Image> im);
 	Ref<Image> get_image() const;
 
+	void set_blur_enabled(bool enable);
+	bool is_blur_enabled() const;
+
 	void emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod);
 
 private:
@@ -20,6 +23,8 @@ private:
 
 private:
 	Ref<Image> _image;
+	// Mostly here as demo/tweak. It's better recommended to use an EXR/float image.
+	bool _blur_enabled = false;
 };
 
 #endif // HEADER_VOXEL_STREAM_IMAGE

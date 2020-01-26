@@ -29,12 +29,12 @@ void VoxelStreamNoise2D::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i or
 	if (_curve.is_null()) {
 		VoxelStreamHeightmap::generate(out_buffer,
 				[&noise](int x, int z) { return 0.5 + 0.5 * noise.get_noise_2d(x, z); },
-				origin_in_voxels.x, origin_in_voxels.y, origin_in_voxels.z, lod);
+				origin_in_voxels, lod);
 	} else {
 		Curve &curve = **_curve;
 		VoxelStreamHeightmap::generate(out_buffer,
 				[&noise, &curve](int x, int z) { return curve.interpolate_baked(0.5 + 0.5 * noise.get_noise_2d(x, z)); },
-				origin_in_voxels.x, origin_in_voxels.y, origin_in_voxels.z, lod);
+				origin_in_voxels, lod);
 	}
 
 	out_buffer.compress_uniform_channels();

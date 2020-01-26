@@ -8,6 +8,15 @@ inline float get_height_repeat(Image &im, int x, int y) {
 	return im.get_pixel(wrap(x, im.get_width()), wrap(y, im.get_height())).r;
 }
 
+inline float get_height_blurred(Image &im, int x, int y) {
+	float h = get_height_repeat(im, x, y);
+	h += get_height_repeat(im, x + 1, y);
+	h += get_height_repeat(im, x - 1, y);
+	h += get_height_repeat(im, x, y + 1);
+	h += get_height_repeat(im, x, y - 1);
+	return h * 0.2f;
+}
+
 } // namespace
 
 VoxelStreamImage::VoxelStreamImage() {
@@ -21,6 +30,14 @@ Ref<Image> VoxelStreamImage::get_image() const {
 	return _image;
 }
 
+void VoxelStreamImage::set_blur_enabled(bool enable) {
+	_blur_enabled = enable;
+}
+
+bool VoxelStreamImage::is_blur_enabled() const {
+	return _blur_enabled;
+}
+
 void VoxelStreamImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod) {
 
 	ERR_FAIL_COND(_image.is_null());
@@ -30,9 +47,15 @@ void VoxelStreamImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i orig
 
 	image.lock();
 
-	VoxelStreamHeightmap::generate(out_buffer,
-			[&image](int x, int z) { return get_height_repeat(image, x, z); },
-			origin_in_voxels.x, origin_in_voxels.y, origin_in_voxels.z, lod);
+	if (_blur_enabled) {
+		VoxelStreamHeightmap::generate(out_buffer,
+				[&image](int x, int z) { return get_height_blurred(image, x, z); },
+				origin_in_voxels, lod);
+	} else {
+		VoxelStreamHeightmap::generate(out_buffer,
+				[&image](int x, int z) { return get_height_repeat(image, x, z); },
+				origin_in_voxels, lod);
+	}
 
 	image.unlock();
 
