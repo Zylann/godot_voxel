@@ -19,42 +19,42 @@ inline float get_height_blurred(Image &im, int x, int y) {
 
 } // namespace
 
-VoxelStreamImage::VoxelStreamImage() {
+VoxelGeneratorImage::VoxelGeneratorImage() {
 }
 
-void VoxelStreamImage::set_image(Ref<Image> im) {
+void VoxelGeneratorImage::set_image(Ref<Image> im) {
 	_image = im;
 }
 
-Ref<Image> VoxelStreamImage::get_image() const {
+Ref<Image> VoxelGeneratorImage::get_image() const {
 	return _image;
 }
 
-void VoxelStreamImage::set_blur_enabled(bool enable) {
+void VoxelGeneratorImage::set_blur_enabled(bool enable) {
 	_blur_enabled = enable;
 }
 
-bool VoxelStreamImage::is_blur_enabled() const {
+bool VoxelGeneratorImage::is_blur_enabled() const {
 	return _blur_enabled;
 }
 
-void VoxelStreamImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
 
 	ERR_FAIL_COND(_image.is_null());
 
-	VoxelBuffer &out_buffer = **p_out_buffer;
+	VoxelBuffer &out_buffer = **input.voxel_buffer;
 	Image &image = **_image;
 
 	image.lock();
 
 	if (_blur_enabled) {
-		VoxelStreamHeightmap::generate(out_buffer,
+		VoxelGeneratorHeightmap::generate(out_buffer,
 				[&image](int x, int z) { return get_height_blurred(image, x, z); },
-				origin_in_voxels, lod);
+				input.origin_in_voxels, input.lod);
 	} else {
-		VoxelStreamHeightmap::generate(out_buffer,
+		VoxelGeneratorHeightmap::generate(out_buffer,
 				[&image](int x, int z) { return get_height_repeat(image, x, z); },
-				origin_in_voxels, lod);
+				input.origin_in_voxels, input.lod);
 	}
 
 	image.unlock();
@@ -62,10 +62,12 @@ void VoxelStreamImage::emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i orig
 	out_buffer.compress_uniform_channels();
 }
 
-void VoxelStreamImage::_bind_methods() {
+void VoxelGeneratorImage::_bind_methods() {
 
-	ClassDB::bind_method(D_METHOD("set_image", "image"), &VoxelStreamImage::set_image);
-	ClassDB::bind_method(D_METHOD("get_image"), &VoxelStreamImage::get_image);
+	ClassDB::bind_method(D_METHOD("set_image", "image"), &VoxelGeneratorImage::set_image);
+	ClassDB::bind_method(D_METHOD("get_image"), &VoxelGeneratorImage::get_image);
+
+	// TODO Expose blur option!
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, "Image"), "set_image", "get_image");
 }

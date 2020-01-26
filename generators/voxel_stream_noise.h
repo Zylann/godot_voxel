@@ -2,11 +2,11 @@
 #define VOXEL_STREAM_NOISE_H
 
 #include "../util/float_buffer_3d.h"
-#include "voxel_stream.h"
+#include "voxel_generator.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
-class VoxelStreamNoise : public VoxelStream {
-	GDCLASS(VoxelStreamNoise, VoxelStream)
+class VoxelGeneratorNoise : public VoxelGenerator {
+	GDCLASS(VoxelGeneratorNoise, VoxelGenerator)
 
 public:
 	void set_channel(VoxelBuffer::ChannelId channel);
@@ -21,7 +21,7 @@ public:
 	void set_height_range(real_t hrange);
 	real_t get_height_range() const;
 
-	void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
+	void generate_block(VoxelBlockRequest &input) override;
 
 protected:
 	static void _bind_methods();

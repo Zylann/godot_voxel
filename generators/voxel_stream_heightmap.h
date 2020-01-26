@@ -1,13 +1,14 @@
 #ifndef VOXEL_STREAM_HEIGHTMAP_H
 #define VOXEL_STREAM_HEIGHTMAP_H
 
-#include "voxel_stream.h"
+#include "../voxel_buffer.h"
+#include "voxel_generator.h"
 #include <core/image.h>
 
-class VoxelStreamHeightmap : public VoxelStream {
-	GDCLASS(VoxelStreamHeightmap, VoxelStream)
+class VoxelGeneratorHeightmap : public VoxelGenerator {
+	GDCLASS(VoxelGeneratorHeightmap, VoxelGenerator)
 public:
-	VoxelStreamHeightmap();
+	VoxelGeneratorHeightmap();
 
 	void set_channel(VoxelBuffer::ChannelId channel);
 	VoxelBuffer::ChannelId get_channel() const;

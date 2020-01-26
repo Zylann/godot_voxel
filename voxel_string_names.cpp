@@ -17,6 +17,7 @@ VoxelStringNames::VoxelStringNames() {
 
 	emerge_block = StaticCString::create("emerge_block");
 	immerge_block = StaticCString::create("immerge_block");
+	generate_block = StaticCString::create("generate_block");
 
 	u_transition_mask = StaticCString::create("u_transition_mask");
 }

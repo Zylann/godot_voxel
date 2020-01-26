@@ -23,18 +23,18 @@ void VoxelStreamFile::emerge_block_fallback(Ref<VoxelBuffer> out_buffer, Vector3
 
 	// This function is just a helper around the true thing, really. I might remove it in the future.
 
-	BlockRequest r;
+	VoxelBlockRequest r;
 	r.voxel_buffer = out_buffer;
 	r.origin_in_voxels = origin_in_voxels;
 	r.lod = lod;
 
-	Vector<BlockRequest> requests;
+	Vector<VoxelBlockRequest> requests;
 	requests.push_back(r);
 
 	emerge_blocks_fallback(requests);
 }
 
-void VoxelStreamFile::emerge_blocks_fallback(Vector<VoxelStreamFile::BlockRequest> &requests) {
+void VoxelStreamFile::emerge_blocks_fallback(Vector<VoxelBlockRequest> &requests) {
 	VOXEL_PROFILE_SCOPE(profile_scope);
 
 	if (_fallback_stream.is_valid()) {

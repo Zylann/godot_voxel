@@ -4,10 +4,10 @@
 #include "voxel_stream_heightmap.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
-class VoxelStreamNoise2D : public VoxelStreamHeightmap {
-	GDCLASS(VoxelStreamNoise2D, VoxelStreamHeightmap)
+class VoxelGeneratorNoise2D : public VoxelGeneratorHeightmap {
+	GDCLASS(VoxelGeneratorNoise2D, VoxelGeneratorHeightmap)
 public:
-	VoxelStreamNoise2D();
+	VoxelGeneratorNoise2D();
 
 	void set_noise(Ref<OpenSimplexNoise> noise);
 	Ref<OpenSimplexNoise> get_noise() const;
@@ -15,7 +15,7 @@ public:
 	void set_curve(Ref<Curve> curve);
 	Ref<Curve> get_curve() const;
 
-	void emerge_block(Ref<VoxelBuffer> p_out_buffer, Vector3i origin_in_voxels, int lod);
+	void generate_block(VoxelBlockRequest &input) override;
 
 private:
 	static void _bind_methods();

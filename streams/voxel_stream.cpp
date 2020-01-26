@@ -43,17 +43,17 @@ void VoxelStream::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxe
 	}
 }
 
-void VoxelStream::emerge_blocks(Vector<VoxelStream::BlockRequest> &p_blocks) {
+void VoxelStream::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
 	// Default implementation. May matter for some stream types to optimize loading.
 	for (int i = 0; i < p_blocks.size(); ++i) {
-		BlockRequest &r = p_blocks.write[i];
+		VoxelBlockRequest &r = p_blocks.write[i];
 		emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 	}
 }
 
-void VoxelStream::immerge_blocks(Vector<VoxelStream::BlockRequest> &p_blocks) {
+void VoxelStream::immerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
 	for (int i = 0; i < p_blocks.size(); ++i) {
-		BlockRequest &r = p_blocks.write[i];
+		VoxelBlockRequest &r = p_blocks.write[i];
 		immerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 	}
 }

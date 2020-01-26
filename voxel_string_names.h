@@ -19,6 +19,7 @@ public:
 
 	StringName emerge_block;
 	StringName immerge_block;
+	StringName generate_block;
 
 	StringName u_transition_mask;
 };

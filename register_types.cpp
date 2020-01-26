@@ -1,16 +1,16 @@
 #include "register_types.h"
 #include "edition/voxel_tool.h"
+#include "generators/voxel_stream_heightmap.h"
+#include "generators/voxel_stream_image.h"
+#include "generators/voxel_stream_noise.h"
+#include "generators/voxel_stream_noise_2d.h"
+#include "generators/voxel_stream_test.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_file.h"
-#include "streams/voxel_stream_heightmap.h"
-#include "streams/voxel_stream_image.h"
-#include "streams/voxel_stream_noise.h"
-#include "streams/voxel_stream_noise_2d.h"
 #include "streams/voxel_stream_region_files.h"
-#include "streams/voxel_stream_test.h"
 #include "terrain/voxel_box_mover.h"
 #include "terrain/voxel_lod_terrain.h"
 #include "terrain/voxel_map.h"
@@ -36,14 +36,17 @@ void register_voxel_types() {
 
 	// Streams
 	ClassDB::register_class<VoxelStream>();
-	ClassDB::register_class<VoxelStreamTest>();
-	ClassDB::register_class<VoxelStreamHeightmap>();
-	ClassDB::register_class<VoxelStreamImage>();
-	ClassDB::register_class<VoxelStreamNoise>();
-	ClassDB::register_class<VoxelStreamNoise2D>();
 	ClassDB::register_class<VoxelStreamFile>();
 	ClassDB::register_class<VoxelStreamBlockFiles>();
 	ClassDB::register_class<VoxelStreamRegionFiles>();
+
+	// Generators
+	ClassDB::register_class<VoxelGenerator>();
+	ClassDB::register_class<VoxelGeneratorTest>();
+	ClassDB::register_class<VoxelGeneratorHeightmap>();
+	ClassDB::register_class<VoxelGeneratorImage>();
+	ClassDB::register_class<VoxelGeneratorNoise2D>();
+	ClassDB::register_class<VoxelGeneratorNoise>();
 
 	// Helpers
 	ClassDB::register_class<VoxelBoxMover>();
