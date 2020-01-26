@@ -15,53 +15,42 @@ bool VoxelToolTerrain::is_area_editable(const Rect3i &box) const {
 	return _map->is_area_fully_loaded(box.padded(1));
 }
 
-namespace {
-struct _VoxelTerrainRaycastContext {
-	VoxelTerrain &terrain;
-	//unsigned int channel_mask;
-};
-} // namespace
-
-static bool cb_raycast_predicate(Vector3i pos, void *context_ptr) {
-	// TODO This is really not the best way.
-	// This needs lambda goodness and made available to other volume types (generic?)
-
-	ERR_FAIL_COND_V(context_ptr == NULL, false);
-	_VoxelTerrainRaycastContext *context = (_VoxelTerrainRaycastContext *)context_ptr;
-	VoxelTerrain &terrain = context->terrain;
-
-	//unsigned int channel = context->channel;
-
-	Ref<VoxelMap> map = terrain.get_storage();
-	int v0 = map->get_voxel(pos, VoxelBuffer::CHANNEL_TYPE);
-
-	Ref<VoxelLibrary> lib_ref = terrain.get_voxel_library();
-	if (lib_ref.is_null())
-		return false;
-	const VoxelLibrary &lib = **lib_ref;
-
-	if (lib.has_voxel(v0) == false)
-		return false;
-
-	const Voxel &voxel = lib.get_voxel_const(v0);
-	if (voxel.is_transparent() == false)
-		return true;
-
-	float v1 = map->get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
-	return v1 < 0;
-}
-
 Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, float max_distance) {
 
 	// TODO Transform input if the terrain is rotated (in the future it can be made a Spatial node)
 
+	struct RaycastPredicate {
+		const VoxelTerrain &terrain;
+
+		bool operator()(Vector3i pos) {
+			//unsigned int channel = context->channel;
+
+			Ref<VoxelMap> map = terrain.get_storage();
+			int v0 = map->get_voxel(pos, VoxelBuffer::CHANNEL_TYPE);
+
+			Ref<VoxelLibrary> lib_ref = terrain.get_voxel_library();
+			if (lib_ref.is_null())
+				return false;
+			const VoxelLibrary &lib = **lib_ref;
+
+			if (lib.has_voxel(v0) == false)
+				return false;
+
+			const Voxel &voxel = lib.get_voxel_const(v0);
+			if (voxel.is_transparent() == false)
+				return true;
+
+			float v1 = map->get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
+			return v1 < 0;
+		}
+	};
+
 	Vector3i hit_pos;
 	Vector3i prev_pos;
-
-	_VoxelTerrainRaycastContext context = { *_terrain };
 	Ref<VoxelRaycastResult> res;
 
-	if (voxel_raycast(pos, dir, cb_raycast_predicate, &context, max_distance, hit_pos, prev_pos)) {
+	RaycastPredicate predicate = { *_terrain };
+	if (voxel_raycast(pos, dir, predicate, max_distance, hit_pos, prev_pos)) {
 
 		res.instance();
 		res->position = hit_pos;

@@ -3,7 +3,6 @@
 #include "../streams/voxel_stream_file.h"
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
-#include "../util/voxel_raycast.h"
 #include "voxel_block.h"
 #include "voxel_map.h"
 

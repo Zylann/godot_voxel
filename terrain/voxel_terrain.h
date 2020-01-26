@@ -52,7 +52,7 @@ public:
 	bool is_smooth_meshing_enabled() const;
 	void set_smooth_meshing_enabled(bool enabled);
 
-	Ref<VoxelMap> get_storage() { return _map; }
+	Ref<VoxelMap> get_storage() const { return _map; }
 	Ref<VoxelTool> get_voxel_tool();
 
 	struct Stats {
