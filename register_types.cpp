@@ -1,7 +1,6 @@
 #include "register_types.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
-#include "meshers/mc/voxel_mesher_mc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_file.h"
@@ -56,7 +55,6 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelMesherBlocky>();
 	ClassDB::register_class<VoxelMesherTransvoxel>();
 	ClassDB::register_class<VoxelMesherDMC>();
-	ClassDB::register_class<VoxelMesherMC>();
 
 	VoxelMemoryPool::create_singleton();
 	VoxelStringNames::create_singleton();
