@@ -286,8 +286,6 @@ void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
 			channel.defval = defval;
 			return;
 		}
-	} else {
-		create_channel_noinit(channel_index, _size);
 	}
 
 	unsigned int volume = get_volume();
@@ -591,6 +589,7 @@ uint32_t VoxelBuffer::get_size_in_bytes_for_volume(Vector3i size, Depth depth) {
 void VoxelBuffer::create_channel_noinit(int i, Vector3i size) {
 	Channel &channel = _channels[i];
 	uint32_t size_in_bytes = get_size_in_bytes_for_volume(size, channel.depth);
+	CRASH_COND(channel.data != nullptr);
 	channel.data = allocate_channel_data(size_in_bytes);
 	channel.size_in_bytes = size_in_bytes;
 }
