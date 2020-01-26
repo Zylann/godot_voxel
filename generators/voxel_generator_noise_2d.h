@@ -1,7 +1,7 @@
-#ifndef VOXEL_STREAM_NOISE_2D_H
-#define VOXEL_STREAM_NOISE_2D_H
+#ifndef VOXEL_GENERATOR_NOISE_2D_H
+#define VOXEL_GENERATOR_NOISE_2D_H
 
-#include "voxel_stream_heightmap.h"
+#include "voxel_generator_heightmap.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
 class VoxelGeneratorNoise2D : public VoxelGeneratorHeightmap {
@@ -25,4 +25,4 @@ private:
 	Ref<Curve> _curve;
 };
 
-#endif // VOXEL_STREAM_NOISE_2D_H
+#endif // VOXEL_GENERATOR_NOISE_2D_H

@@ -1,5 +1,5 @@
-#ifndef VOXEL_STREAM_HEIGHTMAP_H
-#define VOXEL_STREAM_HEIGHTMAP_H
+#ifndef VOXEL_GENERATOR_HEIGHTMAP_H
+#define VOXEL_GENERATOR_HEIGHTMAP_H
 
 #include "../voxel_buffer.h"
 #include "voxel_generator.h"
@@ -103,4 +103,4 @@ private:
 	float _iso_scale = 0.1;
 };
 
-#endif // VOXEL_STREAM_HEIGHTMAP_H
+#endif // VOXEL_GENERATOR_HEIGHTMAP_H

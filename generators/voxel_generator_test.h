@@ -1,5 +1,5 @@
-#ifndef VOXEL_STREAM_TEST_H
-#define VOXEL_STREAM_TEST_H
+#ifndef VOXEL_GENERATOR_TEST_H
+#define VOXEL_GENERATOR_TEST_H
 
 #include "voxel_generator.h"
 
@@ -48,4 +48,4 @@ private:
 	Vector3i _pattern_size;
 };
 
-#endif // VOXEL_STREAM_TEST_H
+#endif // VOXEL_GENERATOR_TEST_H

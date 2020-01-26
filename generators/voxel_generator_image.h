@@ -1,7 +1,7 @@
-#ifndef HEADER_VOXEL_STREAM_IMAGE
-#define HEADER_VOXEL_STREAM_IMAGE
+#ifndef HEADER_VOXEL_GENERATOR_IMAGE
+#define HEADER_VOXEL_GENERATOR_IMAGE
 
-#include "voxel_stream_heightmap.h"
+#include "voxel_generator_heightmap.h"
 #include <core/image.h>
 
 // Provides infinite tiling heightmap based on an image
@@ -27,4 +27,4 @@ private:
 	bool _blur_enabled = false;
 };
 
-#endif // HEADER_VOXEL_STREAM_IMAGE
+#endif // HEADER_VOXEL_GENERATOR_IMAGE

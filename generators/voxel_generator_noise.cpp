@@ -1,4 +1,4 @@
-#include "voxel_stream_noise.h"
+#include "voxel_generator_noise.h"
 
 void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId channel) {
 	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);

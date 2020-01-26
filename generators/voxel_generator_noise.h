@@ -1,5 +1,5 @@
-#ifndef VOXEL_STREAM_NOISE_H
-#define VOXEL_STREAM_NOISE_H
+#ifndef VOXEL_GENERATOR_NOISE_H
+#define VOXEL_GENERATOR_NOISE_H
 
 #include "../util/float_buffer_3d.h"
 #include "voxel_generator.h"
@@ -34,4 +34,4 @@ private:
 	float _height_range = 300;
 };
 
-#endif // VOXEL_STREAM_NOISE_H
+#endif // VOXEL_GENERATOR_NOISE_H

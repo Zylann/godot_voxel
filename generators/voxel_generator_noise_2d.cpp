@@ -1,4 +1,4 @@
-#include "voxel_stream_noise_2d.h"
+#include "voxel_generator_noise_2d.h"
 
 VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {
 }

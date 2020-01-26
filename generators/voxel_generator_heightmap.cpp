@@ -1,4 +1,4 @@
-#include "voxel_stream_heightmap.h"
+#include "voxel_generator_heightmap.h"
 #include "../util/array_slice.h"
 #include "../util/fixed_array.h"
 

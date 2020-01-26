@@ -1,4 +1,4 @@
-#include "voxel_stream_image.h"
+#include "voxel_generator_image.h"
 #include "../util/array_slice.h"
 #include "../util/fixed_array.h"
 
