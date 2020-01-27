@@ -2,9 +2,8 @@
 #define VOXEL_MESHER_BLOCKY_H
 
 #include "../../util/zprofiling.h"
-#include "../../voxel.h"
-#include "../../voxel_library.h"
 #include "../voxel_mesher.h"
+#include "voxel_library.h"
 #include <core/reference.h>
 #include <scene/resources/mesh.h>
 #include <vector>

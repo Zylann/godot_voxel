@@ -2,7 +2,6 @@
 #include "../../cube_tables.h"
 #include "../../util/array_slice.h"
 #include "../../util/utility.h"
-#include "../../voxel_library.h"
 #include <core/os/os.h>
 
 namespace {

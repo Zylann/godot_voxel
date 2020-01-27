@@ -5,6 +5,7 @@
 #include "generators/voxel_generator_noise.h"
 #include "generators/voxel_generator_noise_2d.h"
 #include "generators/voxel_generator_test.h"
+#include "meshers/blocky/voxel_library.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
@@ -16,7 +17,6 @@
 #include "terrain/voxel_map.h"
 #include "terrain/voxel_terrain.h"
 #include "voxel_buffer.h"
-#include "voxel_library.h"
 #include "voxel_memory_pool.h"
 #include "voxel_string_names.h"
 

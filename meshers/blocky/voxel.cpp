@@ -1,6 +1,6 @@
 #include "voxel.h"
-#include "meshers/blocky/voxel_mesher_blocky.h" // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
 #include "voxel_library.h"
+#include "voxel_mesher_blocky.h" // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
 
 #define STRLEN(x) (sizeof(x) / sizeof(x[0]))
 
