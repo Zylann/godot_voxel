@@ -14,18 +14,24 @@ Voxel::Voxel() :
 		_cube_geometry_padding_y(0) {}
 
 static Cube::Side name_to_side(const String &s) {
-	if (s == "left")
+	if (s == "left") {
 		return Cube::SIDE_LEFT;
-	if (s == "right")
+	}
+	if (s == "right") {
 		return Cube::SIDE_RIGHT;
-	if (s == "top")
+	}
+	if (s == "top") {
 		return Cube::SIDE_TOP;
-	if (s == "bottom")
+	}
+	if (s == "bottom") {
 		return Cube::SIDE_BOTTOM;
-	if (s == "front")
+	}
+	if (s == "front") {
 		return Cube::SIDE_FRONT;
-	if (s == "back")
+	}
+	if (s == "back") {
 		return Cube::SIDE_BACK;
+	}
 	return Cube::SIDE_COUNT; // Invalid
 }
 
@@ -120,34 +126,41 @@ Ref<Voxel> Voxel::set_transparent(bool t) {
 	return Ref<Voxel>(this);
 }
 
+void Voxel::clear_geometry() {
+
+	_model_positions.resize(0);
+	_model_normals.resize(0);
+	_model_uvs.resize(0);
+	_model_indices.resize(0);
+
+	for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
+		_model_side_positions[side].resize(0);
+		_model_side_uvs[side].resize(0);
+		_model_side_indices[side].resize(0);
+	}
+}
+
 void Voxel::set_geometry_type(GeometryType type) {
 
 	_geometry_type = type;
 
 	switch (_geometry_type) {
 
-		case GEOMETRY_NONE: {
-			// Clear all geometry
-			_model_positions.resize(0);
-			_model_normals.resize(0);
-			_model_uvs.resize(0);
-			_model_indices.resize(0);
-
-			for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
-				_model_side_positions[side].resize(0);
-				_model_side_uvs[side].resize(0);
-				_model_side_indices[side].resize(0);
-			}
-
-		} break;
+		case GEOMETRY_NONE:
+			clear_geometry();
+			break;
 
 		case GEOMETRY_CUBE:
 			set_cube_geometry(_cube_geometry_padding_y);
 			update_cube_uv_sides();
 			break;
 
+		case GEOMETRY_CUSTOM_MESH:
+			// TODO Re-update geometry?
+			break;
+
 		default:
-			print_line("Wtf? Unknown geometry type");
+			ERR_PRINT("Wtf? Unknown geometry type");
 			break;
 	}
 }
@@ -157,21 +170,161 @@ Voxel::GeometryType Voxel::get_geometry_type() const {
 }
 
 void Voxel::set_library(Ref<VoxelLibrary> lib) {
-	if (lib.is_null())
+	if (lib.is_null()) {
 		_library = 0;
-	else
+	} else {
 		_library = lib->get_instance_id();
-	// Update model UVs because atlas size is defined by the library
-	update_cube_uv_sides();
+	}
+	if(_geometry_type == GEOMETRY_CUBE) {
+		// Update model UVs because atlas size is defined by the library
+		update_cube_uv_sides();
+	}
 }
 
 VoxelLibrary *Voxel::get_library() const {
-	if (_library == 0)
+	if (_library == 0) {
 		return NULL;
+	}
 	Object *v = ObjectDB::get_instance(_library);
-	if (v)
+	if (v) {
 		return Object::cast_to<VoxelLibrary>(v);
+	}
 	return NULL;
+}
+
+void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
+
+	if(mesh == _custom_mesh) {
+		return;
+	}
+
+	clear_geometry();
+
+	if(mesh.is_null()) {
+		_custom_mesh = Ref<Mesh>();
+		return;
+	}
+
+	Array arrays = mesh->surface_get_arrays(0);
+	PoolIntArray indices = arrays[Mesh::ARRAY_INDEX];
+	PoolVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
+	PoolVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
+	PoolVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
+
+	ERR_FAIL_COND_MSG(indices.size() % 3 != 0, "Mesh is empty or does not contain triangles");
+	ERR_FAIL_COND(normals.size() == 0);
+
+	struct L {
+		static bool get_side(Vector3 pos, Cube::SideAxis &out_side) {
+			if (Math::is_equal_approx(pos.x, 0.0)) {
+				out_side = Cube::SIDE_NEGATIVE_X;
+				return true;
+			}
+			if (Math::is_equal_approx(pos.x, 1.0)) {
+				out_side = Cube::SIDE_POSITIVE_X;
+				return true;
+			}
+			if (Math::is_equal_approx(pos.y, 0.0)) {
+				out_side = Cube::SIDE_NEGATIVE_Y;
+				return true;
+			}
+			if (Math::is_equal_approx(pos.y, 1.0)) {
+				out_side = Cube::SIDE_POSITIVE_Y;
+				return true;
+			}
+			if (Math::is_equal_approx(pos.z, 0.0)) {
+				out_side = Cube::SIDE_NEGATIVE_Z;
+				return true;
+			}
+			if (Math::is_equal_approx(pos.z, 1.0)) {
+				out_side = Cube::SIDE_POSITIVE_Z;
+				return true;
+			}
+			return false;
+		}
+	};
+
+	if(uvs.size() == 0) {
+		// TODO Properly generate UVs if there arent any
+		uvs = PoolVector2Array();
+		uvs.resize(positions.size());
+	}
+
+	_custom_mesh = mesh;
+
+	// Separate triangles belonging to faces of the cube
+
+	{
+		PoolIntArray::Read indices_read = indices.read();
+		PoolVector3Array::Read positions_read = positions.read();
+		PoolVector3Array::Read normals_read = normals.read();
+		PoolVector2Array::Read uvs_read = uvs.read();
+
+		FixedArray<HashMap<int, int>, Cube::SIDE_COUNT> added_side_indices;
+		HashMap<int, int> added_regular_indices;
+
+		for (int i = 0; i < indices.size(); i += 3) {
+
+			Cube::SideAxis side0;
+			Cube::SideAxis side1;
+			Cube::SideAxis side2;
+
+			if (L::get_side(positions_read[indices_read[i]], side0) &&
+				L::get_side(positions_read[indices_read[i + 1]], side1) &&
+				L::get_side(positions_read[indices_read[i + 2]], side2) &&
+				side0 == side1 &&
+				side1 == side2) {
+
+				// That triangle is on the face
+
+				int next_side_index = _model_side_positions[side0].size();
+
+				for(int j = 0; j < 3; ++j) {
+					int src_index = indices_read[i + j];
+					const int *existing_dst_index = added_side_indices[side0].getptr(src_index);
+
+					if(existing_dst_index == nullptr) {
+						// Add new vertex
+
+						_model_side_indices[side0].push_back(next_side_index);
+						_model_side_positions[side0].push_back(positions_read[indices_read[i + j]]);
+						_model_side_uvs[side0].push_back(uvs_read[indices_read[i + j]]);
+
+						added_side_indices[side0].set(src_index, next_side_index);
+						++next_side_index;
+
+					} else {
+						// Vertex was already added, just add index referencing it
+						_model_side_indices[side0].push_back(*existing_dst_index);
+					}
+				}
+
+			} else {
+				// That triangle is not on the face
+
+				int next_regular_index = _model_positions.size();
+
+				for (int j = 0; j < 3; ++j) {
+					int src_index = indices_read[i + j];
+					const int *existing_dst_index = added_regular_indices.getptr(src_index);
+
+					if (existing_dst_index == nullptr) {
+
+						_model_indices.push_back(next_regular_index);
+						_model_positions.push_back(positions_read[indices_read[i + j]]);
+						_model_normals.push_back(normals_read[indices_read[i + j]]);
+						_model_uvs.push_back(uvs_read[indices_read[i + j]]);
+
+						added_regular_indices.set(src_index, next_regular_index);
+						++next_regular_index;
+
+					} else {
+						_model_indices.push_back(*existing_dst_index);
+					}
+				}
+			}
+		}
+	}
 }
 
 Ref<Voxel> Voxel::set_cube_geometry(float sy) {
@@ -179,24 +332,21 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 
-		{
-			_model_side_positions[side].resize(4);
-			PoolVector<Vector3>::Write w = _model_side_positions[side].write();
-			for (unsigned int i = 0; i < 4; ++i) {
-				int corner = Cube::g_side_corners[side][i];
-				Vector3 p = Cube::g_corner_position[corner];
-				if (p.y > 0.9)
-					p.y = sy;
-				w[i] = p;
+		std::vector<Vector3> &positions = _model_side_positions[side];
+		positions.resize(4);
+		for (unsigned int i = 0; i < 4; ++i) {
+			int corner = Cube::g_side_corners[side][i];
+			Vector3 p = Cube::g_corner_position[corner];
+			if (p.y > 0.9) {
+				p.y = sy;
 			}
+			positions[i] = p;
 		}
 
-		{
-			_model_side_indices[side].resize(6);
-			PoolVector<int>::Write w = _model_side_indices[side].write();
-			for (unsigned int i = 0; i < 6; ++i) {
-				w[i] = Cube::g_side_quad_triangles[side][i];
-			}
+		std::vector<int> &indices = _model_side_indices[side];
+		indices.resize(6);
+		for (unsigned int i = 0; i < 6; ++i) {
+			indices[i] = Cube::g_side_quad_triangles[side][i];
 		}
 	}
 
@@ -235,9 +385,9 @@ void Voxel::update_cube_uv_sides() {
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 		_model_side_uvs[side].resize(4);
-		PoolVector<Vector2>::Write w = _model_side_uvs[side].write();
+		std::vector<Vector2> &uvs = _model_side_uvs[side];
 		for (unsigned int i = 0; i < 4; ++i) {
-			w[i] = (_cube_tiles[side] + uv[i]) * s;
+			uvs[i] = (_cube_tiles[side] + uv[i]) * s;
 		}
 	}
 }
@@ -258,7 +408,7 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_color", "color"), &Voxel::set_color);
 	ClassDB::bind_method(D_METHOD("get_color"), &Voxel::get_color);
 
-	ClassDB::bind_method(D_METHOD("set_transparent", "transparent"), &Voxel::set_transparent, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("set_transparent", "transparent"), &Voxel::set_transparent);
 	ClassDB::bind_method(D_METHOD("is_transparent"), &Voxel::is_transparent);
 
 	ClassDB::bind_method(D_METHOD("set_material_id", "id"), &Voxel::set_material_id);
@@ -267,13 +417,18 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_geometry_type", "type"), &Voxel::set_geometry_type);
 	ClassDB::bind_method(D_METHOD("get_geometry_type"), &Voxel::get_geometry_type);
 
+	ClassDB::bind_method(D_METHOD("set_custom_mesh", "type"), &Voxel::set_custom_mesh);
+	ClassDB::bind_method(D_METHOD("get_custom_mesh"), &Voxel::get_custom_mesh);
+
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent"), "set_transparent", "is_transparent");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "material_id"), "set_material_id", "get_material_id");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "geometry_type", PROPERTY_HINT_ENUM, "None,Cube"), "set_geometry_type", "get_geometry_type");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "geometry_type", PROPERTY_HINT_ENUM, "None,Cube,CustomMesh"), "set_geometry_type", "get_geometry_type");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), "set_custom_mesh", "get_custom_mesh");
 
 	BIND_ENUM_CONSTANT(GEOMETRY_NONE);
 	BIND_ENUM_CONSTANT(GEOMETRY_CUBE);
+	BIND_ENUM_CONSTANT(GEOMETRY_CUSTOM_MESH);
 	BIND_ENUM_CONSTANT(GEOMETRY_MAX);
 }

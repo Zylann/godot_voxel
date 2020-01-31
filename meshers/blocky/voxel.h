@@ -2,6 +2,7 @@
 #define VOXEL_TYPE_H
 
 #include "../../cube_tables.h"
+#include "../../util/fixed_array.h"
 #include <core/resource.h>
 
 class VoxelLibrary;
@@ -33,12 +34,16 @@ public:
 	Ref<Voxel> set_transparent(bool t = true);
 	_FORCE_INLINE_ bool is_transparent() const { return _is_transparent; }
 
+	void set_custom_mesh(Ref<Mesh> mesh);
+	Ref<Mesh> get_custom_mesh() const { return _custom_mesh; }
+
 	//-------------------------------------------
 	// Built-in geometry generators
 
 	enum GeometryType {
 		GEOMETRY_NONE = 0,
-		GEOMETRY_CUBE = 1,
+		GEOMETRY_CUBE,
+		GEOMETRY_CUSTOM_MESH,
 		GEOMETRY_MAX
 	};
 
@@ -47,18 +52,18 @@ public:
 
 	// Getters for native usage only
 
-	const PoolVector<Vector3> &get_model_positions() const { return _model_positions; }
-	const PoolVector<Vector3> &get_model_normals() const { return _model_normals; }
-	const PoolVector<Vector2> &get_model_uv() const { return _model_uvs; }
-	const PoolVector<int> &get_model_indices() const { return _model_indices; }
+	const std::vector<Vector3> &get_model_positions() const { return _model_positions; }
+	const std::vector<Vector3> &get_model_normals() const { return _model_normals; }
+	const std::vector<Vector2> &get_model_uv() const { return _model_uvs; }
+	const std::vector<int> &get_model_indices() const { return _model_indices; }
 
-	const PoolVector<Vector3> &get_model_side_positions(unsigned int side) const { return _model_side_positions[side]; }
-	const PoolVector<Vector2> &get_model_side_uv(unsigned int side) const { return _model_side_uvs[side]; }
-	const PoolVector<int> &get_model_side_indices(unsigned int side) const { return _model_side_indices[side]; }
+	const std::vector<Vector3> &get_model_side_positions(unsigned int side) const { return _model_side_positions[side]; }
+	const std::vector<Vector2> &get_model_side_uv(unsigned int side) const { return _model_side_uvs[side]; }
+	const std::vector<int> &get_model_side_indices(unsigned int side) const { return _model_side_indices[side]; }
 
 	void set_library(Ref<VoxelLibrary> lib);
 
-protected:
+private:
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
@@ -70,6 +75,7 @@ protected:
 
 	static void _bind_methods();
 
+	void clear_geometry();
 	Ref<Voxel> set_cube_geometry(float sy = 1);
 	//Ref<Voxel> set_xquad_geometry(Vector2 atlas_pos);
 
@@ -78,7 +84,7 @@ private:
 
 	// Identifiers
 	int _id;
-	String _name;
+	String _name; // TODO StringName?
 
 	// Properties
 	int _material_id;
@@ -86,19 +92,20 @@ private:
 	Color _color;
 	GeometryType _geometry_type;
 	float _cube_geometry_padding_y;
-	Vector2 _cube_tiles[Cube::SIDE_COUNT];
+	FixedArray<Vector2, Cube::SIDE_COUNT> _cube_tiles;
+	Ref<Mesh> _custom_mesh;
 
 	// Model
-	PoolVector<Vector3> _model_positions;
-	PoolVector<Vector3> _model_normals;
-	PoolVector<Vector2> _model_uvs;
-	PoolVector<int> _model_indices;
+	std::vector<Vector3> _model_positions;
+	std::vector<Vector3> _model_normals;
+	std::vector<Vector2> _model_uvs;
+	std::vector<int> _model_indices;
 	// Model sides:
 	// They are separated because this way we can occlude them easily.
 	// Due to these defining cube side triangles, normals are known already.
-	PoolVector<Vector3> _model_side_positions[Cube::SIDE_COUNT];
-	PoolVector<Vector2> _model_side_uvs[Cube::SIDE_COUNT];
-	PoolVector<int> _model_side_indices[Cube::SIDE_COUNT];
+	FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> _model_side_positions;
+	FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> _model_side_uvs;
+	FixedArray<std::vector<int>, Cube::SIDE_COUNT> _model_side_indices;
 
 	// TODO Child voxel types?
 };

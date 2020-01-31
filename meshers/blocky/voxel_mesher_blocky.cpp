@@ -141,8 +141,8 @@ static void generate_blocky_mesh(
 					// Sides
 					for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 
-						const PoolVector<Vector3> &positions = voxel.get_model_side_positions(side);
-						const unsigned int vertex_count = positions.size();
+						const std::vector<Vector3> &side_positions = voxel.get_model_side_positions(side);
+						const unsigned int vertex_count = side_positions.size();
 
 						if (vertex_count != 0) {
 
@@ -180,8 +180,7 @@ static void generate_blocky_mesh(
 									}
 								}
 
-								PoolVector<Vector3>::Read rv = positions.read();
-								PoolVector<Vector2>::Read rt = voxel.get_model_side_uv(side).read();
+								const std::vector<Vector2> &side_uvs = voxel.get_model_side_uv(side);
 
 								// Subtracting 1 because the data is padded
 								Vector3 pos(x - 1, y - 1, z - 1);
@@ -193,14 +192,14 @@ static void generate_blocky_mesh(
 									arrays.positions.resize(arrays.positions.size() + vertex_count);
 									Vector3 *w = arrays.positions.data() + append_index;
 									for (unsigned int i = 0; i < vertex_count; ++i) {
-										w[i] = rv[i] + pos;
+										w[i] = side_positions[i] + pos;
 									}
 								}
 
 								{
 									const int append_index = arrays.uvs.size();
 									arrays.uvs.resize(arrays.uvs.size() + vertex_count);
-									memcpy(arrays.uvs.data() + append_index, rt.ptr(), vertex_count * sizeof(Vector2));
+									memcpy(arrays.uvs.data() + append_index, side_uvs.data(), vertex_count * sizeof(Vector2));
 								}
 
 								{
@@ -221,7 +220,7 @@ static void generate_blocky_mesh(
 									if (bake_occlusion) {
 
 										for (unsigned int i = 0; i < vertex_count; ++i) {
-											Vector3 v = rv[i];
+											Vector3 v = side_positions[i];
 
 											// General purpose occlusion colouring.
 											// TODO Optimize for cubes
@@ -252,8 +251,7 @@ static void generate_blocky_mesh(
 									}
 								}
 
-								const PoolVector<int> &side_indices = voxel.get_model_side_indices(side);
-								PoolVector<int>::Read ri = side_indices.read();
+								const std::vector<int> &side_indices = voxel.get_model_side_indices(side);
 								const unsigned int index_count = side_indices.size();
 
 								{
@@ -261,7 +259,7 @@ static void generate_blocky_mesh(
 									arrays.indices.resize(arrays.indices.size() + index_count);
 									int *w = arrays.indices.data();
 									for (unsigned int j = 0; j < index_count; ++j) {
-										w[i++] = index_offset + ri[j];
+										w[i++] = index_offset + side_indices[j];
 									}
 								}
 
@@ -274,30 +272,28 @@ static void generate_blocky_mesh(
 					if (voxel.get_model_positions().size() != 0) {
 						// TODO Get rid of push_backs
 
-						const PoolVector<Vector3> &vertices = voxel.get_model_positions();
-						unsigned int vertex_count = vertices.size();
+						const std::vector<Vector3> &positions = voxel.get_model_positions();
+						unsigned int vertex_count = positions.size();
 						const Color modulate_color = voxel.get_color();
 
-						PoolVector<Vector3>::Read rv = vertices.read();
-						PoolVector<Vector3>::Read rn = voxel.get_model_normals().read();
-						PoolVector<Vector2>::Read rt = voxel.get_model_uv().read();
+						const std::vector<Vector3> &normals = voxel.get_model_normals();
+						const std::vector<Vector2> &uvs = voxel.get_model_uv();
 
 						Vector3 pos(x - 1, y - 1, z - 1);
 
 						for (unsigned int i = 0; i < vertex_count; ++i) {
-							arrays.normals.push_back(rn[i]);
-							arrays.uvs.push_back(rt[i]);
-							arrays.positions.push_back(rv[i] + pos);
+							arrays.normals.push_back(normals[i]);
+							arrays.uvs.push_back(uvs[i]);
+							arrays.positions.push_back(positions[i] + pos);
 							// TODO handle ambient occlusion on inner parts
 							arrays.colors.push_back(modulate_color);
 						}
 
-						const PoolVector<int> &indices = voxel.get_model_indices();
-						PoolVector<int>::Read ri = indices.read();
+						const std::vector<int> &indices = voxel.get_model_indices();
 						unsigned int index_count = indices.size();
 
 						for (unsigned int i = 0; i < index_count; ++i) {
-							arrays.indices.push_back(index_offset + ri[i]);
+							arrays.indices.push_back(index_offset + indices[i]);
 						}
 
 						index_offset += vertex_count;
