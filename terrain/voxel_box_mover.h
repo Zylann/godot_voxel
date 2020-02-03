@@ -10,10 +10,12 @@ class VoxelBoxMover : public Reference {
 public:
 	Vector3 get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelTerrain *terrain);
 
-protected:
-	Vector3 _get_motion_binding(Vector3 pos, Vector3 motion, AABB aabb, Node *terrain_node);
+private:
+	Vector3 _b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Node *terrain_node);
 
 	static void _bind_methods();
+
+	std::vector<AABB> _colliding_boxes;
 };
 
 #endif // VOXEL_BOX_MOVER_H

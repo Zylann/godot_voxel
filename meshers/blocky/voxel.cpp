@@ -350,6 +350,9 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 		}
 	}
 
+	_collision_aabbs.clear();
+	_collision_aabbs.push_back(AABB(Vector3(0,0,0), Vector3(1,1,1)));
+
 	return Ref<Voxel>(this);
 }
 
@@ -420,15 +423,42 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_custom_mesh", "type"), &Voxel::set_custom_mesh);
 	ClassDB::bind_method(D_METHOD("get_custom_mesh"), &Voxel::get_custom_mesh);
 
+	ClassDB::bind_method(D_METHOD("set_collision_aabbs", "aabbs"), &Voxel::_b_set_collision_aabbs);
+	ClassDB::bind_method(D_METHOD("get_collision_aabbs"), &Voxel::_b_get_collision_aabbs);
+
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent"), "set_transparent", "is_transparent");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "material_id"), "set_material_id", "get_material_id");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "geometry_type", PROPERTY_HINT_ENUM, "None,Cube,CustomMesh"), "set_geometry_type", "get_geometry_type");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), "set_custom_mesh", "get_custom_mesh");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING, itos(Variant::AABB) + ":"), "set_collision_aabbs", "get_collision_aabbs");
 
 	BIND_ENUM_CONSTANT(GEOMETRY_NONE);
 	BIND_ENUM_CONSTANT(GEOMETRY_CUBE);
 	BIND_ENUM_CONSTANT(GEOMETRY_CUSTOM_MESH);
 	BIND_ENUM_CONSTANT(GEOMETRY_MAX);
 }
+
+Array Voxel::_b_get_collision_aabbs() const {
+	Array array;
+	array.resize(_collision_aabbs.size());
+	for(int i = 0; i < _collision_aabbs.size(); ++i) {
+		array[i] = _collision_aabbs[i];
+	}
+	return array;
+}
+
+void Voxel::_b_set_collision_aabbs(Array array) {
+	for(int i = 0; i < array.size(); ++i) {
+		const Variant v = array[i];
+		ERR_FAIL_COND(v.get_type() != Variant::AABB);
+	}
+	_collision_aabbs.resize(array.size());
+	for(int i = 0; i < array.size(); ++i) {
+		const AABB aabb = array[i];
+		_collision_aabbs[i] = aabb;
+	}
+}
+
+

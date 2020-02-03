@@ -61,6 +61,8 @@ public:
 	const std::vector<Vector2> &get_model_side_uv(unsigned int side) const { return _model_side_uvs[side]; }
 	const std::vector<int> &get_model_side_indices(unsigned int side) const { return _model_side_indices[side]; }
 
+	const std::vector<AABB> &get_collision_aabbs() const { return _collision_aabbs; }
+
 	void set_library(Ref<VoxelLibrary> lib);
 
 private:
@@ -79,6 +81,9 @@ private:
 	Ref<Voxel> set_cube_geometry(float sy = 1);
 	//Ref<Voxel> set_xquad_geometry(Vector2 atlas_pos);
 
+	Array _b_get_collision_aabbs() const;
+	void _b_set_collision_aabbs(Array array);
+
 private:
 	ObjectID _library;
 
@@ -94,6 +99,7 @@ private:
 	float _cube_geometry_padding_y;
 	FixedArray<Vector2, Cube::SIDE_COUNT> _cube_tiles;
 	Ref<Mesh> _custom_mesh;
+	std::vector<AABB> _collision_aabbs;
 
 	// Model
 	std::vector<Vector3> _model_positions;
