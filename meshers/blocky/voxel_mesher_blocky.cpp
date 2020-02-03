@@ -13,13 +13,28 @@ void raw_copy_to(PoolVector<T> &to, const Vector<T> &from) {
 	memcpy(w.ptr(), from.ptr(), from.size() * sizeof(T));
 }
 
-inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_voxel_id) {
+const int g_opposite_side[6] = {
+	Cube::SIDE_NEGATIVE_X,
+	Cube::SIDE_POSITIVE_X,
+	Cube::SIDE_POSITIVE_Y,
+	Cube::SIDE_NEGATIVE_Y,
+	Cube::SIDE_POSITIVE_Z,
+	Cube::SIDE_NEGATIVE_Z,
+};
+
+inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_voxel_id, int side) {
 	if (other_voxel_id == 0) { // air
 		return true;
 	}
 	if (lib.has_voxel(other_voxel_id)) {
 		const Voxel &other_vt = lib.get_voxel_const(other_voxel_id);
-		return other_vt.is_transparent() && vt.get_id() != other_voxel_id;
+		if (other_vt.is_transparent() && vt.get_id() != other_voxel_id) {
+			return true;
+		} else {
+			const uint8_t m = vt.get_face_culling_mask(side);
+			const int opposite_side = g_opposite_side[side];
+			return (m & other_vt.get_face_culling_mask(opposite_side)) != m;
+		}
 	}
 	return true;
 }
@@ -144,128 +159,129 @@ static void generate_blocky_mesh(
 						const std::vector<Vector3> &side_positions = voxel.get_model_side_positions(side);
 						const unsigned int vertex_count = side_positions.size();
 
-						if (vertex_count != 0) {
+						if(vertex_count == 0) {
+							continue;
+						}
 
-							const int neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
+						const int neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
-							// TODO Better face visibility test
-							if (is_face_visible(library, voxel, neighbor_voxel_id)) {
+						if (!is_face_visible(library, voxel, neighbor_voxel_id, side)) {
+							continue;
+						}
 
-								// The face is visible
+						// The face is visible
 
-								int shaded_corner[8] = { 0 };
+						int shaded_corner[8] = { 0 };
 
-								if (bake_occlusion) {
+						if (bake_occlusion) {
 
-									// Combinatory solution for https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
+							// Combinatory solution for https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
 
-									for (unsigned int j = 0; j < 4; ++j) {
-										unsigned int edge = Cube::g_side_edges[side][j];
-										int edge_neighbor_id = type_buffer[voxel_index + edge_neighbor_lut[edge]];
-										if (!is_transparent(library, edge_neighbor_id)) {
-											shaded_corner[Cube::g_edge_corners[edge][0]] += 1;
-											shaded_corner[Cube::g_edge_corners[edge][1]] += 1;
-										}
-									}
-									for (unsigned int j = 0; j < 4; ++j) {
-										unsigned int corner = Cube::g_side_corners[side][j];
-										if (shaded_corner[corner] == 2) {
-											shaded_corner[corner] = 3;
-										} else {
-											int corner_neigbor_id = type_buffer[voxel_index + corner_neighbor_lut[corner]];
-											if (!is_transparent(library, corner_neigbor_id)) {
-												shaded_corner[corner] += 1;
-											}
-										}
-									}
+							for (unsigned int j = 0; j < 4; ++j) {
+								unsigned int edge = Cube::g_side_edges[side][j];
+								int edge_neighbor_id = type_buffer[voxel_index + edge_neighbor_lut[edge]];
+								if (!is_transparent(library, edge_neighbor_id)) {
+									shaded_corner[Cube::g_edge_corners[edge][0]] += 1;
+									shaded_corner[Cube::g_edge_corners[edge][1]] += 1;
 								}
-
-								const std::vector<Vector2> &side_uvs = voxel.get_model_side_uv(side);
-
-								// Subtracting 1 because the data is padded
-								Vector3 pos(x - 1, y - 1, z - 1);
-
-								// Append vertices of the faces in one go, don't use push_back
-
-								{
-									const int append_index = arrays.positions.size();
-									arrays.positions.resize(arrays.positions.size() + vertex_count);
-									Vector3 *w = arrays.positions.data() + append_index;
-									for (unsigned int i = 0; i < vertex_count; ++i) {
-										w[i] = side_positions[i] + pos;
+							}
+							for (unsigned int j = 0; j < 4; ++j) {
+								unsigned int corner = Cube::g_side_corners[side][j];
+								if (shaded_corner[corner] == 2) {
+									shaded_corner[corner] = 3;
+								} else {
+									int corner_neigbor_id = type_buffer[voxel_index + corner_neighbor_lut[corner]];
+									if (!is_transparent(library, corner_neigbor_id)) {
+										shaded_corner[corner] += 1;
 									}
 								}
-
-								{
-									const int append_index = arrays.uvs.size();
-									arrays.uvs.resize(arrays.uvs.size() + vertex_count);
-									memcpy(arrays.uvs.data() + append_index, side_uvs.data(), vertex_count * sizeof(Vector2));
-								}
-
-								{
-									const int append_index = arrays.normals.size();
-									arrays.normals.resize(arrays.normals.size() + vertex_count);
-									Vector3 *w = arrays.normals.data() + append_index;
-									for (unsigned int i = 0; i < vertex_count; ++i) {
-										w[i] = Cube::g_side_normals[side].to_vec3();
-									}
-								}
-
-								{
-									const int append_index = arrays.colors.size();
-									arrays.colors.resize(arrays.colors.size() + vertex_count);
-									Color *w = arrays.colors.data() + append_index;
-									const Color modulate_color = voxel.get_color();
-
-									if (bake_occlusion) {
-
-										for (unsigned int i = 0; i < vertex_count; ++i) {
-											Vector3 v = side_positions[i];
-
-											// General purpose occlusion colouring.
-											// TODO Optimize for cubes
-											// TODO Fix occlusion inconsistency caused by triangles orientation? Not sure if worth it
-											float shade = 0;
-											for (unsigned int j = 0; j < 4; ++j) {
-												unsigned int corner = Cube::g_side_corners[side][j];
-												if (shaded_corner[corner]) {
-													float s = baked_occlusion_darkness * static_cast<float>(shaded_corner[corner]);
-													float k = 1.0 - Cube::g_corner_position[corner].distance_to(v);
-													if (k < 0.0) {
-														k = 0.0;
-													}
-													s *= k;
-													if (s > shade) {
-														shade = s;
-													}
-												}
-											}
-											float gs = 1.0 - shade;
-											w[i] = Color(gs, gs, gs) * modulate_color;
-										}
-
-									} else {
-										for (unsigned int i = 0; i < vertex_count; ++i) {
-											w[i] = modulate_color;
-										}
-									}
-								}
-
-								const std::vector<int> &side_indices = voxel.get_model_side_indices(side);
-								const unsigned int index_count = side_indices.size();
-
-								{
-									int i = arrays.indices.size();
-									arrays.indices.resize(arrays.indices.size() + index_count);
-									int *w = arrays.indices.data();
-									for (unsigned int j = 0; j < index_count; ++j) {
-										w[i++] = index_offset + side_indices[j];
-									}
-								}
-
-								index_offset += vertex_count;
 							}
 						}
+
+						const std::vector<Vector2> &side_uvs = voxel.get_model_side_uv(side);
+
+						// Subtracting 1 because the data is padded
+						Vector3 pos(x - 1, y - 1, z - 1);
+
+						// Append vertices of the faces in one go, don't use push_back
+
+						{
+							const int append_index = arrays.positions.size();
+							arrays.positions.resize(arrays.positions.size() + vertex_count);
+							Vector3 *w = arrays.positions.data() + append_index;
+							for (unsigned int i = 0; i < vertex_count; ++i) {
+								w[i] = side_positions[i] + pos;
+							}
+						}
+
+						{
+							const int append_index = arrays.uvs.size();
+							arrays.uvs.resize(arrays.uvs.size() + vertex_count);
+							memcpy(arrays.uvs.data() + append_index, side_uvs.data(), vertex_count * sizeof(Vector2));
+						}
+
+						{
+							const int append_index = arrays.normals.size();
+							arrays.normals.resize(arrays.normals.size() + vertex_count);
+							Vector3 *w = arrays.normals.data() + append_index;
+							for (unsigned int i = 0; i < vertex_count; ++i) {
+								w[i] = Cube::g_side_normals[side].to_vec3();
+							}
+						}
+
+						{
+							const int append_index = arrays.colors.size();
+							arrays.colors.resize(arrays.colors.size() + vertex_count);
+							Color *w = arrays.colors.data() + append_index;
+							const Color modulate_color = voxel.get_color();
+
+							if (bake_occlusion) {
+
+								for (unsigned int i = 0; i < vertex_count; ++i) {
+									Vector3 v = side_positions[i];
+
+									// General purpose occlusion colouring.
+									// TODO Optimize for cubes
+									// TODO Fix occlusion inconsistency caused by triangles orientation? Not sure if worth it
+									float shade = 0;
+									for (unsigned int j = 0; j < 4; ++j) {
+										unsigned int corner = Cube::g_side_corners[side][j];
+										if (shaded_corner[corner]) {
+											float s = baked_occlusion_darkness * static_cast<float>(shaded_corner[corner]);
+											float k = 1.0 - Cube::g_corner_position[corner].distance_to(v);
+											if (k < 0.0) {
+												k = 0.0;
+											}
+											s *= k;
+											if (s > shade) {
+												shade = s;
+											}
+										}
+									}
+									float gs = 1.0 - shade;
+									w[i] = Color(gs, gs, gs) * modulate_color;
+								}
+
+							} else {
+								for (unsigned int i = 0; i < vertex_count; ++i) {
+									w[i] = modulate_color;
+								}
+							}
+						}
+
+						const std::vector<int> &side_indices = voxel.get_model_side_indices(side);
+						const unsigned int index_count = side_indices.size();
+
+						{
+							int i = arrays.indices.size();
+							arrays.indices.resize(arrays.indices.size() + index_count);
+							int *w = arrays.indices.data();
+							for (unsigned int j = 0; j < index_count; ++j) {
+								w[i++] = index_offset + side_indices[j];
+							}
+						}
+
+						index_offset += vertex_count;
 					}
 
 					// Inside

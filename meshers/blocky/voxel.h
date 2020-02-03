@@ -17,6 +17,16 @@ class Voxel : public Resource {
 public:
 	Voxel();
 
+	enum Side {
+		SIDE_NEGATIVE_X = Cube::SIDE_NEGATIVE_X,
+		SIDE_POSITIVE_X = Cube::SIDE_POSITIVE_X,
+		SIDE_NEGATIVE_Y = Cube::SIDE_NEGATIVE_Y,
+		SIDE_POSITIVE_Y = Cube::SIDE_POSITIVE_Y,
+		SIDE_NEGATIVE_Z = Cube::SIDE_NEGATIVE_Z,
+		SIDE_POSITIVE_Z = Cube::SIDE_POSITIVE_Z,
+		SIDE_COUNT = Cube::SIDE_COUNT
+	};
+
 	// Properties
 
 	Ref<Voxel> set_voxel_name(String name);
@@ -65,6 +75,8 @@ public:
 
 	void set_library(Ref<VoxelLibrary> lib);
 
+	inline uint8_t get_face_culling_mask(int side) const { return _side_culling_masks[side]; }
+
 private:
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -84,6 +96,9 @@ private:
 	Array _b_get_collision_aabbs() const;
 	void _b_set_collision_aabbs(Array array);
 
+	void _b_set_face_culling_mask(Side face_id, uint8_t mask);
+	uint8_t _b_get_face_culling_mask(int face_id) const;
+
 private:
 	ObjectID _library;
 
@@ -101,6 +116,10 @@ private:
 	Ref<Mesh> _custom_mesh;
 	std::vector<AABB> _collision_aabbs;
 
+	// If a face touches a neighbor face, this decides if it gets culled.
+	// If the neighbor's face culling mask has all bits of the current face's mask, the face will be culled.
+	FixedArray<uint8_t, Cube::SIDE_COUNT> _side_culling_masks;
+
 	// Model
 	std::vector<Vector3> _model_positions;
 	std::vector<Vector3> _model_normals;
@@ -117,5 +136,6 @@ private:
 };
 
 VARIANT_ENUM_CAST(Voxel::GeometryType)
+VARIANT_ENUM_CAST(Voxel::Side)
 
 #endif // VOXEL_TYPE_H

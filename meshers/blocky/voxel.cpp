@@ -11,7 +11,10 @@ Voxel::Voxel() :
 		_is_transparent(false),
 		_color(1.f, 1.f, 1.f),
 		_geometry_type(GEOMETRY_NONE),
-		_cube_geometry_padding_y(0) {}
+		_cube_geometry_padding_y(0) {
+
+	_side_culling_masks.fill(0);
+}
 
 static Cube::Side name_to_side(const String &s) {
 	if (s == "left") {
@@ -325,6 +328,11 @@ void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 			}
 		}
 	}
+
+	// TODO Expose side masks in the inspector, somehow
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+		_side_culling_masks[side] = 0;
+	}
 }
 
 Ref<Voxel> Voxel::set_cube_geometry(float sy) {
@@ -347,6 +355,10 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 		indices.resize(6);
 		for (unsigned int i = 0; i < 6; ++i) {
 			indices[i] = Cube::g_side_quad_triangles[side][i];
+		}
+
+		if(side != Cube::SIDE_POSITIVE_Y || sy == 1.0) {
+			_side_culling_masks[side] = 0xff;
 		}
 	}
 
@@ -426,6 +438,9 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_collision_aabbs", "aabbs"), &Voxel::_b_set_collision_aabbs);
 	ClassDB::bind_method(D_METHOD("get_collision_aabbs"), &Voxel::_b_get_collision_aabbs);
 
+	ClassDB::bind_method(D_METHOD("set_face_culling_mask", "side", "mask"), &Voxel::_b_set_face_culling_mask);
+	ClassDB::bind_method(D_METHOD("get_face_culling_mask"), &Voxel::_b_get_face_culling_mask);
+
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent"), "set_transparent", "is_transparent");
@@ -438,6 +453,14 @@ void Voxel::_bind_methods() {
 	BIND_ENUM_CONSTANT(GEOMETRY_CUBE);
 	BIND_ENUM_CONSTANT(GEOMETRY_CUSTOM_MESH);
 	BIND_ENUM_CONSTANT(GEOMETRY_MAX);
+
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_X);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_X);
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_Y);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_Y);
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_Z);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_Z);
+	BIND_ENUM_CONSTANT(SIDE_COUNT);
 }
 
 Array Voxel::_b_get_collision_aabbs() const {
@@ -459,6 +482,16 @@ void Voxel::_b_set_collision_aabbs(Array array) {
 		const AABB aabb = array[i];
 		_collision_aabbs[i] = aabb;
 	}
+}
+
+void Voxel::_b_set_face_culling_mask(Side face_id, uint8_t mask) {
+	ERR_FAIL_INDEX(face_id, SIDE_COUNT);
+	_side_culling_masks[face_id] = mask;
+}
+
+uint8_t Voxel::_b_get_face_culling_mask(int face_id) const {
+	ERR_FAIL_INDEX_V(face_id, SIDE_COUNT, 0);
+	return _side_culling_masks[face_id];
 }
 
 
