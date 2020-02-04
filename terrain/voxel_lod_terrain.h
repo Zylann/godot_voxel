@@ -115,6 +115,8 @@ private:
 	void process_transition_updates();
 	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
 
+	void _b_save_all_modified_blocks();
+
 	struct OctreeItem {
 		LodOctree octree;
 	};

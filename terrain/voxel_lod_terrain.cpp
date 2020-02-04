@@ -980,6 +980,13 @@ void VoxelLodTerrain::_process() {
 
 			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
 
+			if(ob.data.type == VoxelDataLoader::TYPE_SAVE) {
+				// That's a save confirmation event.
+				// Note: in the future, if blocks don't get copied before being sent for saving,
+				// we will need to use block versionning to know when we can reset the `modified` flag properly
+				continue;
+			}
+
 			if (ob.lod >= get_lod_count()) {
 				// That block was requested at a time where LOD was higher... drop it
 				++_stats.dropped_block_loads;
@@ -1657,6 +1664,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_get_block_info", "block_pos", "lod"), &VoxelLodTerrain::debug_get_block_info);
 	ClassDB::bind_method(D_METHOD("debug_get_last_unexpected_block_drops"), &VoxelLodTerrain::debug_get_last_unexpected_block_drops);
 	ClassDB::bind_method(D_METHOD("debug_get_octrees"), &VoxelLodTerrain::debug_get_octrees);
+	ClassDB::bind_method(D_METHOD("debug_save_all_modified_blocks"), &VoxelLodTerrain::_b_save_all_modified_blocks);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 
@@ -1668,4 +1676,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"), "set_material", "get_material");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"), "set_collision_lod_count", "get_collision_lod_count");
+}
+
+void VoxelLodTerrain::_b_save_all_modified_blocks() {
+	save_all_modified_blocks(true);
 }

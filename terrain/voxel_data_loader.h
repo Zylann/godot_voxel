@@ -13,7 +13,8 @@ public:
 	};
 
 	enum RequestType {
-		TYPE_SAVE = 0,
+		TYPE_NOT_INITIALIZED = 0, // For error detection
+		TYPE_SAVE,
 		TYPE_LOAD
 	};
 
