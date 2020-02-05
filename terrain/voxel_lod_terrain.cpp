@@ -1626,6 +1626,39 @@ Array VoxelLodTerrain::debug_get_octrees() const {
 	return positions;
 }
 
+Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const {
+
+	Array image_array;
+	image_array.resize(get_lod_count());
+
+	for(int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
+
+		const Rect3i world_box = Rect3i::from_center_extents(Vector3i(center) >> lod_index, Vector3i(extents) >> lod_index);
+
+		if (world_box.size.volume() == 0) {
+			continue;
+		}
+
+		Ref<VoxelBuffer> buffer_ref;
+		buffer_ref.instance();
+		VoxelBuffer &buffer = **buffer_ref;
+		buffer.create(world_box.size);
+
+		const Lod &lod = _lods[lod_index];
+
+		world_box.for_each_cell([&](const Vector3i &world_pos) {
+			const float v = lod.map->get_voxel_f(world_pos, VoxelBuffer::CHANNEL_SDF);
+			const Vector3i rpos = world_pos - world_box.pos;
+			buffer.set_voxel_f(v, rpos.x, rpos.y, rpos.z, VoxelBuffer::CHANNEL_SDF);
+		});
+
+		Ref<Image> image = buffer.debug_print_sdf_to_image_top_down();
+		image_array[lod_index] = image;
+	}
+
+	return image_array;
+}
+
 void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
@@ -1664,6 +1697,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_get_last_unexpected_block_drops"), &VoxelLodTerrain::debug_get_last_unexpected_block_drops);
 	ClassDB::bind_method(D_METHOD("debug_get_octrees"), &VoxelLodTerrain::debug_get_octrees);
 	ClassDB::bind_method(D_METHOD("debug_save_all_modified_blocks"), &VoxelLodTerrain::_b_save_all_modified_blocks);
+	ClassDB::bind_method(D_METHOD("debug_print_sdf_top_down", "center", "extents"), &VoxelLodTerrain::_b_debug_print_sdf_top_down);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 
