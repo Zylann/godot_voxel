@@ -639,7 +639,7 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 					uint64_t v;
 					if (src_channel.data) {
 						// TODO Optimized version?
-						v = get_voxel(pos, channel_index);
+						v = get_voxel(src_pos, channel_index);
 					} else {
 						v = src_channel.defval;
 					}
