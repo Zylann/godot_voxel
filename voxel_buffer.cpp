@@ -96,8 +96,8 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 		}
 		case VoxelBuffer::DEPTH_64_BIT: {
 			MarshallDouble m;
-			m.d = value;
-			return m.l;
+			m.l = value;
+			return m.d;
 		}
 		default:
 			CRASH_NOW();
