@@ -631,7 +631,7 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 			for (pos.x = dst_min.x; pos.x < dst_max.x; ++pos.x) {
 				for (pos.y = dst_min.y; pos.y < dst_max.y; ++pos.y) {
 
-					Vector3i src_pos = src_min + ((pos - dst_min) << 1);
+					const Vector3i src_pos = src_min + ((pos - dst_min) << 1);
 
 					// TODO Remove check once it works
 					CRASH_COND(!validate_pos(src_pos.x, src_pos.y, src_pos.z));

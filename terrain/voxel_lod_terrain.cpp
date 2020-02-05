@@ -1261,7 +1261,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 	// Make sure LOD0 gets updates even if _lod_count is 1
 	Lod &lod0 = _lods[0];
 	for (unsigned int i = 0; i < lod0.blocks_pending_lodding.size(); ++i) {
-		Vector3i bpos = lod0.blocks_pending_lodding[i];
+		const Vector3i bpos = lod0.blocks_pending_lodding[i];
 		VoxelBlock *block = lod0.map->get_block(bpos);
 		block->set_needs_lodding(false);
 		L::schedule_update(block, lod0.blocks_pending_update);
@@ -1277,8 +1277,8 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 		Lod &dst_lod = _lods[dst_lod_index];
 
 		for (unsigned int i = 0; i < src_lod.blocks_pending_lodding.size(); ++i) {
-			Vector3i src_bpos = src_lod.blocks_pending_lodding[i];
-			Vector3i dst_bpos = src_bpos >> 1;
+			const Vector3i src_bpos = src_lod.blocks_pending_lodding[i];
+			const Vector3i dst_bpos = src_bpos >> 1;
 
 			VoxelBlock *src_block = src_lod.map->get_block(src_bpos);
 			VoxelBlock *dst_block = dst_lod.map->get_block(dst_bpos);
@@ -1301,7 +1301,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 				dst_lod.blocks_pending_lodding.push_back(dst_bpos);
 			}
 
-			Vector3i rel = src_bpos - (dst_bpos << 1);
+			const Vector3i rel = src_bpos - (dst_bpos << 1);
 
 			// Update lower LOD
 			// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
@@ -1586,7 +1586,6 @@ Array VoxelLodTerrain::debug_get_last_unexpected_block_drops() const {
 
 Dictionary VoxelLodTerrain::debug_get_block_info(Vector3 fbpos, int lod_index) const {
 
-	// Gets some info useful for debugging
 	Dictionary d;
 	ERR_FAIL_COND_V(lod_index < 0, d);
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);

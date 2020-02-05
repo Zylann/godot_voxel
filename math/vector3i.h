@@ -103,13 +103,25 @@ struct Vector3i {
 
 	// Clamps between min and max, where max is excluded
 	void clamp_to(const Vector3i min, const Vector3i max) {
-		if (x < min.x) x = min.x;
-		if (y < min.y) y = min.y;
-		if (z < min.z) z = min.z;
+		if (x < min.x) {
+			x = min.x;
+		}
+		if (y < min.y) {
+			y = min.y;
+		}
+		if (z < min.z) {
+			z = min.z;
+		}
 
-		if (x >= max.x) x = max.x - 1;
-		if (y >= max.y) y = max.y - 1;
-		if (z >= max.z) z = max.z - 1;
+		if (x >= max.x) {
+			x = max.x - 1;
+		}
+		if (y >= max.y) {
+			y = max.y - 1;
+		}
+		if (z >= max.z) {
+			z = max.z - 1;
+		}
 	}
 
 	_FORCE_INLINE_ bool is_contained_in(const Vector3i &min, const Vector3i &max) {
