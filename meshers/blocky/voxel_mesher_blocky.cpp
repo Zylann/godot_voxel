@@ -19,7 +19,7 @@ const int g_opposite_side[6] = {
 	Cube::SIDE_POSITIVE_Y,
 	Cube::SIDE_NEGATIVE_Y,
 	Cube::SIDE_POSITIVE_Z,
-	Cube::SIDE_NEGATIVE_Z,
+	Cube::SIDE_NEGATIVE_Z
 };
 
 inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_voxel_id, int side) {
@@ -159,7 +159,7 @@ static void generate_blocky_mesh(
 						const std::vector<Vector3> &side_positions = voxel.get_model_side_positions(side);
 						const unsigned int vertex_count = side_positions.size();
 
-						if(vertex_count == 0) {
+						if (vertex_count == 0) {
 							continue;
 						}
 

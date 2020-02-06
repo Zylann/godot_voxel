@@ -178,7 +178,7 @@ void Voxel::set_library(Ref<VoxelLibrary> lib) {
 	} else {
 		_library = lib->get_instance_id();
 	}
-	if(_geometry_type == GEOMETRY_CUBE) {
+	if (_geometry_type == GEOMETRY_CUBE) {
 		// Update model UVs because atlas size is defined by the library
 		update_cube_uv_sides();
 	}
@@ -197,13 +197,13 @@ VoxelLibrary *Voxel::get_library() const {
 
 void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 
-	if(mesh == _custom_mesh) {
+	if (mesh == _custom_mesh) {
 		return;
 	}
 
 	clear_geometry();
 
-	if(mesh.is_null()) {
+	if (mesh.is_null()) {
 		_custom_mesh = Ref<Mesh>();
 		return;
 	}
@@ -247,7 +247,7 @@ void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 		}
 	};
 
-	if(uvs.size() == 0) {
+	if (uvs.size() == 0) {
 		// TODO Properly generate UVs if there arent any
 		uvs = PoolVector2Array();
 		uvs.resize(positions.size());
@@ -273,20 +273,20 @@ void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 			Cube::SideAxis side2;
 
 			if (L::get_side(positions_read[indices_read[i]], side0) &&
-				L::get_side(positions_read[indices_read[i + 1]], side1) &&
-				L::get_side(positions_read[indices_read[i + 2]], side2) &&
-				side0 == side1 &&
-				side1 == side2) {
+					L::get_side(positions_read[indices_read[i + 1]], side1) &&
+					L::get_side(positions_read[indices_read[i + 2]], side2) &&
+					side0 == side1 &&
+					side1 == side2) {
 
 				// That triangle is on the face
 
 				int next_side_index = _model_side_positions[side0].size();
 
-				for(int j = 0; j < 3; ++j) {
+				for (int j = 0; j < 3; ++j) {
 					int src_index = indices_read[i + j];
 					const int *existing_dst_index = added_side_indices[side0].getptr(src_index);
 
-					if(existing_dst_index == nullptr) {
+					if (existing_dst_index == nullptr) {
 						// Add new vertex
 
 						_model_side_indices[side0].push_back(next_side_index);
@@ -357,13 +357,13 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 			indices[i] = Cube::g_side_quad_triangles[side][i];
 		}
 
-		if(side != Cube::SIDE_POSITIVE_Y || sy == 1.0) {
+		if (side != Cube::SIDE_POSITIVE_Y || sy == 1.0) {
 			_side_culling_masks[side] = 0xff;
 		}
 	}
 
 	_collision_aabbs.clear();
-	_collision_aabbs.push_back(AABB(Vector3(0,0,0), Vector3(1,1,1)));
+	_collision_aabbs.push_back(AABB(Vector3(0, 0, 0), Vector3(1, 1, 1)));
 
 	return Ref<Voxel>(this);
 }
@@ -466,19 +466,19 @@ void Voxel::_bind_methods() {
 Array Voxel::_b_get_collision_aabbs() const {
 	Array array;
 	array.resize(_collision_aabbs.size());
-	for(int i = 0; i < _collision_aabbs.size(); ++i) {
+	for (int i = 0; i < _collision_aabbs.size(); ++i) {
 		array[i] = _collision_aabbs[i];
 	}
 	return array;
 }
 
 void Voxel::_b_set_collision_aabbs(Array array) {
-	for(int i = 0; i < array.size(); ++i) {
+	for (int i = 0; i < array.size(); ++i) {
 		const Variant v = array[i];
 		ERR_FAIL_COND(v.get_type() != Variant::AABB);
 	}
 	_collision_aabbs.resize(array.size());
-	for(int i = 0; i < array.size(); ++i) {
+	for (int i = 0; i < array.size(); ++i) {
 		const AABB aabb = array[i];
 		_collision_aabbs[i] = aabb;
 	}
@@ -493,5 +493,3 @@ uint8_t Voxel::_b_get_face_culling_mask(int face_id) const {
 	ERR_FAIL_INDEX_V(face_id, SIDE_COUNT, 0);
 	return _side_culling_masks[face_id];
 }
-
-
