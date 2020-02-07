@@ -206,7 +206,7 @@ int VoxelTerrain::get_view_distance() const {
 }
 
 void VoxelTerrain::set_view_distance(int distance_in_voxels) {
-	ERR_FAIL_COND(distance_in_voxels < 0)
+	ERR_FAIL_COND(distance_in_voxels < 0);
 	int d = distance_in_voxels / _map->get_block_size();
 	if (d != _view_distance_blocks) {
 		print_line(String("View distance changed from ") + String::num(_view_distance_blocks) + String(" blocks to ") + String::num(d));
