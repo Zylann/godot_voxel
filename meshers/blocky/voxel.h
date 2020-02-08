@@ -47,6 +47,11 @@ public:
 	void set_custom_mesh(Ref<Mesh> mesh);
 	Ref<Mesh> get_custom_mesh() const { return _custom_mesh; }
 
+	void set_side_culling_mask(int side, uint64_t mask);
+	inline uint64_t get_side_culling_mask(int side) const { return _side_culling_masks[side]; }
+
+	void generate_side_culling_masks();
+
 	//-------------------------------------------
 	// Built-in geometry generators
 
@@ -75,8 +80,6 @@ public:
 
 	void set_library(Ref<VoxelLibrary> lib);
 
-	inline uint8_t get_face_culling_mask(int side) const { return _side_culling_masks[side]; }
-
 private:
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -96,8 +99,8 @@ private:
 	Array _b_get_collision_aabbs() const;
 	void _b_set_collision_aabbs(Array array);
 
-	void _b_set_face_culling_mask(Side face_id, uint8_t mask);
-	uint8_t _b_get_face_culling_mask(int face_id) const;
+	void _b_set_side_culling_mask(Side face_id, uint64_t mask);
+	uint64_t _b_get_side_culling_mask(int face_id) const;
 
 private:
 	ObjectID _library;
@@ -118,7 +121,7 @@ private:
 
 	// If a face touches a neighbor face, this decides if it gets culled.
 	// If the neighbor's face culling mask has all bits of the current face's mask, the face will be culled.
-	FixedArray<uint8_t, Cube::SIDE_COUNT> _side_culling_masks;
+	FixedArray<uint64_t, Cube::SIDE_COUNT> _side_culling_masks;
 
 	// Model
 	std::vector<Vector3> _model_positions;

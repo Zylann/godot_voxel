@@ -44,10 +44,11 @@ protected:
 
 	Ref<Voxel> _b_get_voxel(unsigned int id);
 
+	void generate_side_culling_masks();
+
 private:
 	std::vector<Ref<Voxel> > _voxel_types;
 	int _atlas_size;
 };
 
 #endif // VOXEL_LIBRARY_H
-

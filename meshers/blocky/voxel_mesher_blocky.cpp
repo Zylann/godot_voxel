@@ -31,9 +31,9 @@ inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_
 		if (other_vt.is_transparent() && vt.get_id() != other_voxel_id) {
 			return true;
 		} else {
-			const uint8_t m = vt.get_face_culling_mask(side);
+			const uint64_t m = vt.get_side_culling_mask(side);
 			const int opposite_side = g_opposite_side[side];
-			return (m & other_vt.get_face_culling_mask(opposite_side)) != m;
+			return (m & other_vt.get_side_culling_mask(opposite_side)) != m;
 		}
 	}
 	return true;

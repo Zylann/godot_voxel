@@ -116,11 +116,6 @@ Ref<Voxel> VoxelLibrary::create_voxel(unsigned int id, String name) {
 	return voxel;
 }
 
-Ref<Voxel> VoxelLibrary::_b_get_voxel(unsigned int id) {
-	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<Voxel>());
-	return _voxel_types[id];
-}
-
 void VoxelLibrary::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("create_voxel", "id", "name"), &VoxelLibrary::create_voxel);
@@ -136,4 +131,9 @@ void VoxelLibrary::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_count", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_voxel_count", "get_voxel_count");
 
 	BIND_CONSTANT(MAX_VOXEL_TYPES);
+}
+
+Ref<Voxel> VoxelLibrary::_b_get_voxel(unsigned int id) {
+	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<Voxel>());
+	return _voxel_types[id];
 }
