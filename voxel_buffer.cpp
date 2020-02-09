@@ -40,12 +40,12 @@ uint64_t g_depth_max_values[] = {
 };
 
 inline uint32_t get_depth_bit_count(VoxelBuffer::Depth d) {
-	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT)
+	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT);
 	return g_depth_bit_counts[d];
 }
 
 inline uint64_t get_max_value_for_depth(VoxelBuffer::Depth d) {
-	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT)
+	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT);
 	return g_depth_max_values[d];
 }
 
