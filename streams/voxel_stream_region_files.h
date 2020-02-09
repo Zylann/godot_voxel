@@ -2,6 +2,7 @@
 #define VOXEL_STREAM_REGION_H
 
 #include "../util/fixed_array.h"
+#include "file_utils.h"
 #include "voxel_stream_file.h"
 
 class FileAccess;
@@ -60,8 +61,8 @@ private:
 	EmergeResult _emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
 	void _immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod);
 
-	Error save_meta();
-	Error load_meta();
+	VoxelFileResult save_meta();
+	VoxelFileResult load_meta();
 	Vector3i get_block_position_from_voxels(const Vector3i &origin_in_voxels) const;
 	Vector3i get_region_position_from_blocks(const Vector3i &block_position) const;
 	void close_all_regions();

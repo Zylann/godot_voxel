@@ -1,7 +1,6 @@
 #include "voxel_stream_region_files.h"
 #include "../math/rect3i.h"
 #include "../util/utility.h"
-#include "file_utils.h"
 #include <core/io/json.h>
 #include <core/os/os.h>
 #include <algorithm>
@@ -21,10 +20,7 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.region_size_po2 = 4;
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
 	_meta.lod_count = 1;
-
-	for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
-		_meta.channel_depths[i] = VoxelBuffer::DEFAULT_CHANNEL_DEPTH;
-	}
+	_meta.channel_depths.fill(VoxelBuffer::DEFAULT_CHANNEL_DEPTH);
 }
 
 VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
@@ -104,14 +100,13 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(Ref<V
 	}
 
 	if (!_meta_loaded) {
-		Error err = load_meta();
-		if (err != OK) {
-			// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
-			if (!_meta_saved && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
+		VoxelFileResult load_res = load_meta();
+		if (load_res != VOXEL_FILE_OK) {
+			if (!_meta_saved && load_res == VOXEL_FILE_CANT_OPEN) {
+				// TODO Is it a good idea to save on read?
 				// New data folder, save it for first time
-				//print_line("Writing meta file");
-				Error save_err = save_meta();
-				ERR_FAIL_COND_V(save_err != OK, EMERGE_FAILED);
+				VoxelFileResult save_res = save_meta();
+				ERR_FAIL_COND_V(save_res != VOXEL_FILE_OK, EMERGE_FAILED);
 			} else {
 				return EMERGE_FAILED;
 			}
@@ -182,23 +177,38 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 
 	VOXEL_PROFILE_SCOPE(profile_scope);
 
-	const Vector3i block_size = Vector3i(1 << _meta.block_size_po2);
-	const Vector3i region_size = Vector3i(1 << _meta.region_size_po2);
-
 	ERR_FAIL_COND(_directory_path.empty());
 	ERR_FAIL_COND(voxel_buffer.is_null());
-	ERR_FAIL_COND(voxel_buffer->get_size() != block_size);
+
+	if (!_meta_loaded) {
+		// If it's not loaded, always try to load meta file first if it exists already,
+		// because we could want to save blocks without reading any
+		VoxelFileResult load_res = load_meta();
+		if (load_res != VOXEL_FILE_OK && load_res != VOXEL_FILE_CANT_OPEN) {
+			// The file is present but there is a problem with it
+			String meta_path = _directory_path.plus_file(META_FILE_NAME);
+			ERR_PRINT(String("Could not read {0}: error {1}").format(varray(meta_path, ::to_string(load_res))));
+			return;
+		}
+	}
 
 	if (!_meta_saved) {
-		Error err = save_meta();
-		ERR_FAIL_COND(err != OK);
+		// First time we save the meta file, initialize it from the first block format
+		for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
+			_meta.channel_depths[i] = voxel_buffer->get_channel_depth(i);
+		}
+		VoxelFileResult err = save_meta();
+		ERR_FAIL_COND(err != VOXEL_FILE_OK);
 	}
 
 	// Verify format
+	const Vector3i block_size = Vector3i(1 << _meta.block_size_po2);
+	ERR_FAIL_COND(voxel_buffer->get_size() != block_size);
 	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
 		ERR_FAIL_COND(voxel_buffer->get_channel_depth(i) != _meta.channel_depths[i]);
 	}
 
+	const Vector3i region_size = Vector3i(1 << _meta.region_size_po2);
 	Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
 	Vector3i region_pos = get_region_position_from_blocks(block_pos);
 	Vector3i block_rpos = block_pos.wrap(region_size);
@@ -388,6 +398,7 @@ void VoxelStreamRegionFiles::set_directory(String dirpath) {
 	if (_directory_path != dirpath) {
 		_directory_path = dirpath.strip_edges();
 		_meta_loaded = false;
+		_meta_saved = false;
 		load_meta();
 		_change_notify();
 	}
@@ -434,9 +445,9 @@ static bool depth_from_json_variant(Variant &v, VoxelBuffer::Depth &d) {
 	return true;
 }
 
-Error VoxelStreamRegionFiles::save_meta() {
+VoxelFileResult VoxelStreamRegionFiles::save_meta() {
 
-	ERR_FAIL_COND_V(_directory_path == "", ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(_directory_path == "", VOXEL_FILE_CANT_OPEN);
 
 	Dictionary d;
 	d["version"] = _meta.version;
@@ -459,7 +470,7 @@ Error VoxelStreamRegionFiles::save_meta() {
 		Error err = check_directory_created(_directory_path);
 		if (err != OK) {
 			ERR_PRINT("Could not save meta");
-			return err;
+			return VOXEL_FILE_CANT_OPEN;
 		}
 	}
 
@@ -468,8 +479,8 @@ Error VoxelStreamRegionFiles::save_meta() {
 	Error err;
 	FileAccessRef f = open_file(meta_path, FileAccess::WRITE, &err);
 	if (!f) {
-		print_error(String("Could not save {0}").format(varray(meta_path)));
-		return err;
+		ERR_PRINT(String("Could not save {0}").format(varray(meta_path)));
+		return VOXEL_FILE_CANT_OPEN;
 	}
 
 	f->store_string(json);
@@ -477,7 +488,7 @@ Error VoxelStreamRegionFiles::save_meta() {
 	_meta_saved = true;
 	_meta_loaded = true;
 
-	return OK;
+	return VOXEL_FILE_OK;
 }
 
 static void migrate_region_meta_data(Dictionary &data) {
@@ -493,9 +504,9 @@ static void migrate_region_meta_data(Dictionary &data) {
 	}
 }
 
-Error VoxelStreamRegionFiles::load_meta() {
+VoxelFileResult VoxelStreamRegionFiles::load_meta() {
 
-	ERR_FAIL_COND_V(_directory_path == "", ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(_directory_path == "", VOXEL_FILE_CANT_OPEN);
 
 	// Ensure you cleanup previous world before loading another
 	CRASH_COND(_region_cache.size() > 0);
@@ -507,8 +518,7 @@ Error VoxelStreamRegionFiles::load_meta() {
 		Error err;
 		FileAccessRef f = open_file(meta_path, FileAccess::READ, &err);
 		if (!f) {
-			//print_error(String("Could not load {0}").format(varray(meta_path)));
-			return err;
+			return VOXEL_FILE_CANT_OPEN;
 		}
 		json = f->get_as_utf8_string();
 	}
@@ -521,34 +531,34 @@ Error VoxelStreamRegionFiles::load_meta() {
 	int json_err_line;
 	Error json_err = JSON::parse(json, res, json_err_msg, json_err_line);
 	if (json_err != OK) {
-		print_error(String("Error when parsing {0}: line {1}: {2}").format(varray(meta_path, json_err_line, json_err_msg)));
-		return json_err;
+		ERR_PRINT(String("Error when parsing {0}: line {1}: {2}").format(varray(meta_path, json_err_line, json_err_msg)));
+		return VOXEL_FILE_INVALID_DATA;
 	}
 
 	Dictionary d = res;
 	migrate_region_meta_data(d);
 	Meta meta;
-	ERR_FAIL_COND_V(!u8_from_json_variant(d["version"], meta.version), ERR_PARSE_ERROR);
-	ERR_FAIL_COND_V(!u8_from_json_variant(d["block_size_po2"], meta.block_size_po2), ERR_PARSE_ERROR);
-	ERR_FAIL_COND_V(!u8_from_json_variant(d["region_size_po2"], meta.region_size_po2), ERR_PARSE_ERROR);
-	ERR_FAIL_COND_V(!u8_from_json_variant(d["lod_count"], meta.lod_count), ERR_PARSE_ERROR);
-	ERR_FAIL_COND_V(!s32_from_json_variant(d["sector_size"], meta.sector_size), ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(!u8_from_json_variant(d["version"], meta.version), VOXEL_FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!u8_from_json_variant(d["block_size_po2"], meta.block_size_po2), VOXEL_FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!u8_from_json_variant(d["region_size_po2"], meta.region_size_po2), VOXEL_FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!u8_from_json_variant(d["lod_count"], meta.lod_count), VOXEL_FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!s32_from_json_variant(d["sector_size"], meta.sector_size), VOXEL_FILE_INVALID_DATA);
 
-	ERR_FAIL_COND_V(meta.version < 0, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(meta.version < 0, VOXEL_FILE_INVALID_DATA);
 
 	Array channel_depths_data = d["channel_depths"];
-	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBuffer::MAX_CHANNELS, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBuffer::MAX_CHANNELS, VOXEL_FILE_INVALID_DATA);
 	for (int i = 0; i < channel_depths_data.size(); ++i) {
-		ERR_FAIL_COND_V(!depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), ERR_PARSE_ERROR);
+		ERR_FAIL_COND_V(!depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), VOXEL_FILE_INVALID_DATA);
 	}
 
-	ERR_FAIL_COND_V(!check_meta(meta), ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(!check_meta(meta), VOXEL_FILE_INVALID_DATA);
 
 	_meta = meta;
 	_meta_loaded = true;
 	_meta_saved = true;
 
-	return OK;
+	return VOXEL_FILE_OK;
 }
 
 bool VoxelStreamRegionFiles::check_meta(const Meta &meta) {
@@ -915,7 +925,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	}
 
 	_meta = new_meta;
-	ERR_FAIL_COND(save_meta() != OK);
+	ERR_FAIL_COND(save_meta() != VOXEL_FILE_OK);
 
 	const Vector3i old_block_size = Vector3i(1 << old_meta.block_size_po2);
 	const Vector3i new_block_size = Vector3i(1 << _meta.block_size_po2);
@@ -1096,7 +1106,7 @@ void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 
 	if (!_meta_loaded) {
 
-		if (load_meta() != OK) {
+		if (load_meta() != VOXEL_FILE_OK) {
 			// New stream, nothing to convert
 			_meta = meta;
 

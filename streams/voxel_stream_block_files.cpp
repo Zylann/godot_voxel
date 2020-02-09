@@ -85,12 +85,30 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 	ERR_FAIL_COND(_directory_path.empty());
 	ERR_FAIL_COND(buffer.is_null());
 
+	if (!_meta_loaded) {
+		// If it's not loaded, always try to load meta file first if it exists already,
+		// because we could want to save blocks without reading any
+		VoxelFileResult res = load_meta();
+		if (res != VOXEL_FILE_OK && res != VOXEL_FILE_CANT_OPEN) {
+			// The file is present but there is a problem with it
+			String meta_path = _directory_path.plus_file(META_FILE_NAME);
+			ERR_PRINT(String("Could not read {0}: {1}").format(varray(meta_path, ::to_string(res))));
+			return;
+		}
+	}
+
 	if (!_meta_saved) {
+		// First time we save the meta file, initialize it from the first block format
+		for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
+			_meta.channel_depths[i] = buffer->get_channel_depth(i);
+		}
 		VoxelFileResult res = save_meta();
 		ERR_FAIL_COND(res != VOXEL_FILE_OK);
 	}
 
-	// Check if we are saving correct depths
+	// Check format
+	const Vector3i block_size = Vector3i(1 << _meta.block_size_po2);
+	ERR_FAIL_COND(buffer->get_size() != block_size);
 	for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
 		ERR_FAIL_COND(buffer->get_channel_depth(channel_index) != _meta.channel_depths[channel_index]);
 	}
