@@ -9,7 +9,7 @@ VoxelGeneratorTest::VoxelGeneratorTest() {
 }
 
 void VoxelGeneratorTest::set_mode(Mode mode) {
-	ERR_FAIL_INDEX(mode, MODE_COUNT)
+	ERR_FAIL_INDEX(mode, MODE_COUNT);
 	_mode = mode;
 }
 
