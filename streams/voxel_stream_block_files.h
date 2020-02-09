@@ -1,6 +1,7 @@
 #ifndef VOXEL_STREAM_BLOCK_FILES_H
 #define VOXEL_STREAM_BLOCK_FILES_H
 
+#include "file_utils.h"
 #include "voxel_stream_file.h"
 
 class FileAccess;
@@ -24,8 +25,8 @@ protected:
 	static void _bind_methods();
 
 private:
-	Error save_meta();
-	Error load_meta();
+	VoxelFileResult save_meta();
+	VoxelFileResult load_meta();
 	String get_block_file_path(const Vector3i &block_pos, unsigned int lod) const;
 	Vector3i get_block_position(const Vector3i &origin_in_voxels) const;
 

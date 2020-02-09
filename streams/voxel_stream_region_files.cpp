@@ -125,6 +125,12 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(Ref<V
 	ERR_FAIL_COND_V(lod >= _meta.lod_count, EMERGE_FAILED);
 	ERR_FAIL_COND_V(block_size != out_buffer->get_size(), EMERGE_FAILED);
 
+	// Configure depths, as they currently are only specified in the meta file.
+	// Regions are expected to contain such depths, and use those in the buffer to know how much data to read.
+	for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
+		out_buffer->set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
+	}
+
 	Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
 	Vector3i region_pos = get_region_position_from_blocks(block_pos);
 
@@ -476,7 +482,7 @@ Error VoxelStreamRegionFiles::save_meta() {
 
 static void migrate_region_meta_data(Dictionary &data) {
 
-	if (data["version"] == Variant(FORMAT_VERSION_LEGACY_1)) {
+	if (data["version"] == Variant(real_t(FORMAT_VERSION_LEGACY_1))) {
 		Array depths;
 		depths.resize(VoxelBuffer::MAX_CHANNELS);
 		for (int i = 0; i < depths.size(); ++i) {
@@ -533,7 +539,7 @@ Error VoxelStreamRegionFiles::load_meta() {
 	Array channel_depths_data = d["channel_depths"];
 	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBuffer::MAX_CHANNELS, ERR_PARSE_ERROR);
 	for (int i = 0; i < channel_depths_data.size(); ++i) {
-		ERR_FAIL_COND_V(depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), ERR_PARSE_ERROR);
+		ERR_FAIL_COND_V(!depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), ERR_PARSE_ERROR);
 	}
 
 	ERR_FAIL_COND_V(!check_meta(meta), ERR_INVALID_PARAMETER);
@@ -657,11 +663,22 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 		VOXEL_PROFILE_SCOPE(profile_read_existing);
 
 		uint8_t version;
-		if (check_magic_and_version(existing_f, FORMAT_VERSION, FORMAT_REGION_MAGIC, version) != OK) {
+		const VoxelFileResult check_result = check_magic_and_version(existing_f, FORMAT_VERSION, FORMAT_REGION_MAGIC, version);
+
+		if (check_result == VOXEL_FILE_INVALID_VERSION) {
+			if (version != FORMAT_VERSION_LEGACY_1) {
+				memdelete(existing_f);
+				ERR_PRINT(String("Could not open file {0}, invalid version {1}").format(varray(fpath, version)));
+				return nullptr;
+			}
+
+		} else if (check_result != VOXEL_FILE_OK) {
 			memdelete(existing_f);
-			print_error(String("Could not open file {0}, format or version mismatch").format(varray(fpath)));
+			ERR_PRINT(String("Could not open file {0}, {1}").format(varray(fpath, ::to_string(check_result))));
 			return nullptr;
 		}
+
+		// Versions 1 and 2 are the same
 
 		cache = memnew(CachedRegion);
 		cache->file_exists = true;

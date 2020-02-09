@@ -1,6 +1,5 @@
 #include "voxel_stream_block_files.h"
 #include "../util/utility.h"
-#include "file_utils.h"
 #include <core/os/dir_access.h>
 #include <core/os/file_access.h>
 
@@ -31,7 +30,7 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 	}
 
 	if (!_meta_loaded) {
-		if (load_meta() != OK) {
+		if (load_meta() != VOXEL_FILE_OK) {
 			return;
 		}
 	}
@@ -62,8 +61,14 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 	{
 		{
 			uint8_t version;
-			Error err = check_magic_and_version(f, FORMAT_VERSION, FORMAT_BLOCK_MAGIC, version);
-			ERR_FAIL_COND(err != OK);
+			VoxelFileResult err = check_magic_and_version(f, FORMAT_VERSION, FORMAT_BLOCK_MAGIC, version);
+			ERR_FAIL_COND_MSG(err != VOXEL_FILE_OK, ::to_string(err));
+		}
+
+		// Configure depths, as they currently are only specified in the meta file.
+		// Files are expected to contain such depths, and use those in the buffer to know how much data to read.
+		for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
+			out_buffer->set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
 		}
 
 		uint32_t size_to_read = f->get_32();
@@ -80,8 +85,13 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 	ERR_FAIL_COND(buffer.is_null());
 
 	if (!_meta_saved) {
-		Error err = save_meta();
-		ERR_FAIL_COND(err != OK);
+		VoxelFileResult res = save_meta();
+		ERR_FAIL_COND(res != VOXEL_FILE_OK);
+	}
+
+	// Check if we are saving correct depths
+	for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
+		ERR_FAIL_COND(buffer->get_channel_depth(channel_index) != _meta.channel_depths[channel_index]);
 	}
 
 	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
@@ -130,7 +140,7 @@ int VoxelStreamBlockFiles::get_block_size_po2() const {
 	return _meta.block_size_po2;
 }
 
-Error VoxelStreamBlockFiles::save_meta() {
+VoxelFileResult VoxelStreamBlockFiles::save_meta() {
 
 	CRASH_COND(_directory_path.empty());
 
@@ -139,7 +149,7 @@ Error VoxelStreamBlockFiles::save_meta() {
 		Error err = check_directory_created(_directory_path);
 		if (err != OK) {
 			ERR_PRINT("Could not save meta");
-			return err;
+			return VOXEL_FILE_CANT_OPEN;
 		}
 	}
 
@@ -148,7 +158,7 @@ Error VoxelStreamBlockFiles::save_meta() {
 	{
 		Error err;
 		FileAccess *f = open_file(meta_path, FileAccess::WRITE, &err);
-		ERR_FAIL_COND_V(f == nullptr, err);
+		ERR_FAIL_COND_V(f == nullptr, VOXEL_FILE_CANT_OPEN);
 
 		f->store_buffer((uint8_t *)FORMAT_META_MAGIC, 4);
 		f->store_8(FORMAT_VERSION);
@@ -165,30 +175,30 @@ Error VoxelStreamBlockFiles::save_meta() {
 
 	_meta_loaded = true;
 	_meta_saved = true;
-	return OK;
+	return VOXEL_FILE_OK;
 }
 
-Error VoxelStreamBlockFiles::load_meta() {
+VoxelFileResult VoxelStreamBlockFiles::load_meta() {
 	CRASH_COND(_directory_path.empty());
 
 	String meta_path = _directory_path.plus_file(META_FILE_NAME);
 
 	Meta meta;
 	{
-		Error err;
-		FileAccessRef f = open_file(meta_path, FileAccess::READ, &err);
+		Error open_result;
+		FileAccessRef f = open_file(meta_path, FileAccess::READ, &open_result);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
-		if (!_meta_saved && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
+		if (!_meta_saved && (open_result == ERR_FILE_NOT_FOUND || open_result == ERR_FILE_CANT_OPEN)) {
 			// This is a new terrain, save the meta we have and consider it current
-			Error save_err = save_meta();
-			ERR_FAIL_COND_V(save_err != OK, save_err);
-			return OK;
+			VoxelFileResult save_result = save_meta();
+			ERR_FAIL_COND_V(save_result != VOXEL_FILE_OK, save_result);
+			return VOXEL_FILE_OK;
 		}
-		ERR_FAIL_COND_V(!f, err);
+		ERR_FAIL_COND_V(!f, VOXEL_FILE_CANT_OPEN);
 
-		err = check_magic_and_version(f.f, FORMAT_VERSION, FORMAT_META_MAGIC, meta.version);
-		if (err != OK) {
-			return err;
+		VoxelFileResult check_result = check_magic_and_version(f.f, FORMAT_VERSION, FORMAT_META_MAGIC, meta.version);
+		if (check_result != VOXEL_FILE_OK) {
+			return check_result;
 		}
 
 		meta.lod_count = f->get_8();
@@ -196,17 +206,17 @@ Error VoxelStreamBlockFiles::load_meta() {
 
 		for (unsigned int i = 0; i < meta.channel_depths.size(); ++i) {
 			uint8_t depth = f->get_8();
-			ERR_FAIL_COND_V(depth >= VoxelBuffer::DEPTH_COUNT, ERR_INVALID_DATA);
+			ERR_FAIL_COND_V(depth >= VoxelBuffer::DEPTH_COUNT, VOXEL_FILE_INVALID_DATA);
 			meta.channel_depths[i] = (VoxelBuffer::Depth)depth;
 		}
 
-		ERR_FAIL_COND_V(meta.lod_count < 1 || meta.lod_count > 32, ERR_INVALID_DATA);
-		ERR_FAIL_COND_V(meta.block_size_po2 < 1 || meta.block_size_po2 > 8, ERR_INVALID_DATA);
+		ERR_FAIL_COND_V(meta.lod_count < 1 || meta.lod_count > 32, VOXEL_FILE_INVALID_DATA);
+		ERR_FAIL_COND_V(meta.block_size_po2 < 1 || meta.block_size_po2 > 8, VOXEL_FILE_INVALID_DATA);
 	}
 
 	_meta_loaded = true;
 	_meta = meta;
-	return OK;
+	return VOXEL_FILE_OK;
 }
 
 String VoxelStreamBlockFiles::get_block_file_path(const Vector3i &block_pos, unsigned int lod) const {

@@ -6,6 +6,7 @@
 #include <core/os/file_access.h>
 
 namespace {
+// TODO Introduce versionning
 const unsigned int BLOCK_TRAILING_MAGIC = 0x900df00d;
 const int BLOCK_TRAILING_MAGIC_SIZE = 4;
 } // namespace
@@ -61,11 +62,22 @@ const std::vector<uint8_t> &VoxelBlockSerializer::serialize(VoxelBuffer &voxel_b
 			} break;
 
 			case VoxelBuffer::COMPRESSION_UNIFORM: {
-				int v = voxel_buffer.get_voxel(Vector3i(), channel_index);
-				f->store_8((uint8_t)v);
-				// TODO Support for larger depths
-				if (VoxelBuffer::get_depth_bit_count(voxel_buffer.get_channel_depth(channel_index)) > 8) {
-					ERR_PRINT("Uniform compression serialization doesn't support more than 8 bit depth");
+				uint64_t v = voxel_buffer.get_voxel(Vector3i(), channel_index);
+				switch (voxel_buffer.get_channel_depth(channel_index)) {
+					case VoxelBuffer::DEPTH_8_BIT:
+						f->store_8(v);
+						break;
+					case VoxelBuffer::DEPTH_16_BIT:
+						f->store_16(v);
+						break;
+					case VoxelBuffer::DEPTH_32_BIT:
+						f->store_32(v);
+						break;
+					case VoxelBuffer::DEPTH_64_BIT:
+						f->store_64(v);
+						break;
+					default:
+						CRASH_NOW();
 				}
 			} break;
 
@@ -107,9 +119,26 @@ bool VoxelBlockSerializer::deserialize(const std::vector<uint8_t> &p_data, Voxel
 
 			} break;
 
-			case VoxelBuffer::COMPRESSION_UNIFORM:
-				out_voxel_buffer.clear_channel(channel_index, f->get_8());
-				break;
+			case VoxelBuffer::COMPRESSION_UNIFORM: {
+				uint64_t v;
+				switch (out_voxel_buffer.get_channel_depth(channel_index)) {
+					case VoxelBuffer::DEPTH_8_BIT:
+						v = f->get_8();
+						break;
+					case VoxelBuffer::DEPTH_16_BIT:
+						v = f->get_16();
+						break;
+					case VoxelBuffer::DEPTH_32_BIT:
+						v = f->get_32();
+						break;
+					case VoxelBuffer::DEPTH_64_BIT:
+						v = f->get_64();
+						break;
+					default:
+						CRASH_NOW();
+				}
+				out_voxel_buffer.clear_channel(channel_index, v);
+			} break;
 
 			default:
 				ERR_PRINT("Unhandled compression mode");
