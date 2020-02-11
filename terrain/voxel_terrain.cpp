@@ -382,6 +382,11 @@ void VoxelTerrain::start_updater() {
 
 	ERR_FAIL_COND(_block_updater != nullptr);
 
+	// TODO VoxelLibrary should be baked ahead of time, like MeshLibrary
+	if (_library.is_valid()) {
+		_library->bake();
+	}
+
 	// TODO Thread-safe way to change those parameters
 	VoxelMeshUpdater::MeshingParams params;
 	params.smooth_surface = _smooth_meshing_enabled;
@@ -825,7 +830,7 @@ void VoxelTerrain::_process() {
 				continue;
 			}
 
-			if (ob.data.voxels_loaded->get_size() != _map->get_block_size()) {
+			if (ob.data.voxels_loaded->get_size() != Vector3i(_map->get_block_size())) {
 				// Voxel block size is incorrect, drop it
 				ERR_PRINT("Block size obtained from stream is different from expected size");
 				++_stats.dropped_block_loads;

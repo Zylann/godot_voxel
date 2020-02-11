@@ -13,7 +13,7 @@ Voxel::Voxel() :
 		_geometry_type(GEOMETRY_NONE),
 		_cube_geometry_padding_y(0) {
 
-	_side_culling_masks.fill(0);
+	_side_pattern_index.fill(-1);
 }
 
 static Cube::Side name_to_side(const String &s) {
@@ -328,8 +328,6 @@ void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 			}
 		}
 	}
-
-	generate_side_culling_masks();
 }
 
 Ref<Voxel> Voxel::set_cube_geometry(float sy) {
@@ -357,8 +355,6 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 
 	_collision_aabbs.clear();
 	_collision_aabbs.push_back(AABB(Vector3(0, 0, 0), Vector3(1, 1, 1)));
-
-	generate_side_culling_masks();
 
 	return Ref<Voxel>(this);
 }
@@ -402,109 +398,9 @@ void Voxel::update_cube_uv_sides() {
 	}
 }
 
-void Voxel::set_side_culling_mask(int side, uint64_t mask) {
-	_side_culling_masks[side] = mask;
+void Voxel::set_side_pattern_index(int side, uint32_t i) {
+	_side_pattern_index[side] = i;
 }
-
-template <typename F>
-static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F output_func) {
-	// Slower than scanline method, but looks better
-
-	// Grow the triangle a tiny bit, to help against floating point error
-	Vector2 m = 0.333333 * (a + b + c);
-	a += 0.001 * (a - m);
-	b += 0.001 * (b - m);
-	c += 0.001 * (c - m);
-
-	int min_x = (int)Math::floor(min(min(a.x, b.x), c.x));
-	int min_y = (int)Math::floor(min(min(a.y, b.y), c.y));
-	int max_x = (int)Math::ceil(max(max(a.x, b.x), c.x));
-	int max_y = (int)Math::ceil(max(max(a.y, b.y), c.y));
-
-	// We test against points centered on grid cells
-	Vector2 offset(0.5, 0.5);
-
-	for (int y = min_y; y < max_y; ++y) {
-		for (int x = min_x; x < max_x; ++x) {
-			if (Geometry::is_point_in_triangle(Vector2(x, y) + offset, a, b, c)) {
-				output_func(x, y);
-			}
-		}
-	}
-}
-
-void Voxel::generate_side_culling_masks() {
-
-	// When two blocky voxels are next to each other, they share a side.
-	// Geometry of either side can be culled away if covered by the other,
-	// but it's very expensive to do a full polygon check when we build the mesh.
-	// So instead, we compute which sides occlude which for every voxel type,
-	// and generate culling masks ahead of time, using an approximation.
-	// It may have a limitation of the number of different side types,
-	// so it's a tradeoff to take when designing the models.
-
-	for (uint16_t side = 0; side < Cube::SIDE_COUNT; ++side) {
-		const std::vector<Vector3> &positions = get_model_side_positions(side);
-		const std::vector<int> &indices = get_model_side_indices(side);
-		ERR_FAIL_COND(indices.size() % 3 != 0);
-
-		uint64_t raster_mask = 0;
-
-		for (unsigned int j = 0; j < indices.size(); j += 3) {
-
-			Vector3 va = positions[indices[j]];
-			Vector3 vb = positions[indices[j + 1]];
-			Vector3 vc = positions[indices[j + 2]];
-
-			// Convert 3D vertices into 2D
-			Vector2 a, b, c;
-			switch (side) {
-				case Cube::SIDE_NEGATIVE_X:
-				case Cube::SIDE_POSITIVE_X:
-					a = Vector2(va.y, va.z);
-					b = Vector2(vb.y, vb.z);
-					c = Vector2(vc.y, vc.z);
-					break;
-
-				case Cube::SIDE_NEGATIVE_Y:
-				case Cube::SIDE_POSITIVE_Y:
-					a = Vector2(va.x, va.z);
-					b = Vector2(vb.x, vb.z);
-					c = Vector2(vc.x, vc.z);
-					break;
-
-				case Cube::SIDE_NEGATIVE_Z:
-				case Cube::SIDE_POSITIVE_Z:
-					a = Vector2(va.x, va.y);
-					b = Vector2(vb.x, vb.y);
-					c = Vector2(vc.x, vc.y);
-					break;
-
-				default:
-					CRASH_NOW();
-			}
-
-			a *= 8;
-			b *= 8;
-			c *= 8;
-
-			// Rasterize triangles into an 8x8 grid
-			rasterize_triangle_barycentric(a, b, c, [&raster_mask](uint64_t x, uint64_t y) {
-				if (x >= 8 || y >= 8) {
-					return;
-				}
-				raster_mask |= (uint64_t(1) << (x + uint64_t(8) * y));
-			});
-		}
-
-		set_side_culling_mask(side, raster_mask);
-	}
-}
-
-//Ref<Voxel> Voxel::set_xquad_geometry(Vector2 atlas_pos) {
-//    // TODO
-//    return Ref<Voxel>(this);
-//}
 
 void Voxel::_bind_methods() {
 
@@ -531,10 +427,6 @@ void Voxel::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_collision_aabbs", "aabbs"), &Voxel::_b_set_collision_aabbs);
 	ClassDB::bind_method(D_METHOD("get_collision_aabbs"), &Voxel::_b_get_collision_aabbs);
-
-	ClassDB::bind_method(D_METHOD("set_side_culling_mask", "side", "mask"), &Voxel::_b_set_side_culling_mask);
-	ClassDB::bind_method(D_METHOD("get_side_culling_mask"), &Voxel::_b_get_side_culling_mask);
-	//ClassDB::bind_method(D_METHOD("generate_side_culling_masks"), &Voxel::generate_side_culling_masks);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
@@ -577,14 +469,4 @@ void Voxel::_b_set_collision_aabbs(Array array) {
 		const AABB aabb = array[i];
 		_collision_aabbs[i] = aabb;
 	}
-}
-
-void Voxel::_b_set_side_culling_mask(Side face_id, uint64_t mask) {
-	ERR_FAIL_INDEX(face_id, SIDE_COUNT);
-	set_side_culling_mask(face_id, mask);
-}
-
-uint64_t Voxel::_b_get_side_culling_mask(int face_id) const {
-	ERR_FAIL_INDEX_V(face_id, SIDE_COUNT, 0);
-	return get_side_culling_mask(face_id);
 }

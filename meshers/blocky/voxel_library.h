@@ -1,6 +1,7 @@
 #ifndef VOXEL_LIBRARY_H
 #define VOXEL_LIBRARY_H
 
+#include "../../util/dynamic_bitset.h"
 #include "voxel.h"
 #include <core/resource.h>
 
@@ -35,7 +36,13 @@ public:
 		return **_voxel_types[id];
 	}
 
-protected:
+	void bake();
+
+	bool get_side_pattern_occlusion(unsigned int pattern_a, unsigned int pattern_b) const;
+
+private:
+	void generate_side_culling_matrix();
+
 	static void _bind_methods();
 
 	bool _set(const StringName &p_name, const Variant &p_value);
@@ -44,11 +51,14 @@ protected:
 
 	Ref<Voxel> _b_get_voxel(unsigned int id);
 
-	void generate_side_culling_masks();
-
 private:
 	std::vector<Ref<Voxel> > _voxel_types;
 	int _atlas_size;
+
+	// 2D array: { X : pattern A, Y : pattern B } => Does A occlude B
+	// Where index is X + Y * pattern count
+	DynamicBitset _side_pattern_culling;
+	unsigned int _side_pattern_count = 0;
 };
 
 #endif // VOXEL_LIBRARY_H

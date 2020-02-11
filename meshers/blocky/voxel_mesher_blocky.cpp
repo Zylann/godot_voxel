@@ -23,17 +23,15 @@ const int g_opposite_side[6] = {
 };
 
 inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_voxel_id, int side) {
-	if (other_voxel_id == 0) { // air
-		return true;
-	}
 	if (lib.has_voxel(other_voxel_id)) {
 		const Voxel &other_vt = lib.get_voxel_const(other_voxel_id);
 		if (other_vt.is_transparent() && vt.get_id() != other_voxel_id) {
 			return true;
 		} else {
-			const uint64_t m = vt.get_side_culling_mask(side);
-			const int opposite_side = g_opposite_side[side];
-			return (m & other_vt.get_side_culling_mask(opposite_side)) != m;
+			const unsigned int ai = vt.get_side_pattern_index(side);
+			const unsigned int bi = other_vt.get_side_pattern_index(g_opposite_side[side]);
+			// Patterns are not the same, and B does not occlude A
+			return (ai != bi) && !lib.get_side_pattern_occlusion(bi, ai);
 		}
 	}
 	return true;
