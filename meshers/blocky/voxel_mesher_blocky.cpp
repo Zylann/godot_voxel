@@ -374,7 +374,20 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// That means we can use raw pointers to voxel data inside instead of using the higher-level getters,
 	// and then save a lot of time.
 
-	ERR_FAIL_COND(voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE);
+	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+		// All voxels have the same type.
+		// If it's all air, nothing to do. If it's all cubes, nothing to do either.
+		// TODO Handle edge case of uniform block with non-cubic voxels!
+		// If the type of voxel still produces geometry in this situation (which is an absurd use case but not an error),
+		// decompress into a backing array to still allow the use of the same algorithm.
+		return;
+
+	} else if (voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE) {
+		// No other form of compression is allowed
+		ERR_PRINT("VoxelMesherBlocky received unsupported voxel compression");
+		return;
+	}
+
 	ArraySlice<uint8_t> raw_channel;
 	if (!voxels.get_channel_raw(channel, raw_channel)) {
 		//       _
@@ -387,9 +400,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		//     \   |  |
 		//      \    /
 		//
-		// No data to read, the channel is probably uniform
-		// TODO This is an invalid behavior IF sending a full block of uniformly opaque cubes,
-		// however not likely for terrains because with neighbor padding, such a case means no face would be generated anyways
+		// Case supposedly handled before...
+		ERR_PRINT("Something wrong happened");
 		return;
 	}
 
