@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelTool" inherits="Reference" version="3.2.1">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="do_point">
+			<return type="void">
+			</return>
+			<argument index="0" name="pos" type="Vector3">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="do_sphere">
+			<return type="void">
+			</return>
+			<argument index="0" name="center" type="Vector3">
+			</argument>
+			<argument index="1" name="radius" type="float">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_voxel">
+			<return type="int">
+			</return>
+			<argument index="0" name="pos" type="Vector3">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_voxel_f">
+			<return type="float">
+			</return>
+			<argument index="0" name="pos" type="Vector3">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="raycast">
+			<return type="VoxelRaycastResult">
+			</return>
+			<argument index="0" name="origin" type="Vector3">
+			</argument>
+			<argument index="1" name="direction" type="Vector3">
+			</argument>
+			<argument index="2" name="max_distance" type="float" default="10.0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_voxel">
+			<return type="void">
+			</return>
+			<argument index="0" name="pos" type="Vector3">
+			</argument>
+			<argument index="1" name="v" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_voxel_f">
+			<return type="void">
+			</return>
+			<argument index="0" name="pos" type="Vector3">
+			</argument>
+			<argument index="1" name="v" type="float">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="channel" type="int" setter="set_channel" getter="get_channel" default="0">
+		</member>
+		<member name="eraser_value" type="int" setter="set_eraser_value" getter="get_eraser_value" default="0">
+		</member>
+		<member name="mode" type="int" setter="set_mode" getter="get_mode" enum="VoxelTool.Mode" default="0">
+		</member>
+		<member name="value" type="int" setter="set_value" getter="get_value" default="0">
+		</member>
+	</members>
+	<constants>
+		<constant name="MODE_ADD" value="0" enum="Mode">
+		</constant>
+		<constant name="MODE_REMOVE" value="1" enum="Mode">
+		</constant>
+		<constant name="MODE_SET" value="2" enum="Mode">
+		</constant>
+	</constants>
+</class>

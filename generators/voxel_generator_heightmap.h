@@ -10,9 +10,6 @@ class VoxelGeneratorHeightmap : public VoxelGenerator {
 public:
 	VoxelGeneratorHeightmap();
 
-	void set_channel(VoxelBuffer::ChannelId channel);
-	VoxelBuffer::ChannelId get_channel() const;
-
 	void set_height_start(float start);
 	float get_height_start() const;
 
@@ -97,7 +94,6 @@ private:
 		}
 	};
 
-	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_TYPE;
 	int _matter_type = 1;
 	Range _range;
 	float _iso_scale = 0.1;

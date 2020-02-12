@@ -1,5 +1,6 @@
 #include "voxel_terrain.h"
 #include "../edition/voxel_tool_terrain.h"
+#include "../generators/voxel_generator.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
@@ -27,7 +28,10 @@ VoxelTerrain::VoxelTerrain() {
 	_block_updater = nullptr;
 
 	_run_in_editor = false;
-	_smooth_meshing_enabled = false;
+
+	Ref<VoxelLibrary> library;
+	library.instance();
+	set_voxel_library(library);
 }
 
 VoxelTerrain::~VoxelTerrain() {
@@ -248,19 +252,6 @@ Ref<Material> VoxelTerrain::get_material(unsigned int id) const {
 	return _materials[id];
 }
 
-bool VoxelTerrain::is_smooth_meshing_enabled() const {
-	return _smooth_meshing_enabled;
-}
-
-void VoxelTerrain::set_smooth_meshing_enabled(bool enabled) {
-	if (_smooth_meshing_enabled != enabled) {
-		_smooth_meshing_enabled = enabled;
-		stop_updater();
-		start_updater();
-		make_all_view_dirty_deferred();
-	}
-}
-
 void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 	// TODO Immediate update viewer distance?
 
@@ -384,7 +375,16 @@ void VoxelTerrain::start_updater() {
 
 	// TODO Thread-safe way to change those parameters
 	VoxelMeshUpdater::MeshingParams params;
-	params.smooth_surface = _smooth_meshing_enabled;
+
+	Ref<VoxelGenerator> vg = _stream;
+	if (vg.is_valid()) {
+		if (vg->get_channel() == VoxelBuffer::CHANNEL_TYPE) {
+			params.smooth_surface = false;
+		} else {
+			params.smooth_surface = true;
+		}
+	}
+
 	params.library = _library;
 
 	_block_updater = memnew(VoxelMeshUpdater(1, params));
@@ -887,6 +887,12 @@ void VoxelTerrain::_process() {
 		input.priority_position = viewer_block_pos;
 		input.priority_direction = viewer_direction;
 
+		Ref<VoxelGenerator> vg = _stream;
+		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
+		if (vg.is_valid()) {
+			vg->get_channel();
+		}
+
 		for (int i = 0; i < _blocks_pending_update.size(); ++i) {
 			Vector3i block_pos = _blocks_pending_update[i];
 
@@ -894,7 +900,7 @@ void VoxelTerrain::_process() {
 			// Smooth meshing works on more neighbors, so checking a single block isn't enough to ignore it,
 			// but that will slow down meshing a lot.
 			// TODO This is one reason to separate terrain systems between blocky and smooth (other reason is LOD)
-			if (!_smooth_meshing_enabled) {
+			if (channel==VoxelBuffer::CHANNEL_TYPE) {
 				VoxelBlock *block = _map->get_block(block_pos);
 				if (block == nullptr) {
 					continue;
@@ -1060,7 +1066,12 @@ void VoxelTerrain::_process() {
 }
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
-	return Ref<VoxelTool>(memnew(VoxelToolTerrain(this, _map)));
+	Ref<VoxelTool> vt = memnew(VoxelToolTerrain(this, _map));
+	Ref<VoxelGenerator> vg = _stream;
+	if (vg.is_valid()) {
+		vt->set_channel(vg->get_channel());
+	}
+	return vt;
 }
 
 Vector3 VoxelTerrain::_b_voxel_to_block(Vector3 pos) {
@@ -1091,9 +1102,6 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_viewer_path"), &VoxelTerrain::get_viewer_path);
 	ClassDB::bind_method(D_METHOD("set_viewer_path", "path"), &VoxelTerrain::set_viewer_path);
 
-	ClassDB::bind_method(D_METHOD("is_smooth_meshing_enabled"), &VoxelTerrain::is_smooth_meshing_enabled);
-	ClassDB::bind_method(D_METHOD("set_smooth_meshing_enabled", "enabled"), &VoxelTerrain::set_smooth_meshing_enabled);
-
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_b_voxel_to_block);
 	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_b_block_to_voxel);
 
@@ -1107,5 +1115,4 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "smooth_meshing_enabled"), "set_smooth_meshing_enabled", "is_smooth_meshing_enabled");
 }

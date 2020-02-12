@@ -1,5 +1,4 @@
 
-
 def can_build(env, platform):
   return True
 
@@ -20,21 +19,27 @@ def get_doc_classes():
     "VoxelLodTerrain",
 
     "VoxelStream",
-    "VoxelStreamTest",
-    "VoxelStreamImage",
-    "VoxelStreamNoise",
     "VoxelStreamFile",
     "VoxelStreamBlockFiles",
     "VoxelStreamRegionFiles",
 
+    "VoxelGenerator",
+    "VoxelGeneratorHeightmap",
+    "VoxelGeneratorImage",
+    "VoxelGeneratorNoise",
+    "VoxelGeneratorNoise2D",
+    "VoxelGeneratorTest",
+
     "VoxelBoxMover",
-    "VoxelIsoSurfaceTool",
+    "VoxelTool",
+    "VoxelRaycastResult",
 
     "VoxelMesher",
     "VoxelMesherBlocky",
     "VoxelMesherTransvoxel",
     "VoxelMesherDMC"
-  ]
+
+    ]
 
 
 def get_doc_path():

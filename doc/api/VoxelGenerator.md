@@ -1,6 +1,6 @@
-# Class: VoxelMesher
+# Class: VoxelGenerator
 
-Inherits: Reference
+Inherits: VoxelStream
 
 _Godot version: 3.2.1_
 
@@ -17,13 +17,13 @@ _Godot version: 3.2.1_
 
 ## Methods:
 
-#### » Mesh build_mesh ( VoxelBuffer voxel_buffer ) 
+#### » void generate_block ( VoxelBuffer out_buffer, Vector3 origin_in_voxels, int lod ) 
 
 
-#### » int get_maximum_padding (  )  const
+#### » int get_channel (  )  const
 
 
-#### » int get_minimum_padding (  )  const
+#### » void set_channel ( int channel ) 
 
 
 

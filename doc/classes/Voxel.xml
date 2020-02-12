@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="Voxel" inherits="Resource" category="Core" version="3.2">
+<class name="Voxel" inherits="Resource" version="3.2.1">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -72,12 +72,6 @@
 		<constant name="GEOMETRY_CUBE" value="1" enum="GeometryType">
 		</constant>
 		<constant name="GEOMETRY_MAX" value="2" enum="GeometryType">
-		</constant>
-		<constant name="CHANNEL_TYPE" value="0" enum="ChannelMode">
-		</constant>
-		<constant name="CHANNEL_ISOLEVEL" value="1" enum="ChannelMode">
-		</constant>
-		<constant name="CHANNEL_DATA" value="2" enum="ChannelMode">
 		</constant>
 	</constants>
 </class>

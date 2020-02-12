@@ -2,7 +2,7 @@
 
 Inherits: Resource
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -17,10 +17,10 @@ _Godot version: 3.2_
 
 ## Methods:
 
-#### » void emerge_block ( VoxelBuffer out_buffer, Vector3 origin_in_voxels, int lod ) 
+#### Â» void emerge_block ( VoxelBuffer out_buffer, Vector3 origin_in_voxels, int lod ) 
 
 
-#### » void immerge_block ( VoxelBuffer buffer, Vector3 origin_in_voxels, int lod ) 
+#### Â» void immerge_block ( VoxelBuffer buffer, Vector3 origin_in_voxels, int lod ) 
 
 
 
@@ -31,4 +31,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 13, 2020_

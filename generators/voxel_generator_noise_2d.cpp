@@ -48,6 +48,7 @@ void VoxelGeneratorNoise2D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_curve", "curve"), &VoxelGeneratorNoise2D::set_curve);
 	ClassDB::bind_method(D_METHOD("get_curve"), &VoxelGeneratorNoise2D::get_curve);
 
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise"), "set_noise", "get_noise");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "curve", PROPERTY_HINT_RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");
 }

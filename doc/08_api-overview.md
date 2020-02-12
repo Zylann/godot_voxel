@@ -38,7 +38,7 @@ Note that the engine and your graphics card do not work with voxels. They are co
 
 **Smooth [Terrain]** - One of many isosurface extraction algorithms that attempts to represent voxel data with smoother surfaces and is a better fit for organic shapes. Rather than using a full cube to describe the surface, a cube with one or more planes at potentially any angle is used to provide a far more accurate representation of the source data. As an example if you took a Lego block and sanded down the sharp corners to better represent the airplane curves, or sanded down the tops of the bar chart to better represent the bell curve. However you can only sand down to flat planes, no curves within the cubes.
 
-Voxel Tools supports Dual Marching Cubes, Transvoxel (WIP) and is structured to support other algorithms in the future. Some are faster, use less memory, provide manifold meshes (cleaner meshes), and/or provide more accurate representations of the voxel data.
+Voxel Tools supports Dual Marching Cubes, Transvoxel, and is structured to support other algorithms in the future. Various algorithms are faster, use less memory, provide manifold (cleaner) meshes, allow for sharp edges, and/or provide more accurate representations of the voxel data.
 
 **LOD - Level of Detail** - As the camera gets further away, detail decreases to improve performance. 
 
@@ -57,7 +57,7 @@ Note: Terrains use their VoxelStream and VoxelMeshers from multiple threads. Acc
 ### VoxelTerrain 
 An infinite, paged terrain made of voxel blocks, all with the same level of detail. Voxels are polygonized around the viewer by distance in a large cubic space. 
 
-* Voxel data is streamed using a VoxelStream (e.g. noise image, 3D noise texture, etc).
+* Voxel data is streamed using a VoxelGenerator (e.g. noise image, 3D noise texture, etc).
 * Stores a terrain in a VoxelMap.
 * Supports blocky and smooth terrains.
 * Handles the main Godot \_process() call to update the terrain, load and unload voxel blocks, and generate the mesh and collision.
@@ -67,7 +67,7 @@ An infinite, paged terrain made of voxel blocks, all with the same level of deta
 ### VoxelLodTerrain
 An infinite, paged terrain made of voxel blocks with a variable level of detail. Designed for high view distances. Voxels are polygonized around the viewer by distance in a very large sphere. 
 
-* Data is streamed using a VoxelStream, which must support LOD.
+* Data is streamed using a VoxelGenerator, which must support LOD.
 * Stores a terrain in a VoxelMap.
 * Handles the main Godot \_process() call to update the terrain, load and unload voxel blocks, and generate the mesh and collision.
 * Supports only smooth terrains.
@@ -79,29 +79,26 @@ An infinite, paged terrain made of voxel blocks with a variable level of detail.
 
 These classes provide the source voxel data.
 
-### VoxelStream
+### VoxelGenerator
 Base class to provide infinite, paged voxel data as blocks. Doesn't provide data itself, but can be extended with GDScript. 
 
-If you choose to implement your own stream that does not offer LOD, it is recommended to `assert(lod == 0)`. It will be executed in a separate thread, so access the main thread with care.
+If you choose to implement your own generator that does not offer LOD, it is recommended to `assert(lod == 0)`. It will be executed in a separate thread, so access the main thread with care.
 
 The classes below provide voxel data.
 
-### VoxelStreamTest
-Provides a flat plane or 2D sine waves.
+### VoxelGeneratorTest
+Provides a flat plane or sine waves.
 
-* Blocky only.
-
-### VoxelStreamImage
+### VoxelGeneratorImage
 Creates a heightmap based on a user provided, black and white image. 
 
 This class expects the image to be imported as an Image. By default, image files are imported as a Texture, which are stored in video RAM and are not accessible to the engine. On the Import tab, you need to change the import method of your image to Image and may need to restart Godot before VoxelStreamImage will recognize your file.
 
-* Blocky or smooth.
+### VoxelGeneratorNoise
+Generates 3D noise via a noise algorithm.
 
-### VoxelStreamNoise
-Generates 3D noise via OpenSimplexNoise. 
-
-* Smooth only.
+### VoxelGeneratorNoise2D
+Generates a terrain from a 2D noise heightmap.
 
 
 ## Mesher Classes
@@ -111,7 +108,7 @@ These classes use full cubes or an isosurface extraction algorithm to represent 
 Note: Their initial use case was for terrains, so the input data must be padded by a certain amount of voxels to work (get_minimum_padding() gives you that number. It's usually 1 or 2).
 
 ### VoxelMesher
-Abstract base class to build a polygonal terrain mesh from a given VoxelBuffer. Unlike VoxelStream, this class cannot be implemented with a script. You must extend it with a C++ class to implement another meshing algorithm.
+Abstract base class to build a polygonal terrain mesh from a given VoxelBuffer. Unlike VoxelGenerator, this class cannot be implemented with a script. You must extend it with a C++ class to implement another meshing algorithm.
 
 ### VoxelMesherBlocky
 Builds a mesh using full cubes only. Looks like Minecraft.
@@ -132,9 +129,7 @@ Builds a smooth mesh using the Dual Marching Cubes algorithm.
 ### VoxelMesherTransvoxel
 Builds a smooth mesh using the Transvoxel algorithm. 
 
-* Development is on hold for now. Use DMC.
-* Partial implementation, which may or may not be broken.
-
+* This is now the default smooth mesher.
 
 
 ## Storage Classes
@@ -150,7 +145,7 @@ Where Terrains store their voxels, as an infinite, 3D, sparse grid. It can be th
 Note: There are two grid coordinate systems. One addresses voxels individually, the other addresses blocks. It was initially required to allow streaming of the world, because loading voxels individually would have been very expensive. So instead I load chunks (like Minecraft), and those chunks lie in a grid having a step 16 times larger (because each block contains 16\*16\*16 voxels). When LOD is considered, there are even multiple block grids, but each having a scale higher by powers of two.
 
 
-### VoxelBlock (Unregistered)
+### VoxelBlock (not exposed)
 Internal structure for holding a reference to mesh visuals, collision, and a block of voxel data. Not available to GDScript, but supports both the above and below classes.
 
 * Stores 3D grid position and LOD index.
@@ -167,26 +162,26 @@ The underlying storage for voxels. Also used to pass voxels between functions.
 
 ## Supporting Classes
 
-### VoxelIsoSurfaceTool
-Provides functions to add or remove smooth terrain. Currently supported shapes are sphere, plane, cube, heightmap.
+### VoxelTool
+Provides functions to add or remove smooth terrain. The interface provides for points, lines, circles, spheres, boxes, and custom shapes, though not all are implemented.
 
-* You can generate a 2D heightmap and ask the tool to "rasterize" that portion of the world in a VoxelBuffer, which is what you will have to fill when implementing a custom VoxelStream.
+* You can generate a 2D heightmap and ask the tool to "rasterize" that portion of the world in a VoxelBuffer, which is what you will have to fill when implementing a custom VoxelGenerator.
 
-* Since Godot does not support 3D images, a custom shape could be added using an existing VoxelBuffer as input. This is not yet implemented.
-
-
-### VoxelBoxMover
-Provides Axis Aligned Bounding Box based collision. (blocky only)
+* Since Godot does not support 3D textures, a custom shape could be added using an existing VoxelBuffer as input. This is not yet implemented.
 
 
-### Voxel
-A basic voxel unit. Creating Voxels with VoxelLibrary is recommended.  (blocky only)
+### VoxelBoxMover (blocky)
+Provides Axis Aligned Bounding Box based collision.
+
+
+### Voxel (blocky)
+A basic voxel unit. Creating Voxels with VoxelLibrary is recommended.
 
 * Stores ID, name, material, transparency and type
 
 
-### VoxelLibrary
-A factory for creating Voxels. (blocky only)
+### VoxelLibrary (blocky)
+A factory for creating Voxels.
 
 ---
 * [API Class List](api/Class_List.md)

@@ -1,4 +1,4 @@
-# Class: VoxelBoxMover
+# Class: VoxelRaycastResult
 
 Inherits: Reference
 
@@ -14,11 +14,22 @@ _Godot version: 3.2.1_
 
 ## Properties:
 
+#### » Vector3 position
+
+` (value)` setter
+
+`get_position ()` getter
+
+
+#### » Vector3 previous_position
+
+` (value)` setter
+
+`get_previous_position ()` getter
+
+
 
 ## Methods:
-
-#### » Vector3 get_motion ( Vector3 pos, Vector3 motion, AABB aabb, Node terrain ) 
-
 
 
 ## Signals:

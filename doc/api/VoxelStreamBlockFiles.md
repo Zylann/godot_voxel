@@ -2,7 +2,7 @@
 
 Inherits: VoxelStreamFile
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -14,7 +14,7 @@ _Godot version: 3.2_
 
 ## Properties:
 
-#### » String directory
+#### Â» String directory
 
 `set_directory (value)` setter
 
@@ -32,4 +32,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 13, 2020_

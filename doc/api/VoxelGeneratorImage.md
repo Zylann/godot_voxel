@@ -1,8 +1,8 @@
-# Class: VoxelStreamImage
+# Class: VoxelGeneratorImage
 
-Inherits: VoxelStream
+Inherits: VoxelGeneratorHeightmap
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -14,14 +14,21 @@ _Godot version: 3.2_
 
 ## Properties:
 
-#### » int VoxelBuffer.ChannelId.channel
+#### Â» bool blur_enabled
+
+`set_blur_enabled (value)` setter
+
+`is_blur_enabled ()` getter
+
+
+#### Â» int VoxelBuffer.ChannelId.channel
 
 `set_channel (value)` setter
 
 `get_channel ()` getter
 
 
-#### » Image image
+#### Â» Image image
 
 `set_image (value)` setter
 
@@ -39,4 +46,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 13, 2020_

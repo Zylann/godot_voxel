@@ -2,7 +2,7 @@
 
 Inherits: Reference
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -11,31 +11,46 @@ _Godot version: 3.2_
 
 ## Constants:
 
-#### » ChannelId.CHANNEL_TYPE = 0
+#### Â» ChannelId.CHANNEL_TYPE = 0
 
 
-#### » ChannelId.CHANNEL_ISOLEVEL = 1
+#### Â» ChannelId.CHANNEL_SDF = 1
 
 
-#### » ChannelId.CHANNEL_DATA2 = 2
+#### Â» ChannelId.CHANNEL_DATA2 = 2
 
 
-#### » ChannelId.CHANNEL_DATA3 = 3
+#### Â» ChannelId.CHANNEL_DATA3 = 3
 
 
-#### » ChannelId.CHANNEL_DATA4 = 4
+#### Â» ChannelId.CHANNEL_DATA4 = 4
 
 
-#### » ChannelId.CHANNEL_DATA5 = 5
+#### Â» ChannelId.CHANNEL_DATA5 = 5
 
 
-#### » ChannelId.CHANNEL_DATA6 = 6
+#### Â» ChannelId.CHANNEL_DATA6 = 6
 
 
-#### » ChannelId.CHANNEL_DATA7 = 7
+#### Â» ChannelId.CHANNEL_DATA7 = 7
 
 
-#### » ChannelId.MAX_CHANNELS = 8
+#### Â» ChannelId.MAX_CHANNELS = 8
+
+
+#### Â» Depth.DEPTH_8_BIT = 0
+
+
+#### Â» Depth.DEPTH_16_BIT = 1
+
+
+#### Â» Depth.DEPTH_32_BIT = 2
+
+
+#### Â» Depth.DEPTH_64_BIT = 3
+
+
+#### Â» Depth.DEPTH_COUNT = 4
 
 
 
@@ -44,58 +59,70 @@ _Godot version: 3.2_
 
 ## Methods:
 
-#### » void clear (  ) 
+#### Â» void clear (  ) 
 
 
-#### » void copy_from ( VoxelBuffer other, int channel=0 ) 
+#### Â» void copy_channel_from ( VoxelBuffer other, int channel ) 
 
 
-#### » void copy_from_area ( VoxelBuffer other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, int channel=0 ) 
+#### Â» void copy_channel_from_area ( VoxelBuffer other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, int channel ) 
 
 
-#### » void create ( int sx, int sy, int sz ) 
+#### Â» void create ( int sx, int sy, int sz ) 
 
 
-#### » void fill ( int value, int channel=0 ) 
+#### Â» void downscale_to ( VoxelBuffer dst, Vector3 src_min, Vector3 src_max, Vector3 dst_min )  const
 
 
-#### » void fill_area ( int value, Vector3 min, Vector3 max, int channel=0 ) 
+#### Â» void fill ( int value, int channel=0 ) 
 
 
-#### » void fill_f ( float value, int channel=0 ) 
+#### Â» void fill_area ( int value, Vector3 min, Vector3 max, int channel=0 ) 
 
 
-#### » Vector3 get_size (  )  const
+#### Â» void fill_f ( float value, int channel=0 ) 
 
 
-#### » int get_size_x (  )  const
+#### Â» int get_channel_depth ( int channel )  const
 
 
-#### » int get_size_y (  )  const
+#### Â» Vector3 get_size (  )  const
 
 
-#### » int get_size_z (  )  const
+#### Â» int get_size_x (  )  const
 
 
-#### » int get_voxel ( int x, int y, int z, int channel=0 )  const
+#### Â» int get_size_y (  )  const
 
 
-#### » float get_voxel_f ( int x, int y, int z, int channel=0 )  const
+#### Â» int get_size_z (  )  const
 
 
-#### » bool is_uniform ( int channel )  const
+#### Â» int get_voxel ( int x, int y, int z, int channel=0 )  const
 
 
-#### » void optimize (  ) 
+#### Â» float get_voxel_f ( int x, int y, int z, int channel=0 )  const
 
 
-#### » void set_voxel ( int value, int x, int y, int z, int channel=0 ) 
+#### Â» VoxelTool get_voxel_tool (  ) 
 
 
-#### » void set_voxel_f ( float value, int x, int y, int z, int channel=0 ) 
+#### Â» bool is_uniform ( int channel )  const
 
 
-#### » void set_voxel_v ( int value, Vector3 pos, int channel=0 ) 
+#### Â» void optimize (  ) 
+
+
+#### Â» void set_channel_depth ( int channel, int depth ) 
+
+
+#### Â» void set_voxel ( int value, int x, int y, int z, int channel=0 ) 
+
+
+#### Â» void set_voxel_f ( float value, int x, int y, int z, int channel=0 ) 
+
+
+#### Â» void set_voxel_v ( int value, Vector3 pos, int channel=0 ) 
 
 
 
@@ -106,4 +133,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 13, 2020_

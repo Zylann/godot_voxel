@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelGeneratorNoise" inherits="VoxelGenerator" version="3.2.1">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="channel" type="int" setter="set_channel" getter="get_channel" enum="VoxelBuffer.ChannelId" default="1">
+		</member>
+		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" default="300.0">
+		</member>
+		<member name="height_start" type="float" setter="set_height_start" getter="get_height_start" default="0.0">
+		</member>
+		<member name="noise" type="OpenSimplexNoise" setter="set_noise" getter="get_noise">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

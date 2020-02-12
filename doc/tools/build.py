@@ -118,7 +118,7 @@ def find_godot(godot, bindir):
     else:
         filemask = 'godot.*.[36][24]'
 
-    binfiles = glob.glob(bindir+filemask)
+    binfiles = glob.glob(str(bindir/filemask))
     if len(binfiles) > 0:
         return binfiles[0]
 

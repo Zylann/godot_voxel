@@ -1,14 +1,5 @@
 #include "voxel_generator_noise.h"
 
-void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId channel) {
-	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
-	_channel = channel;
-}
-
-VoxelBuffer::ChannelId VoxelGeneratorNoise::get_channel() const {
-	return _channel;
-}
-
 void VoxelGeneratorNoise::set_noise(Ref<OpenSimplexNoise> noise) {
 	_noise = noise;
 }
@@ -170,11 +161,8 @@ void VoxelGeneratorNoise::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_height_range", "hrange"), &VoxelGeneratorNoise::set_height_range);
 	ClassDB::bind_method(D_METHOD("get_height_range"), &VoxelGeneratorNoise::get_height_range);
 
-	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorNoise::set_channel);
-	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorNoise::get_channel);
-
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise"), "set_noise", "get_noise");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "height_start"), "set_height_start", "get_height_start");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "height_range"), "set_height_range", "get_height_range");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
 }

@@ -2,6 +2,8 @@
 
 Voxel Tools for Godot is a C++ module that must be compiled into the engine. It requires version 3.1+. The following guide will give you a build of Godot that supports Voxel Tools and show you how to use it.
 
+[Prebuilt binaries](http://tokisan.com/godot-binaries) are also available.
+
 ## Tutorials
 
 * [Building Godot With Voxel Tools](02_build-voxel-tools.md)

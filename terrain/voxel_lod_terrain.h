@@ -22,6 +22,8 @@ public:
 	VoxelLodTerrain();
 	~VoxelLodTerrain();
 
+	String get_configuration_warning() const;
+
 	Ref<Material> get_material() const;
 	void set_material(Ref<Material> p_material);
 

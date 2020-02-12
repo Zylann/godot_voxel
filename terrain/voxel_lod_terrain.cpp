@@ -1,6 +1,7 @@
 #include "voxel_lod_terrain.h"
 #include "../edition/voxel_tool_lod_terrain.h"
 #include "../math/rect3i.h"
+#include "../generators/voxel_generator.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/profiling_clock.h"
 #include "../voxel_string_names.h"
@@ -83,6 +84,16 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 	}
 }
 
+String VoxelLodTerrain::get_configuration_warning() const {
+	Ref<VoxelGenerator> vg = _stream;
+	if (vg.is_valid()) {
+		if (vg->get_channel() == VoxelBuffer::CHANNEL_TYPE) {
+			return TTR("VoxelLodTerrain does not support stream channel \"Type\" (blocky).");
+		}
+	}
+	return String();
+}
+
 Ref<Material> VoxelLodTerrain::get_material() const {
 	return _material;
 }
@@ -154,6 +165,8 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 		Lod &lod = _lods[i];
 		lod.last_view_distance_blocks = 0;
 	}
+
+	update_configuration_warning();
 }
 
 void VoxelLodTerrain::set_block_size_po2(unsigned int p_block_size_po2) {

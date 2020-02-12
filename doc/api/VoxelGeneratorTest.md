@@ -1,8 +1,8 @@
-# Class: VoxelStreamTest
+# Class: VoxelGeneratorTest
 
-Inherits: VoxelStream
+Inherits: VoxelGenerator
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -11,37 +11,44 @@ _Godot version: 3.2_
 
 ## Constants:
 
-#### » Mode.MODE_FLAT = 0
+#### Â» Mode.MODE_FLAT = 0
 
 
-#### » Mode.MODE_WAVES = 1
+#### Â» Mode.MODE_WAVES = 1
 
 
 
 ## Properties:
 
-#### » int VoxelStreamTest.Mode.mode
+#### Â» int VoxelBuffer.ChannelId.channel
+
+`set_channel (value)` setter
+
+`get_channel ()` getter
+
+
+#### Â» int VoxelGeneratorTest.Mode.mode
 
 `set_mode (value)` setter
 
 `get_mode ()` getter
 
 
-#### » Vector3 pattern_offset
+#### Â» Vector3 pattern_offset
 
 `set_pattern_offset (value)` setter
 
 `get_pattern_offset ()` getter
 
 
-#### » Vector3 pattern_size
+#### Â» Vector3 pattern_size
 
 `set_pattern_size (value)` setter
 
 `get_pattern_size ()` getter
 
 
-#### » int voxel_type
+#### Â» int voxel_type
 
 `set_voxel_type (value)` setter
 
@@ -59,4 +66,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 13, 2020_
