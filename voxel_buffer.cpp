@@ -360,19 +360,19 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 					break;
 
 				case DEPTH_16_BIT:
-					for (unsigned int i = 0; i < area_size.y; ++i) {
+					for (int i = 0; i < area_size.y; ++i) {
 						((uint16_t *)channel.data)[dst_ri + i] = defval;
 					}
 					break;
 
 				case DEPTH_32_BIT:
-					for (unsigned int i = 0; i < area_size.y; ++i) {
+					for (int i = 0; i < area_size.y; ++i) {
 						((uint32_t *)channel.data)[dst_ri + i] = defval;
 					}
 					break;
 
 				case DEPTH_64_BIT:
-					for (unsigned int i = 0; i < area_size.y; ++i) {
+					for (int i = 0; i < area_size.y; ++i) {
 						((uint64_t *)channel.data)[dst_ri + i] = defval;
 					}
 					break;

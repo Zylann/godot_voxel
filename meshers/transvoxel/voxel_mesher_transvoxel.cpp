@@ -102,7 +102,7 @@ inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &block_size) 
 	// 16: -Z
 	// 32: +Z
 
-	for (int i = 0; i < Vector3i::AXIS_COUNT; i++) {
+	for (unsigned int i = 0; i < Vector3i::AXIS_COUNT; i++) {
 		// Close to negative face.
 		if (pos[i] == 0) {
 			mask |= (1 << (i * 2));
@@ -908,20 +908,20 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 void VoxelMesherTransvoxel::reset_reuse_cells(Vector3i block_size) {
 	_block_size = block_size;
 	unsigned int deck_area = block_size.x * block_size.y;
-	for (int i = 0; i < _cache.size(); ++i) {
+	for (unsigned int i = 0; i < _cache.size(); ++i) {
 		std::vector<ReuseCell> &deck = _cache[i];
 		deck.resize(deck_area);
-		for (int j = 0; j < deck.size(); ++j) {
+		for (long unsigned int j = 0; j < deck.size(); ++j) {
 			deck[j].vertices.fill(-1);
 		}
 	}
 }
 
 void VoxelMesherTransvoxel::reset_reuse_cells_2d(Vector3i block_size) {
-	for (int i = 0; i < _cache_2d.size(); ++i) {
+	for (unsigned int i = 0; i < _cache_2d.size(); ++i) {
 		std::vector<ReuseTransitionCell> &row = _cache_2d[i];
 		row.resize(block_size.x);
-		for (int j = 0; j < row.size(); ++j) {
+		for (long unsigned int j = 0; j < row.size(); ++j) {
 			row[j].vertices.fill(-1);
 		}
 	}
