@@ -76,6 +76,27 @@ void VoxelStream::_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxe
 	immerge_block(buffer, Vector3i(origin_in_voxels), lod);
 }
 
+int VoxelStream::get_used_channels_mask() const {
+	ScriptInstance *script = get_script_instance();
+	int mask = 0;
+	if (script) {
+		// Call script to get mask
+		Variant::CallError err;
+		//const Variant *args[3] = { &arg1, &arg2, &arg3 };
+		mask = script->call(VoxelStringNames::get_singleton()->get_used_channels_mask, NULL, 0, err);
+		ERR_FAIL_COND_V_MSG(err.error != Variant::CallError::CALL_OK, mask,
+				"voxel_stream.cpp:get_used_channels_mask gave an error: " + String::num(err.error) +
+						" Argument: " + String::num(err.argument) +
+						" Expected type: " + Variant::get_type_name(err.expected));
+		// This had to be explicitely logged due to the usual GD debugger not working with threads
+	}
+	return mask;
+}
+
+int VoxelStream::_get_used_channels_mask() const {
+	return get_used_channels_mask();
+}
+
 VoxelStream::Stats VoxelStream::get_statistics() const {
 	return _stats;
 }
@@ -85,4 +106,5 @@ void VoxelStream::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelStream::_emerge_block);
 	ClassDB::bind_method(D_METHOD("immerge_block", "buffer", "origin_in_voxels", "lod"), &VoxelStream::_immerge_block);
+	ClassDB::bind_method(D_METHOD("get_used_channels_mask"), &VoxelStream::_get_used_channels_mask);
 }

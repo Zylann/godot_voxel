@@ -5,6 +5,22 @@
 VoxelGeneratorHeightmap::VoxelGeneratorHeightmap() {
 }
 
+void VoxelGeneratorHeightmap::set_channel(VoxelBuffer::ChannelId channel) {
+	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
+	if(_channel != channel) {
+		_channel = channel;
+		emit_changed();
+	}
+}
+
+VoxelBuffer::ChannelId VoxelGeneratorHeightmap::get_channel() const {
+	return _channel;
+}
+
+int VoxelGeneratorHeightmap::get_used_channels_mask() const {
+	return (1<<_channel);
+}
+
 void VoxelGeneratorHeightmap::set_height_start(float start) {
 	_range.start = start;
 }
@@ -30,6 +46,9 @@ float VoxelGeneratorHeightmap::get_iso_scale() const {
 }
 
 void VoxelGeneratorHeightmap::_bind_methods() {
+
+	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorHeightmap::set_channel);
+	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorHeightmap::get_channel);
 
 	ClassDB::bind_method(D_METHOD("set_height_start", "start"), &VoxelGeneratorHeightmap::set_height_start);
 	ClassDB::bind_method(D_METHOD("get_height_start"), &VoxelGeneratorHeightmap::get_height_start);

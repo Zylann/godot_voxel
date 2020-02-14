@@ -19,6 +19,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="get_used_channels_mask" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
 		<method name="immerge_block">
 			<return type="void">
 			</return>

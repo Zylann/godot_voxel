@@ -33,6 +33,8 @@ public:
 	// This function is recommended if you save to files, because you can batch their access.
 	virtual void immerge_blocks(Vector<VoxelBlockRequest> &p_blocks);
 
+	virtual int get_used_channels_mask() const;
+
 	virtual bool is_thread_safe() const;
 	virtual bool is_cloneable() const;
 
@@ -43,6 +45,7 @@ protected:
 
 	void _emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
 	void _immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
+	int _get_used_channels_mask() const;
 
 	Stats _stats;
 };

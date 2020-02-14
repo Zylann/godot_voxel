@@ -181,7 +181,7 @@ A basic voxel unit. Creating Voxels with VoxelLibrary is recommended.
 
 
 ### VoxelLibrary (blocky)
-A factory for creating Voxels.
+A collection of voxel types, which is used for blocky only, similar to Minecraft or GridMap. 
 
 ---
 * [API Class List](api/Class_List.md)

@@ -7,6 +7,20 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_channel" qualifiers="const">
+			<return type="int" enum="VoxelBuffer.ChannelId">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="set_channel">
+			<return type="void">
+			</return>
+			<argument index="0" name="channel" type="int" enum="VoxelBuffer.ChannelId">
+			</argument>
+			<description>
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" default="200.0">

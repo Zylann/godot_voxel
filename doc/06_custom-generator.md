@@ -7,11 +7,16 @@ Create MyStream.gd with the following contents:
 
 ```
 extends VoxelGenerator
-	
+
+export var channel:int = VoxelBuffer.CHANNEL_TYPE
+
+func get_used_channels_mask () -> int:
+        return 1<<channel
+ 
 func generate_block(buffer:VoxelBuffer, origin:Vector3, lod:int) -> void:
 	if lod != 0: return
-	if origin.y < 0: buffer.fill(1, 0)	
-	if origin.x==origin.z and origin.y < 1: buffer.fill(1,0)
+	if origin.y < 0: buffer.fill(1, channel)
+	if origin.x==origin.z and origin.y < 1: buffer.fill(1,channel)
 ```
 
 In your terrain generation script, add this:
@@ -29,7 +34,7 @@ func _ready():
 
 <img src="images/custom-stream.jpg" width="800" />
 
-Though `VoxelBuffer.fill()` is probably not what you want to use, the above is a quick example. Generate_block generally gives you a block of 16x16x16 cubes to fill all at once, so you'll want to use `VoxelBuffer.set_voxel()` to specify each one.
+Though `VoxelBuffer.fill()` is probably not what you want to use, the above is a quick example. Generate_block generally gives you a block of 16x16x16 cubes to fill all at once, so you'll want to use `VoxelBuffer.set_voxel()` to specify each one. You can change the channel to `VoxelBuffer.CHANNEL_SDF` to get smooth voxels.
 
 In the fps_demo, there is a [custom gdscript stream](https://github.com/tinmanjuggernaut/voxelgame/blob/master/project/fps_demo/scripts/MyStream.gd) that makes a sine wave. This was copied from the [C++ version](../streams/voxel_stream_test.cpp), which runs a lot faster. 
 

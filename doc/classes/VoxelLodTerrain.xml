@@ -17,12 +17,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="debug_get_last_unexpected_block_drops" qualifiers="const">
-			<return type="Array">
-			</return>
-			<description>
-			</description>
-		</method>
 		<method name="debug_get_octrees" qualifiers="const">
 			<return type="Array">
 			</return>

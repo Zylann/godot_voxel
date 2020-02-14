@@ -4,16 +4,6 @@
 VoxelGenerator::VoxelGenerator() {
 }
 
-void VoxelGenerator::set_channel(VoxelBuffer::ChannelId channel) {
-	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
-	_channel = channel;
-	emit_changed();
-}
-
-VoxelBuffer::ChannelId VoxelGenerator::get_channel() const {
-	return _channel;
-}
-
 void VoxelGenerator::generate_block(VoxelBlockRequest &input) {
 
 	ERR_FAIL_COND(input.voxel_buffer.is_null());
@@ -60,8 +50,6 @@ void VoxelGenerator::_b_generate_block(Ref<VoxelBuffer> out_buffer, Vector3 orig
 
 void VoxelGenerator::_bind_methods() {
 	// Note: C++ inheriting classes don't need to re-bind these, because they are bindings that call the actual virtual methods
-	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGenerator::set_channel);
-	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGenerator::get_channel);
 
 	ClassDB::bind_method(D_METHOD("generate_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelGenerator::_b_generate_block);
 }

@@ -19,20 +19,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="get_channel" qualifiers="const">
-			<return type="int" enum="VoxelBuffer.ChannelId">
-			</return>
-			<description>
-			</description>
-		</method>
-		<method name="set_channel">
-			<return type="void">
-			</return>
-			<argument index="0" name="channel" type="int" enum="VoxelBuffer.ChannelId">
-			</argument>
-			<description>
-			</description>
-		</method>
 	</methods>
 	<constants>
 	</constants>

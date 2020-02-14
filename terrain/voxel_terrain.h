@@ -23,6 +23,8 @@ public:
 	VoxelTerrain();
 	~VoxelTerrain();
 
+	String get_configuration_warning() const override;
+
 	void set_stream(Ref<VoxelStream> p_stream);
 	Ref<VoxelStream> get_stream() const;
 

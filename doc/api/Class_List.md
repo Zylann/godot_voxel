@@ -28,4 +28,4 @@ These classes are exposed to GDScript. This information is also available within
 
 ---
 * [Doc Index](../01_get-started.md)
-_Generated on Feb 13, 2020_
+_Generated on Feb 16, 2020_

@@ -13,9 +13,6 @@ class VoxelGenerator : public VoxelStream {
 public:
 	VoxelGenerator();
 
-	void set_channel(VoxelBuffer::ChannelId channel);
-	VoxelBuffer::ChannelId get_channel() const;
-
 	virtual void generate_block(VoxelBlockRequest &input);
 	// TODO Single sample
 
@@ -26,8 +23,6 @@ private:
 	void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
 
 protected:
-	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
-
 	static void _bind_methods();
 
 	void _b_generate_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);

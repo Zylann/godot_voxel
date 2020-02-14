@@ -76,9 +76,6 @@ _Godot version: 3.2.1_
 #### » Dictionary debug_get_block_info ( Vector3 block_pos, int lod )  const
 
 
-#### » Array debug_get_last_unexpected_block_drops (  )  const
-
-
 #### » Array debug_get_octrees (  )  const
 
 
@@ -114,4 +111,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 13, 2020_
+_Generated on Feb 16, 2020_

@@ -1,7 +1,6 @@
 #include "voxel_lod_terrain.h"
 #include "../edition/voxel_tool_lod_terrain.h"
 #include "../math/rect3i.h"
-#include "../generators/voxel_generator.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/profiling_clock.h"
 #include "../voxel_string_names.h"
@@ -85,10 +84,9 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 }
 
 String VoxelLodTerrain::get_configuration_warning() const {
-	Ref<VoxelGenerator> vg = _stream;
-	if (vg.is_valid()) {
-		if (vg->get_channel() == VoxelBuffer::CHANNEL_TYPE) {
-			return TTR("VoxelLodTerrain does not support stream channel \"Type\" (blocky).");
+	if (_stream.is_valid()) {
+		if (! (_stream->get_used_channels_mask() & (1<<VoxelBuffer::CHANNEL_SDF))) {
+			return TTR("VoxelLodTerrain supports only stream channel \"Sdf\" (smooth).");
 		}
 	}
 	return String();

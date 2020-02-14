@@ -8,6 +8,22 @@ VoxelGeneratorTest::VoxelGeneratorTest() {
 	_pattern_size = Vector3i(10, 10, 10);
 }
 
+void VoxelGeneratorTest::set_channel(VoxelBuffer::ChannelId channel) {
+	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
+	if(_channel != channel) {
+		_channel = channel;
+		emit_changed();
+	}
+}
+
+VoxelBuffer::ChannelId VoxelGeneratorTest::get_channel() const {
+	return _channel;
+}
+
+int VoxelGeneratorTest::get_used_channels_mask() const {
+	return (1<<_channel);
+}
+
 void VoxelGeneratorTest::set_mode(Mode mode) {
 	ERR_FAIL_INDEX(mode, MODE_COUNT);
 	_mode = mode;
@@ -114,6 +130,9 @@ void VoxelGeneratorTest::generate_block_waves(VoxelBuffer &out_buffer, Vector3i 
 }
 
 void VoxelGeneratorTest::_bind_methods() {
+
+	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorTest::set_channel);
+	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorTest::get_channel);
 
 	ClassDB::bind_method(D_METHOD("set_mode", "mode"), &VoxelGeneratorTest::set_mode);
 	ClassDB::bind_method(D_METHOD("get_mode"), &VoxelGeneratorTest::get_mode);

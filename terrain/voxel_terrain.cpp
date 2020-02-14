@@ -1,6 +1,5 @@
 #include "voxel_terrain.h"
 #include "../edition/voxel_tool_terrain.h"
-#include "../generators/voxel_generator.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
@@ -48,6 +47,15 @@ VoxelTerrain::~VoxelTerrain() {
 	if (_block_updater) {
 		memdelete(_block_updater);
 	}
+}
+
+String VoxelTerrain::get_configuration_warning() const {
+	if (_stream.is_valid()) {
+		if (! (_stream->get_used_channels_mask() & ((1<<VoxelBuffer::CHANNEL_TYPE) | (1<<VoxelBuffer::CHANNEL_SDF)))) {
+			return TTR("VoxelTerrain supports only stream channels \"Type\" or \"Sdf\".");
+		}
+	}
+	return String();
 }
 
 // TODO See if there is a way to specify materials in voxels directly?
@@ -165,6 +173,8 @@ void VoxelTerrain::_on_stream_params_changed() {
 	if (was_updater_running) {
 		start_updater();
 	}
+
+	update_configuration_warning();
 
 	// The whole map might change, so make all area dirty
 	// TODO Actually, we should regenerate the whole map, not just update all its blocks
@@ -376,13 +386,8 @@ void VoxelTerrain::start_updater() {
 	// TODO Thread-safe way to change those parameters
 	VoxelMeshUpdater::MeshingParams params;
 
-	Ref<VoxelGenerator> vg = _stream;
-	if (vg.is_valid()) {
-		if (vg->get_channel() == VoxelBuffer::CHANNEL_TYPE) {
-			params.smooth_surface = false;
-		} else {
-			params.smooth_surface = true;
-		}
+	if (_stream.is_valid()) {
+		params.smooth_surface = _stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
 	}
 
 	params.library = _library;
@@ -887,12 +892,6 @@ void VoxelTerrain::_process() {
 		input.priority_position = viewer_block_pos;
 		input.priority_direction = viewer_direction;
 
-		Ref<VoxelGenerator> vg = _stream;
-		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
-		if (vg.is_valid()) {
-			vg->get_channel();
-		}
-
 		for (int i = 0; i < _blocks_pending_update.size(); ++i) {
 			Vector3i block_pos = _blocks_pending_update[i];
 
@@ -900,7 +899,7 @@ void VoxelTerrain::_process() {
 			// Smooth meshing works on more neighbors, so checking a single block isn't enough to ignore it,
 			// but that will slow down meshing a lot.
 			// TODO This is one reason to separate terrain systems between blocky and smooth (other reason is LOD)
-			if (channel==VoxelBuffer::CHANNEL_TYPE) {
+			if (! (_stream->get_used_channels_mask() & (1<<VoxelBuffer::CHANNEL_SDF))) {
 				VoxelBlock *block = _map->get_block(block_pos);
 				if (block == nullptr) {
 					continue;
@@ -1067,9 +1066,12 @@ void VoxelTerrain::_process() {
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
 	Ref<VoxelTool> vt = memnew(VoxelToolTerrain(this, _map));
-	Ref<VoxelGenerator> vg = _stream;
-	if (vg.is_valid()) {
-		vt->set_channel(vg->get_channel());
+	if (_stream.is_valid()) {
+		if(_stream->get_used_channels_mask() & (1<<VoxelBuffer::CHANNEL_SDF)) {
+			vt->set_channel(VoxelBuffer::CHANNEL_SDF);
+		} else {
+			vt->set_channel(VoxelBuffer::CHANNEL_TYPE);
+		}
 	}
 	return vt;
 }
