@@ -901,11 +901,11 @@ void VoxelTerrain::_process() {
 				} else {
 					CRASH_COND(block->voxels.is_null());
 
-					int air_type = 0;
+					uint64_t air_type = 0;
 					if (
 							block->voxels->is_uniform(VoxelBuffer::CHANNEL_TYPE) &&
 							block->voxels->is_uniform(VoxelBuffer::CHANNEL_SDF) &&
-							block->voxels->get_voxel(0, 0, 0, VoxelBuffer::CHANNEL_TYPE) == (uint64_t)air_type) {
+							block->voxels->get_voxel(0, 0, 0, VoxelBuffer::CHANNEL_TYPE) == air_type) {
 
 						// If we got here, it must have been because of scheduling an update
 						CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);

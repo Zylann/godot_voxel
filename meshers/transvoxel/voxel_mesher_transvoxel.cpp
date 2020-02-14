@@ -911,7 +911,7 @@ void VoxelMesherTransvoxel::reset_reuse_cells(Vector3i block_size) {
 	for (unsigned int i = 0; i < _cache.size(); ++i) {
 		std::vector<ReuseCell> &deck = _cache[i];
 		deck.resize(deck_area);
-		for (long unsigned int j = 0; j < deck.size(); ++j) {
+		for (size_t j = 0; j < deck.size(); ++j) {
 			deck[j].vertices.fill(-1);
 		}
 	}
@@ -921,7 +921,7 @@ void VoxelMesherTransvoxel::reset_reuse_cells_2d(Vector3i block_size) {
 	for (unsigned int i = 0; i < _cache_2d.size(); ++i) {
 		std::vector<ReuseTransitionCell> &row = _cache_2d[i];
 		row.resize(block_size.x);
-		for (long unsigned int j = 0; j < row.size(); ++j) {
+		for (size_t j = 0; j < row.size(); ++j) {
 			row[j].vertices.fill(-1);
 		}
 	}

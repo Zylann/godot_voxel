@@ -44,9 +44,12 @@ void VoxelGeneratorTest::generate_block(VoxelBlockRequest &input) {
 			generate_block_flat(**input.voxel_buffer, input.origin_in_voxels, input.lod);
 			break;
 
-		default:
 		case MODE_WAVES:
 			generate_block_waves(**input.voxel_buffer, input.origin_in_voxels, input.lod);
+			break;
+
+		default:
+			CRASH_NOW_MSG("Mode is unrecognized.");
 			break;
 	}
 }
