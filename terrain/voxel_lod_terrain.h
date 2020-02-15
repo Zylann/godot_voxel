@@ -76,7 +76,6 @@ public:
 	Dictionary get_statistics() const;
 
 	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
-	Array debug_get_last_unexpected_block_drops() const;
 	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
 	Array debug_get_octrees() const;
 
@@ -160,11 +159,6 @@ private:
 
 		// Members for memory caching
 		std::vector<Vector3i> blocks_to_load;
-
-#ifdef TOOLS_ENABLED
-		// TODO Debug, may be removed in the future
-		std::vector<Vector3i> debug_unexpected_block_drops;
-#endif
 	};
 
 	FixedArray<Lod, VoxelConstants::MAX_LOD> _lods;

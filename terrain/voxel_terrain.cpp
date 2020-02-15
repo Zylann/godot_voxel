@@ -23,8 +23,8 @@ VoxelTerrain::VoxelTerrain() {
 	_view_distance_blocks = 8;
 	_last_view_distance_blocks = 0;
 
-	_stream_thread = NULL;
-	_block_updater = NULL;
+	_stream_thread = nullptr;
+	_block_updater = nullptr;
 
 	_run_in_editor = false;
 	_smooth_meshing_enabled = false;
