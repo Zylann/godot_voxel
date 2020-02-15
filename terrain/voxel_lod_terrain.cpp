@@ -280,7 +280,7 @@ void VoxelLodTerrain::stop_updater() {
 
 	_blocks_pending_main_thread_update.clear();
 
-	for (int i = 0; i < _lods.size(); ++i) {
+	for (unsigned int i = 0; i < _lods.size(); ++i) {
 
 		Lod &lod = _lods[i];
 		lod.blocks_pending_update.clear();
@@ -307,7 +307,7 @@ void VoxelLodTerrain::stop_streamer() {
 		_stream_thread = nullptr;
 	}
 
-	for (int i = 0; i < _lods.size(); ++i) {
+	for (unsigned int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
 		lod.blocks_to_load.clear();
 	}
@@ -337,7 +337,7 @@ float VoxelLodTerrain::get_lod_split_scale() const {
 
 void VoxelLodTerrain::set_lod_count(int p_lod_count) {
 
-	ERR_FAIL_COND(p_lod_count >= VoxelConstants::MAX_LOD);
+	ERR_FAIL_COND(p_lod_count >= (int)VoxelConstants::MAX_LOD);
 	ERR_FAIL_COND(p_lod_count < 1);
 
 	if (get_lod_count() != p_lod_count) {
@@ -347,7 +347,7 @@ void VoxelLodTerrain::set_lod_count(int p_lod_count) {
 
 void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 
-	CRASH_COND(p_lod_count >= VoxelConstants::MAX_LOD);
+	CRASH_COND(p_lod_count >= (int)VoxelConstants::MAX_LOD);
 	CRASH_COND(p_lod_count < 1);
 
 	_lod_count = p_lod_count;
@@ -365,7 +365,7 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 void VoxelLodTerrain::reset_maps() {
 	// Clears all blocks and reconfigures maps to account for new LOD count and block sizes
 
-	for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+	for (int lod_index = 0; lod_index < (int)_lods.size(); ++lod_index) {
 
 		Lod &lod = _lods[lod_index];
 
@@ -447,7 +447,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 
 		case NOTIFICATION_ENTER_WORLD: {
 			World *world = *get_world();
-			for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([world](VoxelBlock *block) {
 						block->set_world(world);
@@ -457,7 +457,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD: {
-			for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([](VoxelBlock *block) {
 						block->set_world(nullptr);
@@ -468,7 +468,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 
 		case NOTIFICATION_VISIBILITY_CHANGED: {
 			bool visible = is_visible();
-			for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([visible](VoxelBlock *block) {
 						block->set_parent_visible(visible);
@@ -1203,7 +1203,7 @@ void VoxelLodTerrain::_process() {
 
 			{
 				VOXEL_PROFILE_SCOPE(profile_process_receive_mesh_updates_block_update_transitions);
-				for (int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
+				for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
 
 					Ref<ArrayMesh> transition_mesh = build_mesh(
 							mesh_data.transition_surfaces[dir],
@@ -1420,7 +1420,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 
 	uint8_t transition_mask = 0;
 
-	if (lod_index + 1 >= _lods.size()) {
+	if (lod_index + 1 >= (int)_lods.size()) {
 		return transition_mask;
 	}
 
@@ -1480,7 +1480,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 				// There are always 4 on each side, checking any is enough
 
 				Vector3i upper_neighbor_pos = upper_pos;
-				for (int i = 0; i < Vector3i::AXIS_COUNT; ++i) {
+				for (unsigned int i = 0; i < Vector3i::AXIS_COUNT; ++i) {
 					if (side_normal[i] == -1) {
 						--upper_neighbor_pos[i];
 					} else if (side_normal[i] == 1) {

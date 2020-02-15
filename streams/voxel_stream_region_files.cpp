@@ -880,7 +880,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 		int lod;
 	};
 
-	ERR_FAIL_COND(old_stream->load_meta() != OK);
+	ERR_FAIL_COND(old_stream->load_meta() != VOXEL_FILE_OK);
 
 	std::vector<PositionAndLod> old_region_list;
 	Meta old_meta = old_stream->_meta;

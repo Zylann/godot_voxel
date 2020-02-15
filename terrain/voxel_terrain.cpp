@@ -901,7 +901,7 @@ void VoxelTerrain::_process() {
 				} else {
 					CRASH_COND(block->voxels.is_null());
 
-					int air_type = 0;
+					uint64_t air_type = 0;
 					if (
 							block->voxels->is_uniform(VoxelBuffer::CHANNEL_TYPE) &&
 							block->voxels->is_uniform(VoxelBuffer::CHANNEL_SDF) &&

@@ -390,7 +390,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 	ArraySlice<uint8_t> raw_channel;
 	if (!voxels.get_channel_raw(channel, raw_channel)) {
-		//       _
+		/*       _
 		//      | \
 		//     /\ \\
 		//    / /|\\\
@@ -399,7 +399,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		//    |    |  )
 		//     \   |  |
 		//      \    /
-		//
+		*/
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");
 		return;
