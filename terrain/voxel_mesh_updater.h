@@ -19,6 +19,8 @@ public:
 	struct OutputBlockData {
 		VoxelMesher::Output blocky_surfaces;
 		VoxelMesher::Output smooth_surfaces;
+		// TODO Support multiple collision shapes
+		Ref<Shape> collision_shape;
 	};
 
 	struct MeshingParams {
@@ -26,6 +28,7 @@ public:
 		bool baked_ao = true;
 		float baked_ao_darkness = 0.75;
 		bool smooth_surface = false;
+		int collision_lod_count = 1;
 	};
 
 	typedef VoxelBlockThreadManager<InputBlockData, OutputBlockData> Mgr;
@@ -45,14 +48,16 @@ public:
 	int get_maximum_padding() const { return _maximum_padding; }
 
 private:
-	void process_blocks_thread_func(const ArraySlice<InputBlock> inputs,
+	static void process_blocks_thread_func(const ArraySlice<InputBlock> inputs,
 			ArraySlice<OutputBlock> outputs,
 			Ref<VoxelMesher> blocky_mesher,
-			Ref<VoxelMesher> smooth_mesher);
+			Ref<VoxelMesher> smooth_mesher,
+			int collision_lod_count);
 
 	Mgr *_mgr = nullptr;
 	int _minimum_padding = 0;
 	int _maximum_padding = 0;
+	int _collision_lod_count = 0;
 };
 
 #endif // VOXEL_MESH_UPDATER_H

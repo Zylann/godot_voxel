@@ -2,39 +2,6 @@
 #include "../util/zprofiling.h"
 #include "../voxel_string_names.h"
 #include <scene/3d/spatial.h>
-#include <scene/resources/concave_polygon_shape.h>
-
-// Faster version of Mesh::create_trimesh_shape()
-// See https://github.com/Zylann/godot_voxel/issues/54
-//
-static Ref<ConcavePolygonShape> create_concave_polygon_shape(Array surface_arrays) {
-
-	PoolVector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];
-	PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
-
-	ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape>());
-	ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape>());
-	ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape>());
-
-	int face_points_count = indices.size();
-
-	PoolVector<Vector3> face_points;
-	face_points.resize(face_points_count);
-
-	{
-		PoolVector<Vector3>::Write w = face_points.write();
-		PoolVector<int>::Read index_r = indices.read();
-		PoolVector<Vector3>::Read position_r = positions.read();
-
-		for (int i = 0; i < face_points_count; ++i) {
-			w[i] = position_r[index_r[i]];
-		}
-	}
-
-	Ref<ConcavePolygonShape> shape = memnew(ConcavePolygonShape);
-	shape->set_faces(face_points);
-	return shape;
-}
 
 // Helper
 VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index) {
@@ -85,11 +52,7 @@ void VoxelBlock::set_world(Ref<World> p_world) {
 	}
 }
 
-void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Array surface_arrays, bool debug_collision) {
-	// TODO Don't add mesh instance to the world if it's not visible.
-	// I suspect Godot is trying to include invisible mesh instances into the culling process,
-	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
-	// This needs investigation.
+void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, Ref<Shape> collision_shape, bool collision_enabled, bool debug_collision) {
 
 	if (mesh.is_valid()) {
 
@@ -115,9 +78,7 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision
 		_mesh_instance.set_material_override(_debug_material);
 #endif
 
-		if (generate_collision) {
-			Ref<Shape> shape = create_concave_polygon_shape(surface_arrays);
-
+		if (collision_enabled) {
 			if (!_static_body.is_valid()) {
 				_static_body.create();
 				_static_body.set_world(*_world);
@@ -126,7 +87,7 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision
 			} else {
 				_static_body.remove_shape(0);
 			}
-			_static_body.add_shape(shape);
+			_static_body.add_shape(collision_shape);
 			_static_body.set_debug(debug_collision, *_world);
 			_static_body.set_shape_enabled(0, _visible);
 		}
@@ -225,17 +186,6 @@ void VoxelBlock::_set_visible(bool visible) {
 void VoxelBlock::set_shader_material(Ref<ShaderMaterial> material) {
 	_shader_material = material;
 }
-
-//void VoxelBlock::set_transition_bit(uint8_t side, bool value) {
-//	CRASH_COND(side >= Cube::SIDE_COUNT);
-//	uint32_t m = _transition_mask;
-//	if (value) {
-//		m |= (1 << side);
-//	} else {
-//		m &= ~(1 << side);
-//	}
-//	set_transition_mask(m);
-//}
 
 void VoxelBlock::set_transition_mask(uint8_t m) {
 	CRASH_COND(m >= (1 << Cube::SIDE_COUNT));

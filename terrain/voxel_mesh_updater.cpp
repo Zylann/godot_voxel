@@ -3,6 +3,39 @@
 #include "../util/utility.h"
 #include "voxel_lod_terrain.h"
 #include <core/os/os.h>
+#include <scene/resources/concave_polygon_shape.h>
+
+// Faster version of Mesh::create_trimesh_shape()
+// See https://github.com/Zylann/godot_voxel/issues/54
+//
+static Ref<ConcavePolygonShape> create_concave_polygon_shape(Array surface_arrays) {
+
+	PoolVector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];
+	PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
+
+	ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape>());
+	ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape>());
+	ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape>());
+
+	int face_points_count = indices.size();
+
+	PoolVector<Vector3> face_points;
+	face_points.resize(face_points_count);
+
+	{
+		PoolVector<Vector3>::Write w = face_points.write();
+		PoolVector<int>::Read index_r = indices.read();
+		PoolVector<Vector3>::Read position_r = positions.read();
+
+		for (int i = 0; i < face_points_count; ++i) {
+			w[i] = position_r[index_r[i]];
+		}
+	}
+
+	Ref<ConcavePolygonShape> shape = memnew(ConcavePolygonShape);
+	shape->set_faces(face_points);
+	return shape;
+}
 
 VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams params) {
 
@@ -13,6 +46,8 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 
 	_minimum_padding = 0;
 	_maximum_padding = 0;
+
+	_collision_lod_count = params.collision_lod_count;
 
 	if (params.library.is_valid()) {
 		blocky_mesher.instance();
@@ -30,6 +65,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 	}
 
 	FixedArray<Mgr::BlockProcessingFunc, VoxelConstants::MAX_LOD> processors;
+	const int collision_lod_count = _collision_lod_count;
 
 	for (unsigned int i = 0; i < thread_count; ++i) {
 
@@ -44,8 +80,8 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 			}
 		}
 
-		processors[i] = [this, blocky_mesher, smooth_mesher](const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Mgr::ProcessorStats &_) {
-			this->process_blocks_thread_func(inputs, outputs, blocky_mesher, smooth_mesher);
+		processors[i] = [blocky_mesher, smooth_mesher, collision_lod_count](const ArraySlice<InputBlock> inputs, ArraySlice<OutputBlock> outputs, Mgr::ProcessorStats &_) {
+			process_blocks_thread_func(inputs, outputs, blocky_mesher, smooth_mesher, collision_lod_count);
 		};
 	}
 
@@ -63,9 +99,26 @@ void VoxelMeshUpdater::process_blocks_thread_func(
 		const ArraySlice<InputBlock> inputs,
 		ArraySlice<OutputBlock> outputs,
 		Ref<VoxelMesher> blocky_mesher,
-		Ref<VoxelMesher> smooth_mesher) {
+		Ref<VoxelMesher> smooth_mesher,
+		int collision_lod_count) {
 
 	CRASH_COND(inputs.size() != outputs.size());
+
+	struct L {
+		static void build(Ref<VoxelMesher> mesher, VoxelMesher::Output &output, Ref<Shape> *shape, const VoxelMesher::Input &input) {
+			if (mesher.is_valid()) {
+				mesher->build(output, input);
+				// TODO Decide which surfaces should be collidable, currently defaults to 0
+				// TODO Support multiple shapes
+				if (shape != nullptr && output.surfaces.size() > 0 && shape->is_null()) {
+					Array surface = output.surfaces[0];
+					if (is_surface_triangulated(surface)) {
+						*shape = create_concave_polygon_shape(surface);
+					}
+				}
+			}
+		}
+	};
 
 	for (unsigned int i = 0; i < inputs.size(); ++i) {
 
@@ -77,11 +130,12 @@ void VoxelMeshUpdater::process_blocks_thread_func(
 
 		VoxelMesher::Input input = { **block.voxels, ib.lod };
 
-		if (blocky_mesher.is_valid()) {
-			blocky_mesher->build(output.blocky_surfaces, input);
+		Ref<Shape> *shape = nullptr;
+		if (ib.lod < collision_lod_count) {
+			shape = &output.collision_shape;
 		}
-		if (smooth_mesher.is_valid()) {
-			smooth_mesher->build(output.smooth_surfaces, input);
-		}
+
+		L::build(blocky_mesher, output.blocky_surfaces, shape, input);
+		L::build(smooth_mesher, output.smooth_surfaces, shape, input);
 	}
 }

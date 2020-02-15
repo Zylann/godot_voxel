@@ -34,7 +34,7 @@ public:
 	// Visuals and physics
 
 	void set_world(Ref<World> p_world);
-	void set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Array surface_arrays, bool debug_collision);
+	void set_mesh(Ref<Mesh> mesh, Spatial *node, Ref<Shape> collision_shape, bool collision_enabled, bool debug_collision);
 	void set_transition_mesh(Ref<Mesh> mesh, int side);
 	bool has_mesh() const;
 
@@ -50,7 +50,6 @@ public:
 	void set_parent_visible(bool parent_visible);
 
 	void set_transition_mask(uint8_t m);
-	//void set_transition_bit(uint8_t side, bool value);
 	inline uint8_t get_transition_mask() const { return _transition_mask; }
 
 	// Voxel data
@@ -68,6 +67,9 @@ private:
 	inline bool _is_transition_visible(int side) const { return _transition_mask & (1 << side); }
 
 	inline void set_mesh_instance_visible(DirectMeshInstance &mi, bool visible) {
+		// Right now, invisible objects still take space in Godot renderer's culling data structure,
+		// which slows down culling by a very significant amount.
+		// So instead, we remove them from world completely.
 		if (visible) {
 			mi.set_world(*_world);
 		} else {

@@ -386,6 +386,7 @@ void VoxelTerrain::start_updater() {
 	VoxelMeshUpdater::MeshingParams params;
 	params.smooth_surface = _smooth_meshing_enabled;
 	params.library = _library;
+	params.collision_lod_count = _generate_collisions ? 1 : 0;
 
 	_block_updater = memnew(VoxelMeshUpdater(1, params));
 }
@@ -911,7 +912,7 @@ void VoxelTerrain::_process() {
 						CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
 						// The block contains empty voxels
-						block->set_mesh(Ref<Mesh>(), this, _generate_collisions, Array(), get_tree()->is_debugging_collisions_hint());
+						block->set_mesh(Ref<Mesh>(), this, Ref<Shape>(), _generate_collisions, get_tree()->is_debugging_collisions_hint());
 						block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
 
 						// Optional, but I guess it might spare some memory
@@ -996,9 +997,6 @@ void VoxelTerrain::_process() {
 			Ref<ArrayMesh> mesh;
 			mesh.instance();
 
-			// TODO Allow multiple collision surfaces
-			Array collidable_surface;
-
 			int surface_index = 0;
 			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
 			for (int i = 0; i < data.blocky_surfaces.surfaces.size(); ++i) {
@@ -1011,10 +1009,6 @@ void VoxelTerrain::_process() {
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
 				if (!is_surface_triangulated(surface)) {
 					continue;
-				}
-
-				if (collidable_surface.empty()) {
-					collidable_surface = surface;
 				}
 
 				mesh->add_surface_from_arrays(data.blocky_surfaces.primitive_type, surface, Array(), data.blocky_surfaces.compression_flags);
@@ -1034,10 +1028,6 @@ void VoxelTerrain::_process() {
 					continue;
 				}
 
-				if (collidable_surface.empty()) {
-					collidable_surface = surface;
-				}
-
 				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface, Array(), data.smooth_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
@@ -1047,7 +1037,7 @@ void VoxelTerrain::_process() {
 				mesh = Ref<Mesh>();
 			}
 
-			block->set_mesh(mesh, this, _generate_collisions, collidable_surface, get_tree()->is_debugging_collisions_hint());
+			block->set_mesh(mesh, this, data.collision_shape, _generate_collisions, get_tree()->is_debugging_collisions_hint());
 			block->set_parent_visible(is_visible());
 		}
 
