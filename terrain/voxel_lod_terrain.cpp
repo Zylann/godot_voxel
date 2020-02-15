@@ -968,19 +968,13 @@ void VoxelLodTerrain::_process() {
 
 		//print_line(String("Loaded {0} blocks").format(varray(output.emerged_blocks.size())));
 
-#ifdef TOOLS_ENABLED
-		for (int i = 0; i < _lod_count; ++i) {
-			_lods[i].debug_unexpected_block_drops.clear();
-		}
-#endif
-
 		for (int i = 0; i < output.blocks.size(); ++i) {
 
 			VOXEL_PROFILE_SCOPE(profile_process_get_loading_responses_block);
 
 			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
 
-			if(ob.data.type == VoxelDataLoader::TYPE_SAVE) {
+			if (ob.data.type == VoxelDataLoader::TYPE_SAVE) {
 				// That's a save confirmation event.
 				// Note: in the future, if blocks don't get copied before being sent for saving,
 				// we will need to use block versionning to know when we can reset the `modified` flag properly
@@ -1014,9 +1008,6 @@ void VoxelLodTerrain::_process() {
 				//				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
 				//								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
 
-#ifdef TOOLS_ENABLED
-				lod.debug_unexpected_block_drops.push_back(ob.position);
-#endif
 				++_stats.dropped_block_loads;
 				continue;
 			}
@@ -1563,27 +1554,6 @@ Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_d
 	return hits;
 }
 
-Array VoxelLodTerrain::debug_get_last_unexpected_block_drops() const {
-
-	Array lods;
-	lods.resize(_lod_count);
-
-	for (int i = 0; i < _lod_count; ++i) {
-		const Lod &lod = _lods[i];
-
-		Array drops;
-		drops.resize(lod.debug_unexpected_block_drops.size());
-
-		for (int j = 0; j < lod.debug_unexpected_block_drops.size(); ++j) {
-			drops[j] = lod.debug_unexpected_block_drops[j].to_vec3();
-		}
-
-		lods[i] = drops;
-	}
-
-	return lods;
-}
-
 Dictionary VoxelLodTerrain::debug_get_block_info(Vector3 fbpos, int lod_index) const {
 
 	Dictionary d;
@@ -1631,7 +1601,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 	Array image_array;
 	image_array.resize(get_lod_count());
 
-	for(int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
+	for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 
 		const Rect3i world_box = Rect3i::from_center_extents(Vector3i(center) >> lod_index, Vector3i(extents) >> lod_index);
 
@@ -1694,7 +1664,6 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("debug_raycast_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_block);
 	ClassDB::bind_method(D_METHOD("debug_get_block_info", "block_pos", "lod"), &VoxelLodTerrain::debug_get_block_info);
-	ClassDB::bind_method(D_METHOD("debug_get_last_unexpected_block_drops"), &VoxelLodTerrain::debug_get_last_unexpected_block_drops);
 	ClassDB::bind_method(D_METHOD("debug_get_octrees"), &VoxelLodTerrain::debug_get_octrees);
 	ClassDB::bind_method(D_METHOD("debug_save_all_modified_blocks"), &VoxelLodTerrain::_b_save_all_modified_blocks);
 	ClassDB::bind_method(D_METHOD("debug_print_sdf_top_down", "center", "extents"), &VoxelLodTerrain::_b_debug_print_sdf_top_down);

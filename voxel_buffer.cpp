@@ -721,8 +721,6 @@ uint32_t VoxelBuffer::get_depth_bit_count(Depth d) {
 	return ::get_depth_bit_count(d);
 }
 
-#ifdef TOOLS_ENABLED
-
 Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 	Image *im = memnew(Image);
 	im->create(_size.x, _size.z, false, Image::FORMAT_RGB8);
@@ -744,8 +742,6 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 	im->unlock();
 	return Ref<Image>(im);
 }
-
-#endif
 
 void VoxelBuffer::_bind_methods() {
 
