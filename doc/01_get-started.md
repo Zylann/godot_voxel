@@ -16,6 +16,7 @@ Voxel Tools for Godot is a C++ module that must be compiled into the engine. It 
 ## API
 * [Overview](08_api-overview.md)
 * [API Class List](api/Class_List.md)
+* [Region files specification](specs/region_format.md)
 
 
 ## External Reference
@@ -23,5 +24,5 @@ Find more information about related topics here.
 
 * [Custom C++ modules in Godot](https://godot.readthedocs.io/en/latest/development/cpp/custom_modules_in_cpp.html)
 * [Dual Marching Cubes algorithm](https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/)
-
+* [Transvoxel algorithm](https://transvoxel.org/)
 
