@@ -1,8 +1,8 @@
-# Class: VoxelStreamNoise
+# Class: VoxelGeneratorNoise
 
-Inherits: VoxelStream
+Inherits: VoxelGenerator
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -14,21 +14,28 @@ _Godot version: 3.2_
 
 ## Properties:
 
-#### » float height_range
+#### Â» int VoxelBuffer.ChannelId.channel
+
+`set_channel (value)` setter
+
+`get_channel ()` getter
+
+
+#### Â» float height_range
 
 `set_height_range (value)` setter
 
 `get_height_range ()` getter
 
 
-#### » float height_start
+#### Â» float height_start
 
 `set_height_start (value)` setter
 
 `get_height_start ()` getter
 
 
-#### » OpenSimplexNoise noise
+#### Â» OpenSimplexNoise noise
 
 `set_noise (value)` setter
 
@@ -46,4 +53,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 16, 2020_

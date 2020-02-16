@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelStream" inherits="Resource" category="Core" version="3.2">
+<class name="VoxelStream" inherits="Resource" version="3.2.1">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -16,6 +16,12 @@
 			</argument>
 			<argument index="2" name="lod" type="int">
 			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_used_channels_mask" qualifiers="const">
+			<return type="int">
+			</return>
 			<description>
 			</description>
 		</method>

@@ -1,6 +1,6 @@
-# Class: VoxelMesherTransvoxel
+# Class: VoxelGenerator
 
-Inherits: VoxelMesher
+Inherits: VoxelStream
 
 _Godot version: 3.2.1_
 
@@ -17,7 +17,7 @@ _Godot version: 3.2.1_
 
 ## Methods:
 
-#### » ArrayMesh build_transition_mesh ( VoxelBuffer voxel_buffer, int direction ) 
+#### » void generate_block ( VoxelBuffer out_buffer, Vector3 origin_in_voxels, int lod ) 
 
 
 

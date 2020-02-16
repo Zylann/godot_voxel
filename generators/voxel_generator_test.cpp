@@ -8,6 +8,22 @@ VoxelGeneratorTest::VoxelGeneratorTest() {
 	_pattern_size = Vector3i(10, 10, 10);
 }
 
+void VoxelGeneratorTest::set_channel(VoxelBuffer::ChannelId channel) {
+	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
+	if(_channel != channel) {
+		_channel = channel;
+		emit_changed();
+	}
+}
+
+VoxelBuffer::ChannelId VoxelGeneratorTest::get_channel() const {
+	return _channel;
+}
+
+int VoxelGeneratorTest::get_used_channels_mask() const {
+	return (1<<_channel);
+}
+
 void VoxelGeneratorTest::set_mode(Mode mode) {
 	ERR_FAIL_INDEX(mode, MODE_COUNT);
 	_mode = mode;
@@ -66,7 +82,7 @@ void VoxelGeneratorTest::generate_block_flat(VoxelBuffer &out_buffer, Vector3i o
 	for (int rz = 0; rz < size.z; ++rz) {
 		for (int rx = 0; rx < size.x; ++rx) {
 			for (int ry = 0; ry < rh; ++ry) {
-				out_buffer.set_voxel(_voxel_type, rx, ry, rz, 0);
+				out_buffer.set_voxel(_voxel_type, rx, ry, rz, _channel);
 			}
 		}
 	}
@@ -105,7 +121,7 @@ void VoxelGeneratorTest::generate_block_waves(VoxelBuffer &out_buffer, Vector3i 
 					rh = size.y;
 
 				for (int ry = 0; ry < rh; ++ry) {
-					out_buffer.set_voxel(_voxel_type, rx, ry, rz, 0);
+					out_buffer.set_voxel(_voxel_type, rx, ry, rz, _channel);
 					//out_buffer.set_voxel(255, rx, ry, rz, 1); // TRANSVOXEL TEST
 				}
 			}
@@ -114,6 +130,9 @@ void VoxelGeneratorTest::generate_block_waves(VoxelBuffer &out_buffer, Vector3i 
 }
 
 void VoxelGeneratorTest::_bind_methods() {
+
+	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorTest::set_channel);
+	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorTest::get_channel);
 
 	ClassDB::bind_method(D_METHOD("set_mode", "mode"), &VoxelGeneratorTest::set_mode);
 	ClassDB::bind_method(D_METHOD("get_mode"), &VoxelGeneratorTest::get_mode);
@@ -127,6 +146,7 @@ void VoxelGeneratorTest::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_pattern_offset", "offset"), &VoxelGeneratorTest::_set_pattern_offset);
 	ClassDB::bind_method(D_METHOD("get_pattern_offset"), &VoxelGeneratorTest::_get_pattern_offset);
 
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Flat,Waves"), "set_mode", "get_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_type", PROPERTY_HINT_RANGE, "0,255,1"), "set_voxel_type", "get_voxel_type");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "pattern_size"), "set_pattern_size", "get_pattern_size");

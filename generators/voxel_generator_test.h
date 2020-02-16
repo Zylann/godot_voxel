@@ -15,6 +15,10 @@ public:
 
 	VoxelGeneratorTest();
 
+	void set_channel(VoxelBuffer::ChannelId channel);
+	VoxelBuffer::ChannelId get_channel() const;
+	int get_used_channels_mask() const override;
+
 	void generate_block(VoxelBlockRequest &input) override;
 
 	void set_mode(Mode mode);
@@ -42,6 +46,7 @@ protected:
 	void _set_pattern_offset(Vector3 offset) { set_pattern_offset(Vector3i(offset)); }
 
 private:
+	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
 	Mode _mode;
 	int _voxel_type;
 	Vector3i _pattern_offset;

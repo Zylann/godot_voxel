@@ -2,7 +2,7 @@
 
 Inherits: Spatial
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -14,56 +14,56 @@ _Godot version: 3.2_
 
 ## Properties:
 
-#### » int collision_lod_count
+#### Â» int collision_lod_count
 
 `set_collision_lod_count (value)` setter
 
 `get_collision_lod_count ()` getter
 
 
-#### » bool generate_collisions
+#### Â» bool generate_collisions
 
 `set_generate_collisions (value)` setter
 
 `get_generate_collisions ()` getter
 
 
-#### » int lod_count
+#### Â» int lod_count
 
 `set_lod_count (value)` setter
 
 `get_lod_count ()` getter
 
 
-#### » float lod_split_scale
+#### Â» float lod_split_scale
 
 `set_lod_split_scale (value)` setter
 
 `get_lod_split_scale ()` getter
 
 
-#### » Material material
+#### Â» Material material
 
 `set_material (value)` setter
 
 `get_material ()` getter
 
 
-#### » VoxelStream stream
+#### Â» VoxelStream stream
 
 `set_stream (value)` setter
 
 `get_stream ()` getter
 
 
-#### » int view_distance
+#### Â» int view_distance
 
 `set_view_distance (value)` setter
 
 `get_view_distance ()` getter
 
 
-#### » NodePath viewer_path
+#### Â» NodePath viewer_path
 
 `set_viewer_path (value)` setter
 
@@ -73,16 +73,34 @@ _Godot version: 3.2_
 
 ## Methods:
 
-#### » Dictionary get_block_info ( Vector3 block_pos, int lod )  const
+#### Â» Dictionary debug_get_block_info ( Vector3 block_pos, int lod )  const
 
 
-#### » int get_block_region_extent (  )  const
+#### Â» Array debug_get_octrees (  )  const
 
 
-#### » Dictionary get_statistics (  )  const
+#### Â» Array debug_print_sdf_top_down ( Vector3 center, Vector3 extents )  const
 
 
-#### » Vector3 voxel_to_block_position ( Vector3 lod_index, int arg1 )  const
+#### Â» Array debug_raycast_block ( Vector3 origin, Vector3 dir )  const
+
+
+#### Â» void debug_save_all_modified_blocks (  ) 
+
+
+#### Â» int get_block_region_extent (  )  const
+
+
+#### Â» int get_block_size (  )  const
+
+
+#### Â» Dictionary get_statistics (  )  const
+
+
+#### Â» VoxelTool get_voxel_tool (  ) 
+
+
+#### Â» Vector3 voxel_to_block_position ( Vector3 lod_index, int arg1 )  const
 
 
 
@@ -93,4 +111,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 16, 2020_

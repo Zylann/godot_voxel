@@ -11,6 +11,7 @@ class VoxelGeneratorNoise : public VoxelGenerator {
 public:
 	void set_channel(VoxelBuffer::ChannelId channel);
 	VoxelBuffer::ChannelId get_channel() const;
+	int get_used_channels_mask() const override;
 
 	void set_noise(Ref<OpenSimplexNoise> noise);
 	Ref<OpenSimplexNoise> get_noise() const;
@@ -27,7 +28,7 @@ protected:
 	static void _bind_methods();
 
 private:
-	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_TYPE;
+	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
 	Ref<OpenSimplexNoise> _noise;
 	FloatBuffer3D _noise_buffer;
 	float _height_start = 0;

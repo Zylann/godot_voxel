@@ -1,4 +1,4 @@
-# Class: VoxelMesher
+# Class: VoxelRaycastResult
 
 Inherits: Reference
 
@@ -14,17 +14,22 @@ _Godot version: 3.2.1_
 
 ## Properties:
 
+#### » Vector3 position
+
+` (value)` setter
+
+`get_position ()` getter
+
+
+#### » Vector3 previous_position
+
+` (value)` setter
+
+`get_previous_position ()` getter
+
+
 
 ## Methods:
-
-#### » Mesh build_mesh ( VoxelBuffer voxel_buffer ) 
-
-
-#### » int get_maximum_padding (  )  const
-
-
-#### » int get_minimum_padding (  )  const
-
 
 
 ## Signals:

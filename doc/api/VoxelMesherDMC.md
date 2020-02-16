@@ -2,7 +2,7 @@
 
 Inherits: VoxelMesher
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -11,31 +11,31 @@ _Godot version: 3.2_
 
 ## Constants:
 
-#### » MeshMode.MESH_NORMAL = 0
+#### Â» MeshMode.MESH_NORMAL = 0
 
 
-#### » MeshMode.MESH_WIREFRAME = 1
+#### Â» MeshMode.MESH_WIREFRAME = 1
 
 
-#### » MeshMode.MESH_DEBUG_OCTREE = 2
+#### Â» MeshMode.MESH_DEBUG_OCTREE = 2
 
 
-#### » MeshMode.MESH_DEBUG_DUAL_GRID = 3
+#### Â» MeshMode.MESH_DEBUG_DUAL_GRID = 3
 
 
-#### » SimplifyMode.SIMPLIFY_OCTREE_BOTTOM_UP = 0
+#### Â» SimplifyMode.SIMPLIFY_OCTREE_BOTTOM_UP = 0
 
 
-#### » SimplifyMode.SIMPLIFY_OCTREE_TOP_DOWN = 1
+#### Â» SimplifyMode.SIMPLIFY_OCTREE_TOP_DOWN = 1
 
 
-#### » SimplifyMode.SIMPLIFY_NONE = 2
+#### Â» SimplifyMode.SIMPLIFY_NONE = 2
 
 
-#### » SeamMode.SEAM_NONE = 0
+#### Â» SeamMode.SEAM_NONE = 0
 
 
-#### » SeamMode.SEAM_MARCHING_SQUARE_SKIRTS = 1
+#### Â» SeamMode.SEAM_MARCHING_SQUARE_SKIRTS = 1
 
 
 
@@ -44,31 +44,31 @@ _Godot version: 3.2_
 
 ## Methods:
 
-#### » float get_geometric_error (  )  const
+#### Â» float get_geometric_error (  )  const
 
 
-#### » int get_mesh_mode (  )  const
+#### Â» int get_mesh_mode (  )  const
 
 
-#### » int get_seam_mode (  )  const
+#### Â» int get_seam_mode (  )  const
 
 
-#### » int get_simplify_mode (  )  const
+#### Â» int get_simplify_mode (  )  const
 
 
-#### » Dictionary get_statistics (  )  const
+#### Â» Dictionary get_statistics (  )  const
 
 
-#### » void set_geometric_error ( float error ) 
+#### Â» void set_geometric_error ( float error ) 
 
 
-#### » void set_mesh_mode ( int mode ) 
+#### Â» void set_mesh_mode ( int mode ) 
 
 
-#### » void set_seam_mode ( int mode ) 
+#### Â» void set_seam_mode ( int mode ) 
 
 
-#### » void set_simplify_mode ( int mode ) 
+#### Â» void set_simplify_mode ( int mode ) 
 
 
 
@@ -79,4 +79,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 16, 2020_

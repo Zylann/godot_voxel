@@ -2,7 +2,7 @@
 
 Inherits: Resource
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -11,23 +11,33 @@ _Godot version: 3.2_
 
 ## Constants:
 
+#### Â» MAX_VOXEL_TYPES = 65536
+
+
 
 ## Properties:
 
-#### » int atlas_size
+#### Â» int atlas_size
 
 `set_atlas_size (value)` setter
 
 `get_atlas_size ()` getter
 
 
+#### Â» int voxel_count
+
+`set_voxel_count (value)` setter
+
+`get_voxel_count ()` getter
+
+
 
 ## Methods:
 
-#### » Voxel create_voxel ( int id, String name ) 
+#### Â» Voxel create_voxel ( int id, String name ) 
 
 
-#### » Voxel get_voxel ( int id ) 
+#### Â» Voxel get_voxel ( int id ) 
 
 
 
@@ -38,4 +48,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 16, 2020_

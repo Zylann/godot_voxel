@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelGeneratorHeightmap" inherits="VoxelGenerator" version="3.2.1">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_channel" qualifiers="const">
+			<return type="int" enum="VoxelBuffer.ChannelId">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="set_channel">
+			<return type="void">
+			</return>
+			<argument index="0" name="channel" type="int" enum="VoxelBuffer.ChannelId">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" default="200.0">
+		</member>
+		<member name="height_start" type="float" setter="set_height_start" getter="get_height_start" default="-50.0">
+		</member>
+		<member name="iso_scale" type="float" setter="set_iso_scale" getter="get_iso_scale" default="0.1">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

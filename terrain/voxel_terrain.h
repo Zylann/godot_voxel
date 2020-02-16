@@ -23,6 +23,8 @@ public:
 	VoxelTerrain();
 	~VoxelTerrain();
 
+	String get_configuration_warning() const override;
+
 	void set_stream(Ref<VoxelStream> p_stream);
 	Ref<VoxelStream> get_stream() const;
 
@@ -48,9 +50,6 @@ public:
 
 	void set_material(unsigned int id, Ref<Material> material);
 	Ref<Material> get_material(unsigned int id) const;
-
-	bool is_smooth_meshing_enabled() const;
-	void set_smooth_meshing_enabled(bool enabled);
 
 	Ref<VoxelMap> get_storage() const { return _map; }
 	Ref<VoxelTool> get_voxel_tool();
@@ -103,7 +102,6 @@ private:
 	Vector3 _b_block_to_voxel(Vector3 pos);
 	//void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
 
-private:
 	// Voxel storage
 	Ref<VoxelMap> _map;
 
@@ -132,7 +130,6 @@ private:
 
 	bool _generate_collisions = true;
 	bool _run_in_editor;
-	bool _smooth_meshing_enabled;
 
 	Ref<Material> _materials[VoxelMesherBlocky::MAX_MATERIALS];
 

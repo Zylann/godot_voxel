@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelGenerator" inherits="VoxelStream" version="3.2.1">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="generate_block">
+			<return type="void">
+			</return>
+			<argument index="0" name="out_buffer" type="VoxelBuffer">
+			</argument>
+			<argument index="1" name="origin_in_voxels" type="Vector3">
+			</argument>
+			<argument index="2" name="lod" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+	</constants>
+</class>

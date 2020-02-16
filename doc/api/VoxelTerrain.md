@@ -2,7 +2,7 @@
 
 Inherits: Spatial
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -14,42 +14,35 @@ _Godot version: 3.2_
 
 ## Properties:
 
-#### » bool generate_collisions
+#### Â» bool generate_collisions
 
 `set_generate_collisions (value)` setter
 
 `get_generate_collisions ()` getter
 
 
-#### » bool smooth_meshing_enabled
-
-`set_smooth_meshing_enabled (value)` setter
-
-`is_smooth_meshing_enabled ()` getter
-
-
-#### » VoxelStream stream
+#### Â» VoxelStream stream
 
 `set_stream (value)` setter
 
 `get_stream ()` getter
 
 
-#### » int view_distance
+#### Â» int view_distance
 
 `set_view_distance (value)` setter
 
 `get_view_distance ()` getter
 
 
-#### » NodePath viewer_path
+#### Â» NodePath viewer_path
 
 `set_viewer_path (value)` setter
 
 `get_viewer_path ()` getter
 
 
-#### » VoxelLibrary voxel_library
+#### Â» VoxelLibrary voxel_library
 
 `set_voxel_library (value)` setter
 
@@ -59,31 +52,22 @@ _Godot version: 3.2_
 
 ## Methods:
 
-#### » Vector3 block_to_voxel ( Vector3 block_pos ) 
+#### Â» Vector3 block_to_voxel ( Vector3 block_pos ) 
 
 
-#### » Material get_material ( int id )  const
+#### Â» Material get_material ( int id )  const
 
 
-#### » Dictionary get_statistics (  )  const
+#### Â» Dictionary get_statistics (  )  const
 
 
-#### » VoxelMap get_storage (  ) 
+#### Â» VoxelTool get_voxel_tool (  ) 
 
 
-#### » void make_area_dirty ( AABB aabb ) 
+#### Â» void set_material ( int id, Material material ) 
 
 
-#### » void make_voxel_dirty ( Vector3 pos ) 
-
-
-#### » Variant raycast ( Vector3 origin, Vector3 direction, float max_distance=100 ) 
-
-
-#### » void set_material ( int id, Material material ) 
-
-
-#### » Vector3 voxel_to_block ( Vector3 voxel_pos ) 
+#### Â» Vector3 voxel_to_block ( Vector3 voxel_pos ) 
 
 
 
@@ -94,4 +78,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 16, 2020_

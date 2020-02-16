@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelRaycastResult" inherits="Reference" version="3.2.1">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="position" type="Vector3" setter="" getter="get_position" default="Vector3( 0, 0, 0 )">
+		</member>
+		<member name="previous_position" type="Vector3" setter="" getter="get_previous_position" default="Vector3( 0, 0, 0 )">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>
