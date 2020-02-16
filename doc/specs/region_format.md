@@ -3,8 +3,8 @@ Region format
 
 Version: 2
 
-Regions allows to save large 3D voxel volumes in a format suitable for frequent streaming in all directions.
-This format is inspired by https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game
+Regions allows to save large 3D voxel volumes in a format suitable for frequent streaming in all directions.  
+This format is inspired by https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game  
 It is implemented by `VoxelStreamRegionFiles`, which can be found in https://github.com/Zylann/godot_voxel/blob/master/streams/voxel_stream_region_files.cpp
 
 
