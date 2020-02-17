@@ -10,7 +10,7 @@ Voxel Tools for Godot is a C++ module that must be compiled into the engine. It 
 * [Creating A Voxel Terrain](03_create-terrain.md)
 * [Texturing & Materials](04_materials.md)
 * [Collision](05_collision.md)
-* [Custom Data Streams](06_custom-streams.md)
+* [Custom Data Generators](06_custom-generator.md)
 * [Performance Tips](07_performance-tips.md)
 
 ## API
