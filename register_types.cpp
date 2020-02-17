@@ -1,10 +1,11 @@
 #include "register_types.h"
 #include "edition/voxel_tool.h"
+#include "generators/voxel_generator_flat.h"
 #include "generators/voxel_generator_heightmap.h"
 #include "generators/voxel_generator_image.h"
 #include "generators/voxel_generator_noise.h"
 #include "generators/voxel_generator_noise_2d.h"
-#include "generators/voxel_generator_test.h"
+#include "generators/voxel_generator_waves.h"
 #include "meshers/blocky/voxel_library.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
@@ -42,7 +43,8 @@ void register_voxel_types() {
 
 	// Generators
 	ClassDB::register_class<VoxelGenerator>();
-	ClassDB::register_class<VoxelGeneratorTest>();
+	ClassDB::register_class<VoxelGeneratorFlat>();
+	ClassDB::register_class<VoxelGeneratorWaves>();
 	ClassDB::register_class<VoxelGeneratorHeightmap>();
 	ClassDB::register_class<VoxelGeneratorImage>();
 	ClassDB::register_class<VoxelGeneratorNoise2D>();
