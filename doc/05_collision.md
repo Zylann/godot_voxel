@@ -63,5 +63,5 @@ if terrain.raycast(...):
 
 
 ---
-* [Next Page](06_custom-streams.md)
+* [Next Page](06_custom-generator.md)
 * [Doc Index](01_get-started.md)
