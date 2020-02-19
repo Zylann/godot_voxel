@@ -1,0 +1,241 @@
+#include "program_graph.h"
+#include <core/os/file_access.h>
+#include <core/variant.h>
+#include <unordered_set>
+
+template <typename T>
+inline bool range_contains(const std::vector<T> &vec, const T &v, uint32_t begin, uint32_t end) {
+	CRASH_COND(end > vec.size());
+	for (size_t i = begin; i < end; ++i) {
+		if (vec[i] == v) {
+			return true;
+		}
+	}
+	return false;
+}
+
+uint32_t ProgramGraph::Node::find_input_connection(PortLocation src, uint32_t input_port_index) const {
+	CRASH_COND(input_port_index >= inputs.size());
+	const Port &p = inputs[input_port_index];
+	for (size_t i = 0; i < p.connections.size(); ++i) {
+		if (p.connections[i] == src) {
+			return i;
+		}
+	}
+	return ProgramGraph::NULL_INDEX;
+}
+
+uint32_t ProgramGraph::Node::find_output_connection(uint32_t output_port_index, PortLocation dst) const {
+	CRASH_COND(output_port_index >= outputs.size());
+	const Port &p = outputs[output_port_index];
+	for (size_t i = 0; i < p.connections.size(); ++i) {
+		if (p.connections[i] == dst) {
+			return i;
+		}
+	}
+	return ProgramGraph::NULL_INDEX;
+}
+
+ProgramGraph::Node *ProgramGraph::create_node() {
+	Node *node = memnew(Node);
+	node->id = _next_node_id++;
+	_nodes[node->id] = node;
+	return node;
+}
+
+void ProgramGraph::remove_node(uint32_t node_id) {
+	Node *node = get_node(node_id);
+
+	// Remove input connections
+	for (uint32_t dst_port_index = 0; dst_port_index < node->inputs.size(); ++dst_port_index) {
+		const Port &p = node->inputs[dst_port_index];
+		for (auto it = p.connections.begin(); it != p.connections.end(); ++it) {
+			const PortLocation src = *it;
+			Node *src_node = get_node(src.node_id);
+			uint32_t i = src_node->find_output_connection(src.port_index, PortLocation{ node_id, dst_port_index });
+			CRASH_COND(i == NULL_INDEX);
+			std::vector<PortLocation> &connections = src_node->outputs[src.port_index].connections;
+			connections.erase(connections.begin() + i);
+		}
+	}
+
+	// Remove output connections
+	for (uint32_t src_port_index = 0; src_port_index < node->outputs.size(); ++src_port_index) {
+		const Port &p = node->outputs[src_port_index];
+		for (auto it = p.connections.begin(); it != p.connections.end(); ++it) {
+			const PortLocation dst = *it;
+			Node *dst_node = get_node(dst.node_id);
+			uint32_t i = dst_node->find_input_connection(PortLocation{ node_id, src_port_index }, dst.port_index);
+			CRASH_COND(i == NULL_INDEX);
+			std::vector<PortLocation> &connections = dst_node->inputs[dst.port_index].connections;
+			connections.erase(connections.begin() + i);
+		}
+	}
+
+	_nodes.erase(node_id);
+	memdelete(node);
+}
+
+void ProgramGraph::clear() {
+	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+		Node *node = it->second;
+		CRASH_COND(node == nullptr);
+		memdelete(node);
+	}
+	_nodes.clear();
+}
+
+bool ProgramGraph::is_connected(PortLocation src, PortLocation dst) const {
+	Node *src_node = get_node(src.node_id);
+	Node *dst_node = get_node(dst.node_id);
+	if (src_node->find_output_connection(src.port_index, dst) != NULL_INDEX) {
+		CRASH_COND(dst_node->find_input_connection(src, dst.port_index) == NULL_INDEX);
+		return true;
+	} else {
+		CRASH_COND(dst_node->find_input_connection(src, dst.port_index) != NULL_INDEX);
+		return false;
+	}
+}
+
+void ProgramGraph::connect(PortLocation src, PortLocation dst) {
+	CRASH_COND(is_connected(src, dst));
+	CRASH_COND(has_path(dst.node_id, src.node_id));
+	Node *src_node = get_node(src.node_id);
+	Node *dst_node = get_node(dst.node_id);
+	CRASH_COND(dst_node->inputs[dst.port_index].connections.size() != 0);
+	src_node->outputs[src.port_index].connections.push_back(dst);
+	dst_node->inputs[dst.port_index].connections.push_back(src);
+}
+
+bool ProgramGraph::disconnect(PortLocation src, PortLocation dst) {
+	Node *src_node = get_node(src.node_id);
+	Node *dst_node = get_node(dst.node_id);
+	uint32_t src_i = src_node->find_output_connection(src.port_index, dst);
+	if (src_i == NULL_INDEX) {
+		return false;
+	}
+	uint32_t dst_i = dst_node->find_input_connection(src, dst.port_index);
+	CRASH_COND(dst_i == NULL_INDEX);
+	std::vector<PortLocation> &src_connections = src_node->outputs[src.port_index].connections;
+	std::vector<PortLocation> &dst_connections = dst_node->inputs[dst.port_index].connections;
+	src_connections.erase(src_connections.begin() + src_i);
+	dst_connections.erase(dst_connections.begin() + dst_i);
+	return true;
+}
+
+ProgramGraph::Node *ProgramGraph::get_node(uint32_t id) const {
+	auto it = _nodes.find(id);
+	CRASH_COND(it == _nodes.end());
+	Node *node = it->second;
+	CRASH_COND(node == nullptr);
+	return node;
+}
+
+bool ProgramGraph::has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) const {
+	std::vector<uint32_t> nodes_to_process;
+	std::unordered_set<uint32_t> visited_nodes;
+
+	nodes_to_process.push_back(p_src_node_id);
+
+	while (nodes_to_process.size() > 0) {
+		const Node *node = get_node(nodes_to_process.back());
+		nodes_to_process.pop_back();
+		visited_nodes.insert(node->id);
+
+		uint32_t nodes_to_process_begin = nodes_to_process.size();
+
+		// Find destinations
+		for (uint32_t oi = 0; oi < node->outputs.size(); ++oi) {
+			const Port &p = node->outputs[oi];
+			for (auto cit = p.connections.begin(); cit != p.connections.end(); ++cit) {
+				PortLocation dst = *cit;
+				if (dst.node_id == p_dst_node_id) {
+					return true;
+				}
+				// A node can have two connections to the same destination node
+				if (range_contains(nodes_to_process, dst.node_id, nodes_to_process_begin, nodes_to_process.size())) {
+					continue;
+				}
+				if (visited_nodes.find(dst.node_id) != visited_nodes.end()) {
+					continue;
+				}
+				nodes_to_process.push_back(dst.node_id);
+			}
+		}
+	}
+
+	return false;
+}
+
+void ProgramGraph::evaluate(std::vector<uint32_t> &order) const {
+	std::vector<uint32_t> nodes_to_process;
+	std::unordered_set<uint32_t> visited_nodes;
+
+	// Find terminal nodes
+	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+		const Node *node = it->second;
+		if (node->outputs.size() == 0) {
+			nodes_to_process.push_back(it->first);
+		}
+	}
+
+	while (nodes_to_process.size() > 0) {
+		const Node *node = get_node(nodes_to_process.back());
+		uint32_t nodes_to_process_begin = nodes_to_process.size();
+
+		// Find ancestors
+		for (uint32_t ii = 0; ii < node->inputs.size(); ++ii) {
+			const Port &p = node->inputs[ii];
+			for (auto cit = p.connections.begin(); cit != p.connections.end(); ++cit) {
+				PortLocation src = *cit;
+				// A node can have two connections to the same destination node
+				if (range_contains(nodes_to_process, src.node_id, nodes_to_process_begin, nodes_to_process.size())) {
+					continue;
+				}
+				if (visited_nodes.find(src.node_id) != visited_nodes.end()) {
+					continue;
+				}
+				nodes_to_process.push_back(src.node_id);
+			}
+		}
+
+		if (nodes_to_process_begin == nodes_to_process.size()) {
+			// No ancestor to visit, process the node
+			order.push_back(node->id);
+			visited_nodes.insert(node->id);
+			nodes_to_process.pop_back();
+		}
+	}
+}
+
+void ProgramGraph::debug_print_dot_file(String file_path) const {
+	// https://www.graphviz.org/pdf/dotguide.pdf
+
+	Error err;
+	FileAccess *f = FileAccess::open(file_path, FileAccess::WRITE, &err);
+	if (f == nullptr) {
+		ERR_PRINT(String("Could not write ProgramGraph debug file as {0}: error {1}").format(varray(file_path, err)));
+		return;
+	}
+
+	f->store_line("digraph G {");
+
+	for (auto nit = _nodes.begin(); nit != _nodes.end(); ++nit) {
+		const Node *node = nit->second;
+		const uint32_t node_id = nit->first;
+
+		for (auto oit = node->outputs.begin(); oit != node->outputs.end(); ++oit) {
+			const Port &port = *oit;
+
+			for (auto cit = port.connections.begin(); cit != port.connections.end(); ++cit) {
+				PortLocation dst = *cit;
+				f->store_line(String("\tn{0} -> n{1};").format(varray(node_id, dst.node_id)));
+			}
+		}
+	}
+
+	f->store_line("}");
+
+	f->close();
+	memdelete(f);
+}

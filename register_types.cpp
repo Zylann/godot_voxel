@@ -1,5 +1,6 @@
 #include "register_types.h"
 #include "edition/voxel_tool.h"
+#include "generators/graph/voxel_generator_graph.h"
 #include "generators/voxel_generator_flat.h"
 #include "generators/voxel_generator_heightmap.h"
 #include "generators/voxel_generator_image.h"
@@ -49,6 +50,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelGeneratorImage>();
 	ClassDB::register_class<VoxelGeneratorNoise2D>();
 	ClassDB::register_class<VoxelGeneratorNoise>();
+	ClassDB::register_class<VoxelGeneratorGraph>();
 
 	// Helpers
 	ClassDB::register_class<VoxelBoxMover>();
@@ -63,6 +65,7 @@ void register_voxel_types() {
 
 	VoxelMemoryPool::create_singleton();
 	VoxelStringNames::create_singleton();
+	VoxelGeneratorGraph::NodeTypeDB::create_singleton();
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::create_debug_box_mesh();
@@ -78,6 +81,8 @@ void unregister_voxel_types() {
 	VoxelMemoryPool::destroy_singleton();
 
 	VoxelStringNames::destroy_singleton();
+
+	VoxelGeneratorGraph::NodeTypeDB::destroy_singleton();
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::free_debug_box_mesh();
