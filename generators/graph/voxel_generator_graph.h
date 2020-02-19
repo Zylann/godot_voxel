@@ -37,18 +37,16 @@ public:
 
 		struct Port {
 			String name;
-			bool fixed_address;
 
-			Port(String p_name, bool p_fixed_address = false) :
-					name(p_name),
-					fixed_address(p_fixed_address) {}
+			Port(String p_name) :
+					name(p_name) {}
 		};
 
 		struct Param {
 			String name;
-			float default_value;
+			Variant default_value;
 
-			Param(String p_name, float p_default_value = 0) :
+			Param(String p_name, Variant p_default_value = Variant()) :
 					name(p_name),
 					default_value(p_default_value) {}
 		};
@@ -78,8 +76,12 @@ public:
 	void node_connect(ProgramGraph::PortLocation src, ProgramGraph::PortLocation dst);
 	void node_set_param(uint32_t node_id, uint32_t param_index, Variant value);
 
+	void load_waves_preset();
+
 	void generate_block(VoxelBlockRequest &input) override;
 	float generate_single(const Vector3i &position);
+
+	float debug_measure_microseconds_per_voxel();
 
 private:
 	void compile();

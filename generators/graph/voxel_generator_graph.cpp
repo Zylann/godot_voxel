@@ -1,4 +1,9 @@
 #include "voxel_generator_graph.h"
+#include "../../util/profiling_clock.h"
+
+//#ifdef DEBUG_ENABLED
+//#define VOXEL_DEBUG_GRAPH_PROG_SENTINEL uint16_t(12345) // 48, 57 (base 10)
+//#endif
 
 namespace {
 VoxelGeneratorGraph::NodeTypeDB *g_node_type_db = nullptr;
@@ -23,23 +28,24 @@ void VoxelGeneratorGraph::NodeTypeDB::destroy_singleton() {
 VoxelGeneratorGraph::NodeTypeDB::NodeTypeDB() {
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CONSTANT];
-		t.outputs.push_back(Port("Value", true));
+		t.outputs.push_back(Port("Value"));
+		t.params.push_back(Param("Value"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_X];
-		t.outputs.push_back(Port("Value", true));
+		t.outputs.push_back(Port("Value"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_Y];
-		t.outputs.push_back(Port("Value", true));
+		t.outputs.push_back(Port("Value"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_Z];
-		t.outputs.push_back(Port("Value", true));
+		t.outputs.push_back(Port("Value"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_SDF];
-		t.inputs.push_back(Port("Value", true));
+		t.inputs.push_back(Port("Value"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_ADD];
@@ -101,8 +107,8 @@ VoxelGeneratorGraph::NodeTypeDB::NodeTypeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CLAMP];
 		t.inputs.push_back(Port("X"));
 		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Min", -1.0));
-		t.params.push_back(Param("Max", 1.0));
+		t.params.push_back(Param("Min", -1.f));
+		t.params.push_back(Param("Max", 1.f));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_MIX];
@@ -115,10 +121,10 @@ VoxelGeneratorGraph::NodeTypeDB::NodeTypeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_REMAP];
 		t.inputs.push_back(Port("X"));
 		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Min0", -1.0));
-		t.params.push_back(Param("Max0", 1.0));
-		t.params.push_back(Param("Min1", -1.0));
-		t.params.push_back(Param("Max1", 1.0));
+		t.params.push_back(Param("Min0", -1.f));
+		t.params.push_back(Param("Max0", 1.f));
+		t.params.push_back(Param("Min1", -1.f));
+		t.params.push_back(Param("Max1", 1.f));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CURVE];
@@ -151,50 +157,6 @@ VoxelGeneratorGraph::NodeTypeDB::NodeTypeDB() {
 }
 
 VoxelGeneratorGraph::VoxelGeneratorGraph() {
-
-	typedef ProgramGraph::PortLocation PL;
-
-	// Default
-	uint32_t n_x = create_node(NODE_INPUT_X);
-	uint32_t n_y = create_node(NODE_INPUT_Y);
-	uint32_t n_z = create_node(NODE_INPUT_Y);
-	uint32_t n_o = create_node(NODE_OUTPUT_SDF);
-	uint32_t n_sin0 = create_node(NODE_SINE);
-	uint32_t n_sin1 = create_node(NODE_SINE);
-	uint32_t n_add = create_node(NODE_ADD);
-	uint32_t n_mul0 = create_node(NODE_MULTIPLY);
-	uint32_t n_mul1 = create_node(NODE_MULTIPLY);
-	uint32_t n_mul2 = create_node(NODE_MULTIPLY);
-	uint32_t n_c0 = create_node(NODE_CONSTANT);
-	uint32_t n_c1 = create_node(NODE_CONSTANT);
-	uint32_t n_sub = create_node(NODE_SUBTRACT);
-
-	node_set_param(n_c0, 0, 1.0 / 20.0);
-	node_set_param(n_c1, 0, 10.0);
-
-	/*
-	 *    X --- * --- sin           Z
-	 *         /         \           \
-	 *       1/20         + --- * --- - --- O
-	 *         \         /     /
-	 *    Y --- * --- sin    10.0
-	*/
-
-	node_connect(PL{ n_x, 0 }, PL{ n_mul0, 0 });
-	node_connect(PL{ n_y, 0 }, PL{ n_mul1, 0 });
-	node_connect(PL{ n_c0, 0 }, PL{ n_mul0, 1 });
-	node_connect(PL{ n_c0, 0 }, PL{ n_mul1, 1 });
-	node_connect(PL{ n_mul0, 0 }, PL{ n_sin0, 0 });
-	node_connect(PL{ n_mul1, 0 }, PL{ n_sin1, 0 });
-	node_connect(PL{ n_sin0, 0 }, PL{ n_add, 0 });
-	node_connect(PL{ n_sin1, 0 }, PL{ n_add, 1 });
-	node_connect(PL{ n_add, 0 }, PL{ n_mul2, 0 });
-	node_connect(PL{ n_c1, 0 }, PL{ n_mul2, 1 });
-	node_connect(PL{ n_z, 0 }, PL{ n_sub, 0 });
-	node_connect(PL{ n_mul2, 0 }, PL{ n_sub, 1 });
-	node_connect(PL{ n_sub, 0 }, PL{ n_o, 0 });
-
-	_graph.debug_print_dot_file("voxel_graph_test.dot");
 }
 
 VoxelGeneratorGraph::~VoxelGeneratorGraph() {
@@ -202,7 +164,7 @@ VoxelGeneratorGraph::~VoxelGeneratorGraph() {
 }
 
 void VoxelGeneratorGraph::clear() {
-	const uint32_t *key;
+	const uint32_t *key = nullptr;
 	while ((key = _nodes.next(key))) {
 		Node *node = _nodes.get(*key);
 		CRASH_COND(node == nullptr);
@@ -223,8 +185,11 @@ uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id) {
 	pg_node->outputs.resize(type.outputs.size());
 
 	Node *node = memnew(Node);
-	node->params.resize(type.params.size());
 	node->type = type_id;
+	node->params.resize(type.params.size());
+	for (size_t i = 0; i < type.params.size(); ++i) {
+		node->params[i] = type.params[i].default_value;
+	}
 	_nodes[pg_node->id] = node;
 
 	return pg_node->id;
@@ -250,6 +215,52 @@ void VoxelGeneratorGraph::node_set_param(uint32_t node_id, uint32_t param_index,
 	ERR_FAIL_COND(pptr == nullptr);
 	Node *node = *pptr;
 	node->params[param_index] = value;
+}
+
+void VoxelGeneratorGraph::load_waves_preset() {
+	clear();
+	// This is mostly for testing
+
+	uint32_t n_x = create_node(NODE_INPUT_X);
+	uint32_t n_y = create_node(NODE_INPUT_Y);
+	uint32_t n_z = create_node(NODE_INPUT_Z);
+	uint32_t n_o = create_node(NODE_OUTPUT_SDF);
+	uint32_t n_sin0 = create_node(NODE_SINE);
+	uint32_t n_sin1 = create_node(NODE_SINE);
+	uint32_t n_add = create_node(NODE_ADD);
+	uint32_t n_mul0 = create_node(NODE_MULTIPLY);
+	uint32_t n_mul1 = create_node(NODE_MULTIPLY);
+	uint32_t n_mul2 = create_node(NODE_MULTIPLY);
+	uint32_t n_c0 = create_node(NODE_CONSTANT);
+	uint32_t n_c1 = create_node(NODE_CONSTANT);
+	uint32_t n_sub = create_node(NODE_SUBTRACT);
+
+	node_set_param(n_c0, 0, 1.f / 20.f);
+	node_set_param(n_c1, 0, 10.f);
+
+	/*
+	 *    X --- * --- sin           Y
+	 *         /         \           \
+	 *       1/20         + --- * --- - --- O
+	 *         \         /     /
+	 *    Z --- * --- sin    10.0
+	*/
+
+	typedef ProgramGraph::PortLocation PL;
+
+	node_connect(PL{ n_x, 0 }, PL{ n_mul0, 0 });
+	node_connect(PL{ n_z, 0 }, PL{ n_mul1, 0 });
+	node_connect(PL{ n_c0, 0 }, PL{ n_mul0, 1 });
+	node_connect(PL{ n_c0, 0 }, PL{ n_mul1, 1 });
+	node_connect(PL{ n_mul0, 0 }, PL{ n_sin0, 0 });
+	node_connect(PL{ n_mul1, 0 }, PL{ n_sin1, 0 });
+	node_connect(PL{ n_sin0, 0 }, PL{ n_add, 0 });
+	node_connect(PL{ n_sin1, 0 }, PL{ n_add, 1 });
+	node_connect(PL{ n_add, 0 }, PL{ n_mul2, 0 });
+	node_connect(PL{ n_c1, 0 }, PL{ n_mul2, 1 });
+	node_connect(PL{ n_y, 0 }, PL{ n_sub, 0 });
+	node_connect(PL{ n_mul2, 0 }, PL{ n_sub, 1 });
+	node_connect(PL{ n_sub, 0 }, PL{ n_o, 0 });
 }
 
 void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
@@ -278,7 +289,9 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 template <typename T>
 inline void write_static(std::vector<uint8_t> &mem, uint32_t p, const T &v) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND(p + sizeof(T) >= mem.size());
+#endif
 	*(T *)(&mem[p]) = v;
 }
 
@@ -290,16 +303,10 @@ inline void append(std::vector<uint8_t> &mem, const T &v) {
 }
 
 template <typename T>
-inline void write_op(std::vector<uint8_t> &mem, uint8_t opid, T data) {
-	uint32_t p = mem.size();
-	mem.resize(p + 1 + sizeof(T));
-	mem[p++] = opid;
-	write_static(mem, p, data);
-}
-
-template <typename T>
 inline const T &read(const std::vector<uint8_t> &mem, uint32_t &p) {
-	CRASH_COND(p + sizeof(T) >= mem.size());
+#ifdef DEBUG_ENABLED
+	CRASH_COND(p + sizeof(T) > mem.size());
+#endif
 	const T *v = (const T *)&mem[p];
 	p += sizeof(T);
 	return *v;
@@ -365,6 +372,7 @@ void VoxelGeneratorGraph::compile() {
 				break;
 
 			default: {
+				// Add actual operation
 				append(program, static_cast<uint8_t>(node->type));
 
 				// Add inputs
@@ -438,10 +446,17 @@ void VoxelGeneratorGraph::compile() {
 						append(program, min1);
 						append(program, max1 - min1);
 					} break;
-				}
 
-			} break;
-		}
+				} // switch special params
+
+#ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
+				// Append a special value after each operation
+				append(program, VOXEL_DEBUG_GRAPH_PROG_SENTINEL);
+#endif
+
+			} break; // default
+
+		} // switch type
 	}
 
 	if (_memory.size() < 4) {
@@ -542,6 +557,14 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 	memory[0] = position.x;
 	memory[1] = position.y;
 	memory[2] = position.z;
+
+	// STL is unreadable on debug builds of Godot, because _DEBUG isn't defined
+	//#ifdef DEBUG_ENABLED
+	//	const size_t memory_size = memory.size();
+	//	const size_t program_size = _program.size();
+	//	const float *memory_raw = memory.data();
+	//	const uint8_t *program_raw = (const uint8_t *)_program.data();
+	//#endif
 
 	uint32_t pc = 0;
 	while (pc < _program.size()) {
@@ -648,12 +671,36 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 				CRASH_NOW();
 				break;
 		}
+
+#ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
+		// If this fails, the program is ill-formed
+		CRASH_COND(read<uint16_t>(_program, pc) != VOXEL_DEBUG_GRAPH_PROG_SENTINEL);
+#endif
 	}
 
 	return memory.back() * _iso_scale;
 }
 
+float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel() {
+	Vector3i pos(1, 1, 1);
+	float v;
+	const uint32_t iterations = 1000000;
+	ProfilingClock profiling_clock;
+	profiling_clock.restart();
+	for (uint32_t i = 0; i < iterations; ++i) {
+		v = generate_single(pos);
+	}
+	uint64_t ius = profiling_clock.restart();
+	float us = static_cast<double>(ius) / iterations;
+	//	print_line(String("Time: {0}us").format(varray(us)));
+	//	print_line(String("Value: {0}").format(varray(v)));
+	return us;
+}
+
 void VoxelGeneratorGraph::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGeneratorGraph::clear);
+	ClassDB::bind_method(D_METHOD("compile"), &VoxelGeneratorGraph::compile);
+	ClassDB::bind_method(D_METHOD("load_waves_preset"), &VoxelGeneratorGraph::load_waves_preset);
+	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel"), &VoxelGeneratorGraph::debug_measure_microseconds_per_voxel);
 }
