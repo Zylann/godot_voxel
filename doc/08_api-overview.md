@@ -86,19 +86,24 @@ If you choose to implement your own generator that does not offer LOD, it is rec
 
 The classes below provide voxel data.
 
-### VoxelGeneratorTest
-Provides a flat plane or sine waves.
+### VoxelGeneratorFlat
+Generates a flat world.
+
+### VoxelGeneratorWaves
+Generates regular waves.
 
 ### VoxelGeneratorImage
 Creates a heightmap based on a user provided, black and white image. 
 
 This class expects the image to be imported as an Image. By default, image files are imported as a Texture, which are stored in video RAM and are not accessible to the engine. On the Import tab, you need to change the import method of your image to Image and may need to restart Godot before VoxelStreamImage will recognize your file.
 
+For smooth terrain, it is recommended to use more than 8-bit precision images, using either EXR or HDR formats. Formats loaded as 8-bit such as PNG or JPG are supported but will look blocky at close range.
+
 ### VoxelGeneratorNoise
-Generates 3D noise via a noise algorithm.
+Generates organic-looking terrain using a 3D noise algorithm. This one can have caves and overhangs but loads slower.
 
 ### VoxelGeneratorNoise2D
-Generates a terrain from a 2D noise heightmap.
+Generates organic-looking terrain using a 3D noise algorithm. This one doesn't have overhangs but loads faster.
 
 
 ## Mesher Classes
