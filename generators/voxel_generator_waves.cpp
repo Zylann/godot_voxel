@@ -40,7 +40,6 @@ void VoxelGeneratorWaves::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_pattern_offset", "offset"), &VoxelGeneratorWaves::set_pattern_offset);
 	ClassDB::bind_method(D_METHOD("get_pattern_offset"), &VoxelGeneratorWaves::get_pattern_offset);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "pattern_size"), "set_pattern_size", "get_pattern_size");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "pattern_offset"), "set_pattern_offset", "get_pattern_offset");
 }

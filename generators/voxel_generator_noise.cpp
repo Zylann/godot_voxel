@@ -6,7 +6,7 @@ void VoxelGeneratorNoise::set_noise(Ref<OpenSimplexNoise> noise) {
 
 void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId channel) {
 	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
-	if(_channel != channel) {
+	if (_channel != channel) {
 		_channel = channel;
 		emit_changed();
 	}
@@ -17,7 +17,7 @@ VoxelBuffer::ChannelId VoxelGeneratorNoise::get_channel() const {
 }
 
 int VoxelGeneratorNoise::get_used_channels_mask() const {
-	return (1<<_channel);
+	return (1 << _channel);
 }
 
 Ref<OpenSimplexNoise> VoxelGeneratorNoise::get_noise() const {
@@ -167,6 +167,7 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 }
 
 void VoxelGeneratorNoise::_bind_methods() {
+
 	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorNoise::set_channel);
 	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorNoise::get_channel);
 
