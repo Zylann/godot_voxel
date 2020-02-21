@@ -782,6 +782,7 @@ bool VoxelGeneratorGraph::_set(const StringName &p_name, const Variant &p_value)
 			const BoundsType type = (BoundsType)(p_value.operator int());
 			ERR_FAIL_INDEX_V(type, BOUNDS_TYPE_COUNT, false);
 			_bounds.type = type;
+			_change_notify();
 			return true;
 
 		} else if (sub.begins_with("min_") && sub.length() == 5) {
