@@ -1,9 +1,9 @@
 #ifndef VOXEL_GENERATOR_GRAPH_H
 #define VOXEL_GENERATOR_GRAPH_H
 
+#include "../../cube_tables.h"
 #include "../voxel_generator.h"
 #include "program_graph.h"
-#include <modules/opensimplex/open_simplex_noise.h>
 
 class VoxelGeneratorGraph : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorGraph, VoxelGenerator)
@@ -76,15 +76,33 @@ public:
 	void node_connect(ProgramGraph::PortLocation src, ProgramGraph::PortLocation dst);
 	void node_set_param(uint32_t node_id, uint32_t param_index, Variant value);
 
+	// TODO Empty preset
 	void load_waves_preset();
+
+	int get_used_channels_mask() const override;
 
 	void generate_block(VoxelBlockRequest &input) override;
 	float generate_single(const Vector3i &position);
+
+	enum BoundsType {
+		BOUNDS_NONE = 0,
+		BOUNDS_VERTICAL,
+		BOUNDS_BOX,
+		BOUNDS_TYPE_COUNT
+	};
+
+	void clear_bounds();
+	void set_vertical_bounds(int min_y, int max_y, float bottom_sdf_value, float top_sdf_value, uint64_t bottom_type_value, uint64_t top_type_value);
+	void set_box_bounds(Vector3i min, Vector3i max, float sdf_value, uint64_t type_value);
 
 	float debug_measure_microseconds_per_voxel();
 
 private:
 	void compile();
+
+	bool _set(const StringName &p_name, const Variant &p_value);
+	bool _get(const StringName &p_name, Variant &r_ret) const;
+	void _get_property_list(List<PropertyInfo> *p_list) const;
 
 	static void _bind_methods();
 
@@ -97,10 +115,25 @@ private:
 	ProgramGraph _graph;
 	HashMap<uint32_t, Node *> _nodes;
 
+	struct Bounds {
+		BoundsType type = BOUNDS_NONE;
+		Vector3i min;
+		Vector3i max;
+		// Voxel values beyond bounds
+		float sdf_value0 = 1.f;
+		float sdf_value1 = 1.f;
+		uint64_t type_value0 = 0;
+		uint64_t type_value1 = 0;
+	};
+
 	std::vector<uint8_t> _program;
 	std::vector<float> _memory;
 	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
 	float _iso_scale = 0.1;
+	Bounds _bounds;
 };
+
+VARIANT_ENUM_CAST(VoxelGeneratorGraph::NodeTypeID)
+VARIANT_ENUM_CAST(VoxelGeneratorGraph::BoundsType)
 
 #endif // VOXEL_GENERATOR_GRAPH_H
