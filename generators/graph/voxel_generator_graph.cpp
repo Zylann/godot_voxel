@@ -281,6 +281,10 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const VoxelBuffer::ChannelId channel = _channel;
 	const Vector3i origin = input.origin_in_voxels;
 
+	const Vector3i rmin;
+	const Vector3i rmax = bs;
+	const Vector3i gmin = origin;
+
 	switch (_bounds.type) {
 		case BOUNDS_NONE:
 			break;
@@ -290,19 +294,32 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 				out_buffer.clear_channel(VoxelBuffer::CHANNEL_TYPE, _bounds.type_value1);
 				out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, _bounds.sdf_value1);
 				return;
-			}
-			if (origin.y + (bs.y << input.lod) < _bounds.min.y) {
+
+			} else if (origin.y + (bs.y << input.lod) < _bounds.min.y) {
 				out_buffer.clear_channel(VoxelBuffer::CHANNEL_TYPE, _bounds.type_value0);
 				out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, _bounds.sdf_value0);
 				return;
 			}
+			// TODO Not sure if it's actually worth doing this? Here we can even have bounds in the same block
+			//
+			//			rmax.y = clamp((_bounds.max.y - origin.y) >> input.lod, 0, bs.y);
+			//			rmin.y = clamp((_bounds.min.y - origin.y) >> input.lod, 0, bs.y);
+			//			gmin += rmin << input.lod;
 			break;
 
 		case BOUNDS_BOX:
-			if (!Rect3i::from_min_max(_bounds.min, _bounds.max).intersects(Rect3i(origin, bs))) {
+			if (!Rect3i::from_min_max(_bounds.min, _bounds.max).intersects(Rect3i(origin, bs << input.lod))) {
 				out_buffer.clear_channel(VoxelBuffer::CHANNEL_TYPE, _bounds.type_value0);
 				out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, _bounds.sdf_value0);
+				return;
 			}
+			//			rmin.x = clamp((_bounds.min.x - origin.x) >> input.lod, 0, bs.x);
+			//			rmin.y = clamp((_bounds.min.y - origin.y) >> input.lod, 0, bs.y);
+			//			rmin.z = clamp((_bounds.min.z - origin.z) >> input.lod, 0, bs.z);
+			//			rmax.x = clamp((_bounds.max.x - origin.x) >> input.lod, 0, bs.x);
+			//			rmax.y = clamp((_bounds.max.y - origin.y) >> input.lod, 0, bs.y);
+			//			rmax.z = clamp((_bounds.max.z - origin.z) >> input.lod, 0, bs.z);
+			//			gmin += rmin << input.lod;
 			break;
 
 		default:
@@ -310,14 +327,17 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 			break;
 	}
 
+	const int stride = 1 << input.lod;
+
 	Vector3i rpos;
 	Vector3i gpos;
 	// Loads of possible optimization from there
+	// TODO Range analysis
+	// TODO XZ-only dependency optimization
 
-	int stride = 1 << input.lod;
-	for (rpos.z = 0, gpos.z = origin.z; rpos.z < bs.z; ++rpos.z, gpos.z += stride) {
-		for (rpos.x = 0, gpos.x = origin.x; rpos.x < bs.x; ++rpos.x, gpos.x += stride) {
-			for (rpos.y = 0, gpos.y = origin.y; rpos.y < bs.y; ++rpos.y, gpos.y += stride) {
+	for (rpos.z = rmin.z, gpos.z = gmin.z; rpos.z < rmax.z; ++rpos.z, gpos.z += stride) {
+		for (rpos.x = rmin.x, gpos.x = gmin.x; rpos.x < rmax.x; ++rpos.x, gpos.x += stride) {
+			for (rpos.y = rmin.y, gpos.y = gmin.y; rpos.y < rmax.y; ++rpos.y, gpos.y += stride) {
 
 				out_buffer.set_voxel_f(generate_single(gpos), rpos.x, rpos.y, rpos.z, channel);
 			}
@@ -592,6 +612,37 @@ struct PNodeImage2D {
 
 float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 	// This part must be optimized for speed
+
+	switch (_bounds.type) {
+		case BOUNDS_NONE:
+			break;
+
+		case BOUNDS_VERTICAL:
+			if (position.y >= _bounds.max.y) {
+				return _bounds.sdf_value1;
+			}
+			if (position.y < _bounds.min.y) {
+				return _bounds.sdf_value0;
+			}
+			break;
+
+		case BOUNDS_BOX:
+			if (
+					position.x < _bounds.min.x ||
+					position.y < _bounds.min.y ||
+					position.z < _bounds.min.z ||
+					position.x >= _bounds.max.x ||
+					position.y >= _bounds.max.y ||
+					position.z >= _bounds.max.z) {
+
+				return _bounds.sdf_value0;
+			}
+			break;
+
+		default:
+			CRASH_NOW();
+			break;
+	}
 
 	std::vector<float> &memory = _memory;
 	memory[0] = position.x;

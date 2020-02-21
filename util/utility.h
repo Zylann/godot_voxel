@@ -114,7 +114,8 @@ inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4,
 	return res;
 }
 
-inline float min(const float &a, const float &b) {
+template <typename T>
+inline T min(const T a, const T b) {
 	return a < b ? a : b;
 }
 
