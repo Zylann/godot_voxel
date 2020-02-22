@@ -1,7 +1,7 @@
 #ifndef INTERVAL_H
 #define INTERVAL_H
 
-#include "utility.h"
+#include "../util/utility.h"
 
 // For interval arithmetic
 struct Interval {
