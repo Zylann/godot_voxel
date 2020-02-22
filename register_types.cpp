@@ -67,6 +67,9 @@ void register_voxel_types() {
 	VoxelStringNames::create_singleton();
 	VoxelGeneratorGraph::NodeTypeDB::create_singleton();
 
+	// Reminder: how to create a singleton accessible from scripts:
+	// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
+
 #ifdef TOOLS_ENABLED
 	VoxelDebug::create_debug_box_mesh();
 #endif

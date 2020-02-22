@@ -167,17 +167,20 @@ bool ProgramGraph::has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) cons
 	return false;
 }
 
-void ProgramGraph::evaluate(std::vector<uint32_t> &order) const {
-	std::vector<uint32_t> nodes_to_process;
-	std::unordered_set<uint32_t> visited_nodes;
-
-	// Find terminal nodes
+void ProgramGraph::find_terminal_nodes(std::vector<uint32_t> &node_ids) const {
 	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 		const Node *node = it->second;
 		if (node->outputs.size() == 0) {
-			nodes_to_process.push_back(it->first);
+			node_ids.push_back(it->first);
 		}
 	}
+}
+
+void ProgramGraph::find_dependencies(uint32_t end_node_id, std::vector<uint32_t> &order) const {
+	std::vector<uint32_t> nodes_to_process;
+	std::unordered_set<uint32_t> visited_nodes;
+
+	nodes_to_process.push_back(end_node_id);
 
 	while (nodes_to_process.size() > 0) {
 		const Node *node = get_node(nodes_to_process.back());

@@ -45,7 +45,8 @@ public:
 	bool disconnect(PortLocation src, PortLocation dst);
 
 	bool has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) const;
-	void evaluate(std::vector<uint32_t> &order) const;
+	void find_dependencies(uint32_t end_node_id, std::vector<uint32_t> &order) const;
+	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
 
 	void debug_print_dot_file(String file_path) const;
 

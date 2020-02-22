@@ -450,7 +450,13 @@ Interval get_heightmap_range(Image &im) {
 
 void VoxelGeneratorGraph::compile() {
 	std::vector<uint32_t> order;
-	_graph.evaluate(order);
+	std::vector<uint32_t> terminal_nodes;
+
+	_graph.find_terminal_nodes(terminal_nodes);
+	// For now only 1 end is supported
+	ERR_FAIL_COND(terminal_nodes.size() != 1);
+
+	_graph.find_dependencies(terminal_nodes.back(), order);
 
 	_program.clear();
 
