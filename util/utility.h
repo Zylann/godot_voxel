@@ -125,6 +125,16 @@ inline T max(const T a, const T b) {
 }
 
 template <typename T>
+inline T min(const T a, const T b, const T c, const T d) {
+	return min(min(a, b), min(c, d));
+}
+
+template <typename T>
+inline T max(const T a, const T b, const T c, const T d) {
+	return max(max(a, b), max(c, d));
+}
+
+template <typename T>
 inline T clamp(const T x, const T min_value, const T max_value) {
 	if (x < min_value) {
 		return min_value;
@@ -133,6 +143,15 @@ inline T clamp(const T x, const T min_value, const T max_value) {
 		return max_value;
 	}
 	return x;
+}
+
+template <typename T>
+inline void sort_min_max(T &a, T &b) {
+	if (a > b) {
+		T temp = a;
+		a = b;
+		b = temp;
+	}
 }
 
 inline bool is_surface_triangulated(Array surface) {

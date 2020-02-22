@@ -129,9 +129,9 @@ struct Vector3i {
 	}
 
 	static void sort_min_max(Vector3i &a, Vector3i &b) {
-		sort_min_max(a.x, b.x);
-		sort_min_max(a.y, b.y);
-		sort_min_max(a.z, b.z);
+		::sort_min_max(a.x, b.x);
+		::sort_min_max(a.y, b.y);
+		::sort_min_max(a.z, b.z);
 	}
 
 	inline Vector3i udiv(int d) const {
@@ -164,15 +164,6 @@ struct Vector3i {
 
 	static inline Vector3i min(const Vector3i a, const Vector3i b) {
 		return Vector3i(::min(a.x, b.x), ::min(a.y, b.y), ::min(a.z, b.z));
-	}
-
-private:
-	static _FORCE_INLINE_ void sort_min_max(int &a, int &b) {
-		if (a > b) {
-			int temp = a;
-			a = b;
-			b = temp;
-		}
 	}
 };
 

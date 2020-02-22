@@ -2,6 +2,7 @@
 #define VOXEL_GENERATOR_GRAPH_H
 
 #include "../../cube_tables.h"
+#include "../../util/interval.h"
 #include "../voxel_generator.h"
 #include "program_graph.h"
 
@@ -99,6 +100,7 @@ public:
 
 private:
 	void compile();
+	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;

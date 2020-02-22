@@ -1,5 +1,6 @@
 #include "voxel_generator_graph.h"
 #include "../../util/profiling_clock.h"
+#include "../../voxel_string_names.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
 //#ifdef DEBUG_ENABLED
@@ -284,6 +285,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const Vector3i rmin;
 	const Vector3i rmax = bs;
 	const Vector3i gmin = origin;
+	const Vector3i gmax = origin + (bs << input.lod);
 
 	switch (_bounds.type) {
 		case BOUNDS_NONE:
@@ -325,6 +327,21 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 		default:
 			CRASH_NOW();
 			break;
+	}
+
+	Interval range = analyze_range(gmin, gmax);
+	const float clip_threshold = 1.f;
+	if (range.min > clip_threshold && range.max > clip_threshold) {
+		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 1.f);
+		return;
+
+	} else if (range.min < -clip_threshold && range.max < -clip_threshold) {
+		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, -1.f);
+		return;
+
+	} else if (range.is_single_value()) {
+		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, range.min);
+		return;
 	}
 
 	const int stride = 1 << input.lod;
@@ -378,6 +395,57 @@ inline float get_pixel_repeat(Image &im, int x, int y) {
 
 inline float squared(float x) {
 	return x * x;
+}
+
+Interval get_curve_range(Curve &curve, uint8_t &is_monotonic_increasing) {
+	// TODO Would be nice to have the cache directly
+	const int res = curve.get_bake_resolution();
+	Interval range;
+	float prev_v = curve.interpolate_baked(0.f);
+	if (curve.interpolate_baked(1.f) > prev_v) {
+		is_monotonic_increasing = 1;
+	}
+	for (int i = 0; i < res; ++i) {
+		const float v = curve.interpolate_baked(static_cast<float>(i) / res);
+		range.add_point(v);
+		if (v < prev_v) {
+			is_monotonic_increasing = 0;
+		}
+		prev_v = v;
+	}
+	return range;
+}
+
+Interval get_heightmap_range(Image &im) {
+	switch (im.get_format()) {
+		case Image::FORMAT_R8:
+		case Image::FORMAT_RG8:
+		case Image::FORMAT_RGB8:
+		case Image::FORMAT_RGBA8:
+		case Image::FORMAT_RH:
+		case Image::FORMAT_RGH:
+		case Image::FORMAT_RGBH:
+		case Image::FORMAT_RGBAH:
+		case Image::FORMAT_RF:
+		case Image::FORMAT_RGF:
+		case Image::FORMAT_RGBF:
+		case Image::FORMAT_RGBAF: {
+			Interval r;
+			im.lock();
+			for (int y = 0; y < im.get_height(); ++y) {
+				for (int x = 0; x < im.get_width(); ++x) {
+					r.add_point(im.get_pixel(x, y).r);
+				}
+			}
+			im.unlock();
+			return r;
+		} break;
+
+		default:
+			ERR_FAIL_V_MSG(Interval(), "Image format not supported");
+			break;
+	}
+	return Interval();
 }
 
 void VoxelGeneratorGraph::compile() {
@@ -474,12 +542,20 @@ void VoxelGeneratorGraph::compile() {
 					case NODE_CURVE: {
 						Ref<Curve> curve = node->params[0];
 						CRASH_COND(curve.is_null());
+						uint8_t is_monotonic_increasing;
+						Interval range = get_curve_range(**curve, is_monotonic_increasing);
+						append(program, is_monotonic_increasing);
+						append(program, range.min);
+						append(program, range.max);
 						append(program, *curve);
 					} break;
 
 					case NODE_IMAGE_2D: {
 						Ref<Image> im = node->params[0];
 						CRASH_COND(im.is_null());
+						Interval range = get_heightmap_range(**im);
+						append(program, range.min);
+						append(program, range.max);
 						append(program, *im);
 					} break;
 
@@ -524,11 +600,23 @@ void VoxelGeneratorGraph::compile() {
 		_memory.resize(4, 0);
 	}
 
+	// Reserve space for range analysis
+	_memory.resize(_memory.size() * 2);
+	// Make it a copy to keep eventual constants at consistent adresses
+	const size_t half_size = _memory.size() / 2;
+	for (size_t i = 0, j = half_size; i < half_size; ++i, ++j) {
+		_memory[j] = _memory[i];
+	}
+
+	print_line(String("Compiled voxel graph. Program size: {0}b, memory size: {1}b")
+					   .format(varray(_program.size() * sizeof(float), _memory.size() * sizeof(float))));
+
 	CRASH_COND(!has_output);
 }
 
 // The order of fields in the following structs matters.
 // Inputs go first, then outputs, then params (if applicable at runtime).
+// TODO Think about alignment
 
 struct PNodeBinop {
 	uint16_t a_i0;
@@ -585,6 +673,9 @@ struct PNodeRemap {
 struct PNodeCurve {
 	uint16_t a_in;
 	uint16_t a_out;
+	uint8_t is_monotonic_increasing;
+	float min_value;
+	float max_value;
 	Curve *p_curve;
 };
 
@@ -607,6 +698,8 @@ struct PNodeImage2D {
 	uint16_t a_x;
 	uint16_t a_y;
 	uint16_t a_out;
+	float min_value;
+	float max_value;
 	Image *p_image;
 };
 
@@ -644,7 +737,7 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 			break;
 	}
 
-	std::vector<float> &memory = _memory;
+	ArraySlice<float> memory(_memory, 0, _memory.size() / 2);
 	memory[0] = position.x;
 	memory[1] = position.y;
 	memory[2] = position.z;
@@ -769,7 +862,226 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 #endif
 	}
 
-	return memory.back() * _iso_scale;
+	return memory[memory.size() - 1] * _iso_scale;
+}
+
+Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) {
+
+	ArraySlice<float> min_memory(_memory, 0, _memory.size() / 2);
+	ArraySlice<float> max_memory(_memory, _memory.size() / 2, _memory.size());
+	min_memory[0] = min_pos.x;
+	min_memory[1] = min_pos.y;
+	min_memory[2] = min_pos.z;
+	max_memory[0] = max_pos.x;
+	max_memory[1] = max_pos.y;
+	max_memory[2] = max_pos.z;
+
+	uint32_t pc = 0;
+	while (pc < _program.size()) {
+
+		const uint8_t opid = _program[pc++];
+
+		switch (opid) {
+			case NODE_CONSTANT:
+			case NODE_INPUT_X:
+			case NODE_INPUT_Y:
+			case NODE_INPUT_Z:
+			case NODE_OUTPUT_SDF:
+				// Not part of the runtime
+				CRASH_NOW();
+				break;
+
+			case NODE_ADD: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				min_memory[n.a_out] = min_memory[n.a_i0] + min_memory[n.a_i1];
+				max_memory[n.a_out] = max_memory[n.a_i0] + max_memory[n.a_i1];
+			} break;
+
+			case NODE_SUBTRACT: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				min_memory[n.a_out] = min_memory[n.a_i0] - max_memory[n.a_i1];
+				max_memory[n.a_out] = max_memory[n.a_i0] - min_memory[n.a_i1];
+			} break;
+
+			case NODE_MULTIPLY: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				Interval r = Interval(min_memory[n.a_i0], max_memory[n.a_i0]) *
+							 Interval(min_memory[n.a_i1], max_memory[n.a_i1]);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case NODE_SINE: {
+				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
+				if (min_memory[n.a_in] == max_memory[n.a_in]) {
+					float s = Math::sin(min_memory[n.a_in]);
+					min_memory[n.a_out] = s;
+					max_memory[n.a_out] = s;
+				} else {
+					// Simplified
+					min_memory[n.a_out] = -1.f;
+					max_memory[n.a_out] = 1.f;
+				}
+			} break;
+
+			case NODE_FLOOR: {
+				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
+				min_memory[n.a_out] = Math::floor(min_memory[n.a_in]);
+				max_memory[n.a_out] = Math::floor(max_memory[n.a_in]); // ceil?
+			} break;
+
+			case NODE_ABS: {
+				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
+				Interval r = Interval(min_memory[n.a_in], max_memory[n.a_in]).abs();
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case NODE_SQRT: {
+				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
+				Interval r = Interval(min_memory[n.a_in], max_memory[n.a_in]).sqrt();
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case NODE_DISTANCE_2D: {
+				const PNodeDistance2D &n = read<PNodeDistance2D>(_program, pc);
+				Interval x0(min_memory[n.a_x0], max_memory[n.a_x0]);
+				Interval y0(min_memory[n.a_y0], max_memory[n.a_y0]);
+				Interval x1(min_memory[n.a_x1], max_memory[n.a_x1]);
+				Interval y1(min_memory[n.a_y1], max_memory[n.a_y1]);
+				Interval dx = x1 - x0;
+				Interval dy = y1 - y0;
+				Interval r = (dx * dx + dy * dy).sqrt();
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case NODE_DISTANCE_3D: {
+				const PNodeDistance3D &n = read<PNodeDistance3D>(_program, pc);
+				Interval x0(min_memory[n.a_x0], max_memory[n.a_x0]);
+				Interval y0(min_memory[n.a_y0], max_memory[n.a_y0]);
+				Interval z0(min_memory[n.a_z0], max_memory[n.a_z0]);
+				Interval x1(min_memory[n.a_x1], max_memory[n.a_x1]);
+				Interval y1(min_memory[n.a_y1], max_memory[n.a_y1]);
+				Interval z1(min_memory[n.a_z1], max_memory[n.a_z1]);
+				Interval dx = x1 - x0;
+				Interval dy = y1 - y0;
+				Interval dz = z1 - z0;
+				Interval r = (dx * dx + dy * dy + dz * dz).sqrt();
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case NODE_MIX: {
+				const PNodeMix &n = read<PNodeMix>(_program, pc);
+				Interval a(min_memory[n.a_i0], max_memory[n.a_i0]);
+				Interval b(min_memory[n.a_i1], max_memory[n.a_i1]);
+				Interval t(min_memory[n.a_ratio], max_memory[n.a_ratio]);
+				if (t.min == t.max) {
+					min_memory[n.a_out] = Math::lerp(a.min, b.min, t.min);
+					max_memory[n.a_out] = Math::lerp(a.max, b.max, t.min);
+				} else {
+					Interval r = a + t * (b - a);
+					min_memory[n.a_out] = r.min;
+					max_memory[n.a_out] = r.max;
+				}
+			} break;
+
+			case NODE_CLAMP: {
+				const PNodeClamp &n = read<PNodeClamp>(_program, pc);
+				Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				// TODO We may want to have wirable min and max later
+				Interval cmin = Interval::from_single_value(n.p_min);
+				Interval cmax = Interval::from_single_value(n.p_max);
+				Interval r = x.clamp(cmin, cmax);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case NODE_REMAP: {
+				const PNodeRemap &n = read<PNodeRemap>(_program, pc);
+				Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				Interval r = ((x - n.p_c0) * n.p_m0) * n.p_m1 + n.p_c1;
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case NODE_CURVE: {
+				const PNodeCurve &n = read<PNodeCurve>(_program, pc);
+				if (min_memory[n.a_in] == max_memory[n.a_in]) {
+					float v = n.p_curve->interpolate_baked(min_memory[n.a_in]);
+					min_memory[n.a_out] = v;
+					max_memory[n.a_out] = v;
+				} else if (n.is_monotonic_increasing) {
+					min_memory[n.a_out] = n.p_curve->interpolate_baked(min_memory[n.a_in]);
+					max_memory[n.a_out] = n.p_curve->interpolate_baked(max_memory[n.a_in]);
+				} else {
+					// TODO Segment the curve?
+					min_memory[n.a_out] = n.min_value;
+					max_memory[n.a_out] = n.max_value;
+				}
+			} break;
+
+			case NODE_NOISE_2D: {
+				const PNodeNoise2D &n = read<PNodeNoise2D>(_program, pc);
+				if (
+						min_memory[n.a_x] == max_memory[n.a_x] &&
+						min_memory[n.a_y] == max_memory[n.a_y]) {
+
+					float h = n.p_noise->get_noise_2d(
+							min_memory[n.a_x],
+							min_memory[n.a_y]);
+
+					min_memory[n.a_out] = h;
+					max_memory[n.a_out] = h;
+
+				} else {
+					min_memory[n.a_out] = -1.f;
+					max_memory[n.a_out] = 1.f;
+				}
+			} break;
+
+			case NODE_NOISE_3D: {
+				const PNodeNoise3D &n = read<PNodeNoise3D>(_program, pc);
+				if (
+						min_memory[n.a_x] == max_memory[n.a_x] &&
+						min_memory[n.a_y] == max_memory[n.a_y] &&
+						min_memory[n.a_z] == max_memory[n.a_z]) {
+
+					float h = n.p_noise->get_noise_3d(
+							min_memory[n.a_x],
+							min_memory[n.a_y],
+							min_memory[n.a_z]);
+
+					min_memory[n.a_out] = h;
+					max_memory[n.a_out] = h;
+
+				} else {
+					min_memory[n.a_out] = -1.f;
+					max_memory[n.a_out] = 1.f;
+				}
+			} break;
+
+			case NODE_IMAGE_2D: {
+				const PNodeImage2D &n = read<PNodeImage2D>(_program, pc);
+				// TODO Segment image?
+				min_memory[n.a_out] = n.min_value;
+				max_memory[n.a_out] = n.max_value;
+			} break;
+
+			default:
+				CRASH_NOW();
+				break;
+		}
+
+#ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
+		// If this fails, the program is ill-formed
+		CRASH_COND(read<uint16_t>(_program, pc) != VOXEL_DEBUG_GRAPH_PROG_SENTINEL);
+#endif
+	}
+
+	return Interval(min_memory[min_memory.size() - 1], max_memory[max_memory.size() - 1]) * _iso_scale;
 }
 
 void VoxelGeneratorGraph::clear_bounds() {

@@ -45,14 +45,14 @@ public:
 	}
 
 	inline T &operator[](size_t i) {
-#ifdef TOOLS_ENABLED
+#ifdef DEBUG_ENABLED
 		CRASH_COND(i >= _size);
 #endif
 		return _ptr[i];
 	}
 
 	inline const T &operator[](size_t i) const {
-#ifdef TOOLS_ENABLED
+#ifdef DEBUG_ENABLED
 		CRASH_COND(i >= _size);
 #endif
 		return _ptr[i];
