@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelGeneratorImage" inherits="VoxelGeneratorHeightmap" version="3.2.1">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="blur_enabled" type="bool" setter="set_blur_enabled" getter="is_blur_enabled" default="false">
+		</member>
+		<member name="channel" type="int" setter="set_channel" getter="get_channel" enum="VoxelBuffer.ChannelId" default="1">
+		</member>
+		<member name="image" type="Image" setter="set_image" getter="get_image">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

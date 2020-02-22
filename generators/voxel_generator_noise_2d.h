@@ -6,6 +6,7 @@
 
 class VoxelGeneratorNoise2D : public VoxelGeneratorHeightmap {
 	GDCLASS(VoxelGeneratorNoise2D, VoxelGeneratorHeightmap)
+	
 public:
 	VoxelGeneratorNoise2D();
 

@@ -4,7 +4,7 @@ Physics based collision is enabled by default. It provides both raycasting and c
 
 You can turn it on or off by setting the `generate_collisions` option on any of the terrain nodes. Or you can enable or disable it in code.
 
-The collision is built along with the mesh. So any blocks that have already been built will not be affected by the setting unless they are regenerated.
+The collision is built along with the mesh. So any blocks that have already been built will not be affected by this setting unless they are regenerated.
 
 
 ## Debugging
@@ -63,5 +63,5 @@ if terrain.raycast(...):
 
 
 ---
-* [Next Page](06_custom-streams.md)
+* [Next Page](06_custom-generator.md)
 * [Doc Index](01_get-started.md)

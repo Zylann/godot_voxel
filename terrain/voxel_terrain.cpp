@@ -23,11 +23,14 @@ VoxelTerrain::VoxelTerrain() {
 	_view_distance_blocks = 8;
 	_last_view_distance_blocks = 0;
 
-	_stream_thread = NULL;
-	_block_updater = NULL;
+	_stream_thread = nullptr;
+	_block_updater = nullptr;
 
 	_run_in_editor = false;
-	_smooth_meshing_enabled = false;
+
+	Ref<VoxelLibrary> library;
+	library.instance();
+	set_voxel_library(library);
 }
 
 VoxelTerrain::~VoxelTerrain() {
@@ -44,6 +47,15 @@ VoxelTerrain::~VoxelTerrain() {
 	if (_block_updater) {
 		memdelete(_block_updater);
 	}
+}
+
+String VoxelTerrain::get_configuration_warning() const {
+	if (_stream.is_valid()) {
+		if (! (_stream->get_used_channels_mask() & ((1<<VoxelBuffer::CHANNEL_TYPE) | (1<<VoxelBuffer::CHANNEL_SDF)))) {
+			return TTR("VoxelTerrain supports only stream channels \"Type\" or \"Sdf\".");
+		}
+	}
+	return String();
 }
 
 // TODO See if there is a way to specify materials in voxels directly?
@@ -162,6 +174,8 @@ void VoxelTerrain::_on_stream_params_changed() {
 		start_updater();
 	}
 
+	update_configuration_warning();
+
 	// The whole map might change, so make all area dirty
 	// TODO Actually, we should regenerate the whole map, not just update all its blocks
 	make_all_view_dirty_deferred();
@@ -206,7 +220,7 @@ int VoxelTerrain::get_view_distance() const {
 }
 
 void VoxelTerrain::set_view_distance(int distance_in_voxels) {
-	ERR_FAIL_COND(distance_in_voxels < 0)
+	ERR_FAIL_COND(distance_in_voxels < 0);
 	int d = distance_in_voxels / _map->get_block_size();
 	if (d != _view_distance_blocks) {
 		print_line(String("View distance changed from ") + String::num(_view_distance_blocks) + String(" blocks to ") + String::num(d));
@@ -246,19 +260,6 @@ void VoxelTerrain::set_material(unsigned int id, Ref<Material> material) {
 Ref<Material> VoxelTerrain::get_material(unsigned int id) const {
 	ERR_FAIL_COND_V(id < 0 || id >= VoxelMesherBlocky::MAX_MATERIALS, Ref<Material>());
 	return _materials[id];
-}
-
-bool VoxelTerrain::is_smooth_meshing_enabled() const {
-	return _smooth_meshing_enabled;
-}
-
-void VoxelTerrain::set_smooth_meshing_enabled(bool enabled) {
-	if (_smooth_meshing_enabled != enabled) {
-		_smooth_meshing_enabled = enabled;
-		stop_updater();
-		start_updater();
-		make_all_view_dirty_deferred();
-	}
 }
 
 void VoxelTerrain::make_block_dirty(Vector3i bpos) {
@@ -389,7 +390,11 @@ void VoxelTerrain::start_updater() {
 
 	// TODO Thread-safe way to change those parameters
 	VoxelMeshUpdater::MeshingParams params;
-	params.smooth_surface = _smooth_meshing_enabled;
+
+	if (_stream.is_valid()) {
+		params.smooth_surface = _stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
+	}
+
 	params.library = _library;
 
 	_block_updater = memnew(VoxelMeshUpdater(1, params));
@@ -899,14 +904,14 @@ void VoxelTerrain::_process() {
 			// Smooth meshing works on more neighbors, so checking a single block isn't enough to ignore it,
 			// but that will slow down meshing a lot.
 			// TODO This is one reason to separate terrain systems between blocky and smooth (other reason is LOD)
-			if (!_smooth_meshing_enabled) {
+			if (! (_stream->get_used_channels_mask() & (1<<VoxelBuffer::CHANNEL_SDF))) {
 				VoxelBlock *block = _map->get_block(block_pos);
 				if (block == nullptr) {
 					continue;
 				} else {
 					CRASH_COND(block->voxels.is_null());
 
-					int air_type = 0;
+					uint64_t air_type = 0;
 					if (
 							block->voxels->is_uniform(VoxelBuffer::CHANNEL_TYPE) &&
 							block->voxels->is_uniform(VoxelBuffer::CHANNEL_SDF) &&
@@ -1065,7 +1070,15 @@ void VoxelTerrain::_process() {
 }
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
-	return Ref<VoxelTool>(memnew(VoxelToolTerrain(this, _map)));
+	Ref<VoxelTool> vt = memnew(VoxelToolTerrain(this, _map));
+	if (_stream.is_valid()) {
+		if(_stream->get_used_channels_mask() & (1<<VoxelBuffer::CHANNEL_SDF)) {
+			vt->set_channel(VoxelBuffer::CHANNEL_SDF);
+		} else {
+			vt->set_channel(VoxelBuffer::CHANNEL_TYPE);
+		}
+	}
+	return vt;
 }
 
 Vector3 VoxelTerrain::_b_voxel_to_block(Vector3 pos) {
@@ -1096,9 +1109,6 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_viewer_path"), &VoxelTerrain::get_viewer_path);
 	ClassDB::bind_method(D_METHOD("set_viewer_path", "path"), &VoxelTerrain::set_viewer_path);
 
-	ClassDB::bind_method(D_METHOD("is_smooth_meshing_enabled"), &VoxelTerrain::is_smooth_meshing_enabled);
-	ClassDB::bind_method(D_METHOD("set_smooth_meshing_enabled", "enabled"), &VoxelTerrain::set_smooth_meshing_enabled);
-
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_b_voxel_to_block);
 	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_b_block_to_voxel);
 
@@ -1112,5 +1122,4 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "smooth_meshing_enabled"), "set_smooth_meshing_enabled", "is_smooth_meshing_enabled");
 }

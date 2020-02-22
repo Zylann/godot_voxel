@@ -7,11 +7,18 @@ VoxelGeneratorHeightmap::VoxelGeneratorHeightmap() {
 
 void VoxelGeneratorHeightmap::set_channel(VoxelBuffer::ChannelId channel) {
 	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
-	_channel = channel;
+	if (_channel != channel) {
+		_channel = channel;
+		emit_changed();
+	}
 }
 
 VoxelBuffer::ChannelId VoxelGeneratorHeightmap::get_channel() const {
 	return _channel;
+}
+
+int VoxelGeneratorHeightmap::get_used_channels_mask() const {
+	return (1 << _channel);
 }
 
 void VoxelGeneratorHeightmap::set_height_start(float start) {

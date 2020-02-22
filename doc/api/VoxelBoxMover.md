@@ -2,7 +2,7 @@
 
 Inherits: Reference
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -17,7 +17,7 @@ _Godot version: 3.2_
 
 ## Methods:
 
-#### » Vector3 get_motion ( Vector3 pos, Vector3 motion, AABB aabb, Node terrain ) 
+#### Â» Vector3 get_motion ( Vector3 pos, Vector3 motion, AABB aabb, Node terrain ) 
 
 
 
@@ -28,4 +28,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 16, 2020_

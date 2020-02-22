@@ -104,6 +104,7 @@ void VoxelDataLoader::process_blocks_thread_func(const ArraySlice<InputBlock> in
 		if (ib.data.voxels_to_save.is_null()) {
 			output.type = TYPE_LOAD;
 			output.voxels_loaded = emerge_requests.write[iload].voxel_buffer;
+			CRASH_COND(output.voxels_loaded.is_null());
 			++iload;
 
 		} else {

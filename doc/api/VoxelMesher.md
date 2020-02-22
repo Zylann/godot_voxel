@@ -2,7 +2,7 @@
 
 Inherits: Reference
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -17,7 +17,13 @@ _Godot version: 3.2_
 
 ## Methods:
 
-#### � Mesh build_mesh ( VoxelBuffer voxel_buffer ) 
+#### » Mesh build_mesh ( VoxelBuffer voxel_buffer ) 
+
+
+#### » int get_maximum_padding (  )  const
+
+
+#### » int get_minimum_padding (  )  const
 
 
 
@@ -28,4 +34,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 16, 2020_

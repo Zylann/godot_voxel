@@ -7,6 +7,7 @@
 // Provides infinite tiling heightmap based on an image
 class VoxelGeneratorImage : public VoxelGeneratorHeightmap {
 	GDCLASS(VoxelGeneratorImage, VoxelGeneratorHeightmap)
+
 public:
 	VoxelGeneratorImage();
 

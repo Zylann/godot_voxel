@@ -83,6 +83,15 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 	}
 }
 
+String VoxelLodTerrain::get_configuration_warning() const {
+	if (_stream.is_valid()) {
+		if (! (_stream->get_used_channels_mask() & (1<<VoxelBuffer::CHANNEL_SDF))) {
+			return TTR("VoxelLodTerrain supports only stream channel \"Sdf\" (smooth).");
+		}
+	}
+	return String();
+}
+
 Ref<Material> VoxelLodTerrain::get_material() const {
 	return _material;
 }
@@ -154,6 +163,8 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 		Lod &lod = _lods[i];
 		lod.last_view_distance_blocks = 0;
 	}
+
+	update_configuration_warning();
 }
 
 void VoxelLodTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
@@ -280,7 +291,7 @@ void VoxelLodTerrain::stop_updater() {
 
 	_blocks_pending_main_thread_update.clear();
 
-	for (int i = 0; i < _lods.size(); ++i) {
+	for (unsigned int i = 0; i < _lods.size(); ++i) {
 
 		Lod &lod = _lods[i];
 		lod.blocks_pending_update.clear();
@@ -307,7 +318,7 @@ void VoxelLodTerrain::stop_streamer() {
 		_stream_thread = nullptr;
 	}
 
-	for (int i = 0; i < _lods.size(); ++i) {
+	for (unsigned int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
 		lod.blocks_to_load.clear();
 	}
@@ -337,7 +348,7 @@ float VoxelLodTerrain::get_lod_split_scale() const {
 
 void VoxelLodTerrain::set_lod_count(int p_lod_count) {
 
-	ERR_FAIL_COND(p_lod_count >= VoxelConstants::MAX_LOD);
+	ERR_FAIL_COND(p_lod_count >= (int)VoxelConstants::MAX_LOD);
 	ERR_FAIL_COND(p_lod_count < 1);
 
 	if (get_lod_count() != p_lod_count) {
@@ -347,7 +358,7 @@ void VoxelLodTerrain::set_lod_count(int p_lod_count) {
 
 void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 
-	CRASH_COND(p_lod_count >= VoxelConstants::MAX_LOD);
+	CRASH_COND(p_lod_count >= (int)VoxelConstants::MAX_LOD);
 	CRASH_COND(p_lod_count < 1);
 
 	_lod_count = p_lod_count;
@@ -365,7 +376,7 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 void VoxelLodTerrain::reset_maps() {
 	// Clears all blocks and reconfigures maps to account for new LOD count and block sizes
 
-	for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+	for (int lod_index = 0; lod_index < (int)_lods.size(); ++lod_index) {
 
 		Lod &lod = _lods[lod_index];
 
@@ -447,7 +458,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 
 		case NOTIFICATION_ENTER_WORLD: {
 			World *world = *get_world();
-			for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([world](VoxelBlock *block) {
 						block->set_world(world);
@@ -457,7 +468,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD: {
-			for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([](VoxelBlock *block) {
 						block->set_world(nullptr);
@@ -468,7 +479,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 
 		case NOTIFICATION_VISIBILITY_CHANGED: {
 			bool visible = is_visible();
-			for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([visible](VoxelBlock *block) {
 						block->set_parent_visible(visible);
@@ -968,17 +979,18 @@ void VoxelLodTerrain::_process() {
 
 		//print_line(String("Loaded {0} blocks").format(varray(output.emerged_blocks.size())));
 
-#ifdef TOOLS_ENABLED
-		for (int i = 0; i < _lod_count; ++i) {
-			_lods[i].debug_unexpected_block_drops.clear();
-		}
-#endif
-
 		for (int i = 0; i < output.blocks.size(); ++i) {
 
 			VOXEL_PROFILE_SCOPE(profile_process_get_loading_responses_block);
 
 			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
+
+			if (ob.data.type == VoxelDataLoader::TYPE_SAVE) {
+				// That's a save confirmation event.
+				// Note: in the future, if blocks don't get copied before being sent for saving,
+				// we will need to use block versionning to know when we can reset the `modified` flag properly
+				continue;
+			}
 
 			if (ob.lod >= get_lod_count()) {
 				// That block was requested at a time where LOD was higher... drop it
@@ -1007,9 +1019,6 @@ void VoxelLodTerrain::_process() {
 				//				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
 				//								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
 
-#ifdef TOOLS_ENABLED
-				lod.debug_unexpected_block_drops.push_back(ob.position);
-#endif
 				++_stats.dropped_block_loads;
 				continue;
 			}
@@ -1205,7 +1214,7 @@ void VoxelLodTerrain::_process() {
 
 			{
 				VOXEL_PROFILE_SCOPE(profile_process_receive_mesh_updates_block_update_transitions);
-				for (int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
+				for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
 
 					Ref<ArrayMesh> transition_mesh = build_mesh(
 							mesh_data.transition_surfaces[dir],
@@ -1254,7 +1263,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 	// Make sure LOD0 gets updates even if _lod_count is 1
 	Lod &lod0 = _lods[0];
 	for (unsigned int i = 0; i < lod0.blocks_pending_lodding.size(); ++i) {
-		Vector3i bpos = lod0.blocks_pending_lodding[i];
+		const Vector3i bpos = lod0.blocks_pending_lodding[i];
 		VoxelBlock *block = lod0.map->get_block(bpos);
 		block->set_needs_lodding(false);
 		L::schedule_update(block, lod0.blocks_pending_update);
@@ -1270,8 +1279,8 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 		Lod &dst_lod = _lods[dst_lod_index];
 
 		for (unsigned int i = 0; i < src_lod.blocks_pending_lodding.size(); ++i) {
-			Vector3i src_bpos = src_lod.blocks_pending_lodding[i];
-			Vector3i dst_bpos = src_bpos >> 1;
+			const Vector3i src_bpos = src_lod.blocks_pending_lodding[i];
+			const Vector3i dst_bpos = src_bpos >> 1;
 
 			VoxelBlock *src_block = src_lod.map->get_block(src_bpos);
 			VoxelBlock *dst_block = dst_lod.map->get_block(dst_bpos);
@@ -1294,7 +1303,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 				dst_lod.blocks_pending_lodding.push_back(dst_bpos);
 			}
 
-			Vector3i rel = src_bpos - (dst_bpos << 1);
+			const Vector3i rel = src_bpos - (dst_bpos << 1);
 
 			// Update lower LOD
 			// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
@@ -1422,7 +1431,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 
 	uint8_t transition_mask = 0;
 
-	if (lod_index + 1 >= _lods.size()) {
+	if (lod_index + 1 >= (int)_lods.size()) {
 		return transition_mask;
 	}
 
@@ -1482,7 +1491,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 				// There are always 4 on each side, checking any is enough
 
 				Vector3i upper_neighbor_pos = upper_pos;
-				for (int i = 0; i < Vector3i::AXIS_COUNT; ++i) {
+				for (unsigned int i = 0; i < Vector3i::AXIS_COUNT; ++i) {
 					if (side_normal[i] == -1) {
 						--upper_neighbor_pos[i];
 					} else if (side_normal[i] == 1) {
@@ -1556,30 +1565,8 @@ Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_d
 	return hits;
 }
 
-Array VoxelLodTerrain::debug_get_last_unexpected_block_drops() const {
-
-	Array lods;
-	lods.resize(_lod_count);
-
-	for (int i = 0; i < _lod_count; ++i) {
-		const Lod &lod = _lods[i];
-
-		Array drops;
-		drops.resize(lod.debug_unexpected_block_drops.size());
-
-		for (int j = 0; j < lod.debug_unexpected_block_drops.size(); ++j) {
-			drops[j] = lod.debug_unexpected_block_drops[j].to_vec3();
-		}
-
-		lods[i] = drops;
-	}
-
-	return lods;
-}
-
 Dictionary VoxelLodTerrain::debug_get_block_info(Vector3 fbpos, int lod_index) const {
 
-	// Gets some info useful for debugging
 	Dictionary d;
 	ERR_FAIL_COND_V(lod_index < 0, d);
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
@@ -1620,6 +1607,39 @@ Array VoxelLodTerrain::debug_get_octrees() const {
 	return positions;
 }
 
+Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const {
+
+	Array image_array;
+	image_array.resize(get_lod_count());
+
+	for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
+
+		const Rect3i world_box = Rect3i::from_center_extents(Vector3i(center) >> lod_index, Vector3i(extents) >> lod_index);
+
+		if (world_box.size.volume() == 0) {
+			continue;
+		}
+
+		Ref<VoxelBuffer> buffer_ref;
+		buffer_ref.instance();
+		VoxelBuffer &buffer = **buffer_ref;
+		buffer.create(world_box.size);
+
+		const Lod &lod = _lods[lod_index];
+
+		world_box.for_each_cell([&](const Vector3i &world_pos) {
+			const float v = lod.map->get_voxel_f(world_pos, VoxelBuffer::CHANNEL_SDF);
+			const Vector3i rpos = world_pos - world_box.pos;
+			buffer.set_voxel_f(v, rpos.x, rpos.y, rpos.z, VoxelBuffer::CHANNEL_SDF);
+		});
+
+		Ref<Image> image = buffer.debug_print_sdf_to_image_top_down();
+		image_array[lod_index] = image;
+	}
+
+	return image_array;
+}
+
 void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
@@ -1655,8 +1675,9 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("debug_raycast_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_block);
 	ClassDB::bind_method(D_METHOD("debug_get_block_info", "block_pos", "lod"), &VoxelLodTerrain::debug_get_block_info);
-	ClassDB::bind_method(D_METHOD("debug_get_last_unexpected_block_drops"), &VoxelLodTerrain::debug_get_last_unexpected_block_drops);
 	ClassDB::bind_method(D_METHOD("debug_get_octrees"), &VoxelLodTerrain::debug_get_octrees);
+	ClassDB::bind_method(D_METHOD("debug_save_all_modified_blocks"), &VoxelLodTerrain::_b_save_all_modified_blocks);
+	ClassDB::bind_method(D_METHOD("debug_print_sdf_top_down", "center", "extents"), &VoxelLodTerrain::_b_debug_print_sdf_top_down);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 
@@ -1668,4 +1689,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"), "set_material", "get_material");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"), "set_collision_lod_count", "get_collision_lod_count");
+}
+
+void VoxelLodTerrain::_b_save_all_modified_blocks() {
+	save_all_modified_blocks(true);
 }

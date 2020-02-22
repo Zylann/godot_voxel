@@ -40,12 +40,12 @@ uint64_t g_depth_max_values[] = {
 };
 
 inline uint32_t get_depth_bit_count(VoxelBuffer::Depth d) {
-	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT)
+	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT);
 	return g_depth_bit_counts[d];
 }
 
 inline uint64_t get_max_value_for_depth(VoxelBuffer::Depth d) {
-	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT)
+	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT);
 	return g_depth_max_values[d];
 }
 
@@ -96,8 +96,8 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 		}
 		case VoxelBuffer::DEPTH_64_BIT: {
 			MarshallDouble m;
-			m.d = value;
-			return m.l;
+			m.l = value;
+			return m.d;
 		}
 		default:
 			CRASH_NOW();
@@ -360,19 +360,19 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 					break;
 
 				case DEPTH_16_BIT:
-					for (unsigned int i = 0; i < area_size.y; ++i) {
+					for (int i = 0; i < area_size.y; ++i) {
 						((uint16_t *)channel.data)[dst_ri + i] = defval;
 					}
 					break;
 
 				case DEPTH_32_BIT:
-					for (unsigned int i = 0; i < area_size.y; ++i) {
+					for (int i = 0; i < area_size.y; ++i) {
 						((uint32_t *)channel.data)[dst_ri + i] = defval;
 					}
 					break;
 
 				case DEPTH_64_BIT:
-					for (unsigned int i = 0; i < area_size.y; ++i) {
+					for (int i = 0; i < area_size.y; ++i) {
 						((uint64_t *)channel.data)[dst_ri + i] = defval;
 					}
 					break;
@@ -631,7 +631,7 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 			for (pos.x = dst_min.x; pos.x < dst_max.x; ++pos.x) {
 				for (pos.y = dst_min.y; pos.y < dst_max.y; ++pos.y) {
 
-					Vector3i src_pos = src_min + ((pos - dst_min) << 1);
+					const Vector3i src_pos = src_min + ((pos - dst_min) << 1);
 
 					// TODO Remove check once it works
 					CRASH_COND(!validate_pos(src_pos.x, src_pos.y, src_pos.z));
@@ -639,7 +639,7 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 					uint64_t v;
 					if (src_channel.data) {
 						// TODO Optimized version?
-						v = get_voxel(pos, channel_index);
+						v = get_voxel(src_pos, channel_index);
 					} else {
 						v = src_channel.defval;
 					}
@@ -721,8 +721,6 @@ uint32_t VoxelBuffer::get_depth_bit_count(Depth d) {
 	return ::get_depth_bit_count(d);
 }
 
-#ifdef TOOLS_ENABLED
-
 Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 	Image *im = memnew(Image);
 	im->create(_size.x, _size.z, false, Image::FORMAT_RGB8);
@@ -744,8 +742,6 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 	im->unlock();
 	return Ref<Image>(im);
 }
-
-#endif
 
 void VoxelBuffer::_bind_methods() {
 

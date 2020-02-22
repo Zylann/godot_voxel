@@ -20,6 +20,7 @@ public:
 	StringName emerge_block;
 	StringName immerge_block;
 	StringName generate_block;
+	StringName get_used_channels_mask;
 
 	StringName u_transition_mask;
 };

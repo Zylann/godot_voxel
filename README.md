@@ -11,11 +11,11 @@ Features
 ---------------------------
 
 - Realtime editable, 3D based terrain (Unlike a heightmap based terrain, this allows for overhangs, tunnels, and user creation/destruction)
-- Full collision support
+- Physics based collision and raycast support
 - Infinite terrains made by paging sections in and out
-- Voxel data is streamed from a variety of sources, which includes the ability to write your own
+- Voxel data is streamed from a variety of sources, which includes the ability to write your own generators
 - Minecraft-style blocky voxel terrain, with multiple materials and baked ambient occlusion
-- Smooth terrain using Dual Marching Cubes
+- Smooth terrain using Transvoxel
 - Levels of detail for smooth terrain
 - Voxel storage using 8-bit channels for any general purpose
 
@@ -32,7 +32,7 @@ What This Module Doesn't Provide
 How To Install And Use
 -------------------------
 
-Voxel Tools is a custom C++ module for Godot 3.1+. It must be compiled into the engine to work. 
+Voxel Tools is a custom C++ module for Godot 3.1+. It must be compiled into the engine to work. [Prebuilt binaries](http://tokisan.com/godot-binaries) are available.
 
 Please see the [Getting Started Guide](doc/01_get-started.md) for instructions, or [Zylann's demos](https://github.com/Zylann/voxelgame) and [TinmanJuggernaut's demo](https://github.com/tinmanjuggernaut/voxelgame) for working examples.
 
@@ -44,5 +44,5 @@ These are some ideas that may or may not be implemented in the future:
 
 * LOD (in development)
 * Support general voxel use (not just terrains)
-* Transvoxel and other meshing algorithms
+* Other meshing algorithms (e.g. dual contouring)
 * GPU Offloading (Maybe when Godot 4+ supports compute shaders)

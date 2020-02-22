@@ -141,12 +141,8 @@ public:
 	//		}
 	//	}
 
-#ifdef TOOLS_ENABLED
-
 	// Debugging
 	Ref<Image> debug_print_sdf_to_image_top_down();
-
-#endif
 
 private:
 	void create_channel_noinit(int i, Vector3i size);

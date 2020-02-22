@@ -22,6 +22,8 @@ public:
 	VoxelLodTerrain();
 	~VoxelLodTerrain();
 
+	String get_configuration_warning() const override;
+
 	Ref<Material> get_material() const;
 	void set_material(Ref<Material> p_material);
 
@@ -76,7 +78,6 @@ public:
 	Dictionary get_statistics() const;
 
 	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
-	Array debug_get_last_unexpected_block_drops() const;
 	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
 	Array debug_get_octrees() const;
 
@@ -114,6 +115,9 @@ private:
 	void add_transition_updates_around(Vector3i block_pos, int lod_index);
 	void process_transition_updates();
 	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
+
+	void _b_save_all_modified_blocks();
+	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const;
 
 	struct OctreeItem {
 		LodOctree octree;
@@ -157,11 +161,6 @@ private:
 
 		// Members for memory caching
 		std::vector<Vector3i> blocks_to_load;
-
-#ifdef TOOLS_ENABLED
-		// TODO Debug, may be removed in the future
-		std::vector<Vector3i> debug_unexpected_block_drops;
-#endif
 	};
 
 	FixedArray<Lod, VoxelConstants::MAX_LOD> _lods;

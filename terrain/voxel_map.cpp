@@ -61,7 +61,7 @@ VoxelBlock *VoxelMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
 	Vector3i bpos = voxel_to_block(pos);
 	VoxelBlock *block = get_block(bpos);
 
-	if (block == NULL) {
+	if (block == nullptr) {
 
 		Ref<VoxelBuffer> buffer(memnew(VoxelBuffer));
 		buffer->create(_block_size, _block_size, _block_size);
@@ -85,7 +85,7 @@ float VoxelMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 
 	Vector3i bpos = voxel_to_block(pos);
 	const VoxelBlock *block = get_block(bpos);
-	if (block == NULL) {
+	if (block == nullptr) {
 		return _default_voxel[c];
 	}
 	Vector3i lpos = to_local(pos);

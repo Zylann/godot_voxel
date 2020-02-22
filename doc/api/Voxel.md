@@ -2,7 +2,7 @@
 
 Inherits: Resource
 
-_Godot version: 3.2_
+_Godot version: 3.2.1_
 
 
 ## Online Tutorials: 
@@ -11,56 +11,47 @@ _Godot version: 3.2_
 
 ## Constants:
 
-#### » GeometryType.GEOMETRY_NONE = 0
+#### Â» GeometryType.GEOMETRY_NONE = 0
 
 
-#### » GeometryType.GEOMETRY_CUBE = 1
+#### Â» GeometryType.GEOMETRY_CUBE = 1
 
 
-#### » GeometryType.GEOMETRY_MAX = 2
-
-
-#### » ChannelMode.CHANNEL_TYPE = 0
-
-
-#### » ChannelMode.CHANNEL_ISOLEVEL = 1
-
-
-#### » ChannelMode.CHANNEL_DATA = 2
+#### Â» GeometryType.GEOMETRY_MAX = 2
 
 
 
 ## Properties:
 
-#### » Color color
+#### Â» Color color
 
 `set_color (value)` setter
 
 `get_color ()` getter
 
 
-#### » int Voxel.GeometryType.geometry_type
+#### Â» int Voxel.GeometryType.geometry_type
 
 `set_geometry_type (value)` setter
 
 `get_geometry_type ()` getter
 
 
-#### » int material_id
+#### Â» int material_id
 
 `set_material_id (value)` setter
 
 `get_material_id ()` getter
 
 
-#### » bool transparent
+#### Â» bool transparent
 
 `set_transparent (value)` setter
 
 `is_transparent ()` getter
 
 
-#### » String voxel_name
+#### Â» String voxel_name
 
 `set_voxel_name (value)` setter
 
@@ -70,22 +61,22 @@ _Godot version: 3.2_
 
 ## Methods:
 
-#### » int get_id (  )  const
+#### Â» int get_id (  )  const
 
 
-#### » Voxel set_color ( Color color ) 
+#### Â» Voxel set_color ( Color color ) 
 
 
-#### » Voxel set_id ( int id ) 
+#### Â» Voxel set_id ( int id ) 
 
 
-#### » Voxel set_material_id ( int id ) 
+#### Â» Voxel set_material_id ( int id ) 
 
 
-#### » Voxel set_transparent ( bool transparent=true ) 
+#### Â» Voxel set_transparent ( bool transparent=true ) 
 
 
-#### » Voxel set_voxel_name ( String name ) 
+#### Â» Voxel set_voxel_name ( String name ) 
 
 
 
@@ -96,4 +87,4 @@ _Godot version: 3.2_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Aug 26, 2019_
+_Generated on Feb 16, 2020_
