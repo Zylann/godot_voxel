@@ -96,6 +96,8 @@ void raw_copy_to(PoolVector<T> &to, const std::vector<T> &from) {
 	memcpy(w.ptr(), from.data(), from.size() * sizeof(T));
 }
 
+// TODO Move math funcs under math/ folder and wrap them in a namespace
+
 // Trilinear interpolation between corner values of a cube.
 // Cube points respect the same position as in octree_tables.h
 template <typename T>

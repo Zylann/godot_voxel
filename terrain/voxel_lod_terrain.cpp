@@ -1023,7 +1023,7 @@ void VoxelLodTerrain::_process() {
 				continue;
 			}
 
-			if (ob.data.voxels_loaded->get_size() != lod.map->get_block_size()) {
+			if (ob.data.voxels_loaded->get_size() != Vector3i(lod.map->get_block_size())) {
 				// Voxel block size is incorrect, drop it
 				ERR_PRINT("Block size obtained from stream is different from expected size");
 				++_stats.dropped_block_loads;

@@ -38,7 +38,7 @@ public:
 	template <typename U>
 	ArraySlice<U> reinterpret_cast_to() const {
 		const size_t size_in_bytes = _size * sizeof(T);
-#ifdef TOOLS_ENABLED
+#ifdef DEBUG_ENABLED
 		CRASH_COND(size_in_bytes % sizeof(U) != 0);
 #endif
 		return ArraySlice<U>((U *)_ptr, 0, size_in_bytes / sizeof(U));

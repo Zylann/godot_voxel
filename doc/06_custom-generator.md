@@ -36,7 +36,7 @@ func _ready():
 
 Though `VoxelBuffer.fill()` is probably not what you want to use, the above is a quick example. Generate_block generally gives you a block of 16x16x16 cubes to fill all at once, so you'll want to use `VoxelBuffer.set_voxel()` to specify each one. You can change the channel to `VoxelBuffer.CHANNEL_SDF` to get smooth voxels.
 
-In the fps_demo, there is a [custom gdscript stream](https://github.com/tinmanjuggernaut/voxelgame/blob/master/project/fps_demo/scripts/MyStream.gd) that makes a sine wave. This was copied from the [C++ version](../generators/voxel_generator_test.cpp), which runs a lot faster.
+In the fps_demo, there is a [custom gdscript stream](https://github.com/tinmanjuggernaut/voxelgame/blob/master/project/fps_demo/scripts/MyStream.gd) that makes a sine wave. This was copied from the [C++ version](../generators/voxel_generator_waves.cpp), which runs a lot faster.
 
 <img src="images/custom-stream-sine.jpg" width="800" />
 

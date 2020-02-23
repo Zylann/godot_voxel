@@ -26,7 +26,7 @@ struct Vector3i {
 			y(0),
 			z(0) {}
 
-	_FORCE_INLINE_ Vector3i(int xyz) :
+	explicit _FORCE_INLINE_ Vector3i(int xyz) :
 			x(xyz),
 			y(xyz),
 			z(xyz) {}

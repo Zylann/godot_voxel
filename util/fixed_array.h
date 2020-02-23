@@ -34,7 +34,34 @@ public:
 		return _data[i];
 	}
 
+	inline bool equals(const FixedArray<T, N> &other) const {
+		for (unsigned int i = 0; i < N; ++i) {
+			if (_data[i] != other._data[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	inline bool operator==(const FixedArray<T, N> &other) const {
+		return equals(other);
+	}
+
+	inline bool operator!=(const FixedArray<T, N> &other) const {
+		return !equals(other);
+	}
+
+	inline void operator=(const FixedArray<T, N> &other) {
+		for (unsigned int i = 0; i < N; ++i) {
+			_data[i] = other._data[i];
+		}
+	}
+
 	inline T *data() {
+		return _data;
+	}
+
+	inline const T *data() const {
 		return _data;
 	}
 
