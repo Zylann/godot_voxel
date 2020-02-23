@@ -79,39 +79,58 @@ struct Interval {
 		const float d = max * other.max;
 		return Interval{ ::min(a, b, c, d), ::max(a, b, c, d) };
 	}
-
-	inline Interval abs() const {
-		return Interval{
-			contains(0) ? 0 : ::min(Math::abs(min), Math::abs(max)),
-			::max(Math::abs(min), Math::abs(max))
-		};
-	}
-
-	inline Interval sqrt() const {
-		return Interval{
-			Math::sqrt(::max(0.f, min)),
-			Math::sqrt(::max(0.f, max))
-		};
-	}
-
-	inline Interval clamp(const Interval &p_min, const Interval &p_max) const {
-		if (p_min.is_single_value() && p_max.is_single_value()) {
-			return {
-				::clamp(min, p_min.min, p_max.min),
-				::clamp(max, p_min.min, p_max.min)
-			};
-		}
-		if (min >= p_min.max && max <= p_max.min) {
-			return *this;
-		}
-		if (min >= p_max.max) {
-			return Interval::from_single_value(p_max.max);
-		}
-		if (max <= p_min.min) {
-			return Interval::from_single_value(p_min.min);
-		}
-		return Interval(p_min.min, p_max.max);
-	}
 };
+
+// Functions declared outside, so using intervals or numbers can be the same code (templatable)
+
+inline Interval sqrt(const Interval &i) {
+	return Interval{
+		Math::sqrt(::max(0.f, i.min)),
+		Math::sqrt(::max(0.f, i.max))
+	};
+}
+
+inline Interval abs(const Interval &i) {
+	return Interval{
+		i.contains(0) ? 0 : ::min(Math::abs(i.min), Math::abs(i.max)),
+		::max(Math::abs(i.min), Math::abs(i.max))
+	};
+}
+
+inline Interval clamp(const Interval &i, const Interval &p_min, const Interval &p_max) {
+	if (p_min.is_single_value() && p_max.is_single_value()) {
+		return {
+			::clamp(i.min, p_min.min, p_max.min),
+			::clamp(i.max, p_min.min, p_max.min)
+		};
+	}
+	if (i.min >= p_min.max && i.max <= p_max.min) {
+		return i;
+	}
+	if (i.min >= p_max.max) {
+		return Interval::from_single_value(p_max.max);
+	}
+	if (i.max <= p_min.min) {
+		return Interval::from_single_value(p_min.min);
+	}
+	return Interval(p_min.min, p_max.max);
+}
+
+inline Interval lerp(const Interval &a, const Interval &b, const Interval &t) {
+	if (t.is_single_value()) {
+		return Interval(Math::lerp(a.min, b.min, t.min), Math::lerp(a.max, b.max, t.min));
+	} else {
+		return a + t * (b - a);
+	}
+}
+
+inline Interval sin(const Interval &i) {
+	if (i.is_single_value()) {
+		return Interval::from_single_value(Math::sin(i.min));
+	} else {
+		// Simplified
+		return Interval(-1.f, 1.f);
+	}
+}
 
 #endif // INTERVAL_H

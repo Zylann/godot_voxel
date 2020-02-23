@@ -776,33 +776,28 @@ Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) 
 
 			case NODE_SINE: {
 				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
-				if (min_memory[n.a_in] == max_memory[n.a_in]) {
-					float s = Math::sin(min_memory[n.a_in]);
-					min_memory[n.a_out] = s;
-					max_memory[n.a_out] = s;
-				} else {
-					// Simplified
-					min_memory[n.a_out] = -1.f;
-					max_memory[n.a_out] = 1.f;
-				}
+				Interval r = sin(Interval(min_memory[n.a_in], max_memory[n.a_in]) * Math_PI);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
 			} break;
 
 			case NODE_FLOOR: {
 				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
+				// Floor is monotonic so I guess we can just do that
 				min_memory[n.a_out] = Math::floor(min_memory[n.a_in]);
 				max_memory[n.a_out] = Math::floor(max_memory[n.a_in]); // ceil?
 			} break;
 
 			case NODE_ABS: {
 				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
-				Interval r = Interval(min_memory[n.a_in], max_memory[n.a_in]).abs();
+				Interval r = abs(Interval(min_memory[n.a_in], max_memory[n.a_in]));
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
 
 			case NODE_SQRT: {
 				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
-				Interval r = Interval(min_memory[n.a_in], max_memory[n.a_in]).sqrt();
+				Interval r = sqrt(Interval(min_memory[n.a_in], max_memory[n.a_in]));
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
@@ -815,7 +810,7 @@ Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) 
 				Interval y1(min_memory[n.a_y1], max_memory[n.a_y1]);
 				Interval dx = x1 - x0;
 				Interval dy = y1 - y0;
-				Interval r = (dx * dx + dy * dy).sqrt();
+				Interval r = sqrt(dx * dx + dy * dy);
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
@@ -831,7 +826,7 @@ Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) 
 				Interval dx = x1 - x0;
 				Interval dy = y1 - y0;
 				Interval dz = z1 - z0;
-				Interval r = (dx * dx + dy * dy + dz * dz).sqrt();
+				Interval r = sqrt(dx * dx + dy * dy + dz * dz);
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
@@ -841,14 +836,9 @@ Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) 
 				Interval a(min_memory[n.a_i0], max_memory[n.a_i0]);
 				Interval b(min_memory[n.a_i1], max_memory[n.a_i1]);
 				Interval t(min_memory[n.a_ratio], max_memory[n.a_ratio]);
-				if (t.min == t.max) {
-					min_memory[n.a_out] = Math::lerp(a.min, b.min, t.min);
-					max_memory[n.a_out] = Math::lerp(a.max, b.max, t.min);
-				} else {
-					Interval r = a + t * (b - a);
-					min_memory[n.a_out] = r.min;
-					max_memory[n.a_out] = r.max;
-				}
+				Interval r = lerp(a, b, t);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
 			} break;
 
 			case NODE_CLAMP: {
@@ -857,7 +847,7 @@ Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) 
 				// TODO We may want to have wirable min and max later
 				Interval cmin = Interval::from_single_value(n.p_min);
 				Interval cmax = Interval::from_single_value(n.p_max);
-				Interval r = x.clamp(cmin, cmax);
+				Interval r = clamp(x, cmin, cmax);
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
