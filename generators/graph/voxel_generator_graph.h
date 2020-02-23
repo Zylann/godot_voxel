@@ -34,39 +34,6 @@ public:
 		NODE_TYPE_COUNT
 	};
 
-	struct NodeTypeDB {
-
-		struct Port {
-			String name;
-
-			Port(String p_name) :
-					name(p_name) {}
-		};
-
-		struct Param {
-			String name;
-			Variant default_value;
-
-			Param(String p_name, Variant p_default_value = Variant()) :
-					name(p_name),
-					default_value(p_default_value) {}
-		};
-
-		struct NodeType {
-			std::vector<Port> inputs;
-			std::vector<Port> outputs;
-			std::vector<Param> params;
-		};
-
-		NodeTypeDB();
-
-		static NodeTypeDB *get_singleton();
-		static void create_singleton();
-		static void destroy_singleton();
-
-		FixedArray<NodeType, NODE_TYPE_COUNT> types;
-	};
-
 	VoxelGeneratorGraph();
 	~VoxelGeneratorGraph();
 

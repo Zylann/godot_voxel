@@ -1,6 +1,7 @@
 #include "register_types.h"
 #include "edition/voxel_tool.h"
 #include "generators/graph/voxel_generator_graph.h"
+#include "generators/graph/voxel_graph_node_db.h"
 #include "generators/voxel_generator_flat.h"
 #include "generators/voxel_generator_heightmap.h"
 #include "generators/voxel_generator_image.h"
@@ -65,7 +66,7 @@ void register_voxel_types() {
 
 	VoxelMemoryPool::create_singleton();
 	VoxelStringNames::create_singleton();
-	VoxelGeneratorGraph::NodeTypeDB::create_singleton();
+	VoxelGraphNodeDB::create_singleton();
 
 	// Reminder: how to create a singleton accessible from scripts:
 	// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
@@ -84,7 +85,7 @@ void unregister_voxel_types() {
 
 	VoxelMemoryPool::destroy_singleton();
 	VoxelStringNames::destroy_singleton();
-	VoxelGeneratorGraph::NodeTypeDB::destroy_singleton();
+	VoxelGraphNodeDB::destroy_singleton();
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::free_debug_box_mesh();

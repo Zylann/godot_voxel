@@ -1,162 +1,12 @@
 #include "voxel_generator_graph.h"
 #include "../../util/profiling_clock.h"
 #include "../../voxel_string_names.h"
+#include "voxel_graph_node_db.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
 //#ifdef DEBUG_ENABLED
 //#define VOXEL_DEBUG_GRAPH_PROG_SENTINEL uint16_t(12345) // 48, 57 (base 10)
 //#endif
-
-namespace {
-VoxelGeneratorGraph::NodeTypeDB *g_node_type_db = nullptr;
-}
-
-VoxelGeneratorGraph::NodeTypeDB *VoxelGeneratorGraph::NodeTypeDB::get_singleton() {
-	CRASH_COND(g_node_type_db == nullptr);
-	return g_node_type_db;
-}
-
-void VoxelGeneratorGraph::NodeTypeDB::create_singleton() {
-	CRASH_COND(g_node_type_db != nullptr);
-	g_node_type_db = memnew(NodeTypeDB());
-}
-
-void VoxelGeneratorGraph::NodeTypeDB::destroy_singleton() {
-	CRASH_COND(g_node_type_db == nullptr);
-	memdelete(g_node_type_db);
-	g_node_type_db = nullptr;
-}
-
-VoxelGeneratorGraph::NodeTypeDB::NodeTypeDB() {
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_CONSTANT];
-		t.outputs.push_back(Port("Value"));
-		t.params.push_back(Param("Value"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_X];
-		t.outputs.push_back(Port("Value"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_Y];
-		t.outputs.push_back(Port("Value"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_Z];
-		t.outputs.push_back(Port("Value"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_SDF];
-		t.inputs.push_back(Port("Value"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_ADD];
-		t.inputs.push_back(Port("A"));
-		t.inputs.push_back(Port("B"));
-		t.outputs.push_back(Port("Sum"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SUBTRACT];
-		t.inputs.push_back(Port("A"));
-		t.inputs.push_back(Port("B"));
-		t.outputs.push_back(Port("Sum"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_MULTIPLY];
-		t.inputs.push_back(Port("A"));
-		t.inputs.push_back(Port("B"));
-		t.outputs.push_back(Port("Product"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SINE];
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_FLOOR];
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_ABS];
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SQRT];
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_DISTANCE_2D];
-		t.inputs.push_back(Port("X0"));
-		t.inputs.push_back(Port("Y0"));
-		t.inputs.push_back(Port("X1"));
-		t.inputs.push_back(Port("Y1"));
-		t.outputs.push_back(Port("Result"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_DISTANCE_3D];
-		t.inputs.push_back(Port("X0"));
-		t.inputs.push_back(Port("Y0"));
-		t.inputs.push_back(Port("Y0"));
-		t.inputs.push_back(Port("X1"));
-		t.inputs.push_back(Port("Y1"));
-		t.inputs.push_back(Port("Z1"));
-		t.outputs.push_back(Port("Result"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_CLAMP];
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Min", -1.f));
-		t.params.push_back(Param("Max", 1.f));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_MIX];
-		t.inputs.push_back(Port("A"));
-		t.inputs.push_back(Port("B"));
-		t.inputs.push_back(Port("Ratio"));
-		t.outputs.push_back(Port("Result"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_REMAP];
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Min0", -1.f));
-		t.params.push_back(Param("Max0", 1.f));
-		t.params.push_back(Param("Min1", -1.f));
-		t.params.push_back(Param("Max1", 1.f));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_CURVE];
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Curve"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_NOISE_2D];
-		t.inputs.push_back(Port("X"));
-		t.inputs.push_back(Port("Y"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Noise"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_NOISE_3D];
-		t.inputs.push_back(Port("X"));
-		t.inputs.push_back(Port("Y"));
-		t.inputs.push_back(Port("Z"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Noise"));
-	}
-	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_IMAGE_2D];
-		t.inputs.push_back(Port("X"));
-		t.inputs.push_back(Port("Y"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Image"));
-	}
-}
 
 VoxelGeneratorGraph::VoxelGeneratorGraph() {
 	clear();
@@ -188,7 +38,7 @@ void VoxelGeneratorGraph::clear() {
 }
 
 uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id) {
-	const NodeTypeDB::NodeType &type = NodeTypeDB::get_singleton()->types[type_id];
+	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->types[type_id];
 
 	ProgramGraph::Node *pg_node = _graph.create_node();
 	pg_node->inputs.resize(type.inputs.size());
@@ -467,7 +317,7 @@ void VoxelGeneratorGraph::compile() {
 	_memory.resize(3);
 
 	std::vector<uint8_t> &program = _program;
-	const NodeTypeDB &type_db = *NodeTypeDB::get_singleton();
+	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
 	HashMap<ProgramGraph::PortLocation, uint16_t, ProgramGraph::PortLocationHasher> output_port_addresses;
 	bool has_output = false;
 
@@ -475,7 +325,7 @@ void VoxelGeneratorGraph::compile() {
 		const uint32_t node_id = order[i];
 		const ProgramGraph::Node *pg_node = _graph.get_node(node_id);
 		const Node *node = _nodes[node_id];
-		const NodeTypeDB::NodeType &type = type_db.types[node->type];
+		const VoxelGraphNodeDB::NodeType &type = type_db.types[node->type];
 
 		CRASH_COND(node == nullptr);
 		CRASH_COND(pg_node->inputs.size() != type.inputs.size());
