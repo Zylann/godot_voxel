@@ -37,9 +37,10 @@ inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_
 	return true;
 }
 
-inline bool is_transparent(const VoxelLibrary &lib, int voxel_id) {
+inline bool contributes_to_ao(const VoxelLibrary &lib, int voxel_id) {
 	if (lib.has_voxel(voxel_id)) {
-		return lib.get_voxel_const(voxel_id).is_transparent();
+		const Voxel &t = lib.get_voxel_const(voxel_id);
+		return t.is_contributing_to_ao();
 	}
 	return true;
 }
@@ -174,23 +175,30 @@ static void generate_blocky_mesh(
 						if (bake_occlusion) {
 
 							// Combinatory solution for https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
+							// (inverted)
+							//	function vertexAO(side1, side2, corner) {
+							//	  if(side1 && side2) {
+							//		return 0
+							//	  }
+							//	  return 3 - (side1 + side2 + corner)
+							//	}
 
 							for (unsigned int j = 0; j < 4; ++j) {
-								unsigned int edge = Cube::g_side_edges[side][j];
-								int edge_neighbor_id = type_buffer[voxel_index + edge_neighbor_lut[edge]];
-								if (!is_transparent(library, edge_neighbor_id)) {
-									shaded_corner[Cube::g_edge_corners[edge][0]] += 1;
-									shaded_corner[Cube::g_edge_corners[edge][1]] += 1;
+								const unsigned int edge = Cube::g_side_edges[side][j];
+								const int edge_neighbor_id = type_buffer[voxel_index + edge_neighbor_lut[edge]];
+								if (contributes_to_ao(library, edge_neighbor_id)) {
+									++shaded_corner[Cube::g_edge_corners[edge][0]];
+									++shaded_corner[Cube::g_edge_corners[edge][1]];
 								}
 							}
 							for (unsigned int j = 0; j < 4; ++j) {
-								unsigned int corner = Cube::g_side_corners[side][j];
+								const unsigned int corner = Cube::g_side_corners[side][j];
 								if (shaded_corner[corner] == 2) {
 									shaded_corner[corner] = 3;
 								} else {
-									int corner_neigbor_id = type_buffer[voxel_index + corner_neighbor_lut[corner]];
-									if (!is_transparent(library, corner_neigbor_id)) {
-										shaded_corner[corner] += 1;
+									const int corner_neigbor_id = type_buffer[voxel_index + corner_neighbor_lut[corner]];
+									if (contributes_to_ao(library, corner_neigbor_id)) {
+										++shaded_corner[corner];
 									}
 								}
 							}
@@ -246,7 +254,8 @@ static void generate_blocky_mesh(
 										unsigned int corner = Cube::g_side_corners[side][j];
 										if (shaded_corner[corner]) {
 											float s = baked_occlusion_darkness * static_cast<float>(shaded_corner[corner]);
-											float k = 1.0 - Cube::g_corner_position[corner].distance_to(v);
+											//float k = 1.f - Cube::g_corner_position[corner].distance_to(v);
+											float k = 1.f - Cube::g_corner_position[corner].distance_squared_to(v);
 											if (k < 0.0) {
 												k = 0.0;
 											}
@@ -256,7 +265,7 @@ static void generate_blocky_mesh(
 											}
 										}
 									}
-									float gs = 1.0 - shade;
+									const float gs = 1.0 - shade;
 									w[i] = Color(gs, gs, gs) * modulate_color;
 								}
 

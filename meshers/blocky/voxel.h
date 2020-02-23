@@ -47,9 +47,6 @@ public:
 	void set_custom_mesh(Ref<Mesh> mesh);
 	Ref<Mesh> get_custom_mesh() const { return _custom_mesh; }
 
-	void set_side_pattern_index(int side, uint32_t i);
-	inline uint32_t get_side_pattern_index(int side) const { return _side_pattern_index[side]; }
-
 	//-------------------------------------------
 	// Built-in geometry generators
 
@@ -63,7 +60,8 @@ public:
 	void set_geometry_type(GeometryType type);
 	GeometryType get_geometry_type() const;
 
-	// Getters for native usage only
+	//------------------------------------------
+	// Properties for native usage only
 
 	const std::vector<Vector3> &get_model_positions() const { return _model_positions; }
 	const std::vector<Vector3> &get_model_normals() const { return _model_normals; }
@@ -77,6 +75,12 @@ public:
 	const std::vector<AABB> &get_collision_aabbs() const { return _collision_aabbs; }
 
 	void set_library(Ref<VoxelLibrary> lib);
+
+	void set_side_pattern_index(int side, uint32_t i);
+	inline uint32_t get_side_pattern_index(int side) const { return _side_pattern_index[side]; }
+
+	inline bool is_contributing_to_ao() const { return _contributes_to_ao; }
+	inline void set_contributing_to_ao(bool b) { _contributes_to_ao = b; }
 
 private:
 	bool _set(const StringName &p_name, const Variant &p_value);
@@ -113,6 +117,7 @@ private:
 	FixedArray<Vector2, Cube::SIDE_COUNT> _cube_tiles;
 	Ref<Mesh> _custom_mesh;
 	std::vector<AABB> _collision_aabbs;
+	bool _contributes_to_ao = false;
 
 	FixedArray<uint32_t, Cube::SIDE_COUNT> _side_pattern_index;
 

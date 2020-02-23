@@ -170,17 +170,18 @@ void VoxelLibrary::generate_side_culling_matrix() {
 
 	static const unsigned int RASTER_SIZE = 32;
 
-	struct TypeAndSide {
-		uint16_t type;
-		uint16_t side;
-	};
+	//	struct TypeAndSide {
+	//		uint16_t type;
+	//		uint16_t side;
+	//	};
 
 	struct Pattern {
 		std::bitset<RASTER_SIZE * RASTER_SIZE> bitmap;
-		std::vector<TypeAndSide> occurrences;
+		//std::vector<TypeAndSide> occurrences;
 	};
 
 	std::vector<Pattern> patterns;
+	uint32_t full_side_pattern_index = -1;
 
 	// Gather patterns
 	for (uint16_t type_id = 0; type_id < _voxel_types.size(); ++type_id) {
@@ -189,6 +190,7 @@ void VoxelLibrary::generate_side_culling_matrix() {
 			continue;
 		}
 		Voxel &voxel_type = **voxel_type_ref;
+		voxel_type.set_contributing_to_ao(true);
 
 		for (uint16_t side = 0; side < Cube::SIDE_COUNT; ++side) {
 			const std::vector<Vector3> &positions = voxel_type.get_model_side_positions(side);
@@ -267,7 +269,15 @@ void VoxelLibrary::generate_side_culling_matrix() {
 
 			CRASH_COND(pattern == nullptr);
 
-			pattern->occurrences.push_back(TypeAndSide{ type_id, side });
+			if (full_side_pattern_index == -1 && bitmap.all()) {
+				full_side_pattern_index = pattern_index;
+			}
+			if (pattern_index != full_side_pattern_index) {
+				// Non-cube voxels don't contribute to AO at the moment
+				voxel_type.set_contributing_to_ao(false);
+			}
+
+			//pattern->occurrences.push_back(TypeAndSide{ type_id, side });
 			voxel_type.set_side_pattern_index(side, pattern_index);
 
 		} // side
