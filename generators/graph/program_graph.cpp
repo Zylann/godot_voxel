@@ -242,3 +242,17 @@ void ProgramGraph::debug_print_dot_file(String file_path) const {
 	f->close();
 	memdelete(f);
 }
+
+void ProgramGraph::copy_from(const ProgramGraph &other) {
+	clear();
+	_next_node_id = other._next_node_id;
+	_nodes.reserve(other._nodes.size());
+	for (auto it = other._nodes.begin(); it != other._nodes.end(); ++it) {
+		const Node *other_node = it->second;
+		Node *node = memnew(Node);
+		node->id = other_node->id;
+		node->inputs = other_node->inputs;
+		node->outputs = other_node->outputs;
+		_nodes.insert(std::make_pair(node->id, node));
+	}
+}

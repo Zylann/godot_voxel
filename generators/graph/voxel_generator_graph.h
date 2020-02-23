@@ -96,11 +96,14 @@ public:
 	void set_vertical_bounds(int min_y, int max_y, float bottom_sdf_value, float top_sdf_value, uint64_t bottom_type_value, uint64_t top_type_value);
 	void set_box_bounds(Vector3i min, Vector3i max, float sdf_value, uint64_t type_value);
 
+	Ref<Resource> duplicate(bool p_subresources) const override;
+
 	float debug_measure_microseconds_per_voxel();
 
 private:
 	void compile();
 	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
+	void make_modified();
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -114,9 +117,6 @@ private:
 		Vector2 gui_position;
 	};
 
-	ProgramGraph _graph;
-	HashMap<uint32_t, Node *> _nodes;
-
 	struct Bounds {
 		BoundsType type = BOUNDS_NONE;
 		Vector3i min;
@@ -127,6 +127,9 @@ private:
 		uint64_t type_value0 = 0;
 		uint64_t type_value1 = 0;
 	};
+
+	ProgramGraph _graph;
+	HashMap<uint32_t, Node *> _nodes;
 
 	std::vector<uint8_t> _program;
 	std::vector<float> _memory;

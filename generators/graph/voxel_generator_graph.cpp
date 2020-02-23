@@ -159,9 +159,12 @@ VoxelGeneratorGraph::NodeTypeDB::NodeTypeDB() {
 }
 
 VoxelGeneratorGraph::VoxelGeneratorGraph() {
+	clear();
 	clear_bounds();
 	_bounds.min = Vector3i(-128);
 	_bounds.max = Vector3i(128);
+
+	// TODO Remove this, it's for testing
 	load_waves_preset();
 	compile();
 }
@@ -181,7 +184,7 @@ void VoxelGeneratorGraph::clear() {
 	_graph.clear();
 
 	_program.clear();
-	_memory.clear();
+	_memory.resize(8, 0);
 }
 
 uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id) {
@@ -743,6 +746,10 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 			break;
 	}
 
+#ifdef DEBUG_ENABLED
+	CRASH_COND(_memory.size() == 0);
+#endif
+
 	ArraySlice<float> memory(_memory, 0, _memory.size() / 2);
 	memory[0] = position.x;
 	memory[1] = position.y;
@@ -1114,6 +1121,43 @@ void VoxelGeneratorGraph::set_box_bounds(Vector3i min, Vector3i max, float sdf_v
 	_bounds.max = max;
 	_bounds.sdf_value0 = sdf_value;
 	_bounds.sdf_value1 = type_value;
+}
+
+Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
+	Ref<VoxelGeneratorGraph> d;
+	d.instance();
+
+	d->_channel = _channel;
+	d->_iso_scale = _iso_scale;
+	d->_bounds = _bounds;
+	d->_graph.copy_from(_graph);
+	// Program not copied, as it may contain pointers to the resources we are duplicating
+
+	const uint32_t *key = nullptr;
+	while ((key = _nodes.next(key))) {
+		Node *node = _nodes.get(*key);
+		Node *node_copy = memnew(Node);
+
+		node_copy->type = node->type;
+		node_copy->gui_position = node->gui_position;
+		node_copy->params = node->params;
+
+		if (p_subresources) {
+			for (auto it = node_copy->params.begin(); it != node_copy->params.end(); ++it) {
+				Object *obj = *it;
+				if (obj != nullptr) {
+					Resource *res = Object::cast_to<Resource>(obj);
+					if (res != nullptr) {
+						*it = res->duplicate(p_subresources);
+					}
+				}
+			}
+		}
+
+		d->_nodes.set(*key, node_copy);
+	}
+
+	return d;
 }
 
 float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel() {

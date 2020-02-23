@@ -48,6 +48,8 @@ public:
 	void find_dependencies(uint32_t end_node_id, std::vector<uint32_t> &order) const;
 	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
 
+	void copy_from(const ProgramGraph &other);
+
 	void debug_print_dot_file(String file_path) const;
 
 private:
