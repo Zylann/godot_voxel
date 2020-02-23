@@ -177,6 +177,8 @@ void ProgramGraph::find_terminal_nodes(std::vector<uint32_t> &node_ids) const {
 }
 
 void ProgramGraph::find_dependencies(uint32_t end_node_id, std::vector<uint32_t> &order) const {
+	// Finds dependencies of the given node, and returns them in the order they should be processed
+
 	std::vector<uint32_t> nodes_to_process;
 	std::unordered_set<uint32_t> visited_nodes;
 
@@ -207,6 +209,37 @@ void ProgramGraph::find_dependencies(uint32_t end_node_id, std::vector<uint32_t>
 			order.push_back(node->id);
 			visited_nodes.insert(node->id);
 			nodes_to_process.pop_back();
+		}
+	}
+}
+
+void ProgramGraph::find_depth_first(uint32_t start_node_id, std::vector<uint32_t> &order) const {
+	// Finds each descendant from the given node, and returns them in the order they were found, depth-first.
+
+	std::vector<uint32_t> nodes_to_process;
+	std::unordered_set<uint32_t> visited_nodes;
+
+	nodes_to_process.push_back(start_node_id);
+
+	while (nodes_to_process.size() > 0) {
+		const Node *node = get_node(nodes_to_process.back());
+		nodes_to_process.pop_back();
+		uint32_t nodes_to_process_begin = nodes_to_process.size();
+		order.push_back(node->id);
+		visited_nodes.insert(node->id);
+
+		for (uint32_t oi = 0; oi < node->outputs.size(); ++oi) {
+			const Port &p = node->outputs[oi];
+			for (auto cit = p.connections.begin(); cit != p.connections.end(); ++cit) {
+				PortLocation dst = *cit;
+				if (range_contains(nodes_to_process, dst.node_id, nodes_to_process_begin, nodes_to_process.size())) {
+					continue;
+				}
+				if (visited_nodes.find(dst.node_id) != visited_nodes.end()) {
+					continue;
+				}
+				nodes_to_process.push_back(dst.node_id);
+			}
 		}
 	}
 }
