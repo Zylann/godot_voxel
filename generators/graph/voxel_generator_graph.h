@@ -41,11 +41,14 @@ public:
 
 	uint32_t create_node(NodeTypeID type_id);
 	void remove_node(uint32_t node_id);
-	void node_connect(ProgramGraph::PortLocation src, ProgramGraph::PortLocation dst);
-	void node_set_param(uint32_t node_id, uint32_t param_index, Variant value);
-
-	// TODO Empty preset
-	void load_waves_preset();
+	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
+	void remove_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
+	Variant get_node_param(uint32_t node_id, uint32_t param_index) const;
+	void set_node_param(uint32_t node_id, uint32_t param_index, Variant value);
+	Vector2 get_node_gui_position(uint32_t node_id) const;
+	void set_node_gui_position(uint32_t node_id, Vector2 pos);
+	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
+	PoolIntArray get_node_ids() const;
 
 	int get_used_channels_mask() const override;
 
@@ -65,16 +68,23 @@ public:
 
 	Ref<Resource> duplicate(bool p_subresources) const override;
 
+	// Debug
+
 	float debug_measure_microseconds_per_voxel();
+	void debug_load_waves_preset();
 
 private:
 	void compile();
 	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
-	void make_modified();
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
+
+	int _b_get_node_type_count() const;
+	Dictionary _b_get_node_type_info(int type_id) const;
+	PoolIntArray _b_get_node_ids() const;
+	Array _b_get_connections() const;
 
 	static void _bind_methods();
 

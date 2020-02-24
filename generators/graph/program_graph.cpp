@@ -98,11 +98,11 @@ bool ProgramGraph::is_connected(PortLocation src, PortLocation dst) const {
 }
 
 void ProgramGraph::connect(PortLocation src, PortLocation dst) {
-	CRASH_COND(is_connected(src, dst));
-	CRASH_COND(has_path(dst.node_id, src.node_id));
+	ERR_FAIL_COND(is_connected(src, dst));
+	ERR_FAIL_COND(has_path(dst.node_id, src.node_id));
 	Node *src_node = get_node(src.node_id);
 	Node *dst_node = get_node(dst.node_id);
-	CRASH_COND(dst_node->inputs[dst.port_index].connections.size() != 0);
+	ERR_FAIL_COND(dst_node->inputs[dst.port_index].connections.size() != 0);
 	src_node->outputs[src.port_index].connections.push_back(dst);
 	dst_node->inputs[dst.port_index].connections.push_back(src);
 }
@@ -287,5 +287,22 @@ void ProgramGraph::copy_from(const ProgramGraph &other) {
 		node->inputs = other_node->inputs;
 		node->outputs = other_node->outputs;
 		_nodes.insert(std::make_pair(node->id, node));
+	}
+}
+
+void ProgramGraph::get_connections(std::vector<ProgramGraph::Connection> &connections) const {
+	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+		const Node *node = it->second;
+
+		for (size_t i = 0; i < node->outputs.size(); ++i) {
+			const Port &port = node->outputs[i];
+
+			for (size_t j = 0; j < port.connections.size(); ++j) {
+				Connection con;
+				con.src = PortLocation{ node->id, uint32_t(i) };
+				con.dst = port.connections[j];
+				connections.push_back(con);
+			}
+		}
 	}
 }

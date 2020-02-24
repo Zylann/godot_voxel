@@ -15,7 +15,7 @@ VoxelGeneratorGraph::VoxelGeneratorGraph() {
 	_bounds.max = Vector3i(128);
 
 	// TODO Remove this, it's for testing
-	load_waves_preset();
+	debug_load_waves_preset();
 	compile();
 }
 
@@ -38,7 +38,7 @@ void VoxelGeneratorGraph::clear() {
 }
 
 uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id) {
-	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->types[type_id];
+	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(type_id);
 
 	ProgramGraph::Node *pg_node = _graph.create_node();
 	pg_node->inputs.resize(type.inputs.size());
@@ -66,65 +66,68 @@ void VoxelGeneratorGraph::remove_node(uint32_t node_id) {
 	}
 }
 
-void VoxelGeneratorGraph::node_connect(ProgramGraph::PortLocation src, ProgramGraph::PortLocation dst) {
-	_graph.connect(src, dst);
+void VoxelGeneratorGraph::add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) {
+	_graph.connect(
+			ProgramGraph::PortLocation{ src_node_id, src_port_index },
+			ProgramGraph::PortLocation{ dst_node_id, dst_port_index });
 }
 
-void VoxelGeneratorGraph::node_set_param(uint32_t node_id, uint32_t param_index, Variant value) {
+void VoxelGeneratorGraph::remove_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) {
+	_graph.disconnect(
+			ProgramGraph::PortLocation{ src_node_id, src_port_index },
+			ProgramGraph::PortLocation{ dst_node_id, dst_port_index });
+}
+
+void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index, Variant value) {
 	Node **pptr = _nodes.getptr(node_id);
 	ERR_FAIL_COND(pptr == nullptr);
 	Node *node = *pptr;
+	ERR_FAIL_INDEX(param_index, node->params.size());
 	node->params[param_index] = value;
+}
+
+Variant VoxelGeneratorGraph::get_node_param(uint32_t node_id, uint32_t param_index) const {
+	const Node *const *pptr = _nodes.getptr(node_id);
+	ERR_FAIL_COND_V(pptr == nullptr, Variant());
+	const Node *node = *pptr;
+	ERR_FAIL_INDEX_V(param_index, node->params.size(), Variant());
+	return node->params[param_index];
+}
+
+Vector2 VoxelGeneratorGraph::get_node_gui_position(uint32_t node_id) const {
+	const Node *const *pptr = _nodes.getptr(node_id);
+	ERR_FAIL_COND_V(pptr == nullptr, Vector2());
+	const Node *node = *pptr;
+	return node->gui_position;
+}
+
+void VoxelGeneratorGraph::set_node_gui_position(uint32_t node_id, Vector2 pos) {
+	Node **node_pptr = _nodes.getptr(node_id);
+	ERR_FAIL_COND(node_pptr == nullptr);
+	Node *node = *node_pptr;
+	node->gui_position = pos;
+}
+
+void VoxelGeneratorGraph::get_connections(std::vector<ProgramGraph::Connection> &connections) const {
+	_graph.get_connections(connections);
+}
+
+PoolIntArray VoxelGeneratorGraph::get_node_ids() const {
+	PoolIntArray ids;
+	ids.resize(_nodes.size());
+	{
+		PoolIntArray::Write w = ids.write();
+		int i = 0;
+		const uint32_t *key = nullptr;
+		while (key = _nodes.next(key)) {
+			w[i++] = *key;
+		}
+	}
+	return ids;
 }
 
 int VoxelGeneratorGraph::get_used_channels_mask() const {
 	return 1 << _channel;
-}
-
-void VoxelGeneratorGraph::load_waves_preset() {
-	clear();
-	// This is mostly for testing
-
-	uint32_t n_x = create_node(NODE_INPUT_X);
-	uint32_t n_y = create_node(NODE_INPUT_Y);
-	uint32_t n_z = create_node(NODE_INPUT_Z);
-	uint32_t n_o = create_node(NODE_OUTPUT_SDF);
-	uint32_t n_sin0 = create_node(NODE_SINE);
-	uint32_t n_sin1 = create_node(NODE_SINE);
-	uint32_t n_add = create_node(NODE_ADD);
-	uint32_t n_mul0 = create_node(NODE_MULTIPLY);
-	uint32_t n_mul1 = create_node(NODE_MULTIPLY);
-	uint32_t n_mul2 = create_node(NODE_MULTIPLY);
-	uint32_t n_c0 = create_node(NODE_CONSTANT);
-	uint32_t n_c1 = create_node(NODE_CONSTANT);
-	uint32_t n_sub = create_node(NODE_SUBTRACT);
-
-	node_set_param(n_c0, 0, 1.f / 20.f);
-	node_set_param(n_c1, 0, 10.f);
-
-	/*
-	 *    X --- * --- sin           Y
-	 *         /         \           \
-	 *       1/20         + --- * --- - --- O
-	 *         \         /     /
-	 *    Z --- * --- sin    10.0
-	*/
-
-	typedef ProgramGraph::PortLocation PL;
-
-	node_connect(PL{ n_x, 0 }, PL{ n_mul0, 0 });
-	node_connect(PL{ n_z, 0 }, PL{ n_mul1, 0 });
-	node_connect(PL{ n_c0, 0 }, PL{ n_mul0, 1 });
-	node_connect(PL{ n_c0, 0 }, PL{ n_mul1, 1 });
-	node_connect(PL{ n_mul0, 0 }, PL{ n_sin0, 0 });
-	node_connect(PL{ n_mul1, 0 }, PL{ n_sin1, 0 });
-	node_connect(PL{ n_sin0, 0 }, PL{ n_add, 0 });
-	node_connect(PL{ n_sin1, 0 }, PL{ n_add, 1 });
-	node_connect(PL{ n_add, 0 }, PL{ n_mul2, 0 });
-	node_connect(PL{ n_c1, 0 }, PL{ n_mul2, 1 });
-	node_connect(PL{ n_y, 0 }, PL{ n_sub, 0 });
-	node_connect(PL{ n_mul2, 0 }, PL{ n_sub, 1 });
-	node_connect(PL{ n_sub, 0 }, PL{ n_o, 0 });
 }
 
 void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
@@ -270,7 +273,7 @@ void VoxelGeneratorGraph::compile() {
 		const uint32_t node_id = order[i];
 		const ProgramGraph::Node *pg_node = _graph.get_node(node_id);
 		const Node *node = _nodes[node_id];
-		const VoxelGraphNodeDB::NodeType &type = type_db.types[node->type];
+		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node->type);
 
 		CRASH_COND(node == nullptr);
 		CRASH_COND(pg_node->inputs.size() != type.inputs.size());
@@ -924,6 +927,8 @@ Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 	return d;
 }
 
+// Debug land
+
 float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel() {
 	Vector3i pos(1, 1, 1);
 	float v;
@@ -939,6 +944,52 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel() {
 	//	print_line(String("Value: {0}").format(varray(v)));
 	return us;
 }
+
+void VoxelGeneratorGraph::debug_load_waves_preset() {
+	clear();
+	// This is mostly for testing
+
+	uint32_t n_x = create_node(NODE_INPUT_X);
+	uint32_t n_y = create_node(NODE_INPUT_Y);
+	uint32_t n_z = create_node(NODE_INPUT_Z);
+	uint32_t n_o = create_node(NODE_OUTPUT_SDF);
+	uint32_t n_sin0 = create_node(NODE_SINE);
+	uint32_t n_sin1 = create_node(NODE_SINE);
+	uint32_t n_add = create_node(NODE_ADD);
+	uint32_t n_mul0 = create_node(NODE_MULTIPLY);
+	uint32_t n_mul1 = create_node(NODE_MULTIPLY);
+	uint32_t n_mul2 = create_node(NODE_MULTIPLY);
+	uint32_t n_c0 = create_node(NODE_CONSTANT);
+	uint32_t n_c1 = create_node(NODE_CONSTANT);
+	uint32_t n_sub = create_node(NODE_SUBTRACT);
+
+	set_node_param(n_c0, 0, 1.f / 20.f);
+	set_node_param(n_c1, 0, 10.f);
+
+	/*
+	 *    X --- * --- sin           Y
+	 *         /         \           \
+	 *       1/20         + --- * --- - --- O
+	 *         \         /     /
+	 *    Z --- * --- sin    10.0
+	*/
+
+	add_connection(n_x, 0, n_mul0, 0);
+	add_connection(n_z, 0, n_mul1, 0);
+	add_connection(n_c0, 0, n_mul0, 1);
+	add_connection(n_c0, 0, n_mul1, 1);
+	add_connection(n_mul0, 0, n_sin0, 0);
+	add_connection(n_mul1, 0, n_sin1, 0);
+	add_connection(n_sin0, 0, n_add, 0);
+	add_connection(n_sin1, 0, n_add, 1);
+	add_connection(n_add, 0, n_mul2, 0);
+	add_connection(n_c1, 0, n_mul2, 1);
+	add_connection(n_y, 0, n_sub, 0);
+	add_connection(n_mul2, 0, n_sub, 1);
+	add_connection(n_sub, 0, n_o, 0);
+}
+
+// Binding land
 
 bool VoxelGeneratorGraph::_set(const StringName &p_name, const Variant &p_value) {
 	const String name = p_name;
@@ -1075,10 +1126,75 @@ void VoxelGeneratorGraph::_get_property_list(List<PropertyInfo> *p_list) const {
 	}
 }
 
+int VoxelGeneratorGraph::_b_get_node_type_count() const {
+	return VoxelGraphNodeDB::get_singleton()->get_type_count();
+}
+
+Dictionary VoxelGeneratorGraph::_b_get_node_type_info(int type_id) const {
+	return VoxelGraphNodeDB::get_singleton()->get_type_info_dict(type_id);
+}
+
+Array VoxelGeneratorGraph::_b_get_connections() const {
+	Array con_array;
+	std::vector<ProgramGraph::Connection> cons;
+	_graph.get_connections(cons);
+	con_array.resize(cons.size());
+
+	for (size_t i = 0; i < cons.size(); ++i) {
+		const ProgramGraph::Connection &con = cons[i];
+		Dictionary d;
+		d["src_node_id"] = con.src.node_id;
+		d["src_port_index"] = con.src.port_index;
+		d["dst_node_id"] = con.dst.node_id;
+		d["dst_port_index"] = con.dst.port_index;
+		con_array[i] = d;
+	}
+
+	return con_array;
+}
+
 void VoxelGeneratorGraph::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGeneratorGraph::clear);
+	ClassDB::bind_method(D_METHOD("create_node", "type_id"), &VoxelGeneratorGraph::create_node);
+	ClassDB::bind_method(D_METHOD("remove_node", "node_id"), &VoxelGeneratorGraph::remove_node);
+	ClassDB::bind_method(D_METHOD("add_connection", "src_node_id", "src_port_index", "dst_node_id", "dst_port_index"), &VoxelGeneratorGraph::add_connection);
+	ClassDB::bind_method(D_METHOD("remove_connection", "src_node_id", "src_port_index", "dst_node_id", "dst_port_index"), &VoxelGeneratorGraph::remove_connection);
+	ClassDB::bind_method(D_METHOD("get_node_param", "node_id", "param_index"), &VoxelGeneratorGraph::get_node_param);
+	ClassDB::bind_method(D_METHOD("set_node_param", "node_id", "param_index", "value"), &VoxelGeneratorGraph::set_node_param);
+	ClassDB::bind_method(D_METHOD("get_node_gui_position", "node_id"), &VoxelGeneratorGraph::get_node_gui_position);
+	ClassDB::bind_method(D_METHOD("set_node_gui_position", "node_id", "position"), &VoxelGeneratorGraph::set_node_gui_position);
+	ClassDB::bind_method(D_METHOD("get_connections"), &VoxelGeneratorGraph::_b_get_connections);
+	ClassDB::bind_method(D_METHOD("get_node_ids"), &VoxelGeneratorGraph::get_node_ids);
+
 	ClassDB::bind_method(D_METHOD("compile"), &VoxelGeneratorGraph::compile);
-	ClassDB::bind_method(D_METHOD("load_waves_preset"), &VoxelGeneratorGraph::load_waves_preset);
+
+	ClassDB::bind_method(D_METHOD("get_node_type_count"), &VoxelGeneratorGraph::_b_get_node_type_count);
+	ClassDB::bind_method(D_METHOD("get_node_type_info", "type_id"), &VoxelGeneratorGraph::_b_get_node_type_info);
+
+	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &VoxelGeneratorGraph::debug_load_waves_preset);
 	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel"), &VoxelGeneratorGraph::debug_measure_microseconds_per_voxel);
+
+	BIND_ENUM_CONSTANT(NODE_CONSTANT);
+	BIND_ENUM_CONSTANT(NODE_INPUT_X);
+	BIND_ENUM_CONSTANT(NODE_INPUT_Y);
+	BIND_ENUM_CONSTANT(NODE_INPUT_Z);
+	BIND_ENUM_CONSTANT(NODE_OUTPUT_SDF);
+	BIND_ENUM_CONSTANT(NODE_ADD);
+	BIND_ENUM_CONSTANT(NODE_SUBTRACT);
+	BIND_ENUM_CONSTANT(NODE_MULTIPLY);
+	BIND_ENUM_CONSTANT(NODE_SINE);
+	BIND_ENUM_CONSTANT(NODE_FLOOR);
+	BIND_ENUM_CONSTANT(NODE_ABS);
+	BIND_ENUM_CONSTANT(NODE_SQRT);
+	BIND_ENUM_CONSTANT(NODE_DISTANCE_2D);
+	BIND_ENUM_CONSTANT(NODE_DISTANCE_3D);
+	BIND_ENUM_CONSTANT(NODE_CLAMP);
+	BIND_ENUM_CONSTANT(NODE_MIX);
+	BIND_ENUM_CONSTANT(NODE_REMAP);
+	BIND_ENUM_CONSTANT(NODE_CURVE);
+	BIND_ENUM_CONSTANT(NODE_NOISE_2D);
+	BIND_ENUM_CONSTANT(NODE_NOISE_3D);
+	BIND_ENUM_CONSTANT(NODE_IMAGE_2D);
+	BIND_ENUM_CONSTANT(NODE_TYPE_COUNT);
 }

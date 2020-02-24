@@ -15,6 +15,11 @@ public:
 		uint32_t port_index;
 	};
 
+	struct Connection {
+		PortLocation src;
+		PortLocation dst;
+	};
+
 	struct PortLocationHasher {
 		static inline uint32_t hash(const PortLocation &v) {
 			uint32_t hash = hash_djb2_one_32(v.node_id);
@@ -50,6 +55,7 @@ public:
 	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
 
 	void copy_from(const ProgramGraph &other);
+	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
 
 	void debug_print_dot_file(String file_path) const;
 
