@@ -148,6 +148,11 @@ inline T clamp(const T x, const T min_value, const T max_value) {
 }
 
 template <typename T>
+inline T squared(const T x) {
+	return x * x;
+}
+
+template <typename T>
 inline void sort_min_max(T &a, T &b) {
 	if (a > b) {
 		T temp = a;

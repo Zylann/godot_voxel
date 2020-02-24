@@ -1,8 +1,8 @@
 #include "voxel_generator_graph.h"
 #include "../../util/profiling_clock.h"
 #include "../../voxel_string_names.h"
+#include "range_utility.h"
 #include "voxel_graph_node_db.h"
-#include <modules/opensimplex/open_simplex_noise.h>
 
 //#ifdef DEBUG_ENABLED
 //#define VOXEL_DEBUG_GRAPH_PROG_SENTINEL uint16_t(12345) // 48, 57 (base 10)
@@ -244,61 +244,6 @@ inline const T &read(const std::vector<uint8_t> &mem, uint32_t &p) {
 
 inline float get_pixel_repeat(Image &im, int x, int y) {
 	return im.get_pixel(wrap(x, im.get_width()), wrap(y, im.get_height())).r;
-}
-
-inline float squared(float x) {
-	return x * x;
-}
-
-Interval get_curve_range(Curve &curve, uint8_t &is_monotonic_increasing) {
-	// TODO Would be nice to have the cache directly
-	const int res = curve.get_bake_resolution();
-	Interval range;
-	float prev_v = curve.interpolate_baked(0.f);
-	if (curve.interpolate_baked(1.f) > prev_v) {
-		is_monotonic_increasing = 1;
-	}
-	for (int i = 0; i < res; ++i) {
-		const float v = curve.interpolate_baked(static_cast<float>(i) / res);
-		range.add_point(v);
-		if (v < prev_v) {
-			is_monotonic_increasing = 0;
-		}
-		prev_v = v;
-	}
-	return range;
-}
-
-Interval get_heightmap_range(Image &im) {
-	switch (im.get_format()) {
-		case Image::FORMAT_R8:
-		case Image::FORMAT_RG8:
-		case Image::FORMAT_RGB8:
-		case Image::FORMAT_RGBA8:
-		case Image::FORMAT_RH:
-		case Image::FORMAT_RGH:
-		case Image::FORMAT_RGBH:
-		case Image::FORMAT_RGBAH:
-		case Image::FORMAT_RF:
-		case Image::FORMAT_RGF:
-		case Image::FORMAT_RGBF:
-		case Image::FORMAT_RGBAF: {
-			Interval r;
-			im.lock();
-			for (int y = 0; y < im.get_height(); ++y) {
-				for (int x = 0; x < im.get_width(); ++x) {
-					r.add_point(im.get_pixel(x, y).r);
-				}
-			}
-			im.unlock();
-			return r;
-		} break;
-
-		default:
-			ERR_FAIL_V_MSG(Interval(), "Image format not supported");
-			break;
-	}
-	return Interval();
 }
 
 void VoxelGeneratorGraph::compile() {
@@ -878,42 +823,21 @@ Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) 
 
 			case NODE_NOISE_2D: {
 				const PNodeNoise2D &n = read<PNodeNoise2D>(_program, pc);
-				if (
-						min_memory[n.a_x] == max_memory[n.a_x] &&
-						min_memory[n.a_y] == max_memory[n.a_y]) {
-
-					float h = n.p_noise->get_noise_2d(
-							min_memory[n.a_x],
-							min_memory[n.a_y]);
-
-					min_memory[n.a_out] = h;
-					max_memory[n.a_out] = h;
-
-				} else {
-					min_memory[n.a_out] = -1.f;
-					max_memory[n.a_out] = 1.f;
-				}
+				Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				Interval r = get_osn_range_2d(n.p_noise, x, y);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
 			} break;
 
 			case NODE_NOISE_3D: {
 				const PNodeNoise3D &n = read<PNodeNoise3D>(_program, pc);
-				if (
-						min_memory[n.a_x] == max_memory[n.a_x] &&
-						min_memory[n.a_y] == max_memory[n.a_y] &&
-						min_memory[n.a_z] == max_memory[n.a_z]) {
-
-					float h = n.p_noise->get_noise_3d(
-							min_memory[n.a_x],
-							min_memory[n.a_y],
-							min_memory[n.a_z]);
-
-					min_memory[n.a_out] = h;
-					max_memory[n.a_out] = h;
-
-				} else {
-					min_memory[n.a_out] = -1.f;
-					max_memory[n.a_out] = 1.f;
-				}
+				Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				Interval z(min_memory[n.a_z], max_memory[n.a_z]);
+				Interval r = get_osn_range_3d(n.p_noise, x, y, z);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
 			} break;
 
 			case NODE_IMAGE_2D: {

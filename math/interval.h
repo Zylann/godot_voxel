@@ -46,12 +46,20 @@ struct Interval {
 		}
 	}
 
+	inline float length() const {
+		return max - min;
+	}
+
 	inline Interval operator+(float x) const {
 		return Interval{ min + x, max + x };
 	}
 
 	inline Interval operator+(const Interval &other) const {
 		return Interval{ min + other.min, max + other.max };
+	}
+
+	inline void operator+=(const Interval &other) {
+		*this = *this + other;
 	}
 
 	inline Interval operator-(float x) const {
@@ -72,12 +80,25 @@ struct Interval {
 		}
 	}
 
+	inline void operator*=(float x) {
+		*this = *this * x;
+	}
+
 	inline Interval operator*(const Interval &other) const {
 		const float a = min * other.min;
 		const float b = min * other.max;
 		const float c = max * other.min;
 		const float d = max * other.max;
 		return Interval{ ::min(a, b, c, d), ::max(a, b, c, d) };
+	}
+
+	inline Interval operator/(float x) const {
+		// TODO Implement proper division by interval
+		return *this * (1.f / x);
+	}
+
+	inline void operator/=(float x) {
+		*this = *this / x;
 	}
 };
 
