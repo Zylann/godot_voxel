@@ -207,6 +207,7 @@ Dictionary VoxelGraphNodeDB::get_type_info_dict(int id) const {
 		d["type"] = p.type;
 		d["class_name"] = p.class_name;
 		d["default_value"] = p.default_value;
+		params[i] = d;
 	}
 
 	type_dict["inputs"] = inputs;
