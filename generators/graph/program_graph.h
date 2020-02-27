@@ -46,6 +46,7 @@ public:
 	void clear();
 
 	bool is_connected(PortLocation src, PortLocation dst) const;
+	bool can_connect(PortLocation src, PortLocation dst) const;
 	void connect(PortLocation src, PortLocation dst);
 	bool disconnect(PortLocation src, PortLocation dst);
 

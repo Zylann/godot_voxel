@@ -66,6 +66,12 @@ void VoxelGeneratorGraph::remove_node(uint32_t node_id) {
 	}
 }
 
+bool VoxelGeneratorGraph::can_connect(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const {
+	return _graph.can_connect(
+			ProgramGraph::PortLocation{ src_node_id, src_port_index },
+			ProgramGraph::PortLocation{ dst_node_id, dst_port_index });
+}
+
 void VoxelGeneratorGraph::add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) {
 	_graph.connect(
 			ProgramGraph::PortLocation{ src_node_id, src_port_index },
@@ -76,6 +82,10 @@ void VoxelGeneratorGraph::remove_connection(uint32_t src_node_id, uint32_t src_p
 	_graph.disconnect(
 			ProgramGraph::PortLocation{ src_node_id, src_port_index },
 			ProgramGraph::PortLocation{ dst_node_id, dst_port_index });
+}
+
+void VoxelGeneratorGraph::get_connections(std::vector<ProgramGraph::Connection> &connections) const {
+	_graph.get_connections(connections);
 }
 
 void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index, Variant value) {
@@ -108,8 +118,11 @@ void VoxelGeneratorGraph::set_node_gui_position(uint32_t node_id, Vector2 pos) {
 	node->gui_position = pos;
 }
 
-void VoxelGeneratorGraph::get_connections(std::vector<ProgramGraph::Connection> &connections) const {
-	_graph.get_connections(connections);
+VoxelGeneratorGraph::NodeTypeID VoxelGeneratorGraph::get_node_type_id(uint32_t node_id) {
+	Node **node_pptr = _nodes.getptr(node_id);
+	ERR_FAIL_COND_V(node_pptr == nullptr, NODE_TYPE_COUNT);
+	Node *node = *node_pptr;
+	return node->type;
 }
 
 PoolIntArray VoxelGeneratorGraph::get_node_ids() const {
@@ -1158,14 +1171,17 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGeneratorGraph::clear);
 	ClassDB::bind_method(D_METHOD("create_node", "type_id"), &VoxelGeneratorGraph::create_node);
 	ClassDB::bind_method(D_METHOD("remove_node", "node_id"), &VoxelGeneratorGraph::remove_node);
+	ClassDB::bind_method(D_METHOD("can_connect", "src_node_id", "src_port_index", "dst_node_id", "dst_port_index"), &VoxelGeneratorGraph::can_connect);
 	ClassDB::bind_method(D_METHOD("add_connection", "src_node_id", "src_port_index", "dst_node_id", "dst_port_index"), &VoxelGeneratorGraph::add_connection);
 	ClassDB::bind_method(D_METHOD("remove_connection", "src_node_id", "src_port_index", "dst_node_id", "dst_port_index"), &VoxelGeneratorGraph::remove_connection);
+	ClassDB::bind_method(D_METHOD("get_connections"), &VoxelGeneratorGraph::_b_get_connections);
+	ClassDB::bind_method(D_METHOD("get_node_ids"), &VoxelGeneratorGraph::get_node_ids);
+
+	ClassDB::bind_method(D_METHOD("get_node_type_id", "node_id"), &VoxelGeneratorGraph::get_node_type_id);
 	ClassDB::bind_method(D_METHOD("get_node_param", "node_id", "param_index"), &VoxelGeneratorGraph::get_node_param);
 	ClassDB::bind_method(D_METHOD("set_node_param", "node_id", "param_index", "value"), &VoxelGeneratorGraph::set_node_param);
 	ClassDB::bind_method(D_METHOD("get_node_gui_position", "node_id"), &VoxelGeneratorGraph::get_node_gui_position);
 	ClassDB::bind_method(D_METHOD("set_node_gui_position", "node_id", "position"), &VoxelGeneratorGraph::set_node_gui_position);
-	ClassDB::bind_method(D_METHOD("get_connections"), &VoxelGeneratorGraph::_b_get_connections);
-	ClassDB::bind_method(D_METHOD("get_node_ids"), &VoxelGeneratorGraph::get_node_ids);
 
 	ClassDB::bind_method(D_METHOD("compile"), &VoxelGeneratorGraph::compile);
 

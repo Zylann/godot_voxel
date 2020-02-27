@@ -97,6 +97,17 @@ bool ProgramGraph::is_connected(PortLocation src, PortLocation dst) const {
 	}
 }
 
+bool ProgramGraph::can_connect(PortLocation src, PortLocation dst) const {
+	if (is_connected(src, dst)) {
+		return false;
+	}
+	if (has_path(dst.node_id, src.node_id)) {
+		return false;
+	}
+	const Node *dst_node = get_node(dst.node_id);
+	return dst_node->inputs[dst.port_index].connections.size() == 0;
+}
+
 void ProgramGraph::connect(PortLocation src, PortLocation dst) {
 	ERR_FAIL_COND(is_connected(src, dst));
 	ERR_FAIL_COND(has_path(dst.node_id, src.node_id));
