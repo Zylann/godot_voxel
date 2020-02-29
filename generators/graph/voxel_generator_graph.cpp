@@ -1,6 +1,5 @@
 #include "voxel_generator_graph.h"
 #include "../../util/profiling_clock.h"
-#include "../../voxel_string_names.h"
 #include "voxel_graph_node_db.h"
 
 VoxelGeneratorGraph::VoxelGeneratorGraph() {
@@ -300,19 +299,19 @@ void VoxelGeneratorGraph::debug_load_waves_preset() {
 	clear();
 	// This is mostly for testing
 
-	uint32_t n_x = create_node(NODE_INPUT_X);
-	uint32_t n_y = create_node(NODE_INPUT_Y);
-	uint32_t n_z = create_node(NODE_INPUT_Z);
-	uint32_t n_o = create_node(NODE_OUTPUT_SDF);
-	uint32_t n_sin0 = create_node(NODE_SINE);
-	uint32_t n_sin1 = create_node(NODE_SINE);
-	uint32_t n_add = create_node(NODE_ADD);
-	uint32_t n_mul0 = create_node(NODE_MULTIPLY);
-	uint32_t n_mul1 = create_node(NODE_MULTIPLY);
-	uint32_t n_mul2 = create_node(NODE_MULTIPLY);
-	uint32_t n_c0 = create_node(NODE_CONSTANT);
-	uint32_t n_c1 = create_node(NODE_CONSTANT);
-	uint32_t n_sub = create_node(NODE_SUBTRACT);
+	uint32_t n_x = create_node(NODE_INPUT_X); // 1
+	uint32_t n_y = create_node(NODE_INPUT_Y); // 2
+	uint32_t n_z = create_node(NODE_INPUT_Z); // 3
+	uint32_t n_o = create_node(NODE_OUTPUT_SDF); // 4
+	uint32_t n_sin0 = create_node(NODE_SINE); // 5
+	uint32_t n_sin1 = create_node(NODE_SINE); // 6
+	uint32_t n_add = create_node(NODE_ADD); // 7
+	uint32_t n_mul0 = create_node(NODE_MULTIPLY); // 8
+	uint32_t n_mul1 = create_node(NODE_MULTIPLY); // 9
+	uint32_t n_mul2 = create_node(NODE_MULTIPLY); // 10
+	uint32_t n_c0 = create_node(NODE_CONSTANT); // 11
+	uint32_t n_c1 = create_node(NODE_CONSTANT); // 12
+	uint32_t n_sub = create_node(NODE_SUBTRACT); // 13
 
 	set_node_param(n_c0, 0, 1.f / 20.f);
 	set_node_param(n_c1, 0, 10.f);

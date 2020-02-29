@@ -2,6 +2,7 @@
 #include "range_utility.h"
 #include "voxel_generator_graph.h"
 #include "voxel_graph_node_db.h"
+#include <unordered_set>
 
 //#ifdef DEBUG_ENABLED
 //#define VOXEL_DEBUG_GRAPH_PROG_SENTINEL uint16_t(12345) // 48, 57 (base 10)
@@ -36,9 +37,16 @@ inline float get_pixel_repeat(Image &im, int x, int y) {
 	return im.get_pixel(wrap(x, im.get_width()), wrap(y, im.get_height())).r;
 }
 
+VoxelGraphRuntime::VoxelGraphRuntime() {
+	clear();
+}
+
 void VoxelGraphRuntime::clear() {
 	_program.clear();
 	_memory.resize(8, 0);
+	_xzy_program_start = 0;
+	_last_x = INT_MAX;
+	_last_z = INT_MAX;
 }
 
 void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
@@ -51,7 +59,78 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 
 	graph.find_dependencies(terminal_nodes.back(), order);
 
+	uint32_t xzy_start_index = 0;
+
+	// Optimize parts of the graph that only depend on X and Z,
+	// so they can be moved in the outer loop when blocks are generated, running less times.
+	// Moves them all at the beginning.
+	{
+		std::vector<uint32_t> immediate_deps;
+		std::unordered_set<uint32_t> nodes_depending_on_y;
+		std::vector<uint32_t> order_xz;
+		std::vector<uint32_t> order_xzy;
+
+		for (size_t i = 0; i < order.size(); ++i) {
+			const uint32_t node_id = order[i];
+			const ProgramGraph::Node *node = graph.get_node(node_id);
+
+			bool depends_on_y = false;
+
+			if (node->type_id == VoxelGeneratorGraph::NODE_INPUT_Y) {
+				nodes_depending_on_y.insert(node_id);
+				depends_on_y = true;
+			}
+
+			if (!depends_on_y) {
+				immediate_deps.clear();
+				graph.find_immediate_dependencies(node_id, immediate_deps);
+
+				for (size_t j = 0; j < immediate_deps.size(); ++j) {
+					const uint32_t dep_node_id = immediate_deps[j];
+
+					if (nodes_depending_on_y.find(dep_node_id) != nodes_depending_on_y.end()) {
+						depends_on_y = true;
+						nodes_depending_on_y.insert(node_id);
+						break;
+					}
+				}
+			}
+
+			if (depends_on_y) {
+				order_xzy.push_back(node_id);
+			} else {
+				order_xz.push_back(node_id);
+			}
+		}
+
+		xzy_start_index = order_xz.size();
+
+		//#ifdef DEBUG_ENABLED
+		//		const uint32_t order_xz_raw_size = order_xz.size();
+		//		const uint32_t *order_xz_raw = order_xz.data();
+		//		const uint32_t order_xzy_raw_size = order_xzy.size();
+		//		const uint32_t *order_xzy_raw = order_xzy.data();
+		//#endif
+
+		size_t i = 0;
+		for (size_t j = 0; j < order_xz.size(); ++j) {
+			order[i++] = order_xz[j];
+		}
+		for (size_t j = 0; j < order_xzy.size(); ++j) {
+			order[i++] = order_xzy[j];
+		}
+	}
+
+	//#ifdef DEBUG_ENABLED
+	//	const uint32_t order_raw_size = order.size();
+	//	const uint32_t *order_raw = order.data();
+	//#endif
+
 	_program.clear();
+
+	_xzy_program_start = 0;
+	_last_x = INT_MAX;
+	_last_z = INT_MAX;
 
 	// Main inputs X, Y, Z
 	_memory.resize(3);
@@ -61,6 +140,7 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 	HashMap<ProgramGraph::PortLocation, uint16_t, ProgramGraph::PortLocationHasher> output_port_addresses;
 	bool has_output = false;
 
+	// Run through each node in order, and turn them into program instructions
 	for (size_t i = 0; i < order.size(); ++i) {
 		const uint32_t node_id = order[i];
 		const ProgramGraph::Node *node = graph.get_node(node_id);
@@ -69,6 +149,10 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 		CRASH_COND(node == nullptr);
 		CRASH_COND(node->inputs.size() != type.inputs.size());
 		CRASH_COND(node->outputs.size() != type.outputs.size());
+
+		if (i == xzy_start_index) {
+			_xzy_program_start = _program.size();
+		}
 
 		switch (node->type_id) {
 			case VoxelGeneratorGraph::NODE_CONSTANT: {
@@ -315,6 +399,13 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 	memory[1] = position.y;
 	memory[2] = position.z;
 
+	uint32_t pc;
+	if (position.x == _last_x && position.z == _last_z) {
+		pc = _xzy_program_start;
+	} else {
+		pc = 0;
+	}
+
 	// STL is unreadable on debug builds of Godot, because _DEBUG isn't defined
 	//#ifdef DEBUG_ENABLED
 	//	const size_t memory_size = memory.size();
@@ -323,7 +414,6 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 	//	const uint8_t *program_raw = (const uint8_t *)_program.data();
 	//#endif
 
-	uint32_t pc = 0;
 	while (pc < _program.size()) {
 
 		const uint8_t opid = _program[pc++];
@@ -572,7 +662,7 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 			case VoxelGeneratorGraph::NODE_CURVE: {
 				const PNodeCurve &n = read<PNodeCurve>(_program, pc);
 				if (min_memory[n.a_in] == max_memory[n.a_in]) {
-					float v = n.p_curve->interpolate_baked(min_memory[n.a_in]);
+					const float v = n.p_curve->interpolate_baked(min_memory[n.a_in]);
 					min_memory[n.a_out] = v;
 					max_memory[n.a_out] = v;
 				} else if (n.is_monotonic_increasing) {

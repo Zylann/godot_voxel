@@ -1,8 +1,6 @@
 #ifndef VOXEL_GENERATOR_GRAPH_H
 #define VOXEL_GENERATOR_GRAPH_H
 
-#include "../../cube_tables.h"
-#include "../../math/interval.h"
 #include "../voxel_generator.h"
 #include "program_graph.h"
 #include "voxel_graph_runtime.h"

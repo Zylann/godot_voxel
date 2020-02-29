@@ -59,6 +59,7 @@ public:
 
 	bool has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) const;
 	void find_dependencies(uint32_t end_node_id, std::vector<uint32_t> &order) const;
+	void find_immediate_dependencies(uint32_t node_id, std::vector<uint32_t> &deps) const;
 	void find_depth_first(uint32_t start_node_id, std::vector<uint32_t> &order) const;
 	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
 

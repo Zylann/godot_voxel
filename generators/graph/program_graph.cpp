@@ -213,7 +213,7 @@ void ProgramGraph::find_dependencies(uint32_t end_node_id, std::vector<uint32_t>
 		for (uint32_t ii = 0; ii < node->inputs.size(); ++ii) {
 			const Port &p = node->inputs[ii];
 			for (auto cit = p.connections.begin(); cit != p.connections.end(); ++cit) {
-				PortLocation src = *cit;
+				const PortLocation src = *cit;
 				// A node can have two connections to the same destination node
 				if (range_contains(nodes_to_process, src.node_id, nodes_to_process_begin, nodes_to_process.size())) {
 					continue;
@@ -230,6 +230,26 @@ void ProgramGraph::find_dependencies(uint32_t end_node_id, std::vector<uint32_t>
 			order.push_back(node->id);
 			visited_nodes.insert(node->id);
 			nodes_to_process.pop_back();
+		}
+	}
+}
+
+void ProgramGraph::find_immediate_dependencies(uint32_t node_id, std::vector<uint32_t> &deps) const {
+	const Node *node = get_node(node_id);
+	const size_t begin = deps.size();
+
+	for (uint32_t ii = 0; ii < node->inputs.size(); ++ii) {
+		const Port &p = node->inputs[ii];
+
+		for (auto cit = p.connections.begin(); cit != p.connections.end(); ++cit) {
+			const PortLocation src = *cit;
+
+			// A node can have two connections to the same destination node
+			if (range_contains(deps, src.node_id, begin, deps.size())) {
+				continue;
+			}
+
+			deps.push_back(src.node_id);
 		}
 	}
 }

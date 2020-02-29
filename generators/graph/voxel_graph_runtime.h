@@ -7,6 +7,8 @@
 
 class VoxelGraphRuntime {
 public:
+	VoxelGraphRuntime();
+
 	void clear();
 	void compile(const ProgramGraph &graph);
 	float generate_single(const Vector3i &position);
@@ -15,6 +17,9 @@ public:
 private:
 	std::vector<uint8_t> _program;
 	std::vector<float> _memory;
+	uint32_t _xzy_program_start;
+	int _last_x;
+	int _last_z;
 };
 
 #endif // VOXEL_GRAPH_RUNTIME_H
