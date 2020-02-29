@@ -1,5 +1,6 @@
 #include "program_graph.h"
 #include <core/os/file_access.h>
+#include <core/resource.h>
 #include <core/variant.h>
 #include <unordered_set>
 
@@ -36,9 +37,10 @@ uint32_t ProgramGraph::Node::find_output_connection(uint32_t output_port_index, 
 	return ProgramGraph::NULL_INDEX;
 }
 
-ProgramGraph::Node *ProgramGraph::create_node() {
+ProgramGraph::Node *ProgramGraph::create_node(uint32_t type_id) {
 	Node *node = memnew(Node);
 	node->id = _next_node_id++;
+	node->type_id = type_id;
 	_nodes[node->id] = node;
 	return node;
 }
@@ -140,6 +142,14 @@ ProgramGraph::Node *ProgramGraph::get_node(uint32_t id) const {
 	Node *node = it->second;
 	CRASH_COND(node == nullptr);
 	return node;
+}
+
+ProgramGraph::Node *ProgramGraph::try_get_node(uint32_t id) const {
+	auto it = _nodes.find(id);
+	if (it == _nodes.end()) {
+		return nullptr;
+	}
+	return it->second;
 }
 
 bool ProgramGraph::has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) const {
@@ -287,16 +297,30 @@ void ProgramGraph::debug_print_dot_file(String file_path) const {
 	memdelete(f);
 }
 
-void ProgramGraph::copy_from(const ProgramGraph &other) {
+void ProgramGraph::copy_from(const ProgramGraph &other, bool copy_subresources) {
 	clear();
+
 	_next_node_id = other._next_node_id;
 	_nodes.reserve(other._nodes.size());
+
 	for (auto it = other._nodes.begin(); it != other._nodes.end(); ++it) {
 		const Node *other_node = it->second;
+
 		Node *node = memnew(Node);
-		node->id = other_node->id;
-		node->inputs = other_node->inputs;
-		node->outputs = other_node->outputs;
+		*node = *other_node;
+
+		if (copy_subresources) {
+			for (size_t i = 0; i < node->params.size(); ++i) {
+				Object *obj = node->params[i];
+				if (obj != nullptr) {
+					Resource *res = Object::cast_to<Resource>(obj);
+					if (res != nullptr) {
+						node->params[i] = res->duplicate(copy_subresources);
+					}
+				}
+			}
+		}
+
 		_nodes.insert(std::make_pair(node->id, node));
 	}
 }
@@ -316,4 +340,17 @@ void ProgramGraph::get_connections(std::vector<ProgramGraph::Connection> &connec
 			}
 		}
 	}
+}
+
+PoolVector<int> ProgramGraph::get_node_ids() const {
+	PoolIntArray ids;
+	ids.resize(_nodes.size());
+	{
+		PoolIntArray::Write w = ids.write();
+		int i = 0;
+		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+			w[i++] = it->first;
+		}
+	}
+	return ids;
 }

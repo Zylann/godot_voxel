@@ -124,6 +124,7 @@ struct Vector3i {
 		}
 	}
 
+	// TODO Deprecate
 	_FORCE_INLINE_ bool is_contained_in(const Vector3i &min, const Vector3i &max) {
 		return x >= min.x && y >= min.y && z >= min.z && x < max.x && y < max.y && z < max.z;
 	}

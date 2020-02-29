@@ -5,6 +5,7 @@
 #include "../../math/interval.h"
 #include "../voxel_generator.h"
 #include "program_graph.h"
+#include "voxel_graph_runtime.h"
 
 class VoxelGeneratorGraph : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorGraph, VoxelGenerator)
@@ -94,12 +95,6 @@ private:
 
 	static void _bind_methods();
 
-	struct Node {
-		NodeTypeID type;
-		std::vector<Variant> params;
-		Vector2 gui_position;
-	};
-
 	struct Bounds {
 		BoundsType type = BOUNDS_NONE;
 		Vector3i min;
@@ -112,10 +107,7 @@ private:
 	};
 
 	ProgramGraph _graph;
-	HashMap<uint32_t, Node *> _nodes;
-
-	std::vector<uint8_t> _program;
-	std::vector<float> _memory;
+	VoxelGraphRuntime _runtime;
 	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
 	float _iso_scale = 0.1;
 	Bounds _bounds;

@@ -2,9 +2,12 @@
 #define PROGRAM_GRAPH_H
 
 #include <core/hashfuncs.h>
+#include <core/math/vector2.h>
+#include <core/pool_vector.h>
 #include <unordered_map>
 #include <vector>
 
+// Generic graph representing a program
 class ProgramGraph {
 public:
 	static const uint32_t NULL_ID = 0;
@@ -33,15 +36,19 @@ public:
 
 	struct Node {
 		uint32_t id;
+		uint32_t type_id;
+		Vector2 gui_position;
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
+		std::vector<Variant> params;
 
 		uint32_t find_input_connection(PortLocation src, uint32_t input_port_index) const;
 		uint32_t find_output_connection(uint32_t output_port_index, PortLocation dst) const;
 	};
 
-	Node *create_node();
+	Node *create_node(uint32_t type_id);
 	Node *get_node(uint32_t id) const;
+	Node *try_get_node(uint32_t id) const;
 	void remove_node(uint32_t id);
 	void clear();
 
@@ -55,8 +62,9 @@ public:
 	void find_depth_first(uint32_t start_node_id, std::vector<uint32_t> &order) const;
 	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
 
-	void copy_from(const ProgramGraph &other);
+	void copy_from(const ProgramGraph &other, bool copy_subresources);
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
+	PoolVector<int> get_node_ids() const;
 
 	void debug_print_dot_file(String file_path) const;
 

@@ -44,8 +44,8 @@ public:
 	static void destroy_singleton();
 
 	int get_type_count() const { return _types.size(); }
-	const NodeType &get_type(int id) const { return _types[id]; }
-	Dictionary get_type_info_dict(int id) const;
+	const NodeType &get_type(uint32_t id) const { return _types[id]; }
+	Dictionary get_type_info_dict(uint32_t id) const;
 
 private:
 	FixedArray<NodeType, VoxelGeneratorGraph::NODE_TYPE_COUNT> _types;

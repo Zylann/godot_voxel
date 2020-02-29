@@ -174,7 +174,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	}
 }
 
-Dictionary VoxelGraphNodeDB::get_type_info_dict(int id) const {
+Dictionary VoxelGraphNodeDB::get_type_info_dict(uint32_t id) const {
 	const NodeType &type = _types[id];
 
 	Dictionary type_dict;
