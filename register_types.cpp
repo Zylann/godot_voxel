@@ -1,5 +1,7 @@
 #include "register_types.h"
 #include "edition/voxel_tool.h"
+#include "editor/editor_plugin.h"
+#include "editor/voxel_graph_editor_plugin.h"
 #include "generators/graph/voxel_generator_graph.h"
 #include "generators/graph/voxel_graph_node_db.h"
 #include "generators/voxel_generator_flat.h"
@@ -73,6 +75,8 @@ void register_voxel_types() {
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::create_debug_box_mesh();
+
+	EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 #endif
 }
 
@@ -89,5 +93,8 @@ void unregister_voxel_types() {
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::free_debug_box_mesh();
+
+	// TODO No remove?
+	//EditorPlugins::remove_by_type<VoxelGraphEditorPlugin>();
 #endif
 }

@@ -17,6 +17,7 @@ files = [
 	"terrain/*.cpp",
 	"math/*.cpp",
 	"edition/*.cpp",
+	"editor/*.cpp",
 	"thirdparty/lz4/*.c"
 ]
 
