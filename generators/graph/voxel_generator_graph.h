@@ -38,13 +38,14 @@ public:
 
 	void clear();
 
-	uint32_t create_node(NodeTypeID type_id);
+	uint32_t create_node(NodeTypeID type_id, Vector2 position);
 	void remove_node(uint32_t node_id);
 
 	bool can_connect(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const;
 	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void remove_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
+	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
 
 	Variant get_node_param(uint32_t node_id, uint32_t param_index) const;
 	void set_node_param(uint32_t node_id, uint32_t param_index, Variant value);
@@ -52,7 +53,7 @@ public:
 	Vector2 get_node_gui_position(uint32_t node_id) const;
 	void set_node_gui_position(uint32_t node_id, Vector2 pos);
 
-	NodeTypeID get_node_type_id(uint32_t node_id);
+	NodeTypeID get_node_type_id(uint32_t node_id) const;
 	PoolIntArray get_node_ids() const;
 
 	int get_used_channels_mask() const override;

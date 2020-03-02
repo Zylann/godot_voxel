@@ -22,12 +22,13 @@ void VoxelGeneratorGraph::clear() {
 	_runtime.clear();
 }
 
-uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id) {
+uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position) {
 	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(type_id);
 
 	ProgramGraph::Node *node = _graph.create_node(type_id);
 	node->inputs.resize(type.inputs.size());
 	node->outputs.resize(type.outputs.size());
+	node->gui_position = position;
 
 	node->params.resize(type.params.size());
 	for (size_t i = 0; i < type.params.size(); ++i) {
@@ -63,6 +64,10 @@ void VoxelGeneratorGraph::get_connections(std::vector<ProgramGraph::Connection> 
 	_graph.get_connections(connections);
 }
 
+//void VoxelGeneratorGraph::get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const {
+//	_graph.get_connections_from_and_to(connections, node_id);
+//}
+
 void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index, Variant value) {
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
@@ -89,7 +94,7 @@ void VoxelGeneratorGraph::set_node_gui_position(uint32_t node_id, Vector2 pos) {
 	node->gui_position = pos;
 }
 
-VoxelGeneratorGraph::NodeTypeID VoxelGeneratorGraph::get_node_type_id(uint32_t node_id) {
+VoxelGeneratorGraph::NodeTypeID VoxelGeneratorGraph::get_node_type_id(uint32_t node_id) const {
 	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, NODE_TYPE_COUNT);
 	CRASH_COND(node->type_id >= NODE_TYPE_COUNT);
@@ -299,19 +304,21 @@ void VoxelGeneratorGraph::debug_load_waves_preset() {
 	clear();
 	// This is mostly for testing
 
-	uint32_t n_x = create_node(NODE_INPUT_X); // 1
-	uint32_t n_y = create_node(NODE_INPUT_Y); // 2
-	uint32_t n_z = create_node(NODE_INPUT_Z); // 3
-	uint32_t n_o = create_node(NODE_OUTPUT_SDF); // 4
-	uint32_t n_sin0 = create_node(NODE_SINE); // 5
-	uint32_t n_sin1 = create_node(NODE_SINE); // 6
-	uint32_t n_add = create_node(NODE_ADD); // 7
-	uint32_t n_mul0 = create_node(NODE_MULTIPLY); // 8
-	uint32_t n_mul1 = create_node(NODE_MULTIPLY); // 9
-	uint32_t n_mul2 = create_node(NODE_MULTIPLY); // 10
-	uint32_t n_c0 = create_node(NODE_CONSTANT); // 11
-	uint32_t n_c1 = create_node(NODE_CONSTANT); // 12
-	uint32_t n_sub = create_node(NODE_SUBTRACT); // 13
+	const Vector2 k(35, 50);
+
+	uint32_t n_x = create_node(NODE_INPUT_X, Vector2(11, 1) * k); // 1
+	uint32_t n_y = create_node(NODE_INPUT_Y, Vector2(37, 1) * k); // 2
+	uint32_t n_z = create_node(NODE_INPUT_Z, Vector2(11, 5) * k); // 3
+	uint32_t n_o = create_node(NODE_OUTPUT_SDF, Vector2(45, 3) * k); // 4
+	uint32_t n_sin0 = create_node(NODE_SINE, Vector2(23, 1) * k); // 5
+	uint32_t n_sin1 = create_node(NODE_SINE, Vector2(23, 5) * k); // 6
+	uint32_t n_add = create_node(NODE_ADD, Vector2(27, 3) * k); // 7
+	uint32_t n_mul0 = create_node(NODE_MULTIPLY, Vector2(17, 1) * k); // 8
+	uint32_t n_mul1 = create_node(NODE_MULTIPLY, Vector2(17, 5) * k); // 9
+	uint32_t n_mul2 = create_node(NODE_MULTIPLY, Vector2(33, 3) * k); // 10
+	uint32_t n_c0 = create_node(NODE_CONSTANT, Vector2(14, 3) * k); // 11
+	uint32_t n_c1 = create_node(NODE_CONSTANT, Vector2(30, 5) * k); // 12
+	uint32_t n_sub = create_node(NODE_SUBTRACT, Vector2(39, 3) * k); // 13
 
 	set_node_param(n_c0, 0, 1.f / 20.f);
 	set_node_param(n_c1, 0, 10.f);
@@ -506,7 +513,7 @@ Array VoxelGeneratorGraph::_b_get_connections() const {
 void VoxelGeneratorGraph::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGeneratorGraph::clear);
-	ClassDB::bind_method(D_METHOD("create_node", "type_id"), &VoxelGeneratorGraph::create_node);
+	ClassDB::bind_method(D_METHOD("create_node", "type_id", "position"), &VoxelGeneratorGraph::create_node);
 	ClassDB::bind_method(D_METHOD("remove_node", "node_id"), &VoxelGeneratorGraph::remove_node);
 	ClassDB::bind_method(D_METHOD("can_connect", "src_node_id", "src_port_index", "dst_node_id", "dst_port_index"), &VoxelGeneratorGraph::can_connect);
 	ClassDB::bind_method(D_METHOD("add_connection", "src_node_id", "src_port_index", "dst_node_id", "dst_port_index"), &VoxelGeneratorGraph::add_connection);

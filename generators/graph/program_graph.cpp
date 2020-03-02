@@ -362,6 +362,33 @@ void ProgramGraph::get_connections(std::vector<ProgramGraph::Connection> &connec
 	}
 }
 
+//void ProgramGraph::get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const {
+//	const Node *node = get_node(node_id);
+//	ERR_FAIL_COND(node == nullptr);
+
+//	for (size_t i = 0; i < node->outputs.size(); ++i) {
+//		const Port &port = node->outputs[i];
+
+//		for (size_t j = 0; j < port.connections.size(); ++j) {
+//			Connection con;
+//			con.src = PortLocation{ node->id, uint32_t(i) };
+//			con.dst = port.connections[j];
+//			connections.push_back(con);
+//		}
+//	}
+
+//	for (size_t i = 0; i < node->inputs.size(); ++i) {
+//		const Port &port = node->inputs[i];
+
+//		for (size_t j = 0; j < port.connections.size(); ++j) {
+//			Connection con;
+//			con.src = PortLocation{ node->id, uint32_t(i) };
+//			con.dst = port.connections[j];
+//			connections.push_back(con);
+//		}
+//	}
+//}
+
 PoolVector<int> ProgramGraph::get_node_ids() const {
 	PoolIntArray ids;
 	ids.resize(_nodes.size());

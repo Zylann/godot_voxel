@@ -1,6 +1,5 @@
 #include "voxel_graph_editor_plugin.h"
 #include "../generators/graph/voxel_generator_graph.h"
-//#include "editor/editor_node.h"
 #include "editor/editor_scale.h"
 #include "voxel_graph_editor.h"
 

@@ -65,6 +65,8 @@ public:
 
 	void copy_from(const ProgramGraph &other, bool copy_subresources);
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
+	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
+
 	PoolVector<int> get_node_ids() const;
 
 	void debug_print_dot_file(String file_path) const;
