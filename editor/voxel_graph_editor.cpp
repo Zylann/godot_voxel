@@ -2,6 +2,7 @@
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../generators/graph/voxel_graph_node_db.h"
 #include "editor/editor_scale.h"
+#include <core/undo_redo.h>
 #include <scene/gui/graph_edit.h>
 #include <scene/gui/label.h>
 
@@ -48,6 +49,10 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
 	build_gui_from_graph();
 }
 
+void VoxelGraphEditor::set_undo_redo(UndoRedo *undo_redo) {
+	_undo_redo = undo_redo;
+}
+
 void VoxelGraphEditor::clear() {
 	_graph_edit->clear_connections();
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
@@ -82,7 +87,7 @@ void VoxelGraphEditor::build_gui_from_graph() {
 		PoolIntArray::Read node_ids_read = node_ids.read();
 		for (int i = 0; i < node_ids.size(); ++i) {
 			const uint32_t node_id = node_ids_read[i];
-			build_gui_from_node(node_id);
+			create_node_gui(node_id);
 		}
 	}
 
@@ -100,7 +105,7 @@ void VoxelGraphEditor::build_gui_from_graph() {
 	}
 }
 
-void VoxelGraphEditor::build_gui_from_node(uint32_t node_id) {
+void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	// Build one GUI node
 
 	CRASH_COND(_graph.is_null());
@@ -172,6 +177,33 @@ void VoxelGraphEditor::build_gui_from_node(uint32_t node_id) {
 	_graph_edit->add_child(node_view);
 }
 
+void remove_connections_from_and_to(GraphEdit *graph_edit, StringName node_name) {
+	// Get copy of connection list
+	List<GraphEdit::Connection> connections;
+	graph_edit->get_connection_list(&connections);
+
+	for (List<GraphEdit::Connection>::Element *E = connections.front(); E; E = E->next()) {
+		const GraphEdit::Connection &con = E->get();
+		if (con.from == node_name || con.to == node_name) {
+			graph_edit->disconnect_node(con.from, con.from_port, con.to, con.to_port);
+		}
+	}
+}
+
+NodePath to_node_path(StringName sn) {
+	Vector<StringName> path;
+	path.push_back(sn);
+	return NodePath(path, false);
+}
+
+void VoxelGraphEditor::remove_node_gui(StringName gui_node_name) {
+	// Remove connections from the UI, because GraphNode doesn't do it...
+	remove_connections_from_and_to(_graph_edit, gui_node_name);
+	Node *node_view = _graph_edit->get_node(to_node_path(gui_node_name));
+	ERR_FAIL_COND(Object::cast_to<GraphNode>(node_view) == nullptr);
+	memdelete(node_view);
+}
+
 void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 	Ref<InputEventMouseButton> mb = event;
 
@@ -193,8 +225,12 @@ void VoxelGraphEditor::_on_graph_edit_connection_request(String from_node_name, 
 	ERR_FAIL_COND(dst_node_view == nullptr);
 	//print("Connection attempt from ", from, ":", from_slot, " to ", to, ":", to_slot)
 	if (_graph->can_connect(src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot)) {
-		_graph->add_connection(src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
-		_graph_edit->connect_node(from_node_name, from_slot, to_node_name, to_slot);
+		_undo_redo->create_action(TTR("Connect Nodes"));
+		_undo_redo->add_do_method(*_graph, "add_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+		_undo_redo->add_do_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
+		_undo_redo->add_undo_method(*_graph, "remove_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+		_undo_redo->add_undo_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
+		_undo_redo->commit_action();
 	}
 }
 
@@ -203,21 +239,12 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(String from_node_nam
 	VoxelGraphEditorNode *dst_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(to_node_name));
 	ERR_FAIL_COND(src_node_view == nullptr);
 	ERR_FAIL_COND(dst_node_view == nullptr);
-	_graph->remove_connection(src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
-	_graph_edit->disconnect_node(from_node_name, from_slot, to_node_name, to_slot);
-}
-
-void remove_connections_from_and_to(GraphEdit *graph_edit, StringName node_name) {
-	// Get copy of connection list
-	List<GraphEdit::Connection> connections;
-	graph_edit->get_connection_list(&connections);
-
-	for (List<GraphEdit::Connection>::Element *E = connections.front(); E; E = E->next()) {
-		const GraphEdit::Connection &con = E->get();
-		if (con.from == node_name || con.to == node_name) {
-			graph_edit->disconnect_node(con.from, con.from_port, con.to, con.to_port);
-		}
-	}
+	_undo_redo->create_action(TTR("Disconnect Nodes"));
+	_undo_redo->add_do_method(*_graph, "remove_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+	_undo_redo->add_do_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
+	_undo_redo->add_undo_method(*_graph, "add_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+	_undo_redo->add_undo_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
+	_undo_redo->commit_action();
 }
 
 void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
@@ -233,15 +260,43 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 		}
 	}
 
+	_undo_redo->create_action(TTR("Delete Nodes"));
+
+	std::vector<ProgramGraph::Connection> connections;
+	_graph->get_connections(connections);
+
 	for (size_t i = 0; i < to_erase.size(); ++i) {
-		VoxelGraphEditorNode *node_view = to_erase[i];
+		const VoxelGraphEditorNode *node_view = to_erase[i];
+		const uint32_t node_id = node_view->node_id;
+		const uint32_t node_type_id = _graph->get_node_type_id(node_id);
 
-		// Remove connections, because GraphNode doesn't do it...
-		remove_connections_from_and_to(_graph_edit, node_view->get_name());
+		_undo_redo->add_do_method(*_graph, "remove_node", node_id);
+		_undo_redo->add_do_method(this, "remove_node_gui", node_view->get_name());
 
-		_graph->remove_node(node_view->node_id);
-		memdelete(node_view);
+		_undo_redo->add_undo_method(*_graph, "create_node", node_type_id, _graph->get_node_gui_position(node_id), node_id);
+
+		// Params undo
+		const size_t param_count = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).params.size();
+		for (size_t j = 0; j < param_count; ++j) {
+			Variant param_value = _graph->get_node_param(node_id, j);
+			_undo_redo->add_undo_method(*_graph, "set_node_param", node_id, j, param_value);
+		}
+
+		_undo_redo->add_undo_method(this, "create_node_gui", node_id);
+
+		// Connections undo
+		for (size_t j = 0; j < connections.size(); ++j) {
+			const ProgramGraph::Connection &con = connections[j];
+			if (con.src.node_id == node_id || con.dst.node_id == node_id) {
+				_undo_redo->add_undo_method(*_graph, "add_connection", con.src.node_id, con.src.port_index, con.dst.node_id, con.dst.port_index);
+				String src_node_name = node_to_gui_name(con.src.node_id);
+				String dst_node_name = node_to_gui_name(con.dst.node_id);
+				_undo_redo->add_undo_method(_graph_edit, "connect_node", src_node_name, con.src.port_index, dst_node_name, con.dst.port_index);
+			}
+		}
 	}
+
+	_undo_redo->commit_action();
 }
 
 Vector2 get_graph_offset_from_mouse(const GraphEdit *graph_edit, const Vector2 local_mouse_pos) {
@@ -259,9 +314,15 @@ Vector2 get_graph_offset_from_mouse(const GraphEdit *graph_edit, const Vector2 l
 void VoxelGraphEditor::_on_context_menu_index_pressed(int idx) {
 	const Vector2 pos = get_graph_offset_from_mouse(_graph_edit, _click_position);
 	const uint32_t node_type_id = _context_menu->get_item_metadata(idx);
-	ERR_FAIL_INDEX(node_type_id, VoxelGeneratorGraph::NODE_TYPE_COUNT);
-	const uint32_t node_id = _graph->create_node((VoxelGeneratorGraph::NodeTypeID)node_type_id, pos);
-	build_gui_from_node(node_id);
+	const uint32_t node_id = _graph->generate_node_id();
+	const StringName node_name = node_to_gui_name(node_id);
+
+	_undo_redo->create_action(TTR("Create Node"));
+	_undo_redo->add_do_method(*_graph, "create_node", node_type_id, pos, node_id);
+	_undo_redo->add_do_method(this, "create_node_gui", node_id);
+	_undo_redo->add_undo_method(*_graph, "remove_node", node_id);
+	_undo_redo->add_undo_method(this, "remove_node_gui", node_name);
+	_undo_redo->commit_action();
 }
 
 void VoxelGraphEditor::_bind_methods() {
@@ -273,4 +334,7 @@ void VoxelGraphEditor::_bind_methods() {
 			&VoxelGraphEditor::_on_graph_edit_disconnection_request);
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_delete_nodes_request"), &VoxelGraphEditor::_on_graph_edit_delete_nodes_request);
 	ClassDB::bind_method(D_METHOD("_on_context_menu_index_pressed", "idx"), &VoxelGraphEditor::_on_context_menu_index_pressed);
+
+	ClassDB::bind_method(D_METHOD("create_node_gui", "node_id"), &VoxelGraphEditor::create_node_gui);
+	ClassDB::bind_method(D_METHOD("remove_node_gui", "node_name"), &VoxelGraphEditor::remove_node_gui);
 }

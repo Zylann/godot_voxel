@@ -22,6 +22,7 @@ bool VoxelGraphEditorPlugin::handles(Object *p_object) const {
 void VoxelGraphEditorPlugin::edit(Object *p_object) {
 	VoxelGeneratorGraph *graph_ptr = Object::cast_to<VoxelGeneratorGraph>(p_object);
 	Ref<VoxelGeneratorGraph> graph(graph_ptr);
+	_graph_editor->set_undo_redo(&get_undo_redo()); // UndoRedo isn't available in constructor
 	_graph_editor->set_graph(graph);
 }
 

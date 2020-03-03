@@ -37,9 +37,15 @@ uint32_t ProgramGraph::Node::find_output_connection(uint32_t output_port_index, 
 	return ProgramGraph::NULL_INDEX;
 }
 
-ProgramGraph::Node *ProgramGraph::create_node(uint32_t type_id) {
+ProgramGraph::Node *ProgramGraph::create_node(uint32_t type_id, uint32_t id) {
+	if (id == NULL_ID) {
+		id = generate_node_id();
+	} else {
+		// ID must not be taken already
+		ERR_FAIL_COND_V(_nodes.find(id) != _nodes.end(), nullptr);
+	}
 	Node *node = memnew(Node);
-	node->id = _next_node_id++;
+	node->id = id;
 	node->type_id = type_id;
 	_nodes[node->id] = node;
 	return node;
@@ -400,4 +406,8 @@ PoolVector<int> ProgramGraph::get_node_ids() const {
 		}
 	}
 	return ids;
+}
+
+uint32_t ProgramGraph::generate_node_id() {
+	return _next_node_id++;
 }

@@ -38,7 +38,7 @@ public:
 
 	void clear();
 
-	uint32_t create_node(NodeTypeID type_id, Vector2 position);
+	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = ProgramGraph::NULL_ID);
 	void remove_node(uint32_t node_id);
 
 	bool can_connect(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const;
@@ -55,6 +55,7 @@ public:
 
 	NodeTypeID get_node_type_id(uint32_t node_id) const;
 	PoolIntArray get_node_ids() const;
+	uint32_t generate_node_id() { return _graph.generate_node_id(); }
 
 	int get_used_channels_mask() const override;
 

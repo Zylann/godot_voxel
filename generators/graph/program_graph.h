@@ -46,7 +46,7 @@ public:
 		uint32_t find_output_connection(uint32_t output_port_index, PortLocation dst) const;
 	};
 
-	Node *create_node(uint32_t type_id);
+	Node *create_node(uint32_t type_id, uint32_t id = NULL_ID);
 	Node *get_node(uint32_t id) const;
 	Node *try_get_node(uint32_t id) const;
 	void remove_node(uint32_t id);
@@ -68,6 +68,7 @@ public:
 	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
 
 	PoolVector<int> get_node_ids() const;
+	uint32_t generate_node_id();
 
 	void debug_print_dot_file(String file_path) const;
 
