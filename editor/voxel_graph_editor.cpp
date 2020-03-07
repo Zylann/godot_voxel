@@ -117,10 +117,11 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	ERR_FAIL_COND(_graph_edit->has_node(node_name));
 
 	VoxelGraphEditorNode *node_view = memnew(VoxelGraphEditorNode);
-	node_view->set_offset(graph.get_node_gui_position(node_id));
+	node_view->set_offset(graph.get_node_gui_position(node_id) * EDSCALE);
 	node_view->set_title(node_type.name);
 	node_view->set_name(node_name);
 	node_view->node_id = node_id;
+	node_view->connect("dragged", this, "_on_graph_node_dragged", varray(node_id));
 	//node_view.resizable = true
 	//node_view.rect_size = Vector2(200, 100)
 
@@ -299,6 +300,24 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 	_undo_redo->commit_action();
 }
 
+void VoxelGraphEditor::_on_graph_node_dragged(Vector2 from, Vector2 to, int id) {
+	print_line("Dragged");
+	_undo_redo->create_action(TTR("Move nodes"));
+	_undo_redo->add_do_method(this, "set_node_position", id, to);
+	_undo_redo->add_undo_method(this, "set_node_position", id, from);
+	_undo_redo->commit_action();
+	// I haven't the faintest idea how VisualScriptEditor magically makes this work neither using `create_action` nor `commit_action`.
+}
+
+void VoxelGraphEditor::set_node_position(int id, Vector2 offset) {
+	String node_name = node_to_gui_name(id);
+	GraphNode *node_view = Object::cast_to<GraphNode>(_graph_edit->get_node(node_name));
+	if (node_view != nullptr) {
+		node_view->set_offset(offset);
+	}
+	_graph->set_node_gui_position(id, offset / EDSCALE);
+}
+
 Vector2 get_graph_offset_from_mouse(const GraphEdit *graph_edit, const Vector2 local_mouse_pos) {
 	// TODO Ask for a method, or at least documentation about how it's done
 	Vector2 offset = graph_edit->get_scroll_ofs() + local_mouse_pos;
@@ -333,8 +352,10 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_disconnection_request", "from_node_name", "from_slot", "to_node_name", "to_slot"),
 			&VoxelGraphEditor::_on_graph_edit_disconnection_request);
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_delete_nodes_request"), &VoxelGraphEditor::_on_graph_edit_delete_nodes_request);
+	ClassDB::bind_method(D_METHOD("_on_graph_node_dragged", "from", "to", "id"), &VoxelGraphEditor::_on_graph_node_dragged);
 	ClassDB::bind_method(D_METHOD("_on_context_menu_index_pressed", "idx"), &VoxelGraphEditor::_on_context_menu_index_pressed);
 
 	ClassDB::bind_method(D_METHOD("create_node_gui", "node_id"), &VoxelGraphEditor::create_node_gui);
 	ClassDB::bind_method(D_METHOD("remove_node_gui", "node_name"), &VoxelGraphEditor::remove_node_gui);
+	ClassDB::bind_method(D_METHOD("set_node_position", "node_id", "offset"), &VoxelGraphEditor::set_node_position);
 }
