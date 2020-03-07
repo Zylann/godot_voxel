@@ -7,10 +7,6 @@ VoxelGeneratorGraph::VoxelGeneratorGraph() {
 	clear_bounds();
 	_bounds.min = Vector3i(-128);
 	_bounds.max = Vector3i(128);
-
-	// TODO Remove this, it's for testing
-	debug_load_waves_preset();
-	compile();
 }
 
 VoxelGeneratorGraph::~VoxelGeneratorGraph() {
@@ -23,9 +19,16 @@ void VoxelGeneratorGraph::clear() {
 }
 
 uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
+	const ProgramGraph::Node *node = create_node_internal(type_id, position, id);
+	ERR_FAIL_COND_V(node == nullptr, ProgramGraph::NULL_ID);
+	return node->id;
+}
+
+ProgramGraph::Node *VoxelGeneratorGraph::create_node_internal(NodeTypeID type_id, Vector2 position, uint32_t id) {
 	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(type_id);
 
 	ProgramGraph::Node *node = _graph.create_node(type_id, id);
+	ERR_FAIL_COND_V(node == nullptr, nullptr);
 	node->inputs.resize(type.inputs.size());
 	node->outputs.resize(type.outputs.size());
 	node->gui_position = position;
@@ -35,7 +38,7 @@ uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, 
 		node->params[i] = type.params[i].default_value;
 	}
 
-	return node->id;
+	return node;
 }
 
 void VoxelGeneratorGraph::remove_node(uint32_t node_id) {
@@ -184,8 +187,6 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	Vector3i rpos;
 	Vector3i gpos;
 	// Loads of possible optimization from there
-	// TODO Range analysis
-	// TODO XZ-only dependency optimization
 
 	for (rpos.z = rmin.z, gpos.z = gmin.z; rpos.z < rmax.z; ++rpos.z, gpos.z += stride) {
 		for (rpos.x = rmin.x, gpos.x = gmin.x; rpos.x < rmax.x; ++rpos.x, gpos.x += stride) {
@@ -280,6 +281,111 @@ Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 	// Program not copied, as it may contain pointers to the resources we are duplicating
 
 	return d;
+}
+
+Dictionary VoxelGeneratorGraph::get_graph_as_variant_data() {
+	Dictionary nodes_data;
+	PoolVector<int> node_ids = _graph.get_node_ids();
+	{
+		PoolVector<int>::Read r = node_ids.read();
+		for (int i = 0; i < node_ids.size(); ++i) {
+			uint32_t node_id = r[i];
+			const ProgramGraph::Node *node = _graph.get_node(node_id);
+			ERR_FAIL_COND_V(node == nullptr, Dictionary());
+
+			Dictionary node_data;
+
+			const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
+			node_data["type"] = type.name;
+			node_data["gui_position"] = node->gui_position;
+
+			for (size_t j = 0; j < type.params.size(); ++j) {
+				const VoxelGraphNodeDB::Param &param = type.params[j];
+				node_data[param.name] = node->params[j];
+			}
+
+			String key = String::num_uint64(node_id);
+			nodes_data[key] = node_data;
+		}
+	}
+
+	Array connections_data;
+	std::vector<ProgramGraph::Connection> connections;
+	_graph.get_connections(connections);
+	connections_data.resize(connections.size());
+	for (size_t i = 0; i < connections.size(); ++i) {
+		const ProgramGraph::Connection &con = connections[i];
+		Array con_data;
+		con_data.resize(4);
+		con_data[0] = con.src.node_id;
+		con_data[1] = con.src.port_index;
+		con_data[2] = con.dst.node_id;
+		con_data[3] = con.dst.port_index;
+		connections_data[i] = con_data;
+	}
+
+	Dictionary data;
+	data["nodes"] = nodes_data;
+	data["connections"] = connections_data;
+	return data;
+}
+
+static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
+	ERR_FAIL_COND_V(v.get_type() != Variant::INT, false);
+	int i = v;
+	ERR_FAIL_COND_V(i < min, false);
+	out_id = i;
+	return true;
+}
+
+void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
+	Dictionary nodes_data = data["nodes"];
+	Array connections_data = data["connections"];
+	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
+
+	const Variant *id_key = nullptr;
+	while (id_key = nodes_data.next(id_key)) {
+		const String id_str = *id_key;
+		ERR_FAIL_COND(!id_str.is_valid_integer());
+		const int sid = id_str.to_int();
+		ERR_FAIL_COND(sid < static_cast<int>(ProgramGraph::NULL_ID));
+		const uint32_t id = sid;
+
+		Dictionary node_data = nodes_data[*id_key];
+
+		const String type_name = node_data["type"];
+		const Vector2 gui_position = node_data["gui_position"];
+		NodeTypeID type_id;
+		ERR_FAIL_COND(!type_db.try_get_type_id_from_name(type_name, type_id));
+		ProgramGraph::Node *node = create_node_internal(type_id, gui_position, id);
+		ERR_FAIL_COND(node == nullptr);
+
+		const Variant *param_key = nullptr;
+		while (param_key = node_data.next(param_key)) {
+			const String param_name = *param_key;
+			if (param_name == "type") {
+				continue;
+			}
+			if (param_name == "gui_position") {
+				continue;
+			}
+			uint32_t param_index;
+			ERR_FAIL_COND(!type_db.try_get_param_index_from_name(type_id, param_name, param_index));
+			node->params[param_index] = node_data[*param_key];
+		}
+	}
+
+	for (int i = 0; i < connections_data.size(); ++i) {
+		Array con_data = connections_data[i];
+		ERR_FAIL_COND(con_data.size() != 4);
+		ProgramGraph::PortLocation src;
+		ProgramGraph::PortLocation dst;
+		ERR_FAIL_COND(!var_to_id(con_data[0], src.node_id, ProgramGraph::NULL_ID));
+		ERR_FAIL_COND(!var_to_id(con_data[1], src.port_index));
+		ERR_FAIL_COND(!var_to_id(con_data[2], dst.node_id, ProgramGraph::NULL_ID));
+		ERR_FAIL_COND(!var_to_id(con_data[3], dst.port_index));
+		_graph.connect(src, dst);
+	}
 }
 
 // Debug land
@@ -534,6 +640,12 @@ void VoxelGeneratorGraph::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &VoxelGeneratorGraph::debug_load_waves_preset);
 	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel"), &VoxelGeneratorGraph::debug_measure_microseconds_per_voxel);
+
+	ClassDB::bind_method(D_METHOD("_set_graph_data", "data"), &VoxelGeneratorGraph::load_graph_from_variant_data);
+	ClassDB::bind_method(D_METHOD("_get_graph_data"), &VoxelGeneratorGraph::get_graph_as_variant_data);
+
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "graph_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NOEDITOR | PROPERTY_USAGE_INTERNAL),
+			"_set_graph_data", "_get_graph_data");
 
 	BIND_ENUM_CONSTANT(NODE_CONSTANT);
 	BIND_ENUM_CONSTANT(NODE_INPUT_X);

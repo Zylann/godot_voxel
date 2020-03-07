@@ -35,6 +35,7 @@ public:
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
 		std::vector<Param> params;
+		HashMap<String, uint32_t> param_name_to_index;
 	};
 
 	VoxelGraphNodeDB();
@@ -46,9 +47,12 @@ public:
 	int get_type_count() const { return _types.size(); }
 	const NodeType &get_type(uint32_t id) const { return _types[id]; }
 	Dictionary get_type_info_dict(uint32_t id) const;
+	bool try_get_type_id_from_name(const String &name, VoxelGeneratorGraph::NodeTypeID &out_type_id) const;
+	bool try_get_param_index_from_name(uint32_t type_id, const String &name, uint32_t &out_param_index) const;
 
 private:
 	FixedArray<NodeType, VoxelGeneratorGraph::NODE_TYPE_COUNT> _types;
+	HashMap<String, VoxelGeneratorGraph::NodeTypeID> _type_name_to_id;
 };
 
 #endif // VOXEL_GRAPH_NODE_DB_H

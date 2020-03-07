@@ -43,6 +43,9 @@ ProgramGraph::Node *ProgramGraph::create_node(uint32_t type_id, uint32_t id) {
 	} else {
 		// ID must not be taken already
 		ERR_FAIL_COND_V(_nodes.find(id) != _nodes.end(), nullptr);
+		if (_next_node_id <= id) {
+			_next_node_id = id + 1;
+		}
 	}
 	Node *node = memnew(Node);
 	node->id = id;

@@ -84,6 +84,11 @@ private:
 	void compile();
 	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
 
+	ProgramGraph::Node *create_node_internal(NodeTypeID type_id, Vector2 position, uint32_t id);
+
+	Dictionary get_graph_as_variant_data();
+	void load_graph_from_variant_data(Dictionary data);
+
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;

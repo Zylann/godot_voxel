@@ -26,151 +26,161 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CONSTANT];
 		t.name = "Constant";
-		t.outputs.push_back(Port("Value"));
-		t.params.push_back(Param("Value", Variant::REAL));
+		t.outputs.push_back(Port("value"));
+		t.params.push_back(Param("value", Variant::REAL));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_X];
-		t.name = "Input X";
-		t.outputs.push_back(Port("Value"));
+		t.name = "InputX";
+		t.outputs.push_back(Port("x"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_Y];
-		t.name = "Input Y";
-		t.outputs.push_back(Port("Value"));
+		t.name = "InputY";
+		t.outputs.push_back(Port("y"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_Z];
-		t.name = "Input Z";
-		t.outputs.push_back(Port("Value"));
+		t.name = "InputZ";
+		t.outputs.push_back(Port("z"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_SDF];
-		t.name = "Output SDF";
-		t.inputs.push_back(Port("Value"));
+		t.name = "OutputSDF";
+		t.inputs.push_back(Port("sdf"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_ADD];
 		t.name = "Add";
-		t.inputs.push_back(Port("A"));
-		t.inputs.push_back(Port("B"));
-		t.outputs.push_back(Port("Sum"));
+		t.inputs.push_back(Port("a"));
+		t.inputs.push_back(Port("b"));
+		t.outputs.push_back(Port("out"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SUBTRACT];
 		t.name = "Subtract";
-		t.inputs.push_back(Port("A"));
-		t.inputs.push_back(Port("B"));
-		t.outputs.push_back(Port("Sum"));
+		t.inputs.push_back(Port("a"));
+		t.inputs.push_back(Port("b"));
+		t.outputs.push_back(Port("out"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_MULTIPLY];
 		t.name = "Multiply";
-		t.inputs.push_back(Port("A"));
-		t.inputs.push_back(Port("B"));
-		t.outputs.push_back(Port("Product"));
+		t.inputs.push_back(Port("a"));
+		t.inputs.push_back(Port("b"));
+		t.outputs.push_back(Port("product"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SINE];
 		t.name = "Sine";
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
+		t.inputs.push_back(Port("x"));
+		t.outputs.push_back(Port("out"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_FLOOR];
 		t.name = "Floor";
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
+		t.inputs.push_back(Port("x"));
+		t.outputs.push_back(Port("out"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_ABS];
 		t.name = "Abs";
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
+		t.inputs.push_back(Port("x"));
+		t.outputs.push_back(Port("out"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SQRT];
 		t.name = "Sqrt";
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
+		t.inputs.push_back(Port("x"));
+		t.outputs.push_back(Port("out"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_DISTANCE_2D];
-		t.name = "Distance 2D";
-		t.inputs.push_back(Port("X0"));
-		t.inputs.push_back(Port("Y0"));
-		t.inputs.push_back(Port("X1"));
-		t.inputs.push_back(Port("Y1"));
-		t.outputs.push_back(Port("Result"));
+		t.name = "Distance2D";
+		t.inputs.push_back(Port("x0"));
+		t.inputs.push_back(Port("y0"));
+		t.inputs.push_back(Port("x1"));
+		t.inputs.push_back(Port("y1"));
+		t.outputs.push_back(Port("out"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_DISTANCE_3D];
-		t.name = "Distance 3D";
-		t.inputs.push_back(Port("X0"));
-		t.inputs.push_back(Port("Y0"));
-		t.inputs.push_back(Port("Y0"));
-		t.inputs.push_back(Port("X1"));
-		t.inputs.push_back(Port("Y1"));
-		t.inputs.push_back(Port("Z1"));
-		t.outputs.push_back(Port("Result"));
+		t.name = "Distance3D";
+		t.inputs.push_back(Port("x0"));
+		t.inputs.push_back(Port("y0"));
+		t.inputs.push_back(Port("z0"));
+		t.inputs.push_back(Port("x1"));
+		t.inputs.push_back(Port("y1"));
+		t.inputs.push_back(Port("z1"));
+		t.outputs.push_back(Port("out"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CLAMP];
 		t.name = "Clamp";
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Min", Variant::REAL, -1.f));
-		t.params.push_back(Param("Max", Variant::REAL, 1.f));
+		t.inputs.push_back(Port("x"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("min", Variant::REAL, -1.f));
+		t.params.push_back(Param("max", Variant::REAL, 1.f));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_MIX];
 		t.name = "Mix";
-		t.inputs.push_back(Port("A"));
-		t.inputs.push_back(Port("B"));
-		t.inputs.push_back(Port("Ratio"));
-		t.outputs.push_back(Port("Result"));
+		t.inputs.push_back(Port("a"));
+		t.inputs.push_back(Port("b"));
+		t.inputs.push_back(Port("ratio"));
+		t.outputs.push_back(Port("out"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_REMAP];
 		t.name = "Remap";
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Min0", Variant::REAL, -1.f));
-		t.params.push_back(Param("Max0", Variant::REAL, 1.f));
-		t.params.push_back(Param("Min1", Variant::REAL, -1.f));
-		t.params.push_back(Param("Max1", Variant::REAL, 1.f));
+		t.inputs.push_back(Port("x"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("min0", Variant::REAL, -1.f));
+		t.params.push_back(Param("max0", Variant::REAL, 1.f));
+		t.params.push_back(Param("min1", Variant::REAL, -1.f));
+		t.params.push_back(Param("max1", Variant::REAL, 1.f));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CURVE];
 		t.name = "Curve";
-		t.inputs.push_back(Port("X"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Curve", "Curve"));
+		t.inputs.push_back(Port("x"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("curve", "Curve"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_NOISE_2D];
-		t.name = "Noise 2D";
-		t.inputs.push_back(Port("X"));
-		t.inputs.push_back(Port("Y"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Noise", "OpenSimplexNoise"));
+		t.name = "Noise2D";
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("noise", "OpenSimplexNoise"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_NOISE_3D];
-		t.name = "Noise 3D";
-		t.inputs.push_back(Port("X"));
-		t.inputs.push_back(Port("Y"));
-		t.inputs.push_back(Port("Z"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Noise", "OpenSimplexNoise"));
+		t.name = "Noise3D";
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.inputs.push_back(Port("z"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("noise", "OpenSimplexNoise"));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_IMAGE_2D];
 		t.name = "Image";
-		t.inputs.push_back(Port("X"));
-		t.inputs.push_back(Port("Y"));
-		t.outputs.push_back(Port("Result"));
-		t.params.push_back(Param("Image", "Image"));
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("image", "Image"));
+	}
+
+	for (unsigned int i = 0; i < _types.size(); ++i) {
+		NodeType &t = _types[i];
+		_type_name_to_id.set(t.name, (VoxelGeneratorGraph::NodeTypeID)i);
+
+		for (size_t param_index = 0; param_index < t.params.size(); ++param_index) {
+			const Param &p = t.params[param_index];
+			t.param_name_to_index[p.name] = param_index;
+		}
 	}
 }
 
@@ -215,4 +225,24 @@ Dictionary VoxelGraphNodeDB::get_type_info_dict(uint32_t id) const {
 	type_dict["params"] = params;
 
 	return type_dict;
+}
+
+bool VoxelGraphNodeDB::try_get_type_id_from_name(const String &name, VoxelGeneratorGraph::NodeTypeID &out_type_id) const {
+	const VoxelGeneratorGraph::NodeTypeID *p = _type_name_to_id.getptr(name);
+	if (p == nullptr) {
+		return false;
+	}
+	out_type_id = *p;
+	return true;
+}
+
+bool VoxelGraphNodeDB::try_get_param_index_from_name(uint32_t type_id, const String &name, uint32_t &out_param_index) const {
+	ERR_FAIL_INDEX_V(type_id, _types.size(), false);
+	const NodeType &t = _types[type_id];
+	const uint32_t *p = t.param_name_to_index.getptr(name);
+	if (p == nullptr) {
+		return false;
+	}
+	out_param_index = *p;
+	return true;
 }
