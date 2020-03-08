@@ -8,9 +8,16 @@ class VoxelGraphNodeDB {
 public:
 	struct Port {
 		String name;
+		Variant default_value;
+		//PortType port_type;
 
 		Port(String p_name) :
-				name(p_name) {}
+				name(p_name),
+				default_value(0.f) {}
+
+		Port(String p_name, float p_default_value) :
+				name(p_name),
+				default_value(p_default_value) {}
 	};
 
 	struct Param {
@@ -37,6 +44,7 @@ public:
 		std::vector<Port> outputs;
 		std::vector<Param> params;
 		HashMap<String, uint32_t> param_name_to_index;
+		HashMap<String, uint32_t> input_name_to_index;
 	};
 
 	VoxelGraphNodeDB();
@@ -50,6 +58,7 @@ public:
 	Dictionary get_type_info_dict(uint32_t id) const;
 	bool try_get_type_id_from_name(const String &name, VoxelGeneratorGraph::NodeTypeID &out_type_id) const;
 	bool try_get_param_index_from_name(uint32_t type_id, const String &name, uint32_t &out_param_index) const;
+	bool try_get_input_index_from_name(uint32_t type_id, const String &name, uint32_t &out_input_index) const;
 
 private:
 	FixedArray<NodeType, VoxelGeneratorGraph::NODE_TYPE_COUNT> _types;

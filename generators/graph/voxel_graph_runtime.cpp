@@ -192,9 +192,10 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 
 					if (node->inputs[j].connections.size() == 0) {
 						// No input, default it
-						// TODO Take param value if specified
+						CRASH_COND(j >= node->default_inputs.size());
+						float defval = node->default_inputs[j];
 						a = _memory.size();
-						_memory.push_back(0);
+						_memory.push_back(defval);
 
 					} else {
 						ProgramGraph::PortLocation src_port = node->inputs[j].connections[0];

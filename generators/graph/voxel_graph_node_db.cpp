@@ -179,7 +179,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 
 		for (size_t param_index = 0; param_index < t.params.size(); ++param_index) {
 			Param &p = t.params[param_index];
-			t.param_name_to_index[p.name] = param_index;
+			t.param_name_to_index.set(p.name, param_index);
 			p.index = param_index;
 
 			switch (p.type) {
@@ -196,6 +196,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 					CRASH_NOW();
 					break;
 			}
+		}
+
+		for (size_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
+			const Port &p = t.inputs[input_index];
+			t.input_name_to_index.set(p.name, input_index);
 		}
 	}
 }
@@ -260,5 +265,16 @@ bool VoxelGraphNodeDB::try_get_param_index_from_name(uint32_t type_id, const Str
 		return false;
 	}
 	out_param_index = *p;
+	return true;
+}
+
+bool VoxelGraphNodeDB::try_get_input_index_from_name(uint32_t type_id, const String &name, uint32_t &out_input_index) const {
+	ERR_FAIL_INDEX_V(type_id, _types.size(), false);
+	const NodeType &t = _types[type_id];
+	const uint32_t *p = t.input_name_to_index.getptr(name);
+	if (p == nullptr) {
+		return false;
+	}
+	out_input_index = *p;
 	return true;
 }

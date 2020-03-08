@@ -31,11 +31,15 @@ ProgramGraph::Node *VoxelGeneratorGraph::create_node_internal(NodeTypeID type_id
 	ERR_FAIL_COND_V(node == nullptr, nullptr);
 	node->inputs.resize(type.inputs.size());
 	node->outputs.resize(type.outputs.size());
+	node->default_inputs.resize(type.inputs.size());
 	node->gui_position = position;
 
 	node->params.resize(type.params.size());
 	for (size_t i = 0; i < type.params.size(); ++i) {
 		node->params[i] = type.params[i].default_value;
+	}
+	for (size_t i = 0; i < type.inputs.size(); ++i) {
+		node->default_inputs[i] = type.inputs[i].default_value;
 	}
 
 	return node;
@@ -83,6 +87,20 @@ Variant VoxelGeneratorGraph::get_node_param(uint32_t node_id, uint32_t param_ind
 	ERR_FAIL_COND_V(node == nullptr, Variant());
 	ERR_FAIL_INDEX_V(param_index, node->params.size(), Variant());
 	return node->params[param_index];
+}
+
+Variant VoxelGeneratorGraph::get_node_default_input(uint32_t node_id, uint32_t input_index) const {
+	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND_V(node == nullptr, Variant());
+	ERR_FAIL_INDEX_V(input_index, node->default_inputs.size(), Variant());
+	return node->default_inputs[input_index];
+}
+
+void VoxelGeneratorGraph::set_node_default_input(uint32_t node_id, uint32_t input_index, Variant value) {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND(node == nullptr);
+	ERR_FAIL_INDEX(input_index, node->default_inputs.size());
+	node->default_inputs[input_index] = value;
 }
 
 Vector2 VoxelGeneratorGraph::get_node_gui_position(uint32_t node_id) const {
@@ -304,6 +322,13 @@ Dictionary VoxelGeneratorGraph::get_graph_as_variant_data() {
 				node_data[param.name] = node->params[j];
 			}
 
+			for (size_t j = 0; j < type.inputs.size(); ++j) {
+				if (node->inputs[j].connections.size() == 0) {
+					const VoxelGraphNodeDB::Port &port = type.inputs[j];
+					node_data[port.name] = node->default_inputs[j];
+				}
+			}
+
 			String key = String::num_uint64(node_id);
 			nodes_data[key] = node_data;
 		}
@@ -370,8 +395,12 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 				continue;
 			}
 			uint32_t param_index;
-			ERR_FAIL_COND(!type_db.try_get_param_index_from_name(type_id, param_name, param_index));
-			node->params[param_index] = node_data[*param_key];
+			if (type_db.try_get_param_index_from_name(type_id, param_name, param_index)) {
+				node->params[param_index] = node_data[*param_key];
+			}
+			if (type_db.try_get_input_index_from_name(type_id, param_name, param_index)) {
+				node->default_inputs[param_index] = node_data[*param_key];
+			}
 		}
 	}
 
@@ -634,6 +663,8 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_node_type_id", "node_id"), &VoxelGeneratorGraph::get_node_type_id);
 	ClassDB::bind_method(D_METHOD("get_node_param", "node_id", "param_index"), &VoxelGeneratorGraph::get_node_param);
 	ClassDB::bind_method(D_METHOD("set_node_param", "node_id", "param_index", "value"), &VoxelGeneratorGraph::set_node_param);
+	ClassDB::bind_method(D_METHOD("get_node_default_input", "node_id", "input_index"), &VoxelGeneratorGraph::get_node_default_input);
+	ClassDB::bind_method(D_METHOD("set_node_default_input", "node_id", "input_index", "value"), &VoxelGeneratorGraph::set_node_default_input);
 	ClassDB::bind_method(D_METHOD("set_node_param_null", "node_id", "param_index"), &VoxelGeneratorGraph::_b_set_node_param_null);
 	ClassDB::bind_method(D_METHOD("get_node_gui_position", "node_id"), &VoxelGeneratorGraph::get_node_gui_position);
 	ClassDB::bind_method(D_METHOD("set_node_gui_position", "node_id", "position"), &VoxelGeneratorGraph::set_node_gui_position);

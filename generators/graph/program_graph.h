@@ -41,6 +41,7 @@ public:
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
 		std::vector<Variant> params;
+		std::vector<Variant> default_inputs;
 
 		uint32_t find_input_connection(PortLocation src, uint32_t input_port_index) const;
 		uint32_t find_output_connection(uint32_t output_port_index, PortLocation dst) const;
