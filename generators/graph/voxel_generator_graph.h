@@ -97,6 +97,9 @@ private:
 	Dictionary _b_get_node_type_info(int type_id) const;
 	PoolIntArray _b_get_node_ids() const;
 	Array _b_get_connections() const;
+	// TODO Only exists because the UndoRedo API is confusing `null` with `absence of argument`...
+	// See https://github.com/godotengine/godot/issues/36895
+	void _b_set_node_param_null(int node_id, int param_index);
 
 	static void _bind_methods();
 

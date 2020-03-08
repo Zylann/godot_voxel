@@ -178,8 +178,24 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		_type_name_to_id.set(t.name, (VoxelGeneratorGraph::NodeTypeID)i);
 
 		for (size_t param_index = 0; param_index < t.params.size(); ++param_index) {
-			const Param &p = t.params[param_index];
+			Param &p = t.params[param_index];
 			t.param_name_to_index[p.name] = param_index;
+			p.index = param_index;
+
+			switch (p.type) {
+				case Variant::REAL:
+					if (p.default_value.get_type() == Variant::NIL) {
+						p.default_value = 0.f;
+					}
+					break;
+
+				case Variant::OBJECT:
+					break;
+
+				default:
+					CRASH_NOW();
+					break;
+			}
 		}
 	}
 }

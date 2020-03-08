@@ -616,6 +616,10 @@ Array VoxelGeneratorGraph::_b_get_connections() const {
 	return con_array;
 }
 
+void VoxelGeneratorGraph::_b_set_node_param_null(int node_id, int param_index) {
+	set_node_param(node_id, param_index, Variant());
+}
+
 void VoxelGeneratorGraph::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGeneratorGraph::clear);
@@ -630,6 +634,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_node_type_id", "node_id"), &VoxelGeneratorGraph::get_node_type_id);
 	ClassDB::bind_method(D_METHOD("get_node_param", "node_id", "param_index"), &VoxelGeneratorGraph::get_node_param);
 	ClassDB::bind_method(D_METHOD("set_node_param", "node_id", "param_index", "value"), &VoxelGeneratorGraph::set_node_param);
+	ClassDB::bind_method(D_METHOD("set_node_param_null", "node_id", "param_index"), &VoxelGeneratorGraph::_b_set_node_param_null);
 	ClassDB::bind_method(D_METHOD("get_node_gui_position", "node_id"), &VoxelGeneratorGraph::get_node_gui_position);
 	ClassDB::bind_method(D_METHOD("set_node_gui_position", "node_id", "position"), &VoxelGeneratorGraph::set_node_gui_position);
 

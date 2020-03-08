@@ -1,6 +1,5 @@
 #include "voxel_graph_editor.h"
 #include "../generators/graph/voxel_generator_graph.h"
-#include "../generators/graph/voxel_graph_node_db.h"
 #include "editor/editor_scale.h"
 #include <core/undo_redo.h>
 #include <scene/gui/graph_edit.h>
@@ -10,6 +9,7 @@ class VoxelGraphEditorNode : public GraphNode {
 	GDCLASS(VoxelGraphEditorNode, GraphNode)
 public:
 	uint32_t node_id = 0;
+	std::vector<Control *> param_controls;
 };
 
 VoxelGraphEditor::VoxelGraphEditor() {
@@ -105,6 +105,34 @@ void VoxelGraphEditor::build_gui_from_graph() {
 	}
 }
 
+Control *VoxelGraphEditor::create_param_control(uint32_t node_id, Variant value, const VoxelGraphNodeDB::Param &param) {
+	Control *param_control = nullptr;
+
+	switch (param.type) {
+		case Variant::REAL: {
+			SpinBox *spinbox = memnew(SpinBox);
+			spinbox->set_step(0.001);
+			spinbox->set_min(-10000.0);
+			spinbox->set_max(10000.0);
+			spinbox->set_value(value);
+			spinbox->connect("value_changed", this, "_on_node_param_spinbox_value_changed", varray(node_id, param.index));
+			param_control = spinbox;
+		} break;
+
+		case Variant::OBJECT: {
+			Label *placeholder = memnew(Label);
+			placeholder->set_text("<Resource>");
+			param_control = placeholder;
+		} break;
+
+		default:
+			CRASH_NOW();
+			break;
+	}
+
+	return param_control;
+}
+
 void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	// Build one GUI node
 
@@ -127,7 +155,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 	const int row_count = max(node_type.inputs.size(), node_type.outputs.size()) + node_type.params.size();
 	const Color port_color(0.4, 0.4, 1.0);
-	int param_index = 0;
+	uint32_t param_index = 0;
 
 	for (int i = 0; i < row_count; ++i) {
 		const bool has_left = i < node_type.inputs.size();
@@ -141,7 +169,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 			label->set_text(node_type.inputs[i].name);
 			property_control->add_child(label);
 
-			// TODO Wire up edition
+			// TODO Input defaults edition
 			SpinBox *spinbox = memnew(SpinBox);
 			spinbox->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 			property_control->add_child(spinbox);
@@ -160,13 +188,19 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 		}
 
 		if (!has_left && !has_right) {
+			const VoxelGraphNodeDB::Param &param = node_type.params[param_index];
+
 			Label *label = memnew(Label);
-			label->set_text(node_type.params[param_index].name);
+			label->set_text(param.name);
 			property_control->add_child(label);
 
-			SpinBox *spinbox = memnew(SpinBox);
-			spinbox->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-			property_control->add_child(spinbox);
+			Variant param_value = graph.get_node_param(node_id, param_index);
+			Control *param_control = create_param_control(node_id, param_value, param);
+
+			param_control->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+			property_control->add_child(param_control);
+			CRASH_COND(param_index != node_view->param_controls.size());
+			node_view->param_controls.push_back(param_control);
 
 			++param_index;
 		}
@@ -176,6 +210,63 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	}
 
 	_graph_edit->add_child(node_view);
+}
+
+void VoxelGraphEditor::_on_node_param_spinbox_value_changed(float value, int node_id, int param_index) {
+	if (_updating_param_gui) {
+		// When undoing, editor controls will emit "changed" signals,
+		// but we don't want to treat those as actual actions
+		return;
+	}
+
+	_undo_redo->create_action(TTR("Set Node Param"));
+	Variant previous_value = _graph->get_node_param(node_id, param_index);
+
+	_undo_redo->add_do_method(*_graph, "set_node_param", node_id, param_index, value);
+	_undo_redo->add_do_method(this, "update_node_param_gui", node_id, param_index);
+
+	// TODO I had to complicate this because UndoRedo confuses `null` as `absence of argument`, which causes method call errors
+	// See https://github.com/godotengine/godot/issues/36895
+	if (previous_value.get_type() == Variant::NIL) {
+		_undo_redo->add_undo_method(*_graph, "set_node_param_null", node_id, param_index);
+	} else {
+		_undo_redo->add_undo_method(*_graph, "set_node_param", node_id, param_index, previous_value);
+	}
+
+	_undo_redo->add_undo_method(this, "update_node_param_gui", node_id, param_index);
+
+	_undo_redo->commit_action();
+}
+
+void VoxelGraphEditor::update_node_param_gui(int node_id, int param_index) {
+	VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(node_to_gui_name(node_id)));
+	CRASH_COND(param_index >= node_view->param_controls.size());
+	Control *param_control = node_view->param_controls[param_index];
+	const uint32_t node_type_id = _graph->get_node_type_id(node_id);
+	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
+	CRASH_COND(param_index >= node_type.params.size());
+	const VoxelGraphNodeDB::Param &param = node_type.params[param_index];
+	const Variant value = _graph->get_node_param(node_id, param_index);
+
+	_updating_param_gui = true;
+
+	switch (param.type) {
+		case Variant::REAL: {
+			SpinBox *spinbox = Object::cast_to<SpinBox>(param_control);
+			ERR_FAIL_COND(spinbox == nullptr);
+			spinbox->set_value(value);
+		} break;
+
+		case Variant::OBJECT: {
+			// TODO
+		} break;
+
+		default:
+			CRASH_NOW();
+			break;
+	}
+
+	_updating_param_gui = false;
 }
 
 void remove_connections_from_and_to(GraphEdit *graph_edit, StringName node_name) {
@@ -301,7 +392,6 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 }
 
 void VoxelGraphEditor::_on_graph_node_dragged(Vector2 from, Vector2 to, int id) {
-	print_line("Dragged");
 	_undo_redo->create_action(TTR("Move nodes"));
 	_undo_redo->add_do_method(this, "set_node_position", id, to);
 	_undo_redo->add_undo_method(this, "set_node_position", id, from);
@@ -354,8 +444,11 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_delete_nodes_request"), &VoxelGraphEditor::_on_graph_edit_delete_nodes_request);
 	ClassDB::bind_method(D_METHOD("_on_graph_node_dragged", "from", "to", "id"), &VoxelGraphEditor::_on_graph_node_dragged);
 	ClassDB::bind_method(D_METHOD("_on_context_menu_index_pressed", "idx"), &VoxelGraphEditor::_on_context_menu_index_pressed);
+	ClassDB::bind_method(D_METHOD("_on_node_param_spinbox_value_changed", "value", "node_id", "param_index"),
+			&VoxelGraphEditor::_on_node_param_spinbox_value_changed);
 
 	ClassDB::bind_method(D_METHOD("create_node_gui", "node_id"), &VoxelGraphEditor::create_node_gui);
 	ClassDB::bind_method(D_METHOD("remove_node_gui", "node_name"), &VoxelGraphEditor::remove_node_gui);
 	ClassDB::bind_method(D_METHOD("set_node_position", "node_id", "offset"), &VoxelGraphEditor::set_node_position);
+	ClassDB::bind_method(D_METHOD("update_node_param_gui", "node_id", "param_id"), &VoxelGraphEditor::update_node_param_gui);
 }
