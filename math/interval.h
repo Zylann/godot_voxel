@@ -30,6 +30,12 @@ struct Interval {
 		return Interval(p_val, p_val);
 	}
 
+	inline static Interval from_infinity() {
+		return Interval(
+				-std::numeric_limits<float>::infinity(),
+				std::numeric_limits<float>::infinity());
+	}
+
 	inline bool contains(float v) const {
 		return v >= min && v <= max;
 	}
@@ -92,6 +98,21 @@ struct Interval {
 		return Interval{ ::min(a, b, c, d), ::max(a, b, c, d) };
 	}
 
+	inline Interval operator/(const Interval &other) const {
+		if (other.is_single_value() && other.min == 0.f) {
+			return Interval::from_single_value(0.f);
+		}
+		if (other.contains(0.f)) {
+			// TODO May need something more precise
+			return Interval::from_infinity();
+		}
+		const float a = min / other.min;
+		const float b = min / other.max;
+		const float c = max / other.min;
+		const float d = max / other.max;
+		return Interval{ ::min(a, b, c, d), ::max(a, b, c, d) };
+	}
+
 	inline Interval operator/(float x) const {
 		// TODO Implement proper division by interval
 		return *this * (1.f / x);
@@ -103,6 +124,22 @@ struct Interval {
 };
 
 // Functions declared outside, so using intervals or numbers can be the same code (templatable)
+
+inline Interval min_interval(const Interval &a, const Interval &b) {
+	return Interval(::min(a.min, b.min), ::min(a.max, b.max));
+}
+
+inline Interval max_interval(const Interval &a, const Interval &b) {
+	return Interval(::max(a.min, b.min), ::max(a.max, b.max));
+}
+
+inline Interval min_interval(const Interval &a, const float b) {
+	return Interval(::min(a.min, b), ::min(a.max, b));
+}
+
+inline Interval max_interval(const Interval &a, const float b) {
+	return Interval(::max(a.min, b), ::max(a.max, b));
+}
 
 inline Interval sqrt(const Interval &i) {
 	return Interval{
@@ -152,6 +189,20 @@ inline Interval sin(const Interval &i) {
 		// Simplified
 		return Interval(-1.f, 1.f);
 	}
+}
+
+inline Interval floor(const Interval &i) {
+	// Floor is monotonic so I guess we can just do that?
+	return Interval(Math::floor(i.min), Math::floor(i.max));
+}
+
+inline Interval stepify(const Interval &p_value, const Interval &p_step) {
+	// TODO Division by zero returns 0, which is different from Godot's stepify. May have to change that
+	return floor(p_value / p_step + Interval::from_single_value(0.5f)) * p_step;
+}
+
+inline Interval wrapf(const Interval &x, const Interval &d) {
+	return x - (d * floor(x / d));
 }
 
 #endif // INTERVAL_H

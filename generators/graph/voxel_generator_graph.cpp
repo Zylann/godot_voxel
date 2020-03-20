@@ -445,8 +445,8 @@ void VoxelGeneratorGraph::debug_load_waves_preset() {
 	uint32_t n_y = create_node(NODE_INPUT_Y, Vector2(37, 1) * k); // 2
 	uint32_t n_z = create_node(NODE_INPUT_Z, Vector2(11, 5) * k); // 3
 	uint32_t n_o = create_node(NODE_OUTPUT_SDF, Vector2(45, 3) * k); // 4
-	uint32_t n_sin0 = create_node(NODE_SINE, Vector2(23, 1) * k); // 5
-	uint32_t n_sin1 = create_node(NODE_SINE, Vector2(23, 5) * k); // 6
+	uint32_t n_sin0 = create_node(NODE_SIN, Vector2(23, 1) * k); // 5
+	uint32_t n_sin1 = create_node(NODE_SIN, Vector2(23, 5) * k); // 6
 	uint32_t n_add = create_node(NODE_ADD, Vector2(27, 3) * k); // 7
 	uint32_t n_mul0 = create_node(NODE_MULTIPLY, Vector2(17, 1) * k); // 8
 	uint32_t n_mul1 = create_node(NODE_MULTIPLY, Vector2(17, 5) * k); // 9
@@ -691,10 +691,16 @@ void VoxelGeneratorGraph::_bind_methods() {
 	BIND_ENUM_CONSTANT(NODE_ADD);
 	BIND_ENUM_CONSTANT(NODE_SUBTRACT);
 	BIND_ENUM_CONSTANT(NODE_MULTIPLY);
-	BIND_ENUM_CONSTANT(NODE_SINE);
+	BIND_ENUM_CONSTANT(NODE_DIVIDE);
+	BIND_ENUM_CONSTANT(NODE_SIN);
 	BIND_ENUM_CONSTANT(NODE_FLOOR);
 	BIND_ENUM_CONSTANT(NODE_ABS);
 	BIND_ENUM_CONSTANT(NODE_SQRT);
+	BIND_ENUM_CONSTANT(NODE_FRACT);
+	BIND_ENUM_CONSTANT(NODE_STEPIFY);
+	BIND_ENUM_CONSTANT(NODE_WRAP);
+	BIND_ENUM_CONSTANT(NODE_MIN);
+	BIND_ENUM_CONSTANT(NODE_MAX);
 	BIND_ENUM_CONSTANT(NODE_DISTANCE_2D);
 	BIND_ENUM_CONSTANT(NODE_DISTANCE_3D);
 	BIND_ENUM_CONSTANT(NODE_CLAMP);
@@ -704,5 +710,9 @@ void VoxelGeneratorGraph::_bind_methods() {
 	BIND_ENUM_CONSTANT(NODE_NOISE_2D);
 	BIND_ENUM_CONSTANT(NODE_NOISE_3D);
 	BIND_ENUM_CONSTANT(NODE_IMAGE_2D);
+	BIND_ENUM_CONSTANT(NODE_SDF_PLANE);
+	BIND_ENUM_CONSTANT(NODE_SDF_BOX);
+	BIND_ENUM_CONSTANT(NODE_SDF_SPHERE);
+	BIND_ENUM_CONSTANT(NODE_SDF_TORUS);
 	BIND_ENUM_CONSTANT(NODE_TYPE_COUNT);
 }

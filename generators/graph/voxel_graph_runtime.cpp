@@ -309,7 +309,7 @@ struct PNodeBinop {
 	uint16_t a_out;
 };
 
-struct PNodeMonoFunc {
+struct PNodeMonop {
 	uint16_t a_in;
 	uint16_t a_out;
 };
@@ -388,6 +388,68 @@ struct PNodeImage2D {
 	Image *p_image;
 };
 
+struct PNodeSdfBox {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_sx;
+	uint16_t a_sy;
+	uint16_t a_sz;
+	uint16_t a_out;
+};
+
+struct PNodeSdfSphere {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_r;
+	uint16_t a_out;
+};
+
+struct PNodeSdfTorus {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_r0;
+	uint16_t a_r1;
+	uint16_t a_out;
+};
+
+inline Interval get_length(const Interval &x, const Interval &y) {
+	return sqrt(x * x + y * y);
+}
+
+inline Interval get_length(const Interval &x, const Interval &y, const Interval &z) {
+	return sqrt(x * x + y * y + z * z);
+}
+
+// For more, see https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+// TODO Move these to VoxelMath once we have a proper namespace, so they can be used in VoxelTool too
+
+inline float sdf_box(const Vector3 pos, const Vector3 extents) {
+	Vector3 d = pos.abs() - extents;
+	return min(max(d.x, max(d.y, d.z)), 0.f) +
+		   Vector3(max(d.x, 0.f), max(d.y, 0.f), max(d.z, 0.f)).length();
+}
+
+inline Interval sdf_box(const Interval &x, const Interval &y, const Interval &z, const Interval &sx, const Interval &sy, const Interval &sz) {
+	Interval dx = abs(x) - sx;
+	Interval dy = abs(y) - sy;
+	Interval dz = abs(z) - sz;
+	return min_interval(max_interval(dx, max_interval(dy, dz)), 0.f) +
+		   get_length(max_interval(dx, 0.f), max_interval(dy, 0.f), max_interval(dz, 0.f));
+}
+
+inline float sdf_torus(const Vector3 pos, float r0, float r1) {
+	Vector2 q = Vector2(Vector2(pos.x, pos.z).length() - r0, pos.y);
+	return q.length() - r1;
+}
+
+inline Interval sdf_torus(const Interval &x, const Interval &y, const Interval &z, const Interval r0, const Interval r1) {
+	Interval qx = get_length(x, z) - r0;
+	return get_length(qx, y) - r1;
+}
+
 float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 	// This part must be optimized for speed
 
@@ -444,24 +506,56 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 				memory[n.a_out] = memory[n.a_i0] * memory[n.a_i1];
 			} break;
 
-			case VoxelGeneratorGraph::NODE_SINE: {
-				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
-				memory[n.a_out] = Math::sin(Math_PI * memory[n.a_in]);
+			case VoxelGeneratorGraph::NODE_DIVIDE: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				float d = memory[n.a_i1];
+				memory[n.a_out] = d == 0.f ? 0.f : memory[n.a_i0] / d;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SIN: {
+				const PNodeMonop &n = read<PNodeMonop>(_program, pc);
+				memory[n.a_out] = Math::sin(memory[n.a_in]);
 			} break;
 
 			case VoxelGeneratorGraph::NODE_FLOOR: {
-				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
+				const PNodeMonop &n = read<PNodeMonop>(_program, pc);
 				memory[n.a_out] = Math::floor(memory[n.a_in]);
 			} break;
 
 			case VoxelGeneratorGraph::NODE_ABS: {
-				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
+				const PNodeMonop &n = read<PNodeMonop>(_program, pc);
 				memory[n.a_out] = Math::abs(memory[n.a_in]);
 			} break;
 
 			case VoxelGeneratorGraph::NODE_SQRT: {
-				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
+				const PNodeMonop &n = read<PNodeMonop>(_program, pc);
 				memory[n.a_out] = Math::sqrt(memory[n.a_in]);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FRACT: {
+				const PNodeMonop &n = read<PNodeMonop>(_program, pc);
+				const float x = memory[n.a_in];
+				memory[n.a_out] = x - Math::floor(x);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_STEPIFY: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				memory[n.a_out] = Math::stepify(memory[n.a_i0], memory[n.a_i1]);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_WRAP: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				memory[n.a_out] = wrapf(memory[n.a_i0], memory[n.a_i1]);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_MIN: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				memory[n.a_out] = ::min(memory[n.a_i0], memory[n.a_i1]);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_MAX: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				memory[n.a_out] = ::max(memory[n.a_i0], memory[n.a_i1]);
 			} break;
 
 			case VoxelGeneratorGraph::NODE_DISTANCE_2D: {
@@ -513,6 +607,34 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 				n.p_image->lock();
 				memory[n.a_out] = get_pixel_repeat(*n.p_image, memory[n.a_x], memory[n.a_y]);
 				n.p_image->unlock();
+			} break;
+
+			// TODO Alias to Subtract?
+			case VoxelGeneratorGraph::NODE_SDF_PLANE: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				memory[n.a_out] = memory[n.a_i0] - memory[n.a_i1];
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_BOX: {
+				const PNodeSdfBox &n = read<PNodeSdfBox>(_program, pc);
+				// TODO Could read raw?
+				const Vector3 pos(memory[n.a_x], memory[n.a_y], memory[n.a_z]);
+				const Vector3 extents(memory[n.a_sx], memory[n.a_sy], memory[n.a_sz]);
+				memory[n.a_out] = sdf_box(pos, extents);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_SPHERE: {
+				const PNodeSdfSphere &n = read<PNodeSdfSphere>(_program, pc);
+				// TODO Could read raw?
+				const Vector3 pos(memory[n.a_x], memory[n.a_y], memory[n.a_z]);
+				memory[n.a_out] = pos.length() - memory[n.a_r];
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_TORUS: {
+				const PNodeSdfTorus &n = read<PNodeSdfTorus>(_program, pc);
+				// TODO Could read raw?
+				const Vector3 pos(memory[n.a_x], memory[n.a_y], memory[n.a_z]);
+				memory[n.a_out] = sdf_torus(pos, memory[n.a_r0], memory[n.a_r1]);
 			} break;
 
 			default:
@@ -574,30 +696,82 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 				max_memory[n.a_out] = r.max;
 			} break;
 
-			case VoxelGeneratorGraph::NODE_SINE: {
-				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
-				Interval r = sin(Interval(min_memory[n.a_in], max_memory[n.a_in]) * Math_PI);
+			case VoxelGeneratorGraph::NODE_DIVIDE: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				Interval r = Interval(min_memory[n.a_i0], max_memory[n.a_i0]) /
+							 Interval(min_memory[n.a_i1], max_memory[n.a_i1]);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SIN: {
+				const PNodeMonop &n = read<PNodeMonop>(_program, pc);
+				Interval r = sin(Interval(min_memory[n.a_in], max_memory[n.a_in]));
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
 
 			case VoxelGeneratorGraph::NODE_FLOOR: {
-				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
-				// Floor is monotonic so I guess we can just do that
-				min_memory[n.a_out] = Math::floor(min_memory[n.a_in]);
-				max_memory[n.a_out] = Math::floor(max_memory[n.a_in]); // ceil?
+				const PNodeMonop &n = read<PNodeMonop>(_program, pc);
+				Interval r = floor(Interval(min_memory[n.a_in], max_memory[n.a_in]));
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
 			} break;
 
 			case VoxelGeneratorGraph::NODE_ABS: {
-				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
+				const PNodeMonop &n = read<PNodeMonop>(_program, pc);
 				Interval r = abs(Interval(min_memory[n.a_in], max_memory[n.a_in]));
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
 
 			case VoxelGeneratorGraph::NODE_SQRT: {
-				const PNodeMonoFunc &n = read<PNodeMonoFunc>(_program, pc);
+				const PNodeMonop &n = read<PNodeMonop>(_program, pc);
 				Interval r = sqrt(Interval(min_memory[n.a_in], max_memory[n.a_in]));
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FRACT: {
+				const PNodeMonop &n = read<PNodeMonop>(_program, pc);
+				Interval r = Interval(min_memory[n.a_in], max_memory[n.a_in]);
+				r = r - floor(r);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_STEPIFY: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				const Interval r = stepify(
+						Interval(min_memory[n.a_i0], max_memory[n.a_i0]),
+						Interval(min_memory[n.a_i1], max_memory[n.a_i1]));
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_WRAP: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				const Interval r = wrapf(
+						Interval(min_memory[n.a_i0], max_memory[n.a_i0]),
+						Interval(min_memory[n.a_i1], max_memory[n.a_i1]));
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_MIN: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				const Interval r = min_interval(
+						Interval(min_memory[n.a_i0], max_memory[n.a_i0]),
+						Interval(min_memory[n.a_i1], max_memory[n.a_i1]));
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_MAX: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				const Interval r = max_interval(
+						Interval(min_memory[n.a_i0], max_memory[n.a_i0]),
+						Interval(min_memory[n.a_i1], max_memory[n.a_i1]));
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
@@ -623,10 +797,7 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 				Interval x1(min_memory[n.a_x1], max_memory[n.a_x1]);
 				Interval y1(min_memory[n.a_y1], max_memory[n.a_y1]);
 				Interval z1(min_memory[n.a_z1], max_memory[n.a_z1]);
-				Interval dx = x1 - x0;
-				Interval dy = y1 - y0;
-				Interval dz = z1 - z0;
-				Interval r = sqrt(dx * dx + dy * dy + dz * dz);
+				Interval r = get_length(x1 - x0, y1 - y0, z1 - z0);
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
@@ -687,10 +858,10 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 
 			case VoxelGeneratorGraph::NODE_NOISE_3D: {
 				const PNodeNoise3D &n = read<PNodeNoise3D>(_program, pc);
-				Interval x(min_memory[n.a_x], max_memory[n.a_x]);
-				Interval y(min_memory[n.a_y], max_memory[n.a_y]);
-				Interval z(min_memory[n.a_z], max_memory[n.a_z]);
-				Interval r = get_osn_range_3d(n.p_noise, x, y, z);
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval z(min_memory[n.a_z], max_memory[n.a_z]);
+				const Interval r = get_osn_range_3d(n.p_noise, x, y, z);
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
@@ -700,6 +871,48 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 				// TODO Segment image?
 				min_memory[n.a_out] = n.min_value;
 				max_memory[n.a_out] = n.max_value;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_PLANE: {
+				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
+				min_memory[n.a_out] = min_memory[n.a_i0] - max_memory[n.a_i1];
+				max_memory[n.a_out] = max_memory[n.a_i0] - min_memory[n.a_i1];
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_BOX: {
+				const PNodeSdfBox &n = read<PNodeSdfBox>(_program, pc);
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval z(min_memory[n.a_z], max_memory[n.a_z]);
+				const Interval sx(min_memory[n.a_sx], max_memory[n.a_sx]);
+				const Interval sy(min_memory[n.a_sy], max_memory[n.a_sy]);
+				const Interval sz(min_memory[n.a_sz], max_memory[n.a_sz]);
+				const Interval r = sdf_box(x, y, z, sx, sy, sz);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_SPHERE: {
+				const PNodeSdfSphere &n = read<PNodeSdfSphere>(_program, pc);
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval z(min_memory[n.a_z], max_memory[n.a_z]);
+				const Interval radius(min_memory[n.a_r], max_memory[n.a_r]);
+				const Interval r = get_length(x, y, z) - radius;
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_TORUS: {
+				const PNodeSdfTorus &n = read<PNodeSdfTorus>(_program, pc);
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval z(min_memory[n.a_z], max_memory[n.a_z]);
+				const Interval radius1(min_memory[n.a_r0], max_memory[n.a_r0]);
+				const Interval radius2(min_memory[n.a_r1], max_memory[n.a_r1]);
+				const Interval r = sdf_torus(x, y, z, radius1, radius2);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
 			} break;
 
 			default:

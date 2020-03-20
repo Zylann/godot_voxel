@@ -68,11 +68,18 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.name = "Multiply";
 		t.inputs.push_back(Port("a"));
 		t.inputs.push_back(Port("b"));
-		t.outputs.push_back(Port("product"));
+		t.outputs.push_back(Port("out"));
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SINE];
-		t.name = "Sine";
+		NodeType &t = types[VoxelGeneratorGraph::NODE_DIVIDE];
+		t.name = "Divide";
+		t.inputs.push_back(Port("a"));
+		t.inputs.push_back(Port("b"));
+		t.outputs.push_back(Port("out"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SIN];
+		t.name = "Sin";
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
 	}
@@ -92,6 +99,40 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SQRT];
 		t.name = "Sqrt";
 		t.inputs.push_back(Port("x"));
+		t.outputs.push_back(Port("out"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_FRACT];
+		t.name = "Fract";
+		t.inputs.push_back(Port("x"));
+		t.outputs.push_back(Port("out"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_STEPIFY];
+		t.name = "Stepify";
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("step"));
+		t.outputs.push_back(Port("out"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_WRAP];
+		t.name = "Wrap";
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("length"));
+		t.outputs.push_back(Port("out"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_MIN];
+		t.name = "Min";
+		t.inputs.push_back(Port("a"));
+		t.inputs.push_back(Port("b"));
+		t.outputs.push_back(Port("out"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_MAX];
+		t.name = "Max";
+		t.inputs.push_back(Port("a"));
+		t.inputs.push_back(Port("b"));
 		t.outputs.push_back(Port("out"));
 	}
 	{
@@ -171,6 +212,43 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out"));
 		t.params.push_back(Param("image", "Image"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_PLANE];
+		t.name = "SdfPlane";
+		t.inputs.push_back(Port("y"));
+		t.inputs.push_back(Port("height"));
+		t.outputs.push_back(Port("sdf"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_BOX];
+		t.name = "SdfBox";
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.inputs.push_back(Port("z"));
+		t.inputs.push_back(Port("size_x"));
+		t.inputs.push_back(Port("size_y"));
+		t.inputs.push_back(Port("size_z"));
+		t.outputs.push_back(Port("sdf"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SPHERE];
+		t.name = "SdfSphere";
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.inputs.push_back(Port("z"));
+		t.inputs.push_back(Port("radius"));
+		t.outputs.push_back(Port("sdf"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_TORUS];
+		t.name = "SdfTorus";
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.inputs.push_back(Port("z"));
+		t.inputs.push_back(Port("radius1", 16.f));
+		t.inputs.push_back(Port("radius2", 4.f));
+		t.outputs.push_back(Port("sdf"));
 	}
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {

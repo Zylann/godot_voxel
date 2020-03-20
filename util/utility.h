@@ -191,10 +191,16 @@ inline int udiv(int x, int d) {
 	}
 }
 
+// TODO Rename `wrapi`
 // `Math::wrapi` with zero min
 inline int wrap(int x, int d) {
 	return ((unsigned int)x - (x < 0)) % (unsigned int)d;
 	//return ((x % d) + d) % d;
+}
+
+// Math::wrapf with zero min
+inline float wrapf(float x, float d) {
+	return Math::is_zero_approx(d) ? 0.f : x - (d * Math::floor(x / d));
 }
 
 #if TOOLS_ENABLED
