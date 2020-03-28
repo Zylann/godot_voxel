@@ -181,7 +181,7 @@ void VoxelLibrary::generate_side_culling_matrix() {
 	};
 
 	std::vector<Pattern> patterns;
-	uint32_t full_side_pattern_index = -1;
+	uint32_t full_side_pattern_index = NULL_INDEX;
 
 	// Gather patterns
 	for (uint16_t type_id = 0; type_id < _voxel_types.size(); ++type_id) {
@@ -248,7 +248,7 @@ void VoxelLibrary::generate_side_culling_matrix() {
 			}
 
 			// Find if the same pattern already exists
-			unsigned int pattern_index = -1;
+			uint32_t pattern_index = NULL_INDEX;
 			for (unsigned int i = 0; i < patterns.size(); ++i) {
 				if (patterns[i].bitmap == bitmap) {
 					pattern_index = i;
@@ -258,7 +258,7 @@ void VoxelLibrary::generate_side_culling_matrix() {
 
 			// Get or create pattern
 			Pattern *pattern = nullptr;
-			if (pattern_index != -1) {
+			if (pattern_index != NULL_INDEX) {
 				pattern = &patterns[pattern_index];
 			} else {
 				pattern_index = patterns.size();
@@ -269,7 +269,7 @@ void VoxelLibrary::generate_side_culling_matrix() {
 
 			CRASH_COND(pattern == nullptr);
 
-			if (full_side_pattern_index == -1 && bitmap.all()) {
+			if (full_side_pattern_index == NULL_INDEX && bitmap.all()) {
 				full_side_pattern_index = pattern_index;
 			}
 			if (pattern_index != full_side_pattern_index) {

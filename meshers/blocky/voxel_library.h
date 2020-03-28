@@ -11,6 +11,7 @@ class VoxelLibrary : public Resource {
 public:
 	// Limit based on maximum supported by VoxelMesherBlocky
 	static const unsigned int MAX_VOXEL_TYPES = 65536;
+	static const uint32_t NULL_INDEX = 0xFFFFFFFF;
 
 	VoxelLibrary();
 	~VoxelLibrary();
