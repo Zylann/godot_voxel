@@ -453,7 +453,7 @@ void Voxel::_bind_methods() {
 Array Voxel::_b_get_collision_aabbs() const {
 	Array array;
 	array.resize(_collision_aabbs.size());
-	for (int i = 0; i < _collision_aabbs.size(); ++i) {
+	for (size_t i = 0; i < _collision_aabbs.size(); ++i) {
 		array[i] = _collision_aabbs[i];
 	}
 	return array;

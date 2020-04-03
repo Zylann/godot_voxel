@@ -80,7 +80,7 @@ void VoxelMemoryPool::debug_print() {
 	int i = 0;
 	while ((key = _pools.next(key))) {
 		Pool *pool = _pools.get(*key);
-		print_line(String("Pool {0} for size {1}: {2} blocks").format(varray(i, *key, pool->blocks.size())));
+		print_line(String("Pool {0} for size {1}: {2} blocks").format(varray(i, *key, static_cast<int>(pool->blocks.size()))));
 		++i;
 	}
 }

@@ -22,6 +22,10 @@ files = [
 for f in files:
 	env_voxel.add_source_files(env.modules_sources, f)
 
+# Ignored clang warnings because Godot's codebase is old and isn't using override yet
+if env['platform'] == 'osx' or env['platform'] == 'android':
+    env_voxel.Append(CXXFLAGS=['-Wno-inconsistent-missing-override'])
+
 # Doesn't work, because reasons
 #if env.msvc:
 #	env_voxel.Append(CXXFLAGS=['/std:c++17'])
