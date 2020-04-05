@@ -205,4 +205,18 @@ inline Interval wrapf(const Interval &x, const Interval &d) {
 	return x - (d * floor(x / d));
 }
 
+inline Interval smoothstep(float p_from, float p_to, Interval p_weight) {
+	if (Math::is_equal_approx(p_from, p_to)) {
+		return Interval::from_single_value(p_from);
+	}
+	// Smoothstep is monotonic
+	float v0 = smoothstep(p_from, p_to, p_weight.min);
+	float v1 = smoothstep(p_from, p_to, p_weight.max);
+	if (v0 <= v1) {
+		return Interval(v0, v1);
+	} else {
+		return Interval(v1, v0);
+	}
+}
+
 #endif // INTERVAL_H

@@ -182,6 +182,14 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("max1", Variant::REAL, 1.f));
 	}
 	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SMOOTHSTEP];
+		t.name = "Smoothstep";
+		t.inputs.push_back(Port("x"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("edge0", Variant::REAL, 0.f));
+		t.params.push_back(Param("edge1", Variant::REAL, 1.f));
+	}
+	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CURVE];
 		t.name = "Curve";
 		t.inputs.push_back(Port("x"));

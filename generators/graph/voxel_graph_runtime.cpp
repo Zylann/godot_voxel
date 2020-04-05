@@ -267,6 +267,13 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 						append(program, max1 - min1);
 					} break;
 
+					case VoxelGeneratorGraph::NODE_SMOOTHSTEP: {
+						float edge0 = node->params[0].operator float();
+						float edge1 = node->params[1].operator float();
+						append(program, edge0);
+						append(program, edge1);
+					} break;
+
 				} // switch special params
 
 #ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
@@ -353,6 +360,13 @@ struct PNodeRemap {
 	float p_m0;
 	float p_c1;
 	float p_m1;
+};
+
+struct PNodeSmoothstep {
+	uint16_t a_x;
+	uint16_t a_out;
+	float p_edge0;
+	float p_edge1;
 };
 
 struct PNodeCurve {
@@ -584,6 +598,11 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 			case VoxelGeneratorGraph::NODE_REMAP: {
 				const PNodeRemap &n = read<PNodeRemap>(_program, pc);
 				memory[n.a_out] = ((memory[n.a_x] - n.p_c0) * n.p_m0) * n.p_m1 + n.p_c1;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SMOOTHSTEP: {
+				const PNodeSmoothstep &n = read<PNodeSmoothstep>(_program, pc);
+				memory[n.a_out] = smoothstep(n.p_edge0, n.p_edge1, memory[n.a_x]);
 			} break;
 
 			case VoxelGeneratorGraph::NODE_CURVE: {
@@ -827,6 +846,14 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 				const PNodeRemap &n = read<PNodeRemap>(_program, pc);
 				Interval x(min_memory[n.a_x], max_memory[n.a_x]);
 				Interval r = ((x - n.p_c0) * n.p_m0) * n.p_m1 + n.p_c1;
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SMOOTHSTEP: {
+				const PNodeSmoothstep &n = read<PNodeSmoothstep>(_program, pc);
+				Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				Interval r = smoothstep(n.p_edge0, n.p_edge1, x);
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;

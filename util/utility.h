@@ -203,6 +203,15 @@ inline float wrapf(float x, float d) {
 	return Math::is_zero_approx(d) ? 0.f : x - (d * Math::floor(x / d));
 }
 
+// Similar to Math::smoothstep but doesn't use macro to clamp
+inline float smoothstep(float p_from, float p_to, float p_weight) {
+	if (Math::is_equal_approx(p_from, p_to)) {
+		return p_from;
+	}
+	float x = clamp((p_weight - p_from) / (p_to - p_from), 0.0f, 1.0f);
+	return x * x * (3.0f - 2.0f * x);
+}
+
 #if TOOLS_ENABLED
 namespace VoxelDebug {
 void create_debug_box_mesh();
