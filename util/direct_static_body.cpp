@@ -23,7 +23,10 @@ void DirectStaticBody::destroy() {
 		ps.free(_body);
 		_body = RID();
 		// The shape need to be destroyed after the body
-		_shape.unref();
+		for(int i = 0; i < _shape.size(); i++){
+			Ref<Shape> shape = _shape[i];
+			shape.unref();
+		}
 	}
 	if (_debug_mesh_instance.is_valid()) {
 		_debug_mesh_instance.destroy();
@@ -46,11 +49,11 @@ void DirectStaticBody::set_transform(Transform transform) {
 void DirectStaticBody::add_shape(Ref<Shape> shape) {
 	ERR_FAIL_COND(!_body.is_valid());
 	PhysicsServer::get_singleton()->body_add_shape(_body, shape->get_rid(), Transform(), false);
-	// No use case for multishape yet
-	_shape = shape;
+	_shape.push_back(shape);
 
 	if (_debug_mesh_instance.is_valid()) {
-		Ref<Mesh> mesh = _shape->get_debug_mesh();
+		Ref<Shape> shape = _shape[0];
+		Ref<Mesh> mesh = shape->get_debug_mesh();
 		_debug_mesh_instance.set_mesh(mesh);
 	}
 }
@@ -58,7 +61,8 @@ void DirectStaticBody::add_shape(Ref<Shape> shape) {
 void DirectStaticBody::remove_shape(int shape_index) {
 	ERR_FAIL_COND(!_body.is_valid());
 	PhysicsServer::get_singleton()->body_remove_shape(_body, shape_index);
-	_shape.unref();
+	Ref<Shape> shape = _shape[shape_index];
+	shape.unref();
 
 	if (_debug_mesh_instance.is_valid()) {
 		_debug_mesh_instance.set_mesh(Ref<Mesh>());
@@ -103,8 +107,9 @@ void DirectStaticBody::set_debug(bool enabled, World *world) {
 		Transform transform = PhysicsServer::get_singleton()->body_get_state(_body, PhysicsServer::BODY_STATE_TRANSFORM);
 		_debug_mesh_instance.set_transform(transform);
 
-		if (_shape.is_valid()) {
-			Ref<Mesh> mesh = _shape->get_debug_mesh();
+		if (_shape[0].is_valid()) {
+			Ref<Shape> shape = _shape[0];
+			Ref<Mesh> mesh = shape->get_debug_mesh();
 			_debug_mesh_instance.set_mesh(mesh);
 		}
 

@@ -36,6 +36,17 @@ static Ref<ConcavePolygonShape> create_concave_polygon_shape(Array surface_array
 	return shape;
 }
 
+static Vector<Ref<Shape>> create_concave_polygon_shapes(Vector<Array> surface_arrays) {
+
+	Vector<Ref<Shape>> shapes = Vector<Ref<Shape>>();
+
+	for(int i = 0; i < surface_arrays.size(); i++) {
+		shapes.push_back(create_concave_polygon_shape(surface_arrays[i]));
+	}
+
+	return shapes;
+}
+
 // Helper
 VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index) {
 	const int bs = size;
@@ -83,6 +94,64 @@ void VoxelBlock::set_world(Ref<World> p_world) {
 			_static_body.set_world(*p_world);
 		}
 	}
+}
+
+void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Vector<Array> surface_arrays, bool debug_collision) {
+	if (mesh.is_valid()) {
+
+		ERR_FAIL_COND(node == nullptr);
+		ERR_FAIL_COND(node->get_world() != _world);
+
+		Transform transform(Basis(), _position_in_voxels.to_vec3());
+
+		if (!_mesh_instance.is_valid()) {
+			// Create instance if it doesn't exist
+			_mesh_instance.create();
+			set_mesh_instance_visible(_mesh_instance, _visible && _parent_visible);
+		}
+
+		_mesh_instance.set_mesh(mesh);
+		_mesh_instance.set_transform(transform);
+		// TODO The day VoxelTerrain becomes a Spatial, this transform will need to be updatable separately
+
+		if (_shader_material.is_valid()) {
+			_mesh_instance.set_material_override(_shader_material);
+		}
+#ifdef VOXEL_DEBUG_LOD_MATERIALS
+		_mesh_instance.set_material_override(_debug_material);
+#endif
+
+		if (generate_collision) {
+			Vector<Ref<Shape>> shapes = create_concave_polygon_shapes(surface_arrays);
+
+			if (!_static_body.is_valid()) {
+				_static_body.create();
+				_static_body.set_world(*_world);
+				_static_body.set_attached_object(node);
+				_static_body.set_transform(transform);
+			} else {
+				_static_body.remove_shape(0);
+			}
+			for(int i = 0; i < shapes.size(); i++){
+				_static_body.add_shape(shapes[i]);
+			}
+			_static_body.set_debug(debug_collision, *_world);
+			_static_body.set_shape_enabled(0, _visible);
+		}
+
+	} else {
+
+		if (_mesh_instance.is_valid()) {
+			// Delete instance if it exists
+			_mesh_instance.destroy();
+		}
+
+		if (_static_body.is_valid()) {
+			_static_body.destroy();
+		}
+	}
+
+	++_mesh_update_count;
 }
 
 void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Array surface_arrays, bool debug_collision) {

@@ -1007,7 +1007,7 @@ void VoxelTerrain::_process() {
 			mesh.instance();
 
 			// TODO Allow multiple collision surfaces
-			Array collidable_surface;
+			Vector<Array> collidable_surfaces;
 
 			int surface_index = 0;
 			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
@@ -1023,9 +1023,7 @@ void VoxelTerrain::_process() {
 					continue;
 				}
 
-				if (collidable_surface.empty()) {
-					collidable_surface = surface;
-				}
+				collidable_surfaces.push_back(surface);
 
 				mesh->add_surface_from_arrays(data.blocky_surfaces.primitive_type, surface, Array(), data.blocky_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
@@ -1044,9 +1042,7 @@ void VoxelTerrain::_process() {
 					continue;
 				}
 
-				if (collidable_surface.empty()) {
-					collidable_surface = surface;
-				}
+				collidable_surfaces.push_back(surface);
 
 				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface, Array(), data.smooth_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
@@ -1057,7 +1053,7 @@ void VoxelTerrain::_process() {
 				mesh = Ref<Mesh>();
 			}
 
-			block->set_mesh(mesh, this, _generate_collisions, collidable_surface, get_tree()->is_debugging_collisions_hint());
+			block->set_mesh(mesh, this, _generate_collisions, collidable_surfaces, get_tree()->is_debugging_collisions_hint());
 			block->set_parent_visible(is_visible());
 		}
 
