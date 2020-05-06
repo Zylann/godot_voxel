@@ -1031,9 +1031,6 @@ void VoxelTerrain::_process() {
 				++surface_index;
 			}
 
-			/*if (!data.smooth_surfaces.collision_surface.empty()) {
-				collidable_surface = data.smooth_surfaces.collision_surface;
-			}*/
 			for (int i = 0; i < data.smooth_surfaces.surfaces.size(); ++i) {
 
 				Array surface = data.smooth_surfaces.surfaces[i];
@@ -1044,6 +1041,10 @@ void VoxelTerrain::_process() {
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
 				if (!is_surface_triangulated(surface)) {
 					continue;
+				}
+
+				if (collidable_surface.empty()) {
+					collidable_surface = surface;
 				}
 
 				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface, Array(), data.smooth_surfaces.compression_flags);

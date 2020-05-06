@@ -28,7 +28,7 @@ public:
 
 private:
 	RID _body;
-	Vector<Ref<Shape>> _shape;
+	Ref<Shape> _shape;
 	DirectMeshInstance _debug_mesh_instance;
 };
 
