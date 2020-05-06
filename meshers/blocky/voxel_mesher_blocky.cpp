@@ -48,6 +48,285 @@ inline bool contributes_to_ao(const VoxelLibrary &lib, int voxel_id) {
 } // namespace
 
 template <typename Type_T>
+static void generate_collision_surface(
+		VoxelMesherBlocky::Arrays &arrays,
+		const ArraySlice<Type_T> type_buffer,
+		const Vector3i block_size,
+		const VoxelLibrary &library,
+		bool bake_occlusion, float baked_occlusion_darkness) {
+
+	// Build lookup tables so to speed up voxel access.
+	// These are values to add to an address in order to get given neighbor.
+
+	int row_size = block_size.y;
+	int deck_size = block_size.x * row_size;
+
+	// Data must be padded, hence the off-by-one
+	Vector3i min = Vector3i(VoxelMesherBlocky::PADDING);
+	Vector3i max = block_size - Vector3i(VoxelMesherBlocky::PADDING);
+
+	int index_offsets[VoxelMesherBlocky::MAX_MATERIALS] = { 0 };
+
+	FixedArray<int, Cube::SIDE_COUNT> side_neighbor_lut;
+	side_neighbor_lut[Cube::SIDE_LEFT] = row_size;
+	side_neighbor_lut[Cube::SIDE_RIGHT] = -row_size;
+	side_neighbor_lut[Cube::SIDE_BACK] = -deck_size;
+	side_neighbor_lut[Cube::SIDE_FRONT] = deck_size;
+	side_neighbor_lut[Cube::SIDE_BOTTOM] = -1;
+	side_neighbor_lut[Cube::SIDE_TOP] = 1;
+
+	FixedArray<int, Cube::EDGE_COUNT> edge_neighbor_lut;
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_BACK] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_BACK];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_FRONT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_FRONT];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_LEFT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_LEFT];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_RIGHT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	edge_neighbor_lut[Cube::EDGE_BACK_LEFT] = side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_LEFT];
+	edge_neighbor_lut[Cube::EDGE_BACK_RIGHT] = side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	edge_neighbor_lut[Cube::EDGE_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
+	edge_neighbor_lut[Cube::EDGE_FRONT_RIGHT] = side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	edge_neighbor_lut[Cube::EDGE_TOP_BACK] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_BACK];
+	edge_neighbor_lut[Cube::EDGE_TOP_FRONT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_FRONT];
+	edge_neighbor_lut[Cube::EDGE_TOP_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_LEFT];
+	edge_neighbor_lut[Cube::EDGE_TOP_RIGHT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_RIGHT];
+
+	FixedArray<int, Cube::CORNER_COUNT> corner_neighbor_lut;
+
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_LEFT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_BACK] +
+			side_neighbor_lut[Cube::SIDE_LEFT];
+
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_RIGHT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_BACK] +
+			side_neighbor_lut[Cube::SIDE_RIGHT];
+
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_RIGHT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_FRONT] +
+			side_neighbor_lut[Cube::SIDE_RIGHT];
+
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_LEFT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_FRONT] +
+			side_neighbor_lut[Cube::SIDE_LEFT];
+
+	corner_neighbor_lut[Cube::CORNER_TOP_BACK_LEFT] =
+			side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_BACK] +
+			side_neighbor_lut[Cube::SIDE_LEFT];
+
+	corner_neighbor_lut[Cube::CORNER_TOP_BACK_RIGHT] =
+			side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_BACK] +
+			side_neighbor_lut[Cube::SIDE_RIGHT];
+
+	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_RIGHT] =
+			side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_FRONT] +
+			side_neighbor_lut[Cube::SIDE_RIGHT];
+
+	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] =
+			side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_FRONT] +
+			side_neighbor_lut[Cube::SIDE_LEFT];
+
+	//uint64_t time_prep = OS::get_singleton()->get_ticks_usec() - time_before;
+	//time_before = OS::get_singleton()->get_ticks_usec();
+
+	for (unsigned int z = min.z; z < (unsigned int)max.z; ++z) {
+		for (unsigned int x = min.x; x < (unsigned int)max.x; ++x) {
+			for (unsigned int y = min.y; y < (unsigned int)max.y; ++y) {
+				// min and max are chosen such that you can visit 1 neighbor away from the current voxel without size check
+
+				const int voxel_index = y + x * row_size + z * deck_size;
+				const int voxel_id = type_buffer[voxel_index];
+
+				if (voxel_id != 0 && library.has_voxel(voxel_id)) {
+
+					const Voxel &voxel = library.get_voxel_const(voxel_id);
+
+					int &index_offset = index_offsets[voxel.get_material_id()];
+
+					// Hybrid approach: extract cube faces and decimate those that aren't visible,
+					// and still allow voxels to have geometry that is not a cube
+
+					// Sides
+					for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+
+						const std::vector<Vector3> &side_positions = voxel.get_model_side_positions(side);
+						const unsigned int vertex_count = side_positions.size();
+
+						if (vertex_count == 0) {
+							continue;
+						}
+
+						const int neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
+
+						if (!is_face_visible(library, voxel, neighbor_voxel_id, side)) {
+							continue;
+						}
+
+						// The face is visible
+
+						int shaded_corner[8] = { 0 };
+
+						if (bake_occlusion) {
+
+							// Combinatory solution for https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
+							// (inverted)
+							//	function vertexAO(side1, side2, corner) {
+							//	  if(side1 && side2) {
+							//		return 0
+							//	  }
+							//	  return 3 - (side1 + side2 + corner)
+							//	}
+
+							for (unsigned int j = 0; j < 4; ++j) {
+								const unsigned int edge = Cube::g_side_edges[side][j];
+								const int edge_neighbor_id = type_buffer[voxel_index + edge_neighbor_lut[edge]];
+								if (contributes_to_ao(library, edge_neighbor_id)) {
+									++shaded_corner[Cube::g_edge_corners[edge][0]];
+									++shaded_corner[Cube::g_edge_corners[edge][1]];
+								}
+							}
+							for (unsigned int j = 0; j < 4; ++j) {
+								const unsigned int corner = Cube::g_side_corners[side][j];
+								if (shaded_corner[corner] == 2) {
+									shaded_corner[corner] = 3;
+								} else {
+									const int corner_neigbor_id = type_buffer[voxel_index + corner_neighbor_lut[corner]];
+									if (contributes_to_ao(library, corner_neigbor_id)) {
+										++shaded_corner[corner];
+									}
+								}
+							}
+						}
+
+						const std::vector<Vector2> &side_uvs = voxel.get_model_side_uv(side);
+
+						// Subtracting 1 because the data is padded
+						Vector3 pos(x - 1, y - 1, z - 1);
+
+						// Append vertices of the faces in one go, don't use push_back
+
+						{
+							const int append_index = arrays.positions.size();
+							arrays.positions.resize(arrays.positions.size() + vertex_count);
+							Vector3 *w = arrays.positions.data() + append_index;
+							for (unsigned int i = 0; i < vertex_count; ++i) {
+								w[i] = side_positions[i] + pos;
+							}
+						}
+
+						{
+							const int append_index = arrays.uvs.size();
+							arrays.uvs.resize(arrays.uvs.size() + vertex_count);
+							memcpy(arrays.uvs.data() + append_index, side_uvs.data(), vertex_count * sizeof(Vector2));
+						}
+
+						{
+							const int append_index = arrays.normals.size();
+							arrays.normals.resize(arrays.normals.size() + vertex_count);
+							Vector3 *w = arrays.normals.data() + append_index;
+							for (unsigned int i = 0; i < vertex_count; ++i) {
+								w[i] = Cube::g_side_normals[side].to_vec3();
+							}
+						}
+
+						{
+							const int append_index = arrays.colors.size();
+							arrays.colors.resize(arrays.colors.size() + vertex_count);
+							Color *w = arrays.colors.data() + append_index;
+							const Color modulate_color = voxel.get_color();
+
+							if (bake_occlusion) {
+
+								for (unsigned int i = 0; i < vertex_count; ++i) {
+									Vector3 v = side_positions[i];
+
+									// General purpose occlusion colouring.
+									// TODO Optimize for cubes
+									// TODO Fix occlusion inconsistency caused by triangles orientation? Not sure if worth it
+									float shade = 0;
+									for (unsigned int j = 0; j < 4; ++j) {
+										unsigned int corner = Cube::g_side_corners[side][j];
+										if (shaded_corner[corner]) {
+											float s = baked_occlusion_darkness * static_cast<float>(shaded_corner[corner]);
+											//float k = 1.f - Cube::g_corner_position[corner].distance_to(v);
+											float k = 1.f - Cube::g_corner_position[corner].distance_squared_to(v);
+											if (k < 0.0) {
+												k = 0.0;
+											}
+											s *= k;
+											if (s > shade) {
+												shade = s;
+											}
+										}
+									}
+									const float gs = 1.0 - shade;
+									w[i] = Color(gs, gs, gs) * modulate_color;
+								}
+
+							} else {
+								for (unsigned int i = 0; i < vertex_count; ++i) {
+									w[i] = modulate_color;
+								}
+							}
+						}
+
+						const std::vector<int> &side_indices = voxel.get_model_side_indices(side);
+						const unsigned int index_count = side_indices.size();
+
+						{
+							int i = arrays.indices.size();
+							arrays.indices.resize(arrays.indices.size() + index_count);
+							int *w = arrays.indices.data();
+							for (unsigned int j = 0; j < index_count; ++j) {
+								w[i++] = index_offset + side_indices[j];
+							}
+						}
+
+						index_offset += vertex_count;
+					}
+
+					// Inside
+					if (voxel.get_model_positions().size() != 0) {
+						// TODO Get rid of push_backs
+
+						const std::vector<Vector3> &positions = voxel.get_model_positions();
+						unsigned int vertex_count = positions.size();
+						const Color modulate_color = voxel.get_color();
+
+						const std::vector<Vector3> &normals = voxel.get_model_normals();
+						const std::vector<Vector2> &uvs = voxel.get_model_uv();
+
+						Vector3 pos(x - 1, y - 1, z - 1);
+
+						for (unsigned int i = 0; i < vertex_count; ++i) {
+							arrays.normals.push_back(normals[i]);
+							arrays.uvs.push_back(uvs[i]);
+							arrays.positions.push_back(positions[i] + pos);
+							// TODO handle ambient occlusion on inner parts
+							arrays.colors.push_back(modulate_color);
+						}
+
+						const std::vector<int> &indices = voxel.get_model_indices();
+						unsigned int index_count = indices.size();
+
+						for (unsigned int i = 0; i < index_count; ++i) {
+							arrays.indices.push_back(index_offset + indices[i]);
+						}
+
+						index_offset += vertex_count;
+					}
+				}
+			}
+		}
+	}
+}
+
+template <typename Type_T>
 static void generate_blocky_mesh(
 		FixedArray<VoxelMesherBlocky::Arrays, VoxelMesherBlocky::MAX_MATERIALS> &out_arrays_per_material,
 		const ArraySlice<Type_T> type_buffer,
@@ -427,15 +706,21 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	const Vector3i block_size = voxels.get_size();
 	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
 
+	Arrays collision_arrays;
+
 	switch (channel_depth) {
 
 		case VoxelBuffer::DEPTH_8_BIT:
 			generate_blocky_mesh(_arrays_per_material, raw_channel,
 					block_size, library, _bake_occlusion, baked_occlusion_darkness);
+			generate_collision_surface(collision_arrays, raw_channel,
+					block_size, library, _bake_occlusion, baked_occlusion_darkness);
 			break;
 
 		case VoxelBuffer::DEPTH_16_BIT:
 			generate_blocky_mesh(_arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(),
+					block_size, library, _bake_occlusion, baked_occlusion_darkness);
+			generate_collision_surface(collision_arrays, raw_channel.reinterpret_cast_to<uint16_t>(),
 					block_size, library, _bake_occlusion, baked_occlusion_darkness);
 			break;
 
@@ -481,6 +766,39 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 			output.surfaces.push_back(Array());
 		}
 	}
+
+	//create the collision surface
+	if (collision_arrays.positions.size() != 0) {
+
+			Array collision_surface;
+			collision_surface.resize(Mesh::ARRAY_MAX);
+
+			{
+				PoolVector<Vector3> positions;
+				PoolVector<Vector2> uvs;
+				PoolVector<Vector3> normals;
+				PoolVector<Color> colors;
+				PoolVector<int> indices;
+
+				raw_copy_to(positions, collision_arrays.positions);
+				raw_copy_to(uvs, collision_arrays.uvs);
+				raw_copy_to(normals, collision_arrays.normals);
+				raw_copy_to(colors, collision_arrays.colors);
+				raw_copy_to(indices, collision_arrays.indices);
+
+				collision_surface[Mesh::ARRAY_VERTEX] = positions;
+				collision_surface[Mesh::ARRAY_TEX_UV] = uvs;
+				collision_surface[Mesh::ARRAY_NORMAL] = normals;
+				collision_surface[Mesh::ARRAY_COLOR] = colors;
+				collision_surface[Mesh::ARRAY_INDEX] = indices;
+			}
+
+			output.collision_surface = collision_surface;
+
+		} else {
+			// Empty
+			output.collision_surface = Array();
+		}
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 }
