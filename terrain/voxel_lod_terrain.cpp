@@ -14,7 +14,7 @@ const uint32_t MAIN_THREAD_MESHING_BUDGET_MS = 8;
 namespace {
 
 Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType primitive, int compression_flags,
-		Ref<Material> material, Array *collidable_surface) {
+		Ref<Material> material, Vector<Array*> &collidable_surface) {
 
 	Ref<ArrayMesh> mesh;
 	mesh.instance();
@@ -32,8 +32,8 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 			continue;
 		}
 
-		if (collidable_surface != nullptr && collidable_surface->empty()) {
-			*collidable_surface = surface;
+		if (collidable_surface[0]->empty()) {
+			*collidable_surface[0] = surface;
 		}
 
 		mesh->add_surface_from_arrays(primitive, surface, Array(), compression_flags);
@@ -1198,12 +1198,12 @@ void VoxelLodTerrain::_process() {
 			const VoxelMesher::Output mesh_data = ob.data.smooth_surfaces;
 
 			// TODO Allow multiple collision surfaces
-			Array collidable_surface;
+			Vector<Array*> collidable_surface;
 			Ref<ArrayMesh> mesh = build_mesh(
 					mesh_data.surfaces,
 					mesh_data.primitive_type,
 					mesh_data.compression_flags,
-					_material, &collidable_surface);
+					_material, collidable_surface);
 
 			bool has_collision = _generate_collisions;
 			if (has_collision && _collision_lod_count != -1) {
@@ -1220,7 +1220,7 @@ void VoxelLodTerrain::_process() {
 							mesh_data.transition_surfaces[dir],
 							mesh_data.primitive_type,
 							mesh_data.compression_flags,
-							_material, nullptr);
+							_material, Vector<Array*>());
 
 					block->set_transition_mesh(transition_mesh, dir);
 				}

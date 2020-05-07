@@ -47,26 +47,6 @@ inline bool contributes_to_ao(const VoxelLibrary &lib, int voxel_id) {
 
 } // namespace
 
-static void generate_collision_surface(
-		VoxelMesherBlocky::Arrays &out_arrays,
-		FixedArray<VoxelMesherBlocky::Arrays, VoxelMesherBlocky::MAX_MATERIALS> &arrays_per_material) {
-
-	for (int i = 0; i < arrays_per_material.size(); i++) {
-		if (arrays_per_material[i].positions.empty()) {
-			continue;
-		}
-
-		const VoxelMesherBlocky::Arrays &arrays = arrays_per_material[i];
-
-		out_arrays.positions.insert(out_arrays.positions.end(), arrays.positions.begin(), arrays.positions.end());
-		out_arrays.normals.insert(out_arrays.normals.end(), arrays.normals.begin(), arrays.normals.end());
-		out_arrays.uvs.insert(out_arrays.uvs.end(), arrays.uvs.begin(), arrays.uvs.end());
-		out_arrays.colors.insert(out_arrays.colors.end(), arrays.colors.begin(), arrays.colors.end());
-		out_arrays.indices.insert(out_arrays.indices.end(), arrays.indices.begin(), arrays.indices.end());
-
-	}
-}
-
 template <typename Type_T>
 static void generate_blocky_mesh(
 		FixedArray<VoxelMesherBlocky::Arrays, VoxelMesherBlocky::MAX_MATERIALS> &out_arrays_per_material,
@@ -501,41 +481,6 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 			output.surfaces.push_back(Array());
 		}
 	}
-
-	//create the collision surface
-	Arrays collision_arrays;
-	generate_collision_surface(collision_arrays, _arrays_per_material);
-	if (collision_arrays.positions.size() != 0) {
-
-			Array collision_surface;
-			collision_surface.resize(Mesh::ARRAY_MAX);
-
-			{
-				PoolVector<Vector3> positions;
-				PoolVector<Vector2> uvs;
-				PoolVector<Vector3> normals;
-				PoolVector<Color> colors;
-				PoolVector<int> indices;
-
-				raw_copy_to(positions, collision_arrays.positions);
-				raw_copy_to(uvs, collision_arrays.uvs);
-				raw_copy_to(normals, collision_arrays.normals);
-				raw_copy_to(colors, collision_arrays.colors);
-				raw_copy_to(indices, collision_arrays.indices);
-
-				collision_surface[Mesh::ARRAY_VERTEX] = positions;
-				collision_surface[Mesh::ARRAY_TEX_UV] = uvs;
-				collision_surface[Mesh::ARRAY_NORMAL] = normals;
-				collision_surface[Mesh::ARRAY_COLOR] = colors;
-				collision_surface[Mesh::ARRAY_INDEX] = indices;
-			}
-
-			output.collision_surface = collision_surface;
-
-		} else {
-			// Empty
-			output.collision_surface = Array();
-		}
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 }

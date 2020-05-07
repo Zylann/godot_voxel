@@ -17,7 +17,6 @@ public:
 	struct Output {
 		// Each surface correspond to a different material
 		Vector<Array> surfaces;
-		Array collision_surface;
 		FixedArray<Vector<Array>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 		unsigned int compression_flags = Mesh::ARRAY_COMPRESS_DEFAULT;
