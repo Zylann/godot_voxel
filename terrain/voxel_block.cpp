@@ -7,12 +7,24 @@
 // Faster version of Mesh::create_trimesh_shape()
 // See https://github.com/Zylann/godot_voxel/issues/54
 //
-static Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array*> surfaces) {
+static Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
 
 	PoolVector<Vector3> face_points;
+	int face_points_size = 0;
 
+	//find the correct size for face_points
 	for(int i = 0; i < surfaces.size(); i++) {
-		const Array &surface_arrays = *surfaces[i];
+		const Array &surface_arrays = surfaces[i];
+		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
+
+		face_points_size += indices.size();
+	}
+	face_points.resize(face_points_size);
+
+	//copy the points into it
+	int face_points_offset = 0;
+	for(int i = 0; i < surfaces.size(); i++) {
+		const Array &surface_arrays = surfaces[i];
 
 		PoolVector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];
 		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
@@ -21,19 +33,19 @@ static Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array*> surf
 		ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape>());
 		ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape>());
 
-		int face_points_count = indices.size();
-		int face_points_start = face_points.size();
-		face_points.resize(face_points_start + face_points_count);
+		int face_points_count = face_points_offset + indices.size();
 
 		{
 			PoolVector<Vector3>::Write w = face_points.write();
 			PoolVector<int>::Read index_r = indices.read();
 			PoolVector<Vector3>::Read position_r = positions.read();
 
-			for (int i = face_points_start; i < face_points_count; ++i) {
-				w[i] = position_r[index_r[i]];
+			for (int p = face_points_offset; p < face_points_count; ++p) {
+				w[p] = position_r[index_r[p - face_points_offset]];
 			}
 		}
+
+		face_points_offset += indices.size();
 	}
 
 	Ref<ConcavePolygonShape> shape = memnew(ConcavePolygonShape);
@@ -90,7 +102,7 @@ void VoxelBlock::set_world(Ref<World> p_world) {
 	}
 }
 
-void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Vector<Array*> surface_arrays, bool debug_collision) {
+void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Vector<Array> surface_arrays, bool debug_collision) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)

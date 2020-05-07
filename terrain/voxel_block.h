@@ -34,7 +34,7 @@ public:
 	// Visuals and physics
 
 	void set_world(Ref<World> p_world);
-	void set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Vector<Array*> surface_arrays, bool debug_collision);
+	void set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Vector<Array> surface_arrays, bool debug_collision);
 	void set_transition_mesh(Ref<Mesh> mesh, int side);
 	bool has_mesh() const;
 
