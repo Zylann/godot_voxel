@@ -21,7 +21,7 @@ void VoxelGenerator::generate_block(VoxelBlockRequest &input) {
 		script->call(VoxelStringNames::get_singleton()->generate_block, args, 3, err);
 
 		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-				"voxel_generator.cpp:emerge_block gave an error: " + String::num(err.error) +
+				"voxel_generator.cpp:generate_block gave an error: " + String::num(err.error) +
 						", Argument: " + String::num(err.argument) +
 						", Expected type: " + Variant::get_type_name(err.expected));
 
