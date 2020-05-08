@@ -299,7 +299,7 @@ inline void scale_positions(PoolVector3Array &positions, float scale) {
 Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 
 	struct GetMaxDepth {
-		int max_depth;
+		int max_depth = 0;
 		void operator()(OctreeNode *_, int depth) {
 			if (depth > max_depth) {
 				max_depth = depth;

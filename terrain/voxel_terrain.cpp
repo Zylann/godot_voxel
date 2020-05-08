@@ -36,7 +36,7 @@ VoxelTerrain::VoxelTerrain() {
 VoxelTerrain::~VoxelTerrain() {
 	print_line("Destroying VoxelTerrain");
 
-	if (_stream_thread) {
+	if (_stream_thread != nullptr) {
 		// Schedule saving of all modified blocks,
 		// without copy because we are destroying the map anyways
 		save_all_modified_blocks(false);
@@ -51,7 +51,7 @@ VoxelTerrain::~VoxelTerrain() {
 
 String VoxelTerrain::get_configuration_warning() const {
 	if (_stream.is_valid()) {
-		if (! (_stream->get_used_channels_mask() & ((1<<VoxelBuffer::CHANNEL_TYPE) | (1<<VoxelBuffer::CHANNEL_SDF)))) {
+		if (!(_stream->get_used_channels_mask() & ((1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_SDF)))) {
 			return TTR("VoxelTerrain supports only stream channels \"Type\" or \"Sdf\".");
 		}
 	}
@@ -710,6 +710,8 @@ void VoxelTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_d
 
 void VoxelTerrain::send_block_data_requests() {
 
+	ERR_FAIL_COND(_stream_thread == nullptr);
+
 	VoxelDataLoader::Input input;
 
 	Vector3 viewer_pos;
@@ -736,7 +738,6 @@ void VoxelTerrain::send_block_data_requests() {
 }
 
 void VoxelTerrain::_process() {
-
 	// TODO Should be able to run without library, tho!
 	if (_library.is_null()) {
 		return;
@@ -791,13 +792,17 @@ void VoxelTerrain::_process() {
 	_last_view_distance_blocks = _view_distance_blocks;
 	_last_viewer_block_pos = viewer_block_pos;
 
-	send_block_data_requests();
+	// It's possible the user didn't set a stream yet
+	if (_stream_thread != nullptr) {
+		send_block_data_requests();
+	}
 
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
 
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
-	{
+	if (_stream_thread != nullptr) {
+
 		VoxelDataLoader::Output output;
 		_stream_thread->pop(output);
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
@@ -893,6 +898,8 @@ void VoxelTerrain::_process() {
 
 	// Send mesh updates
 	{
+		ERR_FAIL_COND(_block_updater == nullptr);
+
 		VoxelMeshUpdater::Input input;
 		input.priority_position = viewer_block_pos;
 		input.priority_direction = viewer_direction;
@@ -904,7 +911,7 @@ void VoxelTerrain::_process() {
 			// Smooth meshing works on more neighbors, so checking a single block isn't enough to ignore it,
 			// but that will slow down meshing a lot.
 			// TODO This is one reason to separate terrain systems between blocky and smooth (other reason is LOD)
-			if (! (_stream->get_used_channels_mask() & (1<<VoxelBuffer::CHANNEL_SDF))) {
+			if (!(_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF))) {
 				VoxelBlock *block = _map->get_block(block_pos);
 				if (block == nullptr) {
 					continue;
@@ -921,7 +928,7 @@ void VoxelTerrain::_process() {
 						CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
 						// The block contains empty voxels
-						block->set_mesh(Ref<Mesh>(), this, _generate_collisions, Array(), get_tree()->is_debugging_collisions_hint());
+						block->set_mesh(Ref<Mesh>(), this, _generate_collisions, Vector<Array>(), get_tree()->is_debugging_collisions_hint());
 						block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
 
 						// Optional, but I guess it might spare some memory
@@ -1006,8 +1013,7 @@ void VoxelTerrain::_process() {
 			Ref<ArrayMesh> mesh;
 			mesh.instance();
 
-			// TODO Allow multiple collision surfaces
-			Array collidable_surface;
+			Vector<Array> collidable_surfaces; //need to put both blocky and smooth surfaces into one list
 
 			int surface_index = 0;
 			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
@@ -1023,9 +1029,7 @@ void VoxelTerrain::_process() {
 					continue;
 				}
 
-				if (collidable_surface.empty()) {
-					collidable_surface = surface;
-				}
+				collidable_surfaces.push_back(surface);
 
 				mesh->add_surface_from_arrays(data.blocky_surfaces.primitive_type, surface, Array(), data.blocky_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
@@ -1044,9 +1048,7 @@ void VoxelTerrain::_process() {
 					continue;
 				}
 
-				if (collidable_surface.empty()) {
-					collidable_surface = surface;
-				}
+				collidable_surfaces.push_back(surface);
 
 				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface, Array(), data.smooth_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
@@ -1057,7 +1059,7 @@ void VoxelTerrain::_process() {
 				mesh = Ref<Mesh>();
 			}
 
-			block->set_mesh(mesh, this, _generate_collisions, collidable_surface, get_tree()->is_debugging_collisions_hint());
+			block->set_mesh(mesh, this, _generate_collisions, collidable_surfaces, get_tree()->is_debugging_collisions_hint());
 			block->set_parent_visible(is_visible());
 		}
 
@@ -1072,7 +1074,7 @@ void VoxelTerrain::_process() {
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
 	Ref<VoxelTool> vt = memnew(VoxelToolTerrain(this, _map));
 	if (_stream.is_valid()) {
-		if(_stream->get_used_channels_mask() & (1<<VoxelBuffer::CHANNEL_SDF)) {
+		if (_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF)) {
 			vt->set_channel(VoxelBuffer::CHANNEL_SDF);
 		} else {
 			vt->set_channel(VoxelBuffer::CHANNEL_TYPE);

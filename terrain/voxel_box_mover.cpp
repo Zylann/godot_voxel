@@ -83,7 +83,7 @@ static Vector3 get_motion(AABB box, Vector3 motion, const std::vector<AABB> &env
 	AABB expanded_box = expand_with_vector(box, motion);
 
 	Vector<AABB> colliding_boxes;
-	for (int i = 0; i < environment_boxes.size(); ++i) {
+	for (size_t i = 0; i < environment_boxes.size(); ++i) {
 		const AABB &other = environment_boxes[i];
 		if (expanded_box.intersects(other)) {
 			colliding_boxes.push_back(other);

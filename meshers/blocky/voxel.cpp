@@ -402,6 +402,43 @@ void Voxel::set_side_pattern_index(int side, uint32_t i) {
 	_side_pattern_index[side] = i;
 }
 
+Ref<Resource> Voxel::duplicate(bool p_subresources) const {
+	Ref<Voxel> d_ref;
+	d_ref.instance();
+	Voxel &d = **d_ref;
+
+	d._library = _library;
+	d._id = -1;
+
+	d._name = _name;
+	d._material_id = _material_id;
+	d._is_transparent = _is_transparent;
+	d._color = _color;
+	d._geometry_type = _geometry_type;
+	d._cube_geometry_padding_y = _cube_geometry_padding_y;
+	d._cube_tiles = _cube_tiles;
+	d._custom_mesh = _custom_mesh;
+	d._collision_aabbs = _collision_aabbs;
+	d._contributes_to_ao = _contributes_to_ao;
+	d._side_pattern_index = _side_pattern_index;
+
+	d._model_positions = _model_positions;
+	d._model_normals = _model_normals;
+	d._model_indices = _model_indices;
+	d._model_uvs = _model_uvs;
+	d._model_side_positions = _model_side_positions;
+	d._model_side_uvs = _model_side_uvs;
+	d._model_side_indices = _model_side_indices;
+
+	if (p_subresources) {
+		if (d._custom_mesh.is_valid()) {
+			d._custom_mesh = d._custom_mesh->duplicate(p_subresources);
+		}
+	}
+
+	return d_ref;
+}
+
 void Voxel::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_voxel_name", "name"), &Voxel::set_voxel_name);
@@ -453,7 +490,7 @@ void Voxel::_bind_methods() {
 Array Voxel::_b_get_collision_aabbs() const {
 	Array array;
 	array.resize(_collision_aabbs.size());
-	for (int i = 0; i < _collision_aabbs.size(); ++i) {
+	for (size_t i = 0; i < _collision_aabbs.size(); ++i) {
 		array[i] = _collision_aabbs[i];
 	}
 	return array;
