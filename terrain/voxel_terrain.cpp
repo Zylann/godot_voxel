@@ -1006,7 +1006,6 @@ void VoxelTerrain::_process() {
 			Ref<ArrayMesh> mesh;
 			mesh.instance();
 
-			// TODO Allow multiple collision surfaces
 			Vector<Array> collidable_surfaces; //need to put both blocky and smooth surfaces into one list
 
 			int surface_index = 0;
@@ -1018,12 +1017,12 @@ void VoxelTerrain::_process() {
 					continue;
 				}
 
-				collidable_surfaces.push_back(data.blocky_surfaces.surfaces[i]);
-
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
 				if (!is_surface_triangulated(surface)) {
 					continue;
 				}
+
+				collidable_surfaces.push_back(surface);
 
 				mesh->add_surface_from_arrays(data.blocky_surfaces.primitive_type, surface, Array(), data.blocky_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
@@ -1037,12 +1036,12 @@ void VoxelTerrain::_process() {
 					continue;
 				}
 
-				collidable_surfaces.push_back(data.smooth_surfaces.surfaces[i]);
-
 				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
 				if (!is_surface_triangulated(surface)) {
 					continue;
 				}
+
+				collidable_surfaces.push_back(surface);
 
 				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface, Array(), data.smooth_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
