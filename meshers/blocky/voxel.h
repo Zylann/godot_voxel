@@ -7,7 +7,7 @@
 
 class VoxelLibrary;
 
-// TODO Rename VoxelType?
+// TODO Rename VoxelBlockyType?
 // Definition of one type of voxel.
 // A voxel can be a simple coloured cube, or a more complex model.
 // Important: it is recommended that you create voxels from a library rather than using new().
@@ -59,6 +59,8 @@ public:
 
 	void set_geometry_type(GeometryType type);
 	GeometryType get_geometry_type() const;
+
+	Ref<Resource> duplicate(bool p_subresources) const override;
 
 	//------------------------------------------
 	// Properties for native usage only
