@@ -5,12 +5,10 @@ VoxelGenerator::VoxelGenerator() {
 }
 
 void VoxelGenerator::generate_block(VoxelBlockRequest &input) {
-
 	ERR_FAIL_COND(input.voxel_buffer.is_null());
 	ScriptInstance *script = get_script_instance();
 
-	if (script) {
-
+	if (script && script->has_method(VoxelStringNames::get_singleton()->generate_block)) {
 		// Call script to generate buffer
 		Variant arg1 = input.voxel_buffer;
 		Variant arg2 = input.origin_in_voxels.to_vec3();
