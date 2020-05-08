@@ -14,7 +14,7 @@ const uint32_t MAIN_THREAD_MESHING_BUDGET_MS = 8;
 namespace {
 
 Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType primitive, int compression_flags,
-		Ref<Material> material, Array *collidable_surface) {
+		Ref<Material> material) {
 
 	Ref<ArrayMesh> mesh;
 	mesh.instance();
@@ -30,10 +30,6 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 		CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
 		if (!is_surface_triangulated(surface)) {
 			continue;
-		}
-
-		if (collidable_surface != nullptr && collidable_surface->empty()) {
-			*collidable_surface = surface;
 		}
 
 		mesh->add_surface_from_arrays(primitive, surface, Array(), compression_flags);
@@ -1197,20 +1193,18 @@ void VoxelLodTerrain::_process() {
 
 			const VoxelMesher::Output mesh_data = ob.data.smooth_surfaces;
 
-			// TODO Allow multiple collision surfaces
-			Array collidable_surface;
 			Ref<ArrayMesh> mesh = build_mesh(
 					mesh_data.surfaces,
 					mesh_data.primitive_type,
 					mesh_data.compression_flags,
-					_material, &collidable_surface);
+					_material);
 
 			bool has_collision = _generate_collisions;
 			if (has_collision && _collision_lod_count != -1) {
 				has_collision = ob.lod < _collision_lod_count;
 			}
 
-			block->set_mesh(mesh, this, has_collision, collidable_surface, get_tree()->is_debugging_collisions_hint());
+			block->set_mesh(mesh, this, has_collision, mesh_data.surfaces, get_tree()->is_debugging_collisions_hint());
 
 			{
 				VOXEL_PROFILE_SCOPE(profile_process_receive_mesh_updates_block_update_transitions);
@@ -1220,7 +1214,7 @@ void VoxelLodTerrain::_process() {
 							mesh_data.transition_surfaces[dir],
 							mesh_data.primitive_type,
 							mesh_data.compression_flags,
-							_material, nullptr);
+							_material);
 
 					block->set_transition_mesh(transition_mesh, dir);
 				}
