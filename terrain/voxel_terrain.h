@@ -3,7 +3,7 @@
 
 #include "../math/rect3i.h"
 #include "../math/vector3i.h"
-#include "../util/zprofiling.h"
+#include "../profiler/zprofiler.h"
 #include "voxel_data_loader.h"
 #include "voxel_mesh_updater.h"
 

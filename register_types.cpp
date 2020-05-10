@@ -20,9 +20,12 @@
 #include "voxel_buffer.h"
 #include "voxel_memory_pool.h"
 #include "voxel_string_names.h"
+#ifdef TOOLS_ENABLED
+#include "profiler/zprofiling_client.h"
+#include "profiler/zprofiling_server.h"
+#endif
 
 void register_voxel_types() {
-
 	// Storage
 	ClassDB::register_class<VoxelBuffer>();
 	ClassDB::register_class<VoxelMap>();
@@ -66,6 +69,10 @@ void register_voxel_types() {
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::create_debug_box_mesh();
+
+	ClassDB::register_class<ZProfilingClient>();
+	ZProfiler::get_thread_profiler().set_profiler_name("main");
+	ZProfilingServer::create_singleton();
 #endif
 }
 
@@ -81,5 +88,7 @@ void unregister_voxel_types() {
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::free_debug_box_mesh();
+
+	ZProfilingServer::destroy_singleton();
 #endif
 }

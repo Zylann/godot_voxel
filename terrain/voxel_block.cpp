@@ -1,5 +1,5 @@
 #include "voxel_block.h"
-#include "../util/zprofiling.h"
+#include "../profiler/zprofiler.h"
 #include "../voxel_string_names.h"
 #include <scene/3d/spatial.h>
 #include <scene/resources/concave_polygon_shape.h>
@@ -13,7 +13,7 @@ static Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfa
 	int face_points_size = 0;
 
 	//find the correct size for face_points
-	for(int i = 0; i < surfaces.size(); i++) {
+	for (int i = 0; i < surfaces.size(); i++) {
 		const Array &surface_arrays = surfaces[i];
 		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
 
@@ -23,7 +23,7 @@ static Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfa
 
 	//copy the points into it
 	int face_points_offset = 0;
-	for(int i = 0; i < surfaces.size(); i++) {
+	for (int i = 0; i < surfaces.size(); i++) {
 		const Array &surface_arrays = surfaces[i];
 
 		PoolVector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];

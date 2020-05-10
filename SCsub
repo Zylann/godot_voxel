@@ -13,6 +13,7 @@ files = [
 	"streams/*.cpp",
 	"generators/*.cpp",
 	"util/*.cpp",
+	"profiler/*.cpp",
 	"terrain/*.cpp",
 	"math/*.cpp",
 	"edition/*.cpp",
