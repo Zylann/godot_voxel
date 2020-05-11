@@ -353,6 +353,8 @@ bool ZProfilingClient::process_event_frame(uint32_t event_time) {
 	new_frame.begin_time = event_time;
 	thread_data.frames.push_back(new_frame);
 
+	_frame_spinbox->set_max(thread_data.frames.size() - 1);
+
 	// TODO Only do this if the user wants to keep update to last frame
 	if (_selected_thread_index == _last_received_thread_index) {
 		set_selected_frame(thread_data.frames.size() - 1);
@@ -429,6 +431,8 @@ const String ZProfilingClient::get_string(uint16_t str_id) const {
 }
 
 void ZProfilingClient::connect_to_host() {
+	clear_profiling_data();
+
 	_peer->connect_to_host(IP_Address(ZProfilingServer::DEFAULT_HOST_ADDRESS), ZProfilingServer::DEFAULT_HOST_PORT);
 	_connect_button->set_disabled(true);
 }
@@ -436,6 +440,29 @@ void ZProfilingClient::connect_to_host() {
 void ZProfilingClient::disconnect_from_host() {
 	_peer->disconnect_from_host();
 	reset_connect_button();
+	clear_network_states();
+}
+
+void ZProfilingClient::clear_network_states() {
+	_previous_peer_status = -1;
+	_last_received_event_type = -1;
+	_last_received_string_id = -1;
+	_last_received_string_size = -1;
+	_last_received_thread_index = -1;
+}
+
+void ZProfilingClient::clear_profiling_data() {
+	_strings.clear();
+	_threads.clear();
+	_selected_thread_index = -1;
+
+	update_thread_list();
+	_flame_view->update();
+
+	_frame_spinbox_ignore_changes = true;
+	_frame_spinbox->set_value(0);
+	_frame_spinbox->set_max(0);
+	_frame_spinbox_ignore_changes = false;
 }
 
 void ZProfilingClient::_on_connect_button_pressed() {
@@ -447,6 +474,9 @@ void ZProfilingClient::_on_connect_button_pressed() {
 }
 
 void ZProfilingClient::_on_frame_spinbox_value_changed(float value) {
+	if (_frame_spinbox_ignore_changes) {
+		return;
+	}
 	set_selected_frame((int)value);
 }
 
@@ -468,17 +498,27 @@ void ZProfilingClient::set_selected_thread(int thread_index) {
 	if (thread_index == _selected_thread_index) {
 		return;
 	}
+
 	ERR_FAIL_COND(thread_index >= _threads.size());
 	_selected_thread_index = thread_index;
 	_flame_view->set_thread(_selected_thread_index);
 
 	print_line(String("Selected thread {0}").format(varray(_selected_thread_index)));
 	_thread_selector->select(thread_index);
+
+	const ThreadData &thread_data = _threads[_selected_thread_index];
+	_frame_spinbox_ignore_changes = true;
+	_frame_spinbox->set_max(thread_data.frames.size() - 1);
+	_frame_spinbox_ignore_changes = false;
+
+	if (thread_data.frames.size() > 0) {
+		set_selected_frame(thread_data.frames.size() - 1);
+	}
 }
 
 void ZProfilingClient::set_selected_frame(int frame_index) {
 	ERR_FAIL_COND(_selected_thread_index == -1);
-	const ThreadData &thread_data = _threads[_selected_thread_index];
+	ThreadData &thread_data = _threads.write[_selected_thread_index];
 
 	ERR_FAIL_COND(thread_data.frames.size() == 0);
 	ERR_FAIL_COND(frame_index >= thread_data.frames.size());
@@ -493,16 +533,16 @@ void ZProfilingClient::set_selected_frame(int frame_index) {
 		return;
 	}
 
-	if (_selected_frame == frame_index) {
+	if (thread_data.selected_frame == frame_index) {
 		return;
 	}
 
-	_selected_frame = frame_index;
-	_flame_view->set_frame(_selected_frame);
+	thread_data.selected_frame = frame_index;
+	_flame_view->update();
 
 	// This can emit again and cycle back to our method...
 	// hence why checking if it changed is important
-	_frame_spinbox->set_value(_selected_frame);
+	_frame_spinbox->set_value(thread_data.selected_frame);
 }
 
 void ZProfilingClient::update_thread_list() {

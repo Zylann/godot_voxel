@@ -13,7 +13,6 @@ public:
 	ZProfilingClientFlameView();
 
 	void set_client(const ZProfilingClient *client);
-	void set_frame(int frame_index);
 	void set_thread(int thread_index);
 
 private:
@@ -25,7 +24,6 @@ private:
 
 	const ZProfilingClient *_client = nullptr;
 
-	int _frame_index = 0;
 	int _thread_index = 0;
 
 	// TODO View window

@@ -32,8 +32,10 @@ public:
 
 	struct ThreadData {
 		uint16_t id = 0;
+		// TODO Drop/dump frames that go beyond a fixed time
 		Vector<Frame> frames;
 		int current_lane_index = -1;
+		int selected_frame = -1;
 	};
 
 	ZProfilingClient();
@@ -66,6 +68,8 @@ private:
 	void disconnect_on_error(String message);
 	void update_thread_list();
 	int get_thread_index_from_id(uint16_t thread_id) const;
+	void clear_profiling_data();
+	void clear_network_states();
 
 	static void _bind_methods();
 
@@ -75,12 +79,12 @@ private:
 	ZProfilingClientFlameView *_flame_view = nullptr;
 	SpinBox *_frame_spinbox = nullptr;
 	OptionButton *_thread_selector = nullptr;
+	bool _frame_spinbox_ignore_changes = false;
 
 	// Data
 	Vector<ThreadData> _threads;
 	HashMap<uint16_t, String> _strings;
 	int _selected_thread_index = -1;
-	int _selected_frame = -1;
 	bool _follow_last_frame = true;
 
 	// Network

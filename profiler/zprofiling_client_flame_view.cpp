@@ -9,13 +9,6 @@ void ZProfilingClientFlameView::set_client(const ZProfilingClient *client) {
 	_client = client;
 }
 
-void ZProfilingClientFlameView::set_frame(int frame_index) {
-	if (frame_index != _frame_index) {
-		_frame_index = frame_index;
-		update();
-	}
-}
-
 void ZProfilingClientFlameView::set_thread(int thread_index) {
 	if (thread_index != _thread_index) {
 		_thread_index = thread_index;
@@ -43,7 +36,7 @@ void ZProfilingClientFlameView::_draw() {
 	const Color item_color(1.f, 0.5f, 0.f);
 	const Color bg_color(0.f, 0.f, 0.f, 0.7f);
 	const int lane_separation = 1;
-	const int lane_height = 32;
+	const int lane_height = 28;
 
 	// Background
 	const Rect2 control_rect = get_rect();
@@ -54,10 +47,10 @@ void ZProfilingClientFlameView::_draw() {
 		return;
 	}
 	const ZProfilingClient::ThreadData &thread_data = _client->get_thread_data(_thread_index);
-	if (_frame_index >= thread_data.frames.size()) {
+	if (thread_data.selected_frame == -1) {
 		return;
 	}
-	const ZProfilingClient::Frame &frame = thread_data.frames[_frame_index];
+	const ZProfilingClient::Frame &frame = thread_data.frames[thread_data.selected_frame];
 
 	if (frame.end_time == -1) {
 		// Frame is not finalized
