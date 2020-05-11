@@ -71,7 +71,7 @@ void register_voxel_types() {
 	VoxelDebug::create_debug_box_mesh();
 
 	ClassDB::register_class<ZProfilingClient>();
-	ZProfiler::get_thread_profiler().set_profiler_name("main");
+	ZProfiler::get_thread_profiler().set_profiler_name("Main");
 	ZProfilingServer::create_singleton();
 #endif
 }
