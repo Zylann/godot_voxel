@@ -103,14 +103,19 @@ public:
 			unsigned int job_count,
 			unsigned int sync_interval_ms,
 			ArraySlice<BlockProcessingFunc> processors,
-			bool duplicate_rejection = true,
-			unsigned int batch_count = 1) {
+			bool duplicate_rejection,
+			unsigned int batch_count,
+			const char *debug_thread_name) {
 
 		CRASH_COND(job_count < 1);
 		CRASH_COND(job_count >= MAX_JOBS);
 		_job_count = job_count;
 
 		CRASH_COND(batch_count == 0);
+
+		if (debug_thread_name == nullptr) {
+			debug_thread_name = "VoxelBlockThreadManager";
+		}
 
 		for (unsigned int i = 0; i < MAX_JOBS; ++i) {
 			JobData &job = _jobs[i];
@@ -131,6 +136,7 @@ public:
 			job.thread = Thread::create(_thread_func, &job);
 			job.needs_sort = true;
 			job.processor = processors[i];
+			job.debug_thread_name = debug_thread_name;
 		}
 	}
 
@@ -314,6 +320,7 @@ private:
 		int batch_count = 0;
 
 		BlockProcessingFunc processor;
+		const char *debug_thread_name;
 	};
 
 	static void merge_stats(Stats &a, const Stats &b, int job_index) {
@@ -373,7 +380,8 @@ private:
 	}
 
 	static void thread_func(JobData &data) {
-		ZProfiler::get_thread_profiler().set_profiler_name("voxel_block_processing");
+		// TODO Allow to give a debug name to such managers?
+		ZProfiler::get_thread_profiler().set_profiler_name(data.debug_thread_name);
 
 		while (!data.thread_exit) {
 			ZProfiler::get_thread_profiler().mark_frame();

@@ -39,11 +39,11 @@ VoxelDataLoader::VoxelDataLoader(unsigned int thread_count, Ref<VoxelStream> str
 		}
 	}
 
-	int batch_count = 128;
-	int sync_interval_ms = 500;
+	const int batch_count = 128;
+	const int sync_interval_ms = 500;
 
 	_block_size_pow2 = block_size_pow2;
-	_mgr = memnew(Mgr(thread_count, sync_interval_ms, processors, true, batch_count));
+	_mgr = memnew(Mgr(thread_count, sync_interval_ms, processors, true, batch_count, "VoxelDataLoader"));
 }
 
 VoxelDataLoader::~VoxelDataLoader() {

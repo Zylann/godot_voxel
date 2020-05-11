@@ -49,7 +49,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 		};
 	}
 
-	_mgr = memnew(Mgr(thread_count, 50, processors));
+	_mgr = memnew(Mgr(thread_count, 50, processors, true, 1, "VoxelMeshUpdater"));
 }
 
 VoxelMeshUpdater::~VoxelMeshUpdater() {
