@@ -23,17 +23,17 @@ void ZProfilingServer::destroy_singleton() {
 }
 
 ZProfilingServer::ZProfilingServer() {
-	printf("Creating profiler harvester singleton\n");
+	printf("Creating profiling server singleton\n");
 	_running = true;
 	_thread = Thread::create(c_thread_func, this);
 }
 
 ZProfilingServer::~ZProfilingServer() {
-	printf("Destroying profiler harvester singleton\n");
+	printf("Destroying profiling server singleton\n");
 	_running = false;
 	Thread::wait_to_finish(_thread);
 	memdelete(_thread);
-	printf("Destroyed profiler harvester singleton\n");
+	printf("Destroyed profiling server singleton\n");
 }
 
 void ZProfilingServer::c_thread_func(void *userdata) {
@@ -42,7 +42,7 @@ void ZProfilingServer::c_thread_func(void *userdata) {
 }
 
 void ZProfilingServer::thread_func() {
-	printf("Profiler harvest thread started\n");
+	printf("Profiling server thread started\n");
 
 	_server.instance();
 	// Only listen to localhost
@@ -66,7 +66,7 @@ void ZProfilingServer::thread_func() {
 	_server->stop();
 	_server.unref();
 
-	printf("Profiler harvest stopped\n");
+	printf("Profiling server stopped\n");
 }
 
 void ZProfilingServer::update_server() {
@@ -147,18 +147,21 @@ void ZProfilingServer::serialize_and_send_messages() {
 	}
 }
 
+inline void serialize_string_def(StreamPeerTCP &peer, uint16_t id, String str) {
+	//print_line(String("Sending string def {0}: {1}").format(varray(id, str)));
+	peer.put_u8(ZProfilingServer::EVENT_STRING_DEF);
+	peer.put_u16(id);
+	peer.put_utf8_string(str);
+}
+
 void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool send_all_strings) {
 	if (send_all_strings) {
 		// New clients need to get all strings they missed
 		for (auto it = _dynamic_strings.begin(); it != _dynamic_strings.end(); ++it) {
-			peer.put_8(EVENT_STRING_DEF);
-			peer.put_16(it->second);
-			peer.put_utf8_string(it->first.c_str());
+			serialize_string_def(peer, it->second, it->first.c_str());
 		}
 		for (auto it = _static_strings.begin(); it != _static_strings.end(); ++it) {
-			peer.put_8(EVENT_STRING_DEF);
-			peer.put_16(it->second);
-			peer.put_utf8_string(it->first);
+			serialize_string_def(peer, it->second, it->first);
 		}
 	}
 
@@ -176,17 +179,16 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 			// Generate string ID
 			thread_name_id = _next_string_id++;
 			_dynamic_strings.insert(std::make_pair(buffer->thread_name, thread_name_id));
-
-			peer.put_8(EVENT_STRING_DEF);
-			peer.put_16(thread_name_id);
-			peer.put_utf8_string(buffer->thread_name.c_str());
+			serialize_string_def(peer, thread_name_id, buffer->thread_name.c_str());
 		}
 
-		peer.put_8(EVENT_THREAD);
-		peer.put_16(thread_name_id);
+		peer.put_u8(EVENT_THREAD);
+		peer.put_u16(thread_name_id);
 
 		for (size_t j = 0; j < buffer->write_index; ++j) {
 			const ZProfiler::Event &event = buffer->events[j];
+			// TODO It seems this part struggles sending large amounts of data.
+			// Is it due to using small serialization functions? Or TCP can't keep up?
 
 			switch (event.type) {
 				case ZProfiler::EVENT_PUSH: {
@@ -199,25 +201,22 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 						// Generate string ID
 						description_id = _next_string_id++;
 						_static_strings.insert(std::make_pair(event.description, description_id));
-
-						peer.put_8(EVENT_STRING_DEF);
-						peer.put_16(description_id);
-						peer.put_utf8_string(event.description);
+						serialize_string_def(peer, description_id, event.description);
 					}
 
-					peer.put_8(EVENT_PUSH);
-					peer.put_16(description_id);
-					peer.put_32(event.time);
+					peer.put_u8(EVENT_PUSH);
+					peer.put_u16(description_id);
+					peer.put_u32(event.time);
 				} break;
 
 				case ZProfiler::EVENT_POP:
-					peer.put_8(EVENT_POP);
-					peer.put_32(event.time);
+					peer.put_u8(EVENT_POP);
+					peer.put_u32(event.time);
 					break;
 
 				case ZProfiler::EVENT_FRAME:
-					peer.put_8(EVENT_FRAME);
-					peer.put_32(event.time);
+					peer.put_u8(EVENT_FRAME);
+					peer.put_u32(event.time);
 					break;
 
 				default:

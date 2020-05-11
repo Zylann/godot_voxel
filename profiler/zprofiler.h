@@ -31,6 +31,8 @@ public:
 	void end();
 	void mark_frame();
 
+	// TODO Category events
+
 	enum EventType {
 		EVENT_PUSH = 0,
 		EVENT_POP,

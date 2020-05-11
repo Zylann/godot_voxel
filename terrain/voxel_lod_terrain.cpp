@@ -81,7 +81,7 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 
 String VoxelLodTerrain::get_configuration_warning() const {
 	if (_stream.is_valid()) {
-		if (! (_stream->get_used_channels_mask() & (1<<VoxelBuffer::CHANNEL_SDF))) {
+		if (!(_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF))) {
 			return TTR("VoxelLodTerrain supports only stream channel \"Sdf\" (smooth).");
 		}
 	}
@@ -625,6 +625,8 @@ void VoxelLodTerrain::send_block_data_requests() {
 }
 
 void VoxelLodTerrain::_process() {
+	// TODO Ideally, frame should be marked at the end of Godot's main thread loop
+	ZProfiler::get_thread_profiler().mark_frame();
 
 	VOXEL_PROFILE_SCOPE(profile_process);
 

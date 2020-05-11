@@ -3,6 +3,7 @@
 
 #include "../math/rect3i.h"
 #include "../math/vector3i.h"
+#include "../profiler/zprofiler.h"
 #include "../util/array_slice.h"
 #include "../util/fixed_array.h"
 #include "../util/utility.h"
@@ -372,8 +373,10 @@ private:
 	}
 
 	static void thread_func(JobData &data) {
+		ZProfiler::get_thread_profiler().set_profiler_name("voxel_block_processing");
 
 		while (!data.thread_exit) {
+			ZProfiler::get_thread_profiler().mark_frame();
 
 			uint32_t sync_time = OS::get_singleton()->get_ticks_msec() + data.sync_interval_ms;
 

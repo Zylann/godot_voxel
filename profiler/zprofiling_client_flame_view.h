@@ -6,6 +6,7 @@
 class ZProfilingClient;
 class InputEvent;
 
+// Displays profiling scopes in a timeline
 class ZProfilingClientFlameView : public Control {
 	GDCLASS(ZProfilingClientFlameView, Control)
 public:
@@ -13,7 +14,7 @@ public:
 
 	void set_client(const ZProfilingClient *client);
 	void set_frame(int frame_index);
-	void set_thread(int thread_id);
+	void set_thread(int thread_index);
 
 private:
 	void _notification(int p_what);
@@ -25,7 +26,7 @@ private:
 	const ZProfilingClient *_client = nullptr;
 
 	int _frame_index = 0;
-	int _thread_id = 0;
+	int _thread_index = 0;
 
 	// TODO View window
 	//	int _min_time = -1;
