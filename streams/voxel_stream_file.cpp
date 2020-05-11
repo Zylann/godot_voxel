@@ -35,7 +35,7 @@ void VoxelStreamFile::emerge_block_fallback(Ref<VoxelBuffer> out_buffer, Vector3
 }
 
 void VoxelStreamFile::emerge_blocks_fallback(Vector<VoxelBlockRequest> &requests) {
-	VOXEL_PROFILE_SCOPE(profile_scope);
+	VOXEL_PROFILE_SCOPE();
 
 	if (_fallback_stream.is_valid()) {
 
@@ -48,7 +48,7 @@ void VoxelStreamFile::emerge_blocks_fallback(Vector<VoxelBlockRequest> &requests
 }
 
 FileAccess *VoxelStreamFile::open_file(const String &fpath, int mode_flags, Error *err) {
-	VOXEL_PROFILE_SCOPE(profile_scope);
+	VOXEL_PROFILE_SCOPE();
 	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 	FileAccess *f = FileAccess::open(fpath, mode_flags, err);
 	uint64_t time_spent = OS::get_singleton()->get_ticks_usec() - time_before;

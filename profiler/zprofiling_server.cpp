@@ -55,7 +55,7 @@ void ZProfilingServer::thread_func() {
 		OS::get_singleton()->delay_usec(LOOP_PERIOD_USEC);
 
 		ZProfiler::get_thread_profiler().mark_frame();
-		VOXEL_PROFILE_SCOPE(profile_scope);
+		VOXEL_PROFILE_SCOPE();
 
 		// TODO The data should be dropped past some amount, otherwise it will saturate memory and bandwidth
 
@@ -75,7 +75,7 @@ void ZProfilingServer::thread_func() {
 }
 
 void ZProfilingServer::update_server() {
-	VOXEL_PROFILE_SCOPE(profile_scope);
+	VOXEL_PROFILE_SCOPE();
 
 	if (_peer.is_null() && _server->is_connection_available()) {
 		_peer = _server->take_connection();
@@ -162,7 +162,7 @@ inline void serialize_string_def(StreamPeerTCP &peer, uint16_t id, String str) {
 }
 
 void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool send_all_strings) {
-	VOXEL_PROFILE_SCOPE(profile_scope);
+	VOXEL_PROFILE_SCOPE();
 
 	if (send_all_strings) {
 		// New clients need to get all strings they missed

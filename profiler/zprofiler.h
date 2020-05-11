@@ -8,18 +8,21 @@
 #include <array>
 #include <string>
 
+// Helpers
+// Macros can be tested with gcc and -E option at https://godbolt.org/
 #define VOXEL_STRINGIFY_(a) #a
 #define VOXEL_STRINGIFY(a) VOXEL_STRINGIFY_(a)
 #define VOXEL_LINE_STR VOXEL_STRINGIFY(__LINE__)
 #define VOXEL_FILE_LINE_STR __FILE__ ": " VOXEL_LINE_STR
+#define VOXEL_COMBINE_NAME_(a, b) a##b
+#define VOXEL_COMBINE_NAME(a, b) VOXEL_COMBINE_NAME_(a, b)
 
-#define VOXEL_PROFILE_BEGIN_K(_key) ZProfiler::get_thread_profiler().begin(_key)
-#define VOXEL_PROFILE_END_K(_key) ZProfiler::get_thread_profiler().end(_key)
-#define VOXEL_PROFILE_SCOPE_K(_scopename, _key) ZProfilerScope _scopename(_key)
-
-#define VOXEL_PROFILE_BEGIN() VOXEL_PROFILE_BEGIN_K(VOXEL_FILE_LINE_STR)
-#define VOXEL_PROFILE_END() VOXEL_PROFILE_END_K(VOXEL_FILE_LINE_STR)
-#define VOXEL_PROFILE_SCOPE(_scopename) VOXEL_PROFILE_SCOPE_K(_scopename, VOXEL_FILE_LINE_STR)
+// C++ usage macros
+#define VOXEL_PROFILE_BEGIN_NAMED(_key) ZProfiler::get_thread_profiler().begin(_key)
+#define VOXEL_PROFILE_BEGIN() VOXEL_PROFILE_BEGIN_NAMED(VOXEL_FILE_LINE_STR)
+#define VOXEL_PROFILE_END() ZProfiler::get_thread_profiler().end()
+#define VOXEL_PROFILE_SCOPE_NAMED(_key) ZProfilerScope VOXEL_COMBINE_NAME(profiler_scope, __LINE__)(_key)
+#define VOXEL_PROFILE_SCOPE() VOXEL_PROFILE_SCOPE_NAMED(VOXEL_FILE_LINE_STR)
 
 class ZProfiler {
 public:
@@ -86,15 +89,12 @@ struct ZProfilerScope {
 
 #else
 
-#define VOXEL_PROFILER_DECLARE //
-
-#define VOXEL_PROFILE_BEGIN_K(_key) //
-#define VOXEL_PROFILE_END_K(_key) //
-#define VOXEL_PROFILE_SCOPE_K(_scopename, _key) //
-
+// Empty definitions
+#define VOXEL_PROFILE_BEGIN_NAMED(_key) //
 #define VOXEL_PROFILE_BEGIN() //
 #define VOXEL_PROFILE_END() //
-#define VOXEL_PROFILE_SCOPE(_scopename) //
+#define VOXEL_PROFILE_SCOPE() //
+#define VOXEL_PROFILE_SCOPE_NAMED(_name) //
 
 #endif
 

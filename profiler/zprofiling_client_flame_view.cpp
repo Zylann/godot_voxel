@@ -31,7 +31,7 @@ void ZProfilingClientFlameView::_gui_input(Ref<InputEvent> p_event) {
 }
 
 void ZProfilingClientFlameView::_draw() {
-	VOXEL_PROFILE_SCOPE(profile_scope);
+	VOXEL_PROFILE_SCOPE();
 
 	const Color item_color(1.f, 0.5f, 0.f);
 	const Color bg_color(0.f, 0.f, 0.f, 0.7f);
