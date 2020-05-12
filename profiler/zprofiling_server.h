@@ -2,6 +2,7 @@
 #define ZPROFILING_SERVER_H
 
 #include "zprofiler.h"
+#include "zprofiling_send_buffer.h"
 
 #include <core/reference.h>
 
@@ -13,7 +14,6 @@ class TCP_Server;
 class StreamPeerTCP;
 
 // Gathers data logged by thread profilers and sends it to network peers.
-// Works as a server so profiling can be controlled by localhost clients.
 class ZProfilingServer {
 public:
 	static const char *DEFAULT_HOST_ADDRESS;
@@ -62,6 +62,7 @@ private:
 	bool _running = false;
 	std::vector<ZProfiler::Buffer *> _buffers_to_send;
 	ZProfiler::Buffer *_recycled_buffers = nullptr;
+	ZProfilingSendBuffer _message;
 
 	// Strings are separated in two categories because one incurs higher performance cost
 	std::unordered_map<const char *, uint16_t> _static_strings;

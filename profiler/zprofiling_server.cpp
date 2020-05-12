@@ -154,7 +154,8 @@ void ZProfilingServer::serialize_and_send_messages() {
 	}
 }
 
-inline void serialize_string_def(StreamPeerTCP &peer, uint16_t id, String str) {
+template <typename Peer_T>
+inline void serialize_string_def(Peer_T &peer, uint16_t id, String str) {
 	//print_line(String("Sending string def {0}: {1}").format(varray(id, str)));
 	peer.put_u8(ZProfilingServer::EVENT_STRING_DEF);
 	peer.put_u16(id);
@@ -164,13 +165,18 @@ inline void serialize_string_def(StreamPeerTCP &peer, uint16_t id, String str) {
 void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool send_all_strings) {
 	VOXEL_PROFILE_SCOPE();
 
+	// An intermediary buffer is used instead of `StreamPeerTCP` directly,
+	// because using the latter slowed it down horribly.
+	// Turning on Nagle's algorithm didn't help...
+	_message.clear();
+
 	if (send_all_strings) {
 		// New clients need to get all strings they missed
 		for (auto it = _dynamic_strings.begin(); it != _dynamic_strings.end(); ++it) {
-			serialize_string_def(peer, it->second, it->first.c_str());
+			serialize_string_def(_message, it->second, it->first.c_str());
 		}
 		for (auto it = _static_strings.begin(); it != _static_strings.end(); ++it) {
-			serialize_string_def(peer, it->second, it->first);
+			serialize_string_def(_message, it->second, it->first);
 		}
 	}
 
@@ -188,11 +194,11 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 			// Generate string ID
 			thread_name_id = _next_string_id++;
 			_dynamic_strings.insert(std::make_pair(buffer->thread_name, thread_name_id));
-			serialize_string_def(peer, thread_name_id, buffer->thread_name.c_str());
+			serialize_string_def(_message, thread_name_id, buffer->thread_name.c_str());
 		}
 
-		peer.put_u8(EVENT_THREAD);
-		peer.put_u16(thread_name_id);
+		_message.put_u8(EVENT_THREAD);
+		_message.put_u16(thread_name_id);
 
 		for (size_t j = 0; j < buffer->write_index; ++j) {
 			const ZProfiler::Event &event = buffer->events[j];
@@ -210,22 +216,22 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 						// Generate string ID
 						description_id = _next_string_id++;
 						_static_strings.insert(std::make_pair(event.description, description_id));
-						serialize_string_def(peer, description_id, event.description);
+						serialize_string_def(_message, description_id, event.description);
 					}
 
-					peer.put_u8(EVENT_PUSH);
-					peer.put_u16(description_id);
-					peer.put_u32(event.time);
+					_message.put_u8(EVENT_PUSH);
+					_message.put_u16(description_id);
+					_message.put_u32(event.time);
 				} break;
 
 				case ZProfiler::EVENT_POP:
-					peer.put_u8(EVENT_POP);
-					peer.put_u32(event.time);
+					_message.put_u8(EVENT_POP);
+					_message.put_u32(event.time);
 					break;
 
 				case ZProfiler::EVENT_FRAME:
-					peer.put_u8(EVENT_FRAME);
-					peer.put_u32(event.time);
+					_message.put_u8(EVENT_FRAME);
+					_message.put_u32(event.time);
 					break;
 
 				default:
@@ -234,6 +240,16 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 			}
 		}
 	}
+
+	{
+		// Send in one block
+		VOXEL_PROFILE_SCOPE();
+		//print_line(String("Sending {0} bytes").format(varray(_message.size())));
+		Error err = peer.put_data(_message.data(), _message.size());
+		CRASH_COND(err != OK);
+	}
+
+	_message.clear();
 }
 
 void ZProfilingServer::recycle_data() {

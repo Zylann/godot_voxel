@@ -24,11 +24,13 @@
 #define VOXEL_PROFILE_SCOPE_NAMED(_key) ZProfilerScope VOXEL_COMBINE_NAME(profiler_scope, __LINE__)(_key)
 #define VOXEL_PROFILE_SCOPE() VOXEL_PROFILE_SCOPE_NAMED(VOXEL_FILE_LINE_STR)
 
+// Profiler for one thread. Main API to record profiling data.
 class ZProfiler {
 public:
 	ZProfiler();
 	~ZProfiler();
 
+	// TODO Rename set_thread_name
 	void set_profiler_name(const char *name);
 	void begin(const char *description);
 	void end();
