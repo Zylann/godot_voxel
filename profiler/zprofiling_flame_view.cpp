@@ -36,8 +36,13 @@ void ZProfilingFlameView::_draw() {
 
 	const Color item_color(1.f, 0.5f, 0.f);
 	const Color bg_color(0.f, 0.f, 0.f, 0.7f);
+	const Color text_color(0.f, 0.f, 0.f);
 	const int lane_separation = 1;
-	const int lane_height = 24;
+	const int lane_height = 20;
+	const Vector2 text_margin(4, 4);
+
+	Ref<Font> font = get_font("font");
+	ERR_FAIL_COND(font.is_null());
 
 	// Background
 	const Rect2 control_rect = get_rect();
@@ -88,6 +93,15 @@ void ZProfilingFlameView::_draw() {
 			}
 
 			draw_rect(item_rect, item_color);
+
+			if (item_rect.size.x > 100) {
+				const String text = _client->get_string(item.description_id);
+				//const Vector2 text_size = font->get_string_size(text);
+				const Vector2 text_pos(
+						item_rect.position.x + text_margin.x,
+						item_rect.position.y + text_margin.y + font->get_ascent());
+				draw_string(font, text_pos, text, text_color, item_rect.size.x);
+			}
 
 			// TODO Draw item text
 		}

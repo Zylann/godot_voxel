@@ -100,6 +100,8 @@ void ZProfilingClient::_notification(int p_what) {
 }
 
 void ZProfilingClient::_process() {
+	VOXEL_PROFILE_SCOPE();
+
 	if (_peer.is_null()) {
 		return;
 	}
