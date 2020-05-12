@@ -1,22 +1,23 @@
-#include "zprofiling_client_flame_view.h"
+#include "zprofiling_flame_view.h"
 #include "zprofiler.h"
 #include "zprofiling_client.h"
 
-ZProfilingClientFlameView::ZProfilingClientFlameView() {
+ZProfilingFlameView::ZProfilingFlameView() {
+	set_clip_contents(true);
 }
 
-void ZProfilingClientFlameView::set_client(const ZProfilingClient *client) {
+void ZProfilingFlameView::set_client(const ZProfilingClient *client) {
 	_client = client;
 }
 
-void ZProfilingClientFlameView::set_thread(int thread_index) {
+void ZProfilingFlameView::set_thread(int thread_index) {
 	if (thread_index != _thread_index) {
 		_thread_index = thread_index;
 		update();
 	}
 }
 
-void ZProfilingClientFlameView::_notification(int p_what) {
+void ZProfilingFlameView::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_DRAW:
 			_draw();
@@ -27,16 +28,16 @@ void ZProfilingClientFlameView::_notification(int p_what) {
 	}
 }
 
-void ZProfilingClientFlameView::_gui_input(Ref<InputEvent> p_event) {
+void ZProfilingFlameView::_gui_input(Ref<InputEvent> p_event) {
 }
 
-void ZProfilingClientFlameView::_draw() {
+void ZProfilingFlameView::_draw() {
 	VOXEL_PROFILE_SCOPE();
 
 	const Color item_color(1.f, 0.5f, 0.f);
 	const Color bg_color(0.f, 0.f, 0.f, 0.7f);
 	const int lane_separation = 1;
-	const int lane_height = 28;
+	const int lane_height = 24;
 
 	// Background
 	const Rect2 control_rect = get_rect();
@@ -97,6 +98,6 @@ void ZProfilingClientFlameView::_draw() {
 	// TODO Draw time graduations
 }
 
-void ZProfilingClientFlameView::_bind_methods() {
-	ClassDB::bind_method("_gui_input", &ZProfilingClientFlameView::_gui_input);
+void ZProfilingFlameView::_bind_methods() {
+	ClassDB::bind_method("_gui_input", &ZProfilingFlameView::_gui_input);
 }

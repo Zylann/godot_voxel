@@ -1,5 +1,6 @@
 #include "zprofiling_client.h"
-#include "zprofiling_client_flame_view.h"
+#include "zprofiling_flame_view.h"
+#include "zprofiling_graph_view.h"
 #include "zprofiling_server.h"
 
 #include <core/io/stream_peer_tcp.h>
@@ -8,6 +9,7 @@
 #include <scene/gui/label.h>
 #include <scene/gui/option_button.h>
 #include <scene/gui/spin_box.h>
+#include <scene/gui/split_container.h>
 
 const uint32_t MAX_LANES = 256;
 const uint32_t MAX_STRING_SIZE = 1000;
@@ -56,10 +58,20 @@ ZProfilingClient::ZProfilingClient() {
 	_thread_selector->connect("item_selected", this, "_on_thread_selector_item_selected");
 	header_hb->add_child(_thread_selector);
 
-	_flame_view = memnew(ZProfilingClientFlameView);
+	_v_split_container = memnew(VSplitContainer);
+	_v_split_container->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	_v_split_container->set_split_offset(30);
+	main_vb->add_child(_v_split_container);
+
+	_graph_view = memnew(ZProfilingGraphView);
+	_graph_view->set_client(this);
+	//_graph_view->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	_v_split_container->add_child(_graph_view);
+
+	_flame_view = memnew(ZProfilingFlameView);
 	_flame_view->set_client(this);
-	_flame_view->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	main_vb->add_child(_flame_view);
+	//_flame_view->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	_v_split_container->add_child(_flame_view);
 
 	HBoxContainer *footer_hb = memnew(HBoxContainer);
 	main_vb->add_child(footer_hb);
@@ -355,6 +367,8 @@ bool ZProfilingClient::process_event_frame(uint32_t event_time) {
 
 	_frame_spinbox->set_max(thread_data.frames.size() - 1);
 
+	_graph_view->update();
+
 	// TODO Only do this if the user wants to keep update to last frame
 	if (_selected_thread_index == _last_received_thread_index) {
 		set_selected_frame(thread_data.frames.size() - 1);
@@ -503,6 +517,8 @@ void ZProfilingClient::set_selected_thread(int thread_index) {
 	_selected_thread_index = thread_index;
 	_flame_view->set_thread(_selected_thread_index);
 
+	_graph_view->update();
+
 	print_line(String("Selected thread {0}").format(varray(_selected_thread_index)));
 	_thread_selector->select(thread_index);
 
@@ -514,6 +530,10 @@ void ZProfilingClient::set_selected_thread(int thread_index) {
 	if (thread_data.frames.size() > 0) {
 		set_selected_frame(thread_data.frames.size() - 1);
 	}
+}
+
+int ZProfilingClient::get_selected_thread() const {
+	return _selected_thread_index;
 }
 
 void ZProfilingClient::set_selected_frame(int frame_index) {
@@ -539,6 +559,7 @@ void ZProfilingClient::set_selected_frame(int frame_index) {
 
 	thread_data.selected_frame = frame_index;
 	_flame_view->update();
+	_graph_view->update();
 
 	// This can emit again and cycle back to our method...
 	// hence why checking if it changed is important

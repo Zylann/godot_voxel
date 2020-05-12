@@ -9,7 +9,9 @@ class Button;
 class Label;
 class SpinBox;
 class OptionButton;
-class ZProfilingClientFlameView;
+class VSplitContainer;
+class ZProfilingFlameView;
+class ZProfilingGraphView;
 
 class ZProfilingClient : public Control {
 	GDCLASS(ZProfilingClient, Control)
@@ -48,6 +50,7 @@ public:
 	const String get_string(uint16_t str_id) const;
 	void set_selected_frame(int frame_index);
 	void set_selected_thread(int thread_index);
+	int get_selected_thread() const;
 
 private:
 	void _notification(int p_what);
@@ -76,10 +79,12 @@ private:
 	// GUI
 	Button *_connect_button = nullptr;
 	Label *_status_label = nullptr;
-	ZProfilingClientFlameView *_flame_view = nullptr;
+	VSplitContainer *_v_split_container = nullptr;
+	ZProfilingGraphView *_graph_view = nullptr;
+	ZProfilingFlameView *_flame_view = nullptr;
 	SpinBox *_frame_spinbox = nullptr;
-	OptionButton *_thread_selector = nullptr;
 	bool _frame_spinbox_ignore_changes = false;
+	OptionButton *_thread_selector = nullptr;
 
 	// Data
 	Vector<ThreadData> _threads;
