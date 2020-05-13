@@ -18,6 +18,11 @@ public:
 		*(T *)(&_data[a]) = v;
 	}
 
+	inline void set_u32(uint32_t pos, uint32_t v) {
+		CRASH_COND(pos + sizeof(uint32_t) > _data.size());
+		*(uint32_t *)(&_data[pos]) = v;
+	}
+
 	inline void put_u16(uint16_t v) {
 		put_t<uint16_t>(v);
 	}
@@ -51,6 +56,7 @@ public:
 	}
 
 private:
+	// Capacity of this vector matters a lot for performance.
 	std::vector<uint8_t> _data;
 };
 

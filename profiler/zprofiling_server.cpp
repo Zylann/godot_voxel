@@ -170,6 +170,11 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 	// Turning on Nagle's algorithm didn't help...
 	_message.clear();
 
+	_message.put_u8(EVENT_INCOMING_DATA_SIZE);
+	const size_t incoming_data_size_index = _message.size();
+	_message.put_u32(0);
+	const size_t begin_index = _message.size();
+
 	if (send_all_strings) {
 		// New clients need to get all strings they missed
 		for (auto it = _dynamic_strings.begin(); it != _dynamic_strings.end(); ++it) {
@@ -197,13 +202,18 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 			serialize_string_def(_message, thread_name_id, buffer->thread_name.c_str());
 		}
 
-		_message.put_u8(EVENT_THREAD);
-		_message.put_u16(thread_name_id);
+		// Get frame buffer corresponding to the thread
+		Frame *frame_buffer;
+		Frame **frame_buffer_ptr = _frame_buffers.getptr(thread_name_id);
+		if (frame_buffer_ptr == nullptr) {
+			frame_buffer = memnew(Frame);
+			_frame_buffers.set(thread_name_id, frame_buffer);
+		} else {
+			frame_buffer = *frame_buffer_ptr;
+		}
 
 		for (size_t j = 0; j < buffer->write_index; ++j) {
 			const ZProfiler::Event &event = buffer->events[j];
-			// TODO It seems this part struggles sending large amounts of data.
-			// Is it due to using small serialization functions? Or TCP can't keep up?
 
 			switch (event.type) {
 				case ZProfiler::EVENT_PUSH: {
@@ -219,19 +229,34 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 						serialize_string_def(_message, description_id, event.description);
 					}
 
-					_message.put_u8(EVENT_PUSH);
-					_message.put_u16(description_id);
-					_message.put_u32(event.time);
+					++frame_buffer->current_lane;
+					ERR_FAIL_COND(frame_buffer->current_lane > frame_buffer->lanes.size()); // Stack too deep?
+					frame_buffer->lanes[frame_buffer->current_lane].push_back(Item{ event.time, 0, description_id });
 				} break;
 
 				case ZProfiler::EVENT_POP:
-					_message.put_u8(EVENT_POP);
-					_message.put_u32(event.time);
+					ERR_FAIL_COND(frame_buffer->current_lane == -1); // Can't pop?
+					frame_buffer->lanes[frame_buffer->current_lane].back().end = event.time;
+					--frame_buffer->current_lane;
 					break;
 
 				case ZProfiler::EVENT_FRAME:
+					// Last frame is now finalized, serialize it
+
 					_message.put_u8(EVENT_FRAME);
-					_message.put_u32(event.time);
+					_message.put_u16(thread_name_id);
+					_message.put_u32(event.time); // This is the *end* time of the frame (and beginning of next one)
+
+					for (size_t i = 0; i < frame_buffer->lanes.size(); ++i) {
+						std::vector<Item> &items = frame_buffer->lanes[i];
+						_message.put_u32(items.size());
+						if (items.size() == 0) {
+							break;
+						}
+						_message.put_data((const uint8_t *)items.data(), items.size() * sizeof(Item));
+					}
+
+					frame_buffer->reset();
 					break;
 
 				default:
@@ -240,6 +265,9 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 			}
 		}
 	}
+
+	// Write block data size back at the beginning
+	_message.set_u32(incoming_data_size_index, _message.size() - begin_index);
 
 	{
 		// Send in one block
@@ -277,6 +305,14 @@ void ZProfilingServer::clear() {
 		memdelete(_recycled_buffers);
 		_recycled_buffers = buffer;
 	}
+
+	// Clear frame buffers
+	const uint16_t *key = nullptr;
+	while ((key = _frame_buffers.next(key))) {
+		Frame *f = _frame_buffers.get(*key);
+		memdelete(f);
+	}
+	_frame_buffers.clear();
 
 	_dynamic_strings.clear();
 	_static_strings.clear();

@@ -1,6 +1,7 @@
 #ifndef ZPROFILING_CLIENT_H
 #define ZPROFILING_CLIENT_H
 
+#include "zprofiling_receive_buffer.h"
 #include <core/hash_map.h>
 #include <scene/gui/control.h>
 
@@ -17,8 +18,8 @@ class ZProfilingClient : public Control {
 	GDCLASS(ZProfilingClient, Control)
 public:
 	struct Item {
-		int begin_time = -1;
-		int end_time = -1;
+		uint32_t begin_time = 0;
+		uint32_t end_time = 0;
 		uint16_t description_id = 0;
 	};
 
@@ -28,15 +29,14 @@ public:
 
 	struct Frame {
 		Vector<Lane> lanes;
-		int begin_time = -1;
-		int end_time = -1;
+		uint32_t begin_time = 0;
+		uint32_t end_time = 0;
 	};
 
 	struct ThreadData {
 		uint16_t id = 0;
 		// TODO Drop/dump frames that go beyond a fixed time
 		Vector<Frame> frames;
-		int current_lane_index = -1;
 		int selected_frame = -1;
 	};
 
@@ -56,12 +56,8 @@ private:
 	void _notification(int p_what);
 	void _process();
 
-	bool process_incoming_data();
-	bool process_event_push(uint32_t event_time, uint16_t description_id);
-	bool process_event_pop(uint32_t event_time);
-	bool process_event_frame(uint32_t event_time);
+	void process_incoming_data();
 	bool process_event_string_def(uint16_t string_id, String str);
-	bool process_event_thread(uint16_t thread_id);
 
 	void _on_connect_button_pressed();
 	void _on_frame_spinbox_value_changed(float value);
@@ -94,11 +90,9 @@ private:
 
 	// Network
 	Ref<StreamPeerTCP> _peer;
+	ZProfilingReceiveBuffer _received_data;
 	int _previous_peer_status = -1;
-	int _last_received_thread_index = -1;
-	int _last_received_event_type = -1;
-	int _last_received_string_size = -1;
-	int _last_received_string_id = -1;
+	int _last_received_block_size = -1;
 };
 
 #endif // ZPROFILING_CLIENT_H

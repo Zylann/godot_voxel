@@ -4,6 +4,7 @@
 #include "zprofiler.h"
 #include "zprofiling_send_buffer.h"
 
+#include <core/hash_map.h>
 #include <core/reference.h>
 
 #include <unordered_map>
@@ -19,6 +20,7 @@ public:
 	static const char *DEFAULT_HOST_ADDRESS;
 	static const uint16_t DEFAULT_HOST_PORT = 13118;
 	static const uint64_t LOOP_PERIOD_USEC = 50000;
+	static const uint32_t MAX_LANES = 64;
 
 	// Input commands
 	enum CommandType {
@@ -28,12 +30,10 @@ public:
 
 	// Output messages
 	enum EventType {
-		EVENT_PUSH = 0, // Entered scope
-		EVENT_POP, // Left scope
-		EVENT_FRAME, // The current frame ended and a new one started
-		EVENT_STRING_DEF, // Definition of a string, which will be referred to with a specified ID
-		EVENT_THREAD // Following messages will be about the specified thread
+		EVENT_FRAME, // Following data is about a whole frame
+		EVENT_STRING_DEF, // New string ID definition
 		// TODO Do we need a THREAD_END message?
+		EVENT_INCOMING_DATA_SIZE // Header for incoming data block
 	};
 
 	static void create_singleton();
@@ -55,6 +55,28 @@ private:
 	void recycle_data();
 	void clear();
 
+	struct Item {
+		uint32_t begin;
+		uint32_t end;
+		uint16_t description_id;
+	};
+
+	struct Frame {
+		int current_lane = -1;
+		// Vectors contain re-usable memory
+		std::array<std::vector<Item>, MAX_LANES> lanes;
+
+		inline void reset() {
+			for (size_t i = 0; i < lanes.size(); ++i) {
+				if (lanes[i].size() == 0) {
+					break;
+				}
+				lanes[i].clear();
+			}
+			current_lane = -1;
+		}
+	};
+
 	Ref<TCP_Server> _server;
 	Ref<StreamPeerTCP> _peer;
 	bool _peer_just_connected = false;
@@ -63,6 +85,9 @@ private:
 	std::vector<ZProfiler::Buffer *> _buffers_to_send;
 	ZProfiler::Buffer *_recycled_buffers = nullptr;
 	ZProfilingSendBuffer _message;
+
+	// Re-used buffers to pre-process raw events before sending them
+	HashMap<uint16_t, Frame *> _frame_buffers;
 
 	// Strings are separated in two categories because one incurs higher performance cost
 	std::unordered_map<const char *, uint16_t> _static_strings;
