@@ -54,6 +54,9 @@ void ZProfilingGraphView::_draw() {
 
 	const Color bg_color(0.f, 0.f, 0.f, 0.7f);
 	const Color curve_color(1.f, 0.5f, 0.f);
+	const Color text_fg_color(1.f, 1.f, 1.f);
+	const Color text_bg_color(0.f, 0.f, 0.f);
+	const Color frame_graduation_color(1.f, 1.f, 1.f, 0.3f);
 
 	// Background
 	const Rect2 control_rect = get_rect();
@@ -82,7 +85,7 @@ void ZProfilingGraphView::_draw() {
 	const int min_x = control_rect.size.x - frame_width * (max_frame - min_frame);
 
 	// Get normalized factor
-	int max_frame_time = 0;
+	int max_frame_time = 1; // microseconds
 	for (int frame_index = min_frame; frame_index < max_frame; ++frame_index) {
 		const ZProfilingClient::Frame &frame = thread_data.frames[frame_index];
 		const int frame_time = get_frame_time(frame);
@@ -105,7 +108,20 @@ void ZProfilingGraphView::_draw() {
 		item_rect.position.x += frame_width;
 	}
 
-	// TODO Graduations
+	Ref<Font> font = get_font("font");
+	ERR_FAIL_COND(font.is_null());
+
+	// Graduations
+
+	// 16 ms limit
+	int frame_graduation_y = control_rect.size.y - control_rect.size.y * (static_cast<float>(16000) / max_frame_time);
+	draw_line(Vector2(0, frame_graduation_y), Vector2(control_rect.size.x, frame_graduation_y), frame_graduation_color);
+
+	// Max ms
+	const float max_frame_time_ms = static_cast<float>(max_frame_time) / 1000.f;
+	String max_time_text = String("{0} ms").format(varray(max_frame_time_ms));
+	draw_string(font, Vector2(5, 5 + font->get_ascent()), max_time_text, text_bg_color);
+	draw_string(font, Vector2(4, 4 + font->get_ascent()), max_time_text, text_fg_color);
 }
 
 void ZProfilingGraphView::_bind_methods() {
