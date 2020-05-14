@@ -36,6 +36,46 @@ static void draw_shaded_text(CanvasItem *ci, Ref<Font> font, Vector2 pos, String
 	ci->draw_string(font, pos, text, fg);
 }
 
+static String get_left_ellipsed_text(String text, int max_width, Ref<Font> font, Vector2 &out_string_size) {
+	if (text.length() == 0) {
+		out_string_size = Vector2(0, font->get_height());
+		return text;
+	}
+
+	float w = 0;
+	const String ellipsis = "...";
+	const float ellipsis_width = font->get_string_size(ellipsis).x;
+
+	// Iterate characters from right to left
+	int i = text.size() - 1;
+	for (; i >= 0; --i) {
+		w += font->get_char_size(text[i], text[i + 1]).width;
+
+		if (w > max_width) {
+			break;
+		}
+	}
+
+	if (i >= 0) {
+		// Ellipsis is needed
+		w += ellipsis_width;
+
+		// Iterate forward until it fits with the ellipsis
+		for (; i < text.size(); ++i) {
+			w -= font->get_char_size(text[i], text[i + 1]).width;
+
+			if (w <= max_width) {
+				break;
+			}
+		}
+
+		text = ellipsis + text.right(i);
+	}
+
+	out_string_size = Vector2(w, font->get_height());
+	return text;
+}
+
 void ZProfilingFlameView::_draw() {
 	VOXEL_PROFILE_SCOPE();
 
@@ -102,15 +142,28 @@ void ZProfilingFlameView::_draw() {
 			draw_rect(item_rect, item_color);
 
 			if (item_rect.size.x > 100) {
-				const String text = _client->get_string(item.description_id);
-				//const Vector2 text_size = font->get_string_size(text);
-				const Vector2 text_pos(
+				String text = _client->get_string(item.description_id);
+
+				int clamped_item_width = item_rect.size.x;
+				if (item_rect.position.x < 0) {
+					clamped_item_width -= item_rect.position.x;
+				}
+
+				const int text_area_width = clamped_item_width - 2 * text_margin.x;
+				Vector2 text_size;
+				text = get_left_ellipsed_text(text, text_area_width, font, text_size);
+
+				Vector2 text_pos(
 						item_rect.position.x + text_margin.x,
 						item_rect.position.y + text_margin.y + font->get_ascent());
+
+				// If the item starts off-screen, clamp it to the left
+				if (text_pos.x < text_margin.x) {
+					text_pos.x = text_margin.x;
+				}
+
 				draw_string(font, text_pos, text, item_text_color, item_rect.size.x);
 			}
-
-			// TODO Draw item text
 		}
 
 		item_rect.position.y += lane_height + lane_separation;
