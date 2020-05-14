@@ -126,11 +126,13 @@ void ZProfilingClient::_process() {
 			case StreamPeerTCP::STATUS_ERROR:
 				_status_label->set_text(TTR("Status: error"));
 				reset_connect_button();
+				_auto_select_main = true;
 				break;
 
 			case StreamPeerTCP::STATUS_NONE:
 				_status_label->set_text(TTR("Status: disconnected"));
 				reset_connect_button();
+				_auto_select_main = true;
 				break;
 
 			default:
@@ -222,6 +224,9 @@ bool ZProfilingClient::process_incoming_data() {
 					thread_index = _threads.size();
 					_threads.push_back(thread_data);
 					update_thread_list();
+
+					if (_auto_select_main) {
+						_auto_select_main = !try_auto_select_main_thread();
 					}
 
 				} else {
@@ -352,6 +357,7 @@ void ZProfilingClient::connect_to_host() {
 void ZProfilingClient::disconnect_from_host() {
 	_peer->disconnect_from_host();
 	reset_connect_button();
+	_auto_select_main = false;
 	clear_network_states();
 }
 
@@ -403,6 +409,20 @@ void ZProfilingClient::disconnect_on_error(String message) {
 void ZProfilingClient::reset_connect_button() {
 	_connect_button->set_disabled(false);
 	_connect_button->set_text(TTR("Connect"));
+}
+
+bool ZProfilingClient::try_auto_select_main_thread() {
+	for (size_t i = 0; i < _threads.size(); ++i) {
+		const ThreadData &t = _threads[i];
+		String *name_ptr = _strings.getptr(t.id);
+		CRASH_COND(name_ptr == nullptr);
+		// TODO Have a more "official" way to say which thread is main?
+		if (name_ptr->findn("main") != -1) {
+			set_selected_thread(i);
+			return true;
+		}
+	}
+	return false;
 }
 
 void ZProfilingClient::set_selected_thread(int thread_index) {

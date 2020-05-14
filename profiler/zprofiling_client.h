@@ -64,6 +64,7 @@ private:
 	void _on_thread_selector_item_selected(int idx);
 
 	void reset_connect_button();
+	bool try_auto_select_main_thread();
 	void disconnect_on_error(String message);
 	void update_thread_list();
 	int get_thread_index_from_id(uint16_t thread_id) const;
@@ -81,6 +82,7 @@ private:
 	SpinBox *_frame_spinbox = nullptr;
 	bool _frame_spinbox_ignore_changes = false;
 	OptionButton *_thread_selector = nullptr;
+	bool _auto_select_main = true;
 
 	// Data
 	Vector<ThreadData> _threads;
