@@ -46,9 +46,15 @@ public:
 
 	// 16 bytes
 	struct Event {
-		uint32_t time;
+		union {
+			const char *description; // TODO Could be StringName?
+			uint64_t time;
+		};
+		// Time for events inside a frame is stored as 32-bit relative to frame start,
+		// because it saves space and should be enough for the durations of a frame.
+		// Absolute 64-bit time is only used at FRAME events.
+		uint32_t relative_time;
 		uint8_t type;
-		const char *description; // TODO Could be StringName?
 	};
 
 	struct Buffer {
@@ -78,6 +84,7 @@ private:
 	Buffer *_buffer = nullptr;
 	std::string _profiler_name;
 	bool _enabled = false;
+	uint64_t _frame_begin_time = 0;
 };
 
 struct ZProfilerScope {

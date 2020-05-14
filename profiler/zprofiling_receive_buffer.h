@@ -4,6 +4,7 @@
 #include <core/ustring.h>
 #include <vector>
 
+// Deserialization helper with re-usable memory
 class ZProfilingReceiveBuffer {
 public:
 	inline void resize(uint32_t size) {
@@ -33,6 +34,10 @@ public:
 
 	inline uint32_t get_u32() {
 		return get_t<uint32_t>();
+	}
+
+	inline uint64_t get_u64() {
+		return get_t<uint64_t>();
 	}
 
 	inline void get_data(uint8_t *dst, uint32_t size) {

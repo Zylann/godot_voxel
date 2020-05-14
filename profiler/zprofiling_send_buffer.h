@@ -31,6 +31,10 @@ public:
 		put_t<uint32_t>(v);
 	}
 
+	inline void put_u64(uint64_t v) {
+		put_t<uint64_t>(v);
+	}
+
 	inline void put_data(const uint8_t *bytes, uint32_t size) {
 		const size_t a = _data.size();
 		_data.resize(_data.size() + size);

@@ -78,7 +78,7 @@ static int get_frame_time(const ZProfilingClient::Frame &frame) {
 	const ZProfilingClient::Lane &lane = frame.lanes[0];
 	for (int i = 0; i < lane.items.size(); ++i) {
 		const ZProfilingClient::Item &item = lane.items[i];
-		sum += item.end_time - item.begin_time;
+		sum += item.end_time_relative - item.begin_time_relative;
 	}
 	return sum;
 }

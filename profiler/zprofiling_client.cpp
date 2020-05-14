@@ -209,7 +209,7 @@ bool ZProfilingClient::process_incoming_data() {
 		switch (event_type) {
 			case ZProfilingServer::EVENT_FRAME: {
 				const uint16_t thread_name_id = _received_data.get_u16();
-				const uint32_t frame_end_time = _received_data.get_u32();
+				const uint64_t frame_end_time = _received_data.get_u64();
 
 				if (!_strings.has(thread_name_id)) {
 					disconnect_on_error(String("Received Thread event with non-registered string {0}")

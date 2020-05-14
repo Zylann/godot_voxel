@@ -127,8 +127,8 @@ void ZProfilingFlameView::_draw() {
 			// TODO Cull items
 			// TODO Pan and zoom
 
-			item_rect.position.x = control_rect.size.x * static_cast<float>(item.begin_time - frame.begin_time) * frame_duration_inv;
-			item_rect.size.x = control_rect.size.x * static_cast<float>(item.end_time - item.begin_time) * frame_duration_inv;
+			item_rect.position.x = control_rect.size.x * static_cast<float>(item.begin_time_relative) * frame_duration_inv;
+			item_rect.size.x = control_rect.size.x * static_cast<float>(item.end_time_relative - item.begin_time_relative) * frame_duration_inv;
 
 			if (item_rect.size.x < 1.01f) {
 				// Clamp item size so it doesn't disappear

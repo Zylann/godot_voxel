@@ -18,8 +18,9 @@ class ZProfilingClient : public Control {
 	GDCLASS(ZProfilingClient, Control)
 public:
 	struct Item {
-		uint32_t begin_time = 0;
-		uint32_t end_time = 0;
+		// This layout must match what the server sends
+		uint32_t begin_time_relative = 0;
+		uint32_t end_time_relative = 0;
 		uint16_t description_id = 0;
 	};
 
@@ -29,8 +30,8 @@ public:
 
 	struct Frame {
 		Vector<Lane> lanes;
-		uint32_t begin_time = 0;
-		uint32_t end_time = 0;
+		uint64_t begin_time = 0;
+		uint64_t end_time = 0;
 	};
 
 	struct ThreadData {

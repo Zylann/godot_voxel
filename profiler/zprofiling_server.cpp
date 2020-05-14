@@ -231,12 +231,12 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 
 					++frame_buffer->current_lane;
 					ERR_FAIL_COND(frame_buffer->current_lane > frame_buffer->lanes.size()); // Stack too deep?
-					frame_buffer->lanes[frame_buffer->current_lane].push_back(Item{ event.time, 0, description_id });
+					frame_buffer->lanes[frame_buffer->current_lane].push_back(Item{ event.relative_time, 0, description_id });
 				} break;
 
 				case ZProfiler::EVENT_POP:
 					ERR_FAIL_COND(frame_buffer->current_lane == -1); // Can't pop?
-					frame_buffer->lanes[frame_buffer->current_lane].back().end = event.time;
+					frame_buffer->lanes[frame_buffer->current_lane].back().end = event.relative_time;
 					--frame_buffer->current_lane;
 					break;
 
@@ -245,7 +245,7 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 
 					_message.put_u8(EVENT_FRAME);
 					_message.put_u16(thread_name_id);
-					_message.put_u32(event.time); // This is the *end* time of the frame (and beginning of next one)
+					_message.put_u64(event.time); // This is the *end* time of the frame (and beginning of next one)
 
 					for (size_t i = 0; i < frame_buffer->lanes.size(); ++i) {
 						std::vector<Item> &items = frame_buffer->lanes[i];

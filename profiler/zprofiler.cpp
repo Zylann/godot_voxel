@@ -95,7 +95,7 @@ void ZProfiler::begin(const char *description) {
 	Event e;
 	e.description = description;
 	e.type = EVENT_PUSH;
-	e.time = get_time();
+	e.relative_time = get_time() - _frame_begin_time;
 	push_event(e);
 }
 
@@ -106,7 +106,7 @@ void ZProfiler::end() {
 	Event e;
 	e.description = nullptr;
 	e.type = EVENT_POP;
-	e.time = get_time();
+	e.relative_time = get_time() - _frame_begin_time;
 	push_event(e);
 }
 
@@ -147,6 +147,7 @@ void ZProfiler::mark_frame() {
 	e.description = nullptr;
 	e.type = EVENT_FRAME;
 	e.time = get_time();
+	_frame_begin_time = e.time;
 	push_event(e);
 }
 

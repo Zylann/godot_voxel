@@ -56,6 +56,7 @@ private:
 	void clear();
 
 	struct Item {
+		// This layout must match what the client expects
 		uint32_t begin;
 		uint32_t end;
 		uint16_t description_id;
