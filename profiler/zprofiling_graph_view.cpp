@@ -18,6 +18,11 @@ void ZProfilingGraphView::_notification(int p_what) {
 			_draw();
 			break;
 
+		case NOTIFICATION_MOUSE_EXIT:
+			_hovered_frame = -1;
+			update();
+			break;
+
 		default:
 			break;
 	}
@@ -25,16 +30,28 @@ void ZProfilingGraphView::_notification(int p_what) {
 
 void ZProfilingGraphView::_gui_input(Ref<InputEvent> p_event) {
 	Ref<InputEventMouseButton> mb = p_event;
+	Ref<InputEventMouseMotion> mm = p_event;
 
 	if (mb.is_valid()) {
 		if (mb->is_pressed()) {
 			if (mb->get_button_index() == BUTTON_LEFT) {
-				const Rect2 control_rect = get_rect();
-				const int frame_index = _max_frame - (control_rect.size.x - mb->get_position().x) / FRAME_WIDTH_PX;
+				const int frame_index = get_frame_index_from_pixel(mb->get_position().x);
 				emit_signal(SIGNAL_FRAME_CLICKED, frame_index);
 			}
 		}
 	}
+
+	if (mm.is_valid()) {
+		const int hovered_frame = get_frame_index_from_pixel(mm->get_position().x);
+		if (hovered_frame != _hovered_frame) {
+			_hovered_frame = hovered_frame;
+			update();
+		}
+	}
+}
+
+int ZProfilingGraphView::get_frame_index_from_pixel(int x) const {
+	return _max_frame - (get_rect().size.x - x) / FRAME_WIDTH_PX;
 }
 
 static bool try_get_last_completed_frame_index(const ZProfilingClient::ThreadData &thread_data, int &out_frame_index) {
@@ -73,9 +90,10 @@ void ZProfilingGraphView::_draw() {
 	const Color curve_color(1.f, 0.5f, 0.f);
 	const Color text_fg_color(1.f, 1.f, 1.f);
 	const Color text_bg_color(0.f, 0.f, 0.f);
-	const Color frame_graduation_color(1.f, 1.f, 1.f, 0.3f);
+	const Color frame_graduation_color(1.f, 1.f, 1.f, 0.2f);
 	const Color selected_frame_bg(1.f, 0.f, 0.f, 0.5f);
 	const Color selected_frame_fg(1.f, 1.f, 1.f);
+	const Color hovered_frame_fg(1.f, 1.f, 1.f, 0.2f);
 
 	// Background
 	const Rect2 control_rect = get_rect();
@@ -127,6 +145,9 @@ void ZProfilingGraphView::_draw() {
 			draw_rect(item_rect, selected_frame_fg);
 		} else {
 			draw_rect(item_rect, curve_color);
+			if (frame_index == _hovered_frame) {
+				draw_rect(Rect2(item_rect.position.x, 0, item_rect.size.x, control_rect.size.y), hovered_frame_fg);
+			}
 		}
 
 		item_rect.position.x += FRAME_WIDTH_PX;
