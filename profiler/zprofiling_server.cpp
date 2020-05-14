@@ -274,7 +274,10 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 		VOXEL_PROFILE_SCOPE();
 		//print_line(String("Sending {0} bytes").format(varray(_message.size())));
 		Error err = peer.put_data(_message.data(), _message.size());
-		CRASH_COND(err != OK);
+		if (err != OK) {
+			// The peer can have disconnected in the meantime
+			ERR_PRINT("Failed to send profiling data");
+		}
 	}
 
 	_message.clear();
