@@ -31,22 +31,29 @@ void ZProfilingFlameView::_notification(int p_what) {
 void ZProfilingFlameView::_gui_input(Ref<InputEvent> p_event) {
 }
 
+static void draw_shaded_text(CanvasItem *ci, Ref<Font> font, Vector2 pos, String text, Color fg, Color bg) {
+	ci->draw_string(font, pos + Vector2(1, 1), text, bg);
+	ci->draw_string(font, pos, text, fg);
+}
+
 void ZProfilingFlameView::_draw() {
 	VOXEL_PROFILE_SCOPE();
 
 	const Color item_color(1.f, 0.5f, 0.f);
 	const Color bg_color(0.f, 0.f, 0.f, 0.7f);
-	const Color text_color(0.f, 0.f, 0.f);
+	const Color item_text_color(0.f, 0.f, 0.f);
+	const Color text_fg_color(1.f, 1.f, 1.f);
+	const Color text_bg_color(0.f, 0.f, 0.f);
 	const int lane_separation = 1;
 	const int lane_height = 20;
 	const Vector2 text_margin(4, 4);
 
-	Ref<Font> font = get_font("font");
-	ERR_FAIL_COND(font.is_null());
-
 	// Background
 	const Rect2 control_rect = get_rect();
 	draw_rect(Rect2(0, 0, control_rect.size.x, control_rect.size.y), bg_color);
+
+	Ref<Font> font = get_font("font");
+	ERR_FAIL_COND(font.is_null());
 
 	ERR_FAIL_COND(_client == nullptr);
 	if (_thread_index >= _client->get_thread_count()) {
@@ -100,7 +107,7 @@ void ZProfilingFlameView::_draw() {
 				const Vector2 text_pos(
 						item_rect.position.x + text_margin.x,
 						item_rect.position.y + text_margin.y + font->get_ascent());
-				draw_string(font, text_pos, text, text_color, item_rect.size.x);
+				draw_string(font, text_pos, text, item_text_color, item_rect.size.x);
 			}
 
 			// TODO Draw item text
@@ -109,7 +116,20 @@ void ZProfilingFlameView::_draw() {
 		item_rect.position.y += lane_height + lane_separation;
 	}
 
-	// TODO Draw time graduations
+	// Time graduations
+
+	const float min_time_ms = 0.f;
+	const float max_time_ms = (frame.end_time - frame.begin_time) / 1000.f;
+
+	const String begin_time_text = String("{0} ms").format(varray(min_time_ms));
+	const String end_time_text = String("{0} ms").format(varray(max_time_ms));
+
+	const Vector2 min_text_pos(4, control_rect.size.y - font->get_height() + font->get_ascent());
+	const Vector2 max_text_size = font->get_string_size(end_time_text);
+	const Vector2 max_text_pos(control_rect.size.x - 4 - max_text_size.x, control_rect.size.y - font->get_height() + font->get_ascent());
+
+	draw_shaded_text(this, font, min_text_pos, begin_time_text, text_fg_color, text_bg_color);
+	draw_shaded_text(this, font, max_text_pos, end_time_text, text_fg_color, text_bg_color);
 }
 
 void ZProfilingFlameView::_bind_methods() {
