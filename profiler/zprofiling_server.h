@@ -19,7 +19,7 @@ class ZProfilingServer {
 public:
 	static const char *DEFAULT_HOST_ADDRESS;
 	static const uint16_t DEFAULT_HOST_PORT = 13118;
-	static const uint64_t LOOP_PERIOD_USEC = 50000;
+	static const uint64_t LOOP_PERIOD_USEC = 20000;
 	static const uint32_t MAX_LANES = 64;
 
 	// Input commands
