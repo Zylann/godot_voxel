@@ -56,7 +56,7 @@ private:
 	void _notification(int p_what);
 	void _process();
 
-	void process_incoming_data();
+	bool process_incoming_data();
 	bool process_event_string_def(uint16_t string_id, String str);
 
 	void _on_connect_button_pressed();

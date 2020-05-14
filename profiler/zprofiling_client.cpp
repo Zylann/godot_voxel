@@ -140,154 +140,167 @@ void ZProfilingClient::_process() {
 	}
 
 	if (peer_status == StreamPeerTCP::STATUS_CONNECTED) {
-		process_incoming_data();
+		uint64_t time_before = OS::get_singleton()->get_ticks_msec();
+		while (process_incoming_data()) {
+			if (OS::get_singleton()->get_ticks_msec() - time_before < MAX_TIME_READING_EVENTS_MSEC) {
+				break;
+			}
+		}
 	}
 }
 
-void ZProfilingClient::process_incoming_data() {
+// Returns true as long as it should be called again
+bool ZProfilingClient::process_incoming_data() {
 	CRASH_COND(_peer.is_null());
 	StreamPeerTCP &peer = **_peer;
 
-	int available_bytes = peer.get_available_bytes();
-
 	if (_last_received_block_size == -1) {
 		// Waiting for next block header
+		const int available_bytes = peer.get_available_bytes();
+
 		if (available_bytes < 5) {
-			return;
+			// Data not arrived yet
+			return false;
 		} else {
 			const uint8_t event_type = peer.get_u8();
 			if (event_type != ZProfilingServer::EVENT_INCOMING_DATA_SIZE) {
 				disconnect_on_error(String("Expected incoming data block header, got {0}")
 											.format(varray(event_type)));
-				return;
+				return false;
 			}
 			_last_received_block_size = peer.get_u32();
+			return true;
 		}
 	}
 
-	available_bytes = peer.get_available_bytes();
-	// TODO Accept partial data or more than a single block
-	// I have a feeling StreamPeerTCP will lock up if a packet is too big to fit in the pipe...
+	if (_received_data.size() < _last_received_block_size) {
+		// Block is incomplete
 
-	if (available_bytes >= _last_received_block_size) {
-		// Get whole block at once
-		{
-			_received_data.resize(_last_received_block_size);
-			Error err = peer.get_data(_received_data.data(), _last_received_block_size);
+		const int remaining_bytes = _last_received_block_size - _received_data.size();
+		const int available_bytes = peer.get_available_bytes();
+		const int available_bytes_for_block = MIN(available_bytes, remaining_bytes);
+
+		if (available_bytes_for_block == 0) {
+			// Data not arrived yet
+			return false;
+		} else {
+			size_t start_index = _received_data.size();
+			_received_data.resize(_received_data.size() + available_bytes_for_block);
+			const Error err = peer.get_data(_received_data.data() + start_index, available_bytes_for_block);
 			if (err != OK) {
 				disconnect_on_error(String("Could not get data size {0} for block, error {1}")
 											.format(varray(_last_received_block_size, err)));
-				return;
+				return false;
 			}
+			// We should continue only when the received data is complete
+			return _received_data.size() == _last_received_block_size;
 		}
-
-		// Then parse events
-		while (!_received_data.is_end()) {
-			const uint8_t event_type = _received_data.get_u8();
-
-			switch (event_type) {
-				case ZProfilingServer::EVENT_FRAME: {
-					const uint16_t thread_name_id = _received_data.get_u16();
-					const uint32_t frame_end_time = _received_data.get_u32();
-
-					if (!_strings.has(thread_name_id)) {
-						disconnect_on_error(String("Received Thread event with non-registered string {0}")
-													.format(varray(thread_name_id)));
-						return;
-					}
-
-					const int existing_thread_index = get_thread_index_from_id(thread_name_id);
-					int thread_index = -1;
-
-					if (existing_thread_index == -1) {
-						ThreadData thread_data;
-						thread_data.id = thread_name_id;
-						thread_index = _threads.size();
-						_threads.push_back(thread_data);
-						update_thread_list();
-
-					} else {
-						thread_index = existing_thread_index;
-					}
-
-					if (_selected_thread_index == -1) {
-						_selected_thread_index = thread_index;
-						_flame_view->set_thread(_selected_thread_index);
-					}
-
-					ThreadData &thread_data = _threads.write[thread_index];
-
-					if (thread_data.frames.size() == 0) {
-						// Initial frame, normally with no events inside,
-						// as frame markers must be at the beginning
-						thread_data.frames.push_back(Frame());
-						Frame &initial_frame = thread_data.frames.write[0];
-						initial_frame.end_time = frame_end_time;
-					}
-
-					_frame_spinbox->set_max(thread_data.frames.size() - 1);
-					_graph_view->update();
-
-					// TODO Only do this if the user wants to keep update to last frame
-					if (_selected_thread_index == thread_index) {
-						set_selected_frame(thread_data.frames.size() - 1);
-					}
-
-					// Finalize frame
-					Frame &frame = thread_data.frames.write[thread_data.frames.size() - 1];
-					frame.end_time = frame_end_time;
-
-					for (size_t i = 0; i < ZProfilingServer::MAX_LANES; ++i) {
-						const uint32_t item_count = _received_data.get_u32();
-						if (item_count == 0) {
-							break;
-						}
-						Lane lane;
-						lane.items.resize(item_count);
-						_received_data.get_data((uint8_t *)lane.items.ptrw(), item_count * sizeof(Item));
-						frame.lanes.push_back(lane);
-					}
-
-					// Start next frame
-					Frame next_frame;
-					next_frame.begin_time = frame_end_time;
-					thread_data.frames.push_back(next_frame);
-				} break;
-
-				case ZProfilingServer::EVENT_STRING_DEF: {
-					const uint16_t string_id = _received_data.get_u16();
-					const uint16_t string_size = _received_data.get_u32();
-
-					Vector<uint8_t> data;
-					data.resize(string_size);
-					_received_data.get_data(data.ptrw(), data.size());
-
-					String str;
-					if (str.parse_utf8((const char *)data.ptr(), data.size())) {
-						disconnect_on_error("Error when parsing UTF8");
-						return;
-					}
-
-					if (!process_event_string_def(string_id, str)) {
-						return;
-					}
-				} break;
-
-				case ZProfilingServer::EVENT_INCOMING_DATA_SIZE:
-					disconnect_on_error("Received unexpected incoming data size header");
-					return;
-					break;
-
-				default:
-					disconnect_on_error(String("Received unknown event {0}").format(varray(event_type)));
-					break;
-			}
-		}
-
-		// Done reading that block
-		_received_data.clear();
-		_last_received_block_size = -1;
 	}
+
+	// We have a complete block of data, read it
+	while (!_received_data.is_end()) {
+		const uint8_t event_type = _received_data.get_u8();
+
+		switch (event_type) {
+			case ZProfilingServer::EVENT_FRAME: {
+				const uint16_t thread_name_id = _received_data.get_u16();
+				const uint32_t frame_end_time = _received_data.get_u32();
+
+				if (!_strings.has(thread_name_id)) {
+					disconnect_on_error(String("Received Thread event with non-registered string {0}")
+												.format(varray(thread_name_id)));
+					return false;
+				}
+
+				// Get thread
+				const int existing_thread_index = get_thread_index_from_id(thread_name_id);
+				int thread_index = -1;
+
+				if (existing_thread_index == -1) {
+					ThreadData thread_data;
+					thread_data.id = thread_name_id;
+					thread_index = _threads.size();
+					_threads.push_back(thread_data);
+					update_thread_list();
+					}
+
+				} else {
+					thread_index = existing_thread_index;
+				}
+
+				ThreadData &thread_data = _threads.write[thread_index];
+
+				if (thread_data.frames.size() == 0) {
+					// Initial frame, normally with no events inside,
+					// as frame markers must be at the beginning
+					thread_data.frames.push_back(Frame());
+					Frame &initial_frame = thread_data.frames.write[0];
+					initial_frame.end_time = frame_end_time;
+				}
+
+				_frame_spinbox->set_max(thread_data.frames.size() - 1);
+				_graph_view->update();
+
+				// TODO Only do this if the user wants to keep update to last frame
+				if (_selected_thread_index == thread_index) {
+					set_selected_frame(thread_data.frames.size() - 1);
+				}
+
+				// Finalize frame
+				Frame &frame = thread_data.frames.write[thread_data.frames.size() - 1];
+				frame.end_time = frame_end_time;
+
+				for (size_t i = 0; i < ZProfilingServer::MAX_LANES; ++i) {
+					const uint32_t item_count = _received_data.get_u32();
+					if (item_count == 0) {
+						break;
+					}
+					Lane lane;
+					lane.items.resize(item_count);
+					_received_data.get_data((uint8_t *)lane.items.ptrw(), item_count * sizeof(Item));
+					frame.lanes.push_back(lane);
+				}
+
+				// Start next frame
+				Frame next_frame;
+				next_frame.begin_time = frame_end_time;
+				thread_data.frames.push_back(next_frame);
+			} break;
+
+			case ZProfilingServer::EVENT_STRING_DEF: {
+				const uint16_t string_id = _received_data.get_u16();
+				const uint16_t string_size = _received_data.get_u32();
+
+				Vector<uint8_t> data;
+				data.resize(string_size);
+				_received_data.get_data(data.ptrw(), data.size());
+
+				String str;
+				if (str.parse_utf8((const char *)data.ptr(), data.size())) {
+					disconnect_on_error("Error when parsing UTF8");
+					return false;
+				}
+
+				if (!process_event_string_def(string_id, str)) {
+					return false;
+				}
+			} break;
+
+			case ZProfilingServer::EVENT_INCOMING_DATA_SIZE:
+				disconnect_on_error("Received unexpected incoming data size header");
+				return false;
+				break;
+
+			default:
+				disconnect_on_error(String("Received unknown event {0}").format(varray(event_type)));
+				break;
+		}
+	}
+
+	// Done reading that block
+	_received_data.clear();
+	_last_received_block_size = -1;
+	return true;
 }
 
 bool ZProfilingClient::process_event_string_def(uint16_t string_id, String str) {

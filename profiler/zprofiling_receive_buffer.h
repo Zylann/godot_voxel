@@ -51,6 +51,10 @@ public:
 		return _position >= _data.size();
 	}
 
+	inline size_t size() const {
+		return _data.size();
+	}
+
 private:
 	// Capacity of this vector matters a lot for performance.
 	std::vector<uint8_t> _data;
