@@ -144,10 +144,12 @@ void ZProfilingClient::_process() {
 	if (peer_status == StreamPeerTCP::STATUS_CONNECTED) {
 		uint64_t time_before = OS::get_singleton()->get_ticks_msec();
 		while (process_incoming_data()) {
-			if (OS::get_singleton()->get_ticks_msec() - time_before < MAX_TIME_READING_EVENTS_MSEC) {
+			if (OS::get_singleton()->get_ticks_msec() - time_before > MAX_TIME_READING_EVENTS_MSEC) {
+				print_line("Spent too long processing incoming data");
 				break;
 			}
 		}
+		//print_line(String("Remaining data: {0}").format(varray(_peer->get_available_bytes())));
 	}
 }
 
