@@ -6,8 +6,7 @@
 
 #include <core/hash_map.h>
 #include <core/reference.h>
-
-#include <unordered_map>
+// Used for now because Godot 3.x doesn't have a worthy vector for frequently re-used memory
 #include <vector>
 
 class Thread;
@@ -64,7 +63,7 @@ private:
 
 	struct Frame {
 		int current_lane = -1;
-		// Vectors contain re-usable memory
+		// Vectors contain re-usable memory which is frequently pushed to
 		std::array<std::vector<Item>, MAX_LANES> lanes;
 
 		inline void reset() {
@@ -83,7 +82,7 @@ private:
 	bool _peer_just_connected = false;
 	Thread *_thread = nullptr;
 	bool _running = false;
-	std::vector<ZProfiler::Buffer *> _buffers_to_send;
+	Vector<ZProfiler::Buffer *> _buffers_to_send;
 	ZProfiler::Buffer *_recycled_buffers = nullptr;
 	ZProfilingSendBuffer _message;
 
@@ -91,8 +90,8 @@ private:
 	HashMap<uint16_t, Frame *> _frame_buffers;
 
 	// Strings are separated in two categories because one incurs higher performance cost
-	std::unordered_map<const char *, uint16_t> _static_strings;
-	std::unordered_map<std::string, uint16_t> _dynamic_strings;
+	HashMap<const char *, uint16_t> _static_strings;
+	HashMap<String, uint16_t> _dynamic_strings;
 	uint16_t _next_string_id = 0;
 };
 

@@ -1,13 +1,11 @@
 #include "zprofiler.h"
 
 #ifdef VOXEL_PROFILING
+#include <core/os/mutex.h>
 #include <core/os/os.h>
+#include <core/os/thread.h>
 #include <atomic>
-#include <fstream>
 #include <mutex>
-#include <sstream>
-#include <thread>
-#include <unordered_map>
 
 namespace {
 
@@ -40,9 +38,7 @@ inline uint64_t get_time() {
 }
 
 ZProfiler::ZProfiler() {
-	std::stringstream ss;
-	ss << std::this_thread::get_id();
-	_profiler_name = ss.str();
+	_profiler_name = String::num_uint64(Thread::get_caller_id());
 	_buffer = memnew(Buffer);
 	_buffer->thread_name = _profiler_name;
 	++g_instanced_profilers;
@@ -62,7 +58,7 @@ ZProfiler::~ZProfiler() {
 	// TODO Wrong?
 	if (g_instanced_profilers == 0) {
 		// All profilers gone, free global data
-		printf("Freeing global profiling data\n");
+		//printf("Freeing global profiling data\n");
 		g_shared_mutex.lock();
 
 		if (g_shared_buffer_pool != nullptr) {
@@ -80,9 +76,10 @@ ZProfiler::~ZProfiler() {
 }
 
 void ZProfiler::set_profiler_name(const char *name) {
-	std::stringstream ss;
-	ss << std::this_thread::get_id() << "_" << name;
-	_profiler_name = ss.str();
+	_profiler_name = String::num_uint64(Thread::get_caller_id());
+	_profiler_name += "_";
+	_profiler_name += name;
+
 	if (_buffer != nullptr) {
 		_buffer->thread_name = _profiler_name;
 	}
@@ -159,7 +156,7 @@ void ZProfiler::push_event(Event e) {
 	++_buffer->write_index;
 
 	if (_buffer->write_index == _buffer->events.size()) {
-		printf("ZProfiler end of capacity\n");
+		//printf("ZProfiler end of capacity\n");
 		flush(true);
 	}
 }

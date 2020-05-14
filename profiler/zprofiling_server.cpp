@@ -23,17 +23,17 @@ void ZProfilingServer::destroy_singleton() {
 }
 
 ZProfilingServer::ZProfilingServer() {
-	printf("Creating profiling server singleton\n");
+	//printf("Creating profiling server singleton\n");
 	_running = true;
 	_thread = Thread::create(c_thread_func, this);
 }
 
 ZProfilingServer::~ZProfilingServer() {
-	printf("Destroying profiling server singleton\n");
+	//printf("Destroying profiling server singleton\n");
 	_running = false;
 	Thread::wait_to_finish(_thread);
 	memdelete(_thread);
-	printf("Destroyed profiling server singleton\n");
+	//printf("Destroyed profiling server singleton\n");
 }
 
 void ZProfilingServer::c_thread_func(void *userdata) {
@@ -44,7 +44,7 @@ void ZProfilingServer::c_thread_func(void *userdata) {
 void ZProfilingServer::thread_func() {
 	ZProfiler::get_thread_profiler().set_profiler_name("ProfilingServer");
 
-	printf("Profiling server thread started\n");
+	//printf("Profiling server thread started\n");
 
 	_server.instance();
 	// Only listen to localhost
@@ -71,7 +71,7 @@ void ZProfilingServer::thread_func() {
 	_server->stop();
 	_server.unref();
 
-	printf("Profiling server stopped\n");
+	//printf("Profiling server stopped\n");
 }
 
 void ZProfilingServer::update_server() {
@@ -80,7 +80,7 @@ void ZProfilingServer::update_server() {
 	if (_peer.is_null() && _server->is_connection_available()) {
 		_peer = _server->take_connection();
 		_peer_just_connected = true;
-		printf("Peer connected\n");
+		printf("Peer connected to profiler\n");
 	}
 
 	if (_peer.is_null()) {
@@ -93,7 +93,7 @@ void ZProfilingServer::update_server() {
 	switch (peer_status) {
 		case StreamPeerTCP::STATUS_ERROR:
 		case StreamPeerTCP::STATUS_NONE:
-			printf("Peer disconnected\n");
+			printf("Peer disconnected from profiler\n");
 			_peer.unref();
 			printf("Last peer disconnected, disabling profiler\n");
 			ZProfiler::set_enabled(false);
@@ -177,11 +177,17 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 
 	if (send_all_strings) {
 		// New clients need to get all strings they missed
-		for (auto it = _dynamic_strings.begin(); it != _dynamic_strings.end(); ++it) {
-			serialize_string_def(_message, it->second, it->first.c_str());
+		{
+			const String *key = nullptr;
+			while ((key = _dynamic_strings.next(key))) {
+				serialize_string_def(_message, _dynamic_strings.get(*key), *key);
+			}
 		}
-		for (auto it = _static_strings.begin(); it != _static_strings.end(); ++it) {
-			serialize_string_def(_message, it->second, it->first);
+		{
+			const char *const *key = nullptr;
+			while ((key = _static_strings.next(key))) {
+				serialize_string_def(_message, _static_strings.get(*key), *key);
+			}
 		}
 	}
 
@@ -191,15 +197,15 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 		const ZProfiler::Buffer *buffer = _buffers_to_send[i];
 
 		uint16_t thread_name_id;
-		auto it = _dynamic_strings.find(buffer->thread_name);
-		if (it != _dynamic_strings.end()) {
-			thread_name_id = it->second;
+		const uint16_t *thread_name_id_ptr = _dynamic_strings.getptr(buffer->thread_name);
+		if (thread_name_id_ptr != nullptr) {
+			thread_name_id = *thread_name_id_ptr;
 
 		} else {
 			// Generate string ID
 			thread_name_id = _next_string_id++;
-			_dynamic_strings.insert(std::make_pair(buffer->thread_name, thread_name_id));
-			serialize_string_def(_message, thread_name_id, buffer->thread_name.c_str());
+			_dynamic_strings.set(buffer->thread_name, thread_name_id);
+			serialize_string_def(_message, thread_name_id, buffer->thread_name);
 		}
 
 		// Get frame buffer corresponding to the thread
@@ -218,14 +224,14 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 			switch (event.type) {
 				case ZProfiler::EVENT_PUSH: {
 					uint16_t description_id;
-					auto it = _static_strings.find(event.description);
-					if (it != _static_strings.end()) {
-						description_id = it->second;
+					const uint16_t *description_id_ptr = _static_strings.getptr(event.description);
+					if (description_id_ptr != nullptr) {
+						description_id = *description_id_ptr;
 
 					} else {
 						// Generate string ID
 						description_id = _next_string_id++;
-						_static_strings.insert(std::make_pair(event.description, description_id));
+						_static_strings.set(event.description, description_id);
 						serialize_string_def(_message, description_id, event.description);
 					}
 

@@ -5,8 +5,8 @@
 
 #ifdef VOXEL_PROFILING
 
+#include <core/ustring.h>
 #include <array>
-#include <string>
 
 // Helpers
 // Macros can be tested with gcc and -E option at https://godbolt.org/
@@ -60,7 +60,7 @@ public:
 	struct Buffer {
 		std::array<Event, 4096> events;
 		unsigned int write_index = 0;
-		std::string thread_name;
+		String thread_name;
 		Buffer *prev = nullptr;
 
 		inline void reset() {
@@ -82,7 +82,7 @@ private:
 	void flush(bool acquire_new_buffer);
 
 	Buffer *_buffer = nullptr;
-	std::string _profiler_name;
+	String _profiler_name;
 	bool _enabled = false;
 	uint64_t _frame_begin_time = 0;
 };
