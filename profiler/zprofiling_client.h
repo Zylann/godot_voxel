@@ -62,6 +62,7 @@ private:
 	void _on_connect_button_pressed();
 	void _on_frame_spinbox_value_changed(float value);
 	void _on_thread_selector_item_selected(int idx);
+	void _on_graph_view_frame_clicked(int frame_index);
 
 	void reset_connect_button();
 	bool try_auto_select_main_thread();

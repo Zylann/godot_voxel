@@ -65,12 +65,11 @@ ZProfilingClient::ZProfilingClient() {
 
 	_graph_view = memnew(ZProfilingGraphView);
 	_graph_view->set_client(this);
-	//_graph_view->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	_graph_view->connect(ZProfilingGraphView::SIGNAL_FRAME_CLICKED, this, "_on_graph_view_frame_clicked");
 	_v_split_container->add_child(_graph_view);
 
 	_flame_view = memnew(ZProfilingFlameView);
 	_flame_view->set_client(this);
-	//_flame_view->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	_v_split_container->add_child(_flame_view);
 
 	HBoxContainer *footer_hb = memnew(HBoxContainer);
@@ -166,6 +165,7 @@ bool ZProfilingClient::process_incoming_data() {
 			// Data not arrived yet
 			return false;
 		} else {
+			VOXEL_PROFILE_SCOPE();
 			const uint8_t event_type = peer.get_u8();
 			if (event_type != ZProfilingServer::EVENT_INCOMING_DATA_SIZE) {
 				disconnect_on_error(String("Expected incoming data block header, got {0}")
@@ -188,6 +188,7 @@ bool ZProfilingClient::process_incoming_data() {
 			// Data not arrived yet
 			return false;
 		} else {
+			VOXEL_PROFILE_SCOPE();
 			size_t start_index = _received_data.size();
 			_received_data.resize(_received_data.size() + available_bytes_for_block);
 			const Error err = peer.get_data(_received_data.data() + start_index, available_bytes_for_block);
@@ -247,11 +248,6 @@ bool ZProfilingClient::process_incoming_data() {
 
 				_frame_spinbox->set_max(thread_data.frames.size() - 1);
 				_graph_view->update();
-
-				// TODO Only do this if the user wants to keep update to last frame
-				if (_selected_thread_index == thread_index) {
-					set_selected_frame(thread_data.frames.size() - 1);
-				}
 
 				// Finalize frame
 				Frame &frame = thread_data.frames.write[thread_data.frames.size() - 1];
@@ -403,6 +399,20 @@ void ZProfilingClient::_on_thread_selector_item_selected(int idx) {
 	set_selected_thread(idx);
 }
 
+void ZProfilingClient::_on_graph_view_frame_clicked(int frame_index) {
+	if (frame_index < 0) {
+		return;
+	}
+	if (get_selected_thread() == -1) {
+		return;
+	}
+	const ThreadData &thread_data = get_thread_data(get_selected_thread());
+	if (frame_index >= thread_data.frames.size()) {
+		return;
+	}
+	set_selected_frame(frame_index);
+}
+
 void ZProfilingClient::disconnect_on_error(String message) {
 	ERR_PRINT(String("ERROR: ") + message);
 	disconnect_from_host();
@@ -508,6 +518,7 @@ void ZProfilingClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_connect_button_pressed"), &ZProfilingClient::_on_connect_button_pressed);
 	ClassDB::bind_method(D_METHOD("_on_frame_spinbox_value_changed"), &ZProfilingClient::_on_frame_spinbox_value_changed);
 	ClassDB::bind_method(D_METHOD("_on_thread_selector_item_selected"), &ZProfilingClient::_on_thread_selector_item_selected);
+	ClassDB::bind_method(D_METHOD("_on_graph_view_frame_clicked"), &ZProfilingClient::_on_graph_view_frame_clicked);
 
 	ClassDB::bind_method(D_METHOD("connect_to_host"), &ZProfilingClient::connect_to_host);
 	ClassDB::bind_method(D_METHOD("disconnect_from_host"), &ZProfilingClient::disconnect_from_host);
