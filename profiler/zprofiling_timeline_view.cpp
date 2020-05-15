@@ -268,7 +268,7 @@ void ZProfilingTimelineView::_draw() {
 
 				int clamped_item_width = item_rect.size.x;
 				if (item_rect.position.x < 0) {
-					clamped_item_width -= item_rect.position.x;
+					clamped_item_width += item_rect.position.x;
 				}
 
 				const int text_area_width = clamped_item_width - 2 * text_margin.x;
