@@ -487,7 +487,7 @@ void ZProfilingClient::set_selected_frame(int frame_index) {
 	}
 
 	thread_data.selected_frame = frame_index;
-	_timeline_view->update();
+	_timeline_view->set_frame_index(frame_index);
 	_graph_view->update();
 
 	// This can emit again and cycle back to our method...

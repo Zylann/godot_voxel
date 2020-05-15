@@ -2,6 +2,26 @@
 #include "zprofiler.h"
 #include "zprofiling_client.h"
 
+const double ZOOM_FACTOR = 1.25;
+const double MINIMUM_TIME_WIDTH_US = 1.0;
+
+static const ZProfilingClient::Frame *get_frame(const ZProfilingClient *client, int thread_index, int frame_index) {
+	ERR_FAIL_COND_V(client == nullptr, nullptr);
+	if (thread_index >= client->get_thread_count()) {
+		return nullptr;
+	}
+	const ZProfilingClient::ThreadData &thread_data = client->get_thread_data(thread_index);
+	if (frame_index < 0 || frame_index >= thread_data.frames.size()) {
+		return nullptr;
+	}
+	const ZProfilingClient::Frame &frame = thread_data.frames[frame_index];
+	if (frame.end_time == -1) {
+		// Frame is not finalized
+		return nullptr;
+	}
+	return &frame;
+}
+
 ZProfilingTimelineView::ZProfilingTimelineView() {
 	set_clip_contents(true);
 }
@@ -11,8 +31,23 @@ void ZProfilingTimelineView::set_client(const ZProfilingClient *client) {
 }
 
 void ZProfilingTimelineView::set_thread(int thread_index) {
-	if (thread_index != _thread_index) {
+	if (_thread_index != thread_index) {
 		_thread_index = thread_index;
+		const ZProfilingClient::Frame *frame = get_frame(_client, _thread_index, _frame_index);
+		if (frame != nullptr) {
+			set_view_range(0, frame->end_time - frame->begin_time);
+		}
+		update();
+	}
+}
+
+void ZProfilingTimelineView::set_frame_index(int frame_index) {
+	if (_frame_index != frame_index) {
+		_frame_index = frame_index;
+		const ZProfilingClient::Frame *frame = get_frame(_client, _thread_index, _frame_index);
+		if (frame != nullptr) {
+			set_view_range(0, frame->end_time - frame->begin_time);
+		}
 		update();
 	}
 }
@@ -29,6 +64,92 @@ void ZProfilingTimelineView::_notification(int p_what) {
 }
 
 void ZProfilingTimelineView::_gui_input(Ref<InputEvent> p_event) {
+	const ZProfilingClient::Frame *frame = get_frame(_client, _thread_index, _frame_index);
+	if (frame == nullptr) {
+		return;
+	}
+
+	Ref<InputEventMouseMotion> mm = p_event;
+	Ref<InputEventMouseButton> mb = p_event;
+
+	if (mb.is_valid()) {
+		if (mb->is_pressed()) {
+			switch (mb->get_button_index()) {
+				case BUTTON_WHEEL_UP:
+					add_zoom(1.f / ZOOM_FACTOR, mb->get_position().x);
+					break;
+
+				case BUTTON_WHEEL_DOWN:
+					add_zoom(ZOOM_FACTOR, mb->get_position().x);
+					break;
+
+				default:
+					break;
+			}
+		}
+	}
+
+	if (mm.is_valid()) {
+		if ((mm->get_button_mask() & BUTTON_MASK_MIDDLE) != 0) {
+			const int time_width = _view_max_time_us - _view_min_time_us;
+			const float microseconds_per_pixel = time_width / get_rect().size.x;
+			double offset = -mm->get_relative().x * microseconds_per_pixel;
+
+			const uint64_t frame_duration = frame->end_time - frame->begin_time;
+
+			if (offset > 0) {
+				if (_view_max_time_us + offset > frame_duration) {
+					offset = frame_duration - _view_max_time_us;
+				}
+			} else {
+				if (_view_min_time_us + offset < 0) {
+					offset = -_view_min_time_us;
+				}
+			}
+
+			set_view_range(_view_min_time_us + offset, _view_max_time_us + offset);
+			update();
+		}
+	}
+}
+
+void ZProfilingTimelineView::add_zoom(float factor, float mouse_x) {
+	double time_offset = _view_min_time_us;
+	double time_width = _view_max_time_us - _view_min_time_us;
+
+	const double d = mouse_x / get_rect().size.x;
+	const double prev_width = time_width;
+	time_width = time_width * factor;
+	time_offset -= d * (time_width - prev_width);
+
+	if (time_width < MINIMUM_TIME_WIDTH_US) {
+		time_width = MINIMUM_TIME_WIDTH_US;
+	}
+
+	set_view_range(time_offset, time_offset + time_width);
+}
+
+void ZProfilingTimelineView::set_view_range(float min_time_us, float max_time_us) {
+	const ZProfilingClient::Frame *frame = get_frame(_client, _thread_index, _frame_index);
+	ERR_FAIL_COND(frame == nullptr);
+	const uint64_t frame_duration_us = frame->end_time - frame->begin_time;
+
+	// Clamp
+	if (min_time_us < 0) {
+		min_time_us = 0;
+	}
+	if (max_time_us > frame_duration_us) {
+		max_time_us = frame_duration_us;
+	}
+
+	if (min_time_us == _view_min_time_us && max_time_us == _view_max_time_us) {
+		return;
+	}
+
+	_view_min_time_us = min_time_us;
+	_view_max_time_us = max_time_us;
+
+	update();
 }
 
 static void draw_shaded_text(CanvasItem *ci, Ref<Font> font, Vector2 pos, String text, Color fg, Color bg) {
@@ -95,18 +216,8 @@ void ZProfilingTimelineView::_draw() {
 	Ref<Font> font = get_font("font");
 	ERR_FAIL_COND(font.is_null());
 
-	ERR_FAIL_COND(_client == nullptr);
-	if (_thread_index >= _client->get_thread_count()) {
-		return;
-	}
-	const ZProfilingClient::ThreadData &thread_data = _client->get_thread_data(_thread_index);
-	if (thread_data.selected_frame == -1) {
-		return;
-	}
-	const ZProfilingClient::Frame &frame = thread_data.frames[thread_data.selected_frame];
-
-	if (frame.end_time == -1) {
-		// Frame is not finalized
+	const ZProfilingClient::Frame *frame = get_frame(_client, _thread_index, _frame_index);
+	if (frame == nullptr) {
 		return;
 	}
 
@@ -114,21 +225,32 @@ void ZProfilingTimelineView::_draw() {
 	item_rect.position.y = lane_separation;
 	item_rect.size.y = lane_height;
 
-	const int frame_duration = frame.end_time - frame.begin_time;
-	const float frame_duration_inv = 1.f / frame_duration;
+	const float frame_view_duration_us = _view_max_time_us - _view_min_time_us;
+	const float frame_view_duration_us_inv = 1.f / frame_view_duration_us;
 
 	// Lanes and items
-	for (int lane_index = 0; lane_index < frame.lanes.size(); ++lane_index) {
-		const ZProfilingClient::Lane &lane = frame.lanes[lane_index];
+	for (int lane_index = 0; lane_index < frame->lanes.size(); ++lane_index) {
+		const ZProfilingClient::Lane &lane = frame->lanes[lane_index];
 
 		for (int item_index = 0; item_index < lane.items.size(); ++item_index) {
 			const ZProfilingClient::Item &item = lane.items[item_index];
 
-			// TODO Cull items
-			// TODO Pan and zoom
+			item_rect.position.x = control_rect.size.x *
+								   (static_cast<double>(item.begin_time_relative) - _view_min_time_us) *
+								   frame_view_duration_us_inv;
 
-			item_rect.position.x = control_rect.size.x * static_cast<float>(item.begin_time_relative) * frame_duration_inv;
-			item_rect.size.x = control_rect.size.x * static_cast<float>(item.end_time_relative - item.begin_time_relative) * frame_duration_inv;
+			item_rect.size.x = control_rect.size.x *
+							   (static_cast<double>(item.end_time_relative) - item.begin_time_relative) *
+							   frame_view_duration_us_inv;
+
+			if (item_rect.position.x + item_rect.size.x < 0) {
+				// Out of view
+				continue;
+			}
+			if (item_rect.position.x > control_rect.size.x) {
+				// Out of view, next items also will
+				break;
+			}
 
 			if (item_rect.size.x < 1.01f) {
 				// Clamp item size so it doesn't disappear
@@ -171,8 +293,8 @@ void ZProfilingTimelineView::_draw() {
 
 	// Time graduations
 
-	const float min_time_ms = 0.f;
-	const float max_time_ms = (frame.end_time - frame.begin_time) / 1000.f;
+	const float min_time_ms = _view_min_time_us / 1000.0;
+	const float max_time_ms = _view_max_time_us / 1000.0;
 
 	const String begin_time_text = String("{0} ms").format(varray(min_time_ms));
 	const String end_time_text = String("{0} ms").format(varray(max_time_ms));
