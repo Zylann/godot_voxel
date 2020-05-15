@@ -23,6 +23,8 @@ private:
 
 	void add_zoom(float factor, float mouse_x);
 	void set_view_range(float min_time_us, float max_time_us);
+	bool try_get_item_at(Vector2 pixel_pos, int &out_lane_index, int &out_item_index) const;
+	void try_select_item_at(Vector2 pixel_pos);
 
 	static void _bind_methods();
 
@@ -32,6 +34,10 @@ private:
 	int _frame_index = 0;
 	double _view_min_time_us = 0;
 	double _view_max_time_us = 1;
+	int _selected_item_lane = -1;
+	int _selected_item_index = -1;
+	int _selected_item_hit_count = 0;
+	uint64_t _selected_item_total_us = 0;
 };
 
 #endif // ZPROFILING_TIMELINE_VIEW_H
