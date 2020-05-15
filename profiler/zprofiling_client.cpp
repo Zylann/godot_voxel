@@ -1,7 +1,7 @@
 #include "zprofiling_client.h"
-#include "zprofiling_flame_view.h"
 #include "zprofiling_graph_view.h"
 #include "zprofiling_server.h"
+#include "zprofiling_timeline_view.h"
 
 #include <core/io/stream_peer_tcp.h>
 #include <scene/gui/box_container.h>
@@ -68,9 +68,9 @@ ZProfilingClient::ZProfilingClient() {
 	_graph_view->connect(ZProfilingGraphView::SIGNAL_FRAME_CLICKED, this, "_on_graph_view_frame_clicked");
 	_v_split_container->add_child(_graph_view);
 
-	_flame_view = memnew(ZProfilingFlameView);
-	_flame_view->set_client(this);
-	_v_split_container->add_child(_flame_view);
+	_timeline_view = memnew(ZProfilingTimelineView);
+	_timeline_view->set_client(this);
+	_v_split_container->add_child(_timeline_view);
 
 	HBoxContainer *footer_hb = memnew(HBoxContainer);
 	main_vb->add_child(footer_hb);
@@ -372,7 +372,7 @@ void ZProfilingClient::clear_profiling_data() {
 	_selected_thread_index = -1;
 
 	update_thread_list();
-	_flame_view->update();
+	_timeline_view->update();
 
 	_frame_spinbox_ignore_changes = true;
 	_frame_spinbox->set_value(0);
@@ -444,7 +444,7 @@ void ZProfilingClient::set_selected_thread(int thread_index) {
 
 	ERR_FAIL_COND(thread_index >= _threads.size());
 	_selected_thread_index = thread_index;
-	_flame_view->set_thread(_selected_thread_index);
+	_timeline_view->set_thread(_selected_thread_index);
 
 	_graph_view->update();
 
@@ -487,7 +487,7 @@ void ZProfilingClient::set_selected_frame(int frame_index) {
 	}
 
 	thread_data.selected_frame = frame_index;
-	_flame_view->update();
+	_timeline_view->update();
 	_graph_view->update();
 
 	// This can emit again and cycle back to our method...

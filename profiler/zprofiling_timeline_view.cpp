@@ -1,23 +1,23 @@
-#include "zprofiling_flame_view.h"
+#include "zprofiling_timeline_view.h"
 #include "zprofiler.h"
 #include "zprofiling_client.h"
 
-ZProfilingFlameView::ZProfilingFlameView() {
+ZProfilingTimelineView::ZProfilingTimelineView() {
 	set_clip_contents(true);
 }
 
-void ZProfilingFlameView::set_client(const ZProfilingClient *client) {
+void ZProfilingTimelineView::set_client(const ZProfilingClient *client) {
 	_client = client;
 }
 
-void ZProfilingFlameView::set_thread(int thread_index) {
+void ZProfilingTimelineView::set_thread(int thread_index) {
 	if (thread_index != _thread_index) {
 		_thread_index = thread_index;
 		update();
 	}
 }
 
-void ZProfilingFlameView::_notification(int p_what) {
+void ZProfilingTimelineView::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_DRAW:
 			_draw();
@@ -28,7 +28,7 @@ void ZProfilingFlameView::_notification(int p_what) {
 	}
 }
 
-void ZProfilingFlameView::_gui_input(Ref<InputEvent> p_event) {
+void ZProfilingTimelineView::_gui_input(Ref<InputEvent> p_event) {
 }
 
 static void draw_shaded_text(CanvasItem *ci, Ref<Font> font, Vector2 pos, String text, Color fg, Color bg) {
@@ -76,7 +76,7 @@ static String get_left_ellipsed_text(String text, int max_width, Ref<Font> font,
 	return text;
 }
 
-void ZProfilingFlameView::_draw() {
+void ZProfilingTimelineView::_draw() {
 	VOXEL_PROFILE_SCOPE();
 
 	const Color item_color(1.f, 0.5f, 0.f);
@@ -185,6 +185,6 @@ void ZProfilingFlameView::_draw() {
 	draw_shaded_text(this, font, max_text_pos, end_time_text, text_fg_color, text_bg_color);
 }
 
-void ZProfilingFlameView::_bind_methods() {
-	ClassDB::bind_method("_gui_input", &ZProfilingFlameView::_gui_input);
+void ZProfilingTimelineView::_bind_methods() {
+	ClassDB::bind_method("_gui_input", &ZProfilingTimelineView::_gui_input);
 }

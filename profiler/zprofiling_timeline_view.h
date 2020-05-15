@@ -1,5 +1,5 @@
-#ifndef ZPROFILING_FLAME_VIEW_H
-#define ZPROFILING_FLAME_VIEW_H
+#ifndef ZPROFILING_TIMELINE_VIEW_H
+#define ZPROFILING_TIMELINE_VIEW_H
 
 #include <scene/gui/control.h>
 
@@ -7,10 +7,10 @@ class ZProfilingClient;
 class InputEvent;
 
 // Displays profiling scopes in a timeline
-class ZProfilingFlameView : public Control {
-	GDCLASS(ZProfilingFlameView, Control)
+class ZProfilingTimelineView : public Control {
+	GDCLASS(ZProfilingTimelineView, Control)
 public:
-	ZProfilingFlameView();
+	ZProfilingTimelineView();
 
 	void set_client(const ZProfilingClient *client);
 	void set_thread(int thread_index);
@@ -31,4 +31,4 @@ private:
 	//	int _max_time = -1;
 };
 
-#endif // ZPROFILING_FLAME_VIEW_H
+#endif // ZPROFILING_TIMELINE_VIEW_H

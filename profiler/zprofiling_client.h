@@ -11,7 +11,7 @@ class Label;
 class SpinBox;
 class OptionButton;
 class VSplitContainer;
-class ZProfilingFlameView;
+class ZProfilingTimelineView;
 class ZProfilingGraphView;
 
 class ZProfilingClient : public Control {
@@ -80,7 +80,7 @@ private:
 	Label *_status_label = nullptr;
 	VSplitContainer *_v_split_container = nullptr;
 	ZProfilingGraphView *_graph_view = nullptr;
-	ZProfilingFlameView *_flame_view = nullptr;
+	ZProfilingTimelineView *_timeline_view = nullptr;
 	SpinBox *_frame_spinbox = nullptr;
 	bool _frame_spinbox_ignore_changes = false;
 	OptionButton *_thread_selector = nullptr;
