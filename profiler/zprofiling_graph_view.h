@@ -9,6 +9,7 @@ class ZProfilingGraphView : public Control {
 	GDCLASS(ZProfilingGraphView, Control)
 public:
 	static const char *SIGNAL_FRAME_CLICKED;
+	static const char *SIGNAL_MOUSE_WHEEL_MOVED;
 
 	ZProfilingGraphView();
 

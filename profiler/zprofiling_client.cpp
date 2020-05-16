@@ -75,6 +75,7 @@ ZProfilingClient::ZProfilingClient() {
 	_graph_view = memnew(ZProfilingGraphView);
 	_graph_view->set_client(this);
 	_graph_view->connect(ZProfilingGraphView::SIGNAL_FRAME_CLICKED, this, "_on_graph_view_frame_clicked");
+	_graph_view->connect(ZProfilingGraphView::SIGNAL_MOUSE_WHEEL_MOVED, this, "_on_graph_view_mouse_wheel_moved");
 	v_split_container->add_child(_graph_view);
 
 	_timeline_view = memnew(ZProfilingTimelineView);
@@ -438,6 +439,21 @@ void ZProfilingClient::_on_graph_view_frame_clicked(int frame_index) {
 	set_selected_frame(frame_index);
 }
 
+void ZProfilingClient::_on_graph_view_mouse_wheel_moved(int delta) {
+	if (get_selected_thread() == -1) {
+		return;
+	}
+	const ThreadData &thread_data = get_thread_data(get_selected_thread());
+	int new_frame_index = thread_data.selected_frame + delta;
+	if (new_frame_index < 0) {
+		new_frame_index = 0;
+	}
+	if (new_frame_index >= thread_data.frames.size()) {
+		new_frame_index = thread_data.frames.size() - 1;
+	}
+	set_selected_frame(new_frame_index);
+}
+
 void ZProfilingClient::disconnect_on_error(String message) {
 	ERR_PRINT(String("ERROR: ") + message);
 	disconnect_from_host();
@@ -546,6 +562,7 @@ void ZProfilingClient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_frame_spinbox_value_changed"), &ZProfilingClient::_on_frame_spinbox_value_changed);
 	ClassDB::bind_method(D_METHOD("_on_thread_selector_item_selected"), &ZProfilingClient::_on_thread_selector_item_selected);
 	ClassDB::bind_method(D_METHOD("_on_graph_view_frame_clicked"), &ZProfilingClient::_on_graph_view_frame_clicked);
+	ClassDB::bind_method(D_METHOD("_on_graph_view_mouse_wheel_moved"), &ZProfilingClient::_on_graph_view_mouse_wheel_moved);
 
 	ClassDB::bind_method(D_METHOD("connect_to_host"), &ZProfilingClient::connect_to_host);
 	ClassDB::bind_method(D_METHOD("disconnect_from_host"), &ZProfilingClient::disconnect_from_host);

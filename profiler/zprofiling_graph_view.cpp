@@ -4,6 +4,7 @@
 
 const int FRAME_WIDTH_PX = 4;
 const char *ZProfilingGraphView::SIGNAL_FRAME_CLICKED = "frame_clicked";
+const char *ZProfilingGraphView::SIGNAL_MOUSE_WHEEL_MOVED = "mouse_wheel_moved";
 
 ZProfilingGraphView::ZProfilingGraphView() {
 }
@@ -34,9 +35,19 @@ void ZProfilingGraphView::_gui_input(Ref<InputEvent> p_event) {
 
 	if (mb.is_valid()) {
 		if (mb->is_pressed()) {
-			if (mb->get_button_index() == BUTTON_LEFT) {
-				const int frame_index = get_frame_index_from_pixel(mb->get_position().x);
-				emit_signal(SIGNAL_FRAME_CLICKED, frame_index);
+			switch (mb->get_button_index()) {
+				case BUTTON_LEFT: {
+					const int frame_index = get_frame_index_from_pixel(mb->get_position().x);
+					emit_signal(SIGNAL_FRAME_CLICKED, frame_index);
+				} break;
+
+				case BUTTON_WHEEL_DOWN:
+					emit_signal(SIGNAL_MOUSE_WHEEL_MOVED, -1);
+					break;
+
+				case BUTTON_WHEEL_UP:
+					emit_signal(SIGNAL_MOUSE_WHEEL_MOVED, 1);
+					break;
 			}
 		}
 	}
@@ -175,4 +186,5 @@ void ZProfilingGraphView::_bind_methods() {
 	ClassDB::bind_method("_gui_input", &ZProfilingGraphView::_gui_input);
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_FRAME_CLICKED));
+	ADD_SIGNAL(MethodInfo(SIGNAL_MOUSE_WHEEL_MOVED, PropertyInfo(Variant::INT, "delta")));
 }
