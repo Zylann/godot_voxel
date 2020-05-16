@@ -48,7 +48,7 @@ void VoxelStreamRegionFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i ori
 }
 
 void VoxelStreamRegionFiles::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	// In order to minimize opening/closing files, requests are grouped according to their region.
 
@@ -74,7 +74,7 @@ void VoxelStreamRegionFiles::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks) 
 }
 
 void VoxelStreamRegionFiles::immerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
 	Vector<VoxelBlockRequest> sorted_blocks;
@@ -91,8 +91,7 @@ void VoxelStreamRegionFiles::immerge_blocks(Vector<VoxelBlockRequest> &p_blocks)
 }
 
 VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 	ERR_FAIL_COND_V(out_buffer.is_null(), EMERGE_FAILED);
 
 	if (_directory_path.empty()) {
@@ -174,8 +173,7 @@ void VoxelStreamRegionFiles::pad_to_sector_size(FileAccess *f) {
 }
 
 void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod) {
-
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	ERR_FAIL_COND(_directory_path.empty());
 	ERR_FAIL_COND(voxel_buffer.is_null());
@@ -315,7 +313,7 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 }
 
 void VoxelStreamRegionFiles::remove_sectors_from_block(CachedRegion *p_region, Vector3i block_rpos, unsigned int p_sector_count) {
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	// Removes sectors from a block, starting from the last ones.
 	// So if a block has 5 sectors and we remove 2, the first 3 will be preserved.
@@ -611,8 +609,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::get_region_from_ca
 }
 
 VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
-
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 	ERR_FAIL_COND_V(!_meta_loaded, nullptr);
 	ERR_FAIL_COND_V(lod < 0, nullptr);
 
@@ -641,7 +638,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 			return nullptr;
 		}
 
-		VOXEL_PROFILE_SCOPE();
+		ZPROFILER_SCOPE_NAMED("VoxelStreamRegionFiles::open_region new file");
 
 		Error dir_err = check_directory_created(fpath.get_base_dir());
 		if (dir_err != OK) {
@@ -670,7 +667,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 
 	} else {
 		// Read existing
-		VOXEL_PROFILE_SCOPE();
+		ZPROFILER_SCOPE_NAMED("VoxelStreamRegionFiles::open_region read existint");
 
 		uint8_t version;
 		const VoxelFileResult check_result = check_magic_and_version(existing_f, FORMAT_VERSION, FORMAT_REGION_MAGIC, version);
@@ -744,8 +741,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const 
 }
 
 void VoxelStreamRegionFiles::save_header(CachedRegion *p_region) {
-
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 	CRASH_COND(p_region->file_access == nullptr);
 
 	RegionHeader &header = p_region->header;
@@ -757,7 +753,7 @@ void VoxelStreamRegionFiles::save_header(CachedRegion *p_region) {
 }
 
 void VoxelStreamRegionFiles::close_region(CachedRegion *region) {
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	if (region->file_access) {
 		FileAccess *f = region->file_access;
@@ -1094,7 +1090,6 @@ void VoxelStreamRegionFiles::set_lod_count(int p_lod_count) {
 }
 
 void VoxelStreamRegionFiles::convert_files(Dictionary d) {
-
 	Meta meta;
 	meta.version = _meta.version;
 	meta.block_size_po2 = int(d["block_size_po2"]);
@@ -1124,7 +1119,6 @@ void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 }
 
 void VoxelStreamRegionFiles::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_directory", "directory"), &VoxelStreamRegionFiles::set_directory);
 	ClassDB::bind_method(D_METHOD("get_directory"), &VoxelStreamRegionFiles::get_directory);
 

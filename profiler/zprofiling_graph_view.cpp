@@ -95,7 +95,7 @@ static int get_frame_time(const ZProfilingClient::Frame &frame) {
 }
 
 void ZProfilingGraphView::_draw() {
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	const Color bg_color(0.f, 0.f, 0.f, 0.7f);
 	const Color curve_color(1.f, 0.5f, 0.f);

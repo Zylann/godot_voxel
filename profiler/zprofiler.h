@@ -1,28 +1,28 @@
-#ifndef VOXEL_PROFILER_H
-#define VOXEL_PROFILER_H
+#ifndef ZPROFILER_H
+#define ZPROFILER_H
 
-#define VOXEL_PROFILING
+#define ZPROFILER_ENABLED
 
-#ifdef VOXEL_PROFILING
+#ifdef ZPROFILER_ENABLED
 
 #include <core/string_name.h>
 #include <array>
 
 // Helpers
 // Macros can be tested with gcc and -E option at https://godbolt.org/
-#define VOXEL_STRINGIFY_(a) #a
-#define VOXEL_STRINGIFY(a) VOXEL_STRINGIFY_(a)
-#define VOXEL_LINE_STR VOXEL_STRINGIFY(__LINE__)
-#define VOXEL_FILE_LINE_STR __FILE__ ": " VOXEL_LINE_STR
-#define VOXEL_COMBINE_NAME_(a, b) a##b
-#define VOXEL_COMBINE_NAME(a, b) VOXEL_COMBINE_NAME_(a, b)
+#define ZPROFILER_STRINGIFY_(a) #a
+#define ZPROFILER_STRINGIFY(a) ZPROFILER_STRINGIFY_(a)
+#define ZPROFILER_LINE_STR ZPROFILER_STRINGIFY(__LINE__)
+#define ZPROFILER_FILE_LINE_STR __FILE__ ": " ZPROFILER_LINE_STR
+#define ZPROFILER_COMBINE_NAME_(a, b) a##b
+#define ZPROFILER_COMBINE_NAME(a, b) ZPROFILER_COMBINE_NAME_(a, b)
 
-// C++ usage macros (not required, just convenient)
-#define VOXEL_PROFILE_BEGIN_NAMED(_key) ZProfiler::get_thread_profiler().begin(_key)
-#define VOXEL_PROFILE_BEGIN() VOXEL_PROFILE_BEGIN_NAMED(VOXEL_FILE_LINE_STR)
-#define VOXEL_PROFILE_END() ZProfiler::get_thread_profiler().end()
-#define VOXEL_PROFILE_SCOPE_NAMED(_key) ZProfilerScope VOXEL_COMBINE_NAME(profiler_scope, __LINE__)(_key)
-#define VOXEL_PROFILE_SCOPE() VOXEL_PROFILE_SCOPE_NAMED(VOXEL_FILE_LINE_STR)
+// C++ usage macros (not required, just convenient).
+#define ZPROFILER_BEGIN_NAMED(_key) ZProfiler::get_thread_profiler().begin(_key)
+#define ZPROFILER_BEGIN() ZPROFILER_BEGIN_NAMED(ZPROFILER_FILE_LINE_STR)
+#define ZPROFILER_END() ZProfiler::get_thread_profiler().end()
+#define ZPROFILER_SCOPE_NAMED(_key) ZProfilerScope ZPROFILER_COMBINE_NAME(profiler_scope, __LINE__)(_key)
+#define ZPROFILER_SCOPE() ZPROFILER_SCOPE_NAMED(ZPROFILER_FILE_LINE_STR)
 
 // Profiler for one thread. Main API to record profiling data.
 class ZProfiler {
@@ -120,12 +120,12 @@ struct ZProfilerScope {
 #else
 
 // Empty definitions
-#define VOXEL_PROFILE_BEGIN_NAMED(_key) //
-#define VOXEL_PROFILE_BEGIN() //
-#define VOXEL_PROFILE_END() //
-#define VOXEL_PROFILE_SCOPE() //
-#define VOXEL_PROFILE_SCOPE_NAMED(_name) //
+#define ZPROFILER_BEGIN_NAMED(_key) //
+#define ZPROFILER_BEGIN() //
+#define ZPROFILER_END() //
+#define ZPROFILER_SCOPE() //
+#define ZPROFILER_SCOPE_NAMED(_name) //
 
 #endif
 
-#endif // VOXEL_PROFILER_H
+#endif // ZPROFILER_H

@@ -740,7 +740,7 @@ void VoxelTerrain::send_block_data_requests() {
 void VoxelTerrain::_process() {
 	// TODO Ideally, frame should be marked at the end of Godot's main thread loop
 	ZProfiler::get_thread_profiler().mark_frame();
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	// TODO Should be able to run without library, tho!
 	if (_library.is_null()) {

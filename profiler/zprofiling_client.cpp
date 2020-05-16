@@ -109,7 +109,7 @@ void ZProfilingClient::_notification(int p_what) {
 }
 
 void ZProfilingClient::_process() {
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	if (_peer.is_null()) {
 		return;
@@ -164,6 +164,7 @@ void ZProfilingClient::_process() {
 
 // Returns true as long as it should be called again
 bool ZProfilingClient::process_incoming_data() {
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 	CRASH_COND(_peer.is_null());
 	StreamPeerTCP &peer = **_peer;
 
@@ -175,7 +176,6 @@ bool ZProfilingClient::process_incoming_data() {
 			// Data not arrived yet
 			return false;
 		} else {
-			VOXEL_PROFILE_SCOPE();
 			const uint8_t event_type = peer.get_u8();
 			if (event_type != ZProfilingServer::EVENT_INCOMING_DATA_SIZE) {
 				disconnect_on_error(String("Expected incoming data block header, got {0}")
@@ -198,7 +198,6 @@ bool ZProfilingClient::process_incoming_data() {
 			// Data not arrived yet
 			return false;
 		} else {
-			VOXEL_PROFILE_SCOPE();
 			size_t start_index = _received_data.size();
 			_received_data.resize(_received_data.size() + available_bytes_for_block);
 			const Error err = peer.get_data(_received_data.data() + start_index, available_bytes_for_block);

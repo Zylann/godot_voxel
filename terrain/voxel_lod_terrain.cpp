@@ -628,7 +628,7 @@ void VoxelLodTerrain::_process() {
 	// TODO Ideally, frame should be marked at the end of Godot's main thread loop
 	ZProfiler::get_thread_profiler().mark_frame();
 
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	if (get_lod_count() == 0) {
 		// If there isn't a LOD 0, there is nothing to load
@@ -660,7 +660,7 @@ void VoxelLodTerrain::_process() {
 	// Unload blocks falling out of block region extent
 	// TODO Obsoleted by octree grid?
 	{
-		VOXEL_PROFILE_SCOPE();
+		ZPROFILER_SCOPE();
 		// TODO Could it actually be enough to have a rolling update on all blocks?
 
 		// This should be the same distance relatively to each LOD
@@ -669,8 +669,7 @@ void VoxelLodTerrain::_process() {
 		// Ignore last lod because it can extend a little beyond due to the view distance setting.
 		// Instead, those blocks are unloaded by the octree forest management.
 		for (int lod_index = 0; lod_index < get_lod_count() - 1; ++lod_index) {
-
-			VOXEL_PROFILE_SCOPE();
+			ZPROFILER_SCOPE();
 			Lod &lod = _lods[lod_index];
 
 			// Each LOD keeps a box of loaded blocks, and only some of the blocks will get polygonized.
@@ -689,7 +688,6 @@ void VoxelLodTerrain::_process() {
 			CRASH_COND(!lod.blocks_to_load.empty());
 
 			if (prev_box != new_box) {
-				VOXEL_PROFILE_SCOPE();
 				prev_box.difference(new_box, [this, lod_index](Rect3i out_of_range_box) {
 					out_of_range_box.for_each_cell([=](Vector3i pos) {
 						//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
@@ -701,7 +699,7 @@ void VoxelLodTerrain::_process() {
 			// Cancel block updates that are not within the padded region (since neighbors are always required to remesh)
 			Rect3i padded_new_box = new_box.padded(-1);
 			{
-				VOXEL_PROFILE_SCOPE();
+				ZPROFILER_SCOPE();
 				unordered_remove_if(lod.blocks_pending_update, [&lod, padded_new_box](Vector3i bpos) {
 					if (padded_new_box.contains(bpos)) {
 						return false;
@@ -722,7 +720,7 @@ void VoxelLodTerrain::_process() {
 
 	// Create and remove octrees in a grid around the viewer
 	{
-		VOXEL_PROFILE_SCOPE();
+		ZPROFILER_SCOPE();
 		// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
 
 		const unsigned int octree_size_po2 = get_block_size_pow2() + get_lod_count() - 1;
@@ -735,7 +733,7 @@ void VoxelLodTerrain::_process() {
 		Rect3i prev_box = _last_octree_region_box;
 
 		if (new_box != prev_box) {
-			VOXEL_PROFILE_SCOPE();
+			ZPROFILER_SCOPE();
 
 			struct CleanOctreeAction {
 				VoxelLodTerrain *self;
@@ -823,12 +821,12 @@ void VoxelLodTerrain::_process() {
 
 	// Find which blocks we need to load and see, within each octree
 	{
-		VOXEL_PROFILE_SCOPE();
+		ZPROFILER_SCOPE();
 
 		// TODO Maintain a vector to make iteration faster?
 		for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 
-			VOXEL_PROFILE_SCOPE();
+			ZPROFILER_SCOPE();
 
 			OctreeItem &item = E->value();
 			Vector3i block_pos_maxlod = E->key();
@@ -952,7 +950,7 @@ void VoxelLodTerrain::_process() {
 		}
 
 		{
-			VOXEL_PROFILE_SCOPE();
+			ZPROFILER_SCOPE();
 			process_transition_updates();
 		}
 	}
@@ -969,7 +967,7 @@ void VoxelLodTerrain::_process() {
 	// Note: if block loading is too fast, this can cause stutters.
 	// It should only happen on first load, though.
 	{
-		VOXEL_PROFILE_SCOPE();
+		ZPROFILER_SCOPE();
 
 		VoxelDataLoader::Output output;
 		_stream_thread->pop(output);
@@ -979,7 +977,7 @@ void VoxelLodTerrain::_process() {
 
 		for (int i = 0; i < output.blocks.size(); ++i) {
 
-			VOXEL_PROFILE_SCOPE();
+			ZPROFILER_SCOPE();
 
 			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
 
@@ -1038,7 +1036,7 @@ void VoxelLodTerrain::_process() {
 
 			Ref<ShaderMaterial> shader_material = _material;
 			if (shader_material.is_valid() && block->get_shader_material().is_null()) {
-				VOXEL_PROFILE_SCOPE();
+				ZPROFILER_SCOPE();
 
 				// Pooling shader materials is necessary for now, to avoid stuttering in the editor.
 				// Due to a signal used to keep the inspector up to date, even though these
@@ -1065,7 +1063,7 @@ void VoxelLodTerrain::_process() {
 
 	// Send mesh updates
 	{
-		VOXEL_PROFILE_SCOPE();
+		ZPROFILER_SCOPE();
 
 		VoxelMeshUpdater::Input input;
 		input.priority_position = viewer_block_pos;
@@ -1076,12 +1074,12 @@ void VoxelLodTerrain::_process() {
 
 		for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 
-			VOXEL_PROFILE_SCOPE();
+			ZPROFILER_SCOPE();
 			Lod &lod = _lods[lod_index];
 
 			for (unsigned int i = 0; i < lod.blocks_pending_update.size(); ++i) {
 
-				VOXEL_PROFILE_SCOPE();
+				ZPROFILER_SCOPE();
 				Vector3i block_pos = lod.blocks_pending_update[i];
 
 				VoxelBlock *block = lod.map->get_block(block_pos);
@@ -1099,13 +1097,13 @@ void VoxelLodTerrain::_process() {
 				unsigned int min_padding = _block_updater->get_minimum_padding();
 				unsigned int max_padding = _block_updater->get_maximum_padding();
 				{
-					VOXEL_PROFILE_SCOPE();
+					ZPROFILER_SCOPE();
 					unsigned int block_size = lod.map->get_block_size();
 					nbuffer->create(Vector3i(block_size + min_padding + max_padding));
 				}
 
 				{
-					VOXEL_PROFILE_SCOPE();
+					ZPROFILER_SCOPE();
 					unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_SDF);
 					lod.map->get_buffer_copy(lod.map->block_to_voxel(block_pos) - Vector3i(min_padding), **nbuffer, channels_mask);
 				}
@@ -1130,7 +1128,7 @@ void VoxelLodTerrain::_process() {
 
 	// Receive mesh updates
 	{
-		VOXEL_PROFILE_SCOPE();
+		ZPROFILER_SCOPE();
 		{
 			VoxelMeshUpdater::Output output;
 			_block_updater->pop(output);
@@ -1140,7 +1138,7 @@ void VoxelLodTerrain::_process() {
 
 			for (int i = 0; i < output.blocks.size(); ++i) {
 
-				VOXEL_PROFILE_SCOPE();
+				ZPROFILER_SCOPE();
 				const VoxelMeshUpdater::OutputBlock &ob = output.blocks[i];
 
 				if (ob.lod >= get_lod_count()) {
@@ -1162,7 +1160,7 @@ void VoxelLodTerrain::_process() {
 
 		for (; queue_index < _blocks_pending_main_thread_update.size() && os.get_ticks_msec() < timeout; ++queue_index) {
 
-			VOXEL_PROFILE_SCOPE();
+			ZPROFILER_SCOPE();
 
 			const VoxelMeshUpdater::OutputBlock &ob = _blocks_pending_main_thread_update[queue_index];
 
@@ -1209,7 +1207,7 @@ void VoxelLodTerrain::_process() {
 			block->set_mesh(mesh, this, has_collision, mesh_data.surfaces, get_tree()->is_debugging_collisions_hint());
 
 			{
-				VOXEL_PROFILE_SCOPE();
+				ZPROFILER_SCOPE();
 				for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
 
 					Ref<ArrayMesh> transition_mesh = build_mesh(
@@ -1224,7 +1222,7 @@ void VoxelLodTerrain::_process() {
 		}
 
 		{
-			VOXEL_PROFILE_SCOPE();
+			ZPROFILER_SCOPE();
 			shift_up(_blocks_pending_main_thread_update, queue_index);
 		}
 	}
@@ -1346,8 +1344,7 @@ struct ScheduleSaveAction {
 } // namespace
 
 void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
-
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	ERR_FAIL_COND(lod_index >= get_lod_count());
 	ERR_FAIL_COND(_lods[lod_index].map.is_null());
@@ -1367,7 +1364,6 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 }
 
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
-
 	ERR_FAIL_COND(_stream_thread == nullptr);
 
 	flush_pending_lod_edits();
@@ -1389,7 +1385,6 @@ void VoxelLodTerrain::add_transition_update(VoxelBlock *block) {
 }
 
 void VoxelLodTerrain::add_transition_updates_around(Vector3i block_pos, int lod_index) {
-
 	Lod &lod = _lods[lod_index];
 	CRASH_COND(lod.map.is_null());
 
@@ -1407,7 +1402,6 @@ void VoxelLodTerrain::add_transition_updates_around(Vector3i block_pos, int lod_
 }
 
 void VoxelLodTerrain::process_transition_updates() {
-
 	for (unsigned int i = 0; i < _blocks_pending_transition_update.size(); ++i) {
 
 		VoxelBlock *block = _blocks_pending_transition_update[i];
@@ -1424,7 +1418,6 @@ void VoxelLodTerrain::process_transition_updates() {
 }
 
 uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) const {
-
 	uint8_t transition_mask = 0;
 
 	if (lod_index + 1 >= (int)_lods.size()) {
@@ -1510,7 +1503,6 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 }
 
 Dictionary VoxelLodTerrain::get_statistics() const {
-
 	Dictionary d;
 	d["stream"] = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);
 	d["updater"] = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
@@ -1534,7 +1526,6 @@ Dictionary VoxelLodTerrain::get_statistics() const {
 // DEBUG LAND
 
 Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const {
-
 	Vector3 pos = world_origin;
 	Vector3 dir = world_direction;
 	float max_distance = 256;
@@ -1562,7 +1553,6 @@ Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_d
 }
 
 Dictionary VoxelLodTerrain::debug_get_block_info(Vector3 fbpos, int lod_index) const {
-
 	Dictionary d;
 	ERR_FAIL_COND_V(lod_index < 0, d);
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
@@ -1604,7 +1594,6 @@ Array VoxelLodTerrain::debug_get_octrees() const {
 }
 
 Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const {
-
 	Array image_array;
 	image_array.resize(get_lod_count());
 
@@ -1637,7 +1626,6 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 }
 
 void VoxelLodTerrain::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelLodTerrain::get_stream);
 

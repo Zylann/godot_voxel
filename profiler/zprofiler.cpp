@@ -1,6 +1,6 @@
 #include "zprofiler.h"
 
-#ifdef VOXEL_PROFILING
+#ifdef ZPROFILER_ENABLED
 #include <core/os/mutex.h>
 #include <core/os/os.h>
 #include <core/os/thread.h>

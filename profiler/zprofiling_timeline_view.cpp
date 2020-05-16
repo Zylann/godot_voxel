@@ -292,7 +292,7 @@ static void draw_rect_outline(CanvasItem *ci, Rect2 rect, Color color, int thick
 }
 
 void ZProfilingTimelineView::_draw() {
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE();
 
 	const Color item_color(1.f, 0.5f, 0.f);
 	const Color item_selected_outline_color(1, 1, 1, 0.5);

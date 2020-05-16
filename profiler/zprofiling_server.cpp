@@ -55,7 +55,7 @@ void ZProfilingServer::thread_func() {
 		OS::get_singleton()->delay_usec(LOOP_PERIOD_USEC);
 
 		ZProfiler::get_thread_profiler().mark_frame();
-		VOXEL_PROFILE_SCOPE();
+		ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 		// TODO The data should be dropped past some amount, otherwise it will saturate memory and bandwidth
 
@@ -75,7 +75,7 @@ void ZProfilingServer::thread_func() {
 }
 
 void ZProfilingServer::update_server() {
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	if (_peer.is_null() && _server->is_connection_available()) {
 		_peer = _server->take_connection();
@@ -191,7 +191,7 @@ uint16_t ZProfilingServer::get_or_create_string_id(String s) {
 }
 
 void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool send_all_strings) {
-	VOXEL_PROFILE_SCOPE();
+	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	// An intermediary buffer is used instead of `StreamPeerTCP` directly,
 	// because using the latter slowed it down horribly.
@@ -295,7 +295,7 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 
 	{
 		// Send in one block
-		VOXEL_PROFILE_SCOPE();
+		ZPROFILER_SCOPE_NAMED("ZProfilingServer::serialize_and_send_messages put_data");
 		//print_line(String("Sending {0} bytes").format(varray(_message.size())));
 		Error err = peer.put_data(_message.data(), _message.size());
 		if (err != OK) {
