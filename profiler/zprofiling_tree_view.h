@@ -26,6 +26,7 @@ private:
 	static void _bind_methods();
 
 	void update_tree();
+	void sort_tree();
 
 	const ZProfilingClient *_client;
 	Tree *_tree = nullptr;

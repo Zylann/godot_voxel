@@ -17,7 +17,7 @@
 #define VOXEL_COMBINE_NAME_(a, b) a##b
 #define VOXEL_COMBINE_NAME(a, b) VOXEL_COMBINE_NAME_(a, b)
 
-// C++ usage macros
+// C++ usage macros (not required, just convenient)
 #define VOXEL_PROFILE_BEGIN_NAMED(_key) ZProfiler::get_thread_profiler().begin(_key)
 #define VOXEL_PROFILE_BEGIN() VOXEL_PROFILE_BEGIN_NAMED(VOXEL_FILE_LINE_STR)
 #define VOXEL_PROFILE_END() ZProfiler::get_thread_profiler().end()
@@ -37,6 +37,7 @@ public:
 	void mark_frame();
 
 	// TODO Category events
+	// TODO API for non-C++ usage
 
 	enum EventType {
 		EVENT_PUSH = 0,
@@ -44,7 +45,7 @@ public:
 		EVENT_FRAME
 	};
 
-	// 16 bytes
+	// 16 bytes POD, there can be a LOT of these
 	struct Event {
 		union {
 			const char *description; // TODO Could be StringName?

@@ -81,7 +81,7 @@ static void process_item(
 		tree_item->set_metadata(ZProfilingTreeView::COLUMN_TOTAL_TIME, item.end_time_relative - item.begin_time_relative);
 	}
 
-	// Process children
+	// Process children in the same time range as the parent
 	int next_lane_index = lane_index + 1;
 	if (next_lane_index < frame->lanes.size()) {
 		int child_item_index = lane_tails[next_lane_index];
@@ -97,6 +97,7 @@ static void process_item(
 			++child_item_index;
 		}
 
+		// Remember last child index so we'll start from there when processing the next item in our lane
 		lane_tails[next_lane_index] = child_item_index;
 	}
 }
@@ -112,6 +113,27 @@ static void update_tree_text(TreeItem *tree_item) {
 	while (child != nullptr) {
 		update_tree_text(child);
 		child = child->get_next();
+	}
+}
+
+template <typename Comparator_T>
+static void sort_tree(TreeItem *parent_tree_item) {
+	Vector<TreeItem *> items;
+
+	TreeItem *item = parent_tree_item->get_children();
+	while (item != nullptr) {
+		// Sort recursively
+		sort_tree<Comparator_T>(item);
+
+		items.push_back(item);
+		item = item->get_next();
+	}
+
+	items.sort_custom<Comparator_T>();
+
+	for (int i = items.size() - 1; i >= 0; --i) {
+		// Moving to top is less expensive
+		items[i]->move_to_top();
 	}
 }
 
@@ -147,6 +169,21 @@ void ZProfilingTreeView::update_tree() {
 		update_tree_text(child);
 		child = child->get_next();
 	}
+
+	sort_tree();
+}
+
+void ZProfilingTreeView::sort_tree() {
+	struct TimeComparator {
+		bool operator()(const TreeItem *a, const TreeItem *b) const {
+			const int a_total = a->get_metadata(ZProfilingTreeView::COLUMN_TOTAL_TIME);
+			const int b_total = b->get_metadata(ZProfilingTreeView::COLUMN_TOTAL_TIME);
+			return a_total > b_total;
+		}
+	};
+
+	// TODO Different sorters
+	::sort_tree<TimeComparator>(_tree->get_root());
 }
 
 void ZProfilingTreeView::_bind_methods() {
