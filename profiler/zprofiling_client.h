@@ -13,6 +13,7 @@ class OptionButton;
 class VSplitContainer;
 class ZProfilingTimelineView;
 class ZProfilingGraphView;
+class ZProfilingTreeView;
 
 class ZProfilingClient : public Control {
 	GDCLASS(ZProfilingClient, Control)
@@ -48,6 +49,7 @@ public:
 	void disconnect_from_host();
 	int get_thread_count() const;
 	const ThreadData &get_thread_data(int thread_id) const;
+	const ZProfilingClient::Frame *get_frame(int thread_index, int frame_index) const;
 	const String get_string(uint16_t str_id) const;
 	void set_selected_frame(int frame_index);
 	void set_selected_thread(int thread_index);
@@ -78,9 +80,9 @@ private:
 	// GUI
 	Button *_connect_button = nullptr;
 	Label *_status_label = nullptr;
-	VSplitContainer *_v_split_container = nullptr;
 	ZProfilingGraphView *_graph_view = nullptr;
 	ZProfilingTimelineView *_timeline_view = nullptr;
+	ZProfilingTreeView *_tree_view = nullptr;
 	SpinBox *_frame_spinbox = nullptr;
 	bool _frame_spinbox_ignore_changes = false;
 	OptionButton *_thread_selector = nullptr;

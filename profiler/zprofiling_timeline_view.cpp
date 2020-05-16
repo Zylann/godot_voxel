@@ -9,19 +9,7 @@ const int LANE_SEPARATION = 1;
 
 static const ZProfilingClient::Frame *get_frame(const ZProfilingClient *client, int thread_index, int frame_index) {
 	ERR_FAIL_COND_V(client == nullptr, nullptr);
-	if (thread_index >= client->get_thread_count()) {
-		return nullptr;
-	}
-	const ZProfilingClient::ThreadData &thread_data = client->get_thread_data(thread_index);
-	if (frame_index < 0 || frame_index >= thread_data.frames.size()) {
-		return nullptr;
-	}
-	const ZProfilingClient::Frame &frame = thread_data.frames[frame_index];
-	if (frame.end_time == -1) {
-		// Frame is not finalized
-		return nullptr;
-	}
-	return &frame;
+	return client->get_frame(thread_index, frame_index);
 }
 
 ZProfilingTimelineView::ZProfilingTimelineView() {

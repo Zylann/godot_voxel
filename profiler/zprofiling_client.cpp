@@ -2,6 +2,7 @@
 #include "zprofiling_graph_view.h"
 #include "zprofiling_server.h"
 #include "zprofiling_timeline_view.h"
+#include "zprofiling_tree_view.h"
 
 #include <core/io/stream_peer_tcp.h>
 #include <scene/gui/box_container.h>
@@ -58,19 +59,27 @@ ZProfilingClient::ZProfilingClient() {
 	_thread_selector->connect("item_selected", this, "_on_thread_selector_item_selected");
 	header_hb->add_child(_thread_selector);
 
-	_v_split_container = memnew(VSplitContainer);
-	_v_split_container->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	_v_split_container->set_split_offset(30);
-	main_vb->add_child(_v_split_container);
+	HSplitContainer *h_split_container = memnew(HSplitContainer);
+	h_split_container->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	h_split_container->set_split_offset(100);
+	main_vb->add_child(h_split_container);
+
+	_tree_view = memnew(ZProfilingTreeView);
+	_tree_view->set_client(this);
+	h_split_container->add_child(_tree_view);
+
+	VSplitContainer *v_split_container = memnew(VSplitContainer);
+	v_split_container->set_split_offset(30);
+	h_split_container->add_child(v_split_container);
 
 	_graph_view = memnew(ZProfilingGraphView);
 	_graph_view->set_client(this);
 	_graph_view->connect(ZProfilingGraphView::SIGNAL_FRAME_CLICKED, this, "_on_graph_view_frame_clicked");
-	_v_split_container->add_child(_graph_view);
+	v_split_container->add_child(_graph_view);
 
 	_timeline_view = memnew(ZProfilingTimelineView);
 	_timeline_view->set_client(this);
-	_v_split_container->add_child(_timeline_view);
+	v_split_container->add_child(_timeline_view);
 
 	HBoxContainer *footer_hb = memnew(HBoxContainer);
 	main_vb->add_child(footer_hb);
@@ -339,6 +348,22 @@ const ZProfilingClient::ThreadData &ZProfilingClient::get_thread_data(int thread
 	return _threads[thread_id];
 }
 
+const ZProfilingClient::Frame *ZProfilingClient::get_frame(int thread_index, int frame_index) const {
+	if (thread_index >= get_thread_count()) {
+		return nullptr;
+	}
+	const ZProfilingClient::ThreadData &thread_data = get_thread_data(thread_index);
+	if (frame_index < 0 || frame_index >= thread_data.frames.size()) {
+		return nullptr;
+	}
+	const ZProfilingClient::Frame &frame = thread_data.frames[frame_index];
+	if (frame.end_time == -1) {
+		// Frame is not finalized
+		return nullptr;
+	}
+	return &frame;
+}
+
 const String ZProfilingClient::get_string(uint16_t str_id) const {
 	const String *ptr = _strings.getptr(str_id);
 	ERR_FAIL_COND_V(ptr == nullptr, String());
@@ -445,6 +470,7 @@ void ZProfilingClient::set_selected_thread(int thread_index) {
 	ERR_FAIL_COND(thread_index >= _threads.size());
 	_selected_thread_index = thread_index;
 	_timeline_view->set_thread(_selected_thread_index);
+	_tree_view->set_thread_index(_selected_thread_index);
 
 	_graph_view->update();
 
@@ -488,6 +514,7 @@ void ZProfilingClient::set_selected_frame(int frame_index) {
 
 	thread_data.selected_frame = frame_index;
 	_timeline_view->set_frame_index(frame_index);
+	_tree_view->set_frame_index(frame_index);
 	_graph_view->update();
 
 	// This can emit again and cycle back to our method...
