@@ -5,7 +5,7 @@
 
 #ifdef VOXEL_PROFILING
 
-#include <core/ustring.h>
+#include <core/string_name.h>
 #include <array>
 
 // Helpers
@@ -31,16 +31,17 @@ public:
 	~ZProfiler();
 
 	// TODO Rename set_thread_name
-	void set_profiler_name(const char *name);
-	void begin(const char *description);
+	void set_profiler_name(String name);
+	void begin_sn(StringName description); // For scripts, which can't provide a const char*
+	void begin(const char *description); // For C++, where litterals just work
 	void end();
 	void mark_frame();
 
 	// TODO Category events
-	// TODO API for non-C++ usage
 
 	enum EventType {
 		EVENT_PUSH = 0,
+		EVENT_PUSH_SN,
 		EVENT_POP,
 		EVENT_FRAME
 	};
@@ -48,7 +49,8 @@ public:
 	// 16 bytes POD, there can be a LOT of these
 	struct Event {
 		union {
-			const char *description; // TODO Could be StringName?
+			const char *description;
+			uint8_t description_sn[sizeof(StringName)];
 			uint64_t time;
 		};
 		// Time for events inside a frame is stored as 32-bit relative to frame start,
@@ -58,13 +60,31 @@ public:
 		uint8_t type;
 	};
 
+	static_assert(sizeof(Event) <= 16, "Event is expected to be no more than 16 bytes");
+
 	struct Buffer {
 		std::array<Event, 4096> events;
 		unsigned int write_index = 0;
 		String thread_name;
 		Buffer *prev = nullptr;
 
+		~Buffer() {
+			reset();
+		}
+
+		inline void reset_no_string_names() {
+			write_index = 0;
+			prev = nullptr;
+		}
+
 		inline void reset() {
+			// We have to do this JUST because of StringName...
+			for (int i = 0; i < write_index; ++i) {
+				if (events[i].type == EVENT_PUSH_SN) {
+					((StringName *)events[i].description_sn)->~StringName();
+				}
+			}
+
 			write_index = 0;
 			prev = nullptr;
 		}

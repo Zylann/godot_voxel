@@ -162,6 +162,34 @@ inline void serialize_string_def(Peer_T &peer, uint16_t id, String str) {
 	peer.put_utf8_string(str);
 }
 
+uint16_t ZProfilingServer::get_or_create_c_string_id(const char *cs) {
+	uint16_t id;
+	const uint16_t *id_ptr = _static_strings.getptr(cs);
+	if (id_ptr != nullptr) {
+		id = *id_ptr;
+
+	} else {
+		id = _next_string_id++;
+		_static_strings.set(cs, id);
+		serialize_string_def(_message, id, cs);
+	}
+	return id;
+}
+
+uint16_t ZProfilingServer::get_or_create_string_id(String s) {
+	uint16_t id;
+	const uint16_t *id_ptr = _dynamic_strings.getptr(s);
+	if (id_ptr != nullptr) {
+		id = *id_ptr;
+
+	} else {
+		id = _next_string_id++;
+		_dynamic_strings.set(s, id);
+		serialize_string_def(_message, id, s);
+	}
+	return id;
+}
+
 void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool send_all_strings) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -194,19 +222,8 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 	// Simple event stream.
 	// Iterate buffers in reverse because that's how buffers got harvested
 	for (int i = _buffers_to_send.size() - 1; i >= 0; --i) {
-		const ZProfiler::Buffer *buffer = _buffers_to_send[i];
-
-		uint16_t thread_name_id;
-		const uint16_t *thread_name_id_ptr = _dynamic_strings.getptr(buffer->thread_name);
-		if (thread_name_id_ptr != nullptr) {
-			thread_name_id = *thread_name_id_ptr;
-
-		} else {
-			// Generate string ID
-			thread_name_id = _next_string_id++;
-			_dynamic_strings.set(buffer->thread_name, thread_name_id);
-			serialize_string_def(_message, thread_name_id, buffer->thread_name);
-		}
+		ZProfiler::Buffer *buffer = _buffers_to_send[i];
+		const uint16_t thread_name_id = get_or_create_string_id(buffer->thread_name);
 
 		// Get frame buffer corresponding to the thread
 		Frame *frame_buffer;
@@ -223,21 +240,19 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 
 			switch (event.type) {
 				case ZProfiler::EVENT_PUSH: {
-					uint16_t description_id;
-					const uint16_t *description_id_ptr = _static_strings.getptr(event.description);
-					if (description_id_ptr != nullptr) {
-						description_id = *description_id_ptr;
-
-					} else {
-						// Generate string ID
-						description_id = _next_string_id++;
-						_static_strings.set(event.description, description_id);
-						serialize_string_def(_message, description_id, event.description);
-					}
-
+					const uint16_t description_id = get_or_create_c_string_id(event.description);
 					++frame_buffer->current_lane;
 					ERR_FAIL_COND(frame_buffer->current_lane > frame_buffer->lanes.size()); // Stack too deep?
 					frame_buffer->lanes[frame_buffer->current_lane].push_back(Item{ event.relative_time, 0, description_id });
+				} break;
+
+				case ZProfiler::EVENT_PUSH_SN: {
+					StringName &sn = *(StringName *)event.description_sn;
+					const uint16_t description_id = get_or_create_string_id(sn);
+					++frame_buffer->current_lane;
+					ERR_FAIL_COND(frame_buffer->current_lane > frame_buffer->lanes.size()); // Stack too deep?
+					frame_buffer->lanes[frame_buffer->current_lane].push_back(Item{ event.relative_time, 0, description_id });
+					sn.~StringName();
 				} break;
 
 				case ZProfiler::EVENT_POP:
@@ -270,6 +285,9 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 					break;
 			}
 		}
+
+		// Optimized way to reset since we took care of freeing StringNames
+		buffer->reset_no_string_names();
 	}
 
 	// Write block data size back at the beginning

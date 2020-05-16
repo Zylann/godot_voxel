@@ -75,7 +75,7 @@ ZProfiler::~ZProfiler() {
 	}
 }
 
-void ZProfiler::set_profiler_name(const char *name) {
+void ZProfiler::set_profiler_name(String name) {
 	_profiler_name = String::num_uint64(Thread::get_caller_id());
 	_profiler_name += "_";
 	_profiler_name += name;
@@ -83,6 +83,21 @@ void ZProfiler::set_profiler_name(const char *name) {
 	if (_buffer != nullptr) {
 		_buffer->thread_name = _profiler_name;
 	}
+}
+
+void ZProfiler::begin_sn(StringName description) {
+	if (!_enabled) {
+		return;
+	}
+	// TODO To make this work properly, probably need Godot 4 stuff?
+	// StringName fits in an event in place of the const char*, but it does ref-counting with global mutex locking,
+	// which adds overhead and is incompatible with the POD nature of event buffers.
+	// Had to iterate the entire buffer when it gets reset as well just to invoke the destructor...
+	Event e;
+	*(StringName *)e.description_sn = description;
+	e.type = EVENT_PUSH_SN;
+	e.relative_time = get_time() - _frame_begin_time;
+	push_event(e);
 }
 
 void ZProfiler::begin(const char *description) {
