@@ -27,16 +27,6 @@
 // Profiler for one thread. Main API to record profiling data.
 class ZProfiler {
 public:
-	ZProfiler();
-	~ZProfiler();
-
-	// TODO Rename set_thread_name
-	void set_profiler_name(String name);
-	void begin_sn(StringName description); // For scripts, which can't provide a const char*
-	void begin(const char *description); // For C++, where litterals just work
-	void end();
-	void mark_frame();
-
 	// TODO Category events
 
 	enum EventType {
@@ -89,6 +79,15 @@ public:
 			prev = nullptr;
 		}
 	};
+
+	ZProfiler();
+	~ZProfiler();
+
+	void set_thread_name(String name);
+	void begin_sn(StringName description); // For scripts, which can't provide a const char*
+	void begin(const char *description); // For C++, where litterals just work
+	void end();
+	void mark_frame();
 
 	// Gets profiler for the current executing thread so events can be logged
 	static ZProfiler &get_thread_profiler();

@@ -42,7 +42,7 @@ void ZProfilingServer::c_thread_func(void *userdata) {
 }
 
 void ZProfilingServer::thread_func() {
-	ZProfiler::get_thread_profiler().set_profiler_name("ProfilingServer");
+	ZProfiler::get_thread_profiler().set_thread_name("ProfilingServer");
 
 	//printf("Profiling server thread started\n");
 

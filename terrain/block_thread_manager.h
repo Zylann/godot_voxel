@@ -381,7 +381,7 @@ private:
 
 	static void thread_func(JobData &data) {
 		// TODO Allow to give a debug name to such managers?
-		ZProfiler::get_thread_profiler().set_profiler_name(data.debug_thread_name);
+		ZProfiler::get_thread_profiler().set_thread_name(data.debug_thread_name);
 
 		while (!data.thread_exit) {
 			ZProfiler::get_thread_profiler().mark_frame();

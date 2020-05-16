@@ -75,7 +75,7 @@ ZProfiler::~ZProfiler() {
 	}
 }
 
-void ZProfiler::set_profiler_name(String name) {
+void ZProfiler::set_thread_name(String name) {
 	_profiler_name = String::num_uint64(Thread::get_caller_id());
 	_profiler_name += "_";
 	_profiler_name += name;
