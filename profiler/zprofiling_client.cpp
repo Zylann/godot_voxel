@@ -220,8 +220,8 @@ bool ZProfilingClient::process_incoming_data() {
 				const uint16_t thread_name_id = _received_data.get_u16();
 				const uint64_t frame_end_time = _received_data.get_u64();
 
-				if (!_strings.has(thread_name_id)) {
-					disconnect_on_error(String("Received Thread event with non-registered string {0}")
+				if (!has_indexed_name(thread_name_id)) {
+					disconnect_on_error(String("Received Thread event with non-registered name {0}")
 												.format(varray(thread_name_id)));
 					return false;
 				}
@@ -262,7 +262,7 @@ bool ZProfilingClient::process_incoming_data() {
 				Frame &frame = thread_data.frames.write[thread_data.frames.size() - 1];
 				frame.end_time = frame_end_time;
 
-				for (size_t i = 0; i < ZProfilingServer::MAX_LANES; ++i) {
+				for (size_t i = 0; i < ZProfiler::MAX_STACK; ++i) {
 					const uint32_t item_count = _received_data.get_u32();
 					if (item_count == 0) {
 						break;
@@ -315,18 +315,20 @@ bool ZProfilingClient::process_incoming_data() {
 	return true;
 }
 
-bool ZProfilingClient::process_event_string_def(uint16_t string_id, String str) {
+bool ZProfilingClient::process_event_string_def(uint16_t i, String str) {
 	// New string definition
 
-	String *existing_ptr = _strings.getptr(string_id);
-	if (existing_ptr != nullptr) {
+	if (has_indexed_name(i)) {
 		print_line(String("WARNING: already received string {0}: previous was `{1}`, newly received is `{2}`")
-						   .format(varray(string_id, *existing_ptr, str)));
-		*existing_ptr = str;
+						   .format(varray(i, _names[i], str)));
 	} else {
-		print_line(String("Registering string {0}: {1}").format(varray(string_id, str)));
-		_strings.set(string_id, str);
+		print_line(String("Registering string {0}: {1}").format(varray(i, str)));
+		if (i >= _names.size()) {
+			_names.resize(i + 1);
+		}
 	}
+
+	_names.write[i] = str;
 	return true;
 }
 
@@ -364,10 +366,12 @@ const ZProfilingClient::Frame *ZProfilingClient::get_frame(int thread_index, int
 	return &frame;
 }
 
-const String ZProfilingClient::get_string(uint16_t str_id) const {
-	const String *ptr = _strings.getptr(str_id);
-	ERR_FAIL_COND_V(ptr == nullptr, String());
-	return *ptr;
+const String &ZProfilingClient::get_indexed_name(uint16_t i) const {
+	return _names[i];
+}
+
+bool ZProfilingClient::has_indexed_name(uint16_t i) const {
+	return i < _names.size() && _names[i] != "";
 }
 
 void ZProfilingClient::connect_to_host() {
@@ -393,7 +397,7 @@ void ZProfilingClient::clear_network_states() {
 void ZProfilingClient::clear_profiling_data() {
 	_threads.clear();
 
-	_strings.clear();
+	_names.clear();
 	_selected_thread_index = -1;
 
 	update_thread_list();
@@ -466,10 +470,9 @@ void ZProfilingClient::reset_connect_button() {
 bool ZProfilingClient::try_auto_select_main_thread() {
 	for (size_t i = 0; i < _threads.size(); ++i) {
 		const ThreadData &t = _threads[i];
-		String *name_ptr = _strings.getptr(t.id);
-		CRASH_COND(name_ptr == nullptr);
+		const String &iname = _names[t.id];
 		// TODO Have a more "official" way to say which thread is main?
-		if (name_ptr->findn("main") != -1) {
+		if (iname.findn("main") != -1) {
 			set_selected_thread(i);
 			return true;
 		}
@@ -540,13 +543,12 @@ void ZProfilingClient::set_selected_frame(int frame_index) {
 void ZProfilingClient::update_thread_list() {
 	for (size_t i = 0; i < _threads.size(); ++i) {
 		const ThreadData &thread_data = _threads[i];
-		const String *name_ptr = _strings.getptr(thread_data.id);
-		ERR_FAIL_COND(name_ptr == nullptr);
+		const String &iname = _names[thread_data.id];
 
 		if (i < _thread_selector->get_item_count()) {
-			_thread_selector->set_item_text(i, *name_ptr);
+			_thread_selector->set_item_text(i, iname);
 		} else {
-			_thread_selector->add_item(*name_ptr);
+			_thread_selector->add_item(iname);
 		}
 	}
 

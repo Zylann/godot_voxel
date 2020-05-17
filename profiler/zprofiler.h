@@ -27,13 +27,21 @@
 // Profiler for one thread. Main API to record profiling data.
 class ZProfiler {
 public:
-	// TODO Category events
+	static const uint32_t MAX_STACK = 64;
 
 	enum EventType {
 		EVENT_PUSH = 0,
 		EVENT_PUSH_SN,
 		EVENT_POP,
 		EVENT_FRAME
+	};
+
+	// Having string categories is possible,
+	// but I figured this is enough for now
+	enum Category {
+		CATEGORY_ENGINE = 0, // Default, since all code starts from engine
+		CATEGORY_SCRIPT,
+		CATEGORY_COUNT
 	};
 
 	// 16 bytes POD, there can be a LOT of these
@@ -48,6 +56,7 @@ public:
 		// Absolute 64-bit time is only used at FRAME events.
 		uint32_t relative_time;
 		uint8_t type;
+		uint8_t category;
 	};
 
 	static_assert(sizeof(Event) <= 16, "Event is expected to be no more than 16 bytes");
@@ -86,6 +95,8 @@ public:
 	void set_thread_name(String name);
 	void begin_sn(StringName description); // For scripts, which can't provide a const char*
 	void begin(const char *description); // For C++, where litterals just work
+	void begin_category(uint8_t category);
+	void end_category();
 	void end();
 	void mark_frame();
 
@@ -105,6 +116,8 @@ private:
 	String _profiler_name;
 	bool _enabled = false;
 	uint64_t _frame_begin_time = 0;
+	std::array<uint8_t, MAX_STACK> _category_stack;
+	uint32_t _category_stack_pos = 0;
 };
 
 struct ZProfilerScope {

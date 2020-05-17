@@ -98,7 +98,8 @@ void ZProfilingGraphView::_draw() {
 	ZPROFILER_SCOPE_NAMED(FUNCTION_STR);
 
 	const Color bg_color(0.f, 0.f, 0.f, 0.7f);
-	const Color curve_color(1.f, 0.5f, 0.f);
+	const Color engine_curve_color(0.4f, 0.4f, 1.0f);
+	const Color script_curve_color(0.3f, 0.8f, 0.3f);
 	const Color text_fg_color(1.f, 1.f, 1.f);
 	const Color text_bg_color(0.f, 0.f, 0.f);
 	const Color frame_graduation_color(1.f, 1.f, 1.f, 0.2f);
@@ -151,11 +152,12 @@ void ZProfilingGraphView::_draw() {
 		item_rect.size.y = control_rect.size.y * (static_cast<float>(frame_time) / max_frame_time);
 		item_rect.position.y = control_rect.size.y - item_rect.size.y;
 
+		// TODO Show script part
 		if (frame_index == thread_data.selected_frame) {
 			draw_rect(Rect2(item_rect.position.x, 0, item_rect.size.x, control_rect.size.y - item_rect.size.y), selected_frame_bg);
 			draw_rect(item_rect, selected_frame_fg);
 		} else {
-			draw_rect(item_rect, curve_color);
+			draw_rect(item_rect, engine_curve_color);
 			if (frame_index == _hovered_frame) {
 				draw_rect(Rect2(item_rect.position.x, 0, item_rect.size.x, control_rect.size.y), hovered_frame_fg);
 			}

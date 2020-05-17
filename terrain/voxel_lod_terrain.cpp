@@ -825,7 +825,6 @@ void VoxelLodTerrain::_process() {
 
 		// TODO Maintain a vector to make iteration faster?
 		for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
-
 			ZPROFILER_SCOPE();
 
 			OctreeItem &item = E->value();
@@ -833,7 +832,6 @@ void VoxelLodTerrain::_process() {
 			Vector3i block_offset_lod0 = block_pos_maxlod << (get_lod_count() - 1);
 
 			struct OctreeActions {
-
 				VoxelLodTerrain *self = nullptr;
 				Vector3i block_offset_lod0;
 				unsigned int blocked_count = 0;

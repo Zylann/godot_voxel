@@ -19,7 +19,6 @@ public:
 	static const char *DEFAULT_HOST_ADDRESS;
 	static const uint16_t DEFAULT_HOST_PORT = 13118;
 	static const uint64_t LOOP_PERIOD_USEC = 20000;
-	static const uint32_t MAX_LANES = 64; // = maximum stack depth
 
 	// Input commands
 	enum CommandType {
@@ -57,16 +56,18 @@ private:
 	uint16_t get_or_create_string_id(String s);
 
 	struct Item {
+		// POD
 		// This layout must match what the client expects
 		uint32_t begin;
 		uint32_t end;
 		uint16_t description_id;
+		uint8_t category;
 	};
 
 	struct Frame {
 		int current_lane = -1;
 		// Vectors contain re-usable memory which is frequently pushed to
-		std::array<std::vector<Item>, MAX_LANES> lanes;
+		std::array<std::vector<Item>, ZProfiler::MAX_STACK> lanes;
 
 		inline void reset() {
 			for (size_t i = 0; i < lanes.size(); ++i) {

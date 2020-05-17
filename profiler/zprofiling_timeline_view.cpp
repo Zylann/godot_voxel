@@ -294,7 +294,8 @@ static void draw_rect_outline(CanvasItem *ci, Rect2 rect, Color color, int thick
 void ZProfilingTimelineView::_draw() {
 	ZPROFILER_SCOPE();
 
-	const Color item_color(1.f, 0.5f, 0.f);
+	const Color engine_item_color(0.5f, 0.5f, 1.0f);
+	const Color script_item_color(0.4f, 0.7f, 0.4f);
 	const Color item_selected_outline_color(1, 1, 1, 0.5);
 	const Color bg_color(0.f, 0.f, 0.f, 0.7f);
 	const Color item_text_color(0.f, 0.f, 0.f);
@@ -361,7 +362,17 @@ void ZProfilingTimelineView::_draw() {
 				item_rect.size.x -= 1.f;
 			}
 
-			draw_rect(item_rect, item_color);
+			switch (item.category) {
+				case ZProfiler::CATEGORY_ENGINE:
+					draw_rect(item_rect, engine_item_color);
+					break;
+				case ZProfiler::CATEGORY_SCRIPT:
+					draw_rect(item_rect, script_item_color);
+					break;
+				default:
+					ERR_FAIL_MSG("Unknown category, memory corrupted?");
+					break;
+			}
 
 			if (_selected_item_lane == lane_index && _selected_item_index == item_index) {
 				selected_item_rect = item_rect;
@@ -369,7 +380,7 @@ void ZProfilingTimelineView::_draw() {
 			}
 
 			if (item_rect.size.x > 100) {
-				String text = _client->get_string(item.description_id);
+				String text = _client->get_indexed_name(item.description_id);
 
 				int clamped_item_width = item_rect.size.x;
 				if (item_rect.position.x < 0) {
@@ -402,7 +413,7 @@ void ZProfilingTimelineView::_draw() {
 			const float self_ms = (item.end_time_relative - item.begin_time_relative) / 1000.0;
 			const float total_ms = _selected_item_total_us / 1000.0;
 
-			String text1 = _client->get_string(item.description_id);
+			String text1 = _client->get_indexed_name(item.description_id);
 			String text2 = String::num_real(self_ms);
 			text2 += " ms | ";
 			text2 += String::num_int64(_selected_item_hit_count);

@@ -42,6 +42,7 @@ ZProfiler::ZProfiler() {
 	_buffer = memnew(Buffer);
 	_buffer->thread_name = _profiler_name;
 	++g_instanced_profilers;
+	_category_stack[0] = CATEGORY_ENGINE;
 }
 
 ZProfiler::~ZProfiler() {
@@ -94,8 +95,9 @@ void ZProfiler::begin_sn(StringName description) {
 	// which adds overhead and is incompatible with the POD nature of event buffers.
 	// Had to iterate the entire buffer when it gets reset as well just to invoke the destructor...
 	Event e;
-	*(StringName *)e.description_sn = description;
 	e.type = EVENT_PUSH_SN;
+	*(StringName *)e.description_sn = description;
+	e.category = _category_stack[_category_stack_pos];
 	e.relative_time = get_time() - _frame_begin_time;
 	push_event(e);
 }
@@ -105,8 +107,9 @@ void ZProfiler::begin(const char *description) {
 		return;
 	}
 	Event e;
-	e.description = description;
 	e.type = EVENT_PUSH;
+	e.description = description;
+	e.category = _category_stack[_category_stack_pos];
 	e.relative_time = get_time() - _frame_begin_time;
 	push_event(e);
 }
@@ -116,10 +119,29 @@ void ZProfiler::end() {
 		return;
 	}
 	Event e;
-	e.description = nullptr;
 	e.type = EVENT_POP;
+	e.description = nullptr;
 	e.relative_time = get_time() - _frame_begin_time;
 	push_event(e);
+}
+
+// Every samples taken inside this scope will have the specified category,
+// unless overriden with another category call
+void ZProfiler::begin_category(uint8_t category) {
+	if (!_enabled) {
+		return;
+	}
+	ERR_FAIL_COND(_category_stack_pos + 1 == _category_stack.size());
+	++_category_stack_pos;
+	_category_stack[_category_stack_pos] = category;
+}
+
+void ZProfiler::end_category() {
+	if (!_enabled) {
+		return;
+	}
+	ERR_FAIL_COND(_category_stack_pos == 0);
+	--_category_stack_pos;
 }
 
 void ZProfiler::mark_frame() {
@@ -249,4 +271,4 @@ uint32_t ZProfiler::get_active_profilers_count() {
 	return g_active_profilers;
 }
 
-#endif // VOXEL_PROFILER
+#endif // ZPROFILER_ENABLED

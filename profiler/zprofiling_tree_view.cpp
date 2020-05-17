@@ -42,7 +42,7 @@ static void process_item(
 		const ZProfilingClient::Item &item,
 		const ZProfilingClient::Frame *frame, int lane_index,
 		const ZProfilingClient *client, Tree *tree, TreeItem *parent_tree_item,
-		std::array<int, ZProfilingServer::MAX_LANES> &lane_tails) {
+		std::array<int, ZProfiler::MAX_STACK> &lane_tails) {
 
 	// Search for existing item
 	TreeItem *tree_item = parent_tree_item->get_children();
@@ -69,7 +69,7 @@ static void process_item(
 		// More occurrences
 		tree_item = tree->create_item(parent_tree_item);
 
-		String text = client->get_string(item.description_id);
+		String text = client->get_indexed_name(item.description_id);
 		if (text.length() > 32) {
 			tree_item->set_tooltip(ZProfilingTreeView::COLUMN_NAME, text);
 			text = String("...") + text.right(text.length() - 32);
@@ -151,7 +151,7 @@ void ZProfilingTreeView::update_tree() {
 		return;
 	}
 
-	std::array<int, ZProfilingServer::MAX_LANES> lane_tails;
+	std::array<int, ZProfiler::MAX_STACK> lane_tails;
 	for (int i = 0; i < lane_tails.size(); ++i) {
 		lane_tails[i] = 0;
 	}

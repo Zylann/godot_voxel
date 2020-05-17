@@ -4,6 +4,7 @@
 #include "zprofiling_receive_buffer.h"
 #include <core/hash_map.h>
 #include <scene/gui/control.h>
+#include <array>
 
 class StreamPeerTCP;
 class Button;
@@ -19,10 +20,12 @@ class ZProfilingClient : public Control {
 	GDCLASS(ZProfilingClient, Control)
 public:
 	struct Item {
+		// POD
 		// This layout must match what the server sends
 		uint32_t begin_time_relative = 0;
 		uint32_t end_time_relative = 0;
 		uint16_t description_id = 0;
+		uint8_t category = 0;
 	};
 
 	struct Lane {
@@ -50,7 +53,7 @@ public:
 	int get_thread_count() const;
 	const ThreadData &get_thread_data(int thread_id) const;
 	const ZProfilingClient::Frame *get_frame(int thread_index, int frame_index) const;
-	const String get_string(uint16_t str_id) const;
+	const String &get_indexed_name(uint16_t i) const;
 	void set_selected_frame(int frame_index);
 	void set_selected_thread(int thread_index);
 	int get_selected_thread() const;
@@ -60,7 +63,7 @@ private:
 	void _process();
 
 	bool process_incoming_data();
-	bool process_event_string_def(uint16_t string_id, String str);
+	bool process_event_string_def(uint16_t i, String str);
 
 	void _on_connect_button_pressed();
 	void _on_frame_spinbox_value_changed(float value);
@@ -75,6 +78,7 @@ private:
 	int get_thread_index_from_id(uint16_t thread_id) const;
 	void clear_profiling_data();
 	void clear_network_states();
+	bool has_indexed_name(uint16_t i) const;
 
 	static void _bind_methods();
 
@@ -91,9 +95,8 @@ private:
 
 	// Data
 	Vector<ThreadData> _threads;
-	HashMap<uint16_t, String> _strings;
+	Vector<String> _names; // They are zero-based and not that many, so a vector works
 	int _selected_thread_index = -1;
-	bool _follow_last_frame = true;
 
 	// Network
 	Ref<StreamPeerTCP> _peer;

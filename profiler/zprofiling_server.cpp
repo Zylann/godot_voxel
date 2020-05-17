@@ -163,31 +163,29 @@ inline void serialize_string_def(Peer_T &peer, uint16_t id, String str) {
 }
 
 uint16_t ZProfilingServer::get_or_create_c_string_id(const char *cs) {
-	uint16_t id;
 	const uint16_t *id_ptr = _static_strings.getptr(cs);
 	if (id_ptr != nullptr) {
-		id = *id_ptr;
+		return *id_ptr;
 
 	} else {
-		id = _next_string_id++;
+		const uint16_t id = _next_string_id++;
 		_static_strings.set(cs, id);
 		serialize_string_def(_message, id, cs);
+		return id;
 	}
-	return id;
 }
 
 uint16_t ZProfilingServer::get_or_create_string_id(String s) {
-	uint16_t id;
 	const uint16_t *id_ptr = _dynamic_strings.getptr(s);
 	if (id_ptr != nullptr) {
-		id = *id_ptr;
+		return *id_ptr;
 
 	} else {
-		id = _next_string_id++;
+		const uint16_t id = _next_string_id++;
 		_dynamic_strings.set(s, id);
 		serialize_string_def(_message, id, s);
+		return id;
 	}
-	return id;
 }
 
 void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool send_all_strings) {
@@ -240,23 +238,23 @@ void ZProfilingServer::serialize_and_send_messages(StreamPeerTCP &peer, bool sen
 
 			switch (event.type) {
 				case ZProfiler::EVENT_PUSH: {
-					const uint16_t description_id = get_or_create_c_string_id(event.description);
+					const uint16_t name_id = get_or_create_c_string_id(event.description);
+					ERR_FAIL_COND_MSG(frame_buffer->current_lane + 1 >= frame_buffer->lanes.size(), "Stack too deep");
 					++frame_buffer->current_lane;
-					ERR_FAIL_COND(frame_buffer->current_lane > frame_buffer->lanes.size()); // Stack too deep?
-					frame_buffer->lanes[frame_buffer->current_lane].push_back(Item{ event.relative_time, 0, description_id });
+					frame_buffer->lanes[frame_buffer->current_lane].push_back(Item{ event.relative_time, 0, name_id, event.category });
 				} break;
 
 				case ZProfiler::EVENT_PUSH_SN: {
 					StringName &sn = *(StringName *)event.description_sn;
-					const uint16_t description_id = get_or_create_string_id(sn);
+					const uint16_t name_id = get_or_create_string_id(sn);
+					ERR_FAIL_COND_MSG(frame_buffer->current_lane + 1 >= frame_buffer->lanes.size(), "Stack too deep");
 					++frame_buffer->current_lane;
-					ERR_FAIL_COND(frame_buffer->current_lane > frame_buffer->lanes.size()); // Stack too deep?
-					frame_buffer->lanes[frame_buffer->current_lane].push_back(Item{ event.relative_time, 0, description_id });
+					frame_buffer->lanes[frame_buffer->current_lane].push_back(Item{ event.relative_time, 0, name_id, event.category });
 					sn.~StringName();
 				} break;
 
 				case ZProfiler::EVENT_POP:
-					ERR_FAIL_COND(frame_buffer->current_lane == -1); // Can't pop?
+					ERR_FAIL_COND_MSG(frame_buffer->current_lane == -1, "Profiler was popped too many times");
 					frame_buffer->lanes[frame_buffer->current_lane].back().end = event.relative_time;
 					--frame_buffer->current_lane;
 					break;
