@@ -91,11 +91,11 @@ void ZProfiler::begin_sn(StringName description) {
 		return;
 	}
 	// TODO To make this work properly, probably need Godot 4 stuff?
-	// StringName fits in an event in place of the const char*, but it does ref-counting with global mutex locking,
-	// which adds overhead and is incompatible with the POD nature of event buffers.
-	// Had to iterate the entire buffer when it gets reset as well just to invoke the destructor...
+	// StringName fits in the event in place of the const char*, but it does ref-counting with global mutex locking,
+	// which adds overhead and is incompatible with the POD nature of event buffers...
 	Event e;
 	e.type = EVENT_PUSH_SN;
+	memnew_placement((StringName *)e.description_sn, StringName);
 	*(StringName *)e.description_sn = description;
 	e.category = _category_stack[_category_stack_pos];
 	e.relative_time = get_time() - _frame_begin_time;

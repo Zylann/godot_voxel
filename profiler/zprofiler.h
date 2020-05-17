@@ -129,6 +129,15 @@ struct ZProfilerScope {
 	}
 };
 
+struct ZProfilerScopeSN {
+	ZProfilerScopeSN(StringName description) {
+		ZProfiler::get_thread_profiler().begin_sn(description);
+	}
+	~ZProfilerScopeSN() {
+		ZProfiler::get_thread_profiler().end();
+	}
+};
+
 #else
 
 // Empty definitions
