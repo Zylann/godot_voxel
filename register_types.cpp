@@ -89,6 +89,10 @@ void unregister_voxel_types() {
 #ifdef TOOLS_ENABLED
 	VoxelDebug::free_debug_box_mesh();
 
+	ZProfiler::get_thread_profiler().finalize();
 	ZProfilingServer::destroy_singleton();
+	ZProfiler::terminate();
+
+	print_line(String("Remaining buffers: {0}").format(varray(ZProfiler::Buffer::get_count())));
 #endif
 }

@@ -9,17 +9,17 @@
 const char *ZProfilingServer::DEFAULT_HOST_ADDRESS = "127.0.0.1";
 
 namespace {
-ZProfilingServer *g_harvester = nullptr;
+ZProfilingServer *g_profiling_server = nullptr;
 }
 
 void ZProfilingServer::create_singleton() {
-	CRASH_COND(g_harvester != nullptr);
-	g_harvester = memnew(ZProfilingServer);
+	CRASH_COND(g_profiling_server != nullptr);
+	g_profiling_server = memnew(ZProfilingServer);
 }
 
 void ZProfilingServer::destroy_singleton() {
-	CRASH_COND(g_harvester == nullptr);
-	memdelete(g_harvester);
+	CRASH_COND(g_profiling_server == nullptr);
+	memdelete(g_profiling_server);
 }
 
 ZProfilingServer::ZProfilingServer() {
@@ -72,6 +72,7 @@ void ZProfilingServer::thread_func() {
 	_server.unref();
 
 	//printf("Profiling server stopped\n");
+	ZProfiler::get_thread_profiler().finalize();
 }
 
 void ZProfilingServer::update_server() {
@@ -143,7 +144,9 @@ void ZProfilingServer::harvest() {
 	while (buffer != nullptr) {
 		_buffers_to_send.push_back(buffer);
 		CRASH_COND(buffer->prev == buffer);
-		buffer = buffer->prev;
+		ZProfiler::Buffer *prev = buffer->prev;
+		buffer->prev = nullptr;
+		buffer = prev;
 	}
 }
 
@@ -318,17 +321,18 @@ void ZProfilingServer::recycle_data() {
 }
 
 void ZProfilingServer::clear() {
+	printf("Clearing data from ZProfilingServer\n");
 	// Clear all data we were about to send
 	for (size_t i = 0; i < _buffers_to_send.size(); ++i) {
 		ZProfiler::Buffer *buffer = _buffers_to_send[i];
+		CRASH_COND(buffer->prev != nullptr); // These buffers aren't linked
 		memdelete(buffer);
 	}
 
 	// Clear all data we were about to recycle
-	while (_recycled_buffers != nullptr) {
-		ZProfiler::Buffer *buffer = _recycled_buffers->prev;
-		memdelete(_recycled_buffers);
-		_recycled_buffers = buffer;
+	if (_recycled_buffers != nullptr) {
+		ZProfiler::Buffer::delete_recursively(_recycled_buffers);
+		_recycled_buffers = nullptr;
 	}
 
 	// Clear frame buffers

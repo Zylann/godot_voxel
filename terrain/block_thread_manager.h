@@ -483,6 +483,8 @@ private:
 			// Wait for future wake-up
 			data.semaphore->wait();
 		}
+
+		ZProfiler::get_thread_profiler().finalize();
 	}
 
 	static inline float get_priority_heuristic(const InputBlock &a, const Vector3i &viewer_block_pos, const Vector3 &viewer_direction, int max_lod) {
