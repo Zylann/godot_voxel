@@ -93,6 +93,6 @@ void unregister_voxel_types() {
 	ZProfilingServer::destroy_singleton();
 	ZProfiler::terminate();
 
-	print_line(String("Remaining buffers: {0}").format(varray(ZProfiler::Buffer::get_count())));
+	//print_line(String("Remaining buffers: {0}").format(varray(ZProfiler::Buffer::get_count())));
 #endif
 }

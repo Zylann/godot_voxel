@@ -16,13 +16,8 @@ ZProfiler::Buffer *g_shared_output = nullptr;
 std::mutex g_shared_mutex; // TODO Locking is extremely short. Could be a spinlock?
 bool g_enabled = false; // TODO Use atomic?
 bool g_finalized = false;
-std::atomic_uint g_buffer_count;
 
 } // namespace
-
-unsigned int ZProfiler::Buffer::get_count() {
-	return g_buffer_count;
-}
 
 void ZProfiler::terminate() {
 	g_shared_mutex.lock();
