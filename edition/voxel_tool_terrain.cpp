@@ -37,6 +37,9 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 				return false;
 
 			const Voxel &voxel = lib.get_voxel_const(v0);
+			if (voxel.get_geometry_type() == voxel.GEOMETRY_NONE)
+				return false;
+
 			if (voxel.is_transparent() == false)
 				return true;
 
