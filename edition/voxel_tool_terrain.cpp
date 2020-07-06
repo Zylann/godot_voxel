@@ -40,6 +40,9 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 			if (voxel.is_transparent() == false)
 				return true;
 
+			if (voxel.is_transparent() && voxel.get_collision_aabbs().empty() == false)
+				return true;
+
 			float v1 = map->get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
 			return v1 < 0;
 		}
