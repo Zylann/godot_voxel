@@ -16,8 +16,15 @@ public:
 	void make_visible(bool visible) override;
 
 private:
+	void _on_graph_editor_node_selected(uint32_t node_id);
+	void _on_graph_editor_nothing_selected();
+	void _hide_deferred();
+
+	static void _bind_methods();
+
 	VoxelGraphEditor *_graph_editor = nullptr;
 	ToolButton *_bottom_panel_button = nullptr;
+	bool _deferred_visibility_scheduled = false;
 };
 
 #endif // VOXEL_GRAPH_EDITOR_PLUGIN_H

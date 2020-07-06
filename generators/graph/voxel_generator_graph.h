@@ -58,6 +58,8 @@ public:
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
 	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
 
+	bool has_node(uint32_t node_id) const;
+
 	Variant get_node_param(uint32_t node_id, uint32_t param_index) const;
 	void set_node_param(uint32_t node_id, uint32_t param_index, Variant value);
 

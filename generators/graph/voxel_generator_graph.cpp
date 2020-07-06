@@ -75,6 +75,10 @@ void VoxelGeneratorGraph::get_connections(std::vector<ProgramGraph::Connection> 
 //	_graph.get_connections_from_and_to(connections, node_id);
 //}
 
+bool VoxelGeneratorGraph::has_node(uint32_t node_id) const {
+	return _graph.try_get_node(node_id) != nullptr;
+}
+
 void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index, Variant value) {
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
@@ -131,7 +135,6 @@ int VoxelGeneratorGraph::get_used_channels_mask() const {
 }
 
 void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
-
 	VoxelBuffer &out_buffer = **input.voxel_buffer;
 
 	const Vector3i bs = out_buffer.get_size();
@@ -649,8 +652,11 @@ void VoxelGeneratorGraph::_b_set_node_param_null(int node_id, int param_index) {
 	set_node_param(node_id, param_index, Variant());
 }
 
-void VoxelGeneratorGraph::_bind_methods() {
+float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
+	return generate_single(Vector3i(pos));
+}
 
+void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGeneratorGraph::clear);
 	ClassDB::bind_method(D_METHOD("create_node", "type_id", "position", "id"), &VoxelGeneratorGraph::create_node, DEFVAL(ProgramGraph::NULL_ID));
 	ClassDB::bind_method(D_METHOD("remove_node", "node_id"), &VoxelGeneratorGraph::remove_node);
@@ -673,6 +679,8 @@ void VoxelGeneratorGraph::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_node_type_count"), &VoxelGeneratorGraph::_b_get_node_type_count);
 	ClassDB::bind_method(D_METHOD("get_node_type_info", "type_id"), &VoxelGeneratorGraph::_b_get_node_type_info);
+
+	ClassDB::bind_method(D_METHOD("generate_single"), &VoxelGeneratorGraph::_b_generate_single);
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &VoxelGeneratorGraph::debug_load_waves_preset);
 	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel"), &VoxelGeneratorGraph::debug_measure_microseconds_per_voxel);
