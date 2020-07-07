@@ -116,6 +116,7 @@ private:
 	// TODO Only exists because the UndoRedo API is confusing `null` with `absence of argument`...
 	// See https://github.com/godotengine/godot/issues/36895
 	void _b_set_node_param_null(int node_id, int param_index);
+	float _b_generate_single(Vector3 pos);
 
 	static void _bind_methods();
 
