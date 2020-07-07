@@ -5,6 +5,7 @@
 #include "../../math/vector3i.h"
 #include "program_graph.h"
 
+// CPU VM to execute a voxel graph generator
 class VoxelGraphRuntime {
 public:
 	VoxelGraphRuntime();

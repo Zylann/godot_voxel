@@ -33,9 +33,143 @@ inline const T &read(const std::vector<uint8_t> &mem, uint32_t &p) {
 	return *v;
 }
 
+template <typename T>
+T &get_or_create(std::vector<uint8_t> &program, uint32_t offset) {
+	CRASH_COND(offset >= program.size());
+	const size_t required_size = offset + sizeof(T);
+	if (required_size >= program.size()) {
+		program.resize(required_size);
+	}
+	return *(T *)&program[offset];
+}
+
 inline float get_pixel_repeat(Image &im, int x, int y) {
 	return im.get_pixel(wrap(x, im.get_width()), wrap(y, im.get_height())).r;
 }
+
+// Runtime data structs:
+// The order of fields in the following structs matters.
+// They map the layout produced by the compilation.
+// Inputs go first, then outputs, then params (if applicable at runtime).
+
+struct PNodeBinop {
+	uint16_t a_i0;
+	uint16_t a_i1;
+	uint16_t a_out;
+};
+
+struct PNodeMonop {
+	uint16_t a_in;
+	uint16_t a_out;
+};
+
+struct PNodeDistance2D {
+	uint16_t a_x0;
+	uint16_t a_y0;
+	uint16_t a_x1;
+	uint16_t a_y1;
+	uint16_t a_out;
+};
+
+struct PNodeDistance3D {
+	uint16_t a_x0;
+	uint16_t a_y0;
+	uint16_t a_z0;
+	uint16_t a_x1;
+	uint16_t a_y1;
+	uint16_t a_z1;
+	uint16_t a_out;
+};
+
+struct PNodeClamp {
+	uint16_t a_x;
+	uint16_t a_out;
+	float p_min;
+	float p_max;
+};
+
+struct PNodeMix {
+	uint16_t a_i0;
+	uint16_t a_i1;
+	uint16_t a_ratio;
+	uint16_t a_out;
+};
+
+struct PNodeRemap {
+	uint16_t a_x;
+	uint16_t a_out;
+	float p_c0;
+	float p_m0;
+	float p_c1;
+	float p_m1;
+};
+
+struct PNodeSmoothstep {
+	uint16_t a_x;
+	uint16_t a_out;
+	float p_edge0;
+	float p_edge1;
+};
+
+struct PNodeCurve {
+	uint16_t a_in;
+	uint16_t a_out;
+	uint8_t is_monotonic_increasing;
+	float min_value;
+	float max_value;
+	Curve *p_curve;
+};
+
+struct PNodeNoise2D {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_out;
+	OpenSimplexNoise *p_noise;
+};
+
+struct PNodeNoise3D {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_out;
+	OpenSimplexNoise *p_noise;
+};
+
+struct PNodeImage2D {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_out;
+	float min_value;
+	float max_value;
+	Image *p_image;
+};
+
+struct PNodeSdfBox {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_sx;
+	uint16_t a_sy;
+	uint16_t a_sz;
+	uint16_t a_out;
+};
+
+struct PNodeSdfSphere {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_r;
+	uint16_t a_out;
+};
+
+struct PNodeSdfTorus {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_r0;
+	uint16_t a_r1;
+	uint16_t a_out;
+};
 
 VoxelGraphRuntime::VoxelGraphRuntime() {
 	clear();
@@ -185,6 +319,10 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 				// Add actual operation
 				CRASH_COND(node->type_id > 0xff);
 				append(program, static_cast<uint8_t>(node->type_id));
+				const size_t offset = program.size();
+
+				// Inputs and outputs use a convention so we can have generic code for them.
+				// Parameters are more specific, and may be affected by alignment so better just do them by hand
 
 				// Add inputs
 				for (size_t j = 0; j < type.inputs.size(); ++j) {
@@ -220,58 +358,67 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 					append(program, a);
 				}
 
-				// Add special params
+				// Add params (only nodes having some)
 				switch (node->type_id) {
-
-					case VoxelGeneratorGraph::NODE_CURVE: {
-						Ref<Curve> curve = node->params[0];
-						CRASH_COND(curve.is_null());
-						uint8_t is_monotonic_increasing;
-						Interval range = get_curve_range(**curve, is_monotonic_increasing);
-						append(program, is_monotonic_increasing);
-						append(program, range.min);
-						append(program, range.max);
-						append(program, *curve);
+					case VoxelGeneratorGraph::NODE_CLAMP: {
+						// TODO Worth it?
+						PNodeClamp &n = get_or_create<PNodeClamp>(program, offset);
+						n.p_min = node->params[0].operator float();
+						n.p_max = node->params[1].operator float();
 					} break;
-
-					case VoxelGeneratorGraph::NODE_IMAGE_2D: {
-						Ref<Image> im = node->params[0];
-						CRASH_COND(im.is_null());
-						Interval range = get_heightmap_range(**im);
-						append(program, range.min);
-						append(program, range.max);
-						append(program, *im);
-					} break;
-
-					case VoxelGeneratorGraph::NODE_NOISE_2D:
-					case VoxelGeneratorGraph::NODE_NOISE_3D: {
-						Ref<OpenSimplexNoise> noise = node->params[0];
-						CRASH_COND(noise.is_null());
-						append(program, *noise);
-					} break;
-
-					// TODO Worth it?
-					case VoxelGeneratorGraph::NODE_CLAMP:
-						append(program, node->params[0].operator float());
-						append(program, node->params[1].operator float());
-						break;
 
 					case VoxelGeneratorGraph::NODE_REMAP: {
-						float min0 = node->params[0].operator float();
-						float max0 = node->params[1].operator float();
-						float min1 = node->params[2].operator float();
-						float max1 = node->params[3].operator float();
-						append(program, -min0);
-						append(program, Math::is_equal_approx(max0, min0) ? 99999.f : 1.f / (max0 - min0));
-						append(program, min1);
-						append(program, max1 - min1);
+						PNodeRemap &n = get_or_create<PNodeRemap>(program, offset);
+						const float min0 = node->params[0].operator float();
+						const float max0 = node->params[1].operator float();
+						const float min1 = node->params[2].operator float();
+						const float max1 = node->params[3].operator float();
+						n.p_c0 = -min0;
+						n.p_m0 = Math::is_equal_approx(max0, min0) ? 99999.f : 1.f / (max0 - min0);
+						n.p_c1 = min1;
+						n.p_m1 = max1 - min1;
 					} break;
 
 					case VoxelGeneratorGraph::NODE_SMOOTHSTEP: {
-						float edge0 = node->params[0].operator float();
-						float edge1 = node->params[1].operator float();
-						append(program, edge0);
-						append(program, edge1);
+						PNodeSmoothstep &n = get_or_create<PNodeSmoothstep>(program, offset);
+						n.p_edge0 = node->params[0].operator float();
+						n.p_edge1 = node->params[1].operator float();
+					} break;
+
+					case VoxelGeneratorGraph::NODE_CURVE: {
+						PNodeCurve &n = get_or_create<PNodeCurve>(program, offset);
+						Ref<Curve> curve = node->params[0];
+						CRASH_COND(curve.is_null());
+						uint8_t is_monotonic_increasing;
+						const Interval range = get_curve_range(**curve, is_monotonic_increasing);
+						n.is_monotonic_increasing = is_monotonic_increasing;
+						n.min_value = range.min;
+						n.max_value = range.max;
+						n.p_curve = *curve;
+					} break;
+
+					case VoxelGeneratorGraph::NODE_NOISE_2D: {
+						PNodeNoise2D &n = get_or_create<PNodeNoise2D>(program, offset);
+						Ref<OpenSimplexNoise> noise = node->params[0];
+						CRASH_COND(noise.is_null());
+						n.p_noise = *noise;
+					} break;
+
+					case VoxelGeneratorGraph::NODE_NOISE_3D: {
+						PNodeNoise3D &n = get_or_create<PNodeNoise3D>(program, offset);
+						Ref<OpenSimplexNoise> noise = node->params[0];
+						CRASH_COND(noise.is_null());
+						n.p_noise = *noise;
+					} break;
+
+					case VoxelGeneratorGraph::NODE_IMAGE_2D: {
+						PNodeImage2D &n = get_or_create<PNodeImage2D>(program, offset);
+						Ref<Image> im = node->params[0];
+						CRASH_COND(im.is_null());
+						const Interval range = get_heightmap_range(**im);
+						n.min_value = range.min;
+						n.max_value = range.max;
+						n.p_image = *im;
 					} break;
 
 				} // switch special params
@@ -305,130 +452,6 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 	CRASH_COND(!has_output);
 }
 
-// The order of fields in the following structs matters.
-// They map the layout produced by the compilation.
-// Inputs go first, then outputs, then params (if applicable at runtime).
-// TODO Think about alignment
-
-struct PNodeBinop {
-	uint16_t a_i0;
-	uint16_t a_i1;
-	uint16_t a_out;
-};
-
-struct PNodeMonop {
-	uint16_t a_in;
-	uint16_t a_out;
-};
-
-struct PNodeDistance2D {
-	uint16_t a_x0;
-	uint16_t a_y0;
-	uint16_t a_x1;
-	uint16_t a_y1;
-	uint16_t a_out;
-};
-
-struct PNodeDistance3D {
-	uint16_t a_x0;
-	uint16_t a_y0;
-	uint16_t a_z0;
-	uint16_t a_x1;
-	uint16_t a_y1;
-	uint16_t a_z1;
-	uint16_t a_out;
-};
-
-struct PNodeClamp {
-	uint16_t a_x;
-	uint16_t a_out;
-	float p_min;
-	float p_max;
-};
-
-struct PNodeMix {
-	uint16_t a_i0;
-	uint16_t a_i1;
-	uint16_t a_ratio;
-	uint16_t a_out;
-};
-
-struct PNodeRemap {
-	uint16_t a_x;
-	uint16_t a_out;
-	float p_c0;
-	float p_m0;
-	float p_c1;
-	float p_m1;
-};
-
-struct PNodeSmoothstep {
-	uint16_t a_x;
-	uint16_t a_out;
-	float p_edge0;
-	float p_edge1;
-};
-
-struct PNodeCurve {
-	uint16_t a_in;
-	uint16_t a_out;
-	uint8_t is_monotonic_increasing;
-	float min_value;
-	float max_value;
-	Curve *p_curve;
-};
-
-struct PNodeNoise2D {
-	uint16_t a_x;
-	uint16_t a_y;
-	uint16_t a_out;
-	OpenSimplexNoise *p_noise;
-};
-
-struct PNodeNoise3D {
-	uint16_t a_x;
-	uint16_t a_y;
-	uint16_t a_z;
-	uint16_t a_out;
-	OpenSimplexNoise *p_noise;
-};
-
-struct PNodeImage2D {
-	uint16_t a_x;
-	uint16_t a_y;
-	uint16_t a_out;
-	float min_value;
-	float max_value;
-	Image *p_image;
-};
-
-struct PNodeSdfBox {
-	uint16_t a_x;
-	uint16_t a_y;
-	uint16_t a_z;
-	uint16_t a_sx;
-	uint16_t a_sy;
-	uint16_t a_sz;
-	uint16_t a_out;
-};
-
-struct PNodeSdfSphere {
-	uint16_t a_x;
-	uint16_t a_y;
-	uint16_t a_z;
-	uint16_t a_r;
-	uint16_t a_out;
-};
-
-struct PNodeSdfTorus {
-	uint16_t a_x;
-	uint16_t a_y;
-	uint16_t a_z;
-	uint16_t a_r0;
-	uint16_t a_r1;
-	uint16_t a_out;
-};
-
 inline Interval get_length(const Interval &x, const Interval &y) {
 	return sqrt(x * x + y * y);
 }
@@ -446,7 +469,9 @@ inline float sdf_box(const Vector3 pos, const Vector3 extents) {
 		   Vector3(max(d.x, 0.f), max(d.y, 0.f), max(d.z, 0.f)).length();
 }
 
-inline Interval sdf_box(const Interval &x, const Interval &y, const Interval &z, const Interval &sx, const Interval &sy, const Interval &sz) {
+inline Interval sdf_box(
+		const Interval &x, const Interval &y, const Interval &z,
+		const Interval &sx, const Interval &sy, const Interval &sz) {
 	Interval dx = abs(x) - sx;
 	Interval dy = abs(y) - sy;
 	Interval dz = abs(z) - sz;
