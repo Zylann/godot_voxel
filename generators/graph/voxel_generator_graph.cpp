@@ -212,7 +212,6 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	for (rpos.z = rmin.z, gpos.z = gmin.z; rpos.z < rmax.z; ++rpos.z, gpos.z += stride) {
 		for (rpos.x = rmin.x, gpos.x = gmin.x; rpos.x < rmax.x; ++rpos.x, gpos.x += stride) {
 			for (rpos.y = rmin.y, gpos.y = gmin.y; rpos.y < rmax.y; ++rpos.y, gpos.y += stride) {
-
 				out_buffer.set_voxel_f(generate_single(gpos), rpos.x, rpos.y, rpos.z, channel);
 			}
 		}
@@ -226,7 +225,6 @@ void VoxelGeneratorGraph::compile() {
 }
 
 float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
-
 	switch (_bounds.type) {
 		case BOUNDS_NONE:
 			break;
@@ -418,6 +416,10 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 		ERR_FAIL_COND(!var_to_id(con_data[3], dst.port_index));
 		_graph.connect(src, dst);
 	}
+
+	// It's possible to auto-compile on load because `graph_data` is the only property set by the loader,
+	// which is enough to have all information we need
+	compile();
 }
 
 // Debug land
