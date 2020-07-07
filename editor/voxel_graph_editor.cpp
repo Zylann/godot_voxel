@@ -1,6 +1,9 @@
 #include "voxel_graph_editor.h"
 #include "../generators/graph/voxel_generator_graph.h"
 #include "editor/editor_scale.h"
+
+#include <core/core_string_names.h>
+#include <core/os/os.h>
 #include <core/undo_redo.h>
 #include <scene/gui/graph_edit.h>
 #include <scene/gui/label.h>
@@ -8,11 +11,44 @@
 const char *VoxelGraphEditor::SIGNAL_NODE_SELECTED = "node_selected";
 const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
 
+// Shows a 2D slice of the 3D set of values coming from an output port
+class VoxelGraphEditorNodePreview : public VBoxContainer {
+	GDCLASS(VoxelGraphEditorNodePreview, VBoxContainer)
+public:
+	static const int RESOLUTION = 64;
+
+	VoxelGraphEditorNodePreview() {
+		_image.instance();
+		_image->create(RESOLUTION, RESOLUTION, false, Image::FORMAT_L8);
+		_texture.instance();
+		update_texture();
+		_texture_rect = memnew(TextureRect);
+		_texture_rect->set_stretch_mode(TextureRect::STRETCH_SCALE);
+		_texture_rect->set_custom_minimum_size(Vector2(RESOLUTION, RESOLUTION));
+		_texture_rect->set_texture(_texture);
+		add_child(_texture_rect);
+	}
+
+	Ref<Image> get_image() const {
+		return _image;
+	}
+
+	void update_texture() {
+		_texture->create_from_image(_image, 0);
+	}
+
+private:
+	TextureRect *_texture_rect = nullptr;
+	Ref<ImageTexture> _texture;
+	Ref<Image> _image;
+};
+
 // Graph node with a few custom data attached.
 class VoxelGraphEditorNode : public GraphNode {
 	GDCLASS(VoxelGraphEditorNode, GraphNode)
 public:
 	uint32_t node_id = 0;
+	VoxelGraphEditorNodePreview *preview = nullptr;
 };
 
 VoxelGraphEditor::VoxelGraphEditor() {
@@ -43,19 +79,42 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
 		return;
 	}
 
-	//	if (_graph.is_valid()) {
-	//	}
+	if (_graph.is_valid()) {
+		_graph->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_graph_changed");
+	}
 
 	_graph = graph;
 
-	//	if (_graph.is_valid()) {
-	//	}
+	if (_graph.is_valid()) {
+		_graph->connect(CoreStringNames::get_singleton()->changed, this, "_on_graph_changed");
+	}
 
 	build_gui_from_graph();
 }
 
 void VoxelGraphEditor::set_undo_redo(UndoRedo *undo_redo) {
 	_undo_redo = undo_redo;
+}
+
+void VoxelGraphEditor::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_INTERNAL_PROCESS:
+			_process(get_tree()->get_idle_process_time());
+			break;
+
+		case NOTIFICATION_VISIBILITY_CHANGED:
+			set_process_internal(is_visible());
+			break;
+	}
+}
+
+void VoxelGraphEditor::_process(float delta) {
+	if (_time_before_preview_update > 0.f) {
+		_time_before_preview_update -= delta;
+		if (_time_before_preview_update < 0.f) {
+			update_previews();
+		}
+	}
 }
 
 void VoxelGraphEditor::clear() {
@@ -162,6 +221,11 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 		node_view->add_child(property_control);
 		node_view->set_slot(i, has_left, Variant::REAL, port_color, has_right, Variant::REAL, port_color);
+	}
+
+	if (node_type_id == VoxelGeneratorGraph::NODE_SDF_PREVIEW) {
+		node_view->preview = memnew(VoxelGraphEditorNodePreview);
+		node_view->add_child(node_view->preview);
 	}
 
 	_graph_edit->add_child(node_view);
@@ -386,6 +450,89 @@ void VoxelGraphEditor::_check_nothing_selected() {
 	}
 }
 
+void VoxelGraphEditor::update_previews() {
+	if (_graph.is_null()) {
+		return;
+	}
+
+	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+
+	_graph->compile();
+
+	// TODO Use a thread?
+	print_line("Updating previews");
+
+	struct PreviewInfo {
+		VoxelGraphEditorNodePreview *control;
+		uint16_t address;
+		float min_value;
+		float value_scale;
+	};
+
+	std::vector<PreviewInfo> previews;
+	const VoxelGraphRuntime &runtime = _graph->get_runtime();
+
+	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
+		VoxelGraphEditorNode *node = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(i));
+		if (node == nullptr || node->preview == nullptr) {
+			continue;
+		}
+		ProgramGraph::PortLocation dst;
+		dst.node_id = node->node_id;
+		dst.port_index = 0;
+		ProgramGraph::PortLocation src;
+		if (!_graph->try_get_connection_to(dst, src)) {
+			// Not connected?
+			continue;
+		}
+		PreviewInfo info;
+		info.control = node->preview;
+		info.address = runtime.get_output_port_address(src);
+		info.min_value = _graph->get_node_param(dst.node_id, 0);
+		const float max_value = _graph->get_node_param(dst.node_id, 1);
+		info.value_scale = 1.f / (max_value - info.min_value);
+		previews.push_back(info);
+	}
+
+	for (size_t i = 0; i < previews.size(); ++i) {
+		previews[i].control->get_image()->lock();
+	}
+
+	for (int iy = 0; iy < VoxelGraphEditorNodePreview::RESOLUTION; ++iy) {
+		for (int ix = 0; ix < VoxelGraphEditorNodePreview::RESOLUTION; ++ix) {
+			{
+				const int x = ix - VoxelGraphEditorNodePreview::RESOLUTION / 2;
+				const int y = (VoxelGraphEditorNodePreview::RESOLUTION - iy) - VoxelGraphEditorNodePreview::RESOLUTION / 2;
+				_graph->generate_single(Vector3i(x, y, 0));
+			}
+
+			for (size_t i = 0; i < previews.size(); ++i) {
+				PreviewInfo &info = previews[i];
+				const float v = runtime.get_memory_value(info.address);
+				const float g = clamp((v - info.min_value) * info.value_scale, 0.f, 1.f);
+				Color c(g, g, g);
+				info.control->get_image()->set_pixel(ix, iy, Color(g, g, g));
+			}
+		}
+	}
+
+	for (size_t i = 0; i < previews.size(); ++i) {
+		previews[i].control->get_image()->unlock();
+		previews[i].control->update_texture();
+	}
+
+	uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
+	print_line(String("Previews generated in {0} us").format(varray(time_taken)));
+}
+
+void VoxelGraphEditor::schedule_preview_update() {
+	_time_before_preview_update = 0.5f;
+}
+
+void VoxelGraphEditor::_on_graph_changed() {
+	schedule_preview_update();
+}
+
 void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_gui_input", "event"), &VoxelGraphEditor::_on_graph_edit_gui_input);
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_connection_request", "from_node_name", "from_slot", "to_node_name", "to_slot"),
@@ -397,6 +544,8 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_node_unselected"), &VoxelGraphEditor::_on_graph_edit_node_unselected);
 	ClassDB::bind_method(D_METHOD("_on_graph_node_dragged", "from", "to", "id"), &VoxelGraphEditor::_on_graph_node_dragged);
 	ClassDB::bind_method(D_METHOD("_on_context_menu_index_pressed", "idx"), &VoxelGraphEditor::_on_context_menu_index_pressed);
+	ClassDB::bind_method(D_METHOD("_on_graph_changed"), &VoxelGraphEditor::_on_graph_changed);
+
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);
 
 	ClassDB::bind_method(D_METHOD("create_node_gui", "node_id"), &VoxelGraphEditor::create_node_gui);

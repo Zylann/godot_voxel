@@ -258,6 +258,14 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("radius2", 4.f));
 		t.outputs.push_back(Port("sdf"));
 	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_PREVIEW];
+		t.name = "SdfPreview";
+		t.inputs.push_back(Port("value"));
+		t.params.push_back(Param("min_value", Variant::REAL, -1.f));
+		t.params.push_back(Param("max_value", Variant::REAL, 1.f));
+		t.debug_only = true;
+	}
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];

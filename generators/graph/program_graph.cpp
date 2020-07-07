@@ -116,6 +116,7 @@ bool ProgramGraph::can_connect(PortLocation src, PortLocation dst) const {
 		return false;
 	}
 	const Node *dst_node = get_node(dst.node_id);
+	// There can be only one connection from a source to a destination
 	return dst_node->inputs[dst.port_index].connections.size() == 0;
 }
 

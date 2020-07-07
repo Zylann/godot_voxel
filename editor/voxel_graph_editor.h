@@ -23,11 +23,17 @@ public:
 	void set_undo_redo(UndoRedo *undo_redo);
 
 private:
+	void _notification(int p_what);
+	void _process(float delta);
+
 	void clear();
 	void build_gui_from_graph();
 	void create_node_gui(uint32_t node_id);
 	void remove_node_gui(StringName gui_node_name);
 	void set_node_position(int id, Vector2 offset);
+
+	void schedule_preview_update();
+	void update_previews();
 
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
@@ -37,6 +43,7 @@ private:
 	void _on_graph_edit_node_unselected(Node *p_node);
 	void _on_graph_node_dragged(Vector2 from, Vector2 to, int id);
 	void _on_context_menu_index_pressed(int idx);
+	void _on_graph_changed();
 
 	void _check_nothing_selected();
 
@@ -48,6 +55,7 @@ private:
 	UndoRedo *_undo_redo = nullptr;
 	Vector2 _click_position;
 	bool _nothing_selected_check_scheduled = false;
+	float _time_before_preview_update = 0.f;
 };
 
 #endif // VOXEL_GRAPH_EDITOR_H

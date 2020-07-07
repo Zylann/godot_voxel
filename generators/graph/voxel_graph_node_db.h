@@ -40,6 +40,8 @@ public:
 
 	struct NodeType {
 		String name;
+		bool debug_only = false;
+		// TODO Category
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
 		std::vector<Param> params;

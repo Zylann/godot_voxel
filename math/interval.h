@@ -5,7 +5,6 @@
 
 // For interval arithmetic
 struct Interval {
-
 	// Both inclusive
 	float min;
 	float max;

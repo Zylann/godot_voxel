@@ -181,15 +181,23 @@ void VoxelGraphRuntime::clear() {
 	_xzy_program_start = 0;
 	_last_x = INT_MAX;
 	_last_z = INT_MAX;
+	_output_port_addresses.clear();
 }
 
 void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
+	_output_port_addresses.clear();
+
 	std::vector<uint32_t> order;
 	std::vector<uint32_t> terminal_nodes;
 
 	graph.find_terminal_nodes(terminal_nodes);
-	// For now only 1 end is supported
-	ERR_FAIL_COND(terminal_nodes.size() != 1);
+
+	// Exclude debug nodes
+	unordered_remove_if(terminal_nodes, [&graph](uint32_t node_id) {
+		const ProgramGraph::Node *node = graph.get_node(node_id);
+		const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
+		return type.debug_only;
+	});
 
 	graph.find_dependencies(terminal_nodes.back(), order);
 
@@ -271,7 +279,6 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 
 	std::vector<uint8_t> &program = _program;
 	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
-	HashMap<ProgramGraph::PortLocation, uint16_t, ProgramGraph::PortLocationHasher> output_port_addresses;
 	bool has_output = false;
 
 	// Run through each node in order, and turn them into program instructions
@@ -294,19 +301,19 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 				CRASH_COND(type.params.size() != 1);
 				uint16_t a = _memory.size();
 				_memory.push_back(node->params[0].operator float());
-				output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = a;
+				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = a;
 			} break;
 
 			case VoxelGeneratorGraph::NODE_INPUT_X:
-				output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = 0;
+				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = 0;
 				break;
 
 			case VoxelGeneratorGraph::NODE_INPUT_Y:
-				output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = 1;
+				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = 1;
 				break;
 
 			case VoxelGeneratorGraph::NODE_INPUT_Z:
-				output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = 2;
+				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = 2;
 				break;
 
 			case VoxelGeneratorGraph::NODE_OUTPUT_SDF:
@@ -337,7 +344,7 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 
 					} else {
 						ProgramGraph::PortLocation src_port = node->inputs[j].connections[0];
-						const uint16_t *aptr = output_port_addresses.getptr(src_port);
+						const uint16_t *aptr = _output_port_addresses.getptr(src_port);
 						// Previous node ports must have been registered
 						CRASH_COND(aptr == nullptr);
 						a = *aptr;
@@ -353,7 +360,7 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 
 					// This will be used by next nodes
 					const ProgramGraph::PortLocation op{ node_id, static_cast<uint32_t>(j) };
-					output_port_addresses[op] = a;
+					_output_port_addresses[op] = a;
 
 					append(program, a);
 				}
@@ -979,4 +986,15 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 	}
 
 	return Interval(min_memory[min_memory.size() - 1], max_memory[max_memory.size() - 1]);
+}
+
+uint16_t VoxelGraphRuntime::get_output_port_address(ProgramGraph::PortLocation port) const {
+	const uint16_t *aptr = _output_port_addresses.getptr(port);
+	ERR_FAIL_COND_V(aptr == nullptr, 0);
+	return *aptr;
+}
+
+float VoxelGraphRuntime::get_memory_value(uint16_t address) const {
+	CRASH_COND(address >= _memory.size());
+	return _memory[address];
 }

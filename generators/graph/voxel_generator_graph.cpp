@@ -2,6 +2,8 @@
 #include "../../util/profiling_clock.h"
 #include "voxel_graph_node_db.h"
 
+#include <core/core_string_names.h>
+
 VoxelGeneratorGraph::VoxelGeneratorGraph() {
 	clear();
 	clear_bounds();
@@ -47,6 +49,7 @@ ProgramGraph::Node *VoxelGeneratorGraph::create_node_internal(NodeTypeID type_id
 
 void VoxelGeneratorGraph::remove_node(uint32_t node_id) {
 	_graph.remove_node(node_id);
+	emit_changed();
 }
 
 bool VoxelGeneratorGraph::can_connect(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const {
@@ -59,12 +62,14 @@ void VoxelGeneratorGraph::add_connection(uint32_t src_node_id, uint32_t src_port
 	_graph.connect(
 			ProgramGraph::PortLocation{ src_node_id, src_port_index },
 			ProgramGraph::PortLocation{ dst_node_id, dst_port_index });
+	emit_changed();
 }
 
 void VoxelGeneratorGraph::remove_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) {
 	_graph.disconnect(
 			ProgramGraph::PortLocation{ src_node_id, src_port_index },
 			ProgramGraph::PortLocation{ dst_node_id, dst_port_index });
+	emit_changed();
 }
 
 void VoxelGeneratorGraph::get_connections(std::vector<ProgramGraph::Connection> &connections) const {
@@ -75,6 +80,18 @@ void VoxelGeneratorGraph::get_connections(std::vector<ProgramGraph::Connection> 
 //	_graph.get_connections_from_and_to(connections, node_id);
 //}
 
+bool VoxelGeneratorGraph::try_get_connection_to(ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const {
+	const ProgramGraph::Node *node = _graph.get_node(dst.node_id);
+	CRASH_COND(node == nullptr);
+	CRASH_COND(dst.port_index >= node->inputs.size());
+	const ProgramGraph::Port &port = node->inputs[dst.port_index];
+	if (port.connections.size() == 0) {
+		return false;
+	}
+	out_src = port.connections[0];
+	return true;
+}
+
 bool VoxelGeneratorGraph::has_node(uint32_t node_id) const {
 	return _graph.try_get_node(node_id) != nullptr;
 }
@@ -83,7 +100,24 @@ void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index,
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_INDEX(param_index, node->params.size());
-	node->params[param_index] = value;
+
+	// TODO Changing sub-resources won't trigger a change signal
+	// It's actually very annoying to setup and keep correct. Needs to be done cautiously.
+
+	// Ref<Resource> res = node->params[param_index];
+	// if (res.is_valid()) {
+	// 	res->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_subresource_changed");
+	// }
+
+	if (node->params[param_index] != value) {
+		node->params[param_index] = value;
+		emit_changed();
+	}
+
+	// res = value;
+	// if (res.is_valid()) {
+	// 	res->connect(CoreStringNames::get_singleton()->changed, this, "_on_subresource_changed");
+	// }
 }
 
 Variant VoxelGeneratorGraph::get_node_param(uint32_t node_id, uint32_t param_index) const {
@@ -104,7 +138,10 @@ void VoxelGeneratorGraph::set_node_default_input(uint32_t node_id, uint32_t inpu
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_INDEX(input_index, node->default_inputs.size());
-	node->default_inputs[input_index] = value;
+	if (node->default_inputs[input_index] != value) {
+		node->default_inputs[input_index] = value;
+		emit_changed();
+	}
 }
 
 Vector2 VoxelGeneratorGraph::get_node_gui_position(uint32_t node_id) const {
@@ -116,7 +153,11 @@ Vector2 VoxelGeneratorGraph::get_node_gui_position(uint32_t node_id) const {
 void VoxelGeneratorGraph::set_node_gui_position(uint32_t node_id, Vector2 pos) {
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
-	node->gui_position = pos;
+	if (node->gui_position != pos) {
+		node->gui_position = pos;
+		// Moving nodes around doesn't functionally change the graph
+		//emit_changed();
+	}
 }
 
 VoxelGeneratorGraph::NodeTypeID VoxelGeneratorGraph::get_node_type_id(uint32_t node_id) const {
@@ -658,6 +699,10 @@ float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
 	return generate_single(Vector3i(pos));
 }
 
+// void VoxelGeneratorGraph::_on_subresource_changed() {
+// 	emit_changed();
+// }
+
 void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGeneratorGraph::clear);
 	ClassDB::bind_method(D_METHOD("create_node", "type_id", "position", "id"), &VoxelGeneratorGraph::create_node, DEFVAL(ProgramGraph::NULL_ID));
@@ -689,6 +734,8 @@ void VoxelGeneratorGraph::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("_set_graph_data", "data"), &VoxelGeneratorGraph::load_graph_from_variant_data);
 	ClassDB::bind_method(D_METHOD("_get_graph_data"), &VoxelGeneratorGraph::get_graph_as_variant_data);
+
+	// ClassDB::bind_method(D_METHOD("_on_subresource_changed"), &VoxelGeneratorGraph::_on_subresource_changed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "graph_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NOEDITOR | PROPERTY_USAGE_INTERNAL),
 			"_set_graph_data", "_get_graph_data");
@@ -725,5 +772,6 @@ void VoxelGeneratorGraph::_bind_methods() {
 	BIND_ENUM_CONSTANT(NODE_SDF_BOX);
 	BIND_ENUM_CONSTANT(NODE_SDF_SPHERE);
 	BIND_ENUM_CONSTANT(NODE_SDF_TORUS);
+	BIND_ENUM_CONSTANT(NODE_SDF_PREVIEW);
 	BIND_ENUM_CONSTANT(NODE_TYPE_COUNT);
 }

@@ -41,6 +41,7 @@ public:
 		NODE_SDF_BOX,
 		NODE_SDF_SPHERE,
 		NODE_SDF_TORUS,
+		NODE_SDF_PREVIEW, // For debugging
 		NODE_TYPE_COUNT
 	};
 
@@ -57,6 +58,7 @@ public:
 	void remove_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
 	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
+	bool try_get_connection_to(ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const;
 
 	bool has_node(uint32_t node_id) const;
 
@@ -91,13 +93,17 @@ public:
 
 	Ref<Resource> duplicate(bool p_subresources) const override;
 
+	// Internal
+
+	const VoxelGraphRuntime &get_runtime() const { return _runtime; }
+	void compile();
+
 	// Debug
 
 	float debug_measure_microseconds_per_voxel();
 	void debug_load_waves_preset();
 
 private:
-	void compile();
 	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
 
 	ProgramGraph::Node *create_node_internal(NodeTypeID type_id, Vector2 position, uint32_t id);
@@ -117,6 +123,9 @@ private:
 	// See https://github.com/godotengine/godot/issues/36895
 	void _b_set_node_param_null(int node_id, int param_index);
 	float _b_generate_single(Vector3 pos);
+
+	void _on_subresource_changed();
+	void connect_to_subresource_changes();
 
 	static void _bind_methods();
 

@@ -50,6 +50,8 @@ inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
 		if (predicate(vec[i])) {
 			vec[i] = vec.back();
 			vec.pop_back();
+			// Note: can underflow, but it should be fine since it's incremented right after.
+			// TODO Use a while()?
 			--i;
 		}
 	}
