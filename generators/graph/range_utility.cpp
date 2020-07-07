@@ -9,7 +9,7 @@ Interval get_osn_octave_range_2d(OpenSimplexNoise *noise, const Interval &x, con
 
 	float mid_x = 0.5 * (x.min + x.max);
 	float mid_y = 0.5 * (y.min + y.max);
-	float mid_value = noise->_get_octave_noise_2d(mid_x, mid_y, octave);
+	float mid_value = noise->_get_octave_noise_2d(octave, mid_x, mid_y);
 
 	float diag = Math::sqrt(squared(x.length()) + squared(y.length()));
 
@@ -27,7 +27,7 @@ Interval get_osn_octave_range_3d(OpenSimplexNoise *noise, const Interval &x, con
 	float mid_x = 0.5 * (x.min + x.max);
 	float mid_y = 0.5 * (y.min + y.max);
 	float mid_z = 0.5 * (z.min + z.max);
-	float mid_value = noise->_get_octave_noise_3d(mid_x, mid_y, mid_z, octave);
+	float mid_value = noise->_get_octave_noise_3d(octave, mid_x, mid_y, mid_z);
 
 	float diag = Math::sqrt(squared(x.length()) + squared(y.length()) + squared(z.length()));
 
