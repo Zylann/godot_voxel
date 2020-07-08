@@ -710,6 +710,7 @@ void VoxelBuffer::set_channel_depth(unsigned int channel_index, Depth new_depth)
 		delete_channel(channel_index);
 	}
 	channel.defval = clamp_value_for_depth(channel.defval, new_depth);
+	channel.depth = new_depth;
 }
 
 VoxelBuffer::Depth VoxelBuffer::get_channel_depth(unsigned int channel_index) const {
