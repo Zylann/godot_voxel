@@ -1,5 +1,6 @@
 #include "voxel_graph_node_inspector_wrapper.h"
 #include "../generators/graph/voxel_graph_node_db.h"
+#include "../util/macros.h"
 
 void VoxelGraphNodeInspectorWrapper::setup(Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id) {
 	_graph = p_graph;
@@ -13,7 +14,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 	if (!graph->has_node(_node_id)) {
 		// Maybe got erased by the user?
 #ifdef DEBUG_ENABLED
-		print_line("VoxelGeneratorGraph node was not found");
+		PRINT_VERBOSE("VoxelGeneratorGraph node was not found, from the graph inspector");
 #endif
 		return;
 	}

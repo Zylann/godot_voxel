@@ -1,10 +1,10 @@
 #include "voxel_data_loader.h"
 #include "../streams/voxel_stream.h"
+#include "../util/macros.h"
 #include "../util/utility.h"
 
 VoxelDataLoader::VoxelDataLoader(unsigned int thread_count, Ref<VoxelStream> stream, unsigned int block_size_pow2) {
-
-	print_line("Constructing VoxelDataLoader");
+	PRINT_VERBOSE("Constructing VoxelDataLoader");
 	CRASH_COND(stream.is_null());
 
 	// TODO I'm not sure it's worth to configure more than one thread for voxel streams
@@ -47,7 +47,7 @@ VoxelDataLoader::VoxelDataLoader(unsigned int thread_count, Ref<VoxelStream> str
 }
 
 VoxelDataLoader::~VoxelDataLoader() {
-	print_line("Destroying VoxelDataLoader");
+	PRINT_VERBOSE("Destroying VoxelDataLoader");
 	if (_mgr) {
 		memdelete(_mgr);
 	}

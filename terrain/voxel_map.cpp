@@ -1,8 +1,7 @@
 #include "voxel_map.h"
 #include "../cube_tables.h"
+#include "../util/macros.h"
 #include "voxel_block.h"
-
-#include "core/os/os.h"
 
 VoxelMap::VoxelMap() :
 		_last_accessed_block(NULL) {
@@ -15,7 +14,7 @@ VoxelMap::VoxelMap() :
 }
 
 VoxelMap::~VoxelMap() {
-	print_line("Destroying VoxelMap");
+	PRINT_VERBOSE("Destroying VoxelMap");
 	clear();
 }
 
@@ -26,7 +25,6 @@ void VoxelMap::create(unsigned int block_size_po2, int lod_index) {
 }
 
 void VoxelMap::set_block_size_pow2(unsigned int p) {
-
 	ERR_FAIL_COND_MSG(p < 1, "Block size is too small");
 	ERR_FAIL_COND_MSG(p > 8, "Block size is too big");
 
@@ -36,7 +34,6 @@ void VoxelMap::set_block_size_pow2(unsigned int p) {
 }
 
 void VoxelMap::set_lod_index(int lod_index) {
-
 	ERR_FAIL_COND_MSG(lod_index < 0, "LOD index can't be negative");
 	ERR_FAIL_COND_MSG(lod_index >= 32, "LOD index is too big");
 
@@ -57,7 +54,6 @@ int VoxelMap::get_voxel(Vector3i pos, unsigned int c) const {
 }
 
 VoxelBlock *VoxelMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
-
 	Vector3i bpos = voxel_to_block(pos);
 	VoxelBlock *block = get_block(bpos);
 
@@ -76,13 +72,11 @@ VoxelBlock *VoxelMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
 }
 
 void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
-
 	VoxelBlock *block = get_or_create_block_at_voxel_pos(pos);
 	block->voxels->set_voxel(value, to_local(pos), c);
 }
 
 float VoxelMap::get_voxel_f(Vector3i pos, unsigned int c) const {
-
 	Vector3i bpos = voxel_to_block(pos);
 	const VoxelBlock *block = get_block(bpos);
 	if (block == nullptr) {
@@ -93,7 +87,6 @@ float VoxelMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 }
 
 void VoxelMap::set_voxel_f(real_t value, Vector3i pos, unsigned int c) {
-
 	VoxelBlock *block = get_or_create_block_at_voxel_pos(pos);
 	Vector3i lpos = to_local(pos);
 	block->voxels->set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
@@ -178,7 +171,6 @@ bool VoxelMap::is_block_surrounded(Vector3i pos) const {
 }
 
 void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) {
-
 	Vector3i max_pos = min_pos + dst_buffer.get_size();
 
 	Vector3i min_block_pos = voxel_to_block(min_pos);
@@ -189,7 +181,6 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 	const Vector3i block_size_v(_block_size, _block_size, _block_size);
 
 	for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
-
 		if (((1 << channel) & channels_mask) == 0) {
 			continue;
 		}
@@ -250,7 +241,6 @@ bool VoxelMap::is_area_fully_loaded(const Rect3i voxels_box) const {
 }
 
 void VoxelMap::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "c"), &VoxelMap::_b_get_voxel, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "c"), &VoxelMap::_b_set_voxel, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "c"), &VoxelMap::_b_get_voxel_f, DEFVAL(VoxelBuffer::CHANNEL_SDF));

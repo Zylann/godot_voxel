@@ -1,7 +1,9 @@
 #include "voxel_graph_runtime.h"
+#include "../../util/macros.h"
 #include "range_utility.h"
 #include "voxel_generator_graph.h"
 #include "voxel_graph_node_db.h"
+
 #include <unordered_set>
 
 //#ifdef DEBUG_ENABLED
@@ -453,8 +455,8 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 		_memory[j] = _memory[i];
 	}
 
-	print_line(String("Compiled voxel graph. Program size: {0}b, memory size: {1}b")
-					   .format(varray(_program.size() * sizeof(float), _memory.size() * sizeof(float))));
+	PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, memory size: {1}b")
+						  .format(varray(_program.size() * sizeof(float), _memory.size() * sizeof(float))));
 
 	CRASH_COND(!has_output);
 }

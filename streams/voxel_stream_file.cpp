@@ -20,7 +20,6 @@ void VoxelStreamFile::set_fallback_stream(Ref<VoxelStream> stream) {
 }
 
 void VoxelStreamFile::emerge_block_fallback(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-
 	// This function is just a helper around the true thing, really. I might remove it in the future.
 
 	VoxelBlockRequest r;

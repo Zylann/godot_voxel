@@ -2,6 +2,7 @@
 #include "../edition/voxel_tool_lod_terrain.h"
 #include "../math/rect3i.h"
 #include "../streams/voxel_stream_file.h"
+#include "../util/macros.h"
 #include "../util/profiling_clock.h"
 #include "../voxel_string_names.h"
 #include "voxel_map.h"
@@ -52,7 +53,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	// Godot may create and destroy dozens of instances of all node types on startup,
 	// due to how ClassDB gets its default values.
 
-	print_line("Construct VoxelLodTerrain");
+	PRINT_VERBOSE("Construct VoxelLodTerrain");
 
 	_lods[0].map.instance();
 
@@ -63,8 +64,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 }
 
 VoxelLodTerrain::~VoxelLodTerrain() {
-
-	print_line("Destroy VoxelLodTerrain");
+	PRINT_VERBOSE("Destroy VoxelLodTerrain");
 
 	if (_stream_thread) {
 		// Schedule saving of all modified blocks,
@@ -81,7 +81,7 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 
 String VoxelLodTerrain::get_configuration_warning() const {
 	if (_stream.is_valid()) {
-		if (! (_stream->get_used_channels_mask() & (1<<VoxelBuffer::CHANNEL_SDF))) {
+		if (!(_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF))) {
 			return TTR("VoxelLodTerrain supports only stream channel \"Sdf\" (smooth).");
 		}
 	}
@@ -613,8 +613,8 @@ void VoxelLodTerrain::send_block_data_requests() {
 	}
 
 	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
-		print_line(String("Requesting save of block {0} lod {1}")
-						   .format(varray(_blocks_to_save[i].position.to_vec3(), _blocks_to_save[i].lod)));
+		PRINT_VERBOSE(String("Requesting save of block {0} lod {1}")
+							  .format(varray(_blocks_to_save[i].position.to_vec3(), _blocks_to_save[i].lod)));
 		input.blocks.push_back(_blocks_to_save[i]);
 	}
 
@@ -625,7 +625,6 @@ void VoxelLodTerrain::send_block_data_requests() {
 }
 
 void VoxelLodTerrain::_process() {
-
 	VOXEL_PROFILE_SCOPE(profile_process);
 
 	if (get_lod_count() == 0) {
@@ -1182,7 +1181,7 @@ void VoxelLodTerrain::_process() {
 			if (ob.drop_hint) {
 				// That block is loaded, but its meshing request was dropped.
 				// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
-				print_line("Received a block mesh drop while we were still expecting it");
+				PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
 				++_stats.dropped_block_meshs;
 				continue;
 			}

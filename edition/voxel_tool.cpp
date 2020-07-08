@@ -1,5 +1,6 @@
 #include "voxel_tool.h"
 #include "../terrain/voxel_lod_terrain.h"
+#include "../util/macros.h"
 #include "../voxel_buffer.h"
 
 Vector3 VoxelRaycastResult::_b_get_position() const {
@@ -69,7 +70,7 @@ float VoxelTool::get_voxel_f(Vector3i pos) {
 void VoxelTool::set_voxel(Vector3i pos, int v) {
 	Rect3i box(pos, Vector3i(1));
 	if (!is_area_editable(box)) {
-		print_line("Area not editable");
+		PRINT_VERBOSE("Area not editable");
 		return;
 	}
 	_set_voxel(pos, v);
@@ -79,7 +80,7 @@ void VoxelTool::set_voxel(Vector3i pos, int v) {
 void VoxelTool::set_voxel_f(Vector3i pos, float v) {
 	Rect3i box(pos, Vector3i(1));
 	if (!is_area_editable(box)) {
-		print_line("Area not editable");
+		PRINT_VERBOSE("Area not editable");
 		return;
 	}
 	_set_voxel_f(pos, v);
@@ -161,7 +162,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 	Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
-		print_line("Area not editable");
+		PRINT_VERBOSE("Area not editable");
 		return;
 	}
 

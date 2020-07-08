@@ -1,6 +1,7 @@
 #include "voxel_terrain.h"
 #include "../edition/voxel_tool_terrain.h"
 #include "../streams/voxel_stream_file.h"
+#include "../util/macros.h"
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
 #include "voxel_block.h"
@@ -8,7 +9,6 @@
 
 #include <core/core_string_names.h>
 #include <core/engine.h>
-#include <core/os/os.h>
 #include <scene/3d/mesh_instance.h>
 
 const uint32_t MAIN_THREAD_MESHING_BUDGET_MS = 8;
@@ -34,7 +34,7 @@ VoxelTerrain::VoxelTerrain() {
 }
 
 VoxelTerrain::~VoxelTerrain() {
-	print_line("Destroying VoxelTerrain");
+	PRINT_VERBOSE("Destroying VoxelTerrain");
 
 	if (_stream_thread != nullptr) {
 		// Schedule saving of all modified blocks,
@@ -223,7 +223,7 @@ void VoxelTerrain::set_view_distance(int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0);
 	int d = distance_in_voxels / _map->get_block_size();
 	if (d != _view_distance_blocks) {
-		print_line(String("View distance changed from ") + String::num(_view_distance_blocks) + String(" blocks to ") + String::num(d));
+		PRINT_VERBOSE(String("View distance changed from ") + String::num(_view_distance_blocks) + String(" blocks to ") + String::num(d));
 		_view_distance_blocks = d;
 		// Blocks too far away will be removed in _process, same for blocks to load
 	}
@@ -281,7 +281,7 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 		_blocks_pending_update.push_back(bpos);
 
 		if (!block->is_modified()) {
-			print_line(String("Marking block {0} as modified").format(varray(bpos.to_vec3())));
+			PRINT_VERBOSE(String("Marking block {0} as modified").format(varray(bpos.to_vec3())));
 			block->set_modified(true);
 		}
 	}
@@ -726,7 +726,7 @@ void VoxelTerrain::send_block_data_requests() {
 	}
 
 	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
-		print_line(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position.to_vec3())));
+		PRINT_VERBOSE(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position.to_vec3())));
 		input.blocks.push_back(_blocks_to_save[i]);
 	}
 
@@ -834,8 +834,8 @@ void VoxelTerrain::_process() {
 			if (ob.drop_hint) {
 				// That block was dropped by the data loader thread, but we were still expecting it...
 				// This is not good, because it means the loader is out of sync due to a bug.
-				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
-								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
+				PRINT_VERBOSE(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
+									  .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
 				++_stats.dropped_block_loads;
 				continue;
 			}
@@ -1005,7 +1005,7 @@ void VoxelTerrain::_process() {
 			if (ob.drop_hint) {
 				// That block is loaded, but its meshing request was dropped.
 				// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
-				print_line("Received a block mesh drop while we were still expecting it");
+				PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
 				++_stats.dropped_block_meshs;
 				continue;
 			}

@@ -1,4 +1,5 @@
 #include "voxel.h"
+#include "../../util/macros.h"
 #include "voxel_library.h"
 #include "voxel_mesher_blocky.h" // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
 
@@ -370,7 +371,7 @@ void Voxel::update_cube_uv_sides() {
 	//ERR_FAIL_COND(library == NULL);
 	if (library == NULL) {
 		// Not an error, the Voxel might have been created before the library, and can't be used without anyways
-		print_line("VoxelLibrary not set yet");
+		PRINT_VERBOSE("VoxelLibrary not set yet");
 		return;
 	}
 

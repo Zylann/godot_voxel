@@ -5,6 +5,7 @@
 #include "../math/vector3i.h"
 #include "../util/array_slice.h"
 #include "../util/fixed_array.h"
+#include "../util/macros.h"
 #include "../util/utility.h"
 #include "../voxel_constants.h"
 
@@ -246,7 +247,7 @@ public:
 		}
 
 		if (replaced_blocks > 0) {
-			print_line(String("VoxelBlockProcessor: {1} blocks already in queue were replaced").format(varray(replaced_blocks)));
+			PRINT_VERBOSE(String("VoxelBlockProcessor: {1} blocks already in queue were replaced").format(varray(replaced_blocks)));
 		}
 	}
 
@@ -589,7 +590,7 @@ private:
 		}
 
 		if (dropped_count > 0) {
-			print_line(String("Dropped {0} blocks from thread").format(varray(dropped_count)));
+			PRINT_VERBOSE(String("Dropped {0} blocks from thread").format(varray(dropped_count)));
 			out_dropped_count = dropped_count;
 		}
 

@@ -1,5 +1,6 @@
 #include "voxel_graph_editor.h"
 #include "../generators/graph/voxel_generator_graph.h"
+#include "../util/macros.h"
 #include "editor/editor_scale.h"
 
 #include <core/core_string_names.h>
@@ -494,7 +495,7 @@ void VoxelGraphEditor::update_previews() {
 	_graph->compile();
 
 	// TODO Use a thread?
-	print_line("Updating previews");
+	PRINT_VERBOSE("Updating previews");
 
 	struct PreviewInfo {
 		VoxelGraphEditorNodePreview *control;
@@ -555,7 +556,7 @@ void VoxelGraphEditor::update_previews() {
 	}
 
 	uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
-	print_line(String("Previews generated in {0} us").format(varray(time_taken)));
+	PRINT_VERBOSE(String("Previews generated in {0} us").format(varray(time_taken)));
 }
 
 void VoxelGraphEditor::schedule_preview_update() {

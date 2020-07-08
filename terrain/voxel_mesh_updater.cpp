@@ -1,12 +1,11 @@
 #include "voxel_mesh_updater.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "../util/macros.h"
 #include "../util/utility.h"
 #include "voxel_lod_terrain.h"
-#include <core/os/os.h>
 
 VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams params) {
-
-	print_line("Constructing VoxelMeshUpdater");
+	PRINT_VERBOSE("Constructing VoxelMeshUpdater");
 
 	Ref<VoxelMesherBlocky> blocky_mesher;
 	Ref<VoxelMesherTransvoxel> smooth_mesher;
@@ -53,7 +52,7 @@ VoxelMeshUpdater::VoxelMeshUpdater(unsigned int thread_count, MeshingParams para
 }
 
 VoxelMeshUpdater::~VoxelMeshUpdater() {
-	print_line("Destroying VoxelMeshUpdater");
+	PRINT_VERBOSE("Destroying VoxelMeshUpdater");
 	if (_mgr) {
 		memdelete(_mgr);
 	}

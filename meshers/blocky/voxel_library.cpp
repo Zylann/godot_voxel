@@ -1,5 +1,5 @@
 #include "voxel_library.h"
-#include <core/os/os.h>
+#include "../../util/macros.h"
 #include <bitset>
 
 VoxelLibrary::VoxelLibrary() :
@@ -146,16 +146,12 @@ static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F ou
 }
 
 void VoxelLibrary::bake() {
-#ifdef DEBUG_ENABLED
 	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
-#endif
 
 	generate_side_culling_matrix();
 
-#ifdef DEBUG_ENABLED
 	uint64_t time_spent = OS::get_singleton()->get_ticks_usec() - time_before;
-	print_line(String("Took {0} us to bake VoxelLibrary").format(varray(time_spent)));
-#endif
+	PRINT_VERBOSE(String("Took {0} us to bake VoxelLibrary").format(varray(time_spent)));
 }
 
 void VoxelLibrary::generate_side_culling_matrix() {

@@ -1,5 +1,6 @@
 #include "voxel_stream_region_files.h"
 #include "../math/rect3i.h"
+#include "../util/macros.h"
 #include "../util/utility.h"
 #include <core/io/json.h>
 #include <core/os/os.h>
@@ -835,7 +836,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	// TODO Converting across different block sizes is untested.
 	// I wrote it because it would be too bad to loose large voxel worlds because of a setting change, so one day we may need it
 
-	print_line("Converting region files");
+	PRINT_VERBOSE("Converting region files");
 	// This can be a very long and slow operation. Better run this in a thread.
 
 	ERR_FAIL_COND(!_meta_saved);
@@ -872,7 +873,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 		}
 
 		old_stream->set_directory(old_dir);
-		print_line("Data backed up as " + old_dir);
+		PRINT_VERBOSE("Data backed up as " + old_dir);
 	}
 
 	struct PositionAndLod {
@@ -942,7 +943,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			continue;
 		}
 
-		print_line(String("Converting region lod{0}/{1}").format(varray(region_info.lod, region_info.position.to_vec3())));
+		PRINT_VERBOSE(String("Converting region lod{0}/{1}").format(varray(region_info.lod, region_info.position.to_vec3())));
 
 		const RegionHeader &header = region->header;
 		for (unsigned int j = 0; j < header.blocks.size(); ++j) {
