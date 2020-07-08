@@ -43,6 +43,8 @@ private:
 	void _on_graph_edit_node_unselected(Node *p_node);
 	void _on_graph_node_dragged(Vector2 from, Vector2 to, int id);
 	void _on_context_menu_id_pressed(int id);
+	void _on_update_previews_button_pressed();
+	void _on_profile_button_pressed();
 	void _on_graph_changed();
 
 	void _check_nothing_selected();
@@ -52,6 +54,7 @@ private:
 	Ref<VoxelGeneratorGraph> _graph;
 	GraphEdit *_graph_edit = nullptr;
 	PopupMenu *_context_menu = nullptr;
+	Label *_profile_label = nullptr;
 	UndoRedo *_undo_redo = nullptr;
 	Vector2 _click_position;
 	bool _nothing_selected_check_scheduled = false;

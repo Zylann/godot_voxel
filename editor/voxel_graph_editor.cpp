@@ -52,16 +52,41 @@ public:
 };
 
 VoxelGraphEditor::VoxelGraphEditor() {
+	VBoxContainer *vbox_container = memnew(VBoxContainer);
+	vbox_container->set_anchors_and_margins_preset(Control::PRESET_WIDE);
+
+	{
+		HBoxContainer *toolbar = memnew(HBoxContainer);
+
+		Button *update_previews_button = memnew(Button);
+		update_previews_button->set_text("Update Previews");
+		update_previews_button->connect("pressed", this, "_on_update_previews_button_pressed");
+		toolbar->add_child(update_previews_button);
+
+		Button *profile_button = memnew(Button);
+		profile_button->set_text("Profile");
+		profile_button->connect("pressed", this, "_on_profile_button_pressed");
+		toolbar->add_child(profile_button);
+
+		_profile_label = memnew(Label);
+		toolbar->add_child(_profile_label);
+
+		vbox_container->add_child(toolbar);
+	}
+
 	_graph_edit = memnew(GraphEdit);
 	_graph_edit->set_anchors_preset(Control::PRESET_WIDE);
 	_graph_edit->set_right_disconnects(true);
+	_graph_edit->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	_graph_edit->connect("gui_input", this, "_on_graph_edit_gui_input");
 	_graph_edit->connect("connection_request", this, "_on_graph_edit_connection_request");
 	_graph_edit->connect("delete_nodes_request", this, "_on_graph_edit_delete_nodes_request");
 	_graph_edit->connect("disconnection_request", this, "_on_graph_edit_disconnection_request");
 	_graph_edit->connect("node_selected", this, "_on_graph_edit_node_selected");
 	_graph_edit->connect("node_unselected", this, "_on_graph_edit_node_unselected");
-	add_child(_graph_edit);
+	vbox_container->add_child(_graph_edit);
+
+	add_child(vbox_container);
 
 	_context_menu = memnew(PopupMenu);
 	FixedArray<PopupMenu *, VoxelGraphNodeDB::CATEGORY_COUNT> category_menus;
@@ -519,7 +544,6 @@ void VoxelGraphEditor::update_previews() {
 				PreviewInfo &info = previews[i];
 				const float v = runtime.get_memory_value(info.address);
 				const float g = clamp((v - info.min_value) * info.value_scale, 0.f, 1.f);
-				Color c(g, g, g);
 				info.control->get_image()->set_pixel(ix, iy, Color(g, g, g));
 			}
 		}
@@ -542,6 +566,18 @@ void VoxelGraphEditor::_on_graph_changed() {
 	schedule_preview_update();
 }
 
+void VoxelGraphEditor::_on_update_previews_button_pressed() {
+	update_previews();
+}
+
+void VoxelGraphEditor::_on_profile_button_pressed() {
+	if (_graph.is_null()) {
+		return;
+	}
+	const float us = _graph->debug_measure_microseconds_per_voxel();
+	_profile_label->set_text(String("{0} microseconds per voxel").format(varray(us)));
+}
+
 void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_gui_input", "event"), &VoxelGraphEditor::_on_graph_edit_gui_input);
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_connection_request", "from_node_name", "from_slot", "to_node_name", "to_slot"),
@@ -554,6 +590,8 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_graph_node_dragged", "from", "to", "id"), &VoxelGraphEditor::_on_graph_node_dragged);
 	ClassDB::bind_method(D_METHOD("_on_context_menu_id_pressed", "id"), &VoxelGraphEditor::_on_context_menu_id_pressed);
 	ClassDB::bind_method(D_METHOD("_on_graph_changed"), &VoxelGraphEditor::_on_graph_changed);
+	ClassDB::bind_method(D_METHOD("_on_update_previews_button_pressed"), &VoxelGraphEditor::_on_update_previews_button_pressed);
+	ClassDB::bind_method(D_METHOD("_on_profile_button_pressed"), &VoxelGraphEditor::_on_profile_button_pressed);
 
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);
 
