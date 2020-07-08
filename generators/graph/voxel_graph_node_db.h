@@ -38,10 +38,21 @@ public:
 				class_name(p_class_name) {}
 	};
 
+	enum Category {
+		CATEGORY_INPUT = 0,
+		CATEGORY_OUTPUT,
+		CATEGORY_MATH,
+		CATEGORY_CONVERT,
+		CATEGORY_GENERATE,
+		CATEGORY_SDF,
+		CATEGORY_DEBUG,
+		CATEGORY_COUNT
+	};
+
 	struct NodeType {
 		String name;
 		bool debug_only = false;
-		// TODO Category
+		Category category;
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
 		std::vector<Param> params;
@@ -54,6 +65,8 @@ public:
 	static VoxelGraphNodeDB *get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
+
+	static const char *get_category_name(Category category);
 
 	int get_type_count() const { return _types.size(); }
 	const NodeType &get_type(uint32_t id) const { return _types[id]; }

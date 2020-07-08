@@ -64,12 +64,21 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	add_child(_graph_edit);
 
 	_context_menu = memnew(PopupMenu);
+	FixedArray<PopupMenu *, VoxelGraphNodeDB::CATEGORY_COUNT> category_menus;
+	for (unsigned int i = 0; i < category_menus.size(); ++i) {
+		String name = VoxelGraphNodeDB::get_category_name(VoxelGraphNodeDB::Category(i));
+		PopupMenu *menu = memnew(PopupMenu);
+		menu->set_name(name);
+		menu->connect("id_pressed", this, "_on_context_menu_id_pressed");
+		_context_menu->add_child(menu);
+		_context_menu->add_submenu_item(name, name, i);
+		category_menus[i] = menu;
+	}
 	for (int i = 0; i < VoxelGraphNodeDB::get_singleton()->get_type_count(); ++i) {
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(i);
-		_context_menu->add_item(node_type.name);
-		_context_menu->set_item_metadata(i, i);
+		PopupMenu *menu = category_menus[node_type.category];
+		menu->add_item(node_type.name, i);
 	}
-	_context_menu->connect("index_pressed", this, "_on_context_menu_index_pressed");
 	_context_menu->hide();
 	add_child(_context_menu);
 }
@@ -414,9 +423,9 @@ Vector2 get_graph_offset_from_mouse(const GraphEdit *graph_edit, const Vector2 l
 	return offset;
 }
 
-void VoxelGraphEditor::_on_context_menu_index_pressed(int idx) {
+void VoxelGraphEditor::_on_context_menu_id_pressed(int id) {
 	const Vector2 pos = get_graph_offset_from_mouse(_graph_edit, _click_position);
-	const uint32_t node_type_id = _context_menu->get_item_metadata(idx);
+	const uint32_t node_type_id = id;
 	const uint32_t node_id = _graph->generate_node_id();
 	const StringName node_name = node_to_gui_name(node_id);
 
@@ -543,7 +552,7 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_node_selected"), &VoxelGraphEditor::_on_graph_edit_node_selected);
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_node_unselected"), &VoxelGraphEditor::_on_graph_edit_node_unselected);
 	ClassDB::bind_method(D_METHOD("_on_graph_node_dragged", "from", "to", "id"), &VoxelGraphEditor::_on_graph_node_dragged);
-	ClassDB::bind_method(D_METHOD("_on_context_menu_index_pressed", "idx"), &VoxelGraphEditor::_on_context_menu_index_pressed);
+	ClassDB::bind_method(D_METHOD("_on_context_menu_id_pressed", "id"), &VoxelGraphEditor::_on_context_menu_id_pressed);
 	ClassDB::bind_method(D_METHOD("_on_graph_changed"), &VoxelGraphEditor::_on_graph_changed);
 
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);

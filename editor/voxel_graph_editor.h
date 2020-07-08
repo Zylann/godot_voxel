@@ -42,7 +42,7 @@ private:
 	void _on_graph_edit_node_selected(Node *p_node);
 	void _on_graph_edit_node_unselected(Node *p_node);
 	void _on_graph_node_dragged(Vector2 from, Vector2 to, int id);
-	void _on_context_menu_index_pressed(int idx);
+	void _on_context_menu_id_pressed(int id);
 	void _on_graph_changed();
 
 	void _check_nothing_selected();
