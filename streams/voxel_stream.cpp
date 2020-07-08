@@ -8,7 +8,7 @@ VoxelStream::VoxelStream() {
 void VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND(out_buffer.is_null());
 	ScriptInstance *script = get_script_instance();
-	if (script) {
+	if (script && script->has_method(VoxelStringNames::get_singleton()->emerge_block)) {
 		// Call script to generate buffer
 		Variant arg1 = out_buffer;
 		Variant arg2 = origin_in_voxels.to_vec3();
@@ -27,7 +27,7 @@ void VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_v
 void VoxelStream::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND(buffer.is_null());
 	ScriptInstance *script = get_script_instance();
-	if (script) {
+	if (script && script->has_method(VoxelStringNames::get_singleton()->immerge_block)) {
 		// Call script to save buffer
 		Variant arg1 = buffer;
 		Variant arg2 = origin_in_voxels.to_vec3();
@@ -79,7 +79,7 @@ void VoxelStream::_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxe
 int VoxelStream::get_used_channels_mask() const {
 	ScriptInstance *script = get_script_instance();
 	int mask = 0;
-	if (script) {
+	if (script && script->has_method(VoxelStringNames::get_singleton()->get_used_channels_mask)) {
 		// Call script to get mask
 		Variant::CallError err;
 		//const Variant *args[3] = { &arg1, &arg2, &arg3 };

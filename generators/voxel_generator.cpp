@@ -5,12 +5,10 @@ VoxelGenerator::VoxelGenerator() {
 }
 
 void VoxelGenerator::generate_block(VoxelBlockRequest &input) {
-
 	ERR_FAIL_COND(input.voxel_buffer.is_null());
 	ScriptInstance *script = get_script_instance();
 
-	if (script) {
-
+	if (script && script->has_method(VoxelStringNames::get_singleton()->generate_block)) {
 		// Call script to generate buffer
 		Variant arg1 = input.voxel_buffer;
 		Variant arg2 = input.origin_in_voxels.to_vec3();
@@ -21,7 +19,7 @@ void VoxelGenerator::generate_block(VoxelBlockRequest &input) {
 		script->call(VoxelStringNames::get_singleton()->generate_block, args, 3, err);
 
 		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-				"voxel_generator.cpp:emerge_block gave an error: " + String::num(err.error) +
+				"voxel_generator.cpp:generate_block gave an error: " + String::num(err.error) +
 						", Argument: " + String::num(err.argument) +
 						", Expected type: " + Variant::get_type_name(err.expected));
 
