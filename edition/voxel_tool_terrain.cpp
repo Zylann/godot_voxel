@@ -37,7 +37,13 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 				return false;
 
 			const Voxel &voxel = lib.get_voxel_const(v0);
+			if (voxel.get_geometry_type() == voxel.GEOMETRY_NONE)
+				return false;
+
 			if (voxel.is_transparent() == false)
+				return true;
+
+			if (voxel.is_transparent() && voxel.get_collision_aabbs().empty() == false)
 				return true;
 
 			float v1 = map->get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
