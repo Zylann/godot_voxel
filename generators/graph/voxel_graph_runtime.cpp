@@ -186,7 +186,7 @@ void VoxelGraphRuntime::clear() {
 	_output_port_addresses.clear();
 }
 
-void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
+void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 	_output_port_addresses.clear();
 
 	std::vector<uint32_t> order;
@@ -194,12 +194,14 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 
 	graph.find_terminal_nodes(terminal_nodes);
 
-	// Exclude debug nodes
-	unordered_remove_if(terminal_nodes, [&graph](uint32_t node_id) {
-		const ProgramGraph::Node *node = graph.get_node(node_id);
-		const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
-		return type.debug_only;
-	});
+	if (!debug) {
+		// Exclude debug nodes
+		unordered_remove_if(terminal_nodes, [&graph](uint32_t node_id) {
+			const ProgramGraph::Node *node = graph.get_node(node_id);
+			const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
+			return type.debug_only;
+		});
+	}
 
 	graph.find_dependencies(terminal_nodes, order);
 
@@ -322,6 +324,8 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 				// TODO Multiple outputs may be supported if we get branching
 				CRASH_COND(has_output);
 				has_output = true;
+
+			case VoxelGeneratorGraph::NODE_SDF_PREVIEW:
 				break;
 
 			default: {

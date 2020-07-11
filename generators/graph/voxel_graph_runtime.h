@@ -11,11 +11,10 @@ public:
 	VoxelGraphRuntime();
 
 	void clear();
-	void compile(const ProgramGraph &graph);
+	void compile(const ProgramGraph &graph, bool debug);
 	float generate_single(const Vector3i &position);
 	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
 
-	// Debugging
 	uint16_t get_output_port_address(ProgramGraph::PortLocation port) const;
 	float get_memory_value(uint16_t address) const;
 

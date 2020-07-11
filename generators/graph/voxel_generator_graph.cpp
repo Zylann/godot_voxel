@@ -262,7 +262,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 }
 
 void VoxelGeneratorGraph::compile() {
-	_runtime.compile(_graph);
+	_runtime.compile(_graph, Engine::get_singleton()->is_editor_hint());
 }
 
 float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
