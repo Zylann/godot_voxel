@@ -24,6 +24,7 @@ private:
 	uint32_t _xzy_program_start;
 	int _last_x;
 	int _last_z;
+	int _sdf_output_address = -1;
 
 	HashMap<ProgramGraph::PortLocation, uint16_t, ProgramGraph::PortLocationHasher> _output_port_addresses;
 };

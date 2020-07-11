@@ -192,6 +192,7 @@ void VoxelGraphRuntime::clear() {
 	_last_x = std::numeric_limits<int>::max();
 	_last_z = std::numeric_limits<int>::max();
 	_output_port_addresses.clear();
+	_sdf_output_address = -1;
 }
 
 void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
@@ -285,13 +286,13 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 	_xzy_program_start = 0;
 	_last_x = std::numeric_limits<int>::max();
 	_last_z = std::numeric_limits<int>::max();
+	_sdf_output_address = -1;
 
 	// Main inputs X, Y, Z
 	_memory.resize(3);
 
 	std::vector<uint8_t> &program = _program;
 	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
-	bool has_output = false;
 
 	// Run through each node in order, and turn them into program instructions
 	for (size_t i = 0; i < order.size(); ++i) {
@@ -311,7 +312,7 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 			case VoxelGeneratorGraph::NODE_CONSTANT: {
 				CRASH_COND(type.outputs.size() != 1);
 				CRASH_COND(type.params.size() != 1);
-				uint16_t a = _memory.size();
+				const uint16_t a = _memory.size();
 				_memory.push_back(node->params[0].operator float());
 				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = a;
 			} break;
@@ -330,8 +331,13 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 
 			case VoxelGeneratorGraph::NODE_OUTPUT_SDF:
 				// TODO Multiple outputs may be supported if we get branching
-				CRASH_COND(has_output);
-				has_output = true;
+				if (_sdf_output_address != -1) {
+					ERR_PRINT("Voxel graph has multiple SDF outputs");
+				}
+				if (_memory.size() > 0) {
+					_sdf_output_address = _memory.size() - 1;
+				}
+				break;
 
 			case VoxelGeneratorGraph::NODE_SDF_PREVIEW:
 				break;
@@ -470,7 +476,7 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 	PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, memory size: {1}b")
 						  .format(varray(_program.size() * sizeof(float), _memory.size() * sizeof(float))));
 
-	CRASH_COND(!has_output);
+	//ERR_FAIL_COND(_sdf_output_address == -1);
 }
 
 inline Interval get_length(const Interval &x, const Interval &y) {
@@ -529,6 +535,9 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 
 #ifdef DEBUG_ENABLED
 	CRASH_COND(_memory.size() == 0);
+#endif
+#ifdef TOOLS_ENABLED
+	ERR_FAIL_COND_V_MSG(_sdf_output_address == -1, 0.0, "The graph has no SDF output");
 #endif
 
 	ArraySlice<float> memory(_memory, 0, _memory.size() / 2);
@@ -731,7 +740,7 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 #endif
 	}
 
-	return memory[memory.size() - 1];
+	return memory[_sdf_output_address];
 }
 
 Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
@@ -1028,7 +1037,7 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 #endif
 	}
 
-	return Interval(min_memory[min_memory.size() - 1], max_memory[max_memory.size() - 1]);
+	return Interval(min_memory[_sdf_output_address], max_memory[_sdf_output_address]);
 }
 
 uint16_t VoxelGraphRuntime::get_output_port_address(ProgramGraph::PortLocation port) const {
