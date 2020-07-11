@@ -466,14 +466,20 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 // Debug land
 
 float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel() {
-	Vector3i pos(1, 1, 1);
+	// Need to query varying positions to avoid some optimizations to kick in
+	FixedArray<Vector3i, 2> random_positions;
+	random_positions[0] = Vector3i(1, 1, 1);
+	random_positions[1] = Vector3i(2, 2, 2);
+
 	float v;
 	const uint32_t iterations = 1000000;
 	ProfilingClock profiling_clock;
 	profiling_clock.restart();
+
 	for (uint32_t i = 0; i < iterations; ++i) {
-		v = generate_single(pos);
+		v = generate_single(random_positions[i & 1]);
 	}
+
 	uint64_t ius = profiling_clock.restart();
 	float us = static_cast<double>(ius) / iterations;
 	//	print_line(String("Time: {0}us").format(varray(us)));
