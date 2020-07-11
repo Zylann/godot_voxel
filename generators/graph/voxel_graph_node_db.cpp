@@ -321,6 +321,16 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("max_value", Variant::REAL, 1.f));
 		t.debug_only = true;
 	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SELECT];
+		t.name = "Select";
+		t.category = CATEGORY_CONVERT;
+		t.inputs.push_back(Port("a"));
+		t.inputs.push_back(Port("b"));
+		t.inputs.push_back(Port("threshold"));
+		t.inputs.push_back(Port("t"));
+		t.outputs.push_back(Port("out"));
+	}
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];

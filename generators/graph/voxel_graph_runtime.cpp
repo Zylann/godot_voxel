@@ -122,6 +122,14 @@ struct PNodeCurve {
 	Curve *p_curve;
 };
 
+struct PNodeSelect {
+	uint16_t a_i0;
+	uint16_t a_i1;
+	uint16_t a_threshold;
+	uint16_t a_t;
+	uint16_t a_out;
+};
+
 struct PNodeNoise2D {
 	uint16_t a_x;
 	uint16_t a_y;
@@ -502,6 +510,20 @@ inline Interval sdf_torus(const Interval &x, const Interval &y, const Interval &
 	return get_length(qx, y) - r1;
 }
 
+inline float select(float a, float b, float threshold, float t) {
+	return t < threshold ? a : b;
+}
+
+inline Interval select(const Interval &a, const Interval &b, const Interval &threshold, const Interval &t) {
+	if (t.max < threshold.min) {
+		return a;
+	}
+	if (t.min >= threshold.max) {
+		return b;
+	}
+	return Interval(min(a.min, b.min), max(a.max, b.max));
+}
+
 float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 	// This part must be optimized for speed
 
@@ -530,7 +552,6 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 	//#endif
 
 	while (pc < _program.size()) {
-
 		const uint8_t opid = _program[pc++];
 
 		switch (opid) {
@@ -646,6 +667,11 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 			case VoxelGeneratorGraph::NODE_CURVE: {
 				const PNodeCurve &n = read<PNodeCurve>(_program, pc);
 				memory[n.a_out] = n.p_curve->interpolate_baked(memory[n.a_in]);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SELECT: {
+				const PNodeSelect &n = read<PNodeSelect>(_program, pc);
+				memory[n.a_out] = select(memory[n.a_i0], memory[n.a_i1], memory[n.a_threshold], memory[n.a_t]);
 			} break;
 
 			case VoxelGeneratorGraph::NODE_NOISE_2D: {
@@ -910,6 +936,17 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 					min_memory[n.a_out] = n.min_value;
 					max_memory[n.a_out] = n.max_value;
 				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SELECT: {
+				const PNodeSelect &n = read<PNodeSelect>(_program, pc);
+				const Interval a(min_memory[n.a_i0], max_memory[n.a_i0]);
+				const Interval b(min_memory[n.a_i1], max_memory[n.a_i1]);
+				const Interval threshold(min_memory[n.a_threshold], max_memory[n.a_threshold]);
+				const Interval t(min_memory[n.a_t], max_memory[n.a_t]);
+				const Interval r = select(a, b, threshold, t);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
 			} break;
 
 			case VoxelGeneratorGraph::NODE_NOISE_2D: {
