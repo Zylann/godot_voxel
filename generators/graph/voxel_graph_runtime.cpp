@@ -4,6 +4,7 @@
 #include "voxel_generator_graph.h"
 #include "voxel_graph_node_db.h"
 
+#include <climits>
 #include <unordered_set>
 
 //#ifdef DEBUG_ENABLED
