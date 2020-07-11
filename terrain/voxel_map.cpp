@@ -189,11 +189,13 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 		for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 			for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 				for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-
 					VoxelBlock *block = get_block(bpos);
-					if (block) {
 
+					if (block) {
 						VoxelBuffer &src_buffer = **block->voxels;
+
+						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
+
 						Vector3i offset = block_to_voxel(bpos);
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_from(src_buffer,
@@ -203,6 +205,8 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 								channel);
 
 					} else {
+						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
+						// If we want to change this, we may have to add an API for that it in `VoxelStream`.
 						Vector3i offset = block_to_voxel(bpos);
 						dst_buffer.fill_area(
 								_default_voxel[channel],

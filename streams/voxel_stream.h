@@ -33,6 +33,7 @@ public:
 	// This function is recommended if you save to files, because you can batch their access.
 	virtual void immerge_blocks(Vector<VoxelBlockRequest> &p_blocks);
 
+	// Declares the format expected from this stream
 	virtual int get_used_channels_mask() const;
 
 	virtual bool is_thread_safe() const;

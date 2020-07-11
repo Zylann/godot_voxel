@@ -22,7 +22,6 @@ VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 // TODO Have configurable block size
 
 void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-
 	ERR_FAIL_COND(out_buffer.is_null());
 
 	if (_directory_path.empty()) {
@@ -260,7 +259,6 @@ Vector3i VoxelStreamBlockFiles::get_block_position(const Vector3i &origin_in_vox
 }
 
 void VoxelStreamBlockFiles::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_directory", "directory"), &VoxelStreamBlockFiles::set_directory);
 	ClassDB::bind_method(D_METHOD("get_directory"), &VoxelStreamBlockFiles::get_directory);
 
