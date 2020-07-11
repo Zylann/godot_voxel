@@ -181,8 +181,8 @@ void VoxelGraphRuntime::clear() {
 	_program.clear();
 	_memory.resize(8, 0);
 	_xzy_program_start = 0;
-	_last_x = INT_MAX;
-	_last_z = INT_MAX;
+	_last_x = std::numeric_limits<int>::max();
+	_last_z = std::numeric_limits<int>::max();
 	_output_port_addresses.clear();
 }
 
@@ -273,8 +273,8 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 	_program.clear();
 
 	_xzy_program_start = 0;
-	_last_x = INT_MAX;
-	_last_z = INT_MAX;
+	_last_x = std::numeric_limits<int>::max();
+	_last_z = std::numeric_limits<int>::max();
 
 	// Main inputs X, Y, Z
 	_memory.resize(3);
