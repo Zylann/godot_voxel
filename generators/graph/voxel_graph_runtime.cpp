@@ -201,7 +201,7 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph) {
 		return type.debug_only;
 	});
 
-	graph.find_dependencies(terminal_nodes.back(), order);
+	graph.find_dependencies(terminal_nodes, order);
 
 	uint32_t xzy_start_index = 0;
 

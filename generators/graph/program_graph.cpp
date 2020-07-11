@@ -207,13 +207,9 @@ void ProgramGraph::find_terminal_nodes(std::vector<uint32_t> &node_ids) const {
 	}
 }
 
-void ProgramGraph::find_dependencies(uint32_t end_node_id, std::vector<uint32_t> &order) const {
-	// Finds dependencies of the given node, and returns them in the order they should be processed
-
-	std::vector<uint32_t> nodes_to_process;
+void ProgramGraph::find_dependencies(std::vector<uint32_t> nodes_to_process, std::vector<uint32_t> &order) const {
+	// Finds dependencies of the given nodes, and returns them in the order they should be processed
 	std::unordered_set<uint32_t> visited_nodes;
-
-	nodes_to_process.push_back(end_node_id);
 
 	while (nodes_to_process.size() > 0) {
 		const Node *node = get_node(nodes_to_process.back());
