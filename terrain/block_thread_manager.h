@@ -374,7 +374,7 @@ private:
 
 	static void thread_func(JobData &data) {
 
-		while (!data.thread_exit) {
+		while (true) {
 
 			uint32_t sync_time = OS::get_singleton()->get_ticks_msec() + data.sync_interval_ms;
 
