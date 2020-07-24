@@ -121,7 +121,6 @@ public:
 		}
 
 		for (unsigned int i = 0; i < _job_count; ++i) {
-
 			JobData &job = _jobs[i];
 			CRASH_COND(job.thread != nullptr);
 
@@ -135,7 +134,6 @@ public:
 	}
 
 	~VoxelBlockThreadManager() {
-
 		for (unsigned int i = 0; i < _job_count; ++i) {
 			JobData &job = _jobs[i];
 			job.thread_exit = true;
@@ -143,7 +141,6 @@ public:
 		}
 
 		for (unsigned int i = 0; i < _job_count; ++i) {
-
 			JobData &job = _jobs[i];
 			CRASH_COND(job.thread == nullptr);
 
@@ -157,7 +154,6 @@ public:
 	}
 
 	void push(const Input &input) {
-
 		CRASH_COND(_job_count < 1);
 
 		unsigned int replaced_blocks = 0;
@@ -166,7 +162,6 @@ public:
 
 		// Lock all inputs and gather their pending work counts
 		for (unsigned int job_index = 0; job_index < _job_count; ++job_index) {
-
 			JobData &job = _jobs[job_index];
 
 			job.input_mutex->lock();
@@ -183,7 +178,6 @@ public:
 
 		// Dispatch to jobs with least pending requests
 		for (unsigned int job_index = 0; job_index < _job_count && i < input.blocks.size(); ++job_index) {
-
 			JobData &job = _jobs[job_index];
 			unsigned int pending_count = job.shared_input.blocks.size();
 
@@ -203,7 +197,6 @@ public:
 		unsigned int base_count = (input.blocks.size() - i) / _job_count;
 		unsigned int remainder = (input.blocks.size() - i) % _job_count;
 		for (unsigned int job_index = 0; job_index < _job_count && i < input.blocks.size(); ++job_index) {
-
 			JobData &job = _jobs[job_index];
 
 			unsigned int count = base_count;
@@ -222,7 +215,6 @@ public:
 
 		// Set remaining data on all jobs, unlock inputs and resume
 		for (unsigned int job_index = 0; job_index < _job_count; ++job_index) {
-
 			JobData &job = _jobs[job_index];
 
 			if (job.shared_input.priority_position != input.priority_position || input.blocks.size() > 0) {
@@ -252,7 +244,6 @@ public:
 	}
 
 	void pop(Output &output) {
-
 		output.stats = Stats();
 		output.stats.thread_count = _job_count;
 
@@ -289,7 +280,6 @@ public:
 
 private:
 	struct JobData {
-
 		// Data accessed from other threads, so they need mutexes
 		//------------------------
 		Input shared_input;
@@ -300,7 +290,7 @@ private:
 		// so if we push a duplicate request with the same coordinates, we can discard it without a linear search
 		FixedArray<HashMap<Vector3i, int, Vector3iHasher>, VoxelConstants::MAX_LOD> shared_input_block_indexes;
 		bool needs_sort = false;
-		// Only read by the thread
+		// Only read by the thread. Should not go back to `false` after being set to `true`.
 		bool thread_exit = false;
 		//------------------------
 
@@ -317,7 +307,6 @@ private:
 	};
 
 	static void merge_stats(Stats &a, const Stats &b, int job_index) {
-
 		a.max_time = MAX(a.max_time, b.max_time);
 		a.min_time = MIN(a.min_time, b.min_time);
 		a.remaining_blocks[job_index] = b.remaining_blocks[job_index];
@@ -336,12 +325,10 @@ private:
 		CRASH_COND(end > input_blocks.size());
 
 		for (unsigned int i = begin; i < end; ++i) {
-
 			const InputBlock &block = input_blocks[i];
 			CRASH_COND(block.lod >= VoxelConstants::MAX_LOD);
 
 			if (job.duplicate_rejection) {
-
 				int *index = job.shared_input_block_indexes[block.lod].getptr(block.position);
 
 				// TODO When using more than one thread, duplicate rejection is less effective... is it relevant to keep it at all?
@@ -373,22 +360,26 @@ private:
 	}
 
 	static void thread_func(JobData &data) {
-
-		while (!data.thread_exit) {
-
+		while (true) {
 			uint32_t sync_time = OS::get_singleton()->get_ticks_msec() + data.sync_interval_ms;
 
 			unsigned int queue_index = 0;
 			Stats stats;
 
+			bool should_exit = false;
+			if (data.thread_exit) {
+				// This will be the last run, we must process all mandatory requests.
+				// We can't check `thread_exit` afterwards because it could have become `true` after we sync,
+				// hence we could miss some of the requests.
+				should_exit = true;
+			}
+
 			thread_sync(data, queue_index, stats, stats.sorting_time, stats.dropped_count);
 
 			// Continue to run as long as there are queries to process
 			while (!data.input.blocks.empty()) {
-
 				if (!data.input.blocks.empty()) {
-
-					if (data.thread_exit) {
+					if (should_exit) {
 						// Flush inputs we processed already
 						shift_up(data.input.blocks, queue_index);
 						queue_index = 0;
@@ -409,7 +400,6 @@ private:
 					}
 
 					if (batch_count > 0) {
-
 						uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
 						unsigned int output_begin = data.output.blocks.size();
@@ -453,7 +443,6 @@ private:
 
 				uint32_t time = OS::get_singleton()->get_ticks_msec();
 				if (time >= sync_time || data.input.blocks.empty()) {
-
 					uint64_t sort_time;
 					unsigned int dropped_count;
 					thread_sync(data, queue_index, stats, sort_time, dropped_count);
@@ -466,7 +455,7 @@ private:
 				}
 			}
 
-			if (data.thread_exit) {
+			if (should_exit) {
 				break;
 			}
 
@@ -492,7 +481,6 @@ private:
 	};
 
 	static void thread_sync(JobData &data, unsigned int queue_index, Stats stats, uint64_t &out_sort_time, unsigned int &out_dropped_count) {
-
 		if (!data.input.blocks.empty()) {
 			// Cleanup input vector
 
@@ -538,7 +526,6 @@ private:
 		}
 
 		if (!data.output.blocks.empty()) {
-
 			//		print_line(String("VoxelMeshUpdater: posting {0} blocks, {1} remaining ; cost [{2}..{3}] usec")
 			//				   .format(varray(_output.blocks.size(), _input.blocks.size(), stats.min_time, stats.max_time)));
 
@@ -597,7 +584,6 @@ private:
 		uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
 		if (!data.input.blocks.empty() && needs_sort) {
-
 			for (auto it = data.input.blocks.begin(); it != data.input.blocks.end(); ++it) {
 				InputBlock &ib = *it;
 				// Set or override previous heuristic based on new infos
