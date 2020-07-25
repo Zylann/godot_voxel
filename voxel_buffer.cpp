@@ -745,7 +745,6 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 }
 
 void VoxelBuffer::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::_b_create);
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelBuffer::clear);
 

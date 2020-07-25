@@ -21,7 +21,6 @@ const char *to_string(VoxelFileResult res) {
 }
 
 VoxelFileResult check_magic_and_version(FileAccess *f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version) {
-
 	uint8_t magic[5] = { '\0' };
 	int count = f->get_buffer(magic, 4);
 	if (count != 4) {
@@ -42,7 +41,6 @@ VoxelFileResult check_magic_and_version(FileAccess *f, uint8_t expected_version,
 }
 
 Error check_directory_created(const String &directory_path) {
-
 	DirAccess *d = DirAccess::create_for_path(directory_path);
 
 	if (d == nullptr) {

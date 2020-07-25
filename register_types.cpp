@@ -26,7 +26,6 @@
 #include "voxel_string_names.h"
 
 void register_voxel_types() {
-
 	// Storage
 	ClassDB::register_class<VoxelBuffer>();
 	ClassDB::register_class<VoxelMap>();
@@ -59,6 +58,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelBoxMover>();
 	ClassDB::register_class<VoxelRaycastResult>();
 	ClassDB::register_class<VoxelTool>();
+	ClassDB::register_class<VoxelBlockSerializer>();
 
 	// Meshers
 	ClassDB::register_class<VoxelMesher>();
@@ -81,7 +81,6 @@ void register_voxel_types() {
 }
 
 void unregister_voxel_types() {
-
 	unsigned int used_blocks = VoxelMemoryPool::get_singleton()->debug_get_used_blocks();
 	if (used_blocks > 0) {
 		ERR_PRINT(String("VoxelMemoryPool: {0} memory blocks are still used when unregistering the module. Recycling leak?").format(varray(used_blocks)));

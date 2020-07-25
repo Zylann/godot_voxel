@@ -32,7 +32,7 @@ protected:
 
 	FileAccess *open_file(const String &fpath, int mode_flags, Error *err);
 
-	VoxelBlockSerializer _block_serializer;
+	VoxelBlockSerializerInternal _block_serializer;
 
 private:
 	Vector3 _get_block_size() const;
