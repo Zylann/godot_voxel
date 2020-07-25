@@ -294,7 +294,6 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 
 namespace {
 struct ScheduleSaveAction {
-
 	std::vector<VoxelDataLoader::InputBlock> &blocks_to_save;
 	bool with_copy;
 
@@ -313,7 +312,6 @@ struct ScheduleSaveAction {
 } // namespace
 
 void VoxelTerrain::immerge_block(Vector3i bpos) {
-
 	ERR_FAIL_COND(_map.is_null());
 
 	// Note: no need to copy the block because it gets removed from the map anyways
@@ -326,7 +324,6 @@ void VoxelTerrain::immerge_block(Vector3i bpos) {
 }
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
-
 	ERR_FAIL_COND(_stream_thread == nullptr);
 
 	// That may cause a stutter, so should be used when the player won't notice
@@ -431,12 +428,10 @@ void VoxelTerrain::start_streamer() {
 }
 
 void VoxelTerrain::stop_streamer() {
-
 	if (_stream_thread) {
 		memdelete(_stream_thread);
 		_stream_thread = nullptr;
 	}
-
 	_loading_blocks.clear();
 	_blocks_pending_load.clear();
 }
@@ -709,7 +704,6 @@ void VoxelTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_d
 }
 
 void VoxelTerrain::send_block_data_requests() {
-
 	ERR_FAIL_COND(_stream_thread == nullptr);
 
 	VoxelDataLoader::Input input;
@@ -1091,8 +1085,27 @@ Vector3 VoxelTerrain::_b_block_to_voxel(Vector3 pos) {
 	return Vector3i(_map->block_to_voxel(pos)).to_vec3();
 }
 
-void VoxelTerrain::_bind_methods() {
+void VoxelTerrain::_b_save_modified_blocks() {
+	save_all_modified_blocks(true);
+}
 
+// Explicitely ask to save a block if it was modified
+void VoxelTerrain::_b_save_block(Vector3 p_block_pos) {
+	ERR_FAIL_COND(_map.is_null());
+
+	const Vector3i block_pos(p_block_pos);
+
+	VoxelBlock *block = _map->get_block(block_pos);
+	ERR_FAIL_COND(block == nullptr);
+
+	if (!block->is_modified()) {
+		return;
+	}
+
+	ScheduleSaveAction{ _blocks_to_save, false }(block);
+}
+
+void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelTerrain::get_stream);
 
@@ -1116,6 +1129,9 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::get_statistics);
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelTerrain::get_voxel_tool);
+
+	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &VoxelTerrain::_b_save_modified_blocks);
+	ClassDB::bind_method(D_METHOD("save_block"), &VoxelTerrain::_b_save_block);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelTerrain::_on_stream_params_changed);
 

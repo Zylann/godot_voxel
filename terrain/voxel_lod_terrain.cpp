@@ -1343,7 +1343,6 @@ struct ScheduleSaveAction {
 } // namespace
 
 void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
-
 	VOXEL_PROFILE_SCOPE(profile_immerge_block);
 
 	ERR_FAIL_COND(lod_index >= get_lod_count());
@@ -1364,7 +1363,6 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 }
 
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
-
 	ERR_FAIL_COND(_stream_thread == nullptr);
 
 	flush_pending_lod_edits();
@@ -1386,12 +1384,10 @@ void VoxelLodTerrain::add_transition_update(VoxelBlock *block) {
 }
 
 void VoxelLodTerrain::add_transition_updates_around(Vector3i block_pos, int lod_index) {
-
 	Lod &lod = _lods[lod_index];
 	CRASH_COND(lod.map.is_null());
 
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-
 		Vector3i npos = block_pos + Cube::g_side_normals[dir];
 		VoxelBlock *nblock = lod.map->get_block(npos);
 
@@ -1404,9 +1400,7 @@ void VoxelLodTerrain::add_transition_updates_around(Vector3i block_pos, int lod_
 }
 
 void VoxelLodTerrain::process_transition_updates() {
-
 	for (unsigned int i = 0; i < _blocks_pending_transition_update.size(); ++i) {
-
 		VoxelBlock *block = _blocks_pending_transition_update[i];
 		CRASH_COND(block == nullptr);
 
@@ -1421,7 +1415,6 @@ void VoxelLodTerrain::process_transition_updates() {
 }
 
 uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) const {
-
 	uint8_t transition_mask = 0;
 
 	if (lod_index + 1 >= (int)_lods.size()) {
@@ -1507,7 +1500,6 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 }
 
 Dictionary VoxelLodTerrain::get_statistics() const {
-
 	Dictionary d;
 	d["stream"] = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);
 	d["updater"] = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
@@ -1528,10 +1520,13 @@ Dictionary VoxelLodTerrain::get_statistics() const {
 	return d;
 }
 
+void VoxelLodTerrain::_b_save_modified_blocks() {
+	save_all_modified_blocks(true);
+}
+
 // DEBUG LAND
 
 Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const {
-
 	Vector3 pos = world_origin;
 	Vector3 dir = world_direction;
 	float max_distance = 256;
@@ -1559,7 +1554,6 @@ Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_d
 }
 
 Dictionary VoxelLodTerrain::debug_get_block_info(Vector3 fbpos, int lod_index) const {
-
 	Dictionary d;
 	ERR_FAIL_COND_V(lod_index < 0, d);
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
@@ -1601,12 +1595,10 @@ Array VoxelLodTerrain::debug_get_octrees() const {
 }
 
 Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const {
-
 	Array image_array;
 	image_array.resize(get_lod_count());
 
 	for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
-
 		const Rect3i world_box = Rect3i::from_center_extents(Vector3i(center) >> lod_index, Vector3i(extents) >> lod_index);
 
 		if (world_box.size.volume() == 0) {
@@ -1634,7 +1626,6 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 }
 
 void VoxelLodTerrain::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelLodTerrain::get_stream);
 
@@ -1665,11 +1656,11 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("voxel_to_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_block_position);
 
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelLodTerrain::get_voxel_tool);
+	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &VoxelLodTerrain::_b_save_modified_blocks);
 
 	ClassDB::bind_method(D_METHOD("debug_raycast_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_block);
 	ClassDB::bind_method(D_METHOD("debug_get_block_info", "block_pos", "lod"), &VoxelLodTerrain::debug_get_block_info);
 	ClassDB::bind_method(D_METHOD("debug_get_octrees"), &VoxelLodTerrain::debug_get_octrees);
-	ClassDB::bind_method(D_METHOD("debug_save_all_modified_blocks"), &VoxelLodTerrain::_b_save_all_modified_blocks);
 	ClassDB::bind_method(D_METHOD("debug_print_sdf_top_down", "center", "extents"), &VoxelLodTerrain::_b_debug_print_sdf_top_down);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
@@ -1682,8 +1673,4 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"), "set_material", "get_material");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"), "set_collision_lod_count", "get_collision_lod_count");
-}
-
-void VoxelLodTerrain::_b_save_all_modified_blocks() {
-	save_all_modified_blocks(true);
 }

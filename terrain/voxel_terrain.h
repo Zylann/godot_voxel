@@ -101,6 +101,8 @@ private:
 	Vector3 _b_voxel_to_block(Vector3 pos);
 	Vector3 _b_block_to_voxel(Vector3 pos);
 	//void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
+	void _b_save_modified_blocks();
+	void _b_save_block(Vector3 p_block_pos);
 
 	// Voxel storage
 	Ref<VoxelMap> _map;
