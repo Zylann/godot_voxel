@@ -1102,7 +1102,7 @@ void VoxelTerrain::_b_save_block(Vector3 p_block_pos) {
 		return;
 	}
 
-	ScheduleSaveAction{ _blocks_to_save, false }(block);
+	ScheduleSaveAction{ _blocks_to_save, true }(block);
 }
 
 void VoxelTerrain::_bind_methods() {
