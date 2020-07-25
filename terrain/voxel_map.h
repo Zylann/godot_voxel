@@ -67,12 +67,12 @@ public:
 	template <typename Action_T>
 	void remove_block(Vector3i bpos, Action_T pre_delete) {
 		if (_last_accessed_block && _last_accessed_block->position == bpos) {
-			_last_accessed_block = NULL;
+			_last_accessed_block = nullptr;
 		}
 		VoxelBlock **pptr = _blocks.getptr(bpos);
 		if (pptr) {
 			VoxelBlock *block = *pptr;
-			ERR_FAIL_COND(block == NULL);
+			ERR_FAIL_COND(block == nullptr);
 			pre_delete(block);
 			memdelete(block);
 			remove_block_internal(bpos);
@@ -91,10 +91,10 @@ public:
 
 	template <typename Op_T>
 	void for_all_blocks(Op_T op) {
-		const Vector3i *key = NULL;
+		const Vector3i *key = nullptr;
 		while ((key = _blocks.next(key))) {
 			VoxelBlock *block = _blocks.get(*key);
-			if (block != NULL) {
+			if (block != nullptr) {
 				op(block);
 			}
 		}

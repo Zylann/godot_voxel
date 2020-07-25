@@ -13,7 +13,7 @@ static Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfa
 	int face_points_size = 0;
 
 	//find the correct size for face_points
-	for(int i = 0; i < surfaces.size(); i++) {
+	for (int i = 0; i < surfaces.size(); i++) {
 		const Array &surface_arrays = surfaces[i];
 		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
 
@@ -23,7 +23,7 @@ static Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfa
 
 	//copy the points into it
 	int face_points_offset = 0;
-	for(int i = 0; i < surfaces.size(); i++) {
+	for (int i = 0; i < surfaces.size(); i++) {
 		const Array &surface_arrays = surfaces[i];
 
 		PoolVector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];
@@ -56,8 +56,8 @@ static Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfa
 // Helper
 VoxelBlock *VoxelBlock::create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index) {
 	const int bs = size;
-	ERR_FAIL_COND_V(buffer.is_null(), NULL);
-	ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), NULL);
+	ERR_FAIL_COND_V(buffer.is_null(), nullptr);
+	ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), nullptr);
 
 	VoxelBlock *block = memnew(VoxelBlock);
 	block->position = bpos;

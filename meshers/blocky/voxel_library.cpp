@@ -11,7 +11,7 @@ VoxelLibrary::~VoxelLibrary() {
 	// Handled with a WeakRef
 	//	for (unsigned int i = 0; i < MAX_VOXEL_TYPES; ++i) {
 	//		if (_voxel_types[i].is_valid()) {
-	//			_voxel_types[i]->set_library(NULL);
+	//			_voxel_types[i]->set_library(nullptr);
 	//		}
 	//	}
 }
@@ -373,7 +373,6 @@ bool VoxelLibrary::get_side_pattern_occlusion(unsigned int pattern_a, unsigned i
 }
 
 void VoxelLibrary::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("create_voxel", "id", "name"), &VoxelLibrary::create_voxel);
 	ClassDB::bind_method(D_METHOD("get_voxel", "id"), &VoxelLibrary::_b_get_voxel);
 

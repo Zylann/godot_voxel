@@ -40,12 +40,10 @@ static Cube::Side name_to_side(const String &s) {
 }
 
 bool Voxel::_set(const StringName &p_name, const Variant &p_value) {
-
 	String name = p_name;
 
 	// TODO Eventualy these could be Rect2 for maximum flexibility?
 	if (name.begins_with("cube_tiles/")) {
-
 		String s = name.substr(STRLEN("cube_tiles/") - 1, name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
@@ -55,7 +53,6 @@ bool Voxel::_set(const StringName &p_name, const Variant &p_value) {
 		}
 
 	} else if (name == "cube_geometry/padding_y") {
-
 		_cube_geometry_padding_y = p_value;
 		set_cube_geometry(_cube_geometry_padding_y);
 		return true;
@@ -65,11 +62,9 @@ bool Voxel::_set(const StringName &p_name, const Variant &p_value) {
 }
 
 bool Voxel::_get(const StringName &p_name, Variant &r_ret) const {
-
 	String name = p_name;
 
 	if (name.begins_with("cube_tiles/")) {
-
 		String s = name.substr(STRLEN("cube_tiles/") - 1, name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
@@ -78,7 +73,6 @@ bool Voxel::_get(const StringName &p_name, Variant &r_ret) const {
 		}
 
 	} else if (name == "cube_geometry/padding_y") {
-
 		r_ret = _cube_geometry_padding_y;
 		return true;
 	}
@@ -87,11 +81,8 @@ bool Voxel::_get(const StringName &p_name, Variant &r_ret) const {
 }
 
 void Voxel::_get_property_list(List<PropertyInfo> *p_list) const {
-
 	if (_geometry_type == GEOMETRY_CUBE) {
-
 		p_list->push_back(PropertyInfo(Variant::REAL, "cube_geometry/padding_y"));
-
 		p_list->push_back(PropertyInfo(Variant::VECTOR2, "cube_tiles/left"));
 		p_list->push_back(PropertyInfo(Variant::VECTOR2, "cube_tiles/right"));
 		p_list->push_back(PropertyInfo(Variant::VECTOR2, "cube_tiles/bottom"));
@@ -145,11 +136,9 @@ void Voxel::clear_geometry() {
 }
 
 void Voxel::set_geometry_type(GeometryType type) {
-
 	_geometry_type = type;
 
 	switch (_geometry_type) {
-
 		case GEOMETRY_NONE:
 			clear_geometry();
 			break;
@@ -187,17 +176,16 @@ void Voxel::set_library(Ref<VoxelLibrary> lib) {
 
 VoxelLibrary *Voxel::get_library() const {
 	if (_library == 0) {
-		return NULL;
+		return nullptr;
 	}
 	Object *v = ObjectDB::get_instance(_library);
 	if (v) {
 		return Object::cast_to<VoxelLibrary>(v);
 	}
-	return NULL;
+	return nullptr;
 }
 
 void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
-
 	if (mesh == _custom_mesh) {
 		return;
 	}
@@ -270,7 +258,6 @@ void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 		FixedArray<Vector3, 3> tri_positions;
 
 		for (int i = 0; i < indices.size(); i += 3) {
-
 			Cube::SideAxis side;
 
 			tri_positions[0] = positions_read[indices_read[i]];
@@ -278,7 +265,6 @@ void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 			tri_positions[2] = positions_read[indices_read[i + 2]];
 
 			if (L::get_triangle_side(tri_positions[0], tri_positions[1], tri_positions[2], side)) {
-
 				// That triangle is on the face
 
 				int next_side_index = _model_side_positions[side].size();
@@ -313,7 +299,6 @@ void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 					const int *existing_dst_index = added_regular_indices.getptr(src_index);
 
 					if (existing_dst_index == nullptr) {
-
 						_model_indices.push_back(next_regular_index);
 						_model_positions.push_back(tri_positions[j]);
 						_model_normals.push_back(normals_read[indices_read[i + j]]);
@@ -335,7 +320,6 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 	sy = 1.0 + sy;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-
 		std::vector<Vector3> &positions = _model_side_positions[side];
 		positions.resize(4);
 		for (unsigned int i = 0; i < 4; ++i) {
@@ -368,8 +352,8 @@ void Voxel::set_cube_uv_side(int side, Vector2 tile_pos) {
 
 void Voxel::update_cube_uv_sides() {
 	VoxelLibrary *library = get_library();
-	//ERR_FAIL_COND(library == NULL);
-	if (library == NULL) {
+	//ERR_FAIL_COND(library == nullptr);
+	if (library == nullptr) {
 		// Not an error, the Voxel might have been created before the library, and can't be used without anyways
 		PRINT_VERBOSE("VoxelLibrary not set yet");
 		return;
@@ -441,7 +425,6 @@ Ref<Resource> Voxel::duplicate(bool p_subresources) const {
 }
 
 void Voxel::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_voxel_name", "name"), &Voxel::set_voxel_name);
 	ClassDB::bind_method(D_METHOD("get_voxel_name"), &Voxel::get_voxel_name);
 

@@ -60,7 +60,7 @@ void VoxelMemoryPool::recycle(uint8_t *block, uint32_t size) {
 
 void VoxelMemoryPool::clear() {
 	MutexLock lock(_mutex);
-	const uint32_t *key = NULL;
+	const uint32_t *key = nullptr;
 	while ((key = _pools.next(key))) {
 		Pool *pool = _pools.get(*key);
 		CRASH_COND(pool == nullptr);
@@ -76,7 +76,7 @@ void VoxelMemoryPool::clear() {
 void VoxelMemoryPool::debug_print() {
 	MutexLock lock(_mutex);
 	print_line("-------- VoxelMemoryPool ----------");
-	const uint32_t *key = NULL;
+	const uint32_t *key = nullptr;
 	int i = 0;
 	while ((key = _pools.next(key))) {
 		Pool *pool = _pools.get(*key);

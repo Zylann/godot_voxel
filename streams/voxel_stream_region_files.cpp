@@ -1125,7 +1125,6 @@ void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 }
 
 void VoxelStreamRegionFiles::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_directory", "directory"), &VoxelStreamRegionFiles::set_directory);
 	ClassDB::bind_method(D_METHOD("get_directory"), &VoxelStreamRegionFiles::get_directory);
 

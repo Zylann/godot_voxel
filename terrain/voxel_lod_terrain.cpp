@@ -282,7 +282,7 @@ void VoxelLodTerrain::stop_updater() {
 
 	if (_block_updater) {
 		memdelete(_block_updater);
-		_block_updater = NULL;
+		_block_updater = nullptr;
 	}
 
 	_blocks_pending_main_thread_update.clear();
@@ -1172,7 +1172,7 @@ void VoxelLodTerrain::_process() {
 			Lod &lod = _lods[ob.lod];
 
 			VoxelBlock *block = lod.map->get_block(ob.position);
-			if (block == NULL) {
+			if (block == nullptr) {
 				// That block is no longer loaded, drop the result
 				++_stats.dropped_block_meshs;
 				continue;

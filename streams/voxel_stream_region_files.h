@@ -145,7 +145,7 @@ private:
 		Vector3i position;
 		int lod = 0;
 		bool file_exists = false;
-		FileAccess *file_access = NULL;
+		FileAccess *file_access = nullptr;
 		RegionHeader header;
 		bool header_modified = false;
 

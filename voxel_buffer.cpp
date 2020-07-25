@@ -213,7 +213,7 @@ void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int ch
 	value = clamp_value_for_depth(value, channel.depth);
 	bool do_set = true;
 
-	if (channel.data == NULL) {
+	if (channel.data == nullptr) {
 		if (channel.defval != value) {
 			// Allocate channel with same initial values as defval
 			create_channel(channel_index, _size, channel.defval);
@@ -276,7 +276,7 @@ void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
 
 	defval = clamp_value_for_depth(defval, channel.depth);
 
-	if (channel.data == NULL) {
+	if (channel.data == nullptr) {
 		// Channel is already optimized and uniform
 		if (channel.defval == defval) {
 			// No change
@@ -336,7 +336,7 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 	Channel &channel = _channels[channel_index];
 	defval = clamp_value_for_depth(defval, channel.depth);
 
-	if (channel.data == NULL) {
+	if (channel.data == nullptr) {
 		if (channel.defval == defval) {
 			return;
 		} else {
@@ -473,7 +473,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index
 	ERR_FAIL_COND(other_channel.depth != channel.depth);
 
 	if (other_channel.data) {
-		if (channel.data == NULL) {
+		if (channel.data == nullptr) {
 			create_channel_noinit(channel_index, _size);
 		}
 		CRASH_COND(channel.size_in_bytes != other_channel.size_in_bytes);
@@ -517,7 +517,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 	} else {
 		if (other_channel.data) {
 
-			if (channel.data == NULL) {
+			if (channel.data == nullptr) {
 				create_channel(channel_index, _size, channel.defval);
 			}
 
@@ -548,7 +548,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 			}
 
 		} else if (channel.defval != other_channel.defval) {
-			if (channel.data == NULL) {
+			if (channel.data == nullptr) {
 				create_channel(channel_index, _size, channel.defval);
 			}
 			fill_area(other_channel.defval, dst_min, dst_min + area_size, channel_index);

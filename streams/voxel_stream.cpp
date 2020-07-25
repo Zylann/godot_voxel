@@ -83,7 +83,7 @@ int VoxelStream::get_used_channels_mask() const {
 		// Call script to get mask
 		Variant::CallError err;
 		//const Variant *args[3] = { &arg1, &arg2, &arg3 };
-		mask = script->call(VoxelStringNames::get_singleton()->get_used_channels_mask, NULL, 0, err);
+		mask = script->call(VoxelStringNames::get_singleton()->get_used_channels_mask, nullptr, 0, err);
 		ERR_FAIL_COND_V_MSG(err.error != Variant::CallError::CALL_OK, mask,
 				"voxel_stream.cpp:get_used_channels_mask gave an error: " + String::num(err.error) +
 						" Argument: " + String::num(err.argument) +

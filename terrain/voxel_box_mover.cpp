@@ -2,7 +2,6 @@
 #include "voxel_map.h"
 
 static AABB expand_with_vector(AABB box, Vector3 v) {
-
 	if (v.x > 0) {
 		box.size.x += v.x;
 	} else if (v.x < 0) {
@@ -28,7 +27,6 @@ static AABB expand_with_vector(AABB box, Vector3 v) {
 }
 
 static float calculate_i_offset(AABB box, AABB other, float motion, int i, int j, int k) {
-
 	const float EPSILON = 0.001;
 
 	Vector3 other_end = other.position + other.size;
@@ -117,8 +115,7 @@ static Vector3 get_motion(AABB box, Vector3 motion, const std::vector<AABB> &env
 }
 
 Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelTerrain *terrain) {
-
-	ERR_FAIL_COND_V(terrain == NULL, Vector3());
+	ERR_FAIL_COND_V(terrain == nullptr, Vector3());
 	Ref<VoxelLibrary> library_ref = terrain->get_voxel_library();
 	ERR_FAIL_COND_V(library_ref.is_null(), Vector3());
 	VoxelLibrary &library = **library_ref;
@@ -152,11 +149,11 @@ Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelT
 
 				const int type_id = voxels.get_voxel(i, 0);
 
-				if(library.has_voxel(type_id)) {
+				if (library.has_voxel(type_id)) {
 					const Voxel &voxel_type = library.get_voxel_const(type_id);
 					const std::vector<AABB> &local_boxes = voxel_type.get_collision_aabbs();
 
-					for(auto it = local_boxes.begin(); it != local_boxes.end(); ++it) {
+					for (auto it = local_boxes.begin(); it != local_boxes.end(); ++it) {
 						AABB world_box = *it;
 						world_box.position += i.to_vec3();
 						potential_boxes.push_back(world_box);
@@ -171,13 +168,12 @@ Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelT
 }
 
 void VoxelBoxMover::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("get_motion", "pos", "motion", "aabb", "terrain"), &VoxelBoxMover::_b_get_motion);
 }
 
 Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Node *terrain_node) {
-	ERR_FAIL_COND_V(terrain_node == NULL, Vector3());
+	ERR_FAIL_COND_V(terrain_node == nullptr, Vector3());
 	VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(terrain_node);
-	ERR_FAIL_COND_V(terrain == NULL, Vector3());
+	ERR_FAIL_COND_V(terrain == nullptr, Vector3());
 	return get_motion(pos, motion, aabb, terrain);
 }

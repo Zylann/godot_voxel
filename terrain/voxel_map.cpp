@@ -4,7 +4,7 @@
 #include "voxel_block.h"
 
 VoxelMap::VoxelMap() :
-		_last_accessed_block(NULL) {
+		_last_accessed_block(nullptr) {
 
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
 	set_block_size_pow2(4);
@@ -47,7 +47,7 @@ unsigned int VoxelMap::get_lod_index() const {
 int VoxelMap::get_voxel(Vector3i pos, unsigned int c) const {
 	Vector3i bpos = voxel_to_block(pos);
 	const VoxelBlock *block = get_block(bpos);
-	if (block == NULL) {
+	if (block == nullptr) {
 		return _default_voxel[c];
 	}
 	return block->voxels->get_voxel(to_local(pos), c);
@@ -109,10 +109,10 @@ VoxelBlock *VoxelMap::get_block(Vector3i bpos) {
 	VoxelBlock **p = _blocks.getptr(bpos);
 	if (p) {
 		_last_accessed_block = *p;
-		CRASH_COND(_last_accessed_block == NULL); // The map should not contain null blocks
+		CRASH_COND(_last_accessed_block == nullptr); // The map should not contain null blocks
 		return _last_accessed_block;
 	}
-	return NULL;
+	return nullptr;
 }
 
 const VoxelBlock *VoxelMap::get_block(Vector3i bpos) const {
@@ -123,16 +123,16 @@ const VoxelBlock *VoxelMap::get_block(Vector3i bpos) const {
 	if (p) {
 		// TODO This function can't cache _last_accessed_block, because it's const, so repeated accesses are hashing again...
 		const VoxelBlock *block = *p;
-		CRASH_COND(block == NULL); // The map should not contain null blocks
+		CRASH_COND(block == nullptr); // The map should not contain null blocks
 		return block;
 	}
-	return NULL;
+	return nullptr;
 }
 
 void VoxelMap::set_block(Vector3i bpos, VoxelBlock *block) {
-	ERR_FAIL_COND(block == NULL);
+	ERR_FAIL_COND(block == nullptr);
 	CRASH_COND(bpos != block->position);
-	if (_last_accessed_block == NULL || _last_accessed_block->position == bpos) {
+	if (_last_accessed_block == nullptr || _last_accessed_block->position == bpos) {
 		_last_accessed_block = block;
 	}
 	_blocks.set(bpos, block);
@@ -146,7 +146,7 @@ void VoxelMap::remove_block_internal(Vector3i bpos) {
 VoxelBlock *VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
 	ERR_FAIL_COND_V(buffer.is_null(), nullptr);
 	VoxelBlock *block = get_block(bpos);
-	if (block == NULL) {
+	if (block == nullptr) {
 		block = VoxelBlock::create(bpos, *buffer, _block_size, _lod_index);
 		set_block(bpos, block);
 	} else {
@@ -156,7 +156,7 @@ VoxelBlock *VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
 }
 
 bool VoxelMap::has_block(Vector3i pos) const {
-	return /*(_last_accessed_block != NULL && _last_accessed_block->pos == pos) ||*/ _blocks.has(pos);
+	return /*(_last_accessed_block != nullptr && _last_accessed_block->pos == pos) ||*/ _blocks.has(pos);
 }
 
 bool VoxelMap::is_block_surrounded(Vector3i pos) const {
@@ -221,16 +221,16 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 }
 
 void VoxelMap::clear() {
-	const Vector3i *key = NULL;
+	const Vector3i *key = nullptr;
 	while ((key = _blocks.next(key))) {
 		VoxelBlock *block_ptr = _blocks.get(*key);
-		if (block_ptr == NULL) {
-			OS::get_singleton()->printerr("Unexpected NULL in VoxelMap::clear()");
+		if (block_ptr == nullptr) {
+			OS::get_singleton()->printerr("Unexpected nullptr in VoxelMap::clear()");
 		}
 		memdelete(block_ptr);
 	}
 	_blocks.clear();
-	_last_accessed_block = NULL;
+	_last_accessed_block = nullptr;
 }
 
 int VoxelMap::get_block_count() const {
