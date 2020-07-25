@@ -13,6 +13,7 @@
 #include "meshers/blocky/voxel_library.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
+#include "meshers/fast_quadric_mesh_simplifier.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_file.h"
@@ -59,6 +60,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelBoxMover>();
 	ClassDB::register_class<VoxelRaycastResult>();
 	ClassDB::register_class<VoxelTool>();
+	ClassDB::register_class<FastQuadricMeshSimplifier>();
 
 	// Meshers
 	ClassDB::register_class<VoxelMesher>();
