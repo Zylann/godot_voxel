@@ -1,7 +1,6 @@
 #include "voxel_mesher.h"
 
 Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels) {
-
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
 	Output output;
@@ -23,7 +22,6 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels) {
 }
 
 void VoxelMesher::build(Output &output, const Input &input) {
-
 	ERR_PRINT("Not implemented");
 }
 
@@ -47,7 +45,6 @@ VoxelMesher *VoxelMesher::clone() {
 }
 
 void VoxelMesher::_bind_methods() {
-
 	// Shortcut if you want to generate a mesh directly from a fixed grid of voxels.
 	// Useful for testing the different meshers.
 	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer"), &VoxelMesher::build_mesh);

@@ -242,7 +242,6 @@ static void generate_blocky_mesh(
 							const Color modulate_color = voxel.get_color();
 
 							if (bake_occlusion) {
-
 								for (unsigned int i = 0; i < vertex_count; ++i) {
 									Vector3 v = side_positions[i];
 
