@@ -46,6 +46,12 @@ void VoxelStreamFile::emerge_blocks_fallback(Vector<VoxelBlockRequest> &requests
 	}
 }
 
+int VoxelStreamFile::get_used_channels_mask() const {
+	if (_fallback_stream.is_valid()) {
+		return _fallback_stream->get_used_channels_mask();
+	}
+}
+
 FileAccess *VoxelStreamFile::open_file(const String &fpath, int mode_flags, Error *err) {
 	VOXEL_PROFILE_SCOPE(profile_scope);
 	uint64_t time_before = OS::get_singleton()->get_ticks_usec();

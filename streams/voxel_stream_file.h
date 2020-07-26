@@ -24,6 +24,8 @@ public:
 	virtual int get_block_size_po2() const;
 	virtual int get_lod_count() const;
 
+	int get_used_channels_mask() const override;
+
 protected:
 	static void _bind_methods();
 
