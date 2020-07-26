@@ -122,16 +122,15 @@ Ref<Voxel> Voxel::set_transparent(bool t) {
 }
 
 void Voxel::clear_geometry() {
-
-	_model_positions.resize(0);
-	_model_normals.resize(0);
-	_model_uvs.resize(0);
-	_model_indices.resize(0);
+	_model_positions.clear();
+	_model_normals.clear();
+	_model_uvs.clear();
+	_model_indices.clear();
 
 	for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		_model_side_positions[side].resize(0);
-		_model_side_uvs[side].resize(0);
-		_model_side_indices[side].resize(0);
+		_model_side_positions[side].clear();
+		_model_side_uvs[side].clear();
+		_model_side_indices[side].clear();
 	}
 }
 
@@ -198,12 +197,23 @@ void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 	}
 
 	Array arrays = mesh->surface_get_arrays(0);
+	set_custom_mesh_from_arrays(arrays);
+
+	_custom_mesh = mesh;
+}
+
+void Voxel::set_custom_mesh_from_arrays(Array arrays) {
+	clear_geometry();
+
+	ERR_FAIL_COND(arrays.size() == 0);
+
 	PoolIntArray indices = arrays[Mesh::ARRAY_INDEX];
+	ERR_FAIL_COND_MSG(indices.size() % 3 != 0, "Mesh is empty or does not contain triangles");
+
 	PoolVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
 	PoolVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
 	PoolVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
 
-	ERR_FAIL_COND_MSG(indices.size() % 3 != 0, "Mesh is empty or does not contain triangles");
 	ERR_FAIL_COND(normals.size() == 0);
 
 	struct L {
@@ -242,8 +252,6 @@ void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 		uvs = PoolVector2Array();
 		uvs.resize(positions.size());
 	}
-
-	_custom_mesh = mesh;
 
 	// Separate triangles belonging to faces of the cube
 
@@ -359,7 +367,7 @@ void Voxel::update_cube_uv_sides() {
 		return;
 	}
 
-	float e = 0.001;
+	const float e = 0.001;
 	// Winding is the same as the one chosen in Cube:: vertices
 	// I am confused. I read in at least 3 OpenGL tutorials that texture coordinates start at bottom-left (0,0).
 	// But even though Godot is said to follow OpenGL's convention, the engine starts at top-left!
@@ -370,9 +378,9 @@ void Voxel::update_cube_uv_sides() {
 		Vector2(e, e),
 	};
 
-	float atlas_size = (float)library->get_atlas_size();
+	const float atlas_size = (float)library->get_atlas_size();
 	CRASH_COND(atlas_size <= 0);
-	float s = 1.0 / atlas_size;
+	const float s = 1.0 / atlas_size;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 		_model_side_uvs[side].resize(4);

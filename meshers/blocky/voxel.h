@@ -92,6 +92,8 @@ private:
 	void set_cube_uv_side(int side, Vector2 tile_pos);
 	void update_cube_uv_sides();
 
+	void set_custom_mesh_from_arrays(Array arrays);
+
 	VoxelLibrary *get_library() const;
 
 	static void _bind_methods();
