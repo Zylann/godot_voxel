@@ -30,7 +30,7 @@ public:
 	// Properties
 
 	Ref<Voxel> set_voxel_name(String name);
-	_FORCE_INLINE_ String get_voxel_name() const { return _name; }
+	_FORCE_INLINE_ StringName get_voxel_name() const { return _name; }
 
 	Ref<Voxel> set_id(int id);
 	_FORCE_INLINE_ int get_id() const { return _id; }
@@ -98,7 +98,6 @@ private:
 
 	void clear_geometry();
 	Ref<Voxel> set_cube_geometry(float sy = 1);
-	//Ref<Voxel> set_xquad_geometry(Vector2 atlas_pos);
 
 	Array _b_get_collision_aabbs() const;
 	void _b_set_collision_aabbs(Array array);
@@ -108,7 +107,7 @@ private:
 
 	// Identifiers
 	int _id;
-	String _name; // TODO StringName?
+	StringName _name;
 
 	// Properties
 	int _material_id;

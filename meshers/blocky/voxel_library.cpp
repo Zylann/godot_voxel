@@ -30,6 +30,16 @@ void VoxelLibrary::set_voxel_count(unsigned int type_count) {
 	_change_notify();
 }
 
+int VoxelLibrary::get_voxel_index_from_name(StringName name) const {
+	for (size_t i = 0; i < _voxel_types.size(); ++i) {
+		const Ref<Voxel> &v = _voxel_types[i];
+		if (v->get_name() == name) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 void VoxelLibrary::load_default() {
 	set_voxel_count(2);
 	create_voxel(0, "air")->set_transparent(true);
@@ -382,6 +392,9 @@ void VoxelLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_count", "count"), &VoxelLibrary::set_voxel_count);
 	ClassDB::bind_method(D_METHOD("get_voxel_count"), &VoxelLibrary::get_voxel_count);
 
+	ClassDB::bind_method(D_METHOD("get_voxel_index_from_name", "name"), &VoxelLibrary::get_voxel_index_from_name);
+	ClassDB::bind_method(D_METHOD("get_voxel_by_name", "name"), &VoxelLibrary::_b_get_voxel_by_name);
+
 	ClassDB::bind_method(D_METHOD("bake"), &VoxelLibrary::bake);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "atlas_size"), "set_atlas_size", "get_atlas_size");
@@ -392,5 +405,11 @@ void VoxelLibrary::_bind_methods() {
 
 Ref<Voxel> VoxelLibrary::_b_get_voxel(unsigned int id) {
 	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<Voxel>());
+	return _voxel_types[id];
+}
+
+Ref<Voxel> VoxelLibrary::_b_get_voxel_by_name(StringName name) {
+	int id = get_voxel_index_from_name(name);
+	ERR_FAIL_COND_V(id == -1, Ref<Voxel>());
 	return _voxel_types[id];
 }

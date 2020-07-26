@@ -41,6 +41,8 @@ public:
 
 	bool get_side_pattern_occlusion(unsigned int pattern_a, unsigned int pattern_b) const;
 
+	int get_voxel_index_from_name(StringName name) const;
+
 private:
 	void generate_side_culling_matrix();
 
@@ -51,6 +53,7 @@ private:
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
 	Ref<Voxel> _b_get_voxel(unsigned int id);
+	Ref<Voxel> _b_get_voxel_by_name(StringName name);
 
 private:
 	std::vector<Ref<Voxel> > _voxel_types;
