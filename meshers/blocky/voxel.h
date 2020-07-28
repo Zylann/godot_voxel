@@ -47,6 +47,9 @@ public:
 	void set_custom_mesh(Ref<Mesh> mesh);
 	Ref<Mesh> get_custom_mesh() const { return _custom_mesh; }
 
+	void set_random_tickable(bool rt);
+	inline bool is_random_tickable() const { return _random_tickable; }
+
 	//-------------------------------------------
 	// Built-in geometry generators
 
@@ -121,6 +124,7 @@ private:
 	Ref<Mesh> _custom_mesh;
 	std::vector<AABB> _collision_aabbs;
 	bool _contributes_to_ao = false;
+	bool _random_tickable = false;
 
 	FixedArray<uint32_t, Cube::SIDE_COUNT> _side_pattern_index;
 

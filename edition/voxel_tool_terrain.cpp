@@ -2,6 +2,10 @@
 #include "../terrain/voxel_map.h"
 #include "../terrain/voxel_terrain.h"
 #include "../util/voxel_raycast.h"
+#include <core/func_ref.h>
+
+VoxelToolTerrain::VoxelToolTerrain() {
+}
 
 VoxelToolTerrain::VoxelToolTerrain(VoxelTerrain *terrain, Ref<VoxelMap> map) {
 	ERR_FAIL_COND(terrain == nullptr);
@@ -16,7 +20,6 @@ bool VoxelToolTerrain::is_area_editable(const Rect3i &box) const {
 }
 
 Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, float max_distance) {
-
 	// TODO Transform input if the terrain is rotated (in the future it can be made a Spatial node)
 
 	struct RaycastPredicate {
@@ -89,4 +92,76 @@ void VoxelToolTerrain::_set_voxel_f(Vector3i pos, float v) {
 void VoxelToolTerrain::_post_edit(const Rect3i &box) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	_terrain->make_area_dirty(box);
+}
+
+// Executes a function on random voxels in the provided area, using the type channel.
+// This allows to implement slow "natural" cellular automata behavior, as can be seen in Minecraft.
+void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<FuncRef> callback, int batch_count) const {
+	ERR_FAIL_COND(_terrain == nullptr);
+	ERR_FAIL_COND(_terrain->get_voxel_library().is_null());
+	ERR_FAIL_COND(callback.is_null());
+	ERR_FAIL_COND(batch_count <= 0);
+	ERR_FAIL_COND(voxel_count < 0);
+
+	if (voxel_count == 0) {
+		return;
+	}
+
+	const VoxelLibrary &lib = **_terrain->get_voxel_library();
+
+	const Vector3i min_pos = Vector3i(voxel_area.position);
+	const Vector3i max_pos = min_pos + Vector3i(voxel_area.size);
+
+	const Vector3i min_block_pos = _map->voxel_to_block(min_pos);
+	const Vector3i max_block_pos = _map->voxel_to_block(max_pos);
+	const Vector3i block_area_size = max_block_pos - min_block_pos;
+
+	const int block_count = voxel_count / batch_count;
+	const int bs_mask = _map->get_block_size_mask();
+
+	// Choose blocks at random
+	for (int bi = 0; bi < block_count; ++bi) {
+		const Vector3i block_pos = min_block_pos + Vector3i(
+														   Math::rand() % block_area_size.x,
+														   Math::rand() % block_area_size.y,
+														   Math::rand() % block_area_size.z);
+		const Vector3i block_origin = _map->block_to_voxel(block_pos);
+
+		const VoxelBlock *block = _map->get_block(block_pos);
+		if (block != nullptr) {
+			// Choose a bunch of voxels at random within the block.
+			// Batching this way improves performance a little by reducing block lookups.
+			for (int vi = 0; vi < batch_count; ++vi) {
+				const Vector3i rpos(
+						Math::rand() & bs_mask,
+						Math::rand() & bs_mask,
+						Math::rand() & bs_mask);
+
+				const unsigned int v = block->voxels->get_voxel(rpos, VoxelBuffer::CHANNEL_TYPE);
+
+				if (lib.has_voxel(v)) {
+					const Voxel &vt = lib.get_voxel_const(v);
+
+					if (vt.is_random_tickable()) {
+						const Variant vpos = (rpos + block_origin).to_vec3();
+						const Variant vv = v;
+						const Variant *args[2];
+						args[0] = &vpos;
+						args[1] = &vv;
+						Variant::CallError error;
+						callback->call_func(args, 2, error);
+						// TODO I would really like to know what's the correct way to report such errors...
+						// Examples I found in the engine are inconsistent
+						ERR_FAIL_COND(error.error != Variant::CallError::CALL_OK);
+						// Return if it fails, we don't want an error spam
+					}
+				}
+			}
+		}
+	}
+}
+
+void VoxelToolTerrain::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("run_blocky_random_tick", "voxel_count", "callback", "batch_count"),
+			&VoxelToolTerrain::run_blocky_random_tick, DEFVAL(16));
 }

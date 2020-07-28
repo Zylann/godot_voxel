@@ -1,5 +1,6 @@
 #include "register_types.h"
 #include "edition/voxel_tool.h"
+#include "edition/voxel_tool_terrain.h"
 #include "editor/editor_plugin.h"
 #include "editor/voxel_graph_editor_plugin.h"
 #include "generators/graph/voxel_generator_graph.h"
@@ -58,6 +59,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelBoxMover>();
 	ClassDB::register_class<VoxelRaycastResult>();
 	ClassDB::register_class<VoxelTool>();
+	ClassDB::register_class<VoxelToolTerrain>();
 	ClassDB::register_class<VoxelBlockSerializer>();
 
 	// Meshers

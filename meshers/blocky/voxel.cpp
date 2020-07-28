@@ -352,6 +352,10 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 	return Ref<Voxel>(this);
 }
 
+void Voxel::set_random_tickable(bool rt) {
+	_random_tickable = rt;
+}
+
 void Voxel::set_cube_uv_side(int side, Vector2 tile_pos) {
 	_cube_tiles[side] = tile_pos;
 	// TODO Better have a dirty flag, otherwise UVs will be needlessly updated at least 6 times everytime a Voxel resource is loaded!
@@ -445,6 +449,9 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_transparent", "transparent"), &Voxel::set_transparent);
 	ClassDB::bind_method(D_METHOD("is_transparent"), &Voxel::is_transparent);
 
+	ClassDB::bind_method(D_METHOD("set_random_tickable", "rt"), &Voxel::set_random_tickable);
+	ClassDB::bind_method(D_METHOD("is_random_tickable"), &Voxel::is_random_tickable);
+
 	ClassDB::bind_method(D_METHOD("set_material_id", "id"), &Voxel::set_material_id);
 	ClassDB::bind_method(D_METHOD("get_material_id"), &Voxel::get_material_id);
 
@@ -461,6 +468,7 @@ void Voxel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent"), "set_transparent", "is_transparent");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_tickable"), "set_random_tickable", "is_random_tickable");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "material_id"), "set_material_id", "get_material_id");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "geometry_type", PROPERTY_HINT_ENUM, "None,Cube,CustomMesh"), "set_geometry_type", "get_geometry_type");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), "set_custom_mesh", "get_custom_mesh");
