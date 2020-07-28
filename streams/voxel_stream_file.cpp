@@ -37,7 +37,6 @@ void VoxelStreamFile::emerge_blocks_fallback(Vector<VoxelBlockRequest> &requests
 	VOXEL_PROFILE_SCOPE(profile_scope);
 
 	if (_fallback_stream.is_valid()) {
-
 		_fallback_stream->emerge_blocks(requests);
 
 		if (_save_fallback_output) {
@@ -50,6 +49,7 @@ int VoxelStreamFile::get_used_channels_mask() const {
 	if (_fallback_stream.is_valid()) {
 		return _fallback_stream->get_used_channels_mask();
 	}
+	return VoxelStream::get_used_channels_mask();
 }
 
 FileAccess *VoxelStreamFile::open_file(const String &fpath, int mode_flags, Error *err) {
