@@ -400,7 +400,7 @@ Dictionary VoxelGeneratorGraph::get_graph_as_variant_data() {
 static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT, false);
 	int i = v;
-	ERR_FAIL_COND_V(i < min, false);
+	ERR_FAIL_COND_V(i < 0 || (unsigned int)i < min, false);
 	out_id = i;
 	return true;
 }
@@ -411,7 +411,7 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
 
 	const Variant *id_key = nullptr;
-	while (id_key = nodes_data.next(id_key)) {
+	while ((id_key = nodes_data.next(id_key))) {
 		const String id_str = *id_key;
 		ERR_FAIL_COND(!id_str.is_valid_integer());
 		const int sid = id_str.to_int();
@@ -428,7 +428,7 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 		ERR_FAIL_COND(node == nullptr);
 
 		const Variant *param_key = nullptr;
-		while (param_key = node_data.next(param_key)) {
+		while ((param_key = node_data.next(param_key))) {
 			const String param_name = *param_key;
 			if (param_name == "type") {
 				continue;
@@ -541,7 +541,7 @@ bool VoxelGeneratorGraph::_set(const StringName &p_name, const Variant &p_value)
 	struct L {
 		inline static bool set_xyz(char c, Vector3i &p, int v) {
 			int i = c - 'x';
-			ERR_FAIL_COND_V(i < 0 || i >= Vector3i::AXIS_COUNT, false);
+			ERR_FAIL_COND_V(i < 0 || (unsigned int)i >= Vector3i::AXIS_COUNT, false);
 			p[i] = v;
 			return true;
 		}
@@ -596,7 +596,7 @@ bool VoxelGeneratorGraph::_get(const StringName &p_name, Variant &r_ret) const {
 	struct L {
 		inline static bool get_xyz(char c, const Vector3i &p, Variant &r) {
 			int i = c - 'x';
-			ERR_FAIL_COND_V(i < 0 || i >= Vector3i::AXIS_COUNT, false);
+			ERR_FAIL_COND_V(i < 0 || (unsigned int)i >= Vector3i::AXIS_COUNT, false);
 			r = p[i];
 			return true;
 		}

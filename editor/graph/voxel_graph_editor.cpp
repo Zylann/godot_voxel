@@ -227,10 +227,10 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	//node_view.resizable = true
 	//node_view.rect_size = Vector2(200, 100)
 
-	const int row_count = max(node_type.inputs.size(), node_type.outputs.size());
+	const unsigned int row_count = max(node_type.inputs.size(), node_type.outputs.size());
 	const Color port_color(0.4, 0.4, 1.0);
 
-	for (int i = 0; i < row_count; ++i) {
+	for (unsigned int i = 0; i < row_count; ++i) {
 		const bool has_left = i < node_type.inputs.size();
 		const bool has_right = i < node_type.outputs.size();
 
