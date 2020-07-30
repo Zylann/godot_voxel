@@ -132,6 +132,8 @@ void Voxel::clear_geometry() {
 		_model_side_uvs[side].clear();
 		_model_side_indices[side].clear();
 	}
+
+	_empty = true;
 }
 
 void Voxel::set_geometry_type(GeometryType type) {
@@ -213,6 +215,8 @@ void Voxel::set_custom_mesh_from_arrays(Array arrays) {
 	PoolVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
 	PoolVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
 	PoolVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
+
+	_empty = positions.size() == 0;
 
 	ERR_FAIL_COND(normals.size() == 0);
 
@@ -349,6 +353,7 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 	_collision_aabbs.clear();
 	_collision_aabbs.push_back(AABB(Vector3(0, 0, 0), Vector3(1, 1, 1)));
 
+	_empty = false;
 	return Ref<Voxel>(this);
 }
 
@@ -463,6 +468,8 @@ void Voxel::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_collision_aabbs", "aabbs"), &Voxel::_b_set_collision_aabbs);
 	ClassDB::bind_method(D_METHOD("get_collision_aabbs"), &Voxel::_b_get_collision_aabbs);
+
+	ClassDB::bind_method(D_METHOD("is_empty()"), &Voxel::is_empty);
 
 	// TODO Update to StringName in Godot 4
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");

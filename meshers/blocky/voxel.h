@@ -7,7 +7,7 @@
 
 class VoxelLibrary;
 
-// TODO Rename VoxelBlockyType?
+// TODO Rename VoxelModel?
 // Definition of one type of voxel.
 // A voxel can be a simple coloured cube, or a more complex model.
 // Important: it is recommended that you create voxels from a library rather than using new().
@@ -62,6 +62,8 @@ public:
 
 	void set_geometry_type(GeometryType type);
 	GeometryType get_geometry_type() const;
+
+	inline bool is_empty() const { return _empty; }
 
 	Ref<Resource> duplicate(bool p_subresources) const override;
 
@@ -125,6 +127,7 @@ private:
 	std::vector<AABB> _collision_aabbs;
 	bool _contributes_to_ao = false;
 	bool _random_tickable = false;
+	bool _empty = true;
 
 	FixedArray<uint32_t, Cube::SIDE_COUNT> _side_pattern_index;
 

@@ -25,7 +25,8 @@ const int g_opposite_side[6] = {
 inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_voxel_id, int side) {
 	if (lib.has_voxel(other_voxel_id)) {
 		const Voxel &other_vt = lib.get_voxel_const(other_voxel_id);
-		if (other_vt.is_transparent() && vt.get_id() != other_voxel_id) {
+		// TODO Might test against material somehow, but not only
+		if (other_vt.is_empty() || (other_vt.is_transparent() && !vt.is_transparent())) {
 			return true;
 		} else {
 			const unsigned int ai = vt.get_side_pattern_index(side);
@@ -143,7 +144,6 @@ static void generate_blocky_mesh(
 				const int voxel_id = type_buffer[voxel_index];
 
 				if (voxel_id != 0 && library.has_voxel(voxel_id)) {
-
 					const Voxel &voxel = library.get_voxel_const(voxel_id);
 
 					VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[voxel.get_material_id()];
@@ -154,7 +154,6 @@ static void generate_blocky_mesh(
 
 					// Sides
 					for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-
 						const std::vector<Vector3> &side_positions = voxel.get_model_side_positions(side);
 						const unsigned int vertex_count = side_positions.size();
 
@@ -173,7 +172,6 @@ static void generate_blocky_mesh(
 						int shaded_corner[8] = { 0 };
 
 						if (bake_occlusion) {
-
 							// Combinatory solution for https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
 							// (inverted)
 							//	function vertexAO(side1, side2, corner) {
@@ -350,7 +348,6 @@ void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-
 	const int channel = VoxelBuffer::CHANNEL_TYPE;
 
 	ERR_FAIL_COND(_library.is_null());
@@ -446,7 +443,6 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// TODO We could return a single byte array and use Mesh::add_surface down the line?
 
 	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
-
 		const Arrays &arrays = _arrays_per_material[i];
 		if (arrays.positions.size() != 0) {
 
@@ -493,7 +489,6 @@ VoxelMesher *VoxelMesherBlocky::clone() {
 }
 
 void VoxelMesherBlocky::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_library", "voxel_library"), &VoxelMesherBlocky::set_library);
 	ClassDB::bind_method(D_METHOD("get_library"), &VoxelMesherBlocky::get_library);
 
