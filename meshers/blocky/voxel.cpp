@@ -100,7 +100,7 @@ Ref<Voxel> Voxel::set_voxel_name(String name) {
 Ref<Voxel> Voxel::set_id(int id) {
 	ERR_FAIL_COND_V(id < 0 || id >= VoxelLibrary::MAX_VOXEL_TYPES, Ref<Voxel>(this));
 	// Cannot modify ID after creation
-	ERR_FAIL_COND_V(_id != -1, Ref<Voxel>(this));
+	ERR_FAIL_COND_V_MSG(_id != -1, Ref<Voxel>(this), "ID cannot be modified after being added to a library");
 	_id = id;
 	return Ref<Voxel>(this);
 }
