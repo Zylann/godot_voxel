@@ -1,11 +1,12 @@
 #include "voxel_graph_editor.h"
-#include "../generators/graph/voxel_generator_graph.h"
-#include "../util/macros.h"
-#include "editor/editor_scale.h"
+#include "../../generators/graph/voxel_generator_graph.h"
+#include "../../generators/graph/voxel_graph_node_db.h"
+#include "../../util/macros.h"
 
 #include <core/core_string_names.h>
 #include <core/os/os.h>
 #include <core/undo_redo.h>
+#include <editor/editor_scale.h>
 #include <scene/gui/graph_edit.h>
 #include <scene/gui/label.h>
 

@@ -1,8 +1,9 @@
 #include "voxel_graph_editor_plugin.h"
-#include "../generators/graph/voxel_generator_graph.h"
-#include "editor/editor_scale.h"
+#include "../../generators/graph/voxel_generator_graph.h"
 #include "voxel_graph_editor.h"
 #include "voxel_graph_node_inspector_wrapper.h"
+
+#include <editor/editor_scale.h>
 
 VoxelGraphEditorPlugin::VoxelGraphEditorPlugin(EditorNode *p_node) {
 	//EditorInterface *ed = get_editor_interface();

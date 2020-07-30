@@ -1,7 +1,6 @@
 #ifndef VOXEL_GRAPH_EDITOR_H
 #define VOXEL_GRAPH_EDITOR_H
 
-#include "../generators/graph/voxel_graph_node_db.h"
 #include <scene/gui/control.h>
 
 class VoxelGeneratorGraph;

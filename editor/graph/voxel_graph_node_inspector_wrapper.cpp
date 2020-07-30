@@ -1,6 +1,6 @@
 #include "voxel_graph_node_inspector_wrapper.h"
-#include "../generators/graph/voxel_graph_node_db.h"
-#include "../util/macros.h"
+#include "../../generators/graph/voxel_graph_node_db.h"
+#include "../../util/macros.h"
 
 void VoxelGraphNodeInspectorWrapper::setup(Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id) {
 	_graph = p_graph;

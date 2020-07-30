@@ -2,7 +2,7 @@
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_terrain.h"
 #include "editor/editor_plugin.h"
-#include "editor/voxel_graph_editor_plugin.h"
+#include "editor/graph/voxel_graph_editor_plugin.h"
 #include "generators/graph/voxel_generator_graph.h"
 #include "generators/graph/voxel_graph_node_db.h"
 #include "generators/voxel_generator_flat.h"

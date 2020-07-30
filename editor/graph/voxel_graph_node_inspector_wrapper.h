@@ -1,7 +1,7 @@
 #ifndef VOXEL_GRAPH_NODE_INSPECTOR_WRAPPER_H
 #define VOXEL_GRAPH_NODE_INSPECTOR_WRAPPER_H
 
-#include "../generators/graph/program_graph.h"
+#include "../../generators/graph/program_graph.h"
 #include <core/reference.h>
 
 class VoxelGeneratorGraph;
