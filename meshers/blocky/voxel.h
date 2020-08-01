@@ -50,6 +50,9 @@ public:
 	void set_random_tickable(bool rt);
 	inline bool is_random_tickable() const { return _random_tickable; }
 
+	void set_collision_mask(uint32_t mask);
+	inline uint32_t get_collision_mask() const { return _collision_mask; }
+
 	//-------------------------------------------
 	// Built-in geometry generators
 
@@ -128,6 +131,7 @@ private:
 	bool _contributes_to_ao = false;
 	bool _random_tickable = false;
 	bool _empty = true;
+	uint32_t _collision_mask = 1;
 
 	FixedArray<uint32_t, Cube::SIDE_COUNT> _side_pattern_index;
 

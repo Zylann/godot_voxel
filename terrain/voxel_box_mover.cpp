@@ -146,11 +146,15 @@ Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelT
 	for (i.z = min_z; i.z < max_z; ++i.z) {
 		for (i.y = min_y; i.y < max_y; ++i.y) {
 			for (i.x = min_x; i.x < max_x; ++i.x) {
-
 				const int type_id = voxels.get_voxel(i, 0);
 
 				if (library.has_voxel(type_id)) {
 					const Voxel &voxel_type = library.get_voxel_const(type_id);
+
+					if ((voxel_type.get_collision_mask() & _collision_mask) == 0) {
+						continue;
+					}
+
 					const std::vector<AABB> &local_boxes = voxel_type.get_collision_aabbs();
 
 					for (auto it = local_boxes.begin(); it != local_boxes.end(); ++it) {
@@ -167,8 +171,14 @@ Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelT
 	return ::get_motion(box, motion, potential_boxes);
 }
 
+void VoxelBoxMover::set_collision_mask(uint32_t mask) {
+	_collision_mask = mask;
+}
+
 void VoxelBoxMover::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_motion", "pos", "motion", "aabb", "terrain"), &VoxelBoxMover::_b_get_motion);
+	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelBoxMover::set_collision_mask);
+	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelBoxMover::get_collision_mask);
 }
 
 Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Node *terrain_node) {

@@ -441,6 +441,10 @@ Ref<Resource> Voxel::duplicate(bool p_subresources) const {
 	return d_ref;
 }
 
+void Voxel::set_collision_mask(uint32_t mask) {
+	_collision_mask = mask;
+}
+
 void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_name", "name"), &Voxel::set_voxel_name);
 	ClassDB::bind_method(D_METHOD("get_voxel_name"), &Voxel::get_voxel_name);
@@ -469,6 +473,9 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_collision_aabbs", "aabbs"), &Voxel::_b_set_collision_aabbs);
 	ClassDB::bind_method(D_METHOD("get_collision_aabbs"), &Voxel::_b_get_collision_aabbs);
 
+	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &Voxel::set_collision_mask);
+	ClassDB::bind_method(D_METHOD("get_collision_mask"), &Voxel::get_collision_mask);
+
 	ClassDB::bind_method(D_METHOD("is_empty()"), &Voxel::is_empty);
 
 	// TODO Update to StringName in Godot 4
@@ -480,6 +487,7 @@ void Voxel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "geometry_type", PROPERTY_HINT_ENUM, "None,Cube,CustomMesh"), "set_geometry_type", "get_geometry_type");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), "set_custom_mesh", "get_custom_mesh");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING, itos(Variant::AABB) + ":"), "set_collision_aabbs", "get_collision_aabbs");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask", "get_collision_mask");
 
 	BIND_ENUM_CONSTANT(GEOMETRY_NONE);
 	BIND_ENUM_CONSTANT(GEOMETRY_CUBE);
