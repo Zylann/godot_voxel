@@ -29,9 +29,11 @@ def get_doc_classes():
     "VoxelGeneratorNoise",
     "VoxelGeneratorNoise2D",
     "VoxelGeneratorTest",
+    "VoxelGeneratorGraph",
 
     "VoxelBoxMover",
     "VoxelTool",
+    "VoxelToolTerrain",
     "VoxelRaycastResult",
 
     "VoxelMesher",
