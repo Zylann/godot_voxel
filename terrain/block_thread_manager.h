@@ -11,6 +11,8 @@
 
 #include <core/os/os.h>
 #include <core/os/semaphore.h>
+#include <core/os/thread.h>
+
 #include <algorithm>
 #include <functional>
 #include <vector>

@@ -4,10 +4,12 @@
 #include "math/rect3i.h"
 #include "util/array_slice.h"
 #include "util/fixed_array.h"
+
 #include <core/reference.h>
 #include <core/vector.h>
 
 class VoxelTool;
+class Image;
 
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.

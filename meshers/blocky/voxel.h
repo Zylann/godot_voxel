@@ -3,7 +3,8 @@
 
 #include "../../cube_tables.h"
 #include "../../util/fixed_array.h"
-#include <core/resource.h>
+
+#include <scene/resources/mesh.h>
 
 class VoxelLibrary;
 

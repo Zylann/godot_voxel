@@ -1,34 +1,33 @@
 #ifndef HEADER_VOXEL_UTILITY_H
 #define HEADER_VOXEL_UTILITY_H
 
+#include <core/math/vector3.h>
 #include <core/pool_vector.h>
-#include <core/ustring.h>
+#include <core/reference.h>
 #include <core/vector.h>
-#include <scene/resources/mesh.h>
 #include <vector>
+
+class Mesh;
+class Object;
 
 // Takes elements starting from a given position and moves them at the beginning,
 // then shrink the array to fit them. Other elements are discarded.
 template <typename T>
 void shift_up(Vector<T> &v, unsigned int pos) {
-
 	unsigned int j = 0;
 	for (unsigned int i = pos; i < (unsigned int)v.size(); ++i, ++j) {
 		v.write[j] = v[i];
 	}
-
 	int remaining = v.size() - pos;
 	v.resize(remaining);
 }
 
 template <typename T>
 void shift_up(std::vector<T> &v, unsigned int pos) {
-
 	unsigned int j = 0;
 	for (unsigned int i = pos; i < v.size(); ++i, ++j) {
 		v[j] = v[i];
 	}
-
 	int remaining = v.size() - pos;
 	v.resize(remaining);
 }
@@ -77,11 +76,8 @@ inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
 
 template <typename T>
 void copy_to(PoolVector<T> &to, const Vector<T> &from) {
-
 	to.resize(from.size());
-
 	typename PoolVector<T>::Write w = to.write();
-
 	for (unsigned int i = 0; i < from.size(); ++i) {
 		w[i] = from[i];
 	}
@@ -104,7 +100,6 @@ void raw_copy_to(PoolVector<T> &to, const std::vector<T> &from) {
 // Cube points respect the same position as in octree_tables.h
 template <typename T>
 inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4, const T v5, const T v6, const T v7, Vector3 position) {
-
 	const float one_min_x = 1.f - position.x;
 	const float one_min_y = 1.f - position.y;
 	const float one_min_z = 1.f - position.z;
@@ -163,22 +158,8 @@ inline void sort_min_max(T &a, T &b) {
 	}
 }
 
-inline bool is_surface_triangulated(Array surface) {
-	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
-	PoolIntArray indices = surface[Mesh::ARRAY_INDEX];
-	return positions.size() >= 3 && indices.size() >= 3;
-}
-
-inline bool is_mesh_empty(Ref<Mesh> mesh_ref) {
-	if (mesh_ref.is_null())
-		return true;
-	const Mesh &mesh = **mesh_ref;
-	if (mesh.get_surface_count() == 0)
-		return true;
-	if (mesh.surface_get_array_len(0) == 0)
-		return true;
-	return false;
-}
+bool is_surface_triangulated(Array surface);
+bool is_mesh_empty(Ref<Mesh> mesh_ref);
 
 template <typename T>
 inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
@@ -212,6 +193,13 @@ inline float smoothstep(float p_from, float p_to, float p_weight) {
 	}
 	float x = clamp((p_weight - p_from) / (p_to - p_from), 0.0f, 1.0f);
 	return x * x * (3.0f - 2.0f * x);
+}
+
+bool try_call_script(const Object *obj, StringName method_name, const Variant **args, unsigned int argc, Variant *out_ret);
+
+inline bool try_call_script(const Object *obj, StringName method_name, Variant arg0, Variant arg1, Variant arg2, Variant *out_ret) {
+	const Variant *args[3] = { &arg0, &arg1, &arg2 };
+	return try_call_script(obj, method_name, args, 3, out_ret);
 }
 
 #if TOOLS_ENABLED

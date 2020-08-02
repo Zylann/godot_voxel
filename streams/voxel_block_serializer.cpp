@@ -3,6 +3,8 @@
 #include "../thirdparty/lz4/lz4.h"
 #include "../voxel_buffer.h"
 #include "../voxel_memory_pool.h"
+
+#include <core/io/stream_peer.h>
 #include <core/os/file_access.h>
 
 namespace {

@@ -7,6 +7,7 @@
 #include "edition/voxel_tool_buffer.h"
 #include "voxel_buffer.h"
 
+#include <core/image.h>
 #include <core/io/marshalls.h>
 #include <core/math/math_funcs.h>
 #include <string.h>
