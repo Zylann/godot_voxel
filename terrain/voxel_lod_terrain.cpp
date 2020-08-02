@@ -81,6 +81,10 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 
 String VoxelLodTerrain::get_configuration_warning() const {
 	if (_stream.is_valid()) {
+		Ref<Script> script = _stream->get_script();
+		if (script.is_valid() && !script->is_tool()) {
+			return TTR("The custom stream is not tool, the editor won't be able to use it.");
+		}
 		if (!(_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF))) {
 			return TTR("VoxelLodTerrain supports only stream channel \"Sdf\" (smooth).");
 		}
