@@ -9,6 +9,9 @@
 
 #include <core/core_string_names.h>
 #include <core/engine.h>
+#include <scene/main/viewport.h>
+#include <editor/plugins/spatial_editor_plugin.h>
+#include <scene/3d/camera.h>
 
 const uint32_t MAIN_THREAD_MESHING_BUDGET_MS = 8;
 
@@ -444,9 +447,9 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_PROCESS:
-			if (!Engine::get_singleton()->is_editor_hint()) {
+//			if (!Engine::get_singleton()->is_editor_hint()) {
 				_process();
-			}
+//			}
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
@@ -492,13 +495,17 @@ void VoxelLodTerrain::_notification(int p_what) {
 }
 
 void VoxelLodTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const {
-
 	if (Engine::get_singleton()->is_editor_hint()) {
-
-		// TODO Use editor's camera here
-		out_pos = Vector3();
-		out_direction = Vector3(0, -1, 0);
-
+		SpatialEditorViewport *viewer = NULL;
+		viewer = SpatialEditor::get_singleton()->get_editor_viewport(0);
+		if (viewer) {
+			Transform gt = viewer->get_camera()->get_global_transform();
+			out_pos = gt.origin;
+			out_direction = -gt.basis.get_axis(Vector3::AXIS_Z);
+		} else {
+			out_pos = (_lods[0].last_viewer_block_pos << _lods[0].map->get_block_size_pow2()).to_vec3();
+			out_direction = Vector3(0, -1, 0);
+		}
 	} else {
 		// TODO Have option to use viewport camera
 		Spatial *viewer = get_viewer();
@@ -1674,3 +1681,5 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"), "set_collision_lod_count", "get_collision_lod_count");
 }
+
+

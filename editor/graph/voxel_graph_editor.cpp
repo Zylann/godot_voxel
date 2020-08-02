@@ -401,7 +401,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 		const size_t param_count = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).params.size();
 		for (size_t j = 0; j < param_count; ++j) {
 			Variant param_value = _graph->get_node_param(node_id, j);
-			_undo_redo->add_undo_method(*_graph, "set_node_param", node_id, j, param_value);
+			_undo_redo->add_undo_method(*_graph, "set_node_param", node_id, (uint64_t)j, param_value);
 		}
 
 		_undo_redo->add_undo_method(this, "create_node_gui", node_id);

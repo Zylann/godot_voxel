@@ -508,6 +508,7 @@ static void migrate_region_meta_data(Dictionary &data) {
 VoxelFileResult VoxelStreamRegionFiles::load_meta() {
 
 	ERR_FAIL_COND_V(_directory_path == "", VOXEL_FILE_CANT_OPEN);
+	if (_directory_path.empty()) return VOXEL_FILE_CANT_OPEN;
 
 	// Ensure you cleanup previous world before loading another
 	CRASH_COND(_region_cache.size() > 0);
