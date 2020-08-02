@@ -29,8 +29,8 @@ public:
 
 		Param(String p_name, Variant::Type p_type, Variant p_default_value = Variant()) :
 				name(p_name),
-				type(p_type),
-				default_value(p_default_value) {}
+				default_value(p_default_value),
+				type(p_type) {}
 
 		Param(String p_name, String p_class_name) :
 				name(p_name),
