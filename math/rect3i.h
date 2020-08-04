@@ -197,7 +197,6 @@ public:
 	}
 
 	static inline void clip_range(int &pos, int &size, int lim_pos, int lim_size) {
-
 		int max_pos = pos + size;
 		int lim_max_pos = lim_pos + lim_size;
 

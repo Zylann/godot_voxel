@@ -176,11 +176,9 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 	const Channel &channel = _channels[channel_index];
 
 	if (validate_pos(x, y, z) && channel.data) {
-
 		uint32_t i = index(x, y, z);
 
 		switch (channel.depth) {
-
 			case DEPTH_8_BIT:
 				return channel.data[i];
 
@@ -227,7 +225,6 @@ void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int ch
 		uint32_t i = index(x, y, z);
 
 		switch (channel.depth) {
-
 			case DEPTH_8_BIT:
 				channel.data[i] = value;
 				break;
@@ -489,7 +486,6 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index
 }
 
 void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index) {
-
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
 	Channel &channel = _channels[channel_index];

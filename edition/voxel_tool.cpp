@@ -134,7 +134,6 @@ namespace {
 inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 	float res;
 	switch (mode) {
-
 		case VoxelTool::MODE_ADD:
 			// Union
 			res = min(src_value, dst_value);
@@ -158,7 +157,6 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 } // namespace
 
 void VoxelTool::do_sphere(Vector3 center, float radius) {
-
 	Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
@@ -167,14 +165,12 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 	}
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
-
 		box.for_each_cell([this, center, radius](Vector3i pos) {
 			float d = pos.to_vec3().distance_to(center) - radius;
 			_set_voxel_f(pos, sdf_blend(d, get_voxel_f(pos), _mode));
 		});
 
 	} else {
-
 		int value = _mode == MODE_REMOVE ? _eraser_value : _value;
 
 		box.for_each_cell([this, center, radius, value](Vector3i pos) {
@@ -192,7 +188,7 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	ERR_PRINT("Not implemented");
 }
 
-void VoxelTool::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, int mask_value) {
+void VoxelTool::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, int mask_value) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	Ref<VoxelBuffer> voxels = Object::cast_to<VoxelBuffer>(*p_voxels);
 	ERR_FAIL_COND(voxels.is_null());
@@ -209,7 +205,6 @@ void VoxelTool::_post_edit(const Rect3i &box) {
 }
 
 void VoxelTool::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_value", "v"), &VoxelTool::set_value);
 	ClassDB::bind_method(D_METHOD("get_value"), &VoxelTool::get_value);
 
@@ -228,6 +223,8 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_f", "pos", "v"), &VoxelTool::_b_set_voxel_f);
 	ClassDB::bind_method(D_METHOD("do_point", "pos"), &VoxelTool::_b_do_point);
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere);
+
+	ClassDB::bind_method(D_METHOD("paste", "dst_pos", "src_buffer", "src_mask_value"), &VoxelTool::_b_paste);
 
 	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance"), &VoxelTool::_b_raycast, DEFVAL(10.0));
 

@@ -35,3 +35,36 @@ void VoxelToolBuffer::_post_edit(const Rect3i &box) {
 	ERR_FAIL_COND(_buffer.is_null());
 	// Nothing special to do
 }
+
+void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, int mask_value) {
+	ERR_FAIL_COND(_buffer.is_null());
+	ERR_FAIL_COND(p_voxels.is_null());
+
+	VoxelBuffer *dst = *_buffer;
+	const VoxelBuffer *src = *p_voxels;
+
+	Rect3i box(p_pos, p_voxels->get_size());
+	const Vector3i min_noclamp = box.pos;
+	box.clip(Rect3i(Vector3i(), _buffer->get_size()));
+
+	const int channel = get_channel();
+
+	const Vector3i box_max = box.pos + box.size;
+
+	for (int z = box.pos.z; z < box_max.z; ++z) {
+		const int bz = z - min_noclamp.z;
+
+		for (int x = box.pos.x; x < box_max.x; ++x) {
+			const int bx = x - min_noclamp.x;
+
+			for (int y = box.pos.y; y < box_max.y; ++y) {
+				const int by = y - min_noclamp.y;
+
+				const uint64_t v = src->get_voxel(bx, by, bz, channel);
+				if (v != mask_value) {
+					dst->set_voxel(v, x, y, z, channel);
+				}
+			}
+		}
+	}
+}
