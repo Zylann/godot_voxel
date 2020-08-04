@@ -32,7 +32,7 @@ public:
 	// Must be cloneable so can be duplicated for use by more than one thread
 	virtual VoxelMesher *clone();
 
-	Ref<Mesh> build_mesh(Ref<VoxelBuffer> voxels);
+	Ref<Mesh> build_mesh(Ref<VoxelBuffer> voxels, Array materials);
 
 protected:
 	static void _bind_methods();

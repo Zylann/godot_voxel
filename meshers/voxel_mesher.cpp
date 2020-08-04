@@ -1,6 +1,6 @@
 #include "voxel_mesher.h"
 
-Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels) {
+Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
 	Output output;
@@ -14,8 +14,23 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels) {
 	Ref<ArrayMesh> mesh;
 	mesh.instance();
 
+	int surface_index = 0;
 	for (int i = 0; i < output.surfaces.size(); ++i) {
-		mesh->add_surface_from_arrays(output.primitive_type, output.surfaces[i], Array(), output.compression_flags);
+		Array surface = output.surfaces[i];
+		if (surface.empty()) {
+			continue;
+		}
+
+		CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
+		if (!is_surface_triangulated(surface)) {
+			continue;
+		}
+
+		mesh->add_surface_from_arrays(output.primitive_type, surface, Array(), output.compression_flags);
+		if (i < materials.size()) {
+			mesh->surface_set_material(surface_index, materials[i]);
+		}
+		++surface_index;
 	}
 
 	return mesh;
@@ -47,7 +62,7 @@ VoxelMesher *VoxelMesher::clone() {
 void VoxelMesher::_bind_methods() {
 	// Shortcut if you want to generate a mesh directly from a fixed grid of voxels.
 	// Useful for testing the different meshers.
-	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer"), &VoxelMesher::build_mesh);
+	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "materials"), &VoxelMesher::build_mesh);
 	ClassDB::bind_method(D_METHOD("get_minimum_padding"), &VoxelMesher::get_minimum_padding);
 	ClassDB::bind_method(D_METHOD("get_maximum_padding"), &VoxelMesher::get_maximum_padding);
 }
