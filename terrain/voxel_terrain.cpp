@@ -12,6 +12,8 @@
 #include <scene/3d/mesh_instance.h>
 
 const uint32_t MAIN_THREAD_MESHING_BUDGET_MS = 8;
+const char *VoxelTerrain::SIGNAL_BLOCK_LOADED = "block_loaded";
+const char *VoxelTerrain::SIGNAL_BLOCK_UNLOADED = "block_unloaded";
 
 VoxelTerrain::VoxelTerrain() {
 	// Note: don't do anything heavy in the constructor.
@@ -769,6 +771,7 @@ void VoxelTerrain::_process() {
 				out_of_range_box.for_each_cell([=](Vector3i bpos) {
 					// Unload block
 					immerge_block(bpos);
+					emit_signal(SIGNAL_BLOCK_UNLOADED, bpos.to_vec3(), 0); // TODO: only lod0 here, or need to grab from block?
 				});
 			});
 
@@ -852,6 +855,7 @@ void VoxelTerrain::_process() {
 			bool update_neighbors = block == nullptr;
 			block = _map->set_block_buffer(block_pos, ob.data.voxels_loaded);
 			block->set_world(get_world());
+			emit_signal(SIGNAL_BLOCK_LOADED, block->position.to_vec3(), 0); // TODO: only lod0 here, or need to grab from block?
 
 			// TODO The following code appears to have order-dependency with block loading.
 			// i.e if block loading responses arrive in a different order they were requested in,
@@ -1138,6 +1142,9 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("save_block"), &VoxelTerrain::_b_save_block);
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelTerrain::_on_stream_params_changed);
+
+	ADD_SIGNAL(MethodInfo("block_loaded", PropertyInfo(Variant::VECTOR3, "block_position"), PropertyInfo(Variant::INT, "lod")));
+	ADD_SIGNAL(MethodInfo("block_unloaded", PropertyInfo(Variant::VECTOR3, "block_position"), PropertyInfo(Variant::INT, "lod")));
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"), "set_voxel_library", "get_voxel_library");

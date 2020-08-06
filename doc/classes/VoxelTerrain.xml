@@ -66,6 +66,26 @@
 		<member name="voxel_library" type="VoxelLibrary" setter="set_voxel_library" getter="get_voxel_library">
 		</member>
 	</members>
+	<signals>
+		<signal name="block_loaded">
+			<argument index="0" name="block_position" type="Vector3"> 
+			</argument>
+			<argument index="1" name="lod" type="int"> 
+			</argument>
+			<description>
+				Emitted when a new block is loaded from stream. Note it might be not visible yet. 
+			</description>
+		</signal>
+		<signal name="block_unloaded">
+			<argument index="0" name="block_position" type="Vector3"> 
+			</argument>
+			<argument index="1" name="lod" type="int"> 
+			</argument>
+			<description>
+				Emitted when a block unloaded due to being outside view distance.
+			</description>
+		</signal>
+	</signals>
 	<constants>
 	</constants>
 </class>

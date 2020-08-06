@@ -20,6 +20,9 @@ class VoxelTool;
 class VoxelTerrain : public Spatial {
 	GDCLASS(VoxelTerrain, Spatial)
 public:
+	static const char *SIGNAL_BLOCK_LOADED;
+	static const char *SIGNAL_BLOCK_UNLOADED;
+	
 	VoxelTerrain();
 	~VoxelTerrain();
 
