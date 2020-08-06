@@ -25,6 +25,17 @@
 			<description>
 			</description>
 		</method>
+		<method name="do_box">
+			<return type="void">
+			</return>
+			<argument index="0" name="begin" type="Vector3">
+			</argument>
+			<argument index="1" name="end" type="Vector3">
+			</argument>
+			<description>
+			Operate on a rectangular cuboid section of the terrain. [code]begin[/code] and [code]end[/code] are inclusive. Choose operation and which voxel to use by setting [code]value[/code] and [code]mode[/code] before calling this function.
+			</description>
+		</method>
 		<method name="get_voxel">
 			<return type="int">
 			</return>
