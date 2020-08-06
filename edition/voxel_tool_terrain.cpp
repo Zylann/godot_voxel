@@ -19,11 +19,12 @@ bool VoxelToolTerrain::is_area_editable(const Rect3i &box) const {
 	return _map->is_area_fully_loaded(box.padded(1));
 }
 
-Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, float max_distance) {
+Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
 	// TODO Transform input if the terrain is rotated (in the future it can be made a Spatial node)
 
 	struct RaycastPredicate {
 		const VoxelTerrain &terrain;
+		const uint32_t collision_mask;
 
 		bool operator()(Vector3i pos) {
 			//unsigned int channel = context->channel;
@@ -32,22 +33,31 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 			int v0 = map->get_voxel(pos, VoxelBuffer::CHANNEL_TYPE);
 
 			Ref<VoxelLibrary> lib_ref = terrain.get_voxel_library();
-			if (lib_ref.is_null())
+			if (lib_ref.is_null()) {
 				return false;
+			}
 			const VoxelLibrary &lib = **lib_ref;
 
-			if (lib.has_voxel(v0) == false)
+			if (lib.has_voxel(v0) == false) {
 				return false;
+			}
 
 			const Voxel &voxel = lib.get_voxel_const(v0);
-			if (voxel.get_geometry_type() == voxel.GEOMETRY_NONE)
+			if (voxel.is_empty()) {
 				return false;
+			}
 
-			if (voxel.is_transparent() == false)
-				return true;
+			if ((voxel.get_collision_mask() & collision_mask) == 0) {
+				return false;
+			}
 
-			if (voxel.is_transparent() && voxel.get_collision_aabbs().empty() == false)
+			if (voxel.is_transparent() == false) {
 				return true;
+			}
+
+			if (voxel.is_transparent() && voxel.get_collision_aabbs().empty() == false) {
+				return true;
+			}
 
 			float v1 = map->get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
 			return v1 < 0;
@@ -58,9 +68,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 	Vector3i prev_pos;
 	Ref<VoxelRaycastResult> res;
 
-	RaycastPredicate predicate = { *_terrain };
+	RaycastPredicate predicate = { *_terrain, collision_mask };
 	if (voxel_raycast(pos, dir, predicate, max_distance, hit_pos, prev_pos)) {
-
 		res.instance();
 		res->position = hit_pos;
 		res->previous_position = prev_pos;

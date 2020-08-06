@@ -59,7 +59,7 @@ public:
 
 	virtual void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint64_t mask_value);
 
-	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance);
+	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
 
 	// Checks if an edit affecting the given box can be applied, fully or partially
 	virtual bool is_area_editable(const Rect3i &box) const;
@@ -81,7 +81,9 @@ private:
 	float _b_get_voxel_f(Vector3 pos) { return get_voxel_f(Vector3i(pos)); }
 	void _b_set_voxel(Vector3 pos, uint64_t v) { set_voxel(Vector3i(pos), v); }
 	void _b_set_voxel_f(Vector3 pos, float v) { set_voxel_f(Vector3i(pos), v); }
-	Ref<VoxelRaycastResult> _b_raycast(Vector3 pos, Vector3 dir, float max_distance) { return raycast(pos, dir, max_distance); }
+	Ref<VoxelRaycastResult> _b_raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
+		return raycast(pos, dir, max_distance, collision_mask);
+	}
 	void _b_do_point(Vector3 pos) { do_point(Vector3i(pos)); }
 	void _b_do_line(Vector3i begin, Vector3i end) { do_line(Vector3i(begin), Vector3i(end)); }
 	void _b_do_circle(Vector3 pos, float radius, Vector3 direction) { do_circle(Vector3i(pos), radius, Vector3i(direction)); }

@@ -14,7 +14,7 @@ public:
 	VoxelToolTerrain(VoxelTerrain *terrain, Ref<VoxelMap> map);
 
 	bool is_area_editable(const Rect3i &box) const override;
-	Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance) override;
+	Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) override;
 
 	void run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<FuncRef> callback, int block_batch_count) const;
 
