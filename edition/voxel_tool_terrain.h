@@ -19,9 +19,9 @@ public:
 	void run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<FuncRef> callback, int block_batch_count) const;
 
 protected:
-	int _get_voxel(Vector3i pos) override;
+	uint64_t _get_voxel(Vector3i pos) override;
 	float _get_voxel_f(Vector3i pos) override;
-	void _set_voxel(Vector3i pos, int v) override;
+	void _set_voxel(Vector3i pos, uint64_t v) override;
 	void _set_voxel_f(Vector3i pos, float v) override;
 	void _post_edit(const Rect3i &box) override;
 

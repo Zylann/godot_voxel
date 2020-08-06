@@ -69,7 +69,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 	return res;
 }
 
-int VoxelToolTerrain::_get_voxel(Vector3i pos) {
+uint64_t VoxelToolTerrain::_get_voxel(Vector3i pos) {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _map->get_voxel(pos, _channel);
 }
@@ -79,7 +79,7 @@ float VoxelToolTerrain::_get_voxel_f(Vector3i pos) {
 	return _map->get_voxel_f(pos, _channel);
 }
 
-void VoxelToolTerrain::_set_voxel(Vector3i pos, int v) {
+void VoxelToolTerrain::_set_voxel(Vector3i pos, uint64_t v) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	_map->set_voxel(v, pos, _channel);
 }
@@ -118,6 +118,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 
 	const int block_count = voxel_count / batch_count;
 	const int bs_mask = _map->get_block_size_mask();
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 
 	// Choose blocks at random
 	for (int bi = 0; bi < block_count; ++bi) {
@@ -137,7 +138,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 						Math::rand() & bs_mask,
 						Math::rand() & bs_mask);
 
-				const unsigned int v = block->voxels->get_voxel(rpos, VoxelBuffer::CHANNEL_TYPE);
+				const uint64_t v = block->voxels->get_voxel(rpos, channel);
 
 				if (lib.has_voxel(v)) {
 					const Voxel &vt = lib.get_voxel_const(v);

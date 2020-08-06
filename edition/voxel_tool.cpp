@@ -21,19 +21,19 @@ void VoxelRaycastResult::_bind_methods() {
 
 //----------------------------------------
 
-void VoxelTool::set_value(int val) {
+void VoxelTool::set_value(uint64_t val) {
 	_value = val;
 }
 
-int VoxelTool::get_value() const {
+uint64_t VoxelTool::get_value() const {
 	return _value;
 }
 
-void VoxelTool::set_eraser_value(int value) {
+void VoxelTool::set_eraser_value(uint64_t value) {
 	_eraser_value = value;
 }
 
-int VoxelTool::get_eraser_value() const {
+uint64_t VoxelTool::get_eraser_value() const {
 	return _eraser_value;
 }
 
@@ -59,7 +59,7 @@ Ref<VoxelRaycastResult> VoxelTool::raycast(Vector3 pos, Vector3 dir, float max_d
 	return Ref<VoxelRaycastResult>();
 }
 
-int VoxelTool::get_voxel(Vector3i pos) {
+uint64_t VoxelTool::get_voxel(Vector3i pos) {
 	return _get_voxel(pos);
 }
 
@@ -67,7 +67,7 @@ float VoxelTool::get_voxel_f(Vector3i pos) {
 	return _get_voxel_f(pos);
 }
 
-void VoxelTool::set_voxel(Vector3i pos, int v) {
+void VoxelTool::set_voxel(Vector3i pos, uint64_t v) {
 	Rect3i box(pos, Vector3i(1));
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -108,7 +108,7 @@ void VoxelTool::do_circle(Vector3i pos, int radius, Vector3i direction) {
 	ERR_PRINT("Not implemented");
 }
 
-int VoxelTool::_get_voxel(Vector3i pos) {
+uint64_t VoxelTool::_get_voxel(Vector3i pos) {
 	ERR_PRINT("Not implemented");
 	return 0;
 }
@@ -118,7 +118,7 @@ float VoxelTool::_get_voxel_f(Vector3i pos) {
 	return 0;
 }
 
-void VoxelTool::_set_voxel(Vector3i pos, int v) {
+void VoxelTool::_set_voxel(Vector3i pos, uint64_t v) {
 	ERR_PRINT("Not implemented");
 }
 
@@ -188,7 +188,7 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	ERR_PRINT("Not implemented");
 }
 
-void VoxelTool::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, int mask_value) {
+void VoxelTool::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint64_t mask_value) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	Ref<VoxelBuffer> voxels = Object::cast_to<VoxelBuffer>(*p_voxels);
 	ERR_FAIL_COND(voxels.is_null());

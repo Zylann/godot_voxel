@@ -11,7 +11,7 @@ bool VoxelToolBuffer::is_area_editable(const Rect3i &box) const {
 	return Rect3i(Vector3i(), _buffer->get_size()).encloses(box);
 }
 
-int VoxelToolBuffer::_get_voxel(Vector3i pos) {
+uint64_t VoxelToolBuffer::_get_voxel(Vector3i pos) {
 	ERR_FAIL_COND_V(_buffer.is_null(), 0);
 	return _buffer->get_voxel(pos, _channel);
 }
@@ -21,7 +21,7 @@ float VoxelToolBuffer::_get_voxel_f(Vector3i pos) {
 	return _buffer->get_voxel_f(pos.x, pos.y, pos.z, _channel);
 }
 
-void VoxelToolBuffer::_set_voxel(Vector3i pos, int v) {
+void VoxelToolBuffer::_set_voxel(Vector3i pos, uint64_t v) {
 	ERR_FAIL_COND(_buffer.is_null());
 	return _buffer->set_voxel(v, pos, _channel);
 }
@@ -36,7 +36,7 @@ void VoxelToolBuffer::_post_edit(const Rect3i &box) {
 	// Nothing special to do
 }
 
-void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, int mask_value) {
+void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint64_t mask_value) {
 	ERR_FAIL_COND(_buffer.is_null());
 	ERR_FAIL_COND(p_voxels.is_null());
 

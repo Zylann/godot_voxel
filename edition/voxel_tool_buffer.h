@@ -11,12 +11,12 @@ public:
 	VoxelToolBuffer(Ref<VoxelBuffer> vb);
 
 	bool is_area_editable(const Rect3i &box) const override;
-	void paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, int mask_value) override;
+	void paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint64_t mask_value) override;
 
 protected:
-	int _get_voxel(Vector3i pos) override;
+	uint64_t _get_voxel(Vector3i pos) override;
 	float _get_voxel_f(Vector3i pos) override;
-	void _set_voxel(Vector3i pos, int v) override;
+	void _set_voxel(Vector3i pos, uint64_t v) override;
 	void _set_voxel_f(Vector3i pos, float v) override;
 	void _post_edit(const Rect3i &box) override;
 
