@@ -21,6 +21,8 @@ public:
 	StringName immerge_block;
 	StringName generate_block;
 	StringName get_used_channels_mask;
+	StringName block_loaded;
+	StringName block_unloaded;
 
 	StringName u_transition_mask;
 };

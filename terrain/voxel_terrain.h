@@ -13,6 +13,7 @@ class VoxelMap;
 class VoxelLibrary;
 class VoxelStream;
 class VoxelTool;
+class VoxelBlock;
 
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.
@@ -92,6 +93,9 @@ private:
 	void save_all_modified_blocks(bool with_copy);
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
 	void send_block_data_requests();
+
+	void emit_block_loaded(const VoxelBlock *block);
+	void emit_block_unloaded(const VoxelBlock *block);
 
 	Dictionary get_statistics() const;
 

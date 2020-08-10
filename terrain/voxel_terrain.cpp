@@ -4,6 +4,7 @@
 #include "../util/macros.h"
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
+#include "../voxel_string_names.h"
 #include "voxel_block.h"
 #include "voxel_map.h"
 
@@ -65,7 +66,6 @@ String VoxelTerrain::get_configuration_warning() const {
 // TODO See if there is a way to specify materials in voxels directly?
 
 bool VoxelTerrain::_set(const StringName &p_name, const Variant &p_value) {
-
 	if (p_name.operator String().begins_with("material/")) {
 		unsigned int idx = p_name.operator String().get_slicec('/', 1).to_int();
 		ERR_FAIL_COND_V(idx >= VoxelMesherBlocky::MAX_MATERIALS || idx < 0, false);
@@ -77,7 +77,6 @@ bool VoxelTerrain::_set(const StringName &p_name, const Variant &p_value) {
 }
 
 bool VoxelTerrain::_get(const StringName &p_name, Variant &r_ret) const {
-
 	if (p_name.operator String().begins_with("material/")) {
 		unsigned int idx = p_name.operator String().get_slicec('/', 1).to_int();
 		ERR_FAIL_COND_V(idx >= VoxelMesherBlocky::MAX_MATERIALS || idx < 0, false);
@@ -89,7 +88,6 @@ bool VoxelTerrain::_get(const StringName &p_name, Variant &r_ret) const {
 }
 
 void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
-
 	for (unsigned int i = 0; i < VoxelMesherBlocky::MAX_MATERIALS; ++i) {
 		p_list->push_back(PropertyInfo(Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,SpatialMaterial"));
 	}
@@ -120,7 +118,6 @@ Ref<VoxelStream> VoxelTerrain::get_stream() const {
 }
 
 void VoxelTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
-
 	ERR_FAIL_COND(p_block_size_po2 < 1);
 	ERR_FAIL_COND(p_block_size_po2 > 32);
 
@@ -190,7 +187,6 @@ Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
 }
 
 void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
-
 	if (library == _library) {
 		return;
 	}
@@ -203,7 +199,7 @@ void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
 
 	_library = library;
 
-	bool updater_was_running = _block_updater != nullptr;
+	const bool updater_was_running = _block_updater != nullptr;
 
 	stop_updater();
 
@@ -225,7 +221,7 @@ int VoxelTerrain::get_view_distance() const {
 
 void VoxelTerrain::set_view_distance(int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0);
-	int d = distance_in_voxels / _map->get_block_size();
+	const int d = distance_in_voxels / _map->get_block_size();
 	if (d != _view_distance_blocks) {
 		PRINT_VERBOSE(String("View distance changed from ") + String::num(_view_distance_blocks) + String(" blocks to ") + String::num(d));
 		_view_distance_blocks = d;
@@ -318,8 +314,11 @@ struct ScheduleSaveAction {
 void VoxelTerrain::immerge_block(Vector3i bpos) {
 	ERR_FAIL_COND(_map.is_null());
 
-	// Note: no need to copy the block because it gets removed from the map anyways
-	_map->remove_block(bpos, ScheduleSaveAction{ _blocks_to_save, false });
+	_map->remove_block(bpos, [this, bpos](VoxelBlock *block) {
+		emit_block_unloaded(block);
+		// Note: no need to copy the block because it gets removed from the map anyways
+		ScheduleSaveAction{ _blocks_to_save, false }(block);
+	});
 
 	_loading_blocks.erase(bpos);
 
@@ -338,8 +337,8 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
 }
 
 Dictionary VoxelTerrain::get_statistics() const {
-
 	Dictionary d;
+
 	d["stream"] = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);
 	d["updater"] = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
 
@@ -381,7 +380,6 @@ void VoxelTerrain::make_all_view_dirty_deferred() {
 }
 
 void VoxelTerrain::start_updater() {
-
 	ERR_FAIL_COND(_block_updater != nullptr);
 
 	// TODO VoxelLibrary should be baked ahead of time, like MeshLibrary
@@ -402,7 +400,6 @@ void VoxelTerrain::start_updater() {
 }
 
 void VoxelTerrain::stop_updater() {
-
 	struct ResetMeshStateAction {
 		void operator()(VoxelBlock *block) {
 			if (block->get_mesh_state() == VoxelBlock::MESH_UPDATE_SENT) {
@@ -424,7 +421,6 @@ void VoxelTerrain::stop_updater() {
 }
 
 void VoxelTerrain::start_streamer() {
-
 	ERR_FAIL_COND(_stream_thread != nullptr);
 	ERR_FAIL_COND(_stream.is_null());
 
@@ -441,6 +437,9 @@ void VoxelTerrain::stop_streamer() {
 }
 
 void VoxelTerrain::reset_map() {
+	_map->for_all_blocks([this](VoxelBlock *block) {
+		emit_block_unloaded(block);
+	});
 	_map->create(get_block_size_pow2(), 0);
 }
 
@@ -449,35 +448,37 @@ inline int get_border_index(int x, int max) {
 }
 
 void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
-
 	// Update the block in which the voxel is
-	Vector3i bpos = _map->voxel_to_block(pos);
+	const Vector3i bpos = _map->voxel_to_block(pos);
 	make_block_dirty(bpos);
 	//OS::get_singleton()->print("Dirty (%i, %i, %i)\n", bpos.x, bpos.y, bpos.z);
 
 	// Update neighbor blocks if the voxel is touching a boundary
 
-	Vector3i rpos = _map->to_local(pos);
+	const Vector3i rpos = _map->to_local(pos);
 
 	// TODO Thread-safe way of getting this parameter
-	bool check_corners = true; //_mesher->get_occlusion_enabled();
+	const bool check_corners = true; //_mesher->get_occlusion_enabled();
 
 	const int max = _map->get_block_size() - 1;
 
-	if (rpos.x == 0)
+	if (rpos.x == 0) {
 		make_block_dirty(bpos - Vector3i(1, 0, 0));
-	else if (rpos.x == max)
+	} else if (rpos.x == max) {
 		make_block_dirty(bpos + Vector3i(1, 0, 0));
+	}
 
-	if (rpos.y == 0)
+	if (rpos.y == 0) {
 		make_block_dirty(bpos - Vector3i(0, 1, 0));
-	else if (rpos.y == max)
+	} else if (rpos.y == max) {
 		make_block_dirty(bpos + Vector3i(0, 1, 0));
+	}
 
-	if (rpos.z == 0)
+	if (rpos.z == 0) {
 		make_block_dirty(bpos - Vector3i(0, 0, 1));
-	else if (rpos.z == max)
+	} else if (rpos.z == max) {
 		make_block_dirty(bpos + Vector3i(0, 0, 1));
+	}
 
 	// We might want to update blocks in corners in order to update ambient occlusion
 	if (check_corners) {
@@ -540,10 +541,10 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 			{ 24, 15, 21, 25 }, { 25 }, { 26, 17, 23, 25 }
 		};
 
-		int m = get_border_index(rpos.x, max) + 3 * get_border_index(rpos.z, max) + 9 * get_border_index(rpos.y, max);
+		const int m = get_border_index(rpos.x, max) + 3 * get_border_index(rpos.z, max) + 9 * get_border_index(rpos.y, max);
 
 		const int *ce_indexes = ce_indexes_lut[m];
-		int ce_count = ce_counts[m];
+		const int ce_count = ce_counts[m];
 		//OS::get_singleton()->print("m=%i, rpos=(%i, %i, %i)\n", m, rpos.x, rpos.y, rpos.z);
 
 		for (int i = 0; i < ce_count; ++i) {
@@ -551,7 +552,7 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 			// we could optimize it even more by looking at neighbor voxels,
 			// and discard the update if we know it won't change anything
 			const int *normal = normals[ce_indexes[i]];
-			Vector3i nbpos(bpos.x + normal[0], bpos.y + normal[1], bpos.z + normal[2]);
+			const Vector3i nbpos(bpos.x + normal[0], bpos.y + normal[1], bpos.z + normal[2]);
 			//OS::get_singleton()->print("Corner dirty (%i, %i, %i)\n", nbpos.x, nbpos.y, nbpos.z);
 			make_block_dirty(nbpos);
 		}
@@ -559,45 +560,48 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 }
 
 void VoxelTerrain::make_area_dirty(Rect3i box) {
-
 	Vector3i min_pos = box.pos;
 	Vector3i max_pos = box.pos + box.size - Vector3(1, 1, 1);
 
 	// TODO Thread-safe way of getting this parameter
-	bool check_corners = true; //_mesher->get_occlusion_enabled();
-	if (check_corners) {
+	const bool check_corners = true; //_mesher->get_occlusion_enabled();
 
+	if (check_corners) {
 		min_pos -= Vector3i(1, 1, 1);
 		max_pos += Vector3i(1, 1, 1);
 
 	} else {
-
 		Vector3i min_rpos = _map->to_local(min_pos);
-		if (min_rpos.x == 0)
+		if (min_rpos.x == 0) {
 			--min_pos.x;
-		if (min_rpos.y == 0)
+		}
+		if (min_rpos.y == 0) {
 			--min_pos.y;
-		if (min_rpos.z == 0)
+		}
+		if (min_rpos.z == 0) {
 			--min_pos.z;
+		}
 
 		const int max = _map->get_block_size() - 1;
-		Vector3i max_rpos = _map->to_local(max_pos);
-		if (max_rpos.x == max)
+		const Vector3i max_rpos = _map->to_local(max_pos);
+		if (max_rpos.x == max) {
 			++max_pos.x;
-		if (max_rpos.y == max)
+		}
+		if (max_rpos.y == max) {
 			++max_pos.y;
-		if (max_rpos.z == max)
+		}
+		if (max_rpos.z == max) {
 			++max_pos.z;
+		}
 	}
 
-	Vector3i min_block_pos = _map->voxel_to_block(min_pos);
-	Vector3i max_block_pos = _map->voxel_to_block(max_pos);
+	const Vector3i min_block_pos = _map->voxel_to_block(min_pos);
+	const Vector3i max_block_pos = _map->voxel_to_block(max_pos);
 
 	Vector3i bpos;
 	for (bpos.z = min_block_pos.z; bpos.z <= max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x <= max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y <= max_block_pos.y; ++bpos.y) {
-
 				make_block_dirty(bpos);
 			}
 		}
@@ -605,7 +609,6 @@ void VoxelTerrain::make_area_dirty(Rect3i box) {
 }
 
 void VoxelTerrain::_notification(int p_what) {
-
 	struct SetWorldAction {
 		World *world;
 		SetWorldAction(World *w) :
@@ -672,7 +675,7 @@ static void remove_positions_outside_box(
 	for (int i = 0; i < positions.size(); ++i) {
 		const Vector3i bpos = positions[i];
 		if (!box.contains(bpos)) {
-			int last = positions.size() - 1;
+			const int last = positions.size() - 1;
 			positions.write[i] = positions[last];
 			positions.resize(last);
 			loading_set.erase(bpos);
@@ -682,24 +685,21 @@ static void remove_positions_outside_box(
 }
 
 void VoxelTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const {
-
 	if (Engine::get_singleton()->is_editor_hint()) {
-
 		// TODO Use editor's camera here
 		out_pos = Vector3();
 		out_direction = Vector3(0, -1, 0);
 
 	} else {
 		// TODO Have option to use viewport camera
-		Spatial *viewer = get_viewer();
-		if (viewer) {
+		const Spatial *viewer = get_viewer();
 
+		if (viewer) {
 			Transform gt = viewer->get_global_transform();
 			out_pos = gt.origin;
 			out_direction = -gt.basis.get_axis(Vector3::AXIS_Z);
 
 		} else {
-
 			// TODO Just remember last viewer pos
 			out_pos = (_last_viewer_block_pos << _map->get_block_size_pow2()).to_vec3();
 			out_direction = Vector3(0, -1, 0);
@@ -733,6 +733,20 @@ void VoxelTerrain::send_block_data_requests() {
 	_blocks_to_save.clear();
 
 	_stream_thread->push(input);
+}
+
+void VoxelTerrain::emit_block_loaded(const VoxelBlock *block) {
+	const Variant vpos = block->position.to_vec3();
+	const Variant vbuffer = block->voxels;
+	const Variant *args[2] = { &vpos, &vbuffer };
+	emit_signal(VoxelStringNames::get_singleton()->block_loaded, args, 2);
+}
+
+void VoxelTerrain::emit_block_unloaded(const VoxelBlock *block) {
+	const Variant vpos = block->position.to_vec3();
+	const Variant vbuffer = block->voxels;
+	const Variant *args[2] = { &vpos, &vbuffer };
+	emit_signal(VoxelStringNames::get_singleton()->block_unloaded, args, 2);
 }
 
 void VoxelTerrain::_process() {
@@ -800,7 +814,6 @@ void VoxelTerrain::_process() {
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
 	if (_stream_thread != nullptr) {
-
 		VoxelDataLoader::Output output;
 		_stream_thread->pop(output);
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
@@ -808,14 +821,13 @@ void VoxelTerrain::_process() {
 		_stats.stream = output.stats;
 
 		for (int i = 0; i < output.blocks.size(); ++i) {
-
 			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
 
 			if (ob.data.type != VoxelDataLoader::TYPE_LOAD) {
 				continue;
 			}
 
-			Vector3i block_pos = ob.position;
+			const Vector3i block_pos = ob.position;
 
 			{
 				Set<Vector3i>::Element *E = _loading_blocks.find(block_pos);
@@ -852,6 +864,7 @@ void VoxelTerrain::_process() {
 			bool update_neighbors = block == nullptr;
 			block = _map->set_block_buffer(block_pos, ob.data.voxels_loaded);
 			block->set_world(get_world());
+			emit_block_loaded(block);
 
 			// TODO The following code appears to have order-dependency with block loading.
 			// i.e if block loading responses arrive in a different order they were requested in,
@@ -865,10 +878,10 @@ void VoxelTerrain::_process() {
 				for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
 					for (ndir.x = -1; ndir.x < 2; ++ndir.x) {
 						for (ndir.y = -1; ndir.y < 2; ++ndir.y) {
-							Vector3i npos = block_pos + ndir;
+							const Vector3i npos = block_pos + ndir;
+
 							// TODO What if the map is really composed of empty blocks?
 							if (_map->is_block_surrounded(npos)) {
-
 								VoxelBlock *nblock = _map->get_block(npos);
 								if (nblock == nullptr || nblock->get_mesh_state() == VoxelBlock::MESH_UPDATE_NOT_SENT) {
 									// Assuming it is scheduled to be updated already.
@@ -916,7 +929,7 @@ void VoxelTerrain::_process() {
 				} else {
 					CRASH_COND(block->voxels.is_null());
 
-					uint64_t air_type = 0;
+					const uint64_t air_type = 0;
 					if (
 							block->voxels->is_uniform(VoxelBuffer::CHANNEL_TYPE) &&
 							block->voxels->is_uniform(VoxelBuffer::CHANNEL_SDF) &&
@@ -982,7 +995,7 @@ void VoxelTerrain::_process() {
 			_blocks_pending_main_thread_update.append_array(output.blocks);
 		}
 
-		uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS;
+		const uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS;
 		int queue_index = 0;
 
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
@@ -990,7 +1003,6 @@ void VoxelTerrain::_process() {
 		// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
 
 		for (; queue_index < _blocks_pending_main_thread_update.size() && os.get_ticks_msec() < timeout; ++queue_index) {
-
 			const VoxelMeshUpdater::OutputBlock &ob = _blocks_pending_main_thread_update[queue_index];
 
 			VoxelBlock *block = _map->get_block(ob.position);
@@ -1029,7 +1041,8 @@ void VoxelTerrain::_process() {
 
 				collidable_surfaces.push_back(surface);
 
-				mesh->add_surface_from_arrays(data.blocky_surfaces.primitive_type, surface, Array(), data.blocky_surfaces.compression_flags);
+				mesh->add_surface_from_arrays(
+						data.blocky_surfaces.primitive_type, surface, Array(), data.blocky_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
 			}
@@ -1048,7 +1061,8 @@ void VoxelTerrain::_process() {
 
 				collidable_surfaces.push_back(surface);
 
-				mesh->add_surface_from_arrays(data.smooth_surfaces.primitive_type, surface, Array(), data.smooth_surfaces.compression_flags);
+				mesh->add_surface_from_arrays(
+						data.smooth_surfaces.primitive_type, surface, Array(), data.smooth_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
 			}
@@ -1139,9 +1153,20 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelTerrain::_on_stream_params_changed);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"), "set_voxel_library", "get_voxel_library");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"),
+			"set_stream", "get_stream");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"),
+			"set_voxel_library", "get_voxel_library");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"),
+			"set_generate_collisions", "get_generate_collisions");
+
+	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton()->block_loaded,
+			PropertyInfo(Variant::VECTOR3, "position"),
+			PropertyInfo(Variant::OBJECT, "voxels", PROPERTY_HINT_RESOURCE_TYPE, "VoxelBuffer")));
+
+	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton()->block_unloaded,
+			PropertyInfo(Variant::VECTOR3, "position"),
+			PropertyInfo(Variant::OBJECT, "voxels", PROPERTY_HINT_RESOURCE_TYPE, "VoxelBuffer")));
 }

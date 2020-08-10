@@ -27,6 +27,10 @@
 #include "voxel_string_names.h"
 
 void register_voxel_types() {
+	VoxelMemoryPool::create_singleton();
+	VoxelStringNames::create_singleton();
+	VoxelGraphNodeDB::create_singleton();
+
 	// Storage
 	ClassDB::register_class<VoxelBuffer>();
 	ClassDB::register_class<VoxelMap>();
@@ -67,10 +71,6 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelMesherBlocky>();
 	ClassDB::register_class<VoxelMesherTransvoxel>();
 	ClassDB::register_class<VoxelMesherDMC>();
-
-	VoxelMemoryPool::create_singleton();
-	VoxelStringNames::create_singleton();
-	VoxelGraphNodeDB::create_singleton();
 
 	// Reminder: how to create a singleton accessible from scripts:
 	// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
