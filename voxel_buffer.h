@@ -227,5 +227,6 @@ private:
 
 VARIANT_ENUM_CAST(VoxelBuffer::ChannelId)
 VARIANT_ENUM_CAST(VoxelBuffer::Depth)
+VARIANT_ENUM_CAST(VoxelBuffer::Compression)
 
 #endif // VOXEL_BUFFER_H

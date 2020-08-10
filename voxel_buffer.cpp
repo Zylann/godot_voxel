@@ -871,6 +871,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);
 	// TODO Rename `compress_uniform_channels`
 	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::compress_uniform_channels);
+	ClassDB::bind_method(D_METHOD("get_channel_compression", "channel"), &VoxelBuffer::get_channel_compression);
 
 	ClassDB::bind_method(D_METHOD("get_block_metadata"), &VoxelBuffer::get_block_metadata);
 	ClassDB::bind_method(D_METHOD("set_block_metadata", "meta"), &VoxelBuffer::set_block_metadata);
@@ -897,6 +898,10 @@ void VoxelBuffer::_bind_methods() {
 	BIND_ENUM_CONSTANT(DEPTH_32_BIT);
 	BIND_ENUM_CONSTANT(DEPTH_64_BIT);
 	BIND_ENUM_CONSTANT(DEPTH_COUNT);
+
+	BIND_ENUM_CONSTANT(COMPRESSION_NONE);
+	BIND_ENUM_CONSTANT(COMPRESSION_UNIFORM);
+	BIND_ENUM_CONSTANT(COMPRESSION_COUNT);
 }
 
 void VoxelBuffer::_b_copy_channel_from(Ref<VoxelBuffer> other, unsigned int channel) {
