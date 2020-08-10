@@ -3,6 +3,7 @@
 	<brief_description>
 	</brief_description>
 	<description>
+		Dense voxels data storage. Works like a normal 3D grid. Organized in channels of configurable bit depth. Values can be interpreted either as unsigned integers or normalized floats. Arbitrary metadata can also be stored, at higher cost.
 	</description>
 	<tutorials>
 	</tutorials>

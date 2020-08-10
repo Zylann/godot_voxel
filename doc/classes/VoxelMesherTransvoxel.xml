@@ -3,6 +3,7 @@
 	<brief_description>
 	</brief_description>
 	<description>
+		Implements isosurface generation (smooth voxels) using the [url=https://transvoxel.org/]Transvoxel[/url] algorithm.
 	</description>
 	<tutorials>
 	</tutorials>

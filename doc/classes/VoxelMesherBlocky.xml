@@ -3,6 +3,7 @@
 	<brief_description>
 	</brief_description>
 	<description>
+		Produces a mesh by batching models corresponding to each voxel value, similar to games like Minecraft or StarMade. Occluded faces are removed from the result, and some degree of ambient occlusion can be baked on the edges. Values are expected to be in the [constant VoxelBuffer.CHANNEL_TYPE] channel. Models are defined with a [VoxelLibrary], in which model indices correspond to the voxel values. Models don't have to be cubes.
 	</description>
 	<tutorials>
 	</tutorials>
