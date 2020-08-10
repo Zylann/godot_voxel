@@ -34,7 +34,6 @@ public:
 	}
 
 	static inline Rect3i get_bounding_box(Rect3i a, Rect3i b) {
-
 		Rect3i box;
 
 		box.pos.x = MIN(a.pos.x, b.pos.x);
@@ -52,13 +51,24 @@ public:
 	}
 
 	bool inline contains(Vector3i p_pos) const {
-		Vector3i end = pos + size;
+		const Vector3i end = pos + size;
 		return p_pos.x >= pos.x &&
 			   p_pos.y >= pos.y &&
 			   p_pos.z >= pos.z &&
 			   p_pos.x < end.x &&
 			   p_pos.y < end.y &&
 			   p_pos.z < end.z;
+	}
+
+	bool inline contains(const Rect3i other) const {
+		const Vector3i other_end = other.pos + other.size;
+		const Vector3i end = pos + size;
+		return other.pos.x >= pos.x &&
+			   other.pos.y >= pos.y &&
+			   other.pos.z >= pos.z &&
+			   other_end.x < end.x &&
+			   other_end.y < end.y &&
+			   other_end.z < end.z;
 	}
 
 	String to_string() const {
@@ -122,7 +132,6 @@ public:
 
 	template <typename A>
 	void difference(const Rect3i &b, A action) const {
-
 		if (!intersects(b)) {
 			action(*this);
 			return;
@@ -213,6 +222,12 @@ public:
 		clip_range(pos.x, size.x, lim.pos.x, lim.size.x);
 		clip_range(pos.y, size.y, lim.pos.y, lim.size.y);
 		clip_range(pos.z, size.z, lim.pos.z, lim.size.z);
+	}
+
+	inline Rect3i clipped(const Rect3i lim) const {
+		Rect3i copy(*this);
+		copy.clip(lim);
+		return copy;
 	}
 
 	inline bool encloses(const Rect3i &other) const {

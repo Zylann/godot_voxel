@@ -16,6 +16,11 @@ public:
 	bool is_area_editable(const Rect3i &box) const override;
 	Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) override;
 
+	void set_voxel_metadata(Vector3i pos, Variant meta) override;
+	Variant get_voxel_metadata(Vector3i pos) override;
+
+	// Specialized API
+
 	void run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<FuncRef> callback, int block_batch_count) const;
 
 protected:

@@ -22,10 +22,9 @@ public:
 	void deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress);
 
 private:
-	unsigned int get_size_in_bytes(const VoxelBuffer &buffer);
-
 	std::vector<uint8_t> _data;
 	std::vector<uint8_t> _compressed_data;
+	std::vector<uint8_t> _metadata_tmp;
 	FileAccessMemory _file_access_memory;
 };
 

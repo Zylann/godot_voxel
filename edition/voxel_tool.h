@@ -64,6 +64,9 @@ public:
 	// Checks if an edit affecting the given box can be applied, fully or partially
 	virtual bool is_area_editable(const Rect3i &box) const;
 
+	virtual void set_voxel_metadata(Vector3i pos, Variant meta);
+	virtual Variant get_voxel_metadata(Vector3i pos);
+
 protected:
 	static void _bind_methods();
 
@@ -90,6 +93,9 @@ private:
 	void _b_do_sphere(Vector3 pos, float radius) { do_sphere(pos, radius); }
 	void _b_do_box(Vector3 begin, Vector3 end) { do_box(Vector3i(begin), Vector3i(end)); }
 	void _b_paste(Vector3 pos, Ref<Reference> voxels, int mask_value) { paste(Vector3i(pos), voxels, mask_value); }
+
+	Variant _b_get_voxel_metadata(Vector3 pos) { return get_voxel_metadata(Vector3i(pos)); }
+	void _b_set_voxel_metadata(Vector3 pos, Variant meta) { return set_voxel_metadata(Vector3i(pos), meta); }
 
 protected:
 	uint64_t _value = 0;

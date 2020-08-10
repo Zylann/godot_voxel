@@ -123,17 +123,28 @@ Block format
 --------------
 
 A block is serialized as compressed data.
+Note, this is the same format provided by the `VoxelBlockSerializer` utility class. If you don't use compression, the layout will correspond to `BlockData` described in the next figure.
 
 ```
-BlockData
+CompressedBlockData
 - decompressed_data_size: uint32_t
 - compressed_data
 ```
 
-`compressed_data` must be decompressed using the LZ4 algorithm (without header), into a buffer big enough to contain `decompressed_data_size` bytes.
+`compressed_data` must be decompressed using the LZ4 algorithm (without header), into a buffer big enough to contain `decompressed_data_size` bytes. Knowing that size is also important later on.
 
-The obtained data then contains the actual block. It is saved as it comes, assuming the format specified in the meta file is respected.
-Block data consists in 8 channels one after the other, each with the following structure:
+The obtained data then contains the actual block. It is saved as it comes, assuming the format specified in the meta file is respected: its dimensions and channel depths are not present here. If you use this for custom block serialization, you must take care of using a consistent format when encoding and decoding.
+
+```
+BlockData
+- channels[8]
+- metadata*
+- epilogue
+```
+
+### Channels
+
+Block data starts with 8 channels one after the other, each with the following structure:
 
 ```
 Channel
@@ -155,4 +166,50 @@ If compression is `COMPRESSION_UNIFORM` (1), the data will be a single voxel val
 
 Other compression values are invalid.
 
-After all channels information, block data ends with a sequence of 4 bytes, which once read into a `uint32_t` integer must match the value `0x900df00d`. If that condition isn't fulfilled, the block must be assumed corrupted.
+### Metadata
+
+After all channels information, block data can contain metadata information. Blocks that don't contain any will only have a fixed amount of bytes left (from the epilogue) before reaching the size of the total data to read. If there is more, the block contains metadata.
+
+```
+Metadata
+- metadata_size: uint32_t
+- block_metadata
+- voxel_metadata[*]
+```
+
+It starts wth one 32-bit unsigned integer representing the total size of all metadata there is to read. That data comes in two groups: one for the whole block, and one per voxel.
+
+Block metadata is one Godot `Variant`, encoded using the `encode_variant` method of the engine.
+
+Voxel metadata immediately follows. It is a sequence of the following data structures, which must be read until a total of `metadata_size` bytes have been read from the beginning:
+
+```
+VoxelMetadata
+- x: uint16_t
+- y: uint16_t
+- z: uint16_t
+- data
+```
+
+`x`, `y` and `z` indicate which voxel the data corresponds. `data` is also a `Variant` encoded the same way as described earlier. This results in an associative collection between voxel positions relative to the block and their corresponding metadata.
+
+### Epilogue
+
+At the very end, block data finishes with a sequence of 4 bytes, which once read into a `uint32_t` integer must match the value `0x900df00d`. If that condition isn't fulfilled, the block must be assumed corrupted.
+
+
+Current Issues
+----------------
+
+Although this format is currently implemented and usable, it has known issues.
+
+### Endianess
+
+Godot's `encode_variant` doesn't seem to care about endianess across architectures, so it's possible it becomes a problem in the future and gets changed to a custom format.
+The rest of this spec is not affected by this and assumes we use little-endian, however the implementation of block channels currently doesn't consider this either. This may be refined in a later iteration.
+
+### Versionning
+
+The region format should be thought of a container for instances of the block format. The former has a version number, but the latter doesn't, which is hard to manage. We may introduce separate versionning, which will cause older saves to become incompatible.
+
+User versionning may also be added as a third layer: if the game needs to replace some metadata with new ones, or swap voxel IDs around due to a change in the game, it is desirable to expose a hook to migrate old versions.

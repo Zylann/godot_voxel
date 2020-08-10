@@ -36,6 +36,16 @@ void VoxelToolBuffer::_post_edit(const Rect3i &box) {
 	// Nothing special to do
 }
 
+void VoxelToolBuffer::set_voxel_metadata(Vector3i pos, Variant meta) {
+	ERR_FAIL_COND(_buffer.is_null());
+	_buffer->set_voxel_metadata(pos, meta);
+}
+
+Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) {
+	ERR_FAIL_COND_V(_buffer.is_null(), Variant());
+	return _buffer->get_voxel_metadata(pos);
+}
+
 void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint64_t mask_value) {
 	ERR_FAIL_COND(_buffer.is_null());
 	ERR_FAIL_COND(p_voxels.is_null());
@@ -63,8 +73,13 @@ void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint64_t 
 				const uint64_t v = src->get_voxel(bx, by, bz, channel);
 				if (v != mask_value) {
 					dst->set_voxel(v, x, y, z, channel);
+
+					// Overwrite previous metadata
+					dst->set_voxel_metadata(Vector3i(x, y, z), Variant());
 				}
 			}
 		}
 	}
+
+	_buffer->copy_voxel_metadata_in_area(p_voxels, Rect3i(Vector3i(), p_voxels->get_size()), p_pos);
 }

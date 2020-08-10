@@ -204,6 +204,15 @@ void VoxelTool::_post_edit(const Rect3i &box) {
 	ERR_PRINT("Not implemented");
 }
 
+void VoxelTool::set_voxel_metadata(Vector3i pos, Variant meta) {
+	ERR_PRINT("Not implemented");
+}
+
+Variant VoxelTool::get_voxel_metadata(Vector3i pos) {
+	ERR_PRINT("Not implemented");
+	return Variant();
+}
+
 void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_value", "v"), &VoxelTool::set_value);
 	ClassDB::bind_method(D_METHOD("get_value"), &VoxelTool::get_value);
@@ -223,6 +232,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_f", "pos", "v"), &VoxelTool::_b_set_voxel_f);
 	ClassDB::bind_method(D_METHOD("do_point", "pos"), &VoxelTool::_b_do_point);
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere);
+
+	ClassDB::bind_method(D_METHOD("set_voxel_metadata", "pos", "meta"), &VoxelTool::_b_set_voxel_metadata);
+	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);
 
 	ClassDB::bind_method(D_METHOD("paste", "dst_pos", "src_buffer", "src_mask_value"), &VoxelTool::_b_paste);
 

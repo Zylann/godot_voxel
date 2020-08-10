@@ -5,11 +5,13 @@
 #include "util/array_slice.h"
 #include "util/fixed_array.h"
 
+#include <core/map.h>
 #include <core/reference.h>
 #include <core/vector.h>
 
 class VoxelTool;
 class Image;
+class FuncRef;
 
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.
@@ -50,6 +52,7 @@ public:
 	};
 
 	static const Depth DEFAULT_CHANNEL_DEPTH = DEPTH_8_BIT;
+	static const uint32_t MAX_SIZE = 65535; // Limit was made explicit for serialization reasons
 
 	VoxelBuffer();
 	~VoxelBuffer();
@@ -93,8 +96,16 @@ public:
 
 	Ref<VoxelBuffer> duplicate() const;
 
-	_FORCE_INLINE_ bool validate_pos(unsigned int x, unsigned int y, unsigned int z) const {
+	_FORCE_INLINE_ bool is_position_valid(unsigned int x, unsigned int y, unsigned int z) const {
 		return x < (unsigned)_size.x && y < (unsigned)_size.y && z < (unsigned)_size.z;
+	}
+
+	_FORCE_INLINE_ bool is_position_valid(const Vector3i pos) const {
+		return is_position_valid(pos.x, pos.y, pos.z);
+	}
+
+	_FORCE_INLINE_ bool is_box_valid(const Rect3i box) const {
+		return Rect3i(Vector3i(), _size).contains(box);
 	}
 
 	_FORCE_INLINE_ unsigned int index(unsigned int x, unsigned int y, unsigned int z) const {
@@ -121,6 +132,20 @@ public:
 	Depth get_channel_depth(unsigned int channel_index) const;
 	static uint32_t get_depth_bit_count(Depth d);
 
+	// Metadata
+
+	Variant get_block_metadata() const { return _block_metadata; }
+	void set_block_metadata(Variant meta);
+	Variant get_voxel_metadata(Vector3i pos) const;
+	void set_voxel_metadata(Vector3i pos, Variant meta);
+	void for_each_voxel_metadata(Ref<FuncRef> callback) const;
+	void for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Rect3i box) const;
+	void clear_voxel_metadata();
+	void clear_voxel_metadata_in_area(Rect3i box);
+	void copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Rect3i src_box, Vector3i dst_pos);
+
+	const Map<Vector3i, Variant> &get_voxel_metadata() const { return _voxel_metadata; }
+
 	// TODO Make this work, would be awesome for perf
 	//
 	//	template <typename F>
@@ -144,6 +169,7 @@ public:
 	//	}
 
 	// Debugging
+
 	Ref<Image> debug_print_sdf_to_image_top_down();
 
 private:
@@ -151,7 +177,6 @@ private:
 	void create_channel(int i, Vector3i size, uint64_t defval);
 	void delete_channel(int i);
 
-protected:
 	static void _bind_methods();
 
 	int get_size_x() const { return _size.x; }
@@ -169,6 +194,11 @@ protected:
 	void _b_set_voxel_f(real_t value, int x, int y, int z, unsigned int channel) { set_voxel_f(value, x, y, z, channel); }
 	void _b_set_voxel_v(uint64_t value, Vector3 pos, unsigned int channel_index = 0) { set_voxel(value, pos.x, pos.y, pos.z, channel_index); }
 	void _b_downscale_to(Ref<VoxelBuffer> dst, Vector3 src_min, Vector3 src_max, Vector3 dst_min) const;
+	Variant _b_get_voxel_metadata(Vector3 pos) const { return get_voxel_metadata(Vector3i(pos)); }
+	void _b_set_voxel_metadata(Vector3 pos, Variant meta) { set_voxel_metadata(Vector3i(pos), meta); }
+	void _b_for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Vector3 min_pos, Vector3 max_pos);
+	void _b_clear_voxel_metadata_in_area(Vector3 min_pos, Vector3 max_pos);
+	void _b_copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Vector3 src_min_pos, Vector3 src_max_pos, Vector3 dst_pos);
 
 private:
 	struct Channel {
@@ -190,6 +220,9 @@ private:
 
 	// How many voxels are there in the three directions. All populated channels have the same size.
 	Vector3i _size;
+
+	Variant _block_metadata;
+	Map<Vector3i, Variant> _voxel_metadata;
 };
 
 VARIANT_ENUM_CAST(VoxelBuffer::ChannelId)

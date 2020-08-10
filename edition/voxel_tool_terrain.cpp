@@ -103,6 +103,20 @@ void VoxelToolTerrain::_post_edit(const Rect3i &box) {
 	_terrain->make_area_dirty(box);
 }
 
+void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
+	ERR_FAIL_COND(_terrain == nullptr);
+	VoxelBlock *block = _map->get_block(_map->voxel_to_block(pos));
+	ERR_FAIL_COND_MSG(block == nullptr, "Area not editable");
+	block->voxels->set_voxel_metadata(_map->to_local(pos), meta);
+}
+
+Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) {
+	ERR_FAIL_COND_V(_terrain == nullptr, Variant());
+	const VoxelBlock *block = _map->get_block(_map->voxel_to_block(pos));
+	ERR_FAIL_COND_V_MSG(block == nullptr, Variant(), "Area not editable");
+	return block->voxels->get_voxel_metadata(_map->to_local(pos));
+}
+
 // Executes a function on random voxels in the provided area, using the type channel.
 // This allows to implement slow "natural" cellular automata behavior, as can be seen in Minecraft.
 void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<FuncRef> callback, int batch_count) const {
