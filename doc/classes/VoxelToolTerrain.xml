@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelToolTerrain" inherits="VoxelTool" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="run_blocky_random_tick" qualifiers="const">
+			<return type="void">
+			</return>
+			<argument index="0" name="voxel_count" type="AABB">
+			</argument>
+			<argument index="1" name="callback" type="int">
+			</argument>
+			<argument index="2" name="batch_count" type="FuncRef">
+			</argument>
+			<argument index="3" name="arg3" type="int" default="16">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+	</constants>
+</class>

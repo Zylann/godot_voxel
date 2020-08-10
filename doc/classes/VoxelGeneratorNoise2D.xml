@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorNoise2D" inherits="VoxelGeneratorHeightmap" version="3.2.1">
+<class name="VoxelGeneratorNoise2D" inherits="VoxelGeneratorHeightmap" version="3.2">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -9,8 +9,6 @@
 	<methods>
 	</methods>
 	<members>
-		<member name="channel" type="int" setter="set_channel" getter="get_channel" enum="VoxelBuffer.ChannelId" default="1">
-		</member>
 		<member name="curve" type="Curve" setter="set_curve" getter="get_curve">
 		</member>
 		<member name="noise" type="OpenSimplexNoise" setter="set_noise" getter="get_noise">

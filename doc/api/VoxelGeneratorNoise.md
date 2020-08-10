@@ -2,7 +2,7 @@
 
 Inherits: VoxelGenerator
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
 
 
 ## Online Tutorials: 
@@ -14,28 +14,28 @@ _Godot version: 3.2.1_
 
 ## Properties:
 
-#### Â» int VoxelBuffer.ChannelId.channel
+#### » int VoxelBuffer.ChannelId.channel
 
 `set_channel (value)` setter
 
 `get_channel ()` getter
 
 
-#### Â» float height_range
+#### » float height_range
 
 `set_height_range (value)` setter
 
 `get_height_range ()` getter
 
 
-#### Â» float height_start
+#### » float height_start
 
 `set_height_start (value)` setter
 
 `get_height_start ()` getter
 
 
-#### Â» OpenSimplexNoise noise
+#### » OpenSimplexNoise noise
 
 `set_noise (value)` setter
 
@@ -53,4 +53,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_

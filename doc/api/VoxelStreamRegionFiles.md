@@ -2,7 +2,7 @@
 
 Inherits: VoxelStreamFile
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
 
 
 ## Online Tutorials: 
@@ -14,35 +14,35 @@ _Godot version: 3.2.1_
 
 ## Properties:
 
-#### Â» int block_size_po2
+#### » int block_size_po2
 
 `set_block_size_po2 (value)` setter
 
 `get_region_size_po2 ()` getter
 
 
-#### Â» String directory
+#### » String directory
 
 `set_directory (value)` setter
 
 `get_directory ()` getter
 
 
-#### Â» int lod_count
+#### » int lod_count
 
 `set_lod_count (value)` setter
 
 `get_lod_count ()` getter
 
 
-#### Â» int region_size_po2
+#### » int region_size_po2
 
 `set_region_size_po2 (value)` setter
 
 `get_region_size_po2 ()` getter
 
 
-#### Â» int sector_size
+#### » int sector_size
 
 `set_sector_size (value)` setter
 
@@ -52,13 +52,13 @@ _Godot version: 3.2.1_
 
 ## Methods:
 
-#### Â» void convert_files ( Dictionary new_settings ) 
+#### » void convert_files ( Dictionary new_settings ) 
 
 
-#### Â» int get_block_size_po2 (  )  const
+#### » int get_block_size_po2 (  )  const
 
 
-#### Â» Vector3 get_region_size (  )  const
+#### » Vector3 get_region_size (  )  const
 
 
 
@@ -69,4 +69,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_

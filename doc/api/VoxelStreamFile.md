@@ -2,7 +2,7 @@
 
 Inherits: VoxelStream
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
 
 
 ## Online Tutorials: 
@@ -14,14 +14,14 @@ _Godot version: 3.2.1_
 
 ## Properties:
 
-#### Â» VoxelStream fallback_stream
+#### » VoxelStream fallback_stream
 
 `set_fallback_stream (value)` setter
 
 `get_fallback_stream ()` getter
 
 
-#### Â» bool save_fallback_output
+#### » bool save_fallback_output
 
 `set_save_fallback_output (value)` setter
 
@@ -31,7 +31,7 @@ _Godot version: 3.2.1_
 
 ## Methods:
 
-#### Â» Vector3 get_block_size (  )  const
+#### » Vector3 get_block_size (  )  const
 
 
 
@@ -42,4 +42,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_

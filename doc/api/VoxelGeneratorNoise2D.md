@@ -2,7 +2,7 @@
 
 Inherits: VoxelGeneratorHeightmap
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
 
 
 ## Online Tutorials: 
@@ -14,21 +14,14 @@ _Godot version: 3.2.1_
 
 ## Properties:
 
-#### Â» int VoxelBuffer.ChannelId.channel
-
-`set_channel (value)` setter
-
-`get_channel ()` getter
-
-
-#### Â» Curve curve
+#### » Curve curve
 
 `set_curve (value)` setter
 
 `get_curve ()` getter
 
 
-#### Â» OpenSimplexNoise noise
+#### » OpenSimplexNoise noise
 
 `set_noise (value)` setter
 
@@ -46,4 +39,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_

@@ -2,7 +2,12 @@
 
 Inherits: VoxelMesher
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
+
+
+## Class Description: 
+
+Implements isosurface generation (smooth voxels) using the `url=https://transvoxel.org/]Transvoxel[/url` algorithm.
 
 
 ## Online Tutorials: 
@@ -17,7 +22,7 @@ _Godot version: 3.2.1_
 
 ## Methods:
 
-#### Â» ArrayMesh build_transition_mesh ( VoxelBuffer voxel_buffer, int direction ) 
+#### » ArrayMesh build_transition_mesh ( VoxelBuffer voxel_buffer, int direction ) 
 
 
 
@@ -28,4 +33,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_

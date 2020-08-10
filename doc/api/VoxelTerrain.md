@@ -2,7 +2,7 @@
 
 Inherits: Spatial
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
 
 
 ## Online Tutorials: 
@@ -14,35 +14,35 @@ _Godot version: 3.2.1_
 
 ## Properties:
 
-#### Â» bool generate_collisions
+#### » bool generate_collisions
 
 `set_generate_collisions (value)` setter
 
 `get_generate_collisions ()` getter
 
 
-#### Â» VoxelStream stream
+#### » VoxelStream stream
 
 `set_stream (value)` setter
 
 `get_stream ()` getter
 
 
-#### Â» int view_distance
+#### » int view_distance
 
 `set_view_distance (value)` setter
 
 `get_view_distance ()` getter
 
 
-#### Â» NodePath viewer_path
+#### » NodePath viewer_path
 
 `set_viewer_path (value)` setter
 
 `get_viewer_path ()` getter
 
 
-#### Â» VoxelLibrary voxel_library
+#### » VoxelLibrary voxel_library
 
 `set_voxel_library (value)` setter
 
@@ -52,30 +52,46 @@ _Godot version: 3.2.1_
 
 ## Methods:
 
-#### Â» Vector3 block_to_voxel ( Vector3 block_pos ) 
+#### » Vector3 block_to_voxel ( Vector3 block_pos ) 
 
 
-#### Â» Material get_material ( int id )  const
+#### » Material get_material ( int id )  const
 
 
-#### Â» Dictionary get_statistics (  )  const
+#### » Dictionary get_statistics (  )  const
 
 
-#### Â» VoxelTool get_voxel_tool (  ) 
+#### » VoxelTool get_voxel_tool (  ) 
 
 
-#### Â» void set_material ( int id, Material material ) 
+#### » void save_block ( Vector3 arg0 ) 
 
 
-#### Â» Vector3 voxel_to_block ( Vector3 voxel_pos ) 
+#### » void save_modified_blocks (  ) 
+
+
+#### » void set_material ( int id, Material material ) 
+
+
+#### » Vector3 voxel_to_block ( Vector3 voxel_pos ) 
 
 
 
 ## Signals:
+
+#### » block_loaded
+Emitted when a new block is loaded from stream. Note it might be not visible yet.
+
+
+
+#### » block_unloaded
+Emitted when a block unloaded due to being outside view distance.
+
+
 
 
 ---
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_

@@ -2,7 +2,7 @@
 
 Inherits: Reference
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
 
 
 ## Online Tutorials: 
@@ -17,7 +17,13 @@ _Godot version: 3.2.1_
 
 ## Methods:
 
-#### Â» Vector3 get_motion ( Vector3 pos, Vector3 motion, AABB aabb, Node terrain ) 
+#### » int get_collision_mask (  )  const
+
+
+#### » Vector3 get_motion ( Vector3 pos, Vector3 motion, AABB aabb, Node terrain ) 
+
+
+#### » void set_collision_mask ( int mask ) 
 
 
 
@@ -28,4 +34,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelTerrain" inherits="Spatial" version="3.2.1">
+<class name="VoxelTerrain" inherits="Spatial" version="3.2">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -31,6 +31,20 @@
 		</method>
 		<method name="get_voxel_tool">
 			<return type="VoxelTool">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="save_block">
+			<return type="void">
+			</return>
+			<argument index="0" name="arg0" type="Vector3">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="save_modified_blocks">
+			<return type="void">
 			</return>
 			<description>
 			</description>
@@ -68,20 +82,18 @@
 	</members>
 	<signals>
 		<signal name="block_loaded">
-			<argument index="0" name="block_position" type="Vector3"> 
-				Position in block coordinates. Use [method block_to_voxel] to obtain its origin in voxels.
+			<argument index="0" name="position" type="Vector3">
 			</argument>
-			<argument index="1" name="voxels" type="VoxelBuffer"> 
+			<argument index="1" name="voxels" type="VoxelBuffer">
 			</argument>
 			<description>
-				Emitted when a new block is loaded from stream. Note it might be not visible yet. 
+				Emitted when a new block is loaded from stream. Note it might be not visible yet.
 			</description>
 		</signal>
 		<signal name="block_unloaded">
-			<argument index="0" name="block_position" type="Vector3"> 
-				Position in block coordinates. Use [method block_to_voxel] to obtain its origin in voxels.
+			<argument index="0" name="position" type="Vector3">
 			</argument>
-			<argument index="1" name="voxels" type="VoxelBuffer"> 
+			<argument index="1" name="voxels" type="VoxelBuffer">
 			</argument>
 			<description>
 				Emitted when a block unloaded due to being outside view distance.

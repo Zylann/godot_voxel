@@ -2,7 +2,7 @@
 
 Inherits: Reference
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
 
 
 ## Online Tutorials: 
@@ -17,46 +17,46 @@ _Godot version: 3.2.1_
 
 ## Methods:
 
-#### Â» Vector3 block_to_voxel ( Vector3 block_pos )  const
+#### » Vector3 block_to_voxel ( Vector3 block_pos )  const
 
 
-#### Â» int get_block_size (  )  const
+#### » int get_block_size (  )  const
 
 
-#### Â» void get_buffer_copy ( Vector3 min_pos, VoxelBuffer out_buffer, int channel=0 ) 
+#### » void get_buffer_copy ( Vector3 min_pos, VoxelBuffer out_buffer, int channel=0 ) 
 
 
-#### Â» int get_default_voxel ( int channel=0 ) 
+#### » int get_default_voxel ( int channel=0 ) 
 
 
-#### Â» int get_voxel ( int x, int y, int z, int c=0 ) 
+#### » int get_voxel ( int x, int y, int z, int c=0 ) 
 
 
-#### Â» float get_voxel_f ( int x, int y, int z, int c=1 ) 
+#### » float get_voxel_f ( int x, int y, int z, int c=1 ) 
 
 
-#### Â» int get_voxel_v ( Vector3 pos, int c=0 ) 
+#### » int get_voxel_v ( Vector3 pos, int c=0 ) 
 
 
-#### Â» bool has_block ( int x, int y, int z ) 
+#### » bool has_block ( int x, int y, int z ) 
 
 
-#### Â» void set_block_buffer ( Vector3 block_pos, VoxelBuffer buffer ) 
+#### » void set_block_buffer ( Vector3 block_pos, VoxelBuffer buffer ) 
 
 
-#### Â» void set_default_voxel ( int value, int channel=0 ) 
+#### » void set_default_voxel ( int value, int channel=0 ) 
 
 
-#### Â» void set_voxel ( int value, int x, int y, int z, int c=0 ) 
+#### » void set_voxel ( int value, int x, int y, int z, int c=0 ) 
 
 
-#### Â» void set_voxel_f ( float value, int x, int y, int z, int c=1 ) 
+#### » void set_voxel_f ( float value, int x, int y, int z, int c=1 ) 
 
 
-#### Â» void set_voxel_v ( int value, Vector3 pos, int c=0 ) 
+#### » void set_voxel_v ( int value, Vector3 pos, int c=0 ) 
 
 
-#### Â» Vector3 voxel_to_block ( Vector3 voxel_pos )  const
+#### » Vector3 voxel_to_block ( Vector3 voxel_pos )  const
 
 
 
@@ -67,4 +67,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_

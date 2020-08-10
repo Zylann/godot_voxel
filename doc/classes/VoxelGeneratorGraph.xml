@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_connection">
+			<return type="void">
+			</return>
+			<argument index="0" name="src_node_id" type="int">
+			</argument>
+			<argument index="1" name="src_port_index" type="int">
+			</argument>
+			<argument index="2" name="dst_node_id" type="int">
+			</argument>
+			<argument index="3" name="dst_port_index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="can_connect" qualifiers="const">
+			<return type="bool">
+			</return>
+			<argument index="0" name="src_node_id" type="int">
+			</argument>
+			<argument index="1" name="src_port_index" type="int">
+			</argument>
+			<argument index="2" name="dst_node_id" type="int">
+			</argument>
+			<argument index="3" name="dst_port_index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="clear">
+			<return type="void">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="compile">
+			<return type="void">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="create_node">
+			<return type="int">
+			</return>
+			<argument index="0" name="type_id" type="int" enum="VoxelGeneratorGraph.NodeTypeID">
+			</argument>
+			<argument index="1" name="position" type="Vector2">
+			</argument>
+			<argument index="2" name="id" type="int" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="debug_load_waves_preset">
+			<return type="void">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="debug_measure_microseconds_per_voxel">
+			<return type="float">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="generate_single">
+			<return type="float">
+			</return>
+			<argument index="0" name="arg0" type="Vector3">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_connections" qualifiers="const">
+			<return type="Array">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_node_default_input" qualifiers="const">
+			<return type="Variant">
+			</return>
+			<argument index="0" name="node_id" type="int">
+			</argument>
+			<argument index="1" name="input_index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_node_gui_position" qualifiers="const">
+			<return type="Vector2">
+			</return>
+			<argument index="0" name="node_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_node_ids" qualifiers="const">
+			<return type="PoolIntArray">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_node_param" qualifiers="const">
+			<return type="Variant">
+			</return>
+			<argument index="0" name="node_id" type="int">
+			</argument>
+			<argument index="1" name="param_index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_node_type_count" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_node_type_id" qualifiers="const">
+			<return type="int" enum="VoxelGeneratorGraph.NodeTypeID">
+			</return>
+			<argument index="0" name="node_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_node_type_info" qualifiers="const">
+			<return type="Dictionary">
+			</return>
+			<argument index="0" name="type_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="is_compressing_uniform_channels" qualifiers="const">
+			<return type="bool">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="remove_connection">
+			<return type="void">
+			</return>
+			<argument index="0" name="src_node_id" type="int">
+			</argument>
+			<argument index="1" name="src_port_index" type="int">
+			</argument>
+			<argument index="2" name="dst_node_id" type="int">
+			</argument>
+			<argument index="3" name="dst_port_index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="remove_node">
+			<return type="void">
+			</return>
+			<argument index="0" name="node_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_compress_uniform_channels">
+			<return type="void">
+			</return>
+			<argument index="0" name="enabled" type="bool">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_node_default_input">
+			<return type="void">
+			</return>
+			<argument index="0" name="node_id" type="int">
+			</argument>
+			<argument index="1" name="input_index" type="int">
+			</argument>
+			<argument index="2" name="value" type="Variant">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_node_gui_position">
+			<return type="void">
+			</return>
+			<argument index="0" name="node_id" type="int">
+			</argument>
+			<argument index="1" name="position" type="Vector2">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_node_param">
+			<return type="void">
+			</return>
+			<argument index="0" name="node_id" type="int">
+			</argument>
+			<argument index="1" name="param_index" type="int">
+			</argument>
+			<argument index="2" name="value" type="Variant">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_node_param_null">
+			<return type="void">
+			</return>
+			<argument index="0" name="node_id" type="int">
+			</argument>
+			<argument index="1" name="param_index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="NODE_CONSTANT" value="0" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_INPUT_X" value="1" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_INPUT_Y" value="2" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_INPUT_Z" value="3" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_OUTPUT_SDF" value="4" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_ADD" value="5" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_SUBTRACT" value="6" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_MULTIPLY" value="7" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_DIVIDE" value="8" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_SIN" value="9" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_FLOOR" value="10" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_ABS" value="11" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_SQRT" value="12" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_FRACT" value="13" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_STEPIFY" value="14" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_WRAP" value="15" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_MIN" value="16" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_MAX" value="17" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_DISTANCE_2D" value="18" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_DISTANCE_3D" value="19" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_CLAMP" value="20" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_MIX" value="21" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_REMAP" value="22" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_SMOOTHSTEP" value="23" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_CURVE" value="24" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_SELECT" value="25" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_NOISE_2D" value="26" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_NOISE_3D" value="27" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_IMAGE_2D" value="28" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_SDF_PLANE" value="29" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_SDF_BOX" value="30" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_SDF_SPHERE" value="31" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_SDF_TORUS" value="32" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_SDF_PREVIEW" value="33" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_TYPE_COUNT" value="34" enum="NodeTypeID">
+		</constant>
+	</constants>
+</class>

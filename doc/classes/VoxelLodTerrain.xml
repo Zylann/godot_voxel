@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelLodTerrain" inherits="Spatial" version="3.2.1">
+<class name="VoxelLodTerrain" inherits="Spatial" version="3.2">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -43,12 +43,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="debug_save_all_modified_blocks">
-			<return type="void">
-			</return>
-			<description>
-			</description>
-		</method>
 		<method name="get_block_region_extent" qualifiers="const">
 			<return type="int">
 			</return>
@@ -69,6 +63,12 @@
 		</method>
 		<method name="get_voxel_tool">
 			<return type="VoxelTool">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="save_modified_blocks">
+			<return type="void">
 			</return>
 			<description>
 			</description>

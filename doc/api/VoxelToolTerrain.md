@@ -1,6 +1,6 @@
-# Class: VoxelGenerator
+# Class: VoxelToolTerrain
 
-Inherits: VoxelStream
+Inherits: VoxelTool
 
 _Godot version: 3.2_
 
@@ -17,7 +17,7 @@ _Godot version: 3.2_
 
 ## Methods:
 
-#### » void generate_block ( VoxelBuffer out_buffer, Vector3 origin_in_voxels, int lod ) 
+#### » void run_blocky_random_tick ( AABB voxel_count, int callback, FuncRef batch_count, int arg3=16 )  const
 
 
 

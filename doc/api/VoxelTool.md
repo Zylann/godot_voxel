@@ -2,7 +2,7 @@
 
 Inherits: Reference
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
 
 
 ## Online Tutorials: 
@@ -11,40 +11,40 @@ _Godot version: 3.2.1_
 
 ## Constants:
 
-#### Â» Mode.MODE_ADD = 0
+#### » Mode.MODE_ADD = 0
 
 
-#### Â» Mode.MODE_REMOVE = 1
+#### » Mode.MODE_REMOVE = 1
 
 
-#### Â» Mode.MODE_SET = 2
+#### » Mode.MODE_SET = 2
 
 
 
 ## Properties:
 
-#### Â» int channel
+#### » int channel
 
 `set_channel (value)` setter
 
 `get_channel ()` getter
 
 
-#### Â» int eraser_value
+#### » int eraser_value
 
 `set_eraser_value (value)` setter
 
 `get_eraser_value ()` getter
 
 
-#### Â» int VoxelTool.Mode.mode
+#### » int VoxelTool.Mode.mode
 
 `set_mode (value)` setter
 
 `get_mode ()` getter
 
 
-#### Â» int value
+#### » int value
 
 `set_value (value)` setter
 
@@ -54,25 +54,40 @@ _Godot version: 3.2.1_
 
 ## Methods:
 
-#### Â» void do_point ( Vector3 pos ) 
+#### » void do_box ( Vector3 begin, Vector3 end ) 
+
+Operate on a rectangular cuboid section of the terrain. `begin` and `end` are inclusive. Choose operation and which voxel to use by setting `value` and `mode` before calling this function.
 
 
-#### Â» void do_sphere ( Vector3 center, float radius ) 
+
+#### » void do_point ( Vector3 pos ) 
 
 
-#### Â» int get_voxel ( Vector3 pos ) 
+#### » void do_sphere ( Vector3 center, float radius ) 
 
 
-#### Â» float get_voxel_f ( Vector3 pos ) 
+#### » int get_voxel ( Vector3 pos ) 
 
 
-#### Â» VoxelRaycastResult raycast ( Vector3 origin, Vector3 direction, float max_distance=10.0 ) 
+#### » float get_voxel_f ( Vector3 pos ) 
 
 
-#### Â» void set_voxel ( Vector3 pos, int v ) 
+#### » Variant get_voxel_metadata ( Vector3 pos ) 
 
 
-#### Â» void set_voxel_f ( Vector3 pos, float v ) 
+#### » void paste ( Vector3 dst_pos, Reference src_buffer, int src_mask_value ) 
+
+
+#### » VoxelRaycastResult raycast ( Vector3 origin, Vector3 direction, float max_distance=10.0, int collision_mask=4294967295 ) 
+
+
+#### » void set_voxel ( Vector3 pos, int v ) 
+
+
+#### » void set_voxel_f ( Vector3 pos, float v ) 
+
+
+#### » void set_voxel_metadata ( Vector3 pos, Variant meta ) 
 
 
 
@@ -83,4 +98,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_

@@ -2,7 +2,12 @@
 
 Inherits: Reference
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
+
+
+## Class Description: 
+
+Dense voxels data storage. Works like a normal 3D grid. Organized in channels of configurable bit depth. Values can be interpreted either as unsigned integers or normalized floats. Arbitrary metadata can also be stored, at higher cost.
 
 
 ## Online Tutorials: 
@@ -11,46 +16,55 @@ _Godot version: 3.2.1_
 
 ## Constants:
 
-#### Â» ChannelId.CHANNEL_TYPE = 0
+#### » ChannelId.CHANNEL_TYPE = 0
 
 
-#### Â» ChannelId.CHANNEL_SDF = 1
+#### » ChannelId.CHANNEL_SDF = 1
 
 
-#### Â» ChannelId.CHANNEL_DATA2 = 2
+#### » ChannelId.CHANNEL_DATA2 = 2
 
 
-#### Â» ChannelId.CHANNEL_DATA3 = 3
+#### » ChannelId.CHANNEL_DATA3 = 3
 
 
-#### Â» ChannelId.CHANNEL_DATA4 = 4
+#### » ChannelId.CHANNEL_DATA4 = 4
 
 
-#### Â» ChannelId.CHANNEL_DATA5 = 5
+#### » ChannelId.CHANNEL_DATA5 = 5
 
 
-#### Â» ChannelId.CHANNEL_DATA6 = 6
+#### » ChannelId.CHANNEL_DATA6 = 6
 
 
-#### Â» ChannelId.CHANNEL_DATA7 = 7
+#### » ChannelId.CHANNEL_DATA7 = 7
 
 
-#### Â» ChannelId.MAX_CHANNELS = 8
+#### » ChannelId.MAX_CHANNELS = 8
 
 
-#### Â» Depth.DEPTH_8_BIT = 0
+#### » Depth.DEPTH_8_BIT = 0
 
 
-#### Â» Depth.DEPTH_16_BIT = 1
+#### » Depth.DEPTH_16_BIT = 1
 
 
-#### Â» Depth.DEPTH_32_BIT = 2
+#### » Depth.DEPTH_32_BIT = 2
 
 
-#### Â» Depth.DEPTH_64_BIT = 3
+#### » Depth.DEPTH_64_BIT = 3
 
 
-#### Â» Depth.DEPTH_COUNT = 4
+#### » Depth.DEPTH_COUNT = 4
+
+
+#### » Compression.COMPRESSION_NONE = 0
+
+
+#### » Compression.COMPRESSION_UNIFORM = 1
+
+
+#### » Compression.COMPRESSION_COUNT = 2
 
 
 
@@ -59,70 +73,100 @@ _Godot version: 3.2.1_
 
 ## Methods:
 
-#### Â» void clear (  ) 
+#### » void clear (  ) 
 
 
-#### Â» void copy_channel_from ( VoxelBuffer other, int channel ) 
+#### » void clear_voxel_metadata (  ) 
 
 
-#### Â» void copy_channel_from_area ( VoxelBuffer other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, int channel ) 
+#### » void clear_voxel_metadata_in_area ( Vector3 min_pos, Vector3 max_pos ) 
 
 
-#### Â» void create ( int sx, int sy, int sz ) 
+#### » void copy_channel_from ( VoxelBuffer other, int channel ) 
 
 
-#### Â» void downscale_to ( VoxelBuffer dst, Vector3 src_min, Vector3 src_max, Vector3 dst_min )  const
+#### » void copy_channel_from_area ( VoxelBuffer other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, int channel ) 
 
 
-#### Â» void fill ( int value, int channel=0 ) 
+#### » void copy_voxel_metadata_in_area ( VoxelBuffer src_min_pos, Vector3 src_max_pos, Vector3 dst_min_pos, Vector3 arg3 ) 
 
 
-#### Â» void fill_area ( int value, Vector3 min, Vector3 max, int channel=0 ) 
+#### » void create ( int sx, int sy, int sz ) 
 
 
-#### Â» void fill_f ( float value, int channel=0 ) 
+#### » void downscale_to ( VoxelBuffer dst, Vector3 src_min, Vector3 src_max, Vector3 dst_min )  const
 
 
-#### Â» int get_channel_depth ( int channel )  const
+#### » void fill ( int value, int channel=0 ) 
 
 
-#### Â» Vector3 get_size (  )  const
+#### » void fill_area ( int value, Vector3 min, Vector3 max, int channel=0 ) 
 
 
-#### Â» int get_size_x (  )  const
+#### » void fill_f ( float value, int channel=0 ) 
 
 
-#### Â» int get_size_y (  )  const
+#### » void for_each_voxel_metadata ( FuncRef callback )  const
 
 
-#### Â» int get_size_z (  )  const
+#### » void for_each_voxel_metadata_in_area ( FuncRef callback, Vector3 min_pos, Vector3 max_pos ) 
 
 
-#### Â» int get_voxel ( int x, int y, int z, int channel=0 )  const
+#### » Variant get_block_metadata (  )  const
 
 
-#### Â» float get_voxel_f ( int x, int y, int z, int channel=0 )  const
+#### » int get_channel_compression ( int channel )  const
 
 
-#### Â» VoxelTool get_voxel_tool (  ) 
+#### » int get_channel_depth ( int channel )  const
 
 
-#### Â» bool is_uniform ( int channel )  const
+#### » Vector3 get_size (  )  const
 
 
-#### Â» void optimize (  ) 
+#### » int get_size_x (  )  const
 
 
-#### Â» void set_channel_depth ( int channel, int depth ) 
+#### » int get_size_y (  )  const
 
 
-#### Â» void set_voxel ( int value, int x, int y, int z, int channel=0 ) 
+#### » int get_size_z (  )  const
 
 
-#### Â» void set_voxel_f ( float value, int x, int y, int z, int channel=0 ) 
+#### » int get_voxel ( int x, int y, int z, int channel=0 )  const
 
 
-#### Â» void set_voxel_v ( int value, Vector3 pos, int channel=0 ) 
+#### » float get_voxel_f ( int x, int y, int z, int channel=0 )  const
+
+
+#### » Variant get_voxel_metadata ( Vector3 pos )  const
+
+
+#### » VoxelTool get_voxel_tool (  ) 
+
+
+#### » bool is_uniform ( int channel )  const
+
+
+#### » void optimize (  ) 
+
+
+#### » void set_block_metadata ( Variant meta ) 
+
+
+#### » void set_channel_depth ( int channel, int depth ) 
+
+
+#### » void set_voxel ( int value, int x, int y, int z, int channel=0 ) 
+
+
+#### » void set_voxel_f ( float value, int x, int y, int z, int channel=0 ) 
+
+
+#### » void set_voxel_metadata ( Vector3 pos, Variant value ) 
+
+
+#### » void set_voxel_v ( int value, Vector3 pos, int channel=0 ) 
 
 
 
@@ -133,4 +177,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_

@@ -2,7 +2,7 @@
 
 Inherits: Reference
 
-_Godot version: 3.2.1_
+_Godot version: 3.2_
 
 
 ## Online Tutorials: 
@@ -14,14 +14,14 @@ _Godot version: 3.2.1_
 
 ## Properties:
 
-#### Â» Vector3 position
+#### » Vector3 position
 
 ` (value)` setter
 
 `get_position ()` getter
 
 
-#### Â» Vector3 previous_position
+#### » Vector3 previous_position
 
 ` (value)` setter
 
@@ -39,4 +39,4 @@ _Godot version: 3.2.1_
 * [Class List](Class_List.md)
 * [Doc Index](../01_get-started.md)
 
-_Generated on Feb 16, 2020_
+_Generated on Aug 10, 2020_
