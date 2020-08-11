@@ -22,15 +22,15 @@ const int g_opposite_side[6] = {
 	Cube::SIDE_NEGATIVE_Z
 };
 
-inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_voxel_id, int side) {
-	if (lib.has_voxel(other_voxel_id)) {
-		const Voxel &other_vt = lib.get_voxel_const(other_voxel_id);
+inline bool is_face_visible(const VoxelLibrary::BakedData &lib, const Voxel::BakedData &vt, uint32_t other_voxel_id, int side) {
+	if (other_voxel_id < lib.models.size()) {
+		const Voxel::BakedData &other_vt = lib.models[other_voxel_id];
 		// TODO Might test against material somehow, but not only
-		if (other_vt.is_empty() || (other_vt.is_transparent() && !vt.is_transparent())) {
+		if (other_vt.empty || (other_vt.is_transparent && !vt.is_transparent)) {
 			return true;
 		} else {
-			const unsigned int ai = vt.get_side_pattern_index(side);
-			const unsigned int bi = other_vt.get_side_pattern_index(g_opposite_side[side]);
+			const unsigned int ai = vt.model.side_pattern_indices[side];
+			const unsigned int bi = other_vt.model.side_pattern_indices[g_opposite_side[side]];
 			// Patterns are not the same, and B does not occlude A
 			return (ai != bi) && !lib.get_side_pattern_occlusion(bi, ai);
 		}
@@ -38,10 +38,10 @@ inline bool is_face_visible(const VoxelLibrary &lib, const Voxel &vt, int other_
 	return true;
 }
 
-inline bool contributes_to_ao(const VoxelLibrary &lib, int voxel_id) {
-	if (lib.has_voxel(voxel_id)) {
-		const Voxel &t = lib.get_voxel_const(voxel_id);
-		return t.is_contributing_to_ao();
+inline bool contributes_to_ao(const VoxelLibrary::BakedData &lib, uint32_t voxel_id) {
+	if (voxel_id < lib.models.size()) {
+		const Voxel::BakedData &t = lib.models[voxel_id];
+		return t.contributes_to_ao;
 	}
 	return true;
 }
@@ -53,7 +53,7 @@ static void generate_blocky_mesh(
 		FixedArray<VoxelMesherBlocky::Arrays, VoxelMesherBlocky::MAX_MATERIALS> &out_arrays_per_material,
 		const ArraySlice<Type_T> type_buffer,
 		const Vector3i block_size,
-		const VoxelLibrary &library,
+		const VoxelLibrary::BakedData &library,
 		bool bake_occlusion, float baked_occlusion_darkness) {
 
 	// Build lookup tables so to speed up voxel access.
@@ -143,25 +143,25 @@ static void generate_blocky_mesh(
 				const int voxel_index = y + x * row_size + z * deck_size;
 				const int voxel_id = type_buffer[voxel_index];
 
-				if (voxel_id != 0 && library.has_voxel(voxel_id)) {
-					const Voxel &voxel = library.get_voxel_const(voxel_id);
+				if (voxel_id != 0 && library.has_model(voxel_id)) {
+					const Voxel::BakedData &voxel = library.models[voxel_id];
 
-					VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[voxel.get_material_id()];
-					int &index_offset = index_offsets[voxel.get_material_id()];
+					VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[voxel.material_id];
+					int &index_offset = index_offsets[voxel.material_id];
 
 					// Hybrid approach: extract cube faces and decimate those that aren't visible,
 					// and still allow voxels to have geometry that is not a cube
 
 					// Sides
 					for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-						const std::vector<Vector3> &side_positions = voxel.get_model_side_positions(side);
+						const std::vector<Vector3> &side_positions = voxel.model.side_positions[side];
 						const unsigned int vertex_count = side_positions.size();
 
 						if (vertex_count == 0) {
 							continue;
 						}
 
-						const int neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
+						const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
 						if (!is_face_visible(library, voxel, neighbor_voxel_id, side)) {
 							continue;
@@ -202,7 +202,7 @@ static void generate_blocky_mesh(
 							}
 						}
 
-						const std::vector<Vector2> &side_uvs = voxel.get_model_side_uv(side);
+						const std::vector<Vector2> &side_uvs = voxel.model.side_uvs[side];
 
 						// Subtracting 1 because the data is padded
 						Vector3 pos(x - 1, y - 1, z - 1);
@@ -237,7 +237,7 @@ static void generate_blocky_mesh(
 							const int append_index = arrays.colors.size();
 							arrays.colors.resize(arrays.colors.size() + vertex_count);
 							Color *w = arrays.colors.data() + append_index;
-							const Color modulate_color = voxel.get_color();
+							const Color modulate_color = voxel.color;
 
 							if (bake_occlusion) {
 								for (unsigned int i = 0; i < vertex_count; ++i) {
@@ -273,7 +273,7 @@ static void generate_blocky_mesh(
 							}
 						}
 
-						const std::vector<int> &side_indices = voxel.get_model_side_indices(side);
+						const std::vector<int> &side_indices = voxel.model.side_indices[side];
 						const unsigned int index_count = side_indices.size();
 
 						{
@@ -289,17 +289,17 @@ static void generate_blocky_mesh(
 					}
 
 					// Inside
-					if (voxel.get_model_positions().size() != 0) {
+					if (voxel.model.positions.size() != 0) {
 						// TODO Get rid of push_backs
 
-						const std::vector<Vector3> &positions = voxel.get_model_positions();
-						unsigned int vertex_count = positions.size();
-						const Color modulate_color = voxel.get_color();
+						const std::vector<Vector3> &positions = voxel.model.positions;
+						const unsigned int vertex_count = positions.size();
+						const Color modulate_color = voxel.color;
 
-						const std::vector<Vector3> &normals = voxel.get_model_normals();
-						const std::vector<Vector2> &uvs = voxel.get_model_uv();
+						const std::vector<Vector3> &normals = voxel.model.normals;
+						const std::vector<Vector2> &uvs = voxel.model.uvs;
 
-						Vector3 pos(x - 1, y - 1, z - 1);
+						const Vector3 pos(x - 1, y - 1, z - 1);
 
 						for (unsigned int i = 0; i < vertex_count; ++i) {
 							arrays.normals.push_back(normals[i]);
@@ -309,8 +309,8 @@ static void generate_blocky_mesh(
 							arrays.colors.push_back(modulate_color);
 						}
 
-						const std::vector<int> &indices = voxel.get_model_indices();
-						unsigned int index_count = indices.size();
+						const std::vector<int> &indices = voxel.model.indices;
+						const unsigned int index_count = indices.size();
 
 						for (unsigned int i = 0; i < index_count; ++i) {
 							arrays.indices.push_back(index_offset + indices[i]);
@@ -351,7 +351,6 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	const int channel = VoxelBuffer::CHANNEL_TYPE;
 
 	ERR_FAIL_COND(_library.is_null());
-	const VoxelLibrary &library = **_library;
 
 	for (unsigned int i = 0; i < _arrays_per_material.size(); ++i) {
 		Arrays &a = _arrays_per_material[i];
@@ -423,21 +422,25 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	const Vector3i block_size = voxels.get_size();
 	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
 
-	switch (channel_depth) {
+	{
+		RWLockRead lock(_library->get_baked_data_rw_lock());
+		const VoxelLibrary::BakedData &library_baked_data = _library->get_baked_data();
 
-		case VoxelBuffer::DEPTH_8_BIT:
-			generate_blocky_mesh(_arrays_per_material, raw_channel,
-					block_size, library, _bake_occlusion, baked_occlusion_darkness);
-			break;
+		switch (channel_depth) {
+			case VoxelBuffer::DEPTH_8_BIT:
+				generate_blocky_mesh(_arrays_per_material, raw_channel,
+						block_size, library_baked_data, _bake_occlusion, baked_occlusion_darkness);
+				break;
 
-		case VoxelBuffer::DEPTH_16_BIT:
-			generate_blocky_mesh(_arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(),
-					block_size, library, _bake_occlusion, baked_occlusion_darkness);
-			break;
+			case VoxelBuffer::DEPTH_16_BIT:
+				generate_blocky_mesh(_arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(),
+						block_size, library_baked_data, _bake_occlusion, baked_occlusion_darkness);
+				break;
 
-		default:
-			ERR_PRINT("Unsupported voxel depth");
-			return;
+			default:
+				ERR_PRINT("Unsupported voxel depth");
+				return;
+		}
 	}
 
 	// TODO We could return a single byte array and use Mesh::add_surface down the line?

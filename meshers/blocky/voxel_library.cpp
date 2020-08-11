@@ -2,18 +2,12 @@
 #include "../../util/macros.h"
 #include <bitset>
 
-VoxelLibrary::VoxelLibrary() :
-		Resource(),
-		_atlas_size(1) {
+VoxelLibrary::VoxelLibrary() {
+	_baked_data_rw_lock = RWLock::create();
 }
 
 VoxelLibrary::~VoxelLibrary() {
-	// Handled with a WeakRef
-	//	for (unsigned int i = 0; i < MAX_VOXEL_TYPES; ++i) {
-	//		if (_voxel_types[i].is_valid()) {
-	//			_voxel_types[i]->set_library(nullptr);
-	//		}
-	//	}
+	memdelete(_baked_data_rw_lock);
 }
 
 unsigned int VoxelLibrary::get_voxel_count() const {
@@ -28,6 +22,7 @@ void VoxelLibrary::set_voxel_count(unsigned int type_count) {
 	// Note: a smaller size may cause a loss of data
 	_voxel_types.resize(type_count);
 	_change_notify();
+	_needs_baking = true;
 }
 
 int VoxelLibrary::get_voxel_index_from_name(StringName name) const {
@@ -42,16 +37,18 @@ int VoxelLibrary::get_voxel_index_from_name(StringName name) const {
 
 void VoxelLibrary::load_default() {
 	set_voxel_count(2);
-	create_voxel(0, "air")->set_transparent(true);
-	create_voxel(1, "solid")
-			->set_transparent(false)
-			->set_geometry_type(Voxel::GEOMETRY_CUBE);
+
+	Ref<Voxel> air = create_voxel(0, "air");
+	air->set_transparent(true);
+
+	Ref<Voxel> solid = create_voxel(1, "solid");
+	solid->set_transparent(false);
+	solid->set_geometry_type(Voxel::GEOMETRY_CUBE);
 }
 
 // TODO Add a way to add voxels
 
 bool VoxelLibrary::_set(const StringName &p_name, const Variant &p_value) {
-
 	//	if(p_name == "voxels/max") {
 
 	//		int v = p_value;
@@ -63,24 +60,8 @@ bool VoxelLibrary::_set(const StringName &p_name, const Variant &p_value) {
 
 	//	} else
 	if (p_name.operator String().begins_with("voxels/")) {
-
 		unsigned int idx = p_name.operator String().get_slicec('/', 1).to_int();
-
-		ERR_FAIL_INDEX_V(idx, MAX_VOXEL_TYPES, false);
-
-		if (idx >= _voxel_types.size()) {
-			_voxel_types.resize(idx + 1);
-		}
-
-		Ref<Voxel> voxel = p_value;
-		_voxel_types[idx] = voxel;
-		if (voxel.is_valid()) {
-			voxel->set_library(Ref<VoxelLibrary>(this));
-			voxel->set_id(idx);
-		}
-
-		// Note: if the voxel is set to null, we could set the previous one's library reference to null.
-		// however Voxels use a weak reference, so it's not really needed
+		set_voxel(idx, p_value);
 		return true;
 	}
 
@@ -88,7 +69,6 @@ bool VoxelLibrary::_set(const StringName &p_name, const Variant &p_value) {
 }
 
 bool VoxelLibrary::_get(const StringName &p_name, Variant &r_ret) const {
-
 	//	if(p_name == "voxels/max") {
 
 	//		r_ret = _max_count;
@@ -96,8 +76,7 @@ bool VoxelLibrary::_get(const StringName &p_name, Variant &r_ret) const {
 
 	//	} else
 	if (p_name.operator String().begins_with("voxels/")) {
-
-		unsigned int idx = p_name.operator String().get_slicec('/', 1).to_int();
+		const unsigned int idx = p_name.operator String().get_slicec('/', 1).to_int();
 		if (idx < _voxel_types.size()) {
 			r_ret = _voxel_types[idx];
 			return true;
@@ -116,16 +95,31 @@ void VoxelLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
 void VoxelLibrary::set_atlas_size(int s) {
 	ERR_FAIL_COND(s <= 0);
 	_atlas_size = s;
+	_needs_baking = true;
 }
 
 Ref<Voxel> VoxelLibrary::create_voxel(unsigned int id, String name) {
 	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<Voxel>());
 	Ref<Voxel> voxel(memnew(Voxel));
-	voxel->set_library(Ref<VoxelLibrary>(this));
 	voxel->set_id(id);
 	voxel->set_voxel_name(name);
 	_voxel_types[id] = voxel;
 	return voxel;
+}
+
+void VoxelLibrary::set_voxel(unsigned int idx, Ref<Voxel> voxel) {
+	ERR_FAIL_INDEX(idx, MAX_VOXEL_TYPES);
+
+	if (idx >= _voxel_types.size()) {
+		_voxel_types.resize(idx + 1);
+	}
+
+	_voxel_types[idx] = voxel;
+	if (voxel.is_valid()) {
+		voxel->set_id(idx);
+	}
+
+	_needs_baking = true;
 }
 
 template <typename F>
@@ -133,18 +127,18 @@ static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F ou
 	// Slower than scanline method, but looks better
 
 	// Grow the triangle a tiny bit, to help against floating point error
-	Vector2 m = 0.333333 * (a + b + c);
+	const Vector2 m = 0.333333 * (a + b + c);
 	a += 0.001 * (a - m);
 	b += 0.001 * (b - m);
 	c += 0.001 * (c - m);
 
-	int min_x = (int)Math::floor(min(min(a.x, b.x), c.x));
-	int min_y = (int)Math::floor(min(min(a.y, b.y), c.y));
-	int max_x = (int)Math::ceil(max(max(a.x, b.x), c.x));
-	int max_y = (int)Math::ceil(max(max(a.y, b.y), c.y));
+	const int min_x = (int)Math::floor(min(min(a.x, b.x), c.x));
+	const int min_y = (int)Math::floor(min(min(a.y, b.y), c.y));
+	const int max_x = (int)Math::ceil(max(max(a.x, b.x), c.x));
+	const int max_y = (int)Math::ceil(max(max(a.y, b.y), c.y));
 
 	// We test against points centered on grid cells
-	Vector2 offset(0.5, 0.5);
+	const Vector2 offset(0.5, 0.5);
 
 	for (int y = min_y; y < max_y; ++y) {
 		for (int x = min_x; x < max_x; ++x) {
@@ -156,7 +150,21 @@ static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F ou
 }
 
 void VoxelLibrary::bake() {
-	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+	RWLockWrite lock(_baked_data_rw_lock);
+
+	const uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+
+	// This is the only place we modify the data.
+
+	_baked_data.models.resize(_voxel_types.size());
+	for (size_t i = 0; i < _voxel_types.size(); ++i) {
+		Ref<Voxel> config = _voxel_types[i];
+		if (config.is_valid()) {
+			_voxel_types[i]->bake(_baked_data.models[i], _atlas_size);
+		} else {
+			_baked_data.models[i].clear();
+		}
+	}
 
 	generate_side_culling_matrix();
 
@@ -190,25 +198,24 @@ void VoxelLibrary::generate_side_culling_matrix() {
 
 	// Gather patterns
 	for (uint16_t type_id = 0; type_id < _voxel_types.size(); ++type_id) {
-		Ref<Voxel> voxel_type_ref = _voxel_types[type_id];
-		if (voxel_type_ref.is_null()) {
+		if (_voxel_types[type_id].is_null()) {
 			continue;
 		}
-		Voxel &voxel_type = **voxel_type_ref;
-		voxel_type.set_contributing_to_ao(true);
+
+		Voxel::BakedData &model_data = _baked_data.models[type_id];
+		model_data.contributes_to_ao = true;
 
 		for (uint16_t side = 0; side < Cube::SIDE_COUNT; ++side) {
-			const std::vector<Vector3> &positions = voxel_type.get_model_side_positions(side);
-			const std::vector<int> &indices = voxel_type.get_model_side_indices(side);
+			const std::vector<Vector3> &positions = model_data.model.side_positions[side];
+			const std::vector<int> &indices = model_data.model.side_indices[side];
 			ERR_FAIL_COND(indices.size() % 3 != 0);
 
 			std::bitset<RASTER_SIZE * RASTER_SIZE> bitmap;
 
 			for (unsigned int j = 0; j < indices.size(); j += 3) {
-
-				Vector3 va = positions[indices[j]];
-				Vector3 vb = positions[indices[j + 1]];
-				Vector3 vc = positions[indices[j + 2]];
+				const Vector3 va = positions[indices[j]];
+				const Vector3 vb = positions[indices[j + 1]];
+				const Vector3 vc = positions[indices[j + 2]];
 
 				// Convert 3D vertices into 2D
 				Vector2 a, b, c;
@@ -279,27 +286,27 @@ void VoxelLibrary::generate_side_culling_matrix() {
 			}
 			if (pattern_index != full_side_pattern_index) {
 				// Non-cube voxels don't contribute to AO at the moment
-				voxel_type.set_contributing_to_ao(false);
+				model_data.contributes_to_ao = false;
 			}
 
 			//pattern->occurrences.push_back(TypeAndSide{ type_id, side });
-			voxel_type.set_side_pattern_index(side, pattern_index);
+			model_data.model.side_pattern_indices[side] = pattern_index;
 
 		} // side
 	} // type
 
 	// Find which pattern occludes which
 
-	_side_pattern_count = patterns.size();
-	_side_pattern_culling.resize(_side_pattern_count * _side_pattern_count);
-	_side_pattern_culling.fill(false);
+	_baked_data.side_pattern_count = patterns.size();
+	_baked_data.side_pattern_culling.resize(_baked_data.side_pattern_count * _baked_data.side_pattern_count);
+	_baked_data.side_pattern_culling.fill(false);
 
 	for (unsigned int ai = 0; ai < patterns.size(); ++ai) {
 		const Pattern &pattern_a = patterns[ai];
 
 		if (pattern_a.bitmap.any()) {
 			// Pattern always occludes itself
-			_side_pattern_culling.set(ai + ai * _side_pattern_count);
+			_baked_data.side_pattern_culling.set(ai + ai * _baked_data.side_pattern_count);
 		}
 
 		for (unsigned int bi = ai + 1; bi < patterns.size(); ++bi) {
@@ -319,10 +326,10 @@ void VoxelLibrary::generate_side_culling_matrix() {
 			CRASH_COND(b_occludes_a && a_occludes_b);
 
 			if (a_occludes_b) {
-				_side_pattern_culling.set(ai + bi * _side_pattern_count);
+				_baked_data.side_pattern_culling.set(ai + bi * _baked_data.side_pattern_count);
 
 			} else if (b_occludes_a) {
-				_side_pattern_culling.set(bi + ai * _side_pattern_count);
+				_baked_data.side_pattern_culling.set(bi + ai * _baked_data.side_pattern_count);
 			}
 		}
 	}
@@ -371,14 +378,6 @@ void VoxelLibrary::generate_side_culling_matrix() {
 		}
 	}
 	print_line("");*/
-}
-
-bool VoxelLibrary::get_side_pattern_occlusion(unsigned int pattern_a, unsigned int pattern_b) const {
-#ifdef DEBUG_ENABLED
-	CRASH_COND(pattern_a >= _side_pattern_count);
-	CRASH_COND(pattern_b >= _side_pattern_count);
-#endif
-	return _side_pattern_culling.get(pattern_a + pattern_b * _side_pattern_count);
 }
 
 void VoxelLibrary::_bind_methods() {

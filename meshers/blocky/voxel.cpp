@@ -6,15 +6,11 @@
 #define STRLEN(x) (sizeof(x) / sizeof(x[0]))
 
 Voxel::Voxel() :
-		_library(0),
 		_id(-1),
 		_material_id(0),
 		_is_transparent(false),
 		_color(1.f, 1.f, 1.f),
-		_geometry_type(GEOMETRY_NONE),
-		_cube_geometry_padding_y(0) {
-
-	_model.side_pattern_indices.fill(-1);
+		_geometry_type(GEOMETRY_NONE) {
 }
 
 static Cube::Side name_to_side(const String &s) {
@@ -51,11 +47,6 @@ bool Voxel::_set(const StringName &p_name, const Variant &p_value) {
 			set_cube_uv_side(side, v);
 			return true;
 		}
-
-	} else if (name == "cube_geometry/padding_y") {
-		_cube_geometry_padding_y = p_value;
-		set_cube_geometry(_cube_geometry_padding_y);
-		return true;
 	}
 
 	return false;
@@ -71,10 +62,6 @@ bool Voxel::_get(const StringName &p_name, Variant &r_ret) const {
 			r_ret = _cube_tiles[side];
 			return true;
 		}
-
-	} else if (name == "cube_geometry/padding_y") {
-		r_ret = _cube_geometry_padding_y;
-		return true;
 	}
 
 	return false;
@@ -92,48 +79,28 @@ void Voxel::_get_property_list(List<PropertyInfo> *p_list) const {
 	}
 }
 
-Ref<Voxel> Voxel::set_voxel_name(String name) {
+void Voxel::set_voxel_name(String name) {
 	_name = name;
-	return Ref<Voxel>(this);
 }
 
-Ref<Voxel> Voxel::set_id(int id) {
-	ERR_FAIL_COND_V(id < 0 || (unsigned int)id >= VoxelLibrary::MAX_VOXEL_TYPES, Ref<Voxel>(this));
+void Voxel::set_id(int id) {
+	ERR_FAIL_COND(id < 0 || (unsigned int)id >= VoxelLibrary::MAX_VOXEL_TYPES);
 	// Cannot modify ID after creation
-	ERR_FAIL_COND_V_MSG(_id != -1, Ref<Voxel>(this), "ID cannot be modified after being added to a library");
+	ERR_FAIL_COND_MSG(_id != -1, "ID cannot be modified after being added to a library");
 	_id = id;
-	return Ref<Voxel>(this);
 }
 
-Ref<Voxel> Voxel::set_color(Color color) {
+void Voxel::set_color(Color color) {
 	_color = color;
-	return Ref<Voxel>(this);
 }
 
-Ref<Voxel> Voxel::set_material_id(unsigned int id) {
-	ERR_FAIL_COND_V(id >= VoxelMesherBlocky::MAX_MATERIALS, Ref<Voxel>(this));
+void Voxel::set_material_id(unsigned int id) {
+	ERR_FAIL_COND(id >= VoxelMesherBlocky::MAX_MATERIALS);
 	_material_id = id;
-	return Ref<Voxel>(this);
 }
 
-Ref<Voxel> Voxel::set_transparent(bool t) {
+void Voxel::set_transparent(bool t) {
 	_is_transparent = t;
-	return Ref<Voxel>(this);
-}
-
-void Voxel::clear_geometry() {
-	_model.positions.clear();
-	_model.normals.clear();
-	_model.uvs.clear();
-	_model.indices.clear();
-
-	for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		_model.side_positions[side].clear();
-		_model.side_uvs[side].clear();
-		_model.side_indices[side].clear();
-	}
-
-	_empty = true;
 }
 
 void Voxel::set_geometry_type(GeometryType type) {
@@ -141,16 +108,17 @@ void Voxel::set_geometry_type(GeometryType type) {
 
 	switch (_geometry_type) {
 		case GEOMETRY_NONE:
-			clear_geometry();
+			_collision_aabbs.clear();
 			break;
 
 		case GEOMETRY_CUBE:
-			set_cube_geometry(_cube_geometry_padding_y);
-			update_cube_uv_sides();
+			_collision_aabbs.clear();
+			_collision_aabbs.push_back(AABB(Vector3(0, 0, 0), Vector3(1, 1, 1)));
+			_empty = false;
 			break;
 
 		case GEOMETRY_CUSTOM_MESH:
-			// TODO Re-update geometry?
+			// Gotta be user-defined
 			break;
 
 		default:
@@ -163,49 +131,109 @@ Voxel::GeometryType Voxel::get_geometry_type() const {
 	return _geometry_type;
 }
 
-void Voxel::set_library(Ref<VoxelLibrary> lib) {
-	if (lib.is_null()) {
-		_library = 0;
-	} else {
-		_library = lib->get_instance_id();
-	}
-	if (_geometry_type == GEOMETRY_CUBE) {
-		// Update model UVs because atlas size is defined by the library
-		update_cube_uv_sides();
-	}
-}
-
-VoxelLibrary *Voxel::get_library() const {
-	if (_library == 0) {
-		return nullptr;
-	}
-	Object *v = ObjectDB::get_instance(_library);
-	if (v) {
-		return Object::cast_to<VoxelLibrary>(v);
-	}
-	return nullptr;
-}
-
 void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
-	if (mesh == _custom_mesh) {
-		return;
+	_custom_mesh = mesh;
+}
+
+void Voxel::set_cube_geometry() {
+}
+
+void Voxel::set_random_tickable(bool rt) {
+	_random_tickable = rt;
+}
+
+void Voxel::set_cube_uv_side(int side, Vector2 tile_pos) {
+	_cube_tiles[side] = tile_pos;
+}
+
+Ref<Resource> Voxel::duplicate(bool p_subresources) const {
+	Ref<Voxel> d_ref;
+	d_ref.instance();
+	Voxel &d = **d_ref;
+
+	d._id = -1;
+
+	d._name = _name;
+	d._material_id = _material_id;
+	d._is_transparent = _is_transparent;
+	d._color = _color;
+	d._geometry_type = _geometry_type;
+	d._cube_tiles = _cube_tiles;
+	d._custom_mesh = _custom_mesh;
+	d._collision_aabbs = _collision_aabbs;
+	d._random_tickable = _random_tickable;
+	d._empty = _empty;
+
+	if (p_subresources) {
+		if (d._custom_mesh.is_valid()) {
+			d._custom_mesh = d._custom_mesh->duplicate(p_subresources);
+		}
 	}
 
-	clear_geometry();
+	return d_ref;
+}
+
+void Voxel::set_collision_mask(uint32_t mask) {
+	_collision_mask = mask;
+}
+
+static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int p_atlas_size) {
+	const float sy = 1.0;
+
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+		std::vector<Vector3> &positions = baked_data.model.side_positions[side];
+		positions.resize(4);
+		for (unsigned int i = 0; i < 4; ++i) {
+			int corner = Cube::g_side_corners[side][i];
+			Vector3 p = Cube::g_corner_position[corner];
+			if (p.y > 0.9) {
+				p.y = sy;
+			}
+			positions[i] = p;
+		}
+
+		std::vector<int> &indices = baked_data.model.side_indices[side];
+		indices.resize(6);
+		for (unsigned int i = 0; i < 6; ++i) {
+			indices[i] = Cube::g_side_quad_triangles[side][i];
+		}
+	}
+
+	const float e = 0.001;
+	// Winding is the same as the one chosen in Cube:: vertices
+	// I am confused. I read in at least 3 OpenGL tutorials that texture coordinates start at bottom-left (0,0).
+	// But even though Godot is said to follow OpenGL's convention, the engine starts at top-left!
+	const Vector2 uv[4] = {
+		Vector2(e, 1.f - e),
+		Vector2(1.f - e, 1.f - e),
+		Vector2(1.f - e, e),
+		Vector2(e, e),
+	};
+
+	const float atlas_size = (float)p_atlas_size;
+	CRASH_COND(atlas_size <= 0);
+	const float s = 1.0 / atlas_size;
+
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+		baked_data.model.side_uvs[side].resize(4);
+		std::vector<Vector2> &uvs = baked_data.model.side_uvs[side];
+		for (unsigned int i = 0; i < 4; ++i) {
+			uvs[i] = (config.get_cube_tile(side) + uv[i]) * s;
+		}
+	}
+
+	baked_data.empty = true;
+}
+
+static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
+	Ref<Mesh> mesh = config.get_custom_mesh();
 
 	if (mesh.is_null()) {
-		_custom_mesh = Ref<Mesh>();
+		baked_data.empty = true;
 		return;
 	}
 
 	Array arrays = mesh->surface_get_arrays(0);
-	set_custom_mesh_from_arrays(arrays);
-
-	_custom_mesh = mesh;
-}
-
-void Voxel::set_custom_mesh_from_arrays(Array arrays) {
-	clear_geometry();
 
 	ERR_FAIL_COND(arrays.size() == 0);
 
@@ -216,7 +244,7 @@ void Voxel::set_custom_mesh_from_arrays(Array arrays) {
 	PoolVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
 	PoolVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
 
-	_empty = positions.size() == 0;
+	baked_data.empty = positions.size() == 0;
 
 	ERR_FAIL_COND(normals.size() == 0);
 
@@ -269,6 +297,8 @@ void Voxel::set_custom_mesh_from_arrays(Array arrays) {
 		HashMap<int, int> added_regular_indices;
 		FixedArray<Vector3, 3> tri_positions;
 
+		Voxel::BakedData::Model &model = baked_data.model;
+
 		for (int i = 0; i < indices.size(); i += 3) {
 			Cube::SideAxis side;
 
@@ -279,7 +309,7 @@ void Voxel::set_custom_mesh_from_arrays(Array arrays) {
 			if (L::get_triangle_side(tri_positions[0], tri_positions[1], tri_positions[2], side)) {
 				// That triangle is on the face
 
-				int next_side_index = _model.side_positions[side].size();
+				int next_side_index = model.side_positions[side].size();
 
 				for (int j = 0; j < 3; ++j) {
 					int src_index = indices_read[i + j];
@@ -288,39 +318,39 @@ void Voxel::set_custom_mesh_from_arrays(Array arrays) {
 					if (existing_dst_index == nullptr) {
 						// Add new vertex
 
-						_model.side_indices[side].push_back(next_side_index);
-						_model.side_positions[side].push_back(tri_positions[j]);
-						_model.side_uvs[side].push_back(uvs_read[indices_read[i + j]]);
+						model.side_indices[side].push_back(next_side_index);
+						model.side_positions[side].push_back(tri_positions[j]);
+						model.side_uvs[side].push_back(uvs_read[indices_read[i + j]]);
 
 						added_side_indices[side].set(src_index, next_side_index);
 						++next_side_index;
 
 					} else {
 						// Vertex was already added, just add index referencing it
-						_model.side_indices[side].push_back(*existing_dst_index);
+						model.side_indices[side].push_back(*existing_dst_index);
 					}
 				}
 
 			} else {
 				// That triangle is not on the face
 
-				int next_regular_index = _model.positions.size();
+				int next_regular_index = model.positions.size();
 
 				for (int j = 0; j < 3; ++j) {
 					int src_index = indices_read[i + j];
 					const int *existing_dst_index = added_regular_indices.getptr(src_index);
 
 					if (existing_dst_index == nullptr) {
-						_model.indices.push_back(next_regular_index);
-						_model.positions.push_back(tri_positions[j]);
-						_model.normals.push_back(normals_read[indices_read[i + j]]);
-						_model.uvs.push_back(uvs_read[indices_read[i + j]]);
+						model.indices.push_back(next_regular_index);
+						model.positions.push_back(tri_positions[j]);
+						model.normals.push_back(normals_read[indices_read[i + j]]);
+						model.uvs.push_back(uvs_read[indices_read[i + j]]);
 
 						added_regular_indices.set(src_index, next_regular_index);
 						++next_regular_index;
 
 					} else {
-						_model.indices.push_back(*existing_dst_index);
+						model.indices.push_back(*existing_dst_index);
 					}
 				}
 			}
@@ -328,115 +358,33 @@ void Voxel::set_custom_mesh_from_arrays(Array arrays) {
 	}
 }
 
-Ref<Voxel> Voxel::set_cube_geometry(float sy) {
-	sy = 1.0 + sy;
+void Voxel::bake(BakedData &baked_data, int p_atlas_size) {
+	baked_data.clear();
 
-	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		std::vector<Vector3> &positions = _model.side_positions[side];
-		positions.resize(4);
-		for (unsigned int i = 0; i < 4; ++i) {
-			int corner = Cube::g_side_corners[side][i];
-			Vector3 p = Cube::g_corner_position[corner];
-			if (p.y > 0.9) {
-				p.y = sy;
-			}
-			positions[i] = p;
-		}
+	// baked_data.contributes_to_ao is set by the side culling phase
+	baked_data.is_transparent = _is_transparent;
+	baked_data.material_id = _material_id;
+	baked_data.color = _color;
 
-		std::vector<int> &indices = _model.side_indices[side];
-		indices.resize(6);
-		for (unsigned int i = 0; i < 6; ++i) {
-			indices[i] = Cube::g_side_quad_triangles[side][i];
-		}
+	switch (_geometry_type) {
+		case GEOMETRY_NONE:
+			baked_data.empty = true;
+			break;
+
+		case GEOMETRY_CUBE:
+			bake_cube_geometry(*this, baked_data, p_atlas_size);
+			break;
+
+		case GEOMETRY_CUSTOM_MESH:
+			bake_mesh_geometry(*this, baked_data);
+			break;
+
+		default:
+			ERR_PRINT("Wtf? Unknown geometry type");
+			break;
 	}
 
-	_collision_aabbs.clear();
-	_collision_aabbs.push_back(AABB(Vector3(0, 0, 0), Vector3(1, 1, 1)));
-
-	_empty = false;
-	return Ref<Voxel>(this);
-}
-
-void Voxel::set_random_tickable(bool rt) {
-	_random_tickable = rt;
-}
-
-void Voxel::set_cube_uv_side(int side, Vector2 tile_pos) {
-	_cube_tiles[side] = tile_pos;
-	// TODO Better have a dirty flag, otherwise UVs will be needlessly updated at least 6 times everytime a Voxel resource is loaded!
-	update_cube_uv_sides();
-}
-
-void Voxel::update_cube_uv_sides() {
-	VoxelLibrary *library = get_library();
-	//ERR_FAIL_COND(library == nullptr);
-	if (library == nullptr) {
-		// Not an error, the Voxel might have been created before the library, and can't be used without anyways
-		PRINT_VERBOSE("VoxelLibrary not set yet");
-		return;
-	}
-
-	const float e = 0.001;
-	// Winding is the same as the one chosen in Cube:: vertices
-	// I am confused. I read in at least 3 OpenGL tutorials that texture coordinates start at bottom-left (0,0).
-	// But even though Godot is said to follow OpenGL's convention, the engine starts at top-left!
-	const Vector2 uv[4] = {
-		Vector2(e, 1.f - e),
-		Vector2(1.f - e, 1.f - e),
-		Vector2(1.f - e, e),
-		Vector2(e, e),
-	};
-
-	const float atlas_size = (float)library->get_atlas_size();
-	CRASH_COND(atlas_size <= 0);
-	const float s = 1.0 / atlas_size;
-
-	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		_model.side_uvs[side].resize(4);
-		std::vector<Vector2> &uvs = _model.side_uvs[side];
-		for (unsigned int i = 0; i < 4; ++i) {
-			uvs[i] = (_cube_tiles[side] + uv[i]) * s;
-		}
-	}
-}
-
-void Voxel::set_side_pattern_index(int side, uint32_t i) {
-	_model.side_pattern_indices[side] = i;
-}
-
-Ref<Resource> Voxel::duplicate(bool p_subresources) const {
-	Ref<Voxel> d_ref;
-	d_ref.instance();
-	Voxel &d = **d_ref;
-
-	d._library = _library;
-	d._id = -1;
-
-	d._name = _name;
-	d._material_id = _material_id;
-	d._is_transparent = _is_transparent;
-	d._color = _color;
-	d._geometry_type = _geometry_type;
-	d._cube_geometry_padding_y = _cube_geometry_padding_y;
-	d._cube_tiles = _cube_tiles;
-	d._custom_mesh = _custom_mesh;
-	d._collision_aabbs = _collision_aabbs;
-	d._contributes_to_ao = _contributes_to_ao;
-	d._random_tickable = _random_tickable;
-	d._empty = _empty;
-	d._model = _model;
-
-	if (p_subresources) {
-		if (d._custom_mesh.is_valid()) {
-			d._custom_mesh = d._custom_mesh->duplicate(p_subresources);
-		}
-	}
-
-	return d_ref;
-}
-
-void Voxel::set_collision_mask(uint32_t mask) {
-	_collision_mask = mask;
+	_empty = baked_data.empty;
 }
 
 void Voxel::_bind_methods() {

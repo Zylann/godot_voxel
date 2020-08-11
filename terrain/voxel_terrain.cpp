@@ -380,10 +380,12 @@ void VoxelTerrain::make_all_view_dirty_deferred() {
 }
 
 void VoxelTerrain::start_updater() {
+	// The meshing thread must be stopped
 	ERR_FAIL_COND(_block_updater != nullptr);
 
-	// TODO VoxelLibrary should be baked ahead of time, like MeshLibrary
 	if (_library.is_valid()) {
+		// TODO Any way to execute this function just after the TRES resource loader has finished to load?
+		// VoxelLibrary should be baked ahead of time, like MeshLibrary
 		_library->bake();
 	}
 

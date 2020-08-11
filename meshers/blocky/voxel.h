@@ -9,13 +9,58 @@
 class VoxelLibrary;
 
 // TODO Rename VoxelModel?
-// Definition of one type of voxel.
+// Definition of one type of voxel for use with `VoxelMesherBlocky`.
 // A voxel can be a simple coloured cube, or a more complex model.
 // Important: it is recommended that you create voxels from a library rather than using new().
 class Voxel : public Resource {
 	GDCLASS(Voxel, Resource)
 
 public:
+	// Plain data strictly used by the mesher.
+	// It becomes distinct because it's going to be used in a multithread environment,
+	// while the configuration that produced thed data can be changed by the user at any time.
+	struct BakedData {
+		struct Model {
+			std::vector<Vector3> positions;
+			std::vector<Vector3> normals;
+			std::vector<Vector2> uvs;
+			std::vector<int> indices;
+			// Model sides:
+			// They are separated because this way we can occlude them easily.
+			// Due to these defining cube side triangles, normals are known already.
+			FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> side_positions;
+			FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> side_uvs;
+			FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
+
+			FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
+
+			void clear() {
+				positions.clear();
+				normals.clear();
+				uvs.clear();
+				indices.clear();
+
+				for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
+					side_positions[side].clear();
+					side_uvs[side].clear();
+					side_indices[side].clear();
+				}
+			}
+		};
+
+		Model model;
+		int material_id;
+		Color color;
+		bool is_transparent;
+		bool contributes_to_ao;
+		bool empty;
+
+		inline void clear() {
+			model.clear();
+			empty = true;
+		}
+	};
+
 	Voxel();
 
 	enum Side {
@@ -30,19 +75,19 @@ public:
 
 	// Properties
 
-	Ref<Voxel> set_voxel_name(String name);
+	void set_voxel_name(String name);
 	_FORCE_INLINE_ StringName get_voxel_name() const { return _name; }
 
-	Ref<Voxel> set_id(int id);
+	void set_id(int id);
 	_FORCE_INLINE_ int get_id() const { return _id; }
 
-	Ref<Voxel> set_color(Color color);
+	void set_color(Color color);
 	_FORCE_INLINE_ Color get_color() const { return _color; }
 
-	Ref<Voxel> set_material_id(unsigned int id);
+	void set_material_id(unsigned int id);
 	_FORCE_INLINE_ unsigned int get_material_id() const { return _material_id; }
 
-	Ref<Voxel> set_transparent(bool t = true);
+	void set_transparent(bool t = true);
 	_FORCE_INLINE_ bool is_transparent() const { return _is_transparent; }
 
 	void set_custom_mesh(Ref<Mesh> mesh);
@@ -53,6 +98,8 @@ public:
 
 	void set_collision_mask(uint32_t mask);
 	inline uint32_t get_collision_mask() const { return _collision_mask; }
+
+	Vector2 get_cube_tile(int side) const { return _cube_tiles[side]; }
 
 	//-------------------------------------------
 	// Built-in geometry generators
@@ -74,24 +121,9 @@ public:
 	//------------------------------------------
 	// Properties for native usage only
 
-	const std::vector<Vector3> &get_model_positions() const { return _model.positions; }
-	const std::vector<Vector3> &get_model_normals() const { return _model.normals; }
-	const std::vector<Vector2> &get_model_uv() const { return _model.uvs; }
-	const std::vector<int> &get_model_indices() const { return _model.indices; }
-
-	const std::vector<Vector3> &get_model_side_positions(unsigned int side) const { return _model.side_positions[side]; }
-	const std::vector<Vector2> &get_model_side_uv(unsigned int side) const { return _model.side_uvs[side]; }
-	const std::vector<int> &get_model_side_indices(unsigned int side) const { return _model.side_indices[side]; }
+	void bake(BakedData &baked_data, int p_atlas_size);
 
 	const std::vector<AABB> &get_collision_aabbs() const { return _collision_aabbs; }
-
-	void set_library(Ref<VoxelLibrary> lib);
-
-	void set_side_pattern_index(int side, uint32_t i);
-	inline uint32_t get_side_pattern_index(int side) const { return _model.side_pattern_indices[side]; }
-
-	inline bool is_contributing_to_ao() const { return _contributes_to_ao; }
-	inline void set_contributing_to_ao(bool b) { _contributes_to_ao = b; }
 
 private:
 	bool _set(const StringName &p_name, const Variant &p_value);
@@ -99,23 +131,15 @@ private:
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
 	void set_cube_uv_side(int side, Vector2 tile_pos);
-	void update_cube_uv_sides();
-
-	void set_custom_mesh_from_arrays(Array arrays);
-
-	VoxelLibrary *get_library() const;
 
 	static void _bind_methods();
 
-	void clear_geometry();
-	Ref<Voxel> set_cube_geometry(float sy = 1);
+	void set_cube_geometry();
 
 	Array _b_get_collision_aabbs() const;
 	void _b_set_collision_aabbs(Array array);
 
 private:
-	ObjectID _library;
-
 	// Identifiers
 	int _id;
 	StringName _name;
@@ -125,31 +149,12 @@ private:
 	bool _is_transparent;
 	Color _color;
 	GeometryType _geometry_type;
-	float _cube_geometry_padding_y;
 	FixedArray<Vector2, Cube::SIDE_COUNT> _cube_tiles;
 	Ref<Mesh> _custom_mesh;
 	std::vector<AABB> _collision_aabbs;
-	bool _contributes_to_ao = false;
 	bool _random_tickable = false;
 	bool _empty = true;
 	uint32_t _collision_mask = 1;
-
-	struct Model {
-		std::vector<Vector3> positions;
-		std::vector<Vector3> normals;
-		std::vector<Vector2> uvs;
-		std::vector<int> indices;
-		// Model sides:
-		// They are separated because this way we can occlude them easily.
-		// Due to these defining cube side triangles, normals are known already.
-		FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> side_positions;
-		FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> side_uvs;
-		FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
-
-		FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
-	};
-
-	Model _model;
 };
 
 VARIANT_ENUM_CAST(Voxel::GeometryType)
