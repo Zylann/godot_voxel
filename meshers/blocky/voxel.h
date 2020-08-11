@@ -74,21 +74,21 @@ public:
 	//------------------------------------------
 	// Properties for native usage only
 
-	const std::vector<Vector3> &get_model_positions() const { return _model_positions; }
-	const std::vector<Vector3> &get_model_normals() const { return _model_normals; }
-	const std::vector<Vector2> &get_model_uv() const { return _model_uvs; }
-	const std::vector<int> &get_model_indices() const { return _model_indices; }
+	const std::vector<Vector3> &get_model_positions() const { return _model.positions; }
+	const std::vector<Vector3> &get_model_normals() const { return _model.normals; }
+	const std::vector<Vector2> &get_model_uv() const { return _model.uvs; }
+	const std::vector<int> &get_model_indices() const { return _model.indices; }
 
-	const std::vector<Vector3> &get_model_side_positions(unsigned int side) const { return _model_side_positions[side]; }
-	const std::vector<Vector2> &get_model_side_uv(unsigned int side) const { return _model_side_uvs[side]; }
-	const std::vector<int> &get_model_side_indices(unsigned int side) const { return _model_side_indices[side]; }
+	const std::vector<Vector3> &get_model_side_positions(unsigned int side) const { return _model.side_positions[side]; }
+	const std::vector<Vector2> &get_model_side_uv(unsigned int side) const { return _model.side_uvs[side]; }
+	const std::vector<int> &get_model_side_indices(unsigned int side) const { return _model.side_indices[side]; }
 
 	const std::vector<AABB> &get_collision_aabbs() const { return _collision_aabbs; }
 
 	void set_library(Ref<VoxelLibrary> lib);
 
 	void set_side_pattern_index(int side, uint32_t i);
-	inline uint32_t get_side_pattern_index(int side) const { return _side_pattern_index[side]; }
+	inline uint32_t get_side_pattern_index(int side) const { return _model.side_pattern_indices[side]; }
 
 	inline bool is_contributing_to_ao() const { return _contributes_to_ao; }
 	inline void set_contributing_to_ao(bool b) { _contributes_to_ao = b; }
@@ -134,21 +134,22 @@ private:
 	bool _empty = true;
 	uint32_t _collision_mask = 1;
 
-	FixedArray<uint32_t, Cube::SIDE_COUNT> _side_pattern_index;
+	struct Model {
+		std::vector<Vector3> positions;
+		std::vector<Vector3> normals;
+		std::vector<Vector2> uvs;
+		std::vector<int> indices;
+		// Model sides:
+		// They are separated because this way we can occlude them easily.
+		// Due to these defining cube side triangles, normals are known already.
+		FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> side_positions;
+		FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> side_uvs;
+		FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
 
-	// Model
-	std::vector<Vector3> _model_positions;
-	std::vector<Vector3> _model_normals;
-	std::vector<Vector2> _model_uvs;
-	std::vector<int> _model_indices;
-	// Model sides:
-	// They are separated because this way we can occlude them easily.
-	// Due to these defining cube side triangles, normals are known already.
-	FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> _model_side_positions;
-	FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> _model_side_uvs;
-	FixedArray<std::vector<int>, Cube::SIDE_COUNT> _model_side_indices;
+		FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
+	};
 
-	// TODO Child voxel types?
+	Model _model;
 };
 
 VARIANT_ENUM_CAST(Voxel::GeometryType)

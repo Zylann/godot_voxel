@@ -14,7 +14,7 @@ Voxel::Voxel() :
 		_geometry_type(GEOMETRY_NONE),
 		_cube_geometry_padding_y(0) {
 
-	_side_pattern_index.fill(-1);
+	_model.side_pattern_indices.fill(-1);
 }
 
 static Cube::Side name_to_side(const String &s) {
@@ -122,15 +122,15 @@ Ref<Voxel> Voxel::set_transparent(bool t) {
 }
 
 void Voxel::clear_geometry() {
-	_model_positions.clear();
-	_model_normals.clear();
-	_model_uvs.clear();
-	_model_indices.clear();
+	_model.positions.clear();
+	_model.normals.clear();
+	_model.uvs.clear();
+	_model.indices.clear();
 
 	for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		_model_side_positions[side].clear();
-		_model_side_uvs[side].clear();
-		_model_side_indices[side].clear();
+		_model.side_positions[side].clear();
+		_model.side_uvs[side].clear();
+		_model.side_indices[side].clear();
 	}
 
 	_empty = true;
@@ -279,7 +279,7 @@ void Voxel::set_custom_mesh_from_arrays(Array arrays) {
 			if (L::get_triangle_side(tri_positions[0], tri_positions[1], tri_positions[2], side)) {
 				// That triangle is on the face
 
-				int next_side_index = _model_side_positions[side].size();
+				int next_side_index = _model.side_positions[side].size();
 
 				for (int j = 0; j < 3; ++j) {
 					int src_index = indices_read[i + j];
@@ -288,39 +288,39 @@ void Voxel::set_custom_mesh_from_arrays(Array arrays) {
 					if (existing_dst_index == nullptr) {
 						// Add new vertex
 
-						_model_side_indices[side].push_back(next_side_index);
-						_model_side_positions[side].push_back(tri_positions[j]);
-						_model_side_uvs[side].push_back(uvs_read[indices_read[i + j]]);
+						_model.side_indices[side].push_back(next_side_index);
+						_model.side_positions[side].push_back(tri_positions[j]);
+						_model.side_uvs[side].push_back(uvs_read[indices_read[i + j]]);
 
 						added_side_indices[side].set(src_index, next_side_index);
 						++next_side_index;
 
 					} else {
 						// Vertex was already added, just add index referencing it
-						_model_side_indices[side].push_back(*existing_dst_index);
+						_model.side_indices[side].push_back(*existing_dst_index);
 					}
 				}
 
 			} else {
 				// That triangle is not on the face
 
-				int next_regular_index = _model_positions.size();
+				int next_regular_index = _model.positions.size();
 
 				for (int j = 0; j < 3; ++j) {
 					int src_index = indices_read[i + j];
 					const int *existing_dst_index = added_regular_indices.getptr(src_index);
 
 					if (existing_dst_index == nullptr) {
-						_model_indices.push_back(next_regular_index);
-						_model_positions.push_back(tri_positions[j]);
-						_model_normals.push_back(normals_read[indices_read[i + j]]);
-						_model_uvs.push_back(uvs_read[indices_read[i + j]]);
+						_model.indices.push_back(next_regular_index);
+						_model.positions.push_back(tri_positions[j]);
+						_model.normals.push_back(normals_read[indices_read[i + j]]);
+						_model.uvs.push_back(uvs_read[indices_read[i + j]]);
 
 						added_regular_indices.set(src_index, next_regular_index);
 						++next_regular_index;
 
 					} else {
-						_model_indices.push_back(*existing_dst_index);
+						_model.indices.push_back(*existing_dst_index);
 					}
 				}
 			}
@@ -332,7 +332,7 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 	sy = 1.0 + sy;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		std::vector<Vector3> &positions = _model_side_positions[side];
+		std::vector<Vector3> &positions = _model.side_positions[side];
 		positions.resize(4);
 		for (unsigned int i = 0; i < 4; ++i) {
 			int corner = Cube::g_side_corners[side][i];
@@ -343,7 +343,7 @@ Ref<Voxel> Voxel::set_cube_geometry(float sy) {
 			positions[i] = p;
 		}
 
-		std::vector<int> &indices = _model_side_indices[side];
+		std::vector<int> &indices = _model.side_indices[side];
 		indices.resize(6);
 		for (unsigned int i = 0; i < 6; ++i) {
 			indices[i] = Cube::g_side_quad_triangles[side][i];
@@ -392,8 +392,8 @@ void Voxel::update_cube_uv_sides() {
 	const float s = 1.0 / atlas_size;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		_model_side_uvs[side].resize(4);
-		std::vector<Vector2> &uvs = _model_side_uvs[side];
+		_model.side_uvs[side].resize(4);
+		std::vector<Vector2> &uvs = _model.side_uvs[side];
 		for (unsigned int i = 0; i < 4; ++i) {
 			uvs[i] = (_cube_tiles[side] + uv[i]) * s;
 		}
@@ -401,7 +401,7 @@ void Voxel::update_cube_uv_sides() {
 }
 
 void Voxel::set_side_pattern_index(int side, uint32_t i) {
-	_side_pattern_index[side] = i;
+	_model.side_pattern_indices[side] = i;
 }
 
 Ref<Resource> Voxel::duplicate(bool p_subresources) const {
@@ -422,15 +422,9 @@ Ref<Resource> Voxel::duplicate(bool p_subresources) const {
 	d._custom_mesh = _custom_mesh;
 	d._collision_aabbs = _collision_aabbs;
 	d._contributes_to_ao = _contributes_to_ao;
-	d._side_pattern_index = _side_pattern_index;
-
-	d._model_positions = _model_positions;
-	d._model_normals = _model_normals;
-	d._model_indices = _model_indices;
-	d._model_uvs = _model_uvs;
-	d._model_side_positions = _model_side_positions;
-	d._model_side_uvs = _model_side_uvs;
-	d._model_side_indices = _model_side_indices;
+	d._random_tickable = _random_tickable;
+	d._empty = _empty;
+	d._model = _model;
 
 	if (p_subresources) {
 		if (d._custom_mesh.is_valid()) {

@@ -29,6 +29,7 @@ public:
 	int get_minimum_padding() const;
 	int get_maximum_padding() const;
 
+	// TODO Rename duplicate()
 	// Must be cloneable so can be duplicated for use by more than one thread
 	virtual VoxelMesher *clone();
 

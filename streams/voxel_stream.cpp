@@ -1,6 +1,5 @@
 #include "voxel_stream.h"
 #include "../voxel_string_names.h"
-#include <core/script_language.h>
 
 VoxelStream::VoxelStream() {
 }

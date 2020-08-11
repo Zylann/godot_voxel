@@ -38,6 +38,10 @@ public:
 	// Declares the format expected from this stream
 	virtual int get_used_channels_mask() const;
 
+	// If the stream is thread-safe, the same instance will be used by the streamer across all threads.
+	// If the stream is not thread-safe:
+	// - If it is cloneable, the streamer will duplicate the instance for each thread.
+	// - If it isn't, the streamer will be limited to a single thread.
 	virtual bool is_thread_safe() const;
 	virtual bool is_cloneable() const;
 

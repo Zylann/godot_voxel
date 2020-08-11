@@ -165,7 +165,6 @@ void VoxelLibrary::bake() {
 }
 
 void VoxelLibrary::generate_side_culling_matrix() {
-
 	// When two blocky voxels are next to each other, they share a side.
 	// Geometry of either side can be culled away if covered by the other,
 	// but it's very expensive to do a full polygon check when we build the mesh.
