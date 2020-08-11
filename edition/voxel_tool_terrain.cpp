@@ -153,6 +153,16 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 
 		const VoxelBlock *block = _map->get_block(block_pos);
 		if (block != nullptr) {
+			if (block->voxels->get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+				const uint64_t v = block->voxels->get_voxel(0, 0, 0, channel);
+				if (lib.has_voxel(v)) {
+					const Voxel &vt = lib.get_voxel_const(v);
+					if (!vt.is_random_tickable()) {
+						// Skip whole block
+						continue;
+					}
+				}
+			}
 			// Choose a bunch of voxels at random within the block.
 			// Batching this way improves performance a little by reducing block lookups.
 			for (int vi = 0; vi < batch_count; ++vi) {
