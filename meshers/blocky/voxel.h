@@ -18,7 +18,7 @@ class Voxel : public Resource {
 public:
 	// Plain data strictly used by the mesher.
 	// It becomes distinct because it's going to be used in a multithread environment,
-	// while the configuration that produced thed data can be changed by the user at any time.
+	// while the configuration that produced the data can be changed by the user at any time.
 	struct BakedData {
 		struct Model {
 			std::vector<Vector3> positions;

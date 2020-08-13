@@ -222,7 +222,7 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 		}
 	}
 
-	baked_data.empty = true;
+	baked_data.empty = false;
 }
 
 static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
