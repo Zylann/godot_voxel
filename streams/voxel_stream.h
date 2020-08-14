@@ -47,6 +47,8 @@ public:
 
 	Stats get_statistics() const;
 
+	virtual bool has_script() const;
+
 protected:
 	static void _bind_methods();
 

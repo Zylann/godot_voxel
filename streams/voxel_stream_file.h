@@ -26,6 +26,8 @@ public:
 
 	int get_used_channels_mask() const override;
 
+	bool has_script() const override;
+
 protected:
 	static void _bind_methods();
 

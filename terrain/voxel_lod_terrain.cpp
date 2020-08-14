@@ -82,11 +82,18 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 String VoxelLodTerrain::get_configuration_warning() const {
 	if (_stream.is_valid()) {
 		Ref<Script> script = _stream->get_script();
-		if (script.is_valid() && !script->is_tool()) {
-			return TTR("The custom stream is not tool, the editor won't be able to use it.");
+		if (script.is_valid()) {
+			if (script->is_tool()) {
+				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this properly?
+				return TTR("Be careful! Don't edit your custom stream while it's running, it can cause crashes. "
+						   "Turn off `run_stream_in_editor` before doing so.");
+			} else {
+				return TTR("The custom stream is not tool, the editor won't be able to use it.");
+			}
 		}
 		if (!(_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF))) {
-			return TTR("VoxelLodTerrain supports only stream channel \"Sdf\" (smooth).");
+			return TTR("VoxelLodTerrain supports only stream channel \"Sdf\" (smooth), "
+					   "but `get_used_channels_mask()` tells it's providing none of these.");
 		}
 	}
 	return String();
@@ -113,44 +120,46 @@ unsigned int VoxelLodTerrain::get_block_size_pow2() const {
 }
 
 void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
-
 	if (p_stream == _stream) {
 		return;
 	}
 
-	if (_stream.is_valid()) {
-		if (_stream->is_connected(CoreStringNames::get_singleton()->changed, this, "_on_stream_params_changed")) {
-			_stream->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_stream_params_changed");
-		}
-	}
-
 	_stream = p_stream;
 
+#ifdef TOOLS_ENABLED
 	if (_stream.is_valid()) {
-		_stream->connect(CoreStringNames::get_singleton()->changed, this, "_on_stream_params_changed");
+		if (Engine::get_singleton()->is_editor_hint()) {
+			if (_stream->has_script()) {
+				// Safety check. It's too easy to break threads by making a script reload.
+				// You can turn it back on, but be careful.
+				_run_stream_in_editor = false;
+				_change_notify();
+			}
+		}
 	}
+#endif
 
 	_on_stream_params_changed();
 }
 
 void VoxelLodTerrain::_on_stream_params_changed() {
-
 	stop_streamer();
 
-	bool was_updater_running = _block_updater != nullptr;
+	const bool was_updater_running = _block_updater != nullptr;
 	stop_updater();
 
 	Ref<VoxelStreamFile> file_stream = _stream;
 	if (file_stream.is_valid()) {
-
-		int stream_block_size_po2 = file_stream->get_block_size_po2();
+		const int stream_block_size_po2 = file_stream->get_block_size_po2();
 		_set_block_size_po2(stream_block_size_po2);
 
-		int stream_lod_count = file_stream->get_lod_count();
+		const int stream_lod_count = file_stream->get_lod_count();
 		_set_lod_count(min(stream_lod_count, get_lod_count()));
 	}
 
-	if (_stream.is_valid()) {
+	reset_maps();
+
+	if (_stream.is_valid() && (!Engine::get_singleton()->is_editor_hint() || _run_stream_in_editor)) {
 		start_streamer();
 	}
 	if (was_updater_running) {
@@ -168,7 +177,6 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 }
 
 void VoxelLodTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
-
 	ERR_FAIL_COND(p_block_size_po2 < 1);
 	ERR_FAIL_COND(p_block_size_po2 > 32);
 
@@ -182,20 +190,7 @@ void VoxelLodTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
 		return;
 	}
 
-	bool updater_was_running = _block_updater != nullptr;
-
-	stop_streamer();
-	stop_updater();
-
-	_set_block_size_po2(p_block_size_po2);
-	reset_maps();
-
-	if (_stream.is_valid()) {
-		start_streamer();
-	}
-	if (updater_was_running) {
-		start_updater();
-	}
+	_on_stream_params_changed();
 }
 
 void VoxelLodTerrain::_set_block_size_po2(int p_block_size_po2) {
@@ -240,10 +235,8 @@ int VoxelLodTerrain::get_view_distance() const {
 }
 
 void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
-
 	ERR_FAIL_COND(p_distance_in_voxels <= 0);
 	ERR_FAIL_COND(p_distance_in_voxels > 8192);
-
 	// Note: this is a hint distance, the terrain will attempt to have this radius filled with loaded voxels.
 	// It is possible for blocks to still load beyond that distance.
 	_view_distance_voxels = p_distance_in_voxels;
@@ -264,7 +257,6 @@ Spatial *VoxelLodTerrain::get_viewer() const {
 }
 
 void VoxelLodTerrain::start_updater() {
-
 	ERR_FAIL_COND(_block_updater != nullptr);
 
 	// TODO Thread-safe way to change those parameters
@@ -275,7 +267,6 @@ void VoxelLodTerrain::start_updater() {
 }
 
 void VoxelLodTerrain::stop_updater() {
-
 	struct ResetMeshStateAction {
 		void operator()(VoxelBlock *block) {
 			if (block->get_mesh_state() == VoxelBlock::MESH_UPDATE_SENT) {
@@ -292,7 +283,6 @@ void VoxelLodTerrain::stop_updater() {
 	_blocks_pending_main_thread_update.clear();
 
 	for (unsigned int i = 0; i < _lods.size(); ++i) {
-
 		Lod &lod = _lods[i];
 		lod.blocks_pending_update.clear();
 
@@ -304,7 +294,6 @@ void VoxelLodTerrain::stop_updater() {
 }
 
 void VoxelLodTerrain::start_streamer() {
-
 	ERR_FAIL_COND(_stream_thread != nullptr);
 	ERR_FAIL_COND(_stream.is_null());
 
@@ -312,7 +301,6 @@ void VoxelLodTerrain::start_streamer() {
 }
 
 void VoxelLodTerrain::stop_streamer() {
-
 	if (_stream_thread) {
 		memdelete(_stream_thread);
 		_stream_thread = nullptr;
@@ -325,7 +313,6 @@ void VoxelLodTerrain::stop_streamer() {
 }
 
 void VoxelLodTerrain::set_lod_split_scale(float p_lod_split_scale) {
-
 	if (p_lod_split_scale == _lod_split_scale) {
 		return;
 	}
@@ -333,7 +320,6 @@ void VoxelLodTerrain::set_lod_split_scale(float p_lod_split_scale) {
 	_lod_split_scale = CLAMP(p_lod_split_scale, VoxelConstants::MINIMUM_LOD_SPLIT_SCALE, VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE);
 
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
-
 		OctreeItem &item = E->value();
 		item.octree.set_split_scale(_lod_split_scale);
 
@@ -347,7 +333,6 @@ float VoxelLodTerrain::get_lod_split_scale() const {
 }
 
 void VoxelLodTerrain::set_lod_count(int p_lod_count) {
-
 	ERR_FAIL_COND(p_lod_count >= (int)VoxelConstants::MAX_LOD);
 	ERR_FAIL_COND(p_lod_count < 1);
 
@@ -357,7 +342,6 @@ void VoxelLodTerrain::set_lod_count(int p_lod_count) {
 }
 
 void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
-
 	CRASH_COND(p_lod_count >= (int)VoxelConstants::MAX_LOD);
 	CRASH_COND(p_lod_count < 1);
 
@@ -376,25 +360,31 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 void VoxelLodTerrain::reset_maps() {
 	// Clears all blocks and reconfigures maps to account for new LOD count and block sizes
 
-	for (int lod_index = 0; lod_index < (int)_lods.size(); ++lod_index) {
+	// Don't reset while streaming, the result can be dirty?
+	//CRASH_COND(_stream_thread != nullptr);
 
+	for (int lod_index = 0; lod_index < (int)_lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 
 		// Instance new maps if we have more lods, or clear them otherwise
 		if (lod_index < get_lod_count()) {
-
 			if (lod.map.is_null()) {
 				lod.map.instance();
 			}
 			lod.map->create(get_block_size_pow2(), lod_index);
 
-		} else {
+			lod.last_view_distance_blocks = 0;
 
+		} else {
 			if (lod.map.is_valid()) {
 				lod.map.unref();
 			}
 		}
 	}
+
+	// Reset previous state caches to force rebuilding the view area
+	_last_octree_region_box = Rect3i();
+	_lod_octrees.clear();
 }
 
 int VoxelLodTerrain::get_lod_count() const {
@@ -437,9 +427,7 @@ Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, int lod_index) co
 }
 
 void VoxelLodTerrain::_notification(int p_what) {
-
 	switch (p_what) {
-
 		case NOTIFICATION_ENTER_TREE:
 			if (_block_updater == nullptr) {
 				start_updater();
@@ -448,9 +436,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_PROCESS:
-			if (!Engine::get_singleton()->is_editor_hint()) {
-				_process();
-			}
+			_process();
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
@@ -496,9 +482,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 }
 
 void VoxelLodTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const {
-
 	if (Engine::get_singleton()->is_editor_hint()) {
-
 		// TODO Use editor's camera here
 		out_pos = Vector3();
 		out_direction = Vector3(0, -1, 0);
@@ -507,13 +491,11 @@ void VoxelLodTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &ou
 		// TODO Have option to use viewport camera
 		Spatial *viewer = get_viewer();
 		if (viewer) {
-
 			Transform gt = viewer->get_global_transform();
 			out_pos = gt.origin;
 			out_direction = -gt.basis.get_axis(Vector3::AXIS_Z);
 
 		} else {
-
 			// TODO Just remember last viewer pos
 			out_pos = (_lods[0].last_viewer_block_pos << _lods[0].map->get_block_size_pow2()).to_vec3();
 			out_direction = Vector3(0, -1, 0);
@@ -591,7 +573,6 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelBlock *block) {
 }
 
 void VoxelLodTerrain::send_block_data_requests() {
-
 	VoxelDataLoader::Input input;
 
 	Vector3 viewer_pos;
@@ -665,7 +646,7 @@ void VoxelLodTerrain::_process() {
 		// TODO Could it actually be enough to have a rolling update on all blocks?
 
 		// This should be the same distance relatively to each LOD
-		int block_region_extent = get_block_region_extent();
+		const int block_region_extent = get_block_region_extent();
 
 		// Ignore last lod because it can extend a little beyond due to the view distance setting.
 		// Instead, those blocks are unloaded by the octree forest management.
@@ -828,7 +809,6 @@ void VoxelLodTerrain::_process() {
 
 		// TODO Maintain a vector to make iteration faster?
 		for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
-
 			VOXEL_PROFILE_SCOPE(profile_process_update_octrees_item);
 
 			OctreeItem &item = E->value();
@@ -836,7 +816,6 @@ void VoxelLodTerrain::_process() {
 			Vector3i block_offset_lod0 = block_pos_maxlod << (get_lod_count() - 1);
 
 			struct OctreeActions {
-
 				VoxelLodTerrain *self = nullptr;
 				Vector3i block_offset_lod0;
 				unsigned int blocked_count = 0;
@@ -1076,12 +1055,10 @@ void VoxelLodTerrain::_process() {
 		input.exclusive_region_extent = get_block_region_extent();
 
 		for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
-
 			VOXEL_PROFILE_SCOPE(profile_process_send_mesh_updates_lod);
 			Lod &lod = _lods[lod_index];
 
 			for (unsigned int i = 0; i < lod.blocks_pending_update.size(); ++i) {
-
 				VOXEL_PROFILE_SCOPE(profile_process_send_mesh_updates_block);
 				Vector3i block_pos = lod.blocks_pending_update[i];
 
@@ -1140,7 +1117,6 @@ void VoxelLodTerrain::_process() {
 			_stats.updated_blocks = output.blocks.size();
 
 			for (int i = 0; i < output.blocks.size(); ++i) {
-
 				VOXEL_PROFILE_SCOPE(profile_process_receive_mesh_updates_block_schedule);
 				const VoxelMeshUpdater::OutputBlock &ob = output.blocks[i];
 
@@ -1162,7 +1138,6 @@ void VoxelLodTerrain::_process() {
 		// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
 
 		for (; queue_index < _blocks_pending_main_thread_update.size() && os.get_ticks_msec() < timeout; ++queue_index) {
-
 			VOXEL_PROFILE_SCOPE(profile_process_receive_mesh_updates_block_update);
 
 			const VoxelMeshUpdater::OutputBlock &ob = _blocks_pending_main_thread_update[queue_index];
@@ -1319,13 +1294,11 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 
 namespace {
 struct ScheduleSaveAction {
-
 	std::vector<VoxelDataLoader::InputBlock> &blocks_to_save;
 	std::vector<Ref<ShaderMaterial> > &shader_materials;
 	bool with_copy;
 
 	void operator()(VoxelBlock *block) {
-
 		Ref<ShaderMaterial> sm = block->get_shader_material();
 		if (sm.is_valid()) {
 			shader_materials.push_back(sm);
@@ -1524,6 +1497,32 @@ Dictionary VoxelLodTerrain::get_statistics() const {
 	return d;
 }
 
+void VoxelLodTerrain::set_run_stream_in_editor(bool enable) {
+	if (enable == _run_stream_in_editor) {
+		return;
+	}
+
+	_run_stream_in_editor = enable;
+
+	if (Engine::get_singleton()->is_editor_hint()) {
+		if (_run_stream_in_editor) {
+			_on_stream_params_changed();
+
+		} else {
+			// This is expected to block the main thread until the streaming thread is done.
+			stop_streamer();
+		}
+	}
+}
+
+bool VoxelLodTerrain::is_stream_running_in_editor() const {
+	return _run_stream_in_editor;
+}
+
+void VoxelLodTerrain::restart_stream() {
+	_on_stream_params_changed();
+}
+
 void VoxelLodTerrain::_b_save_modified_blocks() {
 	save_all_modified_blocks(true);
 }
@@ -1662,12 +1661,15 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelLodTerrain::get_voxel_tool);
 	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &VoxelLodTerrain::_b_save_modified_blocks);
 
+	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor"), &VoxelLodTerrain::set_run_stream_in_editor);
+	ClassDB::bind_method(D_METHOD("is_stream_running_in_editor"), &VoxelLodTerrain::is_stream_running_in_editor);
+
 	ClassDB::bind_method(D_METHOD("debug_raycast_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_block);
 	ClassDB::bind_method(D_METHOD("debug_get_block_info", "block_pos", "lod"), &VoxelLodTerrain::debug_get_block_info);
 	ClassDB::bind_method(D_METHOD("debug_get_octrees"), &VoxelLodTerrain::debug_get_octrees);
 	ClassDB::bind_method(D_METHOD("debug_print_sdf_top_down", "center", "extents"), &VoxelLodTerrain::_b_debug_print_sdf_top_down);
 
-	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
+	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
@@ -1677,4 +1679,6 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"), "set_material", "get_material");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"), "set_collision_lod_count", "get_collision_lod_count");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
+			"set_run_stream_in_editor", "is_stream_running_in_editor");
 }

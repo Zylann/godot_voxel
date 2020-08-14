@@ -7,6 +7,12 @@ VoxelDataLoader::VoxelDataLoader(unsigned int thread_count, Ref<VoxelStream> str
 	PRINT_VERBOSE("Constructing VoxelDataLoader");
 	CRASH_COND(stream.is_null());
 
+	if (Engine::get_singleton()->is_editor_hint()) {
+		// In the editor, we want extra safety.
+		// Duplicate all data so modifications done by the user won't impact running threads.
+		stream = stream->duplicate(true);
+	}
+
 	// TODO I'm not sure it's worth to configure more than one thread for voxel streams
 
 	FixedArray<Mgr::BlockProcessingFunc, Mgr::MAX_JOBS> processors;

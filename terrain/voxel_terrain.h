@@ -1,10 +1,9 @@
 #ifndef VOXEL_TERRAIN_H
 #define VOXEL_TERRAIN_H
 
-#include "../math/rect3i.h"
-#include "../math/vector3i.h"
 #include "../util/zprofiling.h"
 #include "voxel_data_loader.h"
+#include "voxel_map.h"
 #include "voxel_mesh_updater.h"
 
 #include <scene/3d/spatial.h>
@@ -54,6 +53,11 @@ public:
 
 	Ref<VoxelMap> get_storage() const { return _map; }
 	Ref<VoxelTool> get_voxel_tool();
+
+	void set_run_stream_in_editor(bool enable);
+	bool is_stream_running_in_editor() const;
+
+	void restart_stream();
 
 	struct Stats {
 		VoxelMeshUpdater::Stats updater;
@@ -135,7 +139,7 @@ private:
 	int _last_view_distance_blocks;
 
 	bool _generate_collisions = true;
-	bool _run_in_editor;
+	bool _run_stream_in_editor = true;
 
 	Ref<Material> _materials[VoxelMesherBlocky::MAX_MATERIALS];
 

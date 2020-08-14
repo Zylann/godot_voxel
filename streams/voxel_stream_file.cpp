@@ -74,8 +74,14 @@ Vector3 VoxelStreamFile::_get_block_size() const {
 	return Vector3i(1 << get_block_size_po2()).to_vec3();
 }
 
-void VoxelStreamFile::_bind_methods() {
+bool VoxelStreamFile::has_script() const {
+	if (_fallback_stream.is_valid()) {
+		return _fallback_stream->has_script();
+	}
+	return VoxelStream::has_script();
+}
 
+void VoxelStreamFile::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_save_fallback_output", "enabled"), &VoxelStreamFile::set_save_fallback_output);
 	ClassDB::bind_method(D_METHOD("get_save_fallback_output"), &VoxelStreamFile::get_save_fallback_output);
 

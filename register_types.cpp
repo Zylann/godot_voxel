@@ -3,6 +3,7 @@
 #include "edition/voxel_tool_terrain.h"
 #include "editor/editor_plugin.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
+#include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "generators/graph/voxel_generator_graph.h"
 #include "generators/graph/voxel_graph_node_db.h"
 #include "generators/voxel_generator_flat.h"
@@ -79,6 +80,7 @@ void register_voxel_types() {
 	VoxelDebug::create_debug_box_mesh();
 
 	EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
+	EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
 #endif
 }
 

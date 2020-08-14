@@ -77,6 +77,11 @@ public:
 
 	Dictionary get_statistics() const;
 
+	void set_run_stream_in_editor(bool enable);
+	bool is_stream_running_in_editor() const;
+
+	void restart_stream();
+
 	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
 	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
 	Array debug_get_octrees() const;
@@ -119,13 +124,14 @@ private:
 	void _b_save_modified_blocks();
 	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const;
 
+private:
 	struct OctreeItem {
 		LodOctree octree;
 	};
 
 	// This terrain type is a sparse grid of octrees.
-	// Indexed by a grid coordinate whose step is the size of the highest-LOD block
-	// This octree doesn't hold any data... hence bool.
+	// Indexed by a grid coordinate whose step is the size of the highest-LOD block.
+	// Not using a pointer because Map storage is stable.
 	Map<Vector3i, OctreeItem> _lod_octrees;
 	Rect3i _last_octree_region_box;
 
@@ -167,6 +173,8 @@ private:
 	int _lod_count = 0;
 	float _lod_split_scale = 0.f;
 	unsigned int _view_distance_voxels = 512;
+
+	bool _run_stream_in_editor = true;
 
 	Stats _stats;
 };

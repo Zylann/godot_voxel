@@ -340,6 +340,8 @@ Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 	d->_graph.copy_from(_graph, p_subresources);
 	// Program not copied, as it may contain pointers to the resources we are duplicating
 
+	d->compile();
+
 	return d;
 }
 
@@ -590,7 +592,6 @@ bool VoxelGeneratorGraph::_set(const StringName &p_name, const Variant &p_value)
 }
 
 bool VoxelGeneratorGraph::_get(const StringName &p_name, Variant &r_ret) const {
-
 	const String name = p_name;
 
 	struct L {
@@ -637,7 +638,6 @@ bool VoxelGeneratorGraph::_get(const StringName &p_name, Variant &r_ret) const {
 }
 
 void VoxelGeneratorGraph::_get_property_list(List<PropertyInfo> *p_list) const {
-
 	p_list->push_back(PropertyInfo(Variant::INT, "bounds/type", PROPERTY_HINT_ENUM, "None,Vertical,Box"));
 
 	switch (_bounds.type) {

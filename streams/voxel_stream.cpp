@@ -1,5 +1,6 @@
 #include "voxel_stream.h"
 #include "../voxel_string_names.h"
+#include <core/script_language.h>
 
 VoxelStream::VoxelStream() {
 }
@@ -61,6 +62,11 @@ int VoxelStream::_get_used_channels_mask() const {
 
 VoxelStream::Stats VoxelStream::get_statistics() const {
 	return _stats;
+}
+
+bool VoxelStream::has_script() const {
+	Ref<Script> s = get_script();
+	return s.is_valid();
 }
 
 void VoxelStream::_bind_methods() {

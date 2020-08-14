@@ -744,6 +744,10 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 }
 
 Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
+#ifdef TOOLS_ENABLED
+	ERR_FAIL_COND_V_MSG(_sdf_output_address == -1, Interval(), "The graph has no SDF output");
+#endif
+
 	ArraySlice<float> min_memory(_memory, 0, _memory.size() / 2);
 	ArraySlice<float> max_memory(_memory, _memory.size() / 2, _memory.size());
 	min_memory[0] = min_pos.x;
@@ -755,7 +759,6 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 
 	uint32_t pc = 0;
 	while (pc < _program.size()) {
-
 		const uint8_t opid = _program[pc++];
 
 		switch (opid) {

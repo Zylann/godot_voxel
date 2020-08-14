@@ -27,8 +27,6 @@ VoxelTerrain::VoxelTerrain() {
 	_stream_thread = nullptr;
 	_block_updater = nullptr;
 
-	_run_in_editor = false;
-
 	Ref<VoxelLibrary> library;
 	library.instance();
 	set_voxel_library(library);
@@ -53,11 +51,18 @@ VoxelTerrain::~VoxelTerrain() {
 String VoxelTerrain::get_configuration_warning() const {
 	if (_stream.is_valid()) {
 		Ref<Script> script = _stream->get_script();
-		if (script.is_valid() && !script->is_tool()) {
-			return TTR("The custom stream is not tool, the editor won't be able to use it.");
+		if (script.is_valid()) {
+			if (script->is_tool()) {
+				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this properly?
+				return TTR("Be careful! Don't edit your custom stream while it's running, "
+						   "it can cause crashes. Turn off `run_stream_in_editor` before doing so.");
+			} else {
+				return TTR("The custom stream is not tool, the editor won't be able to use it.");
+			}
 		}
 		if (!(_stream->get_used_channels_mask() & ((1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_SDF)))) {
-			return TTR("VoxelTerrain supports only stream channels \"Type\" or \"Sdf\".");
+			return TTR("VoxelTerrain supports only stream channels \"Type\" or \"Sdf\", "
+					   "but `get_used_channels_mask()` tells it's providing none of these.");
 		}
 	}
 	return String();
@@ -98,17 +103,20 @@ void VoxelTerrain::set_stream(Ref<VoxelStream> p_stream) {
 		return;
 	}
 
-	if (_stream.is_valid()) {
-		if (_stream->is_connected(CoreStringNames::get_singleton()->changed, this, "_on_stream_params_changed")) {
-			_stream->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_stream_params_changed");
-		}
-	}
-
 	_stream = p_stream;
 
+#ifdef TOOLS_ENABLED
 	if (_stream.is_valid()) {
-		_stream->connect(CoreStringNames::get_singleton()->changed, this, "_on_stream_params_changed");
+		if (Engine::get_singleton()->is_editor_hint()) {
+			if (_stream->has_script()) {
+				// Safety check. It's too easy to break threads by making a script reload.
+				// You can turn it back on, but be careful.
+				_run_stream_in_editor = false;
+				_change_notify();
+			}
+		}
 	}
+#endif
 
 	_on_stream_params_changed();
 }
@@ -131,20 +139,7 @@ void VoxelTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
 		return;
 	}
 
-	bool updater_was_running = _block_updater != nullptr;
-
-	stop_streamer();
-	stop_updater();
-
-	reset_map();
-	_set_block_size_po2(p_block_size_po2);
-
-	if (_stream.is_valid()) {
-		start_streamer();
-	}
-	if (updater_was_running) {
-		start_updater();
-	}
+	_on_stream_params_changed();
 }
 
 void VoxelTerrain::_set_block_size_po2(int p_block_size_po2) {
@@ -155,6 +150,10 @@ unsigned int VoxelTerrain::get_block_size_pow2() const {
 	return _map->get_block_size_pow2();
 }
 
+void VoxelTerrain::restart_stream() {
+	_on_stream_params_changed();
+}
+
 void VoxelTerrain::_on_stream_params_changed() {
 	stop_streamer();
 
@@ -163,12 +162,14 @@ void VoxelTerrain::_on_stream_params_changed() {
 
 	Ref<VoxelStreamFile> file_stream = _stream;
 	if (file_stream.is_valid()) {
-
 		int stream_block_size_po2 = file_stream->get_block_size_po2();
 		_set_block_size_po2(stream_block_size_po2);
 	}
 
-	if (_stream.is_valid()) {
+	// The whole map might change, so regenerate it
+	reset_map();
+
+	if (_stream.is_valid() && (!Engine::get_singleton()->is_editor_hint() || _run_stream_in_editor)) {
 		start_streamer();
 	}
 	if (was_updater_running) {
@@ -176,10 +177,6 @@ void VoxelTerrain::_on_stream_params_changed() {
 	}
 
 	update_configuration_warning();
-
-	// The whole map might change, so make all area dirty
-	// TODO Actually, we should regenerate the whole map, not just update all its blocks
-	make_all_view_dirty_deferred();
 }
 
 Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
@@ -370,6 +367,7 @@ Dictionary VoxelTerrain::get_statistics() const {
 //}
 
 void VoxelTerrain::make_all_view_dirty_deferred() {
+	// We do this because we query blocks only when the viewer area changes.
 	// This trick will regenerate all chunks in view, according to the view distance found during block updates.
 	// The point of doing this instead of immediately scheduling updates is that it will
 	// always use an up-to-date view distance, which is not necessarily loaded yet on initialization.
@@ -439,10 +437,16 @@ void VoxelTerrain::stop_streamer() {
 }
 
 void VoxelTerrain::reset_map() {
+	// Don't reset while streaming, the result can be dirty
+	CRASH_COND(_stream_thread != nullptr);
+
 	_map->for_all_blocks([this](VoxelBlock *block) {
 		emit_block_unloaded(block);
 	});
 	_map->create(get_block_size_pow2(), 0);
+
+	// To force queries to happen again, because we only listen for viewer position changes
+	make_all_view_dirty_deferred();
 }
 
 inline int get_border_index(int x, int max) {
@@ -639,9 +643,7 @@ void VoxelTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_PROCESS:
-			if (!Engine::get_singleton()->is_editor_hint() || _run_in_editor) {
-				_process();
-			}
+			_process();
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
@@ -806,7 +808,7 @@ void VoxelTerrain::_process() {
 	_last_view_distance_blocks = _view_distance_blocks;
 	_last_viewer_block_pos = viewer_block_pos;
 
-	// It's possible the user didn't set a stream yet
+	// It's possible the user didn't set a stream yet, or it is turned off
 	if (_stream_thread != nullptr) {
 		send_block_data_requests();
 	}
@@ -1097,6 +1099,28 @@ Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
 	return vt;
 }
 
+void VoxelTerrain::set_run_stream_in_editor(bool enable) {
+	if (enable == _run_stream_in_editor) {
+		return;
+	}
+
+	_run_stream_in_editor = enable;
+
+	if (Engine::get_singleton()->is_editor_hint()) {
+		if (_run_stream_in_editor) {
+			_on_stream_params_changed();
+
+		} else {
+			// This is expected to block the main thread until the streaming thread is done.
+			stop_streamer();
+		}
+	}
+}
+
+bool VoxelTerrain::is_stream_running_in_editor() const {
+	return _run_stream_in_editor;
+}
+
 Vector3 VoxelTerrain::_b_voxel_to_block(Vector3 pos) {
 	return Vector3i(_map->voxel_to_block(pos)).to_vec3();
 }
@@ -1153,7 +1177,10 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &VoxelTerrain::_b_save_modified_blocks);
 	ClassDB::bind_method(D_METHOD("save_block"), &VoxelTerrain::_b_save_block);
 
-	ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelTerrain::_on_stream_params_changed);
+	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor"), &VoxelTerrain::set_run_stream_in_editor);
+	ClassDB::bind_method(D_METHOD("is_stream_running_in_editor"), &VoxelTerrain::is_stream_running_in_editor);
+
+	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelTerrain::_on_stream_params_changed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"),
 			"set_stream", "get_stream");
@@ -1163,6 +1190,8 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"),
 			"set_generate_collisions", "get_generate_collisions");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
+			"set_run_stream_in_editor", "is_stream_running_in_editor");
 
 	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton()->block_loaded,
 			PropertyInfo(Variant::VECTOR3, "position"),
