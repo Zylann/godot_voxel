@@ -15,7 +15,11 @@ public:
 	void make_visible(bool visible) override;
 
 private:
+	void set_node(Node *node);
+
 	void _on_restart_stream_button_pressed();
+	void _on_terrain_tree_entered(Node *node);
+	void _on_terrain_tree_exited(Node *node);
 
 	static void _bind_methods();
 

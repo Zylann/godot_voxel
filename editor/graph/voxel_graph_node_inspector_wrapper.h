@@ -1,10 +1,8 @@
 #ifndef VOXEL_GRAPH_NODE_INSPECTOR_WRAPPER_H
 #define VOXEL_GRAPH_NODE_INSPECTOR_WRAPPER_H
 
-#include "../../generators/graph/program_graph.h"
+#include "../../generators/graph/voxel_generator_graph.h"
 #include <core/reference.h>
-
-class VoxelGeneratorGraph;
 
 // Nodes aren't resources so this translates them into a form the inspector can understand.
 // This makes it easier to support undo/redo and sub-resources.
