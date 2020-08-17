@@ -32,9 +32,30 @@ What This Module Doesn't Provide
 How To Install And Use
 -------------------------
 
-Voxel Tools is a custom C++ module for Godot 3.1+. It must be compiled into the engine to work. [Prebuilt binaries](http://tokisan.com/godot-binaries) are available.
+Voxel Tools is a custom C++ module for Godot 3.1+. It must be compiled into the engine to work.
 
-Please see the [Getting Started Guide](doc/01_get-started.md) for instructions, or [Zylann's demos](https://github.com/Zylann/voxelgame) and [TinmanJuggernaut's demo](https://github.com/tinmanjuggernaut/voxelgame) for working examples.
+### Prebuilt binaries
+
+Ready-to-use versions of Godot including the module exist, though they might not be 100% up to date.
+
+- Tokisan Games
+    - [Tokisan Games binaries](http://tokisan.com/godot-binaries)
+
+- Zylann
+    - Godot 3.2.2 editor for Windows 64 bits (TBD)
+
+
+### Compiling
+
+Compiling yourself is the best way to get the very last version.
+Please see the [Getting Started Guide](doc/01_get-started.md) for instructions.
+
+
+### Examples
+
+- Documentation: [Getting Started Guide](doc/01_get-started.md)
+- Zylann's demos: [Zylann's demos](https://github.com/Zylann/voxelgame)
+- TinmanJuggernaut's demos: [TinmanJuggernaut's demo](https://github.com/tinmanjuggernaut/voxelgame)
 
 
 Roadmap
@@ -42,7 +63,8 @@ Roadmap
 
 These are some ideas that may or may not be implemented in the future:
 
-* LOD (in development)
-* Support general voxel use (not just terrains)
+* Texturing on smooth terrain
+* Editor preview and authoring
+* Improving LOD performance
 * Other meshing algorithms (e.g. dual contouring)
-* GPU Offloading (Maybe when Godot 4+ supports compute shaders)
+* GPU offloading (Maybe when Godot 4+ supports compute shaders)
