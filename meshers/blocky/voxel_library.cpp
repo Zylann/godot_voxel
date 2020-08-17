@@ -196,6 +196,8 @@ void VoxelLibrary::generate_side_culling_matrix() {
 	std::vector<Pattern> patterns;
 	uint32_t full_side_pattern_index = NULL_INDEX;
 
+	CRASH_COND(_voxel_types.size() != _baked_data.models.size());
+
 	// Gather patterns
 	for (uint16_t type_id = 0; type_id < _voxel_types.size(); ++type_id) {
 		if (_voxel_types[type_id].is_null()) {

@@ -120,10 +120,11 @@ VoxelBuffer::~VoxelBuffer() {
 }
 
 void VoxelBuffer::create(int sx, int sy, int sz) {
-	if (sx <= 0 || sy <= 0 || sz <= 0) {
-		return;
-	}
+	ERR_FAIL_COND(sx <= 0 || sy <= 0 || sz <= 0);
+	ERR_FAIL_COND(sx > MAX_SIZE || sy > MAX_SIZE || sz > MAX_SIZE);
+
 	clear_voxel_metadata();
+
 	Vector3i new_size(sx, sy, sz);
 	if (new_size != _size) {
 		for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
