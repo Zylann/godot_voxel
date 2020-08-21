@@ -208,7 +208,7 @@ Although this format is currently implemented and usable, it has known issues.
 Godot's `encode_variant` doesn't seem to care about endianess across architectures, so it's possible it becomes a problem in the future and gets changed to a custom format.
 The rest of this spec is not affected by this and assumes we use little-endian, however the implementation of block channels currently doesn't consider this either. This may be refined in a later iteration.
 
-### Versionning
+### Versioning
 
 The region format should be thought of a container for instances of the block format. The former has a version number, but the latter doesn't, which is hard to manage. We may introduce separate versionning, which will cause older saves to become incompatible.
 
