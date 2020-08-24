@@ -47,7 +47,7 @@ Ready-to-use versions of Godot including the module exist, though they might not
 
 ### Compiling
 
-Compiling yourself is the best way to get the very last version.
+Compiling the source yourself is the best way to get the very latest version.
 Please see the [Getting Started Guide](doc/01_get-started.md) for instructions.
 
 
