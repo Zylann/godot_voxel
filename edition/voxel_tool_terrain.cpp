@@ -21,6 +21,7 @@ bool VoxelToolTerrain::is_area_editable(const Rect3i &box) const {
 
 Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
 	// TODO Transform input if the terrain is rotated (in the future it can be made a Spatial node)
+	// TODO Optimize using a broad phase on blocks
 
 	struct RaycastPredicate {
 		const VoxelTerrain &terrain;
