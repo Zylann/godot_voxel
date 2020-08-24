@@ -265,6 +265,8 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance", "collision_mask"),
 			&VoxelTool::_b_raycast, DEFVAL(10.0), DEFVAL(0xffffffff));
 
+	ClassDB::bind_method(D_METHOD("is_area_editable", "box"), &VoxelTool::_b_is_area_editable);
+
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "value"), "set_value", "get_value");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "eraser_value"), "set_eraser_value", "get_eraser_value");
