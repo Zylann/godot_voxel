@@ -163,6 +163,7 @@ private:
 	bool _meta_loaded = false;
 	bool _meta_saved = false;
 	std::vector<CachedRegion *> _region_cache;
+	// TODO Add memory caches to increase capacity.
 	unsigned int _max_open_regions = MIN(8, FOPEN_MAX);
 };
 

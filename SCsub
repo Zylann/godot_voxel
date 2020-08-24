@@ -16,6 +16,7 @@ files = [
 	"generators/graph/*.cpp",
 	"util/*.cpp",
 	"terrain/*.cpp",
+	"server/*.cpp",
 	"math/*.cpp",
 	"edition/*.cpp",
 	"editor/graph/*.cpp",
