@@ -5,6 +5,7 @@
 #include "../streams/voxel_stream.h"
 #include "struct_db.h"
 #include "voxel_thread_pool.h"
+#include <scene/main/node.h>
 
 #include <memory>
 
@@ -27,15 +28,15 @@ public:
 
 	struct BlockDataOutput {
 		enum Type {
-			TYPE_LOADED, // Contains loaded voxels
-			TYPE_SAVED, // Indicates a block was saved
-			TYPE_DROPPED // Indicates a block request was cancelled
+			TYPE_LOAD,
+			TYPE_SAVE
 		};
 
 		Type type;
 		Ref<VoxelBuffer> voxels;
 		Vector3i position;
 		uint8_t lod;
+		bool dropped;
 	};
 
 	struct ReceptionBuffers {
@@ -44,8 +45,8 @@ public:
 	};
 
 	static VoxelServer *get_singleton();
-	static void create();
-	static void destroy();
+	static void create_singleton();
+	static void destroy_singleton();
 
 	VoxelServer();
 	~VoxelServer();
@@ -54,6 +55,8 @@ public:
 	void set_volume_transform(uint32_t volume_id, Transform t);
 	void set_volume_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
+	void set_volume_voxel_library(uint32_t volume_id, Ref<VoxelLibrary> library);
+	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod);
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod);
 	void request_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod);
@@ -63,6 +66,10 @@ public:
 	void set_viewer_position(uint32_t viewer_id, Vector3 position);
 	void set_viewer_region_extents(uint32_t viewer_id, Vector3 extents);
 	void remove_viewer(uint32_t viewer_id);
+
+	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
+	void get_min_max_block_padding(
+			uint32_t volume_id, unsigned int &out_min_padding, unsigned int &out_max_padding) const;
 
 	void process();
 
@@ -79,8 +86,15 @@ private:
 	//   If such data sets change structurally (like their size, or other non-dirty-readable fields),
 	//   then a new instance is created and old references are left to "die out".
 
+	// Data common to all requests about a particular volume
 	struct StreamingDependency {
 		FixedArray<Ref<VoxelStream>, VoxelThreadPool::MAX_THREADS> streams;
+		bool valid = true;
+	};
+
+	// Data common to all requests about a particular volume
+	struct MeshingDependency {
+		Ref<VoxelLibrary> library;
 		bool valid = true;
 	};
 
@@ -89,8 +103,9 @@ private:
 		Transform transform;
 		Ref<VoxelStream> stream;
 		Ref<VoxelLibrary> voxel_library;
+		uint32_t block_size = 16;
 		std::shared_ptr<StreamingDependency> stream_dependency;
-		uint32_t block_size;
+		std::shared_ptr<MeshingDependency> meshing_dependency;
 	};
 
 	struct Viewer {
@@ -158,7 +173,7 @@ private:
 		bool blocky_enabled;
 		bool has_run = false;
 		BlockRequestPriorityDependency priority_dependency;
-		Ref<VoxelLibrary> library;
+		std::shared_ptr<MeshingDependency> meshing_dependency;
 		VoxelMesher::Output blocky_surfaces_output;
 		VoxelMesher::Output smooth_surfaces_output;
 	};
@@ -176,6 +191,25 @@ private:
 	// Options such as library etc can change per task.
 	FixedArray<Ref<VoxelMesherBlocky>, VoxelThreadPool::MAX_THREADS> _blocky_meshers;
 	FixedArray<Ref<VoxelMesher>, VoxelThreadPool::MAX_THREADS> _smooth_meshers;
+};
+
+// TODO Hack to make VoxelServer update... need ways to integrate callbacks from main loop!
+class VoxelServerUpdater : public Node {
+	GDCLASS(VoxelServerUpdater, Node)
+public:
+	static void ensure_existence(SceneTree *st);
+
+protected:
+	void _notification(int p_what) {
+		if (p_what == NOTIFICATION_PROCESS) {
+			VoxelServer::get_singleton()->process();
+		}
+	}
+
+private:
+	VoxelServerUpdater() {
+		set_process(true);
+	}
 };
 
 #endif // VOXEL_SERVER_H

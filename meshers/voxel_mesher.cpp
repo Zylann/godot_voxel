@@ -40,11 +40,11 @@ void VoxelMesher::build(Output &output, const Input &input) {
 	ERR_PRINT("Not implemented");
 }
 
-int VoxelMesher::get_minimum_padding() const {
+unsigned int VoxelMesher::get_minimum_padding() const {
 	return _minimum_padding;
 }
 
-int VoxelMesher::get_maximum_padding() const {
+unsigned int VoxelMesher::get_maximum_padding() const {
 	return _maximum_padding;
 }
 

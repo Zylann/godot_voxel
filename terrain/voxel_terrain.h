@@ -1,6 +1,7 @@
 #ifndef VOXEL_TERRAIN_H
 #define VOXEL_TERRAIN_H
 
+#include "../server/voxel_server.h"
 #include "../util/zprofiling.h"
 #include "voxel_data_loader.h"
 #include "voxel_map.h"
@@ -45,6 +46,7 @@ public:
 	int get_view_distance() const;
 	void set_view_distance(int distance_in_voxels);
 
+	// TODO Make this obsolete with multi-viewers
 	void set_viewer_path(NodePath path);
 	NodePath get_viewer_path() const;
 
@@ -112,6 +114,9 @@ private:
 	void _b_save_modified_blocks();
 	void _b_save_block(Vector3 p_block_pos);
 
+	uint32_t _volume_id = 0;
+	VoxelServer::ReceptionBuffers _reception_buffers;
+
 	// Voxel storage
 	Ref<VoxelMap> _map;
 
@@ -124,15 +129,12 @@ private:
 	Set<Vector3i> _loading_blocks;
 	Vector<Vector3i> _blocks_pending_load;
 	Vector<Vector3i> _blocks_pending_update;
-	Vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
 
 	std::vector<VoxelDataLoader::InputBlock> _blocks_to_save;
 
 	Ref<VoxelStream> _stream;
-	VoxelDataLoader *_stream_thread;
 
 	Ref<VoxelLibrary> _library;
-	VoxelMeshUpdater *_block_updater;
 
 	NodePath _viewer_path;
 	Vector3i _last_viewer_block_pos;

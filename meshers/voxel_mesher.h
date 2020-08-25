@@ -26,8 +26,8 @@ public:
 
 	// Get how many neighbor voxels need to be accessed around the meshed area.
 	// If this is not respected, the mesher might produce seams at the edges, or an error
-	int get_minimum_padding() const;
-	int get_maximum_padding() const;
+	unsigned int get_minimum_padding() const;
+	unsigned int get_maximum_padding() const;
 
 	// TODO Rename duplicate()
 	// Must be cloneable so can be duplicated for use by more than one thread
@@ -41,8 +41,8 @@ protected:
 	void set_padding(int minimum, int maximum);
 
 private:
-	int _minimum_padding = 0;
-	int _maximum_padding = 0;
+	unsigned int _minimum_padding = 0;
+	unsigned int _maximum_padding = 0;
 };
 
 #endif // VOXEL_MESHER_H

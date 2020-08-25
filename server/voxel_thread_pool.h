@@ -59,6 +59,7 @@ public:
 	// Schedules a task.
 	// Ownership is NOT passed to the pool, so make sure you get them back when completed if you want to delete them.
 	void enqueue(IVoxelTask *task);
+	void enqueue(ArraySlice<IVoxelTask *> tasks);
 
 	template <typename F>
 	void dequeue_completed_tasks(F f) {

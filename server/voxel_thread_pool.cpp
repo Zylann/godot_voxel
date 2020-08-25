@@ -77,6 +77,21 @@ void VoxelThreadPool::enqueue(IVoxelTask *task) {
 	_tasks_semaphore->post();
 }
 
+void VoxelThreadPool::enqueue(ArraySlice<IVoxelTask *> tasks) {
+	{
+		MutexLock lock(_tasks_mutex);
+		for (size_t i = 0; i < tasks.size(); ++i) {
+			TaskItem t;
+			t.task = tasks[i];
+			_tasks.push_back(t);
+		}
+	}
+	// TODO Do I need to post a certain amount of times?
+	for (size_t i = 0; i < tasks.size(); ++i) {
+		_tasks_semaphore->post();
+	}
+}
+
 void VoxelThreadPool::thread_func_static(void *p_data) {
 	ThreadData &data = *static_cast<ThreadData *>(p_data);
 	VoxelThreadPool &pool = *data.pool;
@@ -107,6 +122,9 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 					if (now - item.last_priority_update_time > _priority_update_period) {
 						if (item.task->is_cancelled()) {
 							cancelled_tasks.push_back(item.task);
+							_tasks[i] = _tasks.back();
+							_tasks.pop_back();
+							--i;
 							continue;
 
 						} else {
@@ -134,6 +152,8 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 			cancelled_tasks.clear();
 		}
 
+		//print_line(String("Processing {0} tasks").format(varray(tasks.size())));
+
 		if (tasks.empty()) {
 			data.debug_state = STATE_WAITNG;
 
@@ -160,6 +180,8 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 					_completed_tasks.push_back(item.task);
 				}
 			}
+
+			tasks.clear();
 		}
 	}
 

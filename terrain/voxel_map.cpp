@@ -176,6 +176,7 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 	Vector3i min_block_pos = voxel_to_block(min_pos);
 	Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1, 1, 1)) + Vector3i(1, 1, 1);
 	// TODO Why is this function limited by this check?
+	// Probably to make sure we are getting neighbors, however that's a worry for the caller, not this function...
 	ERR_FAIL_COND((max_block_pos - min_block_pos) != Vector3i(3, 3, 3));
 
 	const Vector3i block_size_v(_block_size, _block_size, _block_size);

@@ -6,6 +6,7 @@
 
 class VoxelBuffer;
 
+// TODO Rename VoxelStreamBlockRequest
 struct VoxelBlockRequest {
 	Ref<VoxelBuffer> voxel_buffer;
 	Vector3i origin_in_voxels;

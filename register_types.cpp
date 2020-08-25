@@ -31,6 +31,7 @@ void register_voxel_types() {
 	VoxelMemoryPool::create_singleton();
 	VoxelStringNames::create_singleton();
 	VoxelGraphNodeDB::create_singleton();
+	VoxelServer::create_singleton();
 
 	// Storage
 	ClassDB::register_class<VoxelBuffer>();
@@ -85,14 +86,18 @@ void register_voxel_types() {
 }
 
 void unregister_voxel_types() {
-	unsigned int used_blocks = VoxelMemoryPool::get_singleton()->debug_get_used_blocks();
-	if (used_blocks > 0) {
-		ERR_PRINT(String("VoxelMemoryPool: {0} memory blocks are still used when unregistering the module. Recycling leak?").format(varray(used_blocks)));
-	}
-
-	VoxelMemoryPool::destroy_singleton();
 	VoxelStringNames::destroy_singleton();
 	VoxelGraphNodeDB::destroy_singleton();
+	VoxelServer::destroy_singleton();
+
+	// Do this last as VoxelServer might still be holding some refs to voxel blocks
+	unsigned int used_blocks = VoxelMemoryPool::get_singleton()->debug_get_used_blocks();
+	if (used_blocks > 0) {
+		ERR_PRINT(String("VoxelMemoryPool: "
+						 "{0} memory blocks are still used when unregistering the module. Recycling leak?")
+						  .format(varray(used_blocks)));
+	}
+	VoxelMemoryPool::destroy_singleton();
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::free_debug_box_mesh();

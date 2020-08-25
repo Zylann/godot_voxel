@@ -1,5 +1,6 @@
 #include "voxel_terrain.h"
 #include "../edition/voxel_tool_terrain.h"
+#include "../server/voxel_server.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/macros.h"
 #include "../util/profiling_clock.h"
@@ -19,13 +20,12 @@ VoxelTerrain::VoxelTerrain() {
 	// Godot may create and destroy dozens of instances of all node types on startup,
 	// due to how ClassDB gets its default values.
 
+	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers);
+
 	_map.instance();
 
 	_view_distance_blocks = 8;
 	_last_view_distance_blocks = 0;
-
-	_stream_thread = nullptr;
-	_block_updater = nullptr;
 
 	Ref<VoxelLibrary> library;
 	library.instance();
@@ -35,17 +35,11 @@ VoxelTerrain::VoxelTerrain() {
 VoxelTerrain::~VoxelTerrain() {
 	PRINT_VERBOSE("Destroying VoxelTerrain");
 
-	if (_stream_thread != nullptr) {
-		// Schedule saving of all modified blocks,
-		// without copy because we are destroying the map anyways
-		save_all_modified_blocks(false);
+	// Schedule saving of all modified blocks,
+	// without copy because we are destroying the map anyways
+	save_all_modified_blocks(false);
 
-		memdelete(_stream_thread);
-	}
-
-	if (_block_updater) {
-		memdelete(_block_updater);
-	}
+	VoxelServer::get_singleton()->remove_volume(_volume_id);
 }
 
 String VoxelTerrain::get_configuration_warning() const {
@@ -156,8 +150,6 @@ void VoxelTerrain::restart_stream() {
 
 void VoxelTerrain::_on_stream_params_changed() {
 	stop_streamer();
-
-	bool was_updater_running = _block_updater != nullptr;
 	stop_updater();
 
 	Ref<VoxelStreamFile> file_stream = _stream;
@@ -166,13 +158,13 @@ void VoxelTerrain::_on_stream_params_changed() {
 		_set_block_size_po2(stream_block_size_po2);
 	}
 
+	VoxelServer::get_singleton()->set_volume_block_size(_volume_id, 1 << get_block_size_pow2());
+
 	// The whole map might change, so regenerate it
 	reset_map();
 
-	if (_stream.is_valid() && (!Engine::get_singleton()->is_editor_hint() || _run_stream_in_editor)) {
+	if (_stream.is_valid() && (Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
 		start_streamer();
-	}
-	if (was_updater_running) {
 		start_updater();
 	}
 
@@ -196,13 +188,8 @@ void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
 
 	_library = library;
 
-	const bool updater_was_running = _block_updater != nullptr;
-
 	stop_updater();
-
-	if (updater_was_running) {
-		start_updater();
-	}
+	start_updater();
 
 	// Voxel appearance might completely change
 	make_all_view_dirty_deferred();
@@ -324,11 +311,8 @@ void VoxelTerrain::immerge_block(Vector3i bpos) {
 }
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
-	ERR_FAIL_COND(_stream_thread == nullptr);
-
 	// That may cause a stutter, so should be used when the player won't notice
 	_map->for_all_blocks(ScheduleSaveAction{ _blocks_to_save, with_copy });
-
 	// And flush immediately
 	send_block_data_requests();
 }
@@ -346,7 +330,7 @@ Dictionary VoxelTerrain::get_statistics() const {
 	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
 	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
-	d["remaining_main_thread_blocks"] = (int)_blocks_pending_main_thread_update.size();
+	d["remaining_main_thread_blocks"] = (int)_reception_buffers.mesh_output.size();
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;
@@ -378,25 +362,13 @@ void VoxelTerrain::make_all_view_dirty_deferred() {
 }
 
 void VoxelTerrain::start_updater() {
-	// The meshing thread must be stopped
-	ERR_FAIL_COND(_block_updater != nullptr);
-
 	if (_library.is_valid()) {
 		// TODO Any way to execute this function just after the TRES resource loader has finished to load?
 		// VoxelLibrary should be baked ahead of time, like MeshLibrary
 		_library->bake();
 	}
 
-	// TODO Thread-safe way to change those parameters
-	VoxelMeshUpdater::MeshingParams params;
-
-	if (_stream.is_valid()) {
-		params.smooth_surface = _stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
-	}
-
-	params.library = _library;
-
-	_block_updater = memnew(VoxelMeshUpdater(1, params));
+	VoxelServer::get_singleton()->set_volume_voxel_library(_volume_id, _library);
 }
 
 void VoxelTerrain::stop_updater() {
@@ -408,12 +380,10 @@ void VoxelTerrain::stop_updater() {
 		}
 	};
 
-	if (_block_updater) {
-		memdelete(_block_updater);
-		_block_updater = nullptr;
-	}
+	VoxelServer::get_singleton()->invalidate_volume_mesh_requests(_volume_id);
+	VoxelServer::get_singleton()->set_volume_voxel_library(_volume_id, Ref<VoxelLibrary>());
 
-	_blocks_pending_main_thread_update.clear();
+	_reception_buffers.mesh_output.clear();
 	_blocks_pending_update.clear();
 
 	ResetMeshStateAction a;
@@ -421,25 +391,17 @@ void VoxelTerrain::stop_updater() {
 }
 
 void VoxelTerrain::start_streamer() {
-	ERR_FAIL_COND(_stream_thread != nullptr);
-	ERR_FAIL_COND(_stream.is_null());
-
-	_stream_thread = memnew(VoxelDataLoader(1, _stream, get_block_size_pow2()));
+	VoxelServer::get_singleton()->set_volume_stream(_volume_id, _stream);
 }
 
 void VoxelTerrain::stop_streamer() {
-	if (_stream_thread) {
-		memdelete(_stream_thread);
-		_stream_thread = nullptr;
-	}
+	VoxelServer::get_singleton()->set_volume_stream(_volume_id, Ref<VoxelStream>());
 	_loading_blocks.clear();
 	_blocks_pending_load.clear();
+	_reception_buffers.data_output.clear();
 }
 
 void VoxelTerrain::reset_map() {
-	// Don't reset while streaming, the result can be dirty
-	CRASH_COND(_stream_thread != nullptr);
-
 	_map->for_all_blocks([this](VoxelBlock *block) {
 		emit_block_unloaded(block);
 	});
@@ -636,13 +598,15 @@ void VoxelTerrain::_notification(int p_what) {
 	switch (p_what) {
 
 		case NOTIFICATION_ENTER_TREE:
-			if (_block_updater == nullptr) {
-				start_updater();
-			}
 			set_process(true);
 			break;
 
 		case NOTIFICATION_PROCESS:
+			// Can't do that in enter tree because Godot is "still setting up children".
+			// Can't do that in ready either because Godot says node state is locked.
+			// This hack is really getting miserable.
+			VoxelServerUpdater::ensure_existence(get_tree());
+
 			_process();
 			break;
 
@@ -712,31 +676,24 @@ void VoxelTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_d
 }
 
 void VoxelTerrain::send_block_data_requests() {
-	ERR_FAIL_COND(_stream_thread == nullptr);
-
-	VoxelDataLoader::Input input;
-
-	Vector3 viewer_pos;
-	get_viewer_pos_and_direction(viewer_pos, input.priority_direction);
-	input.priority_position = _map->voxel_to_block(Vector3i(viewer_pos));
-
+	// Blocks to load
 	for (int i = 0; i < _blocks_pending_load.size(); ++i) {
-		VoxelDataLoader::InputBlock input_block;
-		input_block.position = _blocks_pending_load[i];
-		input_block.lod = 0;
-		input.blocks.push_back(input_block);
+		const Vector3i block_pos = _blocks_pending_load[i];
+		// TODO Batch request
+		VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, 0);
 	}
 
+	// Blocks to save
 	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
 		PRINT_VERBOSE(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position.to_vec3())));
-		input.blocks.push_back(_blocks_to_save[i]);
+		const VoxelDataLoader::InputBlock ib = _blocks_to_save[i];
+		// TODO Batch request
+		VoxelServer::get_singleton()->request_block_save(_volume_id, ib.data.voxels_to_save, ib.position, 0);
 	}
 
 	//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
 	_blocks_pending_load.clear();
 	_blocks_to_save.clear();
-
-	_stream_thread->push(input);
 }
 
 void VoxelTerrain::emit_block_loaded(const VoxelBlock *block) {
@@ -758,6 +715,8 @@ void VoxelTerrain::_process() {
 	if (_library.is_null()) {
 		return;
 	}
+	// print_line(String("D:{0} M:{1}")
+	// 				   .format(varray(_reception_buffers.data_output.size(), _reception_buffers.mesh_output.size())));
 
 	OS &os = *OS::get_singleton();
 
@@ -809,7 +768,7 @@ void VoxelTerrain::_process() {
 	_last_viewer_block_pos = viewer_block_pos;
 
 	// It's possible the user didn't set a stream yet, or it is turned off
-	if (_stream_thread != nullptr) {
+	if (_stream.is_valid() && (Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
 		send_block_data_requests();
 	}
 
@@ -817,19 +776,19 @@ void VoxelTerrain::_process() {
 
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
-	if (_stream_thread != nullptr) {
-		VoxelDataLoader::Output output;
-		_stream_thread->pop(output);
+	{
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
+		for (size_t i = 0; i < _reception_buffers.data_output.size(); ++i) {
+			const VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[i];
 
-		_stats.stream = output.stats;
-
-		for (int i = 0; i < output.blocks.size(); ++i) {
-			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
-
-			if (ob.data.type != VoxelDataLoader::TYPE_LOAD) {
+			if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVE) {
+				if (ob.dropped) {
+					ERR_PRINT(String("Could not save block {0}").format(varray(ob.position.to_vec3())));
+				}
 				continue;
 			}
+
+			CRASH_COND(ob.type != VoxelServer::BlockDataOutput::TYPE_LOAD);
 
 			const Vector3i block_pos = ob.position;
 
@@ -845,18 +804,24 @@ void VoxelTerrain::_process() {
 				_loading_blocks.erase(E);
 			}
 
-			if (ob.drop_hint) {
+			if (ob.dropped) {
 				// That block was dropped by the data loader thread, but we were still expecting it...
 				// This is not good, because it means the loader is out of sync due to a bug.
-				PRINT_VERBOSE(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
+				PRINT_VERBOSE(String("Received a block loading drop while we were still expecting it: "
+									 "lod{0} ({1}, {2}, {3})")
 									  .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
 				++_stats.dropped_block_loads;
 				continue;
 			}
 
-			if (ob.data.voxels_loaded->get_size() != Vector3i(_map->get_block_size())) {
+			CRASH_COND(ob.voxels.is_null());
+
+			const Vector3i expected_block_size = Vector3i(_map->get_block_size());
+			if (ob.voxels->get_size() != expected_block_size) {
 				// Voxel block size is incorrect, drop it
-				ERR_PRINT("Block size obtained from stream is different from expected size");
+				ERR_PRINT(String("Block size obtained from stream is different from expected size. "
+								 "Expected {0}, got {1}")
+								  .format(varray(expected_block_size.to_vec3(), ob.voxels->get_size().to_vec3())));
 				++_stats.dropped_block_loads;
 				continue;
 			}
@@ -866,7 +831,7 @@ void VoxelTerrain::_process() {
 			// Store buffer
 			VoxelBlock *block = _map->get_block(block_pos);
 			bool update_neighbors = block == nullptr;
-			block = _map->set_block_buffer(block_pos, ob.data.voxels_loaded);
+			block = _map->set_block_buffer(block_pos, ob.voxels);
 			block->set_world(get_world());
 			emit_block_loaded(block);
 
@@ -907,17 +872,21 @@ void VoxelTerrain::_process() {
 				//OS::get_singleton()->print("Update (%i, %i, %i)\n", block_pos.x, block_pos.y, block_pos.z);
 			}
 		}
+
+		_reception_buffers.data_output.clear();
 	}
 
 	_stats.time_process_load_responses = profiling_clock.restart();
 
 	// Send mesh updates
 	{
-		ERR_FAIL_COND(_block_updater == nullptr);
-
 		VoxelMeshUpdater::Input input;
 		input.priority_position = viewer_block_pos;
 		input.priority_direction = viewer_direction;
+
+		unsigned int min_padding;
+		unsigned int max_padding;
+		VoxelServer::get_singleton()->get_min_max_block_padding(_volume_id, min_padding, max_padding);
 
 		for (int i = 0; i < _blocks_pending_update.size(); ++i) {
 			Vector3i block_pos = _blocks_pending_update[i];
@@ -964,24 +933,17 @@ void VoxelTerrain::_process() {
 			Ref<VoxelBuffer> nbuffer;
 			nbuffer.instance();
 
-			// TODO Make the buffer re-usable
-			unsigned int block_size = _map->get_block_size();
-			unsigned int min_padding = _block_updater->get_minimum_padding();
-			unsigned int max_padding = _block_updater->get_maximum_padding();
+			const unsigned int block_size = _map->get_block_size();
 			nbuffer->create(Vector3i(block_size + min_padding + max_padding));
 
-			unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_SDF);
+			const unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_SDF);
 			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(min_padding), **nbuffer, channels_mask);
 
-			VoxelMeshUpdater::InputBlock iblock;
-			iblock.data.voxels = nbuffer;
-			iblock.position = block_pos;
-			input.blocks.push_back(iblock);
+			VoxelServer::get_singleton()->request_block_mesh(_volume_id, nbuffer, block_pos, 0);
 
 			block->set_mesh_state(VoxelBlock::MESH_UPDATE_SENT);
 		}
 
-		_block_updater->push(input);
 		_blocks_pending_update.clear();
 	}
 
@@ -989,25 +951,15 @@ void VoxelTerrain::_process() {
 
 	// Get mesh updates
 	{
-		{
-			VoxelMeshUpdater::Output output;
-			_block_updater->pop(output);
-
-			_stats.updater = output.stats;
-			_stats.updated_blocks = output.blocks.size();
-
-			_blocks_pending_main_thread_update.append_array(output.blocks);
-		}
-
 		const uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS;
-		int queue_index = 0;
+		size_t queue_index = 0;
 
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
 		// This also proved to be very slow compared to the meshing process itself...
 		// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
 
-		for (; queue_index < _blocks_pending_main_thread_update.size() && os.get_ticks_msec() < timeout; ++queue_index) {
-			const VoxelMeshUpdater::OutputBlock &ob = _blocks_pending_main_thread_update[queue_index];
+		for (; queue_index < _reception_buffers.mesh_output.size() && os.get_ticks_msec() < timeout; ++queue_index) {
+			const VoxelServer::BlockMeshOutput &ob = _reception_buffers.mesh_output[queue_index];
 
 			VoxelBlock *block = _map->get_block(ob.position);
 			if (block == nullptr) {
@@ -1016,7 +968,7 @@ void VoxelTerrain::_process() {
 				continue;
 			}
 
-			if (ob.drop_hint) {
+			if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
 				// That block is loaded, but its meshing request was dropped.
 				// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
 				PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
@@ -1030,10 +982,9 @@ void VoxelTerrain::_process() {
 			Vector<Array> collidable_surfaces; //need to put both blocky and smooth surfaces into one list
 
 			int surface_index = 0;
-			const VoxelMeshUpdater::OutputBlockData &data = ob.data;
-			for (int i = 0; i < data.blocky_surfaces.surfaces.size(); ++i) {
+			for (int i = 0; i < ob.blocky_surfaces.surfaces.size(); ++i) {
 
-				Array surface = data.blocky_surfaces.surfaces[i];
+				Array surface = ob.blocky_surfaces.surfaces[i];
 				if (surface.empty()) {
 					continue;
 				}
@@ -1046,14 +997,14 @@ void VoxelTerrain::_process() {
 				collidable_surfaces.push_back(surface);
 
 				mesh->add_surface_from_arrays(
-						data.blocky_surfaces.primitive_type, surface, Array(), data.blocky_surfaces.compression_flags);
+						ob.blocky_surfaces.primitive_type, surface, Array(), ob.blocky_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
 			}
 
-			for (int i = 0; i < data.smooth_surfaces.surfaces.size(); ++i) {
+			for (int i = 0; i < ob.smooth_surfaces.surfaces.size(); ++i) {
 
-				Array surface = data.smooth_surfaces.surfaces[i];
+				Array surface = ob.smooth_surfaces.surfaces[i];
 				if (surface.empty()) {
 					continue;
 				}
@@ -1066,7 +1017,7 @@ void VoxelTerrain::_process() {
 				collidable_surfaces.push_back(surface);
 
 				mesh->add_surface_from_arrays(
-						data.smooth_surfaces.primitive_type, surface, Array(), data.smooth_surfaces.compression_flags);
+						ob.smooth_surfaces.primitive_type, surface, Array(), ob.smooth_surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
 			}
@@ -1079,7 +1030,7 @@ void VoxelTerrain::_process() {
 			block->set_parent_visible(is_visible());
 		}
 
-		shift_up(_blocks_pending_main_thread_update, queue_index);
+		shift_up(_reception_buffers.mesh_output, queue_index);
 	}
 
 	_stats.time_process_update_responses = profiling_clock.restart();
