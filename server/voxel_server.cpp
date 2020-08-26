@@ -111,7 +111,6 @@ uint32_t VoxelServer::add_volume(ReceptionBuffers *buffers) {
 	Volume volume;
 	volume.reception_buffers = buffers;
 	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
-	volume.meshing_dependency->valid = true;
 	return _world.volumes.create(volume);
 }
 
@@ -147,6 +146,8 @@ void VoxelServer::set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream)
 void VoxelServer::set_volume_voxel_library(uint32_t volume_id, Ref<VoxelLibrary> library) {
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.voxel_library = library;
+	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
+	volume.meshing_dependency->library = volume.voxel_library;
 }
 
 void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
@@ -154,7 +155,6 @@ void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	volume.meshing_dependency->valid = false;
 	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
 	volume.meshing_dependency->library = volume.voxel_library;
-	volume.meshing_dependency->valid = true;
 }
 
 template <typename BlockRequest_T>
