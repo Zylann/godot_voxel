@@ -36,7 +36,7 @@ public:
 	enum State {
 		STATE_RUNNING = 0,
 		STATE_PICKING,
-		STATE_WAITNG,
+		STATE_WAITING,
 		STATE_STOPPED
 	};
 
@@ -75,6 +75,7 @@ public:
 	void wait_for_all_tasks();
 
 	State get_thread_debug_state(uint32_t i) const;
+	unsigned int get_debug_remaining_tasks() const;
 
 private:
 	struct TaskItem {
@@ -110,6 +111,9 @@ private:
 
 	uint32_t _batch_count = 1;
 	uint32_t _priority_update_period = 32;
+
+	unsigned int _debug_received_tasks = 0;
+	unsigned int _debug_completed_tasks = 0;
 };
 
 #endif // VOXEL_THREAD_TASK_MANAGER_H

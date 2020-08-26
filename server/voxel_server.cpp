@@ -385,6 +385,36 @@ void VoxelServer::get_min_max_block_padding(
 	}
 }
 
+static unsigned int debug_get_active_thread_count(const VoxelThreadPool &pool) {
+	unsigned int active_count = 0;
+	for (unsigned int i = 0; i < pool.get_thread_count(); ++i) {
+		VoxelThreadPool::State s = pool.get_thread_debug_state(i);
+		if (s == VoxelThreadPool::STATE_RUNNING) {
+			++active_count;
+		}
+	}
+	return active_count;
+}
+
+static Dictionary debug_get_pool_stats(const VoxelThreadPool &pool) {
+	Dictionary d;
+	d["tasks"] = pool.get_debug_remaining_tasks();
+	d["active_threads"] = debug_get_active_thread_count(pool);
+	d["thread_count"] = pool.get_thread_count();
+	return d;
+}
+
+Dictionary VoxelServer::_b_get_stats() {
+	Dictionary d;
+	d["streaming"] = debug_get_pool_stats(_streaming_thread_pool);
+	d["meshing"] = debug_get_pool_stats(_meshing_thread_pool);
+	return d;
+}
+
+void VoxelServer::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelServer::_b_get_stats);
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {

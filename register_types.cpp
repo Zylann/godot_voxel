@@ -33,6 +33,11 @@ void register_voxel_types() {
 	VoxelGraphNodeDB::create_singleton();
 	VoxelServer::create_singleton();
 
+	Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelServer", VoxelServer::get_singleton()));
+
+	// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not abstract?
+	ClassDB::register_class<VoxelServer>();
+
 	// Storage
 	ClassDB::register_class<VoxelBuffer>();
 	ClassDB::register_class<VoxelMap>();
@@ -98,11 +103,12 @@ void unregister_voxel_types() {
 						  .format(varray(used_blocks)));
 	}
 	VoxelMemoryPool::destroy_singleton();
+	// TODO No remove?
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::free_debug_box_mesh();
 
-	// TODO No remove?
+	// TODO Seriously, no remove?
 	//EditorPlugins::remove_by_type<VoxelGraphEditorPlugin>();
 #endif
 }

@@ -11,7 +11,8 @@
 
 // Access point for asynchronous voxel processing APIs.
 // Functions must be used from the main thread.
-class VoxelServer {
+class VoxelServer : public Object {
+	GDCLASS(VoxelServer, Object)
 public:
 	struct BlockMeshOutput {
 		enum Type {
@@ -74,6 +75,10 @@ public:
 	void process();
 
 private:
+	Dictionary _b_get_stats();
+
+	static void _bind_methods();
+
 	// Since we are going to send data to tasks running in multiple threads, a few strategies are in place:
 	//
 	// - Copy the data for each thread. This is suitable for simple information that doesn't change after scheduling.

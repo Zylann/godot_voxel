@@ -72,6 +72,7 @@ void VoxelThreadPool::enqueue(IVoxelTask *task) {
 		TaskItem t;
 		t.task = task;
 		_tasks.push_back(t);
+		++_debug_received_tasks;
 	}
 	// TODO Do I need to post a certain amount of times?
 	_tasks_semaphore->post();
@@ -84,6 +85,7 @@ void VoxelThreadPool::enqueue(ArraySlice<IVoxelTask *> tasks) {
 			TaskItem t;
 			t.task = tasks[i];
 			_tasks.push_back(t);
+			++_debug_received_tasks;
 		}
 	}
 	// TODO Do I need to post a certain amount of times?
@@ -148,6 +150,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 			MutexLock lock(_completed_tasks_mutex);
 			for (size_t i = 0; i < cancelled_tasks.size(); ++i) {
 				_completed_tasks.push_back(cancelled_tasks[i]);
+				++_debug_completed_tasks;
 			}
 			cancelled_tasks.clear();
 		}
@@ -155,7 +158,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 		//print_line(String("Processing {0} tasks").format(varray(tasks.size())));
 
 		if (tasks.empty()) {
-			data.debug_state = STATE_WAITNG;
+			data.debug_state = STATE_WAITING;
 
 			// Wait for more tasks
 			data.waiting = true;
@@ -178,6 +181,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 				for (size_t i = 0; i < tasks.size(); ++i) {
 					TaskItem &item = tasks[i];
 					_completed_tasks.push_back(item.task);
+					++_debug_completed_tasks;
 				}
 			}
 
@@ -235,6 +239,14 @@ void VoxelThreadPool::wait_for_all_tasks() {
 	}
 }
 
+// Debug information can be wrong, on some rare occasions.
+// The variables should be safely updated, but computing or reading from them is not thread safe.
+// Thought it wasnt worth locking for debugging.
+
 VoxelThreadPool::State VoxelThreadPool::get_thread_debug_state(uint32_t i) const {
 	return _threads[i].debug_state;
+}
+
+unsigned int VoxelThreadPool::get_debug_remaining_tasks() const {
+	return _debug_received_tasks - _debug_completed_tasks;
 }
