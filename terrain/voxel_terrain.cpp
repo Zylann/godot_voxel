@@ -278,16 +278,15 @@ void VoxelTerrain::make_block_dirty(Vector3i bpos) {
 
 namespace {
 struct ScheduleSaveAction {
-	std::vector<VoxelDataLoader::InputBlock> &blocks_to_save;
+	std::vector<VoxelTerrain::BlockToSave> &blocks_to_save;
 	bool with_copy;
 
 	void operator()(VoxelBlock *block) {
 		if (block->is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
-			VoxelDataLoader::InputBlock b;
-			b.data.voxels_to_save = with_copy ? block->voxels->duplicate() : block->voxels;
+			VoxelTerrain::BlockToSave b;
+			b.voxels = with_copy ? block->voxels->duplicate() : block->voxels;
 			b.position = block->position;
-			b.can_be_discarded = false;
 			blocks_to_save.push_back(b);
 			block->set_modified(false);
 		}
@@ -319,9 +318,6 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
 
 Dictionary VoxelTerrain::get_statistics() const {
 	Dictionary d;
-
-	d["stream"] = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);
-	d["updater"] = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
 
 	// Breakdown of time spent in _process
 	d["time_detect_required_blocks"] = _stats.time_detect_required_blocks;
@@ -686,9 +682,9 @@ void VoxelTerrain::send_block_data_requests() {
 	// Blocks to save
 	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
 		PRINT_VERBOSE(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position.to_vec3())));
-		const VoxelDataLoader::InputBlock ib = _blocks_to_save[i];
+		const BlockToSave b = _blocks_to_save[i];
 		// TODO Batch request
-		VoxelServer::get_singleton()->request_block_save(_volume_id, ib.data.voxels_to_save, ib.position, 0);
+		VoxelServer::get_singleton()->request_block_save(_volume_id, b.voxels, b.position, 0);
 	}
 
 	//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
@@ -880,10 +876,6 @@ void VoxelTerrain::_process() {
 
 	// Send mesh updates
 	{
-		VoxelMeshUpdater::Input input;
-		input.priority_position = viewer_block_pos;
-		input.priority_direction = viewer_direction;
-
 		unsigned int min_padding;
 		unsigned int max_padding;
 		VoxelServer::get_singleton()->get_min_max_block_padding(_volume_id, min_padding, max_padding);

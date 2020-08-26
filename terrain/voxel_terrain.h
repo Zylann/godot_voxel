@@ -3,17 +3,11 @@
 
 #include "../server/voxel_server.h"
 #include "../util/zprofiling.h"
-#include "voxel_data_loader.h"
 #include "voxel_map.h"
-#include "voxel_mesh_updater.h"
 
 #include <scene/3d/spatial.h>
 
-class VoxelMap;
-class VoxelLibrary;
-class VoxelStream;
 class VoxelTool;
-class VoxelBlock;
 
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.
@@ -62,8 +56,6 @@ public:
 	void restart_stream();
 
 	struct Stats {
-		VoxelMeshUpdater::Stats updater;
-		VoxelDataLoader::Stats stream;
 		int updated_blocks = 0;
 		int dropped_block_loads = 0;
 		int dropped_block_meshs = 0;
@@ -72,6 +64,11 @@ public:
 		uint64_t time_process_load_responses = 0;
 		uint64_t time_request_blocks_to_update = 0;
 		uint64_t time_process_update_responses = 0;
+	};
+
+	struct BlockToSave {
+		Ref<VoxelBuffer> voxels;
+		Vector3i position;
 	};
 
 protected:
@@ -130,7 +127,7 @@ private:
 	Vector<Vector3i> _blocks_pending_load;
 	Vector<Vector3i> _blocks_pending_update;
 
-	std::vector<VoxelDataLoader::InputBlock> _blocks_to_save;
+	std::vector<BlockToSave> _blocks_to_save;
 
 	Ref<VoxelStream> _stream;
 
