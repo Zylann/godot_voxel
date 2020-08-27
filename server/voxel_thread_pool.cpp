@@ -4,6 +4,16 @@
 #include <core/os/semaphore.h>
 #include <core/os/thread.h>
 
+// template <typename T>
+// static bool contains(const std::vector<T> vec, T v) {
+// 	for (size_t i = 0; i < vec.size(); ++i) {
+// 		if (vec[i] == v) {
+// 			return true;
+// 		}
+// 	}
+// 	return false;
+// }
+
 VoxelThreadPool::VoxelThreadPool() {
 	_tasks_mutex = Mutex::create();
 	_tasks_semaphore = Semaphore::create();
@@ -115,9 +125,10 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 
 			// Pick best tasks
 			for (uint32_t bi = 0; bi < _batch_count && _tasks.size() != 0; ++bi) {
-				size_t best_index;
+				size_t best_index = 0; // Take first by default, this is a valid index
 				int best_priority = 999999;
 
+				// TODO This takes a lot of time when there are many queued tasks. Use a better container?
 				for (size_t i = 0; i < _tasks.size(); ++i) {
 					TaskItem &item = _tasks[i];
 
@@ -152,8 +163,8 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 				_completed_tasks.push_back(cancelled_tasks[i]);
 				++_debug_completed_tasks;
 			}
-			cancelled_tasks.clear();
 		}
+		cancelled_tasks.clear();
 
 		//print_line(String("Processing {0} tasks").format(varray(tasks.size())));
 
