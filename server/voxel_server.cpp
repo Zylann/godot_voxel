@@ -50,7 +50,7 @@ VoxelServer::VoxelServer() {
 
 	// TODO Try more threads, it should be possible
 	// This pool works on visuals so it must have low latency
-	_meshing_thread_pool.set_thread_count(1);
+	_meshing_thread_pool.set_thread_count(2);
 	_meshing_thread_pool.set_priority_update_period(32);
 	_meshing_thread_pool.set_batch_count(1);
 
