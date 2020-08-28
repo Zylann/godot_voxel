@@ -21,10 +21,7 @@ VoxelThreadPool::VoxelThreadPool() {
 }
 
 VoxelThreadPool::~VoxelThreadPool() {
-	for (size_t i = 0; i < _thread_count; ++i) {
-		ThreadData &d = _threads[i];
-		destroy_thread(d);
-	}
+	destroy_all_threads();
 
 	if (_completed_tasks.size() != 0) {
 		// We don't have ownership over tasks, so it's an error to destroy the pool without handling them
@@ -44,22 +41,32 @@ void VoxelThreadPool::create_thread(ThreadData &d, uint32_t i) {
 	d.thread = Thread::create(thread_func_static, &d);
 }
 
-void VoxelThreadPool::destroy_thread(ThreadData &d) {
-	d.stop = true;
-	_tasks_semaphore->post();
-	Thread::wait_to_finish(d.thread);
-	memdelete(d.thread);
-	d = ThreadData();
+void VoxelThreadPool::destroy_all_threads() {
+	// We have only one semaphore to signal threads to resume, and one `post()` lets only one pass.
+	// We cannot tell one single thread to stop, because when we post and other threads are waiting, we can't guarantee
+	// the one to pass will be the one we want.
+	// So we can only choose to stop ALL threads, and then start them again if we want to adjust their count.
+	// Also, it shouldn't drop tasks. Any tasks the thread was working on should still complete normally.
+	for (size_t i = 0; i < _thread_count; ++i) {
+		ThreadData &d = _threads[i];
+		d.stop = true;
+	}
+	for (size_t i = 0; i < _thread_count; ++i) {
+		_tasks_semaphore->post();
+	}
+	for (size_t i = 0; i < _thread_count; ++i) {
+		ThreadData &d = _threads[i];
+		Thread::wait_to_finish(d.thread);
+		memdelete(d.thread);
+		d = ThreadData();
+	}
 }
 
 void VoxelThreadPool::set_thread_count(uint32_t count) {
 	if (count > MAX_THREADS) {
 		count = MAX_THREADS;
 	}
-	for (uint32_t i = count; i < _thread_count; ++i) {
-		ThreadData &d = _threads[i];
-		destroy_thread(d);
-	}
+	destroy_all_threads();
 	for (uint32_t i = _thread_count; i < count; ++i) {
 		ThreadData &d = _threads[i];
 		create_thread(d, i);

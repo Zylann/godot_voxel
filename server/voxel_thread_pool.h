@@ -97,7 +97,7 @@ private:
 	void thread_func(ThreadData &data);
 
 	void create_thread(ThreadData &d, uint32_t i);
-	void destroy_thread(ThreadData &d);
+	void destroy_all_threads();
 
 	FixedArray<ThreadData, MAX_THREADS> _threads;
 	uint32_t _thread_count = 0;
