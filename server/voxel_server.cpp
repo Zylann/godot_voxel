@@ -157,13 +157,6 @@ void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	volume.meshing_dependency->library = volume.voxel_library;
 }
 
-template <typename BlockRequest_T>
-inline void remove_items_from_matching_volume(std::vector<BlockRequest_T> &requests, uint32_t volume_id) {
-	unordered_remove_if(requests, [](const BlockRequest_T &r) {
-		return r.volume_id == volume_id;
-	})
-}
-
 void VoxelServer::request_block_mesh(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
