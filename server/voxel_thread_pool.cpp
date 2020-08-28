@@ -142,6 +142,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 
 						} else {
 							item.cached_priority = item.task->get_priority();
+							item.last_priority_update_time = now;
 						}
 					}
 
