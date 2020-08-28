@@ -435,7 +435,7 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 			break;
 
 		default:
-			CRASH_NOW("Invalid type");
+			CRASH_NOW_MSG("Invalid type");
 	}
 
 	has_run = true;
