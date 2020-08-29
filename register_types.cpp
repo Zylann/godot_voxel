@@ -82,6 +82,9 @@ void register_voxel_types() {
 	// Reminder: how to create a singleton accessible from scripts:
 	// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
 
+	PRINT_VERBOSE(String("Size of VoxelBuffer: {0}").format(varray((int)sizeof(VoxelBuffer))));
+	PRINT_VERBOSE(String("Size of VoxelBlock: {0}").format(varray((int)sizeof(VoxelBlock))));
+
 #ifdef TOOLS_ENABLED
 	VoxelDebug::create_debug_box_mesh();
 
@@ -91,6 +94,10 @@ void register_voxel_types() {
 }
 
 void unregister_voxel_types() {
+	// TODO At this point, the GDScript module has nullified GDScriptLanguage::singleton!!
+	// That means it's impossible to free scripts still referenced by VoxelServer. And that can happen, because
+	// users can write custom generators, which run inside threads, and these threads are hosted in the server...
+
 	VoxelStringNames::destroy_singleton();
 	VoxelGraphNodeDB::destroy_singleton();
 	VoxelServer::destroy_singleton();

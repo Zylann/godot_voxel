@@ -71,6 +71,9 @@ VoxelServer::VoxelServer() {
 	// Init world
 	// TODO How to make this use memnew and memdelete?
 	_world.viewers_for_priority = gd_make_shared<VoxelViewersArray>();
+
+	PRINT_VERBOSE(String("Size of BlockDataRequest: {0}").format(varray((int)sizeof(BlockDataRequest))));
+	PRINT_VERBOSE(String("Size of BlockMeshRequest: {0}").format(varray((int)sizeof(BlockMeshRequest))));
 }
 
 VoxelServer::~VoxelServer() {
@@ -157,7 +160,7 @@ void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	volume.meshing_dependency->library = volume.voxel_library;
 }
 
-void VoxelServer::request_block_mesh(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod) {
+void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
@@ -167,25 +170,24 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, Ref<VoxelBuffer> voxels
 	// It was previously done by remembering the request with a hashmap by position.
 	// But later we may want to solve it by not pre-emptively copying voxels, only do it on meshing using RWLock
 
-	BlockMeshRequest r;
-	r.voxels = voxels;
-	r.volume_id = volume_id;
-	r.position = block_pos;
-	r.lod = lod;
+	BlockMeshRequest *r = memnew(BlockMeshRequest);
+	r->volume_id = volume_id;
+	r->blocks = input.blocks;
+	r->position = input.position;
+	r->lod = input.lod;
 
-	r.smooth_enabled = volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
-	r.blocky_enabled = volume.voxel_library.is_valid() &&
-					   volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_TYPE);
+	r->smooth_enabled = volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
+	r->blocky_enabled = volume.voxel_library.is_valid() &&
+						volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_TYPE);
 
-	r.meshing_dependency = volume.meshing_dependency;
+	r->meshing_dependency = volume.meshing_dependency;
 
-	const Vector3i voxel_pos = (block_pos << lod) * volume.block_size;
-	r.priority_dependency.world_position = volume.transform.xform(voxel_pos.to_vec3());
-	r.priority_dependency.viewers = _world.viewers_for_priority;
+	const Vector3i voxel_pos = (input.position << input.lod) * volume.block_size;
+	r->priority_dependency.world_position = volume.transform.xform(voxel_pos.to_vec3());
+	r->priority_dependency.viewers = _world.viewers_for_priority;
 
 	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
-	BlockMeshRequest *rp = memnew(BlockMeshRequest(r));
-	_meshing_thread_pool.enqueue(rp);
+	_meshing_thread_pool.enqueue(r);
 }
 
 void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod) {
@@ -356,13 +358,13 @@ void VoxelServer::process() {
 }
 
 void VoxelServer::get_min_max_block_padding(
-		uint32_t volume_id, unsigned int &out_min_padding, unsigned int &out_max_padding) const {
+		bool blocky_enabled, bool smooth_enabled, unsigned int &out_min_padding, unsigned int &out_max_padding) const {
 
-	const Volume &volume = _world.volumes.get(volume_id);
+	// const Volume &volume = _world.volumes.get(volume_id);
 
-	bool smooth_enabled = volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
-	bool blocky_enabled = volume.voxel_library.is_valid() &&
-						  volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_TYPE);
+	// bool smooth_enabled = volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
+	// bool blocky_enabled = volume.voxel_library.is_valid() &&
+	// 					  volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_TYPE);
 
 	out_min_padding = 0;
 	out_max_padding = 0;
@@ -422,10 +424,15 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 			stream->emerge_block(voxels, position * block_size, lod);
 			break;
 
-		case TYPE_SAVE:
-			stream->immerge_block(voxels, position * block_size, lod);
+		case TYPE_SAVE: {
+			Ref<VoxelBuffer> voxels_copy;
+			{
+				RWLockRead lock(voxels->get_lock());
+				voxels_copy = voxels->duplicate(true);
+			}
 			voxels.unref();
-			break;
+			stream->immerge_block(voxels_copy, position * block_size, lod);
+		} break;
 
 		default:
 			CRASH_NOW_MSG("Invalid type");
@@ -444,9 +451,56 @@ bool VoxelServer::BlockDataRequest::is_cancelled() {
 
 //----------------------------------------------------------------------------------------------------------------------
 
+static void copy_block_and_neighbors(const FixedArray<Ref<VoxelBuffer>, Cube::MOORE_AREA_3D_COUNT> &moore_blocks,
+		VoxelBuffer &dst, int min_padding, int max_padding) {
+
+	FixedArray<unsigned int, 2> channels;
+	channels[0] = VoxelBuffer::CHANNEL_TYPE;
+	channels[1] = VoxelBuffer::CHANNEL_SDF;
+
+	Ref<VoxelBuffer> central_buffer = moore_blocks[Cube::MOORE_AREA_3D_CENTRAL_INDEX];
+	const int block_size = central_buffer->get_size().x;
+	const unsigned int padded_block_size = block_size + min_padding + max_padding;
+
+	dst.create(padded_block_size, padded_block_size, padded_block_size);
+
+	for (unsigned int ci = 0; ci < channels.size(); ++ci) {
+		dst.set_channel_depth(ci, central_buffer->get_channel_depth(ci));
+	}
+
+	const Vector3i min_pos = -Vector3i(min_padding);
+	const Vector3i max_pos = Vector3i(block_size + max_padding);
+
+	for (unsigned int i = 0; i < Cube::MOORE_AREA_3D_COUNT; ++i) {
+		const Vector3i offset = block_size * Cube::g_ordered_moore_area_3d[i];
+		Ref<VoxelBuffer> src = moore_blocks[i];
+
+		CRASH_COND(src.is_null());
+
+		const Vector3i src_min = min_pos - offset;
+		const Vector3i src_max = max_pos - offset;
+		const Vector3i dst_min = offset - min_pos;
+
+		{
+			RWLockRead read(src->get_lock());
+			for (unsigned int ci = 0; ci < channels.size(); ++ci) {
+				dst.copy_from(**src, src_min, src_max, dst_min, ci);
+			}
+		}
+	}
+}
+
 void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
-	CRASH_COND(voxels.is_null());
 	CRASH_COND(meshing_dependency == nullptr);
+
+	unsigned int min_padding;
+	unsigned int max_padding;
+	VoxelServer::get_singleton()->get_min_max_block_padding(blocky_enabled, smooth_enabled, min_padding, max_padding);
+
+	// TODO Cache?
+	Ref<VoxelBuffer> voxels;
+	voxels.instance();
+	copy_block_and_neighbors(blocks, **voxels, min_padding, max_padding);
 
 	VoxelMesher::Input input = { **voxels, lod };
 

@@ -40,6 +40,13 @@ public:
 		bool dropped;
 	};
 
+	struct BlockMeshInput {
+		// Moore area ordered by forward XYZ iteration
+		FixedArray<Ref<VoxelBuffer>, Cube::MOORE_AREA_3D_COUNT> blocks;
+		Vector3i position;
+		uint8_t lod = 0;
+	};
+
 	struct ReceptionBuffers {
 		std::vector<BlockMeshOutput> mesh_output;
 		std::vector<BlockDataOutput> data_output;
@@ -58,7 +65,7 @@ public:
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
 	void set_volume_voxel_library(uint32_t volume_id, Ref<VoxelLibrary> library);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
-	void request_block_mesh(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod);
+	void request_block_mesh(uint32_t volume_id, BlockMeshInput &input);
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod);
 	void request_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod);
 	void remove_volume(uint32_t volume_id);
@@ -70,7 +77,8 @@ public:
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
 	void get_min_max_block_padding(
-			uint32_t volume_id, unsigned int &out_min_padding, unsigned int &out_max_padding) const;
+			bool blocky_enabled, bool smooth_enabled,
+			unsigned int &out_min_padding, unsigned int &out_max_padding) const;
 
 	void process();
 
@@ -169,8 +177,7 @@ private:
 		int get_priority() override;
 		bool is_cancelled() override;
 
-		// TODO Reference blocks instead of doing preemptive copy
-		Ref<VoxelBuffer> voxels;
+		FixedArray<Ref<VoxelBuffer>, Cube::MOORE_AREA_3D_COUNT> blocks;
 		Vector3i position;
 		uint32_t volume_id;
 		uint8_t lod;

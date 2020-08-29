@@ -50,6 +50,7 @@ int VoxelMap::get_voxel(Vector3i pos, unsigned int c) const {
 	if (block == nullptr) {
 		return _default_voxel[c];
 	}
+	RWLockRead lock(block->voxels->get_lock());
 	return block->voxels->get_voxel(to_local(pos), c);
 }
 
@@ -73,6 +74,8 @@ VoxelBlock *VoxelMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
 
 void VoxelMap::set_voxel(int value, Vector3i pos, unsigned int c) {
 	VoxelBlock *block = get_or_create_block_at_voxel_pos(pos);
+	// TODO If it turns out to be a problem, use CoW
+	RWLockWrite lock(block->voxels->get_lock());
 	block->voxels->set_voxel(value, to_local(pos), c);
 }
 
@@ -83,12 +86,14 @@ float VoxelMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 		return _default_voxel[c];
 	}
 	Vector3i lpos = to_local(pos);
+	RWLockRead lock(block->voxels->get_lock());
 	return block->voxels->get_voxel_f(lpos.x, lpos.y, lpos.z, c);
 }
 
 void VoxelMap::set_voxel_f(real_t value, Vector3i pos, unsigned int c) {
 	VoxelBlock *block = get_or_create_block_at_voxel_pos(pos);
 	Vector3i lpos = to_local(pos);
+	RWLockWrite lock(block->voxels->get_lock());
 	block->voxels->set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
 }
 
@@ -190,14 +195,17 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 		for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 			for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 				for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-					VoxelBlock *block = get_block(bpos);
+					const VoxelBlock *block = get_block(bpos);
 
 					if (block) {
-						VoxelBuffer &src_buffer = **block->voxels;
+						const VoxelBuffer &src_buffer = **block->voxels;
 
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
 
 						Vector3i offset = block_to_voxel(bpos);
+
+						RWLockRead lock(src_buffer.get_lock());
+
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_from(src_buffer,
 								min_pos - offset,

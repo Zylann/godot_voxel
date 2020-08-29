@@ -7,7 +7,9 @@
 #include <core/hash_map.h>
 #include <scene/main/node.h>
 
-// Infinite voxel storage by means of octants like Gridmap, within a constant LOD
+// Infinite voxel storage by means of octants like Gridmap, within a constant LOD.
+// Convenience functions to access VoxelBuffers internally will lock them to protect against multithreaded access.
+// However, the map itself is not thread-safe.
 class VoxelMap : public Reference {
 	GDCLASS(VoxelMap, Reference)
 public:
@@ -128,7 +130,6 @@ private:
 	// Voxel values that will be returned if access is out of map bounds
 	FixedArray<uint64_t, VoxelBuffer::MAX_CHANNELS> _default_voxel;
 
-	// TODO Consider using OAHashMap
 	// Blocks stored with a spatial hash in all 3D directions
 	HashMap<Vector3i, VoxelBlock *, Vector3iHasher> _blocks;
 

@@ -1280,7 +1280,11 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 			// Update lower LOD
 			// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
 			// TODO Try to narrow to edited region instead of taking whole block
-			src_block->voxels->downscale_to(**dst_block->voxels, Vector3i(), src_block->voxels->get_size(), rel * half_bs);
+			{
+				RWLockWrite lock(src_block->voxels->get_lock());
+				src_block->voxels->downscale_to(
+						**dst_block->voxels, Vector3i(), src_block->voxels->get_size(), rel * half_bs);
+			}
 		}
 
 		src_lod.blocks_pending_lodding.clear();
@@ -1305,10 +1309,18 @@ struct ScheduleSaveAction {
 			block->set_shader_material(Ref<ShaderMaterial>());
 		}
 
+		// TODO Don't ask for save if the stream doesn't support it!
 		if (block->is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelDataLoader::InputBlock b;
-			b.data.voxels_to_save = with_copy ? block->voxels->duplicate() : block->voxels;
+
+			if (with_copy) {
+				RWLockRead lock(block->voxels->get_lock());
+				b.data.voxels_to_save = block->voxels->duplicate(true);
+			} else {
+				b.data.voxels_to_save = block->voxels;
+			}
+
 			b.position = block->position;
 			b.can_be_discarded = false;
 			b.lod = block->lod_index;
@@ -1570,7 +1582,6 @@ Dictionary VoxelLodTerrain::debug_get_block_info(Vector3 fbpos, int lod_index) c
 	const VoxelBlock *block = lod.map->get_block(bpos);
 
 	if (block) {
-
 		meshed = !block->has_mesh() && block->get_mesh_state() != VoxelBlock::MESH_UP_TO_DATE;
 		visible = block->is_visible();
 		loading_state = 2;

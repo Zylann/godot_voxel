@@ -21,6 +21,7 @@ bool VoxelToolTerrain::is_area_editable(const Rect3i &box) const {
 
 Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
 	// TODO Transform input if the terrain is rotated (in the future it can be made a Spatial node)
+	// TODO Implement broad-phase on blocks to minimize locking and increase performance
 
 	struct RaycastPredicate {
 		const VoxelTerrain &terrain;
@@ -107,6 +108,7 @@ void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	VoxelBlock *block = _map->get_block(_map->voxel_to_block(pos));
 	ERR_FAIL_COND_MSG(block == nullptr, "Area not editable");
+	RWLockWrite lock(block->voxels->get_lock());
 	block->voxels->set_voxel_metadata(_map->to_local(pos), meta);
 }
 
@@ -114,6 +116,7 @@ Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) {
 	ERR_FAIL_COND_V(_terrain == nullptr, Variant());
 	const VoxelBlock *block = _map->get_block(_map->voxel_to_block(pos));
 	ERR_FAIL_COND_V_MSG(block == nullptr, Variant(), "Area not editable");
+	RWLockRead lock(block->voxels->get_lock());
 	return block->voxels->get_voxel_metadata(_map->to_local(pos));
 }
 
@@ -143,42 +146,64 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 	const int bs_mask = _map->get_block_size_mask();
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 
+	struct Pick {
+		uint64_t value;
+		Vector3i rpos;
+	};
+	std::vector<Pick> picks;
+	picks.resize(batch_count);
+
 	// Choose blocks at random
 	for (int bi = 0; bi < block_count; ++bi) {
 		const Vector3i block_pos = min_block_pos + Vector3i(
 														   Math::rand() % block_area_size.x,
 														   Math::rand() % block_area_size.y,
 														   Math::rand() % block_area_size.z);
+
 		const Vector3i block_origin = _map->block_to_voxel(block_pos);
 
 		const VoxelBlock *block = _map->get_block(block_pos);
 		if (block != nullptr) {
-			if (block->voxels->get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
-				const uint64_t v = block->voxels->get_voxel(0, 0, 0, channel);
-				if (lib.has_voxel(v)) {
-					const Voxel &vt = lib.get_voxel_const(v);
-					if (!vt.is_random_tickable()) {
-						// Skip whole block
-						continue;
+			// Doing ONLY reads here.
+			{
+				RWLockRead lock(block->voxels->get_lock());
+
+				if (block->voxels->get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+					const uint64_t v = block->voxels->get_voxel(0, 0, 0, channel);
+					if (lib.has_voxel(v)) {
+						const Voxel &vt = lib.get_voxel_const(v);
+						if (!vt.is_random_tickable()) {
+							// Skip whole block
+							continue;
+						}
 					}
 				}
+
+				// Choose a bunch of voxels at random within the block.
+				// Batching this way improves performance a little by reducing block lookups.
+				for (int vi = 0; vi < batch_count; ++vi) {
+					const Vector3i rpos(
+							Math::rand() & bs_mask,
+							Math::rand() & bs_mask,
+							Math::rand() & bs_mask);
+
+					const uint64_t v = block->voxels->get_voxel(rpos, channel);
+					picks[vi] = Pick{ v, rpos };
+				}
 			}
-			// Choose a bunch of voxels at random within the block.
-			// Batching this way improves performance a little by reducing block lookups.
-			for (int vi = 0; vi < batch_count; ++vi) {
-				const Vector3i rpos(
-						Math::rand() & bs_mask,
-						Math::rand() & bs_mask,
-						Math::rand() & bs_mask);
 
-				const uint64_t v = block->voxels->get_voxel(rpos, channel);
+			// The following may or may not read AND write voxels randomly due to its exposition to scripts.
+			// However, we don't send the buffer directly, so it will go through an API taking care of locking.
+			// So we don't (and shouldn't) lock anything here.
+			for (size_t i = 0; i < picks.size(); ++i) {
+				const Pick pick = picks[i];
 
-				if (lib.has_voxel(v)) {
-					const Voxel &vt = lib.get_voxel_const(v);
+				if (lib.has_voxel(pick.value)) {
+					const Voxel &vt = lib.get_voxel_const(pick.value);
 
 					if (vt.is_random_tickable()) {
-						const Variant vpos = (rpos + block_origin).to_vec3();
-						const Variant vv = v;
+						const Variant vpos = (pick.rpos + block_origin).to_vec3();
+						const Variant vv = pick.value;
 						const Variant *args[2];
 						args[0] = &vpos;
 						args[1] = &vv;

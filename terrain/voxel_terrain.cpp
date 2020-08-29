@@ -282,10 +282,16 @@ struct ScheduleSaveAction {
 	bool with_copy;
 
 	void operator()(VoxelBlock *block) {
+		// TODO Don't ask for save if the stream doesn't support it!
 		if (block->is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelTerrain::BlockToSave b;
-			b.voxels = with_copy ? block->voxels->duplicate() : block->voxels;
+			if (with_copy) {
+				RWLockRead lock(block->voxels->get_lock());
+				b.voxels = block->voxels->duplicate(true);
+			} else {
+				b.voxels = block->voxels;
+			}
 			b.position = block->position;
 			blocks_to_save.push_back(b);
 			block->set_modified(false);
@@ -876,10 +882,6 @@ void VoxelTerrain::_process() {
 
 	// Send mesh updates
 	{
-		unsigned int min_padding;
-		unsigned int max_padding;
-		VoxelServer::get_singleton()->get_min_max_block_padding(_volume_id, min_padding, max_padding);
-
 		for (int i = 0; i < _blocks_pending_update.size(); ++i) {
 			Vector3i block_pos = _blocks_pending_update[i];
 
@@ -894,12 +896,15 @@ void VoxelTerrain::_process() {
 				} else {
 					CRASH_COND(block->voxels.is_null());
 
-					const uint64_t air_type = 0;
-					if (
-							block->voxels->is_uniform(VoxelBuffer::CHANNEL_TYPE) &&
-							block->voxels->is_uniform(VoxelBuffer::CHANNEL_SDF) &&
-							block->voxels->get_voxel(0, 0, 0, VoxelBuffer::CHANNEL_TYPE) == air_type) {
+					bool is_empty;
+					{
+						RWLockRead lock(block->voxels->get_lock());
+						is_empty = block->voxels->is_uniform(VoxelBuffer::CHANNEL_TYPE) &&
+								   block->voxels->is_uniform(VoxelBuffer::CHANNEL_SDF) &&
+								   block->voxels->get_voxel(0, 0, 0, VoxelBuffer::CHANNEL_TYPE) == Voxel::AIR_ID;
+					}
 
+					if (is_empty) {
 						// If we got here, it must have been because of scheduling an update
 						CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
@@ -907,8 +912,9 @@ void VoxelTerrain::_process() {
 						block->set_mesh(Ref<Mesh>(), this, _generate_collisions, Vector<Array>(), get_tree()->is_debugging_collisions_hint());
 						block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
 
-						// Optional, but I guess it might spare some memory
-						block->voxels->clear_channel(VoxelBuffer::CHANNEL_TYPE, air_type);
+						// Optional, but I guess it might spare some memory.
+						// Not doing it anymore cuz now we need to be more careful about multithreaded access.
+						//block->voxels->clear_channel(VoxelBuffer::CHANNEL_TYPE, air_type);
 
 						continue;
 					}
@@ -921,17 +927,18 @@ void VoxelTerrain::_process() {
 			CRASH_COND(block == nullptr);
 			CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
-			// Create buffer padded with neighbor voxels
-			Ref<VoxelBuffer> nbuffer;
-			nbuffer.instance();
+			// Get block and its neighbors
+			VoxelServer::BlockMeshInput mi;
+			mi.position = block_pos;
+			mi.lod = 0;
+			for (unsigned int i = 0; i < Cube::MOORE_AREA_3D_COUNT; ++i) {
+				const Vector3i npos = block_pos + Cube::g_ordered_moore_area_3d[i];
+				VoxelBlock *nblock = _map->get_block(npos);
+				CRASH_COND(nblock == nullptr);
+				mi.blocks[i] = nblock->voxels;
+			}
 
-			const unsigned int block_size = _map->get_block_size();
-			nbuffer->create(Vector3i(block_size + min_padding + max_padding));
-
-			const unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_SDF);
-			_map->get_buffer_copy(_map->block_to_voxel(block_pos) - Vector3i(min_padding), **nbuffer, channels_mask);
-
-			VoxelServer::get_singleton()->request_block_mesh(_volume_id, nbuffer, block_pos, 0);
+			VoxelServer::get_singleton()->request_block_mesh(_volume_id, mi);
 
 			block->set_mesh_state(VoxelBlock::MESH_UPDATE_SENT);
 		}
@@ -1136,11 +1143,9 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
 			"set_run_stream_in_editor", "is_stream_running_in_editor");
 
+	// TODO Add back access to block, but with an API securing multithreaded access
 	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton()->block_loaded,
-			PropertyInfo(Variant::VECTOR3, "position"),
-			PropertyInfo(Variant::OBJECT, "voxels", PROPERTY_HINT_RESOURCE_TYPE, "VoxelBuffer")));
-
+			PropertyInfo(Variant::VECTOR3, "position")));
 	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton()->block_unloaded,
-			PropertyInfo(Variant::VECTOR3, "position"),
-			PropertyInfo(Variant::OBJECT, "voxels", PROPERTY_HINT_RESOURCE_TYPE, "VoxelBuffer")));
+			PropertyInfo(Variant::VECTOR3, "position")));
 }

@@ -12,6 +12,7 @@
 class VoxelTool;
 class Image;
 class FuncRef;
+class RWLock;
 
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.
@@ -70,8 +71,6 @@ public:
 	uint64_t get_voxel(int x, int y, int z, unsigned int channel_index = 0) const;
 	void set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index = 0);
 
-	void try_set_voxel(int x, int y, int z, int value, unsigned int channel_index = 0);
-
 	real_t get_voxel_f(int x, int y, int z, unsigned int channel_index = 0) const;
 	void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index = 0);
 
@@ -90,11 +89,13 @@ public:
 
 	static uint32_t get_size_in_bytes_for_volume(Vector3i size, Depth depth);
 
+	// Note: these functions don't include metadata on purpose.
+	// If you also want to copy metadata, use the specialized functions.
 	void copy_from(const VoxelBuffer &other);
 	void copy_from(const VoxelBuffer &other, unsigned int channel_index);
 	void copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index);
 
-	Ref<VoxelBuffer> duplicate() const;
+	Ref<VoxelBuffer> duplicate(bool include_metadata) const;
 
 	_FORCE_INLINE_ bool is_position_valid(unsigned int x, unsigned int y, unsigned int z) const {
 		return x < (unsigned)_size.x && y < (unsigned)_size.y && z < (unsigned)_size.z;
@@ -143,8 +144,14 @@ public:
 	void clear_voxel_metadata();
 	void clear_voxel_metadata_in_area(Rect3i box);
 	void copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Rect3i src_box, Vector3i dst_pos);
+	void copy_voxel_metadata(const VoxelBuffer &src_buffer);
 
 	const Map<Vector3i, Variant> &get_voxel_metadata() const { return _voxel_metadata; }
+
+	// Internal synchronization.
+	// This lock is optional, and used internally at the moment, only in multithreaded areas.
+	inline const RWLock *get_lock() const { return _rw_lock; }
+	inline RWLock *get_lock() { return _rw_lock; }
 
 	// TODO Make this work, would be awesome for perf
 	//
@@ -223,6 +230,8 @@ private:
 
 	Variant _block_metadata;
 	Map<Vector3i, Variant> _voxel_metadata;
+
+	RWLock *_rw_lock;
 };
 
 VARIANT_ENUM_CAST(VoxelBuffer::ChannelId)

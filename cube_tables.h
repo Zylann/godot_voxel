@@ -81,6 +81,10 @@ extern const unsigned int g_edge_corners[EDGE_COUNT][2];
 const unsigned int MOORE_NEIGHBORING_3D_COUNT = 26;
 extern const Vector3i g_moore_neighboring_3d[MOORE_NEIGHBORING_3D_COUNT];
 
+const unsigned int MOORE_AREA_3D_COUNT = 27;
+const unsigned int MOORE_AREA_3D_CENTRAL_INDEX = 13;
+extern const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT];
+
 } // namespace Cube
 
 #endif // CUBE_TABLES_H

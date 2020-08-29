@@ -16,6 +16,10 @@ class Voxel : public Resource {
 	GDCLASS(Voxel, Resource)
 
 public:
+	// Convention to mean "nothing".
+	// Don't assign a non-empty model at this index.
+	static const uint16_t AIR_ID = 0;
+
 	// Plain data strictly used by the mesher.
 	// It becomes distinct because it's going to be used in a multithread environment,
 	// while the configuration that produced the data can be changed by the user at any time.

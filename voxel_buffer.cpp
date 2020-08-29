@@ -113,10 +113,13 @@ const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Data2,Data3,Data4,Da
 
 VoxelBuffer::VoxelBuffer() {
 	_channels[CHANNEL_SDF].defval = 255;
+	// TODO How many of these can be created? Make it optional?
+	_rw_lock = RWLock::create();
 }
 
 VoxelBuffer::~VoxelBuffer() {
 	clear();
+	memdelete(_rw_lock);
 }
 
 void VoxelBuffer::create(int sx, int sy, int sz) {
@@ -260,15 +263,6 @@ real_t VoxelBuffer::get_voxel_f(int x, int y, int z, unsigned int channel_index)
 void VoxelBuffer::set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 	set_voxel(real_to_raw_voxel(value, _channels[channel_index].depth), x, y, z, channel_index);
-}
-
-// This version does not cause errors if out of bounds. Use only if it's okay to be outside.
-void VoxelBuffer::try_set_voxel(int x, int y, int z, int value, unsigned int channel_index) {
-	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
-	if (!is_position_valid(x, y, z)) {
-		return;
-	}
-	set_voxel(x, y, z, value, channel_index);
 }
 
 void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
@@ -474,14 +468,14 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index
 
 	ERR_FAIL_COND(other_channel.depth != channel.depth);
 
-	if (other_channel.data) {
+	if (other_channel.data != nullptr) {
 		if (channel.data == nullptr) {
 			create_channel_noinit(channel_index, _size);
 		}
 		CRASH_COND(channel.size_in_bytes != other_channel.size_in_bytes);
 		memcpy(channel.data, other_channel.data, channel.size_in_bytes);
 
-	} else if (channel.data) {
+	} else if (channel.data != nullptr) {
 		delete_channel(channel_index);
 	}
 
@@ -557,10 +551,16 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 	}
 }
 
-Ref<VoxelBuffer> VoxelBuffer::duplicate() const {
+Ref<VoxelBuffer> VoxelBuffer::duplicate(bool include_metadata) const {
 	VoxelBuffer *d = memnew(VoxelBuffer);
 	d->create(_size);
+	for (unsigned int i = 0; i < _channels.size(); ++i) {
+		d->set_channel_depth(i, _channels[i].depth);
+	}
 	d->copy_from(*this);
+	if (include_metadata) {
+		d->copy_voxel_metadata(*this);
+	}
 	return Ref<VoxelBuffer>(d);
 }
 
@@ -819,6 +819,20 @@ void VoxelBuffer::copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Rect3
 		}
 		elem = elem->next();
 	}
+}
+
+void VoxelBuffer::copy_voxel_metadata(const VoxelBuffer &src_buffer) {
+	ERR_FAIL_COND(src_buffer.get_size() != _size);
+
+	const Map<Vector3i, Variant>::Element *elem = src_buffer._voxel_metadata.front();
+
+	while (elem != nullptr) {
+		const Vector3i pos = elem->key();
+		_voxel_metadata[pos] = elem->value().duplicate();
+		elem = elem->next();
+	}
+
+	_block_metadata = src_buffer._block_metadata.duplicate();
 }
 
 Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {

@@ -165,4 +165,38 @@ const Vector3i g_moore_neighboring_3d[MOORE_NEIGHBORING_3D_COUNT] = {
 	Vector3i(1, 1, 1),
 };
 
+// Order is IMPORTANT:
+// This is used in multithread context, in which we may iterate blocks in XYZ order, to avoid deadlocks.
+const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT] = {
+	Vector3i(-1, -1, -1),
+	Vector3i(0, -1, -1),
+	Vector3i(1, -1, -1),
+	Vector3i(-1, 0, -1),
+	Vector3i(0, 0, -1),
+	Vector3i(1, 0, -1),
+	Vector3i(-1, 1, -1),
+	Vector3i(0, 1, -1),
+	Vector3i(1, 1, -1),
+
+	Vector3i(-1, -1, 0),
+	Vector3i(0, -1, 0),
+	Vector3i(1, -1, 0),
+	Vector3i(-1, 0, 0),
+	Vector3i(0, 0, 0),
+	Vector3i(1, 0, 0),
+	Vector3i(-1, 1, 0),
+	Vector3i(0, 1, 0),
+	Vector3i(1, 1, 0),
+
+	Vector3i(-1, -1, 1),
+	Vector3i(0, -1, 1),
+	Vector3i(1, -1, 1),
+	Vector3i(-1, 0, 1),
+	Vector3i(0, 0, 1),
+	Vector3i(1, 0, 1),
+	Vector3i(-1, 1, 1),
+	Vector3i(0, 1, 1),
+	Vector3i(1, 1, 1)
+};
+
 } // namespace Cube
