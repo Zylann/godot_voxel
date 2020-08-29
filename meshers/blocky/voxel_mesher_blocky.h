@@ -8,6 +8,7 @@
 #include <scene/resources/mesh.h>
 #include <vector>
 
+// TODO Rename VoxelMesherModelBatch
 class VoxelMesherBlocky : public VoxelMesher {
 	GDCLASS(VoxelMesherBlocky, VoxelMesher)
 

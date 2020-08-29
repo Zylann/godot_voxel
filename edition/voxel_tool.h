@@ -47,6 +47,8 @@ public:
 	uint64_t get_voxel(Vector3i pos);
 	float get_voxel_f(Vector3i pos);
 
+	// TODO Methods working on a whole area must use an implementation that minimizes locking!
+
 	// The following methods represent one edit each. Pick the correct one for the job.
 	// For example, using `do_box` will be more efficient than calling `do_point` many times.
 	virtual void set_voxel(Vector3i pos, uint64_t v);
