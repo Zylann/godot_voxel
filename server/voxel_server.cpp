@@ -77,10 +77,23 @@ VoxelServer::VoxelServer() {
 }
 
 VoxelServer::~VoxelServer() {
+	// The GDScriptLanguage singleton can get destroyed before ours, so any script referenced by tasks
+	// cannot be freed. To work this around, tasks are cleared when the scene tree autoload is destroyed.
+	// So normally there should not be any task left to clear here,
+	// but doing it anyways for correctness, it's how it should have been...
+	// See https://github.com/Zylann/godot_voxel/issues/189
+	wait_and_clear_all_tasks(true);
+}
+
+void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	_streaming_thread_pool.wait_for_all_tasks();
 	_meshing_thread_pool.wait_for_all_tasks();
 
-	_streaming_thread_pool.dequeue_completed_tasks([](IVoxelTask *task) {
+	_streaming_thread_pool.dequeue_completed_tasks([warn](IVoxelTask *task) {
+		if (warn) {
+			WARN_PRINT("Streaming tasks remain on module cleanup, "
+					   "this could become a problem if they reference scripts");
+		}
 		memdelete(task);
 	});
 
@@ -246,6 +259,12 @@ void VoxelServer::remove_volume(uint32_t volume_id) {
 
 	_world.volumes.destroy(volume_id);
 	// TODO How to cancel meshing tasks?
+
+	if (_world.volumes.count() == 0) {
+		// To workaround https://github.com/Zylann/godot_voxel/issues/189
+		// When the last remaining volume got destroyed (as in game exit)
+		VoxelServer::get_singleton()->wait_and_clear_all_tasks(false);
+	}
 }
 
 uint32_t VoxelServer::add_viewer() {
@@ -535,6 +554,11 @@ bool VoxelServer::BlockMeshRequest::is_cancelled() {
 
 //----------------------------------------------------------------------------------------------------------------------
 
+VoxelServerUpdater::VoxelServerUpdater() {
+	PRINT_VERBOSE("Creating VoxelServerUpdater");
+	set_process(true);
+}
+
 void VoxelServerUpdater::ensure_existence(SceneTree *st) {
 	if (st == nullptr) {
 		return;
@@ -547,6 +571,22 @@ void VoxelServerUpdater::ensure_existence(SceneTree *st) {
 		}
 	}
 	VoxelServerUpdater *u = memnew(VoxelServerUpdater);
-	u->set_name("VoxelServerUpdater");
+	u->set_name("VoxelServerUpdater_dont_touch_this");
 	root->add_child(u);
+}
+
+void VoxelServerUpdater::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_PROCESS:
+			// To workaround the absence of API to have a custom server processing in the main loop
+			VoxelServer::get_singleton()->process();
+			break;
+
+		case NOTIFICATION_PREDELETE:
+			PRINT_VERBOSE("Deleting VoxelServerUpdater");
+			break;
+
+		default:
+			break;
+	}
 }

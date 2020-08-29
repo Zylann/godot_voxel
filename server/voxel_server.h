@@ -81,6 +81,7 @@ public:
 			unsigned int &out_min_padding, unsigned int &out_max_padding) const;
 
 	void process();
+	void wait_and_clear_all_tasks(bool warn);
 
 private:
 	Dictionary _b_get_stats();
@@ -212,16 +213,10 @@ public:
 	static void ensure_existence(SceneTree *st);
 
 protected:
-	void _notification(int p_what) {
-		if (p_what == NOTIFICATION_PROCESS) {
-			VoxelServer::get_singleton()->process();
-		}
-	}
+	void _notification(int p_what);
 
 private:
-	VoxelServerUpdater() {
-		set_process(true);
-	}
+	VoxelServerUpdater();
 };
 
 #endif // VOXEL_SERVER_H
