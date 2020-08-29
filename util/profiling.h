@@ -1,0 +1,13 @@
+#ifndef VOXEL_PROFILING_H
+#define VOXEL_PROFILING_H
+
+#define VOXEL_PROFILER_ENABLED
+
+#ifdef VOXEL_PROFILER_ENABLED
+// TODO Integrate a profiler
+#define VOXEL_PROFILE_SCOPE()
+#else
+#define VOXEL_PROFILE_SCOPE()
+#endif
+
+#endif // VOXEL_PROFILING_H

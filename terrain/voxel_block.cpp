@@ -1,5 +1,4 @@
 #include "voxel_block.h"
-#include "../util/zprofiling.h"
 #include "../voxel_string_names.h"
 #include <scene/3d/spatial.h>
 #include <scene/resources/concave_polygon_shape.h>

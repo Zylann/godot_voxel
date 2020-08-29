@@ -1,7 +1,6 @@
 #ifndef VOXEL_STREAM_H
 #define VOXEL_STREAM_H
 
-#include "../util/zprofiling.h"
 #include "voxel_block_request.h"
 #include <core/resource.h>
 

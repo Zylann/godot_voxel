@@ -2,7 +2,6 @@
 #define VOXEL_TERRAIN_H
 
 #include "../server/voxel_server.h"
-#include "../util/zprofiling.h"
 #include "voxel_map.h"
 
 #include <scene/3d/spatial.h>
