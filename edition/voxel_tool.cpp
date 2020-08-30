@@ -1,6 +1,7 @@
 #include "voxel_tool.h"
 #include "../terrain/voxel_lod_terrain.h"
 #include "../util/macros.h"
+#include "../util/profiling.h"
 #include "../voxel_buffer.h"
 
 Vector3 VoxelRaycastResult::_b_get_position() const {
@@ -157,6 +158,8 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 } // namespace
 
 void VoxelTool::do_sphere(Vector3 center, float radius) {
+	VOXEL_PROFILE_SCOPE();
+
 	Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
@@ -185,6 +188,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 }
 
 void VoxelTool::do_box(Vector3i begin, Vector3i end) {
+	VOXEL_PROFILE_SCOPE();
 	Vector3i::sort_min_max(begin, end);
 	Rect3i box = Rect3i::from_min_max(begin, end + Vector3i(1, 1, 1));
 

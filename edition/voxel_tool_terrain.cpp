@@ -123,6 +123,8 @@ Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) {
 // Executes a function on random voxels in the provided area, using the type channel.
 // This allows to implement slow "natural" cellular automata behavior, as can be seen in Minecraft.
 void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<FuncRef> callback, int batch_count) const {
+	VOXEL_PROFILE_SCOPE();
+
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(_terrain->get_voxel_library().is_null());
 	ERR_FAIL_COND(callback.is_null());

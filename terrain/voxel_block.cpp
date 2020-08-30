@@ -1,4 +1,5 @@
 #include "voxel_block.h"
+#include "../util/profiling.h"
 #include "../voxel_string_names.h"
 #include <scene/3d/spatial.h>
 #include <scene/resources/concave_polygon_shape.h>
@@ -7,6 +8,7 @@
 // See https://github.com/Zylann/godot_voxel/issues/54
 //
 static Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
+	VOXEL_PROFILE_SCOPE();
 
 	PoolVector<Vector3> face_points;
 	int face_points_size = 0;
@@ -108,7 +110,6 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision
 	// This needs investigation.
 
 	if (mesh.is_valid()) {
-
 		ERR_FAIL_COND(node == nullptr);
 		ERR_FAIL_COND(node->get_world() != _world);
 
@@ -167,7 +168,6 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision
 }
 
 void VoxelBlock::set_transition_mesh(Ref<Mesh> mesh, int side) {
-
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {

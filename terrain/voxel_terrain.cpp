@@ -3,6 +3,7 @@
 #include "../server/voxel_server.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/macros.h"
+#include "../util/profiling.h"
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
 #include "../voxel_string_names.h"
@@ -678,6 +679,8 @@ void VoxelTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_d
 }
 
 void VoxelTerrain::send_block_data_requests() {
+	VOXEL_PROFILE_SCOPE();
+
 	// Blocks to load
 	for (int i = 0; i < _blocks_pending_load.size(); ++i) {
 		const Vector3i block_pos = _blocks_pending_load[i];
@@ -713,6 +716,8 @@ void VoxelTerrain::emit_block_unloaded(const VoxelBlock *block) {
 }
 
 void VoxelTerrain::_process() {
+	VOXEL_PROFILE_SCOPE();
+
 	// TODO Should be able to run without library, tho!
 	if (_library.is_null()) {
 		return;
@@ -738,6 +743,8 @@ void VoxelTerrain::_process() {
 
 	// Find out which blocks need to appear and which need to be unloaded
 	{
+		VOXEL_PROFILE_SCOPE();
+
 		Rect3i new_box = Rect3i::from_center_extents(viewer_block_pos, Vector3i(_view_distance_blocks));
 		Rect3i prev_box = Rect3i::from_center_extents(_last_viewer_block_pos, Vector3i(_last_view_distance_blocks));
 
@@ -779,6 +786,8 @@ void VoxelTerrain::_process() {
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
 	{
+		VOXEL_PROFILE_SCOPE();
+
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 		for (size_t i = 0; i < _reception_buffers.data_output.size(); ++i) {
 			const VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[i];
@@ -882,6 +891,8 @@ void VoxelTerrain::_process() {
 
 	// Send mesh updates
 	{
+		VOXEL_PROFILE_SCOPE();
+
 		for (int i = 0; i < _blocks_pending_update.size(); ++i) {
 			Vector3i block_pos = _blocks_pending_update[i];
 
@@ -950,6 +961,8 @@ void VoxelTerrain::_process() {
 
 	// Get mesh updates
 	{
+		VOXEL_PROFILE_SCOPE_NAMED("Receive mesh updates");
+
 		const uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS;
 		size_t queue_index = 0;
 
@@ -980,9 +993,10 @@ void VoxelTerrain::_process() {
 
 			Vector<Array> collidable_surfaces; //need to put both blocky and smooth surfaces into one list
 
+			VOXEL_PROFILE_SCOPE_NAMED("Build mesh");
+
 			int surface_index = 0;
 			for (int i = 0; i < ob.blocky_surfaces.surfaces.size(); ++i) {
-
 				Array surface = ob.blocky_surfaces.surfaces[i];
 				if (surface.empty()) {
 					continue;
@@ -1002,7 +1016,6 @@ void VoxelTerrain::_process() {
 			}
 
 			for (int i = 0; i < ob.smooth_surfaces.surfaces.size(); ++i) {
-
 				Array surface = ob.smooth_surfaces.surfaces[i];
 				if (surface.empty()) {
 					continue;

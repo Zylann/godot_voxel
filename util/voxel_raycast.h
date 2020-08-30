@@ -1,4 +1,5 @@
 #include "../math/vector3i.h"
+#include "../util/profiling.h"
 #include <core/math/vector3.h>
 
 template <typename Predicate_F> // f(Vector3i position) -> bool
@@ -9,6 +10,8 @@ bool voxel_raycast(
 		real_t max_distance,
 		Vector3i &out_hit_pos,
 		Vector3i &out_prev_pos) {
+
+	VOXEL_PROFILE_SCOPE();
 
 	const float g_infinite = 9999999;
 

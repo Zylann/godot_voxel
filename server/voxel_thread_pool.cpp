@@ -1,4 +1,5 @@
 #include "voxel_thread_pool.h"
+#include "../util/profiling.h"
 
 #include <core/os/os.h>
 #include <core/os/semaphore.h>
@@ -125,6 +126,8 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 
 	while (!data.stop) {
 		{
+			VOXEL_PROFILE_SCOPE();
+
 			data.debug_state = STATE_PICKING;
 			const uint32_t now = OS::get_singleton()->get_ticks_msec();
 

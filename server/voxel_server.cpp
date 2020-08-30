@@ -1,6 +1,7 @@
 #include "voxel_server.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../util/macros.h"
+#include "../util/profiling.h"
 #include <core/os/memory.h>
 #include <scene/main/viewport.h>
 
@@ -286,6 +287,10 @@ void VoxelServer::remove_viewer(uint32_t viewer_id) {
 }
 
 void VoxelServer::process() {
+	// Note, this shouldn't be here. It should normally done just after SwapBuffers.
+	// Godot does not have any C++ profiler usage anywhere, so when using Tracy Profiler I have to put it somewhere...
+	VOXEL_PROFILE_MARK_FRAME();
+
 	// Receive data updates
 	_streaming_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
 		BlockDataRequest *r = must_be_cast<BlockDataRequest>(task);
@@ -432,6 +437,8 @@ void VoxelServer::_bind_methods() {
 //----------------------------------------------------------------------------------------------------------------------
 
 void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
+	VOXEL_PROFILE_SCOPE();
+
 	CRASH_COND(stream_dependency == nullptr);
 	Ref<VoxelStream> stream = stream_dependency->streams[ctx.thread_index];
 	CRASH_COND(stream.is_null());
@@ -473,6 +480,8 @@ bool VoxelServer::BlockDataRequest::is_cancelled() {
 static void copy_block_and_neighbors(const FixedArray<Ref<VoxelBuffer>, Cube::MOORE_AREA_3D_COUNT> &moore_blocks,
 		VoxelBuffer &dst, int min_padding, int max_padding) {
 
+	VOXEL_PROFILE_SCOPE();
+
 	FixedArray<unsigned int, 2> channels;
 	channels[0] = VoxelBuffer::CHANNEL_TYPE;
 	channels[1] = VoxelBuffer::CHANNEL_SDF;
@@ -510,6 +519,7 @@ static void copy_block_and_neighbors(const FixedArray<Ref<VoxelBuffer>, Cube::MO
 }
 
 void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
+	VOXEL_PROFILE_SCOPE();
 	CRASH_COND(meshing_dependency == nullptr);
 
 	unsigned int min_padding;
@@ -526,6 +536,7 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 	if (blocky_enabled) {
 		Ref<VoxelLibrary> library = meshing_dependency->library;
 		if (library.is_valid()) {
+			VOXEL_PROFILE_SCOPE_NAMED("Blocky meshing");
 			Ref<VoxelMesherBlocky> blocky_mesher = VoxelServer::get_singleton()->_blocky_meshers[ctx.thread_index];
 			CRASH_COND(blocky_mesher.is_null());
 			// This mesher only uses baked data from the library, which is protected by a lock
@@ -536,6 +547,7 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 	}
 
 	if (smooth_enabled) {
+		VOXEL_PROFILE_SCOPE("Smooth meshing");
 		Ref<VoxelMesher> smooth_mesher = VoxelServer::get_singleton()->_smooth_meshers[ctx.thread_index];
 		CRASH_COND(smooth_mesher.is_null());
 		smooth_mesher->build(smooth_surfaces_output, input);

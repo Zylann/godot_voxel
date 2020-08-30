@@ -1,6 +1,7 @@
 #include "voxel_block_serializer.h"
 #include "../math/vector3i.h"
 #include "../thirdparty/lz4/lz4.h"
+#include "../util/profiling.h"
 #include "../voxel_buffer.h"
 #include "../voxel_memory_pool.h"
 
@@ -172,6 +173,7 @@ size_t get_size_in_bytes(const VoxelBuffer &buffer, size_t &metadata_size) {
 }
 
 const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize(VoxelBuffer &voxel_buffer) {
+	VOXEL_PROFILE_SCOPE();
 	size_t metadata_size = 0;
 	const size_t data_size = get_size_in_bytes(voxel_buffer, metadata_size);
 	_data.resize(data_size);
@@ -231,6 +233,7 @@ const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize(VoxelBuffer 
 }
 
 bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer) {
+	VOXEL_PROFILE_SCOPE();
 	CRASH_COND(_file_access_memory.open_custom(p_data.data(), p_data.size()) != OK);
 	FileAccessMemory *f = &_file_access_memory;
 
@@ -296,6 +299,7 @@ bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_dat
 }
 
 const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize_and_compress(VoxelBuffer &voxel_buffer) {
+	VOXEL_PROFILE_SCOPE();
 	const std::vector<uint8_t> &data = serialize(voxel_buffer);
 
 	unsigned int header_size = sizeof(unsigned int);
@@ -320,6 +324,7 @@ const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize_and_compress
 }
 
 bool VoxelBlockSerializerInternal::decompress_and_deserialize(const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer) {
+	VOXEL_PROFILE_SCOPE();
 	// Read header
 	unsigned int header_size = sizeof(unsigned int);
 	ERR_FAIL_COND_V(_file_access_memory.open_custom(p_data.data(), p_data.size()) != OK, false);
@@ -344,6 +349,7 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(const std::vector<
 }
 
 bool VoxelBlockSerializerInternal::decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBuffer &out_voxel_buffer) {
+	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(f == nullptr, false);
 
 	_compressed_data.resize(size_to_read);
