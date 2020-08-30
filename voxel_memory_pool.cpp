@@ -1,6 +1,7 @@
 #include "voxel_memory_pool.h"
 #include "core/print_string.h"
 #include "core/variant.h"
+#include "util/profiling.h"
 
 namespace {
 VoxelMemoryPool *g_memory_pool = nullptr;
@@ -36,6 +37,7 @@ VoxelMemoryPool::~VoxelMemoryPool() {
 }
 
 uint8_t *VoxelMemoryPool::allocate(uint32_t size) {
+	VOXEL_PROFILE_SCOPE();
 	MutexLock lock(_mutex);
 	Pool *pool = get_or_create_pool(size);
 	uint8_t *block;
