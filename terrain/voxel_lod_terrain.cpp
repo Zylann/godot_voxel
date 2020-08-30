@@ -167,7 +167,6 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 	}
 
 	// The whole map might change, so make all area dirty
-	// TODO Actually, we should regenerate the whole map, not just update all its blocks
 	for (int i = 0; i < get_lod_count(); ++i) {
 		Lod &lod = _lods[i];
 		lod.last_view_distance_blocks = 0;
@@ -308,6 +307,7 @@ void VoxelLodTerrain::stop_streamer() {
 
 	for (unsigned int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
+		lod.loading_blocks.clear();
 		lod.blocks_to_load.clear();
 	}
 }
