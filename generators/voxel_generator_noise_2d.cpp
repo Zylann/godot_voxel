@@ -1,6 +1,13 @@
 #include "voxel_generator_noise_2d.h"
+#include <core/engine.h>
 
 VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		// Have one by default in editor
+		_noise.instance();
+	}
+#endif
 }
 
 void VoxelGeneratorNoise2D::set_noise(Ref<OpenSimplexNoise> noise) {
@@ -27,12 +34,14 @@ void VoxelGeneratorNoise2D::generate_block(VoxelBlockRequest &input) {
 	OpenSimplexNoise &noise = **_noise;
 
 	if (_curve.is_null()) {
-		VoxelGeneratorHeightmap::generate(out_buffer,
+		VoxelGeneratorHeightmap::generate(
+				out_buffer,
 				[&noise](int x, int z) { return 0.5 + 0.5 * noise.get_noise_2d(x, z); },
 				input.origin_in_voxels, input.lod);
 	} else {
 		Curve &curve = **_curve;
-		VoxelGeneratorHeightmap::generate(out_buffer,
+		VoxelGeneratorHeightmap::generate(
+				out_buffer,
 				[&noise, &curve](int x, int z) { return curve.interpolate_baked(0.5 + 0.5 * noise.get_noise_2d(x, z)); },
 				input.origin_in_voxels, input.lod);
 	}

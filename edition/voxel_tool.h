@@ -100,6 +100,8 @@ private:
 	Variant _b_get_voxel_metadata(Vector3 pos) { return get_voxel_metadata(Vector3i(pos)); }
 	void _b_set_voxel_metadata(Vector3 pos, Variant meta) { return set_voxel_metadata(Vector3i(pos), meta); }
 
+	bool _b_is_area_editable(AABB box) { return is_area_editable(Rect3i(box.position, box.size)); }
+
 protected:
 	uint64_t _value = 0;
 	uint64_t _eraser_value = 0; // air

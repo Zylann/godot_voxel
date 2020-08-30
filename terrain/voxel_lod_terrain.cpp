@@ -168,7 +168,6 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 	}
 
 	// The whole map might change, so make all area dirty
-	// TODO Actually, we should regenerate the whole map, not just update all its blocks
 	for (int i = 0; i < get_lod_count(); ++i) {
 		Lod &lod = _lods[i];
 		lod.last_view_distance_blocks = 0;
@@ -309,6 +308,7 @@ void VoxelLodTerrain::stop_streamer() {
 
 	for (unsigned int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
+		lod.loading_blocks.clear();
 		lod.blocks_to_load.clear();
 	}
 }
@@ -942,14 +942,17 @@ void VoxelLodTerrain::_process() {
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
 
-	send_block_data_requests();
+	// It's possible the user didn't set a stream yet, or it is turned off
+	if (_stream_thread != nullptr) {
+		send_block_data_requests();
+	}
 
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
 
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters.
 	// It should only happen on first load, though.
-	{
+	if (_stream_thread != nullptr) {
 		VOXEL_PROFILE_SCOPE();
 
 		VoxelDataLoader::Output output;
