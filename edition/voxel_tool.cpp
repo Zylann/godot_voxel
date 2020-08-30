@@ -215,10 +215,13 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	_post_edit(box);
 }
 
+void VoxelTool::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint64_t mask_value) {
+	ERR_FAIL_COND(dst.is_null());
+	ERR_PRINT("Not implemented");
+}
+
 void VoxelTool::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint64_t mask_value) {
 	ERR_FAIL_COND(p_voxels.is_null());
-	Ref<VoxelBuffer> voxels = Object::cast_to<VoxelBuffer>(*p_voxels);
-	ERR_FAIL_COND(voxels.is_null());
 	ERR_PRINT("Not implemented");
 }
 

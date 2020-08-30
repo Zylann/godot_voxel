@@ -59,6 +59,7 @@ public:
 	virtual void do_sphere(Vector3 center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
 
+	virtual void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint64_t mask_value);
 	virtual void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint64_t mask_value);
 
 	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
