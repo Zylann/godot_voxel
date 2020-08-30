@@ -1,4 +1,14 @@
 #include "voxel_generator_noise.h"
+#include <core/engine.h>
+
+VoxelGeneratorNoise::VoxelGeneratorNoise() {
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		// Have one by default in editor
+		_noise.instance();
+	}
+#endif
+}
 
 void VoxelGeneratorNoise::set_noise(Ref<OpenSimplexNoise> noise) {
 	_noise = noise;
@@ -78,7 +88,6 @@ static inline float get_shaped_noise(OpenSimplexNoise &noise, float x, float y, 
 }
 
 void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
-
 	ERR_FAIL_COND(input.voxel_buffer.is_null());
 	ERR_FAIL_COND(_noise.is_null());
 

@@ -9,6 +9,8 @@ class VoxelGeneratorNoise : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorNoise, VoxelGenerator)
 
 public:
+	VoxelGeneratorNoise();
+
 	void set_channel(VoxelBuffer::ChannelId channel);
 	VoxelBuffer::ChannelId get_channel() const;
 	int get_used_channels_mask() const override;
