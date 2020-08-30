@@ -941,14 +941,17 @@ void VoxelLodTerrain::_process() {
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
 
-	send_block_data_requests();
+	// It's possible the user didn't set a stream yet, or it is turned off
+	if (_stream_thread != nullptr) {
+		send_block_data_requests();
+	}
 
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
 
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters.
 	// It should only happen on first load, though.
-	{
+	if (_stream_thread != nullptr) {
 		VOXEL_PROFILE_SCOPE(profile_process_get_loading_responses);
 
 		VoxelDataLoader::Output output;
