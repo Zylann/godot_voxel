@@ -945,7 +945,11 @@ void VoxelTerrain::_process() {
 			for (unsigned int i = 0; i < Cube::MOORE_AREA_3D_COUNT; ++i) {
 				const Vector3i npos = block_pos + Cube::g_ordered_moore_area_3d[i];
 				VoxelBlock *nblock = _map->get_block(npos);
-				CRASH_COND(nblock == nullptr);
+				// The block can actually be null on some occasions. Not sure yet if it's that bad
+				//CRASH_COND(nblock == nullptr);
+				if (nblock == nullptr) {
+					continue;
+				}
 				mi.blocks[i] = nblock->voxels;
 			}
 

@@ -487,6 +487,7 @@ static void copy_block_and_neighbors(const FixedArray<Ref<VoxelBuffer>, Cube::MO
 	channels[1] = VoxelBuffer::CHANNEL_SDF;
 
 	Ref<VoxelBuffer> central_buffer = moore_blocks[Cube::MOORE_AREA_3D_CENTRAL_INDEX];
+	CRASH_COND_MSG(central_buffer.is_null(), "Central buffer must be valid");
 	const int block_size = central_buffer->get_size().x;
 	const unsigned int padded_block_size = block_size + min_padding + max_padding;
 
@@ -503,7 +504,9 @@ static void copy_block_and_neighbors(const FixedArray<Ref<VoxelBuffer>, Cube::MO
 		const Vector3i offset = block_size * Cube::g_ordered_moore_area_3d[i];
 		Ref<VoxelBuffer> src = moore_blocks[i];
 
-		CRASH_COND(src.is_null());
+		if (src.is_null()) {
+			continue;
+		}
 
 		const Vector3i src_min = min_pos - offset;
 		const Vector3i src_max = max_pos - offset;
