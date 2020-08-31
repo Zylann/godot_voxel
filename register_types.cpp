@@ -23,9 +23,11 @@
 #include "terrain/voxel_lod_terrain.h"
 #include "terrain/voxel_map.h"
 #include "terrain/voxel_terrain.h"
+#include "util/macros.h"
 #include "voxel_buffer.h"
 #include "voxel_memory_pool.h"
 #include "voxel_string_names.h"
+#include <core/engine.h>
 
 void register_voxel_types() {
 	VoxelMemoryPool::create_singleton();

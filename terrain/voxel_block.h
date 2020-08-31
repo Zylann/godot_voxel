@@ -89,7 +89,7 @@ private:
 	Ref<Material> _debug_transition_material;
 #endif
 
-	int _mesh_update_count = 0;
+	int _mesh_update_count = 0; // TODO Never really used?
 	bool _visible = true;
 	bool _parent_visible = true;
 	MeshState _mesh_state = MESH_NEVER_UPDATED;

@@ -56,6 +56,8 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	PRINT_VERBOSE("Construct VoxelLodTerrain");
 
+	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers);
+
 	_lods[0].map.instance();
 
 	// TODO Being able to set a LOD smaller than the stream is probably a bad idea,
@@ -67,17 +69,13 @@ VoxelLodTerrain::VoxelLodTerrain() {
 VoxelLodTerrain::~VoxelLodTerrain() {
 	PRINT_VERBOSE("Destroy VoxelLodTerrain");
 
-	if (_stream_thread) {
+	if (_stream.is_valid()) {
 		// Schedule saving of all modified blocks,
 		// without copy because we are destroying the map anyways
 		save_all_modified_blocks(false);
-
-		memdelete(_stream_thread);
 	}
 
-	if (_block_updater) {
-		memdelete(_block_updater);
-	}
+	VoxelServer::get_singleton()->remove_volume(_volume_id);
 }
 
 String VoxelLodTerrain::get_configuration_warning() const {
@@ -145,8 +143,6 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 
 void VoxelLodTerrain::_on_stream_params_changed() {
 	stop_streamer();
-
-	const bool was_updater_running = _block_updater != nullptr;
 	stop_updater();
 
 	Ref<VoxelStreamFile> file_stream = _stream;
@@ -158,12 +154,12 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 		_set_lod_count(min(stream_lod_count, get_lod_count()));
 	}
 
+	VoxelServer::get_singleton()->set_volume_block_size(_volume_id, get_block_size());
+
 	reset_maps();
 
 	if (_stream.is_valid() && (!Engine::get_singleton()->is_editor_hint() || _run_stream_in_editor)) {
 		start_streamer();
-	}
-	if (was_updater_running) {
 		start_updater();
 	}
 
@@ -257,13 +253,6 @@ Spatial *VoxelLodTerrain::get_viewer() const {
 }
 
 void VoxelLodTerrain::start_updater() {
-	ERR_FAIL_COND(_block_updater != nullptr);
-
-	// TODO Thread-safe way to change those parameters
-	VoxelMeshUpdater::MeshingParams params;
-	params.smooth_surface = true;
-
-	_block_updater = memnew(VoxelMeshUpdater(2, params));
 }
 
 void VoxelLodTerrain::stop_updater() {
@@ -275,12 +264,9 @@ void VoxelLodTerrain::stop_updater() {
 		}
 	};
 
-	if (_block_updater) {
-		memdelete(_block_updater);
-		_block_updater = nullptr;
-	}
+	VoxelServer::get_singleton()->invalidate_volume_mesh_requests(_volume_id);
 
-	_blocks_pending_main_thread_update.clear();
+	_reception_buffers.mesh_output.clear();
 
 	for (unsigned int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
@@ -294,23 +280,19 @@ void VoxelLodTerrain::stop_updater() {
 }
 
 void VoxelLodTerrain::start_streamer() {
-	ERR_FAIL_COND(_stream_thread != nullptr);
-	ERR_FAIL_COND(_stream.is_null());
-
-	_stream_thread = memnew(VoxelDataLoader(1, _stream, get_block_size_pow2()));
+	VoxelServer::get_singleton()->set_volume_stream(_volume_id, _stream);
 }
 
 void VoxelLodTerrain::stop_streamer() {
-	if (_stream_thread) {
-		memdelete(_stream_thread);
-		_stream_thread = nullptr;
-	}
+	VoxelServer::get_singleton()->set_volume_stream(_volume_id, Ref<VoxelStream>());
 
 	for (unsigned int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
 		lod.loading_blocks.clear();
 		lod.blocks_to_load.clear();
 	}
+
+	_reception_buffers.data_output.clear();
 }
 
 void VoxelLodTerrain::set_lod_split_scale(float p_lod_split_scale) {
@@ -430,13 +412,15 @@ Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, int lod_index) co
 void VoxelLodTerrain::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
-			if (_block_updater == nullptr) {
-				start_updater();
-			}
 			set_process(true);
 			break;
 
 		case NOTIFICATION_PROCESS:
+			// Can't do that in enter tree because Godot is "still setting up children".
+			// Can't do that in ready either because Godot says node state is locked.
+			// This hack is quite miserable.
+			VoxelServerUpdater::ensure_existence(get_tree());
+
 			_process();
 			break;
 
@@ -574,40 +558,27 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelBlock *block) {
 }
 
 void VoxelLodTerrain::send_block_data_requests() {
-	VoxelDataLoader::Input input;
-
-	Vector3 viewer_pos;
-	get_viewer_pos_and_direction(viewer_pos, input.priority_direction);
-	input.priority_position = _lods[0].map->voxel_to_block(Vector3i(viewer_pos));
-
-	input.use_exclusive_region = true;
-	// The last LOD may spread until end of view distance, it should not be discarded
-	input.exclusive_region_max_lod = get_lod_count() - 1;
-	input.exclusive_region_extent = get_block_region_extent();
-
+	// Blocks to load
 	for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 
 		for (unsigned int i = 0; i < lod.blocks_to_load.size(); ++i) {
-			VoxelDataLoader::InputBlock input_block;
-			input_block.position = lod.blocks_to_load[i];
-			input_block.lod = lod_index;
-			input.blocks.push_back(input_block);
+			const Vector3i block_pos = lod.blocks_to_load[i];
+			VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, lod_index);
 		}
 
 		lod.blocks_to_load.clear();
 	}
 
+	// Blocks to save
 	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
 		PRINT_VERBOSE(String("Requesting save of block {0} lod {1}")
 							  .format(varray(_blocks_to_save[i].position.to_vec3(), _blocks_to_save[i].lod)));
-		input.blocks.push_back(_blocks_to_save[i]);
+		const BlockToSave &b = _blocks_to_save[i];
+		VoxelServer::get_singleton()->request_block_save(_volume_id, b.voxels, b.position, b.lod);
 	}
 
 	_blocks_to_save.clear();
-
-	//print_line(String("Sending {0}").format(varray(input.blocks_to_emerge.size())));
-	_stream_thread->push(input);
 }
 
 void VoxelLodTerrain::_process() {
@@ -617,8 +588,6 @@ void VoxelLodTerrain::_process() {
 		// If there isn't a LOD 0, there is nothing to load
 		return;
 	}
-
-	OS &os = *OS::get_singleton();
 
 	// Get viewer location
 	// TODO Transform to local (Spatial Transform)
@@ -943,7 +912,7 @@ void VoxelLodTerrain::_process() {
 	_stats.time_detect_required_blocks = profiling_clock.restart();
 
 	// It's possible the user didn't set a stream yet, or it is turned off
-	if (_stream_thread != nullptr) {
+	if (_stream.is_valid() && (Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
 		send_block_data_requests();
 	}
 
@@ -952,25 +921,19 @@ void VoxelLodTerrain::_process() {
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters.
 	// It should only happen on first load, though.
-	if (_stream_thread != nullptr) {
+	{
 		VOXEL_PROFILE_SCOPE();
 
-		VoxelDataLoader::Output output;
-		_stream_thread->pop(output);
-		_stats.stream = output.stats;
-
-		//print_line(String("Loaded {0} blocks").format(varray(output.emerged_blocks.size())));
-
-		for (int i = 0; i < output.blocks.size(); ++i) {
-
+		for (size_t i = 0; i < _reception_buffers.data_output.size(); ++i) {
 			VOXEL_PROFILE_SCOPE();
+			const VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[i];
 
-			const VoxelDataLoader::OutputBlock &ob = output.blocks[i];
-
-			if (ob.data.type == VoxelDataLoader::TYPE_SAVE) {
+			if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVE) {
 				// That's a save confirmation event.
 				// Note: in the future, if blocks don't get copied before being sent for saving,
 				// we will need to use block versionning to know when we can reset the `modified` flag properly
+
+				// TODO Now that's the case. Use version? Or just keep copying?
 				continue;
 			}
 
@@ -993,7 +956,7 @@ void VoxelLodTerrain::_process() {
 				lod.loading_blocks.erase(E);
 			}
 
-			if (ob.drop_hint) {
+			if (ob.dropped) {
 				// That block was dropped by the data loader thread, but we were still expecting it...
 				// This is most likely caused by the loader not keeping up with the speed at which the player is moving.
 				// We should recover with the removal from `loading_blocks` so it will be re-queried again later...
@@ -1005,7 +968,7 @@ void VoxelLodTerrain::_process() {
 				continue;
 			}
 
-			if (ob.data.voxels_loaded->get_size() != Vector3i(lod.map->get_block_size())) {
+			if (ob.voxels->get_size() != Vector3i(lod.map->get_block_size())) {
 				// Voxel block size is incorrect, drop it
 				ERR_PRINT("Block size obtained from stream is different from expected size");
 				++_stats.dropped_block_loads;
@@ -1013,7 +976,7 @@ void VoxelLodTerrain::_process() {
 			}
 
 			// Store buffer
-			VoxelBlock *block = lod.map->set_block_buffer(ob.position, ob.data.voxels_loaded);
+			VoxelBlock *block = lod.map->set_block_buffer(ob.position, ob.voxels);
 			//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
 			// The block will be made visible and meshed only by LodOctree
 			block->set_visible(false);
@@ -1051,100 +1014,61 @@ void VoxelLodTerrain::_process() {
 	{
 		VOXEL_PROFILE_SCOPE();
 
-		VoxelMeshUpdater::Input input;
-		input.priority_position = viewer_block_pos;
-		input.priority_direction = viewer_direction;
-		input.use_exclusive_region = true;
-		input.exclusive_region_max_lod = get_lod_count() - 1;
-		input.exclusive_region_extent = get_block_region_extent();
-
 		for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 			VOXEL_PROFILE_SCOPE();
 			Lod &lod = _lods[lod_index];
 
 			for (unsigned int i = 0; i < lod.blocks_pending_update.size(); ++i) {
 				VOXEL_PROFILE_SCOPE();
-				Vector3i block_pos = lod.blocks_pending_update[i];
+				const Vector3i block_pos = lod.blocks_pending_update[i];
 
 				VoxelBlock *block = lod.map->get_block(block_pos);
 				CRASH_COND(block == nullptr);
 				// All blocks we get here must be in the scheduled state
 				CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
-				// TODO Perhaps we could do a bit of early-rejection before spending time in buffer copy?
-
-				// Create buffer padded with neighbor voxels
-				Ref<VoxelBuffer> nbuffer;
-				nbuffer.instance();
-
-				// TODO Make the buffer re-usable, or pool memory
-				unsigned int min_padding = _block_updater->get_minimum_padding();
-				unsigned int max_padding = _block_updater->get_maximum_padding();
-				{
-					VOXEL_PROFILE_SCOPE();
-					unsigned int block_size = lod.map->get_block_size();
-					nbuffer->create(Vector3i(block_size + min_padding + max_padding));
+				// Get block and its neighbors
+				VoxelServer::BlockMeshInput mi;
+				mi.position = block_pos;
+				mi.lod = lod_index;
+				for (unsigned int i = 0; i < Cube::MOORE_AREA_3D_COUNT; ++i) {
+					const Vector3i npos = block_pos + Cube::g_ordered_moore_area_3d[i];
+					VoxelBlock *nblock = lod.map->get_block(npos);
+					// The block can actually be null on some occasions. Not sure yet if it's that bad
+					//CRASH_COND(nblock == nullptr);
+					if (nblock == nullptr) {
+						continue;
+					}
+					mi.blocks[i] = nblock->voxels;
 				}
 
-				{
-					VOXEL_PROFILE_SCOPE();
-					unsigned int channels_mask = (1 << VoxelBuffer::CHANNEL_SDF);
-					lod.map->get_buffer_copy(lod.map->block_to_voxel(block_pos) - Vector3i(min_padding), **nbuffer, channels_mask);
-				}
-
-				VoxelMeshUpdater::InputBlock iblock;
-				iblock.data.voxels = nbuffer;
-				iblock.position = block_pos;
-				iblock.lod = lod_index;
-				input.blocks.push_back(iblock);
+				VoxelServer::get_singleton()->request_block_mesh(_volume_id, mi);
 
 				block->set_mesh_state(VoxelBlock::MESH_UPDATE_SENT);
 			}
 
 			lod.blocks_pending_update.clear();
 		}
-
-		//print_line(String("Sending {0} updates").format(varray(input.blocks.size())));
-		_block_updater->push(input);
 	}
 
 	_stats.time_request_blocks_to_update = profiling_clock.restart();
 
 	// Receive mesh updates
 	{
-		VOXEL_PROFILE_SCOPE();
-		{
-			VoxelMeshUpdater::Output output;
-			_block_updater->pop(output);
+		VOXEL_PROFILE_SCOPE_NAMED("Receive mesh updates");
 
-			_stats.updater = output.stats;
-			_stats.updated_blocks = output.blocks.size();
-
-			for (int i = 0; i < output.blocks.size(); ++i) {
-				VOXEL_PROFILE_SCOPE();
-				const VoxelMeshUpdater::OutputBlock &ob = output.blocks[i];
-
-				if (ob.lod >= get_lod_count()) {
-					// Sorry, LOD configuration changed, drop that mesh
-					++_stats.dropped_block_meshs;
-					continue;
-				}
-
-				_blocks_pending_main_thread_update.push_back(ob);
-			}
-		}
-
-		uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS; // Allocate milliseconds max to upload meshes
-		unsigned int queue_index = 0;
+		// Allocate milliseconds max to upload meshes
+		const OS &os = *OS::get_singleton();
+		const uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS;
 
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
 		// This also proved to be very slow compared to the meshing process itself...
 		// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
 
-		for (; queue_index < _blocks_pending_main_thread_update.size() && os.get_ticks_msec() < timeout; ++queue_index) {
+		size_t queue_index = 0;
+		for (; queue_index < _reception_buffers.mesh_output.size() && os.get_ticks_msec() < timeout; ++queue_index) {
 			VOXEL_PROFILE_SCOPE();
-
-			const VoxelMeshUpdater::OutputBlock &ob = _blocks_pending_main_thread_update[queue_index];
+			const VoxelServer::BlockMeshOutput &ob = _reception_buffers.mesh_output[queue_index];
 
 			if (ob.lod >= get_lod_count()) {
 				// Sorry, LOD configuration changed, drop that mesh
@@ -1161,7 +1085,7 @@ void VoxelLodTerrain::_process() {
 				continue;
 			}
 
-			if (ob.drop_hint) {
+			if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
 				// That block is loaded, but its meshing request was dropped.
 				// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
 				PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
@@ -1173,7 +1097,7 @@ void VoxelLodTerrain::_process() {
 				block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
 			}
 
-			const VoxelMesher::Output mesh_data = ob.data.smooth_surfaces;
+			const VoxelMesher::Output mesh_data = ob.smooth_surfaces;
 
 			Ref<ArrayMesh> mesh = build_mesh(
 					mesh_data.surfaces,
@@ -1205,7 +1129,7 @@ void VoxelLodTerrain::_process() {
 
 		{
 			VOXEL_PROFILE_SCOPE();
-			shift_up(_blocks_pending_main_thread_update, queue_index);
+			shift_up(_reception_buffers.mesh_output, queue_index);
 		}
 	}
 
@@ -1302,13 +1226,14 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 
 namespace {
 struct ScheduleSaveAction {
-	std::vector<VoxelDataLoader::InputBlock> &blocks_to_save;
+	std::vector<VoxelLodTerrain::BlockToSave> &blocks_to_save;
 	std::vector<Ref<ShaderMaterial> > &shader_materials;
 	bool with_copy;
 
 	void operator()(VoxelBlock *block) {
 		Ref<ShaderMaterial> sm = block->get_shader_material();
 		if (sm.is_valid()) {
+			// Recycle material
 			shader_materials.push_back(sm);
 			block->set_shader_material(Ref<ShaderMaterial>());
 		}
@@ -1316,17 +1241,16 @@ struct ScheduleSaveAction {
 		// TODO Don't ask for save if the stream doesn't support it!
 		if (block->is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
-			VoxelDataLoader::InputBlock b;
+			VoxelLodTerrain::BlockToSave b;
 
 			if (with_copy) {
 				RWLockRead lock(block->voxels->get_lock());
-				b.data.voxels_to_save = block->voxels->duplicate(true);
+				b.voxels = block->voxels->duplicate(true);
 			} else {
-				b.data.voxels_to_save = block->voxels;
+				b.voxels = block->voxels;
 			}
 
 			b.position = block->position;
-			b.can_be_discarded = false;
 			b.lod = block->lod_index;
 			blocks_to_save.push_back(b);
 			block->set_modified(false);
@@ -1356,8 +1280,6 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 }
 
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
-	ERR_FAIL_COND(_stream_thread == nullptr);
-
 	flush_pending_lod_edits();
 
 	for (int i = 0; i < _lod_count; ++i) {
@@ -1494,8 +1416,6 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 
 Dictionary VoxelLodTerrain::get_statistics() const {
 	Dictionary d;
-	d["stream"] = VoxelDataLoader::Mgr::to_dictionary(_stats.stream);
-	d["updater"] = VoxelMeshUpdater::Mgr::to_dictionary(_stats.updater);
 
 	// Breakdown of time spent in _process
 	d["time_detect_required_blocks"] = _stats.time_detect_required_blocks;
@@ -1504,7 +1424,7 @@ Dictionary VoxelLodTerrain::get_statistics() const {
 	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
 	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
-	d["remaining_main_thread_blocks"] = (int)_blocks_pending_main_thread_update.size();
+	d["remaining_main_thread_blocks"] = (int)_reception_buffers.mesh_output.size();
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;

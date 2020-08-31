@@ -607,7 +607,7 @@ void VoxelTerrain::_notification(int p_what) {
 		case NOTIFICATION_PROCESS:
 			// Can't do that in enter tree because Godot is "still setting up children".
 			// Can't do that in ready either because Godot says node state is locked.
-			// This hack is really getting miserable.
+			// This hack is quite miserable.
 			VoxelServerUpdater::ensure_existence(get_tree());
 
 			_process();

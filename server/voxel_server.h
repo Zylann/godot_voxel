@@ -147,7 +147,7 @@ private:
 		Vector3 world_position; // TODO Won't update while in queue. Can it be bad?
 	};
 
-	static int get_priority(const BlockRequestPriorityDependency &dep);
+	static int get_priority(const BlockRequestPriorityDependency &dep, uint8_t lod);
 
 	class BlockDataRequest : public IVoxelTask {
 	public:
@@ -210,6 +210,7 @@ private:
 class VoxelServerUpdater : public Node {
 	GDCLASS(VoxelServerUpdater, Node)
 public:
+	~VoxelServerUpdater();
 	static void ensure_existence(SceneTree *st);
 
 protected:

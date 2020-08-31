@@ -2,6 +2,7 @@
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
+#include "../voxel_constants.h"
 #include <core/os/memory.h>
 #include <scene/main/viewport.h>
 
@@ -103,7 +104,7 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	});
 }
 
-int VoxelServer::get_priority(const BlockRequestPriorityDependency &dep) {
+int VoxelServer::get_priority(const BlockRequestPriorityDependency &dep, uint8_t lod) {
 	const std::vector<Vector3> &viewer_positions = dep.viewers->positions;
 	const Vector3 block_position = dep.world_position;
 
@@ -120,7 +121,13 @@ int VoxelServer::get_priority(const BlockRequestPriorityDependency &dep) {
 		}
 	}
 
-	return static_cast<int>(closest_distance_sq);
+	int priority = static_cast<int>(closest_distance_sq);
+
+	// Higher lod indexes come first to allow the octree to subdivide.
+	// Then comes distance, which is modified by how much in view the block is
+	priority += (VoxelConstants::MAX_LOD - lod) * 10000;
+
+	return priority;
 }
 
 uint32_t VoxelServer::add_volume(ReceptionBuffers *buffers) {
@@ -174,6 +181,10 @@ void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	volume.meshing_dependency->library = volume.voxel_library;
 }
 
+static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
+	return (pos << lod) * bs + Vector3i(bs / 2);
+}
+
 void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
@@ -196,7 +207,7 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) 
 
 	r->meshing_dependency = volume.meshing_dependency;
 
-	const Vector3i voxel_pos = (input.position << input.lod) * volume.block_size;
+	const Vector3i voxel_pos = get_block_center(input.position, volume.block_size, input.lod);
 	r->priority_dependency.world_position = volume.transform.xform(voxel_pos.to_vec3());
 	r->priority_dependency.viewers = _world.viewers_for_priority;
 
@@ -218,7 +229,7 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 
 	r.stream_dependency = volume.stream_dependency;
 
-	const Vector3i voxel_pos = (block_pos << lod) * volume.block_size;
+	const Vector3i voxel_pos = get_block_center(block_pos, volume.block_size, lod);
 	r.priority_dependency.world_position = volume.transform.xform(voxel_pos.to_vec3());
 	r.priority_dependency.viewers = _world.viewers_for_priority;
 
@@ -297,6 +308,7 @@ void VoxelServer::process() {
 		Volume *volume = _world.volumes.try_get(r->volume_id);
 
 		if (volume != nullptr) {
+			// TODO Comparing pointer may not be guaranteed
 			// The request response must match the dependency it would have been requested with.
 			// If it doesn't match, we are no longer interested in the result.
 			if (r->stream_dependency == volume->stream_dependency) {
@@ -336,6 +348,7 @@ void VoxelServer::process() {
 		Volume *volume = _world.volumes.try_get(r->volume_id);
 
 		if (volume != nullptr) {
+			// TODO Comparing pointer may not be guaranteed
 			// The request response must match the dependency it would have been requested with.
 			// If it doesn't match, we are no longer interested in the result.
 			if (volume->meshing_dependency == r->meshing_dependency) {
@@ -443,11 +456,13 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 	Ref<VoxelStream> stream = stream_dependency->streams[ctx.thread_index];
 	CRASH_COND(stream.is_null());
 
+	const Vector3i origin_in_voxels = (position << lod) * block_size;
+
 	switch (type) {
 		case TYPE_LOAD:
 			voxels.instance();
 			voxels->create(block_size, block_size, block_size);
-			stream->emerge_block(voxels, position * block_size, lod);
+			stream->emerge_block(voxels, origin_in_voxels, lod);
 			break;
 
 		case TYPE_SAVE: {
@@ -457,7 +472,7 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 				voxels_copy = voxels->duplicate(true);
 			}
 			voxels.unref();
-			stream->immerge_block(voxels_copy, position * block_size, lod);
+			stream->immerge_block(voxels_copy, origin_in_voxels, lod);
 		} break;
 
 		default:
@@ -468,7 +483,7 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 }
 
 int VoxelServer::BlockDataRequest::get_priority() {
-	return type == TYPE_LOAD ? VoxelServer::get_priority(priority_dependency) : 0;
+	return type == TYPE_LOAD ? VoxelServer::get_priority(priority_dependency, lod) : 0;
 }
 
 bool VoxelServer::BlockDataRequest::is_cancelled() {
@@ -560,7 +575,7 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 }
 
 int VoxelServer::BlockMeshRequest::get_priority() {
-	return VoxelServer::get_priority(priority_dependency);
+	return VoxelServer::get_priority(priority_dependency, lod);
 }
 
 bool VoxelServer::BlockMeshRequest::is_cancelled() {
@@ -569,13 +584,25 @@ bool VoxelServer::BlockMeshRequest::is_cancelled() {
 
 //----------------------------------------------------------------------------------------------------------------------
 
+namespace {
+bool g_updater_created = false;
+}
+
 VoxelServerUpdater::VoxelServerUpdater() {
 	PRINT_VERBOSE("Creating VoxelServerUpdater");
 	set_process(true);
+	g_updater_created = true;
+}
+
+VoxelServerUpdater::~VoxelServerUpdater() {
+	g_updater_created = false;
 }
 
 void VoxelServerUpdater::ensure_existence(SceneTree *st) {
 	if (st == nullptr) {
+		return;
+	}
+	if (g_updater_created) {
 		return;
 	}
 	Viewport *root = st->get_root();

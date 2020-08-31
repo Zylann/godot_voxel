@@ -1,9 +1,8 @@
 #ifndef VOXEL_LOD_TERRAIN_HPP
 #define VOXEL_LOD_TERRAIN_HPP
 
+#include "../server/voxel_server.h"
 #include "lod_octree.h"
-#include "voxel_data_loader.h"
-#include "voxel_mesh_updater.h"
 #include <core/set.h>
 #include <scene/3d/spatial.h>
 
@@ -62,8 +61,6 @@ public:
 	Ref<VoxelTool> get_voxel_tool();
 
 	struct Stats {
-		VoxelMeshUpdater::Stats updater;
-		VoxelDataLoader::Stats stream;
 		int blocked_lods = 0;
 		int updated_blocks = 0;
 		int dropped_block_loads = 0;
@@ -81,6 +78,12 @@ public:
 	bool is_stream_running_in_editor() const;
 
 	void restart_stream();
+
+	struct BlockToSave {
+		Ref<VoxelBuffer> voxels;
+		Vector3i position;
+		uint8_t lod;
+	};
 
 	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
 	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
@@ -138,10 +141,9 @@ private:
 	NodePath _viewer_path;
 
 	Ref<VoxelStream> _stream;
-	VoxelDataLoader *_stream_thread = nullptr;
-	VoxelMeshUpdater *_block_updater = nullptr;
-	std::vector<VoxelMeshUpdater::OutputBlock> _blocks_pending_main_thread_update;
-	std::vector<VoxelDataLoader::InputBlock> _blocks_to_save;
+	std::vector<BlockToSave> _blocks_to_save;
+	VoxelServer::ReceptionBuffers _reception_buffers;
+	uint32_t _volume_id = 0;
 
 	// Only populated and then cleared inside _process, so lifetime of pointers should be valid
 	std::vector<VoxelBlock *> _blocks_pending_transition_update;
