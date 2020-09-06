@@ -7,7 +7,7 @@ Syntax
 --------
 
 - Class and struct names `PascalCase`
-- Constants, enums and macros `CAPITAL_CASE`
+- Constants, enums and macros `CAPSLOCK_CASE`
 - Other names `snake_case`
 - Globals prefixed with `g_`
 - Parameters prefixed with `p_`, but not really enforced so far. Matters for big functions.
@@ -16,9 +16,11 @@ Syntax
 - Enums prefixed by their name. Example: `enum Type { TYPE_ONE, TYPE_TWO }`
 - Open braces at the end of line, close them next line
 - Never omit braces
-- Space between binary operators and control flow
+- Space between binary operators and control flow: `if (a + b == 42)`
 - Indent with tabs
 - Use Clang-format to automate most of these rules (the one included in Godot should do it)
+- Constructors and destructors go on top
+- Bindings go at the bottom. Private wrapper functions start with `_b_`.
 
 C++ features
 -------------
@@ -26,6 +28,8 @@ C++ features
 - Don't use `auto` unless the type is impossible to express or a horrible template (like STL ones). IDEs aren't granted (Github reviews and diffs)
 - STL is ok if it measurably performs better than Godot alternatives.
 - Initialize variables next to declaration
+- Avoid using macros to define logic or constants. Prefer `static const`, `constexpr` and `inline` functions.
+- Prefer adding `const` to variables that won't change after being initialized
 
 Error handling
 ---------------
@@ -46,7 +50,7 @@ In performance-critical areas:
 - Reduce mutex locking to a minimum
 - Use data structures that are fit to the most frequent use over time (will often be either array, vector or hash map)
 - Consider statistics if their impact is negligible. It helps monitoring how well the module performs even in release builds.
-- Profile your code, in release mode. The lightweight `util/zprofiling.h` can help but you are free to use your own technique.
+- Profile your code, in release mode. This module is Tracy-friendly, see `util/profiling.hpp`.
 
 Godot API
 ----------
