@@ -244,7 +244,10 @@ void VoxelTerrain::make_block_dirty(VoxelBlock *block) {
 void VoxelTerrain::try_schedule_block_update(VoxelBlock *block) {
 	CRASH_COND(block == nullptr);
 
-	if (block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT) {
+	// If no update was requested already, and if there are viewers requiring a mesh
+	if (block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT &&
+			(block->viewers.get(VoxelViewerRefCount::TYPE_MESH) != 0 ||
+					block->viewers.get(VoxelViewerRefCount::TYPE_COLLISION) != 0)) {
 		// Regardless of if the updater is updating the block already,
 		// the block was modified again so we schedule another update
 		block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
@@ -826,6 +829,7 @@ void VoxelTerrain::_process() {
 		for (size_t i = 0; i < _paired_viewers.size(); ++i) {
 			PairedViewer &p = _paired_viewers[i];
 			if (!VoxelServer::get_singleton()->viewer_exists(p.id)) {
+				PRINT_VERBOSE("Detected destroyed viewer in VoxelTerrain");
 				p.state.view_distance_blocks = 0;
 				unpaired_viewer_indexes.push_back(i);
 			}
@@ -928,6 +932,7 @@ void VoxelTerrain::_process() {
 
 	// We no longer need unpaired viewers
 	for (size_t i = 0; i < unpaired_viewer_indexes.size(); ++i) {
+		PRINT_VERBOSE("Unpairing viewer from VoxelTerrain");
 		size_t vi = unpaired_viewer_indexes[i];
 		_paired_viewers[vi] = _paired_viewers.back();
 		_paired_viewers.pop_back();

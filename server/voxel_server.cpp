@@ -348,7 +348,7 @@ bool VoxelServer::is_viewer_requiring_collisions(uint32_t viewer_id) const {
 }
 
 bool VoxelServer::viewer_exists(uint32_t viewer_id) const {
-	return _world.viewers.try_get(viewer_id) != nullptr;
+	return _world.viewers.is_valid(viewer_id);
 }
 
 void VoxelServer::process() {

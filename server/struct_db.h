@@ -53,7 +53,7 @@ public:
 
 	inline T *try_get(uint32_t id) {
 		const uint16_t i = get_index(id);
-		if (i > _slots.size()) {
+		if (i >= _slots.size()) {
 			return nullptr;
 		}
 		const uint16_t v = get_version(id);
@@ -66,7 +66,7 @@ public:
 
 	inline const T *try_get(uint32_t id) const {
 		const uint16_t i = get_index(id);
-		if (i > _slots.size()) {
+		if (i >= _slots.size()) {
 			return nullptr;
 		}
 		const uint16_t v = get_version(id);
@@ -109,7 +109,7 @@ public:
 	}
 
 	inline bool is_valid(uint32_t id) const {
-		const i = get_index(id);
+		const uint16_t i = get_index(id);
 		if (i >= _slots.size()) {
 			return false;
 		}
