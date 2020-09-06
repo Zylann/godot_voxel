@@ -4,7 +4,7 @@
 	</brief_description>
 	<description>
 		Represents a model to be used for voxels of a specific TYPE value. Such models must be contained within a [VoxelLibrary] to be used with [VoxelTerrain] or directly with a [VoxelMesherBlocky].
-		Some other various properties also exist to make it easier to implements games based on this technique (such as Minecraft).
+		Some other various properties also exist to make it easier to implement games based on this technique (such as Minecraft).
 	</description>
 	<tutorials>
 	</tutorials>
