@@ -53,51 +53,61 @@ bool voxel_raycast(
 
 	// X initialization
 	if (xi_step != 0) {
-		if (xi_step == 1)
+		if (xi_step == 1) {
 			tcross_x = (Math::ceil(ray_origin.x) - ray_origin.x) * tdelta_x;
-		else
+		} else {
 			tcross_x = (ray_origin.x - Math::floor(ray_origin.x)) * tdelta_x;
-	} else
+		}
+	} else {
 		tcross_x = g_infinite; // Will never cross on X
+	}
 
 	// Y initialization
 	if (yi_step != 0) {
-		if (yi_step == 1)
+		if (yi_step == 1) {
 			tcross_y = (Math::ceil(ray_origin.y) - ray_origin.y) * tdelta_y;
-		else
+		} else {
 			tcross_y = (ray_origin.y - Math::floor(ray_origin.y)) * tdelta_y;
-	} else
+		}
+	} else {
 		tcross_y = g_infinite; // Will never cross on X
+	}
 
 	// Z initialization
 	if (zi_step != 0) {
-		if (zi_step == 1)
+		if (zi_step == 1) {
 			tcross_z = (Math::ceil(ray_origin.z) - ray_origin.z) * tdelta_z;
-		else
+		} else {
 			tcross_z = (ray_origin.z - Math::floor(ray_origin.z)) * tdelta_z;
-	} else
+		}
+	} else {
 		tcross_z = g_infinite; // Will never cross on X
+	}
 
 	// Workaround for integer positions
-	// Adapted from https://github.com/bulletphysics/bullet3/blob/3dbe5426bf7387e532c17df9a1c5e5a4972c298a/src/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.cpp#L418
+	// Adapted from https://github.com/bulletphysics/bullet3/blob/3dbe5426bf7387e532c17df9a1c5e5a4972c298a/src/
+	// BulletCollision/CollisionShapes/btHeightfieldTerrainShape.cpp#L418
 	if (tcross_x == 0.0) {
 		tcross_x += tdelta_x;
 		// If going backwards, we should ignore the position we would get by the above flooring,
 		// because the ray is not heading in that direction
-		if (xi_step == -1)
+		if (xi_step == -1) {
 			hit_pos.x -= 1;
+		}
 	}
 
 	if (tcross_y == 0.0) {
 		tcross_y += tdelta_y;
-		if (yi_step == -1)
+		if (yi_step == -1) {
 			hit_pos.y -= 1;
+		}
 	}
 
 	if (tcross_z == 0.0) {
 		tcross_z += tdelta_z;
-		if (zi_step == -1)
+		if (zi_step == -1) {
 			hit_pos.z -= 1;
+		}
 	}
 
 	/* Iteration */
@@ -109,15 +119,17 @@ bool voxel_raycast(
 				// X collision
 				//hit.prevPos.x = hit.pos.x;
 				hit_pos.x += xi_step;
-				if (tcross_x > max_distance)
+				if (tcross_x > max_distance) {
 					return false;
+				}
 				tcross_x += tdelta_x;
 			} else {
 				// Z collision (duplicate code)
 				//hit.prevPos.z = hit.pos.z;
 				hit_pos.z += zi_step;
-				if (tcross_z > max_distance)
+				if (tcross_z > max_distance) {
 					return false;
+				}
 				tcross_z += tdelta_z;
 			}
 		} else {
@@ -125,15 +137,17 @@ bool voxel_raycast(
 				// Y collision
 				//hit.prevPos.y = hit.pos.y;
 				hit_pos.y += yi_step;
-				if (tcross_y > max_distance)
+				if (tcross_y > max_distance) {
 					return false;
+				}
 				tcross_y += tdelta_y;
 			} else {
 				// Z collision (duplicate code)
 				//hit.prevPos.z = hit.pos.z;
 				hit_pos.z += zi_step;
-				if (tcross_z > max_distance)
+				if (tcross_z > max_distance) {
 					return false;
+				}
 				tcross_z += tdelta_z;
 			}
 		}

@@ -287,7 +287,6 @@ void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
 	unsigned int volume = get_volume();
 
 	switch (channel.depth) {
-
 		case DEPTH_8_BIT:
 			memset(channel.data, defval, channel.size_in_bytes);
 			break;
@@ -344,12 +343,10 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 	unsigned int volume = get_volume();
 	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
 		for (pos.x = min.x; pos.x < max.x; ++pos.x) {
-
 			unsigned int dst_ri = index(pos.x, pos.y + min.y, pos.z);
 			CRASH_COND(dst_ri >= volume);
 
 			switch (channel.depth) {
-
 				case DEPTH_8_BIT:
 					// Fill row by row
 					memset(&channel.data[dst_ri], defval, area_size.y * sizeof(uint8_t));
@@ -615,7 +612,6 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 	dst_max.clamp_to(Vector3i(), dst._size + Vector3i(1));
 
 	for (int channel_index = 0; channel_index < MAX_CHANNELS; ++channel_index) {
-
 		const Channel &src_channel = _channels[channel_index];
 		const Channel &dst_channel = dst._channels[channel_index];
 
@@ -630,7 +626,6 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 		for (pos.z = dst_min.z; pos.z < dst_max.z; ++pos.z) {
 			for (pos.x = dst_min.x; pos.x < dst_max.x; ++pos.x) {
 				for (pos.y = dst_min.y; pos.y < dst_max.y; ++pos.y) {
-
 					const Vector3i src_pos = src_min + ((pos - dst_min) << 1);
 
 					// TODO Remove check once it works

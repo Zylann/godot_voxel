@@ -39,12 +39,12 @@ inline uint8_t get_voxel(const VoxelBuffer &vb, Vector3i pos, int channel) {
 }
 
 Vector3 get_border_offset(const Vector3 pos, const int lod_index, const Vector3i block_size) {
-
 	// When transition meshes are inserted between blocks of different LOD, we need to make space for them.
 	// Secondary vertex positions can be calculated by linearly transforming positions inside boundary cells
-	// so that the full-size cell is scaled to a smaller size that allows space for between one and three transition cells,
-	// as necessary, depending on the location with respect to the edges and corners of the entire block.
-	// This can be accomplished by computing offsets (Δx, Δy, Δz) for the coordinates (x, y, z) in any boundary cell.
+	// so that the full-size cell is scaled to a smaller size that allows space for between one and three
+	// transition cells, as necessary, depending on the location with respect to the edges and corners of the
+	// entire block. This can be accomplished by computing offsets (Δx, Δy, Δz) for the coordinates (x, y, z)
+	// in any boundary cell.
 
 	Vector3 delta;
 
@@ -54,7 +54,6 @@ Vector3 get_border_offset(const Vector3 pos, const int lod_index, const Vector3i
 	const float wk = TRANSITION_CELL_SCALE * p2k; // 2 ^ (lod - 2), if scale is 0.25
 
 	for (unsigned int i = 0; i < Vector3i::AXIS_COUNT; ++i) {
-
 		const float p = pos[i];
 		const float s = block_size[i];
 
@@ -85,7 +84,8 @@ inline Vector3 project_border_offset(Vector3 delta, Vector3 normal) {
 			/**/ -normal.x * normal.z * delta.x /**/ - normal.y * normal.z * delta.y /**/ + (1 - normal.z * normal.z) * delta.z);
 }
 
-inline Vector3 get_secondary_position(const Vector3 primary, const Vector3 normal, const int lod_index, const Vector3i block_size) {
+inline Vector3 get_secondary_position(
+		const Vector3 primary, const Vector3 normal, const int lod_index, const Vector3i block_size) {
 	Vector3 delta = get_border_offset(primary, lod_index, block_size);
 	delta = project_border_offset(delta, normal);
 	return primary + delta;
@@ -318,8 +318,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 				// TODO We might not always need all of them
 				// Compute normals
 				for (unsigned int i = 0; i < corner_positions.size(); ++i) {
-
-					Vector3i p = corner_positions[i];
+					const Vector3i p = corner_positions[i];
 
 					float nx = tof(tos(get_voxel(voxels, p.x - 1, p.y, p.z, channel)));
 					float ny = tof(tos(get_voxel(voxels, p.x, p.y - 1, p.z, channel)));
@@ -340,39 +339,39 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 				// In these cases, we allow new vertex creation on additional edges of a cell.
 				// While iterating through the cells in a block, a 3-bit mask is maintained whose bits indicate
 				// whether corresponding bits in a direction code are valid
-				uint8_t direction_validity_mask =
+				const uint8_t direction_validity_mask =
 						(pos.x > min_pos.x ? 1 : 0) |
 						((pos.y > min_pos.y ? 1 : 0) << 1) |
 						((pos.z > min_pos.z ? 1 : 0) << 2);
 
-				uint8_t regular_cell_class_index = Transvoxel::get_regular_cell_class(case_code);
-				const Transvoxel::RegularCellData &regular_cell_data = Transvoxel::get_regular_cell_data(regular_cell_class_index);
-				uint8_t triangle_count = regular_cell_data.geometryCounts & 0x0f;
-				uint8_t vertex_count = (regular_cell_data.geometryCounts & 0xf0) >> 4;
+				const uint8_t regular_cell_class_index = Transvoxel::get_regular_cell_class(case_code);
+				const Transvoxel::RegularCellData &regular_cell_data =
+						Transvoxel::get_regular_cell_data(regular_cell_class_index);
+				const uint8_t triangle_count = regular_cell_data.geometryCounts & 0x0f;
+				const uint8_t vertex_count = (regular_cell_data.geometryCounts & 0xf0) >> 4;
 
 				FixedArray<int, 12> cell_vertex_indices(-1);
 
-				uint8_t cell_border_mask = get_border_mask(pos - min_pos, block_size - Vector3i(1));
+				const uint8_t cell_border_mask = get_border_mask(pos - min_pos, block_size - Vector3i(1));
 
 				// For each vertex in the case
 				for (unsigned int i = 0; i < vertex_count; ++i) {
-
-					// The case index maps to a list of 16-bit codes providing information about the edges on which the vertices lie.
-					// The low byte of each 16-bit code contains the corner indexes of the edge’s endpoints in one nibble each,
-					// and the high byte contains the mapping code shown in Figure 3.8(b)
-					unsigned short rvd = Transvoxel::get_regular_vertex_data(case_code, i);
-					uint8_t edge_code_low = rvd & 0xff;
-					uint8_t edge_code_high = (rvd >> 8) & 0xff;
+					// The case index maps to a list of 16-bit codes providing information about the edges on which the
+					// vertices lie. The low byte of each 16-bit code contains the corner indexes of the edge’s
+					// endpoints in one nibble each, and the high byte contains the mapping code shown in Figure 3.8(b)
+					const unsigned short rvd = Transvoxel::get_regular_vertex_data(case_code, i);
+					const uint8_t edge_code_low = rvd & 0xff;
+					const uint8_t edge_code_high = (rvd >> 8) & 0xff;
 
 					// Get corner indexes in the low nibble (always ordered so the higher comes last)
-					uint8_t v0 = (edge_code_low >> 4) & 0xf;
-					uint8_t v1 = edge_code_low & 0xf;
+					const uint8_t v0 = (edge_code_low >> 4) & 0xf;
+					const uint8_t v1 = edge_code_low & 0xf;
 
 					ERR_FAIL_COND(v1 <= v0);
 
 					// Get voxel values at the corners
-					int sample0 = cell_samples[v0]; // called d0 in the paper
-					int sample1 = cell_samples[v1]; // called d1 in the paper
+					const int sample0 = cell_samples[v0]; // called d0 in the paper
+					const int sample1 = cell_samples[v1]; // called d1 in the paper
 
 					// TODO Zero-division is not mentionned in the paper??
 					ERR_FAIL_COND(sample1 == sample0);
@@ -381,12 +380,12 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 					// Get interpolation position
 					// We use an 8-bit fraction, allowing the new vertex to be located at one of 257 possible
 					// positions  along  the  edge  when  both  endpoints  are included.
-					int t = (sample1 << 8) / (sample1 - sample0);
+					const int t = (sample1 << 8) / (sample1 - sample0);
 
-					float t0 = static_cast<float>(t) / 256.f;
-					float t1 = static_cast<float>(0x100 - t) / 256.f;
-					int ti0 = t;
-					int ti1 = 0x100 - t;
+					const float t0 = static_cast<float>(t) / 256.f;
+					const float t1 = static_cast<float>(0x100 - t) / 256.f;
+					const int ti0 = t;
+					const int ti1 = 0x100 - t;
 
 					const Vector3i p0 = corner_positions[v0];
 					const Vector3i p1 = corner_positions[v1];
@@ -397,11 +396,11 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						// Each edge of a cell is assigned an 8-bit code, as shown in Figure 3.8(b),
 						// that provides a mapping to a preceding cell and the coincident edge on that preceding cell
 						// for which new vertex creation  was  allowed.
-						// The high nibble of this code indicates which direction to go in order to reach the correct preceding cell.
-						// The bit values 1, 2, and 4 in this nibble indicate that we must subtract one
+						// The high nibble of this code indicates which direction to go in order to reach the correct
+						// preceding cell. The bit values 1, 2, and 4 in this nibble indicate that we must subtract one
 						// from the x, y, and/or z coordinate, respectively.
-						uint8_t reuse_dir = (edge_code_high >> 4) & 0xf;
-						uint8_t reuse_vertex_index = edge_code_high & 0xf;
+						const uint8_t reuse_dir = (edge_code_high >> 4) & 0xf;
+						const uint8_t reuse_vertex_index = edge_code_high & 0xf;
 
 						// TODO Some re-use opportunities are missed on negative sides of the block,
 						// but I don't really know how to fix it...
@@ -424,21 +423,25 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 							// See issue https://github.com/Zylann/godot_voxel/issues/60
 							// Seen in the paper, it fixes "steps" between LODs on flat surfaces.
 							// It is using a binary search through higher lods to find the zero-crossing edge.
-							// I did not do it here, because our data model is such that when we have low-resolution voxels,
-							// we cannot just have a look at the high-res ones, because they are not in memory.
-							// However, it might be possible on low-res blocks bordering high-res ones due to neighboring rules,
-							// or by falling back on the generator that was used to produce the volume.
+							// I did not do it here, because our data model is such that when we have low-resolution
+							// voxels, we cannot just have a look at the high-res ones, because they are not in memory.
+							// However, it might be possible on low-res blocks bordering high-res ones due to
+							// neighboring rules, or by falling back on the generator that was used to produce the
+							// volume.
 
-							Vector3i primary = p0 * ti0 + p1 * ti1;
-							Vector3 primaryf = primary.to_vec3() * FIXED_FACTOR;
-							Vector3 normal = normalized_not_null(corner_gradients[v0] * t0 + corner_gradients[v1] * t1);
+							const Vector3i primary = p0 * ti0 + p1 * ti1;
+							const Vector3 primaryf = primary.to_vec3() * FIXED_FACTOR;
+							const Vector3 normal = normalized_not_null(
+									corner_gradients[v0] * t0 + corner_gradients[v1] * t1);
 
 							Vector3 secondary;
 							uint16_t border_mask = cell_border_mask;
 
 							if (cell_border_mask > 0) {
 								secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
-								border_mask |= (get_border_mask(p0, block_size_scaled) & get_border_mask(p1, block_size_scaled)) << 6;
+								border_mask |= (get_border_mask(p0, block_size_scaled) &
+													   get_border_mask(p1, block_size_scaled))
+											   << 6;
 							}
 
 							cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
@@ -454,9 +457,9 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						// v1 == 7: p1 on the max corner of the cell
 						// This cell owns the vertex, so it should be created.
 
-						Vector3i primary = p1;
-						Vector3 primaryf = primary.to_vec3();
-						Vector3 normal = normalized_not_null(corner_gradients[v1]);
+						const Vector3i primary = p1;
+						const Vector3 primaryf = primary.to_vec3();
+						const Vector3 normal = normalized_not_null(corner_gradients[v1]);
 
 						Vector3 secondary;
 						uint16_t border_mask = cell_border_mask;
@@ -478,8 +481,8 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						// inverting the 3-bit corner index (bitwise, by exclusive ORing with the number 7).
 						// The corner index depends on the value of t, t = 0 means that we're at the higher
 						// numbered endpoint.
-						uint8_t reuse_dir = (t == 0 ? v1 ^ 7 : v0 ^ 7);
-						bool present = (reuse_dir & direction_validity_mask) == reuse_dir;
+						const uint8_t reuse_dir = (t == 0 ? v1 ^ 7 : v0 ^ 7);
+						const bool present = (reuse_dir & direction_validity_mask) == reuse_dir;
 
 						// Note: the only difference with similar code above is that we take vertice 0 in the `else`
 						if (present) {
@@ -489,10 +492,9 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 						}
 
 						if (!present || cell_vertex_indices[i] < 0) {
-
-							Vector3i primary = t == 0 ? p1 : p0;
-							Vector3 primaryf = primary.to_vec3();
-							Vector3 normal = normalized_not_null(corner_gradients[t == 0 ? v1 : v0]);
+							const Vector3i primary = t == 0 ? p1 : p0;
+							const Vector3 primaryf = primary.to_vec3();
+							const Vector3 normal = normalized_not_null(corner_gradients[t == 0 ? v1 : v0]);
 
 							// TODO This bit of code is repeated several times, factor it?
 							Vector3 secondary;
@@ -511,7 +513,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 
 				for (int t = 0; t < triangle_count; ++t) {
 					for (int i = 0; i < 3; ++i) {
-						int index = cell_vertex_indices[regular_cell_data.get_vertex_index(t * 3 + i)];
+						const int index = cell_vertex_indices[regular_cell_data.get_vertex_index(t * 3 + i)];
 						_output_indices.push_back(index);
 					}
 				}
@@ -521,7 +523,8 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 	} // z
 }
 
-void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsigned int channel, int direction, int lod_index) {
+void VoxelMesherTransvoxel::build_transition(
+		const VoxelBuffer &p_voxels, unsigned int channel, int direction, int lod_index) {
 
 	//    y            y
 	//    |            | z
@@ -646,7 +649,6 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 	// Iterating in face space
 	for (int fy = min_fpos_y; fy < max_fpos_y; fy += 2) {
 		for (int fx = min_fpos_x; fx < max_fpos_x; fx += 2) {
-
 			const int fz = MIN_PADDING;
 
 			const VoxelBuffer &fvoxels = p_voxels;
@@ -692,8 +694,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 
 			// TODO We may not need all of them!
 			for (unsigned int i = 0; i < 9; ++i) {
-
-				Vector3i p = cell_positions[i];
+				const Vector3i p = cell_positions[i];
 
 				float nx = tof(tos(get_voxel(fvoxels, p.x - 1, p.y, p.z, channel)));
 				float ny = tof(tos(get_voxel(fvoxels, p.x, p.y - 1, p.z, channel)));
@@ -709,7 +710,8 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 			cell_gradients[0xB] = cell_gradients[6];
 			cell_gradients[0xC] = cell_gradients[8];
 
-			// Convert grid positions into actual positions, since we don't need to use them to access the buffer anymore
+			// Convert grid positions into actual positions,
+			// since we don't need to use them to access the buffer anymore
 			for (unsigned int i = 0; i < cell_positions.size(); ++i) {
 				cell_positions[i] = (cell_positions[i] - min_pos) << lod_index;
 			}
@@ -776,24 +778,27 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 					// Vertex lies in the interior of the edge.
 					// (i.e t is either 0 or 257, meaning it's either directly on vertex a or vertex b)
 
-					uint8_t vertex_index_to_reuse_or_create = (edge_code >> 8) & 0xf;
+					const uint8_t vertex_index_to_reuse_or_create = (edge_code >> 8) & 0xf;
 
-					// The bit values 1 and 2 in this nibble indicate that we must subtract one from the x or y coordinate, respectively,
-					// and these two bits are never simultaneously set. The bit value 4 indicates that a new vertex is to be created on an interior edge
-					// where it cannot be reused, and the bit value 8 indicates that a new vertex is to be created on a  maximal  edge  where  it  can  be  reused.
+					// The bit values 1 and 2 in this nibble indicate that we must subtract one from the x or y
+					// coordinate, respectively, and these two bits are never simultaneously set.
+					// The bit value 4 indicates that a new vertex is to be created on an interior edge
+					// where it cannot be reused, and the bit value 8 indicates that a new vertex is to be created on a
+					// maximal  edge  where  it  can  be  reused.
 					//
 					// Bit 0 (0x1): need to subtract one to X
 					// Bit 1 (0x2): need to subtract one to Y
 					// Bit 2 (0x4): vertex is on an interior edge, won't be reused
 					// Bit 3 (0x8): vertex is on a maximal edge, it can be reused
-					uint8_t reuse_direction = (edge_code >> 12);
+					const uint8_t reuse_direction = (edge_code >> 12);
 
-					bool present = (reuse_direction & direction_validity_mask) == reuse_direction;
+					const bool present = (reuse_direction & direction_validity_mask) == reuse_direction;
 
 					if (present) {
 						// The previous cell is available. Retrieve the cached cell
 						// from which to retrieve the reused vertex index from.
-						const ReuseTransitionCell &prev = get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
+						const ReuseTransitionCell &prev =
+								get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
 						// Reuse the vertex index from the previous cell.
 						cell_vertex_indices[i] = prev.vertices[vertex_index_to_reuse_or_create];
 					}
@@ -816,14 +821,16 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 
 						Vector3 secondary;
 						if (fullres_side) {
-
 							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
-							border_mask |= (get_border_mask(p0, block_size_scaled) & get_border_mask(p1, block_size_scaled)) << 6;
+							border_mask |= (get_border_mask(p0, block_size_scaled) &
+												   get_border_mask(p1, block_size_scaled))
+										   << 6;
 
 						} else {
-							// If the vertex is on the half-res side (in our implementation, it's the side of the block),
-							// then we make the mask 0 so that the vertex is never moved. We only move the full-res side to
-							// connect with the regular mesh, which will also be moved by the same amount to fit the transition mesh.
+							// If the vertex is on the half-res side (in our implementation,
+							// it's the side of the block), then we make the mask 0 so that the vertex is never moved.
+							// We only move the full-res side to connect with the regular mesh,
+							// which will also be moved by the same amount to fit the transition mesh.
 							border_mask = 0;
 						}
 
@@ -841,18 +848,19 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 					// Try to reuse corner vertex from a preceding cell.
 					// Use the reuse information in transitionCornerData.
 
-					uint8_t index_vertex = (t == 0 ? index_vertex_b : index_vertex_a);
+					const uint8_t index_vertex = (t == 0 ? index_vertex_b : index_vertex_a);
 					CRASH_COND(index_vertex >= 13);
-					uint8_t corner_data = Transvoxel::get_transition_corner_data(index_vertex);
-					uint8_t vertex_index_to_reuse_or_create = (corner_data & 0xf);
-					uint8_t reuse_direction = ((corner_data >> 4) & 0xf);
+					const uint8_t corner_data = Transvoxel::get_transition_corner_data(index_vertex);
+					const uint8_t vertex_index_to_reuse_or_create = (corner_data & 0xf);
+					const uint8_t reuse_direction = ((corner_data >> 4) & 0xf);
 
-					bool present = (reuse_direction & direction_validity_mask) == reuse_direction;
+					const bool present = (reuse_direction & direction_validity_mask) == reuse_direction;
 
 					if (present) {
 						// The previous cell is available. Retrieve the cached cell
 						// from which to retrieve the reused vertex index from.
-						const ReuseTransitionCell &prev = get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
+						const ReuseTransitionCell &prev =
+								get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
 						// Reuse the vertex index from the previous cell.
 						cell_vertex_indices[i] = prev.vertices[vertex_index_to_reuse_or_create];
 					}
@@ -860,16 +868,15 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 					if (!present || cell_vertex_indices[i] == -1) {
 						// Going to create a new vertex
 
-						Vector3i primary = cell_positions[index_vertex];
-						Vector3 primaryf = primary.to_vec3();
-						Vector3 normal = normalized_not_null(cell_gradients[index_vertex]);
+						const Vector3i primary = cell_positions[index_vertex];
+						const Vector3 primaryf = primary.to_vec3();
+						const Vector3 normal = normalized_not_null(cell_gradients[index_vertex]);
 
-						bool fullres_side = (index_vertex < 9);
+						const bool fullres_side = (index_vertex < 9);
 						uint16_t border_mask = cell_border_mask;
 
 						Vector3 secondary;
 						if (fullres_side) {
-
 							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
 							border_mask |= get_border_mask(primary, block_size_scaled) << 6;
 
@@ -887,7 +894,7 @@ void VoxelMesherTransvoxel::build_transition(const VoxelBuffer &p_voxels, unsign
 
 			} // for vertex
 
-			unsigned int triangle_count = cell_data.GetTriangleCount();
+			const unsigned int triangle_count = cell_data.GetTriangleCount();
 
 			for (unsigned int ti = 0; ti < triangle_count; ++ti) {
 				if (flip_triangles) {
@@ -957,5 +964,6 @@ VoxelMesher *VoxelMesherTransvoxel::clone() {
 }
 
 void VoxelMesherTransvoxel::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"), &VoxelMesherTransvoxel::build_transition_mesh);
+	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"),
+			&VoxelMesherTransvoxel::build_transition_mesh);
 }

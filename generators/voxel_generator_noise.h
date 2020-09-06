@@ -32,7 +32,7 @@ protected:
 private:
 	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
 	Ref<OpenSimplexNoise> _noise;
-	FloatBuffer3D _noise_buffer;
+	FloatBuffer3D _noise_buffer; // TODO No longer used?
 	float _height_start = 0;
 	float _height_range = 300;
 };
