@@ -162,9 +162,13 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 					}
 				}
 
-				tasks.push_back(_tasks[best_index]);
-				_tasks[best_index] = _tasks.back();
-				_tasks.pop_back();
+				// If not all tasks were cancelled
+				if (_tasks.size() != 0) {
+					tasks.push_back(_tasks[best_index]);
+					CRASH_COND(best_index >= _tasks.size());
+					_tasks[best_index] = _tasks.back();
+					_tasks.pop_back();
+				}
 			}
 		}
 
