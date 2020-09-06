@@ -1,4 +1,5 @@
 #include "voxel_block.h"
+#include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../voxel_string_names.h"
 #include <scene/3d/spatial.h>
@@ -103,16 +104,13 @@ void VoxelBlock::set_world(Ref<World> p_world) {
 	}
 }
 
-void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Vector<Array> surface_arrays, bool debug_collision) {
+void VoxelBlock::set_mesh(Ref<Mesh> mesh) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
 	// This needs investigation.
 
 	if (mesh.is_valid()) {
-		ERR_FAIL_COND(node == nullptr);
-		ERR_FAIL_COND(node->get_world() != _world);
-
 		Transform transform(Basis(), _position_in_voxels.to_vec3());
 
 		if (!_mesh_instance.is_valid()) {
@@ -132,46 +130,18 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision
 		_mesh_instance.set_material_override(_debug_material);
 #endif
 
-		if (generate_collision) {
-			Ref<Shape> shape = create_concave_polygon_shape(surface_arrays);
-
-			if (!_static_body.is_valid()) {
-				_static_body.create();
-				_static_body.set_world(*_world);
-				_static_body.set_attached_object(node);
-				_static_body.set_transform(transform);
-			} else {
-				_static_body.remove_shape(0);
-			}
-			_static_body.add_shape(shape);
-			_static_body.set_debug(debug_collision, *_world);
-			_static_body.set_shape_enabled(0, _visible);
-		}
-
 	} else {
-
 		if (_mesh_instance.is_valid()) {
 			// Delete instance if it exists
 			_mesh_instance.destroy();
 		}
-
-		if (_static_body.is_valid()) {
-			_static_body.destroy();
-		}
 	}
-
-	++_mesh_update_count;
-
-	//	if(_mesh_update_count > 1) {
-	//		print_line(String("Block {0} was updated {1} times").format(varray(pos.to_vec3(), _mesh_update_count)));
-	//	}
 }
 
 void VoxelBlock::set_transition_mesh(Ref<Mesh> mesh, int side) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
-
 		if (!mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
 			mesh_instance.create();
@@ -191,7 +161,6 @@ void VoxelBlock::set_transition_mesh(Ref<Mesh> mesh, int side) {
 #endif
 
 	} else {
-
 		if (mesh_instance.is_valid()) {
 			// Delete instance if it exists
 			mesh_instance.destroy();
@@ -201,6 +170,12 @@ void VoxelBlock::set_transition_mesh(Ref<Mesh> mesh, int side) {
 
 bool VoxelBlock::has_mesh() const {
 	return _mesh_instance.get_mesh().is_valid();
+}
+
+void VoxelBlock::drop_mesh() {
+	if (_mesh_instance.is_valid()) {
+		_mesh_instance.destroy();
+	}
 }
 
 void VoxelBlock::set_mesh_state(MeshState ms) {
@@ -302,8 +277,44 @@ bool VoxelBlock::is_modified() const {
 }
 
 void VoxelBlock::set_modified(bool modified) {
-	//	if (_modified != modified) {
-	//		print_line(String("Marking block {0}[lod{1}] as modified").format(varray(bpos.to_vec3(), lod_index)));
-	//	}
+#ifdef TOOLS_ENABLED
+	if (_modified == false && modified) {
+		PRINT_VERBOSE(String("Marking block {0} as modified").format(varray(position.to_vec3())));
+	}
+#endif
 	_modified = modified;
+}
+
+void VoxelBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Spatial *node) {
+	if (surface_arrays.size() == 0) {
+		drop_collision();
+		return;
+	}
+
+	ERR_FAIL_COND(node == nullptr);
+	ERR_FAIL_COND_MSG(node->get_world() != _world, "Physics body and attached node must be from the same world");
+
+	if (!_static_body.is_valid()) {
+		const Transform transform(Basis(), _position_in_voxels.to_vec3());
+		_static_body.create();
+		_static_body.set_world(*_world);
+		// This allows collision signals to provide the terrain node in the `collider` field
+		_static_body.set_attached_object(node);
+		_static_body.set_transform(transform);
+
+	} else {
+		_static_body.remove_shape(0);
+	}
+
+	Ref<Shape> shape = create_concave_polygon_shape(surface_arrays);
+
+	_static_body.add_shape(shape);
+	_static_body.set_debug(debug_collision, *_world);
+	_static_body.set_shape_enabled(0, _visible);
+}
+
+void VoxelBlock::drop_collision() {
+	if (_static_body.is_valid()) {
+		_static_body.destroy();
+	}
 }

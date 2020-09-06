@@ -28,16 +28,14 @@ public:
 	void set_voxel_library(Ref<VoxelLibrary> library);
 	Ref<VoxelLibrary> get_voxel_library() const;
 
-	void make_block_dirty(Vector3i bpos);
-	//void make_blocks_dirty(Vector3i min, Vector3i size);
 	void make_voxel_dirty(Vector3i pos);
 	void make_area_dirty(Rect3i box);
 
 	void set_generate_collisions(bool enabled);
 	bool get_generate_collisions() const { return _generate_collisions; }
 
-	int get_view_distance() const;
-	void set_view_distance(int distance_in_voxels);
+	unsigned int get_max_view_distance() const;
+	void set_max_view_distance(unsigned int distance_in_voxels);
 
 	// TODO Make this obsolete with multi-viewers
 	void set_viewer_path(NodePath path);
@@ -82,22 +80,28 @@ private:
 
 	void _on_stream_params_changed();
 	void _set_block_size_po2(int p_block_size_po2);
-	void make_all_view_dirty_deferred();
+	void make_all_view_dirty();
 	void start_updater();
 	void stop_updater();
 	void start_streamer();
 	void stop_streamer();
 	void reset_map();
 
-	Spatial *get_viewer() const;
-
+	void view_block(Vector3i bpos, bool data_flag, bool mesh_flag, bool collision_flag);
+	void unview_block(Vector3i bpos, bool data_flag, bool mesh_flag, bool collision_flag);
 	void immerge_block(Vector3i bpos);
+	void make_block_dirty(Vector3i bpos);
+	void make_block_dirty(VoxelBlock *block);
+	void try_schedule_block_update(VoxelBlock *block);
+
 	void save_all_modified_blocks(bool with_copy);
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
 	void send_block_data_requests();
 
 	void emit_block_loaded(const VoxelBlock *block);
 	void emit_block_unloaded(const VoxelBlock *block);
+
+	bool try_get_paired_viewer_index(uint32_t id, size_t &out_i) const;
 
 	Dictionary get_statistics() const;
 
@@ -113,28 +117,41 @@ private:
 	uint32_t _volume_id = 0;
 	VoxelServer::ReceptionBuffers _reception_buffers;
 
+	struct PairedViewer {
+		struct State {
+			Vector3i block_position;
+			int view_distance_blocks;
+			bool requires_collisions;
+			bool requires_meshes;
+		};
+		uint32_t id;
+		State state;
+		State prev_state;
+	};
+
+	std::vector<PairedViewer> _paired_viewers;
+
 	// Voxel storage
 	Ref<VoxelMap> _map;
 
 	// How many blocks to load around the viewer
-	int _view_distance_blocks;
+	unsigned int _max_view_distance_blocks = 8;
 
 	// TODO Terrains only need to handle the visible portion of voxels, which reduces the bounds blocks to handle.
 	// Therefore, could a simple grid be better to use than a hashmap?
 
-	Set<Vector3i> _loading_blocks;
-	Vector<Vector3i> _blocks_pending_load;
-	Vector<Vector3i> _blocks_pending_update;
+	struct LoadingBlock {
+		VoxelViewerRefCount viewers;
+	};
 
+	HashMap<Vector3i, LoadingBlock, Vector3iHasher> _loading_blocks;
+	std::vector<Vector3i> _blocks_pending_load;
+	std::vector<Vector3i> _blocks_pending_update;
 	std::vector<BlockToSave> _blocks_to_save;
 
 	Ref<VoxelStream> _stream;
 
 	Ref<VoxelLibrary> _library;
-
-	NodePath _viewer_path;
-	Vector3i _last_viewer_block_pos;
-	int _last_view_distance_blocks;
 
 	bool _generate_collisions = true;
 	bool _run_stream_in_editor = true;

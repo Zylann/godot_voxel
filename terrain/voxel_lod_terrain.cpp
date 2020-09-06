@@ -1110,7 +1110,10 @@ void VoxelLodTerrain::_process() {
 				has_collision = ob.lod < _collision_lod_count;
 			}
 
-			block->set_mesh(mesh, this, has_collision, mesh_data.surfaces, get_tree()->is_debugging_collisions_hint());
+			block->set_mesh(mesh);
+			if (has_collision) {
+				block->set_collision_mesh(mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this);
+			}
 
 			{
 				VOXEL_PROFILE_SCOPE();

@@ -6,6 +6,7 @@
 #include "../util/direct_static_body.h"
 #include "../util/fixed_array.h"
 #include "../voxel_buffer.h"
+#include "voxel_viewer_ref_count.h"
 
 //#define VOXEL_DEBUG_LOD_MATERIALS
 
@@ -26,20 +27,31 @@ public:
 	Vector3i position;
 	unsigned int lod_index = 0;
 	bool pending_transition_update = false;
+	VoxelViewerRefCount viewers;
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 
 	~VoxelBlock();
 
-	// Visuals and physics
-
 	void set_world(Ref<World> p_world);
-	void set_mesh(Ref<Mesh> mesh, Spatial *node, bool generate_collision, Vector<Array> surface_arrays, bool debug_collision);
+
+	// Visuals
+
+	void set_mesh(Ref<Mesh> mesh);
 	void set_transition_mesh(Ref<Mesh> mesh, int side);
 	bool has_mesh() const;
+	void drop_mesh();
 
 	void set_shader_material(Ref<ShaderMaterial> material);
 	inline Ref<ShaderMaterial> get_shader_material() const { return _shader_material; }
+
+	// Collisions
+
+	void set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Spatial *node);
+	void drop_collision();
+	// TODO Collision layer and mask
+
+	// State
 
 	void set_mesh_state(MeshState ms);
 	MeshState get_mesh_state() const;
@@ -52,8 +64,6 @@ public:
 	void set_transition_mask(uint8_t m);
 	//void set_transition_bit(uint8_t side, bool value);
 	inline uint8_t get_transition_mask() const { return _transition_mask; }
-
-	// Voxel data
 
 	void set_needs_lodding(bool need_lodding);
 	inline bool get_needs_lodding() const { return _needs_lodding; }
@@ -89,7 +99,6 @@ private:
 	Ref<Material> _debug_transition_material;
 #endif
 
-	int _mesh_update_count = 0; // TODO Never really used?
 	bool _visible = true;
 	bool _parent_visible = true;
 	MeshState _mesh_state = MESH_NEVER_UPDATED;

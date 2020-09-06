@@ -53,7 +53,7 @@ VoxelServer::VoxelServer() {
 	// TODO Try more threads, it should be possible
 	// This pool works on visuals so it must have low latency
 	_meshing_thread_pool.set_thread_count(2);
-	_meshing_thread_pool.set_priority_update_period(32);
+	_meshing_thread_pool.set_priority_update_period(64);
 	_meshing_thread_pool.set_batch_count(1);
 
 	for (size_t i = 0; i < _meshing_thread_pool.get_thread_count(); ++i) {
@@ -70,8 +70,14 @@ VoxelServer::VoxelServer() {
 		_smooth_meshers[i] = mesher;
 	}
 
+	if (Engine::get_singleton()->is_editor_hint()) {
+		// Default viewer
+		const uint32_t default_viewer_id = add_viewer();
+		Viewer &default_viewer = _world.viewers.get(default_viewer_id);
+		default_viewer.is_default = true;
+	}
+
 	// Init world
-	// TODO How to make this use memnew and memdelete?
 	_world.viewers_for_priority = gd_make_shared<VoxelViewersArray>();
 
 	PRINT_VERBOSE(String("Size of BlockDataRequest: {0}").format(varray((int)sizeof(BlockDataRequest))));
@@ -280,7 +286,30 @@ void VoxelServer::remove_volume(uint32_t volume_id) {
 }
 
 uint32_t VoxelServer::add_viewer() {
+	if (Engine::get_singleton()->is_editor_hint()) {
+		// Remove default viewer if any
+		_world.viewers.for_each_with_id([this](Viewer &viewer, uint32_t id) {
+			if (viewer.is_default) {
+				// Safe because StructDB does not shift items
+				_world.viewers.destroy(id);
+			}
+		});
+	}
+
 	return _world.viewers.create(Viewer());
+}
+
+void VoxelServer::remove_viewer(uint32_t viewer_id) {
+	_world.viewers.destroy(viewer_id);
+
+	if (Engine::get_singleton()->is_editor_hint()) {
+		// Re-add default viewer
+		if (_world.viewers.count() == 0) {
+			const uint32_t default_viewer_id = add_viewer();
+			Viewer &default_viewer = _world.viewers.get(default_viewer_id);
+			default_viewer.is_default = true;
+		}
+	}
 }
 
 void VoxelServer::set_viewer_position(uint32_t viewer_id, Vector3 position) {
@@ -288,13 +317,38 @@ void VoxelServer::set_viewer_position(uint32_t viewer_id, Vector3 position) {
 	viewer.world_position = position;
 }
 
-void VoxelServer::set_viewer_region_extents(uint32_t viewer_id, Vector3 extents) {
+void VoxelServer::set_viewer_distance(uint32_t viewer_id, unsigned int distance) {
 	Viewer &viewer = _world.viewers.get(viewer_id);
-	// TODO
+	viewer.view_distance = distance;
 }
 
-void VoxelServer::remove_viewer(uint32_t viewer_id) {
-	_world.viewers.destroy(viewer_id);
+unsigned int VoxelServer::get_viewer_distance(uint32_t viewer_id) const {
+	const Viewer &viewer = _world.viewers.get(viewer_id);
+	return viewer.view_distance;
+}
+
+void VoxelServer::set_viewer_requires_visuals(uint32_t viewer_id, bool enabled) {
+	Viewer &viewer = _world.viewers.get(viewer_id);
+	viewer.require_visuals = enabled;
+}
+
+bool VoxelServer::is_viewer_requiring_visuals(uint32_t viewer_id) const {
+	const Viewer &viewer = _world.viewers.get(viewer_id);
+	return viewer.require_visuals;
+}
+
+void VoxelServer::set_viewer_requires_collisions(uint32_t viewer_id, bool enabled) {
+	Viewer &viewer = _world.viewers.get(viewer_id);
+	viewer.require_collisions = enabled;
+}
+
+bool VoxelServer::is_viewer_requiring_collisions(uint32_t viewer_id) const {
+	const Viewer &viewer = _world.viewers.get(viewer_id);
+	return viewer.require_collisions;
+}
+
+bool VoxelServer::viewer_exists(uint32_t viewer_id) const {
+	return _world.viewers.try_get(viewer_id) != nullptr;
 }
 
 void VoxelServer::process() {
@@ -387,7 +441,7 @@ void VoxelServer::process() {
 			_world.viewers_for_priority->positions.resize(viewer_count);
 		}
 		size_t i = 0;
-		_world.viewers.for_each([&i, this](const Viewer &viewer) {
+		_world.viewers.for_each([&i, this](Viewer &viewer) {
 			_world.viewers_for_priority->positions[i] = viewer.world_position;
 			++i;
 		});
@@ -565,7 +619,7 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 	}
 
 	if (smooth_enabled) {
-		VOXEL_PROFILE_SCOPE("Smooth meshing");
+		VOXEL_PROFILE_SCOPE_NAMED("Smooth meshing");
 		Ref<VoxelMesher> smooth_mesher = VoxelServer::get_singleton()->_smooth_meshers[ctx.thread_index];
 		CRASH_COND(smooth_mesher.is_null());
 		smooth_mesher->build(smooth_surfaces_output, input);

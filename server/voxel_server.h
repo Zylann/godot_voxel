@@ -52,6 +52,20 @@ public:
 		std::vector<BlockDataOutput> data_output;
 	};
 
+	struct Viewer {
+		// enum Flags {
+		// 	FLAG_DATA = 1,
+		// 	FLAG_VISUAL = 2,
+		// 	FLAG_COLLISION = 4,
+		// 	FLAGS_COUNT = 3
+		// };
+		Vector3 world_position;
+		unsigned int view_distance = 128;
+		bool require_collisions = false;
+		bool require_visuals = true;
+		bool is_default = false;
+	};
+
 	static VoxelServer *get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
@@ -71,9 +85,20 @@ public:
 	void remove_volume(uint32_t volume_id);
 
 	uint32_t add_viewer();
-	void set_viewer_position(uint32_t viewer_id, Vector3 position);
-	void set_viewer_region_extents(uint32_t viewer_id, Vector3 extents);
 	void remove_viewer(uint32_t viewer_id);
+	void set_viewer_position(uint32_t viewer_id, Vector3 position);
+	void set_viewer_distance(uint32_t viewer_id, unsigned int distance);
+	unsigned int get_viewer_distance(uint32_t viewer_id) const;
+	void set_viewer_requires_visuals(uint32_t viewer_id, bool enabled);
+	bool is_viewer_requiring_visuals(uint32_t viewer_id) const;
+	void set_viewer_requires_collisions(uint32_t viewer_id, bool enabled);
+	bool is_viewer_requiring_collisions(uint32_t viewer_id) const;
+	bool viewer_exists(uint32_t viewer_id) const;
+
+	template <typename F>
+	inline void for_each_viewer(F f) const {
+		_world.viewers.for_each_with_id(f);
+	}
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
 	void get_min_max_block_padding(
@@ -120,10 +145,6 @@ private:
 		uint32_t block_size = 16;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		std::shared_ptr<MeshingDependency> meshing_dependency;
-	};
-
-	struct Viewer {
-		Vector3 world_position;
 	};
 
 	struct VoxelViewersArray {

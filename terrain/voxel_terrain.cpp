@@ -25,9 +25,6 @@ VoxelTerrain::VoxelTerrain() {
 
 	_map.instance();
 
-	_view_distance_blocks = 8;
-	_last_view_distance_blocks = 0;
-
 	Ref<VoxelLibrary> library;
 	library.instance();
 	set_voxel_library(library);
@@ -193,47 +190,26 @@ void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
 	start_updater();
 
 	// Voxel appearance might completely change
-	make_all_view_dirty_deferred();
+	make_all_view_dirty();
 }
 
 void VoxelTerrain::set_generate_collisions(bool enabled) {
 	_generate_collisions = enabled;
 }
 
-int VoxelTerrain::get_view_distance() const {
-	return _view_distance_blocks * _map->get_block_size();
+unsigned int VoxelTerrain::get_max_view_distance() const {
+	return _max_view_distance_blocks * _map->get_block_size();
 }
 
-void VoxelTerrain::set_view_distance(int distance_in_voxels) {
+void VoxelTerrain::set_max_view_distance(unsigned int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0);
-	const int d = distance_in_voxels / _map->get_block_size();
-	if (d != _view_distance_blocks) {
-		PRINT_VERBOSE(String("View distance changed from ") + String::num(_view_distance_blocks) + String(" blocks to ") + String::num(d));
-		_view_distance_blocks = d;
+	const unsigned int d = distance_in_voxels / _map->get_block_size();
+	if (d != _max_view_distance_blocks) {
+		PRINT_VERBOSE(String("View distance changed from ") +
+					  String::num(_max_view_distance_blocks) + String(" blocks to ") + String::num(d));
+		_max_view_distance_blocks = d;
 		// Blocks too far away will be removed in _process, same for blocks to load
 	}
-}
-
-void VoxelTerrain::set_viewer_path(NodePath path) {
-	_viewer_path = path;
-}
-
-NodePath VoxelTerrain::get_viewer_path() const {
-	return _viewer_path;
-}
-
-Spatial *VoxelTerrain::get_viewer() const {
-	if (!is_inside_tree()) {
-		return nullptr;
-	}
-	if (_viewer_path.is_empty()) {
-		return nullptr;
-	}
-	Node *node = get_node(_viewer_path);
-	if (node == nullptr) {
-		return nullptr;
-	}
-	return Object::cast_to<Spatial>(node);
 }
 
 void VoxelTerrain::set_material(unsigned int id, Ref<Material> material) {
@@ -248,33 +224,136 @@ Ref<Material> VoxelTerrain::get_material(unsigned int id) const {
 }
 
 void VoxelTerrain::make_block_dirty(Vector3i bpos) {
-	// TODO Immediate update viewer distance?
-
 	VoxelBlock *block = _map->get_block(bpos);
+	ERR_FAIL_COND_MSG(block == nullptr, "Requested update to a block that isn't loaded");
+	make_block_dirty(block);
+}
 
-	if (block == nullptr) {
-		// The block isn't available, we may need to load it
-		if (!_loading_blocks.has(bpos)) {
-			_blocks_pending_load.push_back(bpos);
-			_loading_blocks.insert(bpos);
-		}
-
-	} else if (block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT) {
-		// Regardless of if the updater is updating the block already,
-		// the block was modified again so we schedule another update
-		block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
-		_blocks_pending_update.push_back(bpos);
-
-		if (!block->is_modified()) {
-			PRINT_VERBOSE(String("Marking block {0} as modified").format(varray(bpos.to_vec3())));
-			block->set_modified(true);
-		}
-	}
+void VoxelTerrain::make_block_dirty(VoxelBlock *block) {
+	// TODO Immediate update viewer distance?
+	CRASH_COND(block == nullptr);
+	block->set_modified(true);
+	try_schedule_block_update(block);
 
 	//OS::get_singleton()->print("Dirty (%i, %i, %i)", bpos.x, bpos.y, bpos.z);
 
 	// TODO What if a block is made dirty, goes through threaded update, then gets changed again before it gets updated?
 	// this will make the second change ignored, which is not correct!
+}
+
+void VoxelTerrain::try_schedule_block_update(VoxelBlock *block) {
+	CRASH_COND(block == nullptr);
+
+	if (block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT) {
+		// Regardless of if the updater is updating the block already,
+		// the block was modified again so we schedule another update
+		block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
+		_blocks_pending_update.push_back(block->position);
+	}
+}
+
+void VoxelTerrain::view_block(Vector3i bpos, bool data_flag, bool mesh_flag, bool collision_flag) {
+	VoxelBlock *block = _map->get_block(bpos);
+
+	if (block == nullptr) {
+		// The block isn't loaded
+		LoadingBlock *loading_block = _loading_blocks.getptr(bpos);
+
+		if (loading_block == nullptr) {
+			// First viewer to request it
+			LoadingBlock loading_block;
+			loading_block.viewers.add(data_flag, mesh_flag, collision_flag);
+
+			// Schedule a loading request
+			_loading_blocks.set(bpos, loading_block);
+			_blocks_pending_load.push_back(bpos);
+
+		} else {
+			// More viewers
+			loading_block->viewers.add(data_flag, mesh_flag, collision_flag);
+		}
+
+	} else {
+		// The block is loaded
+		VoxelViewerRefCount &viewers = block->viewers;
+
+		if (data_flag) {
+			viewers.add(VoxelViewerRefCount::TYPE_DATA);
+		}
+
+		if (mesh_flag) {
+			viewers.add(VoxelViewerRefCount::TYPE_MESH);
+			if (viewers.get(VoxelViewerRefCount::TYPE_MESH) == 1) {
+				// First to request a mesh (means it was not requested when the block was loaded earlier)
+				// Trigger mesh update
+				try_schedule_block_update(block);
+			}
+		}
+
+		if (collision_flag) {
+			viewers.add(VoxelViewerRefCount::TYPE_COLLISION);
+			if (viewers.get(VoxelViewerRefCount::TYPE_COLLISION) == 1) {
+				try_schedule_block_update(block);
+			}
+		}
+
+		// TODO viewers with varying flags during the game is not supported at the moment.
+		// They have to be re-created, which may cause world re-load...
+	}
+}
+
+void VoxelTerrain::unview_block(Vector3i bpos, bool data_flag, bool mesh_flag, bool collision_flag) {
+	VoxelBlock *block = _map->get_block(bpos);
+
+	if (block == nullptr) {
+		// The block isn't loaded
+		LoadingBlock *loading_block = _loading_blocks.getptr(bpos);
+		CRASH_COND_MSG(loading_block == nullptr, "Request to unview a loading block that was never requested");
+
+		loading_block->viewers.remove(data_flag, mesh_flag, collision_flag);
+
+		if (loading_block->viewers.get(VoxelViewerRefCount::TYPE_DATA) == 0) {
+			// No longer want to load it
+			_loading_blocks.erase(bpos);
+
+			// TODO Do we really need that vector after all?
+			for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
+				if (_blocks_pending_load[i] == bpos) {
+					_blocks_pending_load[i] = _blocks_pending_load.back();
+					_blocks_pending_load.pop_back();
+					break;
+				}
+			}
+		}
+
+	} else {
+		// The block is loaded
+		VoxelViewerRefCount &viewers = block->viewers;
+
+		if (mesh_flag) {
+			viewers.remove(VoxelViewerRefCount::TYPE_MESH);
+			if (viewers.get(VoxelViewerRefCount::TYPE_MESH) == 0) {
+				// Mesh no longer required
+				block->drop_mesh();
+			}
+		}
+
+		if (collision_flag) {
+			viewers.remove(VoxelViewerRefCount::TYPE_COLLISION);
+			if (viewers.get(VoxelViewerRefCount::TYPE_COLLISION) == 0) {
+				// Collision no longer required
+				block->drop_collision();
+			}
+		}
+
+		if (data_flag) {
+			viewers.remove(VoxelViewerRefCount::TYPE_DATA);
+		}
+		if (viewers.get(VoxelViewerRefCount::TYPE_DATA) == 0) {
+			// The block itself is no longer wanted
+			immerge_block(bpos);
+		}
+	}
 }
 
 namespace {
@@ -314,6 +393,14 @@ void VoxelTerrain::immerge_block(Vector3i bpos) {
 
 	// Blocks in the update queue will be cancelled in _process,
 	// because it's too expensive to linear-search all blocks for each block
+
+	// for (size_t i = 0; i < _blocks_pending_update.size(); ++i) {
+	// 	if (_blocks_pending_update[i] == bpos) {
+	// 		_blocks_pending_update[i] = _blocks_pending_update.back();
+	// 		_blocks_pending_update.pop_back();
+	// 		break;
+	// 	}
+	// }
 }
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
@@ -353,12 +440,13 @@ Dictionary VoxelTerrain::get_statistics() const {
 //	}
 //}
 
-void VoxelTerrain::make_all_view_dirty_deferred() {
-	// We do this because we query blocks only when the viewer area changes.
-	// This trick will regenerate all chunks in view, according to the view distance found during block updates.
-	// The point of doing this instead of immediately scheduling updates is that it will
-	// always use an up-to-date view distance, which is not necessarily loaded yet on initialization.
-	_last_view_distance_blocks = 0;
+void VoxelTerrain::make_all_view_dirty() {
+	// Mark all loaded blocks dirty within range of viewers that require meshes
+	_map->for_all_blocks([this](VoxelBlock *b) {
+		if (b->viewers.get(VoxelViewerRefCount::TYPE_MESH) > 0) {
+			make_block_dirty(b);
+		}
+	});
 
 	//	Vector3i radius(_view_distance_blocks, _view_distance_blocks, _view_distance_blocks);
 	//	make_blocks_dirty(-radius, 2*radius);
@@ -405,13 +493,20 @@ void VoxelTerrain::stop_streamer() {
 }
 
 void VoxelTerrain::reset_map() {
+	// Discard everything, to reload it all
+
 	_map->for_all_blocks([this](VoxelBlock *block) {
 		emit_block_unloaded(block);
 	});
 	_map->create(get_block_size_pow2(), 0);
 
-	// To force queries to happen again, because we only listen for viewer position changes
-	make_all_view_dirty_deferred();
+	_loading_blocks.clear();
+	_blocks_pending_load.clear();
+	_blocks_pending_update.clear();
+	_blocks_to_save.clear();
+
+	// No need to care about refcounts, we drop everything anyways. Will pair it back on next process.
+	_paired_viewers.clear();
 }
 
 inline int get_border_index(int x, int max) {
@@ -655,29 +750,6 @@ static void remove_positions_outside_box(
 	}
 }
 
-void VoxelTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const {
-	if (Engine::get_singleton()->is_editor_hint()) {
-		// TODO Use editor's camera here
-		out_pos = Vector3();
-		out_direction = Vector3(0, -1, 0);
-
-	} else {
-		// TODO Have option to use viewport camera
-		const Spatial *viewer = get_viewer();
-
-		if (viewer) {
-			Transform gt = viewer->get_global_transform();
-			out_pos = gt.origin;
-			out_direction = -gt.basis.get_axis(Vector3::AXIS_Z);
-
-		} else {
-			// TODO Just remember last viewer pos
-			out_pos = (_last_viewer_block_pos << _map->get_block_size_pow2()).to_vec3();
-			out_direction = Vector3(0, -1, 0);
-		}
-	}
-}
-
 void VoxelTerrain::send_block_data_requests() {
 	VOXEL_PROFILE_SCOPE();
 
@@ -715,6 +787,17 @@ void VoxelTerrain::emit_block_unloaded(const VoxelBlock *block) {
 	emit_signal(VoxelStringNames::get_singleton()->block_unloaded, args, 2);
 }
 
+bool VoxelTerrain::try_get_paired_viewer_index(uint32_t id, size_t &out_i) const {
+	for (size_t i = 0; i < _paired_viewers.size(); ++i) {
+		const PairedViewer &p = _paired_viewers[i];
+		if (p.id == id) {
+			out_i = i;
+			return true;
+		}
+	}
+	return false;
+}
+
 void VoxelTerrain::_process() {
 	VOXEL_PROFILE_SCOPE();
 
@@ -734,47 +817,121 @@ void VoxelTerrain::_process() {
 	_stats.dropped_block_loads = 0;
 	_stats.dropped_block_meshs = 0;
 
-	// Get viewer location
-	// TODO Transform to local (Spatial Transform)
-	Vector3 viewer_pos;
-	Vector3 viewer_direction;
-	get_viewer_pos_and_direction(viewer_pos, viewer_direction);
-	Vector3i viewer_block_pos = _map->voxel_to_block(Vector3i(viewer_pos));
+	// Update viewers
+	std::vector<size_t> unpaired_viewer_indexes;
+	{
+		// Our node doesn't have bounds yet, so for now viewers are always paired.
+
+		// Destroyed viewers
+		for (size_t i = 0; i < _paired_viewers.size(); ++i) {
+			PairedViewer &p = _paired_viewers[i];
+			if (!VoxelServer::get_singleton()->viewer_exists(p.id)) {
+				p.state.view_distance_blocks = 0;
+				unpaired_viewer_indexes.push_back(i);
+			}
+		}
+
+		// New viewers and updates
+		VoxelServer::get_singleton()->for_each_viewer([this](const VoxelServer::Viewer &viewer, uint32_t viewer_id) {
+			size_t i;
+			if (!try_get_paired_viewer_index(viewer_id, i)) {
+				PairedViewer p;
+				p.id = viewer_id;
+				p.state.view_distance_blocks = 0;
+				i = _paired_viewers.size();
+				_paired_viewers.push_back(p);
+			}
+
+			PairedViewer &p = _paired_viewers[i];
+
+			p.prev_state = p.state;
+
+			p.state.view_distance_blocks =
+					min(viewer.view_distance >> get_block_size_pow2(), _max_view_distance_blocks);
+			p.state.block_position = _map->voxel_to_block(Vector3i(viewer.world_position));
+			p.state.requires_collisions = VoxelServer::get_singleton()->is_viewer_requiring_collisions(viewer_id);
+			p.state.requires_meshes = VoxelServer::get_singleton()->is_viewer_requiring_visuals(viewer_id);
+		});
+	}
 
 	// Find out which blocks need to appear and which need to be unloaded
 	{
 		VOXEL_PROFILE_SCOPE();
 
-		Rect3i new_box = Rect3i::from_center_extents(viewer_block_pos, Vector3i(_view_distance_blocks));
-		Rect3i prev_box = Rect3i::from_center_extents(_last_viewer_block_pos, Vector3i(_last_view_distance_blocks));
+		for (size_t i = 0; i < _paired_viewers.size(); ++i) {
+			const PairedViewer &viewer = _paired_viewers[i];
 
-		if (prev_box != new_box) {
-			//print_line(String("Loaded area changed: from ") + prev_box.to_string() + String(" to ") + new_box.to_string());
+			const Rect3i new_box = Rect3i::from_center_extents(
+					viewer.state.block_position, Vector3i(viewer.state.view_distance_blocks));
+			const Rect3i prev_box = Rect3i::from_center_extents(
+					viewer.prev_state.block_position, Vector3i(viewer.prev_state.view_distance_blocks));
 
-			prev_box.difference(new_box, [this](Rect3i out_of_range_box) {
-				out_of_range_box.for_each_cell([=](Vector3i bpos) {
-					// Unload block
-					immerge_block(bpos);
+			if (prev_box != new_box) {
+				// Unview blocks that just fell out of range
+				prev_box.difference(new_box, [this, &viewer](Rect3i out_of_range_box) {
+					out_of_range_box.for_each_cell([this, &viewer](Vector3i bpos) {
+						unview_block(bpos, true,
+								viewer.prev_state.requires_meshes,
+								viewer.prev_state.requires_collisions);
+					});
 				});
-			});
 
-			new_box.difference(prev_box, [this](Rect3i box_to_load) {
-				box_to_load.for_each_cell([=](Vector3i bpos) {
-					// Load or update block
-					make_block_dirty(bpos);
+				// View blocks that just entered the range
+				new_box.difference(prev_box, [this, &viewer](Rect3i box_to_load) {
+					box_to_load.for_each_cell([this, &viewer](Vector3i bpos) {
+						// Load or update block
+						view_block(bpos, true,
+								viewer.state.requires_meshes,
+								viewer.state.requires_collisions);
+					});
 				});
-			});
+			}
+
+			// Blocks that remained within range of the viewer may need some changes too if viewer flags were modified.
+			// This operates on a DISTINCT set of blocks than the one above.
+
+			if (viewer.state.requires_collisions != viewer.prev_state.requires_collisions) {
+				const Rect3i box = new_box.clipped(prev_box);
+				if (viewer.state.requires_collisions) {
+					box.for_each_cell([this](Vector3i bpos) {
+						view_block(bpos, false, false, true);
+					});
+
+				} else {
+					box.for_each_cell([this](Vector3i bpos) {
+						unview_block(bpos, false, false, true);
+					});
+				}
+			}
+
+			if (viewer.state.requires_meshes != viewer.prev_state.requires_meshes) {
+				const Rect3i box = new_box.clipped(prev_box);
+				if (viewer.state.requires_meshes) {
+					box.for_each_cell([this](Vector3i bpos) {
+						view_block(bpos, false, true, false);
+					});
+
+				} else {
+					box.for_each_cell([this](Vector3i bpos) {
+						unview_block(bpos, false, true, false);
+					});
+				}
+			}
+
+			// Eliminate pending blocks that aren't needed
+			//remove_positions_outside_box(_blocks_pending_load, new_box, _loading_blocks);
+			//remove_positions_outside_box(_blocks_pending_update, new_box, _loading_blocks);
 		}
-
-		// Eliminate pending blocks that aren't needed
-		remove_positions_outside_box(_blocks_pending_load, new_box, _loading_blocks);
-		remove_positions_outside_box(_blocks_pending_update, new_box, _loading_blocks);
 	}
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
 
-	_last_view_distance_blocks = _view_distance_blocks;
-	_last_viewer_block_pos = viewer_block_pos;
+	// We no longer need unpaired viewers
+	for (size_t i = 0; i < unpaired_viewer_indexes.size(); ++i) {
+		size_t vi = unpaired_viewer_indexes[i];
+		_paired_viewers[vi] = _paired_viewers.back();
+		_paired_viewers.pop_back();
+	}
 
 	// It's possible the user didn't set a stream yet, or it is turned off
 	if (_stream.is_valid() && (Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
@@ -803,16 +960,18 @@ void VoxelTerrain::_process() {
 
 			const Vector3i block_pos = ob.position;
 
+			LoadingBlock loading_block;
 			{
-				Set<Vector3i>::Element *E = _loading_blocks.find(block_pos);
+				LoadingBlock *loading_block_ptr = _loading_blocks.getptr(block_pos);
 
-				if (E == nullptr) {
+				if (loading_block_ptr == nullptr) {
 					// That block was not requested, drop it
 					++_stats.dropped_block_loads;
 					continue;
 				}
 
-				_loading_blocks.erase(E);
+				_loading_blocks.erase(block_pos);
+				loading_block = *loading_block_ptr;
 			}
 
 			if (ob.dropped) {
@@ -839,11 +998,17 @@ void VoxelTerrain::_process() {
 
 			// TODO Discard blocks out of range
 
-			// Store buffer
+			// Create or update block data
 			VoxelBlock *block = _map->get_block(block_pos);
-			bool update_neighbors = block == nullptr;
+			const bool was_not_loaded = block == nullptr;
 			block = _map->set_block_buffer(block_pos, ob.voxels);
 			block->set_world(get_world());
+
+			if (was_not_loaded) {
+				// Set viewers count that are currently expecting the block
+				block->viewers = loading_block.viewers;
+			}
+
 			emit_block_loaded(block);
 
 			// TODO The following code appears to have order-dependency with block loading.
@@ -852,7 +1017,7 @@ void VoxelTerrain::_process() {
 			// but it needs to be made more robust
 
 			// Trigger mesh updates
-			if (update_neighbors) {
+			if (was_not_loaded) {
 				// All neighbors have to be checked. If they are now surrounded, they can be updated
 				Vector3i ndir;
 				for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
@@ -920,7 +1085,9 @@ void VoxelTerrain::_process() {
 						CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
 						// The block contains empty voxels
-						block->set_mesh(Ref<Mesh>(), this, _generate_collisions, Vector<Array>(), get_tree()->is_debugging_collisions_hint());
+
+						block->drop_mesh();
+						block->drop_collision();
 						block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
 
 						// Optional, but I guess it might spare some memory.
@@ -963,7 +1130,7 @@ void VoxelTerrain::_process() {
 
 	_stats.time_request_blocks_to_update = profiling_clock.restart();
 
-	// Get mesh updates
+	// Receive mesh updates
 	{
 		VOXEL_PROFILE_SCOPE_NAMED("Receive mesh updates");
 
@@ -1040,9 +1207,16 @@ void VoxelTerrain::_process() {
 
 			if (is_mesh_empty(mesh)) {
 				mesh = Ref<Mesh>();
+				collidable_surfaces.clear();
 			}
 
-			block->set_mesh(mesh, this, _generate_collisions, collidable_surfaces, get_tree()->is_debugging_collisions_hint());
+			const bool gen_collisions =
+					_generate_collisions && block->viewers.get(VoxelViewerRefCount::TYPE_COLLISION) > 0;
+
+			block->set_mesh(mesh);
+			if (gen_collisions) {
+				block->set_collision_mesh(collidable_surfaces, get_tree()->is_debugging_collisions_hint(), this);
+			}
 			block->set_parent_visible(is_visible());
 		}
 
@@ -1126,14 +1300,11 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_material", "id", "material"), &VoxelTerrain::set_material);
 	ClassDB::bind_method(D_METHOD("get_material", "id"), &VoxelTerrain::get_material);
 
-	ClassDB::bind_method(D_METHOD("set_view_distance", "distance_in_voxels"), &VoxelTerrain::set_view_distance);
-	ClassDB::bind_method(D_METHOD("get_view_distance"), &VoxelTerrain::get_view_distance);
+	ClassDB::bind_method(D_METHOD("set_max_view_distance", "distance_in_voxels"), &VoxelTerrain::set_max_view_distance);
+	ClassDB::bind_method(D_METHOD("get_max_view_distance"), &VoxelTerrain::get_max_view_distance);
 
 	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelTerrain::get_generate_collisions);
 	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelTerrain::set_generate_collisions);
-
-	ClassDB::bind_method(D_METHOD("get_viewer_path"), &VoxelTerrain::get_viewer_path);
-	ClassDB::bind_method(D_METHOD("set_viewer_path", "path"), &VoxelTerrain::set_viewer_path);
 
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_b_voxel_to_block);
 	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_b_block_to_voxel);
@@ -1153,8 +1324,7 @@ void VoxelTerrain::_bind_methods() {
 			"set_stream", "get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"),
 			"set_voxel_library", "get_voxel_library");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
-	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_view_distance"), "set_max_view_distance", "get_max_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"),
 			"set_generate_collisions", "get_generate_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),

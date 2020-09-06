@@ -23,6 +23,7 @@
 #include "terrain/voxel_lod_terrain.h"
 #include "terrain/voxel_map.h"
 #include "terrain/voxel_terrain.h"
+#include "terrain/voxel_viewer.h"
 #include "util/macros.h"
 #include "voxel_buffer.h"
 #include "voxel_memory_pool.h"
@@ -51,6 +52,7 @@ void register_voxel_types() {
 	// Nodes
 	ClassDB::register_class<VoxelTerrain>();
 	ClassDB::register_class<VoxelLodTerrain>();
+	ClassDB::register_class<VoxelViewer>();
 
 	// Streams
 	ClassDB::register_class<VoxelStream>();
