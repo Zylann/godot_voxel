@@ -12,6 +12,8 @@ def get_icons_path():
 
 def get_doc_classes():
   return [
+    "VoxelServer",
+
     "VoxelBuffer",
     "VoxelMap",
 
@@ -20,6 +22,7 @@ def get_doc_classes():
 
     "VoxelTerrain",
     "VoxelLodTerrain",
+    "VoxelViewer",
 
     "VoxelStream",
     "VoxelStreamFile",
@@ -38,6 +41,7 @@ def get_doc_classes():
     "VoxelTool",
     "VoxelToolTerrain",
     "VoxelRaycastResult",
+    "VoxelBlockSerializer",
 
     "VoxelMesher",
     "VoxelMesherBlocky",
