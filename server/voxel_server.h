@@ -115,7 +115,7 @@ private:
 
 	// Since we are going to send data to tasks running in multiple threads, a few strategies are in place:
 	//
-	// - Copy the data for each thread. This is suitable for simple information that doesn't change after scheduling.
+	// - Copy the data for each task. This is suitable for simple information that doesn't change after scheduling.
 	//
 	// - Per-thread instances. This is done if some heap-allocated class instances are not safe
 	//   to use in multiple threads, and don't change after being scheduled.
@@ -147,28 +147,29 @@ private:
 		std::shared_ptr<MeshingDependency> meshing_dependency;
 	};
 
-	struct VoxelViewersArray {
+	struct PriorityDependencyShared {
 		// These positions are written by the main thread and read by block processing threads.
+		// Order doesn't matter.
 		// It's only used to adjust task priority so using a lock isn't worth it. In worst case scenario,
 		// a task will run much sooner or later than expected, but it will run in any case.
-		std::vector<Vector3> positions;
+		std::vector<Vector3> viewers;
+		unsigned int cancel_distance_squared = 999999;
 	};
 
 	struct World {
 		StructDB<Volume> volumes;
 		StructDB<Viewer> viewers;
 
-		// Order doesn't matter.
 		// Must be overwritten with a new instance if count changes.
-		std::shared_ptr<VoxelViewersArray> viewers_for_priority;
+		std::shared_ptr<PriorityDependencyShared> shared_priority_dependency;
 	};
 
-	struct BlockRequestPriorityDependency {
-		std::shared_ptr<VoxelViewersArray> viewers;
+	struct PriorityDependency {
+		std::shared_ptr<PriorityDependencyShared> shared;
 		Vector3 world_position; // TODO Won't update while in queue. Can it be bad?
 	};
 
-	static int get_priority(const BlockRequestPriorityDependency &dep, uint8_t lod);
+	static int get_priority(const PriorityDependency &dep, uint8_t lod, float *out_closest_distance_sq);
 
 	class BlockDataRequest : public IVoxelTask {
 	public:
@@ -188,7 +189,8 @@ private:
 		uint8_t block_size;
 		uint8_t type;
 		bool has_run = false;
-		BlockRequestPriorityDependency priority_dependency;
+		bool too_far = false;
+		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		// TODO Find a way to separate save, it doesnt need sorting
 	};
@@ -206,7 +208,8 @@ private:
 		bool smooth_enabled;
 		bool blocky_enabled;
 		bool has_run = false;
-		BlockRequestPriorityDependency priority_dependency;
+		bool too_far = false;
+		PriorityDependency priority_dependency;
 		std::shared_ptr<MeshingDependency> meshing_dependency;
 		VoxelMesher::Output blocky_surfaces_output;
 		VoxelMesher::Output smooth_surfaces_output;

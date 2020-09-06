@@ -102,6 +102,7 @@ void VoxelThreadPool::enqueue(ArraySlice<IVoxelTask *> tasks) {
 		for (size_t i = 0; i < tasks.size(); ++i) {
 			TaskItem t;
 			t.task = tasks[i];
+			CRASH_COND(t.task == nullptr);
 			_tasks.push_back(t);
 			++_debug_received_tasks;
 		}
@@ -141,19 +142,22 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 				// TODO This takes a lot of time when there are many queued tasks. Use a better container?
 				for (size_t i = 0; i < _tasks.size(); ++i) {
 					TaskItem &item = _tasks[i];
+					CRASH_COND(item.task == nullptr);
 
 					if (now - item.last_priority_update_time > _priority_update_period) {
+						// Calling `get_priority()` first since it can update cancellation
+						// (not clear API tho, might review that in the future)
+						item.cached_priority = item.task->get_priority();
+
 						if (item.task->is_cancelled()) {
 							cancelled_tasks.push_back(item.task);
 							_tasks[i] = _tasks.back();
 							_tasks.pop_back();
 							--i;
 							continue;
-
-						} else {
-							item.cached_priority = item.task->get_priority();
-							item.last_priority_update_time = now;
 						}
+
+						item.last_priority_update_time = now;
 					}
 
 					if (item.cached_priority < best_priority) {

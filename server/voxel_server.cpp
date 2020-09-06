@@ -78,7 +78,7 @@ VoxelServer::VoxelServer() {
 	}
 
 	// Init world
-	_world.viewers_for_priority = gd_make_shared<VoxelViewersArray>();
+	_world.shared_priority_dependency = gd_make_shared<PriorityDependencyShared>();
 
 	PRINT_VERBOSE(String("Size of BlockDataRequest: {0}").format(varray((int)sizeof(BlockDataRequest))));
 	PRINT_VERBOSE(String("Size of BlockMeshRequest: {0}").format(varray((int)sizeof(BlockMeshRequest))));
@@ -110,8 +110,10 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	});
 }
 
-int VoxelServer::get_priority(const BlockRequestPriorityDependency &dep, uint8_t lod) {
-	const std::vector<Vector3> &viewer_positions = dep.viewers->positions;
+int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod,
+		float *out_closest_distance_sq) {
+
+	const std::vector<Vector3> &viewer_positions = dep.shared->viewers;
 	const Vector3 block_position = dep.world_position;
 
 	float closest_distance_sq = 99999.f;
@@ -128,6 +130,10 @@ int VoxelServer::get_priority(const BlockRequestPriorityDependency &dep, uint8_t
 	}
 
 	int priority = static_cast<int>(closest_distance_sq);
+
+	if (out_closest_distance_sq != nullptr) {
+		*out_closest_distance_sq = closest_distance_sq;
+	}
 
 	// Higher lod indexes come first to allow the octree to subdivide.
 	// Then comes distance, which is modified by how much in view the block is
@@ -215,7 +221,7 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) 
 
 	const Vector3i voxel_pos = get_block_center(input.position, volume.block_size, input.lod);
 	r->priority_dependency.world_position = volume.transform.xform(voxel_pos.to_vec3());
-	r->priority_dependency.viewers = _world.viewers_for_priority;
+	r->priority_dependency.shared = _world.shared_priority_dependency;
 
 	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
 	_meshing_thread_pool.enqueue(r);
@@ -237,7 +243,7 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 
 	const Vector3i voxel_pos = get_block_center(block_pos, volume.block_size, lod);
 	r.priority_dependency.world_position = volume.transform.xform(voxel_pos.to_vec3());
-	r.priority_dependency.viewers = _world.viewers_for_priority;
+	r.priority_dependency.shared = _world.shared_priority_dependency;
 
 	BlockDataRequest *rp = memnew(BlockDataRequest(r));
 	_streaming_thread_pool.enqueue(rp);
@@ -355,6 +361,7 @@ void VoxelServer::process() {
 	// Note, this shouldn't be here. It should normally done just after SwapBuffers.
 	// Godot does not have any C++ profiler usage anywhere, so when using Tracy Profiler I have to put it somewhere...
 	VOXEL_PROFILE_MARK_FRAME();
+	VOXEL_PROFILE_SCOPE();
 
 	// Receive data updates
 	_streaming_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
@@ -435,16 +442,24 @@ void VoxelServer::process() {
 	// Update viewer dependencies
 	{
 		const size_t viewer_count = _world.viewers.count();
-		if (_world.viewers_for_priority->positions.size() != viewer_count) {
+		if (_world.shared_priority_dependency->viewers.size() != viewer_count) {
 			// TODO We can avoid the invalidation by using an atomic size or memory barrier?
-			_world.viewers_for_priority = gd_make_shared<VoxelViewersArray>();
-			_world.viewers_for_priority->positions.resize(viewer_count);
+			_world.shared_priority_dependency = gd_make_shared<PriorityDependencyShared>();
+			_world.shared_priority_dependency->viewers.resize(viewer_count);
 		}
 		size_t i = 0;
-		_world.viewers.for_each([&i, this](Viewer &viewer) {
-			_world.viewers_for_priority->positions[i] = viewer.world_position;
+		unsigned int max_distance = 0;
+		_world.viewers.for_each([&i, &max_distance, this](Viewer &viewer) {
+			_world.shared_priority_dependency->viewers[i] = viewer.world_position;
+			if (viewer.view_distance > max_distance) {
+				max_distance = viewer.view_distance;
+			}
 			++i;
 		});
+		// Cancel distance is increased because of two reasons:
+		// - Some volumes use a cubic area which has higher distances on their corners
+		// - Hysteresis is needed to reduce ping-pong
+		_world.shared_priority_dependency->cancel_distance_squared = squared(max_distance * 2);
 	}
 }
 
@@ -537,11 +552,17 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 }
 
 int VoxelServer::BlockDataRequest::get_priority() {
-	return type == TYPE_LOAD ? VoxelServer::get_priority(priority_dependency, lod) : 0;
+	if (type == TYPE_SAVE) {
+		return 0;
+	}
+	float closest_distance_sq;
+	int p = VoxelServer::get_priority(priority_dependency, lod, &closest_distance_sq);
+	too_far = closest_distance_sq > priority_dependency.shared->cancel_distance_squared;
+	return p;
 }
 
 bool VoxelServer::BlockDataRequest::is_cancelled() {
-	return type == TYPE_LOAD && !stream_dependency->valid;
+	return type == TYPE_LOAD && (!stream_dependency->valid || too_far);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -629,11 +650,14 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 }
 
 int VoxelServer::BlockMeshRequest::get_priority() {
-	return VoxelServer::get_priority(priority_dependency, lod);
+	float closest_distance_sq;
+	int p = VoxelServer::get_priority(priority_dependency, lod, &closest_distance_sq);
+	too_far = closest_distance_sq > priority_dependency.shared->cancel_distance_squared;
+	return p;
 }
 
 bool VoxelServer::BlockMeshRequest::is_cancelled() {
-	return !meshing_dependency->valid;
+	return !meshing_dependency->valid || too_far;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

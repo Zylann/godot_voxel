@@ -311,7 +311,11 @@ void VoxelTerrain::unview_block(Vector3i bpos, bool data_flag, bool mesh_flag, b
 	if (block == nullptr) {
 		// The block isn't loaded
 		LoadingBlock *loading_block = _loading_blocks.getptr(bpos);
-		CRASH_COND_MSG(loading_block == nullptr, "Request to unview a loading block that was never requested");
+		if (loading_block == nullptr) {
+			PRINT_VERBOSE("Request to unview a loading block that was never requested");
+			// Not expected, but fine I guess
+			return;
+		}
 
 		loading_block->viewers.remove(data_flag, mesh_flag, collision_flag);
 
@@ -969,24 +973,28 @@ void VoxelTerrain::_process() {
 				LoadingBlock *loading_block_ptr = _loading_blocks.getptr(block_pos);
 
 				if (loading_block_ptr == nullptr) {
-					// That block was not requested, drop it
+					// That block was not requested or is no longer needed, drop it.
 					++_stats.dropped_block_loads;
 					continue;
 				}
 
-				_loading_blocks.erase(block_pos);
 				loading_block = *loading_block_ptr;
 			}
 
 			if (ob.dropped) {
-				// That block was dropped by the data loader thread, but we were still expecting it...
-				// This is not good, because it means the loader is out of sync due to a bug.
+				// That block was cancelled by the server, but we are still expecting it.
+				// We'll have to request it again.
 				PRINT_VERBOSE(String("Received a block loading drop while we were still expecting it: "
-									 "lod{0} ({1}, {2}, {3})")
+									 "lod{0} ({1}, {2}, {3}), re-requesting it")
 									  .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
 				++_stats.dropped_block_loads;
+
+				_blocks_pending_load.push_back(ob.position);
 				continue;
 			}
+
+			// Now we got the block. If we still have to drop it, the cause will be an error.
+			_loading_blocks.erase(block_pos);
 
 			CRASH_COND(ob.voxels.is_null());
 
@@ -999,8 +1007,6 @@ void VoxelTerrain::_process() {
 				++_stats.dropped_block_loads;
 				continue;
 			}
-
-			// TODO Discard blocks out of range
 
 			// Create or update block data
 			VoxelBlock *block = _map->get_block(block_pos);
@@ -1054,6 +1060,8 @@ void VoxelTerrain::_process() {
 		}
 
 		_reception_buffers.data_output.clear();
+
+		send_block_data_requests();
 	}
 
 	_stats.time_process_load_responses = profiling_clock.restart();
