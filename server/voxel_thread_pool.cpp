@@ -219,7 +219,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 }
 
 void VoxelThreadPool::wait_for_all_tasks() {
-	const uint32_t suspicious_delay = 10;
+	const uint32_t suspicious_delay_msec = 10000;
 
 	uint32_t before = OS::get_singleton()->get_ticks_msec();
 	bool error1_reported = false;
@@ -233,9 +233,9 @@ void VoxelThreadPool::wait_for_all_tasks() {
 			}
 		}
 
-		OS::get_singleton()->delay_usec(1000);
+		OS::get_singleton()->delay_usec(2000);
 
-		if (!error1_reported && OS::get_singleton()->get_ticks_msec() - before > suspicious_delay) {
+		if (!error1_reported && OS::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
 			ERR_PRINT("Waiting for all tasks to be picked is taking too long");
 			error1_reported = true;
 		}
@@ -256,9 +256,9 @@ void VoxelThreadPool::wait_for_all_tasks() {
 			}
 		}
 
-		OS::get_singleton()->delay_usec(1000);
+		OS::get_singleton()->delay_usec(2000);
 
-		if (!error2_reported && OS::get_singleton()->get_ticks_msec() - before > suspicious_delay) {
+		if (!error2_reported && OS::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
 			ERR_PRINT("Waiting for all tasks to be completed is taking too long");
 			error2_reported = true;
 		}
