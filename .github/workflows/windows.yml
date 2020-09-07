@@ -67,10 +67,7 @@ jobs:
         run: |
           scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=yes target=release_debug
 
-      # TODO Had to disable tests, because they just fail miserably at driver creation and spin endlessly...
-      # `ERROR: RasterizerGLES3::is_viable: Error initializing GLAD`
-      # Meanwhile they work fine on Godot's main repo and I have no idea why.
-      #
+      # TODO Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
       #- name: Unit Tests
       #  run: |
