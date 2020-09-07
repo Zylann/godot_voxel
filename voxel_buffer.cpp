@@ -119,8 +119,7 @@ VoxelBuffer::~VoxelBuffer() {
 	clear();
 }
 
-void VoxelBuffer::create(int sx, int sy, int sz) {
-	ERR_FAIL_COND(sx <= 0 || sy <= 0 || sz <= 0);
+void VoxelBuffer::create(unsigned int sx, unsigned int sy, unsigned int sz) {
 	ERR_FAIL_COND(sx > MAX_SIZE || sy > MAX_SIZE || sz > MAX_SIZE);
 
 	clear_voxel_metadata();
@@ -801,12 +800,12 @@ void VoxelBuffer::clear_voxel_metadata_in_area(Rect3i box) {
 	}
 }
 
-void VoxelBuffer::copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Rect3i src_box, Vector3i dst_pos) {
+void VoxelBuffer::copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Rect3i src_box, Vector3i dst_origin) {
 	ERR_FAIL_COND(src_buffer.is_null());
 	ERR_FAIL_COND(src_buffer->is_box_valid(src_box));
 
-	const Rect3i clipped_src_box = src_box.clipped(Rect3i(src_box.pos - dst_pos, _size));
-	const Vector3i clipped_dst_offset = dst_pos + clipped_src_box.pos - src_box.pos;
+	const Rect3i clipped_src_box = src_box.clipped(Rect3i(src_box.pos - dst_origin, _size));
+	const Vector3i clipped_dst_offset = dst_origin + clipped_src_box.pos - src_box.pos;
 
 	const Map<Vector3i, Variant>::Element *elem = src_buffer->_voxel_metadata.front();
 

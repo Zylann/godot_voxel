@@ -10,4 +10,8 @@
 		print_line(msg);                            \
 	}
 
+// TODO Waiting for a fix, Variant() can't be constructed from `size_t` on JavaScript and OSX builds.
+// See https://github.com/godotengine/godot/issues/36690
+#define SIZE_T_TO_VARIANT(s) static_cast<int64_t>(s)
+
 #endif // VOXEL_MACROS_H
