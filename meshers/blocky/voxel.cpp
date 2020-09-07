@@ -418,7 +418,7 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &Voxel::set_collision_mask);
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &Voxel::get_collision_mask);
 
-	ClassDB::bind_method(D_METHOD("is_empty()"), &Voxel::is_empty);
+	ClassDB::bind_method(D_METHOD("is_empty"), &Voxel::is_empty);
 
 	// TODO Update to StringName in Godot 4
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");
