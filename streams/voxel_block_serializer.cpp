@@ -1,6 +1,7 @@
 #include "voxel_block_serializer.h"
 #include "../math/vector3i.h"
 #include "../thirdparty/lz4/lz4.h"
+#include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../voxel_buffer.h"
 #include "../voxel_memory_pool.h"
@@ -25,9 +26,14 @@ size_t get_metadata_size_in_bytes(const VoxelBuffer &buffer) {
 	const Map<Vector3i, Variant>::Element *elem = buffer.get_voxel_metadata().front();
 	while (elem != nullptr) {
 		const Vector3i pos = elem->key();
-		ERR_FAIL_COND_V_MSG(pos.x < 0 || pos.x >= VoxelBuffer::MAX_SIZE, 0, "Invalid voxel metadata X position");
-		ERR_FAIL_COND_V_MSG(pos.y < 0 || pos.y >= VoxelBuffer::MAX_SIZE, 0, "Invalid voxel metadata Y position");
-		ERR_FAIL_COND_V_MSG(pos.z < 0 || pos.z >= VoxelBuffer::MAX_SIZE, 0, "Invalid voxel metadata Z position");
+
+		ERR_FAIL_COND_V_MSG(pos.x < 0 || static_cast<uint32_t>(pos.x) >= VoxelBuffer::MAX_SIZE, 0,
+				"Invalid voxel metadata X position");
+		ERR_FAIL_COND_V_MSG(pos.y < 0 || static_cast<uint32_t>(pos.y) >= VoxelBuffer::MAX_SIZE, 0,
+				"Invalid voxel metadata Y position");
+		ERR_FAIL_COND_V_MSG(pos.z < 0 || static_cast<uint32_t>(pos.z) >= VoxelBuffer::MAX_SIZE, 0,
+				"Invalid voxel metadata Z position");
+
 		size += 3 * sizeof(uint16_t); // Positions are stored as 3 unsigned shorts
 
 		int len;
@@ -75,7 +81,9 @@ void serialize_metadata(uint8_t *p_dst, const VoxelBuffer &buffer, const size_t 
 		encode_variant(buffer.get_block_metadata(), dst, written_length, false);
 		dst += written_length;
 
-		CRASH_COND_MSG((dst - p_dst) > metadata_size, "Wrote block metadata out of expected bounds");
+		// I chose to cast this way to fix a GCC warning.
+		// If dst - p_dst is negative (which is wrong), it will wrap and cause a justified assertion failure
+		CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) > metadata_size, "Wrote block metadata out of expected bounds");
 	}
 
 	const Map<Vector3i, Variant>::Element *elem = buffer.get_voxel_metadata().front();
@@ -92,14 +100,14 @@ void serialize_metadata(uint8_t *p_dst, const VoxelBuffer &buffer, const size_t 
 		CRASH_COND_MSG(err != OK, "Error when trying to encode voxel metadata.");
 		dst += written_length;
 
-		CRASH_COND_MSG((dst - p_dst) > metadata_size, "Wrote voxel metadata out of expected bounds");
+		CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) > metadata_size, "Wrote voxel metadata out of expected bounds");
 
 		elem = elem->next();
 	}
 
-	CRASH_COND_MSG((dst - p_dst) != metadata_size,
+	CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) != metadata_size,
 			String("Written metadata doesn't match expected count (expected {0}, got {1})")
-					.format(varray(metadata_size, (int)(dst - p_dst))));
+					.format(varray(SIZE_T_TO_VARIANT(metadata_size), (int)(dst - p_dst))));
 }
 
 bool deserialize_metadata(uint8_t *p_src, VoxelBuffer &buffer, const size_t metadata_size) {

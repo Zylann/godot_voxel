@@ -53,12 +53,14 @@ public:
 	};
 
 	static const Depth DEFAULT_CHANNEL_DEPTH = DEPTH_8_BIT;
-	static const uint32_t MAX_SIZE = 65535; // Limit was made explicit for serialization reasons
+
+	// Limit was made explicit for serialization reasons, and also because there must be a reasonable one
+	static const uint32_t MAX_SIZE = 65535;
 
 	VoxelBuffer();
 	~VoxelBuffer();
 
-	void create(int sx, int sy, int sz);
+	void create(unsigned int sx, unsigned int sy, unsigned int sz);
 	void create(Vector3i size);
 	void clear();
 	void clear_channel(unsigned int channel_index, uint64_t clear_value = 0);
@@ -143,7 +145,7 @@ public:
 	void for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Rect3i box) const;
 	void clear_voxel_metadata();
 	void clear_voxel_metadata_in_area(Rect3i box);
-	void copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Rect3i src_box, Vector3i dst_pos);
+	void copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Rect3i src_box, Vector3i dst_origin);
 	void copy_voxel_metadata(const VoxelBuffer &src_buffer);
 
 	const Map<Vector3i, Variant> &get_voxel_metadata() const { return _voxel_metadata; }

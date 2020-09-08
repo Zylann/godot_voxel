@@ -404,14 +404,14 @@ void VoxelStreamRegionFiles::set_directory(String dirpath) {
 	}
 }
 
-static Array to_varray(const Vector3i &v) {
+/*static Array to_varray(const Vector3i &v) {
 	Array a;
 	a.resize(3);
 	a[0] = v.x;
 	a[1] = v.y;
 	a[2] = v.z;
 	return a;
-}
+}*/
 
 static bool u8_from_json_variant(Variant v, uint8_t &i) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::REAL, false);
@@ -427,7 +427,7 @@ static bool s32_from_json_variant(Variant v, int &i) {
 	return true;
 }
 
-static bool from_json_varray(Array a, Vector3i &v) {
+/*static bool from_json_varray(Array a, Vector3i &v) {
 	ERR_FAIL_COND_V(a.size() != 3, false);
 	for (int i = 0; i < 3; ++i) {
 		if (!s32_from_json_variant(a[i], v[i])) {
@@ -435,7 +435,7 @@ static bool from_json_varray(Array a, Vector3i &v) {
 		}
 	}
 	return true;
-}
+}*/
 
 static bool depth_from_json_variant(Variant &v, VoxelBuffer::Depth &d) {
 	uint8_t n;
