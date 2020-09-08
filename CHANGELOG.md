@@ -8,8 +8,8 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
 
-`master` (Godot 3.2.3)
-------------------------
+`godot3.2.3` - 08/09/2020
+---------------------------
 
 - General
     - Terrain nodes now render in the editor, unless scripts are involved (can be changed with an option)
