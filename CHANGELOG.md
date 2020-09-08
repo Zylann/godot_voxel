@@ -7,6 +7,19 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
+`master`
+--------
+
+- General
+    - Introduction of Voxel Server, which shares threaded tasks among all voxel nodes
+    - Voxel data is no longer copied when sent to processing threads, reducing high memory spikes in some scenarios
+
+- Breaking changes
+    - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points
+
+- Known issues
+    - `VoxelLodTerrain` does not support `VoxelViewer`, but a refactoring pass is planned for it.
+
 
 `godot3.2.3` - 08/09/2020
 ---------------------------
