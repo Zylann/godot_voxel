@@ -861,8 +861,11 @@ void VoxelTerrain::_process() {
 		});
 	}
 
+	const bool stream_enabled = _stream.is_valid() &&
+								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
+
 	// Find out which blocks need to appear and which need to be unloaded
-	{
+	if (stream_enabled) {
 		VOXEL_PROFILE_SCOPE();
 
 		for (size_t i = 0; i < _paired_viewers.size(); ++i) {
@@ -942,7 +945,7 @@ void VoxelTerrain::_process() {
 	}
 
 	// It's possible the user didn't set a stream yet, or it is turned off
-	if (_stream.is_valid() && (Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
+	if (stream_enabled) {
 		send_block_data_requests();
 	}
 
@@ -1061,7 +1064,9 @@ void VoxelTerrain::_process() {
 
 		_reception_buffers.data_output.clear();
 
-		send_block_data_requests();
+		if (stream_enabled) {
+			send_block_data_requests();
+		}
 	}
 
 	_stats.time_process_load_responses = profiling_clock.restart();
