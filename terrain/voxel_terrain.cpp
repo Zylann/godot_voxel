@@ -264,11 +264,11 @@ void VoxelTerrain::view_block(Vector3i bpos, bool data_flag, bool mesh_flag, boo
 
 		if (loading_block == nullptr) {
 			// First viewer to request it
-			LoadingBlock loading_block;
-			loading_block.viewers.add(data_flag, mesh_flag, collision_flag);
+			LoadingBlock new_loading_block;
+			new_loading_block.viewers.add(data_flag, mesh_flag, collision_flag);
 
 			// Schedule a loading request
-			_loading_blocks.set(bpos, loading_block);
+			_loading_blocks.set(bpos, new_loading_block);
 			_blocks_pending_load.push_back(bpos);
 
 		} else {
@@ -739,28 +739,11 @@ void VoxelTerrain::_notification(int p_what) {
 	}
 }
 
-static void remove_positions_outside_box(
-		Vector<Vector3i> &positions,
-		Rect3i box,
-		Set<Vector3i> &loading_set) {
-
-	for (int i = 0; i < positions.size(); ++i) {
-		const Vector3i bpos = positions[i];
-		if (!box.contains(bpos)) {
-			const int last = positions.size() - 1;
-			positions.write[i] = positions[last];
-			positions.resize(last);
-			loading_set.erase(bpos);
-			--i;
-		}
-	}
-}
-
 void VoxelTerrain::send_block_data_requests() {
 	VOXEL_PROFILE_SCOPE();
 
 	// Blocks to load
-	for (int i = 0; i < _blocks_pending_load.size(); ++i) {
+	for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
 		const Vector3i block_pos = _blocks_pending_load[i];
 		// TODO Batch request
 		VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, 0);
@@ -844,7 +827,6 @@ void VoxelTerrain::_process() {
 			if (!try_get_paired_viewer_index(viewer_id, i)) {
 				PairedViewer p;
 				p.id = viewer_id;
-				p.state.view_distance_blocks = 0;
 				i = _paired_viewers.size();
 				_paired_viewers.push_back(p);
 			}
@@ -927,10 +909,6 @@ void VoxelTerrain::_process() {
 					});
 				}
 			}
-
-			// Eliminate pending blocks that aren't needed
-			//remove_positions_outside_box(_blocks_pending_load, new_box, _loading_blocks);
-			//remove_positions_outside_box(_blocks_pending_update, new_box, _loading_blocks);
 		}
 	}
 
@@ -1075,8 +1053,8 @@ void VoxelTerrain::_process() {
 	{
 		VOXEL_PROFILE_SCOPE();
 
-		for (int i = 0; i < _blocks_pending_update.size(); ++i) {
-			Vector3i block_pos = _blocks_pending_update[i];
+		for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
+			Vector3i block_pos = _blocks_pending_update[bi];
 
 			// Check if the block is worth meshing
 			// Smooth meshing works on more neighbors, so checking a single block isn't enough to ignore it,
@@ -1123,9 +1101,9 @@ void VoxelTerrain::_process() {
 			CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
 			// Get block and its neighbors
-			VoxelServer::BlockMeshInput mi;
-			mi.position = block_pos;
-			mi.lod = 0;
+			VoxelServer::BlockMeshInput mesh_request;
+			mesh_request.position = block_pos;
+			mesh_request.lod = 0;
 			for (unsigned int i = 0; i < Cube::MOORE_AREA_3D_COUNT; ++i) {
 				const Vector3i npos = block_pos + Cube::g_ordered_moore_area_3d[i];
 				VoxelBlock *nblock = _map->get_block(npos);
@@ -1134,10 +1112,10 @@ void VoxelTerrain::_process() {
 				if (nblock == nullptr) {
 					continue;
 				}
-				mi.blocks[i] = nblock->voxels;
+				mesh_request.blocks[i] = nblock->voxels;
 			}
 
-			VoxelServer::get_singleton()->request_block_mesh(_volume_id, mi);
+			VoxelServer::get_singleton()->request_block_mesh(_volume_id, mesh_request);
 
 			block->set_mesh_state(VoxelBlock::MESH_UPDATE_SENT);
 		}

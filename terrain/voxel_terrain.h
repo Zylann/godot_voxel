@@ -120,9 +120,9 @@ private:
 	struct PairedViewer {
 		struct State {
 			Vector3i block_position;
-			int view_distance_blocks;
-			bool requires_collisions;
-			bool requires_meshes;
+			int view_distance_blocks = 0;
+			bool requires_collisions = false;
+			bool requires_meshes = false;
 		};
 		uint32_t id;
 		State state;

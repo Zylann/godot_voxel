@@ -594,7 +594,6 @@ void VoxelLodTerrain::_process() {
 	Vector3 viewer_pos;
 	Vector3 viewer_direction;
 	get_viewer_pos_and_direction(viewer_pos, viewer_direction);
-	Vector3i viewer_block_pos = _lods[0].map->voxel_to_block(Vector3i(viewer_pos));
 
 	_stats.dropped_block_loads = 0;
 	_stats.dropped_block_meshs = 0;
@@ -1018,9 +1017,9 @@ void VoxelLodTerrain::_process() {
 			VOXEL_PROFILE_SCOPE();
 			Lod &lod = _lods[lod_index];
 
-			for (unsigned int i = 0; i < lod.blocks_pending_update.size(); ++i) {
+			for (unsigned int bi = 0; bi < lod.blocks_pending_update.size(); ++bi) {
 				VOXEL_PROFILE_SCOPE();
-				const Vector3i block_pos = lod.blocks_pending_update[i];
+				const Vector3i block_pos = lod.blocks_pending_update[bi];
 
 				VoxelBlock *block = lod.map->get_block(block_pos);
 				CRASH_COND(block == nullptr);
@@ -1028,9 +1027,9 @@ void VoxelLodTerrain::_process() {
 				CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
 
 				// Get block and its neighbors
-				VoxelServer::BlockMeshInput mi;
-				mi.position = block_pos;
-				mi.lod = lod_index;
+				VoxelServer::BlockMeshInput mesh_request;
+				mesh_request.position = block_pos;
+				mesh_request.lod = lod_index;
 				for (unsigned int i = 0; i < Cube::MOORE_AREA_3D_COUNT; ++i) {
 					const Vector3i npos = block_pos + Cube::g_ordered_moore_area_3d[i];
 					VoxelBlock *nblock = lod.map->get_block(npos);
@@ -1039,10 +1038,10 @@ void VoxelLodTerrain::_process() {
 					if (nblock == nullptr) {
 						continue;
 					}
-					mi.blocks[i] = nblock->voxels;
+					mesh_request.blocks[i] = nblock->voxels;
 				}
 
-				VoxelServer::get_singleton()->request_block_mesh(_volume_id, mi);
+				VoxelServer::get_singleton()->request_block_mesh(_volume_id, mesh_request);
 
 				block->set_mesh_state(VoxelBlock::MESH_UPDATE_SENT);
 			}
