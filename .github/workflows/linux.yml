@@ -85,6 +85,6 @@ jobs:
       # Make build available
       - uses: actions/upload-artifact@v2
         with:
-          name: godot.linuxbsd.opt.tools.64
-          path: bin/godot.linuxbsd.opt.tools.64
+          name: godot.x11.opt.tools.64
+          path: bin/godot.x11.opt.tools.64
 
