@@ -81,3 +81,10 @@ jobs:
       #- name: Unit Tests
       #  run: |
       #    ./bin/godot.linuxbsd.opt.tools.64 --test
+
+      # Make build available
+      - uses: actions/upload-artifact@v2
+        with:
+          name: godot.linuxbsd.opt.tools.64
+          path: bin/godot.linuxbsd.opt.tools.64
+

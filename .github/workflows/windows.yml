@@ -72,3 +72,9 @@ jobs:
       #- name: Unit Tests
       #  run: |
       #    ./bin/godot.windows.opt.tools.64.exe --test
+
+      # Make build available
+      - uses: actions/upload-artifact@v2
+        with:
+          name: godot.windows.opt.tools.64.exe
+          path: bin/godot.windows.opt.tools.64.exe
