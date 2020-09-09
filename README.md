@@ -38,11 +38,13 @@ Voxel Tools is a custom C++ module for Godot 3.1+. It must be compiled into the 
 
 Ready-to-use versions of Godot including the module exist, though they might not be 100% up to date.
 
-- Tokisan Games
+- Tokisan Games (editor and export templates)
     - [Tokisan Games binaries](http://tokisan.com/godot-binaries)
 
-- Zylann
-    - Godot 3.2.2 editor for Windows 64 bits (TBD)
+- Master builds (editor)
+    - Windows: https://github.com/Zylann/godot_voxel/actions?query=workflow%3A%22%F0%9F%9A%AA+Windows+Builds%22
+    - Linux: https://github.com/Zylann/godot_voxel/actions?query=workflow%3A%22%F0%9F%90%A7+Linux+Builds%22
+    - Warning, these can be unstable, as they come from the very latest commits. Click on one of the recent commits and a build artifact should be available.
 
 
 ### Compiling
