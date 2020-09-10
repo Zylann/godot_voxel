@@ -41,7 +41,7 @@ Ready-to-use versions of Godot including the module exist, though they might not
 - Tokisan Games (editor and export templates)
     - [Tokisan Games binaries](http://tokisan.com/godot-binaries)
 
-- Master builds (editor)
+- Master builds (editor only)
     - Windows: https://github.com/Zylann/godot_voxel/actions?query=workflow%3A%22%F0%9F%9A%AA+Windows+Builds%22
     - Linux: https://github.com/Zylann/godot_voxel/actions?query=workflow%3A%22%F0%9F%90%A7+Linux+Builds%22
     - Warning, these can be unstable, as they come from the very latest commits. Click on one of the recent commits and a build artifact should be available.
@@ -49,7 +49,7 @@ Ready-to-use versions of Godot including the module exist, though they might not
 
 ### Compiling
 
-Compiling the source yourself is the best way to get the very latest version.
+Compiling the source yourself is the best way to get your own version and export template.
 Please see the [Getting Started Guide](doc/01_get-started.md) for instructions.
 
 
