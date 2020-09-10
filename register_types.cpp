@@ -14,6 +14,7 @@
 #include "generators/voxel_generator_waves.h"
 #include "meshers/blocky/voxel_library.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
+#include "meshers/cubes/voxel_mesher_cubes.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "streams/voxel_stream_block_files.h"
@@ -82,6 +83,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelMesherBlocky>();
 	ClassDB::register_class<VoxelMesherTransvoxel>();
 	ClassDB::register_class<VoxelMesherDMC>();
+	ClassDB::register_class<VoxelMesherCubes>();
 
 	// Reminder: how to create a singleton accessible from scripts:
 	// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
