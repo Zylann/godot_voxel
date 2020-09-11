@@ -56,9 +56,9 @@ static void generate_blocky_mesh(
 		const VoxelLibrary::BakedData &library,
 		bool bake_occlusion, float baked_occlusion_darkness) {
 
-	ERR_FAIL_COND(block_size.x < 2 * VoxelMesherBlocky::PADDING ||
-				  block_size.y < 2 * VoxelMesherBlocky::PADDING ||
-				  block_size.z < 2 * VoxelMesherBlocky::PADDING);
+	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
+				  block_size.y < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
+				  block_size.z < static_cast<int>(2 * VoxelMesherBlocky::PADDING));
 
 	// Build lookup tables so to speed up voxel access.
 	// These are values to add to an address in order to get given neighbor.

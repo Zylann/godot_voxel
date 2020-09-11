@@ -213,9 +213,9 @@ void build_voxel_mesh_as_greedy_cubes(
 		const Vector3i block_size,
 		std::vector<uint8_t> mask_memory_pool) {
 
-	ERR_FAIL_COND(block_size.x < 2 * VoxelMesherCubes::PADDING ||
-				  block_size.y < 2 * VoxelMesherCubes::PADDING ||
-				  block_size.z < 2 * VoxelMesherCubes::PADDING);
+	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
+				  block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
+				  block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
 
 	struct MaskValue {
 		Voxel_T color;
