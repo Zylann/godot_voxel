@@ -56,15 +56,19 @@ static void generate_blocky_mesh(
 		const VoxelLibrary::BakedData &library,
 		bool bake_occlusion, float baked_occlusion_darkness) {
 
+	ERR_FAIL_COND(block_size.x < 2 * VoxelMesherBlocky::PADDING ||
+				  block_size.y < 2 * VoxelMesherBlocky::PADDING ||
+				  block_size.z < 2 * VoxelMesherBlocky::PADDING);
+
 	// Build lookup tables so to speed up voxel access.
 	// These are values to add to an address in order to get given neighbor.
 
-	int row_size = block_size.y;
-	int deck_size = block_size.x * row_size;
+	const int row_size = block_size.y;
+	const int deck_size = block_size.x * row_size;
 
 	// Data must be padded, hence the off-by-one
-	Vector3i min = Vector3i(VoxelMesherBlocky::PADDING);
-	Vector3i max = block_size - Vector3i(VoxelMesherBlocky::PADDING);
+	const Vector3i min = Vector3i(VoxelMesherBlocky::PADDING);
+	const Vector3i max = block_size - Vector3i(VoxelMesherBlocky::PADDING);
 
 	int index_offsets[VoxelMesherBlocky::MAX_MATERIALS] = { 0 };
 

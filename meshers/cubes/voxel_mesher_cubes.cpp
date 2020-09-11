@@ -85,6 +85,10 @@ void build_voxel_mesh_as_simple_cubes(
 		const ArraySlice<Voxel_T> voxel_buffer,
 		const Vector3i block_size) {
 
+	ERR_FAIL_COND(block_size.x < 2 * VoxelMesherCubes::PADDING ||
+				  block_size.y < 2 * VoxelMesherCubes::PADDING ||
+				  block_size.z < 2 * VoxelMesherCubes::PADDING);
+
 	const Vector3i min_pos = Vector3i(VoxelMesherCubes::PADDING);
 	const Vector3i max_pos = block_size - Vector3i(VoxelMesherCubes::PADDING);
 	const unsigned int row_size = block_size.y;
@@ -106,8 +110,8 @@ void build_voxel_mesh_as_simple_cubes(
 		// For each deck
 		for (unsigned int d = min_pos[za] - VoxelMesherCubes::PADDING; d < (unsigned int)max_pos[za]; ++d) {
 			// For each cell of the deck, gather face info
-			for (unsigned int fy = min_pos[ya]; fy < max_pos[ya]; ++fy) {
-				for (unsigned int fx = min_pos[xa]; fx < max_pos[xa]; ++fx) {
+			for (unsigned int fy = min_pos[ya]; fy < (unsigned int)max_pos[ya]; ++fy) {
+				for (unsigned int fx = min_pos[xa]; fx < (unsigned int)max_pos[xa]; ++fx) {
 					FixedArray<unsigned int, Vector3i::AXIS_COUNT> pos;
 					pos[xa] = fx;
 					pos[ya] = fy;
@@ -209,6 +213,10 @@ void build_voxel_mesh_as_greedy_cubes(
 		const Vector3i block_size,
 		std::vector<uint8_t> mask_memory_pool) {
 
+	ERR_FAIL_COND(block_size.x < 2 * VoxelMesherCubes::PADDING ||
+				  block_size.y < 2 * VoxelMesherCubes::PADDING ||
+				  block_size.z < 2 * VoxelMesherCubes::PADDING);
+
 	struct MaskValue {
 		Voxel_T color;
 		uint8_t side;
@@ -250,8 +258,8 @@ void build_voxel_mesh_as_greedy_cubes(
 		// For each deck
 		for (unsigned int d = min_pos[za] - VoxelMesherCubes::PADDING; d < (unsigned int)max_pos[za]; ++d) {
 			// For each cell of the deck, gather face info
-			for (unsigned int fy = min_pos[ya]; fy < max_pos[ya]; ++fy) {
-				for (unsigned int fx = min_pos[xa]; fx < max_pos[xa]; ++fx) {
+			for (unsigned int fy = min_pos[ya]; fy < (unsigned int)max_pos[ya]; ++fy) {
+				for (unsigned int fx = min_pos[xa]; fx < (unsigned int)max_pos[xa]; ++fx) {
 					FixedArray<unsigned int, Vector3i::AXIS_COUNT> pos;
 					pos[xa] = fx;
 					pos[ya] = fy;
