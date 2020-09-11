@@ -85,9 +85,9 @@ void build_voxel_mesh_as_simple_cubes(
 		const ArraySlice<Voxel_T> voxel_buffer,
 		const Vector3i block_size) {
 
-	ERR_FAIL_COND(block_size.x < 2 * VoxelMesherCubes::PADDING ||
-				  block_size.y < 2 * VoxelMesherCubes::PADDING ||
-				  block_size.z < 2 * VoxelMesherCubes::PADDING);
+	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
+				  block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
+				  block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
 
 	const Vector3i min_pos = Vector3i(VoxelMesherCubes::PADDING);
 	const Vector3i max_pos = block_size - Vector3i(VoxelMesherCubes::PADDING);
