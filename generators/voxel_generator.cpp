@@ -31,6 +31,8 @@ void VoxelGenerator::_b_generate_block(Ref<VoxelBuffer> out_buffer, Vector3 orig
 
 void VoxelGenerator::_bind_methods() {
 	// Note: C++ inheriting classes don't need to re-bind these, because they are bindings that call the actual virtual methods
-
-	ClassDB::bind_method(D_METHOD("generate_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelGenerator::_b_generate_block);
+	BIND_VMETHOD(MethodInfo("generate_block",
+							PropertyInfo(Variant::OBJECT, "out_buffer", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT, "VoxelBuffer"),
+							PropertyInfo(Variant::VECTOR3, "origin_in_voxels"),
+							PropertyInfo(Variant::INT, "lod")));
 }

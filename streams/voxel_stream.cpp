@@ -70,9 +70,14 @@ bool VoxelStream::has_script() const {
 }
 
 void VoxelStream::_bind_methods() {
-	// TODO Make these proper virtual, it confuses C# bindings
 	// Note: C++ inheriting classes don't need to re-bind these, because they are bindings that call the actual virtual methods
-	ClassDB::bind_method(D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelStream::_emerge_block);
-	ClassDB::bind_method(D_METHOD("immerge_block", "buffer", "origin_in_voxels", "lod"), &VoxelStream::_immerge_block);
-	ClassDB::bind_method(D_METHOD("get_used_channels_mask"), &VoxelStream::_get_used_channels_mask);
+	BIND_VMETHOD(MethodInfo("emerge_block",
+							PropertyInfo(Variant::OBJECT, "out_buffer", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT, "VoxelBuffer"),
+							PropertyInfo(Variant::VECTOR3, "origin_in_voxels"),
+							PropertyInfo(Variant::INT, "lod")));
+	BIND_VMETHOD(MethodInfo("immerge_block",
+							PropertyInfo(Variant::OBJECT, "buffer", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT, "VoxelBuffer"),
+							PropertyInfo(Variant::VECTOR3, "origin_in_voxels"),
+							PropertyInfo(Variant::INT, "lod")));
+	BIND_VMETHOD(MethodInfo(Variant::INT, "get_used_channels_mask"));
 }

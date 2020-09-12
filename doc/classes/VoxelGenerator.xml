@@ -7,7 +7,7 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="generate_block">
+		<method name="generate_block" qualifiers="virtual">
 			<return type="void">
 			</return>
 			<argument index="0" name="out_buffer" type="VoxelBuffer">

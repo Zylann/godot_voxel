@@ -7,7 +7,7 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="emerge_block">
+		<method name="emerge_block" qualifiers="virtual">
 			<return type="void">
 			</return>
 			<argument index="0" name="out_buffer" type="VoxelBuffer">
@@ -19,13 +19,13 @@
 			<description>
 			</description>
 		</method>
-		<method name="get_used_channels_mask" qualifiers="const">
+		<method name="get_used_channels_mask" qualifiers="const virtual">
 			<return type="int">
 			</return>
 			<description>
 			</description>
 		</method>
-		<method name="immerge_block">
+		<method name="immerge_block" qualifiers="virtual">
 			<return type="void">
 			</return>
 			<argument index="0" name="buffer" type="VoxelBuffer">
