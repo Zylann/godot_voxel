@@ -17,6 +17,7 @@
 #include "meshers/cubes/voxel_mesher_cubes.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "streams/vox_loader.h"
 #include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_file.h"
 #include "streams/voxel_stream_region_files.h"
@@ -77,6 +78,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelTool>();
 	ClassDB::register_class<VoxelToolTerrain>();
 	ClassDB::register_class<VoxelBlockSerializer>();
+	ClassDB::register_class<VoxelVoxLoader>();
 
 	// Meshers
 	ClassDB::register_class<VoxelMesher>();
