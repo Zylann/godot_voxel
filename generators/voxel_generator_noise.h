@@ -1,7 +1,6 @@
 #ifndef VOXEL_GENERATOR_NOISE_H
 #define VOXEL_GENERATOR_NOISE_H
 
-#include "../util/float_buffer_3d.h"
 #include "voxel_generator.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
@@ -32,7 +31,6 @@ protected:
 private:
 	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
 	Ref<OpenSimplexNoise> _noise;
-	FloatBuffer3D _noise_buffer; // TODO No longer used?
 	float _height_start = 0;
 	float _height_range = 300;
 };
