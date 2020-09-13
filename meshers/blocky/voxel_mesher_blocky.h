@@ -8,6 +8,9 @@
 #include <vector>
 
 // TODO Rename VoxelMesherModelBatch
+
+// Interprets voxel values as indexes to models in a VoxelLibrary, and batches them together.
+// Overlapping faces are removed from the final mesh.
 class VoxelMesherBlocky : public VoxelMesher {
 	GDCLASS(VoxelMesherBlocky, VoxelMesher)
 

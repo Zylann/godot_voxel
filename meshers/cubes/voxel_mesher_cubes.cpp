@@ -51,39 +51,16 @@ enum Side {
 // 0 if alpha is zero,
 // 1 if alpha is neither zero neither max,
 // 2 if alpha is max
-inline uint8_t get_alpha_index(uint8_t v) {
-	const uint8_t a = v & 3;
-	return (a == 3) + (a > 0);
+inline uint8_t get_alpha_index(Color8 c) {
+	return (c.a == 0xf) + (c.a > 0);
 }
 
-inline uint8_t get_alpha_index(uint16_t v) {
-	const uint16_t a = v & 0xf;
-	return (a == 0xf) + (a > 0);
-}
-
-inline Color to_color(uint8_t v) {
-	// rrggbbaa
-	return Color(
-			(v >> 6) / 3.f,
-			((v >> 4) & 3) / 3.f,
-			((v >> 2) & 3) / 3.f,
-			(v & 3) / 3.f);
-}
-
-inline Color to_color(uint16_t v) {
-	// rrrrgggg bbbbaaaa
-	return Color(
-			(v >> 12) / 15.f,
-			((v >> 8) & 0xf) / 15.f,
-			((v >> 4) & 0xf) / 15.f,
-			(v & 0xf) / 15.f);
-}
-
-template <typename Voxel_T>
+template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_simple_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
 		const ArraySlice<Voxel_T> voxel_buffer,
-		const Vector3i block_size) {
+		const Vector3i block_size,
+		Color_F color_func) {
 
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 				  block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
@@ -121,28 +98,31 @@ void build_voxel_mesh_as_simple_cubes(
 													 pos[Vector3i::AXIS_X] * row_size +
 													 pos[Vector3i::AXIS_Z] * deck_size;
 
-					const Voxel_T color0 = voxel_buffer[voxel_index];
-					const Voxel_T color1 = voxel_buffer[voxel_index + neighbor_offset_d_lut[za]];
+					const Voxel_T raw_color0 = voxel_buffer[voxel_index];
+					const Voxel_T raw_color1 = voxel_buffer[voxel_index + neighbor_offset_d_lut[za]];
 
+					const Color8 color0 = color_func(raw_color0);
+					const Color8 color1 = color_func(raw_color1);
+
+					// TODO Change this
 					const uint8_t ai0 = get_alpha_index(color0);
 					const uint8_t ai1 = get_alpha_index(color1);
 
-					Voxel_T color_raw;
+					Color8 color;
 					Side side;
 					if (ai0 == ai1) {
 						continue;
 					} else if (ai0 > ai1) {
-						color_raw = color0;
+						color = color0;
 						side = SIDE_BACK;
 					} else {
-						color_raw = color1;
+						color = color1;
 						side = SIDE_FRONT;
 					}
 
 					// Commit face to the mesh
 
-					const Color color = to_color(color_raw);
-					const uint8_t material_index = color.a < 0.999f;
+					const uint8_t material_index = color.a < 255;
 					VoxelMesherCubes::Arrays &arrays = out_arrays_per_material[material_index];
 
 					const int vx0 = fx - VoxelMesherCubes::PADDING;
@@ -183,10 +163,12 @@ void build_voxel_mesh_as_simple_cubes(
 					arrays.positions.push_back(v2);
 					arrays.positions.push_back(v3);
 
-					arrays.colors.push_back(color);
-					arrays.colors.push_back(color);
-					arrays.colors.push_back(color);
-					arrays.colors.push_back(color);
+					// TODO Any way to not need Color anywhere? It's wasteful
+					const Color colorf = color;
+					arrays.colors.push_back(colorf);
+					arrays.colors.push_back(colorf);
+					arrays.colors.push_back(colorf);
+					arrays.colors.push_back(colorf);
 
 					arrays.normals.push_back(n);
 					arrays.normals.push_back(n);
@@ -206,12 +188,13 @@ void build_voxel_mesh_as_simple_cubes(
 	}
 }
 
-template <typename Voxel_T>
+template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_greedy_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
 		const ArraySlice<Voxel_T> voxel_buffer,
 		const Vector3i block_size,
-		std::vector<uint8_t> mask_memory_pool) {
+		std::vector<uint8_t> mask_memory_pool,
+		Color_F color_func) {
 
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 				  block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
@@ -269,8 +252,11 @@ void build_voxel_mesh_as_greedy_cubes(
 													 pos[Vector3i::AXIS_X] * row_size +
 													 pos[Vector3i::AXIS_Z] * deck_size;
 
-					const Voxel_T color0 = voxel_buffer[voxel_index];
-					const Voxel_T color1 = voxel_buffer[voxel_index + neighbor_offset_d_lut[za]];
+					const Voxel_T raw_color0 = voxel_buffer[voxel_index];
+					const Voxel_T raw_color1 = voxel_buffer[voxel_index + neighbor_offset_d_lut[za]];
+
+					const Color8 color0 = color_func(raw_color0);
+					const Color8 color1 = color_func(raw_color1);
 
 					const uint8_t ai0 = get_alpha_index(color0);
 					const uint8_t ai1 = get_alpha_index(color1);
@@ -279,10 +265,10 @@ void build_voxel_mesh_as_greedy_cubes(
 					if (ai0 == ai1) {
 						mv.side = SIDE_NONE;
 					} else if (ai0 > ai1) {
-						mv.color = color0;
+						mv.color = raw_color0;
 						mv.side = SIDE_BACK;
 					} else {
-						mv.color = color1;
+						mv.color = raw_color1;
 						mv.side = SIDE_FRONT;
 					}
 
@@ -329,8 +315,8 @@ void build_voxel_mesh_as_greedy_cubes(
 
 					// Commit face to the mesh
 
-					const Color color = to_color(m.color);
-					const uint8_t material_index = color.a < 0.999f;
+					const Color colorf = color_func(m.color);
+					const uint8_t material_index = colorf.a < 0.999f;
 					VoxelMesherCubes::Arrays &arrays = out_arrays_per_material[material_index];
 
 					Vector3 v0;
@@ -366,10 +352,10 @@ void build_voxel_mesh_as_greedy_cubes(
 					arrays.positions.push_back(v2);
 					arrays.positions.push_back(v3);
 
-					arrays.colors.push_back(color);
-					arrays.colors.push_back(color);
-					arrays.colors.push_back(color);
-					arrays.colors.push_back(color);
+					arrays.colors.push_back(colorf);
+					arrays.colors.push_back(colorf);
+					arrays.colors.push_back(colorf);
+					arrays.colors.push_back(colorf);
 
 					arrays.normals.push_back(n);
 					arrays.normals.push_back(n);
@@ -445,28 +431,160 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	const Vector3i block_size = voxels.get_size();
 	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
 
-	switch (channel_depth) {
-		case VoxelBuffer::DEPTH_8_BIT:
-			if (_greedy_meshing) {
-				build_voxel_mesh_as_greedy_cubes(_arrays_per_material, raw_channel, block_size, _mask_memory_pool);
-			} else {
-				build_voxel_mesh_as_simple_cubes(_arrays_per_material, raw_channel, block_size);
+	switch (_color_mode) {
+		case COLOR_RAW:
+			switch (channel_depth) {
+				case VoxelBuffer::DEPTH_8_BIT:
+					if (_greedy_meshing) {
+						build_voxel_mesh_as_greedy_cubes(
+								_arrays_per_material,
+								raw_channel,
+								block_size,
+								_mask_memory_pool,
+								Color8::from_u8);
+					} else {
+						build_voxel_mesh_as_simple_cubes(
+								_arrays_per_material,
+								raw_channel,
+								block_size,
+								Color8::from_u8);
+					}
+					break;
+
+				case VoxelBuffer::DEPTH_16_BIT:
+					if (_greedy_meshing) {
+						build_voxel_mesh_as_greedy_cubes(
+								_arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								_mask_memory_pool,
+								Color8::from_u16);
+					} else {
+						build_voxel_mesh_as_simple_cubes(
+								_arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								Color8::from_u16);
+					}
+					break;
+
+				default:
+					ERR_PRINT("Unsupported voxel depth");
+					return;
 			}
 			break;
 
-		case VoxelBuffer::DEPTH_16_BIT:
-			if (_greedy_meshing) {
-				build_voxel_mesh_as_greedy_cubes(_arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(),
-						block_size, _mask_memory_pool);
-			} else {
-				build_voxel_mesh_as_simple_cubes(_arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(),
-						block_size);
+		case COLOR_MESHER_PALETTE: {
+			ERR_FAIL_COND_MSG(_palette.is_null(), "Palette mode is used but no palette was specified");
+
+			struct GetColorFromPalette {
+				VoxelColorPalette &palette;
+				Color8 operator()(uint64_t i) const {
+					// Note: even though this code may run in a thread, I'm not locking the palette at all because
+					// it stores colors in a fixed-size array, and reading the wrong color won't cause any serious
+					// problem. It's not supposed to change often in game anyways. If it does, better use shader mode.
+					return palette.get_color8(i);
+				}
+			};
+			const GetColorFromPalette get_color_from_palette{ **_palette };
+
+			switch (channel_depth) {
+				case VoxelBuffer::DEPTH_8_BIT:
+					if (_greedy_meshing) {
+						build_voxel_mesh_as_greedy_cubes(
+								_arrays_per_material,
+								raw_channel,
+								block_size,
+								_mask_memory_pool,
+								get_color_from_palette);
+					} else {
+						build_voxel_mesh_as_simple_cubes(
+								_arrays_per_material,
+								raw_channel,
+								block_size,
+								get_color_from_palette);
+					}
+					break;
+
+				case VoxelBuffer::DEPTH_16_BIT:
+					if (_greedy_meshing) {
+						build_voxel_mesh_as_greedy_cubes(
+								_arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								_mask_memory_pool,
+								get_color_from_palette);
+					} else {
+						build_voxel_mesh_as_simple_cubes(
+								_arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								get_color_from_palette);
+					}
+					break;
+
+				default:
+					ERR_PRINT("Unsupported voxel depth");
+					return;
 			}
-			break;
+		} break;
+
+		case COLOR_SHADER_PALETTE: {
+			ERR_FAIL_COND_MSG(_palette.is_null(), "Palette mode is used but no palette was specified");
+
+			struct GetIndexFromPalette {
+				VoxelColorPalette &palette;
+				Color8 operator()(uint64_t i) const {
+					// Still providing alpha because it allows to separate the opaque and transparent surfaces
+					return Color8(i, 0, 0, palette.get_color8(i).a);
+				}
+			};
+			const GetIndexFromPalette get_index_from_palette{ **_palette };
+
+			switch (channel_depth) {
+				case VoxelBuffer::DEPTH_8_BIT:
+					if (_greedy_meshing) {
+						build_voxel_mesh_as_greedy_cubes(
+								_arrays_per_material,
+								raw_channel,
+								block_size,
+								_mask_memory_pool,
+								get_index_from_palette);
+					} else {
+						build_voxel_mesh_as_simple_cubes(
+								_arrays_per_material,
+								raw_channel,
+								block_size,
+								get_index_from_palette);
+					}
+					break;
+
+				case VoxelBuffer::DEPTH_16_BIT:
+					if (_greedy_meshing) {
+						build_voxel_mesh_as_greedy_cubes(
+								_arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								_mask_memory_pool,
+								get_index_from_palette);
+					} else {
+						build_voxel_mesh_as_simple_cubes(
+								_arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								get_index_from_palette);
+					}
+					break;
+
+				default:
+					ERR_PRINT("Unsupported voxel depth");
+					return;
+			}
+		} break;
 
 		default:
-			ERR_PRINT("Unsupported voxel depth");
-			return;
+			CRASH_NOW();
+			break;
 	}
 
 	// TODO We could return a single byte array and use Mesh::add_surface down the line?
@@ -515,6 +633,23 @@ bool VoxelMesherCubes::is_greedy_meshing_enabled() const {
 	return _greedy_meshing;
 }
 
+void VoxelMesherCubes::set_palette(Ref<VoxelColorPalette> palette) {
+	_palette = palette;
+}
+
+Ref<VoxelColorPalette> VoxelMesherCubes::get_palette() const {
+	return _palette;
+}
+
+void VoxelMesherCubes::set_color_mode(ColorMode mode) {
+	ERR_FAIL_INDEX(mode, COLOR_MODE_COUNT);
+	_color_mode = mode;
+}
+
+VoxelMesherCubes::ColorMode VoxelMesherCubes::get_color_mode() const {
+	return _color_mode;
+}
+
 VoxelMesher *VoxelMesherCubes::clone() {
 	VoxelMesherCubes *d = memnew(VoxelMesherCubes);
 	d->_greedy_meshing = _greedy_meshing;
@@ -526,6 +661,23 @@ void VoxelMesherCubes::_bind_methods() {
 			&VoxelMesherCubes::set_greedy_meshing_enabled);
 	ClassDB::bind_method(D_METHOD("is_greedy_meshing_enabled"), &VoxelMesherCubes::is_greedy_meshing_enabled);
 
+	ClassDB::bind_method(D_METHOD("set_palette", "palette"), &VoxelMesherCubes::set_palette);
+	ClassDB::bind_method(D_METHOD("get_palette"), &VoxelMesherCubes::get_palette);
+
+	ClassDB::bind_method(D_METHOD("set_color_mode", "mode"), &VoxelMesherCubes::set_color_mode);
+	ClassDB::bind_method(D_METHOD("get_color_mode"), &VoxelMesherCubes::get_color_mode);
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "greedy_meshing_enabled"),
 			"set_greedy_meshing_enabled", "is_greedy_meshing_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_mode"), "set_color_mode", "get_color_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "palette", PROPERTY_HINT_RESOURCE_TYPE, "VoxelColorPalette"),
+			"set_palette", "get_palette");
+
+	BIND_ENUM_CONSTANT(MATERIAL_OPAQUE);
+	BIND_ENUM_CONSTANT(MATERIAL_TRANSPARENT);
+	BIND_ENUM_CONSTANT(MATERIAL_COUNT);
+
+	BIND_ENUM_CONSTANT(COLOR_RAW);
+	BIND_ENUM_CONSTANT(COLOR_MESHER_PALETTE);
+	BIND_ENUM_CONSTANT(COLOR_SHADER_PALETTE);
 }

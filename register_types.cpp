@@ -43,13 +43,13 @@ void register_voxel_types() {
 	// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not abstract?
 	ClassDB::register_class<VoxelServer>();
 
+	ClassDB::register_class<Voxel>();
+	ClassDB::register_class<VoxelLibrary>();
+	ClassDB::register_class<VoxelColorPalette>();
+
 	// Storage
 	ClassDB::register_class<VoxelBuffer>();
 	ClassDB::register_class<VoxelMap>();
-
-	// Voxel types
-	ClassDB::register_class<Voxel>();
-	ClassDB::register_class<VoxelLibrary>();
 
 	// Nodes
 	ClassDB::register_class<VoxelTerrain>();
@@ -72,7 +72,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelGeneratorNoise>();
 	ClassDB::register_class<VoxelGeneratorGraph>();
 
-	// Helpers
+	// Utilities
 	ClassDB::register_class<VoxelBoxMover>();
 	ClassDB::register_class<VoxelRaycastResult>();
 	ClassDB::register_class<VoxelTool>();

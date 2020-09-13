@@ -3,7 +3,9 @@
 
 namespace vox {
 
-uint32_t g_default_palette[256] = {
+const uint32_t PALETTE_SIZE = 256;
+
+uint32_t g_default_palette[PALETTE_SIZE] = {
 	0x00000000, 0xffffffff, 0xffccffff, 0xff99ffff, 0xff66ffff, 0xff33ffff, 0xff00ffff, 0xffffccff,
 	0xffccccff, 0xff99ccff, 0xff66ccff, 0xff33ccff, 0xff00ccff, 0xffff99ff, 0xffcc99ff, 0xff9999ff,
 	0xff6699ff, 0xff3399ff, 0xff0099ff, 0xffff66ff, 0xffcc66ff, 0xff9966ff, 0xff6666ff, 0xff3366ff,
@@ -115,21 +117,7 @@ Error load_vox(const String &fpath, Data &data) {
 
 } // namespace vox
 
-inline uint8_t to_u8(vox::Color8 c) {
-	return ((c.r >> 6) << 6) |
-		   ((c.g >> 6) << 4) |
-		   ((c.b >> 6) << 2) |
-		   (c.a >> 6);
-}
-
-inline uint16_t to_u16(vox::Color8 c) {
-	return ((c.r >> 4) << 12) |
-		   ((c.g >> 4) << 8) |
-		   ((c.b >> 4) << 4) |
-		   (c.a >> 4);
-}
-
-Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> voxels) {
+Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> voxels, Ref<VoxelColorPalette> palette) {
 	ERR_FAIL_COND_V(voxels.is_null(), ERR_INVALID_PARAMETER);
 
 	const Error err = vox::load_vox(fpath, _data);
@@ -137,10 +125,10 @@ Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> voxels) {
 
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_COLOR;
 
-	const ArraySlice<vox::Color8> palette =
+	const ArraySlice<Color8> src_palette =
 			_data.has_palette ?
-					ArraySlice<vox::Color8>(_data.palette) :
-					ArraySlice<vox::Color8>(reinterpret_cast<vox::Color8 *>(vox::g_default_palette), 0, 256);
+					ArraySlice<Color8>(_data.palette) :
+					ArraySlice<Color8>(reinterpret_cast<Color8 *>(vox::g_default_palette), 0, vox::PALETTE_SIZE);
 
 	const VoxelBuffer::Depth depth = voxels->get_channel_depth(VoxelBuffer::CHANNEL_COLOR);
 
@@ -149,25 +137,49 @@ Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> voxels) {
 	voxels->decompress_channel(channel);
 	CRASH_COND(!voxels->get_channel_raw(channel, dst_raw));
 
-	switch (depth) {
-		case VoxelBuffer::DEPTH_8_BIT: {
-			for (size_t i = 0; i < dst_raw.size(); ++i) {
-				const uint8_t ci = _data.color_indexes[i];
-				dst_raw[i] = to_u8(palette[ci]);
-			}
-		} break;
+	if (palette.is_valid() && _data.has_palette) {
+		for (size_t i = 0; i < src_palette.size(); ++i) {
+			palette->set_color8(i, src_palette[i]);
+		}
 
-		case VoxelBuffer::DEPTH_16_BIT: {
-			ArraySlice<uint16_t> dst = dst_raw.reinterpret_cast_to<uint16_t>();
-			for (size_t i = 0; i < dst.size(); ++i) {
-				const uint8_t ci = _data.color_indexes[i];
-				dst[i] = to_u16(palette[ci]);
-			}
-		} break;
+		switch (depth) {
+			case VoxelBuffer::DEPTH_8_BIT: {
+				memcpy(dst_raw.data(), _data.color_indexes.data(), _data.color_indexes.size());
+			} break;
 
-		default:
-			ERR_FAIL_V_MSG(ERR_INVALID_PARAMETER, "Unsupported depth");
-			break;
+			case VoxelBuffer::DEPTH_16_BIT: {
+				ArraySlice<uint16_t> dst = dst_raw.reinterpret_cast_to<uint16_t>();
+				for (size_t i = 0; i < dst.size(); ++i) {
+					dst[i] = _data.color_indexes[i];
+				}
+			} break;
+
+			default:
+				ERR_FAIL_V_MSG(ERR_INVALID_PARAMETER, "Unsupported depth");
+				break;
+		}
+
+	} else {
+		switch (depth) {
+			case VoxelBuffer::DEPTH_8_BIT: {
+				for (size_t i = 0; i < dst_raw.size(); ++i) {
+					const uint8_t ci = _data.color_indexes[i];
+					dst_raw[i] = src_palette[ci].to_u8();
+				}
+			} break;
+
+			case VoxelBuffer::DEPTH_16_BIT: {
+				ArraySlice<uint16_t> dst = dst_raw.reinterpret_cast_to<uint16_t>();
+				for (size_t i = 0; i < dst.size(); ++i) {
+					const uint8_t ci = _data.color_indexes[i];
+					dst[i] = src_palette[ci].to_u16();
+				}
+			} break;
+
+			default:
+				ERR_FAIL_V_MSG(ERR_INVALID_PARAMETER, "Unsupported depth");
+				break;
+		}
 	}
 
 	return err;
