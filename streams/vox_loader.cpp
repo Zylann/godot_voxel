@@ -46,7 +46,7 @@ Error load_vox(const String &fpath, Data &data) {
 	Error err;
 	FileAccessRef f = FileAccess::open(fpath, FileAccess::READ, &err);
 	if (f == nullptr) {
-		err;
+		return err;
 	}
 
 	char magic[5] = { 0 };
@@ -62,7 +62,6 @@ Error load_vox(const String &fpath, Data &data) {
 	const size_t flen = f->get_len();
 
 	while (f->get_position() < flen) {
-		int ddpos = f->get_position();
 		char chunk_id[5] = { 0 };
 		ERR_FAIL_COND_V(f->get_buffer((uint8_t *)chunk_id, 4) != 4, ERR_PARSE_ERROR);
 
