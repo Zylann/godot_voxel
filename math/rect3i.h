@@ -29,6 +29,7 @@ public:
 		return Rect3i(center - extents, 2 * extents);
 	}
 
+	// max is exclusive
 	static inline Rect3i from_min_max(Vector3i p_min, Vector3i p_max) {
 		return Rect3i(p_min, p_max - p_min);
 	}

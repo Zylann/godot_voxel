@@ -14,6 +14,10 @@ class VoxelTool;
 class VoxelTerrain : public Spatial {
 	GDCLASS(VoxelTerrain, Spatial)
 public:
+	static const unsigned int MAX_EXTENT = 0x1fffffff;
+	static const unsigned int MAX_SIZE = 2 * MAX_EXTENT; // 1,073,741,822 voxels
+	static const unsigned int MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME = 512;
+
 	VoxelTerrain();
 	~VoxelTerrain();
 
@@ -49,6 +53,9 @@ public:
 
 	void set_run_stream_in_editor(bool enable);
 	bool is_stream_running_in_editor() const;
+
+	void set_bounds(Rect3i box);
+	Rect3i get_bounds() const;
 
 	void restart_stream();
 
@@ -113,6 +120,8 @@ private:
 	//void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
 	void _b_save_modified_blocks();
 	void _b_save_block(Vector3 p_block_pos);
+	void _b_set_bounds(AABB aabb);
+	AABB _b_get_bounds() const;
 
 	uint32_t _volume_id = 0;
 	VoxelServer::ReceptionBuffers _reception_buffers;
@@ -133,6 +142,12 @@ private:
 
 	// Voxel storage
 	Ref<VoxelMap> _map;
+
+	// Area within which voxels can exist.
+	// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be
+	// approximated to the closest chunk.
+	Rect3i _bounds_in_voxels;
+	Rect3i _prev_bounds_in_voxels;
 
 	// How many blocks to load around the viewer
 	unsigned int _max_view_distance_blocks = 8;
@@ -155,6 +170,7 @@ private:
 
 	bool _generate_collisions = true;
 	bool _run_stream_in_editor = true;
+	//bool _stream_enabled = false;
 
 	Ref<Material> _materials[VoxelMesherBlocky::MAX_MATERIALS];
 

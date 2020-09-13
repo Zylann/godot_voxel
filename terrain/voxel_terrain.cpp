@@ -21,6 +21,9 @@ VoxelTerrain::VoxelTerrain() {
 	// Godot may create and destroy dozens of instances of all node types on startup,
 	// due to how ClassDB gets its default values.
 
+	// Infinite by default
+	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(MAX_EXTENT));
+
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers);
 
 	_map.instance();
@@ -86,7 +89,8 @@ bool VoxelTerrain::_get(const StringName &p_name, Variant &r_ret) const {
 
 void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 	for (unsigned int i = 0; i < VoxelMesherBlocky::MAX_MATERIALS; ++i) {
-		p_list->push_back(PropertyInfo(Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,SpatialMaterial"));
+		p_list->push_back(PropertyInfo(
+				Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,SpatialMaterial"));
 	}
 }
 
@@ -521,6 +525,12 @@ inline int get_border_index(int x, int max) {
 }
 
 void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
+	if (!_bounds_in_voxels.contains(pos)) {
+		PRINT_VERBOSE(String("Voxel {0} can't be made dirty out of volume bounds {1}")
+							  .format(varray(_bounds_in_voxels.to_string(), pos.to_vec3())));
+		return;
+	}
+
 	// Update the block in which the voxel is
 	const Vector3i bpos = _map->voxel_to_block(pos);
 	make_block_dirty(bpos);
@@ -633,6 +643,8 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 }
 
 void VoxelTerrain::make_area_dirty(Rect3i box) {
+	box.clip(_bounds_in_voxels);
+
 	Vector3i min_pos = box.pos;
 	Vector3i max_pos = box.pos + box.size - Vector3(1, 1, 1);
 
@@ -797,8 +809,6 @@ void VoxelTerrain::_process() {
 	// print_line(String("D:{0} M:{1}")
 	// 				   .format(varray(_reception_buffers.data_output.size(), _reception_buffers.mesh_output.size())));
 
-	OS &os = *OS::get_singleton();
-
 	ERR_FAIL_COND(_map.is_null());
 
 	ProfilingClock profiling_clock;
@@ -850,13 +860,19 @@ void VoxelTerrain::_process() {
 	if (stream_enabled) {
 		VOXEL_PROFILE_SCOPE();
 
+		const uint32_t block_size = 1 << get_block_size_pow2();
+		const Rect3i bounds_in_blocks = _bounds_in_voxels.downscaled(block_size);
+		const Rect3i prev_bounds_in_blocks = _prev_bounds_in_voxels.downscaled(block_size);
+
 		for (size_t i = 0; i < _paired_viewers.size(); ++i) {
 			const PairedViewer &viewer = _paired_viewers[i];
 
 			const Rect3i new_box = Rect3i::from_center_extents(
-					viewer.state.block_position, Vector3i(viewer.state.view_distance_blocks));
+					viewer.state.block_position, Vector3i(viewer.state.view_distance_blocks))
+										   .clipped(bounds_in_blocks);
 			const Rect3i prev_box = Rect3i::from_center_extents(
-					viewer.prev_state.block_position, Vector3i(viewer.prev_state.view_distance_blocks));
+					viewer.prev_state.block_position, Vector3i(viewer.prev_state.view_distance_blocks))
+											.clipped(prev_bounds_in_blocks);
 
 			if (prev_box != new_box) {
 				// Unview blocks that just fell out of range
@@ -910,6 +926,9 @@ void VoxelTerrain::_process() {
 				}
 			}
 		}
+
+		// We're done remembering the difference
+		_prev_bounds_in_voxels = _bounds_in_voxels;
 	}
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
@@ -1054,7 +1073,7 @@ void VoxelTerrain::_process() {
 		VOXEL_PROFILE_SCOPE();
 
 		for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
-			Vector3i block_pos = _blocks_pending_update[bi];
+			const Vector3i block_pos = _blocks_pending_update[bi];
 
 			// Check if the block is worth meshing
 			// Smooth meshing works on more neighbors, so checking a single block isn't enough to ignore it,
@@ -1128,6 +1147,8 @@ void VoxelTerrain::_process() {
 	// Receive mesh updates
 	{
 		VOXEL_PROFILE_SCOPE_NAMED("Receive mesh updates");
+
+		OS &os = *OS::get_singleton();
 
 		const uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS;
 		size_t queue_index = 0;
@@ -1257,6 +1278,23 @@ bool VoxelTerrain::is_stream_running_in_editor() const {
 	return _run_stream_in_editor;
 }
 
+void VoxelTerrain::set_bounds(Rect3i box) {
+	_bounds_in_voxels = box.clipped(Rect3i::from_center_extents(Vector3i(), Vector3i(MAX_EXTENT)));
+	const int largest_dimension = max(max(box.size.x, box.size.y), box.size.z);
+	if (largest_dimension > MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME) {
+		// Cap view distance to make sure you don't accidentally blow up memory when changing parameters
+		if (_max_view_distance_blocks > MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME) {
+			_max_view_distance_blocks = min(_max_view_distance_blocks, MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME);
+			_change_notify();
+		}
+	}
+	// TODO Editor gizmo bounds
+}
+
+Rect3i VoxelTerrain::get_bounds() const {
+	return _bounds_in_voxels;
+}
+
 Vector3 VoxelTerrain::_b_voxel_to_block(Vector3 pos) {
 	return Vector3i(_map->voxel_to_block(pos)).to_vec3();
 }
@@ -1285,6 +1323,16 @@ void VoxelTerrain::_b_save_block(Vector3 p_block_pos) {
 	ScheduleSaveAction{ _blocks_to_save, true }(block);
 }
 
+void VoxelTerrain::_b_set_bounds(AABB aabb) {
+	// TODO Please Godot, have an integer AABB!
+	set_bounds(Rect3i(aabb.position.round(), aabb.size.round()));
+}
+
+AABB VoxelTerrain::_b_get_bounds() const {
+	const Rect3i b = get_bounds();
+	return AABB(b.pos.to_vec3(), b.size.to_vec3());
+}
+
 void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelTerrain::get_stream);
@@ -1308,10 +1356,13 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelTerrain::get_voxel_tool);
 
 	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &VoxelTerrain::_b_save_modified_blocks);
-	ClassDB::bind_method(D_METHOD("save_block"), &VoxelTerrain::_b_save_block);
+	ClassDB::bind_method(D_METHOD("save_block", "position"), &VoxelTerrain::_b_save_block);
 
-	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor"), &VoxelTerrain::set_run_stream_in_editor);
+	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor", "enable"), &VoxelTerrain::set_run_stream_in_editor);
 	ClassDB::bind_method(D_METHOD("is_stream_running_in_editor"), &VoxelTerrain::is_stream_running_in_editor);
+
+	ClassDB::bind_method(D_METHOD("set_bounds"), &VoxelTerrain::_b_set_bounds);
+	ClassDB::bind_method(D_METHOD("get_bounds"), &VoxelTerrain::_b_get_bounds);
 
 	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelTerrain::_on_stream_params_changed);
 
@@ -1324,6 +1375,7 @@ void VoxelTerrain::_bind_methods() {
 			"set_generate_collisions", "get_generate_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
 			"set_run_stream_in_editor", "is_stream_running_in_editor");
+	ADD_PROPERTY(PropertyInfo(Variant::AABB, "bounds"), "set_bounds", "get_bounds");
 
 	// TODO Add back access to block, but with an API securing multithreaded access
 	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton()->block_loaded,
