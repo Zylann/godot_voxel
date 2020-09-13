@@ -66,7 +66,7 @@ Error load_vox(const String &fpath, Data &data) {
 		ERR_FAIL_COND_V(f->get_buffer((uint8_t *)chunk_id, 4) != 4, ERR_PARSE_ERROR);
 
 		const uint32_t chunk_size = f->get_32();
-		const uint32_t child_chunks_size = f->get_32();
+		f->get_32(); // child_chunks_size
 
 		if (strcmp(chunk_id, "SIZE") == 0) {
 			data.size.x = f->get_32();
