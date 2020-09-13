@@ -21,6 +21,7 @@ Syntax
 - Use Clang-format to automate most of these rules (the one included in Godot should do it)
 - Constructors and destructors go on top
 - Bindings go at the bottom. Private wrapper functions start with `_b_`.
+- Avoid long lines. Preferred ruler is 100 characters.
 
 C++ features
 -------------
