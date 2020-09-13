@@ -13,9 +13,14 @@ Semver is not yet in place, so each version can have breaking changes, although 
 - General
     - Introduction of Voxel Server, which shares threaded tasks among all voxel nodes
     - Voxel data is no longer copied when sent to processing threads, reducing high memory spikes in some scenarios
+    - Added a utility class to load MagicaVoxel `.vox` files
+
+- Blocky voxels
+    - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support
 
 - Breaking changes
     - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points
+    - Defined `COLOR` channel in `VoxelBuffer`, previously known as `DATA3`
 
 - Known issues
     - `VoxelLodTerrain` does not support `VoxelViewer`, but a refactoring pass is planned for it.
