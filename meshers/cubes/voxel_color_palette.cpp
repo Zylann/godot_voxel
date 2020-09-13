@@ -29,9 +29,9 @@ PoolIntArray VoxelColorPalette::_b_get_data() const {
 }
 
 void VoxelColorPalette::_b_set_data(PoolIntArray colors) {
-	ERR_FAIL_COND(colors.size() > _colors.size());
+	ERR_FAIL_COND(colors.size() > static_cast<int>(_colors.size()));
 	PoolIntArray::Read r = colors.read();
-	for (size_t i = 0; i < colors.size(); ++i) {
+	for (int i = 0; i < colors.size(); ++i) {
 		_colors[i] = Color8::from_u32(r[i]);
 	}
 }
