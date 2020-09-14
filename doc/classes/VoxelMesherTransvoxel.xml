@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelMesherTransvoxel" inherits="VoxelMesher" version="3.2">
 	<brief_description>
+		Implements isosurface generation (smooth voxels) using the [url=https://transvoxel.org/]Transvoxel[/url] algorithm.
 	</brief_description>
 	<description>
-		Implements isosurface generation (smooth voxels) using the [url=https://transvoxel.org/]Transvoxel[/url] algorithm.
 	</description>
 	<tutorials>
 	</tutorials>

@@ -223,6 +223,6 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 }
 
 void VoxelToolTerrain::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("run_blocky_random_tick", "voxel_count", "callback", "batch_count"),
+	ClassDB::bind_method(D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),
 			&VoxelToolTerrain::run_blocky_random_tick, DEFVAL(16));
 }

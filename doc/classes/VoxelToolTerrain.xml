@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelToolTerrain" inherits="VoxelTool" version="3.2">
 	<brief_description>
+		Implementation of [VoxelTool] optimized for uses on [VoxelTerrain].
 	</brief_description>
 	<description>
 	</description>
@@ -10,15 +11,21 @@
 		<method name="run_blocky_random_tick" qualifiers="const">
 			<return type="void">
 			</return>
-			<argument index="0" name="voxel_count" type="AABB">
+			<argument index="0" name="area" type="AABB">
+				Area in which to pick voxels
 			</argument>
-			<argument index="1" name="callback" type="int">
+			<argument index="1" name="voxel_count" type="int">
+				How many voxels to pick. Note, this function might not always find as many voxels, if the picked locations don't contain a tickable voxel.
 			</argument>
-			<argument index="2" name="batch_count" type="FuncRef">
+			<argument index="2" name="callback" type="FuncRef">
+				Function to run on tickable voxels. The expected signature is [code]f(Vector3 position, int value)[/code].
 			</argument>
-			<argument index="3" name="arg3" type="int" default="16">
+			<argument index="3" name="batch_count" type="int">
+				Performance tuning parameter. A value of 16 should be fine for most use cases.
+				Every time a voxel has to be queried on [VoxelTerrain], there are two lookups to run: block lookup, and voxel lookup. Block lookup can be more expensive, so this function allows to pick random blocks and execute multiple voxel picks within the same block. This improves performance, because a lot less blocks will have to be queried. For example, if you want 512 random voxels with a batch of 1, the function would have to query 512 potentially different blocks. But if you want 512 voxels with a batch of 16, only 32 blocks will be queried (and will have 16 voxels being picked in each of them).
 			</argument>
 			<description>
+				Picks random voxels within the specified area and executes a function on them. This only works for terrains using [VoxelMesherBlocky]. Only voxels where [member Voxel.random_tickable] is [code]true[/code] will be picked.
 			</description>
 		</method>
 	</methods>

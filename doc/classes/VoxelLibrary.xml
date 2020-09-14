@@ -49,7 +49,7 @@
 		</method>
 	</methods>
 	<members>
-		<member name="atlas_size" type="int" setter="set_atlas_size" getter="get_atlas_size" default="1">
+		<member name="atlas_size" type="int" setter="set_atlas_size" getter="get_atlas_size" default="16">
 		</member>
 		<member name="voxel_count" type="int" setter="set_voxel_count" getter="get_voxel_count" default="0">
 		</member>

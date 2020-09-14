@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelGenerator" inherits="VoxelStream" version="3.2">
 	<brief_description>
+		Base class to all voxel procedural generators. If you want to define a custom one with a script, this is the class you should extend from.
+		Important: this engine makes heavy use of threads. Generators will run in one of them, so make sure you don't access the scene tree or other unsafe APIs from within a generator.
 	</brief_description>
 	<description>
 	</description>
@@ -11,12 +13,16 @@
 			<return type="void">
 			</return>
 			<argument index="0" name="out_buffer" type="VoxelBuffer">
+				Buffer into which the voxel values must be set. Its size also determines the size of the area.
 			</argument>
 			<argument index="1" name="origin_in_voxels" type="Vector3">
+				Lower-corner of the area to generate. These coordinates are relative to the expected LOD and scale by powers of two. For example, LOD1 coordinates == LOD0 coordinates * 2.
 			</argument>
 			<argument index="2" name="lod" type="int">
+				Which LOD the block is expected for. 0 means highest level of detail. 1 means half-resolution, 2 means quarter-resolution etc.
 			</argument>
 			<description>
+				Generates a block of voxels within the specified world area.
 			</description>
 		</method>
 	</methods>

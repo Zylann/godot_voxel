@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelTool" inherits="Reference" version="3.2">
 	<brief_description>
+		Helper class to easily access and modify voxels
 	</brief_description>
 	<description>
 	</description>
@@ -56,6 +57,14 @@
 			<return type="Variant">
 			</return>
 			<argument index="0" name="pos" type="Vector3">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="is_area_editable">
+			<return type="bool">
+			</return>
+			<argument index="0" name="box" type="AABB">
 			</argument>
 			<description>
 			</description>

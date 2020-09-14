@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelViewer" inherits="Spatial" version="3.2">
+	<brief_description>
+		Attach this as a child node of characters, so the voxel world will know where to load blocks around them.
+		If no viewer is present in the world, nothing will generate.
+	</brief_description>
+	<description>
+		The voxel world uses the position and options of all the [VoxelViewer] nodes to determine where to load blocks, and prioritize updates. For example, a voxel placed 100 units away from a player will have much lower priority than the modifications that player is doing when digging in front of them.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="requires_collisions" type="bool" setter="set_requires_collisions" getter="is_requiring_collisions" default="false">
+			If set to [code]true[/code], the engine will generate classic collision shapes around this viewer.
+		</member>
+		<member name="requires_visuals" type="bool" setter="set_requires_visuals" getter="is_requiring_visuals" default="true">
+			If set to [code]true[/code], the engine will generate meshes around this viewer. This may be enabled for the local player.
+		</member>
+		<member name="view_distance" type="int" setter="set_view_distance" getter="get_view_distance" default="128">
+			How far should voxels generate around this viewer.
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

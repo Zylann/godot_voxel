@@ -3,6 +3,13 @@
 	<brief_description>
 	</brief_description>
 	<description>
+		Utility class allowing to reproduce simple move-and-slide logic using only voxel AABBs, similar to Minecraft physics. This class may only be used with blocky voxels.
+		Store an instance of it within a member variable of your script, and use it within [method Node._process] or [method Node._physics_process] (it works wherever you like).
+		[codeblock]
+		var motion = Vector3(0, 0, -10 * delta) # Move forward
+		motion = _box_mover.get_motion(get_translation(), motion, aabb, terrain_node)
+		global_translate(motion)
+		[/codeblock]
 	</description>
 	<tutorials>
 	</tutorials>
@@ -15,16 +22,22 @@
 		</method>
 		<method name="get_motion">
 			<return type="Vector3">
+				Modified motion vector with collisions taken into account.
 			</return>
 			<argument index="0" name="pos" type="Vector3">
+				Initial position of your object.
 			</argument>
 			<argument index="1" name="motion" type="Vector3">
+				Motion vector you would like your object to move by.
 			</argument>
 			<argument index="2" name="aabb" type="AABB">
+				Bounding box of your character (or whatever moving thing it is).
 			</argument>
 			<argument index="3" name="terrain" type="Node">
+				[VoxelTerrain] to use for collision detection.
 			</argument>
 			<description>
+				Given a motion vector, returns a modified vector telling you by how much to move your character. This is similar to [method KinematicBody.move_and_slide], except you have to apply the movement.
 			</description>
 		</method>
 		<method name="set_collision_mask">

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelBlockSerializer" inherits="Reference" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+		Low-level utility to save and load the data within a [VoxelBuffer]. This can be useful to send data over the network, or to store it in a file.
+		Note: this utility uses [StreamPeer] as temporary support for the data, because Godot does not have a common interface between files and network streams. So typically, you should use a temporary [StreamPeerBuffer] to put voxel data into, and then you can use its [member StreamPeerBuffer.data_array] to save the data in the actual place you want.
+		To store into a file:
+		[codeblock]
+		# Note, buffer can be re-used if you do this often
+		var stream_peer_buffer = StreamPeerBuffer.new()
+		var written_size = serializer.serialize(stream_peer_buffer, voxels, true)
+		file.store_32(written_size)
+		file.store_buffer(stream_peer_buffer.data_array)
+		[/codeblock]
+		To read it back:
+		[codeblock]
+		var size = file.get_32()
+		var stream_peer_buffer = StreamPeerBuffer.new()
+		# Unfortunately Godot will always allocate memory with this API, can't avoid that
+		stream_peer_buffer.data_array = file.get_buffer(size)
+		serializer.deserialize(stream_peer_buffer, voxels, size, true)
+		[/codeblock]
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="deserialize">
+			<return type="void">
+			</return>
+			<argument index="0" name="peer" type="StreamPeer">
+			</argument>
+			<argument index="1" name="voxel_buffer" type="VoxelBuffer">
+				Buffer into which the data will be written. Its size and formats will determine what is expected from the deserialized data.
+			</argument>
+			<argument index="2" name="size" type="int">
+				How many bytes to read
+			</argument>
+			<argument index="3" name="decompress" type="bool">
+				If the data to read was compressed, you should set this boolean to true so it will be decompressed.
+			</argument>
+			<description>
+				Reads the data of a [VoxelBuffer] from a [StreamPeer]. You must provide the number of bytes to read, and the destination buffer must have the expected size.
+			</description>
+		</method>
+		<method name="serialize">
+			<return type="int">
+				Number of bytes written.
+			</return>
+			<argument index="0" name="peer" type="StreamPeer">
+			</argument>
+			<argument index="1" name="voxel_buffer" type="VoxelBuffer">
+				Voxels to serialize.
+			</argument>
+			<argument index="2" name="compress" type="bool">
+				If true, the data will be compressed. It has a small CPU cost, but the written data will occuppy less space.
+			</argument>
+			<description>
+				Stores the data of a [VoxelBuffer] into a [StreamPeer]. To be able to read it back, you should use the 
+			</description>
+		</method>
+	</methods>
+	<constants>
+	</constants>
+</class>

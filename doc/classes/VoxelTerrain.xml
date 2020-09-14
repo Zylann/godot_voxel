@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelTerrain" inherits="Spatial" version="3.2">
 	<brief_description>
+		Voxel volume using constant level of detail.
 	</brief_description>
 	<description>
 	</description>
@@ -38,7 +39,7 @@
 		<method name="save_block">
 			<return type="void">
 			</return>
-			<argument index="0" name="arg0" type="Vector3">
+			<argument index="0" name="position" type="Vector3">
 			</argument>
 			<description>
 			</description>
@@ -69,13 +70,15 @@
 		</method>
 	</methods>
 	<members>
+		<member name="bounds" type="AABB" setter="set_bounds" getter="get_bounds" default="AABB( -5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09 )">
+		</member>
 		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
 		</member>
+		<member name="max_view_distance" type="int" setter="set_max_view_distance" getter="get_max_view_distance" default="128">
+		</member>
+		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
+		</member>
 		<member name="stream" type="VoxelStream" setter="set_stream" getter="get_stream">
-		</member>
-		<member name="view_distance" type="int" setter="set_view_distance" getter="get_view_distance" default="128">
-		</member>
-		<member name="viewer_path" type="NodePath" setter="set_viewer_path" getter="get_viewer_path" default="NodePath(&quot;&quot;)">
 		</member>
 		<member name="voxel_library" type="VoxelLibrary" setter="set_voxel_library" getter="get_voxel_library">
 		</member>
@@ -84,16 +87,12 @@
 		<signal name="block_loaded">
 			<argument index="0" name="position" type="Vector3">
 			</argument>
-			<argument index="1" name="voxels" type="VoxelBuffer">
-			</argument>
 			<description>
 				Emitted when a new block is loaded from stream. Note it might be not visible yet.
 			</description>
 		</signal>
 		<signal name="block_unloaded">
 			<argument index="0" name="position" type="Vector3">
-			</argument>
-			<argument index="1" name="voxels" type="VoxelBuffer">
 			</argument>
 			<description>
 				Emitted when a block unloaded due to being outside view distance.

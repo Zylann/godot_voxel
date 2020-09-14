@@ -152,6 +152,7 @@ void VoxelBuffer::clear() {
 			delete_channel(i);
 		}
 	}
+	_size = Vector3i();
 	clear_voxel_metadata();
 }
 
@@ -890,7 +891,9 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("for_each_voxel_metadata_in_area", "callback", "min_pos", "max_pos"), &VoxelBuffer::_b_for_each_voxel_metadata_in_area);
 	ClassDB::bind_method(D_METHOD("clear_voxel_metadata"), &VoxelBuffer::clear_voxel_metadata);
 	ClassDB::bind_method(D_METHOD("clear_voxel_metadata_in_area", "min_pos", "max_pos"), &VoxelBuffer::_b_clear_voxel_metadata_in_area);
-	ClassDB::bind_method(D_METHOD("copy_voxel_metadata_in_area", "src_min_pos", "src_max_pos", "dst_min_pos"), &VoxelBuffer::_b_copy_voxel_metadata_in_area);
+	ClassDB::bind_method(
+			D_METHOD("copy_voxel_metadata_in_area", "src_buffer", "src_min_pos", "src_max_pos", "dst_min_pos"),
+			&VoxelBuffer::_b_copy_voxel_metadata_in_area);
 
 	BIND_ENUM_CONSTANT(CHANNEL_TYPE);
 	BIND_ENUM_CONSTANT(CHANNEL_SDF);
@@ -911,6 +914,8 @@ void VoxelBuffer::_bind_methods() {
 	BIND_ENUM_CONSTANT(COMPRESSION_NONE);
 	BIND_ENUM_CONSTANT(COMPRESSION_UNIFORM);
 	BIND_ENUM_CONSTANT(COMPRESSION_COUNT);
+
+	BIND_CONSTANT(MAX_SIZE);
 }
 
 void VoxelBuffer::_b_copy_channel_from(Ref<VoxelBuffer> other, unsigned int channel) {

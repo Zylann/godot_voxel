@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelMesherDMC" inherits="VoxelMesher" version="3.2">
 	<brief_description>
+		Implements isosurface generation (smooth voxels) using [url=https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/]Dual Marching Cubes[/url].
 	</brief_description>
 	<description>
-		Implements isosurface generation (smooth voxels) using [url=https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/]Dual Marching Cubes[/url].
 	</description>
 	<tutorials>
 	</tutorials>

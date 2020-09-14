@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="3.2">
 	<brief_description>
+		Graph-based generator for smooth voxel worlds.
 	</brief_description>
 	<description>
 	</description>
@@ -141,12 +142,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="is_compressing_uniform_channels" qualifiers="const">
-			<return type="bool">
-			</return>
-			<description>
-			</description>
-		</method>
 		<method name="remove_connection">
 			<return type="void">
 			</return>
@@ -165,14 +160,6 @@
 			<return type="void">
 			</return>
 			<argument index="0" name="node_id" type="int">
-			</argument>
-			<description>
-			</description>
-		</method>
-		<method name="set_compress_uniform_channels">
-			<return type="void">
-			</return>
-			<argument index="0" name="enabled" type="bool">
 			</argument>
 			<description>
 			</description>

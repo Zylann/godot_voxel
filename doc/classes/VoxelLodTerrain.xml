@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelLodTerrain" inherits="Spatial" version="3.2">
 	<brief_description>
+		Voxel volume using variable level of detail.
 	</brief_description>
 	<description>
 	</description>
@@ -94,6 +95,8 @@
 		<member name="lod_split_scale" type="float" setter="set_lod_split_scale" getter="get_lod_split_scale" default="3.0">
 		</member>
 		<member name="material" type="Material" setter="set_material" getter="get_material">
+		</member>
+		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
 		</member>
 		<member name="stream" type="VoxelStream" setter="set_stream" getter="get_stream">
 		</member>
