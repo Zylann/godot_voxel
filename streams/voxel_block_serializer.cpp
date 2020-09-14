@@ -1,10 +1,10 @@
 #include "voxel_block_serializer.h"
 #include "../math/vector3i.h"
+#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_memory_pool.h"
 #include "../thirdparty/lz4/lz4.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
-#include "../voxel_buffer.h"
-#include "../voxel_memory_pool.h"
 
 #include <core/io/marshalls.h>
 #include <core/io/stream_peer.h>

@@ -1,4 +1,5 @@
 #include "voxel_mesher_transvoxel.h"
+#include "../../storage/voxel_buffer.h"
 #include "transvoxel_tables.cpp"
 #include <core/os/os.h>
 

@@ -1,7 +1,7 @@
 #include "voxel_memory_pool.h"
-#include "core/print_string.h"
-#include "core/variant.h"
-#include "util/profiling.h"
+#include "../util/profiling.h"
+#include <core/print_string.h>
+#include <core/variant.h>
 
 namespace {
 VoxelMemoryPool *g_memory_pool = nullptr;

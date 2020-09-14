@@ -1,5 +1,6 @@
 #include "voxel_mesher_blocky.h"
 #include "../../cube_tables.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../util/array_slice.h"
 #include "../../util/utility.h"
 #include <core/os/os.h>

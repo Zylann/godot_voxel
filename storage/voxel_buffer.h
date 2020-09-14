@@ -1,9 +1,9 @@
 #ifndef VOXEL_BUFFER_H
 #define VOXEL_BUFFER_H
 
-#include "math/rect3i.h"
-#include "util/array_slice.h"
-#include "util/fixed_array.h"
+#include "../math/rect3i.h"
+#include "../util/array_slice.h"
+#include "../util/fixed_array.h"
 
 #include <core/map.h>
 #include <core/reference.h>

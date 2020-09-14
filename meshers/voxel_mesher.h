@@ -3,8 +3,9 @@
 
 #include "../cube_tables.h"
 #include "../util/fixed_array.h"
-#include "../voxel_buffer.h"
 #include <scene/resources/mesh.h>
+
+class VoxelBuffer;
 
 class VoxelMesher : public Reference {
 	GDCLASS(VoxelMesher, Reference)

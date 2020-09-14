@@ -1,9 +1,9 @@
 #ifndef VOXEL_THREAD_POOL_H
 #define VOXEL_THREAD_POOL_H
 
+#include "../storage/voxel_buffer.h"
 #include "../util/array_slice.h"
 #include "../util/fixed_array.h"
-#include "../voxel_buffer.h"
 #include <core/os/mutex.h>
 
 #include <queue>

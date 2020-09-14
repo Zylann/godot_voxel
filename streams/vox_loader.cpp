@@ -1,4 +1,5 @@
 #include "vox_loader.h"
+#include "../storage/voxel_buffer.h"
 #include <core/os/file_access.h>
 
 namespace vox {

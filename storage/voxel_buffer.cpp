@@ -4,7 +4,7 @@
 #include "voxel_memory_pool.h"
 #endif
 
-#include "edition/voxel_tool_buffer.h"
+#include "../edition/voxel_tool_buffer.h"
 #include "voxel_buffer.h"
 
 #include <core/func_ref.h>

@@ -1,8 +1,10 @@
 #ifndef VOX_LOADER_H
 #define VOX_LOADER_H
 
+#include "../math/vector3i.h"
 #include "../meshers/cubes/voxel_color_palette.h"
-#include "../voxel_buffer.h"
+
+class VoxelBuffer;
 
 namespace vox {
 

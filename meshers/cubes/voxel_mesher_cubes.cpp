@@ -1,4 +1,5 @@
 #include "voxel_mesher_cubes.h"
+#include "../../storage/voxel_buffer.h"
 
 namespace {
 // 2-----3

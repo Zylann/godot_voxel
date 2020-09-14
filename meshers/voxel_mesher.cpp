@@ -1,4 +1,5 @@
 #include "voxel_mesher.h"
+#include "../storage/voxel_buffer.h"
 
 Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());

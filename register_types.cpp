@@ -17,6 +17,8 @@
 #include "meshers/cubes/voxel_mesher_cubes.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "storage/voxel_buffer.h"
+#include "storage/voxel_memory_pool.h"
 #include "streams/vox_loader.h"
 #include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_file.h"
@@ -27,8 +29,6 @@
 #include "terrain/voxel_terrain.h"
 #include "terrain/voxel_viewer.h"
 #include "util/macros.h"
-#include "voxel_buffer.h"
-#include "voxel_memory_pool.h"
 #include "voxel_string_names.h"
 #include <core/engine.h>
 

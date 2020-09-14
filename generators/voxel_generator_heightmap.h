@@ -1,7 +1,7 @@
 #ifndef VOXEL_GENERATOR_HEIGHTMAP_H
 #define VOXEL_GENERATOR_HEIGHTMAP_H
 
-#include "../voxel_buffer.h"
+#include "../storage/voxel_buffer.h"
 #include "voxel_generator.h"
 #include <core/image.h>
 

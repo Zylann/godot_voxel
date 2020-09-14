@@ -12,6 +12,7 @@ files = [
 	"meshers/cubes/*.cpp",
 	"meshers/*.cpp",
 	"streams/*.cpp",
+	"storage/*.cpp",
 	"generators/*.cpp",
 	"generators/graph/*.cpp",
 	"util/*.cpp",

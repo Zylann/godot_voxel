@@ -1,8 +1,8 @@
 #ifndef HERMITE_VALUE_H
 #define HERMITE_VALUE_H
 
+#include "../../storage/voxel_buffer.h"
 #include "../../util/utility.h"
-#include "../../voxel_buffer.h"
 #include <core/math/vector3.h>
 
 namespace dmc {
