@@ -61,3 +61,48 @@ Error check_directory_created(const String &directory_path) {
 	memdelete(d);
 	return OK;
 }
+
+namespace VoxelFileUtils {
+
+// TODO Write tests
+
+// Makes the file bigger to move the half from the current posiiton further,
+// so that it makes room for the specified amount of bytes.
+// The new allocated "free" bytes have undefined values, which may be later overwritten by the caller anyways.
+void insert_bytes(FileAccess *f, size_t count, size_t temp_chunk_size) {
+	CRASH_COND(f == nullptr);
+	CRASH_COND(temp_chunk_size == 0);
+
+	const size_t prev_file_len = f->get_len();
+	const size_t insert_pos = f->get_position();
+
+	// Make the file larger
+	f->seek(prev_file_len);
+	for (size_t i = 0; i < count; ++i) {
+		f->store_8(0);
+	}
+
+	const size_t initial_bytes_to_move = prev_file_len - insert_pos;
+	size_t bytes_to_move = initial_bytes_to_move;
+	std::vector<uint8_t> temp;
+	size_t src_pos = prev_file_len;
+	size_t dst_pos = f->get_len();
+
+	// Copy chunks of the file at a later position, from last to first.
+	// The last copied chunk can be smaller.
+	while (bytes_to_move > 0) {
+		size_t chunk_size = bytes_to_move >= temp_chunk_size ? temp_chunk_size : bytes_to_move;
+		src_pos -= chunk_size;
+		dst_pos -= chunk_size;
+		temp.resize(chunk_size);
+		f->seek(src_pos);
+		const size_t read_size = f->get_buffer(temp.data(), temp.size());
+		CRASH_COND(read_size != temp.size());
+		f->seek(dst_pos);
+		f->store_buffer(temp.data(), temp.size());
+		bytes_to_move -= temp.size();
+		CRASH_COND(bytes_to_move >= initial_bytes_to_move);
+	}
+}
+
+} // namespace VoxelFileUtils

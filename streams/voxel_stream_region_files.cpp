@@ -8,12 +8,13 @@
 #include <algorithm>
 
 namespace {
-const uint8_t FORMAT_VERSION = 2;
+const uint8_t FORMAT_VERSION = 3;
+
+// Version 2 is the same as version 3, except region files use version 3 of their specification.
+const uint8_t FORMAT_VERSION_LEGACY_2 = 2;
+
 const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
-const char *FORMAT_REGION_MAGIC = "VXR_";
 const char *META_FILE_NAME = "meta.vxrm";
-const int MAGIC_AND_VERSION_SIZE = 4 + 1;
-const char *REGION_FILE_EXTENSION = "vxr";
 } // namespace
 
 VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
@@ -92,7 +93,9 @@ void VoxelStreamRegionFiles::immerge_blocks(Vector<VoxelBlockRequest> &p_blocks)
 	}
 }
 
-VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
+		Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(out_buffer.is_null(), EMERGE_FAILED);
 
@@ -127,50 +130,26 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(Ref<V
 		out_buffer->set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
 	}
 
-	Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
-	Vector3i region_pos = get_region_position_from_blocks(block_pos);
+	const Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
+	const Vector3i region_pos = get_region_position_from_blocks(block_pos);
 
 	CachedRegion *cache = open_region(region_pos, lod, false);
 	if (cache == nullptr || !cache->file_exists) {
 		return EMERGE_OK_FALLBACK;
 	}
 
-	Vector3i block_rpos = block_pos.wrap(region_size);
-	int lut_index = get_block_index_in_header(block_rpos);
-	const BlockInfo &block_info = cache->header.blocks[lut_index];
+	const Vector3i block_rpos = block_pos.wrap(region_size);
 
-	if (block_info.data == 0) {
-		return EMERGE_OK_FALLBACK;
-	}
+	Error err = cache->region.load_block(block_rpos, out_buffer, _block_serializer);
+	switch (err) {
+		case OK:
+			return EMERGE_OK;
 
-	unsigned int sector_index = block_info.get_sector_index();
-	//unsigned int sector_count = block_info.get_sector_count();
-	int blocks_begin_offset = get_region_header_size();
+		case ERR_DOES_NOT_EXIST:
+			return EMERGE_OK_FALLBACK;
 
-	FileAccess *f = cache->file_access;
-
-	f->seek(blocks_begin_offset + sector_index * _meta.sector_size);
-
-	unsigned int block_data_size = f->get_32();
-	CRASH_COND(f->eof_reached());
-
-	ERR_FAIL_COND_V_MSG(!_block_serializer.decompress_and_deserialize(f, block_data_size, **out_buffer), EMERGE_FAILED,
-			String("Failed to read block {0} at region {1}").format(varray(block_pos.to_vec3(), region_pos.to_vec3())));
-
-	return EMERGE_OK;
-}
-
-void VoxelStreamRegionFiles::pad_to_sector_size(FileAccess *f) {
-	int blocks_begin_offset = get_region_header_size();
-	int rpos = f->get_position() - blocks_begin_offset;
-	if (rpos == 0) {
-		return;
-	}
-	CRASH_COND(rpos < 0);
-	int pad = _meta.sector_size - (rpos - 1) % _meta.sector_size - 1;
-	for (int i = 0; i < pad; ++i) {
-		// TODO Virtual function called many times, hmmmm...
-		f->store_8(0);
+		default:
+			return EMERGE_FAILED;
 	}
 }
 
@@ -215,179 +194,8 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 	//print_line(String("Immerging block {0} r {1}").format(varray(block_pos.to_vec3(), region_pos.to_vec3())));
 
 	CachedRegion *cache = open_region(region_pos, lod, true);
-	ERR_FAIL_COND(cache == nullptr);
-	FileAccess *f = cache->file_access;
-
-	int lut_index = get_block_index_in_header(block_rpos);
-	BlockInfo &block_info = cache->header.blocks[lut_index];
-	int blocks_begin_offset = get_region_header_size();
-
-	if (block_info.data == 0) {
-		// The block isn't in the file yet, append at the end
-
-		int end_offset = blocks_begin_offset + cache->sectors.size() * _meta.sector_size;
-		f->seek(end_offset);
-		int block_offset = f->get_position();
-		// Check position matches the sectors rule
-		CRASH_COND((block_offset - blocks_begin_offset) % _meta.sector_size != 0);
-
-		const std::vector<uint8_t> &data = _block_serializer.serialize_and_compress(**voxel_buffer);
-		f->store_32(data.size());
-		int written_size = sizeof(int) + data.size();
-		f->store_buffer(data.data(), data.size());
-
-		int end_pos = f->get_position();
-		CRASH_COND(written_size != (end_pos - block_offset));
-		pad_to_sector_size(f);
-
-		block_info.set_sector_index((block_offset - blocks_begin_offset) / _meta.sector_size);
-		block_info.set_sector_count(get_sector_count_from_bytes(written_size));
-
-		for (unsigned int i = 0; i < block_info.get_sector_count(); ++i) {
-			cache->sectors.push_back(block_rpos);
-		}
-
-		cache->header_modified = true;
-
-		//print_line(String("Block saved flen={0}").format(varray(f->get_len())));
-
-	} else {
-		// The block is already in the file
-
-		CRASH_COND(cache->sectors.size() == 0);
-
-		int old_sector_index = block_info.get_sector_index();
-		int old_sector_count = block_info.get_sector_count();
-		CRASH_COND(old_sector_count < 1);
-
-		const std::vector<uint8_t> &data = _block_serializer.serialize_and_compress(**voxel_buffer);
-		int written_size = sizeof(int) + data.size();
-
-		int new_sector_count = get_sector_count_from_bytes(written_size);
-		CRASH_COND(new_sector_count < 1);
-
-		if (new_sector_count <= old_sector_count) {
-			// We can write the block at the same spot
-
-			if (new_sector_count < old_sector_count) {
-				// The block now uses less sectors, we can compact others.
-				remove_sectors_from_block(cache, block_rpos, old_sector_count - new_sector_count);
-				cache->header_modified = true;
-			}
-
-			int block_offset = blocks_begin_offset + old_sector_index * _meta.sector_size;
-			f->seek(block_offset);
-
-			f->store_32(data.size());
-			f->store_buffer(data.data(), data.size());
-
-			int end_pos = f->get_position();
-			CRASH_COND(written_size != (end_pos - block_offset));
-
-		} else {
-			// The block now uses more sectors, we have to move others.
-			// Note: we could shift blocks forward, but we can also remove the block entirely and rewrite it at the end.
-			// Need to investigate if it's worth implementing forward shift instead.
-
-			remove_sectors_from_block(cache, block_rpos, old_sector_count);
-
-			int block_offset = blocks_begin_offset + cache->sectors.size() * _meta.sector_size;
-			f->seek(block_offset);
-
-			f->store_32(data.size());
-			f->store_buffer(data.data(), data.size());
-
-			int end_pos = f->get_position();
-			CRASH_COND(written_size != (end_pos - block_offset));
-
-			pad_to_sector_size(f);
-
-			block_info.set_sector_index(cache->sectors.size());
-			for (int i = 0; i < new_sector_count; ++i) {
-				cache->sectors.push_back(block_rpos);
-			}
-
-			cache->header_modified = true;
-		}
-
-		block_info.set_sector_count(new_sector_count);
-	}
-}
-
-void VoxelStreamRegionFiles::remove_sectors_from_block(CachedRegion *p_region, Vector3i block_rpos, unsigned int p_sector_count) {
-	VOXEL_PROFILE_SCOPE();
-
-	// Removes sectors from a block, starting from the last ones.
-	// So if a block has 5 sectors and we remove 2, the first 3 will be preserved.
-	// Then all following sectors are moved earlier in the file to fill the gap.
-
-	//print_line(String("Removing {0} sectors from region {1}").format(varray(p_sector_count, p_region->position.to_vec3())));
-
-	FileAccess *f = p_region->file_access;
-	int blocks_begin_offset = get_region_header_size();
-	int old_end_offset = blocks_begin_offset + p_region->sectors.size() * _meta.sector_size;
-
-	unsigned int block_index = get_block_index_in_header(block_rpos);
-	BlockInfo &block_info = p_region->header.blocks[block_index];
-
-	int src_offset = blocks_begin_offset + (block_info.get_sector_index() + block_info.get_sector_count()) * _meta.sector_size;
-	int dst_offset = src_offset - p_sector_count * _meta.sector_size;
-
-	// Note: removing the last block from a region doesn't make the file invalid, but is not a known use case
-	CRASH_COND(p_region->sectors.size() - p_sector_count <= 0);
-	CRASH_COND(f == nullptr);
-	CRASH_COND(p_sector_count <= 0);
-	CRASH_COND(src_offset - _meta.sector_size < dst_offset);
-	CRASH_COND(block_info.get_sector_index() + p_sector_count > p_region->sectors.size());
-	CRASH_COND(p_sector_count > block_info.get_sector_count());
-	CRASH_COND(dst_offset < blocks_begin_offset);
-
-	uint8_t *temp = (uint8_t *)memalloc(_meta.sector_size);
-
-	// TODO There might be a faster way to shrink a file
-	// Erase sectors from file
-	while (src_offset < old_end_offset) {
-
-		f->seek(src_offset);
-		int read_bytes = f->get_buffer(temp, _meta.sector_size);
-		CRASH_COND(read_bytes != _meta.sector_size); // Corrupted file
-
-		f->seek(dst_offset);
-		f->store_buffer(temp, _meta.sector_size);
-
-		src_offset += _meta.sector_size;
-		dst_offset += _meta.sector_size;
-	}
-
-	memfree(temp);
-	// TODO We need to truncate the end of the file since we effectively shortened it,
-	// but FileAccess doesn't have any function to do that... so can't rely on EOF either
-
-	// Erase sectors from cache
-	p_region->sectors.erase(
-			p_region->sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count() - p_sector_count),
-			p_region->sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count()));
-
-	unsigned int old_sector_index = block_info.get_sector_index();
-
-	// Reduce sectors of current block in header.
-	if (block_info.get_sector_count() > p_sector_count) {
-		block_info.set_sector_count(block_info.get_sector_count() - p_sector_count);
-	} else {
-		// Block removed
-		block_info.data = 0;
-	}
-
-	// Shift sector index of following blocks
-	if (old_sector_index < p_region->sectors.size()) {
-		RegionHeader &header = p_region->header;
-		for (unsigned int i = 0; i < header.blocks.size(); ++i) {
-			BlockInfo &b = header.blocks[i];
-			if (b.data != 0 && b.get_sector_index() > old_sector_index) {
-				b.set_sector_index(b.get_sector_index() - p_sector_count);
-			}
-		}
-	}
+	ERR_FAIL_COND_MSG(cache == nullptr, "Could not save region file data");
+	ERR_FAIL_COND(cache->region.save_block(block_rpos, voxel_buffer, _block_serializer) != OK);
 }
 
 String VoxelStreamRegionFiles::get_directory() const {
@@ -404,15 +212,6 @@ void VoxelStreamRegionFiles::set_directory(String dirpath) {
 	}
 }
 
-/*static Array to_varray(const Vector3i &v) {
-	Array a;
-	a.resize(3);
-	a[0] = v.x;
-	a[1] = v.y;
-	a[2] = v.z;
-	return a;
-}*/
-
 static bool u8_from_json_variant(Variant v, uint8_t &i) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::REAL, false);
 	int n = v;
@@ -427,16 +226,6 @@ static bool s32_from_json_variant(Variant v, int &i) {
 	return true;
 }
 
-/*static bool from_json_varray(Array a, Vector3i &v) {
-	ERR_FAIL_COND_V(a.size() != 3, false);
-	for (int i = 0; i < 3; ++i) {
-		if (!s32_from_json_variant(a[i], v[i])) {
-			return false;
-		}
-	}
-	return true;
-}*/
-
 static bool depth_from_json_variant(Variant &v, VoxelBuffer::Depth &d) {
 	uint8_t n;
 	ERR_FAIL_COND_V(!u8_from_json_variant(v, n), false);
@@ -446,7 +235,6 @@ static bool depth_from_json_variant(Variant &v, VoxelBuffer::Depth &d) {
 }
 
 VoxelFileResult VoxelStreamRegionFiles::save_meta() {
-
 	ERR_FAIL_COND_V(_directory_path == "", VOXEL_FILE_CANT_OPEN);
 
 	Dictionary d;
@@ -492,7 +280,6 @@ VoxelFileResult VoxelStreamRegionFiles::save_meta() {
 }
 
 static void migrate_region_meta_data(Dictionary &data) {
-
 	if (data["version"] == Variant(real_t(FORMAT_VERSION_LEGACY_1))) {
 		Array depths;
 		depths.resize(VoxelBuffer::MAX_CHANNELS);
@@ -500,12 +287,20 @@ static void migrate_region_meta_data(Dictionary &data) {
 			depths[i] = VoxelBuffer::DEFAULT_CHANNEL_DEPTH;
 		}
 		data["channel_depths"] = depths;
+		data["version"] = FORMAT_VERSION_LEGACY_2;
+	}
+
+	if (data["version"] == Variant(real_t(FORMAT_VERSION_LEGACY_2))) {
+		// Nothing for the region forest, but indicates region files may be upgraded to v3.
 		data["version"] = FORMAT_VERSION;
 	}
+
+	//if (data["version"] != Variant(real_t(FORMAT_VERSION))) {
+	// TODO Throw error?
+	//}
 }
 
 VoxelFileResult VoxelStreamRegionFiles::load_meta() {
-
 	ERR_FAIL_COND_V(_directory_path == "", VOXEL_FILE_CANT_OPEN);
 
 	// Ensure you cleanup previous world before loading another
@@ -531,7 +326,8 @@ VoxelFileResult VoxelStreamRegionFiles::load_meta() {
 	int json_err_line;
 	Error json_err = JSON::parse(json, res, json_err_msg, json_err_line);
 	if (json_err != OK) {
-		ERR_PRINT(String("Error when parsing {0}: line {1}: {2}").format(varray(meta_path, json_err_line, json_err_msg)));
+		ERR_PRINT(String("Error when parsing {0}: line {1}: {2}")
+						  .format(varray(meta_path, json_err_line, json_err_msg)));
 		return VOXEL_FILE_INVALID_DATA;
 	}
 
@@ -549,7 +345,8 @@ VoxelFileResult VoxelStreamRegionFiles::load_meta() {
 	Array channel_depths_data = d["channel_depths"];
 	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBuffer::MAX_CHANNELS, VOXEL_FILE_INVALID_DATA);
 	for (int i = 0; i < channel_depths_data.size(); ++i) {
-		ERR_FAIL_COND_V(!depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), VOXEL_FILE_INVALID_DATA);
+		ERR_FAIL_COND_V(
+				!depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), VOXEL_FILE_INVALID_DATA);
 	}
 
 	ERR_FAIL_COND_V(!check_meta(meta), VOXEL_FILE_INVALID_DATA);
@@ -587,14 +384,13 @@ void VoxelStreamRegionFiles::close_all_regions() {
 }
 
 String VoxelStreamRegionFiles::get_region_file_path(const Vector3i &region_pos, unsigned int lod) const {
-
 	Array a;
 	a.resize(5);
 	a[0] = lod;
 	a[1] = region_pos.x;
 	a[2] = region_pos.y;
 	a[3] = region_pos.z;
-	a[4] = REGION_FILE_EXTENSION;
+	a[4] = VoxelRegionFile::FILE_EXTENSION;
 	return _directory_path.plus_file(String("regions/lod{0}/r.{1}.{2}.{3}.{4}").format(a));
 }
 
@@ -610,165 +406,87 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::get_region_from_ca
 	return nullptr;
 }
 
-VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
+VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
+		const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
+
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(!_meta_loaded, nullptr);
 	ERR_FAIL_COND_V(lod < 0, nullptr);
 
-	CachedRegion *cache = get_region_from_cache(region_pos, lod);
-	if (cache != nullptr) {
-		return cache;
+	CachedRegion *cached_region = get_region_from_cache(region_pos, lod);
+	if (cached_region != nullptr) {
+		return cached_region;
 	}
 
 	while (_region_cache.size() > _max_open_regions - 1) {
 		close_oldest_region();
 	}
+	// Not in cache, we'll have to open or create it
 
 	const Vector3i region_size = Vector3i(1 << _meta.region_size_po2);
 
 	String fpath = get_region_file_path(region_pos, lod);
-	Error existing_file_err;
-	FileAccess *existing_f = open_file(fpath, FileAccess::READ_WRITE, &existing_file_err);
-	// TODO Cache the fact the file doesnt exist, so we won't need to do a system call to actually check it every time
-	// TODO No need to read the header again when it has been read once, we assume no other process will modify region files
 
-	if (existing_f == nullptr || existing_file_err != OK) {
-		// Write new file
+	cached_region = memnew(CachedRegion);
 
-		if (!create_if_not_found) {
-			//print_error(String("Could not open file {0}").format(varray(fpath)));
+	// Configure format because we might have to create the file, and some old file versions don't embed format
+	VoxelRegionFile::Format format;
+	format.block_size_po2 = _meta.block_size_po2;
+	format.channel_depths = _meta.channel_depths;
+	// TODO Palette support
+	format.has_palette = false;
+	format.region_size = Vector3i(1 << _meta.region_size_po2);
+	format.sector_size = _meta.sector_size;
+
+	cached_region->region.set_format(format);
+	cached_region->position = region_pos;
+	cached_region->lod = lod;
+
+	const Error err = cached_region->region.open(fpath, create_if_not_found);
+
+	// Things we could do for optimization:
+	// - Cache the fact the file doesnt exist, so we won't need to do a system call to actually check it every time
+	// - No need to read the header again when it has been read once,
+	//   we assume no other process will modify region files
+
+	if (err != OK) {
+		memdelete(cached_region);
+		if (create_if_not_found) {
+			// Could not create it apparently
+			ERR_PRINT(String("Could not open or create region file {0}, error: {1}").format(varray(fpath, err)));
 			return nullptr;
-		}
-
-		VOXEL_PROFILE_SCOPE();
-
-		Error dir_err = check_directory_created(fpath.get_base_dir());
-		if (dir_err != OK) {
+		} else {
+			// Does not exist, it was probably expected
 			return nullptr;
-		}
-
-		Error file_err;
-		FileAccess *f = open_file(fpath, FileAccess::WRITE_READ, &file_err);
-		ERR_FAIL_COND_V_MSG(!f, nullptr, "Failed to write file " + fpath + ", error " + String::num_int64(file_err));
-		ERR_FAIL_COND_V_MSG(file_err != OK, nullptr, "Error " + String::num_int64(file_err));
-
-		f->store_buffer((uint8_t *)FORMAT_REGION_MAGIC, 4);
-		f->store_8(FORMAT_VERSION);
-
-		cache = memnew(CachedRegion);
-		cache->file_exists = true;
-		cache->file_access = f;
-		cache->position = region_pos;
-		cache->lod = lod;
-		_region_cache.push_back(cache);
-		RegionHeader &header = cache->header;
-
-		header.blocks.resize(region_size.volume());
-
-		save_header(cache);
-
-	} else {
-		// Read existing
-		VOXEL_PROFILE_SCOPE();
-
-		uint8_t version;
-		const VoxelFileResult check_result = check_magic_and_version(existing_f, FORMAT_VERSION, FORMAT_REGION_MAGIC, version);
-
-		if (check_result == VOXEL_FILE_INVALID_VERSION) {
-			if (version != FORMAT_VERSION_LEGACY_1) {
-				memdelete(existing_f);
-				ERR_PRINT(String("Could not open file {0}, invalid version {1}").format(varray(fpath, version)));
-				return nullptr;
-			}
-
-		} else if (check_result != VOXEL_FILE_OK) {
-			memdelete(existing_f);
-			ERR_PRINT(String("Could not open file {0}, {1}").format(varray(fpath, ::to_string(check_result))));
-			return nullptr;
-		}
-
-		// Versions 1 and 2 are the same
-
-		cache = memnew(CachedRegion);
-		cache->file_exists = true;
-		cache->file_access = existing_f;
-		cache->position = region_pos;
-		cache->lod = lod;
-		_region_cache.push_back(cache);
-		RegionHeader &header = cache->header;
-
-		header.blocks.resize(region_size.volume());
-
-		// TODO Deal with endianess
-		existing_f->get_buffer((uint8_t *)header.blocks.data(), header.blocks.size() * sizeof(BlockInfo));
-	}
-
-	// Precalculate location of sectors and which block they contain.
-	// This will be useful to know when sectors get moved on insertion and removal
-
-	struct BlockInfoAndIndex {
-		BlockInfo b;
-		int i;
-	};
-
-	// Filter only present blocks and keep the index around because it represents the 3D position of the block
-	RegionHeader &header = cache->header;
-	std::vector<BlockInfoAndIndex> blocks_sorted_by_offset;
-	for (unsigned int i = 0; i < header.blocks.size(); ++i) {
-		const BlockInfo b = header.blocks[i];
-		if (b.data != 0) {
-			BlockInfoAndIndex p;
-			p.b = b;
-			p.i = i;
-			blocks_sorted_by_offset.push_back(p);
 		}
 	}
 
-	std::sort(blocks_sorted_by_offset.begin(), blocks_sorted_by_offset.end(),
-			[](const BlockInfoAndIndex &a, const BlockInfoAndIndex &b) {
-				return a.b.get_sector_index() < b.b.get_sector_index();
-			});
+	// Make sure it has correct format
+	{
+		const VoxelRegionFile::Format &format = cached_region->region.get_format();
+		if (format.block_size_po2 != _meta.block_size_po2 ||
+				format.channel_depths != _meta.channel_depths ||
+				format.region_size != Vector3i(1 << _meta.region_size_po2) ||
+				format.sector_size != _meta.sector_size) {
 
-	for (unsigned int i = 0; i < blocks_sorted_by_offset.size(); ++i) {
-		const BlockInfoAndIndex b = blocks_sorted_by_offset[i];
-		Vector3i bpos = get_block_position_from_index(b.i);
-		for (unsigned int j = 0; j < b.b.get_sector_count(); ++j) {
-			cache->sectors.push_back(bpos);
+			ERR_PRINT("Region file has unexpected format");
+			memdelete(cached_region);
+			return nullptr;
 		}
 	}
 
-	cache->last_opened = OS::get_singleton()->get_ticks_usec();
+	// TODO Debug check to make sure we did not already cache it
+	_region_cache.push_back(cached_region);
 
-	return cache;
+	cached_region->file_exists = true;
+	cached_region->last_opened = OS::get_singleton()->get_ticks_usec();
+
+	return cached_region;
 }
 
-void VoxelStreamRegionFiles::save_header(CachedRegion *p_region) {
-	VOXEL_PROFILE_SCOPE();
-	CRASH_COND(p_region->file_access == nullptr);
-
-	RegionHeader &header = p_region->header;
-	CRASH_COND(header.blocks.size() == 0);
-
-	// TODO Deal with endianess
-	p_region->file_access->store_buffer((const uint8_t *)header.blocks.data(), header.blocks.size() * sizeof(BlockInfo));
-	p_region->header_modified = false;
-}
-
+// TODO Get rid of to simplify?
 void VoxelStreamRegionFiles::close_region(CachedRegion *region) {
-	VOXEL_PROFILE_SCOPE();
-
-	if (region->file_access) {
-		FileAccess *f = region->file_access;
-
-		// This is really important because the OS can optimize file closing if we didn't write anything
-		if (region->header_modified) {
-			f->seek(MAGIC_AND_VERSION_SIZE);
-			save_header(region);
-		}
-
-		memdelete(region->file_access);
-		region->file_access = nullptr;
-	}
+	region->region.close();
 }
 
 void VoxelStreamRegionFiles::close_oldest_region() {
@@ -780,11 +498,11 @@ void VoxelStreamRegionFiles::close_oldest_region() {
 
 	int oldest_index = -1;
 	uint64_t oldest_time = 0;
-	uint64_t now = OS::get_singleton()->get_ticks_usec();
+	const uint64_t now = OS::get_singleton()->get_ticks_usec();
 
 	for (unsigned int i = 0; i < _region_cache.size(); ++i) {
-		CachedRegion *r = _region_cache[i];
-		uint64_t time = now - r->last_opened;
+		const CachedRegion *r = _region_cache[i];
+		const uint64_t time = now - r->last_opened;
 		if (time >= oldest_time) {
 			oldest_index = i;
 		}
@@ -795,27 +513,6 @@ void VoxelStreamRegionFiles::close_oldest_region() {
 
 	close_region(region);
 	memdelete(region);
-}
-
-unsigned int VoxelStreamRegionFiles::get_block_index_in_header(const Vector3i &rpos) const {
-	const Vector3i region_size(1 << _meta.region_size_po2);
-	return rpos.get_zxy_index(region_size);
-}
-
-Vector3i VoxelStreamRegionFiles::get_block_position_from_index(int i) const {
-	const Vector3i region_size(1 << _meta.region_size_po2);
-	return Vector3i::from_zxy_index(i, region_size);
-}
-
-int VoxelStreamRegionFiles::get_sector_count_from_bytes(int size_in_bytes) const {
-	return (size_in_bytes - 1) / _meta.sector_size + 1;
-}
-
-int VoxelStreamRegionFiles::get_region_header_size() const {
-	// Which file offset blocks data is starting
-	// magic + version + blockinfos
-	const Vector3i region_size(1 << _meta.region_size_po2);
-	return MAGIC_AND_VERSION_SIZE + region_size.volume() * sizeof(BlockInfo);
 }
 
 static inline int convert_block_coordinate(int p_x, int old_size, int new_size) {
@@ -887,8 +584,9 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	{
 		for (int lod = 0; lod < old_meta.lod_count; ++lod) {
 
-			String lod_folder = old_stream->_directory_path.plus_file("regions").plus_file("lod") + String::num_int64(lod);
-			String ext = String(".") + REGION_FILE_EXTENSION;
+			const String lod_folder =
+					old_stream->_directory_path.plus_file("regions").plus_file("lod") + String::num_int64(lod);
+			const String ext = String(".") + VoxelRegionFile::FILE_EXTENSION;
 
 			DirAccessRef da = DirAccess::open(lod_folder);
 			if (!da) {
@@ -935,17 +633,17 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	for (unsigned int i = 0; i < old_region_list.size(); ++i) {
 		PositionAndLod region_info = old_region_list[i];
 
-		const CachedRegion *region = old_stream->open_region(region_info.position, region_info.lod, false);
-		if (region == nullptr) {
+		const CachedRegion *old_region = old_stream->open_region(region_info.position, region_info.lod, false);
+		if (old_region == nullptr) {
 			continue;
 		}
 
-		PRINT_VERBOSE(String("Converting region lod{0}/{1}").format(varray(region_info.lod, region_info.position.to_vec3())));
+		PRINT_VERBOSE(String("Converting region lod{0}/{1}")
+							  .format(varray(region_info.lod, region_info.position.to_vec3())));
 
-		const RegionHeader &header = region->header;
-		for (unsigned int j = 0; j < header.blocks.size(); ++j) {
-			const BlockInfo bi = header.blocks[j];
-			if (bi.data == 0) {
+		const unsigned int blocks_count = old_region->region.get_header_block_count();
+		for (unsigned int j = 0; j < blocks_count; ++j) {
+			if (!old_region->region.has_block(j)) {
 				continue;
 			}
 
@@ -958,7 +656,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			new_block->create(new_block_size.x, new_block_size.y, new_block_size.z);
 
 			// Load block from old stream
-			Vector3i block_rpos = old_stream->get_block_position_from_index(j);
+			Vector3i block_rpos = old_region->region.get_block_position_from_index(j);
 			Vector3i block_pos = block_rpos + region_info.position * old_region_size;
 			old_stream->emerge_block(old_block, block_pos * old_block_size << region_info.lod, region_info.lod);
 
@@ -988,7 +686,6 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					immerge_block(new_block, new_block_pos * new_block_size << region_info.lod, region_info.lod);
 
 				} else {
-
 					// Copy to multiple blocks
 					Vector3i area = new_block_size / old_block_size;
 					Vector3i rpos;
@@ -1000,11 +697,13 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 								Vector3i src_min = rpos * new_block->get_size();
 								Vector3i src_max = src_min + new_block->get_size();
 
-								for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
+								for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS;
+										++channel_index) {
 									new_block->copy_from(**old_block, src_min, src_max, Vector3i(), channel_index);
 								}
 
-								immerge_block(new_block, (new_block_pos + rpos) * new_block_size << region_info.lod, region_info.lod);
+								immerge_block(new_block,
+										(new_block_pos + rpos) * new_block_size << region_info.lod, region_info.lod);
 							}
 						}
 					}
@@ -1092,7 +791,6 @@ void VoxelStreamRegionFiles::set_lod_count(int p_lod_count) {
 }
 
 void VoxelStreamRegionFiles::convert_files(Dictionary d) {
-
 	Meta meta;
 	meta.version = _meta.version;
 	meta.block_size_po2 = int(d["block_size_po2"]);

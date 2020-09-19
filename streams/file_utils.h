@@ -46,4 +46,11 @@ const char *to_string(VoxelFileResult res);
 VoxelFileResult check_magic_and_version(FileAccess *f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version);
 Error check_directory_created(const String &directory_path);
 
+// TODO Wrap other stuff in that
+namespace VoxelFileUtils {
+
+void insert_bytes(FileAccess *f, size_t count, size_t temp_chunk_size = 512);
+
+} // namespace VoxelFileUtils
+
 #endif // FILE_UTILS_H

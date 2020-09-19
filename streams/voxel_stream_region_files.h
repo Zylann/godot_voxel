@@ -3,13 +3,14 @@
 
 #include "../util/fixed_array.h"
 #include "file_utils.h"
+#include "region_file.h"
 #include "voxel_stream_file.h"
 
 class FileAccess;
 
-// Loads and saves blocks to the filesystem, under a directory.
-// Blocks are saved in region files to minimize I/O.
-// It's a bit more complex but should deliver better performance.
+// TODO Rename VoxelStreamRegionForest
+
+// Loads and saves blocks to the filesystem, in multiple region files indexed by world position, under a directory.
 // Loading and saving blocks in batches of similar regions makes a lot more sense here,
 // because it allows to keep using the same file handles and avoid switching.
 // Inspired by https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game
@@ -69,16 +70,9 @@ private:
 	String get_region_file_path(const Vector3i &region_pos, unsigned int lod) const;
 	CachedRegion *open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found);
 	void close_region(CachedRegion *cache);
-	unsigned int get_block_index_in_header(const Vector3i &rpos) const;
-	Vector3i get_block_position_from_index(int i) const;
-	int get_sector_count_from_bytes(int size_in_bytes) const;
-	int get_region_header_size() const;
 	CachedRegion *get_region_from_cache(const Vector3i pos, int lod) const;
-	void remove_sectors_from_block(CachedRegion *p_region, Vector3i block_rpos, unsigned int p_sector_count);
 	int get_sectors_count(const RegionHeader &header) const;
 	void close_oldest_region();
-	void save_header(CachedRegion *p_region);
-	void pad_to_sector_size(FileAccess *f);
 
 	struct Meta {
 		uint8_t version = -1;
@@ -111,49 +105,11 @@ private:
 		}
 	};
 
-	struct BlockInfo {
-		uint32_t data = 0;
-
-		inline uint32_t get_sector_index() const {
-			return data >> 8;
-		}
-
-		inline void set_sector_index(uint32_t i) {
-			CRASH_COND(i > 0xffffff);
-			data = (i << 8) | (data & 0xff);
-		}
-
-		inline uint32_t get_sector_count() const {
-			return data & 0xff;
-		}
-
-		inline void set_sector_count(uint32_t c) {
-			CRASH_COND(c > 0xff);
-			data = (c & 0xff) | (data & 0xffffff00);
-		}
-	};
-
-	struct RegionHeader {
-		uint8_t version;
-		// Location and size of blocks, indexed by flat position.
-		// This table always has the same size,
-		// and the same index always corresponds to the same 3D position.
-		std::vector<BlockInfo> blocks;
-	};
-
 	struct CachedRegion {
 		Vector3i position;
 		int lod = 0;
 		bool file_exists = false;
-		FileAccess *file_access = nullptr;
-		RegionHeader header;
-		bool header_modified = false;
-
-		// List of sectors in the order they appear in the file,
-		// and which position their block is. The same block can span multiple sectors.
-		// This is essentially a reverse table of `header->blocks`.
-		std::vector<Vector3i> sectors;
-
+		VoxelRegionFile region;
 		uint64_t last_opened = 0;
 		//uint64_t last_accessed;
 	};
