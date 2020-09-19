@@ -1,4 +1,5 @@
 #ifndef COLOR8_H
+#define COLOR8_H
 
 #include <core/color.h>
 
