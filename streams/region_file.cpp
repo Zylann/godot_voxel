@@ -366,7 +366,7 @@ void VoxelRegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int
 	// Erase sectors from file
 	while (src_offset < old_end_offset) {
 		f->seek(src_offset);
-		int read_bytes = f->get_buffer(temp.data(), sector_size);
+		size_t read_bytes = f->get_buffer(temp.data(), sector_size);
 		CRASH_COND(read_bytes != sector_size); // Corrupted file
 
 		f->seek(dst_offset);
@@ -494,7 +494,7 @@ bool VoxelRegionFile::migrate_to_latest(FileAccess *f) {
 	// }
 
 	if (version == FORMAT_VERSION_LEGACY_2) {
-		ERR_FAIL_COND_V(!migrate_from_v2_to_v3(f, _header.format), ERR_PARSE_ERROR);
+		ERR_FAIL_COND_V(!migrate_from_v2_to_v3(f, _header.format), false);
 		version = FORMAT_VERSION;
 	}
 
