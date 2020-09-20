@@ -770,7 +770,7 @@ void VoxelStreamRegionFiles::set_block_size_po2(int p_block_size_po2) {
 }
 
 void VoxelStreamRegionFiles::set_sector_size(int p_sector_size) {
-	if (_meta.sector_size == p_sector_size) {
+	if (static_cast<int>(_meta.sector_size) == p_sector_size) {
 		return;
 	}
 	ERR_FAIL_COND_MSG(_meta_loaded, "Can't change existing sector size without heavy conversion. Use convert_files().");
