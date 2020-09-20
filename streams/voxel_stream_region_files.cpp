@@ -220,8 +220,9 @@ static bool u8_from_json_variant(Variant v, uint8_t &i) {
 	return true;
 }
 
-static bool s32_from_json_variant(Variant v, int &i) {
+static bool u32_from_json_variant(Variant v, uint32_t &i) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::REAL, false);
+	ERR_FAIL_COND_V(v.operator int64_t() < 0, false);
 	i = v;
 	return true;
 }
@@ -338,7 +339,7 @@ VoxelFileResult VoxelStreamRegionFiles::load_meta() {
 	ERR_FAIL_COND_V(!u8_from_json_variant(d["block_size_po2"], meta.block_size_po2), VOXEL_FILE_INVALID_DATA);
 	ERR_FAIL_COND_V(!u8_from_json_variant(d["region_size_po2"], meta.region_size_po2), VOXEL_FILE_INVALID_DATA);
 	ERR_FAIL_COND_V(!u8_from_json_variant(d["lod_count"], meta.lod_count), VOXEL_FILE_INVALID_DATA);
-	ERR_FAIL_COND_V(!s32_from_json_variant(d["sector_size"], meta.sector_size), VOXEL_FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!u32_from_json_variant(d["sector_size"], meta.sector_size), VOXEL_FILE_INVALID_DATA);
 
 	ERR_FAIL_COND_V(meta.version < 0, VOXEL_FILE_INVALID_DATA);
 
@@ -423,24 +424,24 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 	}
 	// Not in cache, we'll have to open or create it
 
-	const Vector3i region_size = Vector3i(1 << _meta.region_size_po2);
-
 	String fpath = get_region_file_path(region_pos, lod);
 
 	cached_region = memnew(CachedRegion);
 
 	// Configure format because we might have to create the file, and some old file versions don't embed format
-	VoxelRegionFile::Format format;
-	format.block_size_po2 = _meta.block_size_po2;
-	format.channel_depths = _meta.channel_depths;
-	// TODO Palette support
-	format.has_palette = false;
-	format.region_size = Vector3i(1 << _meta.region_size_po2);
-	format.sector_size = _meta.sector_size;
+	{
+		VoxelRegionFile::Format format;
+		format.block_size_po2 = _meta.block_size_po2;
+		format.channel_depths = _meta.channel_depths;
+		// TODO Palette support
+		format.has_palette = false;
+		format.region_size = Vector3i(1 << _meta.region_size_po2);
+		format.sector_size = _meta.sector_size;
 
-	cached_region->region.set_format(format);
-	cached_region->position = region_pos;
-	cached_region->lod = lod;
+		cached_region->region.set_format(format);
+		cached_region->position = region_pos;
+		cached_region->lod = lod;
+	}
 
 	const Error err = cached_region->region.open(fpath, create_if_not_found);
 
