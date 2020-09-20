@@ -1280,7 +1280,7 @@ bool VoxelTerrain::is_stream_running_in_editor() const {
 
 void VoxelTerrain::set_bounds(Rect3i box) {
 	_bounds_in_voxels = box.clipped(Rect3i::from_center_extents(Vector3i(), Vector3i(MAX_EXTENT)));
-	const int largest_dimension = max(max(box.size.x, box.size.y), box.size.z);
+	const unsigned int largest_dimension = static_cast<unsigned int>(max(max(box.size.x, box.size.y), box.size.z));
 	if (largest_dimension > MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME) {
 		// Cap view distance to make sure you don't accidentally blow up memory when changing parameters
 		if (_max_view_distance_blocks > MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME) {
