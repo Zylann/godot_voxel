@@ -60,6 +60,22 @@
 			<return type="Dictionary">
 			</return>
 			<description>
+				Gets debug information about how much time is spent processing the terrain.
+				The returned dictionary has the following structure:
+				[codeblock]
+				{
+					"time_detect_required_blocks": int,
+					"time_request_blocks_to_load": int,
+					"time_process_load_responses": int,
+					"time_request_blocks_to_update": int,
+					"time_process_update_responses": int,
+					"remaining_main_thread_blocks": int,
+					"dropped_block_loads": int,
+					"dropped_block_meshs": int,
+					"updated_blocks": int,
+					"blocked_lods": int
+				}
+				[/codeblock]
 			</description>
 		</method>
 		<method name="get_voxel_tool">

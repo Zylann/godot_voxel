@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelMesher" inherits="Reference" version="3.2">
 	<brief_description>
+		Base class for all meshing algorithms.
 	</brief_description>
 	<description>
+		In order to be rendered by Godot, voxels can be transformed into a mesh. There are various ways to do this, that's why this class is only a base for other, specialized ones. Voxel nodes automatically make use of meshers, but you can also produce meshes manually. For this, you may use one of the derived classes. Meshers can be re-used, which often yields better performance by reducing memory allocations.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -15,18 +17,21 @@
 			<argument index="1" name="materials" type="Array">
 			</argument>
 			<description>
+				Builds a mesh from the provided voxels. Materials will be attached to each surface based on the provided array. The way materials are used can depend on the type of mesher.
 			</description>
 		</method>
 		<method name="get_maximum_padding" qualifiers="const">
 			<return type="int">
 			</return>
 			<description>
+				Gets by how much voxels must be padded before their lower corner in order for the mesher to work.
 			</description>
 		</method>
 		<method name="get_minimum_padding" qualifiers="const">
 			<return type="int">
 			</return>
 			<description>
+				Gets by how much voxels must be padded after their upper corner in order for the mesher to work.
 			</description>
 		</method>
 	</methods>

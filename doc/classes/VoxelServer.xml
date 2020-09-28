@@ -12,6 +12,22 @@
 			<return type="Dictionary">
 			</return>
 			<description>
+				Gets debug information about shared voxel processing.
+				The returned dictionary has the following structure:
+				[codeblock]
+				{
+					"streaming": {
+						"tasks": int,
+						"active_threads": int,
+						"thread_count": int
+					},
+					"meshing": {
+						"tasks": int,
+						"active_threads": int,
+						"thread_count": int
+					}
+				}
+				[/codeblock]
 			</description>
 		</method>
 	</methods>

@@ -14,6 +14,7 @@
 			<argument index="0" name="block_pos" type="Vector3">
 			</argument>
 			<description>
+				Converts block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
 			</description>
 		</method>
 		<method name="get_material" qualifiers="const">
@@ -28,26 +29,52 @@
 			<return type="Dictionary">
 			</return>
 			<description>
+				Gets debug information about how much time is spent processing the terrain.
+				The returned dictionary has the following structure:
+				[codeblock]
+				{
+					"time_detect_required_blocks": int,
+					"time_request_blocks_to_load": int,
+					"time_process_load_responses": int,
+					"time_request_blocks_to_update": int,
+					"time_process_update_responses": int,
+					"remaining_main_thread_blocks": int,
+					"dropped_block_loads": int,
+					"dropped_block_meshs": int,
+					"updated_blocks": int
+				}
+				[/codeblock]
 			</description>
 		</method>
 		<method name="get_voxel_tool">
 			<return type="VoxelTool">
 			</return>
 			<description>
+				Creates an instance of [VoxelTool] bound to this node, to access voxels and edition methods.
+				You can keep it in a member variable to avoid creating one again, as long as the node still exists.
 			</description>
 		</method>
 		<method name="save_block">
 			<return type="void">
 			</return>
 			<argument index="0" name="position" type="Vector3">
+				Position of the block, in block coordinates. Use [method voxel_to_block] to convert from voxel to block coordinates.
 			</argument>
 			<description>
+				Forces a specific block to be saved.
+				Note 1: all modified blocks are automatically saved before the terrain is destroyed.
+				Note 2: this will only have an effect if the stream setup on this terrain supports saving.
+				Note 3: saving is asynchronous and won't block the game. the save may complete only a short time after you call this method.
 			</description>
 		</method>
 		<method name="save_modified_blocks">
 			<return type="void">
 			</return>
 			<description>
+				Forces all modified blocks to be saved.
+				Note 1: all modified blocks are automatically saved before the terrain is destroyed.
+				Note 2: this will only have an effect if the stream setup on this terrain supports saving.
+				Note 3: saving is asynchronous and won't block the game. the save may complete only a short time after you call this method.
 			</description>
 		</method>
 		<method name="set_material">
@@ -66,17 +93,26 @@
 			<argument index="0" name="voxel_pos" type="Vector3">
 			</argument>
 			<description>
+				Converts voxel coordinates into block coordinates.
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="bounds" type="AABB" setter="set_bounds" getter="get_bounds" default="AABB( -5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09 )">
+			Defines the bounds within which the terrain is allowed to have voxels. If an infinite world generator is used, blocks will only generate within this region. Everything outside will be left empty.
 		</member>
 		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
+			Enables the generation of collision shapes using the classic physics engine. Use this feature if you need realistic or non-trivial collisions or physics.
+			Note 1: you also need [VoxelViewer] to request collisions, otherwise they won't generate.
+			Note 2: If you need simple Minecraft/AABB physics, you can use [VoxelBoxMover] which may perform better in blocky worlds.
 		</member>
 		<member name="max_view_distance" type="int" setter="set_max_view_distance" getter="get_max_view_distance" default="128">
+			Sets the maximum distance this terrain can support. If a [VoxelViewer] requests more, it will be clamped.
+			Note: there is an internal limit of 512 for constant LOD terrains, because going further can affect performance and memory very badly at the moment.
 		</member>
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
+			Makes the terrain appear in the editor.
+			Important: this option will turn off automatically if you setup a script world generator. Modifying scripts while they are in use by threads causes undefined behaviors. You can still turn on this option if you need a preview, but it is strongly advised to turn it back off and wait until all generation has finished before you edit the script again.
 		</member>
 		<member name="stream" type="VoxelStream" setter="set_stream" getter="get_stream">
 		</member>
@@ -88,7 +124,8 @@
 			<argument index="0" name="position" type="Vector3">
 			</argument>
 			<description>
-				Emitted when a new block is loaded from stream. Note it might be not visible yet.
+				Emitted when a new block is loaded from stream.
+				Note: it might be not visible yet.
 			</description>
 		</signal>
 		<signal name="block_unloaded">
