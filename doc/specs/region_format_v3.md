@@ -43,7 +43,7 @@ Region forest
 
 ### Filesystem structure
 
-A region forest is organized in multiple region files, and is contained within a root directory containing them.
+A region forest is organized in multiple region files, and is contained within a root directory containing them. Region files don't need to be inside a forest to be usable.
 Under that directory, is located two things:
 
 - A `meta.vxrm` file
@@ -119,7 +119,7 @@ It starts with four 8-bit characters: `VXR_`, followed by one byte representing 
 
 The header starts with some metadata describing the size of the volume and the format of voxels. It no longer has a fixed size.
 
-A color palette can be optionally provided. If `palette_hint` is set to `0xff` (`255`), it must be followed by 256 8-bit RGBA vallues. If `palette_hint` is `0x00` (`0`), then no palette data will follow. Other values are invalid at the moment.
+A color palette can be optionally provided. If `palette_hint` is set to `0xff` (`255`), it must be followed by 256 8-bit RGBA values. If `palette_hint` is `0x00` (`0`), then no palette data will follow. Other values are invalid at the moment.
 
 `blocks` is a sequence of 32-bit integers, located at the end of the header. Each integer represents information about where a block is in the file, and how big its serialized data is. The count of that sequence is the number of blocks a region can contain, and remains constant for a given region size. The index of elements in that sequence is calculated from 3D block positions, in ZXY order. The index for a block can be obtained with the formula `y + block_size * (x + block_size * z)`.
 Each integer contains two informations:
@@ -131,9 +131,9 @@ As a result, if a block is unoccupied, its value is `0`.
 ### Sectors
 
 The rest of the file is occupied by sectors.
-Sectors are fixed-size chunks of data. Their size is determined from the meta file described earlier.
+Sectors are fixed-size chunks of data. Their size is determined from the header described earlier, and also in a meta file if part of a region forest.
 Blocks are stored in those sectors. A block can span one or more sectors.
-The file is partitionned in this way to allow frequently writing blocks of variable size without having to often shift consecutive contents.
+The file is partitioned in this way to allow frequently writing blocks of variable size without having to often shift consecutive contents.
 
 When we need to load a block, the address where block information starts will be the following:
 ```
@@ -166,7 +166,7 @@ CompressedBlockData
 
 `compressed_data` must be decompressed using the LZ4 algorithm (without header), into a buffer big enough to contain `decompressed_data_size` bytes. Knowing that size is also important later on.
 
-The obtained data then contains the actual block. It is saved as it comes, assuming the format specified in the meta file is respected: its dimensions and channel depths are not present here. If you use this for custom block serialization, you must take care of using a consistent format when encoding and decoding.
+The obtained data then contains the actual block. It is saved as it comes, assuming the format specified in the region header is respected: its dimensions and channel depths are not present here. If you use this for custom block serialization, you must take care of using a consistent format when encoding and decoding.
 
 ```
 BlockData
@@ -210,7 +210,7 @@ Metadata
 - voxel_metadata[*]
 ```
 
-It starts wth one 32-bit unsigned integer representing the total size of all metadata there is to read. That data comes in two groups: one for the whole block, and one per voxel.
+It starts with one 32-bit unsigned integer representing the total size of all metadata there is to read. That data comes in two groups: one for the whole block, and one per voxel.
 
 Block metadata is one Godot `Variant`, encoded using the `encode_variant` method of the engine.
 
