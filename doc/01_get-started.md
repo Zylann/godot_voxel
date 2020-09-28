@@ -16,7 +16,7 @@ Voxel Tools for Godot is a C++ module that must be compiled into the engine. It 
 ## API
 * [Overview](08_api-overview.md)
 * [API Class List](api/Class_List.md)
-* [Region files specification](specs/region_format.md)
+* [Region files specification](specs/region_format_v3.md)
 
 
 ## External Reference
