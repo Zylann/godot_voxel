@@ -57,6 +57,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	PRINT_VERBOSE("Construct VoxelLodTerrain");
 
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers);
+	VoxelServer::get_singleton()->set_volume_cancellable_requests(_volume_id, false);
 
 	_lods[0].map.instance();
 

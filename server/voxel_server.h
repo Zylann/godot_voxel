@@ -78,6 +78,7 @@ public:
 	void set_volume_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
 	void set_volume_voxel_library(uint32_t volume_id, Ref<VoxelLibrary> library);
+	void set_volume_cancellable_requests(uint32_t volume_id, bool cancellable);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, BlockMeshInput &input);
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod);
@@ -145,6 +146,8 @@ private:
 		uint32_t block_size = 16;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		std::shared_ptr<MeshingDependency> meshing_dependency;
+		// TODO Workaround for VoxelLodTerrain, which doesnt support this well atm
+		bool cancellable_requests = true;
 	};
 
 	struct PriorityDependencyShared {
@@ -153,7 +156,7 @@ private:
 		// It's only used to adjust task priority so using a lock isn't worth it. In worst case scenario,
 		// a task will run much sooner or later than expected, but it will run in any case.
 		std::vector<Vector3> viewers;
-		unsigned int cancel_distance_squared = 999999;
+		float highest_view_distance = 999999;
 	};
 
 	struct World {
@@ -167,8 +170,10 @@ private:
 	struct PriorityDependency {
 		std::shared_ptr<PriorityDependencyShared> shared;
 		Vector3 world_position; // TODO Won't update while in queue. Can it be bad?
+		float radius;
 	};
 
+	void init_priority_dependency(PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume);
 	static int get_priority(const PriorityDependency &dep, uint8_t lod, float *out_closest_distance_sq);
 
 	class BlockDataRequest : public IVoxelTask {
@@ -190,6 +195,7 @@ private:
 		uint8_t type;
 		bool has_run = false;
 		bool too_far = false;
+		bool cancellable = true;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		// TODO Find a way to separate save, it doesnt need sorting
@@ -209,6 +215,7 @@ private:
 		bool blocky_enabled;
 		bool has_run = false;
 		bool too_far = false;
+		bool cancellable = true;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<MeshingDependency> meshing_dependency;
 		VoxelMesher::Output blocky_surfaces_output;

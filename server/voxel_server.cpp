@@ -110,9 +110,7 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	});
 }
 
-int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod,
-		float *out_closest_distance_sq) {
-
+int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod, float *out_closest_distance_sq) {
 	const std::vector<Vector3> &viewer_positions = dep.shared->viewers;
 	const Vector3 block_position = dep.world_position;
 
@@ -186,6 +184,11 @@ void VoxelServer::set_volume_voxel_library(uint32_t volume_id, Ref<VoxelLibrary>
 	volume.meshing_dependency->library = volume.voxel_library;
 }
 
+void VoxelServer::set_volume_cancellable_requests(uint32_t volume_id, bool cancellable) {
+	Volume &volume = _world.volumes.get(volume_id);
+	volume.cancellable_requests = cancellable;
+}
+
 void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.meshing_dependency->valid = false;
@@ -197,21 +200,28 @@ static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
 	return (pos << lod) * bs + Vector3i(bs / 2);
 }
 
+void VoxelServer::init_priority_dependency(
+		VoxelServer::PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume) {
+
+	const Vector3i voxel_pos = get_block_center(block_position, volume.block_size, lod);
+	const float block_radius = (volume.block_size << lod) / 2;
+	dep.shared = _world.shared_priority_dependency;
+	dep.world_position = volume.transform.xform(voxel_pos.to_vec3());
+	dep.radius = volume.transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
+}
+
 void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
 	ERR_FAIL_COND(volume.meshing_dependency == nullptr);
 
-	// TODO Handle spamming!
-	// It was previously done by remembering the request with a hashmap by position.
-	// But later we may want to solve it by not pre-emptively copying voxels, only do it on meshing using RWLock
-
 	BlockMeshRequest *r = memnew(BlockMeshRequest);
 	r->volume_id = volume_id;
 	r->blocks = input.blocks;
 	r->position = input.position;
 	r->lod = input.lod;
+	r->cancellable = volume.cancellable_requests;
 
 	r->smooth_enabled = volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
 	r->blocky_enabled = volume.voxel_library.is_valid() &&
@@ -219,9 +229,7 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) 
 
 	r->meshing_dependency = volume.meshing_dependency;
 
-	const Vector3i voxel_pos = get_block_center(input.position, volume.block_size, input.lod);
-	r->priority_dependency.world_position = volume.transform.xform(voxel_pos.to_vec3());
-	r->priority_dependency.shared = _world.shared_priority_dependency;
+	init_priority_dependency(r->priority_dependency, input.position, input.lod, volume);
 
 	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
 	_meshing_thread_pool.enqueue(r);
@@ -238,12 +246,11 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 	r.lod = lod;
 	r.type = BlockDataRequest::TYPE_LOAD;
 	r.block_size = volume.block_size;
+	r.cancellable = volume.cancellable_requests;
 
 	r.stream_dependency = volume.stream_dependency;
 
-	const Vector3i voxel_pos = get_block_center(block_pos, volume.block_size, lod);
-	r.priority_dependency.world_position = volume.transform.xform(voxel_pos.to_vec3());
-	r.priority_dependency.shared = _world.shared_priority_dependency;
+	init_priority_dependency(r.priority_dependency, block_pos, lod, volume);
 
 	BlockDataRequest *rp = memnew(BlockDataRequest(r));
 	_streaming_thread_pool.enqueue(rp);
@@ -459,7 +466,7 @@ void VoxelServer::process() {
 		// Cancel distance is increased because of two reasons:
 		// - Some volumes use a cubic area which has higher distances on their corners
 		// - Hysteresis is needed to reduce ping-pong
-		_world.shared_priority_dependency->cancel_distance_squared = squared(max_distance * 2);
+		_world.shared_priority_dependency->highest_view_distance = max_distance * 2;
 	}
 }
 
@@ -555,9 +562,12 @@ int VoxelServer::BlockDataRequest::get_priority() {
 	if (type == TYPE_SAVE) {
 		return 0;
 	}
-	float closest_distance_sq;
-	int p = VoxelServer::get_priority(priority_dependency, lod, &closest_distance_sq);
-	too_far = closest_distance_sq > priority_dependency.shared->cancel_distance_squared;
+	float closest_viewer_distance_sq;
+	const int p = VoxelServer::get_priority(priority_dependency, lod, &closest_viewer_distance_sq);
+	if (cancellable) {
+		const float closest_viewer_distance = Math::sqrt(closest_viewer_distance_sq);
+		too_far = closest_viewer_distance > priority_dependency.radius + priority_dependency.shared->highest_view_distance;
+	}
 	return p;
 }
 
@@ -650,9 +660,12 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 }
 
 int VoxelServer::BlockMeshRequest::get_priority() {
-	float closest_distance_sq;
-	int p = VoxelServer::get_priority(priority_dependency, lod, &closest_distance_sq);
-	too_far = closest_distance_sq > priority_dependency.shared->cancel_distance_squared;
+	float closest_viewer_distance_sq;
+	const int p = VoxelServer::get_priority(priority_dependency, lod, &closest_viewer_distance_sq);
+	if (cancellable) {
+		const float closest_viewer_distance = Math::sqrt(closest_viewer_distance_sq);
+		too_far = closest_viewer_distance > priority_dependency.radius + priority_dependency.shared->highest_view_distance;
+	}
 	return p;
 }
 
