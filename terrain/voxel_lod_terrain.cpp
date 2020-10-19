@@ -338,6 +338,7 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 		item.octree.create_from_lod_count(get_block_size(), p_lod_count, nda);
 	}
 
+	// Not entirely required, but changing LOD count at runtime is rarely needed
 	reset_maps();
 }
 
@@ -356,6 +357,7 @@ void VoxelLodTerrain::reset_maps() {
 				lod.map.instance();
 			}
 			lod.map->create(get_block_size_pow2(), lod_index);
+			lod.blocks_to_load.clear();
 
 			lod.last_view_distance_blocks = 0;
 
@@ -621,7 +623,6 @@ void VoxelLodTerrain::_process() {
 		// Ignore last lod because it can extend a little beyond due to the view distance setting.
 		// Instead, those blocks are unloaded by the octree forest management.
 		for (int lod_index = 0; lod_index < get_lod_count() - 1; ++lod_index) {
-
 			VOXEL_PROFILE_SCOPE();
 			Lod &lod = _lods[lod_index];
 
