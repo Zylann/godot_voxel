@@ -66,6 +66,11 @@ public:
 		bool is_default = false;
 	};
 
+	enum VolumeType {
+		VOLUME_SPARSE_GRID,
+		VOLUME_SPARSE_OCTREE
+	};
+
 	static VoxelServer *get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
@@ -73,18 +78,20 @@ public:
 	VoxelServer();
 	~VoxelServer();
 
-	uint32_t add_volume(ReceptionBuffers *buffers);
+	// TODO Rename functions to C convention
+	uint32_t add_volume(ReceptionBuffers *buffers, VolumeType type);
 	void set_volume_transform(uint32_t volume_id, Transform t);
 	void set_volume_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
 	void set_volume_voxel_library(uint32_t volume_id, Ref<VoxelLibrary> library);
-	void set_volume_cancellable_requests(uint32_t volume_id, bool cancellable);
+	void set_volume_octree_split_scale(uint32_t volume_id, float split_scale);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, BlockMeshInput &input);
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod);
 	void request_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod);
 	void remove_volume(uint32_t volume_id);
 
+	// TODO Rename functions to C convention
 	uint32_t add_viewer();
 	void remove_viewer(uint32_t viewer_id);
 	void set_viewer_position(uint32_t viewer_id, Vector3 position);
@@ -108,6 +115,13 @@ public:
 
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
+
+	static inline int get_octree_lod_block_region_extent(float split_scale) {
+		// This is a bounding radius of blocks around a viewer within which we may load them.
+		// It depends on the LOD split scale, which tells how close to a block we need to be for it to subdivide.
+		// Each LOD is fractal so that value is the same for each of them, multiplied by 2^lod.
+		return static_cast<int>(split_scale) * 2 + 2;
+	}
 
 private:
 	Dictionary _b_get_stats();
@@ -139,15 +153,15 @@ private:
 	};
 
 	struct Volume {
+		VolumeType type;
 		ReceptionBuffers *reception_buffers = nullptr;
 		Transform transform;
 		Ref<VoxelStream> stream;
 		Ref<VoxelLibrary> voxel_library;
 		uint32_t block_size = 16;
+		float octree_split_scale = 0;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		std::shared_ptr<MeshingDependency> meshing_dependency;
-		// TODO Workaround for VoxelLodTerrain, which doesnt support this well atm
-		bool cancellable_requests = true;
 	};
 
 	struct PriorityDependencyShared {
@@ -170,7 +184,8 @@ private:
 	struct PriorityDependency {
 		std::shared_ptr<PriorityDependencyShared> shared;
 		Vector3 world_position; // TODO Won't update while in queue. Can it be bad?
-		float radius;
+		// If the closest viewer is further away than this distance, the request can be cancelled as not worth it
+		float drop_distance_squared;
 	};
 
 	void init_priority_dependency(PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume);
@@ -195,7 +210,6 @@ private:
 		uint8_t type;
 		bool has_run = false;
 		bool too_far = false;
-		bool cancellable = true;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		// TODO Find a way to separate save, it doesnt need sorting
@@ -215,7 +229,6 @@ private:
 		bool blocky_enabled;
 		bool has_run = false;
 		bool too_far = false;
-		bool cancellable = true;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<MeshingDependency> meshing_dependency;
 		VoxelMesher::Output blocky_surfaces_output;

@@ -24,7 +24,7 @@ VoxelTerrain::VoxelTerrain() {
 	// Infinite by default
 	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(MAX_EXTENT));
 
-	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers);
+	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_GRID);
 
 	_map.instance();
 

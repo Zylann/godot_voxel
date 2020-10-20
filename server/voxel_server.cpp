@@ -140,9 +140,10 @@ int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod, float 
 	return priority;
 }
 
-uint32_t VoxelServer::add_volume(ReceptionBuffers *buffers) {
+uint32_t VoxelServer::add_volume(ReceptionBuffers *buffers, VolumeType type) {
 	CRASH_COND(buffers == nullptr);
 	Volume volume;
+	volume.type = type;
 	volume.reception_buffers = buffers;
 	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
 	return _world.volumes.create(volume);
@@ -184,9 +185,9 @@ void VoxelServer::set_volume_voxel_library(uint32_t volume_id, Ref<VoxelLibrary>
 	volume.meshing_dependency->library = volume.voxel_library;
 }
 
-void VoxelServer::set_volume_cancellable_requests(uint32_t volume_id, bool cancellable) {
+void VoxelServer::set_volume_octree_split_scale(uint32_t volume_id, float split_scale) {
 	Volume &volume = _world.volumes.get(volume_id);
-	volume.cancellable_requests = cancellable;
+	volume.octree_split_scale = split_scale;
 }
 
 void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
@@ -207,7 +208,27 @@ void VoxelServer::init_priority_dependency(
 	const float block_radius = (volume.block_size << lod) / 2;
 	dep.shared = _world.shared_priority_dependency;
 	dep.world_position = volume.transform.xform(voxel_pos.to_vec3());
-	dep.radius = volume.transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
+	const float transformed_block_radius =
+			volume.transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
+
+	switch (volume.type) {
+		case VOLUME_SPARSE_GRID:
+			// Distance beyond which no field of view can overlap the block
+			dep.drop_distance_squared =
+					squared(_world.shared_priority_dependency->highest_view_distance + transformed_block_radius);
+			break;
+
+		case VOLUME_SPARSE_OCTREE:
+			// Distance beyond which it is safe to drop a block without risking to block LOD subdivision.
+			// This does not depend on viewer's view distance, but on LOD precision instead.
+			dep.drop_distance_squared = squared(2.f * transformed_block_radius *
+												get_octree_lod_block_region_extent(volume.octree_split_scale));
+			break;
+
+		default:
+			CRASH_NOW_MSG("Unexpected type");
+			break;
+	}
 }
 
 void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) {
@@ -221,7 +242,6 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) 
 	r->blocks = input.blocks;
 	r->position = input.position;
 	r->lod = input.lod;
-	r->cancellable = volume.cancellable_requests;
 
 	r->smooth_enabled = volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
 	r->blocky_enabled = volume.voxel_library.is_valid() &&
@@ -246,7 +266,6 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 	r.lod = lod;
 	r.type = BlockDataRequest::TYPE_LOAD;
 	r.block_size = volume.block_size;
-	r.cancellable = volume.cancellable_requests;
 
 	r.stream_dependency = volume.stream_dependency;
 
@@ -564,10 +583,7 @@ int VoxelServer::BlockDataRequest::get_priority() {
 	}
 	float closest_viewer_distance_sq;
 	const int p = VoxelServer::get_priority(priority_dependency, lod, &closest_viewer_distance_sq);
-	if (cancellable) {
-		const float closest_viewer_distance = Math::sqrt(closest_viewer_distance_sq);
-		too_far = closest_viewer_distance > priority_dependency.radius + priority_dependency.shared->highest_view_distance;
-	}
+	too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
 
@@ -662,10 +678,7 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 int VoxelServer::BlockMeshRequest::get_priority() {
 	float closest_viewer_distance_sq;
 	const int p = VoxelServer::get_priority(priority_dependency, lod, &closest_viewer_distance_sq);
-	if (cancellable) {
-		const float closest_viewer_distance = Math::sqrt(closest_viewer_distance_sq);
-		too_far = closest_viewer_distance > priority_dependency.radius + priority_dependency.shared->highest_view_distance;
-	}
+	too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
 

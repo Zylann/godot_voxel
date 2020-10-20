@@ -56,8 +56,8 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	PRINT_VERBOSE("Construct VoxelLodTerrain");
 
-	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers);
-	VoxelServer::get_singleton()->set_volume_cancellable_requests(_volume_id, false);
+	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_OCTREE);
+	VoxelServer::get_singleton()->set_volume_octree_split_scale(_volume_id, get_lod_split_scale());
 
 	_lods[0].map.instance();
 
@@ -310,6 +310,8 @@ void VoxelLodTerrain::set_lod_split_scale(float p_lod_split_scale) {
 		// Because `set_split_scale` may clamp it...
 		_lod_split_scale = item.octree.get_split_scale();
 	}
+
+	VoxelServer::get_singleton()->set_volume_octree_split_scale(_volume_id, get_lod_split_scale());
 }
 
 float VoxelLodTerrain::get_lod_split_scale() const {
@@ -398,10 +400,7 @@ NodePath VoxelLodTerrain::get_viewer_path() const {
 }
 
 int VoxelLodTerrain::get_block_region_extent() const {
-	// This is the radius of blocks around the viewer in which we may load them.
-	// It depends on the LOD split scale, which tells how close to a block we need to be for it to subdivide.
-	// Each LOD is fractal so that value is the same for each of them.
-	return static_cast<int>(_lod_split_scale) * 2 + 2;
+	return VoxelServer::get_octree_lod_block_region_extent(_lod_split_scale);
 }
 
 Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, int lod_index) const {
