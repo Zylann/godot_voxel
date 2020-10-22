@@ -6,7 +6,6 @@
 #include <core/math/vector3.h>
 
 struct Vector3i {
-
 	static const unsigned int AXIS_X = 0;
 	static const unsigned int AXIS_Y = 1;
 	static const unsigned int AXIS_Z = 2;
@@ -141,6 +140,10 @@ struct Vector3i {
 
 	inline Vector3i udiv(const Vector3i d) const {
 		return Vector3i(::udiv(x, d.x), ::udiv(y, d.y), ::udiv(z, d.z));
+	}
+
+	inline Vector3i floordiv(const int d) const {
+		return Vector3i(::udiv(x, d), ::udiv(y, d), ::udiv(z, d));
 	}
 
 	inline Vector3i wrap(const Vector3i d) const {

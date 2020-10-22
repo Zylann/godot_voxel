@@ -58,6 +58,9 @@ public:
 	void post_edit_area(Rect3i p_box);
 	void post_edit_block_lod0(Vector3i bpos);
 
+	void set_voxel_bounds(Rect3i p_box);
+	inline Rect3i get_voxel_bounds() const { return _bounds_in_voxels; }
+
 	Ref<VoxelTool> get_voxel_tool();
 
 	struct Stats {
@@ -125,6 +128,8 @@ private:
 	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
 
 	void _b_save_modified_blocks();
+	void _b_set_voxel_bounds(AABB aabb);
+	AABB _b_get_voxel_bounds() const;
 	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const;
 
 private:
@@ -137,6 +142,12 @@ private:
 	// Not using a pointer because Map storage is stable.
 	Map<Vector3i, OctreeItem> _lod_octrees;
 	Rect3i _last_octree_region_box;
+
+	// Area within which voxels can exist.
+	// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be
+	// approximated to the closest chunk.
+	Rect3i _bounds_in_voxels;
+	//Rect3i _prev_bounds_in_voxels;
 
 	NodePath _viewer_path;
 

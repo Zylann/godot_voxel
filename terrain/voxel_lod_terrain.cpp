@@ -11,8 +11,6 @@
 #include <core/core_string_names.h>
 #include <core/engine.h>
 
-const uint32_t MAIN_THREAD_MESHING_BUDGET_MS = 8;
-
 namespace {
 
 Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType primitive, int compression_flags,
@@ -55,6 +53,9 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	// due to how ClassDB gets its default values.
 
 	PRINT_VERBOSE("Construct VoxelLodTerrain");
+
+	// Infinite by default
+	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
 
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_OCTREE);
 	VoxelServer::get_singleton()->set_volume_octree_split_scale(_volume_id, get_lod_split_scale());
@@ -301,7 +302,8 @@ void VoxelLodTerrain::set_lod_split_scale(float p_lod_split_scale) {
 		return;
 	}
 
-	_lod_split_scale = CLAMP(p_lod_split_scale, VoxelConstants::MINIMUM_LOD_SPLIT_SCALE, VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE);
+	_lod_split_scale =
+			clamp(p_lod_split_scale, VoxelConstants::MINIMUM_LOD_SPLIT_SCALE, VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE);
 
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 		OctreeItem &item = E->value();
@@ -621,7 +623,8 @@ void VoxelLodTerrain::_process() {
 
 		// Ignore last lod because it can extend a little beyond due to the view distance setting.
 		// Instead, those blocks are unloaded by the octree forest management.
-		for (int lod_index = 0; lod_index < get_lod_count() - 1; ++lod_index) {
+		// Iterating from big to small LOD so we can exit earlier.
+		for (int lod_index = get_lod_count() - 1; lod_index > 0; --lod_index) {
 			VOXEL_PROFILE_SCOPE();
 			Lod &lod = _lods[lod_index];
 
@@ -631,8 +634,19 @@ void VoxelLodTerrain::_process() {
 			unsigned int block_size_po2 = _lods[0].map->get_block_size_pow2() + lod_index;
 			Vector3i viewer_block_pos_within_lod = VoxelMap::voxel_to_block_b(viewer_pos, block_size_po2);
 
-			Rect3i new_box = Rect3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(block_region_extent));
-			Rect3i prev_box = Rect3i::from_center_extents(lod.last_viewer_block_pos, Vector3i(lod.last_view_distance_blocks));
+			const Rect3i bounds_in_blocks = Rect3i(
+					_bounds_in_voxels.pos >> block_size_po2,
+					_bounds_in_voxels.size >> block_size_po2);
+
+			const Rect3i new_box =
+					Rect3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(block_region_extent));
+			const Rect3i prev_box =
+					Rect3i::from_center_extents(lod.last_viewer_block_pos, Vector3i(lod.last_view_distance_blocks));
+
+			if (!new_box.intersects(bounds_in_blocks) && !prev_box.intersects(bounds_in_blocks)) {
+				// If this box doesn't intersect either now or before, there is no chance a smaller one will
+				break;
+			}
 
 			// Eliminate pending blocks that aren't needed
 
@@ -681,10 +695,13 @@ void VoxelLodTerrain::_process() {
 		const unsigned int octree_size = 1 << octree_size_po2;
 		const unsigned int octree_region_extent = 1 + _view_distance_voxels / (1 << octree_size_po2);
 
-		Vector3i viewer_octree_pos = (Vector3i(viewer_pos) + Vector3i(octree_size / 2)) >> octree_size_po2;
+		const Vector3i viewer_octree_pos = (Vector3i(viewer_pos) + Vector3i(octree_size / 2)) >> octree_size_po2;
 
-		Rect3i new_box = Rect3i::from_center_extents(viewer_octree_pos, Vector3i(octree_region_extent));
-		Rect3i prev_box = _last_octree_region_box;
+		const Rect3i bounds_in_octrees = _bounds_in_voxels.downscaled(octree_size);
+
+		const Rect3i new_box = Rect3i::from_center_extents(viewer_octree_pos, Vector3i(octree_region_extent))
+									   .clipped(bounds_in_octrees);
+		const Rect3i prev_box = _last_octree_region_box;
 
 		if (new_box != prev_box) {
 			VOXEL_PROFILE_SCOPE();
@@ -1059,7 +1076,7 @@ void VoxelLodTerrain::_process() {
 
 		// Allocate milliseconds max to upload meshes
 		const OS &os = *OS::get_singleton();
-		const uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS;
+		const uint32_t timeout = os.get_ticks_msec() + VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS;
 
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
 		// This also proved to be very slow compared to the meshing process itself...
@@ -1462,8 +1479,32 @@ void VoxelLodTerrain::restart_stream() {
 	_on_stream_params_changed();
 }
 
+void VoxelLodTerrain::set_voxel_bounds(Rect3i p_box) {
+	_bounds_in_voxels =
+			p_box.clipped(Rect3i::from_center_extents(Vector3i(), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT)));
+	// Round to octree size
+	int octree_size = get_block_size() << get_lod_count();
+	_bounds_in_voxels = _bounds_in_voxels.snapped(octree_size);
+	// Can't have a smaller region than one octree
+	for (unsigned i = 0; i < Vector3i::AXIS_COUNT; ++i) {
+		if (_bounds_in_voxels.size[i] < octree_size) {
+			_bounds_in_voxels.size[i] = octree_size;
+		}
+	}
+}
+
 void VoxelLodTerrain::_b_save_modified_blocks() {
 	save_all_modified_blocks(true);
+}
+
+void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {
+	// TODO Please Godot, have an integer AABB!
+	set_voxel_bounds(Rect3i(aabb.position.round(), aabb.size.round()));
+}
+
+AABB VoxelLodTerrain::_b_get_voxel_bounds() const {
+	const Rect3i b = get_voxel_bounds();
+	return AABB(b.pos.to_vec3(), b.size.to_vec3());
 }
 
 // DEBUG LAND
@@ -1602,21 +1643,30 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor"), &VoxelLodTerrain::set_run_stream_in_editor);
 	ClassDB::bind_method(D_METHOD("is_stream_running_in_editor"), &VoxelLodTerrain::is_stream_running_in_editor);
 
+	ClassDB::bind_method(D_METHOD("set_voxel_bounds"), &VoxelLodTerrain::_b_set_voxel_bounds);
+	ClassDB::bind_method(D_METHOD("get_voxel_bounds"), &VoxelLodTerrain::_b_get_voxel_bounds);
+
 	ClassDB::bind_method(D_METHOD("debug_raycast_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_block);
 	ClassDB::bind_method(D_METHOD("debug_get_block_info", "block_pos", "lod"), &VoxelLodTerrain::debug_get_block_info);
 	ClassDB::bind_method(D_METHOD("debug_get_octrees"), &VoxelLodTerrain::debug_get_octrees);
-	ClassDB::bind_method(D_METHOD("debug_print_sdf_top_down", "center", "extents"), &VoxelLodTerrain::_b_debug_print_sdf_top_down);
+	ClassDB::bind_method(D_METHOD("debug_print_sdf_top_down", "center", "extents"),
+			&VoxelLodTerrain::_b_debug_print_sdf_top_down);
 
 	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream", "get_stream");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"),
+			"set_stream", "get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"), "set_material", "get_material");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"), "set_collision_lod_count", "get_collision_lod_count");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"),
+			"set_material", "get_material");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"),
+			"set_generate_collisions", "get_generate_collisions");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"),
+			"set_collision_lod_count", "get_collision_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
 			"set_run_stream_in_editor", "is_stream_running_in_editor");
+	ADD_PROPERTY(PropertyInfo(Variant::AABB, "voxel_bounds"), "set_voxel_bounds", "get_voxel_bounds");
 }

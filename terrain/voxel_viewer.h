@@ -13,6 +13,7 @@ public:
 	// Distance in world space units
 	void set_view_distance(unsigned int distance);
 	unsigned int get_view_distance() const;
+	// TODO Collision distance
 
 	void set_requires_visuals(bool enabled);
 	bool is_requiring_visuals() const;

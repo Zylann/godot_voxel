@@ -14,8 +14,6 @@ class VoxelTool;
 class VoxelTerrain : public Spatial {
 	GDCLASS(VoxelTerrain, Spatial)
 public:
-	static const unsigned int MAX_EXTENT = 0x1fffffff;
-	static const unsigned int MAX_SIZE = 2 * MAX_EXTENT; // 1,073,741,822 voxels
 	static const unsigned int MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME = 512;
 
 	VoxelTerrain();

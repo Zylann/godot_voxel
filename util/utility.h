@@ -7,6 +7,10 @@
 #include <core/vector.h>
 #include <vector>
 
+#ifdef DEBUG_ENABLED
+#include <core/error_macros.h>
+#endif
+
 class Mesh;
 class Object;
 
@@ -166,7 +170,30 @@ inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
 	dst.insert(dst.end(), src.begin(), src.end());
 }
 
+// TODO Rename udiv => floordiv
+
+// Performs euclidean division, aka floored division.
+// This implementation expects a strictly positive divisor.
+//
+//    x   | `/` | udiv
+// ----------------------
+//    -6  | -2  | -2
+//    -5  | -1  | -2
+//    -4  | -1  | -2
+//    -3  | -1  | -1
+//    -2  | 0   | -1
+//    -1  | 0   | -1
+//    0   | 0   | 0
+//    1   | 0   | 0
+//    2   | 0   | 0
+//    3   | 1   | 1
+//    4   | 1   | 1
+//    5   | 1   | 1
+//    6   | 2   | 2
 inline int udiv(int x, int d) {
+#ifdef DEBUG_ENABLED
+	CRASH_COND(d < 0);
+#endif
 	if (x < 0) {
 		return (x - d + 1) / d;
 	} else {

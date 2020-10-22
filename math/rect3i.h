@@ -237,6 +237,10 @@ public:
 			   pos.x + size.x >= other.pos.x + other.size.x &&
 			   pos.y + size.y >= other.pos.y + other.size.y;
 	}
+
+	inline Rect3i snapped(int step) const {
+		return Rect3i(pos.floordiv(step) * step, size.floordiv(step) * step);
+	}
 };
 
 inline bool operator!=(const Rect3i &a, const Rect3i &b) {

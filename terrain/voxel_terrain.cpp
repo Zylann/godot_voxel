@@ -6,6 +6,7 @@
 #include "../util/profiling.h"
 #include "../util/profiling_clock.h"
 #include "../util/utility.h"
+#include "../voxel_constants.h"
 #include "../voxel_string_names.h"
 #include "voxel_block.h"
 #include "voxel_map.h"
@@ -14,15 +15,13 @@
 #include <core/engine.h>
 #include <scene/3d/mesh_instance.h>
 
-const uint32_t MAIN_THREAD_MESHING_BUDGET_MS = 8;
-
 VoxelTerrain::VoxelTerrain() {
 	// Note: don't do anything heavy in the constructor.
 	// Godot may create and destroy dozens of instances of all node types on startup,
 	// due to how ClassDB gets its default values.
 
 	// Infinite by default
-	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(MAX_EXTENT));
+	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
 
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_GRID);
 
@@ -1150,7 +1149,7 @@ void VoxelTerrain::_process() {
 
 		OS &os = *OS::get_singleton();
 
-		const uint32_t timeout = os.get_ticks_msec() + MAIN_THREAD_MESHING_BUDGET_MS;
+		const uint32_t timeout = os.get_ticks_msec() + VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS;
 		size_t queue_index = 0;
 
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
@@ -1279,7 +1278,12 @@ bool VoxelTerrain::is_stream_running_in_editor() const {
 }
 
 void VoxelTerrain::set_bounds(Rect3i box) {
-	_bounds_in_voxels = box.clipped(Rect3i::from_center_extents(Vector3i(), Vector3i(MAX_EXTENT)));
+	_bounds_in_voxels = box.clipped(
+			Rect3i::from_center_extents(Vector3i(), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT)));
+
+	// Round to block size
+	_bounds_in_voxels = _bounds_in_voxels.snapped(1 << get_block_size_pow2());
+
 	const unsigned int largest_dimension = static_cast<unsigned int>(max(max(box.size.x, box.size.y), box.size.z));
 	if (largest_dimension > MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME) {
 		// Cap view distance to make sure you don't accidentally blow up memory when changing parameters
@@ -1361,6 +1365,7 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor", "enable"), &VoxelTerrain::set_run_stream_in_editor);
 	ClassDB::bind_method(D_METHOD("is_stream_running_in_editor"), &VoxelTerrain::is_stream_running_in_editor);
 
+	// TODO Rename `_voxel_bounds`
 	ClassDB::bind_method(D_METHOD("set_bounds"), &VoxelTerrain::_b_set_bounds);
 	ClassDB::bind_method(D_METHOD("get_bounds"), &VoxelTerrain::_b_get_bounds);
 
