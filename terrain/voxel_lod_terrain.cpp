@@ -1483,7 +1483,7 @@ void VoxelLodTerrain::set_voxel_bounds(Rect3i p_box) {
 	_bounds_in_voxels =
 			p_box.clipped(Rect3i::from_center_extents(Vector3i(), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT)));
 	// Round to octree size
-	int octree_size = get_block_size() << get_lod_count();
+	const int octree_size = get_block_size() << (get_lod_count() - 1);
 	_bounds_in_voxels = _bounds_in_voxels.snapped(octree_size);
 	// Can't have a smaller region than one octree
 	for (unsigned i = 0; i < Vector3i::AXIS_COUNT; ++i) {
