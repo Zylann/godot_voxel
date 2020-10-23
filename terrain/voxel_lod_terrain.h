@@ -2,9 +2,14 @@
 #define VOXEL_LOD_TERRAIN_HPP
 
 #include "../server/voxel_server.h"
+#include "../util/direct_mesh_instance.h"
 #include "lod_octree.h"
 #include <core/set.h>
 #include <scene/3d/spatial.h>
+
+#ifdef TOOLS_ENABLED
+#include "../editor/voxel_debug.h"
+#endif
 
 class VoxelMap;
 class VoxelTool;
@@ -53,6 +58,7 @@ public:
 
 	unsigned int get_block_size_pow2() const;
 	void set_block_size_po2(unsigned int p_block_size_po2);
+	unsigned int get_block_size() const;
 
 	// These must be called after an edit
 	void post_edit_area(Rect3i p_box);
@@ -92,6 +98,11 @@ public:
 	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
 	Array debug_get_octrees() const;
 
+#ifdef TOOLS_ENABLED
+	void set_show_gizmos(bool enable);
+	bool is_showing_gizmos() const { return _show_gizmos_enabled; }
+#endif
+
 protected:
 	static void _bind_methods();
 
@@ -99,7 +110,6 @@ protected:
 	void _process();
 
 private:
-	unsigned int get_block_size() const;
 	Spatial *get_viewer() const;
 	void immerge_block(Vector3i block_pos, int lod_index);
 
@@ -132,11 +142,15 @@ private:
 	AABB _b_get_voxel_bounds() const;
 	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const;
 
-private:
 	struct OctreeItem {
 		LodOctree octree;
 	};
 
+#ifdef TOOLS_ENABLED
+	void update_gizmos();
+#endif
+
+private:
 	// This terrain type is a sparse grid of octrees.
 	// Indexed by a grid coordinate whose step is the size of the highest-LOD block.
 	// Not using a pointer because Map storage is stable.
@@ -188,6 +202,10 @@ private:
 	unsigned int _view_distance_voxels = 512;
 
 	bool _run_stream_in_editor = true;
+#ifdef TOOLS_ENABLED
+	bool _show_gizmos_enabled = false;
+	VoxelDebug::DebugRenderer _debug_renderer;
+#endif
 
 	Stats _stats;
 };

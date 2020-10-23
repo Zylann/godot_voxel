@@ -20,6 +20,7 @@ files = [
 	"server/*.cpp",
 	"math/*.cpp",
 	"edition/*.cpp",
+	"editor/*.cpp",
 	"editor/graph/*.cpp",
 	"editor/terrain/*.cpp",
 	"thirdparty/lz4/*.c"

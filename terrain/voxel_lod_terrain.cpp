@@ -440,6 +440,11 @@ void VoxelLodTerrain::_notification(int p_what) {
 					});
 				}
 			}
+#ifdef TOOLS_ENABLED
+			if (is_showing_gizmos()) {
+				_debug_renderer.set_world(is_visible_in_tree() ? world : nullptr);
+			}
+#endif
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD: {
@@ -450,6 +455,9 @@ void VoxelLodTerrain::_notification(int p_what) {
 					});
 				}
 			}
+#ifdef TOOLS_ENABLED
+			_debug_renderer.set_world(nullptr);
+#endif
 		} break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED: {
@@ -461,6 +469,11 @@ void VoxelLodTerrain::_notification(int p_what) {
 					});
 				}
 			}
+#ifdef TOOLS_ENABLED
+			if (is_showing_gizmos()) {
+				_debug_renderer.set_world(is_visible_in_tree() ? *get_world() : nullptr);
+			}
+#endif
 		} break;
 
 			// TODO Listen for transform changes
@@ -1154,6 +1167,12 @@ void VoxelLodTerrain::_process() {
 	}
 
 	_stats.time_process_update_responses = profiling_clock.restart();
+
+#ifdef TOOLS_ENABLED
+	if (is_showing_gizmos()) {
+		update_gizmos();
+	}
+#endif
 }
 
 void VoxelLodTerrain::flush_pending_lod_edits() {
@@ -1575,6 +1594,45 @@ Array VoxelLodTerrain::debug_get_octrees() const {
 	}
 	return positions;
 }
+
+#ifdef TOOLS_ENABLED
+
+void VoxelLodTerrain::update_gizmos() {
+	VOXEL_PROFILE_SCOPE();
+
+	VoxelDebug::DebugRenderer &dr = _debug_renderer;
+	dr.begin();
+
+	const int octree_size = get_block_size() << (get_lod_count() - 1);
+	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
+		Transform t = get_global_transform();
+		t.scale(Vector3(octree_size, octree_size, octree_size));
+		t.translate(E->key().to_vec3());
+		dr.draw_box(t, VoxelDebug::ID_OCTREE_BOUNDS);
+	}
+
+	const float bounds_in_voxels_len = _bounds_in_voxels.size.length();
+	if (bounds_in_voxels_len < 10000) {
+		Transform t = get_global_transform();
+		Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
+		t.scale(_bounds_in_voxels.size.to_vec3() + margin * 2.f);
+		t.origin = _bounds_in_voxels.pos.to_vec3() - margin;
+		dr.draw_box(t, VoxelDebug::ID_VOXEL_BOUNDS);
+	}
+
+	dr.end();
+}
+
+void VoxelLodTerrain::set_show_gizmos(bool enable) {
+	_show_gizmos_enabled = enable;
+	if (_show_gizmos_enabled) {
+		_debug_renderer.set_world(is_visible_in_tree() ? *get_world() : nullptr);
+	} else {
+		_debug_renderer.clear();
+	}
+}
+
+#endif
 
 Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const {
 	Array image_array;

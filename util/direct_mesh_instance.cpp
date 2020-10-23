@@ -48,7 +48,9 @@ void DirectMeshInstance::set_mesh(Ref<Mesh> mesh) {
 	ERR_FAIL_COND(!_mesh_instance.is_valid());
 	VisualServer &vs = *VisualServer::get_singleton();
 	if (mesh.is_valid()) {
-		vs.instance_set_base(_mesh_instance, mesh->get_rid());
+		if (_mesh != mesh) {
+			vs.instance_set_base(_mesh_instance, mesh->get_rid());
+		}
 	} else {
 		vs.instance_set_base(_mesh_instance, RID());
 	}

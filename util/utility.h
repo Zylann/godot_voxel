@@ -229,12 +229,4 @@ inline bool try_call_script(const Object *obj, StringName method_name, Variant a
 	return try_call_script(obj, method_name, args, 3, out_ret);
 }
 
-#if TOOLS_ENABLED
-namespace VoxelDebug {
-void create_debug_box_mesh();
-void free_debug_box_mesh();
-Ref<Mesh> get_debug_box_mesh();
-} // namespace VoxelDebug
-#endif
-
 #endif // HEADER_VOXEL_UTILITY_H

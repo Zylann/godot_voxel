@@ -134,10 +134,6 @@ struct Vector3i {
 		::sort_min_max(a.z, b.z);
 	}
 
-	inline Vector3i udiv(int d) const {
-		return Vector3i(::udiv(x, d), ::udiv(y, d), ::udiv(z, d));
-	}
-
 	inline Vector3i udiv(const Vector3i d) const {
 		return Vector3i(::udiv(x, d.x), ::udiv(y, d.y), ::udiv(z, d.z));
 	}

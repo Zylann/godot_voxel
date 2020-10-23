@@ -200,8 +200,8 @@ public:
 
 	inline Rect3i downscaled(int step_size) const {
 		Rect3i o;
-		o.pos = pos.udiv(step_size);
-		Vector3i max_pos = (pos + size - Vector3i(1)).udiv(step_size);
+		o.pos = pos.floordiv(step_size);
+		Vector3i max_pos = (pos + size - Vector3i(1)).floordiv(step_size);
 		o.size = max_pos - o.pos + Vector3i(1);
 		return o;
 	}

@@ -69,6 +69,11 @@ void VoxelTerrainEditorPlugin::set_node(Node *node) {
 		// Also moving the node around in the tree triggers exit/enter so have to listen for both.
 		_node->disconnect("tree_entered", this, "_on_terrain_tree_entered");
 		_node->disconnect("tree_exited", this, "_on_terrain_tree_exited");
+
+		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
+		if (vlt != nullptr) {
+			vlt->set_show_gizmos(false);
+		}
 	}
 
 	_node = node;
@@ -76,12 +81,27 @@ void VoxelTerrainEditorPlugin::set_node(Node *node) {
 	if (_node != nullptr) {
 		_node->connect("tree_entered", this, "_on_terrain_tree_entered", varray(_node));
 		_node->connect("tree_exited", this, "_on_terrain_tree_exited", varray(_node));
+
+		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
+		if (vlt != nullptr) {
+			vlt->set_show_gizmos(true);
+		}
 	}
 }
 
 void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 	_restart_stream_button->set_visible(visible);
-	// Can't use `make_visible(false)` to reset our reference to the node,
+
+	if (_node != nullptr) {
+		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
+		if (vlt != nullptr) {
+			vlt->set_show_gizmos(visible);
+		}
+	}
+
+	// TODO There are deselection problems I cannot fix cleanly!
+
+	// Can't use `make_visible(false)` to reset our reference to the node or reset gizmos,
 	// because of https://github.com/godotengine/godot/issues/40166
 	// So we'll need to check if _node is null all over the place
 }
@@ -99,11 +119,11 @@ void VoxelTerrainEditorPlugin::_on_restart_stream_button_pressed() {
 }
 
 void VoxelTerrainEditorPlugin::_on_terrain_tree_entered(Node *node) {
-	// If the node exited the tree because it was deleted, signals we connected should automatically disconnect.
 	_node = node;
 }
 
 void VoxelTerrainEditorPlugin::_on_terrain_tree_exited(Node *node) {
+	// If the node exited the tree because it was deleted, signals we connected should automatically disconnect.
 	_node = nullptr;
 }
 

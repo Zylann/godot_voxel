@@ -32,6 +32,10 @@
 #include "voxel_string_names.h"
 #include <core/engine.h>
 
+#ifdef TOOLS_ENABLED
+#include "editor/voxel_debug.h"
+#endif
+
 void register_voxel_types() {
 	VoxelMemoryPool::create_singleton();
 	VoxelStringNames::create_singleton();
@@ -94,8 +98,6 @@ void register_voxel_types() {
 	PRINT_VERBOSE(String("Size of VoxelBlock: {0}").format(varray((int)sizeof(VoxelBlock))));
 
 #ifdef TOOLS_ENABLED
-	VoxelDebug::create_debug_box_mesh();
-
 	EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
 #endif
@@ -122,7 +124,7 @@ void unregister_voxel_types() {
 	// TODO No remove?
 
 #ifdef TOOLS_ENABLED
-	VoxelDebug::free_debug_box_mesh();
+	VoxelDebug::free_resources();
 
 	// TODO Seriously, no remove?
 	//EditorPlugins::remove_by_type<VoxelGraphEditorPlugin>();

@@ -695,7 +695,8 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 
 			case VoxelGeneratorGraph::NODE_IMAGE_2D: {
 				const PNodeImage2D &n = read<PNodeImage2D>(_program, pc);
-				// TODO Not great, but in Godot 4.0 we won't need to lock anymore. Otherwise, need to do it in a pre-run and post-run
+				// TODO Not great, but in Godot 4.0 we won't need to lock anymore.
+				// Otherwise, need to do it in a pre-run and post-run
 				n.p_image->lock();
 				memory[n.a_out] = get_pixel_repeat(*n.p_image, memory[n.a_x], memory[n.a_y]);
 				n.p_image->unlock();
