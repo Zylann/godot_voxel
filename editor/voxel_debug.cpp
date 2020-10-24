@@ -12,7 +12,7 @@ bool g_finalized = false;
 template <typename T>
 void raw_copy_to(PoolVector<T> &dst, const T *src, unsigned int count) {
 	dst.resize(count);
-	PoolVector<T>::Write w = dst.write();
+	typename PoolVector<T>::Write w = dst.write();
 	memcpy(w.ptr(), src, count * sizeof(T));
 }
 
