@@ -110,7 +110,7 @@ protected:
 	void _process();
 
 private:
-	Spatial *get_viewer() const;
+	const Spatial *get_viewer() const;
 	void immerge_block(Vector3i block_pos, int lod_index);
 
 	void start_updater();

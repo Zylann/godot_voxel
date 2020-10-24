@@ -242,7 +242,7 @@ void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
 	_view_distance_voxels = p_distance_in_voxels;
 }
 
-Spatial *VoxelLodTerrain::get_viewer() const {
+const Spatial *VoxelLodTerrain::get_viewer() const {
 	if (!is_inside_tree()) {
 		return nullptr;
 	}
@@ -463,7 +463,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED: {
-			bool visible = is_visible();
+			const bool visible = is_visible();
 			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([visible](VoxelBlock *block) {
@@ -479,13 +479,15 @@ void VoxelLodTerrain::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
+			const Transform transform = get_global_transform();
+			VoxelServer::get_singleton()->set_volume_transform(_volume_id, transform);
+
 			if (!is_inside_tree()) {
 				// The transform and other properties can be set by the scene loader,
 				// before we enter the tree
 				return;
 			}
 
-			Transform transform = get_global_transform();
 			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				if (_lods[lod_index].map.is_valid()) {
 					_lods[lod_index].map->for_all_blocks([&transform](VoxelBlock *block) {
@@ -508,11 +510,12 @@ void VoxelLodTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &ou
 
 	} else {
 		// TODO Have option to use viewport camera
-		Spatial *viewer = get_viewer();
+		const Spatial *viewer = get_viewer();
 		if (viewer) {
 			Transform gt = viewer->get_global_transform();
-			out_pos = gt.origin;
-			out_direction = -gt.basis.get_axis(Vector3::AXIS_Z);
+			const Transform world_to_local = get_global_transform().affine_inverse();
+			out_pos = world_to_local.xform(gt.origin);
+			out_direction = world_to_local.basis.xform(-gt.basis.get_axis(Vector3::AXIS_Z));
 
 		} else {
 			// TODO Just remember last viewer pos
@@ -623,8 +626,7 @@ void VoxelLodTerrain::_process() {
 		return;
 	}
 
-	// Get viewer location
-	// TODO Transform to local (Spatial Transform)
+	// Get viewer location in voxel space
 	Vector3 viewer_pos;
 	Vector3 viewer_direction;
 	get_viewer_pos_and_direction(viewer_pos, viewer_direction);
@@ -1550,10 +1552,11 @@ AABB VoxelLodTerrain::_b_get_voxel_bounds() const {
 // DEBUG LAND
 
 Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const {
-	Vector3 pos = world_origin;
-	Vector3 dir = world_direction;
-	float max_distance = 256;
-	float step = 2.f;
+	const Transform world_to_local = get_global_transform().affine_inverse();
+	Vector3 pos = world_to_local.xform(world_origin);
+	const Vector3 dir = world_to_local.basis.xform(world_direction);
+	const float max_distance = 256;
+	const float step = 2.f;
 	float distance = 0.f;
 
 	Array hits;

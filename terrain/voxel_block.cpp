@@ -223,7 +223,7 @@ void VoxelBlock::set_shader_material(Ref<ShaderMaterial> material) {
 
 void VoxelBlock::set_transition_mask(uint8_t m) {
 	CRASH_COND(m >= (1 << Cube::SIDE_COUNT));
-	uint8_t diff = _transition_mask ^ m;
+	const uint8_t diff = _transition_mask ^ m;
 	if (diff == 0) {
 		return;
 	}

@@ -20,6 +20,8 @@ private:
 	static void _bind_methods();
 };
 
+// TODO Need to review VoxelTool to account for transformed volumes
+
 // High-level generic voxel edition utility.
 // Ease of use comes at cost.
 // It's not a class to instantiate alone, get it from the voxel objects you want to work with

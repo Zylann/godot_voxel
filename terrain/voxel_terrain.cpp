@@ -20,6 +20,8 @@ VoxelTerrain::VoxelTerrain() {
 	// Godot may create and destroy dozens of instances of all node types on startup,
 	// due to how ClassDB gets its default values.
 
+	set_notify_transform(true);
+
 	// Infinite by default
 	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
 
@@ -743,7 +745,21 @@ void VoxelTerrain::_notification(int p_what) {
 			_map->for_all_blocks(SetParentVisibilityAction(is_visible()));
 			break;
 
-			// TODO Listen for transform changes
+		case NOTIFICATION_TRANSFORM_CHANGED: {
+			const Transform transform = get_global_transform();
+			VoxelServer::get_singleton()->set_volume_transform(_volume_id, transform);
+
+			if (!is_inside_tree()) {
+				// The transform and other properties can be set by the scene loader,
+				// before we enter the tree
+				return;
+			}
+
+			_map->for_all_blocks([&transform](VoxelBlock *block) {
+				block->set_parent_transform(transform);
+			});
+
+		} break;
 
 		default:
 			break;
@@ -819,6 +835,7 @@ void VoxelTerrain::_process() {
 	std::vector<size_t> unpaired_viewer_indexes;
 	{
 		// Our node doesn't have bounds yet, so for now viewers are always paired.
+		// TODO Update: the node has bounds now, need to change this
 
 		// Destroyed viewers
 		for (size_t i = 0; i < _paired_viewers.size(); ++i) {
@@ -830,8 +847,16 @@ void VoxelTerrain::_process() {
 			}
 		}
 
+		const Transform local_to_world_transform = get_global_transform();
+		const Transform world_to_local_transform = local_to_world_transform.affine_inverse();
+
+		// Note, this does not support non-uniform scaling
+		// TODO There is probably a better way to do this
+		const float view_distance_scale = world_to_local_transform.basis.xform(Vector3(1, 0, 0)).length();
+
 		// New viewers and updates
-		VoxelServer::get_singleton()->for_each_viewer([this](const VoxelServer::Viewer &viewer, uint32_t viewer_id) {
+		VoxelServer::get_singleton()->for_each_viewer([this, view_distance_scale, world_to_local_transform](
+															  const VoxelServer::Viewer &viewer, uint32_t viewer_id) {
 			size_t i;
 			if (!try_get_paired_viewer_index(viewer_id, i)) {
 				PairedViewer p;
@@ -844,9 +869,13 @@ void VoxelTerrain::_process() {
 
 			p.prev_state = p.state;
 
+			const unsigned int view_distance_voxels =
+					static_cast<unsigned int>(static_cast<float>(viewer.view_distance) * view_distance_scale);
+			const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
+
 			p.state.view_distance_blocks =
-					min(viewer.view_distance >> get_block_size_pow2(), _max_view_distance_blocks);
-			p.state.block_position = _map->voxel_to_block(Vector3i(viewer.world_position));
+					min(view_distance_voxels >> get_block_size_pow2(), _max_view_distance_blocks);
+			p.state.block_position = _map->voxel_to_block(Vector3i(local_position));
 			p.state.requires_collisions = VoxelServer::get_singleton()->is_viewer_requiring_collisions(viewer_id);
 			p.state.requires_meshes = VoxelServer::get_singleton()->is_viewer_requiring_visuals(viewer_id);
 		});
@@ -1152,6 +1181,8 @@ void VoxelTerrain::_process() {
 		const uint32_t timeout = os.get_ticks_msec() + VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS;
 		size_t queue_index = 0;
 
+		const Transform local_to_world_transform = get_global_transform();
+
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
 		// This also proved to be very slow compared to the meshing process itself...
 		// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
@@ -1233,6 +1264,7 @@ void VoxelTerrain::_process() {
 				block->set_collision_mesh(collidable_surfaces, get_tree()->is_debugging_collisions_hint(), this);
 			}
 			block->set_parent_visible(is_visible());
+			block->set_parent_transform(local_to_world_transform);
 		}
 
 		shift_up(_reception_buffers.mesh_output, queue_index);
