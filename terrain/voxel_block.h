@@ -60,6 +60,7 @@ public:
 	bool is_visible() const;
 
 	void set_parent_visible(bool parent_visible);
+	void set_parent_transform(const Transform &parent_transform);
 
 	void set_transition_mask(uint8_t m);
 	//void set_transition_bit(uint8_t side, bool value);

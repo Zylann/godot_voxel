@@ -54,6 +54,8 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	PRINT_VERBOSE("Construct VoxelLodTerrain");
 
+	set_notify_transform(true);
+
 	// Infinite by default
 	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
 
@@ -476,7 +478,22 @@ void VoxelLodTerrain::_notification(int p_what) {
 #endif
 		} break;
 
-			// TODO Listen for transform changes
+		case NOTIFICATION_TRANSFORM_CHANGED: {
+			if (!is_inside_tree()) {
+				// The transform and other properties can be set by the scene loader,
+				// before we enter the tree
+				return;
+			}
+
+			Transform transform = get_global_transform();
+			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+				if (_lods[lod_index].map.is_valid()) {
+					_lods[lod_index].map->for_all_blocks([&transform](VoxelBlock *block) {
+						block->set_parent_transform(transform);
+					});
+				}
+			}
+		} break;
 
 		default:
 			break;
@@ -1091,6 +1108,8 @@ void VoxelLodTerrain::_process() {
 		const OS &os = *OS::get_singleton();
 		const uint32_t timeout = os.get_ticks_msec() + VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS;
 
+		const Transform global_transform = get_global_transform();
+
 		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
 		// This also proved to be very slow compared to the meshing process itself...
 		// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
@@ -1158,6 +1177,8 @@ void VoxelLodTerrain::_process() {
 					block->set_transition_mesh(transition_mesh, dir);
 				}
 			}
+
+			block->set_parent_transform(global_transform);
 		}
 
 		{
@@ -1603,21 +1624,21 @@ void VoxelLodTerrain::update_gizmos() {
 	VoxelDebug::DebugRenderer &dr = _debug_renderer;
 	dr.begin();
 
+	const Transform parent_transform = get_global_transform();
+
 	const int octree_size = get_block_size() << (get_lod_count() - 1);
+	const Basis local_octree_basis = Basis().scaled(Vector3(octree_size, octree_size, octree_size));
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
-		Transform t = get_global_transform();
-		t.scale(Vector3(octree_size, octree_size, octree_size));
-		t.translate(E->key().to_vec3());
-		dr.draw_box(t, VoxelDebug::ID_OCTREE_BOUNDS);
+		const Transform local_transform(local_octree_basis, (E->key() * octree_size).to_vec3());
+		dr.draw_box(parent_transform * local_transform, VoxelDebug::ID_OCTREE_BOUNDS);
 	}
 
 	const float bounds_in_voxels_len = _bounds_in_voxels.size.length();
 	if (bounds_in_voxels_len < 10000) {
-		Transform t = get_global_transform();
-		Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
-		t.scale(_bounds_in_voxels.size.to_vec3() + margin * 2.f);
-		t.origin = _bounds_in_voxels.pos.to_vec3() - margin;
-		dr.draw_box(t, VoxelDebug::ID_VOXEL_BOUNDS);
+		const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
+		const Vector3 size = _bounds_in_voxels.size.to_vec3();
+		const Transform local_transform(Basis().scaled(size + margin * 2.f), _bounds_in_voxels.pos.to_vec3() - margin);
+		dr.draw_box(parent_transform * local_transform, VoxelDebug::ID_VOXEL_BOUNDS);
 	}
 
 	dr.end();

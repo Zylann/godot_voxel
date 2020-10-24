@@ -111,8 +111,6 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh) {
 	// This needs investigation.
 
 	if (mesh.is_valid()) {
-		Transform transform(Basis(), _position_in_voxels.to_vec3());
-
 		if (!_mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
 			_mesh_instance.create();
@@ -120,8 +118,6 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh) {
 		}
 
 		_mesh_instance.set_mesh(mesh);
-		_mesh_instance.set_transform(transform);
-		// TODO The day VoxelTerrain becomes a Spatial, this transform will need to be updatable separately
 
 		if (_shader_material.is_valid()) {
 			_mesh_instance.set_material_override(_shader_material);
@@ -148,10 +144,7 @@ void VoxelBlock::set_transition_mesh(Ref<Mesh> mesh, int side) {
 			set_mesh_instance_visible(mesh_instance, _visible && _parent_visible && _is_transition_visible(side));
 		}
 
-		Transform transform(Basis(), _position_in_voxels.to_vec3());
-
 		mesh_instance.set_mesh(mesh);
-		mesh_instance.set_transform(transform);
 
 		if (_shader_material.is_valid()) {
 			mesh_instance.set_material_override(_shader_material);
@@ -268,6 +261,26 @@ void VoxelBlock::set_parent_visible(bool parent_visible) {
 	_set_visible(_visible && _parent_visible);
 }
 
+void VoxelBlock::set_parent_transform(const Transform &parent_transform) {
+	const Transform local_transform(Basis(), _position_in_voxels.to_vec3());
+	const Transform world_transform = parent_transform * local_transform;
+
+	if (_mesh_instance.is_valid()) {
+		_mesh_instance.set_transform(world_transform);
+
+		for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+			DirectMeshInstance &mi = _transition_mesh_instances[i];
+			if (mi.is_valid()) {
+				mi.set_transform(world_transform);
+			}
+		}
+	}
+
+	if (_static_body.is_valid()) {
+		_static_body.set_transform(world_transform);
+	}
+}
+
 void VoxelBlock::set_needs_lodding(bool need_lodding) {
 	_needs_lodding = need_lodding;
 }
@@ -295,12 +308,10 @@ void VoxelBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug_col
 	ERR_FAIL_COND_MSG(node->get_world() != _world, "Physics body and attached node must be from the same world");
 
 	if (!_static_body.is_valid()) {
-		const Transform transform(Basis(), _position_in_voxels.to_vec3());
 		_static_body.create();
 		_static_body.set_world(*_world);
 		// This allows collision signals to provide the terrain node in the `collider` field
 		_static_body.set_attached_object(node);
-		_static_body.set_transform(transform);
 
 	} else {
 		_static_body.remove_shape(0);
