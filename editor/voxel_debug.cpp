@@ -141,6 +141,7 @@ void DebugRenderer::draw_box(Transform t, ColorID color) {
 
 	mi->set_mesh(get_wirecube(color));
 	mi->set_transform(t);
+	mi->set_visible(true);
 
 	++_current;
 }
