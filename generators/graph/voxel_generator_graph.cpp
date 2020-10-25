@@ -4,6 +4,8 @@
 
 #include <core/core_string_names.h>
 
+const char *VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED = "node_name_changed";
+
 VoxelGeneratorGraph::VoxelGeneratorGraph() {
 	clear();
 	clear_bounds();
@@ -94,6 +96,32 @@ bool VoxelGeneratorGraph::try_get_connection_to(ProgramGraph::PortLocation dst, 
 
 bool VoxelGeneratorGraph::has_node(uint32_t node_id) const {
 	return _graph.try_get_node(node_id) != nullptr;
+}
+
+void VoxelGeneratorGraph::set_node_name(uint32_t node_id, StringName name) {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND_MSG(node == nullptr, "No node was found with the specified ID");
+	if (node->name == name) {
+		return;
+	}
+	if (name != StringName()) {
+		const uint32_t existing_node_id = _graph.find_node_by_name(name);
+		if (existing_node_id != ProgramGraph::NULL_ID && node_id == existing_node_id) {
+			ERR_PRINT(String("More than one graph node has the name \"{0}\"").format(varray(name)));
+		}
+	}
+	node->name = name;
+	emit_signal(SIGNAL_NODE_NAME_CHANGED, node_id);
+}
+
+StringName VoxelGeneratorGraph::get_node_name(uint32_t node_id) const {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND_V(node == nullptr, StringName());
+	return node->name;
+}
+
+uint32_t VoxelGeneratorGraph::find_node_by_name(StringName name) const {
+	return _graph.find_node_by_name(name);
 }
 
 void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index, Variant value) {
@@ -361,6 +389,10 @@ Dictionary VoxelGeneratorGraph::get_graph_as_variant_data() {
 			node_data["type"] = type.name;
 			node_data["gui_position"] = node->gui_position;
 
+			if (node->name != StringName()) {
+				node_data["name"] = node->name;
+			}
+
 			for (size_t j = 0; j < type.params.size(); ++j) {
 				const VoxelGraphNodeDB::Param &param = type.params[j];
 				node_data[param.name] = node->params[j];
@@ -444,6 +476,10 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 			}
 			if (type_db.try_get_input_index_from_name(type_id, param_name, param_index)) {
 				node->default_inputs[param_index] = node_data[*param_key];
+			}
+			const Variant *vname = node_data.getptr("name");
+			if (vname != nullptr) {
+				node->name = *vname;
 			}
 		}
 	}
@@ -734,15 +770,19 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("generate_single"), &VoxelGeneratorGraph::_b_generate_single);
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &VoxelGeneratorGraph::debug_load_waves_preset);
-	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel"), &VoxelGeneratorGraph::debug_measure_microseconds_per_voxel);
+	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel"),
+			&VoxelGeneratorGraph::debug_measure_microseconds_per_voxel);
 
 	ClassDB::bind_method(D_METHOD("_set_graph_data", "data"), &VoxelGeneratorGraph::load_graph_from_variant_data);
 	ClassDB::bind_method(D_METHOD("_get_graph_data"), &VoxelGeneratorGraph::get_graph_as_variant_data);
 
 	// ClassDB::bind_method(D_METHOD("_on_subresource_changed"), &VoxelGeneratorGraph::_on_subresource_changed);
 
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "graph_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NOEDITOR | PROPERTY_USAGE_INTERNAL),
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "graph_data", PROPERTY_HINT_NONE, "",
+						 PROPERTY_USAGE_NOEDITOR | PROPERTY_USAGE_INTERNAL),
 			"_set_graph_data", "_get_graph_data");
+
+	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_NAME_CHANGED, PropertyInfo(Variant::INT, "node_id")));
 
 	BIND_ENUM_CONSTANT(NODE_CONSTANT);
 	BIND_ENUM_CONSTANT(NODE_INPUT_X);

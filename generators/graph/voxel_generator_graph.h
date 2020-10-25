@@ -8,6 +8,8 @@
 class VoxelGeneratorGraph : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorGraph, VoxelGenerator)
 public:
+	static const char *SIGNAL_NODE_NAME_CHANGED;
+
 	enum NodeTypeID {
 		NODE_CONSTANT,
 		NODE_INPUT_X,
@@ -62,6 +64,10 @@ public:
 	bool try_get_connection_to(ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const;
 
 	bool has_node(uint32_t node_id) const;
+
+	void set_node_name(uint32_t node_id, StringName name);
+	StringName get_node_name(uint32_t node_id) const;
+	uint32_t find_node_by_name(StringName name) const;
 
 	Variant get_node_param(uint32_t node_id, uint32_t param_index) const;
 	void set_node_param(uint32_t node_id, uint32_t param_index, Variant value);

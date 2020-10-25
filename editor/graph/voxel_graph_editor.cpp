@@ -117,12 +117,14 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
 
 	if (_graph.is_valid()) {
 		_graph->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_graph_changed");
+		_graph->disconnect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED, this, "_on_graph_node_name_changed");
 	}
 
 	_graph = graph;
 
 	if (_graph.is_valid()) {
 		_graph->connect(CoreStringNames::get_singleton()->changed, this, "_on_graph_changed");
+		_graph->connect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED, this, "_on_graph_node_name_changed");
 	}
 
 	build_gui_from_graph();
@@ -207,6 +209,14 @@ void VoxelGraphEditor::build_gui_from_graph() {
 	}
 }
 
+static void update_node_view_title(VoxelGraphEditorNode *node_view, StringName node_name, String node_type_name) {
+	if (node_name == StringName()) {
+		node_view->set_title(node_type_name);
+	} else {
+		node_view->set_title(String("{0} ({1})").format(varray(node_name, node_type_name)));
+	}
+}
+
 void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	// Build one GUI node
 
@@ -215,13 +225,16 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	const uint32_t node_type_id = graph.get_node_type_id(node_id);
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
 
-	const String node_name = node_to_gui_name(node_id);
-	ERR_FAIL_COND(_graph_edit->has_node(node_name));
+	const String ui_node_name = node_to_gui_name(node_id);
+	ERR_FAIL_COND(_graph_edit->has_node(ui_node_name));
 
 	VoxelGraphEditorNode *node_view = memnew(VoxelGraphEditorNode);
 	node_view->set_offset(graph.get_node_gui_position(node_id) * EDSCALE);
-	node_view->set_title(node_type.name);
-	node_view->set_name(node_name);
+
+	StringName node_name = graph.get_node_name(node_id);
+	update_node_view_title(node_view, node_name, node_type.name);
+
+	node_view->set_name(ui_node_name);
 	node_view->node_id = node_id;
 	node_view->connect("dragged", this, "_on_graph_node_dragged", varray(node_id));
 	//node_view.resizable = true
@@ -568,6 +581,18 @@ void VoxelGraphEditor::_on_graph_changed() {
 	schedule_preview_update();
 }
 
+void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
+	StringName node_name = _graph->get_node_name(node_id);
+
+	const uint32_t node_type_id = _graph->get_node_type_id(node_id);
+	String node_type_name = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).name;
+
+	const String ui_node_name = node_to_gui_name(node_id);
+	VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(ui_node_name));
+
+	update_node_view_title(node_view, node_name, node_type_name);
+}
+
 void VoxelGraphEditor::_on_update_previews_button_pressed() {
 	update_previews();
 }
@@ -582,17 +607,23 @@ void VoxelGraphEditor::_on_profile_button_pressed() {
 
 void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_gui_input", "event"), &VoxelGraphEditor::_on_graph_edit_gui_input);
-	ClassDB::bind_method(D_METHOD("_on_graph_edit_connection_request", "from_node_name", "from_slot", "to_node_name", "to_slot"),
+	ClassDB::bind_method(
+			D_METHOD("_on_graph_edit_connection_request", "from_node_name", "from_slot", "to_node_name", "to_slot"),
 			&VoxelGraphEditor::_on_graph_edit_connection_request);
-	ClassDB::bind_method(D_METHOD("_on_graph_edit_disconnection_request", "from_node_name", "from_slot", "to_node_name", "to_slot"),
+	ClassDB::bind_method(
+			D_METHOD("_on_graph_edit_disconnection_request", "from_node_name", "from_slot", "to_node_name", "to_slot"),
 			&VoxelGraphEditor::_on_graph_edit_disconnection_request);
-	ClassDB::bind_method(D_METHOD("_on_graph_edit_delete_nodes_request"), &VoxelGraphEditor::_on_graph_edit_delete_nodes_request);
+	ClassDB::bind_method(D_METHOD("_on_graph_edit_delete_nodes_request"),
+			&VoxelGraphEditor::_on_graph_edit_delete_nodes_request);
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_node_selected"), &VoxelGraphEditor::_on_graph_edit_node_selected);
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_node_unselected"), &VoxelGraphEditor::_on_graph_edit_node_unselected);
-	ClassDB::bind_method(D_METHOD("_on_graph_node_dragged", "from", "to", "id"), &VoxelGraphEditor::_on_graph_node_dragged);
+	ClassDB::bind_method(D_METHOD("_on_graph_node_dragged", "from", "to", "id"),
+			&VoxelGraphEditor::_on_graph_node_dragged);
 	ClassDB::bind_method(D_METHOD("_on_context_menu_id_pressed", "id"), &VoxelGraphEditor::_on_context_menu_id_pressed);
 	ClassDB::bind_method(D_METHOD("_on_graph_changed"), &VoxelGraphEditor::_on_graph_changed);
-	ClassDB::bind_method(D_METHOD("_on_update_previews_button_pressed"), &VoxelGraphEditor::_on_update_previews_button_pressed);
+	ClassDB::bind_method(D_METHOD("_on_graph_node_name_changed"), &VoxelGraphEditor::_on_graph_node_name_changed);
+	ClassDB::bind_method(D_METHOD("_on_update_previews_button_pressed"),
+			&VoxelGraphEditor::_on_update_previews_button_pressed);
 	ClassDB::bind_method(D_METHOD("_on_profile_button_pressed"), &VoxelGraphEditor::_on_profile_button_pressed);
 
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);

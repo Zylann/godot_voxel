@@ -45,6 +45,7 @@ private:
 	void _on_update_previews_button_pressed();
 	void _on_profile_button_pressed();
 	void _on_graph_changed();
+	void _on_graph_node_name_changed(int node_id);
 
 	void _check_nothing_selected();
 

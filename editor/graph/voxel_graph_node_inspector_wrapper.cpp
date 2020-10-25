@@ -19,6 +19,8 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 		return;
 	}
 
+	p_list->push_back(PropertyInfo(Variant::STRING, "name", PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_EDITOR));
+
 	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
 
@@ -58,6 +60,11 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 	Ref<VoxelGeneratorGraph> graph = get_graph();
 	ERR_FAIL_COND_V(graph.is_null(), false);
 
+	if (p_name == "name") {
+		graph->set_node_name(_node_id, p_value);
+		return true;
+	}
+
 	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
 
 	uint32_t index;
@@ -78,6 +85,11 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 bool VoxelGraphNodeInspectorWrapper::_get(const StringName &p_name, Variant &r_ret) const {
 	Ref<VoxelGeneratorGraph> graph = get_graph();
 	ERR_FAIL_COND_V(graph.is_null(), false);
+
+	if (p_name == "name") {
+		r_ret = graph->get_node_name(_node_id);
+		return true;
+	}
 
 	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
 

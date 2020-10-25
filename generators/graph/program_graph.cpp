@@ -368,6 +368,15 @@ void ProgramGraph::get_connections(std::vector<ProgramGraph::Connection> &connec
 	}
 }
 
+uint32_t ProgramGraph::find_node_by_name(StringName name) const {
+	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+		const Node *node = it->second;
+		if (node->name == name) {
+			return it->first;
+		}
+	}
+}
+
 //void ProgramGraph::get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const {
 //	const Node *node = get_node(node_id);
 //	ERR_FAIL_COND(node == nullptr);

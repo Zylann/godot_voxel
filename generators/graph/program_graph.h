@@ -37,6 +37,7 @@ public:
 	struct Node {
 		uint32_t id;
 		uint32_t type_id;
+		StringName name;
 		Vector2 gui_position;
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
@@ -67,6 +68,8 @@ public:
 	void copy_from(const ProgramGraph &other, bool copy_subresources);
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
 	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
+
+	uint32_t find_node_by_name(StringName name) const;
 
 	PoolVector<int> get_node_ids() const;
 	uint32_t generate_node_id();
