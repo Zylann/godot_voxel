@@ -204,7 +204,8 @@ void VoxelGraphEditor::build_gui_from_graph() {
 		const String to_node_name = node_to_gui_name(con.dst.node_id);
 		VoxelGraphEditorNode *to_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(to_node_name));
 		ERR_FAIL_COND(to_node_view == nullptr);
-		const Error err = _graph_edit->connect_node(from_node_name, con.src.port_index, to_node_view->get_name(), con.dst.port_index);
+		const Error err = _graph_edit->connect_node(
+				from_node_name, con.src.port_index, to_node_view->get_name(), con.dst.port_index);
 		ERR_FAIL_COND(err != OK);
 	}
 }
@@ -347,26 +348,34 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 	}
 }
 
-void VoxelGraphEditor::_on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot) {
+void VoxelGraphEditor::_on_graph_edit_connection_request(
+		String from_node_name, int from_slot, String to_node_name, int to_slot) {
+
 	VoxelGraphEditorNode *src_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(from_node_name));
 	VoxelGraphEditorNode *dst_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(to_node_name));
 	ERR_FAIL_COND(src_node_view == nullptr);
 	ERR_FAIL_COND(dst_node_view == nullptr);
+
 	//print("Connection attempt from ", from, ":", from_slot, " to ", to, ":", to_slot)
 	if (_graph->can_connect(src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot)) {
 		_undo_redo->create_action(TTR("Connect Nodes"));
 
-		_undo_redo->add_do_method(*_graph, "add_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
-		_undo_redo->add_do_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
+		_undo_redo->add_do_method(
+				*_graph, "add_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+		_undo_redo->add_do_method(
+				_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
 
-		_undo_redo->add_undo_method(*_graph, "remove_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+		_undo_redo->add_undo_method(
+				*_graph, "remove_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
 		_undo_redo->add_undo_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
 
 		_undo_redo->commit_action();
 	}
 }
 
-void VoxelGraphEditor::_on_graph_edit_disconnection_request(String from_node_name, int from_slot, String to_node_name, int to_slot) {
+void VoxelGraphEditor::_on_graph_edit_disconnection_request(
+		String from_node_name, int from_slot, String to_node_name, int to_slot) {
+
 	VoxelGraphEditorNode *src_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(from_node_name));
 	VoxelGraphEditorNode *dst_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(to_node_name));
 	ERR_FAIL_COND(src_node_view == nullptr);
@@ -374,10 +383,12 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(String from_node_nam
 
 	_undo_redo->create_action(TTR("Disconnect Nodes"));
 
-	_undo_redo->add_do_method(*_graph, "remove_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+	_undo_redo->add_do_method(
+			*_graph, "remove_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
 	_undo_redo->add_do_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
 
-	_undo_redo->add_undo_method(*_graph, "add_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+	_undo_redo->add_undo_method(
+			*_graph, "add_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
 	_undo_redo->add_undo_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
 
 	_undo_redo->commit_action();
@@ -408,7 +419,8 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 		_undo_redo->add_do_method(*_graph, "remove_node", node_id);
 		_undo_redo->add_do_method(this, "remove_node_gui", node_view->get_name());
 
-		_undo_redo->add_undo_method(*_graph, "create_node", node_type_id, _graph->get_node_gui_position(node_id), node_id);
+		_undo_redo->add_undo_method(
+				*_graph, "create_node", node_type_id, _graph->get_node_gui_position(node_id), node_id);
 
 		// Params undo
 		const size_t param_count = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).params.size();
@@ -422,11 +434,15 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 		// Connections undo
 		for (size_t j = 0; j < connections.size(); ++j) {
 			const ProgramGraph::Connection &con = connections[j];
+
 			if (con.src.node_id == node_id || con.dst.node_id == node_id) {
-				_undo_redo->add_undo_method(*_graph, "add_connection", con.src.node_id, con.src.port_index, con.dst.node_id, con.dst.port_index);
-				String src_node_name = node_to_gui_name(con.src.node_id);
-				String dst_node_name = node_to_gui_name(con.dst.node_id);
-				_undo_redo->add_undo_method(_graph_edit, "connect_node", src_node_name, con.src.port_index, dst_node_name, con.dst.port_index);
+				_undo_redo->add_undo_method(*_graph, "add_connection",
+						con.src.node_id, con.src.port_index, con.dst.node_id, con.dst.port_index);
+
+				const String src_node_name = node_to_gui_name(con.src.node_id);
+				const String dst_node_name = node_to_gui_name(con.dst.node_id);
+				_undo_redo->add_undo_method(_graph_edit, "connect_node",
+						src_node_name, con.src.port_index, dst_node_name, con.dst.port_index);
 			}
 		}
 	}
@@ -439,7 +455,8 @@ void VoxelGraphEditor::_on_graph_node_dragged(Vector2 from, Vector2 to, int id) 
 	_undo_redo->add_do_method(this, "set_node_position", id, to);
 	_undo_redo->add_undo_method(this, "set_node_position", id, from);
 	_undo_redo->commit_action();
-	// I haven't the faintest idea how VisualScriptEditor magically makes this work neither using `create_action` nor `commit_action`.
+	// I haven't the faintest idea how VisualScriptEditor magically makes this work,
+	// neither using `create_action` nor `commit_action`.
 }
 
 void VoxelGraphEditor::set_node_position(int id, Vector2 offset) {
@@ -551,7 +568,8 @@ void VoxelGraphEditor::update_previews() {
 		for (int ix = 0; ix < VoxelGraphEditorNodePreview::RESOLUTION; ++ix) {
 			{
 				const int x = ix - VoxelGraphEditorNodePreview::RESOLUTION / 2;
-				const int y = (VoxelGraphEditorNodePreview::RESOLUTION - iy) - VoxelGraphEditorNodePreview::RESOLUTION / 2;
+				const int y =
+						(VoxelGraphEditorNodePreview::RESOLUTION - iy) - VoxelGraphEditorNodePreview::RESOLUTION / 2;
 				_graph->generate_single(Vector3i(x, y, 0));
 			}
 

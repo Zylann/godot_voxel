@@ -18,7 +18,8 @@ Interval get_osn_octave_range_2d(OpenSimplexNoise *noise, const Interval &x, con
 			::min(mid_value + max_derivative_half_diagonal * diag, 1.f));
 }
 
-Interval get_osn_octave_range_3d(OpenSimplexNoise *noise, const Interval &x, const Interval &y, const Interval &z, int octave) {
+Interval get_osn_octave_range_3d(
+		OpenSimplexNoise *noise, const Interval &x, const Interval &y, const Interval &z, int octave) {
 	// Any unit vector away from a given evaluation point, the maximum difference is a fixed number.
 	// We can use that number to find a bounding range within our box interval.
 	static const float max_derivative = 2.5;

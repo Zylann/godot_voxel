@@ -97,7 +97,9 @@ void VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected() {
 }
 
 void VoxelGraphEditorPlugin::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_graph_editor_node_selected", "node_id"), &VoxelGraphEditorPlugin::_on_graph_editor_node_selected);
-	ClassDB::bind_method(D_METHOD("_on_graph_editor_nothing_selected"), &VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected);
+	ClassDB::bind_method(D_METHOD("_on_graph_editor_node_selected", "node_id"),
+			&VoxelGraphEditorPlugin::_on_graph_editor_node_selected);
+	ClassDB::bind_method(D_METHOD("_on_graph_editor_nothing_selected"),
+			&VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected);
 	ClassDB::bind_method(D_METHOD("_hide_deferred"), &VoxelGraphEditorPlugin::_hide_deferred);
 }

@@ -56,11 +56,12 @@ public:
 	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = ProgramGraph::NULL_ID);
 	void remove_node(uint32_t node_id);
 
-	bool can_connect(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const;
+	bool can_connect(
+			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const;
 	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
-	void remove_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
+	void remove_connection(
+			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
-	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
 	bool try_get_connection_to(ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const;
 
 	bool has_node(uint32_t node_id) const;
@@ -95,7 +96,8 @@ public:
 	};
 
 	void clear_bounds();
-	void set_vertical_bounds(int min_y, int max_y, float bottom_sdf_value, float top_sdf_value, uint64_t bottom_type_value, uint64_t top_type_value);
+	void set_vertical_bounds(int min_y, int max_y, float bottom_sdf_value, float top_sdf_value,
+			uint64_t bottom_type_value, uint64_t top_type_value);
 	void set_box_bounds(Vector3i min, Vector3i max, float sdf_value, uint64_t type_value);
 
 	Ref<Resource> duplicate(bool p_subresources) const override;
