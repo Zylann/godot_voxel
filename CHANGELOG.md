@@ -14,9 +14,12 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Introduction of Voxel Server, which shares threaded tasks among all voxel nodes
     - Voxel data is no longer copied when sent to processing threads, reducing high memory spikes in some scenarios
     - Added a utility class to load MagicaVoxel `.vox` files
+    - Voxel nodes can be moved, scaled and rotated
+    - Voxel nodes can be limited to specific bounds, rather than being infinitely paging volumes (multiples of block size)
 
 - Blocky voxels
     - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support
+    - Replaced `transparent` property with `transparency_index` for more control on the culling of transparent faces
 
 - Breaking changes
     - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points
