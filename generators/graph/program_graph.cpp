@@ -375,6 +375,7 @@ uint32_t ProgramGraph::find_node_by_name(StringName name) const {
 			return it->first;
 		}
 	}
+	return NULL_ID;
 }
 
 //void ProgramGraph::get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const {
