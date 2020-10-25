@@ -66,7 +66,7 @@ namespace VoxelFileUtils {
 
 // TODO Write tests
 
-// Makes the file bigger to move the half from the current posiiton further,
+// Makes the file bigger to move the half from the current position further,
 // so that it makes room for the specified amount of bytes.
 // The new allocated "free" bytes have undefined values, which may be later overwritten by the caller anyways.
 void insert_bytes(FileAccess *f, size_t count, size_t temp_chunk_size) {
