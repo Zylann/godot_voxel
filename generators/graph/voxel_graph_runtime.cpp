@@ -474,7 +474,9 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 	}
 
 	PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, memory size: {1}b")
-						  .format(varray(_program.size() * sizeof(float), _memory.size() * sizeof(float))));
+						  .format(varray(
+								  SIZE_T_TO_VARIANT(_program.size() * sizeof(float)),
+								  SIZE_T_TO_VARIANT(_memory.size() * sizeof(float)))));
 
 	//ERR_FAIL_COND(_sdf_output_address == -1);
 }
