@@ -50,9 +50,6 @@ public:
 	void set_collision_lod_count(int lod_count);
 	int get_collision_lod_count() const;
 
-	void set_viewer_path(NodePath path);
-	NodePath get_viewer_path() const;
-
 	int get_block_region_extent() const;
 	Vector3 voxel_to_block_position(Vector3 vpos, int lod_index) const;
 
@@ -110,7 +107,6 @@ protected:
 	void _process();
 
 private:
-	const Spatial *get_viewer() const;
 	void immerge_block(Vector3i block_pos, int lod_index);
 
 	void start_updater();
@@ -119,7 +115,7 @@ private:
 	void stop_streamer();
 	void reset_maps();
 
-	void get_viewer_pos_and_direction(Vector3 &out_viewer_pos, Vector3 &out_direction) const;
+	Vector3 get_local_viewer_pos() const;
 	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index);
 	bool check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index);
 	bool check_block_mesh_updated(VoxelBlock *block);
@@ -162,8 +158,6 @@ private:
 	// approximated to the closest chunk.
 	Rect3i _bounds_in_voxels;
 	//Rect3i _prev_bounds_in_voxels;
-
-	NodePath _viewer_path;
 
 	Ref<VoxelStream> _stream;
 	std::vector<BlockToSave> _blocks_to_save;

@@ -1,6 +1,7 @@
 #include "voxel_lod_terrain.h"
 #include "../edition/voxel_tool_lod_terrain.h"
 #include "../math/rect3i.h"
+#include "../server/voxel_server.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
@@ -21,8 +22,8 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 
 	unsigned int surface_index = 0;
 	for (int i = 0; i < surfaces.size(); ++i) {
-
 		Array surface = surfaces[i];
+
 		if (surface.empty()) {
 			continue;
 		}
@@ -200,9 +201,8 @@ void VoxelLodTerrain::_set_block_size_po2(int p_block_size_po2) {
 // Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.
 // The provided box must be at LOD0 coordinates.
 void VoxelLodTerrain::post_edit_area(Rect3i p_box) {
-
-	Rect3i box = p_box.padded(1);
-	Rect3i bbox = box.downscaled(get_block_size());
+	const Rect3i box = p_box.padded(1);
+	const Rect3i bbox = box.downscaled(get_block_size());
 
 	bbox.for_each_cell([this](Vector3i block_pos_lod0) {
 		post_edit_block_lod0(block_pos_lod0);
@@ -210,7 +210,6 @@ void VoxelLodTerrain::post_edit_area(Rect3i p_box) {
 }
 
 void VoxelLodTerrain::post_edit_block_lod0(Vector3i block_pos_lod0) {
-
 	Lod &lod0 = _lods[0];
 	VoxelBlock *block = lod0.map->get_block(block_pos_lod0);
 	ERR_FAIL_COND(block == nullptr);
@@ -240,20 +239,6 @@ void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
 	// Note: this is a hint distance, the terrain will attempt to have this radius filled with loaded voxels.
 	// It is possible for blocks to still load beyond that distance.
 	_view_distance_voxels = p_distance_in_voxels;
-}
-
-const Spatial *VoxelLodTerrain::get_viewer() const {
-	if (!is_inside_tree()) {
-		return nullptr;
-	}
-	if (_viewer_path.is_empty()) {
-		return nullptr;
-	}
-	Node *node = get_node(_viewer_path);
-	if (node == nullptr) {
-		return nullptr;
-	}
-	return Object::cast_to<Spatial>(node);
 }
 
 void VoxelLodTerrain::start_updater() {
@@ -395,14 +380,6 @@ int VoxelLodTerrain::get_collision_lod_count() const {
 	return _collision_lod_count;
 }
 
-void VoxelLodTerrain::set_viewer_path(NodePath path) {
-	_viewer_path = path;
-}
-
-NodePath VoxelLodTerrain::get_viewer_path() const {
-	return _viewer_path;
-}
-
 int VoxelLodTerrain::get_block_region_extent() const {
 	return VoxelServer::get_octree_lod_block_region_extent(_lod_split_scale);
 }
@@ -502,26 +479,22 @@ void VoxelLodTerrain::_notification(int p_what) {
 	}
 }
 
-void VoxelLodTerrain::get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const {
+Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 	if (Engine::get_singleton()->is_editor_hint()) {
 		// TODO Use editor's camera here
-		out_pos = Vector3();
-		out_direction = Vector3(0, -1, 0);
+		return Vector3();
 
 	} else {
-		// TODO Have option to use viewport camera
-		const Spatial *viewer = get_viewer();
-		if (viewer) {
-			Transform gt = viewer->get_global_transform();
-			const Transform world_to_local = get_global_transform().affine_inverse();
-			out_pos = world_to_local.xform(gt.origin);
-			out_direction = world_to_local.basis.xform(-gt.basis.get_axis(Vector3::AXIS_Z));
+		Vector3 pos = (_lods[0].last_viewer_block_pos << _lods[0].map->get_block_size_pow2()).to_vec3();
 
-		} else {
-			// TODO Just remember last viewer pos
-			out_pos = (_lods[0].last_viewer_block_pos << _lods[0].map->get_block_size_pow2()).to_vec3();
-			out_direction = Vector3(0, -1, 0);
-		}
+		// TODO Support for multiple viewers, this is a placeholder implementation
+		VoxelServer::get_singleton()->for_each_viewer([&pos](const VoxelServer::Viewer &viewer, uint32_t viewer_id) {
+			pos = viewer.world_position;
+		});
+
+		const Transform world_to_local = get_global_transform().affine_inverse();
+		pos = world_to_local.xform(pos);
+		return pos;
 	}
 }
 
@@ -627,9 +600,7 @@ void VoxelLodTerrain::_process() {
 	}
 
 	// Get viewer location in voxel space
-	Vector3 viewer_pos;
-	Vector3 viewer_direction;
-	get_viewer_pos_and_direction(viewer_pos, viewer_direction);
+	const Vector3 viewer_pos = get_local_viewer_pos();
 
 	_stats.dropped_block_loads = 0;
 	_stats.dropped_block_meshs = 0;
@@ -1705,9 +1676,6 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_collision_lod_count"), &VoxelLodTerrain::get_collision_lod_count);
 	ClassDB::bind_method(D_METHOD("set_collision_lod_count", "count"), &VoxelLodTerrain::set_collision_lod_count);
 
-	ClassDB::bind_method(D_METHOD("get_viewer_path"), &VoxelLodTerrain::get_viewer_path);
-	ClassDB::bind_method(D_METHOD("set_viewer_path", "path"), &VoxelLodTerrain::set_viewer_path);
-
 	ClassDB::bind_method(D_METHOD("set_lod_count", "lod_count"), &VoxelLodTerrain::set_lod_count);
 	ClassDB::bind_method(D_METHOD("get_lod_count"), &VoxelLodTerrain::get_lod_count);
 
@@ -1741,7 +1709,6 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");
-	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "viewer_path"), "set_viewer_path", "get_viewer_path");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"),
 			"set_material", "get_material");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"),
