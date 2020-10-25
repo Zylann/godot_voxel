@@ -8,7 +8,7 @@
 Voxel::Voxel() :
 		_id(-1),
 		_material_id(0),
-		_is_transparent(false),
+		_transparency_index(0),
 		_color(1.f, 1.f, 1.f),
 		_geometry_type(GEOMETRY_NONE) {
 }
@@ -100,7 +100,17 @@ void Voxel::set_material_id(unsigned int id) {
 }
 
 void Voxel::set_transparent(bool t) {
-	_is_transparent = t;
+	if (t) {
+		if (_transparency_index == 0) {
+			_transparency_index = 1;
+		}
+	} else {
+		_transparency_index = 0;
+	}
+}
+
+void Voxel::set_transparency_index(int i) {
+	_transparency_index = clamp(i, 0, 255);
 }
 
 void Voxel::set_geometry_type(GeometryType type) {
@@ -155,7 +165,7 @@ Ref<Resource> Voxel::duplicate(bool p_subresources) const {
 
 	d._name = _name;
 	d._material_id = _material_id;
-	d._is_transparent = _is_transparent;
+	d._transparency_index = _transparency_index;
 	d._color = _color;
 	d._geometry_type = _geometry_type;
 	d._cube_tiles = _cube_tiles;
@@ -362,7 +372,7 @@ void Voxel::bake(BakedData &baked_data, int p_atlas_size) {
 	baked_data.clear();
 
 	// baked_data.contributes_to_ao is set by the side culling phase
-	baked_data.is_transparent = _is_transparent;
+	baked_data.transparency_index = _transparency_index;
 	baked_data.material_id = _material_id;
 	baked_data.color = _color;
 
@@ -400,6 +410,9 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_transparent", "transparent"), &Voxel::set_transparent);
 	ClassDB::bind_method(D_METHOD("is_transparent"), &Voxel::is_transparent);
 
+	ClassDB::bind_method(D_METHOD("set_transparency_index", "transparent"), &Voxel::set_transparency_index);
+	ClassDB::bind_method(D_METHOD("get_transparency_index"), &Voxel::get_transparency_index);
+
 	ClassDB::bind_method(D_METHOD("set_random_tickable", "rt"), &Voxel::set_random_tickable);
 	ClassDB::bind_method(D_METHOD("is_random_tickable"), &Voxel::is_random_tickable);
 
@@ -423,13 +436,20 @@ void Voxel::_bind_methods() {
 	// TODO Update to StringName in Godot 4
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent"), "set_transparent", "is_transparent");
+	// TODO Might become obsolete
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
+			"set_transparent", "is_transparent");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "transparency_index"), "set_transparency_index", "get_transparency_index");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_tickable"), "set_random_tickable", "is_random_tickable");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "material_id"), "set_material_id", "get_material_id");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "geometry_type", PROPERTY_HINT_ENUM, "None,Cube,CustomMesh"), "set_geometry_type", "get_geometry_type");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), "set_custom_mesh", "get_custom_mesh");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING, itos(Variant::AABB) + ":"), "set_collision_aabbs", "get_collision_aabbs");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask", "get_collision_mask");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "geometry_type", PROPERTY_HINT_ENUM, "None,Cube,CustomMesh"),
+			"set_geometry_type", "get_geometry_type");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"),
+			"set_custom_mesh", "get_custom_mesh");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING, itos(Variant::AABB) + ":"),
+			"set_collision_aabbs", "get_collision_aabbs");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
+			"set_collision_mask", "get_collision_mask");
 
 	BIND_ENUM_CONSTANT(GEOMETRY_NONE);
 	BIND_ENUM_CONSTANT(GEOMETRY_CUBE);

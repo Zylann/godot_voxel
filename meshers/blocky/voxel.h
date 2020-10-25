@@ -55,7 +55,7 @@ public:
 		Model model;
 		int material_id;
 		Color color;
-		bool is_transparent;
+		uint8_t transparency_index;
 		bool contributes_to_ao;
 		bool empty;
 
@@ -91,8 +91,12 @@ public:
 	void set_material_id(unsigned int id);
 	_FORCE_INLINE_ unsigned int get_material_id() const { return _material_id; }
 
+	// TODO Might become obsolete
 	void set_transparent(bool t = true);
-	_FORCE_INLINE_ bool is_transparent() const { return _is_transparent; }
+	_FORCE_INLINE_ bool is_transparent() const { return _transparency_index != 0; }
+
+	void set_transparency_index(int i);
+	uint8_t get_transparency_index() const { return _transparency_index; }
 
 	void set_custom_mesh(Ref<Mesh> mesh);
 	Ref<Mesh> get_custom_mesh() const { return _custom_mesh; }
@@ -145,12 +149,18 @@ private:
 
 private:
 	// Identifiers
+
 	int _id;
 	StringName _name;
 
 	// Properties
+
 	int _material_id;
-	bool _is_transparent;
+
+	// If two neighboring voxels are supposed to occlude their shared face,
+	// this index decides wether or not it should happen. Equal indexes culls the face, different indexes doesn't.
+	uint8_t _transparency_index = 0;
+
 	Color _color;
 	GeometryType _geometry_type;
 	FixedArray<Vector2, Cube::SIDE_COUNT> _cube_tiles;

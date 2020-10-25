@@ -26,8 +26,7 @@ const int g_opposite_side[6] = {
 inline bool is_face_visible(const VoxelLibrary::BakedData &lib, const Voxel::BakedData &vt, uint32_t other_voxel_id, int side) {
 	if (other_voxel_id < lib.models.size()) {
 		const Voxel::BakedData &other_vt = lib.models[other_voxel_id];
-		// TODO Might test against material somehow, but not only
-		if (other_vt.empty || (other_vt.is_transparent && !vt.is_transparent)) {
+		if (other_vt.empty || (other_vt.transparency_index > vt.transparency_index)) {
 			return true;
 		} else {
 			const unsigned int ai = vt.model.side_pattern_indices[side];
