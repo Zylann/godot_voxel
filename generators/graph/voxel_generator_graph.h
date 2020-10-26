@@ -105,7 +105,11 @@ public:
 	// Internal
 
 	const VoxelGraphRuntime &get_runtime() const { return _runtime; }
-	void compile();
+	bool compile();
+
+	const VoxelGraphRuntime::CompilationResult &get_compilation_result() const {
+		return _runtime.get_compilation_result();
+	}
 
 	// Debug
 

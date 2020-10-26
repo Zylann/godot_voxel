@@ -193,9 +193,20 @@ void VoxelGraphRuntime::clear() {
 	_last_z = std::numeric_limits<int>::max();
 	_output_port_addresses.clear();
 	_sdf_output_address = -1;
+	_compilation_result = CompilationResult();
 }
 
-void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
+bool VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
+	const bool success = _compile(graph, debug);
+	if (success == false) {
+		const CompilationResult result = _compilation_result;
+		clear();
+		_compilation_result = result;
+	}
+	return success;
+}
+
+bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 	_output_port_addresses.clear();
 
 	std::vector<uint32_t> order;
@@ -332,7 +343,10 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 			case VoxelGeneratorGraph::NODE_OUTPUT_SDF:
 				// TODO Multiple outputs may be supported if we get branching
 				if (_sdf_output_address != -1) {
-					ERR_PRINT("Voxel graph has multiple SDF outputs");
+					_compilation_result.success = false;
+					_compilation_result.message = "Multiple SDF outputs are not supported";
+					_compilation_result.node_id = node_id;
+					return false;
 				}
 				if (_memory.size() > 0) {
 					_sdf_output_address = _memory.size() - 1;
@@ -415,7 +429,12 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 					case VoxelGeneratorGraph::NODE_CURVE: {
 						PNodeCurve &n = get_or_create<PNodeCurve>(program, offset);
 						Ref<Curve> curve = node->params[0];
-						CRASH_COND(curve.is_null());
+						if (curve.is_null()) {
+							_compilation_result.success = false;
+							_compilation_result.message = "Curve instance is null";
+							_compilation_result.node_id = node_id;
+							return false;
+						}
 						uint8_t is_monotonic_increasing;
 						const Interval range = get_curve_range(**curve, is_monotonic_increasing);
 						n.is_monotonic_increasing = is_monotonic_increasing;
@@ -427,21 +446,36 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 					case VoxelGeneratorGraph::NODE_NOISE_2D: {
 						PNodeNoise2D &n = get_or_create<PNodeNoise2D>(program, offset);
 						Ref<OpenSimplexNoise> noise = node->params[0];
-						CRASH_COND(noise.is_null());
+						if (noise.is_null()) {
+							_compilation_result.success = false;
+							_compilation_result.message = "OpenSimplexNoise instance is null";
+							_compilation_result.node_id = node_id;
+							return false;
+						}
 						n.p_noise = *noise;
 					} break;
 
 					case VoxelGeneratorGraph::NODE_NOISE_3D: {
 						PNodeNoise3D &n = get_or_create<PNodeNoise3D>(program, offset);
 						Ref<OpenSimplexNoise> noise = node->params[0];
-						CRASH_COND(noise.is_null());
+						if (noise.is_null()) {
+							_compilation_result.success = false;
+							_compilation_result.message = "OpenSimplexNoise instance is null";
+							_compilation_result.node_id = node_id;
+							return false;
+						}
 						n.p_noise = *noise;
 					} break;
 
 					case VoxelGeneratorGraph::NODE_IMAGE_2D: {
 						PNodeImage2D &n = get_or_create<PNodeImage2D>(program, offset);
 						Ref<Image> im = node->params[0];
-						CRASH_COND(im.is_null());
+						if (im.is_null()) {
+							_compilation_result.success = false;
+							_compilation_result.message = "Image instance is null";
+							_compilation_result.node_id = node_id;
+							return false;
+						}
 						const Interval range = get_heightmap_range(**im);
 						n.min_value = range.min;
 						n.max_value = range.max;
@@ -479,6 +513,8 @@ void VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 								  SIZE_T_TO_VARIANT(_memory.size() * sizeof(float)))));
 
 	//ERR_FAIL_COND(_sdf_output_address == -1);
+	_compilation_result.success = true;
+	return true;
 }
 
 inline Interval get_length(const Interval &x, const Interval &y) {
@@ -539,7 +575,7 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 	CRASH_COND(_memory.size() == 0);
 #endif
 #ifdef TOOLS_ENABLED
-	ERR_FAIL_COND_V_MSG(_sdf_output_address == -1, 0.0, "The graph has no SDF output");
+	ERR_FAIL_COND_V_MSG(!has_output(), 0.0, "The graph has no SDF output");
 #endif
 
 	ArraySlice<float> memory(_memory, 0, _memory.size() / 2);
@@ -748,7 +784,7 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 
 Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 #ifdef TOOLS_ENABLED
-	ERR_FAIL_COND_V_MSG(_sdf_output_address == -1, Interval(), "The graph has no SDF output");
+	ERR_FAIL_COND_V_MSG(!has_output(), Interval(), "The graph has no SDF output");
 #endif
 
 	ArraySlice<float> min_memory(_memory, 0, _memory.size() / 2);

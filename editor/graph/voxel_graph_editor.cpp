@@ -523,7 +523,12 @@ void VoxelGraphEditor::update_previews() {
 
 	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
-	_graph->compile();
+	if (!_graph->compile()) {
+		const VoxelGraphRuntime::CompilationResult &result = _graph->get_compilation_result();
+		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
+		// TODO Enhance reporting in the UI
+		return;
+	}
 
 	// TODO Use a thread?
 	PRINT_VERBOSE("Updating previews");

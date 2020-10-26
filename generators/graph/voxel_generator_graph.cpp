@@ -204,6 +204,10 @@ int VoxelGeneratorGraph::get_used_channels_mask() const {
 }
 
 void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
+	if (!_runtime.has_output()) {
+		return;
+	}
+
 	VoxelBuffer &out_buffer = **input.voxel_buffer;
 
 	const Vector3i bs = out_buffer.get_size();
@@ -289,11 +293,15 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	out_buffer.compress_uniform_channels();
 }
 
-void VoxelGeneratorGraph::compile() {
-	_runtime.compile(_graph, Engine::get_singleton()->is_editor_hint());
+bool VoxelGeneratorGraph::compile() {
+	return _runtime.compile(_graph, Engine::get_singleton()->is_editor_hint());
 }
 
 float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
+	if (!_runtime.has_output()) {
+		return 1.f;
+	}
+
 	switch (_bounds.type) {
 		case BOUNDS_NONE:
 			break;
