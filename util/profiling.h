@@ -19,4 +19,15 @@
 
 #endif
 
+/*
+To add Tracy support, clone it under thirdparty/tracy, and add the following lines in core/SCsub:
+
+```
+# tracy library
+env.Append(CPPDEFINES="TRACY_ENABLE")
+env_thirdparty.Append(CPPDEFINES="TRACY_ENABLE")
+env_thirdparty.add_source_files(env.core_sources, ["#thirdparty/tracy/TracyClient.cpp"])
+```
+*/
+
 #endif // VOXEL_PROFILING_H
