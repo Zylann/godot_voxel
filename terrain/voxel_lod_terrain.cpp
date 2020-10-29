@@ -1660,6 +1660,14 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 	return image_array;
 }
 
+int VoxelLodTerrain::_b_debug_get_block_count() const {
+	int sum = 0;
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		sum += _lods[lod_index].map->get_block_count();
+	}
+	return sum;
+}
+
 void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelLodTerrain::get_stream);
@@ -1701,6 +1709,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_get_octrees"), &VoxelLodTerrain::debug_get_octrees);
 	ClassDB::bind_method(D_METHOD("debug_print_sdf_top_down", "center", "extents"),
 			&VoxelLodTerrain::_b_debug_print_sdf_top_down);
+	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelLodTerrain::_b_debug_get_block_count);
 
 	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 
