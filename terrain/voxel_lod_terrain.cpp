@@ -456,6 +456,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
+			VOXEL_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
+
 			const Transform transform = get_global_transform();
 			VoxelServer::get_singleton()->set_volume_transform(_volume_id, transform);
 
@@ -624,10 +626,10 @@ void VoxelLodTerrain::_process() {
 		// This should be the same distance relatively to each LOD
 		const int block_region_extent = get_block_region_extent();
 
-		// Ignore last lod because it can extend a little beyond due to the view distance setting.
+		// Ignore largest lod because it can extend a little beyond due to the view distance setting.
 		// Instead, those blocks are unloaded by the octree forest management.
-		// Iterating from big to small LOD so we can exit earlier.
-		for (int lod_index = get_lod_count() - 1; lod_index > 0; --lod_index) {
+		// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
+		for (int lod_index = get_lod_count() - 2; lod_index >= 0; --lod_index) {
 			VOXEL_PROFILE_SCOPE();
 			Lod &lod = _lods[lod_index];
 
@@ -668,7 +670,7 @@ void VoxelLodTerrain::_process() {
 			}
 
 			// Cancel block updates that are not within the padded region (since neighbors are always required to remesh)
-			Rect3i padded_new_box = new_box.padded(-1);
+			const Rect3i padded_new_box = new_box.padded(-1);
 			{
 				VOXEL_PROFILE_SCOPE();
 				unordered_remove_if(lod.blocks_pending_update, [&lod, padded_new_box](Vector3i bpos) {
@@ -1202,7 +1204,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 		L::schedule_update(block, lod0.blocks_pending_update);
 	}
 
-	int half_bs = get_block_size() >> 1;
+	const int half_bs = get_block_size() >> 1;
 
 	// Process downscales upwards in pairs of consecutive LODs.
 	// This ensures we don't process multiple times the same blocks.
@@ -1218,16 +1220,22 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 			VoxelBlock *src_block = src_lod.map->get_block(src_bpos);
 			VoxelBlock *dst_block = dst_lod.map->get_block(dst_bpos);
 
+			src_block->set_needs_lodding(false);
+
+			if (dst_block == nullptr) {
+				ERR_PRINT(String("Destination block {0} not found when cascading edits on LOD {1}")
+								  .format(varray(dst_bpos.to_vec3(), dst_lod_index)));
+				continue;
+			}
+
 			// The block and its lower LODs are expected to be available.
 			// Otherwise it means the function was called too late
 			CRASH_COND(src_block == nullptr);
-			CRASH_COND(dst_block == nullptr);
+			//CRASH_COND(dst_block == nullptr);
 			CRASH_COND(src_block->voxels.is_null());
 			CRASH_COND(dst_block->voxels.is_null());
 
 			L::schedule_update(dst_block, dst_lod.blocks_pending_update);
-
-			src_block->set_needs_lodding(false);
 
 			dst_block->set_modified(true);
 
