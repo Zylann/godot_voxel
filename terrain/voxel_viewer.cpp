@@ -3,9 +3,7 @@
 #include <core/engine.h>
 
 VoxelViewer::VoxelViewer() {
-	if (!Engine::get_singleton()->is_editor_hint()) {
-		set_process(true);
-	}
+	set_notify_transform(!Engine::get_singleton()->is_editor_hint());
 }
 
 void VoxelViewer::set_view_distance(unsigned int distance) {
@@ -60,18 +58,16 @@ void VoxelViewer::_notification(int p_what) {
 			}
 			break;
 
-		case NOTIFICATION_PROCESS:
-			_process();
+		case NOTIFICATION_TRANSFORM_CHANGED:
+			if (is_active()) {
+				const Vector3 pos = get_global_transform().origin;
+				VoxelServer::get_singleton()->set_viewer_position(_viewer_id, pos);
+			}
 			break;
 
 		default:
 			break;
 	}
-}
-
-void VoxelViewer::_process() {
-	const Vector3 pos = get_global_transform().origin;
-	VoxelServer::get_singleton()->set_viewer_position(_viewer_id, pos);
 }
 
 bool VoxelViewer::is_active() const {
