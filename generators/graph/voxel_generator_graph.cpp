@@ -765,6 +765,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 			&VoxelGeneratorGraph::remove_connection);
 	ClassDB::bind_method(D_METHOD("get_connections"), &VoxelGeneratorGraph::_b_get_connections);
 	ClassDB::bind_method(D_METHOD("get_node_ids"), &VoxelGeneratorGraph::get_node_ids);
+	ClassDB::bind_method(D_METHOD("find_node_by_name", "name"), &VoxelGeneratorGraph::find_node_by_name);
 
 	ClassDB::bind_method(D_METHOD("get_node_type_id", "node_id"), &VoxelGeneratorGraph::get_node_type_id);
 	ClassDB::bind_method(D_METHOD("get_node_param", "node_id", "param_index"), &VoxelGeneratorGraph::get_node_param);
