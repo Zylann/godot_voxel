@@ -233,9 +233,10 @@ int VoxelLodTerrain::get_view_distance() const {
 	return _view_distance_voxels;
 }
 
+// TODO Needs to be clamped dynamically, to avoid the user accidentally setting blowing up memory.
+// It used to be clamped to a hardcoded value, but now it may depend on LOD count and boundaries
 void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
 	ERR_FAIL_COND(p_distance_in_voxels <= 0);
-	ERR_FAIL_COND(p_distance_in_voxels > 8192);
 	// Note: this is a hint distance, the terrain will attempt to have this radius filled with loaded voxels.
 	// It is possible for blocks to still load beyond that distance.
 	_view_distance_voxels = p_distance_in_voxels;
