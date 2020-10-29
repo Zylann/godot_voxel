@@ -1709,7 +1709,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 
 int VoxelLodTerrain::_b_debug_get_block_count() const {
 	int sum = 0;
-	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		sum += _lods[lod_index].map->get_block_count();
 	}
 	return sum;
