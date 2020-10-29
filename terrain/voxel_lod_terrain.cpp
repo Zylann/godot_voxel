@@ -503,16 +503,26 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index) {
 	Lod &lod = _lods[lod_index];
 
+	const int p = lod.map->get_block_size_pow2() + lod_index;
+
+	const int bound_min_x = _bounds_in_voxels.pos.x >> p;
+	const int bound_min_y = _bounds_in_voxels.pos.y >> p;
+	const int bound_min_z = _bounds_in_voxels.pos.z >> p;
+	const int bound_max_x = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
+	const int bound_max_y = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
+	const int bound_max_z = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
+
+	const int min_x = max(p_bpos.x - 1, bound_min_x);
+	const int min_y = max(p_bpos.y - 1, bound_min_y);
+	const int min_z = max(p_bpos.z - 1, bound_min_z);
+	const int max_x = min(p_bpos.x + 2, bound_max_x);
+	const int max_y = min(p_bpos.y + 2, bound_max_y);
+	const int max_z = min(p_bpos.z + 2, bound_max_z);
+
 	Vector3i bpos;
-
-	for (int y = -1; y < 2; ++y) {
-		for (int z = -1; z < 2; ++z) {
-			for (int x = -1; x < 2; ++x) {
-
-				bpos.x = p_bpos.x + x;
-				bpos.y = p_bpos.y + y;
-				bpos.z = p_bpos.z + z;
-
+	for (bpos.y = min_y; bpos.y < max_y; ++bpos.y) {
+		for (bpos.z = min_z; bpos.z < max_z; ++bpos.z) {
+			for (bpos.x = min_x; bpos.x < max_x; ++bpos.x) {
 				VoxelBlock *block = lod.map->get_block(bpos);
 
 				if (block == nullptr) {
@@ -526,6 +536,36 @@ void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos
 	}
 }
 
+bool VoxelLodTerrain::is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelMap &map) const {
+	const int p = map.get_block_size_pow2() + lod_index;
+
+	const int bound_min_x = _bounds_in_voxels.pos.x >> p;
+	const int bound_min_y = _bounds_in_voxels.pos.y >> p;
+	const int bound_min_z = _bounds_in_voxels.pos.z >> p;
+	const int bound_max_x = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
+	const int bound_max_y = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
+	const int bound_max_z = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
+
+	const int min_x = max(p_bpos.x - 1, bound_min_x);
+	const int min_y = max(p_bpos.y - 1, bound_min_y);
+	const int min_z = max(p_bpos.z - 1, bound_min_z);
+	const int max_x = min(p_bpos.x + 2, bound_max_x);
+	const int max_y = min(p_bpos.y + 2, bound_max_y);
+	const int max_z = min(p_bpos.z + 2, bound_max_z);
+
+	Vector3i bpos;
+	for (bpos.y = min_y; bpos.y < max_y; ++bpos.y) {
+		for (bpos.z = min_z; bpos.z < max_z; ++bpos.z) {
+			for (bpos.x = min_x; bpos.x < max_x; ++bpos.x) {
+				if (bpos != p_bpos && !map.has_block(bpos)) {
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
 bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index) {
 	Lod &lod = _lods[lod_index];
 	VoxelBlock *block = lod.map->get_block(p_bpos);
@@ -537,18 +577,16 @@ bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, int
 }
 
 bool VoxelLodTerrain::check_block_mesh_updated(VoxelBlock *block) {
+	VOXEL_PROFILE_SCOPE();
 	CRASH_COND(block == nullptr);
 	Lod &lod = _lods[block->lod_index];
 
 	switch (block->get_mesh_state()) {
-
 		case VoxelBlock::MESH_NEVER_UPDATED:
 		case VoxelBlock::MESH_NEED_UPDATE:
-			if (lod.map->is_block_surrounded(block->position)) {
-
+			if (is_block_surrounded(block->position, block->lod_index, **lod.map)) {
 				lod.blocks_pending_update.push_back(block->position);
 				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
-
 			} else {
 				try_schedule_loading_with_neighbors(block->position, block->lod_index);
 			}

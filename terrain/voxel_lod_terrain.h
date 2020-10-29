@@ -117,6 +117,7 @@ private:
 
 	Vector3 get_local_viewer_pos() const;
 	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index);
+	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelMap &map) const;
 	bool check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index);
 	bool check_block_mesh_updated(VoxelBlock *block);
 	void _set_lod_count(int p_lod_count);
