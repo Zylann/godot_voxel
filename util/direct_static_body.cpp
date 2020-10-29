@@ -1,4 +1,5 @@
 #include "direct_static_body.h"
+#include "profiling.h"
 
 #include <scene/resources/world.h>
 #include <servers/physics/physics_server_sw.h>
@@ -35,6 +36,7 @@ bool DirectStaticBody::is_valid() const {
 }
 
 void DirectStaticBody::set_transform(Transform transform) {
+	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(!_body.is_valid());
 	PhysicsServer::get_singleton()->body_set_state(_body, PhysicsServer::BODY_STATE_TRANSFORM, transform);
 

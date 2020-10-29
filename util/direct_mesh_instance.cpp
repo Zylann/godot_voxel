@@ -1,4 +1,5 @@
 #include "direct_mesh_instance.h"
+#include "profiling.h"
 #include <scene/resources/world.h>
 
 DirectMeshInstance::DirectMeshInstance() {
@@ -39,6 +40,7 @@ void DirectMeshInstance::set_world(World *world) {
 }
 
 void DirectMeshInstance::set_transform(Transform world_transform) {
+	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(!_mesh_instance.is_valid());
 	VisualServer &vs = *VisualServer::get_singleton();
 	vs.instance_set_transform(_mesh_instance, world_transform);

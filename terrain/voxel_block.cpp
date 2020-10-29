@@ -262,22 +262,26 @@ void VoxelBlock::set_parent_visible(bool parent_visible) {
 }
 
 void VoxelBlock::set_parent_transform(const Transform &parent_transform) {
-	const Transform local_transform(Basis(), _position_in_voxels.to_vec3());
-	const Transform world_transform = parent_transform * local_transform;
+	VOXEL_PROFILE_SCOPE();
 
-	if (_mesh_instance.is_valid()) {
-		_mesh_instance.set_transform(world_transform);
+	if (_mesh_instance.is_valid() || _static_body.is_valid()) {
+		const Transform local_transform(Basis(), _position_in_voxels.to_vec3());
+		const Transform world_transform = parent_transform * local_transform;
 
-		for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-			DirectMeshInstance &mi = _transition_mesh_instances[i];
-			if (mi.is_valid()) {
-				mi.set_transform(world_transform);
+		if (_mesh_instance.is_valid()) {
+			_mesh_instance.set_transform(world_transform);
+
+			for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+				DirectMeshInstance &mi = _transition_mesh_instances[i];
+				if (mi.is_valid()) {
+					mi.set_transform(world_transform);
+				}
 			}
 		}
-	}
 
-	if (_static_body.is_valid()) {
-		_static_body.set_transform(world_transform);
+		if (_static_body.is_valid()) {
+			_static_body.set_transform(world_transform);
+		}
 	}
 }
 
