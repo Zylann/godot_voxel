@@ -57,6 +57,9 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	set_notify_transform(true);
 
+	// Doing this to setup the defaults
+	set_process_mode(_process_mode);
+
 	// Infinite by default
 	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
 
@@ -393,20 +396,35 @@ Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, int lod_index) co
 	return bpos.to_vec3();
 }
 
+void VoxelLodTerrain::set_process_mode(ProcessMode mode) {
+	_process_mode = mode;
+	set_process(_process_mode == PROCESS_MODE_IDLE);
+	set_physics_process(_process_mode == PROCESS_MODE_PHYSICS);
+}
+
 void VoxelLodTerrain::_notification(int p_what) {
 	switch (p_what) {
-		case NOTIFICATION_ENTER_TREE:
-			set_process(true);
-			break;
-
+		// TODO Should use NOTIFICATION_INTERNAL_PROCESS instead?
 		case NOTIFICATION_PROCESS:
-			// Can't do that in enter tree because Godot is "still setting up children".
-			// Can't do that in ready either because Godot says node state is locked.
-			// This hack is quite miserable.
-			VoxelServerUpdater::ensure_existence(get_tree());
-
-			_process();
+			if (_process_mode == PROCESS_MODE_IDLE) {
+				// Can't do that in enter tree because Godot is "still setting up children".
+				// Can't do that in ready either because Godot says node state is locked.
+				// This hack is quite miserable.
+				VoxelServerUpdater::ensure_existence(get_tree());
+				_process();
+			}
 			break;
+
+		// TODO Should use NOTIFICATION_INTERNAL_PHYSICS_PROCESS instead?
+		case NOTIFICATION_PHYSICS_PROCESS:
+			if (_process_mode == PROCESS_MODE_PHYSICS) {
+				// Can't do that in enter tree because Godot is "still setting up children".
+				// Can't do that in ready either because Godot says node state is locked.
+				// This hack is quite miserable.
+				VoxelServerUpdater::ensure_existence(get_tree());
+				_process();
+				break;
+			}
 
 		case NOTIFICATION_EXIT_TREE:
 			break;
@@ -1751,6 +1769,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_bounds"), &VoxelLodTerrain::_b_set_voxel_bounds);
 	ClassDB::bind_method(D_METHOD("get_voxel_bounds"), &VoxelLodTerrain::_b_get_voxel_bounds);
 
+	ClassDB::bind_method(D_METHOD("set_process_mode", "mode"), &VoxelLodTerrain::set_process_mode);
+	ClassDB::bind_method(D_METHOD("get_process_mode"), &VoxelLodTerrain::get_process_mode);
+
 	ClassDB::bind_method(D_METHOD("debug_raycast_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_block);
 	ClassDB::bind_method(D_METHOD("debug_get_block_info", "block_pos", "lod"), &VoxelLodTerrain::debug_get_block_info);
 	ClassDB::bind_method(D_METHOD("debug_get_octrees"), &VoxelLodTerrain::debug_get_octrees);
@@ -1759,6 +1780,10 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelLodTerrain::_b_debug_get_block_count);
 
 	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
+
+	BIND_ENUM_CONSTANT(PROCESS_MODE_IDLE);
+	BIND_ENUM_CONSTANT(PROCESS_MODE_PHYSICS);
+	BIND_ENUM_CONSTANT(PROCESS_MODE_DISABLED);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"),
 			"set_stream", "get_stream");

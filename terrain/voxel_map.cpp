@@ -215,7 +215,7 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 
 					} else {
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
-						// If we want to change this, we may have to add an API for that it in `VoxelStream`.
+						// If we want to change this, we may have to add an API for that.
 						Vector3i offset = block_to_voxel(bpos);
 						dst_buffer.fill_area(
 								_default_voxel[channel],

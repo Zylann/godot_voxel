@@ -64,6 +64,20 @@ public:
 	void set_voxel_bounds(Rect3i p_box);
 	inline Rect3i get_voxel_bounds() const { return _bounds_in_voxels; }
 
+	enum ProcessMode {
+		PROCESS_MODE_IDLE = 0,
+		PROCESS_MODE_PHYSICS,
+		PROCESS_MODE_DISABLED
+	};
+
+	// This was originally added to fix a problem with rigidbody teleportation and floating world origin:
+	// The player teleported at a different rate than the rest of the world due to delays in transform updates,
+	// which caused the world to unload and then reload entirely over the course of 3 frames,
+	// producing flickers and CPU lag. Changing process mode allows to align update rate,
+	// and freeze LOD for the duration of the teleport.
+	void set_process_mode(ProcessMode mode);
+	ProcessMode get_process_mode() const { return _process_mode; }
+
 	Ref<VoxelTool> get_voxel_tool();
 
 	struct Stats {
@@ -165,6 +179,7 @@ private:
 	std::vector<BlockToSave> _blocks_to_save;
 	VoxelServer::ReceptionBuffers _reception_buffers;
 	uint32_t _volume_id = 0;
+	ProcessMode _process_mode = PROCESS_MODE_IDLE;
 
 	// Only populated and then cleared inside _process, so lifetime of pointers should be valid
 	std::vector<VoxelBlock *> _blocks_pending_transition_update;
@@ -205,5 +220,7 @@ private:
 
 	Stats _stats;
 };
+
+VARIANT_ENUM_CAST(VoxelLodTerrain::ProcessMode)
 
 #endif // VOXEL_LOD_TERRAIN_HPP
