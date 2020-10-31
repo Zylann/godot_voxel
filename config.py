@@ -25,6 +25,7 @@ def get_doc_classes():
     "VoxelViewer",
 
     "VoxelStream",
+    "VoxelStreamScript",
     "VoxelStreamFile",
     "VoxelStreamBlockFiles",
     "VoxelStreamRegionFiles",
@@ -36,6 +37,7 @@ def get_doc_classes():
     "VoxelGeneratorNoise2D",
     "VoxelGeneratorTest",
     "VoxelGeneratorGraph",
+    "VoxelGeneratorScript",
 
     "VoxelBoxMover",
     "VoxelTool",

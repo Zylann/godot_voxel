@@ -1,0 +1,19 @@
+#ifndef VOXEL_GENERATOR_SCRIPT_H
+#define VOXEL_GENERATOR_SCRIPT_H
+
+#include "voxel_generator.h"
+
+// Generator based on a script, like GDScript, C# or NativeScript
+class VoxelGeneratorScript : public VoxelGenerator {
+	GDCLASS(VoxelGeneratorScript, VoxelGenerator)
+public:
+	VoxelGeneratorScript();
+
+	void generate_block(VoxelBlockRequest &input) override;
+	int get_used_channels_mask() const override;
+
+private:
+	static void _bind_methods();
+};
+
+#endif // VOXEL_GENERATOR_SCRIPT_H

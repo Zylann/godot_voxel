@@ -17,6 +17,9 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Voxel nodes can be moved, scaled and rotated
     - Voxel nodes can be limited to specific bounds, rather than being infinitely paging volumes (multiples of block size)
 
+- Smooth voxels
+    - Shaders now have access to the transform of each block, useful for triplanar mapping on moving volumes
+
 - Blocky voxels
     - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support
     - Replaced `transparent` property with `transparency_index` for more control on the culling of transparent faces
@@ -24,9 +27,14 @@ Semver is not yet in place, so each version can have breaking changes, although 
 - Breaking changes
     - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points
     - Defined `COLOR` channel in `VoxelBuffer`, previously known as `DATA3`
+    - `VoxelGenerator` is no longer the base for script-based generators, use `VoxelGeneratorScript` instead
+    - `VoxelStream` is no longer the base for script-based streams, use `VoxelStreamScript` instead
+
+- Fixes
+    - C# should be able to properly implement generator/stream functions
 
 - Known issues
-    - `VoxelLodTerrain` does not support `VoxelViewer`, but a refactoring pass is planned for it.
+    - `VoxelLodTerrain` does not entirely support `VoxelViewer`, but a refactoring pass is planned for it.
 
 
 `godot3.2.3` - 08/09/2020

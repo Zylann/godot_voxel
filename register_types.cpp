@@ -11,6 +11,7 @@
 #include "generators/voxel_generator_image.h"
 #include "generators/voxel_generator_noise.h"
 #include "generators/voxel_generator_noise_2d.h"
+#include "generators/voxel_generator_script.h"
 #include "generators/voxel_generator_waves.h"
 #include "meshers/blocky/voxel_library.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
@@ -23,6 +24,7 @@
 #include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_file.h"
 #include "streams/voxel_stream_region_files.h"
+#include "streams/voxel_stream_script.h"
 #include "terrain/voxel_box_mover.h"
 #include "terrain/voxel_lod_terrain.h"
 #include "terrain/voxel_map.h"
@@ -65,6 +67,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelStreamFile>();
 	ClassDB::register_class<VoxelStreamBlockFiles>();
 	ClassDB::register_class<VoxelStreamRegionFiles>();
+	ClassDB::register_class<VoxelStreamScript>();
 
 	// Generators
 	ClassDB::register_class<VoxelGenerator>();
@@ -75,6 +78,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelGeneratorNoise2D>();
 	ClassDB::register_class<VoxelGeneratorNoise>();
 	ClassDB::register_class<VoxelGeneratorGraph>();
+	ClassDB::register_class<VoxelGeneratorScript>();
 
 	// Utilities
 	ClassDB::register_class<VoxelBoxMover>();
