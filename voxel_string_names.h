@@ -25,6 +25,7 @@ public:
 	StringName block_unloaded;
 
 	StringName u_transition_mask;
+	StringName u_block_local_transform;
 };
 
 #endif // VOXEL_STRING_NAMES_H

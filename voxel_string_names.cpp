@@ -22,4 +22,5 @@ VoxelStringNames::VoxelStringNames() {
 	block_unloaded = StaticCString::create("block_unloaded");
 
 	u_transition_mask = StaticCString::create("u_transition_mask");
+	u_block_local_transform = StaticCString::create("u_block_local_transform");
 }

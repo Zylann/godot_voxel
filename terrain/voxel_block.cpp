@@ -208,6 +208,22 @@ void VoxelBlock::_set_visible(bool visible) {
 
 void VoxelBlock::set_shader_material(Ref<ShaderMaterial> material) {
 	_shader_material = material;
+
+	if (_mesh_instance.is_valid()) {
+		_mesh_instance.set_material_override(_shader_material);
+
+		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+			DirectMeshInstance &mi = _transition_mesh_instances[dir];
+			if (mi.is_valid()) {
+				mi.set_material_override(_shader_material);
+			}
+		}
+	}
+
+	if (_shader_material.is_valid()) {
+		const Transform local_transform(Basis(), _position_in_voxels.to_vec3());
+		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_block_local_transform, local_transform);
+	}
 }
 
 //void VoxelBlock::set_transition_bit(uint8_t side, bool value) {
@@ -243,6 +259,7 @@ void VoxelBlock::set_transition_mask(uint8_t m) {
 		tm |= bits[Cube::SIDE_NEGATIVE_Z] << 4;
 		tm |= bits[Cube::SIDE_POSITIVE_Z] << 5;
 
+		// TODO Godot 4: we may replace this with a per-instance parameter so we can lift material access limitation
 		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, tm);
 	}
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {

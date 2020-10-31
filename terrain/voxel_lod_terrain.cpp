@@ -1003,9 +1003,9 @@ void VoxelLodTerrain::_process() {
 	{
 		VOXEL_PROFILE_SCOPE();
 
-		for (size_t i = 0; i < _reception_buffers.data_output.size(); ++i) {
+		for (size_t reception_index = 0; reception_index < _reception_buffers.data_output.size(); ++reception_index) {
 			VOXEL_PROFILE_SCOPE();
-			const VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[i];
+			const VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[reception_index];
 
 			if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVE) {
 				// That's a save confirmation event.
