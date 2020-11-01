@@ -59,7 +59,6 @@ VoxelBlock *VoxelMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
 	VoxelBlock *block = get_block(bpos);
 
 	if (block == nullptr) {
-
 		Ref<VoxelBuffer> buffer(memnew(VoxelBuffer));
 		buffer->create(_block_size, _block_size, _block_size);
 		buffer->set_default_values(_default_voxel);
@@ -111,10 +110,15 @@ VoxelBlock *VoxelMap::get_block(Vector3i bpos) {
 	if (_last_accessed_block && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
-	VoxelBlock **p = _blocks.getptr(bpos);
-	if (p) {
-		_last_accessed_block = *p;
-		CRASH_COND(_last_accessed_block == nullptr); // The map should not contain null blocks
+	unsigned int *iptr = _blocks_map.getptr(bpos);
+	if (iptr != nullptr) {
+		const unsigned int i = *iptr;
+#ifdef DEBUG_ENABLED
+		CRASH_COND(i >= _blocks.size());
+#endif
+		VoxelBlock *block = _blocks[i];
+		CRASH_COND(block == nullptr); // The map should not contain null blocks
+		_last_accessed_block = block;
 		return _last_accessed_block;
 	}
 	return nullptr;
@@ -124,10 +128,14 @@ const VoxelBlock *VoxelMap::get_block(Vector3i bpos) const {
 	if (_last_accessed_block && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
-	const VoxelBlock *const *p = _blocks.getptr(bpos);
-	if (p) {
+	const unsigned int *iptr = _blocks_map.getptr(bpos);
+	if (iptr != nullptr) {
+		const unsigned int i = *iptr;
+#ifdef DEBUG_ENABLED
+		CRASH_COND(i >= _blocks.size());
+#endif
 		// TODO This function can't cache _last_accessed_block, because it's const, so repeated accesses are hashing again...
-		const VoxelBlock *block = *p;
+		const VoxelBlock *block = _blocks[i];
 		CRASH_COND(block == nullptr); // The map should not contain null blocks
 		return block;
 	}
@@ -140,12 +148,27 @@ void VoxelMap::set_block(Vector3i bpos, VoxelBlock *block) {
 	if (_last_accessed_block == nullptr || _last_accessed_block->position == bpos) {
 		_last_accessed_block = block;
 	}
-	_blocks.set(bpos, block);
+#ifdef DEBUG_ENABLED
+	CRASH_COND(_blocks_map.has(bpos));
+#endif
+	unsigned int i = _blocks.size();
+	_blocks.push_back(block);
+	_blocks_map.set(bpos, i);
 }
 
-void VoxelMap::remove_block_internal(Vector3i bpos) {
+void VoxelMap::remove_block_internal(Vector3i bpos, unsigned int index) {
 	// This function assumes the block is already freed
-	_blocks.erase(bpos);
+	_blocks_map.erase(bpos);
+
+	VoxelBlock *moved_block = _blocks.back();
+	_blocks[index] = moved_block;
+	_blocks.pop_back();
+
+	if (index < _blocks.size()) {
+		unsigned int *moved_block_index = _blocks_map.getptr(moved_block->position);
+		CRASH_COND(moved_block_index == nullptr);
+		*moved_block_index = index;
+	}
 }
 
 VoxelBlock *VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
@@ -161,7 +184,7 @@ VoxelBlock *VoxelMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
 }
 
 bool VoxelMap::has_block(Vector3i pos) const {
-	return /*(_last_accessed_block != nullptr && _last_accessed_block->pos == pos) ||*/ _blocks.has(pos);
+	return /*(_last_accessed_block != nullptr && _last_accessed_block->pos == pos) ||*/ _blocks_map.has(pos);
 }
 
 bool VoxelMap::is_block_surrounded(Vector3i pos) const {
@@ -176,10 +199,10 @@ bool VoxelMap::is_block_surrounded(Vector3i pos) const {
 }
 
 void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) {
-	Vector3i max_pos = min_pos + dst_buffer.get_size();
+	const Vector3i max_pos = min_pos + dst_buffer.get_size();
 
-	Vector3i min_block_pos = voxel_to_block(min_pos);
-	Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1, 1, 1)) + Vector3i(1, 1, 1);
+	const Vector3i min_block_pos = voxel_to_block(min_pos);
+	const Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1, 1, 1)) + Vector3i(1, 1, 1);
 	// TODO Why is this function limited by this check?
 	// Probably to make sure we are getting neighbors, however that's a worry for the caller, not this function...
 	ERR_FAIL_COND((max_block_pos - min_block_pos) != Vector3i(3, 3, 3));
@@ -231,18 +254,24 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 
 void VoxelMap::clear() {
 	const Vector3i *key = nullptr;
-	while ((key = _blocks.next(key))) {
-		VoxelBlock *block_ptr = _blocks.get(*key);
-		if (block_ptr == nullptr) {
-			OS::get_singleton()->printerr("Unexpected nullptr in VoxelMap::clear()");
+	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
+		VoxelBlock *block = *it;
+		if (block == nullptr) {
+			ERR_PRINT("Unexpected nullptr in VoxelMap::clear()");
+		} else {
+			memdelete(block);
 		}
-		memdelete(block_ptr);
 	}
 	_blocks.clear();
+	_blocks_map.clear();
 	_last_accessed_block = nullptr;
 }
 
 int VoxelMap::get_block_count() const {
+#ifdef DEBUG_ENABLED
+	const unsigned int blocks_map_size = _blocks_map.size();
+	CRASH_COND(_blocks.size() != blocks_map_size);
+#endif
 	return _blocks.size();
 }
 

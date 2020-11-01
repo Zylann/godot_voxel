@@ -71,13 +71,17 @@ public:
 		if (_last_accessed_block && _last_accessed_block->position == bpos) {
 			_last_accessed_block = nullptr;
 		}
-		VoxelBlock **pptr = _blocks.getptr(bpos);
-		if (pptr) {
-			VoxelBlock *block = *pptr;
+		unsigned int *iptr = _blocks_map.getptr(bpos);
+		if (iptr != nullptr) {
+			const unsigned int i = *iptr;
+#ifdef DEBUG_ENABLED
+			CRASH_COND(i >= _blocks.size());
+#endif
+			VoxelBlock *block = _blocks[i];
 			ERR_FAIL_COND(block == nullptr);
 			pre_delete(block);
 			memdelete(block);
-			remove_block_internal(bpos);
+			remove_block_internal(bpos, i);
 		}
 	}
 
@@ -92,13 +96,9 @@ public:
 	int get_block_count() const;
 
 	template <typename Op_T>
-	void for_all_blocks(Op_T op) {
-		const Vector3i *key = nullptr;
-		while ((key = _blocks.next(key))) {
-			VoxelBlock *block = _blocks.get(*key);
-			if (block != nullptr) {
-				op(block);
-			}
+	inline void for_all_blocks(Op_T op) {
+		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
+			op(*it);
 		}
 	}
 
@@ -107,7 +107,7 @@ public:
 private:
 	void set_block(Vector3i bpos, VoxelBlock *block);
 	VoxelBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
-	void remove_block_internal(Vector3i bpos);
+	void remove_block_internal(Vector3i bpos, unsigned int index);
 
 	void set_block_size_pow2(unsigned int p);
 
@@ -131,7 +131,8 @@ private:
 	FixedArray<uint64_t, VoxelBuffer::MAX_CHANNELS> _default_voxel;
 
 	// Blocks stored with a spatial hash in all 3D directions
-	HashMap<Vector3i, VoxelBlock *, Vector3iHasher> _blocks;
+	HashMap<Vector3i, unsigned int, Vector3iHasher> _blocks_map;
+	std::vector<VoxelBlock *> _blocks;
 
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
 	// To prevent too much hashing, this reference is checked before.
