@@ -207,6 +207,7 @@ static void generate_blocky_mesh(
 						}
 
 						const std::vector<Vector2> &side_uvs = voxel.model.side_uvs[side];
+						const std::vector<real_t> &side_tangents = voxel.model.side_tangents[side];
 
 						// Subtracting 1 because the data is padded
 						Vector3 pos(x - 1, y - 1, z - 1);
@@ -226,6 +227,11 @@ static void generate_blocky_mesh(
 							const int append_index = arrays.uvs.size();
 							arrays.uvs.resize(arrays.uvs.size() + vertex_count);
 							memcpy(arrays.uvs.data() + append_index, side_uvs.data(), vertex_count * sizeof(Vector2));
+						}
+						{
+							const int append_index = arrays.tangents.size();
+							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
+							memcpy(arrays.tangents.data() + append_index, side_tangents.data(), (vertex_count * 4) * sizeof(real_t));
 						}
 
 						{
@@ -302,9 +308,15 @@ static void generate_blocky_mesh(
 
 						const std::vector<Vector3> &normals = voxel.model.normals;
 						const std::vector<Vector2> &uvs = voxel.model.uvs;
+						const std::vector<real_t> &tangents = voxel.model.tangents;
 
 						const Vector3 pos(x - 1, y - 1, z - 1);
 
+						{
+							const int append_index = arrays.tangents.size();
+							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
+							memcpy(arrays.tangents.data() + append_index, tangents.data(), (vertex_count * 4) * sizeof(real_t));
+						}
 						for (unsigned int i = 0; i < vertex_count; ++i) {
 							arrays.normals.push_back(normals[i]);
 							arrays.uvs.push_back(uvs[i]);
@@ -363,6 +375,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		a.uvs.clear();
 		a.colors.clear();
 		a.indices.clear();
+		a.tangents.clear();
 	}
 
 	float baked_occlusion_darkness = 0;
@@ -462,18 +475,21 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				PoolVector<Vector3> normals;
 				PoolVector<Color> colors;
 				PoolVector<int> indices;
+				PoolVector<real_t> tangents;
 
 				raw_copy_to(positions, arrays.positions);
 				raw_copy_to(uvs, arrays.uvs);
 				raw_copy_to(normals, arrays.normals);
 				raw_copy_to(colors, arrays.colors);
 				raw_copy_to(indices, arrays.indices);
+				raw_copy_to(tangents, arrays.tangents);
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
 				mesh_arrays[Mesh::ARRAY_NORMAL] = normals;
 				mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
+				mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
 			}
 
 			output.surfaces.push_back(mesh_arrays);

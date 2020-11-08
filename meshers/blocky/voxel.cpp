@@ -190,6 +190,8 @@ void Voxel::set_collision_mask(uint32_t mask) {
 static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int p_atlas_size) {
 	const float sy = 1.0;
 
+	std::vector<Vector3> deltaPos;
+
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 		std::vector<Vector3> &positions = baked_data.model.side_positions[side];
 		positions.resize(4);
@@ -201,6 +203,9 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 			}
 			positions[i] = p;
 		}
+		deltaPos.push_back(Vector3(positions[2] - positions[0]));
+		deltaPos.push_back(Vector3(positions[1] - positions[0]));
+		deltaPos.push_back(Vector3(positions[3] - positions[0]));
 
 		std::vector<int> &indices = baked_data.model.side_indices[side];
 		indices.resize(6);
@@ -224,11 +229,50 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 	CRASH_COND(atlas_size <= 0);
 	const float s = 1.0 / atlas_size;
 
+	std::vector<Vector2> deltaUV;
+
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 		baked_data.model.side_uvs[side].resize(4);
 		std::vector<Vector2> &uvs = baked_data.model.side_uvs[side];
 		for (unsigned int i = 0; i < 4; ++i) {
 			uvs[i] = (config.get_cube_tile(side) + uv[i]) * s;
+		}
+
+		Vector2 deltaUV1 = uvs[2] - uvs[0];
+		Vector2 deltaUV2 = uvs[1] - uvs[0];
+
+		Vector2 deltaUV3 = uvs[3] - uvs[0];
+
+		float r1 = 1.0f / (deltaUV1[0] * deltaUV2[1] - deltaUV1[1] * deltaUV2[0]);
+		float r2 = 1.0f / (deltaUV3[0] * deltaUV1[1] - deltaUV3[1] * deltaUV1[0]);
+
+		Vector3 deltaPos1 = deltaPos[side * 3];
+		Vector3 deltaPos2 = deltaPos[side * 3+1];
+		Vector3 deltaPos3 = deltaPos[side * 3+2];
+
+		Vector3 t1 = (deltaPos1 * deltaUV2[1] - deltaPos2 * deltaUV1[1]) * r1;
+		Vector3 t2 = (deltaPos3 * deltaUV1[1] - deltaPos1 * deltaUV3[1]) * r2;
+
+		Vector3 bt1 = (deltaPos2 * deltaUV1[0] - deltaPos1 * deltaUV2[0]) * r1;
+		Vector3 bt2 = (deltaPos1 * deltaUV3[0] - deltaPos3 * deltaUV1[0]) * r2;
+
+		Vector3i ni = Cube::g_side_normals[side];
+		Vector3 n = Vector3(ni[0], ni[1], ni[2]);
+		float d1 = bt1.dot(n.cross(t1)) < 0 ? -1.0f : 1.0f;
+		float d2 = bt2.dot(n.cross(t2)) < 0 ? -1.0f : 1.0f;
+
+		std::vector<real_t> &tangents = baked_data.model.side_tangents[side];
+		for (unsigned int i = 0; i < 3; i++) {
+			tangents.push_back(t1[0]);
+			tangents.push_back(t1[1]);
+			tangents.push_back(t1[2]);
+			tangents.push_back(d1);
+		}
+		for (unsigned int i = 0; i < 3; i++) {
+			tangents.push_back(t2[0]);
+			tangents.push_back(t2[1]);
+			tangents.push_back(t2[2]);
+			tangents.push_back(d2);
 		}
 	}
 
@@ -253,6 +297,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 	PoolVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
 	PoolVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
 	PoolVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
+	PoolVector<real_t> tangents = arrays[Mesh::ARRAY_TANGENT];
 
 	baked_data.empty = positions.size() == 0;
 
@@ -295,6 +340,13 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 		uvs.resize(positions.size());
 	}
 
+	bool tangents_empty = false;
+	if(tangents.size() == 0) {
+		tangents = PoolVector<real_t>();
+		tangents.resize(positions.size() * 4);
+		tangents_empty = true;
+	}
+
 	// Separate triangles belonging to faces of the cube
 
 	{
@@ -302,6 +354,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 		PoolVector3Array::Read positions_read = positions.read();
 		PoolVector3Array::Read normals_read = normals.read();
 		PoolVector2Array::Read uvs_read = uvs.read();
+		PoolVector<real_t>::Read tangents_read = tangents.read();
 
 		FixedArray<HashMap<int, int>, Cube::SIDE_COUNT> added_side_indices;
 		HashMap<int, int> added_regular_indices;
@@ -315,6 +368,23 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 			tri_positions[0] = positions_read[indices_read[i]];
 			tri_positions[1] = positions_read[indices_read[i + 1]];
 			tri_positions[2] = positions_read[indices_read[i + 2]];
+
+			float tangent[4];
+
+			if(tangents_empty){
+				// Some tangent calc
+				Vector2 deltaUV1 = uvs_read[indices_read[i+1]] - uvs_read[indices_read[i]];
+				Vector2 deltaUV2 = uvs_read[indices_read[i+2]] - uvs_read[indices_read[i]];
+				Vector3 deltaPos1 = tri_positions[1] - tri_positions[0];
+				Vector3 deltaPos2 = tri_positions[2] - tri_positions[0];
+				float r = 1.0f / (deltaUV1[0] * deltaUV2[1] - deltaUV1[1] * deltaUV2[0]);
+				Vector3 t = (deltaPos1 * deltaUV2[1] - deltaPos2 * deltaUV1[1])*r;
+				Vector3 bt = (deltaPos2 * deltaUV1[0] - deltaPos1 * deltaUV2[0])*r;
+				tangent[0] = t[0];
+				tangent[1] = t[1];
+				tangent[2] = t[2];
+				tangent[3] = (bt.dot(normals_read[indices_read[i]].cross(t))) < 0 ? -1.0f : 1.0f;
+			}
 
 			if (L::get_triangle_side(tri_positions[0], tri_positions[1], tri_positions[2], side)) {
 				// That triangle is on the face
@@ -331,6 +401,20 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 						model.side_indices[side].push_back(next_side_index);
 						model.side_positions[side].push_back(tri_positions[j]);
 						model.side_uvs[side].push_back(uvs_read[indices_read[i + j]]);
+						if(tangents_empty) {
+							model.side_tangents[side].push_back(tangent[0]);
+							model.side_tangents[side].push_back(tangent[1]);
+							model.side_tangents[side].push_back(tangent[2]);
+							model.side_tangents[side].push_back(tangent[3]);
+						}
+						else {
+							// need to fix tangent indexing since it increases by 4
+							int ti = i / 3; // Always will be evenly divisible
+							model.side_tangents[side].push_back(tangents_read[ti*4]);
+							model.side_tangents[side].push_back(tangents_read[ti*4+1]);
+							model.side_tangents[side].push_back(tangents_read[ti*4+2]);
+							model.side_tangents[side].push_back(tangents_read[ti*4+3]);
+						}
 
 						added_side_indices[side].set(src_index, next_side_index);
 						++next_side_index;
@@ -355,7 +439,18 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 						model.positions.push_back(tri_positions[j]);
 						model.normals.push_back(normals_read[indices_read[i + j]]);
 						model.uvs.push_back(uvs_read[indices_read[i + j]]);
-
+						if(tangents_empty){
+							model.tangents.push_back(tangents_read[i*4]);
+							model.tangents.push_back(tangents_read[i*4+1]);
+							model.tangents.push_back(tangents_read[i*4+2]);
+							model.tangents.push_back(tangents_read[i*4+3]);
+						}
+						else {
+							model.tangents.push_back(tangent[0]);
+							model.tangents.push_back(tangent[1]);
+							model.tangents.push_back(tangent[2]);
+							model.tangents.push_back(tangent[3]);
+						}
 						added_regular_indices.set(src_index, next_regular_index);
 						++next_regular_index;
 

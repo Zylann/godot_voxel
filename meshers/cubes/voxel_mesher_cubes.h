@@ -51,6 +51,7 @@ public:
 		std::vector<Vector3> normals;
 		std::vector<Color> colors;
 		std::vector<int> indices;
+		std::vector<real_t> tangents;
 	};
 
 protected:

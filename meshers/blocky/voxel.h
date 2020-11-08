@@ -29,12 +29,14 @@ public:
 			std::vector<Vector3> normals;
 			std::vector<Vector2> uvs;
 			std::vector<int> indices;
+			std::vector<real_t> tangents;
 			// Model sides:
 			// They are separated because this way we can occlude them easily.
 			// Due to these defining cube side triangles, normals are known already.
 			FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> side_positions;
 			FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> side_uvs;
 			FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
+			FixedArray<std::vector<real_t>, Cube::SIDE_COUNT> side_tangents;
 
 			FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
 
