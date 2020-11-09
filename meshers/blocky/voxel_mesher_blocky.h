@@ -41,7 +41,7 @@ public:
 		std::vector<Vector2> uvs;
 		std::vector<Color> colors;
 		std::vector<int> indices;
-		std::vector<real_t> tangents;
+		std::vector<float> tangents;
 	};
 
 protected:

@@ -231,7 +231,7 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 			uvs[i] = (config.get_cube_tile(side) + uv[i]) * s;
 		}
 
-		std::vector<real_t> &tangents = baked_data.model.side_tangents[side];
+		std::vector<float> &tangents = baked_data.model.side_tangents[side];
 		for (unsigned int i = 0; i < 12; ++i) {
 			for (unsigned int j = 0; j < 4; ++j)
 				tangents.push_back(Cube::g_side_tangents[side][j]);

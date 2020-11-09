@@ -207,7 +207,7 @@ static void generate_blocky_mesh(
 						}
 
 						const std::vector<Vector2> &side_uvs = voxel.model.side_uvs[side];
-						const std::vector<real_t> &side_tangents = voxel.model.side_tangents[side];
+						const std::vector<float> &side_tangents = voxel.model.side_tangents[side];
 
 						// Subtracting 1 because the data is padded
 						Vector3 pos(x - 1, y - 1, z - 1);
@@ -231,7 +231,7 @@ static void generate_blocky_mesh(
 						{
 							const int append_index = arrays.tangents.size();
 							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
-							memcpy(arrays.tangents.data() + append_index, side_tangents.data(), (vertex_count * 4) * sizeof(real_t));
+							memcpy(arrays.tangents.data() + append_index, side_tangents.data(), (vertex_count * 4) * sizeof(float));
 						}
 
 						{
@@ -308,14 +308,14 @@ static void generate_blocky_mesh(
 
 						const std::vector<Vector3> &normals = voxel.model.normals;
 						const std::vector<Vector2> &uvs = voxel.model.uvs;
-						const std::vector<real_t> &tangents = voxel.model.tangents;
+						const std::vector<float> &tangents = voxel.model.tangents;
 
 						const Vector3 pos(x - 1, y - 1, z - 1);
 
 						{
 							const int append_index = arrays.tangents.size();
 							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
-							memcpy(arrays.tangents.data() + append_index, tangents.data(), (vertex_count * 4) * sizeof(real_t));
+							memcpy(arrays.tangents.data() + append_index, tangents.data(), (vertex_count * 4) * sizeof(float));
 						}
 						for (unsigned int i = 0; i < vertex_count; ++i) {
 							arrays.normals.push_back(normals[i]);
