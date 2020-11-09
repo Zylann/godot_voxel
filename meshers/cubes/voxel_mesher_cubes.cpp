@@ -343,11 +343,6 @@ void build_voxel_mesh_as_greedy_cubes(
 					Vector3 n;
 					n[za] = m.side == SIDE_FRONT ? -1 : 1;
 
-					Vector3 t = n.cross(v0);
-					Vector3 bt = t.cross(n);
-					float dt = bt.dot(n.cross(t));
-					float tangent[4] = {t[0], t[1], t[2], dt < 0 ? -1.0f : 1.0f};
-
 					// 2-----3
 					// |     |
 					// |     |
@@ -367,27 +362,6 @@ void build_voxel_mesh_as_greedy_cubes(
 					arrays.normals.push_back(n);
 					arrays.normals.push_back(n);
 					arrays.normals.push_back(n);
-
-					// One for each vertex
-					arrays.tangents.push_back(tangent[0]);
-					arrays.tangents.push_back(tangent[1]);
-					arrays.tangents.push_back(tangent[2]);
-					arrays.tangents.push_back(tangent[3]);
-
-					arrays.tangents.push_back(tangent[0]);
-					arrays.tangents.push_back(tangent[1]);
-					arrays.tangents.push_back(tangent[2]);
-					arrays.tangents.push_back(tangent[3]);
-
-					arrays.tangents.push_back(tangent[0]);
-					arrays.tangents.push_back(tangent[1]);
-					arrays.tangents.push_back(tangent[2]);
-					arrays.tangents.push_back(tangent[3]);
-
-					arrays.tangents.push_back(tangent[0]);
-					arrays.tangents.push_back(tangent[1]);
-					arrays.tangents.push_back(tangent[2]);
-					arrays.tangents.push_back(tangent[3]);
 
 					const unsigned int index_offset = index_offsets[material_index];
 					CRASH_COND(za >= 3 || m.side >= 2);
@@ -421,7 +395,6 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 		a.normals.clear();
 		a.colors.clear();
 		a.indices.clear();
-		a.tangents.clear();
 	}
 
 	const VoxelBuffer &voxels = input.voxels;
@@ -629,19 +602,16 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 				PoolVector<Vector3> normals;
 				PoolVector<Color> colors;
 				PoolVector<int> indices;
-				PoolVector<real_t> tangents;
 
 				raw_copy_to(positions, arrays.positions);
 				raw_copy_to(normals, arrays.normals);
 				raw_copy_to(colors, arrays.colors);
 				raw_copy_to(indices, arrays.indices);
-				raw_copy_to(tangents, arrays.tangents);
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_NORMAL] = normals;
 				mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
-				mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
 			}
 
 			output.surfaces.push_back(mesh_arrays);

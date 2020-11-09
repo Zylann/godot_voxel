@@ -199,4 +199,12 @@ const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT] = {
 	Vector3i(1, 1, 1)
 };
 
+const float g_side_tangents[SIDE_COUNT][4] = {
+	{0.0f, 0.0f, -1.0f, -1.0f},
+	{0.0f, 0.0f, 1.0f, -1.0f},
+	{1.0f, 0.0f, 0.0f, -1.0f},
+	{-1.0f, 0.0f, 0.0f, -1.0f},
+	{1.0f, 0.0f, 0.0f, -1.0f},
+};
+
 } // namespace Cube

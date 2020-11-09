@@ -60,6 +60,8 @@ enum Corner {
 	CORNER_COUNT
 };
 
+extern const float g_side_tangents[SIDE_COUNT][4];
+
 extern const Vector3 g_corner_position[CORNER_COUNT];
 
 extern const int g_side_quad_triangles[SIDE_COUNT][6];
