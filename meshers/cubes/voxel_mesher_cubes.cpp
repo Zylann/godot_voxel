@@ -345,8 +345,8 @@ void build_voxel_mesh_as_greedy_cubes(
 
 					Vector3 t = n.cross(v0);
 					Vector3 bt = t.cross(n);
-					float d = bt.dot(n.cross(t));
-					float tangent[4] = {t[0], t[1], t[2], d < 0 ? -1.0f : 1.0f};
+					float dt = bt.dot(n.cross(t));
+					float tangent[4] = {t[0], t[1], t[2], dt < 0 ? -1.0f : 1.0f};
 
 					// 2-----3
 					// |     |
