@@ -475,7 +475,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				PoolVector<Vector3> normals;
 				PoolVector<Color> colors;
 				PoolVector<int> indices;
-				PoolVector<real_t> tangents;
+				PoolVector<float> tangents;
 
 				raw_copy_to(positions, arrays.positions);
 				raw_copy_to(uvs, arrays.uvs);
