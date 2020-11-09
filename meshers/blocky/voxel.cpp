@@ -203,6 +203,7 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 			}
 			positions[i] = p;
 		}
+		//Saving them here so we don't have to loop through and get them later. Probably a better way of doing this.
 		deltaPos.push_back(Vector3(positions[2] - positions[0]));
 		deltaPos.push_back(Vector3(positions[1] - positions[0]));
 		deltaPos.push_back(Vector3(positions[3] - positions[0]));
@@ -238,6 +239,7 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 			uvs[i] = (config.get_cube_tile(side) + uv[i]) * s;
 		}
 
+		//Tangent calculation modeled after http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping/#computing-the-tangents-and-bitangents
 		Vector2 deltaUV1 = uvs[2] - uvs[0];
 		Vector2 deltaUV2 = uvs[1] - uvs[0];
 
@@ -343,7 +345,6 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 	bool tangents_empty = false;
 	if(tangents.size() == 0) {
 		tangents = PoolVector<real_t>();
-		tangents.resize(positions.size() * 4);
 		tangents_empty = true;
 	}
 
@@ -372,7 +373,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 			float tangent[4];
 
 			if(tangents_empty){
-				// Some tangent calc
+				//If tangents are empty then we calculate them
 				Vector2 deltaUV1 = uvs_read[indices_read[i+1]] - uvs_read[indices_read[i]];
 				Vector2 deltaUV2 = uvs_read[indices_read[i+2]] - uvs_read[indices_read[i]];
 				Vector3 deltaPos1 = tri_positions[1] - tri_positions[0];
@@ -408,12 +409,11 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 							model.side_tangents[side].push_back(tangent[3]);
 						}
 						else {
-							// need to fix tangent indexing since it increases by 4
-							int ti = i / 3; // Always will be evenly divisible
-							model.side_tangents[side].push_back(tangents_read[ti*4]);
-							model.side_tangents[side].push_back(tangents_read[ti*4+1]);
-							model.side_tangents[side].push_back(tangents_read[ti*4+2]);
-							model.side_tangents[side].push_back(tangents_read[ti*4+3]);
+							int ti = (i / 3) * 4; // i is the first vertex of each triangle which increments in 3s. There are 4 floats per tangent.
+							model.side_tangents[side].push_back(tangents_read[ti]);
+							model.side_tangents[side].push_back(tangents_read[ti+1]);
+							model.side_tangents[side].push_back(tangents_read[ti+2]);
+							model.side_tangents[side].push_back(tangents_read[ti+3]);
 						}
 
 						added_side_indices[side].set(src_index, next_side_index);
@@ -440,16 +440,17 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 						model.normals.push_back(normals_read[indices_read[i + j]]);
 						model.uvs.push_back(uvs_read[indices_read[i + j]]);
 						if(tangents_empty){
-							model.tangents.push_back(tangents_read[i*4]);
-							model.tangents.push_back(tangents_read[i*4+1]);
-							model.tangents.push_back(tangents_read[i*4+2]);
-							model.tangents.push_back(tangents_read[i*4+3]);
-						}
-						else {
 							model.tangents.push_back(tangent[0]);
 							model.tangents.push_back(tangent[1]);
 							model.tangents.push_back(tangent[2]);
 							model.tangents.push_back(tangent[3]);
+						}
+						else {
+							int ti = (i / 3) * 4; // i is the first vertex of each triangle which increments in 3s. There are 4 floats per tangent.
+							model.tangents.push_back(tangents_read[ti]);
+							model.tangents.push_back(tangents_read[ti+1]);
+							model.tangents.push_back(tangents_read[ti+2]);
+							model.tangents.push_back(tangents_read[ti+3]);
 						}
 						added_regular_indices.set(src_index, next_regular_index);
 						++next_regular_index;
