@@ -113,6 +113,9 @@ public:
 
 	Vector2 get_cube_tile(int side) const { return _cube_tiles[side]; }
 
+	bool get_bake_tangents() const { return _bake_tangents;}
+	void set_bake_tangents(bool bt);
+
 	//-------------------------------------------
 	// Built-in geometry generators
 
@@ -173,6 +176,8 @@ private:
 	bool _random_tickable = false;
 	bool _empty = true;
 	uint32_t _collision_mask = 1;
+
+	bool _bake_tangents;
 };
 
 VARIANT_ENUM_CAST(Voxel::GeometryType)

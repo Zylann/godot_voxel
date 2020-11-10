@@ -229,9 +229,11 @@ static void generate_blocky_mesh(
 							memcpy(arrays.uvs.data() + append_index, side_uvs.data(), vertex_count * sizeof(Vector2));
 						}
 						{
-							const int append_index = arrays.tangents.size();
-							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
-							memcpy(arrays.tangents.data() + append_index, side_tangents.data(), (vertex_count * 4) * sizeof(float));
+							if (side_tangents.size() > 0 ){
+								const int append_index = arrays.tangents.size();
+								arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
+								memcpy(arrays.tangents.data() + append_index, side_tangents.data(), (vertex_count * 4) * sizeof(float));
+							}
 						}
 
 						{
@@ -312,11 +314,12 @@ static void generate_blocky_mesh(
 
 						const Vector3 pos(x - 1, y - 1, z - 1);
 
-						{
+						if (tangents.size() > 0) {
 							const int append_index = arrays.tangents.size();
 							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
 							memcpy(arrays.tangents.data() + append_index, tangents.data(), (vertex_count * 4) * sizeof(float));
 						}
+
 						for (unsigned int i = 0; i < vertex_count; ++i) {
 							arrays.normals.push_back(normals[i]);
 							arrays.uvs.push_back(uvs[i]);
@@ -475,21 +478,23 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				PoolVector<Vector3> normals;
 				PoolVector<Color> colors;
 				PoolVector<int> indices;
-				PoolVector<float> tangents;
 
 				raw_copy_to(positions, arrays.positions);
 				raw_copy_to(uvs, arrays.uvs);
 				raw_copy_to(normals, arrays.normals);
 				raw_copy_to(colors, arrays.colors);
 				raw_copy_to(indices, arrays.indices);
-				raw_copy_to(tangents, arrays.tangents);
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
 				mesh_arrays[Mesh::ARRAY_NORMAL] = normals;
 				mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
-				mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
+				if (arrays.tangents.size() > 0) {
+					PoolVector<float> tangents;
+					raw_copy_to(tangents, arrays.tangents);
+					mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
+				}
 			}
 
 			output.surfaces.push_back(mesh_arrays);

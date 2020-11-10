@@ -48,6 +48,9 @@ public:
 	unsigned int get_voxel_count() const;
 	void set_voxel_count(unsigned int type_count);
 
+	bool get_bake_tangents() const { return _bake_tangents;}
+	void set_bake_tangents(bool bt);
+
 	void load_default();
 
 	int get_voxel_index_from_name(StringName name) const;
@@ -86,6 +89,7 @@ private:
 	std::vector<Ref<Voxel> > _voxel_types;
 	int _atlas_size = 16;
 	bool _needs_baking = true;
+	bool _bake_tangents = false;
 
 	// Used in multithread context by the mesher. Don't modify that outside of bake().
 	RWLock *_baked_data_rw_lock = nullptr;
