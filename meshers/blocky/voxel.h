@@ -45,11 +45,13 @@ public:
 				normals.clear();
 				uvs.clear();
 				indices.clear();
+				tangents.clear();
 
 				for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
 					side_positions[side].clear();
 					side_uvs[side].clear();
 					side_indices[side].clear();
+					side_tangents[side].clear();
 				}
 			}
 		};
