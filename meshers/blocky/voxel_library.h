@@ -89,7 +89,7 @@ private:
 	std::vector<Ref<Voxel> > _voxel_types;
 	int _atlas_size = 16;
 	bool _needs_baking = true;
-	bool _bake_tangents = false;
+	bool _bake_tangents = true;
 
 	// Used in multithread context by the mesher. Don't modify that outside of bake().
 	RWLock *_baked_data_rw_lock = nullptr;

@@ -94,10 +94,6 @@ void Voxel::set_color(Color color) {
 	_color = color;
 }
 
-void Voxel::set_bake_tangents(bool bt) {
-	_bake_tangents = bt;
-}
-
 void Voxel::set_material_id(unsigned int id) {
 	ERR_FAIL_COND(id >= VoxelMesherBlocky::MAX_MATERIALS);
 	_material_id = id;
@@ -191,7 +187,7 @@ void Voxel::set_collision_mask(uint32_t mask) {
 	_collision_mask = mask;
 }
 
-static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int p_atlas_size) {
+static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int p_atlas_size, bool bake_tangents) {
 	const float sy = 1.0;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
@@ -235,7 +231,7 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 			uvs[i] = (config.get_cube_tile(side) + uv[i]) * s;
 		}
 
-		if(config.get_bake_tangents()){
+		if(bake_tangents){
 			std::vector<float> &tangents = baked_data.model.side_tangents[side];
 			for (unsigned int i = 0; i < 12; ++i) {
 				for (unsigned int j = 0; j < 4; ++j)
@@ -247,7 +243,7 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 	baked_data.empty = false;
 }
 
-static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
+static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool bake_tangents) {
 	Ref<Mesh> mesh = config.get_custom_mesh();
 
 	if (mesh.is_null()) {
@@ -334,7 +330,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 
 			float tangent[4];
 
-			if(tangents_empty && config.get_bake_tangents()){
+			if(tangents_empty && bake_tangents){
 				//If tangents are empty then we calculate them
 				Vector2 delta_uv1 = uvs_read[indices_read[i+1]] - uvs_read[indices_read[i]];
 				Vector2 delta_uv2 = uvs_read[indices_read[i+2]] - uvs_read[indices_read[i]];
@@ -364,13 +360,13 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 						model.side_indices[side].push_back(next_side_index);
 						model.side_positions[side].push_back(tri_positions[j]);
 						model.side_uvs[side].push_back(uvs_read[indices_read[i + j]]);
-						if(tangents_empty && config.get_bake_tangents()) {
+						if(tangents_empty && bake_tangents) {
 							model.side_tangents[side].push_back(tangent[0]);
 							model.side_tangents[side].push_back(tangent[1]);
 							model.side_tangents[side].push_back(tangent[2]);
 							model.side_tangents[side].push_back(tangent[3]);
 						}
-						else if(config.get_bake_tangents()) {
+						else if(bake_tangents) {
 							int ti = (i / 3) * 4; // i is the first vertex of each triangle which increments in 3s. There are 4 floats per tangent.
 							model.side_tangents[side].push_back(tangents_read[ti]);
 							model.side_tangents[side].push_back(tangents_read[ti+1]);
@@ -401,13 +397,13 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 						model.positions.push_back(tri_positions[j]);
 						model.normals.push_back(normals_read[indices_read[i + j]]);
 						model.uvs.push_back(uvs_read[indices_read[i + j]]);
-						if(tangents_empty && config.get_bake_tangents()){
+						if(tangents_empty && bake_tangents){
 							model.tangents.push_back(tangent[0]);
 							model.tangents.push_back(tangent[1]);
 							model.tangents.push_back(tangent[2]);
 							model.tangents.push_back(tangent[3]);
 						}
-						else if(config.get_bake_tangents()) {
+						else if(bake_tangents) {
 							int ti = (i / 3) * 4; // i is the first vertex of each triangle which increments in 3s. There are 4 floats per tangent.
 							model.tangents.push_back(tangents_read[ti]);
 							model.tangents.push_back(tangents_read[ti+1]);
@@ -426,7 +422,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 	}
 }
 
-void Voxel::bake(BakedData &baked_data, int p_atlas_size) {
+void Voxel::bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents) {
 	baked_data.clear();
 
 	// baked_data.contributes_to_ao is set by the side culling phase
@@ -440,11 +436,11 @@ void Voxel::bake(BakedData &baked_data, int p_atlas_size) {
 			break;
 
 		case GEOMETRY_CUBE:
-			bake_cube_geometry(*this, baked_data, p_atlas_size);
+			bake_cube_geometry(*this, baked_data, p_atlas_size, bake_tangents);
 			break;
 
 		case GEOMETRY_CUSTOM_MESH:
-			bake_mesh_geometry(*this, baked_data);
+			bake_mesh_geometry(*this, baked_data, bake_tangents);
 			break;
 
 		default:
@@ -491,7 +487,6 @@ void Voxel::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("is_empty"), &Voxel::is_empty);
 
-	ClassDB::bind_method(D_METHOD("set_bake_tangents", "bake_tangents"), &Voxel::set_bake_tangents);
 
 	// TODO Update to StringName in Godot 4
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");

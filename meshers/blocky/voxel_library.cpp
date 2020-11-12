@@ -99,14 +99,8 @@ void VoxelLibrary::set_atlas_size(int s) {
 }
 
 void VoxelLibrary::set_bake_tangents(bool bt) {
-	if(bt==_bake_tangents)
-		return;
 	_bake_tangents = bt;
 	_needs_baking = true;
-	//for each current voxel, we need to set their flags
-	for (unsigned int i = 0; i < _voxel_types.size(); ++i) {
-		_voxel_types[i]->set_bake_tangents(bt);
-	}
 }
 
 Ref<Voxel> VoxelLibrary::create_voxel(unsigned int id, String name) {
@@ -114,7 +108,6 @@ Ref<Voxel> VoxelLibrary::create_voxel(unsigned int id, String name) {
 	Ref<Voxel> voxel(memnew(Voxel));
 	voxel->set_id(id);
 	voxel->set_voxel_name(name);
-	voxel->set_bake_tangents(_bake_tangents); // Not sure exactly where to hook in. Trying here and set_voxel
 	_voxel_types[id] = voxel;
 	return voxel;
 }
@@ -131,7 +124,6 @@ void VoxelLibrary::set_voxel(unsigned int idx, Ref<Voxel> voxel) {
 		voxel->set_id(idx);
 	}
 
-	voxel->set_bake_tangents(_bake_tangents); //Not sure if this is needed
 	_needs_baking = true;
 }
 
@@ -173,7 +165,7 @@ void VoxelLibrary::bake() {
 	for (size_t i = 0; i < _voxel_types.size(); ++i) {
 		Ref<Voxel> config = _voxel_types[i];
 		if (config.is_valid()) {
-			_voxel_types[i]->bake(_baked_data.models[i], _atlas_size);
+			_voxel_types[i]->bake(_baked_data.models[i], _atlas_size, _bake_tangents);
 		} else {
 			_baked_data.models[i].clear();
 		}
