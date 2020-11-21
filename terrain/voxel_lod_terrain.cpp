@@ -11,6 +11,8 @@
 
 #include <core/core_string_names.h>
 #include <core/engine.h>
+#include <scene/3d/mesh_instance.h>
+#include <scene/resources/packed_scene.h>
 
 namespace {
 
@@ -1707,6 +1709,43 @@ int VoxelLodTerrain::_b_debug_get_block_count() const {
 	return sum;
 }
 
+Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath) const {
+	Spatial *root = memnew(Spatial);
+	root->set_name(get_name());
+
+	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		const Lod &lod = _lods[lod_index];
+
+		lod.map.for_all_blocks([root](const VoxelBlock *block) {
+			block->for_each_mesh_instance_with_transform([root, block](const DirectMeshInstance &dmi, Transform t) {
+				Ref<Mesh> mesh = dmi.get_mesh();
+
+				if (mesh.is_valid()) {
+					MeshInstance *mi = memnew(MeshInstance);
+					mi->set_mesh(mesh);
+					mi->set_transform(t);
+					// TODO Transition mesh visibility?
+					mi->set_visible(block->is_visible());
+					root->add_child(mi);
+					// The owner must be set after adding to parent
+					mi->set_owner(root);
+				}
+			});
+		});
+	}
+
+	Ref<PackedScene> scene = memnew(PackedScene);
+	Error err = scene->pack(root);
+	if (err != OK) {
+		return err;
+	}
+	err = ResourceSaver::save(fpath, scene, ResourceSaver::FLAG_BUNDLE_RESOURCES);
+
+	memdelete(root);
+
+	return err;
+}
+
 void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelLodTerrain::get_stream);
@@ -1752,6 +1791,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_print_sdf_top_down", "center", "extents"),
 			&VoxelLodTerrain::_b_debug_print_sdf_top_down);
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelLodTerrain::_b_debug_get_block_count);
+	ClassDB::bind_method(D_METHOD("debug_dump_as_scene", "path"), &VoxelLodTerrain::_b_debug_dump_as_scene);
 
 	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 

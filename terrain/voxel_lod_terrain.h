@@ -151,6 +151,7 @@ private:
 	AABB _b_get_voxel_bounds() const;
 	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const;
 	int _b_debug_get_block_count() const;
+	Error _b_debug_dump_as_scene(String fpath) const;
 
 	struct OctreeItem {
 		LodOctree octree;
