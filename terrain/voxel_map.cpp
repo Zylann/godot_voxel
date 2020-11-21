@@ -225,7 +225,7 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
 
-						Vector3i offset = block_to_voxel(bpos);
+						const Vector3i offset = block_to_voxel(bpos);
 
 						RWLockRead lock(src_buffer.get_lock());
 
@@ -239,7 +239,7 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 					} else {
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
-						Vector3i offset = block_to_voxel(bpos);
+						const Vector3i offset = block_to_voxel(bpos);
 						dst_buffer.fill_area(
 								_default_voxel[channel],
 								offset - min_pos,
@@ -280,26 +280,4 @@ bool VoxelMap::is_area_fully_loaded(const Rect3i voxels_box) const {
 	return block_box.all_cells_match([this](Vector3i pos) {
 		return has_block(pos);
 	});
-}
-
-void VoxelMap::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "c"), &VoxelMap::_b_get_voxel, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "c"), &VoxelMap::_b_set_voxel, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "c"), &VoxelMap::_b_get_voxel_f, DEFVAL(VoxelBuffer::CHANNEL_SDF));
-	ClassDB::bind_method(D_METHOD("set_voxel_f", "value", "x", "y", "z", "c"), &VoxelMap::_b_set_voxel_f, DEFVAL(VoxelBuffer::CHANNEL_SDF));
-	ClassDB::bind_method(D_METHOD("get_voxel_v", "pos", "c"), &VoxelMap::_b_get_voxel_v, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "c"), &VoxelMap::_b_set_voxel_v, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("get_default_voxel", "channel"), &VoxelMap::get_default_voxel, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("set_default_voxel", "value", "channel"), &VoxelMap::set_default_voxel, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("has_block", "x", "y", "z"), &VoxelMap::_b_has_block);
-	ClassDB::bind_method(D_METHOD("get_buffer_copy", "min_pos", "out_buffer", "channel"), &VoxelMap::_b_get_buffer_copy, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("set_block_buffer", "block_pos", "buffer"), &VoxelMap::_b_set_block_buffer);
-	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelMap::_b_voxel_to_block);
-	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelMap::_b_block_to_voxel);
-	ClassDB::bind_method(D_METHOD("get_block_size"), &VoxelMap::get_block_size);
-}
-
-void VoxelMap::_b_get_buffer_copy(Vector3 pos, Ref<VoxelBuffer> dst_buffer_ref, unsigned int channel) {
-	ERR_FAIL_COND(dst_buffer_ref.is_null());
-	get_buffer_copy(Vector3i(pos), **dst_buffer_ref, channel);
 }

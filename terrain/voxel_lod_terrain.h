@@ -2,8 +2,8 @@
 #define VOXEL_LOD_TERRAIN_HPP
 
 #include "../server/voxel_server.h"
-#include "../util/direct_mesh_instance.h"
 #include "lod_octree.h"
+#include "voxel_map.h"
 #include <core/set.h>
 #include <scene/3d/spatial.h>
 
@@ -11,10 +11,8 @@
 #include "../editor/voxel_debug.h"
 #endif
 
-class VoxelMap;
 class VoxelTool;
 class VoxelStream;
-class VoxelBlock;
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
@@ -192,7 +190,7 @@ private:
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
-		Ref<VoxelMap> map;
+		VoxelMap map;
 		Set<Vector3i> loading_blocks;
 		std::vector<Vector3i> blocks_pending_update;
 

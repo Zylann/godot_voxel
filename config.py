@@ -15,7 +15,6 @@ def get_doc_classes():
     "VoxelServer",
 
     "VoxelBuffer",
-    "VoxelMap",
 
     "Voxel",
     "VoxelLibrary",

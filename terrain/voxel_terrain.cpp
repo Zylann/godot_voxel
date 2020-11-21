@@ -27,8 +27,6 @@ VoxelTerrain::VoxelTerrain() {
 
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_GRID);
 
-	_map.instance();
-
 	Ref<VoxelLibrary> library;
 	library.instance();
 	set_voxel_library(library);
@@ -140,11 +138,11 @@ void VoxelTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
 }
 
 void VoxelTerrain::_set_block_size_po2(int p_block_size_po2) {
-	_map->create(p_block_size_po2, 0);
+	_map.create(p_block_size_po2, 0);
 }
 
 unsigned int VoxelTerrain::get_block_size_pow2() const {
-	return _map->get_block_size_pow2();
+	return _map.get_block_size_pow2();
 }
 
 void VoxelTerrain::restart_stream() {
@@ -203,12 +201,12 @@ void VoxelTerrain::set_generate_collisions(bool enabled) {
 }
 
 unsigned int VoxelTerrain::get_max_view_distance() const {
-	return _max_view_distance_blocks * _map->get_block_size();
+	return _max_view_distance_blocks * _map.get_block_size();
 }
 
 void VoxelTerrain::set_max_view_distance(unsigned int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0);
-	const unsigned int d = distance_in_voxels / _map->get_block_size();
+	const unsigned int d = distance_in_voxels / _map.get_block_size();
 	if (d != _max_view_distance_blocks) {
 		PRINT_VERBOSE(String("View distance changed from ") +
 					  String::num(_max_view_distance_blocks) + String(" blocks to ") + String::num(d));
@@ -229,7 +227,7 @@ Ref<Material> VoxelTerrain::get_material(unsigned int id) const {
 }
 
 void VoxelTerrain::make_block_dirty(Vector3i bpos) {
-	VoxelBlock *block = _map->get_block(bpos);
+	VoxelBlock *block = _map.get_block(bpos);
 	ERR_FAIL_COND_MSG(block == nullptr, "Requested update to a block that isn't loaded");
 	make_block_dirty(block);
 }
@@ -261,7 +259,7 @@ void VoxelTerrain::try_schedule_block_update(VoxelBlock *block) {
 }
 
 void VoxelTerrain::view_block(Vector3i bpos, bool data_flag, bool mesh_flag, bool collision_flag) {
-	VoxelBlock *block = _map->get_block(bpos);
+	VoxelBlock *block = _map.get_block(bpos);
 
 	if (block == nullptr) {
 		// The block isn't loaded
@@ -311,7 +309,7 @@ void VoxelTerrain::view_block(Vector3i bpos, bool data_flag, bool mesh_flag, boo
 }
 
 void VoxelTerrain::unview_block(Vector3i bpos, bool data_flag, bool mesh_flag, bool collision_flag) {
-	VoxelBlock *block = _map->get_block(bpos);
+	VoxelBlock *block = _map.get_block(bpos);
 
 	if (block == nullptr) {
 		// The block isn't loaded
@@ -393,9 +391,7 @@ struct ScheduleSaveAction {
 } // namespace
 
 void VoxelTerrain::immerge_block(Vector3i bpos) {
-	ERR_FAIL_COND(_map.is_null());
-
-	_map->remove_block(bpos, [this, bpos](VoxelBlock *block) {
+	_map.remove_block(bpos, [this, bpos](VoxelBlock *block) {
 		emit_block_unloaded(block);
 		// Note: no need to copy the block because it gets removed from the map anyways
 		ScheduleSaveAction{ _blocks_to_save, false }(block);
@@ -417,7 +413,7 @@ void VoxelTerrain::immerge_block(Vector3i bpos) {
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
 	// That may cause a stutter, so should be used when the player won't notice
-	_map->for_all_blocks(ScheduleSaveAction{ _blocks_to_save, with_copy });
+	_map.for_all_blocks(ScheduleSaveAction{ _blocks_to_save, with_copy });
 	// And flush immediately
 	send_block_data_requests();
 }
@@ -454,7 +450,7 @@ Dictionary VoxelTerrain::get_statistics() const {
 
 void VoxelTerrain::make_all_view_dirty() {
 	// Mark all loaded blocks dirty within range of viewers that require meshes
-	_map->for_all_blocks([this](VoxelBlock *b) {
+	_map.for_all_blocks([this](VoxelBlock *b) {
 		if (b->viewers.get(VoxelViewerRefCount::TYPE_MESH) > 0) {
 			make_block_dirty(b);
 		}
@@ -490,7 +486,7 @@ void VoxelTerrain::stop_updater() {
 	_blocks_pending_update.clear();
 
 	ResetMeshStateAction a;
-	_map->for_all_blocks(a);
+	_map.for_all_blocks(a);
 }
 
 void VoxelTerrain::start_streamer() {
@@ -507,10 +503,10 @@ void VoxelTerrain::stop_streamer() {
 void VoxelTerrain::reset_map() {
 	// Discard everything, to reload it all
 
-	_map->for_all_blocks([this](VoxelBlock *block) {
+	_map.for_all_blocks([this](VoxelBlock *block) {
 		emit_block_unloaded(block);
 	});
-	_map->create(get_block_size_pow2(), 0);
+	_map.create(get_block_size_pow2(), 0);
 
 	_loading_blocks.clear();
 	_blocks_pending_load.clear();
@@ -533,18 +529,18 @@ void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
 	}
 
 	// Update the block in which the voxel is
-	const Vector3i bpos = _map->voxel_to_block(pos);
+	const Vector3i bpos = _map.voxel_to_block(pos);
 	make_block_dirty(bpos);
 	//OS::get_singleton()->print("Dirty (%i, %i, %i)\n", bpos.x, bpos.y, bpos.z);
 
 	// Update neighbor blocks if the voxel is touching a boundary
 
-	const Vector3i rpos = _map->to_local(pos);
+	const Vector3i rpos = _map.to_local(pos);
 
 	// TODO Thread-safe way of getting this parameter
 	const bool check_corners = true; //_mesher->get_occlusion_enabled();
 
-	const int max = _map->get_block_size() - 1;
+	const int max = _map.get_block_size() - 1;
 
 	if (rpos.x == 0) {
 		make_block_dirty(bpos - Vector3i(1, 0, 0));
@@ -657,7 +653,7 @@ void VoxelTerrain::make_area_dirty(Rect3i box) {
 		max_pos += Vector3i(1, 1, 1);
 
 	} else {
-		Vector3i min_rpos = _map->to_local(min_pos);
+		Vector3i min_rpos = _map.to_local(min_pos);
 		if (min_rpos.x == 0) {
 			--min_pos.x;
 		}
@@ -668,8 +664,8 @@ void VoxelTerrain::make_area_dirty(Rect3i box) {
 			--min_pos.z;
 		}
 
-		const int max = _map->get_block_size() - 1;
-		const Vector3i max_rpos = _map->to_local(max_pos);
+		const int max = _map.get_block_size() - 1;
+		const Vector3i max_rpos = _map.to_local(max_pos);
 		if (max_rpos.x == max) {
 			++max_pos.x;
 		}
@@ -681,8 +677,8 @@ void VoxelTerrain::make_area_dirty(Rect3i box) {
 		}
 	}
 
-	const Vector3i min_block_pos = _map->voxel_to_block(min_pos);
-	const Vector3i max_block_pos = _map->voxel_to_block(max_pos);
+	const Vector3i min_block_pos = _map.voxel_to_block(min_pos);
+	const Vector3i max_block_pos = _map.voxel_to_block(max_pos);
 
 	Vector3i bpos;
 	for (bpos.z = min_block_pos.z; bpos.z <= max_block_pos.z; ++bpos.z) {
@@ -731,18 +727,15 @@ void VoxelTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_ENTER_WORLD: {
-			ERR_FAIL_COND(_map.is_null());
-			_map->for_all_blocks(SetWorldAction(*get_world()));
+			_map.for_all_blocks(SetWorldAction(*get_world()));
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD:
-			ERR_FAIL_COND(_map.is_null());
-			_map->for_all_blocks(SetWorldAction(nullptr));
+			_map.for_all_blocks(SetWorldAction(nullptr));
 			break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
-			ERR_FAIL_COND(_map.is_null());
-			_map->for_all_blocks(SetParentVisibilityAction(is_visible()));
+			_map.for_all_blocks(SetParentVisibilityAction(is_visible()));
 			break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
@@ -755,7 +748,7 @@ void VoxelTerrain::_notification(int p_what) {
 				return;
 			}
 
-			_map->for_all_blocks([&transform](VoxelBlock *block) {
+			_map.for_all_blocks([&transform](VoxelBlock *block) {
 				block->set_parent_transform(transform);
 			});
 
@@ -824,8 +817,6 @@ void VoxelTerrain::_process() {
 	// print_line(String("D:{0} M:{1}")
 	// 				   .format(varray(_reception_buffers.data_output.size(), _reception_buffers.mesh_output.size())));
 
-	ERR_FAIL_COND(_map.is_null());
-
 	ProfilingClock profiling_clock;
 
 	_stats.dropped_block_loads = 0;
@@ -875,7 +866,7 @@ void VoxelTerrain::_process() {
 
 			p.state.view_distance_blocks =
 					min(view_distance_voxels >> get_block_size_pow2(), _max_view_distance_blocks);
-			p.state.block_position = _map->voxel_to_block(Vector3i(local_position));
+			p.state.block_position = _map.voxel_to_block(Vector3i(local_position));
 			p.state.requires_collisions = VoxelServer::get_singleton()->is_viewer_requiring_collisions(viewer_id);
 			p.state.requires_meshes = VoxelServer::get_singleton()->is_viewer_requiring_visuals(viewer_id);
 		});
@@ -1026,7 +1017,7 @@ void VoxelTerrain::_process() {
 
 			CRASH_COND(ob.voxels.is_null());
 
-			const Vector3i expected_block_size = Vector3i(_map->get_block_size());
+			const Vector3i expected_block_size = Vector3i(_map.get_block_size());
 			if (ob.voxels->get_size() != expected_block_size) {
 				// Voxel block size is incorrect, drop it
 				ERR_PRINT(String("Block size obtained from stream is different from expected size. "
@@ -1037,9 +1028,9 @@ void VoxelTerrain::_process() {
 			}
 
 			// Create or update block data
-			VoxelBlock *block = _map->get_block(block_pos);
+			VoxelBlock *block = _map.get_block(block_pos);
 			const bool was_not_loaded = block == nullptr;
-			block = _map->set_block_buffer(block_pos, ob.voxels);
+			block = _map.set_block_buffer(block_pos, ob.voxels);
 			block->set_world(get_world());
 
 			if (was_not_loaded) {
@@ -1064,8 +1055,8 @@ void VoxelTerrain::_process() {
 							const Vector3i npos = block_pos + ndir;
 
 							// TODO What if the map is really composed of empty blocks?
-							if (_map->is_block_surrounded(npos)) {
-								VoxelBlock *nblock = _map->get_block(npos);
+							if (_map.is_block_surrounded(npos)) {
+								VoxelBlock *nblock = _map.get_block(npos);
 								if (nblock == nullptr || nblock->get_mesh_state() == VoxelBlock::MESH_UPDATE_NOT_SENT) {
 									// Assuming it is scheduled to be updated already.
 									// In case of BLOCK_UPDATE_SENT, we'll have to resend it.
@@ -1108,7 +1099,7 @@ void VoxelTerrain::_process() {
 			// but that will slow down meshing a lot.
 			// TODO This is one reason to separate terrain systems between blocky and smooth (other reason is LOD)
 			if (!(_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF))) {
-				VoxelBlock *block = _map->get_block(block_pos);
+				VoxelBlock *block = _map.get_block(block_pos);
 				if (block == nullptr) {
 					continue;
 				} else {
@@ -1141,7 +1132,7 @@ void VoxelTerrain::_process() {
 				}
 			}
 
-			VoxelBlock *block = _map->get_block(block_pos);
+			VoxelBlock *block = _map.get_block(block_pos);
 
 			// If we got here, it must have been because of scheduling an update
 			CRASH_COND(block == nullptr);
@@ -1153,7 +1144,7 @@ void VoxelTerrain::_process() {
 			mesh_request.lod = 0;
 			for (unsigned int i = 0; i < Cube::MOORE_AREA_3D_COUNT; ++i) {
 				const Vector3i npos = block_pos + Cube::g_ordered_moore_area_3d[i];
-				VoxelBlock *nblock = _map->get_block(npos);
+				VoxelBlock *nblock = _map.get_block(npos);
 				// The block can actually be null on some occasions. Not sure yet if it's that bad
 				//CRASH_COND(nblock == nullptr);
 				if (nblock == nullptr) {
@@ -1190,7 +1181,7 @@ void VoxelTerrain::_process() {
 		for (; queue_index < _reception_buffers.mesh_output.size() && os.get_ticks_msec() < timeout; ++queue_index) {
 			const VoxelServer::BlockMeshOutput &ob = _reception_buffers.mesh_output[queue_index];
 
-			VoxelBlock *block = _map->get_block(ob.position);
+			VoxelBlock *block = _map.get_block(ob.position);
 			if (block == nullptr) {
 				// That block is no longer loaded, drop the result
 				++_stats.dropped_block_meshs;
@@ -1276,7 +1267,7 @@ void VoxelTerrain::_process() {
 }
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
-	Ref<VoxelTool> vt = memnew(VoxelToolTerrain(this, _map));
+	Ref<VoxelTool> vt = memnew(VoxelToolTerrain(this));
 	if (_stream.is_valid()) {
 		if (_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF)) {
 			vt->set_channel(VoxelBuffer::CHANNEL_SDF);
@@ -1332,11 +1323,11 @@ Rect3i VoxelTerrain::get_bounds() const {
 }
 
 Vector3 VoxelTerrain::_b_voxel_to_block(Vector3 pos) {
-	return Vector3i(_map->voxel_to_block(pos)).to_vec3();
+	return Vector3i(_map.voxel_to_block(pos)).to_vec3();
 }
 
 Vector3 VoxelTerrain::_b_block_to_voxel(Vector3 pos) {
-	return Vector3i(_map->block_to_voxel(pos)).to_vec3();
+	return Vector3i(_map.block_to_voxel(pos)).to_vec3();
 }
 
 void VoxelTerrain::_b_save_modified_blocks() {
@@ -1345,11 +1336,9 @@ void VoxelTerrain::_b_save_modified_blocks() {
 
 // Explicitely ask to save a block if it was modified
 void VoxelTerrain::_b_save_block(Vector3 p_block_pos) {
-	ERR_FAIL_COND(_map.is_null());
-
 	const Vector3i block_pos(p_block_pos);
 
-	VoxelBlock *block = _map->get_block(block_pos);
+	VoxelBlock *block = _map.get_block(block_pos);
 	ERR_FAIL_COND(block == nullptr);
 
 	if (!block->is_modified()) {

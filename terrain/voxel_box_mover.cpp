@@ -128,9 +128,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelT
 
 	// Collect collisions with the terrain
 
-	Ref<VoxelMap> voxels_ref = terrain->get_storage();
-	ERR_FAIL_COND_V(voxels_ref.is_null(), Vector3());
-	const VoxelMap &voxels = **voxels_ref;
+	const VoxelMap &voxels = terrain->get_storage();
 
 	const int min_x = int(Math::floor(expanded_box.position.x));
 	const int min_y = int(Math::floor(expanded_box.position.y));

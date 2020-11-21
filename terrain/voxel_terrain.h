@@ -46,7 +46,9 @@ public:
 	void set_material(unsigned int id, Ref<Material> material);
 	Ref<Material> get_material(unsigned int id) const;
 
-	Ref<VoxelMap> get_storage() const { return _map; }
+	VoxelMap &get_storage() { return _map; }
+	const VoxelMap &get_storage() const { return _map; }
+
 	Ref<VoxelTool> get_voxel_tool();
 
 	void set_run_stream_in_editor(bool enable);
@@ -139,7 +141,7 @@ private:
 	std::vector<PairedViewer> _paired_viewers;
 
 	// Voxel storage
-	Ref<VoxelMap> _map;
+	VoxelMap _map;
 
 	// Area within which voxels can exist.
 	// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be

@@ -55,7 +55,6 @@ void register_voxel_types() {
 
 	// Storage
 	ClassDB::register_class<VoxelBuffer>();
-	ClassDB::register_class<VoxelMap>();
 
 	// Nodes
 	ClassDB::register_class<VoxelTerrain>();

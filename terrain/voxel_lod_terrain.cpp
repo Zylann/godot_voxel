@@ -66,8 +66,6 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_OCTREE);
 	VoxelServer::get_singleton()->set_volume_octree_split_scale(_volume_id, get_lod_split_scale());
 
-	_lods[0].map.instance();
-
 	// TODO Being able to set a LOD smaller than the stream is probably a bad idea,
 	// Because it prevents edits from propagating up to the last one, they will be left out of sync
 	set_lod_count(4);
@@ -119,11 +117,11 @@ Ref<VoxelStream> VoxelLodTerrain::get_stream() const {
 }
 
 unsigned int VoxelLodTerrain::get_block_size() const {
-	return _lods[0].map->get_block_size();
+	return _lods[0].map.get_block_size();
 }
 
 unsigned int VoxelLodTerrain::get_block_size_pow2() const {
-	return _lods[0].map->get_block_size_pow2();
+	return _lods[0].map.get_block_size_pow2();
 }
 
 void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
@@ -198,7 +196,7 @@ void VoxelLodTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
 }
 
 void VoxelLodTerrain::_set_block_size_po2(int p_block_size_po2) {
-	_lods[0].map->create(p_block_size_po2, 0);
+	_lods[0].map.create(p_block_size_po2, 0);
 }
 
 // Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.
@@ -214,7 +212,7 @@ void VoxelLodTerrain::post_edit_area(Rect3i p_box) {
 
 void VoxelLodTerrain::post_edit_block_lod0(Vector3i block_pos_lod0) {
 	Lod &lod0 = _lods[0];
-	VoxelBlock *block = lod0.map->get_block(block_pos_lod0);
+	VoxelBlock *block = lod0.map.get_block(block_pos_lod0);
 	ERR_FAIL_COND(block == nullptr);
 
 	block->set_modified(true);
@@ -265,10 +263,8 @@ void VoxelLodTerrain::stop_updater() {
 		Lod &lod = _lods[i];
 		lod.blocks_pending_update.clear();
 
-		if (lod.map.is_valid()) {
-			ResetMeshStateAction a;
-			lod.map->for_all_blocks(a);
-		}
+		ResetMeshStateAction a;
+		lod.map.for_all_blocks(a);
 	}
 }
 
@@ -348,18 +344,12 @@ void VoxelLodTerrain::reset_maps() {
 
 		// Instance new maps if we have more lods, or clear them otherwise
 		if (lod_index < get_lod_count()) {
-			if (lod.map.is_null()) {
-				lod.map.instance();
-			}
-			lod.map->create(get_block_size_pow2(), lod_index);
+			lod.map.create(get_block_size_pow2(), lod_index);
 			lod.blocks_to_load.clear();
-
 			lod.last_view_distance_blocks = 0;
 
 		} else {
-			if (lod.map.is_valid()) {
-				lod.map.unref();
-			}
+			lod.map.clear();
 		}
 	}
 
@@ -392,7 +382,7 @@ Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, int lod_index) co
 	ERR_FAIL_COND_V(lod_index < 0, Vector3());
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3());
 	const Lod &lod = _lods[lod_index];
-	Vector3i bpos = lod.map->voxel_to_block(Vector3i(vpos)) >> lod_index;
+	Vector3i bpos = lod.map.voxel_to_block(Vector3i(vpos)) >> lod_index;
 	return bpos.to_vec3();
 }
 
@@ -432,11 +422,9 @@ void VoxelLodTerrain::_notification(int p_what) {
 		case NOTIFICATION_ENTER_WORLD: {
 			World *world = *get_world();
 			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
-				if (_lods[lod_index].map.is_valid()) {
-					_lods[lod_index].map->for_all_blocks([world](VoxelBlock *block) {
-						block->set_world(world);
-					});
-				}
+				_lods[lod_index].map.for_all_blocks([world](VoxelBlock *block) {
+					block->set_world(world);
+				});
 			}
 #ifdef TOOLS_ENABLED
 			if (is_showing_gizmos()) {
@@ -447,11 +435,9 @@ void VoxelLodTerrain::_notification(int p_what) {
 
 		case NOTIFICATION_EXIT_WORLD: {
 			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
-				if (_lods[lod_index].map.is_valid()) {
-					_lods[lod_index].map->for_all_blocks([](VoxelBlock *block) {
-						block->set_world(nullptr);
-					});
-				}
+				_lods[lod_index].map.for_all_blocks([](VoxelBlock *block) {
+					block->set_world(nullptr);
+				});
 			}
 #ifdef TOOLS_ENABLED
 			_debug_renderer.set_world(nullptr);
@@ -461,11 +447,9 @@ void VoxelLodTerrain::_notification(int p_what) {
 		case NOTIFICATION_VISIBILITY_CHANGED: {
 			const bool visible = is_visible();
 			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
-				if (_lods[lod_index].map.is_valid()) {
-					_lods[lod_index].map->for_all_blocks([visible](VoxelBlock *block) {
-						block->set_parent_visible(visible);
-					});
-				}
+				_lods[lod_index].map.for_all_blocks([visible](VoxelBlock *block) {
+					block->set_parent_visible(visible);
+				});
 			}
 #ifdef TOOLS_ENABLED
 			if (is_showing_gizmos()) {
@@ -487,11 +471,9 @@ void VoxelLodTerrain::_notification(int p_what) {
 			}
 
 			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
-				if (_lods[lod_index].map.is_valid()) {
-					_lods[lod_index].map->for_all_blocks([&transform](VoxelBlock *block) {
-						block->set_parent_transform(transform);
-					});
-				}
+				_lods[lod_index].map.for_all_blocks([&transform](VoxelBlock *block) {
+					block->set_parent_transform(transform);
+				});
 			}
 		} break;
 
@@ -506,7 +488,7 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 		return Vector3();
 
 	} else {
-		Vector3 pos = (_lods[0].last_viewer_block_pos << _lods[0].map->get_block_size_pow2()).to_vec3();
+		Vector3 pos = (_lods[0].last_viewer_block_pos << _lods[0].map.get_block_size_pow2()).to_vec3();
 
 		// TODO Support for multiple viewers, this is a placeholder implementation
 		VoxelServer::get_singleton()->for_each_viewer([&pos](const VoxelServer::Viewer &viewer, uint32_t viewer_id) {
@@ -522,7 +504,7 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index) {
 	Lod &lod = _lods[lod_index];
 
-	const int p = lod.map->get_block_size_pow2() + lod_index;
+	const int p = lod.map.get_block_size_pow2() + lod_index;
 
 	const int bound_min_x = _bounds_in_voxels.pos.x >> p;
 	const int bound_min_y = _bounds_in_voxels.pos.y >> p;
@@ -542,7 +524,7 @@ void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos
 	for (bpos.y = min_y; bpos.y < max_y; ++bpos.y) {
 		for (bpos.z = min_z; bpos.z < max_z; ++bpos.z) {
 			for (bpos.x = min_x; bpos.x < max_x; ++bpos.x) {
-				VoxelBlock *block = lod.map->get_block(bpos);
+				VoxelBlock *block = lod.map.get_block(bpos);
 
 				if (block == nullptr) {
 					if (!lod.loading_blocks.has(bpos)) {
@@ -587,7 +569,7 @@ bool VoxelLodTerrain::is_block_surrounded(const Vector3i &p_bpos, int lod_index,
 
 bool VoxelLodTerrain::check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index) {
 	Lod &lod = _lods[lod_index];
-	VoxelBlock *block = lod.map->get_block(p_bpos);
+	VoxelBlock *block = lod.map.get_block(p_bpos);
 	if (block == nullptr) {
 		try_schedule_loading_with_neighbors(p_bpos, lod_index);
 		return false;
@@ -603,7 +585,7 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelBlock *block) {
 	switch (block->get_mesh_state()) {
 		case VoxelBlock::MESH_NEVER_UPDATED:
 		case VoxelBlock::MESH_NEED_UPDATE:
-			if (is_block_surrounded(block->position, block->lod_index, **lod.map)) {
+			if (is_block_surrounded(block->position, block->lod_index, lod.map)) {
 				lod.blocks_pending_update.push_back(block->position);
 				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
 			} else {
@@ -693,7 +675,7 @@ void VoxelLodTerrain::_process() {
 			// Each LOD keeps a box of loaded blocks, and only some of the blocks will get polygonized.
 			// The player can edit them so changes can be propagated to lower lods.
 
-			unsigned int block_size_po2 = _lods[0].map->get_block_size_pow2() + lod_index;
+			unsigned int block_size_po2 = _lods[0].map.get_block_size_pow2() + lod_index;
 			Vector3i viewer_block_pos_within_lod = VoxelMap::voxel_to_block_b(viewer_pos, block_size_po2);
 
 			const Rect3i bounds_in_blocks = Rect3i(
@@ -734,7 +716,7 @@ void VoxelLodTerrain::_process() {
 					if (padded_new_box.contains(bpos)) {
 						return false;
 					} else {
-						VoxelBlock *block = lod.map->get_block(bpos);
+						VoxelBlock *block = lod.map.get_block(bpos);
 						if (block != nullptr) {
 							block->set_mesh_state(VoxelBlock::MESH_NEED_UPDATE);
 						}
@@ -777,7 +759,7 @@ void VoxelLodTerrain::_process() {
 
 					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
 
-					VoxelBlock *block = lod.map->get_block(bpos);
+					VoxelBlock *block = lod.map.get_block(bpos);
 					if (block) {
 						block->set_visible(false);
 					}
@@ -872,7 +854,7 @@ void VoxelLodTerrain::_process() {
 				void create_child(Vector3i node_pos, int lod_index) {
 					Lod &lod = self->_lods[lod_index];
 					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
-					VoxelBlock *block = lod.map->get_block(bpos);
+					VoxelBlock *block = lod.map.get_block(bpos);
 
 					// Never show a child that hasn't been meshed
 					CRASH_COND(block == nullptr);
@@ -886,7 +868,7 @@ void VoxelLodTerrain::_process() {
 				void destroy_child(Vector3i node_pos, int lod_index) {
 					Lod &lod = self->_lods[lod_index];
 					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
-					VoxelBlock *block = lod.map->get_block(bpos);
+					VoxelBlock *block = lod.map.get_block(bpos);
 
 					if (block) {
 						block->set_visible(false);
@@ -897,7 +879,7 @@ void VoxelLodTerrain::_process() {
 				void show_parent(Vector3i node_pos, int lod_index) {
 					Lod &lod = self->_lods[lod_index];
 					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
-					VoxelBlock *block = lod.map->get_block(bpos);
+					VoxelBlock *block = lod.map.get_block(bpos);
 
 					// If we teleport far away, the area we were in is going to merge,
 					// and blocks may have been unloaded completely.
@@ -948,7 +930,7 @@ void VoxelLodTerrain::_process() {
 					Lod &lod = self->_lods[parent_lod_index];
 
 					Vector3i bpos = node_pos + (block_offset_lod0 >> parent_lod_index);
-					VoxelBlock *block = lod.map->get_block(bpos);
+					VoxelBlock *block = lod.map.get_block(bpos);
 
 					if (block == nullptr) {
 						// The block got unloaded. Exceptionally, we can join.
@@ -1047,7 +1029,7 @@ void VoxelLodTerrain::_process() {
 				continue;
 			}
 
-			if (ob.voxels->get_size() != Vector3i(lod.map->get_block_size())) {
+			if (ob.voxels->get_size() != Vector3i(lod.map.get_block_size())) {
 				// Voxel block size is incorrect, drop it
 				ERR_PRINT("Block size obtained from stream is different from expected size");
 				++_stats.dropped_block_loads;
@@ -1055,7 +1037,7 @@ void VoxelLodTerrain::_process() {
 			}
 
 			// Store buffer
-			VoxelBlock *block = lod.map->set_block_buffer(ob.position, ob.voxels);
+			VoxelBlock *block = lod.map.set_block_buffer(ob.position, ob.voxels);
 			//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
 			// The block will be made visible and meshed only by LodOctree
 			block->set_visible(false);
@@ -1101,7 +1083,7 @@ void VoxelLodTerrain::_process() {
 				VOXEL_PROFILE_SCOPE();
 				const Vector3i block_pos = lod.blocks_pending_update[bi];
 
-				VoxelBlock *block = lod.map->get_block(block_pos);
+				VoxelBlock *block = lod.map.get_block(block_pos);
 				CRASH_COND(block == nullptr);
 				// All blocks we get here must be in the scheduled state
 				CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
@@ -1112,7 +1094,7 @@ void VoxelLodTerrain::_process() {
 				mesh_request.lod = lod_index;
 				for (unsigned int i = 0; i < Cube::MOORE_AREA_3D_COUNT; ++i) {
 					const Vector3i npos = block_pos + Cube::g_ordered_moore_area_3d[i];
-					VoxelBlock *nblock = lod.map->get_block(npos);
+					VoxelBlock *nblock = lod.map.get_block(npos);
 					// The block can actually be null on some occasions. Not sure yet if it's that bad
 					//CRASH_COND(nblock == nullptr);
 					if (nblock == nullptr) {
@@ -1159,7 +1141,7 @@ void VoxelLodTerrain::_process() {
 
 			Lod &lod = _lods[ob.lod];
 
-			VoxelBlock *block = lod.map->get_block(ob.position);
+			VoxelBlock *block = lod.map.get_block(ob.position);
 			if (block == nullptr) {
 				// That block is no longer loaded, drop the result
 				++_stats.dropped_block_meshs;
@@ -1256,7 +1238,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 	Lod &lod0 = _lods[0];
 	for (unsigned int i = 0; i < lod0.blocks_pending_lodding.size(); ++i) {
 		const Vector3i bpos = lod0.blocks_pending_lodding[i];
-		VoxelBlock *block = lod0.map->get_block(bpos);
+		VoxelBlock *block = lod0.map.get_block(bpos);
 		block->set_needs_lodding(false);
 		L::schedule_update(block, lod0.blocks_pending_update);
 	}
@@ -1274,8 +1256,8 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 			const Vector3i src_bpos = src_lod.blocks_pending_lodding[i];
 			const Vector3i dst_bpos = src_bpos >> 1;
 
-			VoxelBlock *src_block = src_lod.map->get_block(src_bpos);
-			VoxelBlock *dst_block = dst_lod.map->get_block(dst_bpos);
+			VoxelBlock *src_block = src_lod.map.get_block(src_bpos);
+			VoxelBlock *dst_block = dst_lod.map.get_block(dst_bpos);
 
 			src_block->set_needs_lodding(false);
 
@@ -1361,11 +1343,10 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 	VOXEL_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(lod_index >= get_lod_count());
-	ERR_FAIL_COND(_lods[lod_index].map.is_null());
 
 	Lod &lod = _lods[lod_index];
 
-	lod.map->remove_block(block_pos, ScheduleSaveAction{ _blocks_to_save, _shader_material_pool, false });
+	lod.map.remove_block(block_pos, ScheduleSaveAction{ _blocks_to_save, _shader_material_pool, false });
 
 	lod.loading_blocks.erase(block_pos);
 
@@ -1382,7 +1363,7 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 
 	for (int i = 0; i < _lod_count; ++i) {
 		// That may cause a stutter, so should be used when the player won't notice
-		_lods[i].map->for_all_blocks(ScheduleSaveAction{ _blocks_to_save, _shader_material_pool, with_copy });
+		_lods[i].map.for_all_blocks(ScheduleSaveAction{ _blocks_to_save, _shader_material_pool, with_copy });
 	}
 
 	// And flush immediately
@@ -1398,11 +1379,10 @@ void VoxelLodTerrain::add_transition_update(VoxelBlock *block) {
 
 void VoxelLodTerrain::add_transition_updates_around(Vector3i block_pos, int lod_index) {
 	Lod &lod = _lods[lod_index];
-	CRASH_COND(lod.map.is_null());
 
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		Vector3i npos = block_pos + Cube::g_side_normals[dir];
-		VoxelBlock *nblock = lod.map->get_block(npos);
+		VoxelBlock *nblock = lod.map.get_block(npos);
 
 		if (nblock != nullptr) {
 			add_transition_update(nblock);
@@ -1430,21 +1410,15 @@ void VoxelLodTerrain::process_transition_updates() {
 uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) const {
 	uint8_t transition_mask = 0;
 
-	if (lod_index + 1 >= (int)_lods.size()) {
+	if (lod_index + 1 >= _lod_count) {
 		return transition_mask;
 	}
 
 	const Lod &lower_lod = _lods[lod_index + 1];
-
-	if (!lower_lod.map.is_valid()) {
-		return transition_mask;
-	}
-
-	Vector3i lower_pos = block_pos >> 1;
-	Vector3i upper_pos = block_pos << 1;
-
 	const Lod &lod = _lods[lod_index];
-	CRASH_COND(!lod.map.is_valid());
+
+	const Vector3i lower_pos = block_pos >> 1;
+	const Vector3i upper_pos = block_pos << 1;
 
 	// Based on octree rules, and the fact it must have run before, check neighbor blocks of same LOD:
 	// If one is missing or not visible, it means either of the following:
@@ -1455,7 +1429,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		Vector3i npos = block_pos + Cube::g_side_normals[dir];
 
-		const VoxelBlock *nblock = lod.map->get_block(npos);
+		const VoxelBlock *nblock = lod.map.get_block(npos);
 
 		if (nblock != nullptr && nblock->is_visible()) {
 			visible_neighbors_of_same_lod |= (1 << dir);
@@ -1476,7 +1450,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 			const Vector3i lower_neighbor_pos = (block_pos + side_normal) >> 1;
 
 			if (lower_neighbor_pos != lower_pos) {
-				const VoxelBlock *lower_neighbor_block = lower_lod.map->get_block(lower_neighbor_pos);
+				const VoxelBlock *lower_neighbor_block = lower_lod.map.get_block(lower_neighbor_pos);
 
 				if (lower_neighbor_block != nullptr && lower_neighbor_block->is_visible()) {
 					// The block has a visible neighbor of lower LOD
@@ -1499,7 +1473,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 				}
 
 				const Lod &upper_lod = _lods[lod_index - 1];
-				const VoxelBlock *upper_neighbor_block = upper_lod.map->get_block(upper_neighbor_pos);
+				const VoxelBlock *upper_neighbor_block = upper_lod.map.get_block(upper_neighbor_pos);
 
 				if (upper_neighbor_block == nullptr || upper_neighbor_block->is_visible() == false) {
 					// The block has no visible neighbor yet. World border? Assume lower LOD.
@@ -1599,8 +1573,8 @@ Array VoxelLodTerrain::debug_raycast_block(Vector3 world_origin, Vector3 world_d
 	while (distance < max_distance && hits.size() == 0) {
 		for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 			const Lod &lod = _lods[lod_index];
-			Vector3i bpos = lod.map->voxel_to_block(Vector3i(pos)) >> lod_index;
-			const VoxelBlock *block = lod.map->get_block(bpos);
+			Vector3i bpos = lod.map.voxel_to_block(Vector3i(pos)) >> lod_index;
+			const VoxelBlock *block = lod.map.get_block(bpos);
 			if (block != nullptr && block->is_visible() && block->has_mesh()) {
 				Dictionary d;
 				d["position"] = block->position.to_vec3();
@@ -1626,7 +1600,7 @@ Dictionary VoxelLodTerrain::debug_get_block_info(Vector3 fbpos, int lod_index) c
 	bool meshed = false;
 	bool visible = false;
 	int loading_state = 0;
-	const VoxelBlock *block = lod.map->get_block(bpos);
+	const VoxelBlock *block = lod.map.get_block(bpos);
 
 	if (block) {
 		meshed = !block->has_mesh() && block->get_mesh_state() != VoxelBlock::MESH_UP_TO_DATE;
@@ -1713,7 +1687,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 		const Lod &lod = _lods[lod_index];
 
 		world_box.for_each_cell([&](const Vector3i &world_pos) {
-			const float v = lod.map->get_voxel_f(world_pos, VoxelBuffer::CHANNEL_SDF);
+			const float v = lod.map.get_voxel_f(world_pos, VoxelBuffer::CHANNEL_SDF);
 			const Vector3i rpos = world_pos - world_box.pos;
 			buffer.set_voxel_f(v, rpos.x, rpos.y, rpos.z, VoxelBuffer::CHANNEL_SDF);
 		});
@@ -1728,7 +1702,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 int VoxelLodTerrain::_b_debug_get_block_count() const {
 	int sum = 0;
 	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
-		sum += _lods[lod_index].map->get_block_count();
+		sum += _lods[lod_index].map.get_block_count();
 	}
 	return sum;
 }
