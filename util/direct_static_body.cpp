@@ -94,11 +94,9 @@ void DirectStaticBody::set_attached_object(Object *obj) {
 }
 
 void DirectStaticBody::set_debug(bool enabled, World *world) {
-
 	ERR_FAIL_COND(world == nullptr);
 
 	if (enabled && !_debug_mesh_instance.is_valid()) {
-
 		_debug_mesh_instance.create();
 		_debug_mesh_instance.set_world(world);
 
@@ -111,7 +109,6 @@ void DirectStaticBody::set_debug(bool enabled, World *world) {
 		}
 
 	} else if (!enabled && _debug_mesh_instance.is_valid()) {
-
 		_debug_mesh_instance.destroy();
 	}
 }

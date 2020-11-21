@@ -20,6 +20,7 @@ public:
 	void set_mesh(Ref<Mesh> mesh);
 	void set_material_override(Ref<Material> material);
 	void set_visible(bool visible);
+	void set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode);
 
 	Ref<Mesh> get_mesh() const;
 
