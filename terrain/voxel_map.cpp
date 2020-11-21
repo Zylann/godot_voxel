@@ -253,7 +253,6 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 }
 
 void VoxelMap::clear() {
-	const Vector3i *key = nullptr;
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		VoxelBlock *block = *it;
 		if (block == nullptr) {
