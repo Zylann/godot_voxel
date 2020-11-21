@@ -410,7 +410,7 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_transparent", "transparent"), &Voxel::set_transparent);
 	ClassDB::bind_method(D_METHOD("is_transparent"), &Voxel::is_transparent);
 
-	ClassDB::bind_method(D_METHOD("set_transparency_index", "transparent"), &Voxel::set_transparency_index);
+	ClassDB::bind_method(D_METHOD("set_transparency_index", "transparency_index"), &Voxel::set_transparency_index);
 	ClassDB::bind_method(D_METHOD("get_transparency_index"), &Voxel::get_transparency_index);
 
 	ClassDB::bind_method(D_METHOD("set_random_tickable", "rt"), &Voxel::set_random_tickable);

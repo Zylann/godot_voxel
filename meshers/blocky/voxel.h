@@ -96,7 +96,7 @@ public:
 	_FORCE_INLINE_ bool is_transparent() const { return _transparency_index != 0; }
 
 	void set_transparency_index(int i);
-	uint8_t get_transparency_index() const { return _transparency_index; }
+	int get_transparency_index() const { return _transparency_index; }
 
 	void set_custom_mesh(Ref<Mesh> mesh);
 	Ref<Mesh> get_custom_mesh() const { return _custom_mesh; }
