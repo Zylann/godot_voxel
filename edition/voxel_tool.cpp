@@ -203,8 +203,8 @@ class ConvexChecker {
 				sum_of_coords += convex_points[i];
 			}
 			Vector3 center_of_shape = sum_of_coords/float(convex_points.size());
-
 			
+
 			for (int i = 0; i <num_planes; i++) {
 				//Get normals
 				int offset = i * 3;
@@ -220,6 +220,20 @@ class ConvexChecker {
 					_normals[i] = -_normals[i];
 				}
 			};
+
+			print_line("n1");
+			print_line(rtos(_normals[0].x));
+			print_line(rtos(_normals[0].y));
+			print_line(rtos(_normals[0].z));
+			print_line("n2");
+			print_line(rtos(_normals[1].x));
+			print_line(rtos(_normals[1].y));
+			print_line(rtos(_normals[1].z));
+			print_line("dot1");
+			print_line(rtos(_normals_dot_r0[0]));
+			print_line("dot2");
+			print_line(rtos(_normals_dot_r0[1]));
+
 		};
 
 		bool check_point_in_shape(Vector3 point) {
@@ -237,14 +251,14 @@ class ConvexChecker {
 };
 
 void VoxelTool::do_ravine(Vector3i center, Vector3i direction) {
-	Rect3i ravine_box(Vector3i(center)- Vector3i(0,10,0),Vector3i(20));
+	Rect3i ravine_box(Vector3i(center)- Vector3i(50,50,50),Vector3i(100));
 
 	if (!is_area_editable(ravine_box)) {
 		PRINT_VERBOSE("Area not editable");
 		return;
 	}
 
-	PoolVector3Array ravine_points = new PoolVector3Array();
+	PoolVector3Array ravine_points = PoolVector3Array();
 	//right side
 	ravine_points.push_back(Vector3(1,0,10));
 	ravine_points.push_back(Vector3(0,0,0));
@@ -254,12 +268,21 @@ void VoxelTool::do_ravine(Vector3i center, Vector3i direction) {
 	ravine_points.push_back(Vector3(0,0,0));
 	ravine_points.push_back(Vector3(0,-1,0));
 
+	for (int i = 0; i < ravine_points.size(); i++) {
+		Vector3 vec3_center = Vector3(center.x,center.y,center.z);
+		ravine_points.set(i,ravine_points[i] +(vec3_center));
+	}
+
 	//Make a ravine shaped convex checker
-	ConvexChecker in_ravine_checker = new ConvexChecker(ravine_points);
+	ConvexChecker ravine_checker = ConvexChecker(ravine_points);
 
 	//No SDF blending for now
-	ravine_box.for_each_cell([this,center,direction] (Vector3i pos) {
-		_set_voxel_f(pos,1.0);
+	ravine_box.for_each_cell([this,center,direction,&ravine_checker] (Vector3i pos) {
+		//_set_voxel_f(pos,1.0);
+		Vector3 vec3_pos = Vector3(pos.x,pos.y,pos.z);
+		if (ravine_checker.check_point_in_shape(vec3_pos)) {
+			_set_voxel_f(pos,1.0);
+		}
 	});
 
 	_post_edit(ravine_box);
