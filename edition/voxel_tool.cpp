@@ -184,6 +184,88 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 	_post_edit(box);
 }
 
+//Note that the name is a minomer: If its not convex it still works
+class ConvexChecker {
+	public:
+		ConvexChecker(PoolVector3Array convex_points) {
+			if (convex_points.size() % 3!=0) {
+				ERR_PRINT("Input array for convex checker need to be a multiple of 3!");
+				return;
+			}
+			int num_planes = convex_points.size() / 3;
+			//Resize arrays
+			_normals.resize(num_planes);
+			_normals_dot_r0.resize(num_planes);
+
+			//Determine side of plane of centerpoint
+			Vector3 sum_of_coords = Vector3(0,0,0);
+			for (int i = 0; i < convex_points.size(); i++) {
+				sum_of_coords += convex_points[i];
+			}
+			Vector3 center_of_shape = sum_of_coords/float(convex_points.size());
+
+			
+			for (int i = 0; i <num_planes; i++) {
+				//Get normals
+				int offset = i * 3;
+				Vector3 p1 = convex_points[offset+0];
+				Vector3 p2 = convex_points[offset+1];
+				Vector3 p3 = convex_points[offset+2];
+				_normals.set(i,(p1-p2).cross(p1-p3));
+				//n.r = n.r0 for point on plane
+				//Get value of n.r0
+				_normals_dot_r0.set(i,_normals[i].dot(convex_points[i]));
+				//Make sure all the normals will give a positive value when testing a point inside the convex shape
+				if (_normals[i].dot(center_of_shape) - _normals_dot_r0[i] < 0) {
+					_normals[i] = -_normals[i];
+				}
+			};
+		};
+
+		bool check_point_in_shape(Vector3 point) {
+			for (int i = 0; i < _normals.size(); ++i) {
+				if (_normals[i].dot(point) - _normals_dot_r0[i] < 0) {
+					return false;
+				}
+			}
+			return true;
+		};
+
+	protected:
+		PoolVector3Array _normals = PoolVector3Array();
+		PoolRealArray _normals_dot_r0 = PoolRealArray();
+};
+
+void VoxelTool::do_ravine(Vector3i center, Vector3i direction) {
+	Rect3i ravine_box(Vector3i(center)- Vector3i(0,10,0),Vector3i(20));
+
+	if (!is_area_editable(ravine_box)) {
+		PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	PoolVector3Array ravine_points = new PoolVector3Array();
+	//right side
+	ravine_points.push_back(Vector3(1,0,10));
+	ravine_points.push_back(Vector3(0,0,0));
+	ravine_points.push_back(Vector3(0,-1,0));
+	//left side
+	ravine_points.push_back(Vector3(-1,0,10));
+	ravine_points.push_back(Vector3(0,0,0));
+	ravine_points.push_back(Vector3(0,-1,0));
+
+	//Make a ravine shaped convex checker
+	ConvexChecker in_ravine_checker = new ConvexChecker(ravine_points);
+
+	//No SDF blending for now
+	ravine_box.for_each_cell([this,center,direction] (Vector3i pos) {
+		_set_voxel_f(pos,1.0);
+	});
+
+	_post_edit(ravine_box);
+
+}
+
 void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	Vector3i::sort_min_max(begin, end);
 	Rect3i box = Rect3i::from_min_max(begin, end + Vector3i(1,1,1));
@@ -256,6 +338,7 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_point", "pos"), &VoxelTool::_b_do_point);
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere); 
 	ClassDB::bind_method(D_METHOD("do_box", "begin", "end"), &VoxelTool::_b_do_box);
+	ClassDB::bind_method(D_METHOD("do_ravine", "center", "direction"), &VoxelTool::_b_do_ravine);
 
 	ClassDB::bind_method(D_METHOD("set_voxel_metadata", "pos", "meta"), &VoxelTool::_b_set_voxel_metadata);
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);
