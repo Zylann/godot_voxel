@@ -56,7 +56,7 @@ public:
 	virtual void do_circle(Vector3i pos, int radius, Vector3i direction);
 	virtual void do_sphere(Vector3 center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
-	virtual void do_ravine(Vector3i center, Vector3i direction);
+	virtual void do_ravine(Vector3i center, float direction);
 
 	virtual void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint64_t mask_value);
 
@@ -93,7 +93,7 @@ private:
 	void _b_do_circle(Vector3 pos, float radius, Vector3 direction) { do_circle(Vector3i(pos), radius, Vector3i(direction)); }
 	void _b_do_sphere(Vector3 pos, float radius) { do_sphere(pos, radius); }
 	void _b_do_box(Vector3 begin, Vector3 end) { do_box(Vector3i(begin), Vector3i(end)); }
-	void _b_do_ravine(Vector3 center, Vector3 direction) {do_ravine(Vector3i(center), Vector3i(direction)); }
+	void _b_do_ravine(Vector3 center, float direction) {do_ravine(Vector3i(center), direction); }
 	void _b_paste(Vector3 pos, Ref<Reference> voxels, int mask_value) { paste(Vector3i(pos), voxels, mask_value); }
 
 	Variant _b_get_voxel_metadata(Vector3 pos) { return get_voxel_metadata(Vector3i(pos)); }

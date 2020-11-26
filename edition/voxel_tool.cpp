@@ -212,27 +212,32 @@ class ConvexChecker {
 				Vector3 p2 = convex_points[offset+1];
 				Vector3 p3 = convex_points[offset+2];
 				_normals.set(i,(p1-p2).cross(p1-p3));
+				
 				//n.r = n.r0 for point on plane
 				//Get value of n.r0
 				_normals_dot_r0.set(i,_normals[i].dot(convex_points[i]));
 				//Make sure all the normals will give a positive value when testing a point inside the convex shape
 				if (_normals[i].dot(center_of_shape) - _normals_dot_r0[i] < 0) {
-					_normals[i] = -_normals[i];
+					// print_line("Wrong positivity index:");
+					// print_line(itos(i));
+					_normals.set(i,-_normals[i]);
 				}
+				//Test forcefully set normals
+				// _normals.set(0,Vector3(-10,0,1));
+				// _normals.set(1,Vector3(10,0,1));
+				// print_line("n1");
+				// print_line(rtos(_normals[0].x));
+				// print_line(rtos(_normals[0].y));
+				// print_line(rtos(_normals[0].z));
+				// print_line("n2");
+				// print_line(rtos(_normals[1].x));
+				// print_line(rtos(_normals[1].y));
+				// print_line(rtos(_normals[1].z));
+				// print_line("dot1");
+				// print_line(rtos(_normals_dot_r0[0]));
+				// print_line("dot2");
+				// print_line(rtos(_normals_dot_r0[1]));
 			};
-
-			print_line("n1");
-			print_line(rtos(_normals[0].x));
-			print_line(rtos(_normals[0].y));
-			print_line(rtos(_normals[0].z));
-			print_line("n2");
-			print_line(rtos(_normals[1].x));
-			print_line(rtos(_normals[1].y));
-			print_line(rtos(_normals[1].z));
-			print_line("dot1");
-			print_line(rtos(_normals_dot_r0[0]));
-			print_line("dot2");
-			print_line(rtos(_normals_dot_r0[1]));
 
 		};
 
@@ -250,8 +255,17 @@ class ConvexChecker {
 		PoolRealArray _normals_dot_r0 = PoolRealArray();
 };
 
-void VoxelTool::do_ravine(Vector3i center, Vector3i direction) {
-	Rect3i ravine_box(Vector3i(center)- Vector3i(50,50,50),Vector3i(100));
+//Please supply angle in radians
+Vector3 rotate_point(Vector3 center, Vector3 point, float angle) {
+	float rotatedX = Math::cos(angle) * (point.x - center.x) - Math::sin(angle) * (point.z-center.z) + center.x;
+	float rotatedZ = Math::sin(angle) * (point.x - center.x) + Math::cos(angle) * (point.z-center.z) + center.z;
+	return Vector3(rotatedX,point.y, rotatedZ);
+}
+
+//WARNING: I am not sure if my angle is wrong here or wrong in the game itself
+void VoxelTool::do_ravine(Vector3i center, float angle) {
+
+	Rect3i ravine_box(Vector3i(center.x,center.y,center.z)- Vector3i(10,10,10),Vector3i(20));
 
 	if (!is_area_editable(ravine_box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -270,19 +284,28 @@ void VoxelTool::do_ravine(Vector3i center, Vector3i direction) {
 
 	for (int i = 0; i < ravine_points.size(); i++) {
 		Vector3 vec3_center = Vector3(center.x,center.y,center.z);
-		ravine_points.set(i,ravine_points[i] +(vec3_center));
+		ravine_points.set(i,rotate_point(Vector3(0,0,0),ravine_points[i],angle));
+		// ravine_points.set(i,ravine_points[i] + vec3_center);
+		print_line("cur ind:");
+		print_line(itos(i));
+		print_line("Now at position:");
+		print_line(rtos(ravine_points[i].x));
+		print_line(rtos(ravine_points[i].y));
+		print_line(rtos(ravine_points[i].z));
+		
 	}
 
 	//Make a ravine shaped convex checker
 	ConvexChecker ravine_checker = ConvexChecker(ravine_points);
 
 	//No SDF blending for now
-	ravine_box.for_each_cell([this,center,direction,&ravine_checker] (Vector3i pos) {
-		//_set_voxel_f(pos,1.0);
+	ravine_box.for_each_cell([this,center,angle,&ravine_checker] (Vector3i pos) {
+		// _set_voxel_f(pos,1.0);
 		Vector3 vec3_pos = Vector3(pos.x,pos.y,pos.z);
 		if (ravine_checker.check_point_in_shape(vec3_pos)) {
 			_set_voxel_f(pos,1.0);
 		}
+		
 	});
 
 	_post_edit(ravine_box);
