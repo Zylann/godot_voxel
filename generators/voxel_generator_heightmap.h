@@ -31,7 +31,7 @@ protected:
 		const Vector3i bs = out_buffer.get_size();
 		bool use_sdf = channel == VoxelBuffer::CHANNEL_SDF;
 
-		if (origin.y > get_height_start() + get_height_range()) {
+		if (origin.y > get_height_start() + get_height_range() || origin.y < get_height_start()) {
 			// The bottom of the block is above the highest ground can go (default is air)
 			return;
 		}

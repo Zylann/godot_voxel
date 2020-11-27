@@ -4,16 +4,22 @@
 
 namespace {
 
-inline float get_height_repeat(Image &im, int x, int y) {
-	return im.get_pixel(wrap(x, im.get_width()), wrap(y, im.get_height())).r;
+inline float get_height(Image &im, int x, int y) {
+
+	if (x < 0 || x >= im.get_width()) {
+		return 0.0f;
+	} else if (y < 0 || y >= im.get_height()) {
+		return 0.0f;
+	}
+	return im.get_pixel(x, y).r;
 }
 
 inline float get_height_blurred(Image &im, int x, int y) {
-	float h = get_height_repeat(im, x, y);
-	h += get_height_repeat(im, x + 1, y);
-	h += get_height_repeat(im, x - 1, y);
-	h += get_height_repeat(im, x, y + 1);
-	h += get_height_repeat(im, x, y - 1);
+	float h = get_height(im, x, y);
+	h += get_height(im, x + 1, y);
+	h += get_height(im, x - 1, y);
+	h += get_height(im, x, y + 1);
+	h += get_height(im, x, y - 1);
 	return h * 0.2f;
 }
 
@@ -48,12 +54,14 @@ void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
 	image.lock();
 
 	if (_blur_enabled) {
-		VoxelGeneratorHeightmap::generate(out_buffer,
+		VoxelGeneratorHeightmap::generate(
+				out_buffer,
 				[&image](int x, int z) { return get_height_blurred(image, x, z); },
 				input.origin_in_voxels, input.lod);
 	} else {
-		VoxelGeneratorHeightmap::generate(out_buffer,
-				[&image](int x, int z) { return get_height_repeat(image, x, z); },
+		VoxelGeneratorHeightmap::generate(
+				out_buffer,
+				[&image](int x, int z) { return get_height(image, x, z); },
 				input.origin_in_voxels, input.lod);
 	}
 
@@ -72,4 +80,5 @@ void VoxelGeneratorImage::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, "Image"), "set_image", "get_image");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "blur_enabled"), "set_blur_enabled", "is_blur_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "repeat_enabled"), "set_repeat_enabled", "is_repeat_enabled");
 }
