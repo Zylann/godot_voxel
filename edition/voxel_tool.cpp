@@ -186,86 +186,117 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 
 //Note that the name is a minomer: If its not convex it still works
 class ConvexChecker {
-	public:
-		ConvexChecker(PoolVector3Array convex_points) {
-			if (convex_points.size() % 3!=0) {
-				ERR_PRINT("Input array for convex checker need to be a multiple of 3!");
-				return;
+public:
+	ConvexChecker(PoolVector3Array convex_points) {
+		if (convex_points.size() % 3 != 0) {
+			ERR_PRINT("Input array for convex checker need to be a multiple of 3!");
+			return;
+		}
+		int num_planes = convex_points.size() / 3;
+		//Resize arrays
+		_normals.resize(num_planes);
+		_normals_dot_r0.resize(num_planes);
+
+		//Determine side of plane of centerpoint
+		Vector3 sum_of_coords = Vector3(0, 0, 0);
+		for (int i = 0; i < convex_points.size(); i++) {
+			sum_of_coords += convex_points[i];
+		}
+		Vector3 center_of_shape = sum_of_coords / float(convex_points.size());
+
+		for (int i = 0; i < num_planes; i++) {
+			//Get normals
+			int offset = i * 3;
+			Vector3 p1 = convex_points[offset + 0];
+			Vector3 p2 = convex_points[offset + 1];
+			Vector3 p3 = convex_points[offset + 2];
+			_normals.set(i, ((p1 - p2).cross(p1 - p3)).normalized());
+
+			//n.r = n.r0 for point on plane
+			//Get value of n.r0
+
+			_normals_dot_r0.set(i, _normals[i].dot(convex_points[offset + 0]));
+			// print_line("convex point" + itos(offset));
+			// print_line(rtos(convex_points[offset].x));
+			// print_line(rtos(convex_points[offset].y));
+			// print_line(rtos(convex_points[offset].z));
+			//Make sure all the normals will give a positive value when testing a point inside the convex shape
+			if (_normals[i].dot(center_of_shape) - _normals_dot_r0[i] < 0) {
+				// print_line("Wrong positivity index:");
+				// print_line(itos(i));
+				_normals.set(i, -_normals[i]);
+				_normals_dot_r0.set(i, -_normals_dot_r0[i]);
 			}
-			int num_planes = convex_points.size() / 3;
-			//Resize arrays
-			_normals.resize(num_planes);
-			_normals_dot_r0.resize(num_planes);
-
-			//Determine side of plane of centerpoint
-			Vector3 sum_of_coords = Vector3(0,0,0);
-			for (int i = 0; i < convex_points.size(); i++) {
-				sum_of_coords += convex_points[i];
-			}
-			Vector3 center_of_shape = sum_of_coords/float(convex_points.size());
-			
-
-			for (int i = 0; i <num_planes; i++) {
-				//Get normals
-				int offset = i * 3;
-				Vector3 p1 = convex_points[offset+0];
-				Vector3 p2 = convex_points[offset+1];
-				Vector3 p3 = convex_points[offset+2];
-				_normals.set(i,(p1-p2).cross(p1-p3));
-				
-				//n.r = n.r0 for point on plane
-				//Get value of n.r0
-				_normals_dot_r0.set(i,_normals[i].dot(convex_points[i]));
-				//Make sure all the normals will give a positive value when testing a point inside the convex shape
-				if (_normals[i].dot(center_of_shape) - _normals_dot_r0[i] < 0) {
-					// print_line("Wrong positivity index:");
-					// print_line(itos(i));
-					_normals.set(i,-_normals[i]);
-				}
-				//Test forcefully set normals
-				// _normals.set(0,Vector3(-10,0,1));
-				// _normals.set(1,Vector3(10,0,1));
-				// print_line("n1");
-				// print_line(rtos(_normals[0].x));
-				// print_line(rtos(_normals[0].y));
-				// print_line(rtos(_normals[0].z));
-				// print_line("n2");
-				// print_line(rtos(_normals[1].x));
-				// print_line(rtos(_normals[1].y));
-				// print_line(rtos(_normals[1].z));
-				// print_line("dot1");
-				// print_line(rtos(_normals_dot_r0[0]));
-				// print_line("dot2");
-				// print_line(rtos(_normals_dot_r0[1]));
-			};
-
+			//Test forcefully set normals
+			// _normals.set(0,Vector3(-10,0,1));
+			// _normals.set(1,Vector3(10,0,1));
+			// print_line("n" + itos(i));
+			// print_line(rtos(_normals[i].x));
+			// print_line(rtos(_normals[i].y));
+			// print_line(rtos(_normals[i].z));
+			// print_line("dot" + itos(i));
+			// print_line(rtos(_normals_dot_r0[i]));
 		};
+	};
 
-		bool check_point_in_shape(Vector3 point) {
-			for (int i = 0; i < _normals.size(); ++i) {
-				if (_normals[i].dot(point) - _normals_dot_r0[i] < 0) {
-					return false;
-				}
+	bool check_point_in_shape(Vector3 point) {
+		for (int i = 0; i < _normals.size(); ++i) {
+			if (_normals[i].dot(point) - _normals_dot_r0[i] < 0) {
+				return false;
 			}
-			return true;
-		};
+		}
+		return true;
+	};
 
-	protected:
-		PoolVector3Array _normals = PoolVector3Array();
-		PoolRealArray _normals_dot_r0 = PoolRealArray();
+protected:
+	PoolVector3Array _normals = PoolVector3Array();
+	PoolRealArray _normals_dot_r0 = PoolRealArray();
 };
 
 //Please supply angle in radians
 Vector3 rotate_point(Vector3 center, Vector3 point, float angle) {
-	float rotatedX = Math::cos(angle) * (point.x - center.x) - Math::sin(angle) * (point.z-center.z) + center.x;
-	float rotatedZ = Math::sin(angle) * (point.x - center.x) + Math::cos(angle) * (point.z-center.z) + center.z;
-	return Vector3(rotatedX,point.y, rotatedZ);
+	float rotatedX = Math::cos(angle) * (point.x - center.x) - Math::sin(angle) * (point.z - center.z) + center.x;
+	float rotatedZ = Math::sin(angle) * (point.x - center.x) + Math::cos(angle) * (point.z - center.z) + center.z;
+	return Vector3(rotatedX, point.y, rotatedZ);
 }
 
-//WARNING: I am not sure if my angle is wrong here or wrong in the game itself
-void VoxelTool::do_ravine(Vector3i center, float angle) {
+void VoxelTool::do_ravine(Vector3 center, float angle) {
+	float ravine_width = 6.0f;
+	float ravine_length = 100.0f;
+	float min_x = max(ravine_width * 2, Math::abs((ravine_length)*Math::sin(angle))) * (Math::sin(angle) > 0 ? -1.0f : 1.0f);
+	float min_z = max(ravine_width * 2, Math::abs((ravine_length)*Math::cos(angle))) * (Math::cos(angle) > 0 ? 1.0f : -1.0f);
 
-	Rect3i ravine_box(Vector3i(center.x,center.y,center.z)- Vector3i(10,10,10),Vector3i(20));
+	// print_line("min_x");
+	// print_line(rtos(min_x));
+	// print_line("min_z");
+	// print_line(rtos(min_z));
+
+	Rect3i ravine_box;
+
+	Vector3i box_start = Vector3i(center.x + (min_x > 0 ? -ravine_width : ravine_width),
+								 center.y,
+								 center.z + (min_z > 0 ? -ravine_width : ravine_width)) -
+						 Vector3i(0, 10, 0);
+	Vector3i box_end = Vector3i(center.x, center.y, center.z) + Vector3i(min_x, 15, min_z);
+
+	Vector3i buffer = Vector3i(box_end);
+
+	if (box_start.x > box_end.x) {
+		box_end.x = box_start.x;
+		box_start.x = buffer.x;
+	}
+
+	if (box_start.y > box_end.y) {
+		box_end.y = box_start.y;
+		box_start.y = buffer.y;
+	}
+
+	if (box_start.z > box_end.z) {
+		box_end.z = box_start.z;
+		box_start.z = buffer.z;
+	}
+
+	ravine_box = Rect3i::from_min_max(box_start, box_end);
 
 	if (!is_area_editable(ravine_box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -274,47 +305,45 @@ void VoxelTool::do_ravine(Vector3i center, float angle) {
 
 	PoolVector3Array ravine_points = PoolVector3Array();
 	//right side
-	ravine_points.push_back(Vector3(1,0,10));
-	ravine_points.push_back(Vector3(0,0,0));
-	ravine_points.push_back(Vector3(0,-1,0));
+	ravine_points.push_back(Vector3(0, 0, 0));
+	ravine_points.push_back(Vector3(1, 0, 10));
+	ravine_points.push_back(Vector3(0, -1, 0));
 	//left side
-	ravine_points.push_back(Vector3(-1,0,10));
-	ravine_points.push_back(Vector3(0,0,0));
-	ravine_points.push_back(Vector3(0,-1,0));
+	ravine_points.push_back(Vector3(0, 0, 0));
+	ravine_points.push_back(Vector3(-1, 0, 10));
+	ravine_points.push_back(Vector3(0, -1, 0));
 
 	for (int i = 0; i < ravine_points.size(); i++) {
-		Vector3 vec3_center = Vector3(center.x,center.y,center.z);
-		ravine_points.set(i,rotate_point(Vector3(0,0,0),ravine_points[i],angle));
-		// ravine_points.set(i,ravine_points[i] + vec3_center);
-		print_line("cur ind:");
-		print_line(itos(i));
-		print_line("Now at position:");
-		print_line(rtos(ravine_points[i].x));
-		print_line(rtos(ravine_points[i].y));
-		print_line(rtos(ravine_points[i].z));
-		
+		ravine_points.set(i, rotate_point(Vector3(0, 0, 0), ravine_points[i], angle));
+		ravine_points.set(i, ravine_points[i] + center);
+		// if (i % 3 == 0) {
+		// 	print_line("cur ind:");
+		// 	print_line(itos(i));
+		// 	print_line("Now at position:");
+		// 	print_line(rtos(ravine_points[i].x));
+		// 	print_line(rtos(ravine_points[i].y));
+		// 	print_line(rtos(ravine_points[i].z));
+		// };
 	}
 
 	//Make a ravine shaped convex checker
 	ConvexChecker ravine_checker = ConvexChecker(ravine_points);
 
 	//No SDF blending for now
-	ravine_box.for_each_cell([this,center,angle,&ravine_checker] (Vector3i pos) {
+	ravine_box.for_each_cell([this, center, angle, &ravine_checker](Vector3i pos) {
 		// _set_voxel_f(pos,1.0);
-		Vector3 vec3_pos = Vector3(pos.x,pos.y,pos.z);
+		Vector3 vec3_pos = Vector3(pos.x, pos.y, pos.z);
 		if (ravine_checker.check_point_in_shape(vec3_pos)) {
-			_set_voxel_f(pos,1.0);
+			_set_voxel_f(pos, 1.0);
 		}
-		
 	});
 
 	_post_edit(ravine_box);
-
 }
 
 void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	Vector3i::sort_min_max(begin, end);
-	Rect3i box = Rect3i::from_min_max(begin, end + Vector3i(1,1,1));
+	Rect3i box = Rect3i::from_min_max(begin, end + Vector3i(1, 1, 1));
 
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -382,7 +411,7 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel", "pos", "v"), &VoxelTool::_b_set_voxel);
 	ClassDB::bind_method(D_METHOD("set_voxel_f", "pos", "v"), &VoxelTool::_b_set_voxel_f);
 	ClassDB::bind_method(D_METHOD("do_point", "pos"), &VoxelTool::_b_do_point);
-	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere); 
+	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere);
 	ClassDB::bind_method(D_METHOD("do_box", "begin", "end"), &VoxelTool::_b_do_box);
 	ClassDB::bind_method(D_METHOD("do_ravine", "center", "direction"), &VoxelTool::_b_do_ravine);
 
