@@ -17,9 +17,6 @@ public:
 	void set_blur_enabled(bool enable);
 	bool is_blur_enabled() const;
 
-	void set_repeat_enabled(bool enable);
-	bool is_repeat_enabled() const;
-
 	void generate_block(VoxelBlockRequest &input) override;
 
 private:

@@ -183,7 +183,6 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 
 	_post_edit(box);
 }
-
 //Note that the name is a minomer: If its not convex it still works
 class ConvexChecker {
 public:
@@ -266,18 +265,13 @@ void VoxelTool::do_ravine(Vector3 center, float angle) {
 	float min_x = max(ravine_width * 2, Math::abs((ravine_length)*Math::sin(angle))) * (Math::sin(angle) > 0 ? -1.0f : 1.0f);
 	float min_z = max(ravine_width * 2, Math::abs((ravine_length)*Math::cos(angle))) * (Math::cos(angle) > 0 ? 1.0f : -1.0f);
 
-	// print_line("min_x");
-	// print_line(rtos(min_x));
-	// print_line("min_z");
-	// print_line(rtos(min_z));
 
 	Rect3i ravine_box;
 
 	Vector3i box_start = Vector3i(center.x + (min_x > 0 ? -ravine_width : ravine_width),
-								 center.y,
-								 center.z + (min_z > 0 ? -ravine_width : ravine_width)) -
-						 Vector3i(0, 10, 0);
-	Vector3i box_end = Vector3i(center.x, center.y, center.z) + Vector3i(min_x, 15, min_z);
+								 -20,
+								 center.z + (min_z > 0 ? -ravine_width : ravine_width));
+	Vector3i box_end = Vector3i(center.x, center.y, center.z) + Vector3i(min_x, 40, min_z);
 
 	Vector3i buffer = Vector3i(box_end);
 
@@ -316,14 +310,7 @@ void VoxelTool::do_ravine(Vector3 center, float angle) {
 	for (int i = 0; i < ravine_points.size(); i++) {
 		ravine_points.set(i, rotate_point(Vector3(0, 0, 0), ravine_points[i], angle));
 		ravine_points.set(i, ravine_points[i] + center);
-		// if (i % 3 == 0) {
-		// 	print_line("cur ind:");
-		// 	print_line(itos(i));
-		// 	print_line("Now at position:");
-		// 	print_line(rtos(ravine_points[i].x));
-		// 	print_line(rtos(ravine_points[i].y));
-		// 	print_line(rtos(ravine_points[i].z));
-		// };
+
 	}
 
 	//Make a ravine shaped convex checker

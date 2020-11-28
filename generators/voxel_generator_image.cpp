@@ -5,12 +5,22 @@
 namespace {
 
 inline float get_height(Image &im, int x, int y) {
+	//Centralise the image
+	int width = im.get_width();
+	int height = im.get_height();
 
-	if (x < 0 || x >= im.get_width()) {
+	int half_width = floor(float(width)/2);
+	int half_height = floor(float(height)/2);
+
+	if (x < -half_width || x >= half_width) {
 		return 0.0f;
-	} else if (y < 0 || y >= im.get_height()) {
+	} else if (y < -half_height || y >= half_height) {
 		return 0.0f;
 	}
+
+	x += half_width;
+	y += half_height;
+
 	return im.get_pixel(x, y).r;
 }
 
