@@ -3,7 +3,6 @@ Import('env_modules')
 
 env_voxel = env_modules.Clone()
 
-# TODO Exclude editor stuff when building an export template?
 files = [
 	"*.cpp",
 	"meshers/blocky/*.cpp",
@@ -20,11 +19,17 @@ files = [
 	"server/*.cpp",
 	"math/*.cpp",
 	"edition/*.cpp",
-	"editor/*.cpp",
-	"editor/graph/*.cpp",
-	"editor/terrain/*.cpp",
 	"thirdparty/lz4/*.c"
 ]
+
+if env["tools"]:
+	# Editor-only stuff
+	editor_files = [
+		"editor/*.cpp",
+		"editor/graph/*.cpp",
+		"editor/terrain/*.cpp",
+	]
+	files += editor_files
 
 for f in files:
 	env_voxel.add_source_files(env.modules_sources, f)
