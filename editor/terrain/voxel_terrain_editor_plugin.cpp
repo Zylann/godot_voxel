@@ -14,6 +14,7 @@ VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
 	menu_button->get_popup()->add_separator();
 	menu_button->get_popup()->add_item(TTR("About Voxel Tools..."), MENU_ABOUT);
 	menu_button->get_popup()->connect("id_pressed", this, "_on_menu_item_selected");
+	menu_button->hide();
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, menu_button);
 	_menu_button = menu_button;
 
