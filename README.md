@@ -70,3 +70,22 @@ These are some ideas that may or may not be implemented in the future:
 * Improving LOD performance
 * Other meshing algorithms (e.g. dual contouring)
 * GPU offloading (Maybe when Godot 4+ supports compute shaders)
+
+
+Supporters
+-----------
+
+This module is a non-profit project developped by voluntary contributors. The following is the list of the current donors.
+Thanks for your support :)
+
+### Supporters
+
+```
+wacyym
+Sergey Lapin (slapin)
+Jonas (NoFr1ends)
+lenis0012
+```
+
+TODO Add About window
+

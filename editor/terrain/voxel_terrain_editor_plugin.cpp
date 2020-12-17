@@ -2,14 +2,25 @@
 #include "../../generators/voxel_generator.h"
 #include "../../terrain/voxel_lod_terrain.h"
 #include "../../terrain/voxel_terrain.h"
+#include "../about_window.h"
 #include "../graph/voxel_graph_node_inspector_wrapper.h"
 
+#include <scene/gui/menu_button.h>
+
 VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
-	_restart_stream_button = memnew(Button);
-	_restart_stream_button->set_text(TTR("Re-generate"));
-	_restart_stream_button->connect("pressed", this, "_on_restart_stream_button_pressed");
-	_restart_stream_button->hide();
-	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _restart_stream_button);
+	MenuButton *menu_button = memnew(MenuButton);
+	menu_button->set_text(TTR("Terrain"));
+	menu_button->get_popup()->add_item(TTR("Re-generate"), MENU_RESTART_STREAM);
+	menu_button->get_popup()->add_separator();
+	menu_button->get_popup()->add_item(TTR("About Voxel Tools..."), MENU_ABOUT);
+	menu_button->get_popup()->connect("id_pressed", this, "_on_menu_item_selected");
+	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, menu_button);
+	_menu_button = menu_button;
+
+	Node *base_control = get_editor_interface()->get_base_control();
+
+	_about_window = memnew(VoxelAboutWindow);
+	base_control->add_child(_about_window);
 }
 
 static Node *get_as_terrain(Object *p_object) {
@@ -90,7 +101,7 @@ void VoxelTerrainEditorPlugin::set_node(Node *node) {
 }
 
 void VoxelTerrainEditorPlugin::make_visible(bool visible) {
-	_restart_stream_button->set_visible(visible);
+	_menu_button->set_visible(visible);
 
 	if (_node != nullptr) {
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
@@ -106,16 +117,24 @@ void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 	// So we'll need to check if _node is null all over the place
 }
 
-void VoxelTerrainEditorPlugin::_on_restart_stream_button_pressed() {
-	ERR_FAIL_COND(_node == nullptr);
-	VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(_node);
-	if (terrain != nullptr) {
-		terrain->restart_stream();
-		return;
+void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
+	switch (id) {
+		case MENU_RESTART_STREAM: {
+			ERR_FAIL_COND(_node == nullptr);
+			VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(_node);
+			if (terrain != nullptr) {
+				terrain->restart_stream();
+				return;
+			}
+			VoxelLodTerrain *terrain2 = Object::cast_to<VoxelLodTerrain>(_node);
+			ERR_FAIL_COND(terrain2 == nullptr);
+			terrain2->restart_stream();
+		} break;
+
+		case MENU_ABOUT:
+			_about_window->popup_centered();
+			break;
 	}
-	VoxelLodTerrain *terrain2 = Object::cast_to<VoxelLodTerrain>(_node);
-	ERR_FAIL_COND(terrain2 == nullptr);
-	terrain2->restart_stream();
 }
 
 void VoxelTerrainEditorPlugin::_on_terrain_tree_entered(Node *node) {
@@ -128,8 +147,7 @@ void VoxelTerrainEditorPlugin::_on_terrain_tree_exited(Node *node) {
 }
 
 void VoxelTerrainEditorPlugin::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_restart_stream_button_pressed"),
-			&VoxelTerrainEditorPlugin::_on_restart_stream_button_pressed);
+	ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"), &VoxelTerrainEditorPlugin::_on_menu_item_selected);
 	ClassDB::bind_method(D_METHOD("_on_terrain_tree_entered"), &VoxelTerrainEditorPlugin::_on_terrain_tree_entered);
 	ClassDB::bind_method(D_METHOD("_on_terrain_tree_exited"), &VoxelTerrainEditorPlugin::_on_terrain_tree_exited);
 }
