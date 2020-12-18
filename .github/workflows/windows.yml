@@ -82,7 +82,7 @@ jobs:
   windows-template:
     # Windows 10 with latest image
     runs-on: "windows-latest"
-    name: Editor
+    name: Release
 
     steps:
       # Clone Godot
