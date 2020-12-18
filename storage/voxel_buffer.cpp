@@ -228,7 +228,7 @@ void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int ch
 	}
 
 	if (do_set) {
-		uint32_t i = index(x, y, z);
+		const uint32_t i = get_index(x, y, z);
 
 		switch (channel.depth) {
 			case DEPTH_8_BIT:
@@ -498,7 +498,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 	src_max.clamp_to(Vector3i(0, 0, 0), other._size + Vector3i(1, 1, 1));
 
 	dst_min.clamp_to(Vector3i(0, 0, 0), _size);
-	Vector3i area_size = src_max - src_min;
+	const Vector3i area_size = src_max - src_min;
 	//Vector3i dst_max = dst_min + area_size;
 
 	if (area_size == _size && area_size == other._size) {
@@ -531,7 +531,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 				for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
 					for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
 						for (pos.y = 0; pos.y < area_size.y; ++pos.y) {
-							uint64_t v = other.get_voxel(src_min + pos, channel_index);
+							const uint64_t v = other.get_voxel(src_min + pos, channel_index);
 							set_voxel(v, dst_min + pos, channel_index);
 						}
 					}
@@ -579,7 +579,7 @@ uint32_t VoxelBuffer::get_size_in_bytes_for_volume(Vector3i size, Depth depth) {
 	// Calculate appropriate size based on bit depth
 	const unsigned int volume = size.x * size.y * size.z;
 	const unsigned int bits = volume * ::get_depth_bit_count(depth);
-	unsigned int size_in_bytes = (bits >> 3);
+	const unsigned int size_in_bytes = (bits >> 3);
 	return size_in_bytes;
 }
 

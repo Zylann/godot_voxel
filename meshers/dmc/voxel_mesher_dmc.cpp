@@ -1497,7 +1497,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 
 	const Vector3i buffer_size = voxels.get_size();
 	// Taking previous power of two because the algorithm uses an integer cubic octree, and data should be padded
-	int chunk_size = previous_power_of_2(MIN(MIN(buffer_size.x, buffer_size.y), buffer_size.z));
+	const int chunk_size = previous_power_of_2(MIN(MIN(buffer_size.x, buffer_size.y), buffer_size.z));
 
 	ERR_FAIL_COND(voxels.get_size().x < chunk_size + PADDING * 2);
 	ERR_FAIL_COND(voxels.get_size().y < chunk_size + PADDING * 2);

@@ -63,7 +63,7 @@ Error VoxelRegionFile::open(const String &fpath, bool create_if_not_found) {
 			return file_error;
 		}
 	} else {
-		Error header_error = load_header(f);
+		const Error header_error = load_header(f);
 		if (header_error != OK) {
 			memdelete(f);
 			return header_error;
