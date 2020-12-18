@@ -27,8 +27,8 @@ public:
 	unsigned int get_block_size_pow2() const;
 	void set_block_size_po2(unsigned int p_block_size_po2);
 
-	void set_voxel_library(Ref<VoxelLibrary> library);
-	Ref<VoxelLibrary> get_voxel_library() const;
+	void set_mesher(Ref<VoxelMesher> mesher);
+	Ref<VoxelMesher> get_mesher() const;
 
 	void make_voxel_dirty(Vector3i pos);
 	void make_area_dirty(Rect3i box);
@@ -58,6 +58,10 @@ public:
 	Rect3i get_bounds() const;
 
 	void restart_stream();
+	void remesh_all_blocks();
+
+	// For convenience, this is actually stored in a particular type of mesher
+	Ref<VoxelLibrary> get_voxel_library() const;
 
 	struct Stats {
 		int updated_blocks = 0;
@@ -165,8 +169,7 @@ private:
 	std::vector<BlockToSave> _blocks_to_save;
 
 	Ref<VoxelStream> _stream;
-
-	Ref<VoxelLibrary> _library;
+	Ref<VoxelMesher> _mesher;
 
 	bool _generate_collisions = true;
 	bool _run_stream_in_editor = true;

@@ -32,6 +32,9 @@ public:
 	Ref<VoxelStream> get_stream() const;
 	void set_stream(Ref<VoxelStream> p_stream);
 
+	Ref<VoxelMesher> get_mesher() const;
+	void set_mesher(Ref<VoxelMesher> p_mesher);
+
 	int get_view_distance() const;
 	void set_view_distance(int p_distance_in_voxels);
 
@@ -96,6 +99,7 @@ public:
 	bool is_stream_running_in_editor() const;
 
 	void restart_stream();
+	void remesh_all_blocks();
 
 	struct BlockToSave {
 		Ref<VoxelBuffer> voxels;
@@ -175,6 +179,8 @@ private:
 	//Rect3i _prev_bounds_in_voxels;
 
 	Ref<VoxelStream> _stream;
+	Ref<VoxelMesher> _mesher;
+
 	std::vector<BlockToSave> _blocks_to_save;
 	VoxelServer::ReceptionBuffers _reception_buffers;
 	uint32_t _volume_id = 0;

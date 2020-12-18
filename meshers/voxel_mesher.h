@@ -7,8 +7,8 @@
 
 class VoxelBuffer;
 
-class VoxelMesher : public Reference {
-	GDCLASS(VoxelMesher, Reference)
+class VoxelMesher : public Resource {
+	GDCLASS(VoxelMesher, Resource)
 public:
 	struct Input {
 		const VoxelBuffer &voxels;
@@ -23,18 +23,23 @@ public:
 		unsigned int compression_flags = Mesh::ARRAY_COMPRESS_DEFAULT;
 	};
 
+	// This can be called from multiple threads at once. Make sure member vars are protected or thread-local.
 	virtual void build(Output &output, const Input &voxels);
 
-	// Get how many neighbor voxels need to be accessed around the meshed area.
+	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
+	Ref<Mesh> build_mesh(Ref<VoxelBuffer> voxels, Array materials);
+
+	// Gets how many neighbor voxels need to be accessed around the meshed area, toward negative axes.
 	// If this is not respected, the mesher might produce seams at the edges, or an error
 	unsigned int get_minimum_padding() const;
+
+	// Gets how many neighbor voxels need to be accessed around the meshed area, toward positive axes.
+	// If this is not respected, the mesher might produce seams at the edges, or an error
 	unsigned int get_maximum_padding() const;
 
-	// TODO Rename duplicate()
-	// Must be cloneable so can be duplicated for use by more than one thread
-	virtual VoxelMesher *clone();
+	virtual Ref<Resource> duplicate(bool p_subresources = false) const { return Ref<Resource>(); }
 
-	Ref<Mesh> build_mesh(Ref<VoxelBuffer> voxels, Array materials);
+	virtual int get_used_channels_mask() const { return 0; }
 
 protected:
 	static void _bind_methods();

@@ -11,6 +11,7 @@ VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
 	MenuButton *menu_button = memnew(MenuButton);
 	menu_button->set_text(TTR("Terrain"));
 	menu_button->get_popup()->add_item(TTR("Re-generate"), MENU_RESTART_STREAM);
+	menu_button->get_popup()->add_item(TTR("Re-mesh"), MENU_REMESH);
 	menu_button->get_popup()->add_separator();
 	menu_button->get_popup()->add_item(TTR("About Voxel Tools..."), MENU_ABOUT);
 	menu_button->get_popup()->connect("id_pressed", this, "_on_menu_item_selected");
@@ -130,6 +131,18 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			VoxelLodTerrain *terrain2 = Object::cast_to<VoxelLodTerrain>(_node);
 			ERR_FAIL_COND(terrain2 == nullptr);
 			terrain2->restart_stream();
+		} break;
+
+		case MENU_REMESH: {
+			ERR_FAIL_COND(_node == nullptr);
+			VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(_node);
+			if (terrain != nullptr) {
+				terrain->remesh_all_blocks();
+				return;
+			}
+			VoxelLodTerrain *terrain2 = Object::cast_to<VoxelLodTerrain>(_node);
+			ERR_FAIL_COND(terrain2 == nullptr);
+			terrain2->remesh_all_blocks();
 		} break;
 
 		case MENU_ABOUT:

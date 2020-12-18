@@ -26,6 +26,7 @@ private:
 
 	enum MenuID {
 		MENU_RESTART_STREAM,
+		MENU_REMESH,
 		MENU_ABOUT
 	};
 

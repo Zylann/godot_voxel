@@ -27,9 +27,10 @@ VoxelTerrain::VoxelTerrain() {
 
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_GRID);
 
-	Ref<VoxelLibrary> library;
-	library.instance();
-	set_voxel_library(library);
+	// For ease of use in editor
+	Ref<VoxelMesherBlocky> default_mesher;
+	default_mesher.instance();
+	_mesher = default_mesher;
 }
 
 VoxelTerrain::~VoxelTerrain() {
@@ -43,8 +44,14 @@ VoxelTerrain::~VoxelTerrain() {
 }
 
 String VoxelTerrain::get_configuration_warning() const {
+	if (_mesher.is_null()) {
+		return TTR("This node has no mesher assigned, it wont produce any mesh visuals. "
+				   "You can assign one on the `mesher` property.");
+	}
+
 	if (_stream.is_valid()) {
 		Ref<Script> script = _stream->get_script();
+
 		if (script.is_valid()) {
 			if (script->is_tool()) {
 				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this properly?
@@ -54,11 +61,16 @@ String VoxelTerrain::get_configuration_warning() const {
 				return TTR("The custom stream is not tool, the editor won't be able to use it.");
 			}
 		}
-		if (!(_stream->get_used_channels_mask() & ((1 << VoxelBuffer::CHANNEL_TYPE) | (1 << VoxelBuffer::CHANNEL_SDF)))) {
-			return TTR("VoxelTerrain supports only stream channels \"Type\" or \"Sdf\", "
-					   "but `get_used_channels_mask()` tells it's providing none of these.");
+
+		const int stream_channels = _stream->get_used_channels_mask();
+		const int mesher_channels = _mesher->get_used_channels_mask();
+
+		if ((stream_channels & mesher_channels) == 0) {
+			return TTR("The current stream is providing voxel data only on channels that are not used by the current mesher. "
+					   "This will result in nothing being visible.");
 		}
 	}
+
 	return String();
 }
 
@@ -172,28 +184,34 @@ void VoxelTerrain::_on_stream_params_changed() {
 	update_configuration_warning();
 }
 
-Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
-	return _library;
+Ref<VoxelMesher> VoxelTerrain::get_mesher() const {
+	return _mesher;
 }
 
-void VoxelTerrain::set_voxel_library(Ref<VoxelLibrary> library) {
-	if (library == _library) {
+void VoxelTerrain::set_mesher(Ref<VoxelMesher> mesher) {
+	if (mesher == _mesher) {
 		return;
 	}
 
-#ifdef TOOLS_ENABLED
-	if (library->get_voxel_count() == 0) {
-		library->load_default();
-	}
-#endif
-
-	_library = library;
+	_mesher = mesher;
 
 	stop_updater();
-	start_updater();
 
-	// Voxel appearance might completely change
-	make_all_view_dirty();
+	if (_mesher.is_valid()) {
+		start_updater();
+		// Voxel appearance might completely change
+		remesh_all_blocks();
+	}
+
+	update_configuration_warning();
+}
+
+Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
+	Ref<VoxelMesherBlocky> blocky_mesher = _mesher;
+	if (blocky_mesher.is_valid()) {
+		return blocky_mesher->get_library();
+	}
+	return Ref<VoxelLibrary>();
 }
 
 void VoxelTerrain::set_generate_collisions(bool enabled) {
@@ -461,13 +479,17 @@ void VoxelTerrain::make_all_view_dirty() {
 }
 
 void VoxelTerrain::start_updater() {
-	if (_library.is_valid()) {
-		// TODO Any way to execute this function just after the TRES resource loader has finished to load?
-		// VoxelLibrary should be baked ahead of time, like MeshLibrary
-		_library->bake();
+	Ref<VoxelMesherBlocky> blocky_mesher = _mesher;
+	if (blocky_mesher.is_valid()) {
+		Ref<VoxelLibrary> library = blocky_mesher->get_library();
+		if (library.is_valid()) {
+			// TODO Any way to execute this function just after the TRES resource loader has finished to load?
+			// VoxelLibrary should be baked ahead of time, like MeshLibrary
+			library->bake();
+		}
 	}
 
-	VoxelServer::get_singleton()->set_volume_voxel_library(_volume_id, _library);
+	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, _mesher);
 }
 
 void VoxelTerrain::stop_updater() {
@@ -480,13 +502,19 @@ void VoxelTerrain::stop_updater() {
 	};
 
 	VoxelServer::get_singleton()->invalidate_volume_mesh_requests(_volume_id);
-	VoxelServer::get_singleton()->set_volume_voxel_library(_volume_id, Ref<VoxelLibrary>());
+	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, Ref<VoxelMesher>());
 
 	_reception_buffers.mesh_output.clear();
 	_blocks_pending_update.clear();
 
 	ResetMeshStateAction a;
 	_map.for_all_blocks(a);
+}
+
+void VoxelTerrain::remesh_all_blocks() {
+	_map.for_all_blocks([this](VoxelBlock *block) {
+		try_schedule_block_update(block);
+	});
 }
 
 void VoxelTerrain::start_streamer() {
@@ -810,10 +838,6 @@ bool VoxelTerrain::try_get_paired_viewer_index(uint32_t id, size_t &out_i) const
 void VoxelTerrain::_process() {
 	VOXEL_PROFILE_SCOPE();
 
-	// TODO Should be able to run without library, tho!
-	if (_library.is_null()) {
-		return;
-	}
 	// print_line(String("D:{0} M:{1}")
 	// 				   .format(varray(_reception_buffers.data_output.size(), _reception_buffers.mesh_output.size())));
 
@@ -1204,8 +1228,8 @@ void VoxelTerrain::_process() {
 			VOXEL_PROFILE_SCOPE_NAMED("Build mesh");
 
 			int surface_index = 0;
-			for (int i = 0; i < ob.blocky_surfaces.surfaces.size(); ++i) {
-				Array surface = ob.blocky_surfaces.surfaces[i];
+			for (int i = 0; i < ob.surfaces.surfaces.size(); ++i) {
+				Array surface = ob.surfaces.surfaces[i];
 				if (surface.empty()) {
 					continue;
 				}
@@ -1218,26 +1242,7 @@ void VoxelTerrain::_process() {
 				collidable_surfaces.push_back(surface);
 
 				mesh->add_surface_from_arrays(
-						ob.blocky_surfaces.primitive_type, surface, Array(), ob.blocky_surfaces.compression_flags);
-				mesh->surface_set_material(surface_index, _materials[i]);
-				++surface_index;
-			}
-
-			for (int i = 0; i < ob.smooth_surfaces.surfaces.size(); ++i) {
-				Array surface = ob.smooth_surfaces.surfaces[i];
-				if (surface.empty()) {
-					continue;
-				}
-
-				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-				if (!is_surface_triangulated(surface)) {
-					continue;
-				}
-
-				collidable_surfaces.push_back(surface);
-
-				mesh->add_surface_from_arrays(
-						ob.smooth_surfaces.primitive_type, surface, Array(), ob.smooth_surfaces.compression_flags);
+						ob.surfaces.primitive_type, surface, Array(), ob.surfaces.compression_flags);
 				mesh->surface_set_material(surface_index, _materials[i]);
 				++surface_index;
 			}
@@ -1362,8 +1367,8 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelTerrain::get_stream);
 
-	ClassDB::bind_method(D_METHOD("set_voxel_library", "library"), &VoxelTerrain::set_voxel_library);
-	ClassDB::bind_method(D_METHOD("get_voxel_library"), &VoxelTerrain::get_voxel_library);
+	ClassDB::bind_method(D_METHOD("set_mesher", "mesher"), &VoxelTerrain::set_mesher);
+	ClassDB::bind_method(D_METHOD("get_mesher"), &VoxelTerrain::get_mesher);
 
 	ClassDB::bind_method(D_METHOD("set_material", "id", "material"), &VoxelTerrain::set_material);
 	ClassDB::bind_method(D_METHOD("get_material", "id"), &VoxelTerrain::get_material);
@@ -1394,8 +1399,8 @@ void VoxelTerrain::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"),
 			"set_stream", "get_stream");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "voxel_library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"),
-			"set_voxel_library", "get_voxel_library");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMesher"),
+			"set_mesher", "get_mesher");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_view_distance"), "set_max_view_distance", "get_max_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"),
 			"set_generate_collisions", "get_generate_collisions");

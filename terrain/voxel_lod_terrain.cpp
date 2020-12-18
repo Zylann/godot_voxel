@@ -1,6 +1,7 @@
 #include "voxel_lod_terrain.h"
 #include "../edition/voxel_tool_lod_terrain.h"
 #include "../math/rect3i.h"
+#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../server/voxel_server.h"
 #include "../streams/voxel_stream_file.h"
 #include "../util/macros.h"
@@ -48,6 +49,20 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 	return mesh;
 }
 
+// To use on loaded blocks
+static inline void schedule_mesh_update(VoxelBlock *block, std::vector<Vector3i> &blocks_pending_update) {
+	if (block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT) {
+		if (block->is_visible()) {
+			// Schedule an update
+			block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
+			blocks_pending_update.push_back(block->position);
+		} else {
+			// Just mark it as needing update, so the visibility system will schedule its update when needed
+			block->set_mesh_state(VoxelBlock::MESH_NEED_UPDATE);
+		}
+	}
+}
+
 } // namespace
 
 VoxelLodTerrain::VoxelLodTerrain() {
@@ -72,6 +87,11 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	// Because it prevents edits from propagating up to the last one, they will be left out of sync
 	set_lod_count(4);
 	set_lod_split_scale(3);
+
+	// For ease of use in editor
+	Ref<VoxelMesherTransvoxel> default_mesher;
+	default_mesher.instance();
+	_mesher = default_mesher;
 }
 
 VoxelLodTerrain::~VoxelLodTerrain() {
@@ -87,22 +107,33 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 }
 
 String VoxelLodTerrain::get_configuration_warning() const {
+	if (_mesher.is_null()) {
+		return TTR("This node has no mesher assigned, it wont produce any mesh visuals. "
+				   "You can assign one on the `mesher` property.");
+	}
+
 	if (_stream.is_valid()) {
 		Ref<Script> script = _stream->get_script();
+
 		if (script.is_valid()) {
 			if (script->is_tool()) {
 				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this properly?
-				return TTR("Be careful! Don't edit your custom stream while it's running, it can cause crashes. "
-						   "Turn off `run_stream_in_editor` before doing so.");
+				return TTR("Be careful! Don't edit your custom stream while it's running, "
+						   "it can cause crashes. Turn off `run_stream_in_editor` before doing so.");
 			} else {
 				return TTR("The custom stream is not tool, the editor won't be able to use it.");
 			}
 		}
-		if (!(_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF))) {
-			return TTR("VoxelLodTerrain supports only stream channel \"Sdf\" (smooth), "
-					   "but `get_used_channels_mask()` tells it's providing none of these.");
+
+		const int stream_channels = _stream->get_used_channels_mask();
+		const int mesher_channels = _mesher->get_used_channels_mask();
+
+		if (stream_channels & mesher_channels == 0) {
+			return TTR("The current stream is providing voxel data only on channels that are not used by the current mesher. "
+					   "This will result in nothing being visible.");
 		}
 	}
+
 	return String();
 }
 
@@ -147,6 +178,27 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 #endif
 
 	_on_stream_params_changed();
+}
+
+Ref<VoxelMesher> VoxelLodTerrain::get_mesher() const {
+	return _mesher;
+}
+
+void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
+	if (_mesher == p_mesher) {
+		return;
+	}
+
+	stop_updater();
+
+	_mesher = p_mesher;
+
+	if (_mesher.is_valid()) {
+		start_updater();
+		remesh_all_blocks();
+	}
+
+	update_configuration_warning();
 }
 
 void VoxelLodTerrain::_on_stream_params_changed() {
@@ -246,6 +298,7 @@ void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
 }
 
 void VoxelLodTerrain::start_updater() {
+	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, _mesher);
 }
 
 void VoxelLodTerrain::stop_updater() {
@@ -257,7 +310,7 @@ void VoxelLodTerrain::stop_updater() {
 		}
 	};
 
-	VoxelServer::get_singleton()->invalidate_volume_mesh_requests(_volume_id);
+	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, Ref<VoxelMesher>());
 
 	_reception_buffers.mesh_output.clear();
 
@@ -1162,7 +1215,7 @@ void VoxelLodTerrain::_process() {
 				block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
 			}
 
-			const VoxelMesher::Output mesh_data = ob.smooth_surfaces;
+			const VoxelMesher::Output mesh_data = ob.surfaces;
 
 			Ref<ArrayMesh> mesh = build_mesh(
 					mesh_data.surfaces,
@@ -1221,28 +1274,13 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 
 	//ProfilingClock profiling_clock;
 
-	struct L {
-		static inline void schedule_update(VoxelBlock *block, std::vector<Vector3i> &blocks_pending_update) {
-			if (block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT) {
-				if (block->is_visible()) {
-					// Schedule an update
-					block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
-					blocks_pending_update.push_back(block->position);
-				} else {
-					// Just mark it as needing update, so the visibility system will schedule its update when needed
-					block->set_mesh_state(VoxelBlock::MESH_NEED_UPDATE);
-				}
-			}
-		}
-	};
-
 	// Make sure LOD0 gets updates even if _lod_count is 1
 	Lod &lod0 = _lods[0];
 	for (unsigned int i = 0; i < lod0.blocks_pending_lodding.size(); ++i) {
 		const Vector3i bpos = lod0.blocks_pending_lodding[i];
 		VoxelBlock *block = lod0.map.get_block(bpos);
 		block->set_needs_lodding(false);
-		L::schedule_update(block, lod0.blocks_pending_update);
+		schedule_mesh_update(block, lod0.blocks_pending_update);
 	}
 
 	const int half_bs = get_block_size() >> 1;
@@ -1276,7 +1314,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 			CRASH_COND(src_block->voxels.is_null());
 			CRASH_COND(dst_block->voxels.is_null());
 
-			L::schedule_update(dst_block, dst_lod.blocks_pending_update);
+			schedule_mesh_update(dst_block, dst_lod.blocks_pending_update);
 
 			dst_block->set_modified(true);
 
@@ -1533,6 +1571,15 @@ void VoxelLodTerrain::restart_stream() {
 	_on_stream_params_changed();
 }
 
+void VoxelLodTerrain::remesh_all_blocks() {
+	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		Lod &lod = _lods[lod_index];
+		lod.map.for_all_blocks([&lod](VoxelBlock *block) {
+			schedule_mesh_update(block, lod.blocks_pending_update);
+		});
+	}
+}
+
 void VoxelLodTerrain::set_voxel_bounds(Rect3i p_box) {
 	_bounds_in_voxels =
 			p_box.clipped(Rect3i::from_center_extents(Vector3i(), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT)));
@@ -1750,6 +1797,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelLodTerrain::get_stream);
 
+	ClassDB::bind_method(D_METHOD("set_mesher", "mesher"), &VoxelLodTerrain::set_mesher);
+	ClassDB::bind_method(D_METHOD("get_mesher"), &VoxelLodTerrain::get_mesher);
+
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &VoxelLodTerrain::set_material);
 	ClassDB::bind_method(D_METHOD("get_material"), &VoxelLodTerrain::get_material);
 
@@ -1801,6 +1851,8 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"),
 			"set_stream", "get_stream");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMesher"),
+			"set_mesher", "get_mesher");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");

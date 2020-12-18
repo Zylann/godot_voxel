@@ -46,6 +46,7 @@ struct Color8 {
 	}
 
 	static inline Color8 from_u32(uint32_t c) {
+		// rrrrrrrr gggggggg bbbbbbbb aaaaaaaa
 		return Color8(
 				c >> 24,
 				(c >> 16) & 0xff,

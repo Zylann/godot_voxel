@@ -56,20 +56,6 @@ VoxelServer::VoxelServer() {
 	_meshing_thread_pool.set_priority_update_period(64);
 	_meshing_thread_pool.set_batch_count(1);
 
-	for (size_t i = 0; i < _meshing_thread_pool.get_thread_count(); ++i) {
-		Ref<VoxelMesherBlocky> mesher;
-		mesher.instance();
-		mesher->set_occlusion_enabled(true);
-		mesher->set_occlusion_darkness(0.8f);
-		_blocky_meshers[i] = mesher;
-	}
-
-	for (size_t i = 0; i < _meshing_thread_pool.get_thread_count(); ++i) {
-		Ref<VoxelMesherTransvoxel> mesher;
-		mesher.instance();
-		_smooth_meshers[i] = mesher;
-	}
-
 	if (Engine::get_singleton()->is_editor_hint()) {
 		// Default viewer
 		const uint32_t default_viewer_id = add_viewer();
@@ -178,11 +164,11 @@ void VoxelServer::set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream)
 	}
 }
 
-void VoxelServer::set_volume_voxel_library(uint32_t volume_id, Ref<VoxelLibrary> library) {
+void VoxelServer::set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher) {
 	Volume &volume = _world.volumes.get(volume_id);
-	volume.voxel_library = library;
+	volume.mesher = mesher;
 	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
-	volume.meshing_dependency->library = volume.voxel_library;
+	volume.meshing_dependency->mesher = volume.mesher;
 }
 
 void VoxelServer::set_volume_octree_split_scale(uint32_t volume_id, float split_scale) {
@@ -194,7 +180,7 @@ void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.meshing_dependency->valid = false;
 	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
-	volume.meshing_dependency->library = volume.voxel_library;
+	volume.meshing_dependency->mesher = volume.mesher;
 }
 
 static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
@@ -242,11 +228,6 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) 
 	r->blocks = input.blocks;
 	r->position = input.position;
 	r->lod = input.lod;
-
-	r->smooth_enabled = volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
-	r->blocky_enabled = volume.voxel_library.is_valid() &&
-						volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_TYPE);
-
 	r->meshing_dependency = volume.meshing_dependency;
 
 	init_priority_dependency(r->priority_dependency, input.position, input.lod, volume);
@@ -266,7 +247,6 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 	r.lod = lod;
 	r.type = BlockDataRequest::TYPE_LOAD;
 	r.block_size = volume.block_size;
-
 	r.stream_dependency = volume.stream_dependency;
 
 	init_priority_dependency(r.priority_dependency, block_pos, lod, volume);
@@ -287,7 +267,6 @@ void VoxelServer::request_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels
 	r.lod = lod;
 	r.type = BlockDataRequest::TYPE_SAVE;
 	r.block_size = volume.block_size;
-
 	r.stream_dependency = volume.stream_dependency;
 
 	// No priority data, saving doesnt need sorting
@@ -313,7 +292,7 @@ void VoxelServer::remove_volume(uint32_t volume_id) {
 	if (_world.volumes.count() == 0) {
 		// To workaround https://github.com/Zylann/godot_voxel/issues/189
 		// When the last remaining volume got destroyed (as in game exit)
-		VoxelServer::get_singleton()->wait_and_clear_all_tasks(false);
+		wait_and_clear_all_tasks(false);
 	}
 }
 
@@ -322,7 +301,7 @@ uint32_t VoxelServer::add_viewer() {
 		// Remove default viewer if any
 		_world.viewers.for_each_with_id([this](Viewer &viewer, uint32_t id) {
 			if (viewer.is_default) {
-				// Safe because StructDB does not shift items
+				// Safe because StructDB does not reallocate the data structure on removal
 				_world.viewers.destroy(id);
 			}
 		});
@@ -451,8 +430,7 @@ void VoxelServer::process() {
 
 				o.position = r->position;
 				o.lod = r->lod;
-				o.blocky_surfaces = r->blocky_surfaces_output;
-				o.smooth_surfaces = r->smooth_surfaces_output;
+				o.surfaces = r->surfaces_output;
 
 				volume->reception_buffers->mesh_output.push_back(o);
 			}
@@ -489,28 +467,28 @@ void VoxelServer::process() {
 	}
 }
 
-void VoxelServer::get_min_max_block_padding(
-		bool blocky_enabled, bool smooth_enabled, unsigned int &out_min_padding, unsigned int &out_max_padding) const {
+// void VoxelServer::get_min_max_block_padding(
+// 		bool blocky_enabled, bool smooth_enabled, unsigned int &out_min_padding, unsigned int &out_max_padding) const {
 
-	// const Volume &volume = _world.volumes.get(volume_id);
+// 	// const Volume &volume = _world.volumes.get(volume_id);
 
-	// bool smooth_enabled = volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
-	// bool blocky_enabled = volume.voxel_library.is_valid() &&
-	// 					  volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_TYPE);
+// 	// bool smooth_enabled = volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
+// 	// bool blocky_enabled = volume.voxel_library.is_valid() &&
+// 	// 					  volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_TYPE);
 
-	out_min_padding = 0;
-	out_max_padding = 0;
+// 	out_min_padding = 0;
+// 	out_max_padding = 0;
 
-	if (blocky_enabled) {
-		out_min_padding = max(out_min_padding, _blocky_meshers[0]->get_minimum_padding());
-		out_max_padding = max(out_max_padding, _blocky_meshers[0]->get_maximum_padding());
-	}
+// 	if (blocky_enabled) {
+// 		out_min_padding = max(out_min_padding, _blocky_meshers[0]->get_minimum_padding());
+// 		out_max_padding = max(out_max_padding, _blocky_meshers[0]->get_maximum_padding());
+// 	}
 
-	if (smooth_enabled) {
-		out_min_padding = max(out_min_padding, _smooth_meshers[0]->get_minimum_padding());
-		out_max_padding = max(out_max_padding, _smooth_meshers[0]->get_maximum_padding());
-	}
-}
+// 	if (smooth_enabled) {
+// 		out_min_padding = max(out_min_padding, _smooth_meshers[0]->get_minimum_padding());
+// 		out_max_padding = max(out_max_padding, _smooth_meshers[0]->get_maximum_padding());
+// 	}
+// }
 
 static unsigned int debug_get_active_thread_count(const VoxelThreadPool &pool) {
 	unsigned int active_count = 0;
@@ -594,13 +572,18 @@ bool VoxelServer::BlockDataRequest::is_cancelled() {
 //----------------------------------------------------------------------------------------------------------------------
 
 static void copy_block_and_neighbors(const FixedArray<Ref<VoxelBuffer>, Cube::MOORE_AREA_3D_COUNT> &moore_blocks,
-		VoxelBuffer &dst, int min_padding, int max_padding) {
+		VoxelBuffer &dst, int min_padding, int max_padding, int channels_mask) {
 
 	VOXEL_PROFILE_SCOPE();
 
-	FixedArray<unsigned int, 2> channels;
-	channels[0] = VoxelBuffer::CHANNEL_TYPE;
-	channels[1] = VoxelBuffer::CHANNEL_SDF;
+	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels;
+	unsigned int channels_count = 0;
+	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
+		if (channels_mask & (1 << i) != 0) {
+			channels[channels_count] = i;
+			++channels_count;
+		}
+	}
 
 	Ref<VoxelBuffer> central_buffer = moore_blocks[Cube::MOORE_AREA_3D_CENTRAL_INDEX];
 	CRASH_COND_MSG(central_buffer.is_null(), "Central buffer must be valid");
@@ -641,36 +624,19 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 	CRASH_COND(meshing_dependency == nullptr);
 
-	unsigned int min_padding;
-	unsigned int max_padding;
-	VoxelServer::get_singleton()->get_min_max_block_padding(blocky_enabled, smooth_enabled, min_padding, max_padding);
+	Ref<VoxelMesher> mesher = meshing_dependency->mesher;
+	CRASH_COND(mesher.is_null());
+	const unsigned int min_padding = mesher->get_minimum_padding();
+	const unsigned int max_padding = mesher->get_maximum_padding();
 
 	// TODO Cache?
 	Ref<VoxelBuffer> voxels;
 	voxels.instance();
-	copy_block_and_neighbors(blocks, **voxels, min_padding, max_padding);
+	copy_block_and_neighbors(blocks, **voxels, min_padding, max_padding, mesher->get_used_channels_mask());
 
 	VoxelMesher::Input input = { **voxels, lod };
 
-	if (blocky_enabled) {
-		Ref<VoxelLibrary> library = meshing_dependency->library;
-		if (library.is_valid()) {
-			VOXEL_PROFILE_SCOPE_NAMED("Blocky meshing");
-			Ref<VoxelMesherBlocky> blocky_mesher = VoxelServer::get_singleton()->_blocky_meshers[ctx.thread_index];
-			CRASH_COND(blocky_mesher.is_null());
-			// This mesher only uses baked data from the library, which is protected by a lock
-			blocky_mesher->set_library(library);
-			blocky_mesher->build(blocky_surfaces_output, input);
-			blocky_mesher->set_library(Ref<VoxelLibrary>());
-		}
-	}
-
-	if (smooth_enabled) {
-		VOXEL_PROFILE_SCOPE_NAMED("Smooth meshing");
-		Ref<VoxelMesher> smooth_mesher = VoxelServer::get_singleton()->_smooth_meshers[ctx.thread_index];
-		CRASH_COND(smooth_mesher.is_null());
-		smooth_mesher->build(smooth_surfaces_output, input);
-	}
+	mesher->build(surfaces_output, input);
 
 	has_run = true;
 }

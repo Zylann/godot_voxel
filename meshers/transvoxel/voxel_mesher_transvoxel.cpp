@@ -3,6 +3,7 @@
 #include "transvoxel_tables.cpp"
 #include <core/os/os.h>
 
+// Utility functions
 namespace {
 
 static const float TRANSITION_CELL_SCALE = 0.25;
@@ -129,34 +130,39 @@ inline Vector3 normalized_not_null(Vector3 n) {
 
 } // namespace
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+thread_local VoxelMesherTransvoxelInternal VoxelMesherTransvoxel::_impl;
+
 VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
-	set_padding(MIN_PADDING, MAX_PADDING);
+	set_padding(VoxelMesherTransvoxelInternal::MIN_PADDING, VoxelMesherTransvoxelInternal::MAX_PADDING);
 }
 
-void VoxelMesherTransvoxel::clear_output() {
-	// Important: memory is NOT deallocated. I rely on vectors keeping their capacity.
-	// This is extremely important for performance, while Godot Vector on the same usage caused 50% slowdown.
-	_output_indices.clear();
-	_output_normals.clear();
-	_output_vertices.clear();
-	_output_extra.clear();
+VoxelMesherTransvoxel::~VoxelMesherTransvoxel() {
 }
 
-void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays) {
+Ref<Resource> VoxelMesherTransvoxel::duplicate(bool p_subresources) const {
+	return memnew(VoxelMesherTransvoxel);
+}
 
+int VoxelMesherTransvoxel::get_used_channels_mask() const {
+	return (1 << VoxelBuffer::CHANNEL_SDF);
+}
+
+void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const VoxelMesherTransvoxelInternal::MeshArrays &src) {
 	PoolVector<Vector3> vertices;
 	PoolVector<Vector3> normals;
 	PoolVector<Color> extra;
 	PoolVector<int> indices;
 
-	raw_copy_to(vertices, _output_vertices);
-	raw_copy_to(normals, _output_normals);
-	raw_copy_to(extra, _output_extra);
-	raw_copy_to(indices, _output_indices);
+	raw_copy_to(vertices, src.vertices);
+	raw_copy_to(normals, src.normals);
+	raw_copy_to(extra, src.extra);
+	raw_copy_to(indices, src.indices);
 
 	arrays.resize(Mesh::ARRAY_MAX);
 	arrays[Mesh::ARRAY_VERTEX] = vertices;
-	if (_output_normals.size() != 0) {
+	if (src.normals.size() != 0) {
 		arrays[Mesh::ARRAY_NORMAL] = normals;
 	}
 	arrays[Mesh::ARRAY_COLOR] = extra;
@@ -164,6 +170,7 @@ void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays) {
 }
 
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+	VoxelMesherTransvoxelInternal &impl = _impl;
 
 	int channel = VoxelBuffer::CHANNEL_SDF;
 
@@ -171,34 +178,33 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// These vectors are re-used.
 	// We don't know in advance how much geometry we are going to produce.
 	// Once capacity is big enough, no more memory should be allocated
-	clear_output();
+	impl.clear_output();
 
 	const VoxelBuffer &voxels = input.voxels;
 	ERR_FAIL_COND(voxels.get_channel_depth(channel) != VoxelBuffer::DEPTH_8_BIT);
 
-	build_internal(voxels, channel, input.lod);
+	impl.build_internal(voxels, channel, input.lod);
 
-	if (_output_vertices.size() == 0) {
+	if (impl.get_output().vertices.size() == 0) {
 		// The mesh can be empty
 		return;
 	}
 
 	Array regular_arrays;
-	fill_surface_arrays(regular_arrays);
+	fill_surface_arrays(regular_arrays, impl.get_output());
 	output.surfaces.push_back(regular_arrays);
 
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+		impl.clear_output();
 
-		clear_output();
+		impl.build_transition(voxels, channel, dir, input.lod);
 
-		build_transition(voxels, channel, dir, input.lod);
-
-		if (_output_vertices.size() == 0) {
+		if (impl.get_output().vertices.size() == 0) {
 			continue;
 		}
 
 		Array transition_arrays;
-		fill_surface_arrays(transition_arrays);
+		fill_surface_arrays(transition_arrays, impl.get_output());
 		output.transition_surfaces[dir].push_back(transition_arrays);
 	}
 
@@ -208,28 +214,35 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 // TODO For testing at the moment
 Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> voxels, int direction) {
+	VoxelMesherTransvoxelInternal &impl = _impl;
 
-	clear_output();
+	impl.clear_output();
 
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
-	build_transition(**voxels, VoxelBuffer::CHANNEL_SDF, direction, 0);
+	impl.build_transition(**voxels, VoxelBuffer::CHANNEL_SDF, direction, 0);
 
 	Ref<ArrayMesh> mesh;
 
-	if (_output_vertices.size() == 0) {
+	if (impl.get_output().vertices.size() == 0) {
 		return mesh;
 	}
 
 	Array arrays;
-	fill_surface_arrays(arrays);
+	fill_surface_arrays(arrays, impl.get_output());
 	mesh.instance();
 	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays, Array(), MESH_COMPRESSION_FLAGS);
 	return mesh;
 }
 
-void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned int channel, int lod_index) {
+void VoxelMesherTransvoxel::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"),
+			&VoxelMesherTransvoxel::build_transition_mesh);
+}
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, unsigned int channel, int lod_index) {
 	struct L {
 		inline static Vector3i dir_to_prev_vec(uint8_t dir) {
 			//return g_corner_dirs[mask] - Vector3(1,1,1);
@@ -515,7 +528,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 				for (int t = 0; t < triangle_count; ++t) {
 					for (int i = 0; i < 3; ++i) {
 						const int index = cell_vertex_indices[regular_cell_data.get_vertex_index(t * 3 + i)];
-						_output_indices.push_back(index);
+						_output.indices.push_back(index);
 					}
 				}
 
@@ -524,7 +537,7 @@ void VoxelMesherTransvoxel::build_internal(const VoxelBuffer &voxels, unsigned i
 	} // z
 }
 
-void VoxelMesherTransvoxel::build_transition(
+void VoxelMesherTransvoxelInternal::build_transition(
 		const VoxelBuffer &p_voxels, unsigned int channel, int direction, int lod_index) {
 
 	//    y            y
@@ -899,13 +912,13 @@ void VoxelMesherTransvoxel::build_transition(
 
 			for (unsigned int ti = 0; ti < triangle_count; ++ti) {
 				if (flip_triangles) {
-					_output_indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3)]);
-					_output_indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 1)]);
-					_output_indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 2)]);
+					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3)]);
+					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 1)]);
+					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 2)]);
 				} else {
-					_output_indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 2)]);
-					_output_indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 1)]);
-					_output_indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3)]);
+					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 2)]);
+					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 1)]);
+					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3)]);
 				}
 			}
 
@@ -913,7 +926,7 @@ void VoxelMesherTransvoxel::build_transition(
 	} // for y
 }
 
-void VoxelMesherTransvoxel::reset_reuse_cells(Vector3i block_size) {
+void VoxelMesherTransvoxelInternal::reset_reuse_cells(Vector3i block_size) {
 	_block_size = block_size;
 	unsigned int deck_area = block_size.x * block_size.y;
 	for (unsigned int i = 0; i < _cache.size(); ++i) {
@@ -925,7 +938,7 @@ void VoxelMesherTransvoxel::reset_reuse_cells(Vector3i block_size) {
 	}
 }
 
-void VoxelMesherTransvoxel::reset_reuse_cells_2d(Vector3i block_size) {
+void VoxelMesherTransvoxelInternal::reset_reuse_cells_2d(Vector3i block_size) {
 	for (unsigned int i = 0; i < _cache_2d.size(); ++i) {
 		std::vector<ReuseTransitionCell> &row = _cache_2d[i];
 		row.resize(block_size.x);
@@ -935,36 +948,28 @@ void VoxelMesherTransvoxel::reset_reuse_cells_2d(Vector3i block_size) {
 	}
 }
 
-VoxelMesherTransvoxel::ReuseCell &VoxelMesherTransvoxel::get_reuse_cell(Vector3i pos) {
+VoxelMesherTransvoxelInternal::ReuseCell &VoxelMesherTransvoxelInternal::get_reuse_cell(Vector3i pos) {
 	unsigned int j = pos.z & 1;
 	unsigned int i = pos.y * _block_size.y + pos.x;
 	CRASH_COND(i >= _cache[j].size());
 	return _cache[j][i];
 }
 
-VoxelMesherTransvoxel::ReuseTransitionCell &VoxelMesherTransvoxel::get_reuse_cell_2d(int x, int y) {
+VoxelMesherTransvoxelInternal::ReuseTransitionCell &VoxelMesherTransvoxelInternal::get_reuse_cell_2d(int x, int y) {
 	unsigned int j = y & 1;
 	unsigned int i = x;
 	CRASH_COND(i >= _cache_2d[j].size());
 	return _cache_2d[j][i];
 }
 
-int VoxelMesherTransvoxel::emit_vertex(Vector3 primary, Vector3 normal, uint16_t border_mask, Vector3 secondary) {
+int VoxelMesherTransvoxelInternal::emit_vertex(
+		Vector3 primary, Vector3 normal, uint16_t border_mask, Vector3 secondary) {
 
-	int vi = _output_vertices.size();
+	int vi = _output.vertices.size();
 
-	_output_vertices.push_back(primary);
-	_output_normals.push_back(normal);
-	_output_extra.push_back(Color(secondary.x, secondary.y, secondary.z, border_mask));
+	_output.vertices.push_back(primary);
+	_output.normals.push_back(normal);
+	_output.extra.push_back(Color(secondary.x, secondary.y, secondary.z, border_mask));
 
 	return vi;
-}
-
-VoxelMesher *VoxelMesherTransvoxel::clone() {
-	return memnew(VoxelMesherTransvoxel);
-}
-
-void VoxelMesherTransvoxel::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"),
-			&VoxelMesherTransvoxel::build_transition_mesh);
 }

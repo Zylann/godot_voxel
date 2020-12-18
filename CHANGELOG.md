@@ -16,6 +16,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Added a utility class to load MagicaVoxel `.vox` files
     - Voxel nodes can be moved, scaled and rotated
     - Voxel nodes can be limited to specific bounds, rather than being infinitely paging volumes (multiples of block size)
+    - Meshers are now resources so you can choose and configure them per terrain
 
 - Smooth voxels
     - Shaders now have access to the transform of each block, useful for triplanar mapping on moving volumes
@@ -29,6 +30,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Defined `COLOR` channel in `VoxelBuffer`, previously known as `DATA3`
     - `VoxelGenerator` is no longer the base for script-based generators, use `VoxelGeneratorScript` instead
     - `VoxelStream` is no longer the base for script-based streams, use `VoxelStreamScript` instead
+    - Terrain nodes no longer produce meshes based on the voxel data. Instead they use the mesher assigned to them.
 
 - Fixes
     - C# should be able to properly implement generator/stream functions

@@ -25,6 +25,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 
 	struct RaycastPredicate {
 		const VoxelTerrain &terrain;
+		const VoxelLibrary &library;
 		const uint32_t collision_mask;
 
 		bool operator()(Vector3i pos) {
@@ -33,17 +34,11 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 			const VoxelMap &map = terrain.get_storage();
 			int v0 = map.get_voxel(pos, VoxelBuffer::CHANNEL_TYPE);
 
-			Ref<VoxelLibrary> lib_ref = terrain.get_voxel_library();
-			if (lib_ref.is_null()) {
-				return false;
-			}
-			const VoxelLibrary &lib = **lib_ref;
-
-			if (lib.has_voxel(v0) == false) {
+			if (library.has_voxel(v0) == false) {
 				return false;
 			}
 
-			const Voxel &voxel = lib.get_voxel_const(v0);
+			const Voxel &voxel = library.get_voxel_const(v0);
 			if (voxel.is_empty()) {
 				return false;
 			}
@@ -65,11 +60,17 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 		}
 	};
 
-	Vector3i hit_pos;
-	Vector3i prev_pos;
 	Ref<VoxelRaycastResult> res;
 
-	RaycastPredicate predicate = { *_terrain, collision_mask };
+	Ref<VoxelLibrary> library_ref = _terrain->get_voxel_library();
+	if (library_ref.is_null()) {
+		return res;
+	}
+
+	Vector3i hit_pos;
+	Vector3i prev_pos;
+
+	RaycastPredicate predicate = { *_terrain, **library_ref, collision_mask };
 	if (voxel_raycast(pos, dir, predicate, max_distance, hit_pos, prev_pos)) {
 		res.instance();
 		res->position = hit_pos;

@@ -209,6 +209,7 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 
 	const Vector3i block_size_v(_block_size, _block_size, _block_size);
 
+	// TODO May be inside the XYZ loop, would do less block lookups
 	for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
 		if (((1 << channel) & channels_mask) == 0) {
 			continue;

@@ -21,8 +21,7 @@ public:
 		};
 
 		Type type;
-		VoxelMesher::Output blocky_surfaces;
-		VoxelMesher::Output smooth_surfaces;
+		VoxelMesher::Output surfaces;
 		Vector3i position;
 		uint8_t lod;
 	};
@@ -83,7 +82,7 @@ public:
 	void set_volume_transform(uint32_t volume_id, Transform t);
 	void set_volume_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
-	void set_volume_voxel_library(uint32_t volume_id, Ref<VoxelLibrary> library);
+	void set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher);
 	void set_volume_octree_split_scale(uint32_t volume_id, float split_scale);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, BlockMeshInput &input);
@@ -109,9 +108,9 @@ public:
 	}
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
-	void get_min_max_block_padding(
-			bool blocky_enabled, bool smooth_enabled,
-			unsigned int &out_min_padding, unsigned int &out_max_padding) const;
+	// void get_min_max_block_padding(
+	// 		bool blocky_enabled, bool smooth_enabled,
+	// 		unsigned int &out_min_padding, unsigned int &out_max_padding) const;
 
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
@@ -148,7 +147,7 @@ private:
 
 	// Data common to all requests about a particular volume
 	struct MeshingDependency {
-		Ref<VoxelLibrary> library;
+		Ref<VoxelMesher> mesher;
 		bool valid = true;
 	};
 
@@ -157,7 +156,7 @@ private:
 		ReceptionBuffers *reception_buffers = nullptr;
 		Transform transform;
 		Ref<VoxelStream> stream;
-		Ref<VoxelLibrary> voxel_library;
+		Ref<VoxelMesher> mesher;
 		uint32_t block_size = 16;
 		float octree_split_scale = 0;
 		std::shared_ptr<StreamingDependency> stream_dependency;
@@ -225,14 +224,11 @@ private:
 		Vector3i position;
 		uint32_t volume_id;
 		uint8_t lod;
-		bool smooth_enabled;
-		bool blocky_enabled;
 		bool has_run = false;
 		bool too_far = false;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<MeshingDependency> meshing_dependency;
-		VoxelMesher::Output blocky_surfaces_output;
-		VoxelMesher::Output smooth_surfaces_output;
+		VoxelMesher::Output surfaces_output;
 	};
 
 	// TODO multi-world support in the future
@@ -240,14 +236,6 @@ private:
 
 	VoxelThreadPool _streaming_thread_pool;
 	VoxelThreadPool _meshing_thread_pool;
-
-	// TODO I do this because meshers have memory caches. But perhaps we could put them in thread locals?
-	// Used by tasks from threads.
-	// Meshers have internal state because they use memory caches,
-	// so we instanciate one per thread to be sure it's safe without having to lock.
-	// Options such as library etc can change per task.
-	FixedArray<Ref<VoxelMesherBlocky>, VoxelThreadPool::MAX_THREADS> _blocky_meshers;
-	FixedArray<Ref<VoxelMesher>, VoxelThreadPool::MAX_THREADS> _smooth_meshers;
 };
 
 // TODO Hack to make VoxelServer update... need ways to integrate callbacks from main loop!
