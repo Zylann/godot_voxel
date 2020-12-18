@@ -128,7 +128,7 @@ String VoxelLodTerrain::get_configuration_warning() const {
 		const int stream_channels = _stream->get_used_channels_mask();
 		const int mesher_channels = _mesher->get_used_channels_mask();
 
-		if (stream_channels & mesher_channels == 0) {
+		if ((stream_channels & mesher_channels) == 0) {
 			return TTR("The current stream is providing voxel data only on channels that are not used by the current mesher. "
 					   "This will result in nothing being visible.");
 		}
