@@ -40,6 +40,7 @@ Error VoxelRegionFile::open(const String &fpath, bool create_if_not_found) {
 	_file_path = fpath;
 
 	Error file_error;
+	// Open existing file for read and write permissions. This should not create the file if it doesn't exist.
 	// Note, there is no read-only mode supported, because there was no need for it yet.
 	FileAccess *f = FileAccess::open(fpath, FileAccess::READ_WRITE, &file_error);
 	if (file_error != OK) {
@@ -52,12 +53,15 @@ Error VoxelRegionFile::open(const String &fpath, bool create_if_not_found) {
 				return ERR_CANT_CREATE;
 			}
 
+			// This time, we attempt to create the file
 			f = FileAccess::open(fpath, FileAccess::WRITE_READ, &file_error);
 			if (file_error != OK) {
+				ERR_PRINT(String("Failed to create file {0}").format(varray(fpath)));
 				return file_error;
-			} else {
-				ERR_FAIL_COND_V(save_header(f) == false, ERR_FILE_CANT_WRITE);
 			}
+
+			_header.version = FORMAT_VERSION;
+			ERR_FAIL_COND_V(save_header(f) == false, ERR_FILE_CANT_WRITE);
 
 		} else {
 			return file_error;
@@ -509,6 +513,7 @@ bool VoxelRegionFile::migrate_to_latest(FileAccess *f) {
 
 Error VoxelRegionFile::load_header(FileAccess *f) {
 	ERR_FAIL_COND_V(f->get_position() != 0, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(f->get_len() < MAGIC_AND_VERSION_SIZE, ERR_PARSE_ERROR);
 
 	FixedArray<char, 5> magic(0);
 	ERR_FAIL_COND_V(f->get_buffer(reinterpret_cast<uint8_t *>(magic.data()), 4) != 4, ERR_PARSE_ERROR);
