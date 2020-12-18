@@ -111,7 +111,7 @@ public:
 		return Rect3i(Vector3i(), _size).contains(box);
 	}
 
-	_FORCE_INLINE_ unsigned int index(unsigned int x, unsigned int y, unsigned int z) const {
+	_FORCE_INLINE_ unsigned int get_index(unsigned int x, unsigned int y, unsigned int z) const {
 		return y + _size.y * (x + _size.x * z);
 	}
 

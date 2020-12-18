@@ -183,7 +183,7 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 	const Channel &channel = _channels[channel_index];
 
 	if (is_position_valid(x, y, z) && channel.data) {
-		uint32_t i = index(x, y, z);
+		const uint32_t i = get_index(x, y, z);
 
 		switch (channel.depth) {
 			case DEPTH_8_BIT:
@@ -203,8 +203,7 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 				return 0;
 		}
 
-		return channel.data[index(x, y, z)];
-
+		return channel.data[get_index(x, y, z)];
 	} else {
 		return channel.defval;
 	}
@@ -343,7 +342,7 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 	unsigned int volume = get_volume();
 	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
 		for (pos.x = min.x; pos.x < max.x; ++pos.x) {
-			unsigned int dst_ri = index(pos.x, pos.y + min.y, pos.z);
+			unsigned int dst_ri = get_index(pos.x, pos.y + min.y, pos.z);
 			CRASH_COND(dst_ri >= volume);
 
 			switch (channel.depth) {
@@ -520,8 +519,8 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 				for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
 					for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
 						// Row direction is Y
-						unsigned int src_ri = other.index(pos.x + src_min.x, pos.y + src_min.y, pos.z + src_min.z);
-						unsigned int dst_ri = index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
+						const unsigned int src_ri = other.get_index(pos.x + src_min.x, pos.y + src_min.y, pos.z + src_min.z);
+						const unsigned int dst_ri = get_index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
 						memcpy(&channel.data[dst_ri], &other_channel.data[src_ri], area_size.y * sizeof(uint8_t));
 					}
 				}
