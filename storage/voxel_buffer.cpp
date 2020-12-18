@@ -190,13 +190,13 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 				return channel.data[i];
 
 			case DEPTH_16_BIT:
-				return ((uint16_t *)channel.data)[i];
+				return reinterpret_cast<uint16_t *>(channel.data)[i];
 
 			case DEPTH_32_BIT:
-				return ((uint32_t *)channel.data)[i];
+				return reinterpret_cast<uint32_t *>(channel.data)[i];
 
 			case DEPTH_64_BIT:
-				return ((uint64_t *)channel.data)[i];
+				return reinterpret_cast<uint64_t *>(channel.data)[i];
 
 			default:
 				CRASH_NOW();
@@ -208,7 +208,7 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 	} else {
 		return channel.defval;
 	}
-}
+} // namespace
 
 void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
@@ -237,15 +237,15 @@ void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int ch
 				break;
 
 			case DEPTH_16_BIT:
-				((uint16_t *)channel.data)[i] = value;
+				reinterpret_cast<uint16_t *>(channel.data)[i] = value;
 				break;
 
 			case DEPTH_32_BIT:
-				((uint32_t *)channel.data)[i] = value;
+				reinterpret_cast<uint32_t *>(channel.data)[i] = value;
 				break;
 
 			case DEPTH_64_BIT:
-				((uint64_t *)channel.data)[i] = value;
+				reinterpret_cast<uint64_t *>(channel.data)[i] = value;
 				break;
 
 			default:
@@ -293,19 +293,19 @@ void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
 
 		case DEPTH_16_BIT:
 			for (uint32_t i = 0; i < volume; ++i) {
-				((uint16_t *)channel.data)[i] = defval;
+				reinterpret_cast<uint16_t *>(channel.data)[i] = defval;
 			}
 			break;
 
 		case DEPTH_32_BIT:
 			for (uint32_t i = 0; i < volume; ++i) {
-				((uint32_t *)channel.data)[i] = defval;
+				reinterpret_cast<uint32_t *>(channel.data)[i] = defval;
 			}
 			break;
 
 		case DEPTH_64_BIT:
 			for (uint32_t i = 0; i < volume; ++i) {
-				((uint64_t *)channel.data)[i] = defval;
+				reinterpret_cast<uint64_t *>(channel.data)[i] = defval;
 			}
 			break;
 

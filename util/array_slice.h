@@ -41,7 +41,7 @@ public:
 #ifdef DEBUG_ENABLED
 		CRASH_COND(size_in_bytes % sizeof(U) != 0);
 #endif
-		return ArraySlice<U>((U *)_ptr, 0, size_in_bytes / sizeof(U));
+		return ArraySlice<U>(reinterpret_cast<U *>(_ptr), 0, size_in_bytes / sizeof(U));
 	}
 
 	inline T &operator[](size_t i) {
