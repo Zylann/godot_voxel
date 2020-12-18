@@ -1,6 +1,6 @@
 #include "voxel_generator_image.h"
-#include "../util/array_slice.h"
-#include "../util/fixed_array.h"
+#include "../../util/array_slice.h"
+#include "../../util/fixed_array.h"
 
 namespace {
 
@@ -48,11 +48,13 @@ void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
 	image.lock();
 
 	if (_blur_enabled) {
-		VoxelGeneratorHeightmap::generate(out_buffer,
+		VoxelGeneratorHeightmap::generate(
+				out_buffer,
 				[&image](int x, int z) { return get_height_blurred(image, x, z); },
 				input.origin_in_voxels, input.lod);
 	} else {
-		VoxelGeneratorHeightmap::generate(out_buffer,
+		VoxelGeneratorHeightmap::generate(
+				out_buffer,
 				[&image](int x, int z) { return get_height_repeat(image, x, z); },
 				input.origin_in_voxels, input.lod);
 	}

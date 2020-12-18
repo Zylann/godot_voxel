@@ -1,7 +1,7 @@
 #ifndef VOXEL_GENERATOR_FLAT_H
 #define VOXEL_GENERATOR_FLAT_H
 
-#include "voxel_generator.h"
+#include "../voxel_generator.h"
 
 class VoxelGeneratorFlat : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorFlat, VoxelGenerator)

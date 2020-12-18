@@ -1,8 +1,8 @@
 #ifndef VOXEL_GENERATOR_HEIGHTMAP_H
 #define VOXEL_GENERATOR_HEIGHTMAP_H
 
-#include "../storage/voxel_buffer.h"
-#include "voxel_generator.h"
+#include "../../storage/voxel_buffer.h"
+#include "../voxel_generator.h"
 #include <core/image.h>
 
 class VoxelGeneratorHeightmap : public VoxelGenerator {

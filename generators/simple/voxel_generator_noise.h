@@ -1,7 +1,7 @@
 #ifndef VOXEL_GENERATOR_NOISE_H
 #define VOXEL_GENERATOR_NOISE_H
 
-#include "voxel_generator.h"
+#include "../voxel_generator.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
 class VoxelGeneratorNoise : public VoxelGenerator {

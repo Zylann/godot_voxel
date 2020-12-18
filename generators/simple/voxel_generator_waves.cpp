@@ -1,5 +1,5 @@
 #include "voxel_generator_waves.h"
-#include "../util/utility.h"
+#include "../../util/utility.h"
 #include <cmath>
 
 VoxelGeneratorWaves::VoxelGeneratorWaves() {
@@ -8,14 +8,14 @@ VoxelGeneratorWaves::VoxelGeneratorWaves() {
 }
 
 void VoxelGeneratorWaves::generate_block(VoxelBlockRequest &input) {
-
 	VoxelBuffer &out_buffer = **input.voxel_buffer;
 	const Vector2 freq(
 			Math_PI / static_cast<float>(_pattern_size.x),
 			Math_PI / static_cast<float>(_pattern_size.y));
 	const Vector2 offset = _pattern_offset;
 
-	VoxelGeneratorHeightmap::generate(out_buffer,
+	VoxelGeneratorHeightmap::generate(
+			out_buffer,
 			[freq, offset](int x, int z) {
 				return 0.5 + 0.25 * (Math::cos((x + offset.x) * freq.x) + Math::sin((z + offset.y) * freq.y));
 			},
