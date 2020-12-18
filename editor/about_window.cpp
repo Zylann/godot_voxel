@@ -1,5 +1,6 @@
 #include "about_window.h"
 
+#include <core/os/os.h>
 #include <editor/editor_scale.h>
 #include <scene/gui/rich_text_label.h>
 #include <scene/gui/tab_container.h>
@@ -55,6 +56,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	RichTextLabel *rich_text_label = memnew(RichTextLabel);
 	rich_text_label->set_use_bbcode(true);
 	rich_text_label->set_bbcode(about_text);
+	rich_text_label->connect("meta_clicked", this, "_on_about_rich_text_label_meta_clicked");
 
 	tab_container->add_child(rich_text_label);
 
@@ -79,6 +81,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 			"IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,\n"
 			"WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\n"
 			"SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.");
+	rich_text_label2->set_selection_enabled(true);
 
 	tab_container->add_child(rich_text_label2);
 	tab_container->set_tab_title(0, TTR("About"));
@@ -110,6 +113,13 @@ void VoxelAboutWindow::_on_ok_button_pressed() {
 	hide();
 }
 
+void VoxelAboutWindow::_on_about_rich_text_label_meta_clicked(Variant meta) {
+	// Open hyperlinks
+	OS::get_singleton()->shell_open(meta);
+}
+
 void VoxelAboutWindow::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_ok_button_pressed"), &VoxelAboutWindow::_on_ok_button_pressed);
+	ClassDB::bind_method(D_METHOD("_on_about_rich_text_label_meta_clicked", "meta"),
+			&VoxelAboutWindow::_on_about_rich_text_label_meta_clicked);
 }

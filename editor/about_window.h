@@ -15,6 +15,7 @@ protected:
 
 private:
 	void _on_ok_button_pressed();
+	void _on_about_rich_text_label_meta_clicked(Variant meta);
 
 	static void _bind_methods();
 
