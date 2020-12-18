@@ -579,7 +579,7 @@ static void copy_block_and_neighbors(const FixedArray<Ref<VoxelBuffer>, Cube::MO
 	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels;
 	unsigned int channels_count = 0;
 	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
-		if (channels_mask & (1 << i) != 0) {
+		if ((channels_mask & (1 << i)) != 0) {
 			channels[channels_count] = i;
 			++channels_count;
 		}
