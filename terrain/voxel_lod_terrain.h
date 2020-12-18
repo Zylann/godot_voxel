@@ -4,6 +4,8 @@
 #include "../server/voxel_server.h"
 #include "lod_octree.h"
 #include "voxel_map.h"
+#include "voxel_node.h"
+
 #include <core/set.h>
 #include <scene/3d/spatial.h>
 
@@ -18,22 +20,20 @@ class VoxelStream;
 // Designed for highest view distances, preferably using smooth voxels.
 // Voxels are polygonized around the viewer by distance in a very large sphere, usually extending beyond far clip.
 // Data is streamed using a VoxelStream, which must support LOD.
-class VoxelLodTerrain : public Spatial {
-	GDCLASS(VoxelLodTerrain, Spatial)
+class VoxelLodTerrain : public VoxelNode {
+	GDCLASS(VoxelLodTerrain, VoxelNode)
 public:
 	VoxelLodTerrain();
 	~VoxelLodTerrain();
 
-	String get_configuration_warning() const override;
-
 	Ref<Material> get_material() const;
 	void set_material(Ref<Material> p_material);
 
-	Ref<VoxelStream> get_stream() const;
-	void set_stream(Ref<VoxelStream> p_stream);
+	Ref<VoxelStream> get_stream() const override;
+	void set_stream(Ref<VoxelStream> p_stream) override;
 
-	Ref<VoxelMesher> get_mesher() const;
-	void set_mesher(Ref<VoxelMesher> p_mesher);
+	Ref<VoxelMesher> get_mesher() const override;
+	void set_mesher(Ref<VoxelMesher> p_mesher) override;
 
 	int get_view_distance() const;
 	void set_view_distance(int p_distance_in_voxels);
@@ -98,8 +98,8 @@ public:
 	void set_run_stream_in_editor(bool enable);
 	bool is_stream_running_in_editor() const;
 
-	void restart_stream();
-	void remesh_all_blocks();
+	void restart_stream() override;
+	void remesh_all_blocks() override;
 
 	struct BlockToSave {
 		Ref<VoxelBuffer> voxels;

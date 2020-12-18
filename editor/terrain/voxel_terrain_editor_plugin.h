@@ -5,6 +5,7 @@
 
 class MenuButton;
 class VoxelAboutWindow;
+class VoxelNode;
 
 class VoxelTerrainEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelTerrainEditorPlugin, EditorPlugin)
@@ -16,7 +17,7 @@ public:
 	void make_visible(bool visible) override;
 
 private:
-	void set_node(Node *node);
+	void set_node(VoxelNode *node);
 
 	void _on_menu_item_selected(int id);
 	void _on_terrain_tree_entered(Node *node);
@@ -30,7 +31,7 @@ private:
 		MENU_ABOUT
 	};
 
-	Node *_node = nullptr;
+	VoxelNode *_node = nullptr;
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;

@@ -106,37 +106,6 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 	VoxelServer::get_singleton()->remove_volume(_volume_id);
 }
 
-String VoxelLodTerrain::get_configuration_warning() const {
-	if (_mesher.is_null()) {
-		return TTR("This node has no mesher assigned, it wont produce any mesh visuals. "
-				   "You can assign one on the `mesher` property.");
-	}
-
-	if (_stream.is_valid()) {
-		Ref<Script> script = _stream->get_script();
-
-		if (script.is_valid()) {
-			if (script->is_tool()) {
-				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this properly?
-				return TTR("Be careful! Don't edit your custom stream while it's running, "
-						   "it can cause crashes. Turn off `run_stream_in_editor` before doing so.");
-			} else {
-				return TTR("The custom stream is not tool, the editor won't be able to use it.");
-			}
-		}
-
-		const int stream_channels = _stream->get_used_channels_mask();
-		const int mesher_channels = _mesher->get_used_channels_mask();
-
-		if ((stream_channels & mesher_channels) == 0) {
-			return TTR("The current stream is providing voxel data only on channels that are not used by the current mesher. "
-					   "This will result in nothing being visible.");
-		}
-	}
-
-	return String();
-}
-
 Ref<Material> VoxelLodTerrain::get_material() const {
 	return _material;
 }
@@ -1794,12 +1763,6 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath) const {
 }
 
 void VoxelLodTerrain::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelLodTerrain::set_stream);
-	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelLodTerrain::get_stream);
-
-	ClassDB::bind_method(D_METHOD("set_mesher", "mesher"), &VoxelLodTerrain::set_mesher);
-	ClassDB::bind_method(D_METHOD("get_mesher"), &VoxelLodTerrain::get_mesher);
-
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &VoxelLodTerrain::set_material);
 	ClassDB::bind_method(D_METHOD("get_material"), &VoxelLodTerrain::get_material);
 
@@ -1849,10 +1812,6 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(PROCESS_MODE_PHYSICS);
 	BIND_ENUM_CONSTANT(PROCESS_MODE_DISABLED);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"),
-			"set_stream", "get_stream");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMesher"),
-			"set_mesher", "get_mesher");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");

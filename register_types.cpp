@@ -57,19 +57,20 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelBuffer>();
 
 	// Nodes
+	ClassDB::register_virtual_class<VoxelNode>();
 	ClassDB::register_class<VoxelTerrain>();
 	ClassDB::register_class<VoxelLodTerrain>();
 	ClassDB::register_class<VoxelViewer>();
 
 	// Streams
-	ClassDB::register_class<VoxelStream>();
+	ClassDB::register_virtual_class<VoxelStream>();
 	ClassDB::register_class<VoxelStreamFile>();
 	ClassDB::register_class<VoxelStreamBlockFiles>();
 	ClassDB::register_class<VoxelStreamRegionFiles>();
 	ClassDB::register_class<VoxelStreamScript>();
 
 	// Generators
-	ClassDB::register_class<VoxelGenerator>();
+	ClassDB::register_virtual_class<VoxelGenerator>();
 	ClassDB::register_class<VoxelGeneratorFlat>();
 	ClassDB::register_class<VoxelGeneratorWaves>();
 	ClassDB::register_class<VoxelGeneratorHeightmap>();
@@ -88,7 +89,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelVoxLoader>();
 
 	// Meshers
-	ClassDB::register_class<VoxelMesher>();
+	ClassDB::register_virtual_class<VoxelMesher>();
 	ClassDB::register_class<VoxelMesherBlocky>();
 	ClassDB::register_class<VoxelMesherTransvoxel>();
 	ClassDB::register_class<VoxelMesherDMC>();

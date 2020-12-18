@@ -25,18 +25,6 @@ VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
 	base_control->add_child(_about_window);
 }
 
-static Node *get_as_terrain(Object *p_object) {
-	VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(p_object);
-	if (terrain != nullptr) {
-		return terrain;
-	}
-	VoxelLodTerrain *terrain2 = Object::cast_to<VoxelLodTerrain>(p_object);
-	if (terrain2 != nullptr) {
-		return terrain2;
-	}
-	return nullptr;
-}
-
 // Things the plugin doesn't directly work on, but still handles to keep things visible.
 // This is basically a hack because it's not easy to express that with EditorPlugin API.
 // The use case being, as long as we edit an object NESTED within a voxel terrain, we should keep things visible.
@@ -55,7 +43,7 @@ static bool is_side_handled(Object *p_object) {
 }
 
 bool VoxelTerrainEditorPlugin::handles(Object *p_object) const {
-	if (get_as_terrain(p_object) != nullptr) {
+	if (Object::cast_to<VoxelNode>(p_object) != nullptr) {
 		return true;
 	}
 	if (_node != nullptr) {
@@ -65,7 +53,7 @@ bool VoxelTerrainEditorPlugin::handles(Object *p_object) const {
 }
 
 void VoxelTerrainEditorPlugin::edit(Object *p_object) {
-	Node *node = get_as_terrain(p_object);
+	VoxelNode *node = Object::cast_to<VoxelNode>(p_object);
 	if (node != nullptr) {
 		set_node(node);
 	} else {
@@ -75,7 +63,7 @@ void VoxelTerrainEditorPlugin::edit(Object *p_object) {
 	}
 }
 
-void VoxelTerrainEditorPlugin::set_node(Node *node) {
+void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 	if (_node != nullptr) {
 		// Using this to know when the node becomes really invalid, because ObjectID is unreliable in Godot 3.x,
 		// and we may want to keep access to the node when we select some different kinds of objects.
@@ -121,29 +109,15 @@ void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 
 void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 	switch (id) {
-		case MENU_RESTART_STREAM: {
+		case MENU_RESTART_STREAM:
 			ERR_FAIL_COND(_node == nullptr);
-			VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(_node);
-			if (terrain != nullptr) {
-				terrain->restart_stream();
-				return;
-			}
-			VoxelLodTerrain *terrain2 = Object::cast_to<VoxelLodTerrain>(_node);
-			ERR_FAIL_COND(terrain2 == nullptr);
-			terrain2->restart_stream();
-		} break;
+			_node->restart_stream();
+			break;
 
-		case MENU_REMESH: {
+		case MENU_REMESH:
 			ERR_FAIL_COND(_node == nullptr);
-			VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(_node);
-			if (terrain != nullptr) {
-				terrain->remesh_all_blocks();
-				return;
-			}
-			VoxelLodTerrain *terrain2 = Object::cast_to<VoxelLodTerrain>(_node);
-			ERR_FAIL_COND(terrain2 == nullptr);
-			terrain2->remesh_all_blocks();
-		} break;
+			_node->remesh_all_blocks();
+			break;
 
 		case MENU_ABOUT:
 			_about_window->popup_centered();
@@ -152,7 +126,8 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 }
 
 void VoxelTerrainEditorPlugin::_on_terrain_tree_entered(Node *node) {
-	_node = node;
+	_node = Object::cast_to<VoxelNode>(node);
+	ERR_FAIL_COND(_node == nullptr);
 }
 
 void VoxelTerrainEditorPlugin::_on_terrain_tree_exited(Node *node) {

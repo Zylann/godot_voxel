@@ -3,6 +3,7 @@
 
 #include "../server/voxel_server.h"
 #include "voxel_map.h"
+#include "voxel_node.h"
 
 #include <scene/3d/spatial.h>
 
@@ -11,24 +12,22 @@ class VoxelTool;
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.
 // Data is streamed using a VoxelStream.
-class VoxelTerrain : public Spatial {
-	GDCLASS(VoxelTerrain, Spatial)
+class VoxelTerrain : public VoxelNode {
+	GDCLASS(VoxelTerrain, VoxelNode)
 public:
 	static const unsigned int MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME = 512;
 
 	VoxelTerrain();
 	~VoxelTerrain();
 
-	String get_configuration_warning() const override;
+	void set_stream(Ref<VoxelStream> p_stream) override;
+	Ref<VoxelStream> get_stream() const override;
 
-	void set_stream(Ref<VoxelStream> p_stream);
-	Ref<VoxelStream> get_stream() const;
+	void set_mesher(Ref<VoxelMesher> mesher) override;
+	Ref<VoxelMesher> get_mesher() const override;
 
 	unsigned int get_block_size_pow2() const;
 	void set_block_size_po2(unsigned int p_block_size_po2);
-
-	void set_mesher(Ref<VoxelMesher> mesher);
-	Ref<VoxelMesher> get_mesher() const;
 
 	void make_voxel_dirty(Vector3i pos);
 	void make_area_dirty(Rect3i box);
@@ -57,8 +56,8 @@ public:
 	void set_bounds(Rect3i box);
 	Rect3i get_bounds() const;
 
-	void restart_stream();
-	void remesh_all_blocks();
+	void restart_stream() override;
+	void remesh_all_blocks() override;
 
 	// For convenience, this is actually stored in a particular type of mesher
 	Ref<VoxelLibrary> get_voxel_library() const;
