@@ -62,7 +62,6 @@ public:
 		unsigned int view_distance = 128;
 		bool require_collisions = false;
 		bool require_visuals = true;
-		bool is_default = false;
 	};
 
 	enum VolumeType {

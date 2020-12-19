@@ -507,22 +507,16 @@ void VoxelLodTerrain::_notification(int p_what) {
 }
 
 Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
-	if (Engine::get_singleton()->is_editor_hint()) {
-		// TODO Use editor's camera here
-		return Vector3();
+	Vector3 pos = (_lods[0].last_viewer_block_pos << _lods[0].map.get_block_size_pow2()).to_vec3();
 
-	} else {
-		Vector3 pos = (_lods[0].last_viewer_block_pos << _lods[0].map.get_block_size_pow2()).to_vec3();
+	// TODO Support for multiple viewers, this is a placeholder implementation
+	VoxelServer::get_singleton()->for_each_viewer([&pos](const VoxelServer::Viewer &viewer, uint32_t viewer_id) {
+		pos = viewer.world_position;
+	});
 
-		// TODO Support for multiple viewers, this is a placeholder implementation
-		VoxelServer::get_singleton()->for_each_viewer([&pos](const VoxelServer::Viewer &viewer, uint32_t viewer_id) {
-			pos = viewer.world_position;
-		});
-
-		const Transform world_to_local = get_global_transform().affine_inverse();
-		pos = world_to_local.xform(pos);
-		return pos;
-	}
+	const Transform world_to_local = get_global_transform().affine_inverse();
+	pos = world_to_local.xform(pos);
+	return pos;
 }
 
 void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index) {

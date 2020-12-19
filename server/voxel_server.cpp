@@ -56,13 +56,6 @@ VoxelServer::VoxelServer() {
 	_meshing_thread_pool.set_priority_update_period(64);
 	_meshing_thread_pool.set_batch_count(1);
 
-	if (Engine::get_singleton()->is_editor_hint()) {
-		// Default viewer
-		const uint32_t default_viewer_id = add_viewer();
-		Viewer &default_viewer = _world.viewers.get(default_viewer_id);
-		default_viewer.is_default = true;
-	}
-
 	// Init world
 	_world.shared_priority_dependency = gd_make_shared<PriorityDependencyShared>();
 
@@ -297,30 +290,11 @@ void VoxelServer::remove_volume(uint32_t volume_id) {
 }
 
 uint32_t VoxelServer::add_viewer() {
-	if (Engine::get_singleton()->is_editor_hint()) {
-		// Remove default viewer if any
-		_world.viewers.for_each_with_id([this](Viewer &viewer, uint32_t id) {
-			if (viewer.is_default) {
-				// Safe because StructDB does not reallocate the data structure on removal
-				_world.viewers.destroy(id);
-			}
-		});
-	}
-
 	return _world.viewers.create(Viewer());
 }
 
 void VoxelServer::remove_viewer(uint32_t viewer_id) {
 	_world.viewers.destroy(viewer_id);
-
-	if (Engine::get_singleton()->is_editor_hint()) {
-		// Re-add default viewer
-		if (_world.viewers.count() == 0) {
-			const uint32_t default_viewer_id = add_viewer();
-			Viewer &default_viewer = _world.viewers.get(default_viewer_id);
-			default_viewer.is_default = true;
-		}
-	}
 }
 
 void VoxelServer::set_viewer_position(uint32_t viewer_id, Vector3 position) {

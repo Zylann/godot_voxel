@@ -5,6 +5,7 @@
 #include "../about_window.h"
 #include "../graph/voxel_graph_node_inspector_wrapper.h"
 
+#include <scene/3d/camera.h>
 #include <scene/gui/menu_button.h>
 
 VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
@@ -12,6 +13,13 @@ VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
 	menu_button->set_text(TTR("Terrain"));
 	menu_button->get_popup()->add_item(TTR("Re-generate"), MENU_RESTART_STREAM);
 	menu_button->get_popup()->add_item(TTR("Re-mesh"), MENU_REMESH);
+	menu_button->get_popup()->add_separator();
+	menu_button->get_popup()->add_item(TTR("Stream follow camera"), MENU_STREAM_FOLLOW_CAMERA);
+	{
+		const int i = menu_button->get_popup()->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
+		menu_button->get_popup()->set_item_as_checkable(i, true);
+		menu_button->get_popup()->set_item_checked(i, _editor_viewer_follows_camera);
+	}
 	menu_button->get_popup()->add_separator();
 	menu_button->get_popup()->add_item(TTR("About Voxel Tools..."), MENU_ABOUT);
 	menu_button->get_popup()->connect("id_pressed", this, "_on_menu_item_selected");
@@ -23,6 +31,19 @@ VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
 
 	_about_window = memnew(VoxelAboutWindow);
 	base_control->add_child(_about_window);
+}
+
+void VoxelTerrainEditorPlugin::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_ENTER_TREE:
+			_editor_viewer_id = VoxelServer::get_singleton()->add_viewer();
+			VoxelServer::get_singleton()->set_viewer_distance(_editor_viewer_id, 512);
+			break;
+
+		case NOTIFICATION_EXIT_TREE:
+			VoxelServer::get_singleton()->remove_viewer(_editor_viewer_id);
+			break;
+	}
 }
 
 // Things the plugin doesn't directly work on, but still handles to keep things visible.
@@ -107,6 +128,17 @@ void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 	// So we'll need to check if _node is null all over the place
 }
 
+bool VoxelTerrainEditorPlugin::forward_spatial_gui_input(Camera *p_camera, const Ref<InputEvent> &p_event) {
+	VoxelServer::get_singleton()->set_viewer_distance(_editor_viewer_id, p_camera->get_zfar());
+	_editor_camera_last_position = p_camera->get_global_transform().origin;
+
+	if (_editor_viewer_follows_camera) {
+		VoxelServer::get_singleton()->set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+	}
+
+	return false;
+}
+
 void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 	switch (id) {
 		case MENU_RESTART_STREAM:
@@ -118,6 +150,17 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			ERR_FAIL_COND(_node == nullptr);
 			_node->remesh_all_blocks();
 			break;
+
+		case MENU_STREAM_FOLLOW_CAMERA: {
+			_editor_viewer_follows_camera = !_editor_viewer_follows_camera;
+
+			const int i = _menu_button->get_popup()->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
+			_menu_button->get_popup()->set_item_checked(i, _editor_viewer_follows_camera);
+
+			if (_editor_viewer_follows_camera) {
+				VoxelServer::get_singleton()->set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+			}
+		} break;
 
 		case MENU_ABOUT:
 			_about_window->popup_centered();

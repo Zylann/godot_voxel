@@ -13,16 +13,20 @@ Semver is not yet in place, so each version can have breaking changes, although 
 - General
     - Introduction of Voxel Server, which shares threaded tasks among all voxel nodes
     - Voxel data is no longer copied when sent to processing threads, reducing high memory spikes in some scenarios
-    - Added a utility class to load MagicaVoxel `.vox` files
+    - Added a utility class to load `.vox` files created with MagicaVoxel (scripts only)
     - Voxel nodes can be moved, scaled and rotated
     - Voxel nodes can be limited to specific bounds, rather than being infinitely paging volumes (multiples of block size)
     - Meshers are now resources so you can choose and configure them per terrain
+
+- Editor
+    - Streaming/LOD can be set to follow the editor camera instead of being centered on world origin
+    - Added About window
 
 - Smooth voxels
     - Shaders now have access to the transform of each block, useful for triplanar mapping on moving volumes
 
 - Blocky voxels
-    - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support
+    - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support (scripts only)
     - Replaced `transparent` property with `transparency_index` for more control on the culling of transparent faces
 
 - Breaking changes
@@ -43,13 +47,15 @@ Semver is not yet in place, so each version can have breaking changes, although 
 ---------------------------
 
 - General
-    - Terrain nodes now render in the editor, unless scripts are involved (can be changed with an option)
     - Added per-voxel and per-block metadata, which are saved by file streams along with voxel data
     - `StringName` is now used when possible to call script functions, to reduce overhead
     - Exposed block serializer to allow encoding voxels for network or files from script
     - Added terrain methods to trigger saves explicitely
     - The module only prints debug logs if the engine is in verbose mode
     - `VoxelTerrain` now emit signals when blocks are loaded and unloaded
+
+- Editor
+    - Terrain nodes now render in the editor, unless scripts are involved (can be changed with an option)
 
 - Blocky voxels
     - Added collision masks to blocky voxels, which takes effect with `VoxelBoxMover` and voxel raycasts

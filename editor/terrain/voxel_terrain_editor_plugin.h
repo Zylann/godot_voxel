@@ -15,6 +15,10 @@ public:
 	bool handles(Object *p_object) const override;
 	void edit(Object *p_object) override;
 	void make_visible(bool visible) override;
+	bool forward_spatial_gui_input(Camera *p_camera, const Ref<InputEvent> &p_event) override;
+
+protected:
+	void _notification(int p_what);
 
 private:
 	void set_node(VoxelNode *node);
@@ -28,10 +32,15 @@ private:
 	enum MenuID {
 		MENU_RESTART_STREAM,
 		MENU_REMESH,
+		MENU_STREAM_FOLLOW_CAMERA,
 		MENU_ABOUT
 	};
 
 	VoxelNode *_node = nullptr;
+
+	uint32_t _editor_viewer_id = -1;
+	Vector3 _editor_camera_last_position;
+	bool _editor_viewer_follows_camera = false;
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;
