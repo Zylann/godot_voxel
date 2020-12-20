@@ -475,19 +475,23 @@ static unsigned int debug_get_active_thread_count(const VoxelThreadPool &pool) {
 	return active_count;
 }
 
-static Dictionary debug_get_pool_stats(const VoxelThreadPool &pool) {
-	Dictionary d;
-	d["tasks"] = pool.get_debug_remaining_tasks();
-	d["active_threads"] = debug_get_active_thread_count(pool);
-	d["thread_count"] = pool.get_thread_count();
+static VoxelServer::Stats::ThreadPoolStats debug_get_pool_stats(const VoxelThreadPool &pool) {
+	VoxelServer::Stats::ThreadPoolStats d;
+	d.tasks = pool.get_debug_remaining_tasks();
+	d.active_threads = debug_get_active_thread_count(pool);
+	d.thread_count = pool.get_thread_count();
 	return d;
 }
 
+VoxelServer::Stats VoxelServer::get_stats() const {
+	Stats s;
+	s.streaming = debug_get_pool_stats(_streaming_thread_pool);
+	s.meshing = debug_get_pool_stats(_meshing_thread_pool);
+	return s;
+}
+
 Dictionary VoxelServer::_b_get_stats() {
-	Dictionary d;
-	d["streaming"] = debug_get_pool_stats(_streaming_thread_pool);
-	d["meshing"] = debug_get_pool_stats(_meshing_thread_pool);
-	return d;
+	return get_stats().to_dict();
 }
 
 void VoxelServer::_bind_methods() {

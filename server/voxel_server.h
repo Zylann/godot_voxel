@@ -121,6 +121,34 @@ public:
 		return static_cast<int>(split_scale) * 2 + 2;
 	}
 
+	struct Stats {
+		struct ThreadPoolStats {
+			unsigned int thread_count;
+			unsigned int active_threads;
+			unsigned int tasks;
+
+			Dictionary to_dict() {
+				Dictionary d;
+				d["tasks"] = thread_count;
+				d["active_threads"] = active_threads;
+				d["thread_count"] = tasks;
+				return d;
+			}
+		};
+
+		ThreadPoolStats streaming;
+		ThreadPoolStats meshing;
+
+		Dictionary to_dict() {
+			Dictionary d;
+			d["streaming"] = streaming.to_dict();
+			d["meshing"] = meshing.to_dict();
+			return d;
+		}
+	};
+
+	Stats get_stats() const;
+
 private:
 	Dictionary _b_get_stats();
 

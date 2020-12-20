@@ -5,8 +5,71 @@
 #include "../about_window.h"
 #include "../graph/voxel_graph_node_inspector_wrapper.h"
 
+#include <editor/editor_scale.h>
 #include <scene/3d/camera.h>
 #include <scene/gui/menu_button.h>
+
+class VoxelTerrainEditorTaskIndicator : public HBoxContainer {
+	GDCLASS(VoxelTerrainEditorTaskIndicator, HBoxContainer)
+private:
+	enum StatID {
+		STAT_STREAM_TASKS,
+		STAT_MESH_TASKS,
+		STAT_COUNT
+	};
+
+public:
+	VoxelTerrainEditorTaskIndicator() {
+		create_stat(STAT_STREAM_TASKS, TTR("Streaming tasks"));
+		create_stat(STAT_MESH_TASKS, TTR("Meshing tasks"));
+	}
+
+	void _notification(int p_what) {
+		switch (p_what) {
+			case NOTIFICATION_THEME_CHANGED:
+				// Can't do this in constructor, fonts are not available then. Also the theme can change.
+				for (unsigned int i = 0; i < _stats.size(); ++i) {
+					_stats[i].label->add_font_override("font", get_font("source", "EditorFonts"));
+				}
+				break;
+		}
+	}
+
+	void update_stats() {
+		const VoxelServer::Stats stats = VoxelServer::get_singleton()->get_stats();
+		set_stat(STAT_STREAM_TASKS, stats.streaming.tasks);
+		set_stat(STAT_MESH_TASKS, stats.meshing.tasks);
+	}
+
+private:
+	void create_stat(StatID id, String name) {
+		add_child(memnew(VSeparator));
+		Stat &stat = _stats[id];
+		CRASH_COND(stat.label != nullptr);
+		Label *name_label = memnew(Label);
+		name_label->set_text(name);
+		add_child(name_label);
+		stat.label = memnew(Label);
+		stat.label->set_custom_minimum_size(Vector2(100 * EDSCALE, 0));
+		stat.label->set_text("---");
+		add_child(stat.label);
+	}
+
+	void set_stat(StatID id, int value) {
+		Stat &stat = _stats[id];
+		if (stat.value != value) {
+			stat.value = value;
+			stat.label->set_text(String::num_int64(stat.value));
+		}
+	}
+
+	struct Stat {
+		int value;
+		Label *label;
+	};
+
+	FixedArray<Stat, STAT_COUNT> _stats;
+};
 
 VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
 	MenuButton *menu_button = memnew(MenuButton);
@@ -27,6 +90,10 @@ VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, menu_button);
 	_menu_button = menu_button;
 
+	_task_indicator = memnew(VoxelTerrainEditorTaskIndicator);
+	_task_indicator->hide();
+	add_control_to_container(EditorPlugin::CONTAINER_SPATIAL_EDITOR_BOTTOM, _task_indicator);
+
 	Node *base_control = get_editor_interface()->get_base_control();
 
 	_about_window = memnew(VoxelAboutWindow);
@@ -42,6 +109,10 @@ void VoxelTerrainEditorPlugin::_notification(int p_what) {
 
 		case NOTIFICATION_EXIT_TREE:
 			VoxelServer::get_singleton()->remove_viewer(_editor_viewer_id);
+			break;
+
+		case NOTIFICATION_PROCESS:
+			_task_indicator->update_stats();
 			break;
 	}
 }
@@ -113,6 +184,8 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 
 void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 	_menu_button->set_visible(visible);
+	_task_indicator->set_visible(visible);
+	set_process(visible);
 
 	if (_node != nullptr) {
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);

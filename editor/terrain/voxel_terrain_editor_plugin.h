@@ -6,6 +6,7 @@
 class MenuButton;
 class VoxelAboutWindow;
 class VoxelNode;
+class VoxelTerrainEditorTaskIndicator;
 
 class VoxelTerrainEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelTerrainEditorPlugin, EditorPlugin)
@@ -44,6 +45,7 @@ private:
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;
+	VoxelTerrainEditorTaskIndicator *_task_indicator = nullptr;
 };
 
 #endif // VOXEL_TERRAIN_EDITOR_PLUGIN_H
