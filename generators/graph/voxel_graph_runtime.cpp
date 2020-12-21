@@ -4,6 +4,7 @@
 #include "voxel_generator_graph.h"
 #include "voxel_graph_node_db.h"
 
+#include <core/math/math_funcs.h>
 #include <unordered_set>
 
 //#ifdef DEBUG_ENABLED
@@ -45,9 +46,31 @@ T &get_or_create(std::vector<uint8_t> &program, uint32_t offset) {
 	return *(T *)&program[offset];
 }
 
-inline float get_pixel_repeat(Image &im, int x, int y) {
+inline float get_pixel_repeat(const Image &im, int x, int y) {
 	return im.get_pixel(wrap(x, im.get_width()), wrap(y, im.get_height())).r;
 }
+
+inline float get_pixel_repeat_linear(const Image &im, float x, float y) {
+	const int x0 = int(Math::floor(x));
+	const int y0 = int(Math::floor(y));
+
+	const float xf = x - x0;
+	const float yf = y - y0;
+
+	const float h00 = get_pixel_repeat(im, x0, y0);
+	const float h10 = get_pixel_repeat(im, x0 + 1, y0);
+	const float h01 = get_pixel_repeat(im, x0, y0 + 1);
+	const float h11 = get_pixel_repeat(im, x0 + 1, y0 + 1);
+
+	// Bilinear filter
+	const float h = Math::lerp(Math::lerp(h00, h10, xf), Math::lerp(h01, h11, xf), yf);
+
+	return h;
+}
+
+// TODO bicubic sampling
+// inline float get_pixel_repeat_bicubic(const Image &im, float x, float y) {
+// }
 
 // Runtime data structs:
 // The order of fields in the following structs matters.
@@ -179,6 +202,20 @@ struct PNodeSdfTorus {
 	uint16_t a_r0;
 	uint16_t a_r1;
 	uint16_t a_out;
+};
+
+struct PNodeSphereHeightmap {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_out;
+	float p_radius;
+	float p_factor;
+	float min_height;
+	float max_height;
+	float norm_x;
+	float norm_y;
+	Image *p_image;
 };
 
 VoxelGraphRuntime::VoxelGraphRuntime() {
@@ -482,6 +519,27 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 						n.p_image = *im;
 					} break;
 
+					case VoxelGeneratorGraph::NODE_SDF_SPHERE_HEIGHTMAP: {
+						PNodeSphereHeightmap &n = get_or_create<PNodeSphereHeightmap>(program, offset);
+						Ref<Image> im = node->params[0];
+						const float radius = node->params[1];
+						const float factor = node->params[2];
+						if (im.is_null()) {
+							_compilation_result.success = false;
+							_compilation_result.message = "Image instance is null";
+							_compilation_result.node_id = node_id;
+							return false;
+						}
+						const Interval range = get_heightmap_range(**im) * factor;
+						n.min_height = range.min;
+						n.max_height = range.max;
+						n.p_image = *im;
+						n.p_radius = radius;
+						n.p_factor = factor;
+						n.norm_x = im->get_width();
+						n.norm_y = im->get_height();
+					} break;
+
 				} // switch special params
 
 #ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
@@ -566,6 +624,42 @@ inline Interval select(const Interval &a, const Interval &b, const Interval &thr
 		return b;
 	}
 	return Interval(min(a.min, b.min), max(a.max, b.max));
+}
+
+// This is mostly useful for generating planets from an existing heightmap
+inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, Image &im, float min_h, float max_h,
+		float norm_x, float norm_y) {
+
+	const float d = Math::sqrt(x * x + y * y + z * z) + 0.0001f;
+	const float sd = d - r;
+	// Optimize when far enough from heightmap.
+	// This introduces a discontinuity but it should be ok for clamped storage
+	const float margin = 1.2f * (max_h - min_h);
+	if (sd > max_h + margin || sd < min_h - margin) {
+		return sd;
+	}
+	const float nx = x / d;
+	const float ny = y / d;
+	const float nz = z / d;
+	// TODO Could use fast atan2, it doesn't have to be precise
+	// https://github.com/ducha-aiki/fast_atan2/blob/master/fast_atan.cpp
+	const float uvx = -Math::atan2(nz, nx) / static_cast<float>(Math_TAU) + 0.5f;
+	// We assume the median part is slightly expanded while the poles are shrunk since they have less detail
+	const float ys = (ny * ny * ny + ny) * 0.5f;
+	const float uvy = -0.5f * ys + 0.5f;
+	// TODO Not great, but in Godot 4.0 we won't need to lock anymore.
+	im.lock();
+	// TODO Could use bicubic interpolation when the image is sampled at lower resolution than voxels
+	const float h = get_pixel_repeat_linear(im, uvx * norm_x, uvy * norm_y);
+	im.unlock();
+	return sd - m * h;
+}
+
+inline Interval sdf_sphere_heightmap(Interval x, Interval y, Interval z, float r, Interval im) {
+	const Interval d = sqrt(x * x + y * y + z * z);
+	// Note: `im` should factor in the multiplier `m`
+	// TODO More precision by segmenting the heightmap?
+	return (d - r) - im;
 }
 
 float VoxelGraphRuntime::generate_single(const Vector3i &position) {
@@ -736,6 +830,7 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 				// TODO Not great, but in Godot 4.0 we won't need to lock anymore.
 				// Otherwise, need to do it in a pre-run and post-run
 				n.p_image->lock();
+				// TODO Allow to use bilinear filtering?
 				memory[n.a_out] = get_pixel_repeat(*n.p_image, memory[n.a_x], memory[n.a_y]);
 				n.p_image->unlock();
 			} break;
@@ -766,6 +861,12 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 				// TODO Could read raw?
 				const Vector3 pos(memory[n.a_x], memory[n.a_y], memory[n.a_z]);
 				memory[n.a_out] = sdf_torus(pos, memory[n.a_r0], memory[n.a_r1]);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_SPHERE_HEIGHTMAP: {
+				const PNodeSphereHeightmap &n = read<PNodeSphereHeightmap>(_program, pc);
+				memory[n.a_out] = sdf_sphere_heightmap(memory[n.a_x], memory[n.a_y], memory[n.a_z],
+						n.p_radius, n.p_factor, *n.p_image, n.min_height, n.max_height, n.norm_x, n.norm_y);
 			} break;
 
 			default:
@@ -1064,6 +1165,16 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 				const Interval radius1(min_memory[n.a_r0], max_memory[n.a_r0]);
 				const Interval radius2(min_memory[n.a_r1], max_memory[n.a_r1]);
 				const Interval r = sdf_torus(x, y, z, radius1, radius2);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_SPHERE_HEIGHTMAP: {
+				const PNodeSphereHeightmap &n = read<PNodeSphereHeightmap>(_program, pc);
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval z(min_memory[n.a_z], max_memory[n.a_z]);
+				const Interval r = sdf_sphere_heightmap(x, y, z, n.p_radius, Interval(n.min_height, n.max_height));
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;

@@ -331,6 +331,18 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("t"));
 		t.outputs.push_back(Port("out"));
 	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SPHERE_HEIGHTMAP];
+		t.name = "SdfSphereHeightmap";
+		t.category = CATEGORY_SDF;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.inputs.push_back(Port("z"));
+		t.outputs.push_back(Port("sdf"));
+		t.params.push_back(Param("image", "Image"));
+		t.params.push_back(Param("radius", Variant::REAL, 10.f));
+		t.params.push_back(Param("factor", Variant::REAL, 1.f));
+	}
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];

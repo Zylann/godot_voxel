@@ -76,6 +76,10 @@ struct Interval {
 		return Interval{ min - other.max, max - other.min };
 	}
 
+	inline Interval operator-() const {
+		return Interval{ -max, -min };
+	}
+
 	inline Interval operator*(float x) const {
 		const float a = min * x;
 		const float b = max * x;
@@ -122,6 +126,10 @@ struct Interval {
 		*this = *this / x;
 	}
 };
+
+inline Interval operator*(float b, const Interval &a) {
+	return a * b;
+}
 
 // Functions declared outside, so using intervals or numbers can be the same code (templatable)
 
@@ -186,9 +194,18 @@ inline Interval sin(const Interval &i) {
 	if (i.is_single_value()) {
 		return Interval::from_single_value(Math::sin(i.min));
 	} else {
+		// TODO more precision
 		// Simplified
 		return Interval(-1.f, 1.f);
 	}
+}
+
+inline Interval atan2(const Interval &y, const Interval &x) {
+	if (y.is_single_value() && x.is_single_value()) {
+		return Interval::from_single_value(Math::atan2(y.min, x.max));
+	}
+	// TODO more precision
+	return Interval(-Math_PI / 2.f, Math_PI / 2.f);
 }
 
 inline Interval floor(const Interval &i) {
