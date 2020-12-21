@@ -343,6 +343,18 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("radius", Variant::REAL, 10.f));
 		t.params.push_back(Param("factor", Variant::REAL, 1.f));
 	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_NORMALIZE_3D];
+		t.name = "Normalize";
+		t.category = CATEGORY_MATH;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.inputs.push_back(Port("z"));
+		t.outputs.push_back(Port("nx"));
+		t.outputs.push_back(Port("ny"));
+		t.outputs.push_back(Port("nz"));
+		t.outputs.push_back(Port("len"));
+	}
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];

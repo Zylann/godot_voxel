@@ -218,6 +218,16 @@ struct PNodeSphereHeightmap {
 	Image *p_image;
 };
 
+struct PNodeNormalize3D {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_out_nx;
+	uint16_t a_out_ny;
+	uint16_t a_out_nz;
+	uint16_t a_out_len;
+};
+
 VoxelGraphRuntime::VoxelGraphRuntime() {
 	clear();
 }
@@ -869,6 +879,19 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 						n.p_radius, n.p_factor, *n.p_image, n.min_height, n.max_height, n.norm_x, n.norm_y);
 			} break;
 
+			case VoxelGeneratorGraph::NODE_NORMALIZE_3D: {
+				const PNodeNormalize3D n = read<PNodeNormalize3D>(_program, pc);
+				const float x = memory[n.a_x];
+				const float y = memory[n.a_y];
+				const float z = memory[n.a_z];
+				float len = Math::sqrt(x * x + y * y + z * z);
+				const float inv_len = 1.f / len;
+				memory[n.a_out_nx] = x * inv_len;
+				memory[n.a_out_ny] = y * inv_len;
+				memory[n.a_out_nz] = z * inv_len;
+				memory[n.a_out_len] = len;
+			} break;
+
 			default:
 				CRASH_NOW();
 				break;
@@ -1177,6 +1200,25 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 				const Interval r = sdf_sphere_heightmap(x, y, z, n.p_radius, Interval(n.min_height, n.max_height));
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_NORMALIZE_3D: {
+				const PNodeNormalize3D n = read<PNodeNormalize3D>(_program, pc);
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval z(min_memory[n.a_z], max_memory[n.a_z]);
+				const Interval len = sqrt(x * x + y * y + z * z);
+				const Interval nx = x / len;
+				const Interval ny = y / len;
+				const Interval nz = z / len;
+				min_memory[n.a_out_nx] = nx.min;
+				min_memory[n.a_out_ny] = ny.min;
+				min_memory[n.a_out_nz] = nz.min;
+				min_memory[n.a_out_len] = len.min;
+				max_memory[n.a_out_nx] = nx.max;
+				max_memory[n.a_out_ny] = ny.max;
+				max_memory[n.a_out_nz] = nz.max;
+				max_memory[n.a_out_len] = len.max;
 			} break;
 
 			default:
