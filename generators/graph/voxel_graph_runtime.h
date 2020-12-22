@@ -18,7 +18,7 @@ public:
 
 	void clear();
 	bool compile(const ProgramGraph &graph, bool debug);
-	float generate_single(const Vector3i &position);
+	float generate_single(const Vector3 &position);
 	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
 
 	inline const CompilationResult &get_compilation_result() const {
@@ -38,8 +38,8 @@ private:
 	std::vector<uint8_t> _program;
 	std::vector<float> _memory;
 	uint32_t _xzy_program_start;
-	int _last_x;
-	int _last_z;
+	float _last_x;
+	float _last_z;
 	int _sdf_output_address = -1;
 	CompilationResult _compilation_result;
 

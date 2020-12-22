@@ -104,6 +104,11 @@ public:
 
 	Ref<Resource> duplicate(bool p_subresources) const override;
 
+	// Utility
+
+	void bake_sphere_bumpmap(Ref<Image> im, float ref_radius, float min_height, float max_height);
+	void bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength);
+
 	// Internal
 
 	const VoxelGraphRuntime &get_runtime() const { return _runtime; }

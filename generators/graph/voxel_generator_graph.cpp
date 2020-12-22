@@ -297,6 +297,96 @@ bool VoxelGeneratorGraph::compile() {
 	return _runtime.compile(_graph, Engine::get_singleton()->is_editor_hint());
 }
 
+inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
+	const float xa = -Math_TAU * uv.x - Math_PI;
+	const float ya = -Math_PI * (uv.y - 0.5f);
+	const float y = Math::sin(ya);
+	const float ca = Math::cos(ya);
+	const float x = Math::cos(xa) * ca;
+	const float z = Math::sin(xa) * ca;
+	return Vector3(x, y, z);
+}
+
+void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, float sdf_min, float sdf_max) {
+	ERR_FAIL_COND(im.is_null());
+
+	const Vector2 suv(
+			1.f / static_cast<float>(im->get_width()),
+			1.f / static_cast<float>(im->get_height()));
+
+	const float nr = 1.f / (sdf_max - sdf_min);
+
+	im->lock();
+
+	for (int iy = 0; iy < im->get_height(); ++iy) {
+		for (int ix = 0; ix < im->get_width(); ++ix) {
+			const Vector2 uv = suv * Vector2(ix, iy);
+			const Vector3 pos = get_3d_pos_from_panorama_uv(uv) * ref_radius;
+			// TODO Need float position input
+			const float sdf = _runtime.generate_single(pos);
+			const float nh = (-sdf - sdf_min) * nr;
+			im->set_pixel(ix, iy, Color(nh, nh, nh));
+		}
+	}
+
+	im->unlock();
+}
+
+// If this generator is used to produce a planet, specifically using a spherical heightmap approach,
+// then this function can be used to bake a map of the surface.
+// Such maps can be used by shaders to sharpen the details of the planet when seen from far away.
+void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength) {
+	ERR_FAIL_COND(im.is_null());
+
+	const Vector2 suv(
+			1.f / static_cast<float>(im->get_width()),
+			1.f / static_cast<float>(im->get_height()));
+
+	const Vector2 normal_step = 0.5f * Vector2(1.f, 1.f) / im->get_size();
+	const Vector2 normal_step_x = Vector2(normal_step.x, 0.f);
+	const Vector2 normal_step_y = Vector2(0.f, normal_step.y);
+
+	// The default for strength is 1.f
+	const float e = 0.001f;
+	if (strength > -e && strength < e) {
+		if (strength > 0.f) {
+			strength = e;
+		} else {
+			strength = -e;
+		}
+	}
+
+	const float ns = 2.f / strength;
+
+	im->lock();
+
+	for (int iy = 0; iy < im->get_height(); ++iy) {
+		for (int ix = 0; ix < im->get_width(); ++ix) {
+			// TODO There is probably a more optimized way to do this
+			const Vector2 uv = suv * Vector2(ix, iy);
+
+			const Vector3 np_nx = get_3d_pos_from_panorama_uv(uv - normal_step_x) * ref_radius;
+			const Vector3 np_px = get_3d_pos_from_panorama_uv(uv + normal_step_x) * ref_radius;
+			const Vector3 np_ny = get_3d_pos_from_panorama_uv(uv - normal_step_y) * ref_radius;
+			const Vector3 np_py = get_3d_pos_from_panorama_uv(uv + normal_step_y) * ref_radius;
+
+			const float h_nx = -_runtime.generate_single(np_nx);
+			const float h_px = -_runtime.generate_single(np_px);
+			const float h_ny = -_runtime.generate_single(np_ny);
+			const float h_py = -_runtime.generate_single(np_py);
+
+			const Vector3 normal = Vector3(h_nx - h_px, ns, h_ny - h_py).normalized();
+			const Color en(
+					0.5f * normal.x + 0.5f,
+					-0.5f * normal.z + 0.5f,
+					0.5f * normal.y + 0.5f);
+			im->set_pixel(ix, iy, en);
+		}
+	}
+
+	im->unlock();
+}
+
 float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 	if (!_runtime.has_output()) {
 		return 1.f;
@@ -333,7 +423,7 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 			break;
 	}
 
-	return _runtime.generate_single(position) * _iso_scale;
+	return _runtime.generate_single(position.to_vec3()) * _iso_scale;
 }
 
 Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) {
@@ -787,6 +877,11 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_node_type_info", "type_id"), &VoxelGeneratorGraph::_b_get_node_type_info);
 
 	ClassDB::bind_method(D_METHOD("generate_single"), &VoxelGeneratorGraph::_b_generate_single);
+
+	ClassDB::bind_method(D_METHOD("bake_sphere_bumpmap", "im", "ref_radius", "sdf_min", "sdf_max"),
+			&VoxelGeneratorGraph::bake_sphere_bumpmap);
+	ClassDB::bind_method(D_METHOD("bake_sphere_normalmap", "im", "ref_radius", "strength"),
+			&VoxelGeneratorGraph::bake_sphere_normalmap);
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &VoxelGeneratorGraph::debug_load_waves_preset);
 	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel"),

@@ -636,6 +636,25 @@ inline Interval select(const Interval &a, const Interval &b, const Interval &thr
 	return Interval(min(a.min, b.min), max(a.max, b.max));
 }
 
+inline float skew3(float x) {
+	return (x * x * x + x) * 0.5f;
+}
+
+/*inline float cbrt(float x) {
+	return Math::pow(x, 1.f / 3.f);
+}
+
+inline float unskew3(float x) {
+	const float sqrt3 = 1.73205080757f; // Math::sqrt(3.f);
+	const float cbrt12 = 2.28942848511f; // cbrt(12);
+	const float cbrt18 = 2.62074139421f; // cbrt(18);
+	x *= 2.f;
+	const float a = -9.f * x + sqrt3 * Math::sqrt(27.f * x * x + 4.f);
+	const float n = -cbrt12 * Math::pow(a, 2.f / 3.f) + 2.f * cbrt18;
+	const float d = 6.f * cbrt(a);
+	return n / d;
+}*/
+
 // This is mostly useful for generating planets from an existing heightmap
 inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, Image &im, float min_h, float max_h,
 		float norm_x, float norm_y) {
@@ -654,8 +673,10 @@ inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, I
 	// TODO Could use fast atan2, it doesn't have to be precise
 	// https://github.com/ducha-aiki/fast_atan2/blob/master/fast_atan.cpp
 	const float uvx = -Math::atan2(nz, nx) / static_cast<float>(Math_TAU) + 0.5f;
-	// We assume the median part is slightly expanded while the poles are shrunk since they have less detail
-	const float ys = (ny * ny * ny + ny) * 0.5f;
+	// This is an approximation of asin(ny)/(PI/2)
+	// TODO It may be desirable to use the real function though,
+	// in cases where we want to combine the same map in shaders
+	const float ys = skew3(ny);
 	const float uvy = -0.5f * ys + 0.5f;
 	// TODO Not great, but in Godot 4.0 we won't need to lock anymore.
 	im.lock();
@@ -672,7 +693,7 @@ inline Interval sdf_sphere_heightmap(Interval x, Interval y, Interval z, float r
 	return (d - r) - im;
 }
 
-float VoxelGraphRuntime::generate_single(const Vector3i &position) {
+float VoxelGraphRuntime::generate_single(const Vector3 &position) {
 	// This part must be optimized for speed
 
 #ifdef DEBUG_ENABLED
@@ -688,11 +709,15 @@ float VoxelGraphRuntime::generate_single(const Vector3i &position) {
 	memory[2] = position.z;
 
 	uint32_t pc;
+	// Note, when sampling beyond negative or positive 16,777,216, this optimization may cease to work
 	if (position.x == _last_x && position.z == _last_z) {
 		pc = _xzy_program_start;
 	} else {
 		pc = 0;
 	}
+
+	_last_x = position.x;
+	_last_z = position.z;
 
 	// STL is unreadable on debug builds of Godot, because _DEBUG isn't defined
 	//#ifdef DEBUG_ENABLED
