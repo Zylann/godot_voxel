@@ -21,14 +21,14 @@ public:
 	}
 
 	inline T &operator[](unsigned int i) {
-#ifdef TOOLS_ENABLED
+#ifdef DEBUG_ENABLED
 		CRASH_COND(i >= N);
 #endif
 		return _data[i];
 	}
 
 	inline const T &operator[](unsigned int i) const {
-#ifdef TOOLS_ENABLED
+#ifdef DEBUG_ENABLED
 		CRASH_COND(i >= N);
 #endif
 		return _data[i];

@@ -76,8 +76,13 @@ public:
 	real_t get_voxel_f(int x, int y, int z, unsigned int channel_index = 0) const;
 	void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index = 0);
 
-	_FORCE_INLINE_ uint64_t get_voxel(const Vector3i pos, unsigned int channel_index = 0) const { return get_voxel(pos.x, pos.y, pos.z, channel_index); }
-	_FORCE_INLINE_ void set_voxel(int value, const Vector3i pos, unsigned int channel_index = 0) { set_voxel(value, pos.x, pos.y, pos.z, channel_index); }
+	Color get_voxel_c(int x, int y, int z, unsigned int channel_index = 0) const;
+	_FORCE_INLINE_ uint64_t get_voxel(const Vector3i pos, unsigned int channel_index = 0) const {
+		return get_voxel(pos.x, pos.y, pos.z, channel_index);
+	}
+	_FORCE_INLINE_ void set_voxel(int value, const Vector3i pos, unsigned int channel_index = 0) {
+		set_voxel(value, pos.x, pos.y, pos.z, channel_index);
+	}
 
 	void fill(uint64_t defval, unsigned int channel_index = 0);
 	void fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigned int channel_index = 0);
@@ -111,8 +116,12 @@ public:
 		return Rect3i(Vector3i(), _size).contains(box);
 	}
 
+	static _FORCE_INLINE_ unsigned int get_index(const Vector3i pos, const Vector3i size) {
+		return pos.get_zxy_index(size);
+	}
+
 	_FORCE_INLINE_ unsigned int get_index(unsigned int x, unsigned int y, unsigned int z) const {
-		return y + _size.y * (x + _size.x * z);
+		return y + _size.y * (x + _size.x * z); // ZXY index
 	}
 
 	//	_FORCE_INLINE_ unsigned int row_index(unsigned int x, unsigned int y, unsigned int z) const {
@@ -134,6 +143,14 @@ public:
 	void set_channel_depth(unsigned int channel_index, Depth new_depth);
 	Depth get_channel_depth(unsigned int channel_index) const;
 	static uint32_t get_depth_bit_count(Depth d);
+
+	static inline float u8_to_real(uint8_t v) {
+		return (static_cast<real_t>(v) - 0x7f) / 0x7f;
+	}
+
+	static inline float u16_to_real(uint16_t v) {
+		return (static_cast<real_t>(v) - 0x7fff) / 0x7fff;
+	}
 
 	// Metadata
 

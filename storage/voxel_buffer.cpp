@@ -88,19 +88,23 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	// Depths below 32 are normalized between -1 and 1
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT:
-			return (static_cast<real_t>(value) - 0x7f) / 0x7f;
+			return VoxelBuffer::u8_to_real(value);
+
 		case VoxelBuffer::DEPTH_16_BIT:
-			return (static_cast<real_t>(value) - 0x7fff) / 0x7fff;
+			return VoxelBuffer::u16_to_real(value);
+
 		case VoxelBuffer::DEPTH_32_BIT: {
 			MarshallFloat m;
 			m.i = value;
 			return m.f;
 		}
+
 		case VoxelBuffer::DEPTH_64_BIT: {
 			MarshallDouble m;
 			m.l = value;
 			return m.d;
 		}
+
 		default:
 			CRASH_NOW();
 			return 0;
@@ -182,7 +186,7 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 
 	const Channel &channel = _channels[channel_index];
 
-	if (is_position_valid(x, y, z) && channel.data) {
+	if (is_position_valid(x, y, z) && channel.data != nullptr) {
 		const uint32_t i = get_index(x, y, z);
 
 		switch (channel.depth) {
@@ -207,7 +211,7 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 	} else {
 		return channel.defval;
 	}
-} // namespace
+}
 
 void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
