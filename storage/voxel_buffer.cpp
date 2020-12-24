@@ -116,7 +116,14 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Data2,Data3,Data4,Data5,Data6,Data7";
 
 VoxelBuffer::VoxelBuffer() {
-	_channels[CHANNEL_SDF].defval = 255;
+	// Minecraft uses way more than 255 block types and there is room for eventual metadata such as rotation
+	_channels[CHANNEL_TYPE].depth = VoxelBuffer::DEPTH_16_BIT;
+	_channels[CHANNEL_TYPE].defval = 0;
+
+	// 16-bit is better on average to handle large worlds
+	_channels[CHANNEL_SDF].depth = VoxelBuffer::DEPTH_16_BIT;
+	_channels[CHANNEL_SDF].defval = 0xffff;
+
 	// TODO How many of these can be created? Make it optional?
 	_rw_lock = RWLock::create();
 }
