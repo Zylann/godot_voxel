@@ -261,8 +261,31 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 			break;
 	}
 
-	Interval range = analyze_range(gmin, gmax);
-	const float clip_threshold = 1.f;
+	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
+	// so we must scale the values to make better use of the offered resolution
+	float sdf_scale;
+	switch (out_buffer.get_channel_depth(VoxelBuffer::CHANNEL_SDF)) {
+		// Normalized
+		case VoxelBuffer::DEPTH_8_BIT:
+			sdf_scale = 0.1f;
+			break;
+		case VoxelBuffer::DEPTH_16_BIT:
+			sdf_scale = 0.002f;
+			break;
+		// Direct
+		case VoxelBuffer::DEPTH_32_BIT:
+			sdf_scale = 1.0f;
+			break;
+		case VoxelBuffer::DEPTH_64_BIT:
+			sdf_scale = 1.0f;
+			break;
+		default:
+			CRASH_NOW();
+			break;
+	}
+
+	Interval range = analyze_range(gmin, gmax) * sdf_scale;
+	const float clip_threshold = sdf_scale * 0.2f;
 	if (range.min > clip_threshold && range.max > clip_threshold) {
 		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 1.f);
 		return;
@@ -285,7 +308,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	for (rpos.z = rmin.z, gpos.z = gmin.z; rpos.z < rmax.z; ++rpos.z, gpos.z += stride) {
 		for (rpos.x = rmin.x, gpos.x = gmin.x; rpos.x < rmax.x; ++rpos.x, gpos.x += stride) {
 			for (rpos.y = rmin.y, gpos.y = gmin.y; rpos.y < rmax.y; ++rpos.y, gpos.y += stride) {
-				out_buffer.set_voxel_f(generate_single(gpos), rpos.x, rpos.y, rpos.z, channel);
+				out_buffer.set_voxel_f(sdf_scale * generate_single(gpos), rpos.x, rpos.y, rpos.z, channel);
 			}
 		}
 	}
@@ -423,11 +446,11 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 			break;
 	}
 
-	return _runtime.generate_single(position.to_vec3()) * _iso_scale;
+	return _runtime.generate_single(position.to_vec3());
 }
 
 Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) {
-	return _runtime.analyze_range(min_pos, max_pos) * _iso_scale;
+	return _runtime.analyze_range(min_pos, max_pos);
 }
 
 void VoxelGeneratorGraph::clear_bounds() {
@@ -461,7 +484,6 @@ Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 	d.instance();
 
 	d->_channel = _channel;
-	d->_iso_scale = _iso_scale;
 	d->_bounds = _bounds;
 	d->_graph.copy_from(_graph, p_subresources);
 	// Program not copied, as it may contain pointers to the resources we are duplicating

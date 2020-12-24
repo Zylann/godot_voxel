@@ -163,7 +163,6 @@ private:
 	ProgramGraph _graph;
 	VoxelGraphRuntime _runtime;
 	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
-	float _iso_scale = 0.1;
 	Bounds _bounds;
 };
 
