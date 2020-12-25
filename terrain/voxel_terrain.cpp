@@ -405,7 +405,11 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
 	send_block_data_requests();
 }
 
-Dictionary VoxelTerrain::get_statistics() const {
+const VoxelTerrain::Stats &VoxelTerrain::get_stats() const {
+	return _stats;
+}
+
+Dictionary VoxelTerrain::_b_get_statistics() const {
 	Dictionary d;
 
 	// Breakdown of time spent in _process
@@ -419,6 +423,7 @@ Dictionary VoxelTerrain::get_statistics() const {
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;
+	d["pending_block_meshes"] = _stats.pending_block_meshes;
 
 	return d;
 }
@@ -1233,6 +1238,8 @@ void VoxelTerrain::_process() {
 		}
 
 		shift_up(_reception_buffers.mesh_output, queue_index);
+
+		_stats.pending_block_meshes = _reception_buffers.mesh_output.size();
 	}
 
 	_stats.time_process_update_responses = profiling_clock.restart();
@@ -1345,7 +1352,7 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("voxel_to_block", "voxel_pos"), &VoxelTerrain::_b_voxel_to_block);
 	ClassDB::bind_method(D_METHOD("block_to_voxel", "block_pos"), &VoxelTerrain::_b_block_to_voxel);
 
-	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::get_statistics);
+	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::_b_get_statistics);
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelTerrain::get_voxel_tool);
 
 	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &VoxelTerrain::_b_save_modified_blocks);

@@ -86,6 +86,7 @@ public:
 		int updated_blocks = 0;
 		int dropped_block_loads = 0;
 		int dropped_block_meshs = 0;
+		int pending_block_meshes = 0;
 		uint64_t time_detect_required_blocks = 0;
 		uint64_t time_request_blocks_to_load = 0;
 		uint64_t time_process_load_responses = 0;
@@ -93,7 +94,7 @@ public:
 		uint64_t time_process_update_responses = 0;
 	};
 
-	Dictionary get_statistics() const;
+	const Stats &get_stats() const;
 
 	void set_run_stream_in_editor(bool enable);
 	bool is_stream_running_in_editor() const;
@@ -156,6 +157,7 @@ private:
 	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const;
 	int _b_debug_get_block_count() const;
 	Error _b_debug_dump_as_scene(String fpath) const;
+	Dictionary _b_get_statistics() const;
 
 	struct OctreeItem {
 		LodOctree octree;

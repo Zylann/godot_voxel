@@ -15,6 +15,7 @@ private:
 	enum StatID {
 		STAT_STREAM_TASKS,
 		STAT_MESH_TASKS,
+		STAT_MAIN_THREAD_TASKS,
 		STAT_COUNT
 	};
 
@@ -22,6 +23,7 @@ public:
 	VoxelTerrainEditorTaskIndicator() {
 		create_stat(STAT_STREAM_TASKS, TTR("Streaming tasks"));
 		create_stat(STAT_MESH_TASKS, TTR("Meshing tasks"));
+		create_stat(STAT_MAIN_THREAD_TASKS, TTR("Main thread tasks"));
 	}
 
 	void _notification(int p_what) {
@@ -35,10 +37,11 @@ public:
 		}
 	}
 
-	void update_stats() {
+	void update_stats(int main_thread_tasks) {
 		const VoxelServer::Stats stats = VoxelServer::get_singleton()->get_stats();
 		set_stat(STAT_STREAM_TASKS, stats.streaming.tasks);
 		set_stat(STAT_MESH_TASKS, stats.meshing.tasks);
+		set_stat(STAT_MAIN_THREAD_TASKS, main_thread_tasks);
 	}
 
 private:
@@ -50,7 +53,7 @@ private:
 		name_label->set_text(name);
 		add_child(name_label);
 		stat.label = memnew(Label);
-		stat.label->set_custom_minimum_size(Vector2(100 * EDSCALE, 0));
+		stat.label->set_custom_minimum_size(Vector2(80 * EDSCALE, 0));
 		stat.label->set_text("---");
 		add_child(stat.label);
 	}
@@ -111,9 +114,19 @@ void VoxelTerrainEditorPlugin::_notification(int p_what) {
 			VoxelServer::get_singleton()->remove_viewer(_editor_viewer_id);
 			break;
 
-		case NOTIFICATION_PROCESS:
-			_task_indicator->update_stats();
-			break;
+		case NOTIFICATION_PROCESS: {
+			int main_thread_tasks = 0;
+			VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
+			if (vlt != nullptr) {
+				main_thread_tasks = vlt->get_stats().pending_block_meshes;
+			} else {
+				VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_node);
+				if (vt != nullptr) {
+					main_thread_tasks = vt->get_stats().pending_block_meshes;
+				}
+			}
+			_task_indicator->update_stats(main_thread_tasks);
+		} break;
 	}
 }
 

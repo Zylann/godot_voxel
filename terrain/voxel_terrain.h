@@ -66,12 +66,15 @@ public:
 		int updated_blocks = 0;
 		int dropped_block_loads = 0;
 		int dropped_block_meshs = 0;
+		int pending_block_meshes = 0;
 		uint64_t time_detect_required_blocks = 0;
 		uint64_t time_request_blocks_to_load = 0;
 		uint64_t time_process_load_responses = 0;
 		uint64_t time_request_blocks_to_update = 0;
 		uint64_t time_process_update_responses = 0;
 	};
+
+	const Stats &get_stats() const;
 
 	struct BlockToSave {
 		Ref<VoxelBuffer> voxels;
@@ -113,8 +116,6 @@ private:
 
 	bool try_get_paired_viewer_index(uint32_t id, size_t &out_i) const;
 
-	Dictionary get_statistics() const;
-
 	static void _bind_methods();
 
 	// Bindings
@@ -125,6 +126,7 @@ private:
 	void _b_save_block(Vector3 p_block_pos);
 	void _b_set_bounds(AABB aabb);
 	AABB _b_get_bounds() const;
+	Dictionary _b_get_statistics() const;
 
 	uint32_t _volume_id = 0;
 	VoxelServer::ReceptionBuffers _reception_buffers;
