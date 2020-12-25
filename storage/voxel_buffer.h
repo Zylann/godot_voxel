@@ -4,6 +4,7 @@
 #include "../math/rect3i.h"
 #include "../util/array_slice.h"
 #include "../util/fixed_array.h"
+#include "../voxel_constants.h"
 
 #include <core/map.h>
 #include <core/reference.h>
@@ -145,11 +146,11 @@ public:
 	static uint32_t get_depth_bit_count(Depth d);
 
 	static inline float u8_to_real(uint8_t v) {
-		return (static_cast<real_t>(v) - 0x7f) / 0x7f;
+		return (static_cast<real_t>(v) - 0x7f) * VoxelConstants::INV_0x7f;
 	}
 
 	static inline float u16_to_real(uint16_t v) {
-		return (static_cast<real_t>(v) - 0x7fff) / 0x7fff;
+		return (static_cast<real_t>(v) - 0x7fff) * VoxelConstants::INV_0x7fff;
 	}
 
 	// Metadata
