@@ -87,5 +87,3 @@ Jonas (NoFr1ends)
 lenis0012
 ```
 
-TODO Add About window
-
