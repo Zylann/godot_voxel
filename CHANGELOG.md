@@ -15,19 +15,24 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Voxel data is no longer copied when sent to processing threads, reducing high memory spikes in some scenarios
     - Added a utility class to load `.vox` files created with MagicaVoxel (scripts only)
     - Voxel nodes can be moved, scaled and rotated
-    - Voxel nodes can be limited to specific bounds, rather than being infinitely paging volumes (multiples of block size)
+    - Voxel nodes can be limited to specific bounds, rather than being infinitely paging volumes (multiples of block size).
     - Meshers are now resources so you can choose and configure them per terrain
 
 - Editor
-    - Streaming/LOD can be set to follow the editor camera instead of being centered on world origin
+    - Streaming/LOD can be set to follow the editor camera instead of being centered on world origin. Use with caution, fast big movements and zooms can cause lag
+    - The amount of pending background tasks is now indicated when the node is selected
     - Added About window
 
 - Smooth voxels
     - Shaders now have access to the transform of each block, useful for triplanar mapping on moving volumes
+    - Transvoxel runs faster (almost x2 speedup)
+    - The SDF channel is now 16-bit by default instead of 8-bit, which reduces terracing in big terrains
+    - Optimized `VoxelGeneratorGraph` by making it detect empty blocks more accurately
 
 - Blocky voxels
     - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support (scripts only)
     - Replaced `transparent` property with `transparency_index` for more control on the culling of transparent faces
+    - The TYPE channel is now 16-bit by default instead of 8-bit, allowing to store up to 65,536 types (part of this channel might actually be used to store rotation in the future)
 
 - Breaking changes
     - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points
@@ -35,6 +40,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelGenerator` is no longer the base for script-based generators, use `VoxelGeneratorScript` instead
     - `VoxelStream` is no longer the base for script-based streams, use `VoxelStreamScript` instead
     - Terrain nodes no longer produce meshes based on the voxel data. Instead they use the mesher assigned to them.
+    - SDF and TYPE channels have different default depth, so if you relied on 8-bit depth, you may have to explicitely set that format in your generator, to avoid mismatch with existing savegames
 
 - Fixes
     - C# should be able to properly implement generator/stream functions
