@@ -5,6 +5,8 @@
 #include "../../math/vector3i.h"
 #include "program_graph.h"
 
+class ImageRangeGrid;
+
 // CPU VM to execute a voxel graph generator
 class VoxelGraphRuntime {
 public:
@@ -15,6 +17,7 @@ public:
 	};
 
 	VoxelGraphRuntime();
+	~VoxelGraphRuntime();
 
 	void clear();
 	bool compile(const ProgramGraph &graph, bool debug);
@@ -37,6 +40,7 @@ private:
 
 	std::vector<uint8_t> _program;
 	std::vector<float> _memory;
+	std::vector<ImageRangeGrid *> _image_range_grids;
 	uint32_t _xzy_program_start;
 	float _last_x;
 	float _last_z;

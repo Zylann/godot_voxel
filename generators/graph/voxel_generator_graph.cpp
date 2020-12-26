@@ -284,10 +284,14 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 			break;
 	}
 
+	// TODO Add subdivide option so we can fine tune the analysis
+
 	Interval range = analyze_range(gmin, gmax) * sdf_scale;
 	const float clip_threshold = sdf_scale * 0.2f;
 	if (range.min > clip_threshold && range.max > clip_threshold) {
 		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 1.f);
+		// DEBUG: use this instead to fill optimized-out blocks with matter, making them stand out
+		//out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, -1.f);
 		return;
 
 	} else if (range.min < -clip_threshold && range.max < -clip_threshold) {

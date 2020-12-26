@@ -2,7 +2,6 @@
 #define VOXEL_GRAPH_NODE_DB_H
 
 #include "voxel_generator_graph.h"
-#include <core/object.h>
 
 class VoxelGraphNodeDB {
 public:

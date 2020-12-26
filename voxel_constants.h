@@ -1,6 +1,8 @@
 #ifndef VOXEL_CONSTANTS_H
 #define VOXEL_CONSTANTS_H
 
+#include <core/math/math_defs.h>
+
 namespace VoxelConstants {
 
 static const float MINIMUM_LOD_SPLIT_SCALE = 2.f;
@@ -12,6 +14,7 @@ static const unsigned int MAIN_THREAD_MESHING_BUDGET_MS = 8;
 
 static const float INV_0x7f = 1.f / 0x7f;
 static const float INV_0x7fff = 1.f / 0x7fff;
+static const float INV_TAU = 1.f / Math_TAU;
 
 } // namespace VoxelConstants
 

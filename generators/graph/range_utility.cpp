@@ -1,6 +1,10 @@
 #include "range_utility.h"
 #include "../../util/utility.h"
 
+#include <core/image.h>
+#include <modules/opensimplex/open_simplex_noise.h>
+#include <scene/resources/curve.h>
+
 Interval get_osn_octave_range_2d(OpenSimplexNoise *noise, const Interval &x, const Interval &y, int octave) {
 	// Any unit vector away from a given evaluation point, the maximum difference is a fixed number.
 	// We can use that number to find a bounding range within our rectangular interval.
@@ -111,6 +115,10 @@ Interval get_curve_range(Curve &curve, uint8_t &is_monotonic_increasing) {
 }
 
 Interval get_heightmap_range(Image &im) {
+	return get_heightmap_range(im, Rect2i(0, 0, im.get_width(), im.get_height()));
+}
+
+Interval get_heightmap_range(Image &im, Rect2i rect) {
 	switch (im.get_format()) {
 		case Image::FORMAT_R8:
 		case Image::FORMAT_RG8:
@@ -125,15 +133,23 @@ Interval get_heightmap_range(Image &im) {
 		case Image::FORMAT_RGBF:
 		case Image::FORMAT_RGBAF: {
 			Interval r;
+
 			im.lock();
+
 			r.min = im.get_pixel(0, 0).r;
 			r.max = r.min;
-			for (int y = 0; y < im.get_height(); ++y) {
-				for (int x = 0; x < im.get_width(); ++x) {
+
+			const int max_x = rect.position.x + rect.size.x;
+			const int max_y = rect.position.y + rect.size.y;
+
+			for (int y = rect.position.y; y < max_y; ++y) {
+				for (int x = rect.position.x; x < max_x; ++x) {
 					r.add_point(im.get_pixel(x, y).r);
 				}
 			}
+
 			im.unlock();
+
 			return r;
 		} break;
 

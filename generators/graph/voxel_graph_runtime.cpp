@@ -1,10 +1,14 @@
 #include "voxel_graph_runtime.h"
 #include "../../util/macros.h"
+#include "image_range_grid.h"
 #include "range_utility.h"
 #include "voxel_generator_graph.h"
 #include "voxel_graph_node_db.h"
 
+//#include <core/image.h>
 #include <core/math/math_funcs.h>
+#include <modules/opensimplex/open_simplex_noise.h>
+#include <scene/resources/curve.h>
 #include <unordered_set>
 
 //#ifdef DEBUG_ENABLED
@@ -172,9 +176,8 @@ struct PNodeImage2D {
 	uint16_t a_x;
 	uint16_t a_y;
 	uint16_t a_out;
-	float min_value;
-	float max_value;
 	Image *p_image;
+	const ImageRangeGrid *p_image_range_grid;
 };
 
 struct PNodeSdfBox {
@@ -216,6 +219,7 @@ struct PNodeSphereHeightmap {
 	float norm_x;
 	float norm_y;
 	Image *p_image;
+	const ImageRangeGrid *p_image_range_grid;
 };
 
 struct PNodeNormalize3D {
@@ -232,6 +236,10 @@ VoxelGraphRuntime::VoxelGraphRuntime() {
 	clear();
 }
 
+VoxelGraphRuntime::~VoxelGraphRuntime() {
+	clear();
+}
+
 void VoxelGraphRuntime::clear() {
 	_program.clear();
 	_memory.resize(8, 0);
@@ -241,6 +249,12 @@ void VoxelGraphRuntime::clear() {
 	_output_port_addresses.clear();
 	_sdf_output_address = -1;
 	_compilation_result = CompilationResult();
+
+	for (size_t i = 0; i < _image_range_grids.size(); ++i) {
+		ImageRangeGrid *im = _image_range_grids[i];
+		memdelete(im);
+	}
+	_image_range_grids.clear();
 }
 
 bool VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
@@ -254,7 +268,7 @@ bool VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
 }
 
 bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
-	_output_port_addresses.clear();
+	clear();
 
 	std::vector<uint32_t> order;
 	std::vector<uint32_t> terminal_nodes;
@@ -338,13 +352,6 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 	//	const uint32_t order_raw_size = order.size();
 	//	const uint32_t *order_raw = order.data();
 	//#endif
-
-	_program.clear();
-
-	_xzy_program_start = 0;
-	_last_x = std::numeric_limits<int>::max();
-	_last_z = std::numeric_limits<int>::max();
-	_sdf_output_address = -1;
 
 	// Main inputs X, Y, Z
 	_memory.resize(3);
@@ -523,10 +530,11 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 							_compilation_result.node_id = node_id;
 							return false;
 						}
-						const Interval range = get_heightmap_range(**im);
-						n.min_value = range.min;
-						n.max_value = range.max;
+						ImageRangeGrid *im_range = memnew(ImageRangeGrid);
+						im_range->generate(**im);
 						n.p_image = *im;
+						n.p_image_range_grid = im_range;
+						_image_range_grids.push_back(im_range);
 					} break;
 
 					case VoxelGeneratorGraph::NODE_SDF_SPHERE_HEIGHTMAP: {
@@ -540,14 +548,18 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 							_compilation_result.node_id = node_id;
 							return false;
 						}
-						const Interval range = get_heightmap_range(**im) * factor;
+						ImageRangeGrid *im_range = memnew(ImageRangeGrid);
+						im_range->generate(**im);
+						const Interval range = im_range->get_range() * factor;
 						n.min_height = range.min;
 						n.max_height = range.max;
 						n.p_image = *im;
+						n.p_image_range_grid = im_range;
 						n.p_radius = radius;
 						n.p_factor = factor;
 						n.norm_x = im->get_width();
 						n.norm_y = im->get_height();
+						_image_range_grids.push_back(im_range);
 					} break;
 
 				} // switch special params
@@ -636,7 +648,8 @@ inline Interval select(const Interval &a, const Interval &b, const Interval &thr
 	return Interval(min(a.min, b.min), max(a.max, b.max));
 }
 
-inline float skew3(float x) {
+template <typename T>
+inline T skew3(T x) {
 	return (x * x * x + x) * 0.5f;
 }
 
@@ -672,7 +685,7 @@ inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, I
 	const float nz = z / d;
 	// TODO Could use fast atan2, it doesn't have to be precise
 	// https://github.com/ducha-aiki/fast_atan2/blob/master/fast_atan.cpp
-	const float uvx = -Math::atan2(nz, nx) / static_cast<float>(Math_TAU) + 0.5f;
+	const float uvx = -Math::atan2(nz, nx) * VoxelConstants::INV_TAU + 0.5f;
 	// This is an approximation of asin(ny)/(PI/2)
 	// TODO It may be desirable to use the real function though,
 	// in cases where we want to combine the same map in shaders
@@ -686,11 +699,36 @@ inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, I
 	return sd - m * h;
 }
 
-inline Interval sdf_sphere_heightmap(Interval x, Interval y, Interval z, float r, Interval im) {
-	const Interval d = sqrt(x * x + y * y + z * z);
-	// Note: `im` should factor in the multiplier `m`
-	// TODO More precision by segmenting the heightmap?
-	return (d - r) - im;
+inline Interval sdf_sphere_heightmap(Interval x, Interval y, Interval z, float r, float m,
+		const ImageRangeGrid *im_range, float norm_x, float norm_y) {
+
+	const Interval d = get_length(x, y, z) + 0.0001f;
+	const Interval sd = d - r;
+	// TODO There is a discontinuity here due to the optimization done in the regular function
+	// Not sure yet how to implement it here. Worst case scenario, we remove it
+
+	const Interval nx = x / d;
+	const Interval ny = y / d;
+	const Interval nz = z / d;
+
+	const Interval ys = skew3(ny);
+	const Interval uvy = -0.5f * ys + 0.5f;
+
+	// atan2 returns results between -PI and PI but sometimes the angle can wrap, we have to account for this
+	OptionalInterval atan_r1;
+	const Interval atan_r0 = atan2(nz, nx, &atan_r1);
+
+	Interval h;
+	{
+		const Interval uvx = -atan_r0 * VoxelConstants::INV_TAU + 0.5f;
+		h = im_range->get_range(uvx * norm_x, uvy * norm_y);
+	}
+	if (atan_r1.valid) {
+		const Interval uvx = -atan_r1.value * VoxelConstants::INV_TAU + 0.5f;
+		h.add_interval(im_range->get_range(uvx * norm_x, uvy * norm_y));
+	}
+
+	return sd - m * h;
 }
 
 float VoxelGraphRuntime::generate_single(const Vector3 &position) {
@@ -1170,9 +1208,11 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 
 			case VoxelGeneratorGraph::NODE_IMAGE_2D: {
 				const PNodeImage2D &n = read<PNodeImage2D>(_program, pc);
-				// TODO Segment image?
-				min_memory[n.a_out] = n.min_value;
-				max_memory[n.a_out] = n.max_value;
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval r = n.p_image_range_grid->get_range(x, y);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
 			} break;
 
 			case VoxelGeneratorGraph::NODE_SDF_PLANE: {
@@ -1222,7 +1262,8 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
 				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
 				const Interval z(min_memory[n.a_z], max_memory[n.a_z]);
-				const Interval r = sdf_sphere_heightmap(x, y, z, n.p_radius, Interval(n.min_height, n.max_height));
+				const Interval r = sdf_sphere_heightmap(x, y, z, n.p_radius, n.p_factor, n.p_image_range_grid,
+						n.norm_x, n.norm_y);
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
