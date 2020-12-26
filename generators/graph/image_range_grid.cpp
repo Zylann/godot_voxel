@@ -8,7 +8,7 @@ ImageRangeGrid::~ImageRangeGrid() {
 }
 
 void ImageRangeGrid::clear() {
-	for (unsigned int i = 0; i < _lod_count; ++i) {
+	for (int i = 0; i < _lod_count; ++i) {
 		Lod &lod = _lods[i];
 		if (lod.data != nullptr) {
 			memdelete_arr(lod.data);
