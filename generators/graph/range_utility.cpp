@@ -171,7 +171,6 @@ void test_osn_max_derivative() {
 	static const int iterations = 1000000;
 
 	for (int j = 0; j < 50; ++j) {
-
 		double max_derivative_2d = 0.0;
 		double max_derivative_3d = 0.0;
 		double step = Math::lerp(0.0001, 0.001, static_cast<double>(j) / 50.0);

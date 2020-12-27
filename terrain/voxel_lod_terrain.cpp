@@ -1224,7 +1224,7 @@ void VoxelLodTerrain::_process() {
 	_stats.time_process_update_responses = profiling_clock.restart();
 
 #ifdef TOOLS_ENABLED
-	if (is_showing_gizmos()) {
+	if (is_showing_gizmos() && is_visible_in_tree()) {
 		update_gizmos();
 	}
 #endif
