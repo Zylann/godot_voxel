@@ -28,6 +28,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Transvoxel runs faster (almost x2 speedup)
     - The SDF channel is now 16-bit by default instead of 8-bit, which reduces terracing in big terrains
     - Optimized `VoxelGeneratorGraph` by making it detect empty blocks more accurately
+    - Added `SdfSphereHeightmap` and `Normalize` nodes to voxel graph, which can help making planets
 
 - Blocky voxels
     - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support (scripts only)
