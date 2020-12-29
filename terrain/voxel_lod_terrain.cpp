@@ -1378,6 +1378,13 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 	//	}
 }
 
+void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
+	if (_instancer != nullptr && instancer != nullptr) {
+		ERR_FAIL_COND_MSG(_instancer != nullptr, "No more than one VoxelInstancer per terrain");
+	}
+	_instancer = instancer;
+}
+
 void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(lod_index >= get_lod_count());
