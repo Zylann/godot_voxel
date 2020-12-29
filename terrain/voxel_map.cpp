@@ -161,6 +161,9 @@ void VoxelMap::remove_block_internal(Vector3i bpos, unsigned int index) {
 	_blocks_map.erase(bpos);
 
 	VoxelBlock *moved_block = _blocks.back();
+#ifdef DEBUG_ENABLED
+	CRASH_COND(index >= _blocks.size());
+#endif
 	_blocks[index] = moved_block;
 	_blocks.pop_back();
 
