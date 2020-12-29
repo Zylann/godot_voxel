@@ -130,7 +130,6 @@ struct PNodeRemap {
 	float p_c0;
 	float p_m0;
 	float p_c1;
-	float p_m1;
 };
 
 struct PNodeSmoothstep {
@@ -469,9 +468,8 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 						const float min1 = node->params[2].operator float();
 						const float max1 = node->params[3].operator float();
 						n.p_c0 = -min0;
-						n.p_m0 = Math::is_equal_approx(max0, min0) ? 99999.f : 1.f / (max0 - min0);
+						n.p_m0 = (max1 - min1) * (Math::is_equal_approx(max0, min0) ? 99999.f : 1.f / (max0 - min0));
 						n.p_c1 = min1;
-						n.p_m1 = max1 - min1;
 					} break;
 
 					case VoxelGeneratorGraph::NODE_SMOOTHSTEP: {
@@ -870,7 +868,7 @@ float VoxelGraphRuntime::generate_single(const Vector3 &position) {
 
 			case VoxelGeneratorGraph::NODE_REMAP: {
 				const PNodeRemap &n = read<PNodeRemap>(_program, pc);
-				memory[n.a_out] = ((memory[n.a_x] - n.p_c0) * n.p_m0) * n.p_m1 + n.p_c1;
+				memory[n.a_out] = (memory[n.a_x] - n.p_c0) * n.p_m0 + n.p_c1;
 			} break;
 
 			case VoxelGeneratorGraph::NODE_SMOOTHSTEP: {
@@ -1147,7 +1145,7 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 			case VoxelGeneratorGraph::NODE_REMAP: {
 				const PNodeRemap &n = read<PNodeRemap>(_program, pc);
 				Interval x(min_memory[n.a_x], max_memory[n.a_x]);
-				Interval r = ((x - n.p_c0) * n.p_m0) * n.p_m1 + n.p_c1;
+				Interval r = (x - n.p_c0) * n.p_m0 + n.p_c1;
 				min_memory[n.a_out] = r.min;
 				max_memory[n.a_out] = r.max;
 			} break;
