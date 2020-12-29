@@ -97,9 +97,6 @@ public:
 
 	const Stats &get_stats() const;
 
-	void set_run_stream_in_editor(bool enable);
-	bool is_stream_running_in_editor() const;
-
 	void restart_stream() override;
 	void remesh_all_blocks() override;
 
@@ -109,9 +106,16 @@ public:
 		uint8_t lod;
 	};
 
+	// Debugging
+
 	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
 	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
 	Array debug_get_octrees() const;
+
+	// Editor
+
+	void set_run_stream_in_editor(bool enable);
+	bool is_stream_running_in_editor() const;
 
 #ifdef TOOLS_ENABLED
 	void set_show_gizmos(bool enable);

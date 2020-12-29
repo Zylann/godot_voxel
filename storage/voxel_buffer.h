@@ -77,7 +77,6 @@ public:
 	real_t get_voxel_f(int x, int y, int z, unsigned int channel_index = 0) const;
 	void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index = 0);
 
-	Color get_voxel_c(int x, int y, int z, unsigned int channel_index = 0) const;
 	_FORCE_INLINE_ uint64_t get_voxel(const Vector3i pos, unsigned int channel_index = 0) const {
 		return get_voxel(pos.x, pos.y, pos.z, channel_index);
 	}
