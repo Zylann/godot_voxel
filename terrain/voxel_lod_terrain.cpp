@@ -63,6 +63,53 @@ static inline void schedule_mesh_update(VoxelBlock *block, std::vector<Vector3i>
 	}
 }
 
+struct BeforeUnloadAction {
+	std::vector<Ref<ShaderMaterial> > shader_material_pool;
+	std::vector<VoxelLodTerrain::BlockToSave> blocks_to_save;
+
+	void operator()(VoxelBlock *block) {
+		// Recycle material
+		Ref<ShaderMaterial> sm = block->get_shader_material();
+		if (sm.is_valid()) {
+			shader_material_pool.push_back(sm);
+			block->set_shader_material(Ref<ShaderMaterial>());
+		}
+
+		// Save if modified
+		// TODO Don't ask for save if the stream doesn't support it!
+		if (block->is_modified()) {
+			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
+			VoxelLodTerrain::BlockToSave b;
+			// We don't copy since the block will be unloaded anyways
+			b.voxels = block->voxels;
+			b.position = block->position;
+			b.lod = block->lod_index;
+			blocks_to_save.push_back(b);
+		}
+	}
+};
+
+struct ScheduleSaveAction {
+	std::vector<VoxelLodTerrain::BlockToSave> blocks_to_save;
+
+	void operator()(VoxelBlock *block) {
+		// Save if modified
+		// TODO Don't ask for save if the stream doesn't support it!
+		if (block->is_modified()) {
+			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
+			VoxelLodTerrain::BlockToSave b;
+
+			RWLockRead lock(block->voxels->get_lock());
+			b.voxels = block->voxels->duplicate(true);
+
+			b.position = block->position;
+			b.lod = block->lod_index;
+			blocks_to_save.push_back(b);
+			block->set_modified(false);
+		}
+	}
+};
+
 } // namespace
 
 VoxelLodTerrain::VoxelLodTerrain() {
@@ -100,7 +147,15 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 	if (_stream.is_valid()) {
 		// Schedule saving of all modified blocks,
 		// without copy because we are destroying the map anyways
-		save_all_modified_blocks(false);
+
+		flush_pending_lod_edits();
+
+		for (int i = 0; i < _lod_count; ++i) {
+			_lods[i].map.for_all_blocks(BeforeUnloadAction{ _shader_material_pool, _blocks_to_save });
+		}
+
+		// And flush immediately
+		send_block_data_requests();
 	}
 
 	VoxelServer::get_singleton()->remove_volume(_volume_id);
@@ -1309,49 +1364,13 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 	//	}
 }
 
-namespace {
-struct ScheduleSaveAction {
-	std::vector<VoxelLodTerrain::BlockToSave> &blocks_to_save;
-	std::vector<Ref<ShaderMaterial> > &shader_materials;
-	bool with_copy;
-
-	void operator()(VoxelBlock *block) {
-		Ref<ShaderMaterial> sm = block->get_shader_material();
-		if (sm.is_valid()) {
-			// Recycle material
-			shader_materials.push_back(sm);
-			block->set_shader_material(Ref<ShaderMaterial>());
-		}
-
-		// TODO Don't ask for save if the stream doesn't support it!
-		if (block->is_modified()) {
-			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
-			VoxelLodTerrain::BlockToSave b;
-
-			if (with_copy) {
-				RWLockRead lock(block->voxels->get_lock());
-				b.voxels = block->voxels->duplicate(true);
-			} else {
-				b.voxels = block->voxels;
-			}
-
-			b.position = block->position;
-			b.lod = block->lod_index;
-			blocks_to_save.push_back(b);
-			block->set_modified(false);
-		}
-	}
-};
-} // namespace
-
 void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 	VOXEL_PROFILE_SCOPE();
-
 	ERR_FAIL_COND(lod_index >= get_lod_count());
 
 	Lod &lod = _lods[lod_index];
 
-	lod.map.remove_block(block_pos, ScheduleSaveAction{ _blocks_to_save, _shader_material_pool, false });
+	lod.map.remove_block(block_pos, BeforeUnloadAction{ _shader_material_pool, _blocks_to_save });
 
 	lod.loading_blocks.erase(block_pos);
 
@@ -1368,7 +1387,7 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 
 	for (int i = 0; i < _lod_count; ++i) {
 		// That may cause a stutter, so should be used when the player won't notice
-		_lods[i].map.for_all_blocks(ScheduleSaveAction{ _blocks_to_save, _shader_material_pool, with_copy });
+		_lods[i].map.for_all_blocks(ScheduleSaveAction{ _blocks_to_save });
 	}
 
 	// And flush immediately
