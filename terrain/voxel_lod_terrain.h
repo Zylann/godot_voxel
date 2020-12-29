@@ -15,6 +15,7 @@
 
 class VoxelTool;
 class VoxelStream;
+class VoxelInstancer;
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
@@ -117,6 +118,10 @@ public:
 	bool is_showing_gizmos() const { return _show_gizmos_enabled; }
 #endif
 
+	// Internal
+
+	void set_instancer(VoxelInstancer *instancer);
+
 protected:
 	static void _bind_methods();
 
@@ -196,6 +201,8 @@ private:
 
 	bool _generate_collisions = true;
 	int _collision_lod_count = -1;
+
+	VoxelInstancer *_instancer = nullptr;
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {

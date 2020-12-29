@@ -8,6 +8,7 @@
 #include "../util/profiling.h"
 #include "../util/profiling_clock.h"
 #include "../voxel_string_names.h"
+#include "voxel_instancer.h"
 #include "voxel_map.h"
 
 #include <core/core_string_names.h>
@@ -104,6 +105,8 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 	}
 
 	VoxelServer::get_singleton()->remove_volume(_volume_id);
+
+	// Instancer can take care of itself
 }
 
 Ref<Material> VoxelLodTerrain::get_material() const {
@@ -1191,6 +1194,17 @@ void VoxelLodTerrain::_process() {
 				has_collision = ob.lod < _collision_lod_count;
 			}
 
+			if (block->got_first_mesh_update == false) {
+				block->got_first_mesh_update = true;
+
+				// TODO Need a more generic API for this kind of stuff
+				if (_instancer != nullptr && ob.surfaces.surfaces.size() > 0) {
+					// TODO The mesh could come from an edited region!
+					// We would have to know if specific voxels got edited, or different from the generator
+					_instancer->on_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0]);
+				}
+			}
+
 			block->set_mesh(mesh);
 			if (has_collision) {
 				block->set_collision_mesh(mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this);
@@ -1354,6 +1368,10 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 	lod.map.remove_block(block_pos, ScheduleSaveAction{ _blocks_to_save, _shader_material_pool, false });
 
 	lod.loading_blocks.erase(block_pos);
+
+	if (_instancer != nullptr) {
+		_instancer->on_block_exit(block_pos, lod_index);
+	}
 
 	// Blocks in the update queue will be cancelled in _process,
 	// because it's too expensive to linear-search all blocks for each block

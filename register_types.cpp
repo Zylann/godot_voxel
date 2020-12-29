@@ -26,6 +26,7 @@
 #include "streams/voxel_stream_region_files.h"
 #include "streams/voxel_stream_script.h"
 #include "terrain/voxel_box_mover.h"
+#include "terrain/voxel_instancer.h"
 #include "terrain/voxel_lod_terrain.h"
 #include "terrain/voxel_map.h"
 #include "terrain/voxel_terrain.h"
@@ -61,6 +62,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelTerrain>();
 	ClassDB::register_class<VoxelLodTerrain>();
 	ClassDB::register_class<VoxelViewer>();
+	ClassDB::register_class<VoxelInstancer>();
 
 	// Streams
 	ClassDB::register_virtual_class<VoxelStream>();
