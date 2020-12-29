@@ -46,6 +46,7 @@ void VoxelInstancer::clear_instances() {
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		memdelete(*it);
 	}
+	_blocks.clear();
 	for (auto it = _layers.begin(); it != _layers.end(); ++it) {
 		Layer *layer = *it;
 		if (layer != nullptr) {
