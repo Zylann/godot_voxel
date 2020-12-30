@@ -1,4 +1,5 @@
 #include "voxel_instancer.h"
+#include "../edition/voxel_tool.h"
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../util/profiling.h"
 #include "voxel_lod_terrain.h"
@@ -353,6 +354,9 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 				Transform t;
 				t.origin = vr[i];
 
+				// TODO Check if that position has been edited somehow, so we can decide to not spawn there
+				// Or remesh from generator and compare sdf but that's expensive
+
 				// Pick a random rotation from the floor's normal.
 				// Warning: sometimes mesh normals are not perfectly normalized
 				Vector3 axis_y;
@@ -475,7 +479,7 @@ void VoxelInstancer::on_block_exit(Vector3i grid_position, int lod_index) {
 		return;
 	}
 
-	Lod &lod = _lods[lod_index];
+	const Lod &lod = _lods[lod_index];
 
 	for (auto it = lod.layers.begin(); it != lod.layers.end(); ++it) {
 		const int layer_index = *it;
@@ -486,6 +490,100 @@ void VoxelInstancer::on_block_exit(Vector3i grid_position, int lod_index) {
 		int *block_index_ptr = layer->blocks.getptr(grid_position);
 		if (block_index_ptr != nullptr) {
 			remove_block(*block_index_ptr);
+		}
+	}
+}
+
+void VoxelInstancer::on_area_edited(Rect3i p_box) {
+	VOXEL_PROFILE_SCOPE();
+	ERR_FAIL_COND(_parent == nullptr);
+	const int block_size = _parent->get_block_size();
+
+	Ref<VoxelTool> voxel_tool = _parent->get_voxel_tool();
+	voxel_tool->set_channel(VoxelBuffer::CHANNEL_SDF);
+
+	const Transform parent_transform = get_global_transform();
+	const int base_block_size_po2 = _parent->get_block_size_pow2();
+
+	for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+		const Lod &lod = _lods[lod_index];
+
+		if (lod.layers.size() == 0) {
+			continue;
+		}
+
+		const Rect3i blocks_box = p_box.downscaled(block_size << lod_index);
+
+		for (auto it = lod.layers.begin(); it != lod.layers.end(); ++it) {
+			const Layer *layer = _layers[*it];
+			const std::vector<Block *> &blocks = _blocks;
+			const int block_size_po2 = base_block_size_po2 + layer->lod_index;
+
+			blocks_box.for_each_cell([layer, &blocks, voxel_tool, p_box, parent_transform, block_size_po2](
+											 Vector3i block_pos) {
+				const int *iptr = layer->blocks.getptr(block_pos);
+
+				if (iptr != nullptr) {
+					Block *block = blocks[*iptr];
+					Ref<MultiMesh> multimesh = block->multimesh_instance.get_multimesh();
+
+					int initial_instance_count = multimesh->get_visible_instance_count();
+					if (initial_instance_count == -1) {
+						initial_instance_count = multimesh->get_instance_count();
+					}
+
+					int instance_count = initial_instance_count;
+
+					const Transform block_global_transform = Transform(parent_transform.basis,
+							parent_transform.xform((block_pos << block_size_po2).to_vec3()));
+
+					// Let's check all instances one by one
+					// Note: the fact we have to query VisualServer in and out is pretty bad though.
+					// - We probably have to sync with its thread in MT mode
+					// - A hashmap RID lookup is performed to check `RID_Owner::id_map`
+					for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
+						const Transform mm_transform = multimesh->get_instance_transform(instance_index);
+						const Vector3i voxel_pos = Vector3i(mm_transform.origin + block_global_transform.origin);
+
+						if (p_box.contains(voxel_pos)) {
+							// 1-voxel cheap check without interpolation
+							const float sdf = voxel_tool->get_voxel_f(voxel_pos);
+
+							if (sdf >= -0.1f) {
+								// Remove the instance
+								--instance_count;
+								const Transform last_trans = multimesh->get_instance_transform(instance_count);
+								multimesh->set_instance_transform(instance_index, last_trans);
+								--instance_index;
+
+								// DEBUG
+								// Ref<CubeMesh> cm;
+								// cm.instance();
+								// cm->set_size(Vector3(0.5, 0.5, 0.5));
+								// MeshInstance *mi = memnew(MeshInstance);
+								// mi->set_mesh(cm);
+								// mi->set_transform(get_global_transform() *
+								// 				  (Transform(Basis(), (block_pos << layer->lod_index).to_vec3()) * t));
+								// add_child(mi);
+							}
+						}
+					}
+
+					if (instance_count < initial_instance_count) {
+						// According to the docs, set_instance_count() resets the array so we only hide them instead
+						multimesh->set_visible_instance_count(instance_count);
+
+						// Array args;
+						// args.push_back(instance_count);
+						// args.push_back(initial_instance_count);
+						// args.push_back(block_pos.to_vec3());
+						// args.push_back(layer->lod_index);
+						// args.push_back(multimesh->get_instance_count());
+						// print_line(
+						// 		String("Hiding instances from {0} to {1}. P: {2}, lod: {3}, total: {4}").format(args));
+					}
+				}
+			});
 		}
 	}
 }

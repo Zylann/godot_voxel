@@ -289,6 +289,10 @@ void VoxelLodTerrain::post_edit_area(Rect3i p_box) {
 	bbox.for_each_cell([this](Vector3i block_pos_lod0) {
 		post_edit_block_lod0(block_pos_lod0);
 	});
+
+	if (_instancer != nullptr) {
+		_instancer->on_area_edited(p_box);
+	}
 }
 
 void VoxelLodTerrain::post_edit_block_lod0(Vector3i block_pos_lod0) {

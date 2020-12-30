@@ -1,7 +1,7 @@
 #ifndef VOXEL_INSTANCER_H
 #define VOXEL_INSTANCER_H
 
-#include "../math/vector3i.h"
+#include "../math/rect3i.h"
 #include "../util/direct_multimesh_instance.h"
 #include "../util/fixed_array.h"
 
@@ -46,7 +46,7 @@ public:
 	void on_block_enter(Vector3i grid_position, int lod_index, Array surface_arrays);
 	void on_block_exit(Vector3i grid_position, int lod_index);
 
-	//void on_area_edited(Rect3i box);
+	void on_area_edited(Rect3i p_box);
 
 	int debug_get_block_count() const;
 
