@@ -41,6 +41,8 @@ public:
 	void set_layer_max_scale(int layer_index, float max_scale);
 	void set_layer_vertical_alignment(int layer_index, float vertical_alignment);
 	void set_layer_offset_along_normal(int layer_index, float offset);
+	void set_layer_min_slope_degrees(int layer_index, float degrees);
+	void set_layer_max_slope_degrees(int layer_index, float degrees);
 	void remove_layer(int layer_index);
 
 	void on_block_enter(Vector3i grid_position, int lod_index, Array surface_arrays);
@@ -75,8 +77,8 @@ private:
 		float max_scale = 1.f;
 		float offset_along_normal = 0.f;
 		bool random_vertical_flip = false;
-		// float min_slope = 0.f;
-		// float max_slope = 1.f;
+		float min_surface_normal_y = -1.f;
+		float max_surface_normal_y = 1.f;
 		// float min_height = 0.f;
 		// float max_height = 10000.f;
 

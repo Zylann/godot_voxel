@@ -217,6 +217,22 @@ void VoxelInstancer::set_layer_offset_along_normal(int layer_index, float offset
 	layer->offset_along_normal = offset;
 }
 
+void VoxelInstancer::set_layer_min_slope_degrees(int layer_index, float degrees) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	layer->max_surface_normal_y = min(1.f, Math::cos(Math::deg2rad(clamp(degrees, -180.f, 180.f))));
+}
+
+void VoxelInstancer::set_layer_max_slope_degrees(int layer_index, float degrees) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	layer->min_surface_normal_y = max(-1.f, Math::cos(Math::deg2rad(clamp(degrees, -180.f, 180.f))));
+}
+
 void VoxelInstancer::remove_layer(int layer_index) {
 	ERR_FAIL_INDEX(layer_index, _layers.size());
 	Layer *layer = _layers[layer_index];
@@ -326,6 +342,9 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 		const float scale_range = layer->max_scale - layer->min_scale;
 		const bool random_vertical_flip = layer->random_vertical_flip;
 		const float offset_along_normal = layer->offset_along_normal;
+		const float normal_min_y = layer->min_surface_normal_y;
+		const float normal_max_y = layer->max_surface_normal_y;
+		const bool slope_filter = normal_min_y != -1.f || normal_max_y != 1.f;
 
 		Vector3 global_up(0.f, 1.f, 0.f);
 
@@ -357,23 +376,49 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 				// TODO Check if that position has been edited somehow, so we can decide to not spawn there
 				// Or remesh from generator and compare sdf but that's expensive
 
-				// Pick a random rotation from the floor's normal.
-				// Warning: sometimes mesh normals are not perfectly normalized
 				Vector3 axis_y;
 
+				// Warning: sometimes mesh normals are not perfectly normalized.
+				// The cause is for meshing speed on CPU. It's normalized on GPU anyways.
+				Vector3 surface_normal = nr[i];
+				bool surface_normal_is_normalized = false;
+				bool sphere_up_is_computed = false;
+
 				if (vertical_alignment == 0.f) {
-					axis_y = nr[i].normalized();
+					surface_normal.normalize();
+					surface_normal_is_normalized = true;
+					axis_y = surface_normal;
 
 				} else {
 					if (_up_mode == UP_MODE_SPHERE) {
 						global_up = (block_local_transform.origin + t.origin).normalized();
+						sphere_up_is_computed = true;
 					}
 
 					if (vertical_alignment < 1.f) {
-						axis_y = nr[i].linear_interpolate(global_up, vertical_alignment).normalized();
+						axis_y = surface_normal.linear_interpolate(global_up, vertical_alignment).normalized();
 
 					} else {
 						axis_y = global_up;
+					}
+				}
+
+				if (slope_filter) {
+					if (!surface_normal_is_normalized) {
+						surface_normal.normalize();
+					}
+
+					float y = surface_normal.y;
+					if (_up_mode == UP_MODE_SPHERE) {
+						if (!sphere_up_is_computed) {
+							global_up = (block_local_transform.origin + t.origin).normalized();
+						}
+						y = surface_normal.dot(global_up);
+					}
+
+					if (y < normal_min_y || y > normal_max_y) {
+						// Discard
+						continue;
 					}
 				}
 
@@ -382,8 +427,10 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 				// Allows to use two faces of a single rock to create variety in the same layer
 				if (random_vertical_flip && (pcg1.rand() & 1) == 1) {
 					axis_y = -axis_y;
+					// TODO Should have to flip another axis as well?
 				}
 
+				// Pick a random rotation from the floor's normal.
 				// TODO A pool of precomputed random directions would do the job too
 				const Vector3 dir = Vector3(pcg1.randf() - 0.5f, pcg1.randf() - 0.5f, pcg1.randf() - 0.5f);
 				const Vector3 axis_x = axis_y.cross(dir).normalized();
@@ -609,6 +656,10 @@ void VoxelInstancer::_bind_methods() {
 			&VoxelInstancer::set_layer_random_vertical_flip);
 	ClassDB::bind_method(D_METHOD("set_layer_offset_along_normal", "layer_index", "offset"),
 			&VoxelInstancer::set_layer_offset_along_normal);
+	ClassDB::bind_method(D_METHOD("set_layer_min_slope_degrees", "layer_index", "degrees"),
+			&VoxelInstancer::set_layer_min_slope_degrees);
+	ClassDB::bind_method(D_METHOD("set_layer_max_slope_degrees", "layer_index", "degrees"),
+			&VoxelInstancer::set_layer_max_slope_degrees);
 	ClassDB::bind_method(D_METHOD("remove_layer", "layer_index"), &VoxelInstancer::remove_layer);
 
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelInstancer::debug_get_block_count);
