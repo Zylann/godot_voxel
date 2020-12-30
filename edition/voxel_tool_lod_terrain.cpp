@@ -15,12 +15,12 @@ bool VoxelToolLodTerrain::is_area_editable(const Rect3i &box) const {
 	return _map.is_area_fully_loaded(box.padded(1));
 }
 
-uint64_t VoxelToolLodTerrain::_get_voxel(Vector3i pos) {
+uint64_t VoxelToolLodTerrain::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _map.get_voxel(pos, _channel);
 }
 
-float VoxelToolLodTerrain::_get_voxel_f(Vector3i pos) {
+float VoxelToolLodTerrain::_get_voxel_f(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _map.get_voxel_f(pos, _channel);
 }

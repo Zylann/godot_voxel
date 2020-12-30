@@ -14,8 +14,8 @@ public:
 	bool is_area_editable(const Rect3i &box) const override;
 
 protected:
-	uint64_t _get_voxel(Vector3i pos) override;
-	float _get_voxel_f(Vector3i pos) override;
+	uint64_t _get_voxel(Vector3i pos) const override;
+	float _get_voxel_f(Vector3i pos) const override;
 	void _set_voxel(Vector3i pos, uint64_t v) override;
 	void _set_voxel_f(Vector3i pos, float v) override;
 	void _post_edit(const Rect3i &box) override;

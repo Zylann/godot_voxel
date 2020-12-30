@@ -80,12 +80,12 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 	return res;
 }
 
-uint64_t VoxelToolTerrain::_get_voxel(Vector3i pos) {
+uint64_t VoxelToolTerrain::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _terrain->get_storage().get_voxel(pos, _channel);
 }
 
-float VoxelToolTerrain::_get_voxel_f(Vector3i pos) {
+float VoxelToolTerrain::_get_voxel_f(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _terrain->get_storage().get_voxel_f(pos, _channel);
 }
