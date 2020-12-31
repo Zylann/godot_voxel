@@ -233,6 +233,22 @@ void VoxelInstancer::set_layer_max_slope_degrees(int layer_index, float degrees)
 	layer->min_surface_normal_y = max(-1.f, Math::cos(Math::deg2rad(clamp(degrees, -180.f, 180.f))));
 }
 
+void VoxelInstancer::set_layer_min_height(int layer_index, float h) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	layer->min_height = h;
+}
+
+void VoxelInstancer::set_layer_max_height(int layer_index, float h) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	layer->max_height = h;
+}
+
 void VoxelInstancer::remove_layer(int layer_index) {
 	ERR_FAIL_INDEX(layer_index, _layers.size());
 	Layer *layer = _layers[layer_index];
@@ -287,6 +303,17 @@ void VoxelInstancer::remove_block(int block_index) {
 		CRASH_COND(iptr == nullptr);
 		*iptr = block_index;
 	}
+}
+
+static inline Vector3 normalized(Vector3 pos, float &length) {
+	length = pos.length();
+	if (length == 0) {
+		return Vector3();
+	}
+	pos.x /= length;
+	pos.y /= length;
+	pos.z /= length;
+	return pos;
 }
 
 void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array surface_arrays) {
@@ -345,6 +372,10 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 		const float normal_min_y = layer->min_surface_normal_y;
 		const float normal_max_y = layer->max_surface_normal_y;
 		const bool slope_filter = normal_min_y != -1.f || normal_max_y != 1.f;
+		const bool height_filter = layer->min_height != std::numeric_limits<float>::min() ||
+								   layer->max_height != std::numeric_limits<float>::max();
+		const float min_height = layer->min_height;
+		const float max_height = layer->max_height;
 
 		Vector3 global_up(0.f, 1.f, 0.f);
 
@@ -383,6 +414,8 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 				Vector3 surface_normal = nr[i];
 				bool surface_normal_is_normalized = false;
 				bool sphere_up_is_computed = false;
+				bool sphere_distance_is_computed = false;
+				float sphere_distance;
 
 				if (vertical_alignment == 0.f) {
 					surface_normal.normalize();
@@ -391,8 +424,9 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 
 				} else {
 					if (_up_mode == UP_MODE_SPHERE) {
-						global_up = (block_local_transform.origin + t.origin).normalized();
+						global_up = normalized(block_local_transform.origin + t.origin, sphere_distance);
 						sphere_up_is_computed = true;
+						sphere_distance_is_computed = true;
 					}
 
 					if (vertical_alignment < 1.f) {
@@ -408,16 +442,33 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 						surface_normal.normalize();
 					}
 
-					float y = surface_normal.y;
+					float ny = surface_normal.y;
 					if (_up_mode == UP_MODE_SPHERE) {
 						if (!sphere_up_is_computed) {
-							global_up = (block_local_transform.origin + t.origin).normalized();
+							global_up = normalized(block_local_transform.origin + t.origin, sphere_distance);
+							sphere_up_is_computed = true;
+							sphere_distance_is_computed = true;
 						}
-						y = surface_normal.dot(global_up);
+						ny = surface_normal.dot(global_up);
 					}
 
-					if (y < normal_min_y || y > normal_max_y) {
+					if (ny < normal_min_y || ny > normal_max_y) {
 						// Discard
+						continue;
+					}
+				}
+
+				if (height_filter) {
+					float y = t.origin.y;
+					if (_up_mode == UP_MODE_SPHERE) {
+						if (!sphere_distance_is_computed) {
+							sphere_distance = (block_local_transform.origin + t.origin).length();
+							sphere_distance_is_computed = true;
+						}
+						y = sphere_distance;
+					}
+
+					if (y < min_height || y > max_height) {
 						continue;
 					}
 				}
@@ -457,11 +508,11 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 			continue;
 		}
 
-		// TODO Investigate if this helps
+		// TODO Investigate if this helps (won't help with authored terrain)
 		// if (graph_generator.is_valid()) {
 		// 	for (size_t i = 0; i < _transform_cache.size(); ++i) {
 		// 		Transform &t = _transform_cache[i];
-		// 		const Vector3 up = t.get_basis().get_axis(1);
+		// 		const Vector3 up = t.get_basis().get_axis(Vector3::AXIS_Y);
 		// 		t.origin = graph_generator->approximate_surface(t.origin, up * 0.5f);
 		// 	}
 		// }
@@ -660,6 +711,10 @@ void VoxelInstancer::_bind_methods() {
 			&VoxelInstancer::set_layer_min_slope_degrees);
 	ClassDB::bind_method(D_METHOD("set_layer_max_slope_degrees", "layer_index", "degrees"),
 			&VoxelInstancer::set_layer_max_slope_degrees);
+	ClassDB::bind_method(D_METHOD("set_layer_min_height", "layer_index", "height"),
+			&VoxelInstancer::set_layer_min_height);
+	ClassDB::bind_method(D_METHOD("set_layer_max_height", "layer_index", "height"),
+			&VoxelInstancer::set_layer_max_height);
 	ClassDB::bind_method(D_METHOD("remove_layer", "layer_index"), &VoxelInstancer::remove_layer);
 
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelInstancer::debug_get_block_count);

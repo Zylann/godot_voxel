@@ -43,6 +43,8 @@ public:
 	void set_layer_offset_along_normal(int layer_index, float offset);
 	void set_layer_min_slope_degrees(int layer_index, float degrees);
 	void set_layer_max_slope_degrees(int layer_index, float degrees);
+	void set_layer_min_height(int layer_index, float h);
+	void set_layer_max_height(int layer_index, float h);
 	void remove_layer(int layer_index);
 
 	void on_block_enter(Vector3i grid_position, int lod_index, Array surface_arrays);
@@ -79,8 +81,8 @@ private:
 		bool random_vertical_flip = false;
 		float min_surface_normal_y = -1.f;
 		float max_surface_normal_y = 1.f;
-		// float min_height = 0.f;
-		// float max_height = 10000.f;
+		float min_height = std::numeric_limits<float>::min();
+		float max_height = std::numeric_limits<float>::max();
 
 		// TODO lods?
 		Ref<Mesh> mesh;
