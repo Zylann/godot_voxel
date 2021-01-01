@@ -20,6 +20,7 @@ public:
 	Ref<MultiMesh> get_multimesh() const;
 	void set_transform(Transform world_transform);
 	void set_visible(bool visible);
+	void set_material_override(Ref<Material> material);
 
 private:
 	RID _multimesh_instance;

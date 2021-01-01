@@ -69,3 +69,13 @@ void DirectMultiMeshInstance::set_visible(bool visible) {
 	VisualServer &vs = *VisualServer::get_singleton();
 	vs.instance_set_visible(_multimesh_instance, visible);
 }
+
+void DirectMultiMeshInstance::set_material_override(Ref<Material> material) {
+	ERR_FAIL_COND(!_multimesh_instance.is_valid());
+	VisualServer &vs = *VisualServer::get_singleton();
+	if (material.is_valid()) {
+		vs.instance_geometry_set_material_override(_multimesh_instance, material->get_rid());
+	} else {
+		vs.instance_geometry_set_material_override(_multimesh_instance, RID());
+	}
+}

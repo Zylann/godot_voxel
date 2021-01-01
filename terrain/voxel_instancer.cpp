@@ -249,6 +249,14 @@ void VoxelInstancer::set_layer_max_height(int layer_index, float h) {
 	layer->max_height = h;
 }
 
+void VoxelInstancer::set_layer_material_override(int layer_index, Ref<Material> material) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	layer->material_override = material;
+}
+
 void VoxelInstancer::remove_layer(int layer_index) {
 	ERR_FAIL_INDEX(layer_index, _layers.size());
 	Layer *layer = _layers[layer_index];
@@ -279,7 +287,6 @@ void VoxelInstancer::remove_layer(int layer_index) {
 	memdelete(layer);
 }
 
-// TODO Had block_index way out of bounds here. Still not fixed, could not find cause yet
 void VoxelInstancer::remove_block(int block_index) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(block_index < 0 || block_index >= _blocks.size());
@@ -563,6 +570,7 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 		block->multimesh_instance.set_multimesh(multimesh);
 		block->multimesh_instance.set_world(world);
 		block->multimesh_instance.set_transform(block_transform);
+		block->multimesh_instance.set_material_override(layer->material_override);
 		block->layer_index = layer_index;
 		block->grid_position = grid_position;
 		const int block_index = _blocks.size();
@@ -696,6 +704,8 @@ void VoxelInstancer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("add_layer", "lod_index"), &VoxelInstancer::add_layer);
 	ClassDB::bind_method(D_METHOD("set_layer_mesh", "layer_index", "mesh"), &VoxelInstancer::set_layer_mesh);
+	ClassDB::bind_method(D_METHOD("set_layer_mesh_material_override", "layer_index", "material"),
+			&VoxelInstancer::set_layer_material_override);
 	ClassDB::bind_method(D_METHOD("set_layer_density", "layer_index", "density"), &VoxelInstancer::set_layer_density);
 	ClassDB::bind_method(D_METHOD("set_layer_min_scale", "layer_index", "min_scale"),
 			&VoxelInstancer::set_layer_min_scale);

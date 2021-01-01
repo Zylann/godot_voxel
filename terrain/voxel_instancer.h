@@ -6,6 +6,7 @@
 #include "../util/fixed_array.h"
 
 #include <scene/3d/spatial.h>
+//#include <scene/resources/material.h> // Included by node.h lol
 #include <vector>
 
 class VoxelGenerator;
@@ -35,6 +36,7 @@ public:
 
 	int add_layer(int lod_index);
 	void set_layer_mesh(int layer_index, Ref<Mesh> mesh);
+	void set_layer_material_override(int layer_index, Ref<Material> material);
 	void set_layer_random_vertical_flip(int layer_index, bool flip_enabled);
 	void set_layer_density(int layer_index, float density);
 	void set_layer_min_scale(int layer_index, float min_scale);
@@ -78,15 +80,18 @@ private:
 		float min_scale = 1.f;
 		float max_scale = 1.f;
 		float offset_along_normal = 0.f;
-		bool random_vertical_flip = false;
 		float min_surface_normal_y = -1.f;
 		float max_surface_normal_y = 1.f;
 		float min_height = std::numeric_limits<float>::min();
 		float max_height = std::numeric_limits<float>::max();
+		bool random_vertical_flip = false;
 
 		// TODO lods?
 		Ref<Mesh> mesh;
 
+		// It is preferred to have materials on the mesh already,
+		// but this is in case OBJ meshes are used, which often dont have a material of their own
+		Ref<Material> material_override;
 		// TODO Collision shapes
 
 		HashMap<Vector3i, int, Vector3iHasher> blocks;
