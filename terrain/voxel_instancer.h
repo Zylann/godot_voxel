@@ -11,6 +11,8 @@
 
 class VoxelGenerator;
 class VoxelLodTerrain;
+class VoxelInstancerRigidBody;
+class PhysicsBody;
 
 class VoxelInstancer : public Spatial {
 	GDCLASS(VoxelInstancer, Spatial)
@@ -35,8 +37,10 @@ public:
 	UpMode get_up_mode() const;
 
 	int add_layer(int lod_index);
+
 	void set_layer_mesh(int layer_index, Ref<Mesh> mesh);
 	void set_layer_material_override(int layer_index, Ref<Material> material);
+
 	void set_layer_random_vertical_flip(int layer_index, bool flip_enabled);
 	void set_layer_density(int layer_index, float density);
 	void set_layer_min_scale(int layer_index, float min_scale);
@@ -47,6 +51,13 @@ public:
 	void set_layer_max_slope_degrees(int layer_index, float degrees);
 	void set_layer_min_height(int layer_index, float h);
 	void set_layer_max_height(int layer_index, float h);
+
+	void set_layer_collision_layer(int layer_index, int collision_layer);
+	void set_layer_collision_mask(int layer_index, int collision_mask);
+	void set_layer_collision_shapes(int layer_index, Array shape_infos);
+
+	void set_layer_from_template(int layer_index, Node *root);
+
 	void remove_layer(int layer_index);
 
 	void on_block_enter(Vector3i grid_position, int lod_index, Array surface_arrays);
@@ -54,7 +65,14 @@ public:
 
 	void on_area_edited(Rect3i p_box);
 
+	void on_body_removed(int block_index, int instance_index);
+
 	int debug_get_block_count() const;
+
+	struct CollisionShapeInfo {
+		Transform transform;
+		Ref<Shape> shape;
+	};
 
 protected:
 	void _notification(int p_what);
@@ -71,6 +89,9 @@ private:
 		int layer_index;
 		Vector3i grid_position;
 		DirectMultiMeshInstance multimesh_instance;
+		// For physics we use nodes because it's easier to manage.
+		// Such instances may be less numerous.
+		Vector<VoxelInstancerRigidBody *> bodies;
 	};
 
 	struct Layer {
@@ -92,7 +113,10 @@ private:
 		// It is preferred to have materials on the mesh already,
 		// but this is in case OBJ meshes are used, which often dont have a material of their own
 		Ref<Material> material_override;
-		// TODO Collision shapes
+
+		int collision_mask = 1;
+		int collision_layer = 1;
+		Vector<CollisionShapeInfo> collision_shapes;
 
 		HashMap<Vector3i, int, Vector3iHasher> blocks;
 	};

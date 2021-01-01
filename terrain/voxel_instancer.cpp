@@ -4,8 +4,61 @@
 #include "../util/profiling.h"
 #include "voxel_lod_terrain.h"
 
+#include <scene/3d/collision_shape.h>
+#include <scene/3d/mesh_instance.h>
+#include <scene/3d/physics_body.h>
 #include <scene/3d/spatial.h>
 #include <scene/resources/primitive_meshes.h>
+
+class VoxelInstancerRigidBody : public RigidBody {
+	GDCLASS(VoxelInstancerRigidBody, RigidBody);
+
+public:
+	VoxelInstancerRigidBody() {
+		set_mode(RigidBody::MODE_STATIC);
+	}
+
+	void set_block_index(int block_index) {
+		_block_index = block_index;
+	}
+
+	void set_instance_index(int instance_index) {
+		_instance_index = instance_index;
+	}
+
+	void attach(VoxelInstancer *parent) {
+		_parent = parent;
+	}
+
+	void detach_and_destroy() {
+		_parent = nullptr;
+		queue_delete();
+	}
+
+	// Note, for this the body must switch to convex shapes
+	// void detach_and_become_rigidbody() {
+	// 	//...
+	// }
+
+protected:
+	void _notification(int p_what) {
+		switch (p_what) {
+			case NOTIFICATION_UNPARENTED:
+				// The user could queue_free() that node in game,
+				// so we have to notify the instancer to remove the multimesh instance and pointer
+				if (_parent != nullptr) {
+					_parent->on_body_removed(_block_index, _instance_index);
+					_parent = nullptr;
+				}
+				break;
+		}
+	}
+
+private:
+	VoxelInstancer *_parent = nullptr;
+	int _block_index = -1;
+	int _instance_index = -1;
+};
 
 VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
@@ -33,6 +86,7 @@ VoxelInstancer::~VoxelInstancer() {
 	// Destroy everything
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		memdelete(*it);
+		// We don't destroy nodes, we assume they were detached already
 	}
 	for (auto it = _layers.begin(); it != _layers.end(); ++it) {
 		Layer *layer = *it;
@@ -45,7 +99,12 @@ VoxelInstancer::~VoxelInstancer() {
 void VoxelInstancer::clear_instances() {
 	// Destroy blocks, keep configured layers
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-		memdelete(*it);
+		Block *block = *it;
+		for (int i = 0; i < block->bodies.size(); ++i) {
+			VoxelInstancerRigidBody *body = block->bodies[i];
+			body->detach_and_destroy();
+		}
+		memdelete(block);
 	}
 	_blocks.clear();
 	for (auto it = _layers.begin(); it != _layers.end(); ++it) {
@@ -250,12 +309,85 @@ void VoxelInstancer::set_layer_max_height(int layer_index, float h) {
 	layer->max_height = h;
 }
 
+void VoxelInstancer::set_layer_collision_layer(int layer_index, int collision_layer) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	layer->collision_layer = collision_layer;
+}
+
+void VoxelInstancer::set_layer_collision_mask(int layer_index, int collision_mask) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	layer->collision_mask = collision_mask;
+}
+
 void VoxelInstancer::set_layer_material_override(int layer_index, Ref<Material> material) {
 	ERR_FAIL_INDEX(layer_index, _layers.size());
 	Layer *layer = _layers[layer_index];
 	ERR_FAIL_COND(layer == nullptr);
 
 	layer->material_override = material;
+}
+
+void VoxelInstancer::set_layer_collision_shapes(int layer_index, Array shape_infos) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	layer->collision_shapes.clear();
+
+	for (int i = 0; i < shape_infos.size(); ++i) {
+		Dictionary d = shape_infos[i];
+
+		CollisionShapeInfo info;
+		info.transform = d["transform"];
+		info.shape = d["shape"];
+
+		ERR_FAIL_COND(info.shape.is_null());
+
+		layer->collision_shapes.push_back(info);
+	}
+}
+
+// TODO Should expect a `Spatial`, but method bindings won't allow it
+void VoxelInstancer::set_layer_from_template(int layer_index, Node *root) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	ERR_FAIL_COND(root == nullptr);
+
+	layer->collision_shapes.clear();
+
+	PhysicsBody *physics_body = Object::cast_to<PhysicsBody>(root);
+	if (physics_body != nullptr) {
+		layer->collision_layer = physics_body->get_collision_layer();
+		layer->collision_mask = physics_body->get_collision_mask();
+	}
+
+	for (int i = 0; i < root->get_child_count(); ++i) {
+		MeshInstance *mi = Object::cast_to<MeshInstance>(root->get_child(i));
+		if (mi != nullptr) {
+			layer->mesh = mi->get_mesh();
+			layer->material_override = mi->get_material_override();
+		}
+
+		if (physics_body != nullptr) {
+			CollisionShape *cs = Object::cast_to<CollisionShape>(physics_body->get_child(i));
+
+			if (cs != nullptr) {
+				CollisionShapeInfo info;
+				info.shape = cs->get_shape();
+				info.transform = cs->get_transform();
+
+				layer->collision_shapes.push_back(info);
+			}
+		}
+	}
 }
 
 void VoxelInstancer::remove_layer(int layer_index) {
@@ -300,6 +432,12 @@ void VoxelInstancer::remove_block(int block_index) {
 	}
 	_blocks[block_index] = moved_block;
 	_blocks.pop_back();
+
+	for (int i = 0; i < block->bodies.size(); ++i) {
+		VoxelInstancerRigidBody *body = block->bodies[i];
+		body->detach_and_destroy();
+	}
+
 	memdelete(block);
 
 	if (block != moved_block) {
@@ -577,6 +715,32 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 		const int block_index = _blocks.size();
 		_blocks.push_back(block);
 
+		if (layer->collision_shapes.size() > 0) {
+			VOXEL_PROFILE_SCOPE();
+			// Create bodies
+
+			for (int instance_index = 0; instance_index < _transform_cache.size(); ++instance_index) {
+				const Transform body_transform = block_transform * _transform_cache[instance_index];
+
+				VoxelInstancerRigidBody *body = memnew(VoxelInstancerRigidBody);
+				body->attach(this);
+				body->set_instance_index(instance_index);
+				body->set_block_index(block_index);
+				body->set_transform(body_transform);
+
+				for (int i = 0; i < layer->collision_shapes.size(); ++i) {
+					CollisionShapeInfo &shape_info = layer->collision_shapes.write[i];
+					CollisionShape *cs = memnew(CollisionShape);
+					cs->set_shape(shape_info.shape);
+					cs->set_transform(shape_info.transform);
+					body->add_child(cs);
+				}
+
+				add_child(body);
+				block->bodies.push_back(body);
+			}
+		}
+
 		layer->blocks.set(grid_position, block_index);
 	}
 }
@@ -599,6 +763,14 @@ void VoxelInstancer::on_block_exit(Vector3i grid_position, int lod_index) {
 			remove_block(*block_index_ptr);
 		}
 	}
+}
+
+static inline int get_visible_instance_count(Ref<MultiMesh> mm) {
+	int visible_count = mm->get_visible_instance_count();
+	if (visible_count == -1) {
+		visible_count = mm->get_instance_count();
+	}
+	return visible_count;
 }
 
 void VoxelInstancer::on_area_edited(Rect3i p_box) {
@@ -634,11 +806,7 @@ void VoxelInstancer::on_area_edited(Rect3i p_box) {
 					Block *block = blocks[*iptr];
 					Ref<MultiMesh> multimesh = block->multimesh_instance.get_multimesh();
 
-					int initial_instance_count = multimesh->get_visible_instance_count();
-					if (initial_instance_count == -1) {
-						initial_instance_count = multimesh->get_instance_count();
-					}
-
+					int initial_instance_count = get_visible_instance_count(multimesh);
 					int instance_count = initial_instance_count;
 
 					const Transform block_global_transform = Transform(parent_transform.basis,
@@ -657,10 +825,25 @@ void VoxelInstancer::on_area_edited(Rect3i p_box) {
 							const float sdf = voxel_tool->get_voxel_f(voxel_pos);
 
 							if (sdf >= -0.1f) {
-								// Remove the instance
-								--instance_count;
-								const Transform last_trans = multimesh->get_instance_transform(instance_count);
+								// Remove the MultiMesh instance
+								int last_instance_index = --instance_count;
+								const Transform last_trans = multimesh->get_instance_transform(last_instance_index);
 								multimesh->set_instance_transform(instance_index, last_trans);
+
+								// Remove the body if this block has some
+								// TODO In the case of bodies, we could use an overlap check
+								if (block->bodies.size() > 0) {
+									VoxelInstancerRigidBody *rb = block->bodies[instance_index];
+									// Detach so it won't try to update our instances, we already do it here
+									rb->detach_and_destroy();
+
+									VoxelInstancerRigidBody *moved_rb = block->bodies[last_instance_index];
+									if (moved_rb != rb) {
+										moved_rb->set_instance_index(instance_index);
+										block->bodies.write[instance_index] = moved_rb;
+									}
+								}
+
 								--instance_index;
 
 								// DEBUG
@@ -680,6 +863,10 @@ void VoxelInstancer::on_area_edited(Rect3i p_box) {
 						// According to the docs, set_instance_count() resets the array so we only hide them instead
 						multimesh->set_visible_instance_count(instance_count);
 
+						if (block->bodies.size() > 0) {
+							block->bodies.resize(instance_count);
+						}
+
 						// Array args;
 						// args.push_back(instance_count);
 						// args.push_back(initial_instance_count);
@@ -695,6 +882,39 @@ void VoxelInstancer::on_area_edited(Rect3i p_box) {
 	}
 }
 
+// This is called if a user destroys or unparents the body node while it's still attached to the ground
+void VoxelInstancer::on_body_removed(int block_index, int instance_index) {
+	ERR_FAIL_INDEX(block_index, _blocks.size());
+	Block *block = _blocks[block_index];
+	CRASH_COND(block == nullptr);
+	ERR_FAIL_INDEX(instance_index, block->bodies.size());
+
+	if (block->multimesh_instance.is_valid()) {
+		// Remove the multimesh instance
+
+		Ref<MultiMesh> multimesh = block->multimesh_instance.get_multimesh();
+		ERR_FAIL_COND(multimesh.is_null());
+
+		int visible_count = get_visible_instance_count(multimesh);
+		ERR_FAIL_COND(instance_index >= visible_count);
+
+		--visible_count;
+		const Transform last_trans = multimesh->get_instance_transform(visible_count);
+		multimesh->set_instance_transform(instance_index, last_trans);
+		multimesh->set_visible_instance_count(visible_count);
+	}
+
+	// Unregister the body
+	int body_count = block->bodies.size();
+	int last_instance_index = --body_count;
+	VoxelInstancerRigidBody *moved_body = block->bodies[last_instance_index];
+	if (instance_index != last_instance_index) {
+		moved_body->set_instance_index(instance_index);
+		block->bodies.write[instance_index] = moved_body;
+	}
+	block->bodies.resize(body_count);
+}
+
 int VoxelInstancer::debug_get_block_count() const {
 	return _blocks.size();
 }
@@ -704,9 +924,11 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_up_mode"), &VoxelInstancer::get_up_mode);
 
 	ClassDB::bind_method(D_METHOD("add_layer", "lod_index"), &VoxelInstancer::add_layer);
+
 	ClassDB::bind_method(D_METHOD("set_layer_mesh", "layer_index", "mesh"), &VoxelInstancer::set_layer_mesh);
 	ClassDB::bind_method(D_METHOD("set_layer_mesh_material_override", "layer_index", "material"),
 			&VoxelInstancer::set_layer_material_override);
+
 	ClassDB::bind_method(D_METHOD("set_layer_density", "layer_index", "density"), &VoxelInstancer::set_layer_density);
 	ClassDB::bind_method(D_METHOD("set_layer_min_scale", "layer_index", "min_scale"),
 			&VoxelInstancer::set_layer_min_scale);
@@ -726,6 +948,17 @@ void VoxelInstancer::_bind_methods() {
 			&VoxelInstancer::set_layer_min_height);
 	ClassDB::bind_method(D_METHOD("set_layer_max_height", "layer_index", "height"),
 			&VoxelInstancer::set_layer_max_height);
+
+	ClassDB::bind_method(D_METHOD("set_layer_collision_layer", "layer_index", "collision_layer"),
+			&VoxelInstancer::set_layer_collision_layer);
+	ClassDB::bind_method(D_METHOD("set_layer_collision_mask", "layer_index", "collision_mask"),
+			&VoxelInstancer::set_layer_collision_mask);
+	ClassDB::bind_method(D_METHOD("set_layer_collision_shapes", "layer_index", "shape_infos"),
+			&VoxelInstancer::set_layer_collision_shapes);
+
+	ClassDB::bind_method(D_METHOD("set_layer_from_template", "layer_index", "node"),
+			&VoxelInstancer::set_layer_from_template);
+
 	ClassDB::bind_method(D_METHOD("remove_layer", "layer_index"), &VoxelInstancer::remove_layer);
 
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelInstancer::debug_get_block_count);
