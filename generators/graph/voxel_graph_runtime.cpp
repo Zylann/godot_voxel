@@ -863,7 +863,7 @@ float VoxelGraphRuntime::generate_single(const Vector3 &position) {
 
 			case VoxelGeneratorGraph::NODE_CLAMP: {
 				const PNodeClamp &n = read<PNodeClamp>(_program, pc);
-				memory[n.a_out] = clamp(memory[n.a_x], memory[n.p_min], memory[n.p_max]);
+				memory[n.a_out] = clamp(memory[n.a_x], n.p_min, n.p_max);
 			} break;
 
 			case VoxelGeneratorGraph::NODE_REMAP: {
