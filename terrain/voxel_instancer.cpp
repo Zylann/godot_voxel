@@ -79,6 +79,7 @@ void VoxelInstancer::_notification(int p_what) {
 			if (_parent != nullptr) {
 				_parent->set_instancer(nullptr);
 			}
+			_parent = nullptr;
 			break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
