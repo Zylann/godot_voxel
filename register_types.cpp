@@ -2,6 +2,7 @@
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_terrain.h"
 #include "editor/editor_plugin.h"
+#include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "generators/graph/voxel_generator_graph.h"
@@ -31,7 +32,10 @@
 #include "terrain/voxel_terrain.h"
 #include "terrain/voxel_viewer.h"
 #include "util/macros.h"
+#include "util/noise/fast_noise_lite.h"
+#include "util/noise/fast_noise_lite_gradient.h"
 #include "voxel_string_names.h"
+
 #include <core/engine.h>
 
 #ifdef TOOLS_ENABLED
@@ -87,6 +91,8 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelToolTerrain>();
 	ClassDB::register_class<VoxelBlockSerializer>();
 	ClassDB::register_class<VoxelVoxLoader>();
+	ClassDB::register_class<FastNoiseLite>();
+	ClassDB::register_class<FastNoiseLiteGradient>();
 
 	// Meshers
 	ClassDB::register_virtual_class<VoxelMesher>();
@@ -104,6 +110,7 @@ void register_voxel_types() {
 #ifdef TOOLS_ENABLED
 	EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
+	EditorPlugins::add_by_type<FastNoiseLiteEditorPlugin>();
 #endif
 }
 

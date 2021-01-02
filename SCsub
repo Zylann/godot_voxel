@@ -16,6 +16,7 @@ files = [
 	"generators/graph/*.cpp",
 	"generators/simple/*.cpp",
 	"util/*.cpp",
+	"util/noise/*.cpp",
 	"terrain/*.cpp",
 	"server/*.cpp",
 	"math/*.cpp",
@@ -29,6 +30,7 @@ if env["tools"]:
 		"editor/*.cpp",
 		"editor/graph/*.cpp",
 		"editor/terrain/*.cpp",
+		"editor/fast_noise_lite/*.cpp",
 	]
 	files += editor_files
 
