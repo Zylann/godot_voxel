@@ -301,6 +301,11 @@ inline Interval floor(const Interval &i) {
 	return Interval(Math::floor(i.min), Math::floor(i.max));
 }
 
+inline Interval round(const Interval &i) {
+	// Floor is monotonic so I guess we can just do that?
+	return Interval(Math::floor(i.min + 0.5f), Math::floor(i.max + 0.5f));
+}
+
 inline Interval stepify(const Interval &p_value, const Interval &p_step) {
 	// TODO Division by zero returns 0, which is different from Godot's stepify. May have to change that
 	return floor(p_value / p_step + Interval::from_single_value(0.5f)) * p_step;

@@ -117,8 +117,8 @@ void ImageRangeGrid::generate(Image &im) {
 
 static void interval_to_pixels(Interval i, int &out_min, int &out_max, int len) {
 	// Convert range to integer coordinates
-	int imin = static_cast<int>(Math::floor(i.min));
-	int imax = static_cast<int>(Math::ceil(i.max));
+	const int imin = static_cast<int>(Math::floor(i.min));
+	const int imax = static_cast<int>(Math::ceil(i.max));
 
 	// Images are finite, intervals are not.
 	// It's useless to let the range span a potentially infinite area.

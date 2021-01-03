@@ -113,8 +113,6 @@ public:
 
 	// TODO Have a separate cell noise? It outputs multiple things, but we only get one.
 	// To get the others the API forces to calculate it a second time, and it's the most expensive noise...
-	// TODO Bounds access
-	// TODO Interval range analysis
 
 private:
 	static void _bind_methods();

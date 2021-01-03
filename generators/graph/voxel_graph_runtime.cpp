@@ -1,5 +1,6 @@
 #include "voxel_graph_runtime.h"
 #include "../../util/macros.h"
+#include "../../util/noise/fast_noise_lite.h"
 #include "image_range_grid.h"
 #include "range_utility.h"
 #include "voxel_generator_graph.h"
@@ -145,6 +146,7 @@ struct PNodeCurve {
 	uint8_t is_monotonic_increasing;
 	float min_value;
 	float max_value;
+	// TODO Should be `const` but isn't because it auto-bakes, and it's a concern for multithreading
 	Curve *p_curve;
 };
 
@@ -160,6 +162,7 @@ struct PNodeNoise2D {
 	uint16_t a_x;
 	uint16_t a_y;
 	uint16_t a_out;
+	// TODO Should be `const` but isn't because of an oversight in Godot
 	OpenSimplexNoise *p_noise;
 };
 
@@ -168,6 +171,7 @@ struct PNodeNoise3D {
 	uint16_t a_y;
 	uint16_t a_z;
 	uint16_t a_out;
+	// TODO Should be `const` but isn't because of an oversight in Godot
 	OpenSimplexNoise *p_noise;
 };
 
@@ -206,6 +210,7 @@ struct PNodeSdfTorus {
 	uint16_t a_out;
 };
 
+// TODO `filter` param?
 struct PNodeSphereHeightmap {
 	uint16_t a_x;
 	uint16_t a_y;
@@ -217,6 +222,7 @@ struct PNodeSphereHeightmap {
 	float max_height;
 	float norm_x;
 	float norm_y;
+	// TODO Should be `const` but isn't because of `lock()`
 	Image *p_image;
 	const ImageRangeGrid *p_image_range_grid;
 };
@@ -229,6 +235,39 @@ struct PNodeNormalize3D {
 	uint16_t a_out_ny;
 	uint16_t a_out_nz;
 	uint16_t a_out_len;
+};
+
+struct PNodeFastNoise2D {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_out;
+	const FastNoiseLite *p_noise;
+};
+
+struct PNodeFastNoise3D {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_out;
+	const FastNoiseLite *p_noise;
+};
+
+struct PNodeFastNoiseGradient2D {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_out_x;
+	uint16_t a_out_y;
+	const FastNoiseLiteGradient *p_noise;
+};
+
+struct PNodeFastNoiseGradient3D {
+	uint16_t a_x;
+	uint16_t a_y;
+	uint16_t a_z;
+	uint16_t a_out_x;
+	uint16_t a_out_y;
+	uint16_t a_out_z;
+	const FastNoiseLiteGradient *p_noise;
 };
 
 VoxelGraphRuntime::VoxelGraphRuntime() {
@@ -487,6 +526,9 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 							_compilation_result.node_id = node_id;
 							return false;
 						}
+						// Make sure it is baked. We don't want multithreading to bail out because of a write operation
+						// happening in `interpolate_baked`...
+						curve->bake();
 						uint8_t is_monotonic_increasing;
 						const Interval range = get_curve_range(**curve, is_monotonic_increasing);
 						n.is_monotonic_increasing = is_monotonic_increasing;
@@ -558,6 +600,54 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 						n.norm_x = im->get_width();
 						n.norm_y = im->get_height();
 						_image_range_grids.push_back(im_range);
+					} break;
+
+					case VoxelGeneratorGraph::NODE_FAST_NOISE_2D: {
+						PNodeFastNoise2D &n = get_or_create<PNodeFastNoise2D>(program, offset);
+						Ref<FastNoiseLite> noise = node->params[0];
+						if (noise.is_null()) {
+							_compilation_result.success = false;
+							_compilation_result.message = "FastNoiseLite instance is null";
+							_compilation_result.node_id = node_id;
+							return false;
+						}
+						n.p_noise = *noise;
+					} break;
+
+					case VoxelGeneratorGraph::NODE_FAST_NOISE_3D: {
+						PNodeFastNoise3D &n = get_or_create<PNodeFastNoise3D>(program, offset);
+						Ref<FastNoiseLite> noise = node->params[0];
+						if (noise.is_null()) {
+							_compilation_result.success = false;
+							_compilation_result.message = "FastNoiseLite instance is null";
+							_compilation_result.node_id = node_id;
+							return false;
+						}
+						n.p_noise = *noise;
+					} break;
+
+					case VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_2D: {
+						PNodeFastNoiseGradient2D &n = get_or_create<PNodeFastNoiseGradient2D>(program, offset);
+						Ref<FastNoiseLiteGradient> noise = node->params[0];
+						if (noise.is_null()) {
+							_compilation_result.success = false;
+							_compilation_result.message = "FastNoiseLiteGradient instance is null";
+							_compilation_result.node_id = node_id;
+							return false;
+						}
+						n.p_noise = *noise;
+					} break;
+
+					case VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_3D: {
+						PNodeFastNoiseGradient3D &n = get_or_create<PNodeFastNoiseGradient3D>(program, offset);
+						Ref<FastNoiseLiteGradient> noise = node->params[0];
+						if (noise.is_null()) {
+							_compilation_result.success = false;
+							_compilation_result.message = "FastNoiseLiteGradient instance is null";
+							_compilation_result.node_id = node_id;
+							return false;
+						}
+						n.p_noise = *noise;
 					} break;
 
 				} // switch special params
@@ -953,6 +1043,36 @@ float VoxelGraphRuntime::generate_single(const Vector3 &position) {
 				memory[n.a_out_len] = len;
 			} break;
 
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_2D: {
+				const PNodeFastNoise2D &n = read<PNodeFastNoise2D>(_program, pc);
+				memory[n.a_out] = n.p_noise->get_noise_2d(memory[n.a_x], memory[n.a_y]);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_3D: {
+				const PNodeFastNoise3D &n = read<PNodeFastNoise3D>(_program, pc);
+				memory[n.a_out] = n.p_noise->get_noise_3d(memory[n.a_x], memory[n.a_y], memory[n.a_z]);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_2D: {
+				const PNodeFastNoiseGradient2D &n = read<PNodeFastNoiseGradient2D>(_program, pc);
+				float x = memory[n.a_x];
+				float y = memory[n.a_y];
+				n.p_noise->warp_2d(x, y);
+				memory[n.a_out_x] = x;
+				memory[n.a_out_y] = y;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_3D: {
+				const PNodeFastNoiseGradient3D &n = read<PNodeFastNoiseGradient3D>(_program, pc);
+				float x = memory[n.a_x];
+				float y = memory[n.a_y];
+				float z = memory[n.a_z];
+				n.p_noise->warp_3d(x, y, z);
+				memory[n.a_out_x] = x;
+				memory[n.a_out_y] = y;
+				memory[n.a_out_z] = z;
+			} break;
+
 			default:
 				CRASH_NOW();
 				break;
@@ -1283,6 +1403,50 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 				max_memory[n.a_out_ny] = ny.max;
 				max_memory[n.a_out_nz] = nz.max;
 				max_memory[n.a_out_len] = len.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_2D: {
+				const PNodeFastNoise2D &n = read<PNodeFastNoise2D>(_program, pc);
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval r = get_fnl_range_2d(n.p_noise, x, y);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_3D: {
+				const PNodeFastNoise3D &n = read<PNodeFastNoise3D>(_program, pc);
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval z(min_memory[n.a_z], max_memory[n.a_z]);
+				const Interval r = get_fnl_range_3d(n.p_noise, x, y, z);
+				min_memory[n.a_out] = r.min;
+				max_memory[n.a_out] = r.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_2D: {
+				const PNodeFastNoiseGradient2D &n = read<PNodeFastNoiseGradient2D>(_program, pc);
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval2 r = get_fnl_gradient_range_2d(n.p_noise, x, y);
+				min_memory[n.a_out_x] = r.x.min;
+				max_memory[n.a_out_x] = r.x.max;
+				min_memory[n.a_out_y] = r.y.min;
+				max_memory[n.a_out_y] = r.y.max;
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_3D: {
+				const PNodeFastNoiseGradient3D &n = read<PNodeFastNoiseGradient3D>(_program, pc);
+				const Interval x(min_memory[n.a_x], max_memory[n.a_x]);
+				const Interval y(min_memory[n.a_y], max_memory[n.a_y]);
+				const Interval z(min_memory[n.a_z], max_memory[n.a_z]);
+				const Interval3 r = get_fnl_gradient_range_3d(n.p_noise, x, y, z);
+				min_memory[n.a_out_x] = r.x.min;
+				max_memory[n.a_out_x] = r.x.max;
+				min_memory[n.a_out_y] = r.y.min;
+				max_memory[n.a_out_y] = r.y.max;
+				min_memory[n.a_out_z] = r.z.min;
+				max_memory[n.a_out_z] = r.z.max;
 			} break;
 
 			default:

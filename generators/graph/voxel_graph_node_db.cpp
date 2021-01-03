@@ -355,6 +355,47 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.outputs.push_back(Port("nz"));
 		t.outputs.push_back(Port("len"));
 	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_2D];
+		t.name = "FastNoise2D";
+		t.category = CATEGORY_GENERATE;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("noise", "FastNoiseLite"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_3D];
+		t.name = "FastNoise3D";
+		t.category = CATEGORY_GENERATE;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.inputs.push_back(Port("z"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("noise", "FastNoiseLite"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_2D];
+		t.name = "FastNoiseGradient2D";
+		t.category = CATEGORY_GENERATE;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.outputs.push_back(Port("out_x"));
+		t.outputs.push_back(Port("out_y"));
+		t.params.push_back(Param("noise", "FastNoiseLiteGradient"));
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_3D];
+		t.name = "FastNoiseGradient3D";
+		t.category = CATEGORY_GENERATE;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.inputs.push_back(Port("z"));
+		t.outputs.push_back(Port("out_x"));
+		t.outputs.push_back(Port("out_y"));
+		t.outputs.push_back(Port("out_z"));
+		t.params.push_back(Param("noise", "FastNoiseLiteGradient"));
+	}
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];

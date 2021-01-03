@@ -248,6 +248,8 @@ public:
     /// Default: Distance
     /// </remarks>
     void SetCellularDistanceFunction(CellularDistanceFunction cellularDistanceFunction) { mCellularDistanceFunction = cellularDistanceFunction; }
+    // <Zylann> Added
+    CellularDistanceFunction GetCellularDistanceFunction() const { return mCellularDistanceFunction; }
 
     /// <summary>
     /// Sets return type from cellular noise calculations
@@ -256,6 +258,8 @@ public:
     /// Default: EuclideanSq
     /// </remarks>
     void SetCellularReturnType(CellularReturnType cellularReturnType) { mCellularReturnType = cellularReturnType; }
+    // <Zylann> Added
+    CellularReturnType GetCellularReturnType() const { return mCellularReturnType; }
 
     /// <summary>
     /// Sets the maximum distance a cellular point can move from it's grid position
@@ -265,7 +269,8 @@ public:
     /// Note: Setting this higher than 1 will cause artifacts
     /// </remarks> 
     void SetCellularJitter(float cellularJitter) { mCellularJitterModifier = cellularJitter; }
-
+    // <Zylann> Added
+    float GetCellularJitter() const { return mCellularJitterModifier; }
 
     /// <summary>
     /// Sets the warp algorithm when using DomainWarp(...)
