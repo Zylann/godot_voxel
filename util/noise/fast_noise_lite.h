@@ -97,20 +97,22 @@ public:
 	void set_rotation_type_3d(RotationType3D type);
 	RotationType3D get_rotation_type_3d() const;
 
-	inline float get_noise_2d(float x, float y) {
+	inline float get_noise_2d(float x, float y) const {
 		if (_warp_noise.is_valid()) {
 			_warp_noise->warp_2d(x, y);
 		}
 		return _fn.GetNoise(x, y);
 	}
 
-	inline float get_noise_3d(float x, float y, float z) {
+	inline float get_noise_3d(float x, float y, float z) const {
 		if (_warp_noise.is_valid()) {
 			_warp_noise->warp_3d(x, y, z);
 		}
 		return _fn.GetNoise(x, y, z);
 	}
 
+	// TODO Have a separate cell noise? It outputs multiple things, but we only get one.
+	// To get the others the API forces to calculate it a second time, and it's the most expensive noise...
 	// TODO Bounds access
 	// TODO Interval range analysis
 

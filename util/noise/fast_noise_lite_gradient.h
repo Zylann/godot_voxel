@@ -74,11 +74,11 @@ public:
 	// These are inline to ensure inlining actually happens. If they were bound directly to the script API,
 	// it means they would need to have an address, in which case I'm not sure they would be inlined?
 
-	inline void warp_2d(float &x, float &y) {
+	inline void warp_2d(float &x, float &y) const {
 		return _fn.DomainWarp(x, y);
 	}
 
-	inline void warp_3d(float &x, float &y, float &z) {
+	inline void warp_3d(float &x, float &y, float &z) const {
 		return _fn.DomainWarp(x, y, z);
 	}
 
