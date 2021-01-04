@@ -282,8 +282,23 @@ void VoxelGraphRuntime::clear() {
 	_program.clear();
 	_memory.resize(8, 0);
 	_xzy_program_start = 0;
-	_last_x = std::numeric_limits<int>::max();
-	_last_z = std::numeric_limits<int>::max();
+
+	const float fmax = std::numeric_limits<float>::max();
+	_last_x = fmax;
+	_last_z = fmax;
+
+	_xz_last_min = Vector2(fmax, fmax);
+	_xz_last_max = Vector2(fmax, fmax);
+
+	_buffer_size = 0;
+	for (auto it = _buffers.begin(); it != _buffers.end(); ++it) {
+		Buffer &b = *it;
+		if (b.data != nullptr) {
+			memfree(b.data);
+		}
+	}
+	_buffers.clear();
+
 	_output_port_addresses.clear();
 	_sdf_output_address = -1;
 	_compilation_result = CompilationResult();
@@ -391,8 +406,40 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 	//	const uint32_t *order_raw = order.data();
 	//#endif
 
+	_memory.clear();
+
+	struct MemoryHelper {
+		std::vector<float> &value_mem;
+		std::vector<Buffer> &buffer_mem;
+
+		uint16_t add_var() {
+			uint16_t a = value_mem.size();
+			value_mem.push_back(0.f);
+			Buffer b;
+			b.data = nullptr;
+			b.is_constant = false;
+			buffer_mem.push_back(b);
+			return a;
+		}
+
+		uint16_t add_constant(float v) {
+			uint16_t a = value_mem.size();
+			value_mem.push_back(v);
+			Buffer b;
+			b.data = nullptr;
+			b.is_constant = true;
+			b.constant_value = v;
+			buffer_mem.push_back(b);
+			return a;
+		}
+	};
+
+	MemoryHelper mem{ _memory, _buffers };
+
 	// Main inputs X, Y, Z
-	_memory.resize(3);
+	mem.add_var();
+	mem.add_var();
+	mem.add_var();
 
 	std::vector<uint8_t> &program = _program;
 	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
@@ -415,8 +462,7 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 			case VoxelGeneratorGraph::NODE_CONSTANT: {
 				CRASH_COND(type.outputs.size() != 1);
 				CRASH_COND(type.params.size() != 1);
-				const uint16_t a = _memory.size();
-				_memory.push_back(node->params[0].operator float());
+				const uint16_t a = mem.add_constant(node->params[0].operator float());
 				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = a;
 			} break;
 
@@ -465,8 +511,7 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 						// No input, default it
 						CRASH_COND(j >= node->default_inputs.size());
 						float defval = node->default_inputs[j];
-						a = _memory.size();
-						_memory.push_back(defval);
+						a = mem.add_constant(defval);
 
 					} else {
 						ProgramGraph::PortLocation src_port = node->inputs[j].connections[0];
@@ -481,8 +526,7 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 
 				// Add outputs
 				for (size_t j = 0; j < type.outputs.size(); ++j) {
-					const uint16_t a = _memory.size();
-					_memory.push_back(0);
+					const uint16_t a = mem.add_var();
 
 					// This will be used by next nodes
 					const ProgramGraph::PortLocation op{ node_id, static_cast<uint32_t>(j) };
@@ -662,9 +706,9 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 		} // switch type
 	}
 
-	if (_memory.size() < 4) {
-		// In case there is nothing
-		_memory.resize(4, 0);
+	// In case there is nothing
+	while (_memory.size() < 4) {
+		mem.add_var();
 	}
 
 	// Reserve space for range analysis
@@ -675,10 +719,12 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 		_memory[j] = _memory[i];
 	}
 
-	PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, memory size: {1}b")
+	CRASH_COND(_buffers.size() != half_size);
+
+	PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, buffers: {1}")
 						  .format(varray(
 								  SIZE_T_TO_VARIANT(_program.size() * sizeof(float)),
-								  SIZE_T_TO_VARIANT(_memory.size() * sizeof(float)))));
+								  SIZE_T_TO_VARIANT(_buffers.size()))));
 
 	//ERR_FAIL_COND(_sdf_output_address == -1);
 	_compilation_result.success = true;
@@ -780,10 +826,8 @@ inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, I
 	const float ys = skew3(ny);
 	const float uvy = -0.5f * ys + 0.5f;
 	// TODO Not great, but in Godot 4.0 we won't need to lock anymore.
-	im.lock();
 	// TODO Could use bicubic interpolation when the image is sampled at lower resolution than voxels
 	const float h = get_pixel_repeat_linear(im, uvx * norm_x, uvy * norm_y);
-	im.unlock();
 	return sd - m * h;
 }
 
@@ -857,6 +901,7 @@ float VoxelGraphRuntime::generate_single(const Vector3 &position) {
 		const uint8_t opid = _program[pc++];
 
 		switch (opid) {
+#ifdef DEBUG_ENABLED
 			case VoxelGeneratorGraph::NODE_CONSTANT:
 			case VoxelGeneratorGraph::NODE_INPUT_X:
 			case VoxelGeneratorGraph::NODE_INPUT_Y:
@@ -865,6 +910,7 @@ float VoxelGraphRuntime::generate_single(const Vector3 &position) {
 				// Not part of the runtime
 				CRASH_NOW();
 				break;
+#endif
 
 			case VoxelGeneratorGraph::NODE_ADD: {
 				const PNodeBinop &n = read<PNodeBinop>(_program, pc);
@@ -1026,8 +1072,10 @@ float VoxelGraphRuntime::generate_single(const Vector3 &position) {
 
 			case VoxelGeneratorGraph::NODE_SDF_SPHERE_HEIGHTMAP: {
 				const PNodeSphereHeightmap &n = read<PNodeSphereHeightmap>(_program, pc);
+				n.p_image->lock();
 				memory[n.a_out] = sdf_sphere_heightmap(memory[n.a_x], memory[n.a_y], memory[n.a_z],
 						n.p_radius, n.p_factor, *n.p_image, n.min_height, n.max_height, n.norm_x, n.norm_y);
+				n.p_image->unlock();
 			} break;
 
 			case VoxelGeneratorGraph::NODE_NORMALIZE_3D: {
@@ -1085,6 +1133,698 @@ float VoxelGraphRuntime::generate_single(const Vector3 &position) {
 	}
 
 	return memory[_sdf_output_address];
+}
+
+template <typename F>
+inline void do_monop(const std::vector<uint8_t> &program, uint32_t &pc,
+		ArraySlice<VoxelGraphRuntime::Buffer> buffers, uint32_t buffer_size, F f) {
+
+	const PNodeMonop &n = read<PNodeMonop>(program, pc);
+	VoxelGraphRuntime::Buffer &out = buffers[n.a_out];
+	if (out.is_constant) {
+		return;
+	}
+	const VoxelGraphRuntime::Buffer &a = buffers[n.a_in];
+	for (uint32_t i = 0; i < buffer_size; ++i) {
+		out.data[i] = f(a.data[i]);
+	}
+}
+
+template <typename F>
+inline void do_binop(const std::vector<uint8_t> &program, uint32_t &pc,
+		ArraySlice<VoxelGraphRuntime::Buffer> buffers, uint32_t buffer_size, F f) {
+
+	const PNodeBinop &n = read<PNodeBinop>(program, pc);
+	VoxelGraphRuntime::Buffer &out = buffers[n.a_out];
+	if (out.is_constant) {
+		return;
+	}
+
+	const VoxelGraphRuntime::Buffer &a = buffers[n.a_i0];
+	const VoxelGraphRuntime::Buffer &b = buffers[n.a_i1];
+
+	if (a.is_constant || b.is_constant) {
+		float c;
+		const float *v;
+
+		if (a.is_constant) {
+			c = a.constant_value;
+			v = b.data;
+			for (uint32_t i = 0; i < buffer_size; ++i) {
+				out.data[i] = f(c, v[i]);
+			}
+		} else {
+			c = b.constant_value;
+			v = a.data;
+			for (uint32_t i = 0; i < buffer_size; ++i) {
+				out.data[i] = f(v[i], c);
+			}
+		}
+
+	} else {
+		for (uint32_t i = 0; i < buffer_size; ++i) {
+			out.data[i] = f(a.data[i], b.data[i]);
+		}
+	}
+}
+
+inline void do_division(const std::vector<uint8_t> &program, uint32_t pc,
+		ArraySlice<VoxelGraphRuntime::Buffer> buffers, uint32_t buffer_size) {
+
+	const PNodeBinop &n = read<PNodeBinop>(program, pc);
+	VoxelGraphRuntime::Buffer &out = buffers[n.a_out];
+	if (out.is_constant) {
+		return;
+	}
+
+	const VoxelGraphRuntime::Buffer &a = buffers[n.a_i0];
+	const VoxelGraphRuntime::Buffer &b = buffers[n.a_i1];
+
+	if (a.is_constant || b.is_constant) {
+		float c;
+		const float *v;
+
+		if (a.is_constant) {
+			c = a.constant_value;
+			v = b.data;
+			for (uint32_t i = 0; i < buffer_size; ++i) {
+				if (b.data[i] == 0.f) {
+					out.data[i] = 0.f;
+				} else {
+					out.data[i] = c / v[i];
+				}
+			}
+
+		} else {
+			c = b.constant_value;
+			v = a.data;
+			if (c == 0.f) {
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = 0.f;
+				}
+			} else {
+				c = 1.f / c;
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = v[i] * c;
+				}
+			}
+		}
+
+	} else {
+		for (uint32_t i = 0; i < buffer_size; ++i) {
+			if (b.data[i] == 0.f) {
+				out.data[i] = 0.f;
+			} else {
+				out.data[i] = a.data[i] / b.data[i];
+			}
+		}
+	}
+}
+
+void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_size, Vector2 min, Vector2 max,
+		float y, int stride) {
+
+	struct L {
+		static inline void alloc_buffer(Buffer &buffer, int buffer_size) {
+			// TODO Use pool?
+			if (buffer.data == nullptr) {
+				buffer.data = reinterpret_cast<float *>(memrealloc(buffer.data, buffer_size * sizeof(float)));
+			} else {
+				buffer.data = reinterpret_cast<float *>(memalloc(buffer_size * sizeof(float)));
+			}
+		}
+	};
+
+#ifdef DEBUG_ENABLED
+	CRASH_COND(_buffers.size() == 0);
+	CRASH_COND(_buffers.size() != _memory.size() / 2);
+#endif
+#ifdef TOOLS_ENABLED
+	ERR_FAIL_COND_MSG(!has_output(), "The graph has no SDF output");
+#endif
+
+	ArraySlice<Buffer> buffers(_buffers, 0, _buffers.size());
+	const uint32_t buffer_size = dst_size.x * dst_size.y;
+	const bool buffer_size_changed = buffer_size != _buffer_size;
+	_buffer_size = buffer_size;
+
+	// Input buffers
+	{
+		// TODO When not using range analysis, it should be possible to fill the input buffers with whatever we want.
+		// So eventually we should put these buffers out
+
+		// TODO User-provided buffers may not need to be owned, or even recomputed
+
+		Buffer &x_buffer = buffers[0];
+		Buffer &y_buffer = buffers[1];
+		Buffer &z_buffer = buffers[2];
+
+		x_buffer.is_constant = false;
+		z_buffer.is_constant = false;
+
+		// Y is fixed
+		y_buffer.is_constant = true;
+		y_buffer.constant_value = y;
+
+		if (buffer_size_changed) {
+			L::alloc_buffer(x_buffer, buffer_size);
+			L::alloc_buffer(y_buffer, buffer_size);
+			L::alloc_buffer(z_buffer, buffer_size);
+		}
+
+		for (auto i = 0; i < buffer_size; ++i) {
+			y_buffer.data[i] = y;
+		}
+
+		int i = 0;
+
+		if (stride == 1) {
+			for (int zi = 0; zi < dst_size.y; ++zi) {
+				for (int xi = 0; xi < dst_size.x; ++xi) {
+					x_buffer.data[i] = xi;
+					z_buffer.data[i] = zi;
+					++i;
+				}
+			}
+
+		} else if (stride > 0) {
+			for (int zi = 0; zi < dst_size.y; ++zi) {
+				const float z = min.y + zi * stride;
+				for (int xi = 0; xi < dst_size.x; ++xi) {
+					x_buffer.data[i] = min.x + xi * stride;
+					z_buffer.data[i] = z;
+					++i;
+				}
+			}
+
+		} else {
+			// Slowest generic method
+			for (int zi = 0; zi < dst_size.y; ++zi) {
+				float zt = static_cast<float>(zi) / static_cast<float>(dst_size.y);
+				float z = Math::lerp(min.y, max.y, zt);
+				for (int xi = 0; xi < dst_size.x; ++xi) {
+					float xt = static_cast<float>(xi) / static_cast<float>(dst_size.x);
+					x_buffer.data[i] = Math::lerp(min.x, max.x, xt);
+					z_buffer.data[i] = z;
+					++i;
+				}
+			}
+		}
+	}
+
+	// Prepare buffers
+	{
+		if (buffer_size_changed) {
+			// We ignore input buffers, these are supposed to be setup already
+			for (size_t i = 3; i < _buffers.size(); ++i) {
+				Buffer &buffer = _buffers[i];
+
+				L::alloc_buffer(buffer, buffer_size);
+
+				if (buffer.is_constant) {
+					for (auto i = 0; i < buffer_size; ++i) {
+						buffer.data[i] = buffer.constant_value;
+					}
+				}
+			}
+		}
+
+		/*if (use_range_analysis) {
+			// TODO To be really worth it, we may need a runtime graph traversal pass,
+			// where we build an execution map of nodes that are worthy 🔨
+
+			const float ra_min = _memory[i];
+			const float ra_max = _memory[i + _memory.size() / 2];
+
+			buffer.is_constant = (ra_min == ra_max);
+			if (buffer.is_constant) {
+				buffer.constant_value = ra_min;
+			}
+		}*/
+	}
+
+	uint32_t pc;
+	// Note, when sampling beyond negative or positive 16,777,216, this optimization may cease to work
+	if (_xz_last_min == min && _xz_last_max == max && !buffer_size_changed) {
+		pc = _xzy_program_start;
+	} else {
+		pc = 0;
+	}
+
+	_xz_last_min = min;
+	_xz_last_max = max;
+
+	// STL is unreadable on debug builds of Godot, because _DEBUG isn't defined
+	//#ifdef DEBUG_ENABLED
+	//	const size_t memory_size = memory.size();
+	//	const size_t program_size = _program.size();
+	//	const float *memory_raw = memory.data();
+	//	const uint8_t *program_raw = (const uint8_t *)_program.data();
+	//#endif
+
+	// TODO Most operations need SIMD support
+	// TODO This mode may be better implemented with function pointers
+
+	while (pc < _program.size()) {
+		const uint8_t opid = _program[pc++];
+
+		switch (opid) {
+#ifdef DEBUG_ENABLED
+			case VoxelGeneratorGraph::NODE_CONSTANT:
+			case VoxelGeneratorGraph::NODE_INPUT_X:
+			case VoxelGeneratorGraph::NODE_INPUT_Y:
+			case VoxelGeneratorGraph::NODE_INPUT_Z:
+			case VoxelGeneratorGraph::NODE_OUTPUT_SDF:
+				// Not part of the runtime
+				CRASH_NOW();
+				break;
+#endif
+
+			case VoxelGeneratorGraph::NODE_ADD: {
+				do_binop(_program, pc, buffers, buffer_size, [](float a, float b) { return a + b; });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SUBTRACT: {
+				do_binop(_program, pc, buffers, buffer_size, [](float a, float b) { return a - b; });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_MULTIPLY: {
+				do_binop(_program, pc, buffers, buffer_size, [](float a, float b) { return a * b; });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_DIVIDE: {
+				do_division(_program, pc, buffers, buffer_size);
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SIN: {
+				do_monop(_program, pc, buffers, buffer_size, [](float a) { return Math::sin(a); });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FLOOR: {
+				do_monop(_program, pc, buffers, buffer_size, [](float a) { return Math::floor(a); });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_ABS: {
+				do_monop(_program, pc, buffers, buffer_size, [](float a) { return Math::abs(a); });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SQRT: {
+				do_monop(_program, pc, buffers, buffer_size, [](float a) { return Math::sqrt(a); });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FRACT: {
+				do_monop(_program, pc, buffers, buffer_size, [](float a) { return a - Math::floor(a); });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_STEPIFY: {
+				do_binop(_program, pc, buffers, buffer_size, [](float a, float b) { return Math::stepify(a, b); });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_WRAP: {
+				do_binop(_program, pc, buffers, buffer_size, [](float a, float b) { return wrapf(a, b); });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_MIN: {
+				do_binop(_program, pc, buffers, buffer_size, [](float a, float b) { return ::min(a, b); });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_MAX: {
+				do_binop(_program, pc, buffers, buffer_size, [](float a, float b) { return ::max(a, b); });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_DISTANCE_2D: {
+				const PNodeDistance2D &n = read<PNodeDistance2D>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &x0 = buffers[n.a_x0];
+				const Buffer &y0 = buffers[n.a_y0];
+				const Buffer &x1 = buffers[n.a_x1];
+				const Buffer &y1 = buffers[n.a_y1];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = Math::sqrt(
+							squared(x1.data[i] - x0.data[i]) +
+							squared(y1.data[i] - y0.data[i]));
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_DISTANCE_3D: {
+				const PNodeDistance3D &n = read<PNodeDistance3D>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &x0 = buffers[n.a_x0];
+				const Buffer &y0 = buffers[n.a_y0];
+				const Buffer &z0 = buffers[n.a_z0];
+				const Buffer &x1 = buffers[n.a_x1];
+				const Buffer &y1 = buffers[n.a_y1];
+				const Buffer &z1 = buffers[n.a_z1];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = Math::sqrt(
+							squared(x1.data[i] - x0.data[i]) +
+							squared(y1.data[i] - y0.data[i]) +
+							squared(z1.data[i] - z0.data[i]));
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_MIX: {
+				const PNodeMix &n = read<PNodeMix>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &a = buffers[n.a_i0];
+				const Buffer &b = buffers[n.a_i1];
+				const Buffer &r = buffers[n.a_ratio];
+				if (a.is_constant) {
+					const float ca = a.constant_value;
+					if (b.is_constant) {
+						const float cb = b.constant_value;
+						for (uint32_t i = 0; i < buffer_size; ++i) {
+							out.data[i] = Math::lerp(ca, cb, r.data[i]);
+						}
+					} else {
+						for (uint32_t i = 0; i < buffer_size; ++i) {
+							out.data[i] = Math::lerp(ca, b.data[i], r.data[i]);
+						}
+					}
+				} else if (b.is_constant) {
+					const float cb = b.constant_value;
+					for (uint32_t i = 0; i < buffer_size; ++i) {
+						out.data[i] = Math::lerp(a.data[i], cb, r.data[i]);
+					}
+				} else {
+					for (uint32_t i = 0; i < buffer_size; ++i) {
+						out.data[i] = Math::lerp(a.data[i], b.data[i], r.data[i]);
+					}
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_CLAMP: {
+				const PNodeClamp &n = read<PNodeClamp>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &a = buffers[n.a_x];
+				const float cmin = n.p_min;
+				const float cmax = n.p_max;
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = clamp(a.data[i], cmin, cmax);
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_REMAP: {
+				const PNodeRemap &n = read<PNodeRemap>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &a = buffers[n.a_x];
+				const float c0 = n.p_c0;
+				const float m0 = n.p_m0;
+				const float c1 = n.p_c1;
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = (a.data[i] - c0) * m0 + c1;
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SMOOTHSTEP: {
+				const PNodeSmoothstep &n = read<PNodeSmoothstep>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &a = buffers[n.a_x];
+				const float edge0 = n.p_edge0;
+				const float edge1 = n.p_edge1;
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = smoothstep(edge0, edge1, a.data[i]);
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_CURVE: {
+				const PNodeCurve &n = read<PNodeCurve>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &a = buffers[n.a_in];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = n.p_curve->interpolate_baked(a.data[i]);
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SELECT: {
+				const PNodeSelect &n = read<PNodeSelect>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &a = buffers[n.a_i0];
+				const Buffer &b = buffers[n.a_i1];
+				const Buffer &threshold = buffers[n.a_threshold];
+				const Buffer &t = buffers[n.a_t];
+				if (t.is_constant && threshold.is_constant) {
+					const float *src = t.constant_value < threshold.constant_value ? a.data : b.data;
+					for (uint32_t i = 0; i < buffer_size; ++i) {
+						memcpy(out.data, src, buffer_size * sizeof(float));
+					}
+				} else if (a.is_constant && b.is_constant && a.constant_value == b.constant_value) {
+					for (uint32_t i = 0; i < buffer_size; ++i) {
+						memcpy(out.data, a.data, buffer_size * sizeof(float));
+					}
+				} else {
+					for (uint32_t i = 0; i < buffer_size; ++i) {
+						out.data[i] = select(a.data[i], b.data[i], threshold.data[i], t.data[i]);
+					}
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_NOISE_2D: {
+				const PNodeNoise2D &n = read<PNodeNoise2D>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &x = buffers[n.a_x];
+				const Buffer &y = buffers[n.a_y];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = n.p_noise->get_noise_2d(x.data[i], y.data[i]);
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_NOISE_3D: {
+				const PNodeNoise3D &n = read<PNodeNoise3D>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &x = buffers[n.a_x];
+				const Buffer &y = buffers[n.a_y];
+				const Buffer &z = buffers[n.a_z];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = n.p_noise->get_noise_3d(x.data[i], y.data[i], z.data[i]);
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_IMAGE_2D: {
+				const PNodeImage2D &n = read<PNodeImage2D>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				Image &im = *n.p_image;
+				im.lock();
+				// TODO Allow to use bilinear filtering?
+				const Buffer &x = buffers[n.a_x];
+				const Buffer &y = buffers[n.a_y];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = get_pixel_repeat(im, x.data[i], y.data[i]);
+				}
+				im.unlock();
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_PLANE: {
+				do_binop(_program, pc, buffers, buffer_size, [](float a, float b) { return a - b; });
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_BOX: {
+				const PNodeSdfBox &n = read<PNodeSdfBox>(_program, pc);
+				// TODO We should really move origin away, or make it params
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &x = buffers[n.a_x];
+				const Buffer &y = buffers[n.a_y];
+				const Buffer &z = buffers[n.a_z];
+				const Buffer &sx = buffers[n.a_sx];
+				const Buffer &sy = buffers[n.a_sy];
+				const Buffer &sz = buffers[n.a_sz];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = sdf_box(
+							Vector3(x.data[i], y.data[i], z.data[i]),
+							Vector3(sx.data[i], sy.data[i], sz.data[i]));
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_SPHERE: {
+				const PNodeSdfSphere &n = read<PNodeSdfSphere>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &x = buffers[n.a_x];
+				const Buffer &y = buffers[n.a_y];
+				const Buffer &z = buffers[n.a_z];
+				// TODO Move radius to param?
+				const Buffer &r = buffers[n.a_r];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					const Vector3 pos(x.data[i], y.data[i], z.data[i]);
+					out.data[i] = pos.length() - r.data[i];
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_TORUS: {
+				const PNodeSdfTorus &n = read<PNodeSdfTorus>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &x = buffers[n.a_x];
+				const Buffer &y = buffers[n.a_y];
+				const Buffer &z = buffers[n.a_z];
+				// TODO Move radii to param?
+				const Buffer &r0 = buffers[n.a_r0];
+				const Buffer &r1 = buffers[n.a_r1];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					const Vector3 pos(x.data[i], y.data[i], z.data[i]);
+					out.data[n.a_out] = sdf_torus(pos, r0.data[i], r1.data[i]);
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_SDF_SPHERE_HEIGHTMAP: {
+				const PNodeSphereHeightmap &n = read<PNodeSphereHeightmap>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &x = buffers[n.a_x];
+				const Buffer &y = buffers[n.a_y];
+				const Buffer &z = buffers[n.a_z];
+				n.p_image->lock();
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i],
+							n.p_radius, n.p_factor, *n.p_image, n.min_height, n.max_height, n.norm_x, n.norm_y);
+				}
+				n.p_image->unlock();
+			} break;
+
+			case VoxelGeneratorGraph::NODE_NORMALIZE_3D: {
+				const PNodeNormalize3D n = read<PNodeNormalize3D>(_program, pc);
+				Buffer &out_nx = buffers[n.a_out_nx];
+				Buffer &out_ny = buffers[n.a_out_ny];
+				Buffer &out_nz = buffers[n.a_out_nz];
+				Buffer &out_len = buffers[n.a_out_len];
+				const Buffer &xb = buffers[n.a_x];
+				const Buffer &yb = buffers[n.a_y];
+				const Buffer &zb = buffers[n.a_z];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					const float x = xb.data[i];
+					const float y = yb.data[i];
+					const float z = zb.data[i];
+					float len = Math::sqrt(squared(x) + squared(y) + squared(z));
+					out_nx.data[i] = x / len;
+					out_ny.data[i] = y / len;
+					out_nz.data[i] = z / len;
+					out_len.data[i] = len;
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_2D: {
+				const PNodeFastNoise2D &n = read<PNodeFastNoise2D>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &x = buffers[n.a_x];
+				const Buffer &y = buffers[n.a_y];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = n.p_noise->get_noise_2d(x.data[i], y.data[i]);
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_3D: {
+				const PNodeFastNoise3D &n = read<PNodeFastNoise3D>(_program, pc);
+				Buffer &out = buffers[n.a_out];
+				if (out.is_constant) {
+					return;
+				}
+				const Buffer &x = buffers[n.a_x];
+				const Buffer &y = buffers[n.a_y];
+				const Buffer &z = buffers[n.a_z];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					out.data[i] = n.p_noise->get_noise_3d(x.data[i], y.data[i], z.data[i]);
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_2D: {
+				const PNodeFastNoiseGradient2D &n = read<PNodeFastNoiseGradient2D>(_program, pc);
+				Buffer &out_x = buffers[n.a_out_x];
+				Buffer &out_y = buffers[n.a_out_y];
+				const Buffer &xb = buffers[n.a_x];
+				const Buffer &yb = buffers[n.a_y];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					float x = xb.data[i];
+					float y = yb.data[i];
+					n.p_noise->warp_2d(x, y);
+					out_x.data[i] = x;
+					out_y.data[i] = y;
+				}
+			} break;
+
+			case VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_3D: {
+				const PNodeFastNoiseGradient3D &n = read<PNodeFastNoiseGradient3D>(_program, pc);
+				Buffer &out_x = buffers[n.a_out_x];
+				Buffer &out_y = buffers[n.a_out_y];
+				Buffer &out_z = buffers[n.a_out_z];
+				const Buffer &xb = buffers[n.a_x];
+				const Buffer &yb = buffers[n.a_y];
+				const Buffer &zb = buffers[n.a_z];
+				for (uint32_t i = 0; i < buffer_size; ++i) {
+					float x = xb.data[i];
+					float y = yb.data[i];
+					float z = zb.data[i];
+					n.p_noise->warp_3d(x, y, z);
+					out_x.data[i] = x;
+					out_y.data[i] = y;
+					out_z.data[i] = z;
+				}
+			} break;
+
+			default:
+				CRASH_NOW();
+				break;
+		}
+
+#ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
+		// If this fails, the program is ill-formed
+		CRASH_COND(read<uint16_t>(_program, pc) != VOXEL_DEBUG_GRAPH_PROG_SENTINEL);
+#endif
+	}
+
+	// Populate output buffers
+	Buffer &sdf_output_buffer = buffers[_sdf_output_address];
+	if (sdf_output_buffer.is_constant) {
+		for (int i = 0; i < buffer_size; ++i) {
+			dst[i] = sdf_output_buffer.constant_value;
+		}
+	} else {
+		memcpy(dst.data(), sdf_output_buffer.data, buffer_size * sizeof(float));
+	}
 }
 
 Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {

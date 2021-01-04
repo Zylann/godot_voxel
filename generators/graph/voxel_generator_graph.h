@@ -124,7 +124,7 @@ public:
 
 	// Debug
 
-	float debug_measure_microseconds_per_voxel();
+	float debug_measure_microseconds_per_voxel(bool singular);
 	void debug_load_waves_preset();
 
 private:

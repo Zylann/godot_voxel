@@ -627,22 +627,51 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 
 // Debug land
 
-float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel() {
-	// Need to query varying positions to avoid some optimizations to kick in
-	FixedArray<Vector3i, 2> random_positions;
-	random_positions[0] = Vector3i(1, 1, 1);
-	random_positions[1] = Vector3i(2, 2, 2);
-
-	const uint32_t iterations = 1000000;
-	ProfilingClock profiling_clock;
-	profiling_clock.restart();
-
-	for (uint32_t i = 0; i < iterations; ++i) {
-		generate_single(random_positions[i & 1]);
+float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
+	if (!_runtime.has_output()) {
+		return -1;
 	}
 
-	uint64_t ius = profiling_clock.restart();
-	float us = static_cast<double>(ius) / iterations;
+	const uint32_t cube_size = 100;
+	const uint32_t voxel_count = cube_size * cube_size * cube_size;
+	ProfilingClock profiling_clock;
+	uint64_t elapsed_us;
+
+	if (singular) {
+		profiling_clock.restart();
+
+		// Note: intentionally iterating in XYZ instead of XZY to avoid XZ optimization to kick in
+		for (uint32_t z = 0; z < cube_size; ++z) {
+			for (uint32_t y = 0; y < cube_size; ++y) {
+				for (uint32_t x = 0; x < cube_size; ++x) {
+					_runtime.generate_single(Vector3i(x, y, z).to_vec3());
+				}
+			}
+		}
+
+		elapsed_us = profiling_clock.restart();
+
+	} else {
+		std::vector<float> dst;
+		dst.resize(cube_size * cube_size * cube_size);
+		const Vector2i slice_size_v(cube_size, cube_size);
+		const uint32_t slice_size = cube_size * cube_size;
+
+		profiling_clock.restart();
+
+		for (uint32_t y = 0; y < cube_size; ++y) {
+			// Note: intentionally moving slice position in X to avoid axis optimization to kick in
+			const Vector2 min_pos_2d(y, 0);
+			const Vector2 max_pos_2d(cube_size + y, cube_size);
+			_runtime.generate_xz_slice(
+					ArraySlice<float>(dst, y * slice_size, (y + 1) * slice_size),
+					slice_size_v, min_pos_2d, max_pos_2d, y, 1);
+		}
+
+		elapsed_us = profiling_clock.restart();
+	}
+
+	float us = static_cast<double>(elapsed_us) / voxel_count;
 	// print_line(String("Time: {0}us").format(varray(us)));
 	return us;
 }
@@ -910,7 +939,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 			&VoxelGeneratorGraph::bake_sphere_normalmap);
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &VoxelGeneratorGraph::debug_load_waves_preset);
-	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel"),
+	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel", "use_singular_queries"),
 			&VoxelGeneratorGraph::debug_measure_microseconds_per_voxel);
 
 	ClassDB::bind_method(D_METHOD("_set_graph_data", "data"), &VoxelGeneratorGraph::load_graph_from_variant_data);

@@ -624,7 +624,7 @@ void VoxelGraphEditor::_on_profile_button_pressed() {
 	if (_graph.is_null()) {
 		return;
 	}
-	const float us = _graph->debug_measure_microseconds_per_voxel();
+	const float us = _graph->debug_measure_microseconds_per_voxel(false);
 	_profile_label->set_text(String("{0} microseconds per voxel").format(varray(us)));
 }
 
