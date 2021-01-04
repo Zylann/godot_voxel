@@ -17,6 +17,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Voxel nodes can be moved, scaled and rotated
     - Voxel nodes can be limited to specific bounds, rather than being infinitely paging volumes (multiples of block size).
     - Meshers are now resources so you can choose and configure them per terrain
+    - Added [FastNoiseLite](https://github.com/Auburn/FastNoise) for a wider variety of noises
 
 - Editor
     - Streaming/LOD can be set to follow the editor camera instead of being centered on world origin. Use with caution, fast big movements and zooms can cause lag
@@ -50,8 +51,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelLodTerrain` does not entirely support `VoxelViewer`, but a refactoring pass is planned for it.
 
 
-`godot3.2.3` - 08/09/2020
----------------------------
+08/09/2020 - `godot3.2.3`
+--------------------------
 
 - General
     - Added per-voxel and per-block metadata, which are saved by file streams along with voxel data
@@ -79,8 +80,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Fixed `VoxelTool` truncating 64-bit values
 
 
-(no branch) 27/03/2020 Tokisan Games binary version
-------------------------------------------------------
+27/03/2020 - (no branch) - Tokisan Games binary version
+--------------------------------------------------------
 
 - General
     - Optimized `VoxelBuffer` memory allocation with a pool (best when sizes are often the same)
@@ -117,8 +118,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Replaced `VoxelGeneratorTest` by `VoxelGeneratorWaves` and `VoxelGeneratorFlat`
 
 
-`godot3.1` - 03/10/2019
---------------------------
+03/10/2019 - `godot3.1`
+------------------------
 
 Initial reference version.
 
