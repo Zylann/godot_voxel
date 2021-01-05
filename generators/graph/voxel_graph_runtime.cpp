@@ -1,6 +1,7 @@
 #include "voxel_graph_runtime.h"
 #include "../../util/macros.h"
 #include "../../util/noise/fast_noise_lite.h"
+#include "../../util/profiling.h"
 #include "image_range_grid.h"
 #include "range_utility.h"
 #include "voxel_generator_graph.h"
@@ -1255,6 +1256,8 @@ void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_si
 		}
 	};
 
+	VOXEL_PROFILE_SCOPE();
+
 #ifdef DEBUG_ENABLED
 	CRASH_COND(_buffers.size() == 0);
 	CRASH_COND(_buffers.size() != _memory.size() / 2);
@@ -1300,9 +1303,10 @@ void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_si
 
 		if (stride == 1) {
 			for (int zi = 0; zi < dst_size.y; ++zi) {
+				const float z = min.y + zi;
 				for (int xi = 0; xi < dst_size.x; ++xi) {
-					x_buffer.data[i] = xi;
-					z_buffer.data[i] = zi;
+					x_buffer.data[i] = min.x + xi;
+					z_buffer.data[i] = z;
 					++i;
 				}
 			}
