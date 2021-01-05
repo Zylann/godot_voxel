@@ -1,4 +1,5 @@
 #include "voxel_generator_graph.h"
+#include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "voxel_graph_node_db.h"
 
@@ -261,6 +262,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 			break;
 	}
 
+	// TODO This may be shared across the module
 	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
 	// so we must scale the values to make better use of the offered resolution
 	float sdf_scale;
@@ -286,7 +288,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 	// TODO Add subdivide option so we can fine tune the analysis
 
-	Interval range = analyze_range(gmin, gmax) * sdf_scale;
+	const Interval range = _runtime.analyze_range(gmin, gmax) * sdf_scale;
 	const float clip_threshold = sdf_scale * 0.2f;
 	if (range.min > clip_threshold && range.max > clip_threshold) {
 		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 1.f);
@@ -305,14 +307,23 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 	const int stride = 1 << input.lod;
 
-	Vector3i rpos;
-	Vector3i gpos;
-	// Loads of possible optimization from there
+	const Vector2i slice_size(bs.x, bs.z);
+	_slice_cache.resize(slice_size.x * slice_size.y);
+	ArraySlice<float> slice_cache(_slice_cache, 0, _slice_cache.size());
+	const Vector2 min_pos_xz(gmin.x, gmin.z);
+	const Vector2 max_pos_xz(gmax.x, gmax.z);
 
-	for (rpos.z = rmin.z, gpos.z = gmin.z; rpos.z < rmax.z; ++rpos.z, gpos.z += stride) {
-		for (rpos.x = rmin.x, gpos.x = gmin.x; rpos.x < rmax.x; ++rpos.x, gpos.x += stride) {
-			for (rpos.y = rmin.y, gpos.y = gmin.y; rpos.y < rmax.y; ++rpos.y, gpos.y += stride) {
-				out_buffer.set_voxel_f(sdf_scale * generate_single(gpos), rpos.x, rpos.y, rpos.z, channel);
+	for (int ry = rmin.y, gy = gmin.y; ry < rmax.y; ++ry, gy += stride) {
+		VOXEL_PROFILE_SCOPE();
+
+		_runtime.generate_xz_slice(slice_cache, slice_size, min_pos_xz, max_pos_xz, gy, stride);
+
+		// TODO Flatten this further
+		int i = 0;
+		for (int rz = rmin.z; rz < rmax.z; ++rz) {
+			for (int rx = rmin.x; rx < rmax.x; ++rx) {
+				out_buffer.set_voxel_f(sdf_scale * slice_cache[i], rx, ry, rz, channel);
+				++i;
 			}
 		}
 	}
@@ -349,7 +360,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 		for (int ix = 0; ix < im->get_width(); ++ix) {
 			const Vector2 uv = suv * Vector2(ix, iy);
 			const Vector3 pos = get_3d_pos_from_panorama_uv(uv) * ref_radius;
-			// TODO Need float position input
+			// TODO Need to convert this to buffers instead of using single queries
 			const float sdf = _runtime.generate_single(pos);
 			const float nh = (-sdf - sdf_min) * nr;
 			im->set_pixel(ix, iy, Color(nh, nh, nh));
@@ -397,6 +408,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 			const Vector3 np_ny = get_3d_pos_from_panorama_uv(uv - normal_step_y) * ref_radius;
 			const Vector3 np_py = get_3d_pos_from_panorama_uv(uv + normal_step_y) * ref_radius;
 
+			// TODO Need to convert this to buffers instead of using single queries
 			const float h_nx = -_runtime.generate_single(np_nx);
 			const float h_px = -_runtime.generate_single(np_px);
 			const float h_ny = -_runtime.generate_single(np_ny);
