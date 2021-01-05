@@ -9,9 +9,6 @@ const char *VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED = "node_name_changed";
 
 VoxelGeneratorGraph::VoxelGeneratorGraph() {
 	clear();
-	clear_bounds();
-	_bounds.min = Vector3i(-128);
-	_bounds.max = Vector3i(128);
 }
 
 VoxelGeneratorGraph::~VoxelGeneratorGraph() {
@@ -130,23 +127,10 @@ void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index,
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_INDEX(param_index, node->params.size());
 
-	// TODO Changing sub-resources won't trigger a change signal
-	// It's actually very annoying to setup and keep correct. Needs to be done cautiously.
-
-	// Ref<Resource> res = node->params[param_index];
-	// if (res.is_valid()) {
-	// 	res->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_subresource_changed");
-	// }
-
 	if (node->params[param_index] != value) {
 		node->params[param_index] = value;
 		emit_changed();
 	}
-
-	// res = value;
-	// if (res.is_valid()) {
-	// 	res->connect(CoreStringNames::get_singleton()->changed, this, "_on_subresource_changed");
-	// }
 }
 
 Variant VoxelGeneratorGraph::get_node_param(uint32_t node_id, uint32_t param_index) const {
@@ -184,8 +168,6 @@ void VoxelGeneratorGraph::set_node_gui_position(uint32_t node_id, Vector2 pos) {
 	ERR_FAIL_COND(node == nullptr);
 	if (node->gui_position != pos) {
 		node->gui_position = pos;
-		// Moving nodes around doesn't functionally change the graph
-		//emit_changed();
 	}
 }
 
@@ -219,48 +201,6 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const Vector3i rmax = bs;
 	const Vector3i gmin = origin;
 	const Vector3i gmax = origin + (bs << input.lod);
-
-	switch (_bounds.type) {
-		case BOUNDS_NONE:
-			break;
-
-		case BOUNDS_VERTICAL:
-			if (origin.y > _bounds.max.y) {
-				out_buffer.clear_channel(VoxelBuffer::CHANNEL_TYPE, _bounds.type_value1);
-				out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, _bounds.sdf_value1);
-				return;
-
-			} else if (origin.y + (bs.y << input.lod) < _bounds.min.y) {
-				out_buffer.clear_channel(VoxelBuffer::CHANNEL_TYPE, _bounds.type_value0);
-				out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, _bounds.sdf_value0);
-				return;
-			}
-			// TODO Not sure if it's actually worth doing this? Here we can even have bounds in the same block
-			//
-			//			rmax.y = clamp((_bounds.max.y - origin.y) >> input.lod, 0, bs.y);
-			//			rmin.y = clamp((_bounds.min.y - origin.y) >> input.lod, 0, bs.y);
-			//			gmin += rmin << input.lod;
-			break;
-
-		case BOUNDS_BOX:
-			if (!Rect3i::from_min_max(_bounds.min, _bounds.max).intersects(Rect3i(origin, bs << input.lod))) {
-				out_buffer.clear_channel(VoxelBuffer::CHANNEL_TYPE, _bounds.type_value0);
-				out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, _bounds.sdf_value0);
-				return;
-			}
-			//			rmin.x = clamp((_bounds.min.x - origin.x) >> input.lod, 0, bs.x);
-			//			rmin.y = clamp((_bounds.min.y - origin.y) >> input.lod, 0, bs.y);
-			//			rmin.z = clamp((_bounds.min.z - origin.z) >> input.lod, 0, bs.z);
-			//			rmax.x = clamp((_bounds.max.x - origin.x) >> input.lod, 0, bs.x);
-			//			rmax.y = clamp((_bounds.max.y - origin.y) >> input.lod, 0, bs.y);
-			//			rmax.z = clamp((_bounds.max.z - origin.z) >> input.lod, 0, bs.z);
-			//			gmin += rmin << input.lod;
-			break;
-
-		default:
-			CRASH_NOW();
-			break;
-	}
 
 	// TODO This may be shared across the module
 	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
@@ -431,37 +371,6 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 		return 1.f;
 	}
 
-	switch (_bounds.type) {
-		case BOUNDS_NONE:
-			break;
-
-		case BOUNDS_VERTICAL:
-			if (position.y >= _bounds.max.y) {
-				return _bounds.sdf_value1;
-			}
-			if (position.y < _bounds.min.y) {
-				return _bounds.sdf_value0;
-			}
-			break;
-
-		case BOUNDS_BOX:
-			if (
-					position.x < _bounds.min.x ||
-					position.y < _bounds.min.y ||
-					position.z < _bounds.min.z ||
-					position.x >= _bounds.max.x ||
-					position.y >= _bounds.max.y ||
-					position.z >= _bounds.max.z) {
-
-				return _bounds.sdf_value0;
-			}
-			break;
-
-		default:
-			CRASH_NOW();
-			break;
-	}
-
 	return _runtime.generate_single(position.to_vec3());
 }
 
@@ -469,38 +378,11 @@ Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) 
 	return _runtime.analyze_range(min_pos, max_pos);
 }
 
-void VoxelGeneratorGraph::clear_bounds() {
-	_bounds.type = BOUNDS_NONE;
-}
-
-void VoxelGeneratorGraph::set_vertical_bounds(int min_y, int max_y,
-		float bottom_sdf_value, float top_sdf_value,
-		uint64_t bottom_type_value, uint64_t top_type_value) {
-
-	_bounds.type = BOUNDS_VERTICAL;
-	_bounds.min = Vector3i(0, min_y, 0);
-	_bounds.max = Vector3i(0, max_y, 0);
-	_bounds.sdf_value0 = bottom_sdf_value;
-	_bounds.sdf_value1 = top_sdf_value;
-	_bounds.type_value0 = bottom_type_value;
-	_bounds.type_value1 = top_type_value;
-}
-
-void VoxelGeneratorGraph::set_box_bounds(Vector3i min, Vector3i max, float sdf_value, uint64_t type_value) {
-	Vector3i::sort_min_max(min, max);
-	_bounds.type = BOUNDS_BOX;
-	_bounds.min = min;
-	_bounds.max = max;
-	_bounds.sdf_value0 = sdf_value;
-	_bounds.sdf_value1 = type_value;
-}
-
 Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 	Ref<VoxelGeneratorGraph> d;
 	d.instance();
 
 	d->_channel = _channel;
-	d->_bounds = _bounds;
 	d->_graph.copy_from(_graph, p_subresources);
 	// Program not copied, as it may contain pointers to the resources we are duplicating
 
@@ -735,139 +617,6 @@ void VoxelGeneratorGraph::debug_load_waves_preset() {
 }
 
 // Binding land
-
-bool VoxelGeneratorGraph::_set(const StringName &p_name, const Variant &p_value) {
-	const String name = p_name;
-
-	struct L {
-		inline static bool set_xyz(char c, Vector3i &p, int v) {
-			int i = c - 'x';
-			ERR_FAIL_COND_V(i < 0 || (unsigned int)i >= Vector3i::AXIS_COUNT, false);
-			p[i] = v;
-			return true;
-		}
-	};
-
-	if (name.begins_with("bounds/")) {
-		const String sub = name.right(7);
-
-		if (sub == "type") {
-			const BoundsType type = (BoundsType)(p_value.operator int());
-			ERR_FAIL_INDEX_V(type, BOUNDS_TYPE_COUNT, false);
-			_bounds.type = type;
-			_change_notify();
-			return true;
-
-		} else if (sub.begins_with("min_") && sub.length() == 5) {
-			// Not using Vector3 because floats can't contain big integer values
-			ERR_FAIL_COND_V(!L::set_xyz(sub[4], _bounds.min, p_value), false);
-			Vector3i::sort_min_max(_bounds.min, _bounds.max);
-			return true;
-
-		} else if (sub.begins_with("max_") && sub.length() == 5) {
-			ERR_FAIL_COND_V(!L::set_xyz(sub[4], _bounds.max, p_value), false);
-			Vector3i::sort_min_max(_bounds.min, _bounds.max);
-			return true;
-
-		} else if (sub == "sdf_value" || sub == "bottom_sdf_value") {
-			_bounds.sdf_value0 = p_value;
-			return true;
-
-		} else if (sub == "type_value" || sub == "bottom_type_value") {
-			_bounds.type_value0 = p_value;
-			return true;
-
-		} else if (sub == "top_sdf_value") {
-			_bounds.sdf_value1 = p_value;
-			return true;
-
-		} else if (sub == "top_type_value1") {
-			_bounds.type_value1 = p_value;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool VoxelGeneratorGraph::_get(const StringName &p_name, Variant &r_ret) const {
-	const String name = p_name;
-
-	struct L {
-		inline static bool get_xyz(char c, const Vector3i &p, Variant &r) {
-			int i = c - 'x';
-			ERR_FAIL_COND_V(i < 0 || (unsigned int)i >= Vector3i::AXIS_COUNT, false);
-			r = p[i];
-			return true;
-		}
-	};
-
-	if (name.begins_with("bounds/")) {
-		const String sub = name.right(7);
-
-		if (sub == "type") {
-			r_ret = _bounds.type;
-			return true;
-
-		} else if (sub.begins_with("min_") && sub.length() == 5) {
-			return L::get_xyz(sub[4], _bounds.min, r_ret);
-
-		} else if (sub.begins_with("max_") && sub.length() == 5) {
-			return L::get_xyz(sub[4], _bounds.max, r_ret);
-
-		} else if (sub == "sdf_value" || sub == "bottom_sdf_value") {
-			r_ret = _bounds.sdf_value0;
-			return true;
-
-		} else if (sub == "type_value" || sub == "bottom_type_value") {
-			r_ret = _bounds.type_value0;
-			return true;
-
-		} else if (sub == "top_sdf_value") {
-			r_ret = _bounds.sdf_value1;
-			return true;
-
-		} else if (sub == "top_type_value1") {
-			r_ret = _bounds.type_value1;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-void VoxelGeneratorGraph::_get_property_list(List<PropertyInfo> *p_list) const {
-	p_list->push_back(PropertyInfo(Variant::INT, "bounds/type", PROPERTY_HINT_ENUM, "None,Vertical,Box"));
-
-	switch (_bounds.type) {
-		case BOUNDS_NONE:
-			break;
-
-		case BOUNDS_VERTICAL:
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/min_y"));
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/max_y"));
-			p_list->push_back(PropertyInfo(Variant::REAL, "bounds/top_sdf_value"));
-			p_list->push_back(PropertyInfo(Variant::REAL, "bounds/bottom_sdf_value"));
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/top_type_value"));
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/bottom_type_value"));
-			break;
-
-		case BOUNDS_BOX:
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/min_x"));
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/min_y"));
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/min_z"));
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/max_x"));
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/max_y"));
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/max_z"));
-			p_list->push_back(PropertyInfo(Variant::REAL, "bounds/sdf_value"));
-			p_list->push_back(PropertyInfo(Variant::INT, "bounds/type_value"));
-			break;
-
-		default:
-			CRASH_NOW();
-			break;
-	}
-}
 
 int VoxelGeneratorGraph::_b_get_node_type_count() const {
 	return VoxelGraphNodeDB::get_singleton()->get_type_count();

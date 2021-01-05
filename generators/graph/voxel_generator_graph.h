@@ -94,18 +94,6 @@ public:
 	void generate_block(VoxelBlockRequest &input) override;
 	float generate_single(const Vector3i &position);
 
-	enum BoundsType {
-		BOUNDS_NONE = 0,
-		BOUNDS_VERTICAL,
-		BOUNDS_BOX,
-		BOUNDS_TYPE_COUNT
-	};
-
-	void clear_bounds();
-	void set_vertical_bounds(int min_y, int max_y, float bottom_sdf_value, float top_sdf_value,
-			uint64_t bottom_type_value, uint64_t top_type_value);
-	void set_box_bounds(Vector3i min, Vector3i max, float sdf_value, uint64_t type_value);
-
 	Ref<Resource> duplicate(bool p_subresources) const override;
 
 	// Utility
@@ -135,10 +123,6 @@ private:
 	Dictionary get_graph_as_variant_data();
 	void load_graph_from_variant_data(Dictionary data);
 
-	bool _set(const StringName &p_name, const Variant &p_value);
-	bool _get(const StringName &p_name, Variant &r_ret) const;
-	void _get_property_list(List<PropertyInfo> *p_list) const;
-
 	int _b_get_node_type_count() const;
 	Dictionary _b_get_node_type_info(int type_id) const;
 	PoolIntArray _b_get_node_ids() const;
@@ -153,25 +137,12 @@ private:
 
 	static void _bind_methods();
 
-	struct Bounds {
-		BoundsType type = BOUNDS_NONE;
-		Vector3i min;
-		Vector3i max;
-		// Voxel values beyond bounds
-		float sdf_value0 = 1.f;
-		float sdf_value1 = 1.f;
-		uint64_t type_value0 = 0;
-		uint64_t type_value1 = 0;
-	};
-
 	ProgramGraph _graph;
 	VoxelGraphRuntime _runtime;
 	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
 	std::vector<float> _slice_cache;
-	Bounds _bounds;
 };
 
 VARIANT_ENUM_CAST(VoxelGeneratorGraph::NodeTypeID)
-VARIANT_ENUM_CAST(VoxelGeneratorGraph::BoundsType)
 
 #endif // VOXEL_GENERATOR_GRAPH_H
