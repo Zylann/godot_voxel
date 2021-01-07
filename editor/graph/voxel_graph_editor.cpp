@@ -580,6 +580,7 @@ void VoxelGraphEditor::update_previews() {
 
 			for (size_t i = 0; i < previews.size(); ++i) {
 				PreviewInfo &info = previews[i];
+				// TODO This won't work efficiently since we use buffers, we should use a different method
 				const float v = runtime.get_memory_value(info.address);
 				const float g = clamp((v - info.min_value) * info.value_scale, 0.f, 1.f);
 				info.control->get_image()->set_pixel(ix, iy, Color(g, g, g));

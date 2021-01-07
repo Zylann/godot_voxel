@@ -159,26 +159,22 @@ public:
 	class RangeAnalysisContext : public _ProcessContext {
 	public:
 		inline RangeAnalysisContext(const ArraySlice<uint16_t> inputs, ArraySlice<uint16_t> outputs,
-				const ArraySlice<uint8_t> params,
-				ArraySlice<float> min_memory, ArraySlice<float> max_memory) :
+				const ArraySlice<uint8_t> params, ArraySlice<Interval> ranges) :
 				_ProcessContext(inputs, outputs, params),
-				_min_memory(min_memory),
-				_max_memory(max_memory) {}
+				_ranges(ranges) {}
 
 		inline const Interval get_input(uint32_t i) const {
 			const uint32_t address = get_input_address(i);
-			return Interval{ _min_memory[address], _max_memory[address] };
+			return _ranges[address];
 		}
 
 		inline void set_output(uint32_t i, const Interval r) {
 			const uint32_t address = get_output_address(i);
-			_min_memory[address] = r.min;
-			_max_memory[address] = r.max;
+			_ranges[address] = r;
 		}
 
 	private:
-		ArraySlice<float> _min_memory;
-		ArraySlice<float> _max_memory;
+		ArraySlice<Interval> _ranges;
 	};
 
 	typedef void (*CompileFunc)(CompileContext &);
@@ -189,8 +185,7 @@ private:
 	bool _compile(const ProgramGraph &graph, bool debug);
 
 	std::vector<uint8_t> _program;
-	std::vector<float> _memory;
-
+	std::vector<Interval> _ranges;
 	std::vector<Buffer> _buffers;
 	Vector2 _xz_last_min;
 	Vector2 _xz_last_max;
@@ -199,8 +194,6 @@ private:
 	std::vector<HeapResource> _heap_resources;
 
 	uint32_t _xzy_program_start;
-	float _last_x;
-	float _last_z;
 	int _sdf_output_address = -1;
 	CompilationResult _compilation_result;
 

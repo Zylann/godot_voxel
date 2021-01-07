@@ -18,11 +18,11 @@
 //#endif
 
 template <typename T>
-inline const T &read(const std::vector<uint8_t> &mem, uint32_t &p) {
+inline const T &read(const ArraySlice<uint8_t> &mem, uint32_t &p) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(p + sizeof(T) > mem.size());
 #endif
-	const T *v = (const T *)&mem[p];
+	const T *v = reinterpret_cast<const T *>(&mem[p]);
 	p += sizeof(T);
 	return *v;
 }
@@ -44,12 +44,10 @@ VoxelGraphRuntime::~VoxelGraphRuntime() {
 
 void VoxelGraphRuntime::clear() {
 	_program.clear();
-	_memory.resize(8, 0);
+	_ranges.resize(4, Interval());
 	_xzy_program_start = 0;
 
 	const float fmax = std::numeric_limits<float>::max();
-	_last_x = fmax;
-	_last_z = fmax;
 
 	_xz_last_min = Vector2(fmax, fmax);
 	_xz_last_max = Vector2(fmax, fmax);
@@ -74,12 +72,6 @@ void VoxelGraphRuntime::clear() {
 		r.deleter(r.ptr);
 	}
 	_heap_resources.clear();
-
-	// for (size_t i = 0; i < _image_range_grids.size(); ++i) {
-	// 	ImageRangeGrid *im = _image_range_grids[i];
-	// 	memdelete(im);
-	// }
-	// _image_range_grids.clear();
 }
 
 bool VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
@@ -178,15 +170,15 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 	//	const uint32_t *order_raw = order.data();
 	//#endif
 
-	_memory.clear();
+	_ranges.clear();
 
 	struct MemoryHelper {
-		std::vector<float> &value_mem;
+		std::vector<Interval> &ra_mem;
 		std::vector<Buffer> &buffer_mem;
 
 		uint16_t add_var() {
-			uint16_t a = value_mem.size();
-			value_mem.push_back(0.f);
+			uint16_t a = ra_mem.size();
+			ra_mem.push_back(Interval());
 			Buffer b;
 			b.data = nullptr;
 			b.is_constant = false;
@@ -195,8 +187,8 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 		}
 
 		uint16_t add_constant(float v) {
-			uint16_t a = value_mem.size();
-			value_mem.push_back(v);
+			uint16_t a = ra_mem.size();
+			ra_mem.push_back(Interval::from_single_value(v));
 			Buffer b;
 			b.data = nullptr;
 			b.is_constant = true;
@@ -206,7 +198,7 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 		}
 	};
 
-	MemoryHelper mem{ _memory, _buffers };
+	MemoryHelper mem{ _ranges, _buffers };
 
 	// Main inputs X, Y, Z
 	mem.add_var();
@@ -230,6 +222,7 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 			_xzy_program_start = _program.size();
 		}
 
+		// We still hardcode some of the nodes. Maybe we can abstract them too one day.
 		switch (node->type_id) {
 			case VoxelGeneratorGraph::NODE_CONSTANT: {
 				CRASH_COND(type.outputs.size() != 1);
@@ -258,8 +251,8 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 					_compilation_result.node_id = node_id;
 					return false;
 				}
-				if (_memory.size() > 0) {
-					_sdf_output_address = _memory.size() - 1;
+				if (_buffers.size() > 0) {
+					_sdf_output_address = _buffers.size() - 1;
 				}
 				break;
 
@@ -336,20 +329,12 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 		} // switch type
 	}
 
-	// In case there is nothing
-	while (_memory.size() < 4) {
+	// In case there is nothing, add minimal nodes for correctness
+	while (_buffers.size() < 4) {
 		mem.add_var();
 	}
 
-	// Reserve space for range analysis
-	_memory.resize(_memory.size() * 2);
-	// Make it a copy to keep eventual constants at consistent adresses
-	const size_t half_size = _memory.size() / 2;
-	for (size_t i = 0, j = half_size; i < half_size; ++i, ++j) {
-		_memory[j] = _memory[i];
-	}
-
-	CRASH_COND(_buffers.size() != half_size);
+	CRASH_COND(_buffers.size() != _ranges.size());
 
 	PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, buffers: {1}")
 						  .format(varray(
@@ -386,7 +371,7 @@ void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_si
 
 #ifdef DEBUG_ENABLED
 	CRASH_COND(_buffers.size() == 0);
-	CRASH_COND(_buffers.size() != _memory.size() / 2);
+	CRASH_COND(_buffers.size() != _ranges.size());
 #endif
 #ifdef TOOLS_ENABLED
 	ERR_FAIL_COND_MSG(!has_output(), "The graph has no SDF output");
@@ -399,10 +384,7 @@ void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_si
 
 	// Input buffers
 	{
-		// TODO When not using range analysis, it should be possible to fill the input buffers with whatever we want.
-		// So eventually we should put these buffers out
-
-		// TODO User-provided buffers may not need to be owned, or even recomputed
+		// TODO Move this away from here, allow to specify custom inputs
 
 		Buffer &x_buffer = buffers[0];
 		Buffer &y_buffer = buffers[1];
@@ -515,8 +497,8 @@ void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_si
 
 	const ArraySlice<uint8_t> program(_program, 0, _program.size());
 
-	while (pc < _program.size()) {
-		const uint8_t opid = _program[pc++];
+	while (pc < program.size()) {
+		const uint8_t opid = program[pc++];
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
 		const uint32_t inputs_size = node_type.inputs.size() * sizeof(uint16_t);
@@ -527,7 +509,7 @@ void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_si
 		const ArraySlice<uint16_t> outputs = program.sub(pc, outputs_size).reinterpret_cast_to<uint16_t>();
 		pc += outputs_size;
 
-		const uint16_t params_size = read<uint16_t>(_program, pc);
+		const uint16_t params_size = read<uint16_t>(program, pc);
 		ArraySlice<uint8_t> params;
 		if (params_size > 0) {
 			params = program.sub(pc, params_size);
@@ -559,25 +541,23 @@ void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_si
 	}
 }
 
+// TODO Accept float bounds
 Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 #ifdef TOOLS_ENABLED
 	ERR_FAIL_COND_V_MSG(!has_output(), Interval(), "The graph has no SDF output");
 #endif
 
-	ArraySlice<float> min_memory(_memory, 0, _memory.size() / 2);
-	ArraySlice<float> max_memory(_memory, _memory.size() / 2, _memory.size());
-	min_memory[0] = min_pos.x;
-	min_memory[1] = min_pos.y;
-	min_memory[2] = min_pos.z;
-	max_memory[0] = max_pos.x;
-	max_memory[1] = max_pos.y;
-	max_memory[2] = max_pos.z;
+	ArraySlice<Interval> ranges(_ranges, 0, _ranges.size());
+
+	ranges[0] = Interval(min_pos.x, max_pos.x);
+	ranges[1] = Interval(min_pos.y, max_pos.y);
+	ranges[2] = Interval(min_pos.z, max_pos.z);
 
 	const ArraySlice<uint8_t> program(_program, 0, _program.size());
 
 	uint32_t pc = 0;
-	while (pc < _program.size()) {
-		const uint8_t opid = _program[pc++];
+	while (pc < program.size()) {
+		const uint8_t opid = program[pc++];
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
 		const uint32_t inputs_size = node_type.inputs.size() * sizeof(uint16_t);
@@ -588,7 +568,7 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 		const ArraySlice<uint16_t> outputs = program.sub(pc, outputs_size).reinterpret_cast_to<uint16_t>();
 		pc += outputs_size;
 
-		const uint16_t params_size = read<uint16_t>(_program, pc);
+		const uint16_t params_size = read<uint16_t>(program, pc);
 		ArraySlice<uint8_t> params;
 		if (params_size > 0) {
 			params = program.sub(pc, params_size);
@@ -596,7 +576,7 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 		}
 
 		ERR_FAIL_COND_V(node_type.range_analysis_func == nullptr, Interval());
-		node_type.range_analysis_func(RangeAnalysisContext(inputs, outputs, params, min_memory, max_memory));
+		node_type.range_analysis_func(RangeAnalysisContext(inputs, outputs, params, ranges));
 
 #ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
 		// If this fails, the program is ill-formed
@@ -604,7 +584,7 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 #endif
 	}
 
-	return Interval(min_memory[_sdf_output_address], max_memory[_sdf_output_address]);
+	return ranges[_sdf_output_address];
 }
 
 uint16_t VoxelGraphRuntime::get_output_port_address(ProgramGraph::PortLocation port) const {
@@ -614,6 +594,8 @@ uint16_t VoxelGraphRuntime::get_output_port_address(ProgramGraph::PortLocation p
 }
 
 float VoxelGraphRuntime::get_memory_value(uint16_t address) const {
-	CRASH_COND(address >= _memory.size());
-	return _memory[address];
+	CRASH_COND(address >= _buffers.size());
+	const Buffer &buffer = _buffers[address];
+	// TODO This is a patch implementation. We may need to remove this method eventually
+	return buffer.data == nullptr ? buffer.constant_value : buffer.data[0];
 }

@@ -284,6 +284,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 
 	// TODO Most operations need SIMD support
 
+	// SUGG the program could be a list of pointers to polymorphic heap-allocated classes...
+	// but I find that the data struct approach is kinda convenient too?
+
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CONSTANT];
 		t.name = "Constant";
