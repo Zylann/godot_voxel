@@ -96,19 +96,20 @@ Interval get_osn_range_3d(OpenSimplexNoise *noise, Interval x, Interval y, Inter
 	return sum / max;
 }
 
-Interval get_curve_range(Curve &curve, uint8_t &is_monotonic_increasing) {
+Interval get_curve_range(Curve &curve, bool &is_monotonic_increasing) {
 	// TODO Would be nice to have the cache directly
+	// TODO Also detect if monotonic decreasing, or litterally find peaks
 	const int res = curve.get_bake_resolution();
 	Interval range;
 	float prev_v = curve.interpolate_baked(0.f);
 	if (curve.interpolate_baked(1.f) > prev_v) {
-		is_monotonic_increasing = 1;
+		is_monotonic_increasing = true;
 	}
 	for (int i = 0; i < res; ++i) {
 		const float v = curve.interpolate_baked(static_cast<float>(i) / res);
 		range.add_point(v);
 		if (v < prev_v) {
-			is_monotonic_increasing = 0;
+			is_monotonic_increasing = false;
 		}
 		prev_v = v;
 	}

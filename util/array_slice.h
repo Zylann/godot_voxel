@@ -21,6 +21,17 @@ public:
 		_size = p_end - p_begin;
 	}
 
+	inline ArraySlice(T *p_ptr, size_t p_size) :
+			_ptr(p_ptr), _size(p_size) {}
+
+	inline ArraySlice(ArraySlice<T> &p_other, size_t p_begin, size_t p_end) {
+		CRASH_COND(p_end <= p_begin);
+		CRASH_COND(p_begin >= vec.size());
+		CRASH_COND(p_end > vec.size()); // `>` because p_end is typically `p_begin + size`
+		_ptr = p_other._ptr + p_begin;
+		_size = p_end - p_begin;
+	}
+
 	inline ArraySlice(std::vector<T> &vec, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end <= p_begin);
 		CRASH_COND(p_begin >= vec.size());
@@ -34,6 +45,26 @@ public:
 		_ptr = a.data();
 		_size = a.size();
 	}
+
+	inline ArraySlice<T> sub(size_t from, size_t len) const {
+		CRASH_COND(from + len >= _size);
+		return ArraySlice<T>(_ptr + from, len);
+	}
+
+	inline ArraySlice<T> sub(size_t from) const {
+		CRASH_COND(from >= _size);
+		return ArraySlice<T>(_ptr + from, _size - from);
+	}
+
+	// const ArraySlice<T> sub_const(size_t from, size_t len) const {
+	// 	CRASH_COND(from + len >= _size);
+	// 	return ArraySlice{ _ptr + from, len };
+	// }
+
+	// const ArraySlice<T> sub_const(size_t from) const {
+	// 	CRASH_COND(from >= _size);
+	// 	return ArraySlice{ _ptr + from, _size - from };
+	// }
 
 	template <typename U>
 	ArraySlice<U> reinterpret_cast_to() const {

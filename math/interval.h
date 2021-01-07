@@ -161,6 +161,10 @@ inline Interval sqrt(const Interval &i) {
 	};
 }
 
+inline Interval squared(const Interval a) {
+	return a * a;
+}
+
 inline Interval abs(const Interval &i) {
 	return Interval{
 		i.contains(0) ? 0 : ::min(Math::abs(i.min), Math::abs(i.max)),
