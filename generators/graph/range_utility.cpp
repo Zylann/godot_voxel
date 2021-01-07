@@ -278,9 +278,6 @@ Interval get_fnl_range_2d(const FastNoiseLite *noise, Interval x, Interval y) {
 				return get_fnl_cellular_value_range_2d(noise, x, y);
 			}
 			return get_fnl_cellular_range(noise);
-		case FastNoiseLite::TYPE_VALUE_CUBIC:
-			// ValueCubic is theoretically in -1..1 but in practice it reaches it's extremes very rarely
-			return Interval{ -0.8, 0.8 };
 		default:
 			return Interval{ -1.f, 1.f };
 	}
@@ -294,9 +291,6 @@ Interval get_fnl_range_3d(const FastNoiseLite *noise, Interval x, Interval y, In
 				return get_fnl_cellular_value_range_3d(noise, x, y, z);
 			}
 			return get_fnl_cellular_range(noise);
-		case FastNoiseLite::TYPE_VALUE_CUBIC:
-			// ValueCubic is theoretically in -1..1 but in practice it reaches its extremes very rarely
-			return Interval{ -0.6, 0.6 };
 		default:
 			return Interval{ -1.f, 1.f };
 	}
