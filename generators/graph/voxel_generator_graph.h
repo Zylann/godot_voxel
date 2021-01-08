@@ -140,6 +140,9 @@ private:
 	ProgramGraph _graph;
 	VoxelGraphRuntime _runtime;
 	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
+	std::vector<float> _x_cache;
+	std::vector<float> _y_cache;
+	std::vector<float> _z_cache;
 	std::vector<float> _slice_cache;
 };
 

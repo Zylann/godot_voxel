@@ -49,20 +49,22 @@ void VoxelGraphRuntime::clear() {
 
 	const float fmax = std::numeric_limits<float>::max();
 
-	_xz_last_min = Vector2(fmax, fmax);
-	_xz_last_max = Vector2(fmax, fmax);
-
 	_buffer_size = 0;
 	for (auto it = _buffers.begin(); it != _buffers.end(); ++it) {
 		Buffer &b = *it;
-		if (b.data != nullptr) {
+		if (b.data != nullptr && !b.is_binding) {
 			memfree(b.data);
 		}
 	}
 	_buffers.clear();
 
 	_output_port_addresses.clear();
+
 	_sdf_output_address = -1;
+	_x_input_address = -1;
+	_y_input_address = -1;
+	_z_input_address = -1;
+
 	_compilation_result = CompilationResult();
 
 	for (auto it = _heap_resources.begin(); it != _heap_resources.end(); ++it) {
@@ -176,12 +178,24 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 		std::vector<Interval> &ra_mem;
 		std::vector<Buffer> &buffer_mem;
 
+		uint16_t add_binding() {
+			uint16_t a = ra_mem.size();
+			ra_mem.push_back(Interval());
+			Buffer b;
+			b.data = nullptr;
+			b.is_constant = false;
+			b.is_binding = true;
+			buffer_mem.push_back(b);
+			return a;
+		}
+
 		uint16_t add_var() {
 			uint16_t a = ra_mem.size();
 			ra_mem.push_back(Interval());
 			Buffer b;
 			b.data = nullptr;
 			b.is_constant = false;
+			b.is_binding = false;
 			buffer_mem.push_back(b);
 			return a;
 		}
@@ -192,6 +206,7 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 			Buffer b;
 			b.data = nullptr;
 			b.is_constant = true;
+			b.is_binding = false;
 			b.constant_value = v;
 			buffer_mem.push_back(b);
 			return a;
@@ -201,9 +216,9 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 	MemoryHelper mem{ _ranges, _buffers };
 
 	// Main inputs X, Y, Z
-	mem.add_var();
-	mem.add_var();
-	mem.add_var();
+	_x_input_address = mem.add_binding();
+	_y_input_address = mem.add_binding();
+	_z_input_address = mem.add_binding();
 
 	std::vector<uint8_t> &program = _program;
 	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
@@ -229,109 +244,105 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 				CRASH_COND(type.params.size() != 1);
 				const uint16_t a = mem.add_constant(node->params[0].operator float());
 				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = a;
-			} break;
+				continue;
+			}
 
 			case VoxelGeneratorGraph::NODE_INPUT_X:
-				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = 0;
-				break;
+				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _x_input_address;
+				continue;
 
 			case VoxelGeneratorGraph::NODE_INPUT_Y:
-				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = 1;
-				break;
+				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _y_input_address;
+				continue;
 
 			case VoxelGeneratorGraph::NODE_INPUT_Z:
-				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = 2;
-				break;
+				_output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _z_input_address;
+				continue;
 
 			case VoxelGeneratorGraph::NODE_OUTPUT_SDF:
-				// TODO Multiple outputs may be supported if we get branching
 				if (_sdf_output_address != -1) {
 					_compilation_result.success = false;
 					_compilation_result.message = "Multiple SDF outputs are not supported";
 					_compilation_result.node_id = node_id;
 					return false;
 				}
-				if (_buffers.size() > 0) {
-					_sdf_output_address = _buffers.size() - 1;
+				CRASH_COND(node->inputs.size() != 1);
+				if (node->inputs[0].connections.size() > 0) {
+					ProgramGraph::PortLocation src_port = node->inputs[0].connections[0];
+					const uint16_t *aptr = _output_port_addresses.getptr(src_port);
+					// Previous node ports must have been registered
+					CRASH_COND(aptr == nullptr);
+					_sdf_output_address = *aptr;
 				}
-				break;
+				continue;
 
 			case VoxelGeneratorGraph::NODE_SDF_PREVIEW:
-				break;
+				continue;
+		};
 
-			default: {
-				// Add actual operation
-				CRASH_COND(node->type_id > 0xff);
-				append(program, static_cast<uint8_t>(node->type_id));
-				const size_t offset = program.size();
+		// Add actual operation
+		CRASH_COND(node->type_id > 0xff);
+		append(program, static_cast<uint8_t>(node->type_id));
+		const size_t offset = program.size();
 
-				// Inputs and outputs use a convention so we can have generic code for them.
-				// Parameters are more specific, and may be affected by alignment so better just do them by hand
+		// Inputs and outputs use a convention so we can have generic code for them.
+		// Parameters are more specific, and may be affected by alignment so better just do them by hand
 
-				// Add inputs
-				for (size_t j = 0; j < type.inputs.size(); ++j) {
-					uint16_t a;
+		// Add inputs
+		for (size_t j = 0; j < type.inputs.size(); ++j) {
+			uint16_t a;
 
-					if (node->inputs[j].connections.size() == 0) {
-						// No input, default it
-						CRASH_COND(j >= node->default_inputs.size());
-						float defval = node->default_inputs[j];
-						a = mem.add_constant(defval);
+			if (node->inputs[j].connections.size() == 0) {
+				// No input, default it
+				CRASH_COND(j >= node->default_inputs.size());
+				float defval = node->default_inputs[j];
+				a = mem.add_constant(defval);
 
-					} else {
-						ProgramGraph::PortLocation src_port = node->inputs[j].connections[0];
-						const uint16_t *aptr = _output_port_addresses.getptr(src_port);
-						// Previous node ports must have been registered
-						CRASH_COND(aptr == nullptr);
-						a = *aptr;
-					}
+			} else {
+				ProgramGraph::PortLocation src_port = node->inputs[j].connections[0];
+				const uint16_t *aptr = _output_port_addresses.getptr(src_port);
+				// Previous node ports must have been registered
+				CRASH_COND(aptr == nullptr);
+				a = *aptr;
+			}
 
-					append(program, a);
-				}
+			append(program, a);
+		}
 
-				// Add outputs
-				for (size_t j = 0; j < type.outputs.size(); ++j) {
-					const uint16_t a = mem.add_var();
+		// Add outputs
+		for (size_t j = 0; j < type.outputs.size(); ++j) {
+			const uint16_t a = mem.add_var();
 
-					// This will be used by next nodes
-					const ProgramGraph::PortLocation op{ node_id, static_cast<uint32_t>(j) };
-					_output_port_addresses[op] = a;
+			// This will be used by next nodes
+			const ProgramGraph::PortLocation op{ node_id, static_cast<uint32_t>(j) };
+			_output_port_addresses[op] = a;
 
-					append(program, a);
-				}
+			append(program, a);
+		}
 
-				// Add space for params size, default is no params so size is 0
-				size_t params_size_index = program.size();
-				append<uint16_t>(program, 0);
+		// Add space for params size, default is no params so size is 0
+		size_t params_size_index = program.size();
+		append<uint16_t>(program, 0);
 
-				if (type.compile_func != nullptr) {
-					const size_t size_before = program.size();
-					CompileContext ctx(*node, program, _heap_resources);
-					type.compile_func(ctx);
-					if (ctx.has_error()) {
-						_compilation_result.success = false;
-						_compilation_result.message = ctx.get_error_message();
-						_compilation_result.node_id = node_id;
-						return false;
-					}
-					const size_t params_size = program.size() - size_before;
-					CRASH_COND(params_size > std::numeric_limits<uint16_t>::max());
-					*reinterpret_cast<uint16_t *>(&program[params_size_index]) = params_size;
-				}
+		if (type.compile_func != nullptr) {
+			const size_t size_before = program.size();
+			CompileContext ctx(*node, program, _heap_resources);
+			type.compile_func(ctx);
+			if (ctx.has_error()) {
+				_compilation_result.success = false;
+				_compilation_result.message = ctx.get_error_message();
+				_compilation_result.node_id = node_id;
+				return false;
+			}
+			const size_t params_size = program.size() - size_before;
+			CRASH_COND(params_size > std::numeric_limits<uint16_t>::max());
+			*reinterpret_cast<uint16_t *>(&program[params_size_index]) = params_size;
+		}
 
 #ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
-				// Append a special value after each operation
-				append(program, VOXEL_DEBUG_GRAPH_PROG_SENTINEL);
+		// Append a special value after each operation
+		append(program, VOXEL_DEBUG_GRAPH_PROG_SENTINEL);
 #endif
-
-			} break; // default
-
-		} // switch type
-	}
-
-	// In case there is nothing, add minimal nodes for correctness
-	while (_buffers.size() < 4) {
-		mem.add_var();
 	}
 
 	CRASH_COND(_buffers.size() != _ranges.size());
@@ -346,16 +357,20 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 	return true;
 }
 
-float VoxelGraphRuntime::generate_single(const Vector3 &position) {
+float VoxelGraphRuntime::generate_single(Vector3 position) {
 	float output;
-	generate_xz_slice(ArraySlice<float>(&output, 1), Vector2i(1, 1),
-			Vector2(position.x, position.z), Vector2(position.x, position.z), position.y, 1);
+	generate_set(
+			ArraySlice<float>(&position.x, 1),
+			ArraySlice<float>(&position.y, 1),
+			ArraySlice<float>(&position.z, 1),
+			ArraySlice<float>(&output, 1), false);
 	return output;
 }
 
-void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_size, Vector2 min, Vector2 max,
-		float y, int stride) {
+void VoxelGraphRuntime::generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
+		ArraySlice<float> out_sdf, bool skip_xz) {
 
+	// I don't like putting private helper functions in headers.
 	struct L {
 		static inline void alloc_buffer(Buffer &buffer, int buffer_size) {
 			// TODO Use pool?
@@ -365,6 +380,20 @@ void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_si
 				buffer.data = reinterpret_cast<float *>(memalloc(buffer_size * sizeof(float)));
 			}
 		}
+
+		static inline void bind_buffer(ArraySlice<Buffer> buffers, int a, ArraySlice<float> d) {
+			Buffer &buffer = buffers[a];
+			CRASH_COND(!buffer.is_binding);
+			buffer.data = d.data();
+			buffer.size = d.size();
+			buffer.is_constant = false;
+		}
+
+		static inline void unbind_buffer(ArraySlice<Buffer> buffers, int a) {
+			Buffer &buffer = buffers[a];
+			CRASH_COND(!buffer.is_binding);
+			buffer.data = nullptr;
+		}
 	};
 
 	VOXEL_PROFILE_SCOPE();
@@ -372,120 +401,61 @@ void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_si
 #ifdef DEBUG_ENABLED
 	CRASH_COND(_buffers.size() == 0);
 	CRASH_COND(_buffers.size() != _ranges.size());
+	CRASH_COND(!(in_x.size() == in_y.size() && in_y.size() == in_z.size() && in_z.size() == out_sdf.size()));
 #endif
 #ifdef TOOLS_ENABLED
 	ERR_FAIL_COND_MSG(!has_output(), "The graph has no SDF output");
 #endif
 
 	ArraySlice<Buffer> buffers(_buffers, 0, _buffers.size());
-	const uint32_t buffer_size = dst_size.x * dst_size.y;
+	const uint32_t buffer_size = in_x.size();
 	const bool buffer_size_changed = buffer_size != _buffer_size;
 	_buffer_size = buffer_size;
 
-	// Input buffers
-	{
-		// TODO Move this away from here, allow to specify custom inputs
-
-		Buffer &x_buffer = buffers[0];
-		Buffer &y_buffer = buffers[1];
-		Buffer &z_buffer = buffers[2];
-
-		x_buffer.is_constant = false;
-		z_buffer.is_constant = false;
-
-		// Y is fixed
-		y_buffer.is_constant = true;
-		y_buffer.constant_value = y;
-
-		if (buffer_size_changed) {
-			L::alloc_buffer(x_buffer, buffer_size);
-			L::alloc_buffer(y_buffer, buffer_size);
-			L::alloc_buffer(z_buffer, buffer_size);
-		}
-
-		for (auto i = 0; i < buffer_size; ++i) {
-			y_buffer.data[i] = y;
-		}
-
-		int i = 0;
-
-		if (stride == 1) {
-			for (int zi = 0; zi < dst_size.y; ++zi) {
-				const float z = min.y + zi;
-				for (int xi = 0; xi < dst_size.x; ++xi) {
-					x_buffer.data[i] = min.x + xi;
-					z_buffer.data[i] = z;
-					++i;
-				}
-			}
-
-		} else if (stride > 0) {
-			for (int zi = 0; zi < dst_size.y; ++zi) {
-				const float z = min.y + zi * stride;
-				for (int xi = 0; xi < dst_size.x; ++xi) {
-					x_buffer.data[i] = min.x + xi * stride;
-					z_buffer.data[i] = z;
-					++i;
-				}
-			}
-
-		} else {
-			// Slowest generic method
-			for (int zi = 0; zi < dst_size.y; ++zi) {
-				float zt = static_cast<float>(zi) / static_cast<float>(dst_size.y);
-				float z = Math::lerp(min.y, max.y, zt);
-				for (int xi = 0; xi < dst_size.x; ++xi) {
-					float xt = static_cast<float>(xi) / static_cast<float>(dst_size.x);
-					x_buffer.data[i] = Math::lerp(min.x, max.x, xt);
-					z_buffer.data[i] = z;
-					++i;
-				}
-			}
-		}
+	// Bind inputs
+	if (_x_input_address != -1) {
+		L::bind_buffer(buffers, _x_input_address, in_x);
+	}
+	if (_y_input_address != -1) {
+		L::bind_buffer(buffers, _y_input_address, in_y);
+	}
+	if (_z_input_address != -1) {
+		L::bind_buffer(buffers, _z_input_address, in_z);
 	}
 
 	// Prepare buffers
-	{
-		if (buffer_size_changed) {
-			// We ignore input buffers, these are supposed to be setup already
-			for (size_t i = 3; i < _buffers.size(); ++i) {
-				Buffer &buffer = _buffers[i];
+	if (buffer_size_changed) {
+		// We ignore input buffers, these are supposed to be setup already
+		for (size_t i = 0; i < _buffers.size(); ++i) {
+			Buffer &buffer = _buffers[i];
+			if (buffer.is_binding) {
+				continue;
+			}
 
-				L::alloc_buffer(buffer, buffer_size);
-				buffer.size = buffer_size;
+			L::alloc_buffer(buffer, buffer_size);
+			buffer.size = buffer_size;
 
-				if (buffer.is_constant) {
-					for (auto i = 0; i < buffer_size; ++i) {
-						buffer.data[i] = buffer.constant_value;
-					}
+			if (buffer.is_constant) {
+				for (auto i = 0; i < buffer_size; ++i) {
+					buffer.data[i] = buffer.constant_value;
 				}
 			}
 		}
-
-		/*if (use_range_analysis) {
-			// TODO To be really worth it, we may need a runtime graph traversal pass,
-			// where we build an execution map of nodes that are worthy 🔨
-
-			const float ra_min = _memory[i];
-			const float ra_max = _memory[i + _memory.size() / 2];
-
-			buffer.is_constant = (ra_min == ra_max);
-			if (buffer.is_constant) {
-				buffer.constant_value = ra_min;
-			}
-		}*/
 	}
+	/*if (use_range_analysis) {
+		// TODO To be really worth it, we may need a runtime graph traversal pass,
+		// where we build an execution map of nodes that are worthy 🔨
 
-	uint32_t pc;
-	// Note, when sampling beyond negative or positive 16,777,216, this optimization may cease to work
-	if (_xz_last_min == min && _xz_last_max == max && !buffer_size_changed) {
-		pc = _xzy_program_start;
-	} else {
-		pc = 0;
-	}
+		const float ra_min = _memory[i];
+		const float ra_max = _memory[i + _memory.size() / 2];
 
-	_xz_last_min = min;
-	_xz_last_max = max;
+		buffer.is_constant = (ra_min == ra_max);
+		if (buffer.is_constant) {
+			buffer.constant_value = ra_min;
+		}
+	}*/
+
+	uint32_t pc = skip_xz ? _xzy_program_start : 0;
 
 	// STL is unreadable on debug builds of Godot, because _DEBUG isn't defined
 	//#ifdef DEBUG_ENABLED
@@ -533,11 +503,20 @@ void VoxelGraphRuntime::generate_xz_slice(ArraySlice<float> dst, Vector2i dst_si
 	// Populate output buffers
 	Buffer &sdf_output_buffer = buffers[_sdf_output_address];
 	if (sdf_output_buffer.is_constant) {
-		for (int i = 0; i < buffer_size; ++i) {
-			dst[i] = sdf_output_buffer.constant_value;
-		}
+		out_sdf.fill(sdf_output_buffer.constant_value);
 	} else {
-		memcpy(dst.data(), sdf_output_buffer.data, buffer_size * sizeof(float));
+		memcpy(out_sdf.data(), sdf_output_buffer.data, buffer_size * sizeof(float));
+	}
+
+	// Unbind buffers
+	if (_x_input_address != -1) {
+		L::unbind_buffer(buffers, _x_input_address);
+	}
+	if (_y_input_address != -1) {
+		L::unbind_buffer(buffers, _y_input_address);
+	}
+	if (_z_input_address != -1) {
+		L::unbind_buffer(buffers, _z_input_address);
 	}
 }
 

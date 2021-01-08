@@ -101,6 +101,13 @@ public:
 		return _ptr;
 	}
 
+	inline void fill(const T v) {
+		const T *end = _ptr + _size;
+		for (T *p = _ptr; p != end; ++p) {
+			*p = v;
+		}
+	}
+
 private:
 	T *_ptr;
 	size_t _size;

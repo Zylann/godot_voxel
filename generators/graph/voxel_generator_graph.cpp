@@ -231,9 +231,9 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const Interval range = _runtime.analyze_range(gmin, gmax) * sdf_scale;
 	const float clip_threshold = sdf_scale * 0.2f;
 	if (range.min > clip_threshold && range.max > clip_threshold) {
-		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 1.f);
+		//out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 1.f);
 		// DEBUG: use this instead to fill optimized-out blocks with matter, making them stand out
-		//out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, -1.f);
+		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, -1.f);
 		return;
 
 	} else if (range.min < -clip_threshold && range.max < -clip_threshold) {
@@ -245,21 +245,39 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 		return;
 	}
 
+	_slice_cache.resize(bs.x * bs.y);
+	ArraySlice<float> slice_cache(_slice_cache, 0, _slice_cache.size());
+
+	_x_cache.resize(_slice_cache.size());
+	_y_cache.resize(_slice_cache.size());
+	_z_cache.resize(_slice_cache.size());
+
+	ArraySlice<float> x_cache(_x_cache, 0, _x_cache.size());
+	ArraySlice<float> y_cache(_y_cache, 0, _y_cache.size());
+	ArraySlice<float> z_cache(_z_cache, 0, _z_cache.size());
+
 	const int stride = 1 << input.lod;
 
-	const Vector2i slice_size(bs.x, bs.z);
-	_slice_cache.resize(slice_size.x * slice_size.y);
-	ArraySlice<float> slice_cache(_slice_cache, 0, _slice_cache.size());
-	const Vector2 min_pos_xz(gmin.x, gmin.z);
-	const Vector2 max_pos_xz(gmax.x, gmax.z);
+	{
+		unsigned int i = 0;
+		for (int rz = rmin.z, gz = gmin.z; rz < rmax.z; ++rz, gz += stride) {
+			for (int rx = rmin.x, gx = gmin.x; rx < rmax.x; ++rx, gx += stride) {
+				x_cache[i] = gx;
+				z_cache[i] = gz;
+				++i;
+			}
+		}
+	}
 
-	for (int ry = rmin.y, gy = gmin.y; ry < rmax.y; ++ry, gy += stride) {
+	for (int ry = rmin.y, gy = gmin.y; ry < rmax.y; ++ry, gy += (1 << input.lod)) {
 		VOXEL_PROFILE_SCOPE();
 
-		_runtime.generate_xz_slice(slice_cache, slice_size, min_pos_xz, max_pos_xz, gy, stride);
+		y_cache.fill(gy);
+
+		_runtime.generate_set(x_cache, y_cache, z_cache, slice_cache, ry != rmin.y);
 
 		// TODO Flatten this further
-		int i = 0;
+		unsigned int i = 0;
 		for (int rz = rmin.z; rz < rmax.z; ++rz) {
 			for (int rx = rmin.x; rx < rmax.x; ++rx) {
 				out_buffer.set_voxel_f(sdf_scale * slice_cache[i], rx, ry, rz, channel);
@@ -526,43 +544,53 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 		return -1;
 	}
 
-	const uint32_t cube_size = 100;
-	const uint32_t voxel_count = cube_size * cube_size * cube_size;
+	const uint32_t cube_size = 16;
+	const uint32_t cube_count = 250;
+	// const uint32_t cube_size = 100;
+	// const uint32_t cube_count = 1;
+	const uint32_t voxel_count = cube_size * cube_size * cube_size * cube_count;
 	ProfilingClock profiling_clock;
-	uint64_t elapsed_us;
+	uint64_t elapsed_us = 0;
 
 	if (singular) {
-		profiling_clock.restart();
+		for (int i = 0; i < cube_count; ++i) {
+			profiling_clock.restart();
 
-		// Note: intentionally iterating in XYZ instead of XZY to avoid XZ optimization to kick in
-		for (uint32_t z = 0; z < cube_size; ++z) {
-			for (uint32_t y = 0; y < cube_size; ++y) {
-				for (uint32_t x = 0; x < cube_size; ++x) {
-					_runtime.generate_single(Vector3i(x, y, z).to_vec3());
+			// Note: intentionally iterating in XYZ instead of XZY to avoid XZ optimization to kick in
+			for (uint32_t z = 0; z < cube_size; ++z) {
+				for (uint32_t y = 0; y < cube_size; ++y) {
+					for (uint32_t x = 0; x < cube_size; ++x) {
+						_runtime.generate_single(Vector3i(x, y, z).to_vec3());
+					}
 				}
 			}
-		}
 
-		elapsed_us = profiling_clock.restart();
+			elapsed_us += profiling_clock.restart();
+		}
 
 	} else {
 		std::vector<float> dst;
-		dst.resize(cube_size * cube_size * cube_size);
-		const Vector2i slice_size_v(cube_size, cube_size);
-		const uint32_t slice_size = cube_size * cube_size;
+		dst.resize(cube_size * cube_size);
+		std::vector<float> src_x;
+		std::vector<float> src_y;
+		std::vector<float> src_z;
+		src_x.resize(dst.size());
+		src_y.resize(dst.size());
+		src_z.resize(dst.size());
+		ArraySlice<float> sx(src_x, 0, src_x.size());
+		ArraySlice<float> sy(src_y, 0, src_y.size());
+		ArraySlice<float> sz(src_z, 0, src_z.size());
+		ArraySlice<float> sdst(dst, 0, dst.size());
 
-		profiling_clock.restart();
+		for (int i = 0; i < cube_count; ++i) {
+			profiling_clock.restart();
 
-		for (uint32_t y = 0; y < cube_size; ++y) {
-			// Note: intentionally moving slice position in X to avoid axis optimization to kick in
-			const Vector2 min_pos_2d(y, 0);
-			const Vector2 max_pos_2d(cube_size + y, cube_size);
-			_runtime.generate_xz_slice(
-					ArraySlice<float>(dst, y * slice_size, (y + 1) * slice_size),
-					slice_size_v, min_pos_2d, max_pos_2d, y, 1);
+			for (uint32_t y = 0; y < cube_size; ++y) {
+				_runtime.generate_set(sx, sy, sz, sdst, false);
+			}
+
+			elapsed_us += profiling_clock.restart();
 		}
-
-		elapsed_us = profiling_clock.restart();
 	}
 
 	float us = static_cast<double>(elapsed_us) / voxel_count;

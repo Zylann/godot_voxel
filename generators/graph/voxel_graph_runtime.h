@@ -22,8 +22,11 @@ public:
 
 	void clear();
 	bool compile(const ProgramGraph &graph, bool debug);
-	float generate_single(const Vector3 &position);
-	void generate_xz_slice(ArraySlice<float> dst, Vector2i dst_size, Vector2 min, Vector2 max, float y, int stride);
+	float generate_single(Vector3 position);
+
+	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
+			ArraySlice<float> out_sdf, bool skip_xz);
+
 	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
 
 	inline const CompilationResult &get_compilation_result() const {
@@ -42,6 +45,7 @@ public:
 		unsigned int size;
 		float constant_value;
 		bool is_constant;
+		bool is_binding = false;
 	};
 
 	struct HeapResource {
@@ -187,13 +191,14 @@ private:
 	std::vector<uint8_t> _program;
 	std::vector<Interval> _ranges;
 	std::vector<Buffer> _buffers;
-	Vector2 _xz_last_min;
-	Vector2 _xz_last_max;
 	int _buffer_size = 0;
 
 	std::vector<HeapResource> _heap_resources;
 
 	uint32_t _xzy_program_start;
+	int _x_input_address = -1;
+	int _y_input_address = -1;
+	int _z_input_address = -1;
 	int _sdf_output_address = -1;
 	CompilationResult _compilation_result;
 
