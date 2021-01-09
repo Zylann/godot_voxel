@@ -32,6 +32,7 @@
 #include "terrain/voxel_terrain.h"
 #include "terrain/voxel_viewer.h"
 #include "util/macros.h"
+//#include "util/noise/fast_noise_2.h"
 #include "util/noise/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite_gradient.h"
 #include "voxel_string_names.h"
@@ -93,6 +94,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelVoxLoader>();
 	ClassDB::register_class<FastNoiseLite>();
 	ClassDB::register_class<FastNoiseLiteGradient>();
+	//ClassDB::register_class<FastNoise2>(); // See SCsub
 
 	// Meshers
 	ClassDB::register_virtual_class<VoxelMesher>();
