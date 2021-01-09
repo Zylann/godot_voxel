@@ -369,15 +369,6 @@ void VoxelGraphRuntime::generate_set(ArraySlice<float> in_x, ArraySlice<float> i
 
 	// I don't like putting private helper functions in headers.
 	struct L {
-		static inline void alloc_buffer(Buffer &buffer, int buffer_size) {
-			// TODO Use pool?
-			if (buffer.data == nullptr) {
-				buffer.data = reinterpret_cast<float *>(memrealloc(buffer.data, buffer_size * sizeof(float)));
-			} else {
-				buffer.data = reinterpret_cast<float *>(memalloc(buffer_size * sizeof(float)));
-			}
-		}
-
 		static inline void bind_buffer(ArraySlice<Buffer> buffers, int a, ArraySlice<float> d) {
 			Buffer &buffer = buffers[a];
 			CRASH_COND(!buffer.is_binding);
@@ -423,13 +414,18 @@ void VoxelGraphRuntime::generate_set(ArraySlice<float> in_x, ArraySlice<float> i
 	// Prepare buffers
 	if (buffer_size_changed) {
 		// We ignore input buffers, these are supposed to be setup already
-		for (size_t i = 0; i < _buffers.size(); ++i) {
-			Buffer &buffer = _buffers[i];
+		for (size_t buffer_index = 0; buffer_index < _buffers.size(); ++buffer_index) {
+			Buffer &buffer = _buffers[buffer_index];
 			if (buffer.is_binding) {
 				continue;
 			}
 
-			L::alloc_buffer(buffer, buffer_size);
+			// TODO Use pool?
+			if (buffer.data == nullptr) {
+				buffer.data = reinterpret_cast<float *>(memrealloc(buffer.data, buffer_size * sizeof(float)));
+			} else {
+				buffer.data = reinterpret_cast<float *>(memalloc(buffer_size * sizeof(float)));
+			}
 			buffer.size = buffer_size;
 
 			if (buffer.is_constant) {
