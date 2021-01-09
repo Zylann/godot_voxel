@@ -38,7 +38,6 @@ public:
 	}
 
 	uint16_t get_output_port_address(ProgramGraph::PortLocation port) const;
-	float get_memory_value(uint16_t address) const;
 
 	struct Buffer {
 		float *data = nullptr;
@@ -47,6 +46,8 @@ public:
 		bool is_constant;
 		bool is_binding = false;
 	};
+
+	const Buffer &get_buffer(uint16_t address) const;
 
 	struct HeapResource {
 		void *ptr;

@@ -293,6 +293,12 @@ bool VoxelGeneratorGraph::compile() {
 	return _runtime.compile(_graph, Engine::get_singleton()->is_editor_hint());
 }
 
+void VoxelGeneratorGraph::generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
+		ArraySlice<float> out_sdf) {
+
+	_runtime.generate_set(in_x, in_y, in_z, out_sdf, false);
+}
+
 inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
 	const float xa = -Math_TAU * uv.x - Math_PI;
 	const float ya = -Math_PI * (uv.y - 0.5f);

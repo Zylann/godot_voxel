@@ -565,32 +565,64 @@ void VoxelGraphEditor::update_previews() {
 		previews.push_back(info);
 	}
 
-	for (size_t i = 0; i < previews.size(); ++i) {
-		previews[i].control->get_image()->lock();
-	}
+	const int preview_size_x = VoxelGraphEditorNodePreview::RESOLUTION;
+	const int preview_size_y = VoxelGraphEditorNodePreview::RESOLUTION;
+	const int buffer_size = preview_size_x * preview_size_y;
+	std::vector<float> x_vec;
+	std::vector<float> y_vec;
+	std::vector<float> z_vec;
+	std::vector<float> sdf_vec;
+	x_vec.resize(buffer_size);
+	y_vec.resize(buffer_size);
+	z_vec.resize(buffer_size);
+	sdf_vec.resize(buffer_size);
 
-	for (int iy = 0; iy < VoxelGraphEditorNodePreview::RESOLUTION; ++iy) {
-		for (int ix = 0; ix < VoxelGraphEditorNodePreview::RESOLUTION; ++ix) {
-			{
-				const int x = ix - VoxelGraphEditorNodePreview::RESOLUTION / 2;
-				const int y =
-						(VoxelGraphEditorNodePreview::RESOLUTION - iy) - VoxelGraphEditorNodePreview::RESOLUTION / 2;
-				_graph->generate_single(Vector3i(x, y, 0));
-			}
+	const Vector3 min_pos(-preview_size_x / 2, -preview_size_y / 2, 0);
+	const Vector3 max_pos = min_pos + Vector3(preview_size_x, preview_size_x, 0);
 
-			for (size_t i = 0; i < previews.size(); ++i) {
-				PreviewInfo &info = previews[i];
-				// TODO This won't work efficiently since we use buffers, we should use a different method
-				const float v = runtime.get_memory_value(info.address);
-				const float g = clamp((v - info.min_value) * info.value_scale, 0.f, 1.f);
-				info.control->get_image()->set_pixel(ix, iy, Color(g, g, g));
+	{
+		int i = 0;
+		for (int iy = 0; iy < preview_size_x; ++iy) {
+			const float y = Math::lerp(min_pos.y, max_pos.y, static_cast<float>(iy) / preview_size_y);
+			for (int ix = 0; ix < preview_size_y; ++ix) {
+				const float x = Math::lerp(min_pos.x, max_pos.x, static_cast<float>(ix) / preview_size_x);
+				x_vec[i] = x;
+				y_vec[i] = y;
+				z_vec[i] = min_pos.z;
+				++i;
 			}
 		}
 	}
 
-	for (size_t i = 0; i < previews.size(); ++i) {
-		previews[i].control->get_image()->unlock();
-		previews[i].control->update_texture();
+	_graph->generate_set(
+			ArraySlice<float>(x_vec, 0, x_vec.size()),
+			ArraySlice<float>(y_vec, 0, y_vec.size()),
+			ArraySlice<float>(z_vec, 0, z_vec.size()),
+			ArraySlice<float>(sdf_vec, 0, sdf_vec.size()));
+
+	for (size_t preview_index = 0; preview_index < previews.size(); ++preview_index) {
+		PreviewInfo &info = previews[preview_index];
+
+		const VoxelGraphRuntime::Buffer &buffer = runtime.get_buffer(info.address);
+
+		Image &im = **info.control->get_image();
+		ERR_FAIL_COND(im.get_width() * im.get_height() != buffer.size);
+
+		im.lock();
+
+		unsigned int i = 0;
+		for (int y = 0; y < im.get_height(); ++y) {
+			for (int x = 0; x < im.get_width(); ++x) {
+				const float v = buffer.data[i];
+				const float g = clamp((v - info.min_value) * info.value_scale, 0.f, 1.f);
+				im.set_pixel(x, y, Color(g, g, g));
+				++i;
+			}
+		}
+
+		im.unlock();
+
+		info.control->update_texture();
 	}
 
 	uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;

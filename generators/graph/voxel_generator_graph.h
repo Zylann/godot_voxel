@@ -110,6 +110,9 @@ public:
 		return _runtime.get_compilation_result();
 	}
 
+	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
+			ArraySlice<float> out_sdf);
+
 	// Debug
 
 	float debug_measure_microseconds_per_voxel(bool singular);

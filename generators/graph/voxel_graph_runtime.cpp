@@ -572,9 +572,7 @@ uint16_t VoxelGraphRuntime::get_output_port_address(ProgramGraph::PortLocation p
 	return *aptr;
 }
 
-float VoxelGraphRuntime::get_memory_value(uint16_t address) const {
+const VoxelGraphRuntime::Buffer &VoxelGraphRuntime::get_buffer(uint16_t address) const {
 	CRASH_COND(address >= _buffers.size());
-	const Buffer &buffer = _buffers[address];
-	// TODO This is a patch implementation. We may need to remove this method eventually
-	return buffer.data == nullptr ? buffer.constant_value : buffer.data[0];
+	return _buffers[address];
 }
