@@ -722,8 +722,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			const ProgramGraph::Node &node = ctx.get_node();
 			Params p;
-			const float min0 = node.params[0].operator float();
-			const float max0 = node.params[1].operator float();
+			p.edge0 = node.params[0].operator float();
+			p.edge1 = node.params[1].operator float();
 			ctx.set_params(p);
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
@@ -1208,7 +1208,6 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ctx.set_output(3, len);
 		};
 	}
-	// TODO
 	{
 		struct Params {
 			FastNoiseLite *noise;
