@@ -26,8 +26,8 @@ public:
 
 	inline ArraySlice(ArraySlice<T> &p_other, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end <= p_begin);
-		CRASH_COND(p_begin >= vec.size());
-		CRASH_COND(p_end > vec.size()); // `>` because p_end is typically `p_begin + size`
+		CRASH_COND(p_begin >= p_other.size());
+		CRASH_COND(p_end > p_other.size()); // `>` because p_end is typically `p_begin + size`
 		_ptr = p_other._ptr + p_begin;
 		_size = p_end - p_begin;
 	}
