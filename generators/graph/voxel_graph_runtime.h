@@ -192,7 +192,7 @@ private:
 	std::vector<uint8_t> _program;
 	std::vector<Interval> _ranges;
 	std::vector<Buffer> _buffers;
-	int _buffer_size = 0;
+	unsigned int _buffer_size = 0;
 
 	std::vector<HeapResource> _heap_resources;
 

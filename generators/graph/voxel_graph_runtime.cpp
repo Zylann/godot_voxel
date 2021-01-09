@@ -436,8 +436,8 @@ void VoxelGraphRuntime::generate_set(ArraySlice<float> in_x, ArraySlice<float> i
 			buffer.size = buffer_size;
 
 			if (buffer.is_constant) {
-				for (auto i = 0; i < buffer_size; ++i) {
-					buffer.data[i] = buffer.constant_value;
+				for (unsigned int j = 0; j < buffer_size; ++j) {
+					buffer.data[j] = buffer.constant_value;
 				}
 			}
 		}
