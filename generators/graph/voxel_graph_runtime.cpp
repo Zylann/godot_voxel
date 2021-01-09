@@ -47,8 +47,6 @@ void VoxelGraphRuntime::clear() {
 	_ranges.resize(4, Interval());
 	_xzy_program_start = 0;
 
-	const float fmax = std::numeric_limits<float>::max();
-
 	_buffer_size = 0;
 	for (auto it = _buffers.begin(); it != _buffers.end(); ++it) {
 		Buffer &b = *it;
@@ -283,7 +281,6 @@ bool VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
 		// Add actual operation
 		CRASH_COND(node->type_id > 0xff);
 		append(program, static_cast<uint8_t>(node->type_id));
-		const size_t offset = program.size();
 
 		// Inputs and outputs use a convention so we can have generic code for them.
 		// Parameters are more specific, and may be affected by alignment so better just do them by hand
