@@ -490,7 +490,8 @@ void VoxelGraphRuntime::generate_set(ArraySlice<float> in_x, ArraySlice<float> i
 		}
 
 		ERR_FAIL_COND(node_type.process_buffer_func == nullptr);
-		node_type.process_buffer_func(ProcessBufferContext(inputs, outputs, params, buffers));
+		ProcessBufferContext ctx(inputs, outputs, params, buffers);
+		node_type.process_buffer_func(ctx);
 	}
 
 	// Populate output buffers
@@ -548,7 +549,8 @@ Interval VoxelGraphRuntime::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 		}
 
 		ERR_FAIL_COND_V(node_type.range_analysis_func == nullptr, Interval());
-		node_type.range_analysis_func(RangeAnalysisContext(inputs, outputs, params, ranges));
+		RangeAnalysisContext ctx(inputs, outputs, params, ranges);
+		node_type.range_analysis_func(ctx);
 
 #ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
 		// If this fails, the program is ill-formed
