@@ -662,8 +662,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
-			const Interval t = ctx.get_input(2);
-			ctx.set_output(0, lerp(a, b, t));
+			// Note: if I call this `t` like I use to do with `lerp`, GCC complains it shadows `t` from the outer scope.
+			// Even though this lambda does not capture anything from the outer scope :shrug:
+			const Interval r = ctx.get_input(2);
+			ctx.set_output(0, lerp(a, b, r));
 		};
 	}
 	{
@@ -1062,11 +1064,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
 			const VoxelGraphRuntime::Buffer &threshold = ctx.get_input(2);
-			const VoxelGraphRuntime::Buffer &t = ctx.get_input(3);
+			const VoxelGraphRuntime::Buffer &tested_value = ctx.get_input(3);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const uint32_t buffer_size = out.size;
-			if (t.is_constant && threshold.is_constant) {
-				const float *src = t.constant_value < threshold.constant_value ? a.data : b.data;
+			if (tested_value.is_constant && threshold.is_constant) {
+				const float *src = tested_value.constant_value < threshold.constant_value ? a.data : b.data;
 				for (uint32_t i = 0; i < buffer_size; ++i) {
 					memcpy(out.data, src, buffer_size * sizeof(float));
 				}
@@ -1076,7 +1078,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				}
 			} else {
 				for (uint32_t i = 0; i < buffer_size; ++i) {
-					out.data[i] = select(a.data[i], b.data[i], threshold.data[i], t.data[i]);
+					out.data[i] = select(a.data[i], b.data[i], threshold.data[i], tested_value.data[i]);
 				}
 			}
 		};
@@ -1084,8 +1086,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
 			const Interval threshold = ctx.get_input(2);
-			const Interval t = ctx.get_input(3);
-			ctx.set_output(0, select(a, b, threshold, t));
+			const Interval tested_value = ctx.get_input(3);
+			ctx.set_output(0, select(a, b, threshold, tested_value));
 		};
 	}
 	{
