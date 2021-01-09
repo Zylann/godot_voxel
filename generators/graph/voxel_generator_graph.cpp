@@ -559,7 +559,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 	uint64_t elapsed_us = 0;
 
 	if (singular) {
-		for (int i = 0; i < cube_count; ++i) {
+		for (uint32_t i = 0; i < cube_count; ++i) {
 			profiling_clock.restart();
 
 			// Note: intentionally iterating in XYZ instead of XZY to avoid XZ optimization to kick in
@@ -588,7 +588,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 		ArraySlice<float> sz(src_z, 0, src_z.size());
 		ArraySlice<float> sdst(dst, 0, dst.size());
 
-		for (int i = 0; i < cube_count; ++i) {
+		for (uint32_t i = 0; i < cube_count; ++i) {
 			profiling_clock.restart();
 
 			for (uint32_t y = 0; y < cube_size; ++y) {
