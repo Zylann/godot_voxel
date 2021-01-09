@@ -59,9 +59,9 @@ public:
 		CompileContext(const ProgramGraph::Node &node, std::vector<uint8_t> &program,
 				std::vector<HeapResource> &heap_resources) :
 				_node(node),
+				_offset(program.size()),
 				_program(program),
-				_heap_resources(heap_resources),
-				_offset(program.size()) {}
+				_heap_resources(heap_resources) {}
 
 		const ProgramGraph::Node &get_node() const {
 			return _node;
