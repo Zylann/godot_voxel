@@ -606,7 +606,7 @@ void VoxelGraphEditor::update_previews() {
 		const VoxelGraphRuntime::Buffer &buffer = runtime.get_buffer(info.address);
 
 		Image &im = **info.control->get_image();
-		ERR_FAIL_COND(im.get_width() * im.get_height() != buffer.size);
+		ERR_FAIL_COND(im.get_width() * im.get_height() != static_cast<int>(buffer.size));
 
 		im.lock();
 
