@@ -59,6 +59,10 @@ public:
 
 	void clear();
 
+	// Graph edition API
+	// Important: functions editing the graph are NOT thread-safe.
+	// They are expected to be used by the main thread (editor or game logic).
+
 	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = ProgramGraph::NULL_ID);
 	void remove_node(uint32_t node_id);
 
@@ -89,6 +93,8 @@ public:
 	PoolIntArray get_node_ids() const;
 	uint32_t generate_node_id() { return _graph.generate_node_id(); }
 
+	// VoxelGenerator implementation
+
 	int get_used_channels_mask() const override;
 
 	void generate_block(VoxelBlockRequest &input) override;
@@ -103,15 +109,16 @@ public:
 
 	// Internal
 
-	const VoxelGraphRuntime &get_runtime() const { return _runtime; }
-	bool compile();
-
-	const VoxelGraphRuntime::CompilationResult &get_compilation_result() const {
-		return _runtime.get_compilation_result();
-	}
+	VoxelGraphRuntime::CompilationResult compile();
+	bool is_good() const;
 
 	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
 			ArraySlice<float> out_sdf);
+
+	// Returns state from the last generator used in the current thread
+	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
+
+	uint32_t get_output_port_address(ProgramGraph::PortLocation port) const;
 
 	// Debug
 
@@ -121,9 +128,7 @@ public:
 private:
 	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
 
-	ProgramGraph::Node *create_node_internal(NodeTypeID type_id, Vector2 position, uint32_t id);
-
-	Dictionary get_graph_as_variant_data();
+	Dictionary get_graph_as_variant_data() const;
 	void load_graph_from_variant_data(Dictionary data);
 
 	int _b_get_node_type_count() const;
@@ -134,6 +139,7 @@ private:
 	// See https://github.com/godotengine/godot/issues/36895
 	void _b_set_node_param_null(int node_id, int param_index);
 	float _b_generate_single(Vector3 pos);
+	Dictionary _b_compile();
 
 	void _on_subresource_changed();
 	void connect_to_subresource_changes();
@@ -141,12 +147,21 @@ private:
 	static void _bind_methods();
 
 	ProgramGraph _graph;
-	VoxelGraphRuntime _runtime;
-	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
-	std::vector<float> _x_cache;
-	std::vector<float> _y_cache;
-	std::vector<float> _z_cache;
-	std::vector<float> _slice_cache;
+
+	// Only compiling and generation methods are thread-safe.
+
+	VoxelGraphRuntime *_runtime = nullptr;
+	RWLock *_runtime_lock = nullptr;
+
+	struct Cache {
+		std::vector<float> x_cache;
+		std::vector<float> y_cache;
+		std::vector<float> z_cache;
+		std::vector<float> slice_cache;
+		VoxelGraphRuntime::State state;
+	};
+
+	static thread_local Cache _cache;
 };
 
 VARIANT_ENUM_CAST(VoxelGeneratorGraph::NodeTypeID)

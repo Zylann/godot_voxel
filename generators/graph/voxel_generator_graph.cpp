@@ -7,29 +7,34 @@
 
 const char *VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED = "node_name_changed";
 
+thread_local VoxelGeneratorGraph::Cache VoxelGeneratorGraph::_cache;
+
 VoxelGeneratorGraph::VoxelGeneratorGraph() {
-	clear();
+	_runtime_lock = RWLock::create();
 }
 
 VoxelGeneratorGraph::~VoxelGeneratorGraph() {
 	clear();
+	memdelete(_runtime_lock);
 }
 
 void VoxelGeneratorGraph::clear() {
 	_graph.clear();
-	_runtime.clear();
+	{
+		RWLockWrite wlock(_runtime_lock);
+		if (_runtime != nullptr) {
+			memdelete(_runtime);
+			_runtime = nullptr;
+		}
+	}
 }
 
-uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
-	const ProgramGraph::Node *node = create_node_internal(type_id, position, id);
-	ERR_FAIL_COND_V(node == nullptr, ProgramGraph::NULL_ID);
-	return node->id;
-}
+static ProgramGraph::Node *create_node_internal(ProgramGraph &graph,
+		VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position, uint32_t id) {
 
-ProgramGraph::Node *VoxelGeneratorGraph::create_node_internal(NodeTypeID type_id, Vector2 position, uint32_t id) {
 	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(type_id);
 
-	ProgramGraph::Node *node = _graph.create_node(type_id, id);
+	ProgramGraph::Node *node = graph.create_node(type_id, id);
 	ERR_FAIL_COND_V(node == nullptr, nullptr);
 	node->inputs.resize(type.inputs.size());
 	node->outputs.resize(type.outputs.size());
@@ -45,6 +50,12 @@ ProgramGraph::Node *VoxelGeneratorGraph::create_node_internal(NodeTypeID type_id
 	}
 
 	return node;
+}
+
+uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
+	const ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id);
+	ERR_FAIL_COND_V(node == nullptr, ProgramGraph::NULL_ID);
+	return node->id;
 }
 
 void VoxelGeneratorGraph::remove_node(uint32_t node_id) {
@@ -183,18 +194,22 @@ PoolIntArray VoxelGeneratorGraph::get_node_ids() const {
 }
 
 int VoxelGeneratorGraph::get_used_channels_mask() const {
-	return 1 << _channel;
+	return 1 << VoxelBuffer::CHANNEL_SDF;
 }
 
 void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
-	if (!_runtime.has_output()) {
+	RWLockRead rlock(_runtime_lock);
+
+	const VoxelGraphRuntime *runtime = _runtime;
+
+	if (runtime == nullptr || !runtime->has_output()) {
 		return;
 	}
 
 	VoxelBuffer &out_buffer = **input.voxel_buffer;
 
 	const Vector3i bs = out_buffer.get_size();
-	const VoxelBuffer::ChannelId channel = _channel;
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 	const Vector3i origin = input.origin_in_voxels;
 
 	const Vector3i rmin;
@@ -226,14 +241,19 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 			break;
 	}
 
+	Cache &cache = _cache;
+
+	const unsigned int slice_buffer_size = bs.x * bs.y;
+	runtime->prepare_state(cache.state, slice_buffer_size);
+
 	// TODO Add subdivide option so we can fine tune the analysis
 
-	const Interval range = _runtime.analyze_range(gmin, gmax) * sdf_scale;
+	const Interval range = runtime->analyze_range(cache.state, gmin, gmax) * sdf_scale;
 	const float clip_threshold = sdf_scale * 0.2f;
 	if (range.min > clip_threshold && range.max > clip_threshold) {
-		//out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 1.f);
+		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 1.f);
 		// DEBUG: use this instead to fill optimized-out blocks with matter, making them stand out
-		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, -1.f);
+		//out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, -1.f);
 		return;
 
 	} else if (range.min < -clip_threshold && range.max < -clip_threshold) {
@@ -245,16 +265,16 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 		return;
 	}
 
-	_slice_cache.resize(bs.x * bs.y);
-	ArraySlice<float> slice_cache(_slice_cache, 0, _slice_cache.size());
+	cache.slice_cache.resize(slice_buffer_size);
+	ArraySlice<float> slice_cache(cache.slice_cache, 0, cache.slice_cache.size());
 
-	_x_cache.resize(_slice_cache.size());
-	_y_cache.resize(_slice_cache.size());
-	_z_cache.resize(_slice_cache.size());
+	cache.x_cache.resize(cache.slice_cache.size());
+	cache.y_cache.resize(cache.slice_cache.size());
+	cache.z_cache.resize(cache.slice_cache.size());
 
-	ArraySlice<float> x_cache(_x_cache, 0, _x_cache.size());
-	ArraySlice<float> y_cache(_y_cache, 0, _y_cache.size());
-	ArraySlice<float> z_cache(_z_cache, 0, _z_cache.size());
+	ArraySlice<float> x_cache(cache.x_cache, 0, cache.x_cache.size());
+	ArraySlice<float> y_cache(cache.y_cache, 0, cache.y_cache.size());
+	ArraySlice<float> z_cache(cache.z_cache, 0, cache.z_cache.size());
 
 	const int stride = 1 << input.lod;
 
@@ -274,7 +294,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 		y_cache.fill(gy);
 
-		_runtime.generate_set(x_cache, y_cache, z_cache, slice_cache, ry != rmin.y);
+		runtime->generate_set(cache.state, x_cache, y_cache, z_cache, slice_cache, ry != rmin.y);
 
 		// TODO Flatten this further
 		unsigned int i = 0;
@@ -289,14 +309,52 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	out_buffer.compress_uniform_channels();
 }
 
-bool VoxelGeneratorGraph::compile() {
-	return _runtime.compile(_graph, Engine::get_singleton()->is_editor_hint());
+VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
+	VoxelGraphRuntime::CompilationResult result;
+	VoxelGraphRuntime *r = memnew(VoxelGraphRuntime);
+	result = r->compile(_graph, Engine::get_singleton()->is_editor_hint());
+
+	if (result.success) {
+		RWLockWrite wlock(_runtime_lock);
+		if (_runtime != nullptr) {
+			memdelete(_runtime);
+		}
+		_runtime = r;
+
+	} else {
+		memdelete(r);
+	}
+
+	return result;
+}
+
+// This is an external API which involves locking so better not use this internally
+bool VoxelGeneratorGraph::is_good() const {
+	RWLockRead rlock(_runtime_lock);
+	const VoxelGraphRuntime *runtime = _runtime;
+	return runtime != nullptr && runtime->has_output();
 }
 
 void VoxelGeneratorGraph::generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
 		ArraySlice<float> out_sdf) {
 
-	_runtime.generate_set(in_x, in_y, in_z, out_sdf, false);
+	RWLockRead rlock(_runtime_lock);
+	const VoxelGraphRuntime *runtime = _runtime;
+	ERR_FAIL_COND(runtime == nullptr || !runtime->has_output());
+	Cache &cache = _cache;
+	runtime->prepare_state(cache.state, in_x.size());
+	runtime->generate_set(cache.state, in_x, in_y, in_z, out_sdf, false);
+}
+
+const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current_thread() {
+	return _cache.state;
+}
+
+uint32_t VoxelGeneratorGraph::get_output_port_address(ProgramGraph::PortLocation port) const {
+	RWLockRead rlock(_runtime_lock);
+	const VoxelGraphRuntime *runtime = _runtime;
+	ERR_FAIL_COND_V(runtime == nullptr || !runtime->has_output(), 0);
+	return runtime->get_output_port_address(port);
 }
 
 inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
@@ -312,6 +370,14 @@ inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
 void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, float sdf_min, float sdf_max) {
 	ERR_FAIL_COND(im.is_null());
 
+	RWLockRead rlock(_runtime_lock);
+	const VoxelGraphRuntime *runtime = _runtime;
+	ERR_FAIL_COND(runtime == nullptr || !runtime->has_output());
+
+	Cache &cache = _cache;
+	// TODO Need to convert this to buffers instead of using single queries
+	runtime->prepare_state(cache.state, 1);
+
 	const Vector2 suv(
 			1.f / static_cast<float>(im->get_width()),
 			1.f / static_cast<float>(im->get_height()));
@@ -324,8 +390,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 		for (int ix = 0; ix < im->get_width(); ++ix) {
 			const Vector2 uv = suv * Vector2(ix, iy);
 			const Vector3 pos = get_3d_pos_from_panorama_uv(uv) * ref_radius;
-			// TODO Need to convert this to buffers instead of using single queries
-			const float sdf = _runtime.generate_single(pos);
+			const float sdf = runtime->generate_single(cache.state, pos);
 			const float nh = (-sdf - sdf_min) * nr;
 			im->set_pixel(ix, iy, Color(nh, nh, nh));
 		}
@@ -339,6 +404,14 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 // Such maps can be used by shaders to sharpen the details of the planet when seen from far away.
 void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength) {
 	ERR_FAIL_COND(im.is_null());
+
+	RWLockRead rlock(_runtime_lock);
+	const VoxelGraphRuntime *runtime = _runtime;
+	ERR_FAIL_COND(runtime == nullptr || !runtime->has_output());
+
+	Cache &cache = _cache;
+	// TODO Need to convert this to buffers instead of using single queries
+	runtime->prepare_state(cache.state, 1);
 
 	const Vector2 suv(
 			1.f / static_cast<float>(im->get_width()),
@@ -373,10 +446,10 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 			const Vector3 np_py = get_3d_pos_from_panorama_uv(uv + normal_step_y) * ref_radius;
 
 			// TODO Need to convert this to buffers instead of using single queries
-			const float h_nx = -_runtime.generate_single(np_nx);
-			const float h_px = -_runtime.generate_single(np_px);
-			const float h_ny = -_runtime.generate_single(np_ny);
-			const float h_py = -_runtime.generate_single(np_py);
+			const float h_nx = -runtime->generate_single(cache.state, np_nx);
+			const float h_px = -runtime->generate_single(cache.state, np_px);
+			const float h_ny = -runtime->generate_single(cache.state, np_ny);
+			const float h_py = -runtime->generate_single(cache.state, np_py);
 
 			const Vector3 normal = Vector3(h_nx - h_px, ns, h_ny - h_py).normalized();
 			const Color en(
@@ -390,39 +463,47 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	im->unlock();
 }
 
+// TODO This function isn't used yet, but whatever uses it should probably put locking and cache outside
 float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
-	if (!_runtime.has_output()) {
-		return 1.f;
-	}
-
-	return _runtime.generate_single(position.to_vec3());
+	RWLockRead rlock(_runtime_lock);
+	const VoxelGraphRuntime *runtime = _runtime;
+	ERR_FAIL_COND_V(runtime == nullptr || !runtime->has_output(), 0.f);
+	Cache &cache = _cache;
+	runtime->prepare_state(cache.state, 1);
+	return runtime->generate_single(cache.state, position.to_vec3());
 }
 
 Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) {
-	return _runtime.analyze_range(min_pos, max_pos);
+	RWLockRead rlock(_runtime_lock);
+	const VoxelGraphRuntime *runtime = _runtime;
+	ERR_FAIL_COND_V(runtime == nullptr || !runtime->has_output(), Interval::from_single_value(0.f));
+	Cache &cache = _cache;
+	// Note, buffer size is irrelevant here
+	runtime->prepare_state(cache.state, 1);
+	return runtime->analyze_range(cache.state, min_pos, max_pos);
 }
 
 Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 	Ref<VoxelGeneratorGraph> d;
 	d.instance();
 
-	d->_channel = _channel;
 	d->_graph.copy_from(_graph, p_subresources);
 	// Program not copied, as it may contain pointers to the resources we are duplicating
 
+	// TODO Should we really compile in there though?
 	d->compile();
 
 	return d;
 }
 
-Dictionary VoxelGeneratorGraph::get_graph_as_variant_data() {
+static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 	Dictionary nodes_data;
-	PoolVector<int> node_ids = _graph.get_node_ids();
+	PoolVector<int> node_ids = graph.get_node_ids();
 	{
 		PoolVector<int>::Read r = node_ids.read();
 		for (int i = 0; i < node_ids.size(); ++i) {
 			uint32_t node_id = r[i];
-			const ProgramGraph::Node *node = _graph.get_node(node_id);
+			const ProgramGraph::Node *node = graph.get_node(node_id);
 			ERR_FAIL_COND_V(node == nullptr, Dictionary());
 
 			Dictionary node_data;
@@ -454,7 +535,7 @@ Dictionary VoxelGeneratorGraph::get_graph_as_variant_data() {
 
 	Array connections_data;
 	std::vector<ProgramGraph::Connection> connections;
-	_graph.get_connections(connections);
+	graph.get_connections(connections);
 	connections_data.resize(connections.size());
 	for (size_t i = 0; i < connections.size(); ++i) {
 		const ProgramGraph::Connection &con = connections[i];
@@ -473,6 +554,10 @@ Dictionary VoxelGeneratorGraph::get_graph_as_variant_data() {
 	return data;
 }
 
+Dictionary VoxelGeneratorGraph::get_graph_as_variant_data() const {
+	return ::get_graph_as_variant_data(_graph);
+}
+
 static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT, false);
 	int i = v;
@@ -481,7 +566,7 @@ static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
 	return true;
 }
 
-void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
+static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 	Dictionary nodes_data = data["nodes"];
 	Array connections_data = data["connections"];
 	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
@@ -489,19 +574,19 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 	const Variant *id_key = nullptr;
 	while ((id_key = nodes_data.next(id_key))) {
 		const String id_str = *id_key;
-		ERR_FAIL_COND(!id_str.is_valid_integer());
+		ERR_FAIL_COND_V(!id_str.is_valid_integer(), false);
 		const int sid = id_str.to_int();
-		ERR_FAIL_COND(sid < static_cast<int>(ProgramGraph::NULL_ID));
+		ERR_FAIL_COND_V(sid < static_cast<int>(ProgramGraph::NULL_ID), false);
 		const uint32_t id = sid;
 
 		Dictionary node_data = nodes_data[*id_key];
 
 		const String type_name = node_data["type"];
 		const Vector2 gui_position = node_data["gui_position"];
-		NodeTypeID type_id;
-		ERR_FAIL_COND(!type_db.try_get_type_id_from_name(type_name, type_id));
-		ProgramGraph::Node *node = create_node_internal(type_id, gui_position, id);
-		ERR_FAIL_COND(node == nullptr);
+		VoxelGeneratorGraph::NodeTypeID type_id;
+		ERR_FAIL_COND_V(!type_db.try_get_type_id_from_name(type_name, type_id), false);
+		ProgramGraph::Node *node = create_node_internal(graph, type_id, gui_position, id);
+		ERR_FAIL_COND_V(node == nullptr, false);
 
 		const Variant *param_key = nullptr;
 		while ((param_key = node_data.next(param_key))) {
@@ -528,27 +613,35 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 
 	for (int i = 0; i < connections_data.size(); ++i) {
 		Array con_data = connections_data[i];
-		ERR_FAIL_COND(con_data.size() != 4);
+		ERR_FAIL_COND_V(con_data.size() != 4, false);
 		ProgramGraph::PortLocation src;
 		ProgramGraph::PortLocation dst;
-		ERR_FAIL_COND(!var_to_id(con_data[0], src.node_id, ProgramGraph::NULL_ID));
-		ERR_FAIL_COND(!var_to_id(con_data[1], src.port_index));
-		ERR_FAIL_COND(!var_to_id(con_data[2], dst.node_id, ProgramGraph::NULL_ID));
-		ERR_FAIL_COND(!var_to_id(con_data[3], dst.port_index));
-		_graph.connect(src, dst);
+		ERR_FAIL_COND_V(!var_to_id(con_data[0], src.node_id, ProgramGraph::NULL_ID), false);
+		ERR_FAIL_COND_V(!var_to_id(con_data[1], src.port_index), false);
+		ERR_FAIL_COND_V(!var_to_id(con_data[2], dst.node_id, ProgramGraph::NULL_ID), false);
+		ERR_FAIL_COND_V(!var_to_id(con_data[3], dst.port_index), false);
+		graph.connect(src, dst);
 	}
 
-	// It's possible to auto-compile on load because `graph_data` is the only property set by the loader,
-	// which is enough to have all information we need
-	compile();
+	return true;
+}
+
+void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
+	if (::load_graph_from_variant_data(_graph, data)) {
+		// It's possible to auto-compile on load because `graph_data` is the only property set by the loader,
+		// which is enough to have all information we need
+		compile();
+	} else {
+		_graph.clear();
+	}
 }
 
 // Debug land
 
 float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
-	if (!_runtime.has_output()) {
-		return -1;
-	}
+	RWLockRead rlock(_runtime_lock);
+	const VoxelGraphRuntime *runtime = _runtime;
+	ERR_FAIL_COND_V(runtime == nullptr || !runtime->has_output(), 0.f);
 
 	const uint32_t cube_size = 16;
 	const uint32_t cube_count = 250;
@@ -558,15 +651,18 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 	ProfilingClock profiling_clock;
 	uint64_t elapsed_us = 0;
 
+	Cache &cache = _cache;
+
 	if (singular) {
+		runtime->prepare_state(cache.state, 1);
+
 		for (uint32_t i = 0; i < cube_count; ++i) {
 			profiling_clock.restart();
 
-			// Note: intentionally iterating in XYZ instead of XZY to avoid XZ optimization to kick in
 			for (uint32_t z = 0; z < cube_size; ++z) {
 				for (uint32_t y = 0; y < cube_size; ++y) {
 					for (uint32_t x = 0; x < cube_size; ++x) {
-						_runtime.generate_single(Vector3i(x, y, z).to_vec3());
+						runtime->generate_single(cache.state, Vector3i(x, y, z).to_vec3());
 					}
 				}
 			}
@@ -588,11 +684,13 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 		ArraySlice<float> sz(src_z, 0, src_z.size());
 		ArraySlice<float> sdst(dst, 0, dst.size());
 
+		runtime->prepare_state(cache.state, sx.size());
+
 		for (uint32_t i = 0; i < cube_count; ++i) {
 			profiling_clock.restart();
 
 			for (uint32_t y = 0; y < cube_size; ++y) {
-				_runtime.generate_set(sx, sy, sz, sdst, false);
+				runtime->generate_set(cache.state, sx, sy, sz, sdst, false);
 			}
 
 			elapsed_us += profiling_clock.restart();
@@ -687,6 +785,17 @@ float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
 	return generate_single(Vector3i(pos));
 }
 
+Dictionary VoxelGeneratorGraph::_b_compile() {
+	VoxelGraphRuntime::CompilationResult res = compile();
+	Dictionary d;
+	d["success"] = res.success;
+	if (!res.success) {
+		d["message"] = res.message;
+		d["node_id"] = res.node_id;
+	}
+	return d;
+}
+
 // void VoxelGeneratorGraph::_on_subresource_changed() {
 // 	emit_changed();
 // }
@@ -721,7 +830,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_node_gui_position", "node_id", "position"),
 			&VoxelGeneratorGraph::set_node_gui_position);
 
-	ClassDB::bind_method(D_METHOD("compile"), &VoxelGeneratorGraph::compile);
+	ClassDB::bind_method(D_METHOD("compile"), &VoxelGeneratorGraph::_b_compile);
 
 	ClassDB::bind_method(D_METHOD("get_node_type_count"), &VoxelGeneratorGraph::_b_get_node_type_count);
 	ClassDB::bind_method(D_METHOD("get_node_type_info", "type_id"), &VoxelGeneratorGraph::_b_get_node_type_info);

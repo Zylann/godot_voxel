@@ -600,10 +600,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("min", Variant::REAL, -1.f));
 		t.params.push_back(Param("max", Variant::REAL, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
 			Params p;
-			p.min = node.params[0].operator float();
-			p.max = node.params[1].operator float();
+			p.min = ctx.get_param(0).operator float();
+			p.max = ctx.get_param(1).operator float();
 			ctx.set_params(p);
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
@@ -684,12 +683,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("min1", Variant::REAL, -1.f));
 		t.params.push_back(Param("max1", Variant::REAL, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
 			Params p;
-			const float min0 = node.params[0].operator float();
-			const float max0 = node.params[1].operator float();
-			const float min1 = node.params[2].operator float();
-			const float max1 = node.params[3].operator float();
+			const float min0 = ctx.get_param(0).operator float();
+			const float max0 = ctx.get_param(1).operator float();
+			const float min1 = ctx.get_param(2).operator float();
+			const float max1 = ctx.get_param(3).operator float();
 			p.c0 = -min0;
 			p.m0 = (max1 - min1) * (Math::is_equal_approx(max0, min0) ? 99999.f : 1.f / (max0 - min0));
 			p.c1 = min1;
@@ -722,10 +720,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("edge0", Variant::REAL, 0.f));
 		t.params.push_back(Param("edge1", Variant::REAL, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
 			Params p;
-			p.edge0 = node.params[0].operator float();
-			p.edge1 = node.params[1].operator float();
+			p.edge0 = ctx.get_param(0).operator float();
+			p.edge1 = ctx.get_param(1).operator float();
 			ctx.set_params(p);
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
@@ -757,8 +754,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.outputs.push_back(Port("out"));
 		t.params.push_back(Param("curve", "Curve"));
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
-			Ref<Curve> curve = node.params[0];
+			Ref<Curve> curve = ctx.get_param(0);
 			if (curve.is_null()) {
 				ctx.make_error("Curve instance is null");
 				return;
@@ -812,8 +808,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("noise", "OpenSimplexNoise"));
 
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
-			Ref<OpenSimplexNoise> noise = node.params[0];
+			Ref<OpenSimplexNoise> noise = ctx.get_param(0);
 			if (noise.is_null()) {
 				ctx.make_error("OpenSimplexNoise instance is null");
 				return;
@@ -856,8 +851,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("noise", "OpenSimplexNoise"));
 
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
-			Ref<OpenSimplexNoise> noise = node.params[0];
+			Ref<OpenSimplexNoise> noise = ctx.get_param(0);
 			if (noise.is_null()) {
 				ctx.make_error("OpenSimplexNoise instance is null");
 				return;
@@ -900,8 +894,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.outputs.push_back(Port("out"));
 		t.params.push_back(Param("image", "Image"));
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
-			Ref<Image> image = node.params[0];
+			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
 				ctx.make_error("Image instance is null");
 				return;
@@ -1115,22 +1108,21 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("factor", Variant::REAL, 1.f));
 
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
-			Ref<Image> image = node.params[0];
+			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
 				ctx.make_error("Image instance is null");
 				return;
 			}
 			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
 			im_range->generate(**image);
-			const float factor = node.params[1];
+			const float factor = ctx.get_param(2);
 			const Interval range = im_range->get_range() * factor;
 			Params p;
 			p.min_height = range.min;
 			p.max_height = range.max;
 			p.image = *image;
 			p.image_range_grid = im_range;
-			p.radius = node.params[0];
+			p.radius = ctx.get_param(1);
 			p.factor = factor;
 			p.norm_x = image->get_width();
 			p.norm_y = image->get_height();
@@ -1224,8 +1216,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("noise", "FastNoiseLite"));
 
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
-			Ref<FastNoiseLite> noise = node.params[0];
+			Ref<FastNoiseLite> noise = ctx.get_param(0);
 			if (noise.is_null()) {
 				ctx.make_error("FastNoiseLite instance is null");
 				return;
@@ -1267,8 +1258,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("noise", "FastNoiseLite"));
 
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
-			Ref<FastNoiseLite> noise = node.params[0];
+			Ref<FastNoiseLite> noise = ctx.get_param(0);
 			if (noise.is_null()) {
 				ctx.make_error("FastNoiseLite instance is null");
 				return;
@@ -1312,8 +1302,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("noise", "FastNoiseLiteGradient"));
 
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
-			Ref<FastNoiseLiteGradient> noise = node.params[0];
+			Ref<FastNoiseLiteGradient> noise = ctx.get_param(0);
 			if (noise.is_null()) {
 				ctx.make_error("FastNoiseLiteGradient instance is null");
 				return;
@@ -1364,8 +1353,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("noise", "FastNoiseLiteGradient"));
 
 		t.compile_func = [](CompileContext &ctx) {
-			const ProgramGraph::Node &node = ctx.get_node();
-			Ref<FastNoiseLiteGradient> noise = node.params[0];
+			Ref<FastNoiseLiteGradient> noise = ctx.get_param(0);
 			if (noise.is_null()) {
 				ctx.make_error("FastNoiseLiteGradient instance is null");
 				return;

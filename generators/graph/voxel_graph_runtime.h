@@ -17,37 +17,73 @@ public:
 		String message;
 	};
 
-	VoxelGraphRuntime();
-	~VoxelGraphRuntime();
-
-	void clear();
-	bool compile(const ProgramGraph &graph, bool debug);
-	float generate_single(Vector3 position);
-
-	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
-			ArraySlice<float> out_sdf, bool skip_xz);
-
-	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
-
-	inline const CompilationResult &get_compilation_result() const {
-		return _compilation_result;
-	}
-
-	inline bool has_output() const {
-		return _sdf_output_address != -1;
-	}
-
-	uint16_t get_output_port_address(ProgramGraph::PortLocation port) const;
-
 	struct Buffer {
+		// TODO Consider wrapping this in debug mode. It is one of the rare cases I didnt do it.
+		// I spent an hour debugging memory corruption which originated from an overrun while accessing this data.
 		float *data = nullptr;
+		// This size is not the allocated count, it's an available count below capacity.
+		// All buffers have the same available count, size is here only for convenience.
 		unsigned int size;
+		unsigned int capacity;
 		float constant_value;
 		bool is_constant;
 		bool is_binding = false;
 	};
 
-	const Buffer &get_buffer(uint16_t address) const;
+	// Contains the data the program will modify while it runs.
+	class State {
+	public:
+		inline const Buffer &get_buffer(uint16_t address) const {
+			// TODO Just for convenience because STL bound checks aren't working in Godot 3
+			CRASH_COND(address >= buffers.size());
+			return buffers[address];
+		}
+
+		void clear() {
+			buffer_size = 0;
+			buffer_capacity = 0;
+			for (auto it = buffers.begin(); it != buffers.end(); ++it) {
+				Buffer &b = *it;
+				if (b.data != nullptr && !b.is_binding) {
+					memfree(b.data);
+				}
+			}
+			buffers.clear();
+			ranges.clear();
+		}
+
+	private:
+		friend class VoxelGraphRuntime;
+
+		std::vector<Interval> ranges;
+		std::vector<Buffer> buffers;
+		unsigned int buffer_size = 0;
+		unsigned int buffer_capacity = 0;
+	};
+
+	VoxelGraphRuntime();
+	~VoxelGraphRuntime();
+
+	void clear();
+	CompilationResult compile(const ProgramGraph &graph, bool debug);
+
+	// Call this before you use a state with generation functions.
+	// You need to call it once, until you want to use a different graph, buffer size or buffer count.
+	// If none of these change, you can keep re-using it.
+	void prepare_state(State &state, unsigned int buffer_size) const;
+
+	float generate_single(State &state, Vector3 position) const;
+
+	void generate_set(State &state, ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
+			ArraySlice<float> out_sdf, bool skip_xz) const;
+
+	Interval analyze_range(State &state, Vector3i min_pos, Vector3i max_pos) const;
+
+	inline bool has_output() const {
+		return _program.sdf_output_address != -1;
+	}
+
+	uint16_t get_output_port_address(ProgramGraph::PortLocation port) const;
 
 	struct HeapResource {
 		void *ptr;
@@ -57,14 +93,17 @@ public:
 	class CompileContext {
 	public:
 		CompileContext(const ProgramGraph::Node &node, std::vector<uint8_t> &program,
-				std::vector<HeapResource> &heap_resources) :
+				std::vector<HeapResource> &heap_resources,
+				std::vector<Variant> &params) :
 				_node(node),
 				_offset(program.size()),
 				_program(program),
-				_heap_resources(heap_resources) {}
+				_heap_resources(heap_resources),
+				_params(params) {}
 
-		const ProgramGraph::Node &get_node() const {
-			return _node;
+		Variant get_param(size_t i) const {
+			CRASH_COND(i > _params.size());
+			return _params[i];
 		}
 
 		// Typical use is to pass a struct containing all compile-time arguments the operation will need
@@ -108,14 +147,17 @@ public:
 		const size_t _offset;
 		std::vector<uint8_t> &_program;
 		std::vector<HeapResource> &_heap_resources;
+		std::vector<Variant> &_params;
 		String _error_message;
 		bool _has_error = false;
 	};
 
 	class _ProcessContext {
 	public:
-		inline _ProcessContext(const ArraySlice<uint16_t> inputs, ArraySlice<uint16_t> outputs,
-				const ArraySlice<uint8_t> params) :
+		inline _ProcessContext(
+				const ArraySlice<const uint16_t> inputs,
+				const ArraySlice<const uint16_t> outputs,
+				const ArraySlice<const uint8_t> params) :
 				_inputs(inputs),
 				_outputs(outputs),
 				_params(params) {}
@@ -134,15 +176,17 @@ public:
 		}
 
 	private:
-		const ArraySlice<uint16_t> _inputs;
-		const ArraySlice<uint16_t> _outputs;
-		ArraySlice<uint8_t> _params;
+		const ArraySlice<const uint16_t> _inputs;
+		const ArraySlice<const uint16_t> _outputs;
+		const ArraySlice<const uint8_t> _params;
 	};
 
 	class ProcessBufferContext : public _ProcessContext {
 	public:
-		inline ProcessBufferContext(const ArraySlice<uint16_t> inputs, ArraySlice<uint16_t> outputs,
-				const ArraySlice<uint8_t> params,
+		inline ProcessBufferContext(
+				const ArraySlice<const uint16_t> inputs,
+				const ArraySlice<const uint16_t> outputs,
+				const ArraySlice<const uint8_t> params,
 				ArraySlice<Buffer> buffers) :
 				_ProcessContext(inputs, outputs, params),
 				_buffers(buffers) {}
@@ -163,8 +207,11 @@ public:
 
 	class RangeAnalysisContext : public _ProcessContext {
 	public:
-		inline RangeAnalysisContext(const ArraySlice<uint16_t> inputs, ArraySlice<uint16_t> outputs,
-				const ArraySlice<uint8_t> params, ArraySlice<Interval> ranges) :
+		inline RangeAnalysisContext(
+				const ArraySlice<const uint16_t> inputs,
+				const ArraySlice<const uint16_t> outputs,
+				const ArraySlice<const uint8_t> params,
+				ArraySlice<Interval> ranges) :
 				_ProcessContext(inputs, outputs, params),
 				_ranges(ranges) {}
 
@@ -187,23 +234,54 @@ public:
 	typedef void (*RangeAnalysisFunc)(RangeAnalysisContext &);
 
 private:
-	bool _compile(const ProgramGraph &graph, bool debug);
+	CompilationResult _compile(const ProgramGraph &graph, bool debug);
 
-	std::vector<uint8_t> _program;
-	std::vector<Interval> _ranges;
-	std::vector<Buffer> _buffers;
-	unsigned int _buffer_size = 0;
+	struct Constant {
+		unsigned int address;
+		float value = 0;
+	};
 
-	std::vector<HeapResource> _heap_resources;
+	// Remains constant and read-only after compilation.
+	struct Program {
+		std::vector<uint8_t> operations;
+		std::vector<HeapResource> heap_resources;
+		std::vector<Ref<Reference> > ref_resources;
+		std::vector<Constant> constants;
+		std::vector<uint16_t> bindings;
+		uint32_t xzy_start;
+		int x_input_address = -1;
+		int y_input_address = -1;
+		int z_input_address = -1;
+		int sdf_output_address = -1;
+		int buffer_count = -1;
+		HashMap<ProgramGraph::PortLocation, uint16_t, ProgramGraph::PortLocationHasher> output_port_addresses;
+		CompilationResult compilation_result;
 
-	uint32_t _xzy_program_start;
-	int _x_input_address = -1;
-	int _y_input_address = -1;
-	int _z_input_address = -1;
-	int _sdf_output_address = -1;
-	CompilationResult _compilation_result;
+		void clear() {
+			operations.clear();
+			constants.clear();
+			bindings.clear();
+			// Address in the program from which operations will depend on Y.
+			xzy_start = 0;
+			output_port_addresses.clear();
+			sdf_output_address = -1;
+			x_input_address = -1;
+			y_input_address = -1;
+			z_input_address = -1;
+			compilation_result = CompilationResult();
+			for (auto it = heap_resources.begin(); it != heap_resources.end(); ++it) {
+				HeapResource &r = *it;
+				CRASH_COND(r.deleter == nullptr);
+				CRASH_COND(r.ptr == nullptr);
+				r.deleter(r.ptr);
+			}
+			heap_resources.clear();
+			ref_resources.clear();
+			buffer_count = -1;
+		}
+	};
 
-	HashMap<ProgramGraph::PortLocation, uint16_t, ProgramGraph::PortLocationHasher> _output_port_addresses;
+	Program _program;
 };
 
 #endif // VOXEL_GRAPH_RUNTIME_H

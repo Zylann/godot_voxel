@@ -523,12 +523,17 @@ void VoxelGraphEditor::update_previews() {
 
 	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
-	if (!_graph->compile()) {
-		const VoxelGraphRuntime::CompilationResult &result = _graph->get_compilation_result();
+	const VoxelGraphRuntime::CompilationResult result = _graph->compile();
+	if (!result.success) {
 		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
 		// TODO Enhance reporting in the UI
 		return;
 	}
+
+	if (!_graph->is_good()) {
+		return;
+	}
+	// We assume no other thread will try to modify the graph and compile something not good
 
 	// TODO Use a thread?
 	PRINT_VERBOSE("Updating previews");
@@ -541,7 +546,6 @@ void VoxelGraphEditor::update_previews() {
 	};
 
 	std::vector<PreviewInfo> previews;
-	const VoxelGraphRuntime &runtime = _graph->get_runtime();
 
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
 		VoxelGraphEditorNode *node = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(i));
@@ -558,7 +562,7 @@ void VoxelGraphEditor::update_previews() {
 		}
 		PreviewInfo info;
 		info.control = node->preview;
-		info.address = runtime.get_output_port_address(src);
+		info.address = _graph->get_output_port_address(src);
 		info.min_value = _graph->get_node_param(dst.node_id, 0);
 		const float max_value = _graph->get_node_param(dst.node_id, 1);
 		info.value_scale = 1.f / (max_value - info.min_value);
@@ -600,10 +604,12 @@ void VoxelGraphEditor::update_previews() {
 			ArraySlice<float>(z_vec, 0, z_vec.size()),
 			ArraySlice<float>(sdf_vec, 0, sdf_vec.size()));
 
+	const VoxelGraphRuntime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
+
 	for (size_t preview_index = 0; preview_index < previews.size(); ++preview_index) {
 		PreviewInfo &info = previews[preview_index];
 
-		const VoxelGraphRuntime::Buffer &buffer = runtime.get_buffer(info.address);
+		const VoxelGraphRuntime::Buffer &buffer = last_state.get_buffer(info.address);
 
 		Image &im = **info.control->get_image();
 		ERR_FAIL_COND(im.get_width() * im.get_height() != static_cast<int>(buffer.size));
