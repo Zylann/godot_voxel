@@ -1273,7 +1273,7 @@ void VoxelLodTerrain::_process() {
 			shift_up(_reception_buffers.mesh_output, queue_index);
 		}
 
-		_stats.pending_block_meshes = (int)_reception_buffers.mesh_output.size();
+		_stats.remaining_main_thread_blocks = (int)_reception_buffers.mesh_output.size();
 	}
 
 	_stats.time_process_update_responses = profiling_clock.restart();
@@ -1524,7 +1524,7 @@ Dictionary VoxelLodTerrain::_b_get_statistics() const {
 	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
 	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
-	d["pending_block_meshes"] = _stats.pending_block_meshes;
+	d["remaining_main_thread_blocks"] = _stats.remaining_main_thread_blocks;
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;

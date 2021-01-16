@@ -118,11 +118,11 @@ void VoxelTerrainEditorPlugin::_notification(int p_what) {
 			int main_thread_tasks = 0;
 			VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 			if (vlt != nullptr) {
-				main_thread_tasks = vlt->get_stats().pending_block_meshes;
+				main_thread_tasks = vlt->get_stats().remaining_main_thread_blocks;
 			} else {
 				VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_node);
 				if (vt != nullptr) {
-					main_thread_tasks = vt->get_stats().pending_block_meshes;
+					main_thread_tasks = vt->get_stats().remaining_main_thread_blocks;
 				}
 			}
 			_task_indicator->update_stats(main_thread_tasks);
