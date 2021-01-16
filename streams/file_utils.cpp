@@ -1,4 +1,5 @@
 #include "file_utils.h"
+#include "../server/voxel_server.h"
 
 const char *to_string(VoxelFileResult res) {
 	switch (res) {
@@ -6,6 +7,8 @@ const char *to_string(VoxelFileResult res) {
 			return "OK";
 		case VOXEL_FILE_CANT_OPEN:
 			return "Can't open";
+		case VOXEL_FILE_DOES_NOT_EXIST:
+			return "Doesn't exist";
 		case VOXEL_FILE_UNEXPECTED_EOF:
 			return "Unexpected end of file";
 		case VOXEL_FILE_INVALID_MAGIC:
@@ -41,6 +44,7 @@ VoxelFileResult check_magic_and_version(FileAccess *f, uint8_t expected_version,
 }
 
 Error check_directory_created(const String &directory_path) {
+	VoxelFileLockerWrite file_wlock(directory_path);
 	DirAccess *d = DirAccess::create_for_path(directory_path);
 
 	if (d == nullptr) {

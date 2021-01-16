@@ -16,11 +16,159 @@ const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
 
 const char *FORMAT_REGION_MAGIC = "VXR_";
 const uint32_t MAGIC_AND_VERSION_SIZE = 4 + 1;
-const uint32_t FIXED_HEADER_DATA_SIZE = 7 + VoxelRegionFile::CHANNEL_COUNT;
+const uint32_t FIXED_HEADER_DATA_SIZE = 7 + VoxelRegionFormat::CHANNEL_COUNT;
 const uint32_t PALETTE_SIZE_IN_BYTES = 256 * 4;
 } // namespace
 
-const char *VoxelRegionFile::FILE_EXTENSION = "vxr";
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const char *VoxelRegionFormat::FILE_EXTENSION = "vxr";
+
+bool VoxelRegionFormat::validate() const {
+	ERR_FAIL_COND_V(region_size.x < 0 || region_size.x >= static_cast<int>(MAX_BLOCKS_ACROSS), false);
+	ERR_FAIL_COND_V(region_size.y < 0 || region_size.y >= static_cast<int>(MAX_BLOCKS_ACROSS), false);
+	ERR_FAIL_COND_V(region_size.z < 0 || region_size.z >= static_cast<int>(MAX_BLOCKS_ACROSS), false);
+	ERR_FAIL_COND_V(block_size_po2 <= 0, false);
+
+	// Test worst case limits (this does not include arbitrary metadata, so it can't be 100% accurrate...)
+	size_t bytes_per_block = 0;
+	for (unsigned int i = 0; i < channel_depths.size(); ++i) {
+		bytes_per_block += VoxelBuffer::get_depth_bit_count(channel_depths[i]) / 8;
+	}
+	bytes_per_block *= Vector3i(1 << block_size_po2).volume();
+	const size_t sectors_per_block = (bytes_per_block - 1) / sector_size + 1;
+	ERR_FAIL_COND_V(sectors_per_block > VoxelRegionBlockInfo::MAX_SECTOR_COUNT, false);
+	const size_t max_potential_sectors = region_size.volume() * sectors_per_block;
+	ERR_FAIL_COND_V(max_potential_sectors > VoxelRegionBlockInfo::MAX_SECTOR_INDEX, false);
+
+	return true;
+}
+
+bool VoxelRegionFormat::verify_block(const VoxelBuffer &block) const {
+	ERR_FAIL_COND_V(block.get_size() != Vector3i(1 << block_size_po2), false);
+	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
+		ERR_FAIL_COND_V(block.get_channel_depth(i) != channel_depths[i], false);
+	}
+	return true;
+}
+
+static uint32_t get_header_size_v3(const VoxelRegionFormat &format) {
+	// Which file offset blocks data is starting
+	// magic + version + blockinfos
+	return MAGIC_AND_VERSION_SIZE + FIXED_HEADER_DATA_SIZE +
+		   (format.has_palette ? PALETTE_SIZE_IN_BYTES : 0) +
+		   format.region_size.volume() * sizeof(VoxelRegionBlockInfo);
+}
+
+static bool save_header(FileAccess *f, uint8_t version, const VoxelRegionFormat &format,
+		const std::vector<VoxelRegionBlockInfo> &block_infos) {
+
+	ERR_FAIL_COND_V(f == nullptr, ERR_INVALID_PARAMETER);
+
+	f->seek(0);
+
+	f->store_buffer(reinterpret_cast<const uint8_t *>(FORMAT_REGION_MAGIC), 4);
+	f->store_8(version);
+
+	f->store_8(format.block_size_po2);
+
+	f->store_8(format.region_size.x);
+	f->store_8(format.region_size.y);
+	f->store_8(format.region_size.z);
+
+	for (unsigned int i = 0; i < format.channel_depths.size(); ++i) {
+		f->store_8(format.channel_depths[i]);
+	}
+
+	f->store_16(format.sector_size);
+
+	if (format.has_palette) {
+		f->store_8(0xff);
+		for (unsigned int i = 0; i < format.palette.size(); ++i) {
+			const Color8 c = format.palette[i];
+			f->store_8(c.r);
+			f->store_8(c.g);
+			f->store_8(c.b);
+			f->store_8(c.a);
+		}
+	} else {
+		f->store_8(0x00);
+	}
+
+	// TODO Deal with endianess
+	f->store_buffer(reinterpret_cast<const uint8_t *>(block_infos.data()),
+			block_infos.size() * sizeof(VoxelRegionBlockInfo));
+
+	size_t blocks_begin_offset = f->get_position();
+#ifdef DEBUG_ENABLED
+	CRASH_COND(blocks_begin_offset != get_header_size_v3(format));
+#endif
+
+	return true;
+}
+
+static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &out_format,
+		std::vector<VoxelRegionBlockInfo> &out_block_infos) {
+
+	ERR_FAIL_COND_V(f == nullptr, ERR_INVALID_PARAMETER);
+
+	ERR_FAIL_COND_V(f->get_position() != 0, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(f->get_len() < MAGIC_AND_VERSION_SIZE, ERR_PARSE_ERROR);
+
+	FixedArray<char, 5> magic(0);
+	ERR_FAIL_COND_V(f->get_buffer(reinterpret_cast<uint8_t *>(magic.data()), 4) != 4, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(strcmp(magic.data(), FORMAT_REGION_MAGIC) != 0, ERR_PARSE_ERROR);
+
+	const uint8_t version = f->get_8();
+
+	if (version == FORMAT_VERSION) {
+		out_format.block_size_po2 = f->get_8();
+
+		out_format.region_size.x = f->get_8();
+		out_format.region_size.y = f->get_8();
+		out_format.region_size.z = f->get_8();
+
+		for (unsigned int i = 0; i < out_format.channel_depths.size(); ++i) {
+			const uint8_t d = f->get_8();
+			ERR_FAIL_COND_V(d >= VoxelBuffer::DEPTH_COUNT, ERR_PARSE_ERROR);
+			out_format.channel_depths[i] = static_cast<VoxelBuffer::Depth>(d);
+		}
+
+		out_format.sector_size = f->get_16();
+
+		const uint8_t palette_size = f->get_8();
+		if (palette_size == 0xff) {
+			out_format.has_palette = true;
+			for (unsigned int i = 0; i < out_format.palette.size(); ++i) {
+				Color8 c;
+				c.r = f->get_8();
+				c.g = f->get_8();
+				c.b = f->get_8();
+				c.a = f->get_8();
+				out_format.palette[i] = c;
+			}
+
+		} else if (palette_size == 0x00) {
+			out_format.has_palette = false;
+
+		} else {
+			ERR_PRINT(String("Unexpected palette value: {0}").format(varray(palette_size)));
+			return ERR_PARSE_ERROR;
+		}
+	}
+
+	out_version = version;
+	out_block_infos.resize(out_format.region_size.volume());
+
+	// TODO Deal with endianess
+	const size_t blocks_len = out_block_infos.size() * sizeof(VoxelRegionBlockInfo);
+	const size_t read_size = f->get_buffer((uint8_t *)out_block_infos.data(), blocks_len);
+	ERR_FAIL_COND_V(read_size != blocks_len, ERR_PARSE_ERROR);
+
+	return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 VoxelRegionFile::VoxelRegionFile() {
 	// Defaults
@@ -80,14 +228,14 @@ Error VoxelRegionFile::open(const String &fpath, bool create_if_not_found) {
 	// This will be useful to know when sectors get moved on insertion and removal
 
 	struct BlockInfoAndIndex {
-		BlockInfo b;
+		VoxelRegionBlockInfo b;
 		unsigned int i;
 	};
 
 	// Filter only present blocks and keep the index around because it represents the 3D position of the block
 	std::vector<BlockInfoAndIndex> blocks_sorted_by_offset;
 	for (unsigned int i = 0; i < _header.blocks.size(); ++i) {
-		const BlockInfo b = _header.blocks[i];
+		const VoxelRegionBlockInfo b = _header.blocks[i];
 		if (b.data != 0) {
 			BlockInfoAndIndex p;
 			p.b = b;
@@ -136,26 +284,9 @@ bool VoxelRegionFile::is_open() const {
 	return _file_access != nullptr;
 }
 
-bool VoxelRegionFile::set_format(const VoxelRegionFile::Format &format) {
+bool VoxelRegionFile::set_format(const VoxelRegionFormat &format) {
 	ERR_FAIL_COND_V_MSG(_file_access != nullptr, false, "Can't set format when the file already exists");
-
-	ERR_FAIL_COND_V(format.region_size.x < 0 || format.region_size.x >= static_cast<int>(MAX_BLOCKS_ACROSS), false);
-	ERR_FAIL_COND_V(format.region_size.y < 0 || format.region_size.y >= static_cast<int>(MAX_BLOCKS_ACROSS), false);
-	ERR_FAIL_COND_V(format.region_size.z < 0 || format.region_size.z >= static_cast<int>(MAX_BLOCKS_ACROSS), false);
-	ERR_FAIL_COND_V(format.block_size_po2 <= 0, false);
-
-	// Test worst case limits (this does not include arbitrary metadata, so it can't be 100% accurrate...)
-	{
-		size_t bytes_per_block = 0;
-		for (unsigned int i = 0; i < format.channel_depths.size(); ++i) {
-			bytes_per_block += VoxelBuffer::get_depth_bit_count(format.channel_depths[i]) / 8;
-		}
-		bytes_per_block *= Vector3i(1 << format.block_size_po2).volume();
-		const size_t sectors_per_block = (bytes_per_block - 1) / format.sector_size + 1;
-		ERR_FAIL_COND_V(sectors_per_block > BlockInfo::MAX_SECTOR_COUNT, false);
-		const size_t max_potential_sectors = format.region_size.volume() * sectors_per_block;
-		ERR_FAIL_COND_V(max_potential_sectors > BlockInfo::MAX_SECTOR_INDEX, false);
-	}
+	ERR_FAIL_COND_V(!format.validate(), false);
 
 	// This will be the format used to create the next file if not found on open()
 	_header.format = format;
@@ -164,7 +295,7 @@ bool VoxelRegionFile::set_format(const VoxelRegionFile::Format &format) {
 	return true;
 }
 
-const VoxelRegionFile::Format &VoxelRegionFile::get_format() const {
+const VoxelRegionFormat &VoxelRegionFile::get_format() const {
 	return _header.format;
 }
 
@@ -177,7 +308,7 @@ Error VoxelRegionFile::load_block(
 
 	const unsigned int lut_index = get_block_index_in_header(position);
 	ERR_FAIL_COND_V(lut_index >= _header.blocks.size(), ERR_INVALID_PARAMETER);
-	const BlockInfo &block_info = _header.blocks[lut_index];
+	const VoxelRegionBlockInfo &block_info = _header.blocks[lut_index];
 
 	if (block_info.data == 0) {
 		return ERR_DOES_NOT_EXIST;
@@ -202,17 +333,9 @@ Error VoxelRegionFile::load_block(
 	return OK;
 }
 
-bool VoxelRegionFile::verify_format(VoxelBuffer &block) {
-	ERR_FAIL_COND_V(block.get_size() != Vector3i(1 << _header.format.block_size_po2), false);
-	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
-		ERR_FAIL_COND_V(block.get_channel_depth(i) != _header.format.channel_depths[i], false);
-	}
-	return true;
-}
-
 Error VoxelRegionFile::save_block(Vector3i position, Ref<VoxelBuffer> block, VoxelBlockSerializerInternal &serializer) {
 	ERR_FAIL_COND_V(block.is_null(), ERR_INVALID_PARAMETER);
-	ERR_FAIL_COND_V(verify_format(**block) == false, ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(_header.format.verify_block(**block) == false, ERR_INVALID_PARAMETER);
 
 	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_WRITE);
 	FileAccess *f = _file_access;
@@ -224,7 +347,7 @@ Error VoxelRegionFile::save_block(Vector3i position, Ref<VoxelBuffer> block, Vox
 
 	const unsigned int lut_index = get_block_index_in_header(position);
 	ERR_FAIL_COND_V(lut_index >= _header.blocks.size(), ERR_INVALID_PARAMETER);
-	BlockInfo &block_info = _header.blocks[lut_index];
+	VoxelRegionBlockInfo &block_info = _header.blocks[lut_index];
 
 	if (block_info.data == 0) {
 		// The block isn't in the file yet, append at the end
@@ -349,7 +472,7 @@ void VoxelRegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int
 
 	const unsigned int block_index = get_block_index_in_header(block_pos);
 	CRASH_COND(block_index >= _header.blocks.size());
-	BlockInfo &block_info = _header.blocks[block_index];
+	VoxelRegionBlockInfo &block_info = _header.blocks[block_index];
 
 	unsigned int src_offset = _blocks_begin_offset +
 							  (block_info.get_sector_index() + block_info.get_sector_count()) * sector_size;
@@ -401,7 +524,7 @@ void VoxelRegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int
 	// Shift sector index of following blocks
 	if (old_sector_index < _sectors.size()) {
 		for (unsigned int i = 0; i < _header.blocks.size(); ++i) {
-			BlockInfo &b = _header.blocks[i];
+			VoxelRegionBlockInfo &b = _header.blocks[i];
 			if (b.data != 0 && b.get_sector_index() > old_sector_index) {
 				b.set_sector_index(b.get_sector_index() - p_sector_count);
 			}
@@ -414,51 +537,13 @@ bool VoxelRegionFile::save_header(FileAccess *f) {
 	if (_header.version != FORMAT_VERSION) {
 		ERR_FAIL_COND_V(migrate_to_latest(f) == false, false);
 	}
-
-	f->seek(0);
-
-	f->store_buffer(reinterpret_cast<const uint8_t *>(FORMAT_REGION_MAGIC), 4);
-	f->store_8(_header.version);
-
-	f->store_8(_header.format.block_size_po2);
-
-	f->store_8(_header.format.region_size.x);
-	f->store_8(_header.format.region_size.y);
-	f->store_8(_header.format.region_size.z);
-
-	for (unsigned int i = 0; i < _header.format.channel_depths.size(); ++i) {
-		f->store_8(_header.format.channel_depths[i]);
-	}
-
-	f->store_16(_header.format.sector_size);
-
-	if (_header.format.has_palette) {
-		f->store_8(0xff);
-		for (unsigned int i = 0; i < _header.format.palette.size(); ++i) {
-			const Color8 c = _header.format.palette[i];
-			f->store_8(c.r);
-			f->store_8(c.g);
-			f->store_8(c.b);
-			f->store_8(c.a);
-		}
-	} else {
-		f->store_8(0x00);
-	}
-
-	// TODO Deal with endianess
-	f->store_buffer(reinterpret_cast<const uint8_t *>(_header.blocks.data()),
-			_header.blocks.size() * sizeof(BlockInfo));
-
+	ERR_FAIL_COND_V(!::save_header(f, _header.version, _header.format, _header.blocks), false);
 	_blocks_begin_offset = f->get_position();
-#ifdef DEBUG_ENABLED
-	CRASH_COND(_blocks_begin_offset != get_header_size_v3(_header.format));
-#endif
-
 	_header_modified = false;
 	return true;
 }
 
-bool VoxelRegionFile::migrate_from_v2_to_v3(FileAccess *f, VoxelRegionFile::Format &format) {
+bool VoxelRegionFile::migrate_from_v2_to_v3(FileAccess *f, VoxelRegionFormat &format) {
 	PRINT_VERBOSE(String("Migrating region file {0} from v2 to v3").format(varray(_file_path)));
 
 	// We can migrate if we know in advance what format the file should contain.
@@ -512,60 +597,8 @@ bool VoxelRegionFile::migrate_to_latest(FileAccess *f) {
 }
 
 Error VoxelRegionFile::load_header(FileAccess *f) {
-	ERR_FAIL_COND_V(f->get_position() != 0, ERR_PARSE_ERROR);
-	ERR_FAIL_COND_V(f->get_len() < MAGIC_AND_VERSION_SIZE, ERR_PARSE_ERROR);
-
-	FixedArray<char, 5> magic(0);
-	ERR_FAIL_COND_V(f->get_buffer(reinterpret_cast<uint8_t *>(magic.data()), 4) != 4, ERR_PARSE_ERROR);
-	ERR_FAIL_COND_V(strcmp(magic.data(), FORMAT_REGION_MAGIC) != 0, ERR_PARSE_ERROR);
-
-	const uint8_t version = f->get_8();
-
-	if (version == FORMAT_VERSION) {
-		_header.format.block_size_po2 = f->get_8();
-
-		_header.format.region_size.x = f->get_8();
-		_header.format.region_size.y = f->get_8();
-		_header.format.region_size.z = f->get_8();
-
-		for (unsigned int i = 0; i < _header.format.channel_depths.size(); ++i) {
-			const uint8_t d = f->get_8();
-			ERR_FAIL_COND_V(d >= VoxelBuffer::DEPTH_COUNT, ERR_PARSE_ERROR);
-			_header.format.channel_depths[i] = static_cast<VoxelBuffer::Depth>(d);
-		}
-
-		_header.format.sector_size = f->get_16();
-
-		const uint8_t palette_size = f->get_8();
-		if (palette_size == 0xff) {
-			_header.format.has_palette = true;
-			for (unsigned int i = 0; i < _header.format.palette.size(); ++i) {
-				Color8 c;
-				c.r = f->get_8();
-				c.g = f->get_8();
-				c.b = f->get_8();
-				c.a = f->get_8();
-				_header.format.palette[i] = c;
-			}
-
-		} else if (palette_size == 0x00) {
-			_header.format.has_palette = false;
-
-		} else {
-			ERR_PRINT(String("Unexpected palette value: {0}").format(varray(palette_size)));
-			return ERR_PARSE_ERROR;
-		}
-	}
-
-	_header.version = version;
-	_header.blocks.resize(_header.format.region_size.volume());
-
-	// TODO Deal with endianess
-	const size_t blocks_len = _header.blocks.size() * sizeof(BlockInfo);
-	const size_t read_size = f->get_buffer((uint8_t *)_header.blocks.data(), blocks_len);
-	ERR_FAIL_COND_V(read_size != blocks_len, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(!::load_header(f, _header.version, _header.format, _header.blocks), ERR_PARSE_ERROR);
 	_blocks_begin_offset = f->get_position();
-
 	return OK;
 }
 
@@ -579,14 +612,6 @@ Vector3i VoxelRegionFile::get_block_position_from_index(uint32_t i) const {
 
 uint32_t VoxelRegionFile::get_sector_count_from_bytes(uint32_t size_in_bytes) const {
 	return (size_in_bytes - 1) / _header.format.sector_size + 1;
-}
-
-uint32_t VoxelRegionFile::get_header_size_v3(const Format &format) {
-	// Which file offset blocks data is starting
-	// magic + version + blockinfos
-	return MAGIC_AND_VERSION_SIZE + FIXED_HEADER_DATA_SIZE +
-		   (format.has_palette ? PALETTE_SIZE_IN_BYTES : 0) +
-		   format.region_size.volume() * sizeof(BlockInfo);
 }
 
 unsigned int VoxelRegionFile::get_header_block_count() const {

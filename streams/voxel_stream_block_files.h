@@ -8,6 +8,7 @@ class FileAccess;
 
 // Loads and saves blocks to the filesystem, under a directory.
 // Each block gets its own file, which may produce a lot of them, but it makes it simple to implement.
+// This is a naive implementation and may be very slow in practice, so maybe it will be removed in the future.
 class VoxelStreamBlockFiles : public VoxelStreamFile {
 	GDCLASS(VoxelStreamBlockFiles, VoxelStreamFile)
 public:
@@ -27,6 +28,7 @@ protected:
 private:
 	VoxelFileResult save_meta();
 	VoxelFileResult load_meta();
+	VoxelFileResult load_or_create_meta();
 	String get_block_file_path(const Vector3i &block_pos, unsigned int lod) const;
 	Vector3i get_block_position(const Vector3i &origin_in_voxels) const;
 

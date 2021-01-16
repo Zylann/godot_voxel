@@ -1,4 +1,5 @@
 #include "voxel_stream_block_files.h"
+#include "../server/voxel_server.h"
 #include "../util/utility.h"
 #include <core/os/dir_access.h>
 #include <core/os/file_access.h>
@@ -46,6 +47,7 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 	String file_path = get_block_file_path(block_pos, lod);
 
 	FileAccess *f = nullptr;
+	VoxelFileLockerRead file_rlock(file_path);
 	{
 		Error err;
 		f = open_file(file_path, FileAccess::READ, &err);
@@ -62,7 +64,11 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 		{
 			uint8_t version;
 			VoxelFileResult err = check_magic_and_version(f, FORMAT_VERSION, FORMAT_BLOCK_MAGIC, version);
-			ERR_FAIL_COND_MSG(err != VOXEL_FILE_OK, ::to_string(err));
+			if (err != VOXEL_FILE_OK) {
+				memdelete(f);
+				ERR_PRINT(String("Invalid file header: ") + ::to_string(err));
+				return;
+			}
 		}
 
 		// Configure depths, as they currently are only specified in the meta file.
@@ -72,7 +78,9 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 		}
 
 		uint32_t size_to_read = f->get_32();
-		ERR_FAIL_COND(!_block_serializer.decompress_and_deserialize(f, size_to_read, **out_buffer));
+		if (!_block_serializer.decompress_and_deserialize(f, size_to_read, **out_buffer)) {
+			ERR_PRINT("Failed to decompress and deserialize");
+		}
 	}
 
 	f->close();
@@ -80,7 +88,6 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 }
 
 void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
-
 	ERR_FAIL_COND(_directory_path.empty());
 	ERR_FAIL_COND(buffer.is_null());
 
@@ -118,12 +125,13 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 	//print_line(String("Saving VXB {0}").format(varray(block_pos.to_vec3())));
 
 	{
-		Error err = check_directory_created(file_path.get_base_dir());
+		const Error err = check_directory_created(file_path.get_base_dir());
 		ERR_FAIL_COND(err != OK);
 	}
 
 	{
 		FileAccess *f = nullptr;
+		VoxelFileLockerWrite file_wlock(file_path);
 		{
 			Error err;
 			// Create file if not exists, always truncate
@@ -159,7 +167,6 @@ int VoxelStreamBlockFiles::get_block_size_po2() const {
 }
 
 VoxelFileResult VoxelStreamBlockFiles::save_meta() {
-
 	CRASH_COND(_directory_path.empty());
 
 	// Make sure the directory exists
@@ -175,6 +182,7 @@ VoxelFileResult VoxelStreamBlockFiles::save_meta() {
 
 	{
 		Error err;
+		VoxelFileLockerWrite file_wlock(meta_path);
 		FileAccess *f = open_file(meta_path, FileAccess::WRITE, &err);
 		ERR_FAIL_COND_V(f == nullptr, VOXEL_FILE_CANT_OPEN);
 
@@ -196,6 +204,16 @@ VoxelFileResult VoxelStreamBlockFiles::save_meta() {
 	return VOXEL_FILE_OK;
 }
 
+VoxelFileResult VoxelStreamBlockFiles::load_or_create_meta() {
+	VoxelFileResult res = load_meta();
+	if (res == VOXEL_FILE_DOES_NOT_EXIST) {
+		VoxelFileResult save_result = save_meta();
+		ERR_FAIL_COND_V(save_result != VOXEL_FILE_OK, save_result);
+		return VOXEL_FILE_OK;
+	}
+	return res;
+}
+
 VoxelFileResult VoxelStreamBlockFiles::load_meta() {
 	CRASH_COND(_directory_path.empty());
 
@@ -204,13 +222,12 @@ VoxelFileResult VoxelStreamBlockFiles::load_meta() {
 	Meta meta;
 	{
 		Error open_result;
+		VoxelFileLockerRead file_rlock(meta_path);
 		FileAccessRef f = open_file(meta_path, FileAccess::READ, &open_result);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
 		if (!_meta_saved && (open_result == ERR_FILE_NOT_FOUND || open_result == ERR_FILE_CANT_OPEN)) {
 			// This is a new terrain, save the meta we have and consider it current
-			VoxelFileResult save_result = save_meta();
-			ERR_FAIL_COND_V(save_result != VOXEL_FILE_OK, save_result);
-			return VOXEL_FILE_OK;
+			return VOXEL_FILE_DOES_NOT_EXIST;
 		}
 		ERR_FAIL_COND_V(!f, VOXEL_FILE_CANT_OPEN);
 

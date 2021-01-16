@@ -10,11 +10,6 @@
 class VoxelStream : public Resource {
 	GDCLASS(VoxelStream, Resource)
 public:
-	struct Stats {
-		int file_openings = 0;
-		int time_spent_opening_files = 0;
-	};
-
 	VoxelStream();
 
 	// TODO Rename load_block()
@@ -37,15 +32,6 @@ public:
 	// Declares the format expected from this stream
 	virtual int get_used_channels_mask() const;
 
-	// If the stream is thread-safe, the same instance will be used by the streamer across all threads.
-	// If the stream is not thread-safe:
-	// - If it is cloneable, the streamer will duplicate the instance for each thread.
-	// - If it isn't, the streamer will be limited to a single thread.
-	virtual bool is_thread_safe() const;
-	virtual bool is_cloneable() const;
-
-	Stats get_statistics() const;
-
 	virtual bool has_script() const;
 
 protected:
@@ -54,8 +40,6 @@ protected:
 	void _emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
 	void _immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
 	int _get_used_channels_mask() const;
-
-	Stats _stats;
 };
 
 #endif // VOXEL_STREAM_H

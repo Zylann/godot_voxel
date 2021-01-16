@@ -3,6 +3,7 @@
 
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../streams/voxel_stream.h"
+#include "../util/file_locker.h"
 #include "struct_db.h"
 #include "voxel_thread_pool.h"
 #include <scene/main/node.h>
@@ -113,6 +114,10 @@ public:
 
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
+
+	inline VoxelFileLocker &get_file_locker() {
+		return _file_locker;
+	}
 
 	static inline int get_octree_lod_block_region_extent(float split_scale) {
 		// This is a bounding radius of blocks around a viewer within which we may load them.
@@ -263,6 +268,8 @@ private:
 
 	VoxelThreadPool _streaming_thread_pool;
 	VoxelThreadPool _meshing_thread_pool;
+
+	VoxelFileLocker _file_locker;
 };
 
 // TODO Hack to make VoxelServer update... need ways to integrate callbacks from main loop!
@@ -277,6 +284,32 @@ protected:
 
 private:
 	VoxelServerUpdater();
+};
+
+struct VoxelFileLockerRead {
+	VoxelFileLockerRead(String path) :
+			_path(path) {
+		VoxelServer::get_singleton()->get_file_locker().lock_read(path);
+	}
+
+	~VoxelFileLockerRead() {
+		VoxelServer::get_singleton()->get_file_locker().unlock(_path);
+	}
+
+	String _path;
+};
+
+struct VoxelFileLockerWrite {
+	VoxelFileLockerWrite(String path) :
+			_path(path) {
+		VoxelServer::get_singleton()->get_file_locker().lock_write(path);
+	}
+
+	~VoxelFileLockerWrite() {
+		VoxelServer::get_singleton()->get_file_locker().unlock(_path);
+	}
+
+	String _path;
 };
 
 #endif // VOXEL_SERVER_H

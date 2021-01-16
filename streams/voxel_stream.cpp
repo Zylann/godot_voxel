@@ -28,14 +28,6 @@ void VoxelStream::immerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
 	}
 }
 
-bool VoxelStream::is_thread_safe() const {
-	return false;
-}
-
-bool VoxelStream::is_cloneable() const {
-	return false;
-}
-
 void VoxelStream::_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	emerge_block(out_buffer, Vector3i(origin_in_voxels), lod);
@@ -52,10 +44,6 @@ int VoxelStream::get_used_channels_mask() const {
 
 int VoxelStream::_get_used_channels_mask() const {
 	return get_used_channels_mask();
-}
-
-VoxelStream::Stats VoxelStream::get_statistics() const {
-	return _stats;
 }
 
 bool VoxelStream::has_script() const {

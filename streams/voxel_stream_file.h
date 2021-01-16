@@ -13,6 +13,9 @@ class FileAccess;
 class VoxelStreamFile : public VoxelStream {
 	GDCLASS(VoxelStreamFile, VoxelStream)
 public:
+	VoxelStreamFile();
+	~VoxelStreamFile();
+
 	void set_save_fallback_output(bool enabled);
 	bool get_save_fallback_output() const;
 
@@ -35,14 +38,20 @@ protected:
 	void emerge_blocks_fallback(Vector<VoxelBlockRequest> &requests);
 
 	FileAccess *open_file(const String &fpath, int mode_flags, Error *err);
+	void close_file(FileAccess *f);
 
 	VoxelBlockSerializerInternal _block_serializer;
 
 private:
 	Vector3 _get_block_size() const;
 
-	Ref<VoxelStream> _fallback_stream;
-	bool _save_fallback_output = true;
+	struct Parameters {
+		Ref<VoxelStream> fallback_stream;
+		bool save_fallback_output = true;
+	};
+
+	Parameters _parameters;
+	RWLock *_parameters_lock = nullptr;
 };
 
 #endif // VOXEL_STREAM_FILE_H

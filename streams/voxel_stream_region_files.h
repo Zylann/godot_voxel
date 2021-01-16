@@ -15,6 +15,8 @@ class FileAccess;
 // because it allows to keep using the same file handles and avoid switching.
 // Inspired by https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game
 //
+// Region files are not thread-safe. Because of this, internal mutexing may often constrain the use by one thread only.
+//
 class VoxelStreamRegionFiles : public VoxelStreamFile {
 	GDCLASS(VoxelStreamRegionFiles, VoxelStreamFile)
 public:
@@ -105,6 +107,10 @@ private:
 		}
 	};
 
+	// TODO This is not thread-friendly.
+	// `VoxelRegionFile` is not thread-safe so we have to limit the usage to one thread at once, blocking the others.
+	// A refactoring should be done to allow better threading.
+
 	struct CachedRegion {
 		Vector3i position;
 		int lod = 0;
@@ -121,6 +127,8 @@ private:
 	std::vector<CachedRegion *> _region_cache;
 	// TODO Add memory caches to increase capacity.
 	unsigned int _max_open_regions = MIN(8, FOPEN_MAX);
+
+	Mutex *_mutex;
 };
 
 #endif // VOXEL_STREAM_REGION_H
