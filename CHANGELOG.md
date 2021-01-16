@@ -28,7 +28,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Shaders now have access to the transform of each block, useful for triplanar mapping on moving volumes
     - Transvoxel runs faster (almost x2 speedup)
     - The SDF channel is now 16-bit by default instead of 8-bit, which reduces terracing in big terrains
-    - Optimized `VoxelGeneratorGraph` by making it detect empty blocks more accurately
+    - Optimized `VoxelGeneratorGraph` by making it detect empty blocks more accurately and process by buffers
     - Added `SdfSphereHeightmap` and `Normalize` nodes to voxel graph, which can help making planets
 
 - Blocky voxels
