@@ -5,7 +5,9 @@
 #include <core/error_macros.h>
 #include <vector>
 
+// TODO Rename Span
 // View into an array, referencing a pointer and a size.
+// STL equivalent would be std::span<T> in C++20
 template <typename T>
 class ArraySlice {
 public:
@@ -16,7 +18,7 @@ public:
 
 	// TODO Get rid of unsafe constructor, use specialized ones
 	inline ArraySlice(T *p_ptr, size_t p_begin, size_t p_end) {
-		CRASH_COND(p_end <= p_begin);
+		CRASH_COND(p_end < p_begin);
 		_ptr = p_ptr + p_begin;
 		_size = p_end - p_begin;
 	}
@@ -25,7 +27,7 @@ public:
 			_ptr(p_ptr), _size(p_size) {}
 
 	inline ArraySlice(ArraySlice<T> &p_other, size_t p_begin, size_t p_end) {
-		CRASH_COND(p_end <= p_begin);
+		CRASH_COND(p_end < p_begin);
 		CRASH_COND(p_begin >= p_other.size());
 		CRASH_COND(p_end > p_other.size()); // `>` because p_end is typically `p_begin + size`
 		_ptr = p_other._ptr + p_begin;
@@ -33,7 +35,7 @@ public:
 	}
 
 	inline ArraySlice(std::vector<T> &vec, size_t p_begin, size_t p_end) {
-		CRASH_COND(p_end <= p_begin);
+		CRASH_COND(p_end < p_begin);
 		CRASH_COND(p_begin >= vec.size());
 		CRASH_COND(p_end > vec.size()); // `>` because p_end is typically `p_begin + size`
 		_ptr = &vec[p_begin];
