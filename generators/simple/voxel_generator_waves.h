@@ -8,6 +8,7 @@ class VoxelGeneratorWaves : public VoxelGeneratorHeightmap {
 
 public:
 	VoxelGeneratorWaves();
+	~VoxelGeneratorWaves();
 
 	void set_channel(VoxelBuffer::ChannelId channel);
 	VoxelBuffer::ChannelId get_channel() const;
