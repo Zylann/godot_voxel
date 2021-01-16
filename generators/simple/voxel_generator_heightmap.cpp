@@ -3,50 +3,68 @@
 #include "../../util/fixed_array.h"
 
 VoxelGeneratorHeightmap::VoxelGeneratorHeightmap() {
+	_parameters_lock = RWLock::create();
+}
+
+VoxelGeneratorHeightmap::~VoxelGeneratorHeightmap() {
+	memdelete(_parameters_lock);
 }
 
 void VoxelGeneratorHeightmap::set_channel(VoxelBuffer::ChannelId channel) {
 	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
-	if (_channel != channel) {
-		_channel = channel;
+	bool changed = false;
+	{
+		RWLockWrite wlock(_parameters_lock);
+		if (_parameters.channel != channel) {
+			_parameters.channel = channel;
+		}
+	}
+	if (changed) {
 		emit_changed();
 	}
 }
 
 VoxelBuffer::ChannelId VoxelGeneratorHeightmap::get_channel() const {
-	return _channel;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.channel;
 }
 
 int VoxelGeneratorHeightmap::get_used_channels_mask() const {
-	return (1 << _channel);
+	RWLockRead rlock(_parameters_lock);
+	return (1 << _parameters.channel);
 }
 
 void VoxelGeneratorHeightmap::set_height_start(float start) {
-	_range.start = start;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.range.start = start;
 }
 
 float VoxelGeneratorHeightmap::get_height_start() const {
-	return _range.start;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.range.start;
 }
 
 void VoxelGeneratorHeightmap::set_height_range(float range) {
-	_range.height = range;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.range.height = range;
 }
 
 float VoxelGeneratorHeightmap::get_height_range() const {
-	return _range.height;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.range.height;
 }
 
 void VoxelGeneratorHeightmap::set_iso_scale(float iso_scale) {
-	_iso_scale = iso_scale;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.iso_scale = iso_scale;
 }
 
 float VoxelGeneratorHeightmap::get_iso_scale() const {
-	return _iso_scale;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.iso_scale;
 }
 
 void VoxelGeneratorHeightmap::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorHeightmap::set_channel);
 	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorHeightmap::get_channel);
 

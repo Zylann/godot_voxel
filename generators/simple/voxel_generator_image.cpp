@@ -20,10 +20,21 @@ inline float get_height_blurred(Image &im, int x, int y) {
 } // namespace
 
 VoxelGeneratorImage::VoxelGeneratorImage() {
+	_parameters_lock = RWLock::create();
+}
+
+VoxelGeneratorImage::~VoxelGeneratorImage() {
+	memdelete(_parameters_lock);
 }
 
 void VoxelGeneratorImage::set_image(Ref<Image> im) {
+	if (im == _image) {
+		return;
+	}
 	_image = im;
+	Ref<Image> copy = im.is_valid() ? im->duplicate() : Ref<Image>();
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.image = copy;
 }
 
 Ref<Image> VoxelGeneratorImage::get_image() const {
@@ -31,23 +42,30 @@ Ref<Image> VoxelGeneratorImage::get_image() const {
 }
 
 void VoxelGeneratorImage::set_blur_enabled(bool enable) {
-	_blur_enabled = enable;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.blur_enabled = enable;
 }
 
 bool VoxelGeneratorImage::is_blur_enabled() const {
-	return _blur_enabled;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.blur_enabled;
 }
 
 void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
-
-	ERR_FAIL_COND(_image.is_null());
-
 	VoxelBuffer &out_buffer = **input.voxel_buffer;
-	Image &image = **_image;
+
+	Parameters params;
+	{
+		RWLockRead rlock(_parameters_lock);
+		params = _parameters;
+	}
+
+	ERR_FAIL_COND(params.image.is_null());
+	Image &image = **params.image;
 
 	image.lock();
 
-	if (_blur_enabled) {
+	if (params.blur_enabled) {
 		VoxelGeneratorHeightmap::generate(
 				out_buffer,
 				[&image](int x, int z) { return get_height_blurred(image, x, z); },
@@ -65,7 +83,6 @@ void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
 }
 
 void VoxelGeneratorImage::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_image", "image"), &VoxelGeneratorImage::set_image);
 	ClassDB::bind_method(D_METHOD("get_image"), &VoxelGeneratorImage::get_image);
 
