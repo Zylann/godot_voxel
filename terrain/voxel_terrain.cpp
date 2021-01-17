@@ -22,6 +22,7 @@ VoxelTerrain::VoxelTerrain() {
 
 	set_notify_transform(true);
 
+	// TODO Should it actually be finite for better discovery?
 	// Infinite by default
 	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
 
@@ -84,7 +85,8 @@ void VoxelTerrain::set_stream(Ref<VoxelStream> p_stream) {
 #ifdef TOOLS_ENABLED
 	if (_stream.is_valid()) {
 		if (Engine::get_singleton()->is_editor_hint()) {
-			if (_stream->has_script()) {
+			Ref<Script> script = _stream->get_script();
+			if (script.is_valid()) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_run_stream_in_editor = false;
@@ -99,6 +101,34 @@ void VoxelTerrain::set_stream(Ref<VoxelStream> p_stream) {
 
 Ref<VoxelStream> VoxelTerrain::get_stream() const {
 	return _stream;
+}
+
+void VoxelTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
+	if (p_generator == _generator) {
+		return;
+	}
+
+	_generator = p_generator;
+
+#ifdef TOOLS_ENABLED
+	if (_generator.is_valid()) {
+		if (Engine::get_singleton()->is_editor_hint()) {
+			Ref<Script> script = _generator->get_script();
+			if (script.is_valid()) {
+				// Safety check. It's too easy to break threads by making a script reload.
+				// You can turn it back on, but be careful.
+				_run_stream_in_editor = false;
+				_change_notify();
+			}
+		}
+	}
+#endif
+
+	_on_stream_params_changed();
+}
+
+Ref<VoxelGenerator> VoxelTerrain::get_generator() const {
+	return _generator;
 }
 
 void VoxelTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
@@ -134,9 +164,8 @@ void VoxelTerrain::_on_stream_params_changed() {
 	stop_streamer();
 	stop_updater();
 
-	Ref<VoxelStreamFile> file_stream = _stream;
-	if (file_stream.is_valid()) {
-		int stream_block_size_po2 = file_stream->get_block_size_po2();
+	if (_stream.is_valid()) {
+		const int stream_block_size_po2 = _stream->get_block_size_po2();
 		_set_block_size_po2(stream_block_size_po2);
 	}
 
@@ -145,7 +174,8 @@ void VoxelTerrain::_on_stream_params_changed() {
 	// The whole map might change, so regenerate it
 	reset_map();
 
-	if (_stream.is_valid() && (Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
+	if ((_stream.is_valid() || _generator.is_valid()) &&
+			(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
 		start_streamer();
 		start_updater();
 	}
@@ -493,10 +523,12 @@ void VoxelTerrain::remesh_all_blocks() {
 
 void VoxelTerrain::start_streamer() {
 	VoxelServer::get_singleton()->set_volume_stream(_volume_id, _stream);
+	VoxelServer::get_singleton()->set_volume_generator(_volume_id, _generator);
 }
 
 void VoxelTerrain::stop_streamer() {
 	VoxelServer::get_singleton()->set_volume_stream(_volume_id, Ref<VoxelStream>());
+	VoxelServer::get_singleton()->set_volume_generator(_volume_id, Ref<VoxelGenerator>());
 	_loading_blocks.clear();
 	_blocks_pending_load.clear();
 	_reception_buffers.data_output.clear();
@@ -870,7 +902,7 @@ void VoxelTerrain::_process() {
 		});
 	}
 
-	const bool stream_enabled = _stream.is_valid() &&
+	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
 								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
 
 	// Find out which blocks need to appear and which need to be unloaded
@@ -1089,14 +1121,16 @@ void VoxelTerrain::_process() {
 	{
 		VOXEL_PROFILE_SCOPE();
 
+		const int used_channels_mask = get_used_channels_mask();
+
 		for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
 			const Vector3i block_pos = _blocks_pending_update[bi];
 
 			// Check if the block is worth meshing
 			// Smooth meshing works on more neighbors, so checking a single block isn't enough to ignore it,
 			// but that will slow down meshing a lot.
-			// TODO This is one reason to separate terrain systems between blocky and smooth (other reason is LOD)
-			if (!(_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF))) {
+			// TODO Query mesher instead?
+			if (!(used_channels_mask & (1 << VoxelBuffer::CHANNEL_SDF))) {
 				VoxelBlock *block = _map.get_block(block_pos);
 				if (block == nullptr) {
 					continue;
@@ -1249,11 +1283,11 @@ void VoxelTerrain::_process() {
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
 	Ref<VoxelTool> vt = memnew(VoxelToolTerrain(this));
-	if (_stream.is_valid()) {
-		if (_stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF)) {
-			vt->set_channel(VoxelBuffer::CHANNEL_SDF);
-		} else {
-			vt->set_channel(VoxelBuffer::CHANNEL_TYPE);
+	const int used_channels_mask = get_used_channels_mask();
+	// Auto-pick first used channel
+	for (int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
+		if ((used_channels_mask & (1 << channel)) != 0) {
+			vt->set_channel(channel);
 		}
 	}
 	return vt;

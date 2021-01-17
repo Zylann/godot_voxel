@@ -5,6 +5,7 @@
 #include "../voxel_constants.h"
 #include <core/os/memory.h>
 #include <scene/main/viewport.h>
+#include <thread>
 
 namespace {
 VoxelServer *g_voxel_server = nullptr;
@@ -44,14 +45,20 @@ void VoxelServer::destroy_singleton() {
 }
 
 VoxelServer::VoxelServer() {
-	// TODO Can't set more than 1 thread yet, streams aren't well made for it... unless we can separate file ones
-	// This pool can work on larger periods, it doesn't require low latency
+	const unsigned int hw_threads_hint = std::thread::hardware_concurrency();
+	PRINT_VERBOSE(String("HW threads hint: {0}").format(varray(hw_threads_hint)));
+	// TODO Automatic thread assignment and project settings
+
+	// Can't be more than 1 thread. File access with more threads isn't worth it.
 	_streaming_thread_pool.set_thread_count(1);
 	_streaming_thread_pool.set_priority_update_period(300);
 	_streaming_thread_pool.set_batch_count(16);
 
-	// TODO Try more threads, it should be possible
-	// This pool works on visuals so it must have low latency
+	_generation_thread_pool.set_thread_count(2);
+	_generation_thread_pool.set_priority_update_period(300);
+	_generation_thread_pool.set_batch_count(1);
+
+	// This pool works on visuals so it must have lower latency
 	_meshing_thread_pool.set_thread_count(2);
 	_meshing_thread_pool.set_priority_update_period(64);
 	_meshing_thread_pool.set_batch_count(1);
@@ -75,6 +82,7 @@ VoxelServer::~VoxelServer() {
 void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	_streaming_thread_pool.wait_for_all_tasks();
 	_meshing_thread_pool.wait_for_all_tasks();
+	_generation_thread_pool.wait_for_all_tasks();
 
 	_streaming_thread_pool.dequeue_completed_tasks([warn](IVoxelTask *task) {
 		if (warn) {
@@ -85,6 +93,14 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	});
 
 	_meshing_thread_pool.dequeue_completed_tasks([](IVoxelTask *task) {
+		memdelete(task);
+	});
+
+	_generation_thread_pool.dequeue_completed_tasks([warn](IVoxelTask *task) {
+		if (warn) {
+			WARN_PRINT("Generator tasks remain on module cleanup, "
+					   "this could become a problem if they reference scripts");
+		}
 		memdelete(task);
 	});
 }
@@ -142,19 +158,28 @@ void VoxelServer::set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream)
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.stream = stream;
 
-	// Commit a new stream to process requests with
+	// Commit a new dependency to process requests with
 	if (volume.stream_dependency != nullptr) {
 		volume.stream_dependency->valid = false;
 	}
 
-	if (stream.is_valid()) {
-		volume.stream_dependency = gd_make_shared<StreamingDependency>();
-		for (size_t i = 0; i < _streaming_thread_pool.get_thread_count(); ++i) {
-			volume.stream_dependency->streams[i] = stream->duplicate();
-		}
-	} else {
-		volume.stream_dependency = nullptr;
+	volume.stream_dependency = gd_make_shared<StreamingDependency>();
+	volume.stream_dependency->generator = volume.generator;
+	volume.stream_dependency->stream = volume.stream;
+}
+
+void VoxelServer::set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> generator) {
+	Volume &volume = _world.volumes.get(volume_id);
+	volume.generator = generator;
+
+	// Commit a new dependency to process requests with
+	if (volume.stream_dependency != nullptr) {
+		volume.stream_dependency->valid = false;
 	}
+
+	volume.stream_dependency = gd_make_shared<StreamingDependency>();
+	volume.stream_dependency->generator = volume.generator;
+	volume.stream_dependency->stream = volume.stream;
 }
 
 void VoxelServer::set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher) {
@@ -212,8 +237,6 @@ void VoxelServer::init_priority_dependency(
 
 void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) {
 	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream.is_null());
-	CRASH_COND(volume.stream_dependency == nullptr);
 	ERR_FAIL_COND(volume.meshing_dependency == nullptr);
 
 	BlockMeshRequest *r = memnew(BlockMeshRequest);
@@ -231,21 +254,38 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) 
 
 void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod) {
 	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream.is_null());
-	CRASH_COND(volume.stream_dependency == nullptr);
+	ERR_FAIL_COND(volume.stream_dependency == nullptr);
 
-	BlockDataRequest r;
-	r.volume_id = volume_id;
-	r.position = block_pos;
-	r.lod = lod;
-	r.type = BlockDataRequest::TYPE_LOAD;
-	r.block_size = volume.block_size;
-	r.stream_dependency = volume.stream_dependency;
+	if (volume.stream_dependency->stream.is_valid()) {
+		BlockDataRequest r;
+		r.volume_id = volume_id;
+		r.position = block_pos;
+		r.lod = lod;
+		r.type = BlockDataRequest::TYPE_LOAD;
+		r.block_size = volume.block_size;
+		r.stream_dependency = volume.stream_dependency;
 
-	init_priority_dependency(r.priority_dependency, block_pos, lod, volume);
+		init_priority_dependency(r.priority_dependency, block_pos, lod, volume);
 
-	BlockDataRequest *rp = memnew(BlockDataRequest(r));
-	_streaming_thread_pool.enqueue(rp);
+		BlockDataRequest *rp = memnew(BlockDataRequest(r));
+		_streaming_thread_pool.enqueue(rp);
+
+	} else {
+		// Directly generate the block without checking the stream
+		ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
+
+		BlockGenerateRequest r;
+		r.volume_id = volume_id;
+		r.position = block_pos;
+		r.lod = lod;
+		r.block_size = volume.block_size;
+		r.stream_dependency = volume.stream_dependency;
+
+		init_priority_dependency(r.priority_dependency, block_pos, lod, volume);
+
+		BlockGenerateRequest *rp = memnew(BlockGenerateRequest(r));
+		_generation_thread_pool.enqueue(rp);
+	}
 }
 
 void VoxelServer::request_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod) {
@@ -266,6 +306,22 @@ void VoxelServer::request_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels
 
 	BlockDataRequest *rp = memnew(BlockDataRequest(r));
 	_streaming_thread_pool.enqueue(rp);
+}
+
+void VoxelServer::request_block_generate_from_data_request(BlockDataRequest *src) {
+	// This can be called from another thread
+
+	BlockGenerateRequest r;
+	r.voxels = src->voxels;
+	r.volume_id = src->volume_id;
+	r.position = src->position;
+	r.lod = src->lod;
+	r.block_size = src->block_size;
+	r.stream_dependency = src->stream_dependency;
+	r.priority_dependency = src->priority_dependency;
+
+	BlockGenerateRequest *rp = memnew(BlockGenerateRequest(r));
+	_generation_thread_pool.enqueue(rp);
 }
 
 void VoxelServer::remove_volume(uint32_t volume_id) {
@@ -351,7 +407,8 @@ void VoxelServer::process() {
 			// TODO Comparing pointer may not be guaranteed
 			// The request response must match the dependency it would have been requested with.
 			// If it doesn't match, we are no longer interested in the result.
-			if (r->stream_dependency == volume->stream_dependency) {
+			if (r->stream_dependency == volume->stream_dependency &&
+					r->type != BlockDataRequest::TYPE_FALLBACK_ON_GENERATOR) {
 				BlockDataOutput o;
 				o.voxels = r->voxels;
 				o.position = r->position;
@@ -376,7 +433,34 @@ void VoxelServer::process() {
 
 		} else {
 			// This can happen if the user removes the volume while requests are still about to return
-			PRINT_VERBOSE("Data request response came back but volume wasn't found");
+			PRINT_VERBOSE("Stream data request response came back but volume wasn't found");
+		}
+
+		memdelete(r);
+	});
+
+	// Receive generation updates
+	_generation_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
+		BlockGenerateRequest *r = must_be_cast<BlockGenerateRequest>(task);
+		Volume *volume = _world.volumes.try_get(r->volume_id);
+
+		if (volume != nullptr) {
+			// TODO Comparing pointer may not be guaranteed
+			// The request response must match the dependency it would have been requested with.
+			// If it doesn't match, we are no longer interested in the result.
+			if (r->stream_dependency == volume->stream_dependency) {
+				BlockDataOutput o;
+				o.voxels = r->voxels;
+				o.position = r->position;
+				o.lod = r->lod;
+				o.dropped = !r->has_run;
+				o.type = BlockDataOutput::TYPE_LOAD;
+				volume->reception_buffers->data_output.push_back(o);
+			}
+
+		} else {
+			// This can happen if the user removes the volume while requests are still about to return
+			PRINT_VERBOSE("Gemerated data request response came back but volume wasn't found");
 		}
 
 		memdelete(r);
@@ -486,6 +570,7 @@ static VoxelServer::Stats::ThreadPoolStats debug_get_pool_stats(const VoxelThrea
 VoxelServer::Stats VoxelServer::get_stats() const {
 	Stats s;
 	s.streaming = debug_get_pool_stats(_streaming_thread_pool);
+	s.generation = debug_get_pool_stats(_generation_thread_pool);
 	s.meshing = debug_get_pool_stats(_meshing_thread_pool);
 	return s;
 }
@@ -504,17 +589,24 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);
-	Ref<VoxelStream> stream = stream_dependency->streams[ctx.thread_index];
+	Ref<VoxelStream> stream = stream_dependency->stream;
 	CRASH_COND(stream.is_null());
 
 	const Vector3i origin_in_voxels = (position << lod) * block_size;
 
 	switch (type) {
-		case TYPE_LOAD:
+		case TYPE_LOAD: {
 			voxels.instance();
 			voxels->create(block_size, block_size, block_size);
-			stream->emerge_block(voxels, origin_in_voxels, lod);
-			break;
+			const VoxelStream::Result result = stream->emerge_block(voxels, origin_in_voxels, lod);
+			if (result == VoxelStream::RESULT_BLOCK_NOT_FOUND) {
+				Ref<VoxelGenerator> generator = stream_dependency->generator;
+				if (generator.is_valid()) {
+					VoxelServer::get_singleton()->request_block_generate_from_data_request(this);
+					type = TYPE_FALLBACK_ON_GENERATOR;
+				}
+			}
+		} break;
 
 		case TYPE_SAVE: {
 			Ref<VoxelBuffer> voxels_copy;
@@ -545,6 +637,40 @@ int VoxelServer::BlockDataRequest::get_priority() {
 
 bool VoxelServer::BlockDataRequest::is_cancelled() {
 	return type == TYPE_LOAD && (!stream_dependency->valid || too_far);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
+	VOXEL_PROFILE_SCOPE();
+
+	CRASH_COND(stream_dependency == nullptr);
+	Ref<VoxelGenerator> generator = stream_dependency->generator;
+	ERR_FAIL_COND(generator.is_null());
+
+	const Vector3i origin_in_voxels = (position << lod) * block_size;
+
+	if (voxels.is_null()) {
+		voxels.instance();
+		voxels->create(block_size, block_size, block_size);
+	}
+
+	VoxelBlockRequest r{ voxels, origin_in_voxels, lod };
+	generator->generate_block(r);
+	// TODO Request save if the option is enabled
+
+	has_run = true;
+}
+
+int VoxelServer::BlockGenerateRequest::get_priority() {
+	float closest_viewer_distance_sq;
+	const int p = VoxelServer::get_priority(priority_dependency, lod, &closest_viewer_distance_sq);
+	too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
+	return p;
+}
+
+bool VoxelServer::BlockGenerateRequest::is_cancelled() {
+	return !stream_dependency->valid || too_far; // || stream_dependency->stream->get_fallback_generator().is_null();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

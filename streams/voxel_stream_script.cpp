@@ -1,10 +1,16 @@
 #include "voxel_stream_script.h"
 #include "../voxel_string_names.h"
 
-void VoxelStreamScript::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-	ERR_FAIL_COND(out_buffer.is_null());
-	try_call_script(this, VoxelStringNames::get_singleton()->_emerge_block,
-			out_buffer, origin_in_voxels.to_vec3(), lod, nullptr);
+VoxelStream::Result VoxelStreamScript::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
+	Variant output;
+	if (try_call_script(this, VoxelStringNames::get_singleton()->_emerge_block,
+				out_buffer, origin_in_voxels.to_vec3(), lod, &output)) {
+		int res = output;
+		ERR_FAIL_INDEX_V(res, _RESULT_COUNT, RESULT_ERROR);
+		return static_cast<Result>(res);
+	}
+	return RESULT_ERROR;
 }
 
 void VoxelStreamScript::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {

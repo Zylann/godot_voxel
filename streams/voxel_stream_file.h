@@ -6,52 +6,17 @@
 
 class FileAccess;
 
-// TODO Could be worth integrating with Godot ResourceLoader
-// Loads and saves blocks to the filesystem.
-// If a block is not found, a fallback stream can be used (usually to generate the block).
-// Look at subclasses of this for a specific format.
+// TODO Might be removed in the future, it doesn't add much.
+
+// Helper common base for some file streams.
 class VoxelStreamFile : public VoxelStream {
 	GDCLASS(VoxelStreamFile, VoxelStream)
-public:
-	VoxelStreamFile();
-	~VoxelStreamFile();
-
-	void set_save_fallback_output(bool enabled);
-	bool get_save_fallback_output() const;
-
-	Ref<VoxelStream> get_fallback_stream() const;
-	void set_fallback_stream(Ref<VoxelStream> stream);
-
-	// File streams are likely to impose a specific block size,
-	// and changing it can be very expensive so the API is usually specific too
-	virtual int get_block_size_po2() const;
-	virtual int get_lod_count() const;
-
-	int get_used_channels_mask() const override;
-
-	bool has_script() const override;
-
 protected:
 	static void _bind_methods();
 
-	void emerge_block_fallback(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
-	void emerge_blocks_fallback(Vector<VoxelBlockRequest> &requests);
-
 	FileAccess *open_file(const String &fpath, int mode_flags, Error *err);
-	void close_file(FileAccess *f);
 
-	VoxelBlockSerializerInternal _block_serializer;
-
-private:
-	Vector3 _get_block_size() const;
-
-	struct Parameters {
-		Ref<VoxelStream> fallback_stream;
-		bool save_fallback_output = true;
-	};
-
-	Parameters _parameters;
-	RWLock *_parameters_lock = nullptr;
+	static thread_local VoxelBlockSerializerInternal _block_serializer;
 };
 
 #endif // VOXEL_STREAM_FILE_H

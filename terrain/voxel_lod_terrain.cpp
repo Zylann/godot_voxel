@@ -169,10 +169,6 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 	_material = p_material;
 }
 
-Ref<VoxelStream> VoxelLodTerrain::get_stream() const {
-	return _stream;
-}
-
 unsigned int VoxelLodTerrain::get_block_size() const {
 	return _lods[0].map.get_block_size();
 }
@@ -191,7 +187,8 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 #ifdef TOOLS_ENABLED
 	if (_stream.is_valid()) {
 		if (Engine::get_singleton()->is_editor_hint()) {
-			if (_stream->has_script()) {
+			Ref<Script> script = _stream->get_script();
+			if (script.is_valid()) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_run_stream_in_editor = false;
@@ -204,8 +201,36 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 	_on_stream_params_changed();
 }
 
-Ref<VoxelMesher> VoxelLodTerrain::get_mesher() const {
-	return _mesher;
+Ref<VoxelStream> VoxelLodTerrain::get_stream() const {
+	return _stream;
+}
+
+void VoxelLodTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
+	if (p_generator == _generator) {
+		return;
+	}
+
+	_generator = p_generator;
+
+#ifdef TOOLS_ENABLED
+	if (_generator.is_valid()) {
+		if (Engine::get_singleton()->is_editor_hint()) {
+			Ref<Script> script = _generator->get_script();
+			if (script.is_valid()) {
+				// Safety check. It's too easy to break threads by making a script reload.
+				// You can turn it back on, but be careful.
+				_run_stream_in_editor = false;
+				_change_notify();
+			}
+		}
+	}
+#endif
+
+	_on_stream_params_changed();
+}
+
+Ref<VoxelGenerator> VoxelLodTerrain::get_generator() const {
+	return _generator;
 }
 
 void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
@@ -225,16 +250,19 @@ void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
 	update_configuration_warning();
 }
 
+Ref<VoxelMesher> VoxelLodTerrain::get_mesher() const {
+	return _mesher;
+}
+
 void VoxelLodTerrain::_on_stream_params_changed() {
 	stop_streamer();
 	stop_updater();
 
-	Ref<VoxelStreamFile> file_stream = _stream;
-	if (file_stream.is_valid()) {
-		const int stream_block_size_po2 = file_stream->get_block_size_po2();
+	if (_stream.is_valid()) {
+		const int stream_block_size_po2 = _stream->get_block_size_po2();
 		_set_block_size_po2(stream_block_size_po2);
 
-		const int stream_lod_count = file_stream->get_lod_count();
+		const int stream_lod_count = _stream->get_lod_count();
 		_set_lod_count(min(stream_lod_count, get_lod_count()));
 	}
 
@@ -242,7 +270,8 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 
 	reset_maps();
 
-	if (_stream.is_valid() && (!Engine::get_singleton()->is_editor_hint() || _run_stream_in_editor)) {
+	if ((_stream.is_valid() || _generator.is_valid()) &&
+			(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
 		start_streamer();
 		start_updater();
 	}
@@ -349,10 +378,12 @@ void VoxelLodTerrain::stop_updater() {
 
 void VoxelLodTerrain::start_streamer() {
 	VoxelServer::get_singleton()->set_volume_stream(_volume_id, _stream);
+	VoxelServer::get_singleton()->set_volume_generator(_volume_id, _generator);
 }
 
 void VoxelLodTerrain::stop_streamer() {
 	VoxelServer::get_singleton()->set_volume_stream(_volume_id, Ref<VoxelStream>());
+	VoxelServer::get_singleton()->set_volume_generator(_volume_id, Ref<VoxelGenerator>());
 
 	for (unsigned int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
@@ -1045,8 +1076,11 @@ void VoxelLodTerrain::_process() {
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
 
+	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
+								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
+
 	// It's possible the user didn't set a stream yet, or it is turned off
-	if (_stream.is_valid() && (Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
+	if (stream_enabled) {
 		send_block_data_requests();
 	}
 

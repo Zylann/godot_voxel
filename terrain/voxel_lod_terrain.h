@@ -32,6 +32,9 @@ public:
 	Ref<VoxelStream> get_stream() const override;
 	void set_stream(Ref<VoxelStream> p_stream) override;
 
+	Ref<VoxelGenerator> get_generator() const override;
+	void set_generator(Ref<VoxelGenerator> p_stream) override;
+
 	Ref<VoxelMesher> get_mesher() const override;
 	void set_mesher(Ref<VoxelMesher> p_mesher) override;
 
@@ -185,6 +188,7 @@ private:
 	//Rect3i _prev_bounds_in_voxels;
 
 	Ref<VoxelStream> _stream;
+	Ref<VoxelGenerator> _generator;
 	Ref<VoxelMesher> _mesher;
 
 	std::vector<BlockToSave> _blocks_to_save;

@@ -23,11 +23,11 @@ public:
 	VoxelStreamRegionFiles();
 	~VoxelStreamRegionFiles();
 
-	void emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
+	Result emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
 	void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) override;
 
-	void emerge_blocks(Vector<VoxelBlockRequest> &p_blocks) override;
-	void immerge_blocks(Vector<VoxelBlockRequest> &p_blocks) override;
+	void emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results) override;
+	void immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) override;
 
 	String get_directory() const;
 	void set_directory(String dirpath);
@@ -55,6 +55,7 @@ private:
 	struct CachedRegion;
 	struct RegionHeader;
 
+	// TODO Redundant with VoxelStream::Result. May be replaced
 	enum EmergeResult {
 		EMERGE_OK,
 		EMERGE_OK_FALLBACK,

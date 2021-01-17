@@ -33,14 +33,16 @@ VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
 	memdelete(_mutex);
 }
 
-void VoxelStreamRegionFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStream::Result VoxelStreamRegionFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 	VoxelBlockRequest r;
 	r.voxel_buffer = out_buffer;
 	r.origin_in_voxels = origin_in_voxels;
 	r.lod = lod;
 	Vector<VoxelBlockRequest> requests;
+	Vector<Result> results;
 	requests.push_back(r);
-	emerge_blocks(requests);
+	emerge_blocks(requests, results);
+	return results[0];
 }
 
 void VoxelStreamRegionFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
@@ -53,7 +55,7 @@ void VoxelStreamRegionFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i ori
 	immerge_blocks(requests);
 }
 
-void VoxelStreamRegionFiles::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
+void VoxelStreamRegionFiles::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results) {
 	VOXEL_PROFILE_SCOPE();
 
 	// In order to minimize opening/closing files, requests are grouped according to their region.
@@ -70,16 +72,25 @@ void VoxelStreamRegionFiles::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks) 
 
 	for (int i = 0; i < sorted_blocks.size(); ++i) {
 		VoxelBlockRequest &r = sorted_blocks.write[i];
-		EmergeResult result = _emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
-		if (result == EMERGE_OK_FALLBACK) {
-			fallback_requests.push_back(r);
+		const EmergeResult result = _emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		switch (result) {
+			case EMERGE_OK:
+				out_results.push_back(RESULT_BLOCK_FOUND);
+				break;
+			case EMERGE_OK_FALLBACK:
+				out_results.push_back(RESULT_BLOCK_NOT_FOUND);
+				break;
+			case EMERGE_FAILED:
+				out_results.push_back(RESULT_ERROR);
+				break;
+			default:
+				CRASH_NOW();
+				break;
 		}
 	}
-
-	emerge_blocks_fallback(fallback_requests);
 }
 
-void VoxelStreamRegionFiles::immerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
+void VoxelStreamRegionFiles::immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) {
 	VOXEL_PROFILE_SCOPE();
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order

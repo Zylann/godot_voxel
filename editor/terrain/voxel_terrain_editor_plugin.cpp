@@ -14,6 +14,7 @@ class VoxelTerrainEditorTaskIndicator : public HBoxContainer {
 private:
 	enum StatID {
 		STAT_STREAM_TASKS,
+		STAT_GENERATE_TASKS,
 		STAT_MESH_TASKS,
 		STAT_MAIN_THREAD_TASKS,
 		STAT_COUNT
@@ -22,6 +23,7 @@ private:
 public:
 	VoxelTerrainEditorTaskIndicator() {
 		create_stat(STAT_STREAM_TASKS, TTR("Streaming tasks"));
+		create_stat(STAT_GENERATE_TASKS, TTR("Generation tasks"));
 		create_stat(STAT_MESH_TASKS, TTR("Meshing tasks"));
 		create_stat(STAT_MAIN_THREAD_TASKS, TTR("Main thread tasks"));
 	}
@@ -29,6 +31,7 @@ public:
 	void _notification(int p_what) {
 		switch (p_what) {
 			case NOTIFICATION_THEME_CHANGED:
+				// Set a monospace font.
 				// Can't do this in constructor, fonts are not available then. Also the theme can change.
 				for (unsigned int i = 0; i < _stats.size(); ++i) {
 					_stats[i].label->add_font_override("font", get_font("source", "EditorFonts"));
@@ -40,6 +43,7 @@ public:
 	void update_stats(int main_thread_tasks) {
 		const VoxelServer::Stats stats = VoxelServer::get_singleton()->get_stats();
 		set_stat(STAT_STREAM_TASKS, stats.streaming.tasks);
+		set_stat(STAT_GENERATE_TASKS, stats.generation.tasks);
 		set_stat(STAT_MESH_TASKS, stats.meshing.tasks);
 		set_stat(STAT_MAIN_THREAD_TASKS, main_thread_tasks);
 	}
@@ -53,7 +57,7 @@ private:
 		name_label->set_text(name);
 		add_child(name_label);
 		stat.label = memnew(Label);
-		stat.label->set_custom_minimum_size(Vector2(80 * EDSCALE, 0));
+		stat.label->set_custom_minimum_size(Vector2(60 * EDSCALE, 0));
 		stat.label->set_text("---");
 		add_child(stat.label);
 	}

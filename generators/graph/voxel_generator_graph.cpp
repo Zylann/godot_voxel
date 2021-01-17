@@ -198,6 +198,10 @@ int VoxelGeneratorGraph::get_used_channels_mask() const {
 }
 
 void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
+	// TODO Find a way to not require read lock for the whole duration of the block.
+	// If the user tries to edit (and recompile) the graph while it's still generating stuff in the editor,
+	// the editor will freeze until generation has completed.
+	// Use std::shared_ptr?
 	RWLockRead rlock(_runtime_lock);
 
 	const VoxelGraphRuntime *runtime = _runtime;

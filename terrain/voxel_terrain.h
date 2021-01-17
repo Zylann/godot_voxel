@@ -23,6 +23,9 @@ public:
 	void set_stream(Ref<VoxelStream> p_stream) override;
 	Ref<VoxelStream> get_stream() const override;
 
+	void set_generator(Ref<VoxelGenerator> p_generator) override;
+	Ref<VoxelGenerator> get_generator() const override;
+
 	void set_mesher(Ref<VoxelMesher> mesher) override;
 	Ref<VoxelMesher> get_mesher() const override;
 
@@ -171,6 +174,7 @@ private:
 
 	Ref<VoxelStream> _stream;
 	Ref<VoxelMesher> _mesher;
+	Ref<VoxelGenerator> _generator;
 
 	bool _generate_collisions = true;
 	bool _run_stream_in_editor = true;

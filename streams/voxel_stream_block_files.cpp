@@ -22,17 +22,18 @@ VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 
 // TODO Have configurable block size
 
-void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-	ERR_FAIL_COND(out_buffer.is_null());
+VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
+		Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+
+	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
 
 	if (_directory_path.empty()) {
-		emerge_block_fallback(out_buffer, origin_in_voxels, lod);
-		return;
+		return RESULT_BLOCK_NOT_FOUND;
 	}
 
 	if (!_meta_loaded) {
 		if (load_meta() != VOXEL_FILE_OK) {
-			return;
+			return RESULT_ERROR;
 		}
 	}
 
@@ -40,8 +41,8 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 
 	const Vector3i block_size(1 << _meta.block_size_po2);
 
-	ERR_FAIL_COND(lod >= _meta.lod_count);
-	ERR_FAIL_COND(block_size != out_buffer->get_size());
+	ERR_FAIL_COND_V(lod >= _meta.lod_count, RESULT_ERROR);
+	ERR_FAIL_COND_V(block_size != out_buffer->get_size(), RESULT_ERROR);
 
 	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
 	String file_path = get_block_file_path(block_pos, lod);
@@ -53,12 +54,11 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 		f = open_file(file_path, FileAccess::READ, &err);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
 		if (f == nullptr && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
-			emerge_block_fallback(out_buffer, origin_in_voxels, lod);
-			return;
+			return RESULT_BLOCK_NOT_FOUND;
 		}
 	}
 
-	ERR_FAIL_COND(f == nullptr);
+	ERR_FAIL_COND_V(f == nullptr, RESULT_ERROR);
 
 	{
 		{
@@ -67,7 +67,7 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 			if (err != VOXEL_FILE_OK) {
 				memdelete(f);
 				ERR_PRINT(String("Invalid file header: ") + ::to_string(err));
-				return;
+				return RESULT_ERROR;
 			}
 		}
 
@@ -85,6 +85,8 @@ void VoxelStreamBlockFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i o
 
 	f->close();
 	memdelete(f);
+
+	return RESULT_BLOCK_FOUND;
 }
 
 void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {

@@ -1,6 +1,7 @@
 #ifndef VOXEL_SERVER_H
 #define VOXEL_SERVER_H
 
+#include "../generators/voxel_generator.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../streams/voxel_stream.h"
 #include "../util/file_locker.h"
@@ -82,6 +83,7 @@ public:
 	void set_volume_transform(uint32_t volume_id, Transform t);
 	void set_volume_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
+	void set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> generator);
 	void set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher);
 	void set_volume_octree_split_scale(uint32_t volume_id, float split_scale);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
@@ -134,19 +136,21 @@ public:
 
 			Dictionary to_dict() {
 				Dictionary d;
-				d["tasks"] = thread_count;
+				d["tasks"] = tasks;
 				d["active_threads"] = active_threads;
-				d["thread_count"] = tasks;
+				d["thread_count"] = thread_count;
 				return d;
 			}
 		};
 
 		ThreadPoolStats streaming;
+		ThreadPoolStats generation;
 		ThreadPoolStats meshing;
 
 		Dictionary to_dict() {
 			Dictionary d;
 			d["streaming"] = streaming.to_dict();
+			d["generation"] = generation.to_dict();
 			d["meshing"] = meshing.to_dict();
 			return d;
 		}
@@ -155,6 +159,10 @@ public:
 	Stats get_stats() const;
 
 private:
+	class BlockDataRequest;
+
+	void request_block_generate_from_data_request(BlockDataRequest *src);
+
 	Dictionary _b_get_stats();
 
 	static void _bind_methods();
@@ -171,13 +179,12 @@ private:
 	//   If such data sets change structurally (like their size, or other non-dirty-readable fields),
 	//   then a new instance is created and old references are left to "die out".
 
-	// Data common to all requests about a particular volume
 	struct StreamingDependency {
-		FixedArray<Ref<VoxelStream>, VoxelThreadPool::MAX_THREADS> streams;
+		Ref<VoxelStream> stream;
+		Ref<VoxelGenerator> generator;
 		bool valid = true;
 	};
 
-	// Data common to all requests about a particular volume
 	struct MeshingDependency {
 		Ref<VoxelMesher> mesher;
 		bool valid = true;
@@ -188,6 +195,7 @@ private:
 		ReceptionBuffers *reception_buffers = nullptr;
 		Transform transform;
 		Ref<VoxelStream> stream;
+		Ref<VoxelGenerator> generator;
 		Ref<VoxelMesher> mesher;
 		uint32_t block_size = 16;
 		float octree_split_scale = 0;
@@ -226,7 +234,8 @@ private:
 	public:
 		enum Type {
 			TYPE_LOAD = 0,
-			TYPE_SAVE
+			TYPE_SAVE,
+			TYPE_FALLBACK_ON_GENERATOR
 		};
 
 		void run(VoxelTaskContext ctx) override;
@@ -244,6 +253,23 @@ private:
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		// TODO Find a way to separate save, it doesnt need sorting
+	};
+
+	class BlockGenerateRequest : public IVoxelTask {
+	public:
+		void run(VoxelTaskContext ctx) override;
+		int get_priority() override;
+		bool is_cancelled() override;
+
+		Ref<VoxelBuffer> voxels;
+		Vector3i position;
+		uint32_t volume_id;
+		uint8_t lod;
+		uint8_t block_size;
+		bool has_run = false;
+		bool too_far = false;
+		PriorityDependency priority_dependency;
+		std::shared_ptr<StreamingDependency> stream_dependency;
 	};
 
 	class BlockMeshRequest : public IVoxelTask {
@@ -267,6 +293,7 @@ private:
 	World _world;
 
 	VoxelThreadPool _streaming_thread_pool;
+	VoxelThreadPool _generation_thread_pool;
 	VoxelThreadPool _meshing_thread_pool;
 
 	VoxelFileLocker _file_locker;

@@ -1138,6 +1138,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			// TODO Allow to use bilinear filtering?
 			const Params p = ctx.get_params<Params>();
 			Image &im = *p.image;
+			// TODO Because of this shitty locking system, images aren't read-only and as a result can't be used with more than one thread!
+			// - Copy data in a custom structure?
+			// - Lock all images after compilation and unlock them in destructor?
 			im.lock();
 			for (uint32_t i = 0; i < out.size; ++i) {
 				out.data[i] = sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i],

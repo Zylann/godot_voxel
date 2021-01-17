@@ -5,6 +5,7 @@
 
 class VoxelMesher;
 class VoxelStream;
+class VoxelGenerator;
 
 // Base class for voxel volumes
 class VoxelNode : public Spatial {
@@ -16,10 +17,16 @@ public:
 	virtual void set_stream(Ref<VoxelStream> stream);
 	virtual Ref<VoxelStream> get_stream() const;
 
+	virtual void set_generator(Ref<VoxelGenerator> generator);
+	virtual Ref<VoxelGenerator> get_generator() const;
+
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
 
 	String get_configuration_warning() const override;
+
+protected:
+	int get_used_channels_mask() const;
 
 private:
 	Ref<VoxelMesher> _b_get_mesher() { return get_mesher(); }
@@ -27,6 +34,9 @@ private:
 
 	Ref<VoxelStream> _b_get_stream() { return get_stream(); }
 	void _b_set_stream(Ref<VoxelStream> stream) { set_stream(stream); }
+
+	Ref<VoxelGenerator> _b_get_generator() { return get_generator(); }
+	void _b_set_generator(Ref<VoxelGenerator> g) { set_generator(g); }
 
 	static void _bind_methods();
 };
