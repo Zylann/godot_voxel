@@ -100,7 +100,7 @@ int VoxelNode::get_used_channels_mask() const {
 	Ref<VoxelStream> stream = get_stream();
 	int used_channels_mask = 0;
 	if (generator.is_valid()) {
-		used_channels_mask |= stream->get_used_channels_mask();
+		used_channels_mask |= generator->get_used_channels_mask();
 	}
 	if (stream.is_valid()) {
 		used_channels_mask |= stream->get_used_channels_mask();
