@@ -31,6 +31,7 @@ public:
 	};
 
 	// Contains the data the program will modify while it runs.
+	// The same state can be re-used with multiple programs, but it should be prepared before doing that.
 	class State {
 	public:
 		inline const Buffer &get_buffer(uint16_t address) const {
@@ -276,9 +277,13 @@ private:
 				r.deleter(r.ptr);
 			}
 			heap_resources.clear();
+			unlock_images();
 			ref_resources.clear();
 			buffer_count = -1;
 		}
+
+		void lock_images();
+		void unlock_images();
 	};
 
 	Program _program;

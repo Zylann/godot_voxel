@@ -4,11 +4,11 @@
 
 namespace {
 
-inline float get_height_repeat(Image &im, int x, int y) {
+inline float get_height_repeat(const Image &im, int x, int y) {
 	return im.get_pixel(wrap(x, im.get_width()), wrap(y, im.get_height())).r;
 }
 
-inline float get_height_blurred(Image &im, int x, int y) {
+inline float get_height_blurred(const Image &im, int x, int y) {
 	float h = get_height_repeat(im, x, y);
 	h += get_height_repeat(im, x + 1, y);
 	h += get_height_repeat(im, x - 1, y);
@@ -25,6 +25,9 @@ VoxelGeneratorImage::VoxelGeneratorImage() {
 
 VoxelGeneratorImage::~VoxelGeneratorImage() {
 	memdelete(_parameters_lock);
+	if (_parameters.image.is_valid()) {
+		_parameters.image->unlock();
+	}
 }
 
 void VoxelGeneratorImage::set_image(Ref<Image> im) {
@@ -34,7 +37,15 @@ void VoxelGeneratorImage::set_image(Ref<Image> im) {
 	_image = im;
 	Ref<Image> copy = im.is_valid() ? im->duplicate() : Ref<Image>();
 	RWLockWrite wlock(_parameters_lock);
+	// lock() prevents us from reading the same image from multiple threads, so we lock it up-front.
+	// This might no longer be needed in Godot 4.
+	if (_parameters.image.is_valid()) {
+		_parameters.image->unlock();
+	}
 	_parameters.image = copy;
+	if (_parameters.image.is_valid()) {
+		_parameters.image->lock();
+	}
 }
 
 Ref<Image> VoxelGeneratorImage::get_image() const {
@@ -61,9 +72,7 @@ void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
 	}
 
 	ERR_FAIL_COND(params.image.is_null());
-	Image &image = **params.image;
-
-	image.lock();
+	const Image &image = **params.image;
 
 	if (params.blur_enabled) {
 		VoxelGeneratorHeightmap::generate(
@@ -76,8 +85,6 @@ void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
 				[&image](int x, int z) { return get_height_repeat(image, x, z); },
 				input.origin_in_voxels, input.lod);
 	}
-
-	image.unlock();
 
 	out_buffer.compress_uniform_channels();
 }

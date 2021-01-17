@@ -148,8 +148,8 @@ inline T skew3(T x) {
 }
 
 // This is mostly useful for generating planets from an existing heightmap
-inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, Image &im, float min_h, float max_h,
-		float norm_x, float norm_y) {
+inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, const Image &im,
+		float min_h, float max_h, float norm_x, float norm_y) {
 
 	const float d = Math::sqrt(x * x + y * y + z * z) + 0.0001f;
 	const float sd = d - r;
@@ -170,7 +170,6 @@ inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, I
 	// in cases where we want to combine the same map in shaders
 	const float ys = skew3(ny);
 	const float uvy = -0.5f * ys + 0.5f;
-	// TODO Not great, but in Godot 4.0 we won't need to lock anymore.
 	// TODO Could use bicubic interpolation when the image is sampled at lower resolution than voxels
 	const float h = get_pixel_repeat_linear(im, uvx * norm_x, uvy * norm_y);
 	return sd - m * h;
@@ -882,8 +881,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	}
 	{
 		struct Params {
-			// TODO Should be `const` but can't because of `lock()`
-			Image *image;
+			const Image *image;
 			const ImageRangeGrid *image_range_grid;
 		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_IMAGE_2D];
@@ -913,12 +911,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			// TODO Allow to use bilinear filtering?
 			const Params p = ctx.get_params<Params>();
-			Image &im = *p.image;
-			im.lock();
+			const Image &im = *p.image;
 			for (uint32_t i = 0; i < out.size; ++i) {
 				out.data[i] = get_pixel_repeat(im, x.data[i], y.data[i]);
 			}
-			im.unlock();
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval x = ctx.get_input(0);
@@ -1091,8 +1087,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			float max_height;
 			float norm_x;
 			float norm_y;
-			// TODO Should be `const` but isn't because of `lock()`
-			Image *image;
+			const Image *image;
 			const ImageRangeGrid *image_range_grid;
 		};
 
@@ -1137,16 +1132,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			// TODO Allow to use bilinear filtering?
 			const Params p = ctx.get_params<Params>();
-			Image &im = *p.image;
-			// TODO Because of this shitty locking system, images aren't read-only and as a result can't be used with more than one thread!
-			// - Copy data in a custom structure?
-			// - Lock all images after compilation and unlock them in destructor?
-			im.lock();
+			const Image &im = *p.image;
 			for (uint32_t i = 0; i < out.size; ++i) {
 				out.data[i] = sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i],
 						p.radius, p.factor, im, p.min_height, p.max_height, p.norm_x, p.norm_y);
 			}
-			im.unlock();
 		};
 
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {

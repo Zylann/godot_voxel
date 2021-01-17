@@ -34,6 +34,27 @@ inline void append(std::vector<uint8_t> &mem, const T &v) {
 	*(T *)(&mem[p]) = v;
 }
 
+// The Image lock() API prevents us from reading the same image in multiple threads.
+// Compiling makes a read-only copy of all resources, so we can lock all images up-front if successful.
+// This might no longer needed in Godot 4.
+void VoxelGraphRuntime::Program::lock_images() {
+	for (size_t i = 0; i < ref_resources.size(); ++i) {
+		Ref<Image> im = ref_resources[i];
+		if (im.is_valid()) {
+			im->lock();
+		}
+	}
+}
+
+void VoxelGraphRuntime::Program::unlock_images() {
+	for (size_t i = 0; i < ref_resources.size(); ++i) {
+		Ref<Image> im = ref_resources[i];
+		if (im.is_valid()) {
+			im->unlock();
+		}
+	}
+}
+
 VoxelGraphRuntime::VoxelGraphRuntime() {
 	clear();
 }
@@ -285,8 +306,10 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		params_copy.resize(node->params.size());
 		for (size_t i = 0; i < node->params.size(); ++i) {
 			Variant v = node->params[i];
+
 			if (v.get_type() == Variant::OBJECT) {
 				Ref<Resource> res = v;
+
 				if (res.is_null()) {
 					// duplicate() is only available in Resource,
 					// so we have to limit to this instead of Reference or Object
@@ -296,10 +319,13 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 					result.node_id = node_id;
 					return result;
 				}
+
 				res = res->duplicate();
+
 				_program.ref_resources.push_back(res);
 				v = res;
 			}
+
 			params_copy[i] = v;
 		}
 
@@ -331,6 +357,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 						  .format(varray(
 								  SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(float)),
 								  SIZE_T_TO_VARIANT(_program.buffer_count))));
+
+	_program.lock_images();
 
 	CompilationResult result;
 	result.success = true;
