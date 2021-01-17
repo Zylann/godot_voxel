@@ -160,8 +160,10 @@ public:
 
 private:
 	class BlockDataRequest;
+	class BlockGenerateRequest;
 
 	void request_block_generate_from_data_request(BlockDataRequest *src);
+	void request_block_save_from_generate_request(BlockGenerateRequest *src);
 
 	Dictionary _b_get_stats();
 

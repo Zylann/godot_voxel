@@ -81,8 +81,12 @@ VoxelServer::~VoxelServer() {
 
 void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	_streaming_thread_pool.wait_for_all_tasks();
-	_meshing_thread_pool.wait_for_all_tasks();
 	_generation_thread_pool.wait_for_all_tasks();
+
+	// Wait a second time because the generation pool can generate streaming requests
+	_streaming_thread_pool.wait_for_all_tasks();
+
+	_meshing_thread_pool.wait_for_all_tasks();
 
 	_streaming_thread_pool.dequeue_completed_tasks([warn](IVoxelTask *task) {
 		if (warn) {
@@ -322,6 +326,29 @@ void VoxelServer::request_block_generate_from_data_request(BlockDataRequest *src
 
 	BlockGenerateRequest *rp = memnew(BlockGenerateRequest(r));
 	_generation_thread_pool.enqueue(rp);
+}
+
+void VoxelServer::request_block_save_from_generate_request(BlockGenerateRequest *src) {
+	// This can be called from another thread
+
+	PRINT_VERBOSE(String("Requesting save of generator output for block {0} lod {1}")
+						  .format(varray(src->position.to_vec3(), src->lod)));
+
+	ERR_FAIL_COND(src->voxels.is_null());
+
+	BlockDataRequest r;
+	r.voxels = src->voxels->duplicate(true);
+	r.volume_id = src->volume_id;
+	r.position = src->position;
+	r.lod = src->lod;
+	r.type = BlockDataRequest::TYPE_SAVE;
+	r.block_size = src->block_size;
+	r.stream_dependency = src->stream_dependency;
+
+	// No priority data, saving doesnt need sorting
+
+	BlockDataRequest *rp = memnew(BlockDataRequest(r));
+	_streaming_thread_pool.enqueue(rp);
 }
 
 void VoxelServer::remove_volume(uint32_t volume_id) {
@@ -657,7 +684,13 @@ void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
 
 	VoxelBlockRequest r{ voxels, origin_in_voxels, lod };
 	generator->generate_block(r);
-	// TODO Request save if the option is enabled
+
+	if (stream_dependency->valid) {
+		Ref<VoxelStream> stream = stream_dependency->stream;
+		if (stream.is_valid() && stream->get_save_generator_output()) {
+			VoxelServer::get_singleton()->request_block_save_from_generate_request(this);
+		}
+	}
 
 	has_run = true;
 }
