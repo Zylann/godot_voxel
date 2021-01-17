@@ -406,12 +406,14 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 		state.buffer_capacity = buffer_size;
 	}
 	for (auto it = state.buffers.begin(); it != state.buffers.end(); ++it) {
-		it->size = buffer_size;
+		Buffer &buffer = *it;
+		buffer.size = buffer_size;
+		buffer.is_constant = false;
 	}
 
 	state.ranges.resize(_program.buffer_count);
 
-	// Always fill constants because we don't know if we'll run the same program as before...
+	// Always reset constants because we don't know if we'll run the same program as before...
 	for (auto it = _program.constants.begin(); it != _program.constants.end(); ++it) {
 		const Constant &c = *it;
 		Buffer &buffer = buffers[c.address];
@@ -421,6 +423,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 		for (unsigned int j = 0; j < buffer_size; ++j) {
 			buffer.data[j] = c.value;
 		}
+		CRASH_COND(c.address >= state.ranges.size());
 		state.ranges[c.address] = Interval::from_single_value(c.value);
 	}
 
@@ -441,7 +444,6 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 void VoxelGraphRuntime::generate_set(State &state,
 		ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
 		ArraySlice<float> out_sdf, bool skip_xz) const {
-
 	// I don't like putting private helper functions in headers.
 	struct L {
 		static inline void bind_buffer(ArraySlice<Buffer> buffers, int a, ArraySlice<float> d) {
@@ -576,9 +578,9 @@ Interval VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector
 
 	ArraySlice<Interval> ranges(state.ranges, 0, state.ranges.size());
 
-	ranges[0] = Interval(min_pos.x, max_pos.x);
-	ranges[1] = Interval(min_pos.y, max_pos.y);
-	ranges[2] = Interval(min_pos.z, max_pos.z);
+	ranges[_program.x_input_address] = Interval(min_pos.x, max_pos.x);
+	ranges[_program.y_input_address] = Interval(min_pos.y, max_pos.y);
+	ranges[_program.z_input_address] = Interval(min_pos.z, max_pos.z);
 
 	const ArraySlice<const uint8_t> operations(_program.operations.data(), 0, _program.operations.size());
 
