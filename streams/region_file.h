@@ -87,6 +87,8 @@ public:
 	bool has_block(unsigned int index) const;
 	Vector3i get_block_position_from_index(uint32_t i) const;
 
+	void debug_check();
+
 private:
 	bool save_header(FileAccess *f);
 	Error load_header(FileAccess *f);

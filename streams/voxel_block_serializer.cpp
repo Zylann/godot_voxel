@@ -362,8 +362,14 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(f == nullptr, false);
 
+#if defined(TOOLS_ENABLED) || defined(DEBUG_ENABLED)
+	const size_t fpos = f->get_position();
+	const size_t remaining_file_size = f->get_len() - fpos;
+	ERR_FAIL_COND_V(size_to_read > remaining_file_size, false);
+#endif
+
 	_compressed_data.resize(size_to_read);
-	unsigned int read_size = f->get_buffer(_compressed_data.data(), size_to_read);
+	const unsigned int read_size = f->get_buffer(_compressed_data.data(), size_to_read);
 	ERR_FAIL_COND_V(read_size != size_to_read, false);
 
 	return decompress_and_deserialize(_compressed_data, out_voxel_buffer);

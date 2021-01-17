@@ -258,6 +258,10 @@ Error VoxelRegionFile::open(const String &fpath, bool create_if_not_found) {
 		}
 	}
 
+#ifdef DEBUG_ENABLED
+	debug_check();
+#endif
+
 	return OK;
 }
 
@@ -321,8 +325,9 @@ Error VoxelRegionFile::load_block(
 	}
 
 	const unsigned int sector_index = block_info.get_sector_index();
+	const unsigned int block_begin = _blocks_begin_offset + sector_index * _header.format.sector_size;
 
-	f->seek(_blocks_begin_offset + sector_index * _header.format.sector_size);
+	f->seek(block_begin);
 
 	unsigned int block_data_size = f->get_32();
 	CRASH_COND(f->eof_reached());
@@ -629,4 +634,35 @@ bool VoxelRegionFile::has_block(unsigned int index) const {
 	ERR_FAIL_COND_V(!is_open(), false);
 	CRASH_COND(index >= _header.blocks.size());
 	return _header.blocks[index].data != 0;
+}
+
+// Checks to detect some corruption signs in the file
+void VoxelRegionFile::debug_check() {
+	ERR_FAIL_COND(!is_open());
+	ERR_FAIL_COND(_file_access == nullptr);
+	FileAccess *f = _file_access;
+	const size_t file_len = f->get_len();
+
+	for (size_t lut_index = 0; lut_index < _header.blocks.size(); ++lut_index) {
+		const VoxelRegionBlockInfo &block_info = _header.blocks[lut_index];
+		const Vector3i position = get_block_position_from_index(lut_index);
+		if (block_info.data == 0) {
+			continue;
+		}
+		const unsigned int sector_index = block_info.get_sector_index();
+		const unsigned int block_begin = _blocks_begin_offset + sector_index * _header.format.sector_size;
+		if (block_begin >= file_len) {
+			print_line(String("ERROR: LUT {0} ({1}): offset {2} is larger than file size {3}")
+							   .format(varray(lut_index, position.to_vec3(), block_begin, file_len)));
+			continue;
+		}
+		f->seek(block_begin);
+		const size_t block_data_size = f->get_32();
+		const size_t pos = f->get_position();
+		const size_t remaining_size = file_len - pos;
+		if (block_data_size > remaining_size) {
+			print_line(String("ERROR: LUT {0} ({1}): block size at offset {2} is larger than remaining size {3}")
+							   .format(varray(lut_index, position.to_vec3(), block_data_size, remaining_size)));
+		}
+	}
 }
