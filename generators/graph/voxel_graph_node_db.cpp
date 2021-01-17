@@ -1128,7 +1128,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
-			const VoxelGraphRuntime::Buffer &z = ctx.get_input(1);
+			const VoxelGraphRuntime::Buffer &z = ctx.get_input(2);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			// TODO Allow to use bilinear filtering?
 			const Params p = ctx.get_params<Params>();
