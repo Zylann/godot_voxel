@@ -4,6 +4,7 @@
 #include "../voxel_generator.h"
 #include "program_graph.h"
 #include "voxel_graph_runtime.h"
+#include <memory>
 
 class VoxelGeneratorGraph : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorGraph, VoxelGenerator)
@@ -150,7 +151,7 @@ private:
 
 	// Only compiling and generation methods are thread-safe.
 
-	VoxelGraphRuntime *_runtime = nullptr;
+	std::shared_ptr<VoxelGraphRuntime> _runtime = nullptr;
 	RWLock *_runtime_lock = nullptr;
 
 	struct Cache {

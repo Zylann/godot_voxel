@@ -22,10 +22,7 @@ void VoxelGeneratorGraph::clear() {
 	_graph.clear();
 	{
 		RWLockWrite wlock(_runtime_lock);
-		if (_runtime != nullptr) {
-			memdelete(_runtime);
-			_runtime = nullptr;
-		}
+		_runtime.reset();
 	}
 }
 
@@ -202,9 +199,11 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	// If the user tries to edit (and recompile) the graph while it's still generating stuff in the editor,
 	// the editor will freeze until generation has completed.
 	// Use std::shared_ptr?
-	RWLockRead rlock(_runtime_lock);
-
-	const VoxelGraphRuntime *runtime = _runtime;
+	std::shared_ptr<VoxelGraphRuntime> runtime;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime = _runtime;
+	}
 
 	if (runtime == nullptr || !runtime->has_output()) {
 		return;
@@ -314,19 +313,12 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
-	VoxelGraphRuntime::CompilationResult result;
-	VoxelGraphRuntime *r = memnew(VoxelGraphRuntime);
-	result = r->compile(_graph, Engine::get_singleton()->is_editor_hint());
+	std::shared_ptr<VoxelGraphRuntime> r = std::make_shared<VoxelGraphRuntime>();
+	const VoxelGraphRuntime::CompilationResult result = r->compile(_graph, Engine::get_singleton()->is_editor_hint());
 
 	if (result.success) {
 		RWLockWrite wlock(_runtime_lock);
-		if (_runtime != nullptr) {
-			memdelete(_runtime);
-		}
 		_runtime = r;
-
-	} else {
-		memdelete(r);
 	}
 
 	return result;
@@ -335,19 +327,17 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 // This is an external API which involves locking so better not use this internally
 bool VoxelGeneratorGraph::is_good() const {
 	RWLockRead rlock(_runtime_lock);
-	const VoxelGraphRuntime *runtime = _runtime;
-	return runtime != nullptr && runtime->has_output();
+	return _runtime != nullptr && _runtime->has_output();
 }
 
 void VoxelGeneratorGraph::generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
 		ArraySlice<float> out_sdf) {
 
 	RWLockRead rlock(_runtime_lock);
-	const VoxelGraphRuntime *runtime = _runtime;
-	ERR_FAIL_COND(runtime == nullptr || !runtime->has_output());
+	ERR_FAIL_COND(_runtime == nullptr || !_runtime->has_output());
 	Cache &cache = _cache;
-	runtime->prepare_state(cache.state, in_x.size());
-	runtime->generate_set(cache.state, in_x, in_y, in_z, out_sdf, false);
+	_runtime->prepare_state(cache.state, in_x.size());
+	_runtime->generate_set(cache.state, in_x, in_y, in_z, out_sdf, false);
 }
 
 const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current_thread() {
@@ -356,9 +346,8 @@ const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current
 
 uint32_t VoxelGeneratorGraph::get_output_port_address(ProgramGraph::PortLocation port) const {
 	RWLockRead rlock(_runtime_lock);
-	const VoxelGraphRuntime *runtime = _runtime;
-	ERR_FAIL_COND_V(runtime == nullptr || !runtime->has_output(), 0);
-	return runtime->get_output_port_address(port);
+	ERR_FAIL_COND_V(_runtime == nullptr || !_runtime->has_output(), 0);
+	return _runtime->get_output_port_address(port);
 }
 
 inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
@@ -374,8 +363,12 @@ inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
 void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, float sdf_min, float sdf_max) {
 	ERR_FAIL_COND(im.is_null());
 
-	RWLockRead rlock(_runtime_lock);
-	const VoxelGraphRuntime *runtime = _runtime;
+	std::shared_ptr<const VoxelGraphRuntime> runtime;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime = _runtime;
+	}
+
 	ERR_FAIL_COND(runtime == nullptr || !runtime->has_output());
 
 	Cache &cache = _cache;
@@ -409,8 +402,12 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength) {
 	ERR_FAIL_COND(im.is_null());
 
-	RWLockRead rlock(_runtime_lock);
-	const VoxelGraphRuntime *runtime = _runtime;
+	std::shared_ptr<const VoxelGraphRuntime> runtime;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime = _runtime;
+	}
+
 	ERR_FAIL_COND(runtime == nullptr || !runtime->has_output());
 
 	Cache &cache = _cache;
@@ -469,8 +466,11 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 
 // TODO This function isn't used yet, but whatever uses it should probably put locking and cache outside
 float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
-	RWLockRead rlock(_runtime_lock);
-	const VoxelGraphRuntime *runtime = _runtime;
+	std::shared_ptr<const VoxelGraphRuntime> runtime;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime = _runtime;
+	}
 	ERR_FAIL_COND_V(runtime == nullptr || !runtime->has_output(), 0.f);
 	Cache &cache = _cache;
 	runtime->prepare_state(cache.state, 1);
@@ -479,7 +479,11 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 
 Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) {
 	RWLockRead rlock(_runtime_lock);
-	const VoxelGraphRuntime *runtime = _runtime;
+	std::shared_ptr<const VoxelGraphRuntime> runtime;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime = _runtime;
+	}
 	ERR_FAIL_COND_V(runtime == nullptr || !runtime->has_output(), Interval::from_single_value(0.f));
 	Cache &cache = _cache;
 	// Note, buffer size is irrelevant here
@@ -644,7 +648,11 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 
 float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 	RWLockRead rlock(_runtime_lock);
-	const VoxelGraphRuntime *runtime = _runtime;
+	std::shared_ptr<const VoxelGraphRuntime> runtime;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime = _runtime;
+	}
 	ERR_FAIL_COND_V(runtime == nullptr || !runtime->has_output(), 0.f);
 
 	const uint32_t cube_size = 16;
