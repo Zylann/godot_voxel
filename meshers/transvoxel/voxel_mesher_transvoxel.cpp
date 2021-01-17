@@ -722,6 +722,7 @@ void VoxelMesherTransvoxelInternal::build_transition(
 	// Instead of making transition meshes go from low-res blocks to high-res blocks,
 	// I do the opposite, going from high-res to low-res. It's easier because half-res voxels are available for free,
 	// if we compute the transition meshes right after the regular mesh, with the same voxel data.
+	// TODO One issue with this change however, is a "bump" of mesh density which can be noticeable.
 
 	// This represents the actual box of voxels we are working on.
 	// It also represents positions of the minimum and maximum vertices that can be generated.
