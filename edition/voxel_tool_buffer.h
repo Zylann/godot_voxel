@@ -8,6 +8,7 @@ class VoxelBuffer;
 class VoxelToolBuffer : public VoxelTool {
 	GDCLASS(VoxelToolBuffer, VoxelTool)
 public:
+	VoxelToolBuffer() {}
 	VoxelToolBuffer(Ref<VoxelBuffer> vb);
 
 	bool is_area_editable(const Rect3i &box) const override;
