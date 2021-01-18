@@ -47,7 +47,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Sergey Lapin (slapin)\n"
 						"Jonas (NoFr1ends)\n"
 						"lenis0012\n"
-						"Phyronnaz\n";
+						"Phyronnaz\n"
+						"RonanZe\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique

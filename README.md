@@ -86,5 +86,6 @@ Sergey Lapin (slapin)
 Jonas (NoFr1ends)
 lenis0012
 Phyronnaz
+RonanZe
 ```
 
