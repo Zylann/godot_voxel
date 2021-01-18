@@ -63,7 +63,7 @@ static uint32_t get_header_size_v3(const VoxelRegionFormat &format) {
 static bool save_header(FileAccess *f, uint8_t version, const VoxelRegionFormat &format,
 		const std::vector<VoxelRegionBlockInfo> &block_infos) {
 
-	ERR_FAIL_COND_V(f == nullptr, ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(f == nullptr, false);
 
 	f->seek(0);
 
@@ -110,14 +110,14 @@ static bool save_header(FileAccess *f, uint8_t version, const VoxelRegionFormat 
 static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &out_format,
 		std::vector<VoxelRegionBlockInfo> &out_block_infos) {
 
-	ERR_FAIL_COND_V(f == nullptr, ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(f == nullptr, false);
 
-	ERR_FAIL_COND_V(f->get_position() != 0, ERR_PARSE_ERROR);
-	ERR_FAIL_COND_V(f->get_len() < MAGIC_AND_VERSION_SIZE, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(f->get_position() != 0, false);
+	ERR_FAIL_COND_V(f->get_len() < MAGIC_AND_VERSION_SIZE, false);
 
 	FixedArray<char, 5> magic(0);
-	ERR_FAIL_COND_V(f->get_buffer(reinterpret_cast<uint8_t *>(magic.data()), 4) != 4, ERR_PARSE_ERROR);
-	ERR_FAIL_COND_V(strcmp(magic.data(), FORMAT_REGION_MAGIC) != 0, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(f->get_buffer(reinterpret_cast<uint8_t *>(magic.data()), 4) != 4, false);
+	ERR_FAIL_COND_V(strcmp(magic.data(), FORMAT_REGION_MAGIC) != 0, false);
 
 	const uint8_t version = f->get_8();
 
@@ -130,7 +130,7 @@ static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &
 
 		for (unsigned int i = 0; i < out_format.channel_depths.size(); ++i) {
 			const uint8_t d = f->get_8();
-			ERR_FAIL_COND_V(d >= VoxelBuffer::DEPTH_COUNT, ERR_PARSE_ERROR);
+			ERR_FAIL_COND_V(d >= VoxelBuffer::DEPTH_COUNT, false);
 			out_format.channel_depths[i] = static_cast<VoxelBuffer::Depth>(d);
 		}
 
@@ -153,7 +153,7 @@ static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &
 
 		} else {
 			ERR_PRINT(String("Unexpected palette value: {0}").format(varray(palette_size)));
-			return ERR_PARSE_ERROR;
+			return false;
 		}
 	}
 
@@ -163,7 +163,7 @@ static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &
 	// TODO Deal with endianess
 	const size_t blocks_len = out_block_infos.size() * sizeof(VoxelRegionBlockInfo);
 	const size_t read_size = f->get_buffer((uint8_t *)out_block_infos.data(), blocks_len);
-	ERR_FAIL_COND_V(read_size != blocks_len, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(read_size != blocks_len, false);
 
 	return true;
 }
