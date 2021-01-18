@@ -453,7 +453,7 @@ Dictionary VoxelTerrain::_b_get_statistics() const {
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;
-	d["pending_block_meshes"] = _stats.pending_block_meshes;
+	d["remaining_main_thread_blocks"] = _stats.remaining_main_thread_blocks;
 
 	return d;
 }
@@ -1273,7 +1273,7 @@ void VoxelTerrain::_process() {
 
 		shift_up(_reception_buffers.mesh_output, queue_index);
 
-		_stats.pending_block_meshes = _reception_buffers.mesh_output.size();
+		_stats.remaining_main_thread_blocks = _reception_buffers.mesh_output.size();
 	}
 
 	_stats.time_process_update_responses = profiling_clock.restart();
