@@ -35,7 +35,10 @@ void VoxelGeneratorImage::set_image(Ref<Image> im) {
 		return;
 	}
 	_image = im;
-	Ref<Image> copy = im.is_valid() ? im->duplicate() : Ref<Image>();
+	Ref<Image> copy;
+	if (im.is_valid()) {
+		copy = im->duplicate();
+	}
 	RWLockWrite wlock(_parameters_lock);
 	// lock() prevents us from reading the same image from multiple threads, so we lock it up-front.
 	// This might no longer be needed in Godot 4.

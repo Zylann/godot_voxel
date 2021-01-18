@@ -22,8 +22,12 @@ void VoxelGeneratorNoise2D::set_noise(Ref<OpenSimplexNoise> noise) {
 		return;
 	}
 	_noise = noise;
+	Ref<OpenSimplexNoise> copy;
+	if (noise.is_valid()) {
+		copy = noise->duplicate();
+	}
 	RWLockWrite wlock(_parameters_lock);
-	_parameters.noise = _noise.is_valid() ? _noise->duplicate() : Ref<OpenSimplexNoise>();
+	_parameters.noise = copy;
 }
 
 Ref<OpenSimplexNoise> VoxelGeneratorNoise2D::get_noise() const {
