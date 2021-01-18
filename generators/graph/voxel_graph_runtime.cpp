@@ -201,8 +201,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
 
 	// Run through each node in order, and turn them into program instructions
-	for (size_t i = 0; i < order.size(); ++i) {
-		const uint32_t node_id = order[i];
+	for (size_t order_index = 0; order_index < order.size(); ++order_index) {
+		const uint32_t node_id = order[order_index];
 		const ProgramGraph::Node *node = graph.get_node(node_id);
 		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node->type_id);
 
@@ -210,7 +210,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		CRASH_COND(node->inputs.size() != type.inputs.size());
 		CRASH_COND(node->outputs.size() != type.outputs.size());
 
-		if (i == xzy_start_index) {
+		if (order_index == xzy_start_index) {
 			_program.xzy_start = operations.size();
 		}
 
