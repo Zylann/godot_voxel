@@ -474,7 +474,6 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 }
 
 Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) {
-	RWLockRead rlock(_runtime_lock);
 	std::shared_ptr<const VoxelGraphRuntime> runtime;
 	{
 		RWLockRead rlock(_runtime_lock);
@@ -643,7 +642,6 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 // Debug land
 
 float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
-	RWLockRead rlock(_runtime_lock);
 	std::shared_ptr<const VoxelGraphRuntime> runtime;
 	{
 		RWLockRead rlock(_runtime_lock);
