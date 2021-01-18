@@ -254,7 +254,7 @@ private:
 		int y_input_address = -1;
 		int z_input_address = -1;
 		int sdf_output_address = -1;
-		int buffer_count = -1;
+		unsigned int buffer_count = 0;
 		HashMap<ProgramGraph::PortLocation, uint16_t, ProgramGraph::PortLocationHasher> output_port_addresses;
 		CompilationResult compilation_result;
 
@@ -279,7 +279,7 @@ private:
 			heap_resources.clear();
 			unlock_images();
 			ref_resources.clear();
-			buffer_count = -1;
+			buffer_count = 0;
 		}
 
 		void lock_images();
