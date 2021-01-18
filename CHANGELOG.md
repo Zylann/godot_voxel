@@ -18,6 +18,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Voxel nodes can be limited to specific bounds, rather than being infinitely paging volumes (multiples of block size).
     - Meshers are now resources so you can choose and configure them per terrain
     - Added [FastNoiseLite](https://github.com/Auburn/FastNoise) for a wider variety of noises
+    - Generators are no longer limited to a single background thread
 
 - Editor
     - Streaming/LOD can be set to follow the editor camera instead of being centered on world origin. Use with caution, fast big movements and zooms can cause lag
@@ -32,7 +33,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Added `SdfSphereHeightmap` and `Normalize` nodes to voxel graph, which can help making planets
 
 - Blocky voxels
-    - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support (scripts only)
+    - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support
     - Replaced `transparent` property with `transparency_index` for more control on the culling of transparent faces
     - The TYPE channel is now 16-bit by default instead of 8-bit, allowing to store up to 65,536 types (part of this channel might actually be used to store rotation in the future)
 
@@ -40,8 +41,10 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points
     - Defined `COLOR` channel in `VoxelBuffer`, previously known as `DATA3`
     - `VoxelGenerator` is no longer the base for script-based generators, use `VoxelGeneratorScript` instead
+    - `VoxelGenerator` no longer inherits `VoxelStream`
     - `VoxelStream` is no longer the base for script-based streams, use `VoxelStreamScript` instead
-    - Terrain nodes no longer produce meshes based on the voxel data. Instead they use the mesher assigned to them.
+    - Generators and streams have been split. Streams are more dedicated to files and use a single background thread. Generators are dedicated to generation and can be used by more than one background thread. Terrains have one property for each.
+    - The meshing system no longer "guesses" how voxels will look like. Instead it uses the mesher assigned to the terrain.
     - SDF and TYPE channels have different default depth, so if you relied on 8-bit depth, you may have to explicitely set that format in your generator, to avoid mismatch with existing savegames
 
 - Fixes
