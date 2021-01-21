@@ -208,6 +208,7 @@ static void generate_blocky_mesh(
 						}
 
 						const std::vector<Vector2> &side_uvs = voxel.model.side_uvs[side];
+						const std::vector<float> &side_tangents = voxel.model.side_tangents[side];
 
 						// Subtracting 1 because the data is padded
 						Vector3 pos(x - 1, y - 1, z - 1);
@@ -227,6 +228,13 @@ static void generate_blocky_mesh(
 							const int append_index = arrays.uvs.size();
 							arrays.uvs.resize(arrays.uvs.size() + vertex_count);
 							memcpy(arrays.uvs.data() + append_index, side_uvs.data(), vertex_count * sizeof(Vector2));
+						}
+						{
+							if (side_tangents.size() > 0 ){
+								const int append_index = arrays.tangents.size();
+								arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
+								memcpy(arrays.tangents.data() + append_index, side_tangents.data(), (vertex_count * 4) * sizeof(float));
+							}
 						}
 
 						{
@@ -303,8 +311,15 @@ static void generate_blocky_mesh(
 
 						const std::vector<Vector3> &normals = voxel.model.normals;
 						const std::vector<Vector2> &uvs = voxel.model.uvs;
+						const std::vector<float> &tangents = voxel.model.tangents;
 
 						const Vector3 pos(x - 1, y - 1, z - 1);
+
+						if (tangents.size() > 0) {
+							const int append_index = arrays.tangents.size();
+							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
+							memcpy(arrays.tangents.data() + append_index, tangents.data(), (vertex_count * 4) * sizeof(float));
+						}
 
 						for (unsigned int i = 0; i < vertex_count; ++i) {
 							arrays.normals.push_back(normals[i]);
@@ -504,6 +519,11 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				mesh_arrays[Mesh::ARRAY_NORMAL] = normals;
 				mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
+				if (arrays.tangents.size() > 0) {
+					PoolVector<float> tangents;
+					raw_copy_to(tangents, arrays.tangents);
+					mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
+				}
 			}
 
 			output.surfaces.push_back(mesh_arrays);

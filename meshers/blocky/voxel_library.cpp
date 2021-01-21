@@ -98,6 +98,11 @@ void VoxelLibrary::set_atlas_size(int s) {
 	_needs_baking = true;
 }
 
+void VoxelLibrary::set_bake_tangents(bool bt) {
+	_bake_tangents = bt;
+	_needs_baking = true;
+}
+
 Ref<Voxel> VoxelLibrary::create_voxel(unsigned int id, String name) {
 	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<Voxel>());
 	Ref<Voxel> voxel(memnew(Voxel));
@@ -160,7 +165,7 @@ void VoxelLibrary::bake() {
 	for (size_t i = 0; i < _voxel_types.size(); ++i) {
 		Ref<Voxel> config = _voxel_types[i];
 		if (config.is_valid()) {
-			_voxel_types[i]->bake(_baked_data.models[i], _atlas_size);
+			_voxel_types[i]->bake(_baked_data.models[i], _atlas_size, _bake_tangents);
 		} else {
 			_baked_data.models[i].clear();
 		}
@@ -392,6 +397,9 @@ void VoxelLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_count", "count"), &VoxelLibrary::set_voxel_count);
 	ClassDB::bind_method(D_METHOD("get_voxel_count"), &VoxelLibrary::get_voxel_count);
 
+	ClassDB::bind_method(D_METHOD("get_bake_tangents"), &VoxelLibrary::get_bake_tangents);
+	ClassDB::bind_method(D_METHOD("set_bake_tangents", "bake_tangents"), &VoxelLibrary::set_bake_tangents);
+
 	ClassDB::bind_method(D_METHOD("get_voxel_index_from_name", "name"), &VoxelLibrary::get_voxel_index_from_name);
 	ClassDB::bind_method(D_METHOD("get_voxel_by_name", "name"), &VoxelLibrary::_b_get_voxel_by_name);
 
@@ -399,6 +407,7 @@ void VoxelLibrary::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "atlas_size"), "set_atlas_size", "get_atlas_size");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_count", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_voxel_count", "get_voxel_count");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "bake_tangents"), "set_bake_tangents", "get_bake_tangents");
 
 	BIND_CONSTANT(MAX_VOXEL_TYPES);
 }
