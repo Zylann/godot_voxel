@@ -19,19 +19,21 @@ public:
 	static const int PADDING = 1;
 
 	VoxelMesherBlocky();
+	~VoxelMesherBlocky();
 
 	void set_library(Ref<VoxelLibrary> library);
-	Ref<VoxelLibrary> get_library() const { return _library; }
+	Ref<VoxelLibrary> get_library() const;
 
 	void set_occlusion_darkness(float darkness);
-	float get_occlusion_darkness() const { return _baked_occlusion_darkness; }
+	float get_occlusion_darkness() const;
 
 	void set_occlusion_enabled(bool enable);
-	bool get_occlusion_enabled() const { return _bake_occlusion; }
+	bool get_occlusion_enabled() const;
 
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
-	VoxelMesher *clone() override;
+	Ref<Resource> duplicate(bool p_subresources = false) const override;
+	int get_used_channels_mask() const override;
 
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
@@ -42,16 +44,37 @@ public:
 		std::vector<Color> colors;
 		std::vector<int> indices;
 		std::vector<float> tangents;
+
+		void clear() {
+			positions.clear();
+			normals.clear();
+			uvs.clear();
+			colors.clear();
+			indices.clear();
+      tangents.clear();
+		}
 	};
 
 protected:
 	static void _bind_methods();
 
 private:
-	Ref<VoxelLibrary> _library;
-	FixedArray<Arrays, MAX_MATERIALS> _arrays_per_material;
-	float _baked_occlusion_darkness;
-	bool _bake_occlusion;
+	struct Parameters {
+		float baked_occlusion_darkness = 0.8;
+		bool bake_occlusion = true;
+		Ref<VoxelLibrary> library;
+	};
+
+	struct Cache {
+		FixedArray<Arrays, MAX_MATERIALS> arrays_per_material;
+	};
+
+	// Parameters
+	Parameters _parameters;
+	RWLock *_parameters_lock = nullptr;
+
+	// Work cache
+	static thread_local Cache _cache;
 };
 
 #endif // VOXEL_MESHER_BLOCKY_H

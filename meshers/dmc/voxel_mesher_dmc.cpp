@@ -1444,67 +1444,86 @@ void polygonize_volume_directly(const VoxelBuffer &voxels, Vector3i min, Vector3
 
 #define BUILD_OCTREE_BOTTOM_UP
 
+thread_local VoxelMesherDMC::Cache VoxelMesherDMC::_cache;
+
 VoxelMesherDMC::VoxelMesherDMC() {
 	set_padding(PADDING, PADDING);
+	_parameters_lock = RWLock::create();
+}
+
+VoxelMesherDMC::~VoxelMesherDMC() {
+	memdelete(_parameters_lock);
 }
 
 void VoxelMesherDMC::set_mesh_mode(MeshMode mode) {
-	_mesh_mode = mode;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.mesh_mode = mode;
 }
 
 VoxelMesherDMC::MeshMode VoxelMesherDMC::get_mesh_mode() const {
-	return _mesh_mode;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.mesh_mode;
 }
 
 void VoxelMesherDMC::set_simplify_mode(SimplifyMode mode) {
-	_simplify_mode = mode;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.simplify_mode = mode;
 }
 
 VoxelMesherDMC::SimplifyMode VoxelMesherDMC::get_simplify_mode() const {
-	return _simplify_mode;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.simplify_mode;
 }
 
 void VoxelMesherDMC::set_geometric_error(real_t geometric_error) {
-	_geometric_error = geometric_error;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.geometric_error = geometric_error;
 }
 
 float VoxelMesherDMC::get_geometric_error() const {
-	return _geometric_error;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.geometric_error;
 }
 
 void VoxelMesherDMC::set_seam_mode(SeamMode mode) {
-	_seam_mode = mode;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.seam_mode = mode;
 }
 
 VoxelMesherDMC::SeamMode VoxelMesherDMC::get_seam_mode() const {
-	return _seam_mode;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.seam_mode;
 }
 
 void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-
 	// Requirements:
 	// - Voxel data must be padded
 	// - The non-padded area size is cubic and power of two
-
-	_stats = {};
 
 	const VoxelBuffer &voxels = input.voxels;
 
 	if (voxels.is_uniform(VoxelBuffer::CHANNEL_SDF)) {
 		// That won't produce any polygon
+		_stats = {};
 		return;
 	}
 
 	const Vector3i buffer_size = voxels.get_size();
 	// Taking previous power of two because the algorithm uses an integer cubic octree, and data should be padded
-	int chunk_size = previous_power_of_2(MIN(MIN(buffer_size.x, buffer_size.y), buffer_size.z));
+	const int chunk_size = previous_power_of_2(MIN(MIN(buffer_size.x, buffer_size.y), buffer_size.z));
 
 	ERR_FAIL_COND(voxels.get_size().x < chunk_size + PADDING * 2);
 	ERR_FAIL_COND(voxels.get_size().y < chunk_size + PADDING * 2);
 	ERR_FAIL_COND(voxels.get_size().z < chunk_size + PADDING * 2);
 
+	Parameters params;
+	{
+		RWLockRead rlock(_parameters_lock);
+		params = _parameters;
+	}
+
 	// TODO Option for this in case LOD is not used
-	bool skirts_enabled = _seam_mode == SEAM_MARCHING_SQUARE_SKIRTS;
+	const bool skirts_enabled = (params.seam_mode == SEAM_MARCHING_SQUARE_SKIRTS);
 	// Marching square skirts are a cheap way to hide LOD cracks,
 	// however they might still be visible because of shadow mapping, and cause potential issues when used for physics.
 	// Maybe a shader with a `light()` function can prevent shadows from being applied to these,
@@ -1517,7 +1536,10 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	// Construct an intermediate to handle padding transparently
 	dmc::VoxelAccess voxels_access(voxels, Vector3i(PADDING));
 
+	Stats stats;
 	real_t time_before = OS::get_singleton()->get_ticks_usec();
+
+	Cache &cache = _cache;
 
 	// In an ideal world, a tiny sphere placed in the middle of an empty SDF volume will
 	// cause corners data to change so that they indicate distance to it.
@@ -1537,87 +1559,86 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	//
 	// TODO This option might disappear once I find a good enough solution
 	dmc::OctreeNode *root = nullptr;
-	if (_simplify_mode == SIMPLIFY_OCTREE_BOTTOM_UP) {
-
-		dmc::OctreeBuilderBottomUp octree_builder(voxels_access, _geometric_error, _octree_node_pool);
+	if (params.simplify_mode == SIMPLIFY_OCTREE_BOTTOM_UP) {
+		dmc::OctreeBuilderBottomUp octree_builder(voxels_access, params.geometric_error, cache.octree_node_pool);
 		root = octree_builder.build(Vector3i(), chunk_size);
 
-	} else if (_simplify_mode == SIMPLIFY_OCTREE_TOP_DOWN) {
-
-		dmc::OctreeBuilderTopDown octree_builder(voxels_access, _geometric_error, _octree_node_pool);
+	} else if (params.simplify_mode == SIMPLIFY_OCTREE_TOP_DOWN) {
+		dmc::OctreeBuilderTopDown octree_builder(voxels_access, params.geometric_error, cache.octree_node_pool);
 		root = octree_builder.build(Vector3i(), chunk_size);
 	}
 
-	_stats.octree_build_time = OS::get_singleton()->get_ticks_usec() - time_before;
+	stats.octree_build_time = OS::get_singleton()->get_ticks_usec() - time_before;
 
 	Array surface;
 
 	if (root != nullptr) {
-
-		if (_mesh_mode == MESH_DEBUG_OCTREE) {
+		if (params.mesh_mode == MESH_DEBUG_OCTREE) {
 			surface = dmc::generate_debug_octree_mesh(root, 1 << input.lod);
 
 		} else {
-
 			time_before = OS::get_singleton()->get_ticks_usec();
 
-			dmc::DualGridGenerator dual_grid_generator(_dual_grid, root->size);
+			dmc::DualGridGenerator dual_grid_generator(cache.dual_grid, root->size);
 			dual_grid_generator.node_proc(root);
 			// TODO Handle non-subdivided octree
 
-			_stats.dualgrid_derivation_time = OS::get_singleton()->get_ticks_usec() - time_before;
+			stats.dualgrid_derivation_time = OS::get_singleton()->get_ticks_usec() - time_before;
 
-			if (_mesh_mode == MESH_DEBUG_DUAL_GRID) {
-				surface = dmc::generate_debug_dual_grid_mesh(_dual_grid, 1 << input.lod);
+			if (params.mesh_mode == MESH_DEBUG_DUAL_GRID) {
+				surface = dmc::generate_debug_dual_grid_mesh(cache.dual_grid, 1 << input.lod);
 
 			} else {
-
 				time_before = OS::get_singleton()->get_ticks_usec();
-				dmc::polygonize_dual_grid(_dual_grid, voxels_access, _mesh_builder, skirts_enabled);
-				_stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
+				dmc::polygonize_dual_grid(cache.dual_grid, voxels_access, cache.mesh_builder, skirts_enabled);
+				stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
 			}
 
-			_dual_grid.cells.clear();
+			cache.dual_grid.cells.clear();
 		}
 
-		root->recycle(_octree_node_pool);
+		root->recycle(cache.octree_node_pool);
 
-	} else if (_simplify_mode == SIMPLIFY_NONE) {
-
+	} else if (params.simplify_mode == SIMPLIFY_NONE) {
 		// We throw away adaptivity for meshing speed.
 		// This is essentially regular marching cubes.
-
 		time_before = OS::get_singleton()->get_ticks_usec();
-		dmc::polygonize_volume_directly(voxels, Vector3i(PADDING), Vector3i(chunk_size), _mesh_builder, skirts_enabled);
-		_stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
+		dmc::polygonize_volume_directly(
+				voxels, Vector3i(PADDING), Vector3i(chunk_size), cache.mesh_builder, skirts_enabled);
+		stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
 	}
 
 	if (surface.empty()) {
 		time_before = OS::get_singleton()->get_ticks_usec();
 		if (input.lod > 0) {
-			_mesh_builder.scale(1 << input.lod);
+			cache.mesh_builder.scale(1 << input.lod);
 		}
-		surface = _mesh_builder.commit(_mesh_mode == MESH_WIREFRAME);
-		_stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
+		surface = cache.mesh_builder.commit(params.mesh_mode == MESH_WIREFRAME);
+		stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
 	}
 
 	// surfaces[material][array_type], for now single material
 	output.surfaces.push_back(surface);
 
-	if (_mesh_mode == MESH_NORMAL) {
+	if (params.mesh_mode == MESH_NORMAL) {
 		output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 	} else {
 		output.primitive_type = Mesh::PRIMITIVE_LINES;
 	}
+
+	// We don't lock stats, it's not a big issue if debug displays get some weird numbers once a week
+	_stats = stats;
 }
 
-VoxelMesher *VoxelMesherDMC::clone() {
+Ref<Resource> VoxelMesherDMC::duplicate(bool p_subresources) const {
 	VoxelMesherDMC *c = memnew(VoxelMesherDMC);
-	c->set_mesh_mode(_mesh_mode);
-	c->set_simplify_mode(_simplify_mode);
-	c->set_geometric_error(_geometric_error);
-	c->set_seam_mode(_seam_mode);
+	RWLockRead rlock(_parameters_lock);
+	c->_parameters = _parameters;
 	return c;
+}
+
+int VoxelMesherDMC::get_used_channels_mask() const {
+	return (1 << VoxelBuffer::CHANNEL_SDF);
 }
 
 Dictionary VoxelMesherDMC::get_statistics() const {
@@ -1630,7 +1651,6 @@ Dictionary VoxelMesherDMC::get_statistics() const {
 }
 
 void VoxelMesherDMC::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_mesh_mode", "mode"), &VoxelMesherDMC::set_mesh_mode);
 	ClassDB::bind_method(D_METHOD("get_mesh_mode"), &VoxelMesherDMC::get_mesh_mode);
 
@@ -1644,6 +1664,19 @@ void VoxelMesherDMC::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_seam_mode"), &VoxelMesherDMC::get_seam_mode);
 
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelMesherDMC::get_statistics);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "mesh_mode", PROPERTY_HINT_ENUM, "Normal,Wireframe,DebugOctree,DebugDualGrid"),
+			"set_mesh_mode", "get_mesh_mode");
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "simplify_mode", PROPERTY_HINT_ENUM, "OctreeBottomUp,OctreeTopDown,None"),
+			"set_simplify_mode", "get_simplify_mode");
+
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "geometric_error"), "set_simplify_mode", "get_simplify_mode");
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "seam_mode", PROPERTY_HINT_ENUM, "None,MarchingSquareSkirts"),
+			"set_seam_mode", "get_seam_mode");
 
 	BIND_ENUM_CONSTANT(MESH_NORMAL);
 	BIND_ENUM_CONSTANT(MESH_WIREFRAME);

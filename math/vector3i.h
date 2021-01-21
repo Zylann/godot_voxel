@@ -211,6 +211,10 @@ _FORCE_INLINE_ Vector3i operator>>(const Vector3i &a, int b) {
 	return Vector3i(a.x >> b, a.y >> b, a.z >> b);
 }
 
+_FORCE_INLINE_ Vector3i operator&(const Vector3i &a, int b) {
+	return Vector3i(a.x & b, a.y & b, a.z & b);
+}
+
 inline Vector3i operator%(const Vector3i &a, const Vector3i &b) {
 	return Vector3i(a.x % b.x, a.y % b.y, a.z % b.z);
 }

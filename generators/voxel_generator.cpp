@@ -8,17 +8,8 @@ void VoxelGenerator::generate_block(VoxelBlockRequest &input) {
 	ERR_FAIL_COND(input.voxel_buffer.is_null());
 }
 
-//bool VoxelGenerator::is_thread_safe() const {
-//	return false;
-//}
-
-//bool VoxelGenerator::is_cloneable() const {
-//	return false;
-//}
-
-void VoxelGenerator::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-	VoxelBlockRequest r = { out_buffer, Vector3i(origin_in_voxels), lod };
-	generate_block(r);
+int VoxelGenerator::get_used_channels_mask() const {
+	return 0;
 }
 
 void VoxelGenerator::_b_generate_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {

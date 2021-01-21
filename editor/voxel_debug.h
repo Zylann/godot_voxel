@@ -19,6 +19,8 @@ enum ColorID {
 Ref<Mesh> get_wirecube(ColorID id);
 void free_resources();
 
+class DebugRendererItem;
+
 class DebugRenderer {
 public:
 	~DebugRenderer();
@@ -31,7 +33,7 @@ public:
 	void clear();
 
 private:
-	std::vector<DirectMeshInstance *> _mesh_instances;
+	std::vector<DebugRendererItem *> _items;
 	unsigned int _current = 0;
 	bool _inside_block = false;
 	World *_world = nullptr;

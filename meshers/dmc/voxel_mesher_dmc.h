@@ -88,6 +88,7 @@ public:
 	};
 
 	VoxelMesherDMC();
+	~VoxelMesherDMC();
 
 	void set_mesh_mode(MeshMode mode);
 	MeshMode get_mesh_mode() const;
@@ -105,19 +106,32 @@ public:
 
 	Dictionary get_statistics() const;
 
-	VoxelMesher *clone() override;
+	Ref<Resource> duplicate(bool p_subresources = false) const override;
+	int get_used_channels_mask() const override;
 
 protected:
 	static void _bind_methods();
 
 private:
-	dmc::MeshBuilder _mesh_builder;
-	dmc::DualGrid _dual_grid;
-	dmc::OctreeNodePool _octree_node_pool;
-	real_t _geometric_error = 0.1;
-	MeshMode _mesh_mode = MESH_NORMAL;
-	SimplifyMode _simplify_mode = SIMPLIFY_OCTREE_BOTTOM_UP;
-	SeamMode _seam_mode = SEAM_NONE;
+	struct Parameters {
+		real_t geometric_error = 0.1;
+		MeshMode mesh_mode = MESH_NORMAL;
+		SimplifyMode simplify_mode = SIMPLIFY_OCTREE_BOTTOM_UP;
+		SeamMode seam_mode = SEAM_NONE;
+	};
+
+	struct Cache {
+		dmc::MeshBuilder mesh_builder;
+		dmc::DualGrid dual_grid;
+		dmc::OctreeNodePool octree_node_pool;
+	};
+
+	// Parameters
+	Parameters _parameters;
+	RWLock *_parameters_lock = nullptr;
+
+	// Work cache
+	static thread_local Cache _cache;
 
 	struct Stats {
 		real_t octree_build_time = 0;

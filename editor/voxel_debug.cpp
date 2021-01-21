@@ -103,20 +103,62 @@ void free_resources() {
 	g_finalized = true;
 }
 
+class DebugRendererItem {
+public:
+	DebugRendererItem() {
+		_mesh_instance.create();
+		// TODO When shadow casting is on, directional shadows completely break.
+		// The reason is still unknown.
+		// It should be off anyways, but it's rather concerning.
+		_mesh_instance.set_cast_shadows_setting(VisualServer::SHADOW_CASTING_SETTING_OFF);
+	}
+
+	void set_mesh(Ref<Mesh> mesh) {
+		if (_mesh != mesh) {
+			_mesh = mesh;
+			_mesh_instance.set_mesh(mesh);
+		}
+	}
+
+	void set_transform(Transform t) {
+		if (_transform != t) {
+			_transform = t;
+			_mesh_instance.set_transform(t);
+		}
+	}
+
+	void set_visible(bool visible) {
+		if (_visible != visible) {
+			_visible = visible;
+			_mesh_instance.set_visible(visible);
+		}
+	}
+
+	void set_world(World *world) {
+		_mesh_instance.set_world(world);
+	}
+
+private:
+	Transform _transform;
+	bool _visible = true;
+	Ref<Mesh> _mesh;
+	DirectMeshInstance _mesh_instance;
+};
+
 DebugRenderer::~DebugRenderer() {
 	clear();
 }
 
 void DebugRenderer::clear() {
-	for (auto it = _mesh_instances.begin(); it != _mesh_instances.end(); ++it) {
+	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		memdelete(*it);
 	}
-	_mesh_instances.clear();
+	_items.clear();
 }
 
 void DebugRenderer::set_world(World *world) {
 	_world = world;
-	for (auto it = _mesh_instances.begin(); it != _mesh_instances.end(); ++it) {
+	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		(*it)->set_world(world);
 	}
 }
@@ -129,28 +171,27 @@ void DebugRenderer::begin() {
 }
 
 void DebugRenderer::draw_box(Transform t, ColorID color) {
-	DirectMeshInstance *mi;
-	if (_current >= _mesh_instances.size()) {
-		mi = memnew(DirectMeshInstance);
-		mi->create();
-		mi->set_world(_world);
-		_mesh_instances.push_back(mi);
+	DebugRendererItem *item;
+	if (_current >= _items.size()) {
+		item = memnew(DebugRendererItem);
+		item->set_world(_world);
+		_items.push_back(item);
 	} else {
-		mi = _mesh_instances[_current];
+		item = _items[_current];
 	}
 
-	mi->set_mesh(get_wirecube(color));
-	mi->set_transform(t);
-	mi->set_visible(true);
+	item->set_mesh(get_wirecube(color));
+	item->set_transform(t);
+	item->set_visible(true);
 
 	++_current;
 }
 
 void DebugRenderer::end() {
 	CRASH_COND(!_inside_block);
-	for (unsigned int i = _current; i < _mesh_instances.size(); ++i) {
-		DirectMeshInstance *mi = _mesh_instances[i];
-		mi->set_visible(false);
+	for (unsigned int i = _current; i < _items.size(); ++i) {
+		DebugRendererItem *item = _items[i];
+		item->set_visible(false);
 	}
 	_inside_block = false;
 }

@@ -5,6 +5,7 @@
 #include "../../util/utility.h"
 #include <core/os/os.h>
 
+// Utility functions
 namespace {
 
 template <typename T>
@@ -343,47 +344,74 @@ static void generate_blocky_mesh(
 	}
 }
 
-VoxelMesherBlocky::VoxelMesherBlocky() :
-		_baked_occlusion_darkness(0.8),
-		_bake_occlusion(true) {
+thread_local VoxelMesherBlocky::Cache VoxelMesherBlocky::_cache;
+
+VoxelMesherBlocky::VoxelMesherBlocky() {
 	set_padding(PADDING, PADDING);
+
+	_parameters_lock = RWLock::create();
+
+	// Default library, less steps to setup in editor
+	Ref<VoxelLibrary> library;
+	library.instance();
+	library->load_default();
+	_parameters.library = library;
+}
+
+VoxelMesherBlocky::~VoxelMesherBlocky() {
+	memdelete(_parameters_lock);
 }
 
 void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {
-	_library = library;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.library = library;
+}
+
+Ref<VoxelLibrary> VoxelMesherBlocky::get_library() const {
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.library;
 }
 
 void VoxelMesherBlocky::set_occlusion_darkness(float darkness) {
-	_baked_occlusion_darkness = darkness;
-	if (_baked_occlusion_darkness < 0.0) {
-		_baked_occlusion_darkness = 0.0;
-	} else if (_baked_occlusion_darkness >= 1.0) {
-		_baked_occlusion_darkness = 1.0;
-	}
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.baked_occlusion_darkness = clamp(darkness, 0.0f, 1.0f);
+}
+
+float VoxelMesherBlocky::get_occlusion_darkness() const {
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.baked_occlusion_darkness;
 }
 
 void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
-	_bake_occlusion = enable;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.bake_occlusion = enable;
+}
+
+bool VoxelMesherBlocky::get_occlusion_enabled() const {
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.bake_occlusion;
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	const int channel = VoxelBuffer::CHANNEL_TYPE;
+	Parameters params;
+	{
+		RWLockRead rlock(_parameters_lock);
+		params = _parameters;
+	}
 
-	ERR_FAIL_COND(_library.is_null());
+	ERR_FAIL_COND(params.library.is_null());
 
-	for (unsigned int i = 0; i < _arrays_per_material.size(); ++i) {
-		Arrays &a = _arrays_per_material[i];
-		a.positions.clear();
-		a.normals.clear();
-		a.uvs.clear();
-		a.colors.clear();
-		a.indices.clear();
-		a.tangents.clear();
+	Cache &cache = _cache;
+
+	for (unsigned int i = 0; i < cache.arrays_per_material.size(); ++i) {
+		Arrays &a = cache.arrays_per_material[i];
+		a.clear();
 	}
 
 	float baked_occlusion_darkness = 0;
-	if (_bake_occlusion) {
-		baked_occlusion_darkness = _baked_occlusion_darkness / 3.0;
+	if (params.bake_occlusion) {
+		baked_occlusion_darkness = params.baked_occlusion_darkness / 3.0f;
 	}
 
 	// The technique is Culled faces.
@@ -443,18 +471,19 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
 
 	{
-		RWLockRead lock(_library->get_baked_data_rw_lock());
-		const VoxelLibrary::BakedData &library_baked_data = _library->get_baked_data();
+		// We can only access baked data. Only this data is made for multithreaded access.
+		RWLockRead lock(params.library->get_baked_data_rw_lock());
+		const VoxelLibrary::BakedData &library_baked_data = params.library->get_baked_data();
 
 		switch (channel_depth) {
 			case VoxelBuffer::DEPTH_8_BIT:
-				generate_blocky_mesh(_arrays_per_material, raw_channel,
-						block_size, library_baked_data, _bake_occlusion, baked_occlusion_darkness);
+				generate_blocky_mesh(cache.arrays_per_material, raw_channel,
+						block_size, library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
 				break;
 
 			case VoxelBuffer::DEPTH_16_BIT:
-				generate_blocky_mesh(_arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(),
-						block_size, library_baked_data, _bake_occlusion, baked_occlusion_darkness);
+				generate_blocky_mesh(cache.arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(),
+						block_size, library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
 				break;
 
 			default:
@@ -466,7 +495,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// TODO We could return a single byte array and use Mesh::add_surface down the line?
 
 	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
-		const Arrays &arrays = _arrays_per_material[i];
+		const Arrays &arrays = cache.arrays_per_material[i];
 		if (arrays.positions.size() != 0) {
 
 			Array mesh_arrays;
@@ -508,12 +537,24 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 }
 
-VoxelMesher *VoxelMesherBlocky::clone() {
+Ref<Resource> VoxelMesherBlocky::duplicate(bool p_subresources) const {
+	Parameters params;
+	{
+		RWLockRead rlock(_parameters_lock);
+		params = _parameters;
+	}
+
+	if (p_subresources && params.library.is_valid()) {
+		params.library = params.library->duplicate(true);
+	}
+
 	VoxelMesherBlocky *c = memnew(VoxelMesherBlocky);
-	c->set_library(_library);
-	c->set_occlusion_darkness(_baked_occlusion_darkness);
-	c->set_occlusion_enabled(_bake_occlusion);
+	c->_parameters = params;
 	return c;
+}
+
+int VoxelMesherBlocky::get_used_channels_mask() const {
+	return (1 << VoxelBuffer::CHANNEL_TYPE);
 }
 
 void VoxelMesherBlocky::_bind_methods() {
@@ -525,4 +566,10 @@ void VoxelMesherBlocky::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
+
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"),
+			"set_library", "get_library");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "occlusion_enabled"), "set_occlusion_enabled", "get_occlusion_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
+			"set_occlusion_darkness", "get_occlusion_darkness");
 }

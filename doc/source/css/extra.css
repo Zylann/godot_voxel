@@ -1,0 +1,4 @@
+/* Without this, top-level items are barely recognizable from second-level */
+.caption {
+    color: #5599ff;
+}

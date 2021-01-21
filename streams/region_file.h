@@ -10,29 +10,65 @@
 class FileAccess;
 class VoxelBlockSerializerInternal;
 
-// Archive file storing voxels in a fixed sparse grid data structure.
-// The format is designed to be easily writable in chunks so it can be used for partial in-game loading and saving.
-// Inspired by https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game
-class VoxelRegionFile {
-public:
+struct VoxelRegionFormat {
 	static const char *FILE_EXTENSION;
 	static const uint32_t MAX_BLOCKS_ACROSS = 255;
 	static const uint32_t CHANNEL_COUNT = 8;
 
 	static_assert(CHANNEL_COUNT == VoxelBuffer::MAX_CHANNELS, "This format doesn't support variable channel count");
 
-	struct Format {
-		// How many voxels in a cubic block, as power of two
-		uint8_t block_size_po2 = 0;
-		// How many blocks across all dimensions (stored as 3 bytes)
-		Vector3i region_size;
-		FixedArray<VoxelBuffer::Depth, CHANNEL_COUNT> channel_depths;
-		// Blocks are stored at offsets multiple of that size
-		uint32_t sector_size = 0;
-		FixedArray<Color8, 256> palette;
-		bool has_palette = false;
-	};
+	// How many voxels in a cubic block, as power of two
+	uint8_t block_size_po2 = 0;
+	// How many blocks across all dimensions (stored as 3 bytes)
+	Vector3i region_size;
+	FixedArray<VoxelBuffer::Depth, CHANNEL_COUNT> channel_depths;
+	// Blocks are stored at offsets multiple of that size
+	uint32_t sector_size = 0;
+	FixedArray<Color8, 256> palette;
+	bool has_palette = false;
 
+	bool validate() const;
+	bool verify_block(const VoxelBuffer &block) const;
+};
+
+struct VoxelRegionBlockInfo {
+	static const unsigned int MAX_SECTOR_INDEX = 0xffffff;
+	static const unsigned int MAX_SECTOR_COUNT = 0xff;
+
+	// AAAB
+	// A: 3 bytes for sector index
+	// B: 1 byte for size of the block, in sectors
+	uint32_t data = 0;
+
+	inline uint32_t get_sector_index() const {
+		return data >> 8;
+	}
+
+	inline void set_sector_index(uint32_t i) {
+		CRASH_COND(i > MAX_SECTOR_INDEX);
+		data = (i << 8) | (data & 0xff);
+	}
+
+	inline uint32_t get_sector_count() const {
+		return data & 0xff;
+	}
+
+	inline void set_sector_count(uint32_t c) {
+		CRASH_COND(c > 0xff);
+		data = (c & 0xff) | (data & 0xffffff00);
+	}
+};
+
+// Archive file storing voxels in a fixed sparse grid data structure.
+// The format is designed to be easily writable in chunks so it can be used for partial in-game loading and saving.
+// Inspired by https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game
+//
+// This is a stream implementation, where the file handle remains in use for read and write and only keeps a fraction
+// of data in memory.
+// It isn't thread-safe.
+//
+class VoxelRegionFile {
+public:
 	VoxelRegionFile();
 	~VoxelRegionFile();
 
@@ -40,8 +76,8 @@ public:
 	Error close();
 	bool is_open() const;
 
-	bool set_format(const Format &format);
-	const Format &get_format() const;
+	bool set_format(const VoxelRegionFormat &format);
+	const VoxelRegionFormat &get_format() const;
 
 	Error load_block(Vector3i position, Ref<VoxelBuffer> out_block, VoxelBlockSerializerInternal &serializer);
 	Error save_block(Vector3i position, Ref<VoxelBuffer> block, VoxelBlockSerializerInternal &serializer);
@@ -50,6 +86,8 @@ public:
 	bool has_block(Vector3i position) const;
 	bool has_block(unsigned int index) const;
 	Vector3i get_block_position_from_index(uint32_t i) const;
+
+	void debug_check();
 
 private:
 	bool save_header(FileAccess *f);
@@ -62,46 +100,15 @@ private:
 	void remove_sectors_from_block(Vector3i block_pos, unsigned int p_sector_count);
 
 	bool migrate_to_latest(FileAccess *f);
-	static uint32_t get_header_size_v3(const Format &format);
-	bool migrate_from_v2_to_v3(FileAccess *f, VoxelRegionFile::Format &format);
-
-	bool verify_format(VoxelBuffer &block);
-
-	struct BlockInfo {
-		static const unsigned int MAX_SECTOR_INDEX = 0xffffff;
-		static const unsigned int MAX_SECTOR_COUNT = 0xff;
-
-		// AAAB
-		// A: 3 bytes for sector index
-		// B: 1 byte for size of the block, in sectors
-		uint32_t data = 0;
-
-		inline uint32_t get_sector_index() const {
-			return data >> 8;
-		}
-
-		inline void set_sector_index(uint32_t i) {
-			CRASH_COND(i > MAX_SECTOR_INDEX);
-			data = (i << 8) | (data & 0xff);
-		}
-
-		inline uint32_t get_sector_count() const {
-			return data & 0xff;
-		}
-
-		inline void set_sector_count(uint32_t c) {
-			CRASH_COND(c > 0xff);
-			data = (c & 0xff) | (data & 0xffffff00);
-		}
-	};
+	bool migrate_from_v2_to_v3(FileAccess *f, VoxelRegionFormat &format);
 
 	struct Header {
 		uint8_t version = -1;
-		Format format;
+		VoxelRegionFormat format;
 		// Location and size of blocks, indexed by flat position.
 		// This table always has the same size,
 		// and the same index always corresponds to the same 3D position.
-		std::vector<BlockInfo> blocks;
+		std::vector<VoxelRegionBlockInfo> blocks;
 	};
 
 	FileAccess *_file_access = nullptr;
@@ -123,7 +130,7 @@ private:
 	// and which position their block is. The same block can span multiple sectors.
 	// This is essentially a reverse table of `Header::blocks`.
 	std::vector<Vector3u16> _sectors;
-	size_t _blocks_begin_offset;
+	uint32_t _blocks_begin_offset;
 	String _file_path;
 };
 

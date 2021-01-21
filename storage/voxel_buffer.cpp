@@ -88,19 +88,23 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	// Depths below 32 are normalized between -1 and 1
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT:
-			return (static_cast<real_t>(value) - 0x7f) / 0x7f;
+			return VoxelBuffer::u8_to_real(value);
+
 		case VoxelBuffer::DEPTH_16_BIT:
-			return (static_cast<real_t>(value) - 0x7fff) / 0x7fff;
+			return VoxelBuffer::u16_to_real(value);
+
 		case VoxelBuffer::DEPTH_32_BIT: {
 			MarshallFloat m;
 			m.i = value;
 			return m.f;
 		}
+
 		case VoxelBuffer::DEPTH_64_BIT: {
 			MarshallDouble m;
 			m.l = value;
 			return m.d;
 		}
+
 		default:
 			CRASH_NOW();
 			return 0;
@@ -112,7 +116,14 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Data2,Data3,Data4,Data5,Data6,Data7";
 
 VoxelBuffer::VoxelBuffer() {
-	_channels[CHANNEL_SDF].defval = 255;
+	// Minecraft uses way more than 255 block types and there is room for eventual metadata such as rotation
+	_channels[CHANNEL_TYPE].depth = VoxelBuffer::DEPTH_16_BIT;
+	_channels[CHANNEL_TYPE].defval = 0;
+
+	// 16-bit is better on average to handle large worlds
+	_channels[CHANNEL_SDF].depth = VoxelBuffer::DEPTH_16_BIT;
+	_channels[CHANNEL_SDF].defval = 0xffff;
+
 	// TODO How many of these can be created? Make it optional?
 	_rw_lock = RWLock::create();
 }
@@ -182,29 +193,28 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 
 	const Channel &channel = _channels[channel_index];
 
-	if (is_position_valid(x, y, z) && channel.data) {
-		uint32_t i = index(x, y, z);
+	if (is_position_valid(x, y, z) && channel.data != nullptr) {
+		const uint32_t i = get_index(x, y, z);
 
 		switch (channel.depth) {
 			case DEPTH_8_BIT:
 				return channel.data[i];
 
 			case DEPTH_16_BIT:
-				return ((uint16_t *)channel.data)[i];
+				return reinterpret_cast<uint16_t *>(channel.data)[i];
 
 			case DEPTH_32_BIT:
-				return ((uint32_t *)channel.data)[i];
+				return reinterpret_cast<uint32_t *>(channel.data)[i];
 
 			case DEPTH_64_BIT:
-				return ((uint64_t *)channel.data)[i];
+				return reinterpret_cast<uint64_t *>(channel.data)[i];
 
 			default:
 				CRASH_NOW();
 				return 0;
 		}
 
-		return channel.data[index(x, y, z)];
-
+		return channel.data[get_index(x, y, z)];
 	} else {
 		return channel.defval;
 	}
@@ -229,7 +239,7 @@ void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int ch
 	}
 
 	if (do_set) {
-		uint32_t i = index(x, y, z);
+		const uint32_t i = get_index(x, y, z);
 
 		switch (channel.depth) {
 			case DEPTH_8_BIT:
@@ -237,15 +247,15 @@ void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int ch
 				break;
 
 			case DEPTH_16_BIT:
-				((uint16_t *)channel.data)[i] = value;
+				reinterpret_cast<uint16_t *>(channel.data)[i] = value;
 				break;
 
 			case DEPTH_32_BIT:
-				((uint32_t *)channel.data)[i] = value;
+				reinterpret_cast<uint32_t *>(channel.data)[i] = value;
 				break;
 
 			case DEPTH_64_BIT:
-				((uint64_t *)channel.data)[i] = value;
+				reinterpret_cast<uint64_t *>(channel.data)[i] = value;
 				break;
 
 			default:
@@ -293,19 +303,19 @@ void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
 
 		case DEPTH_16_BIT:
 			for (uint32_t i = 0; i < volume; ++i) {
-				((uint16_t *)channel.data)[i] = defval;
+				reinterpret_cast<uint16_t *>(channel.data)[i] = defval;
 			}
 			break;
 
 		case DEPTH_32_BIT:
 			for (uint32_t i = 0; i < volume; ++i) {
-				((uint32_t *)channel.data)[i] = defval;
+				reinterpret_cast<uint32_t *>(channel.data)[i] = defval;
 			}
 			break;
 
 		case DEPTH_64_BIT:
 			for (uint32_t i = 0; i < volume; ++i) {
-				((uint64_t *)channel.data)[i] = defval;
+				reinterpret_cast<uint64_t *>(channel.data)[i] = defval;
 			}
 			break;
 
@@ -343,7 +353,7 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 	unsigned int volume = get_volume();
 	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
 		for (pos.x = min.x; pos.x < max.x; ++pos.x) {
-			unsigned int dst_ri = index(pos.x, pos.y + min.y, pos.z);
+			unsigned int dst_ri = get_index(pos.x, pos.y + min.y, pos.z);
 			CRASH_COND(dst_ri >= volume);
 
 			switch (channel.depth) {
@@ -499,7 +509,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 	src_max.clamp_to(Vector3i(0, 0, 0), other._size + Vector3i(1, 1, 1));
 
 	dst_min.clamp_to(Vector3i(0, 0, 0), _size);
-	Vector3i area_size = src_max - src_min;
+	const Vector3i area_size = src_max - src_min;
 	//Vector3i dst_max = dst_min + area_size;
 
 	if (area_size == _size && area_size == other._size) {
@@ -520,8 +530,8 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 				for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
 					for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
 						// Row direction is Y
-						unsigned int src_ri = other.index(pos.x + src_min.x, pos.y + src_min.y, pos.z + src_min.z);
-						unsigned int dst_ri = index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
+						const unsigned int src_ri = other.get_index(pos.x + src_min.x, pos.y + src_min.y, pos.z + src_min.z);
+						const unsigned int dst_ri = get_index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
 						memcpy(&channel.data[dst_ri], &other_channel.data[src_ri], area_size.y * sizeof(uint8_t));
 					}
 				}
@@ -532,7 +542,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 				for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
 					for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
 						for (pos.y = 0; pos.y < area_size.y; ++pos.y) {
-							uint64_t v = other.get_voxel(src_min + pos, channel_index);
+							const uint64_t v = other.get_voxel(src_min + pos, channel_index);
 							set_voxel(v, dst_min + pos, channel_index);
 						}
 					}
@@ -580,7 +590,7 @@ uint32_t VoxelBuffer::get_size_in_bytes_for_volume(Vector3i size, Depth depth) {
 	// Calculate appropriate size based on bit depth
 	const unsigned int volume = size.x * size.y * size.z;
 	const unsigned int bits = volume * ::get_depth_bit_count(depth);
-	unsigned int size_in_bytes = (bits >> 3);
+	const unsigned int size_in_bytes = (bits >> 3);
 	return size_in_bytes;
 }
 
@@ -875,7 +885,8 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("fill_f", "value", "channel"), &VoxelBuffer::fill_f, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("fill_area", "value", "min", "max", "channel"), &VoxelBuffer::_b_fill_area, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("copy_channel_from", "other", "channel"), &VoxelBuffer::_b_copy_channel_from);
-	ClassDB::bind_method(D_METHOD("copy_channel_from_area", "other", "src_min", "src_max", "dst_min", "channel"), &VoxelBuffer::_b_copy_channel_from_area);
+	ClassDB::bind_method(D_METHOD("copy_channel_from_area", "other", "src_min", "src_max", "dst_min", "channel"),
+			&VoxelBuffer::_b_copy_channel_from_area);
 	ClassDB::bind_method(D_METHOD("downscale_to", "dst", "src_min", "src_max", "dst_min"), &VoxelBuffer::_b_downscale_to);
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);

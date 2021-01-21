@@ -1,8 +1,10 @@
 #ifndef VOXEL_SERVER_H
 #define VOXEL_SERVER_H
 
+#include "../generators/voxel_generator.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../streams/voxel_stream.h"
+#include "../util/file_locker.h"
 #include "struct_db.h"
 #include "voxel_thread_pool.h"
 #include <scene/main/node.h>
@@ -21,8 +23,7 @@ public:
 		};
 
 		Type type;
-		VoxelMesher::Output blocky_surfaces;
-		VoxelMesher::Output smooth_surfaces;
+		VoxelMesher::Output surfaces;
 		Vector3i position;
 		uint8_t lod;
 	};
@@ -63,7 +64,6 @@ public:
 		unsigned int view_distance = 128;
 		bool require_collisions = false;
 		bool require_visuals = true;
-		bool is_default = false;
 	};
 
 	enum VolumeType {
@@ -83,7 +83,8 @@ public:
 	void set_volume_transform(uint32_t volume_id, Transform t);
 	void set_volume_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
-	void set_volume_voxel_library(uint32_t volume_id, Ref<VoxelLibrary> library);
+	void set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> generator);
+	void set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher);
 	void set_volume_octree_split_scale(uint32_t volume_id, float split_scale);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, BlockMeshInput &input);
@@ -109,12 +110,16 @@ public:
 	}
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
-	void get_min_max_block_padding(
-			bool blocky_enabled, bool smooth_enabled,
-			unsigned int &out_min_padding, unsigned int &out_max_padding) const;
+	// void get_min_max_block_padding(
+	// 		bool blocky_enabled, bool smooth_enabled,
+	// 		unsigned int &out_min_padding, unsigned int &out_max_padding) const;
 
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
+
+	inline VoxelFileLocker &get_file_locker() {
+		return _file_locker;
+	}
 
 	static inline int get_octree_lod_block_region_extent(float split_scale) {
 		// This is a bounding radius of blocks around a viewer within which we may load them.
@@ -123,7 +128,43 @@ public:
 		return static_cast<int>(split_scale) * 2 + 2;
 	}
 
+	struct Stats {
+		struct ThreadPoolStats {
+			unsigned int thread_count;
+			unsigned int active_threads;
+			unsigned int tasks;
+
+			Dictionary to_dict() {
+				Dictionary d;
+				d["tasks"] = tasks;
+				d["active_threads"] = active_threads;
+				d["thread_count"] = thread_count;
+				return d;
+			}
+		};
+
+		ThreadPoolStats streaming;
+		ThreadPoolStats generation;
+		ThreadPoolStats meshing;
+
+		Dictionary to_dict() {
+			Dictionary d;
+			d["streaming"] = streaming.to_dict();
+			d["generation"] = generation.to_dict();
+			d["meshing"] = meshing.to_dict();
+			return d;
+		}
+	};
+
+	Stats get_stats() const;
+
 private:
+	class BlockDataRequest;
+	class BlockGenerateRequest;
+
+	void request_block_generate_from_data_request(BlockDataRequest *src);
+	void request_block_save_from_generate_request(BlockGenerateRequest *src);
+
 	Dictionary _b_get_stats();
 
 	static void _bind_methods();
@@ -140,15 +181,14 @@ private:
 	//   If such data sets change structurally (like their size, or other non-dirty-readable fields),
 	//   then a new instance is created and old references are left to "die out".
 
-	// Data common to all requests about a particular volume
 	struct StreamingDependency {
-		FixedArray<Ref<VoxelStream>, VoxelThreadPool::MAX_THREADS> streams;
+		Ref<VoxelStream> stream;
+		Ref<VoxelGenerator> generator;
 		bool valid = true;
 	};
 
-	// Data common to all requests about a particular volume
 	struct MeshingDependency {
-		Ref<VoxelLibrary> library;
+		Ref<VoxelMesher> mesher;
 		bool valid = true;
 	};
 
@@ -157,7 +197,8 @@ private:
 		ReceptionBuffers *reception_buffers = nullptr;
 		Transform transform;
 		Ref<VoxelStream> stream;
-		Ref<VoxelLibrary> voxel_library;
+		Ref<VoxelGenerator> generator;
+		Ref<VoxelMesher> mesher;
 		uint32_t block_size = 16;
 		float octree_split_scale = 0;
 		std::shared_ptr<StreamingDependency> stream_dependency;
@@ -195,7 +236,8 @@ private:
 	public:
 		enum Type {
 			TYPE_LOAD = 0,
-			TYPE_SAVE
+			TYPE_SAVE,
+			TYPE_FALLBACK_ON_GENERATOR
 		};
 
 		void run(VoxelTaskContext ctx) override;
@@ -215,6 +257,23 @@ private:
 		// TODO Find a way to separate save, it doesnt need sorting
 	};
 
+	class BlockGenerateRequest : public IVoxelTask {
+	public:
+		void run(VoxelTaskContext ctx) override;
+		int get_priority() override;
+		bool is_cancelled() override;
+
+		Ref<VoxelBuffer> voxels;
+		Vector3i position;
+		uint32_t volume_id;
+		uint8_t lod;
+		uint8_t block_size;
+		bool has_run = false;
+		bool too_far = false;
+		PriorityDependency priority_dependency;
+		std::shared_ptr<StreamingDependency> stream_dependency;
+	};
+
 	class BlockMeshRequest : public IVoxelTask {
 	public:
 		void run(VoxelTaskContext ctx) override;
@@ -225,29 +284,21 @@ private:
 		Vector3i position;
 		uint32_t volume_id;
 		uint8_t lod;
-		bool smooth_enabled;
-		bool blocky_enabled;
 		bool has_run = false;
 		bool too_far = false;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<MeshingDependency> meshing_dependency;
-		VoxelMesher::Output blocky_surfaces_output;
-		VoxelMesher::Output smooth_surfaces_output;
+		VoxelMesher::Output surfaces_output;
 	};
 
 	// TODO multi-world support in the future
 	World _world;
 
 	VoxelThreadPool _streaming_thread_pool;
+	VoxelThreadPool _generation_thread_pool;
 	VoxelThreadPool _meshing_thread_pool;
 
-	// TODO I do this because meshers have memory caches. But perhaps we could put them in thread locals?
-	// Used by tasks from threads.
-	// Meshers have internal state because they use memory caches,
-	// so we instanciate one per thread to be sure it's safe without having to lock.
-	// Options such as library etc can change per task.
-	FixedArray<Ref<VoxelMesherBlocky>, VoxelThreadPool::MAX_THREADS> _blocky_meshers;
-	FixedArray<Ref<VoxelMesher>, VoxelThreadPool::MAX_THREADS> _smooth_meshers;
+	VoxelFileLocker _file_locker;
 };
 
 // TODO Hack to make VoxelServer update... need ways to integrate callbacks from main loop!
@@ -262,6 +313,32 @@ protected:
 
 private:
 	VoxelServerUpdater();
+};
+
+struct VoxelFileLockerRead {
+	VoxelFileLockerRead(String path) :
+			_path(path) {
+		VoxelServer::get_singleton()->get_file_locker().lock_read(path);
+	}
+
+	~VoxelFileLockerRead() {
+		VoxelServer::get_singleton()->get_file_locker().unlock(_path);
+	}
+
+	String _path;
+};
+
+struct VoxelFileLockerWrite {
+	VoxelFileLockerWrite(String path) :
+			_path(path) {
+		VoxelServer::get_singleton()->get_file_locker().lock_write(path);
+	}
+
+	~VoxelFileLockerWrite() {
+		VoxelServer::get_singleton()->get_file_locker().unlock(_path);
+	}
+
+	String _path;
 };
 
 #endif // VOXEL_SERVER_H

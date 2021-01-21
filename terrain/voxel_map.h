@@ -10,8 +10,7 @@
 // Infinite voxel storage by means of octants like Gridmap, within a constant LOD.
 // Convenience functions to access VoxelBuffers internally will lock them to protect against multithreaded access.
 // However, the map itself is not thread-safe.
-class VoxelMap : public Reference {
-	GDCLASS(VoxelMap, Reference)
+class VoxelMap {
 public:
 	// Converts voxel coodinates into block coordinates.
 	// Don't use division because it introduces an offset in negative coordinates.
@@ -71,13 +70,17 @@ public:
 		if (_last_accessed_block && _last_accessed_block->position == bpos) {
 			_last_accessed_block = nullptr;
 		}
-		VoxelBlock **pptr = _blocks.getptr(bpos);
-		if (pptr) {
-			VoxelBlock *block = *pptr;
+		unsigned int *iptr = _blocks_map.getptr(bpos);
+		if (iptr != nullptr) {
+			const unsigned int i = *iptr;
+#ifdef DEBUG_ENABLED
+			CRASH_COND(i >= _blocks.size());
+#endif
+			VoxelBlock *block = _blocks[i];
 			ERR_FAIL_COND(block == nullptr);
 			pre_delete(block);
 			memdelete(block);
-			remove_block_internal(bpos);
+			remove_block_internal(bpos, i);
 		}
 	}
 
@@ -91,14 +94,19 @@ public:
 
 	int get_block_count() const;
 
+	// TODO Rename for_each_block
 	template <typename Op_T>
-	void for_all_blocks(Op_T op) {
-		const Vector3i *key = nullptr;
-		while ((key = _blocks.next(key))) {
-			VoxelBlock *block = _blocks.get(*key);
-			if (block != nullptr) {
-				op(block);
-			}
+	inline void for_all_blocks(Op_T op) {
+		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
+			op(*it);
+		}
+	}
+
+	// TODO Rename for_each_block
+	template <typename Op_T>
+	inline void for_all_blocks(Op_T op) const {
+		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
+			op(*it);
 		}
 	}
 
@@ -107,31 +115,17 @@ public:
 private:
 	void set_block(Vector3i bpos, VoxelBlock *block);
 	VoxelBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
-	void remove_block_internal(Vector3i bpos);
+	void remove_block_internal(Vector3i bpos, unsigned int index);
 
 	void set_block_size_pow2(unsigned int p);
-
-	static void _bind_methods();
-
-	int _b_get_voxel(int x, int y, int z, unsigned int c) { return get_voxel(Vector3i(x, y, z), c); }
-	void _b_set_voxel(int value, int x, int y, int z, unsigned int c) { set_voxel(value, Vector3i(x, y, z), c); }
-	float _b_get_voxel_f(int x, int y, int z, unsigned int c) { return get_voxel_f(Vector3i(x, y, z), c); }
-	void _b_set_voxel_f(float value, int x, int y, int z, unsigned int c) { set_voxel_f(value, Vector3i(x, y, z), c); }
-	int _b_get_voxel_v(Vector3 pos, unsigned int c) { return get_voxel(Vector3i(pos), c); }
-	void _b_set_voxel_v(int value, Vector3 pos, unsigned int c) { set_voxel(value, Vector3i(pos), c); }
-	bool _b_has_block(int x, int y, int z) { return has_block(Vector3i(x, y, z)); }
-	Vector3 _b_voxel_to_block(Vector3 pos) const { return voxel_to_block(Vector3i(pos)).to_vec3(); }
-	Vector3 _b_block_to_voxel(Vector3 pos) const { return block_to_voxel(Vector3i(pos)).to_vec3(); }
-	bool _b_is_block_surrounded(Vector3 pos) const { return is_block_surrounded(Vector3i(pos)); }
-	void _b_get_buffer_copy(Vector3 pos, Ref<VoxelBuffer> dst_buffer_ref, unsigned int channel = 0);
-	void _b_set_block_buffer(Vector3 bpos, Ref<VoxelBuffer> buffer) { set_block_buffer(Vector3i(bpos), buffer); }
 
 private:
 	// Voxel values that will be returned if access is out of map bounds
 	FixedArray<uint64_t, VoxelBuffer::MAX_CHANNELS> _default_voxel;
 
 	// Blocks stored with a spatial hash in all 3D directions
-	HashMap<Vector3i, VoxelBlock *, Vector3iHasher> _blocks;
+	HashMap<Vector3i, unsigned int, Vector3iHasher> _blocks_map;
+	std::vector<VoxelBlock *> _blocks;
 
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
 	// To prevent too much hashing, this reference is checked before.

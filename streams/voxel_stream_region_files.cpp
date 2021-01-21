@@ -1,5 +1,6 @@
 #include "voxel_stream_region_files.h"
 #include "../math/rect3i.h"
+#include "../server/voxel_server.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/utility.h"
@@ -24,20 +25,24 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
 	_meta.lod_count = 1;
 	_meta.channel_depths.fill(VoxelBuffer::DEFAULT_CHANNEL_DEPTH);
+	_mutex = Mutex::create();
 }
 
 VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
 	close_all_regions();
+	memdelete(_mutex);
 }
 
-void VoxelStreamRegionFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStream::Result VoxelStreamRegionFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 	VoxelBlockRequest r;
 	r.voxel_buffer = out_buffer;
 	r.origin_in_voxels = origin_in_voxels;
 	r.lod = lod;
 	Vector<VoxelBlockRequest> requests;
+	Vector<Result> results;
 	requests.push_back(r);
-	emerge_blocks(requests);
+	emerge_blocks(requests, results);
+	return results[0];
 }
 
 void VoxelStreamRegionFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
@@ -50,7 +55,7 @@ void VoxelStreamRegionFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i ori
 	immerge_blocks(requests);
 }
 
-void VoxelStreamRegionFiles::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
+void VoxelStreamRegionFiles::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results) {
 	VOXEL_PROFILE_SCOPE();
 
 	// In order to minimize opening/closing files, requests are grouped according to their region.
@@ -67,16 +72,25 @@ void VoxelStreamRegionFiles::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks) 
 
 	for (int i = 0; i < sorted_blocks.size(); ++i) {
 		VoxelBlockRequest &r = sorted_blocks.write[i];
-		EmergeResult result = _emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
-		if (result == EMERGE_OK_FALLBACK) {
-			fallback_requests.push_back(r);
+		const EmergeResult result = _emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		switch (result) {
+			case EMERGE_OK:
+				out_results.push_back(RESULT_BLOCK_FOUND);
+				break;
+			case EMERGE_OK_FALLBACK:
+				out_results.push_back(RESULT_BLOCK_NOT_FOUND);
+				break;
+			case EMERGE_FAILED:
+				out_results.push_back(RESULT_ERROR);
+				break;
+			default:
+				CRASH_NOW();
+				break;
 		}
 	}
-
-	emerge_blocks_fallback(fallback_requests);
 }
 
-void VoxelStreamRegionFiles::immerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
+void VoxelStreamRegionFiles::immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) {
 	VOXEL_PROFILE_SCOPE();
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
@@ -98,6 +112,8 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(out_buffer.is_null(), EMERGE_FAILED);
+
+	MutexLock lock(_mutex);
 
 	if (_directory_path.empty()) {
 		return EMERGE_OK_FALLBACK;
@@ -156,6 +172,8 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod) {
 	VOXEL_PROFILE_SCOPE();
 
+	MutexLock lock(_mutex);
+
 	ERR_FAIL_COND(_directory_path.empty());
 	ERR_FAIL_COND(voxel_buffer.is_null());
 
@@ -199,11 +217,14 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 }
 
 String VoxelStreamRegionFiles::get_directory() const {
+	MutexLock lock(_mutex);
 	return _directory_path;
 }
 
 void VoxelStreamRegionFiles::set_directory(String dirpath) {
+	MutexLock lock(_mutex);
 	if (_directory_path != dirpath) {
+		close_all_regions();
 		_directory_path = dirpath.strip_edges();
 		_meta_loaded = false;
 		_meta_saved = false;
@@ -266,6 +287,7 @@ VoxelFileResult VoxelStreamRegionFiles::save_meta() {
 	String meta_path = _directory_path.plus_file(META_FILE_NAME);
 
 	Error err;
+	VoxelFileLockerWrite file_wlock(meta_path);
 	FileAccessRef f = open_file(meta_path, FileAccess::WRITE, &err);
 	if (!f) {
 		ERR_PRINT(String("Could not save {0}").format(varray(meta_path)));
@@ -312,6 +334,7 @@ VoxelFileResult VoxelStreamRegionFiles::load_meta() {
 
 	{
 		Error err;
+		VoxelFileLockerRead file_rlock(meta_path);
 		FileAccessRef f = open_file(meta_path, FileAccess::READ, &err);
 		if (!f) {
 			return VOXEL_FILE_CANT_OPEN;
@@ -391,7 +414,7 @@ String VoxelStreamRegionFiles::get_region_file_path(const Vector3i &region_pos, 
 	a[1] = region_pos.x;
 	a[2] = region_pos.y;
 	a[3] = region_pos.z;
-	a[4] = VoxelRegionFile::FILE_EXTENSION;
+	a[4] = VoxelRegionFormat::FILE_EXTENSION;
 	return _directory_path.plus_file(String("regions/lod{0}/r.{1}.{2}.{3}.{4}").format(a));
 }
 
@@ -430,7 +453,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 
 	// Configure format because we might have to create the file, and some old file versions don't embed format
 	{
-		VoxelRegionFile::Format format;
+		VoxelRegionFormat format;
 		format.block_size_po2 = _meta.block_size_po2;
 		format.channel_depths = _meta.channel_depths;
 		// TODO Palette support
@@ -464,7 +487,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 
 	// Make sure it has correct format
 	{
-		const VoxelRegionFile::Format &format = cached_region->region.get_format();
+		const VoxelRegionFormat &format = cached_region->region.get_format();
 		if (format.block_size_po2 != _meta.block_size_po2 ||
 				format.channel_depths != _meta.channel_depths ||
 				format.region_size != Vector3i(1 << _meta.region_size_po2) ||
@@ -587,7 +610,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 			const String lod_folder =
 					old_stream->_directory_path.plus_file("regions").plus_file("lod") + String::num_int64(lod);
-			const String ext = String(".") + VoxelRegionFile::FILE_EXTENSION;
+			const String ext = String(".") + VoxelRegionFormat::FILE_EXTENSION;
 
 			DirAccessRef da = DirAccess::open(lod_folder);
 			if (!da) {
@@ -719,6 +742,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 }
 
 Vector3i VoxelStreamRegionFiles::get_region_size() const {
+	MutexLock lock(_mutex);
 	return Vector3i(1 << _meta.region_size_po2);
 }
 
@@ -727,18 +751,22 @@ Vector3 VoxelStreamRegionFiles::get_region_size_v() const {
 }
 
 int VoxelStreamRegionFiles::get_region_size_po2() const {
+	MutexLock lock(_mutex);
 	return _meta.region_size_po2;
 }
 
 int VoxelStreamRegionFiles::get_block_size_po2() const {
+	MutexLock lock(_mutex);
 	return _meta.block_size_po2;
 }
 
 int VoxelStreamRegionFiles::get_lod_count() const {
+	MutexLock lock(_mutex);
 	return _meta.lod_count;
 }
 
 int VoxelStreamRegionFiles::get_sector_size() const {
+	MutexLock lock(_mutex);
 	return _meta.sector_size;
 }
 
@@ -748,46 +776,61 @@ int VoxelStreamRegionFiles::get_sector_size() const {
 // This can be made easier by adding a button to the inspector to convert existing files just in case
 
 void VoxelStreamRegionFiles::set_region_size_po2(int p_region_size_po2) {
-	if (_meta.region_size_po2 == p_region_size_po2) {
-		return;
+	{
+		MutexLock lock(_mutex);
+		if (_meta.region_size_po2 == p_region_size_po2) {
+			return;
+		}
+		ERR_FAIL_COND_MSG(_meta_loaded, "Can't change existing region size without heavy conversion. Use convert_files().");
+		ERR_FAIL_COND(p_region_size_po2 < 1);
+		ERR_FAIL_COND(p_region_size_po2 > 8);
+		_meta.region_size_po2 = p_region_size_po2;
 	}
-	ERR_FAIL_COND_MSG(_meta_loaded, "Can't change existing region size without heavy conversion. Use convert_files().");
-	ERR_FAIL_COND(p_region_size_po2 < 1);
-	ERR_FAIL_COND(p_region_size_po2 > 8);
-	_meta.region_size_po2 = p_region_size_po2;
 	emit_changed();
 }
 
 void VoxelStreamRegionFiles::set_block_size_po2(int p_block_size_po2) {
-	if (_meta.block_size_po2 == p_block_size_po2) {
-		return;
+	{
+		MutexLock lock(_mutex);
+		if (_meta.block_size_po2 == p_block_size_po2) {
+			return;
+		}
+		ERR_FAIL_COND_MSG(_meta_loaded,
+				"Can't change existing block size without heavy conversion. Use convert_files().");
+		ERR_FAIL_COND(p_block_size_po2 < 1);
+		ERR_FAIL_COND(p_block_size_po2 > 8);
+		_meta.block_size_po2 = p_block_size_po2;
 	}
-	ERR_FAIL_COND_MSG(_meta_loaded, "Can't change existing block size without heavy conversion. Use convert_files().");
-	ERR_FAIL_COND(p_block_size_po2 < 1);
-	ERR_FAIL_COND(p_block_size_po2 > 8);
-	_meta.block_size_po2 = p_block_size_po2;
 	emit_changed();
 }
 
 void VoxelStreamRegionFiles::set_sector_size(int p_sector_size) {
-	if (static_cast<int>(_meta.sector_size) == p_sector_size) {
-		return;
+	{
+		MutexLock lock(_mutex);
+		if (static_cast<int>(_meta.sector_size) == p_sector_size) {
+			return;
+		}
+		ERR_FAIL_COND_MSG(_meta_loaded,
+				"Can't change existing sector size without heavy conversion. Use convert_files().");
+		ERR_FAIL_COND(p_sector_size < 256);
+		ERR_FAIL_COND(p_sector_size > 65536);
+		_meta.sector_size = p_sector_size;
 	}
-	ERR_FAIL_COND_MSG(_meta_loaded, "Can't change existing sector size without heavy conversion. Use convert_files().");
-	ERR_FAIL_COND(p_sector_size < 256);
-	ERR_FAIL_COND(p_sector_size > 65536);
-	_meta.sector_size = p_sector_size;
 	emit_changed();
 }
 
 void VoxelStreamRegionFiles::set_lod_count(int p_lod_count) {
-	if (_meta.lod_count == p_lod_count) {
-		return;
+	{
+		MutexLock lock(_mutex);
+		if (_meta.lod_count == p_lod_count) {
+			return;
+		}
+		ERR_FAIL_COND_MSG(_meta_loaded,
+				"Can't change existing LOD count without heavy conversion. Use convert_files().");
+		ERR_FAIL_COND(p_lod_count < 1);
+		ERR_FAIL_COND(p_lod_count > 32);
+		_meta.lod_count = p_lod_count;
 	}
-	ERR_FAIL_COND_MSG(_meta_loaded, "Can't change existing LOD count without heavy conversion. Use convert_files().");
-	ERR_FAIL_COND(p_lod_count < 1);
-	ERR_FAIL_COND(p_lod_count > 32);
-	_meta.lod_count = p_lod_count;
 	emit_changed();
 }
 
@@ -799,22 +842,26 @@ void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 	meta.sector_size = int(d["sector_size"]);
 	meta.lod_count = int(d["lod_count"]);
 
-	ERR_FAIL_COND_MSG(!check_meta(meta), "Invalid setting");
+	{
+		MutexLock lock(_mutex);
 
-	if (!_meta_loaded) {
+		ERR_FAIL_COND_MSG(!check_meta(meta), "Invalid setting");
 
-		if (load_meta() != VOXEL_FILE_OK) {
-			// New stream, nothing to convert
-			_meta = meta;
+		if (!_meta_loaded) {
+
+			if (load_meta() != VOXEL_FILE_OK) {
+				// New stream, nothing to convert
+				_meta = meta;
+
+			} else {
+				// Just opened existing stream
+				_convert_files(meta);
+			}
 
 		} else {
-			// Just opened existing stream
+			// That stream was previously used
 			_convert_files(meta);
 		}
-
-	} else {
-		// That stream was previously used
-		_convert_files(meta);
 	}
 
 	emit_changed();

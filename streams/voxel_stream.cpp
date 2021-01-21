@@ -3,68 +3,98 @@
 #include <core/script_language.h>
 
 VoxelStream::VoxelStream() {
+	_parameters_lock = RWLock::create();
 }
 
-void VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-	ERR_FAIL_COND(out_buffer.is_null());
+VoxelStream::~VoxelStream() {
+	memdelete(_parameters_lock);
+}
+
+VoxelStream::Result VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
+	// Can be implemented in subclasses
+	return RESULT_BLOCK_NOT_FOUND;
 }
 
 void VoxelStream::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND(buffer.is_null());
+	// Can be implemented in subclasses
 }
 
-void VoxelStream::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
+void VoxelStream::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results) {
 	// Default implementation. May matter for some stream types to optimize loading.
 	for (int i = 0; i < p_blocks.size(); ++i) {
 		VoxelBlockRequest &r = p_blocks.write[i];
-		emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		const Result res = emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		out_results.push_back(res);
 	}
 }
 
-void VoxelStream::immerge_blocks(Vector<VoxelBlockRequest> &p_blocks) {
+void VoxelStream::immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) {
 	for (int i = 0; i < p_blocks.size(); ++i) {
-		VoxelBlockRequest &r = p_blocks.write[i];
+		const VoxelBlockRequest &r = p_blocks[i];
 		immerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 	}
-}
-
-bool VoxelStream::is_thread_safe() const {
-	return false;
-}
-
-bool VoxelStream::is_cloneable() const {
-	return false;
-}
-
-void VoxelStream::_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
-	ERR_FAIL_COND(lod < 0);
-	emerge_block(out_buffer, Vector3i(origin_in_voxels), lod);
-}
-
-void VoxelStream::_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod) {
-	ERR_FAIL_COND(lod < 0);
-	immerge_block(buffer, Vector3i(origin_in_voxels), lod);
 }
 
 int VoxelStream::get_used_channels_mask() const {
 	return 0;
 }
 
-int VoxelStream::_get_used_channels_mask() const {
+void VoxelStream::set_save_generator_output(bool enabled) {
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.save_generator_output = enabled;
+}
+
+bool VoxelStream::get_save_generator_output() const {
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.save_generator_output;
+}
+
+int VoxelStream::get_block_size_po2() const {
+	return 4;
+}
+
+int VoxelStream::get_lod_count() const {
+	return 1;
+}
+
+// Binding land
+
+VoxelStream::Result VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
+	ERR_FAIL_COND_V(lod < 0, RESULT_ERROR);
+	return emerge_block(out_buffer, Vector3i(origin_in_voxels), lod);
+}
+
+void VoxelStream::_b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod) {
+	ERR_FAIL_COND(lod < 0);
+	immerge_block(buffer, Vector3i(origin_in_voxels), lod);
+}
+
+int VoxelStream::_b_get_used_channels_mask() const {
 	return get_used_channels_mask();
 }
 
-VoxelStream::Stats VoxelStream::get_statistics() const {
-	return _stats;
-}
-
-bool VoxelStream::has_script() const {
-	Ref<Script> s = get_script();
-	return s.is_valid();
+Vector3 VoxelStream::_b_get_block_size() const {
+	return Vector3i(1 << get_block_size_po2()).to_vec3();
 }
 
 void VoxelStream::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelStream::_emerge_block);
-	ClassDB::bind_method(D_METHOD("immerge_block", "buffer", "origin_in_voxels", "lod"), &VoxelStream::_immerge_block);
-	ClassDB::bind_method(D_METHOD("get_used_channels_mask"), &VoxelStream::_get_used_channels_mask);
+	ClassDB::bind_method(D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod"),
+			&VoxelStream::_b_emerge_block);
+	ClassDB::bind_method(D_METHOD("immerge_block", "buffer", "origin_in_voxels", "lod"),
+			&VoxelStream::_b_immerge_block);
+	ClassDB::bind_method(D_METHOD("get_used_channels_mask"), &VoxelStream::_b_get_used_channels_mask);
+
+	ClassDB::bind_method(D_METHOD("set_save_generator_output", "enabled"), &VoxelStream::set_save_generator_output);
+	ClassDB::bind_method(D_METHOD("get_save_generator_output"), &VoxelStream::get_save_generator_output);
+
+	ClassDB::bind_method(D_METHOD("get_block_size"), &VoxelStream::_b_get_block_size);
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "save_generator_output"),
+			"set_save_generator_output", "get_save_generator_output");
+
+	BIND_ENUM_CONSTANT(RESULT_ERROR);
+	BIND_ENUM_CONSTANT(RESULT_BLOCK_FOUND);
+	BIND_ENUM_CONSTANT(RESULT_BLOCK_NOT_FOUND);
 }

@@ -9,7 +9,7 @@ class VoxelMap;
 class VoxelToolLodTerrain : public VoxelTool {
 	GDCLASS(VoxelToolLodTerrain, VoxelTool)
 public:
-	VoxelToolLodTerrain(VoxelLodTerrain *terrain, Ref<VoxelMap> map);
+	VoxelToolLodTerrain(VoxelLodTerrain *terrain, VoxelMap &map);
 
 	bool is_area_editable(const Rect3i &box) const override;
 
@@ -22,7 +22,7 @@ protected:
 
 private:
 	VoxelLodTerrain *_terrain = nullptr;
-	Ref<VoxelMap> _map;
+	VoxelMap &_map;
 };
 
 #endif // VOXEL_TOOL_LOD_TERRAIN_H

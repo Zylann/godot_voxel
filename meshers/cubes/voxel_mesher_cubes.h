@@ -30,6 +30,7 @@ public:
 	};
 
 	VoxelMesherCubes();
+	~VoxelMesherCubes();
 
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
@@ -42,7 +43,8 @@ public:
 	void set_palette(Ref<VoxelColorPalette> palette);
 	Ref<VoxelColorPalette> get_palette() const;
 
-	VoxelMesher *clone() override;
+	Ref<Resource> duplicate(bool p_subresources = false) const override;
+	int get_used_channels_mask() const override;
 
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
@@ -51,17 +53,36 @@ public:
 		std::vector<Vector3> normals;
 		std::vector<Color> colors;
 		std::vector<int> indices;
+
+		void clear() {
+			positions.clear();
+			normals.clear();
+			colors.clear();
+			indices.clear();
+		}
 	};
 
 protected:
 	static void _bind_methods();
 
 private:
-	FixedArray<Arrays, MATERIAL_COUNT> _arrays_per_material;
-	std::vector<uint8_t> _mask_memory_pool;
-	Ref<VoxelColorPalette> _palette;
-	bool _greedy_meshing = true;
-	ColorMode _color_mode = COLOR_RAW;
+	struct Parameters {
+		ColorMode color_mode = COLOR_RAW;
+		Ref<VoxelColorPalette> palette;
+		bool greedy_meshing = true;
+	};
+
+	struct Cache {
+		FixedArray<Arrays, MATERIAL_COUNT> arrays_per_material;
+		std::vector<uint8_t> mask_memory_pool;
+	};
+
+	// Parameters
+	Parameters _parameters;
+	RWLock *_parameters_lock = nullptr;
+
+	// Work cache
+	static thread_local Cache _cache;
 };
 
 VARIANT_ENUM_CAST(VoxelMesherCubes::ColorMode);

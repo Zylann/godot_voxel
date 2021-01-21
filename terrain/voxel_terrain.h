@@ -3,6 +3,7 @@
 
 #include "../server/voxel_server.h"
 #include "voxel_map.h"
+#include "voxel_node.h"
 
 #include <scene/3d/spatial.h>
 
@@ -11,24 +12,25 @@ class VoxelTool;
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.
 // Data is streamed using a VoxelStream.
-class VoxelTerrain : public Spatial {
-	GDCLASS(VoxelTerrain, Spatial)
+class VoxelTerrain : public VoxelNode {
+	GDCLASS(VoxelTerrain, VoxelNode)
 public:
 	static const unsigned int MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME = 512;
 
 	VoxelTerrain();
 	~VoxelTerrain();
 
-	String get_configuration_warning() const override;
+	void set_stream(Ref<VoxelStream> p_stream) override;
+	Ref<VoxelStream> get_stream() const override;
 
-	void set_stream(Ref<VoxelStream> p_stream);
-	Ref<VoxelStream> get_stream() const;
+	void set_generator(Ref<VoxelGenerator> p_generator) override;
+	Ref<VoxelGenerator> get_generator() const override;
+
+	void set_mesher(Ref<VoxelMesher> mesher) override;
+	Ref<VoxelMesher> get_mesher() const override;
 
 	unsigned int get_block_size_pow2() const;
 	void set_block_size_po2(unsigned int p_block_size_po2);
-
-	void set_voxel_library(Ref<VoxelLibrary> library);
-	Ref<VoxelLibrary> get_voxel_library() const;
 
 	void make_voxel_dirty(Vector3i pos);
 	void make_area_dirty(Rect3i box);
@@ -46,7 +48,9 @@ public:
 	void set_material(unsigned int id, Ref<Material> material);
 	Ref<Material> get_material(unsigned int id) const;
 
-	Ref<VoxelMap> get_storage() const { return _map; }
+	VoxelMap &get_storage() { return _map; }
+	const VoxelMap &get_storage() const { return _map; }
+
 	Ref<VoxelTool> get_voxel_tool();
 
 	void set_run_stream_in_editor(bool enable);
@@ -55,18 +59,25 @@ public:
 	void set_bounds(Rect3i box);
 	Rect3i get_bounds() const;
 
-	void restart_stream();
+	void restart_stream() override;
+	void remesh_all_blocks() override;
+
+	// For convenience, this is actually stored in a particular type of mesher
+	Ref<VoxelLibrary> get_voxel_library() const;
 
 	struct Stats {
 		int updated_blocks = 0;
 		int dropped_block_loads = 0;
 		int dropped_block_meshs = 0;
+		int remaining_main_thread_blocks = 0;
 		uint64_t time_detect_required_blocks = 0;
 		uint64_t time_request_blocks_to_load = 0;
 		uint64_t time_process_load_responses = 0;
 		uint64_t time_request_blocks_to_update = 0;
 		uint64_t time_process_update_responses = 0;
 	};
+
+	const Stats &get_stats() const;
 
 	struct BlockToSave {
 		Ref<VoxelBuffer> voxels;
@@ -108,8 +119,6 @@ private:
 
 	bool try_get_paired_viewer_index(uint32_t id, size_t &out_i) const;
 
-	Dictionary get_statistics() const;
-
 	static void _bind_methods();
 
 	// Bindings
@@ -120,6 +129,7 @@ private:
 	void _b_save_block(Vector3 p_block_pos);
 	void _b_set_bounds(AABB aabb);
 	AABB _b_get_bounds() const;
+	Dictionary _b_get_statistics() const;
 
 	uint32_t _volume_id = 0;
 	VoxelServer::ReceptionBuffers _reception_buffers;
@@ -139,7 +149,7 @@ private:
 	std::vector<PairedViewer> _paired_viewers;
 
 	// Voxel storage
-	Ref<VoxelMap> _map;
+	VoxelMap _map;
 
 	// Area within which voxels can exist.
 	// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be
@@ -163,8 +173,8 @@ private:
 	std::vector<BlockToSave> _blocks_to_save;
 
 	Ref<VoxelStream> _stream;
-
-	Ref<VoxelLibrary> _library;
+	Ref<VoxelMesher> _mesher;
+	Ref<VoxelGenerator> _generator;
 
 	bool _generate_collisions = true;
 	bool _run_stream_in_editor = true;

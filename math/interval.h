@@ -52,6 +52,11 @@ struct Interval {
 		}
 	}
 
+	inline void add_interval(Interval other) {
+		add_point(other.min);
+		add_point(other.max);
+	}
+
 	inline float length() const {
 		return max - min;
 	}
@@ -74,6 +79,10 @@ struct Interval {
 
 	inline Interval operator-(const Interval &other) const {
 		return Interval{ min - other.max, max - other.min };
+	}
+
+	inline Interval operator-() const {
+		return Interval{ -max, -min };
 	}
 
 	inline Interval operator*(float x) const {
@@ -123,6 +132,10 @@ struct Interval {
 	}
 };
 
+inline Interval operator*(float b, const Interval &a) {
+	return a * b;
+}
+
 // Functions declared outside, so using intervals or numbers can be the same code (templatable)
 
 inline Interval min_interval(const Interval &a, const Interval &b) {
@@ -146,6 +159,10 @@ inline Interval sqrt(const Interval &i) {
 		Math::sqrt(::max(0.f, i.min)),
 		Math::sqrt(::max(0.f, i.max))
 	};
+}
+
+inline Interval squared(const Interval a) {
+	return a * a;
 }
 
 inline Interval abs(const Interval &i) {
@@ -186,14 +203,111 @@ inline Interval sin(const Interval &i) {
 	if (i.is_single_value()) {
 		return Interval::from_single_value(Math::sin(i.min));
 	} else {
+		// TODO more precision
 		// Simplified
 		return Interval(-1.f, 1.f);
 	}
 }
 
+inline Interval atan(const Interval &t) {
+	if (t.is_single_value()) {
+		return Interval::from_single_value(Math::atan(t.min));
+	}
+	// arctan is monotonic
+	return Interval{ Math::atan(t.min), Math::atan(t.max) };
+}
+
+struct OptionalInterval {
+	Interval value;
+	bool valid;
+};
+
+inline Interval atan2(const Interval &y, const Interval &x, OptionalInterval *secondary_output) {
+	if (y.is_single_value() && x.is_single_value()) {
+		return Interval::from_single_value(Math::atan2(y.min, x.max));
+	}
+
+	//          y
+	//      1   |    0
+	//          |
+	//    ------o------x
+	//          |
+	//      2   |    3
+
+	bool in_nx = x.min <= 0.f;
+	bool in_px = x.max >= 0.f;
+	bool in_ny = y.min <= 0.f;
+	bool in_py = y.max >= 0.f;
+
+	if (secondary_output != nullptr) {
+		secondary_output->valid = false;
+	}
+
+	if (in_nx && in_px && in_ny && in_py) {
+		// All quadrants
+		return Interval{ -Math_PI, Math_PI };
+	}
+
+	bool in_q0 = in_px && in_py;
+	bool in_q1 = in_nx && in_py;
+	bool in_q2 = in_nx && in_ny;
+	bool in_q3 = in_px && in_ny;
+
+	// Double-quadrants
+
+	if (in_q0 && in_q1) {
+		return Interval(Math::atan2(y.min, x.max), Math::atan2(y.min, x.min));
+	}
+	if (in_q1 && in_q2) {
+		if (secondary_output == nullptr) {
+			// When crossing those two quadrants, the angle wraps from PI to -PI.
+			// We would be forced to split the interval in two, but we have to return only one.
+			// For correctness, we have to return the full range...
+			return Interval{ -Math_PI, Math_PI };
+		} else {
+			// But, sometimes we can afford splitting the interval,
+			// especially if our use case joins it back to one.
+			// Q1
+			secondary_output->value = Interval(Math::atan2(y.max, x.max), Math_PI);
+			secondary_output->valid = true;
+			// Q2
+			return Interval(-Math_PI, Math::atan2(y.min, x.max));
+		}
+	}
+	if (in_q2 && in_q3) {
+		return Interval(Math::atan2(y.max, x.min), Math::atan2(y.max, x.max));
+	}
+	if (in_q3 && in_q0) {
+		return Interval(Math::atan2(y.min, x.min), Math::atan2(y.max, x.min));
+	}
+
+	// Single quadrants
+
+	if (in_q0) {
+		return Interval(Math::atan2(y.min, x.max), Math::atan2(y.max, x.min));
+	}
+	if (in_q1) {
+		return Interval(Math::atan2(y.max, x.max), Math::atan2(y.min, x.min));
+	}
+	if (in_q2) {
+		return Interval(Math::atan2(y.max, x.min), Math::atan2(y.min, x.max));
+	}
+	if (in_q3) {
+		return Interval(Math::atan2(y.min, x.min), Math::atan2(y.max, x.max));
+	}
+
+	// Bwarf.
+	return Interval{ -Math_PI, Math_PI };
+}
+
 inline Interval floor(const Interval &i) {
 	// Floor is monotonic so I guess we can just do that?
 	return Interval(Math::floor(i.min), Math::floor(i.max));
+}
+
+inline Interval round(const Interval &i) {
+	// Floor is monotonic so I guess we can just do that?
+	return Interval(Math::floor(i.min + 0.5f), Math::floor(i.max + 0.5f));
 }
 
 inline Interval stepify(const Interval &p_value, const Interval &p_step) {

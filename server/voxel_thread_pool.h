@@ -61,6 +61,7 @@ public:
 	void enqueue(IVoxelTask *task);
 	void enqueue(ArraySlice<IVoxelTask *> tasks);
 
+	// TODO Lambda might not be the best API. memcpying to a vector would ensure we lock for a shorter time.
 	template <typename F>
 	void dequeue_completed_tasks(F f) {
 		MutexLock lock(_completed_tasks_mutex);
@@ -102,8 +103,9 @@ private:
 	FixedArray<ThreadData, MAX_THREADS> _threads;
 	uint32_t _thread_count = 0;
 
+	// TODO Optimize this with a less naive design? Maybe moodycamel
 	std::vector<TaskItem> _tasks;
-	Mutex *_tasks_mutex = nullptr; // TODO Optimize this with a less naive design?
+	Mutex *_tasks_mutex = nullptr;
 	Semaphore *_tasks_semaphore = nullptr;
 
 	std::vector<IVoxelTask *> _completed_tasks;

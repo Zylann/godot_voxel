@@ -382,25 +382,30 @@ void build_voxel_mesh_as_greedy_cubes(
 	}
 }
 
+thread_local VoxelMesherCubes::Cache VoxelMesherCubes::_cache;
+
 VoxelMesherCubes::VoxelMesherCubes() {
 	set_padding(PADDING, PADDING);
+	_parameters_lock = RWLock::create();
+}
+
+VoxelMesherCubes::~VoxelMesherCubes() {
+	memdelete(_parameters_lock);
 }
 
 void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	const int channel = VoxelBuffer::CHANNEL_COLOR;
+	Cache &cache = _cache;
 
-	for (unsigned int i = 0; i < _arrays_per_material.size(); ++i) {
-		Arrays &a = _arrays_per_material[i];
-		a.positions.clear();
-		a.normals.clear();
-		a.colors.clear();
-		a.indices.clear();
+	for (unsigned int i = 0; i < cache.arrays_per_material.size(); ++i) {
+		Arrays &a = cache.arrays_per_material[i];
+		a.clear();
 	}
 
 	const VoxelBuffer &voxels = input.voxels;
 #ifdef TOOLS_ENABLED
 	if (input.lod != 0) {
-		WARN_PRINT("VoxelMesherBlocky received lod != 0, it is not supported");
+		WARN_PRINT("VoxelMesherCubes received lod != 0, it is not supported");
 	}
 #endif
 
@@ -418,7 +423,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 
 	} else if (voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE) {
 		// No other form of compression is allowed
-		ERR_PRINT("VoxelMesherBlocky received unsupported voxel compression");
+		ERR_PRINT("VoxelMesherCubes received unsupported voxel compression");
 		return;
 	}
 
@@ -432,20 +437,27 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	const Vector3i block_size = voxels.get_size();
 	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
 
-	switch (_color_mode) {
+	Parameters params;
+	{
+		RWLockRead rlock(_parameters_lock);
+		params = _parameters;
+	}
+	// Note, we don't lock the palette because its data has fixed-size
+
+	switch (params.color_mode) {
 		case COLOR_RAW:
 			switch (channel_depth) {
 				case VoxelBuffer::DEPTH_8_BIT:
-					if (_greedy_meshing) {
+					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel,
 								block_size,
-								_mask_memory_pool,
+								cache.mask_memory_pool,
 								Color8::from_u8);
 					} else {
 						build_voxel_mesh_as_simple_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel,
 								block_size,
 								Color8::from_u8);
@@ -453,16 +465,16 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					break;
 
 				case VoxelBuffer::DEPTH_16_BIT:
-					if (_greedy_meshing) {
+					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(),
 								block_size,
-								_mask_memory_pool,
+								cache.mask_memory_pool,
 								Color8::from_u16);
 					} else {
 						build_voxel_mesh_as_simple_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(),
 								block_size,
 								Color8::from_u16);
@@ -476,7 +488,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			break;
 
 		case COLOR_MESHER_PALETTE: {
-			ERR_FAIL_COND_MSG(_palette.is_null(), "Palette mode is used but no palette was specified");
+			ERR_FAIL_COND_MSG(params.palette.is_null(), "Palette mode is used but no palette was specified");
 
 			struct GetColorFromPalette {
 				VoxelColorPalette &palette;
@@ -487,20 +499,20 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					return palette.get_color8(i);
 				}
 			};
-			const GetColorFromPalette get_color_from_palette{ **_palette };
+			const GetColorFromPalette get_color_from_palette{ **params.palette };
 
 			switch (channel_depth) {
 				case VoxelBuffer::DEPTH_8_BIT:
-					if (_greedy_meshing) {
+					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel,
 								block_size,
-								_mask_memory_pool,
+								cache.mask_memory_pool,
 								get_color_from_palette);
 					} else {
 						build_voxel_mesh_as_simple_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel,
 								block_size,
 								get_color_from_palette);
@@ -508,16 +520,16 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					break;
 
 				case VoxelBuffer::DEPTH_16_BIT:
-					if (_greedy_meshing) {
+					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(),
 								block_size,
-								_mask_memory_pool,
+								cache.mask_memory_pool,
 								get_color_from_palette);
 					} else {
 						build_voxel_mesh_as_simple_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(),
 								block_size,
 								get_color_from_palette);
@@ -531,7 +543,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 		} break;
 
 		case COLOR_SHADER_PALETTE: {
-			ERR_FAIL_COND_MSG(_palette.is_null(), "Palette mode is used but no palette was specified");
+			ERR_FAIL_COND_MSG(params.palette.is_null(), "Palette mode is used but no palette was specified");
 
 			struct GetIndexFromPalette {
 				VoxelColorPalette &palette;
@@ -540,20 +552,20 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					return Color8(i, 0, 0, palette.get_color8(i).a);
 				}
 			};
-			const GetIndexFromPalette get_index_from_palette{ **_palette };
+			const GetIndexFromPalette get_index_from_palette{ **params.palette };
 
 			switch (channel_depth) {
 				case VoxelBuffer::DEPTH_8_BIT:
-					if (_greedy_meshing) {
+					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel,
 								block_size,
-								_mask_memory_pool,
+								cache.mask_memory_pool,
 								get_index_from_palette);
 					} else {
 						build_voxel_mesh_as_simple_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel,
 								block_size,
 								get_index_from_palette);
@@ -561,16 +573,16 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					break;
 
 				case VoxelBuffer::DEPTH_16_BIT:
-					if (_greedy_meshing) {
+					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(),
 								block_size,
-								_mask_memory_pool,
+								cache.mask_memory_pool,
 								get_index_from_palette);
 					} else {
 						build_voxel_mesh_as_simple_cubes(
-								_arrays_per_material,
+								cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(),
 								block_size,
 								get_index_from_palette);
@@ -591,7 +603,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	// TODO We could return a single byte array and use Mesh::add_surface down the line?
 
 	for (unsigned int i = 0; i < MATERIAL_COUNT; ++i) {
-		const Arrays &arrays = _arrays_per_material[i];
+		const Arrays &arrays = cache.arrays_per_material[i];
 
 		if (arrays.positions.size() != 0) {
 			Array mesh_arrays;
@@ -627,34 +639,54 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 }
 
 void VoxelMesherCubes::set_greedy_meshing_enabled(bool enable) {
-	_greedy_meshing = enable;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.greedy_meshing = enable;
 }
 
 bool VoxelMesherCubes::is_greedy_meshing_enabled() const {
-	return _greedy_meshing;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.greedy_meshing;
 }
 
 void VoxelMesherCubes::set_palette(Ref<VoxelColorPalette> palette) {
-	_palette = palette;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.palette = palette;
 }
 
 Ref<VoxelColorPalette> VoxelMesherCubes::get_palette() const {
-	return _palette;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.palette;
 }
 
 void VoxelMesherCubes::set_color_mode(ColorMode mode) {
 	ERR_FAIL_INDEX(mode, COLOR_MODE_COUNT);
-	_color_mode = mode;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.color_mode = mode;
 }
 
 VoxelMesherCubes::ColorMode VoxelMesherCubes::get_color_mode() const {
-	return _color_mode;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.color_mode;
 }
 
-VoxelMesher *VoxelMesherCubes::clone() {
+Ref<Resource> VoxelMesherCubes::duplicate(bool p_subresources) const {
+	Parameters params;
+	{
+		RWLockRead rlock(_parameters_lock);
+		params = _parameters;
+	}
+
+	if (p_subresources && params.palette.is_valid()) {
+		params.palette = params.palette->duplicate(true);
+	}
 	VoxelMesherCubes *d = memnew(VoxelMesherCubes);
-	d->_greedy_meshing = _greedy_meshing;
+	d->_parameters = params;
+
 	return d;
+}
+
+int VoxelMesherCubes::get_used_channels_mask() const {
+	return (1 << VoxelBuffer::CHANNEL_COLOR);
 }
 
 void VoxelMesherCubes::_bind_methods() {

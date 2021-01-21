@@ -26,6 +26,7 @@ class VoxelVoxLoader : public Reference {
 
 public:
 	Error load_from_file(String fpath, Ref<VoxelBuffer> voxels, Ref<VoxelColorPalette> palette);
+	// TODO Have chunked loading for better memory usage
 
 private:
 	static void _bind_methods();

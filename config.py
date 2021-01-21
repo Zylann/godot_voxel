@@ -14,41 +14,48 @@ def get_doc_classes():
   return [
     "VoxelServer",
 
-    "VoxelBuffer",
-    "VoxelMap",
-
     "Voxel",
     "VoxelLibrary",
+    "VoxelColorPalette",
 
+    "VoxelBuffer",
+
+    "VoxelNode",
     "VoxelTerrain",
     "VoxelLodTerrain",
     "VoxelViewer",
 
     "VoxelStream",
-    "VoxelStreamScript",
     "VoxelStreamFile",
     "VoxelStreamBlockFiles",
     "VoxelStreamRegionFiles",
+    "VoxelStreamScript",
 
     "VoxelGenerator",
+    "VoxelGeneratorFlat",
+    "VoxelGeneratorWaves",
     "VoxelGeneratorHeightmap",
     "VoxelGeneratorImage",
-    "VoxelGeneratorNoise",
     "VoxelGeneratorNoise2D",
-    "VoxelGeneratorTest",
+    "VoxelGeneratorNoise",
     "VoxelGeneratorGraph",
     "VoxelGeneratorScript",
 
     "VoxelBoxMover",
+    "VoxelRaycastResult",
     "VoxelTool",
     "VoxelToolTerrain",
-    "VoxelRaycastResult",
+    "VoxelToolBuffer",
     "VoxelBlockSerializer",
+    "VoxelVoxLoader",
+    "FastNoiseLite",
+    "FastNoiseLiteGradient",
 
     "VoxelMesher",
     "VoxelMesherBlocky",
     "VoxelMesherTransvoxel",
-    "VoxelMesherDMC"
+    "VoxelMesherDMC",
+    "VoxelMesherCubes"
 ]
 
 

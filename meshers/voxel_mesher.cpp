@@ -56,10 +56,6 @@ void VoxelMesher::set_padding(int minimum, int maximum) {
 	_maximum_padding = maximum;
 }
 
-VoxelMesher *VoxelMesher::clone() {
-	return nullptr;
-}
-
 void VoxelMesher::_bind_methods() {
 	// Shortcut if you want to generate a mesh directly from a fixed grid of voxels.
 	// Useful for testing the different meshers.

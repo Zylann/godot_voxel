@@ -37,7 +37,7 @@ public:
 	struct Node {
 		uint32_t id;
 		uint32_t type_id;
-		StringName name;
+		StringName name; // User-defined
 		Vector2 gui_position;
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;

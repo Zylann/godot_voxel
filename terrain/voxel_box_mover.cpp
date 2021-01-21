@@ -116,9 +116,11 @@ static Vector3 get_motion(AABB box, Vector3 motion, const std::vector<AABB> &env
 
 Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelTerrain *terrain) {
 	ERR_FAIL_COND_V(terrain == nullptr, Vector3());
+	ERR_FAIL_COND_V(terrain->get_mesher().is_null(), Vector3());
 	Ref<VoxelLibrary> library_ref = terrain->get_voxel_library();
 	ERR_FAIL_COND_V(library_ref.is_null(), Vector3());
 	VoxelLibrary &library = **library_ref;
+	// TODO Make this work with colored cubes meshers too, but need to set a collision rule for transparent cubes
 
 	AABB box(aabb.position + pos, aabb.size);
 	AABB expanded_box = expand_with_vector(box, motion);
@@ -128,9 +130,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelT
 
 	// Collect collisions with the terrain
 
-	Ref<VoxelMap> voxels_ref = terrain->get_storage();
-	ERR_FAIL_COND_V(voxels_ref.is_null(), Vector3());
-	const VoxelMap &voxels = **voxels_ref;
+	const VoxelMap &voxels = terrain->get_storage();
 
 	const int min_x = int(Math::floor(expanded_box.position.x));
 	const int min_y = int(Math::floor(expanded_box.position.y));

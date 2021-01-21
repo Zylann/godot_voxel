@@ -72,6 +72,19 @@ public:
 	bool is_modified() const;
 	void set_modified(bool modified);
 
+	template <typename F>
+	void for_each_mesh_instance_with_transform(F f) const {
+		const Transform local_transform(Basis(), _position_in_voxels.to_vec3());
+		const Transform world_transform = local_transform;
+		f(_mesh_instance, world_transform);
+		for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+			const DirectMeshInstance &mi = _transition_mesh_instances[i];
+			if (mi.is_valid()) {
+				f(mi, world_transform);
+			}
+		}
+	}
+
 private:
 	VoxelBlock();
 

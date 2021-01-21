@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="FastNoiseLite" inherits="Resource" version="3.2">
+	<brief_description>
+		Generates coherent and fractal noise using the FastNoiseLite library.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_noise_2d">
+			<return type="float">
+			</return>
+			<argument index="0" name="x" type="float">
+			</argument>
+			<argument index="1" name="y" type="float">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_noise_2dv">
+			<return type="float">
+			</return>
+			<argument index="0" name="position" type="Vector2">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_noise_3d">
+			<return type="float">
+			</return>
+			<argument index="0" name="x" type="float">
+			</argument>
+			<argument index="1" name="y" type="float">
+			</argument>
+			<argument index="2" name="z" type="float">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_noise_3dv">
+			<return type="float">
+			</return>
+			<argument index="0" name="position" type="Vector3">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cellular_distance_function" type="int" setter="set_cellular_distance_function" getter="get_cellular_distance_function" enum="FastNoiseLite.CellularDistanceFunction" default="1">
+		</member>
+		<member name="cellular_jitter" type="float" setter="set_cellular_jitter" getter="get_cellular_jitter" default="1.0">
+		</member>
+		<member name="cellular_return_type" type="int" setter="set_cellular_return_type" getter="get_cellular_return_type" enum="FastNoiseLite.CellularReturnType" default="1">
+		</member>
+		<member name="fractal_gain" type="float" setter="set_fractal_gain" getter="get_fractal_gain" default="0.5">
+		</member>
+		<member name="fractal_lacunarity" type="float" setter="set_fractal_lacunarity" getter="get_fractal_lacunarity" default="2.0">
+		</member>
+		<member name="fractal_octaves" type="int" setter="set_fractal_octaves" getter="get_fractal_octaves" default="3">
+		</member>
+		<member name="fractal_ping_pong_strength" type="float" setter="set_fractal_ping_pong_strength" getter="get_fractal_ping_pong_strength" default="2.0">
+		</member>
+		<member name="fractal_type" type="int" setter="set_fractal_type" getter="get_fractal_type" enum="FastNoiseLite.FractalType" default="1">
+		</member>
+		<member name="fractal_weighted_strength" type="float" setter="set_fractal_weighted_strength" getter="get_fractal_weighted_strength" default="0.0">
+		</member>
+		<member name="noise_type" type="int" setter="set_noise_type" getter="get_noise_type" enum="FastNoiseLite.NoiseType" default="0">
+		</member>
+		<member name="period" type="float" setter="set_period" getter="get_period" default="64.0">
+		</member>
+		<member name="rotation_type_3d" type="int" setter="set_rotation_type_3d" getter="get_rotation_type_3d" enum="FastNoiseLite.RotationType3D" default="0">
+		</member>
+		<member name="seed" type="int" setter="set_seed" getter="get_seed" default="0">
+		</member>
+		<member name="warp_noise" type="FastNoiseLiteGradient" setter="set_warp_noise" getter="get_warp_noise">
+		</member>
+	</members>
+	<constants>
+		<constant name="TYPE_OPEN_SIMPLEX_2" value="0" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_OPEN_SIMPLEX_2S" value="1" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_CELLULAR" value="2" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_PERLIN" value="3" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_VALUE_CUBIC" value="4" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_VALUE" value="5" enum="NoiseType">
+		</constant>
+		<constant name="FRACTAL_NONE" value="0" enum="FractalType">
+		</constant>
+		<constant name="FRACTAL_FBM" value="1" enum="FractalType">
+		</constant>
+		<constant name="FRACTAL_RIDGED" value="2" enum="FractalType">
+		</constant>
+		<constant name="FRACTAL_PING_PONG" value="3" enum="FractalType">
+		</constant>
+		<constant name="ROTATION_3D_NONE" value="0" enum="RotationType3D">
+		</constant>
+		<constant name="ROTATION_3D_IMPROVE_XY_PLANES" value="1" enum="RotationType3D">
+		</constant>
+		<constant name="ROTATION_3D_IMPROVE_XZ_PLANES" value="2" enum="RotationType3D">
+		</constant>
+		<constant name="CELLULAR_DISTANCE_EUCLIDEAN" value="0" enum="CellularDistanceFunction">
+		</constant>
+		<constant name="CELLULAR_DISTANCE_EUCLIDEAN_SQ" value="1" enum="CellularDistanceFunction">
+		</constant>
+		<constant name="CELLULAR_DISTANCE_MANHATTAN" value="2" enum="CellularDistanceFunction">
+		</constant>
+		<constant name="CELLULAR_DISTANCE_HYBRID" value="3" enum="CellularDistanceFunction">
+		</constant>
+		<constant name="CELLULAR_RETURN_CELL_VALUE" value="0" enum="CellularReturnType">
+		</constant>
+		<constant name="CELLULAR_RETURN_DISTANCE" value="1" enum="CellularReturnType">
+		</constant>
+		<constant name="CELLULAR_RETURN_DISTANCE_2" value="2" enum="CellularReturnType">
+		</constant>
+		<constant name="CELLULAR_RETURN_DISTANCE_2_ADD" value="3" enum="CellularReturnType">
+		</constant>
+		<constant name="CELLULAR_RETURN_DISTANCE_2_SUB" value="4" enum="CellularReturnType">
+		</constant>
+		<constant name="CELLULAR_RETURN_DISTANCE_2_MUL" value="5" enum="CellularReturnType">
+		</constant>
+		<constant name="CELLULAR_RETURN_DISTANCE_2_DIV" value="6" enum="CellularReturnType">
+		</constant>
+	</constants>
+</class>

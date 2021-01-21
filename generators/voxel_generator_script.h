@@ -3,7 +3,8 @@
 
 #include "voxel_generator.h"
 
-// Generator based on a script, like GDScript, C# or NativeScript
+// Generator based on a script, like GDScript, C# or NativeScript.
+// The script is expected to properly handle multithreading.
 class VoxelGeneratorScript : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorScript, VoxelGenerator)
 public:

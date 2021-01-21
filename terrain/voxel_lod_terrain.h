@@ -2,8 +2,10 @@
 #define VOXEL_LOD_TERRAIN_HPP
 
 #include "../server/voxel_server.h"
-#include "../util/direct_mesh_instance.h"
 #include "lod_octree.h"
+#include "voxel_map.h"
+#include "voxel_node.h"
+
 #include <core/set.h>
 #include <scene/3d/spatial.h>
 
@@ -11,28 +13,30 @@
 #include "../editor/voxel_debug.h"
 #endif
 
-class VoxelMap;
 class VoxelTool;
 class VoxelStream;
-class VoxelBlock;
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
 // Voxels are polygonized around the viewer by distance in a very large sphere, usually extending beyond far clip.
 // Data is streamed using a VoxelStream, which must support LOD.
-class VoxelLodTerrain : public Spatial {
-	GDCLASS(VoxelLodTerrain, Spatial)
+class VoxelLodTerrain : public VoxelNode {
+	GDCLASS(VoxelLodTerrain, VoxelNode)
 public:
 	VoxelLodTerrain();
 	~VoxelLodTerrain();
 
-	String get_configuration_warning() const override;
-
 	Ref<Material> get_material() const;
 	void set_material(Ref<Material> p_material);
 
-	Ref<VoxelStream> get_stream() const;
-	void set_stream(Ref<VoxelStream> p_stream);
+	Ref<VoxelStream> get_stream() const override;
+	void set_stream(Ref<VoxelStream> p_stream) override;
+
+	Ref<VoxelGenerator> get_generator() const override;
+	void set_generator(Ref<VoxelGenerator> p_stream) override;
+
+	Ref<VoxelMesher> get_mesher() const override;
+	void set_mesher(Ref<VoxelMesher> p_mesher) override;
 
 	int get_view_distance() const;
 	void set_view_distance(int p_distance_in_voxels);
@@ -85,6 +89,7 @@ public:
 		int updated_blocks = 0;
 		int dropped_block_loads = 0;
 		int dropped_block_meshs = 0;
+		int remaining_main_thread_blocks = 0;
 		uint64_t time_detect_required_blocks = 0;
 		uint64_t time_request_blocks_to_load = 0;
 		uint64_t time_process_load_responses = 0;
@@ -92,12 +97,10 @@ public:
 		uint64_t time_process_update_responses = 0;
 	};
 
-	Dictionary get_statistics() const;
+	const Stats &get_stats() const;
 
-	void set_run_stream_in_editor(bool enable);
-	bool is_stream_running_in_editor() const;
-
-	void restart_stream();
+	void restart_stream() override;
+	void remesh_all_blocks() override;
 
 	struct BlockToSave {
 		Ref<VoxelBuffer> voxels;
@@ -105,9 +108,16 @@ public:
 		uint8_t lod;
 	};
 
+	// Debugging
+
 	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
 	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
 	Array debug_get_octrees() const;
+
+	// Editor
+
+	void set_run_stream_in_editor(bool enable);
+	bool is_stream_running_in_editor() const;
 
 #ifdef TOOLS_ENABLED
 	void set_show_gizmos(bool enable);
@@ -153,6 +163,8 @@ private:
 	AABB _b_get_voxel_bounds() const;
 	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const;
 	int _b_debug_get_block_count() const;
+	Error _b_debug_dump_as_scene(String fpath) const;
+	Dictionary _b_get_statistics() const;
 
 	struct OctreeItem {
 		LodOctree octree;
@@ -176,6 +188,9 @@ private:
 	//Rect3i _prev_bounds_in_voxels;
 
 	Ref<VoxelStream> _stream;
+	Ref<VoxelGenerator> _generator;
+	Ref<VoxelMesher> _mesher;
+
 	std::vector<BlockToSave> _blocks_to_save;
 	VoxelServer::ReceptionBuffers _reception_buffers;
 	uint32_t _volume_id = 0;
@@ -192,7 +207,7 @@ private:
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
-		Ref<VoxelMap> map;
+		VoxelMap map;
 		Set<Vector3i> loading_blocks;
 		std::vector<Vector3i> blocks_pending_update;
 

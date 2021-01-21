@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelServer" inherits="Object" version="3.2">
 	<brief_description>
-		Singleton handling common voxel processing.
+		Singleton handling common voxel processing in background threads.
 	</brief_description>
 	<description>
 	</description>

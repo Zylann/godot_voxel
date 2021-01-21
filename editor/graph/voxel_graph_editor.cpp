@@ -523,12 +523,17 @@ void VoxelGraphEditor::update_previews() {
 
 	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
-	if (!_graph->compile()) {
-		const VoxelGraphRuntime::CompilationResult &result = _graph->get_compilation_result();
+	const VoxelGraphRuntime::CompilationResult result = _graph->compile();
+	if (!result.success) {
 		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
 		// TODO Enhance reporting in the UI
 		return;
 	}
+
+	if (!_graph->is_good()) {
+		return;
+	}
+	// We assume no other thread will try to modify the graph and compile something not good
 
 	// TODO Use a thread?
 	PRINT_VERBOSE("Updating previews");
@@ -541,7 +546,6 @@ void VoxelGraphEditor::update_previews() {
 	};
 
 	std::vector<PreviewInfo> previews;
-	const VoxelGraphRuntime &runtime = _graph->get_runtime();
 
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
 		VoxelGraphEditorNode *node = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(i));
@@ -558,38 +562,73 @@ void VoxelGraphEditor::update_previews() {
 		}
 		PreviewInfo info;
 		info.control = node->preview;
-		info.address = runtime.get_output_port_address(src);
+		info.address = _graph->get_output_port_address(src);
 		info.min_value = _graph->get_node_param(dst.node_id, 0);
 		const float max_value = _graph->get_node_param(dst.node_id, 1);
 		info.value_scale = 1.f / (max_value - info.min_value);
 		previews.push_back(info);
 	}
 
-	for (size_t i = 0; i < previews.size(); ++i) {
-		previews[i].control->get_image()->lock();
-	}
+	const int preview_size_x = VoxelGraphEditorNodePreview::RESOLUTION;
+	const int preview_size_y = VoxelGraphEditorNodePreview::RESOLUTION;
+	const int buffer_size = preview_size_x * preview_size_y;
+	std::vector<float> x_vec;
+	std::vector<float> y_vec;
+	std::vector<float> z_vec;
+	std::vector<float> sdf_vec;
+	x_vec.resize(buffer_size);
+	y_vec.resize(buffer_size);
+	z_vec.resize(buffer_size);
+	sdf_vec.resize(buffer_size);
 
-	for (int iy = 0; iy < VoxelGraphEditorNodePreview::RESOLUTION; ++iy) {
-		for (int ix = 0; ix < VoxelGraphEditorNodePreview::RESOLUTION; ++ix) {
-			{
-				const int x = ix - VoxelGraphEditorNodePreview::RESOLUTION / 2;
-				const int y =
-						(VoxelGraphEditorNodePreview::RESOLUTION - iy) - VoxelGraphEditorNodePreview::RESOLUTION / 2;
-				_graph->generate_single(Vector3i(x, y, 0));
-			}
+	const Vector3 min_pos(-preview_size_x / 2, -preview_size_y / 2, 0);
+	const Vector3 max_pos = min_pos + Vector3(preview_size_x, preview_size_x, 0);
 
-			for (size_t i = 0; i < previews.size(); ++i) {
-				PreviewInfo &info = previews[i];
-				const float v = runtime.get_memory_value(info.address);
-				const float g = clamp((v - info.min_value) * info.value_scale, 0.f, 1.f);
-				info.control->get_image()->set_pixel(ix, iy, Color(g, g, g));
+	{
+		int i = 0;
+		for (int iy = 0; iy < preview_size_x; ++iy) {
+			const float y = Math::lerp(min_pos.y, max_pos.y, static_cast<float>(iy) / preview_size_y);
+			for (int ix = 0; ix < preview_size_y; ++ix) {
+				const float x = Math::lerp(min_pos.x, max_pos.x, static_cast<float>(ix) / preview_size_x);
+				x_vec[i] = x;
+				y_vec[i] = y;
+				z_vec[i] = min_pos.z;
+				++i;
 			}
 		}
 	}
 
-	for (size_t i = 0; i < previews.size(); ++i) {
-		previews[i].control->get_image()->unlock();
-		previews[i].control->update_texture();
+	_graph->generate_set(
+			ArraySlice<float>(x_vec, 0, x_vec.size()),
+			ArraySlice<float>(y_vec, 0, y_vec.size()),
+			ArraySlice<float>(z_vec, 0, z_vec.size()),
+			ArraySlice<float>(sdf_vec, 0, sdf_vec.size()));
+
+	const VoxelGraphRuntime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
+
+	for (size_t preview_index = 0; preview_index < previews.size(); ++preview_index) {
+		PreviewInfo &info = previews[preview_index];
+
+		const VoxelGraphRuntime::Buffer &buffer = last_state.get_buffer(info.address);
+
+		Image &im = **info.control->get_image();
+		ERR_FAIL_COND(im.get_width() * im.get_height() != static_cast<int>(buffer.size));
+
+		im.lock();
+
+		unsigned int i = 0;
+		for (int y = 0; y < im.get_height(); ++y) {
+			for (int x = 0; x < im.get_width(); ++x) {
+				const float v = buffer.data[i];
+				const float g = clamp((v - info.min_value) * info.value_scale, 0.f, 1.f);
+				im.set_pixel(x, y, Color(g, g, g));
+				++i;
+			}
+		}
+
+		im.unlock();
+
+		info.control->update_texture();
 	}
 
 	uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
@@ -624,7 +663,7 @@ void VoxelGraphEditor::_on_profile_button_pressed() {
 	if (_graph.is_null()) {
 		return;
 	}
-	const float us = _graph->debug_measure_microseconds_per_voxel();
+	const float us = _graph->debug_measure_microseconds_per_voxel(false);
 	_profile_label->set_text(String("{0} microseconds per voxel").format(varray(us)));
 }
 
