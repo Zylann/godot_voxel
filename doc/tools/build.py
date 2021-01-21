@@ -99,11 +99,12 @@ def update_mkdocs_file(mkdocs_config_fpath, md_classes_dir):
                 in_generated_section = False
             else:
                 continue
-        processed_lines.append(line)
         if "<generated_class_list>" in line:
             in_generated_section = True
-            for cf in class_files:
-                processed_lines.append("      - " + cf + "\n")
+            indent = line[:line.find('#')]
+            processed_lines.append(line)
+            for class_file in class_files:
+                processed_lines.append(indent + "- " + class_file + "\n")
 
     yml = "".join(processed_lines)
     with open(mkdocs_config_fpath, 'w', encoding='utf-8') as f:
