@@ -3,9 +3,9 @@ Voxel Tools for Godot
 
 A C++ module for creating volumetric worlds in Godot Engine.
 
-<img src="doc/images/blocky_screenshot.png" width="800" />
-<img src="doc/images/smooth_screenshot.png" width="800" />
-<img src="doc/images/textured-terrain.jpg" width="800" />
+![Blocky screenshot](doc/docs/images/blocky_screenshot.png)
+![Smooth screenshot](doc/docs/images/smooth_screenshot.png)
+![Textured screenshot](doc/docs/images/textured-terrain.jpg)
 
 Features
 ---------------------------
@@ -17,7 +17,7 @@ Features
 - Minecraft-style blocky voxel terrain, with multiple materials and baked ambient occlusion
 - Smooth terrain using Transvoxel
 - Levels of detail for smooth terrain
-- Voxel storage using 8-bit channels for any general purpose
+- Voxel storage using 8-bit or 16-bit channels for any general purpose
 
 
 What This Module Doesn't Provide
@@ -50,12 +50,13 @@ Ready-to-use versions of Godot including the module exist, though they might not
 ### Compiling
 
 Compiling the source yourself is the best way to get your own version and export template.
-Please see the [Getting Started Guide](doc/01_get-started.md) for instructions.
+Please see the [documentation](https://voxel-tools.readthedocs.io/en/latest/getting_the_module/) for instructions.
 
 
-### Examples
+### Documentation
 
-- Documentation: [Getting Started Guide](doc/01_get-started.md)
+- [Main documentation](https://voxel-tools.readthedocs.io/en/latest/)
+
 - Zylann's demos: [Zylann's demos](https://github.com/Zylann/voxelgame)
 - TinmanJuggernaut's demos: [TinmanJuggernaut's demo](https://github.com/tinmanjuggernaut/voxelgame)
 
@@ -65,6 +66,7 @@ Roadmap
 
 These are some ideas that may or may not be implemented in the future:
 
+* Instancing for foliage and rocks
 * Texturing on smooth terrain
 * Editor preview and authoring
 * Improving LOD performance
@@ -87,5 +89,6 @@ Jonas (NoFr1ends)
 lenis0012
 Phyronnaz
 RonanZe
+furtherorbit
 ```
 

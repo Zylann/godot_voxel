@@ -48,7 +48,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Jonas (NoFr1ends)\n"
 						"lenis0012\n"
 						"Phyronnaz\n"
-						"RonanZe\n";
+						"RonanZe\n"
+						"furtherorbit\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
