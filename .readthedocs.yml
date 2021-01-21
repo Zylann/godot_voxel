@@ -1,0 +1,10 @@
+version: 2
+
+mkdocs:
+  configuration: doc/mkdocs.yml
+
+python:
+  install:
+    # Added this to fix an MkDocs error about `site_dir`
+    # https://github.com/readthedocs/readthedocs.org/issues/4974#issuecomment-735320443
+    - requirements: doc/requirements.txt
