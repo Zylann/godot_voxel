@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelNode" inherits="Spatial" version="3.2">
 	<brief_description>
+		Base class for voxel volumes.
 	</brief_description>
 	<description>
 	</description>
@@ -10,10 +11,13 @@
 	</methods>
 	<members>
 		<member name="generator" type="VoxelGenerator" setter="set_generator" getter="get_generator">
+			Procedural generator used to load voxel blocks when not present in the stream.
 		</member>
 		<member name="mesher" type="VoxelMesher" setter="set_mesher" getter="get_mesher">
+			Defines how voxels are transformed into visible meshes.
 		</member>
 		<member name="stream" type="VoxelStream" setter="set_stream" getter="get_stream">
+			Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 		</member>
 	</members>
 	<constants>

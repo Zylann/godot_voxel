@@ -30,4 +30,4 @@ Type                | Name                             | Default
 - [OpenSimplexNoise](https://docs.godotengine.org/en/stable/classes/class_opensimplexnoise.html)<span id="i_noise"></span> **noise**
 
 
-_Generated on Jan 20, 2021_
+_Generated on Jan 21, 2021_
