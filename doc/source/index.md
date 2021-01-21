@@ -15,3 +15,4 @@ Explore categories on the left to get started!
 ![Editor screenshot](images/graph_in_editor_with_fast_noise_lite.png)
 
 ![Smooth screenshot](images/smooth_screenshot.png)
+

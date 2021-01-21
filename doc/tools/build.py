@@ -22,6 +22,8 @@ import glob
 import os
 from pathlib import Path
 
+SOURCES = "docs"
+
 
 def update_classes_xml(custom_godot_path, godot_repo_root, verbose=False):
     godot_executable = custom_godot_path
@@ -80,11 +82,10 @@ def find_godot(bindir):
 def update_mkdocs_file(mkdocs_config_fpath, md_classes_dir):
     absolute_paths = md_classes_dir.glob("*.md")
     class_files = []
-    docs_folder = mkdocs_config_fpath.parents[0] / 'docs'
+    docs_folder = mkdocs_config_fpath.parents[0] / SOURCES
     for absolute_path in absolute_paths:
         class_files.append(str(absolute_path.relative_to(docs_folder)).replace('\\', '/'))
     class_files = sorted(class_files)
-    class_files = list(sorted(class_files))
 
     with open(mkdocs_config_fpath, 'r', encoding='utf-8') as f:
         lines = f.readlines()
@@ -137,7 +138,7 @@ def main():
     godot_executable = ""
 
     godot_repo_root = my_path.parents[4]
-    md_path = my_path.parents[1] / 'docs/api'
+    md_path = my_path.parents[1] / SOURCES / 'api'
     xml_path = my_path.parents[1] / 'classes'
     mkdocs_config_path = my_path.parents[1] / 'mkdocs.yml'
 

@@ -1,9 +1,7 @@
 site_name: Voxel Tools documentation
 theme: readthedocs
 
-# I had to specify this even though it's supposed to be the default
-# See https://github.com/mkdocs/mkdocs/issues/2145#issuecomment-735342512
-docs_dir: docs
+docs_dir: source
 
 nav:
   - 'index.md'
