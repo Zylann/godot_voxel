@@ -68,7 +68,7 @@ private:
 	Vector3 _b_get_block_size() const;
 
 	struct Parameters {
-		bool save_generator_output = true;
+		bool save_generator_output = false;
 	};
 
 	Parameters _parameters;
