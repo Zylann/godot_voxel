@@ -62,7 +62,7 @@ public:
 private:
 	static void _bind_methods();
 
-	void _b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
+	Result _b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
 	void _b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
 	int _b_get_used_channels_mask() const;
 	Vector3 _b_get_block_size() const;

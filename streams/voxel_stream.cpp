@@ -61,9 +61,9 @@ int VoxelStream::get_lod_count() const {
 
 // Binding land
 
-void VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
-	ERR_FAIL_COND(lod < 0);
-	emerge_block(out_buffer, Vector3i(origin_in_voxels), lod);
+VoxelStream::Result VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
+	ERR_FAIL_COND_V(lod < 0, RESULT_ERROR);
+	return emerge_block(out_buffer, Vector3i(origin_in_voxels), lod);
 }
 
 void VoxelStream::_b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod) {
