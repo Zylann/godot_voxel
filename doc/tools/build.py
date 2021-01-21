@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # coding: utf-8
 
 # Builds Voxel Tools API docs
@@ -7,78 +7,36 @@
 # Run with --help for usage
 #
 # Configure these variables for your system or specify on the command line
-import tempfile
-from xmlproc import process_xml
-from time import gmtime, strftime
-import subprocess
-import shutil
-import getopt
-import glob
-import re
-import os
-from pathlib import Path
-import sys
 
+import sys
 
 if sys.version_info < (3, 4):
     print("Please upgrade python to version 3.4 or higher.")
     print("Your version: %s\n" % sys.version_info)
     sys.exit(1)
 
+import xml_to_markdown
+import subprocess
+import getopt
+import glob
+import os
+from pathlib import Path
 
-def generate_api_docs_from_classes_xml(xml_path, output_path, verbose=False):
 
-    # Make output dir and remove old files
-    if not os.path.isdir(output_path):
-        if verbose:
-            print("Making output directory: " + output_path)
-        os.makedirs(output_path)
-
-    for i in output_path.glob("*.md"):
-        if verbose:
-            print("Removing old: ", i)
-        os.remove(i)
-
-    # Convert files to MD
-    xml_files = xml_path.glob("*.xml")
-    doc_files = []
-    count = 0
-    for src in xml_files:
-        dest = output_path / (src.stem + ".md")
-        if verbose:
-            print("Converting ", src, dest)
-        process_xml(src, dest)
-        count += 1
-        doc_files.append(dest)
-
-    # Create Class index
-    index_path = output_path / "Class_List.md"
-    doc_files = sorted(doc_files)
-
-    str = "# Voxel Tools Class List\n\n"
-    str += "These classes are exposed to GDScript. This information is also available within the Godot script editor by searching help.\n\n"
-
-    for i in doc_files:
-        f = Path(i).name
-        str += "* [%s](%s)\n" % (f, f)
-
-    str += "\n---\n"
-    str += "* [Doc Index](../01_get-started.md)\n"
-    str += "_Generated on " + strftime("%b %d, %Y", gmtime()) + "_\n"
+def update_classes_xml(custom_godot_path, godot_repo_root, verbose=False):
+    godot_executable = custom_godot_path
+    if godot_executable is None or godot_executable == "":
+        bindir = godot_repo_root / 'bin'
+        godot_executable = find_godot(bindir)
+        if godot_executable is None:
+            print("Godot executable not found")
+            return
 
     if verbose:
-        print("Writing %s" % index_path)
-    outfile = open(index_path, 'a')
-    outfile.write(str)
-    count += 1
-
-    print("Generated %d files in %s." % (count, output_path))
-
-
-def update_classes_xml(godot_executable, path, verbose=False):
-
+        print("Found Godot at: %s" % godot_executable)
+    
     # Dump XML files from Godot
-    args = [godot_executable, ' --doctool ',  path]
+    args = [str(godot_executable), ' --doctool ', str(godot_repo_root)]
     if verbose:
         print("Running: ", args)
     result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -88,42 +46,80 @@ def update_classes_xml(godot_executable, path, verbose=False):
         print("Disregard Godot's errors about files unless they are about Voxel*.")
 
 
+def find_godot(bindir):
+    # Match a filename like these
+    # godot.windows.tools.64.exe
+    # godot.x11.tools.64
+    #regex = r"godot\.(windows|x11|osx)(\.opt)?(\.tools)?\.(32|64)(\.exe)?"
+    prefix = "godot"
+    suffix = ""
+    if sys.platform == "win32" or sys.platform == "cygwin":
+        prefix += ".windows"
+        suffix = ".exe"
+    else:
+        # TODO Mac OS?
+        prefix += ".x11"
+
+    bits = ".64"
+
+    # Names to try by priority
+    names = [
+        prefix + ".tools" + bits + suffix,
+        prefix + ".opt.tools" + bits + suffix
+    ]
+
+    for name in names:
+        path = bindir / name
+        if os.path.isfile(path):
+            return path
+
+    print("Error: Godot binary not specified and none suitable found in %s" % bindir)
+    return None
+
+
+def update_mkdocs_file(mkdocs_config_fpath, md_classes_dir):
+    absolute_paths = md_classes_dir.glob("*.md")
+    class_files = []
+    docs_folder = mkdocs_config_fpath.parents[0] / 'docs'
+    for absolute_path in absolute_paths:
+        class_files.append(str(absolute_path.relative_to(docs_folder)).replace('\\', '/'))
+    class_files = sorted(class_files)
+    class_files = list(sorted(class_files))
+
+    with open(mkdocs_config_fpath, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+    
+    processed_lines = []
+    in_generated_section = False
+
+    for line in lines:
+        if in_generated_section:
+            if "</generated_class_list>" in line:
+                in_generated_section = False
+            else:
+                continue
+        processed_lines.append(line)
+        if "<generated_class_list>" in line:
+            in_generated_section = True
+            for cf in class_files:
+                processed_lines.append("      - " + cf + "\n")
+
+    yml = "".join(processed_lines)
+    with open(mkdocs_config_fpath, 'w', encoding='utf-8') as f:
+        f.write(yml)
+
+
 def print_usage():
     print("\nUsage: ", sys.argv[0],
-          "[-v] [-u] [-g path_to_godot] [-o output_dir]")
+          "[-d] [-a] [-m] [-h] [-v] [-g path_to_godot]")
     print()
-    print("\t-v -> Verbose")
-    print("\t-u -> Execute doctool to update XML class data")
+    print("\t-d -> Execute Godot doctool to update XML class data")
+    print("\t-a -> Update Markdown API files from XML class data")
+    print("\t-m -> Update mkdocs config file with generated content such as API files")
+    print("\t-h, --help -> Prints help")
+    print("\t-v -> Verbose. Print more details when running.")
+    print("\t-g -> Specify custom path to Godot. Otherwise will use compiled executable under the repo's bin directory.")
     print()
-
-
-def find_godot(godot, bindir):
-
-    # If godot was specified or hard coded, verify file
-    if godot != "":
-        if os.path.isfile(godot):
-            return godot
-        else:
-            print("Error: %s is not a valid file." % godot)
-            return None
-
-    # Otherwise search for it
-
-    # Match a filename like these
-    # godot.windows.opt.tools.64.exe
-    # godot.x11.opt.tools.64
-    #regex = r"godot\.(windows|x11|osx)(\.opt)?(\.tools)?\.(32|64)(\.exe)?"
-    if sys.platform == "win32" or sys.platform == "cygwin":
-        filemask = 'godot.*.exe'
-    else:
-        filemask = 'godot.*.[36][24]'
-
-    binfiles = glob.glob(os.path.join(bindir,filemask))
-    if len(binfiles) > 0:
-        return binfiles[0]
-
-    print("Error: Godot binary not specified and none found in %s" % bindir)
-    return None
 
 
 ###########################
@@ -135,46 +131,56 @@ def main():
 
     # Default parameters
     verbose = False
-    run_doctool = False
-    godot_repo_root = my_path.parents[4]
-    bindir = godot_repo_root / 'bin'
+    must_run_doctool = False
+    must_update_md_from_xml = False
+    must_update_mkdocs_config = False
     godot_executable = ""
-    output_path = my_path.parents[1] / 'api'
+
+    godot_repo_root = my_path.parents[4]
+    md_path = my_path.parents[1] / 'docs/api'
     xml_path = my_path.parents[1] / 'classes'
+    mkdocs_config_path = my_path.parents[1] / 'mkdocs.yml'
 
     # Parse command line arguments
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hvug:o:", "help")
+        opts, args = getopt.getopt(sys.argv[1:], "damhvg:", "help")
     except getopt.error as msg:
         print("Error: ", msg)
         print_usage()
+        return
+
+    did_something = False
 
     for opt, arg in opts:
+        if opt == '-d':
+            must_run_doctool = True
+        if opt == '-a':
+            must_update_md_from_xml = True
+        if opt == '-m':
+            must_update_mkdocs_config = True
         if opt in ('-h', '--help'):
             print_usage()
-        if opt == '-g':
-            godot_executable = arg
-        if opt == '-o':
-            output_path = Path(arg)
+            did_something = True
         if opt == '-v':
             verbose = True
-        if opt == '-u':
-            run_doctool = True
+        if opt == '-g':
+            godot_executable = arg
 
-    if run_doctool:
-        maybe_godot_executable = find_godot(godot_executable, bindir)
-        if maybe_godot_executable is None:
-            print_usage()
-            return
-        else:
-            godot_executable = maybe_godot_executable
-
-        if verbose:
-            print("Found Godot at: %s" % godot_executable)
-
+    if must_run_doctool:
         update_classes_xml(godot_executable, godot_repo_root, verbose)
+        did_something = True
+    
+    if must_update_mkdocs_config:
+        update_mkdocs_file(mkdocs_config_path, md_path)
+        did_something = True
 
-    generate_api_docs_from_classes_xml(xml_path, output_path, verbose)
+    if must_update_md_from_xml:
+        xml_to_markdown.process_xml_folder(xml_path, md_path, verbose)
+        did_something = True
+
+    if not did_something:
+        print("No operation specified.")
+        print_usage()
 
 
 # If called from command line

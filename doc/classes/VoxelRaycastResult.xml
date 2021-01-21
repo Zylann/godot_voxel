@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelRaycastResult" inherits="Reference" version="3.2">
 	<brief_description>
+		Result of a raycast performed with [method VoxelTool.raycast]
 	</brief_description>
 	<description>
 	</description>

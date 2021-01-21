@@ -1,0 +1,76 @@
+site_name: Voxel Tools documentation
+theme: readthedocs
+
+# I had to specify this even though it's supposed to be the default
+# See https://github.com/mkdocs/mkdocs/issues/2145#issuecomment-735342512
+docs_dir: docs
+
+nav:
+  - 'index.md'
+  - 'getting_the_module.md'
+  - 'quick_start.md'
+  - 'overview.md'
+  - 'terrain_types.md'
+  - 'blocky_terrain.md'
+  - 'smooth_terrain.md'
+  - 'generators.md'
+  - 'streams.md'
+  - 'editor.md'
+  - 'scripting.md'
+  - 'access_to_voxels_and_multithreading.md'
+  - 'module_development.md'
+  - 'changelog.md'
+  - 'API':
+    - 'Classes':
+      # <generated_class_list>
+      - api/FastNoiseLite.md
+      - api/FastNoiseLiteGradient.md
+      - api/Voxel.md
+      - api/VoxelBlockSerializer.md
+      - api/VoxelBoxMover.md
+      - api/VoxelBuffer.md
+      - api/VoxelColorPalette.md
+      - api/VoxelGenerator.md
+      - api/VoxelGeneratorFlat.md
+      - api/VoxelGeneratorGraph.md
+      - api/VoxelGeneratorHeightmap.md
+      - api/VoxelGeneratorImage.md
+      - api/VoxelGeneratorNoise.md
+      - api/VoxelGeneratorNoise2D.md
+      - api/VoxelGeneratorScript.md
+      - api/VoxelGeneratorWaves.md
+      - api/VoxelLibrary.md
+      - api/VoxelLodTerrain.md
+      - api/VoxelMesher.md
+      - api/VoxelMesherBlocky.md
+      - api/VoxelMesherCubes.md
+      - api/VoxelMesherDMC.md
+      - api/VoxelMesherTransvoxel.md
+      - api/VoxelNode.md
+      - api/VoxelRaycastResult.md
+      - api/VoxelServer.md
+      - api/VoxelStream.md
+      - api/VoxelStreamBlockFiles.md
+      - api/VoxelStreamFile.md
+      - api/VoxelStreamRegionFiles.md
+      - api/VoxelStreamScript.md
+      - api/VoxelTerrain.md
+      - api/VoxelTool.md
+      - api/VoxelToolBuffer.md
+      - api/VoxelToolTerrain.md
+      - api/VoxelViewer.md
+      - api/VoxelVoxLoader.md
+      # </generated_class_list>
+  - 'Serialization formats':
+    - 'specs/block_format.md'
+    - 'specs/region_format_v2.md'
+    - 'specs/region_format_v3.md'
+
+markdown_extensions:
+    # Makes permalinks appear on headings
+    - toc:
+        permalink: True
+    # Makes boxes for notes and warnings
+    - admonition
+    # Better highlighter which supports GDScript
+    - codehilite

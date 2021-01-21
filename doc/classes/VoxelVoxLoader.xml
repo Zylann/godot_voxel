@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelVoxLoader" inherits="Reference" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="load_from_file">
+			<return type="int" enum="Error">
+			</return>
+			<argument index="0" name="fpath" type="String">
+			</argument>
+			<argument index="1" name="voxels" type="VoxelBuffer">
+			</argument>
+			<argument index="2" name="arg2" type="VoxelColorPalette">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+	</constants>
+</class>

@@ -22,6 +22,32 @@
 			<description>
 			</description>
 		</method>
+		<method name="bake_sphere_bumpmap">
+			<return type="void">
+			</return>
+			<argument index="0" name="im" type="Image">
+			</argument>
+			<argument index="1" name="ref_radius" type="float">
+			</argument>
+			<argument index="2" name="sdf_min" type="float">
+			</argument>
+			<argument index="3" name="sdf_max" type="float">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="bake_sphere_normalmap">
+			<return type="void">
+			</return>
+			<argument index="0" name="im" type="Image">
+			</argument>
+			<argument index="1" name="ref_radius" type="float">
+			</argument>
+			<argument index="2" name="strength" type="float">
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="can_connect" qualifiers="const">
 			<return type="bool">
 			</return>
@@ -43,7 +69,7 @@
 			</description>
 		</method>
 		<method name="compile">
-			<return type="void">
+			<return type="Dictionary">
 			</return>
 			<description>
 			</description>
@@ -69,6 +95,16 @@
 		<method name="debug_measure_microseconds_per_voxel">
 			<return type="float">
 			</return>
+			<argument index="0" name="use_singular_queries" type="bool">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="find_node_by_name" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="name" type="String">
+			</argument>
 			<description>
 			</description>
 		</method>
@@ -209,6 +245,14 @@
 			</description>
 		</method>
 	</methods>
+	<signals>
+		<signal name="node_name_changed">
+			<argument index="0" name="node_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</signal>
+	</signals>
 	<constants>
 		<constant name="NODE_CONSTANT" value="0" enum="NodeTypeID">
 		</constant>
@@ -278,7 +322,17 @@
 		</constant>
 		<constant name="NODE_SDF_PREVIEW" value="33" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_TYPE_COUNT" value="34" enum="NodeTypeID">
+		<constant name="NODE_NORMALIZE_3D" value="35" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_FAST_NOISE_2D" value="36" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_FAST_NOISE_3D" value="37" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_FAST_NOISE_GRADIENT_2D" value="38" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_FAST_NOISE_GRADIENT_3D" value="39" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_TYPE_COUNT" value="40" enum="NodeTypeID">
 		</constant>
 	</constants>
 </class>

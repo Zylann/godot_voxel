@@ -19,6 +19,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="get_block_size" qualifiers="const">
+			<return type="Vector3">
+			</return>
+			<description>
+			</description>
+		</method>
 		<method name="get_used_channels_mask" qualifiers="const">
 			<return type="int">
 			</return>
@@ -38,6 +44,16 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="save_generator_output" type="bool" setter="set_save_generator_output" getter="get_save_generator_output" default="true">
+		</member>
+	</members>
 	<constants>
+		<constant name="RESULT_ERROR" value="0" enum="Result">
+		</constant>
+		<constant name="RESULT_BLOCK_FOUND" value="2" enum="Result">
+		</constant>
+		<constant name="RESULT_BLOCK_NOT_FOUND" value="1" enum="Result">
+		</constant>
 	</constants>
 </class>

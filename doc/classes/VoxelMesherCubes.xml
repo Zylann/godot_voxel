@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelMesherCubes" inherits="VoxelMesher" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="color_mode" type="int" setter="set_color_mode" getter="get_color_mode" enum="VoxelMesherCubes.ColorMode" default="0">
+		</member>
+		<member name="greedy_meshing_enabled" type="bool" setter="set_greedy_meshing_enabled" getter="is_greedy_meshing_enabled" default="true">
+		</member>
+		<member name="palette" type="VoxelColorPalette" setter="set_palette" getter="get_palette">
+		</member>
+	</members>
+	<constants>
+		<constant name="MATERIAL_OPAQUE" value="0" enum="Materials">
+		</constant>
+		<constant name="MATERIAL_TRANSPARENT" value="1" enum="Materials">
+		</constant>
+		<constant name="MATERIAL_COUNT" value="2" enum="Materials">
+		</constant>
+		<constant name="COLOR_RAW" value="0" enum="ColorMode">
+		</constant>
+		<constant name="COLOR_MESHER_PALETTE" value="1" enum="ColorMode">
+		</constant>
+		<constant name="COLOR_SHADER_PALETTE" value="2" enum="ColorMode">
+		</constant>
+	</constants>
+</class>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelTerrain" inherits="Spatial" version="3.2">
+<class name="VoxelTerrain" inherits="VoxelNode" version="3.2">
 	<brief_description>
 		Voxel volume using constant level of detail.
 	</brief_description>
@@ -58,7 +58,6 @@
 			<return type="void">
 			</return>
 			<argument index="0" name="position" type="Vector3">
-				Position of the block, in block coordinates. Use [method voxel_to_block] to convert from voxel to block coordinates.
 			</argument>
 			<description>
 				Forces a specific block to be saved.
@@ -113,10 +112,6 @@
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
 			Makes the terrain appear in the editor.
 			Important: this option will turn off automatically if you setup a script world generator. Modifying scripts while they are in use by threads causes undefined behaviors. You can still turn on this option if you need a preview, but it is strongly advised to turn it back off and wait until all generation has finished before you edit the script again.
-		</member>
-		<member name="stream" type="VoxelStream" setter="set_stream" getter="get_stream">
-		</member>
-		<member name="voxel_library" type="VoxelLibrary" setter="set_voxel_library" getter="get_voxel_library">
 		</member>
 	</members>
 	<signals>

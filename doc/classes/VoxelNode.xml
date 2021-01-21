@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelNode" inherits="Spatial" version="3.2">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="generator" type="VoxelGenerator" setter="set_generator" getter="get_generator">
+		</member>
+		<member name="mesher" type="VoxelMesher" setter="set_mesher" getter="get_mesher">
+		</member>
+		<member name="stream" type="VoxelStream" setter="set_stream" getter="get_stream">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>
