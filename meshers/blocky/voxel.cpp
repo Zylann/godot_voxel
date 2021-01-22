@@ -231,12 +231,13 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 			uvs[i] = (config.get_cube_tile(side) + uv[i]) * s;
 		}
 
-		if(bake_tangents){
+		if (bake_tangents) {
 			std::vector<float> &tangents = baked_data.model.side_tangents[side];
-		  for (unsigned int i = 0; i < 4; ++i) {
-				for (unsigned int j = 0; j < 4; ++j)
+			for (unsigned int i = 0; i < 4; ++i) {
+				for (unsigned int j = 0; j < 4; ++j) {
 					tangents.push_back(Cube::g_side_tangents[side][j]);
-			 }
+				}
+			}
 		}
 	}
 
@@ -304,10 +305,18 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 		uvs.resize(positions.size());
 	}
 
-	bool tangents_empty = tangents.size() == 0 ? false : true;
+	const bool tangents_empty = (tangents.size() == 0);
+
+#ifdef TOOLS_ENABLED
+	if (tangents_empty && bake_tangents) {
+		WARN_PRINT(String("Voxel model '{0}' with ID {1} does not have tangents. They will be generated."
+						  "You should consider providing a mesh with tangents, or at least UVs and normals, "
+						  "or turn off tangents baking in VoxelLibrary.")
+						   .format(varray(config.get_voxel_name(), config.get_id())));
+	}
+#endif
 
 	// Separate triangles belonging to faces of the cube
-
 	{
 		PoolIntArray::Read indices_read = indices.read();
 		PoolVector3Array::Read positions_read = positions.read();
@@ -328,17 +337,17 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 			tri_positions[1] = positions_read[indices_read[i + 1]];
 			tri_positions[2] = positions_read[indices_read[i + 2]];
 
-			float tangent[4];
+			FixedArray<float, 4> tangent;
 
-			if(tangents_empty && bake_tangents){
+			if (tangents_empty && bake_tangents) {
 				//If tangents are empty then we calculate them
-				Vector2 delta_uv1 = uvs_read[indices_read[i+1]] - uvs_read[indices_read[i]];
-				Vector2 delta_uv2 = uvs_read[indices_read[i+2]] - uvs_read[indices_read[i]];
+				Vector2 delta_uv1 = uvs_read[indices_read[i + 1]] - uvs_read[indices_read[i]];
+				Vector2 delta_uv2 = uvs_read[indices_read[i + 2]] - uvs_read[indices_read[i]];
 				Vector3 delta_pos1 = tri_positions[1] - tri_positions[0];
 				Vector3 delta_pos2 = tri_positions[2] - tri_positions[0];
 				float r = 1.0f / (delta_uv1[0] * delta_uv2[1] - delta_uv1[1] * delta_uv2[0]);
-				Vector3 t = (delta_pos1 * delta_uv2[1] - delta_pos2 * delta_uv1[1])*r;
-				Vector3 bt = (delta_pos2 * delta_uv1[0] - delta_pos1 * delta_uv2[0])*r;
+				Vector3 t = (delta_pos1 * delta_uv2[1] - delta_pos2 * delta_uv1[1]) * r;
+				Vector3 bt = (delta_pos2 * delta_uv1[0] - delta_pos1 * delta_uv2[0]) * r;
 				tangent[0] = t[0];
 				tangent[1] = t[1];
 				tangent[2] = t[2];
@@ -360,18 +369,23 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 						model.side_indices[side].push_back(next_side_index);
 						model.side_positions[side].push_back(tri_positions[j]);
 						model.side_uvs[side].push_back(uvs_read[indices_read[i + j]]);
-						if(tangents_empty && bake_tangents) {
-							model.side_tangents[side].push_back(tangent[0]);
-							model.side_tangents[side].push_back(tangent[1]);
-							model.side_tangents[side].push_back(tangent[2]);
-							model.side_tangents[side].push_back(tangent[3]);
-						}
-						else if(bake_tangents) {
-							int ti = (i / 3) * 4; // i is the first vertex of each triangle which increments in 3s. There are 4 floats per tangent.
-							model.side_tangents[side].push_back(tangents_read[ti]);
-							model.side_tangents[side].push_back(tangents_read[ti+1]);
-							model.side_tangents[side].push_back(tangents_read[ti+2]);
-							model.side_tangents[side].push_back(tangents_read[ti+3]);
+
+						if (bake_tangents) {
+							if (tangents_empty) {
+								model.side_tangents[side].push_back(tangent[0]);
+								model.side_tangents[side].push_back(tangent[1]);
+								model.side_tangents[side].push_back(tangent[2]);
+								model.side_tangents[side].push_back(tangent[3]);
+
+							} else {
+								// i is the first vertex of each triangle which increments by steps of 3.
+								// There are 4 floats per tangent.
+								int ti = (i / 3) * 4;
+								model.side_tangents[side].push_back(tangents_read[ti]);
+								model.side_tangents[side].push_back(tangents_read[ti + 1]);
+								model.side_tangents[side].push_back(tangents_read[ti + 2]);
+								model.side_tangents[side].push_back(tangents_read[ti + 3]);
+							}
 						}
 
 						added_side_indices[side].set(src_index, next_side_index);
@@ -397,19 +411,25 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 						model.positions.push_back(tri_positions[j]);
 						model.normals.push_back(normals_read[indices_read[i + j]]);
 						model.uvs.push_back(uvs_read[indices_read[i + j]]);
-						if(tangents_empty && bake_tangents){
-							model.tangents.push_back(tangent[0]);
-							model.tangents.push_back(tangent[1]);
-							model.tangents.push_back(tangent[2]);
-							model.tangents.push_back(tangent[3]);
+
+						if (bake_tangents) {
+							if (tangents_empty) {
+								model.tangents.push_back(tangent[0]);
+								model.tangents.push_back(tangent[1]);
+								model.tangents.push_back(tangent[2]);
+								model.tangents.push_back(tangent[3]);
+
+							} else {
+								// i is the first vertex of each triangle which increments by steps of 3.
+								// There are 4 floats per tangent.
+								int ti = (i / 3) * 4;
+								model.tangents.push_back(tangents_read[ti]);
+								model.tangents.push_back(tangents_read[ti + 1]);
+								model.tangents.push_back(tangents_read[ti + 2]);
+								model.tangents.push_back(tangents_read[ti + 3]);
+							}
 						}
-						else if(bake_tangents) {
-							int ti = (i / 3) * 4; // i is the first vertex of each triangle which increments in 3s. There are 4 floats per tangent.
-							model.tangents.push_back(tangents_read[ti]);
-							model.tangents.push_back(tangents_read[ti+1]);
-							model.tangents.push_back(tangents_read[ti+2]);
-							model.tangents.push_back(tangents_read[ti+3]);
-						}
+
 						added_regular_indices.set(src_index, next_regular_index);
 						++next_regular_index;
 
@@ -486,7 +506,6 @@ void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &Voxel::get_collision_mask);
 
 	ClassDB::bind_method(D_METHOD("is_empty"), &Voxel::is_empty);
-
 
 	// TODO Update to StringName in Godot 4
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");

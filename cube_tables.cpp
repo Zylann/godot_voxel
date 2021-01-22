@@ -66,6 +66,17 @@ const Vector3i g_side_normals[SIDE_COUNT] = {
 	Vector3i(0, 0, 1), // FRONT
 };
 
+const float g_side_tangents[SIDE_COUNT][4] = {
+	{ 0.f, 0.f, -1.f, 1.f },
+	{ 0.f, 0.f, 1.f, 1.f },
+
+	{ 1.f, 0.f, 0.f, 1.f },
+	{ -1.f, 0.f, 0.f, 1.f },
+
+	{ -1.f, 0.f, 0.f, 1.f },
+	{ 1.f, 0.f, 0.f, 1.f }
+};
+
 // Corners have same winding, relative to the face's normal
 const unsigned int g_side_corners[SIDE_COUNT][4] = {
 	{ 3, 0, 4, 7 },
@@ -197,14 +208,6 @@ const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT] = {
 	Vector3i(-1, 1, 1),
 	Vector3i(0, 1, 1),
 	Vector3i(1, 1, 1)
-};
-
-const float g_side_tangents[SIDE_COUNT][4] = {
-	{0.0f, 0.0f, -1.0f, -1.0f},
-	{0.0f, 0.0f, 1.0f, -1.0f},
-	{1.0f, 0.0f, 0.0f, -1.0f},
-	{-1.0f, 0.0f, 0.0f, -1.0f},
-	{1.0f, 0.0f, 0.0f, -1.0f},
 };
 
 } // namespace Cube

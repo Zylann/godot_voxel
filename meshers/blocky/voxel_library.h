@@ -48,7 +48,7 @@ public:
 	unsigned int get_voxel_count() const;
 	void set_voxel_count(unsigned int type_count);
 
-	bool get_bake_tangents() const { return _bake_tangents;}
+	bool get_bake_tangents() const { return _bake_tangents; }
 	void set_bake_tangents(bool bt);
 
 	void load_default();

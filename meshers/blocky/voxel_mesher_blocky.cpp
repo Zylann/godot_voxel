@@ -229,12 +229,12 @@ static void generate_blocky_mesh(
 							arrays.uvs.resize(arrays.uvs.size() + vertex_count);
 							memcpy(arrays.uvs.data() + append_index, side_uvs.data(), vertex_count * sizeof(Vector2));
 						}
-						{
-							if (side_tangents.size() > 0 ){
-								const int append_index = arrays.tangents.size();
-								arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
-								memcpy(arrays.tangents.data() + append_index, side_tangents.data(), (vertex_count * 4) * sizeof(float));
-							}
+
+						if (side_tangents.size() > 0) {
+							const int append_index = arrays.tangents.size();
+							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
+							memcpy(arrays.tangents.data() + append_index, side_tangents.data(),
+									(vertex_count * 4) * sizeof(float));
 						}
 
 						{
@@ -318,7 +318,8 @@ static void generate_blocky_mesh(
 						if (tangents.size() > 0) {
 							const int append_index = arrays.tangents.size();
 							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
-							memcpy(arrays.tangents.data() + append_index, tangents.data(), (vertex_count * 4) * sizeof(float));
+							memcpy(arrays.tangents.data() + append_index, tangents.data(),
+									(vertex_count * 4) * sizeof(float));
 						}
 
 						for (unsigned int i = 0; i < vertex_count; ++i) {

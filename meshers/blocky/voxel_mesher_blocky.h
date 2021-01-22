@@ -51,7 +51,7 @@ public:
 			uvs.clear();
 			colors.clear();
 			indices.clear();
-      tangents.clear();
+			tangents.clear();
 		}
 	};
 

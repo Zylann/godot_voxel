@@ -131,7 +131,7 @@ public:
 	Ref<Resource> duplicate(bool p_subresources) const override;
 
 	//------------------------------------------
-	// Properties for native usage only
+	// Properties for internal usage only
 
 	void bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents);
 
@@ -173,7 +173,6 @@ private:
 	bool _random_tickable = false;
 	bool _empty = true;
 	uint32_t _collision_mask = 1;
-
 };
 
 VARIANT_ENUM_CAST(Voxel::GeometryType)
