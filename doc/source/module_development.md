@@ -154,7 +154,7 @@ void some_function() {
 }
 ```
 
-// To profile part of a function:
+To profile part of a function:
 ```cpp
 void some_function() {
     // Some code...
