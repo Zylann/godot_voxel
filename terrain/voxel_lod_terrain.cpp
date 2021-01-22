@@ -64,8 +64,8 @@ static inline void schedule_mesh_update(VoxelBlock *block, std::vector<Vector3i>
 }
 
 struct BeforeUnloadAction {
-	std::vector<Ref<ShaderMaterial> > shader_material_pool;
-	std::vector<VoxelLodTerrain::BlockToSave> blocks_to_save;
+	std::vector<Ref<ShaderMaterial> > &shader_material_pool;
+	std::vector<VoxelLodTerrain::BlockToSave> &blocks_to_save;
 
 	void operator()(VoxelBlock *block) {
 		// Recycle material
@@ -90,7 +90,7 @@ struct BeforeUnloadAction {
 };
 
 struct ScheduleSaveAction {
-	std::vector<VoxelLodTerrain::BlockToSave> blocks_to_save;
+	std::vector<VoxelLodTerrain::BlockToSave> &blocks_to_save;
 
 	void operator()(VoxelBlock *block) {
 		// Save if modified
