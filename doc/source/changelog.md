@@ -36,6 +36,7 @@ Ongoing development - `master`
     - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support
     - Replaced `transparent` property with `transparency_index` for more control on the culling of transparent faces
     - The TYPE channel is now 16-bit by default instead of 8-bit, allowing to store up to 65,536 types (part of this channel might actually be used to store rotation in the future)
+    - Added normalmaps support
 
 - Breaking changes
     - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points
