@@ -3,9 +3,9 @@ Voxel Tools for Godot
 
 A C++ module for creating volumetric worlds in Godot Engine.
 
-![Blocky screenshot](doc/docs/images/blocky_screenshot.png)
-![Smooth screenshot](doc/docs/images/smooth_screenshot.png)
-![Textured screenshot](doc/docs/images/textured-terrain.jpg)
+![Blocky screenshot](doc/source/images/blocky_screenshot.png)
+![Smooth screenshot](doc/source/images/smooth_screenshot.png)
+![Textured screenshot](doc/source/images/textured-terrain.jpg)
 
 Features
 ---------------------------
