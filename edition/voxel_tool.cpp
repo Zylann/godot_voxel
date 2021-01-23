@@ -142,7 +142,7 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 
 		case VoxelTool::MODE_REMOVE:
 			// Relative complement (or difference)
-			res = max(1.f - src_value, dst_value);
+			res = max(-src_value, dst_value);
 			break;
 
 		case VoxelTool::MODE_SET:
