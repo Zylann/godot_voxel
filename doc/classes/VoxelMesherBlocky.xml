@@ -9,49 +9,15 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="get_library" qualifiers="const">
-			<return type="VoxelLibrary">
-			</return>
-			<description>
-			</description>
-		</method>
-		<method name="get_occlusion_darkness" qualifiers="const">
-			<return type="float">
-			</return>
-			<description>
-			</description>
-		</method>
-		<method name="get_occlusion_enabled" qualifiers="const">
-			<return type="bool">
-			</return>
-			<description>
-			</description>
-		</method>
-		<method name="set_library">
-			<return type="void">
-			</return>
-			<argument index="0" name="voxel_library" type="VoxelLibrary">
-			</argument>
-			<description>
-			</description>
-		</method>
-		<method name="set_occlusion_darkness">
-			<return type="void">
-			</return>
-			<argument index="0" name="value" type="float">
-			</argument>
-			<description>
-			</description>
-		</method>
-		<method name="set_occlusion_enabled">
-			<return type="void">
-			</return>
-			<argument index="0" name="enable" type="bool">
-			</argument>
-			<description>
-			</description>
-		</method>
 	</methods>
+	<members>
+		<member name="library" type="VoxelLibrary" setter="set_library" getter="get_library">
+		</member>
+		<member name="occlusion_darkness" type="float" setter="set_occlusion_darkness" getter="get_occlusion_darkness" default="0.8">
+		</member>
+		<member name="occlusion_enabled" type="bool" setter="set_occlusion_enabled" getter="get_occlusion_enabled" default="true">
+		</member>
+	</members>
 	<constants>
 	</constants>
 </class>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelStreamScript" inherits="VoxelStream" version="3.2">
+	<brief_description>
+		Base class for custom streams defined with a script.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_emerge_block" qualifiers="virtual">
+			<return type="void">
+			</return>
+			<argument index="0" name="out_buffer" type="VoxelBuffer">
+			</argument>
+			<argument index="1" name="origin_in_voxels" type="Vector3">
+			</argument>
+			<argument index="2" name="lod" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="_get_used_channels_mask" qualifiers="virtual">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="_immerge_block" qualifiers="virtual">
+			<return type="void">
+			</return>
+			<argument index="0" name="buffer" type="VoxelBuffer">
+			</argument>
+			<argument index="1" name="origin_in_voxels" type="Vector3">
+			</argument>
+			<argument index="2" name="lod" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+	</constants>
+</class>

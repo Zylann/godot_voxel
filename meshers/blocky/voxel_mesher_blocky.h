@@ -43,6 +43,7 @@ public:
 		std::vector<Vector2> uvs;
 		std::vector<Color> colors;
 		std::vector<int> indices;
+		std::vector<float> tangents;
 
 		void clear() {
 			positions.clear();
@@ -50,6 +51,7 @@ public:
 			uvs.clear();
 			colors.clear();
 			indices.clear();
+			tangents.clear();
 		}
 	};
 

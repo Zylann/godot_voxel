@@ -68,6 +68,7 @@ extern const int g_side_quad_triangles[SIDE_COUNT][6];
 //extern const unsigned int g_side_sign[SIDE_COUNT];
 
 extern const Vector3i g_side_normals[SIDE_COUNT];
+extern const float g_side_tangents[SIDE_COUNT][4];
 
 extern const unsigned int g_side_corners[SIDE_COUNT][4];
 extern const unsigned int g_side_edges[SIDE_COUNT][4];

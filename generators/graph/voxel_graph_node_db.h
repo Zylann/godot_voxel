@@ -57,6 +57,9 @@ public:
 		std::vector<Param> params;
 		HashMap<String, uint32_t> param_name_to_index;
 		HashMap<String, uint32_t> input_name_to_index;
+		VoxelGraphRuntime::CompileFunc compile_func = nullptr;
+		VoxelGraphRuntime::ProcessBufferFunc process_buffer_func = nullptr;
+		VoxelGraphRuntime::RangeAnalysisFunc range_analysis_func = nullptr;
 	};
 
 	VoxelGraphNodeDB();

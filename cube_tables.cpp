@@ -66,6 +66,17 @@ const Vector3i g_side_normals[SIDE_COUNT] = {
 	Vector3i(0, 0, 1), // FRONT
 };
 
+const float g_side_tangents[SIDE_COUNT][4] = {
+	{ 0.f, 0.f, -1.f, 1.f },
+	{ 0.f, 0.f, 1.f, 1.f },
+
+	{ 1.f, 0.f, 0.f, 1.f },
+	{ -1.f, 0.f, 0.f, 1.f },
+
+	{ -1.f, 0.f, 0.f, 1.f },
+	{ 1.f, 0.f, 0.f, 1.f }
+};
+
 // Corners have same winding, relative to the face's normal
 const unsigned int g_side_corners[SIDE_COUNT][4] = {
 	{ 3, 0, 4, 7 },

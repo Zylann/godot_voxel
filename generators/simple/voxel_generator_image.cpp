@@ -4,11 +4,11 @@
 
 namespace {
 
-inline float get_height_repeat(Image &im, int x, int y) {
+inline float get_height_repeat(const Image &im, int x, int y) {
 	return im.get_pixel(wrap(x, im.get_width()), wrap(y, im.get_height())).r;
 }
 
-inline float get_height_blurred(Image &im, int x, int y) {
+inline float get_height_blurred(const Image &im, int x, int y) {
 	float h = get_height_repeat(im, x, y);
 	h += get_height_repeat(im, x + 1, y);
 	h += get_height_repeat(im, x - 1, y);
@@ -20,10 +20,35 @@ inline float get_height_blurred(Image &im, int x, int y) {
 } // namespace
 
 VoxelGeneratorImage::VoxelGeneratorImage() {
+	_parameters_lock = RWLock::create();
+}
+
+VoxelGeneratorImage::~VoxelGeneratorImage() {
+	memdelete(_parameters_lock);
+	if (_parameters.image.is_valid()) {
+		_parameters.image->unlock();
+	}
 }
 
 void VoxelGeneratorImage::set_image(Ref<Image> im) {
+	if (im == _image) {
+		return;
+	}
 	_image = im;
+	Ref<Image> copy;
+	if (im.is_valid()) {
+		copy = im->duplicate();
+	}
+	RWLockWrite wlock(_parameters_lock);
+	// lock() prevents us from reading the same image from multiple threads, so we lock it up-front.
+	// This might no longer be needed in Godot 4.
+	if (_parameters.image.is_valid()) {
+		_parameters.image->unlock();
+	}
+	_parameters.image = copy;
+	if (_parameters.image.is_valid()) {
+		_parameters.image->lock();
+	}
 }
 
 Ref<Image> VoxelGeneratorImage::get_image() const {
@@ -31,23 +56,28 @@ Ref<Image> VoxelGeneratorImage::get_image() const {
 }
 
 void VoxelGeneratorImage::set_blur_enabled(bool enable) {
-	_blur_enabled = enable;
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.blur_enabled = enable;
 }
 
 bool VoxelGeneratorImage::is_blur_enabled() const {
-	return _blur_enabled;
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.blur_enabled;
 }
 
 void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
-
-	ERR_FAIL_COND(_image.is_null());
-
 	VoxelBuffer &out_buffer = **input.voxel_buffer;
-	Image &image = **_image;
 
-	image.lock();
+	Parameters params;
+	{
+		RWLockRead rlock(_parameters_lock);
+		params = _parameters;
+	}
 
-	if (_blur_enabled) {
+	ERR_FAIL_COND(params.image.is_null());
+	const Image &image = **params.image;
+
+	if (params.blur_enabled) {
 		VoxelGeneratorHeightmap::generate(
 				out_buffer,
 				[&image](int x, int z) { return get_height_blurred(image, x, z); },
@@ -59,13 +89,10 @@ void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
 				input.origin_in_voxels, input.lod);
 	}
 
-	image.unlock();
-
 	out_buffer.compress_uniform_channels();
 }
 
 void VoxelGeneratorImage::_bind_methods() {
-
 	ClassDB::bind_method(D_METHOD("set_image", "image"), &VoxelGeneratorImage::set_image);
 	ClassDB::bind_method(D_METHOD("get_image"), &VoxelGeneratorImage::get_image);
 

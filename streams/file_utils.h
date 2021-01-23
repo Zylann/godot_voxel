@@ -36,6 +36,7 @@ inline void store_vec3u32(FileAccess *f, const Vector3i v) {
 enum VoxelFileResult {
 	VOXEL_FILE_OK = 0,
 	VOXEL_FILE_CANT_OPEN,
+	VOXEL_FILE_DOES_NOT_EXIST,
 	VOXEL_FILE_UNEXPECTED_EOF,
 	VOXEL_FILE_INVALID_MAGIC,
 	VOXEL_FILE_INVALID_VERSION,

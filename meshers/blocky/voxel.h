@@ -29,12 +29,14 @@ public:
 			std::vector<Vector3> normals;
 			std::vector<Vector2> uvs;
 			std::vector<int> indices;
+			std::vector<float> tangents;
 			// Model sides:
 			// They are separated because this way we can occlude them easily.
 			// Due to these defining cube side triangles, normals are known already.
 			FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> side_positions;
 			FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> side_uvs;
 			FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
+			FixedArray<std::vector<float>, Cube::SIDE_COUNT> side_tangents;
 
 			FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
 
@@ -43,11 +45,13 @@ public:
 				normals.clear();
 				uvs.clear();
 				indices.clear();
+				tangents.clear();
 
 				for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
 					side_positions[side].clear();
 					side_uvs[side].clear();
 					side_indices[side].clear();
+					side_tangents[side].clear();
 				}
 			}
 		};
@@ -127,9 +131,9 @@ public:
 	Ref<Resource> duplicate(bool p_subresources) const override;
 
 	//------------------------------------------
-	// Properties for native usage only
+	// Properties for internal usage only
 
-	void bake(BakedData &baked_data, int p_atlas_size);
+	void bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents);
 
 	const std::vector<AABB> &get_collision_aabbs() const { return _collision_aabbs; }
 

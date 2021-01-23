@@ -31,13 +31,10 @@
 			<argument index="0" name="peer" type="StreamPeer">
 			</argument>
 			<argument index="1" name="voxel_buffer" type="VoxelBuffer">
-				Buffer into which the data will be written. Its size and formats will determine what is expected from the deserialized data.
 			</argument>
 			<argument index="2" name="size" type="int">
-				How many bytes to read
 			</argument>
 			<argument index="3" name="decompress" type="bool">
-				If the data to read was compressed, you should set this boolean to true so it will be decompressed.
 			</argument>
 			<description>
 				Reads the data of a [VoxelBuffer] from a [StreamPeer]. You must provide the number of bytes to read, and the destination buffer must have the expected size.
@@ -45,18 +42,15 @@
 		</method>
 		<method name="serialize">
 			<return type="int">
-				Number of bytes written.
 			</return>
 			<argument index="0" name="peer" type="StreamPeer">
 			</argument>
 			<argument index="1" name="voxel_buffer" type="VoxelBuffer">
-				Voxels to serialize.
 			</argument>
 			<argument index="2" name="compress" type="bool">
-				If true, the data will be compressed. It has a small CPU cost, but the written data will occuppy less space.
 			</argument>
 			<description>
-				Stores the data of a [VoxelBuffer] into a [StreamPeer]. To be able to read it back, you should use the 
+				Stores the data of a [VoxelBuffer] into a [StreamPeer]. To be able to read it back, you should use the
 			</description>
 		</method>
 	</methods>

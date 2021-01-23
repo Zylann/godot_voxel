@@ -161,6 +161,10 @@ inline Interval sqrt(const Interval &i) {
 	};
 }
 
+inline Interval squared(const Interval a) {
+	return a * a;
+}
+
 inline Interval abs(const Interval &i) {
 	return Interval{
 		i.contains(0) ? 0 : ::min(Math::abs(i.min), Math::abs(i.max)),
@@ -299,6 +303,11 @@ inline Interval atan2(const Interval &y, const Interval &x, OptionalInterval *se
 inline Interval floor(const Interval &i) {
 	// Floor is monotonic so I guess we can just do that?
 	return Interval(Math::floor(i.min), Math::floor(i.max));
+}
+
+inline Interval round(const Interval &i) {
+	// Floor is monotonic so I guess we can just do that?
+	return Interval(Math::floor(i.min + 0.5f), Math::floor(i.max + 0.5f));
 }
 
 inline Interval stepify(const Interval &p_value, const Interval &p_step) {

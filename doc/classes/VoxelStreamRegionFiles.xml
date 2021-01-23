@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelStreamRegionFiles" inherits="VoxelStreamFile" version="3.2">
 	<brief_description>
+		Loads and saves blocks to region files indexed by world position, under a directory.
 	</brief_description>
 	<description>
+		Loads and saves blocks to the filesystem, in multiple region files indexed by world position, under a directory. Regions pack many blocks together, so it reduces file switching and improves performance. Inspired by [url=https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game]Seed of Andromeda[/url] and Minecraft.
+		Region files are not thread-safe. Because of this, internal mutexing may often constrain the use by one thread only.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -32,6 +35,7 @@
 		<member name="block_size_po2" type="int" setter="set_block_size_po2" getter="get_region_size_po2" default="4">
 		</member>
 		<member name="directory" type="String" setter="set_directory" getter="get_directory" default="&quot;&quot;">
+			Directory under which the data is saved.
 		</member>
 		<member name="lod_count" type="int" setter="set_lod_count" getter="get_lod_count" default="1">
 		</member>

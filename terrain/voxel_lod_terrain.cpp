@@ -65,8 +65,8 @@ static inline void schedule_mesh_update(VoxelBlock *block, std::vector<Vector3i>
 }
 
 struct BeforeUnloadAction {
-	std::vector<Ref<ShaderMaterial> > shader_material_pool;
-	std::vector<VoxelLodTerrain::BlockToSave> blocks_to_save;
+	std::vector<Ref<ShaderMaterial> > &shader_material_pool;
+	std::vector<VoxelLodTerrain::BlockToSave> &blocks_to_save;
 
 	void operator()(VoxelBlock *block) {
 		// Recycle material
@@ -91,7 +91,7 @@ struct BeforeUnloadAction {
 };
 
 struct ScheduleSaveAction {
-	std::vector<VoxelLodTerrain::BlockToSave> blocks_to_save;
+	std::vector<VoxelLodTerrain::BlockToSave> &blocks_to_save;
 
 	void operator()(VoxelBlock *block) {
 		// Save if modified
@@ -172,10 +172,6 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 	_material = p_material;
 }
 
-Ref<VoxelStream> VoxelLodTerrain::get_stream() const {
-	return _stream;
-}
-
 unsigned int VoxelLodTerrain::get_block_size() const {
 	return _lods[0].map.get_block_size();
 }
@@ -194,7 +190,8 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 #ifdef TOOLS_ENABLED
 	if (_stream.is_valid()) {
 		if (Engine::get_singleton()->is_editor_hint()) {
-			if (_stream->has_script()) {
+			Ref<Script> script = _stream->get_script();
+			if (script.is_valid()) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_run_stream_in_editor = false;
@@ -207,8 +204,36 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 	_on_stream_params_changed();
 }
 
-Ref<VoxelMesher> VoxelLodTerrain::get_mesher() const {
-	return _mesher;
+Ref<VoxelStream> VoxelLodTerrain::get_stream() const {
+	return _stream;
+}
+
+void VoxelLodTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
+	if (p_generator == _generator) {
+		return;
+	}
+
+	_generator = p_generator;
+
+#ifdef TOOLS_ENABLED
+	if (_generator.is_valid()) {
+		if (Engine::get_singleton()->is_editor_hint()) {
+			Ref<Script> script = _generator->get_script();
+			if (script.is_valid()) {
+				// Safety check. It's too easy to break threads by making a script reload.
+				// You can turn it back on, but be careful.
+				_run_stream_in_editor = false;
+				_change_notify();
+			}
+		}
+	}
+#endif
+
+	_on_stream_params_changed();
+}
+
+Ref<VoxelGenerator> VoxelLodTerrain::get_generator() const {
+	return _generator;
 }
 
 void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
@@ -228,16 +253,19 @@ void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
 	update_configuration_warning();
 }
 
+Ref<VoxelMesher> VoxelLodTerrain::get_mesher() const {
+	return _mesher;
+}
+
 void VoxelLodTerrain::_on_stream_params_changed() {
 	stop_streamer();
 	stop_updater();
 
-	Ref<VoxelStreamFile> file_stream = _stream;
-	if (file_stream.is_valid()) {
-		const int stream_block_size_po2 = file_stream->get_block_size_po2();
+	if (_stream.is_valid()) {
+		const int stream_block_size_po2 = _stream->get_block_size_po2();
 		_set_block_size_po2(stream_block_size_po2);
 
-		const int stream_lod_count = file_stream->get_lod_count();
+		const int stream_lod_count = _stream->get_lod_count();
 		_set_lod_count(min(stream_lod_count, get_lod_count()));
 	}
 
@@ -245,7 +273,8 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 
 	reset_maps();
 
-	if (_stream.is_valid() && (!Engine::get_singleton()->is_editor_hint() || _run_stream_in_editor)) {
+	if ((_stream.is_valid() || _generator.is_valid()) &&
+			(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
 		start_streamer();
 		start_updater();
 	}
@@ -356,10 +385,12 @@ void VoxelLodTerrain::stop_updater() {
 
 void VoxelLodTerrain::start_streamer() {
 	VoxelServer::get_singleton()->set_volume_stream(_volume_id, _stream);
+	VoxelServer::get_singleton()->set_volume_generator(_volume_id, _generator);
 }
 
 void VoxelLodTerrain::stop_streamer() {
 	VoxelServer::get_singleton()->set_volume_stream(_volume_id, Ref<VoxelStream>());
+	VoxelServer::get_singleton()->set_volume_generator(_volume_id, Ref<VoxelGenerator>());
 
 	for (unsigned int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
@@ -1052,8 +1083,11 @@ void VoxelLodTerrain::_process() {
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
 
+	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
+								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
+
 	// It's possible the user didn't set a stream yet, or it is turned off
-	if (_stream.is_valid() && (Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
+	if (stream_enabled) {
 		send_block_data_requests();
 	}
 
@@ -1291,7 +1325,7 @@ void VoxelLodTerrain::_process() {
 			shift_up(_reception_buffers.mesh_output, queue_index);
 		}
 
-		_stats.pending_block_meshes = (int)_reception_buffers.mesh_output.size();
+		_stats.remaining_main_thread_blocks = (int)_reception_buffers.mesh_output.size();
 	}
 
 	_stats.time_process_update_responses = profiling_clock.restart();
@@ -1553,7 +1587,7 @@ Dictionary VoxelLodTerrain::_b_get_statistics() const {
 	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
 	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
-	d["pending_block_meshes"] = _stats.pending_block_meshes;
+	d["remaining_main_thread_blocks"] = _stats.remaining_main_thread_blocks;
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;

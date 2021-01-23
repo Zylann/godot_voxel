@@ -187,7 +187,7 @@ void Voxel::set_collision_mask(uint32_t mask) {
 	_collision_mask = mask;
 }
 
-static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int p_atlas_size) {
+static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int p_atlas_size, bool bake_tangents) {
 	const float sy = 1.0;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
@@ -230,12 +230,21 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 		for (unsigned int i = 0; i < 4; ++i) {
 			uvs[i] = (config.get_cube_tile(side) + uv[i]) * s;
 		}
+
+		if (bake_tangents) {
+			std::vector<float> &tangents = baked_data.model.side_tangents[side];
+			for (unsigned int i = 0; i < 4; ++i) {
+				for (unsigned int j = 0; j < 4; ++j) {
+					tangents.push_back(Cube::g_side_tangents[side][j]);
+				}
+			}
+		}
 	}
 
 	baked_data.empty = false;
 }
 
-static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
+static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool bake_tangents) {
 	Ref<Mesh> mesh = config.get_custom_mesh();
 
 	if (mesh.is_null()) {
@@ -253,6 +262,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 	PoolVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
 	PoolVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
 	PoolVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
+	PoolVector<float> tangents = arrays[Mesh::ARRAY_TANGENT];
 
 	baked_data.empty = positions.size() == 0;
 
@@ -295,13 +305,24 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 		uvs.resize(positions.size());
 	}
 
-	// Separate triangles belonging to faces of the cube
+	const bool tangents_empty = (tangents.size() == 0);
 
+#ifdef TOOLS_ENABLED
+	if (tangents_empty && bake_tangents) {
+		WARN_PRINT(String("Voxel model '{0}' with ID {1} does not have tangents. They will be generated."
+						  "You should consider providing a mesh with tangents, or at least UVs and normals, "
+						  "or turn off tangents baking in VoxelLibrary.")
+						   .format(varray(config.get_voxel_name(), config.get_id())));
+	}
+#endif
+
+	// Separate triangles belonging to faces of the cube
 	{
 		PoolIntArray::Read indices_read = indices.read();
 		PoolVector3Array::Read positions_read = positions.read();
 		PoolVector3Array::Read normals_read = normals.read();
 		PoolVector2Array::Read uvs_read = uvs.read();
+		PoolVector<float>::Read tangents_read = tangents.read();
 
 		FixedArray<HashMap<int, int>, Cube::SIDE_COUNT> added_side_indices;
 		HashMap<int, int> added_regular_indices;
@@ -315,6 +336,23 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 			tri_positions[0] = positions_read[indices_read[i]];
 			tri_positions[1] = positions_read[indices_read[i + 1]];
 			tri_positions[2] = positions_read[indices_read[i + 2]];
+
+			FixedArray<float, 4> tangent;
+
+			if (tangents_empty && bake_tangents) {
+				//If tangents are empty then we calculate them
+				Vector2 delta_uv1 = uvs_read[indices_read[i + 1]] - uvs_read[indices_read[i]];
+				Vector2 delta_uv2 = uvs_read[indices_read[i + 2]] - uvs_read[indices_read[i]];
+				Vector3 delta_pos1 = tri_positions[1] - tri_positions[0];
+				Vector3 delta_pos2 = tri_positions[2] - tri_positions[0];
+				float r = 1.0f / (delta_uv1[0] * delta_uv2[1] - delta_uv1[1] * delta_uv2[0]);
+				Vector3 t = (delta_pos1 * delta_uv2[1] - delta_pos2 * delta_uv1[1]) * r;
+				Vector3 bt = (delta_pos2 * delta_uv1[0] - delta_pos1 * delta_uv2[0]) * r;
+				tangent[0] = t[0];
+				tangent[1] = t[1];
+				tangent[2] = t[2];
+				tangent[3] = (bt.dot(normals_read[indices_read[i]].cross(t))) < 0 ? -1.0f : 1.0f;
+			}
 
 			if (L::get_triangle_side(tri_positions[0], tri_positions[1], tri_positions[2], side)) {
 				// That triangle is on the face
@@ -331,6 +369,24 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 						model.side_indices[side].push_back(next_side_index);
 						model.side_positions[side].push_back(tri_positions[j]);
 						model.side_uvs[side].push_back(uvs_read[indices_read[i + j]]);
+
+						if (bake_tangents) {
+							if (tangents_empty) {
+								model.side_tangents[side].push_back(tangent[0]);
+								model.side_tangents[side].push_back(tangent[1]);
+								model.side_tangents[side].push_back(tangent[2]);
+								model.side_tangents[side].push_back(tangent[3]);
+
+							} else {
+								// i is the first vertex of each triangle which increments by steps of 3.
+								// There are 4 floats per tangent.
+								int ti = (i / 3) * 4;
+								model.side_tangents[side].push_back(tangents_read[ti]);
+								model.side_tangents[side].push_back(tangents_read[ti + 1]);
+								model.side_tangents[side].push_back(tangents_read[ti + 2]);
+								model.side_tangents[side].push_back(tangents_read[ti + 3]);
+							}
+						}
 
 						added_side_indices[side].set(src_index, next_side_index);
 						++next_side_index;
@@ -356,6 +412,24 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 						model.normals.push_back(normals_read[indices_read[i + j]]);
 						model.uvs.push_back(uvs_read[indices_read[i + j]]);
 
+						if (bake_tangents) {
+							if (tangents_empty) {
+								model.tangents.push_back(tangent[0]);
+								model.tangents.push_back(tangent[1]);
+								model.tangents.push_back(tangent[2]);
+								model.tangents.push_back(tangent[3]);
+
+							} else {
+								// i is the first vertex of each triangle which increments by steps of 3.
+								// There are 4 floats per tangent.
+								int ti = (i / 3) * 4;
+								model.tangents.push_back(tangents_read[ti]);
+								model.tangents.push_back(tangents_read[ti + 1]);
+								model.tangents.push_back(tangents_read[ti + 2]);
+								model.tangents.push_back(tangents_read[ti + 3]);
+							}
+						}
+
 						added_regular_indices.set(src_index, next_regular_index);
 						++next_regular_index;
 
@@ -368,7 +442,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data) {
 	}
 }
 
-void Voxel::bake(BakedData &baked_data, int p_atlas_size) {
+void Voxel::bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents) {
 	baked_data.clear();
 
 	// baked_data.contributes_to_ao is set by the side culling phase
@@ -382,11 +456,11 @@ void Voxel::bake(BakedData &baked_data, int p_atlas_size) {
 			break;
 
 		case GEOMETRY_CUBE:
-			bake_cube_geometry(*this, baked_data, p_atlas_size);
+			bake_cube_geometry(*this, baked_data, p_atlas_size, bake_tangents);
 			break;
 
 		case GEOMETRY_CUSTOM_MESH:
-			bake_mesh_geometry(*this, baked_data);
+			bake_mesh_geometry(*this, baked_data, bake_tangents);
 			break;
 
 		default:

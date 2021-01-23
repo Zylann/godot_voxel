@@ -9,6 +9,7 @@ class VoxelGeneratorNoise : public VoxelGenerator {
 
 public:
 	VoxelGeneratorNoise();
+	~VoxelGeneratorNoise();
 
 	void set_channel(VoxelBuffer::ChannelId channel);
 	VoxelBuffer::ChannelId get_channel() const;
@@ -29,10 +30,17 @@ protected:
 	static void _bind_methods();
 
 private:
-	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
 	Ref<OpenSimplexNoise> _noise;
-	float _height_start = 0;
-	float _height_range = 300;
+
+	struct Parameters {
+		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
+		Ref<OpenSimplexNoise> noise;
+		float height_start = 0;
+		float height_range = 300;
+	};
+
+	Parameters _parameters;
+	RWLock *_parameters_lock;
 };
 
 #endif // VOXEL_GENERATOR_NOISE_H

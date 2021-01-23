@@ -331,7 +331,8 @@ const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize_and_compress
 	return _compressed_data;
 }
 
-bool VoxelBlockSerializerInternal::decompress_and_deserialize(const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer) {
+bool VoxelBlockSerializerInternal::decompress_and_deserialize(
+		const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 	// Read header
 	unsigned int header_size = sizeof(unsigned int);
@@ -356,12 +357,19 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(const std::vector<
 	return deserialize(_data, out_voxel_buffer);
 }
 
-bool VoxelBlockSerializerInternal::decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBuffer &out_voxel_buffer) {
+bool VoxelBlockSerializerInternal::decompress_and_deserialize(
+		FileAccess *f, unsigned int size_to_read, VoxelBuffer &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(f == nullptr, false);
 
+#if defined(TOOLS_ENABLED) || defined(DEBUG_ENABLED)
+	const size_t fpos = f->get_position();
+	const size_t remaining_file_size = f->get_len() - fpos;
+	ERR_FAIL_COND_V(size_to_read > remaining_file_size, false);
+#endif
+
 	_compressed_data.resize(size_to_read);
-	unsigned int read_size = f->get_buffer(_compressed_data.data(), size_to_read);
+	const unsigned int read_size = f->get_buffer(_compressed_data.data(), size_to_read);
 	ERR_FAIL_COND_V(read_size != size_to_read, false);
 
 	return decompress_and_deserialize(_compressed_data, out_voxel_buffer);
@@ -380,7 +388,9 @@ int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, Ref<VoxelBuffe
 	}
 }
 
-void VoxelBlockSerializerInternal::deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress) {
+void VoxelBlockSerializerInternal::deserialize(
+		Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress) {
+
 	if (decompress) {
 		_compressed_data.resize(size);
 		const Error err = peer->get_data(_compressed_data.data(), _compressed_data.size());
@@ -395,6 +405,8 @@ void VoxelBlockSerializerInternal::deserialize(Ref<StreamPeer> peer, Ref<VoxelBu
 		deserialize(_data, **voxel_buffer);
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int VoxelBlockSerializer::serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress) {
 	ERR_FAIL_COND_V(voxel_buffer.is_null(), 0);
@@ -411,5 +423,6 @@ void VoxelBlockSerializer::deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> vo
 
 void VoxelBlockSerializer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("serialize", "peer", "voxel_buffer", "compress"), &VoxelBlockSerializer::serialize);
-	ClassDB::bind_method(D_METHOD("deserialize", "peer", "voxel_buffer", "size", "decompress"), &VoxelBlockSerializer::deserialize);
+	ClassDB::bind_method(D_METHOD("deserialize", "peer", "voxel_buffer", "size", "decompress"),
+			&VoxelBlockSerializer::deserialize);
 }

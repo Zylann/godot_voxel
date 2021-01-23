@@ -1,0 +1,72 @@
+Quick start
+==============
+
+Demo projects
+------------------
+
+Now that your Godot Engine has voxel support built in, you can either download one of the demos and start playing around with them:
+
+- [Zylann's demos](https://github.com/Zylann/voxelgame)
+- [TinmanJuggernaut's fps_demo](https://github.com/tinmanjuggernaut/voxelgame)
+
+Videos
+--------
+
+You can watch some of the video tutorials available (they might come out of date!):
+
+- [How To Make Voxel Terrains In Godot (by Tokisan Games)](https://www.youtube.com/watch?v=zfzmcbR1H_0) (4 Nov 2019)
+- [Godot Voxel Tools (by Gamesfromscratch)](https://www.youtube.com/watch?v=WxZK_Yg5kU0) (25 Jul 2020)
+
+
+Short recipes
+---------------
+
+The following sections contain basic quick start instructions to get voxel terrains running.
+For more in-depth information, see the rest of the documentation.
+
+### Blocky heightmap terrain using `VoxelTerrain`
+
+1) Create a new project and a new 3D scene. Give it some light by adding a `DirectionalLight` node, and orientate it so it shines approximately downwards. You can enable `Shadows` too.
+
+2) Add a `VoxelTerrain` node, and adjust the following settings in the inspector:
+	2.1) Under the `materials` section, create a new `SpatialMaterial` in the first slot. Then click on it and enable the `vertex_color_as_albedo` option. This will give the blocks better shading.
+	2.1) `Generator`: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`.
+	2.2) `Mesher`: create a new `VoxelMesherBlocky`.
+
+3) At this point you should start to see a terrain made of cubes appear in the editor viewport. If you can't see anything, you can force a reload by reopening the scene, or using the menu `Terrain -> Re-generate`.
+
+4) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
+
+5) Add a `VoxelViewer` node under the camera. When the game runs, this node will tell the voxel engine where to generate voxels, as the camera moves around.
+
+6) Play the scene: you should see the terrain appear!
+
+![Screenshot of blocky terrain from the quick start guide](images/default-terrain.jpg)
+
+You can modify the shape of the terrain by changing noise parameters under the generator. 
+
+`VoxelMesherBlocky` allows to specify way more than just white cubes: you can define multiple models, with varying textures, materials and shapes, in order to compose a world like you would see in Minecraft for example.
+
+
+### Large smooth world using `VoxelLODTerrain`
+
+1) Create a new project and a new 3D scene. Give it some light by adding a `DirectionalLight` node, and orientate it so it shines approximately downwards. You can enable `Shadows` too.
+
+2) Add a `VoxelLODTerrain` node, and adjust the following settings in the inspector:
+	2.1) `Generator`: create a new `VoxelGeneratorNoise3D`. Then click on it and set its `Channel` parameter to `SDF`.
+	2.2) `Mesher`: create a new `VoxelMesherTransvoxel`.
+
+3) At this point you should start to see a smooth, spongy terrain appear in the editor viewport. If you can't see anything, you can force a reload by reopening the scene, or using the menu `Terrain -> Re-generate`.
+
+4) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
+
+5) Add a `VoxelViewer` node under the camera. When the game runs, this node will tell the voxel engine where to generate voxels, as the camera moves around.
+
+6) Play the scene: you should see the terrain appear!
+
+![Screenshot of smooth terrain from the quick start guide](images/noise-terrain-default.jpg)
+
+You can modify the shape of the terrain by changing noise parameters under the generator. 
+
+Painting textures manually is not supported yet, but it's possible to apply procedural textures using a shader.
+

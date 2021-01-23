@@ -47,6 +47,7 @@ protected:
 	void set_padding(int minimum, int maximum);
 
 private:
+	// Set in constructor and never changed after.
 	unsigned int _minimum_padding = 0;
 	unsigned int _maximum_padding = 0;
 };

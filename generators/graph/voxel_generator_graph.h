@@ -4,6 +4,7 @@
 #include "../voxel_generator.h"
 #include "program_graph.h"
 #include "voxel_graph_runtime.h"
+#include <memory>
 
 class VoxelGeneratorGraph : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorGraph, VoxelGenerator)
@@ -47,6 +48,10 @@ public:
 		NODE_SDF_PREVIEW, // For debugging
 		NODE_SDF_SPHERE_HEIGHTMAP,
 		NODE_NORMALIZE_3D,
+		NODE_FAST_NOISE_2D,
+		NODE_FAST_NOISE_3D,
+		NODE_FAST_NOISE_GRADIENT_2D,
+		NODE_FAST_NOISE_GRADIENT_3D,
 		NODE_TYPE_COUNT
 	};
 
@@ -54,6 +59,10 @@ public:
 	~VoxelGeneratorGraph();
 
 	void clear();
+
+	// Graph edition API
+	// Important: functions editing the graph are NOT thread-safe.
+	// They are expected to be used by the main thread (editor or game logic).
 
 	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = ProgramGraph::NULL_ID);
 	void remove_node(uint32_t node_id);
@@ -85,22 +94,12 @@ public:
 	PoolIntArray get_node_ids() const;
 	uint32_t generate_node_id() { return _graph.generate_node_id(); }
 
+	// VoxelGenerator implementation
+
 	int get_used_channels_mask() const override;
 
 	void generate_block(VoxelBlockRequest &input) override;
 	float generate_single(const Vector3i &position);
-
-	enum BoundsType {
-		BOUNDS_NONE = 0,
-		BOUNDS_VERTICAL,
-		BOUNDS_BOX,
-		BOUNDS_TYPE_COUNT
-	};
-
-	void clear_bounds();
-	void set_vertical_bounds(int min_y, int max_y, float bottom_sdf_value, float top_sdf_value,
-			uint64_t bottom_type_value, uint64_t top_type_value);
-	void set_box_bounds(Vector3i min, Vector3i max, float sdf_value, uint64_t type_value);
 
 	Ref<Resource> duplicate(bool p_subresources) const override;
 
@@ -111,29 +110,27 @@ public:
 
 	// Internal
 
-	const VoxelGraphRuntime &get_runtime() const { return _runtime; }
-	bool compile();
+	VoxelGraphRuntime::CompilationResult compile();
+	bool is_good() const;
 
-	const VoxelGraphRuntime::CompilationResult &get_compilation_result() const {
-		return _runtime.get_compilation_result();
-	}
+	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
+			ArraySlice<float> out_sdf);
+
+	// Returns state from the last generator used in the current thread
+	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
+
+	uint32_t get_output_port_address(ProgramGraph::PortLocation port) const;
 
 	// Debug
 
-	float debug_measure_microseconds_per_voxel();
+	float debug_measure_microseconds_per_voxel(bool singular);
 	void debug_load_waves_preset();
 
 private:
 	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
 
-	ProgramGraph::Node *create_node_internal(NodeTypeID type_id, Vector2 position, uint32_t id);
-
-	Dictionary get_graph_as_variant_data();
+	Dictionary get_graph_as_variant_data() const;
 	void load_graph_from_variant_data(Dictionary data);
-
-	bool _set(const StringName &p_name, const Variant &p_value);
-	bool _get(const StringName &p_name, Variant &r_ret) const;
-	void _get_property_list(List<PropertyInfo> *p_list) const;
 
 	int _b_get_node_type_count() const;
 	Dictionary _b_get_node_type_info(int type_id) const;
@@ -143,30 +140,31 @@ private:
 	// See https://github.com/godotengine/godot/issues/36895
 	void _b_set_node_param_null(int node_id, int param_index);
 	float _b_generate_single(Vector3 pos);
+	Dictionary _b_compile();
 
 	void _on_subresource_changed();
 	void connect_to_subresource_changes();
 
 	static void _bind_methods();
 
-	struct Bounds {
-		BoundsType type = BOUNDS_NONE;
-		Vector3i min;
-		Vector3i max;
-		// Voxel values beyond bounds
-		float sdf_value0 = 1.f;
-		float sdf_value1 = 1.f;
-		uint64_t type_value0 = 0;
-		uint64_t type_value1 = 0;
+	ProgramGraph _graph;
+
+	// Only compiling and generation methods are thread-safe.
+
+	std::shared_ptr<VoxelGraphRuntime> _runtime = nullptr;
+	RWLock *_runtime_lock = nullptr;
+
+	struct Cache {
+		std::vector<float> x_cache;
+		std::vector<float> y_cache;
+		std::vector<float> z_cache;
+		std::vector<float> slice_cache;
+		VoxelGraphRuntime::State state;
 	};
 
-	ProgramGraph _graph;
-	VoxelGraphRuntime _runtime;
-	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_SDF;
-	Bounds _bounds;
+	static thread_local Cache _cache;
 };
 
 VARIANT_ENUM_CAST(VoxelGeneratorGraph::NodeTypeID)
-VARIANT_ENUM_CAST(VoxelGeneratorGraph::BoundsType)
 
 #endif // VOXEL_GENERATOR_GRAPH_H

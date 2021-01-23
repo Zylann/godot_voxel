@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="FastNoiseLiteGradient" inherits="Resource" version="3.2">
+	<brief_description>
+		Generates coherent and fractal noise gradients using the FastNoiseLite library.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="amplitude" type="float" setter="set_amplitude" getter="get_amplitude" default="30.0">
+		</member>
+		<member name="fractal_gain" type="float" setter="set_fractal_gain" getter="get_fractal_gain" default="0.5">
+		</member>
+		<member name="fractal_lacunarity" type="float" setter="set_fractal_lacunarity" getter="get_fractal_lacunarity" default="2.0">
+		</member>
+		<member name="fractal_octaves" type="int" setter="set_fractal_octaves" getter="get_fractal_octaves" default="3">
+		</member>
+		<member name="fractal_type" type="int" setter="set_fractal_type" getter="get_fractal_type" enum="FastNoiseLiteGradient.FractalType" default="0">
+		</member>
+		<member name="noise_type" type="int" setter="set_noise_type" getter="get_noise_type" enum="FastNoiseLiteGradient.NoiseType" default="2">
+		</member>
+		<member name="period" type="float" setter="set_period" getter="get_period" default="64.0">
+		</member>
+		<member name="rotation_type_3d" type="int" setter="set_rotation_type_3d" getter="get_rotation_type_3d" enum="FastNoiseLiteGradient.RotationType3D" default="0">
+		</member>
+		<member name="seed" type="int" setter="set_seed" getter="get_seed" default="0">
+		</member>
+	</members>
+	<constants>
+		<constant name="TYPE_OPEN_SIMPLEX_2" value="0" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_OPEN_SIMPLEX_2_REDUCED" value="1" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_VALUE" value="2" enum="NoiseType">
+		</constant>
+		<constant name="FRACTAL_NONE" value="0" enum="FractalType">
+		</constant>
+		<constant name="FRACTAL_DOMAIN_WARP_PROGRESSIVE" value="1" enum="FractalType">
+		</constant>
+		<constant name="FRACTAL_DOMAIN_WARP_INDEPENDENT" value="2" enum="FractalType">
+		</constant>
+		<constant name="ROTATION_3D_NONE" value="0" enum="RotationType3D">
+		</constant>
+		<constant name="ROTATION_3D_IMPROVE_XY_PLANES" value="1" enum="RotationType3D">
+		</constant>
+		<constant name="ROTATION_3D_IMPROVE_XZ_PLANES" value="2" enum="RotationType3D">
+		</constant>
+	</constants>
+</class>

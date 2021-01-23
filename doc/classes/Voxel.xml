@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="Voxel" inherits="Resource" version="3.2">
 	<brief_description>
+		Model stored in [VoxelLibrary] and used by [VoxelMesherBlocky].
 	</brief_description>
 	<description>
 		Represents a model to be used for voxels of a specific TYPE value. Such models must be contained within a [VoxelLibrary] to be used with [VoxelTerrain] or directly with a [VoxelMesherBlocky].
@@ -42,22 +43,31 @@
 		<member name="geometry_type" type="int" setter="set_geometry_type" getter="get_geometry_type" enum="Voxel.GeometryType" default="0">
 		</member>
 		<member name="material_id" type="int" setter="set_material_id" getter="get_material_id" default="0">
+			ID of the material that will be used. It corresponds to the index of materials found on [VoxelTerrain].
 		</member>
 		<member name="random_tickable" type="bool" setter="set_random_tickable" getter="is_random_tickable" default="false">
+			If enabled, voxels having this ID in the TYPE channel will be used by [method VoxelToolTerrain.run_blocky_random_tick].
+		</member>
+		<member name="transparency_index" type="int" setter="set_transparency_index" getter="get_transparency_index" default="0">
 		</member>
 		<member name="transparent" type="bool" setter="set_transparent" getter="is_transparent" default="false">
 		</member>
 		<member name="voxel_name" type="String" setter="set_voxel_name" getter="get_voxel_name" default="&quot;&quot;">
+			Name that can be used for convenience, when looking up a specific [Voxel] from [VoxelLibrary].
 		</member>
 	</members>
 	<constants>
 		<constant name="GEOMETRY_NONE" value="0" enum="GeometryType">
+			Don't produce any geometry. The voxel will be invisible.
 		</constant>
 		<constant name="GEOMETRY_CUBE" value="1" enum="GeometryType">
+			Use the shape of a generated cube. It is useful for testing and quick configuration.
 		</constant>
 		<constant name="GEOMETRY_CUSTOM_MESH" value="2" enum="GeometryType">
+			Use the mesh specified in the [member mesh] property. This is the most versatile way to create shapes.
 		</constant>
 		<constant name="GEOMETRY_MAX" value="3" enum="GeometryType">
+			How many geometry modes there are.
 		</constant>
 		<constant name="SIDE_NEGATIVE_X" value="1" enum="Side">
 		</constant>

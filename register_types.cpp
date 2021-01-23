@@ -1,7 +1,9 @@
 #include "register_types.h"
 #include "edition/voxel_tool.h"
+#include "edition/voxel_tool_buffer.h"
 #include "edition/voxel_tool_terrain.h"
 #include "editor/editor_plugin.h"
+#include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "generators/graph/voxel_generator_graph.h"
@@ -32,7 +34,11 @@
 #include "terrain/voxel_terrain.h"
 #include "terrain/voxel_viewer.h"
 #include "util/macros.h"
+//#include "util/noise/fast_noise_2.h"
+#include "util/noise/fast_noise_lite.h"
+#include "util/noise/fast_noise_lite_gradient.h"
 #include "voxel_string_names.h"
+
 #include <core/engine.h>
 
 #ifdef TOOLS_ENABLED
@@ -87,8 +93,14 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelRaycastResult>();
 	ClassDB::register_class<VoxelTool>();
 	ClassDB::register_class<VoxelToolTerrain>();
+	// I had to bind this one despite it being useless as-is because otherwise Godot lazily initializes its class.
+	// And this can happen in a thread, causing crashes due to the concurrent access
+	ClassDB::register_class<VoxelToolBuffer>();
 	ClassDB::register_class<VoxelBlockSerializer>();
 	ClassDB::register_class<VoxelVoxLoader>();
+	ClassDB::register_class<FastNoiseLite>();
+	ClassDB::register_class<FastNoiseLiteGradient>();
+	//ClassDB::register_class<FastNoise2>(); // See SCsub
 
 	// Meshers
 	ClassDB::register_virtual_class<VoxelMesher>();
@@ -106,6 +118,7 @@ void register_voxel_types() {
 #ifdef TOOLS_ENABLED
 	EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
+	EditorPlugins::add_by_type<FastNoiseLiteEditorPlugin>();
 #endif
 }
 
