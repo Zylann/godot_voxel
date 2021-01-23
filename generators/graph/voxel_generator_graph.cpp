@@ -493,9 +493,6 @@ Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 	d->_graph.copy_from(_graph, p_subresources);
 	// Program not copied, as it may contain pointers to the resources we are duplicating
 
-	// TODO Should we really compile in there though?
-	d->compile();
-
 	return d;
 }
 
