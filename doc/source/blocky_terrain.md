@@ -30,10 +30,10 @@ Fast collisions alternative
 Mesh-based collisions are quite accurate and feature-rich in Godot, however it some drawbacks:
 
 - Trimesh collision shapes have to be built each time the terrain is modified, which is [very slow](https://github.com/Zylann/godot_voxel/issues/54).
-- The physics engine has to constantly process all triangles near the player
+- The physics engine has to process arbitrary triangles near the player, which can't take advantage of particular situations, such as everything being cubes
 - Sometimes you may also want a simpler, more game-oriented collision system
 
-The `VoxelBoxMover` class provides a Minecraft-like collision system, which can be used in a similar way to `move_and_slide()`. It is more limited, but is extremely fast and does not suffer from tunnelling.
+The `VoxelBoxMover` class provides a Minecraft-like collision system, which can be used in a similar way to `move_and_slide()`. It is more limited, but is extremely fast and is not affected by tunnelling.
 
 The code below shows how to use it, but see the [blocky demo](https://github.com/Zylann/voxelgame/tree/master/project/blocky_terrain) for the full code.
 
