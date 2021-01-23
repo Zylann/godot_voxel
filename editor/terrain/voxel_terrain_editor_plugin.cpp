@@ -72,7 +72,7 @@ private:
 
 	struct Stat {
 		int value;
-		Label *label;
+		Label *label = nullptr;
 	};
 
 	FixedArray<Stat, STAT_COUNT> _stats;
