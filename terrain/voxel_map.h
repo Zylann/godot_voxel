@@ -123,8 +123,9 @@ private:
 	// Voxel values that will be returned if access is out of map bounds
 	FixedArray<uint64_t, VoxelBuffer::MAX_CHANNELS> _default_voxel;
 
-	// Blocks stored with a spatial hash in all 3D directions
-	HashMap<Vector3i, unsigned int, Vector3iHasher> _blocks_map;
+	// Blocks stored with a spatial hash in all 3D directions.
+	// RELATIONSHIP = 2 because it delivers better performance with this kind of key and hash (less collisions).
+	HashMap<Vector3i, unsigned int, Vector3iHasher, HashMapComparatorDefault<Vector3i>, 3, 2> _blocks_map;
 	std::vector<VoxelBlock *> _blocks;
 
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
