@@ -20,45 +20,12 @@ Features
 - Voxel storage using 8-bit or 16-bit channels for any general purpose
 
 
-What This Module Doesn't Provide
------------------------------------
-
-- Levels of detail for blocky terrain
-- Game specific features such as cave generation or procedural trees (though it might include tools to help doing them)
-- Editor tools (only a few things are exposed)
-- Import and export of voxel formats
-
-
-How To Install And Use
--------------------------
-
-Voxel Tools is a custom C++ module for Godot 3.1+. It must be compiled into the engine to work.
-
-### Prebuilt binaries
-
-Ready-to-use versions of Godot including the module exist, though they might not be 100% up to date.
-
-- Tokisan Games (editor and export templates)
-    - [Tokisan Games binaries](http://tokisan.com/godot-binaries)
-
-- Master builds (editor only)
-    - Windows: https://github.com/Zylann/godot_voxel/actions?query=workflow%3A%22%F0%9F%9A%AA+Windows+Builds%22
-    - Linux: https://github.com/Zylann/godot_voxel/actions?query=workflow%3A%22%F0%9F%90%A7+Linux+Builds%22
-    - Warning, these can be unstable, as they come from the very latest commits. Click on one of the recent commits and a build artifact should be available.
-
-
-### Compiling
-
-Compiling the source yourself is the best way to get your own version and export template.
-Please see the [documentation](https://voxel-tools.readthedocs.io/en/latest/getting_the_module/) for instructions.
-
-
-### Documentation
+Documentation
+---------------
 
 - [Main documentation](https://voxel-tools.readthedocs.io/en/latest/)
-
-- Zylann's demos: [Zylann's demos](https://github.com/Zylann/voxelgame)
-- TinmanJuggernaut's demos: [TinmanJuggernaut's demo](https://github.com/tinmanjuggernaut/voxelgame)
+- [How to get the module](https://voxel-tools.readthedocs.io/en/latest/getting_the_module/)
+- [Quick start](https://voxel-tools.readthedocs.io/en/latest/quick_start/)
 
 
 Roadmap
