@@ -5,15 +5,22 @@ Inherits: [Reference](https://docs.godotengine.org/en/stable/classes/class_refer
 
 Helper class to easily access and modify voxels
 
+## Description: 
+
+Abstract interface to access and edit voxels. It allows accessing individual voxels, or doing bulk operations such as carving large chunks or copy/paste boxes.
+
+It's not a class to instantiate alone, you may get it from the voxel objects you want to work with.
+
 ## Properties: 
 
 
-Type   | Name                             | Default 
------- | -------------------------------- | --------
-`int`  | [channel](#i_channel)            | 0       
-`int`  | [eraser_value](#i_eraser_value)  | 0       
-`int`  | [mode](#i_mode)                  | 0       
-`int`  | [value](#i_value)                | 0       
+Type     | Name                             | Default 
+-------- | -------------------------------- | --------
+`int`    | [channel](#i_channel)            | 0       
+`int`    | [eraser_value](#i_eraser_value)  | 0       
+`int`    | [mode](#i_mode)                  | 0       
+`float`  | [sdf_scale](#i_sdf_scale)        | 0.1     
+`int`    | [value](#i_value)                | 0       
 <p></p>
 
 ## Methods: 
@@ -39,24 +46,31 @@ Return                                                                        | 
 
 enum **Mode**: 
 
-- **MODE_ADD** = **0**
-- **MODE_REMOVE** = **1**
-- **MODE_SET** = **2**
+- **MODE_ADD** = **0** --- When editing [enum VoxelBuffer.CHANNEL_SDF], will add matter. Useful for building.
+- **MODE_REMOVE** = **1** --- When editing [enum VoxelBuffer.CHANNEL_SDF], will subtract matter. Useful for digging.
+- **MODE_SET** = **2** --- Replace voxel values without any blending. Useful for blocky voxels.
 
 
 ## Property Descriptions
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_channel"></span> **channel** = 0
-
+Set which channel will be edited. When used on a terrain node, it will default to the first available channel, based on the stream and generator.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_eraser_value"></span> **eraser_value** = 0
-
+Sets which value will be used to erase voxels when editing the enum VoxelBuffer.CHANNEL_TYPE channel in enum MODE_REMOVE mode.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mode"></span> **mode** = 0
+Sets how `do_*` functions will behave. This may vary depending on the channel.
 
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_scale"></span> **sdf_scale** = 0.1
+When working with smooth voxels, applies a scale to the signed distance field. A high scale (1 or higher) will tend to produce blocky results, and a low scale (below 1, but not too close to zero) will tend to be smoother.
+
+
+
+This is related to the enum VoxelBuffer.Depth configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_value"></span> **value** = 0
-
+Sets which voxel value will be used. This is not relevant when editing enum VoxelBuffer.CHANNEL_SDF.
 
 ## Method Descriptions
 
@@ -108,4 +122,4 @@ Operate on a rectangular cuboid section of the terrain. `begin` and `end` are in
 
 
 
-_Generated on Jan 21, 2021_
+_Generated on Jan 24, 2021_

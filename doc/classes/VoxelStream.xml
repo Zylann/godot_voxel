@@ -9,7 +9,7 @@
 	</tutorials>
 	<methods>
 		<method name="emerge_block">
-			<return type="void">
+			<return type="int" enum="VoxelStream.Result">
 			</return>
 			<argument index="0" name="out_buffer" type="VoxelBuffer">
 			</argument>

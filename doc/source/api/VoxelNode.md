@@ -26,4 +26,4 @@ Defines how voxels are transformed into visible meshes.
 - [VoxelStream](VoxelStream.md)<span id="i_stream"></span> **stream**
 Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 
-_Generated on Jan 21, 2021_
+_Generated on Jan 24, 2021_

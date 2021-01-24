@@ -4,6 +4,8 @@
 		Helper class to easily access and modify voxels
 	</brief_description>
 	<description>
+		Abstract interface to access and edit voxels. It allows accessing individual voxels, or doing bulk operations such as carving large chunks or copy/paste boxes.
+		It's not a class to instantiate alone, you may get it from the voxel objects you want to work with.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -128,20 +130,32 @@
 	</methods>
 	<members>
 		<member name="channel" type="int" setter="set_channel" getter="get_channel" default="0">
+			Set which channel will be edited. When used on a terrain node, it will default to the first available channel, based on the stream and generator.
 		</member>
 		<member name="eraser_value" type="int" setter="set_eraser_value" getter="get_eraser_value" default="0">
+			Sets which value will be used to erase voxels when editing the [enum VoxelBuffer.CHANNEL_TYPE] channel in [enum MODE_REMOVE] mode.
 		</member>
 		<member name="mode" type="int" setter="set_mode" getter="get_mode" enum="VoxelTool.Mode" default="0">
+			Sets how [code]do_*[/code] functions will behave. This may vary depending on the channel.
+		</member>
+		<member name="sdf_scale" type="float" setter="set_sdf_scale" getter="get_sdf_scale" default="0.1">
+			When working with smooth voxels, applies a scale to the signed distance field. A high scale (1 or higher) will tend to produce blocky results, and a low scale (below 1, but not too close to zero) will tend to be smoother.
+
+			This is related to the [enum VoxelBuffer.Depth] configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
 		</member>
 		<member name="value" type="int" setter="set_value" getter="get_value" default="0">
+			Sets which voxel value will be used. This is not relevant when editing [enum VoxelBuffer.CHANNEL_SDF].
 		</member>
 	</members>
 	<constants>
 		<constant name="MODE_ADD" value="0" enum="Mode">
+			When editing [enum VoxelBuffer.CHANNEL_SDF], will add matter. Useful for building.
 		</constant>
 		<constant name="MODE_REMOVE" value="1" enum="Mode">
+			When editing [enum VoxelBuffer.CHANNEL_SDF], will subtract matter. Useful for digging.
 		</constant>
 		<constant name="MODE_SET" value="2" enum="Mode">
+			Replace voxel values without any blending. Useful for blocky voxels.
 		</constant>
 	</constants>
 </class>

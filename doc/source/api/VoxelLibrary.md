@@ -8,10 +8,11 @@ Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resour
 ## Properties: 
 
 
-Type   | Name                           | Default 
------- | ------------------------------ | --------
-`int`  | [atlas_size](#i_atlas_size)    | 16      
-`int`  | [voxel_count](#i_voxel_count)  | 0       
+Type    | Name                               | Default 
+------- | ---------------------------------- | --------
+`int`   | [atlas_size](#i_atlas_size)        | 16      
+`bool`  | [bake_tangents](#i_bake_tangents)  | true    
+`int`   | [voxel_count](#i_voxel_count)      | 0       
 <p></p>
 
 ## Methods: 
@@ -34,6 +35,9 @@ Return                                                                | Signatur
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_atlas_size"></span> **atlas_size** = 16
 
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_bake_tangents"></span> **bake_tangents** = true
+Enable this option if you need normal mapping on your voxels. If you don't need it, disabling can reduce memory usage and give a small speed boost.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_voxel_count"></span> **voxel_count** = 0
 
@@ -60,4 +64,4 @@ Return                                                                | Signatur
 
 
 
-_Generated on Jan 21, 2021_
+_Generated on Jan 24, 2021_

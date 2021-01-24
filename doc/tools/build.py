@@ -22,7 +22,7 @@ import glob
 import os
 from pathlib import Path
 
-SOURCES = "docs"
+SOURCES = "source"
 
 
 def update_classes_xml(custom_godot_path, godot_repo_root, verbose=False):
