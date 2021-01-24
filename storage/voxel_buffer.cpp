@@ -119,11 +119,11 @@ const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Data2,Data3,Data4,Da
 
 VoxelBuffer::VoxelBuffer() {
 	// Minecraft uses way more than 255 block types and there is room for eventual metadata such as rotation
-	_channels[CHANNEL_TYPE].depth = VoxelBuffer::DEPTH_16_BIT;
+	_channels[CHANNEL_TYPE].depth = VoxelBuffer::DEFAULT_TYPE_CHANNEL_DEPTH;
 	_channels[CHANNEL_TYPE].defval = 0;
 
 	// 16-bit is better on average to handle large worlds
-	_channels[CHANNEL_SDF].depth = VoxelBuffer::DEPTH_16_BIT;
+	_channels[CHANNEL_SDF].depth = VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH;
 	_channels[CHANNEL_SDF].defval = 0xffff;
 
 	// TODO How many of these can be created? Make it optional?
