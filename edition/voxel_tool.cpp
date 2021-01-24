@@ -22,6 +22,10 @@ void VoxelRaycastResult::_bind_methods() {
 
 //----------------------------------------
 
+VoxelTool::VoxelTool() {
+	_sdf_scale = VoxelBuffer::get_sdf_quantization_scale(VoxelBuffer::DEFAULT_CHANNEL_DEPTH);
+}
+
 void VoxelTool::set_value(uint64_t val) {
 	_value = val;
 }
@@ -53,6 +57,14 @@ void VoxelTool::set_mode(Mode mode) {
 
 VoxelTool::Mode VoxelTool::get_mode() const {
 	return _mode;
+}
+
+float VoxelTool::get_sdf_scale() const {
+	return _sdf_scale;
+}
+
+void VoxelTool::set_sdf_scale(float s) {
+	_sdf_scale = max(s, 0.00001f);
 }
 
 Ref<VoxelRaycastResult> VoxelTool::raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
@@ -160,7 +172,7 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 void VoxelTool::do_sphere(Vector3 center, float radius) {
 	VOXEL_PROFILE_SCOPE();
 
-	Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	const Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -169,7 +181,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		box.for_each_cell([this, center, radius](Vector3i pos) {
-			float d = pos.to_vec3().distance_to(center) - radius;
+			float d = _sdf_scale * (pos.to_vec3().distance_to(center) - radius);
 			_set_voxel_f(pos, sdf_blend(d, get_voxel_f(pos), _mode));
 		});
 
@@ -198,15 +210,13 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	}
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
-
+		// TODO Better quality
 		box.for_each_cell([this](Vector3i pos) {
 			_set_voxel_f(pos, sdf_blend(-1.0, get_voxel_f(pos), _mode));
 		});
 
 	} else {
-
 		int value = _mode == MODE_REMOVE ? _eraser_value : _value;
-
 		box.for_each_cell([this, value](Vector3i pos) {
 			_set_voxel(pos, value);
 		});
@@ -256,6 +266,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_eraser_value", "v"), &VoxelTool::set_eraser_value);
 	ClassDB::bind_method(D_METHOD("get_eraser_value"), &VoxelTool::get_eraser_value);
 
+	ClassDB::bind_method(D_METHOD("set_sdf_scale", "scale"), &VoxelTool::set_sdf_scale);
+	ClassDB::bind_method(D_METHOD("get_sdf_scale"), &VoxelTool::get_sdf_scale);
+
 	ClassDB::bind_method(D_METHOD("get_voxel", "pos"), &VoxelTool::_b_get_voxel);
 	ClassDB::bind_method(D_METHOD("get_voxel_f", "pos"), &VoxelTool::_b_get_voxel_f);
 	ClassDB::bind_method(D_METHOD("set_voxel", "pos", "v"), &VoxelTool::_b_set_voxel);
@@ -275,9 +288,11 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_area_editable", "box"), &VoxelTool::_b_is_area_editable);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "value"), "set_value", "get_value");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING),
+			"set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "eraser_value"), "set_eraser_value", "get_eraser_value");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Add,Remove,Set"), "set_mode", "get_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "sdf_scale"), "set_sdf_scale", "get_sdf_scale");
 
 	BIND_ENUM_CONSTANT(MODE_ADD);
 	BIND_ENUM_CONSTANT(MODE_REMOVE);

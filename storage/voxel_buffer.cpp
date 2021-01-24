@@ -65,9 +65,11 @@ static_assert(sizeof(uint64_t) == sizeof(double), "uint64_t and double cannot be
 inline uint64_t real_to_raw_voxel(real_t value, VoxelBuffer::Depth depth) {
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT:
-			return clamp(static_cast<int>(128.f * value + 128.f), 0, 0xff);
+			return VoxelBuffer::norm_to_u8(value);
+
 		case VoxelBuffer::DEPTH_16_BIT:
-			return clamp(static_cast<int>(0x7fff * value + 0x7fff), 0, 0xffff);
+			return VoxelBuffer::norm_to_u16(value);
+
 		case VoxelBuffer::DEPTH_32_BIT: {
 			MarshallFloat m;
 			m.f = value;
@@ -88,10 +90,10 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	// Depths below 32 are normalized between -1 and 1
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT:
-			return VoxelBuffer::u8_to_real(value);
+			return VoxelBuffer::u8_to_norm(value);
 
 		case VoxelBuffer::DEPTH_16_BIT:
-			return VoxelBuffer::u16_to_real(value);
+			return VoxelBuffer::u16_to_norm(value);
 
 		case VoxelBuffer::DEPTH_32_BIT: {
 			MarshallFloat m;
@@ -724,6 +726,19 @@ VoxelBuffer::Depth VoxelBuffer::get_channel_depth(unsigned int channel_index) co
 
 uint32_t VoxelBuffer::get_depth_bit_count(Depth d) {
 	return ::get_depth_bit_count(d);
+}
+
+float VoxelBuffer::get_sdf_quantization_scale(Depth d) {
+	switch (d) {
+		// Normalized
+		case DEPTH_8_BIT:
+			return VoxelConstants::QUANTIZED_SDF_8_BITS_SCALE;
+		case DEPTH_16_BIT:
+			return VoxelConstants::QUANTIZED_SDF_16_BITS_SCALE;
+		// Direct
+		default:
+			return 1.f;
+	}
 }
 
 void VoxelBuffer::set_block_metadata(Variant meta) {

@@ -34,6 +34,8 @@ public:
 		MODE_SET
 	};
 
+	VoxelTool();
+
 	void set_value(uint64_t val);
 	uint64_t get_value() const;
 
@@ -48,6 +50,9 @@ public:
 
 	uint64_t get_voxel(Vector3i pos);
 	float get_voxel_f(Vector3i pos);
+
+	float get_sdf_scale() const;
+	void set_sdf_scale(float s);
 
 	// TODO Methods working on a whole area must use an implementation that minimizes locking!
 
@@ -108,6 +113,7 @@ protected:
 	uint64_t _value = 0;
 	uint64_t _eraser_value = 0; // air
 	int _channel = 0;
+	float _sdf_scale = 1.f;
 	Mode _mode = MODE_ADD;
 };
 

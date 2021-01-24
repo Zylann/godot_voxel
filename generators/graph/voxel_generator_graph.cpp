@@ -219,26 +219,8 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	// TODO This may be shared across the module
 	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
 	// so we must scale the values to make better use of the offered resolution
-	float sdf_scale;
-	switch (out_buffer.get_channel_depth(VoxelBuffer::CHANNEL_SDF)) {
-		// Normalized
-		case VoxelBuffer::DEPTH_8_BIT:
-			sdf_scale = 0.1f;
-			break;
-		case VoxelBuffer::DEPTH_16_BIT:
-			sdf_scale = 0.002f;
-			break;
-		// Direct
-		case VoxelBuffer::DEPTH_32_BIT:
-			sdf_scale = 1.0f;
-			break;
-		case VoxelBuffer::DEPTH_64_BIT:
-			sdf_scale = 1.0f;
-			break;
-		default:
-			CRASH_NOW();
-			break;
-	}
+	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(
+			out_buffer.get_channel_depth(out_buffer.get_channel_depth(channel)));
 
 	Cache &cache = _cache;
 
@@ -250,17 +232,17 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const Interval range = runtime->analyze_range(cache.state, gmin, gmax) * sdf_scale;
 	const float clip_threshold = sdf_scale * 0.2f;
 	if (range.min > clip_threshold && range.max > clip_threshold) {
-		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, 1.f);
+		out_buffer.clear_channel_f(channel, 1.f);
 		// DEBUG: use this instead to fill optimized-out blocks with matter, making them stand out
-		//out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, -1.f);
+		//out_buffer.clear_channel_f(channel, -1.f);
 		return;
 
 	} else if (range.min < -clip_threshold && range.max < -clip_threshold) {
-		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, -1.f);
+		out_buffer.clear_channel_f(channel, -1.f);
 		return;
 
 	} else if (range.is_single_value()) {
-		out_buffer.clear_channel_f(VoxelBuffer::CHANNEL_SDF, range.min);
+		out_buffer.clear_channel_f(channel, range.min);
 		return;
 	}
 
