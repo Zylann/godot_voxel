@@ -325,7 +325,7 @@ def process_xml(f_xml, f_out, module_class_names):
                 + make_custom_internal_anchor(member.attrib['name']) + " **" + member.attrib['name'] + "**"
             if 'default' in member.attrib:
                 out += " = " + member.attrib['default']
-            out += "\n"
+            out += "\n\n"
 
             if member.text is not None:
                 out += make_text(member.text, module_class_names)
