@@ -110,7 +110,9 @@ header_size + first_sector_index * sector_size
 ```
 
 Once we have the address of the block, the first 4 bytes at this address will contain the size of the written data.
-Note: those 4 bytes are included in the total block size when the number of occupied sectors is determined.
+
+!!! note
+	those 4 bytes are included in the total block size when the number of occupied sectors is determined.
 
 ```
 RegionBlockData

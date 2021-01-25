@@ -54,6 +54,8 @@ public:
 	};
 
 	static const Depth DEFAULT_CHANNEL_DEPTH = DEPTH_8_BIT;
+	static const Depth DEFAULT_TYPE_CHANNEL_DEPTH = DEPTH_16_BIT;
+	static const Depth DEFAULT_SDF_CHANNEL_DEPTH = DEPTH_16_BIT;
 
 	// Limit was made explicit for serialization reasons, and also because there must be a reasonable one
 	static const uint32_t MAX_SIZE = 65535;
@@ -144,13 +146,42 @@ public:
 	Depth get_channel_depth(unsigned int channel_index) const;
 	static uint32_t get_depth_bit_count(Depth d);
 
-	static inline float u8_to_real(uint8_t v) {
-		return (static_cast<real_t>(v) - 0x7f) * VoxelConstants::INV_0x7f;
+	// When using lower than 32-bit resolution for terrain signed distance fields,
+	// it should be scaled to better fit the range of represented values since the storage is normalized to -1..1.
+	// This returns that scale for a given depth configuration.
+	static float get_sdf_quantization_scale(Depth d);
+
+	static inline float u8_to_norm(uint8_t v) {
+		return (static_cast<float>(v) - 0x7f) * VoxelConstants::INV_0x7f;
 	}
 
-	static inline float u16_to_real(uint16_t v) {
-		return (static_cast<real_t>(v) - 0x7fff) * VoxelConstants::INV_0x7fff;
+	static inline float u16_to_norm(uint16_t v) {
+		return (static_cast<float>(v) - 0x7fff) * VoxelConstants::INV_0x7fff;
 	}
+
+	static inline uint8_t norm_to_u8(float v) {
+		return clamp(static_cast<int>(128.f * v + 128.f), 0, 0xff);
+	}
+
+	static inline uint16_t norm_to_u16(float v) {
+		return clamp(static_cast<int>(0x7fff * v + 0x7fff), 0, 0xffff);
+	}
+
+	/*static inline float quantized_u8_to_real(uint8_t v) {
+		return u8_to_norm(v) * VoxelConstants::QUANTIZED_SDF_8_BITS_SCALE_INV;
+	}
+
+	static inline float quantized_u16_to_real(uint8_t v) {
+		return u8_to_norm(v) * VoxelConstants::QUANTIZED_SDF_16_BITS_SCALE_INV;
+	}
+
+	static inline uint8_t real_to_quantized_u8(float v) {
+		return norm_to_u8(v * VoxelConstants::QUANTIZED_SDF_8_BITS_SCALE);
+	}
+
+	static inline uint16_t real_to_quantized_u16(float v) {
+		return norm_to_u16(v * VoxelConstants::QUANTIZED_SDF_16_BITS_SCALE);
+	}*/
 
 	// Metadata
 

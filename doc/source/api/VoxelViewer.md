@@ -32,4 +32,4 @@ If set to `true`, the engine will generate meshes around this viewer. This may b
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_view_distance"></span> **view_distance** = 128
 How far should voxels generate around this viewer.
 
-_Generated on Jan 21, 2021_
+_Generated on Jan 24, 2021_

@@ -51,6 +51,9 @@
 	<members>
 		<member name="atlas_size" type="int" setter="set_atlas_size" getter="get_atlas_size" default="16">
 		</member>
+		<member name="bake_tangents" type="bool" setter="set_bake_tangents" getter="get_bake_tangents" default="true">
+			Enable this option if you need normal mapping on your voxels. If you don't need it, disabling can reduce memory usage and give a small speed boost.
+		</member>
 		<member name="voxel_count" type="int" setter="set_voxel_count" getter="get_voxel_count" default="0">
 		</member>
 	</members>

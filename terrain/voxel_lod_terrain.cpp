@@ -67,6 +67,7 @@ static inline void schedule_mesh_update(VoxelBlock *block, std::vector<Vector3i>
 struct BeforeUnloadAction {
 	std::vector<Ref<ShaderMaterial> > &shader_material_pool;
 	std::vector<VoxelLodTerrain::BlockToSave> &blocks_to_save;
+	bool save;
 
 	void operator()(VoxelBlock *block) {
 		// Recycle material
@@ -78,7 +79,7 @@ struct BeforeUnloadAction {
 
 		// Save if modified
 		// TODO Don't ask for save if the stream doesn't support it!
-		if (block->is_modified()) {
+		if (save && block->is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelLodTerrain::BlockToSave b;
 			// We don't copy since the block will be unloaded anyways
@@ -152,7 +153,7 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 		flush_pending_lod_edits();
 
 		for (int i = 0; i < _lod_count; ++i) {
-			_lods[i].map.for_all_blocks(BeforeUnloadAction{ _shader_material_pool, _blocks_to_save });
+			_lods[i].map.for_all_blocks(BeforeUnloadAction{ _shader_material_pool, _blocks_to_save, true });
 		}
 
 		// And flush immediately
@@ -1429,7 +1430,7 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 
 	Lod &lod = _lods[lod_index];
 
-	lod.map.remove_block(block_pos, BeforeUnloadAction{ _shader_material_pool, _blocks_to_save });
+	lod.map.remove_block(block_pos, BeforeUnloadAction{ _shader_material_pool, _blocks_to_save, _stream.is_valid() });
 
 	lod.loading_blocks.erase(block_pos);
 
@@ -1448,9 +1449,11 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 	flush_pending_lod_edits();
 
-	for (int i = 0; i < _lod_count; ++i) {
-		// That may cause a stutter, so should be used when the player won't notice
-		_lods[i].map.for_all_blocks(ScheduleSaveAction{ _blocks_to_save });
+	if (_stream.is_valid()) {
+		for (int i = 0; i < _lod_count; ++i) {
+			// That may cause a stutter, so should be used when the player won't notice
+			_lods[i].map.for_all_blocks(ScheduleSaveAction{ _blocks_to_save });
+		}
 	}
 
 	// And flush immediately

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="FastNoiseLite" inherits="Resource" version="3.2">
 	<brief_description>
-		Generates coherent and fractal noise using the FastNoiseLite library.
+		Generates coherent and fractal noise using the [url=https://github.com/Auburn/FastNoise]FastNoiseLite[/url] library.
 	</brief_description>
 	<description>
 	</description>

@@ -30,4 +30,4 @@ Type            | Name                                         | Default
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_occlusion_enabled"></span> **occlusion_enabled** = true
 
 
-_Generated on Jan 21, 2021_
+_Generated on Jan 24, 2021_

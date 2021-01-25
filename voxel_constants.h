@@ -16,6 +16,14 @@ static const float INV_0x7f = 1.f / 0x7f;
 static const float INV_0x7fff = 1.f / 0x7fff;
 static const float INV_TAU = 1.f / Math_TAU;
 
+// Below 32 bits, channels are normalized in -1..1, and can represent a limited number of values.
+// For storing SDF, we need a range of values that extends beyond that, in particular for better LOD.
+// So we can scale it to better fit the resolution.
+static const float QUANTIZED_SDF_8_BITS_SCALE = 0.1f;
+static const float QUANTIZED_SDF_8_BITS_SCALE_INV = 1.f / 0.1f;
+static const float QUANTIZED_SDF_16_BITS_SCALE = 0.002f;
+static const float QUANTIZED_SDF_16_BITS_SCALE_INV = 1.f / 0.002f;
+
 } // namespace VoxelConstants
 
 #endif // VOXEL_CONSTANTS_H

@@ -22,4 +22,4 @@ Type      | Name                       | Default
 - [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_directory"></span> **directory** = ""
 Directory under which the data is saved.
 
-_Generated on Jan 21, 2021_
+_Generated on Jan 24, 2021_
