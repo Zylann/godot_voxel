@@ -153,15 +153,18 @@ size_t get_size_in_bytes(const VoxelBuffer &buffer, size_t &metadata_size) {
 
 	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
 		const VoxelBuffer::Compression compression = buffer.get_channel_compression(channel_index);
+		const VoxelBuffer::Depth depth = buffer.get_channel_depth(channel_index);
+
+		// For depth value
 		size += 1;
 
 		switch (compression) {
 			case VoxelBuffer::COMPRESSION_NONE: {
-				size += size_in_voxels.volume() * sizeof(uint8_t);
+				size += VoxelBuffer::get_size_in_bytes_for_volume(size_in_voxels, depth);
 			} break;
 
 			case VoxelBuffer::COMPRESSION_UNIFORM: {
-				size += 1;
+				size += VoxelBuffer::get_depth_bit_count(depth) >> 3;
 			} break;
 
 			default:
