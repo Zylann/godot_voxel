@@ -625,6 +625,7 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 		case TYPE_LOAD: {
 			voxels.instance();
 			voxels->create(block_size, block_size, block_size);
+			// TODO No longer using batches? If that works ok, we should get rid of batch queries in files
 			const VoxelStream::Result result = stream->emerge_block(voxels, origin_in_voxels, lod);
 			if (result == VoxelStream::RESULT_BLOCK_NOT_FOUND) {
 				Ref<VoxelGenerator> generator = stream_dependency->generator;

@@ -24,6 +24,8 @@ static const float QUANTIZED_SDF_8_BITS_SCALE_INV = 1.f / 0.1f;
 static const float QUANTIZED_SDF_16_BITS_SCALE = 0.002f;
 static const float QUANTIZED_SDF_16_BITS_SCALE_INV = 1.f / 0.002f;
 
+static const unsigned int DEFAULT_BLOCK_SIZE_PO2 = 4;
+
 } // namespace VoxelConstants
 
 #endif // VOXEL_CONSTANTS_H

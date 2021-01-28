@@ -22,6 +22,7 @@
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "storage/voxel_buffer.h"
 #include "storage/voxel_memory_pool.h"
+#include "streams/sqlite/voxel_stream_sqlite.h"
 #include "streams/vox_loader.h"
 #include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_file.h"
@@ -74,6 +75,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelStreamBlockFiles>();
 	ClassDB::register_class<VoxelStreamRegionFiles>();
 	ClassDB::register_class<VoxelStreamScript>();
+	ClassDB::register_class<VoxelStreamSQLite>();
 
 	// Generators
 	ClassDB::register_virtual_class<VoxelGenerator>();

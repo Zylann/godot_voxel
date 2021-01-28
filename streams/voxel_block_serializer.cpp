@@ -180,7 +180,7 @@ size_t get_size_in_bytes(const VoxelBuffer &buffer, size_t &metadata_size) {
 	return size + metadata_size_with_header + BLOCK_TRAILING_MAGIC_SIZE;
 }
 
-const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize(VoxelBuffer &voxel_buffer) {
+const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize(const VoxelBuffer &voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 	size_t metadata_size = 0;
 	const size_t data_size = get_size_in_bytes(voxel_buffer, metadata_size);
@@ -201,7 +201,7 @@ const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize(VoxelBuffer 
 			} break;
 
 			case VoxelBuffer::COMPRESSION_UNIFORM: {
-				uint64_t v = voxel_buffer.get_voxel(Vector3i(), channel_index);
+				const uint64_t v = voxel_buffer.get_voxel(Vector3i(), channel_index);
 				switch (voxel_buffer.get_channel_depth(channel_index)) {
 					case VoxelBuffer::DEPTH_8_BIT:
 						f->store_8(v);
@@ -306,7 +306,7 @@ bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_dat
 	return true;
 }
 
-const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize_and_compress(VoxelBuffer &voxel_buffer) {
+const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize_and_compress(const VoxelBuffer &voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 	const std::vector<uint8_t> &data = serialize(voxel_buffer);
 

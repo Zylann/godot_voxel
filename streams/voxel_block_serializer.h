@@ -11,10 +11,10 @@ class StreamPeer;
 class VoxelBlockSerializerInternal {
 	// Had to be named differently to not conflict with the wrapper for Godot script API
 public:
-	const std::vector<uint8_t> &serialize(VoxelBuffer &voxel_buffer);
+	const std::vector<uint8_t> &serialize(const VoxelBuffer &voxel_buffer);
 	bool deserialize(const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer);
 
-	const std::vector<uint8_t> &serialize_and_compress(VoxelBuffer &voxel_buffer);
+	const std::vector<uint8_t> &serialize_and_compress(const VoxelBuffer &voxel_buffer);
 	bool decompress_and_deserialize(const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer);
 	bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBuffer &out_voxel_buffer);
 
