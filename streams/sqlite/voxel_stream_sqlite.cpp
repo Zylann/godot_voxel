@@ -1,6 +1,7 @@
 #include "voxel_stream_sqlite.h"
 #include "../../thirdparty/sqlite/sqlite3.h"
-//#include "../util/profiling.h"
+#include "../../util/macros.h"
+#include "../../util/profiling.h"
 
 // TODO Is the struct really useful?
 struct BlockLocation {
@@ -607,6 +608,9 @@ void VoxelStreamSQLite::flush_cache() {
 
 // This function does not lock any mutex for internal use.
 void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
+	VOXEL_PROFILE_SCOPE();
+	PRINT_VERBOSE("VoxelStreamSQLite: Flushing cache");
+
 	VoxelBlockSerializerInternal &serializer = _voxel_block_serializer;
 
 	ERR_FAIL_COND(con == nullptr);

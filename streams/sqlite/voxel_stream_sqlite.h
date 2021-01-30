@@ -13,7 +13,7 @@ class VoxelStreamSQLiteInternal;
 class VoxelStreamSQLite : public VoxelStream {
 	GDCLASS(VoxelStreamSQLite, VoxelStream)
 public:
-	static const unsigned int CACHE_SIZE = 32;
+	static const unsigned int CACHE_SIZE = 64;
 
 	VoxelStreamSQLite();
 	~VoxelStreamSQLite();
