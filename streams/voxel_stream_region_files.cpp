@@ -209,7 +209,6 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 	Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
 	Vector3i region_pos = get_region_position_from_blocks(block_pos);
 	Vector3i block_rpos = block_pos.wrap(region_size);
-	//print_line(String("Immerging block {0} r {1}").format(varray(block_pos.to_vec3(), region_pos.to_vec3())));
 
 	CachedRegion *cache = open_region(region_pos, lod, true);
 	ERR_FAIL_COND_MSG(cache == nullptr, "Could not save region file data");
@@ -738,7 +737,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	close_all_regions();
 
-	print_line("Done converting region files");
+	PRINT_VERBOSE("Done converting region files");
 }
 
 Vector3i VoxelStreamRegionFiles::get_region_size() const {

@@ -620,8 +620,9 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 		loc.lod = block.lod;
 		// TODO We might want to handle null blocks too, in case they intentionally get deleted
 		ERR_FAIL_COND(block.voxels.is_null());
-		const std::vector<uint8_t> &temp = serializer.serialize_and_compress(**block.voxels);
-		con->save_block(loc, temp);
+		VoxelBlockSerializerInternal::SerializeResult res = serializer.serialize_and_compress(**block.voxels);
+		ERR_FAIL_COND(!res.success);
+		con->save_block(loc, res.data);
 	});
 
 	ERR_FAIL_COND(con->end_transaction() == false);

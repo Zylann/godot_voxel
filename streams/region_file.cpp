@@ -363,10 +363,11 @@ Error VoxelRegionFile::save_block(Vector3i position, Ref<VoxelBuffer> block, Vox
 		// Check position matches the sectors rule
 		CRASH_COND((block_offset - _blocks_begin_offset) % _header.format.sector_size != 0);
 
-		const std::vector<uint8_t> &data = serializer.serialize_and_compress(**block);
-		f->store_32(data.size());
-		const unsigned int written_size = sizeof(int) + data.size();
-		f->store_buffer(data.data(), data.size());
+		VoxelBlockSerializerInternal::SerializeResult res = serializer.serialize_and_compress(**block);
+		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
+		f->store_32(res.data.size());
+		const unsigned int written_size = sizeof(int) + res.data.size();
+		f->store_buffer(res.data.data(), res.data.size());
 
 		const unsigned int end_pos = f->get_position();
 		CRASH_COND(written_size != (end_pos - block_offset));
@@ -381,8 +382,6 @@ Error VoxelRegionFile::save_block(Vector3i position, Ref<VoxelBuffer> block, Vox
 
 		_header_modified = true;
 
-		//print_line(String("Block saved flen={0}").format(varray(f->get_len())));
-
 	} else {
 		// The block is already in the file
 
@@ -392,7 +391,9 @@ Error VoxelRegionFile::save_block(Vector3i position, Ref<VoxelBuffer> block, Vox
 		const int old_sector_count = block_info.get_sector_count();
 		CRASH_COND(old_sector_count < 1);
 
-		const std::vector<uint8_t> &data = serializer.serialize_and_compress(**block);
+		VoxelBlockSerializerInternal::SerializeResult res = serializer.serialize_and_compress(**block);
+		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
+		const std::vector<uint8_t> &data = res.data;
 		const int written_size = sizeof(int) + data.size();
 
 		const int new_sector_count = get_sector_count_from_bytes(written_size);
