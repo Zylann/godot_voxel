@@ -530,8 +530,15 @@ void VoxelStreamSQLite::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vecto
 		Ref<VoxelBuffer> vb;
 		if (_cache.load_voxel_block(pos, r.lod, vb)) {
 			VoxelBlockRequest &wr = p_blocks.write[i];
-			wr.voxel_buffer = vb;
+
+			// Copying is required since the cache has ownership on its data,
+			// and the requests wants us to populate the buffer it provides
+			wr.voxel_buffer->copy_format(**vb);
+			wr.voxel_buffer->copy_from(**vb);
+			wr.voxel_buffer->copy_voxel_metadata(**vb);
+
 			out_results.write[i] = RESULT_BLOCK_FOUND;
+
 		} else {
 			blocks_to_load.push_back(i);
 		}
