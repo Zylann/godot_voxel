@@ -683,7 +683,6 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 	}
 
 	float us = static_cast<double>(elapsed_us) / voxel_count;
-	// print_line(String("Time: {0}us").format(varray(us)));
 	return us;
 }
 

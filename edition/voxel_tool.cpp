@@ -70,6 +70,7 @@ void VoxelTool::set_sdf_scale(float s) {
 Ref<VoxelRaycastResult> VoxelTool::raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
 	ERR_PRINT("Not implemented");
 	return Ref<VoxelRaycastResult>();
+	// See derived classes for implementations
 }
 
 uint64_t VoxelTool::get_voxel(Vector3i pos) {
