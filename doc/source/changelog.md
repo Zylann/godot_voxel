@@ -19,6 +19,7 @@ Ongoing development - `master`
     - Meshers are now resources so you can choose and configure them per terrain
     - Added [FastNoiseLite](https://github.com/Auburn/FastNoise) for a wider variety of noises
     - Generators are no longer limited to a single background thread
+    - Added `VoxelStreamSQLite`, allowing to save volumes as a single SQLite database
 
 - Editor
     - Streaming/LOD can be set to follow the editor camera instead of being centered on world origin. Use with caution, fast big movements and zooms can cause lag
@@ -47,6 +48,7 @@ Ongoing development - `master`
     - Generators and streams have been split. Streams are more dedicated to files and use a single background thread. Generators are dedicated to generation and can be used by more than one background thread. Terrains have one property for each.
     - The meshing system no longer "guesses" how voxels will look like. Instead it uses the mesher assigned to the terrain.
     - SDF and TYPE channels have different default depth, so if you relied on 8-bit depth, you may have to explicitely set that format in your generator, to avoid mismatch with existing savegames
+    - The block serialization format has changed, and migration is not implemented, so old saves using it cannot be used. See documentation for more information.
 
 - Fixes
     - C# should be able to properly implement generator/stream functions
