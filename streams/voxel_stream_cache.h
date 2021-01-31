@@ -20,6 +20,7 @@ public:
 
 	template <typename F>
 	void flush(F save_func) {
+		_count = 0;
 		for (unsigned int lod_index = 0; lod_index < _cache.size(); ++lod_index) {
 			Lod &lod = _cache[lod_index];
 			RWLockWrite wlock(lod.rw_lock);

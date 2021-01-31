@@ -238,6 +238,8 @@ bool VoxelStreamSQLiteInternal::end_transaction() {
 }
 
 bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, const std::vector<uint8_t> &block_data) {
+	VOXEL_PROFILE_SCOPE();
+
 	sqlite3 *db = _db;
 	sqlite3_stmt *update_block_statement = _update_block_statement;
 
@@ -609,7 +611,8 @@ void VoxelStreamSQLite::flush_cache() {
 // This function does not lock any mutex for internal use.
 void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 	VOXEL_PROFILE_SCOPE();
-	PRINT_VERBOSE("VoxelStreamSQLite: Flushing cache");
+	PRINT_VERBOSE(String("VoxelStreamSQLite: Flushing cache ({0} elements)")
+						  .format(varray(_cache.get_indicative_block_count())));
 
 	VoxelBlockSerializerInternal &serializer = _voxel_block_serializer;
 
