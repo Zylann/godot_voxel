@@ -175,7 +175,7 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 		meta.version = VERSION;
 		// Defaults
 		meta.block_size_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
-		for (int i = 0; i < meta.channels.size(); ++i) {
+		for (unsigned int i = 0; i < meta.channels.size(); ++i) {
 			Meta::Channel &channel = meta.channels[i];
 			channel.used = true;
 			channel.depth = VoxelBuffer::DEPTH_16_BIT;
@@ -361,7 +361,7 @@ VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
 		if (rc == SQLITE_ROW) {
 			const int index = sqlite3_column_int(load_channels_statement, 0);
 			const int depth = sqlite3_column_int(load_channels_statement, 1);
-			if (index < 0 || index >= meta.channels.size()) {
+			if (index < 0 || index >= static_cast<int>(meta.channels.size())) {
 				ERR_PRINT(String("Channel index {0} is invalid").format(varray(index)));
 				continue;
 			}
