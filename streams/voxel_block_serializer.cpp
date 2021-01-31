@@ -10,6 +10,7 @@
 #include <core/io/stream_peer.h>
 //#include <core/map.h>
 #include <core/os/file_access.h>
+#include <limits>
 
 namespace VoxelCompressedData {
 
