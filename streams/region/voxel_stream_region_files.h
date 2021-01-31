@@ -1,10 +1,10 @@
 #ifndef VOXEL_STREAM_REGION_H
 #define VOXEL_STREAM_REGION_H
 
-#include "../util/fixed_array.h"
-#include "file_utils.h"
+#include "../../util/fixed_array.h"
+#include "../file_utils.h"
+#include "../voxel_stream_file.h"
 #include "region_file.h"
-#include "voxel_stream_file.h"
 
 class FileAccess;
 

@@ -1,9 +1,9 @@
 #include "voxel_stream_region_files.h"
-#include "../math/rect3i.h"
-#include "../server/voxel_server.h"
-#include "../util/macros.h"
-#include "../util/profiling.h"
-#include "../util/utility.h"
+#include "../../math/rect3i.h"
+#include "../../server/voxel_server.h"
+#include "../../util/macros.h"
+#include "../../util/profiling.h"
+#include "../../util/utility.h"
 #include <core/io/json.h>
 #include <core/os/os.h>
 #include <algorithm>

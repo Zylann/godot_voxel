@@ -19,6 +19,7 @@ voxel_files = [
 
 	"streams/*.cpp",
 	"streams/sqlite/*.cpp",
+	"streams/region/*.cpp",
 
 	"storage/*.cpp",
 

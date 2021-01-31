@@ -1,10 +1,10 @@
 #ifndef REGION_FILE_H
 #define REGION_FILE_H
 
-#include "../math/color8.h"
-#include "../math/vector3i.h"
-#include "../storage/voxel_buffer.h"
-#include "../util/fixed_array.h"
+#include "../../math/color8.h"
+#include "../../math/vector3i.h"
+#include "../../storage/voxel_buffer.h"
+#include "../../util/fixed_array.h"
 #include <vector>
 
 class FileAccess;
