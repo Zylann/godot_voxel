@@ -679,6 +679,6 @@ void VoxelStreamSQLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_database_path", "path"), &VoxelStreamSQLite::set_database_path);
 	ClassDB::bind_method(D_METHOD("get_database_path"), &VoxelStreamSQLite::get_database_path);
 
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_DIR),
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_FILE),
 			"set_database_path", "get_database_path");
 }
