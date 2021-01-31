@@ -3,16 +3,16 @@ Region format
 
 Version: 3
 
-Region files allows to save large 3D voxel volumes in a format suitable for frequent streaming and partial edition.  
-This format is inspired by https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game  
-It is used by `VoxelStreamRegionFiles`, which can be found in https://github.com/Zylann/godot_voxel/blob/master/streams/voxel_stream_region_files.cpp
+Region files allows to save large fixed-size 3D voxel volumes in a format suitable for frequent streaming and partial edition.
+This format is inspired by [Seed of Andromeda](https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game) and Minecraft.
+It is used by `VoxelStreamRegionFiles`, which is implemented in [this C++ file](https://github.com/Zylann/godot_voxel/blob/master/streams/voxel_stream_region_files.cpp)
 
 Two use cases exist:
 - Standalone region: fixed-size voxel volume
 - Region forest: using multiple region files for infinite voxel worlds without boundaries. This used to be the only case region files were used for.
 
-Note:
-The "Region" name in this document does not designate a standard, but an approach. The format described here is specific to the Godot module, and could be referred to as `Godot Voxel VXR` if a full name is needed.
+!!! note
+	The "Region" name in this document does not designate a standard, but an approach. The format described here is specific to the Godot module, and could be referred to as `Godot Voxel VXR` if a full name is needed.
 
 
 Migration
