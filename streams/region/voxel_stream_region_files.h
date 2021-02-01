@@ -3,7 +3,8 @@
 
 #include "../../util/fixed_array.h"
 #include "../file_utils.h"
-#include "../voxel_stream_file.h"
+#include "../voxel_block_serializer.h"
+#include "../voxel_stream.h"
 #include "region_file.h"
 
 class FileAccess;
@@ -17,8 +18,8 @@ class FileAccess;
 //
 // Region files are not thread-safe. Because of this, internal mutexing may often constrain the use by one thread only.
 //
-class VoxelStreamRegionFiles : public VoxelStreamFile {
-	GDCLASS(VoxelStreamRegionFiles, VoxelStreamFile)
+class VoxelStreamRegionFiles : public VoxelStream {
+	GDCLASS(VoxelStreamRegionFiles, VoxelStream)
 public:
 	VoxelStreamRegionFiles();
 	~VoxelStreamRegionFiles();
@@ -107,6 +108,8 @@ private:
 			return rpos_a < rpos_b;
 		}
 	};
+
+	static thread_local VoxelBlockSerializerInternal _block_serializer;
 
 	// TODO This is not thread-friendly.
 	// `VoxelRegionFile` is not thread-safe so we have to limit the usage to one thread at once, blocking the others.

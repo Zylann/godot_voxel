@@ -4,6 +4,7 @@
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/utility.h"
+
 #include <core/io/json.h>
 #include <core/os/os.h>
 #include <algorithm>
@@ -17,6 +18,8 @@ const uint8_t FORMAT_VERSION_LEGACY_2 = 2;
 const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
 const char *META_FILE_NAME = "meta.vxrm";
 } // namespace
+
+thread_local VoxelBlockSerializerInternal VoxelStreamRegionFiles::_block_serializer;
 
 VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.version = FORMAT_VERSION;
@@ -287,7 +290,7 @@ VoxelFileResult VoxelStreamRegionFiles::save_meta() {
 
 	Error err;
 	VoxelFileLockerWrite file_wlock(meta_path);
-	FileAccessRef f = open_file(meta_path, FileAccess::WRITE, &err);
+	FileAccessRef f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
 	if (!f) {
 		ERR_PRINT(String("Could not save {0}").format(varray(meta_path)));
 		return VOXEL_FILE_CANT_OPEN;
@@ -334,7 +337,7 @@ VoxelFileResult VoxelStreamRegionFiles::load_meta() {
 	{
 		Error err;
 		VoxelFileLockerRead file_rlock(meta_path);
-		FileAccessRef f = open_file(meta_path, FileAccess::READ, &err);
+		FileAccessRef f = FileAccess::open(meta_path, FileAccess::READ, &err);
 		if (!f) {
 			return VOXEL_FILE_CANT_OPEN;
 		}

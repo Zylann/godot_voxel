@@ -26,7 +26,6 @@
 #include "streams/sqlite/voxel_stream_sqlite.h"
 #include "streams/vox_loader.h"
 #include "streams/voxel_stream_block_files.h"
-#include "streams/voxel_stream_file.h"
 #include "streams/voxel_stream_script.h"
 #include "terrain/voxel_box_mover.h"
 #include "terrain/voxel_lod_terrain.h"
@@ -71,7 +70,6 @@ void register_voxel_types() {
 
 	// Streams
 	ClassDB::register_virtual_class<VoxelStream>();
-	ClassDB::register_class<VoxelStreamFile>();
 	ClassDB::register_class<VoxelStreamBlockFiles>();
 	ClassDB::register_class<VoxelStreamRegionFiles>();
 	ClassDB::register_class<VoxelStreamScript>();

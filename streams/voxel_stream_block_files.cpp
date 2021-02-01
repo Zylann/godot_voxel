@@ -1,6 +1,7 @@
 #include "voxel_stream_block_files.h"
 #include "../server/voxel_server.h"
 #include "../util/utility.h"
+
 #include <core/os/dir_access.h>
 #include <core/os/file_access.h>
 
@@ -11,6 +12,8 @@ const char *FORMAT_BLOCK_MAGIC = "VXB_";
 const char *META_FILE_NAME = "meta.vxbm";
 const char *BLOCK_FILE_EXTENSION = ".vxb";
 } // namespace
+
+thread_local VoxelBlockSerializerInternal VoxelStreamBlockFiles::_block_serializer;
 
 VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 	// Defaults
@@ -51,7 +54,7 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 	VoxelFileLockerRead file_rlock(file_path);
 	{
 		Error err;
-		f = open_file(file_path, FileAccess::READ, &err);
+		f = FileAccess::open(file_path, FileAccess::READ, &err);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
 		if (f == nullptr && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
 			return RESULT_BLOCK_NOT_FOUND;
@@ -135,7 +138,7 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 		{
 			Error err;
 			// Create file if not exists, always truncate
-			f = open_file(file_path, FileAccess::WRITE, &err);
+			f = FileAccess::open(file_path, FileAccess::WRITE, &err);
 		}
 		ERR_FAIL_COND(f == nullptr);
 
@@ -188,7 +191,7 @@ VoxelFileResult VoxelStreamBlockFiles::save_meta() {
 	{
 		Error err;
 		VoxelFileLockerWrite file_wlock(meta_path);
-		FileAccess *f = open_file(meta_path, FileAccess::WRITE, &err);
+		FileAccess *f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
 		ERR_FAIL_COND_V(f == nullptr, VOXEL_FILE_CANT_OPEN);
 
 		f->store_buffer((uint8_t *)FORMAT_META_MAGIC, 4);
@@ -228,7 +231,7 @@ VoxelFileResult VoxelStreamBlockFiles::load_meta() {
 	{
 		Error open_result;
 		VoxelFileLockerRead file_rlock(meta_path);
-		FileAccessRef f = open_file(meta_path, FileAccess::READ, &open_result);
+		FileAccessRef f = FileAccess::open(meta_path, FileAccess::READ, &open_result);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
 		if (!_meta_saved && (open_result == ERR_FILE_NOT_FOUND || open_result == ERR_FILE_CANT_OPEN)) {
 			// This is a new terrain, save the meta we have and consider it current
