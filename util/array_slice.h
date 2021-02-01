@@ -105,4 +105,14 @@ private:
 	size_t _size;
 };
 
+template <typename T>
+ArraySlice<const T> to_slice(const std::vector<T> &vec) {
+	return ArraySlice<const T>(vec.data(), 0, vec.size());
+}
+
+template <typename T>
+ArraySlice<T> to_slice(std::vector<T> &vec) {
+	return ArraySlice<T>(vec.data(), 0, vec.size());
+}
+
 #endif // ARRAY_SLICE_H

@@ -338,6 +338,29 @@ inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
 	return Vector3(x, y, z);
 }
 
+// Subdivides a rectangle in square chunks and runs a function on each of them.
+// The ref is important to allow re-using functors.
+template <typename F>
+inline void for_chunks_2d(int w, int h, int chunk_size, F &f) {
+	const int chunks_x = w / chunk_size;
+	const int chunks_y = h / chunk_size;
+
+	const int last_chunk_width = w % chunk_size;
+	const int last_chunk_height = h % chunk_size;
+
+	for (int cy = 0; cy < chunks_y; ++cy) {
+		int ry = cy * chunk_size;
+		int rh = ry + chunk_size > h ? last_chunk_height : chunk_size;
+
+		for (int cx = 0; cx < chunks_x; ++cx) {
+			int rx = cx * chunk_size;
+			int rw = ry + chunk_size > w ? last_chunk_width : chunk_size;
+
+			f(rx, ry, rw, rh);
+		}
+	}
+}
+
 void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, float sdf_min, float sdf_max) {
 	ERR_FAIL_COND(im.is_null());
 
@@ -349,35 +372,88 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 
 	ERR_FAIL_COND(runtime == nullptr || !runtime->has_output());
 
-	Cache &cache = _cache;
-	// TODO Need to convert this to buffers instead of using single queries
-	runtime->prepare_state(cache.state, 1);
+	// This process would use too much memory if run over the entire image at once,
+	// so we'll subdivide the load in smaller chunks
+	struct ProcessChunk {
+		std::vector<float> x_coords;
+		std::vector<float> y_coords;
+		std::vector<float> z_coords;
+		std::vector<float> sdf_values;
+		Ref<Image> im;
+		std::shared_ptr<const VoxelGraphRuntime> runtime;
+		VoxelGraphRuntime::State &state;
+		const float ref_radius;
+		const float sdf_min;
+		const float sdf_max;
 
-	const Vector2 suv(
-			1.f / static_cast<float>(im->get_width()),
-			1.f / static_cast<float>(im->get_height()));
+		ProcessChunk(VoxelGraphRuntime::State &p_state, float p_ref_radius, float p_sdf_min, float p_sdf_max) :
+				state(p_state),
+				ref_radius(p_ref_radius),
+				sdf_min(p_sdf_min),
+				sdf_max(p_sdf_max) {}
 
-	const float nr = 1.f / (sdf_max - sdf_min);
+		void operator()(int x0, int y0, int w, int h) {
+			VOXEL_PROFILE_SCOPE();
 
-	im->lock();
+			const unsigned int area = w * h;
+			x_coords.resize(area);
+			y_coords.resize(area);
+			z_coords.resize(area);
+			sdf_values.resize(area);
+			runtime->prepare_state(state, area);
 
-	for (int iy = 0; iy < im->get_height(); ++iy) {
-		for (int ix = 0; ix < im->get_width(); ++ix) {
-			const Vector2 uv = suv * Vector2(ix, iy);
-			const Vector3 pos = get_3d_pos_from_panorama_uv(uv) * ref_radius;
-			const float sdf = runtime->generate_single(cache.state, pos);
-			const float nh = (-sdf - sdf_min) * nr;
-			im->set_pixel(ix, iy, Color(nh, nh, nh));
+			const Vector2 suv = Vector2(
+					1.f / static_cast<float>(im->get_width()),
+					1.f / static_cast<float>(im->get_height()));
+
+			const float nr = 1.f / (sdf_max - sdf_min);
+
+			const int xmax = x0 + w;
+			const int ymax = y0 + h;
+
+			unsigned int i = 0;
+			for (int iy = y0; iy < ymax; ++iy) {
+				for (int ix = x0; ix < xmax; ++ix) {
+					const Vector2 uv = suv * Vector2(ix, iy);
+					const Vector3 p = get_3d_pos_from_panorama_uv(uv) * ref_radius;
+					x_coords[i] = p.x;
+					y_coords[i] = p.y;
+					z_coords[i] = p.z;
+					++i;
+				}
+			}
+
+			runtime->generate_set(state,
+					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values), false);
+
+			// Calculate final pixels
+			im->lock();
+			i = 0;
+			for (int iy = y0; iy < ymax; ++iy) {
+				for (int ix = x0; ix < xmax; ++ix) {
+					const float sdf = sdf_values[i];
+					const float nh = (-sdf - sdf_min) * nr;
+					im->set_pixel(ix, iy, Color(nh, nh, nh));
+					++i;
+				}
+			}
+			im->unlock();
 		}
-	}
+	};
 
-	im->unlock();
+	Cache &cache = _cache;
+
+	ProcessChunk pc(cache.state, ref_radius, sdf_min, sdf_max);
+	pc.runtime = runtime;
+	pc.im = im;
+	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
 // If this generator is used to produce a planet, specifically using a spherical heightmap approach,
 // then this function can be used to bake a map of the surface.
 // Such maps can be used by shaders to sharpen the details of the planet when seen from far away.
 void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength) {
+	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(im.is_null());
 
 	std::shared_ptr<const VoxelGraphRuntime> runtime;
@@ -388,17 +464,121 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 
 	ERR_FAIL_COND(runtime == nullptr || !runtime->has_output());
 
+	// This process would use too much memory if run over the entire image at once,
+	// so we'll subdivide the load in smaller chunks
+	struct ProcessChunk {
+		std::vector<float> x_coords;
+		std::vector<float> y_coords;
+		std::vector<float> z_coords;
+		std::vector<float> sdf_values_p; // TODO Could be used at the same time to get bump?
+		std::vector<float> sdf_values_px;
+		std::vector<float> sdf_values_py;
+		Ref<Image> im;
+		std::shared_ptr<const VoxelGraphRuntime> runtime;
+		VoxelGraphRuntime::State &state;
+		const float strength;
+		const float ref_radius;
+
+		ProcessChunk(VoxelGraphRuntime::State &p_state, float p_strength, float p_ref_radius) :
+				state(p_state),
+				strength(p_strength),
+				ref_radius(p_ref_radius) {}
+
+		void operator()(int x0, int y0, int w, int h) {
+			VOXEL_PROFILE_SCOPE();
+
+			const unsigned int area = w * h;
+			x_coords.resize(area);
+			y_coords.resize(area);
+			z_coords.resize(area);
+			sdf_values_p.resize(area);
+			sdf_values_px.resize(area);
+			sdf_values_py.resize(area);
+			runtime->prepare_state(state, area);
+
+			const float ns = 2.f / strength;
+
+			const Vector2 suv = Vector2(
+					1.f / static_cast<float>(im->get_width()),
+					1.f / static_cast<float>(im->get_height()));
+
+			const Vector2 normal_step = 0.5f * Vector2(1.f, 1.f) / im->get_size();
+			const Vector2 normal_step_x = Vector2(normal_step.x, 0.f);
+			const Vector2 normal_step_y = Vector2(0.f, normal_step.y);
+
+			const int xmax = x0 + w;
+			const int ymax = y0 + h;
+
+			// Get heights
+			unsigned int i = 0;
+			for (int iy = y0; iy < ymax; ++iy) {
+				for (int ix = x0; ix < xmax; ++ix) {
+					const Vector2 uv = suv * Vector2(ix, iy);
+					const Vector3 p = get_3d_pos_from_panorama_uv(uv) * ref_radius;
+					x_coords[i] = p.x;
+					y_coords[i] = p.y;
+					z_coords[i] = p.z;
+					++i;
+				}
+			}
+			runtime->generate_set(state,
+					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_p), false);
+
+			// Get neighbors along X
+			i = 0;
+			for (int iy = y0; iy < ymax; ++iy) {
+				for (int ix = x0; ix < xmax; ++ix) {
+					const Vector2 uv = suv * Vector2(ix, iy);
+					const Vector3 p = get_3d_pos_from_panorama_uv(uv + normal_step_x) * ref_radius;
+					x_coords[i] = p.x;
+					y_coords[i] = p.y;
+					z_coords[i] = p.z;
+					++i;
+				}
+			}
+			runtime->generate_set(state,
+					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_px), false);
+
+			// Get neighbors along Y
+			i = 0;
+			for (int iy = y0; iy < ymax; ++iy) {
+				for (int ix = x0; ix < xmax; ++ix) {
+					const Vector2 uv = suv * Vector2(ix, iy);
+					const Vector3 p = get_3d_pos_from_panorama_uv(uv + normal_step_y) * ref_radius;
+					x_coords[i] = p.x;
+					y_coords[i] = p.y;
+					z_coords[i] = p.z;
+					++i;
+				}
+			}
+			runtime->generate_set(state,
+					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_py), false);
+
+			// TODO This is probably invalid due to the distortion, may need to use another approach.
+			// Compute the 3D normal from gradient, then project it?
+
+			// Calculate final pixels
+			im->lock();
+			i = 0;
+			for (int iy = y0; iy < ymax; ++iy) {
+				for (int ix = x0; ix < xmax; ++ix) {
+					const float h = sdf_values_p[i];
+					const float h_px = sdf_values_px[i];
+					const float h_py = sdf_values_py[i];
+					++i;
+					const Vector3 normal = Vector3(h_px - h, ns, h_py - h).normalized();
+					const Color en(
+							0.5f * normal.x + 0.5f,
+							-0.5f * normal.z + 0.5f,
+							0.5f * normal.y + 0.5f);
+					im->set_pixel(ix, iy, en);
+				}
+			}
+			im->unlock();
+		}
+	};
+
 	Cache &cache = _cache;
-	// TODO Need to convert this to buffers instead of using single queries
-	runtime->prepare_state(cache.state, 1);
-
-	const Vector2 suv(
-			1.f / static_cast<float>(im->get_width()),
-			1.f / static_cast<float>(im->get_height()));
-
-	const Vector2 normal_step = 0.5f * Vector2(1.f, 1.f) / im->get_size();
-	const Vector2 normal_step_x = Vector2(normal_step.x, 0.f);
-	const Vector2 normal_step_y = Vector2(0.f, normal_step.y);
 
 	// The default for strength is 1.f
 	const float e = 0.001f;
@@ -410,36 +590,10 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 		}
 	}
 
-	const float ns = 2.f / strength;
-
-	im->lock();
-
-	for (int iy = 0; iy < im->get_height(); ++iy) {
-		for (int ix = 0; ix < im->get_width(); ++ix) {
-			// TODO There is probably a more optimized way to do this
-			const Vector2 uv = suv * Vector2(ix, iy);
-
-			const Vector3 np_nx = get_3d_pos_from_panorama_uv(uv - normal_step_x) * ref_radius;
-			const Vector3 np_px = get_3d_pos_from_panorama_uv(uv + normal_step_x) * ref_radius;
-			const Vector3 np_ny = get_3d_pos_from_panorama_uv(uv - normal_step_y) * ref_radius;
-			const Vector3 np_py = get_3d_pos_from_panorama_uv(uv + normal_step_y) * ref_radius;
-
-			// TODO Need to convert this to buffers instead of using single queries
-			const float h_nx = -runtime->generate_single(cache.state, np_nx);
-			const float h_px = -runtime->generate_single(cache.state, np_px);
-			const float h_ny = -runtime->generate_single(cache.state, np_ny);
-			const float h_py = -runtime->generate_single(cache.state, np_py);
-
-			const Vector3 normal = Vector3(h_nx - h_px, ns, h_ny - h_py).normalized();
-			const Color en(
-					0.5f * normal.x + 0.5f,
-					-0.5f * normal.z + 0.5f,
-					0.5f * normal.y + 0.5f);
-			im->set_pixel(ix, iy, en);
-		}
-	}
-
-	im->unlock();
+	ProcessChunk pc(cache.state, strength, ref_radius);
+	pc.runtime = runtime;
+	pc.im = im;
+	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
 // TODO This function isn't used yet, but whatever uses it should probably put locking and cache outside
