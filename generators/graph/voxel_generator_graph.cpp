@@ -392,10 +392,10 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 				sdf_min(p_sdf_min),
 				sdf_max(p_sdf_max) {}
 
-		void operator()(int x0, int y0, int w, int h) {
+		void operator()(int x0, int y0, int width, int height) {
 			VOXEL_PROFILE_SCOPE();
 
-			const unsigned int area = w * h;
+			const unsigned int area = width * height;
 			x_coords.resize(area);
 			y_coords.resize(area);
 			z_coords.resize(area);
@@ -408,8 +408,8 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 
 			const float nr = 1.f / (sdf_max - sdf_min);
 
-			const int xmax = x0 + w;
-			const int ymax = y0 + h;
+			const int xmax = x0 + width;
+			const int ymax = y0 + height;
 
 			unsigned int i = 0;
 			for (int iy = y0; iy < ymax; ++iy) {
@@ -484,10 +484,10 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 				strength(p_strength),
 				ref_radius(p_ref_radius) {}
 
-		void operator()(int x0, int y0, int w, int h) {
+		void operator()(int x0, int y0, int width, int height) {
 			VOXEL_PROFILE_SCOPE();
 
-			const unsigned int area = w * h;
+			const unsigned int area = width * height;
 			x_coords.resize(area);
 			y_coords.resize(area);
 			z_coords.resize(area);
@@ -506,8 +506,8 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 			const Vector2 normal_step_x = Vector2(normal_step.x, 0.f);
 			const Vector2 normal_step_y = Vector2(0.f, normal_step.y);
 
-			const int xmax = x0 + w;
-			const int ymax = y0 + h;
+			const int xmax = x0 + width;
+			const int ymax = y0 + height;
 
 			// Get heights
 			unsigned int i = 0;
