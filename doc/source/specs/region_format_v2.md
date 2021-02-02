@@ -1,7 +1,8 @@
 Region format
 ==================
 
-**This document is about an old version of the format. You may check the most recent version.**
+!!! warn
+    This document is about an old version of the format. You may check the most recent version.
 
 Version: 2
 

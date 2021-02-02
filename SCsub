@@ -10,18 +10,24 @@ env_voxel = env_modules.Clone()
 
 voxel_files = [
 	"*.cpp",
+	
 	"meshers/blocky/*.cpp",
 	"meshers/transvoxel/*.cpp",
 	"meshers/dmc/*.cpp",
 	"meshers/cubes/*.cpp",
 	"meshers/*.cpp",
+
 	"streams/*.cpp",
+	"streams/sqlite/*.cpp",
+	"streams/region/*.cpp",
+
 	"storage/*.cpp",
+
 	"generators/*.cpp",
 	"generators/graph/*.cpp",
 	"generators/simple/*.cpp",
-	"util/*.cpp",
 
+	"util/*.cpp",
 	#"util/noise/*.cpp",
 	"util/noise/fast_noise_lite.cpp",
 	"util/noise/fast_noise_lite_gradient.cpp",
@@ -30,7 +36,9 @@ voxel_files = [
 	"server/*.cpp",
 	"math/*.cpp",
 	"edition/*.cpp",
-	"thirdparty/lz4/*.c"
+
+	"thirdparty/lz4/*.c",
+	"thirdparty/sqlite/*.c"
 ]
 
 if env["tools"]:
@@ -42,6 +50,13 @@ if env["tools"]:
 		"editor/fast_noise_lite/*.cpp",
 	]
 	voxel_files += voxel_editor_files
+
+if env["platform"] == "windows":
+	# When compiling SQLite with Godot on Windows with MSVC, it produces the following warning:
+	# `sqlite3.c(42754): warning C4996: 'GetVersionExA': was declared deprecated `
+	# To fix it, let's indicate to SQLite it should not use this function, even if it is available.
+	# https://stackoverflow.com/questions/20031597/error-c4996-received-when-compiling-sqlite-c-in-visual-studio-2013
+	env_voxel.Append(CPPDEFINES={"SQLITE_WIN32_GETVERSIONEX": 0})
 
 for f in voxel_files:
 	env_voxel.add_source_files(env.modules_sources, f)

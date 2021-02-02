@@ -3,7 +3,6 @@
 #include "../math/rect3i.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../server/voxel_server.h"
-#include "../streams/voxel_stream_file.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/profiling_clock.h"
@@ -294,9 +293,8 @@ void VoxelLodTerrain::set_block_size_po2(unsigned int p_block_size_po2) {
 	ERR_FAIL_COND(p_block_size_po2 > 32);
 
 	unsigned int block_size_po2 = p_block_size_po2;
-	Ref<VoxelStreamFile> file_stream = _stream;
-	if (file_stream.is_valid()) {
-		block_size_po2 = file_stream->get_block_size_po2();
+	if (_stream.is_valid()) {
+		block_size_po2 = _stream->get_block_size_po2();
 	}
 
 	if (block_size_po2 == get_block_size_pow2()) {

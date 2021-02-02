@@ -10,11 +10,116 @@
 #include <core/io/stream_peer.h>
 //#include <core/map.h>
 #include <core/os/file_access.h>
+#include <limits>
+
+namespace VoxelCompressedData {
+
+// Compressed data starts with a single byte telling which compression format is used.
+// What follows depends on it.
+
+enum Compression {
+	// No compression. All following bytes can be read as-is.
+	// Could be used for debugging.
+	COMPRESSION_NONE = 0,
+	// The next uint32_t will be the size of decompressed data.
+	// All following bytes are compressed data using LZ4 defaults.
+	// This is the fastest compression format.
+	COMPRESSION_LZ4 = 1,
+	COMPRESSION_COUNT = 2
+};
+
+bool decompress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst) {
+	VOXEL_PROFILE_SCOPE();
+
+	FileAccessMemory f;
+	f.open_custom(src.data(), src.size());
+
+	const Compression comp = static_cast<Compression>(f.get_8());
+	ERR_FAIL_INDEX_V(comp, COMPRESSION_COUNT, false);
+
+	switch (comp) {
+		case COMPRESSION_NONE: {
+			// We still have to do a copy. The point of this container is compression,
+			// so we don't worry too much about the performance impact of not using `src` directly.
+			dst.resize(src.size() - 1);
+			memcpy(dst.data(), src.data() + 1, dst.size());
+		} break;
+
+		case COMPRESSION_LZ4: {
+			const uint32_t decompressed_size = f.get_32();
+			const uint32_t header_size = sizeof(uint8_t) + sizeof(uint32_t);
+
+			dst.resize(decompressed_size);
+
+			const uint32_t actually_decompressed_size = LZ4_decompress_safe(
+					(const char *)src.data() + header_size,
+					(char *)dst.data(),
+					src.size() - header_size,
+					dst.size());
+
+			ERR_FAIL_COND_V_MSG(actually_decompressed_size < 0, false,
+					String("LZ4 decompression error {0}").format(varray(actually_decompressed_size)));
+
+			ERR_FAIL_COND_V_MSG(actually_decompressed_size != decompressed_size, false,
+					String("Expected {0} bytes, obtained {1}")
+							.format(varray(decompressed_size, actually_decompressed_size)));
+		} break;
+
+		default:
+			ERR_PRINT("Invalid compression header");
+			return false;
+	}
+
+	return true;
+}
+
+bool compress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp) {
+	VOXEL_PROFILE_SCOPE();
+
+	switch (comp) {
+		case COMPRESSION_NONE: {
+			dst.resize(src.size() + 1);
+			dst[0] = comp;
+			memcpy(dst.data() + 1, src.data(), src.size());
+		} break;
+
+		case COMPRESSION_LZ4: {
+			const uint32_t header_size = sizeof(uint8_t) + sizeof(uint32_t);
+			dst.resize(header_size + LZ4_compressBound(src.size()));
+
+			// Write header
+			FileAccessMemory f;
+			f.open_custom(dst.data(), dst.size());
+			f.store_8(comp);
+			f.store_32(src.size());
+			f.close();
+
+			const uint32_t compressed_size = LZ4_compress_default(
+					(const char *)src.data(),
+					(char *)dst.data() + header_size,
+					src.size(),
+					dst.size() - header_size);
+
+			ERR_FAIL_COND_V(compressed_size < 0, false);
+			ERR_FAIL_COND_V(compressed_size == 0, false);
+
+			dst.resize(header_size + compressed_size);
+		} break;
+
+		default:
+			ERR_PRINT("Invalid compression header");
+			return false;
+	}
+
+	return true;
+}
+
+} // namespace VoxelCompressedData
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-// TODO Introduce versionning
-//const uint16_t BLOCK_VERSION = 0;
-//const unsigned int BLOCK_VERSION_HEADER_SIZE = sizeof(uint16_t);
+const uint8_t BLOCK_VERSION = 2;
 const unsigned int BLOCK_TRAILING_MAGIC = 0x900df00d;
 const unsigned int BLOCK_TRAILING_MAGIC_SIZE = 4;
 const unsigned int BLOCK_METADATA_HEADER_SIZE = sizeof(uint32_t);
@@ -148,20 +253,25 @@ bool deserialize_metadata(uint8_t *p_src, VoxelBuffer &buffer, const size_t meta
 }
 
 size_t get_size_in_bytes(const VoxelBuffer &buffer, size_t &metadata_size) {
-	size_t size = 0;
+	// Version and size
+	size_t size = 1 * sizeof(uint8_t) + 3 * sizeof(uint16_t);
+
 	const Vector3i size_in_voxels = buffer.get_size();
 
 	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
 		const VoxelBuffer::Compression compression = buffer.get_channel_compression(channel_index);
+		const VoxelBuffer::Depth depth = buffer.get_channel_depth(channel_index);
+
+		// For format value
 		size += 1;
 
 		switch (compression) {
 			case VoxelBuffer::COMPRESSION_NONE: {
-				size += size_in_voxels.volume() * sizeof(uint8_t);
+				size += VoxelBuffer::get_size_in_bytes_for_volume(size_in_voxels, depth);
 			} break;
 
 			case VoxelBuffer::COMPRESSION_UNIFORM: {
-				size += 1;
+				size += VoxelBuffer::get_depth_bit_count(depth) >> 3;
 			} break;
 
 			default:
@@ -180,29 +290,45 @@ size_t get_size_in_bytes(const VoxelBuffer &buffer, size_t &metadata_size) {
 	return size + metadata_size_with_header + BLOCK_TRAILING_MAGIC_SIZE;
 }
 
-const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize(VoxelBuffer &voxel_buffer) {
+VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize(const VoxelBuffer &voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
+
 	size_t metadata_size = 0;
 	const size_t data_size = get_size_in_bytes(voxel_buffer, metadata_size);
 	_data.resize(data_size);
 
-	CRASH_COND(_file_access_memory.open_custom(_data.data(), _data.size()) != OK);
+	ERR_FAIL_COND_V(_file_access_memory.open_custom(_data.data(), _data.size()) != OK, SerializeResult(_data, false));
 	FileAccessMemory *f = &_file_access_memory;
 
+	f->store_8(BLOCK_VERSION);
+
+	ERR_FAIL_COND_V(voxel_buffer.get_size().x > std::numeric_limits<uint16_t>().max(), SerializeResult(_data, false));
+	f->store_16(voxel_buffer.get_size().x);
+
+	ERR_FAIL_COND_V(voxel_buffer.get_size().y > std::numeric_limits<uint16_t>().max(), SerializeResult(_data, false));
+	f->store_16(voxel_buffer.get_size().y);
+
+	ERR_FAIL_COND_V(voxel_buffer.get_size().z > std::numeric_limits<uint16_t>().max(), SerializeResult(_data, false));
+	f->store_16(voxel_buffer.get_size().z);
+
 	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
-		VoxelBuffer::Compression compression = voxel_buffer.get_channel_compression(channel_index);
-		f->store_8(static_cast<uint8_t>(compression));
+		const VoxelBuffer::Compression compression = voxel_buffer.get_channel_compression(channel_index);
+		const VoxelBuffer::Depth depth = voxel_buffer.get_channel_depth(channel_index);
+		// Low nibble: compression (up to 16 values allowed)
+		// High nibble: depth (up to 16 values allowed)
+		const uint8_t fmt = static_cast<uint8_t>(compression) | (static_cast<uint8_t>(depth) << 4);
+		f->store_8(fmt);
 
 		switch (compression) {
 			case VoxelBuffer::COMPRESSION_NONE: {
 				ArraySlice<uint8_t> data;
-				CRASH_COND(!voxel_buffer.get_channel_raw(channel_index, data));
+				ERR_FAIL_COND_V(!voxel_buffer.get_channel_raw(channel_index, data), SerializeResult(_data, false));
 				f->store_buffer(data.data(), data.size());
 			} break;
 
 			case VoxelBuffer::COMPRESSION_UNIFORM: {
-				uint64_t v = voxel_buffer.get_voxel(Vector3i(), channel_index);
-				switch (voxel_buffer.get_channel_depth(channel_index)) {
+				const uint64_t v = voxel_buffer.get_voxel(Vector3i(), channel_index);
+				switch (depth) {
 					case VoxelBuffer::DEPTH_8_BIT:
 						f->store_8(v);
 						break;
@@ -237,19 +363,54 @@ const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize(VoxelBuffer 
 
 	f->store_32(BLOCK_TRAILING_MAGIC);
 
-	return _data;
+	return SerializeResult(_data, true);
 }
 
 bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
-	CRASH_COND(_file_access_memory.open_custom(p_data.data(), p_data.size()) != OK);
+
+	ERR_FAIL_COND_V(p_data.size() < sizeof(uint32_t), false);
+	const uint32_t magic = *reinterpret_cast<const uint32_t *>(&p_data[p_data.size() - sizeof(uint32_t)]);
+	ERR_FAIL_COND_V(magic != BLOCK_TRAILING_MAGIC, false);
+
+	ERR_FAIL_COND_V(_file_access_memory.open_custom(p_data.data(), p_data.size()) != OK, false);
 	FileAccessMemory *f = &_file_access_memory;
 
+	const uint8_t version = f->get_8();
+	if (version < 2) {
+		// In version 1, the first thing coming in block data is the compression value of the first channel.
+		// At the time, there was only 2 values this could take: 0 and 1.
+		// So we can recognize blocks using this old format and seek back.
+		// Formats before 2 also did not contain bit depth, they only had compression, leaving high nibble to 0.
+		// This means version 2 will read only 8-bit depth from the old block.
+		// "Fortunately", the old format also did not properly serialize formats using more than 8 bits.
+		// So we are kinda set to migrate without much changes, by assuming the block is already formatted properly.
+		f->seek(f->get_position() - 1);
+
+		WARN_PRINT("Reading block version < 2. Attempting to migrate.");
+
+	} else {
+		ERR_FAIL_COND_V(version != BLOCK_VERSION, false);
+
+		const unsigned int size_x = f->get_16();
+		const unsigned int size_y = f->get_16();
+		const unsigned int size_z = f->get_16();
+
+		out_voxel_buffer.create(Vector3i(size_x, size_y, size_z));
+	}
+
 	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
-		uint8_t compression_value = f->get_8();
+		const uint8_t fmt = f->get_8();
+		const uint8_t compression_value = fmt & 0xf;
+		const uint8_t depth_value = (fmt >> 4) & 0xf;
 		ERR_FAIL_COND_V_MSG(compression_value >= VoxelBuffer::COMPRESSION_COUNT, false,
 				"At offset 0x" + String::num_int64(f->get_position() - 1, 16));
+		ERR_FAIL_COND_V_MSG(depth_value >= VoxelBuffer::DEPTH_COUNT, false,
+				"At offset 0x" + String::num_int64(f->get_position() - 1, 16));
 		VoxelBuffer::Compression compression = (VoxelBuffer::Compression)compression_value;
+		VoxelBuffer::Depth depth = (VoxelBuffer::Depth)depth_value;
+
+		out_voxel_buffer.set_channel_depth(channel_index, depth);
 
 		switch (compression) {
 			case VoxelBuffer::COMPRESSION_NONE: {
@@ -258,7 +419,7 @@ bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_dat
 				ArraySlice<uint8_t> buffer;
 				CRASH_COND(!out_voxel_buffer.get_channel_raw(channel_index, buffer));
 
-				uint32_t read_len = f->get_buffer(buffer.data(), buffer.size());
+				const uint32_t read_len = f->get_buffer(buffer.data(), buffer.size());
 				if (read_len != buffer.size()) {
 					ERR_PRINT("Unexpected end of file");
 					return false;
@@ -306,53 +467,30 @@ bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_dat
 	return true;
 }
 
-const std::vector<uint8_t> &VoxelBlockSerializerInternal::serialize_and_compress(VoxelBuffer &voxel_buffer) {
+VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize_and_compress(
+		const VoxelBuffer &voxel_buffer) {
+
 	VOXEL_PROFILE_SCOPE();
-	const std::vector<uint8_t> &data = serialize(voxel_buffer);
 
-	unsigned int header_size = sizeof(unsigned int);
-	_compressed_data.resize(header_size + LZ4_compressBound(data.size()));
+	SerializeResult res = serialize(voxel_buffer);
+	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
+	const std::vector<uint8_t> &data = res.data;
 
-	// Write header
-	CRASH_COND(_file_access_memory.open_custom(_compressed_data.data(), _compressed_data.size()) != OK);
-	_file_access_memory.store_32(data.size());
-	_file_access_memory.close();
+	res.success = VoxelCompressedData::compress(
+			ArraySlice<const uint8_t>(data.data(), 0, data.size()), _compressed_data,
+			VoxelCompressedData::COMPRESSION_LZ4);
+	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
 
-	int compressed_size = LZ4_compress_default(
-			(const char *)data.data(),
-			(char *)_compressed_data.data() + header_size,
-			data.size(),
-			_compressed_data.size() - header_size);
-
-	CRASH_COND(compressed_size < 0);
-	CRASH_COND(compressed_size == 0);
-
-	_compressed_data.resize(header_size + compressed_size);
-	return _compressed_data;
+	return SerializeResult(_compressed_data, true);
 }
 
 bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 		const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer) {
+
 	VOXEL_PROFILE_SCOPE();
-	// Read header
-	unsigned int header_size = sizeof(unsigned int);
-	ERR_FAIL_COND_V(_file_access_memory.open_custom(p_data.data(), p_data.size()) != OK, false);
-	unsigned int decompressed_size = _file_access_memory.get_32();
-	_file_access_memory.close();
 
-	_data.resize(decompressed_size);
-
-	unsigned int actually_decompressed_size = LZ4_decompress_safe(
-			(const char *)p_data.data() + header_size,
-			(char *)_data.data(),
-			p_data.size() - header_size,
-			_data.size());
-
-	ERR_FAIL_COND_V_MSG(actually_decompressed_size < 0, false,
-			String("LZ4 decompression error {0}").format(varray(actually_decompressed_size)));
-
-	ERR_FAIL_COND_V_MSG(actually_decompressed_size != decompressed_size, false,
-			String("Expected {0} bytes, obtained {1}").format(varray(decompressed_size, actually_decompressed_size)));
+	const bool res = VoxelCompressedData::decompress(ArraySlice<const uint8_t>(p_data.data(), 0, p_data.size()), _data);
+	ERR_FAIL_COND_V(!res, false);
 
 	return deserialize(_data, out_voxel_buffer);
 }
@@ -377,14 +515,16 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 
 int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress) {
 	if (compress) {
-		const std::vector<uint8_t> &data = serialize_and_compress(**voxel_buffer);
-		peer->put_data(data.data(), data.size());
-		return data.size();
+		SerializeResult res = serialize_and_compress(**voxel_buffer);
+		ERR_FAIL_COND_V(!res.success, -1);
+		peer->put_data(res.data.data(), res.data.size());
+		return res.data.size();
 
 	} else {
-		const std::vector<uint8_t> &data = serialize(**voxel_buffer);
-		peer->put_data(data.data(), data.size());
-		return data.size();
+		SerializeResult res = serialize(**voxel_buffer);
+		ERR_FAIL_COND_V(!res.success, -1);
+		peer->put_data(res.data.data(), res.data.size());
+		return res.data.size();
 	}
 }
 

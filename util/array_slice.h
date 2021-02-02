@@ -58,16 +58,6 @@ public:
 		return ArraySlice<T>(_ptr + from, _size - from);
 	}
 
-	// const ArraySlice<T> sub_const(size_t from, size_t len) const {
-	// 	CRASH_COND(from + len >= _size);
-	// 	return ArraySlice{ _ptr + from, len };
-	// }
-
-	// const ArraySlice<T> sub_const(size_t from) const {
-	// 	CRASH_COND(from >= _size);
-	// 	return ArraySlice{ _ptr + from, _size - from };
-	// }
-
 	template <typename U>
 	ArraySlice<U> reinterpret_cast_to() const {
 		const size_t size_in_bytes = _size * sizeof(T);
@@ -114,5 +104,15 @@ private:
 	T *_ptr;
 	size_t _size;
 };
+
+template <typename T>
+ArraySlice<const T> to_slice(const std::vector<T> &vec) {
+	return ArraySlice<const T>(vec.data(), 0, vec.size());
+}
+
+template <typename T>
+ArraySlice<T> to_slice(std::vector<T> &vec) {
+	return ArraySlice<T>(vec.data(), 0, vec.size());
+}
 
 #endif // ARRAY_SLICE_H

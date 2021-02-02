@@ -9,6 +9,10 @@
 // This is intented for files, so it may run in a single background thread and gets requests in batches.
 // Must be implemented in a thread-safe way.
 //
+// Functions currently don't enforce querying blocks of the same size, however it is required for every stream to
+// support querying blocks the size of the declared block size, at positions matching their origins.
+// This might be restricted in the future, because there has been no compelling use case for that.
+//
 // If you are looking for a more specialized API to generate voxels with more threads, use VoxelGenerator.
 //
 class VoxelStream : public Resource {
@@ -29,6 +33,7 @@ public:
 	};
 
 	// TODO Rename load_block()
+	// TODO Enforce block areas
 	// Queries a block of voxels beginning at the given world-space voxel position and LOD.
 	// If you use LOD, the result at a given coordinate must always remain the same regardless of it.
 	// In other words, voxels values must solely depend on their coordinates or fixed parameters.
@@ -37,14 +42,19 @@ public:
 	// TODO Rename save_block()
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
 
+	// TODO Pass with ArraySlice
 	// Note: vector is passed by ref for performance. Don't reorder it.
 	virtual void emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results);
 
+	// TODO Pass with ArraySlice
 	// Returns multiple blocks of voxels to the stream.
 	// This function is recommended if you save to files, because you can batch their access.
 	virtual void immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks);
 
-	// Declares the format expected from this stream
+	// Tells which channels can be found in this stream.
+	// The simplest implementation is to return them all.
+	// One reason to specify which channels are available is to help the editor detect configuration issues,
+	// and to avoid saving some of the channels if only specific ones are meant to be saved.
 	virtual int get_used_channels_mask() const;
 
 	// Gets which block size this stream will provide, as a power of two.

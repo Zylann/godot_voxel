@@ -2,15 +2,16 @@
 #define VOXEL_STREAM_BLOCK_FILES_H
 
 #include "file_utils.h"
-#include "voxel_stream_file.h"
+#include "voxel_block_serializer.h"
+#include "voxel_stream.h"
 
 class FileAccess;
 
 // Loads and saves blocks to the filesystem, under a directory.
 // Each block gets its own file, which may produce a lot of them, but it makes it simple to implement.
 // This is a naive implementation and may be very slow in practice, so maybe it will be removed in the future.
-class VoxelStreamBlockFiles : public VoxelStreamFile {
-	GDCLASS(VoxelStreamBlockFiles, VoxelStreamFile)
+class VoxelStreamBlockFiles : public VoxelStream {
+	GDCLASS(VoxelStreamBlockFiles, VoxelStream)
 public:
 	VoxelStreamBlockFiles();
 
@@ -31,6 +32,8 @@ private:
 	VoxelFileResult load_or_create_meta();
 	String get_block_file_path(const Vector3i &block_pos, unsigned int lod) const;
 	Vector3i get_block_position(const Vector3i &origin_in_voxels) const;
+
+	static thread_local VoxelBlockSerializerInternal _block_serializer;
 
 	String _directory_path;
 

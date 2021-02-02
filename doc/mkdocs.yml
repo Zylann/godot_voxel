@@ -63,9 +63,11 @@ nav:
     - api/VoxelVoxLoader.md
     # </generated_class_list>
   - 'Serialization formats':
-    - 'specs/block_format.md'
+    - 'specs/block_format_v1.md'
+    - 'specs/block_format_v2.md'
     - 'specs/region_format_v2.md'
     - 'specs/region_format_v3.md'
+    - 'specs/sqlite_format.md'
 
 markdown_extensions:
     # Makes permalinks appear on headings

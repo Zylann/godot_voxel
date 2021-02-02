@@ -625,12 +625,21 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 		case TYPE_LOAD: {
 			voxels.instance();
 			voxels->create(block_size, block_size, block_size);
+			// TODO No longer using batches? If that works ok, we should get rid of batch queries in files
 			const VoxelStream::Result result = stream->emerge_block(voxels, origin_in_voxels, lod);
+			if (result == VoxelStream::RESULT_ERROR) {
+				ERR_PRINT("Error loading block");
+			}
 			if (result == VoxelStream::RESULT_BLOCK_NOT_FOUND) {
 				Ref<VoxelGenerator> generator = stream_dependency->generator;
 				if (generator.is_valid()) {
 					VoxelServer::get_singleton()->request_block_generate_from_data_request(this);
 					type = TYPE_FALLBACK_ON_GENERATOR;
+				} else {
+					// If there is no generator... what do we do? What defines the format of that empty block?
+					// If the user leaves the defaults it's fine, but otherwise blocks of inconsistent format can
+					// end up in the volume and that can cause errors.
+					// TODO Define format on volume?
 				}
 			}
 		} break;

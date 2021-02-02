@@ -7,7 +7,7 @@ VoxelMap::VoxelMap() :
 		_last_accessed_block(nullptr) {
 
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
-	set_block_size_pow2(4);
+	set_block_size_pow2(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2);
 
 	_default_voxel.fill(0);
 	_default_voxel[VoxelBuffer::CHANNEL_SDF] = 255;

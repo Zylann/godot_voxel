@@ -98,6 +98,8 @@ public:
 
 	static uint32_t get_size_in_bytes_for_volume(Vector3i size, Depth depth);
 
+	void copy_format(const VoxelBuffer &other);
+
 	// Note: these functions don't include metadata on purpose.
 	// If you also want to copy metadata, use the specialized functions.
 	void copy_from(const VoxelBuffer &other);

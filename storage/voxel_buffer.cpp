@@ -461,6 +461,12 @@ VoxelBuffer::Compression VoxelBuffer::get_channel_compression(unsigned int chann
 	return COMPRESSION_NONE;
 }
 
+void VoxelBuffer::copy_format(const VoxelBuffer &other) {
+	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
+		set_channel_depth(i, other.get_channel_depth(i));
+	}
+}
+
 void VoxelBuffer::copy_from(const VoxelBuffer &other) {
 	// Copy all channels, assuming sizes and formats match
 	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
@@ -711,7 +717,7 @@ void VoxelBuffer::set_channel_depth(unsigned int channel_index, Depth new_depth)
 		return;
 	}
 	if (channel.data != nullptr) {
-		// TODO Implement conversion
+		// TODO Implement conversion and do it when specified
 		WARN_PRINT("Changing VoxelBuffer depth with present data, this will reset the channel");
 		delete_channel(channel_index);
 	}

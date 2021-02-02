@@ -50,7 +50,7 @@
 			<argument index="2" name="compress" type="bool">
 			</argument>
 			<description>
-				Stores the data of a [VoxelBuffer] into a [StreamPeer]. To be able to read it back, you should use the
+				Stores the data of a [VoxelBuffer] into a [StreamPeer].
 			</description>
 		</method>
 	</methods>
