@@ -500,10 +500,12 @@ void VoxelInstancer::create_block_from_transforms(ArraySlice<const Transform> tr
 	multimesh->set_custom_data_format(MultiMesh::CUSTOM_DATA_NONE);
 	multimesh->set_mesh(layer->mesh);
 
-	PoolRealArray bulk_array = DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms);
-
-	multimesh->set_instance_count(transforms.size());
-	multimesh->set_as_bulk_array(bulk_array);
+	// Godot throws an error if we call `set_as_bulk_array` with an empty array
+	if (transforms.size() > 0) {
+		PoolRealArray bulk_array = DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms);
+		multimesh->set_instance_count(transforms.size());
+		multimesh->set_as_bulk_array(bulk_array);
+	}
 
 	Block *block = memnew(Block);
 	block->multimesh_instance.create();
