@@ -265,8 +265,9 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 		const int stream_block_size_po2 = _stream->get_block_size_po2();
 		_set_block_size_po2(stream_block_size_po2);
 
-		const int stream_lod_count = _stream->get_lod_count();
-		_set_lod_count(min(stream_lod_count, get_lod_count()));
+		// TODO We have to figure out streams that have a LOD requirement
+		// const int stream_lod_count = _stream->get_lod_count();
+		// _set_lod_count(min(stream_lod_count, get_lod_count()));
 	}
 
 	VoxelServer::get_singleton()->set_volume_block_size(_volume_id, get_block_size());
