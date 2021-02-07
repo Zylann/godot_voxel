@@ -1,9 +1,9 @@
 #include "voxel_instancer.h"
-#include "../edition/voxel_tool.h"
-#include "../generators/graph/voxel_generator_graph.h"
-#include "../util/macros.h"
-#include "../util/profiling.h"
-#include "voxel_lod_terrain.h"
+#include "../../edition/voxel_tool.h"
+//#include "../../generators/graph/voxel_generator_graph.h"
+#include "../../util/macros.h"
+#include "../../util/profiling.h"
+#include "../voxel_lod_terrain.h"
 
 #include <scene/3d/collision_shape.h>
 #include <scene/3d/mesh_instance.h>

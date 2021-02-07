@@ -7,7 +7,7 @@
 #include "../util/profiling.h"
 #include "../util/profiling_clock.h"
 #include "../voxel_string_names.h"
-#include "voxel_instancer.h"
+#include "instancing/voxel_instancer.h"
 #include "voxel_map.h"
 
 #include <core/core_string_names.h>

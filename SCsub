@@ -33,6 +33,8 @@ voxel_files = [
 	"util/noise/fast_noise_lite_gradient.cpp",
 
 	"terrain/*.cpp",
+	"terrain/instancing/*.cpp",
+
 	"server/*.cpp",
 	"math/*.cpp",
 	"edition/*.cpp",

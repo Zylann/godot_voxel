@@ -1,7 +1,8 @@
 #ifndef VOXEL_INSTANCE_GENERATOR_H
 #define VOXEL_INSTANCE_GENERATOR_H
 
-#include "../storage/voxel_buffer.h"
+//#include "../../storage/voxel_buffer.h"
+#include "../../math/vector3i.h"
 #include <core/resource.h>
 #include <limits>
 #include <vector>

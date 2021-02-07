@@ -1,11 +1,11 @@
 #ifndef VOXEL_INSTANCER_H
 #define VOXEL_INSTANCER_H
 
-#include "../math/rect3i.h"
-#include "../streams/instance_data.h"
-#include "../util/array_slice.h"
-#include "../util/direct_multimesh_instance.h"
-#include "../util/fixed_array.h"
+#include "../../math/rect3i.h"
+#include "../../streams/instance_data.h"
+#include "../../util/array_slice.h"
+#include "../../util/direct_multimesh_instance.h"
+#include "../../util/fixed_array.h"
 #include "voxel_instance_generator.h"
 
 #include <scene/3d/spatial.h>

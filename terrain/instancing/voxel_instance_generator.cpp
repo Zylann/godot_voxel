@@ -1,5 +1,5 @@
 #include "voxel_instance_generator.h"
-#include "../util/profiling.h"
+#include "../../util/profiling.h"
 #include <scene/resources/mesh.h>
 
 static inline Vector3 normalized(Vector3 pos, float &length) {
