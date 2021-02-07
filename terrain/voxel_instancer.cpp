@@ -234,6 +234,12 @@ int VoxelInstancer::add_layer(int lod_index) {
 	Layer *layer = memnew(Layer);
 	layer->lod_index = lod_index;
 	layer->id = id;
+
+	if (Engine::get_singleton()->is_editor_hint()) {
+		// Put a default generator
+		layer->generator.instance();
+	}
+
 	_layers[layer_index] = layer;
 
 	Lod &lod = _lods[lod_index];
@@ -242,92 +248,20 @@ int VoxelInstancer::add_layer(int lod_index) {
 	return layer_index;
 }
 
+void VoxelInstancer::set_layer_generator(int layer_index, Ref<VoxelInstanceGenerator> generator) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	layer->generator = generator;
+}
+
 void VoxelInstancer::set_layer_mesh(int layer_index, Ref<Mesh> mesh) {
 	ERR_FAIL_INDEX(layer_index, _layers.size());
 	Layer *layer = _layers[layer_index];
 	ERR_FAIL_COND(layer == nullptr);
 
 	layer->mesh = mesh;
-}
-
-void VoxelInstancer::set_layer_random_vertical_flip(int layer_index, bool flip_enabled) {
-	ERR_FAIL_INDEX(layer_index, _layers.size());
-	Layer *layer = _layers[layer_index];
-	ERR_FAIL_COND(layer == nullptr);
-
-	layer->random_vertical_flip = flip_enabled;
-}
-
-void VoxelInstancer::set_layer_density(int layer_index, float density) {
-	ERR_FAIL_INDEX(layer_index, _layers.size());
-	Layer *layer = _layers[layer_index];
-	ERR_FAIL_COND(layer == nullptr);
-
-	layer->density = max(density, 0.f);
-}
-
-void VoxelInstancer::set_layer_min_scale(int layer_index, float min_scale) {
-	ERR_FAIL_INDEX(layer_index, _layers.size());
-	Layer *layer = _layers[layer_index];
-	ERR_FAIL_COND(layer == nullptr);
-
-	layer->min_scale = max(min_scale, 0.01f);
-}
-
-void VoxelInstancer::set_layer_max_scale(int layer_index, float max_scale) {
-	ERR_FAIL_INDEX(layer_index, _layers.size());
-	Layer *layer = _layers[layer_index];
-	ERR_FAIL_COND(layer == nullptr);
-
-	layer->max_scale = max(max_scale, 0.01f);
-}
-
-void VoxelInstancer::set_layer_vertical_alignment(int layer_index, float amount) {
-	ERR_FAIL_INDEX(layer_index, _layers.size());
-	Layer *layer = _layers[layer_index];
-	ERR_FAIL_COND(layer == nullptr);
-
-	layer->vertical_alignment = clamp(amount, 0.f, 1.f);
-}
-
-void VoxelInstancer::set_layer_offset_along_normal(int layer_index, float offset) {
-	ERR_FAIL_INDEX(layer_index, _layers.size());
-	Layer *layer = _layers[layer_index];
-	ERR_FAIL_COND(layer == nullptr);
-
-	layer->offset_along_normal = offset;
-}
-
-void VoxelInstancer::set_layer_min_slope_degrees(int layer_index, float degrees) {
-	ERR_FAIL_INDEX(layer_index, _layers.size());
-	Layer *layer = _layers[layer_index];
-	ERR_FAIL_COND(layer == nullptr);
-
-	layer->max_surface_normal_y = min(1.f, Math::cos(Math::deg2rad(clamp(degrees, -180.f, 180.f))));
-}
-
-void VoxelInstancer::set_layer_max_slope_degrees(int layer_index, float degrees) {
-	ERR_FAIL_INDEX(layer_index, _layers.size());
-	Layer *layer = _layers[layer_index];
-	ERR_FAIL_COND(layer == nullptr);
-
-	layer->min_surface_normal_y = max(-1.f, Math::cos(Math::deg2rad(clamp(degrees, -180.f, 180.f))));
-}
-
-void VoxelInstancer::set_layer_min_height(int layer_index, float h) {
-	ERR_FAIL_INDEX(layer_index, _layers.size());
-	Layer *layer = _layers[layer_index];
-	ERR_FAIL_COND(layer == nullptr);
-
-	layer->min_height = h;
-}
-
-void VoxelInstancer::set_layer_max_height(int layer_index, float h) {
-	ERR_FAIL_INDEX(layer_index, _layers.size());
-	Layer *layer = _layers[layer_index];
-	ERR_FAIL_COND(layer == nullptr);
-
-	layer->max_height = h;
 }
 
 void VoxelInstancer::set_layer_collision_layer(int layer_index, int collision_layer) {
@@ -691,13 +625,15 @@ void VoxelInstancer::generate_block_on_each_layer(Vector3i grid_position, int lo
 	const Transform block_local_transform = Transform(Basis(), (grid_position * lod_block_size).to_vec3());
 	const Transform block_transform = parent_transform * block_local_transform;
 
-	const uint32_t block_pos_hash = Vector3iHasher::hash(grid_position);
-
 	for (auto it = lod.layers.begin(); it != lod.layers.end(); ++it) {
 		const int layer_index = *it;
 
 		Layer *layer = _layers[layer_index];
 		CRASH_COND(layer == nullptr);
+
+		if (layer->generator.is_null()) {
+			continue;
+		}
 
 		const int *block_index_ptr = layer->blocks.getptr(grid_position);
 
@@ -706,146 +642,16 @@ void VoxelInstancer::generate_block_on_each_layer(Vector3i grid_position, int lo
 			continue;
 		}
 
-		const uint32_t density_u32 = 0xffffffff * layer->density;
-		const float vertical_alignment = layer->vertical_alignment;
-		const float scale_min = layer->min_scale;
-		const float scale_range = layer->max_scale - layer->min_scale;
-		const bool random_vertical_flip = layer->random_vertical_flip;
-		const float offset_along_normal = layer->offset_along_normal;
-		const float normal_min_y = layer->min_surface_normal_y;
-		const float normal_max_y = layer->max_surface_normal_y;
-		const bool slope_filter = normal_min_y != -1.f || normal_max_y != 1.f;
-		const bool height_filter = layer->min_height != std::numeric_limits<float>::min() ||
-								   layer->max_height != std::numeric_limits<float>::max();
-		const float min_height = layer->min_height;
-		const float max_height = layer->max_height;
-
-		Vector3 global_up(0.f, 1.f, 0.f);
-
-		// Using different number generators so changing parameters affecting one doesn't affect the other
-		const uint64_t seed = block_pos_hash + layer_index;
-		RandomPCG pcg0;
-		pcg0.seed(seed);
-		RandomPCG pcg1;
-		pcg1.seed(seed + 1);
-
 		_transform_cache.clear();
-		{
-			VOXEL_PROFILE_SCOPE();
 
-			PoolVector3Array::Read vr = vertices.read();
-			PoolVector3Array::Read nr = normals.read();
-
-			// TODO This part might be moved to the meshing thread if it turns out to be too heavy
-
-			for (size_t i = 0; i < vertices.size(); ++i) {
-				// TODO We could actually generate indexes and pick those, rather than iterating them all and rejecting
-				if (pcg0.rand() >= density_u32) {
-					continue;
-				}
-
-				Transform t;
-				t.origin = vr[i];
-
-				// TODO Check if that position has been edited somehow, so we can decide to not spawn there
-				// Or remesh from generator and compare sdf but that's expensive
-
-				Vector3 axis_y;
-
-				// Warning: sometimes mesh normals are not perfectly normalized.
-				// The cause is for meshing speed on CPU. It's normalized on GPU anyways.
-				Vector3 surface_normal = nr[i];
-				bool surface_normal_is_normalized = false;
-				bool sphere_up_is_computed = false;
-				bool sphere_distance_is_computed = false;
-				float sphere_distance;
-
-				if (vertical_alignment == 0.f) {
-					surface_normal.normalize();
-					surface_normal_is_normalized = true;
-					axis_y = surface_normal;
-
-				} else {
-					if (_up_mode == UP_MODE_SPHERE) {
-						global_up = normalized(block_local_transform.origin + t.origin, sphere_distance);
-						sphere_up_is_computed = true;
-						sphere_distance_is_computed = true;
-					}
-
-					if (vertical_alignment < 1.f) {
-						axis_y = surface_normal.linear_interpolate(global_up, vertical_alignment).normalized();
-
-					} else {
-						axis_y = global_up;
-					}
-				}
-
-				if (slope_filter) {
-					if (!surface_normal_is_normalized) {
-						surface_normal.normalize();
-					}
-
-					float ny = surface_normal.y;
-					if (_up_mode == UP_MODE_SPHERE) {
-						if (!sphere_up_is_computed) {
-							global_up = normalized(block_local_transform.origin + t.origin, sphere_distance);
-							sphere_up_is_computed = true;
-							sphere_distance_is_computed = true;
-						}
-						ny = surface_normal.dot(global_up);
-					}
-
-					if (ny < normal_min_y || ny > normal_max_y) {
-						// Discard
-						continue;
-					}
-				}
-
-				if (height_filter) {
-					float y = t.origin.y;
-					if (_up_mode == UP_MODE_SPHERE) {
-						if (!sphere_distance_is_computed) {
-							sphere_distance = (block_local_transform.origin + t.origin).length();
-							sphere_distance_is_computed = true;
-						}
-						y = sphere_distance;
-					}
-
-					if (y < min_height || y > max_height) {
-						continue;
-					}
-				}
-
-				t.origin += offset_along_normal * axis_y;
-
-				// Allows to use two faces of a single rock to create variety in the same layer
-				if (random_vertical_flip && (pcg1.rand() & 1) == 1) {
-					axis_y = -axis_y;
-					// TODO Should have to flip another axis as well?
-				}
-
-				// Pick a random rotation from the floor's normal.
-				// TODO A pool of precomputed random directions would do the job too
-				const Vector3 dir = Vector3(pcg1.randf() - 0.5f, pcg1.randf() - 0.5f, pcg1.randf() - 0.5f);
-				const Vector3 axis_x = axis_y.cross(dir).normalized();
-				const Vector3 axis_z = axis_x.cross(axis_y);
-
-				t.basis = Basis(
-						Vector3(axis_x.x, axis_y.x, axis_z.x),
-						Vector3(axis_x.y, axis_y.y, axis_z.y),
-						Vector3(axis_x.z, axis_y.z, axis_z.z));
-
-				if (scale_range > 0.f) {
-					const float scale = scale_min + scale_range * pcg1.randf();
-					t.basis.scale(Vector3(scale, scale, scale));
-
-				} else if (scale_min != 1.f) {
-					t.basis.scale(Vector3(scale_min, scale_min, scale_min));
-				}
-
-				_transform_cache.push_back(t);
-			}
-		}
+		layer->generator->generate_transforms(
+				_transform_cache,
+				grid_position,
+				lod_index,
+				layer_index,
+				surface_arrays,
+				block_local_transform,
+				static_cast<VoxelInstanceGenerator::UpMode>(_up_mode));
 
 		if (_transform_cache.size() == 0) {
 			continue;
@@ -910,8 +716,16 @@ void VoxelInstancer::save_block(Vector3i grid_pos, int lod_index) const {
 
 			ERR_FAIL_COND(layer->id < 0);
 			layer_data.id = layer->id;
-			layer_data.scale_min = layer->min_scale;
-			layer_data.scale_max = layer->max_scale;
+
+			if (layer->generator.is_valid()) {
+				layer_data.scale_min = layer->generator->get_min_scale();
+				layer_data.scale_max = layer->generator->get_max_scale();
+			} else {
+				// TODO Calculate scale range automatically in the serializer
+				layer_data.scale_min = 0.1f;
+				layer_data.scale_max = 10.f;
+			}
+
 			layer_data.instances.resize(instance_count);
 
 			// TODO Optimization: it would be nice to get the whole array at once
@@ -1095,29 +909,12 @@ void VoxelInstancer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("add_layer", "lod_index"), &VoxelInstancer::add_layer);
 
+	ClassDB::bind_method(D_METHOD("set_layer_generator", "layer_index", "generator"),
+			&VoxelInstancer::set_layer_generator);
+
 	ClassDB::bind_method(D_METHOD("set_layer_mesh", "layer_index", "mesh"), &VoxelInstancer::set_layer_mesh);
 	ClassDB::bind_method(D_METHOD("set_layer_mesh_material_override", "layer_index", "material"),
 			&VoxelInstancer::set_layer_material_override);
-
-	ClassDB::bind_method(D_METHOD("set_layer_density", "layer_index", "density"), &VoxelInstancer::set_layer_density);
-	ClassDB::bind_method(D_METHOD("set_layer_min_scale", "layer_index", "min_scale"),
-			&VoxelInstancer::set_layer_min_scale);
-	ClassDB::bind_method(D_METHOD("set_layer_max_scale", "layer_index", "max_scale"),
-			&VoxelInstancer::set_layer_max_scale);
-	ClassDB::bind_method(D_METHOD("set_layer_vertical_alignment", "layer_index", "amount"),
-			&VoxelInstancer::set_layer_vertical_alignment);
-	ClassDB::bind_method(D_METHOD("set_layer_random_vertical_flip", "layer_index", "enabled"),
-			&VoxelInstancer::set_layer_random_vertical_flip);
-	ClassDB::bind_method(D_METHOD("set_layer_offset_along_normal", "layer_index", "offset"),
-			&VoxelInstancer::set_layer_offset_along_normal);
-	ClassDB::bind_method(D_METHOD("set_layer_min_slope_degrees", "layer_index", "degrees"),
-			&VoxelInstancer::set_layer_min_slope_degrees);
-	ClassDB::bind_method(D_METHOD("set_layer_max_slope_degrees", "layer_index", "degrees"),
-			&VoxelInstancer::set_layer_max_slope_degrees);
-	ClassDB::bind_method(D_METHOD("set_layer_min_height", "layer_index", "height"),
-			&VoxelInstancer::set_layer_min_height);
-	ClassDB::bind_method(D_METHOD("set_layer_max_height", "layer_index", "height"),
-			&VoxelInstancer::set_layer_max_height);
 
 	ClassDB::bind_method(D_METHOD("set_layer_collision_layer", "layer_index", "collision_layer"),
 			&VoxelInstancer::set_layer_collision_layer);
@@ -1132,6 +929,8 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("remove_layer", "layer_index"), &VoxelInstancer::remove_layer);
 
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelInstancer::debug_get_block_count);
+
+	BIND_CONSTANT(MAX_LOD);
 
 	BIND_ENUM_CONSTANT(UP_MODE_POSITIVE_Y);
 	BIND_ENUM_CONSTANT(UP_MODE_SPHERE);

@@ -69,6 +69,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelLodTerrain>();
 	ClassDB::register_class<VoxelViewer>();
 	ClassDB::register_class<VoxelInstancer>();
+	ClassDB::register_class<VoxelInstanceGenerator>();
 
 	// Streams
 	ClassDB::register_virtual_class<VoxelStream>();
