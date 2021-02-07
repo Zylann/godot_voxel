@@ -799,7 +799,7 @@ void VoxelTerrain::send_block_data_requests() {
 	for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
 		const Vector3i block_pos = _blocks_pending_load[i];
 		// TODO Batch request
-		VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, 0);
+		VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, 0, false);
 	}
 
 	// Blocks to save
@@ -807,7 +807,7 @@ void VoxelTerrain::send_block_data_requests() {
 		PRINT_VERBOSE(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position.to_vec3())));
 		const BlockToSave b = _blocks_to_save[i];
 		// TODO Batch request
-		VoxelServer::get_singleton()->request_block_save(_volume_id, b.voxels, b.position, 0);
+		VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, 0);
 	}
 
 	//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));

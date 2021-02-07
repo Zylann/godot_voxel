@@ -705,12 +705,13 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelBlock *block) {
 
 void VoxelLodTerrain::send_block_data_requests() {
 	// Blocks to load
+	const bool request_instances = _instancer != nullptr;
 	for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 
 		for (unsigned int i = 0; i < lod.blocks_to_load.size(); ++i) {
 			const Vector3i block_pos = lod.blocks_to_load[i];
-			VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, lod_index);
+			VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, lod_index, request_instances);
 		}
 
 		lod.blocks_to_load.clear();
@@ -720,8 +721,8 @@ void VoxelLodTerrain::send_block_data_requests() {
 	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
 		PRINT_VERBOSE(String("Requesting save of block {0} lod {1}")
 							  .format(varray(_blocks_to_save[i].position.to_vec3(), _blocks_to_save[i].lod)));
-		const BlockToSave &b = _blocks_to_save[i];
-		VoxelServer::get_singleton()->request_block_save(_volume_id, b.voxels, b.position, b.lod);
+		BlockToSave &b = _blocks_to_save[i];
+		VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
 	}
 
 	_blocks_to_save.clear();
@@ -1164,6 +1165,11 @@ void VoxelLodTerrain::_process() {
 				// used to smooth seams without re-uploading meshes and allow to implement LOD fading
 				block->set_shader_material(sm);
 			}
+
+			if (_instancer != nullptr && ob.instances != nullptr) {
+				VoxelServer::BlockDataOutput &wob = _reception_buffers.data_output[reception_index];
+				_instancer->on_block_data_loaded(wob.position, wob.lod, std::move(wob.instances));
+			}
 		}
 	}
 
@@ -1436,6 +1442,10 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 		for (int i = 0; i < _lod_count; ++i) {
 			// That may cause a stutter, so should be used when the player won't notice
 			_lods[i].map.for_all_blocks(ScheduleSaveAction{ _blocks_to_save });
+		}
+
+		if (_instancer != nullptr && _stream->supports_instance_blocks()) {
+			_instancer->save_all_modified_blocks();
 		}
 	}
 

@@ -128,6 +128,7 @@ public:
 	// Internal
 
 	void set_instancer(VoxelInstancer *instancer);
+	uint32_t get_volume_id() const { return _volume_id; }
 
 protected:
 	static void _bind_methods();

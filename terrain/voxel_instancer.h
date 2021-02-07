@@ -2,11 +2,16 @@
 #define VOXEL_INSTANCER_H
 
 #include "../math/rect3i.h"
+#include "../streams/instance_data.h"
+#include "../util/array_slice.h"
 #include "../util/direct_multimesh_instance.h"
 #include "../util/fixed_array.h"
 
 #include <scene/3d/spatial.h>
 //#include <scene/resources/material.h> // Included by node.h lol
+#include <limits>
+#include <memory>
+#include <unordered_map>
 #include <vector>
 
 class VoxelGenerator;
@@ -14,6 +19,16 @@ class VoxelLodTerrain;
 class VoxelInstancerRigidBody;
 class PhysicsBody;
 
+// TODO Decouple this?
+// class VoxelInstanceGenerator : public Resource {
+// 	GDCLASS(VoxelInstanceGenerator, Resource)
+// public:
+// 	void generate_transforms(std::vector<Transform> &out_transforms,
+// 			Vector3i grid_position, int lod_index, Ref<VoxelBuffer> voxels, Array surface_arrays);
+// };
+
+// Add-on to voxel nodes, allowing to spawn elements on the surface.
+// These elements are rendered with hardware instancing, can have collisions, and also be persistent.
 class VoxelInstancer : public Spatial {
 	GDCLASS(VoxelInstancer, Spatial)
 public:
@@ -27,14 +42,23 @@ public:
 	// 	SOURCE_FACES
 	// };
 
+	// Tells how to interpret where "upwards" is in the current volume
 	enum UpMode {
+		// The world is a plane, so altitude is obtained from the Y coordinate and upwards is always toward +Y.
 		UP_MODE_POSITIVE_Y,
+		// The world is a sphere (planet), so altitude is obtained from distance to the origin (0,0,0),
+		// and upwards is the normalized vector from origin to current position.
 		UP_MODE_SPHERE,
+		// How many up modes there are
 		UP_MODE_COUNT
 	};
 
 	void set_up_mode(UpMode mode);
 	UpMode get_up_mode() const;
+
+	void save_all_modified_blocks();
+
+	// Layers
 
 	int add_layer(int lod_index);
 
@@ -60,28 +84,43 @@ public:
 
 	void remove_layer(int layer_index);
 
+	// Event handlers
+
+	void on_block_data_loaded(Vector3i grid_position, int lod_index,
+			std::unique_ptr<VoxelInstanceBlockData> instances);
+
 	void on_block_enter(Vector3i grid_position, int lod_index, Array surface_arrays);
 	void on_block_exit(Vector3i grid_position, int lod_index);
 
-	void on_area_edited(Rect3i p_box);
+	void on_area_edited(Rect3i p_voxel_box);
 
 	void on_body_removed(int block_index, int instance_index);
 
-	int debug_get_block_count() const;
+	// Debug
 
-	struct CollisionShapeInfo {
-		Transform transform;
-		Ref<Shape> shape;
-	};
+	int debug_get_block_count() const;
 
 protected:
 	void _notification(int p_what);
 
 private:
+	struct Block;
+	struct Layer;
+
 	void remove_block(int block_index);
 	void set_world(World *world);
 	void clear_instances();
 	void update_visibility();
+	void save_block(Vector3i grid_pos, int lod_index) const;
+	void generate_block_on_each_layer(Vector3i grid_pos, int lod_index, Array surface_arrays);
+
+	int find_layer_by_id(int id) const;
+
+	void create_loaded_blocks(const VoxelInstanceBlockData &instances_data, Vector3i grid_position, int lod_index);
+
+	void create_block_from_transforms(ArraySlice<const Transform> transforms,
+			Vector3i grid_position, Layer *layer, unsigned int layer_index, World *world,
+			const Transform &block_transform);
 
 	static void _bind_methods();
 
@@ -94,8 +133,22 @@ private:
 		Vector<VoxelInstancerRigidBody *> bodies;
 	};
 
+	struct CollisionShapeInfo {
+		Transform transform;
+		Ref<Shape> shape;
+	};
+
 	struct Layer {
+		static const int MAX_ID = 0xffff;
+
+		// This ID identifies the layer uniquely within the current volume, and within saved data.
+		// Note: layer indexes are used only for fast access, they are not persistent.
+		int id = -1;
+		// TODO Allow non-persistent layers?
+		// These won't need an ID, will not be saved, and will always re-generate. Also rename `id` to `persistent_id`.
+
 		int lod_index = 0;
+
 		float density = 0.1f;
 		float vertical_alignment = 1.f;
 		float min_scale = 1.f;
@@ -119,10 +172,24 @@ private:
 		Vector<CollisionShapeInfo> collision_shapes;
 
 		HashMap<Vector3i, int, Vector3iHasher> blocks;
+
+		Layer() = default;
+		Layer(const Layer &) = delete; // non construction-copyable
+		Layer &operator=(const Layer &) = delete; // non copyable
 	};
 
 	struct Lod {
 		std::vector<int> layers;
+		HashMap<Vector3i, bool, Vector3iHasher> modified_blocks;
+		// This is a temporary place to store loaded instances data while it's not visible yet.
+		// These instances are user-authored ones. If a block does not have an entry there,
+		// it will get generated instances.
+		// Can't use `HashMap` because it lacks move semantics.
+		std::unordered_map<Vector3i, std::unique_ptr<VoxelInstanceBlockData> > loaded_instances_data;
+
+		Lod() = default;
+		Lod(const Lod &) = delete; // non construction-copyable
+		Lod &operator=(const Lod &) = delete; // non copyable
 	};
 
 	UpMode _up_mode = UP_MODE_POSITIVE_Y;

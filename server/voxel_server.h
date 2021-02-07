@@ -11,6 +11,8 @@
 
 #include <memory>
 
+// TODO Don't inherit Object. Instead have a Godot wrapper, there is very little use for Object stuff
+
 // Access point for asynchronous voxel processing APIs.
 // Functions must be used from the main thread.
 class VoxelServer : public Object {
@@ -36,6 +38,7 @@ public:
 
 		Type type;
 		Ref<VoxelBuffer> voxels;
+		std::unique_ptr<VoxelInstanceBlockData> instances;
 		Vector3i position;
 		uint8_t lod;
 		bool dropped;
@@ -88,8 +91,10 @@ public:
 	void set_volume_octree_split_scale(uint32_t volume_id, float split_scale);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, BlockMeshInput &input);
-	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod);
-	void request_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod);
+	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
+	void request_voxel_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod);
+	void request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
+			Vector3i block_pos, int lod);
 	void remove_volume(uint32_t volume_id);
 
 	// TODO Rename functions to C convention
@@ -245,6 +250,7 @@ private:
 		bool is_cancelled() override;
 
 		Ref<VoxelBuffer> voxels;
+		std::unique_ptr<VoxelInstanceBlockData> instances;
 		Vector3i position;
 		uint32_t volume_id;
 		uint8_t lod;
@@ -252,6 +258,8 @@ private:
 		uint8_t type;
 		bool has_run = false;
 		bool too_far = false;
+		bool request_instances = false;
+		bool request_voxels = false;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		// TODO Find a way to separate save, it doesnt need sorting

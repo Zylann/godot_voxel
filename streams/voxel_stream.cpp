@@ -37,6 +37,23 @@ void VoxelStream::immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) {
 	}
 }
 
+bool VoxelStream::supports_instance_blocks() const {
+	// Can be implemented in subclasses
+	return false;
+}
+
+void VoxelStream::load_instance_blocks(
+		ArraySlice<VoxelStreamInstanceDataRequest> out_blocks, ArraySlice<Result> out_results) {
+	// Can be implemented in subclasses
+	for (int i = 0; i < out_results.size(); ++i) {
+		out_results[i] = RESULT_BLOCK_NOT_FOUND;
+	}
+}
+
+void VoxelStream::save_instance_blocks(ArraySlice<VoxelStreamInstanceDataRequest> p_blocks) {
+	// Can be implemented in subclasses
+}
+
 int VoxelStream::get_used_channels_mask() const {
 	return 0;
 }

@@ -1,4 +1,4 @@
-Block format
+Voxel block format
 ====================
 
 Version: 2
@@ -28,7 +28,7 @@ This is the format provided by the `VoxelBlockSerializer` utility class. If you 
 Compressed data starts with one byte. Depending on its value, what follows is different.
 
 - 0: no compression. Following bytes can be read as as block format directly. This is rarely used and could be for debugging.
-- 1: LZ4 compression. The next 32-bit unsigned integer is the size of the decompressed data, and following bytes are compressed data using LZ4 default parameters. This mode is used by default.
+- 1: LZ4 compression. The next big-endian 32-bit unsigned integer is the size of the decompressed data, and following bytes are compressed data using LZ4 default parameters. This mode is used by default.
 
 Knowing the size of the decompressed data may be important when parsing the block later.
 

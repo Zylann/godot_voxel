@@ -1,6 +1,8 @@
 #ifndef DIRECT_MULTIMESH_INSTANCE_H
 #define DIRECT_MULTIMESH_INSTANCE_H
 
+#include "array_slice.h"
+
 #include <core/rid.h>
 #include <scene/resources/multimesh.h>
 
@@ -21,6 +23,8 @@ public:
 	void set_transform(Transform world_transform);
 	void set_visible(bool visible);
 	void set_material_override(Ref<Material> material);
+
+	static PoolRealArray make_transform_3d_bulk_array(ArraySlice<const Transform> transforms);
 
 private:
 	RID _multimesh_instance;

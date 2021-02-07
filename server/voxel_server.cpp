@@ -256,23 +256,23 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) 
 	_meshing_thread_pool.enqueue(r);
 }
 
-void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod) {
+void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream_dependency == nullptr);
 
 	if (volume.stream_dependency->stream.is_valid()) {
-		BlockDataRequest r;
-		r.volume_id = volume_id;
-		r.position = block_pos;
-		r.lod = lod;
-		r.type = BlockDataRequest::TYPE_LOAD;
-		r.block_size = volume.block_size;
-		r.stream_dependency = volume.stream_dependency;
+		BlockDataRequest *r = memnew(BlockDataRequest);
+		r->volume_id = volume_id;
+		r->position = block_pos;
+		r->lod = lod;
+		r->type = BlockDataRequest::TYPE_LOAD;
+		r->block_size = volume.block_size;
+		r->stream_dependency = volume.stream_dependency;
+		r->request_instances = request_instances;
 
-		init_priority_dependency(r.priority_dependency, block_pos, lod, volume);
+		init_priority_dependency(r->priority_dependency, block_pos, lod, volume);
 
-		BlockDataRequest *rp = memnew(BlockDataRequest(r));
-		_streaming_thread_pool.enqueue(rp);
+		_streaming_thread_pool.enqueue(r);
 
 	} else {
 		// Directly generate the block without checking the stream
@@ -292,24 +292,48 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 	}
 }
 
-void VoxelServer::request_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod) {
+void VoxelServer::request_voxel_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
 
-	BlockDataRequest r;
-	r.voxels = voxels;
-	r.volume_id = volume_id;
-	r.position = block_pos;
-	r.lod = lod;
-	r.type = BlockDataRequest::TYPE_SAVE;
-	r.block_size = volume.block_size;
-	r.stream_dependency = volume.stream_dependency;
+	BlockDataRequest *r = memnew(BlockDataRequest);
+	r->voxels = voxels;
+	r->volume_id = volume_id;
+	r->position = block_pos;
+	r->lod = lod;
+	r->type = BlockDataRequest::TYPE_SAVE;
+	r->block_size = volume.block_size;
+	r->stream_dependency = volume.stream_dependency;
+	r->request_instances = false;
+	r->request_voxels = true;
 
 	// No priority data, saving doesnt need sorting
 
-	BlockDataRequest *rp = memnew(BlockDataRequest(r));
-	_streaming_thread_pool.enqueue(rp);
+	_streaming_thread_pool.enqueue(r);
+}
+
+void VoxelServer::request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
+		Vector3i block_pos, int lod) {
+
+	const Volume &volume = _world.volumes.get(volume_id);
+	ERR_FAIL_COND(volume.stream.is_null());
+	CRASH_COND(volume.stream_dependency == nullptr);
+
+	BlockDataRequest *r = memnew(BlockDataRequest);
+	r->instances = std::move(instances);
+	r->volume_id = volume_id;
+	r->position = block_pos;
+	r->lod = lod;
+	r->type = BlockDataRequest::TYPE_SAVE;
+	r->block_size = volume.block_size;
+	r->stream_dependency = volume.stream_dependency;
+	r->request_instances = true;
+	r->request_voxels = false;
+
+	// No priority data, saving doesnt need sorting
+
+	_streaming_thread_pool.enqueue(r);
 }
 
 void VoxelServer::request_block_generate_from_data_request(BlockDataRequest *src) {
@@ -336,19 +360,19 @@ void VoxelServer::request_block_save_from_generate_request(BlockGenerateRequest 
 
 	ERR_FAIL_COND(src->voxels.is_null());
 
-	BlockDataRequest r;
-	r.voxels = src->voxels->duplicate(true);
-	r.volume_id = src->volume_id;
-	r.position = src->position;
-	r.lod = src->lod;
-	r.type = BlockDataRequest::TYPE_SAVE;
-	r.block_size = src->block_size;
-	r.stream_dependency = src->stream_dependency;
+	BlockDataRequest *r = memnew(BlockDataRequest());
+	r->voxels = src->voxels->duplicate(true);
+	r->volume_id = src->volume_id;
+	r->position = src->position;
+	r->lod = src->lod;
+	r->type = BlockDataRequest::TYPE_SAVE;
+	r->block_size = src->block_size;
+	r->stream_dependency = src->stream_dependency;
 
+	// No instances, generators are not designed to produce them at this stage yet.
 	// No priority data, saving doesnt need sorting
 
-	BlockDataRequest *rp = memnew(BlockDataRequest(r));
-	_streaming_thread_pool.enqueue(rp);
+	_streaming_thread_pool.enqueue(r);
 }
 
 void VoxelServer::remove_volume(uint32_t volume_id) {
@@ -438,6 +462,7 @@ void VoxelServer::process() {
 					r->type != BlockDataRequest::TYPE_FALLBACK_ON_GENERATOR) {
 				BlockDataOutput o;
 				o.voxels = r->voxels;
+				o.instances = std::move(r->instances);
 				o.position = r->position;
 				o.lod = r->lod;
 				o.dropped = !r->has_run;
@@ -455,7 +480,7 @@ void VoxelServer::process() {
 						CRASH_NOW_MSG("Unexpected data request response type");
 				}
 
-				volume->reception_buffers->data_output.push_back(o);
+				volume->reception_buffers->data_output.push_back(std::move(o));
 			}
 
 		} else {
@@ -482,7 +507,7 @@ void VoxelServer::process() {
 				o.lod = r->lod;
 				o.dropped = !r->has_run;
 				o.type = BlockDataOutput::TYPE_LOAD;
-				volume->reception_buffers->data_output.push_back(o);
+				volume->reception_buffers->data_output.push_back(std::move(o));
 			}
 
 		} else {
@@ -552,29 +577,6 @@ void VoxelServer::process() {
 	}
 }
 
-// void VoxelServer::get_min_max_block_padding(
-// 		bool blocky_enabled, bool smooth_enabled, unsigned int &out_min_padding, unsigned int &out_max_padding) const {
-
-// 	// const Volume &volume = _world.volumes.get(volume_id);
-
-// 	// bool smooth_enabled = volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF);
-// 	// bool blocky_enabled = volume.voxel_library.is_valid() &&
-// 	// 					  volume.stream->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_TYPE);
-
-// 	out_min_padding = 0;
-// 	out_max_padding = 0;
-
-// 	if (blocky_enabled) {
-// 		out_min_padding = max(out_min_padding, _blocky_meshers[0]->get_minimum_padding());
-// 		out_max_padding = max(out_max_padding, _blocky_meshers[0]->get_maximum_padding());
-// 	}
-
-// 	if (smooth_enabled) {
-// 		out_min_padding = max(out_min_padding, _smooth_meshers[0]->get_minimum_padding());
-// 		out_max_padding = max(out_max_padding, _smooth_meshers[0]->get_maximum_padding());
-// 	}
-// }
-
 static unsigned int debug_get_active_thread_count(const VoxelThreadPool &pool) {
 	unsigned int active_count = 0;
 	for (unsigned int i = 0; i < pool.get_thread_count(); ++i) {
@@ -625,12 +627,17 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 		case TYPE_LOAD: {
 			voxels.instance();
 			voxels->create(block_size, block_size, block_size);
-			// TODO No longer using batches? If that works ok, we should get rid of batch queries in files
-			const VoxelStream::Result result = stream->emerge_block(voxels, origin_in_voxels, lod);
-			if (result == VoxelStream::RESULT_ERROR) {
-				ERR_PRINT("Error loading block");
-			}
-			if (result == VoxelStream::RESULT_BLOCK_NOT_FOUND) {
+
+			// TODO We should consider batching this again, but it needs to be done carefully.
+			// Each task is one block, and priority depends on distance to closest viewer.
+			// If we batch blocks, we have to do it by distance too.
+
+			const VoxelStream::Result voxel_result = stream->emerge_block(voxels, origin_in_voxels, lod);
+
+			if (voxel_result == VoxelStream::RESULT_ERROR) {
+				ERR_PRINT("Error loading voxel block");
+
+			} else if (voxel_result == VoxelStream::RESULT_BLOCK_NOT_FOUND) {
 				Ref<VoxelGenerator> generator = stream_dependency->generator;
 				if (generator.is_valid()) {
 					VoxelServer::get_singleton()->request_block_generate_from_data_request(this);
@@ -642,16 +649,56 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 					// TODO Define format on volume?
 				}
 			}
+
+			if (request_instances && stream->supports_instance_blocks()) {
+				ERR_FAIL_COND(instances != nullptr);
+
+				VoxelStreamInstanceDataRequest instance_data_request;
+				instance_data_request.lod = lod;
+				instance_data_request.position = position;
+				VoxelStream::Result instances_result;
+				stream->load_instance_blocks(
+						ArraySlice<VoxelStreamInstanceDataRequest>(&instance_data_request, 1),
+						ArraySlice<VoxelStream::Result>(&instances_result, 1));
+
+				if (instances_result == VoxelStream::RESULT_ERROR) {
+					ERR_PRINT("Error loading instance block");
+
+				} else if (voxel_result == VoxelStream::RESULT_BLOCK_FOUND) {
+					instances = std::move(instance_data_request.data);
+				}
+				// If not found, instances will return null,
+				// which means it can be generated by the instancer after the meshing process
+			}
 		} break;
 
 		case TYPE_SAVE: {
-			Ref<VoxelBuffer> voxels_copy;
-			{
-				RWLockRead lock(voxels->get_lock());
-				voxels_copy = voxels->duplicate(true);
+			if (request_voxels) {
+				Ref<VoxelBuffer> voxels_copy;
+				// TODO Is that copy necessary? It's possible it was already done while issuing the request
+				if (voxels.is_valid()) {
+					RWLockRead lock(voxels->get_lock());
+					voxels_copy = voxels->duplicate(true);
+				}
+				voxels.unref();
+				stream->immerge_block(voxels_copy, origin_in_voxels, lod);
 			}
-			voxels.unref();
-			stream->immerge_block(voxels_copy, origin_in_voxels, lod);
+
+			if (request_instances && stream->supports_instance_blocks()) {
+				// If the provided data is null, it means this instance block was never modified.
+				// Since we are in a save request, the saved data will revert to unmodified.
+				// On the other hand, if we want to represent the fact that "everything was deleted here",
+				// this should not be null.
+
+				PRINT_VERBOSE(String("Saving instance block {0} lod {1} with data {2}")
+									  .format(varray(position.to_vec3(), lod, ptr2s(instances.get()))));
+
+				VoxelStreamInstanceDataRequest instance_data_request;
+				instance_data_request.lod = lod;
+				instance_data_request.position = position;
+				instance_data_request.data = std::move(instances);
+				stream->save_instance_blocks(ArraySlice<VoxelStreamInstanceDataRequest>(&instance_data_request, 1));
+			}
 		} break;
 
 		default:

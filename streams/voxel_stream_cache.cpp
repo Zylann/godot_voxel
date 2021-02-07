@@ -1,18 +1,28 @@
 #include "voxel_stream_cache.h"
 
 bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, Ref<VoxelBuffer> &out_voxels) {
+	ERR_FAIL_COND_V(out_voxels.is_null(), false);
+
 	const Lod &lod = _cache[lod_index];
 	lod.rw_lock->read_lock();
-	const Block *block_ptr = lod.blocks.getptr(position);
+	auto it = lod.blocks.find(position);
 
-	if (block_ptr == nullptr) {
+	if (it == lod.blocks.end()) {
 		// Not in cache, will have to query
 		lod.rw_lock->read_unlock();
 		return false;
 
 	} else {
 		// In cache, serve it
-		out_voxels = block_ptr->voxels;
+
+		Ref<VoxelBuffer> vb = it->second.voxels;
+
+		// Copying is required since the cache has ownership on its data,
+		// and the requests wants us to populate the buffer it provides
+		out_voxels->copy_format(**vb);
+		out_voxels->copy_from(**vb);
+		out_voxels->copy_voxel_metadata(**vb);
+
 		lod.rw_lock->read_unlock();
 		return true;
 	}
@@ -21,20 +31,73 @@ bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, Re
 void VoxelStreamCache::save_voxel_block(Vector3i position, uint8_t lod_index, Ref<VoxelBuffer> voxels) {
 	Lod &lod = _cache[lod_index];
 	RWLockWrite wlock(lod.rw_lock);
-	Block *block_ptr = lod.blocks.getptr(position);
+	auto it = lod.blocks.find(position);
 
-	if (block_ptr == nullptr) {
+	if (it == lod.blocks.end()) {
 		// Not cached yet, create an entry
 		Block b;
 		b.position = position;
 		b.lod = lod_index;
 		b.voxels = voxels;
-		lod.blocks.set(position, b);
+		b.has_voxels = true;
+		lod.blocks.insert(std::make_pair(position, std::move(b)));
 		++_count;
 
 	} else {
 		// Cached already, overwrite
-		block_ptr->voxels = voxels;
+		it->second.voxels = voxels;
+		it->second.has_voxels = true;
+	}
+}
+
+bool VoxelStreamCache::load_instance_block(
+		Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> &out_instances) {
+
+	const Lod &lod = _cache[lod_index];
+	lod.rw_lock->read_lock();
+	auto it = lod.blocks.find(position);
+
+	if (it == lod.blocks.end()) {
+		// Not in cache, will have to query
+		lod.rw_lock->read_unlock();
+		return false;
+
+	} else {
+		// In cache, serve it
+
+		if (it->second.instances == nullptr) {
+			out_instances = nullptr;
+
+		} else {
+			// Copying is required since the cache has ownership on its data
+			out_instances = std::make_unique<VoxelInstanceBlockData>();
+			it->second.instances->copy_to(*out_instances);
+		}
+
+		lod.rw_lock->read_unlock();
+		return true;
+	}
+}
+
+void VoxelStreamCache::save_instance_block(
+		Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> instances) {
+
+	Lod &lod = _cache[lod_index];
+	RWLockWrite wlock(lod.rw_lock);
+	auto it = lod.blocks.find(position);
+
+	if (it == lod.blocks.end()) {
+		// Not cached yet, create an entry
+		Block b;
+		b.position = position;
+		b.lod = lod_index;
+		b.instances = std::move(instances);
+		lod.blocks.insert(std::make_pair(position, std::move(b)));
+		++_count;
+
+	} else {
+		// Cached already, overwrite
+		it->second.instances = std::move(instances);
 	}
 }
 

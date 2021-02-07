@@ -27,6 +27,11 @@ public:
 	void emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results) override;
 	void immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) override;
 
+	bool supports_instance_blocks() const override;
+	void load_instance_blocks(
+			ArraySlice<VoxelStreamInstanceDataRequest> out_blocks, ArraySlice<Result> out_results) override;
+	void save_instance_blocks(ArraySlice<VoxelStreamInstanceDataRequest> p_blocks) override;
+
 	void flush_cache();
 
 private:
@@ -58,6 +63,7 @@ private:
 	// TODO I should consider specialized memory allocators
 	static thread_local VoxelBlockSerializerInternal _voxel_block_serializer;
 	static thread_local std::vector<uint8_t> _temp_block_data;
+	static thread_local std::vector<uint8_t> _temp_compressed_block_data;
 };
 
 #endif // VOXEL_STREAM_SQLITE_H

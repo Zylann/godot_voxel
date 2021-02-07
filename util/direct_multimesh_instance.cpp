@@ -79,3 +79,38 @@ void DirectMultiMeshInstance::set_material_override(Ref<Material> material) {
 		vs.instance_geometry_set_material_override(_multimesh_instance, RID());
 	}
 }
+
+PoolRealArray DirectMultiMeshInstance::make_transform_3d_bulk_array(ArraySlice<const Transform> transforms) {
+	VOXEL_PROFILE_SCOPE();
+
+	PoolRealArray bulk_array;
+	bulk_array.resize(transforms.size() * 12);
+	CRASH_COND(transforms.size() * sizeof(Transform) / sizeof(float) != bulk_array.size());
+
+	PoolRealArray::Write w = bulk_array.write();
+
+	//memcpy(w.ptr(), _transform_cache.data(), bulk_array.size() * sizeof(float));
+	// Nope, you can't memcpy that, nonono. It's said to be for performance, but doesnt specify why.
+
+	for (size_t i = 0; i < transforms.size(); ++i) {
+		float *ptr = w.ptr() + 12 * i;
+		const Transform &t = transforms[i];
+
+		ptr[0] = t.basis.elements[0].x;
+		ptr[1] = t.basis.elements[0].y;
+		ptr[2] = t.basis.elements[0].z;
+		ptr[3] = t.origin.x;
+
+		ptr[4] = t.basis.elements[1].x;
+		ptr[5] = t.basis.elements[1].y;
+		ptr[6] = t.basis.elements[1].z;
+		ptr[7] = t.origin.y;
+
+		ptr[8] = t.basis.elements[2].x;
+		ptr[9] = t.basis.elements[2].y;
+		ptr[10] = t.basis.elements[2].z;
+		ptr[11] = t.origin.z;
+	}
+
+	return bulk_array;
+}

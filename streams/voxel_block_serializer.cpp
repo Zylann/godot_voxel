@@ -2,121 +2,15 @@
 #include "../math/vector3i.h"
 #include "../storage/voxel_buffer.h"
 #include "../storage/voxel_memory_pool.h"
-#include "../thirdparty/lz4/lz4.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
+#include "compressed_data.h"
 
 #include <core/io/marshalls.h>
 #include <core/io/stream_peer.h>
 //#include <core/map.h>
 #include <core/os/file_access.h>
 #include <limits>
-
-namespace VoxelCompressedData {
-
-// Compressed data starts with a single byte telling which compression format is used.
-// What follows depends on it.
-
-enum Compression {
-	// No compression. All following bytes can be read as-is.
-	// Could be used for debugging.
-	COMPRESSION_NONE = 0,
-	// The next uint32_t will be the size of decompressed data.
-	// All following bytes are compressed data using LZ4 defaults.
-	// This is the fastest compression format.
-	COMPRESSION_LZ4 = 1,
-	COMPRESSION_COUNT = 2
-};
-
-bool decompress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst) {
-	VOXEL_PROFILE_SCOPE();
-
-	FileAccessMemory f;
-	f.open_custom(src.data(), src.size());
-
-	const Compression comp = static_cast<Compression>(f.get_8());
-	ERR_FAIL_INDEX_V(comp, COMPRESSION_COUNT, false);
-
-	switch (comp) {
-		case COMPRESSION_NONE: {
-			// We still have to do a copy. The point of this container is compression,
-			// so we don't worry too much about the performance impact of not using `src` directly.
-			dst.resize(src.size() - 1);
-			memcpy(dst.data(), src.data() + 1, dst.size());
-		} break;
-
-		case COMPRESSION_LZ4: {
-			const uint32_t decompressed_size = f.get_32();
-			const uint32_t header_size = sizeof(uint8_t) + sizeof(uint32_t);
-
-			dst.resize(decompressed_size);
-
-			const uint32_t actually_decompressed_size = LZ4_decompress_safe(
-					(const char *)src.data() + header_size,
-					(char *)dst.data(),
-					src.size() - header_size,
-					dst.size());
-
-			ERR_FAIL_COND_V_MSG(actually_decompressed_size < 0, false,
-					String("LZ4 decompression error {0}").format(varray(actually_decompressed_size)));
-
-			ERR_FAIL_COND_V_MSG(actually_decompressed_size != decompressed_size, false,
-					String("Expected {0} bytes, obtained {1}")
-							.format(varray(decompressed_size, actually_decompressed_size)));
-		} break;
-
-		default:
-			ERR_PRINT("Invalid compression header");
-			return false;
-	}
-
-	return true;
-}
-
-bool compress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp) {
-	VOXEL_PROFILE_SCOPE();
-
-	switch (comp) {
-		case COMPRESSION_NONE: {
-			dst.resize(src.size() + 1);
-			dst[0] = comp;
-			memcpy(dst.data() + 1, src.data(), src.size());
-		} break;
-
-		case COMPRESSION_LZ4: {
-			const uint32_t header_size = sizeof(uint8_t) + sizeof(uint32_t);
-			dst.resize(header_size + LZ4_compressBound(src.size()));
-
-			// Write header
-			FileAccessMemory f;
-			f.open_custom(dst.data(), dst.size());
-			f.store_8(comp);
-			f.store_32(src.size());
-			f.close();
-
-			const uint32_t compressed_size = LZ4_compress_default(
-					(const char *)src.data(),
-					(char *)dst.data() + header_size,
-					src.size(),
-					dst.size() - header_size);
-
-			ERR_FAIL_COND_V(compressed_size < 0, false);
-			ERR_FAIL_COND_V(compressed_size == 0, false);
-
-			dst.resize(header_size + compressed_size);
-		} break;
-
-		default:
-			ERR_PRINT("Invalid compression header");
-			return false;
-	}
-
-	return true;
-}
-
-} // namespace VoxelCompressedData
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace {
 const uint8_t BLOCK_VERSION = 2;
