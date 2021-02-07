@@ -196,7 +196,9 @@ private:
 	Ref<VoxelGenerator> _generator;
 	Ref<VoxelMesher> _mesher;
 
+	// TODO Might put this batch into VoxelServer directly instead of here
 	std::vector<BlockToSave> _blocks_to_save;
+
 	VoxelServer::ReceptionBuffers _reception_buffers;
 	uint32_t _volume_id = 0;
 	ProcessMode _process_mode = PROCESS_MODE_IDLE;

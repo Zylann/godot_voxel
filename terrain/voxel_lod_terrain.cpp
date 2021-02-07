@@ -144,23 +144,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 VoxelLodTerrain::~VoxelLodTerrain() {
 	PRINT_VERBOSE("Destroy VoxelLodTerrain");
-
-	if (_stream.is_valid()) {
-		// Schedule saving of all modified blocks,
-		// without copy because we are destroying the map anyways
-
-		flush_pending_lod_edits();
-
-		for (int i = 0; i < _lod_count; ++i) {
-			_lods[i].map.for_all_blocks(BeforeUnloadAction{ _shader_material_pool, _blocks_to_save, true });
-		}
-
-		// And flush immediately
-		send_block_data_requests();
-	}
-
 	VoxelServer::get_singleton()->remove_volume(_volume_id);
-
 	// Instancer can take care of itself
 }
 

@@ -35,11 +35,6 @@ VoxelTerrain::VoxelTerrain() {
 
 VoxelTerrain::~VoxelTerrain() {
 	PRINT_VERBOSE("Destroying VoxelTerrain");
-
-	// Schedule saving of all modified blocks,
-	// without copy because we are destroying the map anyways
-	save_all_modified_blocks(false);
-
 	VoxelServer::get_singleton()->remove_volume(_volume_id);
 }
 
@@ -550,7 +545,13 @@ void VoxelTerrain::reset_map() {
 }
 
 inline int get_border_index(int x, int max) {
-	return x == 0 ? 0 : x != max ? 1 : 2;
+	if (x == 0) {
+		return 0;
+	}
+	if (x != max) {
+		return 1;
+	}
+	return 2;
 }
 
 void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
