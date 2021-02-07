@@ -65,13 +65,15 @@ bool compress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst, Compress
 		case COMPRESSION_LZ4: {
 			ERR_FAIL_COND_V(src.size() > std::numeric_limits<uint32_t>::max(), false);
 
-			const uint32_t header_size = sizeof(uint8_t) + sizeof(uint32_t);
-			dst.resize(header_size + LZ4_compressBound(src.size()));
-
 			// Write header
+			// Must clear first because MemoryWriter writes from the end
+			dst.clear();
 			VoxelUtility::MemoryWriter f(dst, VoxelUtility::ENDIANESS_BIG_ENDIAN);
 			f.store_8(comp);
 			f.store_32(src.size());
+
+			const uint32_t header_size = sizeof(uint8_t) + sizeof(uint32_t);
+			dst.resize(header_size + LZ4_compressBound(src.size()));
 
 			const uint32_t compressed_size = LZ4_compress_default(
 					(const char *)src.data(),
