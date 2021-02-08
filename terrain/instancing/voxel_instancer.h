@@ -45,6 +45,7 @@ public:
 	int add_layer(int lod_index);
 
 	void set_layer_generator(int layer_index, Ref<VoxelInstanceGenerator> generator);
+	void set_layer_persistent(int layer_index, bool persistent);
 
 	void set_layer_mesh(int layer_index, Ref<Mesh> mesh);
 	void set_layer_material_override(int layer_index, Ref<Material> material);
@@ -85,11 +86,12 @@ private:
 	void clear_instances();
 	void update_visibility();
 	void save_block(Vector3i grid_pos, int lod_index) const;
-	void generate_block_on_each_layer(Vector3i grid_pos, int lod_index, Array surface_arrays);
 
-	int find_layer_by_id(int id) const;
+	int find_layer_by_persistent_id(int id) const;
+	int generate_persistent_id() const;
 
-	void create_loaded_blocks(const VoxelInstanceBlockData &instances_data, Vector3i grid_position, int lod_index);
+	void create_blocks(const VoxelInstanceBlockData *instances_data, Vector3i grid_position, int lod_index,
+			Array surface_arrays);
 
 	void create_block_from_transforms(ArraySlice<const Transform> transforms,
 			Vector3i grid_position, Layer *layer, unsigned int layer_index, World *world,
@@ -114,11 +116,14 @@ private:
 	struct Layer {
 		static const int MAX_ID = 0xffff;
 
-		// This ID identifies the layer uniquely within the current volume, and within saved data.
+		// This ID identifies the layer uniquely within saved data. Two layers cannot use the same ID.
 		// Note: layer indexes are used only for fast access, they are not persistent.
-		int id = -1;
-		// TODO Allow non-persistent layers?
-		// These won't need an ID, will not be saved, and will always re-generate. Also rename `id` to `persistent_id`.
+		int persistent_id = -1;
+		// If a layer is persistent, any change to its instances will be saved if the volume has a stream
+		// supporting instances. It will also not generate on top of modified surfaces.
+		// If a layer is not persistent, changes won't get saved, and it will keep generating on all compliant
+		// surfaces.
+		bool persistent = false;
 
 		int lod_index = 0;
 

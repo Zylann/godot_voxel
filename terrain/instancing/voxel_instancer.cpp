@@ -205,20 +205,21 @@ VoxelInstancer::UpMode VoxelInstancer::get_up_mode() const {
 	return _up_mode;
 }
 
-int VoxelInstancer::add_layer(int lod_index) {
-	// Find unused ID
+int VoxelInstancer::generate_persistent_id() const {
 	int id = 0;
 	for (size_t i = 0; i < _layers.size(); ++i) {
 		const Layer *layer = _layers[i];
 		if (layer != nullptr) {
-			id = max(layer->id + 1, id);
+			id = max(layer->persistent_id + 1, id);
 			break;
 		}
 	}
-
 	// Should not happen
 	ERR_FAIL_COND_V(id > Layer::MAX_ID, -1);
+	return id;
+}
 
+int VoxelInstancer::add_layer(int lod_index) {
 	int layer_index = -1;
 	for (size_t i = 0; i < _layers.size(); ++i) {
 		if (_layers[i] == nullptr) {
@@ -233,7 +234,6 @@ int VoxelInstancer::add_layer(int lod_index) {
 
 	Layer *layer = memnew(Layer);
 	layer->lod_index = lod_index;
-	layer->id = id;
 
 	if (Engine::get_singleton()->is_editor_hint()) {
 		// Put a default generator
@@ -254,6 +254,21 @@ void VoxelInstancer::set_layer_generator(int layer_index, Ref<VoxelInstanceGener
 	ERR_FAIL_COND(layer == nullptr);
 
 	layer->generator = generator;
+}
+
+void VoxelInstancer::set_layer_persistent(int layer_index, bool persistent) {
+	ERR_FAIL_INDEX(layer_index, _layers.size());
+	Layer *layer = _layers[layer_index];
+	ERR_FAIL_COND(layer == nullptr);
+
+	if (persistent) {
+		layer->persistent = true;
+		if (layer->persistent_id < 0 || find_layer_by_persistent_id(layer->persistent_id) != -1) {
+			layer->persistent_id = generate_persistent_id();
+		}
+	} else {
+		layer->persistent = false;
+	}
 }
 
 void VoxelInstancer::set_layer_mesh(int layer_index, Ref<Mesh> mesh) {
@@ -434,16 +449,18 @@ void VoxelInstancer::on_block_enter(Vector3i grid_position, int lod_index, Array
 	Lod &lod = _lods[lod_index];
 
 	auto it = lod.loaded_instances_data.find(grid_position);
+	const VoxelInstanceBlockData *instances_data = nullptr;
 
 	if (it != lod.loaded_instances_data.end()) {
-		ERR_FAIL_COND(it->second == nullptr);
-		create_loaded_blocks(*it->second, grid_position, lod_index);
-		// Data no longer needed in this form
-		lod.loaded_instances_data.erase(grid_position);
+		instances_data = it->second.get();
+		ERR_FAIL_COND(instances_data == nullptr);
 
-	} else {
-		generate_block_on_each_layer(grid_position, lod_index, surface_arrays);
+		// We could do this:
+		// lod.loaded_instances_data.erase(grid_position);
+		// but we'd loose the information that this block was edited, so keeping it for now
 	}
+
+	create_blocks(instances_data, grid_position, lod_index, surface_arrays);
 }
 
 void VoxelInstancer::on_block_exit(Vector3i grid_position, int lod_index) {
@@ -547,75 +564,31 @@ void VoxelInstancer::create_block_from_transforms(ArraySlice<const Transform> tr
 	layer->blocks.set(grid_position, block_index);
 }
 
-int VoxelInstancer::find_layer_by_id(int id) const {
+int VoxelInstancer::find_layer_by_persistent_id(int id) const {
+	ERR_FAIL_COND_V(id < 0, -1);
 	for (size_t i = 0; i < _layers.size(); ++i) {
 		const Layer *layer = _layers[i];
-		if (layer != nullptr && layer->id == id) {
+		if (layer != nullptr && layer->persistent_id == id) {
 			return i;
 		}
 	}
 	return -1;
 }
 
-void VoxelInstancer::create_loaded_blocks(const VoxelInstanceBlockData &instances_data, Vector3i grid_position,
-		int lod_index) {
-
-	VOXEL_PROFILE_SCOPE();
-
-	Lod &lod = _lods[lod_index];
-	const Transform parent_transform = get_global_transform();
-	Ref<World> world_ref = get_world();
-	ERR_FAIL_COND(world_ref.is_null());
-	World *world = *world_ref;
-
-	const int lod_block_size = _parent->get_block_size() << lod_index;
-	const Transform block_local_transform = Transform(Basis(), (grid_position * lod_block_size).to_vec3());
-	const Transform block_transform = parent_transform * block_local_transform;
-
-	for (auto layer_it = instances_data.layers.begin(); layer_it != instances_data.layers.end(); ++layer_it) {
-		const VoxelInstanceBlockData::LayerData &layer_data = *layer_it;
-
-		const int layer_index = find_layer_by_id(layer_data.id);
-		if (layer_index == -1) {
-			ERR_PRINT(String("Could not find associated layer ID {0} from loaded instances data")
-							  .format(varray(layer_data.id)));
-			continue;
+static bool contains_layer_id(const VoxelInstanceBlockData &instances_data, int id) {
+	for (auto it = instances_data.layers.begin(); it != instances_data.layers.end(); ++it) {
+		const VoxelInstanceBlockData::LayerData &layer = *it;
+		if (layer.id == id) {
+			return true;
 		}
-
-		Layer *layer = _layers[layer_index];
-		CRASH_COND(layer == nullptr);
-
-		const int *block_index_ptr = layer->blocks.getptr(grid_position);
-
-		if (block_index_ptr != nullptr) {
-			// The block was already made?
-			continue;
-		}
-
-		static_assert(sizeof(VoxelInstanceBlockData::InstanceData) == sizeof(Transform),
-				"Assuming instance data only contains a transform for now");
-		ArraySlice<const Transform> transforms(
-				reinterpret_cast<const Transform *>(layer_data.instances.data()), layer_data.instances.size());
-		create_block_from_transforms(transforms, grid_position, layer, layer_index, world, block_transform);
 	}
+	return false;
 }
 
-void VoxelInstancer::generate_block_on_each_layer(Vector3i grid_position, int lod_index, Array surface_arrays) {
-	if (surface_arrays.size() == 0) {
-		return;
-	}
-
-	PoolVector3Array vertices = surface_arrays[ArrayMesh::ARRAY_VERTEX];
-
-	if (vertices.size() == 0) {
-		return;
-	}
+void VoxelInstancer::create_blocks(const VoxelInstanceBlockData *instances_data_ptr, Vector3i grid_position,
+		int lod_index, Array surface_arrays) {
 
 	VOXEL_PROFILE_SCOPE();
-
-	PoolVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
-
-	//Ref<VoxelGeneratorGraph> graph_generator = _parent->get_stream();
 
 	Lod &lod = _lods[lod_index];
 	const Transform parent_transform = get_global_transform();
@@ -627,49 +600,104 @@ void VoxelInstancer::generate_block_on_each_layer(Vector3i grid_position, int lo
 	const Transform block_local_transform = Transform(Basis(), (grid_position * lod_block_size).to_vec3());
 	const Transform block_transform = parent_transform * block_local_transform;
 
-	for (auto it = lod.layers.begin(); it != lod.layers.end(); ++it) {
-		const int layer_index = *it;
+	// Load from data if any
+	if (instances_data_ptr != nullptr) {
+		VOXEL_PROFILE_SCOPE();
+		const VoxelInstanceBlockData &instances_data = *instances_data_ptr;
 
-		Layer *layer = _layers[layer_index];
-		CRASH_COND(layer == nullptr);
+		for (auto layer_it = instances_data.layers.begin(); layer_it != instances_data.layers.end(); ++layer_it) {
+			const VoxelInstanceBlockData::LayerData &layer_data = *layer_it;
 
-		if (layer->generator.is_null()) {
-			continue;
+			const int layer_index = find_layer_by_persistent_id(layer_data.id);
+			if (layer_index == -1) {
+				ERR_PRINT(String("Could not find associated layer ID {0} from loaded instances data")
+								  .format(varray(layer_data.id)));
+				continue;
+			}
+
+			Layer *layer = _layers[layer_index];
+			CRASH_COND(layer == nullptr);
+
+			if (!layer->persistent) {
+				// That layer is no longer persistent so we'll have to ignore authored data...
+				WARN_PRINT(String("Layer index={0} received loaded data but is no longer persistent. "
+								  "Loaded data will be ignored.")
+								   .format(varray(layer_index)));
+				continue;
+			}
+
+			const int *block_index_ptr = layer->blocks.getptr(grid_position);
+			if (block_index_ptr != nullptr) {
+				// The block was already made?
+				continue;
+			}
+
+			// TODO Don't create blocks if there are no transforms?
+
+			static_assert(sizeof(VoxelInstanceBlockData::InstanceData) == sizeof(Transform),
+					"Assuming instance data only contains a transform for now");
+			ArraySlice<const Transform> transforms(
+					reinterpret_cast<const Transform *>(layer_data.instances.data()), layer_data.instances.size());
+			create_block_from_transforms(transforms, grid_position, layer, layer_index, world, block_transform);
+		}
+	}
+
+	// Generate other blocks
+	{
+		VOXEL_PROFILE_SCOPE();
+
+		if (surface_arrays.size() == 0) {
+			return;
 		}
 
-		const int *block_index_ptr = layer->blocks.getptr(grid_position);
-
-		if (block_index_ptr != nullptr) {
-			// The block was already made?
-			continue;
+		PoolVector3Array vertices = surface_arrays[ArrayMesh::ARRAY_VERTEX];
+		if (vertices.size() == 0) {
+			return;
 		}
 
-		_transform_cache.clear();
+		PoolVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
+		ERR_FAIL_COND(normals.size() == 0);
 
-		layer->generator->generate_transforms(
-				_transform_cache,
-				grid_position,
-				lod_index,
-				layer_index,
-				surface_arrays,
-				block_local_transform,
-				static_cast<VoxelInstanceGenerator::UpMode>(_up_mode));
+		for (auto it = lod.layers.begin(); it != lod.layers.end(); ++it) {
+			const int layer_index = *it;
 
-		if (_transform_cache.size() == 0) {
-			continue;
+			Layer *layer = _layers[layer_index];
+			CRASH_COND(layer == nullptr);
+
+			if (layer->generator.is_null()) {
+				continue;
+			}
+
+			const int *block_index_ptr = layer->blocks.getptr(grid_position);
+			if (block_index_ptr != nullptr) {
+				// The block was already made?
+				continue;
+			}
+
+			if (layer->persistent && instances_data_ptr != nullptr &&
+					contains_layer_id(*instances_data_ptr, layer->persistent_id)) {
+				// Don't generate, it received modified data
+				continue;
+			}
+
+			_transform_cache.clear();
+
+			layer->generator->generate_transforms(
+					_transform_cache,
+					grid_position,
+					lod_index,
+					layer_index,
+					surface_arrays,
+					block_local_transform,
+					static_cast<VoxelInstanceGenerator::UpMode>(_up_mode));
+
+			if (_transform_cache.size() == 0) {
+				continue;
+			}
+
+			create_block_from_transforms(to_slice_const(_transform_cache),
+					grid_position, layer, layer_index, world, block_transform);
 		}
-
-		// TODO Investigate if this helps (won't help with authored terrain)
-		// if (graph_generator.is_valid()) {
-		// 	for (size_t i = 0; i < _transform_cache.size(); ++i) {
-		// 		Transform &t = _transform_cache[i];
-		// 		const Vector3 up = t.get_basis().get_axis(Vector3::AXIS_Y);
-		// 		t.origin = graph_generator->approximate_surface(t.origin, up * 0.5f);
-		// 	}
-		// }
-
-		create_block_from_transforms(to_slice_const(_transform_cache),
-				grid_position, layer, layer_index, world, block_transform);
 	}
 }
 
@@ -698,6 +726,11 @@ void VoxelInstancer::save_block(Vector3i grid_pos, int lod_index) const {
 		Layer *layer = _layers[layer_index];
 		CRASH_COND(layer == nullptr);
 
+		if (!layer->persistent) {
+			continue;
+		}
+		ERR_FAIL_COND(layer->persistent_id < 0);
+
 		int *block_index_ptr = layer->blocks.getptr(grid_pos);
 
 		if (block_index_ptr != nullptr) {
@@ -716,8 +749,7 @@ void VoxelInstancer::save_block(Vector3i grid_pos, int lod_index) const {
 
 			const int instance_count = get_visible_instance_count(multimesh);
 
-			ERR_FAIL_COND(layer->id < 0);
-			layer_data.id = layer->id;
+			layer_data.id = layer->persistent_id;
 
 			if (layer->generator.is_valid()) {
 				layer_data.scale_min = layer->generator->get_min_scale();
@@ -913,6 +945,9 @@ void VoxelInstancer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_layer_generator", "layer_index", "generator"),
 			&VoxelInstancer::set_layer_generator);
+
+	ClassDB::bind_method(D_METHOD("set_layer_persistent", "layer_index", "persistent"),
+			&VoxelInstancer::set_layer_persistent);
 
 	ClassDB::bind_method(D_METHOD("set_layer_mesh", "layer_index", "mesh"), &VoxelInstancer::set_layer_mesh);
 	ClassDB::bind_method(D_METHOD("set_layer_mesh_material_override", "layer_index", "material"),

@@ -175,6 +175,15 @@ void VoxelInstanceGenerator::generate_transforms(
 
 		out_transforms.push_back(t);
 	}
+
+	// TODO Investigate if this helps (won't help with authored terrain)
+	// if (graph_generator.is_valid()) {
+	// 	for (size_t i = 0; i < _transform_cache.size(); ++i) {
+	// 		Transform &t = _transform_cache[i];
+	// 		const Vector3 up = t.get_basis().get_axis(Vector3::AXIS_Y);
+	// 		t.origin = graph_generator->approximate_surface(t.origin, up * 0.5f);
+	// 	}
+	// }
 }
 
 void VoxelInstanceGenerator::set_density(float density) {
