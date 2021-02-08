@@ -1171,6 +1171,8 @@ void VoxelLodTerrain::_process() {
 				_instancer->on_block_data_loaded(wob.position, wob.lod, std::move(wob.instances));
 			}
 		}
+
+		_reception_buffers.data_output.clear();
 	}
 
 	_stats.time_process_load_responses = profiling_clock.restart();
