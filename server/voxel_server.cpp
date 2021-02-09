@@ -50,15 +50,18 @@ VoxelServer::VoxelServer() {
 	// TODO Automatic thread assignment and project settings
 
 	// Can't be more than 1 thread. File access with more threads isn't worth it.
+	_streaming_thread_pool.set_name("Voxel streaming");
 	_streaming_thread_pool.set_thread_count(1);
 	_streaming_thread_pool.set_priority_update_period(300);
 	_streaming_thread_pool.set_batch_count(16);
 
+	_generation_thread_pool.set_name("Voxel generation");
 	_generation_thread_pool.set_thread_count(2);
 	_generation_thread_pool.set_priority_update_period(300);
 	_generation_thread_pool.set_batch_count(1);
 
 	// This pool works on visuals so it must have lower latency
+	_meshing_thread_pool.set_name("Voxel meshing");
 	_meshing_thread_pool.set_thread_count(2);
 	_meshing_thread_pool.set_priority_update_period(64);
 	_meshing_thread_pool.set_batch_count(1);

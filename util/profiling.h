@@ -1,21 +1,26 @@
 #ifndef VOXEL_PROFILING_H
 #define VOXEL_PROFILING_H
 
-#define VOXEL_PROFILER_ENABLED
-
-#if defined(VOXEL_PROFILER_ENABLED) && defined(TRACY_ENABLE)
+#if defined(TRACY_ENABLE)
 
 #include <thirdparty/tracy/Tracy.hpp>
+#include <thirdparty/tracy/common/TracySystem.hpp>
+
+#define VOXEL_PROFILER_ENABLED
 
 #define VOXEL_PROFILE_SCOPE() ZoneScoped
 #define VOXEL_PROFILE_SCOPE_NAMED(name) ZoneScopedN(name)
 #define VOXEL_PROFILE_MARK_FRAME() FrameMark
+#define VOXEL_PROFILE_SET_THREAD_NAME(name) tracy::SetThreadName(name)
 
 #else
 
 #define VOXEL_PROFILE_SCOPE()
+// Name must be static const char* (usually string litteral)
 #define VOXEL_PROFILE_SCOPE_NAMED(name)
 #define VOXEL_PROFILE_MARK_FRAME()
+// Name must be const char*. An internal copy will be made so it can be temporary.
+#define VOXEL_PROFILE_SET_THREAD_NAME(name)
 
 #endif
 

@@ -39,6 +39,9 @@ void VoxelThreadPool::create_thread(ThreadData &d, uint32_t i) {
 	d.stop = false;
 	d.waiting = false;
 	d.index = i;
+	if (!_name.empty()) {
+		d.name = String("{0} {1}").format(varray(_name, i));
+	}
 	d.thread = Thread::create(thread_func_static, &d);
 }
 
@@ -61,6 +64,10 @@ void VoxelThreadPool::destroy_all_threads() {
 		memdelete(d.thread);
 		d = ThreadData();
 	}
+}
+
+void VoxelThreadPool::set_name(String name) {
+	_name = name;
 }
 
 void VoxelThreadPool::set_thread_count(uint32_t count) {
@@ -116,6 +123,16 @@ void VoxelThreadPool::enqueue(ArraySlice<IVoxelTask *> tasks) {
 void VoxelThreadPool::thread_func_static(void *p_data) {
 	ThreadData &data = *static_cast<ThreadData *>(p_data);
 	VoxelThreadPool &pool = *data.pool;
+
+	if (!data.name.empty()) {
+		Thread::set_name(data.name);
+
+#ifdef VOXEL_PROFILER_ENABLED
+		CharString thread_name = data.name.utf8();
+		VOXEL_PROFILE_SET_THREAD_NAME(thread_name.get_data());
+#endif
+	}
+
 	pool.thread_func(data);
 }
 
