@@ -4,6 +4,7 @@
 #include "../../util/profiling.h"
 #include "../compressed_data.h"
 #include <limits>
+#include <string>
 
 struct BlockLocation {
 	int16_t x;
@@ -70,7 +71,15 @@ public:
 	void close();
 
 	bool is_open() const { return _db != nullptr; }
+
+	// Returns the file path from SQLite
 	const char *get_file_path() const;
+
+	// Return the file path that was used to open the connection.
+	// You may use this one if you want determinism, as SQLite seems to globalize its path.
+	const char *get_opened_file_path() const {
+		return _opened_path.c_str();
+	}
 
 	bool begin_transaction();
 	bool end_transaction();
@@ -109,6 +118,7 @@ private:
 		}
 	}
 
+	std::string _opened_path;
 	sqlite3 *_db = nullptr;
 	sqlite3_stmt *_begin_statement = nullptr;
 	sqlite3_stmt *_end_statement = nullptr;
@@ -212,6 +222,7 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 		save_meta(meta);
 	}
 
+	_opened_path = fpath;
 	return true;
 }
 
@@ -231,6 +242,7 @@ void VoxelStreamSQLiteInternal::close() {
 	finalize(_save_channel_statement);
 	sqlite3_close(_db);
 	_db = nullptr;
+	_opened_path.clear();
 }
 
 const char *VoxelStreamSQLiteInternal::get_file_path() const {
@@ -700,6 +712,7 @@ void VoxelStreamSQLite::load_instance_blocks(
 	ERR_FAIL_COND(con == nullptr);
 
 	// TODO We should handle busy return codes
+	// TODO recycle on error
 	ERR_FAIL_COND(con->begin_transaction() == false);
 
 	for (int i = 0; i < blocks_to_load.size(); ++i) {
@@ -841,7 +854,7 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 }
 
 void VoxelStreamSQLite::recycle_connection(VoxelStreamSQLiteInternal *con) {
-	String con_path = con->get_file_path();
+	String con_path = con->get_opened_file_path();
 	_connection_mutex->lock();
 	// If path differs, delete this connection
 	if (_connection_path != con_path) {
