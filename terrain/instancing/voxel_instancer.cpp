@@ -1,14 +1,15 @@
 #include "voxel_instancer.h"
 #include "../../edition/voxel_tool.h"
-//#include "../../generators/graph/voxel_generator_graph.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../voxel_lod_terrain.h"
 
+#include <scene/3d/camera.h>
 #include <scene/3d/collision_shape.h>
 #include <scene/3d/mesh_instance.h>
 #include <scene/3d/physics_body.h>
 #include <scene/3d/spatial.h>
+#include <scene/main/viewport.h>
 #include <scene/resources/primitive_meshes.h>
 
 class VoxelInstancerRigidBody : public RigidBody {
@@ -65,24 +66,7 @@ private:
 
 VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
-	// TEST
-	// Ref<CubeMesh> mesh1;
-	// mesh1.instance();
-	// mesh1->set_size(Vector3(0.5f, 0.5f, 0.5f));
-	// int layer_index = add_layer(0);
-	// set_layer_mesh(layer_index, mesh1);
-
-	// Ref<CubeMesh> mesh2;
-	// mesh2.instance();
-	// mesh2->set_size(Vector3(1.0f, 2.0f, 1.0f));
-	// layer_index = add_layer(2);
-	// set_layer_mesh(layer_index, mesh2);
-
-	// Ref<CubeMesh> mesh3;
-	// mesh3.instance();
-	// mesh3->set_size(Vector3(2.0f, 20.0f, 2.0f));
-	// layer_index = add_layer(3);
-	// set_layer_mesh(layer_index, mesh3);
+	set_process_internal(true);
 }
 
 VoxelInstancer::~VoxelInstancer() {
@@ -175,6 +159,98 @@ void VoxelInstancer::_notification(int p_what) {
 		case NOTIFICATION_VISIBILITY_CHANGED:
 			update_visibility();
 			break;
+
+		case NOTIFICATION_INTERNAL_PROCESS:
+			if (_parent != nullptr) {
+				process_mesh_lods();
+			}
+			break;
+	}
+}
+
+void VoxelInstancer::process_mesh_lods() {
+	VOXEL_PROFILE_SCOPE();
+
+	// Get viewer position
+	const Viewport *viewport = get_viewport();
+	const Camera *camera = viewport->get_camera();
+	if (camera == nullptr) {
+		return;
+	}
+	const Transform gtrans = get_global_transform();
+	const Vector3 cam_pos_local = (gtrans.affine_inverse() * camera->get_global_transform()).origin;
+
+	ERR_FAIL_COND(_parent == nullptr);
+	const int block_size = _parent->get_block_size();
+
+	// Hardcoded LOD thresholds for now.
+	// Can't really use pixel density because view distances are controlled by the main surface LOD octree
+	const int block_region_extent = _parent->get_block_region_extent();
+	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+		const Lod &lod = _lods[lod_index];
+		const float max_distance = block_size * (block_region_extent << lod_index);
+
+		FixedArray<float, 4> coeffs;
+		coeffs[0] = 0;
+		coeffs[1] = 0.1;
+		coeffs[2] = 0.25;
+		coeffs[3] = 0.5;
+		const float hysteresis = 1.05;
+
+		for (unsigned int i = 0; i < lod.layers.size(); ++i) {
+			Layer *layer = _layers[lod.layers[i]];
+			ERR_FAIL_COND(layer == nullptr);
+			if (layer->mesh_lod_count <= 1) {
+				// This block has no LOD
+				continue;
+			}
+
+			for (unsigned int j = 0; j < layer->mesh_lod_distances.size(); ++j) {
+				MeshLodDistances &mld = layer->mesh_lod_distances[j];
+				mld.exit_distance_squared = max_distance * max_distance * coeffs[j];
+				mld.enter_distance_squared = hysteresis * mld.exit_distance_squared;
+			}
+		}
+	}
+
+	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
+		Block *block = *it;
+
+		const Layer *layer = _layers[block->layer_index];
+		ERR_FAIL_COND(layer == nullptr);
+		if (layer->mesh_lod_count <= 1) {
+			// This block has no LOD
+			continue;
+		}
+
+#ifdef DEBUG_ENABLED
+		ERR_FAIL_COND(layer->mesh_lod_count < Layer::MAX_MESH_LODS);
+#endif
+
+		const int lod_block_size = block_size << layer->lod_index;
+		const int hs = lod_block_size >> 1;
+		const Vector3 block_center_local = (block->grid_position * lod_block_size + Vector3i(hs, hs, hs)).to_vec3();
+		const float distance_squared = cam_pos_local.distance_squared_to(block_center_local);
+
+		if (block->current_mesh_lod + 1 < layer->mesh_lod_count &&
+				distance_squared > layer->mesh_lod_distances[block->current_mesh_lod].enter_distance_squared) {
+			// Decrease detail
+			++block->current_mesh_lod;
+			Ref<MultiMesh> multimesh = block->multimesh_instance.get_multimesh();
+			if (multimesh.is_valid()) {
+				multimesh->set_mesh(layer->mesh_lods[block->current_mesh_lod].mesh);
+			}
+		}
+
+		if (block->current_mesh_lod > 0 &&
+				distance_squared < layer->mesh_lod_distances[block->current_mesh_lod].exit_distance_squared) {
+			// Increase detail
+			--block->current_mesh_lod;
+			Ref<MultiMesh> multimesh = block->multimesh_instance.get_multimesh();
+			if (multimesh.is_valid()) {
+				multimesh->set_mesh(layer->mesh_lods[block->current_mesh_lod].mesh);
+			}
+		}
 	}
 }
 
@@ -271,12 +347,23 @@ void VoxelInstancer::set_layer_persistent(int layer_index, bool persistent) {
 	}
 }
 
-void VoxelInstancer::set_layer_mesh(int layer_index, Ref<Mesh> mesh) {
+void VoxelInstancer::set_layer_mesh(int layer_index, Ref<Mesh> mesh, int mesh_lod_index) {
 	ERR_FAIL_INDEX(layer_index, _layers.size());
 	Layer *layer = _layers[layer_index];
 	ERR_FAIL_COND(layer == nullptr);
 
-	layer->mesh = mesh;
+	ERR_FAIL_INDEX(mesh_lod_index, Layer::MAX_MESH_LODS);
+	layer->mesh_lods[mesh_lod_index].mesh = mesh;
+
+	// Update count
+	unsigned int count = layer->mesh_lods.size();
+	for (unsigned int i = layer->mesh_lods.size() - 1; i > 0; --i) {
+		if (layer->mesh_lods[i].mesh.is_valid()) {
+			break;
+		}
+		--count;
+	}
+	layer->mesh_lod_count = count;
 }
 
 void VoxelInstancer::set_layer_collision_layer(int layer_index, int collision_layer) {
@@ -343,7 +430,8 @@ void VoxelInstancer::set_layer_from_template(int layer_index, Node *root) {
 	for (int i = 0; i < root->get_child_count(); ++i) {
 		MeshInstance *mi = Object::cast_to<MeshInstance>(root->get_child(i));
 		if (mi != nullptr) {
-			layer->mesh = mi->get_mesh();
+			layer->mesh_lods[0].mesh = mi->get_mesh();
+			layer->mesh_lod_count = 1;
 			layer->material_override = mi->get_material_override();
 		}
 
@@ -509,13 +597,16 @@ void VoxelInstancer::create_block_from_transforms(ArraySlice<const Transform> tr
 		const Transform &block_transform) {
 
 	VOXEL_PROFILE_SCOPE();
+	CRASH_COND(layer == nullptr);
 
 	Ref<MultiMesh> multimesh;
 	multimesh.instance();
 	multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
 	multimesh->set_color_format(MultiMesh::COLOR_NONE);
 	multimesh->set_custom_data_format(MultiMesh::CUSTOM_DATA_NONE);
-	multimesh->set_mesh(layer->mesh);
+	if (layer->mesh_lod_count > 0) {
+		multimesh->set_mesh(layer->mesh_lods[layer->mesh_lod_count - 1].mesh);
+	}
 
 	// Godot throws an error if we call `set_as_bulk_array` with an empty array
 	if (transforms.size() > 0) {
@@ -949,7 +1040,8 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_layer_persistent", "layer_index", "persistent"),
 			&VoxelInstancer::set_layer_persistent);
 
-	ClassDB::bind_method(D_METHOD("set_layer_mesh", "layer_index", "mesh"), &VoxelInstancer::set_layer_mesh);
+	ClassDB::bind_method(D_METHOD("set_layer_mesh", "layer_index", "mesh", "mesh_lod_index"),
+			&VoxelInstancer::set_layer_mesh);
 	ClassDB::bind_method(D_METHOD("set_layer_mesh_material_override", "layer_index", "material"),
 			&VoxelInstancer::set_layer_material_override);
 

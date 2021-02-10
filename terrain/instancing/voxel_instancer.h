@@ -47,7 +47,7 @@ public:
 	void set_layer_generator(int layer_index, Ref<VoxelInstanceGenerator> generator);
 	void set_layer_persistent(int layer_index, bool persistent);
 
-	void set_layer_mesh(int layer_index, Ref<Mesh> mesh);
+	void set_layer_mesh(int layer_index, Ref<Mesh> mesh, int mesh_lod_index);
 	void set_layer_material_override(int layer_index, Ref<Material> material);
 
 	void set_layer_collision_layer(int layer_index, int collision_layer);
@@ -81,6 +81,8 @@ private:
 	struct Block;
 	struct Layer;
 
+	void process_mesh_lods();
+
 	void remove_block(int block_index);
 	void set_world(World *world);
 	void clear_instances();
@@ -100,7 +102,8 @@ private:
 	static void _bind_methods();
 
 	struct Block {
-		int layer_index;
+		uint16_t layer_index;
+		uint16_t current_mesh_lod = 0;
 		Vector3i grid_position;
 		DirectMultiMeshInstance multimesh_instance;
 		// For physics we use nodes because it's easier to manage.
@@ -113,8 +116,27 @@ private:
 		Ref<Shape> shape;
 	};
 
+	struct MeshLod {
+		Ref<Mesh> mesh;
+	};
+
+	struct MeshLodDistances {
+		// Multimesh LOD updates based on the distance between the camera and the center of the block.
+		// Two distances are used to implement hysteresis, which allows to avoid oscillating too fast between lods.
+
+		// TODO Need to investigate if Godot 4 implements LOD for multimeshes
+		// Despite this, due to how Godot 4 implements LOD, it may still be beneficial to have a custom LOD system,
+		// so we can switch to impostors rather than only decimating geometry
+
+		// Distance above which the mesh starts being used, taking precedence over meshes of lower distance.
+		float enter_distance_squared;
+		// Distance under which the mesh stops being used
+		float exit_distance_squared;
+	};
+
 	struct Layer {
 		static const int MAX_ID = 0xffff;
+		static const int MAX_MESH_LODS = 4;
 
 		// This ID identifies the layer uniquely within saved data. Two layers cannot use the same ID.
 		// Note: layer indexes are used only for fast access, they are not persistent.
@@ -129,8 +151,9 @@ private:
 
 		Ref<VoxelInstanceGenerator> generator;
 
-		// TODO lods?
-		Ref<Mesh> mesh;
+		FixedArray<MeshLodDistances, Layer::MAX_MESH_LODS> mesh_lod_distances;
+		FixedArray<MeshLod, MAX_MESH_LODS> mesh_lods;
+		unsigned int mesh_lod_count = 1;
 
 		// It is preferred to have materials on the mesh already,
 		// but this is in case OBJ meshes are used, which often dont have a material of their own
