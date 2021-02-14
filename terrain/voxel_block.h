@@ -38,6 +38,7 @@ public:
 	// Visuals
 
 	void set_mesh(Ref<Mesh> mesh);
+	Ref<Mesh> get_mesh() const;
 	void set_transition_mesh(Ref<Mesh> mesh, int side);
 	bool has_mesh() const;
 	void drop_mesh();

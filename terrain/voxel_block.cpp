@@ -134,6 +134,13 @@ void VoxelBlock::set_mesh(Ref<Mesh> mesh) {
 	}
 }
 
+Ref<Mesh> VoxelBlock::get_mesh() const {
+	if (_mesh_instance.is_valid()) {
+		return _mesh_instance.get_mesh();
+	}
+	return Ref<Mesh>();
+}
+
 void VoxelBlock::set_transition_mesh(Ref<Mesh> mesh, int side) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 

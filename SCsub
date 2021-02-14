@@ -50,6 +50,7 @@ if env["tools"]:
 		"editor/graph/*.cpp",
 		"editor/terrain/*.cpp",
 		"editor/fast_noise_lite/*.cpp",
+		"editor/instance_library/*.cpp",
 	]
 	voxel_files += voxel_editor_files
 

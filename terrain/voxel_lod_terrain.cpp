@@ -1437,6 +1437,25 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 	// It is a member only to re-use its capacity memory over frames.
 }
 
+// This function is primarily intented for editor use cases at the moment.
+// It will be slower than using the instancing generation events,
+// because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
+Array VoxelLodTerrain::get_block_vertices_and_normals(Vector3i block_pos, int lod_index) {
+	VOXEL_PROFILE_SCOPE();
+	Array array;
+	Lod &lod = _lods[lod_index];
+	VoxelBlock *block = lod.map.get_block(block_pos);
+	if (block != nullptr) {
+		Ref<Mesh> mesh = block->get_mesh();
+		if (mesh.is_valid()) {
+			Array surface = mesh->surface_get_arrays(0);
+			array.push_back(surface[Mesh::ARRAY_VERTEX]);
+			array.push_back(surface[Mesh::ARRAY_NORMAL]);
+		}
+	}
+	return array;
+}
+
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 	flush_pending_lod_edits();
 

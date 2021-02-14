@@ -25,12 +25,14 @@ public:
 		UP_MODE_COUNT
 	};
 
+	// TODO Option to generate from faces
+
 	// This API might change so for now it's not exposed to scripts
 	void generate_transforms(
 			std::vector<Transform> &out_transforms,
 			Vector3i grid_position,
 			int lod_index,
-			int layer_index,
+			int layer_id,
 			Array surface_arrays,
 			const Transform &block_local_transform,
 			UpMode up_mode);
@@ -46,6 +48,8 @@ public:
 
 	void set_max_scale(float max_scale);
 	float get_max_scale() const;
+
+	// TODO Add scale curve, in real life there are way more small items than big ones
 
 	void set_offset_along_normal(float offset);
 	float get_offset_along_normal() const;
@@ -78,6 +82,10 @@ private:
 	float _min_height = std::numeric_limits<float>::min();
 	float _max_height = std::numeric_limits<float>::max();
 	bool _random_vertical_flip = false;
+
+	// Stored separately for editor
+	float _min_slope_degrees = -180.f;
+	float _max_slope_degrees = 180.f;
 };
 
 #endif // VOXEL_INSTANCE_GENERATOR_H

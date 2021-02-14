@@ -5,6 +5,7 @@
 #include "editor/editor_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
+#include "editor/instance_library/voxel_instance_library_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "generators/graph/voxel_generator_graph.h"
 #include "generators/graph/voxel_graph_node_db.h"
@@ -56,9 +57,12 @@ void register_voxel_types() {
 	// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not abstract?
 	ClassDB::register_class<VoxelServer>();
 
+	// Misc
 	ClassDB::register_class<Voxel>();
 	ClassDB::register_class<VoxelLibrary>();
 	ClassDB::register_class<VoxelColorPalette>();
+	ClassDB::register_class<VoxelInstanceLibrary>();
+	ClassDB::register_class<VoxelInstanceLibraryItem>();
 
 	// Storage
 	ClassDB::register_class<VoxelBuffer>();
@@ -68,8 +72,8 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelTerrain>();
 	ClassDB::register_class<VoxelLodTerrain>();
 	ClassDB::register_class<VoxelViewer>();
-	ClassDB::register_class<VoxelInstancer>();
 	ClassDB::register_class<VoxelInstanceGenerator>();
+	ClassDB::register_class<VoxelInstancer>();
 
 	// Streams
 	ClassDB::register_virtual_class<VoxelStream>();
@@ -119,6 +123,7 @@ void register_voxel_types() {
 #ifdef TOOLS_ENABLED
 	EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
+	EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
 	EditorPlugins::add_by_type<FastNoiseLiteEditorPlugin>();
 #endif
 }
