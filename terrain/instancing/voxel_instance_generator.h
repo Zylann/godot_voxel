@@ -25,7 +25,14 @@ public:
 		UP_MODE_COUNT
 	};
 
-	// TODO Option to generate from faces
+	enum EmitMode {
+		// Fastest, but can have noticeable patterns when using high densities
+		EMIT_FROM_VERTICES,
+		// Slower, but should not have noticeable patterns
+		EMIT_FROM_FACES,
+
+		EMIT_MODE_COUNT
+	};
 
 	// This API might change so for now it's not exposed to scripts
 	void generate_transforms(
@@ -39,6 +46,9 @@ public:
 
 	void set_density(float d);
 	float get_density() const;
+
+	void set_emit_mode(EmitMode mode);
+	EmitMode get_emit_mode() const;
 
 	void set_vertical_alignment(float valign);
 	float get_vertical_alignment() const;
@@ -82,10 +92,13 @@ private:
 	float _min_height = std::numeric_limits<float>::min();
 	float _max_height = std::numeric_limits<float>::max();
 	bool _random_vertical_flip = false;
+	EmitMode _emit_mode = EMIT_FROM_VERTICES;
 
 	// Stored separately for editor
 	float _min_slope_degrees = 0.f;
 	float _max_slope_degrees = 180.f;
 };
+
+VARIANT_ENUM_CAST(VoxelInstanceGenerator::EmitMode);
 
 #endif // VOXEL_INSTANCE_GENERATOR_H

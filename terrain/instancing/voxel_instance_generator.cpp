@@ -3,8 +3,12 @@
 #include <scene/resources/mesh.h>
 
 namespace {
-const float MAX_DENSITY = 10.f;
-const char *DENSITY_HINT_STRING = "0.0, 10.0, 0.01";
+const float MAX_DENSITY = 1.f;
+const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
+
+thread_local std::vector<Vector3> g_vertex_cache;
+thread_local std::vector<Vector3> g_normal_cache;
+
 } // namespace
 
 static inline Vector3 normalized(Vector3 pos, float &length) {
@@ -30,7 +34,8 @@ void VoxelInstanceGenerator::generate_transforms(
 	VOXEL_PROFILE_SCOPE();
 
 	if (surface_arrays.size() < ArrayMesh::ARRAY_VERTEX &&
-			surface_arrays.size() < ArrayMesh::ARRAY_NORMAL) {
+			surface_arrays.size() < ArrayMesh::ARRAY_NORMAL &&
+			surface_arrays.size() < ArrayMesh::ARRAY_INDEX) {
 		return;
 	}
 
@@ -42,10 +47,102 @@ void VoxelInstanceGenerator::generate_transforms(
 	PoolVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
 	ERR_FAIL_COND(normals.size() == 0);
 
+	PoolIntArray indices = surface_arrays[ArrayMesh::ARRAY_INDEX];
+	ERR_FAIL_COND(indices.size() == 0);
+	ERR_FAIL_COND(indices.size() % 3 != 0);
+
 	const uint32_t block_pos_hash = Vector3iHasher::hash(grid_position);
 
-	// TODO Density may be interpreted differently depending on the emission source (vertices or faces)
-	const uint32_t density_u32 = 0xffffffff * (_density / MAX_DENSITY);
+	Vector3 global_up(0.f, 1.f, 0.f);
+
+	// Using different number generators so changing parameters affecting one doesn't affect the other
+	const uint64_t seed = block_pos_hash + layer_id;
+	RandomPCG pcg0;
+	pcg0.seed(seed);
+	RandomPCG pcg1;
+	pcg1.seed(seed + 1);
+
+	out_transforms.clear();
+
+	// TODO This part might be moved to the meshing thread if it turns out to be too heavy
+
+	std::vector<Vector3> &vertex_cache = g_vertex_cache;
+	std::vector<Vector3> &normal_cache = g_normal_cache;
+
+	vertex_cache.clear();
+	normal_cache.clear();
+
+	// Pick random points
+	{
+		VOXEL_PROFILE_SCOPE();
+
+		PoolVector3Array::Read vertices_r = vertices.read();
+		PoolVector3Array::Read normals_r = normals.read();
+
+		switch (_emit_mode) {
+			case EMIT_FROM_VERTICES: {
+				// Density is interpreted differently here,
+				// so it's possible a different emit mode will produce different amounts of instances
+				const uint32_t density_u32 = 0xffffffff * (_density / MAX_DENSITY);
+				const int size = vertices.size();
+				for (int i = 0; i < size; ++i) {
+					// TODO We could actually generate indexes and pick those,
+					// rather than iterating them all and rejecting
+					if (pcg0.rand() >= density_u32) {
+						continue;
+					}
+					vertex_cache.push_back(vertices_r[i]);
+					normal_cache.push_back(normals_r[i]);
+				}
+			} break;
+
+			case EMIT_FROM_FACES: {
+				PoolIntArray::Read indices_r = indices.read();
+
+				const int triangle_count = indices.size() / 3;
+				const int instance_count = _density * triangle_count;
+
+				vertex_cache.resize(instance_count);
+				normal_cache.resize(instance_count);
+
+				// Assumes triangles have roughly the same sizes, and Transvoxel ones do
+				for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
+					// Pick a random triangle
+					const uint32_t ii = (pcg0.rand() % triangle_count) * 3;
+
+					const int ia = indices_r[ii];
+					const int ib = indices_r[ii + 1];
+					const int ic = indices_r[ii + 2];
+
+					const Vector3 &pa = vertices_r[ia];
+					const Vector3 &pb = vertices_r[ib];
+					const Vector3 &pc = vertices_r[ic];
+
+					const Vector3 &na = normals_r[ia];
+					const Vector3 &nb = normals_r[ib];
+					const Vector3 &nc = normals_r[ic];
+
+					const float t0 = pcg1.randf();
+					const float t1 = pcg1.randf();
+
+					// This formula gives pretty uniform distribution but involves a square root
+					//const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
+
+					// This is an approximation
+					const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, t1);
+					const Vector3 n = na.linear_interpolate(nb, t0).linear_interpolate(nc, t1);
+
+					vertex_cache[instance_index] = p;
+					normal_cache[instance_index] = n;
+				}
+
+			} break;
+
+			default:
+				CRASH_NOW();
+		}
+	}
+
 	const float vertical_alignment = _vertical_alignment;
 	const float scale_min = _min_scale;
 	const float scale_range = _max_scale - _min_scale;
@@ -59,39 +156,17 @@ void VoxelInstanceGenerator::generate_transforms(
 	const float min_height = _min_height;
 	const float max_height = _max_height;
 
-	Vector3 global_up(0.f, 1.f, 0.f);
-
-	// Using different number generators so changing parameters affecting one doesn't affect the other
-	const uint64_t seed = block_pos_hash + layer_id;
-	RandomPCG pcg0;
-	pcg0.seed(seed);
-	RandomPCG pcg1;
-	pcg1.seed(seed + 1);
-
-	out_transforms.clear();
-
-	PoolVector3Array::Read vr = vertices.read();
-	PoolVector3Array::Read nr = normals.read();
-
-	// TODO This part might be moved to the meshing thread if it turns out to be too heavy
-
-	for (size_t i = 0; i < vertices.size(); ++i) {
-		// TODO We could actually generate indexes and pick those, rather than iterating them all and rejecting
-		if (pcg0.rand() >= density_u32) {
-			continue;
-		}
-
+	// Calculate orientations
+	for (size_t vertex_index = 0; vertex_index < vertex_cache.size(); ++vertex_index) {
 		Transform t;
-		t.origin = vr[i];
-
-		// TODO Check if that position has been edited somehow, so we can decide to not spawn there
-		// Or remesh from generator and compare sdf but that's expensive
-
-		Vector3 axis_y;
+		t.origin = vertex_cache[vertex_index];
 
 		// Warning: sometimes mesh normals are not perfectly normalized.
 		// The cause is for meshing speed on CPU. It's normalized on GPU anyways.
-		Vector3 surface_normal = nr[i];
+		Vector3 surface_normal = normal_cache[vertex_index];
+
+		Vector3 axis_y;
+
 		bool surface_normal_is_normalized = false;
 		bool sphere_up_is_computed = false;
 		bool sphere_distance_is_computed = false;
@@ -204,6 +279,19 @@ void VoxelInstanceGenerator::set_density(float density) {
 
 float VoxelInstanceGenerator::get_density() const {
 	return _density;
+}
+
+void VoxelInstanceGenerator::set_emit_mode(EmitMode mode) {
+	ERR_FAIL_INDEX(mode, EMIT_MODE_COUNT);
+	if (_emit_mode == mode) {
+		return;
+	}
+	_emit_mode = mode;
+	emit_changed();
+}
+
+VoxelInstanceGenerator::EmitMode VoxelInstanceGenerator::get_emit_mode() const {
+	return _emit_mode;
 }
 
 void VoxelInstanceGenerator::set_min_scale(float min_scale) {
@@ -323,6 +411,9 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_density", "density"), &VoxelInstanceGenerator::set_density);
 	ClassDB::bind_method(D_METHOD("get_density"), &VoxelInstanceGenerator::get_density);
 
+	ClassDB::bind_method(D_METHOD("set_emit_mode", "density"), &VoxelInstanceGenerator::set_emit_mode);
+	ClassDB::bind_method(D_METHOD("get_emit_mode"), &VoxelInstanceGenerator::get_emit_mode);
+
 	ClassDB::bind_method(D_METHOD("set_min_scale", "min_scale"), &VoxelInstanceGenerator::set_min_scale);
 	ClassDB::bind_method(D_METHOD("get_min_scale"), &VoxelInstanceGenerator::get_min_scale);
 
@@ -354,6 +445,8 @@ void VoxelInstanceGenerator::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "density", PROPERTY_HINT_RANGE, DENSITY_HINT_STRING),
 			"set_density", "get_density");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,Faces"),
+			"set_emit_mode", "get_emit_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
 			"set_min_scale", "get_min_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
@@ -370,4 +463,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_height"), "set_max_height", "get_max_height");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_vertical_flip"),
 			"set_random_vertical_flip", "get_random_vertical_flip");
+
+	BIND_ENUM_CONSTANT(EMIT_FROM_VERTICES);
+	BIND_ENUM_CONSTANT(EMIT_FROM_FACES);
 }

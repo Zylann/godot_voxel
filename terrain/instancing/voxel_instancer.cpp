@@ -371,7 +371,7 @@ void VoxelInstancer::regenerate_layer(int layer_id) {
 
 		_transform_cache.clear();
 
-		Array surface_arrays = _parent->get_block_vertices_and_normals(block->grid_position, lod_index);
+		Array surface_arrays = _parent->get_block_surface(block->grid_position, lod_index);
 
 		const int lod_block_size = _parent->get_block_size() << lod_index;
 		const Transform block_local_transform =
