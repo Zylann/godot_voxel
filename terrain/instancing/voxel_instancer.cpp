@@ -334,7 +334,7 @@ void VoxelInstancer::set_library(Ref<VoxelInstanceLibrary> library) {
 	if (_library.is_valid()) {
 		_library->for_each_item([this](int id, const VoxelInstanceLibraryItem &item) {
 			add_layer(id, item.get_lod_index());
-			if (_parent != nullptr) {
+			if (_parent != nullptr && is_inside_tree()) {
 				regenerate_layer(id, true);
 			}
 		});
