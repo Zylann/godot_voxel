@@ -21,6 +21,7 @@ public:
 	void remove_item(int id);
 	void clear();
 	int find_item_by_name(String name) const;
+	int get_item_count() const;
 
 	// Internal
 
@@ -52,6 +53,7 @@ private:
 	static void _bind_methods();
 
 	// ID => Item
+	// Using a Map keeps items ordered, so the last item has highest ID
 	Map<int, Ref<VoxelInstanceLibraryItem> > _items;
 
 	Vector<IListener *> _listeners;

@@ -341,6 +341,8 @@ void VoxelInstancer::set_library(Ref<VoxelInstanceLibrary> library) {
 
 		_library->add_listener(this);
 	}
+
+	update_configuration_warning();
 }
 
 Ref<VoxelInstanceLibrary> VoxelInstancer::get_library() const {
@@ -456,6 +458,7 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 
 		case VoxelInstanceLibraryItem::CHANGE_REMOVED:
 			remove_layer(item_id);
+			update_configuration_warning();
 			break;
 
 		case VoxelInstanceLibraryItem::CHANGE_GENERATOR:
@@ -1119,6 +1122,19 @@ void VoxelInstancer::on_body_removed(int block_index, int instance_index) {
 
 int VoxelInstancer::debug_get_block_count() const {
 	return _blocks.size();
+}
+
+String VoxelInstancer::get_configuration_warning() const {
+	if (_parent == nullptr) {
+		return TTR("This node must be child of a VoxelLodTerrain.");
+	}
+	if (_library.is_null()) {
+		return TTR("No library is assigned. A VoxelInstanceLibrary is needed to spawn items.");
+	}
+	if (_library->get_item_count() == 0) {
+		return TTR("The assigned library is empty. Add items to it so they can be spawned.");
+	}
+	return "";
 }
 
 void VoxelInstancer::_bind_methods() {

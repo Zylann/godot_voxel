@@ -64,7 +64,7 @@ public:
 
 	int debug_get_block_count() const;
 
-	// TODO Node configuration warnings
+	String get_configuration_warning() const override;
 
 protected:
 	void _notification(int p_what);

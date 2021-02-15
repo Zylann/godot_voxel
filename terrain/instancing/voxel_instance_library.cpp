@@ -60,6 +60,10 @@ int VoxelInstanceLibrary::find_item_by_name(String name) const {
 	return -1;
 }
 
+int VoxelInstanceLibrary::get_item_count() const {
+	return _items.size();
+}
+
 Ref<VoxelInstanceLibraryItem> VoxelInstanceLibrary::_b_get_item(int id) {
 	Map<int, Ref<VoxelInstanceLibraryItem> >::Element *E = _items.find(id);
 	Ref<VoxelInstanceLibraryItem> item;
