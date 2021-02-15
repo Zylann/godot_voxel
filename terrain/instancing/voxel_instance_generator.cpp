@@ -256,7 +256,7 @@ float VoxelInstanceGenerator::get_offset_along_normal() const {
 }
 
 void VoxelInstanceGenerator::set_min_slope_degrees(float degrees) {
-	_min_slope_degrees = clamp(degrees, -180.f, 180.f);
+	_min_slope_degrees = clamp(degrees, 0.f, 180.f);
 	const float max_surface_normal_y = min(1.f, Math::cos(Math::deg2rad(_min_slope_degrees)));
 	if (max_surface_normal_y == _max_surface_normal_y) {
 		return;
@@ -270,7 +270,7 @@ float VoxelInstanceGenerator::get_min_slope_degrees() const {
 }
 
 void VoxelInstanceGenerator::set_max_slope_degrees(float degrees) {
-	_max_slope_degrees = clamp(degrees, -180.f, 180.f);
+	_max_slope_degrees = clamp(degrees, 0.f, 180.f);
 	const float min_surface_normal_y = max(-1.f, Math::cos(Math::deg2rad(_max_slope_degrees)));
 	if (min_surface_normal_y == _min_surface_normal_y) {
 		return;
@@ -362,9 +362,9 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"set_vertical_alignment", "get_vertical_alignment");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "offset_along_normal"),
 			"set_offset_along_normal", "get_offset_along_normal");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_slope_degrees", PROPERTY_HINT_RANGE, "-180.0, 180.0, 0.1"),
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
 			"set_min_slope_degrees", "get_min_slope_degrees");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_slope_degrees", PROPERTY_HINT_RANGE, "-180.0, 180.0, 0.1"),
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
 			"set_max_slope_degrees", "get_max_slope_degrees");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_height"), "set_min_height", "get_min_height");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_height"), "set_max_height", "get_max_height");

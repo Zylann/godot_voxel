@@ -84,7 +84,7 @@ private:
 	bool _random_vertical_flip = false;
 
 	// Stored separately for editor
-	float _min_slope_degrees = -180.f;
+	float _min_slope_degrees = 0.f;
 	float _max_slope_degrees = 180.f;
 };
 
