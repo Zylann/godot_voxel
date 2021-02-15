@@ -2,6 +2,7 @@
 
 #include <scene/gui/dialogs.h>
 #include <scene/gui/menu_button.h>
+#include <scene/resources/primitive_meshes.h>
 
 VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin(EditorNode *p_node) {
 	_menu_button = memnew(MenuButton);
@@ -47,6 +48,14 @@ void VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed(int id) {
 
 			Ref<VoxelInstanceLibraryItem> item;
 			item.instance();
+			// Setup some defaults
+			Ref<CubeMesh> mesh;
+			mesh.instance();
+			item->set_mesh(mesh, 0);
+			item->set_lod_index(2);
+			Ref<VoxelInstanceGenerator> generator;
+			generator.instance();
+			item->set_generator(generator);
 
 			const int item_id = _library->get_next_available_id();
 
