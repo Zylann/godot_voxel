@@ -55,17 +55,16 @@ public:
 
 	void on_block_data_loaded(Vector3i grid_position, int lod_index,
 			std::unique_ptr<VoxelInstanceBlockData> instances);
-
 	void on_block_enter(Vector3i grid_position, int lod_index, Array surface_arrays);
 	void on_block_exit(Vector3i grid_position, int lod_index);
-
 	void on_area_edited(Rect3i p_voxel_box);
-
 	void on_body_removed(int block_index, int instance_index);
 
 	// Debug
 
 	int debug_get_block_count() const;
+
+	// TODO Node configuration warnings
 
 protected:
 	void _notification(int p_what);
@@ -78,16 +77,17 @@ private:
 
 	void add_layer(int layer_id, int lod_index);
 	void remove_layer(int layer_id);
+	int create_block(Layer *layer, uint16_t layer_id, Vector3i grid_position);
 	void remove_block(int block_index);
 	void set_world(World *world);
-	void clear_instances();
-	void clear_instances_in_layer(int layer_id);
+	void clear_blocks();
+	void clear_blocks_in_layer(int layer_id);
 	void clear_layers();
 	void update_visibility();
 	void save_block(Vector3i grid_pos, int lod_index) const;
 	Layer *get_layer(int id);
 	const Layer *get_layer_const(int id) const;
-	void regenerate_layer(int layer_id);
+	void regenerate_layer(uint16_t layer_id, bool regenerate_blocks);
 	void update_layer_meshes(int layer_id);
 
 	void create_blocks(const VoxelInstanceBlockData *instances_data, Vector3i grid_position, int lod_index,

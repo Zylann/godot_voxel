@@ -130,7 +130,8 @@ public:
 	void set_instancer(VoxelInstancer *instancer);
 	uint32_t get_volume_id() const { return _volume_id; }
 
-	Array get_block_surface(Vector3i block_pos, int lod_index);
+	Array get_block_surface(Vector3i block_pos, int lod_index) const;
+	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
 
 protected:
 	static void _bind_methods();

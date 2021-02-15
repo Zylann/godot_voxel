@@ -1440,10 +1440,11 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 // This function is primarily intented for editor use cases at the moment.
 // It will be slower than using the instancing generation events,
 // because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
-Array VoxelLodTerrain::get_block_surface(Vector3i block_pos, int lod_index) {
+Array VoxelLodTerrain::get_block_surface(Vector3i block_pos, int lod_index) const {
 	VOXEL_PROFILE_SCOPE();
-	Lod &lod = _lods[lod_index];
-	VoxelBlock *block = lod.map.get_block(block_pos);
+	ERR_FAIL_COND_V(lod_index >= _lod_count, Array());
+	const Lod &lod = _lods[lod_index];
+	const VoxelBlock *block = lod.map.get_block(block_pos);
 	if (block != nullptr) {
 		Ref<Mesh> mesh = block->get_mesh();
 		if (mesh.is_valid()) {
@@ -1451,6 +1452,18 @@ Array VoxelLodTerrain::get_block_surface(Vector3i block_pos, int lod_index) {
 		}
 	}
 	return Array();
+}
+
+Vector<Vector3i> VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index) const {
+	Vector<Vector3i> positions;
+	ERR_FAIL_COND_V(lod_index >= _lod_count, positions);
+	const Lod &lod = _lods[lod_index];
+	lod.map.for_all_blocks([&positions](const VoxelBlock *block) {
+		if (block->has_mesh()) {
+			positions.push_back(block->position);
+		}
+	});
+	return positions;
 }
 
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {

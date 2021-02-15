@@ -78,7 +78,7 @@ VoxelInstancer::~VoxelInstancer() {
 	}
 }
 
-void VoxelInstancer::clear_instances() {
+void VoxelInstancer::clear_blocks() {
 	VOXEL_PROFILE_SCOPE();
 	// Destroy blocks, keep configured layers
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
@@ -101,7 +101,7 @@ void VoxelInstancer::clear_instances() {
 	}
 }
 
-void VoxelInstancer::clear_instances_in_layer(int layer_id) {
+void VoxelInstancer::clear_blocks_in_layer(int layer_id) {
 	// Not optimal, but should work for now
 	for (size_t i = 0; i < _blocks.size(); ++i) {
 		Block *block = _blocks[i];
@@ -114,7 +114,7 @@ void VoxelInstancer::clear_instances_in_layer(int layer_id) {
 }
 
 void VoxelInstancer::clear_layers() {
-	clear_instances();
+	clear_blocks();
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 		lod.layers.clear();
@@ -139,10 +139,11 @@ void VoxelInstancer::_notification(int p_what) {
 			if (_parent != nullptr) {
 				_parent->set_instancer(this);
 			}
+			// TODO may want to reload all instances? Not sure if worth implementing that use case
 			break;
 
 		case NOTIFICATION_UNPARENTED:
-			clear_instances();
+			clear_blocks();
 			if (_parent != nullptr) {
 				_parent->set_instancer(nullptr);
 			}
@@ -303,7 +304,14 @@ void VoxelInstancer::set_world(World *world) {
 
 void VoxelInstancer::set_up_mode(UpMode mode) {
 	ERR_FAIL_COND(mode < 0 || mode >= UP_MODE_COUNT);
+	if (_up_mode == mode) {
+		return;
+	}
 	_up_mode = mode;
+	const int *key = nullptr;
+	while ((key = _layers.next(key))) {
+		regenerate_layer(*key, false);
+	}
 }
 
 VoxelInstancer::UpMode VoxelInstancer::get_up_mode() const {
@@ -326,7 +334,9 @@ void VoxelInstancer::set_library(Ref<VoxelInstanceLibrary> library) {
 	if (_library.is_valid()) {
 		_library->for_each_item([this](int id, const VoxelInstanceLibraryItem &item) {
 			add_layer(id, item.get_lod_index());
-			regenerate_layer(id);
+			if (_parent != nullptr) {
+				regenerate_layer(id, true);
+			}
 		});
 
 		_library->add_listener(this);
@@ -337,12 +347,9 @@ Ref<VoxelInstanceLibrary> VoxelInstancer::get_library() const {
 	return _library;
 }
 
-void VoxelInstancer::regenerate_layer(int layer_id) {
+void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks) {
 	VOXEL_PROFILE_SCOPE();
-
-	if (_parent == nullptr) {
-		return;
-	}
+	ERR_FAIL_COND(_parent == nullptr);
 
 	Ref<World> world_ref = get_world();
 	ERR_FAIL_COND(world_ref.is_null());
@@ -353,9 +360,28 @@ void VoxelInstancer::regenerate_layer(int layer_id) {
 
 	Ref<VoxelInstanceLibraryItem> item = _library->get_item(layer_id);
 	ERR_FAIL_COND(item.is_null());
+	if (item->get_generator().is_null()) {
+		return;
+	}
 
 	const Transform parent_transform = get_global_transform();
 
+	if (regenerate_blocks) {
+		// Create blocks
+		Vector<Vector3i> positions = _parent->get_meshed_block_positions_at_lod(layer->lod_index);
+		for (int i = 0; i < positions.size(); ++i) {
+			const Vector3i pos = positions[i];
+
+			const int *iptr = layer->blocks.getptr(pos);
+			if (iptr != nullptr) {
+				continue;
+			}
+
+			create_block(layer, layer_id, pos);
+		}
+	}
+
+	// Update existing blocks
 	for (size_t block_index = 0; block_index < _blocks.size(); ++block_index) {
 		Block *block = _blocks[block_index];
 		if (block->layer_id != layer_id) {
@@ -418,11 +444,14 @@ void VoxelInstancer::update_layer_meshes(int layer_id) {
 void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) {
 	ERR_FAIL_COND(_library.is_null());
 
+	// TODO It's unclear yet if some code paths do the right thing in case instances got edited
+
 	switch (change) {
 		case VoxelInstanceLibraryItem::CHANGE_ADDED: {
 			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
 			ERR_FAIL_COND(item.is_null());
 			add_layer(item_id, item->get_lod_index());
+			regenerate_layer(item_id, true);
 		} break;
 
 		case VoxelInstanceLibraryItem::CHANGE_REMOVED:
@@ -430,7 +459,7 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 			break;
 
 		case VoxelInstanceLibraryItem::CHANGE_GENERATOR:
-			regenerate_layer(item_id);
+			regenerate_layer(item_id, false);
 			break;
 
 		case VoxelInstanceLibraryItem::CHANGE_VISUAL:
@@ -441,8 +470,7 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
 			ERR_FAIL_COND(item.is_null());
 
-			// TODO Implement migration between lods, I was just lazy
-			clear_instances_in_layer(item_id);
+			clear_blocks_in_layer(item_id);
 
 			Layer *layer = get_layer(item_id);
 			CRASH_COND(layer == nullptr);
@@ -454,6 +482,8 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 
 			Lod &new_lod = _lods[layer->lod_index];
 			new_lod.layers.push_back(item_id);
+
+			regenerate_layer(item_id, true);
 		} break;
 
 		default:
@@ -604,6 +634,21 @@ void VoxelInstancer::save_all_modified_blocks() {
 	}
 }
 
+int VoxelInstancer::create_block(Layer *layer, uint16_t layer_id, Vector3i grid_position) {
+	Block *block = memnew(Block);
+	block->layer_id = layer_id;
+	block->current_mesh_lod = 0;
+	block->lod_index = layer->lod_index;
+	block->grid_position = grid_position;
+	int block_index = _blocks.size();
+	_blocks.push_back(block);
+#ifdef DEBUG_ENABLED
+	CRASH_COND(layer->blocks.has(grid_position));
+#endif
+	layer->blocks.set(grid_position, block_index);
+	return block_index;
+}
+
 void VoxelInstancer::update_block_from_transforms(int block_index, ArraySlice<const Transform> transforms,
 		Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItem *item, uint16_t layer_id,
 		World *world, const Transform &block_transform) {
@@ -618,14 +663,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, ArraySlice<co
 	if (block_index != -1) {
 		block = _blocks[block_index];
 	} else {
-		block = memnew(Block);
-		block->layer_id = layer_id;
-		block->current_mesh_lod = 0;
-		block->lod_index = item->get_lod_index();
-		block->grid_position = grid_position;
-		block_index = _blocks.size();
-		_blocks.push_back(block);
-		layer->blocks.set(grid_position, block_index);
+		block_index = create_block(layer, layer_id, grid_position);
+		block = _blocks[block_index];
 	}
 
 	// Update multimesh
