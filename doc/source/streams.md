@@ -20,5 +20,5 @@ Save formats
 --------------
 
 - [Region format](specs/region_format_v3.md)
-- [Block format](specs/block_format.md)
+- [Block format](specs/block_format_v2.md)
 
