@@ -721,7 +721,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, ArraySlice<co
 
 			VoxelInstancerRigidBody *body;
 
-			if (instance_index < block->bodies.size()) {
+			if (instance_index < static_cast<unsigned int>(block->bodies.size())) {
 				body = block->bodies.write[instance_index];
 
 			} else {
