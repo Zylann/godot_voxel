@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelStreamSQLite" inherits="VoxelStream" version="3.2">
+	<brief_description>
+		Saves voxel data into a single SQLite database file.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="database_path" type="String" setter="set_database_path" getter="get_database_path" default="&quot;&quot;">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

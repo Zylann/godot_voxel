@@ -33,6 +33,7 @@ def get_doc_classes():
     "VoxelStreamFile",
     "VoxelStreamBlockFiles",
     "VoxelStreamRegionFiles",
+    "VoxelStreamSQLite",
     "VoxelStreamScript",
 
     "VoxelGenerator",
