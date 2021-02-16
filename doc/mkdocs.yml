@@ -58,6 +58,7 @@ nav:
     - api/VoxelStream.md
     - api/VoxelStreamBlockFiles.md
     - api/VoxelStreamRegionFiles.md
+    - api/VoxelStreamSQLite.md
     - api/VoxelStreamScript.md
     - api/VoxelTerrain.md
     - api/VoxelTool.md

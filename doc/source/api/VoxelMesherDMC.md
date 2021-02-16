@@ -66,13 +66,10 @@ enum **SeamMode**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_geometric_error"></span> **get_geometric_error**( ) 
 
 
-
 - [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_get_statistics"></span> **get_statistics**( ) 
-
 
 
 - [void](#)<span id="i_set_geometric_error"></span> **set_geometric_error**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) error ) 
 
 
-
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_

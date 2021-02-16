@@ -18,12 +18,15 @@ Type              | Name                       | Default
 ## Property Descriptions
 
 - [VoxelGenerator](VoxelGenerator.md)<span id="i_generator"></span> **generator**
+
 Procedural generator used to load voxel blocks when not present in the stream.
 
 - [VoxelMesher](VoxelMesher.md)<span id="i_mesher"></span> **mesher**
+
 Defines how voxels are transformed into visible meshes.
 
 - [VoxelStream](VoxelStream.md)<span id="i_stream"></span> **stream**
+
 Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_

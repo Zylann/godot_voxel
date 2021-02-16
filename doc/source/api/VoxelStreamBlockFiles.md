@@ -1,6 +1,6 @@
 # VoxelStreamBlockFiles
 
-Inherits: [VoxelStreamFile](VoxelStreamFile.md)
+Inherits: [VoxelStream](VoxelStream.md)
 
 
 Loads and saves blocks as individual files under a directory.
@@ -20,6 +20,7 @@ Type      | Name                       | Default
 ## Property Descriptions
 
 - [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_directory"></span> **directory** = ""
+
 Directory under which the data is saved.
 
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_
