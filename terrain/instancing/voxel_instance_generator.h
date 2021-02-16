@@ -3,6 +3,8 @@
 
 //#include "../../storage/voxel_buffer.h"
 #include "../../math/vector3i.h"
+#include "../../util/noise/fast_noise_lite.h"
+
 #include <core/resource.h>
 #include <limits>
 #include <vector>
@@ -34,6 +36,20 @@ public:
 		EMIT_MODE_COUNT
 	};
 
+	enum Distribution {
+		DISTRIBUTION_LINEAR = 0,
+		DISTRIBUTION_QUADRATIC,
+		DISTRIBUTION_CUBIC,
+		DISTRIBUTION_QUINTIC,
+		DISTRIBUTION_COUNT
+	};
+
+	enum Dimension {
+		DIMENSION_2D = 0,
+		DIMENSION_3D,
+		DIMENSION_COUNT
+	};
+
 	// This API might change so for now it's not exposed to scripts
 	void generate_transforms(
 			std::vector<Transform> &out_transforms,
@@ -59,6 +75,9 @@ public:
 	void set_max_scale(float max_scale);
 	float get_max_scale() const;
 
+	void set_scale_distribution(Distribution distribution);
+	Distribution get_scale_distribution() const;
+
 	// TODO Add scale curve, in real life there are way more small items than big ones
 
 	void set_offset_along_normal(float offset);
@@ -79,7 +98,18 @@ public:
 	void set_random_vertical_flip(bool flip);
 	bool get_random_vertical_flip() const;
 
+	void set_noise(Ref<FastNoiseLite> noise);
+	Ref<FastNoiseLite> get_noise() const;
+
+	void set_noise_dimension(Dimension dim);
+	Dimension get_noise_dimension() const;
+
+	void set_noise_on_scale(float amount);
+	float get_noise_on_scale() const;
+
 private:
+	void _on_noise_changed();
+
 	static void _bind_methods();
 
 	float _density = 0.1f;
@@ -93,6 +123,10 @@ private:
 	float _max_height = std::numeric_limits<float>::max();
 	bool _random_vertical_flip = false;
 	EmitMode _emit_mode = EMIT_FROM_VERTICES;
+	Distribution _scale_distribution = DISTRIBUTION_QUADRATIC;
+	Ref<FastNoiseLite> _noise;
+	Dimension _noise_dimension = DIMENSION_3D;
+	float _noise_on_scale = 0.f;
 
 	// Stored separately for editor
 	float _min_slope_degrees = 0.f;
@@ -100,5 +134,7 @@ private:
 };
 
 VARIANT_ENUM_CAST(VoxelInstanceGenerator::EmitMode);
+VARIANT_ENUM_CAST(VoxelInstanceGenerator::Distribution);
+VARIANT_ENUM_CAST(VoxelInstanceGenerator::Dimension);
 
 #endif // VOXEL_INSTANCE_GENERATOR_H

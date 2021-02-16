@@ -45,6 +45,12 @@ void unordered_remove(Vector<T> &v, unsigned int pos) {
 	v.resize(last);
 }
 
+template <typename T>
+void unordered_remove(std::vector<T> &v, unsigned int pos) {
+	v[pos] = v.back();
+	v.pop_back();
+}
+
 // Removes all items satisfying the given predicate.
 // This can change the size of the container, and original order of items is not preserved.
 template <typename T, typename F>

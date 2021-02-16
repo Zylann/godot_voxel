@@ -1,5 +1,7 @@
 #include "voxel_instance_generator.h"
 #include "../../util/profiling.h"
+
+#include <core/core_string_names.h>
 #include <scene/resources/mesh.h>
 
 namespace {
@@ -8,6 +10,7 @@ const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
 
 thread_local std::vector<Vector3> g_vertex_cache;
 thread_local std::vector<Vector3> g_normal_cache;
+thread_local std::vector<float> g_noise_cache;
 
 } // namespace
 
@@ -143,6 +146,45 @@ void VoxelInstanceGenerator::generate_transforms(
 		}
 	}
 
+	std::vector<float> &noise_cache = g_noise_cache;
+
+	if (_noise.is_valid()) {
+		noise_cache.clear();
+
+		switch (_noise_dimension) {
+			case DIMENSION_2D: {
+				for (size_t i = 0; i < vertex_cache.size(); ++i) {
+					const Vector3 &pos = vertex_cache[i] + block_local_transform.origin;
+					const float n = _noise->get_noise_2d(pos.x, pos.z);
+					if (n < 0) {
+						unordered_remove(vertex_cache, i);
+						unordered_remove(normal_cache, i);
+						--i;
+					} else {
+						noise_cache.push_back(n);
+					}
+				}
+			} break;
+
+			case DIMENSION_3D: {
+				for (size_t i = 0; i < vertex_cache.size(); ++i) {
+					const Vector3 &pos = vertex_cache[i] + block_local_transform.origin;
+					const float n = _noise->get_noise_3d(pos.x, pos.y, pos.z);
+					if (n < 0) {
+						unordered_remove(vertex_cache, i);
+						unordered_remove(normal_cache, i);
+						--i;
+					} else {
+						noise_cache.push_back(n);
+					}
+				}
+			} break;
+
+			default:
+				ERR_FAIL();
+		}
+	}
+
 	const float vertical_alignment = _vertical_alignment;
 	const float scale_min = _min_scale;
 	const float scale_range = _max_scale - _min_scale;
@@ -248,7 +290,31 @@ void VoxelInstanceGenerator::generate_transforms(
 				Vector3(axis_x.z, axis_y.z, axis_z.z));
 
 		if (scale_range > 0.f) {
-			const float scale = scale_min + scale_range * pcg1.randf();
+			float r = pcg1.randf();
+
+			switch (_scale_distribution) {
+				case DISTRIBUTION_QUADRATIC:
+					r = r * r;
+					break;
+				case DISTRIBUTION_CUBIC:
+					r = r * r * r;
+					break;
+				case DISTRIBUTION_QUINTIC:
+					r = r * r * r * r * r;
+					break;
+			}
+
+			if (_noise.is_valid() && _noise_on_scale > 0.f) {
+#ifdef DEBUG_ENABLED
+				CRASH_COND(vertex_index >= noise_cache.size());
+#endif
+				// Multiplied noise because it gives more pronounced results
+				const float n = clamp(noise_cache[vertex_index] * 2.f, 0.f, 1.f);
+				r *= Math::lerp(1.f, n, _noise_on_scale);
+			}
+
+			float scale = scale_min + scale_range * r;
+
 			t.basis.scale(Vector3(scale, scale, scale));
 
 		} else if (scale_min != 1.f) {
@@ -316,6 +382,19 @@ void VoxelInstanceGenerator::set_max_scale(float max_scale) {
 
 float VoxelInstanceGenerator::get_max_scale() const {
 	return _max_scale;
+}
+
+void VoxelInstanceGenerator::set_scale_distribution(Distribution distribution) {
+	ERR_FAIL_INDEX(distribution, DISTRIBUTION_COUNT);
+	if (distribution == _scale_distribution) {
+		return;
+	}
+	_scale_distribution = distribution;
+	emit_changed();
+}
+
+VoxelInstanceGenerator::Distribution VoxelInstanceGenerator::get_scale_distribution() const {
+	return _scale_distribution;
 }
 
 void VoxelInstanceGenerator::set_vertical_alignment(float amount) {
@@ -407,6 +486,54 @@ bool VoxelInstanceGenerator::get_random_vertical_flip() const {
 	return _random_vertical_flip;
 }
 
+void VoxelInstanceGenerator::set_noise(Ref<FastNoiseLite> noise) {
+	if (_noise == noise) {
+		return;
+	}
+	if (_noise.is_valid()) {
+		_noise->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_noise_changed");
+	}
+	_noise = noise;
+	if (_noise.is_valid()) {
+		_noise->connect(CoreStringNames::get_singleton()->changed, this, "_on_noise_changed");
+	}
+	emit_changed();
+}
+
+Ref<FastNoiseLite> VoxelInstanceGenerator::get_noise() const {
+	return _noise;
+}
+
+void VoxelInstanceGenerator::set_noise_dimension(Dimension dim) {
+	ERR_FAIL_INDEX(dim, DIMENSION_COUNT);
+	if (dim == _noise_dimension) {
+		return;
+	}
+	_noise_dimension = dim;
+	emit_changed();
+}
+
+VoxelInstanceGenerator::Dimension VoxelInstanceGenerator::get_noise_dimension() const {
+	return _noise_dimension;
+}
+
+void VoxelInstanceGenerator::set_noise_on_scale(float amount) {
+	amount = clamp(amount, 0.f, 1.f);
+	if (amount == _noise_on_scale) {
+		return;
+	}
+	_noise_on_scale = amount;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_noise_on_scale() const {
+	return _noise_on_scale;
+}
+
+void VoxelInstanceGenerator::_on_noise_changed() {
+	emit_changed();
+}
+
 void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_density", "density"), &VoxelInstanceGenerator::set_density);
 	ClassDB::bind_method(D_METHOD("get_density"), &VoxelInstanceGenerator::get_density);
@@ -419,6 +546,10 @@ void VoxelInstanceGenerator::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_max_scale", "max_scale"), &VoxelInstanceGenerator::set_max_scale);
 	ClassDB::bind_method(D_METHOD("get_max_scale"), &VoxelInstanceGenerator::get_max_scale);
+
+	ClassDB::bind_method(D_METHOD("set_scale_distribution", "distribution"),
+			&VoxelInstanceGenerator::set_scale_distribution);
+	ClassDB::bind_method(D_METHOD("get_scale_distribution"), &VoxelInstanceGenerator::get_scale_distribution);
 
 	ClassDB::bind_method(D_METHOD("set_vertical_alignment", "amount"), &VoxelInstanceGenerator::set_vertical_alignment);
 	ClassDB::bind_method(D_METHOD("get_vertical_alignment"), &VoxelInstanceGenerator::get_vertical_alignment);
@@ -443,26 +574,59 @@ void VoxelInstanceGenerator::_bind_methods() {
 			&VoxelInstanceGenerator::set_random_vertical_flip);
 	ClassDB::bind_method(D_METHOD("get_random_vertical_flip"), &VoxelInstanceGenerator::get_random_vertical_flip);
 
+	ClassDB::bind_method(D_METHOD("set_noise", "noise"), &VoxelInstanceGenerator::set_noise);
+	ClassDB::bind_method(D_METHOD("get_noise"), &VoxelInstanceGenerator::get_noise);
+
+	ClassDB::bind_method(D_METHOD("set_noise_dimension", "dim"), &VoxelInstanceGenerator::set_noise_dimension);
+	ClassDB::bind_method(D_METHOD("get_noise_dimension"), &VoxelInstanceGenerator::get_noise_dimension);
+
+	ClassDB::bind_method(D_METHOD("set_noise_on_scale", "amount"), &VoxelInstanceGenerator::set_noise_on_scale);
+	ClassDB::bind_method(D_METHOD("get_noise_on_scale"), &VoxelInstanceGenerator::get_noise_on_scale);
+
+	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelInstanceGenerator::_on_noise_changed);
+
+	ADD_GROUP("Emission", "");
+
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "density", PROPERTY_HINT_RANGE, DENSITY_HINT_STRING),
 			"set_density", "get_density");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,Faces"),
 			"set_emit_mode", "get_emit_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
-			"set_min_scale", "get_min_scale");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
-			"set_max_scale", "get_max_scale");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "vertical_alignment", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
-			"set_vertical_alignment", "get_vertical_alignment");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "offset_along_normal"),
-			"set_offset_along_normal", "get_offset_along_normal");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
 			"set_min_slope_degrees", "get_min_slope_degrees");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
 			"set_max_slope_degrees", "get_max_slope_degrees");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_height"), "set_min_height", "get_min_height");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_height"), "set_max_height", "get_max_height");
+
+	ADD_GROUP("Scale", "");
+
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
+			"set_min_scale", "get_min_scale");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
+			"set_max_scale", "get_max_scale");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "scale_distribution", PROPERTY_HINT_ENUM, "Linear,Quadratic,Cubic,Quintic"),
+			"set_scale_distribution", "get_scale_distribution");
+
+	ADD_GROUP("Rotation", "");
+
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "vertical_alignment", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
+			"set_vertical_alignment", "get_vertical_alignment");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_vertical_flip"),
 			"set_random_vertical_flip", "get_random_vertical_flip");
+
+	ADD_GROUP("Offset", "");
+
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "offset_along_normal"),
+			"set_offset_along_normal", "get_offset_along_normal");
+
+	ADD_GROUP("Noise", "");
+
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "FastNoiseLite"),
+			"set_noise", "get_noise");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_dimension", PROPERTY_HINT_ENUM, "2D,3D"),
+			"set_noise_dimension", "get_noise_dimension");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "noise_on_scale", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
+			"set_noise_on_scale", "get_noise_on_scale");
 
 	BIND_ENUM_CONSTANT(EMIT_FROM_VERTICES);
 	BIND_ENUM_CONSTANT(EMIT_FROM_FACES);
