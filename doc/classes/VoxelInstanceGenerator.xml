@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelInstanceGenerator" inherits="Resource" version="3.2">
+	<brief_description>
+		Decides where to spawn instances on top of a voxel surface.
+	</brief_description>
+	<description>
+		Generates the necessry information to spawn instances on top of a voxel surface. This may be used by a [VoxelInstancer].
+		Note: to generate voxels, see [VoxelGenerator].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="density" type="float" setter="set_density" getter="get_density" default="0.1">
+		</member>
+		<member name="emit_mode" type="int" setter="set_emit_mode" getter="get_emit_mode" enum="VoxelInstanceGenerator.EmitMode" default="0">
+		</member>
+		<member name="max_height" type="float" setter="set_max_height" getter="get_max_height" default="3.40282e+38">
+		</member>
+		<member name="max_scale" type="float" setter="set_max_scale" getter="get_max_scale" default="1.0">
+		</member>
+		<member name="max_slope_degrees" type="float" setter="set_max_slope_degrees" getter="get_max_slope_degrees" default="180.0">
+		</member>
+		<member name="min_height" type="float" setter="set_min_height" getter="get_min_height" default="1.17549e-38">
+		</member>
+		<member name="min_scale" type="float" setter="set_min_scale" getter="get_min_scale" default="1.0">
+		</member>
+		<member name="min_slope_degrees" type="float" setter="set_min_slope_degrees" getter="get_min_slope_degrees" default="0.0">
+		</member>
+		<member name="noise" type="FastNoiseLite" setter="set_noise" getter="get_noise">
+		</member>
+		<member name="noise_dimension" type="int" setter="set_noise_dimension" getter="get_noise_dimension" enum="VoxelInstanceGenerator.Dimension" default="1">
+		</member>
+		<member name="noise_on_scale" type="float" setter="set_noise_on_scale" getter="get_noise_on_scale" default="0.0">
+		</member>
+		<member name="offset_along_normal" type="float" setter="set_offset_along_normal" getter="get_offset_along_normal" default="0.0">
+		</member>
+		<member name="random_vertical_flip" type="bool" setter="set_random_vertical_flip" getter="get_random_vertical_flip" default="false">
+		</member>
+		<member name="scale_distribution" type="int" setter="set_scale_distribution" getter="get_scale_distribution" enum="VoxelInstanceGenerator.Distribution" default="1">
+		</member>
+		<member name="vertical_alignment" type="float" setter="set_vertical_alignment" getter="get_vertical_alignment" default="1.0">
+		</member>
+	</members>
+	<constants>
+		<constant name="EMIT_FROM_VERTICES" value="0" enum="EmitMode">
+		</constant>
+		<constant name="EMIT_FROM_FACES" value="1" enum="EmitMode">
+		</constant>
+	</constants>
+</class>

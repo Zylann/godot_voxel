@@ -16,7 +16,7 @@ nav:
   - 'smooth_terrain.md'
   - 'generators.md'
   - 'streams.md'
-  - 'instancing.md',
+  - 'instancing.md'
   - 'editor.md'
   - 'scripting.md'
   - 'access_to_voxels_and_multithreading.md'
@@ -41,6 +41,10 @@ nav:
     - api/VoxelGeneratorNoise2D.md
     - api/VoxelGeneratorScript.md
     - api/VoxelGeneratorWaves.md
+    - api/VoxelInstanceGenerator.md
+    - api/VoxelInstanceLibrary.md
+    - api/VoxelInstanceLibraryItem.md
+    - api/VoxelInstancer.md
     - api/VoxelLibrary.md
     - api/VoxelLodTerrain.md
     - api/VoxelMesher.md
@@ -53,7 +57,6 @@ nav:
     - api/VoxelServer.md
     - api/VoxelStream.md
     - api/VoxelStreamBlockFiles.md
-    - api/VoxelStreamFile.md
     - api/VoxelStreamRegionFiles.md
     - api/VoxelStreamScript.md
     - api/VoxelTerrain.md

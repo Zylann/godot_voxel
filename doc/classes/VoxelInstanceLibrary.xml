@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelInstanceLibrary" inherits="Resource" version="3.2">
+	<brief_description>
+		Contains a list of models that can be used by [VoxelInstancer], associated with a unique ID
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_item">
+			<return type="void">
+			</return>
+			<argument index="0" name="id" type="int">
+			</argument>
+			<argument index="1" name="arg1" type="VoxelInstanceLibraryItem">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="clear">
+			<return type="void">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="find_item_by_name" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="name" type="String">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_item">
+			<return type="VoxelInstanceLibraryItem">
+			</return>
+			<argument index="0" name="id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="remove_item">
+			<return type="void">
+			</return>
+			<argument index="0" name="id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="MAX_ID" value="65535">
+		</constant>
+	</constants>
+</class>
