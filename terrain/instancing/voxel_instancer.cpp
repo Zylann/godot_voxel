@@ -500,7 +500,11 @@ void VoxelInstancer::add_layer(int layer_id, int lod_index) {
 #ifdef DEBUG_ENABLED
 	ERR_FAIL_COND(lod_index < 0 || lod_index >= MAX_LOD);
 	ERR_FAIL_COND(_layers.has(layer_id));
+#endif
+
 	Lod &lod = _lods[lod_index];
+
+#ifdef DEBUG_ENABLED
 	ERR_FAIL_COND_MSG(std::find(lod.layers.begin(), lod.layers.end(), layer_id) != lod.layers.end(),
 			"Layer already referenced by this LOD");
 #endif
