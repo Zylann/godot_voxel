@@ -73,11 +73,11 @@ Ref<VoxelRaycastResult> VoxelTool::raycast(Vector3 pos, Vector3 dir, float max_d
 	// See derived classes for implementations
 }
 
-uint64_t VoxelTool::get_voxel(Vector3i pos) {
+uint64_t VoxelTool::get_voxel(Vector3i pos) const {
 	return _get_voxel(pos);
 }
 
-float VoxelTool::get_voxel_f(Vector3i pos) {
+float VoxelTool::get_voxel_f(Vector3i pos) const {
 	return _get_voxel_f(pos);
 }
 
@@ -122,12 +122,12 @@ void VoxelTool::do_circle(Vector3i pos, int radius, Vector3i direction) {
 	ERR_PRINT("Not implemented");
 }
 
-uint64_t VoxelTool::_get_voxel(Vector3i pos) {
+uint64_t VoxelTool::_get_voxel(Vector3i pos) const {
 	ERR_PRINT("Not implemented");
 	return 0;
 }
 
-float VoxelTool::_get_voxel_f(Vector3i pos) {
+float VoxelTool::_get_voxel_f(Vector3i pos) const {
 	ERR_PRINT("Not implemented");
 	return 0;
 }

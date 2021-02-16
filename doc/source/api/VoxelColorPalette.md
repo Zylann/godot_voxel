@@ -36,9 +36,7 @@ Return                                                                    | Sign
 - [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_get_color"></span> **get_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) arg0 ) 
 
 
-
 - [void](#)<span id="i_set_color"></span> **set_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) color, [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) arg1 ) 
 
 
-
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_

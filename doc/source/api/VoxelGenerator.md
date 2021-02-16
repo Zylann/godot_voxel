@@ -3,9 +3,7 @@
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
 
-Base class to all voxel procedural generators. If you want to define a custom one with a script, this is the class you should extend from.
-
-Important: this engine makes heavy use of threads. Generators will run in one of them, so make sure you don't access the scene tree or other unsafe APIs from within a generator.
+Base class to all voxel procedural generators. If you want to define a custom one with a script, this is the class you should extend from. All implementations must be thread safe.
 
 ## Methods: 
 
@@ -21,4 +19,10 @@ Return     | Signature
 
 Generates a block of voxels within the specified world area.
 
-_Generated on Jan 24, 2021_
+`out_buffer`: Buffer in which voxel data will be generated. It should not be `null` and should be given the requested size. Do not keep a reference on it after the call.
+
+`origin_in_voxels`: Coordinates of the lower corner of the box to generate, relative to LOD0.
+
+`lod`: Level of detail index to use for this block. Some generators might not support LOD, in which case it can be left 0.
+
+_Generated on Feb 16, 2021_

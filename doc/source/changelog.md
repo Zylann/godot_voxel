@@ -32,6 +32,7 @@ Ongoing development - `master`
     - The SDF channel is now 16-bit by default instead of 8-bit, which reduces terracing in big terrains
     - Optimized `VoxelGeneratorGraph` by making it detect empty blocks more accurately and process by buffers
     - Added `SdfSphereHeightmap` and `Normalize` nodes to voxel graph, which can help making planets
+    - Added `VoxelInstancer` to instantiate items on top of `VoxelLodTerrain`, aimed at spawning natural elements such as rocks and foliage
 
 - Blocky voxels
     - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support
@@ -49,6 +50,7 @@ Ongoing development - `master`
     - The meshing system no longer "guesses" how voxels will look like. Instead it uses the mesher assigned to the terrain.
     - SDF and TYPE channels have different default depth, so if you relied on 8-bit depth, you may have to explicitely set that format in your generator, to avoid mismatch with existing savegames
     - The block serialization format has changed, and migration is not implemented, so old saves using it cannot be used. See documentation for more information.
+    - Terrains no longer auto-save when they are destroyed while having a `stream` assigned. You have to call `save_modified_blocks()` explicitely before doing that.
 
 - Fixes
     - C# should be able to properly implement generator/stream functions

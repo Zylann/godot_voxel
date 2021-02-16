@@ -127,7 +127,7 @@ The obtained buffer can be read using the block format.
 Block format
 --------------
 
-See [Block format](block_format.md)
+See [Block format](block_format_v1.md)
 
 
 Current Issues

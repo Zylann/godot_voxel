@@ -45,6 +45,12 @@ void unordered_remove(Vector<T> &v, unsigned int pos) {
 	v.resize(last);
 }
 
+template <typename T>
+void unordered_remove(std::vector<T> &v, unsigned int pos) {
+	v[pos] = v.back();
+	v.pop_back();
+}
+
 // Removes all items satisfying the given predicate.
 // This can change the size of the container, and original order of items is not preserved.
 template <typename T, typename F>
@@ -56,6 +62,17 @@ inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
 			// Note: can underflow, but it should be fine since it's incremented right after.
 			// TODO Use a while()?
 			--i;
+		}
+	}
+}
+
+template <typename T>
+inline void unordered_remove_value(std::vector<T> &vec, T v) {
+	for (size_t i = 0; i < vec.size(); ++i) {
+		if (vec[i] == v) {
+			vec[i] = vec.back();
+			vec.pop_back();
+			break;
 		}
 	}
 }

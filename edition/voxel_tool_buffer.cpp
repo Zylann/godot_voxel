@@ -11,12 +11,12 @@ bool VoxelToolBuffer::is_area_editable(const Rect3i &box) const {
 	return Rect3i(Vector3i(), _buffer->get_size()).encloses(box);
 }
 
-uint64_t VoxelToolBuffer::_get_voxel(Vector3i pos) {
+uint64_t VoxelToolBuffer::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_buffer.is_null(), 0);
 	return _buffer->get_voxel(pos, _channel);
 }
 
-float VoxelToolBuffer::_get_voxel_f(Vector3i pos) {
+float VoxelToolBuffer::_get_voxel_f(Vector3i pos) const {
 	ERR_FAIL_COND_V(_buffer.is_null(), 0);
 	return _buffer->get_voxel_f(pos.x, pos.y, pos.z, _channel);
 }

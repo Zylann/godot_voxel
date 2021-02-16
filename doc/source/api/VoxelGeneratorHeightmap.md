@@ -30,4 +30,4 @@ Type     | Name                             | Default
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_iso_scale"></span> **iso_scale** = 0.1
 
 
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_

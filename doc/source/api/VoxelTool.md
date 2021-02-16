@@ -19,7 +19,7 @@ Type     | Name                             | Default
 `int`    | [channel](#i_channel)            | 0       
 `int`    | [eraser_value](#i_eraser_value)  | 0       
 `int`    | [mode](#i_mode)                  | 0       
-`float`  | [sdf_scale](#i_sdf_scale)        | 0.1     
+`float`  | [sdf_scale](#i_sdf_scale)        | 0.002   
 `int`    | [value](#i_value)                | 0       
 <p></p>
 
@@ -54,15 +54,19 @@ enum **Mode**:
 ## Property Descriptions
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_channel"></span> **channel** = 0
+
 Set which channel will be edited. When used on a terrain node, it will default to the first available channel, based on the stream and generator.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_eraser_value"></span> **eraser_value** = 0
+
 Sets which value will be used to erase voxels when editing the enum VoxelBuffer.CHANNEL_TYPE channel in enum MODE_REMOVE mode.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mode"></span> **mode** = 0
+
 Sets how `do_*` functions will behave. This may vary depending on the channel.
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_scale"></span> **sdf_scale** = 0.1
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_scale"></span> **sdf_scale** = 0.002
+
 When working with smooth voxels, applies a scale to the signed distance field. A high scale (1 or higher) will tend to produce blocky results, and a low scale (below 1, but not too close to zero) will tend to be smoother.
 
 
@@ -70,6 +74,7 @@ When working with smooth voxels, applies a scale to the signed distance field. A
 This is related to the enum VoxelBuffer.Depth configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_value"></span> **value** = 0
+
 Sets which voxel value will be used. This is not relevant when editing enum VoxelBuffer.CHANNEL_SDF.
 
 ## Method Descriptions
@@ -81,45 +86,34 @@ Operate on a rectangular cuboid section of the terrain. `begin` and `end` are in
 - [void](#)<span id="i_do_point"></span> **do_point**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos ) 
 
 
-
 - [void](#)<span id="i_do_sphere"></span> **do_sphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius ) 
-
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel"></span> **get_voxel**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos ) 
 
 
-
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_voxel_f"></span> **get_voxel_f**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos ) 
-
 
 
 - [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)<span id="i_get_voxel_metadata"></span> **get_voxel_metadata**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos ) 
 
 
-
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_area_editable"></span> **is_area_editable**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) box ) 
-
 
 
 - [void](#)<span id="i_paste"></span> **paste**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) dst_pos, [Reference](https://docs.godotengine.org/en/stable/classes/class_reference.html) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_mask_value ) 
 
 
-
 - [VoxelRaycastResult](VoxelRaycastResult.md)<span id="i_raycast"></span> **raycast**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) max_distance=10.0, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) collision_mask=4294967295 ) 
-
 
 
 - [void](#)<span id="i_set_voxel"></span> **set_voxel**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) v ) 
 
 
-
 - [void](#)<span id="i_set_voxel_f"></span> **set_voxel_f**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) v ) 
-
 
 
 - [void](#)<span id="i_set_voxel_metadata"></span> **set_voxel_metadata**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta ) 
 
 
-
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_

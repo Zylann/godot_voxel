@@ -76,9 +76,11 @@ enum **Side**:
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_material_id"></span> **material_id** = 0
+
 ID of the material that will be used. It corresponds to the index of materials found on [VoxelTerrain](VoxelTerrain.md).
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_random_tickable"></span> **random_tickable** = false
+
 If enabled, voxels having this ID in the TYPE channel will be used by method VoxelToolTerrain.run_blocky_random_tick.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_transparency_index"></span> **transparency_index** = 0
@@ -88,6 +90,7 @@ If enabled, voxels having this ID in the TYPE channel will be used by method Vox
 
 
 - [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_voxel_name"></span> **voxel_name** = ""
+
 Name that can be used for convenience, when looking up a specific [Voxel](Voxel.md) from [VoxelLibrary](VoxelLibrary.md).
 
 ## Method Descriptions
@@ -95,13 +98,10 @@ Name that can be used for convenience, when looking up a specific [Voxel](Voxel.
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_id"></span> **get_id**( ) 
 
 
-
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_empty"></span> **is_empty**( ) 
-
 
 
 - [void](#)<span id="i_set_id"></span> **set_id**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
 
-
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_

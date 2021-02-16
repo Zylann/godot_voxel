@@ -328,8 +328,12 @@ def process_xml(f_xml, f_out, module_class_names):
             out += "\n\n"
 
             if member.text is not None:
-                out += make_text(member.text, module_class_names)
-            out += "\n\n"
+                text = make_text(member.text, module_class_names)
+                if text != "":
+                    out += text
+                    out += "\n"
+
+            out += "\n"
     
     # Method descriptions
     if len(methods) > 0:
@@ -350,9 +354,11 @@ def process_xml(f_xml, f_out, module_class_names):
             desc = method.find('description')
             if desc is not None:
                 text = make_text(desc.text, module_class_names)
-                out += text
+                if text != "":
+                    out += text
+                    out += "\n"
             
-            out += "\n\n"
+            out += "\n"
 
     # Footer
     out += "_Generated on " + strftime("%b %d, %Y", gmtime()) + "_\n" 

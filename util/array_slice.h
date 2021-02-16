@@ -16,7 +16,6 @@ public:
 			_size(0) {
 	}
 
-	// TODO Get rid of unsafe constructor, use specialized ones
 	inline ArraySlice(T *p_ptr, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end < p_begin);
 		_ptr = p_ptr + p_begin;
@@ -34,6 +33,7 @@ public:
 		_size = p_end - p_begin;
 	}
 
+	// TODO Remove this one, prefer to_slice() specializations
 	inline ArraySlice(std::vector<T> &vec, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end < p_begin);
 		CRASH_COND(p_begin >= vec.size());
@@ -42,6 +42,7 @@ public:
 		_size = p_end - p_begin;
 	}
 
+	// TODO Remove this one, prefer to_slice() specializations
 	template <unsigned int N>
 	inline ArraySlice(FixedArray<T, N> &a) {
 		_ptr = a.data();
@@ -113,6 +114,11 @@ ArraySlice<const T> to_slice(const std::vector<T> &vec) {
 template <typename T>
 ArraySlice<T> to_slice(std::vector<T> &vec) {
 	return ArraySlice<T>(vec.data(), 0, vec.size());
+}
+
+template <typename T>
+ArraySlice<const T> to_slice_const(const std::vector<T> &vec) {
+	return ArraySlice<const T>(vec.data(), 0, vec.size());
 }
 
 #endif // ARRAY_SLICE_H

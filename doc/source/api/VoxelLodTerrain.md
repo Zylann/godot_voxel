@@ -85,37 +85,28 @@ enum **ProcessMode**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_debug_dump_as_scene"></span> **debug_dump_as_scene**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) path ) 
 
 
-
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_debug_get_block_count"></span> **debug_get_block_count**( ) 
-
 
 
 - [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_debug_get_block_info"></span> **debug_get_block_info**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) 
 
 
-
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_debug_get_octrees"></span> **debug_get_octrees**( ) 
-
 
 
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_debug_print_sdf_top_down"></span> **debug_print_sdf_top_down**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) extents ) 
 
 
-
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_debug_raycast_block"></span> **debug_raycast_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) dir ) 
-
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_block_region_extent"></span> **get_block_region_extent**( ) 
 
 
-
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_block_size"></span> **get_block_size**( ) 
 
 
-
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_process_mode"></span> **get_process_mode**( ) 
-
 
 
 - [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_get_statistics"></span> **get_statistics**( ) 
@@ -143,17 +134,13 @@ The returned dictionary has the following structure:
 - [VoxelTool](VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
 
 
-
 - [void](#)<span id="i_save_modified_blocks"></span> **save_modified_blocks**( ) 
-
 
 
 - [void](#)<span id="i_set_process_mode"></span> **set_process_mode**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mode ) 
 
 
-
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_voxel_to_block_position"></span> **voxel_to_block_position**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) lod_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) arg1 ) 
 
 
-
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_

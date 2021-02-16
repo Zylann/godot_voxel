@@ -236,6 +236,7 @@ _FORCE_INLINE_ int Vector3i::distance_sq(const Vector3i &other) const {
 	return (other - *this).length_sq();
 }
 
+// For Godot
 struct Vector3iHasher {
 	static _FORCE_INLINE_ uint32_t hash(const Vector3i &v) {
 		uint32_t hash = hash_djb2_one_32(v.x);
@@ -243,5 +244,15 @@ struct Vector3iHasher {
 		return hash_djb2_one_32(v.z, hash);
 	}
 };
+
+// For STL
+namespace std {
+template <>
+struct hash<Vector3i> {
+	size_t operator()(const Vector3i &v) const {
+		return Vector3iHasher::hash(v);
+	}
+};
+} // namespace std
 
 #endif // VOXEL_VECTOR3I_H

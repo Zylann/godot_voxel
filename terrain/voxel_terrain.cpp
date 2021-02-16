@@ -35,11 +35,6 @@ VoxelTerrain::VoxelTerrain() {
 
 VoxelTerrain::~VoxelTerrain() {
 	PRINT_VERBOSE("Destroying VoxelTerrain");
-
-	// Schedule saving of all modified blocks,
-	// without copy because we are destroying the map anyways
-	save_all_modified_blocks(false);
-
 	VoxelServer::get_singleton()->remove_volume(_volume_id);
 }
 
@@ -550,7 +545,13 @@ void VoxelTerrain::reset_map() {
 }
 
 inline int get_border_index(int x, int max) {
-	return x == 0 ? 0 : x != max ? 1 : 2;
+	if (x == 0) {
+		return 0;
+	}
+	if (x != max) {
+		return 1;
+	}
+	return 2;
 }
 
 void VoxelTerrain::make_voxel_dirty(Vector3i pos) {
@@ -798,7 +799,7 @@ void VoxelTerrain::send_block_data_requests() {
 	for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
 		const Vector3i block_pos = _blocks_pending_load[i];
 		// TODO Batch request
-		VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, 0);
+		VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, 0, false);
 	}
 
 	// Blocks to save
@@ -806,7 +807,7 @@ void VoxelTerrain::send_block_data_requests() {
 		PRINT_VERBOSE(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position.to_vec3())));
 		const BlockToSave b = _blocks_to_save[i];
 		// TODO Batch request
-		VoxelServer::get_singleton()->request_block_save(_volume_id, b.voxels, b.position, 0);
+		VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, 0);
 	}
 
 	//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));

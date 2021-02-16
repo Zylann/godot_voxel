@@ -43,6 +43,10 @@ public:
 	VoxelThreadPool();
 	~VoxelThreadPool();
 
+	// Set name prefix to recognize threads of this pool in debug tools.
+	// Must be called before configuring thread count.
+	void set_name(String name);
+
 	// TODO Add ability to change it while running without skipping tasks
 	// Can't be changed after tasks have been queued
 	void set_thread_count(uint32_t count);
@@ -92,6 +96,7 @@ private:
 		bool stop = false;
 		bool waiting = false;
 		State debug_state = STATE_STOPPED;
+		String name;
 	};
 
 	static void thread_func_static(void *p_data);
@@ -113,6 +118,8 @@ private:
 
 	uint32_t _batch_count = 1;
 	uint32_t _priority_update_period = 32;
+
+	String _name;
 
 	unsigned int _debug_received_tasks = 0;
 	unsigned int _debug_completed_tasks = 0;

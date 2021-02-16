@@ -12,16 +12,16 @@
 			<return type="void">
 			</return>
 			<argument index="0" name="out_buffer" type="VoxelBuffer">
-				Buffer in which voxel data will be generated. It should not be [code]null[/code] and should be given the requested size.
 			</argument>
 			<argument index="1" name="origin_in_voxels" type="Vector3">
-				Coordinates of the lower corner of the box to generate, relative to LOD0.
 			</argument>
 			<argument index="2" name="lod" type="int">
-				Level of detail index to use for this block. Some generators might not support LOD, in which case it can be left 0.
 			</argument>
 			<description>
 				Generates a block of voxels within the specified world area.
+				[code]out_buffer[/code]: Buffer in which voxel data will be generated. It should not be [code]null[/code] and should be given the requested size. Do not keep a reference on it after the call.
+				[code]origin_in_voxels[/code]: Coordinates of the lower corner of the box to generate, relative to LOD0.
+				[code]lod[/code]: Level of detail index to use for this block. Some generators might not support LOD, in which case it can be left 0.
 			</description>
 		</method>
 	</methods>

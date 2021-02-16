@@ -1,0 +1,167 @@
+#ifndef VOXEL_INSTANCER_H
+#define VOXEL_INSTANCER_H
+
+#include "../../math/rect3i.h"
+#include "../../streams/instance_data.h"
+#include "../../util/array_slice.h"
+#include "../../util/direct_multimesh_instance.h"
+#include "../../util/fixed_array.h"
+#include "voxel_instance_generator.h"
+#include "voxel_instance_library.h"
+
+#include <scene/3d/spatial.h>
+//#include <scene/resources/material.h> // Included by node.h lol
+#include <limits>
+#include <memory>
+#include <unordered_map>
+#include <vector>
+
+class VoxelLodTerrain;
+class VoxelInstancerRigidBody;
+class PhysicsBody;
+
+// Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
+// Even nodes like gridmaps could be rebuilt on top of this, if its concept of "grid" was decoupled.
+
+// Add-on to voxel nodes, allowing to spawn elements on the surface.
+// These elements are rendered with hardware instancing, can have collisions, and also be persistent.
+class VoxelInstancer : public Spatial, public VoxelInstanceLibrary::IListener {
+	GDCLASS(VoxelInstancer, Spatial)
+public:
+	static const int MAX_LOD = 8;
+
+	enum UpMode {
+		UP_MODE_POSITIVE_Y = VoxelInstanceGenerator::UP_MODE_POSITIVE_Y,
+		UP_MODE_SPHERE = VoxelInstanceGenerator::UP_MODE_SPHERE,
+		UP_MODE_COUNT = VoxelInstanceGenerator::UP_MODE_COUNT
+	};
+
+	VoxelInstancer();
+	~VoxelInstancer();
+
+	// Properties
+
+	void set_up_mode(UpMode mode);
+	UpMode get_up_mode() const;
+
+	void set_library(Ref<VoxelInstanceLibrary> library);
+	Ref<VoxelInstanceLibrary> get_library() const;
+
+	// Actions
+
+	void save_all_modified_blocks();
+
+	// Event handlers
+
+	void on_block_data_loaded(Vector3i grid_position, int lod_index,
+			std::unique_ptr<VoxelInstanceBlockData> instances);
+	void on_block_enter(Vector3i grid_position, int lod_index, Array surface_arrays);
+	void on_block_exit(Vector3i grid_position, int lod_index);
+	void on_area_edited(Rect3i p_voxel_box);
+	void on_body_removed(int block_index, int instance_index);
+
+	// Debug
+
+	int debug_get_block_count() const;
+
+	String get_configuration_warning() const override;
+
+protected:
+	void _notification(int p_what);
+
+private:
+	struct Block;
+	struct Layer;
+
+	void process_mesh_lods();
+
+	void add_layer(int layer_id, int lod_index);
+	void remove_layer(int layer_id);
+	int create_block(Layer *layer, uint16_t layer_id, Vector3i grid_position);
+	void remove_block(int block_index);
+	void set_world(World *world);
+	void clear_blocks();
+	void clear_blocks_in_layer(int layer_id);
+	void clear_layers();
+	void update_visibility();
+	void save_block(Vector3i grid_pos, int lod_index) const;
+	Layer *get_layer(int id);
+	const Layer *get_layer_const(int id) const;
+	void regenerate_layer(uint16_t layer_id, bool regenerate_blocks);
+	void update_layer_meshes(int layer_id);
+
+	void create_blocks(const VoxelInstanceBlockData *instances_data, Vector3i grid_position, int lod_index,
+			Array surface_arrays);
+
+	void update_block_from_transforms(int block_index, ArraySlice<const Transform> transforms,
+			Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItem *item, uint16_t layer_id,
+			World *world, const Transform &block_transform);
+
+	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
+
+	static void _bind_methods();
+
+	struct Block {
+		uint16_t layer_id;
+		uint8_t current_mesh_lod = 0;
+		uint8_t lod_index;
+		Vector3i grid_position;
+		DirectMultiMeshInstance multimesh_instance;
+		// For physics we use nodes because it's easier to manage.
+		// Such instances may be less numerous.
+		Vector<VoxelInstancerRigidBody *> bodies;
+	};
+
+	struct Layer {
+		int lod_index;
+		HashMap<Vector3i, int, Vector3iHasher> blocks;
+	};
+
+	struct MeshLodDistances {
+		// Multimesh LOD updates based on the distance between the camera and the center of the block.
+		// Two distances are used to implement hysteresis, which allows to avoid oscillating too fast between lods.
+
+		// TODO Need to investigate if Godot 4 implements LOD for multimeshes
+		// Despite this, due to how Godot 4 implements LOD, it may still be beneficial to have a custom LOD system,
+		// so we can switch to impostors rather than only decimating geometry
+
+		// Distance above which the mesh starts being used, taking precedence over meshes of lower distance.
+		float enter_distance_squared;
+		// Distance under which the mesh stops being used
+		float exit_distance_squared;
+	};
+
+	struct Lod {
+		std::vector<int> layers;
+
+		// Blocks that have have unsaved changes
+		HashMap<Vector3i, bool, Vector3iHasher> modified_blocks;
+
+		// This is a temporary place to store loaded instances data while it's not visible yet.
+		// These instances are user-authored ones. If a block does not have an entry there,
+		// it will get generated instances.
+		// Can't use `HashMap` because it lacks move semantics.
+		std::unordered_map<Vector3i, std::unique_ptr<VoxelInstanceBlockData> > loaded_instances_data;
+
+		FixedArray<MeshLodDistances, VoxelInstanceLibraryItem::MAX_MESH_LODS> mesh_lod_distances;
+
+		Lod() = default;
+		Lod(const Lod &) = delete; // non construction-copyable
+		Lod &operator=(const Lod &) = delete; // non copyable
+	};
+
+	UpMode _up_mode = UP_MODE_POSITIVE_Y;
+
+	FixedArray<Lod, MAX_LOD> _lods;
+	std::vector<Block *> _blocks; // Does not have nulls
+	HashMap<int, Layer> _layers; // Each layer corresponds to a library item
+	Ref<VoxelInstanceLibrary> _library;
+
+	std::vector<Transform> _transform_cache;
+
+	VoxelLodTerrain *_parent;
+};
+
+VARIANT_ENUM_CAST(VoxelInstancer::UpMode);
+
+#endif // VOXEL_INSTANCER_H

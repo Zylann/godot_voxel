@@ -27,7 +27,7 @@ Fast collisions alternative
 
 ### Move and slide
 
-Mesh-based collisions are quite accurate and feature-rich in Godot, however it some drawbacks:
+Mesh-based collisions are quite accurate and feature-rich in Godot, however it has some drawbacks:
 
 - Trimesh collision shapes have to be built each time the terrain is modified, which is [very slow](https://github.com/Zylann/godot_voxel/issues/54).
 - The physics engine has to process arbitrary triangles near the player, which can't take advantage of particular situations, such as everything being cubes
@@ -53,7 +53,7 @@ func _physics_process(delta):
 ```
 
 !!! note
-	this technique mainly works if you use `VoxelMesherBlocky`. It might have some limited support in other meshers though.
+	this technique mainly works if you use `VoxelMesherBlocky`, because it gets information about which block is collidable from the `VoxelLibrary` used with it. It might have some limited support in other meshers though.
 
 ### Raycast
 

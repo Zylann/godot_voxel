@@ -5,7 +5,6 @@
 #include "../storage/voxel_buffer.h"
 #include "../util/direct_mesh_instance.h"
 #include "../util/direct_static_body.h"
-#include "../util/fixed_array.h"
 #include "voxel_viewer_ref_count.h"
 
 //#define VOXEL_DEBUG_LOD_MATERIALS
@@ -28,6 +27,7 @@ public:
 	unsigned int lod_index = 0;
 	bool pending_transition_update = false;
 	VoxelViewerRefCount viewers;
+	bool got_first_mesh_update = false;
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 
@@ -38,6 +38,7 @@ public:
 	// Visuals
 
 	void set_mesh(Ref<Mesh> mesh);
+	Ref<Mesh> get_mesh() const;
 	void set_transition_mesh(Ref<Mesh> mesh, int side);
 	bool has_mesh() const;
 	void drop_mesh();

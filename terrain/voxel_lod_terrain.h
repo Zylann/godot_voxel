@@ -15,6 +15,7 @@
 
 class VoxelTool;
 class VoxelStream;
+class VoxelInstancer;
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
@@ -124,6 +125,14 @@ public:
 	bool is_showing_gizmos() const { return _show_gizmos_enabled; }
 #endif
 
+	// Internal
+
+	void set_instancer(VoxelInstancer *instancer);
+	uint32_t get_volume_id() const { return _volume_id; }
+
+	Array get_block_surface(Vector3i block_pos, int lod_index) const;
+	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
+
 protected:
 	static void _bind_methods();
 
@@ -191,7 +200,9 @@ private:
 	Ref<VoxelGenerator> _generator;
 	Ref<VoxelMesher> _mesher;
 
+	// TODO Might put this batch into VoxelServer directly instead of here
 	std::vector<BlockToSave> _blocks_to_save;
+
 	VoxelServer::ReceptionBuffers _reception_buffers;
 	uint32_t _volume_id = 0;
 	ProcessMode _process_mode = PROCESS_MODE_IDLE;
@@ -204,6 +215,8 @@ private:
 
 	bool _generate_collisions = true;
 	int _collision_lod_count = -1;
+
+	VoxelInstancer *_instancer = nullptr;
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {

@@ -7,6 +7,7 @@
 #include "../util/profiling.h"
 #include "../util/profiling_clock.h"
 #include "../voxel_string_names.h"
+#include "instancing/voxel_instancer.h"
 #include "voxel_map.h"
 
 #include <core/core_string_names.h>
@@ -143,22 +144,8 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 VoxelLodTerrain::~VoxelLodTerrain() {
 	PRINT_VERBOSE("Destroy VoxelLodTerrain");
-
-	if (_stream.is_valid()) {
-		// Schedule saving of all modified blocks,
-		// without copy because we are destroying the map anyways
-
-		flush_pending_lod_edits();
-
-		for (int i = 0; i < _lod_count; ++i) {
-			_lods[i].map.for_all_blocks(BeforeUnloadAction{ _shader_material_pool, _blocks_to_save, true });
-		}
-
-		// And flush immediately
-		send_block_data_requests();
-	}
-
 	VoxelServer::get_singleton()->remove_volume(_volume_id);
+	// Instancer can take care of itself
 }
 
 Ref<Material> VoxelLodTerrain::get_material() const {
@@ -315,6 +302,10 @@ void VoxelLodTerrain::post_edit_area(Rect3i p_box) {
 	bbox.for_each_cell([this](Vector3i block_pos_lod0) {
 		post_edit_block_lod0(block_pos_lod0);
 	});
+
+	if (_instancer != nullptr) {
+		_instancer->on_area_edited(p_box);
+	}
 }
 
 void VoxelLodTerrain::post_edit_block_lod0(Vector3i block_pos_lod0) {
@@ -714,12 +705,13 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelBlock *block) {
 
 void VoxelLodTerrain::send_block_data_requests() {
 	// Blocks to load
+	const bool request_instances = _instancer != nullptr;
 	for (int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 
 		for (unsigned int i = 0; i < lod.blocks_to_load.size(); ++i) {
 			const Vector3i block_pos = lod.blocks_to_load[i];
-			VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, lod_index);
+			VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, lod_index, request_instances);
 		}
 
 		lod.blocks_to_load.clear();
@@ -729,8 +721,8 @@ void VoxelLodTerrain::send_block_data_requests() {
 	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
 		PRINT_VERBOSE(String("Requesting save of block {0} lod {1}")
 							  .format(varray(_blocks_to_save[i].position.to_vec3(), _blocks_to_save[i].lod)));
-		const BlockToSave &b = _blocks_to_save[i];
-		VoxelServer::get_singleton()->request_block_save(_volume_id, b.voxels, b.position, b.lod);
+		BlockToSave &b = _blocks_to_save[i];
+		VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
 	}
 
 	_blocks_to_save.clear();
@@ -1173,7 +1165,14 @@ void VoxelLodTerrain::_process() {
 				// used to smooth seams without re-uploading meshes and allow to implement LOD fading
 				block->set_shader_material(sm);
 			}
+
+			if (_instancer != nullptr && ob.instances != nullptr) {
+				VoxelServer::BlockDataOutput &wob = _reception_buffers.data_output[reception_index];
+				_instancer->on_block_data_loaded(wob.position, wob.lod, std::move(wob.instances));
+			}
 		}
+
+		_reception_buffers.data_output.clear();
 	}
 
 	_stats.time_process_load_responses = profiling_clock.restart();
@@ -1278,6 +1277,17 @@ void VoxelLodTerrain::_process() {
 			bool has_collision = _generate_collisions;
 			if (has_collision && _collision_lod_count != -1) {
 				has_collision = ob.lod < _collision_lod_count;
+			}
+
+			if (block->got_first_mesh_update == false) {
+				block->got_first_mesh_update = true;
+
+				// TODO Need a more generic API for this kind of stuff
+				if (_instancer != nullptr && ob.surfaces.surfaces.size() > 0) {
+					// TODO The mesh could come from an edited region!
+					// We would have to know if specific voxels got edited, or different from the generator
+					_instancer->on_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0]);
+				}
 			}
 
 			block->set_mesh(mesh);
@@ -1398,6 +1408,13 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 	//	}
 }
 
+void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
+	if (_instancer != nullptr && instancer != nullptr) {
+		ERR_FAIL_COND_MSG(_instancer != nullptr, "No more than one VoxelInstancer per terrain");
+	}
+	_instancer = instancer;
+}
+
 void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(lod_index >= get_lod_count());
@@ -1408,12 +1425,45 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 
 	lod.loading_blocks.erase(block_pos);
 
+	if (_instancer != nullptr) {
+		_instancer->on_block_exit(block_pos, lod_index);
+	}
+
 	// Blocks in the update queue will be cancelled in _process,
 	// because it's too expensive to linear-search all blocks for each block
 
 	// No need to remove things from blocks_pending_load,
 	// This vector is filled and cleared immediately in the main process.
 	// It is a member only to re-use its capacity memory over frames.
+}
+
+// This function is primarily intented for editor use cases at the moment.
+// It will be slower than using the instancing generation events,
+// because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
+Array VoxelLodTerrain::get_block_surface(Vector3i block_pos, int lod_index) const {
+	VOXEL_PROFILE_SCOPE();
+	ERR_FAIL_COND_V(lod_index >= _lod_count, Array());
+	const Lod &lod = _lods[lod_index];
+	const VoxelBlock *block = lod.map.get_block(block_pos);
+	if (block != nullptr) {
+		Ref<Mesh> mesh = block->get_mesh();
+		if (mesh.is_valid()) {
+			return mesh->surface_get_arrays(0);
+		}
+	}
+	return Array();
+}
+
+Vector<Vector3i> VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index) const {
+	Vector<Vector3i> positions;
+	ERR_FAIL_COND_V(lod_index >= _lod_count, positions);
+	const Lod &lod = _lods[lod_index];
+	lod.map.for_all_blocks([&positions](const VoxelBlock *block) {
+		if (block->has_mesh()) {
+			positions.push_back(block->position);
+		}
+	});
+	return positions;
 }
 
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
@@ -1423,6 +1473,10 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 		for (int i = 0; i < _lod_count; ++i) {
 			// That may cause a stutter, so should be used when the player won't notice
 			_lods[i].map.for_all_blocks(ScheduleSaveAction{ _blocks_to_save });
+		}
+
+		if (_instancer != nullptr && _stream->supports_instance_blocks()) {
+			_instancer->save_all_modified_blocks();
 		}
 	}
 

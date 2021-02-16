@@ -50,6 +50,6 @@ Reads the data of a [VoxelBuffer](VoxelBuffer.md) from a [StreamPeer](https://do
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_serialize"></span> **serialize**( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) 
 
-Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). To be able to read it back, you should use the
+Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html).
 
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_

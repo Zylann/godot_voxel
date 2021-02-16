@@ -1,6 +1,6 @@
 # VoxelStreamRegionFiles
 
-Inherits: [VoxelStreamFile](VoxelStreamFile.md)
+Inherits: [VoxelStream](VoxelStream.md)
 
 
 Loads and saves blocks to region files indexed by world position, under a directory.
@@ -39,6 +39,7 @@ Return                                                                        | 
 
 
 - [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_directory"></span> **directory** = ""
+
 Directory under which the data is saved.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_lod_count"></span> **lod_count** = 1
@@ -55,13 +56,10 @@ Directory under which the data is saved.
 - [void](#)<span id="i_convert_files"></span> **convert_files**( [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) new_settings ) 
 
 
-
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_block_size_po2"></span> **get_block_size_po2**( ) 
-
 
 
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_get_region_size"></span> **get_region_size**( ) 
 
 
-
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_

@@ -48,8 +48,8 @@ public:
 	void set_eraser_value(uint64_t value);
 	uint64_t get_eraser_value() const;
 
-	uint64_t get_voxel(Vector3i pos);
-	float get_voxel_f(Vector3i pos);
+	uint64_t get_voxel(Vector3i pos) const;
+	float get_voxel_f(Vector3i pos) const;
 
 	float get_sdf_scale() const;
 	void set_sdf_scale(float s);
@@ -82,8 +82,8 @@ protected:
 
 	// These methods never go alone, but may be used in others.
 	// They don't represent an edit, they only abstract the lower-level API
-	virtual uint64_t _get_voxel(Vector3i pos);
-	virtual float _get_voxel_f(Vector3i pos);
+	virtual uint64_t _get_voxel(Vector3i pos) const;
+	virtual float _get_voxel_f(Vector3i pos) const;
 	virtual void _set_voxel(Vector3i pos, uint64_t v);
 	virtual void _set_voxel_f(Vector3i pos, float v);
 	virtual void _post_edit(const Rect3i &box);

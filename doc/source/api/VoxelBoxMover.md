@@ -33,7 +33,6 @@ Return                                                                        | 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_collision_mask"></span> **get_collision_mask**( ) 
 
 
-
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_get_motion"></span> **get_motion**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) motion, [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) aabb, [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) terrain ) 
 
 Given a motion vector, returns a modified vector telling you by how much to move your character. This is similar to method KinematicBody.move_and_slide, except you have to apply the movement.
@@ -41,5 +40,4 @@ Given a motion vector, returns a modified vector telling you by how much to move
 - [void](#)<span id="i_set_collision_mask"></span> **set_collision_mask**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask ) 
 
 
-
-_Generated on Jan 24, 2021_
+_Generated on Feb 16, 2021_
