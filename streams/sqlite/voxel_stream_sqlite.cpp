@@ -688,11 +688,11 @@ void VoxelStreamSQLite::load_instance_blocks(
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Get block size from database
-	const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
+	//const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// Check the cache first
 	Vector<int> blocks_to_load;
-	for (int i = 0; i < out_blocks.size(); ++i) {
+	for (size_t i = 0; i < out_blocks.size(); ++i) {
 		VoxelStreamInstanceDataRequest &r = out_blocks[i];
 
 		if (_cache.load_instance_block(r.position, r.lod, r.data)) {
@@ -751,15 +751,15 @@ void VoxelStreamSQLite::load_instance_blocks(
 
 void VoxelStreamSQLite::save_instance_blocks(ArraySlice<VoxelStreamInstanceDataRequest> p_blocks) {
 	// TODO Get block size from database
-	const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
+	//const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// First put in cache
-	for (int i = 0; i < p_blocks.size(); ++i) {
+	for (size_t i = 0; i < p_blocks.size(); ++i) {
 		VoxelStreamInstanceDataRequest &r = p_blocks[i];
 		_cache.save_instance_block(r.position, r.lod, std::move(r.data));
 	}
 
-	// TODO We should consider using a serialized cache, and measure the threshold in bytes
+	// TODO Optimization: we should consider using a serialized cache, and measure the threshold in bytes
 	if (_cache.get_indicative_block_count() >= CACHE_SIZE) {
 		flush_cache();
 	}
