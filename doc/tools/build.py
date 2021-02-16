@@ -105,6 +105,8 @@ def update_mkdocs_file(mkdocs_config_fpath, md_classes_dir):
             processed_lines.append(line)
             for class_file in class_files:
                 processed_lines.append(indent + "- " + class_file + "\n")
+        else:
+            processed_lines.append(line)
 
     yml = "".join(processed_lines)
     with open(mkdocs_config_fpath, 'w', encoding='utf-8') as f:
