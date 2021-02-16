@@ -454,6 +454,7 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 			ERR_FAIL_COND(item.is_null());
 			add_layer(item_id, item->get_lod_index());
 			regenerate_layer(item_id, true);
+			update_configuration_warning();
 		} break;
 
 		case VoxelInstanceLibraryItem::CHANGE_REMOVED:
