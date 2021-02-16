@@ -302,6 +302,8 @@ void VoxelInstanceGenerator::generate_transforms(
 				case DISTRIBUTION_QUINTIC:
 					r = r * r * r * r * r;
 					break;
+				default:
+					break;
 			}
 
 			if (_noise.is_valid() && _noise_on_scale > 0.f) {
