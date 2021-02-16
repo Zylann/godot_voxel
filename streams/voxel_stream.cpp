@@ -45,7 +45,7 @@ bool VoxelStream::supports_instance_blocks() const {
 void VoxelStream::load_instance_blocks(
 		ArraySlice<VoxelStreamInstanceDataRequest> out_blocks, ArraySlice<Result> out_results) {
 	// Can be implemented in subclasses
-	for (int i = 0; i < out_results.size(); ++i) {
+	for (size_t i = 0; i < out_results.size(); ++i) {
 		out_results[i] = RESULT_BLOCK_NOT_FOUND;
 	}
 }
