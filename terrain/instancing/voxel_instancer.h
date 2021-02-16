@@ -53,12 +53,12 @@ public:
 
 	// Event handlers
 
-	void on_block_data_loaded(Vector3i grid_position, int lod_index,
+	void on_block_data_loaded(Vector3i grid_position, unsigned int lod_index,
 			std::unique_ptr<VoxelInstanceBlockData> instances);
-	void on_block_enter(Vector3i grid_position, int lod_index, Array surface_arrays);
-	void on_block_exit(Vector3i grid_position, int lod_index);
+	void on_block_enter(Vector3i grid_position, unsigned int lod_index, Array surface_arrays);
+	void on_block_exit(Vector3i grid_position, unsigned int lod_index);
 	void on_area_edited(Rect3i p_voxel_box);
-	void on_body_removed(int block_index, int instance_index);
+	void on_body_removed(unsigned int block_index, int instance_index);
 
 	// Debug
 
@@ -78,7 +78,7 @@ private:
 	void add_layer(int layer_id, int lod_index);
 	void remove_layer(int layer_id);
 	int create_block(Layer *layer, uint16_t layer_id, Vector3i grid_position);
-	void remove_block(int block_index);
+	void remove_block(unsigned int block_index);
 	void set_world(World *world);
 	void clear_blocks();
 	void clear_blocks_in_layer(int layer_id);
@@ -113,8 +113,8 @@ private:
 	};
 
 	struct Layer {
-		int lod_index;
-		HashMap<Vector3i, int, Vector3iHasher> blocks;
+		unsigned int lod_index;
+		HashMap<Vector3i, unsigned int, Vector3iHasher> blocks;
 	};
 
 	struct MeshLodDistances {
