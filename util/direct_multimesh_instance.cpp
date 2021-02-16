@@ -85,7 +85,7 @@ PoolRealArray DirectMultiMeshInstance::make_transform_3d_bulk_array(ArraySlice<c
 
 	PoolRealArray bulk_array;
 	bulk_array.resize(transforms.size() * 12);
-	CRASH_COND(transforms.size() * sizeof(Transform) / sizeof(float) != bulk_array.size());
+	CRASH_COND(transforms.size() * sizeof(Transform) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
 
 	PoolRealArray::Write w = bulk_array.write();
 
