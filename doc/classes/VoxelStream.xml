@@ -36,13 +36,13 @@
 			<return type="void">
 			</return>
 			<argument index="0" name="buffer" type="VoxelBuffer">
-				Block of voxels to save. It is strongly recommended to not keep a reference to that data afterward, because streams are allowed to cache it, and saved data must represent either snapshots (copies) or last references to the data after the volume they belonged to is destroyed.
 			</argument>
 			<argument index="1" name="origin_in_voxels" type="Vector3">
 			</argument>
 			<argument index="2" name="lod" type="int">
 			</argument>
 			<description>
+				[code]buffer[/code]: Block of voxels to save. It is strongly recommended to not keep a reference to that data afterward, because streams are allowed to cache it, and saved data must represent either snapshots (copies) or last references to the data after the volume they belonged to is destroyed.
 			</description>
 		</method>
 	</methods>

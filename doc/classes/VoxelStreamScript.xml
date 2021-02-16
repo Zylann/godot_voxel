@@ -12,13 +12,13 @@
 			<return type="void">
 			</return>
 			<argument index="0" name="out_buffer" type="VoxelBuffer">
-				Buffer in which to populate voxel data. It will never be [code]null[/code] and will have the requested size. It is only valid for this function, do not store it anywhere after the end.
 			</argument>
 			<argument index="1" name="origin_in_voxels" type="Vector3">
 			</argument>
 			<argument index="2" name="lod" type="int">
 			</argument>
 			<description>
+				[code]out_buffer[/code]: Buffer in which to populate voxel data. It will never be [code]null[/code] and will have the requested size. It is only valid for this function, do not store it anywhere after the end.
 			</description>
 		</method>
 		<method name="_get_used_channels_mask" qualifiers="virtual">
@@ -31,13 +31,13 @@
 			<return type="void">
 			</return>
 			<argument index="0" name="buffer" type="VoxelBuffer">
-				Buffer of voxel data to save. It is allowed to keep a reference to it for caching purposes, as saved data will either be snapshots or only references left after removal of a volume.
 			</argument>
 			<argument index="1" name="origin_in_voxels" type="Vector3">
 			</argument>
 			<argument index="2" name="lod" type="int">
 			</argument>
 			<description>
+				[code]buffer[/code]: Buffer of voxel data to save. It is allowed to keep a reference to it for caching purposes, as saved data will either be snapshots or only references left after removal of a volume.
 			</description>
 		</method>
 	</methods>
