@@ -5,6 +5,7 @@
 
 #include <core/io/file_access_memory.h>
 #include <core/variant.h>
+#include <limits>
 
 namespace VoxelCompressedData {
 
