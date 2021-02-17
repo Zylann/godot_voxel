@@ -44,6 +44,7 @@ There is a balance to consider when choosing the appropriate `lod_index`: curren
 To combat this, you can adjust the `offset_along_normal` parameter in the `generator` associated to the item. This depends on the asset, so designing them such that they can have part of their bottom sunk into the ground can give some margin of error.
 
 Sometimes it might not be enough, so this problem still has to be worked out in the future. Possible approaches include:
+
 - Querying the world generator to approximate the surface without using the mesh (not suitable if the ground was edited)
 - Gradually snap the instances somehow as higher-resolution data becomes available
 - Load edited voxels for the entire world at once so they can be queried even from far distance (takes more memory)
