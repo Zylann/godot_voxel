@@ -1,6 +1,5 @@
 #include "fast_noise_lite.h"
-#include "../utility.h"
-
+#include "../math/funcs.h"
 #include <core/core_string_names.h>
 
 FastNoiseLite::FastNoiseLite() {

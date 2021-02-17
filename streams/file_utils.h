@@ -1,7 +1,7 @@
 #ifndef FILE_UTILS_H
 #define FILE_UTILS_H
 
-#include "../math/vector3i.h"
+#include "../util/math/vector3i.h"
 #include <core/os/dir_access.h>
 #include <core/os/file_access.h>
 

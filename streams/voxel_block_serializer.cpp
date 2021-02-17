@@ -1,8 +1,8 @@
 #include "voxel_block_serializer.h"
-#include "../math/vector3i.h"
 #include "../storage/voxel_buffer.h"
 #include "../storage/voxel_memory_pool.h"
 #include "../util/macros.h"
+#include "../util/math/vector3i.h"
 #include "../util/profiling.h"
 #include "compressed_data.h"
 

@@ -1,8 +1,8 @@
 #ifndef IMAGE_RANGE_GRID_H
 #define IMAGE_RANGE_GRID_H
 
-#include "../../math/interval.h"
 #include "../../util/fixed_array.h"
+#include "../../util/math/interval.h"
 
 class Image;
 

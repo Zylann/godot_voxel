@@ -3,6 +3,7 @@
 
 #include "../voxel_mesher.h"
 #include "voxel_color_palette.h"
+#include <vector>
 
 // A super simple mesher only producing colored cubes
 class VoxelMesherCubes : public VoxelMesher {

@@ -1,5 +1,6 @@
 #include "voxel_instancer.h"
 #include "../../edition/voxel_tool.h"
+#include "../../util/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../voxel_lod_terrain.h"

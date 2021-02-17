@@ -1,7 +1,7 @@
 #ifndef INTERVAL_H
 #define INTERVAL_H
 
-#include "../util/utility.h"
+#include "funcs.h"
 #include <limits>
 
 // For interval arithmetic

@@ -2,7 +2,7 @@
 #include "../../cube_tables.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../util/array_slice.h"
-#include "../../util/utility.h"
+#include "../../util/funcs.h"
 #include <core/os/os.h>
 
 // Utility functions

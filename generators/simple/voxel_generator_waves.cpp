@@ -1,5 +1,4 @@
 #include "voxel_generator_waves.h"
-#include "../../util/utility.h"
 #include <cmath>
 
 VoxelGeneratorWaves::VoxelGeneratorWaves() {

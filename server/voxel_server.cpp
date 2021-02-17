@@ -1,5 +1,6 @@
 #include "voxel_server.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "../util/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../voxel_constants.h"

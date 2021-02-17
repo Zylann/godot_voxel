@@ -1,8 +1,8 @@
 #ifndef VOXEL_BLOCK_REQUEST_H
 #define VOXEL_BLOCK_REQUEST_H
 
-#include "../math/vector3i.h"
 #include "../storage/voxel_buffer.h"
+#include "../util/math/vector3i.h"
 #include "instance_data.h"
 #include <memory>
 

@@ -1,8 +1,8 @@
 #ifndef LOD_OCTREE_H
 #define LOD_OCTREE_H
 
-#include "../math/vector3i.h"
 #include "../octree_tables.h"
+#include "../util/math/vector3i.h"
 #include "../voxel_constants.h"
 
 // Octree designed to handle level of detail.

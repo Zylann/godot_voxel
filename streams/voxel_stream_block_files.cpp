@@ -1,6 +1,5 @@
 #include "voxel_stream_block_files.h"
 #include "../server/voxel_server.h"
-#include "../util/utility.h"
 
 #include <core/os/dir_access.h>
 #include <core/os/file_access.h>

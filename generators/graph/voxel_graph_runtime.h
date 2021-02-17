@@ -1,10 +1,11 @@
 #ifndef VOXEL_GRAPH_RUNTIME_H
 #define VOXEL_GRAPH_RUNTIME_H
 
-#include "../../math/interval.h"
-#include "../../math/vector3i.h"
 #include "../../util/array_slice.h"
+#include "../../util/math/interval.h"
+#include "../../util/math/vector3i.h"
 #include "program_graph.h"
+#include <core/reference.h>
 
 class ImageRangeGrid;
 

@@ -1,5 +1,5 @@
 #include "direct_mesh_instance.h"
-#include "profiling.h"
+#include "../profiling.h"
 #include <scene/resources/world.h>
 
 DirectMeshInstance::DirectMeshInstance() {

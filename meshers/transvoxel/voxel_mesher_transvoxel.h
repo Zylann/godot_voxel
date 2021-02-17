@@ -4,7 +4,7 @@
 #include "../../cube_tables.h"
 #include "../../util/fixed_array.h"
 #include "../voxel_mesher.h"
-#include <scene/resources/mesh.h>
+#include <vector>
 
 class VoxelMesherTransvoxelInternal {
 public:
@@ -56,6 +56,8 @@ private:
 	Vector3i _block_size;
 	MeshArrays _output;
 };
+
+class ArrayMesh;
 
 class VoxelMesherTransvoxel : public VoxelMesher {
 	GDCLASS(VoxelMesherTransvoxel, VoxelMesher)

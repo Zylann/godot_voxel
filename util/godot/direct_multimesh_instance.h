@@ -1,7 +1,7 @@
 #ifndef DIRECT_MULTIMESH_INSTANCE_H
 #define DIRECT_MULTIMESH_INSTANCE_H
 
-#include "array_slice.h"
+#include "../array_slice.h"
 
 #include <core/rid.h>
 #include <scene/resources/multimesh.h>

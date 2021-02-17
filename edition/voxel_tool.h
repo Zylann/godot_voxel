@@ -1,7 +1,7 @@
 #ifndef VOXEL_TOOL_H
 #define VOXEL_TOOL_H
 
-#include "../math/rect3i.h"
+#include "../util/math/rect3i.h"
 #include <core/reference.h>
 
 class VoxelBuffer;

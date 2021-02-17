@@ -5,6 +5,7 @@
 #include "../../util/fixed_array.h"
 
 #include <scene/resources/mesh.h>
+#include <vector>
 
 class VoxelLibrary;
 

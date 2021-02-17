@@ -1,7 +1,7 @@
 #include "voxel_mesher_transvoxel.h"
 #include "../../storage/voxel_buffer.h"
+#include "../../util/funcs.h"
 #include "transvoxel_tables.cpp"
-#include <core/os/os.h>
 
 namespace {
 static const unsigned int MESH_COMPRESSION_FLAGS =

@@ -28,6 +28,7 @@ voxel_files = [
 	"generators/simple/*.cpp",
 
 	"util/*.cpp",
+	"util/godot/*.cpp",
 	#"util/noise/*.cpp",
 	"util/noise/fast_noise_lite.cpp",
 	"util/noise/fast_noise_lite_gradient.cpp",
@@ -36,7 +37,6 @@ voxel_files = [
 	"terrain/instancing/*.cpp",
 
 	"server/*.cpp",
-	"math/*.cpp",
 	"edition/*.cpp",
 
 	"thirdparty/lz4/*.c",

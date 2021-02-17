@@ -1,4 +1,6 @@
 #include "mesh_builder.h"
+#include "../../util/funcs.h"
+#include <scene/resources/mesh.h>
 
 namespace dmc {
 

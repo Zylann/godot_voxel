@@ -1,4 +1,5 @@
 #include "voxel_graph_runtime.h"
+#include "../../util/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/noise/fast_noise_lite.h"
 #include "../../util/profiling.h"
@@ -7,7 +8,6 @@
 #include "voxel_generator_graph.h"
 #include "voxel_graph_node_db.h"
 
-//#include <core/image.h>
 #include <core/math/math_funcs.h>
 #include <modules/opensimplex/open_simplex_noise.h>
 #include <scene/resources/curve.h>

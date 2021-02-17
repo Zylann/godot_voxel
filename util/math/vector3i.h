@@ -1,9 +1,10 @@
 #ifndef VOXEL_VECTOR3I_H
 #define VOXEL_VECTOR3I_H
 
-#include "../util/utility.h"
+#include "funcs.h"
 #include <core/hashfuncs.h>
 #include <core/math/vector3.h>
+#include <functional>
 
 struct Vector3i {
 	static const unsigned int AXIS_X = 0;

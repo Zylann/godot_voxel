@@ -1,7 +1,6 @@
 #include "voxel_debug.h"
-#include "../util/direct_mesh_instance.h"
 #include "../util/fixed_array.h"
-#include "../util/utility.h"
+#include "../util/godot/direct_mesh_instance.h"
 #include <scene/resources/mesh.h>
 
 namespace VoxelDebug {

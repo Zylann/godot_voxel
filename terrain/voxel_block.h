@@ -3,8 +3,8 @@
 
 #include "../cube_tables.h"
 #include "../storage/voxel_buffer.h"
-#include "../util/direct_mesh_instance.h"
-#include "../util/direct_static_body.h"
+#include "../util/godot/direct_mesh_instance.h"
+#include "../util/godot/direct_static_body.h"
 #include "voxel_viewer_ref_count.h"
 
 //#define VOXEL_DEBUG_LOD_MATERIALS

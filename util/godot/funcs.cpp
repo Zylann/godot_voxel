@@ -1,5 +1,4 @@
-#include "utility.h"
-#include "../cube_tables.h"
+#include "funcs.h"
 
 #include <core/engine.h>
 #include <scene/resources/mesh.h>
@@ -24,7 +23,9 @@ bool is_mesh_empty(Ref<Mesh> mesh_ref) {
 	return false;
 }
 
-bool try_call_script(const Object *obj, StringName method_name, const Variant **args, unsigned int argc, Variant *out_ret) {
+bool try_call_script(
+		const Object *obj, StringName method_name, const Variant **args, unsigned int argc, Variant *out_ret) {
+
 	ScriptInstance *script = obj->get_script_instance();
 	// TODO Is has_method() needed? I've seen `call()` being called anyways in ButtonBase
 	if (script == nullptr || !script->has_method(method_name)) {

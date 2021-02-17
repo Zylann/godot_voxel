@@ -1,6 +1,5 @@
 #include "range_utility.h"
 #include "../../util/noise/fast_noise_lite.h"
-#include "../../util/utility.h"
 
 #include <core/image.h>
 #include <modules/opensimplex/open_simplex_noise.h>

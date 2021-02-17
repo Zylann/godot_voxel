@@ -1,5 +1,5 @@
 #include "direct_static_body.h"
-#include "profiling.h"
+#include "../profiling.h"
 
 #include <scene/resources/world.h>
 #include <servers/physics/physics_server_sw.h>

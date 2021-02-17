@@ -1,9 +1,8 @@
 #ifndef MESH_BUILDER_H
 #define MESH_BUILDER_H
 
-#include "../../util/utility.h"
 #include <core/map.h>
-#include <scene/resources/mesh.h>
+#include <core/math/vector3.h>
 #include <vector>
 
 namespace dmc {

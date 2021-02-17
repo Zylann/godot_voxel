@@ -1,10 +1,9 @@
 #ifndef VOXEL_COLOR_PALETTE_H
 #define VOXEL_COLOR_PALETTE_H
 
-#include "../../math/color8.h"
 #include "../../util/fixed_array.h"
+#include "../../util/math/color8.h"
 #include <core/resource.h>
-#include <vector>
 
 // Associates small numbers to colors, so colored voxels can be specified using less memory.
 class VoxelColorPalette : public Resource {

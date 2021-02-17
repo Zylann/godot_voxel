@@ -1,7 +1,8 @@
 #ifndef RANGE_UTILITY_H
 #define RANGE_UTILITY_H
 
-#include "../../math/interval.h"
+#include "../../util/math/interval.h"
+#include <core/math/rect2.h>
 
 class Curve;
 class OpenSimplexNoise;
