@@ -236,6 +236,29 @@ inline Interval sdf_torus(const Interval &x, const Interval &y, const Interval &
 	return get_length(qx, y) - r1;
 }
 
+inline float sdf_smooth_union(float a, float b, float s) {
+	float h = clamp(0.5f + 0.5f * (b - a) / s, 0.0f, 1.0f);
+	return Math::lerp(b, a, h) - s * h * (1.0f - h);
+}
+
+inline Interval sdf_smooth_union(Interval a, Interval b, Interval s) {
+	Interval h = clamp(Interval::from_single_value(0.5f) + Interval::from_single_value(0.5f) * (b - a) / s,
+			Interval::from_single_value(0.0f), Interval::from_single_value(1.0f));
+	return lerp(b, a, h) - s * h * (Interval::from_single_value(1.0f) - h);
+}
+
+// Inverted a and b because it does b - a
+inline float sdf_smooth_subtract(float b, float a, float s) {
+	float h = clamp(0.5f - 0.5f * (b + a) / s, 0.0f, 1.0f);
+	return Math::lerp(b, -a, h) + s * h * (1.0f - h);
+}
+
+inline Interval sdf_smooth_subtract(Interval b, Interval a, Interval s) {
+	Interval h = clamp(Interval::from_single_value(0.5f) - Interval::from_single_value(0.5f) * (b + a) / s,
+			Interval::from_single_value(0.0f), Interval::from_single_value(1.0f));
+	return lerp(b, -a, h) + s * h * (Interval::from_single_value(1.0f) - h);
+}
+
 VoxelGraphNodeDB *VoxelGraphNodeDB::get_singleton() {
 	CRASH_COND(g_node_type_db == nullptr);
 	return g_node_type_db;
@@ -1029,6 +1052,70 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval r0 = ctx.get_input(3);
 			const Interval r1 = ctx.get_input(4);
 			ctx.set_output(0, sdf_torus(x, y, z, r0, r1));
+		};
+	}
+	{
+		struct Params {
+			float smoothness;
+		};
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SMOOTH_UNION];
+		t.name = "SdfSmoothUnion";
+		t.category = CATEGORY_SDF;
+		t.inputs.push_back(Port("a"));
+		t.inputs.push_back(Port("b"));
+		t.outputs.push_back(Port("sdf"));
+		t.params.push_back(Param("smoothness", Variant::REAL, 0.f));
+		t.compile_func = [](CompileContext &ctx) {
+			Params p;
+			p.smoothness = ctx.get_param(0).operator float();
+			ctx.set_params(p);
+		};
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
+			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			const Params params = ctx.get_params<Params>();
+			for (uint32_t i = 0; i < out.size; ++i) {
+				out.data[i] = sdf_smooth_union(a.data[i], b.data[i], params.smoothness);
+			}
+		};
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval a = ctx.get_input(0);
+			const Interval b = ctx.get_input(1);
+			const Params params = ctx.get_params<Params>();
+			ctx.set_output(0, sdf_smooth_union(a, b, Interval::from_single_value(params.smoothness)));
+		};
+	}
+	{
+		struct Params {
+			float smoothness;
+		};
+		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SMOOTH_SUBTRACT];
+		t.name = "SdfSmoothSubtract";
+		t.category = CATEGORY_SDF;
+		t.inputs.push_back(Port("a"));
+		t.inputs.push_back(Port("b"));
+		t.outputs.push_back(Port("sdf"));
+		t.params.push_back(Param("smoothness", Variant::REAL, 0.f));
+		t.compile_func = [](CompileContext &ctx) {
+			Params p;
+			p.smoothness = ctx.get_param(0).operator float();
+			ctx.set_params(p);
+		};
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
+			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			const Params params = ctx.get_params<Params>();
+			for (uint32_t i = 0; i < out.size; ++i) {
+				out.data[i] = sdf_smooth_subtract(a.data[i], b.data[i], params.smoothness);
+			}
+		};
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval a = ctx.get_input(0);
+			const Interval b = ctx.get_input(1);
+			const Params params = ctx.get_params<Params>();
+			ctx.set_output(0, sdf_smooth_subtract(a, b, Interval::from_single_value(params.smoothness)));
 		};
 	}
 	{
