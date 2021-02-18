@@ -28,6 +28,9 @@ public:
 	bool pending_transition_update = false;
 	VoxelViewerRefCount viewers;
 	bool got_first_mesh_update = false;
+	uint32_t last_collider_update_time = 0;
+	bool has_deferred_collider_update = false;
+	Vector<Array> deferred_collider_data;
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 

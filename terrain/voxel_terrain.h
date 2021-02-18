@@ -70,11 +70,11 @@ public:
 		int dropped_block_loads = 0;
 		int dropped_block_meshs = 0;
 		int remaining_main_thread_blocks = 0;
-		uint64_t time_detect_required_blocks = 0;
-		uint64_t time_request_blocks_to_load = 0;
-		uint64_t time_process_load_responses = 0;
-		uint64_t time_request_blocks_to_update = 0;
-		uint64_t time_process_update_responses = 0;
+		uint32_t time_detect_required_blocks = 0;
+		uint32_t time_request_blocks_to_load = 0;
+		uint32_t time_process_load_responses = 0;
+		uint32_t time_request_blocks_to_update = 0;
+		uint32_t time_process_update_responses = 0;
 	};
 
 	const Stats &get_stats() const;

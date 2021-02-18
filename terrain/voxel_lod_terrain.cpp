@@ -113,6 +113,10 @@ struct ScheduleSaveAction {
 	}
 };
 
+static inline uint64_t get_ticks_msec() {
+	return OS::get_singleton()->get_ticks_msec();
+}
+
 } // namespace
 
 VoxelLodTerrain::VoxelLodTerrain() {
@@ -454,6 +458,8 @@ void VoxelLodTerrain::reset_maps() {
 		} else {
 			lod.map.clear();
 		}
+
+		lod.deferred_collision_updates.clear();
 	}
 
 	// Reset previous state caches to force rebuilding the view area
@@ -1222,13 +1228,13 @@ void VoxelLodTerrain::_process() {
 
 	_stats.time_request_blocks_to_update = profiling_clock.restart();
 
-	// Receive mesh updates
+	const uint32_t main_thread_task_timeout = get_ticks_msec() + VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS;
+
+	// Receive mesh updates:
+	// This contains work that should normally be threaded, but isn't because of Godot limitations.
+	// So after a timeout, it stops processing and will resume next frame.
 	{
 		VOXEL_PROFILE_SCOPE_NAMED("Receive mesh updates");
-
-		// Allocate milliseconds max to upload meshes
-		const OS &os = *OS::get_singleton();
-		const uint32_t timeout = os.get_ticks_msec() + VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS;
 
 		const Transform global_transform = get_global_transform();
 
@@ -1237,7 +1243,9 @@ void VoxelLodTerrain::_process() {
 		// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
 
 		size_t queue_index = 0;
-		for (; queue_index < _reception_buffers.mesh_output.size() && os.get_ticks_msec() < timeout; ++queue_index) {
+		for (; queue_index < _reception_buffers.mesh_output.size() && get_ticks_msec() < main_thread_task_timeout;
+				++queue_index) {
+
 			VOXEL_PROFILE_SCOPE();
 			const VoxelServer::BlockMeshOutput &ob = _reception_buffers.mesh_output[queue_index];
 
@@ -1293,14 +1301,9 @@ void VoxelLodTerrain::_process() {
 			}
 
 			block->set_mesh(mesh);
-			if (has_collision) {
-				block->set_collision_mesh(mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this);
-			}
-
 			{
 				VOXEL_PROFILE_SCOPE();
 				for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
-
 					Ref<ArrayMesh> transition_mesh = build_mesh(
 							mesh_data.transition_surfaces[dir],
 							mesh_data.primitive_type,
@@ -1308,6 +1311,22 @@ void VoxelLodTerrain::_process() {
 							_material);
 
 					block->set_transition_mesh(transition_mesh, dir);
+				}
+			}
+
+			const uint32_t now = get_ticks_msec();
+			if (has_collision) {
+				if (_collision_update_delay == 0 || now - block->last_collider_update_time > _collision_update_delay) {
+					block->set_collision_mesh(mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this);
+					block->last_collider_update_time = now;
+					block->has_deferred_collider_update = false;
+					block->deferred_collider_data.clear();
+				} else {
+					if (!block->has_deferred_collider_update) {
+						lod.deferred_collision_updates.push_back(ob.position);
+						block->has_deferred_collider_update = true;
+					}
+					block->deferred_collider_data = mesh_data.surfaces;
 				}
 			}
 
@@ -1324,11 +1343,51 @@ void VoxelLodTerrain::_process() {
 
 	_stats.time_process_update_responses = profiling_clock.restart();
 
+	process_deferred_collision_updates(main_thread_task_timeout);
+
 #ifdef TOOLS_ENABLED
 	if (is_showing_gizmos() && is_visible_in_tree()) {
 		update_gizmos();
 	}
 #endif
+}
+
+void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
+	VOXEL_PROFILE_SCOPE();
+
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		Lod &lod = _lods[lod_index];
+
+		for (unsigned int i = 0; i < lod.deferred_collision_updates.size(); ++i) {
+			const Vector3i block_pos = lod.deferred_collision_updates[i];
+			VoxelBlock *block = lod.map.get_block(block_pos);
+
+			if (block == nullptr || block->has_deferred_collider_update == false) {
+				// Block was unloaded or no longer needs a collision update
+				unordered_remove(lod.deferred_collision_updates, i);
+				--i;
+				continue;
+			}
+
+			const uint32_t now = get_ticks_msec();
+
+			if (now - block->last_collider_update_time > _collision_update_delay) {
+				block->set_collision_mesh(
+						block->deferred_collider_data, get_tree()->is_debugging_collisions_hint(), this);
+				block->last_collider_update_time = now;
+				block->has_deferred_collider_update = false;
+				block->deferred_collider_data.clear();
+
+				unordered_remove(lod.deferred_collision_updates, i);
+				--i;
+			}
+
+			// We always process at least one, then we to check the timeout
+			if (get_ticks_msec() >= timeout_msec) {
+				return;
+			}
+		}
+	}
 }
 
 void VoxelLodTerrain::flush_pending_lod_edits() {
@@ -1609,6 +1668,12 @@ const VoxelLodTerrain::Stats &VoxelLodTerrain::get_stats() const {
 Dictionary VoxelLodTerrain::_b_get_statistics() const {
 	Dictionary d;
 
+	int deferred_collision_updates = 0;
+	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		const Lod &lod = _lods[lod_index];
+		deferred_collision_updates += lod.deferred_collision_updates.size();
+	}
+
 	// Breakdown of time spent in _process
 	d["time_detect_required_blocks"] = _stats.time_detect_required_blocks;
 	d["time_request_blocks_to_load"] = _stats.time_request_blocks_to_load;
@@ -1616,7 +1681,7 @@ Dictionary VoxelLodTerrain::_b_get_statistics() const {
 	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
 	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
-	d["remaining_main_thread_blocks"] = _stats.remaining_main_thread_blocks;
+	d["remaining_main_thread_blocks"] = _stats.remaining_main_thread_blocks + deferred_collision_updates;
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;
@@ -1672,6 +1737,14 @@ void VoxelLodTerrain::set_voxel_bounds(Rect3i p_box) {
 			_bounds_in_voxels.size[i] = octree_size;
 		}
 	}
+}
+
+void VoxelLodTerrain::set_collision_update_delay(int delay_msec) {
+	_collision_update_delay = clamp(delay_msec, 0, 4000);
+}
+
+int VoxelLodTerrain::get_collision_update_delay() const {
+	return _collision_update_delay;
 }
 
 void VoxelLodTerrain::_b_save_modified_blocks() {
@@ -1886,6 +1959,10 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_collision_lod_count"), &VoxelLodTerrain::get_collision_lod_count);
 	ClassDB::bind_method(D_METHOD("set_collision_lod_count", "count"), &VoxelLodTerrain::set_collision_lod_count);
 
+	ClassDB::bind_method(D_METHOD("get_collision_update_delay"), &VoxelLodTerrain::get_collision_update_delay);
+	ClassDB::bind_method(D_METHOD("set_collision_update_delay", "delay_msec"),
+			&VoxelLodTerrain::set_collision_update_delay);
+
 	ClassDB::bind_method(D_METHOD("set_lod_count", "lod_count"), &VoxelLodTerrain::set_lod_count);
 	ClassDB::bind_method(D_METHOD("get_lod_count"), &VoxelLodTerrain::get_lod_count);
 
@@ -1932,6 +2009,8 @@ void VoxelLodTerrain::_bind_methods() {
 			"set_generate_collisions", "get_generate_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"),
 			"set_collision_lod_count", "get_collision_lod_count");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_update_delay"),
+			"set_collision_update_delay", "get_collision_update_delay");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
 			"set_run_stream_in_editor", "is_stream_running_in_editor");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "voxel_bounds"), "set_voxel_bounds", "get_voxel_bounds");

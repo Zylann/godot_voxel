@@ -69,6 +69,9 @@ public:
 	void set_voxel_bounds(Rect3i p_box);
 	inline Rect3i get_voxel_bounds() const { return _bounds_in_voxels; }
 
+	void set_collision_update_delay(int delay_msec);
+	int get_collision_update_delay() const;
+
 	enum ProcessMode {
 		PROCESS_MODE_IDLE = 0,
 		PROCESS_MODE_PHYSICS,
@@ -91,11 +94,11 @@ public:
 		int dropped_block_loads = 0;
 		int dropped_block_meshs = 0;
 		int remaining_main_thread_blocks = 0;
-		uint64_t time_detect_required_blocks = 0;
-		uint64_t time_request_blocks_to_load = 0;
-		uint64_t time_process_load_responses = 0;
-		uint64_t time_request_blocks_to_update = 0;
-		uint64_t time_process_update_responses = 0;
+		uint32_t time_detect_required_blocks = 0;
+		uint32_t time_request_blocks_to_load = 0;
+		uint32_t time_process_load_responses = 0;
+		uint32_t time_request_blocks_to_update = 0;
+		uint32_t time_process_update_responses = 0;
 	};
 
 	const Stats &get_stats() const;
@@ -161,6 +164,7 @@ private:
 	void flush_pending_lod_edits();
 	void save_all_modified_blocks(bool with_copy);
 	void send_block_data_requests();
+	void process_deferred_collision_updates(uint32_t timeout_msec);
 
 	void add_transition_update(VoxelBlock *block);
 	void add_transition_updates_around(Vector3i block_pos, int lod_index);
@@ -215,6 +219,7 @@ private:
 
 	bool _generate_collisions = true;
 	int _collision_lod_count = -1;
+	int _collision_update_delay = 0;
 
 	VoxelInstancer *_instancer = nullptr;
 
@@ -230,6 +235,8 @@ private:
 		// These are relative to this LOD, in block coordinates
 		Vector3i last_viewer_block_pos;
 		int last_view_distance_blocks = 0;
+
+		std::vector<Vector3i> deferred_collision_updates;
 
 		// Members for memory caching
 		std::vector<Vector3i> blocks_to_load;
