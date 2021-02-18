@@ -50,7 +50,7 @@ public:
 	}
 
 	inline ArraySlice<T> sub(size_t from, size_t len) const {
-		CRASH_COND(from + len >= _size);
+		CRASH_COND(from + len > _size);
 		return ArraySlice<T>(_ptr + from, len);
 	}
 
