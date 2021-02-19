@@ -1316,7 +1316,8 @@ void VoxelLodTerrain::_process() {
 
 			const uint32_t now = get_ticks_msec();
 			if (has_collision) {
-				if (_collision_update_delay == 0 || now - block->last_collider_update_time > _collision_update_delay) {
+				if (_collision_update_delay == 0 ||
+						static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 					block->set_collision_mesh(mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this);
 					block->last_collider_update_time = now;
 					block->has_deferred_collider_update = false;
@@ -1355,7 +1356,7 @@ void VoxelLodTerrain::_process() {
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
 	VOXEL_PROFILE_SCOPE();
 
-	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		Lod &lod = _lods[lod_index];
 
 		for (unsigned int i = 0; i < lod.deferred_collision_updates.size(); ++i) {
@@ -1371,7 +1372,7 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 
 			const uint32_t now = get_ticks_msec();
 
-			if (now - block->last_collider_update_time > _collision_update_delay) {
+			if (static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 				block->set_collision_mesh(
 						block->deferred_collider_data, get_tree()->is_debugging_collisions_hint(), this);
 				block->last_collider_update_time = now;
