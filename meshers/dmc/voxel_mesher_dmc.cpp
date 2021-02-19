@@ -1448,11 +1448,9 @@ thread_local VoxelMesherDMC::Cache VoxelMesherDMC::_cache;
 
 VoxelMesherDMC::VoxelMesherDMC() {
 	set_padding(PADDING, PADDING);
-	_parameters_lock = RWLock::create();
 }
 
 VoxelMesherDMC::~VoxelMesherDMC() {
-	memdelete(_parameters_lock);
 }
 
 void VoxelMesherDMC::set_mesh_mode(MeshMode mode) {

@@ -20,11 +20,9 @@ inline float get_height_blurred(const Image &im, int x, int y) {
 } // namespace
 
 VoxelGeneratorImage::VoxelGeneratorImage() {
-	_parameters_lock = RWLock::create();
 }
 
 VoxelGeneratorImage::~VoxelGeneratorImage() {
-	memdelete(_parameters_lock);
 	if (_parameters.image.is_valid()) {
 		_parameters.image->unlock();
 	}

@@ -34,7 +34,7 @@ private:
 	};
 
 	Parameters _parameters;
-	RWLock *_parameters_lock;
+	RWLock _parameters_lock;
 };
 
 #endif // VOXEL_GENERATOR_FLAT_H

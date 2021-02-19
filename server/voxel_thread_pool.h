@@ -5,12 +5,12 @@
 #include "../util/array_slice.h"
 #include "../util/fixed_array.h"
 #include <core/os/mutex.h>
+#include <core/os/semaphore.h>
+#include <core/os/thread.h>
 
 #include <queue>
 
-class Mutex;
 class Thread;
-class Semaphore;
 
 struct VoxelTaskContext {
 	uint8_t thread_index;
@@ -90,13 +90,23 @@ private:
 	};
 
 	struct ThreadData {
-		Thread *thread = nullptr;
+		Thread thread;
 		VoxelThreadPool *pool = nullptr;
 		uint32_t index = 0;
 		bool stop = false;
 		bool waiting = false;
 		State debug_state = STATE_STOPPED;
 		String name;
+
+		void wait_to_finish_and_reset() {
+			thread.wait_to_finish();
+			pool = nullptr;
+			index = 0;
+			stop = false;
+			waiting = false;
+			debug_state = STATE_STOPPED;
+			name.clear();
+		}
 	};
 
 	static void thread_func_static(void *p_data);
@@ -110,11 +120,11 @@ private:
 
 	// TODO Optimize this with a less naive design? Maybe moodycamel
 	std::vector<TaskItem> _tasks;
-	Mutex *_tasks_mutex = nullptr;
-	Semaphore *_tasks_semaphore = nullptr;
+	Mutex _tasks_mutex;
+	Semaphore _tasks_semaphore;
 
 	std::vector<IVoxelTask *> _completed_tasks;
-	Mutex *_completed_tasks_mutex = nullptr;
+	Mutex _completed_tasks_mutex;
 
 	uint32_t _batch_count = 1;
 	uint32_t _priority_update_period = 32;

@@ -57,7 +57,7 @@ private:
 
 	String _connection_path;
 	std::vector<VoxelStreamSQLiteInternal *> _connection_pool;
-	Mutex *_connection_mutex = nullptr;
+	Mutex _connection_mutex;
 	VoxelStreamCache _cache;
 
 	// TODO I should consider specialized memory allocators

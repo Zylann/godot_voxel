@@ -111,7 +111,7 @@ private:
 		float iso_scale = 0.1;
 	};
 
-	RWLock *_parameters_lock;
+	RWLock _parameters_lock;
 	Parameters _parameters;
 };
 

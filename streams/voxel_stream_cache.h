@@ -55,14 +55,7 @@ public:
 private:
 	struct Lod {
 		std::unordered_map<Vector3i, Block> blocks;
-		RWLock *rw_lock;
-
-		Lod() {
-			rw_lock = RWLock::create();
-		}
-		~Lod() {
-			memdelete(rw_lock);
-		}
+		RWLock rw_lock;
 	};
 
 	FixedArray<Lod, VoxelConstants::MAX_LOD> _cache;

@@ -13,7 +13,6 @@
 class VoxelTool;
 class Image;
 class FuncRef;
-class RWLock;
 
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.
@@ -202,8 +201,8 @@ public:
 
 	// Internal synchronization.
 	// This lock is optional, and used internally at the moment, only in multithreaded areas.
-	inline const RWLock *get_lock() const { return _rw_lock; }
-	inline RWLock *get_lock() { return _rw_lock; }
+	inline const RWLock &get_lock() const { return _rw_lock; }
+	inline RWLock &get_lock() { return _rw_lock; }
 
 	// TODO Make this work, would be awesome for perf
 	//
@@ -283,7 +282,7 @@ private:
 	Variant _block_metadata;
 	Map<Vector3i, Variant> _voxel_metadata;
 
-	RWLock *_rw_lock;
+	RWLock _rw_lock;
 };
 
 VARIANT_ENUM_CAST(VoxelBuffer::ChannelId)

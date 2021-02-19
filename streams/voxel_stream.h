@@ -91,7 +91,7 @@ private:
 	};
 
 	Parameters _parameters;
-	RWLock *_parameters_lock = nullptr;
+	RWLock _parameters_lock;
 };
 
 VARIANT_ENUM_CAST(VoxelStream::Result);

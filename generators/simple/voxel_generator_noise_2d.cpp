@@ -2,7 +2,6 @@
 #include <core/engine.h>
 
 VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {
-	_parameters_lock = RWLock::create();
 #ifdef TOOLS_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		// Have one by default in editor
@@ -14,7 +13,6 @@ VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {
 }
 
 VoxelGeneratorNoise2D::~VoxelGeneratorNoise2D() {
-	memdelete(_parameters_lock);
 }
 
 void VoxelGeneratorNoise2D::set_noise(Ref<OpenSimplexNoise> noise) {

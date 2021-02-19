@@ -4,11 +4,9 @@
 VoxelGeneratorWaves::VoxelGeneratorWaves() {
 	_parameters.pattern_size = Vector2(30, 30);
 	set_height_range(30);
-	_parameters_lock = RWLock::create();
 }
 
 VoxelGeneratorWaves::~VoxelGeneratorWaves() {
-	memdelete(_parameters_lock);
 }
 
 void VoxelGeneratorWaves::generate_block(VoxelBlockRequest &input) {

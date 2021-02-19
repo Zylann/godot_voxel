@@ -10,12 +10,10 @@ const char *VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED = "node_name_changed";
 thread_local VoxelGeneratorGraph::Cache VoxelGeneratorGraph::_cache;
 
 VoxelGeneratorGraph::VoxelGeneratorGraph() {
-	_runtime_lock = RWLock::create();
 }
 
 VoxelGeneratorGraph::~VoxelGeneratorGraph() {
 	clear();
-	memdelete(_runtime_lock);
 }
 
 void VoxelGeneratorGraph::clear() {

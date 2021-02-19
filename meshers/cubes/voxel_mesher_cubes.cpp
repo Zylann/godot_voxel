@@ -387,11 +387,9 @@ thread_local VoxelMesherCubes::Cache VoxelMesherCubes::_cache;
 
 VoxelMesherCubes::VoxelMesherCubes() {
 	set_padding(PADDING, PADDING);
-	_parameters_lock = RWLock::create();
 }
 
 VoxelMesherCubes::~VoxelMesherCubes() {
-	memdelete(_parameters_lock);
 }
 
 void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {

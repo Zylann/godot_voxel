@@ -524,7 +524,6 @@ thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_block_data;
 thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_compressed_block_data;
 
 VoxelStreamSQLite::VoxelStreamSQLite() {
-	_connection_mutex = Mutex::create();
 }
 
 VoxelStreamSQLite::~VoxelStreamSQLite() {
@@ -538,7 +537,6 @@ VoxelStreamSQLite::~VoxelStreamSQLite() {
 		delete *it;
 	}
 	_connection_pool.clear();
-	memdelete(_connection_mutex);
 	PRINT_VERBOSE("~VoxelStreamSQLite done");
 }
 
@@ -827,19 +825,19 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 }
 
 VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
-	_connection_mutex->lock();
+	_connection_mutex.lock();
 	if (_connection_path.empty()) {
-		_connection_mutex->unlock();
+		_connection_mutex.unlock();
 		return nullptr;
 	}
 	if (_connection_pool.size() != 0) {
 		VoxelStreamSQLiteInternal *s = _connection_pool.back();
 		_connection_pool.pop_back();
-		_connection_mutex->unlock();
+		_connection_mutex.unlock();
 		return s;
 	}
 	String fpath = _connection_path;
-	_connection_mutex->unlock();
+	_connection_mutex.unlock();
 
 	if (fpath.empty()) {
 		return nullptr;
@@ -855,14 +853,14 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 
 void VoxelStreamSQLite::recycle_connection(VoxelStreamSQLiteInternal *con) {
 	String con_path = con->get_opened_file_path();
-	_connection_mutex->lock();
+	_connection_mutex.lock();
 	// If path differs, delete this connection
 	if (_connection_path != con_path) {
-		_connection_mutex->unlock();
+		_connection_mutex.unlock();
 		delete con;
 	} else {
 		_connection_pool.push_back(con);
-		_connection_mutex->unlock();
+		_connection_mutex.unlock();
 	}
 }
 

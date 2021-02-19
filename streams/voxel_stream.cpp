@@ -3,11 +3,9 @@
 #include <core/script_language.h>
 
 VoxelStream::VoxelStream() {
-	_parameters_lock = RWLock::create();
 }
 
 VoxelStream::~VoxelStream() {
-	memdelete(_parameters_lock);
 }
 
 VoxelStream::Result VoxelStream::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {

@@ -4,12 +4,12 @@ bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, Re
 	ERR_FAIL_COND_V(out_voxels.is_null(), false);
 
 	const Lod &lod = _cache[lod_index];
-	lod.rw_lock->read_lock();
+	lod.rw_lock.read_lock();
 	auto it = lod.blocks.find(position);
 
 	if (it == lod.blocks.end()) {
 		// Not in cache, will have to query
-		lod.rw_lock->read_unlock();
+		lod.rw_lock.read_unlock();
 		return false;
 
 	} else {
@@ -23,7 +23,7 @@ bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, Re
 		out_voxels->copy_from(**vb);
 		out_voxels->copy_voxel_metadata(**vb);
 
-		lod.rw_lock->read_unlock();
+		lod.rw_lock.read_unlock();
 		return true;
 	}
 }
@@ -54,12 +54,12 @@ bool VoxelStreamCache::load_instance_block(
 		Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> &out_instances) {
 
 	const Lod &lod = _cache[lod_index];
-	lod.rw_lock->read_lock();
+	lod.rw_lock.read_lock();
 	auto it = lod.blocks.find(position);
 
 	if (it == lod.blocks.end()) {
 		// Not in cache, will have to query
-		lod.rw_lock->read_unlock();
+		lod.rw_lock.read_unlock();
 		return false;
 
 	} else {
@@ -74,7 +74,7 @@ bool VoxelStreamCache::load_instance_block(
 			it->second.instances->copy_to(*out_instances);
 		}
 
-		lod.rw_lock->read_unlock();
+		lod.rw_lock.read_unlock();
 		return true;
 	}
 }

@@ -125,14 +125,10 @@ VoxelBuffer::VoxelBuffer() {
 	// 16-bit is better on average to handle large worlds
 	_channels[CHANNEL_SDF].depth = VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH;
 	_channels[CHANNEL_SDF].defval = 0xffff;
-
-	// TODO How many of these can be created? Make it optional?
-	_rw_lock = RWLock::create();
 }
 
 VoxelBuffer::~VoxelBuffer() {
 	clear();
-	memdelete(_rw_lock);
 }
 
 void VoxelBuffer::create(unsigned int sx, unsigned int sy, unsigned int sz) {

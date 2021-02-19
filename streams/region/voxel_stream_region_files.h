@@ -132,7 +132,7 @@ private:
 	// TODO Add memory caches to increase capacity.
 	unsigned int _max_open_regions = MIN(8, FOPEN_MAX);
 
-	Mutex *_mutex;
+	Mutex _mutex;
 };
 
 #endif // VOXEL_STREAM_REGION_H

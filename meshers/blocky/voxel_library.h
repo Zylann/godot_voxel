@@ -5,8 +5,6 @@
 #include "voxel.h"
 #include <core/resource.h>
 
-class RWLock;
-
 class VoxelLibrary : public Resource {
 	GDCLASS(VoxelLibrary, Resource)
 
@@ -69,7 +67,7 @@ public:
 	}
 
 	const BakedData &get_baked_data() const { return _baked_data; }
-	const RWLock *get_baked_data_rw_lock() const { return _baked_data_rw_lock; }
+	const RWLock &get_baked_data_rw_lock() const { return _baked_data_rw_lock; }
 
 private:
 	void set_voxel(unsigned int id, Ref<Voxel> voxel);
@@ -92,7 +90,7 @@ private:
 	bool _bake_tangents = true;
 
 	// Used in multithread context by the mesher. Don't modify that outside of bake().
-	RWLock *_baked_data_rw_lock = nullptr;
+	RWLock _baked_data_rw_lock;
 	BakedData _baked_data;
 };
 

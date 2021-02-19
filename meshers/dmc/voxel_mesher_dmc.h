@@ -128,7 +128,7 @@ private:
 
 	// Parameters
 	Parameters _parameters;
-	RWLock *_parameters_lock = nullptr;
+	RWLock _parameters_lock;
 
 	// Work cache
 	static thread_local Cache _cache;

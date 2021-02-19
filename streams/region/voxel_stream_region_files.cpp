@@ -27,12 +27,10 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
 	_meta.lod_count = 1;
 	_meta.channel_depths.fill(VoxelBuffer::DEFAULT_CHANNEL_DEPTH);
-	_mutex = Mutex::create();
 }
 
 VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
 	close_all_regions();
-	memdelete(_mutex);
 }
 
 VoxelStream::Result VoxelStreamRegionFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {

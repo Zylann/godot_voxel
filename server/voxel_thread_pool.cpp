@@ -16,9 +16,6 @@
 // }
 
 VoxelThreadPool::VoxelThreadPool() {
-	_tasks_mutex = Mutex::create();
-	_tasks_semaphore = Semaphore::create();
-	_completed_tasks_mutex = Mutex::create();
 }
 
 VoxelThreadPool::~VoxelThreadPool() {
@@ -28,10 +25,6 @@ VoxelThreadPool::~VoxelThreadPool() {
 		// We don't have ownership over tasks, so it's an error to destroy the pool without handling them
 		ERR_PRINT("There are unhandled completed tasks remaining!");
 	}
-
-	memdelete(_tasks_mutex);
-	memdelete(_tasks_semaphore);
-	memdelete(_completed_tasks_mutex);
 }
 
 void VoxelThreadPool::create_thread(ThreadData &d, uint32_t i) {
@@ -42,7 +35,7 @@ void VoxelThreadPool::create_thread(ThreadData &d, uint32_t i) {
 	if (!_name.empty()) {
 		d.name = String("{0} {1}").format(varray(_name, i));
 	}
-	d.thread = Thread::create(thread_func_static, &d);
+	d.thread.start(thread_func_static, &d);
 }
 
 void VoxelThreadPool::destroy_all_threads() {
@@ -56,13 +49,11 @@ void VoxelThreadPool::destroy_all_threads() {
 		d.stop = true;
 	}
 	for (size_t i = 0; i < _thread_count; ++i) {
-		_tasks_semaphore->post();
+		_tasks_semaphore.post();
 	}
 	for (size_t i = 0; i < _thread_count; ++i) {
 		ThreadData &d = _threads[i];
-		Thread::wait_to_finish(d.thread);
-		memdelete(d.thread);
-		d = ThreadData();
+		d.wait_to_finish_and_reset();
 	}
 }
 
@@ -100,7 +91,7 @@ void VoxelThreadPool::enqueue(IVoxelTask *task) {
 		++_debug_received_tasks;
 	}
 	// TODO Do I need to post a certain amount of times?
-	_tasks_semaphore->post();
+	_tasks_semaphore.post();
 }
 
 void VoxelThreadPool::enqueue(ArraySlice<IVoxelTask *> tasks) {
@@ -116,7 +107,7 @@ void VoxelThreadPool::enqueue(ArraySlice<IVoxelTask *> tasks) {
 	}
 	// TODO Do I need to post a certain amount of times?
 	for (size_t i = 0; i < tasks.size(); ++i) {
-		_tasks_semaphore->post();
+		_tasks_semaphore.post();
 	}
 }
 
@@ -209,7 +200,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 
 			// Wait for more tasks
 			data.waiting = true;
-			_tasks_semaphore->wait();
+			_tasks_semaphore.wait();
 			data.waiting = false;
 
 		} else {

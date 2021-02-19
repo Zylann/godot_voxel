@@ -350,8 +350,6 @@ thread_local VoxelMesherBlocky::Cache VoxelMesherBlocky::_cache;
 VoxelMesherBlocky::VoxelMesherBlocky() {
 	set_padding(PADDING, PADDING);
 
-	_parameters_lock = RWLock::create();
-
 	// Default library, less steps to setup in editor
 	Ref<VoxelLibrary> library;
 	library.instance();
@@ -360,7 +358,6 @@ VoxelMesherBlocky::VoxelMesherBlocky() {
 }
 
 VoxelMesherBlocky::~VoxelMesherBlocky() {
-	memdelete(_parameters_lock);
 }
 
 void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {

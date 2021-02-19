@@ -3,11 +3,9 @@
 #include "../../util/fixed_array.h"
 
 VoxelGeneratorHeightmap::VoxelGeneratorHeightmap() {
-	_parameters_lock = RWLock::create();
 }
 
 VoxelGeneratorHeightmap::~VoxelGeneratorHeightmap() {
-	memdelete(_parameters_lock);
 }
 
 void VoxelGeneratorHeightmap::set_channel(VoxelBuffer::ChannelId channel) {

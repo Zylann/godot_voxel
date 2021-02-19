@@ -37,7 +37,7 @@ private:
 	};
 
 	Parameters _parameters;
-	RWLock *_parameters_lock;
+	RWLock _parameters_lock;
 };
 
 #endif // HEADER_VOXEL_GENERATOR_IMAGE

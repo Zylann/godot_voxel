@@ -3,11 +3,9 @@
 #include <bitset>
 
 VoxelLibrary::VoxelLibrary() {
-	_baked_data_rw_lock = RWLock::create();
 }
 
 VoxelLibrary::~VoxelLibrary() {
-	memdelete(_baked_data_rw_lock);
 }
 
 unsigned int VoxelLibrary::get_voxel_count() const {

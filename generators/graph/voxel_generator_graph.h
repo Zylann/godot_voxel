@@ -154,7 +154,7 @@ private:
 	// Only compiling and generation methods are thread-safe.
 
 	std::shared_ptr<VoxelGraphRuntime> _runtime = nullptr;
-	RWLock *_runtime_lock = nullptr;
+	RWLock _runtime_lock;
 
 	struct Cache {
 		std::vector<float> x_cache;
