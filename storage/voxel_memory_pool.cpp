@@ -1,5 +1,6 @@
 #include "voxel_memory_pool.h"
 #include "../util/profiling.h"
+#include <core/os/os.h>
 #include <core/print_string.h>
 #include <core/variant.h>
 
@@ -29,7 +30,9 @@ VoxelMemoryPool::VoxelMemoryPool() {
 
 VoxelMemoryPool::~VoxelMemoryPool() {
 #ifdef TOOLS_ENABLED
-	debug_print();
+	if (OS::get_singleton()->is_stdout_verbose()) {
+		debug_print();
+	}
 #endif
 	clear();
 }
