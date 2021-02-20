@@ -32,6 +32,7 @@ Ongoing development - `master`
     - The SDF channel is now 16-bit by default instead of 8-bit, which reduces terracing in big terrains
     - Optimized `VoxelGeneratorGraph` by making it detect empty blocks more accurately and process by buffers
     - Added `SdfSphereHeightmap` and `Normalize` nodes to voxel graph, which can help making planets
+    - Added `SdfSmoothUnion` and `SdfSmoothSubtract` nodes to voxel graph
     - Added `VoxelInstancer` to instantiate items on top of `VoxelLodTerrain`, aimed at spawning natural elements such as rocks and foliage
 
 - Blocky voxels
