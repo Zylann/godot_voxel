@@ -1,5 +1,6 @@
 #include "voxel_graph_node_db.h"
 #include "../../util/noise/fast_noise_lite.h"
+#include "../../util/profiling.h"
 #include "image_range_grid.h"
 #include "range_utility.h"
 
@@ -794,6 +795,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ctx.set_params(p);
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_CURVE");
 			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const Params p = ctx.get_params<Params>();
@@ -841,6 +843,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_NOISE_2D");
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
@@ -884,6 +887,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_NOISE_3D");
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
 			const VoxelGraphRuntime::Buffer &z = ctx.get_input(2);
@@ -929,6 +933,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ctx.add_memdelete_cleanup(im_range);
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_IMAGE_2D");
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
@@ -1071,6 +1076,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ctx.set_params(p);
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_SDF_SMOOTH_UNION");
 			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
@@ -1103,6 +1109,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ctx.set_params(p);
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_SDF_SMOOTH_SUBTRACT");
 			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
@@ -1213,6 +1220,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_SDF_SPHERE_HEIGHTMAP");
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
 			const VoxelGraphRuntime::Buffer &z = ctx.get_input(2);
@@ -1248,6 +1256,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.outputs.push_back(Port("len"));
 
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_NORMALIZE_3D");
 			const VoxelGraphRuntime::Buffer &xb = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &yb = ctx.get_input(1);
 			const VoxelGraphRuntime::Buffer &zb = ctx.get_input(2);
@@ -1307,6 +1316,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_FAST_NOISE_2D");
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
@@ -1349,6 +1359,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_FAST_NOISE_3D");
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
 			const VoxelGraphRuntime::Buffer &z = ctx.get_input(2);
@@ -1393,6 +1404,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_FAST_NOISE_GRADIENT_2D");
 			const VoxelGraphRuntime::Buffer &xb = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &yb = ctx.get_input(1);
 			VoxelGraphRuntime::Buffer &out_x = ctx.get_output(0);
@@ -1444,6 +1456,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_FAST_NOISE_GRADIENT_3D");
 			const VoxelGraphRuntime::Buffer &xb = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &yb = ctx.get_input(1);
 			const VoxelGraphRuntime::Buffer &zb = ctx.get_input(2);
