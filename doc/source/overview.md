@@ -25,7 +25,7 @@ Voxels can be obtained by either deciding their values manually on a grid, or by
 Generating voxels
 ------------------
 
-Voxels span 3 dimensions, so contrary to images, storing them can take up way more memory as volumes get bigger. This is why it important to think about procedural sources of voxels, because they don't cost any memory and can be access at any resolution.
+Voxels span 3 dimensions, so contrary to images, storing them can take up way more memory as volumes get bigger. This is why it important to think about procedural sources of voxels, because they don't cost any memory and can be accessed at any resolution.
 
 This task is implemented by resources deriving [VoxelGenerator](api/VoxelGenerator.md). Their goal is to generate voxel data, either at a specific point in space, or in a whole defined volume. There are endless possible recipes to generate models, terrains or planets, which we won't detail in this section. 
 
