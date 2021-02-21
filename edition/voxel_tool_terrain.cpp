@@ -83,6 +83,26 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 	return res;
 }
 
+void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) {
+	ERR_FAIL_COND(_terrain == nullptr);
+	ERR_FAIL_COND(dst.is_null());
+	if (channels_mask == 0) {
+		channels_mask = (1 << _channel);
+	}
+	_terrain->get_storage().get_buffer_copy(pos, **dst, channels_mask);
+}
+
+void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value) {
+	ERR_FAIL_COND(_terrain == nullptr);
+	ERR_FAIL_COND(p_voxels.is_null());
+	ERR_PRINT("Not implemented");
+	if (channels_mask == 0) {
+		channels_mask = (1 << _channel);
+	}
+	_terrain->get_storage().paste(pos, **p_voxels, channels_mask, mask_value, false);
+	_post_edit(Rect3i(pos, p_voxels->get_size()));
+}
+
 uint64_t VoxelToolTerrain::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _terrain->get_storage().get_voxel(pos, _channel);

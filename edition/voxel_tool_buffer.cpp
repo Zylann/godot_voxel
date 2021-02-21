@@ -46,7 +46,7 @@ Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) {
 	return _buffer->get_voxel_metadata(pos);
 }
 
-void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint64_t mask_value) {
+void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value) {
 	ERR_FAIL_COND(_buffer.is_null());
 	ERR_FAIL_COND(p_voxels.is_null());
 
@@ -57,25 +57,35 @@ void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint64_t 
 	const Vector3i min_noclamp = box.pos;
 	box.clip(Rect3i(Vector3i(), _buffer->get_size()));
 
-	const int channel = get_channel();
+	if (channels_mask == 0) {
+		channels_mask = (1 << get_channel());
+	}
+
+	unsigned int channel_count;
+	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
+			VoxelBuffer::mask_to_channels_list(channels_mask, channel_count);
 
 	const Vector3i box_max = box.pos + box.size;
 
-	for (int z = box.pos.z; z < box_max.z; ++z) {
-		const int bz = z - min_noclamp.z;
+	for (unsigned int ci = 0; ci < channel_count; ++ci) {
+		const unsigned int channel_index = channels[ci];
 
-		for (int x = box.pos.x; x < box_max.x; ++x) {
-			const int bx = x - min_noclamp.x;
+		for (int z = box.pos.z; z < box_max.z; ++z) {
+			const int bz = z - min_noclamp.z;
 
-			for (int y = box.pos.y; y < box_max.y; ++y) {
-				const int by = y - min_noclamp.y;
+			for (int x = box.pos.x; x < box_max.x; ++x) {
+				const int bx = x - min_noclamp.x;
 
-				const uint64_t v = src->get_voxel(bx, by, bz, channel);
-				if (v != mask_value) {
-					dst->set_voxel(v, x, y, z, channel);
+				for (int y = box.pos.y; y < box_max.y; ++y) {
+					const int by = y - min_noclamp.y;
 
-					// Overwrite previous metadata
-					dst->set_voxel_metadata(Vector3i(x, y, z), Variant());
+					const uint64_t v = src->get_voxel(bx, by, bz, channel_index);
+					if (v != mask_value) {
+						dst->set_voxel(v, x, y, z, channel_index);
+
+						// Overwrite previous metadata
+						dst->set_voxel_metadata(Vector3i(x, y, z), Variant());
+					}
 				}
 			}
 		}

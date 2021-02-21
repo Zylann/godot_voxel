@@ -2,6 +2,7 @@
 #include "../cube_tables.h"
 #include "../util/macros.h"
 #include "voxel_block.h"
+#include <limits>
 
 VoxelMap::VoxelMap() :
 		_last_accessed_block(nullptr) {
@@ -54,20 +55,21 @@ int VoxelMap::get_voxel(Vector3i pos, unsigned int c) const {
 	return block->voxels->get_voxel(to_local(pos), c);
 }
 
+VoxelBlock *VoxelMap::create_default_block(Vector3i bpos) {
+	Ref<VoxelBuffer> buffer(memnew(VoxelBuffer));
+	buffer->create(_block_size, _block_size, _block_size);
+	buffer->set_default_values(_default_voxel);
+	VoxelBlock *block = VoxelBlock::create(bpos, buffer, _block_size, _lod_index);
+	set_block(bpos, block);
+	return block;
+}
+
 VoxelBlock *VoxelMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
 	Vector3i bpos = voxel_to_block(pos);
 	VoxelBlock *block = get_block(bpos);
-
 	if (block == nullptr) {
-		Ref<VoxelBuffer> buffer(memnew(VoxelBuffer));
-		buffer->create(_block_size, _block_size, _block_size);
-		buffer->set_default_values(_default_voxel);
-
-		block = VoxelBlock::create(bpos, buffer, _block_size, _lod_index);
-
-		set_block(bpos, block);
+		block = create_default_block(bpos);
 	}
-
 	return block;
 }
 
@@ -206,25 +208,20 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 
 	const Vector3i min_block_pos = voxel_to_block(min_pos);
 	const Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1, 1, 1)) + Vector3i(1, 1, 1);
-	// TODO Why is this function limited by this check?
-	// Probably to make sure we are getting neighbors, however that's a worry for the caller, not this function...
-	ERR_FAIL_COND((max_block_pos - min_block_pos) != Vector3i(3, 3, 3));
 
 	const Vector3i block_size_v(_block_size, _block_size, _block_size);
 
-	// TODO May be inside the XYZ loop, would do less block lookups
-	for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
-		if (((1 << channel) & channels_mask) == 0) {
-			continue;
-		}
-
-		Vector3i bpos;
-		for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
-			for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
-				for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
+	Vector3i bpos;
+	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
+		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
+			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
+				for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
+					if (((1 << channel) & channels_mask) == 0) {
+						continue;
+					}
 					const VoxelBlock *block = get_block(bpos);
 
-					if (block) {
+					if (block != nullptr) {
 						const VoxelBuffer &src_buffer = **block->voxels;
 
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
@@ -248,6 +245,59 @@ void VoxelMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsign
 								_default_voxel[channel],
 								offset - min_pos,
 								offset - min_pos + block_size_v,
+								channel);
+					}
+				}
+			}
+		}
+	}
+}
+
+void VoxelMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int channels_mask, uint64_t mask_value,
+		bool create_new_blocks) {
+
+	const Vector3i max_pos = min_pos + src_buffer.get_size();
+
+	const Vector3i min_block_pos = voxel_to_block(min_pos);
+	const Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1, 1, 1)) + Vector3i(1, 1, 1);
+
+	Vector3i bpos;
+	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
+		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
+			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
+				for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
+					if (((1 << channel) & channels_mask) == 0) {
+						continue;
+					}
+					VoxelBlock *block = get_block(bpos);
+
+					if (block == nullptr) {
+						if (create_new_blocks) {
+							block = create_default_block(bpos);
+						} else {
+							continue;
+						}
+					}
+
+					const Vector3i offset = block_to_voxel(bpos);
+
+					VoxelBuffer &dst_buffer = **block->voxels;
+					RWLockWrite lock(dst_buffer.get_lock());
+
+					if (mask_value != std::numeric_limits<uint64_t>::max()) {
+						dst_buffer.read_write_action(Rect3i(offset - min_pos, src_buffer.get_size()), channel,
+								[&src_buffer, mask_value, offset, channel](const Vector3i pos, uint64_t dst_v) {
+									const uint64_t src_v = src_buffer.get_voxel(pos + offset, channel);
+									if (src_v == mask_value) {
+										return dst_v;
+									}
+									return src_v;
+								});
+					} else {
+						dst_buffer.copy_from(src_buffer,
+								offset - min_pos,
+								offset - max_pos,
+								min_pos - offset,
 								channel);
 					}
 				}

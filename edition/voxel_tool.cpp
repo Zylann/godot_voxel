@@ -232,12 +232,12 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	_post_edit(box);
 }
 
-void VoxelTool::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint64_t mask_value) {
+void VoxelTool::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channel_mask) {
 	ERR_FAIL_COND(dst.is_null());
 	ERR_PRINT("Not implemented");
 }
 
-void VoxelTool::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint64_t mask_value) {
+void VoxelTool::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	ERR_PRINT("Not implemented");
 }
@@ -287,7 +287,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_metadata", "pos", "meta"), &VoxelTool::_b_set_voxel_metadata);
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);
 
-	ClassDB::bind_method(D_METHOD("paste", "dst_pos", "src_buffer", "src_mask_value"), &VoxelTool::_b_paste);
+	ClassDB::bind_method(D_METHOD("copy", "src_pos", "dst_buffer", "channels_mask"), &VoxelTool::_b_copy);
+	ClassDB::bind_method(D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask", "src_mask_value"),
+			&VoxelTool::_b_paste);
 
 	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance", "collision_mask"),
 			&VoxelTool::_b_raycast, DEFVAL(10.0), DEFVAL(0xffffffff));

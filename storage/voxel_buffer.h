@@ -99,11 +99,56 @@ public:
 
 	void copy_format(const VoxelBuffer &other);
 
+	// Specialized copy functions.
 	// Note: these functions don't include metadata on purpose.
 	// If you also want to copy metadata, use the specialized functions.
 	void copy_from(const VoxelBuffer &other);
 	void copy_from(const VoxelBuffer &other, unsigned int channel_index);
-	void copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index);
+	void copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
+			unsigned int channel_index);
+
+	// Executes a read-write action on all cells of the provided box that intersect with this buffer.
+	// `action_func` receives a voxel value from the channel, and returns a modified value.
+	// if the returned value is different, it will be applied to the buffer.
+	// Can be used to blend voxels together.
+	template <typename F>
+	inline void read_write_action(Rect3i box, unsigned int channel_index, F action_func) {
+		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
+
+		box.clip(Rect3i(Vector3i(), _size));
+		Vector3i min_pos = box.pos;
+		Vector3i max_pos = box.pos + box.size;
+		Vector3i pos;
+		for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
+			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
+				for (pos.y = min_pos.y; pos.y < max_pos.y; ++pos.y) {
+					// TODO Optimization: a bunch of checks and branching could be skipped
+					const uint64_t v0 = get_voxel(pos, channel_index);
+					const uint64_t v1 = action_func(pos, v0);
+					if (v0 != v1) {
+						set_voxel(v1, pos, channel_index);
+					}
+				}
+			}
+		}
+	}
+
+	static inline FixedArray<uint8_t, MAX_CHANNELS> mask_to_channels_list(
+			uint8_t channels_mask, unsigned int &out_count) {
+
+		FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels;
+		unsigned int channel_count = 0;
+
+		for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
+			if (((1 << channel_index) & channels_mask) != 0) {
+				channels[channel_count] = channel_index;
+				++channel_count;
+			}
+		}
+
+		out_count = channel_count;
+		return channels;
+	}
 
 	Ref<VoxelBuffer> duplicate(bool include_metadata) const;
 
@@ -203,28 +248,6 @@ public:
 	// This lock is optional, and used internally at the moment, only in multithreaded areas.
 	inline const RWLock &get_lock() const { return _rw_lock; }
 	inline RWLock &get_lock() { return _rw_lock; }
-
-	// TODO Make this work, would be awesome for perf
-	//
-	//	template <typename F>
-	//	void read_write_action(Rect3i box, Vector3i offset, unsigned int channel_index, F f) {
-	//		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
-	//		box.clip(Rect3i(Vector3i(), _size));
-	//		Vector3i min_pos = box.pos;
-	//		Vector3i max_pos = box.pos + box.size;
-	//		Vector3i pos;
-	//		for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
-	//			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
-	//				for (pos.y = min_pos.y; pos.y < max_pos.y; ++pos.y) {
-	//					int v0 = get_voxel(pos, channel_index);
-	//					int v1 = f(pos + offset, v0);
-	//					if (v0 != v1) {
-	//						set_voxel(v1, pos, channel_index);
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
 
 	// Debugging
 

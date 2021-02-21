@@ -19,6 +19,9 @@ public:
 	void set_voxel_metadata(Vector3i pos, Variant meta) override;
 	Variant get_voxel_metadata(Vector3i pos) override;
 
+	void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) override;
+	void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value) override;
+
 	// Specialized API
 
 	void run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<FuncRef> callback, int block_batch_count) const;

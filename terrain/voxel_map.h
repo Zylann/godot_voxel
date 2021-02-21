@@ -56,7 +56,10 @@ public:
 	int get_default_voxel(unsigned int channel = 0);
 
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
-	void get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask = 1);
+	void get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask);
+
+	void paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int channels_mask, uint64_t mask_value,
+			bool create_new_blocks);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
 	VoxelBlock *set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer);
@@ -115,6 +118,7 @@ public:
 private:
 	void set_block(Vector3i bpos, VoxelBlock *block);
 	VoxelBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
+	VoxelBlock *create_default_block(Vector3i bpos);
 	void remove_block_internal(Vector3i bpos, unsigned int index);
 
 	void set_block_size_pow2(unsigned int p);

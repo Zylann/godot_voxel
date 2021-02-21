@@ -20,6 +20,7 @@ Ongoing development - `master`
     - Added [FastNoiseLite](https://github.com/Auburn/FastNoise) for a wider variety of noises
     - Generators are no longer limited to a single background thread
     - Added `VoxelStreamSQLite`, allowing to save volumes as a single SQLite database
+    - Implemented `copy` and `paste` for `VoxelToolTerrain`
 
 - Editor
     - Streaming/LOD can be set to follow the editor camera instead of being centered on world origin. Use with caution, fast big movements and zooms can cause lag

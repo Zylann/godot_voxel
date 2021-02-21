@@ -40,6 +40,7 @@ struct Vector3i {
 		*this = other;
 	}
 
+	// TODO Deprecate this constructor, it is ambiguous because there are multiple ways to convert a float to an int
 	_FORCE_INLINE_ Vector3i(const Vector3 &f) {
 		x = Math::floor(f.x);
 		y = Math::floor(f.y);
