@@ -1,6 +1,6 @@
 #include "voxel_mesher_dmc.h"
-#include "../../cube_tables.h"
-#include "../../octree_tables.h"
+#include "../../constants/cube_tables.h"
+#include "../../constants/octree_tables.h"
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
 #include <core/os/os.h>

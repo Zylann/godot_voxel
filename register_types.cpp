@@ -39,9 +39,9 @@
 #ifdef VOXEL_FAST_NOISE_2_SUPPORT
 #include "util/noise/fast_noise_2.h"
 #endif
+#include "constants/voxel_string_names.h"
 #include "util/noise/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite_gradient.h"
-#include "voxel_string_names.h"
 
 #include <core/engine.h>
 

@@ -1,7 +1,7 @@
 #ifndef VOXEL_MESHER_H
 #define VOXEL_MESHER_H
 
-#include "../cube_tables.h"
+#include "../constants/cube_tables.h"
 #include "../util/fixed_array.h"
 #include <scene/resources/mesh.h>
 

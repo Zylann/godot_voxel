@@ -1,8 +1,8 @@
 #include "instance_data.h"
+#include "../constants/voxel_constants.h"
 #include "../util/array_slice.h"
 #include "../util/math/funcs.h"
 #include "../util/serialization.h"
-#include "../voxel_constants.h"
 #include <core/variant.h>
 
 namespace {

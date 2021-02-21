@@ -1,6 +1,6 @@
 #include "voxel_stream_script.h"
+#include "../constants/voxel_string_names.h"
 #include "../util/godot/funcs.h"
-#include "../voxel_string_names.h"
 
 VoxelStream::Result VoxelStreamScript::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);

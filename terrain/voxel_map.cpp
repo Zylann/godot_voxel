@@ -1,5 +1,5 @@
 #include "voxel_map.h"
-#include "../cube_tables.h"
+#include "../constants/cube_tables.h"
 #include "../util/macros.h"
 #include "voxel_block.h"
 #include <limits>

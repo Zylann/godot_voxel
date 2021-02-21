@@ -12,6 +12,8 @@ env_voxel = env_modules.Clone()
 voxel_files = [
 	"*.cpp",
 	
+	"constants/*.cpp",
+
 	"meshers/blocky/*.cpp",
 	"meshers/transvoxel/*.cpp",
 	"meshers/dmc/*.cpp",

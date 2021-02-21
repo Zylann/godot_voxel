@@ -1,5 +1,5 @@
 #include "voxel_generator.h"
-#include "../voxel_string_names.h"
+#include "../constants/voxel_string_names.h"
 
 VoxelGenerator::VoxelGenerator() {
 }

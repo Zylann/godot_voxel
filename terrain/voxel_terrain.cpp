@@ -1,4 +1,6 @@
 #include "voxel_terrain.h"
+#include "../constants/voxel_constants.h"
+#include "../constants/voxel_string_names.h"
 #include "../edition/voxel_tool_terrain.h"
 #include "../server/voxel_server.h"
 #include "../util/funcs.h"
@@ -6,8 +8,6 @@
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/profiling_clock.h"
-#include "../voxel_constants.h"
-#include "../voxel_string_names.h"
 #include "voxel_block.h"
 #include "voxel_map.h"
 

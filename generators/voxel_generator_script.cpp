@@ -1,6 +1,6 @@
 #include "voxel_generator_script.h"
+#include "../constants/voxel_string_names.h"
 #include "../util/godot/funcs.h"
-#include "../voxel_string_names.h"
 
 VoxelGeneratorScript::VoxelGeneratorScript() {
 }
