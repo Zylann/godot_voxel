@@ -333,4 +333,12 @@ inline Interval smoothstep(float p_from, float p_to, Interval p_weight) {
 	}
 }
 
+inline Interval get_length(const Interval &x, const Interval &y) {
+	return sqrt(x * x + y * y);
+}
+
+inline Interval get_length(const Interval &x, const Interval &y, const Interval &z) {
+	return sqrt(x * x + y * y + z * z);
+}
+
 #endif // INTERVAL_H

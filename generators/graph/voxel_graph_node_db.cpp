@@ -1,4 +1,5 @@
 #include "voxel_graph_node_db.h"
+#include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite.h"
 #include "../../util/profiling.h"
 #include "image_range_grid.h"
@@ -121,14 +122,6 @@ inline float get_pixel_repeat_linear(const Image &im, float x, float y) {
 	return h;
 }
 
-inline Interval get_length(const Interval &x, const Interval &y) {
-	return sqrt(x * x + y * y);
-}
-
-inline Interval get_length(const Interval &x, const Interval &y, const Interval &z) {
-	return sqrt(x * x + y * y + z * z);
-}
-
 inline float select(float a, float b, float threshold, float t) {
 	return t < threshold ? a : b;
 }
@@ -206,58 +199,6 @@ inline Interval sdf_sphere_heightmap(Interval x, Interval y, Interval z, float r
 	}
 
 	return sd - m * h;
-}
-
-// For more, see https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
-// TODO Move these to VoxelMath once we have a proper namespace, so they can be used in VoxelTool too
-
-inline float sdf_box(const Vector3 pos, const Vector3 extents) {
-	Vector3 d = pos.abs() - extents;
-	return min(max(d.x, max(d.y, d.z)), 0.f) +
-		   Vector3(max(d.x, 0.f), max(d.y, 0.f), max(d.z, 0.f)).length();
-}
-
-inline Interval sdf_box(
-		const Interval &x, const Interval &y, const Interval &z,
-		const Interval &sx, const Interval &sy, const Interval &sz) {
-	Interval dx = abs(x) - sx;
-	Interval dy = abs(y) - sy;
-	Interval dz = abs(z) - sz;
-	return min_interval(max_interval(dx, max_interval(dy, dz)), 0.f) +
-		   get_length(max_interval(dx, 0.f), max_interval(dy, 0.f), max_interval(dz, 0.f));
-}
-
-inline float sdf_torus(float x, float y, float z, float r0, float r1) {
-	Vector2 q = Vector2(Vector2(x, z).length() - r0, y);
-	return q.length() - r1;
-}
-
-inline Interval sdf_torus(const Interval &x, const Interval &y, const Interval &z, const Interval r0, const Interval r1) {
-	Interval qx = get_length(x, z) - r0;
-	return get_length(qx, y) - r1;
-}
-
-inline float sdf_smooth_union(float a, float b, float s) {
-	float h = clamp(0.5f + 0.5f * (b - a) / s, 0.0f, 1.0f);
-	return Math::lerp(b, a, h) - s * h * (1.0f - h);
-}
-
-inline Interval sdf_smooth_union(Interval a, Interval b, Interval s) {
-	Interval h = clamp(Interval::from_single_value(0.5f) + Interval::from_single_value(0.5f) * (b - a) / s,
-			Interval::from_single_value(0.0f), Interval::from_single_value(1.0f));
-	return lerp(b, a, h) - s * h * (Interval::from_single_value(1.0f) - h);
-}
-
-// Inverted a and b because it does b - a
-inline float sdf_smooth_subtract(float b, float a, float s) {
-	float h = clamp(0.5f - 0.5f * (b + a) / s, 0.0f, 1.0f);
-	return Math::lerp(b, -a, h) + s * h * (1.0f - h);
-}
-
-inline Interval sdf_smooth_subtract(Interval b, Interval a, Interval s) {
-	Interval h = clamp(Interval::from_single_value(0.5f) - Interval::from_single_value(0.5f) * (b + a) / s,
-			Interval::from_single_value(0.0f), Interval::from_single_value(1.0f));
-	return lerp(b, -a, h) + s * h * (Interval::from_single_value(1.0f) - h);
 }
 
 VoxelGraphNodeDB *VoxelGraphNodeDB::get_singleton() {
@@ -1562,7 +1503,8 @@ Dictionary VoxelGraphNodeDB::get_type_info_dict(uint32_t id) const {
 	return type_dict;
 }
 
-bool VoxelGraphNodeDB::try_get_type_id_from_name(const String &name, VoxelGeneratorGraph::NodeTypeID &out_type_id) const {
+bool VoxelGraphNodeDB::try_get_type_id_from_name(
+		const String &name, VoxelGeneratorGraph::NodeTypeID &out_type_id) const {
 	const VoxelGeneratorGraph::NodeTypeID *p = _type_name_to_id.getptr(name);
 	if (p == nullptr) {
 		return false;
@@ -1571,7 +1513,8 @@ bool VoxelGraphNodeDB::try_get_type_id_from_name(const String &name, VoxelGenera
 	return true;
 }
 
-bool VoxelGraphNodeDB::try_get_param_index_from_name(uint32_t type_id, const String &name, uint32_t &out_param_index) const {
+bool VoxelGraphNodeDB::try_get_param_index_from_name(
+		uint32_t type_id, const String &name, uint32_t &out_param_index) const {
 	ERR_FAIL_INDEX_V(type_id, _types.size(), false);
 	const NodeType &t = _types[type_id];
 	const uint32_t *p = t.param_name_to_index.getptr(name);
@@ -1582,7 +1525,8 @@ bool VoxelGraphNodeDB::try_get_param_index_from_name(uint32_t type_id, const Str
 	return true;
 }
 
-bool VoxelGraphNodeDB::try_get_input_index_from_name(uint32_t type_id, const String &name, uint32_t &out_input_index) const {
+bool VoxelGraphNodeDB::try_get_input_index_from_name(
+		uint32_t type_id, const String &name, uint32_t &out_input_index) const {
 	ERR_FAIL_INDEX_V(type_id, _types.size(), false);
 	const NodeType &t = _types[type_id];
 	const uint32_t *p = t.input_name_to_index.getptr(name);
