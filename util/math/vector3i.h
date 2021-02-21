@@ -46,6 +46,13 @@ struct Vector3i {
 		z = Math::floor(f.z);
 	}
 
+	static inline Vector3i from_floored(const Vector3 &f) {
+		return Vector3i(
+				Math::floor(f.x),
+				Math::floor(f.y),
+				Math::floor(f.z));
+	}
+
 	_FORCE_INLINE_ Vector3 to_vec3() const {
 		return Vector3(x, y, z);
 	}

@@ -9,7 +9,9 @@ bool voxel_raycast(
 		Predicate_F predicate,
 		real_t max_distance,
 		Vector3i &out_hit_pos,
-		Vector3i &out_prev_pos) {
+		Vector3i &out_prev_pos,
+		float &out_distance_along_ray,
+		float &out_distance_along_ray_prev) {
 
 	VOXEL_PROFILE_SCOPE();
 
@@ -112,8 +114,12 @@ bool voxel_raycast(
 
 	/* Iteration */
 
+	float t = 0.f;
+	float t_prev = 0.f;
+
 	do {
 		hit_prev_pos = hit_pos;
+		t_prev = t;
 		if (tcross_x < tcross_y) {
 			if (tcross_x < tcross_z) {
 				// X collision
@@ -122,6 +128,7 @@ bool voxel_raycast(
 				if (tcross_x > max_distance) {
 					return false;
 				}
+				t = tcross_x;
 				tcross_x += tdelta_x;
 			} else {
 				// Z collision (duplicate code)
@@ -130,6 +137,7 @@ bool voxel_raycast(
 				if (tcross_z > max_distance) {
 					return false;
 				}
+				t = tcross_z;
 				tcross_z += tdelta_z;
 			}
 		} else {
@@ -140,6 +148,7 @@ bool voxel_raycast(
 				if (tcross_y > max_distance) {
 					return false;
 				}
+				t = tcross_y;
 				tcross_y += tdelta_y;
 			} else {
 				// Z collision (duplicate code)
@@ -148,6 +157,7 @@ bool voxel_raycast(
 				if (tcross_z > max_distance) {
 					return false;
 				}
+				t = tcross_z;
 				tcross_z += tdelta_z;
 			}
 		}
@@ -156,6 +166,8 @@ bool voxel_raycast(
 
 	out_hit_pos = hit_pos;
 	out_prev_pos = hit_prev_pos;
+	out_distance_along_ray = t;
+	out_distance_along_ray_prev = t_prev;
 
 	return true;
 }

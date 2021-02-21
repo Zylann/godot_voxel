@@ -34,12 +34,14 @@ Ongoing development - `master`
     - Added `SdfSphereHeightmap` and `Normalize` nodes to voxel graph, which can help making planets
     - Added `SdfSmoothUnion` and `SdfSmoothSubtract` nodes to voxel graph
     - Added `VoxelInstancer` to instantiate items on top of `VoxelLodTerrain`, aimed at spawning natural elements such as rocks and foliage
+    - Implemented `VoxelToolLodterrain.raycast()`
 
 - Blocky voxels
     - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support
     - Replaced `transparent` property with `transparency_index` for more control on the culling of transparent faces
     - The TYPE channel is now 16-bit by default instead of 8-bit, allowing to store up to 65,536 types (part of this channel might actually be used to store rotation in the future)
     - Added normalmaps support
+    - `VoxelRaycastResult` now also contains hit distance
 
 - Breaking changes
     - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points

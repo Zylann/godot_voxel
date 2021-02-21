@@ -4,7 +4,19 @@
 #include <core/math/vector3.h>
 
 // Trilinear interpolation between corner values of a cube.
-// Cube points respect the same position as in octree_tables.h
+//
+//      6---------------7
+//     /|              /|
+//    / |             / |
+//   5---------------4  |
+//   |  |            |  |
+//   |  |            |  |
+//   |  |            |  |
+//   |  2------------|--3        Y
+//   | /             | /         | Z
+//   |/              |/          |/
+//   1---------------0      X----o
+//
 template <typename T>
 inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4, const T v5, const T v6, const T v7,
 		Vector3 position) {
@@ -117,6 +129,14 @@ inline float smoothstep(float p_from, float p_to, float p_weight) {
 	}
 	float x = clamp((p_weight - p_from) / (p_to - p_from), 0.0f, 1.0f);
 	return x * x * (3.0f - 2.0f * x);
+}
+
+inline float fract(float x) {
+	return x - Math::floor(x);
+}
+
+inline Vector3 fract(const Vector3 &p) {
+	return Vector3(fract(p.x), fract(p.y), fract(p.z));
 }
 
 #endif // VOXEL_MATH_FUNCS_H

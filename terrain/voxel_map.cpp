@@ -125,7 +125,7 @@ VoxelBlock *VoxelMap::get_block(Vector3i bpos) {
 }
 
 const VoxelBlock *VoxelMap::get_block(Vector3i bpos) const {
-	if (_last_accessed_block && _last_accessed_block->position == bpos) {
+	if (_last_accessed_block != nullptr && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
 	const unsigned int *iptr = _blocks_map.getptr(bpos);

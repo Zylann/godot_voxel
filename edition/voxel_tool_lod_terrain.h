@@ -9,9 +9,14 @@ class VoxelMap;
 class VoxelToolLodTerrain : public VoxelTool {
 	GDCLASS(VoxelToolLodTerrain, VoxelTool)
 public:
+	VoxelToolLodTerrain() {}
 	VoxelToolLodTerrain(VoxelLodTerrain *terrain, VoxelMap &map);
 
 	bool is_area_editable(const Rect3i &box) const override;
+	Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) override;
+
+	int get_raycast_binary_search_iterations() const;
+	void set_raycast_binary_search_iterations(int iterations);
 
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;
@@ -21,8 +26,11 @@ protected:
 	void _post_edit(const Rect3i &box) override;
 
 private:
+	static void _bind_methods();
+
 	VoxelLodTerrain *_terrain = nullptr;
-	VoxelMap &_map;
+	VoxelMap *_map = nullptr;
+	int _raycast_binary_search_iterations = 0;
 };
 
 #endif // VOXEL_TOOL_LOD_TERRAIN_H

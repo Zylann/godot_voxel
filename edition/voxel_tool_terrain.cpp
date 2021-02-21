@@ -71,10 +71,13 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 	Vector3i prev_pos;
 
 	RaycastPredicate predicate = { *_terrain, **library_ref, collision_mask };
-	if (voxel_raycast(pos, dir, predicate, max_distance, hit_pos, prev_pos)) {
+	float hit_distance;
+	float hit_distance_prev;
+	if (voxel_raycast(pos, dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
 		res.instance();
 		res->position = hit_pos;
 		res->previous_position = prev_pos;
+		res->distance_along_ray = hit_distance;
 	}
 
 	return res;
