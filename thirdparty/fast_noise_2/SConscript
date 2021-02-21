@@ -1,0 +1,111 @@
+# -*- coding: utf-8 -*-
+
+Import("env")
+Import("env_voxel")
+
+
+if env["use_lto"]:
+    # TODO Auburn warned about issues with LTO and static builds of FastNoise2
+    # Need to either produce an error, fallback on Scalar, or turn off support entirely?
+    pass
+
+env_voxel.Append(CPPPATH=["thirdparty/fast_noise_2/include"])
+#env_voxel.Append(CPPDEFINES=["VOXEL_SUPPORT_FAST_NOISE_2"])
+
+fn2_sources_common = [
+    "src/FastNoise/FastNoiseMetadata.cpp",
+    "src/FastSIMD/FastSIMD.cpp"
+]
+fn2_sources_scalar = [
+    "src/FastSIMD/FastSIMD_Level_Scalar.cpp"
+]
+fn2_sources_sse3 = [
+    "src/FastSIMD/FastSIMD_Level_SSE3.cpp"
+]
+fn2_sources_ssse3 = [
+    "src/FastSIMD/FastSIMD_Level_SSSE3.cpp"
+]
+fn2_sources_sse2 = [
+    "src/FastSIMD/FastSIMD_Level_SSE2.cpp"
+]
+fn2_sources_sse41 = [
+    "src/FastSIMD/FastSIMD_Level_SSE41.cpp"
+]
+fn2_sources_sse42 = [
+    "src/FastSIMD/FastSIMD_Level_SSE42.cpp"
+]
+fn2_sources_avx2 = [
+    "src/FastSIMD/FastSIMD_Level_AVX2.cpp"
+]
+fn2_sources_avx512 = [
+    "src/FastSIMD/FastSIMD_Level_AVX512.cpp"
+]
+fn2_sources_arm = [
+    "src/FastSIMD/FastSIMD_Level_NEON.cpp"
+]
+
+env_fn2 = env_voxel.Clone()
+# In case we need common options for FastNoise2 we can add them here
+
+env_fn2_scalar = env_fn2.Clone()
+env_fn2_sse2 = env_fn2.Clone()
+env_fn2_sse3 = env_fn2.Clone()
+env_fn2_ssse3 = env_fn2.Clone()
+env_fn2_sse41 = env_fn2.Clone()
+env_fn2_sse42 = env_fn2.Clone()
+env_fn2_avx2 = env_fn2.Clone()
+env_fn2_avx512 = env_fn2.Clone()
+env_fn2_arm = env_fn2.Clone()
+
+if env.msvc:
+    if env["bits"] == "32":
+        # MSVC/64 warns:
+        # ignoring unknown option "/arch:SSE2" as 64 bit already has SSE2 built in
+        env_fn2_scalar.Append(CCFLAGS=["/arch:SSE"])
+        env_fn2_sse2.Append(CCFLAGS=["/arch:SSE2"])
+        env_fn2_sse3.Append(CCFLAGS=["/arch:SSE2"])
+        env_fn2_ssse3.Append(CCFLAGS=["/arch:SSE2"])
+        env_fn2_sse41.Append(CCFLAGS=["/arch:SSE2"])
+        env_fn2_sse42.Append(CCFLAGS=["/arch:SSE2"])
+
+    env_fn2_avx2.Append(CCFLAGS=["/arch:AVX2"])
+    env_fn2_avx512.Append(CCFLAGS=["/arch:AVX512"])
+
+else: # Clang, GCC, AppleClang
+    # TODO The Cmake build script still has a big `if(MSVC)` in that section.
+    # what does it mean?
+
+    if env["bits"] == "32":
+        env_fn2_scalar.Append(CCFLAGS=["-msse"])
+        env_fn2_sse2.Append(CCFLAGS=["-msse2"])
+
+    env_fn2_sse3.Append(CCFLAGS=["-msse3"])
+    env_fn2_ssse3.Append(CCFLAGS=["-mssse3"])
+    env_fn2_sse41.Append(CCFLAGS=["-msse4.1"])
+    env_fn2_sse42.Append(CCFLAGS=["-msse4.2"])
+    env_fn2_avx2.Append(CCFLAGS=["-mavx2", "-mfma"])
+    env_fn2_avx512.Append(CCFLAGS=["-mavx512f", "-mavx512dq", "-mfma"])
+
+    # TODO This was in the old FastNoiseSIMD repo from Tinmanjuggernaut. Is it still needed?
+    # if (env["target"] == "release"):
+    # 	# gcc 9.2.1 won"t compile x64 with -O3
+    # 	env_thirdparty_avx512.Append(CCFLAGS=["-mavx512f", "-O2"])
+    # else:
+    # 	env_thirdparty_avx512.Append(CCFLAGS=["-mavx512f"])
+
+env_fn2.add_source_files(env.modules_sources, fn2_sources_common)
+env_fn2_scalar.add_source_files(env.modules_sources, fn2_sources_scalar)
+env_fn2_sse2.add_source_files(env.modules_sources, fn2_sources_sse2)
+env_fn2_sse3.add_source_files(env.modules_sources, fn2_sources_sse3)
+env_fn2_ssse3.add_source_files(env.modules_sources, fn2_sources_ssse3)
+env_fn2_sse41.add_source_files(env.modules_sources, fn2_sources_sse41)
+env_fn2_sse42.add_source_files(env.modules_sources, fn2_sources_sse42)
+
+if env["platform"] == "android":
+    # Both Android and IOS have ARM chips, but only android build tools have necessary headers
+    env_fn2_arm.add_source_files(env.modules_sources, fn2_sources_arm)
+
+elif env["platform"] in ["windows", "x11", "osx"]:
+    # AVX is supported on desktop only
+    env_fn2_avx2.add_source_files(env.modules_sources, fn2_sources_avx2)
+    env_fn2_avx512.add_source_files(env.modules_sources, fn2_sources_avx512)

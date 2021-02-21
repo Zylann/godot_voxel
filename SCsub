@@ -2,9 +2,10 @@ Import('env')
 Import('env_modules')
 
 # TODO Support is turned off for now because Godot 3 doesn't compile with C++17.
-# FastNoise2 use C++17 features and STL in its headers as well.
+# FastNoise2 use C++17 features and STL both in its headers and runtime as well.
 # SIMD noise support would have to wait for Godot 4...
-FAST_NOISE_2 = False
+FAST_NOISE_2_SRC = False
+FAST_NOISE_2_STATIC = False
 
 env_voxel = env_modules.Clone()
 
@@ -61,117 +62,47 @@ if env["platform"] == "windows":
 	# https://stackoverflow.com/questions/20031597/error-c4996-received-when-compiling-sqlite-c-in-visual-studio-2013
 	env_voxel.Append(CPPDEFINES={"SQLITE_WIN32_GETVERSIONEX": 0})
 
+# ----------------------------------------------------------------------------------------------------------------------
+# FastNoise 2
+
+if FAST_NOISE_2_SRC:
+	# Build from source. Should be the simplest, but requires C++17
+	SConscript('thirdparty/fast_noise_2/SConscript', exports = ["env", "env_voxel"])
+
+if FAST_NOISE_2_STATIC:
+	# Build from a pre-built static lib. This requires to check every build combination (and have them as well),
+	# AND it also requires C++17 due to differences of runtimes.
+	fn2_path = "C:/Projects/FastNoise2/0.7-alpha"
+
+	if env["platform"] == "windows":
+		if env.msvc:
+			if env['bits'] == '64':
+				env_voxel.Append(LIBPATH = [fn2_path + "/lib/win64-msvc"])
+			else:
+				raise RuntimeError("FastNoise2 32-bit builds are not supported yet")
+		else:
+			raise RuntimeError("FastNoise2 can only be built with MSVC at the moment")
+
+		env_voxel.Append(CPPPATH = [fn2_path + '/include'])
+		if env['target'] == 'debug':
+			env_voxel.Append(LIBS = ['FastNoise'])
+		else:
+			env_voxel.Append(LIBS = ['FastNoiseD'])
+	else:
+		raise RuntimeError("FastNoise2 can only be built on Windows at the moment")
+
+	voxel_files += [
+		"util/noise/fast_noise_2.cpp"
+	]
+
+	env_voxel.Append(CPPDEFINES = ["VOXEL_FAST_NOISE_2_SUPPORT"])
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 for f in voxel_files:
 	env_voxel.add_source_files(env.modules_sources, f)
 
-if FAST_NOISE_2:
-	if env["use_lto"]:
-		# TODO Auburn warned about issues with LTO and static builds of FastNoise2
-		# Need to either produce an error, fallback on Scalar, or turn off support entirely?
-		pass
-
-	env_voxel.Append(CPPPATH=["thirdparty/fast_noise_2/include"])
-	#env_voxel.Append(CPPDEFINES=["VOXEL_SUPPORT_FAST_NOISE_2"])
-
-	fn2_sources_common = [
-		"thirdparty/fast_noise_2/src/FastNoise/FastNoiseMetadata.cpp"
-		"thirdparty/fast_noise_2/src/FastSIMD/FastSIMD.cpp"
-	]
-	fn2_sources_scalar = [
-		"thirdparty/fast_noise_2/src/FastSIMD/FastSIMD_Level_Scalar.cpp"
-	]
-	fn2_sources_sse3 = [
-		"thirdparty/fast_noise_2/src/FastSIMD/FastSIMD_Level_SSE3.cpp"
-	]
-	fn2_sources_ssse3 = [
-		"thirdparty/fast_noise_2/src/FastSIMD/FastSIMD_Level_SSSE3.cpp"
-	]
-	fn2_sources_sse2 = [
-		"thirdparty/fast_noise_2/src/FastSIMD/FastSIMD_Level_SSE2.cpp"
-	]
-	fn2_sources_sse41 = [
-		"thirdparty/fast_noise_2/src/FastSIMD/FastSIMD_Level_SSE41.cpp"
-	]
-	fn2_sources_sse42 = [
-		"thirdparty/fast_noise_2/src/FastSIMD/FastSIMD_Level_SSE42.cpp"
-	]
-	fn2_sources_avx2 = [
-		"thirdparty/fast_noise_2/src/FastSIMD/FastSIMD_Level_AVX2.cpp"
-	]
-	fn2_sources_avx512 = [
-		"thirdparty/fast_noise_2/src/FastSIMD/FastSIMD_Level_AVX512.cpp"
-	]
-	fn2_sources_arm = [
-		"thirdparty/fast_noise_2/src/FastSIMD/FastSIMD_Level_NEON.cpp"
-	]
-
-	env_fn2 = env_voxel.Clone()
-	# In case we need common options for FastNoise2 we can add them here
-
-	env_fn2_scalar = env_fn2.Clone()
-	env_fn2_sse2 = env_fn2.Clone()
-	env_fn2_sse3 = env_fn2.Clone()
-	env_fn2_ssse3 = env_fn2.Clone()
-	env_fn2_sse41 = env_fn2.Clone()
-	env_fn2_sse42 = env_fn2.Clone()
-	env_fn2_avx2 = env_fn2.Clone()
-	env_fn2_avx512 = env_fn2.Clone()
-	env_fn2_arm = env_fn2.Clone()
-
-	if env.msvc:
-		if env["bits"] == "32":
-			# MSVC/64 warns:
-			# ignoring unknown option "/arch:SSE2" as 64 bit already has SSE2 built in
-			env_fn2_scalar.Append(CCFLAGS=["/arch:SSE"])
-			env_fn2_sse2.Append(CCFLAGS=["/arch:SSE2"])
-			env_fn2_sse3.Append(CCFLAGS=["/arch:SSE2"])
-			env_fn2_ssse3.Append(CCFLAGS=["/arch:SSE2"])
-			env_fn2_sse41.Append(CCFLAGS=["/arch:SSE2"])
-			env_fn2_sse42.Append(CCFLAGS=["/arch:SSE2"])
-
-		env_fn2_avx2.Append(CCFLAGS=["/arch:AVX2"])
-		env_fn2_avx512.Append(CCFLAGS=["/arch:AVX512"])
-
-	else: # Clang, GCC, AppleClang
-		# TODO The Cmake build script still has a big `if(MSVC)` in that section.
-		# what does it mean?
-
-		if env["bits"] == "32":
-			env_fn2_scalar.Append(CCFLAGS=["-msse"])
-			env_fn2_sse2.Append(CCFLAGS=["-msse2"])
-
-		env_fn2_sse3.Append(CCFLAGS=["-msse3"])
-		env_fn2_ssse3.Append(CCFLAGS=["-mssse3"])
-		env_fn2_sse41.Append(CCFLAGS=["-msse4.1"])
-		env_fn2_sse42.Append(CCFLAGS=["-msse4.2"])
-		env_fn2_avx2.Append(CCFLAGS=["-mavx2", "-mfma"])
-		env_fn2_avx512.Append(CCFLAGS=["-mavx512f", "-mavx512dq", "-mfma"])
-
-		# TODO This was in the old FastNoiseSIMD repo from Tinmanjuggernaut. Is it still needed?
-		# if (env["target"] == "release"):
-		# 	# gcc 9.2.1 won"t compile x64 with -O3
-		# 	env_thirdparty_avx512.Append(CCFLAGS=["-mavx512f", "-O2"])
-		# else:
-		# 	env_thirdparty_avx512.Append(CCFLAGS=["-mavx512f"])
-
-	env_fn2.add_source_files(env.modules_sources, fn2_sources_common)
-	env_fn2_scalar.add_source_files(env.modules_sources, fn2_sources_scalar)
-	env_fn2_sse2.add_source_files(env.modules_sources, fn2_sources_sse2)
-	env_fn2_sse3.add_source_files(env.modules_sources, fn2_sources_sse3)
-	env_fn2_ssse3.add_source_files(env.modules_sources, fn2_sources_ssse3)
-	env_fn2_sse41.add_source_files(env.modules_sources, fn2_sources_sse41)
-	env_fn2_sse42.add_source_files(env.modules_sources, fn2_sources_sse42)
-
-	if env["platform"] == "android":
-		# Both Android and IOS have ARM chips, but only android build tools have necessary headers
-		env_fn2_arm.add_source_files(env.modules_sources, fn2_sources_arm)
-
-	elif env["platform"] in ["windows", "x11", "osx"]:
-		# AVX is supported on desktop only
-		env_fn2_avx2.add_source_files(env.modules_sources, fn2_sources_avx2)
-		env_fn2_avx512.add_source_files(env.modules_sources, fn2_sources_avx512)
-
-	# TODO Check webassembly builds (`env["platform"] == "javascript"`)
+# TODO Check webassembly builds (`env["platform"] == "javascript"`)
 
 # Ignored clang warnings because Godot's codebase is old and isn't using override yet
 if env['platform'] in ['osx', 'android']:
