@@ -212,7 +212,6 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 				return 0;
 		}
 
-		return channel.data[get_index(x, y, z)];
 	} else {
 		return channel.defval;
 	}
@@ -494,7 +493,9 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index
 	channel.depth = other_channel.depth;
 }
 
-void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index) {
+void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
+		unsigned int channel_index) {
+
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
 	Channel &channel = _channels[channel_index];
