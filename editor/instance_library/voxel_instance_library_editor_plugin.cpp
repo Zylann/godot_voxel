@@ -73,7 +73,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed(int id) {
 			String prefix = "item_";
 
 			if (path.begins_with(prefix)) {
-				_item_id_to_remove = path.substr(prefix.size()).to_int();
+				_item_id_to_remove = path.substr(prefix.length()).to_int();
 				_confirmation_dialog->set_text(vformat(TTR("Remove item %d?"), _item_id_to_remove));
 				_confirmation_dialog->popup_centered();
 
@@ -82,9 +82,11 @@ void VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed(int id) {
 				// Gridmap works because it simulates every item as properties of the library,
 				// but our current resource does not do that,
 				// and I don't want to modify the API just because the built-in inspector is bad.
-				_info_dialog->set_text(TTR(
-						"Could not determine selected item.\n"
-						"You must select the `item_X` property label of the item you want to remove."));
+				_info_dialog->set_text(
+						TTR(String("Could not determine selected item from property path: `{0}`.\n"
+								   "You must select the `item_X` property label of the item you want to remove."))
+								.format(varray(path)));
+				_info_dialog->popup();
 			}
 		} break;
 
