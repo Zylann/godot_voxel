@@ -4,7 +4,7 @@
 		Spawns items on top of voxel surfaces.
 	</brief_description>
 	<description>
-		Add-on to voxel nodes, allowing to spawn elements on the surface. These elements are rendered with hardware instancing, can have collisions, and also be persistent.
+		Add-on to voxel nodes, allowing to spawn elements on the surface. These elements are rendered with hardware instancing, can have collisions, and also be persistent. It must be child of a voxel node. At the moment it only supports `VoxelLodTerrain`.
 	</description>
 	<tutorials>
 	</tutorials>
