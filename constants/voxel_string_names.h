@@ -27,6 +27,7 @@ public:
 
 	StringName u_transition_mask;
 	StringName u_block_local_transform;
+	StringName u_lod_fade;
 };
 
 #endif // VOXEL_STRING_NAMES_H

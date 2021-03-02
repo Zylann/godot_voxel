@@ -72,6 +72,9 @@ public:
 	void set_collision_update_delay(int delay_msec);
 	int get_collision_update_delay() const;
 
+	void set_lod_fade_duration(float seconds);
+	float get_lod_fade_duration() const;
+
 	enum ProcessMode {
 		PROCESS_MODE_IDLE = 0,
 		PROCESS_MODE_PHYSICS,
@@ -140,7 +143,7 @@ protected:
 	static void _bind_methods();
 
 	void _notification(int p_what);
-	void _process();
+	void _process(float delta);
 
 private:
 	void immerge_block(Vector3i block_pos, int lod_index);
@@ -158,6 +161,7 @@ private:
 	bool check_block_mesh_updated(VoxelBlock *block);
 	void _set_lod_count(int p_lod_count);
 	void _set_block_size_po2(int p_block_size_po2);
+	void set_block_active(VoxelBlock &block, bool active);
 
 	void _on_stream_params_changed();
 
@@ -165,6 +169,7 @@ private:
 	void save_all_modified_blocks(bool with_copy);
 	void send_block_data_requests();
 	void process_deferred_collision_updates(uint32_t timeout_msec);
+	void process_fading_blocks(float delta);
 
 	void add_transition_update(VoxelBlock *block);
 	void add_transition_updates_around(Vector3i block_pos, int lod_index);
@@ -240,11 +245,14 @@ private:
 
 		// Members for memory caching
 		std::vector<Vector3i> blocks_to_load;
+
+		Map<Vector3i, VoxelBlock *> fading_blocks;
 	};
 
 	FixedArray<Lod, VoxelConstants::MAX_LOD> _lods;
 	int _lod_count = 0;
 	float _lod_split_scale = 0.f;
+	float _lod_fade_duration = 0.f;
 	unsigned int _view_distance_voxels = 512;
 
 	bool _run_stream_in_editor = true;

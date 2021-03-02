@@ -22,15 +22,32 @@ public:
 		MESH_UPDATE_SENT // The mesh is out of date, and an update request was sent, pending response
 	};
 
+	enum FadingState {
+		FADING_NONE,
+		FADING_IN,
+		FADING_OUT
+	};
+
 	Ref<VoxelBuffer> voxels;
 	Vector3i position;
 	unsigned int lod_index = 0;
 	bool pending_transition_update = false;
 	VoxelViewerRefCount viewers;
 	bool got_first_mesh_update = false;
+
 	uint32_t last_collider_update_time = 0;
 	bool has_deferred_collider_update = false;
 	Vector<Array> deferred_collider_data;
+
+	FadingState fading_state = FADING_NONE;
+	float fading_progress = 0.f;
+	// Voxel LOD works by splitting a block into up to 8 higher-resolution blocks.
+	// The parent block and its children can be called a "LOD group".
+	// Only non-overlapping blocks in a LOD group can be considered active at once.
+	// So when LOD fading is used, we no longer use `visible` to find which block is active,
+	// because blocks can use a cross-fade effect. Overlapping blocks of the same LOD group can be visible at once.
+	// Hence the need to use this boolean.
+	bool active = false;
 
 	static VoxelBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index);
 
@@ -88,6 +105,8 @@ public:
 			}
 		}
 	}
+
+	bool update_fading(float speed);
 
 private:
 	VoxelBlock();

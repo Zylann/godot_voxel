@@ -358,3 +358,57 @@ void VoxelBlock::drop_collision() {
 		_static_body.destroy();
 	}
 }
+
+// Returns `true` when finished
+bool VoxelBlock::update_fading(float speed) {
+	// TODO Should probably not be on the block directly?
+	// Because we may want to fade transition meshes only
+
+	if (_shader_material.is_null()) {
+		return true;
+	}
+
+	bool finished = false;
+
+	// x is progress in 0..1
+	// y is direction: 1 fades in, 0 fades out
+	Vector2 p;
+
+	switch (fading_state) {
+		case FADING_IN:
+			fading_progress += speed;
+			if (fading_progress >= 1.f) {
+				fading_progress = 1.f;
+				fading_state = FADING_NONE;
+				finished = true;
+			}
+			p.x = fading_progress;
+			p.y = 1.f;
+			break;
+
+		case FADING_OUT:
+			fading_progress -= speed;
+			if (fading_progress < 0.f) {
+				fading_progress = 0.f;
+				fading_state = FADING_NONE;
+				finished = true;
+				set_visible(false);
+			}
+			p.x = 1.f - fading_progress;
+			p.y = 0.f;
+			break;
+
+		case FADING_NONE:
+			p.x = 1.f;
+			p.y = active ? 1.f : 0.f;
+			break;
+
+		default:
+			CRASH_NOW();
+			break;
+	}
+
+	_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_lod_fade, p);
+
+	return finished;
+}

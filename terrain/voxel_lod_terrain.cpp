@@ -54,7 +54,7 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 // To use on loaded blocks
 static inline void schedule_mesh_update(VoxelBlock *block, std::vector<Vector3i> &blocks_pending_update) {
 	if (block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT) {
-		if (block->is_visible()) {
+		if (block->active) {
 			// Schedule an update
 			block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
 			blocks_pending_update.push_back(block->position);
@@ -299,6 +299,25 @@ void VoxelLodTerrain::_set_block_size_po2(int p_block_size_po2) {
 	_lods[0].map.create(p_block_size_po2, 0);
 }
 
+void VoxelLodTerrain::set_block_active(VoxelBlock &block, bool active) {
+	if (block.active == active) {
+		return;
+	}
+	block.active = active;
+	if (active) {
+		block.set_visible(true);
+		if (block.fading_state != VoxelBlock::FADING_IN) {
+			block.fading_state = VoxelBlock::FADING_IN;
+			_lods[block.lod_index].fading_blocks.insert(block.position, &block);
+		}
+	} else {
+		if (block.fading_state != VoxelBlock::FADING_OUT) {
+			block.fading_state = VoxelBlock::FADING_OUT;
+			_lods[block.lod_index].fading_blocks.insert(block.position, &block);
+		}
+	}
+}
+
 // Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.
 // The provided box must be at LOD0 coordinates.
 void VoxelLodTerrain::post_edit_area(Rect3i p_box) {
@@ -510,7 +529,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// Can't do that in ready either because Godot says node state is locked.
 				// This hack is quite miserable.
 				VoxelServerUpdater::ensure_existence(get_tree());
-				_process();
+				_process(get_process_delta_time());
 			}
 			break;
 
@@ -521,7 +540,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// Can't do that in ready either because Godot says node state is locked.
 				// This hack is quite miserable.
 				VoxelServerUpdater::ensure_existence(get_tree());
-				_process();
+				_process(get_physics_process_delta_time());
 				break;
 			}
 
@@ -736,7 +755,7 @@ void VoxelLodTerrain::send_block_data_requests() {
 	_blocks_to_save.clear();
 }
 
-void VoxelLodTerrain::_process() {
+void VoxelLodTerrain::_process(float delta) {
 	VOXEL_PROFILE_SCOPE();
 
 	if (get_lod_count() == 0) {
@@ -864,8 +883,8 @@ void VoxelLodTerrain::_process() {
 					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
 
 					VoxelBlock *block = lod.map.get_block(bpos);
-					if (block) {
-						block->set_visible(false);
+					if (block != nullptr) {
+						self->set_block_active(*block, false);
 					}
 				}
 			};
@@ -964,7 +983,7 @@ void VoxelLodTerrain::_process() {
 					CRASH_COND(block == nullptr);
 					CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UP_TO_DATE);
 
-					block->set_visible(true);
+					self->set_block_active(*block, true);
 					self->add_transition_update(block);
 					self->add_transition_updates_around(bpos, lod_index);
 				}
@@ -974,8 +993,8 @@ void VoxelLodTerrain::_process() {
 					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
 					VoxelBlock *block = lod.map.get_block(bpos);
 
-					if (block) {
-						block->set_visible(false);
+					if (block != nullptr) {
+						self->set_block_active(*block, false);
 						self->add_transition_updates_around(bpos, lod_index);
 					}
 				}
@@ -990,7 +1009,7 @@ void VoxelLodTerrain::_process() {
 					// So in that case it's normal to not find any block.
 					// Otherwise, there must always be a visible parent in the end, unless the octree vanished.
 					if (block != nullptr && block->get_mesh_state() == VoxelBlock::MESH_UP_TO_DATE) {
-						block->set_visible(true);
+						self->set_block_active(*block, true);
 						self->add_transition_update(block);
 						self->add_transition_updates_around(bpos, lod_index);
 					}
@@ -1145,9 +1164,10 @@ void VoxelLodTerrain::_process() {
 
 			// Store buffer
 			VoxelBlock *block = lod.map.set_block_buffer(ob.position, ob.voxels);
+			CRASH_COND(block == nullptr);
 			//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
 			// The block will be made visible and meshed only by LodOctree
-			block->set_visible(false);
+			set_block_active(*block, false);
 			block->set_parent_visible(is_visible());
 			block->set_world(get_world());
 
@@ -1182,6 +1202,8 @@ void VoxelLodTerrain::_process() {
 
 		_reception_buffers.data_output.clear();
 	}
+
+	process_fading_blocks(delta);
 
 	_stats.time_process_load_responses = profiling_clock.restart();
 
@@ -1391,6 +1413,32 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 	}
 }
 
+void VoxelLodTerrain::process_fading_blocks(float delta) {
+	VOXEL_PROFILE_SCOPE();
+
+	const float speed = _lod_fade_duration < 0.001f ? 99999.f : delta / _lod_fade_duration;
+
+	for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+		Lod &lod = _lods[lod_index];
+
+		Map<Vector3i, VoxelBlock *>::Element *e = lod.fading_blocks.front();
+
+		while (e != nullptr) {
+			VoxelBlock *block = e->value();
+			const bool finished = block->update_fading(speed);
+
+			if (finished) {
+				Map<Vector3i, VoxelBlock *>::Element *next = e->next();
+				lod.fading_blocks.erase(e);
+				e = next;
+
+			} else {
+				e = e->next();
+			}
+		}
+	}
+}
+
 void VoxelLodTerrain::flush_pending_lod_edits() {
 	// Propagates edits performed so far to other LODs.
 	// These LODs must be currently in memory, otherwise terrain data will miss it.
@@ -1486,6 +1534,7 @@ void VoxelLodTerrain::immerge_block(Vector3i block_pos, int lod_index) {
 	lod.map.remove_block(block_pos, BeforeUnloadAction{ _shader_material_pool, _blocks_to_save, _stream.is_valid() });
 
 	lod.loading_blocks.erase(block_pos);
+	lod.fading_blocks.erase(block_pos);
 
 	if (_instancer != nullptr) {
 		_instancer->on_block_exit(block_pos, lod_index);
@@ -1573,7 +1622,7 @@ void VoxelLodTerrain::process_transition_updates() {
 		VoxelBlock *block = _blocks_pending_transition_update[i];
 		CRASH_COND(block == nullptr);
 
-		if (block->is_visible()) {
+		if (block->active) {
 			block->set_transition_mask(get_transition_mask(block->position, block->lod_index));
 		}
 
@@ -1607,7 +1656,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 
 		const VoxelBlock *nblock = lod.map.get_block(npos);
 
-		if (nblock != nullptr && nblock->is_visible()) {
+		if (nblock != nullptr && nblock->active) {
 			visible_neighbors_of_same_lod |= (1 << dir);
 		}
 	}
@@ -1651,7 +1700,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 				const Lod &upper_lod = _lods[lod_index - 1];
 				const VoxelBlock *upper_neighbor_block = upper_lod.map.get_block(upper_neighbor_pos);
 
-				if (upper_neighbor_block == nullptr || upper_neighbor_block->is_visible() == false) {
+				if (upper_neighbor_block == nullptr || upper_neighbor_block->active == false) {
 					// The block has no visible neighbor yet. World border? Assume lower LOD.
 					transition_mask |= dir_mask;
 				}
@@ -1746,6 +1795,14 @@ void VoxelLodTerrain::set_collision_update_delay(int delay_msec) {
 
 int VoxelLodTerrain::get_collision_update_delay() const {
 	return _collision_update_delay;
+}
+
+void VoxelLodTerrain::set_lod_fade_duration(float seconds) {
+	_lod_fade_duration = clamp(seconds, 0.f, 1.f);
+}
+
+float VoxelLodTerrain::get_lod_fade_duration() const {
+	return _lod_fade_duration;
 }
 
 void VoxelLodTerrain::_b_save_modified_blocks() {
@@ -1964,6 +2021,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_collision_update_delay", "delay_msec"),
 			&VoxelLodTerrain::set_collision_update_delay);
 
+	ClassDB::bind_method(D_METHOD("get_lod_fade_duration"), &VoxelLodTerrain::get_lod_fade_duration);
+	ClassDB::bind_method(D_METHOD("set_lod_fade_duration", "seconds"), &VoxelLodTerrain::set_lod_fade_duration);
+
 	ClassDB::bind_method(D_METHOD("set_lod_count", "lod_count"), &VoxelLodTerrain::set_lod_count);
 	ClassDB::bind_method(D_METHOD("get_lod_count"), &VoxelLodTerrain::get_lod_count);
 
@@ -2002,17 +2062,22 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(PROCESS_MODE_DISABLED);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::AABB, "voxel_bounds"), "set_voxel_bounds", "get_voxel_bounds");
+
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
+
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"),
 			"set_material", "get_material");
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"),
 			"set_generate_collisions", "get_generate_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"),
 			"set_collision_lod_count", "get_collision_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_update_delay"),
 			"set_collision_update_delay", "get_collision_update_delay");
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
 			"set_run_stream_in_editor", "is_stream_running_in_editor");
-	ADD_PROPERTY(PropertyInfo(Variant::AABB, "voxel_bounds"), "set_voxel_bounds", "get_voxel_bounds");
 }
