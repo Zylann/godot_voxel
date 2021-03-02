@@ -57,5 +57,6 @@ lenis0012
 Phyronnaz
 RonanZe
 furtherorbit
+jp.owo.Manda (segfault-god)
 ```
 

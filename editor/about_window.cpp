@@ -49,7 +49,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"lenis0012\n"
 						"Phyronnaz\n"
 						"RonanZe\n"
-						"furtherorbit\n";
+						"furtherorbit\n"
+						"jp.owo.Manda (segfault-god)\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
