@@ -804,8 +804,8 @@ void VoxelBuffer::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Rect3i 
 			// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
 			// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
 
-			elem = elem->next();
 		}
+		elem = elem->next();
 	}
 }
 
