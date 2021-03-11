@@ -1879,7 +1879,7 @@ Dictionary VoxelLodTerrain::debug_get_block_info(Vector3 fbpos, int lod_index) c
 	return d;
 }
 
-Array VoxelLodTerrain::debug_get_octrees() const {
+Array VoxelLodTerrain::debug_get_octree_positions() const {
 	Array positions;
 	positions.resize(_lod_octrees.size());
 	int i = 0;
@@ -1887,6 +1887,75 @@ Array VoxelLodTerrain::debug_get_octrees() const {
 		positions[i++] = E->key().to_vec3();
 	}
 	return positions;
+}
+
+Array VoxelLodTerrain::debug_get_octrees_detailed() const {
+	// [
+	//     Vector3,
+	//     Octree,
+	//     ...
+	// ]
+	// Octree [
+	//     state: State,
+	//     Octree[8] or null
+	// ]
+	// State {
+	//     0: no block
+	//     1: no mesh
+	//     2: mesh
+	// }
+
+	struct L {
+		static void read_node(const LodOctree &octree, const LodOctree::Node *node, Vector3i position, int lod_index,
+				const VoxelLodTerrain *self, Array &out_data) {
+
+			ERR_FAIL_COND(lod_index < 0);
+			Variant state;
+
+			const Lod &lod = self->_lods[lod_index];
+			const VoxelBlock *block = lod.map.get_block(position);
+			if (block == nullptr) {
+				state = 0;
+			} else {
+				if (block->get_mesh_state() == VoxelBlock::MESH_UP_TO_DATE) {
+					state = 2;
+				} else {
+					state = 1;
+				}
+			}
+
+			out_data.append(state);
+
+			if (node->has_children()) {
+				Array children_data;
+				for (unsigned int i = 0; i < 8; ++i) {
+					Array child_data;
+					const LodOctree::Node *child = octree.get_child(node, i);
+					const Vector3i child_pos = LodOctree::get_child_position(position, i);
+					read_node(octree, child, child_pos, lod_index - 1, self, child_data);
+					children_data.append(child_data);
+				}
+				out_data.append(children_data);
+
+			} else {
+				out_data.append(Variant());
+			}
+		}
+	};
+
+	Array forest_data;
+
+	for (const Map<Vector3i, OctreeItem>::Element *e = _lod_octrees.front(); e; e = e->next()) {
+		const LodOctree &octree = e->value().octree;
+		const LodOctree::Node *root = octree.get_root();
+		Array root_data;
+		const Vector3i octree_pos = e->key();
+		L::read_node(octree, root, octree_pos, get_lod_count() - 1, this, root_data);
+		forest_data.append(octree_pos.to_vec3());
+		forest_data.append(root_data);
+	}
+
+	return forest_data;
 }
 
 #ifdef TOOLS_ENABLED
@@ -2049,7 +2118,7 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("debug_raycast_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_block);
 	ClassDB::bind_method(D_METHOD("debug_get_block_info", "block_pos", "lod"), &VoxelLodTerrain::debug_get_block_info);
-	ClassDB::bind_method(D_METHOD("debug_get_octrees"), &VoxelLodTerrain::debug_get_octrees);
+	ClassDB::bind_method(D_METHOD("debug_get_octrees_detailed"), &VoxelLodTerrain::debug_get_octrees_detailed);
 	ClassDB::bind_method(D_METHOD("debug_print_sdf_top_down", "center", "extents"),
 			&VoxelLodTerrain::_b_debug_print_sdf_top_down);
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelLodTerrain::_b_debug_get_block_count);

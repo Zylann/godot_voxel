@@ -74,7 +74,6 @@ public:
 	// The higher, the longer LODs will spread and higher the quality.
 	// The lower, the shorter LODs will spread and lower the quality.
 	void set_split_scale(float p_split_scale) {
-
 		// Split scale must be greater than a threshold,
 		// otherwise lods will decimate too fast and it will look messy
 		if (p_split_scale < VoxelConstants::MINIMUM_LOD_SPLIT_SCALE) {
@@ -83,7 +82,6 @@ public:
 		} else if (p_split_scale > VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE) {
 			p_split_scale = VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE;
 		}
-
 		_split_scale = p_split_scale;
 	}
 
@@ -108,10 +106,8 @@ public:
 
 	template <typename UpdateActions_T>
 	void update(Vector3 view_pos, UpdateActions_T &actions) {
-
 		if (_is_root_created || _root.has_children()) {
 			update(ROOT_INDEX, Vector3i(), _max_depth, view_pos, actions);
-
 		} else {
 			// TODO I don't like this much
 			// Treat the root in a slightly different way the first time.
@@ -129,12 +125,28 @@ public:
 				parent_position.z * 2 + OctreeTables::g_octant_position[i][2]);
 	}
 
+	const Node *get_root() const {
+		return &_root;
+	}
+
+	const Node *get_child(const Node *node, unsigned int i) const {
+		ERR_FAIL_COND_V(node == nullptr, nullptr);
+		ERR_FAIL_INDEX_V(i, 8, nullptr);
+		return get_node(node->first_child + i);
+	}
+
 private:
 	// This pool treats nodes as packs of 8 so they can be addressed by only knowing the first child
 	class NodePool {
 	public:
 		// Warning: the returned pointer may be invalidated later by `allocate_children`. Use with care.
 		inline Node *get_node(unsigned int i) {
+			CRASH_COND(i >= _nodes.size());
+			CRASH_COND(i == ROOT_INDEX);
+			return &_nodes[i];
+		}
+
+		inline const Node *get_node(unsigned int i) const {
 			CRASH_COND(i >= _nodes.size());
 			CRASH_COND(i == ROOT_INDEX);
 			return &_nodes[i];
@@ -173,6 +185,14 @@ private:
 	};
 
 	inline Node *get_node(unsigned int index) {
+		if (index == ROOT_INDEX) {
+			return &_root;
+		} else {
+			return _pool.get_node(index);
+		}
+	}
+
+	inline const Node *get_node(unsigned int index) const {
 		if (index == ROOT_INDEX) {
 			return &_root;
 		} else {

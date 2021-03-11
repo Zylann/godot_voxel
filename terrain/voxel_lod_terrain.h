@@ -119,7 +119,8 @@ public:
 
 	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
 	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
-	Array debug_get_octrees() const;
+	Array debug_get_octree_positions() const;
+	Array debug_get_octrees_detailed() const;
 
 	// Editor
 
