@@ -49,6 +49,9 @@ private:
 			} else {
 				fp = *fpp;
 			}
+			else {
+				fp = *fpp;
+			}
 		}
 
 		if (read_only) {
