@@ -439,8 +439,10 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 
 void VoxelBuffer::compress_uniform_channels() {
 	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
-		if (_channels[i].data && is_uniform(i)) {
-			clear_channel(i, _channels[i].data[0]);
+		if (_channels[i].data != nullptr && is_uniform(i)) {
+			// TODO More direct way
+			const uint64_t v = get_voxel(0, 0, 0, i);
+			clear_channel(i, v);
 		}
 	}
 }
