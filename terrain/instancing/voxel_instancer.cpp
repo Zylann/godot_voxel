@@ -167,6 +167,10 @@ void VoxelInstancer::_notification(int p_what) {
 
 			for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 				Block *block = *it;
+				if (!block->multimesh_instance.is_valid()) {
+					// The block exists as an empty block (if it did not exist, it would get generated)
+					continue;
+				}
 				const int block_size_po2 = base_block_size_po2 + block->lod_index;
 				const Vector3 block_local_pos = (block->grid_position << block_size_po2).to_vec3();
 				// The local block transform never has rotation or scale so we can take a shortcut
