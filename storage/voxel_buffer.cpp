@@ -52,7 +52,7 @@ inline uint64_t get_max_value_for_depth(VoxelBuffer::Depth d) {
 }
 
 inline uint64_t clamp_value_for_depth(uint64_t value, VoxelBuffer::Depth d) {
-	uint64_t max_val = get_max_value_for_depth(d);
+	const uint64_t max_val = get_max_value_for_depth(d);
 	if (value >= max_val) {
 		return max_val;
 	}
@@ -168,7 +168,7 @@ void VoxelBuffer::clear() {
 void VoxelBuffer::clear_channel(unsigned int channel_index, uint64_t clear_value) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 	Channel &channel = _channels[channel_index];
-	if (channel.data) {
+	if (channel.data != nullptr) {
 		delete_channel(channel_index);
 	}
 	channel.defval = clamp_value_for_depth(clear_value, channel.depth);
@@ -291,7 +291,7 @@ void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
 		}
 	}
 
-	unsigned int volume = get_volume();
+	const unsigned int volume = get_volume();
 
 	switch (channel.depth) {
 		case DEPTH_8_BIT:
@@ -329,7 +329,7 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 
 	min.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1, 1, 1));
 	max.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1, 1, 1));
-	Vector3i area_size = max - min;
+	const Vector3i area_size = max - min;
 
 	if (area_size.x == 0 || area_size.y == 0 || area_size.z == 0) {
 		return;
@@ -347,10 +347,10 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 	}
 
 	Vector3i pos;
-	unsigned int volume = get_volume();
+	const unsigned int volume = get_volume();
 	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
 		for (pos.x = min.x; pos.x < max.x; ++pos.x) {
-			unsigned int dst_ri = get_index(pos.x, pos.y + min.y, pos.z);
+			const unsigned int dst_ri = get_index(pos.x, pos.y + min.y, pos.z);
 			CRASH_COND(dst_ri >= volume);
 
 			switch (channel.depth) {
@@ -393,7 +393,7 @@ void VoxelBuffer::fill_f(real_t value, unsigned int channel) {
 template <typename T>
 inline bool is_uniform(const uint8_t *p_data, uint32_t size) {
 	const T *data = (const T *)p_data;
-	T v0 = data[0];
+	const T v0 = data[0];
 	for (unsigned int i = 1; i < size; ++i) {
 		if (data[i] != v0) {
 			return false;
@@ -411,7 +411,7 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 		return true;
 	}
 
-	unsigned int volume = get_volume();
+	const unsigned int volume = get_volume();
 
 	// Channel isn't optimized, so must look at each voxel
 	switch (channel.depth) {

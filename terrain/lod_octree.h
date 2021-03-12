@@ -204,10 +204,10 @@ private:
 	void update(unsigned int node_index, Vector3i node_pos, int lod, Vector3 view_pos, UpdateActions_T &actions) {
 		// This function should be called regularly over frames.
 
-		int lod_factor = get_lod_factor(lod);
-		int chunk_size = _base_size * lod_factor;
-		Vector3 world_center = static_cast<real_t>(chunk_size) * (node_pos.to_vec3() + Vector3(0.5, 0.5, 0.5));
-		float split_distance = chunk_size * _split_scale;
+		const int lod_factor = get_lod_factor(lod);
+		const int chunk_size = _base_size * lod_factor;
+		const Vector3 world_center = static_cast<real_t>(chunk_size) * (node_pos.to_vec3() + Vector3(0.5, 0.5, 0.5));
+		const float split_distance = chunk_size * _split_scale;
 		Node *node = get_node(node_index);
 
 		if (!node->has_children()) {
@@ -216,7 +216,7 @@ private:
 			if (lod > 0 && world_center.distance_to(view_pos) < split_distance && actions.can_split(node_pos, lod - 1)) {
 				// Split
 
-				unsigned int first_child = _pool.allocate_children();
+				const unsigned int first_child = _pool.allocate_children();
 				// Get node again because `allocate_children` may invalidate the pointer
 				node = get_node(node_index);
 				node->first_child = first_child;
@@ -232,12 +232,11 @@ private:
 			}
 
 		} else {
-
 			bool has_split_child = false;
-			unsigned int first_child = node->first_child;
+			const unsigned int first_child = node->first_child;
 
 			for (unsigned int i = 0; i < 8; ++i) {
-				unsigned int child_index = first_child + i;
+				const unsigned int child_index = first_child + i;
 				update(child_index, get_child_position(node_pos, i), lod - 1, view_pos, actions);
 				has_split_child |= _pool.get_node(child_index)->has_children();
 			}

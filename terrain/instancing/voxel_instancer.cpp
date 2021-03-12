@@ -717,6 +717,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, ArraySlice<co
 	if (collision_shapes.size() > 0) {
 		VOXEL_PROFILE_SCOPE();
 
+		// Add new bodies
 		for (unsigned int instance_index = 0; instance_index < transforms.size(); ++instance_index) {
 			const Transform body_transform = block_transform * transforms[instance_index];
 
@@ -746,6 +747,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, ArraySlice<co
 			body->set_transform(body_transform);
 		}
 
+		// Remove old bodies
 		for (int instance_index = transforms.size(); instance_index < block->bodies.size(); ++instance_index) {
 			VoxelInstancerRigidBody *body = block->bodies[instance_index];
 			body->detach_and_destroy();
