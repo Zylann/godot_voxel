@@ -91,6 +91,12 @@ struct Vector3i {
 		z -= other.z;
 	}
 
+	_FORCE_INLINE_ void operator*=(const int s) {
+		x *= s;
+		y *= s;
+		z *= s;
+	}
+
 	_FORCE_INLINE_ Vector3i operator-() const {
 		return Vector3i(-x, -y, -z);
 	}

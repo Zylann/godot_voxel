@@ -239,7 +239,10 @@ public:
 	}
 
 	inline Rect3i snapped(int step) const {
-		return Rect3i(pos.floordiv(step) * step, size.floordiv(step) * step);
+		Rect3i r = downscaled(step);
+		r.pos *= step;
+		r.size *= step;
+		return r;
 	}
 };
 
