@@ -209,40 +209,24 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 	const Vector3i origin = input.origin_in_voxels;
 
-	const Vector3i rmin;
-	const Vector3i rmax = bs;
-	const Vector3i gmin = origin;
-	const Vector3i gmax = origin + (bs << input.lod);
-
 	// TODO This may be shared across the module
 	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
 	// so we must scale the values to make better use of the offered resolution
 	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(
 			out_buffer.get_channel_depth(out_buffer.get_channel_depth(channel)));
 
+	const float clip_threshold = sdf_scale * 0.2f;
+
+	const int stride = 1 << input.lod;
+
+	const int section_size = 16;
+	// Block size must be a multiple of section size
+	ERR_FAIL_COND(bs.x % section_size != 0 || bs.y % section_size != 0 || bs.z % section_size != 0);
+
 	Cache &cache = _cache;
 
-	const unsigned int slice_buffer_size = bs.x * bs.y;
+	const unsigned int slice_buffer_size = section_size * section_size;
 	runtime->prepare_state(cache.state, slice_buffer_size);
-
-	// TODO Add subdivide option so we can fine tune the analysis
-
-	const Interval range = runtime->analyze_range(cache.state, gmin, gmax) * sdf_scale;
-	const float clip_threshold = sdf_scale * 0.2f;
-	if (range.min > clip_threshold && range.max > clip_threshold) {
-		out_buffer.clear_channel_f(channel, 1.f);
-		// DEBUG: use this instead to fill optimized-out blocks with matter, making them stand out
-		//out_buffer.clear_channel_f(channel, -1.f);
-		return;
-
-	} else if (range.min < -clip_threshold && range.max < -clip_threshold) {
-		out_buffer.clear_channel_f(channel, -1.f);
-		return;
-
-	} else if (range.is_single_value()) {
-		out_buffer.clear_channel_f(channel, range.min);
-		return;
-	}
 
 	cache.slice_cache.resize(slice_buffer_size);
 	ArraySlice<float> slice_cache(cache.slice_cache, 0, cache.slice_cache.size());
@@ -255,32 +239,71 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	ArraySlice<float> y_cache(cache.y_cache, 0, cache.y_cache.size());
 	ArraySlice<float> z_cache(cache.z_cache, 0, cache.z_cache.size());
 
-	const int stride = 1 << input.lod;
+	// For each subdivision of the block
+	for (int sz = 0; sz < bs.z; sz += section_size) {
+		for (int sy = 0; sy < bs.y; sy += section_size) {
+			for (int sx = 0; sx < bs.x; sx += section_size) {
+				VOXEL_PROFILE_SCOPE_NAMED("Section");
 
-	{
-		unsigned int i = 0;
-		for (int rz = rmin.z, gz = gmin.z; rz < rmax.z; ++rz, gz += stride) {
-			for (int rx = rmin.x, gx = gmin.x; rx < rmax.x; ++rx, gx += stride) {
-				x_cache[i] = gx;
-				z_cache[i] = gz;
-				++i;
-			}
-		}
-	}
+				const Vector3i rmin(sx, sy, sz);
+				const Vector3i rmax = rmin + Vector3i(section_size);
+				const Vector3i gmin = origin + (rmin << input.lod);
+				const Vector3i gmax = origin + (rmax << input.lod);
 
-	for (int ry = rmin.y, gy = gmin.y; ry < rmax.y; ++ry, gy += (1 << input.lod)) {
-		VOXEL_PROFILE_SCOPE();
+				const Interval range = runtime->analyze_range(cache.state, gmin, gmax) * sdf_scale;
+				if (range.min > clip_threshold && range.max > clip_threshold) {
+					// TODO fill_area_f has an issue with max values
+					out_buffer.fill_area_f(1.f, rmin, rmax, channel);
 
-		y_cache.fill(gy);
+					//out_buffer.clear_channel_f(channel, 1.f);
 
-		runtime->generate_set(cache.state, x_cache, y_cache, z_cache, slice_cache, ry != rmin.y);
+					// DEBUG: use this instead to fill optimized-out blocks with matter, making them stand out
+					//out_buffer.clear_channel_f(channel, -1.f);
+					continue;
 
-		// TODO Flatten this further
-		unsigned int i = 0;
-		for (int rz = rmin.z; rz < rmax.z; ++rz) {
-			for (int rx = rmin.x; rx < rmax.x; ++rx) {
-				out_buffer.set_voxel_f(sdf_scale * slice_cache[i], rx, ry, rz, channel);
-				++i;
+				} else if (range.min < -clip_threshold && range.max < -clip_threshold) {
+					out_buffer.fill_area_f(-1.f, rmin, rmax, channel);
+					//out_buffer.clear_channel_f(channel, -1.f);
+					continue;
+
+				} else if (range.is_single_value()) {
+					out_buffer.fill_area_f(range.min, rmin, rmax, channel);
+					//out_buffer.clear_channel_f(channel, range.min);
+					continue;
+				}
+
+				// The section may have the surface in it, we have to calculate it
+
+				{
+					unsigned int i = 0;
+					for (int rz = rmin.z, gz = gmin.z; rz < rmax.z; ++rz, gz += stride) {
+						for (int rx = rmin.x, gx = gmin.x; rx < rmax.x; ++rx, gx += stride) {
+							x_cache[i] = gx;
+							z_cache[i] = gz;
+							++i;
+						}
+					}
+				}
+
+				for (int ry = rmin.y, gy = gmin.y; ry < rmax.y; ++ry, gy += stride) {
+					VOXEL_PROFILE_SCOPE_NAMED("Slice");
+
+					y_cache.fill(gy);
+
+					runtime->generate_set(cache.state, x_cache, y_cache, z_cache, slice_cache, ry != rmin.y);
+
+					// TODO Flatten this further
+					{
+						VOXEL_PROFILE_SCOPE_NAMED("Copy to block");
+						unsigned int i = 0;
+						for (int rz = rmin.z; rz < rmax.z; ++rz) {
+							for (int rx = rmin.x; rx < rmax.x; ++rx) {
+								out_buffer.set_voxel_f(sdf_scale * slice_cache[i], rx, ry, rz, channel);
+								++i;
+							}
+						}
+					}
+				}
 			}
 		}
 	}

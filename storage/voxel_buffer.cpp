@@ -385,6 +385,12 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 	}
 }
 
+void VoxelBuffer::fill_area_f(float fvalue, Vector3i min, Vector3i max, unsigned int channel_index) {
+	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
+	const Channel &channel = _channels[channel_index];
+	fill_area(real_to_raw_voxel(fvalue, channel.depth), min, max, channel_index);
+}
+
 void VoxelBuffer::fill_f(real_t value, unsigned int channel) {
 	ERR_FAIL_INDEX(channel, MAX_CHANNELS);
 	fill(real_to_raw_voxel(value, _channels[channel].depth), channel);
