@@ -113,7 +113,7 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	});
 }
 
-int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod, float *out_closest_distance_sq) {
+int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod_index, float *out_closest_distance_sq) {
 	const std::vector<Vector3> &viewer_positions = dep.shared->viewers;
 	const Vector3 block_position = dep.world_position;
 
@@ -130,15 +130,18 @@ int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod, float 
 		}
 	}
 
-	int priority = static_cast<int>(closest_distance_sq);
-
 	if (out_closest_distance_sq != nullptr) {
 		*out_closest_distance_sq = closest_distance_sq;
 	}
 
+	// TODO Any way to optimize out the sqrt?
+	// I added it because the LOD modifier was not working with squared distances,
+	// which led blocks to subdivide too much compared to their neighbors, making cracks more likely to happen
+	int priority = static_cast<int>(Math::sqrt(closest_distance_sq));
+
 	// Higher lod indexes come first to allow the octree to subdivide.
 	// Then comes distance, which is modified by how much in view the block is
-	priority += (VoxelConstants::MAX_LOD - lod) * 10000;
+	priority += (VoxelConstants::MAX_LOD - lod_index) * 10000;
 
 	return priority;
 }

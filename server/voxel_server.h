@@ -235,7 +235,7 @@ private:
 	};
 
 	void init_priority_dependency(PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume);
-	static int get_priority(const PriorityDependency &dep, uint8_t lod, float *out_closest_distance_sq);
+	static int get_priority(const PriorityDependency &dep, uint8_t lod_index, float *out_closest_distance_sq);
 
 	class BlockDataRequest : public IVoxelTask {
 	public:
