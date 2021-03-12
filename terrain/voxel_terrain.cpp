@@ -1267,6 +1267,7 @@ void VoxelTerrain::_process() {
 			if (gen_collisions) {
 				block->set_collision_mesh(collidable_surfaces, get_tree()->is_debugging_collisions_hint(), this);
 			}
+			block->set_visible(true);
 			block->set_parent_visible(is_visible());
 			block->set_parent_transform(local_to_world_transform);
 		}
