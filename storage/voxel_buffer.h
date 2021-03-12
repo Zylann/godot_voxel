@@ -211,7 +211,7 @@ public:
 	}
 
 	static inline uint16_t norm_to_u16(float v) {
-		return clamp(static_cast<int>(0x7fff * v + 0x7fff), 0, 0xffff);
+		return clamp(static_cast<int>(0x8000 * v + 0x8000), 0, 0xffff);
 	}
 
 	/*static inline float quantized_u8_to_real(uint8_t v) {
