@@ -22,6 +22,7 @@ Transvoxel uses special meshes to stitch blocks of different level of detail. Ho
 Create and setup a `ShaderMaterial` on your terrain, and integrate this snippet to it:
 
 ```glsl
+// This is recognized and assigned automatically by the voxel engine
 uniform int u_transition_mask;
 
 vec3 get_transvoxel_position(vec3 vertex_pos, vec4 vertex_col) {
@@ -97,4 +98,64 @@ In the shader parameters, add your two albedo maps, and optionally normal, and A
 	- [Shading Language](https://docs.godotengine.org/en/stable/tutorials/shading/shading_reference/shading_language.html)
 	- [SpatialShader](https://docs.godotengine.org/en/stable/tutorials/shading/shading_reference/spatial_shader.html)
 
+
+
+Level of detail (LOD)
+-----------------------
+
+`VoxelLodTerrain` implements dynamic level of detail for smooth terrain.
+
+### Description
+
+TODO
+
+### LOD fading (experimental)
+
+LOD changes can introduce some mild "popping" in the landscape, which might be a bit disturbing. One way to attenuate this problem is to fade meshes when they switch from two different levels of details. When a "parent" mesh subdivides into higher-resolution "child" meshes, they can be both rendered at the same time for a brief period of time, while the parent fades out and the children fade in, and vice-versa.
+This trick requires you to use a `ShaderMaterial` on `VoxelLodTerrain`, as the rendering part needs an extra bit of code inside the fragment shader.
+
+`VoxelLodTerrain` has a property `lod_fade_duration`, expressed in seconds. By default it is `0`, which makes it inactive. Setting it to a small value like `0.25` will enable it.
+
+In your shader, add the following uniform:
+
+```glsl
+// This is recognized and assigned automatically by the voxel node
+uniform vec2 u_lod_fade;
+```
+
+Add also this function (unless you have it already):
+
+```glsl
+float get_hash(vec2 c) {
+	return fract(sin(dot(c.xy, vec2(12.9898,78.233))) * 43758.5453);
+}
+```
+
+And *at the end* of `fragment()`, add this:
+
+```glsl
+// Discard pixels progressively.
+// It has to be last to workaround https://github.com/godotengine/godot/issues/34966
+float h = get_hash(SCREEN_UV);
+if (u_lod_fade.y > 0.5) {
+	// Fade in
+	if (u_lod_fade.x < h) {
+		discard;
+	}
+} else {
+	// Fade out
+	if (u_lod_fade.x > h) {
+		discard;
+	}
+}
+```
+
+Note: this is an example of implementation. There might be more optimized ways to do it.
+
+This will discard such that pixels of the two meshes will be complementary without overlap. `discard` is used so the mesh can remain rendered in the same pass (usually the opaque pass).
+
+!!! warn
+	This technique is still imperfect because of several limitations:
+	- Transition meshes used to stitch blocks of different LOD are currently not faded. Doing so requires much more work, and in fact, the way these meshes are handled in the first place could be simplified if Godot allowed more fine-grained access to `ArrayMesh`, like switching to another index buffer without re-uploading the entire mesh.
+	- Shadow maps still create self-shadowing. While both meshes are rendered to cross-fade, one of them will eventually project shadows on the other. This creates a lot of noisy patches. Turning off shadows from one of them does not fix the other, and turning shadows off completely will make shadows pop. I haven't found a solution yet. See https://github.com/godotengine/godot-proposals/issues/692#issuecomment-782331429
 
