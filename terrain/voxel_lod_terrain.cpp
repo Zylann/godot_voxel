@@ -303,18 +303,36 @@ void VoxelLodTerrain::set_block_active(VoxelBlock &block, bool active) {
 	if (block.active == active) {
 		return;
 	}
+
 	block.active = active;
+
+	if (_lod_fade_duration == 0.f) {
+		block.set_visible(active);
+		return;
+	}
+
+	VoxelBlock::FadingState fading_state;
+	// Initial progress has to be set too because it sometimes happens that a LOD must appear before its parent
+	// finished fading in. So the parent will have to fade out from solid with the same duration.
+	float initial_progress;
 	if (active) {
 		block.set_visible(true);
-		if (block.fading_state != VoxelBlock::FADING_IN) {
-			block.fading_state = VoxelBlock::FADING_IN;
-			_lods[block.lod_index].fading_blocks.insert(block.position, &block);
-		}
+		fading_state = VoxelBlock::FADING_IN;
+		initial_progress = 0.f;
 	} else {
-		if (block.fading_state != VoxelBlock::FADING_OUT) {
-			block.fading_state = VoxelBlock::FADING_OUT;
-			_lods[block.lod_index].fading_blocks.insert(block.position, &block);
+		fading_state = VoxelBlock::FADING_OUT;
+		initial_progress = 1.f;
+	}
+
+	if (block.fading_state != fading_state) {
+		if (block.fading_state == VoxelBlock::FADING_NONE) {
+			Lod &lod = _lods[block.lod_index];
+			// Must not have duplicates
+			ERR_FAIL_COND(lod.fading_blocks.has(block.position));
+			lod.fading_blocks.insert(block.position, &block);
 		}
+		block.fading_state = fading_state;
+		block.fading_progress = initial_progress;
 	}
 }
 
@@ -410,6 +428,8 @@ void VoxelLodTerrain::stop_streamer() {
 	_reception_buffers.data_output.clear();
 }
 
+// TODO This should be changed to `lod_distance`
+// It would be easier to relate, and would not depend on block size
 void VoxelLodTerrain::set_lod_split_scale(float p_lod_split_scale) {
 	if (p_lod_split_scale == _lod_split_scale) {
 		return;
@@ -1030,16 +1050,23 @@ void VoxelLodTerrain::_process(float delta) {
 
 					// Can only subdivide if higher detail meshes are ready to be shown, otherwise it will produce holes
 					for (int i = 0; i < 8; ++i) {
-
 						// Get block pos local-to-region
 						Vector3i child_pos = LodOctree::get_child_position(node_pos, i);
-
 						// Convert to local-to-terrain
 						child_pos += offset;
-
 						// We have to ping ALL children, because the reason we are here is we want them loaded
 						can &= self->check_block_loaded_and_updated(child_pos, child_lod_index);
 					}
+
+					// Can only subdivide if blocks of a higher LOD index are present around,
+					// otherwise it will cause cracks.
+					// Need to check meshes, not voxels?
+					// const int lod_index = child_lod_index + 1;
+					// if (lod_index < self->get_lod_count()) {
+					// 	const Vector3i parent_offset = block_offset_lod0 >> lod_index;
+					// 	const Lod &lod = self->_lods[lod_index];
+					// 	can &= self->is_block_surrounded(node_pos + parent_offset, lod_index, lod.map);
+					// }
 
 					if (!can) {
 						++blocked_count;
@@ -1425,6 +1452,9 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 
 		while (e != nullptr) {
 			VoxelBlock *block = e->value();
+			// The collection of fading blocks must only contain fading blocks
+			ERR_FAIL_COND(block->fading_state == VoxelBlock::FADING_NONE);
+
 			const bool finished = block->update_fading(speed);
 
 			if (finished) {
@@ -1677,7 +1707,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) 
 			if (lower_neighbor_pos != lower_pos) {
 				const VoxelBlock *lower_neighbor_block = lower_lod.map.get_block(lower_neighbor_pos);
 
-				if (lower_neighbor_block != nullptr && lower_neighbor_block->is_visible()) {
+				if (lower_neighbor_block != nullptr && lower_neighbor_block->active) {
 					// The block has a visible neighbor of lower LOD
 					transition_mask |= dir_mask;
 					continue;

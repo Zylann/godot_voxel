@@ -364,10 +364,6 @@ bool VoxelBlock::update_fading(float speed) {
 	// TODO Should probably not be on the block directly?
 	// Because we may want to fade transition meshes only
 
-	if (_shader_material.is_null()) {
-		return true;
-	}
-
 	bool finished = false;
 
 	// x is progress in 0..1
@@ -408,7 +404,9 @@ bool VoxelBlock::update_fading(float speed) {
 			break;
 	}
 
-	_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_lod_fade, p);
+	if (_shader_material.is_valid()) {
+		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_lod_fade, p);
+	}
 
 	return finished;
 }

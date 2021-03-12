@@ -136,7 +136,9 @@ private:
 	Ref<Material> _debug_transition_material;
 #endif
 
-	bool _visible = true;
+	// Must match default value of `active`
+	bool _visible = false;
+
 	bool _parent_visible = true;
 	MeshState _mesh_state = MESH_NEVER_UPDATED;
 	uint8_t _transition_mask = 0;
