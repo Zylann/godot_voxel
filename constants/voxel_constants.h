@@ -5,7 +5,7 @@
 
 namespace VoxelConstants {
 
-static const float MINIMUM_LOD_SPLIT_SCALE = 2.f;
+static const float MINIMUM_LOD_SPLIT_SCALE = 1.f;
 static const float MAXIMUM_LOD_SPLIT_SCALE = 5.f;
 static const unsigned int MAX_LOD = 32;
 static const unsigned int MAX_VOLUME_EXTENT = 0x1fffffff;
