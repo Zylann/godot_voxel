@@ -652,8 +652,8 @@ void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_bpos
 	const int bound_min_y = _bounds_in_voxels.pos.y >> p;
 	const int bound_min_z = _bounds_in_voxels.pos.z >> p;
 	const int bound_max_x = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
-	const int bound_max_y = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
-	const int bound_max_z = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
+	const int bound_max_y = (_bounds_in_voxels.pos.y + _bounds_in_voxels.size.y) >> p;
+	const int bound_max_z = (_bounds_in_voxels.pos.z + _bounds_in_voxels.size.z) >> p;
 
 	const int min_x = max(p_bpos.x - 1, bound_min_x);
 	const int min_y = max(p_bpos.y - 1, bound_min_y);
@@ -686,8 +686,8 @@ bool VoxelLodTerrain::is_block_surrounded(const Vector3i &p_bpos, int lod_index,
 	const int bound_min_y = _bounds_in_voxels.pos.y >> p;
 	const int bound_min_z = _bounds_in_voxels.pos.z >> p;
 	const int bound_max_x = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
-	const int bound_max_y = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
-	const int bound_max_z = (_bounds_in_voxels.pos.x + _bounds_in_voxels.size.x) >> p;
+	const int bound_max_y = (_bounds_in_voxels.pos.y + _bounds_in_voxels.size.y) >> p;
+	const int bound_max_z = (_bounds_in_voxels.pos.z + _bounds_in_voxels.size.z) >> p;
 
 	const int min_x = max(p_bpos.x - 1, bound_min_x);
 	const int min_y = max(p_bpos.y - 1, bound_min_y);
