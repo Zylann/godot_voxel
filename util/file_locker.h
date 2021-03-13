@@ -47,6 +47,9 @@ private:
 				fp = memnew(File);
 				_files.set(fpath, fp);
 			}
+			else {
+				fp = *fpp;
+			}
 		}
 
 		if (read_only) {
