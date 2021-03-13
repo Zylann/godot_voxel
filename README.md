@@ -58,5 +58,6 @@ Phyronnaz
 RonanZe
 furtherorbit
 jp.owo.Manda (segfault-god)
+hidemat
 ```
 
