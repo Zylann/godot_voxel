@@ -50,7 +50,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Phyronnaz\n"
 						"RonanZe\n"
 						"furtherorbit\n"
-						"jp.owo.Manda (segfault-god)\n";
+						"jp.owo.Manda (segfault-god)\n"
+						"hidemat\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
