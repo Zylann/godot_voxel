@@ -946,6 +946,11 @@ float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
 	return generate_single(Vector3i(pos));
 }
 
+Vector2 VoxelGeneratorGraph::_b_analyze_range(Vector3 min_pos, Vector3 max_pos) const {
+	const Interval r = analyze_range(Vector3i::from_floored(min_pos), Vector3i::from_floored(max_pos));
+	return Vector2(r.min, r.max);
+}
+
 Dictionary VoxelGeneratorGraph::_b_compile() {
 	VoxelGraphRuntime::CompilationResult res = compile();
 	Dictionary d;
@@ -997,6 +1002,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_node_type_info", "type_id"), &VoxelGeneratorGraph::_b_get_node_type_info);
 
 	ClassDB::bind_method(D_METHOD("generate_single"), &VoxelGeneratorGraph::_b_generate_single);
+	ClassDB::bind_method(D_METHOD("analyze_range", "min_pos", "max_pos"), &VoxelGeneratorGraph::_b_analyze_range);
 
 	ClassDB::bind_method(D_METHOD("bake_sphere_bumpmap", "im", "ref_radius", "sdf_min", "sdf_max"),
 			&VoxelGeneratorGraph::bake_sphere_bumpmap);

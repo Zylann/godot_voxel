@@ -142,6 +142,7 @@ private:
 	// See https://github.com/godotengine/godot/issues/36895
 	void _b_set_node_param_null(int node_id, int param_index);
 	float _b_generate_single(Vector3 pos);
+	Vector2 _b_analyze_range(Vector3 min_pos, Vector3 max_pos) const;
 	Dictionary _b_compile();
 
 	void _on_subresource_changed();
