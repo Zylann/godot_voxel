@@ -647,8 +647,12 @@ Interval VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector
 	return ranges[_program.sdf_output_address];
 }
 
-uint16_t VoxelGraphRuntime::get_output_port_address(ProgramGraph::PortLocation port) const {
+bool VoxelGraphRuntime::try_get_output_port_address(ProgramGraph::PortLocation port, uint16_t &out_address) const {
 	const uint16_t *aptr = _program.output_port_addresses.getptr(port);
-	ERR_FAIL_COND_V(aptr == nullptr, 0);
-	return *aptr;
+	if (aptr == nullptr) {
+		// This port did not take part of the compiled result
+		return false;
+	}
+	out_address = *aptr;
+	return true;
 }

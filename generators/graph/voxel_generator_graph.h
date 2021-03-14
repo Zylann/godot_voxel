@@ -118,10 +118,12 @@ public:
 	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
 			ArraySlice<float> out_sdf);
 
+	Interval analyze_range(Vector3i min_pos, Vector3i max_pos) const;
+
 	// Returns state from the last generator used in the current thread
 	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
 
-	uint32_t get_output_port_address(ProgramGraph::PortLocation port) const;
+	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 
 	// Debug
 
@@ -129,8 +131,6 @@ public:
 	void debug_load_waves_preset();
 
 private:
-	Interval analyze_range(Vector3i min_pos, Vector3i max_pos);
-
 	Dictionary get_graph_as_variant_data() const;
 	void load_graph_from_variant_data(Dictionary data);
 

@@ -41,6 +41,12 @@ public:
 			return buffers[address];
 		}
 
+		inline const Interval get_range(uint16_t address) const {
+			// TODO Just for convenience because STL bound checks aren't working in Godot 3
+			CRASH_COND(address >= buffers.size());
+			return ranges[address];
+		}
+
 		void clear() {
 			buffer_size = 0;
 			buffer_capacity = 0;
@@ -85,7 +91,7 @@ public:
 		return _program.sdf_output_address != -1;
 	}
 
-	uint16_t get_output_port_address(ProgramGraph::PortLocation port) const;
+	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint16_t &out_address) const;
 
 	struct HeapResource {
 		void *ptr;

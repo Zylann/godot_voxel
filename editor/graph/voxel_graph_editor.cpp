@@ -7,7 +7,10 @@
 #include <core/os/os.h>
 #include <core/undo_redo.h>
 #include <editor/editor_scale.h>
+#include <scene/gui/check_box.h>
+#include <scene/gui/dialogs.h>
 #include <scene/gui/graph_edit.h>
+#include <scene/gui/grid_container.h>
 #include <scene/gui/label.h>
 
 const char *VoxelGraphEditor::SIGNAL_NODE_SELECTED = "node_selected";
@@ -51,6 +54,78 @@ class VoxelGraphEditorNode : public GraphNode {
 public:
 	uint32_t node_id = 0;
 	VoxelGraphEditorNodePreview *preview = nullptr;
+	Vector<Control *> output_labels;
+};
+
+class VoxelRangeAnalysisDialog : public AcceptDialog {
+	GDCLASS(VoxelRangeAnalysisDialog, AcceptDialog)
+public:
+	VoxelRangeAnalysisDialog() {
+		set_title(TTR("Debug Range Analysis"));
+		set_custom_minimum_size(EDSCALE * Vector2(300, 280));
+
+		VBoxContainer *vb = memnew(VBoxContainer);
+		//vb->set_anchors_preset(Control::PRESET_TOP_WIDE);
+
+		enabled_checkbox = memnew(CheckBox);
+		enabled_checkbox->set_text(TTR("Enabled"));
+		vb->add_child(enabled_checkbox);
+
+		Label *tip = memnew(Label);
+		// TODO Had to use `\n` and disable autowrap, otherwise the popup height becomes crazy high
+		// See https://github.com/godotengine/godot/issues/47005
+		tip->set_text(TTR("When enabled, hover node output labels to\ninspect their "
+						  "estimated range within the\nconfigured area."));
+		//tip->set_autowrap(true);
+		tip->set_modulate(Color(1.f, 1.f, 1.f, 0.8f));
+		vb->add_child(tip);
+
+		GridContainer *gc = memnew(GridContainer);
+		gc->set_anchors_preset(Control::PRESET_TOP_WIDE);
+		gc->set_columns(2);
+
+		add_row(TTR("Position X"), pos_x_spinbox, gc, 0);
+		add_row(TTR("Position Y"), pos_y_spinbox, gc, 0);
+		add_row(TTR("Position Z"), pos_z_spinbox, gc, 0);
+		add_row(TTR("Size X"), size_x_spinbox, gc, 100);
+		add_row(TTR("Size Y"), size_y_spinbox, gc, 100);
+		add_row(TTR("Size Z"), size_z_spinbox, gc, 100);
+
+		vb->add_child(gc);
+
+		add_child(vb);
+	}
+
+	AABB get_aabb() const {
+		return AABB(
+				Vector3(pos_x_spinbox->get_value(), pos_y_spinbox->get_value(), pos_z_spinbox->get_value()),
+				Vector3(size_x_spinbox->get_value(), size_y_spinbox->get_value(), size_z_spinbox->get_value()));
+	}
+
+	bool is_analysis_enabled() const {
+		return enabled_checkbox->is_pressed();
+	}
+
+private:
+	static void add_row(String text, SpinBox *&sb, GridContainer *parent, float defval) {
+		sb = memnew(SpinBox);
+		sb->set_min(-99999.f);
+		sb->set_max(99999.f);
+		sb->set_value(defval);
+		sb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+		Label *label = memnew(Label);
+		label->set_text(text);
+		parent->add_child(label);
+		parent->add_child(sb);
+	}
+
+	CheckBox *enabled_checkbox;
+	SpinBox *pos_x_spinbox;
+	SpinBox *pos_y_spinbox;
+	SpinBox *pos_z_spinbox;
+	SpinBox *size_x_spinbox;
+	SpinBox *size_y_spinbox;
+	SpinBox *size_z_spinbox;
 };
 
 VoxelGraphEditor::VoxelGraphEditor() {
@@ -72,6 +147,11 @@ VoxelGraphEditor::VoxelGraphEditor() {
 
 		_profile_label = memnew(Label);
 		toolbar->add_child(_profile_label);
+
+		Button *range_analysis_button = memnew(Button);
+		range_analysis_button->set_text("Analyze Range...");
+		range_analysis_button->connect("pressed", this, "_on_analyze_range_button_pressed");
+		toolbar->add_child(range_analysis_button);
 
 		vbox_container->add_child(toolbar);
 	}
@@ -108,6 +188,9 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	}
 	_context_menu->hide();
 	add_child(_context_menu);
+
+	_range_analysis_dialog = memnew(VoxelRangeAnalysisDialog);
+	add_child(_range_analysis_dialog);
 }
 
 void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
@@ -266,7 +349,11 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 			Label *label = memnew(Label);
 			label->set_text(node_type.outputs[i].name);
+			// Pass filter is required to allow tooltips to work
+			label->set_mouse_filter(Control::MOUSE_FILTER_PASS);
 			property_control->add_child(label);
+
+			node_view->output_labels.push_back(label);
 		}
 
 		node_view->add_child(property_control);
@@ -521,6 +608,8 @@ void VoxelGraphEditor::update_previews() {
 		return;
 	}
 
+	clear_range_analysis_tooltips();
+
 	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
 	const VoxelGraphRuntime::CompilationResult result = _graph->compile();
@@ -533,14 +622,59 @@ void VoxelGraphEditor::update_previews() {
 	if (!_graph->is_good()) {
 		return;
 	}
+
 	// We assume no other thread will try to modify the graph and compile something not good
 
+	update_slice_previews();
+
+	if (_range_analysis_dialog->is_analysis_enabled()) {
+		update_range_analysis_previews();
+	}
+
+	uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
+	PRINT_VERBOSE(String("Previews generated in {0} us").format(varray(time_taken)));
+}
+
+void VoxelGraphEditor::update_range_analysis_previews() {
+	PRINT_VERBOSE("Updating range analysis previews");
+	ERR_FAIL_COND(!_graph->is_good());
+
+	const AABB aabb = _range_analysis_dialog->get_aabb();
+
+	_graph->analyze_range(aabb.position, aabb.position + aabb.size);
+
+	const VoxelGraphRuntime::State &state = _graph->get_last_state_from_current_thread();
+
+	for (int child_index = 0; child_index < _graph_edit->get_child_count(); ++child_index) {
+		VoxelGraphEditorNode *node_view =
+				Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(child_index));
+		if (node_view == nullptr) {
+			continue;
+		}
+
+		for (int port_index = 0; port_index < node_view->output_labels.size(); ++port_index) {
+			ProgramGraph::PortLocation loc;
+			loc.node_id = node_view->node_id;
+			loc.port_index = port_index;
+			uint32_t address;
+			if (!_graph->try_get_output_port_address(loc, address)) {
+				continue;
+			}
+			const Interval range = state.get_range(address);
+			Control *label = node_view->output_labels[port_index];
+			label->set_tooltip(String("Min: {0}\nMax: {1}").format(varray(range.min, range.max)));
+		}
+	}
+}
+
+void VoxelGraphEditor::update_slice_previews() {
 	// TODO Use a thread?
-	PRINT_VERBOSE("Updating previews");
+	PRINT_VERBOSE("Updating slice previews");
+	ERR_FAIL_COND(!_graph->is_good());
 
 	struct PreviewInfo {
 		VoxelGraphEditorNodePreview *control;
-		uint16_t address;
+		uint32_t address;
 		float min_value;
 		float value_scale;
 	};
@@ -562,7 +696,10 @@ void VoxelGraphEditor::update_previews() {
 		}
 		PreviewInfo info;
 		info.control = node->preview;
-		info.address = _graph->get_output_port_address(src);
+		if (!_graph->try_get_output_port_address(src, info.address)) {
+			// Not part of the compiled result
+			continue;
+		}
 		info.min_value = _graph->get_node_param(dst.node_id, 0);
 		const float max_value = _graph->get_node_param(dst.node_id, 1);
 		info.value_scale = 1.f / (max_value - info.min_value);
@@ -630,9 +767,20 @@ void VoxelGraphEditor::update_previews() {
 
 		info.control->update_texture();
 	}
+}
 
-	uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
-	PRINT_VERBOSE(String("Previews generated in {0} us").format(varray(time_taken)));
+void VoxelGraphEditor::clear_range_analysis_tooltips() {
+	for (int child_index = 0; child_index < _graph_edit->get_child_count(); ++child_index) {
+		VoxelGraphEditorNode *node_view =
+				Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(child_index));
+		if (node_view == nullptr) {
+			continue;
+		}
+		for (int i = 0; i < node_view->output_labels.size(); ++i) {
+			Control *oc = node_view->output_labels[i];
+			oc->set_tooltip("");
+		}
+	}
 }
 
 void VoxelGraphEditor::schedule_preview_update() {
@@ -667,6 +815,10 @@ void VoxelGraphEditor::_on_profile_button_pressed() {
 	_profile_label->set_text(String("{0} microseconds per voxel").format(varray(us)));
 }
 
+void VoxelGraphEditor::_on_analyze_range_button_pressed() {
+	_range_analysis_dialog->popup_centered_minsize();
+}
+
 void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_gui_input", "event"), &VoxelGraphEditor::_on_graph_edit_gui_input);
 	ClassDB::bind_method(
@@ -687,6 +839,8 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_update_previews_button_pressed"),
 			&VoxelGraphEditor::_on_update_previews_button_pressed);
 	ClassDB::bind_method(D_METHOD("_on_profile_button_pressed"), &VoxelGraphEditor::_on_profile_button_pressed);
+	ClassDB::bind_method(D_METHOD("_on_analyze_range_button_pressed"),
+			&VoxelGraphEditor::_on_analyze_range_button_pressed);
 
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);
 

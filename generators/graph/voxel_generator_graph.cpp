@@ -343,10 +343,13 @@ const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current
 	return _cache.state;
 }
 
-uint32_t VoxelGeneratorGraph::get_output_port_address(ProgramGraph::PortLocation port) const {
+bool VoxelGeneratorGraph::try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const {
 	RWLockRead rlock(_runtime_lock);
-	ERR_FAIL_COND_V(_runtime == nullptr || !_runtime->has_output(), 0);
-	return _runtime->get_output_port_address(port);
+	ERR_FAIL_COND_V(_runtime == nullptr || !_runtime->has_output(), false);
+	uint16_t addr;
+	const bool res = _runtime->try_get_output_port_address(port, addr);
+	out_address = addr;
+	return res;
 }
 
 inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
@@ -630,7 +633,7 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 	return runtime->generate_single(cache.state, position.to_vec3());
 }
 
-Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) {
+Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) const {
 	std::shared_ptr<const VoxelGraphRuntime> runtime;
 	{
 		RWLockRead rlock(_runtime_lock);
@@ -638,7 +641,7 @@ Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) 
 	}
 	ERR_FAIL_COND_V(runtime == nullptr || !runtime->has_output(), Interval::from_single_value(0.f));
 	Cache &cache = _cache;
-	// Note, buffer size is irrelevant here
+	// Note, buffer size is irrelevant here, because range analysis doesn't use buffers
 	runtime->prepare_state(cache.state, 1);
 	return runtime->analyze_range(cache.state, min_pos, max_pos);
 }
