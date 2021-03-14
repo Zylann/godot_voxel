@@ -95,16 +95,20 @@ struct Interval {
 		}
 	}
 
-	inline void operator*=(float x) {
-		*this = *this * x;
-	}
-
 	inline Interval operator*(const Interval &other) const {
 		const float a = min * other.min;
 		const float b = min * other.max;
 		const float c = max * other.min;
 		const float d = max * other.max;
 		return Interval{ ::min(a, b, c, d), ::max(a, b, c, d) };
+	}
+
+	inline void operator*=(float x) {
+		*this = *this * x;
+	}
+
+	inline void operator*=(Interval x) {
+		*this = *this * x;
 	}
 
 	inline Interval operator/(const Interval &other) const {

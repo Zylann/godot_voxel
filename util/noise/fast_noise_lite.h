@@ -114,6 +114,12 @@ public:
 	// TODO Have a separate cell noise? It outputs multiple things, but we only get one.
 	// To get the others the API forces to calculate it a second time, and it's the most expensive noise...
 
+	// Internal
+
+	const fast_noise_lite::FastNoiseLite &get_noise_internal() const {
+		return _fn;
+	}
+
 private:
 	static void _bind_methods();
 

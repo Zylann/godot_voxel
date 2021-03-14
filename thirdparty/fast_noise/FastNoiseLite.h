@@ -400,7 +400,9 @@ public:
         }
     }
 
-private:
+// <Zylann> Exposed everything. Need it for extensions without modifying the library too much
+//private:
+
     template <typename T>
     struct Arguments_must_be_floating_point_values;
 

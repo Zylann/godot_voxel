@@ -5,40 +5,51 @@
 #include <modules/opensimplex/open_simplex_noise.h>
 #include <scene/resources/curve.h>
 
-Interval get_osn_octave_range_2d(OpenSimplexNoise *noise, const Interval &x, const Interval &y, int octave) {
+template <typename Noise_F>
+inline Interval get_noise_range_2d(Noise_F noise_func, const Interval &x, const Interval &y, float max_derivative) {
 	// Any unit vector away from a given evaluation point, the maximum difference is a fixed number.
 	// We can use that number to find a bounding range within our rectangular interval.
-	static const float max_derivative = 2.35;
-	static const float max_derivative_half_diagonal = 0.5f * max_derivative * Math_SQRT2;
+	const float max_derivative_half_diagonal = 0.5f * max_derivative * Math_SQRT2;
 
-	float mid_x = 0.5 * (x.min + x.max);
-	float mid_y = 0.5 * (y.min + y.max);
-	float mid_value = noise->_get_octave_noise_2d(octave, mid_x, mid_y);
+	const float mid_x = 0.5 * (x.min + x.max);
+	const float mid_y = 0.5 * (y.min + y.max);
+	const float mid_value = noise_func(mid_x, mid_y);
 
-	float diag = Math::sqrt(squared(x.length()) + squared(y.length()));
+	const float diag = Math::sqrt(squared(x.length()) + squared(y.length()));
 
 	return Interval(
 			::max(mid_value - max_derivative_half_diagonal * diag, -1.f),
 			::min(mid_value + max_derivative_half_diagonal * diag, 1.f));
 }
 
-Interval get_osn_octave_range_3d(
-		OpenSimplexNoise *noise, const Interval &x, const Interval &y, const Interval &z, int octave) {
-	// Any unit vector away from a given evaluation point, the maximum difference is a fixed number.
-	// We can use that number to find a bounding range within our box interval.
-	static const float max_derivative = 2.5;
-	static const float max_derivative_half_diagonal = 0.5f * max_derivative * Math_SQRT2;
+template <typename Noise_F>
+inline Interval get_noise_range_3d(Noise_F noise_func, const Interval &x, const Interval &y, const Interval &z,
+		float max_derivative) {
+	const float max_derivative_half_diagonal = 0.5f * max_derivative * Math_SQRT2;
 
-	float mid_x = 0.5 * (x.min + x.max);
-	float mid_y = 0.5 * (y.min + y.max);
-	float mid_z = 0.5 * (z.min + z.max);
-	float mid_value = noise->_get_octave_noise_3d(octave, mid_x, mid_y, mid_z);
+	const float mid_x = 0.5 * (x.min + x.max);
+	const float mid_y = 0.5 * (y.min + y.max);
+	const float mid_z = 0.5 * (z.min + z.max);
+	const float mid_value = noise_func(mid_x, mid_y, mid_z);
 
-	float diag = Math::sqrt(squared(x.length()) + squared(y.length()) + squared(z.length()));
+	const float diag = Math::sqrt(squared(x.length()) + squared(y.length()) + squared(z.length()));
 
 	return Interval(
 			::max(mid_value - max_derivative_half_diagonal * diag, -1.f),
 			::min(mid_value + max_derivative_half_diagonal * diag, 1.f));
+}
+
+Interval get_osn_octave_range_2d(OpenSimplexNoise *noise, const Interval &x, const Interval &y, int octave) {
+	return get_noise_range_2d(
+			[octave, noise](float x, float y) { return noise->_get_octave_noise_2d(octave, x, y); },
+			x, y, 2.35f);
+}
+
+Interval get_osn_octave_range_3d(
+		OpenSimplexNoise *noise, const Interval &x, const Interval &y, const Interval &z, int octave) {
+	return get_noise_range_3d(
+			[octave, noise](float x, float y, float z) { return noise->_get_octave_noise_3d(octave, x, y, z); },
+			x, y, z, 2.5f);
 }
 
 Interval get_osn_range_2d(OpenSimplexNoise *noise, Interval x, Interval y) {
@@ -172,15 +183,16 @@ static Interval get_fnl_cellular_value_range_2d(const FastNoiseLite *noise, Inte
 	return Interval{ -1, 1 };
 }
 
-static Interval get_fnl_cellular_value_range_3d(const FastNoiseLite *noise, Interval x, Interval y, Interval z) {
-	const float c0 = noise->get_noise_3d(x.min, y.min, z.min);
-	const float c1 = noise->get_noise_3d(x.max, y.min, z.min);
-	const float c2 = noise->get_noise_3d(x.min, y.max, z.min);
-	const float c3 = noise->get_noise_3d(x.max, y.max, z.min);
-	const float c4 = noise->get_noise_3d(x.max, y.max, z.max);
-	const float c5 = noise->get_noise_3d(x.max, y.max, z.max);
-	const float c6 = noise->get_noise_3d(x.max, y.max, z.max);
-	const float c7 = noise->get_noise_3d(x.max, y.max, z.max);
+static Interval get_fnl_cellular_value_range_3d(
+		const fast_noise_lite::FastNoiseLite &fn, Interval x, Interval y, Interval z) {
+	const float c0 = fn.GetNoise(x.min, y.min, z.min);
+	const float c1 = fn.GetNoise(x.max, y.min, z.min);
+	const float c2 = fn.GetNoise(x.min, y.max, z.min);
+	const float c3 = fn.GetNoise(x.max, y.max, z.min);
+	const float c4 = fn.GetNoise(x.max, y.max, z.max);
+	const float c5 = fn.GetNoise(x.max, y.max, z.max);
+	const float c6 = fn.GetNoise(x.max, y.max, z.max);
+	const float c7 = fn.GetNoise(x.max, y.max, z.max);
 	if (c0 == c1 && c1 == c2 && c2 == c3 && c3 == c4 && c4 == c5 && c5 == c6 && c6 == c7) {
 		return Interval::from_single_value(c0);
 	}
@@ -270,8 +282,180 @@ static Interval get_fnl_cellular_range(const FastNoiseLite *noise) {
 	return Interval{ -1.f, 1.f };
 }
 
+void fnl_transform_noise_coordinate(const fast_noise_lite::FastNoiseLite &fn, Interval &x, Interval &y, Interval &z) {
+	// Same logic as in the FastNoiseLite internal function
+
+	x *= fn.mFrequency;
+	y *= fn.mFrequency;
+	z *= fn.mFrequency;
+
+	switch (fn.mTransformType3D) {
+		case fast_noise_lite::FastNoiseLite::TransformType3D_ImproveXYPlanes: {
+			Interval xy = x + y;
+			Interval s2 = xy * (-0.211324865405187);
+			z *= 0.577350269189626;
+			x += s2 - z;
+			y = y + s2 - z;
+			z += xy * 0.577350269189626;
+		} break;
+		case fast_noise_lite::FastNoiseLite::TransformType3D_ImproveXZPlanes: {
+			Interval xz = x + z;
+			Interval s2 = xz * (-0.211324865405187);
+			y *= 0.577350269189626;
+			x += s2 - y;
+			z += s2 - y;
+			y += xz * 0.577350269189626;
+		} break;
+		case fast_noise_lite::FastNoiseLite::TransformType3D_DefaultOpenSimplex2: {
+			const float R3 = (2.0 / 3.0);
+			Interval r = (x + y + z) * R3; // Rotation, not skew
+			x = r - x;
+			y = r - y;
+			z = r - z;
+		} break;
+		default:
+			break;
+	}
+}
+
+Interval fnl_single_opensimplex2(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval x, Interval y,
+		Interval z) {
+	// According to OpenSimplex2 author, the 3D version is supposed to have a max derivative around 4.23718
+	// https://www.wolframalpha.com/input/?i=max+d%2Fdx+32.69428253173828125+*+x+*+%28%280.6-x%5E2%29%5E4%29+from+-0.6+to+0.6
+	// But empiric measures have shown it around 8. Discontinuities do exist in this noise though,
+	// which makes this measuring harder (and the reason why multiple step sizes are used)
+	return get_noise_range_3d(
+			[&fn, seed](float x, float y, float z) { return fn.SingleOpenSimplex2(seed, x, y, z); },
+			x, y, z, 4.23718f);
+}
+
+Interval fnl_single_opensimplex2s(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval x, Interval y,
+		Interval z) {
+	return get_noise_range_3d(
+			[&fn, seed](float x, float y, float z) { return fn.SingleOpenSimplex2(seed, x, y, z); },
+			x, y, z, 2.5f);
+}
+
+Interval fnl_single_cellular(const FastNoiseLite *noise, Interval x, Interval y, Interval z) {
+	const fast_noise_lite::FastNoiseLite &fn = noise->get_noise_internal();
+	if (fn.mCellularReturnType == fast_noise_lite::FastNoiseLite::CellularReturnType_CellValue) {
+		return get_fnl_cellular_value_range_3d(fn, x, y, z);
+	}
+	return get_fnl_cellular_range(noise);
+}
+
+Interval fnl_single_perlin(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval x, Interval y, Interval z) {
+	return get_noise_range_3d(
+			[&fn, seed](float x, float y, float z) { return fn.SinglePerlin(seed, x, y, z); },
+			x, y, z, 3.5f);
+}
+
+Interval fnl_single_value_cubic(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval x, Interval y, Interval z) {
+	return get_noise_range_3d(
+			[&fn, seed](float x, float y, float z) { return fn.SingleValueCubic(seed, x, y, z); },
+			x, y, z, 1.2f);
+}
+
+Interval fnl_single_value(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval x, Interval y, Interval z) {
+	return get_noise_range_3d(
+			[&fn, seed](float x, float y, float z) { return fn.SingleValue(seed, x, y, z); },
+			x, y, z, 3.0f);
+}
+
+Interval fnl_gen_noise_single(const FastNoiseLite *noise, int seed, Interval x, Interval y, Interval z) {
+	// Same logic as in the FastNoiseLite internal function
+	const fast_noise_lite::FastNoiseLite &fn = noise->get_noise_internal();
+
+	switch (fn.mNoiseType) {
+		case fast_noise_lite::FastNoiseLite::NoiseType_OpenSimplex2:
+			return fnl_single_opensimplex2(fn, seed, x, y, z);
+		case fast_noise_lite::FastNoiseLite::NoiseType_OpenSimplex2S:
+			return fnl_single_opensimplex2s(fn, seed, x, y, z);
+		case fast_noise_lite::FastNoiseLite::NoiseType_Cellular:
+			return fnl_single_cellular(noise, x, y, z);
+		case fast_noise_lite::FastNoiseLite::NoiseType_Perlin:
+			return fnl_single_perlin(fn, seed, x, y, z);
+		case fast_noise_lite::FastNoiseLite::NoiseType_ValueCubic:
+			return fnl_single_value_cubic(fn, seed, x, y, z);
+		case fast_noise_lite::FastNoiseLite::NoiseType_Value:
+			return fnl_single_value(fn, seed, x, y, z);
+		default:
+			return Interval::from_single_value(0);
+	}
+}
+
+Interval fnl_gen_fractal_fbm(const FastNoiseLite *p_noise, Interval x, Interval y, Interval z) {
+	// Same logic as in the FastNoiseLite internal function
+	const fast_noise_lite::FastNoiseLite &fn = p_noise->get_noise_internal();
+
+	int seed = fn.mSeed;
+	Interval sum;
+	Interval amp = Interval::from_single_value(fn.mFractalBounding);
+
+	for (int i = 0; i < fn.mOctaves; i++) {
+		Interval noise = fnl_gen_noise_single(p_noise, seed++, x, y, z);
+		sum += noise * amp;
+		amp *= lerp(
+				Interval::from_single_value(1.0f),
+				(noise + Interval::from_single_value(1.0f)) * 0.5f,
+				Interval::from_single_value(fn.mWeightedStrength));
+
+		x *= fn.mLacunarity;
+		y *= fn.mLacunarity;
+		z *= fn.mLacunarity;
+		amp *= fn.mGain;
+	}
+
+	return sum;
+}
+
+Interval fnl_gen_fractal_ridged(const FastNoiseLite *p_noise, Interval x, Interval y, Interval z) {
+	// Same logic as in the FastNoiseLite internal function
+	const fast_noise_lite::FastNoiseLite &fn = p_noise->get_noise_internal();
+
+	int seed = fn.mSeed;
+	Interval sum;
+	Interval amp = Interval::from_single_value(fn.mFractalBounding);
+
+	for (int i = 0; i < fn.mOctaves; i++) {
+		Interval noise = abs(fnl_gen_noise_single(p_noise, seed++, x, y, z));
+		sum += (noise * -2 + 1) * amp;
+		amp *= lerp(
+				Interval::from_single_value(1.0f),
+				Interval::from_single_value(1.0f) - noise,
+				Interval::from_single_value(fn.mWeightedStrength));
+
+		x *= fn.mLacunarity;
+		y *= fn.mLacunarity;
+		z *= fn.mLacunarity;
+		amp *= fn.mGain;
+	}
+
+	return sum;
+}
+
+Interval fnl_get_noise(const FastNoiseLite *noise, Interval x, Interval y, Interval z) {
+	// Same logic as in the FastNoiseLite internal function
+	const fast_noise_lite::FastNoiseLite &fn = noise->get_noise_internal();
+
+	fnl_transform_noise_coordinate(fn, x, y, z);
+
+	switch (noise->get_fractal_type()) {
+		default:
+			return fnl_gen_noise_single(noise, noise->get_seed(), x, y, z);
+		case FastNoiseLite::FRACTAL_FBM:
+			return fnl_gen_fractal_fbm(noise, x, y, z);
+		case FastNoiseLite::FRACTAL_RIDGED:
+			return fnl_gen_fractal_ridged(noise, x, y, z);
+		case FastNoiseLite::FRACTAL_PING_PONG:
+			// TODO Ping pong
+			return Interval(-1.f, 1.f);
+	}
+}
+
 Interval get_fnl_range_2d(const FastNoiseLite *noise, Interval x, Interval y) {
 	// TODO More precise analysis using derivatives
+	// TODO Take warp noise into account
 	switch (noise->get_noise_type()) {
 		case FastNoiseLite::TYPE_CELLULAR:
 			if (noise->get_cellular_return_type() == FastNoiseLite::CELLULAR_RETURN_CELL_VALUE) {
@@ -284,11 +468,14 @@ Interval get_fnl_range_2d(const FastNoiseLite *noise, Interval x, Interval y) {
 }
 
 Interval get_fnl_range_3d(const FastNoiseLite *noise, Interval x, Interval y, Interval z) {
-	// TODO More precise analysis using derivatives
+	if (noise->get_warp_noise().is_null()) {
+		return fnl_get_noise(noise, x, y, z);
+	}
+	// TODO Take warp noise into account
 	switch (noise->get_noise_type()) {
 		case FastNoiseLite::TYPE_CELLULAR:
 			if (noise->get_cellular_return_type() == FastNoiseLite::CELLULAR_RETURN_CELL_VALUE) {
-				return get_fnl_cellular_value_range_3d(noise, x, y, z);
+				return get_fnl_cellular_value_range_3d(noise->get_noise_internal(), x, y, z);
 			}
 			return get_fnl_cellular_range(noise);
 		default:
