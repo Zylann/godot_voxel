@@ -215,7 +215,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(
 			out_buffer.get_channel_depth(out_buffer.get_channel_depth(channel)));
 
-	const float clip_threshold = sdf_scale * 0.2f;
+	const float clip_threshold = sdf_scale * 0.05f;
 
 	const int stride = 1 << input.lod;
 
@@ -268,7 +268,6 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 				} else if (range.is_single_value()) {
 					out_buffer.fill_area_f(range.min, rmin, rmax, channel);
-					//out_buffer.clear_channel_f(channel, range.min);
 					continue;
 				}
 
