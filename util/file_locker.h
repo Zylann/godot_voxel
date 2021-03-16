@@ -46,6 +46,8 @@ private:
 			if (fpp == nullptr) {
 				fp = memnew(File);
 				_files.set(fpath, fp);
+			} else {
+				fp = *fpp;
 			}
 		}
 
