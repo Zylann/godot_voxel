@@ -175,10 +175,11 @@ public:
 			return *reinterpret_cast<const T *>(_params.data());
 		}
 
-	protected:
 		inline uint32_t get_input_address(uint32_t i) const {
 			return _inputs[i];
 		}
+
+	protected:
 		inline uint32_t get_output_address(uint32_t i) const {
 			return _outputs[i];
 		}

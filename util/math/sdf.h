@@ -6,7 +6,6 @@
 
 // Signed-distance-field functions.
 // For more, see https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
-// TODO Move these to VoxelMath once we have a proper namespace, so they can be used in VoxelTool too
 
 inline float sdf_box(const Vector3 pos, const Vector3 extents) {
 	Vector3 d = pos.abs() - extents;
@@ -35,27 +34,24 @@ inline Interval sdf_torus(
 	return get_length(qx, y) - r1;
 }
 
+inline float sdf_union(float a, float b) {
+	return min(a, b);
+}
+
+// Subtracts SDF a from SDF b
+inline float sdf_subtract(float a, float b) {
+	return max(-a, b);
+}
+
 inline float sdf_smooth_union(float a, float b, float s) {
 	float h = clamp(0.5f + 0.5f * (b - a) / s, 0.0f, 1.0f);
 	return Math::lerp(b, a, h) - s * h * (1.0f - h);
 }
 
-inline Interval sdf_smooth_union(Interval a, Interval b, Interval s) {
-	Interval h = clamp(Interval::from_single_value(0.5f) + Interval::from_single_value(0.5f) * (b - a) / s,
-			Interval::from_single_value(0.0f), Interval::from_single_value(1.0f));
-	return lerp(b, a, h) - s * h * (Interval::from_single_value(1.0f) - h);
-}
-
-// Inverted a and b because it does b - a
+// Inverted a and b because it subtracts SDF b from SDF a
 inline float sdf_smooth_subtract(float b, float a, float s) {
 	float h = clamp(0.5f - 0.5f * (b + a) / s, 0.0f, 1.0f);
 	return Math::lerp(b, -a, h) + s * h * (1.0f - h);
-}
-
-inline Interval sdf_smooth_subtract(Interval b, Interval a, Interval s) {
-	Interval h = clamp(Interval::from_single_value(0.5f) - Interval::from_single_value(0.5f) * (b + a) / s,
-			Interval::from_single_value(0.0f), Interval::from_single_value(1.0f));
-	return lerp(b, -a, h) + s * h * (Interval::from_single_value(1.0f) - h);
 }
 
 #endif // VOXEL_MATH_SDF_H

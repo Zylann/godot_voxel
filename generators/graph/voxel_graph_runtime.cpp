@@ -562,6 +562,7 @@ void VoxelGraphRuntime::generate_set(State &state,
 			pc += params_size;
 		}
 
+		// TODO May be replaced by execution mapping?
 		// Skip node if all its outputs are constant
 		bool all_outputs_constant = true;
 		for (uint32_t i = 0; i < outputs.size(); ++i) {

@@ -96,6 +96,8 @@ struct Interval {
 	}
 
 	inline Interval operator*(const Interval &other) const {
+		// Note, if the two operands have the same source (i.e you are doing x^2), this may lead to suboptimal results.
+		// You may then prefer using a more dedicated function.
 		const float a = min * other.min;
 		const float b = min * other.max;
 		const float c = max * other.min;
@@ -113,6 +115,7 @@ struct Interval {
 
 	inline Interval operator/(const Interval &other) const {
 		if (other.is_single_value() && other.min == 0.f) {
+			// Division by zero. In Voxel graph, we return 0.
 			return Interval::from_single_value(0.f);
 		}
 		if (other.contains(0.f)) {
@@ -165,10 +168,6 @@ inline Interval sqrt(const Interval &i) {
 	};
 }
 
-inline Interval squared(const Interval a) {
-	return a * a;
-}
-
 inline Interval abs(const Interval &i) {
 	return Interval{
 		i.contains(0) ? 0 : ::min(Math::abs(i.min), Math::abs(i.max)),
@@ -198,9 +197,20 @@ inline Interval clamp(const Interval &i, const Interval &p_min, const Interval &
 inline Interval lerp(const Interval &a, const Interval &b, const Interval &t) {
 	if (t.is_single_value()) {
 		return Interval(Math::lerp(a.min, b.min, t.min), Math::lerp(a.max, b.max, t.min));
-	} else {
-		return a + t * (b - a);
 	}
+
+	const float v0 = a.min + t.min * (b.min - a.min);
+	const float v1 = a.max + t.min * (b.min - a.max);
+	const float v2 = a.min + t.max * (b.min - a.min);
+	const float v3 = a.max + t.max * (b.min - a.max);
+	const float v4 = a.min + t.min * (b.max - a.min);
+	const float v5 = a.max + t.min * (b.max - a.max);
+	const float v6 = a.min + t.max * (b.max - a.min);
+	const float v7 = a.max + t.max * (b.max - a.max);
+
+	return Interval(
+			min(v0, v1, v2, v3, v4, v5, v6, v7),
+			max(v0, v1, v2, v3, v4, v5, v6, v7));
 }
 
 inline Interval sin(const Interval &i) {
@@ -337,12 +347,72 @@ inline Interval smoothstep(float p_from, float p_to, Interval p_weight) {
 	}
 }
 
+// Prefer this over x*x, this will provide a more optimal result
+inline Interval squared(const Interval &x) {
+	if (x.min < 0.f && x.max > 0.f) {
+		// The interval includes 0
+		return Interval{ 0.f, max(x.min * x.min, x.max * x.max) };
+	}
+	// The interval is only on one side of the parabola
+	if (x.max <= 0.f) {
+		// Negative side: monotonic descending
+		return Interval{ x.max * x.max, x.min * x.min };
+	} else {
+		// Positive side: monotonic ascending
+		return Interval{ x.min * x.min, x.max * x.max };
+	}
+}
+
+// Prefer this instead of doing polynomials with a single interval, this will provide a more optimal result
+inline Interval polynomial_second_degree(const Interval x, float a, float b, float c) {
+	// a*x*x + b*x + c
+
+	if (a == 0.f) {
+		if (b == 0.f) {
+			return Interval::from_single_value(c);
+		} else {
+			return b * x + c;
+		}
+	}
+
+	const float parabola_x = -b / (2.f * a);
+
+	const float y0 = a * x.min * x.min + b * x.min + c;
+	const float y1 = a * x.max * x.max + b * x.max + c;
+
+	if (x.min < parabola_x && x.max > parabola_x) {
+		// The interval includes the tip
+		const float parabola_y = a * parabola_x * parabola_x + b * parabola_x + c;
+		if (a < 0) {
+			return Interval(min(y0, y1), parabola_y);
+		} else {
+			return Interval(parabola_y, max(y0, y1));
+		}
+	}
+	// The interval is only on one side of the parabola
+	if ((a >= 0 && x.min >= parabola_x) || (a < 0 && x.max < parabola_x)) {
+		// Monotonic increasing
+		return Interval(y0, y1);
+	} else {
+		// Monotonic decreasing
+		return Interval(y1, y0);
+	}
+}
+
+// Prefer this over x*x*x, this will provide a more optimal result
+inline Interval cubed(const Interval &x) {
+	// x^3 is monotonic ascending
+	const float minv = x.min * x.min * x.min;
+	const float maxv = x.max * x.max * x.max;
+	return Interval{ minv, maxv };
+}
+
 inline Interval get_length(const Interval &x, const Interval &y) {
-	return sqrt(x * x + y * y);
+	return sqrt(squared(x) + squared(y));
 }
 
 inline Interval get_length(const Interval &x, const Interval &y, const Interval &z) {
-	return sqrt(x * x + y * y + z * z);
+	return sqrt(squared(x) + squared(y) + squared(z));
 }
 
 #endif // INTERVAL_H

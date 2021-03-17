@@ -18,6 +18,17 @@ Interval get_curve_range(Curve &curve, bool &is_monotonic_increasing);
 Interval get_heightmap_range(Image &im);
 Interval get_heightmap_range(Image &im, Rect2i rect);
 
+inline Interval sdf_union(Interval a, Interval b) {
+	return min_interval(a, b);
+}
+
+inline Interval sdf_subtract(Interval a, Interval b) {
+	return max_interval(a, b);
+}
+
+Interval sdf_smooth_union(Interval b, Interval a, float s);
+Interval sdf_smooth_subtract(Interval b, Interval a, float s);
+
 struct Interval2 {
 	Interval x;
 	Interval y;

@@ -136,9 +136,12 @@ inline Interval select(const Interval &a, const Interval &b, const Interval &thr
 	return Interval(min(a.min, b.min), max(a.max, b.max));
 }
 
-template <typename T>
-inline T skew3(T x) {
+inline float skew3(float x) {
 	return (x * x * x + x) * 0.5f;
+}
+
+inline Interval skew3(Interval x) {
+	return (cubed(x) + x) * 0.5f;
 }
 
 // This is mostly useful for generating planets from an existing heightmap
@@ -328,7 +331,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
-			ctx.set_output(0, a * b);
+			if (ctx.get_input_address(0) == ctx.get_input_address(1)) {
+				// The two operands have the same source, we can optimize to a square function
+				ctx.set_output(0, squared(a));
+			} else {
+				ctx.set_output(0, a * b);
+			}
 		};
 	}
 	{
@@ -507,7 +515,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval y1 = ctx.get_input(3);
 			const Interval dx = x1 - x0;
 			const Interval dy = y1 - y0;
-			const Interval r = sqrt(dx * dx + dy * dy);
+			const Interval r = sqrt(squared(dx) + squared(dy));
 			ctx.set_output(0, r);
 		};
 	}
@@ -547,7 +555,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval dx = x1 - x0;
 			const Interval dy = y1 - y0;
 			const Interval dz = z1 - z0;
-			Interval r = sqrt(dx * dx + dy * dy + dz * dz);
+			Interval r = get_length(dx, dy, dz);
 			ctx.set_output(0, r);
 		};
 	}
@@ -1022,15 +1030,26 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const Params params = ctx.get_params<Params>();
-			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = sdf_smooth_union(a.data[i], b.data[i], params.smoothness);
+			if (params.smoothness > 0.0001f) {
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = sdf_smooth_union(a.data[i], b.data[i], params.smoothness);
+				}
+			} else {
+				// Fallback on hard-union, smooth union does not support zero smoothness
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = sdf_union(a.data[i], b.data[i]);
+				}
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
 			const Params params = ctx.get_params<Params>();
-			ctx.set_output(0, sdf_smooth_union(a, b, Interval::from_single_value(params.smoothness)));
+			if (params.smoothness > 0.0001f) {
+				ctx.set_output(0, sdf_smooth_union(a, b, params.smoothness));
+			} else {
+				ctx.set_output(0, sdf_union(a, b));
+			}
 		};
 	}
 	{
@@ -1055,15 +1074,26 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const Params params = ctx.get_params<Params>();
-			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = sdf_smooth_subtract(a.data[i], b.data[i], params.smoothness);
+			if (params.smoothness > 0.0001f) {
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = sdf_smooth_subtract(a.data[i], b.data[i], params.smoothness);
+				}
+			} else {
+				// Fallback on hard-subtract, smooth subtract does not support zero smoothness
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = sdf_subtract(a.data[i], b.data[i]);
+				}
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
 			const Params params = ctx.get_params<Params>();
-			ctx.set_output(0, sdf_smooth_subtract(a, b, Interval::from_single_value(params.smoothness)));
+			if (params.smoothness > 0.0001f) {
+				ctx.set_output(0, sdf_smooth_subtract(a, b, params.smoothness));
+			} else {
+				ctx.set_output(0, sdf_subtract(a, b));
+			}
 		};
 	}
 	{
@@ -1222,7 +1252,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
-			const Interval len = sqrt(x * x + y * y + z * z);
+			const Interval len = get_length(x, y, z);
 			const Interval nx = x / len;
 			const Interval ny = y / len;
 			const Interval nz = z / len;

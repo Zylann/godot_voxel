@@ -215,7 +215,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(
 			out_buffer.get_channel_depth(out_buffer.get_channel_depth(channel)));
 
-	const float clip_threshold = sdf_scale * 0.05f;
+	const float clip_threshold = sdf_scale * 0.2f;
 
 	const int stride = 1 << input.lod;
 
@@ -252,18 +252,15 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 				const Interval range = runtime->analyze_range(cache.state, gmin, gmax) * sdf_scale;
 				if (range.min > clip_threshold && range.max > clip_threshold) {
-					// TODO fill_area_f has an issue with max values
 					out_buffer.fill_area_f(1.f, rmin, rmax, channel);
-
-					//out_buffer.clear_channel_f(channel, 1.f);
-
 					// DEBUG: use this instead to fill optimized-out blocks with matter, making them stand out
-					//out_buffer.clear_channel_f(channel, -1.f);
+					//out_buffer.fill_area_f(-1.f, rmin, rmax, channel);
 					continue;
 
 				} else if (range.min < -clip_threshold && range.max < -clip_threshold) {
 					out_buffer.fill_area_f(-1.f, rmin, rmax, channel);
-					//out_buffer.clear_channel_f(channel, -1.f);
+					// DEBUG: use this instead to fill optimized-out blocks with matter, making them stand out
+					//out_buffer.fill_area_f(1.f, rmin, rmax, channel);
 					continue;
 
 				} else if (range.is_single_value()) {

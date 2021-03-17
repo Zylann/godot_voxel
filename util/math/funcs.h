@@ -55,7 +55,28 @@ inline T max(const T a, const T b, const T c, const T d) {
 }
 
 template <typename T>
+inline T min(const T a, const T b, const T c, const T d, const T e, const T f) {
+	return min(min(min(a, b), min(c, d)), min(e, f));
+}
+
+template <typename T>
+inline T max(const T a, const T b, const T c, const T d, const T e, const T f) {
+	return max(max(max(a, b), max(c, d)), max(e, f));
+}
+
+template <typename T>
+inline T min(const T a, const T b, const T c, const T d, const T e, const T f, const T g, const T h) {
+	return min(min(a, b, c, d), min(e, f, g, h));
+}
+
+template <typename T>
+inline T max(const T a, const T b, const T c, const T d, const T e, const T f, const T g, const T h) {
+	return max(max(a, b, c, d), max(e, f, g, h));
+}
+
+template <typename T>
 inline T clamp(const T x, const T min_value, const T max_value) {
+	// TODO Clang can optimize a min/max implementation. Worth changing to that?
 	if (x < min_value) {
 		return min_value;
 	}
