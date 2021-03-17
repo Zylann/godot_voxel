@@ -97,9 +97,9 @@ public:
 	}
 
 	AABB get_aabb() const {
-		return AABB(
-				Vector3(pos_x_spinbox->get_value(), pos_y_spinbox->get_value(), pos_z_spinbox->get_value()),
-				Vector3(size_x_spinbox->get_value(), size_y_spinbox->get_value(), size_z_spinbox->get_value()));
+		const Vector3 center(pos_x_spinbox->get_value(), pos_y_spinbox->get_value(), pos_z_spinbox->get_value());
+		const Vector3 size(size_x_spinbox->get_value(), size_y_spinbox->get_value(), size_z_spinbox->get_value());
+		return AABB(center - 0.5f * size, size);
 	}
 
 	bool is_analysis_enabled() const {
