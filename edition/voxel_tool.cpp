@@ -2,6 +2,7 @@
 #include "../storage/voxel_buffer.h"
 #include "../terrain/voxel_lod_terrain.h"
 #include "../util/macros.h"
+#include "../util/math/sdf.h"
 #include "../util/profiling.h"
 
 Vector3 VoxelRaycastResult::_b_get_position() const {
@@ -155,13 +156,12 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 	float res;
 	switch (mode) {
 		case VoxelTool::MODE_ADD:
-			// Union
-			res = min(src_value, dst_value);
+			res = sdf_union(src_value, dst_value);
 			break;
 
 		case VoxelTool::MODE_REMOVE:
 			// Relative complement (or difference)
-			res = max(-src_value, dst_value);
+			res = sdf_subtract(src_value, dst_value);
 			break;
 
 		case VoxelTool::MODE_SET:
