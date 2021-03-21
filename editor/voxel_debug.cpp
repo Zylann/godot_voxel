@@ -21,6 +21,8 @@ static Color get_color(ColorID id) {
 			return Color(1, 1, 1);
 		case ID_OCTREE_BOUNDS:
 			return Color(0.5, 0.5, 0.5);
+		case ID_VOXEL_GRAPH_DEBUG_BOUNDS:
+			return Color(1.0, 1.0, 0.0);
 		default:
 			CRASH_NOW_MSG("Unexpected index");
 	}
@@ -170,6 +172,7 @@ void DebugRenderer::begin() {
 }
 
 void DebugRenderer::draw_box(Transform t, ColorID color) {
+	// Pick an existing item, or create one
 	DebugRendererItem *item;
 	if (_current >= _items.size()) {
 		item = memnew(DebugRendererItem);
@@ -188,6 +191,7 @@ void DebugRenderer::draw_box(Transform t, ColorID color) {
 
 void DebugRenderer::end() {
 	CRASH_COND(!_inside_block);
+	// Hide exceeding items
 	for (unsigned int i = _current; i < _items.size(); ++i) {
 		DebugRendererItem *item = _items[i];
 		item->set_visible(false);

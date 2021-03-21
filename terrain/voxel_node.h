@@ -1,11 +1,11 @@
 #ifndef VOXEL_NODE_H
 #define VOXEL_NODE_H
 
-#include <scene/3d/spatial.h>
+#include "../generators/voxel_generator.h"
+#include "../meshers/voxel_mesher.h"
+#include "../streams/voxel_stream.h"
 
-class VoxelMesher;
-class VoxelStream;
-class VoxelGenerator;
+#include <scene/3d/spatial.h>
 
 // Base class for voxel volumes
 class VoxelNode : public Spatial {

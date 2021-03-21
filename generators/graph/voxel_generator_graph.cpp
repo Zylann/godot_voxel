@@ -270,6 +270,9 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 				// The section may have the surface in it, we have to calculate it
 
+				// Optimize out branches of the graph that won't contribute to the result
+				runtime->generate_optimized_execution_map(cache.state, false);
+
 				{
 					unsigned int i = 0;
 					for (int rz = rmin.z, gz = gmin.z; rz < rmax.z; ++rz, gz += stride) {
@@ -286,7 +289,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 					y_cache.fill(gy);
 
-					runtime->generate_set(cache.state, x_cache, y_cache, z_cache, slice_cache, ry != rmin.y);
+					runtime->generate_set(cache.state, x_cache, y_cache, z_cache, slice_cache, ry != rmin.y, true);
 
 					// TODO Flatten this further
 					{
@@ -332,7 +335,7 @@ void VoxelGeneratorGraph::generate_set(ArraySlice<float> in_x, ArraySlice<float>
 	ERR_FAIL_COND(_runtime == nullptr || !_runtime->has_output());
 	Cache &cache = _cache;
 	_runtime->prepare_state(cache.state, in_x.size());
-	_runtime->generate_set(cache.state, in_x, in_y, in_z, out_sdf, false);
+	_runtime->generate_set(cache.state, in_x, in_y, in_z, out_sdf, false, false);
 }
 
 const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current_thread() {
@@ -346,6 +349,12 @@ bool VoxelGeneratorGraph::try_get_output_port_address(ProgramGraph::PortLocation
 	const bool res = _runtime->try_get_output_port_address(port, addr);
 	out_address = addr;
 	return res;
+}
+
+void VoxelGeneratorGraph::find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_dependencies) const {
+	std::vector<uint32_t> dst;
+	dst.push_back(node_id);
+	_graph.find_dependencies(dst, out_dependencies);
 }
 
 inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
@@ -444,7 +453,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 			}
 
 			runtime->generate_set(state,
-					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values), false);
+					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values), false, false);
 
 			// Calculate final pixels
 			im->lock();
@@ -541,8 +550,9 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 					++i;
 				}
 			}
+			// TODO Perform range analysis on the range of coordinates, it might still yield performance benefits
 			runtime->generate_set(state,
-					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_p), false);
+					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_p), false, false);
 
 			// Get neighbors along X
 			i = 0;
@@ -557,7 +567,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 				}
 			}
 			runtime->generate_set(state,
-					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_px), false);
+					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_px), false, false);
 
 			// Get neighbors along Y
 			i = 0;
@@ -572,7 +582,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 				}
 			}
 			runtime->generate_set(state,
-					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_py), false);
+					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_py), false, false);
 
 			// TODO This is probably invalid due to the distortion, may need to use another approach.
 			// Compute the 3D normal from gradient, then project it?
@@ -626,10 +636,11 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 	ERR_FAIL_COND_V(runtime == nullptr || !runtime->has_output(), 0.f);
 	Cache &cache = _cache;
 	runtime->prepare_state(cache.state, 1);
-	return runtime->generate_single(cache.state, position.to_vec3());
+	return runtime->generate_single(cache.state, position.to_vec3(), false);
 }
 
-Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) const {
+Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos,
+		bool optimize_execution_map, bool debug) const {
 	std::shared_ptr<const VoxelGraphRuntime> runtime;
 	{
 		RWLockRead rlock(_runtime_lock);
@@ -639,7 +650,11 @@ Interval VoxelGeneratorGraph::analyze_range(Vector3i min_pos, Vector3i max_pos) 
 	Cache &cache = _cache;
 	// Note, buffer size is irrelevant here, because range analysis doesn't use buffers
 	runtime->prepare_state(cache.state, 1);
-	return runtime->analyze_range(cache.state, min_pos, max_pos);
+	Interval res = runtime->analyze_range(cache.state, min_pos, max_pos);
+	if (optimize_execution_map) {
+		runtime->generate_optimized_execution_map(cache.state, debug);
+	}
+	return res;
 }
 
 Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
@@ -821,7 +836,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 			for (uint32_t z = 0; z < cube_size; ++z) {
 				for (uint32_t y = 0; y < cube_size; ++y) {
 					for (uint32_t x = 0; x < cube_size; ++x) {
-						runtime->generate_single(cache.state, Vector3i(x, y, z).to_vec3());
+						runtime->generate_single(cache.state, Vector3i(x, y, z).to_vec3(), false);
 					}
 				}
 			}
@@ -849,7 +864,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 			profiling_clock.restart();
 
 			for (uint32_t y = 0; y < cube_size; ++y) {
-				runtime->generate_set(cache.state, sx, sy, sz, sdst, false);
+				runtime->generate_set(cache.state, sx, sy, sz, sdst, false, false);
 			}
 
 			elapsed_us += profiling_clock.restart();
@@ -944,7 +959,7 @@ float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
 }
 
 Vector2 VoxelGeneratorGraph::_b_analyze_range(Vector3 min_pos, Vector3 max_pos) const {
-	const Interval r = analyze_range(Vector3i::from_floored(min_pos), Vector3i::from_floored(max_pos));
+	const Interval r = analyze_range(Vector3i::from_floored(min_pos), Vector3i::from_floored(max_pos), false, false);
 	return Vector2(r.min, r.max);
 }
 

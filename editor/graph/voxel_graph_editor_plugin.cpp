@@ -1,8 +1,10 @@
 #include "voxel_graph_editor_plugin.h"
 #include "../../generators/graph/voxel_generator_graph.h"
+#include "../../terrain/voxel_node.h"
 #include "voxel_graph_editor.h"
 #include "voxel_graph_node_inspector_wrapper.h"
 
+#include <editor/editor_data.h>
 #include <editor/editor_scale.h>
 
 VoxelGraphEditorPlugin::VoxelGraphEditorPlugin(EditorNode *p_node) {
@@ -41,6 +43,19 @@ void VoxelGraphEditorPlugin::edit(Object *p_object) {
 	Ref<VoxelGeneratorGraph> graph(graph_ptr);
 	_graph_editor->set_undo_redo(&get_undo_redo()); // UndoRedo isn't available in constructor
 	_graph_editor->set_graph(graph);
+
+	VoxelNode *voxel_node = nullptr;
+	Array selected_nodes = get_editor_interface()->get_selection()->get_selected_nodes();
+	for (int i = 0; i < selected_nodes.size(); ++i) {
+		Node *node = selected_nodes[i];
+		ERR_FAIL_COND(node == nullptr);
+		VoxelNode *vn = Object::cast_to<VoxelNode>(node);
+		if (vn != nullptr && vn->get_generator() == graph_ptr) {
+			voxel_node = vn;
+			break;
+		}
+	}
+	_graph_editor->set_voxel_node(voxel_node);
 }
 
 void VoxelGraphEditorPlugin::make_visible(bool visible) {
@@ -50,6 +65,7 @@ void VoxelGraphEditorPlugin::make_visible(bool visible) {
 
 	} else {
 		_bottom_panel_button->hide();
+		_graph_editor->set_voxel_node(nullptr);
 
 		// TODO Awful hack to handle the nonsense happening in `_on_graph_editor_node_selected`
 		if (!_deferred_visibility_scheduled) {

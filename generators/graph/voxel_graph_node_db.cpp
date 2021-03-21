@@ -601,6 +601,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("b"));
 		t.inputs.push_back(Port("ratio"));
 		t.outputs.push_back(Port("out"));
+		// TODO Add a `clamp` parameter? It helps optimization
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
@@ -636,6 +637,15 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			// Note: if I call this `t` like I use to do with `lerp`, GCC complains it shadows `t` from the outer scope.
 			// Even though this lambda does not capture anything from the outer scope :shrug:
 			const Interval r = ctx.get_input(2);
+			if (r.is_single_value()) {
+				if (r.min == 1.f) {
+					// a will be ignored
+					ctx.ignore_input(0);
+				} else if (r.min == 0.f) {
+					// b will be ignored
+					ctx.ignore_input(1);
+				}
+			}
 			ctx.set_output(0, lerp(a, b, r));
 		};
 	}

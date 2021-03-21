@@ -207,7 +207,7 @@ void ProgramGraph::find_terminal_nodes(std::vector<uint32_t> &node_ids) const {
 	}
 }
 
-void ProgramGraph::find_dependencies(std::vector<uint32_t> nodes_to_process, std::vector<uint32_t> &order) const {
+void ProgramGraph::find_dependencies(std::vector<uint32_t> nodes_to_process, std::vector<uint32_t> &out_order) const {
 	// Finds dependencies of the given nodes, and returns them in the order they should be processed
 	std::unordered_set<uint32_t> visited_nodes;
 
@@ -233,7 +233,7 @@ void ProgramGraph::find_dependencies(std::vector<uint32_t> nodes_to_process, std
 
 		if (nodes_to_process_begin == nodes_to_process.size()) {
 			// No ancestor to visit, process the node
-			order.push_back(node->id);
+			out_order.push_back(node->id);
 			visited_nodes.insert(node->id);
 			nodes_to_process.pop_back();
 		}

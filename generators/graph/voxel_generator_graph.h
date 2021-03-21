@@ -118,12 +118,15 @@ public:
 	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
 			ArraySlice<float> out_sdf);
 
-	Interval analyze_range(Vector3i min_pos, Vector3i max_pos) const;
+	Interval analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map, bool debug) const;
+	void generate_optimized_execution_map();
 
 	// Returns state from the last generator used in the current thread
 	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
 
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
+
+	void find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_dependencies) const;
 
 	// Debug
 

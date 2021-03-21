@@ -13,6 +13,7 @@ namespace VoxelDebug {
 enum ColorID {
 	ID_VOXEL_BOUNDS = 0,
 	ID_OCTREE_BOUNDS,
+	ID_VOXEL_GRAPH_DEBUG_BOUNDS,
 	ID_COUNT
 };
 

@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_EDITOR_H
 #define VOXEL_GRAPH_EDITOR_H
 
+#include "../voxel_debug.h"
 #include <scene/gui/control.h>
 
 class VoxelGeneratorGraph;
@@ -9,6 +10,8 @@ class PopupMenu;
 class AcceptDialog;
 class UndoRedo;
 class VoxelRangeAnalysisDialog;
+class VoxelNode;
+class Spatial;
 
 class VoxelGraphEditor : public Control {
 	GDCLASS(VoxelGraphEditor, Control)
@@ -22,6 +25,7 @@ public:
 	inline Ref<VoxelGeneratorGraph> get_graph() const { return _graph; }
 
 	void set_undo_redo(UndoRedo *undo_redo);
+	void set_voxel_node(VoxelNode *node);
 
 private:
 	void _notification(int p_what);
@@ -37,6 +41,7 @@ private:
 	void update_previews();
 	void update_slice_previews();
 	void update_range_analysis_previews();
+	void update_range_analysis_gizmo();
 	void clear_range_analysis_tooltips();
 
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
@@ -52,6 +57,8 @@ private:
 	void _on_graph_changed();
 	void _on_graph_node_name_changed(int node_id);
 	void _on_analyze_range_button_pressed();
+	void _on_range_analysis_toggled(bool enabled);
+	void _on_range_analysis_area_changed();
 
 	void _check_nothing_selected();
 
@@ -67,6 +74,8 @@ private:
 	Vector2 _click_position;
 	bool _nothing_selected_check_scheduled = false;
 	float _time_before_preview_update = 0.f;
+	Spatial *_voxel_node = nullptr;
+	VoxelDebug::DebugRenderer _debug_renderer;
 };
 
 #endif // VOXEL_GRAPH_EDITOR_H
