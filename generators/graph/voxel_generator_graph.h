@@ -96,6 +96,20 @@ public:
 	PoolIntArray get_node_ids() const;
 	uint32_t generate_node_id() { return _graph.generate_node_id(); }
 
+	// Performance tuning (advanced)
+
+	bool is_using_optimized_execution_map() const;
+	void set_use_optimized_execution_map(bool use);
+
+	float get_sdf_clip_threshold() const;
+	void set_sdf_clip_threshold(float t);
+
+	void set_use_subdivision(bool use);
+	bool is_using_subdivision() const;
+
+	void set_subdivision_size(int size);
+	int get_subdivision_size() const;
+
 	// VoxelGenerator implementation
 
 	int get_used_channels_mask() const override;
@@ -154,6 +168,20 @@ private:
 	static void _bind_methods();
 
 	ProgramGraph _graph;
+	// This generator performs range analysis using nodes of the graph. Terrain surface can only appear when SDF
+	// crosses zero within a block. For each generated block, an estimated range of the output is calculated.
+	// If that range is beyond this threshold (either negatively or positively), then blocks will be given a uniform
+	// value, either air or matter, skipping generation of all voxels.
+	// Setting a high threshold turns it off, providing consistent SDF, but it may severely impact performance.
+	float _sdf_clip_threshold = 0.2f;
+	// Sometimes block size can be larger, but it makes range analysis less precise. So it is possible to subdivide
+	// generation within areas of the block instead of doing it whole.
+	// Blocks size must be a multiple of the subdivision size.
+	bool _use_subdivision = true;
+	int _subdivision_size = 16;
+	// When enabled, the generator will attempt to optimize out nodes that don't need to run in specific areas,
+	// if their output range is considered to not affect the final result.
+	bool _use_optimized_execution_map = true;
 
 	// Only compiling and generation methods are thread-safe.
 

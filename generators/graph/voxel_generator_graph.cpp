@@ -188,8 +188,40 @@ PoolIntArray VoxelGeneratorGraph::get_node_ids() const {
 	return _graph.get_node_ids();
 }
 
+bool VoxelGeneratorGraph::is_using_optimized_execution_map() const {
+	return _use_optimized_execution_map;
+}
+
+void VoxelGeneratorGraph::set_use_optimized_execution_map(bool use) {
+	_use_optimized_execution_map = use;
+}
+
+float VoxelGeneratorGraph::get_sdf_clip_threshold() const {
+	return _sdf_clip_threshold;
+}
+
+void VoxelGeneratorGraph::set_sdf_clip_threshold(float t) {
+	_sdf_clip_threshold = max(t, 0.f);
+}
+
 int VoxelGeneratorGraph::get_used_channels_mask() const {
 	return 1 << VoxelBuffer::CHANNEL_SDF;
+}
+
+void VoxelGeneratorGraph::set_use_subdivision(bool use) {
+	_use_subdivision = use;
+}
+
+bool VoxelGeneratorGraph::is_using_subdivision() const {
+	return _use_subdivision;
+}
+
+void VoxelGeneratorGraph::set_subdivision_size(int size) {
+	_subdivision_size = size;
+}
+
+int VoxelGeneratorGraph::get_subdivision_size() const {
+	return _subdivision_size;
 }
 
 void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
@@ -215,13 +247,16 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(
 			out_buffer.get_channel_depth(out_buffer.get_channel_depth(channel)));
 
-	const float clip_threshold = sdf_scale * 0.2f;
+	const float clip_threshold = sdf_scale * _sdf_clip_threshold;
 
 	const int stride = 1 << input.lod;
 
-	const int section_size = 16;
+	// TODO Allow non-cubic block size when not using subdivision
+	const int section_size = _use_subdivision ? _subdivision_size : min(min(bs.x, bs.y), bs.z);
 	// Block size must be a multiple of section size
-	ERR_FAIL_COND(bs.x % section_size != 0 || bs.y % section_size != 0 || bs.z % section_size != 0);
+	ERR_FAIL_COND(bs.x % section_size != 0);
+	ERR_FAIL_COND(bs.y % section_size != 0);
+	ERR_FAIL_COND(bs.z % section_size != 0);
 
 	Cache &cache = _cache;
 
@@ -270,8 +305,10 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 				// The section may have the surface in it, we have to calculate it
 
-				// Optimize out branches of the graph that won't contribute to the result
-				runtime->generate_optimized_execution_map(cache.state, false);
+				if (_use_optimized_execution_map) {
+					// Optimize out branches of the graph that won't contribute to the result
+					runtime->generate_optimized_execution_map(cache.state, false);
+				}
 
 				{
 					unsigned int i = 0;
@@ -289,7 +326,8 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 					y_cache.fill(gy);
 
-					runtime->generate_set(cache.state, x_cache, y_cache, z_cache, slice_cache, ry != rmin.y, true);
+					runtime->generate_set(cache.state, x_cache, y_cache, z_cache, slice_cache, ry != rmin.y,
+							_use_optimized_execution_map);
 
 					// TODO Flatten this further
 					{
@@ -1008,6 +1046,20 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_node_gui_position", "node_id", "position"),
 			&VoxelGeneratorGraph::set_node_gui_position);
 
+	ClassDB::bind_method(D_METHOD("set_sdf_clip_threshold", "threshold"), &VoxelGeneratorGraph::set_sdf_clip_threshold);
+	ClassDB::bind_method(D_METHOD("get_sdf_clip_threshold"), &VoxelGeneratorGraph::get_sdf_clip_threshold);
+
+	ClassDB::bind_method(D_METHOD("is_using_optimized_execution_map"),
+			&VoxelGeneratorGraph::is_using_optimized_execution_map);
+	ClassDB::bind_method(D_METHOD("set_use_optimized_execution_map", "use"),
+			&VoxelGeneratorGraph::set_use_optimized_execution_map);
+
+	ClassDB::bind_method(D_METHOD("set_use_subdivision", "use"), &VoxelGeneratorGraph::set_use_subdivision);
+	ClassDB::bind_method(D_METHOD("is_using_subdivision"), &VoxelGeneratorGraph::is_using_subdivision);
+
+	ClassDB::bind_method(D_METHOD("set_subdivision_size", "size"), &VoxelGeneratorGraph::set_subdivision_size);
+	ClassDB::bind_method(D_METHOD("get_subdivision_size"), &VoxelGeneratorGraph::get_subdivision_size);
+
 	ClassDB::bind_method(D_METHOD("compile"), &VoxelGeneratorGraph::_b_compile);
 
 	ClassDB::bind_method(D_METHOD("get_node_type_count"), &VoxelGeneratorGraph::_b_get_node_type_count);
@@ -1033,6 +1085,14 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "graph_data", PROPERTY_HINT_NONE, "",
 						 PROPERTY_USAGE_NOEDITOR | PROPERTY_USAGE_INTERNAL),
 			"_set_graph_data", "_get_graph_data");
+
+	ADD_GROUP("Performance Tuning", "");
+
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "sdf_clip_threshold"), "set_sdf_clip_threshold", "get_sdf_clip_threshold");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_optimized_execution_map"),
+			"set_use_optimized_execution_map", "is_using_optimized_execution_map");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_subdivision"), "set_use_subdivision", "is_using_subdivision");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivision_size"), "set_subdivision_size", "get_subdivision_size");
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_NAME_CHANGED, PropertyInfo(Variant::INT, "node_id")));
 
