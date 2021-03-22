@@ -1055,9 +1055,39 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
 			const Params params = ctx.get_params<Params>();
+
 			if (params.smoothness > 0.0001f) {
+				const SdfAffectingArguments args = sdf_polynomial_smooth_union_side(a, b, params.smoothness);
+				switch (args) {
+					case SDF_ONLY_A:
+						ctx.ignore_input(0);
+						break;
+					case SDF_ONLY_B:
+						ctx.ignore_input(1);
+						break;
+					case SDF_BOTH:
+						break;
+					default:
+						CRASH_NOW();
+						break;
+				}
 				ctx.set_output(0, sdf_smooth_union(a, b, params.smoothness));
+
 			} else {
+				const SdfAffectingArguments args = sdf_union_side(a, b);
+				switch (args) {
+					case SDF_ONLY_A:
+						ctx.ignore_input(0);
+						break;
+					case SDF_ONLY_B:
+						ctx.ignore_input(1);
+						break;
+					case SDF_BOTH:
+						break;
+					default:
+						CRASH_NOW();
+						break;
+				}
 				ctx.set_output(0, sdf_union(a, b));
 			}
 		};
@@ -1099,9 +1129,39 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
 			const Params params = ctx.get_params<Params>();
+
 			if (params.smoothness > 0.0001f) {
+				const SdfAffectingArguments args = sdf_polynomial_smooth_subtract_side(a, b, params.smoothness);
+				switch (args) {
+					case SDF_ONLY_A:
+						ctx.ignore_input(0);
+						break;
+					case SDF_ONLY_B:
+						ctx.ignore_input(1);
+						break;
+					case SDF_BOTH:
+						break;
+					default:
+						CRASH_NOW();
+						break;
+				}
 				ctx.set_output(0, sdf_smooth_subtract(a, b, params.smoothness));
+
 			} else {
+				const SdfAffectingArguments args = sdf_subtract_side(a, b);
+				switch (args) {
+					case SDF_ONLY_A:
+						ctx.ignore_input(0);
+						break;
+					case SDF_ONLY_B:
+						ctx.ignore_input(1);
+						break;
+					case SDF_BOTH:
+						break;
+					default:
+						CRASH_NOW();
+						break;
+				}
 				ctx.set_output(0, sdf_subtract(a, b));
 			}
 		};

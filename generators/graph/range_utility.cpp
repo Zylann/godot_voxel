@@ -176,6 +176,56 @@ Interval get_heightmap_range(Image &im, Rect2i rect) {
 	return Interval();
 }
 
+SdfAffectingArguments sdf_subtract_side(Interval a, Interval b) {
+	if (b.min > -a.min) {
+		return SDF_ONLY_A;
+	}
+	if (b.max < -a.max) {
+		return SDF_ONLY_B;
+	}
+	return SDF_BOTH;
+}
+
+SdfAffectingArguments sdf_polynomial_smooth_subtract_side(Interval a, Interval b, float s) {
+	//     |  \  \  \        |
+	//  ---1---x--x--x-------3--- b.max
+	//     |    \  \  \      |
+	//     |     \  \  \     |              (b)
+	//     |      \  \  \    |               y
+	//     |       \  \  \   |               |
+	//  ---0--------x--x--x--2--- b.min      o---x (a)
+	//     |         \s \ s\ |
+	//    a.min             a.max
+
+	if (b.min > -a.min + s) {
+		return SDF_ONLY_B;
+	}
+	if (b.max < -a.max - s) {
+		return SDF_ONLY_A;
+	}
+	return SDF_BOTH;
+}
+
+SdfAffectingArguments sdf_union_side(Interval a, Interval b) {
+	if (a.max < b.min) {
+		return SDF_ONLY_A;
+	}
+	if (b.max < a.min) {
+		return SDF_ONLY_B;
+	}
+	return SDF_BOTH;
+}
+
+SdfAffectingArguments sdf_polynomial_smooth_union_side(Interval a, Interval b, float s) {
+	if (a.max + s < b.min) {
+		return SDF_ONLY_A;
+	}
+	if (b.max + s < a.min) {
+		return SDF_ONLY_B;
+	}
+	return SDF_BOTH;
+}
+
 template <typename F>
 inline Interval sdf_smooth_op(Interval b, Interval a, float s, F smooth_op_func) {
 	// Smooth union and subtract are a generalization of `min(a, b)` and `max(-a, b)`, with a smooth junction.
@@ -233,6 +283,7 @@ inline Interval sdf_smooth_op(Interval b, Interval a, float s, F smooth_op_func)
 }
 
 Interval sdf_smooth_union(Interval b, Interval a, float s) {
+	// TODO Not tested
 	// Had to use a lambda because otherwise it's ambiguous
 	return sdf_smooth_op(b, a, s, [](float b, float a, float s) { return sdf_smooth_union(b, a, s); });
 }

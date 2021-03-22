@@ -22,12 +22,30 @@ inline Interval sdf_union(Interval a, Interval b) {
 	return min_interval(a, b);
 }
 
+// Does a - b
 inline Interval sdf_subtract(Interval a, Interval b) {
 	return max_interval(a, b);
 }
 
 Interval sdf_smooth_union(Interval b, Interval a, float s);
+
+// Does b - a
 Interval sdf_smooth_subtract(Interval b, Interval a, float s);
+
+enum SdfAffectingArguments {
+	SDF_ONLY_A,
+	SDF_ONLY_B,
+	SDF_BOTH
+};
+
+// Tests which argument can affect the result.
+// for a - b
+SdfAffectingArguments sdf_subtract_side(Interval a, Interval b);
+// for a - b
+SdfAffectingArguments sdf_polynomial_smooth_subtract_side(Interval a, Interval b, float s);
+
+SdfAffectingArguments sdf_union_side(Interval a, Interval b);
+SdfAffectingArguments sdf_polynomial_smooth_union_side(Interval a, Interval b, float s);
 
 struct Interval2 {
 	Interval x;
