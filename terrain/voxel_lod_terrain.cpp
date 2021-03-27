@@ -2158,23 +2158,35 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(PROCESS_MODE_PHYSICS);
 	BIND_ENUM_CONSTANT(PROCESS_MODE_DISABLED);
 
+	ADD_GROUP("Bounds", "");
+
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "voxel_bounds"), "set_voxel_bounds", "get_voxel_bounds");
+
+	ADD_GROUP("Level of detail", "");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_distance"), "set_lod_distance", "get_lod_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
 
+	ADD_GROUP("Material", "");
+
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"),
 			"set_material", "get_material");
+
+	ADD_GROUP("Collisions", "");
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"),
 			"set_generate_collisions", "get_generate_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"),
 			"set_collision_lod_count", "get_collision_lod_count");
+	// TODO Collision mask and layer
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_update_delay"),
 			"set_collision_update_delay", "get_collision_update_delay");
 
+	ADD_GROUP("Advanced", "");
+
+	// TODO Probably should be in parent class?
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
 			"set_run_stream_in_editor", "is_stream_running_in_editor");
 }
