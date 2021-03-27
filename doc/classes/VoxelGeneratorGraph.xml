@@ -4,6 +4,8 @@
 		Graph-based generator for smooth voxel worlds.
 	</brief_description>
 	<description>
+		Generates SDF voxel data from a graph of operations.
+		Warning: methods to modify the graph should only be called from the main thread.
 	</description>
 	<tutorials>
 	</tutorials>

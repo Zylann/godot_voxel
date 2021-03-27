@@ -122,6 +122,18 @@ func _notification(what: int):
 Image.lock() won't be required anymore in Godot 4.
 
 
+### Accessing neighbors to generate structures
+
+Generators cannot access neighbor blocks, because they may be dependent on neighbors themselves, and may, or may not be available yet. It's also bad for performance to have threads interdepend on others. The solution to overcome this is to use a seed to drive every calculations so results are predictable.
+
+Noise-based terrain usually don't need any dependency on neighbors, since any queried voxel position will always yield the same values.
+
+Generating structures like trees in a Minecraft world is however a bit more complicated.
+
+TODO Explain the logic behind the demo
+https://github.com/Zylann/voxelgame/blob/2fa552abfdf52c688bbec27edd676018a31373e0/project/blocky_game/generator/generator.gd#L144
+
+
 Custom stream
 ---------------
 
