@@ -1443,7 +1443,7 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 
 	const float speed = _lod_fade_duration < 0.001f ? 99999.f : delta / _lod_fade_duration;
 
-	for (int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 
 		Map<Vector3i, VoxelBlock *>::Element *e = lod.fading_blocks.front();
