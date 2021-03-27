@@ -27,10 +27,10 @@ inline Interval sdf_subtract(Interval a, Interval b) {
 	return max_interval(a, b);
 }
 
-Interval sdf_smooth_union(Interval b, Interval a, float s);
+Interval sdf_smooth_union(Interval p_b, Interval p_a, float p_s);
 
 // Does b - a
-Interval sdf_smooth_subtract(Interval b, Interval a, float s);
+Interval sdf_smooth_subtract(Interval p_b, Interval p_a, float p_s);
 
 enum SdfAffectingArguments {
 	SDF_ONLY_A,

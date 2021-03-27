@@ -43,17 +43,17 @@ inline Interval get_noise_range_3d(Noise_F noise_func, const Interval &x, const 
 			::min(mid_value + max_derivative_half_diagonal * diag, 1.f));
 }
 
-Interval get_osn_octave_range_2d(OpenSimplexNoise *noise, const Interval &x, const Interval &y, int octave) {
+Interval get_osn_octave_range_2d(OpenSimplexNoise *noise, const Interval &p_x, const Interval &p_y, int octave) {
 	return get_noise_range_2d(
 			[octave, noise](float x, float y) { return noise->_get_octave_noise_2d(octave, x, y); },
-			x, y, 2.35f);
+			p_x, p_y, 2.35f);
 }
 
 Interval get_osn_octave_range_3d(
-		OpenSimplexNoise *noise, const Interval &x, const Interval &y, const Interval &z, int octave) {
+		OpenSimplexNoise *noise, const Interval &p_x, const Interval &p_y, const Interval &p_z, int octave) {
 	return get_noise_range_3d(
 			[octave, noise](float x, float y, float z) { return noise->_get_octave_noise_3d(octave, x, y, z); },
-			x, y, z, 2.5f);
+			p_x, p_y, p_z, 2.5f);
 }
 
 Interval get_osn_range_2d(OpenSimplexNoise *noise, Interval x, Interval y) {
@@ -282,14 +282,14 @@ inline Interval sdf_smooth_op(Interval b, Interval a, float s, F smooth_op_func)
 	return Interval(min(v0, v1, v2, v3), max(v0, v1, v2, v3));
 }
 
-Interval sdf_smooth_union(Interval b, Interval a, float s) {
+Interval sdf_smooth_union(Interval p_b, Interval p_a, float p_s) {
 	// TODO Not tested
 	// Had to use a lambda because otherwise it's ambiguous
-	return sdf_smooth_op(b, a, s, [](float b, float a, float s) { return sdf_smooth_union(b, a, s); });
+	return sdf_smooth_op(p_b, p_a, p_s, [](float b, float a, float s) { return sdf_smooth_union(b, a, s); });
 }
 
-Interval sdf_smooth_subtract(Interval b, Interval a, float s) {
-	return sdf_smooth_op(b, a, s, [](float b, float a, float s) { return sdf_smooth_subtract(b, a, s); });
+Interval sdf_smooth_subtract(Interval p_b, Interval p_a, float p_s) {
+	return sdf_smooth_op(p_b, p_a, p_s, [](float b, float a, float s) { return sdf_smooth_subtract(b, a, s); });
 }
 
 static Interval get_fnl_cellular_value_range_2d(const FastNoiseLite *noise, Interval x, Interval y) {
@@ -438,23 +438,23 @@ void fnl_transform_noise_coordinate(const fast_noise_lite::FastNoiseLite &fn, In
 	}
 }
 
-Interval fnl_single_opensimplex2(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval x, Interval y,
-		Interval z) {
+Interval fnl_single_opensimplex2(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y,
+		Interval p_z) {
 	// According to OpenSimplex2 author, the 3D version is supposed to have a max derivative around 4.23718
 	// https://www.wolframalpha.com/input/?i=max+d%2Fdx+32.69428253173828125+*+x+*+%28%280.6-x%5E2%29%5E4%29+from+-0.6+to+0.6
 	// But empiric measures have shown it around 8. Discontinuities do exist in this noise though,
 	// which makes this measuring harder
 	return get_noise_range_3d(
 			[&fn, seed](float x, float y, float z) { return fn.SingleOpenSimplex2(seed, x, y, z); },
-			x, y, z, 4.23718f);
+			p_x, p_y, p_z, 4.23718f);
 }
 
-Interval fnl_single_opensimplex2s(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval x, Interval y,
-		Interval z) {
+Interval fnl_single_opensimplex2s(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y,
+		Interval p_z) {
 	return get_noise_range_3d(
 			[&fn, seed](float x, float y, float z) { return fn.SingleOpenSimplex2(seed, x, y, z); },
 			// Max derivative found from empiric tests
-			x, y, z, 2.5f);
+			p_x, p_y, p_z, 2.5f);
 }
 
 Interval fnl_single_cellular(const FastNoiseLite *noise, Interval x, Interval y, Interval z) {
@@ -465,25 +465,28 @@ Interval fnl_single_cellular(const FastNoiseLite *noise, Interval x, Interval y,
 	return get_fnl_cellular_range(noise);
 }
 
-Interval fnl_single_perlin(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval x, Interval y, Interval z) {
+Interval fnl_single_perlin(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y,
+		Interval p_z) {
 	return get_noise_range_3d(
 			[&fn, seed](float x, float y, float z) { return fn.SinglePerlin(seed, x, y, z); },
 			// Max derivative found from empiric tests
-			x, y, z, 3.2f);
+			p_x, p_y, p_z, 3.2f);
 }
 
-Interval fnl_single_value_cubic(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval x, Interval y, Interval z) {
+Interval fnl_single_value_cubic(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y,
+		Interval p_z) {
 	return get_noise_range_3d(
 			[&fn, seed](float x, float y, float z) { return fn.SingleValueCubic(seed, x, y, z); },
 			// Max derivative found from empiric tests
-			x, y, z, 1.2f);
+			p_x, p_y, p_z, 1.2f);
 }
 
-Interval fnl_single_value(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval x, Interval y, Interval z) {
+Interval fnl_single_value(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y,
+		Interval p_z) {
 	return get_noise_range_3d(
 			[&fn, seed](float x, float y, float z) { return fn.SingleValue(seed, x, y, z); },
 			// Max derivative found from empiric tests
-			x, y, z, 3.0f);
+			p_x, p_y, p_z, 3.0f);
 }
 
 Interval fnl_gen_noise_single(const FastNoiseLite *noise, int seed, Interval x, Interval y, Interval z) {
