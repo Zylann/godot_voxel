@@ -224,6 +224,14 @@ int VoxelGeneratorGraph::get_subdivision_size() const {
 	return _subdivision_size;
 }
 
+void VoxelGeneratorGraph::set_debug_clipped_blocks(bool enabled) {
+	_debug_clipped_blocks = enabled;
+}
+
+bool VoxelGeneratorGraph::is_debug_clipped_blocks() const {
+	return _debug_clipped_blocks;
+}
+
 void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	std::shared_ptr<VoxelGraphRuntime> runtime;
 	{
@@ -247,9 +255,10 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(
 			out_buffer.get_channel_depth(out_buffer.get_channel_depth(channel)));
 
-	const float clip_threshold = sdf_scale * _sdf_clip_threshold;
-
 	const int stride = 1 << input.lod;
+
+	// Clip threshold must be higher for higher lod indexes because distances for one sampled voxel are also larger
+	const float clip_threshold = sdf_scale * _sdf_clip_threshold * stride;
 
 	// TODO Allow non-cubic block size when not using subdivision
 	const int section_size = _use_subdivision ? _subdivision_size : min(min(bs.x, bs.y), bs.z);
@@ -274,6 +283,9 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	ArraySlice<float> y_cache(cache.y_cache, 0, cache.y_cache.size());
 	ArraySlice<float> z_cache(cache.z_cache, 0, cache.z_cache.size());
 
+	const float air_sdf = _debug_clipped_blocks ? -1.f : 1.f;
+	const float matter_sdf = _debug_clipped_blocks ? 1.f : -1.f;
+
 	// For each subdivision of the block
 	for (int sz = 0; sz < bs.z; sz += section_size) {
 		for (int sy = 0; sy < bs.y; sy += section_size) {
@@ -287,15 +299,11 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 				const Interval range = runtime->analyze_range(cache.state, gmin, gmax) * sdf_scale;
 				if (range.min > clip_threshold && range.max > clip_threshold) {
-					out_buffer.fill_area_f(1.f, rmin, rmax, channel);
-					// DEBUG: use this instead to fill optimized-out blocks with matter, making them stand out
-					//out_buffer.fill_area_f(-1.f, rmin, rmax, channel);
+					out_buffer.fill_area_f(air_sdf, rmin, rmax, channel);
 					continue;
 
 				} else if (range.min < -clip_threshold && range.max < -clip_threshold) {
-					out_buffer.fill_area_f(-1.f, rmin, rmax, channel);
-					// DEBUG: use this instead to fill optimized-out blocks with matter, making them stand out
-					//out_buffer.fill_area_f(1.f, rmin, rmax, channel);
+					out_buffer.fill_area_f(matter_sdf, rmin, rmax, channel);
 					continue;
 
 				} else if (range.is_single_value()) {
@@ -1060,6 +1068,10 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_subdivision_size", "size"), &VoxelGeneratorGraph::set_subdivision_size);
 	ClassDB::bind_method(D_METHOD("get_subdivision_size"), &VoxelGeneratorGraph::get_subdivision_size);
 
+	ClassDB::bind_method(D_METHOD("set_debug_clipped_blocks", "enabled"),
+			&VoxelGeneratorGraph::set_debug_clipped_blocks);
+	ClassDB::bind_method(D_METHOD("is_debug_clipped_blocks"), &VoxelGeneratorGraph::is_debug_clipped_blocks);
+
 	ClassDB::bind_method(D_METHOD("compile"), &VoxelGeneratorGraph::_b_compile);
 
 	ClassDB::bind_method(D_METHOD("get_node_type_count"), &VoxelGeneratorGraph::_b_get_node_type_count);
@@ -1093,6 +1105,8 @@ void VoxelGeneratorGraph::_bind_methods() {
 			"set_use_optimized_execution_map", "is_using_optimized_execution_map");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_subdivision"), "set_use_subdivision", "is_using_subdivision");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivision_size"), "set_subdivision_size", "get_subdivision_size");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_block_clipping"),
+			"set_debug_clipped_blocks", "is_debug_clipped_blocks");
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_NAME_CHANGED, PropertyInfo(Variant::INT, "node_id")));
 

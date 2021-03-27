@@ -139,6 +139,9 @@ int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod_index, 
 	// which led blocks to subdivide too much compared to their neighbors, making cracks more likely to happen
 	int priority = static_cast<int>(Math::sqrt(closest_distance_sq));
 
+	// TODO Prioritizing LOD makes generation slower... but not prioritizing makes cracks more likely to appear...
+	// This could be fixed by allowing the volume to preemptively request blocks of the next LOD?
+	//
 	// Higher lod indexes come first to allow the octree to subdivide.
 	// Then comes distance, which is modified by how much in view the block is
 	priority += (VoxelConstants::MAX_LOD - lod_index) * 10000;

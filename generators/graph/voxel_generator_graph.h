@@ -110,6 +110,9 @@ public:
 	void set_subdivision_size(int size);
 	int get_subdivision_size() const;
 
+	void set_debug_clipped_blocks(bool enabled);
+	bool is_debug_clipped_blocks() const;
+
 	// VoxelGenerator implementation
 
 	int get_used_channels_mask() const override;
@@ -182,6 +185,8 @@ private:
 	// When enabled, the generator will attempt to optimize out nodes that don't need to run in specific areas,
 	// if their output range is considered to not affect the final result.
 	bool _use_optimized_execution_map = true;
+	// If true, inverts clipped blocks so they create visual artifacts making the clipped area visible.
+	bool _debug_clipped_blocks = false;
 
 	// Only compiling and generation methods are thread-safe.
 
