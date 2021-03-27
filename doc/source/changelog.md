@@ -32,17 +32,19 @@ Ongoing development
     - Transvoxel runs faster (almost x2 speedup)
     - The SDF channel is now 16-bit by default instead of 8-bit, which reduces terracing in big terrains
     - Optimized `VoxelGeneratorGraph` by making it detect empty blocks more accurately and process by buffers
+    - `VoxelGeneratorGraph` now exposes performance tuning parameters
     - Added `SdfSphereHeightmap` and `Normalize` nodes to voxel graph, which can help making planets
     - Added `SdfSmoothUnion` and `SdfSmoothSubtract` nodes to voxel graph
     - Added `VoxelInstancer` to instantiate items on top of `VoxelLodTerrain`, aimed at spawning natural elements such as rocks and foliage
     - Implemented `VoxelToolLodterrain.raycast()`
+    - Added experimental API for LOD fading, with some limitations.
 
 - Blocky voxels
     - Introduced a second blocky mesher dedicated to colored cubes, with greedy meshing and palette support
     - Replaced `transparent` property with `transparency_index` for more control on the culling of transparent faces
     - The TYPE channel is now 16-bit by default instead of 8-bit, allowing to store up to 65,536 types (part of this channel might actually be used to store rotation in the future)
     - Added normalmaps support
-    - `VoxelRaycastResult` now also contains hit distance
+    - `VoxelRaycastResult` now also contains hit distance, so it is possible to determine the exact hit position
 
 - Breaking changes
     - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points
@@ -55,6 +57,7 @@ Ongoing development
     - SDF and TYPE channels have different default depth, so if you relied on 8-bit depth, you may have to explicitely set that format in your generator, to avoid mismatch with existing savegames
     - The block serialization format has changed, and migration is not implemented, so old saves using it cannot be used. See documentation for more information.
     - Terrains no longer auto-save when they are destroyed while having a `stream` assigned. You have to call `save_modified_blocks()` explicitely before doing that.
+    - `VoxelLodTerrain.lod_split_scale` has been replaced with `lod_distance` for clarity. It is the distance from the viewer where the first LOD level may extend. 
 
 - Fixes
     - C# should be able to properly implement generator/stream functions
