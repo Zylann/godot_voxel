@@ -176,7 +176,7 @@ private:
 	// If that range is beyond this threshold (either negatively or positively), then blocks will be given a uniform
 	// value, either air or matter, skipping generation of all voxels.
 	// Setting a high threshold turns it off, providing consistent SDF, but it may severely impact performance.
-	float _sdf_clip_threshold = 0.2f;
+	float _sdf_clip_threshold = 1.5f;
 	// Sometimes block size can be larger, but it makes range analysis less precise. So it is possible to subdivide
 	// generation within areas of the block instead of doing it whole.
 	// Blocks size must be a multiple of the subdivision size.
