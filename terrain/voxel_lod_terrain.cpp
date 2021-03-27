@@ -135,12 +135,13 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
 
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_OCTREE);
-	VoxelServer::get_singleton()->set_volume_octree_split_scale(_volume_id, get_lod_split_scale());
+	VoxelServer::get_singleton()->set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	// TODO Being able to set a LOD smaller than the stream is probably a bad idea,
 	// Because it prevents edits from propagating up to the last one, they will be left out of sync
 	set_lod_count(4);
-	set_lod_split_scale(3);
+
+	set_lod_distance(48.f);
 
 	// For ease of use in editor
 	Ref<VoxelMesherTransvoxel> default_mesher;
@@ -428,29 +429,26 @@ void VoxelLodTerrain::stop_streamer() {
 	_reception_buffers.data_output.clear();
 }
 
-// TODO This should be changed to `lod_distance`
-// It would be easier to relate, and would not depend on block size
-void VoxelLodTerrain::set_lod_split_scale(float p_lod_split_scale) {
-	if (p_lod_split_scale == _lod_split_scale) {
+void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
+	if (p_lod_distance == _lod_distance) {
 		return;
 	}
 
-	_lod_split_scale =
-			clamp(p_lod_split_scale, VoxelConstants::MINIMUM_LOD_SPLIT_SCALE, VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE);
+	_lod_distance = clamp(p_lod_distance, VoxelConstants::MINIMUM_LOD_DISTANCE, VoxelConstants::MAXIMUM_LOD_DISTANCE);
 
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 		OctreeItem &item = E->value();
-		item.octree.set_split_scale(_lod_split_scale);
+		item.octree.set_lod_distance(_lod_distance);
 
-		// Because `set_split_scale` may clamp it...
-		_lod_split_scale = item.octree.get_split_scale();
+		// Because `set_lod_distance` may clamp it...
+		_lod_distance = item.octree.get_lod_distance();
 	}
 
-	VoxelServer::get_singleton()->set_volume_octree_split_scale(_volume_id, get_lod_split_scale());
+	VoxelServer::get_singleton()->set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 }
 
-float VoxelLodTerrain::get_lod_split_scale() const {
-	return _lod_split_scale;
+float VoxelLodTerrain::get_lod_distance() const {
+	return _lod_distance;
 }
 
 void VoxelLodTerrain::set_lod_count(int p_lod_count) {
@@ -523,7 +521,7 @@ int VoxelLodTerrain::get_collision_lod_count() const {
 }
 
 int VoxelLodTerrain::get_block_region_extent() const {
-	return VoxelServer::get_octree_lod_block_region_extent(_lod_split_scale);
+	return VoxelServer::get_octree_lod_block_region_extent(_lod_distance, get_block_size());
 }
 
 Vector3 VoxelLodTerrain::voxel_to_block_position(Vector3 vpos, int lod_index) const {
@@ -952,7 +950,7 @@ void VoxelLodTerrain::_process(float delta) {
 					OctreeItem &item = E->value();
 					LodOctree::NoDestroyAction nda;
 					item.octree.create_from_lod_count(block_size, self->get_lod_count(), nda);
-					item.octree.set_split_scale(self->_lod_split_scale);
+					item.octree.set_lod_distance(self->get_lod_distance());
 				}
 			};
 
@@ -2126,8 +2124,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_lod_count", "lod_count"), &VoxelLodTerrain::set_lod_count);
 	ClassDB::bind_method(D_METHOD("get_lod_count"), &VoxelLodTerrain::get_lod_count);
 
-	ClassDB::bind_method(D_METHOD("set_lod_split_scale", "lod_split_scale"), &VoxelLodTerrain::set_lod_split_scale);
-	ClassDB::bind_method(D_METHOD("get_lod_split_scale"), &VoxelLodTerrain::get_lod_split_scale);
+	ClassDB::bind_method(D_METHOD("set_lod_distance", "lod_distance"), &VoxelLodTerrain::set_lod_distance);
+	ClassDB::bind_method(D_METHOD("get_lod_distance"), &VoxelLodTerrain::get_lod_distance);
 
 	ClassDB::bind_method(D_METHOD("get_block_size"), &VoxelLodTerrain::get_block_size);
 	ClassDB::bind_method(D_METHOD("get_block_region_extent"), &VoxelLodTerrain::get_block_region_extent);
@@ -2164,7 +2162,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "voxel_bounds"), "set_voxel_bounds", "get_voxel_bounds");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_split_scale"), "set_lod_split_scale", "get_lod_split_scale");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_distance"), "set_lod_distance", "get_lod_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"),

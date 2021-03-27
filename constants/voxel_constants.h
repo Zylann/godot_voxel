@@ -5,8 +5,10 @@
 
 namespace VoxelConstants {
 
-static const float MINIMUM_LOD_SPLIT_SCALE = 1.f;
-static const float MAXIMUM_LOD_SPLIT_SCALE = 5.f;
+// These constants are chosen so you don't accidentally blow up resource usage
+static const float MINIMUM_LOD_DISTANCE = 16.f;
+static const float MAXIMUM_LOD_DISTANCE = 128.f;
+
 static const unsigned int MAX_LOD = 32;
 static const unsigned int MAX_VOLUME_EXTENT = 0x1fffffff;
 static const unsigned int MAX_VOLUME_SIZE = 2 * MAX_VOLUME_EXTENT; // 1,073,741,822 voxels

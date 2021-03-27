@@ -88,7 +88,7 @@ public:
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
 	void set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> generator);
 	void set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher);
-	void set_volume_octree_split_scale(uint32_t volume_id, float split_scale);
+	void set_volume_octree_lod_distance(uint32_t volume_id, float lod_distance);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, BlockMeshInput &input);
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
@@ -126,11 +126,11 @@ public:
 		return _file_locker;
 	}
 
-	static inline int get_octree_lod_block_region_extent(float split_scale) {
+	static inline int get_octree_lod_block_region_extent(float lod_distance, float block_size) {
 		// This is a bounding radius of blocks around a viewer within which we may load them.
 		// It depends on the LOD split scale, which tells how close to a block we need to be for it to subdivide.
 		// Each LOD is fractal so that value is the same for each of them, multiplied by 2^lod.
-		return static_cast<int>(split_scale) * 2 + 2;
+		return static_cast<int>(lod_distance / block_size) * 2 + 2;
 	}
 
 	struct Stats {
@@ -205,7 +205,7 @@ private:
 		Ref<VoxelGenerator> generator;
 		Ref<VoxelMesher> mesher;
 		uint32_t block_size = 16;
-		float octree_split_scale = 0;
+		float octree_lod_distance = 0;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		std::shared_ptr<MeshingDependency> meshing_dependency;
 	};

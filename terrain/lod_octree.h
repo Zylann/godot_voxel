@@ -73,20 +73,15 @@ public:
 
 	// The higher, the longer LODs will spread and higher the quality.
 	// The lower, the shorter LODs will spread and lower the quality.
-	void set_split_scale(float p_split_scale) {
-		// Split scale must be greater than a threshold,
+	void set_lod_distance(float p_lod_distance) {
+		// Distance must be greater than a threshold,
 		// otherwise lods will decimate too fast and it will look messy
-		if (p_split_scale < VoxelConstants::MINIMUM_LOD_SPLIT_SCALE) {
-			p_split_scale = VoxelConstants::MINIMUM_LOD_SPLIT_SCALE;
-
-		} else if (p_split_scale > VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE) {
-			p_split_scale = VoxelConstants::MAXIMUM_LOD_SPLIT_SCALE;
-		}
-		_split_scale = p_split_scale;
+		_lod_distance =
+				clamp(p_lod_distance, VoxelConstants::MINIMUM_LOD_DISTANCE, VoxelConstants::MAXIMUM_LOD_DISTANCE);
 	}
 
-	float get_split_scale() const {
-		return _split_scale;
+	float get_lod_distance() const {
+		return _lod_distance;
 	}
 
 	static inline int get_lod_factor(int lod) {
@@ -207,15 +202,13 @@ private:
 		const int lod_factor = get_lod_factor(lod);
 		const int chunk_size = _base_size * lod_factor;
 		const Vector3 world_center = static_cast<real_t>(chunk_size) * (node_pos.to_vec3() + Vector3(0.5, 0.5, 0.5));
-		const float split_distance = chunk_size * _split_scale;
+		const float split_distance = _lod_distance * lod_factor;
 		Node *node = get_node(node_index);
 
 		if (!node->has_children()) {
-
 			// If it's not the last LOD, if close enough and custom conditions get fulfilled
 			if (lod > 0 && world_center.distance_to(view_pos) < split_distance && actions.can_split(node_pos, lod - 1)) {
 				// Split
-
 				const unsigned int first_child = _pool.allocate_children();
 				// Get node again because `allocate_children` may invalidate the pointer
 				node = get_node(node_index);
@@ -286,7 +279,7 @@ private:
 	bool _is_root_created = false;
 	int _max_depth = 0;
 	float _base_size = 16;
-	float _split_scale = 2.0;
+	float _lod_distance = 32.0;
 	// TODO May be worth making this pool external for sharing purpose
 	NodePool _pool;
 };

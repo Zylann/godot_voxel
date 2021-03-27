@@ -203,9 +203,9 @@ void VoxelServer::set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher)
 	volume.meshing_dependency->mesher = volume.mesher;
 }
 
-void VoxelServer::set_volume_octree_split_scale(uint32_t volume_id, float split_scale) {
+void VoxelServer::set_volume_octree_lod_distance(uint32_t volume_id, float lod_distance) {
 	Volume &volume = _world.volumes.get(volume_id);
-	volume.octree_split_scale = split_scale;
+	volume.octree_lod_distance = lod_distance;
 }
 
 void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
@@ -239,8 +239,9 @@ void VoxelServer::init_priority_dependency(
 		case VOLUME_SPARSE_OCTREE:
 			// Distance beyond which it is safe to drop a block without risking to block LOD subdivision.
 			// This does not depend on viewer's view distance, but on LOD precision instead.
-			dep.drop_distance_squared = squared(2.f * transformed_block_radius *
-												get_octree_lod_block_region_extent(volume.octree_split_scale));
+			dep.drop_distance_squared =
+					squared(2.f * transformed_block_radius *
+							get_octree_lod_block_region_extent(volume.octree_lod_distance, volume.block_size));
 			break;
 
 		default:

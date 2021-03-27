@@ -42,8 +42,8 @@ public:
 	int get_view_distance() const;
 	void set_view_distance(int p_distance_in_voxels);
 
-	void set_lod_split_scale(float p_lod_split_scale);
-	float get_lod_split_scale() const;
+	void set_lod_distance(float p_lod_distance);
+	float get_lod_distance() const;
 
 	void set_lod_count(int p_lod_count);
 	int get_lod_count() const;
@@ -252,7 +252,8 @@ private:
 
 	FixedArray<Lod, VoxelConstants::MAX_LOD> _lods;
 	int _lod_count = 0;
-	float _lod_split_scale = 0.f;
+	// Distance between a viewer and the end of LOD0
+	float _lod_distance = 0.f;
 	float _lod_fade_duration = 0.f;
 	unsigned int _view_distance_voxels = 512;
 
