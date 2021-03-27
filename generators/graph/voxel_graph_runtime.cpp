@@ -419,7 +419,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 }
 
 static ArraySlice<const uint16_t> get_outputs_from_op_address(
-		ArraySlice<const uint8_t> &operations, uint16_t op_address) {
+		ArraySlice<const uint8_t> operations, uint16_t op_address) {
 
 	const uint8_t opid = operations[op_address];
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
