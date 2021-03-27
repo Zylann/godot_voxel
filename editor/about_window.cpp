@@ -50,11 +50,13 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Phyronnaz\n"
 						"RonanZe\n"
 						"furtherorbit\n"
-						"jp.owo.Manda (segfault-god)\n";
+						"jp.owo.Manda (segfault-god)\n"
+						"hidemat\n"
+						"Jakub Buriánek (Buri)\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
-		d["version"] = "godot3.2.4 dev";
+		d["version"] = "godot3.3 dev";
 		about_text = about_text.format(d);
 	}
 	RichTextLabel *rich_text_label = memnew(RichTextLabel);
