@@ -1,4 +1,5 @@
 #include "voxel_generator_noise.h"
+#include <core/core_string_names.h>
 #include <core/engine.h>
 
 VoxelGeneratorNoise::VoxelGeneratorNoise() {
@@ -19,13 +20,25 @@ void VoxelGeneratorNoise::set_noise(Ref<OpenSimplexNoise> noise) {
 	if (_noise == noise) {
 		return;
 	}
+	if (_noise.is_valid()) {
+		_noise->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_noise_changed");
+	}
 	_noise = noise;
 	Ref<OpenSimplexNoise> copy;
-	if (noise.is_valid()) {
-		copy = noise->duplicate();
+	if (_noise.is_valid()) {
+		_noise->connect(CoreStringNames::get_singleton()->changed, this, "_on_noise_changed");
+		// The OpenSimplexNoise resource is not thread-safe so we make a copy of it for use in threads
+		copy = _noise->duplicate();
 	}
+	// The OpenSimplexNoise resource is not thread-safe so we make a copy of it for use in threads
 	RWLockWrite wlock(_parameters_lock);
 	_parameters.noise = copy;
+}
+
+void VoxelGeneratorNoise::_on_noise_changed() {
+	ERR_FAIL_COND(_noise.is_null());
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.noise = _noise->duplicate();
 }
 
 void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId channel) {
@@ -215,6 +228,8 @@ void VoxelGeneratorNoise::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_height_range", "hrange"), &VoxelGeneratorNoise::set_height_range);
 	ClassDB::bind_method(D_METHOD("get_height_range"), &VoxelGeneratorNoise::get_height_range);
+
+	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelGeneratorNoise::_on_noise_changed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise"), "set_noise", "get_noise");

@@ -20,6 +20,9 @@ public:
 	void generate_block(VoxelBlockRequest &input) override;
 
 private:
+	void _on_noise_changed();
+	void _on_curve_changed();
+
 	static void _bind_methods();
 
 private:

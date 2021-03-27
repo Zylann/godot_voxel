@@ -27,6 +27,8 @@ public:
 	void generate_block(VoxelBlockRequest &input) override;
 
 protected:
+	void _on_noise_changed();
+
 	static void _bind_methods();
 
 private:
