@@ -284,7 +284,7 @@ public:
 private:
 	CompilationResult _compile(const ProgramGraph &graph, bool debug);
 
-	void VoxelGraphRuntime::generate_execution_map(const State &state,
+	void generate_execution_map(const State &state,
 			std::vector<uint16_t> &execution_map, unsigned int &out_mapped_xzy_start,
 			std::vector<int> *debug_execution_map) const;
 
