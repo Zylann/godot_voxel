@@ -41,10 +41,10 @@ extends VoxelGeneratorScript
 
 const channel : int = VoxelBuffer.CHANNEL_TYPE
 
-func get_used_channels_mask() -> int:
+func _get_used_channels_mask() -> int:
     return 1 << channel
  
-func generate_block(buffer : VoxelBuffer, origin : Vector3, lod : int) -> void:
+func _generate_block(buffer : VoxelBuffer, origin : Vector3, lod : int) -> void:
 	if lod != 0:
         return
 	if origin.y < 0:
@@ -62,8 +62,10 @@ const MyGenerator = preload("my_generator.gd")
 var terrain = $VoxelTerrain
 
 func _ready():
-	terrain.stream = MyGenerator.new()
+	terrain.generator = MyGenerator.new()
 ```
+
+Make sure to have a `VoxelViewer` node in the scene under the camera, and you should see this:
 
 ![Custom stream](images/custom-stream.jpg)
 

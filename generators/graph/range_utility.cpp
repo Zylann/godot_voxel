@@ -844,10 +844,10 @@ template <typename F2, typename F3>
 void test_noise(String name, int tests, F2 noise_func_2d, F3 noise_func_3d) {
 	print_line(String("--- {0}:").format(varray(name)));
 
-	if ((tests & TEST_MIN_MAX) == 1) {
+	if (tests & TEST_MIN_MAX) {
 		test_min_max<F2, F3, double>(noise_func_2d, noise_func_3d);
 	}
-	if ((tests & TEST_DERIVATIVES) == 1) {
+	if (tests & TEST_DERIVATIVES) {
 		test_derivatives_tpl<F2, F3, double>(noise_func_2d, noise_func_3d);
 		test_derivatives_with_image(name + "_3D", 10, noise_func_3d);
 	}

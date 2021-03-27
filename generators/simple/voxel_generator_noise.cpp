@@ -48,6 +48,7 @@ void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId channel) {
 		RWLockWrite wlock(_parameters_lock);
 		if (_parameters.channel != channel) {
 			_parameters.channel = channel;
+			changed = true;
 		}
 	}
 	if (changed) {

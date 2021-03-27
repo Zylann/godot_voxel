@@ -813,8 +813,8 @@ void VoxelBuffer::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Rect3i 
 			// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
 			// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
 
-			elem = elem->next();
 		}
+		elem = elem->next();
 	}
 }
 
@@ -825,11 +825,11 @@ void VoxelBuffer::clear_voxel_metadata() {
 void VoxelBuffer::clear_voxel_metadata_in_area(Rect3i box) {
 	Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
 	while (elem != nullptr) {
+		Map<Vector3i, Variant>::Element *next_elem = elem->next();
 		if (box.contains(elem->key())) {
-			Map<Vector3i, Variant>::Element *next_elem = elem->next();
 			_voxel_metadata.erase(elem);
-			elem = next_elem;
 		}
+		elem = next_elem;
 	}
 }
 
