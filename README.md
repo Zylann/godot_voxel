@@ -10,14 +10,16 @@ A C++ module for creating volumetric worlds in Godot Engine.
 Features
 ---------------------------
 
-- Realtime editable, 3D based terrain (Unlike a heightmap based terrain, this allows for overhangs, tunnels, and user creation/destruction)
-- Physics based collision and raycast support
-- Infinite terrains made by paging sections in and out
+- Realtime 3D terrain editable in-game (Unlike a heightmap based terrain, this allows for overhangs, tunnels, and user creation/destruction)
+- Godot physics integration + alternate fast Minecraft-like collisions
+- Infinite terrains made by paging chunks in and out
 - Voxel data is streamed from a variety of sources, which includes the ability to write your own generators
 - Minecraft-style blocky voxel terrain, with multiple materials and baked ambient occlusion
-- Smooth terrain using Transvoxel
-- Levels of detail for smooth terrain
+- Smooth terrain with level of detail using Transvoxel
 - Voxel storage using 8-bit or 16-bit channels for any general purpose
+- Instancing system to spawn foliage, rocks and other decoration on surfaces
+
+Check the [changelog](https://voxel-tools.readthedocs.io/en/latest/changelog/) for more recent details.
 
 
 Documentation
@@ -33,12 +35,12 @@ Roadmap
 
 These are some ideas that may or may not be implemented in the future:
 
-* Instancing for foliage and rocks
 * Texturing on smooth terrain
 * Editor preview and authoring
 * Improving LOD performance
 * Other meshing algorithms (e.g. dual contouring)
 * GPU offloading (Maybe when Godot 4+ supports compute shaders)
+* Migrate to a GDNative plugin (post Godot 4, needs work)
 
 
 Supporters
@@ -58,5 +60,7 @@ Phyronnaz
 RonanZe
 furtherorbit
 jp.owo.Manda (segfault-god)
+hidemat
+Jakub Buriánek (Buri)
 ```
 
