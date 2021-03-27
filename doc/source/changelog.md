@@ -3,12 +3,12 @@ Changelog
 
 This is a high-level list of features, changes and fixes that have been made over time.
 
-At the moment, this module doesn't have a distinct release schedule, so this changelog follows Godot's version numbers and binary releases. Almost each version mentionned here should have an associated Git branch containing features at the time of the version. Backports aren't done so far.
+At the moment, this module doesn't have a distinct release schedule, so this changelog follows Godot's version numbers and binary releases. Almost each version mentionned here should have an associated Git branch (for THIS repo, not Godot's) containing features at the time of the version. Backports aren't done so far.
 
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
-Ongoing development - `master`
---------------------------------
+Ongoing development
+--------------------
 
 - General
     - Introduction of Voxel Server, which shares threaded tasks among all voxel nodes
