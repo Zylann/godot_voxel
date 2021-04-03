@@ -67,6 +67,7 @@ public:
 
 	unsigned int get_mesh_block_size_pow2() const;
 	unsigned int get_mesh_block_size() const;
+	void set_mesh_block_size(unsigned int mesh_block_size);
 
 	// These must be called after an edit
 	void post_edit_area(Rect3i p_box);

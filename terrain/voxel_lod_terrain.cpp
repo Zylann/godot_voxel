@@ -310,6 +310,53 @@ void VoxelLodTerrain::set_data_block_size_po2(unsigned int p_block_size_po2) {
 	_on_stream_params_changed();
 }
 
+void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
+	mesh_block_size = clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
+
+	unsigned int po2;
+	switch (mesh_block_size) {
+		case 16:
+			po2 = 4;
+			break;
+		case 32:
+			po2 = 5;
+			break;
+		default:
+			mesh_block_size = 16;
+			po2 = 4;
+			break;
+	}
+	if (mesh_block_size == get_mesh_block_size()) {
+		return;
+	}
+
+	// Reset mesh maps
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		Lod &lod = _lods[lod_index];
+		if (_instancer != nullptr) {
+			// Unload instances
+			VoxelInstancer *instancer = _instancer;
+			lod.mesh_map.for_all_blocks([lod_index, instancer](VoxelMeshBlock *block) {
+				instancer->on_mesh_block_exit(block->position, lod_index);
+			});
+		}
+		// Unload mesh blocks
+		lod.mesh_map.for_all_blocks(BeforeUnloadMeshAction{ _shader_material_pool });
+		lod.mesh_map.create(po2, lod_index);
+		// Reset view distance cache so they will be re-entered
+		lod.last_view_distance_mesh_blocks = 0;
+	}
+
+	// Reset LOD octrees
+	LodOctree::NoDestroyAction nda;
+	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
+		OctreeItem &item = E->value();
+		item.octree.create_from_lod_count(get_mesh_block_size(), _lod_count, nda);
+	}
+
+	VoxelServer::get_singleton()->set_volume_render_block_size(_volume_id, mesh_block_size);
+}
+
 void VoxelLodTerrain::_set_block_size_po2(int p_block_size_po2) {
 	_lods[0].data_map.create(p_block_size_po2, 0);
 }
@@ -2345,8 +2392,11 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_lod_distance"), &VoxelLodTerrain::get_lod_distance);
 
 	ClassDB::bind_method(D_METHOD("get_mesh_block_size"), &VoxelLodTerrain::get_mesh_block_size);
+	ClassDB::bind_method(D_METHOD("set_mesh_block_size"), &VoxelLodTerrain::set_mesh_block_size);
+
 	ClassDB::bind_method(D_METHOD("get_data_block_size"), &VoxelLodTerrain::get_data_block_size);
 	ClassDB::bind_method(D_METHOD("get_data_block_region_extent"), &VoxelLodTerrain::get_data_block_region_extent);
+
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::_b_get_statistics);
 	ClassDB::bind_method(D_METHOD("voxel_to_data_block_position", "lod_index"),
 			&VoxelLodTerrain::voxel_to_data_block_position);
@@ -2411,4 +2461,5 @@ void VoxelLodTerrain::_bind_methods() {
 	// TODO Probably should be in parent class?
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
 			"set_run_stream_in_editor", "is_stream_running_in_editor");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
 }
