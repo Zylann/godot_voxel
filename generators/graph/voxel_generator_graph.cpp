@@ -232,6 +232,14 @@ bool VoxelGeneratorGraph::is_debug_clipped_blocks() const {
 	return _debug_clipped_blocks;
 }
 
+void VoxelGeneratorGraph::set_use_xz_caching(bool enabled) {
+	_use_xz_caching = enabled;
+}
+
+bool VoxelGeneratorGraph::is_using_xz_caching() const {
+	return _use_xz_caching;
+}
+
 void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	std::shared_ptr<VoxelGraphRuntime> runtime;
 	{
@@ -334,8 +342,9 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 					y_cache.fill(gy);
 
-					runtime->generate_set(cache.state, x_cache, y_cache, z_cache, slice_cache, ry != rmin.y,
-							_use_optimized_execution_map);
+					// TODO Option to disable Y dependency caching
+					runtime->generate_set(cache.state, x_cache, y_cache, z_cache, slice_cache,
+							_use_xz_caching && ry != rmin.y, _use_optimized_execution_map);
 
 					// TODO Flatten this further
 					{
@@ -1072,6 +1081,9 @@ void VoxelGeneratorGraph::_bind_methods() {
 			&VoxelGeneratorGraph::set_debug_clipped_blocks);
 	ClassDB::bind_method(D_METHOD("is_debug_clipped_blocks"), &VoxelGeneratorGraph::is_debug_clipped_blocks);
 
+	ClassDB::bind_method(D_METHOD("set_use_xz_caching", "enabled"), &VoxelGeneratorGraph::set_use_xz_caching);
+	ClassDB::bind_method(D_METHOD("is_using_xz_caching"), &VoxelGeneratorGraph::is_using_xz_caching);
+
 	ClassDB::bind_method(D_METHOD("compile"), &VoxelGeneratorGraph::_b_compile);
 
 	ClassDB::bind_method(D_METHOD("get_node_type_count"), &VoxelGeneratorGraph::_b_get_node_type_count);
@@ -1105,6 +1117,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 			"set_use_optimized_execution_map", "is_using_optimized_execution_map");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_subdivision"), "set_use_subdivision", "is_using_subdivision");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "subdivision_size"), "set_subdivision_size", "get_subdivision_size");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_xz_caching"), "set_use_xz_caching", "is_using_xz_caching");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_block_clipping"),
 			"set_debug_clipped_blocks", "is_debug_clipped_blocks");
 

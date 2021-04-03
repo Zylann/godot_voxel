@@ -465,6 +465,7 @@ void VoxelGraphRuntime::generate_execution_map(const State &state,
 	const Program &program = _program;
 	const DependencyGraph &graph = program.dependency_graph;
 
+	// This function will run a lot of times so better re-use the same vector
 	static thread_local std::vector<uint16_t> to_process;
 	to_process.clear();
 	to_process.push_back(program.sdf_output_node_index);
@@ -546,8 +547,8 @@ void VoxelGraphRuntime::generate_execution_map(const State &state,
 			case SKIPPABLE: {
 				const ArraySlice<const uint16_t> outputs = get_outputs_from_op_address(operations, node.op_address);
 
-				for (unsigned int i = 0; i < outputs.size(); ++i) {
-					const uint16_t output_address = outputs[i];
+				for (unsigned int output_index = 0; output_index < outputs.size(); ++output_index) {
+					const uint16_t output_address = outputs[output_index];
 					const Buffer &buffer = state.get_buffer(output_address);
 
 					if (buffer.is_constant) {
@@ -561,6 +562,7 @@ void VoxelGraphRuntime::generate_execution_map(const State &state,
 					// Unused buffers can be left as-is, but local constants must be filled in.
 					if (buffer.local_users_count > 0) {
 						const Interval range = state.ranges[output_address];
+						// If this interval is not a single value then the node should not have been skippable
 						CRASH_COND(!range.is_single_value());
 						const float v = range.min;
 						for (unsigned int j = 0; j < buffer.size; ++j) {
@@ -798,7 +800,7 @@ void VoxelGraphRuntime::generate_set(State &state,
 		}
 
 		ERR_FAIL_COND(node_type.process_buffer_func == nullptr);
-		ProcessBufferContext ctx(inputs, outputs, params, buffers);
+		ProcessBufferContext ctx(inputs, outputs, params, buffers, use_execution_map);
 		node_type.process_buffer_func(ctx);
 	}
 

@@ -226,12 +226,23 @@ public:
 				const ArraySlice<const uint16_t> inputs,
 				const ArraySlice<const uint16_t> outputs,
 				const ArraySlice<const uint8_t> params,
-				ArraySlice<Buffer> buffers) :
+				ArraySlice<Buffer> buffers,
+				bool using_execution_map) :
 				_ProcessContext(inputs, outputs, params),
-				_buffers(buffers) {}
+				_buffers(buffers),
+				_using_execution_map(using_execution_map) {}
 
 		inline const Buffer &get_input(uint32_t i) const {
 			const uint32_t address = get_input_address(i);
+#ifdef DEBUG_ENABLED
+			// When using optimized execution mapping,
+			// If a buffer is marked as having no users during range analysis, then it should really not be used,
+			// because it won't be filled with relevant data. If it is still used,
+			// then the result can be completely different from what the range analysis predicted.
+			const Buffer &b = _buffers[address];
+			ERR_FAIL_COND_V_MSG(_using_execution_map && !b.is_binding && b.local_users_count == 0, b,
+					"buffer marked as 'ignored' is still being used");
+#endif
 			return _buffers[address];
 		}
 
@@ -240,8 +251,17 @@ public:
 			return _buffers[address];
 		}
 
+		// Different signature to force the coder to acknowledge the condition
+		inline const Buffer &try_get_input(uint32_t i, bool &ignored) {
+			const uint32_t address = get_input_address(i);
+			const Buffer &b = _buffers[address];
+			ignored = _using_execution_map && b.local_users_count;
+			return b;
+		}
+
 	private:
 		ArraySlice<Buffer> _buffers;
+		bool _using_execution_map;
 	};
 
 	class RangeAnalysisContext : public _ProcessContext {
