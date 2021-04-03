@@ -603,8 +603,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.outputs.push_back(Port("out"));
 		// TODO Add a `clamp` parameter? It helps optimization
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
-			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
-			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
+			bool a_ignored;
+			bool b_ignored;
+			const VoxelGraphRuntime::Buffer &a = ctx.try_get_input(0, a_ignored);
+			const VoxelGraphRuntime::Buffer &b = ctx.try_get_input(1, b_ignored);
 			const VoxelGraphRuntime::Buffer &r = ctx.get_input(2);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const uint32_t buffer_size = out.size;
@@ -616,18 +618,40 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 						out.data[i] = Math::lerp(ca, cb, r.data[i]);
 					}
 				} else {
-					for (uint32_t i = 0; i < buffer_size; ++i) {
-						out.data[i] = Math::lerp(ca, b.data[i], r.data[i]);
+					if (b_ignored) {
+						for (uint32_t i = 0; i < buffer_size; ++i) {
+							out.data[i] = ca;
+						}
+					} else {
+						for (uint32_t i = 0; i < buffer_size; ++i) {
+							out.data[i] = Math::lerp(ca, b.data[i], r.data[i]);
+						}
 					}
 				}
 			} else if (b.is_constant) {
 				const float cb = b.constant_value;
-				for (uint32_t i = 0; i < buffer_size; ++i) {
-					out.data[i] = Math::lerp(a.data[i], cb, r.data[i]);
+				if (a_ignored) {
+					for (uint32_t i = 0; i < buffer_size; ++i) {
+						out.data[i] = cb;
+					}
+				} else {
+					for (uint32_t i = 0; i < buffer_size; ++i) {
+						out.data[i] = Math::lerp(a.data[i], cb, r.data[i]);
+					}
 				}
 			} else {
-				for (uint32_t i = 0; i < buffer_size; ++i) {
-					out.data[i] = Math::lerp(a.data[i], b.data[i], r.data[i]);
+				if (a_ignored) {
+					for (uint32_t i = 0; i < buffer_size; ++i) {
+						out.data[i] = b.data[i];
+					}
+				} else if (b_ignored) {
+					for (uint32_t i = 0; i < buffer_size; ++i) {
+						out.data[i] = a.data[i];
+					}
+				} else {
+					for (uint32_t i = 0; i < buffer_size; ++i) {
+						out.data[i] = Math::lerp(a.data[i], b.data[i], r.data[i]);
+					}
 				}
 			}
 		};
@@ -1036,11 +1060,21 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			VOXEL_PROFILE_SCOPE_NAMED("NODE_SDF_SMOOTH_UNION");
-			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
-			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
+			bool a_ignored;
+			bool b_ignored;
+			const VoxelGraphRuntime::Buffer &a = ctx.try_get_input(0, a_ignored);
+			const VoxelGraphRuntime::Buffer &b = ctx.try_get_input(1, b_ignored);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const Params params = ctx.get_params<Params>();
-			if (params.smoothness > 0.0001f) {
+			if (a_ignored) {
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = b.data[i];
+				}
+			} else if (b_ignored) {
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = a.data[i];
+				}
+			} else if (params.smoothness > 0.0001f) {
 				for (uint32_t i = 0; i < out.size; ++i) {
 					out.data[i] = sdf_smooth_union(a.data[i], b.data[i], params.smoothness);
 				}
@@ -1110,11 +1144,21 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			VOXEL_PROFILE_SCOPE_NAMED("NODE_SDF_SMOOTH_SUBTRACT");
-			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
-			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
+			bool a_ignored;
+			bool b_ignored;
+			const VoxelGraphRuntime::Buffer &a = ctx.try_get_input(0, a_ignored);
+			const VoxelGraphRuntime::Buffer &b = ctx.try_get_input(0, b_ignored);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const Params params = ctx.get_params<Params>();
-			if (params.smoothness > 0.0001f) {
+			if (a_ignored) {
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = b.data[i];
+				}
+			} else if (b_ignored) {
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = a.data[i];
+				}
+			} else if (params.smoothness > 0.0001f) {
 				for (uint32_t i = 0; i < out.size; ++i) {
 					out.data[i] = sdf_smooth_subtract(a.data[i], b.data[i], params.smoothness);
 				}

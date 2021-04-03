@@ -334,6 +334,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 					y_cache.fill(gy);
 
+					// TODO Option to disable Y dependency caching
 					runtime->generate_set(cache.state, x_cache, y_cache, z_cache, slice_cache, ry != rmin.y,
 							_use_optimized_execution_map);
 
