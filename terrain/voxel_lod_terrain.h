@@ -3,7 +3,8 @@
 
 #include "../server/voxel_server.h"
 #include "lod_octree.h"
-#include "voxel_map.h"
+#include "voxel_data_map.h"
+#include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
 #include <core/set.h>
@@ -55,12 +56,17 @@ public:
 	void set_collision_lod_count(int lod_count);
 	int get_collision_lod_count() const;
 
-	int get_block_region_extent() const;
-	Vector3 voxel_to_block_position(Vector3 vpos, int lod_index) const;
+	int get_data_block_region_extent() const;
+	int get_mesh_block_region_extent() const;
 
-	unsigned int get_block_size_pow2() const;
-	void set_block_size_po2(unsigned int p_block_size_po2);
-	unsigned int get_block_size() const;
+	Vector3 voxel_to_data_block_position(Vector3 vpos, int lod_index) const;
+
+	unsigned int get_data_block_size_pow2() const;
+	unsigned int get_data_block_size() const;
+	void set_data_block_size_po2(unsigned int p_block_size_po2);
+
+	unsigned int get_mesh_block_size_pow2() const;
+	unsigned int get_mesh_block_size() const;
 
 	// These must be called after an edit
 	void post_edit_area(Rect3i p_box);
@@ -117,8 +123,8 @@ public:
 
 	// Debugging
 
-	Array debug_raycast_block(Vector3 world_origin, Vector3 world_direction) const;
-	Dictionary debug_get_block_info(Vector3 fbpos, int lod_index) const;
+	Array debug_raycast_mesh_block(Vector3 world_origin, Vector3 world_direction) const;
+	Dictionary debug_get_mesh_block_info(Vector3 fbpos, int lod_index) const;
 	Array debug_get_octree_positions() const;
 	Array debug_get_octrees_detailed() const;
 
@@ -137,7 +143,7 @@ public:
 	void set_instancer(VoxelInstancer *instancer);
 	uint32_t get_volume_id() const { return _volume_id; }
 
-	Array get_block_surface(Vector3i block_pos, int lod_index) const;
+	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
 	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
 
 protected:
@@ -147,7 +153,14 @@ protected:
 	void _process(float delta);
 
 private:
-	void immerge_block(Vector3i block_pos, int lod_index);
+	void unload_data_block(Vector3i block_pos, int lod_index);
+	void unload_mesh_block(Vector3i block_pos, int lod_index);
+
+	static inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
+		return (data_block_size == 16 || data_block_size == 32) &&
+			   (mesh_block_size == 16 || mesh_block_size == 32) &&
+			   mesh_block_size >= data_block_size;
+	}
 
 	void start_updater();
 	void stop_updater();
@@ -156,13 +169,13 @@ private:
 	void reset_maps();
 
 	Vector3 get_local_viewer_pos() const;
-	void try_schedule_loading_with_neighbors(const Vector3i &p_bpos, int lod_index);
-	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelMap &map) const;
-	bool check_block_loaded_and_updated(const Vector3i &p_bpos, int lod_index);
-	bool check_block_mesh_updated(VoxelBlock *block);
+	void try_schedule_loading_with_neighbors(const Vector3i &p_data_block_pos, int lod_index);
+	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelDataMap &map) const;
+	bool check_block_loaded_and_meshed(const Vector3i &p_mesh_block_pos, int lod_index);
+	bool check_block_mesh_updated(VoxelMeshBlock *block);
 	void _set_lod_count(int p_lod_count);
 	void _set_block_size_po2(int p_block_size_po2);
-	void set_block_active(VoxelBlock &block, bool active);
+	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
 
 	void _on_stream_params_changed();
 
@@ -172,7 +185,7 @@ private:
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
 
-	void add_transition_update(VoxelBlock *block);
+	void add_transition_update(VoxelMeshBlock *block);
 	void add_transition_updates_around(Vector3i block_pos, int lod_index);
 	void process_transition_updates();
 	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
@@ -181,7 +194,8 @@ private:
 	void _b_set_voxel_bounds(AABB aabb);
 	AABB _b_get_voxel_bounds() const;
 	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const;
-	int _b_debug_get_block_count() const;
+	int _b_debug_get_mesh_block_count() const;
+	int _b_debug_get_data_block_count() const;
 	Error _b_debug_dump_as_scene(String fpath) const;
 	Dictionary _b_get_statistics() const;
 
@@ -218,7 +232,7 @@ private:
 	ProcessMode _process_mode = PROCESS_MODE_IDLE;
 
 	// Only populated and then cleared inside _process, so lifetime of pointers should be valid
-	std::vector<VoxelBlock *> _blocks_pending_transition_update;
+	std::vector<VoxelMeshBlock *> _blocks_pending_transition_update;
 
 	Ref<Material> _material;
 	std::vector<Ref<ShaderMaterial> > _shader_material_pool;
@@ -231,23 +245,23 @@ private:
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
-		VoxelMap map;
+		VoxelDataMap data_map;
 		Set<Vector3i> loading_blocks;
-		std::vector<Vector3i> blocks_pending_update;
-
 		// Blocks that were edited and need their LOD counterparts to be updated
 		std::vector<Vector3i> blocks_pending_lodding;
-
 		// These are relative to this LOD, in block coordinates
-		Vector3i last_viewer_block_pos;
-		int last_view_distance_blocks = 0;
+		Vector3i last_viewer_data_block_pos;
+		int last_view_distance_data_blocks = 0;
 
+		VoxelMeshMap mesh_map;
+		std::vector<Vector3i> blocks_pending_update;
 		std::vector<Vector3i> deferred_collision_updates;
+		Map<Vector3i, VoxelMeshBlock *> fading_blocks;
+		Vector3i last_viewer_mesh_block_pos;
+		int last_view_distance_mesh_blocks = 0;
 
 		// Members for memory caching
 		std::vector<Vector3i> blocks_to_load;
-
-		Map<Vector3i, VoxelBlock *> fading_blocks;
 	};
 
 	FixedArray<Lod, VoxelConstants::MAX_LOD> _lods;

@@ -131,6 +131,10 @@ inline int udiv(int x, int d) {
 	}
 }
 
+inline int ceildiv(int x, int d) {
+	return -udiv(-x, d);
+}
+
 // TODO Rename `wrapi`
 // `Math::wrapi` with zero min
 inline int wrap(int x, int d) {

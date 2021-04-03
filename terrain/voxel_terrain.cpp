@@ -163,7 +163,8 @@ void VoxelTerrain::_on_stream_params_changed() {
 		_set_block_size_po2(stream_block_size_po2);
 	}
 
-	VoxelServer::get_singleton()->set_volume_block_size(_volume_id, 1 << get_block_size_pow2());
+	VoxelServer::get_singleton()->set_volume_data_block_size(_volume_id, 1 << get_block_size_pow2());
+	VoxelServer::get_singleton()->set_volume_render_block_size(_volume_id, 1 << get_block_size_pow2());
 
 	// The whole map might change, so regenerate it
 	reset_map();
@@ -1174,15 +1175,22 @@ void VoxelTerrain::_process() {
 			VoxelServer::BlockMeshInput mesh_request;
 			mesh_request.position = block_pos;
 			mesh_request.lod = 0;
-			for (unsigned int i = 0; i < Cube::MOORE_AREA_3D_COUNT; ++i) {
-				const Vector3i npos = block_pos + Cube::g_ordered_moore_area_3d[i];
-				VoxelBlock *nblock = _map.get_block(npos);
-				// The block can actually be null on some occasions. Not sure yet if it's that bad
-				//CRASH_COND(nblock == nullptr);
-				if (nblock == nullptr) {
-					continue;
+			mesh_request.blocks_count = 3 * 3 * 3;
+			// This iteration order is specifically chosen to match VoxelServer and threaded access
+			unsigned int i = 0;
+			for (int z = -1; z < 2; ++z) {
+				for (int x = -1; x < 2; ++x) {
+					for (int y = -1; y < 2; ++y) {
+						const Vector3i npos = block_pos + Vector3i(x, y, z);
+						VoxelBlock *nblock = _map.get_block(npos);
+						// The block can actually be null on some occasions. Not sure yet if it's that bad
+						//CRASH_COND(nblock == nullptr);
+						if (nblock != nullptr) {
+							mesh_request.blocks[i] = nblock->voxels;
+						}
+						++i;
+					}
 				}
-				mesh_request.blocks[i] = nblock->voxels;
 			}
 
 			VoxelServer::get_singleton()->request_block_mesh(_volume_id, mesh_request);

@@ -53,12 +53,12 @@ public:
 
 	// Event handlers
 
-	void on_block_data_loaded(Vector3i grid_position, unsigned int lod_index,
+	void on_data_block_loaded(Vector3i grid_position, unsigned int lod_index,
 			std::unique_ptr<VoxelInstanceBlockData> instances);
-	void on_block_enter(Vector3i grid_position, unsigned int lod_index, Array surface_arrays);
-	void on_block_exit(Vector3i grid_position, unsigned int lod_index);
+	void on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays);
+	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
 	void on_area_edited(Rect3i p_voxel_box);
-	void on_body_removed(unsigned int block_index, int instance_index);
+	void on_body_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index);
 
 	// Debug
 
@@ -84,14 +84,13 @@ private:
 	void clear_blocks_in_layer(int layer_id);
 	void clear_layers();
 	void update_visibility();
-	void save_block(Vector3i grid_pos, int lod_index) const;
+	void save_block(Vector3i data_grid_pos, int lod_index) const;
 	Layer *get_layer(int id);
 	const Layer *get_layer_const(int id) const;
 	void regenerate_layer(uint16_t layer_id, bool regenerate_blocks);
 	void update_layer_meshes(int layer_id);
 
-	void create_blocks(const VoxelInstanceBlockData *instances_data, Vector3i grid_position, int lod_index,
-			Array surface_arrays);
+	void create_render_blocks(Vector3i grid_position, int lod_index, Array surface_arrays);
 
 	void update_block_from_transforms(int block_index, ArraySlice<const Transform> transforms,
 			Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItem *item, uint16_t layer_id,
@@ -101,19 +100,24 @@ private:
 
 	static void _bind_methods();
 
+	// TODO Rename RenderBlock?
 	struct Block {
 		uint16_t layer_id;
 		uint8_t current_mesh_lod = 0;
 		uint8_t lod_index;
+		// Position in mesh block coordinate system
 		Vector3i grid_position;
 		DirectMultiMeshInstance multimesh_instance;
 		// For physics we use nodes because it's easier to manage.
 		// Such instances may be less numerous.
+		// If the item associated to this block has no collisions, this will be empty.
 		Vector<VoxelInstancerRigidBody *> bodies;
 	};
 
 	struct Layer {
 		unsigned int lod_index;
+		// Blocks indexed by grid position.
+		// Keys follow the mesh block coordinate system.
 		HashMap<Vector3i, unsigned int, Vector3iHasher> blocks;
 	};
 
@@ -134,12 +138,14 @@ private:
 	struct Lod {
 		std::vector<int> layers;
 
-		// Blocks that have have unsaved changes
+		// Blocks that have have unsaved changes.
+		// Keys follows the data block coordinate system.
 		HashMap<Vector3i, bool, Vector3iHasher> modified_blocks;
 
 		// This is a temporary place to store loaded instances data while it's not visible yet.
 		// These instances are user-authored ones. If a block does not have an entry there,
 		// it will get generated instances.
+		// Keys follows the data block coordinate system.
 		// Can't use `HashMap` because it lacks move semantics.
 		std::unordered_map<Vector3i, std::unique_ptr<VoxelInstanceBlockData> > loaded_instances_data;
 

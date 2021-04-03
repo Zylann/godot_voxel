@@ -116,6 +116,19 @@ public:
 	}
 
 	template <typename A>
+	inline void for_each_cell_zxy(A a) const {
+		Vector3i max = pos + size;
+		Vector3i p;
+		for (p.z = pos.z; p.z < max.z; ++p.z) {
+			for (p.x = pos.x; p.x < max.x; ++p.x) {
+				for (p.y = pos.y; p.y < max.y; ++p.y) {
+					a(p);
+				}
+			}
+		}
+	}
+
+	template <typename A>
 	inline bool all_cells_match(A a) const {
 		Vector3i max = pos + size;
 		Vector3i p;
@@ -188,6 +201,53 @@ public:
 		}
 	}
 
+	template <typename F>
+	void for_inner_outline(F f) const {
+		//     o-------o
+		//    /|      /|
+		//   / |     / |
+		//  o--+----o  |
+		//  |  o----|--o
+		//  | /     | /   y z
+		//  |/      |/    |/
+		//  o-------o     o---x
+
+		Vector3i min_pos = pos;
+		Vector3i max_pos = pos + size;
+
+		// Top and bottom
+		for (int z = min_pos.z; z < max_pos.z; ++z) {
+			for (int x = min_pos.x; x < max_pos.x; ++x) {
+				f(Vector3i(x, min_pos.y, z));
+				f(Vector3i(x, max_pos.y - 1, z));
+			}
+		}
+
+		// Exclude top and bottom cells from the sides we'll iterate next
+		++min_pos.y;
+		--max_pos.y;
+
+		// Z sides
+		for (int x = min_pos.x; x < max_pos.x; ++x) {
+			for (int y = min_pos.y; y < max_pos.y; ++y) {
+				f(Vector3i(x, y, min_pos.z));
+				f(Vector3i(x, y, max_pos.z - 1));
+			}
+		}
+
+		// Exclude cells belonging to edges of Z sides we did before
+		++min_pos.z;
+		--max_pos.z;
+
+		// X sides
+		for (int z = min_pos.z; z < max_pos.z; ++z) {
+			for (int y = min_pos.y; y < max_pos.y; ++y) {
+				f(Vector3i(min_pos.x, y, z));
+				f(Vector3i(max_pos.x - 1, y, z));
+			}
+		}
+	}
+
 	inline Rect3i padded(int m) const {
 		return Rect3i(
 				pos.x - m,
@@ -198,12 +258,23 @@ public:
 				size.z + 2 * m);
 	}
 
+	// Converts the rectangle into a coordinate system of higher step size,
+	// rounding outwards of the area covered by the original rectangle if divided coordinates have remainders.
 	inline Rect3i downscaled(int step_size) const {
 		Rect3i o;
 		o.pos = pos.floordiv(step_size);
+		// TODO Is that ceildiv?
 		Vector3i max_pos = (pos + size - Vector3i(1)).floordiv(step_size);
 		o.size = max_pos - o.pos + Vector3i(1);
 		return o;
+	}
+
+	// Converts the rectangle into a coordinate system of higher step size,
+	// rounding inwards of the area covered by the original rectangle if divided coordinates have remainders.
+	// This is such that the result is included in the original rectangle (assuming a common coordinate system).
+	// The result can be an empty rectangle.
+	inline Rect3i downscaled_inner(int step_size) const {
+		return Rect3i::from_min_max(pos.ceildiv(step_size), (pos + size).floordiv(step_size));
 	}
 
 	static inline void clip_range(int &pos, int &size, int lim_pos, int lim_size) {

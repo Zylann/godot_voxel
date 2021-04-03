@@ -1,9 +1,9 @@
 #include "voxel_tool_lod_terrain.h"
+#include "../terrain/voxel_data_map.h"
 #include "../terrain/voxel_lod_terrain.h"
-#include "../terrain/voxel_map.h"
 #include "../util/voxel_raycast.h"
 
-VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain, VoxelMap &map) :
+VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain, VoxelDataMap &map) :
 		_terrain(terrain), _map(&map) {
 	ERR_FAIL_COND(terrain == nullptr);
 	// At the moment, only LOD0 is supported.
@@ -85,7 +85,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	// TODO Implement broad-phase on blocks to minimize locking and increase performance
 
 	struct RaycastPredicate {
-		const VoxelMap &map;
+		const VoxelDataMap &map;
 
 		bool operator()(Vector3i pos) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
@@ -126,7 +126,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 		if (_raycast_binary_search_iterations > 0) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
 			struct VolumeSampler {
-				const VoxelMap &map;
+				const VoxelDataMap &map;
 
 				inline float operator()(const Vector3i &pos) {
 					return map.get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);

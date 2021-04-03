@@ -121,4 +121,10 @@ ArraySlice<const T> to_slice_const(const std::vector<T> &vec) {
 	return ArraySlice<const T>(vec.data(), 0, vec.size());
 }
 
+template <typename T, unsigned int N>
+ArraySlice<T> to_slice(FixedArray<T, N> &a, unsigned int count) {
+	CRASH_COND(count > a.size());
+	return ArraySlice<T>(a.data(), count);
+}
+
 #endif // ARRAY_SLICE_H

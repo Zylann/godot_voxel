@@ -198,6 +198,9 @@ public:
 	// This returns that scale for a given depth configuration.
 	static float get_sdf_quantization_scale(Depth d);
 
+	// TODO Switch to using GPU format inorm16 for these conversions
+	// The current ones seem to work but aren't really correct
+
 	static inline float u8_to_norm(uint8_t v) {
 		return (static_cast<float>(v) - 0x7f) * VoxelConstants::INV_0x7f;
 	}

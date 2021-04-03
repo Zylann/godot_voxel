@@ -5,6 +5,8 @@
 #include <core/variant.h>
 
 class Mesh;
+class ConcavePolygonShape;
+class MultiMesh;
 
 bool is_surface_triangulated(Array surface);
 bool is_mesh_empty(Ref<Mesh> mesh_ref);
@@ -17,5 +19,10 @@ inline bool try_call_script(
 	const Variant *args[3] = { &arg0, &arg1, &arg2 };
 	return try_call_script(obj, method_name, args, 3, out_ret);
 }
+
+Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces);
+
+// This API can be confusing so I made a wrapper
+int get_visible_instance_count(const MultiMesh &mm);
 
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

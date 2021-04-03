@@ -58,7 +58,9 @@ public:
 			int layer_id,
 			Array surface_arrays,
 			const Transform &block_local_transform,
-			UpMode up_mode);
+			UpMode up_mode,
+			uint8_t octant_mask,
+			float block_size);
 
 	void set_density(float d);
 	float get_density() const;
@@ -106,6 +108,10 @@ public:
 
 	void set_noise_on_scale(float amount);
 	float get_noise_on_scale() const;
+
+	static inline int get_octant_index(const Vector3 pos, float half_block_size) {
+		return (pos.x > half_block_size) | ((pos.y > half_block_size) << 1) | ((pos.z > half_block_size) << 2);
+	}
 
 private:
 	void _on_noise_changed();

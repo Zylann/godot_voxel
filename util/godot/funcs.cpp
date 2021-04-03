@@ -1,7 +1,10 @@
 #include "funcs.h"
+#include "../profiling.h"
 
 #include <core/engine.h>
+#include <scene/resources/concave_polygon_shape.h>
 #include <scene/resources/mesh.h>
+#include <scene/resources/multimesh.h>
 
 bool is_surface_triangulated(Array surface) {
 	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
@@ -52,4 +55,62 @@ bool try_call_script(
 	}
 
 	return true;
+}
+
+// Faster version of Mesh::create_trimesh_shape()
+// See https://github.com/Zylann/godot_voxel/issues/54
+//
+Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
+	VOXEL_PROFILE_SCOPE();
+
+	PoolVector<Vector3> face_points;
+	int face_points_size = 0;
+
+	//find the correct size for face_points
+	for (int i = 0; i < surfaces.size(); i++) {
+		const Array &surface_arrays = surfaces[i];
+		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
+
+		face_points_size += indices.size();
+	}
+	face_points.resize(face_points_size);
+
+	//copy the points into it
+	int face_points_offset = 0;
+	for (int i = 0; i < surfaces.size(); i++) {
+		const Array &surface_arrays = surfaces[i];
+
+		PoolVector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];
+		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
+
+		ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape>());
+		ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape>());
+		ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape>());
+
+		int face_points_count = face_points_offset + indices.size();
+
+		{
+			PoolVector<Vector3>::Write w = face_points.write();
+			PoolVector<int>::Read index_r = indices.read();
+			PoolVector<Vector3>::Read position_r = positions.read();
+
+			for (int p = face_points_offset; p < face_points_count; ++p) {
+				w[p] = position_r[index_r[p - face_points_offset]];
+			}
+		}
+
+		face_points_offset += indices.size();
+	}
+
+	Ref<ConcavePolygonShape> shape = memnew(ConcavePolygonShape);
+	shape->set_faces(face_points);
+	return shape;
+}
+
+int get_visible_instance_count(const MultiMesh &mm) {
+	int visible_count = mm.get_visible_instance_count();
+	if (visible_count == -1) {
+		visible_count = mm.get_instance_count();
+	}
+	return visible_count;
 }

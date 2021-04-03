@@ -163,9 +163,14 @@ void VoxelServer::set_volume_transform(uint32_t volume_id, Transform t) {
 	volume.transform = t;
 }
 
-void VoxelServer::set_volume_block_size(uint32_t volume_id, uint32_t block_size) {
+void VoxelServer::set_volume_render_block_size(uint32_t volume_id, uint32_t block_size) {
 	Volume &volume = _world.volumes.get(volume_id);
-	volume.block_size = block_size;
+	volume.render_block_size = block_size;
+}
+
+void VoxelServer::set_volume_data_block_size(uint32_t volume_id, uint32_t block_size) {
+	Volume &volume = _world.volumes.get(volume_id);
+	volume.data_block_size = block_size;
 }
 
 void VoxelServer::set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream) {
@@ -220,10 +225,10 @@ static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
 }
 
 void VoxelServer::init_priority_dependency(
-		VoxelServer::PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume) {
+		VoxelServer::PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size) {
 
-	const Vector3i voxel_pos = get_block_center(block_position, volume.block_size, lod);
-	const float block_radius = (volume.block_size << lod) / 2;
+	const Vector3i voxel_pos = get_block_center(block_position, block_size, lod);
+	const float block_radius = (block_size << lod) / 2;
 	dep.shared = _world.shared_priority_dependency;
 	dep.world_position = volume.transform.xform(voxel_pos.to_vec3());
 	const float transformed_block_radius =
@@ -241,7 +246,7 @@ void VoxelServer::init_priority_dependency(
 			// This does not depend on viewer's view distance, but on LOD precision instead.
 			dep.drop_distance_squared =
 					squared(2.f * transformed_block_radius *
-							get_octree_lod_block_region_extent(volume.octree_lod_distance, volume.block_size));
+							get_octree_lod_block_region_extent(volume.octree_lod_distance, block_size));
 			break;
 
 		default:
@@ -257,11 +262,12 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) 
 	BlockMeshRequest *r = memnew(BlockMeshRequest);
 	r->volume_id = volume_id;
 	r->blocks = input.blocks;
+	r->blocks_count = input.blocks_count;
 	r->position = input.position;
 	r->lod = input.lod;
 	r->meshing_dependency = volume.meshing_dependency;
 
-	init_priority_dependency(r->priority_dependency, input.position, input.lod, volume);
+	init_priority_dependency(r->priority_dependency, input.position, input.lod, volume, volume.render_block_size);
 
 	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
 	_meshing_thread_pool.enqueue(r);
@@ -277,11 +283,11 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 		r->position = block_pos;
 		r->lod = lod;
 		r->type = BlockDataRequest::TYPE_LOAD;
-		r->block_size = volume.block_size;
+		r->block_size = volume.data_block_size;
 		r->stream_dependency = volume.stream_dependency;
 		r->request_instances = request_instances;
 
-		init_priority_dependency(r->priority_dependency, block_pos, lod, volume);
+		init_priority_dependency(r->priority_dependency, block_pos, lod, volume, volume.data_block_size);
 
 		_streaming_thread_pool.enqueue(r);
 
@@ -293,10 +299,10 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 		r.volume_id = volume_id;
 		r.position = block_pos;
 		r.lod = lod;
-		r.block_size = volume.block_size;
+		r.block_size = volume.data_block_size;
 		r.stream_dependency = volume.stream_dependency;
 
-		init_priority_dependency(r.priority_dependency, block_pos, lod, volume);
+		init_priority_dependency(r.priority_dependency, block_pos, lod, volume, volume.data_block_size);
 
 		BlockGenerateRequest *rp = memnew(BlockGenerateRequest(r));
 		_generation_thread_pool.enqueue(rp);
@@ -314,7 +320,7 @@ void VoxelServer::request_voxel_block_save(uint32_t volume_id, Ref<VoxelBuffer> 
 	r->position = block_pos;
 	r->lod = lod;
 	r->type = BlockDataRequest::TYPE_SAVE;
-	r->block_size = volume.block_size;
+	r->block_size = volume.data_block_size;
 	r->stream_dependency = volume.stream_dependency;
 	r->request_instances = false;
 	r->request_voxels = true;
@@ -337,7 +343,7 @@ void VoxelServer::request_instance_block_save(uint32_t volume_id, std::unique_pt
 	r->position = block_pos;
 	r->lod = lod;
 	r->type = BlockDataRequest::TYPE_SAVE;
-	r->block_size = volume.block_size;
+	r->block_size = volume.data_block_size;
 	r->stream_dependency = volume.stream_dependency;
 	r->request_instances = true;
 	r->request_voxels = false;
@@ -775,11 +781,15 @@ bool VoxelServer::BlockGenerateRequest::is_cancelled() {
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void copy_block_and_neighbors(const FixedArray<Ref<VoxelBuffer>, Cube::MOORE_AREA_3D_COUNT> &moore_blocks,
-		VoxelBuffer &dst, int min_padding, int max_padding, int channels_mask) {
+// Takes a list of blocks and interprets it as a cube of blocks centered around the area we want to create a mesh from.
+// Voxels from central blocks are copied, and part of side blocks are also copied so we get a temporary buffer
+// which includes enough neighbors for the mesher to avoid doing bound checks.
+static void copy_block_and_neighbors(ArraySlice<Ref<VoxelBuffer> > blocks, VoxelBuffer &dst,
+		int min_padding, int max_padding, int channels_mask) {
 
 	VOXEL_PROFILE_SCOPE();
 
+	// Extract wanted channels in a list
 	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels;
 	unsigned int channels_count = 0;
 	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
@@ -789,36 +799,64 @@ static void copy_block_and_neighbors(const FixedArray<Ref<VoxelBuffer>, Cube::MO
 		}
 	}
 
-	Ref<VoxelBuffer> central_buffer = moore_blocks[Cube::MOORE_AREA_3D_CENTRAL_INDEX];
-	CRASH_COND_MSG(central_buffer.is_null(), "Central buffer must be valid");
-	const int block_size = central_buffer->get_size().x;
-	const unsigned int padded_block_size = block_size + min_padding + max_padding;
+	// Determine size of the cube of blocks
+	int edge_size;
+	int mesh_block_size_factor;
+	switch (blocks.size()) {
+		case 3 * 3 * 3:
+			edge_size = 3;
+			mesh_block_size_factor = 1;
+			break;
+		case 4 * 4 * 4:
+			edge_size = 4;
+			mesh_block_size_factor = 2;
+			break;
+		default:
+			ERR_FAIL_MSG("Unsupported block count");
+	}
 
-	dst.create(padded_block_size, padded_block_size, padded_block_size);
+	// Pick anchor block, usually within the central part of the cube (that block must be valid)
+	const unsigned int anchor_buffer_index = edge_size * edge_size + edge_size + 1;
+
+	Ref<VoxelBuffer> central_buffer = blocks[anchor_buffer_index];
+	ERR_FAIL_COND_MSG(central_buffer.is_null(), "Central buffer must be valid");
+	ERR_FAIL_COND_MSG(central_buffer->get_size().all_members_equal() == false, "Central buffer must be cubic");
+	const int data_block_size = central_buffer->get_size().x;
+	const int mesh_block_size = data_block_size * mesh_block_size_factor;
+	const int padded_mesh_block_size = mesh_block_size + min_padding + max_padding;
+
+	dst.create(padded_mesh_block_size, padded_mesh_block_size, padded_mesh_block_size);
 
 	for (unsigned int ci = 0; ci < channels.size(); ++ci) {
 		dst.set_channel_depth(ci, central_buffer->get_channel_depth(ci));
 	}
 
 	const Vector3i min_pos = -Vector3i(min_padding);
-	const Vector3i max_pos = Vector3i(block_size + max_padding);
+	const Vector3i max_pos = Vector3i(mesh_block_size + max_padding);
 
-	for (unsigned int i = 0; i < Cube::MOORE_AREA_3D_COUNT; ++i) {
-		const Vector3i offset = block_size * Cube::g_ordered_moore_area_3d[i];
-		Ref<VoxelBuffer> src = moore_blocks[i];
+	// Using ZXY as convention to reconstruct positions with thread locking consistency
+	unsigned int i = 0;
+	for (int z = -1; z < edge_size - 1; ++z) {
+		for (int x = -1; x < edge_size - 1; ++x) {
+			for (int y = -1; y < edge_size - 1; ++y) {
+				const Vector3i offset = data_block_size * Vector3i(x, y, z);
+				Ref<VoxelBuffer> src = blocks[i];
+				++i;
 
-		if (src.is_null()) {
-			continue;
-		}
+				if (src.is_null()) {
+					continue;
+				}
 
-		const Vector3i src_min = min_pos - offset;
-		const Vector3i src_max = max_pos - offset;
-		const Vector3i dst_min = offset - min_pos;
+				const Vector3i src_min = min_pos - offset;
+				const Vector3i src_max = max_pos - offset;
+				const Vector3i dst_min = offset - min_pos;
 
-		{
-			RWLockRead read(src->get_lock());
-			for (unsigned int ci = 0; ci < channels.size(); ++ci) {
-				dst.copy_from(**src, src_min, src_max, dst_min, ci);
+				{
+					RWLockRead read(src->get_lock());
+					for (unsigned int ci = 0; ci < channels.size(); ++ci) {
+						dst.copy_from(**src, src_min, src_max, dst_min, channels[ci]);
+					}
+				}
 			}
 		}
 	}
@@ -836,7 +874,8 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 	// TODO Cache?
 	Ref<VoxelBuffer> voxels;
 	voxels.instance();
-	copy_block_and_neighbors(blocks, **voxels, min_padding, max_padding, mesher->get_used_channels_mask());
+	copy_block_and_neighbors(to_slice(blocks, blocks_count),
+			**voxels, min_padding, max_padding, mesher->get_used_channels_mask());
 
 	VoxelMesher::Input input = { **voxels, lod };
 

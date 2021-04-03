@@ -157,6 +157,10 @@ struct Vector3i {
 		return Vector3i(::udiv(x, d), ::udiv(y, d), ::udiv(z, d));
 	}
 
+	inline Vector3i ceildiv(const int d) const {
+		return Vector3i(::ceildiv(x, d), ::ceildiv(y, d), ::ceildiv(z, d));
+	}
+
 	inline Vector3i wrap(const Vector3i d) const {
 		return Vector3i(::wrap(x, d.x), ::wrap(y, d.y), ::wrap(z, d.z));
 	}

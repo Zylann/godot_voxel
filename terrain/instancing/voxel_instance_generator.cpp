@@ -8,11 +8,6 @@
 namespace {
 const float MAX_DENSITY = 1.f;
 const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
-
-thread_local std::vector<Vector3> g_vertex_cache;
-thread_local std::vector<Vector3> g_normal_cache;
-thread_local std::vector<float> g_noise_cache;
-
 } // namespace
 
 static inline Vector3 normalized(Vector3 pos, float &length) {
@@ -33,7 +28,9 @@ void VoxelInstanceGenerator::generate_transforms(
 		int layer_id,
 		Array surface_arrays,
 		const Transform &block_local_transform,
-		UpMode up_mode) {
+		UpMode up_mode,
+		uint8_t octant_mask,
+		float block_size) {
 
 	VOXEL_PROFILE_SCOPE();
 
@@ -70,6 +67,10 @@ void VoxelInstanceGenerator::generate_transforms(
 
 	// TODO This part might be moved to the meshing thread if it turns out to be too heavy
 
+	static thread_local std::vector<Vector3> g_vertex_cache;
+	static thread_local std::vector<Vector3> g_normal_cache;
+	static thread_local std::vector<float> g_noise_cache;
+
 	std::vector<Vector3> &vertex_cache = g_vertex_cache;
 	std::vector<Vector3> &normal_cache = g_normal_cache;
 
@@ -83,6 +84,7 @@ void VoxelInstanceGenerator::generate_transforms(
 		PoolVector3Array::Read vertices_r = vertices.read();
 		PoolVector3Array::Read normals_r = normals.read();
 
+		// Generate base positions
 		switch (_emit_mode) {
 			case EMIT_FROM_VERTICES: {
 				// Density is interpreted differently here,
@@ -147,8 +149,25 @@ void VoxelInstanceGenerator::generate_transforms(
 		}
 	}
 
+	// Filter out by octants
+	// This is done so some octants can be filled with user-edited data instead,
+	// because mesh size may not necessarily match data block size
+	if ((octant_mask & 0xff) != 0xff) {
+		const float h = block_size / 2.f;
+		for (unsigned int i = 0; i < vertex_cache.size(); ++i) {
+			const Vector3 &pos = vertex_cache[i];
+			const uint8_t octant_index = get_octant_index(pos, h);
+			if ((octant_mask & (1 << octant_index)) == 0) {
+				unordered_remove(vertex_cache, i);
+				unordered_remove(normal_cache, i);
+				--i;
+			}
+		}
+	}
+
 	std::vector<float> &noise_cache = g_noise_cache;
 
+	// Filter out by noise
 	if (_noise.is_valid()) {
 		noise_cache.clear();
 
@@ -199,7 +218,7 @@ void VoxelInstanceGenerator::generate_transforms(
 	const float min_height = _min_height;
 	const float max_height = _max_height;
 
-	// Calculate orientations
+	// Calculate orientations and scales
 	for (size_t vertex_index = 0; vertex_index < vertex_cache.size(); ++vertex_index) {
 		Transform t;
 		t.origin = vertex_cache[vertex_index];

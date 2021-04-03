@@ -9,6 +9,8 @@ namespace {
 const uint32_t TRAILING_MAGIC = 0x900df00d;
 }
 
+// TODO Unify with functions from VoxelBuffer?
+
 inline uint8_t norm_to_u8(float x) {
 	return clamp(static_cast<int>(128.f * x + 128.f), 0, 0xff);
 }
