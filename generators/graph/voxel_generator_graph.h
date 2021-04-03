@@ -113,6 +113,9 @@ public:
 	void set_debug_clipped_blocks(bool enabled);
 	bool is_debug_clipped_blocks() const;
 
+	void set_use_xz_caching(bool enabled);
+	bool is_using_xz_caching() const;
+
 	// VoxelGenerator implementation
 
 	int get_used_channels_mask() const override;
@@ -185,6 +188,10 @@ private:
 	// When enabled, the generator will attempt to optimize out nodes that don't need to run in specific areas,
 	// if their output range is considered to not affect the final result.
 	bool _use_optimized_execution_map = true;
+	// When enabled, nodes using only the X and Z coordinates will be cached when generating blocks in slices along Y.
+	// This prevents recalculating values that would otherwise be the same on each slice.
+	// It helps a lot when part of the graph is generating a heightmap for example.
+	bool _use_xz_caching = true;
 	// If true, inverts clipped blocks so they create visual artifacts making the clipped area visible.
 	bool _debug_clipped_blocks = false;
 
