@@ -6,6 +6,7 @@ Import('env_modules')
 # SIMD noise support would have to wait for Godot 4...
 FAST_NOISE_2_SRC = False
 FAST_NOISE_2_STATIC = False
+RUN_TESTS = True
 
 env_voxel = env_modules.Clone()
 
@@ -56,6 +57,12 @@ if env["tools"]:
 		"editor/instance_library/*.cpp",
 	]
 	voxel_files += voxel_editor_files
+
+if RUN_TESTS:
+	voxel_files += [
+		"tests/tests.cpp"
+	]
+	env_voxel.Append(CPPDEFINES={"VOXEL_RUN_TESTS": 0})
 
 if env["platform"] == "windows":
 	# When compiling SQLite with Godot on Windows with MSVC, it produces the following warning:

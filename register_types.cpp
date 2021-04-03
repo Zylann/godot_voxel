@@ -49,6 +49,10 @@
 #include "editor/voxel_debug.h"
 #endif
 
+#ifdef VOXEL_RUN_TESTS
+#include "tests/tests.h"
+#endif
+
 void register_voxel_types() {
 	VoxelMemoryPool::create_singleton();
 	VoxelStringNames::create_singleton();
@@ -135,6 +139,10 @@ void register_voxel_types() {
 	EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
 	EditorPlugins::add_by_type<FastNoiseLiteEditorPlugin>();
+#endif
+
+#ifdef VOXEL_RUN_TESTS
+	run_voxel_tests();
 #endif
 }
 
