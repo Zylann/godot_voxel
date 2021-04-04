@@ -63,6 +63,7 @@ public:
 	// Debug
 
 	int debug_get_block_count() const;
+	Dictionary debug_get_instance_counts() const;
 
 	String get_configuration_warning() const override;
 

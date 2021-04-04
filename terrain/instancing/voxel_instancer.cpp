@@ -1233,6 +1233,33 @@ int VoxelInstancer::debug_get_block_count() const {
 	return _blocks.size();
 }
 
+Dictionary VoxelInstancer::debug_get_instance_counts() const {
+	Dictionary d;
+
+	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
+		Block *block = *it;
+		ERR_FAIL_COND_V(block == nullptr, Dictionary());
+		if (!block->multimesh_instance.is_valid()) {
+			continue;
+		}
+
+		Ref<MultiMesh> multimesh = block->multimesh_instance.get_multimesh();
+		ERR_FAIL_COND_V(multimesh.is_null(), Dictionary());
+
+		const int count = get_visible_instance_count(**multimesh);
+
+		Variant *vptr = d.getptr(block->layer_id);
+		if (vptr == nullptr) {
+			d[block->layer_id] = count;
+
+		} else {
+			ERR_FAIL_COND_V(vptr->get_type() != Variant::INT, Dictionary());
+			*vptr = vptr->operator signed int() + count;
+		}
+	}
+	return d;
+}
+
 String VoxelInstancer::get_configuration_warning() const {
 	if (_parent == nullptr) {
 		return TTR("This node must be child of a VoxelLodTerrain.");
@@ -1254,6 +1281,7 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_up_mode"), &VoxelInstancer::get_up_mode);
 
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelInstancer::debug_get_block_count);
+	ClassDB::bind_method(D_METHOD("debug_get_instance_counts"), &VoxelInstancer::debug_get_instance_counts);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceLibrary"),
 			"set_library", "get_library");
