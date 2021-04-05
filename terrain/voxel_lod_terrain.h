@@ -60,6 +60,7 @@ public:
 	int get_mesh_block_region_extent() const;
 
 	Vector3 voxel_to_data_block_position(Vector3 vpos, int lod_index) const;
+	Vector3 voxel_to_mesh_block_position(Vector3 vpos, int lod_index) const;
 
 	unsigned int get_data_block_size_pow2() const;
 	unsigned int get_data_block_size() const;

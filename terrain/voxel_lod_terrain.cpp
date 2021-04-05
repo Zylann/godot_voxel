@@ -600,6 +600,14 @@ Vector3 VoxelLodTerrain::voxel_to_data_block_position(Vector3 vpos, int lod_inde
 	return bpos.to_vec3();
 }
 
+Vector3 VoxelLodTerrain::voxel_to_mesh_block_position(Vector3 vpos, int lod_index) const {
+	ERR_FAIL_COND_V(lod_index < 0, Vector3());
+	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3());
+	const Lod &lod = _lods[lod_index];
+	Vector3i bpos = lod.mesh_map.voxel_to_block(Vector3i(vpos)) >> lod_index;
+	return bpos.to_vec3();
+}
+
 void VoxelLodTerrain::set_process_mode(ProcessMode mode) {
 	_process_mode = mode;
 	set_process(_process_mode == PROCESS_MODE_IDLE);
@@ -2400,6 +2408,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::_b_get_statistics);
 	ClassDB::bind_method(D_METHOD("voxel_to_data_block_position", "lod_index"),
 			&VoxelLodTerrain::voxel_to_data_block_position);
+	ClassDB::bind_method(D_METHOD("voxel_to_mesh_block_position", "lod_index"),
+			&VoxelLodTerrain::voxel_to_mesh_block_position);
 
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelLodTerrain::get_voxel_tool);
 	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &VoxelLodTerrain::_b_save_modified_blocks);
