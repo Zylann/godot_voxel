@@ -355,6 +355,9 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	}
 
 	VoxelServer::get_singleton()->set_volume_render_block_size(_volume_id, mesh_block_size);
+
+	// Update voxel bounds because block size change can affect octree size
+	set_voxel_bounds(_bounds_in_voxels);
 }
 
 void VoxelLodTerrain::_set_block_size_po2(int p_block_size_po2) {
@@ -653,6 +656,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 				_debug_renderer.set_world(is_visible_in_tree() ? world : nullptr);
 			}
 #endif
+			// DEBUG
+			//set_show_gizmos(true);
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD: {
