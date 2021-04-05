@@ -126,6 +126,7 @@ public:
 	// Debugging
 
 	Array debug_raycast_mesh_block(Vector3 world_origin, Vector3 world_direction) const;
+	Dictionary debug_get_data_block_info(Vector3 fbpos, int lod_index) const;
 	Dictionary debug_get_mesh_block_info(Vector3 fbpos, int lod_index) const;
 	Array debug_get_octree_positions() const;
 	Array debug_get_octrees_detailed() const;

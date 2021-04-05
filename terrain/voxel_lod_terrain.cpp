@@ -2141,33 +2141,60 @@ Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 wo
 	return hits;
 }
 
+Dictionary VoxelLodTerrain::debug_get_data_block_info(Vector3 fbpos, int lod_index) const {
+	Dictionary d;
+	ERR_FAIL_COND_V(lod_index < 0, d);
+	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
+
+	const Lod &lod = _lods[lod_index];
+	Vector3i bpos = Vector3i::from_floored(fbpos);
+
+	int loading_state = 0;
+	const VoxelDataBlock *block = lod.data_map.get_block(bpos);
+
+	if (block != nullptr) {
+		loading_state = 2;
+
+	} else if (lod.loading_blocks.has(bpos)) {
+		loading_state = 1;
+	}
+
+	d["loading_state"] = loading_state;
+	return d;
+}
+
 Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_index) const {
 	Dictionary d;
 	ERR_FAIL_COND_V(lod_index < 0, d);
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
 
 	const Lod &lod = _lods[lod_index];
-	Vector3i bpos(fbpos);
+	Vector3i bpos = Vector3i::from_floored(fbpos);
 
+	bool loaded = false;
 	bool meshed = false;
 	bool visible = false;
-	int loading_state = 0;
+	bool active = false;
+	bool loading = false;
+	int mesh_state = VoxelMeshBlock::MESH_NEVER_UPDATED;
 	const VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
 
-	if (block) {
-		meshed = !block->has_mesh() && block->get_mesh_state() != VoxelMeshBlock::MESH_UP_TO_DATE;
+	if (block != nullptr) {
+		loaded = true;
+		meshed = block->has_mesh();
+		mesh_state = block->get_mesh_state();
 		visible = block->is_visible();
-		loading_state = 2;
+		active = block->active;
 		d["transition_mask"] = block->get_transition_mask();
+		// This can highlight possible bugs between the current state and what it should be
 		d["recomputed_transition_mask"] = get_transition_mask(block->position, block->lod_index);
-
-	} else if (lod.loading_blocks.has(bpos)) {
-		loading_state = 1;
 	}
 
-	d["loading"] = loading_state;
+	d["loaded"] = loaded;
 	d["meshed"] = meshed;
+	d["mesh_state"] = mesh_state;
 	d["visible"] = visible;
+	d["active"] = active;
 	return d;
 }
 
@@ -2425,6 +2452,8 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("debug_raycast_mesh_block", "origin", "dir"),
 			&VoxelLodTerrain::debug_raycast_mesh_block);
+	ClassDB::bind_method(D_METHOD("debug_get_data_block_info", "block_pos", "lod"),
+			&VoxelLodTerrain::debug_get_data_block_info);
 	ClassDB::bind_method(D_METHOD("debug_get_mesh_block_info", "block_pos", "lod"),
 			&VoxelLodTerrain::debug_get_mesh_block_info);
 	ClassDB::bind_method(D_METHOD("debug_get_octrees_detailed"), &VoxelLodTerrain::debug_get_octrees_detailed);
