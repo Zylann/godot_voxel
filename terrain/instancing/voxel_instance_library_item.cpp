@@ -94,6 +94,18 @@ Ref<Material> VoxelInstanceLibraryItem::get_material_override() const {
 	return _material_override;
 }
 
+void VoxelInstanceLibraryItem::set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode) {
+	if (mode == _shadow_casting_setting) {
+		return;
+	}
+	_shadow_casting_setting = mode;
+	notify_listeners(CHANGE_VISUAL);
+}
+
+VisualServer::ShadowCastingSetting VoxelInstanceLibraryItem::get_cast_shadows_setting() const {
+	return _shadow_casting_setting;
+}
+
 void VoxelInstanceLibraryItem::set_collision_layer(int collision_layer) {
 	_collision_layer = collision_layer;
 }
@@ -228,6 +240,10 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 			&VoxelInstanceLibraryItem::set_material_override);
 	ClassDB::bind_method(D_METHOD("get_material_override"), &VoxelInstanceLibraryItem::get_material_override);
 
+	ClassDB::bind_method(D_METHOD("set_cast_shadows_setting", "mode"),
+			&VoxelInstanceLibraryItem::set_cast_shadows_setting);
+	ClassDB::bind_method(D_METHOD("get_cast_shadows_setting"), &VoxelInstanceLibraryItem::get_cast_shadows_setting);
+
 	ClassDB::bind_method(D_METHOD("set_collision_layer", "collision_layer"),
 			&VoxelInstanceLibraryItem::set_collision_layer);
 	ClassDB::bind_method(D_METHOD("get_collision_layer"), &VoxelInstanceLibraryItem::get_collision_layer);
@@ -263,10 +279,17 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE, "Material"),
 			"set_material_override", "get_material_override");
 
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, "Off,On,Double-Sided,Shadows Only"), "set_cast_shadows_setting", "get_cast_shadows_setting");
+
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS),
 			"set_collision_layer", "get_collision_layer");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
 			"set_collision_mask", "get_collision_mask");
 
 	BIND_CONSTANT(MAX_MESH_LODS);
+
+	BIND_ENUM_CONSTANT(VisualServer::SHADOW_CASTING_SETTING_OFF);
+	BIND_ENUM_CONSTANT(VisualServer::SHADOW_CASTING_SETTING_ON);
+	BIND_ENUM_CONSTANT(VisualServer::SHADOW_CASTING_SETTING_DOUBLE_SIDED);
+	BIND_ENUM_CONSTANT(VisualServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
 }

@@ -714,6 +714,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, ArraySlice<co
 		block->multimesh_instance.set_world(world);
 		block->multimesh_instance.set_transform(block_transform);
 		block->multimesh_instance.set_material_override(item->get_material_override());
+		block->multimesh_instance.set_cast_shadows_setting(item->get_cast_shadows_setting());
 	}
 
 	// Update bodies

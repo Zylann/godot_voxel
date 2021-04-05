@@ -80,6 +80,12 @@ void DirectMultiMeshInstance::set_material_override(Ref<Material> material) {
 	}
 }
 
+void DirectMultiMeshInstance::set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode) {
+	ERR_FAIL_COND(!_multimesh_instance.is_valid());
+	VisualServer &vs = *VisualServer::get_singleton();
+	vs.instance_geometry_set_cast_shadows_setting(_multimesh_instance, mode);
+}
+
 PoolRealArray DirectMultiMeshInstance::make_transform_3d_bulk_array(ArraySlice<const Transform> transforms) {
 	VOXEL_PROFILE_SCOPE();
 
