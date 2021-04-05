@@ -257,7 +257,7 @@ void VoxelInstanceGenerator::generate_transforms(
 		}
 
 		if (height_filter) {
-			float y = t.origin.y;
+			float y = block_local_transform.origin.y + t.origin.y;
 			if (up_mode == UP_MODE_SPHERE) {
 				if (!sphere_distance_is_computed) {
 					sphere_distance = (block_local_transform.origin + t.origin).length();
