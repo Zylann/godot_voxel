@@ -255,7 +255,7 @@ public:
 		inline const Buffer &try_get_input(uint32_t i, bool &ignored) {
 			const uint32_t address = get_input_address(i);
 			const Buffer &b = _buffers[address];
-			ignored = _using_execution_map && b.local_users_count;
+			ignored = _using_execution_map && !b.is_binding && b.local_users_count == 0;
 			return b;
 		}
 
