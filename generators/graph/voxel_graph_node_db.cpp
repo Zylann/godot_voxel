@@ -1147,7 +1147,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			bool a_ignored;
 			bool b_ignored;
 			const VoxelGraphRuntime::Buffer &a = ctx.try_get_input(0, a_ignored);
-			const VoxelGraphRuntime::Buffer &b = ctx.try_get_input(0, b_ignored);
+			const VoxelGraphRuntime::Buffer &b = ctx.try_get_input(1, b_ignored);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const Params params = ctx.get_params<Params>();
 			if (a_ignored) {
