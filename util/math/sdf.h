@@ -38,9 +38,9 @@ inline float sdf_union(float a, float b) {
 	return min(a, b);
 }
 
-// Subtracts SDF a from SDF b
+// Subtracts SDF b from SDF a
 inline float sdf_subtract(float a, float b) {
-	return max(-a, b);
+	return max(a, -b);
 }
 
 inline float sdf_smooth_union(float a, float b, float s) {
@@ -48,7 +48,7 @@ inline float sdf_smooth_union(float a, float b, float s) {
 	return Math::lerp(b, a, h) - s * h * (1.0f - h);
 }
 
-// Inverted a and b because it subtracts SDF b from SDF a
+// Inverted a and b because it subtracts SDF a from SDF b
 inline float sdf_smooth_subtract(float b, float a, float s) {
 	float h = clamp(0.5f - 0.5f * (b + a) / s, 0.0f, 1.0f);
 	return Math::lerp(b, -a, h) + s * h * (1.0f - h);

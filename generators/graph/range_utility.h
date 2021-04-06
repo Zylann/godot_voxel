@@ -24,7 +24,7 @@ inline Interval sdf_union(Interval a, Interval b) {
 
 // Does a - b
 inline Interval sdf_subtract(Interval a, Interval b) {
-	return max_interval(a, b);
+	return max_interval(a, -b);
 }
 
 Interval sdf_smooth_union(Interval p_b, Interval p_a, float p_s);
