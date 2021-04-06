@@ -51,6 +51,9 @@ public:
 	void set_material_override(Ref<Material> material);
 	Ref<Material> get_material_override() const;
 
+	void set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode);
+	VisualServer::ShadowCastingSetting get_cast_shadows_setting() const;
+
 	void set_collision_layer(int collision_layer);
 	int get_collision_layer() const;
 
@@ -110,6 +113,8 @@ private:
 	// It is preferred to have materials on the mesh already,
 	// but this is in case OBJ meshes are used, which often dont have a material of their own
 	Ref<Material> _material_override;
+
+	VisualServer::ShadowCastingSetting _shadow_casting_setting = VisualServer::SHADOW_CASTING_SETTING_ON;
 
 	int _collision_mask = 1;
 	int _collision_layer = 1;

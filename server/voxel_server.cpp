@@ -853,7 +853,7 @@ static void copy_block_and_neighbors(ArraySlice<Ref<VoxelBuffer> > blocks, Voxel
 
 				{
 					RWLockRead read(src->get_lock());
-					for (unsigned int ci = 0; ci < channels.size(); ++ci) {
+					for (unsigned int ci = 0; ci < channels_count; ++ci) {
 						dst.copy_from(**src, src_min, src_max, dst_min, channels[ci]);
 					}
 				}
