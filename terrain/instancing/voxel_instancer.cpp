@@ -436,6 +436,7 @@ void VoxelInstancer::update_layer_meshes(int layer_id) {
 			continue;
 		}
 		block->multimesh_instance.set_material_override(item->get_material_override());
+		block->multimesh_instance.set_cast_shadows_setting(item->get_cast_shadows_setting());
 		Ref<MultiMesh> multimesh = block->multimesh_instance.get_multimesh();
 		if (multimesh.is_valid()) {
 			Ref<Mesh> mesh;
