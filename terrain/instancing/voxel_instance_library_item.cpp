@@ -287,9 +287,4 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 			"set_collision_mask", "get_collision_mask");
 
 	BIND_CONSTANT(MAX_MESH_LODS);
-
-	BIND_ENUM_CONSTANT(VisualServer::SHADOW_CASTING_SETTING_OFF);
-	BIND_ENUM_CONSTANT(VisualServer::SHADOW_CASTING_SETTING_ON);
-	BIND_ENUM_CONSTANT(VisualServer::SHADOW_CASTING_SETTING_DOUBLE_SIDED);
-	BIND_ENUM_CONSTANT(VisualServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
 }
