@@ -23,6 +23,7 @@ public:
 	void set_transform(Transform world_transform);
 	void set_visible(bool visible);
 	void set_material_override(Ref<Material> material);
+	void set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode);
 
 	static PoolRealArray make_transform_3d_bulk_array(ArraySlice<const Transform> transforms);
 
