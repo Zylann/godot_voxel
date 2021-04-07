@@ -252,5 +252,5 @@ jobs:
       # Make build available
       - uses: actions/upload-artifact@v2
         with:
-          name: godot.windows.opt.tools.64.mono.exe
+          name: godot.windows.opt.tools.64.mono
           path: bin/*
