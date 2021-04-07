@@ -1,4 +1,4 @@
-name: Mono Builds
+name: 🐒 Mono Builds
 on:
   push:
     branches: [ master, github_actions ]
