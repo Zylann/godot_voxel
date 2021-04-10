@@ -225,4 +225,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 - [void](#)<span id="i_set_voxel_v"></span> **set_voxel_v**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
 
-_Generated on Feb 16, 2021_
+_Generated on Apr 10, 2021_

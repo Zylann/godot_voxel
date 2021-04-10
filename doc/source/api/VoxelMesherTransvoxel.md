@@ -3,7 +3,7 @@
 Inherits: [VoxelMesher](VoxelMesher.md)
 
 
-Implements isosurface generation (smooth voxels) using the [url=https://transvoxel.org/](https://docs.godotengine.org/en/stable/classes/class_url=https://transvoxel.org/.html)Transvoxel[/url](https://docs.godotengine.org/en/stable/classes/class_/url.html) algorithm.
+Implements isosurface generation (smooth voxels) using the [Transvoxel](https://transvoxel.org/) algorithm.
 
 ## Methods: 
 
@@ -18,4 +18,4 @@ Return                                                                          
 - [ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)<span id="i_build_transition_mesh"></span> **build_transition_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) direction ) 
 
 
-_Generated on Feb 16, 2021_
+_Generated on Apr 10, 2021_

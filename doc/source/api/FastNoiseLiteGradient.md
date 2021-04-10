@@ -3,7 +3,7 @@
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
 
-Generates coherent and fractal noise gradients using the [url=https://github.com/Auburn/FastNoise](https://docs.godotengine.org/en/stable/classes/class_url=https://github.com/auburn/fastnoise.html)FastNoiseLite[/url](https://docs.godotengine.org/en/stable/classes/class_/url.html) library.
+Generates coherent and fractal noise gradients using the [FastNoiseLite](https://github.com/Auburn/FastNoise) library.
 
 ## Properties: 
 
@@ -71,4 +71,4 @@ enum **RotationType3D**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_seed"></span> **seed** = 0
 
 
-_Generated on Feb 16, 2021_
+_Generated on Apr 10, 2021_

@@ -143,4 +143,4 @@ The returned dictionary has the following structure:
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_voxel_to_block_position"></span> **voxel_to_block_position**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) lod_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) arg1 ) 
 
 
-_Generated on Feb 16, 2021_
+_Generated on Apr 10, 2021_
