@@ -23,6 +23,9 @@ inline Endianess get_platform_endianess() {
 struct MemoryWriter {
 	std::vector<uint8_t> &data;
 	// Using network-order by default
+	// TODO Apparently big-endian is dead
+	// I chose it originally to match "network byte order",
+	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
 	Endianess endianess = ENDIANESS_BIG_ENDIAN;
 
 	MemoryWriter(std::vector<uint8_t> &p_data, Endianess p_endianess) :
