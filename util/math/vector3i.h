@@ -219,10 +219,16 @@ _FORCE_INLINE_ bool operator!=(const Vector3i &a, const Vector3i &b) {
 }
 
 _FORCE_INLINE_ Vector3i operator<<(const Vector3i &a, int b) {
+#ifdef DEBUG_ENABLED
+	CRASH_COND(b < 0);
+#endif
 	return Vector3i(a.x << b, a.y << b, a.z << b);
 }
 
 _FORCE_INLINE_ Vector3i operator>>(const Vector3i &a, int b) {
+#ifdef DEBUG_ENABLED
+	CRASH_COND(b < 0);
+#endif
 	return Vector3i(a.x >> b, a.y >> b, a.z >> b);
 }
 
@@ -235,7 +241,6 @@ inline Vector3i operator%(const Vector3i &a, const Vector3i &b) {
 }
 
 _FORCE_INLINE_ bool operator<(const Vector3i &a, const Vector3i &b) {
-
 	if (a.x == b.x) {
 		if (a.y == b.y) {
 			return a.z < b.z;
