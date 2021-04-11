@@ -48,6 +48,9 @@ void serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 	const uint8_t version = 0;
 	const uint8_t instance_format = 0;
 
+	// TODO Apparently big-endian is dead
+	// I chose it originally to match "network byte order",
+	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
 	VoxelUtility::MemoryWriter w(dst, VoxelUtility::ENDIANESS_BIG_ENDIAN);
 
 	w.store_8(version);

@@ -17,6 +17,10 @@ import os
 godot_classes_url = "https://docs.godotengine.org/en/stable/classes"
 
 
+def make_link(text, url):
+    return "[" + text + "](" + url + ")"
+
+
 def make_type(name, module_class_names):
     if name == "void":
         link = "#"
@@ -24,7 +28,7 @@ def make_type(name, module_class_names):
         link = name + ".md"
     else:
         link = godot_classes_url + "/class_" + name.lower() + ".html"
-    return "[" + name + "](" + link + ")"
+    return make_link(name, link)
 
 
 # Assumes text is dedented
@@ -44,7 +48,17 @@ def format_regular_text(text, module_class_names):
         assert i != -1
         cmd = text[:i]
         text = text[i + 1:]
-        if cmd.find(' ') == -1:
+
+        if cmd.startswith('url='):
+            # [url=xxx]text[/url]
+            url = cmd[len('url='):]
+            i = text.find('[/url]')
+            assert i != -1
+            link_text = text[:i]
+            s += make_link(link_text, url)
+            text = text[i + len('[/url]'):]
+
+        elif cmd.find(' ') == -1:
             # [typename]
             s += make_type(cmd, module_class_names)
         else:
@@ -163,7 +177,7 @@ def make_constants(items):
 
 def make_custom_internal_link(name):
     assert name.find(' ') == -1
-    return "[" + name + "](#i_" + name + ")"
+    return make_link(name, "#i_" + name)
 
 
 # This is a hack we can do because Markdown allows to fallback on HTML

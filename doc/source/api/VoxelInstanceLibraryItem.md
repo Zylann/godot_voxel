@@ -10,6 +10,7 @@ Settings for a model that can be used by [VoxelInstancer](VoxelInstancer.md)
 
 Type                      | Name                                       | Default 
 ------------------------- | ------------------------------------------ | --------
+`int`                     | [cast_shadow](#i_cast_shadow)              | 1       
 `int`                     | [collision_layer](#i_collision_layer)      | 1       
 `int`                     | [collision_mask](#i_collision_mask)        | 1       
 `VoxelInstanceGenerator`  | [generator](#i_generator)                  |         
@@ -40,6 +41,9 @@ Return                                                                    | Sign
 - **MAX_MESH_LODS** = **4**
 
 ## Property Descriptions
+
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cast_shadow"></span> **cast_shadow** = 1
+
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_layer"></span> **collision_layer** = 1
 
@@ -91,4 +95,4 @@ Return                                                                    | Sign
 - [void](#)<span id="i_setup_from_template"></span> **setup_from_template**( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node ) 
 
 
-_Generated on Feb 16, 2021_
+_Generated on Apr 10, 2021_

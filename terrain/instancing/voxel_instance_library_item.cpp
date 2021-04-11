@@ -122,6 +122,26 @@ int VoxelInstanceLibraryItem::get_collision_mask() const {
 	return _collision_mask;
 }
 
+static VisualServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance::ShadowCastingSetting v) {
+	switch (v) {
+		case GeometryInstance::SHADOW_CASTING_SETTING_OFF:
+			return VisualServer::SHADOW_CASTING_SETTING_OFF;
+
+		case GeometryInstance::SHADOW_CASTING_SETTING_ON:
+			return VisualServer::SHADOW_CASTING_SETTING_ON;
+
+		case GeometryInstance::SHADOW_CASTING_SETTING_DOUBLE_SIDED:
+			return VisualServer::SHADOW_CASTING_SETTING_DOUBLE_SIDED;
+
+		case GeometryInstance::SHADOW_CASTING_SETTING_SHADOWS_ONLY:
+			return VisualServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+
+		default:
+			ERR_PRINT("Unknown ShadowCastingSetting value");
+			return VisualServer::SHADOW_CASTING_SETTING_OFF;
+	}
+}
+
 void VoxelInstanceLibraryItem::setup_from_template(Node *root) {
 	_collision_shapes.clear();
 
@@ -137,6 +157,7 @@ void VoxelInstanceLibraryItem::setup_from_template(Node *root) {
 			_mesh_lods[0] = mi->get_mesh();
 			_mesh_lod_count = 1;
 			_material_override = mi->get_material_override();
+			_shadow_casting_setting = node_to_visual_server_enum(mi->get_cast_shadows_setting());
 		}
 
 		if (physics_body != nullptr) {

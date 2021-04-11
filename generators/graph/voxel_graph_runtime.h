@@ -328,13 +328,13 @@ private:
 			uint16_t first_dependency;
 			uint16_t end_dependency;
 			uint16_t op_address;
-			bool is_output;
+			bool is_io;
 			int debug_node_id;
 		};
 
 		// Indexes to the `nodes` array
 		std::vector<uint16_t> dependencies;
-		// Nodes in the same order they would be in the default execution map
+		// Nodes in the same order they would be in the default execution map (but indexes may not match)
 		std::vector<Node> nodes;
 
 		inline void clear() {

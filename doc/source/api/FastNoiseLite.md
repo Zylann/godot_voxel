@@ -3,7 +3,7 @@
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
 
-Generates coherent and fractal noise using the [url=https://github.com/Auburn/FastNoise](https://docs.godotengine.org/en/stable/classes/class_url=https://github.com/auburn/fastnoise.html)FastNoiseLite[/url](https://docs.godotengine.org/en/stable/classes/class_/url.html) library.
+Generates coherent and fractal noise using the [FastNoiseLite](https://github.com/Auburn/FastNoise) library.
 
 ## Properties: 
 
@@ -137,4 +137,4 @@ enum **CellularReturnType**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_noise_3dv"></span> **get_noise_3dv**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
 
 
-_Generated on Feb 16, 2021_
+_Generated on Apr 10, 2021_

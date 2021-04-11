@@ -5,6 +5,12 @@ Inherits: [VoxelGenerator](VoxelGenerator.md)
 
 Graph-based generator for smooth voxel worlds.
 
+## Description: 
+
+Generates SDF voxel data from a graph of operations.
+
+Warning: methods to modify the graph should only be called from the main thread.
+
 ## Methods: 
 
 
@@ -164,4 +170,4 @@ enum **NodeTypeID**:
 - [void](#)<span id="i_set_node_param_null"></span> **set_node_param_null**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
 
-_Generated on Feb 16, 2021_
+_Generated on Apr 10, 2021_

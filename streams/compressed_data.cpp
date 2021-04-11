@@ -12,6 +12,9 @@ namespace VoxelCompressedData {
 bool decompress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst) {
 	VOXEL_PROFILE_SCOPE();
 
+	// TODO Apparently big-endian is dead
+	// I chose it originally to match "network byte order",
+	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
 	VoxelUtility::MemoryReader f(src, VoxelUtility::ENDIANESS_BIG_ENDIAN);
 
 	const Compression comp = static_cast<Compression>(f.get_8());
