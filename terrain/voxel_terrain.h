@@ -2,7 +2,8 @@
 #define VOXEL_TERRAIN_H
 
 #include "../server/voxel_server.h"
-#include "voxel_map.h"
+#include "voxel_data_map.h"
+#include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
 #include <scene/3d/spatial.h>
@@ -29,11 +30,15 @@ public:
 	void set_mesher(Ref<VoxelMesher> mesher) override;
 	Ref<VoxelMesher> get_mesher() const override;
 
-	unsigned int get_block_size_pow2() const;
-	void set_block_size_po2(unsigned int p_block_size_po2);
+	unsigned int get_data_block_size_pow2() const;
+	inline unsigned int get_data_block_size() const { return 1 << get_data_block_size_pow2(); }
+	void set_data_block_size_po2(unsigned int p_block_size_po2);
 
-	void make_voxel_dirty(Vector3i pos);
-	void make_area_dirty(Rect3i box);
+	unsigned int get_mesh_block_size_pow2() const;
+	inline unsigned int get_mesh_block_size() const { return 1 << get_mesh_block_size_pow2(); }
+
+	void post_edit_voxel(Vector3i pos);
+	void post_edit_area(Rect3i box_in_voxels);
 
 	void set_generate_collisions(bool enabled);
 	bool get_generate_collisions() const { return _generate_collisions; }
@@ -48,8 +53,8 @@ public:
 	void set_material(unsigned int id, Ref<Material> material);
 	Ref<Material> get_material(unsigned int id) const;
 
-	VoxelMap &get_storage() { return _map; }
-	const VoxelMap &get_storage() const { return _map; }
+	VoxelDataMap &get_storage() { return _data_map; }
+	const VoxelDataMap &get_storage() const { return _data_map; }
 
 	Ref<VoxelTool> get_voxel_tool();
 
@@ -96,34 +101,37 @@ private:
 
 	void _on_stream_params_changed();
 	void _set_block_size_po2(int p_block_size_po2);
-	void make_all_view_dirty();
+	//void make_all_view_dirty();
 	void start_updater();
 	void stop_updater();
 	void start_streamer();
 	void stop_streamer();
 	void reset_map();
 
-	void view_block(Vector3i bpos, bool data_flag, bool mesh_flag, bool collision_flag);
-	void unview_block(Vector3i bpos, bool data_flag, bool mesh_flag, bool collision_flag);
-	void immerge_block(Vector3i bpos);
-	void make_block_dirty(Vector3i bpos);
-	void make_block_dirty(VoxelBlock *block);
-	void try_schedule_block_update(VoxelBlock *block);
+	void view_data_block(Vector3i bpos);
+	void view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag);
+	void unview_data_block(Vector3i bpos);
+	void unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag);
+	void unload_data_block(Vector3i bpos);
+	void unload_mesh_block(Vector3i bpos);
+	//void make_data_block_dirty(Vector3i bpos);
+	void try_schedule_mesh_update(VoxelMeshBlock *block);
+	void try_schedule_mesh_update_from_data(const Rect3i &box_in_voxels);
 
 	void save_all_modified_blocks(bool with_copy);
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
 	void send_block_data_requests();
 
-	void emit_block_loaded(const VoxelBlock *block);
-	void emit_block_unloaded(const VoxelBlock *block);
+	void emit_data_block_loaded(const VoxelDataBlock *block);
+	void emit_data_block_unloaded(const VoxelDataBlock *block);
 
 	bool try_get_paired_viewer_index(uint32_t id, size_t &out_i) const;
 
 	static void _bind_methods();
 
 	// Bindings
-	Vector3 _b_voxel_to_block(Vector3 pos);
-	Vector3 _b_block_to_voxel(Vector3 pos);
+	Vector3 _b_voxel_to_data_block(Vector3 pos) const;
+	Vector3 _b_data_block_to_voxel(Vector3 pos) const;
 	//void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
 	void _b_save_modified_blocks();
 	void _b_save_block(Vector3 p_block_pos);
@@ -136,8 +144,10 @@ private:
 
 	struct PairedViewer {
 		struct State {
-			Vector3i block_position;
-			int view_distance_blocks = 0;
+			Vector3i local_position_voxels;
+			Rect3i data_box;
+			Rect3i mesh_box;
+			int view_distance_voxels = 0;
 			bool requires_collisions = false;
 			bool requires_meshes = false;
 		};
@@ -149,7 +159,9 @@ private:
 	std::vector<PairedViewer> _paired_viewers;
 
 	// Voxel storage
-	VoxelMap _map;
+	VoxelDataMap _data_map;
+	// Mesh storage
+	VoxelMeshMap _mesh_map;
 
 	// Area within which voxels can exist.
 	// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be
@@ -157,8 +169,7 @@ private:
 	Rect3i _bounds_in_voxels;
 	Rect3i _prev_bounds_in_voxels;
 
-	// How many blocks to load around the viewer
-	unsigned int _max_view_distance_blocks = 8;
+	unsigned int _max_view_distance_voxels = 128;
 
 	// TODO Terrains only need to handle the visible portion of voxels, which reduces the bounds blocks to handle.
 	// Therefore, could a simple grid be better to use than a hashmap?

@@ -236,9 +236,11 @@ void VoxelServer::init_priority_dependency(
 
 	switch (volume.type) {
 		case VOLUME_SPARSE_GRID:
-			// Distance beyond which no field of view can overlap the block
+			// Distance beyond which no field of view can overlap the block.
+			// Doubling block radius to account for an extra margin of blocks,
+			// since they are used to provide neighbors when meshing
 			dep.drop_distance_squared =
-					squared(_world.shared_priority_dependency->highest_view_distance + transformed_block_radius);
+					squared(_world.shared_priority_dependency->highest_view_distance + 2.f * transformed_block_radius);
 			break;
 
 		case VOLUME_SPARSE_OCTREE:
@@ -255,19 +257,20 @@ void VoxelServer::init_priority_dependency(
 	}
 }
 
-void VoxelServer::request_block_mesh(uint32_t volume_id, BlockMeshInput &input) {
+void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &input) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.meshing_dependency == nullptr);
 
 	BlockMeshRequest *r = memnew(BlockMeshRequest);
 	r->volume_id = volume_id;
-	r->blocks = input.blocks;
-	r->blocks_count = input.blocks_count;
-	r->position = input.position;
+	r->blocks = input.data_blocks;
+	r->blocks_count = input.data_blocks_count;
+	r->position = input.render_block_position;
 	r->lod = input.lod;
 	r->meshing_dependency = volume.meshing_dependency;
 
-	init_priority_dependency(r->priority_dependency, input.position, input.lod, volume, volume.render_block_size);
+	init_priority_dependency(
+			r->priority_dependency, input.render_block_position, input.lod, volume, volume.render_block_size);
 
 	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
 	_meshing_thread_pool.enqueue(r);

@@ -1,5 +1,4 @@
 #include "voxel_box_mover.h"
-#include "voxel_map.h"
 
 static AABB expand_with_vector(AABB box, Vector3 v) {
 	if (v.x > 0) {
@@ -130,7 +129,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelT
 
 	// Collect collisions with the terrain
 
-	const VoxelMap &voxels = terrain->get_storage();
+	const VoxelDataMap &voxels = terrain->get_storage();
 
 	const int min_x = int(Math::floor(expanded_box.position.x));
 	const int min_y = int(Math::floor(expanded_box.position.y));

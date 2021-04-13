@@ -1,5 +1,4 @@
 #include "voxel_tool_terrain.h"
-#include "../terrain/voxel_map.h"
 #include "../terrain/voxel_terrain.h"
 #include "../util/voxel_raycast.h"
 #include <core/func_ref.h>
@@ -31,7 +30,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 		bool operator()(Vector3i pos) {
 			//unsigned int channel = context->channel;
 
-			const VoxelMap &map = terrain.get_storage();
+			const VoxelDataMap &map = terrain.get_storage();
 			int v0 = map.get_voxel(pos, VoxelBuffer::CHANNEL_TYPE);
 
 			if (library.has_voxel(v0) == false) {
@@ -125,13 +124,13 @@ void VoxelToolTerrain::_set_voxel_f(Vector3i pos, float v) {
 
 void VoxelToolTerrain::_post_edit(const Rect3i &box) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	_terrain->make_area_dirty(box);
+	_terrain->post_edit_area(box);
 }
 
 void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	VoxelMap &map = _terrain->get_storage();
-	VoxelBlock *block = map.get_block(map.voxel_to_block(pos));
+	VoxelDataMap &map = _terrain->get_storage();
+	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
 	ERR_FAIL_COND_MSG(block == nullptr, "Area not editable");
 	RWLockWrite lock(block->voxels->get_lock());
 	block->voxels->set_voxel_metadata(map.to_local(pos), meta);
@@ -139,8 +138,8 @@ void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
 
 Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) {
 	ERR_FAIL_COND_V(_terrain == nullptr, Variant());
-	VoxelMap &map = _terrain->get_storage();
-	VoxelBlock *block = map.get_block(map.voxel_to_block(pos));
+	VoxelDataMap &map = _terrain->get_storage();
+	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
 	ERR_FAIL_COND_V_MSG(block == nullptr, Variant(), "Area not editable");
 	RWLockRead lock(block->voxels->get_lock());
 	return block->voxels->get_voxel_metadata(map.to_local(pos));
@@ -166,7 +165,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 	const Vector3i min_pos = Vector3i(voxel_area.position);
 	const Vector3i max_pos = min_pos + Vector3i(voxel_area.size);
 
-	const VoxelMap &map = _terrain->get_storage();
+	const VoxelDataMap &map = _terrain->get_storage();
 
 	const Vector3i min_block_pos = map.voxel_to_block(min_pos);
 	const Vector3i max_block_pos = map.voxel_to_block(max_pos);
@@ -192,7 +191,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 
 		const Vector3i block_origin = map.block_to_voxel(block_pos);
 
-		const VoxelBlock *block = map.get_block(block_pos);
+		const VoxelDataBlock *block = map.get_block(block_pos);
 		if (block != nullptr) {
 			// Doing ONLY reads here.
 			{

@@ -4,7 +4,6 @@
 #include "voxel_tool.h"
 
 class VoxelTerrain;
-class VoxelMap;
 class FuncRef;
 
 class VoxelToolTerrain : public VoxelTool {

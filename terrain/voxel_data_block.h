@@ -3,6 +3,7 @@
 
 #include "../storage/voxel_buffer.h"
 #include "../util/macros.h"
+#include "voxel_viewer_ref_count.h"
 
 // Stores loaded voxel data for a chunk of the volume. Mesh and colliders are stored separately.
 class VoxelDataBlock {
@@ -10,6 +11,8 @@ public:
 	Ref<VoxelBuffer> voxels;
 	const Vector3i position;
 	const unsigned int lod_index = 0;
+	// TODO Only data view type can be used here. Split it?
+	VoxelViewerRefCount viewers;
 
 	static VoxelDataBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index) {
 		const int bs = size;

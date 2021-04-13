@@ -1455,7 +1455,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 				// Get block and its neighbors
 				VoxelServer::BlockMeshInput mesh_request;
-				mesh_request.position = mesh_block_pos;
+				mesh_request.render_block_position = mesh_block_pos;
 				mesh_request.lod = lod_index;
 
 				const Rect3i data_box =
@@ -1469,9 +1469,9 @@ void VoxelLodTerrain::_process(float delta) {
 					// The block can actually be null on some occasions. Not sure yet if it's that bad
 					//CRASH_COND(nblock == nullptr);
 					if (nblock != nullptr) {
-						mesh_request.blocks[mesh_request.blocks_count] = nblock->voxels;
+						mesh_request.data_blocks[mesh_request.data_blocks_count] = nblock->voxels;
 					}
-					++mesh_request.blocks_count;
+					++mesh_request.data_blocks_count;
 				});
 
 				VoxelServer::get_singleton()->request_block_mesh(_volume_id, mesh_request);

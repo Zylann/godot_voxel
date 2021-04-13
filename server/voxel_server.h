@@ -46,9 +46,9 @@ public:
 
 	struct BlockMeshInput {
 		// Moore area ordered by forward XYZ iteration
-		FixedArray<Ref<VoxelBuffer>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
-		unsigned int blocks_count = 0;
-		Vector3i position;
+		FixedArray<Ref<VoxelBuffer>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> data_blocks;
+		unsigned int data_blocks_count = 0;
+		Vector3i render_block_position;
 		uint8_t lod = 0;
 	};
 
@@ -92,7 +92,7 @@ public:
 	void set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher);
 	void set_volume_octree_lod_distance(uint32_t volume_id, float lod_distance);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
-	void request_block_mesh(uint32_t volume_id, BlockMeshInput &input);
+	void request_block_mesh(uint32_t volume_id, const BlockMeshInput &input);
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
 	void request_voxel_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod);
 	void request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
