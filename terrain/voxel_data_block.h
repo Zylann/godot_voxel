@@ -3,7 +3,7 @@
 
 #include "../storage/voxel_buffer.h"
 #include "../util/macros.h"
-#include "voxel_viewer_ref_count.h"
+#include "voxel_ref_count.h"
 
 // Stores loaded voxel data for a chunk of the volume. Mesh and colliders are stored separately.
 class VoxelDataBlock {

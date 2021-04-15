@@ -4,7 +4,7 @@
 #include "../constants/cube_tables.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
-#include "voxel_viewer_ref_count.h"
+#include "voxel_ref_count.h"
 
 class Spatial;
 
