@@ -11,8 +11,7 @@ public:
 	Ref<VoxelBuffer> voxels;
 	const Vector3i position;
 	const unsigned int lod_index = 0;
-	// TODO Only data view type can be used here. Split it?
-	VoxelViewerRefCount viewers;
+	VoxelRefCount viewers;
 
 	static VoxelDataBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index) {
 		const int bs = size;

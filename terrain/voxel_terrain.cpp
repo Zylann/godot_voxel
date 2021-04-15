@@ -310,8 +310,7 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock *mesh_block) {
 		// Already in the list
 		return;
 	}
-	if (mesh_block->viewers.get(VoxelViewerRefCount::TYPE_MESH) == 0 &&
-			mesh_block->viewers.get(VoxelViewerRefCount::TYPE_COLLISION) == 0) {
+	if (mesh_block->mesh_viewers.get() == 0 && mesh_block->collision_viewers.get() == 0) {
 		// No viewers want mesh on this block (why even call this function then?)
 		return;
 	}
@@ -346,7 +345,7 @@ void VoxelTerrain::view_data_block(Vector3i bpos) {
 		if (loading_block == nullptr) {
 			// First viewer to request it
 			LoadingBlock new_loading_block;
-			new_loading_block.viewers.add(VoxelViewerRefCount::TYPE_DATA);
+			new_loading_block.viewers.add();
 
 			// Schedule a loading request
 			_loading_blocks.set(bpos, new_loading_block);
@@ -354,12 +353,12 @@ void VoxelTerrain::view_data_block(Vector3i bpos) {
 
 		} else {
 			// More viewers
-			loading_block->viewers.add(VoxelViewerRefCount::TYPE_DATA);
+			loading_block->viewers.add();
 		}
 
 	} else {
 		// The block is loaded
-		block->viewers.add(VoxelViewerRefCount::TYPE_DATA);
+		block->viewers.add();
 
 		// TODO viewers with varying flags during the game is not supported at the moment.
 		// They have to be re-created, which may cause world re-load...
@@ -389,7 +388,12 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 		view_data_block(data_bpos);
 	});*/
 
-	block->viewers.add(false, mesh_flag, collision_flag);
+	if (mesh_flag) {
+		block->mesh_viewers.add();
+	}
+	if (collision_flag) {
+		block->collision_viewers.add();
+	}
 
 	// This is needed in case a viewer wants to view meshes in places data blocks are already present.
 	// Before that, meshes were updated only when a data block was loaded or modified,
@@ -428,9 +432,9 @@ void VoxelTerrain::unview_data_block(Vector3i bpos) {
 			return;
 		}
 
-		loading_block->viewers.remove(VoxelViewerRefCount::TYPE_DATA);
+		loading_block->viewers.remove();
 
-		if (loading_block->viewers.get(VoxelViewerRefCount::TYPE_DATA) == 0) {
+		if (loading_block->viewers.get() == 0) {
 			// No longer want to load it
 			_loading_blocks.erase(bpos);
 
@@ -446,11 +450,8 @@ void VoxelTerrain::unview_data_block(Vector3i bpos) {
 
 	} else {
 		// The block is loaded
-		VoxelViewerRefCount &viewers = block->viewers;
-
-		viewers.remove(VoxelViewerRefCount::TYPE_DATA);
-
-		if (viewers.get(VoxelViewerRefCount::TYPE_DATA) == 0) {
+		block->viewers.remove();
+		if (block->viewers.get() == 0) {
 			// The block itself is no longer wanted
 			unload_data_block(bpos);
 		}
@@ -470,25 +471,23 @@ void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collisi
 		unview_data_block(data_bpos);
 	});*/
 
-	VoxelViewerRefCount &viewers = block->viewers;
-
 	if (mesh_flag) {
-		viewers.remove(VoxelViewerRefCount::TYPE_MESH);
-		if (viewers.get(VoxelViewerRefCount::TYPE_MESH) == 0) {
+		block->mesh_viewers.remove();
+		if (block->mesh_viewers.get() == 0) {
 			// Mesh no longer required
 			block->drop_mesh();
 		}
 	}
 
 	if (collision_flag) {
-		viewers.remove(VoxelViewerRefCount::TYPE_COLLISION);
-		if (viewers.get(VoxelViewerRefCount::TYPE_COLLISION) == 0) {
+		block->collision_viewers.remove();
+		if (block->collision_viewers.get() == 0) {
 			// Collision no longer required
 			block->drop_collision();
 		}
 	}
 
-	if (viewers.get(VoxelViewerRefCount::TYPE_MESH) == 0 && viewers.get(VoxelViewerRefCount::TYPE_COLLISION) == 0) {
+	if (block->collision_viewers.get() == 0 && block->collision_viewers.get() == 0) {
 		unload_mesh_block(bpos);
 	}
 }
@@ -1555,8 +1554,7 @@ void VoxelTerrain::_process() {
 				collidable_surfaces.clear();
 			}
 
-			const bool gen_collisions =
-					_generate_collisions && block->viewers.get(VoxelViewerRefCount::TYPE_COLLISION) > 0;
+			const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
 
 			block->set_mesh(mesh);
 			if (gen_collisions) {

@@ -29,7 +29,8 @@ public:
 	Vector3i position;
 	unsigned int lod_index = 0;
 	bool pending_transition_update = false;
-	VoxelViewerRefCount viewers;
+	VoxelRefCount mesh_viewers;
+	VoxelRefCount collision_viewers;
 	bool got_first_mesh_update = false;
 
 	uint32_t last_collider_update_time = 0;

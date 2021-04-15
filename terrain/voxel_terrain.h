@@ -176,7 +176,7 @@ private:
 	// Therefore, could a simple grid be better to use than a hashmap?
 
 	struct LoadingBlock {
-		VoxelViewerRefCount viewers;
+		VoxelRefCount viewers;
 	};
 
 	HashMap<Vector3i, LoadingBlock, Vector3iHasher> _loading_blocks;

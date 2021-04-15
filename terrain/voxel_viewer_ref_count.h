@@ -3,58 +3,23 @@
 
 #include "../util/fixed_array.h"
 
-class VoxelViewerRefCount {
+class VoxelRefCount {
 public:
-	enum ViewerType {
-		TYPE_DATA = 0, // This one is always counted, others are optional
-		TYPE_MESH,
-		TYPE_COLLISION,
-		TYPE_COUNT
-	};
-
-	VoxelViewerRefCount() {
-		_counts.fill(0);
+	inline void add() {
+		++_count;
 	}
 
-	inline void add(bool data, bool mesh, bool collision) {
-		if (data) {
-			add(TYPE_DATA);
-		}
-		if (mesh) {
-			add(TYPE_MESH);
-		}
-		if (collision) {
-			add(TYPE_COLLISION);
-		}
+	inline void remove() {
+		ERR_FAIL_COND_MSG(_count == 0, "Trying to decrease refcount when it's already zero");
+		--_count;
 	}
 
-	inline void remove(bool data, bool mesh, bool collision) {
-		if (data) {
-			remove(TYPE_DATA);
-		}
-		if (mesh) {
-			remove(TYPE_MESH);
-		}
-		if (collision) {
-			remove(TYPE_COLLISION);
-		}
-	}
-
-	inline void add(ViewerType t) {
-		++_counts[t];
-	}
-
-	inline void remove(ViewerType t) {
-		CRASH_COND_MSG(_counts[t] == 0, "Trying to remove a viewer to a block that had none");
-		--_counts[t];
-	}
-
-	inline uint32_t get(ViewerType t) const {
-		return _counts[t];
+	inline unsigned int get() const {
+		return _count;
 	}
 
 private:
-	FixedArray<uint32_t, TYPE_COUNT> _counts;
+	unsigned int _count = 0;
 };
 
 #endif // VOXEL_VIEWER_REF_COUNT_H
