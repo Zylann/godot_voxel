@@ -128,6 +128,7 @@ public:
 		}
 	}
 
+	// Returns true if all cells of the box comply with the given predicate on their position.
 	template <typename A>
 	inline bool all_cells_match(A a) const {
 		Vector3i max = pos + size;
@@ -144,6 +145,19 @@ public:
 		return true;
 	}
 
+	// Subtracts another box from the current box,
+	// then execute a function on a set of boxes representing the remaining area.
+	//
+	// For example, seen from 2D, a possible result would be:
+	//
+	// o-----------o                 o-----o-----o
+	// | A         |                 | C1  | C2  |
+	// |     o-----+---o             |     o-----o
+	// |     |     |   |   A - B =>  |     |
+	// o-----+-----o   |             o-----o
+	//       | B       |
+	//       o---------o
+	//
 	template <typename A>
 	void difference(const Rect3i &b, A action) const {
 		if (!intersects(b)) {
@@ -201,6 +215,8 @@ public:
 		}
 	}
 
+	// Calls a function on all side cell positions belonging to the box.
+	// This function was implemented with no particular order in mind.
 	template <typename F>
 	void for_inner_outline(F f) const {
 		//     o-------o

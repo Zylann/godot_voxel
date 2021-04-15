@@ -1229,6 +1229,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("t"));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			// TODO Mark ignored input to optimize things
 			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
 			const VoxelGraphRuntime::Buffer &threshold = ctx.get_input(2);

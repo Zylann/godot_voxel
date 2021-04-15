@@ -480,6 +480,8 @@ void VoxelGraphEditor::_on_graph_edit_connection_request(
 	ERR_FAIL_COND(src_node_view == nullptr);
 	ERR_FAIL_COND(dst_node_view == nullptr);
 
+	// TODO Replace connection if one already exists
+
 	//print("Connection attempt from ", from, ":", from_slot, " to ", to, ":", to_slot)
 	if (_graph->can_connect(src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot)) {
 		_undo_redo->create_action(TTR("Connect Nodes"));
