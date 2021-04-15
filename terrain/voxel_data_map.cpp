@@ -1,7 +1,6 @@
 #include "voxel_data_map.h"
 #include "../constants/cube_tables.h"
 #include "../util/macros.h"
-#include "voxel_block.h"
 #include <limits>
 
 VoxelDataMap::VoxelDataMap() :

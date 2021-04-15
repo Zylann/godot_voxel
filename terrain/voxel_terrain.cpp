@@ -8,8 +8,6 @@
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/profiling_clock.h"
-#include "voxel_block.h"
-#include "voxel_map.h"
 
 #include <core/core_string_names.h>
 #include <core/engine.h>
