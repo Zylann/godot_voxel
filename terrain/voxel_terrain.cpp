@@ -260,13 +260,6 @@ unsigned int VoxelTerrain::get_max_view_distance() const {
 void VoxelTerrain::set_max_view_distance(unsigned int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0);
 	_max_view_distance_voxels = distance_in_voxels;
-	/*const unsigned int d = ceildiv(distance_in_voxels, _mesh_map.get_block_size());
-	if (d != _max_view_distance_mesh_blocks) {
-		PRINT_VERBOSE(String("View distance changed from ") +
-					  String::num(_max_view_distance_mesh_blocks) + String(" blocks to ") + String::num(d));
-		_max_view_distance_mesh_blocks = d;
-		// Blocks too far away will be removed in _process, same for blocks to load
-	}*/
 }
 
 void VoxelTerrain::set_material(unsigned int id, Ref<Material> material) {
@@ -279,27 +272,6 @@ Ref<Material> VoxelTerrain::get_material(unsigned int id) const {
 	ERR_FAIL_COND_V(id < 0 || id >= VoxelMesherBlocky::MAX_MATERIALS, Ref<Material>());
 	return _materials[id];
 }
-
-/*void VoxelTerrain::make_data_block_dirty(Vector3i data_bpos) {
-	VoxelDataBlock *data_block = _data_map.get_block(data_bpos);
-	ERR_FAIL_COND_MSG(data_block == nullptr, "Requested update to a block that isn't loaded");
-	// TODO Immediate update viewer distance?
-	data_block->set_modified(true);
-
-	const int d2m = get_mesh_block_size_pow2() - get_data_block_size_pow2();
-	ERR_FAIL_COND(d2m < 0);
-	const Vector3i mesh_bpos = data_bpos >> d2m;
-
-	VoxelMeshBlock *mesh_block = _mesh_map.get_block(mesh_bpos);
-	if (mesh_block != nullptr) {
-		try_schedule_mesh_block_update(mesh_block);
-	}
-
-	//OS::get_singleton()->print("Dirty (%i, %i, %i)", bpos.x, bpos.y, bpos.z);
-
-	// TODO What if a block is made dirty, goes through threaded update, then gets changed again before it gets updated?
-	// this will make the second change ignored, which is not correct!
-}*/
 
 void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock *mesh_block) {
 	CRASH_COND(mesh_block == nullptr);
@@ -378,14 +350,6 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 		_mesh_map.set_block(bpos, block);
 	}
 
-	/*const int render_to_data_factor = get_mesh_block_size() / get_data_block_size();
-	const Rect3i data_box(bpos.floordiv(render_to_data_factor), Vector3i(render_to_data_factor));
-
-	data_box.for_each_cell([this](Vector3i data_bpos) {
-		// Data is always needed to obtain a mesh or collider
-		view_data_block(data_bpos);
-	});*/
-
 	if (mesh_flag) {
 		block->mesh_viewers.add();
 	}
@@ -397,22 +361,6 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 	// Before that, meshes were updated only when a data block was loaded or modified,
 	// so changing block size or viewer flags did not make meshes appear.
 	try_schedule_mesh_update(block);
-
-	/*if (mesh_flag) {
-		viewers.add(VoxelViewerRefCount::TYPE_MESH);
-		if (viewers.get(VoxelViewerRefCount::TYPE_MESH) == 1) {
-			// First to request a mesh (means it was not requested when the block was loaded earlier)
-			// Trigger mesh update
-			try_schedule_mesh_block_update(block);
-		}
-	}
-
-	if (collision_flag) {
-		viewers.add(VoxelViewerRefCount::TYPE_COLLISION);
-		if (viewers.get(VoxelViewerRefCount::TYPE_COLLISION) == 1) {
-			try_schedule_mesh_block_update(block);
-		}
-	}*/
 
 	// TODO viewers with varying flags during the game is not supported at the moment.
 	// They have to be re-created, which may cause world re-load...
@@ -461,13 +409,6 @@ void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collisi
 	// Mesh blocks are created on first view call,
 	// so that would mean we unview one without viewing it in the first place
 	ERR_FAIL_COND(block == nullptr);
-
-	/*const int render_to_data_factor = get_mesh_block_size() / get_data_block_size();
-	const Rect3i data_box(bpos.floordiv(render_to_data_factor), Vector3i(render_to_data_factor));
-
-	data_box.for_each_cell([this](Vector3i data_bpos) {
-		unview_data_block(data_bpos);
-	});*/
 
 	if (mesh_flag) {
 		block->mesh_viewers.remove();
@@ -525,14 +466,6 @@ void VoxelTerrain::unload_data_block(Vector3i bpos) {
 
 	// Blocks in the update queue will be cancelled in _process,
 	// because it's too expensive to linear-search all blocks for each block
-
-	// for (size_t i = 0; i < _blocks_pending_update.size(); ++i) {
-	// 	if (_blocks_pending_update[i] == bpos) {
-	// 		_blocks_pending_update[i] = _blocks_pending_update.back();
-	// 		_blocks_pending_update.pop_back();
-	// 		break;
-	// 	}
-	// }
 }
 
 void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
@@ -568,30 +501,6 @@ Dictionary VoxelTerrain::_b_get_statistics() const {
 
 	return d;
 }
-
-//void VoxelTerrain::make_blocks_dirty(Vector3i min, Vector3i size) {
-//	Vector3i max = min + size;
-//	Vector3i pos;
-//	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
-//		for (pos.y = min.y; pos.y < max.y; ++pos.y) {
-//			for (pos.x = min.x; pos.x < max.x; ++pos.x) {
-//				make_block_dirty(pos);
-//			}
-//		}
-//	}
-//}
-
-/*void VoxelTerrain::make_all_view_dirty() {
-	// Mark all loaded blocks dirty within range of viewers that require meshes
-	_map.for_all_blocks([this](VoxelBlock *b) {
-		if (b->viewers.get(VoxelViewerRefCount::TYPE_MESH) > 0) {
-			make_block_dirty(b);
-		}
-	});
-
-	//	Vector3i radius(_view_distance_blocks, _view_distance_blocks, _view_distance_blocks);
-	//	make_blocks_dirty(-radius, 2*radius);
-}*/
 
 void VoxelTerrain::start_updater() {
 	Ref<VoxelMesherBlocky> blocky_mesher = _mesher;
@@ -664,135 +573,8 @@ void VoxelTerrain::reset_map() {
 	_paired_viewers.clear();
 }
 
-/*inline int get_border_index(int x, int max) {
-	if (x == 0) {
-		return 0;
-	}
-	if (x != max) {
-		return 1;
-	}
-	return 2;
-}*/
-
 void VoxelTerrain::post_edit_voxel(Vector3i pos) {
 	post_edit_area(Rect3i(pos, Vector3i(1, 1, 1)));
-
-	/*if (!_bounds_in_voxels.contains(pos)) {
-		PRINT_VERBOSE(String("Voxel {0} can't be made dirty out of volume bounds {1}")
-							  .format(varray(_bounds_in_voxels.to_string(), pos.to_vec3())));
-		return;
-	}
-
-	// Update the block in which the voxel is
-	const Vector3i data_bpos = _data_map.voxel_to_block(pos);
-	make_data_block_dirty(data_bpos);
-	//OS::get_singleton()->print("Dirty (%i, %i, %i)\n", bpos.x, bpos.y, bpos.z);
-
-	// Update neighbor blocks if the voxel is touching a boundary
-
-	const Vector3i rpos = _map.to_local(pos);
-
-	// TODO Thread-safe way of getting this parameter
-	const bool check_corners = true; //_mesher->get_occlusion_enabled();
-
-	const int max = _map.get_block_size() - 1;
-
-	if (rpos.x == 0) {
-		make_block_dirty(bpos - Vector3i(1, 0, 0));
-	} else if (rpos.x == max) {
-		make_block_dirty(bpos + Vector3i(1, 0, 0));
-	}
-
-	if (rpos.y == 0) {
-		make_block_dirty(bpos - Vector3i(0, 1, 0));
-	} else if (rpos.y == max) {
-		make_block_dirty(bpos + Vector3i(0, 1, 0));
-	}
-
-	if (rpos.z == 0) {
-		make_block_dirty(bpos - Vector3i(0, 0, 1));
-	} else if (rpos.z == max) {
-		make_block_dirty(bpos + Vector3i(0, 0, 1));
-	}
-
-	// We might want to update blocks in corners in order to update ambient occlusion
-	if (check_corners) {
-		//       24------25------26
-		//       /|              /|
-		//      / |             / |
-		//    21  |           23  |
-		//    /  15           /  17
-		//   /    |          /    |
-		// 18------19------20     |
-		//  |     |         |     |
-		//  |     6-------7-|-----8
-		//  |    /          |    /
-		//  9   /          11   /
-		//  |  3            |  5
-		//  | /             | /      y z
-		//  |/              |/       |/
-		//  0-------1-------2        o--x
-
-		// I'm not good at writing piles of ifs
-
-		static const int normals[27][3] = {
-			{ -1, -1, -1 }, { 0, -1, -1 }, { 1, -1, -1 },
-			{ -1, -1, 0 }, { 0, -1, 0 }, { 1, -1, 0 },
-			{ -1, -1, 1 }, { 0, -1, 1 }, { 1, -1, 1 },
-
-			{ -1, 0, -1 }, { 0, 0, -1 }, { 1, 0, -1 },
-			{ -1, 0, 0 }, { 0, 0, 0 }, { 1, 0, 0 },
-			{ -1, 0, 1 }, { 0, 0, 1 }, { 1, 0, 1 },
-
-			{ -1, 1, -1 }, { 0, 1, -1 }, { 1, 1, -1 },
-			{ -1, 1, 0 }, { 0, 1, 0 }, { 1, 1, 0 },
-			{ -1, 1, 1 }, { 0, 1, 1 }, { 1, 1, 1 }
-		};
-		static const int ce_counts[27] = {
-			4, 1, 4,
-			1, 0, 1,
-			4, 1, 4,
-
-			1, 0, 1,
-			0, 0, 0,
-			1, 0, 1,
-
-			4, 1, 4,
-			1, 0, 1,
-			4, 1, 4
-		};
-		static const int ce_indexes_lut[27][4] = {
-			{ 0, 1, 3, 9 }, { 1 }, { 2, 1, 5, 11 },
-			{ 3 }, {}, { 5 },
-			{ 6, 3, 7, 15 }, { 7 }, { 8, 7, 5, 17 },
-
-			{ 9 }, {}, { 11 },
-			{}, {}, {},
-			{ 15 }, {}, { 17 },
-
-			{ 18, 9, 19, 21 }, { 19 }, { 20, 11, 19, 23 },
-			{ 21 }, {}, { 23 },
-			{ 24, 15, 21, 25 }, { 25 }, { 26, 17, 23, 25 }
-		};
-
-		const int m = get_border_index(rpos.x, max) +
-					  3 * get_border_index(rpos.z, max) +
-					  9 * get_border_index(rpos.y, max);
-
-		const int *ce_indexes = ce_indexes_lut[m];
-		const int ce_count = ce_counts[m];
-		//OS::get_singleton()->print("m=%i, rpos=(%i, %i, %i)\n", m, rpos.x, rpos.y, rpos.z);
-
-		for (int i = 0; i < ce_count; ++i) {
-			// TODO Because it's about ambient occlusion across 1 voxel only,
-			// we could optimize it even more by looking at neighbor voxels,
-			// and discard the update if we know it won't change anything
-			const int *normal = normals[ce_indexes[i]];
-			const Vector3i nbpos(bpos.x + normal[0], bpos.y + normal[1], bpos.z + normal[2]);
-			//OS::get_singleton()->print("Corner dirty (%i, %i, %i)\n", nbpos.x, nbpos.y, nbpos.z);
-			make_block_dirty(nbpos);
-		}
-	}*/
 }
 
 void VoxelTerrain::try_schedule_mesh_update_from_data(const Rect3i &box_in_voxels) {
@@ -822,53 +604,6 @@ void VoxelTerrain::post_edit_area(Rect3i box_in_voxels) {
 	});
 
 	try_schedule_mesh_update_from_data(box_in_voxels);
-
-	/*Vector3i min_pos = box.pos;
-	Vector3i max_pos = box.pos + box.size - Vector3(1, 1, 1);
-
-	// TODO Thread-safe way of getting this parameter
-	const bool check_corners = true; //_mesher->get_occlusion_enabled();
-
-	if (check_corners) {
-		min_pos -= Vector3i(1, 1, 1);
-		max_pos += Vector3i(1, 1, 1);
-
-	} else {
-		Vector3i min_rpos = _map.to_local(min_pos);
-		if (min_rpos.x == 0) {
-			--min_pos.x;
-		}
-		if (min_rpos.y == 0) {
-			--min_pos.y;
-		}
-		if (min_rpos.z == 0) {
-			--min_pos.z;
-		}
-
-		const int max = _map.get_block_size() - 1;
-		const Vector3i max_rpos = _map.to_local(max_pos);
-		if (max_rpos.x == max) {
-			++max_pos.x;
-		}
-		if (max_rpos.y == max) {
-			++max_pos.y;
-		}
-		if (max_rpos.z == max) {
-			++max_pos.z;
-		}
-	}
-
-	const Vector3i min_block_pos = _map.voxel_to_block(min_pos);
-	const Vector3i max_block_pos = _map.voxel_to_block(max_pos);
-
-	Vector3i bpos;
-	for (bpos.z = min_block_pos.z; bpos.z <= max_block_pos.z; ++bpos.z) {
-		for (bpos.x = min_block_pos.x; bpos.x <= max_block_pos.x; ++bpos.x) {
-			for (bpos.y = min_block_pos.y; bpos.y <= max_block_pos.y; ++bpos.y) {
-				make_block_dirty(bpos);
-			}
-		}
-	}*/
 }
 
 void VoxelTerrain::_notification(int p_what) {
@@ -1086,21 +821,6 @@ void VoxelTerrain::_process() {
 			}
 		};
 
-		/*if (_reset_mesh_views_scheduled) {
-			// Pretend mesh view was empty last frame so meshes will get reloaded.
-			// It should work since the logic that sets this flag also clears all mesh blocks,
-			// but let's reset the map to be sure since there is room for something to happen in between.
-			if (_mesh_map.get_block_count() > 0) {
-				WARN_PRINT("Mesh map not empty after having scheduled a mesh view reset");
-				_mesh_map.clear();
-			}
-			_reset_mesh_views_scheduled = false;
-			for (auto it = _paired_viewers.begin(); it != _paired_viewers.end(); ++it) {
-				PairedViewer &p = *it;
-				p.prev_state.mesh_box = Rect3i();
-			}
-		}*/
-
 		// New viewers and updates
 		UpdatePairedViewer u{ *this, bounds_in_blocks, world_to_local_transform, view_distance_scale };
 		VoxelServer::get_singleton()->for_each_viewer(u);
@@ -1112,11 +832,6 @@ void VoxelTerrain::_process() {
 	// Find out which blocks need to appear and which need to be unloaded
 	if (stream_enabled) {
 		VOXEL_PROFILE_SCOPE();
-
-		/*const uint32_t data_block_size = get_data_block_size();
-		const uint32_t mesh_block_size = get_mesh_block_size();
-		const Rect3i bounds_in_blocks = _bounds_in_voxels.downscaled(data_block_size);
-		const Rect3i prev_bounds_in_blocks = _prev_bounds_in_voxels.downscaled(data_block_size);*/
 
 		for (size_t i = 0; i < _paired_viewers.size(); ++i) {
 			const PairedViewer &viewer = _paired_viewers[i];
@@ -1299,60 +1014,12 @@ void VoxelTerrain::_process() {
 
 			emit_data_block_loaded(block);
 
-			/*
-			// Schedule mesh update if necessary.
-			// Not using `try_schedule_mesh_update_from_data` because block loading is different from modification.
-			// It would try to update too many meshes otherwise
-			const Vector3i mesh_block_pos = _mesh_map.voxel_to_block(_data_map.block_to_voxel(block_pos));
-			VoxelMeshBlock *mesh_block = _mesh_map.get_block(mesh_block_pos);
-			if (mesh_block != nullptr) {
-				try_schedule_mesh_update(mesh_block);
-			}*/
-
 			// The block itself might not be suitable for meshing yet, but blocks surrounding it might be now
 			{
 				VOXEL_PROFILE_SCOPE();
 				try_schedule_mesh_update_from_data(
 						Rect3i(_data_map.block_to_voxel(block_pos), Vector3i(get_data_block_size())));
 			}
-
-			/*
-			// TODO The following code appears to have order-dependency with block loading.
-			// i.e if block loading responses arrive in a different order they were requested in,
-			// some blocks will be stuck in LOAD. For now I made it so no re-ordering happens,
-			// but it needs to be made more robust
-
-			// Trigger mesh updates
-			if (was_not_loaded) {
-				// All neighbors have to be checked. If they are now surrounded, they can be updated
-				Vector3i ndir;
-				for (ndir.z = -1; ndir.z < 2; ++ndir.z) {
-					for (ndir.x = -1; ndir.x < 2; ++ndir.x) {
-						for (ndir.y = -1; ndir.y < 2; ++ndir.y) {
-							const Vector3i npos = block_pos + ndir;
-
-							// TODO What if the map is really composed of empty blocks?
-							if (_map.is_block_surrounded(npos)) {
-								VoxelBlock *nblock = _map.get_block(npos);
-								if (nblock == nullptr || nblock->get_mesh_state() == VoxelBlock::MESH_UPDATE_NOT_SENT) {
-									// Assuming it is scheduled to be updated already.
-									// In case of BLOCK_UPDATE_SENT, we'll have to resend it.
-									continue;
-								}
-
-								nblock->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
-								_blocks_pending_update.push_back(npos);
-							}
-						}
-					}
-				}
-
-			} else {
-				// Only update the block, neighbors will probably follow if needed
-				block->set_mesh_state(VoxelBlock::MESH_UPDATE_NOT_SENT);
-				_blocks_pending_update.push_back(block_pos);
-				//OS::get_singleton()->print("Update (%i, %i, %i)\n", block_pos.x, block_pos.y, block_pos.z);
-			}*/
 		}
 
 		_reception_buffers.data_output.clear();
@@ -1373,45 +1040,6 @@ void VoxelTerrain::_process() {
 
 		for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
 			const Vector3i mesh_block_pos = _blocks_pending_update[bi];
-
-			/*
-			// Check if the block is worth meshing
-			// Smooth meshing works on more neighbors, so checking a single block isn't enough to ignore it,
-			// but that will slow down meshing a lot.
-			// TODO Query mesher instead?
-			if (!(used_channels_mask & (1 << VoxelBuffer::CHANNEL_SDF))) {
-				VoxelMeshBlock *block = _mesh_map.get_block(block_pos);
-				if (block == nullptr) {
-					continue;
-				} else {
-					CRASH_COND(block->voxels.is_null());
-
-					bool is_empty;
-					{
-						RWLockRead lock(block->voxels->get_lock());
-						is_empty = block->voxels->is_uniform(VoxelBuffer::CHANNEL_TYPE) &&
-								   block->voxels->is_uniform(VoxelBuffer::CHANNEL_SDF) &&
-								   block->voxels->get_voxel(0, 0, 0, VoxelBuffer::CHANNEL_TYPE) == Voxel::AIR_ID;
-					}
-
-					if (is_empty) {
-						// If we got here, it must have been because of scheduling an update
-						CRASH_COND(block->get_mesh_state() != VoxelBlock::MESH_UPDATE_NOT_SENT);
-
-						// The block contains empty voxels
-
-						block->drop_mesh();
-						block->drop_collision();
-						block->set_mesh_state(VoxelBlock::MESH_UP_TO_DATE);
-
-						// Optional, but I guess it might spare some memory.
-						// Not doing it anymore cuz now we need to be more careful about multithreaded access.
-						//block->voxels->clear_channel(VoxelBuffer::CHANNEL_TYPE, air_type);
-
-						continue;
-					}
-				}
-			}*/
 
 			VoxelMeshBlock *mesh_block = _mesh_map.get_block(mesh_block_pos);
 
@@ -1449,29 +1077,6 @@ void VoxelTerrain::_process() {
 				ERR_CONTINUE(count == 0);
 			}
 #endif
-
-			/*
-			// Get block and its neighbors
-			VoxelServer::BlockMeshInput mesh_request;
-			mesh_request.position = block_pos;
-			mesh_request.lod = 0;
-			mesh_request.blocks_count = 3 * 3 * 3;
-			// This iteration order is specifically chosen to match VoxelServer and threaded access
-			unsigned int i = 0;
-			for (int z = -1; z < 2; ++z) {
-				for (int x = -1; x < 2; ++x) {
-					for (int y = -1; y < 2; ++y) {
-						const Vector3i npos = block_pos + Vector3i(x, y, z);
-						VoxelBlock *nblock = _map.get_block(npos);
-						// The block can actually be null on some occasions. Not sure yet if it's that bad
-						//CRASH_COND(nblock == nullptr);
-						if (nblock != nullptr) {
-							mesh_request.blocks[i] = nblock->voxels;
-						}
-						++i;
-					}
-				}
-			}*/
 
 			//print_line(String("DDD request {0}").format(varray(mesh_request.render_block_position.to_vec3())));
 			VoxelServer::get_singleton()->request_block_mesh(_volume_id, mesh_request);
