@@ -155,6 +155,44 @@ unsigned int VoxelTerrain::get_mesh_block_size_pow2() const {
 	return _mesh_map.get_block_size_pow2();
 }
 
+void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
+	mesh_block_size = clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
+
+	unsigned int po2;
+	switch (mesh_block_size) {
+		case 16:
+			po2 = 4;
+			break;
+		case 32:
+			po2 = 5;
+			break;
+		default:
+			mesh_block_size = 16;
+			po2 = 4;
+			break;
+	}
+	if (mesh_block_size == get_mesh_block_size()) {
+		return;
+	}
+
+	// Unload all mesh blocks regardless of refcount
+	_mesh_map.create(po2, 0);
+
+	// Make paired viewers re-view the new meshable area
+	for (unsigned int i = 0; i < _paired_viewers.size(); ++i) {
+		PairedViewer &viewer = _paired_viewers[i];
+		// Resetting both because it's a re-initialization.
+		// We could also be doing that before or after their are shifted.
+		viewer.state.mesh_box = Rect3i();
+		viewer.prev_state.mesh_box = Rect3i();
+	}
+
+	VoxelServer::get_singleton()->set_volume_render_block_size(_volume_id, mesh_block_size);
+
+	// No update on bounds because we can support a mismatch, as long as it is a multiple of data block size
+	//set_bounds(_bounds_in_voxels);
+}
+
 void VoxelTerrain::restart_stream() {
 	_on_stream_params_changed();
 }
@@ -352,6 +390,11 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 	});*/
 
 	block->viewers.add(false, mesh_flag, collision_flag);
+
+	// This is needed in case a viewer wants to view meshes in places data blocks are already present.
+	// Before that, meshes were updated only when a data block was loaded or modified,
+	// so changing block size or viewer flags did not make meshes appear.
+	try_schedule_mesh_update(block);
 
 	/*if (mesh_flag) {
 		viewers.add(VoxelViewerRefCount::TYPE_MESH);
@@ -1046,6 +1089,21 @@ void VoxelTerrain::_process() {
 			}
 		};
 
+		/*if (_reset_mesh_views_scheduled) {
+			// Pretend mesh view was empty last frame so meshes will get reloaded.
+			// It should work since the logic that sets this flag also clears all mesh blocks,
+			// but let's reset the map to be sure since there is room for something to happen in between.
+			if (_mesh_map.get_block_count() > 0) {
+				WARN_PRINT("Mesh map not empty after having scheduled a mesh view reset");
+				_mesh_map.clear();
+			}
+			_reset_mesh_views_scheduled = false;
+			for (auto it = _paired_viewers.begin(); it != _paired_viewers.end(); ++it) {
+				PairedViewer &p = *it;
+				p.prev_state.mesh_box = Rect3i();
+			}
+		}*/
+
 		// New viewers and updates
 		UpdatePairedViewer u{ *this, bounds_in_blocks, world_to_local_transform, view_distance_scale };
 		VoxelServer::get_singleton()->for_each_viewer(u);
@@ -1071,6 +1129,8 @@ void VoxelTerrain::_process() {
 				const Rect3i &prev_data_box = viewer.prev_state.data_box;
 
 				if (prev_data_box != new_data_box) {
+					VOXEL_PROFILE_SCOPE();
+
 					// Unview blocks that just fell out of range
 					prev_data_box.difference(new_data_box, [this, &viewer](Rect3i out_of_range_box) {
 						out_of_range_box.for_each_cell([this, &viewer](Vector3i bpos) {
@@ -1093,6 +1153,8 @@ void VoxelTerrain::_process() {
 				const Rect3i &prev_mesh_box = viewer.prev_state.mesh_box;
 
 				if (prev_mesh_box != new_mesh_box) {
+					VOXEL_PROFILE_SCOPE();
+
 					// Unview blocks that just fell out of range
 					prev_mesh_box.difference(new_mesh_box, [this, &viewer](Rect3i out_of_range_box) {
 						out_of_range_box.for_each_cell([this, &viewer](Vector3i bpos) {
@@ -1620,6 +1682,9 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("voxel_to_data_block", "voxel_pos"), &VoxelTerrain::_b_voxel_to_data_block);
 	ClassDB::bind_method(D_METHOD("data_block_to_voxel", "block_pos"), &VoxelTerrain::_b_data_block_to_voxel);
 
+	ClassDB::bind_method(D_METHOD("get_mesh_block_size"), &VoxelTerrain::get_mesh_block_size);
+	ClassDB::bind_method(D_METHOD("set_mesh_block_size", "size"), &VoxelTerrain::set_mesh_block_size);
+
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::_b_get_statistics);
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelTerrain::get_voxel_tool);
 
@@ -1650,6 +1715,7 @@ void VoxelTerrain::_bind_methods() {
 	// TODO Should probably be in the parent class?
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
 			"set_run_stream_in_editor", "is_stream_running_in_editor");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
 
 	// TODO Add back access to block, but with an API securing multithreaded access
 	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton()->block_loaded,

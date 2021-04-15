@@ -36,6 +36,7 @@ public:
 
 	unsigned int get_mesh_block_size_pow2() const;
 	inline unsigned int get_mesh_block_size() const { return 1 << get_mesh_block_size_pow2(); }
+	void set_mesh_block_size(unsigned int p_block_size);
 
 	void post_edit_voxel(Vector3i pos);
 	void post_edit_area(Rect3i box_in_voxels);
