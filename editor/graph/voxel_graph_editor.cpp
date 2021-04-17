@@ -21,7 +21,7 @@ const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
 class VoxelGraphEditorNodePreview : public VBoxContainer {
 	GDCLASS(VoxelGraphEditorNodePreview, VBoxContainer)
 public:
-	static const int RESOLUTION = 64;
+	static const int RESOLUTION = 128;
 
 	VoxelGraphEditorNodePreview() {
 		_image.instance();
