@@ -21,6 +21,7 @@ Ongoing development
     - Generators are no longer limited to a single background thread
     - Added `VoxelStreamSQLite`, allowing to save volumes as a single SQLite database
     - Implemented `copy` and `paste` for `VoxelToolTerrain`
+    - Added ability to double block size used for meshes and instancing, improving rendering speed at the cost of slower modification
 
 - Editor
     - Streaming/LOD can be set to follow the editor camera instead of being centered on world origin. Use with caution, fast big movements and zooms can cause lag
