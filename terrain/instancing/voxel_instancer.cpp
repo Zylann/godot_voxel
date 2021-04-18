@@ -840,16 +840,6 @@ static const VoxelInstanceBlockData::LayerData *find_layer_data(const VoxelInsta
 	return nullptr;
 }
 
-static bool contains_layer_id(const VoxelInstanceBlockData &instances_data, int id) {
-	for (auto it = instances_data.layers.begin(); it != instances_data.layers.end(); ++it) {
-		const VoxelInstanceBlockData::LayerData &layer = *it;
-		if (layer.id == id) {
-			return true;
-		}
-	}
-	return false;
-}
-
 void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod_index, Array surface_arrays) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
@@ -872,8 +862,8 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 
 	const int lod_render_block_size = _parent->get_mesh_block_size() << lod_index;
 
-	for (auto it = lod.layers.begin(); it != lod.layers.end(); ++it) {
-		const int layer_id = *it;
+	for (auto layer_it = lod.layers.begin(); layer_it != lod.layers.end(); ++layer_it) {
+		const int layer_id = *layer_it;
 
 		Layer *layer = get_layer(layer_id);
 		CRASH_COND(layer == nullptr);
