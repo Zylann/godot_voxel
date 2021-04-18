@@ -1035,7 +1035,7 @@ void VoxelTerrain::_process() {
 	{
 		VOXEL_PROFILE_SCOPE();
 
-		const int used_channels_mask = get_used_channels_mask();
+		//const int used_channels_mask = get_used_channels_mask();
 		const int mesh_to_data_factor = get_mesh_block_size() / get_data_block_size();
 
 		for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
@@ -1047,9 +1047,9 @@ void VoxelTerrain::_process() {
 			ERR_CONTINUE(mesh_block == nullptr);
 			ERR_CONTINUE(mesh_block->get_mesh_state() != VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
 
-			const Vector3i data_block_pos = mesh_block_pos * mesh_to_data_factor;
 			// Pad by 1 because meshing requires neighbors
-			const Rect3i data_box = Rect3i(data_block_pos, Vector3i(mesh_to_data_factor)).padded(1);
+			const Rect3i data_box =
+					Rect3i(mesh_block_pos * mesh_to_data_factor, Vector3i(mesh_to_data_factor)).padded(1);
 
 			VoxelServer::BlockMeshInput mesh_request;
 			mesh_request.render_block_position = mesh_block_pos;

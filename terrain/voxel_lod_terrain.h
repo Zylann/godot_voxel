@@ -47,14 +47,14 @@ public:
 	float get_lod_distance() const;
 
 	void set_lod_count(int p_lod_count);
-	int get_lod_count() const;
+	unsigned int get_lod_count() const;
 
 	void set_generate_collisions(bool enabled);
 	bool get_generate_collisions() const { return _generate_collisions; }
 
 	// Sets up to which amount of LODs collision will generate. -1 means all of them.
 	void set_collision_lod_count(int lod_count);
-	int get_collision_lod_count() const;
+	unsigned int get_collision_lod_count() const;
 
 	int get_data_block_region_extent() const;
 	int get_mesh_block_region_extent() const;
@@ -241,7 +241,7 @@ private:
 	std::vector<Ref<ShaderMaterial> > _shader_material_pool;
 
 	bool _generate_collisions = true;
-	int _collision_lod_count = -1;
+	unsigned int _collision_lod_count = 0;
 	int _collision_update_delay = 0;
 
 	VoxelInstancer *_instancer = nullptr;
@@ -268,7 +268,7 @@ private:
 	};
 
 	FixedArray<Lod, VoxelConstants::MAX_LOD> _lods;
-	int _lod_count = 0;
+	unsigned int _lod_count = 0;
 	// Distance between a viewer and the end of LOD0
 	float _lod_distance = 0.f;
 	float _lod_fade_duration = 0.f;

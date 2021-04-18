@@ -571,7 +571,7 @@ void VoxelLodTerrain::reset_maps() {
 	_lod_octrees.clear();
 }
 
-int VoxelLodTerrain::get_lod_count() const {
+unsigned int VoxelLodTerrain::get_lod_count() const {
 	return _lod_count;
 }
 
@@ -580,10 +580,11 @@ void VoxelLodTerrain::set_generate_collisions(bool enabled) {
 }
 
 void VoxelLodTerrain::set_collision_lod_count(int lod_count) {
-	_collision_lod_count = CLAMP(lod_count, -1, get_lod_count());
+	ERR_FAIL_COND(lod_count < 0);
+	_collision_lod_count = min(static_cast<unsigned int>(lod_count), get_lod_count());
 }
 
-int VoxelLodTerrain::get_collision_lod_count() const {
+unsigned int VoxelLodTerrain::get_collision_lod_count() const {
 	return _collision_lod_count;
 }
 
@@ -1542,7 +1543,7 @@ void VoxelLodTerrain::_process(float delta) {
 					_material);
 
 			bool has_collision = _generate_collisions;
-			if (has_collision && _collision_lod_count != -1) {
+			if (has_collision && _collision_lod_count != 0) {
 				has_collision = ob.lod < _collision_lod_count;
 			}
 
@@ -1643,7 +1644,7 @@ void VoxelLodTerrain::_process(float delta) {
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
 	VOXEL_PROFILE_SCOPE();
 
-	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		Lod &lod = _lods[lod_index];
 
 		for (unsigned int i = 0; i < lod.deferred_collision_updates.size(); ++i) {
@@ -1737,7 +1738,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 	// Process downscales upwards in pairs of consecutive LODs.
 	// This ensures we don't process multiple times the same blocks.
 	// Only LOD0 is editable at the moment, so we'll downscale from there
-	for (int dst_lod_index = 1; dst_lod_index < _lod_count; ++dst_lod_index) {
+	for (unsigned int dst_lod_index = 1; dst_lod_index < _lod_count; ++dst_lod_index) {
 		Lod &src_lod = _lods[dst_lod_index - 1];
 		Lod &dst_lod = _lods[dst_lod_index];
 
@@ -1850,7 +1851,7 @@ void VoxelLodTerrain::unload_mesh_block(Vector3i block_pos, int lod_index) {
 // because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
 Array VoxelLodTerrain::get_mesh_block_surface(Vector3i block_pos, int lod_index) const {
 	VOXEL_PROFILE_SCOPE();
-	ERR_FAIL_COND_V(lod_index >= _lod_count, Array());
+	ERR_FAIL_COND_V(lod_index >= static_cast<int>(_lod_count), Array());
 	const Lod &lod = _lods[lod_index];
 	const VoxelMeshBlock *block = lod.mesh_map.get_block(block_pos);
 	if (block != nullptr) {
@@ -1864,7 +1865,7 @@ Array VoxelLodTerrain::get_mesh_block_surface(Vector3i block_pos, int lod_index)
 
 Vector<Vector3i> VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index) const {
 	Vector<Vector3i> positions;
-	ERR_FAIL_COND_V(lod_index >= _lod_count, positions);
+	ERR_FAIL_COND_V(lod_index >= static_cast<int>(_lod_count), positions);
 	const Lod &lod = _lods[lod_index];
 	lod.mesh_map.for_all_blocks([&positions](const VoxelMeshBlock *block) {
 		if (block->has_mesh()) {
@@ -1878,7 +1879,7 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 	flush_pending_lod_edits();
 
 	if (_stream.is_valid()) {
-		for (int i = 0; i < _lod_count; ++i) {
+		for (unsigned int i = 0; i < _lod_count; ++i) {
 			// That may cause a stutter, so should be used when the player won't notice
 			_lods[i].data_map.for_all_blocks(ScheduleSaveAction{ _blocks_to_save });
 		}
@@ -1932,7 +1933,7 @@ void VoxelLodTerrain::process_transition_updates() {
 uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) const {
 	uint8_t transition_mask = 0;
 
-	if (lod_index + 1 >= _lod_count) {
+	if (lod_index + 1 >= static_cast<int>(_lod_count)) {
 		return transition_mask;
 	}
 
@@ -2016,7 +2017,7 @@ Dictionary VoxelLodTerrain::_b_get_statistics() const {
 	Dictionary d;
 
 	int deferred_collision_updates = 0;
-	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		const Lod &lod = _lods[lod_index];
 		deferred_collision_updates += lod.deferred_collision_updates.size();
 	}
@@ -2064,7 +2065,7 @@ void VoxelLodTerrain::restart_stream() {
 }
 
 void VoxelLodTerrain::remesh_all_blocks() {
-	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		Lod &lod = _lods[lod_index];
 		lod.mesh_map.for_all_blocks([&lod](VoxelMeshBlock *block) {
 			schedule_mesh_update(block, lod.blocks_pending_update);
@@ -2128,7 +2129,7 @@ Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 wo
 
 	Array hits;
 	while (distance < max_distance && hits.size() == 0) {
-		for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 			const Lod &lod = _lods[lod_index];
 			Vector3i bpos = lod.mesh_map.voxel_to_block(Vector3i(pos)) >> lod_index;
 			const VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
@@ -2354,7 +2355,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 
 int VoxelLodTerrain::_b_debug_get_mesh_block_count() const {
 	int sum = 0;
-	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		sum += _lods[lod_index].mesh_map.get_block_count();
 	}
 	return sum;
@@ -2362,7 +2363,7 @@ int VoxelLodTerrain::_b_debug_get_mesh_block_count() const {
 
 int VoxelLodTerrain::_b_debug_get_data_block_count() const {
 	int sum = 0;
-	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		sum += _lods[lod_index].data_map.get_block_count();
 	}
 	return sum;
@@ -2372,7 +2373,7 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath) const {
 	Spatial *root = memnew(Spatial);
 	root->set_name(get_name());
 
-	for (int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		const Lod &lod = _lods[lod_index];
 
 		lod.mesh_map.for_all_blocks([root](const VoxelMeshBlock *block) {
