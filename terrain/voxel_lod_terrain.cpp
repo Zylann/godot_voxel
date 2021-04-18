@@ -519,7 +519,7 @@ void VoxelLodTerrain::set_lod_count(int p_lod_count) {
 	ERR_FAIL_COND(p_lod_count >= (int)VoxelConstants::MAX_LOD);
 	ERR_FAIL_COND(p_lod_count < 1);
 
-	if (get_lod_count() != p_lod_count) {
+	if (static_cast<int>(get_lod_count()) != p_lod_count) {
 		_set_lod_count(p_lod_count);
 	}
 }
@@ -863,7 +863,7 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelMeshBlock *block) {
 			Rect3i data_box(data_block_pos0 - Vector3i(1), Vector3i(factor) + Vector3i(2));
 			Rect3i bounds = _bounds_in_voxels.downscaled(data_block_size);
 			FixedArray<Vector3i, 56> neighbor_positions;
-			int neighbor_positions_count = 0;
+			unsigned int neighbor_positions_count = 0;
 			data_box.for_inner_outline([bounds, &neighbor_positions, &neighbor_positions_count](Vector3i pos) {
 				if (bounds.contains(pos)) {
 					neighbor_positions[neighbor_positions_count] = pos;
@@ -1811,7 +1811,7 @@ void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
 
 void VoxelLodTerrain::unload_data_block(Vector3i block_pos, int lod_index) {
 	VOXEL_PROFILE_SCOPE();
-	ERR_FAIL_COND(lod_index >= static_cast<unsigned int>(get_lod_count()));
+	ERR_FAIL_COND(lod_index >= static_cast<int>(get_lod_count()));
 
 	Lod &lod = _lods[lod_index];
 
@@ -1830,7 +1830,7 @@ void VoxelLodTerrain::unload_data_block(Vector3i block_pos, int lod_index) {
 
 void VoxelLodTerrain::unload_mesh_block(Vector3i block_pos, int lod_index) {
 	VOXEL_PROFILE_SCOPE();
-	ERR_FAIL_COND(lod_index >= static_cast<unsigned int>(get_lod_count()));
+	ERR_FAIL_COND(lod_index >= static_cast<int>(get_lod_count()));
 
 	Lod &lod = _lods[lod_index];
 
@@ -2181,7 +2181,6 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 	bool meshed = false;
 	bool visible = false;
 	bool active = false;
-	bool loading = false;
 	int mesh_state = VoxelMeshBlock::MESH_NEVER_UPDATED;
 	const VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
 
