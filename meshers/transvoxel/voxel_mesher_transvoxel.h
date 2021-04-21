@@ -6,77 +6,105 @@
 #include "../voxel_mesher.h"
 #include <vector>
 
-class VoxelMesherTransvoxelInternal {
+namespace Transvoxel {
+
+static const int MIN_PADDING = 1;
+static const int MAX_PADDING = 2;
+static const unsigned int MAX_TEXTURES = 16;
+static const unsigned int MAX_TEXTURE_BLENDS = 4;
+
+enum TexturingMode {
+	TEXTURES_NONE,
+	//TEXTURES_BLEND_4,
+	// Blends the 4 most-represented textures in the given block, ignoring the others.
+	// Texture indices and blend factors have 4-bit precision (maximum 16 textures),
+	// and are respectively encoded in UV and UV2.
+	TEXTURES_BLEND_4_OVER_16
+};
+
+struct TexturingData {
+	FixedArray<uint8_t, MAX_TEXTURE_BLENDS> indices;
+	FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights;
+};
+
+struct MeshArrays {
+	std::vector<Vector3> vertices;
+	std::vector<Vector3> normals;
+	std::vector<Color> extra;
+	std::vector<Vector2> uv;
+	std::vector<int> indices;
+
+	void clear() {
+		vertices.clear();
+		normals.clear();
+		extra.clear();
+		uv.clear();
+		indices.clear();
+	}
+
+	int add_vertex(Vector3 primary, Vector3 normal, uint16_t border_mask, Vector3 secondary) {
+		int vi = vertices.size();
+		vertices.push_back(primary);
+		normals.push_back(normal);
+		extra.push_back(Color(secondary.x, secondary.y, secondary.z, border_mask));
+		return vi;
+	}
+};
+
+struct ReuseCell {
+	FixedArray<int, 4> vertices;
+	unsigned int packed_texture_indices;
+};
+
+struct ReuseTransitionCell {
+	FixedArray<int, 12> vertices;
+};
+
+class Cache {
 public:
-	static const int MIN_PADDING = 1;
-	static const int MAX_PADDING = 2;
-	static const unsigned int MAX_TEXTURES = 16;
-	static const unsigned int MAX_TEXTURE_BLENDS = 4;
-
-	enum TexturingMode {
-		TEXTURES_NONE,
-		//TEXTURES_BLEND_4,
-		// Blends the 4 most-represented textures in the given block, ignoring the others.
-		// Texture indices and blend factors have 4-bit precision (maximum 16 textures),
-		// and are respectively encoded in UV and UV2.
-		TEXTURES_BLEND_4_OVER_16
-	};
-
-	struct TexturingData {
-		FixedArray<uint8_t, MAX_TEXTURE_BLENDS> indices;
-		FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights;
-	};
-
-	struct MeshArrays {
-		std::vector<Vector3> vertices;
-		std::vector<Vector3> normals;
-		std::vector<Color> extra;
-		std::vector<Vector2> uv;
-		std::vector<int> indices;
-
-		void clear() {
-			vertices.clear();
-			normals.clear();
-			extra.clear();
-			uv.clear();
-			indices.clear();
+	void reset_reuse_cells(Vector3i p_block_size) {
+		_block_size = p_block_size;
+		unsigned int deck_area = _block_size.x * _block_size.y;
+		for (unsigned int i = 0; i < _cache.size(); ++i) {
+			std::vector<ReuseCell> &deck = _cache[i];
+			deck.resize(deck_area);
+			for (size_t j = 0; j < deck.size(); ++j) {
+				deck[j].vertices.fill(-1);
+			}
 		}
-	};
+	}
 
-	void build_internal(const VoxelBuffer &voxels, unsigned int sdf_channel, int lod_index,
-			TexturingMode texturing_mode, FixedArray<uint8_t, 4> &out_texture_indices);
-	void build_transition(const VoxelBuffer &voxels, unsigned int sdf_channel, int direction, int lod_index,
-			TexturingMode texturing_mode, const FixedArray<uint8_t, 4> &texture_indices);
-	void clear_output() { _output.clear(); }
-	const MeshArrays &get_output() const { return _output; }
+	void reset_reuse_cells_2d(Vector3i p_block_size) {
+		for (unsigned int i = 0; i < _cache_2d.size(); ++i) {
+			std::vector<ReuseTransitionCell> &row = _cache_2d[i];
+			row.resize(p_block_size.x);
+			for (size_t j = 0; j < row.size(); ++j) {
+				row[j].vertices.fill(-1);
+			}
+		}
+	}
 
-private:
-	struct ReuseCell {
-		FixedArray<int, 4> vertices;
-		unsigned int packed_texture_indices;
-	};
+	ReuseCell &get_reuse_cell(Vector3i pos) {
+		unsigned int j = pos.z & 1;
+		unsigned int i = pos.y * _block_size.y + pos.x;
+		CRASH_COND(i >= _cache[j].size());
+		return _cache[j][i];
+	}
 
-	struct ReuseTransitionCell {
-		FixedArray<int, 12> vertices;
-	};
-
-	struct TransitionVoxels {
-		const VoxelBuffer *full_resolution_neighbor_voxels[Cube::SIDE_COUNT] = { nullptr };
-	};
-
-	void reset_reuse_cells(Vector3i block_size);
-	void reset_reuse_cells_2d(Vector3i block_size);
-	ReuseCell &get_reuse_cell(Vector3i pos);
-	ReuseTransitionCell &get_reuse_cell_2d(int x, int y);
-	int emit_vertex(Vector3 primary, Vector3 normal, uint16_t border_mask, Vector3 secondary);
+	ReuseTransitionCell &get_reuse_cell_2d(int x, int y) {
+		unsigned int j = y & 1;
+		unsigned int i = x;
+		CRASH_COND(i >= _cache_2d[j].size());
+		return _cache_2d[j][i];
+	}
 
 private:
-	// Work cache
 	FixedArray<std::vector<ReuseCell>, 2> _cache;
 	FixedArray<std::vector<ReuseTransitionCell>, 2> _cache_2d;
 	Vector3i _block_size;
-	MeshArrays _output;
 };
+
+} // namespace Transvoxel
 
 class ArrayMesh;
 
@@ -85,8 +113,8 @@ class VoxelMesherTransvoxel : public VoxelMesher {
 
 public:
 	enum TexturingMode {
-		TEXTURES_NONE = VoxelMesherTransvoxelInternal::TEXTURES_NONE,
-		TEXTURES_BLEND_4_OVER_16 = VoxelMesherTransvoxelInternal::TEXTURES_BLEND_4_OVER_16
+		TEXTURES_NONE = Transvoxel::TEXTURES_NONE,
+		TEXTURES_BLEND_4_OVER_16 = Transvoxel::TEXTURES_BLEND_4_OVER_16
 	};
 
 	VoxelMesherTransvoxel();
@@ -105,9 +133,7 @@ protected:
 	static void _bind_methods();
 
 private:
-	void fill_surface_arrays(Array &arrays, const VoxelMesherTransvoxelInternal::MeshArrays &src);
-
-	static thread_local VoxelMesherTransvoxelInternal _impl;
+	void fill_surface_arrays(Array &arrays, const Transvoxel::MeshArrays &src);
 
 	TexturingMode _texture_mode = TEXTURES_NONE;
 };

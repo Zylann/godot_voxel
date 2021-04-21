@@ -33,6 +33,7 @@
 #include <core/error_macros.h>
 
 namespace Transvoxel {
+namespace Tables {
 
 // The RegularCellData structure holds information about the triangulation
 // used for a single equivalence class in the modified Marching Cubes algorithm,
@@ -1053,4 +1054,5 @@ inline unsigned short get_transition_vertex_data(unsigned int i, unsigned int j)
 	return transitionVertexData[i][j];
 }
 
+} // namespace Tables
 } // namespace Transvoxel

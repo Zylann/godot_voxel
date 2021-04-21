@@ -14,161 +14,7 @@ static const unsigned int MESH_COMPRESSION_FLAGS =
 		Mesh::ARRAY_COMPRESS_WEIGHTS;
 }
 
-thread_local VoxelMesherTransvoxelInternal VoxelMesherTransvoxel::_impl;
-
-VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
-	set_padding(VoxelMesherTransvoxelInternal::MIN_PADDING, VoxelMesherTransvoxelInternal::MAX_PADDING);
-}
-
-VoxelMesherTransvoxel::~VoxelMesherTransvoxel() {
-}
-
-Ref<Resource> VoxelMesherTransvoxel::duplicate(bool p_subresources) const {
-	return memnew(VoxelMesherTransvoxel);
-}
-
-int VoxelMesherTransvoxel::get_used_channels_mask() const {
-	return (1 << VoxelBuffer::CHANNEL_SDF);
-}
-
-void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const VoxelMesherTransvoxelInternal::MeshArrays &src) {
-	PoolVector<Vector3> vertices;
-	PoolVector<Vector3> normals;
-	PoolVector<Color> extra;
-	PoolVector<Vector2> uv;
-	PoolVector<int> indices;
-
-	raw_copy_to(vertices, src.vertices);
-	raw_copy_to(extra, src.extra);
-	raw_copy_to(indices, src.indices);
-
-	arrays.resize(Mesh::ARRAY_MAX);
-	arrays[Mesh::ARRAY_VERTEX] = vertices;
-	if (src.normals.size() != 0) {
-		raw_copy_to(normals, src.normals);
-		arrays[Mesh::ARRAY_NORMAL] = normals;
-	}
-	if (src.uv.size() != 0) {
-		raw_copy_to(uv, src.uv);
-		arrays[Mesh::ARRAY_TEX_UV] = uv;
-	}
-	arrays[Mesh::ARRAY_COLOR] = extra;
-	arrays[Mesh::ARRAY_INDEX] = indices;
-}
-
-void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	VOXEL_PROFILE_SCOPE();
-	VoxelMesherTransvoxelInternal &impl = _impl;
-
-	const int channel = VoxelBuffer::CHANNEL_SDF;
-
-	// Initialize dynamic memory:
-	// These vectors are re-used.
-	// We don't know in advance how much geometry we are going to produce.
-	// Once capacity is big enough, no more memory should be allocated
-	impl.clear_output();
-
-	const VoxelBuffer &voxels = input.voxels;
-	if (voxels.is_uniform(channel)) {
-		// There won't be anything to polygonize since the SDF has no variations, so it can't cross the isolevel
-		return;
-	}
-
-	// const uint64_t time_before = OS::get_singleton()->get_ticks_usec();
-
-	FixedArray<uint8_t, 4> texture_indices;
-	impl.build_internal(voxels, channel, input.lod,
-			static_cast<VoxelMesherTransvoxelInternal::TexturingMode>(_texture_mode), texture_indices);
-
-	if (impl.get_output().vertices.size() == 0) {
-		// The mesh can be empty
-		return;
-	}
-
-	Array regular_arrays;
-	fill_surface_arrays(regular_arrays, impl.get_output());
-	output.surfaces.push_back(regular_arrays);
-
-	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-		VOXEL_PROFILE_SCOPE();
-		impl.clear_output();
-
-		impl.build_transition(voxels, channel, dir, input.lod,
-				static_cast<VoxelMesherTransvoxelInternal::TexturingMode>(_texture_mode), texture_indices);
-
-		if (impl.get_output().vertices.size() == 0) {
-			continue;
-		}
-
-		Array transition_arrays;
-		fill_surface_arrays(transition_arrays, impl.get_output());
-		output.transition_surfaces[dir].push_back(transition_arrays);
-	}
-
-	// const uint64_t time_spent = OS::get_singleton()->get_ticks_usec() - time_before;
-	// print_line(String("VoxelMesherTransvoxel spent {0} us").format(varray(time_spent)));
-
-	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
-	output.compression_flags = MESH_COMPRESSION_FLAGS;
-}
-
-// TODO For testing at the moment
-Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> voxels, int direction) {
-	VoxelMesherTransvoxelInternal &impl = _impl;
-
-	impl.clear_output();
-
-	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
-
-	// TODO We need to output transition meshes through the generic interface, they are part of the result
-	// For now we can't support proper texture indices in this specific case
-	FixedArray<uint8_t, 4> texture_indices;
-	impl.build_transition(**voxels, VoxelBuffer::CHANNEL_SDF, direction, 0,
-			static_cast<VoxelMesherTransvoxelInternal::TexturingMode>(_texture_mode), texture_indices);
-
-	Ref<ArrayMesh> mesh;
-
-	if (impl.get_output().vertices.size() == 0) {
-		return mesh;
-	}
-
-	Array arrays;
-	fill_surface_arrays(arrays, impl.get_output());
-	mesh.instance();
-	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays, Array(), MESH_COMPRESSION_FLAGS);
-	return mesh;
-}
-
-void VoxelMesherTransvoxel::set_texturing_mode(TexturingMode mode) {
-	if (mode != _texture_mode) {
-		_texture_mode = mode;
-		emit_changed();
-	}
-}
-
-VoxelMesherTransvoxel::TexturingMode VoxelMesherTransvoxel::get_texturing_mode() const {
-	return _texture_mode;
-}
-
-void VoxelMesherTransvoxel::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"),
-			&VoxelMesherTransvoxel::build_transition_mesh);
-
-	ClassDB::bind_method(D_METHOD("set_texturing_mode", "mode"), &VoxelMesherTransvoxel::set_texturing_mode);
-	ClassDB::bind_method(D_METHOD("get_texturing_mode"), &VoxelMesherTransvoxel::get_texturing_mode);
-
-	ADD_PROPERTY(PropertyInfo(
-						 Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
-			"set_texturing_mode", "get_texturing_mode");
-
-	BIND_ENUM_CONSTANT(TEXTURES_NONE);
-	BIND_ENUM_CONSTANT(TEXTURES_BLEND_4_OVER_16);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Utility functions
-namespace {
+namespace Transvoxel {
 
 static const float TRANSITION_CELL_SCALE = 0.25;
 
@@ -371,14 +217,12 @@ inline Vector3 get_corner_gradient(const Vector3i &p, const ArraySlice<uint8_t> 
 	return Vector3(nx - px, ny - py, nz - pz);
 }
 
-inline VoxelMesherTransvoxelInternal::TexturingData decode_texturing_data(
-		const VoxelBuffer &voxels, const Vector3i pos) {
-
+inline TexturingData decode_texturing_data(const VoxelBuffer &voxels, const Vector3i pos) {
 	// TODO Use different code depending on depth
 	const uint16_t indices = voxels.get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);
 	const uint16_t weights = voxels.get_voxel(pos, VoxelBuffer::CHANNEL_WEIGHTS);
 
-	VoxelMesherTransvoxelInternal::TexturingData d;
+	TexturingData d;
 
 	d.indices[0] = indices & 0x0f;
 	d.indices[1] = (indices >> 4) & 0x0f;
@@ -393,33 +237,12 @@ inline VoxelMesherTransvoxelInternal::TexturingData decode_texturing_data(
 	return d;
 }
 
-/*template <typename I, typename V>
-inline void sort_by_index(I &i0, V &v0, I &i1, V &v1) {
-	if (i0 > i1) {
-		std::swap(i0, i1);
-		std::swap(w0, w1);
-	}
-}*/
-
-/*inline void sort_texture_indices(VoxelMesherTransvoxelInternal::TexturingData &td) {
-	// TODO maybe we could require this sorting to be done up front?
-	sort_by_index(td.indices[0], td.weights[0], td.indices[1], td.weights[1]);
-	sort_by_index(td.indices[2], td.weights[2], td.indices[3], td.weights[3]);
-	sort_by_index(td.indices[0], td.weights[0], td.indices[2], td.weights[2]);
-	sort_by_index(td.indices[1], td.weights[1], td.indices[3], td.weights[3]);
-	sort_by_index(td.indices[1], td.weights[1], td.indices[2], td.weights[2]);
-}*/
-
 inline uint32_t pack_bytes(const FixedArray<uint8_t, 4> &a) {
 	return (a[0] | (a[1] << 8) | (a[2] << 16) | (a[3] << 24));
 }
 
-// inline unsigned int pack_bytes(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
-// 	return (a | (b << 8) | (c << 16) | (d << 24));
-// }
-
 void add_texture_data(std::vector<Vector2> &uv, unsigned int packed_indices,
-		FixedArray<uint8_t, VoxelMesherTransvoxelInternal::MAX_TEXTURE_BLENDS> weights) {
+		FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights) {
 	struct IntUV {
 		uint32_t x;
 		uint32_t y;
@@ -431,39 +254,6 @@ void add_texture_data(std::vector<Vector2> &uv, unsigned int packed_indices,
 	iuv.x = packed_indices;
 	iuv.y = pack_bytes(weights);
 }
-
-/*void fill_packed_texture_data(std::vector<Vector2> &uv,
-		const std::vector<VoxelMesherTransvoxelInternal::TexturingData> &src_texturing_data,
-		FixedArray<uint8_t, 4> texture_indices) {
-
-	const unsigned int i0 = texture_indices[0];
-	const unsigned int i1 = texture_indices[1];
-	const unsigned int i2 = texture_indices[2];
-	const unsigned int i3 = texture_indices[3];
-
-	const uint32_t highest_indices_packed = (i0 | (i1 << 8) | (i2 << 16) | (i3 << 24));
-
-	struct IntUV {
-		uint32_t x;
-		uint32_t y;
-	};
-
-	uv.resize(src_texturing_data.size());
-	ArraySlice<IntUV> iuv = to_slice(uv).reinterpret_cast_to<IntUV>();
-
-	// Write texture blending info into the mesh
-	// TODO We are wasting space here because Godot only allows us to put float data in here.
-	// If we compress the UV arrays we'd loose the precision needed to represent integers
-	for (unsigned int i = 0; i < iuv.size(); ++i) {
-		iuv[i].x = highest_indices_packed;
-		const VoxelMesherTransvoxelInternal::TexturingData &td = src_texturing_data[i];
-		const uint32_t w0 = td.weights[i0];
-		const uint32_t w1 = td.weights[i1];
-		const uint32_t w2 = td.weights[i2];
-		const uint32_t w3 = td.weights[i3];
-		iuv[i].y = w0 | (w1 << 8) | (w2 << 16) | (w3 << 24);
-	}
-}*/
 
 struct IndexAndWeight {
 	unsigned int index;
@@ -479,16 +269,16 @@ struct IndexAndWeightComparator {
 template <unsigned int NVoxels>
 struct CellTextureDatas {
 	unsigned int packed_indices = 0;
-	FixedArray<uint8_t, VoxelMesherTransvoxelInternal::MAX_TEXTURE_BLENDS> indices;
-	FixedArray<FixedArray<uint8_t, VoxelMesherTransvoxelInternal::MAX_TEXTURE_BLENDS>, NVoxels> weights;
+	FixedArray<uint8_t, MAX_TEXTURE_BLENDS> indices;
+	FixedArray<FixedArray<uint8_t, MAX_TEXTURE_BLENDS>, NVoxels> weights;
 };
 
 template <unsigned int NVoxels>
 CellTextureDatas<NVoxels> select_textures(ArraySlice<const Vector3i> voxel_positions, const VoxelBuffer &voxels) {
 	VOXEL_PROFILE_SCOPE();
 
-	FixedArray<FixedArray<uint8_t, VoxelMesherTransvoxelInternal::MAX_TEXTURES>, NVoxels> cell_texture_weights_temp;
-	FixedArray<IndexAndWeight, VoxelMesherTransvoxelInternal::MAX_TEXTURES> indexed_weight_sums;
+	FixedArray<FixedArray<uint8_t, MAX_TEXTURES>, NVoxels> cell_texture_weights_temp;
+	FixedArray<IndexAndWeight, MAX_TEXTURES> indexed_weight_sums;
 
 	// Find 4 most-used indices in voxels
 	for (unsigned int i = 0; i < indexed_weight_sums.size(); ++i) {
@@ -496,9 +286,9 @@ CellTextureDatas<NVoxels> select_textures(ArraySlice<const Vector3i> voxel_posit
 	}
 	for (unsigned int ci = 0; ci < voxel_positions.size(); ++ci) {
 		const Vector3i p = voxel_positions[ci];
-		const VoxelMesherTransvoxelInternal::TexturingData td = decode_texturing_data(voxels, p);
+		const TexturingData td = decode_texturing_data(voxels, p);
 
-		FixedArray<uint8_t, VoxelMesherTransvoxelInternal::MAX_TEXTURES> &weights_temp = cell_texture_weights_temp[ci];
+		FixedArray<uint8_t, MAX_TEXTURES> &weights_temp = cell_texture_weights_temp[ci];
 		weights_temp.fill(0);
 
 		for (unsigned int j = 0; j < td.indices.size(); ++j) {
@@ -533,7 +323,7 @@ CellTextureDatas<NVoxels> select_textures(ArraySlice<const Vector3i> voxel_posit
 
 	// Remap weights to follow the indices we selected
 	for (unsigned int ci = 0; ci < cell_texture_weights_temp.size(); ++ci) {
-		const FixedArray<uint8_t, VoxelMesherTransvoxelInternal::MAX_TEXTURES> &src_weights =
+		const FixedArray<uint8_t, MAX_TEXTURES> &src_weights =
 				cell_texture_weights_temp[ci];
 
 		FixedArray<uint8_t, 4> &dst_weights = cell_textures.weights[ci];
@@ -547,10 +337,8 @@ CellTextureDatas<NVoxels> select_textures(ArraySlice<const Vector3i> voxel_posit
 	return cell_textures;
 }
 
-} // namespace
-
-void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, unsigned int sdf_channel, int lod_index,
-		TexturingMode texturing_mode, FixedArray<uint8_t, 4> &out_texture_indices) {
+void build_internal(const VoxelBuffer &voxels, unsigned int sdf_channel, int lod_index, TexturingMode texturing_mode,
+		Cache &cache, MeshArrays &output) {
 	// From this point, we expect the buffer to contain allocated data in the SDF channel.
 	// This function is commented with quotes from the Transvoxel paper.
 
@@ -565,7 +353,7 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 	const Vector3i block_size_scaled = block_size << lod_index;
 
 	// Prepare vertex reuse cache
-	reset_reuse_cells(block_size_with_padding);
+	cache.reset_reuse_cells(block_size_with_padding);
 
 	// We iterate 2x2 voxel groups, which the paper calls "cells".
 	// We also reach one voxel further to compute normals, so we adjust the iterated area
@@ -624,7 +412,7 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 				case_code |= (sign_f(cell_samples_sdf[6]) << 6);
 				case_code |= (sign_f(cell_samples_sdf[7]) << 7);
 
-				ReuseCell &current_reuse_cell = get_reuse_cell(pos);
+				ReuseCell &current_reuse_cell = cache.get_reuse_cell(pos);
 				// Mark as unusable for now
 				// TODO Is this really needed?
 				current_reuse_cell.vertices[0] = -1;
@@ -658,9 +446,9 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 						((pos.y > min_pos.y ? 1 : 0) << 1) |
 						((pos.z > min_pos.z ? 1 : 0) << 2);
 
-				const uint8_t regular_cell_class_index = Transvoxel::get_regular_cell_class(case_code);
-				const Transvoxel::RegularCellData &regular_cell_data =
-						Transvoxel::get_regular_cell_data(regular_cell_class_index);
+				const uint8_t regular_cell_class_index = Tables::get_regular_cell_class(case_code);
+				const Tables::RegularCellData &regular_cell_data =
+						Tables::get_regular_cell_data(regular_cell_class_index);
 				const uint8_t triangle_count = regular_cell_data.geometryCounts & 0x0f;
 				const uint8_t vertex_count = (regular_cell_data.geometryCounts & 0xf0) >> 4;
 
@@ -673,7 +461,7 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 					// The case index maps to a list of 16-bit codes providing information about the edges on which the
 					// vertices lie. The low byte of each 16-bit code contains the corner indexes of the edge’s
 					// endpoints in one nibble each, and the high byte contains the mapping code shown in Figure 3.8(b)
-					const unsigned short rvd = Transvoxel::get_regular_vertex_data(case_code, i);
+					const unsigned short rvd = Tables::get_regular_vertex_data(case_code, i);
 					const uint8_t edge_code_low = rvd & 0xff;
 					const uint8_t edge_code_high = (rvd >> 8) & 0xff;
 
@@ -725,7 +513,7 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 
 						if (present) {
 							const Vector3i cache_pos = pos + dir_to_prev_vec(reuse_dir);
-							const ReuseCell &prev_cell = get_reuse_cell(cache_pos);
+							const ReuseCell &prev_cell = cache.get_reuse_cell(cache_pos);
 							if (prev_cell.packed_texture_indices == cell_textures.packed_indices) {
 								// Will reuse a previous vertice
 								cell_vertex_indices[i] = prev_cell.vertices[reuse_vertex_index];
@@ -768,7 +556,7 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 											   << 6;
 							}
 
-							cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
+							cell_vertex_indices[i] = output.add_vertex(primaryf, normal, border_mask, secondary);
 
 							if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 								const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights0 = cell_textures.weights[v0];
@@ -778,7 +566,7 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 									weights[i] = static_cast<uint8_t>(
 											clamp(Math::lerp(weights0[i], weights1[i], t1), 0.f, 255.f));
 								}
-								add_texture_data(_output.uv, cell_textures.packed_indices, weights);
+								add_texture_data(output.uv, cell_textures.packed_indices, weights);
 							}
 
 							if (reuse_dir & 8) {
@@ -806,11 +594,11 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 							border_mask |= get_border_mask(p1, block_size_scaled) << 6;
 						}
 
-						cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
+						cell_vertex_indices[i] = output.add_vertex(primaryf, normal, border_mask, secondary);
 
 						if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 							const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights1 = cell_textures.weights[v1];
-							add_texture_data(_output.uv, cell_textures.packed_indices, weights1);
+							add_texture_data(output.uv, cell_textures.packed_indices, weights1);
 						}
 
 						current_reuse_cell.vertices[0] = cell_vertex_indices[i];
@@ -829,7 +617,7 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 						// Note: the only difference with similar code above is that we take vertice 0 in the `else`
 						if (present) {
 							const Vector3i cache_pos = pos + dir_to_prev_vec(reuse_dir);
-							const ReuseCell &prev_cell = get_reuse_cell(cache_pos);
+							const ReuseCell &prev_cell = cache.get_reuse_cell(cache_pos);
 							cell_vertex_indices[i] = prev_cell.vertices[0];
 						}
 
@@ -854,11 +642,11 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 								border_mask |= get_border_mask(primary, block_size_scaled) << 6;
 							}
 
-							cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
+							cell_vertex_indices[i] = output.add_vertex(primaryf, normal, border_mask, secondary);
 
 							if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 								const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights = cell_textures.weights[vi];
-								add_texture_data(_output.uv, cell_textures.packed_indices, weights);
+								add_texture_data(output.uv, cell_textures.packed_indices, weights);
 							}
 						}
 					}
@@ -868,7 +656,7 @@ void VoxelMesherTransvoxelInternal::build_internal(const VoxelBuffer &voxels, un
 				for (int t = 0; t < triangle_count; ++t) {
 					for (int i = 0; i < 3; ++i) {
 						const int index = cell_vertex_indices[regular_cell_data.get_vertex_index(t * 3 + i)];
-						_output.indices.push_back(index);
+						output.indices.push_back(index);
 					}
 				}
 
@@ -992,9 +780,8 @@ inline void get_face_axes(int &ax, int &ay, int dir) {
 	}
 }
 
-void VoxelMesherTransvoxelInternal::build_transition(
-		const VoxelBuffer &p_voxels, unsigned int sdf_channel, int direction, int lod_index,
-		TexturingMode texturing_mode, const FixedArray<uint8_t, 4> &texture_indices) {
+void build_transition(const VoxelBuffer &p_voxels, unsigned int sdf_channel, int direction, int lod_index,
+		TexturingMode texturing_mode, Cache &cache, MeshArrays &output) {
 
 	// From this point, we expect the buffer to contain allocated data.
 
@@ -1006,7 +793,7 @@ void VoxelMesherTransvoxelInternal::build_transition(
 	ERR_FAIL_COND(block_size_with_padding.y < 3);
 	ERR_FAIL_COND(block_size_with_padding.z < 3);
 
-	reset_reuse_cells_2d(block_size_with_padding);
+	cache.reset_reuse_cells_2d(block_size_with_padding);
 
 	// This part works in "face space", which is 2D along local X and Y axes.
 	// In this space, -Z points towards the half resolution cells, while +Z points towards full-resolution cells.
@@ -1091,7 +878,7 @@ void VoxelMesherTransvoxelInternal::build_transition(
 			case_code |= (sign_f(cell_samples[3]) << 7);
 			case_code |= (sign_f(cell_samples[4]) << 8);
 
-			ReuseTransitionCell &current_reuse_cell = get_reuse_cell_2d(fx, fy);
+			ReuseTransitionCell &current_reuse_cell = cache.get_reuse_cell_2d(fx, fy);
 			// Mark current cell unused for now
 			current_reuse_cell.vertices[0] = -1;
 
@@ -1141,11 +928,11 @@ void VoxelMesherTransvoxelInternal::build_transition(
 				cell_positions[i] = (cell_positions[i] - min_pos) << lod_index;
 			}
 
-			const uint8_t cell_class = Transvoxel::get_transition_cell_class(case_code);
+			const uint8_t cell_class = Tables::get_transition_cell_class(case_code);
 
 			CRASH_COND((cell_class & 0x7f) > 55);
 
-			const Transvoxel::TransitionCellData cell_data = Transvoxel::get_transition_cell_data(cell_class & 0x7f);
+			const Tables::TransitionCellData cell_data = Tables::get_transition_cell_data(cell_class & 0x7f);
 			const bool flip_triangles = ((cell_class & 128) != 0);
 
 			const unsigned int vertex_count = cell_data.GetVertexCount();
@@ -1157,7 +944,7 @@ void VoxelMesherTransvoxelInternal::build_transition(
 			const uint8_t cell_border_mask = get_border_mask(cell_positions[0], block_size_scaled);
 
 			for (unsigned int i = 0; i < vertex_count; ++i) {
-				const uint16_t edge_code = Transvoxel::get_transition_vertex_data(case_code, i);
+				const uint16_t edge_code = Tables::get_transition_vertex_data(case_code, i);
 				const uint8_t index_vertex_a = (edge_code >> 4) & 0xf;
 				const uint8_t index_vertex_b = (edge_code & 0xf);
 
@@ -1202,7 +989,7 @@ void VoxelMesherTransvoxelInternal::build_transition(
 						// The previous cell is available. Retrieve the cached cell
 						// from which to retrieve the reused vertex index from.
 						const ReuseTransitionCell &prev =
-								get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
+								cache.get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
 						// Reuse the vertex index from the previous cell.
 						cell_vertex_indices[i] = prev.vertices[vertex_index_to_reuse_or_create];
 					}
@@ -1238,7 +1025,7 @@ void VoxelMesherTransvoxelInternal::build_transition(
 							border_mask = 0;
 						}
 
-						cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
+						cell_vertex_indices[i] = output.add_vertex(primaryf, normal, border_mask, secondary);
 
 						if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 							const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights0 = cell_textures.weights[index_vertex_a];
@@ -1248,12 +1035,12 @@ void VoxelMesherTransvoxelInternal::build_transition(
 								weights[i] = static_cast<uint8_t>(
 										clamp(Math::lerp(weights0[i], weights1[i], t1), 0.f, 255.f));
 							}
-							add_texture_data(_output.uv, cell_textures.packed_indices, weights);
+							add_texture_data(output.uv, cell_textures.packed_indices, weights);
 						}
 
 						if (reuse_direction & 0x8) {
 							// The vertex can be re-used later
-							ReuseTransitionCell &r = get_reuse_cell_2d(fx, fy);
+							ReuseTransitionCell &r = cache.get_reuse_cell_2d(fx, fy);
 							r.vertices[vertex_index_to_reuse_or_create] = cell_vertex_indices[i];
 						}
 					}
@@ -1265,7 +1052,7 @@ void VoxelMesherTransvoxelInternal::build_transition(
 
 					const uint8_t index_vertex = (t == 0 ? index_vertex_b : index_vertex_a);
 					CRASH_COND(index_vertex >= 13);
-					const uint8_t corner_data = Transvoxel::get_transition_corner_data(index_vertex);
+					const uint8_t corner_data = Tables::get_transition_corner_data(index_vertex);
 					const uint8_t vertex_index_to_reuse_or_create = (corner_data & 0xf);
 					const uint8_t reuse_direction = ((corner_data >> 4) & 0xf);
 
@@ -1275,7 +1062,7 @@ void VoxelMesherTransvoxelInternal::build_transition(
 						// The previous cell is available. Retrieve the cached cell
 						// from which to retrieve the reused vertex index from.
 						const ReuseTransitionCell &prev =
-								get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
+								cache.get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
 						// Reuse the vertex index from the previous cell.
 						cell_vertex_indices[i] = prev.vertices[vertex_index_to_reuse_or_create];
 					}
@@ -1299,15 +1086,15 @@ void VoxelMesherTransvoxelInternal::build_transition(
 							border_mask = 0;
 						}
 
-						cell_vertex_indices[i] = emit_vertex(primaryf, normal, border_mask, secondary);
+						cell_vertex_indices[i] = output.add_vertex(primaryf, normal, border_mask, secondary);
 
 						if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 							const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights = cell_textures.weights[index_vertex];
-							add_texture_data(_output.uv, cell_textures.packed_indices, weights);
+							add_texture_data(output.uv, cell_textures.packed_indices, weights);
 						}
 
 						// We are on a corner so the vertex will be re-usable later
-						ReuseTransitionCell &r = get_reuse_cell_2d(fx, fy);
+						ReuseTransitionCell &r = cache.get_reuse_cell_2d(fx, fy);
 						r.vertices[vertex_index_to_reuse_or_create] = cell_vertex_indices[i];
 					}
 				}
@@ -1318,13 +1105,13 @@ void VoxelMesherTransvoxelInternal::build_transition(
 
 			for (unsigned int ti = 0; ti < triangle_count; ++ti) {
 				if (flip_triangles) {
-					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3)]);
-					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 1)]);
-					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 2)]);
+					output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3)]);
+					output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 1)]);
+					output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 2)]);
 				} else {
-					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 2)]);
-					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 1)]);
-					_output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3)]);
+					output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 2)]);
+					output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3 + 1)]);
+					output.indices.push_back(cell_vertex_indices[cell_data.get_vertex_index(ti * 3)]);
 				}
 			}
 
@@ -1332,50 +1119,171 @@ void VoxelMesherTransvoxelInternal::build_transition(
 	} // for y
 }
 
-void VoxelMesherTransvoxelInternal::reset_reuse_cells(Vector3i block_size) {
-	_block_size = block_size;
-	unsigned int deck_area = block_size.x * block_size.y;
-	for (unsigned int i = 0; i < _cache.size(); ++i) {
-		std::vector<ReuseCell> &deck = _cache[i];
-		deck.resize(deck_area);
-		for (size_t j = 0; j < deck.size(); ++j) {
-			deck[j].vertices.fill(-1);
+/*void build_internal(const VoxelBuffer &voxels, unsigned int sdf_channel, int lod_index,
+		TexturingMode texturing_mode, FixedArray<uint8_t, 4> &out_texture_indices);
+void build_transition(const VoxelBuffer &voxels, unsigned int sdf_channel, int direction, int lod_index,
+		TexturingMode texturing_mode, const FixedArray<uint8_t, 4> &texture_indices);
+
+const MeshArrays &get_output() const {
+	return _output;
+}
+
+void reset_reuse_cells(Vector3i block_size);
+void reset_reuse_cells_2d(Vector3i block_size);
+ReuseCell &get_reuse_cell(Vector3i pos);
+ReuseTransitionCell &get_reuse_cell_2d(int x, int y);
+int emit_vertex(Vector3 primary, Vector3 normal, uint16_t border_mask, Vector3 secondary);*/
+
+} // namespace Transvoxel
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
+	set_padding(Transvoxel::MIN_PADDING, Transvoxel::MAX_PADDING);
+}
+
+VoxelMesherTransvoxel::~VoxelMesherTransvoxel() {
+}
+
+Ref<Resource> VoxelMesherTransvoxel::duplicate(bool p_subresources) const {
+	return memnew(VoxelMesherTransvoxel);
+}
+
+int VoxelMesherTransvoxel::get_used_channels_mask() const {
+	return (1 << VoxelBuffer::CHANNEL_SDF);
+}
+
+void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const Transvoxel::MeshArrays &src) {
+	PoolVector<Vector3> vertices;
+	PoolVector<Vector3> normals;
+	PoolVector<Color> extra;
+	PoolVector<Vector2> uv;
+	PoolVector<int> indices;
+
+	raw_copy_to(vertices, src.vertices);
+	raw_copy_to(extra, src.extra);
+	raw_copy_to(indices, src.indices);
+
+	arrays.resize(Mesh::ARRAY_MAX);
+	arrays[Mesh::ARRAY_VERTEX] = vertices;
+	if (src.normals.size() != 0) {
+		raw_copy_to(normals, src.normals);
+		arrays[Mesh::ARRAY_NORMAL] = normals;
+	}
+	if (src.uv.size() != 0) {
+		raw_copy_to(uv, src.uv);
+		arrays[Mesh::ARRAY_TEX_UV] = uv;
+	}
+	arrays[Mesh::ARRAY_COLOR] = extra;
+	arrays[Mesh::ARRAY_INDEX] = indices;
+}
+
+void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+	VOXEL_PROFILE_SCOPE();
+
+	static thread_local Transvoxel::Cache s_cache;
+	static thread_local Transvoxel::MeshArrays s_mesh_arrays;
+
+	const int channel = VoxelBuffer::CHANNEL_SDF;
+
+	// Initialize dynamic memory:
+	// These vectors are re-used.
+	// We don't know in advance how much geometry we are going to produce.
+	// Once capacity is big enough, no more memory should be allocated
+	s_mesh_arrays.clear();
+
+	const VoxelBuffer &voxels = input.voxels;
+	if (voxels.is_uniform(channel)) {
+		// There won't be anything to polygonize since the SDF has no variations, so it can't cross the isolevel
+		return;
+	}
+
+	// const uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+
+	Transvoxel::build_internal(voxels, channel, input.lod, static_cast<Transvoxel::TexturingMode>(_texture_mode),
+			s_cache, s_mesh_arrays);
+
+	if (s_mesh_arrays.vertices.size() == 0) {
+		// The mesh can be empty
+		return;
+	}
+
+	Array regular_arrays;
+	fill_surface_arrays(regular_arrays, s_mesh_arrays);
+	output.surfaces.push_back(regular_arrays);
+
+	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+		VOXEL_PROFILE_SCOPE();
+		s_mesh_arrays.clear();
+
+		Transvoxel::build_transition(voxels, channel, dir, input.lod,
+				static_cast<Transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays);
+
+		if (s_mesh_arrays.vertices.size() == 0) {
+			continue;
 		}
+
+		Array transition_arrays;
+		fill_surface_arrays(transition_arrays, s_mesh_arrays);
+		output.transition_surfaces[dir].push_back(transition_arrays);
+	}
+
+	// const uint64_t time_spent = OS::get_singleton()->get_ticks_usec() - time_before;
+	// print_line(String("VoxelMesherTransvoxel spent {0} us").format(varray(time_spent)));
+
+	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
+	output.compression_flags = MESH_COMPRESSION_FLAGS;
+}
+
+// TODO For testing at the moment
+Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> voxels, int direction) {
+	static thread_local Transvoxel::Cache s_cache;
+	static thread_local Transvoxel::MeshArrays s_mesh_arrays;
+
+	s_mesh_arrays.clear();
+
+	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
+
+	// TODO We need to output transition meshes through the generic interface, they are part of the result
+	// For now we can't support proper texture indices in this specific case
+	Transvoxel::build_transition(**voxels, VoxelBuffer::CHANNEL_SDF, direction, 0,
+			static_cast<Transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays);
+
+	Ref<ArrayMesh> mesh;
+
+	if (s_mesh_arrays.vertices.size() == 0) {
+		return mesh;
+	}
+
+	Array arrays;
+	fill_surface_arrays(arrays, s_mesh_arrays);
+	mesh.instance();
+	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays, Array(), MESH_COMPRESSION_FLAGS);
+	return mesh;
+}
+
+void VoxelMesherTransvoxel::set_texturing_mode(TexturingMode mode) {
+	if (mode != _texture_mode) {
+		_texture_mode = mode;
+		emit_changed();
 	}
 }
 
-void VoxelMesherTransvoxelInternal::reset_reuse_cells_2d(Vector3i block_size) {
-	for (unsigned int i = 0; i < _cache_2d.size(); ++i) {
-		std::vector<ReuseTransitionCell> &row = _cache_2d[i];
-		row.resize(block_size.x);
-		for (size_t j = 0; j < row.size(); ++j) {
-			row[j].vertices.fill(-1);
-		}
-	}
+VoxelMesherTransvoxel::TexturingMode VoxelMesherTransvoxel::get_texturing_mode() const {
+	return _texture_mode;
 }
 
-VoxelMesherTransvoxelInternal::ReuseCell &VoxelMesherTransvoxelInternal::get_reuse_cell(Vector3i pos) {
-	unsigned int j = pos.z & 1;
-	unsigned int i = pos.y * _block_size.y + pos.x;
-	CRASH_COND(i >= _cache[j].size());
-	return _cache[j][i];
-}
+void VoxelMesherTransvoxel::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"),
+			&VoxelMesherTransvoxel::build_transition_mesh);
 
-VoxelMesherTransvoxelInternal::ReuseTransitionCell &VoxelMesherTransvoxelInternal::get_reuse_cell_2d(int x, int y) {
-	unsigned int j = y & 1;
-	unsigned int i = x;
-	CRASH_COND(i >= _cache_2d[j].size());
-	return _cache_2d[j][i];
-}
+	ClassDB::bind_method(D_METHOD("set_texturing_mode", "mode"), &VoxelMesherTransvoxel::set_texturing_mode);
+	ClassDB::bind_method(D_METHOD("get_texturing_mode"), &VoxelMesherTransvoxel::get_texturing_mode);
 
-int VoxelMesherTransvoxelInternal::emit_vertex(
-		Vector3 primary, Vector3 normal, uint16_t border_mask, Vector3 secondary) {
+	ADD_PROPERTY(PropertyInfo(
+						 Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
+			"set_texturing_mode", "get_texturing_mode");
 
-	int vi = _output.vertices.size();
-
-	_output.vertices.push_back(primary);
-	_output.normals.push_back(normal);
-	_output.extra.push_back(Color(secondary.x, secondary.y, secondary.z, border_mask));
-
-	return vi;
+	BIND_ENUM_CONSTANT(TEXTURES_NONE);
+	BIND_ENUM_CONSTANT(TEXTURES_BLEND_4_OVER_16);
 }
