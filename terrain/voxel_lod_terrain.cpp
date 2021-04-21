@@ -969,7 +969,7 @@ void VoxelLodTerrain::_process(float delta) {
 		// Ignore largest lod because it can extend a little beyond due to the view distance setting.
 		// Instead, those blocks are unloaded by the octree forest management.
 		// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
-		for (unsigned int lod_index = get_lod_count() - 2; lod_index >= 0; --lod_index) {
+		for (int lod_index = static_cast<int>(get_lod_count()) - 2; lod_index >= 0; --lod_index) {
 			VOXEL_PROFILE_SCOPE();
 			Lod &lod = _lods[lod_index];
 
@@ -1053,7 +1053,7 @@ void VoxelLodTerrain::_process(float delta) {
 		// Ignore largest lod because it can extend a little beyond due to the view distance setting.
 		// Instead, those blocks are unloaded by the octree forest management.
 		// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
-		for (unsigned int lod_index = get_lod_count() - 2; lod_index >= 0; --lod_index) {
+		for (int lod_index = static_cast<int>(get_lod_count()) - 2; lod_index >= 0; --lod_index) {
 			VOXEL_PROFILE_SCOPE();
 			Lod &lod = _lods[lod_index];
 
