@@ -113,6 +113,16 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	}
 }
 
+inline uint16_t pack_4bit_ints(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+#ifdef DEBUG_ENABLED
+	ERR_FAIL_COND_V(a > 0xf, 0);
+	ERR_FAIL_COND_V(b > 0xf, 0);
+	ERR_FAIL_COND_V(c > 0xf, 0);
+	ERR_FAIL_COND_V(d > 0xf, 0);
+#endif
+	return a | (b << 4) | (c << 8) | (d << 12);
+}
+
 } // namespace
 
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Data2,Data3,Data4,Data5,Data6,Data7";
@@ -125,6 +135,12 @@ VoxelBuffer::VoxelBuffer() {
 	// 16-bit is better on average to handle large worlds
 	_channels[CHANNEL_SDF].depth = VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH;
 	_channels[CHANNEL_SDF].defval = 0xffff;
+
+	_channels[CHANNEL_INDICES].depth = VoxelBuffer::DEPTH_16_BIT;
+	_channels[CHANNEL_INDICES].defval = pack_4bit_ints(0, 1, 2, 3);
+
+	_channels[CHANNEL_WEIGHTS].depth = VoxelBuffer::DEPTH_16_BIT;
+	_channels[CHANNEL_WEIGHTS].defval = pack_4bit_ints(15, 0, 0, 0);
 }
 
 VoxelBuffer::~VoxelBuffer() {
@@ -812,7 +828,6 @@ void VoxelBuffer::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Rect3i 
 			// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
 			// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
 			// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
-
 		}
 		elem = elem->next();
 	}
@@ -942,8 +957,8 @@ void VoxelBuffer::_bind_methods() {
 	BIND_ENUM_CONSTANT(CHANNEL_TYPE);
 	BIND_ENUM_CONSTANT(CHANNEL_SDF);
 	BIND_ENUM_CONSTANT(CHANNEL_COLOR);
-	BIND_ENUM_CONSTANT(CHANNEL_DATA3);
-	BIND_ENUM_CONSTANT(CHANNEL_DATA4);
+	BIND_ENUM_CONSTANT(CHANNEL_INDICES);
+	BIND_ENUM_CONSTANT(CHANNEL_WEIGHTS);
 	BIND_ENUM_CONSTANT(CHANNEL_DATA5);
 	BIND_ENUM_CONSTANT(CHANNEL_DATA6);
 	BIND_ENUM_CONSTANT(CHANNEL_DATA7);

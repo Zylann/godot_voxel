@@ -127,4 +127,15 @@ ArraySlice<T> to_slice(FixedArray<T, N> &a, unsigned int count) {
 	return ArraySlice<T>(a.data(), count);
 }
 
+template <typename T, unsigned int N>
+ArraySlice<const T> to_slice_const(const FixedArray<T, N> &a, unsigned int count) {
+	CRASH_COND(count > a.size());
+	return ArraySlice<const T>(a.data(), count);
+}
+
+template <typename T, unsigned int N>
+ArraySlice<const T> to_slice(const FixedArray<T, N> &a) {
+	return ArraySlice<const T>(a.data(), 0, a.size());
+}
+
 #endif // ARRAY_SLICE_H

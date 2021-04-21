@@ -3,6 +3,7 @@
 
 #include <core/pool_vector.h>
 #include <core/vector.h>
+#include <utility>
 #include <vector>
 
 #ifdef DEBUG_ENABLED
@@ -113,6 +114,22 @@ void raw_copy_to(PoolVector<T> &to, const std::vector<T> &from) {
 	to.resize(from.size());
 	typename PoolVector<T>::Write w = to.write();
 	memcpy(w.ptr(), from.data(), from.size() * sizeof(T));
+}
+
+template <typename T>
+inline void sort(T &a, T &b) {
+	if (a > b) {
+		std::swap(a, b);
+	}
+}
+
+template <typename T>
+inline void sort(T &a, T &b, T &c, T &d) {
+	sort(a, b);
+	sort(c, d);
+	sort(a, c);
+	sort(b, d);
+	sort(b, c);
 }
 
 #endif // HEADER_VOXEL_UTILITY_H
