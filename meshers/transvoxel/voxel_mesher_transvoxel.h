@@ -1,30 +1,28 @@
 #ifndef VOXEL_MESHER_TRANSVOXEL_H
 #define VOXEL_MESHER_TRANSVOXEL_H
 
-#include "../../constants/cube_tables.h"
+//#include "../../constants/cube_tables.h"
 #include "../../util/fixed_array.h"
 #include "../voxel_mesher.h"
 #include <vector>
 
 namespace Transvoxel {
 
+// How many extra voxels are needed towards the negative axes
 static const int MIN_PADDING = 1;
+// How many extra voxels are needed towards the positive axes
 static const int MAX_PADDING = 2;
+// How many textures can be referred to in total
 static const unsigned int MAX_TEXTURES = 16;
+// How many textures can blend at once
 static const unsigned int MAX_TEXTURE_BLENDS = 4;
 
 enum TexturingMode {
 	TEXTURES_NONE,
-	//TEXTURES_BLEND_4,
 	// Blends the 4 most-represented textures in the given block, ignoring the others.
 	// Texture indices and blend factors have 4-bit precision (maximum 16 textures),
 	// and are respectively encoded in UV and UV2.
 	TEXTURES_BLEND_4_OVER_16
-};
-
-struct TexturingData {
-	FixedArray<uint8_t, MAX_TEXTURE_BLENDS> indices;
-	FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights;
 };
 
 struct MeshArrays {
