@@ -44,7 +44,9 @@ struct RegularCellData {
 	unsigned char vertexIndex[15]; // Groups of 3 indexes giving the triangulation.
 
 	inline unsigned char get_vertex_index(unsigned int i) const {
+#ifdef DEBUG_ENABLED
 		CRASH_COND(i >= 15);
+#endif
 		return vertexIndex[i];
 	}
 
@@ -66,7 +68,9 @@ struct TransitionCellData {
 	unsigned char vertexIndex[36]; // Groups of 3 indexes giving the triangulation.
 
 	inline unsigned char get_vertex_index(unsigned int i) const {
+#ifdef DEBUG_ENABLED
 		CRASH_COND(i >= 36);
+#endif
 		return vertexIndex[i];
 	}
 
@@ -104,7 +108,9 @@ const unsigned char regularCellClass[256] = {
 	0x03, 0x04, 0x04, 0x03, 0x04, 0x03, 0x0D, 0x01, 0x04, 0x0D, 0x03, 0x01, 0x03, 0x01, 0x01, 0x00
 };
 inline unsigned char get_regular_cell_class(unsigned int i) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 256);
+#endif
 	return regularCellClass[i];
 }
 
@@ -130,7 +136,9 @@ const RegularCellData regularCellData[16] = {
 	{ 0x95, { 0, 4, 5, 0, 3, 4, 0, 1, 3, 1, 2, 3, 6, 7, 8 } }
 };
 inline const RegularCellData &get_regular_cell_data(unsigned int i) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 16);
+#endif
 	return regularCellData[i];
 }
 
@@ -399,8 +407,10 @@ const unsigned short regularVertexData[256][12] = {
 	{}
 };
 inline unsigned short get_regular_vertex_data(unsigned int i, unsigned int j) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 256);
 	CRASH_COND(j >= 12);
+#endif
 	return regularVertexData[i][j];
 }
 
@@ -446,7 +456,9 @@ const unsigned char transitionCellClass[512] = {
 	0x85, 0x85, 0x8B, 0x04, 0xA6, 0x25, 0x07, 0x82, 0x84, 0x84, 0x85, 0x81, 0x04, 0x82, 0x81, 0x80
 };
 inline unsigned char get_transition_cell_class(unsigned int i) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 512);
+#endif
 	return transitionCellClass[i];
 }
 
@@ -513,7 +525,9 @@ const TransitionCellData transitionCellData[56] = {
 	{ 0xA8, { 0, 1, 5, 1, 4, 5, 1, 2, 4, 2, 3, 4, 2, 6, 3, 3, 6, 7, 0, 8, 9, 0, 5, 8 } }
 };
 inline const TransitionCellData &get_transition_cell_data(unsigned int i) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 56);
+#endif
 	return transitionCellData[i];
 }
 
@@ -524,7 +538,9 @@ const unsigned char transitionCornerData[13] = {
 	0x30, 0x21, 0x20, 0x12, 0x40, 0x82, 0x10, 0x81, 0x80, 0x37, 0x27, 0x17, 0x87
 };
 inline unsigned char get_transition_corner_data(unsigned int i) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 13);
+#endif
 	return transitionCornerData[i];
 }
 
@@ -1049,8 +1065,10 @@ const unsigned short transitionVertexData[512][12] = {
 	{}
 };
 inline unsigned short get_transition_vertex_data(unsigned int i, unsigned int j) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 512);
 	CRASH_COND(j >= 12);
+#endif
 	return transitionVertexData[i][j];
 }
 
