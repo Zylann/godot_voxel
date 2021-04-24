@@ -8,7 +8,6 @@ namespace Transvoxel {
 
 static const float TRANSITION_CELL_SCALE = 0.25;
 
-thread_local std::vector<uint16_t> s_indices_backing_buffer;
 thread_local std::vector<uint16_t> s_weights_backing_buffer;
 
 // Values considered negative have a sign bit of 1
