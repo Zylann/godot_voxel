@@ -5,6 +5,8 @@
 #endif
 
 #include "../edition/voxel_tool_buffer.h"
+#include "../util/funcs.h"
+//#include "../util/profiling.h"
 #include "voxel_buffer.h"
 
 #include <core/func_ref.h>
@@ -413,15 +415,8 @@ void VoxelBuffer::fill_f(real_t value, unsigned int channel) {
 }
 
 template <typename T>
-inline bool is_uniform(const uint8_t *p_data, uint32_t size) {
-	const T *data = (const T *)p_data;
-	const T v0 = data[0];
-	for (unsigned int i = 1; i < size; ++i) {
-		if (data[i] != v0) {
-			return false;
-		}
-	}
-	return true;
+inline bool is_uniform_b(const uint8_t *data, unsigned int item_count) {
+	return is_uniform<T>(reinterpret_cast<const T *>(data), item_count);
 }
 
 bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
@@ -438,13 +433,13 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 	// Channel isn't optimized, so must look at each voxel
 	switch (channel.depth) {
 		case DEPTH_8_BIT:
-			return ::is_uniform<uint8_t>(channel.data, volume);
+			return ::is_uniform_b<uint8_t>(channel.data, volume);
 		case DEPTH_16_BIT:
-			return ::is_uniform<uint16_t>(channel.data, volume);
+			return ::is_uniform_b<uint16_t>(channel.data, volume);
 		case DEPTH_32_BIT:
-			return ::is_uniform<uint32_t>(channel.data, volume);
+			return ::is_uniform_b<uint32_t>(channel.data, volume);
 		case DEPTH_64_BIT:
-			return ::is_uniform<uint64_t>(channel.data, volume);
+			return ::is_uniform_b<uint64_t>(channel.data, volume);
 		default:
 			CRASH_NOW();
 			break;
