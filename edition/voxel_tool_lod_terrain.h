@@ -18,6 +18,8 @@ public:
 	int get_raycast_binary_search_iterations() const;
 	void set_raycast_binary_search_iterations(int iterations);
 
+	void do_sphere(Vector3 center, float radius) override;
+
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;
 	float _get_voxel_f(Vector3i pos) const override;

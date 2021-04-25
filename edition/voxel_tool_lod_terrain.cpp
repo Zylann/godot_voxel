@@ -1,7 +1,9 @@
 #include "voxel_tool_lod_terrain.h"
 #include "../terrain/voxel_data_map.h"
 #include "../terrain/voxel_lod_terrain.h"
+#include "../util/funcs.h"
 #include "../util/voxel_raycast.h"
+#include "funcs.h"
 
 VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain, VoxelDataMap &map) :
 		_terrain(terrain), _map(&map) {
@@ -147,6 +149,42 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	}
 
 	return res;
+}
+
+void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
+	ERR_FAIL_COND(_terrain == nullptr);
+
+	if (_mode != MODE_TEXTURE_PAINT) {
+		VoxelTool::do_sphere(center, radius);
+		return;
+	}
+
+	VOXEL_PROFILE_SCOPE();
+
+	const Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+
+	if (!is_area_editable(box)) {
+		PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	VoxelDataMap &map = *_map;
+	const TextureParams &tp = _texture_params;
+
+	box.for_each_cell([&map, center, radius, &tp](Vector3i pos) {
+		const float distance = radius - pos.to_vec3().distance_to(center);
+		const float target_weight = tp.opacity * clamp(tp.sharpness * (distance / radius), 0.f, 1.f);
+		if (target_weight > 0.f) {
+			uint16_t indices = map.get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);
+			uint16_t weights = map.get_voxel(pos, VoxelBuffer::CHANNEL_WEIGHTS);
+			blend_texture(tp.index, target_weight, indices, weights);
+			// TODO Optimization: don't write back if it didn't change?
+			map.set_voxel(indices, pos, VoxelBuffer::CHANNEL_INDICES);
+			map.set_voxel(weights, pos, VoxelBuffer::CHANNEL_WEIGHTS);
+		}
+	});
+
+	_post_edit(box);
 }
 
 uint64_t VoxelToolLodTerrain::_get_voxel(Vector3i pos) const {
