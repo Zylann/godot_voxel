@@ -132,7 +132,8 @@ inline void sort(T &a, T &b, T &c, T &d) {
 	sort(b, c);
 }
 
-// Tests if POD items in an array are all the same. Better tailored for more than hundred items.
+// Tests if POD items in an array are all the same.
+// Better tailored for more than hundred items that have power-of-two size.
 template <typename Item_T>
 inline bool is_uniform(const Item_T *p_data, uint32_t item_count) {
 	const Item_T v0 = p_data[0];
@@ -142,11 +143,11 @@ inline bool is_uniform(const Item_T *p_data, uint32_t item_count) {
 		size_t a;
 		size_t b;
 		inline bool operator!=(const Bucket_T &other) const {
-			return a != other.a && b != other.b;
+			return a != other.a || b != other.b;
 		}
 	};
 
-	if (sizeof(Bucket_T) > sizeof(Item_T)) {
+	if (sizeof(Bucket_T) > sizeof(Item_T) && sizeof(Bucket_T) % sizeof(Item_T) == 0) {
 		static const unsigned int ITEMS_PER_BUCKET = sizeof(Bucket_T) / sizeof(Item_T);
 
 		// Make a reference bucket
