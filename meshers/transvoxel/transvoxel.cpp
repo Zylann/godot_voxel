@@ -339,7 +339,7 @@ void build_regular_mesh(
 	Vector3i pos;
 	for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
 		for (pos.y = min_pos.y; pos.y < max_pos.y; ++pos.y) {
-			// TODO Change iteration to be ZXY?
+			// TODO Optimization: change iteration to be ZXY? (Data is laid out with Y as deepest coordinate)
 			unsigned int data_index = Vector3i(min_pos.x, pos.y, pos.z).get_zxy_index(block_size_with_padding);
 
 			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x, data_index += block_size_with_padding.y) {
@@ -933,7 +933,7 @@ void build_transition_mesh(
 			cell_gradients[0xB] = cell_gradients[6];
 			cell_gradients[0xC] = cell_gradients[8];
 
-			// TODO Get rid of conditionals involved in face_to_block
+			// TODO Optimization: get rid of conditionals involved in face_to_block
 			cell_positions[1] = face_to_block(fx + 1, fy + 0, fz, direction, block_size_with_padding);
 			cell_positions[2] = face_to_block(fx + 2, fy + 0, fz, direction, block_size_with_padding);
 			cell_positions[3] = face_to_block(fx + 0, fy + 1, fz, direction, block_size_with_padding);
@@ -1212,6 +1212,8 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned
 		ERR_FAIL_COND_V(weights_data.size() != voxels_count, default_texture_indices_data);
 	}
 
+	// We settle data types up-front so we can get rid of abstraction layers and conditionals,
+	// which would otherwise harm performance in tight iterations
 	switch (voxels.get_channel_depth(sdf_channel)) {
 		case VoxelBuffer::DEPTH_8_BIT: {
 			ArraySlice<const uint8_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint8_t>();

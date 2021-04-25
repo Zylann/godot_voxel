@@ -76,7 +76,7 @@ inline T max(const T a, const T b, const T c, const T d, const T e, const T f, c
 
 template <typename T>
 inline T clamp(const T x, const T min_value, const T max_value) {
-	// TODO Clang can optimize a min/max implementation. Worth changing to that?
+	// TODO Optimization: clang can optimize a min/max implementation. Worth changing to that?
 	if (x < min_value) {
 		return min_value;
 	}
@@ -163,5 +163,9 @@ inline float fract(float x) {
 inline Vector3 fract(const Vector3 &p) {
 	return Vector3(fract(p.x), fract(p.y), fract(p.z));
 }
+
+// inline bool is_power_of_two(int i) {
+// 	return i & (i - 1);
+// }
 
 #endif // VOXEL_MATH_FUNCS_H

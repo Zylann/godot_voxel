@@ -60,7 +60,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	static thread_local Transvoxel::Cache s_cache;
 	static thread_local Transvoxel::MeshArrays s_mesh_arrays;
 
-	const int channel = VoxelBuffer::CHANNEL_SDF;
+	const int sdf_channel = VoxelBuffer::CHANNEL_SDF;
 
 	// Initialize dynamic memory:
 	// These vectors are re-used.
@@ -69,7 +69,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	s_mesh_arrays.clear();
 
 	const VoxelBuffer &voxels = input.voxels;
-	if (voxels.is_uniform(channel)) {
+	if (voxels.is_uniform(sdf_channel)) {
 		// There won't be anything to polygonize since the SDF has no variations, so it can't cross the isolevel
 		return;
 	}
@@ -77,7 +77,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// const uint64_t time_before = OS::get_singleton()->get_ticks_usec();
 
 	Transvoxel::DefaultTextureIndicesData default_texture_indices_data = Transvoxel::build_regular_mesh(
-			voxels, channel, input.lod, static_cast<Transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays);
+			voxels, sdf_channel, input.lod, static_cast<Transvoxel::TexturingMode>(_texture_mode), s_cache,
+			s_mesh_arrays);
 
 	if (s_mesh_arrays.vertices.size() == 0) {
 		// The mesh can be empty
@@ -92,7 +93,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		VOXEL_PROFILE_SCOPE();
 		s_mesh_arrays.clear();
 
-		Transvoxel::build_transition_mesh(voxels, channel, dir, input.lod,
+		Transvoxel::build_transition_mesh(voxels, sdf_channel, dir, input.lod,
 				static_cast<Transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays,
 				default_texture_indices_data);
 
