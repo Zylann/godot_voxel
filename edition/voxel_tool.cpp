@@ -74,6 +74,23 @@ void VoxelTool::set_sdf_scale(float s) {
 	_sdf_scale = max(s, 0.00001f);
 }
 
+void VoxelTool::set_texture_index(int ti) {
+	ERR_FAIL_INDEX(ti, 16);
+	_texture_params.index = ti;
+}
+
+int VoxelTool::get_texture_index() const {
+	return _texture_params.index;
+}
+
+void VoxelTool::set_texture_opacity(float opacity) {
+	_texture_params.opacity = clamp(opacity, 0.f, 1.f);
+}
+
+float VoxelTool::get_texture_opacity() const {
+	return _texture_params.opacity;
+}
+
 Ref<VoxelRaycastResult> VoxelTool::raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
 	ERR_PRINT("Not implemented");
 	return Ref<VoxelRaycastResult>();
@@ -276,6 +293,12 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_sdf_scale", "scale"), &VoxelTool::set_sdf_scale);
 	ClassDB::bind_method(D_METHOD("get_sdf_scale"), &VoxelTool::get_sdf_scale);
 
+	ClassDB::bind_method(D_METHOD("set_texture_index", "index"), &VoxelTool::set_texture_index);
+	ClassDB::bind_method(D_METHOD("get_texture_index"), &VoxelTool::get_texture_index);
+
+	ClassDB::bind_method(D_METHOD("set_texture_opacity", "opacity"), &VoxelTool::set_texture_opacity);
+	ClassDB::bind_method(D_METHOD("get_texture_opacity"), &VoxelTool::get_texture_opacity);
+
 	ClassDB::bind_method(D_METHOD("get_voxel", "pos"), &VoxelTool::_b_get_voxel);
 	ClassDB::bind_method(D_METHOD("get_voxel_f", "pos"), &VoxelTool::_b_get_voxel_f);
 	ClassDB::bind_method(D_METHOD("set_voxel", "pos", "v"), &VoxelTool::_b_set_voxel);
@@ -302,8 +325,11 @@ void VoxelTool::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "eraser_value"), "set_eraser_value", "get_eraser_value");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Add,Remove,Set"), "set_mode", "get_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "sdf_scale"), "set_sdf_scale", "get_sdf_scale");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "texture_index"), "set_texture_index", "get_texture_index");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "texture_opacity"), "set_texture_opacity", "get_texture_opacity");
 
 	BIND_ENUM_CONSTANT(MODE_ADD);
 	BIND_ENUM_CONSTANT(MODE_REMOVE);
 	BIND_ENUM_CONSTANT(MODE_SET);
+	BIND_ENUM_CONSTANT(MODE_TEXTURE_PAINT);
 }

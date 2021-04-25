@@ -312,6 +312,34 @@ private:
 	RWLock _rw_lock;
 };
 
+// TODO Maybe find a better place to put these functions other than global space
+
+inline FixedArray<uint8_t, 4> decode_weights(uint16_t packed_weights) {
+	FixedArray<uint8_t, 4> weights;
+	weights[0] = (packed_weights & 0x0f) << 4;
+	weights[1] = ((packed_weights >> 4) & 0x0f) << 4;
+	weights[2] = ((packed_weights >> 8) & 0x0f) << 4;
+	weights[3] = ((packed_weights >> 12) & 0x0f) << 4;
+	return weights;
+}
+
+inline FixedArray<uint8_t, 4> decode_indices(uint16_t packed_indices) {
+	FixedArray<uint8_t, 4> indices;
+	indices[0] = packed_indices & 0x0f;
+	indices[1] = (packed_indices >> 4) & 0x0f;
+	indices[2] = (packed_indices >> 8) & 0x0f;
+	indices[3] = (packed_indices >> 12) & 0x0f;
+	return indices;
+}
+
+inline uint16_t encode_indices(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+	return (a & 0xf) | ((b & 0xf) << 4) | ((c & 0xf) << 8) | ((d & 0xf) << 12);
+}
+
+inline uint16_t encode_weights(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+	return (a >> 4) | ((b >> 4) << 4) | ((c >> 4) << 8) | ((d >> 4) << 12);
+}
+
 VARIANT_ENUM_CAST(VoxelBuffer::ChannelId)
 VARIANT_ENUM_CAST(VoxelBuffer::Depth)
 VARIANT_ENUM_CAST(VoxelBuffer::Compression)

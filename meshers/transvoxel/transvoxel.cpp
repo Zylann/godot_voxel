@@ -153,29 +153,6 @@ inline Vector3 get_corner_gradient(
 	return Vector3(nx - px, ny - py, nz - pz);
 }
 
-struct TexturingData {
-	FixedArray<uint8_t, MAX_TEXTURE_BLENDS> indices;
-	FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights;
-};
-
-inline FixedArray<uint8_t, 4> decode_weights(uint16_t packed_weights) {
-	FixedArray<uint8_t, 4> weights;
-	weights[0] = (packed_weights & 0x0f) << 4;
-	weights[1] = ((packed_weights >> 4) & 0x0f) << 4;
-	weights[2] = ((packed_weights >> 8) & 0x0f) << 4;
-	weights[3] = ((packed_weights >> 12) & 0x0f) << 4;
-	return weights;
-}
-
-inline FixedArray<uint8_t, 4> decode_indices(uint16_t packed_indices) {
-	FixedArray<uint8_t, 4> indices;
-	indices[0] = packed_indices & 0x0f;
-	indices[1] = (packed_indices >> 4) & 0x0f;
-	indices[2] = (packed_indices >> 8) & 0x0f;
-	indices[3] = (packed_indices >> 12) & 0x0f;
-	return indices;
-}
-
 inline uint32_t pack_bytes(const FixedArray<uint8_t, 4> &a) {
 	return (a[0] | (a[1] << 8) | (a[2] << 16) | (a[3] << 24));
 }

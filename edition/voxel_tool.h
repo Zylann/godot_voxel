@@ -33,7 +33,8 @@ public:
 	enum Mode {
 		MODE_ADD,
 		MODE_REMOVE,
-		MODE_SET
+		MODE_SET,
+		MODE_TEXTURE_PAINT
 	};
 
 	VoxelTool();
@@ -55,6 +56,12 @@ public:
 
 	float get_sdf_scale() const;
 	void set_sdf_scale(float s);
+
+	void set_texture_index(int ti);
+	int get_texture_index() const;
+
+	void set_texture_opacity(float opacity);
+	float get_texture_opacity() const;
 
 	// TODO Methods working on a whole area must use an implementation that minimizes locking!
 
@@ -148,6 +155,15 @@ protected:
 	int _channel = 0;
 	float _sdf_scale = 1.f;
 	Mode _mode = MODE_ADD;
+
+	struct TextureParams {
+		float opacity = 1.f;
+		float sharpness = 2.f;
+		unsigned int index = 0;
+	};
+
+	// Used on smooth terrain
+	TextureParams _texture_params;
 };
 
 VARIANT_ENUM_CAST(VoxelTool::Mode)

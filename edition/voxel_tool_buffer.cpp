@@ -1,5 +1,7 @@
 #include "voxel_tool_buffer.h"
 #include "../storage/voxel_buffer.h"
+#include "../util/profiling.h"
+#include "funcs.h"
 
 VoxelToolBuffer::VoxelToolBuffer(Ref<VoxelBuffer> vb) {
 	ERR_FAIL_COND(vb.is_null());
@@ -9,6 +11,38 @@ VoxelToolBuffer::VoxelToolBuffer(Ref<VoxelBuffer> vb) {
 bool VoxelToolBuffer::is_area_editable(const Rect3i &box) const {
 	ERR_FAIL_COND_V(_buffer.is_null(), false);
 	return Rect3i(Vector3i(), _buffer->get_size()).encloses(box);
+}
+
+void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
+	ERR_FAIL_COND(_buffer.is_null());
+
+	if (_mode != MODE_TEXTURE_PAINT) {
+		VoxelTool::do_sphere(center, radius);
+		return;
+	}
+
+	VOXEL_PROFILE_SCOPE();
+
+	Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	box.clip(Rect3i(Vector3i(), _buffer->get_size()));
+
+	const TextureParams &tp = _texture_params;
+	VoxelBuffer &buffer = **_buffer;
+
+	box.for_each_cell([&buffer, center, radius, &tp](Vector3i pos) {
+		const float distance = radius - pos.to_vec3().distance_to(center);
+		const float target_weight = tp.opacity * clamp(tp.sharpness * (distance / radius), 0.f, 1.f);
+		if (target_weight > 0.f) {
+			uint16_t indices = buffer.get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);
+			uint16_t weights = buffer.get_voxel(pos, VoxelBuffer::CHANNEL_WEIGHTS);
+			blend_texture(tp.index, target_weight, indices, weights);
+			// TODO Optimization: don't write back if it didn't change?
+			buffer.set_voxel(indices, pos, VoxelBuffer::CHANNEL_INDICES);
+			buffer.set_voxel(weights, pos, VoxelBuffer::CHANNEL_WEIGHTS);
+		}
+	});
+
+	_post_edit(box);
 }
 
 uint64_t VoxelToolBuffer::_get_voxel(Vector3i pos) const {
