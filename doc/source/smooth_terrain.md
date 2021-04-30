@@ -7,17 +7,28 @@ It is possible to work with smooth-looking terrains, using signed distance field
 Signed distance fields
 -------------------------
 
+### Concept
+
+TODO 
+
+### Scaled values
+
 TODO 
 
 
 Transvoxel
 -----------
 
-TODO More information about Transvoxel
+### Definition
+
+Transvoxel is an extension of Marching Cubes that can be used to create smooth meshes from voxel data. The advantage of this algorithm is to integrate stitching of different levels of details without causing cracks, so it can be used to render very large landscapes.
+
+For more information, visit [https://transvoxel.org/](https://transvoxel.org/).
+
 
 ### Smooth stitches in vertex shader
 
-Transvoxel uses special meshes to stitch blocks of different level of detail. However the seams may still be visible as occasional sharp little steps. To smooth this out a bit, meshes produced by `VoxelMesherTransvoxel` contain extra information in their `COLOR` attribute, telling how to move vertices to smooth those steps.
+Transvoxel uses special meshes to stitch blocks of different level of detail. However the seams may still be visible as occasional sharp little steps. To smooth this out a bit, meshes produced by `VoxelMesherTransvoxel` contain extra information in their `COLOR` attribute, telling how to move vertices to smooth those steps, and make room for them in the regular part of the mesh.
 
 Create and setup a `ShaderMaterial` on your terrain, and integrate this snippet to it:
 
