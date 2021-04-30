@@ -675,9 +675,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	}
 	{
 		struct Params {
-			float c0;
-			float c1;
-			float m0;
+			// Remap can be reduced to a linear function
+			// a * x + b
+			float a;
+			float b;
 		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_REMAP];
 		t.name = "Remap";
@@ -694,23 +695,32 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const float max0 = ctx.get_param(1).operator float();
 			const float min1 = ctx.get_param(2).operator float();
 			const float max1 = ctx.get_param(3).operator float();
-			p.c0 = -min0;
-			p.m0 = (max1 - min1) * (Math::is_equal_approx(max0, min0) ? 99999.f : 1.f / (max0 - min0));
-			p.c1 = min1;
+			// min1 + (max1 - min1) * (x - min0) / (max0 - min0)
+			// min1 + (max1 - min1) * (x - min0) * (1/(max0 - min0))
+			// min1 +       A       * (x - min0) *        B
+			// min1 + A * B * (x - min0)
+			// min1 + A * B * x - A * B * min0
+			// min1 +   C   * x -   C   * min0
+			// min1 - C * min0 + C * x
+			// (min1 - C * min0) + C * x
+			//         b         + a * x
+			// a * x + b
+			p.a = (max1 - min1) * (Math::is_equal_approx(max0, min0) ? 999999.f : 1.f / (max0 - min0));
+			p.b = min1 - p.a * min0;
 			ctx.set_params(p);
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
-			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
+			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const Params p = ctx.get_params<Params>();
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = (a.data[i] - p.c0) * p.m0 + p.c1;
+				out.data[i] = p.a * x.data[i] + p.b;
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
-			const Interval a = ctx.get_input(0);
+			const Interval x = ctx.get_input(0);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, (a - p.c0) * p.m0 + p.c1);
+			ctx.set_output(0, p.a * x + p.b);
 		};
 	}
 	{
