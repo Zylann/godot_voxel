@@ -691,7 +691,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	ERR_FAIL_COND(!_graph->is_good());
 
 	const AABB aabb = _range_analysis_dialog->get_aabb();
-	_graph->analyze_range(aabb.position, aabb.position + aabb.size, true, true);
+	_graph->debug_analyze_range(aabb.position, aabb.position + aabb.size, true);
 
 	const VoxelGraphRuntime::State &state = _graph->get_last_state_from_current_thread();
 
@@ -727,7 +727,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	}
 
 	// Highlight only nodes that will actually run
-	ArraySlice<const int> execution_map = state.get_debug_execution_map();
+	ArraySlice<const int> execution_map = VoxelGeneratorGraph::get_last_execution_map_debug_from_current_thread();
 	for (unsigned int i = 0; i < execution_map.size(); ++i) {
 		String node_view_path = node_to_gui_name(execution_map[i]);
 		VoxelGraphEditorNode *node_view =

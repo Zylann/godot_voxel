@@ -25,6 +25,9 @@ public:
 		Variant::Type type;
 		String class_name;
 		uint32_t index = -1;
+		bool has_range = false;
+		int min_value;
+		int max_value;
 
 		Param(String p_name, Variant::Type p_type, Variant p_default_value = Variant()) :
 				name(p_name),

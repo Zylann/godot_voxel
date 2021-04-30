@@ -37,6 +37,9 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 		if (!param.class_name.empty()) {
 			pi.hint = PROPERTY_HINT_RESOURCE_TYPE;
 			pi.hint_string = pi.class_name;
+		} else if (param.has_range) {
+			pi.hint = PROPERTY_HINT_RANGE;
+			pi.hint_string = String("{0},{1}").format(varray(param.min_value, param.max_value));
 		}
 		pi.usage = PROPERTY_USAGE_EDITOR;
 		p_list->push_back(pi);

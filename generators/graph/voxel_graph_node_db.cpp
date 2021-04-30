@@ -286,6 +286,17 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("sdf"));
 	}
 	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_WEIGHT];
+		t.name = "OutputWeight";
+		t.category = CATEGORY_OUTPUT;
+		t.inputs.push_back(Port("weight"));
+		Param layer_param("layer", Variant::INT, 0);
+		layer_param.has_range = true;
+		layer_param.min_value = 0;
+		layer_param.max_value = 16;
+		t.params.push_back(layer_param);
+	}
+	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_ADD];
 		t.name = "Add";
 		t.category = CATEGORY_MATH;
@@ -1586,6 +1597,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				case Variant::REAL:
 					if (p.default_value.get_type() == Variant::NIL) {
 						p.default_value = 0.f;
+					}
+					break;
+
+				case Variant::INT:
+					if (p.default_value.get_type() == Variant::NIL) {
+						p.default_value = 0;
 					}
 					break;
 

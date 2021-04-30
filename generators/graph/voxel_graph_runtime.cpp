@@ -269,7 +269,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 				if (_program.sdf_output_address != -1) {
 					CompilationResult result;
 					result.success = false;
-					result.message = "Multiple SDF outputs are not supported";
+					result.message = TTR("Multiple SDF outputs are not supported");
 					result.node_id = node_id;
 					return result;
 				}
@@ -294,6 +294,72 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 					_program.sdf_output_node_index = dg_node_index;
 				}
 				continue;
+
+			case VoxelGeneratorGraph::NODE_OUTPUT_WEIGHT: {
+				if (_program.weight_outputs_count >= _program.weight_outputs.size()) {
+					CompilationResult result;
+					result.success = false;
+					result.message = String(TTR("Cannot use more than {0} weight outputs"))
+											 .format(varray(_program.weight_outputs.size()));
+					result.node_id = node_id;
+					return result;
+				}
+				CRASH_COND(node->params.size() == 0);
+				const int layer_index = node->params[0];
+				if (layer_index < 0) {
+					CompilationResult result;
+					result.success = false;
+					result.message = String(TTR("Cannot use negative layer index in weight output"));
+					result.node_id = node_id;
+					return result;
+				}
+				if (layer_index >= _program.weight_outputs.size()) {
+					CompilationResult result;
+					result.success = false;
+					result.message = String(TTR("Weight layers cannot exceed {}"))
+											 .format(varray(_program.weight_outputs.size()));
+					result.node_id = node_id;
+					return result;
+				}
+				for (unsigned int i = 0; i < _program.weight_outputs_count; ++i) {
+					const WeightOutput &wo = _program.weight_outputs[i];
+					if (wo.layer_index == layer_index) {
+						CompilationResult result;
+						result.success = false;
+						result.message =
+								String(TTR("Only one weight output node can use layer index {0}, found duplicate"))
+										.format(varray(layer_index));
+						result.node_id = node_id;
+						return result;
+					}
+				}
+				CRASH_COND(node->inputs.size() != 1);
+				if (node->inputs[0].connections.size() > 0) {
+					WeightOutput &weight_output = _program.weight_outputs[_program.weight_outputs_count];
+					weight_output.layer_index = layer_index;
+
+					ProgramGraph::PortLocation src_port = node->inputs[0].connections[0];
+					const uint16_t *aptr = _program.output_port_addresses.getptr(src_port);
+					// Previous node ports must have been registered
+					CRASH_COND(aptr == nullptr);
+					weight_output.buffer_address = *aptr;
+
+					BufferSpec &bs = _program.buffer_specs[*aptr];
+					++bs.users_count;
+
+					// Register dependency
+					auto it = node_id_to_dependency_graph.find(src_port.node_id);
+					CRASH_COND(it == node_id_to_dependency_graph.end());
+					CRASH_COND(it->second >= _program.dependency_graph.nodes.size());
+					_program.dependency_graph.dependencies.push_back(it->second);
+					++dg_node.end_dependency;
+					dg_node.is_io = true;
+					weight_output.dependency_graph_node_index = dg_node_index;
+
+					++_program.weight_outputs_count;
+				}
+				continue;
+			}
 
 			case VoxelGeneratorGraph::NODE_SDF_PREVIEW:
 				continue;
@@ -418,6 +484,16 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 	_program.lock_images();
 
+	// Sort weight outputs by layer index, for determinism
+	struct WeightOutputComparer {
+		inline bool operator()(const WeightOutput &a, const WeightOutput &b) const {
+			return a.layer_index < b.layer_index;
+		}
+	};
+	SortArray<WeightOutput, WeightOutputComparer> sorter;
+	CRASH_COND(_program.weight_outputs_count >= _program.weight_outputs.size());
+	sorter.sort(_program.weight_outputs.data(), _program.weight_outputs_count);
+
 	CompilationResult result;
 	result.success = true;
 	return result;
@@ -458,9 +534,8 @@ bool VoxelGraphRuntime::is_operation_constant(const State &state, uint16_t op_ad
 // If a non-constant operation only contributes to a constant one, it will also be skipped.
 // This has the effect of optimizing locally at runtime without relying on explicit conditionals.
 // It can be useful for biomes, where some branches become constant when not used in the final blending.
-void VoxelGraphRuntime::generate_execution_map(const State &state,
-		std::vector<uint16_t> &execution_map, unsigned int &out_mapped_xzy_start,
-		std::vector<int> *debug_execution_map) const {
+void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
+		QueryType query_type, bool debug) const {
 
 	VOXEL_PROFILE_SCOPE();
 
@@ -471,9 +546,6 @@ void VoxelGraphRuntime::generate_execution_map(const State &state,
 	const DependencyGraph &graph = program.dependency_graph;
 
 	execution_map.clear();
-	if (debug_execution_map != nullptr) {
-		debug_execution_map->clear();
-	}
 
 	// if (program.default_execution_map.size() == 0) {
 	// 	// Can't reduce more than this
@@ -483,7 +555,13 @@ void VoxelGraphRuntime::generate_execution_map(const State &state,
 	// This function will run a lot of times so better re-use the same vector
 	static thread_local std::vector<uint16_t> to_process;
 	to_process.clear();
-	to_process.push_back(program.sdf_output_node_index);
+
+	if (query_type == QUERY_ALL) {
+		to_process.push_back(program.sdf_output_node_index);
+	}
+	for (unsigned int i = 0; i < program.weight_outputs_count; ++i) {
+		to_process.push_back(program.weight_outputs[i].dependency_graph_node_index);
+	}
 
 	enum ProcessResult {
 		NOT_PROCESSED,
@@ -529,12 +607,12 @@ void VoxelGraphRuntime::generate_execution_map(const State &state,
 		}
 	}
 
-	if (debug_execution_map != nullptr) {
+	if (debug) {
 		for (unsigned int node_index = 0; node_index < graph.nodes.size(); ++node_index) {
 			const ProcessResult res = results[node_index];
 			const DependencyGraph::Node &node = graph.nodes[node_index];
 			if (res == REQUIRED) {
-				debug_execution_map->push_back(node.debug_node_id);
+				execution_map.debug_nodes.push_back(node.debug_node_id);
 			}
 		}
 	}
@@ -588,10 +666,10 @@ void VoxelGraphRuntime::generate_execution_map(const State &state,
 				if (xzy_start_not_assigned && node.op_address >= program.xzy_start_op_address) {
 					// This should be correct as long as the list of nodes in the graph follows the same re-ordered
 					// optimization done in `compile()` such that all nodes not depending on Y come first
-					out_mapped_xzy_start = execution_map.size();
+					execution_map.xzy_start_index = execution_map.operation_adresses.size();
 					xzy_start_not_assigned = false;
 				}
-				execution_map.push_back(node.op_address);
+				execution_map.operation_adresses.push_back(node.op_address);
 				break;
 
 			default:
@@ -601,13 +679,13 @@ void VoxelGraphRuntime::generate_execution_map(const State &state,
 	}
 }
 
-float VoxelGraphRuntime::generate_single(State &state, Vector3 position, bool use_execution_map) const {
+float VoxelGraphRuntime::generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const {
 	float output;
 	generate_set(state,
 			ArraySlice<float>(&position.x, 1),
 			ArraySlice<float>(&position.y, 1),
 			ArraySlice<float>(&position.z, 1),
-			ArraySlice<float>(&output, 1), false, use_execution_map);
+			ArraySlice<float>(&output, 1), false, execution_map);
 	return output;
 }
 
@@ -697,8 +775,6 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 		}
 	}
 
-	state.execution_map.clear();
-
 	/*if (use_range_analysis) {
 		// TODO To be really worth it, we may need a runtime graph traversal pass,
 		// where we build an execution map of nodes that are worthy 🔨
@@ -715,7 +791,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 
 void VoxelGraphRuntime::generate_set(State &state,
 		ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
-		ArraySlice<float> out_sdf, bool skip_xz, bool use_execution_map) const {
+		ArraySlice<float> out_sdf, bool skip_xz, const ExecutionMap *execution_map) const {
 
 	// I don't like putting private helper functions in headers.
 	struct L {
@@ -776,18 +852,18 @@ void VoxelGraphRuntime::generate_set(State &state,
 
 	const ArraySlice<const uint8_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	ArraySlice<const uint16_t> execution_map = use_execution_map ?
-													   to_slice_const(state.execution_map) :
-													   to_slice_const(_program.default_execution_map);
-	if (skip_xz && execution_map.size() > 0) {
-		const unsigned int offset = use_execution_map ?
-											state.execution_map_xzy_start_index :
+	ArraySlice<const uint16_t> op_adresses = execution_map != nullptr ?
+													 to_slice_const(execution_map->operation_adresses) :
+													 to_slice_const(_program.default_execution_map);
+	if (skip_xz && op_adresses.size() > 0) {
+		const unsigned int offset = execution_map != nullptr ?
+											execution_map->xzy_start_index :
 											_program.xzy_start_execution_map_index;
-		execution_map = execution_map.sub(offset);
+		op_adresses = op_adresses.sub(offset);
 	}
 
-	for (unsigned int execution_map_index = 0; execution_map_index < execution_map.size(); ++execution_map_index) {
-		unsigned int pc = execution_map[execution_map_index];
+	for (unsigned int execution_map_index = 0; execution_map_index < op_adresses.size(); ++execution_map_index) {
+		unsigned int pc = op_adresses[execution_map_index];
 
 		const uint8_t opid = operations[pc++];
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
@@ -810,7 +886,7 @@ void VoxelGraphRuntime::generate_set(State &state,
 		}
 
 		ERR_FAIL_COND(node_type.process_buffer_func == nullptr);
-		ProcessBufferContext ctx(inputs, outputs, params, buffers, use_execution_map);
+		ProcessBufferContext ctx(inputs, outputs, params, buffers, execution_map != nullptr);
 		node_type.process_buffer_func(ctx);
 	}
 

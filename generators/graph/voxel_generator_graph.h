@@ -54,6 +54,7 @@ public:
 		NODE_FAST_NOISE_3D,
 		NODE_FAST_NOISE_GRADIENT_2D,
 		NODE_FAST_NOISE_GRADIENT_3D,
+		NODE_OUTPUT_WEIGHT,
 		NODE_TYPE_COUNT
 	};
 
@@ -138,11 +139,9 @@ public:
 	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
 			ArraySlice<float> out_sdf);
 
-	Interval analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map, bool debug) const;
-	void generate_optimized_execution_map();
-
 	// Returns state from the last generator used in the current thread
 	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
+	static ArraySlice<const int> get_last_execution_map_debug_from_current_thread();
 
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 
@@ -150,6 +149,7 @@ public:
 
 	// Debug
 
+	Interval debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map) const;
 	float debug_measure_microseconds_per_voxel(bool singular);
 	void debug_load_waves_preset();
 
@@ -165,7 +165,7 @@ private:
 	// See https://github.com/godotengine/godot/issues/36895
 	void _b_set_node_param_null(int node_id, int param_index);
 	float _b_generate_single(Vector3 pos);
-	Vector2 _b_analyze_range(Vector3 min_pos, Vector3 max_pos) const;
+	Vector2 _b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const;
 	Dictionary _b_compile();
 
 	void _on_subresource_changed();
@@ -197,7 +197,14 @@ private:
 
 	// Only compiling and generation methods are thread-safe.
 
-	std::shared_ptr<VoxelGraphRuntime> _runtime = nullptr;
+	struct Runtime {
+		VoxelGraphRuntime runtime;
+		// Indices that are not used in the graph.
+		// This is used when there are less than 4 texture weight outputs.
+		FixedArray<uint8_t, 4> spare_texture_indices;
+	};
+
+	std::shared_ptr<Runtime> _runtime = nullptr;
 	RWLock _runtime_lock;
 
 	struct Cache {
@@ -206,6 +213,7 @@ private:
 		std::vector<float> z_cache;
 		std::vector<float> slice_cache;
 		VoxelGraphRuntime::State state;
+		VoxelGraphRuntime::ExecutionMap optimized_execution_map;
 	};
 
 	static thread_local Cache _cache;

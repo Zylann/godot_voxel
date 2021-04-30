@@ -340,6 +340,29 @@ inline uint16_t encode_weights(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 	return (a >> 4) | ((b >> 4) << 4) | ((c >> 4) << 8) | ((d >> 4) << 12);
 }
 
+// Checks if there are no duplicate indices in any voxel
+inline void debug_check_texture_indices(FixedArray<uint8_t, 4> indices) {
+	FixedArray<bool, 16> checked;
+	checked.fill(false);
+	for (int i = 0; i < indices.size(); ++i) {
+		unsigned int ti = indices[i];
+		CRASH_COND(checked[ti]);
+		checked[ti] = true;
+	}
+}
+
+inline void debug_check_texture_indices(const VoxelBuffer &voxels) {
+	for (int z = 0; z < voxels.get_size().z; ++z) {
+		for (int x = 0; x < voxels.get_size().x; ++x) {
+			for (int y = 0; y < voxels.get_size().y; ++y) {
+				uint16_t pi = voxels.get_voxel(x, y, z, VoxelBuffer::CHANNEL_INDICES);
+				FixedArray<uint8_t, 4> indices = decode_indices(pi);
+				debug_check_texture_indices(indices);
+			}
+		}
+	}
+}
+
 VARIANT_ENUM_CAST(VoxelBuffer::ChannelId)
 VARIANT_ENUM_CAST(VoxelBuffer::Depth)
 VARIANT_ENUM_CAST(VoxelBuffer::Compression)

@@ -5,9 +5,8 @@
 #include "../../util/math/interval.h"
 #include "../../util/math/vector3i.h"
 #include "program_graph.h"
-#include <core/reference.h>
 
-class ImageRangeGrid;
+#include <core/reference.h>
 
 // CPU VM to execute a voxel graph generator
 class VoxelGraphRuntime {
@@ -18,6 +17,7 @@ public:
 		String message;
 	};
 
+	// Contains values of a node output
 	struct Buffer {
 		// Values of the buffer. Must contain at least `size` values.
 		// TODO Consider wrapping this in debug mode. It is one of the rare cases I didnt do it.
@@ -36,6 +36,23 @@ public:
 		// How many operations are using this buffer as input.
 		// This value is only relevant when using optimized execution mapping.
 		unsigned int local_users_count;
+	};
+
+	// Contains a list of adresses to the operations to execute for a given query.
+	// If no local optimization is done, this can remain the same for any position lists.
+	// If local optimization is used, it may be recomputed before each query.
+	struct ExecutionMap {
+		std::vector<uint16_t> operation_adresses;
+		// Stores node IDs referring to the user-facing graph
+		std::vector<int> debug_nodes;
+		// From which index in the adress list operations will start depending on Y
+		unsigned int xzy_start_index;
+
+		void clear() {
+			operation_adresses.clear();
+			debug_nodes.clear();
+			xzy_start_index = 0;
+		}
 	};
 
 	// Contains the data the program will modify while it runs.
@@ -67,25 +84,20 @@ public:
 			ranges.clear();
 		}
 
-		ArraySlice<const int> get_debug_execution_map() const {
-			return to_slice_const(debug_execution_map);
-		}
-
 	private:
 		friend class VoxelGraphRuntime;
 
 		std::vector<Interval> ranges;
 		std::vector<Buffer> buffers;
 
-		// Stores operation addresses
-		std::vector<uint16_t> execution_map;
-
-		// Stores node IDs referring to the user-facing graph
-		std::vector<int> debug_execution_map;
-
-		unsigned int execution_map_xzy_start_index;
 		unsigned int buffer_size = 0;
 		unsigned int buffer_capacity = 0;
+	};
+
+	struct WeightOutput {
+		unsigned int layer_index;
+		unsigned int buffer_address;
+		unsigned int dependency_graph_node_index;
 	};
 
 	VoxelGraphRuntime();
@@ -99,23 +111,34 @@ public:
 	// If none of these change, you can keep re-using it.
 	void prepare_state(State &state, unsigned int buffer_size) const;
 
-	float generate_single(State &state, Vector3 position, bool use_execution_map) const;
+	float generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const;
 
 	void generate_set(State &state, ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
-			ArraySlice<float> out_sdf, bool skip_xz, bool use_execution_map) const;
+			ArraySlice<float> out_sdf, bool skip_xz, const ExecutionMap *execution_map) const;
+
+	inline unsigned int get_weight_output_count() const {
+		return _program.weight_outputs_count;
+	}
+
+	inline const WeightOutput &get_weight_output_info(unsigned int i) const {
+		return _program.weight_outputs[i];
+	}
 
 	// Analyzes a specific region of inputs to find out what ranges of outputs we can expect.
 	// It can be used to speed up calls to `generate_set` thanks to execution mapping,
 	// so that operations can be optimized out if they don't contribute to the result.
 	Interval analyze_range(State &state, Vector3i min_pos, Vector3i max_pos) const;
 
+	enum QueryType {
+		QUERY_ALL,
+		QUERY_ONLY_WEIGHTS
+	};
+
 	// Call this after `analyze_range` if you intend to actually generate a set or single values in the area.
 	// This allows to use the execution map optimization, until you choose another area.
 	// (i.e when using this, querying values outside of the analyzed area may be invalid)
-	inline void generate_optimized_execution_map(State &state, bool debug) const {
-		generate_execution_map(state, state.execution_map, state.execution_map_xzy_start_index,
-				debug ? &state.debug_execution_map : nullptr);
-	}
+	void generate_optimized_execution_map(const State &state, ExecutionMap &execution_map, QueryType query_type,
+			bool debug) const;
 
 	inline bool has_output() const {
 		return _program.sdf_output_address != -1;
@@ -128,6 +151,7 @@ public:
 		void (*deleter)(void *p);
 	};
 
+	// Functions usable by node implementations during the compilation stage
 	class CompileContext {
 	public:
 		CompileContext(const ProgramGraph::Node &node, std::vector<uint8_t> &program,
@@ -220,6 +244,7 @@ public:
 		const ArraySlice<const uint8_t> _params;
 	};
 
+	// Functions usable by node implementations during execution
 	class ProcessBufferContext : public _ProcessContext {
 	public:
 		inline ProcessBufferContext(
@@ -264,6 +289,7 @@ public:
 		bool _using_execution_map;
 	};
 
+	// Functions usable by node implementations during range analysis
 	class RangeAnalysisContext : public _ProcessContext {
 	public:
 		inline RangeAnalysisContext(
@@ -303,10 +329,6 @@ public:
 
 private:
 	CompilationResult _compile(const ProgramGraph &graph, bool debug);
-
-	void generate_execution_map(const State &state,
-			std::vector<uint16_t> &execution_map, unsigned int &out_mapped_xzy_start,
-			std::vector<int> *debug_execution_map) const;
 
 	bool is_operation_constant(const State &state, uint16_t op_address) const;
 
@@ -392,6 +414,9 @@ private:
 		int sdf_output_address = -1;
 		int sdf_output_node_index = -1;
 
+		FixedArray<WeightOutput, 16> weight_outputs;
+		unsigned int weight_outputs_count = 0;
+
 		// Maximum amount of buffers this program will need to do a full run.
 		// Buffers are needed to hold values of arguments and outputs for each operation.
 		unsigned int buffer_count = 0;
@@ -416,6 +441,7 @@ private:
 			y_input_address = -1;
 			z_input_address = -1;
 			sdf_output_node_index = -1;
+			weight_outputs_count = 0;
 			compilation_result = CompilationResult();
 			for (auto it = heap_resources.begin(); it != heap_resources.end(); ++it) {
 				HeapResource &r = *it;
