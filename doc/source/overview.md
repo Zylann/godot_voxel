@@ -21,6 +21,9 @@ In this engine, a voxel is a specific point in space holding some values. Those 
 
 Voxels can be obtained by either deciding their values manually on a grid, or by defining procedural rules to generate them from anywhere, like fractal noise or Signed-Distance-Field formulas.
 
+!!! note
+    Although this engine started as a way to generate terrains, it is not the only thing you can do with it. Because of this, you will often find the word "volume" instead of "terrain" in this documentation, to designate objects composed of voxels.
+
 
 Generating voxels
 ------------------
