@@ -26,6 +26,11 @@ Ref<Resource> VoxelMesherTransvoxel::duplicate(bool p_subresources) const {
 }
 
 int VoxelMesherTransvoxel::get_used_channels_mask() const {
+	if (_texture_mode == TEXTURES_BLEND_4_OVER_16) {
+		return (1 << VoxelBuffer::CHANNEL_SDF) |
+			   (1 << VoxelBuffer::CHANNEL_INDICES) |
+			   (1 << VoxelBuffer::CHANNEL_WEIGHTS);
+	}
 	return (1 << VoxelBuffer::CHANNEL_SDF);
 }
 
