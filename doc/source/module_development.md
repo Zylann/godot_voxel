@@ -101,6 +101,7 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Prefer adding `const` to variables that won't change after being initialized
 - Don't exploit booleanization. Example: use `if (a == nullptr)` instead of `if (a)`
 - If possible, avoid plain arrays like `int a[42]`. Debuggers don't catch overruns on them. Prefer using wrappers such as `FixedArray` and `ArraySlice` (or `std::array` and `std::span` once [this](https://github.com/godotengine/godot/issues/31608) is fixed)
+- Use `uint32_t`, `uint16_t`, `uint8_t` in case integer size matters.
 
 
 ### Error handling
@@ -129,6 +130,7 @@ In performance-critical areas which run a lot:
 - Only expose a function to the script API if it is safe to use and guaranteed to remain present for a while
 - use `memnew`, `memdelete`, `memalloc` and `memfree` so memory usage is counted within Godot monitors
 - Don't leave random prints. For verbose mode you may also use `PRINT_VERBOSE()` instead of `print_verbose()`.
+- Use `int` as argument for functions exposed to scripts if they don't need to exceed 2^31, even if they are never negative, so errors are clearer if the user makes a mistake
 
 
 Profile with Tracy
