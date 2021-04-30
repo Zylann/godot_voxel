@@ -15,15 +15,6 @@ inline uint8_t sign_f(float v) {
 	return v < 0.f;
 }
 
-// Wrapped to invert SDF data, Transvoxel apparently works backwards?
-inline float get_voxel_f(const VoxelBuffer &vb, int x, int y, int z, int channel) {
-	return -vb.get_voxel_f(x, y, z, channel);
-}
-
-inline float get_voxel_f(const VoxelBuffer &vb, Vector3i pos, int channel) {
-	return get_voxel_f(vb, pos.x, pos.y, pos.z, channel);
-}
-
 Vector3 get_border_offset(const Vector3 pos, const int lod_index, const Vector3i block_size) {
 	// When transition meshes are inserted between blocks of different LOD, we need to make space for them.
 	// Secondary vertex positions can be calculated by linearly transforming positions inside boundary cells
