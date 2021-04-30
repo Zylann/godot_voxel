@@ -11,9 +11,9 @@ Common properties
 
 Each voxel node inherits `VoxelNode`, which defines properties they all have in common.
 
-`stream`: a `VoxelStream` resource, which allows to load and save voxels. See [Voxel Streams](streams.md)
-`generator`: a `VoxelGenerator` resource, which allows to populate the volume with generated voxels. See [Generators](generators.md)
-`mesher`: a `VoxelMesher` resource, which defines how the voxels will look like. It also defines collision meshes if enabled.
+- `stream`: a `VoxelStream` resource, which allows to load and save voxels. See [Voxel Streams](streams.md)
+- `generator`: a `VoxelGenerator` resource, which allows to populate the volume with generated voxels. See [Generators](generators.md)
+- `mesher`: a `VoxelMesher` resource, which defines how the voxels will look like. It also defines collision meshes if enabled.
 
 
 ### Collisions
