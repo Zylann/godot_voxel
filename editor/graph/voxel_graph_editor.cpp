@@ -170,6 +170,12 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_profile_label = memnew(Label);
 		toolbar->add_child(_profile_label);
 
+		_compile_result_label = memnew(Label);
+		_compile_result_label->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+		_compile_result_label->set_clip_text(true);
+		_compile_result_label->hide();
+		toolbar->add_child(_compile_result_label);
+
 		Button *range_analysis_button = memnew(Button);
 		range_analysis_button->set_text("Analyze Range...");
 		range_analysis_button->connect("pressed", this, "_on_analyze_range_button_pressed");
@@ -684,8 +690,22 @@ void VoxelGraphEditor::update_previews() {
 	const VoxelGraphRuntime::CompilationResult result = _graph->compile();
 	if (!result.success) {
 		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
-		// TODO Enhance reporting in the UI
+
+		_compile_result_label->set_text(result.message);
+		_compile_result_label->set_tooltip(result.message);
+		_compile_result_label->set_modulate(Color(1, 0.3, 0.1));
+		_compile_result_label->show();
+
+		if (result.node_id >= 0) {
+			String node_view_path = node_to_gui_name(result.node_id);
+			VoxelGraphEditorNode *node_view =
+					Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(node_view_path));
+			node_view->set_modulate(Color(1, 0.3, 0.1));
+		}
 		return;
+
+	} else {
+		_compile_result_label->hide();
 	}
 
 	if (!_graph->is_good()) {

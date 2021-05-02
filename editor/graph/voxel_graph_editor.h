@@ -69,6 +69,7 @@ private:
 	GraphEdit *_graph_edit = nullptr;
 	PopupMenu *_context_menu = nullptr;
 	Label *_profile_label = nullptr;
+	Label *_compile_result_label = nullptr;
 	VoxelRangeAnalysisDialog *_range_analysis_dialog = nullptr;
 	UndoRedo *_undo_redo = nullptr;
 	Vector2 _click_position;
