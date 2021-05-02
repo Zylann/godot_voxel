@@ -413,6 +413,7 @@ void build_regular_mesh(
 				CellTextureDatas<8> cell_textures;
 				if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 					get_cell_texture_data(cell_textures, texture_indices_data, corner_data_indices, weights_data);
+					current_reuse_cell.packed_texture_indices = cell_textures.packed_indices;
 				}
 
 				FixedArray<Vector3i, 8> corner_positions;
