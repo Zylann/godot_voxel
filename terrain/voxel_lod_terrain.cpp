@@ -43,6 +43,20 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 		++surface_index;
 	}
 
+	// Debug code to highlight vertex sharing
+	/*if (mesh->get_surface_count() > 0) {
+		Array wireframe_surface = generate_debug_seams_wireframe_surface(mesh, 0);
+		if (wireframe_surface.size() > 0) {
+			const int wireframe_surface_index = mesh->get_surface_count();
+			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, wireframe_surface);
+			Ref<SpatialMaterial> line_material;
+			line_material.instance();
+			line_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
+			line_material->set_albedo(Color(1.0, 0.0, 1.0));
+			mesh->surface_set_material(wireframe_surface_index, line_material);
+		}
+	}*/
+
 	if (is_mesh_empty(mesh)) {
 		mesh = Ref<Mesh>();
 	}

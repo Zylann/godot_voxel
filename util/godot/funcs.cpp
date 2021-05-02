@@ -1,4 +1,5 @@
 #include "funcs.h"
+#include "../funcs.h"
 #include "../profiling.h"
 
 #include <core/engine.h>
@@ -113,4 +114,98 @@ int get_visible_instance_count(const MultiMesh &mm) {
 		visible_count = mm.get_instance_count();
 	}
 	return visible_count;
+}
+
+Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_index) {
+	if (src_mesh->surface_get_primitive_type(surface_index) != Mesh::PRIMITIVE_TRIANGLES) {
+		return Array();
+	}
+	Array src_surface = src_mesh->surface_get_arrays(surface_index);
+	if (src_surface.empty()) {
+		return Array();
+	}
+	PoolVector3Array src_positions = src_surface[Mesh::ARRAY_VERTEX];
+	PoolVector3Array src_normals = src_surface[Mesh::ARRAY_NORMAL];
+	PoolIntArray src_indices = src_surface[Mesh::ARRAY_INDEX];
+	if (src_indices.size() < 3) {
+		return Array();
+	}
+	struct Dupe {
+		int dst_index = 0;
+		int count = 0;
+	};
+	HashMap<Vector3, Dupe> vertex_to_dupe;
+	HashMap<int, int> src_index_to_dst_index;
+	std::vector<Vector3> dst_positions;
+	{
+		PoolVector3Array::Read src_positions_read = src_positions.read();
+		PoolVector3Array::Read src_normals_read = src_normals.read();
+		for (int i = 0; i < src_positions.size(); ++i) {
+			const Vector3 pos = src_positions[i];
+			Dupe *dptr = vertex_to_dupe.getptr(pos);
+			if (dptr == nullptr) {
+				vertex_to_dupe.set(pos, Dupe());
+			} else {
+				if (dptr->count == 0) {
+					dptr->dst_index = dst_positions.size();
+					dst_positions.push_back(pos + src_normals_read[i] * 0.05);
+				}
+				++dptr->count;
+				src_index_to_dst_index.set(i, dptr->dst_index);
+			}
+		}
+	}
+
+	std::vector<int> dst_indices;
+	{
+		PoolIntArray::Read r = src_indices.read();
+		for (int i = 0; i < src_indices.size(); i += 3) {
+			const int vi0 = r[i];
+			const int vi1 = r[i + 1];
+			const int vi2 = r[i + 2];
+			const int *v0ptr = src_index_to_dst_index.getptr(vi0);
+			const int *v1ptr = src_index_to_dst_index.getptr(vi1);
+			const int *v2ptr = src_index_to_dst_index.getptr(vi2);
+			if (v0ptr != nullptr && v1ptr != nullptr) {
+				dst_indices.push_back(*v0ptr);
+				dst_indices.push_back(*v1ptr);
+			}
+			if (v1ptr != nullptr && v2ptr != nullptr) {
+				dst_indices.push_back(*v1ptr);
+				dst_indices.push_back(*v2ptr);
+			}
+			if (v2ptr != nullptr && v0ptr != nullptr) {
+				dst_indices.push_back(*v2ptr);
+				dst_indices.push_back(*v0ptr);
+			}
+		}
+	}
+
+	if (dst_indices.size() == 0) {
+		return Array();
+	}
+
+	ERR_FAIL_COND_V(dst_indices.size() % 2 != 0, Array());
+	ERR_FAIL_COND_V(dst_positions.size() < 2, Array());
+
+	PoolVector3Array dst_positions_pv;
+	PoolIntArray dst_indices_pv;
+	raw_copy_to(dst_positions_pv, dst_positions);
+	raw_copy_to(dst_indices_pv, dst_indices);
+	Array dst_surface;
+	dst_surface.resize(Mesh::ARRAY_MAX);
+	dst_surface[Mesh::ARRAY_VERTEX] = dst_positions_pv;
+	dst_surface[Mesh::ARRAY_INDEX] = dst_indices_pv;
+	return dst_surface;
+
+	// Ref<ArrayMesh> wire_mesh;
+	// wire_mesh.instance();
+	// wire_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, dst_surface);
+
+	// Ref<SpatialMaterial> line_material;
+	// line_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
+	// line_material->set_albedo(Color(1.0, 0.0, 1.0));
+	// wire_mesh->surface_set_material(0, line_material);
+
+	// return wire_mesh;
 }

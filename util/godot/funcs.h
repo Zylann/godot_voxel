@@ -25,4 +25,7 @@ Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces);
 // This API can be confusing so I made a wrapper
 int get_visible_instance_count(const MultiMesh &mm);
 
+// Generates a wireframe-mesh that highlights edges of a triangle-mesh where vertices are not shared
+Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_index);
+
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H
