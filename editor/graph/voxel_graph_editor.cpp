@@ -361,12 +361,30 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	//node_view.resizable = true
 	//node_view.rect_size = Vector2(200, 100)
 
-	const unsigned int row_count = max(node_type.inputs.size(), node_type.outputs.size());
+	// We artificially hide output ports if the node is an output.
+	// These nodes have an output for implementation reasons, some outputs can process the data like any other node.
+	const bool hide_outputs = node_type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT;
+
+	const unsigned int row_count = max(node_type.inputs.size(), hide_outputs ? 0 : node_type.outputs.size());
 	const Color port_color(0.4, 0.4, 1.0);
+
+	// TODO Insert a summary so the graph would be readable without having to inspect nodes
+	// However left and right slots always start from the first child item,
+	// so we'd have to decouple the real slots indices from the view
+	// if (node_type_id == VoxelGeneratorGraph::NODE_CLAMP) {
+	// 	const float minv = graph.get_node_param(node_id, 0);
+	// 	const float maxv = graph.get_node_param(node_id, 1);
+	// 	Label *sl = memnew(Label);
+	// 	sl->set_modulate(Color(1, 1, 1, 0.5));
+	// 	sl->set_text(String("[{0}, {1}]").format(varray(minv, maxv)));
+	// 	sl->set_align(Label::ALIGN_CENTER);
+	// 	node_view->summary_label = sl;
+	// 	node_view->add_child(sl);
+	// }
 
 	for (unsigned int i = 0; i < row_count; ++i) {
 		const bool has_left = i < node_type.inputs.size();
-		const bool has_right = i < node_type.outputs.size();
+		const bool has_right = (i < node_type.outputs.size()) && !hide_outputs;
 
 		HBoxContainer *property_control = memnew(HBoxContainer);
 		property_control->set_custom_minimum_size(Vector2(0, 24 * EDSCALE));
@@ -800,11 +818,9 @@ void VoxelGraphEditor::update_slice_previews() {
 	std::vector<float> x_vec;
 	std::vector<float> y_vec;
 	std::vector<float> z_vec;
-	std::vector<float> sdf_vec;
 	x_vec.resize(buffer_size);
 	y_vec.resize(buffer_size);
 	z_vec.resize(buffer_size);
-	sdf_vec.resize(buffer_size);
 
 	const Vector3 min_pos(-preview_size_x / 2, -preview_size_y / 2, 0);
 	const Vector3 max_pos = min_pos + Vector3(preview_size_x, preview_size_x, 0);
@@ -826,8 +842,7 @@ void VoxelGraphEditor::update_slice_previews() {
 	_graph->generate_set(
 			ArraySlice<float>(x_vec, 0, x_vec.size()),
 			ArraySlice<float>(y_vec, 0, y_vec.size()),
-			ArraySlice<float>(z_vec, 0, z_vec.size()),
-			ArraySlice<float>(sdf_vec, 0, sdf_vec.size()));
+			ArraySlice<float>(z_vec, 0, z_vec.size()));
 
 	const VoxelGraphRuntime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 

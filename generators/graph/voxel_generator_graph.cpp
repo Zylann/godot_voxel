@@ -240,39 +240,24 @@ bool VoxelGeneratorGraph::is_using_xz_caching() const {
 	return _use_xz_caching;
 }
 
-static FixedArray<uint8_t, 4> calculate_spare_indices(const VoxelGraphRuntime &runtime) {
-	FixedArray<bool, 16> used_indices;
-	FixedArray<uint8_t, 4> spare_indices;
-	used_indices.fill(false);
-	for (unsigned int i = 0; i < runtime.get_weight_output_count(); ++i) {
-		const VoxelGraphRuntime::WeightOutput &wo = runtime.get_weight_output_info(i);
-		used_indices[wo.layer_index] = true;
-	}
-	unsigned int spare_indices_count = 0;
-	for (unsigned int i = 0; i < used_indices.size() && spare_indices_count < 4; ++i) {
-		if (used_indices[i] == false) {
-			spare_indices[spare_indices_count] = i;
-			++spare_indices_count;
-		}
-	}
-	//debug_check_texture_indices(spare_indices);
-	ERR_FAIL_COND_V(spare_indices_count != 4, spare_indices);
-	return spare_indices;
-}
-
 // TODO Optimization: generating indices and weights on every voxel of a block might be avoidable
 // Instead, we could only generate them near zero-crossings, because this is where materials will be seen.
 // The problem is that it's harder to manage at the moment, to support edited blocks and LOD...
-static void gather_indices_and_weights(const VoxelGraphRuntime &runtime, const VoxelGraphRuntime::State &state,
-		Vector3i rmin, Vector3i rmax, int ry, VoxelBuffer &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices) {
+void VoxelGeneratorGraph::gather_indices_and_weights(ArraySlice<const WeightOutput> weight_outputs,
+		const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry, VoxelBuffer &out_voxel_buffer,
+		FixedArray<uint8_t, 4> spare_indices) {
 
 	VOXEL_PROFILE_SCOPE();
 
+	// TODO Optimization: exclude up-front outputs that are known to be zero?
+	// So we choose the cases below based on non-zero outputs instead of total output count
+
+	// TODO Could maybe put this part outside?
 	FixedArray<ArraySlice<const float>, 16> buffers;
-	const unsigned int buffers_count = runtime.get_weight_output_count();
+	const unsigned int buffers_count = weight_outputs.size();
 	for (unsigned int oi = 0; oi < buffers_count; ++oi) {
-		const VoxelGraphRuntime::WeightOutput &info = runtime.get_weight_output_info(oi);
-		const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(info.buffer_address);
+		const WeightOutput &info = weight_outputs[oi];
+		const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(info.output_buffer_index);
 		buffers[oi] = ArraySlice<const float>(buffer.data, buffer.size);
 	}
 
@@ -286,8 +271,10 @@ static void gather_indices_and_weights(const VoxelGraphRuntime &runtime, const V
 				weights.fill(0);
 				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
 					const float weight = buffers[oi][value_index];
+					// TODO Optimization: weight output nodes could already multiply by 255 and clamp afterward
+					// so we would not need to do it here
 					weights[oi] = clamp(weight * 255.f, 0.f, 255.f);
-					indices[oi] = runtime.get_weight_output_info(oi).layer_index;
+					indices[oi] = weight_outputs[oi].layer_index;
 				}
 				debug_check_texture_indices(indices);
 				const uint16_t encoded_indices = encode_indices(indices[0], indices[1], indices[2], indices[3]);
@@ -309,7 +296,7 @@ static void gather_indices_and_weights(const VoxelGraphRuntime &runtime, const V
 				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
 					const float weight = buffers[oi][value_index];
 					weights[oi] = clamp(weight * 255.f, 0.f, 255.f);
-					indices[oi] = runtime.get_weight_output_info(oi).layer_index;
+					indices[oi] = weight_outputs[oi].layer_index;
 				}
 				const uint16_t encoded_indices = encode_indices(indices[0], indices[1], indices[2], indices[3]);
 				const uint16_t encoded_weights = encode_weights(weights[0], weights[1], weights[2], weights[3]);
@@ -341,7 +328,7 @@ static void gather_indices_and_weights(const VoxelGraphRuntime &runtime, const V
 					const float weight = buffers[oi][value_index];
 					if (weight > pivot) {
 						weights[recorded_weights] = clamp(weight * 255.f, 0.f, 255.f);
-						indices[recorded_weights] = runtime.get_weight_output_info(oi).layer_index;
+						indices[recorded_weights] = weight_outputs[oi].layer_index;
 						++recorded_weights;
 					} else {
 						skipped_outputs[skipped_outputs_count] = oi;
@@ -372,7 +359,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 		runtime_ptr = _runtime;
 	}
 
-	if (runtime_ptr == nullptr || !runtime_ptr->runtime.has_output()) {
+	if (runtime_ptr == nullptr) {
 		return;
 	}
 
@@ -406,12 +393,9 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, slice_buffer_size);
 
-	cache.slice_cache.resize(slice_buffer_size);
-	ArraySlice<float> sdf_slice_cache(cache.slice_cache, 0, cache.slice_cache.size());
-
-	cache.x_cache.resize(cache.slice_cache.size());
-	cache.y_cache.resize(cache.slice_cache.size());
-	cache.z_cache.resize(cache.slice_cache.size());
+	cache.x_cache.resize(slice_buffer_size);
+	cache.y_cache.resize(slice_buffer_size);
+	cache.z_cache.resize(slice_buffer_size);
 
 	ArraySlice<float> x_cache(cache.x_cache, 0, cache.x_cache.size());
 	ArraySlice<float> y_cache(cache.y_cache, 0, cache.y_cache.size());
@@ -421,6 +405,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	const float matter_sdf = _debug_clipped_blocks ? 1.f : -1.f;
 
 	FixedArray<uint8_t, 4> spare_texture_indices = runtime_ptr->spare_texture_indices;
+	const unsigned int sdf_output_buffer_index = runtime_ptr->sdf_output_buffer_index;
 
 	// For each subdivision of the block
 	for (int sz = 0; sz < bs.z; sz += section_size) {
@@ -433,20 +418,21 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 				const Vector3i gmin = origin + (rmin << input.lod);
 				const Vector3i gmax = origin + (rmax << input.lod);
 
-				const Interval range = runtime.analyze_range(cache.state, gmin, gmax) * sdf_scale;
+				runtime.analyze_range(cache.state, gmin, gmax);
+				const Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
 				bool sdf_is_uniform = false;
-				if (range.min > clip_threshold && range.max > clip_threshold) {
+				if (sdf_range.min > clip_threshold && sdf_range.max > clip_threshold) {
 					out_buffer.fill_area_f(air_sdf, rmin, rmax, channel);
 					// In case of air, we skip weights because there is nothing to texture anyways
 					continue;
 
-				} else if (range.min < -clip_threshold && range.max < -clip_threshold) {
+				} else if (sdf_range.min < -clip_threshold && sdf_range.max < -clip_threshold) {
 					out_buffer.fill_area_f(matter_sdf, rmin, rmax, channel);
 					sdf_is_uniform = true;
 
-				} else if (range.is_single_value()) {
-					out_buffer.fill_area_f(range.min, rmin, rmax, channel);
-					if (range.min > 0.f) {
+				} else if (sdf_range.is_single_value()) {
+					out_buffer.fill_area_f(sdf_range.min, rmin, rmax, channel);
+					if (sdf_range.min > 0.f) {
 						continue;
 					}
 					sdf_is_uniform = true;
@@ -459,8 +445,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 					if (_use_optimized_execution_map) {
 						// Optimize out branches of the graph that won't contribute to the result
-						runtime.generate_optimized_execution_map(
-								cache.state, cache.optimized_execution_map, VoxelGraphRuntime::QUERY_ALL, false);
+						runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map, false);
 					}
 
 					unsigned int i = 0;
@@ -478,35 +463,39 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 						y_cache.fill(gy);
 
 						// Full query
-						runtime.generate_set(cache.state, x_cache, y_cache, z_cache, sdf_slice_cache,
+						runtime.generate_set(cache.state, x_cache, y_cache, z_cache,
 								_use_xz_caching && ry != rmin.y,
 								_use_optimized_execution_map ? &cache.optimized_execution_map : nullptr);
 
-						// TODO Flatten this further
 						{
 							VOXEL_PROFILE_SCOPE_NAMED("Copy SDF to block");
 							unsigned int i = 0;
+							const VoxelGraphRuntime::Buffer &sdf_buffer =
+									cache.state.get_buffer(sdf_output_buffer_index);
 							for (int rz = rmin.z; rz < rmax.z; ++rz) {
 								for (int rx = rmin.x; rx < rmax.x; ++rx) {
-									out_buffer.set_voxel_f(sdf_scale * sdf_slice_cache[i], rx, ry, rz, channel);
+									// TODO Flatten this further, this may run checks we don't need
+									out_buffer.set_voxel_f(sdf_scale * sdf_buffer.data[i], rx, ry, rz, channel);
 									++i;
 								}
 							}
 						}
 
-						if (runtime.get_weight_output_count() > 0) {
-							gather_indices_and_weights(runtime, cache.state, rmin, rmax, ry, out_buffer,
-									spare_texture_indices);
+						if (runtime_ptr->weight_outputs_count > 0) {
+							gather_indices_and_weights(
+									to_slice_const(runtime_ptr->weight_outputs, runtime_ptr->weight_outputs_count),
+									cache.state, rmin, rmax, ry, out_buffer, spare_texture_indices);
 						}
 					}
 
-				} else if (runtime.get_weight_output_count() > 0) {
+				} else if (runtime_ptr->weight_outputs_count > 0) {
 					// SDF is uniform and full of matter, but we may want to query weights
 
 					if (_use_optimized_execution_map) {
 						// Optimize out branches of the graph that won't contribute to the result
-						runtime.generate_optimized_execution_map(cache.state,
-								cache.optimized_execution_map, VoxelGraphRuntime::QUERY_ONLY_WEIGHTS, false);
+						runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map,
+								to_slice_const(runtime_ptr->weight_output_indices, runtime_ptr->weight_outputs_count),
+								false);
 					}
 
 					unsigned int i = 0;
@@ -523,12 +512,13 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 						y_cache.fill(gy);
 
-						runtime.generate_set(cache.state, x_cache, y_cache, z_cache, sdf_slice_cache,
+						runtime.generate_set(cache.state, x_cache, y_cache, z_cache,
 								_use_xz_caching && ry != rmin.y,
 								_use_optimized_execution_map ? &cache.optimized_execution_map : nullptr);
 
-						gather_indices_and_weights(runtime, cache.state, rmin, rmax, ry, out_buffer,
-								spare_texture_indices);
+						gather_indices_and_weights(
+								to_slice_const(runtime_ptr->weight_outputs, runtime_ptr->weight_outputs_count),
+								cache.state, rmin, rmax, ry, out_buffer, spare_texture_indices);
 					}
 				}
 			}
@@ -540,14 +530,127 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 	std::shared_ptr<Runtime> r = std::make_shared<Runtime>();
-	const VoxelGraphRuntime::CompilationResult result =
-			r->runtime.compile(_graph, Engine::get_singleton()->is_editor_hint());
+	VoxelGraphRuntime &runtime = r->runtime;
 
-	if (result.success) {
-		RWLockWrite wlock(_runtime_lock);
-		r->spare_texture_indices = calculate_spare_indices(r->runtime);
-		_runtime = r;
+	// Core compilation
+	const VoxelGraphRuntime::CompilationResult result =
+			runtime.compile(_graph, Engine::get_singleton()->is_editor_hint());
+
+	if (!result.success) {
+		return result;
 	}
+
+	// Extra steps
+	for (unsigned int output_index = 0; output_index < runtime.get_output_count(); ++output_index) {
+		const VoxelGraphRuntime::OutputInfo output = runtime.get_output_info(output_index);
+		const ProgramGraph::Node *node = _graph.get_node(output.node_id);
+		ERR_FAIL_COND_V(node == nullptr, VoxelGraphRuntime::CompilationResult());
+		switch (node->type_id) {
+			case NODE_OUTPUT_SDF:
+				if (r->sdf_output_buffer_index != -1) {
+					VoxelGraphRuntime::CompilationResult error;
+					error.success = false;
+					error.message = TTR("Multiple SDF outputs are not supported");
+					error.node_id = output.node_id;
+					return error;
+				} else {
+					r->sdf_output_buffer_index = output.buffer_address;
+				}
+				break;
+
+			case NODE_OUTPUT_WEIGHT: {
+				if (r->weight_outputs_count >= r->weight_outputs.size()) {
+					VoxelGraphRuntime::CompilationResult error;
+					error.success = false;
+					error.message = String(TTR("Cannot use more than {0} weight outputs"))
+											.format(varray(r->weight_outputs.size()));
+					error.node_id = output.node_id;
+					return error;
+				}
+				CRASH_COND(node->params.size() == 0);
+				const int layer_index = node->params[0];
+				if (layer_index < 0) {
+					// Should not be allowed by the UI, but who knows
+					VoxelGraphRuntime::CompilationResult error;
+					error.success = false;
+					error.message = String(TTR("Cannot use negative layer index in weight output"));
+					error.node_id = output.node_id;
+					return error;
+				}
+				if (layer_index >= r->weight_outputs.size()) {
+					VoxelGraphRuntime::CompilationResult error;
+					error.success = false;
+					error.message = String(TTR("Weight layers cannot exceed {}"))
+											.format(varray(r->weight_outputs.size()));
+					error.node_id = output.node_id;
+					return error;
+				}
+				for (unsigned int i = 0; i < r->weight_outputs_count; ++i) {
+					const WeightOutput &wo = r->weight_outputs[i];
+					if (wo.layer_index == layer_index) {
+						VoxelGraphRuntime::CompilationResult error;
+						error.success = false;
+						error.message =
+								String(TTR("Only one weight output node can use layer index {0}, found duplicate"))
+										.format(varray(layer_index));
+						error.node_id = output.node_id;
+						return error;
+					}
+				}
+				WeightOutput &new_weight_output = r->weight_outputs[r->weight_outputs_count];
+				new_weight_output.layer_index = layer_index;
+				new_weight_output.output_buffer_index = output.buffer_address;
+				r->weight_output_indices[r->weight_outputs_count] = output_index;
+				++r->weight_outputs_count;
+			} break;
+
+			default:
+				break;
+		}
+	}
+
+	if (r->sdf_output_buffer_index == -1) {
+		VoxelGraphRuntime::CompilationResult error;
+		error.success = false;
+		error.message = String(TTR("An SDF output is required for the graph to be valid."));
+		return error;
+	}
+
+	// Sort output weights by layer index, for determinism. Could be exploited for optimization too?
+	{
+		struct WeightOutputComparer {
+			inline bool operator()(const WeightOutput &a, const WeightOutput &b) const {
+				return a.layer_index < b.layer_index;
+			}
+		};
+		SortArray<WeightOutput, WeightOutputComparer> sorter;
+		CRASH_COND(r->weight_outputs_count >= r->weight_outputs.size());
+		sorter.sort(r->weight_outputs.data(), r->weight_outputs_count);
+	}
+
+	// Calculate spare indices
+	{
+		FixedArray<bool, 16> used_indices_map;
+		FixedArray<uint8_t, 4> spare_indices;
+		used_indices_map.fill(false);
+		for (unsigned int i = 0; i < r->weight_outputs.size(); ++i) {
+			used_indices_map[r->weight_outputs[i].layer_index] = true;
+		}
+		unsigned int spare_indices_count = 0;
+		for (unsigned int i = 0; i < used_indices_map.size() && spare_indices_count < 4; ++i) {
+			if (used_indices_map[i] == false) {
+				spare_indices[spare_indices_count] = i;
+				++spare_indices_count;
+			}
+		}
+		//debug_check_texture_indices(spare_indices);
+		ERR_FAIL_COND_V(spare_indices_count != 4, VoxelGraphRuntime::CompilationResult());
+		r->spare_texture_indices = spare_indices;
+	}
+
+	// Store valid result
+	RWLockWrite wlock(_runtime_lock);
+	_runtime = r;
 
 	return result;
 }
@@ -555,18 +658,16 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 // This is an external API which involves locking so better not use this internally
 bool VoxelGeneratorGraph::is_good() const {
 	RWLockRead rlock(_runtime_lock);
-	return _runtime != nullptr && _runtime->runtime.has_output();
+	return _runtime != nullptr;
 }
 
-void VoxelGeneratorGraph::generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
-		ArraySlice<float> out_sdf) {
-
+void VoxelGeneratorGraph::generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z) {
 	RWLockRead rlock(_runtime_lock);
-	ERR_FAIL_COND(_runtime == nullptr || !_runtime->runtime.has_output());
+	ERR_FAIL_COND(_runtime == nullptr);
 	Cache &cache = _cache;
 	VoxelGraphRuntime &runtime = _runtime->runtime;
 	runtime.prepare_state(cache.state, in_x.size());
-	runtime.generate_set(cache.state, in_x, in_y, in_z, out_sdf, false, nullptr);
+	runtime.generate_set(cache.state, in_x, in_y, in_z, false, nullptr);
 }
 
 const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current_thread() {
@@ -579,7 +680,7 @@ ArraySlice<const int> VoxelGeneratorGraph::get_last_execution_map_debug_from_cur
 
 bool VoxelGeneratorGraph::try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const {
 	RWLockRead rlock(_runtime_lock);
-	ERR_FAIL_COND_V(_runtime == nullptr || !_runtime->runtime.has_output(), false);
+	ERR_FAIL_COND_V(_runtime == nullptr, false);
 	uint16_t addr;
 	const bool res = _runtime->runtime.try_get_output_port_address(port, addr);
 	out_address = addr;
@@ -634,7 +735,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 		runtime_ptr = _runtime;
 	}
 
-	ERR_FAIL_COND(runtime_ptr == nullptr || !runtime_ptr->runtime.has_output());
+	ERR_FAIL_COND(runtime_ptr == nullptr);
 
 	// This process would use too much memory if run over the entire image at once,
 	// so we'll subdivide the load in smaller chunks
@@ -642,18 +743,20 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 		std::vector<float> x_coords;
 		std::vector<float> y_coords;
 		std::vector<float> z_coords;
-		std::vector<float> sdf_values;
 		Ref<Image> im;
 		const VoxelGraphRuntime &runtime;
 		VoxelGraphRuntime::State &state;
+		const unsigned int sdf_buffer_index;
 		const float ref_radius;
 		const float sdf_min;
 		const float sdf_max;
 
-		ProcessChunk(VoxelGraphRuntime::State &p_state, const VoxelGraphRuntime &p_runtime,
+		ProcessChunk(VoxelGraphRuntime::State &p_state, unsigned int p_sdf_buffer_index,
+				const VoxelGraphRuntime &p_runtime,
 				float p_ref_radius, float p_sdf_min, float p_sdf_max) :
 				runtime(p_runtime),
 				state(p_state),
+				sdf_buffer_index(p_sdf_buffer_index),
 				ref_radius(p_ref_radius),
 				sdf_min(p_sdf_min),
 				sdf_max(p_sdf_max) {}
@@ -665,7 +768,6 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 			x_coords.resize(area);
 			y_coords.resize(area);
 			z_coords.resize(area);
-			sdf_values.resize(area);
 			runtime.prepare_state(state, area);
 
 			const Vector2 suv = Vector2(
@@ -689,15 +791,15 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 				}
 			}
 
-			runtime.generate_set(state,
-					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values), false, nullptr);
+			runtime.generate_set(state, to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), false, nullptr);
+			const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(sdf_buffer_index);
 
 			// Calculate final pixels
 			im->lock();
 			i = 0;
 			for (int iy = y0; iy < ymax; ++iy) {
 				for (int ix = x0; ix < xmax; ++ix) {
-					const float sdf = sdf_values[i];
+					const float sdf = buffer.data[i];
 					const float nh = (-sdf - sdf_min) * nr;
 					im->set_pixel(ix, iy, Color(nh, nh, nh));
 					++i;
@@ -709,7 +811,8 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 
 	Cache &cache = _cache;
 
-	ProcessChunk pc(cache.state, runtime_ptr->runtime, ref_radius, sdf_min, sdf_max);
+	ProcessChunk pc(cache.state, runtime_ptr->sdf_output_buffer_index, runtime_ptr->runtime,
+			ref_radius, sdf_min, sdf_max);
 	pc.im = im;
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
@@ -727,7 +830,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 		runtime_ptr = _runtime;
 	}
 
-	ERR_FAIL_COND(runtime_ptr == nullptr || !runtime_ptr->runtime.has_output());
+	ERR_FAIL_COND(runtime_ptr == nullptr);
 
 	// This process would use too much memory if run over the entire image at once,
 	// so we'll subdivide the load in smaller chunks
@@ -738,15 +841,18 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 		std::vector<float> sdf_values_p; // TODO Could be used at the same time to get bump?
 		std::vector<float> sdf_values_px;
 		std::vector<float> sdf_values_py;
+		unsigned int sdf_buffer_index;
 		Ref<Image> im;
 		const VoxelGraphRuntime &runtime;
 		VoxelGraphRuntime::State &state;
 		const float strength;
 		const float ref_radius;
 
-		ProcessChunk(VoxelGraphRuntime::State &p_state, const VoxelGraphRuntime &p_runtime,
+		ProcessChunk(VoxelGraphRuntime::State &p_state, unsigned int p_sdf_buffer_index,
+				const VoxelGraphRuntime &p_runtime,
 				float p_strength, float p_ref_radius) :
 				state(p_state),
+				sdf_buffer_index(p_sdf_buffer_index),
 				runtime(p_runtime),
 				strength(p_strength),
 				ref_radius(p_ref_radius) {}
@@ -776,6 +882,10 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 			const int xmax = x0 + width;
 			const int ymax = y0 + height;
 
+			const VoxelGraphRuntime::Buffer &sdf_buffer = state.get_buffer(sdf_buffer_index);
+
+			// TODO instead of using 3 separate queries, interleave triplets of positions into a single array?
+
 			// Get heights
 			unsigned int i = 0;
 			for (int iy = y0; iy < ymax; ++iy) {
@@ -789,8 +899,9 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 				}
 			}
 			// TODO Perform range analysis on the range of coordinates, it might still yield performance benefits
-			runtime.generate_set(state,
-					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_p), false, nullptr);
+			runtime.generate_set(state, to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), false, nullptr);
+			CRASH_COND(sdf_values_p.size() != sdf_buffer.size);
+			memcpy(sdf_values_p.data(), sdf_buffer.data, sdf_values_p.size() * sizeof(float));
 
 			// Get neighbors along X
 			i = 0;
@@ -804,8 +915,9 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 					++i;
 				}
 			}
-			runtime.generate_set(state,
-					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_px), false, nullptr);
+			runtime.generate_set(state, to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), false, nullptr);
+			CRASH_COND(sdf_values_px.size() != sdf_buffer.size);
+			memcpy(sdf_values_px.data(), sdf_buffer.data, sdf_values_px.size() * sizeof(float));
 
 			// Get neighbors along Y
 			i = 0;
@@ -819,8 +931,9 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 					++i;
 				}
 			}
-			runtime.generate_set(state,
-					to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), to_slice(sdf_values_py), false, nullptr);
+			runtime.generate_set(state, to_slice(x_coords), to_slice(y_coords), to_slice(z_coords), false, nullptr);
+			CRASH_COND(sdf_values_py.size() != sdf_buffer.size);
+			memcpy(sdf_values_py.data(), sdf_buffer.data, sdf_values_py.size() * sizeof(float));
 
 			// TODO This is probably invalid due to the distortion, may need to use another approach.
 			// Compute the 3D normal from gradient, then project it?
@@ -858,7 +971,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 		}
 	}
 
-	ProcessChunk pc(cache.state, runtime_ptr->runtime, strength, ref_radius);
+	ProcessChunk pc(cache.state, runtime_ptr->sdf_output_buffer_index, runtime_ptr->runtime, strength, ref_radius);
 	pc.im = im;
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
@@ -870,11 +983,13 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 		RWLockRead rlock(_runtime_lock);
 		runtime_ptr = _runtime;
 	}
-	ERR_FAIL_COND_V(runtime_ptr == nullptr || !runtime_ptr->runtime.has_output(), 0.f);
+	ERR_FAIL_COND_V(runtime_ptr == nullptr, 0.f);
 	Cache &cache = _cache;
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, 1);
-	return runtime.generate_single(cache.state, position.to_vec3(), false);
+	runtime.generate_single(cache.state, position.to_vec3(), false);
+	const VoxelGraphRuntime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
+	return buffer.data[0];
 }
 
 // Note, this wrapper may not be used for main generation tasks.
@@ -886,17 +1001,16 @@ Interval VoxelGeneratorGraph::debug_analyze_range(Vector3i min_pos, Vector3i max
 		RWLockRead rlock(_runtime_lock);
 		runtime_ptr = _runtime;
 	}
-	ERR_FAIL_COND_V(runtime_ptr == nullptr || !runtime_ptr->runtime.has_output(), Interval::from_single_value(0.f));
+	ERR_FAIL_COND_V(runtime_ptr == nullptr, Interval::from_single_value(0.f));
 	Cache &cache = _cache;
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	// Note, buffer size is irrelevant here, because range analysis doesn't use buffers
 	runtime.prepare_state(cache.state, 1);
-	Interval res = runtime.analyze_range(cache.state, min_pos, max_pos);
+	runtime.analyze_range(cache.state, min_pos, max_pos);
 	if (optimize_execution_map) {
-		runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map,
-				VoxelGraphRuntime::QUERY_ALL, true);
+		runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map, true);
 	}
-	return res;
+	return cache.state.get_range(runtime_ptr->sdf_output_buffer_index);
 }
 
 Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
@@ -1057,7 +1171,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 		RWLockRead rlock(_runtime_lock);
 		runtime_ptr = _runtime;
 	}
-	ERR_FAIL_COND_V(runtime_ptr == nullptr || !runtime_ptr->runtime.has_output(), 0.f);
+	ERR_FAIL_COND_V(runtime_ptr == nullptr, 0.f);
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 
 	const uint32_t cube_size = 16;
@@ -1088,18 +1202,16 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 		}
 
 	} else {
-		std::vector<float> dst;
-		dst.resize(cube_size * cube_size);
+		const unsigned int cube_volume = cube_size * cube_size * cube_size;
 		std::vector<float> src_x;
 		std::vector<float> src_y;
 		std::vector<float> src_z;
-		src_x.resize(dst.size());
-		src_y.resize(dst.size());
-		src_z.resize(dst.size());
+		src_x.resize(cube_volume);
+		src_y.resize(cube_volume);
+		src_z.resize(cube_volume);
 		ArraySlice<float> sx(src_x, 0, src_x.size());
 		ArraySlice<float> sy(src_y, 0, src_y.size());
 		ArraySlice<float> sz(src_z, 0, src_z.size());
-		ArraySlice<float> sdst(dst, 0, dst.size());
 
 		runtime.prepare_state(cache.state, sx.size());
 
@@ -1107,7 +1219,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 			profiling_clock.restart();
 
 			for (uint32_t y = 0; y < cube_size; ++y) {
-				runtime.generate_set(cache.state, sx, sy, sz, sdst, false, false);
+				runtime.generate_set(cache.state, sx, sy, sz, false, nullptr);
 			}
 
 			elapsed_us += profiling_clock.restart();

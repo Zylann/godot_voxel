@@ -8,9 +8,13 @@
 
 #include <core/reference.h>
 
-// CPU VM to execute a voxel graph generator
+// CPU VM to execute a voxel graph generator.
+// This is a more generic class implementing the core of a 3D expression processing system.
+// Some of the logic dedicated to voxel data is moved in other classes.
 class VoxelGraphRuntime {
 public:
+	static const unsigned int MAX_OUTPUTS = 24;
+
 	struct CompilationResult {
 		bool success = false;
 		int node_id = -1;
@@ -42,11 +46,12 @@ public:
 	// If no local optimization is done, this can remain the same for any position lists.
 	// If local optimization is used, it may be recomputed before each query.
 	struct ExecutionMap {
+		// TODO Typo?
 		std::vector<uint16_t> operation_adresses;
 		// Stores node IDs referring to the user-facing graph
 		std::vector<int> debug_nodes;
 		// From which index in the adress list operations will start depending on Y
-		unsigned int xzy_start_index;
+		unsigned int xzy_start_index = 0;
 
 		void clear() {
 			operation_adresses.clear();
@@ -94,10 +99,11 @@ public:
 		unsigned int buffer_capacity = 0;
 	};
 
-	struct WeightOutput {
-		unsigned int layer_index;
+	// Info about a terminal node of the graph
+	struct OutputInfo {
 		unsigned int buffer_address;
 		unsigned int dependency_graph_node_index;
+		unsigned int node_id;
 	};
 
 	VoxelGraphRuntime();
@@ -111,39 +117,35 @@ public:
 	// If none of these change, you can keep re-using it.
 	void prepare_state(State &state, unsigned int buffer_size) const;
 
-	float generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const;
+	// Convenience for set generation with only one value
+	void generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const;
 
 	void generate_set(State &state, ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
-			ArraySlice<float> out_sdf, bool skip_xz, const ExecutionMap *execution_map) const;
+			bool skip_xz, const ExecutionMap *execution_map) const;
 
-	inline unsigned int get_weight_output_count() const {
-		return _program.weight_outputs_count;
+	inline unsigned int get_output_count() const {
+		return _program.outputs_count;
 	}
 
-	inline const WeightOutput &get_weight_output_info(unsigned int i) const {
-		return _program.weight_outputs[i];
+	inline const OutputInfo &get_output_info(unsigned int i) const {
+		return _program.outputs[i];
 	}
 
 	// Analyzes a specific region of inputs to find out what ranges of outputs we can expect.
 	// It can be used to speed up calls to `generate_set` thanks to execution mapping,
 	// so that operations can be optimized out if they don't contribute to the result.
-	Interval analyze_range(State &state, Vector3i min_pos, Vector3i max_pos) const;
-
-	enum QueryType {
-		QUERY_ALL,
-		QUERY_ONLY_WEIGHTS
-	};
+	void analyze_range(State &state, Vector3i min_pos, Vector3i max_pos) const;
 
 	// Call this after `analyze_range` if you intend to actually generate a set or single values in the area.
 	// This allows to use the execution map optimization, until you choose another area.
 	// (i.e when using this, querying values outside of the analyzed area may be invalid)
-	void generate_optimized_execution_map(const State &state, ExecutionMap &execution_map, QueryType query_type,
-			bool debug) const;
+	void generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
+			ArraySlice<const unsigned int> required_outputs, bool debug) const;
 
-	inline bool has_output() const {
-		return _program.sdf_output_address != -1;
-	}
+	// Convenience function to require all outputs
+	void generate_optimized_execution_map(const State &state, ExecutionMap &execution_map, bool debug) const;
 
+	// Gets the buffer address of a specific output port
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint16_t &out_address) const;
 
 	struct HeapResource {
@@ -350,7 +352,7 @@ private:
 			uint16_t first_dependency;
 			uint16_t end_dependency;
 			uint16_t op_address;
-			bool is_io;
+			bool is_input;
 			int debug_node_id;
 		};
 
@@ -381,7 +383,7 @@ private:
 		// List of indexes within `operations` describing which order they should be run into by default.
 		// It's used because sometimes we may want to override with a simplified execution map dynamically.
 		// When we don't, we use the default one so the code doesn't have to change.
-		std::vector<uint16_t> default_execution_map;
+		ExecutionMap default_execution_map;
 
 		// Heap-allocated parameters data, when too large to fit in `operations`.
 		// We keep a reference to them so they can be freed when the program is cleared.
@@ -397,7 +399,6 @@ private:
 		// Address in `operations` from which operations will depend on Y. Operations before never depend on it.
 		// It is used to optimize away calculations that would otherwise be the same in planar terrain use cases.
 		uint32_t xzy_start_op_address;
-		uint32_t xzy_start_execution_map_index;
 
 		// Note: the following buffers are allocated by the user.
 		// They are mapped temporarily into the same array of buffers inside `State`,
@@ -410,12 +411,9 @@ private:
 		int y_input_address = -1;
 		// Address within the State's array of buffers where the Z input may be.
 		int z_input_address = -1;
-		// Address within the State's array of buffers where the SDF output may be.
-		int sdf_output_address = -1;
-		int sdf_output_node_index = -1;
 
-		FixedArray<WeightOutput, 16> weight_outputs;
-		unsigned int weight_outputs_count = 0;
+		FixedArray<OutputInfo, MAX_OUTPUTS> outputs;
+		unsigned int outputs_count = 0;
 
 		// Maximum amount of buffers this program will need to do a full run.
 		// Buffers are needed to hold values of arguments and outputs for each operation.
@@ -431,17 +429,14 @@ private:
 		void clear() {
 			operations.clear();
 			buffer_specs.clear();
-			xzy_start_execution_map_index = 0;
 			xzy_start_op_address = 0;
 			default_execution_map.clear();
 			output_port_addresses.clear();
 			dependency_graph.clear();
-			sdf_output_address = -1;
 			x_input_address = -1;
 			y_input_address = -1;
 			z_input_address = -1;
-			sdf_output_node_index = -1;
-			weight_outputs_count = 0;
+			outputs_count = 0;
 			compilation_result = CompilationResult();
 			for (auto it = heap_resources.begin(); it != heap_resources.end(); ++it) {
 				HeapResource &r = *it;

@@ -136,8 +136,7 @@ public:
 	VoxelGraphRuntime::CompilationResult compile();
 	bool is_good() const;
 
-	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
-			ArraySlice<float> out_sdf);
+	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z);
 
 	// Returns state from the last generator used in the current thread
 	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
@@ -171,6 +170,15 @@ private:
 	void _on_subresource_changed();
 	void connect_to_subresource_changes();
 
+	struct WeightOutput {
+		unsigned int layer_index;
+		unsigned int output_buffer_index;
+	};
+
+	static void gather_indices_and_weights(ArraySlice<const WeightOutput> weight_outputs,
+			const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry, VoxelBuffer &out_voxel_buffer,
+			FixedArray<uint8_t, 4> spare_indices);
+
 	static void _bind_methods();
 
 	ProgramGraph _graph;
@@ -202,6 +210,12 @@ private:
 		// Indices that are not used in the graph.
 		// This is used when there are less than 4 texture weight outputs.
 		FixedArray<uint8_t, 4> spare_texture_indices;
+		// Index to the SDF output
+		int sdf_output_buffer_index = -1;
+		FixedArray<WeightOutput, 16> weight_outputs;
+		// List of indices to feed queries. The order doesn't matter, can be different from `weight_outputs`.
+		FixedArray<unsigned int, 16> weight_output_indices;
+		unsigned int weight_outputs_count = 0;
 	};
 
 	std::shared_ptr<Runtime> _runtime = nullptr;
@@ -211,7 +225,6 @@ private:
 		std::vector<float> x_cache;
 		std::vector<float> y_cache;
 		std::vector<float> z_cache;
-		std::vector<float> slice_cache;
 		VoxelGraphRuntime::State state;
 		VoxelGraphRuntime::ExecutionMap optimized_execution_map;
 	};

@@ -65,6 +65,15 @@ public:
 	void find_depth_first(uint32_t start_node_id, std::vector<uint32_t> &order) const;
 	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
 
+	template <typename F>
+	inline void for_each_node(F f) const {
+		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+			const Node *node = it->second;
+			ERR_CONTINUE(node == nullptr);
+			f(*node);
+		}
+	}
+
 	void copy_from(const ProgramGraph &other, bool copy_subresources);
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
 	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
