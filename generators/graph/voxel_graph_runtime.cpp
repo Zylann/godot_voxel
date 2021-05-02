@@ -394,7 +394,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 			}
 
 			// Add fake user for output ports so they can pass the local users check in optimizations
-			for (size_t j = 0; j < type.outputs.size(); ++j) {
+			for (unsigned int j = 0; j < type.outputs.size(); ++j) {
 				const ProgramGraph::PortLocation loc{ node_id, j };
 				const uint16_t *aptr = _program.output_port_addresses.getptr(loc);
 				CRASH_COND(aptr == nullptr);
