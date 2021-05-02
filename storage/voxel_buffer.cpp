@@ -6,7 +6,7 @@
 
 #include "../edition/voxel_tool_buffer.h"
 #include "../util/funcs.h"
-//#include "../util/profiling.h"
+#include "../util/profiling.h"
 #include "voxel_buffer.h"
 
 #include <core/func_ref.h>
@@ -561,7 +561,20 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 					}
 				}
 
+			} else if (channel.depth == DEPTH_16_BIT) {
+				Vector3i pos;
+				for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
+					for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
+						const unsigned int src_ri =
+								2 * other.get_index(pos.x + src_min.x, pos.y + src_min.y, pos.z + src_min.z);
+						const unsigned int dst_ri =
+								2 * get_index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
+						memcpy(&channel.data[dst_ri], &other_channel.data[src_ri], area_size.y * sizeof(uint16_t));
+					}
+				}
+
 			} else {
+				VOXEL_PROFILE_SCOPE();
 				// TODO Optimized versions
 				Vector3i pos;
 				for (pos.z = 0; pos.z < area_size.z; ++pos.z) {

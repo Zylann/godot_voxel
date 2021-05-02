@@ -45,11 +45,13 @@ generators/    | Procedural generators. They only depend on voxel storage and ma
 meshers/       | Only depends on voxel storage, math and some Godot graphics APIs.
 streams/       | Files handling code. Only depends on filesystem and storage.
 math/          | Generic math utilities.
-util/          | Generic utility functions.
+util/          | Generic utility functions and structures. They don't depend on voxel stuff.
 thirdparty/    | Third-party libraries, in source code form. They are compiled statically so Godot remains a single executable.
 server/        | Contains VoxelServer. Depends on meshers, streams, storage but not directly on nodes.
 storage/       | Storage and memory data structures.
 terrain/       | Contains all the nodes. Depends on the rest of the module, except editor-only parts.
+tests/         | Contains tests. These run when Godot starts if enabled in the build script.
+doc/           | Contains documentation
 
 <p></p>
 
@@ -89,7 +91,7 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Use Clang-format to automate most of these rules (the one included in Godot should do it)
 - Constructors and destructors go on top
 - Bindings go at the bottom. Private wrapper functions can be used to adapt to the script API and are prefixed with `_b_`.
-- Avoid long lines. Preferred ruler is 100 characters. Don't fit too many operations on the same line, use locals.
+- Avoid long lines. Preferred ruler is 120 characters. Don't fit too many operations on the same line, use locals.
 
 ### C++ features
 
@@ -131,6 +133,83 @@ In performance-critical areas which run a lot:
 - use `memnew`, `memdelete`, `memalloc` and `memfree` so memory usage is counted within Godot monitors
 - Don't leave random prints. For verbose mode you may also use `PRINT_VERBOSE()` instead of `print_verbose()`.
 - Use `int` as argument for functions exposed to scripts if they don't need to exceed 2^31, even if they are never negative, so errors are clearer if the user makes a mistake
+
+
+Debugging
+----------
+
+### Command line arguments
+
+When you start Godot, by default it starts the project manager. When you choose a project from there, it will relaunch itself, but that breaks the debugger's connection. So it is recommended to use command line arguments to directly start Godot in the project and mode you want.
+
+First, make sure Godot is launched within the working directory of your project.
+
+- To debug the game, launch Godot with no argument, and it will start from the main scene.
+- To debug a specific scene of the project, launch Godot with the relative path to the scene as command line argument
+- To debug the editor, add the `-e` argument.
+
+Example of options setup in in VSCode `launch.json` on Windows:
+
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(Windows) Launch",
+            "type": "cppvsdbg", // For MSVC
+            //"type": "cppdbg", // For GDB
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/godot.windows.tools.64.exe", // debug
+            //"program": "${workspaceFolder}/bin/godot.windows.opt.tools.64.exe", // release_debug
+            "args": [
+                "-v", // Verbose output
+                
+                //"-e", // Editor mode
+                
+                //"--debug-collisions",
+                
+                // Run a specific scene
+                //"local_tests/sqlite/test_sqlite.tscn",
+                //"local_tests/texturing/test_textured_terrain.tscn"
+                //"local_tests/texturing/test_texturing.tscn"
+            ],
+            "stopAtEntry": false,
+            "cwd": "D:/PROJETS/INFO/GODOT/Games/SolarSystem/Project",
+            "environment": [],
+            "visualizerFile": "${workspaceFolder}/modules/voxel/voxel.natvis"
+        }
+    ]
+}
+```
+
+### Breakpoint on error
+
+It is recommended to use a debugger to have better information when errors or crashes occur. It may be useful to open `core/error_macros.cpp` (in Godot 3.x) and leave a breakpoint in `_err_print_error`, so that every time an error occurs, the debugger will break in there, providing you with the live call stack and variable states to inspect.
+
+If you debug the editor, Godot tends to print a lot more errors for things that aren't critical, such as making temporary mistakes in the script editor, or trying to index a resource file in the explorer dock and failing for whatever reason. In this case you may either need clean dedicated test projects, or place breakpoints after launch.
+
+### Debug print
+
+```cpp
+print_line(String("Hello {0}, my age is {1}").format(varray(name, age)));
+```
+
+### Pretty printing
+
+Godot and the voxel module both use their own container types, in addition to STL's ones. Debuggers often aren't able to inspect them. For example, Godot's `Vector<T>` class is similar to `std::vector<T>` but debuggers are unable to let you inspect what's in them.
+
+To fix this, it is usually possible to provide your debugger a file listing special patterns to inspect these types in a more user-friendly way.
+
+In VSCode, the cpp-tools extension supports Natvis files. Godot comes with such a file in `platform/windows/godot.natvis`. To get pretty printing for Godot types, in your `launch.json` file, add the following line:
+```json
+            "visualizerFile": "${workspaceFolder}/platform/windows/godot.natvis"
+```
+
+Unfortunately, only one file can be provided at the moment. [An issue is open](https://github.com/Microsoft/vscode-cpptools/issues/925) to request support for multiple files.
+That means if you also want pretty-printing for structures of the voxel module, you have to replace the natvis path to the following:
+```json
+            "visualizerFile": "${workspaceFolder}/modules/voxel/voxel.natvis"
+```
 
 
 Profile with Tracy
