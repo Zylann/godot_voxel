@@ -420,6 +420,10 @@ PoolVector<int> ProgramGraph::get_node_ids() const {
 	return ids;
 }
 
+int ProgramGraph::get_nodes_count() const {
+	return _nodes.size();
+}
+
 uint32_t ProgramGraph::generate_node_id() {
 	return _next_node_id++;
 }

@@ -228,6 +228,10 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
 		return;
 	}
 
+	if (graph->get_nodes_count() == 0) {
+		graph->load_plane_preset();
+	}
+
 	if (_graph.is_valid()) {
 		_graph->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_graph_changed");
 		_graph->disconnect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED, this, "_on_graph_node_name_changed");

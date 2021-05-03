@@ -97,6 +97,10 @@ public:
 	PoolIntArray get_node_ids() const;
 	uint32_t generate_node_id() { return _graph.generate_node_id(); }
 
+	int get_nodes_count() const;
+
+	void load_plane_preset();
+
 	// Performance tuning (advanced)
 
 	bool is_using_optimized_execution_map() const;

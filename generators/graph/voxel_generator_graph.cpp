@@ -188,6 +188,10 @@ PoolIntArray VoxelGeneratorGraph::get_node_ids() const {
 	return _graph.get_node_ids();
 }
 
+int VoxelGeneratorGraph::get_nodes_count() const {
+	return _graph.get_nodes_count();
+}
+
 bool VoxelGeneratorGraph::is_using_optimized_execution_map() const {
 	return _use_optimized_execution_map;
 }
@@ -1230,25 +1234,49 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 	return us;
 }
 
+// This may be used as template when creating new graphs
+void VoxelGeneratorGraph::load_plane_preset() {
+	clear();
+
+	/*
+	 *     X  
+	 * 
+	 *     Y --- SdfPlane --- OutputSDF
+	 * 
+	 *     Z
+	 */
+
+	const Vector2 k(40, 50);
+
+	const uint32_t n_x = create_node(NODE_INPUT_X, Vector2(11, 1) * k); // 1
+	const uint32_t n_y = create_node(NODE_INPUT_Y, Vector2(11, 3) * k); // 2
+	const uint32_t n_z = create_node(NODE_INPUT_Z, Vector2(11, 5) * k); // 3
+	const uint32_t n_o = create_node(NODE_OUTPUT_SDF, Vector2(18, 3) * k); // 4
+	const uint32_t n_plane = create_node(NODE_SDF_PLANE, Vector2(14, 3) * k); // 5
+
+	add_connection(n_y, 0, n_plane, 0);
+	add_connection(n_plane, 0, n_o, 0);
+}
+
 void VoxelGeneratorGraph::debug_load_waves_preset() {
 	clear();
 	// This is mostly for testing
 
 	const Vector2 k(35, 50);
 
-	uint32_t n_x = create_node(NODE_INPUT_X, Vector2(11, 1) * k); // 1
-	uint32_t n_y = create_node(NODE_INPUT_Y, Vector2(37, 1) * k); // 2
-	uint32_t n_z = create_node(NODE_INPUT_Z, Vector2(11, 5) * k); // 3
-	uint32_t n_o = create_node(NODE_OUTPUT_SDF, Vector2(45, 3) * k); // 4
-	uint32_t n_sin0 = create_node(NODE_SIN, Vector2(23, 1) * k); // 5
-	uint32_t n_sin1 = create_node(NODE_SIN, Vector2(23, 5) * k); // 6
-	uint32_t n_add = create_node(NODE_ADD, Vector2(27, 3) * k); // 7
-	uint32_t n_mul0 = create_node(NODE_MULTIPLY, Vector2(17, 1) * k); // 8
-	uint32_t n_mul1 = create_node(NODE_MULTIPLY, Vector2(17, 5) * k); // 9
-	uint32_t n_mul2 = create_node(NODE_MULTIPLY, Vector2(33, 3) * k); // 10
-	uint32_t n_c0 = create_node(NODE_CONSTANT, Vector2(14, 3) * k); // 11
-	uint32_t n_c1 = create_node(NODE_CONSTANT, Vector2(30, 5) * k); // 12
-	uint32_t n_sub = create_node(NODE_SUBTRACT, Vector2(39, 3) * k); // 13
+	const uint32_t n_x = create_node(NODE_INPUT_X, Vector2(11, 1) * k); // 1
+	const uint32_t n_y = create_node(NODE_INPUT_Y, Vector2(37, 1) * k); // 2
+	const uint32_t n_z = create_node(NODE_INPUT_Z, Vector2(11, 5) * k); // 3
+	const uint32_t n_o = create_node(NODE_OUTPUT_SDF, Vector2(45, 3) * k); // 4
+	const uint32_t n_sin0 = create_node(NODE_SIN, Vector2(23, 1) * k); // 5
+	const uint32_t n_sin1 = create_node(NODE_SIN, Vector2(23, 5) * k); // 6
+	const uint32_t n_add = create_node(NODE_ADD, Vector2(27, 3) * k); // 7
+	const uint32_t n_mul0 = create_node(NODE_MULTIPLY, Vector2(17, 1) * k); // 8
+	const uint32_t n_mul1 = create_node(NODE_MULTIPLY, Vector2(17, 5) * k); // 9
+	const uint32_t n_mul2 = create_node(NODE_MULTIPLY, Vector2(33, 3) * k); // 10
+	const uint32_t n_c0 = create_node(NODE_CONSTANT, Vector2(14, 3) * k); // 11
+	const uint32_t n_c1 = create_node(NODE_CONSTANT, Vector2(30, 5) * k); // 12
+	const uint32_t n_sub = create_node(NODE_SUBTRACT, Vector2(39, 3) * k); // 13
 
 	set_node_param(n_c0, 0, 1.f / 20.f);
 	set_node_param(n_c1, 0, 10.f);
