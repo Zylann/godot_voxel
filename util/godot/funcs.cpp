@@ -134,6 +134,8 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 		int dst_index = 0;
 		int count = 0;
 	};
+
+	// TODO Maybe use a Map actually, so we can have a comparator with floating error
 	HashMap<Vector3, Dupe> vertex_to_dupe;
 	HashMap<int, int> src_index_to_dst_index;
 	std::vector<Vector3> dst_positions;
