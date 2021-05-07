@@ -47,7 +47,7 @@ public:
 	float get_lod_distance() const;
 
 	void set_lod_count(int p_lod_count);
-	unsigned int get_lod_count() const;
+	int get_lod_count() const;
 
 	void set_generate_collisions(bool enabled);
 	bool get_generate_collisions() const { return _generate_collisions; }
