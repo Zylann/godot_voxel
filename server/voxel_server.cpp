@@ -852,12 +852,11 @@ static void copy_block_and_neighbors(ArraySlice<Ref<VoxelBuffer> > blocks, Voxel
 
 				const Vector3i src_min = min_pos - offset;
 				const Vector3i src_max = max_pos - offset;
-				const Vector3i dst_min = offset - min_pos;
 
 				{
 					RWLockRead read(src->get_lock());
 					for (unsigned int ci = 0; ci < channels_count; ++ci) {
-						dst.copy_from(**src, src_min, src_max, dst_min, channels[ci]);
+						dst.copy_from(**src, src_min, src_max, Vector3(), channels[ci]);
 					}
 				}
 			}
