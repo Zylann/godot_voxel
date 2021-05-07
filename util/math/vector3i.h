@@ -186,7 +186,7 @@ struct Vector3i {
 	}
 };
 
-_FORCE_INLINE_ Vector3i operator+(const Vector3i a, const Vector3i &b) {
+_FORCE_INLINE_ Vector3i operator+(const Vector3i &a, const Vector3i &b) {
 	return Vector3i(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 

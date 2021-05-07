@@ -512,6 +512,36 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index
 	channel.depth = other_channel.depth;
 }
 
+inline void clip_copy_region_coord(int &src_min, int &src_max, const int src_size, int &dst_min, const int dst_size) {
+	// Clamp source and shrink destination for moved borders
+	if (src_min < 0) {
+		dst_min += -src_min;
+		src_min = 0;
+	}
+	if (src_max > src_size) {
+		src_max = src_size;
+	}
+	// Clamp destination and shrink source for moved borders
+	if (dst_min < 0) {
+		src_min += -dst_min;
+		dst_min = 0;
+	}
+	const int dst_w = src_max - src_min;
+	const int dst_max = dst_min + dst_w;
+	if (dst_max > dst_size) {
+		src_max -= dst_max - dst_size;
+	}
+	// It is possible the source has negative size at this point, which means there is nothing to copy.
+	// This must be checked by the caller.
+}
+
+inline void clip_copy_region(
+		Vector3i &src_min, Vector3i &src_max, const Vector3i &src_size, Vector3i &dst_min, const Vector3i &dst_size) {
+	clip_copy_region_coord(src_min.x, src_max.x, src_size.x, dst_min.x, dst_size.x);
+	clip_copy_region_coord(src_min.y, src_max.y, src_size.y, dst_min.y, dst_size.y);
+	clip_copy_region_coord(src_min.z, src_max.z, src_size.z, dst_min.z, dst_size.z);
+}
+
 void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
 		unsigned int channel_index) {
 
@@ -529,19 +559,21 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 
 	Vector3i::sort_min_max(src_min, src_max);
 
-	src_min.clamp_to(Vector3i(0, 0, 0), other._size);
-	src_max.clamp_to(Vector3i(0, 0, 0), other._size + Vector3i(1, 1, 1));
+	clip_copy_region(src_min, src_max, other._size, dst_min, _size);
 
-	dst_min.clamp_to(Vector3i(0, 0, 0), _size);
 	const Vector3i area_size = src_max - src_min;
-	//Vector3i dst_max = dst_min + area_size;
+
+	if (area_size.x <= 0 || area_size.y <= 0 || area_size.z <= 0) {
+		// Degenerate area, we'll not copy anything.
+		return;
+	}
 
 	if (area_size == _size && area_size == other._size) {
 		// Equivalent of full copy between two blocks of same size
 		copy_from(other, channel_index);
 
 	} else {
-		if (other_channel.data) {
+		if (other_channel.data != nullptr) {
 
 			if (channel.data == nullptr) {
 				create_channel(channel_index, _size, channel.defval);
@@ -656,6 +688,7 @@ void VoxelBuffer::downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_
 
 	Vector3i dst_max = dst_min + ((src_max - src_min) >> 1);
 
+	// TODO This will be wrong if it overlaps the border?
 	dst_min.clamp_to(Vector3i(), dst._size);
 	dst_max.clamp_to(Vector3i(), dst._size + Vector3i(1));
 
