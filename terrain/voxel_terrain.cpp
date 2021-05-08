@@ -686,11 +686,18 @@ void VoxelTerrain::send_block_data_requests() {
 	}
 
 	// Blocks to save
-	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
-		PRINT_VERBOSE(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position.to_vec3())));
-		const BlockToSave b = _blocks_to_save[i];
-		// TODO Batch request
-		VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, 0);
+	if (_stream.is_valid()) {
+		for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
+			PRINT_VERBOSE(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position.to_vec3())));
+			const BlockToSave b = _blocks_to_save[i];
+			// TODO Batch request
+			VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, 0);
+		}
+	} else {
+		if (_blocks_to_save.size() > 0) {
+			PRINT_VERBOSE(String("Not saving {0} blocks because no stream is assigned")
+								  .format(varray(_blocks_to_save.size())));
+		}
 	}
 
 	//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
