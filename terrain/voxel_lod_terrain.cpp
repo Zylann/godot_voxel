@@ -299,7 +299,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 	}
 
 	// The whole map might change, so make all area dirty
-	for (unsigned int i = 0; i < get_lod_count(); ++i) {
+	for (unsigned int i = 0; i < _lod_count; ++i) {
 		Lod &lod = _lods[i];
 		lod.last_view_distance_data_blocks = 0;
 		lod.last_view_distance_mesh_blocks = 0;
@@ -533,7 +533,7 @@ void VoxelLodTerrain::set_lod_count(int p_lod_count) {
 	ERR_FAIL_COND(p_lod_count >= (int)VoxelConstants::MAX_LOD);
 	ERR_FAIL_COND(p_lod_count < 1);
 
-	if (static_cast<int>(get_lod_count()) != p_lod_count) {
+	if (get_lod_count() != p_lod_count) {
 		_set_lod_count(p_lod_count);
 	}
 }
@@ -565,7 +565,7 @@ void VoxelLodTerrain::reset_maps() {
 		Lod &lod = _lods[lod_index];
 
 		// Instance new maps if we have more lods, or clear them otherwise
-		if (lod_index < get_lod_count()) {
+		if (lod_index < _lod_count) {
 			lod.data_map.create(lod.data_map.get_block_size_pow2(), lod_index);
 			lod.mesh_map.create(lod.mesh_map.get_block_size_pow2(), lod_index);
 			lod.blocks_to_load.clear();
@@ -585,7 +585,7 @@ void VoxelLodTerrain::reset_maps() {
 	_lod_octrees.clear();
 }
 
-unsigned int VoxelLodTerrain::get_lod_count() const {
+int VoxelLodTerrain::get_lod_count() const {
 	return _lod_count;
 }
 
@@ -595,7 +595,7 @@ void VoxelLodTerrain::set_generate_collisions(bool enabled) {
 
 void VoxelLodTerrain::set_collision_lod_count(int lod_count) {
 	ERR_FAIL_COND(lod_count < 0);
-	_collision_lod_count = min(static_cast<unsigned int>(lod_count), get_lod_count());
+	_collision_lod_count = static_cast<unsigned int>(min(lod_count, get_lod_count()));
 }
 
 unsigned int VoxelLodTerrain::get_collision_lod_count() const {
@@ -612,7 +612,7 @@ int VoxelLodTerrain::get_mesh_block_region_extent() const {
 
 Vector3 VoxelLodTerrain::voxel_to_data_block_position(Vector3 vpos, int lod_index) const {
 	ERR_FAIL_COND_V(lod_index < 0, Vector3());
-	ERR_FAIL_COND_V(lod_index >= static_cast<int>(get_lod_count()), Vector3());
+	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3());
 	const Lod &lod = _lods[lod_index];
 	Vector3i bpos = lod.data_map.voxel_to_block(Vector3i(vpos)) >> lod_index;
 	return bpos.to_vec3();
@@ -620,7 +620,7 @@ Vector3 VoxelLodTerrain::voxel_to_data_block_position(Vector3 vpos, int lod_inde
 
 Vector3 VoxelLodTerrain::voxel_to_mesh_block_position(Vector3 vpos, int lod_index) const {
 	ERR_FAIL_COND_V(lod_index < 0, Vector3());
-	ERR_FAIL_COND_V(lod_index >= static_cast<int>(get_lod_count()), Vector3());
+	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3());
 	const Lod &lod = _lods[lod_index];
 	Vector3i bpos = lod.mesh_map.voxel_to_block(Vector3i(vpos)) >> lod_index;
 	return bpos.to_vec3();
@@ -926,7 +926,7 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelMeshBlock *block) {
 void VoxelLodTerrain::send_block_data_requests() {
 	// Blocks to load
 	const bool request_instances = _instancer != nullptr;
-	for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		Lod &lod = _lods[lod_index];
 
 		for (unsigned int i = 0; i < lod.blocks_to_load.size(); ++i) {
@@ -983,7 +983,7 @@ void VoxelLodTerrain::_process(float delta) {
 		// Ignore largest lod because it can extend a little beyond due to the view distance setting.
 		// Instead, those blocks are unloaded by the octree forest management.
 		// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
-		for (int lod_index = static_cast<int>(get_lod_count()) - 2; lod_index >= 0; --lod_index) {
+		for (int lod_index = get_lod_count() - 2; lod_index >= 0; --lod_index) {
 			VOXEL_PROFILE_SCOPE();
 			Lod &lod = _lods[lod_index];
 
@@ -1067,7 +1067,7 @@ void VoxelLodTerrain::_process(float delta) {
 		// Ignore largest lod because it can extend a little beyond due to the view distance setting.
 		// Instead, those blocks are unloaded by the octree forest management.
 		// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
-		for (int lod_index = static_cast<int>(get_lod_count()) - 2; lod_index >= 0; --lod_index) {
+		for (int lod_index = get_lod_count() - 2; lod_index >= 0; --lod_index) {
 			VOXEL_PROFILE_SCOPE();
 			Lod &lod = _lods[lod_index];
 
@@ -1394,7 +1394,7 @@ void VoxelLodTerrain::_process(float delta) {
 				continue;
 			}
 
-			if (ob.lod >= get_lod_count()) {
+			if (ob.lod >= _lod_count) {
 				// That block was requested at a time where LOD was higher... drop it
 				++_stats.dropped_block_loads;
 				continue;
@@ -1455,7 +1455,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 		const int render_to_data_factor = get_mesh_block_size() / get_data_block_size();
 
-		for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
+		for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 			VOXEL_PROFILE_SCOPE();
 			Lod &lod = _lods[lod_index];
 
@@ -1521,7 +1521,7 @@ void VoxelLodTerrain::_process(float delta) {
 			VOXEL_PROFILE_SCOPE();
 			const VoxelServer::BlockMeshOutput &ob = _reception_buffers.mesh_output[queue_index];
 
-			if (ob.lod >= get_lod_count()) {
+			if (ob.lod >= _lod_count) {
 				// Sorry, LOD configuration changed, drop that mesh
 				++_stats.dropped_block_meshs;
 				continue;
@@ -1825,7 +1825,7 @@ void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
 
 void VoxelLodTerrain::unload_data_block(Vector3i block_pos, int lod_index) {
 	VOXEL_PROFILE_SCOPE();
-	ERR_FAIL_COND(lod_index >= static_cast<int>(get_lod_count()));
+	ERR_FAIL_COND(lod_index >= get_lod_count());
 
 	Lod &lod = _lods[lod_index];
 
@@ -1844,7 +1844,7 @@ void VoxelLodTerrain::unload_data_block(Vector3i block_pos, int lod_index) {
 
 void VoxelLodTerrain::unload_mesh_block(Vector3i block_pos, int lod_index) {
 	VOXEL_PROFILE_SCOPE();
-	ERR_FAIL_COND(lod_index >= static_cast<int>(get_lod_count()));
+	ERR_FAIL_COND(lod_index >= get_lod_count());
 
 	Lod &lod = _lods[lod_index];
 
@@ -2164,7 +2164,7 @@ Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 wo
 Dictionary VoxelLodTerrain::debug_get_data_block_info(Vector3 fbpos, int lod_index) const {
 	Dictionary d;
 	ERR_FAIL_COND_V(lod_index < 0, d);
-	ERR_FAIL_COND_V(lod_index >= static_cast<int>(get_lod_count()), d);
+	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
 
 	const Lod &lod = _lods[lod_index];
 	Vector3i bpos = Vector3i::from_floored(fbpos);
@@ -2186,7 +2186,7 @@ Dictionary VoxelLodTerrain::debug_get_data_block_info(Vector3 fbpos, int lod_ind
 Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_index) const {
 	Dictionary d;
 	ERR_FAIL_COND_V(lod_index < 0, d);
-	ERR_FAIL_COND_V(lod_index >= static_cast<int>(get_lod_count()), d);
+	ERR_FAIL_COND_V(lod_index >= get_lod_count(), d);
 
 	const Lod &lod = _lods[lod_index];
 	Vector3i bpos = Vector3i::from_floored(fbpos);
@@ -2339,7 +2339,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 	Array image_array;
 	image_array.resize(get_lod_count());
 
-	for (unsigned int lod_index = 0; lod_index < get_lod_count(); ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		const Rect3i world_box = Rect3i::from_center_extents(Vector3i(center) >> lod_index, Vector3i(extents) >> lod_index);
 
 		if (world_box.size.volume() == 0) {
