@@ -13,8 +13,12 @@ Precompiled builds
 These builds correspond to the `master` version depicted in the [changelog](https://github.com/Zylann/godot_voxel/blob/master/CHANGELOG.md).
 A new build is made each time commits are pushed to the main branch, but also when other developers make Pull Requests, so careful about which one you pick.
 
+In case there are multiple downloadable artifacts, the editor build will be the one with `opt.tools` in the name (because it is built with optimizations enabled, and includes tools).
 
-### Tokisan builds
+![Github actions screenshot](images/github_actions_windows_artifacts.png)
+
+
+### Tokisan builds (old)
 
 - Available on [Tokisan Games website](http://tokisan.com/godot-binaries/).
 
