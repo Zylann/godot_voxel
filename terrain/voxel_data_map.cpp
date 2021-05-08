@@ -284,8 +284,11 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int
 					RWLockWrite lock(dst_buffer.get_lock());
 
 					if (mask_value != std::numeric_limits<uint64_t>::max()) {
-						const Vector3i src_offset = min_pos - dst_block_origin;
-						dst_buffer.read_write_action(Rect3i(min_pos - dst_block_origin, src_buffer.get_size()), channel,
+						const Rect3i dst_box(min_pos - dst_block_origin, src_buffer.get_size());
+
+						const Vector3i src_offset = -dst_box.pos;
+
+						dst_buffer.read_write_action(dst_box, channel,
 								[&src_buffer, mask_value, src_offset, channel](const Vector3i pos, uint64_t dst_v) {
 									const uint64_t src_v = src_buffer.get_voxel(pos + src_offset, channel);
 									if (src_v == mask_value) {
@@ -293,6 +296,7 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int
 									}
 									return src_v;
 								});
+
 					} else {
 						dst_buffer.copy_from(src_buffer,
 								Vector3i(),
