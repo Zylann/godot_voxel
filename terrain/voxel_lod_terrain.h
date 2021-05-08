@@ -54,7 +54,7 @@ public:
 
 	// Sets up to which amount of LODs collision will generate. -1 means all of them.
 	void set_collision_lod_count(int lod_count);
-	unsigned int get_collision_lod_count() const;
+	int get_collision_lod_count() const;
 
 	int get_data_block_region_extent() const;
 	int get_mesh_block_region_extent() const;

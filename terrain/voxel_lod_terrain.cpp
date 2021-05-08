@@ -584,7 +584,7 @@ void VoxelLodTerrain::set_collision_lod_count(int lod_count) {
 	_collision_lod_count = static_cast<unsigned int>(min(lod_count, get_lod_count()));
 }
 
-unsigned int VoxelLodTerrain::get_collision_lod_count() const {
+int VoxelLodTerrain::get_collision_lod_count() const {
 	return _collision_lod_count;
 }
 
