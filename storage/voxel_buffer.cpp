@@ -190,10 +190,11 @@ void VoxelBuffer::set_default_values(FixedArray<uint64_t, VoxelBuffer::MAX_CHANN
 
 uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index) const {
 	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, 0);
+	ERR_FAIL_COND_V_MSG(!is_position_valid(x, y, z), 0, String("At position ({0}, {1}, {2})").format(varray(x, y, z)));
 
 	const Channel &channel = _channels[channel_index];
 
-	if (is_position_valid(x, y, z) && channel.data != nullptr) {
+	if (channel.data != nullptr) {
 		const uint32_t i = get_index(x, y, z);
 
 		switch (channel.depth) {
@@ -221,7 +222,7 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 
 void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
-	ERR_FAIL_COND(!is_position_valid(x, y, z));
+	ERR_FAIL_COND_MSG(!is_position_valid(x, y, z), String("At position ({0}, {1}, {2})").format(varray(x, y, z)));
 
 	Channel &channel = _channels[channel_index];
 
