@@ -193,6 +193,10 @@ jobs:
         with:
           path: modules/voxel
 
+      # Move nuget.config from voxel repo to root of checkout, so msbuild can find it
+      - name: Move nuget.config
+        run: mv modules/voxel/nuget.config ./nuget.config
+
       # Install mono
       - name: Configure dependencies
         run: |
