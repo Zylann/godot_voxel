@@ -7,8 +7,8 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
-Ongoing development
---------------------
+09/05/2021 - `godot3.3`
+-----------------------
 
 - General
     - Introduction of Voxel Server, which shares threaded tasks among all voxel nodes
