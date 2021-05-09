@@ -56,6 +56,12 @@ public:
 	void set_collision_lod_count(int lod_count);
 	int get_collision_lod_count() const;
 
+	void set_collision_layer(int layer);
+	int get_collision_layer() const;
+
+	void set_collision_mask(int mask);
+	int get_collision_mask() const;
+
 	int get_data_block_region_extent() const;
 	int get_mesh_block_region_extent() const;
 
@@ -242,6 +248,8 @@ private:
 
 	bool _generate_collisions = true;
 	unsigned int _collision_lod_count = 0;
+	unsigned int _collision_layer = 1;
+	unsigned int _collision_mask = 1;
 	int _collision_update_delay = 0;
 
 	VoxelInstancer *_instancer = nullptr;

@@ -281,6 +281,18 @@ void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug
 	_static_body.set_shape_enabled(0, _visible);
 }
 
+void VoxelMeshBlock::set_collision_layer(int layer) {
+	if (_static_body.is_valid()) {
+		_static_body.set_collision_layer(layer);
+	}
+}
+
+void VoxelMeshBlock::set_collision_mask(int mask) {
+	if (_static_body.is_valid()) {
+		_static_body.set_collision_mask(mask);
+	}
+}
+
 void VoxelMeshBlock::drop_collision() {
 	if (_static_body.is_valid()) {
 		_static_body.destroy();

@@ -253,6 +253,28 @@ void VoxelTerrain::set_generate_collisions(bool enabled) {
 	_generate_collisions = enabled;
 }
 
+void VoxelTerrain::set_collision_layer(int layer) {
+	_collision_layer = layer;
+	_mesh_map.for_all_blocks([layer](VoxelMeshBlock *block) {
+		block->set_collision_layer(layer);
+	});
+}
+
+int VoxelTerrain::get_collision_layer() const {
+	return _collision_layer;
+}
+
+void VoxelTerrain::set_collision_mask(int mask) {
+	_collision_mask = mask;
+	_mesh_map.for_all_blocks([mask](VoxelMeshBlock *block) {
+		block->set_collision_mask(mask);
+	});
+}
+
+int VoxelTerrain::get_collision_mask() const {
+	return _collision_mask;
+}
+
 unsigned int VoxelTerrain::get_max_view_distance() const {
 	return _max_view_distance_voxels;
 }
@@ -1169,6 +1191,8 @@ void VoxelTerrain::_process() {
 			block->set_mesh(mesh);
 			if (gen_collisions) {
 				block->set_collision_mesh(collidable_surfaces, get_tree()->is_debugging_collisions_hint(), this);
+				block->set_collision_layer(_collision_layer);
+				block->set_collision_mask(_collision_mask);
 			}
 			block->set_visible(true);
 			block->set_parent_visible(is_visible());
@@ -1287,6 +1311,12 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelTerrain::get_generate_collisions);
 	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelTerrain::set_generate_collisions);
 
+	ClassDB::bind_method(D_METHOD("get_collision_layer"), &VoxelTerrain::get_collision_layer);
+	ClassDB::bind_method(D_METHOD("set_collision_layer", "layer"), &VoxelTerrain::set_collision_layer);
+
+	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelTerrain::get_collision_mask);
+	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelTerrain::set_collision_mask);
+
 	ClassDB::bind_method(D_METHOD("voxel_to_data_block", "voxel_pos"), &VoxelTerrain::_b_voxel_to_data_block);
 	ClassDB::bind_method(D_METHOD("data_block_to_voxel", "block_pos"), &VoxelTerrain::_b_data_block_to_voxel);
 
@@ -1317,6 +1347,10 @@ void VoxelTerrain::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"),
 			"set_generate_collisions", "get_generate_collisions");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS),
+			"set_collision_layer", "get_collision_layer");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
+			"set_collision_mask", "get_collision_mask");
 
 	ADD_GROUP("Advanced", "");
 

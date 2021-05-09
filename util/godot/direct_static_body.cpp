@@ -93,6 +93,16 @@ void DirectStaticBody::set_attached_object(Object *obj) {
 	PhysicsServer::get_singleton()->body_attach_object_instance_id(_body, obj != nullptr ? obj->get_instance_id() : 0);
 }
 
+void DirectStaticBody::set_collision_layer(int layer) {
+	ERR_FAIL_COND(!_body.is_valid());
+	PhysicsServer::get_singleton()->body_set_collision_layer(_body, layer);
+}
+
+void DirectStaticBody::set_collision_mask(int mask) {
+	ERR_FAIL_COND(!_body.is_valid());
+	PhysicsServer::get_singleton()->body_set_collision_mask(_body, mask);
+}
+
 void DirectStaticBody::set_debug(bool enabled, World *world) {
 	ERR_FAIL_COND(world == nullptr);
 
