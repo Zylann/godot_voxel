@@ -33,7 +33,7 @@ PoolColorArray VoxelColorPalette::get_colors() const {
 
 void VoxelColorPalette::set_colors(PoolColorArray colors) {
 	// Color count is fixed, but we can't easily prevent Godot from allowing users to set a dynamic array
-	ERR_FAIL_COND(colors.size() != _colors.size());
+	ERR_FAIL_COND(colors.size() != static_cast<int>(_colors.size()));
 	{
 		PoolColorArray::Read r = colors.read();
 		for (unsigned int i = 0; i < _colors.size(); ++i) {
