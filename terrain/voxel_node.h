@@ -23,7 +23,7 @@ public:
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
 
-	String get_configuration_warning() const override;
+	virtual String get_configuration_warning() const override;
 
 protected:
 	int get_used_channels_mask() const;

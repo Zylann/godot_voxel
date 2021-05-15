@@ -41,6 +41,8 @@ public:
 
 	virtual int get_used_channels_mask() const { return 0; }
 
+	virtual bool supports_lod() const { return true; }
+
 protected:
 	static void _bind_methods();
 

@@ -89,6 +89,8 @@ public:
 	void set_lod_fade_duration(float seconds);
 	float get_lod_fade_duration() const;
 
+	String get_configuration_warning() const override;
+
 	enum ProcessMode {
 		PROCESS_MODE_IDLE = 0,
 		PROCESS_MODE_PHYSICS,

@@ -264,6 +264,12 @@ void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_COND_MSG(node->get_world() != _world, "Physics body and attached node must be from the same world");
 
+	Ref<Shape> shape = create_concave_polygon_shape(surface_arrays);
+	if (shape.is_null()) {
+		drop_collision();
+		return;
+	}
+
 	if (!_static_body.is_valid()) {
 		_static_body.create();
 		_static_body.set_world(*_world);
@@ -273,8 +279,6 @@ void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug
 	} else {
 		_static_body.remove_shape(0);
 	}
-
-	Ref<Shape> shape = create_concave_polygon_shape(surface_arrays);
 
 	_static_body.add_shape(shape);
 	_static_body.set_debug(debug_collision, *_world);

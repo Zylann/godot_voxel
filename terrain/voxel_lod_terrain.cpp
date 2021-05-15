@@ -450,6 +450,16 @@ void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
 }
 
 void VoxelLodTerrain::start_updater() {
+	Ref<VoxelMesherBlocky> blocky_mesher = _mesher;
+	if (blocky_mesher.is_valid()) {
+		Ref<VoxelLibrary> library = blocky_mesher->get_library();
+		if (library.is_valid()) {
+			// TODO Any way to execute this function just after the TRES resource loader has finished to load?
+			// VoxelLibrary should be baked ahead of time, like MeshLibrary
+			library->bake();
+		}
+	}
+
 	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, _mesher);
 }
 
@@ -2131,6 +2141,18 @@ void VoxelLodTerrain::set_lod_fade_duration(float seconds) {
 
 float VoxelLodTerrain::get_lod_fade_duration() const {
 	return _lod_fade_duration;
+}
+
+String VoxelLodTerrain::get_configuration_warning() const {
+	String w = VoxelNode::get_configuration_warning();
+	if (!w.empty()) {
+		return w;
+	}
+	Ref<VoxelMesher> mesher = get_mesher();
+	if (mesher.is_valid() && !mesher->supports_lod()) {
+		return TTR("The assigned mesher does not support level of detail (LOD), results may be unexpected.");
+	}
+	return String();
 }
 
 void VoxelLodTerrain::_b_save_modified_blocks() {
