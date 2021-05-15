@@ -14,11 +14,10 @@ public:
 	inline uint32_t get_collision_mask() const { return _collision_mask; }
 
 private:
-	Vector3 _b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Node *terrain_node);
+	Vector3 _b_get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, Node *p_terrain_node);
 
 	static void _bind_methods();
 
-	std::vector<AABB> _colliding_boxes;
 	uint32_t _collision_mask = 0xffffffff; // Everything
 };
 
