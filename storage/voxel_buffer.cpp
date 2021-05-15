@@ -726,16 +726,14 @@ Ref<VoxelTool> VoxelBuffer::get_voxel_tool() {
 	return Ref<VoxelTool>(memnew(VoxelToolBuffer(vb)));
 }
 
-bool VoxelBuffer::equals(const VoxelBuffer *p_other) const {
-	CRASH_COND(p_other == nullptr);
-
-	if (p_other->_size != _size) {
+bool VoxelBuffer::equals(const VoxelBuffer &p_other) const {
+	if (p_other._size != _size) {
 		return false;
 	}
 
 	for (int channel_index = 0; channel_index < MAX_CHANNELS; ++channel_index) {
 		const Channel &channel = _channels[channel_index];
-		const Channel &other_channel = p_other->_channels[channel_index];
+		const Channel &other_channel = p_other._channels[channel_index];
 
 		if ((channel.data == nullptr) != (other_channel.data == nullptr)) {
 			// Note: they could still logically be equal if one channel contains uniform voxel memory
@@ -752,7 +750,7 @@ bool VoxelBuffer::equals(const VoxelBuffer *p_other) const {
 			}
 
 		} else {
-			CRASH_COND(channel.size_in_bytes != other_channel.size_in_bytes);
+			ERR_FAIL_COND_V(channel.size_in_bytes != other_channel.size_in_bytes, false);
 			for (unsigned int i = 0; i < channel.size_in_bytes; ++i) {
 				if (channel.data[i] != other_channel.data[i]) {
 					return false;

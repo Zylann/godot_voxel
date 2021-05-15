@@ -88,7 +88,7 @@ void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().get_buffer_copy(pos, **dst, channels_mask);
+	_terrain->get_storage().copy(pos, **dst, channels_mask);
 }
 
 void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value) {

@@ -187,7 +187,7 @@ public:
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 	Ref<VoxelTool> get_voxel_tool();
 
-	bool equals(const VoxelBuffer *p_other) const;
+	bool equals(const VoxelBuffer &p_other) const;
 
 	void set_channel_depth(unsigned int channel_index, Depth new_depth);
 	Depth get_channel_depth(unsigned int channel_index) const;

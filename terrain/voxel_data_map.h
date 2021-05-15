@@ -56,7 +56,7 @@ public:
 	int get_default_voxel(unsigned int channel = 0);
 
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
-	void get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask);
+	void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask);
 
 	void paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int channels_mask, uint64_t mask_value,
 			bool create_new_blocks);

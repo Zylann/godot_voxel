@@ -146,6 +146,55 @@ void test_voxel_data_map_paste_mask() {
 	ERR_FAIL_COND(!outside_is_ok);
 }
 
+void test_voxel_data_map_copy() {
+	static const int voxel_value = 1;
+	static const int default_value = 0;
+	static const int channel = VoxelBuffer::CHANNEL_TYPE;
+
+	VoxelDataMap map;
+	map.create(4, 0);
+
+	Rect3i box(10, 10, 10, 32, 16, 32);
+	Ref<VoxelBuffer> buffer;
+	buffer.instance();
+	buffer->create(box.size);
+
+	// Fill the inside of the buffer with a value, and leave outline to zero,
+	// so our buffer isn't just uniform
+	for (int z = 1; z < buffer->get_size().z - 1; ++z) {
+		for (int x = 1; x < buffer->get_size().x - 1; ++x) {
+			for (int y = 1; y < buffer->get_size().y - 1; ++y) {
+				buffer->set_voxel(voxel_value, x, y, z, channel);
+			}
+		}
+	}
+
+	map.paste(box.pos, **buffer, (1 << channel), default_value, true);
+
+	Ref<VoxelBuffer> buffer2;
+	buffer2.instance();
+	buffer2->create(box.size);
+
+	map.copy(box.pos, **buffer2, (1 << channel));
+
+	// for (int y = 0; y < buffer2->get_size().y; ++y) {
+	// 	String line = String("y={0} | ").format(varray(y));
+	// 	for (int x = 0; x < buffer2->get_size().x; ++x) {
+	// 		const int v = buffer2->get_voxel(Vector3i(x, y, 5), channel);
+	// 		if (v == default_value) {
+	// 			line += "- ";
+	// 		} else if (v == voxel_value) {
+	// 			line += "O ";
+	// 		} else {
+	// 			line += "X ";
+	// 		}
+	// 	}
+	// 	print_line(line);
+	// }
+
+	ERR_FAIL_COND(!buffer->equals(**buffer2));
+}
+
 #define VOXEL_TEST(fname)                                     \
 	print_line(String("Running {0}").format(varray(#fname))); \
 	fname()
@@ -156,6 +205,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_rect3i_for_inner_outline);
 	VOXEL_TEST(test_voxel_data_map_paste_fill);
 	VOXEL_TEST(test_voxel_data_map_paste_mask);
+	VOXEL_TEST(test_voxel_data_map_copy);
 
 	print_line("------------ Voxel tests end -------------");
 }

@@ -202,7 +202,7 @@ bool VoxelDataMap::is_block_surrounded(Vector3i pos) const {
 	return true;
 }
 
-void VoxelDataMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) {
+void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) {
 	const Vector3i max_pos = min_pos + dst_buffer.get_size();
 
 	const Vector3i min_block_pos = voxel_to_block(min_pos);
@@ -219,31 +219,29 @@ void VoxelDataMap::get_buffer_copy(Vector3i min_pos, VoxelBuffer &dst_buffer, un
 						continue;
 					}
 					const VoxelDataBlock *block = get_block(bpos);
+					const Vector3i src_block_origin = block_to_voxel(bpos);
 
 					if (block != nullptr) {
 						const VoxelBuffer &src_buffer = **block->voxels;
 
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
 
-						const Vector3i offset = block_to_voxel(bpos);
-
 						RWLockRead lock(src_buffer.get_lock());
 
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_from(src_buffer,
-								min_pos - offset,
-								max_pos - offset,
-								offset - min_pos,
+								min_pos - src_block_origin,
+								src_buffer.get_size(),
+								Vector3i(),
 								channel);
 
 					} else {
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
-						const Vector3i offset = block_to_voxel(bpos);
 						dst_buffer.fill_area(
 								_default_voxel[channel],
-								offset - min_pos,
-								offset - min_pos + block_size_v,
+								src_block_origin - min_pos,
+								src_block_origin - min_pos + block_size_v,
 								channel);
 					}
 				}
