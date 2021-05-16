@@ -1,6 +1,7 @@
 #include "voxel_box_mover.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
+#include "../util/godot/funcs.h"
 
 static AABB expand_with_vector(AABB box, Vector3 v) {
 	if (v.x > 0) {
@@ -113,13 +114,6 @@ static Vector3 get_motion(AABB box, Vector3 motion, const std::vector<AABB> &env
 	box.position.z += new_motion.z;
 
 	return new_motion;
-}
-
-// `(ref1 = ref2).is_valid()` does not work because Ref<T> does not implement an `operator=` returning the value
-template <typename From_T, typename To_T>
-inline bool try_get_as(Ref<From_T> from, Ref<To_T> &to) {
-	to = from;
-	return to.is_valid();
 }
 
 Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, VoxelTerrain *p_terrain) {
