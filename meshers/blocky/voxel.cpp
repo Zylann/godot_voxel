@@ -272,12 +272,12 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 		static uint8_t get_sides(Vector3 pos) {
 			uint8_t mask = 0;
 			const real_t tolerance = 0.001;
-			mask |= Math::is_equal_approx(pos.x, 0.0, tolerance) << Cube::SIDE_NEGATIVE_X;
-			mask |= Math::is_equal_approx(pos.x, 1.0, tolerance) << Cube::SIDE_POSITIVE_X;
-			mask |= Math::is_equal_approx(pos.y, 0.0, tolerance) << Cube::SIDE_NEGATIVE_Y;
-			mask |= Math::is_equal_approx(pos.y, 1.0, tolerance) << Cube::SIDE_POSITIVE_Y;
-			mask |= Math::is_equal_approx(pos.z, 0.0, tolerance) << Cube::SIDE_NEGATIVE_Z;
-			mask |= Math::is_equal_approx(pos.z, 1.0, tolerance) << Cube::SIDE_POSITIVE_Z;
+			mask |= Math::is_equal_approx(pos.x, real_t(0.0), tolerance) << Cube::SIDE_NEGATIVE_X;
+			mask |= Math::is_equal_approx(pos.x, real_t(1.0), tolerance) << Cube::SIDE_POSITIVE_X;
+			mask |= Math::is_equal_approx(pos.y, real_t(0.0), tolerance) << Cube::SIDE_NEGATIVE_Y;
+			mask |= Math::is_equal_approx(pos.y, real_t(1.0), tolerance) << Cube::SIDE_POSITIVE_Y;
+			mask |= Math::is_equal_approx(pos.z, real_t(0.0), tolerance) << Cube::SIDE_NEGATIVE_Z;
+			mask |= Math::is_equal_approx(pos.z, real_t(1.0), tolerance) << Cube::SIDE_POSITIVE_Z;
 			return mask;
 		}
 
