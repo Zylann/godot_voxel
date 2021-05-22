@@ -11,8 +11,13 @@ class VoxelColorPalette : public Resource {
 public:
 	static const unsigned int MAX_COLORS = 256;
 
+	VoxelColorPalette();
+
 	void set_color(int index, Color color);
 	Color get_color(int index) const;
+
+	PoolColorArray get_colors() const;
+	void set_colors(PoolColorArray colors);
 
 	void clear();
 

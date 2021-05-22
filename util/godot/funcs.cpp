@@ -70,17 +70,28 @@ Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
 	//find the correct size for face_points
 	for (int i = 0; i < surfaces.size(); i++) {
 		const Array &surface_arrays = surfaces[i];
+		if (surface_arrays.size() == 0) {
+			// That surface is empty
+			continue;
+		}
+		// If the surface is not empty then it must have an expected amount of data arrays
+		ERR_CONTINUE(surface_arrays.size() != Mesh::ARRAY_MAX);
 		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
-
 		face_points_size += indices.size();
 	}
 	face_points.resize(face_points_size);
+
+	if (face_points_size < 3) {
+		return Ref<ConcavePolygonShape>();
+	}
 
 	//copy the points into it
 	int face_points_offset = 0;
 	for (int i = 0; i < surfaces.size(); i++) {
 		const Array &surface_arrays = surfaces[i];
-
+		if (surface_arrays.size() == 0) {
+			continue;
+		}
 		PoolVector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];
 		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
 

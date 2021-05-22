@@ -23,6 +23,8 @@ public:
 	void set_world(World *world);
 	void set_shape_enabled(int shape_index, bool disabled);
 	void set_attached_object(Object *obj);
+	void set_collision_layer(int layer);
+	void set_collision_mask(int mask);
 
 	void set_debug(bool enabled, World *world);
 

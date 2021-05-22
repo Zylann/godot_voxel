@@ -206,10 +206,11 @@ void VoxelBuffer::set_default_values(FixedArray<uint64_t, VoxelBuffer::MAX_CHANN
 
 uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index) const {
 	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, 0);
+	ERR_FAIL_COND_V_MSG(!is_position_valid(x, y, z), 0, String("At position ({0}, {1}, {2})").format(varray(x, y, z)));
 
 	const Channel &channel = _channels[channel_index];
 
-	if (is_position_valid(x, y, z) && channel.data != nullptr) {
+	if (channel.data != nullptr) {
 		const uint32_t i = get_index(x, y, z);
 
 		switch (channel.depth) {
@@ -237,7 +238,7 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 
 void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
-	ERR_FAIL_COND(!is_position_valid(x, y, z));
+	ERR_FAIL_COND_MSG(!is_position_valid(x, y, z), String("At position ({0}, {1}, {2})").format(varray(x, y, z)));
 
 	Channel &channel = _channels[channel_index];
 
@@ -734,16 +735,14 @@ Ref<VoxelTool> VoxelBuffer::get_voxel_tool() {
 	return Ref<VoxelTool>(memnew(VoxelToolBuffer(vb)));
 }
 
-bool VoxelBuffer::equals(const VoxelBuffer *p_other) const {
-	CRASH_COND(p_other == nullptr);
-
-	if (p_other->_size != _size) {
+bool VoxelBuffer::equals(const VoxelBuffer &p_other) const {
+	if (p_other._size != _size) {
 		return false;
 	}
 
 	for (int channel_index = 0; channel_index < MAX_CHANNELS; ++channel_index) {
 		const Channel &channel = _channels[channel_index];
-		const Channel &other_channel = p_other->_channels[channel_index];
+		const Channel &other_channel = p_other._channels[channel_index];
 
 		if ((channel.data == nullptr) != (other_channel.data == nullptr)) {
 			// Note: they could still logically be equal if one channel contains uniform voxel memory
@@ -760,7 +759,7 @@ bool VoxelBuffer::equals(const VoxelBuffer *p_other) const {
 			}
 
 		} else {
-			CRASH_COND(channel.size_in_bytes != other_channel.size_in_bytes);
+			ERR_FAIL_COND_V(channel.size_in_bytes != other_channel.size_in_bytes, false);
 			for (unsigned int i = 0; i < channel.size_in_bytes; ++i) {
 				if (channel.data[i] != other_channel.data[i]) {
 					return false;

@@ -1,4 +1,7 @@
 #include "voxel_box_mover.h"
+#include "../meshers/blocky/voxel_mesher_blocky.h"
+#include "../meshers/cubes/voxel_mesher_cubes.h"
+#include "../util/godot/funcs.h"
 
 static AABB expand_with_vector(AABB box, Vector3 v) {
 	if (v.x > 0) {
@@ -113,23 +116,28 @@ static Vector3 get_motion(AABB box, Vector3 motion, const std::vector<AABB> &env
 	return new_motion;
 }
 
-Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelTerrain *terrain) {
-	ERR_FAIL_COND_V(terrain == nullptr, Vector3());
-	ERR_FAIL_COND_V(terrain->get_mesher().is_null(), Vector3());
-	Ref<VoxelLibrary> library_ref = terrain->get_voxel_library();
-	ERR_FAIL_COND_V(library_ref.is_null(), Vector3());
-	VoxelLibrary &library = **library_ref;
-	// TODO Make this work with colored cubes meshers too, but need to set a collision rule for transparent cubes
+Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, VoxelTerrain *p_terrain) {
+	ERR_FAIL_COND_V(p_terrain == nullptr, Vector3());
+	// The mesher is required to know how collisions should be processed
+	ERR_FAIL_COND_V(p_terrain->get_mesher().is_null(), Vector3());
 
-	AABB box(aabb.position + pos, aabb.size);
-	AABB expanded_box = expand_with_vector(box, motion);
+	// Transform to local in case the volume is transformed
+	const Transform to_world = p_terrain->get_global_transform();
+	const Transform to_local = to_world.affine_inverse();
+	const Vector3 pos = to_local.xform(p_pos);
+	const Vector3 motion = to_local.basis.xform(p_motion);
+	const AABB aabb = Transform(to_local.basis, Vector3()).xform(p_aabb);
 
-	_colliding_boxes.clear();
-	std::vector<AABB> &potential_boxes = _colliding_boxes;
+	const AABB box(aabb.position + pos, aabb.size);
+	const AABB expanded_box = expand_with_vector(box, motion);
 
-	// Collect collisions with the terrain
+	static thread_local std::vector<AABB> s_colliding_boxes;
+	std::vector<AABB> &potential_boxes = s_colliding_boxes;
+	potential_boxes.clear();
 
-	const VoxelDataMap &voxels = terrain->get_storage();
+	// Collect potential collisions with the terrain (broad phase)
+
+	const VoxelDataMap &voxels = p_terrain->get_storage();
 
 	const int min_x = int(Math::floor(expanded_box.position.x));
 	const int min_y = int(Math::floor(expanded_box.position.y));
@@ -142,32 +150,61 @@ Vector3 VoxelBoxMover::get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelT
 
 	Vector3i i(min_x, min_y, min_z);
 
-	for (i.z = min_z; i.z < max_z; ++i.z) {
-		for (i.y = min_y; i.y < max_y; ++i.y) {
-			for (i.x = min_x; i.x < max_x; ++i.x) {
-				const int type_id = voxels.get_voxel(i, 0);
+	Ref<VoxelMesherBlocky> mesher_blocky;
+	Ref<VoxelMesherCubes> mesher_cubes;
 
-				if (library.has_voxel(type_id)) {
-					const Voxel &voxel_type = library.get_voxel_const(type_id);
+	if (try_get_as(p_terrain->get_mesher(), mesher_blocky)) {
+		Ref<VoxelLibrary> library_ref = mesher_blocky->get_library();
+		ERR_FAIL_COND_V_MSG(library_ref.is_null(), Vector3(), "VoxelMesherBlocky has no library assigned");
+		VoxelLibrary &library = **library_ref;
+		const int channel = VoxelBuffer::CHANNEL_TYPE;
 
-					if ((voxel_type.get_collision_mask() & _collision_mask) == 0) {
-						continue;
+		for (i.z = min_z; i.z < max_z; ++i.z) {
+			for (i.y = min_y; i.y < max_y; ++i.y) {
+				for (i.x = min_x; i.x < max_x; ++i.x) {
+					const int type_id = voxels.get_voxel(i, channel);
+
+					if (library.has_voxel(type_id)) {
+						const Voxel &voxel_type = library.get_voxel_const(type_id);
+
+						if ((voxel_type.get_collision_mask() & _collision_mask) == 0) {
+							continue;
+						}
+
+						const std::vector<AABB> &local_boxes = voxel_type.get_collision_aabbs();
+
+						for (auto it = local_boxes.begin(); it != local_boxes.end(); ++it) {
+							AABB world_box = *it;
+							world_box.position += i.to_vec3();
+							potential_boxes.push_back(world_box);
+						}
 					}
+				}
+			}
+		}
 
-					const std::vector<AABB> &local_boxes = voxel_type.get_collision_aabbs();
+	} else if (try_get_as(p_terrain->get_mesher(), mesher_cubes)) {
+		const int channel = VoxelBuffer::CHANNEL_COLOR;
 
-					for (auto it = local_boxes.begin(); it != local_boxes.end(); ++it) {
-						AABB world_box = *it;
-						world_box.position += i.to_vec3();
-						potential_boxes.push_back(world_box);
+		for (i.z = min_z; i.z < max_z; ++i.z) {
+			for (i.y = min_y; i.y < max_y; ++i.y) {
+				for (i.x = min_x; i.x < max_x; ++i.x) {
+					const int color_data = voxels.get_voxel(i, channel);
+					if (color_data != 0) {
+						potential_boxes.push_back(AABB(i.to_vec3(), Vector3(1, 1, 1)));
 					}
 				}
 			}
 		}
 	}
 
-	// Calculate collisions
-	return ::get_motion(box, motion, potential_boxes);
+	// Calculate collisions (narrow phase)
+	const Vector3 slided_motion = ::get_motion(box, motion, potential_boxes);
+
+	// Switch back to world
+	const Vector3 world_slided_motion = to_world.basis.xform(slided_motion);
+
+	return world_slided_motion;
 }
 
 void VoxelBoxMover::set_collision_mask(uint32_t mask) {

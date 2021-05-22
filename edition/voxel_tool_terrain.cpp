@@ -1,6 +1,10 @@
 #include "voxel_tool_terrain.h"
+#include "../meshers/blocky/voxel_mesher_blocky.h"
+#include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../terrain/voxel_terrain.h"
+#include "../util/godot/funcs.h"
 #include "../util/voxel_raycast.h"
+
 #include <core/func_ref.h>
 
 VoxelToolTerrain::VoxelToolTerrain() {
@@ -18,26 +22,41 @@ bool VoxelToolTerrain::is_area_editable(const Rect3i &box) const {
 	return _terrain->get_storage().is_area_fully_loaded(box.padded(1));
 }
 
-Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
+Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, float p_max_distance, uint32_t p_collision_mask) {
 	// TODO Transform input if the terrain is rotated
 	// TODO Implement broad-phase on blocks to minimize locking and increase performance
 
-	struct RaycastPredicate {
-		const VoxelTerrain &terrain;
+	struct RaycastPredicateColor {
+		const VoxelDataMap &map;
+
+		bool operator()(const Vector3i pos) const {
+			const uint64_t v = map.get_voxel(pos, VoxelBuffer::CHANNEL_COLOR);
+			return v != 0;
+		}
+	};
+
+	struct RaycastPredicateSDF {
+		const VoxelDataMap &map;
+
+		bool operator()(const Vector3i pos) const {
+			const float v = map.get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
+			return v < 0;
+		}
+	};
+
+	struct RaycastPredicateBlocky {
+		const VoxelDataMap &map;
 		const VoxelLibrary &library;
 		const uint32_t collision_mask;
 
-		bool operator()(Vector3i pos) {
-			//unsigned int channel = context->channel;
+		bool operator()(const Vector3i pos) const {
+			const int v = map.get_voxel(pos, VoxelBuffer::CHANNEL_TYPE);
 
-			const VoxelDataMap &map = terrain.get_storage();
-			int v0 = map.get_voxel(pos, VoxelBuffer::CHANNEL_TYPE);
-
-			if (library.has_voxel(v0) == false) {
+			if (library.has_voxel(v) == false) {
 				return false;
 			}
 
-			const Voxel &voxel = library.get_voxel_const(v0);
+			const Voxel &voxel = library.get_voxel_const(v);
 			if (voxel.is_empty()) {
 				return false;
 			}
@@ -54,29 +73,61 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 pos, Vector3 dir, floa
 				return true;
 			}
 
-			float v1 = map.get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
-			return v1 < 0;
+			return false;
 		}
 	};
 
 	Ref<VoxelRaycastResult> res;
 
-	Ref<VoxelLibrary> library_ref = _terrain->get_voxel_library();
-	if (library_ref.is_null()) {
-		return res;
-	}
+	Ref<VoxelMesherBlocky> mesher_blocky;
+	Ref<VoxelMesherCubes> mesher_cubes;
 
 	Vector3i hit_pos;
 	Vector3i prev_pos;
 
-	RaycastPredicate predicate = { *_terrain, **library_ref, collision_mask };
-	float hit_distance;
-	float hit_distance_prev;
-	if (voxel_raycast(pos, dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
-		res.instance();
-		res->position = hit_pos;
-		res->previous_position = prev_pos;
-		res->distance_along_ray = hit_distance;
+	const Transform to_world = _terrain->get_global_transform();
+	const Transform to_local = to_world.affine_inverse();
+	const Vector3 local_pos = to_local.xform(p_pos);
+	const Vector3 local_dir = to_local.basis.xform(p_dir).normalized();
+	const float to_world_scale = to_world.basis.get_axis(0).length();
+	const float max_distance = p_max_distance / to_world_scale;
+
+	if (try_get_as(_terrain->get_mesher(), mesher_blocky)) {
+		Ref<VoxelLibrary> library_ref = mesher_blocky->get_library();
+		if (library_ref.is_null()) {
+			return res;
+		}
+		RaycastPredicateBlocky predicate{ _terrain->get_storage(), **library_ref, p_collision_mask };
+		float hit_distance;
+		float hit_distance_prev;
+		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
+			res.instance();
+			res->position = hit_pos;
+			res->previous_position = prev_pos;
+			res->distance_along_ray = hit_distance * to_world_scale;
+		}
+
+	} else if (try_get_as(_terrain->get_mesher(), mesher_cubes)) {
+		RaycastPredicateColor predicate{ _terrain->get_storage() };
+		float hit_distance;
+		float hit_distance_prev;
+		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
+			res.instance();
+			res->position = hit_pos;
+			res->previous_position = prev_pos;
+			res->distance_along_ray = hit_distance * to_world_scale;
+		}
+
+	} else {
+		RaycastPredicateSDF predicate{ _terrain->get_storage() };
+		float hit_distance;
+		float hit_distance_prev;
+		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
+			res.instance();
+			res->position = hit_pos;
+			res->previous_position = prev_pos;
+			res->distance_along_ray = hit_distance * to_world_scale;
+		}
 	}
 
 	return res;
@@ -88,7 +139,7 @@ void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().get_buffer_copy(pos, **dst, channels_mask);
+	_terrain->get_storage().copy(pos, **dst, channels_mask);
 }
 
 void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value) {
@@ -150,7 +201,8 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 	VOXEL_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(_terrain == nullptr);
-	ERR_FAIL_COND(_terrain->get_voxel_library().is_null());
+	ERR_FAIL_COND_MSG(_terrain->get_voxel_library().is_null(),
+			"This function requires a volume using VoxelMesherBlocky");
 	ERR_FAIL_COND(callback.is_null());
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);

@@ -28,4 +28,11 @@ int get_visible_instance_count(const MultiMesh &mm);
 // Generates a wireframe-mesh that highlights edges of a triangle-mesh where vertices are not shared
 Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_index);
 
+// `(ref1 = ref2).is_valid()` does not work because Ref<T> does not implement an `operator=` returning the value
+template <typename From_T, typename To_T>
+inline bool try_get_as(Ref<From_T> from, Ref<To_T> &to) {
+	to = from;
+	return to.is_valid();
+}
+
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

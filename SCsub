@@ -6,7 +6,10 @@ Import('env_modules')
 # SIMD noise support would have to wait for Godot 4...
 FAST_NOISE_2_SRC = False
 FAST_NOISE_2_STATIC = False
-RUN_TESTS = True
+
+RUN_TESTS = False
+if env['target'] == 'debug':
+	RUN_TESTS = True
 
 env_voxel = env_modules.Clone()
 

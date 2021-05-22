@@ -44,6 +44,12 @@ public:
 	void set_generate_collisions(bool enabled);
 	bool get_generate_collisions() const { return _generate_collisions; }
 
+	void set_collision_layer(int layer);
+	int get_collision_layer() const;
+
+	void set_collision_mask(int mask);
+	int get_collision_mask() const;
+
 	unsigned int get_max_view_distance() const;
 	void set_max_view_distance(unsigned int distance_in_voxels);
 
@@ -189,6 +195,8 @@ private:
 	Ref<VoxelGenerator> _generator;
 
 	bool _generate_collisions = true;
+	unsigned int _collision_layer = 1;
+	unsigned int _collision_mask = 1;
 	bool _run_stream_in_editor = true;
 	//bool _stream_enabled = false;
 

@@ -7,8 +7,9 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
-Ongoing development
---------------------
+
+09/05/2021 - `godot3.3`
+-----------------------
 
 - General
     - Introduction of Voxel Server, which shares threaded tasks among all voxel nodes
@@ -22,6 +23,7 @@ Ongoing development
     - Added `VoxelStreamSQLite`, allowing to save volumes as a single SQLite database
     - Implemented `copy` and `paste` for `VoxelToolTerrain`
     - Added ability to double block size used for meshes and instancing, improving rendering speed at the cost of slower modification
+    - Added collision layer and mask properties
 
 - Editor
     - Streaming/LOD can be set to follow the editor camera instead of being centered on world origin. Use with caution, fast big movements and zooms can cause lag
@@ -46,6 +48,9 @@ Ongoing development
     - The TYPE channel is now 16-bit by default instead of 8-bit, allowing to store up to 65,536 types (part of this channel might actually be used to store rotation in the future)
     - Added normalmaps support
     - `VoxelRaycastResult` now also contains hit distance, so it is possible to determine the exact hit position
+    - `VoxelBoxMover` supports scaled/translated terrains and `VoxelMesherCubes` (limited to non-zero color voxels)
+    - `VoxelColorPalette` colors can be edited in the inspector
+    - `VoxelToolTerrain.raycast` accounts for scale and rotation, and supports VoxelMesherCubes (non-zero values)
 
 - Breaking changes
     - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points

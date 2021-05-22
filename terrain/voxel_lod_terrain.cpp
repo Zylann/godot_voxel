@@ -464,6 +464,16 @@ void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
 }
 
 void VoxelLodTerrain::start_updater() {
+	Ref<VoxelMesherBlocky> blocky_mesher = _mesher;
+	if (blocky_mesher.is_valid()) {
+		Ref<VoxelLibrary> library = blocky_mesher->get_library();
+		if (library.is_valid()) {
+			// TODO Any way to execute this function just after the TRES resource loader has finished to load?
+			// VoxelLibrary should be baked ahead of time, like MeshLibrary
+			library->bake();
+		}
+	}
+
 	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, _mesher);
 }
 
@@ -598,8 +608,34 @@ void VoxelLodTerrain::set_collision_lod_count(int lod_count) {
 	_collision_lod_count = static_cast<unsigned int>(min(lod_count, get_lod_count()));
 }
 
-unsigned int VoxelLodTerrain::get_collision_lod_count() const {
+int VoxelLodTerrain::get_collision_lod_count() const {
 	return _collision_lod_count;
+}
+
+void VoxelLodTerrain::set_collision_layer(int layer) {
+	_collision_layer = layer;
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		_lods[lod_index].mesh_map.for_all_blocks([layer](VoxelMeshBlock *block) {
+			block->set_collision_layer(layer);
+		});
+	}
+}
+
+int VoxelLodTerrain::get_collision_layer() const {
+	return _collision_layer;
+}
+
+void VoxelLodTerrain::set_collision_mask(int mask) {
+	_collision_mask = mask;
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		_lods[lod_index].mesh_map.for_all_blocks([mask](VoxelMeshBlock *block) {
+			block->set_collision_mask(mask);
+		});
+	}
+}
+
+int VoxelLodTerrain::get_collision_mask() const {
+	return _collision_mask;
 }
 
 int VoxelLodTerrain::get_data_block_region_extent() const {
@@ -1621,6 +1657,8 @@ void VoxelLodTerrain::_process(float delta) {
 				if (_collision_update_delay == 0 ||
 						static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 					block->set_collision_mesh(mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this);
+					block->set_collision_layer(_collision_layer);
+					block->set_collision_mask(_collision_mask);
 					block->last_collider_update_time = now;
 					block->has_deferred_collider_update = false;
 					block->deferred_collider_data.clear();
@@ -1677,6 +1715,8 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 			if (static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 				block->set_collision_mesh(
 						block->deferred_collider_data, get_tree()->is_debugging_collisions_hint(), this);
+				block->set_collision_layer(_collision_layer);
+				block->set_collision_mask(_collision_mask);
 				block->last_collider_update_time = now;
 				block->has_deferred_collider_update = false;
 				block->deferred_collider_data.clear();
@@ -2117,6 +2157,18 @@ float VoxelLodTerrain::get_lod_fade_duration() const {
 	return _lod_fade_duration;
 }
 
+String VoxelLodTerrain::get_configuration_warning() const {
+	String w = VoxelNode::get_configuration_warning();
+	if (!w.empty()) {
+		return w;
+	}
+	Ref<VoxelMesher> mesher = get_mesher();
+	if (mesher.is_valid() && !mesher->supports_lod()) {
+		return TTR("The assigned mesher does not support level of detail (LOD), results may be unexpected.");
+	}
+	return String();
+}
+
 void VoxelLodTerrain::_b_save_modified_blocks() {
 	save_all_modified_blocks(true);
 }
@@ -2432,6 +2484,12 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_collision_lod_count"), &VoxelLodTerrain::get_collision_lod_count);
 	ClassDB::bind_method(D_METHOD("set_collision_lod_count", "count"), &VoxelLodTerrain::set_collision_lod_count);
 
+	ClassDB::bind_method(D_METHOD("get_collision_layer"), &VoxelLodTerrain::get_collision_layer);
+	ClassDB::bind_method(D_METHOD("set_collision_layer", "layer"), &VoxelLodTerrain::set_collision_layer);
+
+	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelLodTerrain::get_collision_mask);
+	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelLodTerrain::set_collision_mask);
+
 	ClassDB::bind_method(D_METHOD("get_collision_update_delay"), &VoxelLodTerrain::get_collision_update_delay);
 	ClassDB::bind_method(D_METHOD("set_collision_update_delay", "delay_msec"),
 			&VoxelLodTerrain::set_collision_update_delay);
@@ -2508,9 +2566,12 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "generate_collisions"),
 			"set_generate_collisions", "get_generate_collisions");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS),
+			"set_collision_layer", "get_collision_layer");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
+			"set_collision_mask", "get_collision_mask");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_lod_count"),
 			"set_collision_lod_count", "get_collision_lod_count");
-	// TODO Collision mask and layer
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_update_delay"),
 			"set_collision_update_delay", "get_collision_update_delay");
 

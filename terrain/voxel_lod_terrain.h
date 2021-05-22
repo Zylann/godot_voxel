@@ -54,7 +54,13 @@ public:
 
 	// Sets up to which amount of LODs collision will generate. -1 means all of them.
 	void set_collision_lod_count(int lod_count);
-	unsigned int get_collision_lod_count() const;
+	int get_collision_lod_count() const;
+
+	void set_collision_layer(int layer);
+	int get_collision_layer() const;
+
+	void set_collision_mask(int mask);
+	int get_collision_mask() const;
 
 	int get_data_block_region_extent() const;
 	int get_mesh_block_region_extent() const;
@@ -82,6 +88,8 @@ public:
 
 	void set_lod_fade_duration(float seconds);
 	float get_lod_fade_duration() const;
+
+	String get_configuration_warning() const override;
 
 	enum ProcessMode {
 		PROCESS_MODE_IDLE = 0,
@@ -242,6 +250,8 @@ private:
 
 	bool _generate_collisions = true;
 	unsigned int _collision_lod_count = 0;
+	unsigned int _collision_layer = 1;
+	unsigned int _collision_mask = 1;
 	int _collision_update_delay = 0;
 
 	VoxelInstancer *_instancer = nullptr;
