@@ -52,6 +52,21 @@ public:
 		DEPTH_COUNT
 	};
 
+	static inline Depth get_depth_from_size(size_t size) {
+		switch (size) {
+			case 1:
+				return DEPTH_8_BIT;
+			case 2:
+				return DEPTH_16_BIT;
+			case 4:
+				return DEPTH_32_BIT;
+			case 8:
+				return DEPTH_64_BIT;
+			default:
+				CRASH_NOW();
+		}
+	}
+
 	static const Depth DEFAULT_CHANNEL_DEPTH = DEPTH_8_BIT;
 	static const Depth DEFAULT_TYPE_CHANNEL_DEPTH = DEPTH_16_BIT;
 	static const Depth DEFAULT_SDF_CHANNEL_DEPTH = DEPTH_16_BIT;
@@ -136,7 +151,6 @@ public:
 
 	static inline FixedArray<uint8_t, MAX_CHANNELS> mask_to_channels_list(
 			uint8_t channels_mask, unsigned int &out_count) {
-
 		FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels;
 		unsigned int channel_count = 0;
 
@@ -314,29 +328,37 @@ private:
 
 // TODO Maybe find a better place to put these functions other than global space
 
-inline FixedArray<uint8_t, 4> decode_weights(uint16_t packed_weights) {
+inline FixedArray<uint8_t, 4> decode_weights_from_packed_u16(uint16_t packed_weights) {
 	FixedArray<uint8_t, 4> weights;
+	// SIMDable?
+	// weights[0] = ((packed_weights >> 0) & 0x0f) << 4;
+	// weights[1] = ((packed_weights >> 4) & 0x0f) << 4;
+	// weights[2] = ((packed_weights >> 8) & 0x0f) << 4;
+	// weights[3] = ((packed_weights >> 12) & 0x0f) << 4;
+
+	// Reduced but not SIMDable
 	weights[0] = (packed_weights & 0x0f) << 4;
-	weights[1] = ((packed_weights >> 4) & 0x0f) << 4;
-	weights[2] = ((packed_weights >> 8) & 0x0f) << 4;
-	weights[3] = ((packed_weights >> 12) & 0x0f) << 4;
+	weights[1] = packed_weights & 0xf0;
+	weights[2] = (packed_weights >> 4) & 0xf0;
+	weights[3] = (packed_weights >> 8) & 0xf0;
 	return weights;
 }
 
-inline FixedArray<uint8_t, 4> decode_indices(uint16_t packed_indices) {
+inline FixedArray<uint8_t, 4> decode_indices_from_packed_u16(uint16_t packed_indices) {
 	FixedArray<uint8_t, 4> indices;
-	indices[0] = packed_indices & 0x0f;
+	// SIMDable?
+	indices[0] = (packed_indices >> 0) & 0x0f;
 	indices[1] = (packed_indices >> 4) & 0x0f;
 	indices[2] = (packed_indices >> 8) & 0x0f;
 	indices[3] = (packed_indices >> 12) & 0x0f;
 	return indices;
 }
 
-inline uint16_t encode_indices(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+inline uint16_t encode_indices_to_packed_u16(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 	return (a & 0xf) | ((b & 0xf) << 4) | ((c & 0xf) << 8) | ((d & 0xf) << 12);
 }
 
-inline uint16_t encode_weights(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+inline uint16_t encode_weights_to_packed_u16(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 	return (a >> 4) | ((b >> 4) << 4) | ((c >> 4) << 8) | ((d >> 4) << 12);
 }
 
@@ -351,12 +373,12 @@ inline void debug_check_texture_indices(FixedArray<uint8_t, 4> indices) {
 	}
 }
 
-inline void debug_check_texture_indices(const VoxelBuffer &voxels) {
+inline void debug_check_texture_indices_packed_u16(const VoxelBuffer &voxels) {
 	for (int z = 0; z < voxels.get_size().z; ++z) {
 		for (int x = 0; x < voxels.get_size().x; ++x) {
 			for (int y = 0; y < voxels.get_size().y; ++y) {
 				uint16_t pi = voxels.get_voxel(x, y, z, VoxelBuffer::CHANNEL_INDICES);
-				FixedArray<uint8_t, 4> indices = decode_indices(pi);
+				FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(pi);
 				debug_check_texture_indices(indices);
 			}
 		}

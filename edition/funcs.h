@@ -8,7 +8,6 @@
 
 inline void _normalize_weights_preserving(FixedArray<float, 4> &weights, unsigned int preserved_index,
 		unsigned int other0, unsigned int other1, unsigned int other2) {
-
 	const float part_sum = weights[other0] + weights[other1] + weights[other2];
 	// It is assumed the preserved channel is already clamped to [0, 1]
 	const float expected_part_sum = 1.f - weights[preserved_index];
@@ -54,13 +53,14 @@ inline void normalize_weights_preserving(FixedArray<float, 4> &weights, unsigned
 	}
 }*/
 
-inline void blend_texture(int texture_index, float target_weight,
+inline void blend_texture_packed_u16(int texture_index, float target_weight,
 		uint16_t &encoded_indices, uint16_t &encoded_weights) {
-
+#ifdef DEBUG_ENABLED
 	ERR_FAIL_COND(target_weight < 0.f || target_weight > 1.f);
+#endif
 
-	FixedArray<uint8_t, 4> indices = decode_indices(encoded_indices);
-	FixedArray<uint8_t, 4> weights = decode_weights(encoded_weights);
+	FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(encoded_indices);
+	FixedArray<uint8_t, 4> weights = decode_weights_from_packed_u16(encoded_weights);
 
 	// Search if our texture index is already present
 	unsigned int component_index = 4;
@@ -101,8 +101,8 @@ inline void blend_texture(int texture_index, float target_weight,
 			weights[i] = clamp(weights_f[i] * 255.f, 0.f, 255.f);
 		}
 
-		encoded_indices = encode_indices(indices[0], indices[1], indices[2], indices[3]);
-		encoded_weights = encode_weights(weights[0], weights[1], weights[2], weights[3]);
+		encoded_indices = encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
+		encoded_weights = encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
 	}
 }
 

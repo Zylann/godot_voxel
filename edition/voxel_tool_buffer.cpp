@@ -35,7 +35,7 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 		if (target_weight > 0.f) {
 			uint16_t indices = buffer.get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);
 			uint16_t weights = buffer.get_voxel(pos, VoxelBuffer::CHANNEL_WEIGHTS);
-			blend_texture(tp.index, target_weight, indices, weights);
+			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
 			// TODO Optimization: don't write back if it didn't change?
 			buffer.set_voxel(indices, pos, VoxelBuffer::CHANNEL_INDICES);
 			buffer.set_voxel(weights, pos, VoxelBuffer::CHANNEL_WEIGHTS);

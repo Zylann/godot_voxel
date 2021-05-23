@@ -41,7 +41,6 @@ float get_sdf_interpolated(Volume_F &f, Vector3 pos) {
 template <typename Volume_F>
 float approximate_distance_to_isosurface_binary_search(
 		Volume_F &f, Vector3 pos0, Vector3 dir, float d1, int iterations) {
-
 	float d0 = 0.f;
 	float sdf0 = get_sdf_interpolated(f, pos0);
 	// The position given as argument may be a rough approximation coming from the middle-phase,
@@ -177,7 +176,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 		if (target_weight > 0.f) {
 			uint16_t indices = map.get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);
 			uint16_t weights = map.get_voxel(pos, VoxelBuffer::CHANNEL_WEIGHTS);
-			blend_texture(tp.index, target_weight, indices, weights);
+			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
 			// TODO Optimization: don't write back if it didn't change?
 			map.set_voxel(indices, pos, VoxelBuffer::CHANNEL_INDICES);
 			map.set_voxel(weights, pos, VoxelBuffer::CHANNEL_WEIGHTS);

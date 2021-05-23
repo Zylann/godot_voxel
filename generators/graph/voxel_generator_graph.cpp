@@ -26,7 +26,6 @@ void VoxelGeneratorGraph::clear() {
 
 static ProgramGraph::Node *create_node_internal(ProgramGraph &graph,
 		VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position, uint32_t id) {
-
 	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(type_id);
 
 	ProgramGraph::Node *node = graph.create_node(type_id, id);
@@ -250,7 +249,6 @@ bool VoxelGeneratorGraph::is_using_xz_caching() const {
 void VoxelGeneratorGraph::gather_indices_and_weights(ArraySlice<const WeightOutput> weight_outputs,
 		const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry, VoxelBuffer &out_voxel_buffer,
 		FixedArray<uint8_t, 4> spare_indices) {
-
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Optimization: exclude up-front outputs that are known to be zero?
@@ -281,8 +279,10 @@ void VoxelGeneratorGraph::gather_indices_and_weights(ArraySlice<const WeightOutp
 					indices[oi] = weight_outputs[oi].layer_index;
 				}
 				debug_check_texture_indices(indices);
-				const uint16_t encoded_indices = encode_indices(indices[0], indices[1], indices[2], indices[3]);
-				const uint16_t encoded_weights = encode_weights(weights[0], weights[1], weights[2], weights[3]);
+				const uint16_t encoded_indices =
+						encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
+				const uint16_t encoded_weights =
+						encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
 				// TODO Flatten this further?
 				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
 				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
@@ -302,8 +302,10 @@ void VoxelGeneratorGraph::gather_indices_and_weights(ArraySlice<const WeightOutp
 					weights[oi] = clamp(weight * 255.f, 0.f, 255.f);
 					indices[oi] = weight_outputs[oi].layer_index;
 				}
-				const uint16_t encoded_indices = encode_indices(indices[0], indices[1], indices[2], indices[3]);
-				const uint16_t encoded_weights = encode_weights(weights[0], weights[1], weights[2], weights[3]);
+				const uint16_t encoded_indices =
+						encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
+				const uint16_t encoded_weights =
+						encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
 				// TODO Flatten this further?
 				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
 				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
@@ -345,8 +347,10 @@ void VoxelGeneratorGraph::gather_indices_and_weights(ArraySlice<const WeightOutp
 				for (unsigned int oi = recorded_weights; oi < indices.size(); ++oi) {
 					indices[oi] = skipped_outputs[oi - recorded_weights];
 				}
-				const uint16_t encoded_indices = encode_indices(indices[0], indices[1], indices[2], indices[3]);
-				const uint16_t encoded_weights = encode_weights(weights[0], weights[1], weights[2], weights[3]);
+				const uint16_t encoded_indices =
+						encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
+				const uint16_t encoded_weights =
+						encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
 				// TODO Flatten this further?
 				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
 				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);

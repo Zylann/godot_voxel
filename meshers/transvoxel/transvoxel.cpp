@@ -8,8 +8,6 @@ namespace Transvoxel {
 
 static const float TRANSITION_CELL_SCALE = 0.25;
 
-thread_local std::vector<uint16_t> s_weights_backing_buffer;
-
 // Values considered negative have a sign bit of 1
 inline uint8_t sign_f(float v) {
 	return v < 0.f;
@@ -128,7 +126,6 @@ inline float sdf_as_float(double v) {
 template <typename Sdf_T>
 inline Vector3 get_corner_gradient(
 		unsigned int data_index, ArraySlice<const Sdf_T> sdf_data, const Vector3i block_size) {
-
 	const unsigned int n010 = 1; // Y+1
 	const unsigned int n100 = block_size.y; // X+1
 	const unsigned int n001 = block_size.y * block_size.x; // Z+1
@@ -169,10 +166,9 @@ struct CellTextureDatas {
 	FixedArray<FixedArray<uint8_t, MAX_TEXTURE_BLENDS>, NVoxels> weights;
 };
 
-template <unsigned int NVoxels>
+template <unsigned int NVoxels, typename WeightSampler_T>
 CellTextureDatas<NVoxels> select_textures(const FixedArray<unsigned int, NVoxels> &voxel_indices,
-		ArraySlice<const uint16_t> indexes_data, ArraySlice<const uint16_t> weights_data) {
-
+		ArraySlice<const uint16_t> indices_data, const WeightSampler_T &weights_sampler) {
 	// TODO Optimization: this function takes almost half of the time when polygonizing non-empty cells.
 	// I wonder how it can be optimized further?
 
@@ -192,8 +188,8 @@ CellTextureDatas<NVoxels> select_textures(const FixedArray<unsigned int, NVoxels
 		//VOXEL_PROFILE_SCOPE();
 
 		const unsigned int data_index = voxel_indices[ci];
-		const FixedArray<uint8_t, 4> indices = decode_indices(indexes_data[data_index]);
-		const FixedArray<uint8_t, 4> weights = decode_weights(weights_data[data_index]);
+		const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(indices_data[data_index]);
+		const FixedArray<uint8_t, 4> weights = weights_sampler.get_weights(data_index);
 
 		FixedArray<uint8_t, MAX_TEXTURES> &weights_temp = cell_texture_weights_temp[ci];
 		weights_temp.fill(0);
@@ -251,19 +247,18 @@ struct TextureIndicesData {
 	uint32_t packed_default_indices;
 };
 
-template <unsigned int NVoxels>
+template <unsigned int NVoxels, typename WeightSampler_T>
 inline void get_cell_texture_data(CellTextureDatas<NVoxels> &cell_textures,
 		const TextureIndicesData &texture_indices_data,
 		const FixedArray<unsigned int, NVoxels> &voxel_indices,
-		ArraySlice<const uint16_t> weights_data) {
-
+		const WeightSampler_T &weights_data) {
 	if (texture_indices_data.buffer.size() == 0) {
 		// Indices are known for the whole block, just read weights directly
 		cell_textures.indices = texture_indices_data.default_indices;
 		cell_textures.packed_indices = texture_indices_data.packed_default_indices;
 		for (unsigned int ci = 0; ci < voxel_indices.size(); ++ci) {
 			const unsigned int wi = voxel_indices[ci];
-			cell_textures.weights[ci] = decode_weights(weights_data[wi]);
+			cell_textures.weights[ci] = weights_data.get_weights(wi);
 		}
 
 	} else {
@@ -291,14 +286,13 @@ inline float get_isolevel<float>() {
 }
 
 // This function is template so we avoid branches and checks when sampling voxels
-template <typename Sdf_T>
+template <typename Sdf_T, typename WeightSampler_T>
 void build_regular_mesh(
 		ArraySlice<const Sdf_T> sdf_data,
 		TextureIndicesData texture_indices_data,
-		ArraySlice<const uint16_t> weights_data,
+		const WeightSampler_T &weights_sampler,
 		const Vector3i block_size_with_padding,
 		int lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output) {
-
 	VOXEL_PROFILE_SCOPE();
 
 	// This function has some comments as quotes from the Transvoxel paper.
@@ -334,7 +328,6 @@ void build_regular_mesh(
 			unsigned int data_index = Vector3i(min_pos.x, pos.y, pos.z).get_zxy_index(block_size_with_padding);
 
 			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x, data_index += block_size_with_padding.y) {
-
 				{
 					const bool s = sdf_data[data_index] < isolevel;
 
@@ -346,7 +339,6 @@ void build_regular_mesh(
 							(sdf_data[data_index + n011] < isolevel) == s &&
 							(sdf_data[data_index + n101] < isolevel) == s &&
 							(sdf_data[data_index + n111] < isolevel) == s) {
-
 						// Not crossing the isolevel, this cell won't produce any geometry.
 						// We must figure this out as fast as possible, because it will happen a lot.
 						continue;
@@ -412,7 +404,7 @@ void build_regular_mesh(
 
 				CellTextureDatas<8> cell_textures;
 				if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
-					get_cell_texture_data(cell_textures, texture_indices_data, corner_data_indices, weights_data);
+					get_cell_texture_data(cell_textures, texture_indices_data, corner_data_indices, weights_sampler);
 					current_reuse_cell.packed_texture_indices = cell_textures.packed_indices;
 				}
 
@@ -692,7 +684,6 @@ inline Vector3i face_to_block(int x, int y, int z, int dir, const Vector3i &bs) 
 // I took the choice of supporting non-cubic area, so...
 inline void get_face_axes(int &ax, int &ay, int dir) {
 	switch (dir) {
-
 		case Cube::SIDE_NEGATIVE_X:
 			ax = Vector3i::AXIS_Y;
 			ay = Vector3i::AXIS_Z;
@@ -728,14 +719,13 @@ inline void get_face_axes(int &ax, int &ay, int dir) {
 	}
 }
 
-template <typename Sdf_T>
+template <typename Sdf_T, typename WeightSampler_T>
 void build_transition_mesh(
 		ArraySlice<const Sdf_T> sdf_data,
 		TextureIndicesData texture_indices_data,
-		ArraySlice<const uint16_t> weights_data,
+		const WeightSampler_T &weights_sampler,
 		const Vector3i block_size_with_padding,
 		int direction, int lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output) {
-
 	// From this point, we expect the buffer to contain allocated data.
 	// This function has some comments as quotes from the Transvoxel paper.
 
@@ -827,7 +817,6 @@ void build_transition_mesh(
 						(sdf_data[data_index + fn02] < isolevel) == s &&
 						(sdf_data[data_index + fn12] < isolevel) == s &&
 						(sdf_data[data_index + fn22] < isolevel) == s) {
-
 					// Not crossing the isolevel, this cell won't produce any geometry.
 					// We must figure this out as fast as possible, because it will happen a lot.
 					continue;
@@ -889,7 +878,7 @@ void build_transition_mesh(
 			CellTextureDatas<13> cell_textures;
 			if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 				CellTextureDatas<9> cell_textures_partial;
-				get_cell_texture_data(cell_textures_partial, texture_indices_data, cell_data_indices, weights_data);
+				get_cell_texture_data(cell_textures_partial, texture_indices_data, cell_data_indices, weights_sampler);
 
 				cell_textures.indices = cell_textures_partial.indices;
 				cell_textures.packed_indices = cell_textures_partial.packed_indices;
@@ -1133,14 +1122,16 @@ void build_transition_mesh(
 	} // for y
 }
 
-ArraySlice<const uint16_t> get_or_decompress_channel(
-		const VoxelBuffer &voxels, std::vector<uint16_t> &backing_buffer, unsigned int channel) {
-
-	ERR_FAIL_COND_V(voxels.get_channel_depth(channel) != VoxelBuffer::DEPTH_16_BIT, ArraySlice<const uint16_t>());
+template <typename T>
+ArraySlice<const T> get_or_decompress_channel(
+		const VoxelBuffer &voxels, std::vector<T> &backing_buffer, unsigned int channel) {
+	ERR_FAIL_COND_V(voxels.get_channel_depth(channel) != VoxelBuffer::get_depth_from_size(sizeof(T)),
+			ArraySlice<const T>());
 
 	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
 		backing_buffer.resize(voxels.get_size().volume());
-		const uint16_t v = voxels.get_voxel(Vector3i(), channel);
+		const T v = voxels.get_voxel(Vector3i(), channel);
+		// TODO Could use a fast fill using 8-byte blocks or intrinsics?
 		for (unsigned int i = 0; i < backing_buffer.size(); ++i) {
 			backing_buffer[i] = v;
 		}
@@ -1149,20 +1140,19 @@ ArraySlice<const uint16_t> get_or_decompress_channel(
 	} else {
 		ArraySlice<uint8_t> data_bytes;
 		CRASH_COND(voxels.get_channel_raw(channel, data_bytes) == false);
-		return data_bytes.reinterpret_cast_to<const uint16_t>();
+		return data_bytes.reinterpret_cast_to<const T>();
 	}
 }
 
 TextureIndicesData get_texture_indices_data(const VoxelBuffer &voxels, unsigned int channel,
 		DefaultTextureIndicesData &out_default_texture_indices_data) {
-
 	ERR_FAIL_COND_V(voxels.get_channel_depth(channel) != VoxelBuffer::DEPTH_16_BIT, TextureIndicesData());
 
 	TextureIndicesData data;
 
 	if (voxels.is_uniform(channel)) {
 		const uint16_t encoded_indices = voxels.get_voxel(Vector3i(), channel);
-		data.default_indices = decode_indices(encoded_indices);
+		data.default_indices = decode_indices_from_packed_u16(encoded_indices);
 		data.packed_default_indices = pack_bytes(data.default_indices);
 
 		out_default_texture_indices_data.indices = data.default_indices;
@@ -1180,9 +1170,42 @@ TextureIndicesData get_texture_indices_data(const VoxelBuffer &voxels, unsigned 
 	return data;
 }
 
+// I'm not really decided if doing this is better or not yet?
+//#define USE_TRICHANNEL
+
+#ifdef USE_TRICHANNEL
+// TODO Is this a faster/equivalent option with better precision?
+struct WeightSampler3U8 {
+	ArraySlice<const uint8_t> u8_data0;
+	ArraySlice<const uint8_t> u8_data1;
+	ArraySlice<const uint8_t> u8_data2;
+	inline FixedArray<uint8_t, 4> get_weights(int i) const {
+		FixedArray<uint8_t, 4> w;
+		w[0] = u8_data0[i];
+		w[1] = u8_data1[i];
+		w[2] = u8_data2[i];
+		w[3] = 255 - (w[0] + w[1] + w[2]);
+		return w;
+	}
+};
+
+thread_local std::vector<uint8_t> s_weights_backing_buffer_u8_0;
+thread_local std::vector<uint8_t> s_weights_backing_buffer_u8_1;
+thread_local std::vector<uint8_t> s_weights_backing_buffer_u8_2;
+
+#else
+struct WeightSamplerPackedU16 {
+	ArraySlice<const uint16_t> u16_data;
+	inline FixedArray<uint8_t, 4> get_weights(int i) const {
+		return decode_weights_from_packed_u16(u16_data[i]);
+	}
+};
+
+thread_local std::vector<uint16_t> s_weights_backing_buffer_u16;
+#endif
+
 DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int lod_index,
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output) {
-
 	VOXEL_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
@@ -1191,18 +1214,36 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned
 
 	const unsigned int voxels_count = voxels.get_size().volume();
 
-	// TODO Support more texturing data configurations
 	DefaultTextureIndicesData default_texture_indices_data;
 	default_texture_indices_data.use = false;
 	TextureIndicesData indices_data;
-	ArraySlice<const uint16_t> weights_data;
+#ifdef USE_TRICHANNEL
+	WeightSampler3U8 weights_data;
 	if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 		// From this point we know SDF is not uniform so it has an allocated buffer,
 		// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
 		indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
-		weights_data = get_or_decompress_channel(voxels, s_weights_backing_buffer, VoxelBuffer::CHANNEL_WEIGHTS);
-		ERR_FAIL_COND_V(weights_data.size() != voxels_count, default_texture_indices_data);
+		weights_data.u8_data0 =
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_0, VoxelBuffer::CHANNEL_WEIGHTS);
+		weights_data.u8_data1 =
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_1, VoxelBuffer::CHANNEL_DATA5);
+		weights_data.u8_data2 =
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_2, VoxelBuffer::CHANNEL_DATA6);
+		ERR_FAIL_COND_V(weights_data.u8_data0.size() != voxels_count, default_texture_indices_data);
+		ERR_FAIL_COND_V(weights_data.u8_data1.size() != voxels_count, default_texture_indices_data);
+		ERR_FAIL_COND_V(weights_data.u8_data2.size() != voxels_count, default_texture_indices_data);
 	}
+#else
+	WeightSamplerPackedU16 weights_data;
+	if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
+		// From this point we know SDF is not uniform so it has an allocated buffer,
+		// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
+		indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
+		weights_data.u16_data =
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u16, VoxelBuffer::CHANNEL_WEIGHTS);
+		ERR_FAIL_COND_V(weights_data.u16_data.size() != voxels_count, default_texture_indices_data);
+	}
+#endif
 
 	// We settle data types up-front so we can get rid of abstraction layers and conditionals,
 	// which would otherwise harm performance in tight iterations
@@ -1237,7 +1278,6 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned
 void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int direction, int lod_index,
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data) {
-
 	VOXEL_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
@@ -1248,7 +1288,8 @@ void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, 
 
 	// TODO Support more texturing data configurations
 	TextureIndicesData indices_data;
-	ArraySlice<const uint16_t> weights_data;
+#ifdef USE_TRICHANNEL
+	WeightSampler3U8 weights_data;
 	if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 		if (default_texture_indices_data.use) {
 			indices_data.default_indices = default_texture_indices_data.indices;
@@ -1259,9 +1300,33 @@ void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, 
 			// TODO Is it worth doing conditionnals instead during meshing?
 			indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
 		}
-		weights_data = get_or_decompress_channel(voxels, s_weights_backing_buffer, VoxelBuffer::CHANNEL_WEIGHTS);
-		ERR_FAIL_COND(weights_data.size() != voxels_count);
+		weights_data.u8_data0 =
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_0, VoxelBuffer::CHANNEL_WEIGHTS);
+		weights_data.u8_data1 =
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_1, VoxelBuffer::CHANNEL_DATA5);
+		weights_data.u8_data2 =
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_2, VoxelBuffer::CHANNEL_DATA6);
+		ERR_FAIL_COND(weights_data.u8_data0.size() != voxels_count);
+		ERR_FAIL_COND(weights_data.u8_data1.size() != voxels_count);
+		ERR_FAIL_COND(weights_data.u8_data2.size() != voxels_count);
 	}
+#else
+	WeightSamplerPackedU16 weights_data;
+	if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
+		if (default_texture_indices_data.use) {
+			indices_data.default_indices = default_texture_indices_data.indices;
+			indices_data.packed_default_indices = default_texture_indices_data.packed_indices;
+		} else {
+			// From this point we know SDF is not uniform so it has an allocated buffer,
+			// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
+			// TODO Is it worth doing conditionnals instead during meshing?
+			indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
+		}
+		weights_data.u16_data =
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u16, VoxelBuffer::CHANNEL_WEIGHTS);
+		ERR_FAIL_COND(weights_data.u16_data.size() != voxels_count);
+	}
+#endif
 
 	switch (voxels.get_channel_depth(sdf_channel)) {
 		case VoxelBuffer::DEPTH_8_BIT: {
