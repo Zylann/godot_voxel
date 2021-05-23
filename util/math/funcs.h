@@ -20,7 +20,6 @@
 template <typename T>
 inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4, const T v5, const T v6, const T v7,
 		Vector3 position) {
-
 	const float one_min_x = 1.f - position.x;
 	const float one_min_y = 1.f - position.y;
 	const float one_min_z = 1.f - position.z;
@@ -89,15 +88,6 @@ inline T clamp(const T x, const T min_value, const T max_value) {
 template <typename T>
 inline T squared(const T x) {
 	return x * x;
-}
-
-template <typename T>
-inline void sort_min_max(T &a, T &b) {
-	if (a > b) {
-		T temp = a;
-		a = b;
-		b = temp;
-	}
 }
 
 // TODO Rename udiv => floordiv
