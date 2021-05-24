@@ -63,6 +63,7 @@
 				Copies values from a channel's sub-region of another [VoxelBuffer] into the same channel for the current buffer, at a specific location. The depth formats must match.
 				If corners of the area represent a negative-size area, they will be sorted back.
 				If coordinates are entirely or partially out of bounds, they will be clipped automatically.
+				Copying across the same buffer to overlapping areas is not supported. You may use an intermediary buffer in this case.
 			</description>
 		</method>
 		<method name="copy_voxel_metadata_in_area">
@@ -80,6 +81,7 @@
 				Copies per-voxel metadata from a sub-region of another [VoxelBuffer] into the the current buffer, at a specific location. Values will be a shallow copy.
 				If corners of the area represent a negative-size area, they will be sorted back.
 				If coordinates are entirely or partially out of bounds, they will be clipped automatically.
+				Copying across the same buffer to overlapping areas is not supported. You may use an intermediary buffer in this case.
 			</description>
 		</method>
 		<method name="create">

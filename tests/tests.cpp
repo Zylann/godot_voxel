@@ -208,6 +208,68 @@ void test_encode_weights_packed_u16() {
 	ERR_FAIL_COND(weights != decoded_weights);
 }
 
+void test_copy_3d_region_zxy() {
+	std::vector<uint16_t> src;
+	std::vector<uint16_t> dst;
+	const Vector3i src_size(8, 8, 8);
+	const Vector3i dst_size(3, 4, 5);
+	src.resize(src_size.volume(), 0);
+	dst.resize(src_size.volume(), 0);
+	for (unsigned int i = 0; i < src.size(); ++i) {
+		src[i] = i;
+	}
+
+	ArraySlice<const uint16_t> srcs = to_slice_const(src);
+	ArraySlice<uint16_t> dsts = to_slice(dst);
+	const Vector3i dst_min(0, 0, 0);
+	const Vector3i src_min(2, 1, 0);
+	const Vector3i src_max(5, 4, 3);
+	copy_3d_region_zxy(dsts, dst_size, dst_min, srcs, src_size, src_min, src_max);
+
+	/*for (pos.y = src_min.y; pos.y < src_max.y; ++pos.y) {
+		String s;
+		for (pos.x = src_min.x; pos.x < src_max.x; ++pos.x) {
+			const uint16_t v = srcs[pos.get_zxy_index(src_size)];
+			if (v < 10) {
+				s += String("{0}   ").format(varray(v));
+			} else if (v < 100) {
+				s += String("{0}  ").format(varray(v));
+			} else {
+				s += String("{0} ").format(varray(v));
+			}
+		}
+		print_line(s);
+	}
+	print_line("----");
+	const Vector3i dst_max = dst_min + (src_max - src_min);
+	pos = Vector3i();
+	for (pos.y = dst_min.y; pos.y < dst_max.y; ++pos.y) {
+		String s;
+		for (pos.x = dst_min.x; pos.x < dst_max.x; ++pos.x) {
+			const uint16_t v = dsts[pos.get_zxy_index(dst_size)];
+			if (v < 10) {
+				s += String("{0}   ").format(varray(v));
+			} else if (v < 100) {
+				s += String("{0}  ").format(varray(v));
+			} else {
+				s += String("{0} ").format(varray(v));
+			}
+		}
+		print_line(s);
+	}*/
+
+	Vector3i pos;
+	for (pos.z = src_min.z; pos.z < src_max.z; ++pos.z) {
+		for (pos.x = src_min.x; pos.x < src_max.x; ++pos.x) {
+			for (pos.y = src_min.y; pos.y < src_max.y; ++pos.y) {
+				const uint16_t srcv = srcs[pos.get_zxy_index(src_size)];
+				const uint16_t dstv = dsts[(pos - src_min + dst_min).get_zxy_index(dst_size)];
+				ERR_FAIL_COND(srcv != dstv);
+			}
+		}
+	}
+}
+
 #define VOXEL_TEST(fname)                                     \
 	print_line(String("Running {0}").format(varray(#fname))); \
 	fname()
@@ -220,6 +282,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_data_map_paste_mask);
 	VOXEL_TEST(test_voxel_data_map_copy);
 	VOXEL_TEST(test_encode_weights_packed_u16);
+	VOXEL_TEST(test_copy_3d_region_zxy);
 
 	print_line("------------ Voxel tests end -------------");
 }

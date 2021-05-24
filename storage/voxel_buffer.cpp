@@ -33,6 +33,9 @@ inline void free_channel_data(uint8_t *data, uint32_t size) {
 #endif
 }
 
+uint32_t g_depth_byte_counts[] = {
+	1, 2, 4, 8
+};
 uint32_t g_depth_bit_counts[] = {
 	8, 16, 32, 64
 };
@@ -46,6 +49,11 @@ uint64_t g_depth_max_values[] = {
 inline uint32_t get_depth_bit_count(VoxelBuffer::Depth d) {
 	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT);
 	return g_depth_bit_counts[d];
+}
+
+inline uint32_t get_depth_byte_count(VoxelBuffer::Depth d) {
+	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT);
+	return g_depth_byte_counts[d];
 }
 
 inline uint64_t get_max_value_for_depth(VoxelBuffer::Depth d) {
@@ -345,11 +353,9 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
 	Vector3i::sort_min_max(min, max);
-
 	min.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1, 1, 1));
 	max.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1, 1, 1));
 	const Vector3i area_size = max - min;
-
 	if (area_size.x == 0 || area_size.y == 0 || area_size.z == 0) {
 		return;
 	}
@@ -513,39 +519,9 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index
 	channel.depth = other_channel.depth;
 }
 
-inline void clip_copy_region_coord(int &src_min, int &src_max, const int src_size, int &dst_min, const int dst_size) {
-	// Clamp source and shrink destination for moved borders
-	if (src_min < 0) {
-		dst_min += -src_min;
-		src_min = 0;
-	}
-	if (src_max > src_size) {
-		src_max = src_size;
-	}
-	// Clamp destination and shrink source for moved borders
-	if (dst_min < 0) {
-		src_min += -dst_min;
-		dst_min = 0;
-	}
-	const int dst_w = src_max - src_min;
-	const int dst_max = dst_min + dst_w;
-	if (dst_max > dst_size) {
-		src_max -= dst_max - dst_size;
-	}
-	// It is possible the source has negative size at this point, which means there is nothing to copy.
-	// This must be checked by the caller.
-}
-
-inline void clip_copy_region(
-		Vector3i &src_min, Vector3i &src_max, const Vector3i &src_size, Vector3i &dst_min, const Vector3i &dst_size) {
-	clip_copy_region_coord(src_min.x, src_max.x, src_size.x, dst_min.x, dst_size.x);
-	clip_copy_region_coord(src_min.y, src_max.y, src_size.y, dst_min.y, dst_size.y);
-	clip_copy_region_coord(src_min.z, src_max.z, src_size.z, dst_min.z, dst_size.z);
-}
-
+// TODO Disallow copying from overlapping areas of the same buffer
 void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
 		unsigned int channel_index) {
-
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
 	Channel &channel = _channels[channel_index];
@@ -558,74 +534,28 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 		return;
 	}
 
-	Vector3i::sort_min_max(src_min, src_max);
-
-	clip_copy_region(src_min, src_max, other._size, dst_min, _size);
-
-	const Vector3i area_size = src_max - src_min;
-
-	if (area_size.x <= 0 || area_size.y <= 0 || area_size.z <= 0) {
-		// Degenerate area, we'll not copy anything.
-		return;
-	}
-
-	if (area_size == _size && area_size == other._size) {
-		// Equivalent of full copy between two blocks of same size
-		copy_from(other, channel_index);
-
-	} else {
-		if (other_channel.data != nullptr) {
-
-			if (channel.data == nullptr) {
-				create_channel(channel_index, _size, channel.defval);
-			}
-
-			if (channel.depth == DEPTH_8_BIT) {
-				// Native format
-				// Copy row by row
-				Vector3i pos;
-				for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
-					for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
-						// Row direction is Y
-						const unsigned int src_ri =
-								other.get_index(pos.x + src_min.x, pos.y + src_min.y, pos.z + src_min.z);
-						const unsigned int dst_ri = get_index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
-						memcpy(&channel.data[dst_ri], &other_channel.data[src_ri], area_size.y * sizeof(uint8_t));
-					}
-				}
-
-			} else if (channel.depth == DEPTH_16_BIT) {
-				Vector3i pos;
-				for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
-					for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
-						const unsigned int src_ri =
-								2 * other.get_index(pos.x + src_min.x, pos.y + src_min.y, pos.z + src_min.z);
-						const unsigned int dst_ri =
-								2 * get_index(pos.x + dst_min.x, pos.y + dst_min.y, pos.z + dst_min.z);
-						memcpy(&channel.data[dst_ri], &other_channel.data[src_ri], area_size.y * sizeof(uint16_t));
-					}
-				}
-
-			} else {
-				VOXEL_PROFILE_SCOPE();
-				// TODO Optimized versions
-				Vector3i pos;
-				for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
-					for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
-						for (pos.y = 0; pos.y < area_size.y; ++pos.y) {
-							const uint64_t v = other.get_voxel(src_min + pos, channel_index);
-							set_voxel(v, dst_min + pos, channel_index);
-						}
-					}
-				}
-			}
-
-		} else if (channel.defval != other_channel.defval) {
-			if (channel.data == nullptr) {
-				create_channel(channel_index, _size, channel.defval);
-			}
-			fill_area(other_channel.defval, dst_min, dst_min + area_size, channel_index);
+	if (other_channel.data != nullptr) {
+		if (channel.data == nullptr) {
+			// Note, we do this even if the pasted data happens to be all the same value as our current channel.
+			// We assume that this case is not frequent enough to bother, and compression can happen later
+			create_channel(channel_index, _size, channel.defval);
 		}
+		const unsigned int item_size = get_depth_byte_count(channel.depth);
+		ArraySlice<const uint8_t> src(other_channel.data, other_channel.size_in_bytes);
+		ArraySlice<uint8_t> dst(channel.data, channel.size_in_bytes);
+		copy_3d_region_zxy(dst, _size, dst_min, src, other._size, src_min, src_max, item_size);
+
+	} else if (channel.defval != other_channel.defval) {
+		// This logic is still required due to how source and destination regions can be specified.
+		// The actual size of the destination area must be determined from the source area, after it has been clipped.
+		Vector3i::sort_min_max(src_min, src_max);
+		clip_copy_region(src_min, src_max, other._size, dst_min, _size);
+		const Vector3i area_size = src_max - src_min;
+		if (area_size.x <= 0 || area_size.y <= 0 || area_size.z <= 0) {
+			// Degenerate area, we'll not copy anything.
+			return;
+		}
+		fill_area(other_channel.defval, dst_min, dst_min + area_size, channel_index);
 	}
 }
 

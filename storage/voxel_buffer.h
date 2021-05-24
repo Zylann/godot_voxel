@@ -5,6 +5,7 @@
 #include "../util/array_slice.h"
 #include "../util/fixed_array.h"
 #include "../util/math/rect3i.h"
+#include "funcs.h"
 
 #include <core/map.h>
 #include <core/reference.h>
@@ -74,6 +75,19 @@ public:
 	// Limit was made explicit for serialization reasons, and also because there must be a reasonable one
 	static const uint32_t MAX_SIZE = 65535;
 
+	struct Channel {
+		// Allocated when the channel is populated.
+		// Flat array, in order [z][x][y] because it allows faster vertical-wise access (the engine is Y-up).
+		uint8_t *data = nullptr;
+
+		// Default value when data is null
+		uint64_t defval = 0;
+
+		Depth depth = DEFAULT_CHANNEL_DEPTH;
+
+		uint32_t size_in_bytes = 0;
+	};
+
 	VoxelBuffer();
 	~VoxelBuffer();
 
@@ -122,6 +136,55 @@ public:
 	void copy_from(const VoxelBuffer &other, unsigned int channel_index);
 	void copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
 			unsigned int channel_index);
+
+	// Copy a region from a box of values, passed as a raw array.
+	// `src_size` is the total 3D size of the source box.
+	// `src_min` and `src_max` are the sub-region of that box we want to copy.
+	// `dst_min` is the lower corner where we want the data to be copied into the destination.
+	template <typename T>
+	void copy_from(ArraySlice<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
+			unsigned int channel_index) {
+		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
+
+		const Channel &channel = _channels[channel_index];
+#ifdef DEBUG_ENABLED
+		// Size of source and destination values must match
+		ERR_FAIL_COND(channel.depth != get_depth_from_size(sizeof(T)));
+#endif
+
+		// This function always decompresses the destination.
+		// To keep it compressed, either check what you are about to copy,
+		// or schedule a recompression for later.
+		decompress_channel(channel_index);
+
+		ArraySlice<T> dst(static_cast<T *>(channel.data), channel.size_in_bytes / sizeof(T));
+		copy_3d_region_zxy<T>(dst, _size, dst_min, src, src_size, src_min, src_max);
+	}
+
+	// Copy a region of the data into a dense buffer.
+	// If the source is compressed, it is decompressed.
+	// `dst` is a raw array storing grid values in a box.
+	// `dst_size` is the total size of the box.
+	// `dst_min` is the lower corner of where we want the source data to be stored.
+	// `src_min` and `src_max` is the sub-region of the source we want to copy.
+	template <typename T>
+	void copy_to(ArraySlice<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i src_min, Vector3i src_max,
+			unsigned int channel_index) const {
+		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
+
+		const Channel &channel = _channels[channel_index];
+#ifdef DEBUG_ENABLED
+		// Size of source and destination values must match
+		ERR_FAIL_COND(channel.depth != get_depth_from_size(sizeof(T)));
+#endif
+
+		if (channel.data == nullptr) {
+			fill_3d_region_zxy<T>(dst, dst_size, dst_min, dst_min + (src_max - src_min), channel.defval);
+		} else {
+			ArraySlice<const T> src(static_cast<const T *>(channel.data), channel.size_in_bytes / sizeof(T));
+			copy_3d_region_zxy<T>(dst, dst_size, dst_min, src, _size, src_min, src_max);
+		}
+	}
 
 	// Executes a read-write action on all cells of the provided box that intersect with this buffer.
 	// `action_func` receives a voxel value from the channel, and returns a modified value.
@@ -300,19 +363,6 @@ private:
 	void _b_copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Vector3 src_min_pos, Vector3 src_max_pos, Vector3 dst_pos);
 
 private:
-	struct Channel {
-		// Allocated when the channel is populated.
-		// Flat array, in order [z][x][y] because it allows faster vertical-wise access (the engine is Y-up).
-		uint8_t *data = nullptr;
-
-		// Default value when data is null
-		uint64_t defval = 0;
-
-		Depth depth = DEFAULT_CHANNEL_DEPTH;
-
-		uint32_t size_in_bytes = 0;
-	};
-
 	// Each channel can store arbitary data.
 	// For example, you can decide to store colors (R, G, B, A), gameplay types (type, state, light) or both.
 	FixedArray<Channel, MAX_CHANNELS> _channels;
@@ -325,53 +375,6 @@ private:
 
 	RWLock _rw_lock;
 };
-
-// TODO Maybe find a better place to put these functions other than global space
-
-inline FixedArray<uint8_t, 4> decode_weights_from_packed_u16(uint16_t packed_weights) {
-	FixedArray<uint8_t, 4> weights;
-	// SIMDable?
-	// weights[0] = ((packed_weights >> 0) & 0x0f) << 4;
-	// weights[1] = ((packed_weights >> 4) & 0x0f) << 4;
-	// weights[2] = ((packed_weights >> 8) & 0x0f) << 4;
-	// weights[3] = ((packed_weights >> 12) & 0x0f) << 4;
-
-	// Reduced but not SIMDable
-	weights[0] = (packed_weights & 0x0f) << 4;
-	weights[1] = packed_weights & 0xf0;
-	weights[2] = (packed_weights >> 4) & 0xf0;
-	weights[3] = (packed_weights >> 8) & 0xf0;
-	return weights;
-}
-
-inline FixedArray<uint8_t, 4> decode_indices_from_packed_u16(uint16_t packed_indices) {
-	FixedArray<uint8_t, 4> indices;
-	// SIMDable?
-	indices[0] = (packed_indices >> 0) & 0x0f;
-	indices[1] = (packed_indices >> 4) & 0x0f;
-	indices[2] = (packed_indices >> 8) & 0x0f;
-	indices[3] = (packed_indices >> 12) & 0x0f;
-	return indices;
-}
-
-inline uint16_t encode_indices_to_packed_u16(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
-	return (a & 0xf) | ((b & 0xf) << 4) | ((c & 0xf) << 8) | ((d & 0xf) << 12);
-}
-
-inline uint16_t encode_weights_to_packed_u16(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
-	return (a >> 4) | ((b >> 4) << 4) | ((c >> 4) << 8) | ((d >> 4) << 12);
-}
-
-// Checks if there are no duplicate indices in any voxel
-inline void debug_check_texture_indices(FixedArray<uint8_t, 4> indices) {
-	FixedArray<bool, 16> checked;
-	checked.fill(false);
-	for (int i = 0; i < indices.size(); ++i) {
-		unsigned int ti = indices[i];
-		CRASH_COND(checked[ti]);
-		checked[ti] = true;
-	}
-}
 
 inline void debug_check_texture_indices_packed_u16(const VoxelBuffer &voxels) {
 	for (int z = 0; z < voxels.get_size().z; ++z) {
