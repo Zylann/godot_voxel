@@ -116,6 +116,7 @@ struct Vector3i {
 		return coords[i];
 	}
 
+	// TODO Change this to be consistent with `::clamp`
 	// Clamps between min and max, where max is excluded
 	void clamp_to(const Vector3i min, const Vector3i max) {
 		if (x < min.x) {
