@@ -79,7 +79,7 @@ inline T clamp(const T x, const T min_value, const T max_value) {
 	if (x < min_value) {
 		return min_value;
 	}
-	if (x >= max_value) {
+	if (x > max_value) {
 		return max_value;
 	}
 	return x;
