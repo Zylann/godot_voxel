@@ -275,41 +275,6 @@ public:
 	// This returns that scale for a given depth configuration.
 	static float get_sdf_quantization_scale(Depth d);
 
-	// TODO Switch to using GPU format inorm16 for these conversions
-	// The current ones seem to work but aren't really correct
-
-	static inline float u8_to_norm(uint8_t v) {
-		return (static_cast<float>(v) - 0x7f) * VoxelConstants::INV_0x7f;
-	}
-
-	static inline float u16_to_norm(uint16_t v) {
-		return (static_cast<float>(v) - 0x7fff) * VoxelConstants::INV_0x7fff;
-	}
-
-	static inline uint8_t norm_to_u8(float v) {
-		return clamp(static_cast<int>(128.f * v + 128.f), 0, 0xff);
-	}
-
-	static inline uint16_t norm_to_u16(float v) {
-		return clamp(static_cast<int>(0x8000 * v + 0x8000), 0, 0xffff);
-	}
-
-	/*static inline float quantized_u8_to_real(uint8_t v) {
-		return u8_to_norm(v) * VoxelConstants::QUANTIZED_SDF_8_BITS_SCALE_INV;
-	}
-
-	static inline float quantized_u16_to_real(uint8_t v) {
-		return u8_to_norm(v) * VoxelConstants::QUANTIZED_SDF_16_BITS_SCALE_INV;
-	}
-
-	static inline uint8_t real_to_quantized_u8(float v) {
-		return norm_to_u8(v * VoxelConstants::QUANTIZED_SDF_8_BITS_SCALE);
-	}
-
-	static inline uint16_t real_to_quantized_u16(float v) {
-		return norm_to_u16(v * VoxelConstants::QUANTIZED_SDF_16_BITS_SCALE);
-	}*/
-
 	// Metadata
 
 	Variant get_block_metadata() const { return _block_metadata; }

@@ -1,6 +1,7 @@
 #ifndef VOXEL_STORAGE_FUNCS_H
 #define VOXEL_STORAGE_FUNCS_H
 
+#include "../constants/voxel_constants.h"
 #include "../util/array_slice.h"
 #include "../util/math/vector3i.h"
 
@@ -90,6 +91,41 @@ void fill_3d_region_zxy(ArraySlice<T> dst, Vector3i dst_size, Vector3i dst_min, 
 		}
 	}
 }
+
+// TODO Switch to using GPU format inorm16 for these conversions
+// The current ones seem to work but aren't really correct
+
+inline float u8_to_norm(uint8_t v) {
+	return (static_cast<float>(v) - 0x7f) * VoxelConstants::INV_0x7f;
+}
+
+inline float u16_to_norm(uint16_t v) {
+	return (static_cast<float>(v) - 0x7fff) * VoxelConstants::INV_0x7fff;
+}
+
+inline uint8_t norm_to_u8(float v) {
+	return clamp(static_cast<int>(128.f * v + 128.f), 0, 0xff);
+}
+
+inline uint16_t norm_to_u16(float v) {
+	return clamp(static_cast<int>(0x8000 * v + 0x8000), 0, 0xffff);
+}
+
+/*static inline float quantized_u8_to_real(uint8_t v) {
+	return u8_to_norm(v) * VoxelConstants::QUANTIZED_SDF_8_BITS_SCALE_INV;
+}
+
+static inline float quantized_u16_to_real(uint8_t v) {
+	return u8_to_norm(v) * VoxelConstants::QUANTIZED_SDF_16_BITS_SCALE_INV;
+}
+
+static inline uint8_t real_to_quantized_u8(float v) {
+	return norm_to_u8(v * VoxelConstants::QUANTIZED_SDF_8_BITS_SCALE);
+}
+
+static inline uint16_t real_to_quantized_u16(float v) {
+	return norm_to_u16(v * VoxelConstants::QUANTIZED_SDF_16_BITS_SCALE);
+}*/
 
 inline FixedArray<uint8_t, 4> decode_weights_from_packed_u16(uint16_t packed_weights) {
 	FixedArray<uint8_t, 4> weights;

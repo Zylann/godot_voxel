@@ -75,10 +75,10 @@ static_assert(sizeof(uint64_t) == sizeof(double), "uint64_t and double cannot be
 inline uint64_t real_to_raw_voxel(real_t value, VoxelBuffer::Depth depth) {
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT:
-			return VoxelBuffer::norm_to_u8(value);
+			return norm_to_u8(value);
 
 		case VoxelBuffer::DEPTH_16_BIT:
-			return VoxelBuffer::norm_to_u16(value);
+			return norm_to_u16(value);
 
 		case VoxelBuffer::DEPTH_32_BIT: {
 			MarshallFloat m;
@@ -100,10 +100,10 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	// Depths below 32 are normalized between -1 and 1
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT:
-			return VoxelBuffer::u8_to_norm(value);
+			return u8_to_norm(value);
 
 		case VoxelBuffer::DEPTH_16_BIT:
-			return VoxelBuffer::u16_to_norm(value);
+			return u16_to_norm(value);
 
 		case VoxelBuffer::DEPTH_32_BIT: {
 			MarshallFloat m;

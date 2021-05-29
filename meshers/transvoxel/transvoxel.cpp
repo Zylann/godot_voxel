@@ -108,11 +108,11 @@ inline Vector3i dir_to_prev_vec(uint8_t dir) {
 }
 
 inline float sdf_as_float(uint8_t v) {
-	return -VoxelBuffer::u8_to_norm(v);
+	return -u8_to_norm(v);
 }
 
 inline float sdf_as_float(uint16_t v) {
-	return -VoxelBuffer::u16_to_norm(v);
+	return -u16_to_norm(v);
 }
 
 inline float sdf_as_float(float v) {
