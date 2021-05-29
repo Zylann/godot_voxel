@@ -228,10 +228,6 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
 		return;
 	}
 
-	if (graph->get_nodes_count() == 0) {
-		graph->load_plane_preset();
-	}
-
 	if (_graph.is_valid()) {
 		_graph->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_graph_changed");
 		_graph->disconnect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED, this, "_on_graph_node_name_changed");
@@ -240,6 +236,12 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
 	_graph = graph;
 
 	if (_graph.is_valid()) {
+		// Load a default preset when creating new graphs.
+		// TODO Downside is, an empty graph cannot be seen.
+		// But Godot doesnt let us know if the resource has been created from the inspector or not
+		if (_graph->get_nodes_count() == 0) {
+			_graph->load_plane_preset();
+		}
 		_graph->connect(CoreStringNames::get_singleton()->changed, this, "_on_graph_changed");
 		_graph->connect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED, this, "_on_graph_node_name_changed");
 	}
@@ -490,7 +492,6 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 
 	if (mb.is_valid()) {
 		if (mb->is_pressed()) {
-
 			if (mb->get_button_index() == BUTTON_RIGHT) {
 				_click_position = mb->get_position();
 				_context_menu->set_position(get_global_mouse_position());
@@ -502,7 +503,6 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 
 void VoxelGraphEditor::_on_graph_edit_connection_request(
 		String from_node_name, int from_slot, String to_node_name, int to_slot) {
-
 	VoxelGraphEditorNode *src_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(from_node_name));
 	VoxelGraphEditorNode *dst_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(to_node_name));
 	ERR_FAIL_COND(src_node_view == nullptr);
@@ -529,7 +529,6 @@ void VoxelGraphEditor::_on_graph_edit_connection_request(
 
 void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 		String from_node_name, int from_slot, String to_node_name, int to_slot) {
-
 	VoxelGraphEditorNode *src_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(from_node_name));
 	VoxelGraphEditorNode *dst_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(to_node_name));
 	ERR_FAIL_COND(src_node_view == nullptr);
