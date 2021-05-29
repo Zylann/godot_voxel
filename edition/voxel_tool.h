@@ -2,25 +2,9 @@
 #define VOXEL_TOOL_H
 
 #include "../util/math/rect3i.h"
-#include <core/reference.h>
+#include "voxel_raycast_result.h"
 
 class VoxelBuffer;
-
-// This class exists only to make the script API nicer.
-class VoxelRaycastResult : public Reference {
-	GDCLASS(VoxelRaycastResult, Reference)
-public:
-	Vector3i position;
-	Vector3i previous_position;
-	float distance_along_ray;
-
-private:
-	Vector3 _b_get_position() const;
-	Vector3 _b_get_previous_position() const;
-	float _b_get_distance() const;
-
-	static void _bind_methods();
-};
 
 // TODO Need to review VoxelTool to account for transformed volumes
 
