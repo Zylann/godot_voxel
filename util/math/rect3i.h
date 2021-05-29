@@ -6,7 +6,6 @@
 
 // TODO Could be renamed to something more sensical, like Box3i
 class Rect3i {
-
 public:
 	Vector3i pos;
 	Vector3i size;
@@ -67,9 +66,9 @@ public:
 		return other.pos.x >= pos.x &&
 			   other.pos.y >= pos.y &&
 			   other.pos.z >= pos.z &&
-			   other_end.x < end.x &&
-			   other_end.y < end.y &&
-			   other_end.z < end.z;
+			   other_end.x <= end.x &&
+			   other_end.y <= end.y &&
+			   other_end.z <= end.z;
 	}
 
 	String to_string() const {
