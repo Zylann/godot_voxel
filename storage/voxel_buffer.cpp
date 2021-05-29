@@ -123,16 +123,6 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	}
 }
 
-inline uint16_t pack_4bit_ints(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
-#ifdef DEBUG_ENABLED
-	ERR_FAIL_COND_V(a > 0xf, 0);
-	ERR_FAIL_COND_V(b > 0xf, 0);
-	ERR_FAIL_COND_V(c > 0xf, 0);
-	ERR_FAIL_COND_V(d > 0xf, 0);
-#endif
-	return a | (b << 4) | (c << 8) | (d << 12);
-}
-
 } // namespace
 
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Data2,Data3,Data4,Data5,Data6,Data7";
@@ -147,10 +137,10 @@ VoxelBuffer::VoxelBuffer() {
 	_channels[CHANNEL_SDF].defval = 0xffff;
 
 	_channels[CHANNEL_INDICES].depth = VoxelBuffer::DEPTH_16_BIT;
-	_channels[CHANNEL_INDICES].defval = pack_4bit_ints(0, 1, 2, 3);
+	_channels[CHANNEL_INDICES].defval = encode_indices_to_packed_u16(0, 1, 2, 3);
 
 	_channels[CHANNEL_WEIGHTS].depth = VoxelBuffer::DEPTH_16_BIT;
-	_channels[CHANNEL_WEIGHTS].defval = pack_4bit_ints(15, 0, 0, 0);
+	_channels[CHANNEL_WEIGHTS].defval = encode_weights_to_packed_u16(15, 0, 0, 0);
 }
 
 VoxelBuffer::~VoxelBuffer() {
