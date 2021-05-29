@@ -1,10 +1,8 @@
 #ifndef EDITION_FUNCS_H
 #define EDITION_FUNCS_H
 
-#include "../storage/voxel_buffer.h"
+#include "../storage/funcs.h"
 #include "../util/fixed_array.h"
-#include "../util/math/funcs.h"
-#include "../util/math/vector3i.h"
 
 inline void _normalize_weights_preserving(FixedArray<float, 4> &weights, unsigned int preserved_index,
 		unsigned int other0, unsigned int other1, unsigned int other2) {
@@ -86,6 +84,8 @@ inline void blend_texture_packed_u16(int texture_index, float target_weight,
 		indices[component_index] = texture_index;
 		index_was_changed = true;
 	}
+
+	// TODO Optimization in case target_weight is 1?
 
 	FixedArray<float, 4> weights_f;
 	for (unsigned int i = 0; i < weights.size(); ++i) {

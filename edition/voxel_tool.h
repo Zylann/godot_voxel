@@ -2,6 +2,7 @@
 #define VOXEL_TOOL_H
 
 #include "../util/math/rect3i.h"
+#include "funcs.h"
 #include "voxel_raycast_result.h"
 
 class VoxelBuffer;
@@ -144,6 +145,29 @@ protected:
 		float opacity = 1.f;
 		float sharpness = 2.f;
 		unsigned int index = 0;
+	};
+
+	struct TextureBlendSphereOp {
+		Vector3 center;
+		float radius;
+		float radius_squared;
+		TextureParams tp;
+
+		TextureBlendSphereOp(Vector3 pCenter, float pRadius, TextureParams pTp) {
+			center = pCenter;
+			radius = pRadius;
+			radius_squared = pRadius * pRadius;
+			tp = pTp;
+		}
+
+		inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
+			const float distance_squared = pos.to_vec3().distance_squared_to(center);
+			if (distance_squared < radius_squared) {
+				const float distance_from_radius = radius - Math::sqrt(distance_squared);
+				const float target_weight = tp.opacity * clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
+				blend_texture_packed_u16(tp.index, target_weight, indices, weights);
+			}
+		}
 	};
 
 	// Used on smooth terrain

@@ -17,6 +17,7 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 	ERR_FAIL_COND(_buffer.is_null());
 
 	if (_mode != MODE_TEXTURE_PAINT) {
+		// TODO Eventually all specialized voxel tools should use lambda writing functions
 		VoxelTool::do_sphere(center, radius);
 		return;
 	}
@@ -26,21 +27,11 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 	Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 	box.clip(Rect3i(Vector3i(), _buffer->get_size()));
 
-	const TextureParams &tp = _texture_params;
-	VoxelBuffer &buffer = **_buffer;
-
-	box.for_each_cell([&buffer, center, radius, &tp](Vector3i pos) {
-		const float distance = radius - pos.to_vec3().distance_to(center);
-		const float target_weight = tp.opacity * clamp(tp.sharpness * (distance / radius), 0.f, 1.f);
-		if (target_weight > 0.f) {
-			uint16_t indices = buffer.get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);
-			uint16_t weights = buffer.get_voxel(pos, VoxelBuffer::CHANNEL_WEIGHTS);
-			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
-			// TODO Optimization: don't write back if it didn't change?
-			buffer.set_voxel(indices, pos, VoxelBuffer::CHANNEL_INDICES);
-			buffer.set_voxel(weights, pos, VoxelBuffer::CHANNEL_WEIGHTS);
-		}
-	});
+	_buffer->write_box_2_template<TextureBlendSphereOp, uint16_t, uint16_t>(box,
+			VoxelBuffer::CHANNEL_INDICES,
+			VoxelBuffer::CHANNEL_WEIGHTS,
+			TextureBlendSphereOp(center, radius, _texture_params),
+			Vector3i());
 
 	_post_edit(box);
 }

@@ -33,12 +33,6 @@ inline void free_channel_data(uint8_t *data, uint32_t size) {
 #endif
 }
 
-uint32_t g_depth_byte_counts[] = {
-	1, 2, 4, 8
-};
-uint32_t g_depth_bit_counts[] = {
-	8, 16, 32, 64
-};
 uint64_t g_depth_max_values[] = {
 	0xff, // 8
 	0xffff, // 16
@@ -48,12 +42,7 @@ uint64_t g_depth_max_values[] = {
 
 inline uint32_t get_depth_bit_count(VoxelBuffer::Depth d) {
 	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT);
-	return g_depth_bit_counts[d];
-}
-
-inline uint32_t get_depth_byte_count(VoxelBuffer::Depth d) {
-	CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT);
-	return g_depth_byte_counts[d];
+	return VoxelBuffer::get_depth_byte_count(d) << 3;
 }
 
 inline uint64_t get_max_value_for_depth(VoxelBuffer::Depth d) {

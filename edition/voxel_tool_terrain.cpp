@@ -152,6 +152,29 @@ void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t ch
 	_post_edit(Rect3i(pos, p_voxels->get_size()));
 }
 
+void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
+	ERR_FAIL_COND(_terrain == nullptr);
+
+	if (_mode != MODE_TEXTURE_PAINT) {
+		VoxelTool::do_sphere(center, radius);
+		return;
+	}
+
+	VOXEL_PROFILE_SCOPE();
+
+	const Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+
+	if (!is_area_editable(box)) {
+		PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	_terrain->get_storage().write_box_2(box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
+			TextureBlendSphereOp{ center, radius, _texture_params });
+
+	_post_edit(box);
+}
+
 uint64_t VoxelToolTerrain::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _terrain->get_storage().get_voxel(pos, _channel);

@@ -19,6 +19,7 @@ class FuncRef;
 // Organized in channels of configurable bit depth.
 // Values can be interpreted either as unsigned integers or normalized floats.
 class VoxelBuffer : public Reference {
+	// TODO Perhaps we could decouple the Godot class and the internals, so we don't always need `Reference`?
 	GDCLASS(VoxelBuffer, Reference)
 
 public:
@@ -52,6 +53,11 @@ public:
 		DEPTH_64_BIT,
 		DEPTH_COUNT
 	};
+
+	static inline uint32_t get_depth_byte_count(VoxelBuffer::Depth d) {
+		CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT);
+		return 1 << d;
+	}
 
 	static inline Depth get_depth_from_size(size_t size) {
 		switch (size) {
@@ -186,6 +192,7 @@ public:
 		}
 	}
 
+	// TODO Deprecate?
 	// Executes a read-write action on all cells of the provided box that intersect with this buffer.
 	// `action_func` receives a voxel value from the channel, and returns a modified value.
 	// if the returned value is different, it will be applied to the buffer.
@@ -211,6 +218,127 @@ public:
 			}
 		}
 	}
+
+	static _FORCE_INLINE_ unsigned int get_index(const Vector3i pos, const Vector3i size) {
+		return pos.get_zxy_index(size);
+	}
+
+	_FORCE_INLINE_ unsigned int get_index(unsigned int x, unsigned int y, unsigned int z) const {
+		return y + _size.y * (x + _size.x * z); // ZXY index
+	}
+
+	template <typename F>
+	inline void for_each_index_and_pos(const Rect3i &box, F f) {
+		const Vector3i min_pos = box.pos;
+		const Vector3i max_pos = box.pos + box.size;
+		Vector3i pos;
+		for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
+			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
+				pos.y = min_pos.y;
+				unsigned int i = get_index(pos.x, pos.y, pos.z);
+				for (; pos.y < max_pos.y; ++pos.y) {
+					f(i, pos);
+					++i;
+				}
+			}
+		}
+	}
+
+	// Data_T action_func(Vector3i pos, Data_T in_v)
+	template <typename F, typename Data_T>
+	void write_box_template(const Rect3i &box, unsigned int channel_index, F action_func, Vector3i offset) {
+		decompress_channel(channel_index);
+		Channel &channel = _channels[channel_index];
+#ifdef DEBUG_ENABLED
+		ERR_FAIL_COND(!Rect3i(Vector3i(), _size).contains(box));
+		ERR_FAIL_COND(get_depth_byte_count(channel.depth) != sizeof(Data_T));
+#endif
+		ArraySlice<Data_T> data = ArraySlice<uint8_t>(channel.data, channel.size_in_bytes)
+										  .reinterpret_cast_to<Data_T>();
+		for_each_index_and_pos(box, [data, action_func, offset](unsigned int i, Vector3i pos) {
+			data[i] = action_func(pos + offset, data[i]);
+		});
+	}
+
+	// void action_func(Vector3i pos, Data0_T &inout_v0, Data1_T &inout_v1)
+	template <typename F, typename Data0_T, typename Data1_T>
+	void write_box_2_template(const Rect3i &box, unsigned int channel_index0, unsigned channel_index1, F action_func,
+			Vector3i offset) {
+		decompress_channel(channel_index0);
+		decompress_channel(channel_index1);
+		Channel &channel0 = _channels[channel_index0];
+		Channel &channel1 = _channels[channel_index1];
+#ifdef DEBUG_ENABLED
+		ERR_FAIL_COND(!Rect3i(Vector3i(), _size).contains(box));
+		ERR_FAIL_COND(get_depth_byte_count(channel0.depth) != sizeof(Data0_T));
+		ERR_FAIL_COND(get_depth_byte_count(channel1.depth) != sizeof(Data1_T));
+#endif
+		ArraySlice<Data0_T> data0 = ArraySlice<uint8_t>(channel0.data, channel0.size_in_bytes)
+											.reinterpret_cast_to<Data0_T>();
+		ArraySlice<Data1_T> data1 = ArraySlice<uint8_t>(channel1.data, channel1.size_in_bytes)
+											.reinterpret_cast_to<Data1_T>();
+		for_each_index_and_pos(box, [action_func, offset, &data0, &data1](unsigned int i, Vector3i pos) {
+			// TODO The caller must still specify exactly the correct type, maybe some conversion could be used
+			action_func(pos + offset, data0[i], data1[i]);
+		});
+	}
+
+	template <typename F>
+	void write_box(const Rect3i &box, unsigned int channel_index, F action_func, Vector3i offset) {
+#ifdef DEBUG_ENABLED
+		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
+#endif
+		const Channel &channel = _channels[channel_index];
+		switch (channel.depth) {
+			case DEPTH_8_BIT:
+				write_box_template<F, uint8_t>(box, channel_index, action_func, offset);
+				break;
+			case DEPTH_16_BIT:
+				write_box_template<F, uint16_t>(box, channel_index, action_func, offset);
+				break;
+			case DEPTH_32_BIT:
+				write_box_template<F, uint32_t>(box, channel_index, action_func, offset);
+				break;
+			case DEPTH_64_BIT:
+				write_box_template<F, uint64_t>(box, channel_index, action_func, offset);
+				break;
+			default:
+				ERR_FAIL();
+				break;
+		}
+	}
+
+	/*template <typename F>
+	void write_box_2(const Rect3i &box, unsigned int channel_index0, unsigned int channel_index1, F action_func,
+			Vector3i offset) {
+#ifdef DEBUG_ENABLED
+		ERR_FAIL_INDEX(channel_index0, MAX_CHANNELS);
+		ERR_FAIL_INDEX(channel_index1, MAX_CHANNELS);
+#endif
+		const Channel &channel0 = _channels[channel_index0];
+		const Channel &channel1 = _channels[channel_index1];
+#ifdef DEBUG_ENABLED
+		// TODO Find a better way to handle combination explosion. For now I allow only what's really used.
+		ERR_FAIL_COND_MSG(channel1.depth != DEPTH_16_BIT, "Second channel depth is hardcoded to 16 for now");
+#endif
+		switch (channel.depth) {
+			case DEPTH_8_BIT:
+				write_box_2_template<F, uint8_t, uint16_t>(box, channel_index0, channel_index1, action_func, offset);
+				break;
+			case DEPTH_16_BIT:
+				write_box_2_template<F, uint16_t, uint16_t>(box, channel_index0, channel_index1, action_func, offset);
+				break;
+			case DEPTH_32_BIT:
+				write_box_2_template<F, uint32_t, uint16_t>(box, channel_index0, channel_index1, action_func, offset);
+				break;
+			case DEPTH_64_BIT:
+				write_box_2_template<F, uint64_t, uint16_t>(box, channel_index0, channel_index1, action_func, offset);
+				break;
+			default:
+				ERR_FAIL();
+				break;
+		}
+	}*/
 
 	static inline FixedArray<uint8_t, MAX_CHANNELS> mask_to_channels_list(
 			uint8_t channels_mask, unsigned int &out_count) {
@@ -241,18 +369,6 @@ public:
 	_FORCE_INLINE_ bool is_box_valid(const Rect3i box) const {
 		return Rect3i(Vector3i(), _size).contains(box);
 	}
-
-	static _FORCE_INLINE_ unsigned int get_index(const Vector3i pos, const Vector3i size) {
-		return pos.get_zxy_index(size);
-	}
-
-	_FORCE_INLINE_ unsigned int get_index(unsigned int x, unsigned int y, unsigned int z) const {
-		return y + _size.y * (x + _size.x * z); // ZXY index
-	}
-
-	//	_FORCE_INLINE_ unsigned int row_index(unsigned int x, unsigned int y, unsigned int z) const {
-	//		return _size.y * (x + _size.x * z);
-	//	}
 
 	_FORCE_INLINE_ unsigned int get_volume() const {
 		return _size.x * _size.y * _size.z;

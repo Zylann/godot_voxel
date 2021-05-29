@@ -167,21 +167,8 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 		return;
 	}
 
-	VoxelDataMap &map = *_map;
-	const TextureParams &tp = _texture_params;
-
-	box.for_each_cell([&map, center, radius, &tp](Vector3i pos) {
-		const float distance = radius - pos.to_vec3().distance_to(center);
-		const float target_weight = tp.opacity * clamp(tp.sharpness * (distance / radius), 0.f, 1.f);
-		if (target_weight > 0.f) {
-			uint16_t indices = map.get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);
-			uint16_t weights = map.get_voxel(pos, VoxelBuffer::CHANNEL_WEIGHTS);
-			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
-			// TODO Optimization: don't write back if it didn't change?
-			map.set_voxel(indices, pos, VoxelBuffer::CHANNEL_INDICES);
-			map.set_voxel(weights, pos, VoxelBuffer::CHANNEL_WEIGHTS);
-		}
-	});
+	_map->write_box_2(box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
+			TextureBlendSphereOp{ center, radius, _texture_params });
 
 	_post_edit(box);
 }
