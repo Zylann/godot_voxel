@@ -4,6 +4,7 @@
 #include "../constants/voxel_constants.h"
 #include "../util/array_slice.h"
 #include "../util/math/vector3i.h"
+#include <stdint.h>
 
 inline void clip_copy_region_coord(int &src_min, int &src_max, const int src_size, int &dst_min, const int dst_size) {
 	// Clamp source and shrink destination for moved borders
@@ -61,7 +62,7 @@ void fill_3d_region_zxy(ArraySlice<T> dst, Vector3i dst_size, Vector3i dst_min, 
 	dst_max.x = clamp(dst_max.x, 0, dst_size.x);
 	dst_max.y = clamp(dst_max.y, 0, dst_size.y);
 	dst_max.z = clamp(dst_max.z, 0, dst_size.z);
-	const Vector3i area_size = src_max - src_min;
+	const Vector3i area_size = dst_max - dst_min;
 	if (area_size.x <= 0 || area_size.y <= 0 || area_size.z <= 0) {
 		// Degenerate area, we'll not copy anything.
 		return;
@@ -173,7 +174,7 @@ inline uint16_t encode_weights_to_packed_u16(uint8_t a, uint8_t b, uint8_t c, ui
 inline void debug_check_texture_indices(FixedArray<uint8_t, 4> indices) {
 	FixedArray<bool, 16> checked;
 	checked.fill(false);
-	for (int i = 0; i < indices.size(); ++i) {
+	for (unsigned int i = 0; i < indices.size(); ++i) {
 		unsigned int ti = indices[i];
 		CRASH_COND(checked[ti]);
 		checked[ti] = true;
