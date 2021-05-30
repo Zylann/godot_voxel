@@ -380,18 +380,15 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		}
 
 		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
-			CRASH_COND(node->inputs.size() != 1);
-			if (node->inputs[0].connections.size() > 0) {
-				ProgramGraph::PortLocation src_port = node->inputs[0].connections[0];
-				const uint16_t *aptr = _program.output_port_addresses.getptr(src_port);
-				// Previous node ports must have been registered
-				CRASH_COND(aptr == nullptr);
-				OutputInfo &output_info = _program.outputs[_program.outputs_count];
-				output_info.buffer_address = *aptr;
-				output_info.dependency_graph_node_index = dg_node_index;
-				output_info.node_id = node_id;
-				++_program.outputs_count;
-			}
+			CRASH_COND(node->outputs.size() != 1);
+			const uint16_t *aptr = _program.output_port_addresses.getptr(ProgramGraph::PortLocation{ node_id, 0 });
+			// Previous node ports must have been registered
+			CRASH_COND(aptr == nullptr);
+			OutputInfo &output_info = _program.outputs[_program.outputs_count];
+			output_info.buffer_address = *aptr;
+			output_info.dependency_graph_node_index = dg_node_index;
+			output_info.node_id = node_id;
+			++_program.outputs_count;
 
 			// Add fake user for output ports so they can pass the local users check in optimizations
 			for (unsigned int j = 0; j < type.outputs.size(); ++j) {
@@ -427,7 +424,6 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 static ArraySlice<const uint16_t> get_outputs_from_op_address(
 		ArraySlice<const uint8_t> operations, uint16_t op_address) {
-
 	const uint8_t opid = operations[op_address];
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
@@ -457,7 +453,6 @@ bool VoxelGraphRuntime::is_operation_constant(const State &state, uint16_t op_ad
 
 void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
 		bool debug) const {
-
 	FixedArray<unsigned int, MAX_OUTPUTS> all_outputs;
 	for (unsigned int i = 0; i < _program.outputs_count; ++i) {
 		all_outputs[i] = i;
@@ -472,7 +467,6 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 // It can be useful for biomes, where some branches become constant when not used in the final blending.
 void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
 		ArraySlice<const unsigned int> required_outputs, bool debug) const {
-
 	VOXEL_PROFILE_SCOPE();
 
 	// Range analysis results must have been computed
@@ -707,6 +701,19 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 		}
 	}
 
+	// Puts sentinel values in buffers to detect non-initialized ones
+	// #ifdef DEBUG_ENABLED
+	// 	for (unsigned int i = 0; i < state.buffers.size(); ++i) {
+	// 		Buffer &buffer = state.buffers[i];
+	// 		if (!buffer.is_constant && !buffer.is_binding) {
+	// 			CRASH_COND(buffer.data == nullptr);
+	// 			for (unsigned int j = 0; j < buffer.size; ++j) {
+	// 				buffer.data[j] = -969696.f;
+	// 			}
+	// 		}
+	// 	}
+	// #endif
+
 	/*if (use_range_analysis) {
 		// TODO To be really worth it, we may need a runtime graph traversal pass,
 		// where we build an execution map of nodes that are worthy 🔨
@@ -724,7 +731,6 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 void VoxelGraphRuntime::generate_set(State &state,
 		ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z, bool skip_xz,
 		const ExecutionMap *execution_map) const {
-
 	// I don't like putting private helper functions in headers.
 	struct L {
 		static inline void bind_buffer(ArraySlice<Buffer> buffers, int a, ArraySlice<float> d) {

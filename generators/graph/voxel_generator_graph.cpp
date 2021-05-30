@@ -552,7 +552,9 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 	for (unsigned int output_index = 0; output_index < runtime.get_output_count(); ++output_index) {
 		const VoxelGraphRuntime::OutputInfo output = runtime.get_output_info(output_index);
 		const ProgramGraph::Node *node = _graph.get_node(output.node_id);
+
 		ERR_FAIL_COND_V(node == nullptr, VoxelGraphRuntime::CompilationResult());
+
 		switch (node->type_id) {
 			case NODE_OUTPUT_SDF:
 				if (r->sdf_output_buffer_index != -1) {
@@ -995,8 +997,10 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 	Cache &cache = _cache;
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, 1);
-	runtime.generate_single(cache.state, position.to_vec3(), false);
+	runtime.generate_single(cache.state, position.to_vec3(), nullptr);
 	const VoxelGraphRuntime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
+	ERR_FAIL_COND_V(buffer.size == 0, 0.f);
+	ERR_FAIL_COND_V(buffer.data == nullptr, 0.f);
 	return buffer.data[0];
 }
 
@@ -1201,7 +1205,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 			for (uint32_t z = 0; z < cube_size; ++z) {
 				for (uint32_t y = 0; y < cube_size; ++y) {
 					for (uint32_t x = 0; x < cube_size; ++x) {
-						runtime.generate_single(cache.state, Vector3i(x, y, z).to_vec3(), false);
+						runtime.generate_single(cache.state, Vector3i(x, y, z).to_vec3(), nullptr);
 					}
 				}
 			}

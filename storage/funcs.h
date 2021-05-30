@@ -140,6 +140,14 @@ inline FixedArray<uint8_t, 4> decode_weights_from_packed_u16(uint16_t packed_wei
 	weights[1] = packed_weights & 0xf0;
 	weights[2] = (packed_weights >> 4) & 0xf0;
 	weights[3] = (packed_weights >> 8) & 0xf0;
+	// The code above is such that the maximum uint8_t value for a weight is 240, not 255.
+	// We could add extra computations in order to match the range exactly,
+	// but as a compromise I'm not doing them because it would kinda break bijectivity and is slower.
+	// If this is a problem, then it could be an argument to switch to 8bit representation using 3 channels.
+	// weights[0] |= weights[0] >> 4;
+	// weights[1] |= weights[1] >> 4;
+	// weights[2] |= weights[2] >> 4;
+	// weights[3] |= weights[3] >> 4;
 	return weights;
 }
 
