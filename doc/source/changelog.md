@@ -8,11 +8,22 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
 
+Ongoing development
+----------------------
+
+- Smooth voxels
+    - Initial support for texturing data in voxels, using 4-bit indices and weights
+    - Optimized `VoxelMesherTransvoxel`'s hot path, making it about 20% faster
+
+- Breaking changes
+    - `VoxelBuffer` channels `DATA3` and `DATA4` were renamed `INDICES` and `WEIGHTS`
+
+
 09/05/2021 - `godot3.3`
 -----------------------
 
 - General
-    - Introduction of Voxel Server, which shares threaded tasks among all voxel nodes
+    - Introduction of `VoxelServer`, which shares threaded tasks among all voxel nodes
     - Voxel data is no longer copied when sent to processing threads, reducing high memory spikes in some scenarios
     - Added a utility class to load `.vox` files created with MagicaVoxel (scripts only)
     - Voxel nodes can be moved, scaled and rotated
@@ -54,7 +65,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
 
 - Breaking changes
     - `VoxelViewer` now replaces the `viewer_path` property on `VoxelTerrain`, and allows multiple loading points
-    - Defined `COLOR` channel in `VoxelBuffer`, previously known as `DATA3`
+    - Defined `COLOR` channel in `VoxelBuffer`, previously known as `DATA2`
     - `VoxelGenerator` is no longer the base for script-based generators, use `VoxelGeneratorScript` instead
     - `VoxelGenerator` no longer inherits `VoxelStream`
     - `VoxelStream` is no longer the base for script-based streams, use `VoxelStreamScript` instead
