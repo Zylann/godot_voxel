@@ -70,3 +70,18 @@ You can modify the shape of the terrain by changing noise parameters under the g
 
 Painting textures manually is not supported yet, but it's possible to apply procedural textures using a shader.
 
+
+Is Voxel tools for you?
+--------------------------
+
+It's easy to think a project needs voxels, but they are less needed than it sounds. Here are some reasons why you could think you need voxels, and why you might not need them:
+
+- "I need a procedurally generated world": if you don't need overhangs you can go with a heightmap approach. Heightmaps are faster and easier to work with.
+
+- "I need destructible models": voxels in this module are "blobby" or "blocky", they can't represent every possible shape. If you need something precise, you could try more specialized alternatives like CSG nodes or precomputed Voronoi destruction.
+
+- "I need a terrain with overhangs and caves": do you need it to be editable by players? If not, then you can model the terrain in any 3D modeller and optimize it up-front. You can mix heightmaps + 3D models. You might rely on voxels to make the authoring process easier, but in the exported game you will only need the meshes and static colliders.
+
+- "I need to make a planet": you can make more efficient planets by stitching 6 spherified heightmaps together. Take a cube where each face is a heightmap, then puff that cube to turn it into a sphere.
+
+- "GridMap sucks": how large do you want your grid to be? How complex are your models? This module is geared towards very large grids with simple geometry, so it has its own restrictions.
