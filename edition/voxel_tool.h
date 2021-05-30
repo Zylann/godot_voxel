@@ -48,6 +48,9 @@ public:
 	void set_texture_opacity(float opacity);
 	float get_texture_opacity() const;
 
+	void set_texture_falloff(float falloff);
+	float get_texture_falloff() const;
+
 	// TODO Methods working on a whole area must use an implementation that minimizes locking!
 
 	// The following methods represent one edit each. Pick the correct one for the job.

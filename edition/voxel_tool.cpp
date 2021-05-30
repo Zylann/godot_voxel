@@ -67,6 +67,15 @@ float VoxelTool::get_texture_opacity() const {
 	return _texture_params.opacity;
 }
 
+void VoxelTool::set_texture_falloff(float falloff) {
+	_texture_params.sharpness = 1.f / clamp(falloff, 0.001f, 1.f);
+}
+
+float VoxelTool::get_texture_falloff() const {
+	ERR_FAIL_COND_V(_texture_params.sharpness < 1.f, 1.f);
+	return 1.f / _texture_params.sharpness;
+}
+
 Ref<VoxelRaycastResult> VoxelTool::raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
 	ERR_PRINT("Not implemented");
 	return Ref<VoxelRaycastResult>();
@@ -275,6 +284,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_texture_opacity", "opacity"), &VoxelTool::set_texture_opacity);
 	ClassDB::bind_method(D_METHOD("get_texture_opacity"), &VoxelTool::get_texture_opacity);
 
+	ClassDB::bind_method(D_METHOD("set_texture_falloff", "falloff"), &VoxelTool::set_texture_falloff);
+	ClassDB::bind_method(D_METHOD("get_texture_falloff"), &VoxelTool::get_texture_falloff);
+
 	ClassDB::bind_method(D_METHOD("get_voxel", "pos"), &VoxelTool::_b_get_voxel);
 	ClassDB::bind_method(D_METHOD("get_voxel_f", "pos"), &VoxelTool::_b_get_voxel_f);
 	ClassDB::bind_method(D_METHOD("set_voxel", "pos", "v"), &VoxelTool::_b_set_voxel);
@@ -303,6 +315,7 @@ void VoxelTool::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "sdf_scale"), "set_sdf_scale", "get_sdf_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "texture_index"), "set_texture_index", "get_texture_index");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "texture_opacity"), "set_texture_opacity", "get_texture_opacity");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "texture_falloff"), "set_texture_falloff", "get_texture_falloff");
 
 	BIND_ENUM_CONSTANT(MODE_ADD);
 	BIND_ENUM_CONSTANT(MODE_REMOVE);
