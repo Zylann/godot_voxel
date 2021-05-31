@@ -381,14 +381,16 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
 			CRASH_COND(node->outputs.size() != 1);
-			const uint16_t *aptr = _program.output_port_addresses.getptr(ProgramGraph::PortLocation{ node_id, 0 });
-			// Previous node ports must have been registered
-			CRASH_COND(aptr == nullptr);
-			OutputInfo &output_info = _program.outputs[_program.outputs_count];
-			output_info.buffer_address = *aptr;
-			output_info.dependency_graph_node_index = dg_node_index;
-			output_info.node_id = node_id;
-			++_program.outputs_count;
+			{
+				const uint16_t *aptr = _program.output_port_addresses.getptr(ProgramGraph::PortLocation{ node_id, 0 });
+				// Previous node ports must have been registered
+				CRASH_COND(aptr == nullptr);
+				OutputInfo &output_info = _program.outputs[_program.outputs_count];
+				output_info.buffer_address = *aptr;
+				output_info.dependency_graph_node_index = dg_node_index;
+				output_info.node_id = node_id;
+				++_program.outputs_count;
+			}
 
 			// Add fake user for output ports so they can pass the local users check in optimizations
 			for (unsigned int j = 0; j < type.outputs.size(); ++j) {
