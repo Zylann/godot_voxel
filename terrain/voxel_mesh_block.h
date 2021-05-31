@@ -2,9 +2,9 @@
 #define VOXEL_MESH_BLOCK_H
 
 #include "../constants/cube_tables.h"
+#include "../storage/voxel_ref_count.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
-#include "voxel_ref_count.h"
 
 class Spatial;
 

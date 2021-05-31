@@ -1,6 +1,6 @@
 #include "tests.h"
 #include "../generators/graph/voxel_generator_graph.h"
-#include "../terrain/voxel_data_map.h"
+#include "../storage/voxel_data_map.h"
 #include "../util/math/rect3i.h"
 
 #include <core/hash_map.h>

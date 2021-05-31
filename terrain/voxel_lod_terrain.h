@@ -2,8 +2,8 @@
 #define VOXEL_LOD_TERRAIN_HPP
 
 #include "../server/voxel_server.h"
+#include "../storage/voxel_data_map.h"
 #include "lod_octree.h"
-#include "voxel_data_map.h"
 #include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
@@ -246,7 +246,7 @@ private:
 	std::vector<VoxelMeshBlock *> _blocks_pending_transition_update;
 
 	Ref<Material> _material;
-	std::vector<Ref<ShaderMaterial> > _shader_material_pool;
+	std::vector<Ref<ShaderMaterial>> _shader_material_pool;
 
 	bool _generate_collisions = true;
 	unsigned int _collision_lod_count = 0;

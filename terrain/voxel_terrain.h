@@ -2,7 +2,7 @@
 #define VOXEL_TERRAIN_H
 
 #include "../server/voxel_server.h"
-#include "voxel_data_map.h"
+#include "../storage/voxel_data_map.h"
 #include "voxel_mesh_map.h"
 #include "voxel_node.h"
 

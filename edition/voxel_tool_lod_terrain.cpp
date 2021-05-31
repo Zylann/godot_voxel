@@ -1,5 +1,4 @@
 #include "voxel_tool_lod_terrain.h"
-#include "../terrain/voxel_data_map.h"
 #include "../terrain/voxel_lod_terrain.h"
 #include "../util/funcs.h"
 #include "../util/voxel_raycast.h"
