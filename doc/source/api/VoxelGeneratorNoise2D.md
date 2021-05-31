@@ -22,4 +22,4 @@ Type                | Name               | Default
 - [OpenSimplexNoise](https://docs.godotengine.org/en/stable/classes/class_opensimplexnoise.html)<span id="i_noise"></span> **noise**
 
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

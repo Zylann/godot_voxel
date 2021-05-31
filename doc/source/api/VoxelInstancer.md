@@ -21,9 +21,10 @@ Type                    | Name                   | Default
 ## Methods: 
 
 
-Return                                                                | Signature                                                   
---------------------------------------------------------------------- | ------------------------------------------------------------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [debug_get_block_count](#i_debug_get_block_count) ( ) const 
+Return                                                                              | Signature                                                           
+----------------------------------------------------------------------------------- | --------------------------------------------------------------------
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_get_block_count](#i_debug_get_block_count) ( ) const         
+[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [debug_get_instance_counts](#i_debug_get_instance_counts) ( ) const 
 <p></p>
 
 ## Enumerations: 
@@ -51,4 +52,7 @@ enum **UpMode**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_debug_get_block_count"></span> **debug_get_block_count**( ) 
 
 
-_Generated on Apr 10, 2021_
+- [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_debug_get_instance_counts"></span> **debug_get_instance_counts**( ) 
+
+
+_Generated on May 31, 2021_

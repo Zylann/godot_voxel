@@ -57,8 +57,8 @@ enum **ChannelId**:
 - **CHANNEL_TYPE** = **0** --- Channel used to store voxel types. Used by [VoxelMesherBlocky].
 - **CHANNEL_SDF** = **1** --- Channel used to store SDF data (signed distance field). Used by [VoxelMesherTransvoxel] and other smooth meshers. Values should preferably be accessed as floats. Negative values are below the isosurface (inside matter), and positive values are above the surface (outside matter).
 - **CHANNEL_COLOR** = **2** --- Channel used to store color data. Used by [VoxelMesherCubes].
-- **CHANNEL_DATA3** = **3** --- Free channel. Not used by the engine yet.
-- **CHANNEL_DATA4** = **4** --- Free channel. Not used by the engine yet.
+- **CHANNEL_INDICES** = **3**
+- **CHANNEL_WEIGHTS** = **4**
 - **CHANNEL_DATA5** = **5** --- Free channel. Not used by the engine yet.
 - **CHANNEL_DATA6** = **6** --- Free channel. Not used by the engine yet.
 - **CHANNEL_DATA7** = **7** --- Free channel. Not used by the engine yet.
@@ -109,6 +109,8 @@ If corners of the area represent a negative-size area, they will be sorted back.
 
 If coordinates are entirely or partially out of bounds, they will be clipped automatically.
 
+Copying across the same buffer to overlapping areas is not supported. You may use an intermediary buffer in this case.
+
 - [void](#)<span id="i_copy_voxel_metadata_in_area"></span> **copy_voxel_metadata_in_area**( [VoxelBuffer](VoxelBuffer.md) src_buffer, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) src_min_pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) src_max_pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) dst_min_pos ) 
 
 Copies per-voxel metadata from a sub-region of another [VoxelBuffer](VoxelBuffer.md) into the the current buffer, at a specific location. Values will be a shallow copy.
@@ -116,6 +118,8 @@ Copies per-voxel metadata from a sub-region of another [VoxelBuffer](VoxelBuffer
 If corners of the area represent a negative-size area, they will be sorted back.
 
 If coordinates are entirely or partially out of bounds, they will be clipped automatically.
+
+Copying across the same buffer to overlapping areas is not supported. You may use an intermediary buffer in this case.
 
 - [void](#)<span id="i_create"></span> **create**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) sx, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) sy, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) sz ) 
 
@@ -225,4 +229,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 - [void](#)<span id="i_set_voxel_v"></span> **set_voxel_v**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

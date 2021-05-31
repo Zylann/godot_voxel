@@ -54,4 +54,4 @@ When this is enabled, if a block cannot be found in the stream and it gets gener
 
 `buffer`: Block of voxels to save. It is strongly recommended to not keep a reference to that data afterward, because streams are allowed to cache it, and saved data must represent either snapshots (copies) or last references to the data after the volume they belonged to is destroyed.
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstancer" inherits="Spatial" version="3.2">
+<class name="VoxelInstancer" inherits="Spatial" version="3.4">
 	<brief_description>
 		Spawns items on top of voxel surfaces.
 	</brief_description>
@@ -11,6 +11,12 @@
 	<methods>
 		<method name="debug_get_block_count" qualifiers="const">
 			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="debug_get_instance_counts" qualifiers="const">
+			<return type="Dictionary">
 			</return>
 			<description>
 			</description>

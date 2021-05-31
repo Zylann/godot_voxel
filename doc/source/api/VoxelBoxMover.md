@@ -40,4 +40,4 @@ Given a motion vector, returns a modified vector telling you by how much to move
 - [void](#)<span id="i_set_collision_mask"></span> **set_collision_mask**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask ) 
 
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

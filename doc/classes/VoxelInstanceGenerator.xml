@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstanceGenerator" inherits="Resource" version="3.2">
+<class name="VoxelInstanceGenerator" inherits="Resource" version="3.4">
 	<brief_description>
 		Decides where to spawn instances on top of a voxel surface.
 	</brief_description>
@@ -47,6 +47,24 @@
 		<constant name="EMIT_FROM_VERTICES" value="0" enum="EmitMode">
 		</constant>
 		<constant name="EMIT_FROM_FACES" value="1" enum="EmitMode">
+		</constant>
+		<constant name="EMIT_MODE_COUNT" value="2" enum="EmitMode">
+		</constant>
+		<constant name="DISTRIBUTION_LINEAR" value="0" enum="Distribution">
+		</constant>
+		<constant name="DISTRIBUTION_QUADRATIC" value="1" enum="Distribution">
+		</constant>
+		<constant name="DISTRIBUTION_CUBIC" value="2" enum="Distribution">
+		</constant>
+		<constant name="DISTRIBUTION_QUINTIC" value="3" enum="Distribution">
+		</constant>
+		<constant name="DISTRIBUTION_COUNT" value="4" enum="Distribution">
+		</constant>
+		<constant name="DIMENSION_2D" value="0" enum="Dimension">
+		</constant>
+		<constant name="DIMENSION_3D" value="1" enum="Dimension">
+		</constant>
+		<constant name="DIMENSION_COUNT" value="2" enum="Dimension">
 		</constant>
 	</constants>
 </class>

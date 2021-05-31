@@ -11,8 +11,11 @@ Voxel volume using constant level of detail.
 Type    | Name                                             | Default                                                                                 
 ------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------
 `AABB`  | [bounds](#i_bounds)                              | AABB( -5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09 ) 
+`int`   | [collision_layer](#i_collision_layer)            | 1                                                                                       
+`int`   | [collision_mask](#i_collision_mask)              | 1                                                                                       
 `bool`  | [generate_collisions](#i_generate_collisions)    | true                                                                                    
 `int`   | [max_view_distance](#i_max_view_distance)        | 128                                                                                     
+`int`   | [mesh_block_size](#i_mesh_block_size)            | 16                                                                                      
 `bool`  | [run_stream_in_editor](#i_run_stream_in_editor)  | true                                                                                    
 <p></p>
 
@@ -21,14 +24,14 @@ Type    | Name                                             | Default
 
 Return                                                                              | Signature                                                                                                                                                                                             
 ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)        | [block_to_voxel](#i_block_to_voxel) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos )                                                                        
+[Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)        | [data_block_to_voxel](#i_data_block_to_voxel) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos ) const                                                        
 [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)      | [get_material](#i_get_material) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) const                                                                                     
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                         
 [VoxelTool](VoxelTool.md)                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                               
 [void](#)                                                                           | [save_block](#i_save_block) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position )                                                                                 
 [void](#)                                                                           | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                   
 [void](#)                                                                           | [set_material](#i_set_material) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material )  
-[Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)        | [voxel_to_block](#i_voxel_to_block) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos )                                                                        
+[Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)        | [voxel_to_data_block](#i_voxel_to_data_block) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) const                                                        
 <p></p>
 
 ## Signals: 
@@ -49,6 +52,12 @@ Emitted when a block unloaded due to being outside view distance.
 
 Defines the bounds within which the terrain is allowed to have voxels. If an infinite world generator is used, blocks will only generate within this region. Everything outside will be left empty.
 
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_layer"></span> **collision_layer** = 1
+
+
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_mask"></span> **collision_mask** = 1
+
+
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_generate_collisions"></span> **generate_collisions** = true
 
 Enables the generation of collision shapes using the classic physics engine. Use this feature if you need realistic or non-trivial collisions or physics.
@@ -63,6 +72,9 @@ Sets the maximum distance this terrain can support. If a [VoxelViewer](VoxelView
 
 Note: there is an internal limit of 512 for constant LOD terrains, because going further can affect performance and memory very badly at the moment.
 
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mesh_block_size"></span> **mesh_block_size** = 16
+
+
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_run_stream_in_editor"></span> **run_stream_in_editor** = true
 
 Makes the terrain appear in the editor.
@@ -71,9 +83,8 @@ Important: this option will turn off automatically if you setup a script world g
 
 ## Method Descriptions
 
-- [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_block_to_voxel"></span> **block_to_voxel**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos ) 
+- [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_data_block_to_voxel"></span> **data_block_to_voxel**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos ) 
 
-Converts block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
 
 - [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_get_material"></span> **get_material**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
@@ -128,8 +139,7 @@ Note 3: saving is asynchronous and won't block the game. the save may complete o
 - [void](#)<span id="i_set_material"></span> **set_material**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material ) 
 
 
-- [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_voxel_to_block"></span> **voxel_to_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
+- [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_voxel_to_data_block"></span> **voxel_to_data_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
 
-Converts voxel coordinates into block coordinates.
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

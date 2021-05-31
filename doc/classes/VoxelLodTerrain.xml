@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelLodTerrain" inherits="VoxelNode" version="3.2">
+<class name="VoxelLodTerrain" inherits="VoxelNode" version="3.4">
 	<brief_description>
 		Voxel volume using variable level of detail.
 	</brief_description>
@@ -16,13 +16,13 @@
 			<description>
 			</description>
 		</method>
-		<method name="debug_get_block_count" qualifiers="const">
+		<method name="debug_get_data_block_count" qualifiers="const">
 			<return type="int">
 			</return>
 			<description>
 			</description>
 		</method>
-		<method name="debug_get_block_info" qualifiers="const">
+		<method name="debug_get_data_block_info" qualifiers="const">
 			<return type="Dictionary">
 			</return>
 			<argument index="0" name="block_pos" type="Vector3">
@@ -32,7 +32,23 @@
 			<description>
 			</description>
 		</method>
-		<method name="debug_get_octrees" qualifiers="const">
+		<method name="debug_get_mesh_block_count" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="debug_get_mesh_block_info" qualifiers="const">
+			<return type="Dictionary">
+			</return>
+			<argument index="0" name="block_pos" type="Vector3">
+			</argument>
+			<argument index="1" name="lod" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="debug_get_octrees_detailed" qualifiers="const">
 			<return type="Array">
 			</return>
 			<description>
@@ -48,7 +64,7 @@
 			<description>
 			</description>
 		</method>
-		<method name="debug_raycast_block" qualifiers="const">
+		<method name="debug_raycast_mesh_block" qualifiers="const">
 			<return type="Array">
 			</return>
 			<argument index="0" name="origin" type="Vector3">
@@ -58,13 +74,13 @@
 			<description>
 			</description>
 		</method>
-		<method name="get_block_region_extent" qualifiers="const">
+		<method name="get_data_block_region_extent" qualifiers="const">
 			<return type="int">
 			</return>
 			<description>
 			</description>
 		</method>
-		<method name="get_block_size" qualifiers="const">
+		<method name="get_data_block_size" qualifiers="const">
 			<return type="int">
 			</return>
 			<description>
@@ -118,7 +134,17 @@
 			<description>
 			</description>
 		</method>
-		<method name="voxel_to_block_position" qualifiers="const">
+		<method name="voxel_to_data_block_position" qualifiers="const">
+			<return type="Vector3">
+			</return>
+			<argument index="0" name="lod_index" type="Vector3">
+			</argument>
+			<argument index="1" name="arg1" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="voxel_to_mesh_block_position" qualifiers="const">
 			<return type="Vector3">
 			</return>
 			<argument index="0" name="lod_index" type="Vector3">
@@ -130,15 +156,25 @@
 		</method>
 	</methods>
 	<members>
-		<member name="collision_lod_count" type="int" setter="set_collision_lod_count" getter="get_collision_lod_count" default="-1">
+		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
+		</member>
+		<member name="collision_lod_count" type="int" setter="set_collision_lod_count" getter="get_collision_lod_count" default="0">
+		</member>
+		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
+		</member>
+		<member name="collision_update_delay" type="int" setter="set_collision_update_delay" getter="get_collision_update_delay" default="0">
 		</member>
 		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
 		</member>
 		<member name="lod_count" type="int" setter="set_lod_count" getter="get_lod_count" default="4">
 		</member>
-		<member name="lod_split_scale" type="float" setter="set_lod_split_scale" getter="get_lod_split_scale" default="3.0">
+		<member name="lod_distance" type="float" setter="set_lod_distance" getter="get_lod_distance" default="48.0">
+		</member>
+		<member name="lod_fade_duration" type="float" setter="set_lod_fade_duration" getter="get_lod_fade_duration" default="0.0">
 		</member>
 		<member name="material" type="Material" setter="set_material" getter="get_material">
+		</member>
+		<member name="mesh_block_size" type="int" setter="set_mesh_block_size" getter="get_mesh_block_size" default="16">
 		</member>
 		<member name="mesher" type="VoxelMesher" setter="set_mesher" getter="get_mesher" override="true" />
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">

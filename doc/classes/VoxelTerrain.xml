@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelTerrain" inherits="VoxelNode" version="3.2">
+<class name="VoxelTerrain" inherits="VoxelNode" version="3.4">
 	<brief_description>
 		Voxel volume using constant level of detail.
 	</brief_description>
@@ -8,13 +8,13 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="block_to_voxel">
+		<method name="data_block_to_voxel" qualifiers="const">
 			<return type="Vector3">
 			</return>
 			<argument index="0" name="block_pos" type="Vector3">
 			</argument>
 			<description>
-				Converts block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
+				Converts data block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
 			</description>
 		</method>
 		<method name="get_material" qualifiers="const">
@@ -86,19 +86,23 @@
 			<description>
 			</description>
 		</method>
-		<method name="voxel_to_block">
+		<method name="voxel_to_data_block" qualifiers="const">
 			<return type="Vector3">
 			</return>
 			<argument index="0" name="voxel_pos" type="Vector3">
+				Converts voxel coordinates into data block coordinates.
 			</argument>
 			<description>
-				Converts voxel coordinates into block coordinates.
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="bounds" type="AABB" setter="set_bounds" getter="get_bounds" default="AABB( -5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09 )">
 			Defines the bounds within which the terrain is allowed to have voxels. If an infinite world generator is used, blocks will only generate within this region. Everything outside will be left empty.
+		</member>
+		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
+		</member>
+		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
 		</member>
 		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
 			Enables the generation of collision shapes using the classic physics engine. Use this feature if you need realistic or non-trivial collisions or physics.
@@ -108,6 +112,8 @@
 		<member name="max_view_distance" type="int" setter="set_max_view_distance" getter="get_max_view_distance" default="128">
 			Sets the maximum distance this terrain can support. If a [VoxelViewer] requests more, it will be clamped.
 			Note: there is an internal limit of 512 for constant LOD terrains, because going further can affect performance and memory very badly at the moment.
+		</member>
+		<member name="mesh_block_size" type="int" setter="set_mesh_block_size" getter="get_mesh_block_size" default="16">
 		</member>
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
 			Makes the terrain appear in the editor.
@@ -119,7 +125,7 @@
 			<argument index="0" name="position" type="Vector3">
 			</argument>
 			<description>
-				Emitted when a new block is loaded from stream.
+				Emitted when a new data block is loaded from stream.
 				Note: it might be not visible yet.
 			</description>
 		</signal>
@@ -127,7 +133,7 @@
 			<argument index="0" name="position" type="Vector3">
 			</argument>
 			<description>
-				Emitted when a block unloaded due to being outside view distance.
+				Emitted when a data block is unloaded due to being outside view distance.
 			</description>
 		</signal>
 	</signals>

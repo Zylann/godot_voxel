@@ -39,6 +39,21 @@ enum **EmitMode**:
 
 - **EMIT_FROM_VERTICES** = **0**
 - **EMIT_FROM_FACES** = **1**
+- **EMIT_MODE_COUNT** = **2**
+
+enum **Distribution**: 
+
+- **DISTRIBUTION_LINEAR** = **0**
+- **DISTRIBUTION_QUADRATIC** = **1**
+- **DISTRIBUTION_CUBIC** = **2**
+- **DISTRIBUTION_QUINTIC** = **3**
+- **DISTRIBUTION_COUNT** = **4**
+
+enum **Dimension**: 
+
+- **DIMENSION_2D** = **0**
+- **DIMENSION_3D** = **1**
+- **DIMENSION_COUNT** = **2**
 
 
 ## Property Descriptions
@@ -88,4 +103,4 @@ enum **EmitMode**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_vertical_alignment"></span> **vertical_alignment** = 1.0
 
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

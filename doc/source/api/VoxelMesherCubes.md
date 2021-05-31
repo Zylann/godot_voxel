@@ -41,4 +41,4 @@ enum **ColorMode**:
 - [VoxelColorPalette](VoxelColorPalette.md)<span id="i_palette"></span> **palette**
 
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

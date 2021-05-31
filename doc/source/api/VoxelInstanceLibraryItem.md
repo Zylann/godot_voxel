@@ -95,4 +95,4 @@ Return                                                                    | Sign
 - [void](#)<span id="i_setup_from_template"></span> **setup_from_template**( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node ) 
 
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

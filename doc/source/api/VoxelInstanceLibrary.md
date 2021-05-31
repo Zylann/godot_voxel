@@ -38,4 +38,4 @@ Return                                                                | Signatur
 - [void](#)<span id="i_remove_item"></span> **remove_item**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

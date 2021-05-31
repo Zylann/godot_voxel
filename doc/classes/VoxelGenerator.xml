@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGenerator" inherits="Resource" version="3.2">
+<class name="VoxelGenerator" inherits="Resource" version="3.4">
 	<brief_description>
 		Base class to all voxel procedural generators. If you want to define a custom one with a script, this is the class you should extend from. All implementations must be thread safe.
 	</brief_description>

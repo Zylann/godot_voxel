@@ -11,6 +11,19 @@ Generates SDF voxel data from a graph of operations.
 
 Warning: methods to modify the graph should only be called from the main thread.
 
+## Properties: 
+
+
+Type     | Name                                                           | Default 
+-------- | -------------------------------------------------------------- | --------
+`bool`   | [debug_block_clipping](#i_debug_block_clipping)                | false   
+`float`  | [sdf_clip_threshold](#i_sdf_clip_threshold)                    | 1.5     
+`int`    | [subdivision_size](#i_subdivision_size)                        | 16      
+`bool`   | [use_optimized_execution_map](#i_use_optimized_execution_map)  | true    
+`bool`   | [use_subdivision](#i_use_subdivision)                          | true    
+`bool`   | [use_xz_caching](#i_use_xz_caching)                            | true    
+<p></p>
+
 ## Methods: 
 
 
@@ -23,6 +36,7 @@ Return                                                                          
 [void](#)                                                                               | [clear](#i_clear) ( )                                                                                                                                                                                                                                                                                                                                                                       
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)      | [compile](#i_compile) ( )                                                                                                                                                                                                                                                                                                                                                                   
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                    | [create_node](#i_create_node) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) type_id, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 )                                                                                                            
+[Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)            | [debug_analyze_range](#i_debug_analyze_range) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) min_pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) max_pos ) const                                                                                                                                                          
 [void](#)                                                                               | [debug_load_waves_preset](#i_debug_load_waves_preset) ( )                                                                                                                                                                                                                                                                                                                                   
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                | [debug_measure_microseconds_per_voxel](#i_debug_measure_microseconds_per_voxel) ( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) use_singular_queries )                                                                                                                                                                                                             
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                    | [find_node_by_name](#i_find_node_by_name) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) const                                                                                                                                                                                                                                                         
@@ -85,12 +99,36 @@ enum **NodeTypeID**:
 - **NODE_SDF_SPHERE** = **31**
 - **NODE_SDF_TORUS** = **32**
 - **NODE_SDF_PREVIEW** = **33**
-- **NODE_NORMALIZE_3D** = **35**
-- **NODE_FAST_NOISE_2D** = **36**
-- **NODE_FAST_NOISE_3D** = **37**
-- **NODE_FAST_NOISE_GRADIENT_2D** = **38**
-- **NODE_FAST_NOISE_GRADIENT_3D** = **39**
-- **NODE_TYPE_COUNT** = **40**
+- **NODE_SDF_SPHERE_HEIGHTMAP** = **34**
+- **NODE_SDF_SMOOTH_UNION** = **35**
+- **NODE_SDF_SMOOTH_SUBTRACT** = **36**
+- **NODE_NORMALIZE_3D** = **37**
+- **NODE_FAST_NOISE_2D** = **38**
+- **NODE_FAST_NOISE_3D** = **39**
+- **NODE_FAST_NOISE_GRADIENT_2D** = **40**
+- **NODE_FAST_NOISE_GRADIENT_3D** = **41**
+- **NODE_OUTPUT_WEIGHT** = **42**
+- **NODE_TYPE_COUNT** = **43**
+
+
+## Property Descriptions
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_block_clipping"></span> **debug_block_clipping** = false
+
+
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_clip_threshold"></span> **sdf_clip_threshold** = 1.5
+
+
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_subdivision_size"></span> **subdivision_size** = 16
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_optimized_execution_map"></span> **use_optimized_execution_map** = true
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_subdivision"></span> **use_subdivision** = true
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_xz_caching"></span> **use_xz_caching** = true
 
 
 ## Method Descriptions
@@ -114,6 +152,9 @@ enum **NodeTypeID**:
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_create_node"></span> **create_node**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) type_id, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 ) 
+
+
+- [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)<span id="i_debug_analyze_range"></span> **debug_analyze_range**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) min_pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) max_pos ) 
 
 
 - [void](#)<span id="i_debug_load_waves_preset"></span> **debug_load_waves_preset**( ) 
@@ -170,4 +211,4 @@ enum **NodeTypeID**:
 - [void](#)<span id="i_set_node_param_null"></span> **set_node_param_null**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

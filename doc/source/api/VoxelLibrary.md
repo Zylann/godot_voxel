@@ -60,4 +60,4 @@ Enable this option if you need normal mapping on your voxels. If you don't need 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel_index_from_name"></span> **get_voxel_index_from_name**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) 
 
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

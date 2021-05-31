@@ -28,4 +28,4 @@ Return                                                                | Signatur
 
 `buffer`: Buffer of voxel data to save. It is allowed to keep a reference to it for caching purposes, as saved data will either be snapshots or only references left after removal of a volume.
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

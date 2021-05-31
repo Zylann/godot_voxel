@@ -26,4 +26,4 @@ Type     | Name                         | Default
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_voxel_type"></span> **voxel_type** = 1
 
 
-_Generated on Apr 10, 2021_
+_Generated on May 31, 2021_

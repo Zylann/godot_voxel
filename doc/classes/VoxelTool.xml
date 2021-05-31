@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelTool" inherits="Reference" version="3.2">
+<class name="VoxelTool" inherits="Reference" version="3.4">
 	<brief_description>
 		Helper class to easily access and modify voxels
 	</brief_description>
@@ -10,6 +10,18 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="copy">
+			<return type="void">
+			</return>
+			<argument index="0" name="src_pos" type="Vector3">
+			</argument>
+			<argument index="1" name="dst_buffer" type="Reference">
+			</argument>
+			<argument index="2" name="channels_mask" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="do_box">
 			<return type="void">
 			</return>
@@ -78,7 +90,9 @@
 			</argument>
 			<argument index="1" name="src_buffer" type="Reference">
 			</argument>
-			<argument index="2" name="src_mask_value" type="int">
+			<argument index="2" name="channels_mask" type="int">
+			</argument>
+			<argument index="3" name="src_mask_value" type="int">
 			</argument>
 			<description>
 			</description>
@@ -143,6 +157,12 @@
 
 			This is related to the [enum VoxelBuffer.Depth] configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
 		</member>
+		<member name="texture_falloff" type="float" setter="set_texture_falloff" getter="get_texture_falloff" default="0.5">
+		</member>
+		<member name="texture_index" type="int" setter="set_texture_index" getter="get_texture_index" default="0">
+		</member>
+		<member name="texture_opacity" type="float" setter="set_texture_opacity" getter="get_texture_opacity" default="1.0">
+		</member>
 		<member name="value" type="int" setter="set_value" getter="get_value" default="0">
 			Sets which voxel value will be used. This is not relevant when editing [enum VoxelBuffer.CHANNEL_SDF].
 		</member>
@@ -156,6 +176,8 @@
 		</constant>
 		<constant name="MODE_SET" value="2" enum="Mode">
 			Replace voxel values without any blending. Useful for blocky voxels.
+		</constant>
+		<constant name="MODE_TEXTURE_PAINT" value="3" enum="Mode">
 		</constant>
 	</constants>
 </class>

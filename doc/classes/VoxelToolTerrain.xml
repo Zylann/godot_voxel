@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelToolTerrain" inherits="VoxelTool" version="3.2">
+<class name="VoxelToolTerrain" inherits="VoxelTool" version="3.4">
 	<brief_description>
 		Implementation of [VoxelTool] optimized for uses on [VoxelTerrain].
 	</brief_description>

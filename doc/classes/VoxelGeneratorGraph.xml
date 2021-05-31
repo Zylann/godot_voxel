@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="3.2">
+<class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="3.4">
 	<brief_description>
 		Graph-based generator for smooth voxel worlds.
 	</brief_description>
@@ -84,6 +84,16 @@
 			<argument index="1" name="position" type="Vector2">
 			</argument>
 			<argument index="2" name="id" type="int" default="0">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="debug_analyze_range" qualifiers="const">
+			<return type="Vector2">
+			</return>
+			<argument index="0" name="min_pos" type="Vector3">
+			</argument>
+			<argument index="1" name="max_pos" type="Vector3">
 			</argument>
 			<description>
 			</description>
@@ -247,6 +257,20 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="debug_block_clipping" type="bool" setter="set_debug_clipped_blocks" getter="is_debug_clipped_blocks" default="false">
+		</member>
+		<member name="sdf_clip_threshold" type="float" setter="set_sdf_clip_threshold" getter="get_sdf_clip_threshold" default="1.5">
+		</member>
+		<member name="subdivision_size" type="int" setter="set_subdivision_size" getter="get_subdivision_size" default="16">
+		</member>
+		<member name="use_optimized_execution_map" type="bool" setter="set_use_optimized_execution_map" getter="is_using_optimized_execution_map" default="true">
+		</member>
+		<member name="use_subdivision" type="bool" setter="set_use_subdivision" getter="is_using_subdivision" default="true">
+		</member>
+		<member name="use_xz_caching" type="bool" setter="set_use_xz_caching" getter="is_using_xz_caching" default="true">
+		</member>
+	</members>
 	<signals>
 		<signal name="node_name_changed">
 			<argument index="0" name="node_id" type="int">
@@ -324,17 +348,25 @@
 		</constant>
 		<constant name="NODE_SDF_PREVIEW" value="33" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_NORMALIZE_3D" value="35" enum="NodeTypeID">
+		<constant name="NODE_SDF_SPHERE_HEIGHTMAP" value="34" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_2D" value="36" enum="NodeTypeID">
+		<constant name="NODE_SDF_SMOOTH_UNION" value="35" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_3D" value="37" enum="NodeTypeID">
+		<constant name="NODE_SDF_SMOOTH_SUBTRACT" value="36" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_GRADIENT_2D" value="38" enum="NodeTypeID">
+		<constant name="NODE_NORMALIZE_3D" value="37" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_GRADIENT_3D" value="39" enum="NodeTypeID">
+		<constant name="NODE_FAST_NOISE_2D" value="38" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_TYPE_COUNT" value="40" enum="NodeTypeID">
+		<constant name="NODE_FAST_NOISE_3D" value="39" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_FAST_NOISE_GRADIENT_2D" value="40" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_FAST_NOISE_GRADIENT_3D" value="41" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_OUTPUT_WEIGHT" value="42" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_TYPE_COUNT" value="43" enum="NodeTypeID">
 		</constant>
 	</constants>
 </class>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelMesherBlocky" inherits="VoxelMesher" version="3.2">
+<class name="VoxelMesherBlocky" inherits="VoxelMesher" version="3.4">
 	<brief_description>
 		Produces a mesh by batching models corresponding to each voxel value, similar to games like Minecraft or StarMade.
 	</brief_description>

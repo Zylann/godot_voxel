@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstanceLibrary" inherits="Resource" version="3.2">
+<class name="VoxelInstanceLibrary" inherits="Resource" version="3.4">
 	<brief_description>
 		Contains a list of models that can be used by [VoxelInstancer], associated with a unique ID
 	</brief_description>
