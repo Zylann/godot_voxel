@@ -47,9 +47,10 @@ template <typename T>
 inline void copy_3d_region_zxy(
 		ArraySlice<T> dst, Vector3i dst_size, Vector3i dst_min,
 		ArraySlice<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max) {
+	// The `template` keyword before method name is required when compiling with GCC
 	copy_3d_region_zxy(
-			dst.reinterpret_cast_to<uint8_t>(), dst_size, dst_min,
-			src.reinterpret_cast_to<const uint8_t>(), src_size, src_min, src_max,
+			dst.template reinterpret_cast_to<uint8_t>(), dst_size, dst_min,
+			src.template reinterpret_cast_to<const uint8_t>(), src_size, src_min, src_max,
 			sizeof(T));
 }
 
@@ -81,7 +82,7 @@ void fill_3d_region_zxy(ArraySlice<T> dst, Vector3i dst_size, Vector3i dst_min, 
 		const unsigned int dst_row_offset = dst_size.y;
 		Vector3i pos;
 		for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
-			unsigned int dst_ri = Vector3i(dst_min + pos).get_zxy_index(src_size);
+			unsigned int dst_ri = Vector3i(dst_min + pos).get_zxy_index(dst_size);
 			for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
 				// Fill row
 				for (pos.y = 0; pos.y < area_size.y; ++pos.y) {
