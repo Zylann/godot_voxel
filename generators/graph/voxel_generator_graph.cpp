@@ -456,12 +456,14 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 						runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map, false);
 					}
 
-					unsigned int i = 0;
-					for (int rz = rmin.z, gz = gmin.z; rz < rmax.z; ++rz, gz += stride) {
-						for (int rx = rmin.x, gx = gmin.x; rx < rmax.x; ++rx, gx += stride) {
-							x_cache[i] = gx;
-							z_cache[i] = gz;
-							++i;
+					{
+						unsigned int i = 0;
+						for (int rz = rmin.z, gz = gmin.z; rz < rmax.z; ++rz, gz += stride) {
+							for (int rx = rmin.x, gx = gmin.x; rx < rmax.x; ++rx, gx += stride) {
+								x_cache[i] = gx;
+								z_cache[i] = gz;
+								++i;
+							}
 						}
 					}
 
@@ -587,7 +589,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 					error.node_id = output.node_id;
 					return error;
 				}
-				if (layer_index >= r->weight_outputs.size()) {
+				if (layer_index >= static_cast<int>(r->weight_outputs.size())) {
 					VoxelGraphRuntime::CompilationResult error;
 					error.success = false;
 					error.message = String(TTR("Weight layers cannot exceed {}"))
@@ -597,7 +599,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 				}
 				for (unsigned int i = 0; i < r->weight_outputs_count; ++i) {
 					const WeightOutput &wo = r->weight_outputs[i];
-					if (wo.layer_index == layer_index) {
+					if (static_cast<int>(wo.layer_index) == layer_index) {
 						VoxelGraphRuntime::CompilationResult error;
 						error.success = false;
 						error.message =
@@ -859,11 +861,13 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 		const float ref_radius;
 
 		ProcessChunk(VoxelGraphRuntime::State &p_state, unsigned int p_sdf_buffer_index,
+				Ref<Image> p_im,
 				const VoxelGraphRuntime &p_runtime,
 				float p_strength, float p_ref_radius) :
-				state(p_state),
 				sdf_buffer_index(p_sdf_buffer_index),
+				im(p_im),
 				runtime(p_runtime),
+				state(p_state),
 				strength(p_strength),
 				ref_radius(p_ref_radius) {}
 
@@ -981,8 +985,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 		}
 	}
 
-	ProcessChunk pc(cache.state, runtime_ptr->sdf_output_buffer_index, runtime_ptr->runtime, strength, ref_radius);
-	pc.im = im;
+	ProcessChunk pc(cache.state, runtime_ptr->sdf_output_buffer_index, im, runtime_ptr->runtime, strength, ref_radius);
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
@@ -1256,9 +1259,9 @@ void VoxelGeneratorGraph::load_plane_preset() {
 
 	const Vector2 k(40, 50);
 
-	const uint32_t n_x = create_node(NODE_INPUT_X, Vector2(11, 1) * k); // 1
+	/*const uint32_t n_x = */ create_node(NODE_INPUT_X, Vector2(11, 1) * k); // 1
 	const uint32_t n_y = create_node(NODE_INPUT_Y, Vector2(11, 3) * k); // 2
-	const uint32_t n_z = create_node(NODE_INPUT_Z, Vector2(11, 5) * k); // 3
+	/*const uint32_t n_z = */ create_node(NODE_INPUT_Z, Vector2(11, 5) * k); // 3
 	const uint32_t n_o = create_node(NODE_OUTPUT_SDF, Vector2(18, 3) * k); // 4
 	const uint32_t n_plane = create_node(NODE_SDF_PLANE, Vector2(14, 3) * k); // 5
 
