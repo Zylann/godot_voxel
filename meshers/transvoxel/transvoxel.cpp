@@ -436,11 +436,11 @@ void build_regular_mesh(
 				const uint8_t cell_border_mask = get_border_mask(pos - min_pos, block_size - Vector3i(1));
 
 				// For each vertex in the case
-				for (unsigned int i = 0; i < vertex_count; ++i) {
+				for (unsigned int vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
 					// The case index maps to a list of 16-bit codes providing information about the edges on which the
 					// vertices lie. The low byte of each 16-bit code contains the corner indexes of the edge’s
 					// endpoints in one nibble each, and the high byte contains the mapping code shown in Figure 3.8(b)
-					const unsigned short rvd = Tables::get_regular_vertex_data(case_code, i);
+					const unsigned short rvd = Tables::get_regular_vertex_data(case_code, vertex_index);
 					const uint8_t edge_code_low = rvd & 0xff;
 					const uint8_t edge_code_high = (rvd >> 8) & 0xff;
 
@@ -495,11 +495,11 @@ void build_regular_mesh(
 							const ReuseCell &prev_cell = cache.get_reuse_cell(cache_pos);
 							if (prev_cell.packed_texture_indices == cell_textures.packed_indices) {
 								// Will reuse a previous vertice
-								cell_vertex_indices[i] = prev_cell.vertices[reuse_vertex_index];
+								cell_vertex_indices[vertex_index] = prev_cell.vertices[reuse_vertex_index];
 							}
 						}
 
-						if (!present || cell_vertex_indices[i] == -1) {
+						if (!present || cell_vertex_indices[vertex_index] == -1) {
 							// Create new vertex
 
 							// TODO Implement surface shifting interpolation (see other places we interpolate too).
@@ -535,7 +535,8 @@ void build_regular_mesh(
 											   << 6;
 							}
 
-							cell_vertex_indices[i] = output.add_vertex(primaryf, normal, border_mask, secondary);
+							cell_vertex_indices[vertex_index] =
+									output.add_vertex(primaryf, normal, border_mask, secondary);
 
 							if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 								const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights0 = cell_textures.weights[v0];
@@ -550,7 +551,7 @@ void build_regular_mesh(
 
 							if (reuse_dir & 8) {
 								// Store the generated vertex so that other cells can reuse it.
-								current_reuse_cell.vertices[reuse_vertex_index] = cell_vertex_indices[i];
+								current_reuse_cell.vertices[reuse_vertex_index] = cell_vertex_indices[vertex_index];
 							}
 						}
 
@@ -573,14 +574,15 @@ void build_regular_mesh(
 							border_mask |= get_border_mask(p1, block_size_scaled) << 6;
 						}
 
-						cell_vertex_indices[i] = output.add_vertex(primaryf, normal, border_mask, secondary);
+						cell_vertex_indices[vertex_index] =
+								output.add_vertex(primaryf, normal, border_mask, secondary);
 
 						if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 							const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights1 = cell_textures.weights[v1];
 							add_texture_data(output.uv, cell_textures.packed_indices, weights1);
 						}
 
-						current_reuse_cell.vertices[0] = cell_vertex_indices[i];
+						current_reuse_cell.vertices[0] = cell_vertex_indices[vertex_index];
 
 					} else {
 						// The vertex is either on p0 or p1
@@ -597,10 +599,10 @@ void build_regular_mesh(
 						if (present) {
 							const Vector3i cache_pos = pos + dir_to_prev_vec(reuse_dir);
 							const ReuseCell &prev_cell = cache.get_reuse_cell(cache_pos);
-							cell_vertex_indices[i] = prev_cell.vertices[0];
+							cell_vertex_indices[vertex_index] = prev_cell.vertices[0];
 						}
 
-						if (!present || cell_vertex_indices[i] < 0) {
+						if (!present || cell_vertex_indices[vertex_index] < 0) {
 							// Create new vertex
 
 							// TODO Earlier we associated t==0 to p0, why are we doing p1 here?
@@ -621,7 +623,8 @@ void build_regular_mesh(
 								border_mask |= get_border_mask(primary, block_size_scaled) << 6;
 							}
 
-							cell_vertex_indices[i] = output.add_vertex(primaryf, normal, border_mask, secondary);
+							cell_vertex_indices[vertex_index] =
+									output.add_vertex(primaryf, normal, border_mask, secondary);
 
 							if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 								const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights = cell_textures.weights[vi];
@@ -765,10 +768,10 @@ void build_transition_mesh(
 	const unsigned int n010 = 1; // Y+1
 	const unsigned int n100 = block_size_with_padding.y; // X+1
 	const unsigned int n001 = block_size_with_padding.y * block_size_with_padding.x; // Z+1
-	const unsigned int n110 = n010 + n100;
-	const unsigned int n101 = n100 + n001;
-	const unsigned int n011 = n010 + n001;
-	const unsigned int n111 = n100 + n010 + n001;
+	// const unsigned int n110 = n010 + n100;
+	// const unsigned int n101 = n100 + n001;
+	// const unsigned int n011 = n010 + n001;
+	// const unsigned int n111 = n100 + n010 + n001;
 
 	// How much to advance in the data array to get neighbor voxels, using face coordinates
 	const int fn00 = face_to_block(0, 0, 0, direction, block_size_with_padding).get_zxy_index(block_size_with_padding);
@@ -797,16 +800,6 @@ void build_transition_mesh(
 
 			{
 				const bool s = sdf_data[data_index] < isolevel;
-
-				const int sdf0 = sdf_data[data_index];
-				const int sdf1 = sdf_data[data_index + fn10];
-				const int sdf2 = sdf_data[data_index + fn20];
-				const int sdf3 = sdf_data[data_index + fn01];
-				const int sdf4 = sdf_data[data_index + fn11];
-				const int sdf5 = sdf_data[data_index + fn21];
-				const int sdf6 = sdf_data[data_index + fn02];
-				const int sdf7 = sdf_data[data_index + fn12];
-				const int sdf8 = sdf_data[data_index + fn22];
 
 				if (
 						(sdf_data[data_index + fn10] < isolevel) == s &&
@@ -946,8 +939,8 @@ void build_transition_mesh(
 
 			const uint8_t cell_border_mask = get_border_mask(cell_positions[0], block_size_scaled);
 
-			for (unsigned int i = 0; i < vertex_count; ++i) {
-				const uint16_t edge_code = Tables::get_transition_vertex_data(case_code, i);
+			for (unsigned int vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
+				const uint16_t edge_code = Tables::get_transition_vertex_data(case_code, vertex_index);
 				const uint8_t index_vertex_a = (edge_code >> 4) & 0xf;
 				const uint8_t index_vertex_b = (edge_code & 0xf);
 
@@ -994,10 +987,10 @@ void build_transition_mesh(
 						const ReuseTransitionCell &prev =
 								cache.get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
 						// Reuse the vertex index from the previous cell.
-						cell_vertex_indices[i] = prev.vertices[vertex_index_to_reuse_or_create];
+						cell_vertex_indices[vertex_index] = prev.vertices[vertex_index_to_reuse_or_create];
 					}
 
-					if (!present || cell_vertex_indices[i] == -1) {
+					if (!present || cell_vertex_indices[vertex_index] == -1) {
 						// Going to create a new vertex
 
 						const Vector3i p0 = cell_positions[index_vertex_a];
@@ -1028,7 +1021,7 @@ void build_transition_mesh(
 							border_mask = 0;
 						}
 
-						cell_vertex_indices[i] = output.add_vertex(primaryf, normal, border_mask, secondary);
+						cell_vertex_indices[vertex_index] = output.add_vertex(primaryf, normal, border_mask, secondary);
 
 						if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 							const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights0 = cell_textures.weights[index_vertex_a];
@@ -1044,7 +1037,7 @@ void build_transition_mesh(
 						if (reuse_direction & 0x8) {
 							// The vertex can be re-used later
 							ReuseTransitionCell &r = cache.get_reuse_cell_2d(fx, fy);
-							r.vertices[vertex_index_to_reuse_or_create] = cell_vertex_indices[i];
+							r.vertices[vertex_index_to_reuse_or_create] = cell_vertex_indices[vertex_index];
 						}
 					}
 
@@ -1053,9 +1046,9 @@ void build_transition_mesh(
 					// Try to reuse corner vertex from a preceding cell.
 					// Use the reuse information in transitionCornerData.
 
-					const uint8_t index_vertex = (t == 0 ? index_vertex_b : index_vertex_a);
-					CRASH_COND(index_vertex >= 13);
-					const uint8_t corner_data = Tables::get_transition_corner_data(index_vertex);
+					const uint8_t cell_index = (t == 0 ? index_vertex_b : index_vertex_a);
+					CRASH_COND(cell_index >= 13);
+					const uint8_t corner_data = Tables::get_transition_corner_data(cell_index);
 					const uint8_t vertex_index_to_reuse_or_create = (corner_data & 0xf);
 					const uint8_t reuse_direction = ((corner_data >> 4) & 0xf);
 
@@ -1067,17 +1060,17 @@ void build_transition_mesh(
 						const ReuseTransitionCell &prev =
 								cache.get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
 						// Reuse the vertex index from the previous cell.
-						cell_vertex_indices[i] = prev.vertices[vertex_index_to_reuse_or_create];
+						cell_vertex_indices[vertex_index] = prev.vertices[vertex_index_to_reuse_or_create];
 					}
 
-					if (!present || cell_vertex_indices[i] == -1) {
+					if (!present || cell_vertex_indices[vertex_index] == -1) {
 						// Going to create a new vertex
 
-						const Vector3i primary = cell_positions[index_vertex];
+						const Vector3i primary = cell_positions[cell_index];
 						const Vector3 primaryf = primary.to_vec3();
-						const Vector3 normal = normalized_not_null(cell_gradients[index_vertex]);
+						const Vector3 normal = normalized_not_null(cell_gradients[cell_index]);
 
-						const bool fullres_side = (index_vertex < 9);
+						const bool fullres_side = (cell_index < 9);
 						uint16_t border_mask = cell_border_mask;
 
 						Vector3 secondary;
@@ -1089,16 +1082,16 @@ void build_transition_mesh(
 							border_mask = 0;
 						}
 
-						cell_vertex_indices[i] = output.add_vertex(primaryf, normal, border_mask, secondary);
+						cell_vertex_indices[vertex_index] = output.add_vertex(primaryf, normal, border_mask, secondary);
 
 						if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
-							const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights = cell_textures.weights[index_vertex];
+							const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights = cell_textures.weights[cell_index];
 							add_texture_data(output.uv, cell_textures.packed_indices, weights);
 						}
 
 						// We are on a corner so the vertex will be re-usable later
 						ReuseTransitionCell &r = cache.get_reuse_cell_2d(fx, fy);
-						r.vertices[vertex_index_to_reuse_or_create] = cell_vertex_indices[i];
+						r.vertices[vertex_index_to_reuse_or_create] = cell_vertex_indices[vertex_index];
 					}
 				}
 
@@ -1270,6 +1263,10 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned
 			ERR_PRINT("Double-precision SDF channel is not supported");
 			// Not worth growing executable size for relatively pointless double-precision sdf
 			break;
+
+		default:
+			ERR_PRINT("Invalid channel");
+			break;
 	}
 
 	return default_texture_indices_data;
@@ -1350,6 +1347,10 @@ void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, 
 		case VoxelBuffer::DEPTH_64_BIT:
 			ERR_FAIL_MSG("Double-precision SDF channel is not supported");
 			// Not worth growing executable size for relatively pointless double-precision sdf
+			break;
+
+		default:
+			ERR_PRINT("Invalid channel");
 			break;
 	}
 }
