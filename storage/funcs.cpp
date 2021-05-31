@@ -1,5 +1,5 @@
 #include "funcs.h"
-#include "../util/math/rect3i.h"
+#include "../util/math/box3i.h"
 
 void copy_3d_region_zxy(
 		Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min,
@@ -17,7 +17,7 @@ void copy_3d_region_zxy(
 #ifdef DEBUG_ENABLED
 	if (src.data() == dst.data()) {
 		ERR_FAIL_COND_MSG(
-				Rect3i::from_min_max(src_min, src_max).intersects(Rect3i::from_min_max(dst_min, dst_min + area_size)),
+				Box3i::from_min_max(src_min, src_max).intersects(Box3i::from_min_max(dst_min, dst_min + area_size)),
 				"Copy across the same buffer to an overlapping area is not supported");
 	}
 	ERR_FAIL_COND(area_size.volume() * item_size > dst.size());

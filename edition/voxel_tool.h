@@ -1,7 +1,7 @@
 #ifndef VOXEL_TOOL_H
 #define VOXEL_TOOL_H
 
-#include "../util/math/rect3i.h"
+#include "../util/math/box3i.h"
 #include "funcs.h"
 #include "voxel_raycast_result.h"
 
@@ -69,7 +69,7 @@ public:
 	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
 
 	// Checks if an edit affecting the given box can be applied, fully or partially
-	virtual bool is_area_editable(const Rect3i &box) const;
+	virtual bool is_area_editable(const Box3i &box) const;
 
 	virtual void set_voxel_metadata(Vector3i pos, Variant meta);
 	virtual Variant get_voxel_metadata(Vector3i pos);
@@ -83,7 +83,7 @@ protected:
 	virtual float _get_voxel_f(Vector3i pos) const;
 	virtual void _set_voxel(Vector3i pos, uint64_t v);
 	virtual void _set_voxel_f(Vector3i pos, float v);
-	virtual void _post_edit(const Rect3i &box);
+	virtual void _post_edit(const Box3i &box);
 
 private:
 	// Bindings to convert to more specialized C++ types and handle virtuality,
@@ -134,7 +134,7 @@ private:
 	}
 
 	bool _b_is_area_editable(AABB box) {
-		return is_area_editable(Rect3i(Vector3i::from_floored(box.position), Vector3i::from_floored(box.size)));
+		return is_area_editable(Box3i(Vector3i::from_floored(box.position), Vector3i::from_floored(box.size)));
 	}
 
 protected:

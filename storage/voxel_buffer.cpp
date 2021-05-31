@@ -761,7 +761,7 @@ void VoxelBuffer::for_each_voxel_metadata(Ref<FuncRef> callback) const {
 	}
 }
 
-void VoxelBuffer::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Rect3i box) const {
+void VoxelBuffer::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Box3i box) const {
 	ERR_FAIL_COND(callback.is_null());
 	const Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
 
@@ -786,7 +786,7 @@ void VoxelBuffer::clear_voxel_metadata() {
 	_voxel_metadata.clear();
 }
 
-void VoxelBuffer::clear_voxel_metadata_in_area(Rect3i box) {
+void VoxelBuffer::clear_voxel_metadata_in_area(Box3i box) {
 	Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
 	while (elem != nullptr) {
 		Map<Vector3i, Variant>::Element *next_elem = elem->next();
@@ -797,11 +797,11 @@ void VoxelBuffer::clear_voxel_metadata_in_area(Rect3i box) {
 	}
 }
 
-void VoxelBuffer::copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Rect3i src_box, Vector3i dst_origin) {
+void VoxelBuffer::copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Box3i src_box, Vector3i dst_origin) {
 	ERR_FAIL_COND(src_buffer.is_null());
 	ERR_FAIL_COND(src_buffer->is_box_valid(src_box));
 
-	const Rect3i clipped_src_box = src_box.clipped(Rect3i(src_box.pos - dst_origin, _size));
+	const Box3i clipped_src_box = src_box.clipped(Box3i(src_box.pos - dst_origin, _size));
 	const Vector3i clipped_dst_offset = dst_origin + clipped_src_box.pos - src_box.pos;
 
 	const Map<Vector3i, Variant>::Element *elem = src_buffer->_voxel_metadata.front();
@@ -943,15 +943,15 @@ void VoxelBuffer::_b_downscale_to(Ref<VoxelBuffer> dst, Vector3 src_min, Vector3
 }
 
 void VoxelBuffer::_b_for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Vector3 min_pos, Vector3 max_pos) {
-	for_each_voxel_metadata_in_area(callback, Rect3i::from_min_max(Vector3i(min_pos), Vector3i(max_pos)));
+	for_each_voxel_metadata_in_area(callback, Box3i::from_min_max(Vector3i(min_pos), Vector3i(max_pos)));
 }
 
 void VoxelBuffer::_b_clear_voxel_metadata_in_area(Vector3 min_pos, Vector3 max_pos) {
-	clear_voxel_metadata_in_area(Rect3i::from_min_max(Vector3i(min_pos), Vector3i(max_pos)));
+	clear_voxel_metadata_in_area(Box3i::from_min_max(Vector3i(min_pos), Vector3i(max_pos)));
 }
 
 void VoxelBuffer::_b_copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Vector3 src_min_pos, Vector3 src_max_pos,
 		Vector3 dst_pos) {
 	copy_voxel_metadata_in_area(
-			src_buffer, Rect3i::from_min_max(Vector3i(src_min_pos), Vector3i(src_max_pos)), dst_pos);
+			src_buffer, Box3i::from_min_max(Vector3i(src_min_pos), Vector3i(src_max_pos)), dst_pos);
 }

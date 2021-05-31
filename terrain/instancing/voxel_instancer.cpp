@@ -1048,7 +1048,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	VoxelServer::get_singleton()->request_instance_block_save(volume_id, std::move(data), data_grid_pos, lod_index);
 }
 
-void VoxelInstancer::on_area_edited(Rect3i p_voxel_box) {
+void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_parent == nullptr);
 	const int render_block_size = _parent->get_mesh_block_size();
@@ -1067,8 +1067,8 @@ void VoxelInstancer::on_area_edited(Rect3i p_voxel_box) {
 			continue;
 		}
 
-		const Rect3i render_blocks_box = p_voxel_box.downscaled(render_block_size << lod_index);
-		const Rect3i data_blocks_box = p_voxel_box.downscaled(data_block_size << lod_index);
+		const Box3i render_blocks_box = p_voxel_box.downscaled(render_block_size << lod_index);
+		const Box3i data_blocks_box = p_voxel_box.downscaled(data_block_size << lod_index);
 
 		for (auto it = lod.layers.begin(); it != lod.layers.end(); ++it) {
 			const Layer *layer = get_layer(*it);

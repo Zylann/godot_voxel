@@ -4,7 +4,7 @@
 #include "../../streams/instance_data.h"
 #include "../../util/fixed_array.h"
 #include "../../util/godot/direct_multimesh_instance.h"
-#include "../../util/math/rect3i.h"
+#include "../../util/math/box3i.h"
 #include "voxel_instance_generator.h"
 #include "voxel_instance_library.h"
 
@@ -56,7 +56,7 @@ public:
 			std::unique_ptr<VoxelInstanceBlockData> instances);
 	void on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays);
 	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
-	void on_area_edited(Rect3i p_voxel_box);
+	void on_area_edited(Box3i p_voxel_box);
 	void on_body_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index);
 
 	// Debug

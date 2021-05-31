@@ -6,7 +6,6 @@
 #include "../util/funcs.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
-#include "../util/math/rect3i.h"
 #include "../util/profiling.h"
 #include "../util/profiling_clock.h"
 #include "instancing/voxel_instancer.h"
@@ -20,7 +19,6 @@ namespace {
 
 Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType primitive, int compression_flags,
 		Ref<Material> material) {
-
 	Ref<ArrayMesh> mesh;
 	mesh.instance();
 
@@ -98,7 +96,7 @@ struct BeforeUnloadDataAction {
 };
 
 struct BeforeUnloadMeshAction {
-	std::vector<Ref<ShaderMaterial> > &shader_material_pool;
+	std::vector<Ref<ShaderMaterial>> &shader_material_pool;
 
 	void operator()(VoxelMeshBlock *block) {
 		// Recycle material
@@ -150,7 +148,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	set_process_mode(_process_mode);
 
 	// Infinite by default
-	_bounds_in_voxels = Rect3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
+	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
 
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_OCTREE);
 	VoxelServer::get_singleton()->set_volume_octree_lod_distance(_volume_id, get_lod_distance());
@@ -417,9 +415,9 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlock &block, bool active) 
 
 // Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.
 // The provided box must be at LOD0 coordinates.
-void VoxelLodTerrain::post_edit_area(Rect3i p_box) {
-	const Rect3i box = p_box.padded(1);
-	const Rect3i bbox = box.downscaled(get_data_block_size());
+void VoxelLodTerrain::post_edit_area(Box3i p_box) {
+	const Box3i box = p_box.padded(1);
+	const Box3i bbox = box.downscaled(get_data_block_size());
 
 	bbox.for_each_cell([this](Vector3i block_pos_lod0) {
 		post_edit_block_lod0(block_pos_lod0);
@@ -591,7 +589,7 @@ void VoxelLodTerrain::reset_maps() {
 	}
 
 	// Reset previous state caches to force rebuilding the view area
-	_last_octree_region_box = Rect3i();
+	_last_octree_region_box = Box3i();
 	_lod_octrees.clear();
 }
 
@@ -909,9 +907,9 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelMeshBlock *block) {
 #endif
 			// Find data block neighbors positions
 			const int factor = mesh_block_size / data_block_size;
-			Vector3i data_block_pos0 = factor * block->position;
-			Rect3i data_box(data_block_pos0 - Vector3i(1), Vector3i(factor) + Vector3i(2));
-			Rect3i bounds = _bounds_in_voxels.downscaled(data_block_size);
+			const Vector3i data_block_pos0 = factor * block->position;
+			const Box3i data_box(data_block_pos0 - Vector3i(1), Vector3i(factor) + Vector3i(2));
+			const Box3i bounds = _bounds_in_voxels.downscaled(data_block_size);
 			FixedArray<Vector3i, 56> neighbor_positions;
 			unsigned int neighbor_positions_count = 0;
 			data_box.for_inner_outline([bounds, &neighbor_positions, &neighbor_positions_count](Vector3i pos) {
@@ -1029,14 +1027,14 @@ void VoxelLodTerrain::_process(float delta) {
 			unsigned int block_size_po2 = _lods[0].data_map.get_block_size_pow2() + lod_index;
 			Vector3i viewer_block_pos_within_lod = VoxelDataMap::voxel_to_block_b(viewer_pos, block_size_po2);
 
-			const Rect3i bounds_in_blocks = Rect3i(
+			const Box3i bounds_in_blocks = Box3i(
 					_bounds_in_voxels.pos >> block_size_po2,
 					_bounds_in_voxels.size >> block_size_po2);
 
-			const Rect3i new_box =
-					Rect3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(data_block_region_extent));
-			const Rect3i prev_box =
-					Rect3i::from_center_extents(
+			const Box3i new_box =
+					Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(data_block_region_extent));
+			const Box3i prev_box =
+					Box3i::from_center_extents(
 							lod.last_viewer_data_block_pos, Vector3i(lod.last_view_distance_data_blocks));
 
 			if (!new_box.intersects(bounds_in_blocks) && !prev_box.intersects(bounds_in_blocks)) {
@@ -1052,7 +1050,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 			if (prev_box != new_box) {
 				VOXEL_PROFILE_SCOPE();
-				prev_box.difference(new_box, [this, lod_index](Rect3i out_of_range_box) {
+				prev_box.difference(new_box, [this, lod_index](Box3i out_of_range_box) {
 					out_of_range_box.for_each_cell([=](Vector3i pos) {
 						//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
 						unload_data_block(pos, lod_index);
@@ -1065,8 +1063,8 @@ void VoxelLodTerrain::_process(float delta) {
 				// Cancel block updates that are not within the padded region
 				// (since neighbors are always required to remesh)
 
-				const Rect3i padded_new_box = new_box.padded(-1);
-				Rect3i mesh_box;
+				const Box3i padded_new_box = new_box.padded(-1);
+				Box3i mesh_box;
 				if (get_mesh_block_size() > get_data_block_size()) {
 					const int factor = get_mesh_block_size() / get_data_block_size();
 					mesh_box = padded_new_box.downscaled_inner(factor);
@@ -1110,14 +1108,14 @@ void VoxelLodTerrain::_process(float delta) {
 			unsigned int block_size_po2 = _lods[0].mesh_map.get_block_size_pow2() + lod_index;
 			Vector3i viewer_block_pos_within_lod = VoxelMeshMap::voxel_to_block_b(viewer_pos, block_size_po2);
 
-			const Rect3i bounds_in_blocks = Rect3i(
+			const Box3i bounds_in_blocks = Box3i(
 					_bounds_in_voxels.pos >> block_size_po2,
 					_bounds_in_voxels.size >> block_size_po2);
 
-			const Rect3i new_box =
-					Rect3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(mesh_block_region_extent));
-			const Rect3i prev_box =
-					Rect3i::from_center_extents(lod.last_viewer_mesh_block_pos, Vector3i(lod.last_view_distance_mesh_blocks));
+			const Box3i new_box =
+					Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(mesh_block_region_extent));
+			const Box3i prev_box =
+					Box3i::from_center_extents(lod.last_viewer_mesh_block_pos, Vector3i(lod.last_view_distance_mesh_blocks));
 
 			if (!new_box.intersects(bounds_in_blocks) && !prev_box.intersects(bounds_in_blocks)) {
 				// If this box doesn't intersect either now or before, there is no chance a smaller one will
@@ -1128,7 +1126,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 			if (prev_box != new_box) {
 				VOXEL_PROFILE_SCOPE();
-				prev_box.difference(new_box, [this, lod_index](Rect3i out_of_range_box) {
+				prev_box.difference(new_box, [this, lod_index](Box3i out_of_range_box) {
 					out_of_range_box.for_each_cell([=](Vector3i pos) {
 						//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
 						unload_mesh_block(pos, lod_index);
@@ -1161,11 +1159,11 @@ void VoxelLodTerrain::_process(float delta) {
 
 		const Vector3i viewer_octree_pos = (Vector3i(viewer_pos) + Vector3i(octree_size / 2)) >> octree_size_po2;
 
-		const Rect3i bounds_in_octrees = _bounds_in_voxels.downscaled(octree_size);
+		const Box3i bounds_in_octrees = _bounds_in_voxels.downscaled(octree_size);
 
-		const Rect3i new_box = Rect3i::from_center_extents(viewer_octree_pos, Vector3i(octree_region_extent))
-									   .clipped(bounds_in_octrees);
-		const Rect3i prev_box = _last_octree_region_box;
+		const Box3i new_box = Box3i::from_center_extents(viewer_octree_pos, Vector3i(octree_region_extent))
+									  .clipped(bounds_in_octrees);
+		const Box3i prev_box = _last_octree_region_box;
 
 		if (new_box != prev_box) {
 			VOXEL_PROFILE_SCOPE();
@@ -1189,7 +1187,6 @@ void VoxelLodTerrain::_process(float delta) {
 			struct ExitAction {
 				VoxelLodTerrain *self;
 				void operator()(const Vector3i &pos) {
-
 					Map<Vector3i, OctreeItem>::Element *E = self->_lod_octrees.find(pos);
 					if (E == nullptr) {
 						return;
@@ -1242,11 +1239,11 @@ void VoxelLodTerrain::_process(float delta) {
 			enter_action.self = this;
 			enter_action.block_size = get_mesh_block_size();
 
-			prev_box.difference(new_box, [exit_action](Rect3i out_of_range_box) {
+			prev_box.difference(new_box, [exit_action](Box3i out_of_range_box) {
 				out_of_range_box.for_each_cell(exit_action);
 			});
 
-			new_box.difference(prev_box, [enter_action](Rect3i box_to_load) {
+			new_box.difference(prev_box, [enter_action](Box3i box_to_load) {
 				box_to_load.for_each_cell(enter_action);
 			});
 		}
@@ -1509,8 +1506,8 @@ void VoxelLodTerrain::_process(float delta) {
 				mesh_request.render_block_position = mesh_block_pos;
 				mesh_request.lod = lod_index;
 
-				const Rect3i data_box =
-						Rect3i(render_to_data_factor * mesh_block_pos, Vector3i(render_to_data_factor)).padded(1);
+				const Box3i data_box =
+						Box3i(render_to_data_factor * mesh_block_pos, Vector3i(render_to_data_factor)).padded(1);
 
 				// Iteration order matters for thread access.
 				// The array also implicitely encodes block position due to the convention being used,
@@ -1553,7 +1550,6 @@ void VoxelLodTerrain::_process(float delta) {
 		size_t queue_index = 0;
 		for (; queue_index < _reception_buffers.mesh_output.size() && get_ticks_msec() < main_thread_task_timeout;
 				++queue_index) {
-
 			VOXEL_PROFILE_SCOPE();
 			const VoxelServer::BlockMeshOutput &ob = _reception_buffers.mesh_output[queue_index];
 
@@ -2127,9 +2123,9 @@ void VoxelLodTerrain::remesh_all_blocks() {
 	}
 }
 
-void VoxelLodTerrain::set_voxel_bounds(Rect3i p_box) {
+void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
 	_bounds_in_voxels =
-			p_box.clipped(Rect3i::from_center_extents(Vector3i(), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT)));
+			p_box.clipped(Box3i::from_center_extents(Vector3i(), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT)));
 	// Round to octree size
 	const int octree_size = get_mesh_block_size() << (get_lod_count() - 1);
 	_bounds_in_voxels = _bounds_in_voxels.snapped(octree_size);
@@ -2175,11 +2171,11 @@ void VoxelLodTerrain::_b_save_modified_blocks() {
 
 void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {
 	// TODO Please Godot, have an integer AABB!
-	set_voxel_bounds(Rect3i(aabb.position.round(), aabb.size.round()));
+	set_voxel_bounds(Box3i(aabb.position.round(), aabb.size.round()));
 }
 
 AABB VoxelLodTerrain::_b_get_voxel_bounds() const {
-	const Rect3i b = get_voxel_bounds();
+	const Box3i b = get_voxel_bounds();
 	return AABB(b.pos.to_vec3(), b.size.to_vec3());
 }
 
@@ -2298,7 +2294,6 @@ Array VoxelLodTerrain::debug_get_octrees_detailed() const {
 	struct L {
 		static void read_node(const LodOctree &octree, const LodOctree::Node *node, Vector3i position, int lod_index,
 				const VoxelLodTerrain *self, Array &out_data) {
-
 			ERR_FAIL_COND(lod_index < 0);
 			Variant state;
 
@@ -2392,7 +2387,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 	image_array.resize(get_lod_count());
 
 	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
-		const Rect3i world_box = Rect3i::from_center_extents(Vector3i(center) >> lod_index, Vector3i(extents) >> lod_index);
+		const Box3i world_box = Box3i::from_center_extents(Vector3i(center) >> lod_index, Vector3i(extents) >> lod_index);
 
 		if (world_box.size.volume() == 0) {
 			continue;

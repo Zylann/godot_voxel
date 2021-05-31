@@ -5,7 +5,6 @@
 
 VoxelDataMap::VoxelDataMap() :
 		_last_accessed_block(nullptr) {
-
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
 	set_block_size_pow2(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2);
 
@@ -252,7 +251,6 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 
 void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int channels_mask, uint64_t mask_value,
 		bool create_new_blocks) {
-
 	const Vector3i max_pos = min_pos + src_buffer.get_size();
 
 	const Vector3i min_block_pos = voxel_to_block(min_pos);
@@ -282,7 +280,7 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int
 					RWLockWrite lock(dst_buffer.get_lock());
 
 					if (mask_value != std::numeric_limits<uint64_t>::max()) {
-						const Rect3i dst_box(min_pos - dst_block_origin, src_buffer.get_size());
+						const Box3i dst_box(min_pos - dst_block_origin, src_buffer.get_size());
 
 						const Vector3i src_offset = -dst_box.pos;
 
@@ -330,8 +328,8 @@ int VoxelDataMap::get_block_count() const {
 	return _blocks.size();
 }
 
-bool VoxelDataMap::is_area_fully_loaded(const Rect3i voxels_box) const {
-	Rect3i block_box = voxels_box.downscaled(get_block_size());
+bool VoxelDataMap::is_area_fully_loaded(const Box3i voxels_box) const {
+	Box3i block_box = voxels_box.downscaled(get_block_size());
 	return block_box.all_cells_match([this](Vector3i pos) {
 		return has_block(pos);
 	});

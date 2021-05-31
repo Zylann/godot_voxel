@@ -91,7 +91,7 @@ float VoxelTool::get_voxel_f(Vector3i pos) const {
 }
 
 void VoxelTool::set_voxel(Vector3i pos, uint64_t v) {
-	Rect3i box(pos, Vector3i(1));
+	Box3i box(pos, Vector3i(1));
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
 		return;
@@ -101,7 +101,7 @@ void VoxelTool::set_voxel(Vector3i pos, uint64_t v) {
 }
 
 void VoxelTool::set_voxel_f(Vector3i pos, float v) {
-	Rect3i box(pos, Vector3i(1));
+	Box3i box(pos, Vector3i(1));
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
 		return;
@@ -111,7 +111,7 @@ void VoxelTool::set_voxel_f(Vector3i pos, float v) {
 }
 
 void VoxelTool::do_point(Vector3i pos) {
-	Rect3i box(pos, Vector3i(1));
+	Box3i box(pos, Vector3i(1));
 	if (!is_area_editable(box)) {
 		return;
 	}
@@ -181,7 +181,7 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 void VoxelTool::do_sphere(Vector3 center, float radius) {
 	VOXEL_PROFILE_SCOPE();
 
-	const Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	const Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -211,7 +211,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	VOXEL_PROFILE_SCOPE();
 	Vector3i::sort_min_max(begin, end);
-	Rect3i box = Rect3i::from_min_max(begin, end + Vector3i(1, 1, 1));
+	Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1));
 
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -244,12 +244,12 @@ void VoxelTool::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channel
 	ERR_PRINT("Not implemented");
 }
 
-bool VoxelTool::is_area_editable(const Rect3i &box) const {
+bool VoxelTool::is_area_editable(const Box3i &box) const {
 	ERR_PRINT("Not implemented");
 	return false;
 }
 
-void VoxelTool::_post_edit(const Rect3i &box) {
+void VoxelTool::_post_edit(const Box3i &box) {
 	ERR_PRINT("Not implemented");
 }
 

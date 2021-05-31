@@ -1,16 +1,16 @@
 #include "tests.h"
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../storage/voxel_data_map.h"
-#include "../util/math/rect3i.h"
+#include "../util/math/box3i.h"
 
 #include <core/hash_map.h>
 #include <core/print_string.h>
 
-void test_rect3i_for_inner_outline() {
-	const Rect3i box(-1, 2, 3, 8, 6, 5);
+void test_box3i_for_inner_outline() {
+	const Box3i box(-1, 2, 3, 8, 6, 5);
 
 	HashMap<Vector3i, bool, Vector3iHasher> expected_coords;
-	const Rect3i inner_box = box.padded(-1);
+	const Box3i inner_box = box.padded(-1);
 	box.for_each_cell([&expected_coords, inner_box](Vector3i pos) {
 		if (!inner_box.contains(pos)) {
 			expected_coords.set(pos, false);
@@ -50,7 +50,7 @@ void test_voxel_data_map_paste_fill() {
 	VoxelDataMap map;
 	map.create(4, 0);
 
-	const Rect3i box(Vector3i(10, 10, 10), buffer->get_size());
+	const Box3i box(Vector3i(10, 10, 10), buffer->get_size());
 
 	map.paste(box.pos, **buffer, (1 << channel), std::numeric_limits<uint64_t>::max(), true);
 
@@ -62,7 +62,7 @@ void test_voxel_data_map_paste_fill() {
 	ERR_FAIL_COND(!is_match);
 
 	// Check neighbor voxels to make sure they were not changed
-	const Rect3i padded_box = box.padded(1);
+	const Box3i padded_box = box.padded(1);
 	bool outside_is_ok = true;
 	padded_box.for_inner_outline([&map, &outside_is_ok](const Vector3i &pos) {
 		if (map.get_voxel(pos, channel) != default_value) {
@@ -95,7 +95,7 @@ void test_voxel_data_map_paste_mask() {
 	VoxelDataMap map;
 	map.create(4, 0);
 
-	const Rect3i box(Vector3i(10, 10, 10), buffer->get_size());
+	const Box3i box(Vector3i(10, 10, 10), buffer->get_size());
 
 	map.paste(box.pos, **buffer, (1 << channel), masked_value, true);
 
@@ -155,7 +155,7 @@ void test_voxel_data_map_copy() {
 	VoxelDataMap map;
 	map.create(4, 0);
 
-	Rect3i box(10, 10, 10, 32, 16, 32);
+	Box3i box(10, 10, 10, 32, 16, 32);
 	Ref<VoxelBuffer> buffer;
 	buffer.instance();
 	buffer->create(box.size);
@@ -485,7 +485,7 @@ void test_voxel_graph_generator_texturing() {
 void run_voxel_tests() {
 	print_line("------------ Voxel tests begin -------------");
 
-	VOXEL_TEST(test_rect3i_for_inner_outline);
+	VOXEL_TEST(test_box3i_for_inner_outline);
 	VOXEL_TEST(test_voxel_data_map_paste_fill);
 	VOXEL_TEST(test_voxel_data_map_paste_mask);
 	VOXEL_TEST(test_voxel_data_map_copy);

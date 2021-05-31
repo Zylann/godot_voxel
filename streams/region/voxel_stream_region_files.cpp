@@ -1,7 +1,7 @@
 #include "voxel_stream_region_files.h"
 #include "../../server/voxel_server.h"
 #include "../../util/macros.h"
-#include "../../util/math/rect3i.h"
+#include "../../util/math/box3i.h"
 #include "../../util/profiling.h"
 
 #include <core/io/json.h>
@@ -109,7 +109,6 @@ void VoxelStreamRegionFiles::immerge_blocks(const Vector<VoxelBlockRequest> &p_b
 
 VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 		Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(out_buffer.is_null(), EMERGE_FAILED);
 
@@ -431,7 +430,6 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::get_region_from_ca
 
 VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 		const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
-
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(!_meta_loaded, nullptr);
 	ERR_FAIL_COND_V(lod < 0, nullptr);
@@ -491,7 +489,6 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 				format.channel_depths != _meta.channel_depths ||
 				format.region_size != Vector3i(1 << _meta.region_size_po2) ||
 				format.sector_size != _meta.sector_size) {
-
 			ERR_PRINT("Region file has unexpected format");
 			memdelete(cached_region);
 			return nullptr;
@@ -606,7 +603,6 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	// Get list of all regions from the old stream
 	{
 		for (int lod = 0; lod < old_meta.lod_count; ++lod) {
-
 			const String lod_folder =
 					old_stream->_directory_path.plus_file("regions").plus_file("lod") + String::num_int64(lod);
 			const String ext = String(".") + VoxelRegionFormat::FILE_EXTENSION;
@@ -692,7 +688,6 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 				// TODO Support any size? Assuming cubic blocks here
 				if (old_block_size.x < new_block_size.x) {
-
 					Vector3i ratio = new_block_size / old_block_size;
 					Vector3i rel = block_pos % ratio;
 
@@ -716,7 +711,6 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					for (rpos.z = 0; rpos.z < area.z; ++rpos.z) {
 						for (rpos.x = 0; rpos.x < area.x; ++rpos.x) {
 							for (rpos.y = 0; rpos.y < area.y; ++rpos.y) {
-
 								Vector3i src_min = rpos * new_block->get_size();
 								Vector3i src_max = src_min + new_block->get_size();
 
@@ -847,7 +841,6 @@ void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 		ERR_FAIL_COND_MSG(!check_meta(meta), "Invalid setting");
 
 		if (!_meta_loaded) {
-
 			if (load_meta() != VOXEL_FILE_OK) {
 				// New stream, nothing to convert
 				_meta = meta;

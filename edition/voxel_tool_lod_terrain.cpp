@@ -11,7 +11,7 @@ VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain, VoxelDataMap 
 	// Don't destroy the terrain while a voxel tool still references it
 }
 
-bool VoxelToolLodTerrain::is_area_editable(const Rect3i &box) const {
+bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, false);
 	// TODO Take volume bounds into account
 	return _map->is_area_fully_loaded(box.padded(1));
@@ -159,7 +159,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 
 	VOXEL_PROFILE_SCOPE();
 
-	const Rect3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	const Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -192,7 +192,7 @@ void VoxelToolLodTerrain::_set_voxel_f(Vector3i pos, float v) {
 	_map->set_voxel_f(v, pos, _channel);
 }
 
-void VoxelToolLodTerrain::_post_edit(const Rect3i &box) {
+void VoxelToolLodTerrain::_post_edit(const Box3i &box) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	_terrain->post_edit_area(box);
 }
