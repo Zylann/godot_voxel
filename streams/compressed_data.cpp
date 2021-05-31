@@ -9,7 +9,7 @@
 
 namespace VoxelCompressedData {
 
-bool decompress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst) {
+bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Apparently big-endian is dead
@@ -56,7 +56,7 @@ bool decompress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst) {
 	return true;
 }
 
-bool compress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp) {
+bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp) {
 	VOXEL_PROFILE_SCOPE();
 
 	switch (comp) {

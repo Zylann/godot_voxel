@@ -1,7 +1,7 @@
 #ifndef VOXEL_INSTANCE_DATA_H
 #define VOXEL_INSTANCE_DATA_H
 
-#include "../util/array_slice.h"
+#include "../util/span.h"
 #include <core/math/transform.h>
 
 // Stores data to pass around until it either gets saved or turned into actual instances
@@ -27,6 +27,6 @@ struct VoxelInstanceBlockData {
 };
 
 void serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vector<uint8_t> &dst);
-bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, ArraySlice<const uint8_t> src);
+bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uint8_t> src);
 
 #endif // VOXEL_INSTANCE_DATA_H

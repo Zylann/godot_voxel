@@ -1,6 +1,5 @@
 #include "instance_data.h"
 #include "../constants/voxel_constants.h"
-#include "../util/array_slice.h"
 #include "../util/math/funcs.h"
 #include "../util/serialization.h"
 #include <core/variant.h>
@@ -94,7 +93,7 @@ void serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 	w.store_32(TRAILING_MAGIC);
 }
 
-bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, ArraySlice<const uint8_t> src) {
+bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uint8_t> src) {
 	const uint8_t expected_version = 0;
 	const uint8_t expected_instance_format = 0;
 

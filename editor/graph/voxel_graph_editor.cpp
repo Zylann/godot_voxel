@@ -768,7 +768,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	}
 
 	// Highlight only nodes that will actually run
-	ArraySlice<const int> execution_map = VoxelGeneratorGraph::get_last_execution_map_debug_from_current_thread();
+	Span<const int> execution_map = VoxelGeneratorGraph::get_last_execution_map_debug_from_current_thread();
 	for (unsigned int i = 0; i < execution_map.size(); ++i) {
 		String node_view_path = node_to_gui_name(execution_map[i]);
 		VoxelGraphEditorNode *node_view =
@@ -863,9 +863,9 @@ void VoxelGraphEditor::update_slice_previews() {
 	}
 
 	_graph->generate_set(
-			ArraySlice<float>(x_vec, 0, x_vec.size()),
-			ArraySlice<float>(y_vec, 0, y_vec.size()),
-			ArraySlice<float>(z_vec, 0, z_vec.size()));
+			Span<float>(x_vec, 0, x_vec.size()),
+			Span<float>(y_vec, 0, y_vec.size()),
+			Span<float>(z_vec, 0, z_vec.size()));
 
 	const VoxelGraphRuntime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 

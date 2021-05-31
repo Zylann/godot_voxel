@@ -487,7 +487,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 			// We may setup a local transform list as well since it's expensive to get it from VisualServer
 		}
 
-		update_block_from_transforms(block_index, to_slice_const(_transform_cache),
+		update_block_from_transforms(block_index, to_span_const(_transform_cache),
 				block->grid_position, layer, *item, layer_id, world, block_transform);
 	}
 }
@@ -646,7 +646,6 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 
 void VoxelInstancer::on_data_block_loaded(Vector3i grid_position, unsigned int lod_index,
 		std::unique_ptr<VoxelInstanceBlockData> instances) {
-
 	ERR_FAIL_COND(lod_index >= _lods.size());
 	Lod &lod = _lods[lod_index];
 	lod.loaded_instances_data.insert(std::make_pair(grid_position, std::move(instances)));
@@ -727,10 +726,9 @@ int VoxelInstancer::create_block(Layer *layer, uint16_t layer_id, Vector3i grid_
 	return block_index;
 }
 
-void VoxelInstancer::update_block_from_transforms(int block_index, ArraySlice<const Transform> transforms,
+void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Transform> transforms,
 		Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItem *item, uint16_t layer_id,
 		World *world, const Transform &block_transform) {
-
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(layer == nullptr);
@@ -946,7 +944,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 			}
 		}
 
-		update_block_from_transforms(-1, to_slice_const(_transform_cache),
+		update_block_from_transforms(-1, to_span_const(_transform_cache),
 				render_grid_position, layer, item, layer_id, world, block_transform);
 	}
 }

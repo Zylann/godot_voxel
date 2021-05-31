@@ -1,7 +1,7 @@
 #ifndef DIRECT_MULTIMESH_INSTANCE_H
 #define DIRECT_MULTIMESH_INSTANCE_H
 
-#include "../array_slice.h"
+#include "../span.h"
 
 #include <core/rid.h>
 #include <scene/resources/multimesh.h>
@@ -25,7 +25,7 @@ public:
 	void set_material_override(Ref<Material> material);
 	void set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode);
 
-	static PoolRealArray make_transform_3d_bulk_array(ArraySlice<const Transform> transforms);
+	static PoolRealArray make_transform_3d_bulk_array(Span<const Transform> transforms);
 
 private:
 	RID _multimesh_instance;

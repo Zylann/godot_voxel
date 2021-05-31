@@ -140,11 +140,11 @@ public:
 	VoxelGraphRuntime::CompilationResult compile();
 	bool is_good() const;
 
-	void generate_set(ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z);
+	void generate_set(Span<float> in_x, Span<float> in_y, Span<float> in_z);
 
 	// Returns state from the last generator used in the current thread
 	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
-	static ArraySlice<const int> get_last_execution_map_debug_from_current_thread();
+	static Span<const int> get_last_execution_map_debug_from_current_thread();
 
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 
@@ -179,7 +179,7 @@ private:
 		unsigned int output_buffer_index;
 	};
 
-	static void gather_indices_and_weights(ArraySlice<const WeightOutput> weight_outputs,
+	static void gather_indices_and_weights(Span<const WeightOutput> weight_outputs,
 			const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry, VoxelBuffer &out_voxel_buffer,
 			FixedArray<uint8_t, 4> spare_indices);
 

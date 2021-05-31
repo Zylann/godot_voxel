@@ -86,7 +86,7 @@ void DirectMultiMeshInstance::set_cast_shadows_setting(VisualServer::ShadowCasti
 	vs.instance_geometry_set_cast_shadows_setting(_multimesh_instance, mode);
 }
 
-PoolRealArray DirectMultiMeshInstance::make_transform_3d_bulk_array(ArraySlice<const Transform> transforms) {
+PoolRealArray DirectMultiMeshInstance::make_transform_3d_bulk_array(Span<const Transform> transforms) {
 	VOXEL_PROFILE_SCOPE();
 
 	PoolRealArray bulk_array;

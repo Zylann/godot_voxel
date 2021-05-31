@@ -1,8 +1,8 @@
 #include "voxel_mesher_blocky.h"
 #include "../../constants/cube_tables.h"
 #include "../../storage/voxel_buffer.h"
-#include "../../util/array_slice.h"
 #include "../../util/funcs.h"
+#include "../../util/span.h"
 #include <core/os/os.h>
 
 // Utility functions
@@ -52,11 +52,10 @@ inline bool contributes_to_ao(const VoxelLibrary::BakedData &lib, uint32_t voxel
 template <typename Type_T>
 static void generate_blocky_mesh(
 		FixedArray<VoxelMesherBlocky::Arrays, VoxelMesherBlocky::MAX_MATERIALS> &out_arrays_per_material,
-		const ArraySlice<Type_T> type_buffer,
+		const Span<Type_T> type_buffer,
 		const Vector3i block_size,
 		const VoxelLibrary::BakedData &library,
 		bool bake_occlusion, float baked_occlusion_darkness) {
-
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
 				  block_size.y < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
 				  block_size.z < static_cast<int>(2 * VoxelMesherBlocky::PADDING));
@@ -448,7 +447,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		return;
 	}
 
-	ArraySlice<uint8_t> raw_channel;
+	Span<uint8_t> raw_channel;
 	if (!voxels.get_channel_raw(channel, raw_channel)) {
 		/*       _
 		//      | \
@@ -495,7 +494,6 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
 		const Arrays &arrays = cache.arrays_per_material[i];
 		if (arrays.positions.size() != 0) {
-
 			Array mesh_arrays;
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
 

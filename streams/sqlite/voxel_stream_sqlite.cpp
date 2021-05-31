@@ -333,7 +333,6 @@ bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, const std::vector<
 
 VoxelStream::Result VoxelStreamSQLiteInternal::load_block(
 		BlockLocation loc, std::vector<uint8_t> &out_block_data, BlockType type) {
-
 	sqlite3 *db = _db;
 
 	sqlite3_stmt *get_block_statement;
@@ -681,8 +680,7 @@ bool VoxelStreamSQLite::supports_instance_blocks() const {
 }
 
 void VoxelStreamSQLite::load_instance_blocks(
-		ArraySlice<VoxelStreamInstanceDataRequest> out_blocks, ArraySlice<Result> out_results) {
-
+		Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) {
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Get block size from database
@@ -726,13 +724,13 @@ void VoxelStreamSQLite::load_instance_blocks(
 		const Result res = con->load_block(loc, _temp_compressed_block_data, VoxelStreamSQLiteInternal::INSTANCES);
 
 		if (res == RESULT_BLOCK_FOUND) {
-			if (!VoxelCompressedData::decompress(to_slice_const(_temp_compressed_block_data), _temp_block_data)) {
+			if (!VoxelCompressedData::decompress(to_span_const(_temp_compressed_block_data), _temp_block_data)) {
 				ERR_PRINT("Failed to decompress instance block");
 				out_results[i] = RESULT_ERROR;
 				continue;
 			}
 			r.data = std::make_unique<VoxelInstanceBlockData>();
-			if (!deserialize_instance_block_data(*r.data, to_slice_const(_temp_block_data))) {
+			if (!deserialize_instance_block_data(*r.data, to_span_const(_temp_block_data))) {
 				ERR_PRINT("Failed to deserialize instance block");
 				out_results[i] = RESULT_ERROR;
 				continue;
@@ -747,7 +745,7 @@ void VoxelStreamSQLite::load_instance_blocks(
 	recycle_connection(con);
 }
 
-void VoxelStreamSQLite::save_instance_blocks(ArraySlice<VoxelStreamInstanceDataRequest> p_blocks) {
+void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks) {
 	// TODO Get block size from database
 	//const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
 
@@ -814,7 +812,7 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 			serialize_instance_block_data(*block.instances, temp_data);
 
 			ERR_FAIL_COND(!VoxelCompressedData::compress(
-					to_slice_const(temp_data), temp_compressed_data, VoxelCompressedData::COMPRESSION_NONE));
+					to_span_const(temp_data), temp_compressed_data, VoxelCompressedData::COMPRESSION_NONE));
 		}
 		con->save_block(loc, temp_compressed_data, VoxelStreamSQLiteInternal::INSTANCES);
 

@@ -1,7 +1,7 @@
 #ifndef VOXEL_UTIL_SERIALIZATION_H
 #define VOXEL_UTIL_SERIALIZATION_H
 
-#include "array_slice.h"
+#include "span.h"
 
 namespace VoxelUtility {
 
@@ -70,12 +70,12 @@ struct MemoryWriter {
 };
 
 struct MemoryReader {
-	ArraySlice<const uint8_t> data;
+	Span<const uint8_t> data;
 	size_t pos = 0;
 	// Using network-order by default
 	Endianess endianess = ENDIANESS_BIG_ENDIAN;
 
-	MemoryReader(ArraySlice<const uint8_t> p_data, Endianess p_endianess) :
+	MemoryReader(Span<const uint8_t> p_data, Endianess p_endianess) :
 			data(p_data), endianess(p_endianess) {}
 
 	inline uint8_t get_8() {

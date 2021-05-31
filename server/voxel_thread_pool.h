@@ -2,8 +2,8 @@
 #define VOXEL_THREAD_POOL_H
 
 #include "../storage/voxel_buffer.h"
-#include "../util/array_slice.h"
 #include "../util/fixed_array.h"
+#include "../util/span.h"
 #include <core/os/mutex.h>
 #include <core/os/semaphore.h>
 #include <core/os/thread.h>
@@ -63,7 +63,7 @@ public:
 	// Schedules a task.
 	// Ownership is NOT passed to the pool, so make sure you get them back when completed if you want to delete them.
 	void enqueue(IVoxelTask *task);
-	void enqueue(ArraySlice<IVoxelTask *> tasks);
+	void enqueue(Span<IVoxelTask *> tasks);
 
 	// TODO Lambda might not be the best API. memcpying to a vector would ensure we lock for a shorter time.
 	template <typename F>

@@ -2,8 +2,8 @@
 #define VOXEL_STORAGE_FUNCS_H
 
 #include "../constants/voxel_constants.h"
-#include "../util/array_slice.h"
 #include "../util/math/vector3i.h"
+#include "../util/span.h"
 #include <stdint.h>
 
 inline void clip_copy_region_coord(int &src_min, int &src_max, const int src_size, int &dst_min, const int dst_size) {
@@ -39,14 +39,14 @@ inline void clip_copy_region(
 }
 
 void copy_3d_region_zxy(
-		ArraySlice<uint8_t> dst, Vector3i dst_size, Vector3i dst_min,
-		ArraySlice<const uint8_t> src, Vector3i src_size, Vector3i src_min, Vector3i src_max,
+		Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min,
+		Span<const uint8_t> src, Vector3i src_size, Vector3i src_min, Vector3i src_max,
 		size_t item_size);
 
 template <typename T>
 inline void copy_3d_region_zxy(
-		ArraySlice<T> dst, Vector3i dst_size, Vector3i dst_min,
-		ArraySlice<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max) {
+		Span<T> dst, Vector3i dst_size, Vector3i dst_min,
+		Span<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max) {
 	// The `template` keyword before method name is required when compiling with GCC
 	copy_3d_region_zxy(
 			dst.template reinterpret_cast_to<uint8_t>(), dst_size, dst_min,
@@ -55,7 +55,7 @@ inline void copy_3d_region_zxy(
 }
 
 template <typename T>
-void fill_3d_region_zxy(ArraySlice<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i dst_max, const T value) {
+void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i dst_max, const T value) {
 	Vector3i::sort_min_max(dst_min, dst_max);
 	dst_min.x = clamp(dst_min.x, 0, dst_size.x);
 	dst_min.y = clamp(dst_min.y, 0, dst_size.y);

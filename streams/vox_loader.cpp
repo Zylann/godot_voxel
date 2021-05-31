@@ -125,14 +125,14 @@ Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> voxels, Ref<
 
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_COLOR;
 
-	const ArraySlice<Color8> src_palette =
+	const Span<Color8> src_palette =
 			_data.has_palette ?
-					ArraySlice<Color8>(_data.palette) :
-					ArraySlice<Color8>(reinterpret_cast<Color8 *>(vox::g_default_palette), 0, vox::PALETTE_SIZE);
+					Span<Color8>(_data.palette) :
+					Span<Color8>(reinterpret_cast<Color8 *>(vox::g_default_palette), 0, vox::PALETTE_SIZE);
 
 	const VoxelBuffer::Depth depth = voxels->get_channel_depth(VoxelBuffer::CHANNEL_COLOR);
 
-	ArraySlice<uint8_t> dst_raw;
+	Span<uint8_t> dst_raw;
 	voxels->create(_data.size);
 	voxels->decompress_channel(channel);
 	CRASH_COND(!voxels->get_channel_raw(channel, dst_raw));
@@ -148,7 +148,7 @@ Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> voxels, Ref<
 			} break;
 
 			case VoxelBuffer::DEPTH_16_BIT: {
-				ArraySlice<uint16_t> dst = dst_raw.reinterpret_cast_to<uint16_t>();
+				Span<uint16_t> dst = dst_raw.reinterpret_cast_to<uint16_t>();
 				for (size_t i = 0; i < dst.size(); ++i) {
 					dst[i] = _data.color_indexes[i];
 				}
@@ -169,7 +169,7 @@ Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> voxels, Ref<
 			} break;
 
 			case VoxelBuffer::DEPTH_16_BIT: {
-				ArraySlice<uint16_t> dst = dst_raw.reinterpret_cast_to<uint16_t>();
+				Span<uint16_t> dst = dst_raw.reinterpret_cast_to<uint16_t>();
 				for (size_t i = 0; i < dst.size(); ++i) {
 					const uint8_t ci = _data.color_indexes[i];
 					dst[i] = src_palette[ci].to_u16();

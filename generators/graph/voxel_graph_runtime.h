@@ -1,9 +1,9 @@
 #ifndef VOXEL_GRAPH_RUNTIME_H
 #define VOXEL_GRAPH_RUNTIME_H
 
-#include "../../util/array_slice.h"
 #include "../../util/math/interval.h"
 #include "../../util/math/vector3i.h"
+#include "../../util/span.h"
 #include "program_graph.h"
 
 #include <core/reference.h>
@@ -120,7 +120,7 @@ public:
 	// Convenience for set generation with only one value
 	void generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const;
 
-	void generate_set(State &state, ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z,
+	void generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z,
 			bool skip_xz, const ExecutionMap *execution_map) const;
 
 	inline unsigned int get_output_count() const {
@@ -140,7 +140,7 @@ public:
 	// This allows to use the execution map optimization, until you choose another area.
 	// (i.e when using this, querying values outside of the analyzed area may be invalid)
 	void generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
-			ArraySlice<const unsigned int> required_outputs, bool debug) const;
+			Span<const unsigned int> required_outputs, bool debug) const;
 
 	// Convenience function to require all outputs
 	void generate_optimized_execution_map(const State &state, ExecutionMap &execution_map, bool debug) const;
@@ -219,9 +219,9 @@ public:
 	class _ProcessContext {
 	public:
 		inline _ProcessContext(
-				const ArraySlice<const uint16_t> inputs,
-				const ArraySlice<const uint16_t> outputs,
-				const ArraySlice<const uint8_t> params) :
+				const Span<const uint16_t> inputs,
+				const Span<const uint16_t> outputs,
+				const Span<const uint8_t> params) :
 				_inputs(inputs),
 				_outputs(outputs),
 				_params(params) {}
@@ -241,19 +241,19 @@ public:
 		}
 
 	private:
-		const ArraySlice<const uint16_t> _inputs;
-		const ArraySlice<const uint16_t> _outputs;
-		const ArraySlice<const uint8_t> _params;
+		const Span<const uint16_t> _inputs;
+		const Span<const uint16_t> _outputs;
+		const Span<const uint8_t> _params;
 	};
 
 	// Functions usable by node implementations during execution
 	class ProcessBufferContext : public _ProcessContext {
 	public:
 		inline ProcessBufferContext(
-				const ArraySlice<const uint16_t> inputs,
-				const ArraySlice<const uint16_t> outputs,
-				const ArraySlice<const uint8_t> params,
-				ArraySlice<Buffer> buffers,
+				const Span<const uint16_t> inputs,
+				const Span<const uint16_t> outputs,
+				const Span<const uint8_t> params,
+				Span<Buffer> buffers,
 				bool using_execution_map) :
 				_ProcessContext(inputs, outputs, params),
 				_buffers(buffers),
@@ -287,7 +287,7 @@ public:
 		}
 
 	private:
-		ArraySlice<Buffer> _buffers;
+		Span<Buffer> _buffers;
 		bool _using_execution_map;
 	};
 
@@ -295,11 +295,11 @@ public:
 	class RangeAnalysisContext : public _ProcessContext {
 	public:
 		inline RangeAnalysisContext(
-				const ArraySlice<const uint16_t> inputs,
-				const ArraySlice<const uint16_t> outputs,
-				const ArraySlice<const uint8_t> params,
-				ArraySlice<Interval> ranges,
-				ArraySlice<Buffer> buffers) :
+				const Span<const uint16_t> inputs,
+				const Span<const uint16_t> outputs,
+				const Span<const uint8_t> params,
+				Span<Interval> ranges,
+				Span<Buffer> buffers) :
 				_ProcessContext(inputs, outputs, params),
 				_ranges(ranges),
 				_buffers(buffers) {}
@@ -321,8 +321,8 @@ public:
 		}
 
 	private:
-		ArraySlice<Interval> _ranges;
-		ArraySlice<Buffer> _buffers;
+		Span<Interval> _ranges;
+		Span<Buffer> _buffers;
 	};
 
 	typedef void (*CompileFunc)(CompileContext &);
@@ -391,7 +391,7 @@ private:
 
 		// Heap-allocated parameters data, when too large to fit in `operations`.
 		// We keep a reference to them so they won't be freed until the program is cleared.
-		std::vector<Ref<Reference> > ref_resources;
+		std::vector<Ref<Reference>> ref_resources;
 
 		// Describes the list of buffers to prepare in `State` before the program can be run
 		std::vector<BufferSpec> buffer_specs;

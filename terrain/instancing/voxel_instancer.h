@@ -2,7 +2,6 @@
 #define VOXEL_INSTANCER_H
 
 #include "../../streams/instance_data.h"
-#include "../../util/array_slice.h"
 #include "../../util/fixed_array.h"
 #include "../../util/godot/direct_multimesh_instance.h"
 #include "../../util/math/rect3i.h"
@@ -93,7 +92,7 @@ private:
 
 	void create_render_blocks(Vector3i grid_position, int lod_index, Array surface_arrays);
 
-	void update_block_from_transforms(int block_index, ArraySlice<const Transform> transforms,
+	void update_block_from_transforms(int block_index, Span<const Transform> transforms,
 			Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItem *item, uint16_t layer_id,
 			World *world, const Transform &block_transform);
 
@@ -148,7 +147,7 @@ private:
 		// it will get generated instances.
 		// Keys follows the data block coordinate system.
 		// Can't use `HashMap` because it lacks move semantics.
-		std::unordered_map<Vector3i, std::unique_ptr<VoxelInstanceBlockData> > loaded_instances_data;
+		std::unordered_map<Vector3i, std::unique_ptr<VoxelInstanceBlockData>> loaded_instances_data;
 
 		FixedArray<MeshLodDistances, VoxelInstanceLibraryItem::MAX_MESH_LODS> mesh_lod_distances;
 

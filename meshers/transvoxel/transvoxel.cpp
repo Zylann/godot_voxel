@@ -125,7 +125,7 @@ inline float sdf_as_float(double v) {
 
 template <typename Sdf_T>
 inline Vector3 get_corner_gradient(
-		unsigned int data_index, ArraySlice<const Sdf_T> sdf_data, const Vector3i block_size) {
+		unsigned int data_index, Span<const Sdf_T> sdf_data, const Vector3i block_size) {
 	const unsigned int n010 = 1; // Y+1
 	const unsigned int n100 = block_size.y; // X+1
 	const unsigned int n001 = block_size.y * block_size.x; // Z+1
@@ -168,7 +168,7 @@ struct CellTextureDatas {
 
 template <unsigned int NVoxels, typename WeightSampler_T>
 CellTextureDatas<NVoxels> select_textures(const FixedArray<unsigned int, NVoxels> &voxel_indices,
-		ArraySlice<const uint16_t> indices_data, const WeightSampler_T &weights_sampler) {
+		Span<const uint16_t> indices_data, const WeightSampler_T &weights_sampler) {
 	// TODO Optimization: this function takes almost half of the time when polygonizing non-empty cells.
 	// I wonder how it can be optimized further?
 
@@ -242,7 +242,7 @@ CellTextureDatas<NVoxels> select_textures(const FixedArray<unsigned int, NVoxels
 }
 
 struct TextureIndicesData {
-	ArraySlice<const uint16_t> buffer;
+	Span<const uint16_t> buffer;
 	FixedArray<uint8_t, 4> default_indices;
 	uint32_t packed_default_indices;
 };
@@ -288,7 +288,7 @@ inline float get_isolevel<float>() {
 // This function is template so we avoid branches and checks when sampling voxels
 template <typename Sdf_T, typename WeightSampler_T>
 void build_regular_mesh(
-		ArraySlice<const Sdf_T> sdf_data,
+		Span<const Sdf_T> sdf_data,
 		TextureIndicesData texture_indices_data,
 		const WeightSampler_T &weights_sampler,
 		const Vector3i block_size_with_padding,
@@ -724,7 +724,7 @@ inline void get_face_axes(int &ax, int &ay, int dir) {
 
 template <typename Sdf_T, typename WeightSampler_T>
 void build_transition_mesh(
-		ArraySlice<const Sdf_T> sdf_data,
+		Span<const Sdf_T> sdf_data,
 		TextureIndicesData texture_indices_data,
 		const WeightSampler_T &weights_sampler,
 		const Vector3i block_size_with_padding,
@@ -1119,10 +1119,11 @@ void build_transition_mesh(
 }
 
 template <typename T>
-ArraySlice<const T> get_or_decompress_channel(
+Span<const T> get_or_decompress_channel(
 		const VoxelBuffer &voxels, std::vector<T> &backing_buffer, unsigned int channel) {
+	//
 	ERR_FAIL_COND_V(voxels.get_channel_depth(channel) != VoxelBuffer::get_depth_from_size(sizeof(T)),
-			ArraySlice<const T>());
+			Span<const T>());
 
 	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
 		backing_buffer.resize(voxels.get_size().volume());
@@ -1131,10 +1132,10 @@ ArraySlice<const T> get_or_decompress_channel(
 		for (unsigned int i = 0; i < backing_buffer.size(); ++i) {
 			backing_buffer[i] = v;
 		}
-		return to_slice_const(backing_buffer);
+		return to_span_const(backing_buffer);
 
 	} else {
-		ArraySlice<uint8_t> data_bytes;
+		Span<uint8_t> data_bytes;
 		CRASH_COND(voxels.get_channel_raw(channel, data_bytes) == false);
 		return data_bytes.reinterpret_cast_to<const T>();
 	}
@@ -1156,7 +1157,7 @@ TextureIndicesData get_texture_indices_data(const VoxelBuffer &voxels, unsigned 
 		out_default_texture_indices_data.use = true;
 
 	} else {
-		ArraySlice<uint8_t> data_bytes;
+		Span<uint8_t> data_bytes;
 		CRASH_COND(voxels.get_channel_raw(channel, data_bytes) == false);
 		data.buffer = data_bytes.reinterpret_cast_to<const uint16_t>();
 
@@ -1172,9 +1173,9 @@ TextureIndicesData get_texture_indices_data(const VoxelBuffer &voxels, unsigned 
 #ifdef USE_TRICHANNEL
 // TODO Is this a faster/equivalent option with better precision?
 struct WeightSampler3U8 {
-	ArraySlice<const uint8_t> u8_data0;
-	ArraySlice<const uint8_t> u8_data1;
-	ArraySlice<const uint8_t> u8_data2;
+	Span<const uint8_t> u8_data0;
+	Span<const uint8_t> u8_data1;
+	Span<const uint8_t> u8_data2;
 	inline FixedArray<uint8_t, 4> get_weights(int i) const {
 		FixedArray<uint8_t, 4> w;
 		w[0] = u8_data0[i];
@@ -1191,7 +1192,7 @@ thread_local std::vector<uint8_t> s_weights_backing_buffer_u8_2;
 
 #else
 struct WeightSamplerPackedU16 {
-	ArraySlice<const uint16_t> u16_data;
+	Span<const uint16_t> u16_data;
 	inline FixedArray<uint8_t, 4> get_weights(int i) const {
 		return decode_weights_from_packed_u16(u16_data[i]);
 	}
@@ -1205,7 +1206,7 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned
 	VOXEL_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
-	ArraySlice<uint8_t> sdf_data_raw;
+	Span<uint8_t> sdf_data_raw;
 	CRASH_COND(voxels.get_channel_raw(sdf_channel, sdf_data_raw) == false);
 
 	const unsigned int voxels_count = voxels.get_size().volume();
@@ -1245,19 +1246,19 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned
 	// which would otherwise harm performance in tight iterations
 	switch (voxels.get_channel_depth(sdf_channel)) {
 		case VoxelBuffer::DEPTH_8_BIT: {
-			ArraySlice<const uint8_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint8_t>();
+			Span<const uint8_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint8_t>();
 			build_regular_mesh<uint8_t>(
 					sdf_data, indices_data, weights_data, voxels.get_size(), lod_index, texturing_mode, cache, output);
 		} break;
 
 		case VoxelBuffer::DEPTH_16_BIT: {
-			ArraySlice<const uint16_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint16_t>();
+			Span<const uint16_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint16_t>();
 			build_regular_mesh<uint16_t>(
 					sdf_data, indices_data, weights_data, voxels.get_size(), lod_index, texturing_mode, cache, output);
 		} break;
 
 		case VoxelBuffer::DEPTH_32_BIT: {
-			ArraySlice<const float> sdf_data = sdf_data_raw.reinterpret_cast_to<const float>();
+			Span<const float> sdf_data = sdf_data_raw.reinterpret_cast_to<const float>();
 			build_regular_mesh<float>(
 					sdf_data, indices_data, weights_data, voxels.get_size(), lod_index, texturing_mode, cache, output);
 		} break;
@@ -1281,7 +1282,7 @@ void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, 
 	VOXEL_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
-	ArraySlice<uint8_t> sdf_data_raw;
+	Span<uint8_t> sdf_data_raw;
 	CRASH_COND(voxels.get_channel_raw(sdf_channel, sdf_data_raw) == false);
 
 	const unsigned int voxels_count = voxels.get_size().volume();
@@ -1330,19 +1331,19 @@ void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, 
 
 	switch (voxels.get_channel_depth(sdf_channel)) {
 		case VoxelBuffer::DEPTH_8_BIT: {
-			ArraySlice<const uint8_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint8_t>();
+			Span<const uint8_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint8_t>();
 			build_transition_mesh<uint8_t>(sdf_data, indices_data, weights_data,
 					voxels.get_size(), direction, lod_index, texturing_mode, cache, output);
 		} break;
 
 		case VoxelBuffer::DEPTH_16_BIT: {
-			ArraySlice<const uint16_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint16_t>();
+			Span<const uint16_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint16_t>();
 			build_transition_mesh<uint16_t>(sdf_data, indices_data, weights_data,
 					voxels.get_size(), direction, lod_index, texturing_mode, cache, output);
 		} break;
 
 		case VoxelBuffer::DEPTH_32_BIT: {
-			ArraySlice<const float> sdf_data = sdf_data_raw.reinterpret_cast_to<const float>();
+			Span<const float> sdf_data = sdf_data_raw.reinterpret_cast_to<const float>();
 			build_transition_mesh<float>(sdf_data, indices_data, weights_data,
 					voxels.get_size(), direction, lod_index, texturing_mode, cache, output);
 		} break;

@@ -2,8 +2,8 @@
 #include "../util/math/rect3i.h"
 
 void copy_3d_region_zxy(
-		ArraySlice<uint8_t> dst, Vector3i dst_size, Vector3i dst_min,
-		ArraySlice<const uint8_t> src, Vector3i src_size, Vector3i src_min, Vector3i src_max,
+		Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min,
+		Span<const uint8_t> src, Vector3i src_size, Vector3i src_min, Vector3i src_max,
 		size_t item_size) {
 	//
 	Vector3i::sort_min_max(src_min, src_max);

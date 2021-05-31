@@ -226,7 +226,6 @@ static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
 
 void VoxelServer::init_priority_dependency(
 		VoxelServer::PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size) {
-
 	const Vector3i voxel_pos = get_block_center(block_position, block_size, lod);
 	const float block_radius = (block_size << lod) / 2;
 	dep.shared = _world.shared_priority_dependency;
@@ -335,7 +334,6 @@ void VoxelServer::request_voxel_block_save(uint32_t volume_id, Ref<VoxelBuffer> 
 
 void VoxelServer::request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
 		Vector3i block_pos, int lod) {
-
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
@@ -548,7 +546,6 @@ void VoxelServer::process() {
 			// The request response must match the dependency it would have been requested with.
 			// If it doesn't match, we are no longer interested in the result.
 			if (volume->meshing_dependency == r->meshing_dependency) {
-
 				BlockMeshOutput o;
 				// TODO Check for invalidation due to property changes
 
@@ -678,8 +675,8 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 				instance_data_request.position = position;
 				VoxelStream::Result instances_result;
 				stream->load_instance_blocks(
-						ArraySlice<VoxelStreamInstanceDataRequest>(&instance_data_request, 1),
-						ArraySlice<VoxelStream::Result>(&instances_result, 1));
+						Span<VoxelStreamInstanceDataRequest>(&instance_data_request, 1),
+						Span<VoxelStream::Result>(&instances_result, 1));
 
 				if (instances_result == VoxelStream::RESULT_ERROR) {
 					ERR_PRINT("Error loading instance block");
@@ -717,7 +714,7 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 				instance_data_request.lod = lod;
 				instance_data_request.position = position;
 				instance_data_request.data = std::move(instances);
-				stream->save_instance_blocks(ArraySlice<VoxelStreamInstanceDataRequest>(&instance_data_request, 1));
+				stream->save_instance_blocks(Span<VoxelStreamInstanceDataRequest>(&instance_data_request, 1));
 			}
 		} break;
 
@@ -787,9 +784,8 @@ bool VoxelServer::BlockGenerateRequest::is_cancelled() {
 // Takes a list of blocks and interprets it as a cube of blocks centered around the area we want to create a mesh from.
 // Voxels from central blocks are copied, and part of side blocks are also copied so we get a temporary buffer
 // which includes enough neighbors for the mesher to avoid doing bound checks.
-static void copy_block_and_neighbors(ArraySlice<Ref<VoxelBuffer> > blocks, VoxelBuffer &dst,
+static void copy_block_and_neighbors(Span<Ref<VoxelBuffer>> blocks, VoxelBuffer &dst,
 		int min_padding, int max_padding, int channels_mask) {
-
 	VOXEL_PROFILE_SCOPE();
 
 	// Extract wanted channels in a list
@@ -876,7 +872,7 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 	// TODO Cache?
 	Ref<VoxelBuffer> voxels;
 	voxels.instance();
-	copy_block_and_neighbors(to_slice(blocks, blocks_count),
+	copy_block_and_neighbors(to_span(blocks, blocks_count),
 			**voxels, min_padding, max_padding, mesher->get_used_channels_mask());
 
 	VoxelMesher::Input input = { **voxels, lod };

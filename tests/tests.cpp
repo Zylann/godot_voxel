@@ -221,8 +221,8 @@ void test_copy_3d_region_zxy() {
 		src[i] = i;
 	}
 
-	ArraySlice<const uint16_t> srcs = to_slice_const(src);
-	ArraySlice<uint16_t> dsts = to_slice(dst);
+	Span<const uint16_t> srcs = to_span_const(src);
+	Span<uint16_t> dsts = to_span(dst);
 	const Vector3i dst_min(0, 0, 0);
 	const Vector3i src_min(2, 1, 0);
 	const Vector3i src_max(5, 4, 3);

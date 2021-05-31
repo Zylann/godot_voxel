@@ -1,31 +1,30 @@
-#ifndef ARRAY_SLICE_H
-#define ARRAY_SLICE_H
+#ifndef SPAN_H
+#define SPAN_H
 
 #include "fixed_array.h"
 #include <core/error_macros.h>
 #include <vector>
 
-// TODO Rename Span
 // View into an array, referencing a pointer and a size.
 // STL equivalent would be std::span<T> in C++20
 template <typename T>
-class ArraySlice {
+class Span {
 public:
-	inline ArraySlice() :
+	inline Span() :
 			_ptr(nullptr),
 			_size(0) {
 	}
 
-	inline ArraySlice(T *p_ptr, size_t p_begin, size_t p_end) {
+	inline Span(T *p_ptr, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end < p_begin);
 		_ptr = p_ptr + p_begin;
 		_size = p_end - p_begin;
 	}
 
-	inline ArraySlice(T *p_ptr, size_t p_size) :
+	inline Span(T *p_ptr, size_t p_size) :
 			_ptr(p_ptr), _size(p_size) {}
 
-	inline ArraySlice(ArraySlice<T> &p_other, size_t p_begin, size_t p_end) {
+	inline Span(Span<T> &p_other, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end < p_begin);
 		CRASH_COND(p_begin >= p_other.size());
 		CRASH_COND(p_end > p_other.size()); // `>` because p_end is typically `p_begin + size`
@@ -33,8 +32,8 @@ public:
 		_size = p_end - p_begin;
 	}
 
-	// TODO Remove this one, prefer to_slice() specializations
-	inline ArraySlice(std::vector<T> &vec, size_t p_begin, size_t p_end) {
+	// TODO Remove this one, prefer to_span() specializations
+	inline Span(std::vector<T> &vec, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end < p_begin);
 		CRASH_COND(p_begin >= vec.size());
 		CRASH_COND(p_end > vec.size()); // `>` because p_end is typically `p_begin + size`
@@ -42,30 +41,30 @@ public:
 		_size = p_end - p_begin;
 	}
 
-	// TODO Remove this one, prefer to_slice() specializations
+	// TODO Remove this one, prefer to_span() specializations
 	template <unsigned int N>
-	inline ArraySlice(FixedArray<T, N> &a) {
+	inline Span(FixedArray<T, N> &a) {
 		_ptr = a.data();
 		_size = a.size();
 	}
 
-	inline ArraySlice<T> sub(size_t from, size_t len) const {
+	inline Span<T> sub(size_t from, size_t len) const {
 		CRASH_COND(from + len > _size);
-		return ArraySlice<T>(_ptr + from, len);
+		return Span<T>(_ptr + from, len);
 	}
 
-	inline ArraySlice<T> sub(size_t from) const {
+	inline Span<T> sub(size_t from) const {
 		CRASH_COND(from >= _size);
-		return ArraySlice<T>(_ptr + from, _size - from);
+		return Span<T>(_ptr + from, _size - from);
 	}
 
 	template <typename U>
-	ArraySlice<U> reinterpret_cast_to() const {
+	Span<U> reinterpret_cast_to() const {
 		const size_t size_in_bytes = _size * sizeof(T);
 #ifdef DEBUG_ENABLED
 		CRASH_COND(size_in_bytes % sizeof(U) != 0);
 #endif
-		return ArraySlice<U>(reinterpret_cast<U *>(_ptr), 0, size_in_bytes / sizeof(U));
+		return Span<U>(reinterpret_cast<U *>(_ptr), 0, size_in_bytes / sizeof(U));
 	}
 
 	inline T &operator[](size_t i) {
@@ -107,35 +106,35 @@ private:
 };
 
 template <typename T>
-ArraySlice<const T> to_slice(const std::vector<T> &vec) {
-	return ArraySlice<const T>(vec.data(), 0, vec.size());
+Span<const T> to_span(const std::vector<T> &vec) {
+	return Span<const T>(vec.data(), 0, vec.size());
 }
 
 template <typename T>
-ArraySlice<T> to_slice(std::vector<T> &vec) {
-	return ArraySlice<T>(vec.data(), 0, vec.size());
+Span<T> to_span(std::vector<T> &vec) {
+	return Span<T>(vec.data(), 0, vec.size());
 }
 
 template <typename T>
-ArraySlice<const T> to_slice_const(const std::vector<T> &vec) {
-	return ArraySlice<const T>(vec.data(), 0, vec.size());
+Span<const T> to_span_const(const std::vector<T> &vec) {
+	return Span<const T>(vec.data(), 0, vec.size());
 }
 
 template <typename T, unsigned int N>
-ArraySlice<T> to_slice(FixedArray<T, N> &a, unsigned int count) {
+Span<T> to_span(FixedArray<T, N> &a, unsigned int count) {
 	CRASH_COND(count > a.size());
-	return ArraySlice<T>(a.data(), count);
+	return Span<T>(a.data(), count);
 }
 
 template <typename T, unsigned int N>
-ArraySlice<const T> to_slice_const(const FixedArray<T, N> &a, unsigned int count) {
+Span<const T> to_span_const(const FixedArray<T, N> &a, unsigned int count) {
 	CRASH_COND(count > a.size());
-	return ArraySlice<const T>(a.data(), count);
+	return Span<const T>(a.data(), count);
 }
 
 template <typename T, unsigned int N>
-ArraySlice<const T> to_slice_const(const FixedArray<T, N> &a) {
-	return ArraySlice<const T>(a.data(), 0, a.size());
+Span<const T> to_span_const(const FixedArray<T, N> &a) {
+	return Span<const T>(a.data(), 0, a.size());
 }
 
-#endif // ARRAY_SLICE_H
+#endif // SPAN_H

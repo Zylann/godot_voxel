@@ -2,9 +2,9 @@
 #define VOXEL_BUFFER_H
 
 #include "../constants/voxel_constants.h"
-#include "../util/array_slice.h"
 #include "../util/fixed_array.h"
 #include "../util/math/rect3i.h"
+#include "../util/span.h"
 #include "funcs.h"
 
 #include <core/map.h>
@@ -148,7 +148,7 @@ public:
 	// `src_min` and `src_max` are the sub-region of that box we want to copy.
 	// `dst_min` is the lower corner where we want the data to be copied into the destination.
 	template <typename T>
-	void copy_from(ArraySlice<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
+	void copy_from(Span<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
 			unsigned int channel_index) {
 		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
@@ -163,7 +163,7 @@ public:
 		// or schedule a recompression for later.
 		decompress_channel(channel_index);
 
-		ArraySlice<T> dst(static_cast<T *>(channel.data), channel.size_in_bytes / sizeof(T));
+		Span<T> dst(static_cast<T *>(channel.data), channel.size_in_bytes / sizeof(T));
 		copy_3d_region_zxy<T>(dst, _size, dst_min, src, src_size, src_min, src_max);
 	}
 
@@ -174,7 +174,7 @@ public:
 	// `dst_min` is the lower corner of where we want the source data to be stored.
 	// `src_min` and `src_max` is the sub-region of the source we want to copy.
 	template <typename T>
-	void copy_to(ArraySlice<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i src_min, Vector3i src_max,
+	void copy_to(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i src_min, Vector3i src_max,
 			unsigned int channel_index) const {
 		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
@@ -187,7 +187,7 @@ public:
 		if (channel.data == nullptr) {
 			fill_3d_region_zxy<T>(dst, dst_size, dst_min, dst_min + (src_max - src_min), channel.defval);
 		} else {
-			ArraySlice<const T> src(static_cast<const T *>(channel.data), channel.size_in_bytes / sizeof(T));
+			Span<const T> src(static_cast<const T *>(channel.data), channel.size_in_bytes / sizeof(T));
 			copy_3d_region_zxy<T>(dst, dst_size, dst_min, src, _size, src_min, src_max);
 		}
 	}
@@ -253,8 +253,8 @@ public:
 		ERR_FAIL_COND(!Rect3i(Vector3i(), _size).contains(box));
 		ERR_FAIL_COND(get_depth_byte_count(channel.depth) != sizeof(Data_T));
 #endif
-		ArraySlice<Data_T> data = ArraySlice<uint8_t>(channel.data, channel.size_in_bytes)
-										  .reinterpret_cast_to<Data_T>();
+		Span<Data_T> data = Span<uint8_t>(channel.data, channel.size_in_bytes)
+									.reinterpret_cast_to<Data_T>();
 		for_each_index_and_pos(box, [data, action_func, offset](unsigned int i, Vector3i pos) {
 			data[i] = action_func(pos + offset, data[i]);
 		});
@@ -273,10 +273,10 @@ public:
 		ERR_FAIL_COND(get_depth_byte_count(channel0.depth) != sizeof(Data0_T));
 		ERR_FAIL_COND(get_depth_byte_count(channel1.depth) != sizeof(Data1_T));
 #endif
-		ArraySlice<Data0_T> data0 = ArraySlice<uint8_t>(channel0.data, channel0.size_in_bytes)
-											.reinterpret_cast_to<Data0_T>();
-		ArraySlice<Data1_T> data1 = ArraySlice<uint8_t>(channel1.data, channel1.size_in_bytes)
-											.reinterpret_cast_to<Data1_T>();
+		Span<Data0_T> data0 = Span<uint8_t>(channel0.data, channel0.size_in_bytes)
+									  .reinterpret_cast_to<Data0_T>();
+		Span<Data1_T> data1 = Span<uint8_t>(channel1.data, channel1.size_in_bytes)
+									  .reinterpret_cast_to<Data1_T>();
 		for_each_index_and_pos(box, [action_func, offset, &data0, &data1](unsigned int i, Vector3i pos) {
 			// TODO The caller must still specify exactly the correct type, maybe some conversion could be used
 			action_func(pos + offset, data0[i], data1[i]);
@@ -375,7 +375,7 @@ public:
 	}
 
 	// TODO Have a template version based on channel depth
-	bool get_channel_raw(unsigned int channel_index, ArraySlice<uint8_t> &slice) const;
+	bool get_channel_raw(unsigned int channel_index, Span<uint8_t> &slice) const;
 
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 	Ref<VoxelTool> get_voxel_tool();

@@ -18,7 +18,7 @@
 //#endif
 
 template <typename T>
-inline const T &read(const ArraySlice<const uint8_t> &mem, uint32_t &p) {
+inline const T &read(const Span<const uint8_t> &mem, uint32_t &p) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(p + sizeof(T) > mem.size());
 #endif
@@ -424,8 +424,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	return result;
 }
 
-static ArraySlice<const uint16_t> get_outputs_from_op_address(
-		ArraySlice<const uint8_t> operations, uint16_t op_address) {
+static Span<const uint16_t> get_outputs_from_op_address(
+		Span<const uint8_t> operations, uint16_t op_address) {
 	const uint8_t opid = operations[op_address];
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
@@ -437,7 +437,7 @@ static ArraySlice<const uint16_t> get_outputs_from_op_address(
 }
 
 bool VoxelGraphRuntime::is_operation_constant(const State &state, uint16_t op_address) const {
-	ArraySlice<const uint16_t> outputs = get_outputs_from_op_address(to_slice_const(_program.operations), op_address);
+	Span<const uint16_t> outputs = get_outputs_from_op_address(to_span_const(_program.operations), op_address);
 
 	for (unsigned int i = 0; i < outputs.size(); ++i) {
 		const uint16_t output_address = outputs[i];
@@ -459,7 +459,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 	for (unsigned int i = 0; i < _program.outputs_count; ++i) {
 		all_outputs[i] = i;
 	}
-	generate_optimized_execution_map(state, execution_map, to_slice_const(all_outputs, _program.outputs_count), debug);
+	generate_optimized_execution_map(state, execution_map, to_span_const(all_outputs, _program.outputs_count), debug);
 }
 
 // Generates a list of adresses for the operations to execute,
@@ -468,7 +468,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 // This has the effect of optimizing locally at runtime without relying on explicit conditionals.
 // It can be useful for biomes, where some branches become constant when not used in the final blending.
 void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
-		ArraySlice<const unsigned int> required_outputs, bool debug) const {
+		Span<const unsigned int> required_outputs, bool debug) const {
 	VOXEL_PROFILE_SCOPE();
 
 	// Range analysis results must have been computed
@@ -548,7 +548,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 		}
 	}
 
-	ArraySlice<const uint8_t> operations(program.operations.data(), 0, program.operations.size());
+	Span<const uint8_t> operations(program.operations.data(), 0, program.operations.size());
 	bool xzy_start_not_assigned = true;
 
 	// Now we have to fill buffers with the local constants we may have found.
@@ -566,7 +566,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 				continue;
 
 			case SKIPPABLE: {
-				const ArraySlice<const uint16_t> outputs = get_outputs_from_op_address(operations, node.op_address);
+				const Span<const uint16_t> outputs = get_outputs_from_op_address(operations, node.op_address);
 
 				for (unsigned int output_index = 0; output_index < outputs.size(); ++output_index) {
 					const uint16_t output_address = outputs[output_index];
@@ -612,9 +612,9 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 
 void VoxelGraphRuntime::generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const {
 	generate_set(state,
-			ArraySlice<float>(&position.x, 1),
-			ArraySlice<float>(&position.y, 1),
-			ArraySlice<float>(&position.z, 1), false, execution_map);
+			Span<float>(&position.x, 1),
+			Span<float>(&position.y, 1),
+			Span<float>(&position.z, 1), false, execution_map);
 }
 
 void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) const {
@@ -624,7 +624,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 	}
 
 	// Note: this must be after we resize the vector
-	ArraySlice<Buffer> buffers(state.buffers, 0, state.buffers.size());
+	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
 	state.buffer_size = buffer_size;
 
 	for (auto it = _program.buffer_specs.cbegin(); it != _program.buffer_specs.cend(); ++it) {
@@ -731,18 +731,18 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 }
 
 void VoxelGraphRuntime::generate_set(State &state,
-		ArraySlice<float> in_x, ArraySlice<float> in_y, ArraySlice<float> in_z, bool skip_xz,
+		Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
 		const ExecutionMap *execution_map) const {
 	// I don't like putting private helper functions in headers.
 	struct L {
-		static inline void bind_buffer(ArraySlice<Buffer> buffers, int a, ArraySlice<float> d) {
+		static inline void bind_buffer(Span<Buffer> buffers, int a, Span<float> d) {
 			Buffer &buffer = buffers[a];
 			CRASH_COND(!buffer.is_binding);
 			buffer.data = d.data();
 			buffer.size = d.size();
 		}
 
-		static inline void unbind_buffer(ArraySlice<Buffer> buffers, int a) {
+		static inline void unbind_buffer(Span<Buffer> buffers, int a) {
 			Buffer &buffer = buffers[a];
 			CRASH_COND(!buffer.is_binding);
 			buffer.data = nullptr;
@@ -776,7 +776,7 @@ void VoxelGraphRuntime::generate_set(State &state,
 #endif
 #endif
 
-	ArraySlice<Buffer> buffers(state.buffers, 0, state.buffers.size());
+	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
 
 	// Bind inputs
 	if (_program.x_input_address != -1) {
@@ -789,11 +789,11 @@ void VoxelGraphRuntime::generate_set(State &state,
 		L::bind_buffer(buffers, _program.z_input_address, in_z);
 	}
 
-	const ArraySlice<const uint8_t> operations(_program.operations.data(), 0, _program.operations.size());
+	const Span<const uint8_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	ArraySlice<const uint16_t> op_adresses = execution_map != nullptr ?
-													 to_slice_const(execution_map->operation_adresses) :
-													 to_slice_const(_program.default_execution_map.operation_adresses);
+	Span<const uint16_t> op_adresses = execution_map != nullptr ?
+											   to_span_const(execution_map->operation_adresses) :
+											   to_span_const(_program.default_execution_map.operation_adresses);
 	if (skip_xz && op_adresses.size() > 0) {
 		const unsigned int offset = execution_map != nullptr ?
 											execution_map->xzy_start_index :
@@ -810,15 +810,15 @@ void VoxelGraphRuntime::generate_set(State &state,
 		const uint32_t inputs_size = node_type.inputs.size() * sizeof(uint16_t);
 		const uint32_t outputs_size = node_type.outputs.size() * sizeof(uint16_t);
 
-		const ArraySlice<const uint16_t> inputs =
+		const Span<const uint16_t> inputs =
 				operations.sub(pc, inputs_size).reinterpret_cast_to<const uint16_t>();
 		pc += inputs_size;
-		const ArraySlice<const uint16_t> outputs =
+		const Span<const uint16_t> outputs =
 				operations.sub(pc, outputs_size).reinterpret_cast_to<const uint16_t>();
 		pc += outputs_size;
 
 		const uint16_t params_size = read<uint16_t>(operations, pc);
-		ArraySlice<const uint8_t> params;
+		Span<const uint8_t> params;
 		if (params_size > 0) {
 			params = operations.sub(pc, params_size);
 			//pc += params_size;
@@ -849,8 +849,8 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 	ERR_FAIL_COND(state.ranges.size() != _program.buffer_count);
 #endif
 
-	ArraySlice<Interval> ranges(state.ranges, 0, state.ranges.size());
-	ArraySlice<Buffer> buffers(state.buffers, 0, state.buffers.size());
+	Span<Interval> ranges(state.ranges, 0, state.ranges.size());
+	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
 
 	// Reset users count, as they might be decreased during the analysis
 	for (auto it = _program.buffer_specs.cbegin(); it != _program.buffer_specs.cend(); ++it) {
@@ -863,7 +863,7 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 	ranges[_program.y_input_address] = Interval(min_pos.y, max_pos.y);
 	ranges[_program.z_input_address] = Interval(min_pos.z, max_pos.z);
 
-	const ArraySlice<const uint8_t> operations(_program.operations.data(), 0, _program.operations.size());
+	const Span<const uint8_t> operations(_program.operations.data(), 0, _program.operations.size());
 
 	// Here operations must all be analyzed, because we do this as a broad-phase.
 	// Only narrow-phase may skip some operations eventually.
@@ -875,15 +875,15 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 		const uint32_t inputs_size = node_type.inputs.size() * sizeof(uint16_t);
 		const uint32_t outputs_size = node_type.outputs.size() * sizeof(uint16_t);
 
-		const ArraySlice<const uint16_t> inputs =
+		const Span<const uint16_t> inputs =
 				operations.sub(pc, inputs_size).reinterpret_cast_to<const uint16_t>();
 		pc += inputs_size;
-		const ArraySlice<const uint16_t> outputs =
+		const Span<const uint16_t> outputs =
 				operations.sub(pc, outputs_size).reinterpret_cast_to<const uint16_t>();
 		pc += outputs_size;
 
 		const uint16_t params_size = read<uint16_t>(operations, pc);
-		ArraySlice<const uint8_t> params;
+		Span<const uint8_t> params;
 		if (params_size > 0) {
 			params = operations.sub(pc, params_size);
 			pc += params_size;

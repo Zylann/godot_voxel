@@ -29,8 +29,8 @@ public:
 
 	bool supports_instance_blocks() const override;
 	void load_instance_blocks(
-			ArraySlice<VoxelStreamInstanceDataRequest> out_blocks, ArraySlice<Result> out_results) override;
-	void save_instance_blocks(ArraySlice<VoxelStreamInstanceDataRequest> p_blocks) override;
+			Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) override;
+	void save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks) override;
 
 	void flush_cache();
 

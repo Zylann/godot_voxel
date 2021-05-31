@@ -43,12 +43,12 @@ public:
 	virtual void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
 
 	// TODO Rename load_voxel_blocks
-	// TODO Pass with ArraySlice
+	// TODO Pass with Span
 	// Note: vector is passed by ref for performance. Don't reorder it.
 	virtual void emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results);
 
 	// TODO Rename save_voxel_blocks
-	// TODO Pass with ArraySlice
+	// TODO Pass with Span
 	// Returns multiple blocks of voxels to the stream.
 	// This function is recommended if you save to files, because you can batch their access.
 	virtual void immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks);
@@ -56,9 +56,9 @@ public:
 	virtual bool supports_instance_blocks() const;
 
 	virtual void load_instance_blocks(
-			ArraySlice<VoxelStreamInstanceDataRequest> out_blocks, ArraySlice<Result> out_results);
+			Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results);
 
-	virtual void save_instance_blocks(ArraySlice<VoxelStreamInstanceDataRequest> p_blocks);
+	virtual void save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks);
 
 	// Tells which channels can be found in this stream.
 	// The simplest implementation is to return them all.

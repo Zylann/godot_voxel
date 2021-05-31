@@ -520,8 +520,8 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 			create_channel(channel_index, _size, channel.defval);
 		}
 		const unsigned int item_size = get_depth_byte_count(channel.depth);
-		ArraySlice<const uint8_t> src(other_channel.data, other_channel.size_in_bytes);
-		ArraySlice<uint8_t> dst(channel.data, channel.size_in_bytes);
+		Span<const uint8_t> src(other_channel.data, other_channel.size_in_bytes);
+		Span<uint8_t> dst(channel.data, channel.size_in_bytes);
 		copy_3d_region_zxy(dst, _size, dst_min, src, other._size, src_min, src_max, item_size);
 
 	} else if (channel.defval != other_channel.defval) {
@@ -551,13 +551,13 @@ Ref<VoxelBuffer> VoxelBuffer::duplicate(bool include_metadata) const {
 	return Ref<VoxelBuffer>(d);
 }
 
-bool VoxelBuffer::get_channel_raw(unsigned int channel_index, ArraySlice<uint8_t> &slice) const {
+bool VoxelBuffer::get_channel_raw(unsigned int channel_index, Span<uint8_t> &slice) const {
 	const Channel &channel = _channels[channel_index];
 	if (channel.data != nullptr) {
-		slice = ArraySlice<uint8_t>(channel.data, 0, channel.size_in_bytes);
+		slice = Span<uint8_t>(channel.data, 0, channel.size_in_bytes);
 		return true;
 	}
-	slice = ArraySlice<uint8_t>();
+	slice = Span<uint8_t>();
 	return false;
 }
 

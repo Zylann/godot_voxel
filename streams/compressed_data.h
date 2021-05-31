@@ -1,7 +1,7 @@
 #ifndef VOXEL_COMPRESSED_DATA_H
 #define VOXEL_COMPRESSED_DATA_H
 
-#include "../util/array_slice.h"
+#include "../util/span.h"
 
 namespace VoxelCompressedData {
 
@@ -19,8 +19,8 @@ enum Compression {
 	COMPRESSION_COUNT = 2
 };
 
-bool compress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp);
-bool decompress(ArraySlice<const uint8_t> src, std::vector<uint8_t> &dst);
+bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp);
+bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst);
 
 } // namespace VoxelCompressedData
 

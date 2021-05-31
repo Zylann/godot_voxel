@@ -215,7 +215,7 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 
 		switch (compression) {
 			case VoxelBuffer::COMPRESSION_NONE: {
-				ArraySlice<uint8_t> data;
+				Span<uint8_t> data;
 				ERR_FAIL_COND_V(!voxel_buffer.get_channel_raw(channel_index, data), SerializeResult(_data, false));
 				f->store_buffer(data.data(), data.size());
 			} break;
@@ -310,7 +310,7 @@ bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_dat
 			case VoxelBuffer::COMPRESSION_NONE: {
 				out_voxel_buffer.decompress_channel(channel_index);
 
-				ArraySlice<uint8_t> buffer;
+				Span<uint8_t> buffer;
 				CRASH_COND(!out_voxel_buffer.get_channel_raw(channel_index, buffer));
 
 				const uint32_t read_len = f->get_buffer(buffer.data(), buffer.size());
@@ -363,7 +363,6 @@ bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_dat
 
 VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize_and_compress(
 		const VoxelBuffer &voxel_buffer) {
-
 	VOXEL_PROFILE_SCOPE();
 
 	SerializeResult res = serialize(voxel_buffer);
@@ -371,7 +370,7 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 	const std::vector<uint8_t> &data = res.data;
 
 	res.success = VoxelCompressedData::compress(
-			ArraySlice<const uint8_t>(data.data(), 0, data.size()), _compressed_data,
+			Span<const uint8_t>(data.data(), 0, data.size()), _compressed_data,
 			VoxelCompressedData::COMPRESSION_LZ4);
 	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
 
@@ -380,10 +379,9 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 
 bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 		const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer) {
-
 	VOXEL_PROFILE_SCOPE();
 
-	const bool res = VoxelCompressedData::decompress(ArraySlice<const uint8_t>(p_data.data(), 0, p_data.size()), _data);
+	const bool res = VoxelCompressedData::decompress(Span<const uint8_t>(p_data.data(), 0, p_data.size()), _data);
 	ERR_FAIL_COND_V(!res, false);
 
 	return deserialize(_data, out_voxel_buffer);
@@ -424,7 +422,6 @@ int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, Ref<VoxelBuffe
 
 void VoxelBlockSerializerInternal::deserialize(
 		Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress) {
-
 	if (decompress) {
 		_compressed_data.resize(size);
 		const Error err = peer->get_data(_compressed_data.data(), _compressed_data.size());

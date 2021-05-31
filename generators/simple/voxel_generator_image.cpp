@@ -1,6 +1,6 @@
 #include "voxel_generator_image.h"
-#include "../../util/array_slice.h"
 #include "../../util/fixed_array.h"
+#include "../../util/span.h"
 
 namespace {
 

@@ -60,10 +60,9 @@ inline uint8_t get_alpha_index(Color8 c) {
 template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_simple_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
-		const ArraySlice<Voxel_T> voxel_buffer,
+		const Span<Voxel_T> voxel_buffer,
 		const Vector3i block_size,
 		Color_F color_func) {
-
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 				  block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 				  block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
@@ -193,11 +192,10 @@ void build_voxel_mesh_as_simple_cubes(
 template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_greedy_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
-		const ArraySlice<Voxel_T> voxel_buffer,
+		const Span<Voxel_T> voxel_buffer,
 		const Vector3i block_size,
 		std::vector<uint8_t> mask_memory_pool,
 		Color_F color_func) {
-
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 				  block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 				  block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
@@ -238,7 +236,7 @@ void build_voxel_mesh_as_greedy_cubes(
 		const unsigned int mask_area = mask_size_x * mask_size_y;
 		// Using the vector as memory pool
 		mask_memory_pool.resize(mask_area * sizeof(MaskValue));
-		ArraySlice<MaskValue> mask(reinterpret_cast<MaskValue *>(mask_memory_pool.data()), 0, mask_area);
+		Span<MaskValue> mask(reinterpret_cast<MaskValue *>(mask_memory_pool.data()), 0, mask_area);
 
 		// For each deck
 		for (unsigned int d = min_pos[za] - VoxelMesherCubes::PADDING; d < (unsigned int)max_pos[za]; ++d) {
@@ -280,7 +278,7 @@ void build_voxel_mesh_as_greedy_cubes(
 
 			struct L {
 				static inline bool is_range_equal(
-						const ArraySlice<MaskValue> &mask, unsigned int xmin, unsigned int xmax, MaskValue v) {
+						const Span<MaskValue> &mask, unsigned int xmin, unsigned int xmax, MaskValue v) {
 					for (unsigned int x = xmin; x < xmax; ++x) {
 						if (mask[x] != v) {
 							return false;
@@ -426,7 +424,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 		return;
 	}
 
-	ArraySlice<uint8_t> raw_channel;
+	Span<uint8_t> raw_channel;
 	if (!voxels.get_channel_raw(channel, raw_channel)) {
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");

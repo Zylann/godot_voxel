@@ -94,7 +94,7 @@ void VoxelThreadPool::enqueue(IVoxelTask *task) {
 	_tasks_semaphore.post();
 }
 
-void VoxelThreadPool::enqueue(ArraySlice<IVoxelTask *> tasks) {
+void VoxelThreadPool::enqueue(Span<IVoxelTask *> tasks) {
 	{
 		MutexLock lock(_tasks_mutex);
 		for (size_t i = 0; i < tasks.size(); ++i) {

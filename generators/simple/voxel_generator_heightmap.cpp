@@ -1,6 +1,6 @@
 #include "voxel_generator_heightmap.h"
-#include "../../util/array_slice.h"
 #include "../../util/fixed_array.h"
+#include "../../util/span.h"
 
 VoxelGeneratorHeightmap::VoxelGeneratorHeightmap() {
 }
