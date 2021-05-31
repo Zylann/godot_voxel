@@ -4,7 +4,8 @@
 		Graph-based generator for smooth voxel worlds.
 	</brief_description>
 	<description>
-		Generates SDF voxel data from a graph of operations.
+		Generates SDF voxel data from a graph of per-voxel operations.
+		The graph must be created, compiled, and only then blocks can be generated.
 		Warning: methods to modify the graph should only be called from the main thread.
 	</description>
 	<tutorials>
@@ -62,18 +63,36 @@
 			<argument index="3" name="dst_port_index" type="int">
 			</argument>
 			<description>
+				Tests if two ports can be connected together.
 			</description>
 		</method>
 		<method name="clear">
 			<return type="void">
 			</return>
 			<description>
+				Erases all nodes and connections from the graph.
 			</description>
 		</method>
 		<method name="compile">
 			<return type="Dictionary">
 			</return>
 			<description>
+				Compiles the graph so it can be used to generate blocks.
+				If it succeeds, the returned result is a dictionary with the following layout:
+				[codeblock]
+				{
+					"success": true
+				}
+				[/codeblock]
+				If it fails, the returned result may contain a message and the ID of a graph node that could be the cause:
+				[codeblock]
+				{
+					"success": false,
+					"node_id": int,
+					"message": String
+				}
+				[/codeblock]
+				The node ID will be -1 if the error is not about a particular node.
 			</description>
 		</method>
 		<method name="create_node">
@@ -86,6 +105,9 @@
 			<argument index="2" name="id" type="int" default="0">
 			</argument>
 			<description>
+				Creates a graph node of a given type at a specific visual position. That position does not affect how the graph will perform, however it helps organizing nodes.
+				An optional ID can be specified. If left to 0, the ID will be generated.
+				This function then returns the ID of the node, which may be useful to modify other properties of the node later.
 			</description>
 		</method>
 		<method name="debug_analyze_range" qualifiers="const">
