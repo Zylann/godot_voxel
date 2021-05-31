@@ -866,8 +866,6 @@ void build_transition_mesh(
 				continue;
 			}
 
-			ReuseTransitionCell &current_reuse_cell = cache.get_reuse_cell_2d(fx, fy);
-
 			CellTextureDatas<13> cell_textures;
 			if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 				CellTextureDatas<9> cell_textures_partial;
@@ -884,6 +882,9 @@ void build_transition_mesh(
 				cell_textures.weights[0xA] = cell_textures_partial.weights[2];
 				cell_textures.weights[0xB] = cell_textures_partial.weights[6];
 				cell_textures.weights[0xC] = cell_textures_partial.weights[8];
+
+				ReuseTransitionCell &current_reuse_cell = cache.get_reuse_cell_2d(fx, fy);
+				current_reuse_cell.packed_texture_indices = cell_textures.packed_indices;
 			}
 
 			CRASH_COND(case_code > 511);
@@ -986,8 +987,10 @@ void build_transition_mesh(
 						// from which to retrieve the reused vertex index from.
 						const ReuseTransitionCell &prev =
 								cache.get_reuse_cell_2d(fx - (reuse_direction & 1), fy - ((reuse_direction >> 1) & 1));
-						// Reuse the vertex index from the previous cell.
-						cell_vertex_indices[vertex_index] = prev.vertices[vertex_index_to_reuse_or_create];
+						if (prev.packed_texture_indices == cell_textures.packed_indices) {
+							// Reuse the vertex index from the previous cell.
+							cell_vertex_indices[vertex_index] = prev.vertices[vertex_index_to_reuse_or_create];
+						}
 					}
 
 					if (!present || cell_vertex_indices[vertex_index] == -1) {

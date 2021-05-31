@@ -55,11 +55,12 @@ struct MeshArrays {
 
 struct ReuseCell {
 	FixedArray<int, 4> vertices;
-	unsigned int packed_texture_indices;
+	unsigned int packed_texture_indices = 0;
 };
 
 struct ReuseTransitionCell {
 	FixedArray<int, 12> vertices;
+	unsigned int packed_texture_indices = 0;
 };
 
 class Cache {
