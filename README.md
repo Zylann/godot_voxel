@@ -1,6 +1,8 @@
 Voxel Tools for Godot
 =========================
 
+[![Discord](https://img.shields.io/discord/703636892901441577?style=flat-square&logo=discord "Discord")](https://discord.gg/pvgQvPDS)
+
 A C++ module for creating volumetric worlds in Godot Engine.
 
 ![Blocky screenshot](doc/source/images/blocky_screenshot.png)
