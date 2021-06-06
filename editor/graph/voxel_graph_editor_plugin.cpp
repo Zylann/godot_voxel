@@ -92,7 +92,7 @@ void VoxelGraphEditorPlugin::_hide_deferred() {
 void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 	Ref<VoxelGraphNodeInspectorWrapper> wrapper;
 	wrapper.instance();
-	wrapper->setup(_graph_editor->get_graph(), node_id);
+	wrapper->setup(_graph_editor->get_graph(), node_id, &get_undo_redo());
 	// Note: it's neither explicit nor documented, but the reference will stay alive due to EditorHistory::_add_object
 	get_editor_interface()->inspect_object(*wrapper);
 	// TODO Absurd situation here...
