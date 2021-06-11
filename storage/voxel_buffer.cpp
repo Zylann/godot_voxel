@@ -799,7 +799,7 @@ void VoxelBuffer::clear_voxel_metadata_in_area(Box3i box) {
 
 void VoxelBuffer::copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Box3i src_box, Vector3i dst_origin) {
 	ERR_FAIL_COND(src_buffer.is_null());
-	ERR_FAIL_COND(src_buffer->is_box_valid(src_box));
+	ERR_FAIL_COND(!src_buffer->is_box_valid(src_box));
 
 	const Box3i clipped_src_box = src_box.clipped(Box3i(src_box.pos - dst_origin, _size));
 	const Vector3i clipped_dst_offset = dst_origin + clipped_src_box.pos - src_box.pos;

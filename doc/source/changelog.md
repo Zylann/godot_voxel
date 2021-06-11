@@ -18,6 +18,10 @@ Ongoing development
 - Breaking changes
     - `VoxelBuffer` channels `DATA3` and `DATA4` were renamed `INDICES` and `WEIGHTS`
 
+- Fixes
+    - `VoxelGeneratorGraph`: changes to node properties are now saved properly
+    - `VoxelBuffer`: `copy_voxel_metadata_in_area` was checking the source box incorrectly
+
 
 09/05/2021 - `godot3.3`
 -----------------------
