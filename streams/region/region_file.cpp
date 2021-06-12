@@ -62,7 +62,6 @@ static uint32_t get_header_size_v3(const VoxelRegionFormat &format) {
 
 static bool save_header(FileAccess *f, uint8_t version, const VoxelRegionFormat &format,
 		const std::vector<VoxelRegionBlockInfo> &block_infos) {
-
 	ERR_FAIL_COND_V(f == nullptr, false);
 
 	f->seek(0);
@@ -109,7 +108,6 @@ static bool save_header(FileAccess *f, uint8_t version, const VoxelRegionFormat 
 
 static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &out_format,
 		std::vector<VoxelRegionBlockInfo> &out_block_infos) {
-
 	ERR_FAIL_COND_V(f == nullptr, false);
 
 	ERR_FAIL_COND_V(f->get_position() != 0, false);
@@ -305,7 +303,6 @@ const VoxelRegionFormat &VoxelRegionFile::get_format() const {
 
 Error VoxelRegionFile::load_block(
 		Vector3i position, Ref<VoxelBuffer> out_block, VoxelBlockSerializerInternal &serializer) {
-
 	ERR_FAIL_COND_V(out_block.is_null(), ERR_INVALID_PARAMETER);
 	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_READ);
 	FileAccess *f = _file_access;
@@ -644,7 +641,7 @@ void VoxelRegionFile::debug_check() {
 	FileAccess *f = _file_access;
 	const size_t file_len = f->get_len();
 
-	for (size_t lut_index = 0; lut_index < _header.blocks.size(); ++lut_index) {
+	for (unsigned int lut_index = 0; lut_index < _header.blocks.size(); ++lut_index) {
 		const VoxelRegionBlockInfo &block_info = _header.blocks[lut_index];
 		const Vector3i position = get_block_position_from_index(lut_index);
 		if (block_info.data == 0) {
