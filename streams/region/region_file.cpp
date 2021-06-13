@@ -660,7 +660,9 @@ void VoxelRegionFile::debug_check() {
 		const size_t remaining_size = file_len - pos;
 		if (block_data_size > remaining_size) {
 			print_line(String("ERROR: LUT {0} ({1}): block size at offset {2} is larger than remaining size {3}")
-							   .format(varray(lut_index, position.to_vec3(), block_data_size, remaining_size)));
+							   .format(varray(lut_index, position.to_vec3(),
+									   SIZE_T_TO_VARIANT(block_data_size),
+									   SIZE_T_TO_VARIANT(remaining_size))));
 		}
 	}
 }
