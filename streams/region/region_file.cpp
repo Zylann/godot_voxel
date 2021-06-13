@@ -651,7 +651,8 @@ void VoxelRegionFile::debug_check() {
 		const unsigned int block_begin = _blocks_begin_offset + sector_index * _header.format.sector_size;
 		if (block_begin >= file_len) {
 			print_line(String("ERROR: LUT {0} ({1}): offset {2} is larger than file size {3}")
-							   .format(varray(lut_index, position.to_vec3(), block_begin, file_len)));
+							   .format(varray(lut_index, position.to_vec3(), block_begin,
+									   SIZE_T_TO_VARIANT(file_len))));
 			continue;
 		}
 		f->seek(block_begin);
