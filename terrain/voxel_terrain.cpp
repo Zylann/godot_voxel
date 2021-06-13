@@ -718,7 +718,7 @@ void VoxelTerrain::send_block_data_requests() {
 	} else {
 		if (_blocks_to_save.size() > 0) {
 			PRINT_VERBOSE(String("Not saving {0} blocks because no stream is assigned")
-								  .format(varray(_blocks_to_save.size())));
+								  .format(varray(SIZE_T_TO_VARIANT(_blocks_to_save.size()))));
 		}
 	}
 
