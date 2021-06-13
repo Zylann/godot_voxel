@@ -314,6 +314,9 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock *mesh_block) {
 								   .padded(1)
 								   .clipped(bounds_in_data_blocks);
 
+	// If we get an empty box at this point, something is wrong with the caller
+	ERR_FAIL_COND(data_box.is_empty());
+
 	// Check if we have the data
 	const bool data_available = data_box.all_cells_match([this](Vector3i bpos) {
 		return _data_map.has_block(bpos);
@@ -791,11 +794,13 @@ void VoxelTerrain::_process() {
 		// TODO There is probably a better way to do this
 		const float view_distance_scale = world_to_local_transform.basis.xform(Vector3(1, 0, 0)).length();
 
-		const Box3i bounds_in_blocks = _bounds_in_voxels.downscaled(get_data_block_size());
+		const Box3i bounds_in_data_blocks = _bounds_in_voxels.downscaled(get_data_block_size());
+		const Box3i bounds_in_mesh_blocks = _bounds_in_voxels.downscaled(get_mesh_block_size());
 
 		struct UpdatePairedViewer {
 			VoxelTerrain &self;
-			const Box3i bounds_in_blocks;
+			const Box3i bounds_in_data_blocks;
+			const Box3i bounds_in_mesh_blocks;
 			const Transform world_to_local_transform;
 			const float view_distance_scale;
 
@@ -836,22 +841,31 @@ void VoxelTerrain::_process() {
 
 					// Adding one block of padding because meshing requires neighbors
 					view_distance_data_blocks = view_distance_mesh_blocks * render_to_data_factor + 1;
+
 					data_block_pos = mesh_block_pos * render_to_data_factor;
-					state.mesh_box = Box3i::from_center_extents(mesh_block_pos, Vector3i(view_distance_mesh_blocks));
+					state.mesh_box = Box3i::from_center_extents(mesh_block_pos, Vector3i(view_distance_mesh_blocks))
+											 .clipped(bounds_in_mesh_blocks);
 
 				} else {
 					view_distance_data_blocks = ceildiv(state.view_distance_voxels, data_block_size);
+
 					data_block_pos = state.local_position_voxels.floordiv(data_block_size);
 					state.mesh_box = Box3i();
 				}
 
 				state.data_box = Box3i::from_center_extents(data_block_pos, Vector3i(view_distance_data_blocks))
-										 .clipped(bounds_in_blocks);
+										 .clipped(bounds_in_data_blocks);
 			}
 		};
 
 		// New viewers and updates
-		UpdatePairedViewer u{ *this, bounds_in_blocks, world_to_local_transform, view_distance_scale };
+		UpdatePairedViewer u{
+			*this,
+			bounds_in_data_blocks,
+			bounds_in_mesh_blocks,
+			world_to_local_transform,
+			view_distance_scale
+		};
 		VoxelServer::get_singleton()->for_each_viewer(u);
 	}
 
@@ -1079,6 +1093,15 @@ void VoxelTerrain::_process() {
 			// Pad by 1 because meshing requires neighbors
 			const Box3i data_box =
 					Box3i(mesh_block_pos * mesh_to_data_factor, Vector3i(mesh_to_data_factor)).padded(1);
+
+#ifdef DEBUG_ENABLED
+			// We must have picked up a valid data block
+			{
+				const Vector3i anchor_pos = data_box.pos + Vector3i(1, 1, 1);
+				const VoxelDataBlock *data_block = _data_map.get_block(anchor_pos);
+				ERR_CONTINUE(data_block == nullptr);
+			}
+#endif
 
 			VoxelServer::BlockMeshInput mesh_request;
 			mesh_request.render_block_position = mesh_block_pos;

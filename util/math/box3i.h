@@ -330,6 +330,10 @@ public:
 		r.size *= step;
 		return r;
 	}
+
+	inline bool is_empty() const {
+		return size.x <= 0 || size.y <= 0 || size.z <= 0;
+	}
 };
 
 inline bool operator!=(const Box3i &a, const Box3i &b) {
