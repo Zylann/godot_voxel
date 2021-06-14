@@ -1,4 +1,9 @@
 site_name: Voxel Tools documentation
+# TODO This should be changed to an environment variable
+# This is fine for now, but when we have to support multiple versions of the documentation,
+# the URL will vary, so in the long term we should not hardcode it here.
+# This would be needed: https://github.com/readthedocs/readthedocs.org/issues/8260
+site_url: https://voxel-tools.readthedocs.io/en/latest/
 theme: readthedocs
 
 docs_dir: source
