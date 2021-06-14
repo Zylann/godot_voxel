@@ -32,6 +32,8 @@ public:
 			Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) override;
 	void save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks) override;
 
+	int get_used_channels_mask() const override;
+
 	void flush_cache();
 
 private:

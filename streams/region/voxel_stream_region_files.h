@@ -30,6 +30,8 @@ public:
 	void emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results) override;
 	void immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) override;
 
+	int get_used_channels_mask() const override;
+
 	String get_directory() const;
 	void set_directory(String dirpath);
 

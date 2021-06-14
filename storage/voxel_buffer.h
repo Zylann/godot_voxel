@@ -38,6 +38,7 @@ public:
 
 	// TODO use C++17 inline to initialize right here...
 	static const char *CHANNEL_ID_HINT_STRING;
+	static const int ALL_CHANNELS_MASK = 0xff;
 
 	enum Compression {
 		COMPRESSION_NONE = 0,
@@ -454,6 +455,9 @@ private:
 	Variant _block_metadata;
 	Map<Vector3i, Variant> _voxel_metadata;
 
+	// TODO It may be preferable to actually move away from storing an RWLock in every buffer in the future.
+	// We should be able to find a solution because very few of these locks are actually used at a given time.
+	// It worked so far on PC but other platforms like the PS5 might have a pretty low limit (8K?)
 	RWLock _rw_lock;
 };
 

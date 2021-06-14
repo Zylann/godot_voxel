@@ -107,6 +107,11 @@ void VoxelStreamRegionFiles::immerge_blocks(const Vector<VoxelBlockRequest> &p_b
 	}
 }
 
+int VoxelStreamRegionFiles::get_used_channels_mask() const {
+	// Assuming all, since that stream can store anything.
+	return VoxelBuffer::ALL_CHANNELS_MASK;
+}
+
 VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 		Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 	VOXEL_PROFILE_SCOPE();
