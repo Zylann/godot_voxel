@@ -398,8 +398,21 @@ public:
 	void set_block_metadata(Variant meta);
 	Variant get_voxel_metadata(Vector3i pos) const;
 	void set_voxel_metadata(Vector3i pos, Variant meta);
+
+	template <typename F>
+	void for_each_voxel_metadata_in_area(Box3i box, F callback) const {
+		const Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
+		while (elem != nullptr) {
+			if (box.contains(elem->key())) {
+				callback(elem->key(), elem->value());
+			}
+			elem = elem->next();
+		}
+	}
+
 	void for_each_voxel_metadata(Ref<FuncRef> callback) const;
 	void for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Box3i box) const;
+
 	void clear_voxel_metadata();
 	void clear_voxel_metadata_in_area(Box3i box);
 	void copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Box3i src_box, Vector3i dst_origin);

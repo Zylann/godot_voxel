@@ -26,6 +26,7 @@ public:
 	// Specialized API
 
 	void run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<FuncRef> callback, int block_batch_count) const;
+	void for_each_voxel_metadata_in_area(AABB voxel_area, Ref<FuncRef> callback);
 
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;

@@ -763,23 +763,18 @@ void VoxelBuffer::for_each_voxel_metadata(Ref<FuncRef> callback) const {
 
 void VoxelBuffer::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Box3i box) const {
 	ERR_FAIL_COND(callback.is_null());
-	const Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
+	for_each_voxel_metadata_in_area(box, [&callback](Vector3i pos, Variant meta) {
+		const Variant key = pos.to_vec3();
+		const Variant *args[2] = { &key, &meta };
+		Variant::CallError err;
+		callback->call_func(args, 2, err);
 
-	while (elem != nullptr) {
-		if (box.contains(elem->key())) {
-			const Variant key = elem->key().to_vec3();
-			const Variant *args[2] = { &key, &elem->value() };
-			Variant::CallError err;
-			callback->call_func(args, 2, err);
-
-			ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-					String("FuncRef call failed at {0}").format(varray(key)));
-			// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
-			// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
-			// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
-		}
-		elem = elem->next();
-	}
+		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
+				String("FuncRef call failed at {0}").format(varray(key)));
+		// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
+		// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
+		// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
+	});
 }
 
 void VoxelBuffer::clear_voxel_metadata() {
