@@ -14,7 +14,7 @@ VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain, VoxelDataMap 
 bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, false);
 	// TODO Take volume bounds into account
-	return _map->is_area_fully_loaded(box.padded(1));
+	return _map->is_area_fully_loaded(box);
 }
 
 template <typename Volume_F>

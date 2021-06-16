@@ -19,7 +19,7 @@ VoxelToolTerrain::VoxelToolTerrain(VoxelTerrain *terrain) {
 bool VoxelToolTerrain::is_area_editable(const Box3i &box) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, false);
 	// TODO Take volume bounds into account
-	return _terrain->get_storage().is_area_fully_loaded(box.padded(1));
+	return _terrain->get_storage().is_area_fully_loaded(box);
 }
 
 Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, float p_max_distance, uint32_t p_collision_mask) {
