@@ -1352,6 +1352,8 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("voxel_to_data_block", "voxel_pos"), &VoxelTerrain::_b_voxel_to_data_block);
 	ClassDB::bind_method(D_METHOD("data_block_to_voxel", "block_pos"), &VoxelTerrain::_b_data_block_to_voxel);
 
+	ClassDB::bind_method(D_METHOD("get_data_block_size"), &VoxelTerrain::get_data_block_size);
+
 	ClassDB::bind_method(D_METHOD("get_mesh_block_size"), &VoxelTerrain::get_mesh_block_size);
 	ClassDB::bind_method(D_METHOD("set_mesh_block_size", "size"), &VoxelTerrain::set_mesh_block_size);
 
