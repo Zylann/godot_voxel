@@ -93,7 +93,7 @@ void register_voxel_types() {
 	ClassDB::register_virtual_class<VoxelGenerator>();
 	ClassDB::register_class<VoxelGeneratorFlat>();
 	ClassDB::register_class<VoxelGeneratorWaves>();
-	ClassDB::register_class<VoxelGeneratorHeightmap>();
+	ClassDB::register_virtual_class<VoxelGeneratorHeightmap>();
 	ClassDB::register_class<VoxelGeneratorImage>();
 	ClassDB::register_class<VoxelGeneratorNoise2D>();
 	ClassDB::register_class<VoxelGeneratorNoise>();
