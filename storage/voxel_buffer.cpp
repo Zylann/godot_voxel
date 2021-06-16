@@ -114,7 +114,7 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 
 } // namespace
 
-const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Data2,Data3,Data4,Data5,Data6,Data7";
+const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
 
 VoxelBuffer::VoxelBuffer() {
 	// Minecraft uses way more than 255 block types and there is room for eventual metadata such as rotation
