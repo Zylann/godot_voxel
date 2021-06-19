@@ -8,8 +8,12 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
 
-Ongoing development
-----------------------
+Ongoing development - `master`
+-------------------------------
+
+- General
+    - Added `VoxelTerrain.get_data_block_size()`
+    - Added `VoxelToolTerrain.for_each_voxel_metadata_in_area()` to quickly find all metadata in a box
 
 - Smooth voxels
     - Initial support for texturing data in voxels, using 4-bit indices and weights
