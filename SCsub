@@ -3,7 +3,7 @@ Import('env_modules')
 
 # TODO Support is turned off for now because Godot 3 doesn't compile with C++17.
 # FastNoise2 use C++17 features and STL both in its headers and runtime as well.
-# SIMD noise support would have to wait for Godot 4...
+# SIMD noise support would have to wait for Godot 4 (or GDNative port, which will only be worth in Godot 4 too)
 FAST_NOISE_2_SRC = False
 FAST_NOISE_2_STATIC = False
 
@@ -63,7 +63,7 @@ if env["tools"]:
 
 if RUN_TESTS:
 	voxel_files += [
-		"tests/tests.cpp"
+		"tests/*.cpp"
 	]
 	env_voxel.Append(CPPDEFINES={"VOXEL_RUN_TESTS": 0})
 

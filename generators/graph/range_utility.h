@@ -63,12 +63,4 @@ Interval get_fnl_range_3d(const FastNoiseLite *noise, Interval x, Interval y, In
 Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient *noise, Interval x, Interval y);
 Interval3 get_fnl_gradient_range_3d(const FastNoiseLiteGradient *noise, Interval x, Interval y, Interval z);
 
-#ifdef DEBUG_ENABLED
-namespace NoiseTests {
-
-void test_noises();
-
-} // namespace NoiseTests
-#endif
-
 #endif // RANGE_UTILITY_H
