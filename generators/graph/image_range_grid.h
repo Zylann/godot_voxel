@@ -6,7 +6,7 @@
 
 class Image;
 
-// Stores minimum and maxium values over a 2D image at multiple levels of detail
+// Stores minimum and maximum values over a 2D image at multiple levels of detail
 class ImageRangeGrid {
 public:
 	~ImageRangeGrid();
