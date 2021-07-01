@@ -83,6 +83,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 		Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
 	// TODO Transform input if the terrain is rotated
 	// TODO Implement broad-phase on blocks to minimize locking and increase performance
+	// TODO Implement reverse raycast? (going from inside ground to air, could be useful for undigging)
 
 	struct RaycastPredicate {
 		const VoxelDataMap &map;
@@ -172,6 +173,17 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	_post_edit(box);
 }
 
+float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) {
+	ERR_FAIL_COND_V(_terrain == nullptr, 0);
+	VoxelDataMap *map = _map;
+	const int channel = get_channel();
+	// TODO Optimization: is it worth a making a fast-path for this?
+	return get_sdf_interpolated([map, channel](Vector3i ipos) {
+		return map->get_voxel_f(ipos, channel);
+	},
+			position);
+}
+
 uint64_t VoxelToolLodTerrain::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _map->get_voxel(pos, _channel);
@@ -210,4 +222,5 @@ void VoxelToolLodTerrain::_bind_methods() {
 			&VoxelToolLodTerrain::set_raycast_binary_search_iterations);
 	ClassDB::bind_method(D_METHOD("get_raycast_binary_search_iterations"),
 			&VoxelToolLodTerrain::get_raycast_binary_search_iterations);
+	ClassDB::bind_method(D_METHOD("get_voxel_f_interpolated"), &VoxelToolLodTerrain::get_voxel_f_interpolated);
 }

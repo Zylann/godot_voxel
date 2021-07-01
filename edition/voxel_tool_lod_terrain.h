@@ -20,6 +20,10 @@ public:
 
 	void do_sphere(Vector3 center, float radius) override;
 
+	// Specialized API
+
+	float get_voxel_f_interpolated(Vector3 position);
+
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;
 	float _get_voxel_f(Vector3i pos) const override;
