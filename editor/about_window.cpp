@@ -53,7 +53,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"jp.owo.Manda (segfault-god)\n"
 						"hidemat\n"
 						"Jakub Buriánek (Buri)\n"
-						"Justin Swanhart (Greenlion)\n";
+						"Justin Swanhart (Greenlion)\n"
+						"Sebastian Clausen (sclausen)\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique

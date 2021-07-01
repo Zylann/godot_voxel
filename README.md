@@ -69,5 +69,6 @@ jp.owo.Manda (segfault-god)
 hidemat
 Jakub Buriánek (Buri)
 Justin Swanhart (Greenlion)
+Sebastian Clausen (sclausen)
 ```
 
