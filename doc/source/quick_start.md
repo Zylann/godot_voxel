@@ -6,7 +6,8 @@ Demo projects
 
 Now that your Godot Engine has voxel support built in, you can either download one of the demos and start playing around with them:
 
-- [Zylann's demos](https://github.com/Zylann/voxelgame)
+- [Zylann's basic demos](https://github.com/Zylann/voxelgame)
+- [Zylann's solar system demo](https://github.com/Zylann/solar_system_demo)
 - [TinmanJuggernaut's fps_demo](https://github.com/tinmanjuggernaut/voxelgame)
 
 Videos
