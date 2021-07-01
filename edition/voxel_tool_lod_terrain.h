@@ -22,7 +22,7 @@ public:
 
 	// Specialized API
 
-	float get_voxel_f_interpolated(Vector3 position);
+	float get_voxel_f_interpolated(Vector3 position) const;
 
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;

@@ -18,7 +18,7 @@ bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 }
 
 template <typename Volume_F>
-float get_sdf_interpolated(Volume_F &f, Vector3 pos) {
+float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
 	const Vector3i c = Vector3i::from_floored(pos);
 
 	const float s000 = f(Vector3i(c.x, c.y, c.z));
@@ -39,7 +39,7 @@ float get_sdf_interpolated(Volume_F &f, Vector3 pos) {
 // The segment may be adjusted internally if it does not contain a zero-crossing of the
 template <typename Volume_F>
 float approximate_distance_to_isosurface_binary_search(
-		Volume_F &f, Vector3 pos0, Vector3 dir, float d1, int iterations) {
+		const Volume_F &f, Vector3 pos0, Vector3 dir, float d1, int iterations) {
 	float d0 = 0.f;
 	float sdf0 = get_sdf_interpolated(f, pos0);
 	// The position given as argument may be a rough approximation coming from the middle-phase,
@@ -129,7 +129,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 			struct VolumeSampler {
 				const VoxelDataMap &map;
 
-				inline float operator()(const Vector3i &pos) {
+				inline float operator()(const Vector3i &pos) const {
 					return map.get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
 				}
 			};
@@ -173,9 +173,9 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	_post_edit(box);
 }
 
-float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) {
+float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
-	VoxelDataMap *map = _map;
+	const VoxelDataMap *map = _map;
 	const int channel = get_channel();
 	// TODO Optimization: is it worth a making a fast-path for this?
 	return get_sdf_interpolated([map, channel](Vector3i ipos) {
