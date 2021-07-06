@@ -89,7 +89,7 @@ public:
 
 	ReuseCell &get_reuse_cell(Vector3i pos) {
 		unsigned int j = pos.z & 1;
-		unsigned int i = pos.y * _block_size.y + pos.x;
+		unsigned int i = pos.y * _block_size.x + pos.x;
 		CRASH_COND(i >= _cache[j].size());
 		return _cache[j][i];
 	}
