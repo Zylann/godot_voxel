@@ -66,9 +66,10 @@ public:
 
 	// Collisions
 
-	void set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Spatial *node);
+	void set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Spatial *node, float margin);
 	void set_collision_layer(int layer);
 	void set_collision_mask(int mask);
+	void set_collision_margin(float margin);
 	void drop_collision();
 	// TODO Collision layer and mask
 

@@ -50,6 +50,9 @@ public:
 	void set_collision_mask(int mask);
 	int get_collision_mask() const;
 
+	void set_collision_margin(float margin);
+	float get_collision_margin() const;
+
 	unsigned int get_max_view_distance() const;
 	void set_max_view_distance(unsigned int distance_in_voxels);
 
@@ -197,6 +200,7 @@ private:
 	bool _generate_collisions = true;
 	unsigned int _collision_layer = 1;
 	unsigned int _collision_mask = 1;
+	float _collision_margin = VoxelConstants::DEFAULT_COLLISION_MARGIN;
 	bool _run_stream_in_editor = true;
 	//bool _stream_enabled = false;
 

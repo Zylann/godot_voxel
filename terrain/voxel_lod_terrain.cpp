@@ -636,6 +636,19 @@ int VoxelLodTerrain::get_collision_mask() const {
 	return _collision_mask;
 }
 
+void VoxelLodTerrain::set_collision_margin(float margin) {
+	_collision_margin = margin;
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		_lods[lod_index].mesh_map.for_all_blocks([margin](VoxelMeshBlock *block) {
+			block->set_collision_margin(margin);
+		});
+	}
+}
+
+float VoxelLodTerrain::get_collision_margin() const {
+	return _collision_margin;
+}
+
 int VoxelLodTerrain::get_data_block_region_extent() const {
 	return VoxelServer::get_octree_lod_block_region_extent(_lod_distance, get_data_block_size());
 }
@@ -1653,7 +1666,8 @@ void VoxelLodTerrain::_process(float delta) {
 			if (has_collision) {
 				if (_collision_update_delay == 0 ||
 						static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
-					block->set_collision_mesh(mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this);
+					block->set_collision_mesh(mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this,
+							_collision_margin);
 					block->set_collision_layer(_collision_layer);
 					block->set_collision_mask(_collision_mask);
 					block->last_collider_update_time = now;
@@ -1711,7 +1725,8 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 
 			if (static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 				block->set_collision_mesh(
-						block->deferred_collider_data, get_tree()->is_debugging_collisions_hint(), this);
+						block->deferred_collider_data, get_tree()->is_debugging_collisions_hint(), this,
+						_collision_margin);
 				block->set_collision_layer(_collision_layer);
 				block->set_collision_mask(_collision_mask);
 				block->last_collider_update_time = now;
@@ -2488,6 +2503,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelLodTerrain::get_collision_mask);
 	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelLodTerrain::set_collision_mask);
 
+	ClassDB::bind_method(D_METHOD("get_collision_margin"), &VoxelLodTerrain::get_collision_margin);
+	ClassDB::bind_method(D_METHOD("set_collision_margin", "margin"), &VoxelLodTerrain::set_collision_margin);
+
 	ClassDB::bind_method(D_METHOD("get_collision_update_delay"), &VoxelLodTerrain::get_collision_update_delay);
 	ClassDB::bind_method(D_METHOD("set_collision_update_delay", "delay_msec"),
 			&VoxelLodTerrain::set_collision_update_delay);
@@ -2572,6 +2590,7 @@ void VoxelLodTerrain::_bind_methods() {
 			"set_collision_lod_count", "get_collision_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_update_delay"),
 			"set_collision_update_delay", "get_collision_update_delay");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "collision_margin"), "set_collision_margin", "get_collision_margin");
 
 	ADD_GROUP("Advanced", "");
 

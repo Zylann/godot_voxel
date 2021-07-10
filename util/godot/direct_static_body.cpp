@@ -67,6 +67,11 @@ void DirectStaticBody::remove_shape(int shape_index) {
 	}
 }
 
+Ref<Shape> DirectStaticBody::get_shape(int shape_index) {
+	ERR_FAIL_COND_V(shape_index < 0 || shape_index > 1, Ref<Shape>());
+	return _shape;
+}
+
 void DirectStaticBody::set_world(World *world) {
 	ERR_FAIL_COND(!_body.is_valid());
 	PhysicsServer &ps = *PhysicsServer::get_singleton();

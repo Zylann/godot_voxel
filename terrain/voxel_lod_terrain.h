@@ -62,6 +62,9 @@ public:
 	void set_collision_mask(int mask);
 	int get_collision_mask() const;
 
+	void set_collision_margin(float margin);
+	float get_collision_margin() const;
+
 	int get_data_block_region_extent() const;
 	int get_mesh_block_region_extent() const;
 
@@ -252,6 +255,7 @@ private:
 	unsigned int _collision_lod_count = 0;
 	unsigned int _collision_layer = 1;
 	unsigned int _collision_mask = 1;
+	float _collision_margin = VoxelConstants::DEFAULT_COLLISION_MARGIN;
 	int _collision_update_delay = 0;
 
 	VoxelInstancer *_instancer = nullptr;

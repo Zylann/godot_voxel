@@ -275,6 +275,17 @@ int VoxelTerrain::get_collision_mask() const {
 	return _collision_mask;
 }
 
+void VoxelTerrain::set_collision_margin(float margin) {
+	_collision_margin = margin;
+	_mesh_map.for_all_blocks([margin](VoxelMeshBlock *block) {
+		block->set_collision_margin(margin);
+	});
+}
+
+float VoxelTerrain::get_collision_margin() const {
+	return _collision_margin;
+}
+
 unsigned int VoxelTerrain::get_max_view_distance() const {
 	return _max_view_distance_voxels;
 }
@@ -1222,7 +1233,8 @@ void VoxelTerrain::_process() {
 
 			block->set_mesh(mesh);
 			if (gen_collisions) {
-				block->set_collision_mesh(collidable_surfaces, get_tree()->is_debugging_collisions_hint(), this);
+				block->set_collision_mesh(collidable_surfaces, get_tree()->is_debugging_collisions_hint(), this,
+						_collision_margin);
 				block->set_collision_layer(_collision_layer);
 				block->set_collision_mask(_collision_mask);
 			}
@@ -1350,6 +1362,9 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelTerrain::get_collision_mask);
 	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelTerrain::set_collision_mask);
 
+	ClassDB::bind_method(D_METHOD("get_collision_margin"), &VoxelTerrain::get_collision_margin);
+	ClassDB::bind_method(D_METHOD("set_collision_margin", "margin"), &VoxelTerrain::set_collision_margin);
+
 	ClassDB::bind_method(D_METHOD("voxel_to_data_block", "voxel_pos"), &VoxelTerrain::_b_voxel_to_data_block);
 	ClassDB::bind_method(D_METHOD("data_block_to_voxel", "block_pos"), &VoxelTerrain::_b_data_block_to_voxel);
 
@@ -1386,6 +1401,7 @@ void VoxelTerrain::_bind_methods() {
 			"set_collision_layer", "get_collision_layer");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
 			"set_collision_mask", "get_collision_mask");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "collision_margin"), "set_collision_margin", "get_collision_margin");
 
 	ADD_GROUP("Advanced", "");
 

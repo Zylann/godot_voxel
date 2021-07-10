@@ -198,7 +198,6 @@ void VoxelMeshBlock::set_transition_mask(uint8_t m) {
 	}
 	_transition_mask = m;
 	if (_shader_material.is_valid()) {
-
 		// TODO Needs translation here, because Cube:: tables use slightly different order...
 		// We may get rid of this once cube tables respects -x+x-y+y-z+z order
 		uint8_t bits[Cube::SIDE_COUNT];
@@ -255,7 +254,7 @@ void VoxelMeshBlock::set_parent_transform(const Transform &parent_transform) {
 	}
 }
 
-void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Spatial *node) {
+void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Spatial *node, float margin) {
 	if (surface_arrays.size() == 0) {
 		drop_collision();
 		return;
@@ -280,6 +279,8 @@ void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug
 		_static_body.remove_shape(0);
 	}
 
+	shape->set_margin(margin);
+
 	_static_body.add_shape(shape);
 	_static_body.set_debug(debug_collision, *_world);
 	_static_body.set_shape_enabled(0, _visible);
@@ -294,6 +295,15 @@ void VoxelMeshBlock::set_collision_layer(int layer) {
 void VoxelMeshBlock::set_collision_mask(int mask) {
 	if (_static_body.is_valid()) {
 		_static_body.set_collision_mask(mask);
+	}
+}
+
+void VoxelMeshBlock::set_collision_margin(float margin) {
+	if (_static_body.is_valid()) {
+		Ref<Shape> shape = _static_body.get_shape(0);
+		if (shape.is_valid()) {
+			shape->set_margin(margin);
+		}
 	}
 }
 
