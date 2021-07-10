@@ -100,16 +100,19 @@ String VoxelNode::get_configuration_warning() const {
 }
 
 int VoxelNode::get_used_channels_mask() const {
+	Ref<VoxelMesher> mesher = get_mesher();
+	if (mesher.is_valid()) {
+		return mesher->get_used_channels_mask();
+	}
 	Ref<VoxelGenerator> generator = get_generator();
-	Ref<VoxelStream> stream = get_stream();
-	int used_channels_mask = 0;
 	if (generator.is_valid()) {
-		used_channels_mask |= generator->get_used_channels_mask();
+		return generator->get_used_channels_mask();
 	}
+	Ref<VoxelStream> stream = get_stream();
 	if (stream.is_valid()) {
-		used_channels_mask |= stream->get_used_channels_mask();
+		return stream->get_used_channels_mask();
 	}
-	return used_channels_mask;
+	return 0;
 }
 
 void VoxelNode::_bind_methods() {

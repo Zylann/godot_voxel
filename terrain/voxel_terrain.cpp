@@ -1248,6 +1248,7 @@ Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
 	for (int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
 		if ((used_channels_mask & (1 << channel)) != 0) {
 			vt->set_channel(channel);
+			break;
 		}
 	}
 	return vt;
