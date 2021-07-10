@@ -20,6 +20,8 @@ public:
 
 	void do_sphere(Vector3 center, float radius) override;
 
+	void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) override;
+
 	// Specialized API
 
 	float get_voxel_f_interpolated(Vector3 position) const;

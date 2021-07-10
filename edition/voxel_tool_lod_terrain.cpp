@@ -173,6 +173,15 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	_post_edit(box);
 }
 
+void VoxelToolLodTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) {
+	ERR_FAIL_COND(_terrain == nullptr);
+	ERR_FAIL_COND(dst.is_null());
+	if (channels_mask == 0) {
+		channels_mask = (1 << _channel);
+	}
+	_map->copy(pos, **dst, channels_mask);
+}
+
 float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	const VoxelDataMap *map = _map;
