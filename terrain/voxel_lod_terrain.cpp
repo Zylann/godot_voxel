@@ -1497,9 +1497,10 @@ void VoxelLodTerrain::_process(float delta) {
 				const Vector3i mesh_block_pos = lod.blocks_pending_update[bi];
 
 				VoxelMeshBlock *block = lod.mesh_map.get_block(mesh_block_pos);
-				CRASH_COND(block == nullptr);
+				// A block must have been allocated before we ask for a mesh update
+				ERR_CONTINUE(block == nullptr);
 				// All blocks we get here must be in the scheduled state
-				CRASH_COND(block->get_mesh_state() != VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
+				ERR_CONTINUE(block->get_mesh_state() != VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
 
 				// Get block and its neighbors
 				VoxelServer::BlockMeshInput mesh_request;
@@ -1779,8 +1780,11 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 
 		const Vector3i mesh_block_pos = data_block_pos.floordiv(data_to_mesh_factor);
 		VoxelMeshBlock *mesh_block = lod0.mesh_map.get_block(mesh_block_pos);
-		ERR_CONTINUE(mesh_block == nullptr);
-		schedule_mesh_update(mesh_block, lod0.blocks_pending_update);
+		if (mesh_block != nullptr) {
+			// If a mesh exists here, it will need an update.
+			// If there is no mesh, it will probably get created later when we come closer to it
+			schedule_mesh_update(mesh_block, lod0.blocks_pending_update);
+		}
 	}
 
 	const int half_bs = get_data_block_size() >> 1;
@@ -1818,10 +1822,9 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 				const Vector3i mesh_block_pos = dst_bpos.floordiv(data_to_mesh_factor);
 				VoxelMeshBlock *mesh_block = dst_lod.mesh_map.get_block(mesh_block_pos);
 				if (mesh_block != nullptr) {
-					schedule_mesh_update(mesh_block, lod0.blocks_pending_update);
-				} else {
-					ERR_PRINT("Could not find mesh block while lodding modified data block");
+					schedule_mesh_update(mesh_block, dst_lod.blocks_pending_update);
 				}
+				// If there is no mesh, it will probably get created later when we come closer to it
 			}
 
 			dst_block->set_modified(true);
