@@ -476,6 +476,107 @@ void test_voxel_graph_generator_texturing() {
 	}
 }
 
+void test_unordered_remove_if() {
+	struct L {
+		static unsigned int count(const std::vector<int> &vec, int v) {
+			unsigned int n = 0;
+			for (size_t i = 0; i < vec.size(); ++i) {
+				if (vec[i] == v) {
+					++n;
+				}
+			}
+			return n;
+		}
+	};
+	// Remove one at beginning
+	{
+		std::vector<int> vec;
+		vec.push_back(0);
+		vec.push_back(1);
+		vec.push_back(2);
+		vec.push_back(3);
+
+		unordered_remove_if(vec, [](int v) {
+			return v == 0;
+		});
+
+		ERR_FAIL_COND(vec.size() != 3);
+		ERR_FAIL_COND((
+							  L::count(vec, 0) == 0 &&
+							  L::count(vec, 1) == 1 &&
+							  L::count(vec, 2) == 1 &&
+							  L::count(vec, 3) == 1) == false);
+	}
+	// Remove one in middle
+	{
+		std::vector<int> vec;
+		vec.push_back(0);
+		vec.push_back(1);
+		vec.push_back(2);
+		vec.push_back(3);
+
+		unordered_remove_if(vec, [](int v) {
+			return v == 2;
+		});
+
+		ERR_FAIL_COND(vec.size() != 3);
+		ERR_FAIL_COND((
+							  L::count(vec, 0) == 1 &&
+							  L::count(vec, 1) == 1 &&
+							  L::count(vec, 2) == 0 &&
+							  L::count(vec, 3) == 1) == false);
+	}
+	// Remove one at end
+	{
+		std::vector<int> vec;
+		vec.push_back(0);
+		vec.push_back(1);
+		vec.push_back(2);
+		vec.push_back(3);
+
+		unordered_remove_if(vec, [](int v) {
+			return v == 3;
+		});
+
+		ERR_FAIL_COND(vec.size() != 3);
+		ERR_FAIL_COND((
+							  L::count(vec, 0) == 1 &&
+							  L::count(vec, 1) == 1 &&
+							  L::count(vec, 2) == 1 &&
+							  L::count(vec, 3) == 0) == false);
+	}
+	// Remove multiple
+	{
+		std::vector<int> vec;
+		vec.push_back(0);
+		vec.push_back(1);
+		vec.push_back(2);
+		vec.push_back(3);
+
+		unordered_remove_if(vec, [](int v) {
+			return v == 1 || v == 2;
+		});
+
+		ERR_FAIL_COND(vec.size() != 2);
+		ERR_FAIL_COND((
+							  L::count(vec, 0) == 1 &&
+							  L::count(vec, 1) == 0 &&
+							  L::count(vec, 2) == 0 &&
+							  L::count(vec, 3) == 1) == false);
+	}
+	// Remove last
+	{
+		std::vector<int> vec;
+		vec.push_back(0);
+
+		unordered_remove_if(vec, [](int v) {
+			return v == 0;
+		});
+
+		ERR_FAIL_COND(vec.size() != 0);
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                     \
@@ -493,6 +594,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_copy_3d_region_zxy);
 	VOXEL_TEST(test_voxel_graph_generator_default_graph_compilation);
 	VOXEL_TEST(test_voxel_graph_generator_texturing);
+	VOXEL_TEST(test_unordered_remove_if);
 
 	print_line("------------ Voxel tests end -------------");
 }
