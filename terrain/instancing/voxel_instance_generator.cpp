@@ -10,7 +10,7 @@ const float MAX_DENSITY = 1.f;
 const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
 } // namespace
 
-static inline Vector3 normalized(Vector3 pos, float &length) {
+inline Vector3 normalized(Vector3 pos, float &length) {
 	length = pos.length();
 	if (length == 0) {
 		return Vector3();
@@ -19,6 +19,16 @@ static inline Vector3 normalized(Vector3 pos, float &length) {
 	pos.y /= length;
 	pos.z /= length;
 	return pos;
+}
+
+// Heron's formula is overly represented on SO but uses 4 square roots. This uses only one.
+// A parallelogram's area is found with the magnitude of the cross product of two adjacent side vectors,
+// so a triangle's area is half of it
+inline float get_triangle_area(Vector3 p0, Vector3 p1, Vector3 p2) {
+	const Vector3 p01 = p1 - p0;
+	const Vector3 p02 = p2 - p0;
+	const Vector3 c = p01.cross(p02);
+	return 0.5f * c.length();
 }
 
 void VoxelInstanceGenerator::generate_transforms(
@@ -31,7 +41,6 @@ void VoxelInstanceGenerator::generate_transforms(
 		UpMode up_mode,
 		uint8_t octant_mask,
 		float block_size) {
-
 	VOXEL_PROFILE_SCOPE();
 
 	if (surface_arrays.size() < ArrayMesh::ARRAY_VERTEX &&
@@ -42,6 +51,10 @@ void VoxelInstanceGenerator::generate_transforms(
 
 	PoolVector3Array vertices = surface_arrays[ArrayMesh::ARRAY_VERTEX];
 	if (vertices.size() == 0) {
+		return;
+	}
+
+	if (_density <= 0.f) {
 		return;
 	}
 
@@ -79,7 +92,7 @@ void VoxelInstanceGenerator::generate_transforms(
 
 	// Pick random points
 	{
-		VOXEL_PROFILE_SCOPE();
+		VOXEL_PROFILE_SCOPE_NAMED("mesh to points");
 
 		PoolVector3Array::Read vertices_r = vertices.read();
 		PoolVector3Array::Read normals_r = normals.read();
@@ -102,16 +115,18 @@ void VoxelInstanceGenerator::generate_transforms(
 				}
 			} break;
 
-			case EMIT_FROM_FACES: {
+			case EMIT_FROM_FACES_FAST: {
 				PoolIntArray::Read indices_r = indices.read();
 
 				const int triangle_count = indices.size() / 3;
+
+				// Assumes triangles are all roughly under the same size, and Transvoxel ones do (when not simplified),
+				// so we can use number of triangles as a metric proportional to the number of instances
 				const int instance_count = _density * triangle_count;
 
 				vertex_cache.resize(instance_count);
 				normal_cache.resize(instance_count);
 
-				// Assumes triangles have roughly the same sizes, and Transvoxel ones do
 				for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
 					// Pick a random triangle
 					const uint32_t ii = (pcg0.rand() % triangle_count) * 3;
@@ -144,6 +159,63 @@ void VoxelInstanceGenerator::generate_transforms(
 
 			} break;
 
+			case EMIT_FROM_FACES: {
+				PoolIntArray::Read indices_r = indices.read();
+
+				const int triangle_count = indices.size() / 3;
+
+				// static thread_local std::vector<float> g_area_cache;
+				// std::vector<float> &area_cache = g_area_cache;
+				// area_cache.resize(triangle_count);
+
+				// Does not assume triangles have the same size, so instead a "unit size" is used,
+				// and more instances will be placed in triangles larger than this.
+				// This is roughly the size of one voxel's triangle
+				//const float unit_area = 0.5f * squared(block_size / 32.f);
+
+				float accumulator = 0.f;
+				const float inv_density = 1.f / _density;
+
+				for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
+					const uint32_t ii = triangle_index * 3;
+
+					const int ia = indices_r[ii];
+					const int ib = indices_r[ii + 1];
+					const int ic = indices_r[ii + 2];
+
+					const Vector3 &pa = vertices_r[ia];
+					const Vector3 &pb = vertices_r[ib];
+					const Vector3 &pc = vertices_r[ic];
+
+					const Vector3 &na = normals_r[ia];
+					const Vector3 &nb = normals_r[ib];
+					const Vector3 &nc = normals_r[ic];
+
+					const float triangle_area = get_triangle_area(pa, pb, pc);
+					accumulator += triangle_area;
+
+					const int count_in_triangle = int(accumulator * _density);
+
+					for (int i = 0; i < count_in_triangle; ++i) {
+						const float t0 = pcg1.randf();
+						const float t1 = pcg1.randf();
+
+						// This formula gives pretty uniform distribution but involves a square root
+						//const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
+
+						// This is an approximation
+						const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, t1);
+						const Vector3 n = na.linear_interpolate(nb, t0).linear_interpolate(nc, t1);
+
+						vertex_cache.push_back(p);
+						normal_cache.push_back(n);
+					}
+
+					accumulator -= count_in_triangle * inv_density;
+				}
+
+			} break;
+
 			default:
 				CRASH_NOW();
 		}
@@ -153,6 +225,7 @@ void VoxelInstanceGenerator::generate_transforms(
 	// This is done so some octants can be filled with user-edited data instead,
 	// because mesh size may not necessarily match data block size
 	if ((octant_mask & 0xff) != 0xff) {
+		VOXEL_PROFILE_SCOPE_NAMED("octant filter");
 		const float h = block_size / 2.f;
 		for (unsigned int i = 0; i < vertex_cache.size(); ++i) {
 			const Vector3 &pos = vertex_cache[i];
@@ -169,6 +242,8 @@ void VoxelInstanceGenerator::generate_transforms(
 
 	// Filter out by noise
 	if (_noise.is_valid()) {
+		VOXEL_PROFILE_SCOPE_NAMED("noise filter");
+
 		noise_cache.clear();
 
 		switch (_noise_dimension) {
@@ -611,7 +686,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "density", PROPERTY_HINT_RANGE, DENSITY_HINT_STRING),
 			"set_density", "get_density");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,Faces"),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,FacesFast,Faces"),
 			"set_emit_mode", "get_emit_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
 			"set_min_slope_degrees", "get_min_slope_degrees");
@@ -651,6 +726,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"set_noise_on_scale", "get_noise_on_scale");
 
 	BIND_ENUM_CONSTANT(EMIT_FROM_VERTICES);
+	BIND_ENUM_CONSTANT(EMIT_FROM_FACES_FAST);
 	BIND_ENUM_CONSTANT(EMIT_FROM_FACES);
 	BIND_ENUM_CONSTANT(EMIT_MODE_COUNT);
 
@@ -659,7 +735,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 	BIND_ENUM_CONSTANT(DISTRIBUTION_CUBIC);
 	BIND_ENUM_CONSTANT(DISTRIBUTION_QUINTIC);
 	BIND_ENUM_CONSTANT(DISTRIBUTION_COUNT);
-	
+
 	BIND_ENUM_CONSTANT(DIMENSION_2D);
 	BIND_ENUM_CONSTANT(DIMENSION_3D);
 	BIND_ENUM_CONSTANT(DIMENSION_COUNT);

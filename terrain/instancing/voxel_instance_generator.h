@@ -28,9 +28,12 @@ public:
 	};
 
 	enum EmitMode {
-		// Fastest, but can have noticeable patterns when using high densities
+		// Fastest, but can have noticeable patterns when using high densities or using simplified meshes
 		EMIT_FROM_VERTICES,
-		// Slower, but should not have noticeable patterns
+		// Slower, but should have less noticeable patterns. Assumes all triangles use similar areas,
+		// which is the case with non-simplified meshes obtained with marching cubes.
+		EMIT_FROM_FACES_FAST,
+		// Slower, but tries to not assume the area of triangles.
 		EMIT_FROM_FACES,
 
 		EMIT_MODE_COUNT
