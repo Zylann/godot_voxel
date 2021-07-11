@@ -20,7 +20,7 @@ public:
 
 	template <typename VolumePredicate_F>
 	void scan_3d(Box3i box, VolumePredicate_F volume_predicate_func, Span<uint8_t> output, unsigned int *out_count) {
-		int volume = box.size.volume();
+		const unsigned int volume = box.size.volume();
 		CRASH_COND(output.size() != volume);
 		memset(output.data(), 0, volume * sizeof(uint8_t));
 
