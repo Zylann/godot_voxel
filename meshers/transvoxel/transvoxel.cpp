@@ -369,6 +369,21 @@ void build_regular_mesh(
 				FixedArray<float, 8> cell_samples_sdf;
 				for (unsigned int i = 0; i < corner_data_indices.size(); ++i) {
 					cell_samples_sdf[i] = sdf_as_float(sdf_data[corner_data_indices[i]]);
+					// TODO Need to investigate if there is a better way to eliminate degenerate triangles.
+					//
+					// Presence of zeroes in samples occurs more often when precision is scarce
+					// (8-bit, scaled SDF, or slow gradients).
+					// This causes two symptoms:
+					// - Degenerate triangles. Potentially bad for systems using the mesh later (MeshOptimizer, physics)
+					// - Glitched triangles. Wrong vertices get re-used.
+					//   Needs closer investigation to know why, maybe related to case selection
+					//
+					// See also https://github.com/zeux/meshoptimizer/issues/312
+					//
+					// This is a quick fix to avoid it.
+					if (cell_samples_sdf[i] == 0.f) {
+						cell_samples_sdf[i] = 0.0001f;
+					}
 				}
 
 				// Concatenate the sign of cell values to obtain the case code.
@@ -636,10 +651,13 @@ void build_regular_mesh(
 				} // for each cell vertex
 
 				for (int t = 0; t < triangle_count; ++t) {
-					for (int i = 0; i < 3; ++i) {
-						const int index = cell_vertex_indices[regular_cell_data.get_vertex_index(t * 3 + i)];
-						output.indices.push_back(index);
-					}
+					const int t0 = t * 3;
+					const int i0 = cell_vertex_indices[regular_cell_data.get_vertex_index(t0)];
+					const int i1 = cell_vertex_indices[regular_cell_data.get_vertex_index(t0 + 1)];
+					const int i2 = cell_vertex_indices[regular_cell_data.get_vertex_index(t0 + 2)];
+					output.indices.push_back(i0);
+					output.indices.push_back(i1);
+					output.indices.push_back(i2);
 				}
 
 			} // x

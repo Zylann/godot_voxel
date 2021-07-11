@@ -25,6 +25,7 @@ public:
 	// Specialized API
 
 	float get_voxel_f_interpolated(Vector3 position) const;
+	Array separate_floating_chunks(AABB world_box, Node *parent_node);
 
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;

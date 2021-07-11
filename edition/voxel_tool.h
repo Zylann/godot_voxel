@@ -63,6 +63,8 @@ public:
 	virtual void do_sphere(Vector3 center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
 
+	void sdf_stamp_erase(Ref<VoxelBuffer> stamp, Vector3i pos);
+
 	virtual void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask);
 	virtual void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value);
 

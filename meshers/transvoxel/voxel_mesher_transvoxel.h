@@ -27,6 +27,15 @@ public:
 	void set_texturing_mode(TexturingMode mode);
 	TexturingMode get_texturing_mode() const;
 
+	void set_mesh_optimization_enabled(bool enabled);
+	bool is_mesh_optimization_enabled() const;
+
+	void set_mesh_optimization_error_threshold(float threshold);
+	float get_mesh_optimization_error_threshold() const;
+
+	void set_mesh_optimization_target_ratio(float ratio);
+	float get_mesh_optimization_target_ratio() const;
+
 protected:
 	static void _bind_methods();
 
@@ -34,6 +43,14 @@ private:
 	void fill_surface_arrays(Array &arrays, const Transvoxel::MeshArrays &src);
 
 	TexturingMode _texture_mode = TEXTURES_NONE;
+
+	struct MeshOptimizationParams {
+		bool enabled = false;
+		float error_threshold = 0.005;
+		float target_ratio = 0.0;
+	};
+
+	MeshOptimizationParams _mesh_optimization_params;
 };
 
 VARIANT_ENUM_CAST(VoxelMesherTransvoxel::TexturingMode);

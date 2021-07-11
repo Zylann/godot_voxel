@@ -1,5 +1,6 @@
 #include "voxel_mesher_transvoxel.h"
 #include "../../storage/voxel_buffer.h"
+#include "../../thirdparty/meshoptimizer/meshoptimizer.h"
 #include "../../util/funcs.h"
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
@@ -59,11 +60,77 @@ void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const Transvoxel:
 	arrays[Mesh::ARRAY_INDEX] = indices;
 }
 
+template <typename T>
+static void remap_vertex_array(const std::vector<T> &src_data, std::vector<T> &dst_data,
+		const std::vector<unsigned int> &remap_indices, unsigned int unique_vertex_count) {
+	if (src_data.size() == 0) {
+		dst_data.clear();
+		return;
+	}
+	dst_data.resize(unique_vertex_count);
+	meshopt_remapVertexBuffer(&dst_data[0], &src_data[0], src_data.size(), sizeof(T), remap_indices.data());
+}
+
+static void simplify(const Transvoxel::MeshArrays &src_mesh, Transvoxel::MeshArrays &dst_mesh,
+		float p_target_ratio, float p_error_threshold) {
+	VOXEL_PROFILE_SCOPE();
+
+	// Gather and check input
+
+	ERR_FAIL_COND(p_target_ratio < 0.f || p_target_ratio > 1.f);
+	ERR_FAIL_COND(p_error_threshold < 0.f || p_error_threshold > 1.f);
+	ERR_FAIL_COND(src_mesh.vertices.size() < 3);
+	ERR_FAIL_COND(src_mesh.indices.size() < 3);
+
+	const unsigned int target_index_count = p_target_ratio * src_mesh.indices.size();
+
+	static thread_local std::vector<unsigned int> lod_indices;
+	lod_indices.clear();
+	lod_indices.resize(src_mesh.indices.size());
+
+	float lod_error = 0.f;
+
+	// Simplify
+	{
+		VOXEL_PROFILE_SCOPE_NAMED("meshopt_simplify");
+
+		const unsigned int lod_index_count = meshopt_simplify(
+				&lod_indices[0], reinterpret_cast<const unsigned int *>(src_mesh.indices.data()), src_mesh.indices.size(),
+				&src_mesh.vertices[0].x, src_mesh.vertices.size(),
+				sizeof(Vector3), target_index_count, p_error_threshold, &lod_error);
+
+		lod_indices.resize(lod_index_count);
+	}
+
+	// Produce output
+
+	Array surface;
+	surface.resize(Mesh::ARRAY_MAX);
+
+	static thread_local std::vector<unsigned int> remap_indices;
+	remap_indices.clear();
+	remap_indices.resize(src_mesh.vertices.size());
+
+	const unsigned int unique_vertex_count = meshopt_optimizeVertexFetchRemap(
+			&remap_indices[0], lod_indices.data(), lod_indices.size(), src_mesh.vertices.size());
+
+	remap_vertex_array(src_mesh.vertices, dst_mesh.vertices, remap_indices, unique_vertex_count);
+	remap_vertex_array(src_mesh.normals, dst_mesh.normals, remap_indices, unique_vertex_count);
+	remap_vertex_array(src_mesh.extra, dst_mesh.extra, remap_indices, unique_vertex_count);
+	remap_vertex_array(src_mesh.uv, dst_mesh.uv, remap_indices, unique_vertex_count);
+
+	dst_mesh.indices.resize(lod_indices.size());
+	// TODO Not sure if arguments are correct
+	meshopt_remapIndexBuffer(reinterpret_cast<unsigned int *>(dst_mesh.indices.data()),
+			lod_indices.data(), lod_indices.size(), remap_indices.data());
+}
+
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	VOXEL_PROFILE_SCOPE();
 
 	static thread_local Transvoxel::Cache s_cache;
 	static thread_local Transvoxel::MeshArrays s_mesh_arrays;
+	static thread_local Transvoxel::MeshArrays s_simplified_mesh_arrays;
 
 	const int sdf_channel = VoxelBuffer::CHANNEL_SDF;
 
@@ -91,7 +158,20 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	}
 
 	Array regular_arrays;
-	fill_surface_arrays(regular_arrays, s_mesh_arrays);
+
+	if (_mesh_optimization_params.enabled) {
+		// TODO When voxel texturing is enabled, this will decrease quality a lot.
+		// There is no support yet for taking textures into account when simplifying.
+		// See https://github.com/zeux/meshoptimizer/issues/158
+		simplify(s_mesh_arrays, s_simplified_mesh_arrays,
+				_mesh_optimization_params.target_ratio, _mesh_optimization_params.error_threshold);
+
+		fill_surface_arrays(regular_arrays, s_simplified_mesh_arrays);
+
+	} else {
+		fill_surface_arrays(regular_arrays, s_mesh_arrays);
+	}
+
 	output.surfaces.push_back(regular_arrays);
 
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
@@ -159,6 +239,30 @@ VoxelMesherTransvoxel::TexturingMode VoxelMesherTransvoxel::get_texturing_mode()
 	return _texture_mode;
 }
 
+void VoxelMesherTransvoxel::set_mesh_optimization_enabled(bool enabled) {
+	_mesh_optimization_params.enabled = enabled;
+}
+
+bool VoxelMesherTransvoxel::is_mesh_optimization_enabled() const {
+	return _mesh_optimization_params.enabled;
+}
+
+void VoxelMesherTransvoxel::set_mesh_optimization_error_threshold(float threshold) {
+	_mesh_optimization_params.error_threshold = clamp(threshold, 0.f, 1.f);
+}
+
+float VoxelMesherTransvoxel::get_mesh_optimization_error_threshold() const {
+	return _mesh_optimization_params.error_threshold;
+}
+
+void VoxelMesherTransvoxel::set_mesh_optimization_target_ratio(float ratio) {
+	_mesh_optimization_params.target_ratio = clamp(ratio, 0.f, 1.f);
+}
+
+float VoxelMesherTransvoxel::get_mesh_optimization_target_ratio() const {
+	return _mesh_optimization_params.target_ratio;
+}
+
 void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"),
 			&VoxelMesherTransvoxel::build_transition_mesh);
@@ -166,9 +270,33 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_texturing_mode", "mode"), &VoxelMesherTransvoxel::set_texturing_mode);
 	ClassDB::bind_method(D_METHOD("get_texturing_mode"), &VoxelMesherTransvoxel::get_texturing_mode);
 
+	ClassDB::bind_method(D_METHOD("set_mesh_optimization_enabled", "enabled"),
+			&VoxelMesherTransvoxel::set_mesh_optimization_enabled);
+	ClassDB::bind_method(D_METHOD("is_mesh_optimization_enabled"),
+			&VoxelMesherTransvoxel::is_mesh_optimization_enabled);
+
+	ClassDB::bind_method(D_METHOD("set_mesh_optimization_error_threshold", "threshold"),
+			&VoxelMesherTransvoxel::set_mesh_optimization_error_threshold);
+	ClassDB::bind_method(D_METHOD("get_mesh_optimization_error_threshold"),
+			&VoxelMesherTransvoxel::get_mesh_optimization_error_threshold);
+
+	ClassDB::bind_method(D_METHOD("set_mesh_optimization_target_ratio", "ratio"),
+			&VoxelMesherTransvoxel::set_mesh_optimization_target_ratio);
+	ClassDB::bind_method(D_METHOD("get_mesh_optimization_target_ratio"),
+			&VoxelMesherTransvoxel::get_mesh_optimization_target_ratio);
+
 	ADD_PROPERTY(PropertyInfo(
 						 Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
 			"set_texturing_mode", "get_texturing_mode");
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "mesh_optimization_enabled"),
+			"set_mesh_optimization_enabled", "is_mesh_optimization_enabled");
+
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "mesh_optimization_error_threshold"),
+			"set_mesh_optimization_error_threshold", "get_mesh_optimization_error_threshold");
+
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "mesh_optimization_target_ratio"),
+			"set_mesh_optimization_target_ratio", "get_mesh_optimization_target_ratio");
 
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);
 	BIND_ENUM_CONSTANT(TEXTURES_BLEND_4_OVER_16);

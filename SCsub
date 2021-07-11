@@ -47,7 +47,8 @@ voxel_files = [
 	"edition/*.cpp",
 
 	"thirdparty/lz4/*.c",
-	"thirdparty/sqlite/*.c"
+	"thirdparty/sqlite/*.c",
+	"thirdparty/meshoptimizer/*.cpp"
 ]
 
 if env["tools"]:
@@ -60,6 +61,9 @@ if env["tools"]:
 		"editor/instance_library/*.cpp",
 	]
 	voxel_files += voxel_editor_files
+
+# See https://github.com/zeux/meshoptimizer/issues/311
+env_voxel.Append(CPPDEFINES=["MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS"])
 
 if RUN_TESTS:
 	voxel_files += [
