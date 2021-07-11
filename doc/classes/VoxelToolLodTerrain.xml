@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelToolLodTerrain" inherits="VoxelTool" version="3.4">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_raycast_binary_search_iterations" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="set_raycast_binary_search_iterations">
+			<return type="void">
+			</return>
+			<argument index="0" name="iterations" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="separate_floating_chunks">
+			<return type="void">
+			</return>
+			<argument index="0" name="box" type="AABB">
+			</argument>
+			<argument index="1" name="parent_node" type="Node">
+			</argument>
+			<description>
+				Turns floating voxels into RigidBodies.
+				Chunks of floating voxels are detected within a box. The box is relative to the voxel volume this VoxelTool is attached to. Chunks have to be contained entirely within that box to be considered floating. Chunks are removed from the source volume and transformed into RigidBodies with convex collision shapes. They will be added as child of the provided node. They will start "kinematic", and turn "rigid" after a short time, to allow the terrain to update its colliders after the removal (otherwise they will overlap). The function returns an array of these rigid bodies, which you can use to attach further behavior to them (such as disappearing after some time or distance for example).
+				This algorithm can become expensive quickly, so the box should not be too big. A size of around 30 voxels should be ok.
+			</description>
+		</method>
+	</methods>
+	<constants>
+	</constants>
+</class>
