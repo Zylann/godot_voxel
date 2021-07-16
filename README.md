@@ -32,8 +32,8 @@ Documentation
 ---------------
 
 - [Main documentation](https://voxel-tools.readthedocs.io/en/latest/)
-- [How to get the module](https://voxel-tools.readthedocs.io/en/latest/getting_the_module/)
-- [Quick start](https://voxel-tools.readthedocs.io/en/latest/quick_start/)
+- [How to get the module](https://voxel-tools.readthedocs.io/en/latest/getting_the_module.html)
+- [Quick start](https://voxel-tools.readthedocs.io/en/latest/quick_start.html)
 
 
 Roadmap
