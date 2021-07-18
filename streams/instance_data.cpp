@@ -8,6 +8,10 @@ namespace {
 const uint32_t TRAILING_MAGIC = 0x900df00d;
 }
 
+const float VoxelInstanceBlockData::POSITION_RANGE_MINIMUM = 0.01f;
+
+const float VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM = 0.01f;
+
 // TODO Unify with functions from VoxelBuffer?
 
 inline uint8_t norm_to_u8(float x) {
@@ -43,33 +47,45 @@ struct CompressedQuaternion4b {
 	}
 };
 
-void serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vector<uint8_t> &dst) {
+bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vector<uint8_t> &dst) {
 	const uint8_t version = 0;
-	const uint8_t instance_format = 0;
+	const uint8_t instance_format = VoxelInstanceBlockData::FORMAT_SIMPLE_11B_V1;
 
 	// TODO Apparently big-endian is dead
 	// I chose it originally to match "network byte order",
 	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
 	VoxelUtility::MemoryWriter w(dst, VoxelUtility::ENDIANESS_BIG_ENDIAN);
 
+	ERR_FAIL_COND_V(src.position_range < 0.f, false);
+	const float position_range = max(src.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM);
+
 	w.store_8(version);
 	w.store_8(src.layers.size());
-	w.store_float(src.position_range);
+	w.store_float(position_range);
 
 	// TODO Introduce a margin to position coordinates, stuff can spawn offset from the ground.
 	// Or just compute the ranges
-	const float pos_norm_scale = 1.f / src.position_range;
+	const float pos_norm_scale = 1.f / position_range;
 
 	for (size_t i = 0; i < src.layers.size(); ++i) {
 		const VoxelInstanceBlockData::LayerData &layer = src.layers[i];
 
+		ERR_FAIL_COND_V(layer.scale_max < layer.scale_min, false);
+
+		float scale_min = layer.scale_min;
+		float scale_max = layer.scale_max;
+		if (scale_max - scale_min < VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) {
+			scale_min = layer.scale_min;
+			scale_max = scale_min + VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM;
+		}
+
 		w.store_16(layer.id);
 		w.store_16(layer.instances.size());
-		w.store_float(layer.scale_min);
-		w.store_float(layer.scale_max);
+		w.store_float(scale_min);
+		w.store_float(scale_max);
 		w.store_8(instance_format);
 
-		const float scale_norm_scale = 1.f / (layer.scale_max - layer.scale_min);
+		const float scale_norm_scale = 1.f / (scale_max - scale_min);
 
 		for (size_t j = 0; j < layer.instances.size(); ++j) {
 			const VoxelInstanceBlockData::InstanceData &instance = layer.instances[j];
@@ -79,7 +95,7 @@ void serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 			w.store_16(static_cast<uint16_t>(pos_norm_scale * instance.transform.origin.z * 0xffff));
 
 			const float scale = instance.transform.get_basis().get_scale().y;
-			w.store_8(static_cast<uint8_t>(scale_norm_scale * (scale - layer.scale_min) * 0xff));
+			w.store_8(static_cast<uint8_t>(scale_norm_scale * (scale - scale_min) * 0xff));
 
 			const Quat q = instance.transform.get_basis().get_rotation_quat();
 			const CompressedQuaternion4b cq = CompressedQuaternion4b::from_quat(q);
@@ -91,11 +107,13 @@ void serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 	}
 
 	w.store_32(TRAILING_MAGIC);
+
+	return true;
 }
 
 bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uint8_t> src) {
 	const uint8_t expected_version = 0;
-	const uint8_t expected_instance_format = 0;
+	const uint8_t expected_instance_format = VoxelInstanceBlockData::FORMAT_SIMPLE_11B_V1;
 
 	VoxelUtility::MemoryReader r(src, VoxelUtility::ENDIANESS_BIG_ENDIAN);
 

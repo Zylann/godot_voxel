@@ -814,7 +814,7 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 		if (block.instances != nullptr) {
 			temp_data.clear();
 
-			serialize_instance_block_data(*block.instances, temp_data);
+			ERR_FAIL_COND(!serialize_instance_block_data(*block.instances, temp_data));
 
 			ERR_FAIL_COND(!VoxelCompressedData::compress(
 					to_span_const(temp_data), temp_compressed_data, VoxelCompressedData::COMPRESSION_NONE));
