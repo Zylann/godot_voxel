@@ -84,7 +84,9 @@ private:
 	static void _bind_methods();
 
 private:
-	std::vector<Ref<Voxel> > _voxel_types;
+	// There can be null entries. A vector is used because there should be no more than 65,536 items,
+	// and in practice the intented use case rarely goes over a few hundreds
+	std::vector<Ref<Voxel>> _voxel_types;
 	int _atlas_size = 16;
 	bool _needs_baking = true;
 	bool _bake_tangents = true;

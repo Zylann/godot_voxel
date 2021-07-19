@@ -26,6 +26,9 @@ void VoxelLibrary::set_voxel_count(unsigned int type_count) {
 int VoxelLibrary::get_voxel_index_from_name(StringName name) const {
 	for (size_t i = 0; i < _voxel_types.size(); ++i) {
 		const Ref<Voxel> &v = _voxel_types[i];
+		if (v.is_null()) {
+			continue;
+		}
 		if (v->get_voxel_name() == name) {
 			return i;
 		}

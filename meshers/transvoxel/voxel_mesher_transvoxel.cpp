@@ -207,6 +207,11 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> vox
 
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
+	if (voxels->is_uniform(VoxelBuffer::CHANNEL_SDF)) {
+		// Uniform SDF won't produce any surface
+		return Ref<ArrayMesh>();
+	}
+
 	// TODO We need to output transition meshes through the generic interface, they are part of the result
 	// For now we can't support proper texture indices in this specific case
 	Transvoxel::DefaultTextureIndicesData default_texture_indices_data;

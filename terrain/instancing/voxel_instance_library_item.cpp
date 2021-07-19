@@ -54,7 +54,7 @@ bool VoxelInstanceLibraryItem::is_persistent() const {
 }
 
 void VoxelInstanceLibraryItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_index) {
-	ERR_FAIL_INDEX(mesh_lod_index, VoxelInstancer::MAX_LOD);
+	ERR_FAIL_INDEX(mesh_lod_index, _mesh_lods.size());
 	if (_mesh_lods[mesh_lod_index] == mesh) {
 		return;
 	}
@@ -78,7 +78,7 @@ int VoxelInstanceLibraryItem::get_mesh_lod_count() const {
 }
 
 Ref<Mesh> VoxelInstanceLibraryItem::get_mesh(int mesh_lod_index) const {
-	ERR_FAIL_INDEX_V(mesh_lod_index, VoxelInstancer::MAX_LOD, Ref<Mesh>());
+	ERR_FAIL_INDEX_V(mesh_lod_index, _mesh_lods.size(), Ref<Mesh>());
 	return _mesh_lods[mesh_lod_index];
 }
 
@@ -143,6 +143,8 @@ static VisualServer::ShadowCastingSetting node_to_visual_server_enum(GeometryIns
 }
 
 void VoxelInstanceLibraryItem::setup_from_template(Node *root) {
+	ERR_FAIL_COND(root == nullptr);
+
 	_collision_shapes.clear();
 
 	PhysicsBody *physics_body = Object::cast_to<PhysicsBody>(root);

@@ -58,6 +58,8 @@ public:
 	bool can_connect(PortLocation src, PortLocation dst) const;
 	void connect(PortLocation src, PortLocation dst);
 	bool disconnect(PortLocation src, PortLocation dst);
+	bool is_input_port_valid(PortLocation loc) const;
+	bool is_output_port_valid(PortLocation loc) const;
 
 	bool has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) const;
 	void find_dependencies(std::vector<uint32_t> nodes_to_process, std::vector<uint32_t> &out_order) const;

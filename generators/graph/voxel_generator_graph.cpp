@@ -47,36 +47,44 @@ static ProgramGraph::Node *create_node_internal(ProgramGraph &graph,
 }
 
 uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
+	ERR_FAIL_COND_V(!VoxelGraphNodeDB::get_singleton()->is_valid_type_id(type_id), ProgramGraph::NULL_ID);
 	const ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id);
 	ERR_FAIL_COND_V(node == nullptr, ProgramGraph::NULL_ID);
 	return node->id;
 }
 
 void VoxelGeneratorGraph::remove_node(uint32_t node_id) {
+	ERR_FAIL_COND(_graph.try_get_node(node_id) == nullptr);
 	_graph.remove_node(node_id);
 	emit_changed();
 }
 
 bool VoxelGeneratorGraph::can_connect(
 		uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const {
-	return _graph.can_connect(
-			ProgramGraph::PortLocation{ src_node_id, src_port_index },
-			ProgramGraph::PortLocation{ dst_node_id, dst_port_index });
+	const ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };
+	const ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
+	ERR_FAIL_COND_V(!_graph.is_output_port_valid(src_port), false);
+	ERR_FAIL_COND_V(!_graph.is_input_port_valid(dst_port), false);
+	return _graph.can_connect(src_port, dst_port);
 }
 
 void VoxelGeneratorGraph::add_connection(
 		uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) {
-	_graph.connect(
-			ProgramGraph::PortLocation{ src_node_id, src_port_index },
-			ProgramGraph::PortLocation{ dst_node_id, dst_port_index });
+	const ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };
+	const ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
+	ERR_FAIL_COND(!_graph.is_output_port_valid(src_port));
+	ERR_FAIL_COND(!_graph.is_input_port_valid(dst_port));
+	_graph.connect(src_port, dst_port);
 	emit_changed();
 }
 
 void VoxelGeneratorGraph::remove_connection(
 		uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) {
-	_graph.disconnect(
-			ProgramGraph::PortLocation{ src_node_id, src_port_index },
-			ProgramGraph::PortLocation{ dst_node_id, dst_port_index });
+	const ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };
+	const ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
+	ERR_FAIL_COND(!_graph.is_output_port_valid(src_port));
+	ERR_FAIL_COND(!_graph.is_input_port_valid(dst_port));
+	_graph.disconnect(src_port, dst_port);
 	emit_changed();
 }
 
@@ -1322,6 +1330,7 @@ int VoxelGeneratorGraph::_b_get_node_type_count() const {
 }
 
 Dictionary VoxelGeneratorGraph::_b_get_node_type_info(int type_id) const {
+	ERR_FAIL_COND_V(!VoxelGraphNodeDB::get_singleton()->is_valid_type_id(type_id), Dictionary());
 	return VoxelGraphNodeDB::get_singleton()->get_type_info_dict(type_id);
 }
 

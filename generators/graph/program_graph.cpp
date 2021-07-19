@@ -148,6 +148,28 @@ bool ProgramGraph::disconnect(PortLocation src, PortLocation dst) {
 	return true;
 }
 
+bool ProgramGraph::is_input_port_valid(PortLocation loc) const {
+	Node *node = try_get_node(loc.node_id);
+	if (node == nullptr) {
+		return false;
+	}
+	if (loc.port_index >= node->inputs.size()) {
+		return false;
+	}
+	return true;
+}
+
+bool ProgramGraph::is_output_port_valid(PortLocation loc) const {
+	Node *node = try_get_node(loc.node_id);
+	if (node == nullptr) {
+		return false;
+	}
+	if (loc.port_index >= node->outputs.size()) {
+		return false;
+	}
+	return true;
+}
+
 ProgramGraph::Node *ProgramGraph::get_node(uint32_t id) const {
 	auto it = _nodes.find(id);
 	CRASH_COND(it == _nodes.end());
