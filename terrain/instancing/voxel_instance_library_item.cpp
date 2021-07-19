@@ -54,7 +54,7 @@ bool VoxelInstanceLibraryItem::is_persistent() const {
 }
 
 void VoxelInstanceLibraryItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_index) {
-	ERR_FAIL_INDEX(mesh_lod_index, _mesh_lods.size());
+	ERR_FAIL_INDEX(mesh_lod_index, static_cast<int>(_mesh_lods.size()));
 	if (_mesh_lods[mesh_lod_index] == mesh) {
 		return;
 	}
@@ -78,7 +78,7 @@ int VoxelInstanceLibraryItem::get_mesh_lod_count() const {
 }
 
 Ref<Mesh> VoxelInstanceLibraryItem::get_mesh(int mesh_lod_index) const {
-	ERR_FAIL_INDEX_V(mesh_lod_index, _mesh_lods.size(), Ref<Mesh>());
+	ERR_FAIL_INDEX_V(mesh_lod_index, static_cast<int>(_mesh_lods.size()), Ref<Mesh>());
 	return _mesh_lods[mesh_lod_index];
 }
 
