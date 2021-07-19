@@ -74,7 +74,7 @@ public:
 	static const char *get_category_name(Category category);
 
 	int get_type_count() const { return _types.size(); }
-	bool is_valid_type_id(int type_id) const { return type_id >= 0 && type_id < _types.size(); }
+	bool is_valid_type_id(int type_id) const { return type_id >= 0 && type_id < static_cast<int>(_types.size()); }
 	const NodeType &get_type(uint32_t id) const { return _types[id]; }
 	Dictionary get_type_info_dict(uint32_t id) const;
 	bool try_get_type_id_from_name(const String &name, VoxelGeneratorGraph::NodeTypeID &out_type_id) const;
