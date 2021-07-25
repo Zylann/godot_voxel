@@ -117,7 +117,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed() {
 	ERR_FAIL_COND(_library.is_null());
 	ERR_FAIL_COND(_item_id_to_remove == -1);
 
-	Ref<VoxelInstanceLibraryItem> item = _library->get_item(_item_id_to_remove);
+	Ref<VoxelInstanceLibraryItemBase> item = _library->get_item(_item_id_to_remove);
 
 	UndoRedo &ur = get_undo_redo();
 	ur.create_action("Remove item");
