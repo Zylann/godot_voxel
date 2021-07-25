@@ -19,7 +19,7 @@ struct VoxelInstanceBlockData {
 		// Scale is uniform and is lossy-compressed to 256 values
 		// - uint8_t scale;
 		//
-		// Rotation is a compressed quaternion
+		// Rotation is a compressed quaternion with naive quantization of its members to 256 values
 		// - uint8_t x;
 		// - uint8_t y;
 		// - uint8_t z;
@@ -28,10 +28,12 @@ struct VoxelInstanceBlockData {
 	};
 
 	static const int POSITION_RESOLUTION = 65536;
+	// Because position is quantized we need its range, but it cannot be zero so it may be clamped to this.
 	static const float POSITION_RANGE_MINIMUM;
 
 	static const int SIMPLE_11B_V1_SCALE_RESOLUTION = 256;
 	static const int SIMPLE_11B_V1_QUAT_RESOLUTION = 256;
+	// Because scale is quantized we need its range, but it cannot be zero so it may be clamped to this.
 	static const float SIMPLE_11B_V1_SCALE_RANGE_MINIMUM;
 
 	struct LayerData {

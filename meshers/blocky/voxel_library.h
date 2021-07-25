@@ -5,6 +5,9 @@
 #include "voxel.h"
 #include <core/resource.h>
 
+// TODO Rename VoxelBlockyLibrary
+
+// Stores a list of models that can be used with VoxelMesherBlocky
 class VoxelLibrary : public Resource {
 	GDCLASS(VoxelLibrary, Resource)
 
