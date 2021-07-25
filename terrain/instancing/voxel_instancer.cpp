@@ -294,6 +294,7 @@ void VoxelInstancer::process_mesh_lods() {
 	}
 }
 
+// We need to do this ourselves because we don't use nodes for multimeshes
 void VoxelInstancer::update_visibility() {
 	if (!is_inside_tree()) {
 		return;
@@ -301,7 +302,9 @@ void VoxelInstancer::update_visibility() {
 	const bool visible = is_visible_in_tree();
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		Block *block = *it;
-		block->multimesh_instance.set_visible(visible);
+		if (block->multimesh_instance.is_valid()) {
+			block->multimesh_instance.set_visible(visible);
+		}
 	}
 }
 
