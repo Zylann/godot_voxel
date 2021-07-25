@@ -186,6 +186,8 @@ size_t get_size_in_bytes(const VoxelBuffer &buffer, size_t &metadata_size) {
 
 VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize(const VoxelBuffer &voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
+	// Cannot serialize an empty block
+	ERR_FAIL_COND_V(voxel_buffer.get_size().volume() == 0, SerializeResult(_data, false));
 
 	size_t metadata_size = 0;
 	const size_t data_size = get_size_in_bytes(voxel_buffer, metadata_size);
