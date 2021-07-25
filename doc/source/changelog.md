@@ -23,6 +23,7 @@ Ongoing development - `master`
     - Added `get_voxel_f_interpolated` to `VoxelToolLodTerrain`, useful to obtain interpolated SDF
     - Added option to simplify meshes with Transvoxel, using MeshOptimizer
     - Added extra option to `VoxelInstanceGenerator` to emit from faces more precisely, especially when meshes got simplified (slower than the other options)
+    - `VoxelInstancer`: added initial support for instancing regular scenes (slower than multimeshes)
 
 - Breaking changes
     - `VoxelBuffer` channels `DATA3` and `DATA4` were renamed `INDICES` and `WEIGHTS`
@@ -34,6 +35,7 @@ Ongoing development - `master`
     - `VoxelMesherTransvoxel`: no longer crashes when the input buffer is not cubic
     - `VoxelLodTerrain`: fixed errors and crashes when editing voxels near loading borders
     - `VoxelTool` channel no longer defaults to 7 when using `get_voxel_tool` from a terrain with a stream assigned. Instead it picks first used channel of the mesher (fallback order is mesher, then generator, then stream).
+    - `VoxelInstancer`: fix error when node visibility changes
 
 
 09/05/2021 - `godot3.3`

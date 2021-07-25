@@ -21,11 +21,13 @@ public:
 private:
 	void _on_menu_id_pressed(int id);
 	void _on_remove_item_confirmed();
+	void _on_open_scene_dialog_file_selected(String fpath);
 
 	static void _bind_methods();
 
 	enum MenuOption {
-		MENU_ADD_ITEM,
+		MENU_ADD_MULTIMESH_ITEM,
+		MENU_ADD_SCENE_ITEM,
 		MENU_REMOVE_ITEM
 	};
 
@@ -33,6 +35,7 @@ private:
 	ConfirmationDialog *_confirmation_dialog = nullptr;
 	AcceptDialog *_info_dialog = nullptr;
 	int _item_id_to_remove = -1;
+	EditorFileDialog *_open_scene_dialog;
 
 	Ref<VoxelInstanceLibrary> _library;
 };

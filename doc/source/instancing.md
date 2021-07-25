@@ -1,9 +1,13 @@
 Instancing
 =============
 
-The module provides an instancing system with the [VoxelInstancer](api/VoxelInstancer.md) node. It allows to spawn 3D models on top of the terrain's surface. It uses `MultiMeshInstance` internally to allow rendering a lot of them at once, and can support collisions and removal. The node must be added as child of [VoxelLodTerrain](api/VoxelLodTerrain.md).
+The module provides an instancing system with the [VoxelInstancer](api/VoxelInstancer.md) node. This node must be added as child of a voxel terrain. It allows to spawn 3D models on top of the terrain's surface, which can later be removed when modified.
 
-This system is primarily intented at natural spawning: grass, rocks, trees and other kinds of semi-random foliage. It is not suited for complex man-made structures like houses or villages.
+It can spawn two different kinds of objects:
+- **Multimesh instances**. They can be extremely numerous, and can optionally have collision.
+- **Scene instances**. They use regular scenes, however it is much slower so should be tuned to low numbers.
+
+This system is primarily intented at natural spawning: grass, rocks, trees and other kinds of semi-random foliage. It is not suited for complex man-made structures like houses or villages, although scene instances can be used in some cases, if the available features suit your game.
 
 This feature is currently only available under `VoxelLodTerrain`.
 
@@ -19,7 +23,7 @@ Select a `VoxelInstancer`. In the inspector, assign a library to the `library` p
 
 ![Screenshot of the VoxelInstanceLibrary menu](images/instance_library_menu.png)
 
-In this menu, you can add items to the library by clicking `VoxelInstanceLibrary -> Add item`.
+In this menu, you can add items to the library by clicking `VoxelInstanceLibrary -> Add Multimesh item`.
 
 Items created this way come with a default setup, so you should be able to see something appear on top of the voxel surface.
 
@@ -89,6 +93,16 @@ The ID of persistent items is important, because it will be used in saved data. 
 At time of writing, only [VoxelStreamSQLite](api/VoxelStreamSQLite.md) supports saving instances.
 
 The save format is described in [this document](specs/instances_format.md).
+
+
+### Scene instances
+
+Instancing scenes is supported by adding items of type `VoxelInstanceLibrarySceneItem`. Instead of spawning multimeshes, regular scene instances will be created as child of `VoxelInstancer`. The advantage is the ability to put much more varied behavior on them, such as scripts, sounds, animations, or even further spawning logic or interaction. The only constraint is, the root of the scene must be `Spatial` or derive from it.
+
+This freedom has a high price compared to multimesh instances. Adding many instances can become slow quickly, so the default density of these items is lower when you create them from the editor. It is strongly recommended to not use too complex scenes, because depending on the settings, it can lead to a freeze or crash of Godot if your computer cannot handle too many instances.
+
+!!! note
+    Warning: if you add a scene to the library and then try to load that library from that same scene, Godot will crash. This is a cyclic reference and is hard to detect in all cases at the moment.
 
 
 Procedural generation

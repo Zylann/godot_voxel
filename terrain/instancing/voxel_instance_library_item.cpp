@@ -6,53 +6,6 @@
 #include <scene/3d/mesh_instance.h>
 #include <scene/3d/physics_body.h>
 
-void VoxelInstanceLibraryItem::set_item_name(String name) {
-	_name = name;
-}
-
-String VoxelInstanceLibraryItem::get_item_name() const {
-	return _name;
-}
-
-void VoxelInstanceLibraryItem::set_lod_index(int lod) {
-	ERR_FAIL_COND(lod < 0 || lod >= VoxelInstancer::MAX_LOD);
-	if (_lod_index == lod) {
-		return;
-	}
-	_lod_index = lod;
-	notify_listeners(CHANGE_LOD_INDEX);
-}
-
-int VoxelInstanceLibraryItem::get_lod_index() const {
-	return _lod_index;
-}
-
-void VoxelInstanceLibraryItem::set_generator(Ref<VoxelInstanceGenerator> generator) {
-	if (_generator == generator) {
-		return;
-	}
-	if (_generator.is_valid()) {
-		_generator->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_generator_changed");
-	}
-	_generator = generator;
-	if (_generator.is_valid()) {
-		_generator->connect(CoreStringNames::get_singleton()->changed, this, "_on_generator_changed");
-	}
-	notify_listeners(CHANGE_GENERATOR);
-}
-
-Ref<VoxelInstanceGenerator> VoxelInstanceLibraryItem::get_generator() const {
-	return _generator;
-}
-
-void VoxelInstanceLibraryItem::set_persistent(bool persistent) {
-	_persistent = persistent;
-}
-
-bool VoxelInstanceLibraryItem::is_persistent() const {
-	return _persistent;
-}
-
 void VoxelInstanceLibraryItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_index) {
 	ERR_FAIL_INDEX(mesh_lod_index, static_cast<int>(_mesh_lods.size()));
 	if (_mesh_lods[mesh_lod_index] == mesh) {
@@ -178,34 +131,6 @@ void VoxelInstanceLibraryItem::setup_from_template(Node *root) {
 	notify_listeners(CHANGE_VISUAL);
 }
 
-void VoxelInstanceLibraryItem::add_listener(IListener *listener, int id) {
-	ListenerSlot slot;
-	slot.listener = listener;
-	slot.id = id;
-	ERR_FAIL_COND(_listeners.find(slot) != -1);
-	_listeners.push_back(slot);
-}
-
-void VoxelInstanceLibraryItem::remove_listener(IListener *listener, int id) {
-	ListenerSlot slot;
-	slot.listener = listener;
-	slot.id = id;
-	int i = _listeners.find(slot);
-	ERR_FAIL_COND(i == -1);
-	_listeners.remove(i);
-}
-
-void VoxelInstanceLibraryItem::notify_listeners(ChangeType change) {
-	for (int i = 0; i < _listeners.size(); ++i) {
-		ListenerSlot &slot = _listeners.write[i];
-		slot.listener->on_library_item_changed(slot.id, change);
-	}
-}
-
-void VoxelInstanceLibraryItem::_on_generator_changed() {
-	notify_listeners(CHANGE_GENERATOR);
-}
-
 void VoxelInstanceLibraryItem::_b_set_collision_shapes(Array shape_infos) {
 	ERR_FAIL_COND(shape_infos.size() % 2 != 0);
 
@@ -233,19 +158,6 @@ Array VoxelInstanceLibraryItem::_b_get_collision_shapes() const {
 }
 
 void VoxelInstanceLibraryItem::_bind_methods() {
-	// Can't be just "set_name" because Resource already defines that, despite being for a `resource_name` property
-	ClassDB::bind_method(D_METHOD("set_item_name", "name"), &VoxelInstanceLibraryItem::set_item_name);
-	ClassDB::bind_method(D_METHOD("get_item_name"), &VoxelInstanceLibraryItem::get_item_name);
-
-	ClassDB::bind_method(D_METHOD("set_lod_index", "lod"), &VoxelInstanceLibraryItem::set_lod_index);
-	ClassDB::bind_method(D_METHOD("get_lod_index"), &VoxelInstanceLibraryItem::get_lod_index);
-
-	ClassDB::bind_method(D_METHOD("set_generator", "generator"), &VoxelInstanceLibraryItem::set_generator);
-	ClassDB::bind_method(D_METHOD("get_generator"), &VoxelInstanceLibraryItem::get_generator);
-
-	ClassDB::bind_method(D_METHOD("set_persistent", "persistent"), &VoxelInstanceLibraryItem::set_persistent);
-	ClassDB::bind_method(D_METHOD("is_persistent"), &VoxelInstanceLibraryItem::is_persistent);
-
 	ClassDB::bind_method(D_METHOD("set_mesh", "mesh", "mesh_lod_index"), &VoxelInstanceLibraryItem::set_mesh);
 	ClassDB::bind_method(D_METHOD("get_mesh", "mesh_lod_index"), &VoxelInstanceLibraryItem::get_mesh);
 
@@ -281,15 +193,6 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("setup_from_template", "node"), &VoxelInstanceLibraryItem::setup_from_template);
 
-	ClassDB::bind_method(D_METHOD("_on_generator_changed"), &VoxelInstanceLibraryItem::_on_generator_changed);
-
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "name"), "set_item_name", "get_item_name");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_index", PROPERTY_HINT_RANGE, "0,8,1"),
-			"set_lod_index", "get_lod_index");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceGenerator"),
-			"set_generator", "get_generator");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "persistent"), "set_persistent", "is_persistent");
-
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"),
 			"_set_mesh_lod0", "_get_mesh_lod0");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod1", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"),
@@ -302,7 +205,8 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE, "Material"),
 			"set_material_override", "get_material_override");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, "Off,On,Double-Sided,Shadows Only"), "set_cast_shadows_setting", "get_cast_shadows_setting");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, "Off,On,Double-Sided,Shadows Only"),
+			"set_cast_shadows_setting", "get_cast_shadows_setting");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS),
 			"set_collision_layer", "get_collision_layer");

@@ -7,6 +7,7 @@
 #include "../../util/math/box3i.h"
 #include "voxel_instance_generator.h"
 #include "voxel_instance_library.h"
+#include "voxel_instance_library_item.h"
 
 #include <scene/3d/spatial.h>
 //#include <scene/resources/material.h> // Included by node.h lol
@@ -17,6 +18,9 @@
 
 class VoxelLodTerrain;
 class VoxelInstancerRigidBody;
+class VoxelInstanceComponent;
+class VoxelInstanceLibrarySceneItem;
+class VoxelTool;
 class PhysicsBody;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
@@ -58,6 +62,8 @@ public:
 	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
 	void on_area_edited(Box3i p_voxel_box);
 	void on_body_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index);
+	void on_scene_instance_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index);
+	void on_scene_instance_modified(Vector3i data_block_position, unsigned int render_block_index);
 
 	// Debug
 
@@ -89,14 +95,30 @@ private:
 	const Layer *get_layer_const(int id) const;
 	void regenerate_layer(uint16_t layer_id, bool regenerate_blocks);
 	void update_layer_meshes(int layer_id);
-
+	void update_layer_scenes(int layer_id);
 	void create_render_blocks(Vector3i grid_position, int lod_index, Array surface_arrays);
 
+	struct SceneInstance {
+		VoxelInstanceComponent *component = nullptr;
+		Spatial *root = nullptr;
+	};
+
+	SceneInstance create_scene_instance(const VoxelInstanceLibrarySceneItem &scene_item,
+			int instance_index, unsigned int block_index, Transform transform, int data_block_size_po2);
+
 	void update_block_from_transforms(int block_index, Span<const Transform> transforms,
-			Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItem *item, uint16_t layer_id,
+			Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id,
 			World *world, const Transform &block_transform);
 
 	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
+
+	struct Block;
+
+	static void remove_floating_multimesh_instances(Block &block, const Transform &parent_transform, Box3i p_voxel_box,
+			const VoxelTool &voxel_tool, int block_size_po2);
+
+	static void remove_floating_scene_instances(Block &block, const Transform &parent_transform, Box3i p_voxel_box,
+			const VoxelTool &voxel_tool, int block_size_po2);
 
 	static void _bind_methods();
 
@@ -111,7 +133,9 @@ private:
 		// For physics we use nodes because it's easier to manage.
 		// Such instances may be less numerous.
 		// If the item associated to this block has no collisions, this will be empty.
+		// Indices in the vector correspond to index of the instance in multimesh.
 		Vector<VoxelInstancerRigidBody *> bodies;
+		Vector<SceneInstance> scene_instances;
 	};
 
 	struct Layer {

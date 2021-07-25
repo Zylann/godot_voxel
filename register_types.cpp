@@ -40,6 +40,8 @@
 #include "util/noise/fast_noise_2.h"
 #endif
 #include "constants/voxel_string_names.h"
+#include "terrain/instancing/voxel_instance_component.h"
+#include "terrain/instancing/voxel_instance_library_scene_item.h"
 #include "util/noise/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite_gradient.h"
 
@@ -69,7 +71,9 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelLibrary>();
 	ClassDB::register_class<VoxelColorPalette>();
 	ClassDB::register_class<VoxelInstanceLibrary>();
+	ClassDB::register_class<VoxelInstanceLibraryItemBase>();
 	ClassDB::register_class<VoxelInstanceLibraryItem>();
+	ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
 
 	// Storage
 	ClassDB::register_class<VoxelBuffer>();
@@ -81,6 +85,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelViewer>();
 	ClassDB::register_class<VoxelInstanceGenerator>();
 	ClassDB::register_class<VoxelInstancer>();
+	ClassDB::register_class<VoxelInstanceComponent>();
 
 	// Streams
 	ClassDB::register_virtual_class<VoxelStream>();
