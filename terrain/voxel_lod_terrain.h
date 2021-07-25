@@ -81,7 +81,6 @@ public:
 
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
-	void post_edit_block_lod0(Vector3i bpos);
 
 	void set_voxel_bounds(Box3i p_box);
 	inline Box3i get_voxel_bounds() const { return _bounds_in_voxels; }

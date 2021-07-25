@@ -416,28 +416,34 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlock &block, bool active) 
 // Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.
 // The provided box must be at LOD0 coordinates.
 void VoxelLodTerrain::post_edit_area(Box3i p_box) {
+	// TODO Better decoupling is needed here.
+	// In the past this padding was necessary for mesh blocks because visuals depend on neighbor voxels.
+	// So when editing voxels at the boundary of two mesh blocks, both must update.
+	// However on data blocks it doesn't make sense, neighbors are not affected (at least for now).
+	// this can cause false positive errors as if we were editing a block that's not loaded (coming up as null).
+	// For now, this is worked around by ignoring cases where blocks are null,
+	// But it might mip more lods than necessary when editing on borders.
 	const Box3i box = p_box.padded(1);
 	const Box3i bbox = box.downscaled(get_data_block_size());
 
 	bbox.for_each_cell([this](Vector3i block_pos_lod0) {
-		post_edit_block_lod0(block_pos_lod0);
+		Lod &lod0 = _lods[0];
+		VoxelDataBlock *block = lod0.data_map.get_block(block_pos_lod0);
+		//ERR_FAIL_COND(block == nullptr);
+		if (block == nullptr) {
+			return;
+		}
+
+		block->set_modified(true);
+
+		if (!block->get_needs_lodding()) {
+			block->set_needs_lodding(true);
+			lod0.blocks_pending_lodding.push_back(block_pos_lod0);
+		}
 	});
 
 	if (_instancer != nullptr) {
 		_instancer->on_area_edited(p_box);
-	}
-}
-
-void VoxelLodTerrain::post_edit_block_lod0(Vector3i block_pos_lod0) {
-	Lod &lod0 = _lods[0];
-	VoxelDataBlock *block = lod0.data_map.get_block(block_pos_lod0);
-	ERR_FAIL_COND(block == nullptr);
-
-	block->set_modified(true);
-
-	if (!block->get_needs_lodding()) {
-		block->set_needs_lodding(true);
-		lod0.blocks_pending_lodding.push_back(block_pos_lod0);
 	}
 }
 
