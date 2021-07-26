@@ -123,8 +123,8 @@ Instancing scenes is supported by adding items of type `VoxelInstanceLibraryScen
 
 This freedom has a high price compared to multimesh instances. Adding many instances can become slow quickly, so the default density of these items is lower when you create them from the editor. It is strongly recommended to not use too complex scenes, because depending on the settings, it can lead to a freeze or crash of Godot if your computer cannot handle too many instances.
 
-!!! note
-    Warning: if you add a scene to the library and then try to load that library from that same scene, Godot will crash. This is a cyclic reference and is hard to detect in all cases at the moment.
+!!! warning
+    If you add a scene to the library and then try to load that library from that same scene, Godot will crash. This is a cyclic reference and is hard to detect in all cases at the moment.
 
 
 Procedural generation
