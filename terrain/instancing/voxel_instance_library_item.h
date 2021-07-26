@@ -40,6 +40,9 @@ public:
 		return _collision_shapes;
 	}
 
+	Array serialize_multimesh_item_properties() const;
+	void deserialize_multimesh_item_properties(Array a);
+
 private:
 	static void _bind_methods();
 

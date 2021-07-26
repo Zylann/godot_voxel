@@ -12,7 +12,10 @@ VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin(EditorNode *p
 	// TODO Icon
 	//_menu_button->set_icon(EditorNode::get_singleton()->get_gui_base()->get_icon("MeshLibrary", "EditorIcons"));
 	_menu_button->get_popup()->add_item(TTR("Add Multimesh Item (fast)"), MENU_ADD_MULTIMESH_ITEM);
+	_menu_button->get_popup()->add_item(TTR("Update Multimesh Item From Scene"), MENU_UPDATE_MULTIMESH_ITEM_FROM_SCENE);
+	_menu_button->get_popup()->add_separator();
 	_menu_button->get_popup()->add_item(TTR("Add Scene Item (slow)"), MENU_ADD_SCENE_ITEM);
+	_menu_button->get_popup()->add_separator();
 	_menu_button->get_popup()->add_item(TTR("Remove Selected Item"), MENU_REMOVE_ITEM);
 	// TODO Add and update from scene
 	_menu_button->get_popup()->connect("id_pressed", this, "_on_menu_id_pressed");
@@ -37,6 +40,9 @@ VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin(EditorNode *p
 	base_control->add_child(_open_scene_dialog);
 	_open_scene_dialog->connect("file_selected", this, "_on_open_scene_dialog_file_selected");
 
+	// TODO Perhaps it's a better idea to put this menu in the inspector directly?
+	// Because it won't be visible if the user is in 2D or script mode,
+	// and it's confusing to see it outside the inspector
 	add_control_to_container(EditorPlugin::CONTAINER_SPATIAL_EDITOR_MENU, _menu_button);
 }
 
@@ -55,6 +61,8 @@ void VoxelInstanceLibraryEditorPlugin::make_visible(bool visible) {
 }
 
 void VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed(int id) {
+	_last_used_menu_option = MenuOption(id);
+
 	switch (id) {
 		case MENU_ADD_MULTIMESH_ITEM: {
 			ERR_FAIL_COND(_library.is_null());
@@ -79,37 +87,55 @@ void VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed(int id) {
 			ur.commit_action();
 		} break;
 
+		case MENU_UPDATE_MULTIMESH_ITEM_FROM_SCENE: {
+			ERR_FAIL_COND(_library.is_null());
+			const int item_id = try_get_selected_item_id();
+			if (item_id != -1) {
+				_item_id_to_update = item_id;
+				_open_scene_dialog->popup_centered_ratio();
+			}
+		} break;
+
 		case MENU_ADD_SCENE_ITEM: {
 			_open_scene_dialog->popup_centered_ratio();
 		} break;
 
 		case MENU_REMOVE_ITEM: {
 			ERR_FAIL_COND(_library.is_null());
-
-			String path = get_editor_interface()->get_inspector()->get_selected_path();
-			String prefix = "item_";
-
-			if (path.begins_with(prefix)) {
-				_item_id_to_remove = path.substr(prefix.length()).to_int();
+			const int item_id = try_get_selected_item_id();
+			if (item_id != -1) {
+				_item_id_to_remove = item_id;
 				_confirmation_dialog->set_text(vformat(TTR("Remove item %d?"), _item_id_to_remove));
 				_confirmation_dialog->popup_centered();
-
-			} else {
-				// The inspector won't let us know which item the current resource is stored into...
-				// Gridmap works because it simulates every item as properties of the library,
-				// but our current resource does not do that,
-				// and I don't want to modify the API just because the built-in inspector is bad.
-				_info_dialog->set_text(
-						TTR(String("Could not determine selected item from property path: `{0}`.\n"
-								   "You must select the `item_X` property label of the item you want to remove."))
-								.format(varray(path)));
-				_info_dialog->popup();
 			}
 		} break;
 
 		default:
 			ERR_PRINT("Unknown menu item");
 			break;
+	}
+}
+
+// TODO This function does not modify anything, but cannot be `const` because get_editor_interface() is not...
+int VoxelInstanceLibraryEditorPlugin::try_get_selected_item_id() {
+	String path = get_editor_interface()->get_inspector()->get_selected_path();
+	String prefix = "item_";
+
+	if (path.begins_with(prefix)) {
+		const int id = path.substr(prefix.length()).to_int();
+		return id;
+
+	} else {
+		// The inspector won't let us know which item the current resource is stored into...
+		// Gridmap works because it simulates every item as properties of the library,
+		// but our current resource does not do that,
+		// and I don't want to modify the API just because the built-in inspector is bad.
+		_info_dialog->set_text(
+				TTR(String("Could not determine selected item from property path: `{0}`.\n"
+						   "You must select the `item_X` property label of the item you want to remove."))
+						.format(varray(path)));
+		_info_dialog->popup();
+		return -1;
 	}
 }
 
@@ -129,6 +155,22 @@ void VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed() {
 }
 
 void VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected(String fpath) {
+	switch (_last_used_menu_option) {
+		case MENU_ADD_SCENE_ITEM:
+			add_scene_item(fpath);
+			break;
+
+		case MENU_UPDATE_MULTIMESH_ITEM_FROM_SCENE:
+			update_multimesh_item_from_scene(fpath, _item_id_to_update);
+			break;
+
+		default:
+			ERR_PRINT("Invalid menu option");
+			break;
+	}
+}
+
+void VoxelInstanceLibraryEditorPlugin::add_scene_item(String fpath) {
 	ERR_FAIL_COND(_library.is_null());
 
 	Ref<PackedScene> scene = ResourceLoader::load(fpath);
@@ -148,8 +190,35 @@ void VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected(Strin
 
 	UndoRedo &ur = get_undo_redo();
 	ur.create_action("Add scene item");
-	ur.add_do_method(*_library, "add_item", item_id, item);
-	ur.add_undo_method(*_library, "remove_item", item_id);
+	ur.add_do_method(_library.ptr(), "add_item", item_id, item);
+	ur.add_undo_method(_library.ptr(), "remove_item", item_id);
+	ur.commit_action();
+}
+
+void VoxelInstanceLibraryEditorPlugin::update_multimesh_item_from_scene(String fpath, int item_id) {
+	ERR_FAIL_COND(_library.is_null());
+
+	Ref<PackedScene> scene = ResourceLoader::load(fpath);
+	ERR_FAIL_COND(scene.is_null());
+
+	Ref<VoxelInstanceLibraryItemBase> item_base = _library->get_item(item_id);
+	ERR_FAIL_COND_MSG(item_base.is_null(), "Item not found");
+	Ref<VoxelInstanceLibraryItem> item = item_base;
+	ERR_FAIL_COND_MSG(item.is_null(), "Item not using multimeshes");
+
+	Node *node = scene->instance();
+	ERR_FAIL_COND(node == nullptr);
+
+	Variant data_before = item->serialize_multimesh_item_properties();
+	item->setup_from_template(node);
+	Variant data_after = item->serialize_multimesh_item_properties();
+
+	memdelete(node);
+
+	UndoRedo &ur = get_undo_redo();
+	ur.create_action("Update Multimesh Item From Scene");
+	ur.add_do_method(item.ptr(), "_deserialize_multimesh_item_properties", data_after);
+	ur.add_undo_method(item.ptr(), "_deserialize_multimesh_item_properties", data_before);
 	ur.commit_action();
 }
 

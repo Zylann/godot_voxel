@@ -95,7 +95,29 @@ At time of writing, only [VoxelStreamSQLite](api/VoxelStreamSQLite.md) supports 
 The save format is described in [this document](specs/instances_format.md).
 
 
+### Setting up a Multimesh item from a scene
+
+It is possible to setup a Multimesh Item from an existing scene, as an alternative to setting it up in the inspector. One reason you could need this is to setup colliders, because although they are supported, it is not possible to set them in the inspector at the moment. It might also be more convenient to design instances in the 3D editor using nodes.
+
+This conversion process expects your scene to follow a specific structure:
+
+```
+- PhysicsBody (StaticBody, RigidBody...)
+	- MeshInstance
+	- CollisionShape1
+	- CollisionShape2
+	- ...
+```
+
+Materials can be setup in two ways:
+- `material_override` on the MeshInstance
+- Materials on the mesh resource directly
+
+Surface material properties on the MeshInstance are not supported.
+
 ### Scene instances
+
+Multimesh items are fast and efficient, but are quite limited.
 
 Instancing scenes is supported by adding items of type `VoxelInstanceLibrarySceneItem`. Instead of spawning multimeshes, regular scene instances will be created as child of `VoxelInstancer`. The advantage is the ability to put much more varied behavior on them, such as scripts, sounds, animations, or even further spawning logic or interaction. The only constraint is, the root of the scene must be `Spatial` or derive from it.
 

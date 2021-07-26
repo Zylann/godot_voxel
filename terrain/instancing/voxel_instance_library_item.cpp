@@ -131,30 +131,71 @@ void VoxelInstanceLibraryItem::setup_from_template(Node *root) {
 	notify_listeners(CHANGE_VISUAL);
 }
 
-void VoxelInstanceLibraryItem::_b_set_collision_shapes(Array shape_infos) {
-	ERR_FAIL_COND(shape_infos.size() % 2 != 0);
-
-	_collision_shapes.clear();
-
-	for (int i = 0; i < shape_infos.size(); i += 2) {
-		CollisionShapeInfo info;
-		info.transform = shape_infos[i];
-		info.shape = shape_infos[i + 1];
-
-		ERR_FAIL_COND(info.shape.is_null());
-
-		_collision_shapes.push_back(info);
+static Array serialize_collision_shape_infos(Vector<VoxelInstanceLibraryItem::CollisionShapeInfo> infos) {
+	Array a;
+	for (int i = 0; i < infos.size(); ++i) {
+		const VoxelInstanceLibraryItem::CollisionShapeInfo &info = infos[i];
+		ERR_FAIL_COND_V(info.shape.is_null(), Array());
+		// TODO Shape might or might not be shared, could have odd side-effects,
+		// but not sure how to properly fix these edge cases without convoluted code
+		a.push_back(info.shape);
+		a.push_back(info.transform);
 	}
+	return a;
+}
+
+static Vector<VoxelInstanceLibraryItem::CollisionShapeInfo> deserialize_collision_shape_infos(Array a) {
+	Vector<VoxelInstanceLibraryItem::CollisionShapeInfo> infos;
+	ERR_FAIL_COND_V(a.size() % 2 != 0, infos);
+
+	for (int i = 0; i < a.size(); i += 2) {
+		VoxelInstanceLibraryItem::CollisionShapeInfo info;
+		info.shape = a[i];
+		info.transform = a[i + 1];
+
+		ERR_FAIL_COND_V(info.shape.is_null(), Vector<VoxelInstanceLibraryItem::CollisionShapeInfo>());
+
+		infos.push_back(info);
+	}
+
+	return infos;
+}
+
+// This is used to support undo/redo with the "setup from scene" feature
+Array VoxelInstanceLibraryItem::serialize_multimesh_item_properties() const {
+	Array a;
+	for (unsigned int i = 0; i < _mesh_lods.size(); ++i) {
+		a.push_back(_mesh_lods[i]);
+	}
+	a.push_back(_mesh_lod_count);
+	a.push_back(_material_override);
+	a.push_back(_shadow_casting_setting);
+	a.push_back(_collision_layer);
+	a.push_back(_collision_mask);
+	a.push_back(serialize_collision_shape_infos(_collision_shapes));
+	return a;
+}
+
+void VoxelInstanceLibraryItem::deserialize_multimesh_item_properties(Array a) {
+	int ai = 0;
+	for (unsigned int i = 0; i < _mesh_lods.size(); ++i) {
+		_mesh_lods[i] = a[ai++];
+	}
+	_mesh_lod_count = a[ai++];
+	_material_override = a[ai++];
+	_shadow_casting_setting = VisualServer::ShadowCastingSetting(int(a[ai++])); // ugh...
+	_collision_layer = a[ai++];
+	_collision_mask = a[ai++];
+	_collision_shapes = deserialize_collision_shape_infos(a[ai++]);
+	notify_listeners(CHANGE_VISUAL);
+}
+
+void VoxelInstanceLibraryItem::_b_set_collision_shapes(Array shape_infos) {
+	_collision_shapes = deserialize_collision_shape_infos(shape_infos);
 }
 
 Array VoxelInstanceLibraryItem::_b_get_collision_shapes() const {
-	Array infos;
-	for (int i = 0; i < _collision_shapes.size(); ++i) {
-		const CollisionShapeInfo &info = _collision_shapes[i];
-		infos.push_back(info.shape);
-		infos.push_back(info.transform);
-	}
-	return infos;
+	return serialize_collision_shape_infos(_collision_shapes);
 }
 
 void VoxelInstanceLibraryItem::_bind_methods() {
@@ -192,6 +233,10 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_collision_shapes"), &VoxelInstanceLibraryItem::_b_get_collision_shapes);
 
 	ClassDB::bind_method(D_METHOD("setup_from_template", "node"), &VoxelInstanceLibraryItem::setup_from_template);
+
+	// Used in editor only
+	ClassDB::bind_method(D_METHOD("_deserialize_multimesh_item_properties", "props"),
+			&VoxelInstanceLibraryItem::deserialize_multimesh_item_properties);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"),
 			"_set_mesh_lod0", "_get_mesh_lod0");

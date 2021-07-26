@@ -19,6 +19,10 @@ public:
 	void make_visible(bool visible) override;
 
 private:
+	int try_get_selected_item_id();
+	void add_scene_item(String fpath);
+	void update_multimesh_item_from_scene(String fpath, int item_id);
+
 	void _on_menu_id_pressed(int id);
 	void _on_remove_item_confirmed();
 	void _on_open_scene_dialog_file_selected(String fpath);
@@ -27,6 +31,7 @@ private:
 
 	enum MenuOption {
 		MENU_ADD_MULTIMESH_ITEM,
+		MENU_UPDATE_MULTIMESH_ITEM_FROM_SCENE,
 		MENU_ADD_SCENE_ITEM,
 		MENU_REMOVE_ITEM
 	};
@@ -35,7 +40,9 @@ private:
 	ConfirmationDialog *_confirmation_dialog = nullptr;
 	AcceptDialog *_info_dialog = nullptr;
 	int _item_id_to_remove = -1;
+	int _item_id_to_update = -1;
 	EditorFileDialog *_open_scene_dialog;
+	MenuOption _last_used_menu_option;
 
 	Ref<VoxelInstanceLibrary> _library;
 };
