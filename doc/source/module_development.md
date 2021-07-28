@@ -44,10 +44,9 @@ editor/        | Editor-specific code. May also depend on voxel nodes.
 generators/    | Procedural generators. They only depend on voxel storage and math.
 meshers/       | Only depends on voxel storage, math and some Godot graphics APIs.
 streams/       | Files handling code. Only depends on filesystem and storage.
-math/          | Generic math utilities.
 util/          | Generic utility functions and structures. They don't depend on voxel stuff.
 thirdparty/    | Third-party libraries, in source code form. They are compiled statically so Godot remains a single executable.
-server/        | Contains VoxelServer. Depends on meshers, streams, storage but not directly on nodes.
+server/        | Contains task management. Depends on meshers, streams, storage but not directly on nodes.
 storage/       | Storage and memory data structures.
 terrain/       | Contains all the nodes. Depends on the rest of the module, except editor-only parts.
 tests/         | Contains tests. These run when Godot starts if enabled in the build script.
