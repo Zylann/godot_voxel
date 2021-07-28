@@ -161,7 +161,6 @@ private:
 
 		// Warning: this is not recursive. Use it properly.
 		void recycle_children(unsigned int i0) {
-
 			// Debug check, there is no use case in recycling a node which is not a first child
 			CRASH_COND(i0 % 8 != 0);
 
@@ -206,6 +205,7 @@ private:
 		Node *node = get_node(node_index);
 
 		if (!node->has_children()) {
+			// TODO Optimization: find if we can use a squared distance instead
 			// If it's not the last LOD, if close enough and custom conditions get fulfilled
 			if (lod > 0 && world_center.distance_to(view_pos) < split_distance && actions.can_split(node_pos, lod - 1)) {
 				// Split
@@ -237,10 +237,10 @@ private:
 			// Get node again because `update` may invalidate the pointer
 			node = get_node(node_index);
 
+			// TODO Optimization: find if we can use a squared distance instead
 			if (!has_split_child && world_center.distance_to(view_pos) > split_distance && actions.can_join(node_pos, lod)) {
 				// Join
 				if (node->has_children()) {
-
 					for (unsigned int i = 0; i < 8; ++i) {
 						actions.destroy_child(get_child_position(node_pos, i), lod - 1);
 					}

@@ -17,6 +17,8 @@
 const char *VoxelGraphEditor::SIGNAL_NODE_SELECTED = "node_selected";
 const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Shows a 2D slice of the 3D set of values coming from an output port
 class VoxelGraphEditorNodePreview : public VBoxContainer {
 	GDCLASS(VoxelGraphEditorNodePreview, VBoxContainer)
@@ -49,6 +51,8 @@ private:
 	Ref<Image> _image;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Graph node with a few custom data attached.
 class VoxelGraphEditorNode : public GraphNode {
 	GDCLASS(VoxelGraphEditorNode, GraphNode)
@@ -57,6 +61,8 @@ public:
 	VoxelGraphEditorNodePreview *preview = nullptr;
 	Vector<Control *> output_labels;
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class VoxelRangeAnalysisDialog : public AcceptDialog {
 	GDCLASS(VoxelRangeAnalysisDialog, AcceptDialog)
@@ -149,6 +155,8 @@ private:
 	SpinBox *size_y_spinbox;
 	SpinBox *size_z_spinbox;
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 VoxelGraphEditor::VoxelGraphEditor() {
 	VBoxContainer *vbox_container = memnew(VBoxContainer);
