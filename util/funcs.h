@@ -99,6 +99,8 @@ inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
 template <typename T>
 void copy_to(PoolVector<T> &to, const Vector<T> &from) {
 	to.resize(from.size());
+	// resize can fail in case allocation was not possible
+	ERR_FAIL_COND(from.size() != to.size());
 	typename PoolVector<T>::Write w = to.write();
 	for (unsigned int i = 0; i < from.size(); ++i) {
 		w[i] = from[i];
@@ -112,6 +114,8 @@ inline String ptr2s(const void *p) {
 template <typename T>
 void raw_copy_to(PoolVector<T> &to, const std::vector<T> &from) {
 	to.resize(from.size());
+	// resize can fail in case allocation was not possible
+	ERR_FAIL_COND(from.size() != to.size());
 	typename PoolVector<T>::Write w = to.write();
 	memcpy(w.ptr(), from.data(), from.size() * sizeof(T));
 }
