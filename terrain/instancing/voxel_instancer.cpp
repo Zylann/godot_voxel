@@ -207,7 +207,10 @@ void VoxelInstancer::process_mesh_lods() {
 		ERR_CONTINUE(item_base == nullptr);
 		// TODO Optimization: would be nice to not need this cast by iterating only the same item types
 		const VoxelInstanceLibraryItem *item = Object::cast_to<VoxelInstanceLibraryItem>(item_base);
-		ERR_CONTINUE(item == nullptr);
+		if (item == nullptr) {
+			// Not a multimesh item
+			continue;
+		}
 		const int mesh_lod_count = item->get_mesh_lod_count();
 		if (mesh_lod_count <= 1) {
 			// This block has no LOD
