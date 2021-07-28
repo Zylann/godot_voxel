@@ -115,7 +115,7 @@ template <typename T>
 void raw_copy_to(PoolVector<T> &to, const std::vector<T> &from) {
 	to.resize(from.size());
 	// resize can fail in case allocation was not possible
-	ERR_FAIL_COND(from.size() != to.size());
+	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));
 	typename PoolVector<T>::Write w = to.write();
 	memcpy(w.ptr(), from.data(), from.size() * sizeof(T));
 }
