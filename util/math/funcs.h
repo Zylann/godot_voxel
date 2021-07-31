@@ -90,12 +90,10 @@ inline T squared(const T x) {
 	return x * x;
 }
 
-// TODO Rename udiv => floordiv
-
 // Performs euclidean division, aka floored division.
 // This implementation expects a strictly positive divisor.
 //
-//    x   | `/` | udiv
+//    x   | `/` | floordiv
 // ----------------------
 //    -6  | -2  | -2
 //    -5  | -1  | -2
@@ -110,7 +108,7 @@ inline T squared(const T x) {
 //    4   | 1   | 1
 //    5   | 1   | 1
 //    6   | 2   | 2
-inline int udiv(int x, int d) {
+inline int floordiv(int x, int d) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(d < 0);
 #endif
@@ -122,7 +120,7 @@ inline int udiv(int x, int d) {
 }
 
 inline int ceildiv(int x, int d) {
-	return -udiv(-x, d);
+	return -floordiv(-x, d);
 }
 
 // TODO Rename `wrapi`

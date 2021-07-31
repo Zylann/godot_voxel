@@ -151,12 +151,12 @@ struct Vector3i {
 		::sort(a.z, b.z);
 	}
 
-	inline Vector3i udiv(const Vector3i d) const {
-		return Vector3i(::udiv(x, d.x), ::udiv(y, d.y), ::udiv(z, d.z));
+	inline Vector3i floordiv(const Vector3i d) const {
+		return Vector3i(::floordiv(x, d.x), ::floordiv(y, d.y), ::floordiv(z, d.z));
 	}
 
 	inline Vector3i floordiv(const int d) const {
-		return Vector3i(::udiv(x, d), ::udiv(y, d), ::udiv(z, d));
+		return Vector3i(::floordiv(x, d), ::floordiv(y, d), ::floordiv(z, d));
 	}
 
 	inline Vector3i ceildiv(const int d) const {
