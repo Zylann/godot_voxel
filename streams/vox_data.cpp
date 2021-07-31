@@ -103,6 +103,20 @@ inline Vector3i magica_to_opengl(const Vector3i &src) {
 	return dst;
 }
 
+void transpose(Vector3i sx, Vector3i sy, Vector3i sz, Vector3i &dx, Vector3i &dy, Vector3i &dz) {
+	dx.x = sx.x;
+	dx.y = sy.x;
+	dx.z = sz.x;
+
+	dy.x = sx.y;
+	dy.y = sy.y;
+	dy.z = sz.y;
+
+	dz.x = sx.z;
+	dz.y = sy.z;
+	dz.z = sz.z;
+}
+
 static Basis parse_basis(uint8_t data) {
 	// bits 0 and 1 are the index of the non-zero entry in the first row
 	const int xi = (data >> 0) & 0x03;
@@ -123,16 +137,26 @@ static Basis parse_basis(uint8_t data) {
 	y[yi] = y_sign;
 	z[zi] = z_sign;
 
-	// TODO Not sure yet if that also works
-	x = magica_to_opengl(x);
-	y = magica_to_opengl(y);
-	z = magica_to_opengl(z);
+	// The following is a bit messy, had a hard time figuring out the correct combination of conversions
+	// to bring MagicaVoxel rotations to Godot rotations.
+	// TODO Maybe this can be simplified?
+
+	Vector3i magica_x, magica_y, magica_z;
+	transpose(x, y, z, magica_x, magica_y, magica_z);
+	// PRINT_VERBOSE(String("---\nX: {0}\nY: {1}\nZ: {2}")
+	// 					  .format(varray(magica_x.to_vec3(), magica_y.to_vec3(), magica_z.to_vec3())));
+	magica_x = magica_to_opengl(magica_x);
+	magica_y = magica_to_opengl(magica_y);
+	magica_z = magica_to_opengl(magica_z);
+	z = magica_x;
+	x = magica_y;
+	y = magica_z;
 
 	Basis b;
 	b.set(
-			x.x, x.y, x.z,
-			y.x, y.y, y.z,
-			z.x, z.y, z.z);
+			x.x, y.x, z.x,
+			x.y, y.y, z.y,
+			x.z, y.z, z.z);
 
 	return b;
 }
@@ -210,9 +234,9 @@ Error Data::_load_from_file(String fpath) {
 			size.x = f.get_32();
 			size.y = f.get_32();
 			size.z = f.get_32();
-			ERR_FAIL_COND_V(size.x > 0xff, ERR_PARSE_ERROR);
-			ERR_FAIL_COND_V(size.y > 0xff, ERR_PARSE_ERROR);
-			ERR_FAIL_COND_V(size.z > 0xff, ERR_PARSE_ERROR);
+			ERR_FAIL_COND_V(size.x > 256, ERR_PARSE_ERROR);
+			ERR_FAIL_COND_V(size.y > 256, ERR_PARSE_ERROR);
+			ERR_FAIL_COND_V(size.z > 256, ERR_PARSE_ERROR);
 			last_size = magica_to_opengl(size);
 
 		} else if (strcmp(chunk_id, "XYZI") == 0) {
@@ -284,6 +308,15 @@ Error Data::_load_from_file(String fpath) {
 			const Error frame_err = parse_dictionary(f, frame);
 			ERR_FAIL_COND_V(frame_err != OK, frame_err);
 
+			auto t_it = frame.find("_t");
+			if (t_it != frame.end()) {
+				// It is 3 integers formatted as text
+				Vector<float> coords = t_it->second.split_floats(" ");
+				ERR_FAIL_COND_V(coords.size() < 3, ERR_PARSE_ERROR);
+				//PRINT_VERBOSE(String("Pos: {0}, {1}, {2}").format(varray(coords[0], coords[1], coords[2])));
+				node.position = magica_to_opengl(Vector3i(coords[0], coords[1], coords[2]));
+			}
+
 			auto r_it = frame.find("_r");
 			if (r_it != frame.end()) {
 				Rotation rot;
@@ -291,14 +324,6 @@ Error Data::_load_from_file(String fpath) {
 				rot.data = r_it->second.to_int();
 				rot.basis = parse_basis(rot.data);
 				node.rotation = rot;
-			}
-
-			auto t_it = frame.find("_t");
-			if (t_it != frame.end()) {
-				// It is 3 integers formatted as text
-				Vector<float> coords = t_it->second.split_floats(" ");
-				ERR_FAIL_COND_V(coords.size() < 3, ERR_PARSE_ERROR);
-				node.position = magica_to_opengl(Vector3i(coords[0], coords[1], coords[2]));
 			}
 
 			//}
