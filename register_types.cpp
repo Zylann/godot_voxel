@@ -3,11 +3,6 @@
 #include "edition/voxel_tool_buffer.h"
 #include "edition/voxel_tool_lod_terrain.h"
 #include "edition/voxel_tool_terrain.h"
-#include "editor/editor_plugin.h"
-#include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
-#include "editor/graph/voxel_graph_editor_plugin.h"
-#include "editor/instance_library/voxel_instance_library_editor_plugin.h"
-#include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "generators/graph/voxel_generator_graph.h"
 #include "generators/graph/voxel_graph_node_db.h"
 #include "generators/simple/voxel_generator_flat.h"
@@ -48,6 +43,12 @@
 #include <core/engine.h>
 
 #ifdef TOOLS_ENABLED
+#include "editor/editor_plugin.h"
+#include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
+#include "editor/graph/voxel_graph_editor_plugin.h"
+#include "editor/instance_library/voxel_instance_library_editor_plugin.h"
+#include "editor/terrain/voxel_terrain_editor_plugin.h"
+#include "editor/vox/vox_editor_plugin.h"
 #include "editor/voxel_debug.h"
 #endif
 
@@ -147,6 +148,7 @@ void register_voxel_types() {
 	EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
 	EditorPlugins::add_by_type<FastNoiseLiteEditorPlugin>();
+	EditorPlugins::add_by_type<VoxEditorPlugin>();
 #endif
 
 #ifdef VOXEL_RUN_TESTS
