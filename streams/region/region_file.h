@@ -62,6 +62,7 @@ struct VoxelRegionBlockInfo {
 // Archive file storing voxels in a fixed sparse grid data structure.
 // The format is designed to be easily writable in chunks so it can be used for partial in-game loading and saving.
 // Inspired by https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game
+// (if that link doesn't work, it can be found on Wayback Machine)
 //
 // This is a stream implementation, where the file handle remains in use for read and write and only keeps a fraction
 // of data in memory.

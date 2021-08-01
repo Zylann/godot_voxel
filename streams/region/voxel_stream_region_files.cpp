@@ -128,16 +128,10 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 	}
 
 	if (!_meta_loaded) {
-		VoxelFileResult load_res = load_meta();
+		const VoxelFileResult load_res = load_meta();
 		if (load_res != VOXEL_FILE_OK) {
-			if (!_meta_saved && load_res == VOXEL_FILE_CANT_OPEN) {
-				// TODO Is it a good idea to save on read?
-				// New data folder, save it for first time
-				VoxelFileResult save_res = save_meta();
-				ERR_FAIL_COND_V(save_res != VOXEL_FILE_OK, EMERGE_FAILED);
-			} else {
-				return EMERGE_FAILED;
-			}
+			// No block was ever saved
+			return EMERGE_OK_FALLBACK;
 		}
 	}
 
@@ -148,7 +142,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 	ERR_FAIL_COND_V(lod >= _meta.lod_count, EMERGE_FAILED);
 	ERR_FAIL_COND_V(block_size != out_buffer->get_size(), EMERGE_FAILED);
 
-	// Configure depths, as they currently are only specified in the meta file.
+	// Configure depths, as they might not be specified in old block data.
 	// Regions are expected to contain such depths, and use those in the buffer to know how much data to read.
 	for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
 		out_buffer->set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
@@ -164,7 +158,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 
 	const Vector3i block_rpos = block_pos.wrap(region_size);
 
-	Error err = cache->region.load_block(block_rpos, out_buffer, _block_serializer);
+	const Error err = cache->region.load_block(block_rpos, out_buffer, _block_serializer);
 	switch (err) {
 		case OK:
 			return EMERGE_OK;
