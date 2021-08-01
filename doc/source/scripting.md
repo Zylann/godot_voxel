@@ -150,7 +150,12 @@ This logic has been implemented [in this demo](https://github.com/Zylann/voxelga
 Custom stream
 ---------------
 
-TODO
+Making a custom stream works similarly to a custom generator.
+
+You have to extend the class `VoxelStreamScript` and override the methods `_immerge_block` and `_emerge_block`.
+See 
+
+TODO Script example of a custom stream
 
 
 Creating a terrain node
