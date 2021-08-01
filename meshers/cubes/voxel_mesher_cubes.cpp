@@ -194,7 +194,7 @@ void build_voxel_mesh_as_greedy_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
 		const Span<Voxel_T> voxel_buffer,
 		const Vector3i block_size,
-		std::vector<uint8_t> mask_memory_pool,
+		std::vector<uint8_t> &mask_memory_pool,
 		Color_F color_func) {
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 				  block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
