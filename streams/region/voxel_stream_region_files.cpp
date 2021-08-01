@@ -27,6 +27,10 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
 	_meta.lod_count = 1;
 	_meta.channel_depths.fill(VoxelBuffer::DEFAULT_CHANNEL_DEPTH);
+	_meta.channel_depths[VoxelBuffer::CHANNEL_TYPE] = VoxelBuffer::DEFAULT_TYPE_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBuffer::CHANNEL_SDF] = VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBuffer::CHANNEL_INDICES] = VoxelBuffer::DEFAULT_INDICES_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBuffer::CHANNEL_WEIGHTS] = VoxelBuffer::DEFAULT_WEIGHTS_CHANNEL_DEPTH;
 }
 
 VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
