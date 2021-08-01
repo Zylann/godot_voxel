@@ -409,7 +409,7 @@ Error Data::_load_from_file(String fpath) {
 			Material &material = *material_ptr;
 
 			const int material_id = f.get_32();
-			ERR_FAIL_COND_V(material_id < 1 || material_id > static_cast<int>(_palette.size()), ERR_INVALID_DATA);
+			ERR_FAIL_COND_V(material_id < 0 || material_id > static_cast<int>(_palette.size()), ERR_INVALID_DATA);
 			ERR_FAIL_COND_V_MSG(_materials.find(material_id) != _materials.end(), ERR_INVALID_DATA,
 					String("Material ID {0} already exists").format(varray(material_id)));
 			material.id = material_id;
