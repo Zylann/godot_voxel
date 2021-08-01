@@ -23,6 +23,7 @@ nav:
   - 'streams.md'
   - 'instancing.md'
   - 'editor.md'
+  - 'multiplayer.md'
   - 'scripting.md'
   - 'access_to_voxels_and_multithreading.md'
   - 'module_development.md'
