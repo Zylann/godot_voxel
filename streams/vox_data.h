@@ -29,11 +29,6 @@ struct Model {
 	std::vector<uint8_t> color_indexes;
 };
 
-struct Shape {
-	unsigned int model_id;
-	Vector3i position;
-};
-
 struct Node {
 	enum Type {
 		TYPE_TRANSFORM = 0,
