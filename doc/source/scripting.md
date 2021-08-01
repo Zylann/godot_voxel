@@ -9,15 +9,43 @@ Editing the terrain
 
 ### Using [VoxelTool](api/VoxelTool.md)
 
-TODO
+`VoxelTool` is a simplified API to access and modify voxel data. It is possible to obtain one from any class storing voxels, using the `get_voxel_tool()` function. That function will return a `VoxelTool` tied to the volume you got it from.
+
+See [VoxelTool](api/VoxelTool.md) for available functions. Note, depending on which class you get it from, subclasses of `VoxelTool` may have more specialized functions.
+
+It is possible to store a reference to `VoxelTool` in a member variable, in case you want to access voxels from the same volume many times. It is more efficient, because every call to `get_voxel_tool()` creates a new instance of it.
+
+Before you start modifying voxels, make sure you access the right channel.
+
+```gdscript
+# If you use VoxelMesherBlocky
+voxel_tool.channel = VoxelBuffer.CHANNEL_TYPE
+```
+
+```gdscript
+# If you use VoxelMesherTransvoxel
+voxel_tool.channel = VoxelBuffer.CHANNEL_SDF
+```
+
+```gdscript
+# If you use VoxelMesherCubes
+voxel_tool.channel = VoxelBuffer.CHANNEL_COLOR
+```
+
+### Boundary limitation
+
+When a terrain is streaming blocks in and out, it is not possible to edit past loaded borders. Either you will get an error, or nothing will happen.
+You can test if the area you want to access or edit is available by calling `VoxelTool.is_area_editable()`.
 
 
 ### LOD limitation
 
-TODO
+Similarly to bounds limitation, when you use LOD with `VoxelLodTerrain`, it is not possible to access or edit voxels beyond the first LOD level. Past this level, voxel data is no longer available at full resolution.
 
 
 ### Editing performance
+
+In general, editing voxels one by one is the slowest. It is ok for actually getting only a few, but if you plan to modify larger areas at once, you may prefer functions that do this in bulk, or copy/paste buffers.
 
 See [Access to voxels and multithreading](access_to_voxels_and_multithreading.md)
 
