@@ -106,11 +106,6 @@ private:
 };
 
 template <typename T>
-Span<const T> to_span(const std::vector<T> &vec) {
-	return Span<const T>(vec.data(), 0, vec.size());
-}
-
-template <typename T>
 Span<T> to_span(std::vector<T> &vec) {
 	return Span<T>(vec.data(), 0, vec.size());
 }
