@@ -116,8 +116,8 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 	return OK;
 }
 
-static Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher, std::vector<int> &surface_index_to_material,
-		Ref<Image> &out_atlas) {
+static Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher,
+		std::vector<unsigned int> &surface_index_to_material, Ref<Image> &out_atlas) {
 	//
 	VoxelMesher::Output output;
 	VoxelMesher::Input input = { voxels, 0 };
@@ -155,7 +155,7 @@ static Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher, std::vecto
 	return mesh;
 }
 
-static Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
+/*static Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
 		bool p_mipmaps, int p_texture_flags, bool p_streamable,
 		bool p_detect_3d, bool p_detect_srgb) {
 	//
@@ -165,8 +165,6 @@ static Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
 	f->store_8('D');
 	f->store_8('S');
 	f->store_8('T'); //godot streamable texture
-
-	const bool resize_to_po2 = false;
 
 	f->store_16(p_image->get_width());
 	f->store_16(0);
@@ -232,7 +230,7 @@ static Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
 
 	memdelete(f);
 	return OK;
-}
+}*/
 
 // template <typename K, typename T>
 // static T try_get(const Map<K, T> &map, const K &key, T defval) {
@@ -298,7 +296,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 		copy_3d_region_zxy(dst_color_indices, voxels->get_size(), Vector3i(VoxelMesherCubes::PADDING),
 				src_color_indices, model.size, Vector3i(), model.size);
 
-		std::vector<int> surface_index_to_material;
+		std::vector<unsigned int> surface_index_to_material;
 		Ref<Image> atlas;
 		Ref<Mesh> mesh = build_mesh(**voxels, **mesher, surface_index_to_material, atlas);
 
@@ -325,8 +323,8 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 		// Assign materials
 		if (p_store_colors_in_textures) {
 			// Can't share materials at the moment, because each atlas is specific to its mesh
-			for (unsigned int i = 0; i < surface_index_to_material.size(); ++i) {
-				const int material_index = surface_index_to_material[i];
+			for (unsigned int surface_index = 0; surface_index < surface_index_to_material.size(); ++surface_index) {
+				const unsigned int material_index = surface_index_to_material[surface_index];
 				CRASH_COND(material_index >= materials.size());
 				Ref<SpatialMaterial> material = materials[material_index]->duplicate();
 				if (atlas.is_valid()) {
@@ -339,13 +337,13 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 					texture->create_from_image(atlas, 0);
 					material->set_texture(SpatialMaterial::TEXTURE_ALBEDO, texture);
 				}
-				mesh->surface_set_material(i, material);
+				mesh->surface_set_material(surface_index, material);
 			}
 		} else {
-			for (unsigned int i = 0; i < surface_index_to_material.size(); ++i) {
-				const int material_index = surface_index_to_material[i];
+			for (unsigned int surface_index = 0; surface_index < surface_index_to_material.size(); ++surface_index) {
+				const unsigned int material_index = surface_index_to_material[surface_index];
 				CRASH_COND(material_index >= materials.size());
-				mesh->surface_set_material(i, materials[material_index]);
+				mesh->surface_set_material(surface_index, materials[material_index]);
 			}
 		}
 
