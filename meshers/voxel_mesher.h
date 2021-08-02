@@ -21,6 +21,7 @@ public:
 		FixedArray<Vector<Array>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 		unsigned int compression_flags = Mesh::ARRAY_COMPRESS_DEFAULT;
+		Ref<Image> atlas_image;
 	};
 
 	// This can be called from multiple threads at once. Make sure member vars are protected or thread-local.

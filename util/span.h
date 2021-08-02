@@ -111,8 +111,19 @@ Span<T> to_span(std::vector<T> &vec) {
 }
 
 template <typename T>
+Span<const T> const_span_from_position_and_size(const std::vector<T> &vec, unsigned int pos, unsigned int size) {
+	CRASH_COND(pos + size > vec.size());
+	return Span<const T>(vec.data(), pos, pos + vec.size());
+}
+
+template <typename T>
 Span<const T> to_span_const(const std::vector<T> &vec) {
 	return Span<const T>(vec.data(), 0, vec.size());
+}
+
+template <typename T, unsigned int N>
+Span<T> to_span(FixedArray<T, N> &a) {
+	return Span<T>(a.data(), a.size());
 }
 
 template <typename T, unsigned int N>

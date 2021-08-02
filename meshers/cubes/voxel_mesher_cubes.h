@@ -47,6 +47,9 @@ public:
 	Ref<Resource> duplicate(bool p_subresources = false) const override;
 	int get_used_channels_mask() const override;
 
+	void set_store_colors_in_texture(bool enable);
+	bool get_store_colors_in_texture() const;
+
 	bool supports_lod() const override { return false; }
 
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
@@ -55,13 +58,32 @@ public:
 		std::vector<Vector3> positions;
 		std::vector<Vector3> normals;
 		std::vector<Color> colors;
+		std::vector<Vector2> uvs;
 		std::vector<int> indices;
 
 		void clear() {
 			positions.clear();
 			normals.clear();
 			colors.clear();
+			uvs.clear();
 			indices.clear();
+		}
+	};
+
+	struct GreedyAtlasData {
+		struct ImageInfo {
+			unsigned int first_color_index;
+			unsigned int first_vertex_index; // From a quad
+			unsigned int size_x;
+			unsigned int size_y;
+			unsigned int surface_index;
+		};
+		std::vector<Color8> colors;
+		std::vector<ImageInfo> images;
+
+		void clear() {
+			colors.clear();
+			images.clear();
 		}
 	};
 
@@ -73,11 +95,13 @@ private:
 		ColorMode color_mode = COLOR_RAW;
 		Ref<VoxelColorPalette> palette;
 		bool greedy_meshing = true;
+		bool store_colors_in_texture = false;
 	};
 
 	struct Cache {
 		FixedArray<Arrays, MATERIAL_COUNT> arrays_per_material;
 		std::vector<uint8_t> mask_memory_pool;
+		GreedyAtlasData greedy_atlas_data;
 	};
 
 	// Parameters
