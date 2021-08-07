@@ -4,6 +4,7 @@
 #include "../../storage/voxel_buffer.h"
 #include "../../streams/vox_data.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/profiling.h"
 
 #include <core/os/file_access.h>
 #include <scene/3d/mesh_instance.h>
@@ -282,7 +283,8 @@ static Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher,
 Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save_path,
 		const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
 		Variant *r_metadata) {
-	//
+	VOXEL_PROFILE_SCOPE();
+
 	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton()->store_colors_in_texture];
 	const float p_scale = p_options[VoxelStringNames::get_singleton()->scale];
 
@@ -409,6 +411,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 	// Save meshes
 	for (int model_index = 0; model_index < meshes.size(); ++model_index) {
+		VOXEL_PROFILE_SCOPE();
 		Ref<Mesh> mesh = meshes[model_index].mesh;
 		String res_save_path = String("{0}.model{1}.mesh").format(varray(p_save_path, model_index));
 		// `FLAG_CHANGE_PATH` did not do what I thought it did.
@@ -421,13 +424,16 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 	root_node->set_name(p_save_path.get_file().get_basename());
 
 	// Save scene
-	Ref<PackedScene> scene;
-	scene.instance();
-	scene->pack(root_node);
-	String scene_save_path = p_save_path + ".tscn";
-	const Error save_err = ResourceSaver::save(scene_save_path, scene);
-	memdelete(root_node);
-	ERR_FAIL_COND_V_MSG(save_err != OK, save_err, "Cannot save scene to file '" + scene_save_path);
+	{
+		VOXEL_PROFILE_SCOPE();
+		Ref<PackedScene> scene;
+		scene.instance();
+		scene->pack(root_node);
+		String scene_save_path = p_save_path + ".tscn";
+		const Error save_err = ResourceSaver::save(scene_save_path, scene);
+		memdelete(root_node);
+		ERR_FAIL_COND_V_MSG(save_err != OK, save_err, "Cannot save scene to file '" + scene_save_path);
+	}
 
 	return OK;
 }
