@@ -49,6 +49,7 @@ String VoxelVoxImporter::get_resource_type() const {
 void VoxelVoxImporter::get_import_options(List<ImportOption> *r_options, int p_preset) const {
 	VoxelStringNames *sn = VoxelStringNames::get_singleton();
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->store_colors_in_texture), false));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::REAL, sn->scale), 1.f));
 }
 
 bool VoxelVoxImporter::get_option_visibility(const String &p_option, const Map<StringName, Variant> &p_options) const {
@@ -70,7 +71,7 @@ struct VoxMesh {
 };
 
 static Error process_scene_node_recursively(const vox::Data &data, int node_id, Spatial *parent_node,
-		Spatial *&root_node, int depth, const Vector<VoxMesh> &meshes) {
+		Spatial *&root_node, int depth, const Vector<VoxMesh> &meshes, float scale) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const vox::Node *vox_node = data.get_node(node_id);
@@ -86,15 +87,18 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 				node->set_owner(root_node);
 			}
 			const vox::TransformNode *vox_transform_node = reinterpret_cast<const vox::TransformNode *>(vox_node);
-			node->set_transform(Transform(vox_transform_node->rotation.basis, vox_transform_node->position.to_vec3()));
-			process_scene_node_recursively(data, vox_transform_node->child_node_id, node, root_node, depth + 1, meshes);
+			node->set_transform(Transform(
+					vox_transform_node->rotation.basis,
+					vox_transform_node->position.to_vec3() * scale));
+			process_scene_node_recursively(
+					data, vox_transform_node->child_node_id, node, root_node, depth + 1, meshes, scale);
 		} break;
 
 		case vox::Node::TYPE_GROUP: {
 			const vox::GroupNode *vox_group_node = reinterpret_cast<const vox::GroupNode *>(vox_node);
 			for (unsigned int i = 0; i < vox_group_node->child_node_ids.size(); ++i) {
 				const int child_node_id = vox_group_node->child_node_ids[i];
-				process_scene_node_recursively(data, child_node_id, parent_node, root_node, depth + 1, meshes);
+				process_scene_node_recursively(data, child_node_id, parent_node, root_node, depth + 1, meshes, scale);
 			}
 		} break;
 
@@ -104,7 +108,7 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 			const vox::ShapeNode *vox_shape_node = reinterpret_cast<const vox::ShapeNode *>(vox_node);
 			const VoxMesh &mesh_data = meshes[vox_shape_node->model_id];
 			ERR_FAIL_COND_V(mesh_data.mesh.is_null(), ERR_BUG);
-			const Vector3 offset = -mesh_data.pivot;
+			const Vector3 offset = -mesh_data.pivot * scale;
 			add_mesh_instance(mesh_data.mesh, parent_node, root_node, offset);
 		} break;
 
@@ -116,8 +120,21 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 	return OK;
 }
 
+static void scale_surface(Array &surface, float scale) {
+	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
+	// Avoiding stupid CoW, assuming this array holds the only instance of this vector
+	surface[Mesh::ARRAY_VERTEX] = PoolVector3Array();
+	{
+		PoolVector3Array::Write w = positions.write();
+		for (int vertex_index = 0; vertex_index < positions.size(); ++vertex_index) {
+			w[vertex_index] *= scale;
+		}
+	}
+	surface[Mesh::ARRAY_VERTEX] = positions;
+}
+
 static Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher,
-		std::vector<unsigned int> &surface_index_to_material, Ref<Image> &out_atlas) {
+		std::vector<unsigned int> &surface_index_to_material, Ref<Image> &out_atlas, float p_scale) {
 	//
 	VoxelMesher::Output output;
 	VoxelMesher::Input input = { voxels, 0 };
@@ -141,6 +158,10 @@ static Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher,
 		CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
 		if (!is_surface_triangulated(surface)) {
 			continue;
+		}
+
+		if (p_scale != 1.f) {
+			scale_surface(surface, p_scale);
 		}
 
 		mesh->add_surface_from_arrays(output.primitive_type, surface, Array(), output.compression_flags);
@@ -246,6 +267,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 		Variant *r_metadata) {
 	//
 	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton()->store_colors_in_texture];
+	const float p_scale = p_options[VoxelStringNames::get_singleton()->scale];
 
 	vox::Data data;
 	const Error load_err = data.load_from_file(p_source_file);
@@ -298,7 +320,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 		std::vector<unsigned int> surface_index_to_material;
 		Ref<Image> atlas;
-		Ref<Mesh> mesh = build_mesh(**voxels, **mesher, surface_index_to_material, atlas);
+		Ref<Mesh> mesh = build_mesh(**voxels, **mesher, surface_index_to_material, atlas, p_scale);
 
 		if (mesh.is_null()) {
 			continue;
@@ -358,7 +380,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 	Spatial *root_node = nullptr;
 	if (data.get_root_node_id() != -1) {
 		// Convert scene graph into a node tree
-		process_scene_node_recursively(data, data.get_root_node_id(), nullptr, root_node, 0, meshes);
+		process_scene_node_recursively(data, data.get_root_node_id(), nullptr, root_node, 0, meshes, p_scale);
 		ERR_FAIL_COND_V(root_node == nullptr, ERR_INVALID_DATA);
 
 	} else if (meshes.size() > 0) {

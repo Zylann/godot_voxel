@@ -26,6 +26,7 @@ public:
 	StringName block_unloaded;
 
 	StringName store_colors_in_texture;
+	StringName scale;
 
 	StringName u_transition_mask;
 	StringName u_block_local_transform;
