@@ -92,6 +92,23 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 					vox_transform_node->position.to_vec3() * scale));
 			process_scene_node_recursively(
 					data, vox_transform_node->child_node_id, node, root_node, depth + 1, meshes, scale);
+
+			// If the parent isn't anything special and has only one child,
+			// it may be cleaner to flatten the hierarchy. We keep the root node unaffected.
+			// TODO Any way to not need a string to check if a node is a specific class?
+			if (node != root_node && node->get_class() == "Spatial" && node->get_child_count() == 1) {
+				Spatial *child = Object::cast_to<Spatial>(node->get_child(0));
+				if (child != nullptr) {
+					node->remove_child(child);
+					parent_node->remove_child(node);
+					child->set_transform(node->get_transform() * child->get_transform());
+					// TODO Would be nice if I could just replace the node without any fuss but `replace_by` is too busy
+					parent_node->add_child(child);
+					// Removal from previous parent unsets the owner, so we have to set it again
+					child->set_owner(root_node);
+					memdelete(node);
+				}
+			}
 		} break;
 
 		case vox::Node::TYPE_GROUP: {
