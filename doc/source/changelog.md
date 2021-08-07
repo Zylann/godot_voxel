@@ -16,6 +16,9 @@ Ongoing development - `master`
     - Added `VoxelToolTerrain.for_each_voxel_metadata_in_area()` to quickly find all metadata in a box
     - Added property to configure collision margin
 
+- Blocky voxels
+    - Added *.vox scene importer to import MagicaVoxel files as scenes where models are converted into meshes
+
 - Smooth voxels
     - Initial support for texturing data in voxels, using 4-bit indices and weights
     - Optimized `VoxelMesherTransvoxel`'s hot path, making it about 20% faster
@@ -23,11 +26,12 @@ Ongoing development - `master`
     - Added `get_voxel_f_interpolated` to `VoxelToolLodTerrain`, useful to obtain interpolated SDF
     - Added option to simplify meshes with Transvoxel, using MeshOptimizer
     - Added extra option to `VoxelInstanceGenerator` to emit from faces more precisely, especially when meshes got simplified (slower than the other options)
+    - `VoxelInstancer`: added menu to setup a multimesh item from a scene (similarly to GridMap), which also allows to set up colliders
     - `VoxelInstancer`: added initial support for instancing regular scenes (slower than multimeshes)
 
 - Breaking changes
-    - `VoxelBuffer` channels `DATA3` and `DATA4` were renamed `INDICES` and `WEIGHTS`
-    - `VoxelInstanceGenerator.EMIT_FROM_FACES` got renamed `EMIT_FROM_FACES_FAST`. `EMIT_FROM_FACES` still exists but is a different algorithm.
+    - `VoxelBuffer`: channels `DATA3` and `DATA4` were renamed `INDICES` and `WEIGHTS`
+    - `VoxelInstanceGenerator`: `EMIT_FROM_FACES` got renamed `EMIT_FROM_FACES_FAST`. `EMIT_FROM_FACES` still exists but is a different algorithm.
 
 - Fixes
     - `VoxelGeneratorGraph`: changes to node properties are now saved properly
@@ -35,7 +39,10 @@ Ongoing development - `master`
     - `VoxelMesherTransvoxel`: no longer crashes when the input buffer is not cubic
     - `VoxelLodTerrain`: fixed errors and crashes when editing voxels near loading borders
     - `VoxelTool` channel no longer defaults to 7 when using `get_voxel_tool` from a terrain with a stream assigned. Instead it picks first used channel of the mesher (fallback order is mesher, then generator, then stream).
-    - `VoxelInstancer`: fix error when node visibility changes
+    - `VoxelInstancer`: fixed error when node visibility changes
+    - `VoxelTerrain`: fixed materials shown under the wrong inspector category
+    - `VoxelStreamRegionFiles`: fixed errors caused by meta file being sometimes written with wrong depth values
+    - Fix some crashes occurring when all PoolVector allocs are in use (Godot 3.x limitation), it will print errors instead
 
 
 09/05/2021 - `godot3.3`
