@@ -147,6 +147,8 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 
 	const int air_type = 0;
 	const int matter_type = 1;
+	const int air_color = 0;
+	const int matter_color = 1;
 
 	if (origin_in_voxels.y >= isosurface_upper_bound) {
 		// Fill with air
@@ -154,6 +156,8 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 			buffer.clear_channel_f(params.channel, 100.0);
 		} else if (params.channel == VoxelBuffer::CHANNEL_TYPE) {
 			buffer.clear_channel(params.channel, air_type);
+		} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
+			buffer.clear_channel(params.channel, air_color);
 		}
 
 	} else if (origin_in_voxels.y + (buffer.get_size().y << lod) < isosurface_lower_bound) {
@@ -162,6 +166,8 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 			buffer.clear_channel_f(params.channel, -100.0);
 		} else if (params.channel == VoxelBuffer::CHANNEL_TYPE) {
 			buffer.clear_channel(params.channel, matter_type);
+		} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
+			buffer.clear_channel(params.channel, matter_color);
 		}
 
 	} else {
@@ -185,6 +191,8 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 							buffer.set_voxel_f(-1, x, y, z, params.channel);
 						} else if (params.channel == VoxelBuffer::CHANNEL_TYPE) {
 							buffer.set_voxel(matter_type, x, y, z, params.channel);
+						} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
+							buffer.set_voxel(matter_color, x, y, z, params.channel);
 						}
 						continue;
 
@@ -194,6 +202,8 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 							buffer.set_voxel_f(1, x, y, z, params.channel);
 						} else if (params.channel == VoxelBuffer::CHANNEL_TYPE) {
 							buffer.set_voxel(air_type, x, y, z, params.channel);
+						} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
+							buffer.set_voxel(air_color, x, y, z, params.channel);
 						}
 						continue;
 					}
@@ -210,6 +220,8 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 						buffer.set_voxel_f(d, x, y, z, params.channel);
 					} else if (params.channel == VoxelBuffer::CHANNEL_TYPE && d < 0) {
 						buffer.set_voxel(matter_type, x, y, z, params.channel);
+					} else if (params.channel == VoxelBuffer::CHANNEL_COLOR && d < 0) {
+						buffer.set_voxel(matter_color, x, y, z, params.channel);
 					}
 				}
 			}
