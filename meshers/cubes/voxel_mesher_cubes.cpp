@@ -726,11 +726,6 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	}
 
 	const VoxelBuffer &voxels = input.voxels;
-#ifdef TOOLS_ENABLED
-	if (input.lod != 0) {
-		WARN_PRINT("VoxelMesherCubes received lod != 0, it is not supported");
-	}
-#endif
 
 	// Iterate 3D padded data to extract voxel faces.
 	// This is the most intensive job in this class, so all required data should be as fit as possible.
@@ -937,10 +932,22 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			break;
 	}
 
+	if (input.lod > 0) {
+		// TODO This is very crude LOD, there will be cracks at the borders.
+		// One way would be to not cull faces on chunk borders if any neighbor face is air
+		const float lod_scale = 1 << input.lod;
+		for (unsigned int material_index = 0; material_index < cache.arrays_per_material.size(); ++material_index) {
+			Arrays &arrays = cache.arrays_per_material[material_index];
+			for (unsigned int i = 0; i < arrays.positions.size(); ++i) {
+				arrays.positions[i] *= lod_scale;
+			}
+		}
+	}
+
 	// TODO We could return a single byte array and use Mesh::add_surface down the line?
 
-	for (unsigned int i = 0; i < MATERIAL_COUNT; ++i) {
-		const Arrays &arrays = cache.arrays_per_material[i];
+	for (unsigned int material_index = 0; material_index < MATERIAL_COUNT; ++material_index) {
+		const Arrays &arrays = cache.arrays_per_material[material_index];
 
 		if (arrays.positions.size() != 0) {
 			Array mesh_arrays;

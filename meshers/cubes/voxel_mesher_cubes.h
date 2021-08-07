@@ -17,6 +17,7 @@ public:
 		MATERIAL_COUNT
 	};
 
+	// Tells how to interpret voxel color data
 	enum ColorMode {
 		// The voxel value will be treated as an RGBA color with components of equal bit depth
 		COLOR_RAW = 0,
@@ -50,7 +51,7 @@ public:
 	void set_store_colors_in_texture(bool enable);
 	bool get_store_colors_in_texture() const;
 
-	bool supports_lod() const override { return false; }
+	bool supports_lod() const override { return true; }
 
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
