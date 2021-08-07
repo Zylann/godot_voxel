@@ -27,6 +27,7 @@ public:
 
 	StringName store_colors_in_texture;
 	StringName scale;
+	StringName enable_baked_lighting;
 
 	StringName u_transition_mask;
 	StringName u_block_local_transform;

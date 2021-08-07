@@ -51,19 +51,22 @@ void VoxelVoxImporter::get_import_options(List<ImportOption> *r_options, int p_p
 	VoxelStringNames *sn = VoxelStringNames::get_singleton();
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->store_colors_in_texture), false));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::REAL, sn->scale), 1.f));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->enable_baked_lighting), true));
 }
 
 bool VoxelVoxImporter::get_option_visibility(const String &p_option, const Map<StringName, Variant> &p_options) const {
 	return true;
 }
 
-static void add_mesh_instance(Ref<Mesh> mesh, Node *parent, Node *owner, Vector3 offset) {
+static void add_mesh_instance(Ref<Mesh> mesh, Node *parent, Node *owner, Vector3 offset, bool p_enable_baked_lighting) {
 	MeshInstance *mesh_instance = memnew(MeshInstance);
 	mesh_instance->set_mesh(mesh);
 	parent->add_child(mesh_instance);
 	mesh_instance->set_owner(owner);
 	mesh_instance->set_translation(offset);
-	// TODO Colliders? Needs conventions or attributes probably
+	mesh_instance->set_flag(GeometryInstance::FLAG_USE_BAKED_LIGHT, p_enable_baked_lighting);
+	// TODO Colliders? Needs conventions or attributes probably.
+	// But due to the nature of voxels, users may often prefer to place colliders themselves (slopes notably).
 }
 
 struct VoxMesh {
@@ -72,7 +75,7 @@ struct VoxMesh {
 };
 
 static Error process_scene_node_recursively(const vox::Data &data, int node_id, Spatial *parent_node,
-		Spatial *&root_node, int depth, const Vector<VoxMesh> &meshes, float scale) {
+		Spatial *&root_node, int depth, const Vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const vox::Node *vox_node = data.get_node(node_id);
@@ -92,7 +95,8 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 					vox_transform_node->rotation.basis,
 					vox_transform_node->position.to_vec3() * scale));
 			process_scene_node_recursively(
-					data, vox_transform_node->child_node_id, node, root_node, depth + 1, meshes, scale);
+					data, vox_transform_node->child_node_id, node, root_node, depth + 1, meshes, scale,
+					p_enable_baked_lighting);
 
 			// If the parent isn't anything special and has only one child,
 			// it may be cleaner to flatten the hierarchy. We keep the root node unaffected.
@@ -116,7 +120,8 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 			const vox::GroupNode *vox_group_node = reinterpret_cast<const vox::GroupNode *>(vox_node);
 			for (unsigned int i = 0; i < vox_group_node->child_node_ids.size(); ++i) {
 				const int child_node_id = vox_group_node->child_node_ids[i];
-				process_scene_node_recursively(data, child_node_id, parent_node, root_node, depth + 1, meshes, scale);
+				process_scene_node_recursively(
+						data, child_node_id, parent_node, root_node, depth + 1, meshes, scale, p_enable_baked_lighting);
 			}
 		} break;
 
@@ -127,7 +132,7 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 			const VoxMesh &mesh_data = meshes[vox_shape_node->model_id];
 			ERR_FAIL_COND_V(mesh_data.mesh.is_null(), ERR_BUG);
 			const Vector3 offset = -mesh_data.pivot * scale;
-			add_mesh_instance(mesh_data.mesh, parent_node, root_node, offset);
+			add_mesh_instance(mesh_data.mesh, parent_node, root_node, offset, p_enable_baked_lighting);
 		} break;
 
 		default:
@@ -287,6 +292,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton()->store_colors_in_texture];
 	const float p_scale = p_options[VoxelStringNames::get_singleton()->scale];
+	const bool p_enable_baked_lighting = p_options[VoxelStringNames::get_singleton()->enable_baked_lighting];
 
 	vox::Data data;
 	const Error load_err = data.load_from_file(p_source_file);
@@ -399,14 +405,15 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 	Spatial *root_node = nullptr;
 	if (data.get_root_node_id() != -1) {
 		// Convert scene graph into a node tree
-		process_scene_node_recursively(data, data.get_root_node_id(), nullptr, root_node, 0, meshes, p_scale);
+		process_scene_node_recursively(
+				data, data.get_root_node_id(), nullptr, root_node, 0, meshes, p_scale, p_enable_baked_lighting);
 		ERR_FAIL_COND_V(root_node == nullptr, ERR_INVALID_DATA);
 
 	} else if (meshes.size() > 0) {
 		// Some vox files don't have a scene graph
 		root_node = memnew(Spatial);
 		const VoxMesh &mesh0 = meshes[0];
-		add_mesh_instance(mesh0.mesh, root_node, root_node, Vector3());
+		add_mesh_instance(mesh0.mesh, root_node, root_node, Vector3(), p_enable_baked_lighting);
 	}
 
 	// Save meshes
