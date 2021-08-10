@@ -12,20 +12,20 @@ Ongoing development - `master`
 -------------------------------
 
 - General
-    - Added `VoxelTerrain.get_data_block_size()`
-    - Added `VoxelToolTerrain.for_each_voxel_metadata_in_area()` to quickly find all metadata in a box
-    - Added property to configure collision margin
+    - `VoxelTerrain`: added `get_data_block_size()`
+    - `VoxelToolTerrain`: added  `for_each_voxel_metadata_in_area()` to quickly find all metadata in a box
+    - Added property to terrain nodes to configure collision margin
 
 - Blocky voxels
     - Added *.vox scene importer to import MagicaVoxel files as scenes where models are converted into meshes
 
 - Smooth voxels
     - Initial support for texturing data in voxels, using 4-bit indices and weights
-    - Optimized `VoxelMesherTransvoxel`'s hot path, making it about 20% faster
-    - Added `copy` to `VoxelToolLodTerrain`
-    - Added `get_voxel_f_interpolated` to `VoxelToolLodTerrain`, useful to obtain interpolated SDF
-    - Added option to simplify meshes with Transvoxel, using MeshOptimizer
-    - Added extra option to `VoxelInstanceGenerator` to emit from faces more precisely, especially when meshes got simplified (slower than the other options)
+    - `VoxelMesherTransvoxel`: optimized hot path, making it about 20% faster
+    - `VoxelMesherTransvoxel`: added option to simplify meshes using MeshOptimizer
+    - `VoxelToolLodTerrain`: added `copy` function
+    - `VoxelToolLodTerrain`: added `get_voxel_f_interpolated` function, useful to obtain interpolated SDF
+    - `VoxelInstanceGenerator`: added extra option to emit from faces more precisely, especially when meshes got simplified (slower than the other options)
     - `VoxelInstancer`: added menu to setup a multimesh item from a scene (similarly to GridMap), which also allows to set up colliders
     - `VoxelInstancer`: added initial support for instancing regular scenes (slower than multimeshes)
 
