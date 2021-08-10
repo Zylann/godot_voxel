@@ -5,6 +5,7 @@
 #include "../../streams/vox_data.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
+#include "vox_import_funcs.h"
 
 #include <core/os/file_access.h>
 #include <scene/3d/mesh_instance.h>
@@ -40,9 +41,11 @@ String VoxelVoxImporter::get_resource_type() const {
 	return "PackedScene";
 }
 
-// float VoxelVoxImporter::get_priority() const {
-//     return 0;
-// }
+float VoxelVoxImporter::get_priority() const {
+	// Higher import priority means the importer is preferred over another.
+	// By default, use this importer.
+	return 1.0;
+}
 
 // int VoxelVoxImporter::get_import_order() const {
 // }
@@ -141,62 +144,6 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 	}
 
 	return OK;
-}
-
-static void scale_surface(Array &surface, float scale) {
-	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
-	// Avoiding stupid CoW, assuming this array holds the only instance of this vector
-	surface[Mesh::ARRAY_VERTEX] = PoolVector3Array();
-	{
-		PoolVector3Array::Write w = positions.write();
-		for (int vertex_index = 0; vertex_index < positions.size(); ++vertex_index) {
-			w[vertex_index] *= scale;
-		}
-	}
-	surface[Mesh::ARRAY_VERTEX] = positions;
-}
-
-static Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher,
-		std::vector<unsigned int> &surface_index_to_material, Ref<Image> &out_atlas, float p_scale) {
-	//
-	VoxelMesher::Output output;
-	VoxelMesher::Input input = { voxels, 0 };
-	mesher.build(output, input);
-
-	if (output.surfaces.empty()) {
-		return Ref<ArrayMesh>();
-	}
-
-	Ref<ArrayMesh> mesh;
-	mesh.instance();
-
-	int surface_index = 0;
-	for (int i = 0; i < output.surfaces.size(); ++i) {
-		Array surface = output.surfaces[i];
-
-		if (surface.empty()) {
-			continue;
-		}
-
-		CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(surface)) {
-			continue;
-		}
-
-		if (p_scale != 1.f) {
-			scale_surface(surface, p_scale);
-		}
-
-		mesh->add_surface_from_arrays(output.primitive_type, surface, Array(), output.compression_flags);
-		surface_index_to_material.push_back(i);
-		++surface_index;
-	}
-
-	if (output.atlas_image.is_valid()) {
-		out_atlas = output.atlas_image;
-	}
-
-	return mesh;
 }
 
 /*static Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
@@ -345,7 +292,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 		std::vector<unsigned int> surface_index_to_material;
 		Ref<Image> atlas;
-		Ref<Mesh> mesh = build_mesh(**voxels, **mesher, surface_index_to_material, atlas, p_scale);
+		Ref<Mesh> mesh = VoxImportUtils::build_mesh(**voxels, **mesher, surface_index_to_material, atlas, p_scale);
 
 		if (mesh.is_null()) {
 			continue;

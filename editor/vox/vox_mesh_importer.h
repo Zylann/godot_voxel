@@ -1,11 +1,11 @@
-#ifndef VOX_IMPORTER_H
-#define VOX_IMPORTER_H
+#ifndef VOX_MESH_IMPORTER_H
+#define VOX_MESH_IMPORTER_H
 
 #include <editor/import/editor_import_plugin.h>
 
-// Imports a vox file as a scene, where the internal scene layout is preserved as nodes
-class VoxelVoxImporter : public ResourceImporter {
-	GDCLASS(VoxelVoxImporter, ResourceImporter)
+// Imports a vox file as a single mesh, where all contents of the vox scene is merged
+class VoxelVoxMeshImporter : public ResourceImporter {
+	GDCLASS(VoxelVoxMeshImporter, ResourceImporter)
 public:
 	String get_importer_name() const override;
 	String get_visible_name() const override;
@@ -23,4 +23,4 @@ public:
 			List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata = nullptr) override;
 };
 
-#endif // VOX_IMPORTER_H
+#endif // VOX_MESH_IMPORTER_H
