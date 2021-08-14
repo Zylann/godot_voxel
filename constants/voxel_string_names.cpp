@@ -25,6 +25,7 @@ VoxelStringNames::VoxelStringNames() {
 	store_colors_in_texture = StaticCString::create("store_colors_in_texture");
 	scale = StaticCString::create("scale");
 	enable_baked_lighting = StaticCString::create("enable_baked_lighting");
+	pivot_mode = StaticCString::create("pivot_mode");
 
 	u_transition_mask = StaticCString::create("u_transition_mask");
 	u_block_local_transform = StaticCString::create("u_block_local_transform");

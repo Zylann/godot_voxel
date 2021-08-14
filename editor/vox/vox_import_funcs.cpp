@@ -16,8 +16,21 @@ static void scale_surface(Array &surface, float scale) {
 	surface[Mesh::ARRAY_VERTEX] = positions;
 }
 
+static void offset_surface(Array &surface, Vector3 offset) {
+	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
+	// Avoiding stupid CoW, assuming this array holds the only instance of this vector
+	surface[Mesh::ARRAY_VERTEX] = PoolVector3Array();
+	{
+		PoolVector3Array::Write w = positions.write();
+		for (int vertex_index = 0; vertex_index < positions.size(); ++vertex_index) {
+			w[vertex_index] += offset;
+		}
+	}
+	surface[Mesh::ARRAY_VERTEX] = positions;
+}
+
 Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher,
-		std::vector<unsigned int> &surface_index_to_material, Ref<Image> &out_atlas, float p_scale) {
+		std::vector<unsigned int> &surface_index_to_material, Ref<Image> &out_atlas, float p_scale, Vector3 p_offset) {
 	//
 	VoxelMesher::Output output;
 	VoxelMesher::Input input = { voxels, 0 };
@@ -45,6 +58,10 @@ Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher,
 
 		if (p_scale != 1.f) {
 			scale_surface(surface, p_scale);
+		}
+
+		if (p_offset != Vector3()) {
+			offset_surface(surface, p_offset);
 		}
 
 		mesh->add_surface_from_arrays(output.primitive_type, surface, Array(), output.compression_flags);

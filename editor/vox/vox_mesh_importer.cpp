@@ -47,6 +47,8 @@ void VoxelVoxMeshImporter::get_import_options(List<ImportOption> *r_options, int
 	VoxelStringNames *sn = VoxelStringNames::get_singleton();
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->store_colors_in_texture), false));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::REAL, sn->scale), 1.f));
+	r_options->push_back(ImportOption(
+			PropertyInfo(Variant::INT, sn->pivot_mode, PROPERTY_HINT_ENUM, "LowerCorner,SceneOrigin,Center"), 1));
 }
 
 bool VoxelVoxMeshImporter::get_option_visibility(const String &p_option,
@@ -176,7 +178,7 @@ static void extract_model_instances(const vox::Data &vox_data, std::vector<Model
 	});
 }
 
-static Ref<VoxelBuffer> make_single_voxel_grid(Span<const ModelInstance> instances) {
+static Ref<VoxelBuffer> make_single_voxel_grid(Span<const ModelInstance> instances, Vector3i &out_origin) {
 	// Determine total size
 	const ModelInstance &first_instance = instances[0];
 	Box3i bounding_box(first_instance.position, first_instance.voxels->get_size());
@@ -206,6 +208,7 @@ static Ref<VoxelBuffer> make_single_voxel_grid(Span<const ModelInstance> instanc
 				VoxelBuffer::CHANNEL_COLOR);
 	}
 
+	out_origin = bounding_box.pos;
 	return voxels;
 }
 
@@ -215,6 +218,9 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 	//
 	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton()->store_colors_in_texture];
 	const float p_scale = p_options[VoxelStringNames::get_singleton()->scale];
+	const int p_pivot_mode = p_options[VoxelStringNames::get_singleton()->pivot_mode];
+
+	ERR_FAIL_INDEX_V(p_pivot_mode, PIVOT_MODES_COUNT, ERR_INVALID_PARAMETER);
 
 	vox::Data vox_data;
 	const Error load_err = vox_data.load_from_file(p_source_file);
@@ -245,7 +251,8 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 
 		// TODO Optimization: this approach uses a lot of memory, might fail on scenes with a large bounding box.
 		// One workaround would be to mesh the scene incrementally in chunks, giving up greedy meshing beyond 256 or so.
-		Ref<VoxelBuffer> voxels = make_single_voxel_grid(to_span_const(model_instances));
+		Vector3i bounding_box_origin;
+		Ref<VoxelBuffer> voxels = make_single_voxel_grid(to_span_const(model_instances), bounding_box_origin);
 		ERR_FAIL_COND_V(voxels.is_null(), ERR_CANT_CREATE);
 
 		// We no longer need these
@@ -258,7 +265,22 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 		mesher->set_greedy_meshing_enabled(true);
 		mesher->set_store_colors_in_texture(p_store_colors_in_textures);
 
-		mesh = VoxImportUtils::build_mesh(**voxels, **mesher, surface_index_to_material, atlas, p_scale);
+		Vector3 offset;
+		switch (p_pivot_mode) {
+			case PIVOT_LOWER_CORNER:
+				break;
+			case PIVOT_SCENE_ORIGIN:
+				offset = bounding_box_origin.to_vec3();
+				break;
+			case PIVOT_CENTER:
+				offset = -((voxels->get_size() - Vector3i(1)) / 2).to_vec3();
+				break;
+			default:
+				ERR_FAIL_V(ERR_BUG);
+				break;
+		};
+
+		mesh = VoxImportUtils::build_mesh(**voxels, **mesher, surface_index_to_material, atlas, p_scale, offset);
 		// Deallocate large temporary memory to free space.
 		// This is a workaround because VoxelBuffer uses this by default, however it doesn't fit the present use case.
 		// Eventually we should avoid using this pool here.

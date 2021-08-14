@@ -292,7 +292,8 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 		std::vector<unsigned int> surface_index_to_material;
 		Ref<Image> atlas;
-		Ref<Mesh> mesh = VoxImportUtils::build_mesh(**voxels, **mesher, surface_index_to_material, atlas, p_scale);
+		Ref<Mesh> mesh = VoxImportUtils::build_mesh(
+				**voxels, **mesher, surface_index_to_material, atlas, p_scale, Vector3());
 
 		if (mesh.is_null()) {
 			continue;

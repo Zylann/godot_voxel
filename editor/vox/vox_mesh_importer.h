@@ -21,6 +21,13 @@ public:
 
 	Error import(const String &p_source_file, const String &p_save_path, const Map<StringName, Variant> &p_options,
 			List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata = nullptr) override;
+
+	enum PivotMode {
+		PIVOT_LOWER_CORNER,
+		PIVOT_SCENE_ORIGIN,
+		PIVOT_CENTER,
+		PIVOT_MODES_COUNT
+	};
 };
 
 #endif // VOX_MESH_IMPORTER_H
