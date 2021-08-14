@@ -139,7 +139,7 @@ inline void sort(T &a, T &b, T &c, T &d) {
 // Tests if POD items in an array are all the same.
 // Better tailored for more than hundred items that have power-of-two size.
 template <typename Item_T>
-inline bool is_uniform(const Item_T *p_data, uint32_t item_count) {
+inline bool is_uniform(const Item_T *p_data, size_t item_count) {
 	const Item_T v0 = p_data[0];
 
 	//typedef size_t Bucket_T;
@@ -152,36 +152,36 @@ inline bool is_uniform(const Item_T *p_data, uint32_t item_count) {
 	};
 
 	if (sizeof(Bucket_T) > sizeof(Item_T) && sizeof(Bucket_T) % sizeof(Item_T) == 0) {
-		static const unsigned int ITEMS_PER_BUCKET = sizeof(Bucket_T) / sizeof(Item_T);
+		static const size_t ITEMS_PER_BUCKET = sizeof(Bucket_T) / sizeof(Item_T);
 
 		// Make a reference bucket
 		union {
 			Bucket_T packed_items;
 			Item_T items[ITEMS_PER_BUCKET];
 		} reference_bucket;
-		for (unsigned int i = 0; i < ITEMS_PER_BUCKET; ++i) {
+		for (size_t i = 0; i < ITEMS_PER_BUCKET; ++i) {
 			reference_bucket.items[i] = v0;
 		}
 
 		// Compare using buckets of items rather than individual items
-		const unsigned int bucket_count = item_count / ITEMS_PER_BUCKET;
+		const size_t bucket_count = item_count / ITEMS_PER_BUCKET;
 		const Bucket_T *buckets = (const Bucket_T *)p_data;
-		for (unsigned int i = 0; i < bucket_count; ++i) {
+		for (size_t i = 0; i < bucket_count; ++i) {
 			if (buckets[i] != reference_bucket.packed_items) {
 				return false;
 			}
 		}
 
 		// Compare last elements individually if they don't fit in a bucket
-		const unsigned int remaining_items_start = item_count - (item_count % ITEMS_PER_BUCKET);
-		for (unsigned int i = remaining_items_start; i < item_count; ++i) {
+		const size_t remaining_items_start = item_count - (item_count % ITEMS_PER_BUCKET);
+		for (size_t i = remaining_items_start; i < item_count; ++i) {
 			if (p_data[i] != v0) {
 				return false;
 			}
 		}
 
 	} else {
-		for (unsigned int i = 1; i < item_count; ++i) {
+		for (size_t i = 1; i < item_count; ++i) {
 			if (p_data[i] != v0) {
 				return false;
 			}

@@ -22,17 +22,19 @@ public:
 	VoxelMemoryPool();
 	~VoxelMemoryPool();
 
-	uint8_t *allocate(uint32_t size);
-	void recycle(uint8_t *block, uint32_t size);
+	uint8_t *allocate(size_t size);
+	void recycle(uint8_t *block, size_t size);
+
+	void clear_unused_blocks();
 
 	void debug_print();
 	unsigned int debug_get_used_blocks() const;
 
 private:
-	Pool *get_or_create_pool(uint32_t size);
+	Pool *get_or_create_pool(size_t size);
 	void clear();
 
-	HashMap<uint32_t, Pool *> _pools;
+	HashMap<size_t, Pool *> _pools;
 	unsigned int _used_blocks = 0;
 	Mutex _mutex;
 };

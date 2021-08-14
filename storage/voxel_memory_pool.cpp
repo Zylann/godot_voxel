@@ -39,7 +39,7 @@ VoxelMemoryPool::~VoxelMemoryPool() {
 	clear();
 }
 
-uint8_t *VoxelMemoryPool::allocate(uint32_t size) {
+uint8_t *VoxelMemoryPool::allocate(size_t size) {
 	VOXEL_PROFILE_SCOPE();
 	MutexLock lock(_mutex);
 	Pool *pool = get_or_create_pool(size);
@@ -49,12 +49,13 @@ uint8_t *VoxelMemoryPool::allocate(uint32_t size) {
 		pool->blocks.pop_back();
 	} else {
 		block = (uint8_t *)memalloc(size * sizeof(uint8_t));
+		ERR_FAIL_COND_V(block == nullptr, nullptr);
 	}
 	++_used_blocks;
 	return block;
 }
 
-void VoxelMemoryPool::recycle(uint8_t *block, uint32_t size) {
+void VoxelMemoryPool::recycle(uint8_t *block, size_t size) {
 	MutexLock lock(_mutex);
 	Pool *pool = _pools[size]; // If not found, entry will be created! It would be an error
 	// Check recycling before having allocated
@@ -63,9 +64,24 @@ void VoxelMemoryPool::recycle(uint8_t *block, uint32_t size) {
 	--_used_blocks;
 }
 
+void VoxelMemoryPool::clear_unused_blocks() {
+	MutexLock lock(_mutex);
+	const size_t *key = nullptr;
+	while ((key = _pools.next(key))) {
+		Pool *pool = _pools.get(*key);
+		CRASH_COND(pool == nullptr);
+		for (auto it = pool->blocks.begin(); it != pool->blocks.end(); ++it) {
+			uint8_t *ptr = *it;
+			CRASH_COND(ptr == nullptr);
+			memfree(ptr);
+		}
+		pool->blocks.clear();
+	}
+}
+
 void VoxelMemoryPool::clear() {
 	MutexLock lock(_mutex);
-	const uint32_t *key = nullptr;
+	const size_t *key = nullptr;
 	while ((key = _pools.next(key))) {
 		Pool *pool = _pools.get(*key);
 		CRASH_COND(pool == nullptr);
@@ -84,12 +100,12 @@ void VoxelMemoryPool::debug_print() {
 	if (_pools.size() == 0) {
 		print_line("No pools created");
 	} else {
-		const uint32_t *key = nullptr;
+		const size_t *key = nullptr;
 		int i = 0;
 		while ((key = _pools.next(key))) {
 			Pool *pool = _pools.get(*key);
 			print_line(String("Pool {0} for size {1}: {2} blocks")
-							   .format(varray(i, *key, SIZE_T_TO_VARIANT(pool->blocks.size()))));
+							   .format(varray(i, SIZE_T_TO_VARIANT(*key), SIZE_T_TO_VARIANT(pool->blocks.size()))));
 			++i;
 		}
 	}
@@ -100,7 +116,7 @@ unsigned int VoxelMemoryPool::debug_get_used_blocks() const {
 	return _used_blocks;
 }
 
-VoxelMemoryPool::Pool *VoxelMemoryPool::get_or_create_pool(uint32_t size) {
+VoxelMemoryPool::Pool *VoxelMemoryPool::get_or_create_pool(size_t size) {
 	Pool *pool;
 	Pool **ppool = _pools.getptr(size);
 	if (ppool == nullptr) {

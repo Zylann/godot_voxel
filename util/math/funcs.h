@@ -93,6 +93,8 @@ inline T squared(const T x) {
 // Performs euclidean division, aka floored division.
 // This implementation expects a strictly positive divisor.
 //
+// Example with division by 3:
+//
 //    x   | `/` | floordiv
 // ----------------------
 //    -6  | -2  | -2

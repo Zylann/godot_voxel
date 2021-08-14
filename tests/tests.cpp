@@ -759,6 +759,105 @@ void test_instance_data_serialization() {
 	}
 }
 
+void test_transform_3d_array_zxy() {
+	// YXZ
+	int src_grid[] = {
+		0, 1, 2, 3,
+		4, 5, 6, 7,
+		8, 9, 10, 11,
+
+		12, 13, 14, 15,
+		16, 17, 18, 19,
+		20, 21, 22, 23
+	};
+	const Vector3i src_size(3, 4, 2);
+	const int volume = src_size.volume();
+
+	FixedArray<int, 24> dst_grid;
+	ERR_FAIL_COND(dst_grid.size() != volume);
+
+	{
+		int expected_dst_grid[] = {
+			0, 4, 8,
+			1, 5, 9,
+			2, 6, 10,
+			3, 7, 11,
+
+			12, 16, 20,
+			13, 17, 21,
+			14, 18, 22,
+			15, 19, 23
+		};
+		const Vector3i expected_dst_size(4, 3, 2);
+		IntBasis basis;
+		basis.x = Vector3i(0, 1, 0);
+		basis.y = Vector3i(1, 0, 0);
+		basis.z = Vector3i(0, 0, 1);
+
+		const Vector3i dst_size = transform_3d_array_zxy(
+				Span<const int>(src_grid, 0, volume),
+				to_span(dst_grid), src_size, basis);
+
+		ERR_FAIL_COND(dst_size != expected_dst_size);
+
+		for (unsigned int i = 0; i < volume; ++i) {
+			ERR_FAIL_COND(dst_grid[i] != expected_dst_grid[i]);
+		}
+	}
+	{
+		int expected_dst_grid[] = {
+			3, 2, 1, 0,
+			7, 6, 5, 4,
+			11, 10, 9, 8,
+
+			15, 14, 13, 12,
+			19, 18, 17, 16,
+			23, 22, 21, 20
+		};
+		const Vector3i expected_dst_size(3, 4, 2);
+		IntBasis basis;
+		basis.x = Vector3i(1, 0, 0);
+		basis.y = Vector3i(0, -1, 0);
+		basis.z = Vector3i(0, 0, 1);
+
+		const Vector3i dst_size = transform_3d_array_zxy(
+				Span<const int>(src_grid, 0, volume),
+				to_span(dst_grid), src_size, basis);
+
+		ERR_FAIL_COND(dst_size != expected_dst_size);
+
+		for (unsigned int i = 0; i < volume; ++i) {
+			ERR_FAIL_COND(dst_grid[i] != expected_dst_grid[i]);
+		}
+	}
+	{
+		int expected_dst_grid[] = {
+			15, 14, 13, 12,
+			19, 18, 17, 16,
+			23, 22, 21, 20,
+
+			3, 2, 1, 0,
+			7, 6, 5, 4,
+			11, 10, 9, 8
+		};
+		const Vector3i expected_dst_size(3, 4, 2);
+		IntBasis basis;
+		basis.x = Vector3i(1, 0, 0);
+		basis.y = Vector3i(0, -1, 0);
+		basis.z = Vector3i(0, 0, -1);
+
+		const Vector3i dst_size = transform_3d_array_zxy(
+				Span<const int>(src_grid, 0, volume),
+				to_span(dst_grid), src_size, basis);
+
+		ERR_FAIL_COND(dst_size != expected_dst_size);
+
+		for (unsigned int i = 0; i < volume; ++i) {
+			ERR_FAIL_COND(dst_grid[i] != expected_dst_grid[i]);
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                     \
@@ -779,6 +878,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_island_finder);
 	VOXEL_TEST(test_unordered_remove_if);
 	VOXEL_TEST(test_instance_data_serialization);
+	VOXEL_TEST(test_transform_3d_array_zxy);
 
 	print_line("------------ Voxel tests end -------------");
 }

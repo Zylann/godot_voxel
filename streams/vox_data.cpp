@@ -183,6 +183,7 @@ void Data::clear() {
 	_models.clear();
 	_scene_graph.clear();
 	_layers.clear();
+	_materials.clear();
 	_root_node_id = -1;
 }
 

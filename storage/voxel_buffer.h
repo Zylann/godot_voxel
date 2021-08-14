@@ -222,11 +222,11 @@ public:
 		}
 	}
 
-	static _FORCE_INLINE_ unsigned int get_index(const Vector3i pos, const Vector3i size) {
+	static _FORCE_INLINE_ size_t get_index(const Vector3i pos, const Vector3i size) {
 		return pos.get_zxy_index(size);
 	}
 
-	_FORCE_INLINE_ unsigned int get_index(unsigned int x, unsigned int y, unsigned int z) const {
+	_FORCE_INLINE_ size_t get_index(unsigned int x, unsigned int y, unsigned int z) const {
 		return y + _size.y * (x + _size.x * z); // ZXY index
 	}
 
@@ -238,7 +238,7 @@ public:
 		for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
 			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
 				pos.y = min_pos.y;
-				unsigned int i = get_index(pos.x, pos.y, pos.z);
+				size_t i = get_index(pos.x, pos.y, pos.z);
 				for (; pos.y < max_pos.y; ++pos.y) {
 					f(i, pos);
 					++i;
@@ -258,7 +258,7 @@ public:
 #endif
 		Span<Data_T> data = Span<uint8_t>(channel.data, channel.size_in_bytes)
 									.reinterpret_cast_to<Data_T>();
-		for_each_index_and_pos(box, [data, action_func, offset](unsigned int i, Vector3i pos) {
+		for_each_index_and_pos(box, [data, action_func, offset](size_t i, Vector3i pos) {
 			data[i] = action_func(pos + offset, data[i]);
 		});
 	}
@@ -280,7 +280,7 @@ public:
 									  .reinterpret_cast_to<Data0_T>();
 		Span<Data1_T> data1 = Span<uint8_t>(channel1.data, channel1.size_in_bytes)
 									  .reinterpret_cast_to<Data1_T>();
-		for_each_index_and_pos(box, [action_func, offset, &data0, &data1](unsigned int i, Vector3i pos) {
+		for_each_index_and_pos(box, [action_func, offset, &data0, &data1](size_t i, Vector3i pos) {
 			// TODO The caller must still specify exactly the correct type, maybe some conversion could be used
 			action_func(pos + offset, data0[i], data1[i]);
 		});
@@ -373,8 +373,8 @@ public:
 		return Box3i(Vector3i(), _size).contains(box);
 	}
 
-	_FORCE_INLINE_ unsigned int get_volume() const {
-		return _size.x * _size.y * _size.z;
+	_FORCE_INLINE_ uint64_t get_volume() const {
+		return _size.volume();
 	}
 
 	// TODO Have a template version based on channel depth
@@ -432,8 +432,8 @@ public:
 	Ref<Image> debug_print_sdf_to_image_top_down();
 
 private:
-	void create_channel_noinit(int i, Vector3i size);
-	void create_channel(int i, Vector3i size, uint64_t defval);
+	bool create_channel_noinit(int i, Vector3i size);
+	bool create_channel(int i, Vector3i size, uint64_t defval);
 	void delete_channel(int i);
 
 	static void _bind_methods();

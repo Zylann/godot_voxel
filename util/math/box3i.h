@@ -334,10 +334,27 @@ public:
 	inline bool is_empty() const {
 		return size.x <= 0 || size.y <= 0 || size.z <= 0;
 	}
+
+	void merge_with(const Box3i &other) {
+		const Vector3i min_pos(
+				min(pos.x, other.pos.x),
+				min(pos.y, other.pos.y),
+				min(pos.z, other.pos.z));
+		const Vector3i max_pos(
+				max(pos.x + size.x, other.pos.x + other.size.x),
+				max(pos.y + size.y, other.pos.y + other.size.y),
+				max(pos.z + size.z, other.pos.z + other.size.z));
+		pos = min_pos;
+		size = max_pos - min_pos;
+	}
 };
 
 inline bool operator!=(const Box3i &a, const Box3i &b) {
 	return a.pos != b.pos || a.size != b.size;
+}
+
+inline bool operator==(const Box3i &a, const Box3i &b) {
+	return a.pos == b.pos && a.size == b.size;
 }
 
 #endif // BOX3I_H

@@ -55,6 +55,7 @@ struct Rotation {
 struct TransformNode : public Node {
 	int child_node_id;
 	int layer_id;
+	// Pivot position, which turns out to be at the center in MagicaVoxel
 	Vector3i position;
 	Rotation rotation;
 	String name;

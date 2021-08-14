@@ -3,6 +3,7 @@
 
 #include <editor/import/editor_import_plugin.h>
 
+// TODO Rename VoxelVoxSceneImporter
 // Imports a vox file as a scene, where the internal scene layout is preserved as nodes
 class VoxelVoxImporter : public ResourceImporter {
 	GDCLASS(VoxelVoxImporter, ResourceImporter)

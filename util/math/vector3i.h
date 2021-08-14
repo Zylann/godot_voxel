@@ -55,23 +55,36 @@ struct Vector3i {
 				Math::floor(f.z));
 	}
 
+	static inline Vector3i from_rounded(const Vector3 &f) {
+		return Vector3i(
+				Math::round(f.x),
+				Math::round(f.y),
+				Math::round(f.z));
+	}
+
 	_FORCE_INLINE_ Vector3 to_vec3() const {
 		return Vector3(x, y, z);
 	}
 
-	_FORCE_INLINE_ int volume() const {
+	// Returning a 64-bit integer because volumes can quickly overflow INT_MAX (like 1300^3),
+	// even though dense volumes of that size will rarely be encountered in this module
+	_FORCE_INLINE_ int64_t volume() const {
+#ifdef DEBUG_ENABLED
+		ERR_FAIL_COND_V(x < 0 || y < 0 || z < 0, 0);
+#endif
 		return x * y * z;
 	}
 
-	_FORCE_INLINE_ int length_sq() const {
+	// Returning a 64-bit integer because squared distances can quickly overflow INT_MAX
+	_FORCE_INLINE_ int64_t length_sq() const {
 		return x * x + y * y + z * z;
 	}
 
 	_FORCE_INLINE_ real_t length() const {
-		return Math::sqrt((real_t)length_sq());
+		return Math::sqrt(real_t(length_sq()));
 	}
 
-	_FORCE_INLINE_ int distance_sq(const Vector3i &other) const;
+	_FORCE_INLINE_ int64_t distance_sq(const Vector3i &other) const;
 
 	_FORCE_INLINE_ Vector3i &operator=(const Vector3i &other) {
 		x = other.x;
@@ -183,6 +196,10 @@ struct Vector3i {
 		return x == y && y == z;
 	}
 
+	inline bool is_unit_vector() const {
+		return Math::abs(x) + Math::abs(y) + Math::abs(z) == 1;
+	}
+
 	static inline Vector3i min(const Vector3i a, const Vector3i b) {
 		return Vector3i(::min(a.x, b.x), ::min(a.y, b.y), ::min(a.z, b.z));
 	}
@@ -258,7 +275,7 @@ _FORCE_INLINE_ bool operator<(const Vector3i &a, const Vector3i &b) {
 	}
 }
 
-_FORCE_INLINE_ int Vector3i::distance_sq(const Vector3i &other) const {
+_FORCE_INLINE_ int64_t Vector3i::distance_sq(const Vector3i &other) const {
 	return (other - *this).length_sq();
 }
 

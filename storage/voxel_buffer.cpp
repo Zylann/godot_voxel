@@ -17,7 +17,7 @@
 
 namespace {
 
-inline uint8_t *allocate_channel_data(uint32_t size) {
+inline uint8_t *allocate_channel_data(size_t size) {
 #ifdef VOXEL_BUFFER_USE_MEMORY_POOL
 	return VoxelMemoryPool::get_singleton()->allocate(size);
 #else
@@ -148,7 +148,7 @@ void VoxelBuffer::create(unsigned int sx, unsigned int sy, unsigned int sz) {
 			if (channel.data) {
 				// Channel already contained data
 				delete_channel(i);
-				create_channel(i, new_size, channel.defval);
+				ERR_FAIL_COND(!create_channel(i, new_size, channel.defval));
 			}
 		}
 		_size = new_size;
@@ -235,7 +235,7 @@ void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int ch
 	if (channel.data == nullptr) {
 		if (channel.defval != value) {
 			// Allocate channel with same initial values as defval
-			create_channel(channel_index, _size, channel.defval);
+			ERR_FAIL_COND(!create_channel(channel_index, _size, channel.defval));
 		} else {
 			do_set = false;
 		}
@@ -297,7 +297,7 @@ void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
 		}
 	}
 
-	const unsigned int volume = get_volume();
+	const size_t volume = get_volume();
 
 	switch (channel.depth) {
 		case DEPTH_8_BIT:
@@ -305,19 +305,19 @@ void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
 			break;
 
 		case DEPTH_16_BIT:
-			for (uint32_t i = 0; i < volume; ++i) {
+			for (size_t i = 0; i < volume; ++i) {
 				reinterpret_cast<uint16_t *>(channel.data)[i] = defval;
 			}
 			break;
 
 		case DEPTH_32_BIT:
-			for (uint32_t i = 0; i < volume; ++i) {
+			for (size_t i = 0; i < volume; ++i) {
 				reinterpret_cast<uint32_t *>(channel.data)[i] = defval;
 			}
 			break;
 
 		case DEPTH_64_BIT:
-			for (uint32_t i = 0; i < volume; ++i) {
+			for (size_t i = 0; i < volume; ++i) {
 				reinterpret_cast<uint64_t *>(channel.data)[i] = defval;
 			}
 			break;
@@ -346,15 +346,15 @@ void VoxelBuffer::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigne
 		if (channel.defval == defval) {
 			return;
 		} else {
-			create_channel(channel_index, _size, channel.defval);
+			ERR_FAIL_COND(!create_channel(channel_index, _size, channel.defval));
 		}
 	}
 
 	Vector3i pos;
-	const unsigned int volume = get_volume();
+	const size_t volume = get_volume();
 	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
 		for (pos.x = min.x; pos.x < max.x; ++pos.x) {
-			const unsigned int dst_ri = get_index(pos.x, pos.y + min.y, pos.z);
+			const size_t dst_ri = get_index(pos.x, pos.y + min.y, pos.z);
 			CRASH_COND(dst_ri >= volume);
 
 			switch (channel.depth) {
@@ -401,7 +401,7 @@ void VoxelBuffer::fill_f(real_t value, unsigned int channel) {
 }
 
 template <typename T>
-inline bool is_uniform_b(const uint8_t *data, unsigned int item_count) {
+inline bool is_uniform_b(const uint8_t *data, size_t item_count) {
 	return is_uniform<T>(reinterpret_cast<const T *>(data), item_count);
 }
 
@@ -414,7 +414,7 @@ bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
 		return true;
 	}
 
-	const unsigned int volume = get_volume();
+	const size_t volume = get_volume();
 
 	// Channel isn't optimized, so must look at each voxel
 	switch (channel.depth) {
@@ -448,7 +448,7 @@ void VoxelBuffer::decompress_channel(unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 	Channel &channel = _channels[channel_index];
 	if (channel.data == nullptr) {
-		create_channel(channel_index, _size, channel.defval);
+		ERR_FAIL_COND(!create_channel(channel_index, _size, channel.defval));
 	}
 }
 
@@ -485,7 +485,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index
 
 	if (other_channel.data != nullptr) {
 		if (channel.data == nullptr) {
-			create_channel_noinit(channel_index, _size);
+			ERR_FAIL_COND(!create_channel_noinit(channel_index, _size));
 		}
 		CRASH_COND(channel.size_in_bytes != other_channel.size_in_bytes);
 		memcpy(channel.data, other_channel.data, channel.size_in_bytes);
@@ -517,7 +517,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, Vector3i src_min, Vector3i
 		if (channel.data == nullptr) {
 			// Note, we do this even if the pasted data happens to be all the same value as our current channel.
 			// We assume that this case is not frequent enough to bother, and compression can happen later
-			create_channel(channel_index, _size, channel.defval);
+			ERR_FAIL_COND(!create_channel(channel_index, _size, channel.defval));
 		}
 		const unsigned int item_size = get_depth_byte_count(channel.depth);
 		Span<const uint8_t> src(other_channel.data, other_channel.size_in_bytes);
@@ -561,9 +561,12 @@ bool VoxelBuffer::get_channel_raw(unsigned int channel_index, Span<uint8_t> &sli
 	return false;
 }
 
-void VoxelBuffer::create_channel(int i, Vector3i size, uint64_t defval) {
-	create_channel_noinit(i, size);
+bool VoxelBuffer::create_channel(int i, Vector3i size, uint64_t defval) {
+	if (!create_channel_noinit(i, size)) {
+		return false;
+	}
 	fill(defval, i);
+	return true;
 }
 
 uint32_t VoxelBuffer::get_size_in_bytes_for_volume(Vector3i size, Depth depth) {
@@ -574,12 +577,14 @@ uint32_t VoxelBuffer::get_size_in_bytes_for_volume(Vector3i size, Depth depth) {
 	return size_in_bytes;
 }
 
-void VoxelBuffer::create_channel_noinit(int i, Vector3i size) {
+bool VoxelBuffer::create_channel_noinit(int i, Vector3i size) {
 	Channel &channel = _channels[i];
-	uint32_t size_in_bytes = get_size_in_bytes_for_volume(size, channel.depth);
+	size_t size_in_bytes = get_size_in_bytes_for_volume(size, channel.depth);
 	CRASH_COND(channel.data != nullptr);
 	channel.data = allocate_channel_data(size_in_bytes);
+	ERR_FAIL_COND_V(channel.data == nullptr, false);
 	channel.size_in_bytes = size_in_bytes;
+	return true;
 }
 
 void VoxelBuffer::delete_channel(int i) {
@@ -669,7 +674,7 @@ bool VoxelBuffer::equals(const VoxelBuffer &p_other) const {
 
 		} else {
 			ERR_FAIL_COND_V(channel.size_in_bytes != other_channel.size_in_bytes, false);
-			for (unsigned int i = 0; i < channel.size_in_bytes; ++i) {
+			for (size_t i = 0; i < channel.size_in_bytes; ++i) {
 				if (channel.data[i] != other_channel.data[i]) {
 					return false;
 				}

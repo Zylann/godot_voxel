@@ -18,7 +18,7 @@ String VoxelVoxImporter::get_importer_name() const {
 }
 
 String VoxelVoxImporter::get_visible_name() const {
-	return "VoxelVoxImporter";
+	return "VoxelVoxSceneImporter";
 }
 
 void VoxelVoxImporter::get_recognized_extensions(List<String> *p_extensions) const {

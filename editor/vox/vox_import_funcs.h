@@ -3,6 +3,8 @@
 
 #include "../../meshers/voxel_mesher.h"
 
+// Some common functions to vox importers
+
 namespace VoxImportUtils {
 
 Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher,
