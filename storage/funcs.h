@@ -210,8 +210,8 @@ Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector
 	ERR_FAIL_COND_V(!basis.x.is_unit_vector(), src_size);
 	ERR_FAIL_COND_V(!basis.y.is_unit_vector(), src_size);
 	ERR_FAIL_COND_V(!basis.z.is_unit_vector(), src_size);
-	ERR_FAIL_COND_V(src_grid.size() != src_size.volume(), src_size);
-	ERR_FAIL_COND_V(dst_grid.size() != src_size.volume(), src_size);
+	ERR_FAIL_COND_V(src_grid.size() != static_cast<size_t>(src_size.volume()), src_size);
+	ERR_FAIL_COND_V(dst_grid.size() != static_cast<size_t>(src_size.volume()), src_size);
 
 	const int xa = basis.x.x != 0 ? 0 : basis.x.y != 0 ? 1 : 2;
 	const int ya = basis.y.x != 0 ? 0 : basis.y.y != 0 ? 1 : 2;

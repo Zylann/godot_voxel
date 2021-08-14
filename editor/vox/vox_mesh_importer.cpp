@@ -65,7 +65,7 @@ struct ForEachModelInstanceArgs {
 
 template <typename F>
 static Error for_each_model_instance_in_scene_graph(
-		const vox::Data &data, int node_id, Transform transform, int depth, F &f) {
+		const vox::Data &data, int node_id, Transform transform, int depth, F f) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const vox::Node *vox_node = data.get_node(node_id);
@@ -106,7 +106,7 @@ static Error for_each_model_instance_in_scene_graph(
 }
 
 template <typename F>
-void for_each_model_instance(const vox::Data &vox_data, F &f) {
+void for_each_model_instance(const vox::Data &vox_data, F f) {
 	if (vox_data.get_model_count() == 0) {
 		return;
 	}
