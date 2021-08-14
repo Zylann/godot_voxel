@@ -17,7 +17,7 @@ Ongoing development - `master`
     - Added property to terrain nodes to configure collision margin
 
 - Blocky voxels
-    - Added *.vox scene importer to import MagicaVoxel files as scenes where models are converted into meshes
+    - Added *.vox importers to import MagicaVoxel files as scenes or meshes
 
 - Smooth voxels
     - Initial support for texturing data in voxels, using 4-bit indices and weights
