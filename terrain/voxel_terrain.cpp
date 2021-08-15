@@ -480,10 +480,10 @@ struct ScheduleSaveAction {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelTerrain::BlockToSave b;
 			if (with_copy) {
-				RWLockRead lock(block->voxels->get_lock());
-				b.voxels = block->voxels->duplicate(true);
+				RWLockRead lock(block->get_voxels()->get_lock());
+				b.voxels = block->get_voxels()->duplicate(true);
 			} else {
-				b.voxels = block->voxels;
+				b.voxels = block->get_voxels();
 			}
 			b.position = block->position;
 			blocks_to_save.push_back(b);
@@ -1134,7 +1134,7 @@ void VoxelTerrain::_process() {
 			data_box.for_each_cell_zxy([this, &mesh_request](Vector3i data_block_pos) {
 				VoxelDataBlock *data_block = _data_map.get_block(data_block_pos);
 				if (data_block != nullptr) {
-					mesh_request.data_blocks[mesh_request.data_blocks_count] = data_block->voxels;
+					mesh_request.data_blocks[mesh_request.data_blocks_count] = data_block->get_voxels();
 				}
 				++mesh_request.data_blocks_count;
 			});

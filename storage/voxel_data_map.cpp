@@ -49,8 +49,8 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 	if (block == nullptr) {
 		return _default_voxel[c];
 	}
-	RWLockRead lock(block->voxels->get_lock());
-	return block->voxels->get_voxel(to_local(pos), c);
+	RWLockRead lock(block->get_voxels()->get_lock());
+	return block->get_voxels()->get_voxel(to_local(pos), c);
 }
 
 VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
@@ -74,8 +74,8 @@ VoxelDataBlock *VoxelDataMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
 void VoxelDataMap::set_voxel(int value, Vector3i pos, unsigned int c) {
 	VoxelDataBlock *block = get_or_create_block_at_voxel_pos(pos);
 	// TODO If it turns out to be a problem, use CoW
-	RWLockWrite lock(block->voxels->get_lock());
-	block->voxels->set_voxel(value, to_local(pos), c);
+	RWLockWrite lock(block->get_voxels()->get_lock());
+	block->get_voxels()->set_voxel(value, to_local(pos), c);
 }
 
 float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
@@ -85,15 +85,15 @@ float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 		return _default_voxel[c];
 	}
 	Vector3i lpos = to_local(pos);
-	RWLockRead lock(block->voxels->get_lock());
-	return block->voxels->get_voxel_f(lpos.x, lpos.y, lpos.z, c);
+	RWLockRead lock(block->get_voxels()->get_lock());
+	return block->get_voxels()->get_voxel_f(lpos.x, lpos.y, lpos.z, c);
 }
 
 void VoxelDataMap::set_voxel_f(real_t value, Vector3i pos, unsigned int c) {
 	VoxelDataBlock *block = get_or_create_block_at_voxel_pos(pos);
 	Vector3i lpos = to_local(pos);
-	RWLockWrite lock(block->voxels->get_lock());
-	block->voxels->set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
+	RWLockWrite lock(block->get_voxels()->get_lock());
+	block->get_voxels()->set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
 }
 
 void VoxelDataMap::set_default_voxel(int value, unsigned int channel) {
@@ -181,7 +181,7 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> b
 		block = VoxelDataBlock::create(bpos, *buffer, _block_size, _lod_index);
 		set_block(bpos, block);
 	} else {
-		block->voxels = buffer;
+		block->set_voxels(buffer);
 	}
 	return block;
 }
@@ -221,7 +221,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 					const Vector3i src_block_origin = block_to_voxel(bpos);
 
 					if (block != nullptr) {
-						const VoxelBuffer &src_buffer = **block->voxels;
+						const VoxelBuffer &src_buffer = **block->get_voxels();
 
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
 
@@ -276,7 +276,7 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int
 
 					const Vector3i dst_block_origin = block_to_voxel(bpos);
 
-					VoxelBuffer &dst_buffer = **block->voxels;
+					VoxelBuffer &dst_buffer = **block->get_voxels();
 					RWLockWrite lock(dst_buffer.get_lock());
 
 					if (mask_value != std::numeric_limits<uint64_t>::max()) {

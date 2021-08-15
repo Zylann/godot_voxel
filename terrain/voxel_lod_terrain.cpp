@@ -87,7 +87,7 @@ struct BeforeUnloadDataAction {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelLodTerrain::BlockToSave b;
 			// We don't copy since the block will be unloaded anyways
-			b.voxels = block->voxels;
+			b.voxels = block->get_voxels();
 			b.position = block->position;
 			b.lod = block->lod_index;
 			blocks_to_save.push_back(b);
@@ -118,8 +118,8 @@ struct ScheduleSaveAction {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelLodTerrain::BlockToSave b;
 
-			RWLockRead lock(block->voxels->get_lock());
-			b.voxels = block->voxels->duplicate(true);
+			RWLockRead lock(block->get_voxels()->get_lock());
+			b.voxels = block->get_voxels()->duplicate(true);
 
 			b.position = block->position;
 			b.lod = block->lod_index;
@@ -1537,7 +1537,7 @@ void VoxelLodTerrain::_process(float delta) {
 					// The block can actually be null on some occasions. Not sure yet if it's that bad
 					//CRASH_COND(nblock == nullptr);
 					if (nblock != nullptr) {
-						mesh_request.data_blocks[mesh_request.data_blocks_count] = nblock->voxels;
+						mesh_request.data_blocks[mesh_request.data_blocks_count] = nblock->get_voxels();
 					}
 					++mesh_request.data_blocks_count;
 				});
@@ -1836,8 +1836,8 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 			// Otherwise it means the function was called too late
 			CRASH_COND(src_block == nullptr);
 			//CRASH_COND(dst_block == nullptr);
-			CRASH_COND(src_block->voxels.is_null());
-			CRASH_COND(dst_block->voxels.is_null());
+			CRASH_COND(src_block->get_voxels().is_null());
+			CRASH_COND(dst_block->get_voxels().is_null());
 
 			{
 				const Vector3i mesh_block_pos = dst_bpos.floordiv(data_to_mesh_factor);
@@ -1861,9 +1861,9 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 			// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
 			// TODO Try to narrow to edited region instead of taking whole block
 			{
-				RWLockWrite lock(src_block->voxels->get_lock());
-				src_block->voxels->downscale_to(
-						**dst_block->voxels, Vector3i(), src_block->voxels->get_size(), rel * half_bs);
+				RWLockWrite lock(src_block->get_voxels()->get_lock());
+				src_block->get_voxels()->downscale_to(
+						**dst_block->get_voxels(), Vector3i(), src_block->get_voxels()->get_size(), rel * half_bs);
 			}
 		}
 

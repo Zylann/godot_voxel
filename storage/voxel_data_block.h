@@ -8,7 +8,6 @@
 // Stores loaded voxel data for a chunk of the volume. Mesh and colliders are stored separately.
 class VoxelDataBlock {
 public:
-	Ref<VoxelBuffer> voxels;
 	const Vector3i position;
 	const unsigned int lod_index = 0;
 	VoxelRefCount viewers;
@@ -18,6 +17,18 @@ public:
 		ERR_FAIL_COND_V(buffer.is_null(), nullptr);
 		ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), nullptr);
 		return memnew(VoxelDataBlock(bpos, buffer, p_lod_index));
+	}
+
+	Ref<VoxelBuffer> get_voxels() const {
+#ifdef DEBUG_ENABLED
+		CRASH_COND(_voxels.is_null());
+#endif
+		return _voxels;
+	}
+
+	void set_voxels(Ref<VoxelBuffer> buffer) {
+		ERR_FAIL_COND(buffer.is_null());
+		_voxels = buffer;
 	}
 
 	void set_modified(bool modified) {
@@ -39,7 +50,9 @@ public:
 
 private:
 	VoxelDataBlock(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int p_lod_index) :
-			voxels(buffer), position(bpos), lod_index(p_lod_index) {}
+			_voxels(buffer), position(bpos), lod_index(p_lod_index) {}
+
+	Ref<VoxelBuffer> _voxels;
 
 	// The block was edited, which requires its LOD counterparts to be recomputed
 	bool _needs_lodding = false;
