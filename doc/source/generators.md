@@ -52,7 +52,7 @@ Generates a heightmap based on fractal noise.
 
 ![Screenshot of 2D noise generator](images/generator_noise2d.png)
 
-### [Noise (3D)](api/VoxelGeneratorNoise3D)
+### [Noise (3D)](api/VoxelGeneratorNoise.md)
 
 Generates a blobby terrain with overhangs using 3D fractal noise. A gradient is applied along height so the volume becomes air when going up, and closes down into matter when going down.
 
