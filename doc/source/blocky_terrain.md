@@ -78,16 +78,16 @@ Materials are not necessary to export, they are still setup in Godot on the terr
 
 ### Usage of voxel type IDs
 
-Voxel types defined in a `VoxelLibrary` are like tiles in a tilemap: for simple games, they can directly correspond to a type of block. However, you may want to avoid treating them directly this way over time. Instead, you may define your own list of block types, and each type can correspond to one, or multiple `Voxel` types. 
+Voxel IDs defined in a `VoxelLibrary` are like tiles in a tilemap: for simple games, they can directly correspond to a type of block. However, you may want to avoid treating them directly this way over time. Instead, you may define your own list of block types, and each type can correspond to one, or multiple `Voxel` IDs. 
 
 Examples from Minecraft:
 
-- Stairs can be placed at different orientations, and sometimes have different appearance. These are actually multiple voxel types.
-- Crops can have several growth stages. Each stage is a different voxel type, for the same type of block.
+- Stairs can be placed at different orientations, and sometimes have different appearance. These are actually multiple voxel IDs.
+- Crops can have several growth stages. Each stage is a different voxel ID, for the same type of block.
 - One door is actually made of 2 voxels. Its top, and bottom. There could be even more if we consider opened and closed doors.
 - One rail can correspond to many different voxels: straight rails, slopes, and turns. They are all rails, but in different sub-configurations.
 
-Managing the correspondance between your "game's block" IDs and voxel type IDs is up to you.
+Managing the correspondance between your "game's block" IDs and voxel IDs is up to you.
 
 !!! note
 	At the moment, rotating or flipping voxels is not supported, so you have to create each rotated version you may need for a type of voxel.
