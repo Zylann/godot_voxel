@@ -288,3 +288,14 @@ Once you are done profiling, don't forget to remove these lines, otherwise profi
     Tracy has a concept of frame mark, which is usually provided by the application, to tell the profiler when each frame begins. Godot does not provide profiling macros natively, so the frame mark was hacked into `VoxelServer` process function. This allows to see frames of the main thread in the timeline, but they will be offset from their real beginning.
 
 This way of integrating Tracy was based on this [commit by vblanco](https://github.com/vblanco20-1/godot/commit/2c5613abb8c9fdb5c4bfe3b52fdb665a91b43579)
+
+
+Compilation flags
+------------------
+
+The module has a few preprocessor macros that can be defined in order to turn off parts of the code getting compiled.
+At the moment, flags are specified within the `SCsub` file, and correspond to C++ defines:
+
+- `VOXEL_RUN_TESTS`: this is mostly for debug builds when doing C++ development on the module. If `True`, tests will be compiled and run on startup to verify if some features of the engine still work correctly. It is off by default in production builds.
+- `MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS`: this one must be defined to fix an issue with `MeshOptimizer`. See [https://github.com/zeux/meshoptimizer/issues/311](https://github.com/zeux/meshoptimizer/issues/311)
+- `VOXEL_FAST_NOISE_2_SUPPORT`: this is an upcoming dependency that doesn't work at the moment. It is not defined by default.
