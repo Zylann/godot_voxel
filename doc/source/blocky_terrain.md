@@ -106,6 +106,8 @@ Both require to use a different material from the default one you may have used.
 
 If two faces touch each other, if they have the same transparency index, they can get culled. But if their transparency index is different, they may not. This allows to see the leaves directly behind glass, instead of seeing the insides.
 
+Here, glass has `transparency_index=2`, and leaves have `transparency_index=1`:
+
 ![Screenshot of transparency index being exploited](images/transparency_index_example2.png)
 
 
