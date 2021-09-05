@@ -81,6 +81,7 @@ Materials are not necessary to export, they are still setup in Godot on the terr
 Voxel types defined in a `VoxelLibrary` are like tiles in a tilemap: for simple games, they can directly correspond to a type of block. However, you may want to avoid treating them directly this way over time. Instead, you may define your own list of block types, and each type can correspond to one, or multiple `Voxel` types. 
 
 Examples from Minecraft:
+
 - Stairs can be placed at different orientations, and sometimes have different appearance. These are actually multiple voxel types.
 - Crops can have several growth stages. Each stage is a different voxel type, for the same type of block.
 - One door is actually made of 2 voxels. Its top, and bottom. There could be even more if we consider opened and closed doors.
