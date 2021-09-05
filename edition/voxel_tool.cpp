@@ -1,6 +1,5 @@
 #include "voxel_tool.h"
 #include "../storage/voxel_buffer.h"
-#include "../terrain/voxel_lod_terrain.h"
 #include "../util/macros.h"
 #include "../util/math/sdf.h"
 #include "../util/profiling.h"
