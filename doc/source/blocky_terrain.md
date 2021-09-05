@@ -114,7 +114,7 @@ Here, glass has `transparency_index=2`, and leaves have `transparency_index=1`:
 
 ### Random tick
 
-`Voxel` has a property named `random_tickable`. This is for use with a very specific function of `VoxelToolTerrain`: [run_blocky_random_tick](api/VoxelToolTerrain/#i_run_blocky_random_tick.md)
+`Voxel` has a property named `random_tickable`. This is for use with a very specific function of `VoxelToolTerrain`: [run_blocky_random_tick](api/VoxelToolTerrain.md)
 
 
 `VoxelMesherCubes`
