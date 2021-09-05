@@ -50,7 +50,7 @@ public:
 
 private:
 	VoxelDataBlock(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int p_lod_index) :
-			_voxels(buffer), position(bpos), lod_index(p_lod_index) {}
+			position(bpos), lod_index(p_lod_index), _voxels(buffer) {}
 
 	Ref<VoxelBuffer> _voxels;
 
