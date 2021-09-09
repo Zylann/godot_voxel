@@ -65,7 +65,7 @@ public:
 
 	void sdf_stamp_erase(Ref<VoxelBuffer> stamp, Vector3i pos);
 
-	virtual void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask);
+	virtual void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const;
 	virtual void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value);
 
 	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
@@ -74,7 +74,7 @@ public:
 	virtual bool is_area_editable(const Box3i &box) const;
 
 	virtual void set_voxel_metadata(Vector3i pos, Variant meta);
-	virtual Variant get_voxel_metadata(Vector3i pos);
+	virtual Variant get_voxel_metadata(Vector3i pos) const;
 
 protected:
 	static void _bind_methods();
@@ -128,14 +128,14 @@ private:
 		paste(Vector3i::from_floored(pos), voxels, channels_mask, mask_value);
 	}
 
-	Variant _b_get_voxel_metadata(Vector3 pos) {
+	Variant _b_get_voxel_metadata(Vector3 pos) const {
 		return get_voxel_metadata(Vector3i::from_floored(pos));
 	}
 	void _b_set_voxel_metadata(Vector3 pos, Variant meta) {
 		return set_voxel_metadata(Vector3i::from_floored(pos), meta);
 	}
 
-	bool _b_is_area_editable(AABB box) {
+	bool _b_is_area_editable(AABB box) const {
 		return is_area_editable(Box3i(Vector3i::from_floored(box.position), Vector3i::from_floored(box.size)));
 	}
 

@@ -133,7 +133,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 	return res;
 }
 
-void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) {
+void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(dst.is_null());
 	if (channels_mask == 0) {
@@ -209,7 +209,7 @@ void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
 	block->get_voxels()->set_voxel_metadata(map.to_local(pos), meta);
 }
 
-Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) {
+Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, Variant());
 	VoxelDataMap &map = _terrain->get_storage();
 	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));

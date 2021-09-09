@@ -256,7 +256,7 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	_post_edit(box);
 }
 
-void VoxelTool::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channel_mask) {
+void VoxelTool::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channel_mask) const {
 	ERR_FAIL_COND(dst.is_null());
 	ERR_PRINT("Not implemented");
 }
@@ -279,7 +279,7 @@ void VoxelTool::set_voxel_metadata(Vector3i pos, Variant meta) {
 	ERR_PRINT("Not implemented");
 }
 
-Variant VoxelTool::get_voxel_metadata(Vector3i pos) {
+Variant VoxelTool::get_voxel_metadata(Vector3i pos) const {
 	ERR_PRINT("Not implemented");
 	return Variant();
 }

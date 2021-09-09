@@ -66,7 +66,7 @@ void VoxelToolBuffer::set_voxel_metadata(Vector3i pos, Variant meta) {
 	_buffer->set_voxel_metadata(pos, meta);
 }
 
-Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) {
+Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) const {
 	ERR_FAIL_COND_V(_buffer.is_null(), Variant());
 	return _buffer->get_voxel_metadata(pos);
 }

@@ -16,9 +16,9 @@ public:
 	Ref<VoxelRaycastResult> raycast(Vector3 p_pos, Vector3 p_dir, float p_max_distance, uint32_t p_collision_mask) override;
 
 	void set_voxel_metadata(Vector3i pos, Variant meta) override;
-	Variant get_voxel_metadata(Vector3i pos) override;
+	Variant get_voxel_metadata(Vector3i pos) const override;
 
-	void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) override;
+	void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const override;
 	void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value) override;
 
 	void do_sphere(Vector3 center, float radius) override;
