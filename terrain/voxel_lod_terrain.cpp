@@ -1027,7 +1027,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 	// Unload data blocks falling out of block region extent
 	{
-		VOXEL_PROFILE_SCOPE();
+		VOXEL_PROFILE_SCOPE_NAMED("Sliding box data unload");
 		// TODO Could it actually be enough to have a rolling update on all blocks?
 
 		// This should be the same distance relatively to each LOD
@@ -1068,7 +1068,7 @@ void VoxelLodTerrain::_process(float delta) {
 			CRASH_COND(!lod.blocks_to_load.empty());
 
 			if (prev_box != new_box) {
-				VOXEL_PROFILE_SCOPE();
+				VOXEL_PROFILE_SCOPE_NAMED("Unload data");
 				prev_box.difference(new_box, [this, lod_index](Box3i out_of_range_box) {
 					out_of_range_box.for_each_cell([=](Vector3i pos) {
 						//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
@@ -1078,7 +1078,7 @@ void VoxelLodTerrain::_process(float delta) {
 			}
 
 			{
-				VOXEL_PROFILE_SCOPE();
+				VOXEL_PROFILE_SCOPE_NAMED("Cancel updates");
 				// Cancel block updates that are not within the padded region
 				// (since neighbors are always required to remesh)
 
@@ -1111,7 +1111,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 	// Unload mesh blocks falling out of block region extent
 	{
-		VOXEL_PROFILE_SCOPE();
+		VOXEL_PROFILE_SCOPE_NAMED("Sliding box mesh unload");
 		// TODO Could it actually be enough to have a rolling update on all blocks?
 
 		// This should be the same distance relatively to each LOD
@@ -1144,7 +1144,7 @@ void VoxelLodTerrain::_process(float delta) {
 			// Eliminate pending blocks that aren't needed
 
 			if (prev_box != new_box) {
-				VOXEL_PROFILE_SCOPE();
+				VOXEL_PROFILE_SCOPE_NAMED("Unload meshes");
 				prev_box.difference(new_box, [this, lod_index](Box3i out_of_range_box) {
 					out_of_range_box.for_each_cell([=](Vector3i pos) {
 						//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
@@ -1154,7 +1154,7 @@ void VoxelLodTerrain::_process(float delta) {
 			}
 
 			{
-				VOXEL_PROFILE_SCOPE();
+				VOXEL_PROFILE_SCOPE_NAMED("Cancel updates");
 				// Cancel block updates that are not within the new region
 				unordered_remove_if(lod.blocks_pending_update, [&lod, new_box](Vector3i bpos) {
 					return !new_box.contains(bpos);
@@ -1169,7 +1169,7 @@ void VoxelLodTerrain::_process(float delta) {
 	// Create and remove octrees in a grid around the viewer.
 	// Mesh blocks drive the loading of voxel data and visuals.
 	{
-		VOXEL_PROFILE_SCOPE();
+		VOXEL_PROFILE_SCOPE_NAMED("Sliding box octrees");
 		// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
 
 		const unsigned int octree_size_po2 = get_mesh_block_size_pow2() + get_lod_count() - 1;
@@ -1185,8 +1185,6 @@ void VoxelLodTerrain::_process(float delta) {
 		const Box3i prev_box = _last_octree_region_box;
 
 		if (new_box != prev_box) {
-			VOXEL_PROFILE_SCOPE();
-
 			struct CleanOctreeAction {
 				VoxelLodTerrain *self;
 				Vector3i block_offset_lod0;
@@ -1258,13 +1256,18 @@ void VoxelLodTerrain::_process(float delta) {
 			enter_action.self = this;
 			enter_action.block_size = get_mesh_block_size();
 
-			prev_box.difference(new_box, [exit_action](Box3i out_of_range_box) {
-				out_of_range_box.for_each_cell(exit_action);
-			});
-
-			new_box.difference(prev_box, [enter_action](Box3i box_to_load) {
-				box_to_load.for_each_cell(enter_action);
-			});
+			{
+				VOXEL_PROFILE_SCOPE_NAMED("Unload octrees");
+				prev_box.difference(new_box, [exit_action](Box3i out_of_range_box) {
+					out_of_range_box.for_each_cell(exit_action);
+				});
+			}
+			{
+				VOXEL_PROFILE_SCOPE_NAMED("Load octrees");
+				new_box.difference(prev_box, [enter_action](Box3i box_to_load) {
+					box_to_load.for_each_cell(enter_action);
+				});
+			}
 		}
 
 		_last_octree_region_box = new_box;
@@ -1274,7 +1277,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 	// Find which blocks we need to load and see, within each octree
 	{
-		VOXEL_PROFILE_SCOPE();
+		VOXEL_PROFILE_SCOPE_NAMED("Update octrees");
 
 		// TODO Maintain a vector to make iteration faster?
 		for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
@@ -1340,6 +1343,7 @@ void VoxelLodTerrain::_process(float delta) {
 				}
 
 				bool can_split(Vector3i node_pos, int child_lod_index) {
+					VOXEL_PROFILE_SCOPE();
 					Vector3i offset = block_offset_lod0 >> child_lod_index;
 					bool can = true;
 
@@ -1371,6 +1375,7 @@ void VoxelLodTerrain::_process(float delta) {
 				}
 
 				bool can_join(Vector3i node_pos, int parent_lod_index) {
+					VOXEL_PROFILE_SCOPE();
 					// Can only unsubdivide if the parent mesh is ready
 					Lod &lod = self->_lods[parent_lod_index];
 
@@ -1408,7 +1413,7 @@ void VoxelLodTerrain::_process(float delta) {
 		}
 
 		{
-			VOXEL_PROFILE_SCOPE();
+			VOXEL_PROFILE_SCOPE_NAMED("Transition updates");
 			process_transition_updates();
 		}
 	}
@@ -1431,7 +1436,7 @@ void VoxelLodTerrain::_process(float delta) {
 	// Note: if block loading is too fast, this can cause stutters.
 	// It should only happen on first load, though.
 	{
-		VOXEL_PROFILE_SCOPE();
+		VOXEL_PROFILE_SCOPE_NAMED("Data loading responses");
 
 		for (size_t reception_index = 0; reception_index < _reception_buffers.data_output.size(); ++reception_index) {
 			VOXEL_PROFILE_SCOPE();
@@ -1503,7 +1508,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 	// Send mesh update requests
 	{
-		VOXEL_PROFILE_SCOPE();
+		VOXEL_PROFILE_SCOPE_NAMED("Send mesh requests");
 
 		const int render_to_data_factor = get_mesh_block_size() / get_data_block_size();
 

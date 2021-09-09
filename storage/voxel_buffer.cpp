@@ -160,6 +160,7 @@ void VoxelBuffer::create(Vector3i size) {
 }
 
 void VoxelBuffer::clear() {
+	VOXEL_PROFILE_SCOPE();
 	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
 		Channel &channel = _channels[i];
 		if (channel.data) {

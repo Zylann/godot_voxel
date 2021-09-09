@@ -2,6 +2,7 @@
 #define VOXEL_DATA_MAP_H
 
 #include "../util/fixed_array.h"
+#include "../util/profiling.h"
 #include "voxel_data_block.h"
 
 #include <core/hash_map.h>
