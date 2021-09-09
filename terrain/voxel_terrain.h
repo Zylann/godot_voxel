@@ -108,6 +108,9 @@ private:
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
 	void _process();
+	void process_viewers();
+	void process_received_data_blocks();
+	void process_meshing();
 
 	void _on_stream_params_changed();
 	void _set_block_size_po2(int p_block_size_po2);
@@ -177,7 +180,6 @@ private:
 	// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be
 	// approximated to the closest chunk.
 	Box3i _bounds_in_voxels;
-	Box3i _prev_bounds_in_voxels;
 
 	unsigned int _max_view_distance_voxels = 128;
 

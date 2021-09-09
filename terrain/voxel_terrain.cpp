@@ -616,7 +616,7 @@ void VoxelTerrain::post_edit_voxel(Vector3i pos) {
 }
 
 void VoxelTerrain::try_schedule_mesh_update_from_data(const Box3i &box_in_voxels) {
-	// We pad by 1 because neighbor blocks might be affected visually (for example, ambient occlusion)
+	// We pad by 1 because neighbor blocks might be affected visually (for example, baked ambient occlusion)
 	const Box3i mesh_box = box_in_voxels.padded(1).downscaled(get_mesh_block_size());
 	mesh_box.for_each_cell([this](Vector3i pos) {
 		VoxelMeshBlock *block = _mesh_map.get_block(pos);
@@ -779,14 +779,13 @@ bool VoxelTerrain::try_get_paired_viewer_index(uint32_t id, size_t &out_i) const
 
 void VoxelTerrain::_process() {
 	VOXEL_PROFILE_SCOPE();
+	process_viewers();
+	process_received_data_blocks();
+	process_meshing();
+}
 
-	// print_line(String("D:{0} M:{1}")
-	// 				   .format(varray(_reception_buffers.data_output.size(), _reception_buffers.mesh_output.size())));
-
+void VoxelTerrain::process_viewers() {
 	ProfilingClock profiling_clock;
-
-	_stats.dropped_block_loads = 0;
-	_stats.dropped_block_meshs = 0;
 
 	// Ordered by ascending index in paired viewers list
 	std::vector<size_t> unpaired_viewer_indexes;
@@ -984,9 +983,6 @@ void VoxelTerrain::_process() {
 				}
 			}
 		}
-
-		// We're done remembering the difference
-		_prev_bounds_in_voxels = _bounds_in_voxels;
 	}
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
@@ -1006,6 +1002,15 @@ void VoxelTerrain::_process() {
 	}
 
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
+}
+
+void VoxelTerrain::process_received_data_blocks() {
+	ProfilingClock profiling_clock;
+
+	_stats.dropped_block_loads = 0;
+
+	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
+								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
 
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
@@ -1089,12 +1094,19 @@ void VoxelTerrain::_process() {
 
 		_reception_buffers.data_output.clear();
 
+		// We might have requested some blocks again (if we got a dropped one while we still need them)
 		if (stream_enabled) {
 			send_block_data_requests();
 		}
 	}
 
 	_stats.time_process_load_responses = profiling_clock.restart();
+}
+
+void VoxelTerrain::process_meshing() {
+	ProfilingClock profiling_clock;
+
+	_stats.dropped_block_meshs = 0;
 
 	// Send mesh updates
 	{
