@@ -101,8 +101,10 @@ void VoxelInstanceGenerator::generate_transforms(
 		switch (_emit_mode) {
 			case EMIT_FROM_VERTICES: {
 				// Density is interpreted differently here,
-				// so it's possible a different emit mode will produce different amounts of instances
-				const uint32_t density_u32 = 0xffffffff * (_density / MAX_DENSITY);
+				// so it's possible a different emit mode will produce different amounts of instances.
+				// I had to use `uint64` and clamp it because floats can't contain `0xffffffff` accurately. Instead
+				// it results in `0x100000000`, one unit above.
+				const uint32_t density_u32 = max(uint64_t(0xffffffff * (_density / MAX_DENSITY)), uint64_t(0xffffffff));
 				const int size = vertices.size();
 				for (int i = 0; i < size; ++i) {
 					// TODO We could actually generate indexes and pick those,
