@@ -13,7 +13,6 @@ VoxelDataMap::VoxelDataMap() :
 }
 
 VoxelDataMap::~VoxelDataMap() {
-	PRINT_VERBOSE("Destroying VoxelMap");
 	clear();
 }
 
