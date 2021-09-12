@@ -258,8 +258,9 @@ public:
 #endif
 		Span<Data_T> data = Span<uint8_t>(channel.data, channel.size_in_bytes)
 									.reinterpret_cast_to<Data_T>();
-		for_each_index_and_pos(box, [data, action_func, offset](size_t i, Vector3i pos) {
-			data[i] = action_func(pos + offset, data[i]);
+		// `&` is required because lambda captures are `const` by default and `mutable` can be used only from C++23
+		for_each_index_and_pos(box, [&data, action_func, offset](size_t i, Vector3i pos) {
+			data.set(i, action_func(pos + offset, data[i]));
 		});
 	}
 

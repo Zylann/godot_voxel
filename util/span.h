@@ -67,6 +67,13 @@ public:
 		return Span<U>(reinterpret_cast<U *>(_ptr), 0, size_in_bytes / sizeof(U));
 	}
 
+	inline void set(size_t i, T v) {
+#ifdef DEBUG_ENABLED
+		CRASH_COND(i >= _size);
+#endif
+		_ptr[i] = v;
+	}
+
 	inline T &operator[](size_t i) {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(i >= _size);
