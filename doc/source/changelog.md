@@ -20,7 +20,7 @@ Ongoing development - `master`
     - Added *.vox importers to import MagicaVoxel files as scenes or meshes
 
 - Smooth voxels
-    - Initial support for texturing data in voxels, using 4-bit indices and weights
+    - `VoxelMesherTransvoxel`: Initial support for texturing data in voxels, using 4-bit indices and weights
     - `VoxelMesherTransvoxel`: optimized hot path, making it about 20% faster
     - `VoxelMesherTransvoxel`: added option to simplify meshes using MeshOptimizer
     - `VoxelToolLodTerrain`: added `copy` function
@@ -40,6 +40,7 @@ Ongoing development - `master`
     - `VoxelLodTerrain`: fixed errors and crashes when editing voxels near loading borders
     - `VoxelTool` channel no longer defaults to 7 when using `get_voxel_tool` from a terrain with a stream assigned. Instead it picks first used channel of the mesher (fallback order is mesher, then generator, then stream).
     - `VoxelInstancer`: fixed error when node visibility changes
+    - `VoxelInstancer`: fixed no instances generated when density is 1 in vertex emission mode 
     - `VoxelTerrain`: fixed materials shown under the wrong inspector category
     - `VoxelStreamRegionFiles`: fixed errors caused by meta file being sometimes written with wrong depth values
     - Fix some crashes occurring when all PoolVector allocs are in use (Godot 3.x limitation), it will print errors instead
