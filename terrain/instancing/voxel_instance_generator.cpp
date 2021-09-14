@@ -286,6 +286,7 @@ void VoxelInstanceGenerator::generate_transforms(
 	const float scale_min = _min_scale;
 	const float scale_range = _max_scale - _min_scale;
 	const bool random_vertical_flip = _random_vertical_flip;
+	const bool random_rotation = _random_rotation;
 	const float offset_along_normal = _offset_along_normal;
 	const float normal_min_y = _min_surface_normal_y;
 	const float normal_max_y = _max_surface_normal_y;
@@ -376,8 +377,13 @@ void VoxelInstanceGenerator::generate_transforms(
 		}
 
 		// Pick a random rotation from the floor's normal.
+		// Disabling a single axis in dir removes the random rotation, but only has a noticeable effect on non-flat
+		// terrains when vertical_alignment is 1, because the angle of the terrain determines rotation.
 		// TODO A pool of precomputed random directions would do the job too
-		const Vector3 dir = Vector3(pcg1.randf() - 0.5f, pcg1.randf() - 0.5f, pcg1.randf() - 0.5f);
+		const Vector3 dir = Vector3(
+				random_rotation ? pcg1.randf() - 0.5f : 0,
+				pcg1.randf() - 0.5f,
+				pcg1.randf() - 0.5f);
 		const Vector3 axis_x = axis_y.cross(dir).normalized();
 		const Vector3 axis_z = axis_x.cross(axis_y);
 
@@ -585,6 +591,18 @@ bool VoxelInstanceGenerator::get_random_vertical_flip() const {
 	return _random_vertical_flip;
 }
 
+void VoxelInstanceGenerator::set_random_rotation(bool rotation_enabled) {
+	if (rotation_enabled == _random_rotation) {
+		return;
+	}
+	_random_rotation = rotation_enabled;
+	emit_changed();
+}
+
+bool VoxelInstanceGenerator::get_random_rotation() const {
+	return _random_rotation;
+}
+
 void VoxelInstanceGenerator::set_noise(Ref<FastNoiseLite> noise) {
 	if (_noise == noise) {
 		return;
@@ -673,6 +691,10 @@ void VoxelInstanceGenerator::_bind_methods() {
 			&VoxelInstanceGenerator::set_random_vertical_flip);
 	ClassDB::bind_method(D_METHOD("get_random_vertical_flip"), &VoxelInstanceGenerator::get_random_vertical_flip);
 
+	ClassDB::bind_method(D_METHOD("set_random_rotation", "enabled"),
+			&VoxelInstanceGenerator::set_random_rotation);
+	ClassDB::bind_method(D_METHOD("get_random_rotation"), &VoxelInstanceGenerator::get_random_rotation);
+
 	ClassDB::bind_method(D_METHOD("set_noise", "noise"), &VoxelInstanceGenerator::set_noise);
 	ClassDB::bind_method(D_METHOD("get_noise"), &VoxelInstanceGenerator::get_noise);
 
@@ -712,6 +734,8 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"set_vertical_alignment", "get_vertical_alignment");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_vertical_flip"),
 			"set_random_vertical_flip", "get_random_vertical_flip");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_rotation"),
+			"set_random_rotation", "get_random_rotation");
 
 	ADD_GROUP("Offset", "");
 

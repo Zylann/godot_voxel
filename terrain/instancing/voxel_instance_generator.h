@@ -103,6 +103,9 @@ public:
 	void set_random_vertical_flip(bool flip);
 	bool get_random_vertical_flip() const;
 
+	void set_random_rotation(bool rotate);
+	bool get_random_rotation() const;
+
 	void set_noise(Ref<FastNoiseLite> noise);
 	Ref<FastNoiseLite> get_noise() const;
 
@@ -131,6 +134,7 @@ private:
 	float _min_height = std::numeric_limits<float>::min();
 	float _max_height = std::numeric_limits<float>::max();
 	bool _random_vertical_flip = false;
+	bool _random_rotation = true;
 	EmitMode _emit_mode = EMIT_FROM_VERTICES;
 	Distribution _scale_distribution = DISTRIBUTION_QUADRATIC;
 	Ref<FastNoiseLite> _noise;
