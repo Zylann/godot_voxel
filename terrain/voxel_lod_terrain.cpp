@@ -1292,7 +1292,7 @@ void VoxelLodTerrain::_process(float delta) {
 				Vector3i block_offset_lod0;
 				unsigned int blocked_count = 0;
 
-				void create_child(Vector3i node_pos, int lod_index) {
+				void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
 					Lod &lod = self->_lods[lod_index];
 					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
 					VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
@@ -1342,7 +1342,7 @@ void VoxelLodTerrain::_process(float delta) {
 					return self->check_block_loaded_and_meshed(offset, lod_index);
 				}
 
-				bool can_split(Vector3i node_pos, int child_lod_index) {
+				bool can_split(Vector3i node_pos, int child_lod_index, LodOctree::NodeData &data) {
 					VOXEL_PROFILE_SCOPE();
 					Vector3i offset = block_offset_lod0 >> child_lod_index;
 					bool can = true;
