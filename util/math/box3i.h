@@ -36,16 +36,16 @@ public:
 	static inline Box3i get_bounding_box(Box3i a, Box3i b) {
 		Box3i box;
 
-		box.pos.x = MIN(a.pos.x, b.pos.x);
-		box.pos.y = MIN(a.pos.y, b.pos.y);
-		box.pos.z = MIN(a.pos.z, b.pos.z);
+		box.pos.x = min(a.pos.x, b.pos.x);
+		box.pos.y = min(a.pos.y, b.pos.y);
+		box.pos.z = min(a.pos.z, b.pos.z);
 
 		Vector3i max_a = a.pos + a.size;
 		Vector3i max_b = b.pos + b.size;
 
-		box.size.x = MAX(max_a.x, max_b.x) - box.pos.x;
-		box.size.y = MAX(max_a.y, max_b.y) - box.pos.y;
-		box.size.z = MAX(max_a.z, max_b.z) - box.pos.z;
+		box.size.x = max(max_a.x, max_b.x) - box.pos.x;
+		box.size.y = max(max_a.y, max_b.y) - box.pos.y;
+		box.size.z = max(max_a.z, max_b.z) - box.pos.z;
 
 		return box;
 	}
