@@ -122,9 +122,9 @@ public:
 
 	static inline Vector3i get_child_position(Vector3i parent_position, int i) {
 		return Vector3i(
-				parent_position.x * 2 + OctreeTables::g_octant_position[i][0],
-				parent_position.y * 2 + OctreeTables::g_octant_position[i][1],
-				parent_position.z * 2 + OctreeTables::g_octant_position[i][2]);
+				parent_position.x * 2 + (i & 1),
+				parent_position.y * 2 + ((i >> 1) & 1),
+				parent_position.z * 2 + ((i >> 2) & 1));
 	}
 
 	const Node *get_root() const {
