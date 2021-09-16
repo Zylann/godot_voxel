@@ -4,7 +4,7 @@
 #include "vector3i.h"
 #include <core/variant.h>
 
-// Axis-aligned box using integer coordinates
+// Axis-aligned 3D box using integer coordinates
 class Box3i {
 public:
 	Vector3i pos;
