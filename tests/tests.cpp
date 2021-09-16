@@ -3,6 +3,7 @@
 #include "../storage/voxel_data_map.h"
 #include "../util/island_finder.h"
 #include "../util/math/box3i.h"
+#include "test_octree.h"
 
 #include <core/hash_map.h>
 #include <core/print_string.h>
@@ -908,6 +909,8 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_unordered_remove_if);
 	VOXEL_TEST(test_instance_data_serialization);
 	VOXEL_TEST(test_transform_3d_array_zxy);
+	VOXEL_TEST(test_octree_update);
+	VOXEL_TEST(test_octree_find_in_box);
 
 	print_line("------------ Voxel tests end -------------");
 }
