@@ -75,23 +75,23 @@ public:
 		return String("(o:{0}, s:{1})").format(varray(pos.to_vec3(), size.to_vec3()));
 	}
 
-	bool intersects(Box3i other) const {
-		if (pos.x > other.pos.x + other.size.x) {
+	bool intersects(const Box3i &other) const {
+		if (pos.x >= other.pos.x + other.size.x) {
 			return false;
 		}
-		if (pos.y > other.pos.y + other.size.y) {
+		if (pos.y >= other.pos.y + other.size.y) {
 			return false;
 		}
-		if (pos.z > other.pos.z + other.size.z) {
+		if (pos.z >= other.pos.z + other.size.z) {
 			return false;
 		}
-		if (other.pos.x > pos.x + size.x) {
+		if (other.pos.x >= pos.x + size.x) {
 			return false;
 		}
-		if (other.pos.y > pos.y + size.y) {
+		if (other.pos.y >= pos.y + size.y) {
 			return false;
 		}
-		if (other.pos.z > pos.z + size.z) {
+		if (other.pos.z >= pos.z + size.z) {
 			return false;
 		}
 		return true;
