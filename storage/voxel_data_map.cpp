@@ -13,7 +13,6 @@ VoxelDataMap::VoxelDataMap() :
 }
 
 VoxelDataMap::~VoxelDataMap() {
-	PRINT_VERBOSE("Destroying VoxelMap");
 	clear();
 }
 
@@ -82,6 +81,7 @@ float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 	Vector3i bpos = voxel_to_block(pos);
 	const VoxelDataBlock *block = get_block(bpos);
 	if (block == nullptr) {
+		// TODO Not valid for a float return value
 		return _default_voxel[c];
 	}
 	Vector3i lpos = to_local(pos);

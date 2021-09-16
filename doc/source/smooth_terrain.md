@@ -261,6 +261,16 @@ This can be done by saturating SDF values in the voxel generator: they have to b
 You may also make shading hard-edged in your shader for better results.
 
 
+### Special uniforms
+
+If you use a `ShaderMaterial` on a voxel node, the module may exploit some uniform (shader parameter) names to provide extra information.
+
+Parameter name             | Type     | Description
+---------------------------|----------|-----------------------
+`u_lod_fade`               | `vec2`   | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
+`u_block_local_transform`  | `mat4`   | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
+
+
 Level of detail (LOD)
 -----------------------
 

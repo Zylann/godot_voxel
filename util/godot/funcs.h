@@ -28,7 +28,8 @@ int get_visible_instance_count(const MultiMesh &mm);
 // Generates a wireframe-mesh that highlights edges of a triangle-mesh where vertices are not shared
 Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_index);
 
-// `(ref1 = ref2).is_valid()` does not work because Ref<T> does not implement an `operator=` returning the value
+// `(ref1 = ref2).is_valid()` does not work because Ref<T> does not implement an `operator=` returning the value.
+// So instead we can write it as `try_get_as(ref2, ref1)`
 template <typename From_T, typename To_T>
 inline bool try_get_as(Ref<From_T> from, Ref<To_T> &to) {
 	to = from;

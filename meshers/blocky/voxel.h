@@ -9,7 +9,7 @@
 
 class VoxelLibrary;
 
-// TODO Rename VoxelModel? Or VoxelBlockyLibraryItem?
+// TODO Rename VoxelBlockyLibraryItem?
 // Definition of one type of voxel for use with `VoxelMesherBlocky`.
 // A voxel can be a simple coloured cube, or a more complex model.
 // Important: it is recommended that you create voxels from a library rather than using new().

@@ -99,6 +99,13 @@ public:
 		bool can_join(Vector3i node_pos, int lod) { return true; }
 	};
 
+	// TODO Have a version of `update` that works recursively
+
+	// Fits the octree around a viewer position by splitting nodes
+	// if they are closer than `_lod_distance*(2^lod_index)` and also fulfill some custom conditions.
+	// Nodes may be subdivided if conditions are met, or unsubdivided if they aren't.
+	// This is not fully recursive. It is expected to be called over several frames,
+	// so the shape is obtained progressively.
 	template <typename UpdateActions_T>
 	void update(Vector3 view_pos, UpdateActions_T &actions) {
 		if (_is_root_created || _root.has_children()) {

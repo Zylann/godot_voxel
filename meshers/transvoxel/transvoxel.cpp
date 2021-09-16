@@ -8,7 +8,7 @@ namespace Transvoxel {
 
 static const float TRANSITION_CELL_SCALE = 0.25;
 
-// Values considered negative have a sign bit of 1
+// SDF values considered negative have a sign bit of 1 in this algorithm
 inline uint8_t sign_f(float v) {
 	return v < 0.f;
 }

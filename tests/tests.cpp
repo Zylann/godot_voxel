@@ -7,6 +7,34 @@
 #include <core/hash_map.h>
 #include <core/print_string.h>
 
+void test_box3i_intersects() {
+	{
+		Box3i a(Vector3i(0, 0, 0), Vector3i(1, 1, 1));
+		Box3i b(Vector3i(0, 0, 0), Vector3i(1, 1, 1));
+		ERR_FAIL_COND(a.intersects(b) == false);
+	}
+	{
+		Box3i a(Vector3i(0, 0, 0), Vector3i(1, 1, 1));
+		Box3i b(Vector3i(1, 0, 0), Vector3i(1, 1, 1));
+		ERR_FAIL_COND(a.intersects(b) == true);
+	}
+	{
+		Box3i a(Vector3i(0, 0, 0), Vector3i(2, 2, 2));
+		Box3i b(Vector3i(1, 0, 0), Vector3i(2, 2, 2));
+		ERR_FAIL_COND(a.intersects(b) == false);
+	}
+	{
+		Box3i a(Vector3i(-5, 0, 0), Vector3i(10, 1, 1));
+		Box3i b(Vector3i(0, -5, 0), Vector3i(1, 10, 1));
+		ERR_FAIL_COND(a.intersects(b) == false);
+	}
+	{
+		Box3i a(Vector3i(-5, 0, 0), Vector3i(10, 1, 1));
+		Box3i b(Vector3i(0, -5, 1), Vector3i(1, 10, 1));
+		ERR_FAIL_COND(a.intersects(b) == true);
+	}
+}
+
 void test_box3i_for_inner_outline() {
 	const Box3i box(-1, 2, 3, 8, 6, 5);
 
@@ -867,6 +895,7 @@ void test_transform_3d_array_zxy() {
 void run_voxel_tests() {
 	print_line("------------ Voxel tests begin -------------");
 
+	VOXEL_TEST(test_box3i_intersects);
 	VOXEL_TEST(test_box3i_for_inner_outline);
 	VOXEL_TEST(test_voxel_data_map_paste_fill);
 	VOXEL_TEST(test_voxel_data_map_paste_mask);

@@ -26,7 +26,7 @@ public:
 		FADING_OUT
 	};
 
-	Vector3i position;
+	Vector3i position; // In blocks
 	unsigned int lod_index = 0;
 	bool pending_transition_update = false;
 	VoxelRefCount mesh_viewers;

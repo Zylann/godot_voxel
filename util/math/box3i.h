@@ -4,7 +4,7 @@
 #include "vector3i.h"
 #include <core/variant.h>
 
-// Axis-aligned box using integer coordinates
+// Axis-aligned 3D box using integer coordinates
 class Box3i {
 public:
 	Vector3i pos;
@@ -36,16 +36,16 @@ public:
 	static inline Box3i get_bounding_box(Box3i a, Box3i b) {
 		Box3i box;
 
-		box.pos.x = MIN(a.pos.x, b.pos.x);
-		box.pos.y = MIN(a.pos.y, b.pos.y);
-		box.pos.z = MIN(a.pos.z, b.pos.z);
+		box.pos.x = min(a.pos.x, b.pos.x);
+		box.pos.y = min(a.pos.y, b.pos.y);
+		box.pos.z = min(a.pos.z, b.pos.z);
 
 		Vector3i max_a = a.pos + a.size;
 		Vector3i max_b = b.pos + b.size;
 
-		box.size.x = MAX(max_a.x, max_b.x) - box.pos.x;
-		box.size.y = MAX(max_a.y, max_b.y) - box.pos.y;
-		box.size.z = MAX(max_a.z, max_b.z) - box.pos.z;
+		box.size.x = max(max_a.x, max_b.x) - box.pos.x;
+		box.size.y = max(max_a.y, max_b.y) - box.pos.y;
+		box.size.z = max(max_a.z, max_b.z) - box.pos.z;
 
 		return box;
 	}
@@ -75,23 +75,23 @@ public:
 		return String("(o:{0}, s:{1})").format(varray(pos.to_vec3(), size.to_vec3()));
 	}
 
-	bool intersects(Box3i other) const {
-		if (pos.x > other.pos.x + other.size.x) {
+	bool intersects(const Box3i &other) const {
+		if (pos.x >= other.pos.x + other.size.x) {
 			return false;
 		}
-		if (pos.y > other.pos.y + other.size.y) {
+		if (pos.y >= other.pos.y + other.size.y) {
 			return false;
 		}
-		if (pos.z > other.pos.z + other.size.z) {
+		if (pos.z >= other.pos.z + other.size.z) {
 			return false;
 		}
-		if (other.pos.x > pos.x + size.x) {
+		if (other.pos.x >= pos.x + size.x) {
 			return false;
 		}
-		if (other.pos.y > pos.y + size.y) {
+		if (other.pos.y >= pos.y + size.y) {
 			return false;
 		}
-		if (other.pos.z > pos.z + size.z) {
+		if (other.pos.z >= pos.z + size.z) {
 			return false;
 		}
 		return true;
@@ -103,7 +103,7 @@ public:
 
 	template <typename A>
 	inline void for_each_cell(A a) const {
-		Vector3i max = pos + size;
+		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
 			for (p.y = pos.y; p.y < max.y; ++p.y) {
@@ -116,7 +116,7 @@ public:
 
 	template <typename A>
 	inline void for_each_cell_zxy(A a) const {
-		Vector3i max = pos + size;
+		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
 			for (p.x = pos.x; p.x < max.x; ++p.x) {
@@ -130,7 +130,7 @@ public:
 	// Returns true if all cells of the box comply with the given predicate on their position.
 	template <typename A>
 	inline bool all_cells_match(A a) const {
-		Vector3i max = pos + size;
+		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
 			for (p.y = pos.y; p.y < max.y; ++p.y) {
