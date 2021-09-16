@@ -25,7 +25,7 @@ public:
 	void set_material_override(Ref<Material> material);
 	void set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode);
 
-	static PoolRealArray make_transform_3d_bulk_array(Span<const Transform> transforms);
+	static void make_transform_3d_bulk_array(Span<const Transform> transforms, PoolRealArray &bulk_array);
 
 private:
 	RID _multimesh_instance;

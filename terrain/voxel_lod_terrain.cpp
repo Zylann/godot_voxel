@@ -413,6 +413,10 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlock &block, bool active) 
 	}
 }
 
+inline int get_octree_size_po2(const VoxelLodTerrain &self) {
+	return self.get_mesh_block_size_pow2() + self.get_lod_count() - 1;
+}
+
 // Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.
 // The provided box must be at LOD0 coordinates.
 void VoxelLodTerrain::post_edit_area(Box3i p_box) {
@@ -1172,7 +1176,7 @@ void VoxelLodTerrain::_process(float delta) {
 		VOXEL_PROFILE_SCOPE_NAMED("Sliding box octrees");
 		// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
 
-		const unsigned int octree_size_po2 = get_mesh_block_size_pow2() + get_lod_count() - 1;
+		const unsigned int octree_size_po2 = get_octree_size_po2(*this);
 		const unsigned int octree_size = 1 << octree_size_po2;
 		const unsigned int octree_region_extent = 1 + _view_distance_voxels / (1 << octree_size_po2);
 
@@ -2382,19 +2386,47 @@ void VoxelLodTerrain::update_gizmos() {
 
 	const Transform parent_transform = get_global_transform();
 
-	const int octree_size = get_mesh_block_size() << (get_lod_count() - 1);
-	const Basis local_octree_basis = Basis().scaled(Vector3(octree_size, octree_size, octree_size));
-	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
-		const Transform local_transform(local_octree_basis, (E->key() * octree_size).to_vec3());
-		dr.draw_box(parent_transform * local_transform, VoxelDebug::ID_OCTREE_BOUNDS);
+	// Octree bounds
+	if (_show_octree_bounds_gizmos) {
+		const int octree_size = 1 << get_octree_size_po2(*this);
+		const Basis local_octree_basis = Basis().scaled(Vector3(octree_size, octree_size, octree_size));
+		for (Map<Vector3i, OctreeItem>::Element *e = _lod_octrees.front(); e; e = e->next()) {
+			const Transform local_transform(local_octree_basis, (e->key() * octree_size).to_vec3());
+			dr.draw_box(parent_transform * local_transform, VoxelDebug::ID_OCTREE_BOUNDS);
+		}
 	}
 
-	const float bounds_in_voxels_len = _bounds_in_voxels.size.length();
-	if (bounds_in_voxels_len < 10000) {
-		const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
-		const Vector3 size = _bounds_in_voxels.size.to_vec3();
-		const Transform local_transform(Basis().scaled(size + margin * 2.f), _bounds_in_voxels.pos.to_vec3() - margin);
-		dr.draw_box(parent_transform * local_transform, VoxelDebug::ID_VOXEL_BOUNDS);
+	// Volume bounds
+	if (_show_volume_bounds_gizmos) {
+		const float bounds_in_voxels_len = _bounds_in_voxels.size.length();
+		if (bounds_in_voxels_len < 10000) {
+			const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
+			const Vector3 size = _bounds_in_voxels.size.to_vec3();
+			const Transform local_transform(Basis().scaled(size + margin * 2.f), _bounds_in_voxels.pos.to_vec3() - margin);
+			dr.draw_box(parent_transform * local_transform, VoxelDebug::ID_VOXEL_BOUNDS);
+		}
+	}
+
+	// Octree nodes
+	if (_show_octree_node_gizmos) {
+		// That can be expensive to draw
+		const int mesh_block_size = get_mesh_block_size();
+		for (Map<Vector3i, OctreeItem>::Element *e = _lod_octrees.front(); e; e = e->next()) {
+			const LodOctree &octree = e->value().octree;
+
+			const Vector3i block_pos_maxlod = e->key();
+			const Vector3i block_offset_lod0 = block_pos_maxlod << (get_lod_count() - 1);
+
+			octree.for_each_leaf([&dr, block_offset_lod0, mesh_block_size, parent_transform](
+										 Vector3i node_pos, int lod_index, const LodOctree::NodeData &data) {
+				//
+				const int size = mesh_block_size << lod_index;
+				const Vector3i voxel_pos = mesh_block_size * ((node_pos << lod_index) + block_offset_lod0);
+				const Transform local_transform(Basis().scaled(Vector3(size, size, size)), voxel_pos.to_vec3());
+				const Transform t = parent_transform * local_transform;
+				dr.draw_box_mm(t);
+			});
+		}
 	}
 
 	dr.end();

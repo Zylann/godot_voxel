@@ -1,6 +1,7 @@
 #ifndef VOXEL_DEBUG_H
 #define VOXEL_DEBUG_H
 
+#include "../util/godot/direct_multimesh_instance.h"
 #include <core/reference.h>
 #include <vector>
 
@@ -14,11 +15,31 @@ enum ColorID {
 	ID_VOXEL_BOUNDS = 0,
 	ID_OCTREE_BOUNDS,
 	ID_VOXEL_GRAPH_DEBUG_BOUNDS,
+	ID_WHITE,
 	ID_COUNT
 };
 
 Ref<Mesh> get_wirecube(ColorID id);
 void free_resources();
+
+class DebugMultiMeshRenderer {
+public:
+	DebugMultiMeshRenderer();
+
+	void set_world(World *world);
+	void begin();
+	void draw_box(Transform t);
+	void end();
+	void clear();
+
+private:
+	std::vector<Transform> _transforms;
+	Ref<MultiMesh> _multimesh;
+	DirectMultiMeshInstance _multimesh_instance;
+	World *_world = nullptr;
+	bool _inside_block = false;
+	PoolRealArray _bulk_array;
+};
 
 class DebugRendererItem;
 
@@ -30,6 +51,7 @@ public:
 
 	void begin();
 	void draw_box(Transform t, ColorID color);
+	void draw_box_mm(Transform t);
 	void end();
 	void clear();
 
@@ -38,6 +60,7 @@ private:
 	unsigned int _current = 0;
 	bool _inside_block = false;
 	World *_world = nullptr;
+	DebugMultiMeshRenderer _mm_renderer;
 };
 
 } // namespace VoxelDebug

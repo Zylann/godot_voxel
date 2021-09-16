@@ -1,6 +1,8 @@
 #include "voxel_debug.h"
 #include "../util/fixed_array.h"
 #include "../util/godot/direct_mesh_instance.h"
+#include "../util/godot/direct_multimesh_instance.h"
+
 #include <scene/resources/mesh.h>
 
 namespace VoxelDebug {
@@ -23,6 +25,8 @@ static Color get_color(ColorID id) {
 			return Color(0.5, 0.5, 0.5);
 		case ID_VOXEL_GRAPH_DEBUG_BOUNDS:
 			return Color(1.0, 1.0, 0.0);
+		case ID_WHITE:
+			return Color(1, 1, 1);
 		default:
 			CRASH_NOW_MSG("Unexpected index");
 	}
@@ -104,6 +108,8 @@ void free_resources() {
 	g_finalized = true;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class DebugRendererItem {
 public:
 	DebugRendererItem() {
@@ -146,6 +152,8 @@ private:
 	DirectMeshInstance _mesh_instance;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 DebugRenderer::~DebugRenderer() {
 	clear();
 }
@@ -155,6 +163,7 @@ void DebugRenderer::clear() {
 		memdelete(*it);
 	}
 	_items.clear();
+	_mm_renderer.clear();
 }
 
 void DebugRenderer::set_world(World *world) {
@@ -162,6 +171,7 @@ void DebugRenderer::set_world(World *world) {
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		(*it)->set_world(world);
 	}
+	_mm_renderer.set_world(world);
 }
 
 void DebugRenderer::begin() {
@@ -169,6 +179,7 @@ void DebugRenderer::begin() {
 	CRASH_COND(_world == nullptr);
 	_current = 0;
 	_inside_block = true;
+	_mm_renderer.begin();
 }
 
 void DebugRenderer::draw_box(Transform t, ColorID color) {
@@ -189,6 +200,10 @@ void DebugRenderer::draw_box(Transform t, ColorID color) {
 	++_current;
 }
 
+void DebugRenderer::draw_box_mm(Transform t) {
+	_mm_renderer.draw_box(t);
+}
+
 void DebugRenderer::end() {
 	CRASH_COND(!_inside_block);
 	// Hide exceeding items
@@ -197,6 +212,57 @@ void DebugRenderer::end() {
 		item->set_visible(false);
 	}
 	_inside_block = false;
+	_mm_renderer.end();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
+	_multimesh_instance.create();
+	// TODO When shadow casting is on, directional shadows completely break.
+	// The reason is still unknown.
+	// It should be off anyways, but it's rather concerning.
+	_multimesh_instance.set_cast_shadows_setting(VisualServer::SHADOW_CASTING_SETTING_OFF);
+	_multimesh.instance();
+	Ref<Mesh> wirecube = get_wirecube(ID_WHITE);
+	_multimesh->set_mesh(wirecube);
+	_multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
+	_multimesh->set_color_format(MultiMesh::COLOR_NONE);
+	_multimesh->set_custom_data_format(MultiMesh::CUSTOM_DATA_NONE);
+	_multimesh_instance.set_multimesh(_multimesh);
+}
+
+void DebugMultiMeshRenderer::set_world(World *world) {
+	_multimesh_instance.set_world(world);
+	_world = world;
+}
+
+void DebugMultiMeshRenderer::begin() {
+	ERR_FAIL_COND(_inside_block);
+	ERR_FAIL_COND(_world == nullptr);
+	_inside_block = true;
+}
+
+void DebugMultiMeshRenderer::draw_box(Transform t) {
+	_transforms.push_back(t);
+}
+
+void DebugMultiMeshRenderer::end() {
+	ERR_FAIL_COND(!_inside_block);
+	_inside_block = false;
+
+	DirectMultiMeshInstance::make_transform_3d_bulk_array(to_span_const(_transforms), _bulk_array);
+	if (_transforms.size() != _multimesh->get_instance_count()) {
+		_multimesh->set_instance_count(_transforms.size());
+	}
+	_multimesh->set_as_bulk_array(_bulk_array);
+
+	_transforms.clear();
+}
+
+void DebugMultiMeshRenderer::clear() {
+	_transforms.clear();
+	_multimesh->set_instance_count(0);
 }
 
 } // namespace VoxelDebug

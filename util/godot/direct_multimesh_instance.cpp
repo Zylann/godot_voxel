@@ -86,11 +86,13 @@ void DirectMultiMeshInstance::set_cast_shadows_setting(VisualServer::ShadowCasti
 	vs.instance_geometry_set_cast_shadows_setting(_multimesh_instance, mode);
 }
 
-PoolRealArray DirectMultiMeshInstance::make_transform_3d_bulk_array(Span<const Transform> transforms) {
+void DirectMultiMeshInstance::make_transform_3d_bulk_array(Span<const Transform> transforms, PoolRealArray &bulk_array) {
 	VOXEL_PROFILE_SCOPE();
 
-	PoolRealArray bulk_array;
-	bulk_array.resize(transforms.size() * 12);
+	const unsigned int bulk_array_size = transforms.size() * 12;
+	if (bulk_array.size() != bulk_array_size) {
+		bulk_array.resize(bulk_array_size);
+	}
 	CRASH_COND(transforms.size() * sizeof(Transform) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
 
 	PoolRealArray::Write w = bulk_array.write();
@@ -117,6 +119,4 @@ PoolRealArray DirectMultiMeshInstance::make_transform_3d_bulk_array(Span<const T
 		ptr[10] = t.basis.elements[2].z;
 		ptr[11] = t.origin.z;
 	}
-
-	return bulk_array;
 }

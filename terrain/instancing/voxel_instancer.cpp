@@ -791,7 +791,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			} else {
 				multimesh->set_visible_instance_count(-1);
 			}
-			PoolRealArray bulk_array = DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms);
+			PoolRealArray bulk_array;
+			DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms, bulk_array);
 			multimesh->set_instance_count(transforms.size());
 			multimesh->set_as_bulk_array(bulk_array);
 

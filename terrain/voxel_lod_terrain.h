@@ -91,8 +91,6 @@ public:
 	void set_lod_fade_duration(float seconds);
 	float get_lod_fade_duration() const;
 
-	String get_configuration_warning() const override;
-
 	enum ProcessMode {
 		PROCESS_MODE_IDLE = 0,
 		PROCESS_MODE_PHYSICS,
@@ -151,6 +149,8 @@ public:
 	bool is_showing_gizmos() const { return _show_gizmos_enabled; }
 #endif
 
+	String get_configuration_warning() const override;
+
 	// Internal
 
 	void set_instancer(VoxelInstancer *instancer);
@@ -160,12 +160,11 @@ public:
 	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
 
 protected:
-	static void _bind_methods();
-
 	void _notification(int p_what);
-	void _process(float delta);
 
 private:
+	void _process(float delta);
+
 	void unload_data_block(Vector3i block_pos, int lod_index);
 	void unload_mesh_block(Vector3i block_pos, int lod_index);
 
@@ -219,6 +218,8 @@ private:
 #ifdef TOOLS_ENABLED
 	void update_gizmos();
 #endif
+
+	static void _bind_methods();
 
 private:
 	// This terrain type is a sparse grid of octrees.
@@ -290,6 +291,9 @@ private:
 	bool _run_stream_in_editor = true;
 #ifdef TOOLS_ENABLED
 	bool _show_gizmos_enabled = false;
+	bool _show_octree_bounds_gizmos = true;
+	bool _show_volume_bounds_gizmos = true;
+	bool _show_octree_node_gizmos = false;
 	VoxelDebug::DebugRenderer _debug_renderer;
 #endif
 
