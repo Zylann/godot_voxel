@@ -42,6 +42,7 @@ public:
 		Vector3i position;
 		uint8_t lod;
 		bool dropped;
+		bool max_lod_hint;
 	};
 
 	struct BlockMeshInput {
@@ -264,6 +265,7 @@ private:
 		bool too_far = false;
 		bool request_instances = false;
 		bool request_voxels = false;
+		bool max_lod_hint = false;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		// TODO Find a way to separate save, it doesnt need sorting
@@ -282,6 +284,7 @@ private:
 		uint8_t block_size;
 		bool has_run = false;
 		bool too_far = false;
+		bool max_lod_hint = false;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 	};

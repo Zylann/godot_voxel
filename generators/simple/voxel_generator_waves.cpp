@@ -9,7 +9,7 @@ VoxelGeneratorWaves::VoxelGeneratorWaves() {
 VoxelGeneratorWaves::~VoxelGeneratorWaves() {
 }
 
-void VoxelGeneratorWaves::generate_block(VoxelBlockRequest &input) {
+VoxelGenerator::Result VoxelGeneratorWaves::generate_block(VoxelBlockRequest &input) {
 	Parameters params;
 	{
 		RWLockRead rlock(_parameters_lock);
@@ -22,7 +22,7 @@ void VoxelGeneratorWaves::generate_block(VoxelBlockRequest &input) {
 			Math_PI / static_cast<float>(params.pattern_size.y));
 	const Vector2 offset = params.pattern_offset;
 
-	VoxelGeneratorHeightmap::generate(
+	return VoxelGeneratorHeightmap::generate(
 			out_buffer,
 			[freq, offset](int x, int z) {
 				return 0.5 + 0.25 * (Math::cos((x + offset.x) * freq.x) + Math::sin((z + offset.y) * freq.y));

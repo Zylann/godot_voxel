@@ -63,7 +63,7 @@ bool VoxelGeneratorImage::is_blur_enabled() const {
 	return _parameters.blur_enabled;
 }
 
-void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
+VoxelGenerator::Result VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
 	VoxelBuffer &out_buffer = **input.voxel_buffer;
 
 	Parameters params;
@@ -72,22 +72,25 @@ void VoxelGeneratorImage::generate_block(VoxelBlockRequest &input) {
 		params = _parameters;
 	}
 
-	ERR_FAIL_COND(params.image.is_null());
+	Result result;
+
+	ERR_FAIL_COND_V(params.image.is_null(), result);
 	const Image &image = **params.image;
 
 	if (params.blur_enabled) {
-		VoxelGeneratorHeightmap::generate(
+		result = VoxelGeneratorHeightmap::generate(
 				out_buffer,
 				[&image](int x, int z) { return get_height_blurred(image, x, z); },
 				input.origin_in_voxels, input.lod);
 	} else {
-		VoxelGeneratorHeightmap::generate(
+		result = VoxelGeneratorHeightmap::generate(
 				out_buffer,
 				[&image](int x, int z) { return get_height_repeat(image, x, z); },
 				input.origin_in_voxels, input.lod);
 	}
 
 	out_buffer.compress_uniform_channels();
+	return result;
 }
 
 void VoxelGeneratorImage::_bind_methods() {

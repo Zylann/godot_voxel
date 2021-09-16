@@ -483,6 +483,7 @@ void VoxelServer::process() {
 				o.position = r->position;
 				o.lod = r->lod;
 				o.dropped = !r->has_run;
+				o.max_lod_hint = r->max_lod_hint;
 
 				switch (r->type) {
 					case BlockDataRequest::TYPE_SAVE:
@@ -524,6 +525,7 @@ void VoxelServer::process() {
 				o.lod = r->lod;
 				o.dropped = !r->has_run;
 				o.type = BlockDataOutput::TYPE_LOAD;
+				o.max_lod_hint = r->max_lod_hint;
 				volume->reception_buffers->data_output.push_back(std::move(o));
 			}
 
@@ -648,6 +650,8 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 			// Each task is one block, and priority depends on distance to closest viewer.
 			// If we batch blocks, we have to do it by distance too.
 
+			// TODO Assign max_lod_hint when available
+
 			const VoxelStream::Result voxel_result = stream->emerge_block(voxels, origin_in_voxels, lod);
 
 			if (voxel_result == VoxelStream::RESULT_ERROR) {
@@ -755,7 +759,8 @@ void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
 	}
 
 	VoxelBlockRequest r{ voxels, origin_in_voxels, lod };
-	generator->generate_block(r);
+	const VoxelGenerator::Result result = generator->generate_block(r);
+	max_lod_hint = result.max_lod_hint;
 
 	if (stream_dependency->valid) {
 		Ref<VoxelStream> stream = stream_dependency->stream;

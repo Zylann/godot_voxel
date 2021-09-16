@@ -59,6 +59,10 @@ private:
 
 	// Indicates if this block is different from the time it was loaded (should be saved)
 	bool _modified = false;
+
+	// Tells if it's worth requesting a more precise version of the data.
+	// Will be `true` if it's not worth it.
+	bool _max_lod_hint = false;
 };
 
 #endif // VOXEL_DATA_BLOCK_H

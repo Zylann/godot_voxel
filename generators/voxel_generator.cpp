@@ -4,8 +4,9 @@
 VoxelGenerator::VoxelGenerator() {
 }
 
-void VoxelGenerator::generate_block(VoxelBlockRequest &input) {
-	ERR_FAIL_COND(input.voxel_buffer.is_null());
+VoxelGenerator::Result VoxelGenerator::generate_block(VoxelBlockRequest &input) {
+	ERR_FAIL_COND_V(input.voxel_buffer.is_null(), Result());
+	return Result();
 }
 
 int VoxelGenerator::get_used_channels_mask() const {

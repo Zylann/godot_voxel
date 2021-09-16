@@ -368,15 +368,17 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 	}
 }
 
-void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
+VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	std::shared_ptr<Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);
 		runtime_ptr = _runtime;
 	}
 
+	Result result;
+
 	if (runtime_ptr == nullptr) {
-		return;
+		return result;
 	}
 
 	VoxelBuffer &out_buffer = **input.voxel_buffer;
@@ -399,9 +401,9 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	// TODO Allow non-cubic block size when not using subdivision
 	const int section_size = _use_subdivision ? _subdivision_size : min(min(bs.x, bs.y), bs.z);
 	// Block size must be a multiple of section size
-	ERR_FAIL_COND(bs.x % section_size != 0);
-	ERR_FAIL_COND(bs.y % section_size != 0);
-	ERR_FAIL_COND(bs.z % section_size != 0);
+	ERR_FAIL_COND_V(bs.x % section_size != 0, result);
+	ERR_FAIL_COND_V(bs.y % section_size != 0, result);
+	ERR_FAIL_COND_V(bs.z % section_size != 0, result);
 
 	Cache &cache = _cache;
 
@@ -422,6 +424,8 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 	FixedArray<uint8_t, 4> spare_texture_indices = runtime_ptr->spare_texture_indices;
 	const unsigned int sdf_output_buffer_index = runtime_ptr->sdf_output_buffer_index;
+
+	bool all_sdf_is_uniform = true;
 
 	// For each subdivision of the block
 	for (int sz = 0; sz < bs.z; sz += section_size) {
@@ -458,6 +462,7 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 
 				if (!sdf_is_uniform) {
 					// SDF is not uniform, we may do a full query
+					all_sdf_is_uniform = false;
 
 					if (_use_optimized_execution_map) {
 						// Optimize out branches of the graph that won't contribute to the result
@@ -544,6 +549,23 @@ void VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	}
 
 	out_buffer.compress_uniform_channels();
+
+	// This is different from finding out that the buffer is uniform.
+	// This really means we predicted SDF will never cross zero in this area, no matter how precise we get.
+	// Relying on the block's uniform channels would bring up false positives due to LOD aliasing.
+	if (all_sdf_is_uniform) {
+		// TODO If voxel texure weights are used, octree compression might be a bit more complicated.
+		// For now we only look at SDF but if texture weights are used and the player digs a bit inside terrain,
+		// they will find it's all default weights.
+		// Possible workarounds:
+		// - Only do it for air
+		// - Also take indices and weights into account, but may lead to way less compression, or none, for stuff that
+		//   essentially isnt showing up until dug out
+		// - Invoke generator to produce LOD0 blocks somehow, but main thread could stall
+		result.max_lod_hint = true;
+	}
+
+	return result;
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {

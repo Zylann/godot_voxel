@@ -125,7 +125,7 @@ public:
 
 	int get_used_channels_mask() const override;
 
-	void generate_block(VoxelBlockRequest &input) override;
+	Result generate_block(VoxelBlockRequest &input) override;
 	float generate_single(const Vector3i &position);
 
 	Ref<Resource> duplicate(bool p_subresources) const override;

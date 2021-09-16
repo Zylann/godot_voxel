@@ -10,7 +10,7 @@ class VoxelGeneratorScript : public VoxelGenerator {
 public:
 	VoxelGeneratorScript();
 
-	void generate_block(VoxelBlockRequest &input) override;
+	Result generate_block(VoxelBlockRequest &input) override;
 	int get_used_channels_mask() const override;
 
 private:

@@ -24,7 +24,7 @@ public:
 	void set_height_range(real_t hrange);
 	real_t get_height_range() const;
 
-	void generate_block(VoxelBlockRequest &input) override;
+	Result generate_block(VoxelBlockRequest &input) override;
 
 protected:
 	void _on_noise_changed();

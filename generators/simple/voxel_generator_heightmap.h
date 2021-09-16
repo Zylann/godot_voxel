@@ -26,7 +26,7 @@ public:
 
 protected:
 	template <typename Height_F>
-	void generate(VoxelBuffer &out_buffer, Height_F height_func, Vector3i origin, int lod) {
+	Result generate(VoxelBuffer &out_buffer, Height_F height_func, Vector3i origin, int lod) {
 		Parameters params;
 		{
 			RWLockRead rlock(_parameters_lock);
@@ -39,12 +39,16 @@ protected:
 
 		if (origin.y > get_height_start() + get_height_range()) {
 			// The bottom of the block is above the highest ground can go (default is air)
-			return;
+			Result result;
+			result.max_lod_hint = true;
+			return result;
 		}
 		if (origin.y + (bs.y << lod) < get_height_start()) {
 			// The top of the block is below the lowest ground can go
 			out_buffer.clear_channel(params.channel, use_sdf ? 0 : params.matter_type);
-			return;
+			Result result;
+			result.max_lod_hint = true;
+			return result;
 		}
 
 		const int stride = 1 << lod;
@@ -90,6 +94,8 @@ protected:
 				} // for x
 			} // for z
 		} // use_sdf
+
+		return Result();
 	}
 
 private:

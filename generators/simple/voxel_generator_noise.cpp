@@ -126,8 +126,8 @@ static inline float get_shaped_noise(OpenSimplexNoise &noise, float x, float y, 
 	return sum / max;
 }
 
-void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
-	ERR_FAIL_COND(input.voxel_buffer.is_null());
+VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
+	ERR_FAIL_COND_V(input.voxel_buffer.is_null(), Result());
 
 	Parameters params;
 	{
@@ -135,7 +135,7 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 		params = _parameters;
 	}
 
-	ERR_FAIL_COND(params.noise.is_null());
+	ERR_FAIL_COND_V(params.noise.is_null(), Result());
 
 	OpenSimplexNoise &noise = **params.noise;
 	VoxelBuffer &buffer = **input.voxel_buffer;
@@ -150,6 +150,8 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 	const int air_color = 0;
 	const int matter_color = 1;
 
+	Result result;
+
 	if (origin_in_voxels.y >= isosurface_upper_bound) {
 		// Fill with air
 		if (params.channel == VoxelBuffer::CHANNEL_SDF) {
@@ -159,6 +161,7 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 		} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
 			buffer.clear_channel(params.channel, air_color);
 		}
+		result.max_lod_hint = true;
 
 	} else if (origin_in_voxels.y + (buffer.get_size().y << lod) < isosurface_lower_bound) {
 		// Fill with matter
@@ -169,6 +172,7 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 		} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
 			buffer.clear_channel(params.channel, matter_color);
 		}
+		result.max_lod_hint = true;
 
 	} else {
 		const float iso_scale = noise.get_period() * 0.1;
@@ -227,6 +231,8 @@ void VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
 			}
 		}
 	}
+
+	return result;
 }
 
 void VoxelGeneratorNoise::_bind_methods() {

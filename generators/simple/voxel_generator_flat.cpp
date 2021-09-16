@@ -51,8 +51,9 @@ float VoxelGeneratorFlat::get_height() const {
 	return _parameters.height;
 }
 
-void VoxelGeneratorFlat::generate_block(VoxelBlockRequest &input) {
-	ERR_FAIL_COND(input.voxel_buffer.is_null());
+VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelBlockRequest &input) {
+	Result result;
+	ERR_FAIL_COND_V(input.voxel_buffer.is_null(), result);
 
 	Parameters params;
 	{
@@ -70,24 +71,23 @@ void VoxelGeneratorFlat::generate_block(VoxelBlockRequest &input) {
 
 	if (origin.y > params.height + margin) {
 		// The bottom of the block is above the highest ground can go (default is air)
-		return;
+		result.max_lod_hint = true;
+		return result;
 	}
 	if (origin.y + (bs.y << lod) < params.height - margin) {
 		// The top of the block is below the lowest ground can go
 		out_buffer.clear_channel(params.channel, use_sdf ? 0 : params.voxel_type);
-		return;
+		result.max_lod_hint = true;
+		return result;
 	}
 
 	const int stride = 1 << lod;
 
 	if (use_sdf) {
-
 		int gz = origin.z;
 		for (int z = 0; z < bs.z; ++z, gz += stride) {
-
 			int gx = origin.x;
 			for (int x = 0; x < bs.x; ++x, gx += stride) {
-
 				int gy = origin.y;
 				for (int y = 0; y < bs.y; ++y, gy += stride) {
 					float sdf = params.iso_scale * (gy - params.height);
@@ -102,10 +102,8 @@ void VoxelGeneratorFlat::generate_block(VoxelBlockRequest &input) {
 
 		int gz = origin.z;
 		for (int z = 0; z < bs.z; ++z, gz += stride) {
-
 			int gx = origin.x;
 			for (int x = 0; x < bs.x; ++x, gx += stride) {
-
 				float h = params.height - origin.y;
 				int ih = int(h);
 				if (ih > 0) {
@@ -118,6 +116,8 @@ void VoxelGeneratorFlat::generate_block(VoxelBlockRequest &input) {
 			} // for x
 		} // for z
 	} // use_sdf
+
+	return result;
 }
 
 void VoxelGeneratorFlat::_bind_methods() {

@@ -61,32 +61,37 @@ Ref<Curve> VoxelGeneratorNoise2D::get_curve() const {
 	return _curve;
 }
 
-void VoxelGeneratorNoise2D::generate_block(VoxelBlockRequest &input) {
+VoxelGenerator::Result VoxelGeneratorNoise2D::generate_block(VoxelBlockRequest &input) {
 	Parameters params;
 	{
 		RWLockRead rlock(_parameters_lock);
 		params = _parameters;
 	}
 
-	ERR_FAIL_COND(params.noise.is_null());
+	Result result;
+
+	ERR_FAIL_COND_V(params.noise.is_null(), result);
 	OpenSimplexNoise &noise = **params.noise;
 
 	VoxelBuffer &out_buffer = **input.voxel_buffer;
 
 	if (_curve.is_null()) {
-		VoxelGeneratorHeightmap::generate(
+		result = VoxelGeneratorHeightmap::generate(
 				out_buffer,
 				[&noise](int x, int z) { return 0.5 + 0.5 * noise.get_noise_2d(x, z); },
 				input.origin_in_voxels, input.lod);
 	} else {
 		Curve &curve = **params.curve;
-		VoxelGeneratorHeightmap::generate(
+		result = VoxelGeneratorHeightmap::generate(
 				out_buffer,
-				[&noise, &curve](int x, int z) { return curve.interpolate_baked(0.5 + 0.5 * noise.get_noise_2d(x, z)); },
+				[&noise, &curve](int x, int z) {
+					return curve.interpolate_baked(0.5 + 0.5 * noise.get_noise_2d(x, z));
+				},
 				input.origin_in_voxels, input.lod);
 	}
 
 	out_buffer.compress_uniform_channels();
+	return result;
 }
 
 void VoxelGeneratorNoise2D::_on_noise_changed() {

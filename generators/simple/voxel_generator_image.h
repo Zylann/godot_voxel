@@ -18,7 +18,7 @@ public:
 	void set_blur_enabled(bool enable);
 	bool is_blur_enabled() const;
 
-	void generate_block(VoxelBlockRequest &input) override;
+	Result generate_block(VoxelBlockRequest &input) override;
 
 private:
 	static void _bind_methods();

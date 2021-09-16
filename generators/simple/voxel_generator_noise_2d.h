@@ -17,7 +17,7 @@ public:
 	void set_curve(Ref<Curve> curve);
 	Ref<Curve> get_curve() const;
 
-	void generate_block(VoxelBlockRequest &input) override;
+	Result generate_block(VoxelBlockRequest &input) override;
 
 private:
 	void _on_noise_changed();

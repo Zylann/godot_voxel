@@ -11,7 +11,15 @@ class VoxelGenerator : public Resource {
 public:
 	VoxelGenerator();
 
-	virtual void generate_block(VoxelBlockRequest &input);
+	struct Result {
+		// Used for block optimization when LOD is used.
+		// If this is `false`, more precise data may be found if a lower LOD index is requested.
+		// If `true`, any block below this LOD are considered to not bring more details or will be the same.
+		// This allows to reduce the number of blocks to load when LOD is used.
+		bool max_lod_hint = false;
+	};
+
+	virtual Result generate_block(VoxelBlockRequest &input);
 	// TODO Single sample
 
 	// Declares the channels this generator will use
