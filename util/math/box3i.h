@@ -103,7 +103,7 @@ public:
 
 	template <typename A>
 	inline void for_each_cell(A a) const {
-		Vector3i max = pos + size;
+		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
 			for (p.y = pos.y; p.y < max.y; ++p.y) {
@@ -116,7 +116,7 @@ public:
 
 	template <typename A>
 	inline void for_each_cell_zxy(A a) const {
-		Vector3i max = pos + size;
+		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
 			for (p.x = pos.x; p.x < max.x; ++p.x) {
@@ -130,7 +130,7 @@ public:
 	// Returns true if all cells of the box comply with the given predicate on their position.
 	template <typename A>
 	inline bool all_cells_match(A a) const {
-		Vector3i max = pos + size;
+		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
 			for (p.y = pos.y; p.y < max.y; ++p.y) {
