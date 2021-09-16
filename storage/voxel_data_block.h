@@ -52,14 +52,6 @@ public:
 		return _needs_lodding;
 	}
 
-	inline void set_max_lod_hint(bool max_lod_hint) {
-		_max_lod_hint = max_lod_hint;
-	}
-
-	inline bool is_max_lod_hint() const {
-		return _max_lod_hint;
-	}
-
 private:
 	VoxelDataBlock(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int p_lod_index) :
 			position(bpos), lod_index(p_lod_index), _voxels(buffer) {}
