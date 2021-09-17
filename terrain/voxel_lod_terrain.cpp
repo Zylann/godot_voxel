@@ -417,6 +417,45 @@ inline int get_octree_size_po2(const VoxelLodTerrain &self) {
 	return self.get_mesh_block_size_pow2() + self.get_lod_count() - 1;
 }
 
+bool VoxelLodTerrain::is_area_editable(Box3i p_voxel_box) const {
+	const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
+	const Box3i lod0_data_block_box = voxel_box.downscaled(get_data_block_size());
+	const Lod &lod0 = _lods[0];
+	const bool all_blocks_present = lod0.data_map.is_area_fully_loaded(lod0_data_block_box);
+	return all_blocks_present;
+}
+
+uint64_t VoxelLodTerrain::get_voxel(Vector3i pos, unsigned int channel, uint64_t defval) const {
+	Vector3i block_pos = pos >> get_data_block_size_pow2();
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		const Lod &lod = _lods[lod_index];
+		const VoxelDataBlock *block = lod.data_map.get_block(block_pos);
+		if (block != nullptr) {
+			return lod.data_map.get_voxel(pos, channel);
+		}
+		// Fallback on lower LOD
+		block_pos = block_pos >> 1;
+	}
+	return defval;
+}
+
+bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value) {
+	const Vector3i block_pos_lod0 = pos >> get_data_block_size_pow2();
+	Lod &lod0 = _lods[0];
+	VoxelDataBlock *block = lod0.data_map.get_block(block_pos_lod0);
+	if (block != nullptr) {
+		lod0.data_map.set_voxel(value, pos, channel);
+		return true;
+	} else {
+		return false;
+	}
+}
+
+void VoxelLodTerrain::copy(Vector3i p_origin_voxels, VoxelBuffer &dst_buffer, uint8_t channels_mask) const {
+	const Lod &lod0 = _lods[0];
+	lod0.data_map.copy(p_origin_voxels, dst_buffer, channels_mask);
+}
+
 // Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.
 // The provided box must be at LOD0 coordinates.
 void VoxelLodTerrain::post_edit_area(Box3i p_box) {
@@ -452,7 +491,7 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 }
 
 Ref<VoxelTool> VoxelLodTerrain::get_voxel_tool() {
-	VoxelToolLodTerrain *vt = memnew(VoxelToolLodTerrain(this, _lods[0].data_map));
+	VoxelToolLodTerrain *vt = memnew(VoxelToolLodTerrain(this));
 	// Set to most commonly used channel on this kind of terrain
 	vt->set_channel(VoxelBuffer::CHANNEL_SDF);
 	return Ref<VoxelTool>(vt);

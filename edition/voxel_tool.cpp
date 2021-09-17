@@ -1,7 +1,6 @@
 #include "voxel_tool.h"
 #include "../storage/voxel_buffer.h"
 #include "../util/macros.h"
-#include "../util/math/sdf.h"
 #include "../util/profiling.h"
 
 VoxelTool::VoxelTool() {
@@ -189,7 +188,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		box.for_each_cell([this, center, radius](Vector3i pos) {
-			float d = _sdf_scale * (pos.to_vec3().distance_to(center) - radius);
+			float d = _sdf_scale * sdf_sphere(pos.to_vec3(), center, radius);
 			_set_voxel_f(pos, sdf_blend(d, get_voxel_f(pos), _mode));
 		});
 

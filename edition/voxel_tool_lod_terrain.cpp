@@ -11,8 +11,8 @@
 #include <scene/3d/physics_body.h>
 #include <scene/main/timer.h>
 
-VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain, VoxelDataMap &map) :
-		_terrain(terrain), _map(&map) {
+VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain) :
+		_terrain(terrain) {
 	ERR_FAIL_COND(terrain == nullptr);
 	// At the moment, only LOD0 is supported.
 	// Don't destroy the terrain while a voxel tool still references it
@@ -20,8 +20,7 @@ VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain, VoxelDataMap 
 
 bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, false);
-	// TODO Take volume bounds into account
-	return _map->is_area_fully_loaded(box);
+	return _terrain->is_area_editable(box);
 }
 
 template <typename Volume_F>
@@ -93,11 +92,13 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	// TODO Implement reverse raycast? (going from inside ground to air, could be useful for undigging)
 
 	struct RaycastPredicate {
-		const VoxelDataMap &map;
+		const VoxelLodTerrain *terrain;
 
 		bool operator()(Vector3i pos) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
-			const float sdf = map.get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
+			const uint64_t raw_value = terrain->get_voxel(pos, VoxelBuffer::CHANNEL_SDF, 0);
+			// TODO Format should be accessible from terrain
+			const float sdf = u16_to_norm(raw_value);
 			return sdf < 0;
 		}
 	};
@@ -105,7 +106,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	Ref<VoxelRaycastResult> res;
 
 	// We use grid-raycast as a middle-phase to roughly detect where the hit will be
-	RaycastPredicate predicate = { *_map };
+	RaycastPredicate predicate = { _terrain };
 	Vector3i hit_pos;
 	Vector3i prev_pos;
 	float hit_distance;
@@ -134,14 +135,17 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 		if (_raycast_binary_search_iterations > 0) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
 			struct VolumeSampler {
-				const VoxelDataMap &map;
+				const VoxelLodTerrain *terrain;
 
 				inline float operator()(const Vector3i &pos) const {
-					return map.get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
+					const uint64_t raw_value = terrain->get_voxel(pos, VoxelBuffer::CHANNEL_SDF, 0);
+					// TODO Format should be accessible from terrain
+					const float sdf = u16_to_norm(raw_value);
+					return sdf;
 				}
 			};
 
-			VolumeSampler sampler{ *_map };
+			VolumeSampler sampler{ _terrain };
 			d = hit_distance_prev + approximate_distance_to_isosurface_binary_search(sampler,
 											pos + dir * hit_distance_prev,
 											dir, hit_distance - hit_distance_prev,
@@ -158,26 +162,50 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 }
 
 void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
+	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	if (_mode != MODE_TEXTURE_PAINT) {
-		VoxelTool::do_sphere(center, radius);
-		return;
-	}
-
-	VOXEL_PROFILE_SCOPE();
-
 	const Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
-
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
 		return;
 	}
 
-	_map->write_box_2(box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
-			TextureBlendSphereOp{ center, radius, _texture_params });
+	switch (_mode) {
+		case MODE_ADD: {
+			// TODO Support other depths, format should be accessible from the volume
+			SdfOperation16bit<SdfUnion, SdfSphere> op;
+			op.shape.center = center;
+			op.shape.radius = radius;
+			op.shape.scale = _sdf_scale;
+			_terrain->write_box(box, VoxelBuffer::CHANNEL_SDF, op);
+		} break;
 
-	_post_edit(box);
+		case MODE_REMOVE: {
+			SdfOperation16bit<SdfSubtract, SdfSphere> op;
+			op.shape.center = center;
+			op.shape.radius = radius;
+			op.shape.scale = _sdf_scale;
+			_terrain->write_box(box, VoxelBuffer::CHANNEL_SDF, op);
+		} break;
+
+		case MODE_SET: {
+			SdfOperation16bit<SdfSet, SdfSphere> op;
+			op.shape.center = center;
+			op.shape.radius = radius;
+			op.shape.scale = _sdf_scale;
+			_terrain->write_box(box, VoxelBuffer::CHANNEL_SDF, op);
+		} break;
+
+		case MODE_TEXTURE_PAINT: {
+			_terrain->write_box_2(box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
+					TextureBlendSphereOp{ center, radius, _texture_params });
+		} break;
+
+		default:
+			ERR_PRINT("Unknown mode");
+			break;
+	}
 }
 
 void VoxelToolLodTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const {
@@ -186,38 +214,44 @@ void VoxelToolLodTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t chann
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_map->copy(pos, **dst, channels_mask);
+	_terrain->copy(pos, **dst, channels_mask);
 }
 
 float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
-	const VoxelDataMap *map = _map;
 	const int channel = get_channel();
+	const VoxelLodTerrain *terrain = _terrain;
 	// TODO Optimization: is it worth a making a fast-path for this?
-	return get_sdf_interpolated([map, channel](Vector3i ipos) {
-		return map->get_voxel_f(ipos, channel);
+	return get_sdf_interpolated([terrain, channel](Vector3i ipos) {
+		const uint64_t raw_value = terrain->get_voxel(ipos, VoxelBuffer::CHANNEL_SDF, 0);
+		// TODO Format should be accessible from terrain
+		const float sdf = u16_to_norm(raw_value);
+		return sdf;
 	},
 			position);
 }
 
 uint64_t VoxelToolLodTerrain::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
-	return _map->get_voxel(pos, _channel);
+	return _terrain->get_voxel(pos, _channel, 0);
 }
 
 float VoxelToolLodTerrain::_get_voxel_f(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
-	return _map->get_voxel_f(pos, _channel);
+	const uint64_t raw_value = _terrain->get_voxel(pos, _channel, 0);
+	// TODO Format should be accessible from terrain
+	return u16_to_norm(raw_value);
 }
 
 void VoxelToolLodTerrain::_set_voxel(Vector3i pos, uint64_t v) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	_map->set_voxel(v, pos, _channel);
+	_terrain->try_set_voxel_without_update(pos, _channel, v);
 }
 
 void VoxelToolLodTerrain::_set_voxel_f(Vector3i pos, float v) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	_map->set_voxel_f(v, pos, _channel);
+	// TODO Format should be accessible from terrain
+	_terrain->try_set_voxel_without_update(pos, _channel, norm_to_u16(v));
 }
 
 void VoxelToolLodTerrain::_post_edit(const Box3i &box) {

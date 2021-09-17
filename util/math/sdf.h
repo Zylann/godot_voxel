@@ -23,6 +23,10 @@ inline Interval sdf_box(
 		   get_length(max_interval(dx, 0.f), max_interval(dy, 0.f), max_interval(dz, 0.f));
 }
 
+inline float sdf_sphere(Vector3 pos, Vector3 center, float radius) {
+	return pos.distance_to(center) - radius;
+}
+
 inline float sdf_torus(float x, float y, float z, float r0, float r1) {
 	Vector2 q = Vector2(Vector2(x, z).length() - r0, y);
 	return q.length() - r1;

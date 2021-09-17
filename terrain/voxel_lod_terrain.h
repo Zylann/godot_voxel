@@ -79,6 +79,33 @@ public:
 	unsigned int get_mesh_block_size() const;
 	void set_mesh_block_size(unsigned int mesh_block_size);
 
+	bool is_area_editable(Box3i p_box) const;
+	uint64_t get_voxel(Vector3i pos, unsigned int channel, uint64_t defval) const;
+	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
+	void copy(Vector3i p_origin_voxels, VoxelBuffer &dst_buffer, uint8_t channels_mask) const;
+
+	template <typename F>
+	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
+		const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
+		if (is_area_editable(voxel_box)) {
+			_lods[0].data_map.write_box(voxel_box, channel, action);
+			post_edit_area(voxel_box);
+		} else {
+			PRINT_VERBOSE("Area not editable");
+		}
+	}
+
+	template <typename F>
+	void write_box_2(const Box3i &p_voxel_box, unsigned int channel1, unsigned int channel2, F action) {
+		const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
+		if (is_area_editable(voxel_box)) {
+			_lods[0].data_map.write_box_2(voxel_box, channel1, channel2, action);
+			post_edit_area(voxel_box);
+		} else {
+			PRINT_VERBOSE("Area not editable");
+		}
+	}
+
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
 

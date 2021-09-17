@@ -189,6 +189,8 @@ public:
 		subdivide_recursively(ROOT_INDEX, Vector3i(), _max_depth, actions);
 	}
 
+	// Gets the bounding box of a node within the LOD0 coordinate system
+	// (i.e a leaf node will always be 1x1x1, a LOD1 node will be 2x2x2 etc)
 	static inline Box3i get_node_box(Vector3i pos_within_lod, int lod_index) {
 		return Box3i(pos_within_lod << lod_index, Vector3i(1 << lod_index));
 	}
