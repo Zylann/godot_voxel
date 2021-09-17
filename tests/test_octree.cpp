@@ -142,7 +142,7 @@ void test_octree_update() {
 }
 
 void test_octree_find_in_box() {
-	const int blocks_across = 16;
+	const int blocks_across = 32;
 	const int block_size = 16;
 	int lods = 0;
 	{
@@ -187,19 +187,39 @@ void test_octree_find_in_box() {
 	});
 
 	// Get octree results
-	full_box.for_each_cell([&octree, &expected_positions](Vector3i pos) {
+	int checksum = 0;
+	full_box.for_each_cell([&octree, &expected_positions, &checksum](Vector3i pos) {
 		const Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
 		auto it = expected_positions.find(pos);
 		ERR_FAIL_COND(it == expected_positions.end());
 		const std::unordered_set<Vector3i> &expected_area_positions = it->second;
 		std::unordered_set<Vector3i> found_positions;
-		octree.for_leaves_in_box(area_box, [&found_positions, &expected_area_positions](
+		octree.for_leaves_in_box(area_box, [&found_positions, &expected_area_positions, &checksum](
 												   Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
 			auto insert_result = found_positions.insert(node_pos);
 			// Must be one of the expected positions
 			ERR_FAIL_COND(expected_area_positions.find(node_pos) == expected_area_positions.end());
 			// Must not be a duplicate
 			ERR_FAIL_COND(insert_result.second == false);
+			checksum += node_data.state;
 		});
 	});
+
+	// Doing it again just to measure time
+	{
+		ProfilingClock profiling_clock;
+		int checksum2 = 0;
+		full_box.for_each_cell([&octree, &expected_positions, &checksum2](Vector3i pos) {
+			const Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
+			octree.for_leaves_in_box(area_box, [&checksum2](Vector3i node_pos, int lod,
+													   const LodOctree::NodeData &node_data) {
+				checksum2 += node_data.state;
+			});
+		});
+		ERR_FAIL_COND(checksum2 != checksum);
+		const int for_each_cell_time = profiling_clock.restart();
+		const float single_query_time = float(for_each_cell_time) / full_box.size.volume();
+		print_line(String("for_each_cell time with {0} lods: total {1} us, single query {2} us, checksum: {3}")
+						   .format(varray(lods, for_each_cell_time, single_query_time, checksum2)));
+	}
 }
