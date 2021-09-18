@@ -1875,6 +1875,10 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 		src_lod.blocks_pending_lodding.clear();
 	}
 
+	// Make sure LOD0 has its list cleared, because in case there is only 1 LOD,
+	// the chain of updates above will not be entered
+	lod0.blocks_pending_lodding.clear();
+
 	//	uint64_t time_spent = profiling_clock.restart();
 	//	if (time_spent > 10) {
 	//		print_line(String("Took {0} us to update lods").format(varray(time_spent)));

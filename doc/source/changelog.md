@@ -38,6 +38,7 @@ Ongoing development - `master`
     - `VoxelBuffer`: `copy_voxel_metadata_in_area` was checking the source box incorrectly
     - `VoxelMesherTransvoxel`: no longer crashes when the input buffer is not cubic
     - `VoxelLodTerrain`: fixed errors and crashes when editing voxels near loading borders
+    - `VoxelLodTerrain`: fixed crash occurring after a few edits when LOD count is set to 1
     - `VoxelTool` channel no longer defaults to 7 when using `get_voxel_tool` from a terrain with a stream assigned. Instead it picks first used channel of the mesher (fallback order is mesher, then generator, then stream).
     - `VoxelInstancer`: fixed error when node visibility changes
     - `VoxelInstancer`: fixed no instances generated when density is 1 in vertex emission mode 
