@@ -44,6 +44,7 @@ Ongoing development - `master`
     - `VoxelInstancer`: fixed no instances generated when density is 1 in vertex emission mode 
     - `VoxelTerrain`: fixed materials shown under the wrong inspector category
     - `VoxelStreamRegionFiles`: fixed errors caused by meta file being sometimes written with wrong depth values
+    - `VoxelStreamBlockFiles`: fixed warning about channels always shown in the scene tree
     - Fix some crashes occurring when all PoolVector allocs are in use (Godot 3.x limitation), it will print errors instead
 
 
