@@ -24,6 +24,9 @@ public:
 			pos(other.pos),
 			size(other.size) {}
 
+	// Creates a box centered on a point, specifying half its size.
+	// Warning: if you consider the center being a 1x1x1 box which would be extended, instead of a mathematical point,
+	// you may want to add 1 to extents.
 	static inline Box3i from_center_extents(Vector3i center, Vector3i extents) {
 		return Box3i(center - extents, 2 * extents);
 	}
