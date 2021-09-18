@@ -1,6 +1,7 @@
 #ifndef DIRECT_MULTIMESH_INSTANCE_H
 #define DIRECT_MULTIMESH_INSTANCE_H
 
+#include "../math/color8.h"
 #include "../span.h"
 
 #include <core/rid.h>
@@ -26,6 +27,13 @@ public:
 	void set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode);
 
 	static void make_transform_3d_bulk_array(Span<const Transform> transforms, PoolRealArray &bulk_array);
+
+	struct TransformAndColor8 {
+		Transform transform;
+		Color8 color;
+	};
+
+	static void make_transform_and_color8_3d_bulk_array(Span<const TransformAndColor8> data, PoolRealArray &bulk_array);
 
 private:
 	RID _multimesh_instance;

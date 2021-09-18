@@ -28,17 +28,18 @@ public:
 
 	void set_world(World *world);
 	void begin();
-	void draw_box(Transform t);
+	void draw_box(const Transform &t, Color8 color);
 	void end();
 	void clear();
 
 private:
-	std::vector<Transform> _transforms;
+	std::vector<DirectMultiMeshInstance::TransformAndColor8> _items;
 	Ref<MultiMesh> _multimesh;
 	DirectMultiMeshInstance _multimesh_instance;
 	World *_world = nullptr;
 	bool _inside_block = false;
 	PoolRealArray _bulk_array;
+	Ref<SpatialMaterial> _material;
 };
 
 class DebugRendererItem;
@@ -50,8 +51,8 @@ public:
 	void set_world(World *world);
 
 	void begin();
-	void draw_box(Transform t, ColorID color);
-	void draw_box_mm(Transform t);
+	void draw_box(const Transform &t, ColorID color);
+	void draw_box_mm(const Transform &t, Color8 color);
 	void end();
 	void clear();
 

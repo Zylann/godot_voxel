@@ -86,10 +86,30 @@ void DirectMultiMeshInstance::set_cast_shadows_setting(VisualServer::ShadowCasti
 	vs.instance_geometry_set_cast_shadows_setting(_multimesh_instance, mode);
 }
 
-void DirectMultiMeshInstance::make_transform_3d_bulk_array(Span<const Transform> transforms, PoolRealArray &bulk_array) {
+inline void write_bulk_array_transform(float *dst, const Transform &t) {
+	dst[0] = t.basis.elements[0].x;
+	dst[1] = t.basis.elements[0].y;
+	dst[2] = t.basis.elements[0].z;
+	dst[3] = t.origin.x;
+
+	dst[4] = t.basis.elements[1].x;
+	dst[5] = t.basis.elements[1].y;
+	dst[6] = t.basis.elements[1].z;
+	dst[7] = t.origin.y;
+
+	dst[8] = t.basis.elements[2].x;
+	dst[9] = t.basis.elements[2].y;
+	dst[10] = t.basis.elements[2].z;
+	dst[11] = t.origin.z;
+}
+
+void DirectMultiMeshInstance::make_transform_3d_bulk_array(
+		Span<const Transform> transforms, PoolRealArray &bulk_array) {
 	VOXEL_PROFILE_SCOPE();
 
-	const unsigned int bulk_array_size = transforms.size() * 12;
+	const int item_size = 12; // In number of floats
+
+	const unsigned int bulk_array_size = transforms.size() * item_size;
 	if (bulk_array.size() != bulk_array_size) {
 		bulk_array.resize(bulk_array_size);
 	}
@@ -101,22 +121,31 @@ void DirectMultiMeshInstance::make_transform_3d_bulk_array(Span<const Transform>
 	// Nope, you can't memcpy that, nonono. It's said to be for performance, but doesnt specify why.
 
 	for (size_t i = 0; i < transforms.size(); ++i) {
-		float *ptr = w.ptr() + 12 * i;
+		float *ptr = w.ptr() + item_size * i;
 		const Transform &t = transforms[i];
+		write_bulk_array_transform(ptr, t);
+	}
+}
 
-		ptr[0] = t.basis.elements[0].x;
-		ptr[1] = t.basis.elements[0].y;
-		ptr[2] = t.basis.elements[0].z;
-		ptr[3] = t.origin.x;
+void DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(
+		Span<const TransformAndColor8> data, PoolRealArray &bulk_array) {
+	VOXEL_PROFILE_SCOPE();
 
-		ptr[4] = t.basis.elements[1].x;
-		ptr[5] = t.basis.elements[1].y;
-		ptr[6] = t.basis.elements[1].z;
-		ptr[7] = t.origin.y;
+	const int transform_size = 12; // In number of floats
+	const int item_size = transform_size + 1;
 
-		ptr[8] = t.basis.elements[2].x;
-		ptr[9] = t.basis.elements[2].y;
-		ptr[10] = t.basis.elements[2].z;
-		ptr[11] = t.origin.z;
+	const unsigned int bulk_array_size = data.size() * item_size;
+	if (bulk_array.size() != bulk_array_size) {
+		bulk_array.resize(bulk_array_size);
+	}
+	CRASH_COND(data.size() * sizeof(TransformAndColor8) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
+
+	PoolRealArray::Write w = bulk_array.write();
+
+	for (size_t i = 0; i < data.size(); ++i) {
+		float *ptr = w.ptr() + item_size * i;
+		const TransformAndColor8 &d = data[i];
+		write_bulk_array_transform(ptr, d.transform);
+		ptr[transform_size] = *reinterpret_cast<const float *>(d.color.components);
 	}
 }

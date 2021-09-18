@@ -182,7 +182,7 @@ void DebugRenderer::begin() {
 	_mm_renderer.begin();
 }
 
-void DebugRenderer::draw_box(Transform t, ColorID color) {
+void DebugRenderer::draw_box(const Transform &t, ColorID color) {
 	// Pick an existing item, or create one
 	DebugRendererItem *item;
 	if (_current >= _items.size()) {
@@ -200,8 +200,8 @@ void DebugRenderer::draw_box(Transform t, ColorID color) {
 	++_current;
 }
 
-void DebugRenderer::draw_box_mm(Transform t) {
-	_mm_renderer.draw_box(t);
+void DebugRenderer::draw_box_mm(const Transform &t, Color8 color) {
+	_mm_renderer.draw_box(t, color);
 }
 
 void DebugRenderer::end() {
@@ -227,9 +227,13 @@ DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
 	Ref<Mesh> wirecube = get_wirecube(ID_WHITE);
 	_multimesh->set_mesh(wirecube);
 	_multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
-	_multimesh->set_color_format(MultiMesh::COLOR_NONE);
+	_multimesh->set_color_format(MultiMesh::COLOR_8BIT);
 	_multimesh->set_custom_data_format(MultiMesh::CUSTOM_DATA_NONE);
 	_multimesh_instance.set_multimesh(_multimesh);
+	_material.instance();
+	_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
+	_material->set_flag(SpatialMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+	_multimesh_instance.set_material_override(_material);
 }
 
 void DebugMultiMeshRenderer::set_world(World *world) {
@@ -243,25 +247,25 @@ void DebugMultiMeshRenderer::begin() {
 	_inside_block = true;
 }
 
-void DebugMultiMeshRenderer::draw_box(Transform t) {
-	_transforms.push_back(t);
+void DebugMultiMeshRenderer::draw_box(const Transform &t, Color8 color) {
+	_items.push_back(DirectMultiMeshInstance::TransformAndColor8{ t, color });
 }
 
 void DebugMultiMeshRenderer::end() {
 	ERR_FAIL_COND(!_inside_block);
 	_inside_block = false;
 
-	DirectMultiMeshInstance::make_transform_3d_bulk_array(to_span_const(_transforms), _bulk_array);
-	if (_transforms.size() != _multimesh->get_instance_count()) {
-		_multimesh->set_instance_count(_transforms.size());
+	DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(to_span_const(_items), _bulk_array);
+	if (_items.size() != _multimesh->get_instance_count()) {
+		_multimesh->set_instance_count(_items.size());
 	}
 	_multimesh->set_as_bulk_array(_bulk_array);
 
-	_transforms.clear();
+	_items.clear();
 }
 
 void DebugMultiMeshRenderer::clear() {
-	_transforms.clear();
+	_items.clear();
 	_multimesh->set_instance_count(0);
 }
 

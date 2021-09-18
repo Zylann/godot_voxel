@@ -2454,20 +2454,24 @@ void VoxelLodTerrain::update_gizmos() {
 	if (_show_octree_node_gizmos) {
 		// That can be expensive to draw
 		const int mesh_block_size = get_mesh_block_size();
+		const float lod_count_f = _lod_count;
 		for (Map<Vector3i, OctreeItem>::Element *e = _lod_octrees.front(); e; e = e->next()) {
 			const LodOctree &octree = e->value().octree;
 
 			const Vector3i block_pos_maxlod = e->key();
 			const Vector3i block_offset_lod0 = block_pos_maxlod << (get_lod_count() - 1);
 
-			octree.for_each_leaf([&dr, block_offset_lod0, mesh_block_size, parent_transform](
+			octree.for_each_leaf([&dr, block_offset_lod0, mesh_block_size, parent_transform, lod_count_f](
 										 Vector3i node_pos, int lod_index, const LodOctree::NodeData &data) {
 				//
 				const int size = mesh_block_size << lod_index;
 				const Vector3i voxel_pos = mesh_block_size * ((node_pos << lod_index) + block_offset_lod0);
 				const Transform local_transform(Basis().scaled(Vector3(size, size, size)), voxel_pos.to_vec3());
 				const Transform t = parent_transform * local_transform;
-				dr.draw_box_mm(t);
+				// Squaring because lower lod indexes are more interesting to see, so we give them more contrast.
+				// Also this might be better with sRGB?
+				float g = squared(max(1.f - float(lod_index) / lod_count_f, 0.f));
+				dr.draw_box_mm(t, Color8(255, uint8_t(g * 254.f), 0, 255));
 			});
 		}
 	}
