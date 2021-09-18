@@ -26,7 +26,6 @@ VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 
 VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 		Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-
 	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
 
 	if (_directory_path.empty()) {
@@ -156,6 +155,11 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 		f->close();
 		memdelete(f);
 	}
+}
+
+int VoxelStreamBlockFiles::get_used_channels_mask() const {
+	// Assuming all, since that stream can store anything.
+	return VoxelBuffer::ALL_CHANNELS_MASK;
 }
 
 String VoxelStreamBlockFiles::get_directory() const {

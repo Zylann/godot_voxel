@@ -18,6 +18,8 @@ public:
 	Result emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
 	void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) override;
 
+	int get_used_channels_mask() const override;
+
 	String get_directory() const;
 	void set_directory(String dirpath);
 
