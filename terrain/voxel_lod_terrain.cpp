@@ -1106,8 +1106,7 @@ void VoxelLodTerrain::_process(float delta) {
 			// Eliminate pending blocks that aren't needed
 
 			// This vector must be empty at this point.
-			// Let's assert so it will pop on your face the day that assumption changes
-			CRASH_COND(!lod.blocks_to_load.empty());
+			ERR_FAIL_COND(!lod.blocks_to_load.empty());
 
 			if (prev_box != new_box) {
 				VOXEL_PROFILE_SCOPE_NAMED("Unload data");
@@ -1317,8 +1316,11 @@ void VoxelLodTerrain::_process(float delta) {
 
 	CRASH_COND(_blocks_pending_transition_update.size() != 0);
 
+	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
+								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
+
 	// Find which blocks we need to load and see, within each octree
-	{
+	if (stream_enabled) {
 		VOXEL_PROFILE_SCOPE_NAMED("Update octrees");
 
 		// TODO Maintain a vector to make iteration faster?
@@ -1463,9 +1465,6 @@ void VoxelLodTerrain::_process(float delta) {
 	CRASH_COND(_blocks_pending_transition_update.size() != 0);
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
-
-	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
-								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
 
 	// It's possible the user didn't set a stream yet, or it is turned off
 	if (stream_enabled) {
