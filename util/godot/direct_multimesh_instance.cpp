@@ -110,7 +110,7 @@ void DirectMultiMeshInstance::make_transform_3d_bulk_array(
 	const int item_size = 12; // In number of floats
 
 	const unsigned int bulk_array_size = transforms.size() * item_size;
-	if (bulk_array.size() != bulk_array_size) {
+	if (static_cast<unsigned int>(bulk_array.size()) != bulk_array_size) {
 		bulk_array.resize(bulk_array_size);
 	}
 	CRASH_COND(transforms.size() * sizeof(Transform) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
@@ -135,7 +135,7 @@ void DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(
 	const int item_size = transform_size + 1;
 
 	const unsigned int bulk_array_size = data.size() * item_size;
-	if (bulk_array.size() != bulk_array_size) {
+	if (static_cast<unsigned int>(bulk_array.size()) != bulk_array_size) {
 		bulk_array.resize(bulk_array_size);
 	}
 	CRASH_COND(data.size() * sizeof(TransformAndColor8) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
