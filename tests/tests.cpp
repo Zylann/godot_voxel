@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "../generators/graph/range_utility.h"
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../storage/voxel_data_map.h"
 #include "../util/island_finder.h"
@@ -887,6 +888,132 @@ void test_transform_3d_array_zxy() {
 	}
 }
 
+void test_get_curve_monotonic_sections() {
+	// This one is a bit annoying to test because Curve has float precision issues stemming from the bake() function
+	struct L {
+		static bool is_equal_approx(float a, float b) {
+			return Math::is_equal_approx(a, b, 2.f * CURVE_RANGE_MARGIN);
+		}
+	};
+	{
+		// One segment going up
+		Ref<Curve> curve;
+		curve.instance();
+		curve->add_point(Vector2(0, 0));
+		curve->add_point(Vector2(1, 1));
+		std::vector<CurveMonotonicSection> sections;
+		get_curve_monotonic_sections(**curve, sections);
+		ERR_FAIL_COND(sections.size() != 1);
+		ERR_FAIL_COND(sections[0].x_min != 0.f);
+		ERR_FAIL_COND(sections[0].x_max != 1.f);
+		ERR_FAIL_COND(sections[0].y_min != 0.f);
+		ERR_FAIL_COND(sections[0].y_max != 1.f);
+		{
+			Interval yi = get_curve_range(**curve, sections, Interval(0.f, 1.f));
+			ERR_FAIL_COND(!L::is_equal_approx(yi.min, 0.f));
+			ERR_FAIL_COND(!L::is_equal_approx(yi.max, 1.f));
+		}
+		{
+			Interval yi = get_curve_range(**curve, sections, Interval(-2.f, 2.f));
+			ERR_FAIL_COND(!L::is_equal_approx(yi.min, 0.f));
+			ERR_FAIL_COND(!L::is_equal_approx(yi.max, 1.f));
+		}
+		{
+			Interval xi(0.2f, 0.8f);
+			Interval yi = get_curve_range(**curve, sections, xi);
+			Interval yi_expected(curve->interpolate_baked(xi.min), curve->interpolate_baked(xi.max));
+			ERR_FAIL_COND(!L::is_equal_approx(yi.min, yi_expected.min));
+			ERR_FAIL_COND(!L::is_equal_approx(yi.max, yi_expected.max));
+		}
+	}
+	{
+		// One flat segment
+		Ref<Curve> curve;
+		curve.instance();
+		curve->add_point(Vector2(0, 0));
+		curve->add_point(Vector2(1, 0));
+		std::vector<CurveMonotonicSection> sections;
+		get_curve_monotonic_sections(**curve, sections);
+		ERR_FAIL_COND(sections.size() != 1);
+		ERR_FAIL_COND(sections[0].x_min != 0.f);
+		ERR_FAIL_COND(sections[0].x_max != 1.f);
+		ERR_FAIL_COND(sections[0].y_min != 0.f);
+		ERR_FAIL_COND(sections[0].y_max != 0.f);
+	}
+	{
+		// Two segments: going up, then flat
+		Ref<Curve> curve;
+		curve.instance();
+		curve->add_point(Vector2(0, 0));
+		curve->add_point(Vector2(0.5, 1));
+		curve->add_point(Vector2(1, 1));
+		std::vector<CurveMonotonicSection> sections;
+		get_curve_monotonic_sections(**curve, sections);
+		ERR_FAIL_COND(sections.size() != 1);
+	}
+	{
+		// Two segments: flat, then up
+		Ref<Curve> curve;
+		curve.instance();
+		curve->add_point(Vector2(0, 0));
+		curve->add_point(Vector2(0.5, 0));
+		curve->add_point(Vector2(1, 1));
+		std::vector<CurveMonotonicSection> sections;
+		get_curve_monotonic_sections(**curve, sections);
+		ERR_FAIL_COND(sections.size() != 1);
+	}
+	{
+		// Three segments: flat, then up, then flat
+		Ref<Curve> curve;
+		curve.instance();
+		curve->add_point(Vector2(0, 0));
+		curve->add_point(Vector2(0.3, 0));
+		curve->add_point(Vector2(0.6, 1));
+		curve->add_point(Vector2(1, 1));
+		std::vector<CurveMonotonicSection> sections;
+		get_curve_monotonic_sections(**curve, sections);
+		ERR_FAIL_COND(sections.size() != 1);
+	}
+	{
+		// Three segments: up, down, up
+		Ref<Curve> curve;
+		curve.instance();
+		curve->add_point(Vector2(0, 0));
+		curve->add_point(Vector2(0.3, 1));
+		curve->add_point(Vector2(0.6, 0));
+		curve->add_point(Vector2(1, 1));
+		std::vector<CurveMonotonicSection> sections;
+		get_curve_monotonic_sections(**curve, sections);
+		ERR_FAIL_COND(sections.size() != 3);
+		ERR_FAIL_COND(sections[0].x_min != 0.f);
+		ERR_FAIL_COND(sections[2].x_max != 1.f);
+	}
+	{
+		// Two segments: going up, then down
+		Ref<Curve> curve;
+		curve.instance();
+		curve->add_point(Vector2(0, 0));
+		curve->add_point(Vector2(0.5, 1));
+		curve->add_point(Vector2(1, 0));
+		std::vector<CurveMonotonicSection> sections;
+		get_curve_monotonic_sections(**curve, sections);
+		ERR_FAIL_COND(sections.size() != 2);
+	}
+	{
+		// One segment, curved as a parabola going up then down
+		Ref<Curve> curve;
+		curve.instance();
+		curve->add_point(Vector2(0, 0), 0.f, 1.f);
+		curve->add_point(Vector2(1, 0));
+		std::vector<CurveMonotonicSection> sections;
+		get_curve_monotonic_sections(**curve, sections);
+		ERR_FAIL_COND(sections.size() != 2);
+		ERR_FAIL_COND(sections[0].x_min != 0.f);
+		ERR_FAIL_COND(sections[0].y_max < 0.1f);
+		ERR_FAIL_COND(sections[1].x_max != 1.f);
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                     \
@@ -911,6 +1038,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_transform_3d_array_zxy);
 	VOXEL_TEST(test_octree_update);
 	VOXEL_TEST(test_octree_find_in_box);
+	VOXEL_TEST(test_get_curve_monotonic_sections);
 
 	print_line("------------ Voxel tests end -------------");
 }

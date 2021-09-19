@@ -30,6 +30,10 @@ struct Interval {
 		return Interval(p_val, p_val);
 	}
 
+	inline static Interval from_unordered_values(float a, float b) {
+		return Interval(::min(a, b), ::max(a, b));
+	}
+
 	inline static Interval from_infinity() {
 		return Interval(
 				-std::numeric_limits<float>::infinity(),
@@ -52,6 +56,10 @@ struct Interval {
 		}
 	}
 
+	inline Interval padded(float e) const {
+		return Interval(min - e, max + e);
+	}
+
 	inline void add_interval(Interval other) {
 		add_point(other.min);
 		add_point(other.max);
@@ -59,6 +67,14 @@ struct Interval {
 
 	inline float length() const {
 		return max - min;
+	}
+
+	inline bool operator==(const Interval &other) const {
+		return min == other.min && max == other.max;
+	}
+
+	inline bool operator!=(const Interval &other) const {
+		return min != other.min || max != other.max;
 	}
 
 	inline Interval operator+(float x) const {

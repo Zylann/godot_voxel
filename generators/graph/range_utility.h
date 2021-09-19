@@ -3,6 +3,7 @@
 
 #include "../../util/math/interval.h"
 #include <core/math/rect2.h>
+#include <vector>
 
 class Curve;
 class OpenSimplexNoise;
@@ -13,6 +14,32 @@ class FastNoiseLiteGradient;
 Interval get_osn_range_2d(OpenSimplexNoise *noise, Interval x, Interval y);
 Interval get_osn_range_3d(OpenSimplexNoise *noise, Interval x, Interval y, Interval z);
 
+struct CurveMonotonicSection {
+	float x_min;
+	float x_max;
+	// Note: Y values are not necessarily in increasing order.
+	// Their name only means to correspond to X coordinates.
+	float y_min;
+	float y_max;
+};
+
+struct CurveRangeData {
+	std::vector<CurveMonotonicSection> sections;
+};
+
+static const float CURVE_RANGE_MARGIN = CMP_EPSILON;
+
+// Gathers monotonic sections of a curve, at baked resolution.
+// Within one section, the curve has only one of the following properties:
+// - Be stationary or decrease
+// - Be stationary or increase
+// Which means, within one section, given a range of input values defined by a min and max,
+// we can quickly calculate an accurate range of output values by sampling the curve only at the two points.
+void get_curve_monotonic_sections(Curve &curve, std::vector<CurveMonotonicSection> &sections);
+// Gets the range of Y values for a range of X values on a curve, using precalculated monotonic segments
+Interval get_curve_range(Curve &curve, const std::vector<CurveMonotonicSection> &sections, Interval x);
+
+// Legacy
 Interval get_curve_range(Curve &curve, bool &is_monotonic_increasing);
 
 Interval get_heightmap_range(Image &im);

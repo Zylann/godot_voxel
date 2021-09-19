@@ -147,7 +147,6 @@ inline Interval skew3(Interval x) {
 // This is mostly useful for generating planets from an existing heightmap
 inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, const Image &im,
 		float min_h, float max_h, float norm_x, float norm_y) {
-
 	const float d = Math::sqrt(x * x + y * y + z * z) + 0.0001f;
 	const float sd = d - r;
 	// Optimize when far enough from heightmap.
@@ -174,7 +173,6 @@ inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, c
 
 inline Interval sdf_sphere_heightmap(Interval x, Interval y, Interval z, float r, float m,
 		const ImageRangeGrid *im_range, float norm_x, float norm_y) {
-
 	const Interval d = get_length(x, y, z) + 0.0001f;
 	const Interval sd = d - r;
 	// TODO There is a discontinuity here due to the optimization done in the regular function
@@ -790,11 +788,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	}
 	{
 		struct Params {
-			float min_value;
-			float max_value;
 			// TODO Should be `const` but isn't because it auto-bakes, and it's a concern for multithreading
 			Curve *curve;
-			bool is_monotonic_increasing;
+			CurveRangeData *curve_range_data;
 		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CURVE];
 		t.name = "Curve";
@@ -811,14 +807,13 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			// Make sure it is baked. We don't want multithreading to bail out because of a write operation
 			// happening in `interpolate_baked`...
 			curve->bake();
-			bool is_monotonic_increasing;
-			const Interval range = get_curve_range(**curve, is_monotonic_increasing);
+			CurveRangeData *curve_range_data = memnew(CurveRangeData);
+			get_curve_monotonic_sections(**curve, curve_range_data->sections);
 			Params p;
-			p.is_monotonic_increasing = is_monotonic_increasing;
-			p.min_value = range.min;
-			p.max_value = range.max;
+			p.curve_range_data = curve_range_data;
 			p.curve = *curve;
 			ctx.set_params(p);
+			ctx.add_memdelete_cleanup(curve_range_data);
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			VOXEL_PROFILE_SCOPE_NAMED("NODE_CURVE");
@@ -835,11 +830,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			if (a.is_single_value()) {
 				const float v = p.curve->interpolate_baked(a.min);
 				ctx.set_output(0, Interval::from_single_value(v));
-			} else if (p.is_monotonic_increasing) {
-				ctx.set_output(0, Interval(p.curve->interpolate_baked(a.min), p.curve->interpolate_baked(a.max)));
 			} else {
-				// TODO Segment the curve?
-				ctx.set_output(0, Interval(p.min_value, p.max_value));
+				const Interval r = get_curve_range(*p.curve, p.curve_range_data->sections, a);
+				ctx.set_output(0, r);
 			}
 		};
 	}
