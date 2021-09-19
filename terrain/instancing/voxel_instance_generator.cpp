@@ -295,6 +295,9 @@ void VoxelInstanceGenerator::generate_transforms(
 	const float min_height = _min_height;
 	const float max_height = _max_height;
 
+	const Vector3 fixed_look_axis = up_mode == UP_MODE_POSITIVE_Y ? Vector3(1, 0, 0) : Vector3(0, 1, 0);
+	const Vector3 fixed_look_axis_alternative = up_mode == UP_MODE_POSITIVE_Y ? Vector3(0, 1, 0) : Vector3(1, 0, 0);
+
 	// Calculate orientations and scales
 	for (size_t vertex_index = 0; vertex_index < vertex_cache.size(); ++vertex_index) {
 		Transform t;
@@ -376,8 +379,29 @@ void VoxelInstanceGenerator::generate_transforms(
 		}
 
 		// Pick a random rotation from the floor's normal.
-		// TODO A pool of precomputed random directions would do the job too
-		const Vector3 dir = Vector3(pcg1.randf() - 0.5f, pcg1.randf() - 0.5f, pcg1.randf() - 0.5f);
+		// We may check for cases too close to Y to avoid broken basis due to float precision limits,
+		// even if that could differ from the expected result
+		Vector3 dir;
+		if (_random_rotation) {
+			do {
+				// TODO A pool of precomputed random directions would do the job too?
+				dir = Vector3(
+						pcg1.randf() - 0.5f,
+						pcg1.randf() - 0.5f,
+						pcg1.randf() - 0.5f)
+							  .normalized();
+				// TODO Any way to check if the two vectors are close to aligned without normalizing `dir`?
+			} while (Math::abs(dir.dot(axis_y)) > 0.9999f);
+
+		} else {
+			// If the surface is aligned with this axis, it will create a "pole" where all instances are looking at.
+			// When getting too close to it, we may pick a different axis.
+			dir = fixed_look_axis;
+			if (Math::abs(dir.dot(axis_y)) > 0.9999f) {
+				dir = fixed_look_axis_alternative;
+			}
+		}
+
 		const Vector3 axis_x = axis_y.cross(dir).normalized();
 		const Vector3 axis_z = axis_x.cross(axis_y);
 
@@ -585,6 +609,17 @@ bool VoxelInstanceGenerator::get_random_vertical_flip() const {
 	return _random_vertical_flip;
 }
 
+void VoxelInstanceGenerator::set_random_rotation(bool enabled) {
+	if (enabled != _random_rotation) {
+		_random_rotation = enabled;
+		emit_changed();
+	}
+}
+
+bool VoxelInstanceGenerator::get_random_rotation() const {
+	return _random_rotation;
+}
+
 void VoxelInstanceGenerator::set_noise(Ref<FastNoiseLite> noise) {
 	if (_noise == noise) {
 		return;
@@ -673,6 +708,9 @@ void VoxelInstanceGenerator::_bind_methods() {
 			&VoxelInstanceGenerator::set_random_vertical_flip);
 	ClassDB::bind_method(D_METHOD("get_random_vertical_flip"), &VoxelInstanceGenerator::get_random_vertical_flip);
 
+	ClassDB::bind_method(D_METHOD("set_random_rotation", "enabled"), &VoxelInstanceGenerator::set_random_rotation);
+	ClassDB::bind_method(D_METHOD("get_random_rotation"), &VoxelInstanceGenerator::get_random_rotation);
+
 	ClassDB::bind_method(D_METHOD("set_noise", "noise"), &VoxelInstanceGenerator::set_noise);
 	ClassDB::bind_method(D_METHOD("get_noise"), &VoxelInstanceGenerator::get_noise);
 
@@ -712,6 +750,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"set_vertical_alignment", "get_vertical_alignment");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_vertical_flip"),
 			"set_random_vertical_flip", "get_random_vertical_flip");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_rotation"), "set_random_rotation", "get_random_rotation");
 
 	ADD_GROUP("Offset", "");
 

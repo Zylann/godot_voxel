@@ -28,6 +28,7 @@ Ongoing development - `master`
     - `VoxelInstanceGenerator`: added extra option to emit from faces more precisely, especially when meshes got simplified (slower than the other options)
     - `VoxelInstancer`: added menu to setup a multimesh item from a scene (similarly to GridMap), which also allows to set up colliders
     - `VoxelInstancer`: added initial support for instancing regular scenes (slower than multimeshes)
+    - `VoxelInstancer`: added option to turn off random rotation
 
 - Breaking changes
     - `VoxelBuffer`: channels `DATA3` and `DATA4` were renamed `INDICES` and `WEIGHTS`
