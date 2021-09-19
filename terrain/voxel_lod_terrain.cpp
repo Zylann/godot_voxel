@@ -419,9 +419,8 @@ inline int get_octree_size_po2(const VoxelLodTerrain &self) {
 
 bool VoxelLodTerrain::is_area_editable(Box3i p_voxel_box) const {
 	const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
-	const Box3i lod0_data_block_box = voxel_box.downscaled(get_data_block_size());
 	const Lod &lod0 = _lods[0];
-	const bool all_blocks_present = lod0.data_map.is_area_fully_loaded(lod0_data_block_box);
+	const bool all_blocks_present = lod0.data_map.is_area_fully_loaded(voxel_box);
 	return all_blocks_present;
 }
 
