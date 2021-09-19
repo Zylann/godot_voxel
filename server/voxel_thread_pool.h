@@ -20,11 +20,16 @@ class IVoxelTask {
 public:
 	virtual ~IVoxelTask() {}
 
+	// Called from within the thread pool
 	virtual void run(VoxelTaskContext ctx) = 0;
+
+	// Called by the scheduler of the task in order to apply results
+	virtual void apply_result() = 0;
 
 	// Lower values means higher priority
 	virtual int get_priority() { return 0; }
 
+	// May return `true` in order for the thread pool to skip the task
 	virtual bool is_cancelled() { return false; }
 };
 
@@ -63,6 +68,7 @@ public:
 	// Schedules a task.
 	// Ownership is NOT passed to the pool, so make sure you get them back when completed if you want to delete them.
 	void enqueue(IVoxelTask *task);
+	// Schedules multiple tasks at once. Involves less internal locking.
 	void enqueue(Span<IVoxelTask *> tasks);
 
 	// TODO Lambda might not be the best API. memcpying to a vector would ensure we lock for a shorter time.

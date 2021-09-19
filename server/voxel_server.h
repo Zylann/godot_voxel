@@ -170,8 +170,8 @@ private:
 	class BlockDataRequest;
 	class BlockGenerateRequest;
 
-	void request_block_generate_from_data_request(BlockDataRequest *src);
-	void request_block_save_from_generate_request(BlockGenerateRequest *src);
+	void request_block_generate_from_data_request(BlockDataRequest &src);
+	void request_block_save_from_generate_request(BlockGenerateRequest &src);
 
 	Dictionary _b_get_stats();
 
@@ -253,6 +253,7 @@ private:
 		void run(VoxelTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
+		void apply_result() override;
 
 		Ref<VoxelBuffer> voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
@@ -276,6 +277,7 @@ private:
 		void run(VoxelTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
+		void apply_result() override;
 
 		Ref<VoxelBuffer> voxels;
 		Vector3i position;
@@ -294,6 +296,7 @@ private:
 		void run(VoxelTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
+		void apply_result() override;
 
 		FixedArray<Ref<VoxelBuffer>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
 		Vector3i position;

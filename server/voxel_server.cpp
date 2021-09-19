@@ -11,17 +11,6 @@ namespace {
 VoxelServer *g_voxel_server = nullptr;
 }
 
-template <typename Dst_T>
-inline Dst_T *must_be_cast(IVoxelTask *src) {
-#ifdef TOOLS_ENABLED
-	Dst_T *dst = dynamic_cast<Dst_T *>(src);
-	CRASH_COND_MSG(dst == nullptr, "Invalid cast");
-	return dst;
-#else
-	return static_cast<Dst_T *>(src);
-#endif
-}
-
 template <typename T>
 inline std::shared_ptr<T> gd_make_shared() {
 	// std::make_shared() apparently wont allow us to specify custom new and delete
@@ -353,38 +342,38 @@ void VoxelServer::request_instance_block_save(uint32_t volume_id, std::unique_pt
 	_streaming_thread_pool.enqueue(r);
 }
 
-void VoxelServer::request_block_generate_from_data_request(BlockDataRequest *src) {
+void VoxelServer::request_block_generate_from_data_request(BlockDataRequest &src) {
 	// This can be called from another thread
 
 	BlockGenerateRequest r;
-	r.voxels = src->voxels;
-	r.volume_id = src->volume_id;
-	r.position = src->position;
-	r.lod = src->lod;
-	r.block_size = src->block_size;
-	r.stream_dependency = src->stream_dependency;
-	r.priority_dependency = src->priority_dependency;
+	r.voxels = src.voxels;
+	r.volume_id = src.volume_id;
+	r.position = src.position;
+	r.lod = src.lod;
+	r.block_size = src.block_size;
+	r.stream_dependency = src.stream_dependency;
+	r.priority_dependency = src.priority_dependency;
 
 	BlockGenerateRequest *rp = memnew(BlockGenerateRequest(r));
 	_generation_thread_pool.enqueue(rp);
 }
 
-void VoxelServer::request_block_save_from_generate_request(BlockGenerateRequest *src) {
+void VoxelServer::request_block_save_from_generate_request(BlockGenerateRequest &src) {
 	// This can be called from another thread
 
 	PRINT_VERBOSE(String("Requesting save of generator output for block {0} lod {1}")
-						  .format(varray(src->position.to_vec3(), src->lod)));
+						  .format(varray(src.position.to_vec3(), src.lod)));
 
-	ERR_FAIL_COND(src->voxels.is_null());
+	ERR_FAIL_COND(src.voxels.is_null());
 
 	BlockDataRequest *r = memnew(BlockDataRequest());
-	r->voxels = src->voxels->duplicate(true);
-	r->volume_id = src->volume_id;
-	r->position = src->position;
-	r->lod = src->lod;
+	r->voxels = src.voxels->duplicate(true);
+	r->volume_id = src.volume_id;
+	r->position = src.position;
+	r->lod = src.lod;
 	r->type = BlockDataRequest::TYPE_SAVE;
-	r->block_size = src->block_size;
-	r->stream_dependency = src->stream_dependency;
+	r->block_size = src.block_size;
+	r->stream_dependency = src.stream_dependency;
 
 	// No instances, generators are not designed to produce them at this stage yet.
 	// No priority data, saving doesnt need sorting
@@ -468,107 +457,20 @@ void VoxelServer::process() {
 
 	// Receive data updates
 	_streaming_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
-		BlockDataRequest *r = must_be_cast<BlockDataRequest>(task);
-		Volume *volume = _world.volumes.try_get(r->volume_id);
-
-		if (volume != nullptr) {
-			// TODO Comparing pointer may not be guaranteed
-			// The request response must match the dependency it would have been requested with.
-			// If it doesn't match, we are no longer interested in the result.
-			if (r->stream_dependency == volume->stream_dependency &&
-					r->type != BlockDataRequest::TYPE_FALLBACK_ON_GENERATOR) {
-				BlockDataOutput o;
-				o.voxels = r->voxels;
-				o.instances = std::move(r->instances);
-				o.position = r->position;
-				o.lod = r->lod;
-				o.dropped = !r->has_run;
-				o.max_lod_hint = r->max_lod_hint;
-
-				switch (r->type) {
-					case BlockDataRequest::TYPE_SAVE:
-						o.type = BlockDataOutput::TYPE_SAVE;
-						break;
-
-					case BlockDataRequest::TYPE_LOAD:
-						o.type = BlockDataOutput::TYPE_LOAD;
-						break;
-
-					default:
-						CRASH_NOW_MSG("Unexpected data request response type");
-				}
-
-				volume->reception_buffers->data_output.push_back(std::move(o));
-			}
-
-		} else {
-			// This can happen if the user removes the volume while requests are still about to return
-			PRINT_VERBOSE("Stream data request response came back but volume wasn't found");
-		}
-
-		memdelete(r);
+		task->apply_result();
+		memdelete(task);
 	});
 
 	// Receive generation updates
 	_generation_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
-		BlockGenerateRequest *r = must_be_cast<BlockGenerateRequest>(task);
-		Volume *volume = _world.volumes.try_get(r->volume_id);
-
-		if (volume != nullptr) {
-			// TODO Comparing pointer may not be guaranteed
-			// The request response must match the dependency it would have been requested with.
-			// If it doesn't match, we are no longer interested in the result.
-			if (r->stream_dependency == volume->stream_dependency) {
-				BlockDataOutput o;
-				o.voxels = r->voxels;
-				o.position = r->position;
-				o.lod = r->lod;
-				o.dropped = !r->has_run;
-				o.type = BlockDataOutput::TYPE_LOAD;
-				o.max_lod_hint = r->max_lod_hint;
-				volume->reception_buffers->data_output.push_back(std::move(o));
-			}
-
-		} else {
-			// This can happen if the user removes the volume while requests are still about to return
-			PRINT_VERBOSE("Gemerated data request response came back but volume wasn't found");
-		}
-
-		memdelete(r);
+		task->apply_result();
+		memdelete(task);
 	});
 
 	// Receive mesh updates
 	_meshing_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
-		BlockMeshRequest *r = must_be_cast<BlockMeshRequest>(task);
-		Volume *volume = _world.volumes.try_get(r->volume_id);
-
-		if (volume != nullptr) {
-			// TODO Comparing pointer may not be guaranteed
-			// The request response must match the dependency it would have been requested with.
-			// If it doesn't match, we are no longer interested in the result.
-			if (volume->meshing_dependency == r->meshing_dependency) {
-				BlockMeshOutput o;
-				// TODO Check for invalidation due to property changes
-
-				if (r->has_run) {
-					o.type = BlockMeshOutput::TYPE_MESHED;
-				} else {
-					o.type = BlockMeshOutput::TYPE_DROPPED;
-				}
-
-				o.position = r->position;
-				o.lod = r->lod;
-				o.surfaces = r->surfaces_output;
-
-				volume->reception_buffers->mesh_output.push_back(o);
-			}
-
-		} else {
-			// This can happen if the user removes the volume while requests are still about to return
-			PRINT_VERBOSE("Mesh request response came back but volume wasn't found");
-		}
-
-		memdelete(r);
+		task->apply_result();
+		memdelete(task);
 	});
 
 	// Update viewer dependencies
@@ -660,7 +562,7 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 			} else if (voxel_result == VoxelStream::RESULT_BLOCK_NOT_FOUND) {
 				Ref<VoxelGenerator> generator = stream_dependency->generator;
 				if (generator.is_valid()) {
-					VoxelServer::get_singleton()->request_block_generate_from_data_request(this);
+					VoxelServer::get_singleton()->request_block_generate_from_data_request(*this);
 					type = TYPE_FALLBACK_ON_GENERATOR;
 				} else {
 					// If there is no generator... what do we do? What defines the format of that empty block?
@@ -742,6 +644,44 @@ bool VoxelServer::BlockDataRequest::is_cancelled() {
 	return type == TYPE_LOAD && (!stream_dependency->valid || too_far);
 }
 
+void VoxelServer::BlockDataRequest::apply_result() {
+	Volume *volume = VoxelServer::get_singleton()->_world.volumes.try_get(volume_id);
+
+	if (volume != nullptr) {
+		// TODO Comparing pointer may not be guaranteed
+		// The request response must match the dependency it would have been requested with.
+		// If it doesn't match, we are no longer interested in the result.
+		if (stream_dependency == volume->stream_dependency && type != BlockDataRequest::TYPE_FALLBACK_ON_GENERATOR) {
+			BlockDataOutput o;
+			o.voxels = voxels;
+			o.instances = std::move(instances);
+			o.position = position;
+			o.lod = lod;
+			o.dropped = !has_run;
+			o.max_lod_hint = max_lod_hint;
+
+			switch (type) {
+				case BlockDataRequest::TYPE_SAVE:
+					o.type = BlockDataOutput::TYPE_SAVE;
+					break;
+
+				case BlockDataRequest::TYPE_LOAD:
+					o.type = BlockDataOutput::TYPE_LOAD;
+					break;
+
+				default:
+					CRASH_NOW_MSG("Unexpected data request response type");
+			}
+
+			volume->reception_buffers->data_output.push_back(std::move(o));
+		}
+
+	} else {
+		// This can happen if the user removes the volume while requests are still about to return
+		PRINT_VERBOSE("Stream data request response came back but volume wasn't found");
+	}
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
@@ -765,7 +705,7 @@ void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
 	if (stream_dependency->valid) {
 		Ref<VoxelStream> stream = stream_dependency->stream;
 		if (stream.is_valid() && stream->get_save_generator_output()) {
-			VoxelServer::get_singleton()->request_block_save_from_generate_request(this);
+			VoxelServer::get_singleton()->request_block_save_from_generate_request(*this);
 		}
 	}
 
@@ -781,6 +721,30 @@ int VoxelServer::BlockGenerateRequest::get_priority() {
 
 bool VoxelServer::BlockGenerateRequest::is_cancelled() {
 	return !stream_dependency->valid || too_far; // || stream_dependency->stream->get_fallback_generator().is_null();
+}
+
+void VoxelServer::BlockGenerateRequest::apply_result() {
+	Volume *volume = VoxelServer::get_singleton()->_world.volumes.try_get(volume_id);
+
+	if (volume != nullptr) {
+		// TODO Comparing pointer may not be guaranteed
+		// The request response must match the dependency it would have been requested with.
+		// If it doesn't match, we are no longer interested in the result.
+		if (stream_dependency == volume->stream_dependency) {
+			BlockDataOutput o;
+			o.voxels = voxels;
+			o.position = position;
+			o.lod = lod;
+			o.dropped = !has_run;
+			o.type = BlockDataOutput::TYPE_LOAD;
+			o.max_lod_hint = max_lod_hint;
+			volume->reception_buffers->data_output.push_back(std::move(o));
+		}
+
+	} else {
+		// This can happen if the user removes the volume while requests are still about to return
+		PRINT_VERBOSE("Gemerated data request response came back but volume wasn't found");
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -895,6 +859,36 @@ int VoxelServer::BlockMeshRequest::get_priority() {
 
 bool VoxelServer::BlockMeshRequest::is_cancelled() {
 	return !meshing_dependency->valid || too_far;
+}
+
+void VoxelServer::BlockMeshRequest::apply_result() {
+	Volume *volume = VoxelServer::get_singleton()->_world.volumes.try_get(volume_id);
+
+	if (volume != nullptr) {
+		// TODO Comparing pointer may not be guaranteed
+		// The request response must match the dependency it would have been requested with.
+		// If it doesn't match, we are no longer interested in the result.
+		if (volume->meshing_dependency == meshing_dependency) {
+			BlockMeshOutput o;
+			// TODO Check for invalidation due to property changes
+
+			if (has_run) {
+				o.type = BlockMeshOutput::TYPE_MESHED;
+			} else {
+				o.type = BlockMeshOutput::TYPE_DROPPED;
+			}
+
+			o.position = position;
+			o.lod = lod;
+			o.surfaces = surfaces_output;
+
+			volume->reception_buffers->mesh_output.push_back(o);
+		}
+
+	} else {
+		// This can happen if the user removes the volume while requests are still about to return
+		PRINT_VERBOSE("Mesh request response came back but volume wasn't found");
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
