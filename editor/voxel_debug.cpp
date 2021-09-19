@@ -256,7 +256,7 @@ void DebugMultiMeshRenderer::end() {
 	_inside_block = false;
 
 	DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(to_span_const(_items), _bulk_array);
-	if (_items.size() != _multimesh->get_instance_count()) {
+	if (_items.size() != static_cast<unsigned int>(_multimesh->get_instance_count())) {
 		_multimesh->set_instance_count(_items.size());
 	}
 
