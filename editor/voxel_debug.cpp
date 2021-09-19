@@ -259,7 +259,11 @@ void DebugMultiMeshRenderer::end() {
 	if (_items.size() != _multimesh->get_instance_count()) {
 		_multimesh->set_instance_count(_items.size());
 	}
-	_multimesh->set_as_bulk_array(_bulk_array);
+
+	// Apparently Godot doesn't like empty bulk arrays, it breaks RasterizerStorageGLES3
+	if (_items.size() > 0) {
+		_multimesh->set_as_bulk_array(_bulk_array);
+	}
 
 	_items.clear();
 }
