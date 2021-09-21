@@ -152,14 +152,22 @@ public:
 		};
 
 		ThreadPoolStats streaming;
-		ThreadPoolStats generation;
-		ThreadPoolStats meshing;
+		ThreadPoolStats general;
+		int generation_tasks;
+		int streaming_tasks;
+		int meshing_tasks;
 
 		Dictionary to_dict() {
+			Dictionary pools;
+			pools["streaming"] = streaming.to_dict();
+			pools["general"] = streaming.to_dict();
+			Dictionary tasks;
+			tasks["streaming"] = generation_tasks;
+			tasks["generation"] = generation_tasks;
+			tasks["meshing"] = meshing_tasks;
 			Dictionary d;
-			d["streaming"] = streaming.to_dict();
-			d["generation"] = generation.to_dict();
-			d["meshing"] = meshing.to_dict();
+			d["pools"] = pools;
+			d["tasks"] = tasks;
 			return d;
 		}
 	};
@@ -250,6 +258,9 @@ private:
 			TYPE_FALLBACK_ON_GENERATOR
 		};
 
+		BlockDataRequest();
+		~BlockDataRequest();
+
 		void run(VoxelTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
@@ -274,6 +285,9 @@ private:
 
 	class BlockGenerateRequest : public IVoxelTask {
 	public:
+		BlockGenerateRequest();
+		~BlockGenerateRequest();
+
 		void run(VoxelTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
@@ -293,6 +307,9 @@ private:
 
 	class BlockMeshRequest : public IVoxelTask {
 	public:
+		BlockMeshRequest();
+		~BlockMeshRequest();
+
 		void run(VoxelTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
@@ -313,9 +330,10 @@ private:
 	// TODO multi-world support in the future
 	World _world;
 
+	// Pool specialized in file I/O
 	VoxelThreadPool _streaming_thread_pool;
-	VoxelThreadPool _generation_thread_pool;
-	VoxelThreadPool _meshing_thread_pool;
+	// Pool for every other task
+	VoxelThreadPool _general_thread_pool;
 
 	VoxelFileLocker _file_locker;
 };

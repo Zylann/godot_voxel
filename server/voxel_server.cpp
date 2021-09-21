@@ -9,7 +9,11 @@
 
 namespace {
 VoxelServer *g_voxel_server = nullptr;
-}
+// Could be atomics, but it's for debugging so I don't bother for now
+int g_debug_generate_tasks_count = 0;
+int g_debug_stream_tasks_count = 0;
+int g_debug_mesh_tasks_count = 0;
+} // namespace
 
 template <typename T>
 inline std::shared_ptr<T> gd_make_shared() {
@@ -42,18 +46,14 @@ VoxelServer::VoxelServer() {
 	_streaming_thread_pool.set_name("Voxel streaming");
 	_streaming_thread_pool.set_thread_count(1);
 	_streaming_thread_pool.set_priority_update_period(300);
+	// Batching is only to give a chance for file I/O tasks to be grouped and reduce open/close calls.
+	// But in the end it might be better to move this idea to the tasks themselves?
 	_streaming_thread_pool.set_batch_count(16);
 
-	_generation_thread_pool.set_name("Voxel generation");
-	_generation_thread_pool.set_thread_count(2);
-	_generation_thread_pool.set_priority_update_period(300);
-	_generation_thread_pool.set_batch_count(1);
-
-	// This pool works on visuals so it must have lower latency
-	_meshing_thread_pool.set_name("Voxel meshing");
-	_meshing_thread_pool.set_thread_count(2);
-	_meshing_thread_pool.set_priority_update_period(64);
-	_meshing_thread_pool.set_batch_count(1);
+	_general_thread_pool.set_name("Voxel general");
+	_general_thread_pool.set_thread_count(4);
+	_general_thread_pool.set_priority_update_period(200);
+	_general_thread_pool.set_batch_count(1);
 
 	// Init world
 	_world.shared_priority_dependency = gd_make_shared<PriorityDependencyShared>();
@@ -73,12 +73,10 @@ VoxelServer::~VoxelServer() {
 
 void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	_streaming_thread_pool.wait_for_all_tasks();
-	_generation_thread_pool.wait_for_all_tasks();
+	_general_thread_pool.wait_for_all_tasks();
 
 	// Wait a second time because the generation pool can generate streaming requests
 	_streaming_thread_pool.wait_for_all_tasks();
-
-	_meshing_thread_pool.wait_for_all_tasks();
 
 	_streaming_thread_pool.dequeue_completed_tasks([warn](IVoxelTask *task) {
 		if (warn) {
@@ -88,13 +86,9 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 		memdelete(task);
 	});
 
-	_meshing_thread_pool.dequeue_completed_tasks([](IVoxelTask *task) {
-		memdelete(task);
-	});
-
-	_generation_thread_pool.dequeue_completed_tasks([warn](IVoxelTask *task) {
+	_general_thread_pool.dequeue_completed_tasks([warn](IVoxelTask *task) {
 		if (warn) {
-			WARN_PRINT("Generator tasks remain on module cleanup, "
+			WARN_PRINT("General tasks remain on module cleanup, "
 					   "this could become a problem if they reference scripts");
 		}
 		memdelete(task);
@@ -260,7 +254,7 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &i
 			r->priority_dependency, input.render_block_position, input.lod, volume, volume.render_block_size);
 
 	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
-	_meshing_thread_pool.enqueue(r);
+	_general_thread_pool.enqueue(r);
 }
 
 void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances) {
@@ -285,17 +279,16 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 		// Directly generate the block without checking the stream
 		ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
 
-		BlockGenerateRequest r;
-		r.volume_id = volume_id;
-		r.position = block_pos;
-		r.lod = lod;
-		r.block_size = volume.data_block_size;
-		r.stream_dependency = volume.stream_dependency;
+		BlockGenerateRequest *r = memnew(BlockGenerateRequest);
+		r->volume_id = volume_id;
+		r->position = block_pos;
+		r->lod = lod;
+		r->block_size = volume.data_block_size;
+		r->stream_dependency = volume.stream_dependency;
 
-		init_priority_dependency(r.priority_dependency, block_pos, lod, volume, volume.data_block_size);
+		init_priority_dependency(r->priority_dependency, block_pos, lod, volume, volume.data_block_size);
 
-		BlockGenerateRequest *rp = memnew(BlockGenerateRequest(r));
-		_generation_thread_pool.enqueue(rp);
+		_general_thread_pool.enqueue(r);
 	}
 }
 
@@ -355,7 +348,7 @@ void VoxelServer::request_block_generate_from_data_request(BlockDataRequest &src
 	r.priority_dependency = src.priority_dependency;
 
 	BlockGenerateRequest *rp = memnew(BlockGenerateRequest(r));
-	_generation_thread_pool.enqueue(rp);
+	_general_thread_pool.enqueue(rp);
 }
 
 void VoxelServer::request_block_save_from_generate_request(BlockGenerateRequest &src) {
@@ -461,14 +454,8 @@ void VoxelServer::process() {
 		memdelete(task);
 	});
 
-	// Receive generation updates
-	_generation_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
-		task->apply_result();
-		memdelete(task);
-	});
-
-	// Receive mesh updates
-	_meshing_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
+	// Receive generation and meshing results
+	_general_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
 		task->apply_result();
 		memdelete(task);
 	});
@@ -519,8 +506,10 @@ static VoxelServer::Stats::ThreadPoolStats debug_get_pool_stats(const VoxelThrea
 VoxelServer::Stats VoxelServer::get_stats() const {
 	Stats s;
 	s.streaming = debug_get_pool_stats(_streaming_thread_pool);
-	s.generation = debug_get_pool_stats(_generation_thread_pool);
-	s.meshing = debug_get_pool_stats(_meshing_thread_pool);
+	s.general = debug_get_pool_stats(_general_thread_pool);
+	s.generation_tasks = g_debug_generate_tasks_count;
+	s.meshing_tasks = g_debug_mesh_tasks_count;
+	s.streaming_tasks = g_debug_stream_tasks_count;
 	return s;
 }
 
@@ -533,6 +522,14 @@ void VoxelServer::_bind_methods() {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+
+VoxelServer::BlockDataRequest::BlockDataRequest() {
+	++g_debug_stream_tasks_count;
+}
+
+VoxelServer::BlockDataRequest::~BlockDataRequest() {
+	--g_debug_stream_tasks_count;
+}
 
 void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
@@ -684,6 +681,14 @@ void VoxelServer::BlockDataRequest::apply_result() {
 
 //----------------------------------------------------------------------------------------------------------------------
 
+VoxelServer::BlockGenerateRequest::BlockGenerateRequest() {
+	++g_debug_generate_tasks_count;
+}
+
+VoxelServer::BlockGenerateRequest::~BlockGenerateRequest() {
+	--g_debug_generate_tasks_count;
+}
+
 void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -826,6 +831,14 @@ static void copy_block_and_neighbors(Span<Ref<VoxelBuffer>> blocks, VoxelBuffer 
 			}
 		}
 	}
+}
+
+VoxelServer::BlockMeshRequest::BlockMeshRequest() {
+	++g_debug_mesh_tasks_count;
+}
+
+VoxelServer::BlockMeshRequest::~BlockMeshRequest() {
+	--g_debug_mesh_tasks_count;
 }
 
 void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {

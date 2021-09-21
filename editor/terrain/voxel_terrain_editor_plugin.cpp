@@ -42,9 +42,9 @@ public:
 
 	void update_stats(int main_thread_tasks) {
 		const VoxelServer::Stats stats = VoxelServer::get_singleton()->get_stats();
-		set_stat(STAT_STREAM_TASKS, stats.streaming.tasks);
-		set_stat(STAT_GENERATE_TASKS, stats.generation.tasks);
-		set_stat(STAT_MESH_TASKS, stats.meshing.tasks);
+		set_stat(STAT_STREAM_TASKS, stats.streaming_tasks);
+		set_stat(STAT_GENERATE_TASKS, stats.generation_tasks);
+		set_stat(STAT_MESH_TASKS, stats.meshing_tasks);
 		set_stat(STAT_MAIN_THREAD_TASKS, main_thread_tasks);
 	}
 
@@ -71,7 +71,7 @@ private:
 	}
 
 	struct Stat {
-		int value;
+		int value = 0;
 		Label *label = nullptr;
 	};
 

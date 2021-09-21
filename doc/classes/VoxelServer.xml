@@ -16,15 +16,22 @@
 				The returned dictionary has the following structure:
 				[codeblock]
 				{
-					"streaming": {
-						"tasks": int,
-						"active_threads": int,
-						"thread_count": int
+					"pools": {
+						"streaming": {
+							"tasks": int,
+							"active_threads": int,
+							"thread_count": int
+						},
+						"general": {
+							"tasks": int,
+							"active_threads": int,
+							"thread_count": int
+						}
 					},
-					"meshing": {
-						"tasks": int,
-						"active_threads": int,
-						"thread_count": int
+					"tasks": {
+						"streaming": int,
+						"meshing": int,
+						"generation": int
 					}
 				}
 				[/codeblock]

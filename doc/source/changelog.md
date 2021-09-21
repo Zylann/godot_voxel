@@ -33,6 +33,7 @@ Ongoing development - `master`
 - Breaking changes
     - `VoxelBuffer`: channels `DATA3` and `DATA4` were renamed `INDICES` and `WEIGHTS`
     - `VoxelInstanceGenerator`: `EMIT_FROM_FACES` got renamed `EMIT_FROM_FACES_FAST`. `EMIT_FROM_FACES` still exists but is a different algorithm.
+    - `VoxelServer`: `get_stats()` format has changed, check documentation
 
 - Fixes
     - `VoxelGeneratorGraph`: changes to node properties are now saved properly
