@@ -11,10 +11,11 @@ VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelBlockRequest &i
 	Variant ret;
 	try_call_script(this, VoxelStringNames::get_singleton()->_generate_block,
 			input.voxel_buffer, input.origin_in_voxels.to_vec3(), input.lod, &ret);
-	if (ret.get_type() == Variant::DICTIONARY) {
-		Dictionary d = ret;
-		result.max_lod_hint = d.get("max_lod_hint", false);
-	}
+	// We may expose this to scripts the day it actually gets used
+	// if (ret.get_type() == Variant::DICTIONARY) {
+	// 	Dictionary d = ret;
+	// 	result.max_lod_hint = d.get("max_lod_hint", false);
+	// }
 	return result;
 }
 
@@ -27,8 +28,7 @@ int VoxelGeneratorScript::get_used_channels_mask() const {
 }
 
 void VoxelGeneratorScript::_bind_methods() {
-	// The dictionary return is optional
-	BIND_VMETHOD(MethodInfo(Variant::DICTIONARY, "_generate_block",
+	BIND_VMETHOD(MethodInfo("_generate_block",
 			PropertyInfo(Variant::OBJECT, "out_buffer", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT, "VoxelBuffer"),
 			PropertyInfo(Variant::VECTOR3, "origin_in_voxels"),
 			PropertyInfo(Variant::INT, "lod")));
