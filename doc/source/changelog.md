@@ -15,6 +15,8 @@ Ongoing development - `master`
     - `VoxelTerrain`: added `get_data_block_size()`
     - `VoxelToolTerrain`: added  `for_each_voxel_metadata_in_area()` to quickly find all metadata in a box
     - Added property to terrain nodes to configure collision margin
+    - Thread count is automatically determined from the number of concurrent threads the CPU supports
+    - Added project settings to configure thread count
 
 - Blocky voxels
     - Added *.vox importers to import MagicaVoxel files as scenes or meshes

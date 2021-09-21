@@ -38,11 +38,47 @@ void VoxelServer::destroy_singleton() {
 }
 
 VoxelServer::VoxelServer() {
-	const unsigned int hw_threads_hint = std::thread::hardware_concurrency();
-	PRINT_VERBOSE(String("HW threads hint: {0}").format(varray(hw_threads_hint)));
-	// TODO Automatic thread assignment and project settings
+	const int hw_threads_hint = std::thread::hardware_concurrency();
+	PRINT_VERBOSE(String("Voxel: HW threads hint: {0}").format(varray(hw_threads_hint)));
 
-	// Can't be more than 1 thread. File access with more threads isn't worth it.
+	// Compute thread count for general pool.
+	// Note that the I/O thread counts as one used thread and will always be present.
+
+	// "RST" means changing the property requires an editor restart (or game restart)
+	GLOBAL_DEF_RST("voxel/threads/count/minimum", 1);
+	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/minimum",
+			PropertyInfo(Variant::INT, "voxel/threads/count/minimum", PROPERTY_HINT_RANGE, "1,64"));
+
+	GLOBAL_DEF_RST("voxel/threads/count/margin_below_max", 1);
+	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/margin_below_max",
+			PropertyInfo(Variant::INT, "voxel/threads/count/margin_below_max", PROPERTY_HINT_RANGE, "1,64"));
+
+	GLOBAL_DEF_RST("voxel/threads/count/ratio_over_max", 0.5f);
+	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/ratio_over_max",
+			PropertyInfo(Variant::REAL, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1"));
+
+	const int minimum_thread_count = max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/minimum")));
+
+	// How many threads below available count on the CPU should we set as limit
+	const int thread_count_margin =
+			max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/margin_below_max")));
+
+	// Portion of available CPU threads to attempt using
+	const float threads_ratio =
+			clamp(float(ProjectSettings::get_singleton()->get("voxel/threads/count/ratio_over_max")), 0.f, 1.f);
+
+	const int maximum_thread_count = max(hw_threads_hint - thread_count_margin, minimum_thread_count);
+	// `-1` is for the stream thread
+	const int thread_count_by_ratio = int(Math::round(float(threads_ratio) * hw_threads_hint)) - 1;
+	const int thread_count = clamp(thread_count_by_ratio, minimum_thread_count, maximum_thread_count);
+	PRINT_VERBOSE(String("Voxel: automatic thread count set to {0}").format(varray(thread_count)));
+
+	if (thread_count > hw_threads_hint) {
+		WARN_PRINT("Configured thread count exceeds hardware thread count. Performance may not be optimal");
+	}
+
+	// I/O can't be more than 1 thread. File access with more threads isn't worth it.
+	// This thread isn't configurable at the moment.
 	_streaming_thread_pool.set_name("Voxel streaming");
 	_streaming_thread_pool.set_thread_count(1);
 	_streaming_thread_pool.set_priority_update_period(300);
@@ -51,7 +87,7 @@ VoxelServer::VoxelServer() {
 	_streaming_thread_pool.set_batch_count(16);
 
 	_general_thread_pool.set_name("Voxel general");
-	_general_thread_pool.set_thread_count(4);
+	_general_thread_pool.set_thread_count(thread_count);
 	_general_thread_pool.set_priority_update_period(200);
 	_general_thread_pool.set_batch_count(1);
 
