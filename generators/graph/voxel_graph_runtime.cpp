@@ -83,7 +83,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	std::unordered_map<uint32_t, uint32_t> node_id_to_dependency_graph;
 
 	// Not using the generic `get_terminal_nodes` function because our terminal nodes do have outputs
-	graph.for_each_node([&terminal_nodes](const ProgramGraph::Node &node) {
+	graph.for_each_node_const([&terminal_nodes](const ProgramGraph::Node &node) {
 		const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node.type_id);
 		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
 			terminal_nodes.push_back(node.id);

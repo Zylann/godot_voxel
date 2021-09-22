@@ -159,6 +159,9 @@ public:
 private:
 	Dictionary get_graph_as_variant_data() const;
 	void load_graph_from_variant_data(Dictionary data);
+	void register_subresource(Resource &resource);
+	void unregister_subresource(Resource &resource);
+	void _on_subresource_changed();
 
 	int _b_get_node_type_count() const;
 	Dictionary _b_get_node_type_info(int type_id) const;
@@ -170,9 +173,6 @@ private:
 	float _b_generate_single(Vector3 pos);
 	Vector2 _b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const;
 	Dictionary _b_compile();
-
-	void _on_subresource_changed();
-	void connect_to_subresource_changes();
 
 	struct WeightOutput {
 		unsigned int layer_index;

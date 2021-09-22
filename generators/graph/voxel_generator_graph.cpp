@@ -1,4 +1,5 @@
 #include "voxel_generator_graph.h"
+#include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "voxel_graph_node_db.h"
@@ -17,6 +18,14 @@ VoxelGeneratorGraph::~VoxelGeneratorGraph() {
 }
 
 void VoxelGeneratorGraph::clear() {
+	_graph.for_each_node([this](ProgramGraph::Node &node) {
+		for (size_t i = 0; i < node.params.size(); ++i) {
+			Ref<Resource> resource = node.params[i];
+			if (resource.is_valid()) {
+				unregister_subresource(**resource);
+			}
+		}
+	});
 	_graph.clear();
 	{
 		RWLockWrite wlock(_runtime_lock);
@@ -54,7 +63,14 @@ uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, 
 }
 
 void VoxelGeneratorGraph::remove_node(uint32_t node_id) {
-	ERR_FAIL_COND(_graph.try_get_node(node_id) == nullptr);
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND(node == nullptr);
+	for (size_t i = 0; i < node->params.size(); ++i) {
+		Ref<Resource> resource = node->params[i];
+		if (resource.is_valid()) {
+			unregister_subresource(**resource);
+		}
+	}
 	_graph.remove_node(node_id);
 	emit_changed();
 }
@@ -141,7 +157,18 @@ void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index,
 	ERR_FAIL_INDEX(param_index, node->params.size());
 
 	if (node->params[param_index] != value) {
+		Ref<Resource> prev_resource = node->params[param_index];
+		if (prev_resource.is_valid()) {
+			unregister_subresource(**prev_resource);
+		}
+
 		node->params[param_index] = value;
+
+		Ref<Resource> resource = value;
+		if (resource.is_valid()) {
+			register_subresource(**resource);
+		}
+
 		emit_changed();
 	}
 }
@@ -569,6 +596,8 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
+	const int64_t time_before = OS::get_singleton()->get_ticks_usec();
+
 	std::shared_ptr<Runtime> r = std::make_shared<Runtime>();
 	VoxelGraphRuntime &runtime = r->runtime;
 
@@ -693,6 +722,9 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 	// Store valid result
 	RWLockWrite wlock(_runtime_lock);
 	_runtime = r;
+
+	const int64_t time_spent = OS::get_singleton()->get_ticks_usec() - time_before;
+	PRINT_VERBOSE(String("Voxel graph compiled in {0} us").format(varray(time_spent)));
 
 	return result;
 }
@@ -1199,13 +1231,33 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 }
 
 void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
+	clear();
+
 	if (::load_graph_from_variant_data(_graph, data)) {
+		_graph.for_each_node([this](ProgramGraph::Node &node) {
+			for (size_t i = 0; i < node.params.size(); ++i) {
+				Ref<Resource> resource = node.params[i];
+				if (resource.is_valid()) {
+					register_subresource(**resource);
+				}
+			}
+		});
+
 		// It's possible to auto-compile on load because `graph_data` is the only property set by the loader,
 		// which is enough to have all information we need
 		compile();
+
 	} else {
 		_graph.clear();
 	}
+}
+
+void VoxelGeneratorGraph::register_subresource(Resource &resource) {
+	resource.connect(CoreStringNames::get_singleton()->changed, this, "_on_subresource_changed");
+}
+
+void VoxelGeneratorGraph::unregister_subresource(Resource &resource) {
+	resource.disconnect(CoreStringNames::get_singleton()->changed, this, "_on_subresource_changed");
 }
 
 // Debug land
@@ -1400,9 +1452,9 @@ Dictionary VoxelGeneratorGraph::_b_compile() {
 	return d;
 }
 
-// void VoxelGeneratorGraph::_on_subresource_changed() {
-// 	emit_changed();
-// }
+void VoxelGeneratorGraph::_on_subresource_changed() {
+	emit_changed();
+}
 
 void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGeneratorGraph::clear);
@@ -1476,7 +1528,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_set_graph_data", "data"), &VoxelGeneratorGraph::load_graph_from_variant_data);
 	ClassDB::bind_method(D_METHOD("_get_graph_data"), &VoxelGeneratorGraph::get_graph_as_variant_data);
 
-	// ClassDB::bind_method(D_METHOD("_on_subresource_changed"), &VoxelGeneratorGraph::_on_subresource_changed);
+	ClassDB::bind_method(D_METHOD("_on_subresource_changed"), &VoxelGeneratorGraph::_on_subresource_changed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "graph_data", PROPERTY_HINT_NONE, "",
 						 PROPERTY_USAGE_NOEDITOR | PROPERTY_USAGE_INTERNAL),

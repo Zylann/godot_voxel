@@ -68,9 +68,18 @@ public:
 	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
 
 	template <typename F>
-	inline void for_each_node(F f) const {
+	inline void for_each_node_const(F f) const {
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 			const Node *node = it->second;
+			ERR_CONTINUE(node == nullptr);
+			f(*node);
+		}
+	}
+
+	template <typename F>
+	inline void for_each_node(F f) {
+		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+			Node *node = it->second;
 			ERR_CONTINUE(node == nullptr);
 			f(*node);
 		}
