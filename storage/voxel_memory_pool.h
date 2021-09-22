@@ -34,7 +34,13 @@ private:
 	Pool *get_or_create_pool(size_t size);
 	void clear();
 
-	HashMap<size_t, Pool *> _pools;
+	struct SizeTHasher {
+		static _FORCE_INLINE_ uint32_t hash(const size_t p_int) {
+			return HashMapHasherDefault::hash(uint64_t(p_int));
+		}
+	};
+
+	HashMap<size_t, Pool *, SizeTHasher> _pools;
 	unsigned int _used_blocks = 0;
 	Mutex _mutex;
 };
