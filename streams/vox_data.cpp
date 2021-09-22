@@ -230,7 +230,7 @@ Error Data::_load_from_file(String fpath) {
 		f.get_32(); // child_chunks_size
 
 		PRINT_VERBOSE(String("Reading chunk {0} at {1}, size={2}")
-							  .format(varray(chunk_id, f.get_position(), chunk_size)));
+							  .format(varray(chunk_id, SIZE_T_TO_VARIANT(f.get_position()), chunk_size)));
 
 		if (strcmp(chunk_id, "SIZE") == 0) {
 			Vector3i size;

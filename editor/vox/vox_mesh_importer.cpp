@@ -6,6 +6,7 @@
 #include "../../streams/vox_data.h"
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
+#include "../../util/macros.h"
 
 String VoxelVoxMeshImporter::get_importer_name() const {
 	return "VoxelVoxMeshImporter";
@@ -193,7 +194,7 @@ static Ref<VoxelBuffer> make_single_voxel_grid(Span<const ModelInstance> instanc
 	const size_t volume = bounding_box.size.volume();
 	ERR_FAIL_COND_V_MSG(volume > limit, Ref<VoxelBuffer>(),
 			String("Vox data is too big to be meshed as a single mesh ({0}: {0} bytes)")
-					.format(varray(bounding_box.size.to_vec3(), volume)));
+					.format(varray(bounding_box.size.to_vec3(), SIZE_T_TO_VARIANT(volume))));
 
 	Ref<VoxelBuffer> voxels;
 	voxels.instance();
