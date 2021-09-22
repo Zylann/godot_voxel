@@ -14,6 +14,7 @@ Ongoing development - `master`
 - General
     - `VoxelTerrain`: added `get_data_block_size()`
     - `VoxelToolTerrain`: added  `for_each_voxel_metadata_in_area()` to quickly find all metadata in a box
+    - `FastNoiseLiteGradient`: exposed missing warp functions
     - Added property to terrain nodes to configure collision margin
     - Thread count is automatically determined from the number of concurrent threads the CPU supports
     - Added project settings to configure thread count

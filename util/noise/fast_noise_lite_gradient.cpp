@@ -181,6 +181,9 @@ void FastNoiseLiteGradient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_rotation_type_3d", "type"), &FastNoiseLiteGradient::set_rotation_type_3d);
 	ClassDB::bind_method(D_METHOD("get_rotation_type_3d"), &FastNoiseLiteGradient::get_rotation_type_3d);
 
+	ClassDB::bind_method(D_METHOD("warp_2d", "position"), &FastNoiseLiteGradient::_b_warp_2d);
+	ClassDB::bind_method(D_METHOD("warp_3d", "position"), &FastNoiseLiteGradient::_b_warp_3d);
+
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM,
 						 "OpenSimplex2,OpenSimplex2Reduced,Value"),
 			"set_noise_type", "get_noise_type");
