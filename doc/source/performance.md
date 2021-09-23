@@ -1,10 +1,13 @@
-Multi-threading
+Performance
 ================
+
+This section discusses performance-related topics, such as making the voxel engine run fast.
+
 
 Thread count configuration
 ----------------------------
 
-This module makes heavy use of threads to speed up heavy operations and avoid stalls.
+This module uses threads to speed up heavy operations and avoid stalls.
 
 Depending on how many threads your CPU can run at the same time, the optimal number of threads can vary. This may also differ for players running your game.
 The module automatically determines the number of threads to use at runtime, based on how many concurrent threads the CPU supports.
@@ -24,6 +27,29 @@ Several notes:
 - It is not possible to use zero threads. The module is designed to use threads at the moment.
 - You can check at runtime how many theads are allocated with a script and using `VoxelServer.get_stats()`. It is also printed if `debug/settings/stdout/verbose_stdout` is enabled in project settings (or `-v` in command line).
 - Changing these settings requires an editor restart (or game restart) to take effect.
+
+
+Slow mesh updates issue
+------------------------
+
+### Issue
+
+Godot 3.x is using OpenGL, and there is an issue which currently degrades performance of this voxel engine a lot. Framerate is not necessarily bad, but the speed at which voxel terrain updates is very low, compared to what it should be. So far the issue has been seen on Windows, on both Intel or nVidia cards.
+
+### Workarounds
+
+- Turn on `debug/settings/stdout/verbose_stdout` in project settings (most effective fix, but has drawbacks because it prints a lot, and was intented as a debugging feature)
+- Or turn off `display/window/vsync/use_vsync` in project settings (not as effective, but improves performance)
+- Or turn on `display/window/vsync/vsync_via_compositor` in project settings (not really a fix but can improve performance in windowed mode)
+
+### Explanation
+
+The engine relies a lot on uploading many meshes at runtime, and this cannot be threaded efficiently in Godot 3.x so far. So instead, meshes are uploaded in the main thread, until part of the frame time elapsed. Beyond that time, the engine stops and continues next frame. This is intented to smooth out the load and avoid stutters *caused by the task CPU-side*. Other tasks that cannot be threaded are also put into the same queue, like creating colliders.
+
+Unfortunately, the first call to OpenGL during the frame appears to take a whopping 15 milliseconds *on the CPU*. This happens no matter how heavy the call is. The voxel engine detects that, and immediately stops uploading meshes, thinking it has done too much. As a result, typically only one mesh ends up being uploaded each frame, which is ridiculously low. We could lift the time limit, but if it were to continue running tasks, it would start stuttering due to overshooting the 16ms limit of the frame.
+
+When one workaround is used, like enabling `verbose_stdout`, this slowdown completely disappears. Instead, the "delay" moves at the end of the frame. This has been linked to a debugging OpenGL extension getting turned on.
+For more information, see [Godot issue #52801](https://github.com/godotengine/godot/issues/52801).
 
 
 Access to voxels

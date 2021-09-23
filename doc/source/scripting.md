@@ -47,7 +47,7 @@ Similarly to bounds limitation, when you use LOD with `VoxelLodTerrain`, it is n
 
 In general, editing voxels one by one is the slowest. It is ok for actually getting only a few, but if you plan to modify larger areas at once, you may prefer functions that do this in bulk, or copy/paste buffers.
 
-See [Access to voxels and multithreading](access_to_voxels_and_multithreading.md)
+See [Access to voxels and multithreading](performance.md)
 
 
 Custom generator

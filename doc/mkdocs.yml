@@ -25,7 +25,7 @@ nav:
   - 'editor.md'
   - 'multiplayer.md'
   - 'scripting.md'
-  - 'multithreading.md'
+  - 'performance.md'
   - 'module_development.md'
   - 'changelog.md'
   - '___.md'
