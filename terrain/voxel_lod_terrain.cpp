@@ -859,7 +859,7 @@ void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_data
 				VoxelDataBlock *block = lod.data_map.get_block(bpos);
 
 				if (block == nullptr) {
-					if (!lod.loading_blocks.has(bpos)) {
+					if (!lod.has_loading_block(bpos)) {
 						lod.blocks_to_load.push_back(bpos);
 						lod.loading_blocks.insert(bpos);
 					}
@@ -987,7 +987,7 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelMeshBlock *block) {
 				if (!lod.data_map.has_block(npos)) {
 					// That neighbor is not loaded
 					surrounded = false;
-					if (!lod.loading_blocks.has(npos)) {
+					if (!lod.has_loading_block(npos)) {
 						// Schedule loading for that neighbor
 						lod.blocks_to_load.push_back(npos);
 						lod.loading_blocks.insert(npos);
@@ -1501,14 +1501,14 @@ void VoxelLodTerrain::_process(float delta) {
 			Lod &lod = _lods[ob.lod];
 
 			{
-				Set<Vector3i>::Element *E = lod.loading_blocks.find(ob.position);
-				if (E == nullptr) {
+				std::unordered_set<Vector3i>::iterator it = lod.loading_blocks.find(ob.position);
+				if (it == lod.loading_blocks.end()) {
 					// That block was not requested, or is no longer needed. drop it...
 					++_stats.dropped_block_loads;
 					continue;
 				}
 
-				lod.loading_blocks.erase(E);
+				lod.loading_blocks.erase(it);
 			}
 
 			if (ob.dropped) {
@@ -2297,7 +2297,7 @@ Dictionary VoxelLodTerrain::debug_get_data_block_info(Vector3 fbpos, int lod_ind
 	if (block != nullptr) {
 		loading_state = 2;
 
-	} else if (lod.loading_blocks.has(bpos)) {
+	} else if (lod.has_loading_block(bpos)) {
 		loading_state = 1;
 	}
 

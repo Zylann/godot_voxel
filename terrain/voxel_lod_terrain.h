@@ -7,8 +7,8 @@
 #include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
-#include <core/set.h>
 #include <scene/3d/spatial.h>
+#include <unordered_set>
 
 #ifdef TOOLS_ENABLED
 #include "../editor/voxel_debug.h"
@@ -290,7 +290,7 @@ private:
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
 		VoxelDataMap data_map;
-		Set<Vector3i> loading_blocks;
+		std::unordered_set<Vector3i> loading_blocks;
 		// Blocks that were edited and need their LOD counterparts to be updated
 		std::vector<Vector3i> blocks_pending_lodding;
 		// These are relative to this LOD, in block coordinates
@@ -306,6 +306,10 @@ private:
 
 		// Members for memory caching
 		std::vector<Vector3i> blocks_to_load;
+
+		inline bool has_loading_block(const Vector3i &pos) const {
+			return loading_blocks.find(pos) != loading_blocks.end();
+		}
 	};
 
 	FixedArray<Lod, VoxelConstants::MAX_LOD> _lods;
