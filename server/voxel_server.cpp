@@ -374,17 +374,16 @@ void VoxelServer::request_instance_block_save(uint32_t volume_id, std::unique_pt
 void VoxelServer::request_block_generate_from_data_request(BlockDataRequest &src) {
 	// This can be called from another thread
 
-	BlockGenerateRequest r;
-	r.voxels = src.voxels;
-	r.volume_id = src.volume_id;
-	r.position = src.position;
-	r.lod = src.lod;
-	r.block_size = src.block_size;
-	r.stream_dependency = src.stream_dependency;
-	r.priority_dependency = src.priority_dependency;
+	BlockGenerateRequest *r = memnew(BlockGenerateRequest);
+	r->voxels = src.voxels;
+	r->volume_id = src.volume_id;
+	r->position = src.position;
+	r->lod = src.lod;
+	r->block_size = src.block_size;
+	r->stream_dependency = src.stream_dependency;
+	r->priority_dependency = src.priority_dependency;
 
-	BlockGenerateRequest *rp = memnew(BlockGenerateRequest(r));
-	_general_thread_pool.enqueue(rp);
+	_general_thread_pool.enqueue(r);
 }
 
 void VoxelServer::request_block_save_from_generate_request(BlockGenerateRequest &src) {
