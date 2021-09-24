@@ -19,7 +19,7 @@ public:
 	Variant get_voxel_metadata(Vector3i pos) const override;
 
 	void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const override;
-	void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value) override;
+	void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) override;
 
 	void do_sphere(Vector3 center, float radius) override;
 

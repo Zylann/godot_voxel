@@ -68,7 +68,8 @@ public:
 	void sdf_stamp_erase(Ref<VoxelBuffer> stamp, Vector3i pos);
 
 	virtual void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const;
-	virtual void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value);
+	virtual void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
+			uint64_t mask_value);
 
 	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
 
@@ -127,7 +128,8 @@ private:
 		copy(Vector3i::from_floored(pos), voxels, channel_mask);
 	}
 	void _b_paste(Vector3 pos, Ref<Reference> voxels, int channels_mask, int mask_value) {
-		paste(Vector3i::from_floored(pos), voxels, channels_mask, mask_value);
+		// TODO May need two functions, one masked, one not masked, or add a parameter, but it breaks compat
+		paste(Vector3i::from_floored(pos), voxels, channels_mask, mask_value > 0xffffffff, mask_value);
 	}
 
 	Variant _b_get_voxel_metadata(Vector3 pos) const {

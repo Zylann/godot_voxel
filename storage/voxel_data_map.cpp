@@ -157,6 +157,10 @@ void VoxelDataMap::set_block(Vector3i bpos, VoxelDataBlock *block) {
 }
 
 void VoxelDataMap::remove_block_internal(Vector3i bpos, unsigned int index) {
+	// TODO `erase` can occasionally be very slow (milliseconds) if the map contains lots of items.
+	// This might be caused by internal rehashing/resizing.
+	// We should look for a faster container, or reduce the number of entries.
+
 	// This function assumes the block is already freed
 	_blocks_map.erase(bpos);
 
@@ -249,8 +253,9 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 	}
 }
 
-void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int channels_mask, uint64_t mask_value,
-		bool create_new_blocks) {
+void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int channels_mask, bool use_mask,
+		uint64_t mask_value, bool create_new_blocks) {
+	//
 	const Vector3i max_pos = min_pos + src_buffer.get_size();
 
 	const Vector3i min_block_pos = voxel_to_block(min_pos);
@@ -279,7 +284,7 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int
 					VoxelBuffer &dst_buffer = **block->get_voxels();
 					RWLockWrite lock(dst_buffer.get_lock());
 
-					if (mask_value != std::numeric_limits<uint64_t>::max()) {
+					if (use_mask) {
 						const Box3i dst_box(min_pos - dst_block_origin, src_buffer.get_size());
 
 						const Vector3i src_offset = -dst_box.pos;

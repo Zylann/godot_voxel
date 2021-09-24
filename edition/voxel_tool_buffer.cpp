@@ -71,7 +71,13 @@ Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) const {
 	return _buffer->get_voxel_metadata(pos);
 }
 
-void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value) {
+void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
+		uint64_t mask_value) {
+	// TODO Support `use_mask` properly
+	if (use_mask) {
+		mask_value = 0xffffffffffffffff;
+	}
+
 	ERR_FAIL_COND(_buffer.is_null());
 	ERR_FAIL_COND(p_voxels.is_null());
 

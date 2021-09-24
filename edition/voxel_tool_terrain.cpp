@@ -142,13 +142,14 @@ void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels
 	_terrain->get_storage().copy(pos, **dst, channels_mask);
 }
 
-void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, uint64_t mask_value) {
+void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
+		uint64_t mask_value) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(p_voxels.is_null());
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().paste(pos, **p_voxels, channels_mask, mask_value, false);
+	_terrain->get_storage().paste(pos, **p_voxels, channels_mask, use_mask, mask_value, false);
 	_post_edit(Box3i(pos, p_voxels->get_size()));
 }
 

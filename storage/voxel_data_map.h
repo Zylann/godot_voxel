@@ -59,7 +59,7 @@ public:
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
 	void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const;
 
-	void paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int channels_mask, uint64_t mask_value,
+	void paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int channels_mask, bool use_mask, uint64_t mask_value,
 			bool create_new_blocks);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.

@@ -83,7 +83,7 @@ void test_voxel_data_map_paste_fill() {
 
 	const Box3i box(Vector3i(10, 10, 10), buffer->get_size());
 
-	map.paste(box.pos, **buffer, (1 << channel), std::numeric_limits<uint64_t>::max(), true);
+	map.paste(box.pos, **buffer, (1 << channel), false, 0, true);
 
 	// All voxels in the area must be as pasted
 	const bool is_match = box.all_cells_match([&map](const Vector3i &pos) {
@@ -128,7 +128,7 @@ void test_voxel_data_map_paste_mask() {
 
 	const Box3i box(Vector3i(10, 10, 10), buffer->get_size());
 
-	map.paste(box.pos, **buffer, (1 << channel), masked_value, true);
+	map.paste(box.pos, **buffer, (1 << channel), true, masked_value, true);
 
 	// All voxels in the area must be as pasted. Ignoring the outline.
 	const bool is_match = box.padded(-1).all_cells_match([&map](const Vector3i &pos) {
@@ -201,7 +201,7 @@ void test_voxel_data_map_copy() {
 		}
 	}
 
-	map.paste(box.pos, **buffer, (1 << channel), default_value, true);
+	map.paste(box.pos, **buffer, (1 << channel), true, default_value, true);
 
 	Ref<VoxelBuffer> buffer2;
 	buffer2.instance();
