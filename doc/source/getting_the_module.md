@@ -33,7 +33,7 @@ These steps will walk you through creating a custom build of Godot with the Voxe
 ### Build Godot
 
 1. Download and compile the [Godot source](https://github.com/godotengine/godot) by following [the official guide](https://docs.godotengine.org/en/latest/development/compiling/index.html). If you want to regularly update your build (recommended), clone the repository with Git instead of downloading a zip file.
-1. Make sure to select the appropriate branches. If you want to use the latest Voxel Tools, the matching Godot branch is `3.2`. If there is a versioned Voxel Tools branch (e.g. `godot3.1`), that is intended to match the corresponding version of Godot. 
+1. Make sure to select the appropriate branches. If you want to use the latest Voxel Tools, the matching Godot branch is `3.x`. If there is a versioned Voxel Tools branch (e.g. `godot3.1`), that is intended to match the corresponding version of Godot. 
 1. Build Godot before adding this or any other modules and make sure it produces an executable.
 1. Run the newly built executable found in `godot/bin`. Look under Help/About and confirm that the version string indicates you are running a development version (e.g. `3.2dev.custom_build.ee5ba3e`).
 
