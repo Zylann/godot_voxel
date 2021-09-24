@@ -11,6 +11,28 @@
 
 #include <memory>
 
+class IVoxelTimeSpreadTask {
+public:
+	virtual ~IVoxelTimeSpreadTask() {}
+	virtual void run() = 0;
+};
+
+// Runs tasks in the caller thread, within a time budget per call.
+class VoxelTimeSpreadTaskRunner {
+public:
+	~VoxelTimeSpreadTaskRunner();
+
+	void push(IVoxelTimeSpreadTask *task);
+	void process(uint64_t time_budget_usec);
+	void flush();
+	unsigned int get_pending_count() const;
+
+private:
+	std::queue<IVoxelTimeSpreadTask *> _tasks;
+};
+
+class VoxelNode;
+
 // TODO Don't inherit Object. Instead have a Godot wrapper, there is very little use for Object stuff
 
 // Access point for asynchronous voxel processing APIs.
@@ -54,7 +76,9 @@ public:
 	};
 
 	struct ReceptionBuffers {
-		std::vector<BlockMeshOutput> mesh_output;
+		void (*mesh_output_callback)(void *, const BlockMeshOutput &) = nullptr;
+		void *callback_data = nullptr;
+		//std::vector<BlockMeshOutput> mesh_output;
 		std::vector<BlockDataOutput> data_output;
 	};
 
@@ -99,6 +123,7 @@ public:
 	void request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
 			Vector3i block_pos, int lod);
 	void remove_volume(uint32_t volume_id);
+	bool is_volume_valid(uint32_t volume_id) const;
 
 	// TODO Rename functions to C convention
 	uint32_t add_viewer();
@@ -116,6 +141,8 @@ public:
 	inline void for_each_viewer(F f) const {
 		_world.viewers.for_each_with_id(f);
 	}
+
+	void push_time_spread_task(IVoxelTimeSpreadTask *task);
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
 	// void get_min_max_block_padding(
@@ -156,6 +183,7 @@ public:
 		int generation_tasks;
 		int streaming_tasks;
 		int meshing_tasks;
+		int main_thread_tasks;
 
 		Dictionary to_dict() {
 			Dictionary pools;
@@ -165,6 +193,7 @@ public:
 			tasks["streaming"] = generation_tasks;
 			tasks["generation"] = generation_tasks;
 			tasks["meshing"] = meshing_tasks;
+			tasks["main_thread"] = main_thread_tasks;
 			Dictionary d;
 			d["pools"] = pools;
 			d["tasks"] = tasks;
@@ -334,6 +363,8 @@ private:
 	VoxelThreadPool _streaming_thread_pool;
 	// Pool for every other task
 	VoxelThreadPool _general_thread_pool;
+	// For tasks that can only run on the main thread and be spread out over frames
+	VoxelTimeSpreadTaskRunner _time_spread_task_runner;
 
 	VoxelFileLocker _file_locker;
 };

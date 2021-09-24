@@ -19,6 +19,7 @@ namespace {
 
 Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType primitive, int compression_flags,
 		Ref<Material> material) {
+	VOXEL_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
 	mesh.instance();
 
@@ -35,6 +36,7 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 			continue;
 		}
 
+		// TODO Use `add_surface`, it's about 20% faster after measuring in Tracy (though we may see if Godot 4 expects the same)
 		mesh->add_surface_from_arrays(primitive, surface, Array(), compression_flags);
 		mesh->surface_set_material(surface_index, material);
 		// No multi-material supported yet
@@ -99,6 +101,7 @@ struct BeforeUnloadMeshAction {
 	std::vector<Ref<ShaderMaterial>> &shader_material_pool;
 
 	void operator()(VoxelMeshBlock *block) {
+		VOXEL_PROFILE_SCOPE_NAMED("Recycle material");
 		// Recycle material
 		Ref<ShaderMaterial> sm = block->get_shader_material();
 		if (sm.is_valid()) {
@@ -149,6 +152,33 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	// Infinite by default
 	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
+
+	struct ApplyMeshUpdateTask : public IVoxelTimeSpreadTask {
+		void run() override {
+			if (!VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
+				// The node can have been destroyed while this task was still pending
+				PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
+				return;
+			}
+			self->apply_mesh_update(data);
+		}
+		uint32_t volume_id = 0;
+		VoxelLodTerrain *self = nullptr;
+		VoxelServer::BlockMeshOutput data;
+	};
+
+	// Mesh updates are spread over frames by scheduling them in a task runner of VoxelServer,
+	// but instead of using a reception buffer we use a callback,
+	// because this kind of task scheduling would otherwise delay the update by 1 frame
+	_reception_buffers.callback_data = this;
+	_reception_buffers.mesh_output_callback = [](void *cb_data, const VoxelServer::BlockMeshOutput &ob) {
+		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
+		ApplyMeshUpdateTask *task = memnew(ApplyMeshUpdateTask);
+		task->volume_id = self->get_volume_id();
+		task->self = self;
+		task->data = ob;
+		VoxelServer::get_singleton()->push_time_spread_task(task);
+	};
 
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_OCTREE);
 	VoxelServer::get_singleton()->set_volume_octree_lod_distance(_volume_id, get_lod_distance());
@@ -534,7 +564,8 @@ void VoxelLodTerrain::stop_updater() {
 
 	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, Ref<VoxelMesher>());
 
-	_reception_buffers.mesh_output.clear();
+	// TODO We can still receive a few mesh delayed mesh updates after this. Is it a problem?
+	//_reception_buffers.mesh_output.clear();
 
 	for (unsigned int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
@@ -1599,161 +1630,140 @@ void VoxelLodTerrain::_process(float delta) {
 
 	_stats.time_request_blocks_to_update = profiling_clock.restart();
 
-	const uint32_t main_thread_task_timeout = get_ticks_msec() + VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS;
-
-	// Receive mesh updates:
-	// This contains work that should normally be threaded, but isn't because of Godot limitations.
-	// So after a timeout, it stops processing and will resume next frame.
-	{
-		VOXEL_PROFILE_SCOPE_NAMED("Receive mesh updates");
-
-		const Transform global_transform = get_global_transform();
-
-		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
-		// This also proved to be very slow compared to the meshing process itself...
-		// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
-
-		size_t queue_index = 0;
-		for (; queue_index < _reception_buffers.mesh_output.size() && get_ticks_msec() < main_thread_task_timeout;
-				++queue_index) {
-			VOXEL_PROFILE_SCOPE();
-			const VoxelServer::BlockMeshOutput &ob = _reception_buffers.mesh_output[queue_index];
-
-			if (ob.lod >= _lod_count) {
-				// Sorry, LOD configuration changed, drop that mesh
-				++_stats.dropped_block_meshs;
-				continue;
-			}
-
-			Lod &lod = _lods[ob.lod];
-
-			VoxelMeshBlock *block = lod.mesh_map.get_block(ob.position);
-			if (block == nullptr) {
-				// That block is no longer loaded, drop the result
-				++_stats.dropped_block_meshs;
-				continue;
-			}
-
-			if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
-				// That block is loaded, but its meshing request was dropped.
-				// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
-				PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
-				++_stats.dropped_block_meshs;
-				continue;
-			}
-
-			if (block->get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_SENT) {
-				block->set_mesh_state(VoxelMeshBlock::MESH_UP_TO_DATE);
-			}
-
-			const VoxelMesher::Output mesh_data = ob.surfaces;
-
-			Ref<ArrayMesh> mesh = build_mesh(
-					mesh_data.surfaces,
-					mesh_data.primitive_type,
-					mesh_data.compression_flags,
-					_material);
-
-			bool has_collision = _generate_collisions;
-			if (has_collision && _collision_lod_count != 0) {
-				has_collision = ob.lod < _collision_lod_count;
-			}
-
-			if (block->got_first_mesh_update == false) {
-				block->got_first_mesh_update = true;
-
-				// TODO Need a more generic API for this kind of stuff
-				if (_instancer != nullptr && ob.surfaces.surfaces.size() > 0) {
-					// TODO The mesh could come from an edited region!
-					// We would have to know if specific voxels got edited, or different from the generator
-					_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0]);
-				}
-
-				// Lazy initialization
-
-				//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
-				//set_mesh_block_active(*block, false);
-				block->set_parent_visible(is_visible());
-				block->set_world(get_world());
-
-				Ref<ShaderMaterial> shader_material = _material;
-				if (shader_material.is_valid() && block->get_shader_material().is_null()) {
-					VOXEL_PROFILE_SCOPE();
-
-					// Pooling shader materials is necessary for now, to avoid stuttering in the editor.
-					// Due to a signal used to keep the inspector up to date, even though these
-					// material copies will never be seen in the inspector
-					// See https://github.com/godotengine/godot/issues/34741
-					Ref<ShaderMaterial> sm;
-					if (_shader_material_pool.size() > 0) {
-						sm = _shader_material_pool.back();
-						// The joys of pooling materials
-						sm->set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, 0);
-						_shader_material_pool.pop_back();
-					} else {
-						sm = shader_material->duplicate(false);
-					}
-
-					// Set individual shader material, because each block can have dynamic parameters,
-					// used to smooth seams without re-uploading meshes and allow to implement LOD fading
-					block->set_shader_material(sm);
-				}
-			}
-
-			block->set_mesh(mesh);
-			{
-				VOXEL_PROFILE_SCOPE();
-				for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
-					Ref<ArrayMesh> transition_mesh = build_mesh(
-							mesh_data.transition_surfaces[dir],
-							mesh_data.primitive_type,
-							mesh_data.compression_flags,
-							_material);
-
-					block->set_transition_mesh(transition_mesh, dir);
-				}
-			}
-
-			const uint32_t now = get_ticks_msec();
-			if (has_collision) {
-				if (_collision_update_delay == 0 ||
-						static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
-					block->set_collision_mesh(mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this,
-							_collision_margin);
-					block->set_collision_layer(_collision_layer);
-					block->set_collision_mask(_collision_mask);
-					block->last_collider_update_time = now;
-					block->has_deferred_collider_update = false;
-					block->deferred_collider_data.clear();
-				} else {
-					if (!block->has_deferred_collider_update) {
-						lod.deferred_collision_updates.push_back(ob.position);
-						block->has_deferred_collider_update = true;
-					}
-					block->deferred_collider_data = mesh_data.surfaces;
-				}
-			}
-
-			block->set_parent_transform(global_transform);
-		}
-
-		{
-			VOXEL_PROFILE_SCOPE();
-			shift_up(_reception_buffers.mesh_output, queue_index);
-		}
-
-		_stats.remaining_main_thread_blocks = (int)_reception_buffers.mesh_output.size();
-	}
-
-	_stats.time_process_update_responses = profiling_clock.restart();
-
-	process_deferred_collision_updates(main_thread_task_timeout);
+	// TODO This could go into time spread tasks too
+	process_deferred_collision_updates(VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS);
 
 #ifdef TOOLS_ENABLED
 	if (is_showing_gizmos() && is_visible_in_tree()) {
 		update_gizmos();
 	}
 #endif
+}
+
+void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
+	// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
+	// This also proved to be very slow compared to the meshing process itself...
+	// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
+	VOXEL_PROFILE_SCOPE();
+
+	ERR_FAIL_COND(!is_inside_tree());
+
+	if (ob.lod >= _lod_count) {
+		// Sorry, LOD configuration changed, drop that mesh
+		++_stats.dropped_block_meshs;
+		return;
+	}
+
+	Lod &lod = _lods[ob.lod];
+
+	VoxelMeshBlock *block = lod.mesh_map.get_block(ob.position);
+	if (block == nullptr) {
+		// That block is no longer loaded, drop the result
+		++_stats.dropped_block_meshs;
+		return;
+	}
+
+	if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
+		// That block is loaded, but its meshing request was dropped.
+		// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
+		PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
+		++_stats.dropped_block_meshs;
+		return;
+	}
+
+	if (block->get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_SENT) {
+		block->set_mesh_state(VoxelMeshBlock::MESH_UP_TO_DATE);
+	}
+
+	const VoxelMesher::Output mesh_data = ob.surfaces;
+
+	Ref<ArrayMesh> mesh = build_mesh(
+			mesh_data.surfaces,
+			mesh_data.primitive_type,
+			mesh_data.compression_flags,
+			_material);
+
+	bool has_collision = _generate_collisions;
+	if (has_collision && _collision_lod_count != 0) {
+		has_collision = ob.lod < _collision_lod_count;
+	}
+
+	if (block->got_first_mesh_update == false) {
+		block->got_first_mesh_update = true;
+
+		// TODO Need a more generic API for this kind of stuff
+		if (_instancer != nullptr && ob.surfaces.surfaces.size() > 0) {
+			// TODO The mesh could come from an edited region!
+			// We would have to know if specific voxels got edited, or different from the generator
+			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0]);
+		}
+
+		// Lazy initialization
+
+		//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
+		//set_mesh_block_active(*block, false);
+		block->set_parent_visible(is_visible());
+		block->set_world(get_world());
+
+		Ref<ShaderMaterial> shader_material = _material;
+		if (shader_material.is_valid() && block->get_shader_material().is_null()) {
+			VOXEL_PROFILE_SCOPE();
+
+			// Pooling shader materials is necessary for now, to avoid stuttering in the editor.
+			// Due to a signal used to keep the inspector up to date, even though these
+			// material copies will never be seen in the inspector
+			// See https://github.com/godotengine/godot/issues/34741
+			Ref<ShaderMaterial> sm;
+			if (_shader_material_pool.size() > 0) {
+				sm = _shader_material_pool.back();
+				// The joys of pooling materials
+				sm->set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, 0);
+				_shader_material_pool.pop_back();
+			} else {
+				sm = shader_material->duplicate(false);
+			}
+
+			// Set individual shader material, because each block can have dynamic parameters,
+			// used to smooth seams without re-uploading meshes and allow to implement LOD fading
+			block->set_shader_material(sm);
+		}
+	}
+
+	block->set_mesh(mesh);
+	{
+		VOXEL_PROFILE_SCOPE();
+		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
+			Ref<ArrayMesh> transition_mesh = build_mesh(
+					mesh_data.transition_surfaces[dir],
+					mesh_data.primitive_type,
+					mesh_data.compression_flags,
+					_material);
+
+			block->set_transition_mesh(transition_mesh, dir);
+		}
+	}
+
+	const uint32_t now = get_ticks_msec();
+	if (has_collision) {
+		if (_collision_update_delay == 0 ||
+				static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
+			block->set_collision_mesh(mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this,
+					_collision_margin);
+			block->set_collision_layer(_collision_layer);
+			block->set_collision_mask(_collision_mask);
+			block->last_collider_update_time = now;
+			block->has_deferred_collider_update = false;
+			block->deferred_collider_data.clear();
+		} else {
+			if (!block->has_deferred_collider_update) {
+				lod.deferred_collision_updates.push_back(ob.position);
+				block->has_deferred_collider_update = true;
+			}
+			block->deferred_collider_data = mesh_data.surfaces;
+		}
+	}
+
+	block->set_parent_transform(get_global_transform());
 }
 
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
@@ -1905,7 +1915,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 
 			// Update lower LOD
 			// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
-			// TODO Try to narrow to edited region instead of taking whole block
+			// TODO Optimization: try to narrow to edited region instead of taking whole block
 			{
 				RWLockWrite lock(src_block->get_voxels()->get_lock());
 				src_block->get_voxels()->downscale_to(
@@ -2151,9 +2161,7 @@ Dictionary VoxelLodTerrain::_b_get_statistics() const {
 	d["time_request_blocks_to_load"] = _stats.time_request_blocks_to_load;
 	d["time_process_load_responses"] = _stats.time_process_load_responses;
 	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
-	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
-	d["remaining_main_thread_blocks"] = _stats.remaining_main_thread_blocks + deferred_collision_updates;
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;

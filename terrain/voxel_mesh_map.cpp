@@ -1,6 +1,7 @@
 #include "voxel_mesh_map.h"
 #include "../constants/cube_tables.h"
 #include "../constants/voxel_constants.h"
+#include "../server/voxel_server.h"
 #include "../util/macros.h"
 
 #include <limits>
@@ -107,6 +108,10 @@ void VoxelMeshMap::set_block(Vector3i bpos, VoxelMeshBlock *block) {
 }
 
 void VoxelMeshMap::remove_block_internal(Vector3i bpos, unsigned int index) {
+	// TODO `erase` can occasionally be very slow (milliseconds) if the map contains lots of items.
+	// This might be caused by internal rehashing/resizing.
+	// We should look for a faster container, or reduce the number of entries.
+
 	// This function assumes the block is already freed
 	_blocks_map.erase(bpos);
 
@@ -122,6 +127,19 @@ void VoxelMeshMap::remove_block_internal(Vector3i bpos, unsigned int index) {
 		CRASH_COND(moved_block_index == nullptr);
 		*moved_block_index = index;
 	}
+}
+
+void VoxelMeshMap::queue_free_mesh_block(VoxelMeshBlock *block) {
+	struct FreeMeshBlockTask : public IVoxelTimeSpreadTask {
+		void run() override {
+			memdelete(block);
+		}
+		VoxelMeshBlock *block = nullptr;
+	};
+	ERR_FAIL_COND(block == nullptr);
+	FreeMeshBlockTask *task = memnew(FreeMeshBlockTask);
+	task->block = block;
+	VoxelServer::get_singleton()->push_time_spread_task(task);
 }
 
 bool VoxelMeshMap::has_block(Vector3i pos) const {

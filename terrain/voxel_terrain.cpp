@@ -24,6 +24,33 @@ VoxelTerrain::VoxelTerrain() {
 	// Infinite by default
 	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
 
+	struct ApplyMeshUpdateTask : public IVoxelTimeSpreadTask {
+		void run() override {
+			if (!VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
+				// The node can have been destroyed while this task was still pending
+				PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
+				return;
+			}
+			self->apply_mesh_update(data);
+		}
+		uint32_t volume_id = 0;
+		VoxelTerrain *self = nullptr;
+		VoxelServer::BlockMeshOutput data;
+	};
+
+	// Mesh updates are spread over frames by scheduling them in a task runner of VoxelServer,
+	// but instead of using a reception buffer we use a callback,
+	// because this kind of task scheduling would otherwise delay the update by 1 frame
+	_reception_buffers.callback_data = this;
+	_reception_buffers.mesh_output_callback = [](void *cb_data, const VoxelServer::BlockMeshOutput &ob) {
+		VoxelTerrain *self = reinterpret_cast<VoxelTerrain *>(cb_data);
+		ApplyMeshUpdateTask *task = memnew(ApplyMeshUpdateTask);
+		task->volume_id = self->_volume_id;
+		task->self = self;
+		task->data = ob;
+		VoxelServer::get_singleton()->push_time_spread_task(task);
+	};
+
 	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_GRID);
 
 	// For ease of use in editor
@@ -529,13 +556,10 @@ Dictionary VoxelTerrain::_b_get_statistics() const {
 	d["time_request_blocks_to_load"] = _stats.time_request_blocks_to_load;
 	d["time_process_load_responses"] = _stats.time_process_load_responses;
 	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
-	d["time_process_update_responses"] = _stats.time_process_update_responses;
 
-	d["remaining_main_thread_blocks"] = (int)_reception_buffers.mesh_output.size();
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
 	d["updated_blocks"] = _stats.updated_blocks;
-	d["remaining_main_thread_blocks"] = _stats.remaining_main_thread_blocks;
 
 	return d;
 }
@@ -566,7 +590,9 @@ void VoxelTerrain::stop_updater() {
 	VoxelServer::get_singleton()->invalidate_volume_mesh_requests(_volume_id);
 	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, Ref<VoxelMesher>());
 
-	_reception_buffers.mesh_output.clear();
+	// TODO We can still receive a few mesh delayed mesh updates after this. Is it a problem?
+	//_reception_buffers.mesh_output.clear();
+
 	_blocks_pending_update.clear();
 
 	ResetMeshStateAction a;
@@ -1175,96 +1201,71 @@ void VoxelTerrain::process_meshing() {
 
 	_stats.time_request_blocks_to_update = profiling_clock.restart();
 
-	// Receive mesh updates
-	{
-		VOXEL_PROFILE_SCOPE_NAMED("Receive mesh updates");
+	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") + String::num(_block_update_queue.size()));
+}
 
-		const OS &os = *OS::get_singleton();
+void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
+	VOXEL_PROFILE_SCOPE();
+	//print_line(String("DDD receive {0}").format(varray(ob.position.to_vec3())));
 
-		const uint32_t timeout = os.get_ticks_msec() + VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS;
-		size_t queue_index = 0;
-
-		const Transform local_to_world_transform = get_global_transform();
-
-		// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
-		// This also proved to be very slow compared to the meshing process itself...
-		// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
-
-		for (; queue_index < _reception_buffers.mesh_output.size() && os.get_ticks_msec() < timeout; ++queue_index) {
-			const VoxelServer::BlockMeshOutput &ob = _reception_buffers.mesh_output[queue_index];
-
-			//print_line(String("DDD receive {0}").format(varray(ob.position.to_vec3())));
-
-			VoxelMeshBlock *block = _mesh_map.get_block(ob.position);
-			if (block == nullptr) {
-				//print_line("- no longer loaded");
-				// That block is no longer loaded, drop the result
-				++_stats.dropped_block_meshs;
-				continue;
-			}
-
-			if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
-				// That block is loaded, but its meshing request was dropped.
-				// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
-				PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
-				++_stats.dropped_block_meshs;
-				continue;
-			}
-
-			Ref<ArrayMesh> mesh;
-			mesh.instance();
-
-			Vector<Array> collidable_surfaces; //need to put both blocky and smooth surfaces into one list
-
-			VOXEL_PROFILE_SCOPE_NAMED("Build mesh");
-
-			int surface_index = 0;
-			for (int i = 0; i < ob.surfaces.surfaces.size(); ++i) {
-				Array surface = ob.surfaces.surfaces[i];
-				if (surface.empty()) {
-					continue;
-				}
-
-				CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-				if (!is_surface_triangulated(surface)) {
-					continue;
-				}
-
-				collidable_surfaces.push_back(surface);
-
-				mesh->add_surface_from_arrays(
-						ob.surfaces.primitive_type, surface, Array(), ob.surfaces.compression_flags);
-				mesh->surface_set_material(surface_index, _materials[i]);
-				++surface_index;
-			}
-
-			if (is_mesh_empty(mesh)) {
-				mesh = Ref<Mesh>();
-				collidable_surfaces.clear();
-			}
-
-			const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
-
-			block->set_mesh(mesh);
-			if (gen_collisions) {
-				block->set_collision_mesh(collidable_surfaces, get_tree()->is_debugging_collisions_hint(), this,
-						_collision_margin);
-				block->set_collision_layer(_collision_layer);
-				block->set_collision_mask(_collision_mask);
-			}
-			block->set_visible(true);
-			block->set_parent_visible(is_visible());
-			block->set_parent_transform(local_to_world_transform);
-		}
-
-		shift_up(_reception_buffers.mesh_output, queue_index);
-
-		_stats.remaining_main_thread_blocks = _reception_buffers.mesh_output.size();
+	VoxelMeshBlock *block = _mesh_map.get_block(ob.position);
+	if (block == nullptr) {
+		//print_line("- no longer loaded");
+		// That block is no longer loaded, drop the result
+		++_stats.dropped_block_meshs;
+		return;
 	}
 
-	_stats.time_process_update_responses = profiling_clock.restart();
+	if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
+		// That block is loaded, but its meshing request was dropped.
+		// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
+		PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
+		++_stats.dropped_block_meshs;
+		return;
+	}
 
-	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") + String::num(_block_update_queue.size()));
+	Ref<ArrayMesh> mesh;
+	mesh.instance();
+
+	Vector<Array> collidable_surfaces; //need to put both blocky and smooth surfaces into one list
+
+	int surface_index = 0;
+	for (int i = 0; i < ob.surfaces.surfaces.size(); ++i) {
+		Array surface = ob.surfaces.surfaces[i];
+		if (surface.empty()) {
+			continue;
+		}
+
+		CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
+		if (!is_surface_triangulated(surface)) {
+			continue;
+		}
+
+		collidable_surfaces.push_back(surface);
+
+		mesh->add_surface_from_arrays(
+				ob.surfaces.primitive_type, surface, Array(), ob.surfaces.compression_flags);
+		mesh->surface_set_material(surface_index, _materials[i]);
+		++surface_index;
+	}
+
+	if (is_mesh_empty(mesh)) {
+		mesh = Ref<Mesh>();
+		collidable_surfaces.clear();
+	}
+
+	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
+
+	block->set_mesh(mesh);
+	if (gen_collisions) {
+		block->set_collision_mesh(collidable_surfaces, get_tree()->is_debugging_collisions_hint(), this,
+				_collision_margin);
+		block->set_collision_layer(_collision_layer);
+		block->set_collision_mask(_collision_mask);
+	}
+	block->set_visible(true);
+	block->set_parent_visible(is_visible());
+	block->set_parent_transform(get_global_transform());
 }
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {

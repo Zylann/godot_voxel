@@ -40,12 +40,12 @@ public:
 		}
 	}
 
-	void update_stats(int main_thread_tasks) {
+	void update_stats() {
 		const VoxelServer::Stats stats = VoxelServer::get_singleton()->get_stats();
 		set_stat(STAT_STREAM_TASKS, stats.streaming_tasks);
 		set_stat(STAT_GENERATE_TASKS, stats.generation_tasks);
 		set_stat(STAT_MESH_TASKS, stats.meshing_tasks);
-		set_stat(STAT_MAIN_THREAD_TASKS, main_thread_tasks);
+		set_stat(STAT_MAIN_THREAD_TASKS, stats.main_thread_tasks);
 	}
 
 private:
@@ -118,19 +118,9 @@ void VoxelTerrainEditorPlugin::_notification(int p_what) {
 			VoxelServer::get_singleton()->remove_viewer(_editor_viewer_id);
 			break;
 
-		case NOTIFICATION_PROCESS: {
-			int main_thread_tasks = 0;
-			VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
-			if (vlt != nullptr) {
-				main_thread_tasks = vlt->get_stats().remaining_main_thread_blocks;
-			} else {
-				VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_node);
-				if (vt != nullptr) {
-					main_thread_tasks = vt->get_stats().remaining_main_thread_blocks;
-				}
-			}
-			_task_indicator->update_stats(main_thread_tasks);
-		} break;
+		case NOTIFICATION_PROCESS:
+			_task_indicator->update_stats();
+			break;
 	}
 }
 

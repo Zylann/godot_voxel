@@ -21,6 +21,50 @@ inline std::shared_ptr<T> gd_make_shared() {
 	return std::shared_ptr<T>(memnew(T), memdelete<T>);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+VoxelTimeSpreadTaskRunner::~VoxelTimeSpreadTaskRunner() {
+	flush();
+}
+
+void VoxelTimeSpreadTaskRunner::push(IVoxelTimeSpreadTask *task) {
+	_tasks.push(task);
+}
+
+void VoxelTimeSpreadTaskRunner::process(uint64_t time_budget_usec) {
+	VOXEL_PROFILE_SCOPE();
+	const OS &os = *OS::get_singleton();
+
+	if (_tasks.size() > 0) {
+		const uint64_t time_before = os.get_ticks_usec();
+
+		// Do at least one task
+		do {
+			IVoxelTimeSpreadTask *task = _tasks.front();
+			_tasks.pop();
+			task->run();
+			// TODO Call recycling function instead?
+			memdelete(task);
+
+		} while (_tasks.size() > 0 && os.get_ticks_usec() - time_before < time_budget_usec);
+	}
+}
+
+void VoxelTimeSpreadTaskRunner::flush() {
+	while (!_tasks.empty()) {
+		IVoxelTimeSpreadTask *task = _tasks.front();
+		_tasks.pop();
+		task->run();
+		memdelete(task);
+	}
+}
+
+unsigned int VoxelTimeSpreadTaskRunner::get_pending_count() const {
+	return _tasks.size();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 VoxelServer *VoxelServer::get_singleton() {
 	CRASH_COND_MSG(g_voxel_server == nullptr, "Accessing singleton while it's null");
 	return g_voxel_server;
@@ -430,6 +474,10 @@ void VoxelServer::remove_volume(uint32_t volume_id) {
 	}
 }
 
+bool VoxelServer::is_volume_valid(uint32_t volume_id) const {
+	return _world.volumes.is_valid(volume_id);
+}
+
 uint32_t VoxelServer::add_viewer() {
 	return _world.viewers.create(Viewer());
 }
@@ -477,10 +525,15 @@ bool VoxelServer::viewer_exists(uint32_t viewer_id) const {
 	return _world.viewers.is_valid(viewer_id);
 }
 
+void VoxelServer::push_time_spread_task(IVoxelTimeSpreadTask *task) {
+	_time_spread_task_runner.push(task);
+}
+
 void VoxelServer::process() {
 	// Note, this shouldn't be here. It should normally done just after SwapBuffers.
 	// Godot does not have any C++ profiler usage anywhere, so when using Tracy Profiler I have to put it somewhere...
-	VOXEL_PROFILE_MARK_FRAME();
+	// TODO Could connect to VisualServer end_frame_draw signal? How to make sure the singleton is available?
+	//VOXEL_PROFILE_MARK_FRAME();
 	VOXEL_PROFILE_SCOPE();
 
 	// Receive data updates
@@ -494,6 +547,10 @@ void VoxelServer::process() {
 		task->apply_result();
 		memdelete(task);
 	});
+
+	// Run this after dequeueing threaded tasks, because they can add some to this runner,
+	// which could in turn complete right away (we avoid 1-frame delays this way).
+	_time_spread_task_runner.process(VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS * 1000);
 
 	// Update viewer dependencies
 	{
@@ -545,6 +602,7 @@ VoxelServer::Stats VoxelServer::get_stats() const {
 	s.generation_tasks = g_debug_generate_tasks_count;
 	s.meshing_tasks = g_debug_mesh_tasks_count;
 	s.streaming_tasks = g_debug_stream_tasks_count;
+	s.main_thread_tasks = _time_spread_task_runner.get_pending_count();
 	return s;
 }
 
@@ -930,7 +988,9 @@ void VoxelServer::BlockMeshRequest::apply_result() {
 			o.lod = lod;
 			o.surfaces = surfaces_output;
 
-			volume->reception_buffers->mesh_output.push_back(o);
+			ERR_FAIL_COND(volume->reception_buffers->mesh_output_callback == nullptr);
+			ERR_FAIL_COND(volume->reception_buffers->callback_data == nullptr);
+			volume->reception_buffers->mesh_output_callback(volume->reception_buffers->callback_data, o);
 		}
 
 	} else {

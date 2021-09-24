@@ -37,6 +37,8 @@ Ongoing development - `master`
     - `VoxelBuffer`: channels `DATA3` and `DATA4` were renamed `INDICES` and `WEIGHTS`
     - `VoxelInstanceGenerator`: `EMIT_FROM_FACES` got renamed `EMIT_FROM_FACES_FAST`. `EMIT_FROM_FACES` still exists but is a different algorithm.
     - `VoxelServer`: `get_stats()` format has changed, check documentation
+    - `VoxelLodTerrain`: `get_statistics()` format has changed: `time_process_update_responses` and `remaining_main_thread_blocks` are no longer available
+    - `VoxelTerrain`: `get_statistics()` format has changed: `time_process_update_responses` and `remaining_main_thread_blocks` are no longer available
 
 - Fixes
     - `VoxelGeneratorGraph`: changes to node properties are now saved properly

@@ -6,6 +6,7 @@
 
 // Stores uniquely-identified structs in a packed array.
 // Always use the IDs if you want to store a reference somewhere. Addresses aren't stable.
+// IDs are made unique with a generation system.
 template <typename T>
 class StructDB {
 private:

@@ -59,7 +59,7 @@ public:
 			VoxelMeshBlock *block = _blocks[i];
 			ERR_FAIL_COND(block == nullptr);
 			pre_delete(block);
-			memdelete(block);
+			queue_free_mesh_block(block);
 			remove_block_internal(bpos, i);
 		}
 	}
@@ -96,6 +96,7 @@ private:
 	//VoxelMeshBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
 	VoxelMeshBlock *create_default_block(Vector3i bpos);
 	void remove_block_internal(Vector3i bpos, unsigned int index);
+	void queue_free_mesh_block(VoxelMeshBlock *block);
 
 	void set_block_size_pow2(unsigned int p);
 
