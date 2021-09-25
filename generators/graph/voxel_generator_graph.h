@@ -161,6 +161,8 @@ private:
 	void load_graph_from_variant_data(Dictionary data);
 	void register_subresource(Resource &resource);
 	void unregister_subresource(Resource &resource);
+	void register_subresources();
+	void unregister_subresources();
 	void _on_subresource_changed();
 
 	int _b_get_node_type_count() const;

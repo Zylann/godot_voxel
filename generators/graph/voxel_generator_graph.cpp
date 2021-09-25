@@ -18,14 +18,7 @@ VoxelGeneratorGraph::~VoxelGeneratorGraph() {
 }
 
 void VoxelGeneratorGraph::clear() {
-	_graph.for_each_node([this](ProgramGraph::Node &node) {
-		for (size_t i = 0; i < node.params.size(); ++i) {
-			Ref<Resource> resource = node.params[i];
-			if (resource.is_valid()) {
-				unregister_subresource(**resource);
-			}
-		}
-	});
+	unregister_subresources();
 	_graph.clear();
 	{
 		RWLockWrite wlock(_runtime_lock);
@@ -1095,6 +1088,7 @@ Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 	d.instance();
 
 	d->_graph.copy_from(_graph, p_subresources);
+	d->register_subresources();
 	// Program not copied, as it may contain pointers to the resources we are duplicating
 
 	return d;
@@ -1234,15 +1228,7 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 	clear();
 
 	if (::load_graph_from_variant_data(_graph, data)) {
-		_graph.for_each_node([this](ProgramGraph::Node &node) {
-			for (size_t i = 0; i < node.params.size(); ++i) {
-				Ref<Resource> resource = node.params[i];
-				if (resource.is_valid()) {
-					register_subresource(**resource);
-				}
-			}
-		});
-
+		register_subresources();
 		// It's possible to auto-compile on load because `graph_data` is the only property set by the loader,
 		// which is enough to have all information we need
 		compile();
@@ -1253,11 +1239,35 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 }
 
 void VoxelGeneratorGraph::register_subresource(Resource &resource) {
+	//print_line(String("{0}: Registering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
 	resource.connect(CoreStringNames::get_singleton()->changed, this, "_on_subresource_changed");
 }
 
 void VoxelGeneratorGraph::unregister_subresource(Resource &resource) {
+	//print_line(String("{0}: Unregistering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
 	resource.disconnect(CoreStringNames::get_singleton()->changed, this, "_on_subresource_changed");
+}
+
+void VoxelGeneratorGraph::register_subresources() {
+	_graph.for_each_node([this](ProgramGraph::Node &node) {
+		for (size_t i = 0; i < node.params.size(); ++i) {
+			Ref<Resource> resource = node.params[i];
+			if (resource.is_valid()) {
+				register_subresource(**resource);
+			}
+		}
+	});
+}
+
+void VoxelGeneratorGraph::unregister_subresources() {
+	_graph.for_each_node([this](ProgramGraph::Node &node) {
+		for (size_t i = 0; i < node.params.size(); ++i) {
+			Ref<Resource> resource = node.params[i];
+			if (resource.is_valid()) {
+				unregister_subresource(**resource);
+			}
+		}
+	});
 }
 
 // Debug land
