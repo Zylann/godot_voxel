@@ -101,6 +101,13 @@ VoxelServer::VoxelServer() {
 	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/ratio_over_max",
 			PropertyInfo(Variant::REAL, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1"));
 
+	GLOBAL_DEF_RST("voxel/threads/main/time_budget_ms", 8);
+	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/main/time_budget_ms",
+			PropertyInfo(Variant::INT, "voxel/threads/main/time_budget_ms", PROPERTY_HINT_RANGE, "0,1000"));
+
+	_main_thread_time_budget_usec =
+			1000 * int(ProjectSettings::get_singleton()->get("voxel/threads/main/time_budget_ms"));
+
 	const int minimum_thread_count = max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/minimum")));
 
 	// How many threads below available count on the CPU should we set as limit
@@ -529,6 +536,10 @@ void VoxelServer::push_time_spread_task(IVoxelTimeSpreadTask *task) {
 	_time_spread_task_runner.push(task);
 }
 
+int VoxelServer::get_main_thread_time_budget_usec() const {
+	return _main_thread_time_budget_usec;
+}
+
 void VoxelServer::process() {
 	// Note, this shouldn't be here. It should normally done just after SwapBuffers.
 	// Godot does not have any C++ profiler usage anywhere, so when using Tracy Profiler I have to put it somewhere...
@@ -550,7 +561,7 @@ void VoxelServer::process() {
 
 	// Run this after dequeueing threaded tasks, because they can add some to this runner,
 	// which could in turn complete right away (we avoid 1-frame delays this way).
-	_time_spread_task_runner.process(VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS * 1000);
+	_time_spread_task_runner.process(_main_thread_time_budget_usec);
 
 	// Update viewer dependencies
 	{

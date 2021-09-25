@@ -1631,7 +1631,7 @@ void VoxelLodTerrain::_process(float delta) {
 	_stats.time_request_blocks_to_update = profiling_clock.restart();
 
 	// TODO This could go into time spread tasks too
-	process_deferred_collision_updates(VoxelConstants::MAIN_THREAD_MESHING_BUDGET_MS);
+	process_deferred_collision_updates(VoxelServer::get_singleton()->get_main_thread_time_budget_usec());
 
 #ifdef TOOLS_ENABLED
 	if (is_showing_gizmos() && is_visible_in_tree()) {

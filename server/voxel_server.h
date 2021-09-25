@@ -143,6 +143,7 @@ public:
 	}
 
 	void push_time_spread_task(IVoxelTimeSpreadTask *task);
+	int get_main_thread_time_budget_usec() const;
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
 	// void get_min_max_block_padding(
@@ -365,6 +366,7 @@ private:
 	VoxelThreadPool _general_thread_pool;
 	// For tasks that can only run on the main thread and be spread out over frames
 	VoxelTimeSpreadTaskRunner _time_spread_task_runner;
+	int _main_thread_time_budget_usec = 8000;
 
 	VoxelFileLocker _file_locker;
 };

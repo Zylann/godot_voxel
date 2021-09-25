@@ -4,8 +4,10 @@ Performance
 This section discusses performance-related topics, such as making the voxel engine run fast.
 
 
-Thread count configuration
-----------------------------
+Threads
+-----------
+
+### Thread count
 
 This module uses threads to speed up heavy operations and avoid stalls.
 
@@ -28,6 +30,12 @@ Several notes:
 - You can check at runtime how many theads are allocated with a script and using `VoxelServer.get_stats()`. It is also printed if `debug/settings/stdout/verbose_stdout` is enabled in project settings (or `-v` in command line).
 - Changing these settings requires an editor restart (or game restart) to take effect.
 
+### Main thread timeout
+
+Some tasks still have to run on the main thread, and sometimes their total time can exceed the duration of a frame, if we were to add all the remaining things that have to be processed.
+
+To mitigate this, the module has an option to stop processing these tasks beyond a certain amount of milliseconds. In `ProjectSettings`, look for `voxel/threads/main/time_budget_ms`.
+
 
 Slow mesh updates issue
 ------------------------
@@ -38,9 +46,12 @@ Godot 3.x is using OpenGL, and there is an issue which currently degrades perfor
 
 ### Workarounds
 
-- Turn on `debug/settings/stdout/verbose_stdout` in project settings (most effective fix, but has drawbacks because it prints a lot, and was intented as a debugging feature)
+Note: you don't have to do them all at once, picking just one of them can improve the situation.
+
+- Increase `voxel/threads/main/time_budget_ms` to a value higher than frame time (by default it is about 16 ms). However this can slowdown FPS while meshes are updated.
+- Or turn on `debug/settings/stdout/verbose_stdout` in project settings (most effective fix, but has drawbacks because it prints a lot, and was intented as a debugging feature)
 - Or turn off `display/window/vsync/use_vsync` in project settings (not as effective, but improves performance)
-- Or turn on `display/window/vsync/vsync_via_compositor` in project settings (not really a fix but can improve performance in windowed mode)
+- Or turn on `display/window/vsync/vsync_via_compositor` in project settings (not as effective but can improve performance in windowed mode)
 
 ### Explanation
 
