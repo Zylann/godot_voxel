@@ -127,7 +127,7 @@ private:
 	void _b_copy(Vector3 pos, Ref<Reference> voxels, int channel_mask) {
 		copy(Vector3i::from_floored(pos), voxels, channel_mask);
 	}
-	void _b_paste(Vector3 pos, Ref<Reference> voxels, int channels_mask, int mask_value) {
+	void _b_paste(Vector3 pos, Ref<Reference> voxels, int channels_mask, int64_t mask_value) {
 		// TODO May need two functions, one masked, one not masked, or add a parameter, but it breaks compat
 		paste(Vector3i::from_floored(pos), voxels, channels_mask, mask_value > 0xffffffff, mask_value);
 	}
