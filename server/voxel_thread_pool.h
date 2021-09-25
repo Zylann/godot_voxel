@@ -23,17 +23,19 @@ public:
 	// Called from within the thread pool
 	virtual void run(VoxelTaskContext ctx) = 0;
 
-	// Called by the scheduler of the task in order to apply results
+	// Convenience method which can be called by the scheduler of the task (usually on the main thread)
+	// in order to apply results. It is not called from the thread pool.
 	virtual void apply_result() = 0;
 
-	// Lower values means higher priority
+	// Lower values means higher priority.
+	// Can change between two calls. The thread pool will poll this value regularly over some time interval.
 	virtual int get_priority() { return 0; }
 
 	// May return `true` in order for the thread pool to skip the task
 	virtual bool is_cancelled() { return false; }
 };
 
-// Generic thread pool that performs batches of tasks based on priority
+// Generic thread pool that performs batches of tasks based on dynamic priority
 class VoxelThreadPool {
 public:
 	static const uint32_t MAX_THREADS = 8;
@@ -58,11 +60,14 @@ public:
 	uint32_t get_thread_count() const { return _thread_count; }
 
 	// TODO Add ability to change it while running
-	// Can't be changed after tasks have been queued
+	// Sets how many tasks each thread will attempt to dequeue on each iteration.
+	// Can't be changed after tasks have been queued.
 	void set_batch_count(uint32_t count);
 
 	// TODO Add ability to change it while running
-	// Can't be changed after tasks have been queued
+	// Task priorities can change over time, but computing them too often with many tasks can be expensive,
+	// so they are cached. This sets how often task priorities will be polled.
+	// Can't be changed after tasks have been queued.
 	void set_priority_update_period(uint32_t milliseconds);
 
 	// Schedules a task.
