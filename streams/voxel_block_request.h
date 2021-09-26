@@ -8,7 +8,7 @@
 
 // TODO Rename VoxelStreamBlockRequest
 struct VoxelBlockRequest {
-	Ref<VoxelBuffer> voxel_buffer;
+	VoxelBufferInternal &voxel_buffer;
 	Vector3i origin_in_voxels;
 	int lod;
 };

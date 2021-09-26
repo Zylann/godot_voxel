@@ -19,11 +19,10 @@ const float SQRT3 = 1.7320508075688772;
 
 // Helper to access padded voxel data
 struct VoxelAccess {
-
-	const VoxelBuffer &buffer;
+	const VoxelBufferInternal &buffer;
 	const Vector3i offset;
 
-	VoxelAccess(const VoxelBuffer &p_buffer, Vector3i p_offset) :
+	VoxelAccess(const VoxelBufferInternal &p_buffer, Vector3i p_offset) :
 			buffer(p_buffer),
 			offset(p_offset) {}
 
@@ -40,7 +39,6 @@ struct VoxelAccess {
 };
 
 bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, float geometric_error) {
-
 	if (node_size == 1) {
 		// Voxel resolution, can't split further
 		return false;
@@ -48,7 +46,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 
 	Vector3i origin = node_origin + voxels.offset;
 	int step = node_size;
-	int channel = VoxelBuffer::CHANNEL_SDF;
+	int channel = VoxelBufferInternal::CHANNEL_SDF;
 
 	// Don't split if nothing is inside, i.e isolevel distance is greater than the size of the cube we are in
 	Vector3i center_pos = node_origin + Vector3i(node_size / 2);
@@ -125,7 +123,6 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 	float error = 0.0;
 
 	for (int i = 0; i < 19; ++i) {
-
 		Vector3i pos = positions[i];
 
 		HermiteValue value = get_hermite_value(voxels.buffer, pos.x, pos.y, pos.z);
@@ -178,12 +175,10 @@ private:
 	}
 
 	void split(OctreeNode *node) {
-
 		CRASH_COND(node->has_children());
 		CRASH_COND(node->size == 1);
 
 		for (int i = 0; i < 8; ++i) {
-
 			OctreeNode *child = _pool.create();
 			const int *v = OctreeTables::g_octant_position[i];
 			child->size = node->size / 2;
@@ -209,7 +204,6 @@ public:
 	}
 
 	OctreeNode *build(Vector3i node_origin, int node_size) const {
-
 		OctreeNode *children[8] = { nullptr };
 		bool any_node = false;
 
@@ -228,7 +222,6 @@ public:
 		if (!any_node) {
 			// No nodes, test if the 8 octants are worth existing (this could be leaves)
 			if (can_split(node_origin, node_size, _voxels, _geometry_error)) {
-
 				node = _pool.create();
 				node->origin = node_origin;
 				node->size = node_size;
@@ -297,7 +290,6 @@ inline void scale_positions(PoolVector3Array &positions, float scale) {
 }
 
 Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
-
 	struct GetMaxDepth {
 		int max_depth = 0;
 		void operator()(OctreeNode *_, int depth) {
@@ -318,7 +310,6 @@ Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 		int max_depth;
 
 		void operator()(OctreeNode *node, int depth) {
-
 			float shrink = depth * 0.005;
 			Vector3 o = node->origin.to_vec3() + Vector3(shrink, shrink, shrink);
 			float s = node->size - 2.0 * shrink;
@@ -366,12 +357,10 @@ Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 }
 
 Array generate_debug_dual_grid_mesh(const DualGrid &grid, int scale) {
-
 	PoolVector3Array positions;
 	PoolIntArray indices;
 
 	for (unsigned int i = 0; i < grid.cells.size(); ++i) {
-
 		const DualCell &cell = grid.cells[i];
 
 		int vi = positions.size();
@@ -646,7 +635,6 @@ inline void add_cell(DualGrid &grid,
 		const Vector3 c5,
 		const Vector3 c6,
 		const Vector3 c7) {
-
 	DualCell cell;
 	cell.corners[0] = c0;
 	cell.corners[1] = c1;
@@ -669,20 +657,17 @@ void DualGridGenerator::create_border_cells(
 		const OctreeNode *n5,
 		const OctreeNode *n6,
 		const OctreeNode *n7) {
-
 	DualGrid &grid = _grid;
 
 	// Most boring function ever
 
 	if (is_border_back(n0) && is_border_back(n1) && is_border_back(n4) && is_border_back(n5)) {
-
 		add_cell(grid,
 				get_center_back(n0), get_center_back(n1), get_center(n1), get_center(n0),
 				get_center_back(n4), get_center_back(n5), get_center(n5), get_center(n4));
 
 		// Generate back edge border cells
 		if (is_border_top(n4, _octree_root_size) && is_border_top(n5, _octree_root_size)) {
-
 			add_cell(grid,
 					get_center_back(n4), get_center_back(n5), get_center(n5), get_center(n4),
 					get_center_back_top(n4), get_center_back_top(n5), get_center_top(n5), get_center_top(n4));
@@ -702,7 +687,6 @@ void DualGridGenerator::create_border_cells(
 		}
 
 		if (is_border_bottom(n0) && is_border_bottom(n1)) {
-
 			add_cell(grid,
 					get_center_back_bottom(n0), get_center_back_bottom(n1), get_center_bottom(n1), get_center_bottom(n0),
 					get_center_back(n0), get_center_back(n1), get_center(n1), get_center(n0));
@@ -724,14 +708,12 @@ void DualGridGenerator::create_border_cells(
 			is_border_front(n3, _octree_root_size) &&
 			is_border_front(n6, _octree_root_size) &&
 			is_border_front(n7, _octree_root_size)) {
-
 		add_cell(grid,
 				get_center(n3), get_center(n2), get_center_front(n2), get_center_front(n3),
 				get_center(n7), get_center(n6), get_center_front(n6), get_center_front(n7));
 
 		// Generate front edge border cells
 		if (is_border_top(n6, _octree_root_size) && is_border_top(n7, _octree_root_size)) {
-
 			add_cell(grid,
 					get_center(n7), get_center(n6), get_center_front(n6), get_center_front(n7),
 					get_center_top(n7), get_center_top(n6), get_center_front_top(n6), get_center_front_top(n7));
@@ -751,7 +733,6 @@ void DualGridGenerator::create_border_cells(
 		}
 
 		if (is_border_bottom(n3) && is_border_bottom(n2)) {
-
 			add_cell(grid,
 					get_center_bottom(n3), get_center_bottom(n2), get_center_front_bottom(n2), get_center_front_bottom(n3),
 					get_center(n3), get_center(n2), get_center_front(n2), get_center_front(n3));
@@ -770,7 +751,6 @@ void DualGridGenerator::create_border_cells(
 	}
 
 	if (is_border_left(n0) && is_border_left(n3) && is_border_left(n4) && is_border_left(n7)) {
-
 		add_cell(grid,
 				get_center_left(n0), get_center(n0), get_center(n3), get_center_left(n3),
 				get_center_left(n4), get_center(n4), get_center(n7), get_center_left(n7));
@@ -805,7 +785,6 @@ void DualGridGenerator::create_border_cells(
 			is_border_right(n2, _octree_root_size) &&
 			is_border_right(n5, _octree_root_size) &&
 			is_border_right(n6, _octree_root_size)) {
-
 		add_cell(grid,
 				get_center(n1), get_center_right(n1), get_center_right(n2), get_center(n2),
 				get_center(n5), get_center_right(n5), get_center_right(n6), get_center(n6));
@@ -840,7 +819,6 @@ void DualGridGenerator::create_border_cells(
 			is_border_top(n5, _octree_root_size) &&
 			is_border_top(n6, _octree_root_size) &&
 			is_border_top(n7, _octree_root_size)) {
-
 		add_cell(grid,
 				get_center(n4), get_center(n5), get_center(n6), get_center(n7),
 				get_center_top(n4), get_center_top(n5), get_center_top(n6), get_center_top(n7));
@@ -869,7 +847,6 @@ void DualGridGenerator::vert_proc(
 		OctreeNode *n5,
 		OctreeNode *n6,
 		OctreeNode *n7) {
-
 	const bool n0_has_children = n0->has_children();
 	const bool n1_has_children = n1->has_children();
 	const bool n2_has_children = n2->has_children();
@@ -882,7 +859,6 @@ void DualGridGenerator::vert_proc(
 	if (
 			n0_has_children || n1_has_children || n2_has_children || n3_has_children ||
 			n4_has_children || n5_has_children || n6_has_children || n7_has_children) {
-
 		OctreeNode *c0 = n0_has_children ? n0->children[6] : n0;
 		OctreeNode *c1 = n1_has_children ? n1->children[7] : n1;
 		OctreeNode *c2 = n2_has_children ? n2->children[4] : n2;
@@ -895,7 +871,6 @@ void DualGridGenerator::vert_proc(
 		vert_proc(c0, c1, c2, c3, c4, c5, c6, c7);
 
 	} else {
-
 		if (!(
 					is_surface_near(n0) ||
 					is_surface_near(n1) ||
@@ -925,7 +900,6 @@ void DualGridGenerator::vert_proc(
 }
 
 void DualGridGenerator::edge_proc_x(OctreeNode *n0, OctreeNode *n1, OctreeNode *n2, OctreeNode *n3) {
-
 	const bool n0_has_children = n0->has_children();
 	const bool n1_has_children = n1->has_children();
 	const bool n2_has_children = n2->has_children();
@@ -951,7 +925,6 @@ void DualGridGenerator::edge_proc_x(OctreeNode *n0, OctreeNode *n1, OctreeNode *
 }
 
 void DualGridGenerator::edge_proc_y(OctreeNode *n0, OctreeNode *n1, OctreeNode *n2, OctreeNode *n3) {
-
 	const bool n0_has_children = n0->has_children();
 	const bool n1_has_children = n1->has_children();
 	const bool n2_has_children = n2->has_children();
@@ -977,7 +950,6 @@ void DualGridGenerator::edge_proc_y(OctreeNode *n0, OctreeNode *n1, OctreeNode *
 }
 
 void DualGridGenerator::edge_proc_z(OctreeNode *n0, OctreeNode *n1, OctreeNode *n2, OctreeNode *n3) {
-
 	const bool n0_has_children = n0->has_children();
 	const bool n1_has_children = n1->has_children();
 	const bool n2_has_children = n2->has_children();
@@ -1003,7 +975,6 @@ void DualGridGenerator::edge_proc_z(OctreeNode *n0, OctreeNode *n1, OctreeNode *
 }
 
 void DualGridGenerator::face_proc_xy(OctreeNode *n0, OctreeNode *n1) {
-
 	const bool n0_has_children = n0->has_children();
 	const bool n1_has_children = n1->has_children();
 
@@ -1035,7 +1006,6 @@ void DualGridGenerator::face_proc_xy(OctreeNode *n0, OctreeNode *n1) {
 }
 
 void DualGridGenerator::face_proc_zy(OctreeNode *n0, OctreeNode *n1) {
-
 	const bool n0_has_children = n0->has_children();
 	const bool n1_has_children = n1->has_children();
 
@@ -1066,7 +1036,6 @@ void DualGridGenerator::face_proc_zy(OctreeNode *n0, OctreeNode *n1) {
 }
 
 void DualGridGenerator::face_proc_xz(OctreeNode *n0, OctreeNode *n1) {
-
 	const bool n0_has_children = n0->has_children();
 	const bool n1_has_children = n1->has_children();
 
@@ -1097,7 +1066,6 @@ void DualGridGenerator::face_proc_xz(OctreeNode *n0, OctreeNode *n1) {
 }
 
 void DualGridGenerator::node_proc(OctreeNode *node) {
-
 	if (!node->has_children()) {
 		return;
 	}
@@ -1136,7 +1104,6 @@ void DualGridGenerator::node_proc(OctreeNode *node) {
 }
 
 inline Vector3 interpolate(const Vector3 &v0, const Vector3 &v1, const HermiteValue &val0, const HermiteValue &val1, Vector3 &out_normal) {
-
 	if (Math::abs(val0.sdf - SURFACE_ISO_LEVEL) <= FLT_EPSILON) {
 		out_normal = val0.gradient;
 		out_normal.normalize();
@@ -1163,7 +1130,6 @@ inline Vector3 interpolate(const Vector3 &v0, const Vector3 &v1, const HermiteVa
 }
 
 void polygonize_cell_marching_squares(const Vector3 *cube_corners, const HermiteValue *cube_values, float max_distance, MeshBuilder &mesh_builder, const int *corner_map) {
-
 	// Note:
 	// Using Ogre's implementation directly resulted in inverted result, because it expects density values instead of SDF,
 	// So I had to flip a few things around in order to make it work
@@ -1240,7 +1206,6 @@ void polygonize_cell_marching_squares(const Vector3 *cube_corners, const Hermite
 
 	// Create the triangles according to the table.
 	for (int i = 0; MarchingCubes::ms_triangles[square_index][i] != -1; i += 3) {
-
 		mesh_builder.add_vertex(
 				intersection_points[MarchingCubes::ms_triangles[square_index][i]],
 				intersection_normals[MarchingCubes::ms_triangles[square_index][i]]);
@@ -1267,7 +1232,6 @@ static const int g_corner_map_bottom[4] = { 3, 2, 1, 0 };
 } // namespace MarchingSquares
 
 void add_marching_squares_skirts(const Vector3 *corners, const HermiteValue *values, MeshBuilder &mesh_builder, Vector3 min_pos, Vector3 max_pos) {
-
 	float max_distance = 0.2f; // Max distance to the isosurface
 
 	if (corners[0].z == min_pos.z) {
@@ -1291,7 +1255,6 @@ void add_marching_squares_skirts(const Vector3 *corners, const HermiteValue *val
 }
 
 void polygonize_cell_marching_cubes(const Vector3 *corners, const HermiteValue *values, MeshBuilder &mesh_builder) {
-
 	unsigned char case_index = 0;
 
 	for (int i = 0; i < 8; ++i) {
@@ -1349,7 +1312,6 @@ void polygonize_cell_marching_cubes(const Vector3 *corners, const HermiteValue *
 
 	// Create the triangles according to the table.
 	for (int i = 0; MarchingCubes::mc_triangles[case_index][i] != -1; i += 3) {
-
 		mesh_builder.add_vertex(
 				intersection_points[MarchingCubes::mc_triangles[case_index][i]],
 				intersection_normals[MarchingCubes::mc_triangles[case_index][i]]);
@@ -1367,7 +1329,6 @@ void polygonize_cell_marching_cubes(const Vector3 *corners, const HermiteValue *
 }
 
 void polygonize_dual_cell(const DualCell &cell, const VoxelAccess &voxels, MeshBuilder &mesh_builder, bool skirts_enabled) {
-
 	const Vector3 *corners = cell.corners;
 	HermiteValue values[8];
 
@@ -1387,14 +1348,13 @@ void polygonize_dual_cell(const DualCell &cell, const VoxelAccess &voxels, MeshB
 }
 
 inline void polygonize_dual_grid(const DualGrid &grid, const VoxelAccess &voxels, MeshBuilder &mesh_builder, bool skirts_enabled) {
-
 	for (unsigned int i = 0; i < grid.cells.size(); ++i) {
 		polygonize_dual_cell(grid.cells[i], voxels, mesh_builder, skirts_enabled);
 	}
 }
 
-void polygonize_volume_directly(const VoxelBuffer &voxels, Vector3i min, Vector3i size, MeshBuilder &mesh_builder, bool skirts_enabled) {
-
+void polygonize_volume_directly(const VoxelBufferInternal &voxels, Vector3i min, Vector3i size,
+		MeshBuilder &mesh_builder, bool skirts_enabled) {
 	Vector3 corners[8];
 	HermiteValue values[8];
 
@@ -1407,7 +1367,6 @@ void polygonize_volume_directly(const VoxelBuffer &voxels, Vector3i min, Vector3
 	for (int z = min.z; z < max.z; ++z) {
 		for (int x = min.x; x < max.x; ++x) {
 			for (int y = min.y; y < max.y; ++y) {
-
 				values[0] = get_hermite_value(voxels, x, y, z);
 				values[1] = get_hermite_value(voxels, x + 1, y, z);
 				values[2] = get_hermite_value(voxels, x + 1, y, z + 1);
@@ -1498,9 +1457,9 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	// - Voxel data must be padded
 	// - The non-padded area size is cubic and power of two
 
-	const VoxelBuffer &voxels = input.voxels;
+	const VoxelBufferInternal &voxels = input.voxels;
 
-	if (voxels.is_uniform(VoxelBuffer::CHANNEL_SDF)) {
+	if (voxels.is_uniform(VoxelBufferInternal::CHANNEL_SDF)) {
 		// That won't produce any polygon
 		_stats = {};
 		return;
@@ -1636,7 +1595,7 @@ Ref<Resource> VoxelMesherDMC::duplicate(bool p_subresources) const {
 }
 
 int VoxelMesherDMC::get_used_channels_mask() const {
-	return (1 << VoxelBuffer::CHANNEL_SDF);
+	return (1 << VoxelBufferInternal::CHANNEL_SDF);
 }
 
 Dictionary VoxelMesherDMC::get_statistics() const {

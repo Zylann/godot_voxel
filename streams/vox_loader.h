@@ -11,7 +11,7 @@ class VoxelVoxLoader : public Reference {
 	GDCLASS(VoxelVoxLoader, Reference);
 
 public:
-	Error load_from_file(String fpath, Ref<VoxelBuffer> voxels, Ref<VoxelColorPalette> palette);
+	Error load_from_file(String fpath, Ref<VoxelBuffer> p_voxels, Ref<VoxelColorPalette> palette);
 	// TODO Have chunked loading for better memory usage
 	// TODO Saving
 

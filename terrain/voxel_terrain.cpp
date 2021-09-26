@@ -507,10 +507,11 @@ struct ScheduleSaveAction {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelTerrain::BlockToSave b;
 			if (with_copy) {
-				RWLockRead lock(block->get_voxels()->get_lock());
-				b.voxels = block->get_voxels()->duplicate(true);
+				RWLockRead lock(block->get_voxels().get_lock());
+				b.voxels = gd_make_shared<VoxelBufferInternal>();
+				block->get_voxels_const().duplicate_to(*b.voxels, true);
 			} else {
-				b.voxels = block->get_voxels();
+				b.voxels = block->get_voxels_shared();
 			}
 			b.position = block->position;
 			blocks_to_save.push_back(b);
@@ -1045,7 +1046,7 @@ void VoxelTerrain::process_received_data_blocks() {
 
 		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 		for (size_t i = 0; i < _reception_buffers.data_output.size(); ++i) {
-			const VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[i];
+			VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[i];
 
 			if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVE) {
 				if (ob.dropped) {
@@ -1086,7 +1087,7 @@ void VoxelTerrain::process_received_data_blocks() {
 			// Now we got the block. If we still have to drop it, the cause will be an error.
 			_loading_blocks.erase(block_pos);
 
-			CRASH_COND(ob.voxels.is_null());
+			CRASH_COND(ob.voxels == nullptr);
 
 			const Vector3i expected_block_size(_data_map.get_block_size());
 			if (ob.voxels->get_size() != expected_block_size) {
@@ -1172,7 +1173,7 @@ void VoxelTerrain::process_meshing() {
 			data_box.for_each_cell_zxy([this, &mesh_request](Vector3i data_block_pos) {
 				VoxelDataBlock *data_block = _data_map.get_block(data_block_pos);
 				if (data_block != nullptr) {
-					mesh_request.data_blocks[mesh_request.data_blocks_count] = data_block->get_voxels();
+					mesh_request.data_blocks[mesh_request.data_blocks_count] = data_block->get_voxels_shared();
 				}
 				++mesh_request.data_blocks_count;
 			});
@@ -1181,7 +1182,7 @@ void VoxelTerrain::process_meshing() {
 			{
 				unsigned int count = 0;
 				for (unsigned int i = 0; i < mesh_request.data_blocks_count; ++i) {
-					if (mesh_request.data_blocks[i].is_valid()) {
+					if (mesh_request.data_blocks[i] != nullptr) {
 						++count;
 					}
 				}
@@ -1272,7 +1273,7 @@ Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
 	Ref<VoxelTool> vt = memnew(VoxelToolTerrain(this));
 	const int used_channels_mask = get_used_channels_mask();
 	// Auto-pick first used channel
-	for (int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
+	for (int channel = 0; channel < VoxelBufferInternal::MAX_CHANNELS; ++channel) {
 		if ((used_channels_mask & (1 << channel)) != 0) {
 			vt->set_channel(channel);
 			break;

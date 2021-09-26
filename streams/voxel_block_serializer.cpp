@@ -19,18 +19,18 @@ const unsigned int BLOCK_TRAILING_MAGIC_SIZE = 4;
 const unsigned int BLOCK_METADATA_HEADER_SIZE = sizeof(uint32_t);
 } // namespace
 
-size_t get_metadata_size_in_bytes(const VoxelBuffer &buffer) {
+size_t get_metadata_size_in_bytes(const VoxelBufferInternal &buffer) {
 	size_t size = 0;
 
 	const Map<Vector3i, Variant>::Element *elem = buffer.get_voxel_metadata().front();
 	while (elem != nullptr) {
 		const Vector3i pos = elem->key();
 
-		ERR_FAIL_COND_V_MSG(pos.x < 0 || static_cast<uint32_t>(pos.x) >= VoxelBuffer::MAX_SIZE, 0,
+		ERR_FAIL_COND_V_MSG(pos.x < 0 || static_cast<uint32_t>(pos.x) >= VoxelBufferInternal::MAX_SIZE, 0,
 				"Invalid voxel metadata X position");
-		ERR_FAIL_COND_V_MSG(pos.y < 0 || static_cast<uint32_t>(pos.y) >= VoxelBuffer::MAX_SIZE, 0,
+		ERR_FAIL_COND_V_MSG(pos.y < 0 || static_cast<uint32_t>(pos.y) >= VoxelBufferInternal::MAX_SIZE, 0,
 				"Invalid voxel metadata Y position");
-		ERR_FAIL_COND_V_MSG(pos.z < 0 || static_cast<uint32_t>(pos.z) >= VoxelBuffer::MAX_SIZE, 0,
+		ERR_FAIL_COND_V_MSG(pos.z < 0 || static_cast<uint32_t>(pos.z) >= VoxelBufferInternal::MAX_SIZE, 0,
 				"Invalid voxel metadata Z position");
 
 		size += 3 * sizeof(uint16_t); // Positions are stored as 3 unsigned shorts
@@ -72,7 +72,7 @@ inline T read(uint8_t *&src) {
 }
 
 // The target buffer MUST have correct size. Recoverable errors must have been checked before.
-void serialize_metadata(uint8_t *p_dst, const VoxelBuffer &buffer, const size_t metadata_size) {
+void serialize_metadata(uint8_t *p_dst, const VoxelBufferInternal &buffer, const size_t metadata_size) {
 	uint8_t *dst = p_dst;
 
 	{
@@ -88,7 +88,7 @@ void serialize_metadata(uint8_t *p_dst, const VoxelBuffer &buffer, const size_t 
 	const Map<Vector3i, Variant>::Element *elem = buffer.get_voxel_metadata().front();
 	while (elem != nullptr) {
 		// Serializing key as ushort because it's more than enough for a 3D dense array
-		static_assert(VoxelBuffer::MAX_SIZE <= 65535, "Maximum size exceeds serialization support");
+		static_assert(VoxelBufferInternal::MAX_SIZE <= 65535, "Maximum size exceeds serialization support");
 		const Vector3i pos = elem->key();
 		write<uint16_t>(dst, pos.x);
 		write<uint16_t>(dst, pos.y);
@@ -109,7 +109,7 @@ void serialize_metadata(uint8_t *p_dst, const VoxelBuffer &buffer, const size_t 
 					.format(varray(SIZE_T_TO_VARIANT(metadata_size), (int)(dst - p_dst))));
 }
 
-bool deserialize_metadata(uint8_t *p_src, VoxelBuffer &buffer, const size_t metadata_size) {
+bool deserialize_metadata(uint8_t *p_src, VoxelBufferInternal &buffer, const size_t metadata_size) {
 	uint8_t *src = p_src;
 	size_t remaining_length = metadata_size;
 
@@ -146,26 +146,26 @@ bool deserialize_metadata(uint8_t *p_src, VoxelBuffer &buffer, const size_t meta
 	return true;
 }
 
-size_t get_size_in_bytes(const VoxelBuffer &buffer, size_t &metadata_size) {
+size_t get_size_in_bytes(const VoxelBufferInternal &buffer, size_t &metadata_size) {
 	// Version and size
 	size_t size = 1 * sizeof(uint8_t) + 3 * sizeof(uint16_t);
 
 	const Vector3i size_in_voxels = buffer.get_size();
 
-	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
-		const VoxelBuffer::Compression compression = buffer.get_channel_compression(channel_index);
-		const VoxelBuffer::Depth depth = buffer.get_channel_depth(channel_index);
+	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
+		const VoxelBufferInternal::Compression compression = buffer.get_channel_compression(channel_index);
+		const VoxelBufferInternal::Depth depth = buffer.get_channel_depth(channel_index);
 
 		// For format value
 		size += 1;
 
 		switch (compression) {
-			case VoxelBuffer::COMPRESSION_NONE: {
-				size += VoxelBuffer::get_size_in_bytes_for_volume(size_in_voxels, depth);
+			case VoxelBufferInternal::COMPRESSION_NONE: {
+				size += VoxelBufferInternal::get_size_in_bytes_for_volume(size_in_voxels, depth);
 			} break;
 
-			case VoxelBuffer::COMPRESSION_UNIFORM: {
-				size += VoxelBuffer::get_depth_bit_count(depth) >> 3;
+			case VoxelBufferInternal::COMPRESSION_UNIFORM: {
+				size += VoxelBufferInternal::get_depth_bit_count(depth) >> 3;
 			} break;
 
 			default:
@@ -184,7 +184,9 @@ size_t get_size_in_bytes(const VoxelBuffer &buffer, size_t &metadata_size) {
 	return size + metadata_size_with_header + BLOCK_TRAILING_MAGIC_SIZE;
 }
 
-VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize(const VoxelBuffer &voxel_buffer) {
+VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize(
+		const VoxelBufferInternal &voxel_buffer) {
+	//
 	VOXEL_PROFILE_SCOPE();
 	// Cannot serialize an empty block
 	ERR_FAIL_COND_V(voxel_buffer.get_size().volume() == 0, SerializeResult(_data, false));
@@ -207,34 +209,34 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 	ERR_FAIL_COND_V(voxel_buffer.get_size().z > std::numeric_limits<uint16_t>().max(), SerializeResult(_data, false));
 	f->store_16(voxel_buffer.get_size().z);
 
-	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
-		const VoxelBuffer::Compression compression = voxel_buffer.get_channel_compression(channel_index);
-		const VoxelBuffer::Depth depth = voxel_buffer.get_channel_depth(channel_index);
+	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
+		const VoxelBufferInternal::Compression compression = voxel_buffer.get_channel_compression(channel_index);
+		const VoxelBufferInternal::Depth depth = voxel_buffer.get_channel_depth(channel_index);
 		// Low nibble: compression (up to 16 values allowed)
 		// High nibble: depth (up to 16 values allowed)
 		const uint8_t fmt = static_cast<uint8_t>(compression) | (static_cast<uint8_t>(depth) << 4);
 		f->store_8(fmt);
 
 		switch (compression) {
-			case VoxelBuffer::COMPRESSION_NONE: {
+			case VoxelBufferInternal::COMPRESSION_NONE: {
 				Span<uint8_t> data;
 				ERR_FAIL_COND_V(!voxel_buffer.get_channel_raw(channel_index, data), SerializeResult(_data, false));
 				f->store_buffer(data.data(), data.size());
 			} break;
 
-			case VoxelBuffer::COMPRESSION_UNIFORM: {
+			case VoxelBufferInternal::COMPRESSION_UNIFORM: {
 				const uint64_t v = voxel_buffer.get_voxel(Vector3i(), channel_index);
 				switch (depth) {
-					case VoxelBuffer::DEPTH_8_BIT:
+					case VoxelBufferInternal::DEPTH_8_BIT:
 						f->store_8(v);
 						break;
-					case VoxelBuffer::DEPTH_16_BIT:
+					case VoxelBufferInternal::DEPTH_16_BIT:
 						f->store_16(v);
 						break;
-					case VoxelBuffer::DEPTH_32_BIT:
+					case VoxelBufferInternal::DEPTH_32_BIT:
 						f->store_32(v);
 						break;
-					case VoxelBuffer::DEPTH_64_BIT:
+					case VoxelBufferInternal::DEPTH_64_BIT:
 						f->store_64(v);
 						break;
 					default:
@@ -262,7 +264,9 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 	return SerializeResult(_data, true);
 }
 
-bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer) {
+bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_data,
+		VoxelBufferInternal &out_voxel_buffer) {
+	//
 	VOXEL_PROFILE_SCOPE();
 
 	ERR_FAIL_COND_V(p_data.size() < sizeof(uint32_t), false);
@@ -295,21 +299,21 @@ bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_dat
 		out_voxel_buffer.create(Vector3i(size_x, size_y, size_z));
 	}
 
-	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
+	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
 		const uint8_t fmt = f->get_8();
 		const uint8_t compression_value = fmt & 0xf;
 		const uint8_t depth_value = (fmt >> 4) & 0xf;
-		ERR_FAIL_COND_V_MSG(compression_value >= VoxelBuffer::COMPRESSION_COUNT, false,
+		ERR_FAIL_COND_V_MSG(compression_value >= VoxelBufferInternal::COMPRESSION_COUNT, false,
 				"At offset 0x" + String::num_int64(f->get_position() - 1, 16));
-		ERR_FAIL_COND_V_MSG(depth_value >= VoxelBuffer::DEPTH_COUNT, false,
+		ERR_FAIL_COND_V_MSG(depth_value >= VoxelBufferInternal::DEPTH_COUNT, false,
 				"At offset 0x" + String::num_int64(f->get_position() - 1, 16));
-		VoxelBuffer::Compression compression = (VoxelBuffer::Compression)compression_value;
-		VoxelBuffer::Depth depth = (VoxelBuffer::Depth)depth_value;
+		VoxelBufferInternal::Compression compression = (VoxelBufferInternal::Compression)compression_value;
+		VoxelBufferInternal::Depth depth = (VoxelBufferInternal::Depth)depth_value;
 
 		out_voxel_buffer.set_channel_depth(channel_index, depth);
 
 		switch (compression) {
-			case VoxelBuffer::COMPRESSION_NONE: {
+			case VoxelBufferInternal::COMPRESSION_NONE: {
 				out_voxel_buffer.decompress_channel(channel_index);
 
 				Span<uint8_t> buffer;
@@ -323,19 +327,19 @@ bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_dat
 
 			} break;
 
-			case VoxelBuffer::COMPRESSION_UNIFORM: {
+			case VoxelBufferInternal::COMPRESSION_UNIFORM: {
 				uint64_t v;
 				switch (out_voxel_buffer.get_channel_depth(channel_index)) {
-					case VoxelBuffer::DEPTH_8_BIT:
+					case VoxelBufferInternal::DEPTH_8_BIT:
 						v = f->get_8();
 						break;
-					case VoxelBuffer::DEPTH_16_BIT:
+					case VoxelBufferInternal::DEPTH_16_BIT:
 						v = f->get_16();
 						break;
-					case VoxelBuffer::DEPTH_32_BIT:
+					case VoxelBufferInternal::DEPTH_32_BIT:
 						v = f->get_32();
 						break;
-					case VoxelBuffer::DEPTH_64_BIT:
+					case VoxelBufferInternal::DEPTH_64_BIT:
 						v = f->get_64();
 						break;
 					default:
@@ -364,7 +368,7 @@ bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_dat
 }
 
 VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize_and_compress(
-		const VoxelBuffer &voxel_buffer) {
+		const VoxelBufferInternal &voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
 	SerializeResult res = serialize(voxel_buffer);
@@ -380,7 +384,7 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 }
 
 bool VoxelBlockSerializerInternal::decompress_and_deserialize(
-		const std::vector<uint8_t> &p_data, VoxelBuffer &out_voxel_buffer) {
+		const std::vector<uint8_t> &p_data, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
 	const bool res = VoxelCompressedData::decompress(Span<const uint8_t>(p_data.data(), 0, p_data.size()), _data);
@@ -390,7 +394,7 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 }
 
 bool VoxelBlockSerializerInternal::decompress_and_deserialize(
-		FileAccess *f, unsigned int size_to_read, VoxelBuffer &out_voxel_buffer) {
+		FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(f == nullptr, false);
 
@@ -407,15 +411,15 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 	return decompress_and_deserialize(_compressed_data, out_voxel_buffer);
 }
 
-int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress) {
+int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress) {
 	if (compress) {
-		SerializeResult res = serialize_and_compress(**voxel_buffer);
+		SerializeResult res = serialize_and_compress(voxel_buffer);
 		ERR_FAIL_COND_V(!res.success, -1);
 		peer->put_data(res.data.data(), res.data.size());
 		return res.data.size();
 
 	} else {
-		SerializeResult res = serialize(**voxel_buffer);
+		SerializeResult res = serialize(voxel_buffer);
 		ERR_FAIL_COND_V(!res.success, -1);
 		peer->put_data(res.data.data(), res.data.size());
 		return res.data.size();
@@ -423,19 +427,19 @@ int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, Ref<VoxelBuffe
 }
 
 void VoxelBlockSerializerInternal::deserialize(
-		Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress) {
+		Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress) {
 	if (decompress) {
 		_compressed_data.resize(size);
 		const Error err = peer->get_data(_compressed_data.data(), _compressed_data.size());
 		ERR_FAIL_COND(err != OK);
-		bool success = decompress_and_deserialize(_compressed_data, **voxel_buffer);
+		bool success = decompress_and_deserialize(_compressed_data, voxel_buffer);
 		ERR_FAIL_COND(!success);
 
 	} else {
 		_data.resize(size);
 		const Error err = peer->get_data(_data.data(), _data.size());
 		ERR_FAIL_COND(err != OK);
-		deserialize(_data, **voxel_buffer);
+		deserialize(_data, voxel_buffer);
 	}
 }
 
@@ -444,14 +448,14 @@ void VoxelBlockSerializerInternal::deserialize(
 int VoxelBlockSerializer::serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress) {
 	ERR_FAIL_COND_V(voxel_buffer.is_null(), 0);
 	ERR_FAIL_COND_V(peer.is_null(), 0);
-	return _serializer.serialize(peer, voxel_buffer, compress);
+	return _serializer.serialize(peer, voxel_buffer->get_buffer(), compress);
 }
 
 void VoxelBlockSerializer::deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress) {
 	ERR_FAIL_COND(voxel_buffer.is_null());
 	ERR_FAIL_COND(peer.is_null());
 	ERR_FAIL_COND(size <= 0);
-	_serializer.deserialize(peer, voxel_buffer, size, decompress);
+	_serializer.deserialize(peer, voxel_buffer->get_buffer(), size, decompress);
 }
 
 void VoxelBlockSerializer::_bind_methods() {

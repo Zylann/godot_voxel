@@ -1,6 +1,8 @@
 #include "voxel_data_map.h"
 #include "../constants/cube_tables.h"
+#include "../util/godot/funcs.h"
 #include "../util/macros.h"
+
 #include <limits>
 
 VoxelDataMap::VoxelDataMap() :
@@ -9,7 +11,7 @@ VoxelDataMap::VoxelDataMap() :
 	set_block_size_pow2(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2);
 
 	_default_voxel.fill(0);
-	_default_voxel[VoxelBuffer::CHANNEL_SDF] = 255;
+	_default_voxel[VoxelBufferInternal::CHANNEL_SDF] = 255;
 }
 
 VoxelDataMap::~VoxelDataMap() {
@@ -48,12 +50,12 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 	if (block == nullptr) {
 		return _default_voxel[c];
 	}
-	RWLockRead lock(block->get_voxels()->get_lock());
-	return block->get_voxels()->get_voxel(to_local(pos), c);
+	RWLockRead lock(block->get_voxels_const().get_lock());
+	return block->get_voxels_const().get_voxel(to_local(pos), c);
 }
 
 VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
-	Ref<VoxelBuffer> buffer(memnew(VoxelBuffer));
+	std::shared_ptr<VoxelBufferInternal> buffer = gd_make_shared<VoxelBufferInternal>();
 	buffer->create(_block_size, _block_size, _block_size);
 	buffer->set_default_values(_default_voxel);
 	VoxelDataBlock *block = VoxelDataBlock::create(bpos, buffer, _block_size, _lod_index);
@@ -73,8 +75,9 @@ VoxelDataBlock *VoxelDataMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
 void VoxelDataMap::set_voxel(int value, Vector3i pos, unsigned int c) {
 	VoxelDataBlock *block = get_or_create_block_at_voxel_pos(pos);
 	// TODO If it turns out to be a problem, use CoW
-	RWLockWrite lock(block->get_voxels()->get_lock());
-	block->get_voxels()->set_voxel(value, to_local(pos), c);
+	VoxelBufferInternal &voxels = block->get_voxels();
+	RWLockWrite lock(voxels.get_lock());
+	voxels.set_voxel(value, to_local(pos), c);
 }
 
 float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
@@ -85,24 +88,25 @@ float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 		return _default_voxel[c];
 	}
 	Vector3i lpos = to_local(pos);
-	RWLockRead lock(block->get_voxels()->get_lock());
-	return block->get_voxels()->get_voxel_f(lpos.x, lpos.y, lpos.z, c);
+	RWLockRead lock(block->get_voxels_const().get_lock());
+	return block->get_voxels_const().get_voxel_f(lpos.x, lpos.y, lpos.z, c);
 }
 
 void VoxelDataMap::set_voxel_f(real_t value, Vector3i pos, unsigned int c) {
 	VoxelDataBlock *block = get_or_create_block_at_voxel_pos(pos);
 	Vector3i lpos = to_local(pos);
-	RWLockWrite lock(block->get_voxels()->get_lock());
-	block->get_voxels()->set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
+	VoxelBufferInternal &voxels = block->get_voxels();
+	RWLockWrite lock(voxels.get_lock());
+	voxels.set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
 }
 
 void VoxelDataMap::set_default_voxel(int value, unsigned int channel) {
-	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
+	ERR_FAIL_INDEX(channel, VoxelBufferInternal::MAX_CHANNELS);
 	_default_voxel[channel] = value;
 }
 
 int VoxelDataMap::get_default_voxel(unsigned int channel) {
-	ERR_FAIL_INDEX_V(channel, VoxelBuffer::MAX_CHANNELS, 0);
+	ERR_FAIL_INDEX_V(channel, VoxelBufferInternal::MAX_CHANNELS, 0);
 	return _default_voxel[channel];
 }
 
@@ -178,11 +182,11 @@ void VoxelDataMap::remove_block_internal(Vector3i bpos, unsigned int index) {
 	}
 }
 
-VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer) {
-	ERR_FAIL_COND_V(buffer.is_null(), nullptr);
+VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer) {
+	ERR_FAIL_COND_V(buffer == nullptr, nullptr);
 	VoxelDataBlock *block = get_block(bpos);
 	if (block == nullptr) {
-		block = VoxelDataBlock::create(bpos, *buffer, _block_size, _lod_index);
+		block = VoxelDataBlock::create(bpos, buffer, _block_size, _lod_index);
 		set_block(bpos, block);
 	} else {
 		block->set_voxels(buffer);
@@ -205,7 +209,7 @@ bool VoxelDataMap::is_block_surrounded(Vector3i pos) const {
 	return true;
 }
 
-void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const {
+void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
 	const Vector3i max_pos = min_pos + dst_buffer.get_size();
 
 	const Vector3i min_block_pos = voxel_to_block(min_pos);
@@ -217,7 +221,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-				for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
+				for (unsigned int channel = 0; channel < VoxelBufferInternal::MAX_CHANNELS; ++channel) {
 					if (((1 << channel) & channels_mask) == 0) {
 						continue;
 					}
@@ -225,7 +229,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 					const Vector3i src_block_origin = block_to_voxel(bpos);
 
 					if (block != nullptr) {
-						const VoxelBuffer &src_buffer = **block->get_voxels();
+						const VoxelBufferInternal &src_buffer = block->get_voxels_const();
 
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
 
@@ -253,7 +257,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 	}
 }
 
-void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int channels_mask, bool use_mask,
+void VoxelDataMap::paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
 		uint64_t mask_value, bool create_new_blocks) {
 	//
 	const Vector3i max_pos = min_pos + src_buffer.get_size();
@@ -265,7 +269,7 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-				for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
+				for (unsigned int channel = 0; channel < VoxelBufferInternal::MAX_CHANNELS; ++channel) {
 					if (((1 << channel) & channels_mask) == 0) {
 						continue;
 					}
@@ -281,7 +285,7 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int
 
 					const Vector3i dst_block_origin = block_to_voxel(bpos);
 
-					VoxelBuffer &dst_buffer = **block->get_voxels();
+					VoxelBufferInternal &dst_buffer = block->get_voxels();
 					RWLockWrite lock(dst_buffer.get_lock());
 
 					if (use_mask) {

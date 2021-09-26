@@ -6,7 +6,7 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
 	Output output;
-	Input input = { **voxels, 0 };
+	Input input = { voxels->get_buffer(), 0 };
 	build(output, input);
 
 	if (output.surfaces.empty()) {

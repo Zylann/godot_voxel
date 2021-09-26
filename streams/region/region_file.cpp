@@ -33,7 +33,7 @@ bool VoxelRegionFormat::validate() const {
 	// Test worst case limits (this does not include arbitrary metadata, so it can't be 100% accurrate...)
 	size_t bytes_per_block = 0;
 	for (unsigned int i = 0; i < channel_depths.size(); ++i) {
-		bytes_per_block += VoxelBuffer::get_depth_bit_count(channel_depths[i]) / 8;
+		bytes_per_block += VoxelBufferInternal::get_depth_bit_count(channel_depths[i]) / 8;
 	}
 	bytes_per_block *= Vector3i(1 << block_size_po2).volume();
 	const size_t sectors_per_block = (bytes_per_block - 1) / sector_size + 1;
@@ -44,9 +44,9 @@ bool VoxelRegionFormat::validate() const {
 	return true;
 }
 
-bool VoxelRegionFormat::verify_block(const VoxelBuffer &block) const {
+bool VoxelRegionFormat::verify_block(const VoxelBufferInternal &block) const {
 	ERR_FAIL_COND_V(block.get_size() != Vector3i(1 << block_size_po2), false);
-	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
+	for (unsigned int i = 0; i < VoxelBufferInternal::MAX_CHANNELS; ++i) {
 		ERR_FAIL_COND_V(block.get_channel_depth(i) != channel_depths[i], false);
 	}
 	return true;
@@ -128,8 +128,8 @@ static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &
 
 		for (unsigned int i = 0; i < out_format.channel_depths.size(); ++i) {
 			const uint8_t d = f->get_8();
-			ERR_FAIL_COND_V(d >= VoxelBuffer::DEPTH_COUNT, false);
-			out_format.channel_depths[i] = static_cast<VoxelBuffer::Depth>(d);
+			ERR_FAIL_COND_V(d >= VoxelBufferInternal::DEPTH_COUNT, false);
+			out_format.channel_depths[i] = static_cast<VoxelBufferInternal::Depth>(d);
 		}
 
 		out_format.sector_size = f->get_16();
@@ -172,7 +172,7 @@ VoxelRegionFile::VoxelRegionFile() {
 	// Defaults
 	_header.format.block_size_po2 = 4;
 	_header.format.region_size = Vector3i(16, 16, 16);
-	_header.format.channel_depths.fill(VoxelBuffer::DEPTH_8_BIT);
+	_header.format.channel_depths.fill(VoxelBufferInternal::DEPTH_8_BIT);
 	_header.format.sector_size = 512;
 }
 
@@ -302,8 +302,8 @@ const VoxelRegionFormat &VoxelRegionFile::get_format() const {
 }
 
 Error VoxelRegionFile::load_block(
-		Vector3i position, Ref<VoxelBuffer> out_block, VoxelBlockSerializerInternal &serializer) {
-	ERR_FAIL_COND_V(out_block.is_null(), ERR_INVALID_PARAMETER);
+		Vector3i position, VoxelBufferInternal &out_block, VoxelBlockSerializerInternal &serializer) {
+	//
 	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_READ);
 	FileAccess *f = _file_access;
 
@@ -315,10 +315,10 @@ Error VoxelRegionFile::load_block(
 		return ERR_DOES_NOT_EXIST;
 	}
 
-	ERR_FAIL_COND_V(out_block->get_size() != out_block->get_size(), ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(out_block.get_size() != out_block.get_size(), ERR_INVALID_PARAMETER);
 	// Configure block format
 	for (unsigned int channel_index = 0; channel_index < _header.format.channel_depths.size(); ++channel_index) {
-		out_block->set_channel_depth(channel_index, _header.format.channel_depths[channel_index]);
+		out_block.set_channel_depth(channel_index, _header.format.channel_depths[channel_index]);
 	}
 
 	const unsigned int sector_index = block_info.get_sector_index();
@@ -329,15 +329,16 @@ Error VoxelRegionFile::load_block(
 	unsigned int block_data_size = f->get_32();
 	CRASH_COND(f->eof_reached());
 
-	ERR_FAIL_COND_V_MSG(!serializer.decompress_and_deserialize(f, block_data_size, **out_block), ERR_PARSE_ERROR,
+	ERR_FAIL_COND_V_MSG(!serializer.decompress_and_deserialize(f, block_data_size, out_block), ERR_PARSE_ERROR,
 			String("Failed to read block {0}").format(varray(position.to_vec3())));
 
 	return OK;
 }
 
-Error VoxelRegionFile::save_block(Vector3i position, Ref<VoxelBuffer> block, VoxelBlockSerializerInternal &serializer) {
-	ERR_FAIL_COND_V(block.is_null(), ERR_INVALID_PARAMETER);
-	ERR_FAIL_COND_V(_header.format.verify_block(**block) == false, ERR_INVALID_PARAMETER);
+Error VoxelRegionFile::save_block(Vector3i position, VoxelBufferInternal &block,
+		VoxelBlockSerializerInternal &serializer) {
+	//
+	ERR_FAIL_COND_V(_header.format.verify_block(block) == false, ERR_INVALID_PARAMETER);
 
 	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_WRITE);
 	FileAccess *f = _file_access;
@@ -360,7 +361,7 @@ Error VoxelRegionFile::save_block(Vector3i position, Ref<VoxelBuffer> block, Vox
 		// Check position matches the sectors rule
 		CRASH_COND((block_offset - _blocks_begin_offset) % _header.format.sector_size != 0);
 
-		VoxelBlockSerializerInternal::SerializeResult res = serializer.serialize_and_compress(**block);
+		VoxelBlockSerializerInternal::SerializeResult res = serializer.serialize_and_compress(block);
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
 		f->store_32(res.data.size());
 		const unsigned int written_size = sizeof(int) + res.data.size();
@@ -388,7 +389,7 @@ Error VoxelRegionFile::save_block(Vector3i position, Ref<VoxelBuffer> block, Vox
 		const int old_sector_count = block_info.get_sector_count();
 		CRASH_COND(old_sector_count < 1);
 
-		VoxelBlockSerializerInternal::SerializeResult res = serializer.serialize_and_compress(**block);
+		VoxelBlockSerializerInternal::SerializeResult res = serializer.serialize_and_compress(block);
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
 		const std::vector<uint8_t> &data = res.data;
 		const int written_size = sizeof(int) + data.size();

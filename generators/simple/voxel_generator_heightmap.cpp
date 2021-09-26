@@ -14,7 +14,7 @@ void VoxelGeneratorHeightmap::set_channel(VoxelBuffer::ChannelId channel) {
 	{
 		RWLockWrite wlock(_parameters_lock);
 		if (_parameters.channel != channel) {
-			_parameters.channel = channel;
+			_parameters.channel = VoxelBufferInternal::ChannelId(channel);
 			changed = true;
 		}
 	}
@@ -25,7 +25,7 @@ void VoxelGeneratorHeightmap::set_channel(VoxelBuffer::ChannelId channel) {
 
 VoxelBuffer::ChannelId VoxelGeneratorHeightmap::get_channel() const {
 	RWLockRead rlock(_parameters_lock);
-	return _parameters.channel;
+	return VoxelBuffer::ChannelId(_parameters.channel);
 }
 
 int VoxelGeneratorHeightmap::get_used_channels_mask() const {

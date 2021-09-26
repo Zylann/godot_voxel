@@ -41,8 +41,9 @@ void VoxelGeneratorNoise::_on_noise_changed() {
 	_parameters.noise = _noise->duplicate();
 }
 
-void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId channel) {
-	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
+void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBuffer::MAX_CHANNELS);
+	VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::ChannelId(p_channel);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);
@@ -58,7 +59,7 @@ void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId channel) {
 
 VoxelBuffer::ChannelId VoxelGeneratorNoise::get_channel() const {
 	RWLockRead rlock(_parameters_lock);
-	return _parameters.channel;
+	return VoxelBuffer::ChannelId(_parameters.channel);
 }
 
 int VoxelGeneratorNoise::get_used_channels_mask() const {
@@ -127,8 +128,6 @@ static inline float get_shaped_noise(OpenSimplexNoise &noise, float x, float y, 
 }
 
 VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelBlockRequest &input) {
-	ERR_FAIL_COND_V(input.voxel_buffer.is_null(), Result());
-
 	Parameters params;
 	{
 		RWLockRead rlock(_parameters_lock);
@@ -138,7 +137,7 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelBlockRequest &in
 	ERR_FAIL_COND_V(params.noise.is_null(), Result());
 
 	OpenSimplexNoise &noise = **params.noise;
-	VoxelBuffer &buffer = **input.voxel_buffer;
+	VoxelBufferInternal &buffer = input.voxel_buffer;
 	Vector3i origin_in_voxels = input.origin_in_voxels;
 	int lod = input.lod;
 
@@ -154,22 +153,22 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelBlockRequest &in
 
 	if (origin_in_voxels.y >= isosurface_upper_bound) {
 		// Fill with air
-		if (params.channel == VoxelBuffer::CHANNEL_SDF) {
+		if (params.channel == VoxelBufferInternal::CHANNEL_SDF) {
 			buffer.clear_channel_f(params.channel, 100.0);
-		} else if (params.channel == VoxelBuffer::CHANNEL_TYPE) {
+		} else if (params.channel == VoxelBufferInternal::CHANNEL_TYPE) {
 			buffer.clear_channel(params.channel, air_type);
-		} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
+		} else if (params.channel == VoxelBufferInternal::CHANNEL_COLOR) {
 			buffer.clear_channel(params.channel, air_color);
 		}
 		result.max_lod_hint = true;
 
 	} else if (origin_in_voxels.y + (buffer.get_size().y << lod) < isosurface_lower_bound) {
 		// Fill with matter
-		if (params.channel == VoxelBuffer::CHANNEL_SDF) {
+		if (params.channel == VoxelBufferInternal::CHANNEL_SDF) {
 			buffer.clear_channel_f(params.channel, -100.0);
-		} else if (params.channel == VoxelBuffer::CHANNEL_TYPE) {
+		} else if (params.channel == VoxelBufferInternal::CHANNEL_TYPE) {
 			buffer.clear_channel(params.channel, matter_type);
-		} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
+		} else if (params.channel == VoxelBufferInternal::CHANNEL_COLOR) {
 			buffer.clear_channel(params.channel, matter_color);
 		}
 		result.max_lod_hint = true;
@@ -191,22 +190,22 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelBlockRequest &in
 
 					if (ly < isosurface_lower_bound) {
 						// Below is only matter
-						if (params.channel == VoxelBuffer::CHANNEL_SDF) {
+						if (params.channel == VoxelBufferInternal::CHANNEL_SDF) {
 							buffer.set_voxel_f(-1, x, y, z, params.channel);
-						} else if (params.channel == VoxelBuffer::CHANNEL_TYPE) {
+						} else if (params.channel == VoxelBufferInternal::CHANNEL_TYPE) {
 							buffer.set_voxel(matter_type, x, y, z, params.channel);
-						} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
+						} else if (params.channel == VoxelBufferInternal::CHANNEL_COLOR) {
 							buffer.set_voxel(matter_color, x, y, z, params.channel);
 						}
 						continue;
 
 					} else if (ly >= isosurface_upper_bound) {
 						// Above is only air
-						if (params.channel == VoxelBuffer::CHANNEL_SDF) {
+						if (params.channel == VoxelBufferInternal::CHANNEL_SDF) {
 							buffer.set_voxel_f(1, x, y, z, params.channel);
-						} else if (params.channel == VoxelBuffer::CHANNEL_TYPE) {
+						} else if (params.channel == VoxelBufferInternal::CHANNEL_TYPE) {
 							buffer.set_voxel(air_type, x, y, z, params.channel);
-						} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
+						} else if (params.channel == VoxelBufferInternal::CHANNEL_COLOR) {
 							buffer.set_voxel(air_color, x, y, z, params.channel);
 						}
 						continue;
@@ -220,11 +219,11 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelBlockRequest &in
 					float n = get_shaped_noise(noise, lx, ly, lz, one_minus_persistence, bias);
 					float d = (n + bias) * iso_scale;
 
-					if (params.channel == VoxelBuffer::CHANNEL_SDF) {
+					if (params.channel == VoxelBufferInternal::CHANNEL_SDF) {
 						buffer.set_voxel_f(d, x, y, z, params.channel);
-					} else if (params.channel == VoxelBuffer::CHANNEL_TYPE && d < 0) {
+					} else if (params.channel == VoxelBufferInternal::CHANNEL_TYPE && d < 0) {
 						buffer.set_voxel(matter_type, x, y, z, params.channel);
-					} else if (params.channel == VoxelBuffer::CHANNEL_COLOR && d < 0) {
+					} else if (params.channel == VoxelBufferInternal::CHANNEL_COLOR && d < 0) {
 						buffer.set_voxel(matter_color, x, y, z, params.channel);
 					}
 				}

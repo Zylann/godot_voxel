@@ -82,7 +82,7 @@ public:
 	bool is_area_editable(Box3i p_box) const;
 	uint64_t get_voxel(Vector3i pos, unsigned int channel, uint64_t defval) const;
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
-	void copy(Vector3i p_origin_voxels, VoxelBuffer &dst_buffer, uint8_t channels_mask) const;
+	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask) const;
 
 	template <typename F>
 	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
@@ -151,7 +151,7 @@ public:
 	void remesh_all_blocks() override;
 
 	struct BlockToSave {
-		Ref<VoxelBuffer> voxels;
+		std::shared_ptr<VoxelBufferInternal> voxels;
 		Vector3i position;
 		uint8_t lod;
 	};

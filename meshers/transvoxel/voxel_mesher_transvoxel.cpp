@@ -28,11 +28,11 @@ Ref<Resource> VoxelMesherTransvoxel::duplicate(bool p_subresources) const {
 
 int VoxelMesherTransvoxel::get_used_channels_mask() const {
 	if (_texture_mode == TEXTURES_BLEND_4_OVER_16) {
-		return (1 << VoxelBuffer::CHANNEL_SDF) |
-			   (1 << VoxelBuffer::CHANNEL_INDICES) |
-			   (1 << VoxelBuffer::CHANNEL_WEIGHTS);
+		return (1 << VoxelBufferInternal::CHANNEL_SDF) |
+			   (1 << VoxelBufferInternal::CHANNEL_INDICES) |
+			   (1 << VoxelBufferInternal::CHANNEL_WEIGHTS);
 	}
-	return (1 << VoxelBuffer::CHANNEL_SDF);
+	return (1 << VoxelBufferInternal::CHANNEL_SDF);
 }
 
 void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const Transvoxel::MeshArrays &src) {
@@ -132,7 +132,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	static thread_local Transvoxel::MeshArrays s_mesh_arrays;
 	static thread_local Transvoxel::MeshArrays s_simplified_mesh_arrays;
 
-	const int sdf_channel = VoxelBuffer::CHANNEL_SDF;
+	const int sdf_channel = VoxelBufferInternal::CHANNEL_SDF;
 
 	// Initialize dynamic memory:
 	// These vectors are re-used.
@@ -140,7 +140,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// Once capacity is big enough, no more memory should be allocated
 	s_mesh_arrays.clear();
 
-	const VoxelBuffer &voxels = input.voxels;
+	const VoxelBufferInternal &voxels = input.voxels;
 	if (voxels.is_uniform(sdf_channel)) {
 		// There won't be anything to polygonize since the SDF has no variations, so it can't cross the isolevel
 		return;
@@ -207,7 +207,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> vox
 
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
-	if (voxels->is_uniform(VoxelBuffer::CHANNEL_SDF)) {
+	if (voxels->is_uniform(VoxelBufferInternal::CHANNEL_SDF)) {
 		// Uniform SDF won't produce any surface
 		return Ref<ArrayMesh>();
 	}
@@ -216,7 +216,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> vox
 	// For now we can't support proper texture indices in this specific case
 	Transvoxel::DefaultTextureIndicesData default_texture_indices_data;
 	default_texture_indices_data.use = false;
-	Transvoxel::build_transition_mesh(**voxels, VoxelBuffer::CHANNEL_SDF, direction, 0,
+	Transvoxel::build_transition_mesh(voxels->get_buffer(), VoxelBufferInternal::CHANNEL_SDF, direction, 0,
 			static_cast<Transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays,
 			default_texture_indices_data);
 

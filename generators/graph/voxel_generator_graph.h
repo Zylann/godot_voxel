@@ -182,8 +182,8 @@ private:
 	};
 
 	static void gather_indices_and_weights(Span<const WeightOutput> weight_outputs,
-			const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry, VoxelBuffer &out_voxel_buffer,
-			FixedArray<uint8_t, 4> spare_indices);
+			const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
+			VoxelBufferInternal &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices);
 
 	static void _bind_methods();
 

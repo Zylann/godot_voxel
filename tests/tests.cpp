@@ -71,19 +71,18 @@ void test_box3i_for_inner_outline() {
 void test_voxel_data_map_paste_fill() {
 	static const int voxel_value = 1;
 	static const int default_value = 0;
-	static const int channel = VoxelBuffer::CHANNEL_TYPE;
+	static const int channel = VoxelBufferInternal::CHANNEL_TYPE;
 
-	Ref<VoxelBuffer> buffer;
-	buffer.instance();
-	buffer->create(32, 16, 32);
-	buffer->fill(voxel_value, channel);
+	VoxelBufferInternal buffer;
+	buffer.create(32, 16, 32);
+	buffer.fill(voxel_value, channel);
 
 	VoxelDataMap map;
 	map.create(4, 0);
 
-	const Box3i box(Vector3i(10, 10, 10), buffer->get_size());
+	const Box3i box(Vector3i(10, 10, 10), buffer.get_size());
 
-	map.paste(box.pos, **buffer, (1 << channel), false, 0, true);
+	map.paste(box.pos, buffer, (1 << channel), false, 0, true);
 
 	// All voxels in the area must be as pasted
 	const bool is_match = box.all_cells_match([&map](const Vector3i &pos) {
@@ -108,17 +107,16 @@ void test_voxel_data_map_paste_mask() {
 	static const int voxel_value = 1;
 	static const int masked_value = 2;
 	static const int default_value = 0;
-	static const int channel = VoxelBuffer::CHANNEL_TYPE;
+	static const int channel = VoxelBufferInternal::CHANNEL_TYPE;
 
-	Ref<VoxelBuffer> buffer;
-	buffer.instance();
-	buffer->create(32, 16, 32);
+	VoxelBufferInternal buffer;
+	buffer.create(32, 16, 32);
 	// Fill the inside of the buffer with a value, and outline it with another value, which we'll use as mask
-	buffer->fill(masked_value, channel);
-	for (int z = 1; z < buffer->get_size().z - 1; ++z) {
-		for (int x = 1; x < buffer->get_size().x - 1; ++x) {
-			for (int y = 1; y < buffer->get_size().y - 1; ++y) {
-				buffer->set_voxel(voxel_value, x, y, z, channel);
+	buffer.fill(masked_value, channel);
+	for (int z = 1; z < buffer.get_size().z - 1; ++z) {
+		for (int x = 1; x < buffer.get_size().x - 1; ++x) {
+			for (int y = 1; y < buffer.get_size().y - 1; ++y) {
+				buffer.set_voxel(voxel_value, x, y, z, channel);
 			}
 		}
 	}
@@ -126,9 +124,9 @@ void test_voxel_data_map_paste_mask() {
 	VoxelDataMap map;
 	map.create(4, 0);
 
-	const Box3i box(Vector3i(10, 10, 10), buffer->get_size());
+	const Box3i box(Vector3i(10, 10, 10), buffer.get_size());
 
-	map.paste(box.pos, **buffer, (1 << channel), true, masked_value, true);
+	map.paste(box.pos, buffer, (1 << channel), true, masked_value, true);
 
 	// All voxels in the area must be as pasted. Ignoring the outline.
 	const bool is_match = box.padded(-1).all_cells_match([&map](const Vector3i &pos) {
@@ -181,33 +179,31 @@ void test_voxel_data_map_paste_mask() {
 void test_voxel_data_map_copy() {
 	static const int voxel_value = 1;
 	static const int default_value = 0;
-	static const int channel = VoxelBuffer::CHANNEL_TYPE;
+	static const int channel = VoxelBufferInternal::CHANNEL_TYPE;
 
 	VoxelDataMap map;
 	map.create(4, 0);
 
 	Box3i box(10, 10, 10, 32, 16, 32);
-	Ref<VoxelBuffer> buffer;
-	buffer.instance();
-	buffer->create(box.size);
+	VoxelBufferInternal buffer;
+	buffer.create(box.size);
 
 	// Fill the inside of the buffer with a value, and leave outline to zero,
 	// so our buffer isn't just uniform
-	for (int z = 1; z < buffer->get_size().z - 1; ++z) {
-		for (int x = 1; x < buffer->get_size().x - 1; ++x) {
-			for (int y = 1; y < buffer->get_size().y - 1; ++y) {
-				buffer->set_voxel(voxel_value, x, y, z, channel);
+	for (int z = 1; z < buffer.get_size().z - 1; ++z) {
+		for (int x = 1; x < buffer.get_size().x - 1; ++x) {
+			for (int y = 1; y < buffer.get_size().y - 1; ++y) {
+				buffer.set_voxel(voxel_value, x, y, z, channel);
 			}
 		}
 	}
 
-	map.paste(box.pos, **buffer, (1 << channel), true, default_value, true);
+	map.paste(box.pos, buffer, (1 << channel), true, default_value, true);
 
-	Ref<VoxelBuffer> buffer2;
-	buffer2.instance();
-	buffer2->create(box.size);
+	VoxelBufferInternal buffer2;
+	buffer2.create(box.size);
 
-	map.copy(box.pos, **buffer2, (1 << channel));
+	map.copy(box.pos, buffer2, (1 << channel));
 
 	// for (int y = 0; y < buffer2->get_size().y; ++y) {
 	// 	String line = String("y={0} | ").format(varray(y));
@@ -224,7 +220,7 @@ void test_voxel_data_map_copy() {
 	// 	print_line(line);
 	// }
 
-	ERR_FAIL_COND(!buffer->equals(**buffer2));
+	ERR_FAIL_COND(!buffer.equals(buffer2));
 }
 
 void test_encode_weights_packed_u16() {
@@ -415,11 +411,10 @@ void test_voxel_graph_generator_texturing() {
 		const uint8_t WEIGHT_MAX = 240;
 
 		struct L {
-			static void check_weights(Ref<VoxelBuffer> buffer, Vector3i pos,
+			static void check_weights(VoxelBufferInternal &buffer, Vector3i pos,
 					bool weight0_must_be_1, bool weight1_must_be_1) {
-				ERR_FAIL_COND(buffer.is_null());
-				const uint16_t encoded_indices = buffer->get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);
-				const uint16_t encoded_weights = buffer->get_voxel(pos, VoxelBuffer::CHANNEL_WEIGHTS);
+				const uint16_t encoded_indices = buffer.get_voxel(pos, VoxelBufferInternal::CHANNEL_INDICES);
+				const uint16_t encoded_weights = buffer.get_voxel(pos, VoxelBufferInternal::CHANNEL_WEIGHTS);
 				const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(encoded_indices);
 				const FixedArray<uint8_t, 4> weights = decode_weights_from_packed_u16(encoded_weights);
 				for (unsigned int i = 0; i < indices.size(); ++i) {
@@ -448,14 +443,10 @@ void test_voxel_graph_generator_texturing() {
 				ERR_FAIL_COND(generator.is_null());
 				{
 					// Block centered on origin
-					Ref<VoxelBuffer> buffer;
-					buffer.instance();
-					buffer->create(Vector3i(16, 16, 16));
+					VoxelBufferInternal buffer;
+					buffer.create(Vector3i(16, 16, 16));
 
-					VoxelBlockRequest request;
-					request.lod = 0;
-					request.origin_in_voxels = -buffer->get_size() / 2;
-					request.voxel_buffer = buffer;
+					VoxelBlockRequest request{ buffer, -buffer.get_size() / 2, 0 };
 					generator->generate_block(request);
 
 					L::check_weights(buffer, Vector3i(4, 3, 8), true, false);
@@ -466,26 +457,18 @@ void test_voxel_graph_generator_texturing() {
 					// The point is to check possible bugs due to optimizations.
 
 					// Below 0
-					Ref<VoxelBuffer> buffer0;
+					VoxelBufferInternal buffer0;
 					{
-						buffer0.instance();
-						buffer0->create(Vector3i(16, 16, 16));
-						VoxelBlockRequest request;
-						request.lod = 0;
-						request.origin_in_voxels = Vector3(0, -16, 0);
-						request.voxel_buffer = buffer0;
+						buffer0.create(Vector3i(16, 16, 16));
+						VoxelBlockRequest request{ buffer0, Vector3(0, -16, 0), 0 };
 						generator->generate_block(request);
 					}
 
 					// Above 0
-					Ref<VoxelBuffer> buffer1;
+					VoxelBufferInternal buffer1;
 					{
-						buffer1.instance();
-						buffer1->create(Vector3i(16, 16, 16));
-						VoxelBlockRequest request;
-						request.lod = 0;
-						request.origin_in_voxels = Vector3(0, 0, 0);
-						request.voxel_buffer = buffer1;
+						buffer1.create(Vector3i(16, 16, 16));
+						VoxelBlockRequest request{ buffer1, Vector3(0, 0, 0), 0 };
 						generator->generate_block(request);
 					}
 

@@ -20,6 +20,8 @@ public:
 		}
 	}
 
+	// TODO Optimization: move semantics
+
 	inline T &operator[](unsigned int i) {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(i >= N);

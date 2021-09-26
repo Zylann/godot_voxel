@@ -569,29 +569,20 @@ String VoxelStreamSQLite::get_database_path() const {
 	return _connection_path;
 }
 
-VoxelStream::Result VoxelStreamSQLite::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-	VoxelBlockRequest r;
-	r.lod = lod;
-	r.origin_in_voxels = origin_in_voxels;
-	r.voxel_buffer = out_buffer;
-	Vector<VoxelBlockRequest> requests;
-	Vector<VoxelStream::Result> results;
-	requests.push_back(r);
-	emerge_blocks(requests, results);
+VoxelStream::Result VoxelStreamSQLite::emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+	VoxelBlockRequest r{ out_buffer, origin_in_voxels, lod };
+	Vector<Result> results;
+	emerge_blocks(Span<VoxelBlockRequest>(&r, 1), results);
+	CRASH_COND(results.size() != 1);
 	return results[0];
 }
 
-void VoxelStreamSQLite::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
-	VoxelBlockRequest r;
-	r.voxel_buffer = buffer;
-	r.origin_in_voxels = origin_in_voxels;
-	r.lod = lod;
-	Vector<VoxelBlockRequest> requests;
-	requests.push_back(r);
-	immerge_blocks(requests);
+void VoxelStreamSQLite::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+	VoxelBlockRequest r{ buffer, origin_in_voxels, lod };
+	immerge_blocks(Span<VoxelBlockRequest>(&r, 1));
 }
 
-void VoxelStreamSQLite::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results) {
+void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) {
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Get block size from database
@@ -602,7 +593,7 @@ void VoxelStreamSQLite::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vecto
 	// Check the cache first
 	Vector<int> blocks_to_load;
 	for (int i = 0; i < p_blocks.size(); ++i) {
-		VoxelBlockRequest &wr = p_blocks.write[i];
+		VoxelBlockRequest &wr = p_blocks[i];
 		const Vector3i pos = wr.origin_in_voxels >> bs_po2;
 
 		Ref<VoxelBuffer> vb;
@@ -638,10 +629,9 @@ void VoxelStreamSQLite::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vecto
 		const Result res = con->load_block(loc, _temp_block_data, VoxelStreamSQLiteInternal::VOXELS);
 
 		if (res == RESULT_BLOCK_FOUND) {
-			VoxelBlockRequest &wr = p_blocks.write[ri];
+			VoxelBlockRequest &wr = p_blocks[ri];
 			// TODO Not sure if we should actually expect non-null. There can be legit not found blocks.
-			ERR_FAIL_COND(wr.voxel_buffer.is_null());
-			_voxel_block_serializer.decompress_and_deserialize(_temp_block_data, **wr.voxel_buffer);
+			_voxel_block_serializer.decompress_and_deserialize(_temp_block_data, wr.voxel_buffer);
 		}
 
 		out_results.write[i] = res;
@@ -652,13 +642,13 @@ void VoxelStreamSQLite::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vecto
 	recycle_connection(con);
 }
 
-void VoxelStreamSQLite::immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) {
+void VoxelStreamSQLite::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
 	// TODO Get block size from database
 	const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// First put in cache
 	for (int i = 0; i < p_blocks.size(); ++i) {
-		const VoxelBlockRequest &r = p_blocks[i];
+		VoxelBlockRequest &r = p_blocks[i];
 		const Vector3i pos = r.origin_in_voxels >> bs_po2;
 
 		if (!BlockLocation::validate(pos, r.lod)) {
@@ -763,7 +753,7 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStreamInstanceDataRequest
 
 int VoxelStreamSQLite::get_used_channels_mask() const {
 	// Assuming all, since that stream can store anything.
-	return VoxelBuffer::ALL_CHANNELS_MASK;
+	return VoxelBufferInternal::ALL_CHANNELS_MASK;
 }
 
 void VoxelStreamSQLite::flush_cache() {
@@ -799,13 +789,13 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 
 		// Save voxels
 		if (block.has_voxels) {
-			if (block.voxels.is_valid()) {
-				VoxelBlockSerializerInternal::SerializeResult res = serializer.serialize_and_compress(**block.voxels);
-				ERR_FAIL_COND(!res.success);
-				con->save_block(loc, res.data, VoxelStreamSQLiteInternal::VOXELS);
-			} else {
+			if (block.voxels_deleted) {
 				const std::vector<uint8_t> empty;
 				con->save_block(loc, empty, VoxelStreamSQLiteInternal::VOXELS);
+			} else {
+				VoxelBlockSerializerInternal::SerializeResult res = serializer.serialize_and_compress(block.voxels);
+				ERR_FAIL_COND(!res.success);
+				con->save_block(loc, res.data, VoxelStreamSQLiteInternal::VOXELS);
 			}
 		}
 

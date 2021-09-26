@@ -7,27 +7,28 @@
 #include <unordered_map>
 
 // In-memory database for voxel streams.
-// It allows to cache blocks so we can save to the filesystem less frequently, or quickly reload recent blocks.
+// It allows to cache blocks so we can save to the filesystem later less frequently, or quickly reload recent blocks.
 class VoxelStreamCache {
 public:
 	struct Block {
 		Vector3i position;
 		int lod;
 
-		// Because `voxels` being null has two possible meanings:
-		// - true: Voxel data has been erased
-		// - false: Voxel data should be left untouched
+		// Absence of voxel data can mean two things:
+		// - Voxel data has been erased (use case not really implemented yet, but may happen in the future)
+		// - Voxel data has never been saved over, so should be left untouched
 		bool has_voxels = false;
+		bool voxels_deleted = false;
 
-		Ref<VoxelBuffer> voxels;
+		VoxelBufferInternal voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
 	};
 
 	// Copies cached block into provided buffer
-	bool load_voxel_block(Vector3i position, uint8_t lod_index, Ref<VoxelBuffer> &out_voxels);
+	bool load_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &out_voxels);
 
 	// Stores provided block into the cache. The cache will take ownership of the provided data.
-	void save_voxel_block(Vector3i position, uint8_t lod_index, Ref<VoxelBuffer> voxels);
+	void save_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &voxels);
 
 	// Copies cached data into the provided pointer. A new instance will be made if found.
 	bool load_instance_block(
@@ -54,6 +55,7 @@ public:
 
 private:
 	struct Lod {
+		// Not using pointers for values, since unordered_map does not invalidate pointers to values
 		std::unordered_map<Vector3i, Block> blocks;
 		RWLock rw_lock;
 	};

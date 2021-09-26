@@ -1,7 +1,7 @@
 #ifndef TRANSVOXEL_H
 #define TRANSVOXEL_H
 
-#include "../../storage/voxel_buffer.h"
+#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/fixed_array.h"
 #include "../../util/math/vector3i.h"
 
@@ -114,10 +114,10 @@ struct DefaultTextureIndicesData {
 	bool use;
 };
 
-DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int lod_index,
+DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int lod_index,
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output);
 
-void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int direction, int lod_index,
+void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int direction, int lod_index,
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data);
 

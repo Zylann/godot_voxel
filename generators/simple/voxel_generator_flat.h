@@ -10,7 +10,7 @@ public:
 	VoxelGeneratorFlat();
 	~VoxelGeneratorFlat();
 
-	void set_channel(VoxelBuffer::ChannelId channel);
+	void set_channel(VoxelBuffer::ChannelId p_channel);
 	VoxelBuffer::ChannelId get_channel() const;
 	int get_used_channels_mask() const override;
 
@@ -27,7 +27,7 @@ protected:
 
 private:
 	struct Parameters {
-		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
+		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 		int voxel_type = 1;
 		float height = 0;
 		float iso_scale = 0.1;

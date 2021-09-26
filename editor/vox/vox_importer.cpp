@@ -279,21 +279,20 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 	for (unsigned int model_index = 0; model_index < data.get_model_count(); ++model_index) {
 		const vox::Model &model = data.get_model(model_index);
 
-		Ref<VoxelBuffer> voxels;
-		voxels.instance();
-		voxels->create(model.size + Vector3i(VoxelMesherCubes::PADDING * 2));
-		voxels->decompress_channel(VoxelBuffer::CHANNEL_COLOR);
+		VoxelBufferInternal voxels;
+		voxels.create(model.size + Vector3i(VoxelMesherCubes::PADDING * 2));
+		voxels.decompress_channel(VoxelBuffer::CHANNEL_COLOR);
 
 		Span<uint8_t> dst_color_indices;
-		ERR_FAIL_COND_V(!voxels->get_channel_raw(VoxelBuffer::CHANNEL_COLOR, dst_color_indices), ERR_BUG);
+		ERR_FAIL_COND_V(!voxels.get_channel_raw(VoxelBuffer::CHANNEL_COLOR, dst_color_indices), ERR_BUG);
 		Span<const uint8_t> src_color_indices = to_span_const(model.color_indexes);
-		copy_3d_region_zxy(dst_color_indices, voxels->get_size(), Vector3i(VoxelMesherCubes::PADDING),
+		copy_3d_region_zxy(dst_color_indices, voxels.get_size(), Vector3i(VoxelMesherCubes::PADDING),
 				src_color_indices, model.size, Vector3i(), model.size);
 
 		std::vector<unsigned int> surface_index_to_material;
 		Ref<Image> atlas;
 		Ref<Mesh> mesh = VoxImportUtils::build_mesh(
-				**voxels, **mesher, surface_index_to_material, atlas, p_scale, Vector3());
+				voxels, **mesher, surface_index_to_material, atlas, p_scale, Vector3());
 
 		if (mesh.is_null()) {
 			continue;
@@ -346,7 +345,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 		mesh_info.mesh = mesh;
 		// In MagicaVoxel scene graph, pivots are at the center of models, not at the lower corner.
 		// TODO I don't know if this is correct, but I could not find a reference saying how that pivot should be calculated
-		mesh_info.pivot = (voxels->get_size() / 2 - Vector3i(1)).to_vec3();
+		mesh_info.pivot = (voxels.get_size() / 2 - Vector3i(1)).to_vec3();
 		meshes.write[model_index] = mesh_info;
 	}
 

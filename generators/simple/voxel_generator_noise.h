@@ -11,7 +11,7 @@ public:
 	VoxelGeneratorNoise();
 	~VoxelGeneratorNoise();
 
-	void set_channel(VoxelBuffer::ChannelId channel);
+	void set_channel(VoxelBuffer::ChannelId p_channel);
 	VoxelBuffer::ChannelId get_channel() const;
 	int get_used_channels_mask() const override;
 
@@ -35,7 +35,7 @@ private:
 	Ref<OpenSimplexNoise> _noise;
 
 	struct Parameters {
-		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
+		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 		Ref<OpenSimplexNoise> noise;
 		float height_start = 0;
 		float height_range = 300;

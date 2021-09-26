@@ -6,8 +6,9 @@ VoxelGeneratorFlat::VoxelGeneratorFlat() {
 VoxelGeneratorFlat::~VoxelGeneratorFlat() {
 }
 
-void VoxelGeneratorFlat::set_channel(VoxelBuffer::ChannelId channel) {
-	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
+void VoxelGeneratorFlat::set_channel(VoxelBuffer::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
+	VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::ChannelId(p_channel);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);
@@ -23,7 +24,7 @@ void VoxelGeneratorFlat::set_channel(VoxelBuffer::ChannelId channel) {
 
 VoxelBuffer::ChannelId VoxelGeneratorFlat::get_channel() const {
 	RWLockRead rlock(_parameters_lock);
-	return _parameters.channel;
+	return VoxelBuffer::ChannelId(_parameters.channel);
 }
 
 int VoxelGeneratorFlat::get_used_channels_mask() const {
@@ -53,7 +54,6 @@ float VoxelGeneratorFlat::get_height() const {
 
 VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelBlockRequest &input) {
 	Result result;
-	ERR_FAIL_COND_V(input.voxel_buffer.is_null(), result);
 
 	Parameters params;
 	{
@@ -61,7 +61,7 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelBlockRequest &inp
 		params = _parameters;
 	}
 
-	VoxelBuffer &out_buffer = **input.voxel_buffer;
+	VoxelBufferInternal &out_buffer = input.voxel_buffer;
 	const Vector3i origin = input.origin_in_voxels;
 	const int channel = params.channel;
 	const Vector3i bs = out_buffer.get_size();

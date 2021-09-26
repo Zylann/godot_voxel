@@ -3,6 +3,7 @@
 
 #include <core/reference.h>
 #include <core/variant.h>
+#include <memory>
 
 class Mesh;
 class ConcavePolygonShape;
@@ -34,6 +35,12 @@ template <typename From_T, typename To_T>
 inline bool try_get_as(Ref<From_T> from, Ref<To_T> &to) {
 	to = from;
 	return to.is_valid();
+}
+
+template <typename T>
+inline std::shared_ptr<T> gd_make_shared() {
+	// std::make_shared() apparently wont allow us to specify custom new and delete
+	return std::shared_ptr<T>(memnew(T), memdelete<T>);
 }
 
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

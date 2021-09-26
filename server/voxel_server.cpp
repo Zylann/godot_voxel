@@ -1,8 +1,10 @@
 #include "voxel_server.h"
 #include "../constants/voxel_constants.h"
 #include "../util/funcs.h"
+#include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
+
 #include <core/os/memory.h>
 #include <scene/main/viewport.h>
 #include <thread>
@@ -14,12 +16,6 @@ int g_debug_generate_tasks_count = 0;
 int g_debug_stream_tasks_count = 0;
 int g_debug_mesh_tasks_count = 0;
 } // namespace
-
-template <typename T>
-inline std::shared_ptr<T> gd_make_shared() {
-	// std::make_shared() apparently wont allow us to specify custom new and delete
-	return std::shared_ptr<T>(memnew(T), memdelete<T>);
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -379,7 +375,9 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 	}
 }
 
-void VoxelServer::request_voxel_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod) {
+void VoxelServer::request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels,
+		Vector3i block_pos, int lod) {
+	//
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
@@ -443,10 +441,10 @@ void VoxelServer::request_block_save_from_generate_request(BlockGenerateRequest 
 	PRINT_VERBOSE(String("Requesting save of generator output for block {0} lod {1}")
 						  .format(varray(src.position.to_vec3(), src.lod)));
 
-	ERR_FAIL_COND(src.voxels.is_null());
-
 	BlockDataRequest *r = memnew(BlockDataRequest());
-	r->voxels = src.voxels->duplicate(true);
+	// TODO Optimization: `r->voxels` doesnt actually need to be shared
+	r->voxels = gd_make_shared<VoxelBufferInternal>();
+	src.voxels->duplicate_to(*r->voxels, true);
 	r->volume_id = src.volume_id;
 	r->position = src.position;
 	r->lod = src.lod;
@@ -646,7 +644,8 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 
 	switch (type) {
 		case TYPE_LOAD: {
-			voxels.instance();
+			ERR_FAIL_COND(voxels != nullptr);
+			voxels = gd_make_shared<VoxelBufferInternal>();
 			voxels->create(block_size, block_size, block_size);
 
 			// TODO We should consider batching this again, but it needs to be done carefully.
@@ -655,7 +654,7 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 
 			// TODO Assign max_lod_hint when available
 
-			const VoxelStream::Result voxel_result = stream->emerge_block(voxels, origin_in_voxels, lod);
+			const VoxelStream::Result voxel_result = stream->emerge_block(*voxels, origin_in_voxels, lod);
 
 			if (voxel_result == VoxelStream::RESULT_ERROR) {
 				ERR_PRINT("Error loading voxel block");
@@ -697,13 +696,14 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 
 		case TYPE_SAVE: {
 			if (request_voxels) {
-				Ref<VoxelBuffer> voxels_copy;
-				// TODO Is that copy necessary? It's possible it was already done while issuing the request
-				if (voxels.is_valid()) {
+				ERR_FAIL_COND(voxels == nullptr);
+				VoxelBufferInternal voxels_copy;
+				{
 					RWLockRead lock(voxels->get_lock());
-					voxels_copy = voxels->duplicate(true);
+					// TODO Optimization: is that copy necessary? It's possible it was already done while issuing the request
+					voxels->duplicate_to(voxels_copy, true);
 				}
-				voxels.unref();
+				voxels = nullptr;
 				stream->immerge_block(voxels_copy, origin_in_voxels, lod);
 			}
 
@@ -802,12 +802,12 @@ void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
 
 	const Vector3i origin_in_voxels = (position << lod) * block_size;
 
-	if (voxels.is_null()) {
-		voxels.instance();
+	if (voxels == nullptr) {
+		voxels = gd_make_shared<VoxelBufferInternal>();
 		voxels->create(block_size, block_size, block_size);
 	}
 
-	VoxelBlockRequest r{ voxels, origin_in_voxels, lod };
+	VoxelBlockRequest r{ *voxels, origin_in_voxels, lod };
 	const VoxelGenerator::Result result = generator->generate_block(r);
 	max_lod_hint = result.max_lod_hint;
 
@@ -861,7 +861,7 @@ void VoxelServer::BlockGenerateRequest::apply_result() {
 // Takes a list of blocks and interprets it as a cube of blocks centered around the area we want to create a mesh from.
 // Voxels from central blocks are copied, and part of side blocks are also copied so we get a temporary buffer
 // which includes enough neighbors for the mesher to avoid doing bound checks.
-static void copy_block_and_neighbors(Span<Ref<VoxelBuffer>> blocks, VoxelBuffer &dst,
+static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
 		int min_padding, int max_padding, int channels_mask) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -894,8 +894,8 @@ static void copy_block_and_neighbors(Span<Ref<VoxelBuffer>> blocks, VoxelBuffer 
 	// Pick anchor block, usually within the central part of the cube (that block must be valid)
 	const unsigned int anchor_buffer_index = edge_size * edge_size + edge_size + 1;
 
-	Ref<VoxelBuffer> central_buffer = blocks[anchor_buffer_index];
-	ERR_FAIL_COND_MSG(central_buffer.is_null(), "Central buffer must be valid");
+	std::shared_ptr<VoxelBufferInternal> &central_buffer = blocks[anchor_buffer_index];
+	ERR_FAIL_COND_MSG(central_buffer == nullptr, "Central buffer must be valid");
 	ERR_FAIL_COND_MSG(central_buffer->get_size().all_members_equal() == false, "Central buffer must be cubic");
 	const int data_block_size = central_buffer->get_size().x;
 	const int mesh_block_size = data_block_size * mesh_block_size_factor;
@@ -916,10 +916,10 @@ static void copy_block_and_neighbors(Span<Ref<VoxelBuffer>> blocks, VoxelBuffer 
 		for (int x = -1; x < edge_size - 1; ++x) {
 			for (int y = -1; y < edge_size - 1; ++y) {
 				const Vector3i offset = data_block_size * Vector3i(x, y, z);
-				Ref<VoxelBuffer> src = blocks[i];
+				const std::shared_ptr<VoxelBufferInternal> &src = blocks[i];
 				++i;
 
-				if (src.is_null()) {
+				if (src == nullptr) {
 					continue;
 				}
 
@@ -929,7 +929,7 @@ static void copy_block_and_neighbors(Span<Ref<VoxelBuffer>> blocks, VoxelBuffer 
 				{
 					RWLockRead read(src->get_lock());
 					for (unsigned int ci = 0; ci < channels_count; ++ci) {
-						dst.copy_from(**src, src_min, src_max, Vector3(), channels[ci]);
+						dst.copy_from(*src, src_min, src_max, Vector3(), channels[ci]);
 					}
 				}
 			}
@@ -955,13 +955,11 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 	const unsigned int max_padding = mesher->get_maximum_padding();
 
 	// TODO Cache?
-	Ref<VoxelBuffer> voxels;
-	voxels.instance();
+	VoxelBufferInternal voxels;
 	copy_block_and_neighbors(to_span(blocks, blocks_count),
-			**voxels, min_padding, max_padding, mesher->get_used_channels_mask());
+			voxels, min_padding, max_padding, mesher->get_used_channels_mask());
 
-	VoxelMesher::Input input = { **voxels, lod };
-
+	const VoxelMesher::Input input = { voxels, lod };
 	mesher->build(surfaces_output, input);
 
 	has_run = true;

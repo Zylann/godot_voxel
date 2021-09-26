@@ -419,7 +419,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// - Slower
 	// => Could be implemented in a separate class?
 
-	const VoxelBuffer &voxels = input.voxels;
+	const VoxelBufferInternal &voxels = input.voxels;
 #ifdef TOOLS_ENABLED
 	if (input.lod != 0) {
 		WARN_PRINT("VoxelMesherBlocky received lod != 0, it is not supported");
@@ -433,7 +433,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// That means we can use raw pointers to voxel data inside instead of using the higher-level getters,
 	// and then save a lot of time.
 
-	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+	if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
 		// All voxels have the same type.
 		// If it's all air, nothing to do. If it's all cubes, nothing to do either.
 		// TODO Handle edge case of uniform block with non-cubic voxels!
@@ -441,7 +441,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		// decompress into a backing array to still allow the use of the same algorithm.
 		return;
 
-	} else if (voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE) {
+	} else if (voxels.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
 		// No other form of compression is allowed
 		ERR_PRINT("VoxelMesherBlocky received unsupported voxel compression");
 		return;
@@ -465,7 +465,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	}
 
 	const Vector3i block_size = voxels.get_size();
-	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
+	const VoxelBufferInternal::Depth channel_depth = voxels.get_channel_depth(channel);
 
 	{
 		// We can only access baked data. Only this data is made for multithreaded access.
@@ -473,12 +473,12 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		const VoxelLibrary::BakedData &library_baked_data = params.library->get_baked_data();
 
 		switch (channel_depth) {
-			case VoxelBuffer::DEPTH_8_BIT:
+			case VoxelBufferInternal::DEPTH_8_BIT:
 				generate_blocky_mesh(cache.arrays_per_material, raw_channel,
 						block_size, library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
 				break;
 
-			case VoxelBuffer::DEPTH_16_BIT:
+			case VoxelBufferInternal::DEPTH_16_BIT:
 				generate_blocky_mesh(cache.arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(),
 						block_size, library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
 				break;

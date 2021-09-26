@@ -7,15 +7,23 @@ VoxelGeneratorScript::VoxelGeneratorScript() {
 
 VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelBlockRequest &input) {
 	Result result;
-	ERR_FAIL_COND_V(input.voxel_buffer.is_null(), result);
 	Variant ret;
+	// Create a temporary wrapper so Godot can pass it to scripts
+	Ref<VoxelBuffer> buffer_wrapper;
+	buffer_wrapper.instance();
+	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
+	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());
 	try_call_script(this, VoxelStringNames::get_singleton()->_generate_block,
-			input.voxel_buffer, input.origin_in_voxels.to_vec3(), input.lod, &ret);
+			buffer_wrapper, input.origin_in_voxels.to_vec3(), input.lod, &ret);
+	// The wrapper is discarded
+	buffer_wrapper->get_buffer().move_to(input.voxel_buffer);
+
 	// We may expose this to scripts the day it actually gets used
 	// if (ret.get_type() == Variant::DICTIONARY) {
 	// 	Dictionary d = ret;
 	// 	result.max_lod_hint = d.get("max_lod_hint", false);
 	// }
+
 	return result;
 }
 

@@ -59,7 +59,7 @@ public:
 		};
 
 		Type type;
-		Ref<VoxelBuffer> voxels;
+		std::shared_ptr<VoxelBufferInternal> voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
 		Vector3i position;
 		uint8_t lod;
@@ -69,7 +69,7 @@ public:
 
 	struct BlockMeshInput {
 		// Moore area ordered by forward XYZ iteration
-		FixedArray<Ref<VoxelBuffer>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> data_blocks;
+		FixedArray<std::shared_ptr<VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> data_blocks;
 		unsigned int data_blocks_count = 0;
 		Vector3i render_block_position;
 		uint8_t lod = 0;
@@ -78,7 +78,6 @@ public:
 	struct ReceptionBuffers {
 		void (*mesh_output_callback)(void *, const BlockMeshOutput &) = nullptr;
 		void *callback_data = nullptr;
-		//std::vector<BlockMeshOutput> mesh_output;
 		std::vector<BlockDataOutput> data_output;
 	};
 
@@ -119,7 +118,8 @@ public:
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, const BlockMeshInput &input);
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
-	void request_voxel_block_save(uint32_t volume_id, Ref<VoxelBuffer> voxels, Vector3i block_pos, int lod);
+	void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos,
+			int lod);
 	void request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
 			Vector3i block_pos, int lod);
 	void remove_volume(uint32_t volume_id);
@@ -296,7 +296,7 @@ private:
 		bool is_cancelled() override;
 		void apply_result() override;
 
-		Ref<VoxelBuffer> voxels;
+		std::shared_ptr<VoxelBufferInternal> voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
 		Vector3i position;
 		uint32_t volume_id;
@@ -323,7 +323,7 @@ private:
 		bool is_cancelled() override;
 		void apply_result() override;
 
-		Ref<VoxelBuffer> voxels;
+		std::shared_ptr<VoxelBufferInternal> voxels;
 		Vector3i position;
 		uint32_t volume_id;
 		uint8_t lod;
@@ -345,7 +345,7 @@ private:
 		bool is_cancelled() override;
 		void apply_result() override;
 
-		FixedArray<Ref<VoxelBuffer>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
+		FixedArray<std::shared_ptr<VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
 		Vector3i position;
 		uint32_t volume_id;
 		uint8_t lod;

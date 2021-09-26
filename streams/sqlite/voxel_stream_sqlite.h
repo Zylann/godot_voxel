@@ -21,11 +21,11 @@ public:
 	void set_database_path(String path);
 	String get_database_path() const;
 
-	Result emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) override;
+	Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
+	void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
 
-	void emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results) override;
-	void immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) override;
+	void emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) override;
+	void immerge_blocks(Span<VoxelBlockRequest> p_blocks) override;
 
 	bool supports_instance_blocks() const override;
 	void load_instance_blocks(

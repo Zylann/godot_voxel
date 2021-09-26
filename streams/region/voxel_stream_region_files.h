@@ -24,11 +24,11 @@ public:
 	VoxelStreamRegionFiles();
 	~VoxelStreamRegionFiles();
 
-	Result emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) override;
+	Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
+	void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
 
-	void emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results) override;
-	void immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) override;
+	void emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) override;
+	void immerge_blocks(Span<VoxelBlockRequest> p_blocks) override;
 
 	int get_used_channels_mask() const override;
 
@@ -65,8 +65,8 @@ private:
 		EMERGE_FAILED
 	};
 
-	EmergeResult _emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
-	void _immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod);
+	EmergeResult _emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
+	void _immerge_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod);
 
 	VoxelFileResult save_meta();
 	VoxelFileResult load_meta();
@@ -85,7 +85,7 @@ private:
 		uint8_t lod_count = 0;
 		uint8_t block_size_po2 = 0; // How many voxels in a cubic block
 		uint8_t region_size_po2 = 0; // How many blocks in one cubic region
-		FixedArray<VoxelBuffer::Depth, VoxelBuffer::MAX_CHANNELS> channel_depths;
+		FixedArray<VoxelBufferInternal::Depth, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
 		uint32_t sector_size = 0; // Blocks are stored at offsets multiple of that size
 	};
 

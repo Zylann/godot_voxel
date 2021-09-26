@@ -2,22 +2,30 @@
 #include "../constants/voxel_string_names.h"
 #include "../util/godot/funcs.h"
 
-VoxelStream::Result VoxelStreamScript::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
+VoxelStream::Result VoxelStreamScript::emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	Variant output;
+	// Create a temporary wrapper so Godot can pass it to scripts
+	Ref<VoxelBuffer> buffer_wrapper;
+	buffer_wrapper.instance();
+	buffer_wrapper->get_buffer().copy_format(out_buffer);
+	buffer_wrapper->get_buffer().create(out_buffer.get_size());
 	if (try_call_script(this, VoxelStringNames::get_singleton()->_emerge_block,
-				out_buffer, origin_in_voxels.to_vec3(), lod, &output)) {
+				buffer_wrapper, origin_in_voxels.to_vec3(), lod, &output)) {
 		int res = output;
 		ERR_FAIL_INDEX_V(res, _RESULT_COUNT, RESULT_ERROR);
 		return static_cast<Result>(res);
 	}
+	// The wrapper is discarded
+	buffer_wrapper->get_buffer().move_to(out_buffer);
 	return RESULT_ERROR;
 }
 
-void VoxelStreamScript::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
-	ERR_FAIL_COND(buffer.is_null());
+void VoxelStreamScript::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+	Ref<VoxelBuffer> buffer_wrapper;
+	buffer_wrapper.instance();
+	buffer.duplicate_to(buffer_wrapper->get_buffer(), true);
 	try_call_script(this, VoxelStringNames::get_singleton()->_immerge_block,
-			buffer, origin_in_voxels.to_vec3(), lod, nullptr);
+			buffer_wrapper, origin_in_voxels.to_vec3(), lod, nullptr);
 }
 
 int VoxelStreamScript::get_used_channels_mask() const {

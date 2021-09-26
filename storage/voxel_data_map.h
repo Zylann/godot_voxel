@@ -50,20 +50,20 @@ public:
 	int get_voxel(Vector3i pos, unsigned int c = 0) const;
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
 
-	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_SDF) const;
-	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_SDF);
+	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBufferInternal::CHANNEL_SDF) const;
+	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBufferInternal::CHANNEL_SDF);
 
 	void set_default_voxel(int value, unsigned int channel = 0);
 	int get_default_voxel(unsigned int channel = 0);
 
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
-	void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const;
+	void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const;
 
-	void paste(Vector3i min_pos, VoxelBuffer &src_buffer, unsigned int channels_mask, bool use_mask, uint64_t mask_value,
-			bool create_new_blocks);
+	void paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
+			uint64_t mask_value, bool create_new_blocks);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
-	VoxelDataBlock *set_block_buffer(Vector3i bpos, Ref<VoxelBuffer> buffer);
+	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer);
 
 	struct NoAction {
 		inline void operator()(VoxelDataBlock *block) {}
@@ -127,7 +127,7 @@ public:
 				const Vector3i block_origin = block_to_voxel(block_pos);
 				Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
 				local_box.clip(Box3i(Vector3i(), block_size));
-				block->get_voxels()->write_box(local_box, channel, action, block_origin);
+				block->get_voxels().write_box(local_box, channel, action, block_origin);
 			}
 		});
 	}
@@ -143,7 +143,7 @@ public:
 				const Vector3i block_origin = block_to_voxel(block_pos);
 				Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
 				local_box.clip(Box3i(Vector3i(), block_size));
-				block->get_voxels()->write_box_2_template<F, uint16_t, uint16_t>(
+				block->get_voxels().write_box_2_template<F, uint16_t, uint16_t>(
 						local_box, channel0, channel1, action, block_origin);
 			}
 		});
@@ -159,7 +159,7 @@ private:
 
 private:
 	// Voxel values that will be returned if access is out of map bounds
-	FixedArray<uint64_t, VoxelBuffer::MAX_CHANNELS> _default_voxel;
+	FixedArray<uint64_t, VoxelBufferInternal::MAX_CHANNELS> _default_voxel;
 
 	// Blocks stored with a spatial hash in all 3D directions.
 	// RELATIONSHIP = 2 because it delivers better performance with this kind of key and hash (less collisions).

@@ -1,4 +1,5 @@
 #include "vox_import_funcs.h"
+//#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/godot/funcs.h"
 
 namespace VoxImportUtils {
@@ -29,7 +30,7 @@ static void offset_surface(Array &surface, Vector3 offset) {
 	surface[Mesh::ARRAY_VERTEX] = positions;
 }
 
-Ref<Mesh> build_mesh(VoxelBuffer &voxels, VoxelMesher &mesher,
+Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 		std::vector<unsigned int> &surface_index_to_material, Ref<Image> &out_atlas, float p_scale, Vector3 p_offset) {
 	//
 	VoxelMesher::Output output;

@@ -89,7 +89,7 @@ struct BeforeUnloadDataAction {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelLodTerrain::BlockToSave b;
 			// We don't copy since the block will be unloaded anyways
-			b.voxels = block->get_voxels();
+			b.voxels = block->get_voxels_shared();
 			b.position = block->position;
 			b.lod = block->lod_index;
 			blocks_to_save.push_back(b);
@@ -121,8 +121,11 @@ struct ScheduleSaveAction {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelLodTerrain::BlockToSave b;
 
-			RWLockRead lock(block->get_voxels()->get_lock());
-			b.voxels = block->get_voxels()->duplicate(true);
+			b.voxels = gd_make_shared<VoxelBufferInternal>();
+			{
+				RWLockRead lock(block->get_voxels().get_lock());
+				block->get_voxels_const().duplicate_to(*b.voxels, true);
+			}
 
 			b.position = block->position;
 			b.lod = block->lod_index;
@@ -480,7 +483,7 @@ bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int ch
 	}
 }
 
-void VoxelLodTerrain::copy(Vector3i p_origin_voxels, VoxelBuffer &dst_buffer, uint8_t channels_mask) const {
+void VoxelLodTerrain::copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask) const {
 	const Lod &lod0 = _lods[0];
 	lod0.data_map.copy(p_origin_voxels, dst_buffer, channels_mask);
 }
@@ -522,7 +525,7 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 Ref<VoxelTool> VoxelLodTerrain::get_voxel_tool() {
 	VoxelToolLodTerrain *vt = memnew(VoxelToolLodTerrain(this));
 	// Set to most commonly used channel on this kind of terrain
-	vt->set_channel(VoxelBuffer::CHANNEL_SDF);
+	vt->set_channel(VoxelBufferInternal::CHANNEL_SDF);
 	return Ref<VoxelTool>(vt);
 }
 
@@ -1512,7 +1515,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 		for (size_t reception_index = 0; reception_index < _reception_buffers.data_output.size(); ++reception_index) {
 			VOXEL_PROFILE_SCOPE();
-			const VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[reception_index];
+			VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[reception_index];
 
 			if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVE) {
 				// That's a save confirmation event.
@@ -1614,7 +1617,7 @@ void VoxelLodTerrain::_process(float delta) {
 					// The block can actually be null on some occasions. Not sure yet if it's that bad
 					//CRASH_COND(nblock == nullptr);
 					if (nblock != nullptr) {
-						mesh_request.data_blocks[mesh_request.data_blocks_count] = nblock->get_voxels();
+						mesh_request.data_blocks[mesh_request.data_blocks_count] = nblock->get_voxels_shared();
 					}
 					++mesh_request.data_blocks_count;
 				});
@@ -1892,8 +1895,6 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 			// Otherwise it means the function was called too late
 			CRASH_COND(src_block == nullptr);
 			//CRASH_COND(dst_block == nullptr);
-			CRASH_COND(src_block->get_voxels().is_null());
-			CRASH_COND(dst_block->get_voxels().is_null());
 
 			{
 				const Vector3i mesh_block_pos = dst_bpos.floordiv(data_to_mesh_factor);
@@ -1917,9 +1918,9 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 			// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look ugly.
 			// TODO Optimization: try to narrow to edited region instead of taking whole block
 			{
-				RWLockWrite lock(src_block->get_voxels()->get_lock());
-				src_block->get_voxels()->downscale_to(
-						**dst_block->get_voxels(), Vector3i(), src_block->get_voxels()->get_size(), rel * half_bs);
+				RWLockWrite lock(src_block->get_voxels().get_lock());
+				src_block->get_voxels().downscale_to(
+						dst_block->get_voxels(), Vector3i(), src_block->get_voxels_const().get_size(), rel * half_bs);
 			}
 		}
 
@@ -2507,9 +2508,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 exten
 			continue;
 		}
 
-		Ref<VoxelBuffer> buffer_ref;
-		buffer_ref.instance();
-		VoxelBuffer &buffer = **buffer_ref;
+		VoxelBufferInternal buffer;
 		buffer.create(world_box.size);
 
 		const Lod &lod = _lods[lod_index];

@@ -4,7 +4,7 @@
 #include "../util/profiling.h"
 
 VoxelTool::VoxelTool() {
-	_sdf_scale = VoxelBuffer::get_sdf_quantization_scale(VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH);
+	_sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH);
 }
 
 void VoxelTool::set_value(uint64_t val) {

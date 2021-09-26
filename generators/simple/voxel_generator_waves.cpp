@@ -16,7 +16,7 @@ VoxelGenerator::Result VoxelGeneratorWaves::generate_block(VoxelBlockRequest &in
 		params = _parameters;
 	}
 
-	VoxelBuffer &out_buffer = **input.voxel_buffer;
+	VoxelBufferInternal &out_buffer = input.voxel_buffer;
 	const Vector2 freq(
 			Math_PI / static_cast<float>(params.pattern_size.x),
 			Math_PI / static_cast<float>(params.pattern_size.y));

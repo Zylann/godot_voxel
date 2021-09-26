@@ -1,7 +1,7 @@
 #ifndef VOXEL_DATA_BLOCK_H
 #define VOXEL_DATA_BLOCK_H
 
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_internal.h"
 #include "../util/macros.h"
 #include "voxel_ref_count.h"
 
@@ -12,22 +12,37 @@ public:
 	const unsigned int lod_index = 0;
 	VoxelRefCount viewers;
 
-	static VoxelDataBlock *create(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int size, unsigned int p_lod_index) {
+	static VoxelDataBlock *create(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int size,
+			unsigned int p_lod_index) {
 		const int bs = size;
-		ERR_FAIL_COND_V(buffer.is_null(), nullptr);
+		ERR_FAIL_COND_V(buffer == nullptr, nullptr);
 		ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), nullptr);
 		return memnew(VoxelDataBlock(bpos, buffer, p_lod_index));
 	}
 
-	Ref<VoxelBuffer> get_voxels() const {
+	VoxelBufferInternal &get_voxels() {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(_voxels.is_null());
+		CRASH_COND(_voxels == nullptr);
+#endif
+		return *_voxels;
+	}
+
+	const VoxelBufferInternal &get_voxels_const() const {
+#ifdef DEBUG_ENABLED
+		CRASH_COND(_voxels == nullptr);
+#endif
+		return *_voxels;
+	}
+
+	std::shared_ptr<VoxelBufferInternal> get_voxels_shared() const {
+#ifdef DEBUG_ENABLED
+		CRASH_COND(_voxels == nullptr);
 #endif
 		return _voxels;
 	}
 
-	void set_voxels(Ref<VoxelBuffer> buffer) {
-		ERR_FAIL_COND(buffer.is_null());
+	void set_voxels(std::shared_ptr<VoxelBufferInternal> &buffer) {
+		ERR_FAIL_COND(buffer == nullptr);
 		_voxels = buffer;
 	}
 
@@ -53,10 +68,10 @@ public:
 	}
 
 private:
-	VoxelDataBlock(Vector3i bpos, Ref<VoxelBuffer> buffer, unsigned int p_lod_index) :
+	VoxelDataBlock(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int p_lod_index) :
 			position(bpos), lod_index(p_lod_index), _voxels(buffer) {}
 
-	Ref<VoxelBuffer> _voxels;
+	std::shared_ptr<VoxelBufferInternal> _voxels;
 
 	// The block was edited, which requires its LOD counterparts to be recomputed
 	bool _needs_lodding = false;

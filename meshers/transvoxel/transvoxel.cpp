@@ -1138,12 +1138,12 @@ void build_transition_mesh(
 
 template <typename T>
 Span<const T> get_or_decompress_channel(
-		const VoxelBuffer &voxels, std::vector<T> &backing_buffer, unsigned int channel) {
+		const VoxelBufferInternal &voxels, std::vector<T> &backing_buffer, unsigned int channel) {
 	//
-	ERR_FAIL_COND_V(voxels.get_channel_depth(channel) != VoxelBuffer::get_depth_from_size(sizeof(T)),
+	ERR_FAIL_COND_V(voxels.get_channel_depth(channel) != VoxelBufferInternal::get_depth_from_size(sizeof(T)),
 			Span<const T>());
 
-	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+	if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
 		backing_buffer.resize(voxels.get_size().volume());
 		const T v = voxels.get_voxel(Vector3i(), channel);
 		// TODO Could use a fast fill using 8-byte blocks or intrinsics?
@@ -1159,9 +1159,9 @@ Span<const T> get_or_decompress_channel(
 	}
 }
 
-TextureIndicesData get_texture_indices_data(const VoxelBuffer &voxels, unsigned int channel,
+TextureIndicesData get_texture_indices_data(const VoxelBufferInternal &voxels, unsigned int channel,
 		DefaultTextureIndicesData &out_default_texture_indices_data) {
-	ERR_FAIL_COND_V(voxels.get_channel_depth(channel) != VoxelBuffer::DEPTH_16_BIT, TextureIndicesData());
+	ERR_FAIL_COND_V(voxels.get_channel_depth(channel) != VoxelBufferInternal::DEPTH_16_BIT, TextureIndicesData());
 
 	TextureIndicesData data;
 
@@ -1219,7 +1219,7 @@ struct WeightSamplerPackedU16 {
 thread_local std::vector<uint16_t> s_weights_backing_buffer_u16;
 #endif
 
-DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int lod_index,
+DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int lod_index,
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output) {
 	VOXEL_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
@@ -1237,13 +1237,14 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned
 	if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 		// From this point we know SDF is not uniform so it has an allocated buffer,
 		// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
-		indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
+		indices_data =
+				get_texture_indices_data(voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
 		weights_data.u8_data0 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_0, VoxelBuffer::CHANNEL_WEIGHTS);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_0, VoxelBufferInternal::CHANNEL_WEIGHTS);
 		weights_data.u8_data1 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_1, VoxelBuffer::CHANNEL_DATA5);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_1, VoxelBufferInternal::CHANNEL_DATA5);
 		weights_data.u8_data2 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_2, VoxelBuffer::CHANNEL_DATA6);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_2, VoxelBufferInternal::CHANNEL_DATA6);
 		ERR_FAIL_COND_V(weights_data.u8_data0.size() != voxels_count, default_texture_indices_data);
 		ERR_FAIL_COND_V(weights_data.u8_data1.size() != voxels_count, default_texture_indices_data);
 		ERR_FAIL_COND_V(weights_data.u8_data2.size() != voxels_count, default_texture_indices_data);
@@ -1253,9 +1254,10 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned
 	if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 		// From this point we know SDF is not uniform so it has an allocated buffer,
 		// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
-		indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
+		indices_data =
+				get_texture_indices_data(voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
 		weights_data.u16_data =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u16, VoxelBuffer::CHANNEL_WEIGHTS);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u16, VoxelBufferInternal::CHANNEL_WEIGHTS);
 		ERR_FAIL_COND_V(weights_data.u16_data.size() != voxels_count, default_texture_indices_data);
 	}
 #endif
@@ -1263,25 +1265,25 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned
 	// We settle data types up-front so we can get rid of abstraction layers and conditionals,
 	// which would otherwise harm performance in tight iterations
 	switch (voxels.get_channel_depth(sdf_channel)) {
-		case VoxelBuffer::DEPTH_8_BIT: {
+		case VoxelBufferInternal::DEPTH_8_BIT: {
 			Span<const uint8_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint8_t>();
 			build_regular_mesh<uint8_t>(
 					sdf_data, indices_data, weights_data, voxels.get_size(), lod_index, texturing_mode, cache, output);
 		} break;
 
-		case VoxelBuffer::DEPTH_16_BIT: {
+		case VoxelBufferInternal::DEPTH_16_BIT: {
 			Span<const uint16_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint16_t>();
 			build_regular_mesh<uint16_t>(
 					sdf_data, indices_data, weights_data, voxels.get_size(), lod_index, texturing_mode, cache, output);
 		} break;
 
-		case VoxelBuffer::DEPTH_32_BIT: {
+		case VoxelBufferInternal::DEPTH_32_BIT: {
 			Span<const float> sdf_data = sdf_data_raw.reinterpret_cast_to<const float>();
 			build_regular_mesh<float>(
 					sdf_data, indices_data, weights_data, voxels.get_size(), lod_index, texturing_mode, cache, output);
 		} break;
 
-		case VoxelBuffer::DEPTH_64_BIT:
+		case VoxelBufferInternal::DEPTH_64_BIT:
 			ERR_PRINT("Double-precision SDF channel is not supported");
 			// Not worth growing executable size for relatively pointless double-precision sdf
 			break;
@@ -1294,7 +1296,7 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned
 	return default_texture_indices_data;
 }
 
-void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int direction, int lod_index,
+void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int direction, int lod_index,
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data) {
 	VOXEL_PROFILE_SCOPE();
@@ -1317,14 +1319,15 @@ void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, 
 			// From this point we know SDF is not uniform so it has an allocated buffer,
 			// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
 			// TODO Is it worth doing conditionnals instead during meshing?
-			indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
+			indices_data = get_texture_indices_data(
+					voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
 		}
 		weights_data.u8_data0 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_0, VoxelBuffer::CHANNEL_WEIGHTS);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_0, VoxelBufferInternal::CHANNEL_WEIGHTS);
 		weights_data.u8_data1 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_1, VoxelBuffer::CHANNEL_DATA5);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_1, VoxelBufferInternal::CHANNEL_DATA5);
 		weights_data.u8_data2 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_2, VoxelBuffer::CHANNEL_DATA6);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_2, VoxelBufferInternal::CHANNEL_DATA6);
 		ERR_FAIL_COND(weights_data.u8_data0.size() != voxels_count);
 		ERR_FAIL_COND(weights_data.u8_data1.size() != voxels_count);
 		ERR_FAIL_COND(weights_data.u8_data2.size() != voxels_count);
@@ -1339,34 +1342,35 @@ void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, 
 			// From this point we know SDF is not uniform so it has an allocated buffer,
 			// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
 			// TODO Is it worth doing conditionnals instead during meshing?
-			indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
+			indices_data = get_texture_indices_data(
+					voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
 		}
 		weights_data.u16_data =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u16, VoxelBuffer::CHANNEL_WEIGHTS);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u16, VoxelBufferInternal::CHANNEL_WEIGHTS);
 		ERR_FAIL_COND(weights_data.u16_data.size() != voxels_count);
 	}
 #endif
 
 	switch (voxels.get_channel_depth(sdf_channel)) {
-		case VoxelBuffer::DEPTH_8_BIT: {
+		case VoxelBufferInternal::DEPTH_8_BIT: {
 			Span<const uint8_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint8_t>();
 			build_transition_mesh<uint8_t>(sdf_data, indices_data, weights_data,
 					voxels.get_size(), direction, lod_index, texturing_mode, cache, output);
 		} break;
 
-		case VoxelBuffer::DEPTH_16_BIT: {
+		case VoxelBufferInternal::DEPTH_16_BIT: {
 			Span<const uint16_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const uint16_t>();
 			build_transition_mesh<uint16_t>(sdf_data, indices_data, weights_data,
 					voxels.get_size(), direction, lod_index, texturing_mode, cache, output);
 		} break;
 
-		case VoxelBuffer::DEPTH_32_BIT: {
+		case VoxelBufferInternal::DEPTH_32_BIT: {
 			Span<const float> sdf_data = sdf_data_raw.reinterpret_cast_to<const float>();
 			build_transition_mesh<float>(sdf_data, indices_data, weights_data,
 					voxels.get_size(), direction, lod_index, texturing_mode, cache, output);
 		} break;
 
-		case VoxelBuffer::DEPTH_64_BIT:
+		case VoxelBufferInternal::DEPTH_64_BIT:
 			ERR_FAIL_MSG("Double-precision SDF channel is not supported");
 			// Not worth growing executable size for relatively pointless double-precision sdf
 			break;

@@ -15,8 +15,8 @@ class VoxelStreamBlockFiles : public VoxelStream {
 public:
 	VoxelStreamBlockFiles();
 
-	Result emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) override;
+	Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
+	void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
 
 	int get_used_channels_mask() const override;
 
@@ -43,7 +43,7 @@ private:
 		uint8_t version = -1;
 		uint8_t lod_count = 0;
 		uint8_t block_size_po2 = 0; // How many voxels in a block
-		FixedArray<VoxelBuffer::Depth, VoxelBuffer::MAX_CHANNELS> channel_depths;
+		FixedArray<VoxelBufferInternal::Depth, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
 	};
 
 	Meta _meta;

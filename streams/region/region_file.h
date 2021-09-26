@@ -1,7 +1,7 @@
 #ifndef REGION_FILE_H
 #define REGION_FILE_H
 
-#include "../../storage/voxel_buffer.h"
+#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/fixed_array.h"
 #include "../../util/math/color8.h"
 #include "../../util/math/vector3i.h"
@@ -15,20 +15,21 @@ struct VoxelRegionFormat {
 	static const uint32_t MAX_BLOCKS_ACROSS = 255;
 	static const uint32_t CHANNEL_COUNT = 8;
 
-	static_assert(CHANNEL_COUNT == VoxelBuffer::MAX_CHANNELS, "This format doesn't support variable channel count");
+	static_assert(CHANNEL_COUNT == VoxelBufferInternal::MAX_CHANNELS,
+			"This format doesn't support variable channel count");
 
 	// How many voxels in a cubic block, as power of two
 	uint8_t block_size_po2 = 0;
 	// How many blocks across all dimensions (stored as 3 bytes)
 	Vector3i region_size;
-	FixedArray<VoxelBuffer::Depth, CHANNEL_COUNT> channel_depths;
+	FixedArray<VoxelBufferInternal::Depth, CHANNEL_COUNT> channel_depths;
 	// Blocks are stored at offsets multiple of that size
 	uint32_t sector_size = 0;
 	FixedArray<Color8, 256> palette;
 	bool has_palette = false;
 
 	bool validate() const;
-	bool verify_block(const VoxelBuffer &block) const;
+	bool verify_block(const VoxelBufferInternal &block) const;
 };
 
 struct VoxelRegionBlockInfo {
@@ -80,8 +81,8 @@ public:
 	bool set_format(const VoxelRegionFormat &format);
 	const VoxelRegionFormat &get_format() const;
 
-	Error load_block(Vector3i position, Ref<VoxelBuffer> out_block, VoxelBlockSerializerInternal &serializer);
-	Error save_block(Vector3i position, Ref<VoxelBuffer> block, VoxelBlockSerializerInternal &serializer);
+	Error load_block(Vector3i position, VoxelBufferInternal &out_block, VoxelBlockSerializerInternal &serializer);
+	Error save_block(Vector3i position, VoxelBufferInternal &block, VoxelBlockSerializerInternal &serializer);
 
 	unsigned int get_header_block_count() const;
 	bool has_block(Vector3i position) const;

@@ -139,7 +139,7 @@ void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().copy(pos, **dst, channels_mask);
+	_terrain->get_storage().copy(pos, dst->get_buffer(), channels_mask);
 }
 
 void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
@@ -149,7 +149,7 @@ void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t ch
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().paste(pos, **p_voxels, channels_mask, use_mask, mask_value, false);
+	_terrain->get_storage().paste(pos, p_voxels->get_buffer(), channels_mask, use_mask, mask_value, false);
 	_post_edit(Box3i(pos, p_voxels->get_size()));
 }
 
@@ -206,8 +206,8 @@ void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
 	VoxelDataMap &map = _terrain->get_storage();
 	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
 	ERR_FAIL_COND_MSG(block == nullptr, "Area not editable");
-	RWLockWrite lock(block->get_voxels()->get_lock());
-	block->get_voxels()->set_voxel_metadata(map.to_local(pos), meta);
+	RWLockWrite lock(block->get_voxels().get_lock());
+	block->get_voxels().set_voxel_metadata(map.to_local(pos), meta);
 }
 
 Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
@@ -215,8 +215,8 @@ Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
 	VoxelDataMap &map = _terrain->get_storage();
 	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
 	ERR_FAIL_COND_V_MSG(block == nullptr, Variant(), "Area not editable");
-	RWLockRead lock(block->get_voxels()->get_lock());
-	return block->get_voxels()->get_voxel_metadata(map.to_local(pos));
+	RWLockRead lock(block->get_voxels().get_lock());
+	return block->get_voxels_const().get_voxel_metadata(map.to_local(pos));
 }
 
 // Executes a function on random voxels in the provided area, using the type channel.
@@ -240,7 +240,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 	const Vector3i min_pos = Vector3i(voxel_area.position);
 	const Vector3i max_pos = min_pos + Vector3i(voxel_area.size);
 
-	const VoxelDataMap &map = _terrain->get_storage();
+	VoxelDataMap &map = _terrain->get_storage();
 
 	const Vector3i min_block_pos = map.voxel_to_block(min_pos);
 	const Vector3i max_block_pos = map.voxel_to_block(max_pos);
@@ -266,14 +266,15 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 
 		const Vector3i block_origin = map.block_to_voxel(block_pos);
 
-		const VoxelDataBlock *block = map.get_block(block_pos);
+		VoxelDataBlock *block = map.get_block(block_pos);
 		if (block != nullptr) {
 			// Doing ONLY reads here.
 			{
-				RWLockRead lock(block->get_voxels()->get_lock());
+				RWLockRead lock(block->get_voxels().get_lock());
+				const VoxelBufferInternal &voxels = block->get_voxels_const();
 
-				if (block->get_voxels()->get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
-					const uint64_t v = block->get_voxels()->get_voxel(0, 0, 0, channel);
+				if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
 					if (lib.has_voxel(v)) {
 						const Voxel &vt = lib.get_voxel_const(v);
 						if (!vt.is_random_tickable()) {
@@ -291,7 +292,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 							Math::rand() & bs_mask,
 							Math::rand() & bs_mask);
 
-					const uint64_t v = block->get_voxels()->get_voxel(rpos, channel);
+					const uint64_t v = voxels.get_voxel(rpos, channel);
 					picks[vi] = Pick{ v, rpos };
 				}
 			}
@@ -333,20 +334,20 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<Func
 
 	const Box3i data_block_box = voxel_box.downscaled(_terrain->get_data_block_size());
 
-	const VoxelDataMap &map = _terrain->get_storage();
+	VoxelDataMap &map = _terrain->get_storage();
 
 	data_block_box.for_each_cell([&map, &callback, voxel_box](Vector3i block_pos) {
-		const VoxelDataBlock *block = map.get_block(block_pos);
+		VoxelDataBlock *block = map.get_block(block_pos);
 
 		if (block == nullptr) {
 			return;
 		}
 
-		ERR_FAIL_COND(block->get_voxels().is_null());
 		const Vector3i block_origin = block_pos * map.get_block_size();
 		const Box3i rel_voxel_box(voxel_box.pos - block_origin, voxel_box.size);
+		// TODO Worth it locking blocks for metadata?
 
-		block->get_voxels()->for_each_voxel_metadata_in_area(rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, Variant meta) {
+		block->get_voxels().for_each_voxel_metadata_in_area(rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, Variant meta) {
 			const Variant key = (rel_pos + block_origin).to_vec3();
 			const Variant *args[2] = { &key, &meta };
 			Variant::CallError err;

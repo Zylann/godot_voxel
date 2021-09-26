@@ -1,7 +1,7 @@
 #ifndef HERMITE_VALUE_H
 #define HERMITE_VALUE_H
 
-#include "../../storage/voxel_buffer.h"
+#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/math/funcs.h"
 #include <core/math/vector3.h>
 
@@ -16,17 +16,18 @@ struct HermiteValue {
 	}
 };
 
-inline float get_isolevel_clamped(const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
+inline float get_isolevel_clamped(const VoxelBufferInternal &voxels, unsigned int x, unsigned int y, unsigned int z) {
 	x = x >= (unsigned int)voxels.get_size().x ? voxels.get_size().x - 1 : x;
 	y = y >= (unsigned int)voxels.get_size().y ? voxels.get_size().y - 1 : y;
 	z = z >= (unsigned int)voxels.get_size().z ? voxels.get_size().z - 1 : z;
-	return voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_SDF);
+	return voxels.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
 }
 
-inline HermiteValue get_hermite_value(const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
+inline HermiteValue get_hermite_value(const VoxelBufferInternal &voxels,
+		unsigned int x, unsigned int y, unsigned int z) {
 	HermiteValue v;
 
-	v.sdf = voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_SDF);
+	v.sdf = voxels.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
 
 	Vector3 gradient;
 
@@ -39,7 +40,7 @@ inline HermiteValue get_hermite_value(const VoxelBuffer &voxels, unsigned int x,
 	return v;
 }
 
-inline HermiteValue get_interpolated_hermite_value(const VoxelBuffer &voxels, Vector3 pos) {
+inline HermiteValue get_interpolated_hermite_value(const VoxelBufferInternal &voxels, Vector3 pos) {
 	int x0 = static_cast<int>(pos.x);
 	int y0 = static_cast<int>(pos.y);
 	int z0 = static_cast<int>(pos.z);
@@ -69,7 +70,9 @@ inline HermiteValue get_interpolated_hermite_value(const VoxelBuffer &voxels, Ve
 
 	HermiteValue v;
 	v.sdf = ::interpolate(v0.sdf, v1.sdf, v2.sdf, v3.sdf, v4.sdf, v5.sdf, v6.sdf, v7.sdf, rpos);
-	v.gradient = ::interpolate(v0.gradient, v1.gradient, v2.gradient, v3.gradient, v4.gradient, v5.gradient, v6.gradient, v7.gradient, rpos);
+	v.gradient = ::interpolate(
+			v0.gradient, v1.gradient, v2.gradient, v3.gradient,
+			v4.gradient, v5.gradient, v6.gradient, v7.gradient, rpos);
 
 	return v;
 }

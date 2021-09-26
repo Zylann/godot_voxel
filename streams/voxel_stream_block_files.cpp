@@ -19,15 +19,14 @@ VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 	_meta.block_size_po2 = 4;
 	_meta.lod_count = 1;
 	_meta.version = FORMAT_VERSION;
-	_meta.channel_depths.fill(VoxelBuffer::DEFAULT_CHANNEL_DEPTH);
+	_meta.channel_depths.fill(VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH);
 }
 
 // TODO Have configurable block size
 
 VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
-		Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
-
+		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+	//
 	if (_directory_path.empty()) {
 		return RESULT_BLOCK_NOT_FOUND;
 	}
@@ -43,7 +42,7 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 	const Vector3i block_size(1 << _meta.block_size_po2);
 
 	ERR_FAIL_COND_V(lod >= _meta.lod_count, RESULT_ERROR);
-	ERR_FAIL_COND_V(block_size != out_buffer->get_size(), RESULT_ERROR);
+	ERR_FAIL_COND_V(block_size != out_buffer.get_size(), RESULT_ERROR);
 
 	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
 	String file_path = get_block_file_path(block_pos, lod);
@@ -75,11 +74,11 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 		// Configure depths, as they currently are only specified in the meta file.
 		// Files are expected to contain such depths, and use those in the buffer to know how much data to read.
 		for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
-			out_buffer->set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
+			out_buffer.set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
 		}
 
 		uint32_t size_to_read = f->get_32();
-		if (!_block_serializer.decompress_and_deserialize(f, size_to_read, **out_buffer)) {
+		if (!_block_serializer.decompress_and_deserialize(f, size_to_read, out_buffer)) {
 			ERR_PRINT("Failed to decompress and deserialize");
 		}
 	}
@@ -90,9 +89,8 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 	return RESULT_BLOCK_FOUND;
 }
 
-void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND(_directory_path.empty());
-	ERR_FAIL_COND(buffer.is_null());
 
 	if (!_meta_loaded) {
 		// If it's not loaded, always try to load meta file first if it exists already,
@@ -109,7 +107,7 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 	if (!_meta_saved) {
 		// First time we save the meta file, initialize it from the first block format
 		for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
-			_meta.channel_depths[i] = buffer->get_channel_depth(i);
+			_meta.channel_depths[i] = buffer.get_channel_depth(i);
 		}
 		VoxelFileResult res = save_meta();
 		ERR_FAIL_COND(res != VOXEL_FILE_OK);
@@ -117,9 +115,9 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 
 	// Check format
 	const Vector3i block_size = Vector3i(1 << _meta.block_size_po2);
-	ERR_FAIL_COND(buffer->get_size() != block_size);
+	ERR_FAIL_COND(buffer.get_size() != block_size);
 	for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
-		ERR_FAIL_COND(buffer->get_channel_depth(channel_index) != _meta.channel_depths[channel_index]);
+		ERR_FAIL_COND(buffer.get_channel_depth(channel_index) != _meta.channel_depths[channel_index]);
 	}
 
 	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
@@ -143,7 +141,7 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 		f->store_buffer((uint8_t *)FORMAT_BLOCK_MAGIC, 4);
 		f->store_8(FORMAT_VERSION);
 
-		VoxelBlockSerializerInternal::SerializeResult res = _block_serializer.serialize_and_compress(**buffer);
+		VoxelBlockSerializerInternal::SerializeResult res = _block_serializer.serialize_and_compress(buffer);
 		if (!res.success) {
 			memdelete(f);
 			ERR_PRINT("Failed to save block");
@@ -159,7 +157,7 @@ void VoxelStreamBlockFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i orig
 
 int VoxelStreamBlockFiles::get_used_channels_mask() const {
 	// Assuming all, since that stream can store anything.
-	return VoxelBuffer::ALL_CHANNELS_MASK;
+	return VoxelBufferInternal::ALL_CHANNELS_MASK;
 }
 
 String VoxelStreamBlockFiles::get_directory() const {
@@ -252,8 +250,8 @@ VoxelFileResult VoxelStreamBlockFiles::load_meta() {
 
 		for (unsigned int i = 0; i < meta.channel_depths.size(); ++i) {
 			uint8_t depth = f->get_8();
-			ERR_FAIL_COND_V(depth >= VoxelBuffer::DEPTH_COUNT, VOXEL_FILE_INVALID_DATA);
-			meta.channel_depths[i] = (VoxelBuffer::Depth)depth;
+			ERR_FAIL_COND_V(depth >= VoxelBufferInternal::DEPTH_COUNT, VOXEL_FILE_INVALID_DATA);
+			meta.channel_depths[i] = (VoxelBufferInternal::Depth)depth;
 		}
 
 		ERR_FAIL_COND_V(meta.lod_count < 1 || meta.lod_count > 32, VOXEL_FILE_INVALID_DATA);

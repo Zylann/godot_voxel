@@ -236,7 +236,7 @@ void VoxelGeneratorGraph::set_sdf_clip_threshold(float t) {
 }
 
 int VoxelGeneratorGraph::get_used_channels_mask() const {
-	return 1 << VoxelBuffer::CHANNEL_SDF;
+	return 1 << VoxelBufferInternal::CHANNEL_SDF;
 }
 
 void VoxelGeneratorGraph::set_use_subdivision(bool use) {
@@ -275,8 +275,8 @@ bool VoxelGeneratorGraph::is_using_xz_caching() const {
 // Instead, we could only generate them near zero-crossings, because this is where materials will be seen.
 // The problem is that it's harder to manage at the moment, to support edited blocks and LOD...
 void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> weight_outputs,
-		const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry, VoxelBuffer &out_voxel_buffer,
-		FixedArray<uint8_t, 4> spare_indices) {
+		const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
+		VoxelBufferInternal &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices) {
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Optimization: exclude up-front outputs that are known to be zero?
@@ -312,8 +312,8 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				const uint16_t encoded_weights =
 						encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
 				// TODO Flatten this further?
-				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
-				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
+				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBufferInternal::CHANNEL_INDICES);
+				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBufferInternal::CHANNEL_WEIGHTS);
 				++value_index;
 			}
 		}
@@ -335,8 +335,8 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				const uint16_t encoded_weights =
 						encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
 				// TODO Flatten this further?
-				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
-				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
+				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBufferInternal::CHANNEL_INDICES);
+				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBufferInternal::CHANNEL_WEIGHTS);
 				++value_index;
 			}
 		}
@@ -380,8 +380,8 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				const uint16_t encoded_weights =
 						encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
 				// TODO Flatten this further?
-				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
-				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
+				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBufferInternal::CHANNEL_INDICES);
+				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBufferInternal::CHANNEL_WEIGHTS);
 				++value_index;
 			}
 		}
@@ -401,16 +401,16 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 		return result;
 	}
 
-	VoxelBuffer &out_buffer = **input.voxel_buffer;
+	VoxelBufferInternal &out_buffer = input.voxel_buffer;
 
 	const Vector3i bs = out_buffer.get_size();
-	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 	const Vector3i origin = input.origin_in_voxels;
 
 	// TODO This may be shared across the module
 	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
 	// so we must scale the values to make better use of the offered resolution
-	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(
+	const float sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(
 			out_buffer.get_channel_depth(out_buffer.get_channel_depth(channel)));
 
 	const int stride = 1 << input.lod;

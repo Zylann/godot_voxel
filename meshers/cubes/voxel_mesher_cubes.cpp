@@ -717,7 +717,7 @@ VoxelMesherCubes::~VoxelMesherCubes() {
 
 void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	VOXEL_PROFILE_SCOPE();
-	const int channel = VoxelBuffer::CHANNEL_COLOR;
+	const int channel = VoxelBufferInternal::CHANNEL_COLOR;
 	Cache &cache = _cache;
 
 	for (unsigned int i = 0; i < cache.arrays_per_material.size(); ++i) {
@@ -725,7 +725,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 		a.clear();
 	}
 
-	const VoxelBuffer &voxels = input.voxels;
+	const VoxelBufferInternal &voxels = input.voxels;
 
 	// Iterate 3D padded data to extract voxel faces.
 	// This is the most intensive job in this class, so all required data should be as fit as possible.
@@ -734,12 +734,12 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	// That means we can use raw pointers to voxel data inside instead of using the higher-level getters,
 	// and then save a lot of time.
 
-	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+	if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
 		// All voxels have the same type.
 		// If it's all air, nothing to do. If it's all cubes, nothing to do either.
 		return;
 
-	} else if (voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE) {
+	} else if (voxels.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
 		// No other form of compression is allowed
 		ERR_PRINT("VoxelMesherCubes received unsupported voxel compression");
 		return;
@@ -753,7 +753,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	}
 
 	const Vector3i block_size = voxels.get_size();
-	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
+	const VoxelBufferInternal::Depth channel_depth = voxels.get_channel_depth(channel);
 
 	Parameters params;
 	{

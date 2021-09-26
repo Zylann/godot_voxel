@@ -96,7 +96,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 
 		bool operator()(Vector3i pos) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
-			const uint64_t raw_value = terrain->get_voxel(pos, VoxelBuffer::CHANNEL_SDF, 0);
+			const uint64_t raw_value = terrain->get_voxel(pos, VoxelBufferInternal::CHANNEL_SDF, 0);
 			// TODO Format should be accessible from terrain
 			const float sdf = u16_to_norm(raw_value);
 			return sdf < 0;
@@ -138,7 +138,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 				const VoxelLodTerrain *terrain;
 
 				inline float operator()(const Vector3i &pos) const {
-					const uint64_t raw_value = terrain->get_voxel(pos, VoxelBuffer::CHANNEL_SDF, 0);
+					const uint64_t raw_value = terrain->get_voxel(pos, VoxelBufferInternal::CHANNEL_SDF, 0);
 					// TODO Format should be accessible from terrain
 					const float sdf = u16_to_norm(raw_value);
 					return sdf;
@@ -178,7 +178,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 			op.shape.center = center;
 			op.shape.radius = radius;
 			op.shape.scale = _sdf_scale;
-			_terrain->write_box(box, VoxelBuffer::CHANNEL_SDF, op);
+			_terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 		} break;
 
 		case MODE_REMOVE: {
@@ -186,7 +186,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 			op.shape.center = center;
 			op.shape.radius = radius;
 			op.shape.scale = _sdf_scale;
-			_terrain->write_box(box, VoxelBuffer::CHANNEL_SDF, op);
+			_terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 		} break;
 
 		case MODE_SET: {
@@ -194,11 +194,11 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 			op.shape.center = center;
 			op.shape.radius = radius;
 			op.shape.scale = _sdf_scale;
-			_terrain->write_box(box, VoxelBuffer::CHANNEL_SDF, op);
+			_terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 		} break;
 
 		case MODE_TEXTURE_PAINT: {
-			_terrain->write_box_2(box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
+			_terrain->write_box_2(box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
 					TextureBlendSphereOp{ center, radius, _texture_params });
 		} break;
 
@@ -214,7 +214,7 @@ void VoxelToolLodTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t chann
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->copy(pos, **dst, channels_mask);
+	_terrain->copy(pos, dst->get_buffer(), channels_mask);
 }
 
 float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
@@ -223,7 +223,7 @@ float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	const VoxelLodTerrain *terrain = _terrain;
 	// TODO Optimization: is it worth a making a fast-path for this?
 	return get_sdf_interpolated([terrain, channel](Vector3i ipos) {
-		const uint64_t raw_value = terrain->get_voxel(ipos, VoxelBuffer::CHANNEL_SDF, 0);
+		const uint64_t raw_value = terrain->get_voxel(ipos, VoxelBufferInternal::CHANNEL_SDF, 0);
 		// TODO Format should be accessible from terrain
 		const float sdf = u16_to_norm(raw_value);
 		return sdf;
@@ -283,16 +283,18 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 	// Copy source data
 
 	// TODO Do not assume channel, at the moment it's hardcoded for smooth terrain
-	static const int channels_mask = (1 << VoxelBuffer::CHANNEL_SDF);
-	static const int main_channel = VoxelBuffer::CHANNEL_SDF;
+	static const int channels_mask = (1 << VoxelBufferInternal::CHANNEL_SDF);
+	static const int main_channel = VoxelBufferInternal::CHANNEL_SDF;
 
-	Ref<VoxelBuffer> source_copy_buffer;
+	// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
+	Ref<VoxelBuffer> source_copy_buffer_ref;
 	{
 		VOXEL_PROFILE_SCOPE_NAMED("Copy");
-		source_copy_buffer.instance();
-		source_copy_buffer->create(world_box.size);
-		voxel_tool.copy(world_box.pos, source_copy_buffer, channels_mask);
+		source_copy_buffer_ref.instance();
+		source_copy_buffer_ref->create(world_box.size.x, world_box.size.y, world_box.size.z);
+		voxel_tool.copy(world_box.pos, source_copy_buffer_ref, channels_mask);
 	}
+	VoxelBufferInternal &source_copy_buffer = source_copy_buffer_ref->get_buffer();
 
 	// Label distinct voxel groups
 
@@ -307,7 +309,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 		island_finder.scan_3d(
 				Box3i(Vector3i(), world_box.size), [&source_copy_buffer](Vector3i pos) {
 					// TODO Can be optimized further with direct access
-					return source_copy_buffer->get_voxel_f(pos.x, pos.y, pos.z, main_channel) < 0.f;
+					return source_copy_buffer.get_voxel_f(pos.x, pos.y, pos.z, main_channel) < 0.f;
 				},
 				to_span(ccl_output), &label_count);
 	}
@@ -418,18 +420,21 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 			const Vector3i world_pos = world_box.pos + local_bounds.min_pos - Vector3i(min_padding);
 			const Vector3i size = local_bounds.max_pos - local_bounds.min_pos + Vector3i(1 + max_padding + min_padding);
 
-			Ref<VoxelBuffer> buffer;
-			buffer.instance();
-			buffer->create(size);
+			// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
+			Ref<VoxelBuffer> buffer_ref;
+			buffer_ref.instance();
+			buffer_ref->create(size.x, size.y, size.z);
 
 			// Read voxels from the source volume
-			voxel_tool.copy(world_pos, buffer, channels_mask);
+			voxel_tool.copy(world_pos, buffer_ref, channels_mask);
+
+			VoxelBufferInternal &buffer = buffer_ref->get_buffer();
 
 			// Cleanup padding borders
-			const Box3i inner_box(Vector3i(min_padding), buffer->get_size() - Vector3i(min_padding + max_padding));
-			Box3i(Vector3i(), buffer->get_size())
+			const Box3i inner_box(Vector3i(min_padding), buffer.get_size() - Vector3i(min_padding + max_padding));
+			Box3i(Vector3i(), buffer.get_size())
 					.difference(inner_box, [&buffer](Box3i box) {
-						buffer->fill_area_f(1.f, box.pos, box.pos + box.size, main_channel);
+						buffer.fill_area_f(1.f, box.pos, box.pos + box.size, main_channel);
 					});
 
 			// Filter out voxels that don't belong to this label
@@ -441,7 +446,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 						const uint8_t label2 = ccl_output[ccl_index];
 
 						if (label2 != 0 && label != label2) {
-							buffer->set_voxel_f(1.f,
+							buffer.set_voxel_f(1.f,
 									min_padding + x - local_bounds.min_pos.x,
 									min_padding + y - local_bounds.min_pos.y,
 									min_padding + z - local_bounds.min_pos.z, main_channel);
@@ -450,7 +455,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 				}
 			}
 
-			instances_info.push_back(InstanceInfo{ buffer, world_pos, label });
+			instances_info.push_back(InstanceInfo{ buffer_ref, world_pos, label });
 		}
 	}
 
@@ -545,6 +550,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 
 			// TODO Option to make multiple convex shapes
 			// TODO Use the fast way. This is slow because of the internal TriangleMesh thing.
+			// TODO Don't create a body if the mesh has no triangles
 			Ref<Shape> shape = mesh->create_convex_shape();
 			ERR_CONTINUE(shape.is_null());
 			CollisionShape *collision_shape = memnew(CollisionShape);

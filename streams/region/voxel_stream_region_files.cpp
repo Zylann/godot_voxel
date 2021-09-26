@@ -16,9 +16,30 @@ const uint8_t FORMAT_VERSION_LEGACY_2 = 2;
 
 const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
 const char *META_FILE_NAME = "meta.vxrm";
+
 } // namespace
 
 thread_local VoxelBlockSerializerInternal VoxelStreamRegionFiles::_block_serializer;
+
+// Sorts a sequence without modifying it, returning a sorted list of pointers
+template <typename T, typename Comparer_T>
+void get_sorted_pointers(Span<T> sequence, Comparer_T comparer, std::vector<T *> &out_sorted_sequence) {
+	struct PtrCompare {
+		Span<T> sequence;
+		Comparer_T comparer;
+		inline bool operator()(const T *a, const T *b) const {
+			return comparer(*a, *b);
+		}
+	};
+	out_sorted_sequence.resize(sequence.size());
+	for (unsigned int i = 0; i < sequence.size(); ++i) {
+		out_sorted_sequence[i] = &sequence[i];
+	}
+	SortArray<T *, PtrCompare> sort_array;
+	sort_array.compare.sequence = sequence;
+	sort_array.compare.comparer = comparer;
+	sort_array.sort(out_sorted_sequence.data(), out_sorted_sequence.size());
+}
 
 VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.version = FORMAT_VERSION;
@@ -26,56 +47,45 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.region_size_po2 = 4;
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
 	_meta.lod_count = 1;
-	_meta.channel_depths.fill(VoxelBuffer::DEFAULT_CHANNEL_DEPTH);
-	_meta.channel_depths[VoxelBuffer::CHANNEL_TYPE] = VoxelBuffer::DEFAULT_TYPE_CHANNEL_DEPTH;
-	_meta.channel_depths[VoxelBuffer::CHANNEL_SDF] = VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH;
-	_meta.channel_depths[VoxelBuffer::CHANNEL_INDICES] = VoxelBuffer::DEFAULT_INDICES_CHANNEL_DEPTH;
-	_meta.channel_depths[VoxelBuffer::CHANNEL_WEIGHTS] = VoxelBuffer::DEFAULT_WEIGHTS_CHANNEL_DEPTH;
+	_meta.channel_depths.fill(VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH);
+	_meta.channel_depths[VoxelBufferInternal::CHANNEL_TYPE] = VoxelBufferInternal::DEFAULT_TYPE_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBufferInternal::CHANNEL_SDF] = VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBufferInternal::CHANNEL_INDICES] = VoxelBufferInternal::DEFAULT_INDICES_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBufferInternal::CHANNEL_WEIGHTS] = VoxelBufferInternal::DEFAULT_WEIGHTS_CHANNEL_DEPTH;
 }
 
 VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
 	close_all_regions();
 }
 
-VoxelStream::Result VoxelStreamRegionFiles::emerge_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
-	VoxelBlockRequest r;
-	r.voxel_buffer = out_buffer;
-	r.origin_in_voxels = origin_in_voxels;
-	r.lod = lod;
-	Vector<VoxelBlockRequest> requests;
+VoxelStream::Result VoxelStreamRegionFiles::emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels,
+		int lod) {
+	VoxelBlockRequest r{ out_buffer, origin_in_voxels, lod };
 	Vector<Result> results;
-	requests.push_back(r);
-	emerge_blocks(requests, results);
+	emerge_blocks(Span<VoxelBlockRequest>(&r, 1), results);
 	return results[0];
 }
 
-void VoxelStreamRegionFiles::immerge_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
-	VoxelBlockRequest r;
-	r.voxel_buffer = buffer;
-	r.origin_in_voxels = origin_in_voxels;
-	r.lod = lod;
-	Vector<VoxelBlockRequest> requests;
-	requests.push_back(r);
-	immerge_blocks(requests);
+void VoxelStreamRegionFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+	VoxelBlockRequest r{ buffer, origin_in_voxels, lod };
+	immerge_blocks(Span<VoxelBlockRequest>(&r, 1));
 }
 
-void VoxelStreamRegionFiles::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, Vector<Result> &out_results) {
+void VoxelStreamRegionFiles::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) {
 	VOXEL_PROFILE_SCOPE();
 
 	// In order to minimize opening/closing files, requests are grouped according to their region.
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
-	Vector<VoxelBlockRequest> sorted_blocks;
-	sorted_blocks.append_array(p_blocks);
-
-	SortArray<VoxelBlockRequest, BlockRequestComparator> sorter;
-	sorter.compare.self = this;
-	sorter.sort(sorted_blocks.ptrw(), sorted_blocks.size());
+	std::vector<VoxelBlockRequest *> sorted_blocks;
+	BlockRequestComparator comparator;
+	comparator.self = this;
+	get_sorted_pointers(p_blocks, comparator, sorted_blocks);
 
 	Vector<VoxelBlockRequest> fallback_requests;
 
 	for (int i = 0; i < sorted_blocks.size(); ++i) {
-		VoxelBlockRequest &r = sorted_blocks.write[i];
+		VoxelBlockRequest &r = *sorted_blocks[i];
 		const EmergeResult result = _emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 		switch (result) {
 			case EMERGE_OK:
@@ -94,32 +104,29 @@ void VoxelStreamRegionFiles::emerge_blocks(Vector<VoxelBlockRequest> &p_blocks, 
 	}
 }
 
-void VoxelStreamRegionFiles::immerge_blocks(const Vector<VoxelBlockRequest> &p_blocks) {
+void VoxelStreamRegionFiles::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
 	VOXEL_PROFILE_SCOPE();
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
-	Vector<VoxelBlockRequest> sorted_blocks;
-	sorted_blocks.append_array(p_blocks);
-
-	SortArray<VoxelBlockRequest, BlockRequestComparator> sorter;
-	sorter.compare.self = this;
-	sorter.sort(sorted_blocks.ptrw(), sorted_blocks.size());
+	std::vector<VoxelBlockRequest *> sorted_blocks;
+	BlockRequestComparator comparator;
+	comparator.self = this;
+	get_sorted_pointers(p_blocks, comparator, sorted_blocks);
 
 	for (int i = 0; i < sorted_blocks.size(); ++i) {
-		VoxelBlockRequest &r = sorted_blocks.write[i];
+		VoxelBlockRequest &r = *sorted_blocks[i];
 		_immerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 	}
 }
 
 int VoxelStreamRegionFiles::get_used_channels_mask() const {
 	// Assuming all, since that stream can store anything.
-	return VoxelBuffer::ALL_CHANNELS_MASK;
+	return VoxelBufferInternal::ALL_CHANNELS_MASK;
 }
 
 VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
-		Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	VOXEL_PROFILE_SCOPE();
-	ERR_FAIL_COND_V(out_buffer.is_null(), EMERGE_FAILED);
 
 	MutexLock lock(_mutex);
 
@@ -140,12 +147,12 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 
 	CRASH_COND(!_meta_loaded);
 	ERR_FAIL_COND_V(lod >= _meta.lod_count, EMERGE_FAILED);
-	ERR_FAIL_COND_V(block_size != out_buffer->get_size(), EMERGE_FAILED);
+	ERR_FAIL_COND_V(block_size != out_buffer.get_size(), EMERGE_FAILED);
 
 	// Configure depths, as they might not be specified in old block data.
 	// Regions are expected to contain such depths, and use those in the buffer to know how much data to read.
 	for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
-		out_buffer->set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
+		out_buffer.set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
 	}
 
 	const Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
@@ -171,13 +178,12 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 	}
 }
 
-void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamRegionFiles::_immerge_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod) {
 	VOXEL_PROFILE_SCOPE();
 
 	MutexLock lock(_mutex);
 
 	ERR_FAIL_COND(_directory_path.empty());
-	ERR_FAIL_COND(voxel_buffer.is_null());
 
 	if (!_meta_loaded) {
 		// If it's not loaded, always try to load meta file first if it exists already,
@@ -194,7 +200,7 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 	if (!_meta_saved) {
 		// First time we save the meta file, initialize it from the first block format
 		for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
-			_meta.channel_depths[i] = voxel_buffer->get_channel_depth(i);
+			_meta.channel_depths[i] = voxel_buffer.get_channel_depth(i);
 		}
 		VoxelFileResult err = save_meta();
 		ERR_FAIL_COND(err != VOXEL_FILE_OK);
@@ -202,9 +208,9 @@ void VoxelStreamRegionFiles::_immerge_block(Ref<VoxelBuffer> voxel_buffer, Vecto
 
 	// Verify format
 	const Vector3i block_size = Vector3i(1 << _meta.block_size_po2);
-	ERR_FAIL_COND(voxel_buffer->get_size() != block_size);
-	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
-		ERR_FAIL_COND(voxel_buffer->get_channel_depth(i) != _meta.channel_depths[i]);
+	ERR_FAIL_COND(voxel_buffer.get_size() != block_size);
+	for (unsigned int i = 0; i < VoxelBufferInternal::MAX_CHANNELS; ++i) {
+		ERR_FAIL_COND(voxel_buffer.get_channel_depth(i) != _meta.channel_depths[i]);
 	}
 
 	const Vector3i region_size = Vector3i(1 << _meta.region_size_po2);
@@ -249,11 +255,11 @@ static bool u32_from_json_variant(Variant v, uint32_t &i) {
 	return true;
 }
 
-static bool depth_from_json_variant(Variant &v, VoxelBuffer::Depth &d) {
+static bool depth_from_json_variant(Variant &v, VoxelBufferInternal::Depth &d) {
 	uint8_t n;
 	ERR_FAIL_COND_V(!u8_from_json_variant(v, n), false);
-	ERR_FAIL_INDEX_V(n, VoxelBuffer::DEPTH_COUNT, false);
-	d = (VoxelBuffer::Depth)n;
+	ERR_FAIL_INDEX_V(n, VoxelBufferInternal::DEPTH_COUNT, false);
+	d = (VoxelBufferInternal::Depth)n;
 	return true;
 }
 
@@ -306,9 +312,9 @@ VoxelFileResult VoxelStreamRegionFiles::save_meta() {
 static void migrate_region_meta_data(Dictionary &data) {
 	if (data["version"] == Variant(real_t(FORMAT_VERSION_LEGACY_1))) {
 		Array depths;
-		depths.resize(VoxelBuffer::MAX_CHANNELS);
+		depths.resize(VoxelBufferInternal::MAX_CHANNELS);
 		for (int i = 0; i < depths.size(); ++i) {
-			depths[i] = VoxelBuffer::DEFAULT_CHANNEL_DEPTH;
+			depths[i] = VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH;
 		}
 		data["channel_depths"] = depths;
 		data["version"] = FORMAT_VERSION_LEGACY_2;
@@ -669,13 +675,11 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 				continue;
 			}
 
-			Ref<VoxelBuffer> old_block;
-			old_block.instance();
-			old_block->create(old_block_size.x, old_block_size.y, old_block_size.z);
+			VoxelBufferInternal old_block;
+			old_block.create(old_block_size.x, old_block_size.y, old_block_size.z);
 
-			Ref<VoxelBuffer> new_block;
-			new_block.instance();
-			new_block->create(new_block_size.x, new_block_size.y, new_block_size.z);
+			VoxelBufferInternal new_block;
+			new_block.create(new_block_size.x, new_block_size.y, new_block_size.z);
 
 			// Load block from old stream
 			Vector3i block_rpos = old_region->region.get_block_position_from_index(j);
@@ -697,13 +701,13 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					// Copy to a sub-area of one block
 					emerge_block(new_block, new_block_pos * new_block_size << region_info.lod, region_info.lod);
 
-					Vector3i dst_pos = rel * old_block->get_size();
+					Vector3i dst_pos = rel * old_block.get_size();
 
 					for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
-						new_block->copy_from(**old_block, Vector3i(), old_block->get_size(), dst_pos, channel_index);
+						new_block.copy_from(old_block, Vector3i(), old_block.get_size(), dst_pos, channel_index);
 					}
 
-					new_block->compress_uniform_channels();
+					new_block.compress_uniform_channels();
 					immerge_block(new_block, new_block_pos * new_block_size << region_info.lod, region_info.lod);
 
 				} else {
@@ -714,12 +718,12 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					for (rpos.z = 0; rpos.z < area.z; ++rpos.z) {
 						for (rpos.x = 0; rpos.x < area.x; ++rpos.x) {
 							for (rpos.y = 0; rpos.y < area.y; ++rpos.y) {
-								Vector3i src_min = rpos * new_block->get_size();
-								Vector3i src_max = src_min + new_block->get_size();
+								Vector3i src_min = rpos * new_block.get_size();
+								Vector3i src_max = src_min + new_block.get_size();
 
 								for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS;
 										++channel_index) {
-									new_block->copy_from(**old_block, src_min, src_max, Vector3i(), channel_index);
+									new_block.copy_from(old_block, src_min, src_max, Vector3i(), channel_index);
 								}
 
 								immerge_block(new_block,
