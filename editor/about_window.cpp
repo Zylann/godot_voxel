@@ -248,7 +248,7 @@ void VoxelAboutWindow::_on_about_rich_text_label_meta_clicked(Variant meta) {
 }
 
 void VoxelAboutWindow::_on_third_party_list_item_selected(int index) {
-	ERR_FAIL_COND(index < 0 || index >= VOXEL_THIRD_PARTY_COUNT);
+	ERR_FAIL_COND(index < 0 || index >= int(VOXEL_THIRD_PARTY_COUNT));
 	const ThirdParty &third_party = g_third_parties[index];
 	_third_party_rich_text_label->set_text(String("{0}\n------------------------------\n{1}")
 												   .format(varray(third_party.name, third_party.license)));
