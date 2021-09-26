@@ -81,7 +81,7 @@ VoxelStream::Result VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Ve
 
 void VoxelStream::_b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
-	ERR_FAIL_COND(buffer.is_null(), RESULT_ERROR);
+	ERR_FAIL_COND(buffer.is_null());
 	immerge_block(buffer->get_buffer(), Vector3i(origin_in_voxels), lod);
 }
 
