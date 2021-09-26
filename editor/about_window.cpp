@@ -106,6 +106,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 
 	Button *button = memnew(Button);
 	button->set_text(TTR("Ok"));
+	button->set_custom_minimum_size(Vector2(100 * EDSCALE, 0));
 	h_box_container2->add_child(button);
 
 	v_box_container->add_child(h_box_container2);
