@@ -2,3 +2,8 @@
 .caption {
     color: #5599ff;
 }
+/* Undo vertical padding on the "Previous Next" fixed box at the bottom of the navigator,
+otherwise it covers the last item */
+.rst-versions .rst-current-version {
+    padding: 0px 12px 0px 12px;
+}
