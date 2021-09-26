@@ -23,7 +23,6 @@ bool VoxelToolTerrain::is_area_editable(const Box3i &box) const {
 }
 
 Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, float p_max_distance, uint32_t p_collision_mask) {
-	// TODO Transform input if the terrain is rotated
 	// TODO Implement broad-phase on blocks to minimize locking and increase performance
 
 	struct RaycastPredicateColor {
