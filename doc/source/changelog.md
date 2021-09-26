@@ -18,6 +18,7 @@ Ongoing development - `master`
     - Added property to terrain nodes to configure collision margin
     - Thread count is automatically determined from the number of concurrent threads the CPU supports
     - Added project settings to configure thread count
+    - Added third-party licenses to the About Window in the editor
 
 - Blocky voxels
     - Added *.vox importers to import MagicaVoxel files as scenes or meshes
