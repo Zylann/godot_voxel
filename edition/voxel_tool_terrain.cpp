@@ -247,7 +247,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 
 	const int block_count = voxel_count / batch_count;
 	const int bs_mask = map.get_block_size_mask();
-	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_TYPE;
 
 	struct Pick {
 		uint64_t value;
@@ -272,7 +272,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 				RWLockRead lock(block->get_voxels().get_lock());
 				const VoxelBufferInternal &voxels = block->get_voxels_const();
 
-				if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+				if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
 					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
 					if (lib.has_voxel(v)) {
 						const Voxel &vt = lib.get_voxel_const(v);
