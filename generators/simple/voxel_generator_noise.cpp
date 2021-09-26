@@ -42,8 +42,8 @@ void VoxelGeneratorNoise::_on_noise_changed() {
 }
 
 void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId p_channel) {
-	ERR_FAIL_INDEX(p_channel, VoxelBuffer::MAX_CHANNELS);
 	VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::ChannelId(p_channel);
+	ERR_FAIL_INDEX(channel, VoxelBufferInternal::MAX_CHANNELS);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);

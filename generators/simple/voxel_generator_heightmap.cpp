@@ -8,8 +8,9 @@ VoxelGeneratorHeightmap::VoxelGeneratorHeightmap() {
 VoxelGeneratorHeightmap::~VoxelGeneratorHeightmap() {
 }
 
-void VoxelGeneratorHeightmap::set_channel(VoxelBuffer::ChannelId channel) {
-	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
+void VoxelGeneratorHeightmap::set_channel(VoxelBuffer::ChannelId p_channel) {
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::ChannelId(p_channel);
+	ERR_FAIL_INDEX(channel, VoxelBufferInternal::MAX_CHANNELS);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);

@@ -11,7 +11,7 @@ public:
 	VoxelGeneratorHeightmap();
 	~VoxelGeneratorHeightmap();
 
-	void set_channel(VoxelBuffer::ChannelId channel);
+	void set_channel(VoxelBuffer::ChannelId p_channel);
 	VoxelBuffer::ChannelId get_channel() const;
 	int get_used_channels_mask() const override;
 

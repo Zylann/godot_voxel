@@ -7,8 +7,8 @@ VoxelGeneratorFlat::~VoxelGeneratorFlat() {
 }
 
 void VoxelGeneratorFlat::set_channel(VoxelBuffer::ChannelId p_channel) {
-	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
-	VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::ChannelId(p_channel);
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::ChannelId(p_channel);
+	ERR_FAIL_INDEX(channel, VoxelBufferInternal::MAX_CHANNELS);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);
