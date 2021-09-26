@@ -84,7 +84,7 @@ void VoxelStreamRegionFiles::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vec
 
 	Vector<VoxelBlockRequest> fallback_requests;
 
-	for (int i = 0; i < sorted_blocks.size(); ++i) {
+	for (unsigned int i = 0; i < sorted_blocks.size(); ++i) {
 		VoxelBlockRequest &r = *sorted_blocks[i];
 		const EmergeResult result = _emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 		switch (result) {
@@ -113,7 +113,7 @@ void VoxelStreamRegionFiles::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
 	comparator.self = this;
 	get_sorted_pointers(p_blocks, comparator, sorted_blocks);
 
-	for (int i = 0; i < sorted_blocks.size(); ++i) {
+	for (unsigned int i = 0; i < sorted_blocks.size(); ++i) {
 		VoxelBlockRequest &r = *sorted_blocks[i];
 		_immerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 	}

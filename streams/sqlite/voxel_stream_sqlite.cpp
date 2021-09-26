@@ -592,7 +592,7 @@ void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<R
 
 	// Check the cache first
 	Vector<int> blocks_to_load;
-	for (int i = 0; i < p_blocks.size(); ++i) {
+	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		VoxelBlockRequest &wr = p_blocks[i];
 		const Vector3i pos = wr.origin_in_voxels >> bs_po2;
 
@@ -647,7 +647,7 @@ void VoxelStreamSQLite::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
 	const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// First put in cache
-	for (int i = 0; i < p_blocks.size(); ++i) {
+	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		VoxelBlockRequest &r = p_blocks[i];
 		const Vector3i pos = r.origin_in_voxels >> bs_po2;
 
