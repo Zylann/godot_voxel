@@ -2,9 +2,100 @@
 
 #include <core/os/os.h>
 #include <editor/editor_scale.h>
+#include <scene/gui/item_list.h>
 #include <scene/gui/rich_text_label.h>
+#include <scene/gui/split_container.h>
 #include <scene/gui/tab_container.h>
 #include <scene/gui/texture_rect.h>
+
+#define VOXEL_ARRAY_LENGTH(a) (sizeof(a) / sizeof(a[0]))
+
+namespace {
+struct ThirdParty {
+	const char *name;
+	const char *license;
+};
+const ThirdParty g_third_parties[] = {
+	{ "FastNoiseLite",
+			"MIT License\n"
+			"\n"
+			"Copyright(c) 2020 Jordan Peck (jordan.me2@gmail.com)\n"
+			"Copyright(c) 2020 Contributors\n"
+			"\n"
+			"Permission is hereby granted, free of charge, to any person obtaining a copy\n"
+			"of this software and associated documentation files(the \" Software \"), to deal\n"
+			"in the Software without restriction, including without limitation the rights\n"
+			"to use, copy, modify, merge, publish, distribute, sublicense, and / or sell\n"
+			"copies of the Software, and to permit persons to whom the Software is\n"
+			"furnished to do so, subject to the following conditions :\n"
+			"\n"
+			"The above copyright notice and this permission notice shall be included in all\n"
+			"copies or substantial portions of the Software.\n"
+			"\n"
+			"THE SOFTWARE IS PROVIDED \" AS IS \", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
+			"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
+			"FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE\n"
+			"AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+			"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
+			"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+			"SOFTWARE.\n" },
+	{ "LZ4 compression library",
+			"Copyright (c) 2011-2016, Yann Collet\n"
+			"All rights reserved.\n"
+			"\n"
+			"Redistribution and use in source and binary forms, with or without modification,\n"
+			"are permitted provided that the following conditions are met:\n"
+			"\n"
+			"* Redistributions of source code must retain the above copyright notice, this\n"
+			"list of conditions and the following disclaimer.\n"
+			"\n"
+			"* Redistributions in binary form must reproduce the above copyright notice, this\n"
+			"list of conditions and the following disclaimer in the documentation and/or\n"
+			"other materials provided with the distribution.\n"
+			"\n"
+			"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \" AS IS \" AND\n"
+			"ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\n"
+			"WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\n"
+			"DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR\n"
+			"ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES\n"
+			"(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\n"
+			"LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON\n"
+			"ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n"
+			"(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n"
+			"SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n" },
+	{ "MeshOptimizer",
+			"MIT License\n"
+			"\n"
+			"Copyright (c) 2016-2021 Arseny Kapoulkine\n"
+			"\n"
+			"Permission is hereby granted, free of charge, to any person obtaining a copy\n"
+			"of this software and associated documentation files (the \"Software\"), to deal\n"
+			"in the Software without restriction, including without limitation the rights\n"
+			"to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n"
+			"copies of the Software, and to permit persons to whom the Software is\n"
+			"furnished to do so, subject to the following conditions:\n"
+			"\n"
+			"The above copyright notice and this permission notice shall be included in all\n"
+			"copies or substantial portions of the Software.\n"
+			"\n"
+			"THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
+			"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
+			"FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n"
+			"AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+			"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
+			"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+			"SOFTWARE.\n" },
+	{ "SQLite",
+			"This software is public-domain.\n"
+			"The author disclaims copyright to this source code.  In place of\n"
+			"a legal notice, here is a blessing:\n"
+			"\n"
+			"   May you do good and not evil.\n"
+			"   May you find forgiveness for yourself and forgive others.\n"
+			"   May you share freely, never taking more than you give.\n" }
+};
+const unsigned int VOXEL_THIRD_PARTY_COUNT = VOXEL_ARRAY_LENGTH(g_third_parties);
+} // namespace
 
 VoxelAboutWindow::VoxelAboutWindow() {
 	// Generated with the help of https://github.com/Zylann/godot_scene_code_converter
@@ -97,6 +188,32 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	tab_container->set_tab_title(0, TTR("About"));
 	tab_container->set_tab_title(1, TTR("License"));
 
+	// Third-party licenses
+	if (VOXEL_THIRD_PARTY_COUNT > 0) {
+		HSplitContainer *third_party_container = memnew(HSplitContainer);
+		ItemList *third_party_list = memnew(ItemList);
+		third_party_list->set_custom_minimum_size(Vector2(200, 0) * EDSCALE);
+
+		for (unsigned int i = 0; i < VOXEL_THIRD_PARTY_COUNT; ++i) {
+			const ThirdParty &third_party = g_third_parties[i];
+			third_party_list->add_item(third_party.name);
+		}
+
+		third_party_list->connect("item_selected", this, "_on_third_party_list_item_selected");
+
+		_third_party_rich_text_label = memnew(RichTextLabel);
+		_third_party_rich_text_label->set_selection_enabled(true);
+
+		third_party_container->add_child(third_party_list);
+		third_party_container->add_child(_third_party_rich_text_label);
+
+		tab_container->add_child(third_party_container);
+		tab_container->set_tab_title(2, TTR("Third party licenses"));
+
+		third_party_list->select(0);
+		_on_third_party_list_item_selected(0);
+	}
+
 	h_box_container->add_child(tab_container);
 
 	v_box_container->add_child(h_box_container);
@@ -130,8 +247,17 @@ void VoxelAboutWindow::_on_about_rich_text_label_meta_clicked(Variant meta) {
 	OS::get_singleton()->shell_open(meta);
 }
 
+void VoxelAboutWindow::_on_third_party_list_item_selected(int index) {
+	ERR_FAIL_COND(index < 0 || index >= VOXEL_THIRD_PARTY_COUNT);
+	const ThirdParty &third_party = g_third_parties[index];
+	_third_party_rich_text_label->set_text(String("{0}\n------------------------------\n{1}")
+												   .format(varray(third_party.name, third_party.license)));
+}
+
 void VoxelAboutWindow::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_ok_button_pressed"), &VoxelAboutWindow::_on_ok_button_pressed);
 	ClassDB::bind_method(D_METHOD("_on_about_rich_text_label_meta_clicked", "meta"),
 			&VoxelAboutWindow::_on_about_rich_text_label_meta_clicked);
+	ClassDB::bind_method(D_METHOD("_on_third_party_list_item_selected"),
+			&VoxelAboutWindow::_on_third_party_list_item_selected);
 }
