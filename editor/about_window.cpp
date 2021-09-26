@@ -37,7 +37,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	tab_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 
 	// About
-	String about_text = "[b]Version:[/b] {version}\n"
+	String about_text = L"[b]Version:[/b] {version}\n"
 						"[b]Author:[/b] Marc Gilleron\n"
 						"[b]Repository:[/b] [url]https://github.com/Zylann/godot_voxel[/url]\n"
 						"[b]Issue tracker:[/b] [url]https://github.com/Zylann/godot_voxel/issues[/url]\n"
