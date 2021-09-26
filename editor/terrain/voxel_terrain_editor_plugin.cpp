@@ -243,7 +243,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_ABOUT:
-			_about_window->popup_centered();
+			_about_window->popup_centered_ratio(0.6);
 			break;
 	}
 }
