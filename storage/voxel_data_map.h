@@ -5,8 +5,8 @@
 #include "../util/profiling.h"
 #include "voxel_data_block.h"
 
-#include <core/hash_map.h>
 #include <scene/main/node.h>
+#include <unordered_map>
 
 // Infinite voxel storage by means of octants like Gridmap, within a constant LOD.
 // Convenience functions to access VoxelBuffers internally will lock them to protect against multithreaded access.
@@ -74,9 +74,9 @@ public:
 		if (_last_accessed_block && _last_accessed_block->position == bpos) {
 			_last_accessed_block = nullptr;
 		}
-		unsigned int *iptr = _blocks_map.getptr(bpos);
-		if (iptr != nullptr) {
-			const unsigned int i = *iptr;
+		auto it = _blocks_map.find(bpos);
+		if (it != _blocks_map.end()) {
+			const unsigned int i = it->second;
 #ifdef DEBUG_ENABLED
 			CRASH_COND(i >= _blocks.size());
 #endif
@@ -162,8 +162,10 @@ private:
 	FixedArray<uint64_t, VoxelBufferInternal::MAX_CHANNELS> _default_voxel;
 
 	// Blocks stored with a spatial hash in all 3D directions.
-	// RELATIONSHIP = 2 because it delivers better performance with this kind of key and hash (less collisions).
-	HashMap<Vector3i, unsigned int, Vector3iHasher, HashMapComparatorDefault<Vector3i>, 3, 2> _blocks_map;
+	// Before I used Godot's HashMap with RELATIONSHIP = 2 because that delivers better performance compared to
+	// defaults, but it sometimes has very long stalls on removal, which std::unordered_map doesn't seem to have
+	// (not as badly). Also overall performance is slightly better.
+	std::unordered_map<Vector3i, unsigned int> _blocks_map;
 	std::vector<VoxelDataBlock *> _blocks;
 
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.

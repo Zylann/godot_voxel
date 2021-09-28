@@ -114,9 +114,9 @@ VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) {
 	if (_last_accessed_block && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
-	unsigned int *iptr = _blocks_map.getptr(bpos);
-	if (iptr != nullptr) {
-		const unsigned int i = *iptr;
+	auto it = _blocks_map.find(bpos);
+	if (it != _blocks_map.end()) {
+		const unsigned int i = it->second;
 #ifdef DEBUG_ENABLED
 		CRASH_COND(i >= _blocks.size());
 #endif
@@ -132,9 +132,9 @@ const VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) const {
 	if (_last_accessed_block != nullptr && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
-	const unsigned int *iptr = _blocks_map.getptr(bpos);
-	if (iptr != nullptr) {
-		const unsigned int i = *iptr;
+	auto it = _blocks_map.find(bpos);
+	if (it != _blocks_map.end()) {
+		const unsigned int i = it->second;
 #ifdef DEBUG_ENABLED
 		CRASH_COND(i >= _blocks.size());
 #endif
@@ -153,11 +153,11 @@ void VoxelDataMap::set_block(Vector3i bpos, VoxelDataBlock *block) {
 		_last_accessed_block = block;
 	}
 #ifdef DEBUG_ENABLED
-	CRASH_COND(_blocks_map.has(bpos));
+	CRASH_COND(_blocks_map.find(bpos) != _blocks_map.end());
 #endif
 	unsigned int i = _blocks.size();
 	_blocks.push_back(block);
-	_blocks_map.set(bpos, i);
+	_blocks_map.insert(std::make_pair(bpos, i));
 }
 
 void VoxelDataMap::remove_block_internal(Vector3i bpos, unsigned int index) {
@@ -176,9 +176,9 @@ void VoxelDataMap::remove_block_internal(Vector3i bpos, unsigned int index) {
 	_blocks.pop_back();
 
 	if (index < _blocks.size()) {
-		unsigned int *moved_block_index = _blocks_map.getptr(moved_block->position);
-		CRASH_COND(moved_block_index == nullptr);
-		*moved_block_index = index;
+		auto it = _blocks_map.find(moved_block->position);
+		CRASH_COND(it == _blocks_map.end());
+		it->second = index;
 	}
 }
 
@@ -195,7 +195,8 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, std::shared_ptr<Vo
 }
 
 bool VoxelDataMap::has_block(Vector3i pos) const {
-	return /*(_last_accessed_block != nullptr && _last_accessed_block->pos == pos) ||*/ _blocks_map.has(pos);
+	return /*(_last_accessed_block != nullptr && _last_accessed_block->pos == pos) ||*/
+			_blocks_map.find(pos) != _blocks_map.end();
 }
 
 bool VoxelDataMap::is_block_surrounded(Vector3i pos) const {
