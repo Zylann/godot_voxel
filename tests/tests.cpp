@@ -997,6 +997,19 @@ void test_get_curve_monotonic_sections() {
 	}
 }
 
+void test_voxel_buffer_create() {
+	// This test was a repro for a memory corruption crash.
+	VoxelBufferInternal generated_voxels;
+	generated_voxels.create(Vector3i(5, 5, 5));
+	generated_voxels.set_voxel_f(-0.7f, 3, 3, 3, VoxelBufferInternal::CHANNEL_SDF);
+	generated_voxels.create(Vector3i(16, 16, 18));
+	// This was found to cause memory corruption at this point because channels got re-allocated using the new size,
+	// but were filled using the old size, which was greater, and accessed out of bounds memory.
+	// The old size was used because the `_size` member was assigned too late in the process.
+	// The corruption did not cause a crash here, but somewhere random where malloc was used shortly after.
+	generated_voxels.create(Vector3i(1, 16, 18));
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                     \
@@ -1022,6 +1035,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_octree_update);
 	VOXEL_TEST(test_octree_find_in_box);
 	VOXEL_TEST(test_get_curve_monotonic_sections);
+	VOXEL_TEST(test_voxel_buffer_create);
 
 	print_line("------------ Voxel tests end -------------");
 }

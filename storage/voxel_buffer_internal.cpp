@@ -144,20 +144,26 @@ VoxelBufferInternal &VoxelBufferInternal::operator=(VoxelBufferInternal &&src) {
 
 void VoxelBufferInternal::create(unsigned int sx, unsigned int sy, unsigned int sz) {
 	ERR_FAIL_COND(sx > MAX_SIZE || sy > MAX_SIZE || sz > MAX_SIZE);
+#ifdef TOOLS_ENABLED
+	if (sx == 0 || sy == 0 || sz == 0) {
+		WARN_PRINT(String("VoxelBuffer::create called with empty size ({0}, {1}, {2})").format(varray(sx, sy, sz)));
+	}
+#endif
 
 	clear_voxel_metadata();
 
-	Vector3i new_size(sx, sy, sz);
+	const Vector3i new_size(sx, sy, sz);
 	if (new_size != _size) {
-		for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
+		// Assign size first, because `create_channel` uses it
+		_size = new_size;
+		for (unsigned int i = 0; i < _channels.size(); ++i) {
 			Channel &channel = _channels[i];
-			if (channel.data) {
+			if (channel.data != nullptr) {
 				// Channel already contained data
 				delete_channel(i);
-				ERR_FAIL_COND(!create_channel(i, new_size, channel.defval));
+				ERR_FAIL_COND(!create_channel(i, channel.defval));
 			}
 		}
-		_size = new_size;
 	}
 }
 
@@ -168,7 +174,7 @@ void VoxelBufferInternal::create(Vector3i size) {
 void VoxelBufferInternal::clear() {
 	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
 		Channel &channel = _channels[i];
-		if (channel.data) {
+		if (channel.data != nullptr) {
 			delete_channel(i);
 		}
 	}
@@ -241,7 +247,7 @@ void VoxelBufferInternal::set_voxel(uint64_t value, int x, int y, int z, unsigne
 	if (channel.data == nullptr) {
 		if (channel.defval != value) {
 			// Allocate channel with same initial values as defval
-			ERR_FAIL_COND(!create_channel(channel_index, _size, channel.defval));
+			ERR_FAIL_COND(!create_channel(channel_index, channel.defval));
 		} else {
 			do_set = false;
 		}
@@ -304,6 +310,9 @@ void VoxelBufferInternal::fill(uint64_t defval, unsigned int channel_index) {
 	}
 
 	const size_t volume = get_volume();
+#ifdef DEBUG_ENABLED
+	CRASH_COND(channel.size_in_bytes != get_size_in_bytes_for_volume(_size, channel.depth));
+#endif
 
 	switch (channel.depth) {
 		case DEPTH_8_BIT:
@@ -352,12 +361,13 @@ void VoxelBufferInternal::fill_area(uint64_t defval, Vector3i min, Vector3i max,
 		if (channel.defval == defval) {
 			return;
 		} else {
-			ERR_FAIL_COND(!create_channel(channel_index, _size, channel.defval));
+			ERR_FAIL_COND(!create_channel(channel_index, channel.defval));
 		}
 	}
 
 	Vector3i pos;
 	const size_t volume = get_volume();
+
 	for (pos.z = min.z; pos.z < max.z; ++pos.z) {
 		for (pos.x = min.x; pos.x < max.x; ++pos.x) {
 			const size_t dst_ri = get_index(pos.x, pos.y + min.y, pos.z);
@@ -454,7 +464,7 @@ void VoxelBufferInternal::decompress_channel(unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 	Channel &channel = _channels[channel_index];
 	if (channel.data == nullptr) {
-		ERR_FAIL_COND(!create_channel(channel_index, _size, channel.defval));
+		ERR_FAIL_COND(!create_channel(channel_index, channel.defval));
 	}
 }
 
@@ -524,7 +534,7 @@ void VoxelBufferInternal::copy_from(const VoxelBufferInternal &other, Vector3i s
 		if (channel.data == nullptr) {
 			// Note, we do this even if the pasted data happens to be all the same value as our current channel.
 			// We assume that this case is not frequent enough to bother, and compression can happen later
-			ERR_FAIL_COND(!create_channel(channel_index, _size, channel.defval));
+			ERR_FAIL_COND(!create_channel(channel_index, channel.defval));
 		}
 		const unsigned int item_size = get_depth_byte_count(channel.depth);
 		Span<const uint8_t> src(other_channel.data, other_channel.size_in_bytes);
@@ -591,8 +601,8 @@ bool VoxelBufferInternal::get_channel_raw(unsigned int channel_index, Span<uint8
 	return false;
 }
 
-bool VoxelBufferInternal::create_channel(int i, Vector3i size, uint64_t defval) {
-	if (!create_channel_noinit(i, size)) {
+bool VoxelBufferInternal::create_channel(int i, uint64_t defval) {
+	if (!create_channel_noinit(i, _size)) {
 		return false;
 	}
 	fill(defval, i);
@@ -609,7 +619,7 @@ uint32_t VoxelBufferInternal::get_size_in_bytes_for_volume(Vector3i size, Depth 
 
 bool VoxelBufferInternal::create_channel_noinit(int i, Vector3i size) {
 	Channel &channel = _channels[i];
-	size_t size_in_bytes = get_size_in_bytes_for_volume(size, channel.depth);
+	const size_t size_in_bytes = get_size_in_bytes_for_volume(size, channel.depth);
 	CRASH_COND(channel.data != nullptr);
 	channel.data = allocate_channel_data(size_in_bytes);
 	ERR_FAIL_COND_V(channel.data == nullptr, false);
@@ -620,6 +630,8 @@ bool VoxelBufferInternal::create_channel_noinit(int i, Vector3i size) {
 void VoxelBufferInternal::delete_channel(int i) {
 	Channel &channel = _channels[i];
 	ERR_FAIL_COND(channel.data == nullptr);
+	// Don't use `_size` to obtain `data` byte count, since we could have changed `_size` up-front during a create().
+	// `size_in_bytes` reflects what is currently allocated inside `data`, regardless of anything else.
 	free_channel_data(channel.data, channel.size_in_bytes);
 	channel.data = nullptr;
 	channel.size_in_bytes = 0;

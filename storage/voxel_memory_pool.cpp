@@ -56,6 +56,8 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 }
 
 void VoxelMemoryPool::recycle(uint8_t *block, size_t size) {
+	CRASH_COND(size == 0);
+	CRASH_COND(block == nullptr);
 	MutexLock lock(_mutex);
 	Pool *pool = _pools[size]; // If not found, entry will be created! It would be an error
 	// Check recycling before having allocated

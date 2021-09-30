@@ -433,7 +433,7 @@ public:
 
 private:
 	bool create_channel_noinit(int i, Vector3i size);
-	bool create_channel(int i, Vector3i size, uint64_t defval);
+	bool create_channel(int i, uint64_t defval);
 	void delete_channel(int i);
 
 private:
