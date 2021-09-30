@@ -299,8 +299,8 @@ public:
 		int max_pos = pos + size;
 		int lim_max_pos = lim_pos + lim_size;
 
-		pos = CLAMP(pos, lim_pos, lim_max_pos);
-		max_pos = CLAMP(max_pos, lim_pos, lim_max_pos);
+		pos = clamp(pos, lim_pos, lim_max_pos);
+		max_pos = clamp(max_pos, lim_pos, lim_max_pos);
 
 		size = max_pos - pos;
 		if (size < 0) {
