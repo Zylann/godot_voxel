@@ -170,26 +170,27 @@ public:
 		Box3i a = *this;
 
 		Vector3i a_min = a.pos;
-		Vector3i b_min = b.pos;
 		Vector3i a_max = a.pos + a.size;
-		Vector3i b_max = b.pos + b.size;
+
+		const Vector3i b_min = b.pos;
+		const Vector3i b_max = b.pos + b.size;
 
 		if (a_min.x < b_min.x) {
-			Vector3i a_rect_size(b_min.x - a_min.x, a.size.y, a.size.z);
+			const Vector3i a_rect_size(b_min.x - a_min.x, a.size.y, a.size.z);
 			action(Box3i(a_min, a_rect_size));
 			a_min.x = b_min.x;
 			a.pos.x = b.pos.x;
 			a.size.x = a_max.x - a_min.x;
 		}
 		if (a_min.y < b_min.y) {
-			Vector3i a_rect_size(a.size.x, b_min.y - a_min.y, a.size.z);
+			const Vector3i a_rect_size(a.size.x, b_min.y - a_min.y, a.size.z);
 			action(Box3i(a_min, a_rect_size));
 			a_min.y = b_min.y;
 			a.pos.y = b.pos.y;
 			a.size.y = a_max.y - a_min.y;
 		}
 		if (a_min.z < b_min.z) {
-			Vector3i a_rect_size(a.size.x, a.size.y, b_min.z - a_min.z);
+			const Vector3i a_rect_size(a.size.x, a.size.y, b_min.z - a_min.z);
 			action(Box3i(a_min, a_rect_size));
 			a_min.z = b_min.z;
 			a.pos.z = b.pos.z;
@@ -197,22 +198,22 @@ public:
 		}
 
 		if (a_max.x > b_max.x) {
-			Vector3i a_rect_pos(b_max.x, a_min.y, a_min.z);
-			Vector3i a_rect_size(a_max.x - b_max.x, a.size.y, a.size.z);
+			const Vector3i a_rect_pos(b_max.x, a_min.y, a_min.z);
+			const Vector3i a_rect_size(a_max.x - b_max.x, a.size.y, a.size.z);
 			action(Box3i(a_rect_pos, a_rect_size));
 			a_max.x = b_max.x;
 			a.size.x = a_max.x - a_min.x;
 		}
 		if (a_max.y > b_max.y) {
-			Vector3i a_rect_pos(a_min.x, b_max.y, a_min.z);
-			Vector3i a_rect_size(a.size.x, a_max.y - b_max.y, a.size.z);
+			const Vector3i a_rect_pos(a_min.x, b_max.y, a_min.z);
+			const Vector3i a_rect_size(a.size.x, a_max.y - b_max.y, a.size.z);
 			action(Box3i(a_rect_pos, a_rect_size));
 			a_max.y = b_max.y;
 			a.size.y = a_max.y - a_min.y;
 		}
 		if (a_max.z > b_max.z) {
-			Vector3i a_rect_pos(a_min.x, a_min.y, b_max.z);
-			Vector3i a_rect_size(a.size.x, a.size.y, a_max.z - b_max.z);
+			const Vector3i a_rect_pos(a_min.x, a_min.y, b_max.z);
+			const Vector3i a_rect_size(a.size.x, a.size.y, a_max.z - b_max.z);
 			action(Box3i(a_rect_pos, a_rect_size));
 		}
 	}
