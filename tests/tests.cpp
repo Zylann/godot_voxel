@@ -261,7 +261,7 @@ void test_copy_3d_region_zxy() {
 		const Vector3i src_size(8, 8, 8);
 		const Vector3i dst_size(3, 4, 5);
 		src.resize(src_size.volume(), 0);
-		dst.resize(src_size.volume(), 0);
+		dst.resize(dst_size.volume(), 0);
 		for (unsigned int i = 0; i < src.size(); ++i) {
 			src[i] = i;
 		}
@@ -314,7 +314,7 @@ void test_copy_3d_region_zxy() {
 		const Vector3i src_size(3, 4, 5);
 		const Vector3i dst_size(3, 4, 5);
 		src.resize(src_size.volume(), 0);
-		dst.resize(src_size.volume(), 0);
+		dst.resize(dst_size.volume(), 0);
 		for (unsigned int i = 0; i < src.size(); ++i) {
 			src[i] = i;
 		}
@@ -323,7 +323,7 @@ void test_copy_3d_region_zxy() {
 		Span<uint16_t> dsts = to_span(dst);
 		const Vector3i dst_min(0, 0, 0);
 		const Vector3i src_min(0, 0, 0);
-		const Vector3i src_max = src_max;
+		const Vector3i src_max = src_size;
 		copy_3d_region_zxy(dsts, dst_size, dst_min, srcs, src_size, src_min, src_max);
 
 		L::compare(srcs, src_size, src_min, src_max, to_span_const(dsts), dst_size, dst_min);
