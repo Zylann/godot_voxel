@@ -26,7 +26,8 @@ void copy_3d_region_zxy(
 
 	if (area_size == src_size && area_size == dst_size) {
 		// Copy everything
-		memcpy(dst.data(), src.data(), dst.size() * item_size);
+		ERR_FAIL_COND(dst.size() != src.size());
+		memcpy(dst.data(), src.data(), dst.size());
 
 	} else {
 		// Copy area row by row:
@@ -40,6 +41,10 @@ void copy_3d_region_zxy(
 			unsigned int src_ri = Vector3i(src_min + pos).get_zxy_index(src_size) * item_size;
 			unsigned int dst_ri = Vector3i(dst_min + pos).get_zxy_index(dst_size) * item_size;
 			for (; pos.x < area_size.x; ++pos.x) {
+#ifdef DEBUG_ENABLED
+				ERR_FAIL_COND(dst_ri >= dst.size());
+				ERR_FAIL_COND(dst.size() - dst_ri < area_size.y * item_size);
+#endif
 				// TODO Cast src and dst to `restrict` so the optimizer can assume adresses don't overlap,
 				//      which might allow to write as a for loop (which may compile as a `memcpy`)?
 				memcpy(&dst[dst_ri], &src[src_ri], area_size.y * item_size);

@@ -238,24 +238,42 @@ void test_encode_weights_packed_u16() {
 }
 
 void test_copy_3d_region_zxy() {
-	std::vector<uint16_t> src;
-	std::vector<uint16_t> dst;
-	const Vector3i src_size(8, 8, 8);
-	const Vector3i dst_size(3, 4, 5);
-	src.resize(src_size.volume(), 0);
-	dst.resize(src_size.volume(), 0);
-	for (unsigned int i = 0; i < src.size(); ++i) {
-		src[i] = i;
-	}
+	struct L {
+		static void compare(
+				Span<const uint16_t> srcs, Vector3i src_size, Vector3i src_min, Vector3i src_max,
+				Span<const uint16_t> dsts, Vector3i dst_size, Vector3i dst_min) {
+			Vector3i pos;
+			for (pos.z = src_min.z; pos.z < src_max.z; ++pos.z) {
+				for (pos.x = src_min.x; pos.x < src_max.x; ++pos.x) {
+					for (pos.y = src_min.y; pos.y < src_max.y; ++pos.y) {
+						const uint16_t srcv = srcs[pos.get_zxy_index(src_size)];
+						const uint16_t dstv = dsts[(pos - src_min + dst_min).get_zxy_index(dst_size)];
+						ERR_FAIL_COND(srcv != dstv);
+					}
+				}
+			}
+		}
+	};
+	// Sub-region
+	{
+		std::vector<uint16_t> src;
+		std::vector<uint16_t> dst;
+		const Vector3i src_size(8, 8, 8);
+		const Vector3i dst_size(3, 4, 5);
+		src.resize(src_size.volume(), 0);
+		dst.resize(src_size.volume(), 0);
+		for (unsigned int i = 0; i < src.size(); ++i) {
+			src[i] = i;
+		}
 
-	Span<const uint16_t> srcs = to_span_const(src);
-	Span<uint16_t> dsts = to_span(dst);
-	const Vector3i dst_min(0, 0, 0);
-	const Vector3i src_min(2, 1, 0);
-	const Vector3i src_max(5, 4, 3);
-	copy_3d_region_zxy(dsts, dst_size, dst_min, srcs, src_size, src_min, src_max);
+		Span<const uint16_t> srcs = to_span_const(src);
+		Span<uint16_t> dsts = to_span(dst);
+		const Vector3i dst_min(0, 0, 0);
+		const Vector3i src_min(2, 1, 0);
+		const Vector3i src_max(5, 4, 3);
+		copy_3d_region_zxy(dsts, dst_size, dst_min, srcs, src_size, src_min, src_max);
 
-	/*for (pos.y = src_min.y; pos.y < src_max.y; ++pos.y) {
+		/*for (pos.y = src_min.y; pos.y < src_max.y; ++pos.y) {
 		String s;
 		for (pos.x = src_min.x; pos.x < src_max.x; ++pos.x) {
 			const uint16_t v = srcs[pos.get_zxy_index(src_size)];
@@ -287,15 +305,28 @@ void test_copy_3d_region_zxy() {
 		print_line(s);
 	}*/
 
-	Vector3i pos;
-	for (pos.z = src_min.z; pos.z < src_max.z; ++pos.z) {
-		for (pos.x = src_min.x; pos.x < src_max.x; ++pos.x) {
-			for (pos.y = src_min.y; pos.y < src_max.y; ++pos.y) {
-				const uint16_t srcv = srcs[pos.get_zxy_index(src_size)];
-				const uint16_t dstv = dsts[(pos - src_min + dst_min).get_zxy_index(dst_size)];
-				ERR_FAIL_COND(srcv != dstv);
-			}
+		L::compare(srcs, src_size, src_min, src_max, to_span_const(dsts), dst_size, dst_min);
+	}
+	// Same size, full region
+	{
+		std::vector<uint16_t> src;
+		std::vector<uint16_t> dst;
+		const Vector3i src_size(3, 4, 5);
+		const Vector3i dst_size(3, 4, 5);
+		src.resize(src_size.volume(), 0);
+		dst.resize(src_size.volume(), 0);
+		for (unsigned int i = 0; i < src.size(); ++i) {
+			src[i] = i;
 		}
+
+		Span<const uint16_t> srcs = to_span_const(src);
+		Span<uint16_t> dsts = to_span(dst);
+		const Vector3i dst_min(0, 0, 0);
+		const Vector3i src_min(0, 0, 0);
+		const Vector3i src_max = src_max;
+		copy_3d_region_zxy(dsts, dst_size, dst_min, srcs, src_size, src_min, src_max);
+
+		L::compare(srcs, src_size, src_min, src_max, to_span_const(dsts), dst_size, dst_min);
 	}
 }
 

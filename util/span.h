@@ -150,4 +150,9 @@ Span<const T> to_span_const(const FixedArray<T, N> &a) {
 	return Span<const T>(a.data(), 0, a.size());
 }
 
+template <typename T>
+Span<const T> to_span_const(const Span<T> &a) {
+	return Span<const T>(a.data(), 0, a.size());
+}
+
 #endif // SPAN_H
