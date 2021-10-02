@@ -10,8 +10,12 @@ VoxelDataMap::VoxelDataMap() :
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
 	set_block_size_pow2(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2);
 
-	_default_voxel.fill(0);
-	_default_voxel[VoxelBufferInternal::CHANNEL_SDF] = 255;
+	// Pick same defaults as VoxelBuffer
+	VoxelBufferInternal b;
+	b.create(1, 1, 1);
+	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
+		_default_voxel[channel_index] = b.get_voxel(0, 0, 0, channel_index);
+	}
 }
 
 VoxelDataMap::~VoxelDataMap() {
