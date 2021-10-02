@@ -16,7 +16,7 @@
 				The returned dictionary has the following structure:
 				[codeblock]
 				{
-					"pools": {
+					"thread_pools": {
 						"streaming": {
 							"tasks": int,
 							"active_threads": int,
@@ -32,6 +32,10 @@
 						"streaming": int,
 						"meshing": int,
 						"generation": int
+					},
+					"memory_pools": {
+						"voxel_used": int,
+						"voxel_total": int
 					}
 				}
 				[/codeblock]

@@ -29,6 +29,8 @@ public:
 
 	void debug_print();
 	unsigned int debug_get_used_blocks() const;
+	size_t debug_get_used_memory() const;
+	size_t debug_get_total_memory() const;
 
 private:
 	Pool *get_or_create_pool(size_t size);
@@ -42,6 +44,8 @@ private:
 
 	HashMap<size_t, Pool *, SizeTHasher> _pools;
 	unsigned int _used_blocks = 0;
+	size_t _used_memory = 0;
+	size_t _total_memory = 0;
 	Mutex _mutex;
 };
 

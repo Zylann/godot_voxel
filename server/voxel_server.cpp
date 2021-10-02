@@ -1,5 +1,6 @@
 #include "voxel_server.h"
 #include "../constants/voxel_constants.h"
+#include "../storage/voxel_memory_pool.h"
 #include "../util/funcs.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
@@ -601,6 +602,30 @@ static VoxelServer::Stats::ThreadPoolStats debug_get_pool_stats(const VoxelThrea
 	d.tasks = pool.get_debug_remaining_tasks();
 	d.active_threads = debug_get_active_thread_count(pool);
 	d.thread_count = pool.get_thread_count();
+	return d;
+}
+
+Dictionary VoxelServer::Stats::to_dict() {
+	Dictionary pools;
+	pools["streaming"] = streaming.to_dict();
+	pools["general"] = general.to_dict();
+
+	Dictionary tasks;
+	tasks["streaming"] = streaming_tasks;
+	tasks["generation"] = generation_tasks;
+	tasks["meshing"] = meshing_tasks;
+	tasks["main_thread"] = main_thread_tasks;
+
+	// This part is additional for scripts because VoxelMemoryPool is not exposed
+	Dictionary mem;
+	mem["voxel_total"] = VoxelMemoryPool::get_singleton()->debug_get_total_memory();
+	mem["voxel_used"] = VoxelMemoryPool::get_singleton()->debug_get_used_memory();
+	mem["block_count"] = VoxelMemoryPool::get_singleton()->debug_get_used_blocks();
+
+	Dictionary d;
+	d["thread_pools"] = pools;
+	d["tasks"] = tasks;
+	d["memory_pools"] = mem;
 	return d;
 }
 

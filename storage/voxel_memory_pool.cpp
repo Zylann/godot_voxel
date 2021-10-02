@@ -50,8 +50,10 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 	} else {
 		block = (uint8_t *)memalloc(size * sizeof(uint8_t));
 		ERR_FAIL_COND_V(block == nullptr, nullptr);
+		_total_memory += size;
 	}
 	++_used_blocks;
+	_used_memory += size;
 	return block;
 }
 
@@ -64,6 +66,7 @@ void VoxelMemoryPool::recycle(uint8_t *block, size_t size) {
 	CRASH_COND(pool == nullptr);
 	pool->blocks.push_back(block);
 	--_used_blocks;
+	_used_memory -= size;
 }
 
 void VoxelMemoryPool::clear_unused_blocks() {
@@ -77,6 +80,7 @@ void VoxelMemoryPool::clear_unused_blocks() {
 			CRASH_COND(ptr == nullptr);
 			memfree(ptr);
 		}
+		_total_memory -= (*key) * pool->blocks.size();
 		pool->blocks.clear();
 	}
 }
@@ -94,6 +98,9 @@ void VoxelMemoryPool::clear() {
 		}
 	}
 	_pools.clear();
+	_used_memory = 0;
+	_total_memory = 0;
+	_used_blocks;
 }
 
 void VoxelMemoryPool::debug_print() {
@@ -114,8 +121,18 @@ void VoxelMemoryPool::debug_print() {
 }
 
 unsigned int VoxelMemoryPool::debug_get_used_blocks() const {
-	MutexLock lock(_mutex);
+	//MutexLock lock(_mutex);
 	return _used_blocks;
+}
+
+size_t VoxelMemoryPool::debug_get_used_memory() const {
+	//MutexLock lock(_mutex);
+	return _used_memory;
+}
+
+size_t VoxelMemoryPool::debug_get_total_memory() const {
+	//MutexLock lock(_mutex);
+	return _total_memory;
 }
 
 VoxelMemoryPool::Pool *VoxelMemoryPool::get_or_create_pool(size_t size) {

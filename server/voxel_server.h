@@ -186,20 +186,7 @@ public:
 		int meshing_tasks;
 		int main_thread_tasks;
 
-		Dictionary to_dict() {
-			Dictionary pools;
-			pools["streaming"] = streaming.to_dict();
-			pools["general"] = streaming.to_dict();
-			Dictionary tasks;
-			tasks["streaming"] = generation_tasks;
-			tasks["generation"] = generation_tasks;
-			tasks["meshing"] = meshing_tasks;
-			tasks["main_thread"] = main_thread_tasks;
-			Dictionary d;
-			d["pools"] = pools;
-			d["tasks"] = tasks;
-			return d;
-		}
+		Dictionary to_dict();
 	};
 
 	Stats get_stats() const;
@@ -298,7 +285,7 @@ private:
 
 		std::shared_ptr<VoxelBufferInternal> voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
-		Vector3i position;
+		Vector3i position; // In data blocks of the specified lod
 		uint32_t volume_id;
 		uint8_t lod;
 		uint8_t block_size;
@@ -346,7 +333,7 @@ private:
 		void apply_result() override;
 
 		FixedArray<std::shared_ptr<VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
-		Vector3i position;
+		Vector3i position; // In mesh blocks of the specified lod
 		uint32_t volume_id;
 		uint8_t lod;
 		uint8_t blocks_count;
