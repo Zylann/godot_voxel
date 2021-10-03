@@ -134,7 +134,7 @@ public:
 		block_box.for_each_cell_zxy([this, action, voxel_box, channel, block_size, gen_func](Vector3i block_pos) {
 			VoxelDataBlock *block = get_block(block_pos);
 			if (block == nullptr) {
-				VOXEL_PROFILE_SCOPE("Generate");
+				VOXEL_PROFILE_SCOPE_NAMED("Generate");
 				block = create_default_block(block_pos);
 				gen_func(block->get_voxels(), block_pos << get_block_size_pow2());
 			}

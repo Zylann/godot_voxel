@@ -338,11 +338,11 @@ private:
 
 	bool _run_stream_in_editor = true;
 #ifdef TOOLS_ENABLED
-	bool _show_gizmos_enabled = true;
-	bool _show_octree_bounds_gizmos = false;
-	bool _show_volume_bounds_gizmos = false;
+	bool _show_gizmos_enabled = false;
+	bool _show_octree_bounds_gizmos = true;
+	bool _show_volume_bounds_gizmos = true;
 	bool _show_octree_node_gizmos = false;
-	bool _show_edited_lod0_blocks = true;
+	bool _show_edited_lod0_blocks = false;
 	VoxelDebug::DebugRenderer _debug_renderer;
 #endif
 

@@ -2583,10 +2583,13 @@ void VoxelLodTerrain::update_gizmos() {
 	if (_show_edited_lod0_blocks) {
 		const Lod &lod0 = _lods[0];
 		const int data_block_size = lod0.data_map.get_block_size();
-		lod0.data_map.for_all_blocks([&dr, parent_transform, data_block_size](const VoxelDataBlock &block) {
-			const Transform local_transform(Basis(), (block.position * data_block_size).to_vec3());
+		const Basis basis(Basis().scaled(Vector3(data_block_size, data_block_size, data_block_size)));
+
+		lod0.data_map.for_all_blocks([&dr, parent_transform, data_block_size, basis](const VoxelDataBlock *block) {
+			const Transform local_transform(basis, (block->position * data_block_size).to_vec3());
 			const Transform t = parent_transform * local_transform;
-			dr.draw_box_mm(t, Color8(255, 255, 0, 255));
+			const Color8 c = Color8(block->is_modified() ? 255 : 0, 255, 0, 255);
+			dr.draw_box_mm(t, c);
 		});
 	}
 
