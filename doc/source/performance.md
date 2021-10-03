@@ -37,6 +37,16 @@ Some tasks still have to run on the main thread, and sometimes their total time 
 To mitigate this, the module has an option to stop processing these tasks beyond a certain amount of milliseconds, and continue them over next frames. In `ProjectSettings`, look for `voxel/threads/main/time_budget_ms`.
 
 
+Rendering
+----------
+
+Terrains are rendered with many unique meshes. That can amount for a lot of draw calls and work for the engine to cull. It is possible to reduce the number of blocks in several ways:
+
+- Reduce view distance
+- Reduce LOD distance, if you use `VoxelLodTerrain`
+- Increase mesh block size: they default to 16, but it can be set to 32 instead. This reduces the number of draw calls, but may increase the time it takes to modify voxels.
+
+
 Slow mesh updates issue
 ------------------------
 
