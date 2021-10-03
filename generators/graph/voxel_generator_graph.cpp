@@ -418,16 +418,21 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 	// Clip threshold must be higher for higher lod indexes because distances for one sampled voxel are also larger
 	const float clip_threshold = sdf_scale * _sdf_clip_threshold * stride;
 
-	// TODO Allow non-cubic block size when not using subdivision
-	const int section_size = _use_subdivision ? _subdivision_size : min(min(bs.x, bs.y), bs.z);
-	// Block size must be a multiple of section size
-	ERR_FAIL_COND_V(bs.x % section_size != 0, result);
-	ERR_FAIL_COND_V(bs.y % section_size != 0, result);
-	ERR_FAIL_COND_V(bs.z % section_size != 0, result);
+	// Block size must be a multiple of section size, as all sections must have the same size
+	const bool can_use_subdivision =
+			(bs.x % _subdivision_size == 0) &&
+			(bs.y % _subdivision_size == 0) &&
+			(bs.z % _subdivision_size == 0);
+
+	const Vector3i section_size = _use_subdivision && can_use_subdivision ? Vector3i(_subdivision_size) : bs;
+	// ERR_FAIL_COND_V(bs.x % section_size != 0, result);
+	// ERR_FAIL_COND_V(bs.y % section_size != 0, result);
+	// ERR_FAIL_COND_V(bs.z % section_size != 0, result);
 
 	Cache &cache = _cache;
 
-	const unsigned int slice_buffer_size = section_size * section_size;
+	// Slice is on the Y axis
+	const unsigned int slice_buffer_size = section_size.x * section_size.z;
 	VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, slice_buffer_size);
 
@@ -448,9 +453,9 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 	bool all_sdf_is_uniform = true;
 
 	// For each subdivision of the block
-	for (int sz = 0; sz < bs.z; sz += section_size) {
-		for (int sy = 0; sy < bs.y; sy += section_size) {
-			for (int sx = 0; sx < bs.x; sx += section_size) {
+	for (int sz = 0; sz < bs.z; sz += section_size.z) {
+		for (int sy = 0; sy < bs.y; sy += section_size.y) {
+			for (int sx = 0; sx < bs.x; sx += section_size.x) {
 				VOXEL_PROFILE_SCOPE_NAMED("Section");
 
 				const Vector3i rmin(sx, sy, sz);
@@ -1044,22 +1049,28 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
-// TODO This function isn't used yet, but whatever uses it should probably put locking and cache outside
-float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
+VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigned int channel) {
+	// TODO Support other channels
+	VoxelSingleValue v;
+	v.i = 0;
+	if (channel != VoxelBufferInternal::CHANNEL_SDF) {
+		return v;
+	}
 	std::shared_ptr<const Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);
 		runtime_ptr = _runtime;
 	}
-	ERR_FAIL_COND_V(runtime_ptr == nullptr, 0.f);
+	ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
 	Cache &cache = _cache;
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, 1);
 	runtime.generate_single(cache.state, position.to_vec3(), nullptr);
 	const VoxelGraphRuntime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
-	ERR_FAIL_COND_V(buffer.size == 0, 0.f);
-	ERR_FAIL_COND_V(buffer.data == nullptr, 0.f);
-	return buffer.data[0];
+	ERR_FAIL_COND_V(buffer.size == 0, v);
+	ERR_FAIL_COND_V(buffer.data == nullptr, v);
+	v.f = buffer.data[0];
+	return v;
 }
 
 // Note, this wrapper may not be used for main generation tasks.
@@ -1442,7 +1453,7 @@ void VoxelGeneratorGraph::_b_set_node_param_null(int node_id, int param_index) {
 }
 
 float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
-	return generate_single(Vector3i(pos));
+	return generate_single(Vector3i(pos), VoxelBufferInternal::CHANNEL_SDF).f;
 }
 
 Vector2 VoxelGeneratorGraph::_b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const {
@@ -1522,7 +1533,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_node_type_count"), &VoxelGeneratorGraph::_b_get_node_type_count);
 	ClassDB::bind_method(D_METHOD("get_node_type_info", "type_id"), &VoxelGeneratorGraph::_b_get_node_type_info);
 
-	ClassDB::bind_method(D_METHOD("generate_single"), &VoxelGeneratorGraph::_b_generate_single);
+	//ClassDB::bind_method(D_METHOD("generate_single"), &VoxelGeneratorGraph::_b_generate_single);
 	ClassDB::bind_method(D_METHOD("debug_analyze_range", "min_pos", "max_pos"),
 			&VoxelGeneratorGraph::_b_debug_analyze_range);
 

@@ -218,6 +218,12 @@ public:
 		}
 	}
 
+	inline void difference(const Box3i &b, std::vector<Box3i> &output) {
+		difference(b, [&output](const Box3i &sub_box) {
+			output.push_back(sub_box);
+		});
+	}
+
 	// Calls a function on all side cell positions belonging to the box.
 	// This function was implemented with no particular order in mind.
 	template <typename F>

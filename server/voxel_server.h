@@ -117,7 +117,9 @@ public:
 	void set_volume_octree_lod_distance(uint32_t volume_id, float lod_distance);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, const BlockMeshInput &input);
+	// TODO Add parameter to skip stream loading
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
+	void request_all_stream_blocks(uint32_t volume_id);
 	void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos,
 			int lod);
 	void request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
@@ -222,6 +224,7 @@ private:
 
 	struct MeshingDependency {
 		Ref<VoxelMesher> mesher;
+		Ref<VoxelGenerator> generator;
 		bool valid = true;
 	};
 
@@ -300,6 +303,21 @@ private:
 		// TODO Find a way to separate save, it doesnt need sorting
 	};
 
+	class AllBlocksDataRequest : public IVoxelTask {
+	public:
+		AllBlocksDataRequest();
+		~AllBlocksDataRequest();
+
+		void run(VoxelTaskContext ctx) override;
+		int get_priority() override;
+		bool is_cancelled() override;
+		void apply_result() override;
+
+		VoxelStream::FullLoadingResult result;
+		uint32_t volume_id;
+		std::shared_ptr<StreamingDependency> stream_dependency;
+	};
+
 	class BlockGenerateRequest : public IVoxelTask {
 	public:
 		BlockGenerateRequest();
@@ -333,10 +351,13 @@ private:
 		void apply_result() override;
 
 		FixedArray<std::shared_ptr<VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
+		// TODO Need to provide format
+		//FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
 		Vector3i position; // In mesh blocks of the specified lod
 		uint32_t volume_id;
 		uint8_t lod;
 		uint8_t blocks_count;
+		uint8_t data_block_size;
 		bool has_run = false;
 		bool too_far = false;
 		PriorityDependency priority_dependency;

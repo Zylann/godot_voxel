@@ -1,8 +1,10 @@
 #include "voxel_stream_sqlite.h"
 #include "../../thirdparty/sqlite/sqlite3.h"
+#include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../compressed_data.h"
+
 #include <limits>
 #include <string>
 
@@ -87,6 +89,13 @@ public:
 	bool save_block(BlockLocation loc, const std::vector<uint8_t> &block_data, BlockType type);
 	VoxelStream::Result load_block(BlockLocation loc, std::vector<uint8_t> &out_block_data, BlockType type);
 
+	bool load_all_blocks(void *callback_data,
+			void (*process_block_func)(
+					void *callback_data,
+					BlockLocation location,
+					Span<const uint8_t> voxel_data,
+					Span<const uint8_t> instances_data));
+
 	Meta load_meta();
 	void save_meta(Meta meta);
 
@@ -130,6 +139,7 @@ private:
 	sqlite3_stmt *_save_meta_statement = nullptr;
 	sqlite3_stmt *_load_channels_statement = nullptr;
 	sqlite3_stmt *_save_channel_statement = nullptr;
+	sqlite3_stmt *_load_all_blocks_statement = nullptr;
 };
 
 VoxelStreamSQLiteInternal::VoxelStreamSQLiteInternal() {
@@ -206,6 +216,9 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 				"ON CONFLICT(idx) DO UPDATE SET depth=excluded.depth")) {
 		return false;
 	}
+	if (!prepare(db, &_load_all_blocks_statement, "SELECT * FROM blocks")) {
+		return false;
+	}
 
 	// Is the database setup?
 	Meta meta = load_meta();
@@ -240,6 +253,7 @@ void VoxelStreamSQLiteInternal::close() {
 	finalize(_save_meta_statement);
 	finalize(_load_channels_statement);
 	finalize(_save_channel_statement);
+	finalize(_load_all_blocks_statement);
 	sqlite3_close(_db);
 	_db = nullptr;
 	_opened_path.clear();
@@ -387,6 +401,59 @@ VoxelStream::Result VoxelStreamSQLiteInternal::load_block(
 	}
 
 	return result;
+}
+
+bool VoxelStreamSQLiteInternal::load_all_blocks(void *callback_data,
+		void (*process_block_func)(
+				void *callback_data,
+				BlockLocation location,
+				Span<const uint8_t> voxel_data,
+				Span<const uint8_t> instances_data)) {
+	VOXEL_PROFILE_SCOPE();
+	CRASH_COND(process_block_func == nullptr);
+
+	sqlite3 *db = _db;
+	sqlite3_stmt *load_all_blocks_statement = _load_all_blocks_statement;
+
+	int rc;
+
+	rc = sqlite3_reset(load_all_blocks_statement);
+	if (rc != SQLITE_OK) {
+		ERR_PRINT(sqlite3_errmsg(db));
+		return false;
+	}
+
+	while (true) {
+		rc = sqlite3_step(load_all_blocks_statement);
+
+		if (rc == SQLITE_ROW) {
+			VOXEL_PROFILE_SCOPE_NAMED("Row");
+
+			const uint64_t eloc = sqlite3_column_int64(load_all_blocks_statement, 0);
+			const BlockLocation loc = BlockLocation::decode(eloc);
+
+			const void *voxels_blob = sqlite3_column_blob(load_all_blocks_statement, 1);
+			const size_t voxels_blob_size = sqlite3_column_bytes(load_all_blocks_statement, 1);
+
+			const void *instances_blob = sqlite3_column_blob(load_all_blocks_statement, 2);
+			const size_t instances_blob_size = sqlite3_column_bytes(load_all_blocks_statement, 2);
+
+			// Using a function pointer because returning a big list of a copy of all the blobs can
+			// waste a lot of temporary memory
+			process_block_func(callback_data, loc,
+					Span<const uint8_t>(reinterpret_cast<const uint8_t *>(voxels_blob), voxels_blob_size),
+					Span<const uint8_t>(reinterpret_cast<const uint8_t *>(instances_blob), instances_blob_size));
+
+		} else if (rc == SQLITE_DONE) {
+			break;
+
+		} else {
+			ERR_PRINT(String("Unexpected SQLite return code: {0}; errmsg: {1}").format(rc, sqlite3_errmsg(db)));
+			return false;
+		}
+	}
+
+	return true;
 }
 
 VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
@@ -749,6 +816,60 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStreamInstanceDataRequest
 	if (_cache.get_indicative_block_count() >= CACHE_SIZE) {
 		flush_cache();
 	}
+}
+
+void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
+	VOXEL_PROFILE_SCOPE();
+
+	VoxelStreamSQLiteInternal *con = get_connection();
+	ERR_FAIL_COND(con == nullptr);
+
+	struct Context {
+		VoxelStreamSQLite &stream;
+		FullLoadingResult &result;
+	};
+
+	Context ctx{ *this, result };
+
+	const bool request_result = con->load_all_blocks(&ctx, [](void *callback_data,
+																   const BlockLocation location,
+																   Span<const uint8_t> voxel_data,
+																   Span<const uint8_t> instances_data) {
+		Context *ctx = reinterpret_cast<Context *>(callback_data);
+
+		if (voxel_data.size() == 0 && instances_data.size() == 0) {
+			PRINT_VERBOSE(String("Unexpected empty voxel data and instances data at {0} lod {1}")
+								  .format(varray(Vector3(location.x, location.y, location.z), location.lod)));
+			return;
+		}
+
+		FullLoadingResult::Block result_block;
+		result_block.position = Vector3i(location.x, location.y, location.z);
+		result_block.lod = location.lod;
+
+		if (voxel_data.size() > 0) {
+			std::shared_ptr<VoxelBufferInternal> voxels = gd_make_shared<VoxelBufferInternal>();
+			ERR_FAIL_COND(!ctx->stream._voxel_block_serializer.decompress_and_deserialize(voxel_data, *voxels));
+			result_block.voxels = voxels;
+		}
+
+		if (instances_data.size() > 0) {
+			std::vector<uint8_t> &temp_block_data = ctx->stream._temp_block_data;
+			if (!VoxelCompressedData::decompress(instances_data, temp_block_data)) {
+				ERR_PRINT("Failed to decompress instance block");
+				return;
+			}
+			result_block.instances_data = std::make_unique<VoxelInstanceBlockData>();
+			if (!deserialize_instance_block_data(*result_block.instances_data, to_span_const(temp_block_data))) {
+				ERR_PRINT("Failed to deserialize instance block");
+				return;
+			}
+		}
+
+		ctx->result.blocks.push_back(std::move(result_block));
+	});
+
+	ERR_FAIL_COND(request_result == false);
 }
 
 int VoxelStreamSQLite::get_used_channels_mask() const {

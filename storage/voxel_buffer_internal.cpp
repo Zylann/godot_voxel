@@ -185,8 +185,12 @@ void VoxelBufferInternal::clear() {
 void VoxelBufferInternal::clear_channel(unsigned int channel_index, uint64_t clear_value) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 	Channel &channel = _channels[channel_index];
+	clear_channel(channel, clear_value);
+}
+
+void VoxelBufferInternal::clear_channel(Channel &channel, uint64_t clear_value) {
 	if (channel.data != nullptr) {
-		delete_channel(channel_index);
+		delete_channel(channel);
 	}
 	channel.defval = clamp_value_for_depth(clear_value, channel.depth);
 }
@@ -423,25 +427,26 @@ inline bool is_uniform_b(const uint8_t *data, size_t item_count) {
 
 bool VoxelBufferInternal::is_uniform(unsigned int channel_index) const {
 	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, true);
-
 	const Channel &channel = _channels[channel_index];
+	return is_uniform(channel);
+}
+
+bool VoxelBufferInternal::is_uniform(const Channel &channel) {
 	if (channel.data == nullptr) {
 		// Channel has been optimized
 		return true;
 	}
 
-	const size_t volume = get_volume();
-
 	// Channel isn't optimized, so must look at each voxel
 	switch (channel.depth) {
 		case DEPTH_8_BIT:
-			return ::is_uniform_b<uint8_t>(channel.data, volume);
+			return ::is_uniform_b<uint8_t>(channel.data, channel.size_in_bytes);
 		case DEPTH_16_BIT:
-			return ::is_uniform_b<uint16_t>(channel.data, volume);
+			return ::is_uniform_b<uint16_t>(channel.data, channel.size_in_bytes / 2);
 		case DEPTH_32_BIT:
-			return ::is_uniform_b<uint32_t>(channel.data, volume);
+			return ::is_uniform_b<uint32_t>(channel.data, channel.size_in_bytes / 4);
 		case DEPTH_64_BIT:
-			return ::is_uniform_b<uint64_t>(channel.data, volume);
+			return ::is_uniform_b<uint64_t>(channel.data, channel.size_in_bytes / 8);
 		default:
 			CRASH_NOW();
 			break;
@@ -450,13 +455,40 @@ bool VoxelBufferInternal::is_uniform(unsigned int channel_index) const {
 	return true;
 }
 
+uint64_t get_first_voxel(const VoxelBufferInternal::Channel &channel) {
+	CRASH_COND(channel.data == nullptr);
+
+	switch (channel.depth) {
+		case VoxelBufferInternal::DEPTH_8_BIT:
+			return channel.data[0];
+
+		case VoxelBufferInternal::DEPTH_16_BIT:
+			return reinterpret_cast<uint16_t *>(channel.data)[0];
+
+		case VoxelBufferInternal::DEPTH_32_BIT:
+			return reinterpret_cast<uint32_t *>(channel.data)[0];
+
+		case VoxelBufferInternal::DEPTH_64_BIT:
+			return reinterpret_cast<uint64_t *>(channel.data)[0];
+
+		default:
+			CRASH_NOW();
+			return 0;
+	}
+}
+
 void VoxelBufferInternal::compress_uniform_channels() {
 	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
-		if (_channels[i].data != nullptr && is_uniform(i)) {
-			// TODO More direct way
-			const uint64_t v = get_voxel(0, 0, 0, i);
-			clear_channel(i, v);
-		}
+		Channel &channel = _channels[i];
+		compress_if_uniform(channel);
+	}
+}
+
+void VoxelBufferInternal::compress_if_uniform(Channel &channel) {
+	VOXEL_PROFILE_SCOPE();
+	if (channel.data != nullptr && is_uniform(channel)) {
+		const uint64_t v = get_first_voxel(channel);
+		clear_channel(channel, v);
 	}
 }
 
@@ -629,6 +661,10 @@ bool VoxelBufferInternal::create_channel_noinit(int i, Vector3i size) {
 
 void VoxelBufferInternal::delete_channel(int i) {
 	Channel &channel = _channels[i];
+	delete_channel(channel);
+}
+
+void VoxelBufferInternal::delete_channel(Channel &channel) {
 	ERR_FAIL_COND(channel.data == nullptr);
 	// Don't use `_size` to obtain `data` byte count, since we could have changed `_size` up-front during a create().
 	// `size_in_bytes` reflects what is currently allocated inside `data`, regardless of anything else.

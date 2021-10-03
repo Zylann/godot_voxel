@@ -214,7 +214,8 @@ bool VoxelDataMap::is_block_surrounded(Vector3i pos) const {
 	return true;
 }
 
-void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
+void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask,
+		void *callback_data, void (*gen_func)(void *, VoxelBufferInternal &, Vector3i)) const {
 	const Vector3i max_pos = min_pos + dst_buffer.get_size();
 
 	const Vector3i min_block_pos = voxel_to_block(min_pos);
@@ -222,32 +223,49 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 
 	const Vector3i block_size_v(_block_size, _block_size, _block_size);
 
+	unsigned int channels_count;
+	FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels =
+			VoxelBufferInternal::mask_to_channels_list(channels_mask, channels_count);
+
 	Vector3i bpos;
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-				for (unsigned int channel = 0; channel < VoxelBufferInternal::MAX_CHANNELS; ++channel) {
-					if (((1 << channel) & channels_mask) == 0) {
-						continue;
-					}
-					const VoxelDataBlock *block = get_block(bpos);
-					const Vector3i src_block_origin = block_to_voxel(bpos);
+				const VoxelDataBlock *block = get_block(bpos);
+				const Vector3i src_block_origin = block_to_voxel(bpos);
 
-					if (block != nullptr) {
-						const VoxelBufferInternal &src_buffer = block->get_voxels_const();
+				if (block != nullptr) {
+					const VoxelBufferInternal &src_buffer = block->get_voxels_const();
 
+					RWLockRead lock(src_buffer.get_lock());
+
+					for (unsigned int ci = 0; ci < channels_count; ++ci) {
+						const uint8_t channel = channels[ci];
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
-
-						RWLockRead lock(src_buffer.get_lock());
-
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_from(src_buffer,
 								min_pos - src_block_origin,
 								src_buffer.get_size(),
 								Vector3i(),
 								channel);
+					}
 
-					} else {
+				} else if (gen_func != nullptr) {
+					const Box3i box = Box3i(bpos << _block_size_pow2, Vector3i(_block_size))
+											  .clipped(Box3i(min_pos, dst_buffer.get_size()));
+
+					// TODO Format?
+					VoxelBufferInternal temp;
+					temp.create(box.size);
+					gen_func(callback_data, temp, box.pos);
+
+					for (unsigned int ci = 0; ci < channels_count; ++ci) {
+						dst_buffer.copy_from(temp, Vector3i(), temp.get_size(), box.pos - min_pos, channels[ci]);
+					}
+
+				} else {
+					for (unsigned int ci = 0; ci < channels_count; ++ci) {
+						const uint8_t channel = channels[ci];
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
 						dst_buffer.fill_area(

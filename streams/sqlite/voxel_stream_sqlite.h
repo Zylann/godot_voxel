@@ -32,6 +32,9 @@ public:
 			Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) override;
 	void save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks) override;
 
+	bool supports_loading_all_blocks() const override { return true; }
+	void load_all_blocks(FullLoadingResult &result) override;
+
 	int get_used_channels_mask() const override;
 
 	void flush_cache();

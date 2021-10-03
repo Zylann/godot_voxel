@@ -261,6 +261,7 @@ public:
 		for_each_index_and_pos(box, [&data, action_func, offset](size_t i, Vector3i pos) {
 			data.set(i, action_func(pos + offset, data[i]));
 		});
+		compress_if_uniform(channel);
 	}
 
 	// void action_func(Vector3i pos, Data0_T &inout_v0, Data1_T &inout_v1)
@@ -284,6 +285,8 @@ public:
 			// TODO The caller must still specify exactly the correct type, maybe some conversion could be used
 			action_func(pos + offset, data0[i], data1[i]);
 		});
+		compress_if_uniform(channel0);
+		compress_if_uniform(channel1);
 	}
 
 	template <typename F>
@@ -435,6 +438,10 @@ private:
 	bool create_channel_noinit(int i, Vector3i size);
 	bool create_channel(int i, uint64_t defval);
 	void delete_channel(int i);
+	void compress_if_uniform(Channel &channel);
+	static void delete_channel(Channel &channel);
+	static void clear_channel(Channel &channel, uint64_t clear_value);
+	static bool is_uniform(const Channel &channel);
 
 private:
 	// Each channel can store arbitary data.

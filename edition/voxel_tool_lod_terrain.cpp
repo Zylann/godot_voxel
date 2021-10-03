@@ -92,14 +92,14 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	// TODO Implement reverse raycast? (going from inside ground to air, could be useful for undigging)
 
 	struct RaycastPredicate {
-		const VoxelLodTerrain *terrain;
+		VoxelLodTerrain *terrain;
 
 		bool operator()(Vector3i pos) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
-			const uint64_t raw_value = terrain->get_voxel(pos, VoxelBufferInternal::CHANNEL_SDF, 0);
-			// TODO Format should be accessible from terrain
-			const float sdf = u16_to_norm(raw_value);
-			return sdf < 0;
+			VoxelSingleValue defval;
+			defval.f = 1.f;
+			const VoxelSingleValue v = terrain->get_voxel(pos, VoxelBufferInternal::CHANNEL_SDF, defval);
+			return v.f < 0;
 		}
 	};
 
@@ -135,13 +135,13 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 		if (_raycast_binary_search_iterations > 0) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
 			struct VolumeSampler {
-				const VoxelLodTerrain *terrain;
+				VoxelLodTerrain *terrain;
 
 				inline float operator()(const Vector3i &pos) const {
-					const uint64_t raw_value = terrain->get_voxel(pos, VoxelBufferInternal::CHANNEL_SDF, 0);
-					// TODO Format should be accessible from terrain
-					const float sdf = u16_to_norm(raw_value);
-					return sdf;
+					VoxelSingleValue defval;
+					defval.f = 1.f;
+					const VoxelSingleValue value = terrain->get_voxel(pos, VoxelBufferInternal::CHANNEL_SDF, defval);
+					return value.f;
 				}
 			};
 
@@ -220,27 +220,29 @@ void VoxelToolLodTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t chann
 float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	const int channel = get_channel();
-	const VoxelLodTerrain *terrain = _terrain;
+	VoxelLodTerrain *terrain = _terrain;
 	// TODO Optimization: is it worth a making a fast-path for this?
 	return get_sdf_interpolated([terrain, channel](Vector3i ipos) {
-		const uint64_t raw_value = terrain->get_voxel(ipos, VoxelBufferInternal::CHANNEL_SDF, 0);
-		// TODO Format should be accessible from terrain
-		const float sdf = u16_to_norm(raw_value);
-		return sdf;
+		VoxelSingleValue defval;
+		defval.f = 1.f;
+		VoxelSingleValue value = terrain->get_voxel(ipos, VoxelBufferInternal::CHANNEL_SDF, defval);
+		return value.f;
 	},
 			position);
 }
 
 uint64_t VoxelToolLodTerrain::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
-	return _terrain->get_voxel(pos, _channel, 0);
+	VoxelSingleValue defval;
+	defval.i = 0;
+	return _terrain->get_voxel(pos, _channel, defval).i;
 }
 
 float VoxelToolLodTerrain::_get_voxel_f(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
-	const uint64_t raw_value = _terrain->get_voxel(pos, _channel, 0);
-	// TODO Format should be accessible from terrain
-	return u16_to_norm(raw_value);
+	VoxelSingleValue defval;
+	defval.f = 1.f;
+	return _terrain->get_voxel(pos, _channel, defval).f;
 }
 
 void VoxelToolLodTerrain::_set_voxel(Vector3i pos, uint64_t v) {

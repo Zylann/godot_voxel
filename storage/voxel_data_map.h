@@ -56,8 +56,13 @@ public:
 	void set_default_voxel(int value, unsigned int channel = 0);
 	int get_default_voxel(unsigned int channel = 0);
 
+	inline void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
+		copy(min_pos, dst_buffer, channels_mask, nullptr, nullptr);
+	}
+
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
-	void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const;
+	void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask, void *,
+			void (*gen_func)(void *, VoxelBufferInternal &, Vector3i)) const;
 
 	void paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
 			uint64_t mask_value, bool create_new_blocks);
@@ -116,36 +121,53 @@ public:
 
 	bool is_area_fully_loaded(const Box3i voxels_box) const;
 
-	// D action(Vector3i pos, D value)
 	template <typename F>
-	void write_box(const Box3i &voxel_box, unsigned int channel, F action) {
+	inline void write_box(const Box3i &voxel_box, unsigned int channel, F action) {
+		write_box(voxel_box, channel, action, [](const VoxelBufferInternal &, const Vector3i &) {});
+	}
+
+	// D action(Vector3i pos, D value)
+	template <typename F, typename G>
+	void write_box(const Box3i &voxel_box, unsigned int channel, F action, G gen_func) {
 		const Box3i block_box = voxel_box.downscaled(get_block_size());
 		const Vector3i block_size(get_block_size());
-		block_box.for_each_cell_zxy([this, action, voxel_box, channel, block_size](Vector3i block_pos) {
+		block_box.for_each_cell_zxy([this, action, voxel_box, channel, block_size, gen_func](Vector3i block_pos) {
 			VoxelDataBlock *block = get_block(block_pos);
-			if (block != nullptr) {
-				const Vector3i block_origin = block_to_voxel(block_pos);
-				Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
-				local_box.clip(Box3i(Vector3i(), block_size));
-				block->get_voxels().write_box(local_box, channel, action, block_origin);
+			if (block == nullptr) {
+				VOXEL_PROFILE_SCOPE("Generate");
+				block = create_default_block(block_pos);
+				gen_func(block->get_voxels(), block_pos << get_block_size_pow2());
 			}
+			const Vector3i block_origin = block_to_voxel(block_pos);
+			Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
+			local_box.clip(Box3i(Vector3i(), block_size));
+			RWLockWrite wlock(block->get_voxels().get_lock());
+			block->get_voxels().write_box(local_box, channel, action, block_origin);
 		});
 	}
 
-	// action(Vector3i pos, D0 &value, D1 &value)
 	template <typename F>
-	void write_box_2(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
+	inline void write_box_2(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
+		write_box_2(voxel_box, channel0, channel1, action, [](const VoxelBufferInternal &, const Vector3i &) {});
+	}
+
+	// action(Vector3i pos, D0 &value, D1 &value)
+	template <typename F, typename G>
+	void write_box_2(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action, G gen_func) {
 		const Box3i block_box = voxel_box.downscaled(get_block_size());
 		const Vector3i block_size(get_block_size());
-		block_box.for_each_cell_zxy([this, action, voxel_box, channel0, channel1, block_size](Vector3i block_pos) {
+		block_box.for_each_cell_zxy([this, action, voxel_box, channel0, channel1, block_size, gen_func](Vector3i block_pos) {
 			VoxelDataBlock *block = get_block(block_pos);
-			if (block != nullptr) {
-				const Vector3i block_origin = block_to_voxel(block_pos);
-				Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
-				local_box.clip(Box3i(Vector3i(), block_size));
-				block->get_voxels().write_box_2_template<F, uint16_t, uint16_t>(
-						local_box, channel0, channel1, action, block_origin);
+			if (block == nullptr) {
+				block = create_default_block(block_pos);
+				gen_func(block->get_voxels(), block_pos << get_block_size_pow2());
 			}
+			const Vector3i block_origin = block_to_voxel(block_pos);
+			Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
+			local_box.clip(Box3i(Vector3i(), block_size));
+			RWLockWrite wlock(block->get_voxels().get_lock());
+			block->get_voxels().write_box_2_template<F, uint16_t, uint16_t>(
+					local_box, channel0, channel1, action, block_origin);
 		});
 	}
 

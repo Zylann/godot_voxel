@@ -79,31 +79,48 @@ public:
 	unsigned int get_mesh_block_size() const;
 	void set_mesh_block_size(unsigned int mesh_block_size);
 
+	void set_full_load_mode_enabled(bool enabled);
+	bool is_full_load_mode_enabled() const;
+
 	bool is_area_editable(Box3i p_box) const;
-	uint64_t get_voxel(Vector3i pos, unsigned int channel, uint64_t defval) const;
+	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel, VoxelSingleValue defval);
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
-	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask) const;
+	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask);
 
 	template <typename F>
 	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
 		const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
-		if (is_area_editable(voxel_box)) {
-			_lods[0].data_map.write_box(voxel_box, channel, action);
-			post_edit_area(voxel_box);
-		} else {
+		if (_full_load_mode == false && !is_area_editable(voxel_box)) {
 			PRINT_VERBOSE("Area not editable");
+			return;
 		}
+		Ref<VoxelGenerator> generator = _generator;
+		_lods[0].data_map.write_box(voxel_box, channel, action,
+				[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
+					if (generator.is_valid()) {
+						VoxelBlockRequest r{ voxels, pos, 0 };
+						generator->generate_block(r);
+					}
+				});
+		post_edit_area(voxel_box);
 	}
 
 	template <typename F>
 	void write_box_2(const Box3i &p_voxel_box, unsigned int channel1, unsigned int channel2, F action) {
 		const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
-		if (is_area_editable(voxel_box)) {
-			_lods[0].data_map.write_box_2(voxel_box, channel1, channel2, action);
-			post_edit_area(voxel_box);
-		} else {
+		if (_full_load_mode == false && !is_area_editable(voxel_box)) {
 			PRINT_VERBOSE("Area not editable");
+			return;
 		}
+		Ref<VoxelGenerator> generator = _generator;
+		_lods[0].data_map.write_box_2(voxel_box, channel1, channel2, action,
+				[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
+					if (generator.is_valid()) {
+						VoxelBlockRequest r{ voxels, pos, 0 };
+						generator->generate_block(r);
+					}
+				});
+		post_edit_area(voxel_box);
 	}
 
 	// These must be called after an edit
@@ -317,13 +334,15 @@ private:
 	float _lod_distance = 0.f;
 	float _lod_fade_duration = 0.f;
 	unsigned int _view_distance_voxels = 512;
+	bool _full_load_mode = false;
 
 	bool _run_stream_in_editor = true;
 #ifdef TOOLS_ENABLED
-	bool _show_gizmos_enabled = false;
-	bool _show_octree_bounds_gizmos = true;
-	bool _show_volume_bounds_gizmos = true;
+	bool _show_gizmos_enabled = true;
+	bool _show_octree_bounds_gizmos = false;
+	bool _show_volume_bounds_gizmos = false;
 	bool _show_octree_node_gizmos = false;
+	bool _show_edited_lod0_blocks = true;
 	VoxelDebug::DebugRenderer _debug_renderer;
 #endif
 

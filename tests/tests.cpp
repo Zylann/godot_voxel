@@ -388,8 +388,10 @@ void test_voxel_graph_generator_texturing() {
 
 	// Single value tests
 	{
-		const float sdf_must_be_in_air = generator->generate_single(Vector3i(-2, 0, 0));
-		const float sdf_must_be_in_ground = generator->generate_single(Vector3i(2, 0, 0));
+		const float sdf_must_be_in_air =
+				generator->generate_single(Vector3i(-2, 0, 0), VoxelBufferInternal::CHANNEL_SDF).f;
+		const float sdf_must_be_in_ground =
+				generator->generate_single(Vector3i(2, 0, 0), VoxelBufferInternal::CHANNEL_SDF).f;
 		ERR_FAIL_COND(sdf_must_be_in_air <= 0.f);
 		ERR_FAIL_COND(sdf_must_be_in_ground >= 0.f);
 
@@ -403,7 +405,7 @@ void test_voxel_graph_generator_texturing() {
 		// Sample two points 1 unit below ground at to heights on the slope
 
 		{
-			const float sdf = generator->generate_single(Vector3i(-2, -3, 0));
+			const float sdf = generator->generate_single(Vector3i(-2, -3, 0), VoxelBufferInternal::CHANNEL_SDF).f;
 			ERR_FAIL_COND(sdf >= 0.f);
 			const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
@@ -419,7 +421,7 @@ void test_voxel_graph_generator_texturing() {
 			ERR_FAIL_COND(out_weight1_buffer.data[0] > 0.f);
 		}
 		{
-			const float sdf = generator->generate_single(Vector3i(2, 1, 0));
+			const float sdf = generator->generate_single(Vector3i(2, 1, 0), VoxelBufferInternal::CHANNEL_SDF).f;
 			ERR_FAIL_COND(sdf >= 0.f);
 			const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
