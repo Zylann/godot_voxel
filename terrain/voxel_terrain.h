@@ -32,7 +32,7 @@ public:
 
 	unsigned int get_data_block_size_pow2() const;
 	inline unsigned int get_data_block_size() const { return 1 << get_data_block_size_pow2(); }
-	void set_data_block_size_po2(unsigned int p_block_size_po2);
+	//void set_data_block_size_po2(unsigned int p_block_size_po2);
 
 	unsigned int get_mesh_block_size_pow2() const;
 	inline unsigned int get_mesh_block_size() const { return 1 << get_mesh_block_size_pow2(); }

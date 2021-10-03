@@ -349,7 +349,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 	update_configuration_warning();
 }
 
-void VoxelLodTerrain::set_data_block_size_po2(unsigned int p_block_size_po2) {
+/*void VoxelLodTerrain::set_data_block_size_po2(unsigned int p_block_size_po2) {
 	ERR_FAIL_COND(p_block_size_po2 < 1);
 	ERR_FAIL_COND(p_block_size_po2 > 32);
 
@@ -363,7 +363,7 @@ void VoxelLodTerrain::set_data_block_size_po2(unsigned int p_block_size_po2) {
 	}
 
 	_on_stream_params_changed();
-}
+}*/
 
 void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	mesh_block_size = clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);

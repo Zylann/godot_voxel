@@ -153,7 +153,7 @@ Ref<VoxelGenerator> VoxelTerrain::get_generator() const {
 	return _generator;
 }
 
-void VoxelTerrain::set_data_block_size_po2(unsigned int p_block_size_po2) {
+/*void VoxelTerrain::set_data_block_size_po2(unsigned int p_block_size_po2) {
 	ERR_FAIL_COND(p_block_size_po2 < 1);
 	ERR_FAIL_COND(p_block_size_po2 > 32);
 
@@ -168,7 +168,7 @@ void VoxelTerrain::set_data_block_size_po2(unsigned int p_block_size_po2) {
 
 	_set_block_size_po2(block_size_po2);
 	_on_stream_params_changed();
-}
+}*/
 
 void VoxelTerrain::_set_block_size_po2(int p_block_size_po2) {
 	_data_map.create(p_block_size_po2, 0);

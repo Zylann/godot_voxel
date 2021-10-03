@@ -698,7 +698,7 @@ void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<R
 		if (res == RESULT_BLOCK_FOUND) {
 			VoxelBlockRequest &wr = p_blocks[ri];
 			// TODO Not sure if we should actually expect non-null. There can be legit not found blocks.
-			_voxel_block_serializer.decompress_and_deserialize(_temp_block_data, wr.voxel_buffer);
+			_voxel_block_serializer.decompress_and_deserialize(to_span_const(_temp_block_data), wr.voxel_buffer);
 		}
 
 		out_results.write[i] = res;

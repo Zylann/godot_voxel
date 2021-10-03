@@ -73,7 +73,7 @@ public:
 
 	unsigned int get_data_block_size_pow2() const;
 	unsigned int get_data_block_size() const;
-	void set_data_block_size_po2(unsigned int p_block_size_po2);
+	//void set_data_block_size_po2(unsigned int p_block_size_po2);
 
 	unsigned int get_mesh_block_size_pow2() const;
 	unsigned int get_mesh_block_size() const;

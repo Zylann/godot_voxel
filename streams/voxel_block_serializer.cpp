@@ -264,7 +264,7 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 	return SerializeResult(_data, true);
 }
 
-bool VoxelBlockSerializerInternal::deserialize(const std::vector<uint8_t> &p_data,
+bool VoxelBlockSerializerInternal::deserialize(Span<const uint8_t> p_data,
 		VoxelBufferInternal &out_voxel_buffer) {
 	//
 	VOXEL_PROFILE_SCOPE();
@@ -384,13 +384,13 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 }
 
 bool VoxelBlockSerializerInternal::decompress_and_deserialize(
-		const std::vector<uint8_t> &p_data, VoxelBufferInternal &out_voxel_buffer) {
+		Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
-	const bool res = VoxelCompressedData::decompress(Span<const uint8_t>(p_data.data(), 0, p_data.size()), _data);
+	const bool res = VoxelCompressedData::decompress(p_data, _data);
 	ERR_FAIL_COND_V(!res, false);
 
-	return deserialize(_data, out_voxel_buffer);
+	return deserialize(to_span_const(_data), out_voxel_buffer);
 }
 
 bool VoxelBlockSerializerInternal::decompress_and_deserialize(
@@ -408,7 +408,7 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 	const unsigned int read_size = f->get_buffer(_compressed_data.data(), size_to_read);
 	ERR_FAIL_COND_V(read_size != size_to_read, false);
 
-	return decompress_and_deserialize(_compressed_data, out_voxel_buffer);
+	return decompress_and_deserialize(to_span_const(_compressed_data), out_voxel_buffer);
 }
 
 int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress) {
@@ -432,14 +432,14 @@ void VoxelBlockSerializerInternal::deserialize(
 		_compressed_data.resize(size);
 		const Error err = peer->get_data(_compressed_data.data(), _compressed_data.size());
 		ERR_FAIL_COND(err != OK);
-		bool success = decompress_and_deserialize(_compressed_data, voxel_buffer);
+		bool success = decompress_and_deserialize(to_span_const(_compressed_data), voxel_buffer);
 		ERR_FAIL_COND(!success);
 
 	} else {
 		_data.resize(size);
 		const Error err = peer->get_data(_data.data(), _data.size());
 		ERR_FAIL_COND(err != OK);
-		deserialize(_data, voxel_buffer);
+		deserialize(to_span_const(_data), voxel_buffer);
 	}
 }
 
