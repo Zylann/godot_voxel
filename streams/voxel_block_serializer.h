@@ -1,6 +1,8 @@
 #ifndef VOXEL_BLOCK_SERIALIZER_H
 #define VOXEL_BLOCK_SERIALIZER_H
 
+#include "../util/span.h"
+
 #include <core/io/file_access_memory.h>
 #include <core/reference.h>
 #include <vector>
@@ -20,10 +22,10 @@ public:
 	};
 
 	SerializeResult serialize(const VoxelBufferInternal &voxel_buffer);
-	bool deserialize(const std::vector<uint8_t> &p_data, VoxelBufferInternal &out_voxel_buffer);
+	bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
 
 	SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer);
-	bool decompress_and_deserialize(const std::vector<uint8_t> &p_data, VoxelBufferInternal &out_voxel_buffer);
+	bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
 	bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
 
 	int serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress);
