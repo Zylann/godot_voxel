@@ -1,0 +1,166 @@
+name: 🐺️ Fuzzer
+on: 
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
+# Global Cache Settings
+env:
+  GODOT_BASE_BRANCH: 3.x
+  SCONS_CACHE_LIMIT: 4096
+
+jobs:
+  test-project:
+    runs-on: "ubuntu-20.04"
+    name: Editor
+
+    steps:
+      # Clone Godot
+      - uses: actions/checkout@v2
+        with:
+          repository: godotengine/godot
+          ref: 3.x
+
+      # Clone our module under the correct directory
+      - uses: actions/checkout@v2
+        with:
+          path: modules/voxel
+
+      # Clone fuzzer
+      - name: Checkout Goost fuzzer backend
+        uses: actions/checkout@v2
+        with:
+          repository: qarmin/Qarminer
+          ref: 3.x
+          path: fuzzer
+
+      # Currently configuration is done by modifing source code
+      - name: Configure fuzzer
+        working-directory: fuzzer
+        run: |
+          sed -i 's/var use_parent_methods: bool = false/var use_parent_methods: bool = true/' FunctionExecutor.gd
+          sed -i 's/var add_to_tree: bool = false/var add_to_tree: bool = true/' FunctionExecutor.gd
+          sed -i 's/var delay_removing_added_nodes_to_next_frame: bool = false/var delay_removing_added_nodes_to_next_frame: bool = true/' FunctionExecutor.gd
+          echo "FastNoiseLite" >> classes.txt
+          echo "FastNoiseLiteGradient" >> classes.txt
+          echo "Voxel" >> classes.txt
+          echo "VoxelBlockSerializer" >> classes.txt
+          echo "VoxelBoxMover" >> classes.txt
+          echo "VoxelBuffer" >> classes.txt
+          echo "VoxelColorPalette" >> classes.txt
+          echo "VoxelGenerator" >> classes.txt
+          echo "VoxelGeneratorFlat" >> classes.txt
+          echo "VoxelGeneratorGraph" >> classes.txt
+          echo "VoxelGeneratorHeightmap" >> classes.txt
+          echo "VoxelGeneratorImage" >> classes.txt
+          echo "VoxelGeneratorNoise" >> classes.txt
+          echo "VoxelGeneratorNoise2D" >> classes.txt
+          echo "VoxelGeneratorScript" >> classes.txt
+          echo "VoxelGeneratorWaves" >> classes.txt
+          echo "VoxelInstanceComponent" >> classes.txt
+          echo "VoxelInstanceGenerator" >> classes.txt
+          echo "VoxelInstanceLibrary" >> classes.txt
+          echo "VoxelInstanceLibraryItem" >> classes.txt
+          echo "VoxelInstanceLibraryItemBase" >> classes.txt
+          echo "VoxelInstanceLibrarySceneItem" >> classes.txt
+          echo "VoxelInstancer" >> classes.txt
+          echo "VoxelLibrary" >> classes.txt
+          echo "VoxelLodTerrain" >> classes.txt
+          echo "VoxelMesher" >> classes.txt
+          echo "VoxelMesherBlocky" >> classes.txt
+          echo "VoxelMesherCubes" >> classes.txt
+          echo "VoxelMesherDMC" >> classes.txt
+          echo "VoxelMesherTransvoxel" >> classes.txt
+          echo "VoxelNode" >> classes.txt
+          echo "VoxelRaycastResult" >> classes.txt
+          echo "VoxelServer" >> classes.txt
+          echo "VoxelStream" >> classes.txt
+          echo "VoxelStreamBlockFiles" >> classes.txt
+          echo "VoxelStreamRegionFiles" >> classes.txt
+          echo "VoxelStreamSQLite" >> classes.txt
+          echo "VoxelStreamScript" >> classes.txt
+          echo "VoxelTerrain" >> classes.txt
+          echo "VoxelTool" >> classes.txt
+          echo "VoxelToolBuffer" >> classes.txt
+          echo "VoxelToolLodTerrain" >> classes.txt
+          echo "VoxelToolTerrain" >> classes.txt
+          echo "VoxelViewer" >> classes.txt
+          echo "VoxelVoxLoader" >> classes.txt
+
+      # Azure repositories are not reliable, we need to prevent azure giving us packages.
+      - name: Make apt sources.list use the default Ubuntu repositories
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/*
+          sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+          sudo apt-get update
+
+      # Install all packages (except scons)
+      - name: Configure dependencies
+        run: |
+          sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
+            libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm \
+            xvfb wget unzip
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: fuzzer-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
+
+      # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          # Semantic version range syntax or exact version of a Python version
+          python-version: '3.x'
+          # Optional - x64 or x86 architecture, defaults to x64
+          architecture: 'x64'
+
+      # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
+      - name: Configuring Python packages
+        run: |
+          python -c "import sys; print(sys.version)"
+          python -m pip install scons
+          python --version
+          scons --version
+
+      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      - name: Compilation
+        env:
+          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
+        run: |
+          scons -j2 use_asan=yes use_ubsan=yes
+
+      - name: Run fuzzer
+        run: |
+          DRI_PRIME=0 xvfb-run bin/godot.x11.tools.64s FunctionExecutor.tscn 600 --audio-driver Dummy --video-driver GLES3 --path fuzzer 2>&1 | tee sanitizers_log.txt || true
+          tail -n 300 sanitizers_log.txt > project_results.txt
+
+      - name: Store project results
+        uses: actions/upload-artifact@v2
+        with:
+          name: project-results
+          path: project_results.txt
+
+      - name: Store test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: last-run-results
+          path: fuzzer/results.txt
+
+      - name: Store time results
+        uses: actions/upload-artifact@v2
+        with:
+          name: timer
+          path: fuzzer/timer.txt
+
+      - name: Check fuzzer output
+        run: |
+          fuzzer/misc/check_ci_log.py sanitizers_log.txt
