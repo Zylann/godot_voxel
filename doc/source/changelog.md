@@ -56,6 +56,7 @@ Ongoing development - `master`
     - `VoxelTerrain`: fixed materials shown under the wrong inspector category
     - `VoxelStreamRegionFiles`: fixed errors caused by meta file being sometimes written with wrong depth values
     - `VoxelStreamBlockFiles`: fixed warning about channels always shown in the scene tree
+    - `VoxelStreamSQLite`: fixed blocks above LOD0 being saved at wrong locations, causing them to be reloaded often floating in the air
     - Fix some crashes occurring when all PoolVector allocs are in use (Godot 3.x limitation). It will print errors instead, but crashes can still occur inside Godot's code as it's not often checking for this
 
 
