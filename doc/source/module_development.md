@@ -67,13 +67,11 @@ No test framework is used at the moment, instead they just run by either printin
 Threads
 ---------
 
-The module uses several background thread pools to process voxels. The number of threads is currently hardcoded, but it is planned to make it detect CPU concurrency automatically, and expose maximum thread counts in Project Settings.
+The module uses several background thread pools to process voxels. The number of threads can be adjusted in Project Settings.
 
 ![Schema of threads](images/threads_schema.png)
 
-- A single streaming thread is handling files. If a block of voxels cannot be found, it can pass tasks to one of the generation threads.
-- One or more generation threads are used for procedural generation. They can pass tasks to the streaming thread if the option to save generated outputs is enabled.
-- One or more meshing threads are used to polygonize voxels into meshes.
+There are two pools of threads currently. One pool is actually just one thread dedicated to streaming (files I/O), and another pool uses more threads for every other type of task. This pool can be given many tasks and distributes them to all its threads. So the more threads are available, the quicker large amounts of tasks get done. Tasks are also sorted by priority, so for example updating a mesh near a player will run before generating a voxel block 300 meters away.
 
 Threads are managed in [VoxelServer](api/VoxelServer.md).
 
@@ -99,6 +97,7 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Indent with tabs
 - Use Clang-format to automate most of these rules (the one included in Godot should do it)
 - Constructors and destructors go on top
+- Public API goes on top, private stuff goes below
 - Bindings go at the bottom. Private wrapper functions can be used to adapt to the script API and are prefixed with `_b_`.
 - Avoid long lines. Preferred ruler is 120 characters. Don't fit too many operations on the same line, use locals.
 
