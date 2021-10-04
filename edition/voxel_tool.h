@@ -9,6 +9,76 @@
 
 class VoxelBuffer;
 
+namespace VoxelToolOps {
+
+template <typename Op, typename Shape>
+struct SdfOperation16bit {
+	Op op;
+	Shape shape;
+	inline uint16_t operator()(Vector3i pos, uint16_t sdf) const {
+		return norm_to_u16(op(u16_to_norm(sdf), shape(pos.to_vec3())));
+	}
+};
+
+struct SdfUnion {
+	inline float operator()(float a, float b) const {
+		return sdf_union(a, b);
+	}
+};
+
+struct SdfSubtract {
+	inline float operator()(float a, float b) const {
+		return sdf_subtract(a, b);
+	}
+};
+
+struct SdfSet {
+	inline float operator()(float a, float b) const {
+		return b;
+	}
+};
+
+struct SdfSphere {
+	Vector3 center;
+	float radius;
+	float scale;
+
+	inline float operator()(Vector3 pos) const {
+		return scale * sdf_sphere(pos, center, radius);
+	}
+};
+
+struct TextureParams {
+	float opacity = 1.f;
+	float sharpness = 2.f;
+	unsigned int index = 0;
+};
+
+struct TextureBlendSphereOp {
+	Vector3 center;
+	float radius;
+	float radius_squared;
+	TextureParams tp;
+
+	TextureBlendSphereOp(Vector3 p_center, float p_radius, TextureParams p_tp) {
+		center = p_center;
+		radius = p_radius;
+		radius_squared = p_radius * p_radius;
+		tp = p_tp;
+	}
+
+	inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
+		const float distance_squared = pos.to_vec3().distance_squared_to(center);
+		if (distance_squared < radius_squared) {
+			const float distance_from_radius = radius - Math::sqrt(distance_squared);
+			const float target_weight = tp.opacity * clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
+			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
+		}
+	}
+};
+
+}; // namespace VoxelToolOps
+
 // TODO Need to review VoxelTool to account for transformed volumes
 
 // High-level generic voxel edition utility.
@@ -150,74 +220,8 @@ protected:
 	float _sdf_scale = 1.f;
 	Mode _mode = MODE_ADD;
 
-	struct TextureParams {
-		float opacity = 1.f;
-		float sharpness = 2.f;
-		unsigned int index = 0;
-	};
-
-	struct TextureBlendSphereOp {
-		Vector3 center;
-		float radius;
-		float radius_squared;
-		TextureParams tp;
-
-		TextureBlendSphereOp(Vector3 p_center, float p_radius, TextureParams p_tp) {
-			center = p_center;
-			radius = p_radius;
-			radius_squared = p_radius * p_radius;
-			tp = p_tp;
-		}
-
-		inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
-			const float distance_squared = pos.to_vec3().distance_squared_to(center);
-			if (distance_squared < radius_squared) {
-				const float distance_from_radius = radius - Math::sqrt(distance_squared);
-				const float target_weight = tp.opacity * clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
-				blend_texture_packed_u16(tp.index, target_weight, indices, weights);
-			}
-		}
-	};
-
-	template <typename Op, typename Shape>
-	struct SdfOperation16bit {
-		Op op;
-		Shape shape;
-		inline uint16_t operator()(Vector3i pos, uint16_t sdf) const {
-			return norm_to_u16(op(u16_to_norm(sdf), shape(pos.to_vec3())));
-		}
-	};
-
-	struct SdfUnion {
-		inline float operator()(float a, float b) const {
-			return sdf_union(a, b);
-		}
-	};
-
-	struct SdfSubtract {
-		inline float operator()(float a, float b) const {
-			return sdf_subtract(a, b);
-		}
-	};
-
-	struct SdfSet {
-		inline float operator()(float a, float b) const {
-			return b;
-		}
-	};
-
-	struct SdfSphere {
-		Vector3 center;
-		float radius;
-		float scale;
-
-		inline float operator()(Vector3 pos) const {
-			return scale * sdf_sphere(pos, center, radius);
-		}
-	};
-
 	// Used on smooth terrain
-	TextureParams _texture_params;
+	VoxelToolOps::TextureParams _texture_params;
 };
 
 VARIANT_ENUM_CAST(VoxelTool::Mode)

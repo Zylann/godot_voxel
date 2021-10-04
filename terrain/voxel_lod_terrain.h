@@ -126,6 +126,11 @@ public:
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
 
+	// TODO This still sucks atm cuz the edit will still run on the main thread
+	void push_async_edit(std::unique_ptr<IVoxelTimeSpreadTask> task, Box3i box);
+	void process_async_edits();
+	void abort_async_edits();
+
 	void set_voxel_bounds(Box3i p_box);
 	inline Box3i get_voxel_bounds() const { return _bounds_in_voxels; }
 
@@ -231,6 +236,7 @@ private:
 	void _set_lod_count(int p_lod_count);
 	void _set_block_size_po2(int p_block_size_po2);
 	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
+	std::shared_ptr<VoxelAsyncDependencyTracker> preload_box_async(Box3i voxel_box);
 
 	void _on_stream_params_changed();
 
@@ -303,6 +309,13 @@ private:
 
 	VoxelInstancer *_instancer = nullptr;
 
+	struct AsyncEdit {
+		std::unique_ptr<IVoxelTimeSpreadTask> task;
+		std::shared_ptr<VoxelAsyncDependencyTracker> dependency_tracker;
+	};
+
+	std::queue<AsyncEdit> _async_edits;
+
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
 		VoxelDataMap data_map;
@@ -342,7 +355,8 @@ private:
 	bool _show_octree_bounds_gizmos = true;
 	bool _show_volume_bounds_gizmos = true;
 	bool _show_octree_node_gizmos = false;
-	bool _show_edited_lod0_blocks = false;
+	bool _show_edited_blocks = false;
+	unsigned int _edited_blocks_gizmos_lod_index = 0;
 	VoxelDebug::DebugRenderer _debug_renderer;
 #endif
 

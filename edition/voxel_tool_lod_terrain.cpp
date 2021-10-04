@@ -161,6 +161,60 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	return res;
 }
 
+namespace {
+
+struct DoSphere {
+	Vector3 center;
+	float radius;
+	VoxelTool::Mode mode;
+	VoxelLodTerrain *terrain;
+	float sdf_scale;
+	Box3i box;
+	VoxelToolOps::TextureParams texture_params;
+
+	void operator()() {
+		using namespace VoxelToolOps;
+
+		switch (mode) {
+			case VoxelTool::MODE_ADD: {
+				// TODO Support other depths, format should be accessible from the volume
+				SdfOperation16bit<SdfUnion, SdfSphere> op;
+				op.shape.center = center;
+				op.shape.radius = radius;
+				op.shape.scale = sdf_scale;
+				terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+			} break;
+
+			case VoxelTool::MODE_REMOVE: {
+				SdfOperation16bit<SdfSubtract, SdfSphere> op;
+				op.shape.center = center;
+				op.shape.radius = radius;
+				op.shape.scale = sdf_scale;
+				terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+			} break;
+
+			case VoxelTool::MODE_SET: {
+				SdfOperation16bit<SdfSet, SdfSphere> op;
+				op.shape.center = center;
+				op.shape.radius = radius;
+				op.shape.scale = sdf_scale;
+				terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+			} break;
+
+			case VoxelTool::MODE_TEXTURE_PAINT: {
+				terrain->write_box_2(box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
+						TextureBlendSphereOp{ center, radius, texture_params });
+			} break;
+
+			default:
+				ERR_PRINT("Unknown mode");
+				break;
+		}
+	}
+};
+
+} // namespace
+
 void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
@@ -171,41 +225,43 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 		return;
 	}
 
-	switch (_mode) {
-		case MODE_ADD: {
-			// TODO Support other depths, format should be accessible from the volume
-			SdfOperation16bit<SdfUnion, SdfSphere> op;
-			op.shape.center = center;
-			op.shape.radius = radius;
-			op.shape.scale = _sdf_scale;
-			_terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
-		} break;
+	DoSphere op;
+	op.box = box;
+	op.center = center;
+	op.mode = get_mode();
+	op.radius = radius;
+	op.sdf_scale = get_sdf_scale();
+	op.terrain = _terrain;
+	op.texture_params = _texture_params;
+	op();
+}
 
-		case MODE_REMOVE: {
-			SdfOperation16bit<SdfSubtract, SdfSphere> op;
-			op.shape.center = center;
-			op.shape.radius = radius;
-			op.shape.scale = _sdf_scale;
-			_terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
-		} break;
+void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
+	ERR_FAIL_COND(_terrain == nullptr);
+	const Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 
-		case MODE_SET: {
-			SdfOperation16bit<SdfSet, SdfSphere> op;
-			op.shape.center = center;
-			op.shape.radius = radius;
-			op.shape.scale = _sdf_scale;
-			_terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
-		} break;
+	DoSphere op;
+	op.box = box;
+	op.center = center;
+	op.mode = get_mode();
+	op.radius = radius;
+	op.sdf_scale = get_sdf_scale();
+	op.terrain = _terrain;
+	op.texture_params = _texture_params;
 
-		case MODE_TEXTURE_PAINT: {
-			_terrain->write_box_2(box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
-					TextureBlendSphereOp{ center, radius, _texture_params });
-		} break;
+	struct Task : IVoxelTimeSpreadTask {
+		DoSphere op;
+		void run() override {
+			op();
+		}
+	};
 
-		default:
-			ERR_PRINT("Unknown mode");
-			break;
-	}
+	// TODO How do I use unique_ptr with Godot's memnew/memdelete instead?
+	// (without having to mention it everywhere I pass this around)
+
+	std::unique_ptr<Task> task = std::make_unique<Task>();
+	task->op = op;
+	_terrain->push_async_edit(std::move(task), op.box);
 }
 
 void VoxelToolLodTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const {
@@ -611,4 +667,5 @@ void VoxelToolLodTerrain::_bind_methods() {
 			&VoxelToolLodTerrain::get_voxel_f_interpolated);
 	ClassDB::bind_method(D_METHOD("separate_floating_chunks", "box", "parent_node"),
 			&VoxelToolLodTerrain::separate_floating_chunks);
+	ClassDB::bind_method(D_METHOD("do_sphere_async", "center", "radius"), &VoxelToolLodTerrain::do_sphere_async);
 }

@@ -43,4 +43,9 @@ inline std::shared_ptr<T> gd_make_shared() {
 	return std::shared_ptr<T>(memnew(T), memdelete<T>);
 }
 
+template <typename T, typename Arg_T>
+inline std::shared_ptr<T> gd_make_shared(Arg_T arg) {
+	return std::shared_ptr<T>(memnew(T(arg)), memdelete<T>);
+}
+
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

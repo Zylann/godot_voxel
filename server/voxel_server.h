@@ -31,6 +31,45 @@ private:
 	std::queue<IVoxelTimeSpreadTask *> _tasks;
 };
 
+class VoxelAsyncDependencyTracker {
+public:
+	// Creates a tracker which will track `initial_count` tasks.
+	// The tracker may be passed by shared pointer to each of these tasks so they can notify completion.
+	VoxelAsyncDependencyTracker(int initial_count) :
+			_count(initial_count), _aborted(false) {
+	}
+
+	// Call this when one of the tracked dependencies is complete
+	void post_complete() {
+		ERR_FAIL_COND_MSG(_count == 0, "post() called more times than expected");
+		--_count;
+	}
+
+	// Call this when one of the tracked dependencies is aborted
+	void abort() {
+		_aborted = true;
+	}
+
+	// Returns `true` if any of the tracked tasks was aborted.
+	// It usually means the task depending on this tracker may be aborted as well.
+	bool is_aborted() const {
+		return _aborted;
+	}
+
+	// Returns `true` when all the tracked tasks have completed
+	bool is_complete() const {
+		return _count == 0;
+	}
+
+	int get_remaining_count() const {
+		return _count;
+	}
+
+private:
+	std::atomic_int _count;
+	std::atomic_bool _aborted;
+};
+
 class VoxelNode;
 
 // TODO Don't inherit Object. Instead have a Godot wrapper, there is very little use for Object stuff
@@ -65,6 +104,8 @@ public:
 		uint8_t lod;
 		bool dropped;
 		bool max_lod_hint;
+		// Blocks with this flag set should not be ignored
+		bool initial_load;
 	};
 
 	struct BlockMeshInput {
@@ -119,6 +160,8 @@ public:
 	void request_block_mesh(uint32_t volume_id, const BlockMeshInput &input);
 	// TODO Add parameter to skip stream loading
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
+	void request_block_generate(uint32_t volume_id, Vector3i block_pos, int lod,
+			std::shared_ptr<VoxelAsyncDependencyTracker> tracker);
 	void request_all_stream_blocks(uint32_t volume_id);
 	void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos,
 			int lod);
@@ -336,8 +379,10 @@ private:
 		bool has_run = false;
 		bool too_far = false;
 		bool max_lod_hint = false;
+		bool drop_beyond_max_distance = true;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
+		std::shared_ptr<VoxelAsyncDependencyTracker> tracker;
 	};
 
 	class BlockMeshRequest : public IVoxelTask {

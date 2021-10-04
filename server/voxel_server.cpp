@@ -361,6 +361,7 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &i
 void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream_dependency == nullptr);
+	ERR_FAIL_COND(volume.data_block_size > 255);
 
 	if (volume.stream_dependency->stream.is_valid()) {
 		BlockDataRequest *r = memnew(BlockDataRequest);
@@ -391,6 +392,26 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 
 		_general_thread_pool.enqueue(r);
 	}
+}
+
+void VoxelServer::request_block_generate(uint32_t volume_id, Vector3i block_pos, int lod,
+		std::shared_ptr<VoxelAsyncDependencyTracker> tracker) {
+	//
+	const Volume &volume = _world.volumes.get(volume_id);
+	ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
+
+	BlockGenerateRequest *r = memnew(BlockGenerateRequest);
+	r->volume_id = volume_id;
+	r->position = block_pos;
+	r->lod = lod;
+	r->block_size = volume.data_block_size;
+	r->stream_dependency = volume.stream_dependency;
+	r->tracker = tracker;
+	r->drop_beyond_max_distance = false;
+
+	init_priority_dependency(r->priority_dependency, block_pos, lod, volume, volume.data_block_size);
+
+	_general_thread_pool.enqueue(r);
 }
 
 void VoxelServer::request_all_stream_blocks(uint32_t volume_id) {
@@ -814,6 +835,7 @@ void VoxelServer::BlockDataRequest::apply_result() {
 			o.lod = lod;
 			o.dropped = !has_run;
 			o.max_lod_hint = max_lod_hint;
+			o.initial_load = false;
 
 			switch (type) {
 				case BlockDataRequest::TYPE_SAVE:
@@ -887,6 +909,7 @@ void VoxelServer::AllBlocksDataRequest::apply_result() {
 				o.lod = rb.lod;
 				o.dropped = false;
 				o.max_lod_hint = false;
+				o.initial_load = true;
 
 				++dst_i;
 			}
@@ -939,7 +962,7 @@ void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
 int VoxelServer::BlockGenerateRequest::get_priority() {
 	float closest_viewer_distance_sq;
 	const int p = VoxelServer::get_priority(priority_dependency, lod, &closest_viewer_distance_sq);
-	too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
+	too_far = drop_beyond_max_distance && closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
 
@@ -949,6 +972,8 @@ bool VoxelServer::BlockGenerateRequest::is_cancelled() {
 
 void VoxelServer::BlockGenerateRequest::apply_result() {
 	Volume *volume = VoxelServer::get_singleton()->_world.volumes.try_get(volume_id);
+
+	bool aborted = true;
 
 	if (volume != nullptr) {
 		// TODO Comparing pointer may not be guaranteed
@@ -962,12 +987,25 @@ void VoxelServer::BlockGenerateRequest::apply_result() {
 			o.dropped = !has_run;
 			o.type = BlockDataOutput::TYPE_LOAD;
 			o.max_lod_hint = max_lod_hint;
+			o.initial_load = false;
 			volume->reception_buffers->data_output.push_back(std::move(o));
+
+			aborted = !has_run;
 		}
 
 	} else {
 		// This can happen if the user removes the volume while requests are still about to return
 		PRINT_VERBOSE("Gemerated data request response came back but volume wasn't found");
+	}
+
+	if (tracker != nullptr) {
+		if (aborted) {
+			tracker->abort();
+		} else {
+			// TODO Problem: the task is actually not complete yet!
+			// We only posted the result into a reception queue, it still needs to be dequeued by the terrain.
+			tracker->post_complete();
+		}
 	}
 }
 
