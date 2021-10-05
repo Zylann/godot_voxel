@@ -1242,250 +1242,15 @@ void VoxelLodTerrain::_process(float delta) {
 
 	// Unload data blocks falling out of block region extent
 	if (_full_load_mode == false) {
-		VOXEL_PROFILE_SCOPE_NAMED("Sliding box data unload");
-		// TODO Could it actually be enough to have a rolling update on all blocks?
-
-		// This should be the same distance relatively to each LOD
-		const int data_block_region_extent = get_data_block_region_extent();
-
-		// Ignore largest lod because it can extend a little beyond due to the view distance setting.
-		// Instead, those blocks are unloaded by the octree forest management.
-		// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
-		for (int lod_index = get_lod_count() - 2; lod_index >= 0; --lod_index) {
-			VOXEL_PROFILE_SCOPE();
-			Lod &lod = _lods[lod_index];
-
-			// Each LOD keeps a box of loaded blocks, and only some of the blocks will get polygonized.
-			// The player can edit them so changes can be propagated to lower lods.
-
-			unsigned int block_size_po2 = _lods[0].data_map.get_block_size_pow2() + lod_index;
-			Vector3i viewer_block_pos_within_lod = VoxelDataMap::voxel_to_block_b(viewer_pos, block_size_po2);
-
-			const Box3i bounds_in_blocks = Box3i(
-					_bounds_in_voxels.pos >> block_size_po2,
-					_bounds_in_voxels.size >> block_size_po2);
-
-			const Box3i new_box =
-					Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(data_block_region_extent));
-			const Box3i prev_box =
-					Box3i::from_center_extents(
-							lod.last_viewer_data_block_pos, Vector3i(lod.last_view_distance_data_blocks));
-
-			if (!new_box.intersects(bounds_in_blocks) && !prev_box.intersects(bounds_in_blocks)) {
-				// If this box doesn't intersect either now or before, there is no chance a smaller one will
-				break;
-			}
-
-			// Eliminate pending blocks that aren't needed
-
-			// This vector must be empty at this point.
-			ERR_FAIL_COND(!lod.blocks_to_load.empty());
-
-			if (prev_box != new_box) {
-				VOXEL_PROFILE_SCOPE_NAMED("Unload data");
-				prev_box.difference(new_box, [this, lod_index](Box3i out_of_range_box) {
-					out_of_range_box.for_each_cell([=](Vector3i pos) {
-						//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
-						unload_data_block(pos, lod_index);
-					});
-				});
-			}
-
-			{
-				VOXEL_PROFILE_SCOPE_NAMED("Cancel updates");
-				// Cancel block updates that are not within the padded region
-				// (since neighbors are always required to remesh)
-
-				const Box3i padded_new_box = new_box.padded(-1);
-				Box3i mesh_box;
-				if (get_mesh_block_size() > get_data_block_size()) {
-					const int factor = get_mesh_block_size() / get_data_block_size();
-					mesh_box = padded_new_box.downscaled_inner(factor);
-				} else {
-					mesh_box = padded_new_box;
-				}
-
-				unordered_remove_if(lod.blocks_pending_update, [&lod, mesh_box](Vector3i bpos) {
-					if (mesh_box.contains(bpos)) {
-						return false;
-					} else {
-						VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
-						if (block != nullptr) {
-							block->set_mesh_state(VoxelMeshBlock::MESH_NEED_UPDATE);
-						}
-						return true;
-					}
-				});
-			}
-
-			lod.last_viewer_data_block_pos = viewer_block_pos_within_lod;
-			lod.last_view_distance_data_blocks = data_block_region_extent;
-		}
+		process_unload_data_blocks_sliding_box(viewer_pos);
 	}
 
 	// Unload mesh blocks falling out of block region extent
-	{
-		VOXEL_PROFILE_SCOPE_NAMED("Sliding box mesh unload");
-		// TODO Could it actually be enough to have a rolling update on all blocks?
-
-		// This should be the same distance relatively to each LOD
-		const int mesh_block_region_extent = get_mesh_block_region_extent();
-
-		// Ignore largest lod because it can extend a little beyond due to the view distance setting.
-		// Instead, those blocks are unloaded by the octree forest management.
-		// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
-		for (int lod_index = get_lod_count() - 2; lod_index >= 0; --lod_index) {
-			VOXEL_PROFILE_SCOPE();
-			Lod &lod = _lods[lod_index];
-
-			unsigned int block_size_po2 = _lods[0].mesh_map.get_block_size_pow2() + lod_index;
-			Vector3i viewer_block_pos_within_lod = VoxelMeshMap::voxel_to_block_b(viewer_pos, block_size_po2);
-
-			const Box3i bounds_in_blocks = Box3i(
-					_bounds_in_voxels.pos >> block_size_po2,
-					_bounds_in_voxels.size >> block_size_po2);
-
-			const Box3i new_box =
-					Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(mesh_block_region_extent));
-			const Box3i prev_box =
-					Box3i::from_center_extents(lod.last_viewer_mesh_block_pos, Vector3i(lod.last_view_distance_mesh_blocks));
-
-			if (!new_box.intersects(bounds_in_blocks) && !prev_box.intersects(bounds_in_blocks)) {
-				// If this box doesn't intersect either now or before, there is no chance a smaller one will
-				break;
-			}
-
-			// Eliminate pending blocks that aren't needed
-
-			if (prev_box != new_box) {
-				VOXEL_PROFILE_SCOPE_NAMED("Unload meshes");
-				prev_box.difference(new_box, [this, lod_index](Box3i out_of_range_box) {
-					out_of_range_box.for_each_cell([=](Vector3i pos) {
-						//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
-						unload_mesh_block(pos, lod_index);
-					});
-				});
-			}
-
-			{
-				VOXEL_PROFILE_SCOPE_NAMED("Cancel updates");
-				// Cancel block updates that are not within the new region
-				unordered_remove_if(lod.blocks_pending_update, [&lod, new_box](Vector3i bpos) {
-					return !new_box.contains(bpos);
-				});
-			}
-
-			lod.last_viewer_mesh_block_pos = viewer_block_pos_within_lod;
-			lod.last_view_distance_mesh_blocks = mesh_block_region_extent;
-		}
-	}
+	process_unload_mesh_blocks_sliding_box(viewer_pos);
 
 	// Create and remove octrees in a grid around the viewer.
 	// Mesh blocks drive the loading of voxel data and visuals.
-	{
-		VOXEL_PROFILE_SCOPE_NAMED("Sliding box octrees");
-		// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
-
-		const unsigned int octree_size_po2 = get_octree_size_po2(*this);
-		const unsigned int octree_size = 1 << octree_size_po2;
-		const unsigned int octree_region_extent = 1 + _view_distance_voxels / (1 << octree_size_po2);
-
-		const Vector3i viewer_octree_pos = (Vector3i(viewer_pos) + Vector3i(octree_size / 2)) >> octree_size_po2;
-
-		const Box3i bounds_in_octrees = _bounds_in_voxels.downscaled(octree_size);
-
-		const Box3i new_box = Box3i::from_center_extents(viewer_octree_pos, Vector3i(octree_region_extent))
-									  .clipped(bounds_in_octrees);
-		const Box3i prev_box = _last_octree_region_box;
-
-		if (new_box != prev_box) {
-			struct CleanOctreeAction {
-				VoxelLodTerrain *self;
-				Vector3i block_offset_lod0;
-
-				void operator()(Vector3i node_pos, unsigned int lod_index) {
-					Lod &lod = self->_lods[lod_index];
-
-					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
-
-					VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
-					if (block != nullptr) {
-						self->set_mesh_block_active(*block, false);
-					}
-				}
-			};
-
-			struct ExitAction {
-				VoxelLodTerrain *self;
-				void operator()(const Vector3i &pos) {
-					Map<Vector3i, OctreeItem>::Element *E = self->_lod_octrees.find(pos);
-					if (E == nullptr) {
-						return;
-					}
-
-					OctreeItem &item = E->value();
-					const Vector3i block_pos_maxlod = E->key();
-
-					const unsigned int last_lod_index = self->get_lod_count() - 1;
-
-					// We just drop the octree and hide blocks it was considering as visible.
-					// Normally such octrees shouldn't bee too deep as they will likely be at the edge
-					// of the loaded area, unless the player teleported far away.
-					CleanOctreeAction a;
-					a.self = self;
-					a.block_offset_lod0 = block_pos_maxlod << last_lod_index;
-					item.octree.clear(a);
-
-					self->_lod_octrees.erase(E);
-
-					// Unload last lod from here, as it may extend a bit further than the others.
-					// Other LODs are unloaded earlier using a sliding region.
-					self->unload_mesh_block(pos, last_lod_index);
-					// TODO Unload data block too?
-				}
-			};
-
-			struct EnterAction {
-				VoxelLodTerrain *self;
-				int block_size;
-				void operator()(const Vector3i &pos) {
-					// That's a new cell we are entering, shouldn't be anything there
-					CRASH_COND(self->_lod_octrees.has(pos));
-
-					// Create new octree
-					// TODO Use ObjectPool to store them, deletion won't be cheap
-					Map<Vector3i, OctreeItem>::Element *E = self->_lod_octrees.insert(pos, OctreeItem());
-					CRASH_COND(E == nullptr);
-					OctreeItem &item = E->value();
-					LodOctree::NoDestroyAction nda;
-					item.octree.create_from_lod_count(block_size, self->get_lod_count(), nda);
-					item.octree.set_lod_distance(self->get_lod_distance());
-				}
-			};
-
-			ExitAction exit_action;
-			exit_action.self = this;
-
-			EnterAction enter_action;
-			enter_action.self = this;
-			enter_action.block_size = get_mesh_block_size();
-
-			{
-				VOXEL_PROFILE_SCOPE_NAMED("Unload octrees");
-				prev_box.difference(new_box, [exit_action](Box3i out_of_range_box) {
-					out_of_range_box.for_each_cell(exit_action);
-				});
-			}
-			{
-				VOXEL_PROFILE_SCOPE_NAMED("Load octrees");
-				new_box.difference(prev_box, [enter_action](Box3i box_to_load) {
-					box_to_load.for_each_cell(enter_action);
-				});
-			}
-		}
-
-		_last_octree_region_box = new_box;
-	}
+	process_octrees_sliding_box(viewer_pos);
 
 	CRASH_COND(_blocks_pending_transition_update.size() != 0);
 
@@ -1494,145 +1259,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 	// Find which blocks we need to load and see, within each octree
 	if (stream_enabled) {
-		VOXEL_PROFILE_SCOPE_NAMED("Update octrees");
-
-		// TODO Maintain a vector to make iteration faster?
-		for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
-			VOXEL_PROFILE_SCOPE();
-
-			OctreeItem &item = E->value();
-			Vector3i block_pos_maxlod = E->key();
-			Vector3i block_offset_lod0 = block_pos_maxlod << (get_lod_count() - 1);
-
-			struct OctreeActions {
-				VoxelLodTerrain *self = nullptr;
-				Vector3i block_offset_lod0;
-				unsigned int blocked_count = 0;
-
-				void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
-					Lod &lod = self->_lods[lod_index];
-					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
-					VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
-
-					// Never show a child that hasn't been meshed
-					CRASH_COND(block == nullptr);
-					CRASH_COND(block->get_mesh_state() != VoxelMeshBlock::MESH_UP_TO_DATE);
-
-					self->set_mesh_block_active(*block, true);
-					self->add_transition_update(block);
-					self->add_transition_updates_around(bpos, lod_index);
-				}
-
-				void destroy_child(Vector3i node_pos, int lod_index) {
-					Lod &lod = self->_lods[lod_index];
-					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
-					VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
-
-					if (block != nullptr) {
-						self->set_mesh_block_active(*block, false);
-						self->add_transition_updates_around(bpos, lod_index);
-					}
-				}
-
-				void show_parent(Vector3i node_pos, int lod_index) {
-					Lod &lod = self->_lods[lod_index];
-					Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
-					VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
-
-					// If we teleport far away, the area we were in is going to merge,
-					// and blocks may have been unloaded completely.
-					// So in that case it's normal to not find any block.
-					// Otherwise, there must always be a visible parent in the end, unless the octree vanished.
-					if (block != nullptr && block->get_mesh_state() == VoxelMeshBlock::MESH_UP_TO_DATE) {
-						self->set_mesh_block_active(*block, true);
-						self->add_transition_update(block);
-						self->add_transition_updates_around(bpos, lod_index);
-					}
-				}
-
-				void hide_parent(Vector3i node_pos, int lod_index) {
-					destroy_child(node_pos, lod_index); // Same
-				}
-
-				bool can_create_root(int lod_index) {
-					Vector3i offset = block_offset_lod0 >> lod_index;
-					return self->check_block_loaded_and_meshed(offset, lod_index);
-				}
-
-				bool can_split(Vector3i node_pos, int child_lod_index, LodOctree::NodeData &data) {
-					VOXEL_PROFILE_SCOPE();
-					Vector3i offset = block_offset_lod0 >> child_lod_index;
-					bool can = true;
-
-					// Can only subdivide if higher detail meshes are ready to be shown, otherwise it will produce holes
-					for (int i = 0; i < 8; ++i) {
-						// Get block pos local-to-region
-						Vector3i child_pos = LodOctree::get_child_position(node_pos, i);
-						// Convert to local-to-terrain
-						child_pos += offset;
-						// We have to ping ALL children, because the reason we are here is we want them loaded
-						can &= self->check_block_loaded_and_meshed(child_pos, child_lod_index);
-					}
-
-					// Can only subdivide if blocks of a higher LOD index are present around,
-					// otherwise it will cause cracks.
-					// Need to check meshes, not voxels?
-					// const int lod_index = child_lod_index + 1;
-					// if (lod_index < self->get_lod_count()) {
-					// 	const Vector3i parent_offset = block_offset_lod0 >> lod_index;
-					// 	const Lod &lod = self->_lods[lod_index];
-					// 	can &= self->is_block_surrounded(node_pos + parent_offset, lod_index, lod.map);
-					// }
-
-					if (!can) {
-						++blocked_count;
-					}
-
-					return can;
-				}
-
-				bool can_join(Vector3i node_pos, int parent_lod_index) {
-					VOXEL_PROFILE_SCOPE();
-					// Can only unsubdivide if the parent mesh is ready
-					Lod &lod = self->_lods[parent_lod_index];
-
-					Vector3i bpos = node_pos + (block_offset_lod0 >> parent_lod_index);
-					VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
-
-					if (block == nullptr) {
-						// The block got unloaded. Exceptionally, we can join.
-						// There will always be a grand-parent because we never destroy them when they split,
-						// and we never create a child without creating a parent first.
-						return true;
-					}
-
-					// The block is loaded (?) but the mesh isn't up to date, we need to ping and wait.
-					bool can = self->check_block_mesh_updated(block);
-
-					if (!can) {
-						++blocked_count;
-					}
-
-					return can;
-				}
-			};
-
-			OctreeActions octree_actions;
-			octree_actions.self = this;
-			octree_actions.block_offset_lod0 = block_offset_lod0;
-
-			Vector3 relative_viewer_pos = viewer_pos - get_mesh_block_size() * block_offset_lod0.to_vec3();
-			item.octree.update(relative_viewer_pos, octree_actions);
-
-			// Ideally, this stat should stabilize to zero.
-			// If not, something in block management prevents LODs from properly show up and should be fixed.
-			_stats.blocked_lods += octree_actions.blocked_count;
-		}
-
-		{
-			VOXEL_PROFILE_SCOPE_NAMED("Transition updates");
-			process_transition_updates();
-		}
+		process_octrees_fitting(viewer_pos);
 	}
 
 	CRASH_COND(_blocks_pending_transition_update.size() != 0);
@@ -1649,81 +1276,7 @@ void VoxelLodTerrain::_process(float delta) {
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters.
 	// It should only happen on first load, though.
-	{
-		VOXEL_PROFILE_SCOPE_NAMED("Data loading responses");
-		// if (_reception_buffers.data_output.size() > 0) {
-		// 	print_line(String("Received {0} data blocks").format(varray(_reception_buffers.data_output.size())));
-		// }
-
-		for (size_t reception_index = 0; reception_index < _reception_buffers.data_output.size(); ++reception_index) {
-			VOXEL_PROFILE_SCOPE();
-			VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[reception_index];
-
-			if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVE) {
-				// That's a save confirmation event.
-				// Note: in the future, if blocks don't get copied before being sent for saving,
-				// we will need to use block versionning to know when we can reset the `modified` flag properly
-
-				// TODO Now that's the case. Use version? Or just keep copying?
-				continue;
-			}
-
-			if (ob.lod >= _lod_count) {
-				// That block was requested at a time where LOD was higher... drop it
-				++_stats.dropped_block_loads;
-				continue;
-			}
-
-			Lod &lod = _lods[ob.lod];
-
-			// Initial load will be true when we requested data without specifying specific positions,
-			// so we wouldn't know which ones to expect. This is the case of full load mode.
-			if (!ob.initial_load) {
-				std::unordered_set<Vector3i>::iterator it = lod.loading_blocks.find(ob.position);
-				if (it == lod.loading_blocks.end()) {
-					// That block was not requested, or is no longer needed. drop it...
-					PRINT_VERBOSE(String("Ignoring block {0} lod {1}, it was not in loading blocks")
-										  .format(varray(ob.position.to_vec3(), ob.lod)));
-					++_stats.dropped_block_loads;
-					continue;
-				}
-
-				lod.loading_blocks.erase(it);
-			}
-
-			if (ob.dropped) {
-				// That block was dropped by the data loader thread, but we were still expecting it...
-				// This is most likely caused by the loader not keeping up with the speed at which the player is moving.
-				// We should recover with the removal from `loading_blocks` so it will be re-queried again later...
-
-				//				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
-				//								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
-
-				++_stats.dropped_block_loads;
-				continue;
-			}
-
-			if (ob.voxels != nullptr) {
-				if (ob.voxels->get_size() != Vector3i(lod.data_map.get_block_size())) {
-					// Voxel block size is incorrect, drop it
-					ERR_PRINT("Block size obtained from stream is different from expected size");
-					++_stats.dropped_block_loads;
-					continue;
-				}
-
-				// Store buffer
-				VoxelDataBlock *block = lod.data_map.set_block_buffer(ob.position, ob.voxels);
-				CRASH_COND(block == nullptr);
-			}
-
-			if (_instancer != nullptr && ob.instances != nullptr) {
-				VoxelServer::BlockDataOutput &wob = _reception_buffers.data_output[reception_index];
-				_instancer->on_data_block_loaded(wob.position, wob.lod, std::move(wob.instances));
-			}
-		}
-
-		_reception_buffers.data_output.clear();
-	}
+	process_block_loading_responses();
 
 	// Process async edits after receiving data blocks because they may need them
 	process_async_edits();
@@ -1733,54 +1286,7 @@ void VoxelLodTerrain::_process(float delta) {
 	_stats.time_process_load_responses = profiling_clock.restart();
 
 	// Send mesh update requests
-	{
-		VOXEL_PROFILE_SCOPE_NAMED("Send mesh requests");
-
-		const int render_to_data_factor = get_mesh_block_size() / get_data_block_size();
-
-		for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
-			VOXEL_PROFILE_SCOPE();
-			Lod &lod = _lods[lod_index];
-
-			for (unsigned int bi = 0; bi < lod.blocks_pending_update.size(); ++bi) {
-				VOXEL_PROFILE_SCOPE();
-				const Vector3i mesh_block_pos = lod.blocks_pending_update[bi];
-
-				VoxelMeshBlock *block = lod.mesh_map.get_block(mesh_block_pos);
-				// A block must have been allocated before we ask for a mesh update
-				ERR_CONTINUE(block == nullptr);
-				// All blocks we get here must be in the scheduled state
-				ERR_CONTINUE(block->get_mesh_state() != VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
-
-				// Get block and its neighbors
-				VoxelServer::BlockMeshInput mesh_request;
-				mesh_request.render_block_position = mesh_block_pos;
-				mesh_request.lod = lod_index;
-
-				const Box3i data_box =
-						Box3i(render_to_data_factor * mesh_block_pos, Vector3i(render_to_data_factor)).padded(1);
-
-				// Iteration order matters for thread access.
-				// The array also implicitely encodes block position due to the convention being used,
-				// so there is no need to also include positions in the request
-				data_box.for_each_cell_zxy([&mesh_request, &lod](Vector3i data_block_pos) {
-					VoxelDataBlock *nblock = lod.data_map.get_block(data_block_pos);
-					// The block can actually be null on some occasions. Not sure yet if it's that bad
-					//CRASH_COND(nblock == nullptr);
-					if (nblock != nullptr) {
-						mesh_request.data_blocks[mesh_request.data_blocks_count] = nblock->get_voxels_shared();
-					}
-					++mesh_request.data_blocks_count;
-				});
-
-				VoxelServer::get_singleton()->request_block_mesh(_volume_id, mesh_request);
-
-				block->set_mesh_state(VoxelMeshBlock::MESH_UPDATE_SENT);
-			}
-
-			lod.blocks_pending_update.clear();
-		}
-	}
+	send_mesh_requests();
 
 	_stats.time_request_blocks_to_update = profiling_clock.restart();
 
@@ -1792,6 +1298,516 @@ void VoxelLodTerrain::_process(float delta) {
 		update_gizmos();
 	}
 #endif
+}
+
+void VoxelLodTerrain::process_unload_data_blocks_sliding_box(Vector3 p_viewer_pos) {
+	VOXEL_PROFILE_SCOPE_NAMED("Sliding box data unload");
+	// TODO Could it actually be enough to have a rolling update on all blocks?
+
+	// This should be the same distance relatively to each LOD
+	const int data_block_region_extent = get_data_block_region_extent();
+
+	// Ignore largest lod because it can extend a little beyond due to the view distance setting.
+	// Instead, those blocks are unloaded by the octree forest management.
+	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
+	for (int lod_index = get_lod_count() - 2; lod_index >= 0; --lod_index) {
+		VOXEL_PROFILE_SCOPE();
+		Lod &lod = _lods[lod_index];
+
+		// Each LOD keeps a box of loaded blocks, and only some of the blocks will get polygonized.
+		// The player can edit them so changes can be propagated to lower lods.
+
+		unsigned int block_size_po2 = _lods[0].data_map.get_block_size_pow2() + lod_index;
+		Vector3i viewer_block_pos_within_lod = VoxelDataMap::voxel_to_block_b(p_viewer_pos, block_size_po2);
+
+		const Box3i bounds_in_blocks = Box3i(
+				_bounds_in_voxels.pos >> block_size_po2,
+				_bounds_in_voxels.size >> block_size_po2);
+
+		const Box3i new_box =
+				Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(data_block_region_extent));
+		const Box3i prev_box =
+				Box3i::from_center_extents(
+						lod.last_viewer_data_block_pos, Vector3i(lod.last_view_distance_data_blocks));
+
+		if (!new_box.intersects(bounds_in_blocks) && !prev_box.intersects(bounds_in_blocks)) {
+			// If this box doesn't intersect either now or before, there is no chance a smaller one will
+			break;
+		}
+
+		// Eliminate pending blocks that aren't needed
+
+		// This vector must be empty at this point.
+		ERR_FAIL_COND(!lod.blocks_to_load.empty());
+
+		if (prev_box != new_box) {
+			VOXEL_PROFILE_SCOPE_NAMED("Unload data");
+			prev_box.difference(new_box, [this, lod_index](Box3i out_of_range_box) {
+				out_of_range_box.for_each_cell([=](Vector3i pos) {
+					//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
+					unload_data_block(pos, lod_index);
+				});
+			});
+		}
+
+		{
+			VOXEL_PROFILE_SCOPE_NAMED("Cancel updates");
+			// Cancel block updates that are not within the padded region
+			// (since neighbors are always required to remesh)
+
+			const Box3i padded_new_box = new_box.padded(-1);
+			Box3i mesh_box;
+			if (get_mesh_block_size() > get_data_block_size()) {
+				const int factor = get_mesh_block_size() / get_data_block_size();
+				mesh_box = padded_new_box.downscaled_inner(factor);
+			} else {
+				mesh_box = padded_new_box;
+			}
+
+			unordered_remove_if(lod.blocks_pending_update, [&lod, mesh_box](Vector3i bpos) {
+				if (mesh_box.contains(bpos)) {
+					return false;
+				} else {
+					VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+					if (block != nullptr) {
+						block->set_mesh_state(VoxelMeshBlock::MESH_NEED_UPDATE);
+					}
+					return true;
+				}
+			});
+		}
+
+		lod.last_viewer_data_block_pos = viewer_block_pos_within_lod;
+		lod.last_view_distance_data_blocks = data_block_region_extent;
+	}
+}
+
+void VoxelLodTerrain::process_unload_mesh_blocks_sliding_box(Vector3 p_viewer_pos) {
+	VOXEL_PROFILE_SCOPE_NAMED("Sliding box mesh unload");
+	// TODO Could it actually be enough to have a rolling update on all blocks?
+
+	// This should be the same distance relatively to each LOD
+	const int mesh_block_region_extent = get_mesh_block_region_extent();
+
+	// Ignore largest lod because it can extend a little beyond due to the view distance setting.
+	// Instead, those blocks are unloaded by the octree forest management.
+	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
+	for (int lod_index = get_lod_count() - 2; lod_index >= 0; --lod_index) {
+		VOXEL_PROFILE_SCOPE();
+		Lod &lod = _lods[lod_index];
+
+		unsigned int block_size_po2 = _lods[0].mesh_map.get_block_size_pow2() + lod_index;
+		Vector3i viewer_block_pos_within_lod = VoxelMeshMap::voxel_to_block_b(p_viewer_pos, block_size_po2);
+
+		const Box3i bounds_in_blocks = Box3i(
+				_bounds_in_voxels.pos >> block_size_po2,
+				_bounds_in_voxels.size >> block_size_po2);
+
+		const Box3i new_box =
+				Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3i(mesh_block_region_extent));
+		const Box3i prev_box =
+				Box3i::from_center_extents(lod.last_viewer_mesh_block_pos, Vector3i(lod.last_view_distance_mesh_blocks));
+
+		if (!new_box.intersects(bounds_in_blocks) && !prev_box.intersects(bounds_in_blocks)) {
+			// If this box doesn't intersect either now or before, there is no chance a smaller one will
+			break;
+		}
+
+		// Eliminate pending blocks that aren't needed
+
+		if (prev_box != new_box) {
+			VOXEL_PROFILE_SCOPE_NAMED("Unload meshes");
+			prev_box.difference(new_box, [this, lod_index](Box3i out_of_range_box) {
+				out_of_range_box.for_each_cell([=](Vector3i pos) {
+					//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
+					unload_mesh_block(pos, lod_index);
+				});
+			});
+		}
+
+		{
+			VOXEL_PROFILE_SCOPE_NAMED("Cancel updates");
+			// Cancel block updates that are not within the new region
+			unordered_remove_if(lod.blocks_pending_update, [&lod, new_box](Vector3i bpos) {
+				return !new_box.contains(bpos);
+			});
+		}
+
+		lod.last_viewer_mesh_block_pos = viewer_block_pos_within_lod;
+		lod.last_view_distance_mesh_blocks = mesh_block_region_extent;
+	}
+}
+
+void VoxelLodTerrain::process_octrees_sliding_box(Vector3 p_viewer_pos) {
+	VOXEL_PROFILE_SCOPE_NAMED("Sliding box octrees");
+	// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
+
+	const unsigned int octree_size_po2 = get_octree_size_po2(*this);
+	const unsigned int octree_size = 1 << octree_size_po2;
+	const unsigned int octree_region_extent = 1 + _view_distance_voxels / (1 << octree_size_po2);
+
+	const Vector3i viewer_octree_pos = (Vector3i(p_viewer_pos) + Vector3i(octree_size / 2)) >> octree_size_po2;
+
+	const Box3i bounds_in_octrees = _bounds_in_voxels.downscaled(octree_size);
+
+	const Box3i new_box = Box3i::from_center_extents(viewer_octree_pos, Vector3i(octree_region_extent))
+								  .clipped(bounds_in_octrees);
+	const Box3i prev_box = _last_octree_region_box;
+
+	if (new_box != prev_box) {
+		struct CleanOctreeAction {
+			VoxelLodTerrain *self;
+			Vector3i block_offset_lod0;
+
+			void operator()(Vector3i node_pos, unsigned int lod_index) {
+				Lod &lod = self->_lods[lod_index];
+
+				Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
+
+				VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+				if (block != nullptr) {
+					self->set_mesh_block_active(*block, false);
+				}
+			}
+		};
+
+		struct ExitAction {
+			VoxelLodTerrain *self;
+			void operator()(const Vector3i &pos) {
+				Map<Vector3i, OctreeItem>::Element *E = self->_lod_octrees.find(pos);
+				if (E == nullptr) {
+					return;
+				}
+
+				OctreeItem &item = E->value();
+				const Vector3i block_pos_maxlod = E->key();
+
+				const unsigned int last_lod_index = self->get_lod_count() - 1;
+
+				// We just drop the octree and hide blocks it was considering as visible.
+				// Normally such octrees shouldn't bee too deep as they will likely be at the edge
+				// of the loaded area, unless the player teleported far away.
+				CleanOctreeAction a;
+				a.self = self;
+				a.block_offset_lod0 = block_pos_maxlod << last_lod_index;
+				item.octree.clear(a);
+
+				self->_lod_octrees.erase(E);
+
+				// Unload last lod from here, as it may extend a bit further than the others.
+				// Other LODs are unloaded earlier using a sliding region.
+				self->unload_mesh_block(pos, last_lod_index);
+				// TODO Unload data block too?
+			}
+		};
+
+		struct EnterAction {
+			VoxelLodTerrain *self;
+			int block_size;
+			void operator()(const Vector3i &pos) {
+				// That's a new cell we are entering, shouldn't be anything there
+				CRASH_COND(self->_lod_octrees.has(pos));
+
+				// Create new octree
+				// TODO Use ObjectPool to store them, deletion won't be cheap
+				Map<Vector3i, OctreeItem>::Element *E = self->_lod_octrees.insert(pos, OctreeItem());
+				CRASH_COND(E == nullptr);
+				OctreeItem &item = E->value();
+				LodOctree::NoDestroyAction nda;
+				item.octree.create_from_lod_count(block_size, self->get_lod_count(), nda);
+				item.octree.set_lod_distance(self->get_lod_distance());
+			}
+		};
+
+		ExitAction exit_action;
+		exit_action.self = this;
+
+		EnterAction enter_action;
+		enter_action.self = this;
+		enter_action.block_size = get_mesh_block_size();
+
+		{
+			VOXEL_PROFILE_SCOPE_NAMED("Unload octrees");
+			prev_box.difference(new_box, [exit_action](Box3i out_of_range_box) {
+				out_of_range_box.for_each_cell(exit_action);
+			});
+		}
+		{
+			VOXEL_PROFILE_SCOPE_NAMED("Load octrees");
+			new_box.difference(prev_box, [enter_action](Box3i box_to_load) {
+				box_to_load.for_each_cell(enter_action);
+			});
+		}
+	}
+
+	_last_octree_region_box = new_box;
+}
+
+void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos) {
+	VOXEL_PROFILE_SCOPE_NAMED("Update octrees");
+
+	// TODO Maintain a vector to make iteration faster?
+	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
+		VOXEL_PROFILE_SCOPE();
+
+		OctreeItem &item = E->value();
+		Vector3i block_pos_maxlod = E->key();
+		Vector3i block_offset_lod0 = block_pos_maxlod << (get_lod_count() - 1);
+
+		struct OctreeActions {
+			VoxelLodTerrain *self = nullptr;
+			Vector3i block_offset_lod0;
+			unsigned int blocked_count = 0;
+
+			void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
+				Lod &lod = self->_lods[lod_index];
+				Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
+				VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+
+				// Never show a child that hasn't been meshed
+				CRASH_COND(block == nullptr);
+				CRASH_COND(block->get_mesh_state() != VoxelMeshBlock::MESH_UP_TO_DATE);
+
+				self->set_mesh_block_active(*block, true);
+				self->add_transition_update(block);
+				self->add_transition_updates_around(bpos, lod_index);
+			}
+
+			void destroy_child(Vector3i node_pos, int lod_index) {
+				Lod &lod = self->_lods[lod_index];
+				Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
+				VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+
+				if (block != nullptr) {
+					self->set_mesh_block_active(*block, false);
+					self->add_transition_updates_around(bpos, lod_index);
+				}
+			}
+
+			void show_parent(Vector3i node_pos, int lod_index) {
+				Lod &lod = self->_lods[lod_index];
+				Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
+				VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+
+				// If we teleport far away, the area we were in is going to merge,
+				// and blocks may have been unloaded completely.
+				// So in that case it's normal to not find any block.
+				// Otherwise, there must always be a visible parent in the end, unless the octree vanished.
+				if (block != nullptr && block->get_mesh_state() == VoxelMeshBlock::MESH_UP_TO_DATE) {
+					self->set_mesh_block_active(*block, true);
+					self->add_transition_update(block);
+					self->add_transition_updates_around(bpos, lod_index);
+				}
+			}
+
+			void hide_parent(Vector3i node_pos, int lod_index) {
+				destroy_child(node_pos, lod_index); // Same
+			}
+
+			bool can_create_root(int lod_index) {
+				Vector3i offset = block_offset_lod0 >> lod_index;
+				return self->check_block_loaded_and_meshed(offset, lod_index);
+			}
+
+			bool can_split(Vector3i node_pos, int child_lod_index, LodOctree::NodeData &data) {
+				VOXEL_PROFILE_SCOPE();
+				Vector3i offset = block_offset_lod0 >> child_lod_index;
+				bool can = true;
+
+				// Can only subdivide if higher detail meshes are ready to be shown, otherwise it will produce holes
+				for (int i = 0; i < 8; ++i) {
+					// Get block pos local-to-region
+					Vector3i child_pos = LodOctree::get_child_position(node_pos, i);
+					// Convert to local-to-terrain
+					child_pos += offset;
+					// We have to ping ALL children, because the reason we are here is we want them loaded
+					can &= self->check_block_loaded_and_meshed(child_pos, child_lod_index);
+				}
+
+				// Can only subdivide if blocks of a higher LOD index are present around,
+				// otherwise it will cause cracks.
+				// Need to check meshes, not voxels?
+				// const int lod_index = child_lod_index + 1;
+				// if (lod_index < self->get_lod_count()) {
+				// 	const Vector3i parent_offset = block_offset_lod0 >> lod_index;
+				// 	const Lod &lod = self->_lods[lod_index];
+				// 	can &= self->is_block_surrounded(node_pos + parent_offset, lod_index, lod.map);
+				// }
+
+				if (!can) {
+					++blocked_count;
+				}
+
+				return can;
+			}
+
+			bool can_join(Vector3i node_pos, int parent_lod_index) {
+				VOXEL_PROFILE_SCOPE();
+				// Can only unsubdivide if the parent mesh is ready
+				Lod &lod = self->_lods[parent_lod_index];
+
+				Vector3i bpos = node_pos + (block_offset_lod0 >> parent_lod_index);
+				VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+
+				if (block == nullptr) {
+					// The block got unloaded. Exceptionally, we can join.
+					// There will always be a grand-parent because we never destroy them when they split,
+					// and we never create a child without creating a parent first.
+					return true;
+				}
+
+				// The block is loaded (?) but the mesh isn't up to date, we need to ping and wait.
+				bool can = self->check_block_mesh_updated(block);
+
+				if (!can) {
+					++blocked_count;
+				}
+
+				return can;
+			}
+		};
+
+		OctreeActions octree_actions;
+		octree_actions.self = this;
+		octree_actions.block_offset_lod0 = block_offset_lod0;
+
+		Vector3 relative_viewer_pos = p_viewer_pos - get_mesh_block_size() * block_offset_lod0.to_vec3();
+		item.octree.update(relative_viewer_pos, octree_actions);
+
+		// Ideally, this stat should stabilize to zero.
+		// If not, something in block management prevents LODs from properly show up and should be fixed.
+		_stats.blocked_lods += octree_actions.blocked_count;
+	}
+
+	{
+		VOXEL_PROFILE_SCOPE_NAMED("Transition updates");
+		process_transition_updates();
+	}
+}
+
+void VoxelLodTerrain::process_block_loading_responses() {
+	VOXEL_PROFILE_SCOPE_NAMED("Data loading responses");
+	// if (_reception_buffers.data_output.size() > 0) {
+	// 	print_line(String("Received {0} data blocks").format(varray(_reception_buffers.data_output.size())));
+	// }
+
+	for (size_t reception_index = 0; reception_index < _reception_buffers.data_output.size(); ++reception_index) {
+		VOXEL_PROFILE_SCOPE();
+		VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[reception_index];
+
+		if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVE) {
+			// That's a save confirmation event.
+			// Note: in the future, if blocks don't get copied before being sent for saving,
+			// we will need to use block versionning to know when we can reset the `modified` flag properly
+
+			// TODO Now that's the case. Use version? Or just keep copying?
+			continue;
+		}
+
+		if (ob.lod >= _lod_count) {
+			// That block was requested at a time where LOD was higher... drop it
+			++_stats.dropped_block_loads;
+			continue;
+		}
+
+		Lod &lod = _lods[ob.lod];
+
+		// Initial load will be true when we requested data without specifying specific positions,
+		// so we wouldn't know which ones to expect. This is the case of full load mode.
+		if (!ob.initial_load) {
+			std::unordered_set<Vector3i>::iterator it = lod.loading_blocks.find(ob.position);
+			if (it == lod.loading_blocks.end()) {
+				// That block was not requested, or is no longer needed. drop it...
+				PRINT_VERBOSE(String("Ignoring block {0} lod {1}, it was not in loading blocks")
+									  .format(varray(ob.position.to_vec3(), ob.lod)));
+				++_stats.dropped_block_loads;
+				continue;
+			}
+
+			lod.loading_blocks.erase(it);
+		}
+
+		if (ob.dropped) {
+			// That block was dropped by the data loader thread, but we were still expecting it...
+			// This is most likely caused by the loader not keeping up with the speed at which the player is moving.
+			// We should recover with the removal from `loading_blocks` so it will be re-queried again later...
+
+			//				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1}, {2}, {3})")
+			//								   .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
+
+			++_stats.dropped_block_loads;
+			continue;
+		}
+
+		if (ob.voxels != nullptr) {
+			if (ob.voxels->get_size() != Vector3i(lod.data_map.get_block_size())) {
+				// Voxel block size is incorrect, drop it
+				ERR_PRINT("Block size obtained from stream is different from expected size");
+				++_stats.dropped_block_loads;
+				continue;
+			}
+
+			// Store buffer
+			VoxelDataBlock *block = lod.data_map.set_block_buffer(ob.position, ob.voxels);
+			CRASH_COND(block == nullptr);
+		}
+
+		if (_instancer != nullptr && ob.instances != nullptr) {
+			VoxelServer::BlockDataOutput &wob = _reception_buffers.data_output[reception_index];
+			_instancer->on_data_block_loaded(wob.position, wob.lod, std::move(wob.instances));
+		}
+	}
+
+	_reception_buffers.data_output.clear();
+}
+
+void VoxelLodTerrain::send_mesh_requests() {
+	VOXEL_PROFILE_SCOPE_NAMED("Send mesh requests");
+
+	const int render_to_data_factor = get_mesh_block_size() / get_data_block_size();
+
+	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		VOXEL_PROFILE_SCOPE();
+		Lod &lod = _lods[lod_index];
+
+		for (unsigned int bi = 0; bi < lod.blocks_pending_update.size(); ++bi) {
+			VOXEL_PROFILE_SCOPE();
+			const Vector3i mesh_block_pos = lod.blocks_pending_update[bi];
+
+			VoxelMeshBlock *block = lod.mesh_map.get_block(mesh_block_pos);
+			// A block must have been allocated before we ask for a mesh update
+			ERR_CONTINUE(block == nullptr);
+			// All blocks we get here must be in the scheduled state
+			ERR_CONTINUE(block->get_mesh_state() != VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
+
+			// Get block and its neighbors
+			VoxelServer::BlockMeshInput mesh_request;
+			mesh_request.render_block_position = mesh_block_pos;
+			mesh_request.lod = lod_index;
+
+			const Box3i data_box =
+					Box3i(render_to_data_factor * mesh_block_pos, Vector3i(render_to_data_factor)).padded(1);
+
+			// Iteration order matters for thread access.
+			// The array also implicitely encodes block position due to the convention being used,
+			// so there is no need to also include positions in the request
+			data_box.for_each_cell_zxy([&mesh_request, &lod](Vector3i data_block_pos) {
+				VoxelDataBlock *nblock = lod.data_map.get_block(data_block_pos);
+				// The block can actually be null on some occasions. Not sure yet if it's that bad
+				//CRASH_COND(nblock == nullptr);
+				if (nblock != nullptr) {
+					mesh_request.data_blocks[mesh_request.data_blocks_count] = nblock->get_voxels_shared();
+				}
+				++mesh_request.data_blocks_count;
+			});
+
+			VoxelServer::get_singleton()->request_block_mesh(_volume_id, mesh_request);
+
+			block->set_mesh_state(VoxelMeshBlock::MESH_UPDATE_SENT);
+		}
+
+		lod.blocks_pending_update.clear();
+	}
 }
 
 void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {

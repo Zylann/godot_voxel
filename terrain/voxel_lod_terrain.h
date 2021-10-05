@@ -211,6 +211,13 @@ protected:
 
 private:
 	void _process(float delta);
+	void process_unload_data_blocks_sliding_box(Vector3 p_viewer_pos);
+	void process_unload_mesh_blocks_sliding_box(Vector3 p_viewer_pos);
+	void process_octrees_sliding_box(Vector3 p_viewer_pos);
+	void process_octrees_fitting(Vector3 p_viewer_pos);
+	void process_block_loading_responses();
+	void send_mesh_requests();
+
 	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
 
 	void unload_data_block(Vector3i block_pos, int lod_index);
@@ -333,6 +340,7 @@ private:
 		Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;
 
+		// TODO Remove such members, they could be local vars, thread-locals or using some temp memory pool.
 		// Members for memory caching
 		std::vector<Vector3i> blocks_to_load;
 
