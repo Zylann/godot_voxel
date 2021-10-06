@@ -210,18 +210,23 @@ protected:
 	void _notification(int p_what);
 
 private:
+	struct BlockLocation {
+		Vector3i position;
+		uint8_t lod;
+	};
+
 	void _process(float delta);
-	void process_unload_data_blocks_sliding_box(Vector3 p_viewer_pos);
+	void process_unload_data_blocks_sliding_box(Vector3 p_viewer_pos, std::vector<BlockToSave> &blocks_to_save);
 	void process_unload_mesh_blocks_sliding_box(Vector3 p_viewer_pos);
 	void process_octrees_sliding_box(Vector3 p_viewer_pos);
-	void process_octrees_fitting(Vector3 p_viewer_pos);
+	void process_octrees_fitting(Vector3 p_viewer_pos, std::vector<BlockLocation> &data_blocks_to_load);
 	void process_block_loading_responses();
 	void send_mesh_requests();
 
 	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
 
-	void unload_data_block(Vector3i block_pos, int lod_index);
-	void unload_mesh_block(Vector3i block_pos, int lod_index);
+	void unload_data_block(Vector3i block_pos, uint8_t lod_index, std::vector<BlockToSave> &blocks_to_save);
+	void unload_mesh_block(Vector3i block_pos, uint8_t lod_index);
 
 	static inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 		return (data_block_size == 16 || data_block_size == 32) &&
@@ -236,10 +241,12 @@ private:
 	void reset_maps();
 
 	Vector3 get_local_viewer_pos() const;
-	void try_schedule_loading_with_neighbors(const Vector3i &p_data_block_pos, int lod_index);
+	void try_schedule_loading_with_neighbors(const Vector3i &p_data_block_pos, uint8_t lod_index,
+			std::vector<BlockLocation> &blocks_to_load);
 	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelDataMap &map) const;
-	bool check_block_loaded_and_meshed(const Vector3i &p_mesh_block_pos, int lod_index);
-	bool check_block_mesh_updated(VoxelMeshBlock *block);
+	bool check_block_loaded_and_meshed(const Vector3i &p_mesh_block_pos, uint8_t lod_index,
+			std::vector<BlockLocation> &blocks_to_load);
+	bool check_block_mesh_updated(VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load);
 	void _set_lod_count(int p_lod_count);
 	void _set_block_size_po2(int p_block_size_po2);
 	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
@@ -249,7 +256,8 @@ private:
 
 	void flush_pending_lod_edits();
 	void save_all_modified_blocks(bool with_copy);
-	void send_block_data_requests();
+	void send_block_data_requests(Span<const BlockLocation> blocks_to_load);
+	void send_block_save_requests(Span<BlockToSave> blocks_to_save);
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
 
@@ -294,9 +302,6 @@ private:
 	Ref<VoxelGenerator> _generator;
 	Ref<VoxelMesher> _mesher;
 
-	// TODO Might put this batch into VoxelServer directly instead of here
-	std::vector<BlockToSave> _blocks_to_save;
-
 	VoxelServer::ReceptionBuffers _reception_buffers;
 	uint32_t _volume_id = 0;
 	ProcessMode _process_mode = PROCESS_MODE_IDLE;
@@ -339,10 +344,6 @@ private:
 		Map<Vector3i, VoxelMeshBlock *> fading_blocks;
 		Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;
-
-		// TODO Remove such members, they could be local vars, thread-locals or using some temp memory pool.
-		// Members for memory caching
-		std::vector<Vector3i> blocks_to_load;
 
 		inline bool has_loading_block(const Vector3i &pos) const {
 			return loading_blocks.find(pos) != loading_blocks.end();

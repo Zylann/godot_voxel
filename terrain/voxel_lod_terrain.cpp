@@ -724,7 +724,6 @@ void VoxelLodTerrain::stop_streamer() {
 	for (unsigned int i = 0; i < _lods.size(); ++i) {
 		Lod &lod = _lods[i];
 		lod.loading_blocks.clear();
-		lod.blocks_to_load.clear();
 	}
 
 	_reception_buffers.data_output.clear();
@@ -791,7 +790,6 @@ void VoxelLodTerrain::reset_maps() {
 		if (lod_index < _lod_count) {
 			lod.data_map.create(lod.data_map.get_block_size_pow2(), lod_index);
 			lod.mesh_map.create(lod.mesh_map.get_block_size_pow2(), lod_index);
-			lod.blocks_to_load.clear();
 			lod.last_view_distance_data_blocks = 0;
 			lod.last_view_distance_mesh_blocks = 0;
 
@@ -1002,7 +1000,8 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 	return pos;
 }
 
-void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_data_block_pos, int lod_index) {
+void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_data_block_pos, uint8_t lod_index,
+		std::vector<BlockLocation> &blocks_to_load) {
 	Lod &lod = _lods[lod_index];
 
 	const int p = lod.data_map.get_block_size_pow2() + lod_index;
@@ -1029,7 +1028,7 @@ void VoxelLodTerrain::try_schedule_loading_with_neighbors(const Vector3i &p_data
 
 				if (block == nullptr) {
 					if (!lod.has_loading_block(bpos)) {
-						lod.blocks_to_load.push_back(bpos);
+						blocks_to_load.push_back({ bpos, lod_index });
 						lod.loading_blocks.insert(bpos);
 					}
 				}
@@ -1068,7 +1067,8 @@ bool VoxelLodTerrain::is_block_surrounded(const Vector3i &p_bpos, int lod_index,
 	return true;
 }
 
-bool VoxelLodTerrain::check_block_loaded_and_meshed(const Vector3i &p_mesh_block_pos, int lod_index) {
+bool VoxelLodTerrain::check_block_loaded_and_meshed(const Vector3i &p_mesh_block_pos, uint8_t lod_index,
+		std::vector<BlockLocation> &blocks_to_load) {
 	Lod &lod = _lods[lod_index];
 
 	const int mesh_block_size = get_mesh_block_size();
@@ -1094,7 +1094,7 @@ bool VoxelLodTerrain::check_block_loaded_and_meshed(const Vector3i &p_mesh_block
 						if (data_block == nullptr) {
 							loaded = false;
 							// TODO This is quite lossy in this case, if we ask for 8 blocks in an octant
-							try_schedule_loading_with_neighbors(data_block_pos, lod_index);
+							try_schedule_loading_with_neighbors(data_block_pos, lod_index, blocks_to_load);
 						}
 					}
 				}
@@ -1108,7 +1108,7 @@ bool VoxelLodTerrain::check_block_loaded_and_meshed(const Vector3i &p_mesh_block
 			const Vector3i data_block_pos = p_mesh_block_pos;
 			VoxelDataBlock *block = lod.data_map.get_block(data_block_pos);
 			if (block == nullptr) {
-				try_schedule_loading_with_neighbors(data_block_pos, lod_index);
+				try_schedule_loading_with_neighbors(data_block_pos, lod_index, blocks_to_load);
 				return false;
 			}
 		}
@@ -1120,10 +1120,10 @@ bool VoxelLodTerrain::check_block_loaded_and_meshed(const Vector3i &p_mesh_block
 		lod.mesh_map.set_block(p_mesh_block_pos, mesh_block);
 	}
 
-	return check_block_mesh_updated(mesh_block);
+	return check_block_mesh_updated(mesh_block, blocks_to_load);
 }
 
-bool VoxelLodTerrain::check_block_mesh_updated(VoxelMeshBlock *block) {
+bool VoxelLodTerrain::check_block_mesh_updated(VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load) {
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(block == nullptr);
@@ -1161,7 +1161,7 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelMeshBlock *block) {
 						surrounded = false;
 						if (!lod.has_loading_block(npos)) {
 							// Schedule loading for that neighbor
-							lod.blocks_to_load.push_back(npos);
+							blocks_to_load.push_back({ npos, block->lod_index });
 							lod.loading_blocks.insert(npos);
 						}
 					}
@@ -1191,29 +1191,21 @@ bool VoxelLodTerrain::check_block_mesh_updated(VoxelMeshBlock *block) {
 	return true;
 }
 
-void VoxelLodTerrain::send_block_data_requests() {
-	// Blocks to load
+void VoxelLodTerrain::send_block_data_requests(Span<const BlockLocation> blocks_to_load) {
 	const bool request_instances = _instancer != nullptr;
-	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
-		Lod &lod = _lods[lod_index];
-
-		for (unsigned int i = 0; i < lod.blocks_to_load.size(); ++i) {
-			const Vector3i block_pos = lod.blocks_to_load[i];
-			VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, lod_index, request_instances);
-		}
-
-		lod.blocks_to_load.clear();
+	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
+		const BlockLocation loc = blocks_to_load[i];
+		VoxelServer::get_singleton()->request_block_load(_volume_id, loc.position, loc.lod, request_instances);
 	}
+}
 
-	// Blocks to save
-	for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
+void VoxelLodTerrain::send_block_save_requests(Span<BlockToSave> blocks_to_save) {
+	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
+		BlockToSave &b = blocks_to_save[i];
 		PRINT_VERBOSE(String("Requesting save of block {0} lod {1}")
-							  .format(varray(_blocks_to_save[i].position.to_vec3(), _blocks_to_save[i].lod)));
-		BlockToSave &b = _blocks_to_save[i];
+							  .format(varray(b.position.to_vec3(), b.lod)));
 		VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
 	}
-
-	_blocks_to_save.clear();
 }
 
 void VoxelLodTerrain::_process(float delta) {
@@ -1240,9 +1232,11 @@ void VoxelLodTerrain::_process(float delta) {
 
 	ProfilingClock profiling_clock;
 
+	static thread_local std::vector<BlockToSave> data_blocks_to_save;
+
 	// Unload data blocks falling out of block region extent
 	if (_full_load_mode == false) {
-		process_unload_data_blocks_sliding_box(viewer_pos);
+		process_unload_data_blocks_sliding_box(viewer_pos, data_blocks_to_save);
 	}
 
 	// Unload mesh blocks falling out of block region extent
@@ -1257,9 +1251,12 @@ void VoxelLodTerrain::_process(float delta) {
 	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
 								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
 
+	static thread_local std::vector<BlockLocation> data_blocks_to_load;
+	data_blocks_to_load.clear();
+
 	// Find which blocks we need to load and see, within each octree
 	if (stream_enabled) {
-		process_octrees_fitting(viewer_pos);
+		process_octrees_fitting(viewer_pos, data_blocks_to_load);
 	}
 
 	CRASH_COND(_blocks_pending_transition_update.size() != 0);
@@ -1268,8 +1265,11 @@ void VoxelLodTerrain::_process(float delta) {
 
 	// It's possible the user didn't set a stream yet, or it is turned off
 	if (stream_enabled) {
-		send_block_data_requests();
+		send_block_data_requests(to_span_const(data_blocks_to_load));
+		send_block_save_requests(to_span(data_blocks_to_save));
 	}
+	data_blocks_to_load.clear();
+	data_blocks_to_save.clear();
 
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
 
@@ -1300,7 +1300,8 @@ void VoxelLodTerrain::_process(float delta) {
 #endif
 }
 
-void VoxelLodTerrain::process_unload_data_blocks_sliding_box(Vector3 p_viewer_pos) {
+void VoxelLodTerrain::process_unload_data_blocks_sliding_box(Vector3 p_viewer_pos,
+		std::vector<BlockToSave> &blocks_to_save) {
 	VOXEL_PROFILE_SCOPE_NAMED("Sliding box data unload");
 	// TODO Could it actually be enough to have a rolling update on all blocks?
 
@@ -1317,8 +1318,8 @@ void VoxelLodTerrain::process_unload_data_blocks_sliding_box(Vector3 p_viewer_po
 		// Each LOD keeps a box of loaded blocks, and only some of the blocks will get polygonized.
 		// The player can edit them so changes can be propagated to lower lods.
 
-		unsigned int block_size_po2 = _lods[0].data_map.get_block_size_pow2() + lod_index;
-		Vector3i viewer_block_pos_within_lod = VoxelDataMap::voxel_to_block_b(p_viewer_pos, block_size_po2);
+		const unsigned int block_size_po2 = _lods[0].data_map.get_block_size_pow2() + lod_index;
+		const Vector3i viewer_block_pos_within_lod = VoxelDataMap::voxel_to_block_b(p_viewer_pos, block_size_po2);
 
 		const Box3i bounds_in_blocks = Box3i(
 				_bounds_in_voxels.pos >> block_size_po2,
@@ -1337,15 +1338,13 @@ void VoxelLodTerrain::process_unload_data_blocks_sliding_box(Vector3 p_viewer_po
 
 		// Eliminate pending blocks that aren't needed
 
-		// This vector must be empty at this point.
-		ERR_FAIL_COND(!lod.blocks_to_load.empty());
-
 		if (prev_box != new_box) {
 			VOXEL_PROFILE_SCOPE_NAMED("Unload data");
-			prev_box.difference(new_box, [this, lod_index](Box3i out_of_range_box) {
-				out_of_range_box.for_each_cell([=](Vector3i pos) {
+			VoxelLodTerrain *self = this;
+			prev_box.difference(new_box, [self, lod_index, &blocks_to_save](Box3i out_of_range_box) {
+				out_of_range_box.for_each_cell([self, lod_index, &blocks_to_save](Vector3i pos) {
 					//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
-					unload_data_block(pos, lod_index);
+					self->unload_data_block(pos, lod_index, blocks_to_save);
 				});
 			});
 		}
@@ -1543,7 +1542,7 @@ void VoxelLodTerrain::process_octrees_sliding_box(Vector3 p_viewer_pos) {
 	_last_octree_region_box = new_box;
 }
 
-void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos) {
+void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<BlockLocation> &data_blocks_to_load) {
 	VOXEL_PROFILE_SCOPE_NAMED("Update octrees");
 
 	// TODO Maintain a vector to make iteration faster?
@@ -1556,6 +1555,7 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos) {
 
 		struct OctreeActions {
 			VoxelLodTerrain *self = nullptr;
+			std::vector<BlockLocation> &data_blocks_to_load;
 			Vector3i block_offset_lod0;
 			unsigned int blocked_count = 0;
 
@@ -1606,7 +1606,7 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos) {
 
 			bool can_create_root(int lod_index) {
 				Vector3i offset = block_offset_lod0 >> lod_index;
-				return self->check_block_loaded_and_meshed(offset, lod_index);
+				return self->check_block_loaded_and_meshed(offset, lod_index, data_blocks_to_load);
 			}
 
 			bool can_split(Vector3i node_pos, int child_lod_index, LodOctree::NodeData &data) {
@@ -1621,7 +1621,7 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos) {
 					// Convert to local-to-terrain
 					child_pos += offset;
 					// We have to ping ALL children, because the reason we are here is we want them loaded
-					can &= self->check_block_loaded_and_meshed(child_pos, child_lod_index);
+					can &= self->check_block_loaded_and_meshed(child_pos, child_lod_index, data_blocks_to_load);
 				}
 
 				// Can only subdivide if blocks of a higher LOD index are present around,
@@ -1657,7 +1657,7 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos) {
 				}
 
 				// The block is loaded (?) but the mesh isn't up to date, we need to ping and wait.
-				bool can = self->check_block_mesh_updated(block);
+				bool can = self->check_block_mesh_updated(block, data_blocks_to_load);
 
 				if (!can) {
 					++blocked_count;
@@ -1667,10 +1667,7 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos) {
 			}
 		};
 
-		OctreeActions octree_actions;
-		octree_actions.self = this;
-		octree_actions.block_offset_lod0 = block_offset_lod0;
-
+		OctreeActions octree_actions{ this, data_blocks_to_load, block_offset_lod0, 0 };
 		Vector3 relative_viewer_pos = p_viewer_pos - get_mesh_block_size() * block_offset_lod0.to_vec3();
 		item.octree.update(relative_viewer_pos, octree_actions);
 
@@ -2158,13 +2155,13 @@ void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
 	_instancer = instancer;
 }
 
-void VoxelLodTerrain::unload_data_block(Vector3i block_pos, int lod_index) {
+void VoxelLodTerrain::unload_data_block(Vector3i block_pos, uint8_t lod_index, std::vector<BlockToSave> &blocks_to_save) {
 	VOXEL_PROFILE_SCOPE();
-	ERR_FAIL_COND(lod_index >= get_lod_count());
+	ERR_FAIL_COND(lod_index >= _lod_count);
 
 	Lod &lod = _lods[lod_index];
 
-	lod.data_map.remove_block(block_pos, BeforeUnloadDataAction{ _blocks_to_save, _stream.is_valid() });
+	lod.data_map.remove_block(block_pos, BeforeUnloadDataAction{ blocks_to_save, _stream.is_valid() });
 
 	//print_line(String("Unloading data block {0} lod {1}").format(varray(block_pos.to_vec3(), lod_index)));
 	lod.loading_blocks.erase(block_pos);
@@ -2178,9 +2175,9 @@ void VoxelLodTerrain::unload_data_block(Vector3i block_pos, int lod_index) {
 	// It is a member only to re-use its capacity memory over frames.
 }
 
-void VoxelLodTerrain::unload_mesh_block(Vector3i block_pos, int lod_index) {
+void VoxelLodTerrain::unload_mesh_block(Vector3i block_pos, uint8_t lod_index) {
 	VOXEL_PROFILE_SCOPE();
-	ERR_FAIL_COND(lod_index >= get_lod_count());
+	ERR_FAIL_COND(lod_index >= _lod_count);
 
 	Lod &lod = _lods[lod_index];
 
@@ -2228,10 +2225,12 @@ Vector<Vector3i> VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_inde
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 	flush_pending_lod_edits();
 
+	std::vector<BlockToSave> blocks_to_save;
+
 	if (_stream.is_valid()) {
 		for (unsigned int i = 0; i < _lod_count; ++i) {
 			// That may cause a stutter, so should be used when the player won't notice
-			_lods[i].data_map.for_all_blocks(ScheduleSaveAction{ _blocks_to_save });
+			_lods[i].data_map.for_all_blocks(ScheduleSaveAction{ blocks_to_save });
 		}
 
 		if (_instancer != nullptr && _stream->supports_instance_blocks()) {
@@ -2240,7 +2239,8 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 	}
 
 	// And flush immediately
-	send_block_data_requests();
+	// TODO Split function so we dont need to care about loading blocks
+	send_block_save_requests(to_span(blocks_to_save));
 }
 
 void VoxelLodTerrain::add_transition_update(VoxelMeshBlock *block) {
