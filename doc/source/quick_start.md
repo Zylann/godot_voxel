@@ -87,3 +87,4 @@ It's easy to think a project needs voxels, but they are less needed than it soun
 - "I need to make a planet": you can make more efficient planets by stitching 6 spherified heightmaps together. Take a cube where each face is a heightmap, then puff that cube to turn it into a sphere.
 
 - "GridMap sucks": how large do you want your grid to be? How complex are your models? This module is geared towards very large grids with simple geometry, so it has its own restrictions.
+
