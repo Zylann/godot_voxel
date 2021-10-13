@@ -661,7 +661,7 @@ void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<R
 	Vector<int> blocks_to_load;
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		VoxelBlockRequest &wr = p_blocks[i];
-		const Vector3i pos = wr.origin_in_voxels >> bs_po2;
+		const Vector3i pos = wr.origin_in_voxels >> (bs_po2 + wr.lod);
 
 		Ref<VoxelBuffer> vb;
 		if (_cache.load_voxel_block(pos, wr.lod, wr.voxel_buffer)) {
@@ -687,10 +687,12 @@ void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<R
 		const int ri = blocks_to_load[i];
 		const VoxelBlockRequest &r = p_blocks[ri];
 
+		const unsigned int po2 = bs_po2 + r.lod;
+
 		BlockLocation loc;
-		loc.x = r.origin_in_voxels.x >> bs_po2;
-		loc.y = r.origin_in_voxels.y >> bs_po2;
-		loc.z = r.origin_in_voxels.z >> bs_po2;
+		loc.x = r.origin_in_voxels.x >> po2;
+		loc.y = r.origin_in_voxels.y >> po2;
+		loc.z = r.origin_in_voxels.z >> po2;
 		loc.lod = r.lod;
 
 		const Result res = con->load_block(loc, _temp_block_data, VoxelStreamSQLiteInternal::VOXELS);
@@ -716,7 +718,7 @@ void VoxelStreamSQLite::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
 	// First put in cache
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		VoxelBlockRequest &r = p_blocks[i];
-		const Vector3i pos = r.origin_in_voxels >> bs_po2;
+		const Vector3i pos = r.origin_in_voxels >> (bs_po2 + r.lod);
 
 		if (!BlockLocation::validate(pos, r.lod)) {
 			ERR_PRINT(String("Block position {0} is outside of supported range").format(varray(pos.to_vec3())));

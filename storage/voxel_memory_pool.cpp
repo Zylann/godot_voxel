@@ -96,11 +96,12 @@ void VoxelMemoryPool::clear() {
 			CRASH_COND(ptr == nullptr);
 			memfree(ptr);
 		}
+		memdelete(pool);
 	}
 	_pools.clear();
 	_used_memory = 0;
 	_total_memory = 0;
-	_used_blocks;
+	_used_blocks = 0;
 }
 
 void VoxelMemoryPool::debug_print() {
