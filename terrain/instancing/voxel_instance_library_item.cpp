@@ -177,7 +177,7 @@ Array VoxelInstanceLibraryItem::serialize_multimesh_item_properties() const {
 }
 
 void VoxelInstanceLibraryItem::deserialize_multimesh_item_properties(Array a) {
-	ERR_FAIL_COND(a.size() != _mesh_lods.size() + 6);
+	ERR_FAIL_COND(a.size() != int(_mesh_lods.size()) + 6);
 	int ai = 0;
 	for (unsigned int i = 0; i < _mesh_lods.size(); ++i) {
 		_mesh_lods[i] = a[ai++];
