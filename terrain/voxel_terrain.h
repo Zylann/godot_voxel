@@ -107,9 +107,10 @@ private:
 
 	void _process();
 	void process_viewers();
-	void process_received_data_blocks();
+	//void process_received_data_blocks();
 	void process_meshing();
 	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
+	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);
 
 	void _on_stream_params_changed();
 	void _set_block_size_po2(int p_block_size_po2);
@@ -152,7 +153,6 @@ private:
 	Dictionary _b_get_statistics() const;
 
 	uint32_t _volume_id = 0;
-	VoxelServer::ReceptionBuffers _reception_buffers;
 
 	struct PairedViewer {
 		struct State {

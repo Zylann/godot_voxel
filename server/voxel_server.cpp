@@ -5,6 +5,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
+#include "voxel_async_dependency_tracker.h"
 
 #include <core/os/memory.h>
 #include <scene/main/viewport.h>
@@ -215,11 +216,11 @@ int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod_index, 
 	return priority;
 }
 
-uint32_t VoxelServer::add_volume(ReceptionBuffers *buffers, VolumeType type) {
-	CRASH_COND(buffers == nullptr);
+uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks, VolumeType type) {
+	CRASH_COND(!callbacks.check_callbacks());
 	Volume volume;
 	volume.type = type;
-	volume.reception_buffers = buffers;
+	volume.callbacks = callbacks;
 	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
 	return _world.volumes.create(volume);
 }
@@ -590,21 +591,30 @@ int VoxelServer::get_main_thread_time_budget_usec() const {
 	return _main_thread_time_budget_usec;
 }
 
+void VoxelServer::push_async_task(IVoxelTask *task) {
+	_general_thread_pool.enqueue(task);
+}
+
+void VoxelServer::push_async_tasks(Span<IVoxelTask *> tasks) {
+	_general_thread_pool.enqueue(tasks);
+}
+
 void VoxelServer::process() {
 	// Note, this shouldn't be here. It should normally done just after SwapBuffers.
 	// Godot does not have any C++ profiler usage anywhere, so when using Tracy Profiler I have to put it somewhere...
 	// TODO Could connect to VisualServer end_frame_draw signal? How to make sure the singleton is available?
 	//VOXEL_PROFILE_MARK_FRAME();
 	VOXEL_PROFILE_SCOPE();
+	VOXEL_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));
 
 	// Receive data updates
-	_streaming_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
+	_streaming_thread_pool.dequeue_completed_tasks([](IVoxelTask *task) {
 		task->apply_result();
 		memdelete(task);
 	});
 
 	// Receive generation and meshing results
-	_general_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
+	_general_thread_pool.dequeue_completed_tasks([](IVoxelTask *task) {
 		task->apply_result();
 		memdelete(task);
 	});
@@ -850,7 +860,8 @@ void VoxelServer::BlockDataRequest::apply_result() {
 					CRASH_NOW_MSG("Unexpected data request response type");
 			}
 
-			volume->reception_buffers->data_output.push_back(std::move(o));
+			CRASH_COND(volume->callbacks.data_output_callback == nullptr);
+			volume->callbacks.data_output_callback(volume->callbacks.data, o);
 		}
 
 	} else {
@@ -895,14 +906,12 @@ void VoxelServer::AllBlocksDataRequest::apply_result() {
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.
 		if (stream_dependency == volume->stream_dependency) {
-			std::vector<BlockDataOutput> &data_output = volume->reception_buffers->data_output;
-			size_t dst_i = data_output.size();
-			data_output.resize(data_output.size() + result.blocks.size());
+			ERR_FAIL_COND(volume->callbacks.data_output_callback == nullptr);
 
 			for (auto it = result.blocks.begin(); it != result.blocks.end(); ++it) {
 				VoxelStream::FullLoadingResult::Block &rb = *it;
 
-				BlockDataOutput &o = data_output[dst_i];
+				BlockDataOutput o;
 				o.voxels = rb.voxels;
 				o.instances = std::move(rb.instances_data);
 				o.position = rb.position;
@@ -911,7 +920,7 @@ void VoxelServer::AllBlocksDataRequest::apply_result() {
 				o.max_lod_hint = false;
 				o.initial_load = true;
 
-				++dst_i;
+				volume->callbacks.data_output_callback(volume->callbacks.data, o);
 			}
 		}
 
@@ -988,7 +997,9 @@ void VoxelServer::BlockGenerateRequest::apply_result() {
 			o.type = BlockDataOutput::TYPE_LOAD;
 			o.max_lod_hint = max_lod_hint;
 			o.initial_load = false;
-			volume->reception_buffers->data_output.push_back(std::move(o));
+
+			ERR_FAIL_COND(volume->callbacks.data_output_callback == nullptr);
+			volume->callbacks.data_output_callback(volume->callbacks.data, o);
 
 			aborted = !has_run;
 		}
@@ -998,12 +1009,13 @@ void VoxelServer::BlockGenerateRequest::apply_result() {
 		PRINT_VERBOSE("Gemerated data request response came back but volume wasn't found");
 	}
 
+	// TODO We could complete earlier inside run() if we had access to the data structure to write the block into.
+	// This would reduce latency a little. The rest of things the terrain needs to do with the generated block could
+	// run later.
 	if (tracker != nullptr) {
 		if (aborted) {
 			tracker->abort();
 		} else {
-			// TODO Problem: the task is actually not complete yet!
-			// We only posted the result into a reception queue, it still needs to be dequeued by the terrain.
 			tracker->post_complete();
 		}
 	}
@@ -1196,9 +1208,9 @@ void VoxelServer::BlockMeshRequest::apply_result() {
 			o.lod = lod;
 			o.surfaces = surfaces_output;
 
-			ERR_FAIL_COND(volume->reception_buffers->mesh_output_callback == nullptr);
-			ERR_FAIL_COND(volume->reception_buffers->callback_data == nullptr);
-			volume->reception_buffers->mesh_output_callback(volume->reception_buffers->callback_data, o);
+			ERR_FAIL_COND(volume->callbacks.mesh_output_callback == nullptr);
+			ERR_FAIL_COND(volume->callbacks.data == nullptr);
+			volume->callbacks.mesh_output_callback(volume->callbacks.data, o);
 		}
 
 	} else {

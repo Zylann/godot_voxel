@@ -95,15 +95,17 @@ void VoxelThreadPool::enqueue(IVoxelTask *task) {
 }
 
 void VoxelThreadPool::enqueue(Span<IVoxelTask *> tasks) {
+	for (size_t i = 0; i < tasks.size(); ++i) {
+		CRASH_COND(tasks[i] == nullptr);
+	}
 	{
 		MutexLock lock(_tasks_mutex);
 		for (size_t i = 0; i < tasks.size(); ++i) {
 			TaskItem t;
 			t.task = tasks[i];
-			CRASH_COND(t.task == nullptr);
 			_tasks.push_back(t);
-			++_debug_received_tasks;
 		}
+		_debug_received_tasks += tasks.size();
 	}
 	// TODO Do I need to post a certain amount of times?
 	for (size_t i = 0; i < tasks.size(); ++i) {
@@ -248,7 +250,7 @@ void VoxelThreadPool::wait_for_all_tasks() {
 		OS::get_singleton()->delay_usec(2000);
 
 		if (!error1_reported && OS::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
-			ERR_PRINT("Waiting for all tasks to be picked is taking too long");
+			WARN_PRINT("Waiting for all tasks to be picked is taking a long time");
 			error1_reported = true;
 		}
 	}
@@ -271,7 +273,7 @@ void VoxelThreadPool::wait_for_all_tasks() {
 		OS::get_singleton()->delay_usec(2000);
 
 		if (!error2_reported && OS::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
-			ERR_PRINT("Waiting for all tasks to be completed is taking too long");
+			WARN_PRINT("Waiting for all tasks to be completed is taking a long time");
 			error2_reported = true;
 		}
 	}

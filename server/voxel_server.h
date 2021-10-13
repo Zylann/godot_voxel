@@ -31,46 +31,8 @@ private:
 	std::queue<IVoxelTimeSpreadTask *> _tasks;
 };
 
-class VoxelAsyncDependencyTracker {
-public:
-	// Creates a tracker which will track `initial_count` tasks.
-	// The tracker may be passed by shared pointer to each of these tasks so they can notify completion.
-	VoxelAsyncDependencyTracker(int initial_count) :
-			_count(initial_count), _aborted(false) {
-	}
-
-	// Call this when one of the tracked dependencies is complete
-	void post_complete() {
-		ERR_FAIL_COND_MSG(_count == 0, "post() called more times than expected");
-		--_count;
-	}
-
-	// Call this when one of the tracked dependencies is aborted
-	void abort() {
-		_aborted = true;
-	}
-
-	// Returns `true` if any of the tracked tasks was aborted.
-	// It usually means the task depending on this tracker may be aborted as well.
-	bool is_aborted() const {
-		return _aborted;
-	}
-
-	// Returns `true` when all the tracked tasks have completed
-	bool is_complete() const {
-		return _count == 0;
-	}
-
-	int get_remaining_count() const {
-		return _count;
-	}
-
-private:
-	std::atomic_int _count;
-	std::atomic_bool _aborted;
-};
-
 class VoxelNode;
+class VoxelAsyncDependencyTracker;
 
 // TODO Don't inherit Object. Instead have a Godot wrapper, there is very little use for Object stuff
 
@@ -116,10 +78,17 @@ public:
 		uint8_t lod = 0;
 	};
 
-	struct ReceptionBuffers {
+	struct VolumeCallbacks {
 		void (*mesh_output_callback)(void *, const BlockMeshOutput &) = nullptr;
-		void *callback_data = nullptr;
-		std::vector<BlockDataOutput> data_output;
+		void (*data_output_callback)(void *, BlockDataOutput &) = nullptr;
+		void *data = nullptr;
+
+		inline bool check_callbacks() const {
+			ERR_FAIL_COND_V(mesh_output_callback == nullptr, false);
+			ERR_FAIL_COND_V(data_output_callback == nullptr, false);
+			ERR_FAIL_COND_V(data == nullptr, false);
+			return true;
+		}
 	};
 
 	struct Viewer {
@@ -148,7 +117,7 @@ public:
 	~VoxelServer();
 
 	// TODO Rename functions to C convention
-	uint32_t add_volume(ReceptionBuffers *buffers, VolumeType type);
+	uint32_t add_volume(VolumeCallbacks callbacks, VolumeType type);
 	void set_volume_transform(uint32_t volume_id, Transform t);
 	void set_volume_render_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_data_block_size(uint32_t volume_id, uint32_t block_size);
@@ -189,6 +158,9 @@ public:
 
 	void push_time_spread_task(IVoxelTimeSpreadTask *task);
 	int get_main_thread_time_budget_usec() const;
+
+	void push_async_task(IVoxelTask *task);
+	void push_async_tasks(Span<IVoxelTask *> tasks);
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
 	// void get_min_max_block_padding(
@@ -273,7 +245,7 @@ private:
 
 	struct Volume {
 		VolumeType type;
-		ReceptionBuffers *reception_buffers = nullptr;
+		VolumeCallbacks callbacks;
 		Transform transform;
 		Ref<VoxelStream> stream;
 		Ref<VoxelGenerator> generator;

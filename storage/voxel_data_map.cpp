@@ -1,12 +1,13 @@
 #include "voxel_data_map.h"
 #include "../constants/cube_tables.h"
+#include "../generators/voxel_generator.h"
+#include "../streams/voxel_block_request.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 
 #include <limits>
 
-VoxelDataMap::VoxelDataMap() :
-		_last_accessed_block(nullptr) {
+VoxelDataMap::VoxelDataMap() {
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
 	set_block_size_pow2(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2);
 
@@ -115,9 +116,6 @@ int VoxelDataMap::get_default_voxel(unsigned int channel) {
 }
 
 VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) {
-	if (_last_accessed_block && _last_accessed_block->position == bpos) {
-		return _last_accessed_block;
-	}
 	auto it = _blocks_map.find(bpos);
 	if (it != _blocks_map.end()) {
 		const unsigned int i = it->second;
@@ -126,16 +124,12 @@ VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) {
 #endif
 		VoxelDataBlock *block = _blocks[i];
 		CRASH_COND(block == nullptr); // The map should not contain null blocks
-		_last_accessed_block = block;
-		return _last_accessed_block;
+		return block;
 	}
 	return nullptr;
 }
 
 const VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) const {
-	if (_last_accessed_block != nullptr && _last_accessed_block->position == bpos) {
-		return _last_accessed_block;
-	}
 	auto it = _blocks_map.find(bpos);
 	if (it != _blocks_map.end()) {
 		const unsigned int i = it->second;
@@ -153,9 +147,6 @@ const VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) const {
 void VoxelDataMap::set_block(Vector3i bpos, VoxelDataBlock *block) {
 	ERR_FAIL_COND(block == nullptr);
 	CRASH_COND(bpos != block->position);
-	if (_last_accessed_block == nullptr || _last_accessed_block->position == bpos) {
-		_last_accessed_block = block;
-	}
 #ifdef DEBUG_ENABLED
 	CRASH_COND(_blocks_map.find(bpos) != _blocks_map.end());
 #endif
@@ -186,21 +177,24 @@ void VoxelDataMap::remove_block_internal(Vector3i bpos, unsigned int index) {
 	}
 }
 
-VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer) {
+VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer,
+		bool overwrite) {
 	ERR_FAIL_COND_V(buffer == nullptr, nullptr);
 	VoxelDataBlock *block = get_block(bpos);
 	if (block == nullptr) {
 		block = VoxelDataBlock::create(bpos, buffer, _block_size, _lod_index);
 		set_block(bpos, block);
-	} else {
+	} else if (overwrite) {
 		block->set_voxels(buffer);
+	} else {
+		PRINT_VERBOSE(String("Discarded block {0} lod {1}, there was already data and overwriting is not enabled")
+							  .format(varray(bpos.to_vec3(), _lod_index)));
 	}
 	return block;
 }
 
 bool VoxelDataMap::has_block(Vector3i pos) const {
-	return /*(_last_accessed_block != nullptr && _last_accessed_block->pos == pos) ||*/
-			_blocks_map.find(pos) != _blocks_map.end();
+	return _blocks_map.find(pos) != _blocks_map.end();
 }
 
 bool VoxelDataMap::is_block_surrounded(Vector3i pos) const {
@@ -237,7 +231,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 				if (block != nullptr) {
 					const VoxelBufferInternal &src_buffer = block->get_voxels_const();
 
-					RWLockRead lock(src_buffer.get_lock());
+					RWLockRead rlock(src_buffer.get_lock());
 
 					for (unsigned int ci = 0; ci < channels_count; ++ci) {
 						const uint8_t channel = channels[ci];
@@ -349,7 +343,6 @@ void VoxelDataMap::clear() {
 	}
 	_blocks.clear();
 	_blocks_map.clear();
-	_last_accessed_block = nullptr;
 }
 
 int VoxelDataMap::get_block_count() const {
@@ -365,4 +358,85 @@ bool VoxelDataMap::is_area_fully_loaded(const Box3i voxels_box) const {
 	return block_box.all_cells_match([this](Vector3i pos) {
 		return has_block(pos);
 	});
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generator) {
+	VOXEL_PROFILE_SCOPE();
+	//ERR_FAIL_COND_MSG(_full_load_mode == false, nullptr, "This function can only be used in full load mode");
+
+	struct Task {
+		Vector3i block_pos;
+		unsigned int lod_index;
+		std::shared_ptr<VoxelBufferInternal> voxels;
+	};
+
+	std::vector<Task> todo;
+	// We'll pack tasks per LOD so we'll have less locking to do
+	std::vector<unsigned int> count_per_lod;
+
+	const unsigned int data_block_size = data.lods[0].map.get_block_size();
+
+	// Find empty slots
+	for (unsigned int lod_index = 0; lod_index < data.lod_count; ++lod_index) {
+		const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
+
+		PRINT_VERBOSE(String("Preloading box {0} at lod {1} synchronously")
+							  .format(varray(block_box.to_string(), lod_index)));
+
+		VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
+		const unsigned int prev_size = todo.size();
+
+		{
+			RWLockRead rlock(data_lod.map_lock);
+			block_box.for_each_cell([&data_lod, lod_index, &todo](Vector3i block_pos) {
+				// We don't check "loading blocks", because this function wants to complete the task right now.
+				if (!data_lod.map.has_block(block_pos)) {
+					todo.push_back(Task{ block_pos, lod_index, nullptr });
+				}
+			});
+		}
+
+		count_per_lod.push_back(todo.size() - prev_size);
+	}
+
+	const Vector3i block_size(data_block_size);
+
+	// Generate
+	for (unsigned int i = 0; i < todo.size(); ++i) {
+		Task &task = todo[i];
+		task.voxels = gd_make_shared<VoxelBufferInternal>();
+		task.voxels->create(block_size);
+		// TODO Format?
+		if (generator != nullptr) {
+			VoxelBlockRequest r{ *task.voxels, task.block_pos * (data_block_size << task.lod_index), task.lod_index };
+			generator->generate_block(r);
+		}
+	}
+
+	// Populate slots
+	unsigned int task_index = 0;
+	for (unsigned int lod_index = 0; lod_index < data.lod_count; ++lod_index) {
+		CRASH_COND(lod_index >= count_per_lod.size());
+		const unsigned int count = count_per_lod[lod_index];
+
+		if (count > 0) {
+			const unsigned int end_task_index = task_index + count;
+
+			VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
+			RWLockWrite wlock(data_lod.map_lock);
+
+			for (; task_index < end_task_index; ++task_index) {
+				Task &task = todo[task_index];
+				CRASH_COND(task.lod_index != lod_index);
+				if (data_lod.map.has_block(task.block_pos)) {
+					// Sorry, that block has been set in the meantime by another thread.
+					// We'll assume the block we just generated is redundant and discard it.
+					continue;
+				}
+				data_lod.map.set_block_buffer(task.block_pos, task.voxels);
+			}
+		}
+	}
 }

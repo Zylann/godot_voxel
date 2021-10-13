@@ -485,7 +485,6 @@ void VoxelBufferInternal::compress_uniform_channels() {
 }
 
 void VoxelBufferInternal::compress_if_uniform(Channel &channel) {
-	VOXEL_PROFILE_SCOPE();
 	if (channel.data != nullptr && is_uniform(channel)) {
 		const uint64_t v = get_first_voxel(channel);
 		clear_channel(channel, v);

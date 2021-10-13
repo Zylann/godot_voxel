@@ -68,7 +68,8 @@ public:
 			uint64_t mask_value, bool create_new_blocks);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
-	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer);
+	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer,
+			bool overwrite = true);
 
 	struct NoAction {
 		inline void operator()(VoxelDataBlock *block) {}
@@ -76,9 +77,6 @@ public:
 
 	template <typename Action_T>
 	void remove_block(Vector3i bpos, Action_T pre_delete) {
-		if (_last_accessed_block && _last_accessed_block->position == bpos) {
-			_last_accessed_block = nullptr;
-		}
 		auto it = _blocks_map.find(bpos);
 		if (it != _blocks_map.end()) {
 			const unsigned int i = it->second;
@@ -126,7 +124,7 @@ public:
 		write_box(voxel_box, channel, action, [](const VoxelBufferInternal &, const Vector3i &) {});
 	}
 
-	// D action(Vector3i pos, D value)
+	// D F(Vector3i pos, D value)
 	template <typename F, typename G>
 	void write_box(const Box3i &voxel_box, unsigned int channel, F action, G gen_func) {
 		const Box3i block_box = voxel_box.downscaled(get_block_size());
@@ -151,7 +149,7 @@ public:
 		write_box_2(voxel_box, channel0, channel1, action, [](const VoxelBufferInternal &, const Vector3i &) {});
 	}
 
-	// action(Vector3i pos, D0 &value, D1 &value)
+	// void F(Vector3i pos, D0 &value, D1 &value)
 	template <typename F, typename G>
 	void write_box_2(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action, G gen_func) {
 		const Box3i block_box = voxel_box.downscaled(get_block_size());
@@ -190,9 +188,13 @@ private:
 	std::unordered_map<Vector3i, unsigned int> _blocks_map;
 	std::vector<VoxelDataBlock *> _blocks;
 
+	// This was a possible optimization in a single-threaded scenario, but it's not in multithread.
+	// We want to be able to do shared read-accesses but this is a mutable variable.
+	// If we want this back, it may be thread-local in some way.
+	//
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
 	// To prevent too much hashing, this reference is checked before.
-	mutable VoxelDataBlock *_last_accessed_block;
+	//mutable VoxelDataBlock *_last_accessed_block = nullptr;
 
 	unsigned int _block_size;
 	unsigned int _block_size_pow2;
@@ -200,5 +202,25 @@ private:
 
 	unsigned int _lod_index = 0;
 };
+
+struct VoxelDataLodMap {
+	struct Lod {
+		VoxelDataMap map;
+		// This lock should be locked in write mode only when the map gets modified (adding or removing blocks).
+		// Otherwise it may be locked in read mode.
+		// It is possible to unlock it after we are done querying the map.
+		RWLock map_lock;
+	};
+	FixedArray<Lod, VoxelConstants::MAX_LOD> lods;
+	unsigned int lod_count = 1;
+};
+
+class VoxelGenerator;
+
+// Generates all non-present blocks in preparation for an edit.
+// Every block intersecting with the box at every LOD will be checked.
+// This function runs sequentially and should be thread-safe. May be used if blocks are immediately needed.
+// It will block if other threads are accessing the same data.
+void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generator);
 
 #endif // VOXEL_MAP_H

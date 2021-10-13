@@ -70,6 +70,8 @@ public:
 	// Can't be changed after tasks have been queued.
 	void set_priority_update_period(uint32_t milliseconds);
 
+	// TODO Expect tasks to be unique ptrs?
+
 	// Schedules a task.
 	// Ownership is NOT passed to the pool, so make sure you get them back when completed if you want to delete them.
 	void enqueue(IVoxelTask *task);
@@ -129,7 +131,7 @@ private:
 	FixedArray<ThreadData, MAX_THREADS> _threads;
 	uint32_t _thread_count = 0;
 
-	// TODO Optimize this with a less naive design? Maybe moodycamel
+	// TODO Optimization: use a less naive design? Maybe moodycamel
 	std::vector<TaskItem> _tasks;
 	Mutex _tasks_mutex;
 	Semaphore _tasks_semaphore;

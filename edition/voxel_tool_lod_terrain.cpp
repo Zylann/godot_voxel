@@ -1,7 +1,10 @@
 #include "voxel_tool_lod_terrain.h"
 #include "../constants/voxel_string_names.h"
+#include "../server/voxel_async_dependency_tracker.h"
+#include "../storage/voxel_data_grid.h"
 #include "../terrain/voxel_lod_terrain.h"
 #include "../util/funcs.h"
+#include "../util/godot/funcs.h"
 #include "../util/island_finder.h"
 #include "../util/voxel_raycast.h"
 #include "funcs.h"
@@ -167,12 +170,13 @@ struct DoSphere {
 	Vector3 center;
 	float radius;
 	VoxelTool::Mode mode;
-	VoxelLodTerrain *terrain;
+	VoxelDataGrid blocks;
 	float sdf_scale;
 	Box3i box;
 	VoxelToolOps::TextureParams texture_params;
 
 	void operator()() {
+		VOXEL_PROFILE_SCOPE();
 		using namespace VoxelToolOps;
 
 		switch (mode) {
@@ -182,7 +186,7 @@ struct DoSphere {
 				op.shape.center = center;
 				op.shape.radius = radius;
 				op.shape.scale = sdf_scale;
-				terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+				blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 			} break;
 
 			case VoxelTool::MODE_REMOVE: {
@@ -190,7 +194,7 @@ struct DoSphere {
 				op.shape.center = center;
 				op.shape.radius = radius;
 				op.shape.scale = sdf_scale;
-				terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+				blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 			} break;
 
 			case VoxelTool::MODE_SET: {
@@ -198,11 +202,11 @@ struct DoSphere {
 				op.shape.center = center;
 				op.shape.radius = radius;
 				op.shape.scale = sdf_scale;
-				terrain->write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+				blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 			} break;
 
 			case VoxelTool::MODE_TEXTURE_PAINT: {
-				terrain->write_box_2(box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
+				blocks.write_box_2(box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
 						TextureBlendSphereOp{ center, radius, texture_params });
 			} break;
 
@@ -219,10 +223,19 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	const Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	const Box3i box = Box3i(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2))
+							  .clipped(_terrain->get_voxel_bounds());
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
 		return;
+	}
+
+	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
+	ERR_FAIL_COND(data == nullptr);
+	VoxelDataLodMap::Lod &data_lod = data->lods[0];
+
+	if (_terrain->is_full_load_mode_enabled()) {
+		preload_box(*data, box, _terrain->get_generator().ptr());
 	}
 
 	DoSphere op;
@@ -231,14 +244,62 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	op.mode = get_mode();
 	op.radius = radius;
 	op.sdf_scale = get_sdf_scale();
-	op.terrain = _terrain;
 	op.texture_params = _texture_params;
-	op();
+	{
+		RWLockRead rlock(data_lod.map_lock);
+		op.blocks.reference_area(data_lod.map, box);
+		op();
+	}
+
+	_post_edit(box);
 }
+
+template <typename Op_T>
+class VoxelToolAsyncEdit : public IVoxelTask {
+public:
+	VoxelToolAsyncEdit(Op_T op, std::shared_ptr<VoxelDataLodMap> data) :
+			_op(op), _data(data) {
+		_tracker = gd_make_shared<VoxelAsyncDependencyTracker>(1);
+	}
+
+	void run(VoxelTaskContext ctx) override {
+		VOXEL_PROFILE_SCOPE();
+		CRASH_COND(_data == nullptr);
+		VoxelDataLodMap::Lod &data_lod = _data->lods[0];
+		{
+			// TODO Prefer a spatial lock?
+			// We want blocks inside the edited area to not be accessed by other threads,
+			// but this locks the entire map, not just our area. If we used a spatial lock we would only need to lock
+			// the map for the duration of `reference_area`.
+			RWLockRead rlock(data_lod.map_lock);
+			// TODO May want to fail if not all blocks were found
+			_op.blocks.reference_area(data_lod.map, _op.box);
+			_op();
+		}
+		_tracker->post_complete();
+	}
+
+	void apply_result() override {}
+	std::shared_ptr<VoxelAsyncDependencyTracker> get_tracker() { return _tracker; }
+
+private:
+	Op_T _op;
+	// We reference this just to keep map pointers alive
+	std::shared_ptr<VoxelDataLodMap> _data;
+	std::shared_ptr<VoxelAsyncDependencyTracker> _tracker;
+};
 
 void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	const Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	const Box3i box = Box3i(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2))
+							  .clipped(_terrain->get_voxel_bounds());
+	if (!is_area_editable(box)) {
+		PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
+	ERR_FAIL_COND(data == nullptr);
 
 	DoSphere op;
 	op.box = box;
@@ -246,22 +307,13 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	op.mode = get_mode();
 	op.radius = radius;
 	op.sdf_scale = get_sdf_scale();
-	op.terrain = _terrain;
 	op.texture_params = _texture_params;
-
-	struct Task : IVoxelTimeSpreadTask {
-		DoSphere op;
-		void run() override {
-			op();
-		}
-	};
 
 	// TODO How do I use unique_ptr with Godot's memnew/memdelete instead?
 	// (without having to mention it everywhere I pass this around)
 
-	std::unique_ptr<Task> task = std::make_unique<Task>();
-	task->op = op;
-	_terrain->push_async_edit(std::move(task), op.box);
+	VoxelToolAsyncEdit<DoSphere> *task = memnew(VoxelToolAsyncEdit<DoSphere>(op, data));
+	_terrain->push_async_edit(task, op.box, task->get_tracker());
 }
 
 void VoxelToolLodTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const {
@@ -362,6 +414,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 	unsigned int label_count = 0;
 
 	{
+		// TODO Allow to run the algorithm at a different LOD, to trade precision for speed
 		VOXEL_PROFILE_SCOPE_NAMED("CCL scan");
 		IslandFinder island_finder;
 		island_finder.scan_3d(

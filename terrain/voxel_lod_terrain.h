@@ -95,13 +95,17 @@ public:
 			return;
 		}
 		Ref<VoxelGenerator> generator = _generator;
-		_lods[0].data_map.write_box(voxel_box, channel, action,
-				[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
-					if (generator.is_valid()) {
-						VoxelBlockRequest r{ voxels, pos, 0 };
-						generator->generate_block(r);
-					}
-				});
+		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
+		{
+			RWLockWrite wlock(data_lod0.map_lock);
+			data_lod0.map.write_box(voxel_box, channel, action,
+					[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
+						if (generator.is_valid()) {
+							VoxelBlockRequest r{ voxels, pos, 0 };
+							generator->generate_block(r);
+						}
+					});
+		}
 		post_edit_area(voxel_box);
 	}
 
@@ -113,13 +117,17 @@ public:
 			return;
 		}
 		Ref<VoxelGenerator> generator = _generator;
-		_lods[0].data_map.write_box_2(voxel_box, channel1, channel2, action,
-				[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
-					if (generator.is_valid()) {
-						VoxelBlockRequest r{ voxels, pos, 0 };
-						generator->generate_block(r);
-					}
-				});
+		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
+		{
+			RWLockWrite wlock(data_lod0.map_lock);
+			data_lod0.map.write_box_2(voxel_box, channel1, channel2, action,
+					[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
+						if (generator.is_valid()) {
+							VoxelBlockRequest r{ voxels, pos, 0 };
+							generator->generate_block(r);
+						}
+					});
+		}
 		post_edit_area(voxel_box);
 	}
 
@@ -127,7 +135,7 @@ public:
 	void post_edit_area(Box3i p_box);
 
 	// TODO This still sucks atm cuz the edit will still run on the main thread
-	void push_async_edit(std::unique_ptr<IVoxelTimeSpreadTask> task, Box3i box);
+	void push_async_edit(IVoxelTask *task, Box3i box, std::shared_ptr<VoxelAsyncDependencyTracker> tracker);
 	void process_async_edits();
 	void abort_async_edits();
 
@@ -206,6 +214,8 @@ public:
 	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
 	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
 
+	std::shared_ptr<VoxelDataLodMap> get_storage() const { return _data; }
+
 protected:
 	void _notification(int p_what);
 
@@ -220,12 +230,13 @@ private:
 	void process_unload_mesh_blocks_sliding_box(Vector3 p_viewer_pos);
 	void process_octrees_sliding_box(Vector3 p_viewer_pos);
 	void process_octrees_fitting(Vector3 p_viewer_pos, std::vector<BlockLocation> &data_blocks_to_load);
-	void process_block_loading_responses();
+	//void process_block_loading_responses();
 	void send_mesh_requests();
 
 	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
+	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);
 
-	void unload_data_block(Vector3i block_pos, uint8_t lod_index, std::vector<BlockToSave> &blocks_to_save);
+	void unload_data_block_no_lock(Vector3i block_pos, uint8_t lod_index, std::vector<BlockToSave> &blocks_to_save);
 	void unload_mesh_block(Vector3i block_pos, uint8_t lod_index);
 
 	static inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
@@ -241,16 +252,17 @@ private:
 	void reset_maps();
 
 	Vector3 get_local_viewer_pos() const;
-	void try_schedule_loading_with_neighbors(const Vector3i &p_data_block_pos, uint8_t lod_index,
+	void try_schedule_loading_with_neighbors_no_lock(const Vector3i &p_data_block_pos, uint8_t lod_index,
 			std::vector<BlockLocation> &blocks_to_load);
 	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelDataMap &map) const;
 	bool check_block_loaded_and_meshed(const Vector3i &p_mesh_block_pos, uint8_t lod_index,
 			std::vector<BlockLocation> &blocks_to_load);
 	bool check_block_mesh_updated(VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load);
 	void _set_lod_count(int p_lod_count);
-	void _set_block_size_po2(int p_block_size_po2);
 	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
-	std::shared_ptr<VoxelAsyncDependencyTracker> preload_box_async(Box3i voxel_box);
+
+	std::shared_ptr<VoxelAsyncDependencyTracker> preload_boxes_async(Span<const Box3i> voxel_boxes,
+			Span<IVoxelTask *> next_tasks);
 
 	void _on_stream_params_changed();
 
@@ -269,7 +281,7 @@ private:
 	void _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
 	AABB _b_get_voxel_bounds() const;
-	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const;
+	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents);
 	int _b_debug_get_mesh_block_count() const;
 	int _b_debug_get_data_block_count() const;
 	Error _b_debug_dump_as_scene(String fpath) const;
@@ -302,10 +314,10 @@ private:
 	Ref<VoxelGenerator> _generator;
 	Ref<VoxelMesher> _mesher;
 
-	VoxelServer::ReceptionBuffers _reception_buffers;
 	uint32_t _volume_id = 0;
 	ProcessMode _process_mode = PROCESS_MODE_IDLE;
 
+	// TODO Get rid of this kind of member, use threadlocal pooling instead
 	// Only populated and then cleared inside _process, so lifetime of pointers should be valid
 	std::vector<VoxelMeshBlock *> _blocks_pending_transition_update;
 
@@ -322,15 +334,25 @@ private:
 	VoxelInstancer *_instancer = nullptr;
 
 	struct AsyncEdit {
-		std::unique_ptr<IVoxelTimeSpreadTask> task;
-		std::shared_ptr<VoxelAsyncDependencyTracker> dependency_tracker;
+		IVoxelTask *task;
+		Box3i box;
+		std::shared_ptr<VoxelAsyncDependencyTracker> task_tracker;
 	};
 
-	std::queue<AsyncEdit> _async_edits;
+	std::vector<AsyncEdit> _pending_async_edits;
+
+	struct RunningAsyncEdit {
+		std::shared_ptr<VoxelAsyncDependencyTracker> tracker;
+		Box3i box;
+	};
+	std::vector<RunningAsyncEdit> _running_async_edits;
+
+	// Data stored with a shared pointer so it can be sent to asynchronous tasks
+	std::shared_ptr<VoxelDataLodMap> _data;
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
-		VoxelDataMap data_map;
+		// Keeping track of asynchronously loading blocks so we don't try to redundantly load them
 		std::unordered_set<Vector3i> loading_blocks;
 		// Blocks that were edited and need their LOD counterparts to be updated
 		std::vector<Vector3i> blocks_pending_lodding;
