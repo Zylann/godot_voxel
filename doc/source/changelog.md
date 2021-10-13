@@ -29,6 +29,7 @@ Ongoing development - `master`
     - `VoxelMesherTransvoxel`: added option to simplify meshes using MeshOptimizer
     - `VoxelToolLodTerrain`: added `copy` function
     - `VoxelToolLodTerrain`: added `get_voxel_f_interpolated` function, useful to obtain interpolated SDF
+    - `VoxelToolLodTerrain`: added a function to separate floating chunks as rigid-bodies in a specified region
     - `VoxelInstanceGenerator`: added extra option to emit from faces more precisely, especially when meshes got simplified (slower than the other options)
     - `VoxelInstancer`: added menu to setup a multimesh item from a scene (similarly to GridMap), which also allows to set up colliders
     - `VoxelInstancer`: added initial support for instancing regular scenes (slower than multimeshes)
