@@ -16,8 +16,6 @@
 #include <scene/3d/mesh_instance.h>
 #include <scene/resources/packed_scene.h>
 
-#include "../thirdparty/nvtx3/nvToolsExt.h"
-
 namespace {
 
 Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType primitive, int compression_flags,
