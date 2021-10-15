@@ -82,7 +82,7 @@ protected:
 					// Output is blocky, so we can go for just one sample
 					float h = params.range.xform(height_func(gx, gz));
 					h -= origin.y;
-					int ih = int(h);
+					int ih = int(h) >> lod;
 					if (ih > 0) {
 						if (ih > bs.y) {
 							ih = bs.y;

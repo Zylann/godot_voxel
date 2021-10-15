@@ -2,6 +2,7 @@
 #include "../constants/voxel_string_names.h"
 #include "../terrain/voxel_lod_terrain.h"
 #include "../util/funcs.h"
+#include "../util/godot/funcs.h"
 #include "../util/island_finder.h"
 #include "../util/voxel_raycast.h"
 #include "funcs.h"
@@ -531,6 +532,10 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 			// The mesh is not supposed to be null,
 			// because we build these buffers from connected groups that had negative SDF.
 			ERR_CONTINUE(mesh.is_null());
+
+			if (is_mesh_empty(mesh)) {
+				continue;
+			}
 
 			// DEBUG
 			// {
