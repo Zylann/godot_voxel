@@ -41,6 +41,7 @@ Ongoing development - `master`
     - `VoxelServer`: `get_stats()` format has changed, check documentation
     - `VoxelLodTerrain`: `get_statistics()` format has changed: `time_process_update_responses` and `remaining_main_thread_blocks` are no longer available
     - `VoxelTerrain`: `get_statistics()` format has changed: `time_process_update_responses` and `remaining_main_thread_blocks` are no longer available
+    - `VoxelViewer`: `requires_collisions` is now `true` by default
 
 - Fixes
     - `VoxelGeneratorGraph`: changes to node properties are now saved properly
