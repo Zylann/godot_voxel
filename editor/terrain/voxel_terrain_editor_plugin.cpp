@@ -178,6 +178,8 @@ void VoxelTerrainEditorPlugin::_notification(int p_what) {
 		case NOTIFICATION_ENTER_TREE:
 			_editor_viewer_id = VoxelServer::get_singleton()->add_viewer();
 			VoxelServer::get_singleton()->set_viewer_distance(_editor_viewer_id, 512);
+			// No collision needed in editor, also it updates faster without
+			VoxelServer::get_singleton()->set_viewer_requires_collisions(_editor_viewer_id, false);
 			break;
 
 		case NOTIFICATION_EXIT_TREE:

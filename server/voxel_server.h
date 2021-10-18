@@ -90,7 +90,7 @@ public:
 		// };
 		Vector3 world_position;
 		unsigned int view_distance = 128;
-		bool require_collisions = false;
+		bool require_collisions = true;
 		bool require_visuals = true;
 	};
 
