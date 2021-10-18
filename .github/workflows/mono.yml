@@ -76,7 +76,7 @@ jobs:
       # Make glue available as artifact for dependent jobs
       - uses: actions/upload-artifact@v2
         with:
-          name: mono-glue
+          name: mono-glue-windows
           path: |
             modules/mono/glue/windows/**.gen.*
             modules/mono/glue/windows/GodotSharp/GodotSharp/Generated/
@@ -163,7 +163,7 @@ jobs:
   linux-editor-mono:
     runs-on: "ubuntu-20.04"
     name: Linux Editor w/ Mono
-    needs: mono-glue
+    needs: mono-glue-linux
 
     steps:
       # Clone Godot
@@ -249,7 +249,7 @@ jobs:
     # Windows 10 with latest image
     runs-on: "windows-latest"
     name: Windows Editor w/ Mono
-    needs: mono-glue
+    needs: mono-glue-windows
 
     steps:
       # Clone Godot
