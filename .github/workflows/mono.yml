@@ -32,7 +32,13 @@ jobs:
       - name: Configure dependencies
         run: |
           choco install -y mono
-          choco install glfw3
+          choco install glfw
+          
+      - name: Install MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
@@ -68,7 +74,7 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j4 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes
+          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes
 
       - name: Generate Mono Glue
         run: |
