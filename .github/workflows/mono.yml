@@ -32,6 +32,7 @@ jobs:
       - name: Configure dependencies
         run: |
           choco install -y mono
+          choco install glfw3
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
