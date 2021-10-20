@@ -32,7 +32,7 @@ jobs:
       - name: Configure dependencies
         run: |
           choco install -y mono
-          choco install glfw
+          choco install glfw3
           
       - name: Install MinGW
         uses: egor-tensin/setup-mingw@v2
