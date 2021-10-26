@@ -637,7 +637,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 				CRASH_COND(buffer.data != nullptr);
 			} else if (buffer.data != nullptr) {
 				// Deallocate this buffer if it wasnt a binding and contained something
-				memdelete(buffer.data);
+				memfree(buffer.data);
 			}
 		}
 
