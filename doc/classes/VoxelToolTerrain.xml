@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelToolTerrain" inherits="VoxelTool" version="3.4">
 	<brief_description>
-		Implementation of [VoxelTool] optimized for uses on [VoxelTerrain].
+		Implementation of [VoxelTool] specialized for uses on [VoxelTerrain].
 	</brief_description>
 	<description>
+		It's not a class to instantiate alone, you may get it from [VoxelTerrain] using the `get_voxel_tool()` method.
 	</description>
 	<tutorials>
 	</tutorials>
