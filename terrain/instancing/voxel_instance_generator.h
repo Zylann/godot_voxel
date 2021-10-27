@@ -55,12 +55,12 @@ public:
 
 	// This API might change so for now it's not exposed to scripts
 	void generate_transforms(
-			std::vector<Transform> &out_transforms,
+			std::vector<Transform3D> &out_transforms,
 			VOX_Vector3i grid_position,
 			int lod_index,
 			int layer_id,
 			Array surface_arrays,
-			const Transform &block_local_transform,
+			const Transform3D &block_local_transform,
 			UpMode up_mode,
 			uint8_t octant_mask,
 			float block_size);

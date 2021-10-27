@@ -120,7 +120,7 @@ public:
         mFrequency = 0.01f;
         mNoiseType = NoiseType_OpenSimplex2;
         mRotationType3D = RotationType3D_None;
-        mTransformType3D = TransformType3D_DefaultOpenSimplex2;
+        mTransform3DType3D = Transform3DType3D_DefaultOpenSimplex2;
 
         mFractalType = FractalType_None;
         mOctaves = 3;
@@ -136,7 +136,7 @@ public:
         mCellularJitterModifier = 1.0f;
 
         mDomainWarpType = DomainWarpType_OpenSimplex2;
-        mWarpTransformType3D = TransformType3D_DefaultOpenSimplex2;
+        mWarpTransform3DType3D = Transform3DType3D_DefaultOpenSimplex2;
         mDomainWarpAmp = 1.0f;
     }
 
@@ -165,7 +165,7 @@ public:
     void SetNoiseType(NoiseType noiseType)
     {
         mNoiseType = noiseType;
-        UpdateTransformType3D();
+        UpdateTransform3DType3D();
     }
 
     /// <summary>
@@ -178,8 +178,8 @@ public:
     void SetRotationType3D(RotationType3D rotationType3D)
     {
         mRotationType3D = rotationType3D;
-        UpdateTransformType3D();
-        UpdateWarpTransformType3D();
+        UpdateTransform3DType3D();
+        UpdateWarpTransform3DType3D();
     }
 
     /// <summary>
@@ -281,7 +281,7 @@ public:
     void SetDomainWarpType(DomainWarpType domainWarpType)
     {
         mDomainWarpType = domainWarpType;
-        UpdateWarpTransformType3D();
+        UpdateWarpTransform3DType3D();
     }
 
 
@@ -305,7 +305,7 @@ public:
     {
         Arguments_must_be_floating_point_values<FNfloat>();
 
-        TransformNoiseCoordinate(x, y);
+        Transform3DNoiseCoordinate(x, y);
 
         switch (mFractalType)
         {
@@ -331,7 +331,7 @@ public:
     {
         Arguments_must_be_floating_point_values<FNfloat>();
 
-        TransformNoiseCoordinate(x, y, z);
+        Transform3DNoiseCoordinate(x, y, z);
 
         switch (mFractalType)
         {
@@ -406,19 +406,19 @@ public:
     template <typename T>
     struct Arguments_must_be_floating_point_values;
 
-    enum TransformType3D
+    enum Transform3DType3D
     {
-        TransformType3D_None,
-        TransformType3D_ImproveXYPlanes,
-        TransformType3D_ImproveXZPlanes,
-        TransformType3D_DefaultOpenSimplex2
+        Transform3DType3D_None,
+        Transform3DType3D_ImproveXYPlanes,
+        Transform3DType3D_ImproveXZPlanes,
+        Transform3DType3D_DefaultOpenSimplex2
     };
 
     int mSeed;
     float mFrequency;
     NoiseType mNoiseType;
     RotationType3D mRotationType3D;
-    TransformType3D mTransformType3D;
+    Transform3DType3D mTransform3DType3D;
 
     FractalType mFractalType;
     int mOctaves;
@@ -434,7 +434,7 @@ public:
     float mCellularJitterModifier;
 
     DomainWarpType mDomainWarpType;
-    TransformType3D mWarpTransformType3D;
+    Transform3DType3D mWarpTransform3DType3D;
     float mDomainWarpAmp;
 
 
@@ -667,10 +667,10 @@ public:
     }
 
 
-    // Noise Coordinate Transforms (frequency, and possible skew or rotation)
+    // Noise Coordinate Transform3Ds (frequency, and possible skew or rotation)
 
     template <typename FNfloat>
-    void TransformNoiseCoordinate(FNfloat& x, FNfloat& y) const // <Zylann> Added const
+    void Transform3DNoiseCoordinate(FNfloat& x, FNfloat& y) const // <Zylann> Added const
     {
         x *= mFrequency;
         y *= mFrequency;
@@ -693,15 +693,15 @@ public:
     }
 
     template <typename FNfloat>
-    void TransformNoiseCoordinate(FNfloat& x, FNfloat& y, FNfloat& z) const // <Zylann> Added const
+    void Transform3DNoiseCoordinate(FNfloat& x, FNfloat& y, FNfloat& z) const // <Zylann> Added const
     {
         x *= mFrequency;
         y *= mFrequency;
         z *= mFrequency;
 
-        switch (mTransformType3D)
+        switch (mTransform3DType3D)
         {
-        case TransformType3D_ImproveXYPlanes:
+        case Transform3DType3D_ImproveXYPlanes:
             {
                 FNfloat xy = x + y;
                 FNfloat s2 = xy * -(FNfloat)0.211324865405187;
@@ -711,7 +711,7 @@ public:
                 z += xy * (FNfloat)0.577350269189626;
             }
             break;
-        case TransformType3D_ImproveXZPlanes:
+        case Transform3DType3D_ImproveXZPlanes:
             {
                 FNfloat xz = x + z;
                 FNfloat s2 = xz * -(FNfloat)0.211324865405187;
@@ -721,7 +721,7 @@ public:
                 y += xz * (FNfloat)0.577350269189626;
             }
             break;
-        case TransformType3D_DefaultOpenSimplex2:
+        case Transform3DType3D_DefaultOpenSimplex2:
             {
                 const FNfloat R3 = (FNfloat)(2.0 / 3.0);
                 FNfloat r = (x + y + z) * R3; // Rotation, not skew
@@ -735,25 +735,25 @@ public:
         }
     }
 
-    void UpdateTransformType3D()
+    void UpdateTransform3DType3D()
     {
         switch (mRotationType3D)
         {
         case RotationType3D_ImproveXYPlanes:
-            mTransformType3D = TransformType3D_ImproveXYPlanes;
+            mTransform3DType3D = Transform3DType3D_ImproveXYPlanes;
             break;
         case RotationType3D_ImproveXZPlanes:
-            mTransformType3D = TransformType3D_ImproveXZPlanes;
+            mTransform3DType3D = Transform3DType3D_ImproveXZPlanes;
             break;
         default:
             switch (mNoiseType)
             {
             case NoiseType_OpenSimplex2:
             case NoiseType_OpenSimplex2S:
-                mTransformType3D = TransformType3D_DefaultOpenSimplex2;
+                mTransform3DType3D = Transform3DType3D_DefaultOpenSimplex2;
                 break;
             default:
-                mTransformType3D = TransformType3D_None;
+                mTransform3DType3D = Transform3DType3D_None;
                 break;
             }
             break;
@@ -761,10 +761,10 @@ public:
     }
 
 
-    // Domain Warp Coordinate Transforms
+    // Domain Warp Coordinate Transform3Ds
 
     template <typename FNfloat>
-    void TransformDomainWarpCoordinate(FNfloat& x, FNfloat& y) const // <Zylann> Added const
+    void Transform3DDomainWarpCoordinate(FNfloat& x, FNfloat& y) const // <Zylann> Added const
     {
         switch (mDomainWarpType)
         {
@@ -784,11 +784,11 @@ public:
     }
 
     template <typename FNfloat>
-    void TransformDomainWarpCoordinate(FNfloat& x, FNfloat& y, FNfloat& z) const // <Zylann> Added const
+    void Transform3DDomainWarpCoordinate(FNfloat& x, FNfloat& y, FNfloat& z) const // <Zylann> Added const
     {
-        switch (mWarpTransformType3D)
+        switch (mWarpTransform3DType3D)
         {
-        case TransformType3D_ImproveXYPlanes:
+        case Transform3DType3D_ImproveXYPlanes:
             {
                 FNfloat xy = x + y;
                 FNfloat s2 = xy * -(FNfloat)0.211324865405187;
@@ -798,7 +798,7 @@ public:
                 z += xy * (FNfloat)0.577350269189626;
             }
             break;
-        case TransformType3D_ImproveXZPlanes:
+        case Transform3DType3D_ImproveXZPlanes:
             {
                 FNfloat xz = x + z;
                 FNfloat s2 = xz * -(FNfloat)0.211324865405187;
@@ -808,7 +808,7 @@ public:
                 y += xz * (FNfloat)0.577350269189626;
             }
             break;
-        case TransformType3D_DefaultOpenSimplex2:
+        case Transform3DType3D_DefaultOpenSimplex2:
             {
                 const FNfloat R3 = (FNfloat)(2.0 / 3.0);
                 FNfloat r = (x + y + z) * R3; // Rotation, not skew
@@ -822,25 +822,25 @@ public:
         }
     }
 
-    void UpdateWarpTransformType3D()
+    void UpdateWarpTransform3DType3D()
     {
         switch (mRotationType3D)
         {
         case RotationType3D_ImproveXYPlanes:
-            mWarpTransformType3D = TransformType3D_ImproveXYPlanes;
+            mWarpTransform3DType3D = Transform3DType3D_ImproveXYPlanes;
             break;
         case RotationType3D_ImproveXZPlanes:
-            mWarpTransformType3D = TransformType3D_ImproveXZPlanes;
+            mWarpTransform3DType3D = Transform3DType3D_ImproveXZPlanes;
             break;
         default:
             switch (mDomainWarpType)
             {
             case DomainWarpType_OpenSimplex2:
             case DomainWarpType_OpenSimplex2Reduced:
-                mWarpTransformType3D = TransformType3D_DefaultOpenSimplex2;
+                mWarpTransform3DType3D = Transform3DType3D_DefaultOpenSimplex2;
                 break;
             default:
-                mWarpTransformType3D = TransformType3D_None;
+                mWarpTransform3DType3D = Transform3DType3D_None;
                 break;
             }
             break;
@@ -996,7 +996,7 @@ public:
         const float G2 = (3 - SQRT3) / 6;
 
         /*
-         * --- Skew moved to TransformNoiseCoordinate method ---
+         * --- Skew moved to Transform3DNoiseCoordinate method ---
          * const FNfloat F2 = 0.5f * (SQRT3 - 1);
          * FNfloat s = (x + y) * F2;
          * x += s; y += s;
@@ -1064,7 +1064,7 @@ public:
         // 3D OpenSimplex2 case uses two offset rotated cube grids.
 
         /*
-         * --- Rotation moved to TransformNoiseCoordinate method ---
+         * --- Rotation moved to Transform3DNoiseCoordinate method ---
          * const FNfloat R3 = (FNfloat)(2.0 / 3.0);
          * FNfloat r = (x + y + z) * R3; // Rotation, not skew
          * x = r - x; y = r - y; z = r - z;
@@ -1169,7 +1169,7 @@ public:
         const FNfloat G2 = (3 - SQRT3) / 6;
 
         /*
-         * --- Skew moved to TransformNoiseCoordinate method ---
+         * --- Skew moved to Transform3DNoiseCoordinate method ---
          * const FNfloat F2 = 0.5f * (SQRT3 - 1);
          * FNfloat s = (x + y) * F2;
          * x += s; y += s;
@@ -1297,7 +1297,7 @@ public:
         // 3D OpenSimplex2S case uses two offset rotated cube grids.
 
         /*
-         * --- Rotation moved to TransformNoiseCoordinate method ---
+         * --- Rotation moved to Transform3DNoiseCoordinate method ---
          * const FNfloat R3 = (FNfloat)(2.0 / 3.0);
          * FNfloat r = (x + y + z) * R3; // Rotation, not skew
          * x = r - x; y = r - y; z = r - z;
@@ -2023,7 +2023,7 @@ public:
 
         FNfloat xs = x;
         FNfloat ys = y;
-        TransformDomainWarpCoordinate(xs, ys);
+        Transform3DDomainWarpCoordinate(xs, ys);
 
         DoSingleDomainWarp(seed, amp, freq, xs, ys, x, y);
     }
@@ -2038,7 +2038,7 @@ public:
         FNfloat xs = x;
         FNfloat ys = y;
         FNfloat zs = z;
-        TransformDomainWarpCoordinate(xs, ys, zs);
+        Transform3DDomainWarpCoordinate(xs, ys, zs);
 
         DoSingleDomainWarp(seed, amp, freq, xs, ys, zs, x, y, z);
     }
@@ -2057,7 +2057,7 @@ public:
         {
             FNfloat xs = x;
             FNfloat ys = y;
-            TransformDomainWarpCoordinate(xs, ys);
+            Transform3DDomainWarpCoordinate(xs, ys);
 
             DoSingleDomainWarp(seed, amp, freq, xs, ys, x, y);
 
@@ -2079,7 +2079,7 @@ public:
             FNfloat xs = x;
             FNfloat ys = y;
             FNfloat zs = z;
-            TransformDomainWarpCoordinate(xs, ys, zs);
+            Transform3DDomainWarpCoordinate(xs, ys, zs);
 
             DoSingleDomainWarp(seed, amp, freq, xs, ys, zs, x, y, z);
 
@@ -2097,7 +2097,7 @@ public:
     {
         FNfloat xs = x;
         FNfloat ys = y;
-        TransformDomainWarpCoordinate(xs, ys);
+        Transform3DDomainWarpCoordinate(xs, ys);
 
         int seed = mSeed;
         float amp = mDomainWarpAmp * mFractalBounding;
@@ -2119,7 +2119,7 @@ public:
         FNfloat xs = x;
         FNfloat ys = y;
         FNfloat zs = z;
-        TransformDomainWarpCoordinate(xs, ys, zs);
+        Transform3DDomainWarpCoordinate(xs, ys, zs);
 
         int seed = mSeed;
         float amp = mDomainWarpAmp * mFractalBounding;
@@ -2243,7 +2243,7 @@ public:
         y *= frequency;
 
         /*
-         * --- Skew moved to TransformNoiseCoordinate method ---
+         * --- Skew moved to Transform3DNoiseCoordinate method ---
          * const FNfloat F2 = 0.5f * (SQRT3 - 1);
          * FNfloat s = (x + y) * F2;
          * x += s; y += s;
@@ -2339,7 +2339,7 @@ public:
         z *= frequency;
 
         /*
-         * --- Rotation moved to TransformDomainWarpCoordinate method ---
+         * --- Rotation moved to Transform3DDomainWarpCoordinate method ---
          * const FNfloat R3 = (FNfloat)(2.0 / 3.0);
          * FNfloat r = (x + y + z) * R3; // Rotation, not skew
          * x = r - x; y = r - y; z = r - z;

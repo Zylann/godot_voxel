@@ -35,7 +35,7 @@ bool DirectStaticBody::is_valid() const {
 	return _body.is_valid();
 }
 
-void DirectStaticBody::set_transform(Transform transform) {
+void DirectStaticBody::set_transform(Transform3D transform) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(!_body.is_valid());
 	PhysicsServer::get_singleton()->body_set_state(_body, PhysicsServer::BODY_STATE_TRANSFORM, transform);
@@ -45,9 +45,9 @@ void DirectStaticBody::set_transform(Transform transform) {
 	}
 }
 
-void DirectStaticBody::add_shape(Ref<Shape> shape) {
+void DirectStaticBody::add_shape(Ref<Shape3D> shape) {
 	ERR_FAIL_COND(!_body.is_valid());
-	PhysicsServer::get_singleton()->body_add_shape(_body, shape->get_rid(), Transform(), false);
+	PhysicsServer::get_singleton()->body_add_shape(_body, shape->get_rid(), Transform3D(), false);
 	// No use case for multishape yet
 	_shape = shape;
 
@@ -67,8 +67,8 @@ void DirectStaticBody::remove_shape(int shape_index) {
 	}
 }
 
-Ref<Shape> DirectStaticBody::get_shape(int shape_index) {
-	ERR_FAIL_COND_V(shape_index < 0 || shape_index > 1, Ref<Shape>());
+Ref<Shape3D> DirectStaticBody::get_shape(int shape_index) {
+	ERR_FAIL_COND_V(shape_index < 0 || shape_index > 1, Ref<Shape3D>());
 	return _shape;
 }
 
@@ -115,7 +115,7 @@ void DirectStaticBody::set_debug(bool enabled, World *world) {
 		_debug_mesh_instance.create();
 		_debug_mesh_instance.set_world(world);
 
-		Transform transform = PhysicsServer::get_singleton()->body_get_state(_body, PhysicsServer::BODY_STATE_TRANSFORM);
+		Transform3D transform = PhysicsServer::get_singleton()->body_get_state(_body, PhysicsServer::BODY_STATE_TRANSFORM);
 		_debug_mesh_instance.set_transform(transform);
 
 		if (_shape.is_valid()) {

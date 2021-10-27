@@ -227,7 +227,7 @@ void fragment() {
 
 ### Recommended Reading
 
-- [Node3DGizmoMaterial](https://docs.godotengine.org/en/stable/classes/class_spatialmaterial.html) - demonstrates many of the shader options available in Godot.
+- [StandardMaterial3D](https://docs.godotengine.org/en/stable/classes/class_spatialmaterial.html) - demonstrates many of the shader options available in Godot.
 - [Shading Index](https://docs.godotengine.org/en/stable/tutorials/shading/index.html) - tutorials and the shader language API
 - Shader API Reference - some of the most frequently accessed references
 	- [Shading Language](https://docs.godotengine.org/en/stable/tutorials/shading/shading_reference/shading_language.html)
@@ -268,7 +268,7 @@ If you use a `ShaderMaterial` on a voxel node, the module may exploit some unifo
 Parameter name             | Type     | Description
 ---------------------------|----------|-----------------------
 `u_lod_fade`               | `vec2`   | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
-`u_block_local_transform`  | `mat4`   | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
+`u_block_local_transform`  | `mat4`   | Transform3D of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
 
 
 Level of detail (LOD)

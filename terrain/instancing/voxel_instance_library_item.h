@@ -12,8 +12,8 @@ public:
 	static const int MAX_MESH_LODS = 4;
 
 	struct CollisionShapeInfo {
-		Transform transform;
-		Ref<Shape> shape;
+		Transform3D transform;
+		Ref<Shape3D> shape;
 	};
 
 	void set_mesh(Ref<Mesh> mesh, int mesh_lod_index);
@@ -23,8 +23,8 @@ public:
 	void set_material_override(Ref<Material> material);
 	Ref<Material> get_material_override() const;
 
-	void set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode);
-	VisualServer::ShadowCastingSetting get_cast_shadows_setting() const;
+	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
+	RenderingServer::ShadowCastingSetting get_cast_shadows_setting() const;
 
 	void set_collision_layer(int collision_layer);
 	int get_collision_layer() const;
@@ -66,7 +66,7 @@ private:
 	// but this is in case OBJ meshes are used, which often dont have a material of their own
 	Ref<Material> _material_override;
 
-	VisualServer::ShadowCastingSetting _shadow_casting_setting = VisualServer::SHADOW_CASTING_SETTING_ON;
+	RenderingServer::ShadowCastingSetting _shadow_casting_setting = RenderingServer::SHADOW_CASTING_SETTING_ON;
 
 	int _collision_mask = 1;
 	int _collision_layer = 1;

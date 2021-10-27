@@ -2,6 +2,7 @@
 #include "../../storage/voxel_buffer.h"
 #include "../../util/funcs.h"
 #include "../../util/profiling.h"
+#include <core/math/geometry_2d.h>
 
 namespace {
 // 2-----3
@@ -42,7 +43,7 @@ const uint8_t g_face_axes_lut[VOX_Vector3i::AXIS_COUNT][2] = {
 	{ VOX_Vector3i::AXIS_X, VOX_Vector3i::AXIS_Y }
 };
 
-enum Side {
+enum FaceSide {
 	SIDE_FRONT = 0,
 	SIDE_BACK,
 	SIDE_NONE // Either means there is no face, or it was consumed
@@ -112,7 +113,7 @@ void build_voxel_mesh_as_simple_cubes(
 					const uint8_t ai1 = get_alpha_index(color1);
 
 					Color8 color;
-					Side side;
+					FaceSide side;
 					if (ai0 == ai1) {
 						continue;
 					} else if (ai0 > ai1) {
@@ -636,7 +637,7 @@ static Ref<Image> make_greedy_atlas(const VoxelMesherCubes::GreedyAtlasData &atl
 			const VoxelMesherCubes::GreedyAtlasData::ImageInfo &im = atlas_data.images[i];
 			sizes.write[i] = Vector2i(im.size_x, im.size_y);
 		}
-		Geometry::make_atlas(sizes, result_points, result_size);
+		Geometry2D::make_atlas(sizes, result_points, result_size);
 	}
 
 	// DEBUG

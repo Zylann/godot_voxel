@@ -27,7 +27,7 @@ VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 		VoxelBufferInternal &out_buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	//
-	if (_directory_path.empty()) {
+	if (_directory_path.is_empty()) {
 		return RESULT_BLOCK_NOT_FOUND;
 	}
 
@@ -90,7 +90,7 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 }
 
 void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, VOX_Vector3i origin_in_voxels, int lod) {
-	ERR_FAIL_COND(_directory_path.empty());
+	ERR_FAIL_COND(_directory_path.is_empty());
 
 	if (!_meta_loaded) {
 		// If it's not loaded, always try to load meta file first if it exists already,
@@ -176,7 +176,7 @@ int VoxelStreamBlockFiles::get_block_size_po2() const {
 }
 
 VoxelFileResult VoxelStreamBlockFiles::save_meta() {
-	CRASH_COND(_directory_path.empty());
+	CRASH_COND(_directory_path.is_empty());
 
 	// Make sure the directory exists
 	{
@@ -224,7 +224,7 @@ VoxelFileResult VoxelStreamBlockFiles::load_or_create_meta() {
 }
 
 VoxelFileResult VoxelStreamBlockFiles::load_meta() {
-	CRASH_COND(_directory_path.empty());
+	CRASH_COND(_directory_path.is_empty());
 
 	String meta_path = _directory_path.plus_file(META_FILE_NAME);
 

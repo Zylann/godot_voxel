@@ -36,7 +36,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 		pi.name = param.name;
 		pi.type = param.type;
 		pi.class_name = param.class_name;
-		if (!param.class_name.empty()) {
+		if (!param.class_name.is_empty()) {
 			pi.hint = PROPERTY_HINT_RESOURCE_TYPE;
 			pi.hint_string = pi.class_name;
 		} else if (param.has_range) {

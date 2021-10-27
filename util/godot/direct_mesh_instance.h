@@ -6,7 +6,7 @@
 
 class World;
 
-// Thin wrapper around VisualServer mesh instance API
+// Thin wrapper around RenderingServer mesh instance API
 class DirectMeshInstance {
 public:
 	DirectMeshInstance();
@@ -16,11 +16,11 @@ public:
 	void create();
 	void destroy();
 	void set_world(World *world);
-	void set_transform(Transform world_transform);
+	void set_transform(Transform3D world_transform);
 	void set_mesh(Ref<Mesh> mesh);
 	void set_material_override(Ref<Material> material);
 	void set_visible(bool visible);
-	void set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode);
+	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
 
 	Ref<Mesh> get_mesh() const;
 

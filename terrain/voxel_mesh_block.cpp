@@ -14,7 +14,7 @@ VoxelMeshBlock *VoxelMeshBlock::create(VOX_Vector3i bpos, unsigned int size, uns
 	block->_position_in_voxels = bpos * (size << p_lod_index);
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
-	Ref<Node3DGizmoMaterial> debug_material;
+	Ref<StandardMaterial3D> debug_material;
 	debug_material.instantiate();
 	int checker = (bpos.x + bpos.y + bpos.z) & 1;
 	Color debug_color = Color(0.8, 0.4, 0.8).linear_interpolate(Color(0.0, 0.0, 0.5), static_cast<float>(p_lod_index) / 8.f);
@@ -22,7 +22,7 @@ VoxelMeshBlock *VoxelMeshBlock::create(VOX_Vector3i bpos, unsigned int size, uns
 	debug_material->set_albedo(debug_color);
 	block->_debug_material = debug_material;
 
-	Ref<Node3DGizmoMaterial> debug_transition_material;
+	Ref<StandardMaterial3D> debug_transition_material;
 	debug_transition_material.instantiate();
 	debug_transition_material->set_albedo(Color(1, 1, 0));
 	block->_debug_transition_material = debug_transition_material;
@@ -174,7 +174,7 @@ void VoxelMeshBlock::set_shader_material(Ref<ShaderMaterial> material) {
 	}
 
 	if (_shader_material.is_valid()) {
-		const Transform local_transform(Basis(), _position_in_voxels.to_vec3());
+		const Transform3D local_transform(Basis(), _position_in_voxels.to_vec3());
 		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_block_local_transform, local_transform);
 	}
 }
@@ -230,12 +230,12 @@ void VoxelMeshBlock::set_parent_visible(bool parent_visible) {
 	_set_visible(_visible && _parent_visible);
 }
 
-void VoxelMeshBlock::set_parent_transform(const Transform &parent_transform) {
+void VoxelMeshBlock::set_parent_transform(const Transform3D &parent_transform) {
 	VOXEL_PROFILE_SCOPE();
 
 	if (_mesh_instance.is_valid() || _static_body.is_valid()) {
-		const Transform local_transform(Basis(), _position_in_voxels.to_vec3());
-		const Transform world_transform = parent_transform * local_transform;
+		const Transform3D local_transform(Basis(), _position_in_voxels.to_vec3());
+		const Transform3D world_transform = parent_transform * local_transform;
 
 		if (_mesh_instance.is_valid()) {
 			_mesh_instance.set_transform(world_transform);
@@ -263,7 +263,7 @@ void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_COND_MSG(node->get_world() != _world, "Physics body and attached node must be from the same world");
 
-	Ref<Shape> shape = create_concave_polygon_shape(surface_arrays);
+	Ref<Shape3D> shape = create_concave_polygon_shape(surface_arrays);
 	if (shape.is_null()) {
 		drop_collision();
 		return;
@@ -300,7 +300,7 @@ void VoxelMeshBlock::set_collision_mask(int mask) {
 
 void VoxelMeshBlock::set_collision_margin(float margin) {
 	if (_static_body.is_valid()) {
-		Ref<Shape> shape = _static_body.get_shape(0);
+		Ref<Shape3D> shape = _static_body.get_shape(0);
 		if (shape.is_valid()) {
 			shape->set_margin(margin);
 		}

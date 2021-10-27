@@ -132,7 +132,7 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 		return Array();
 	}
 	Array src_surface = src_mesh->surface_get_arrays(surface_index);
-	if (src_surface.empty()) {
+	if (src_surface.is_empty()) {
 		return Array();
 	}
 	PackedVector3Array src_positions = src_surface[Mesh::ARRAY_VERTEX];
@@ -215,8 +215,8 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	// wire_mesh.instantiate();
 	// wire_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, dst_surface);
 
-	// Ref<Node3DGizmoMaterial> line_material;
-	// line_material->set_flag(Node3DGizmoMaterial::FLAG_UNSHADED, true);
+	// Ref<StandardMaterial3D> line_material;
+	// line_material->set_flag(StandardMaterial3D::FLAG_UNSHADED, true);
 	// line_material->set_albedo(Color(1.0, 0.0, 1.0));
 	// wire_mesh->surface_set_material(0, line_material);
 

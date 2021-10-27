@@ -37,7 +37,7 @@ Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 	VoxelMesher::Input input = { voxels, 0 };
 	mesher.build(output, input);
 
-	if (output.surfaces.empty()) {
+	if (output.surfaces.is_empty()) {
 		return Ref<ArrayMesh>();
 	}
 
@@ -48,7 +48,7 @@ Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 	for (int i = 0; i < output.surfaces.size(); ++i) {
 		Array surface = output.surfaces[i];
 
-		if (surface.empty()) {
+		if (surface.is_empty()) {
 			continue;
 		}
 

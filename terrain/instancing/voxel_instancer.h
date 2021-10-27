@@ -70,7 +70,7 @@ public:
 	int debug_get_block_count() const;
 	Dictionary debug_get_instance_counts() const;
 
-	String get_configuration_warning() const override;
+	String get_configuration_warning() const; //override;
 
 protected:
 	void _notification(int p_what);
@@ -104,20 +104,20 @@ private:
 	};
 
 	SceneInstance create_scene_instance(const VoxelInstanceLibrarySceneItem &scene_item,
-			int instance_index, unsigned int block_index, Transform transform, int data_block_size_po2);
+			int instance_index, unsigned int block_index, Transform3D transform, int data_block_size_po2);
 
-	void update_block_from_transforms(int block_index, Span<const Transform> transforms,
+	void update_block_from_transforms(int block_index, Span<const Transform3D> transforms,
 			VOX_Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id,
-			World *world, const Transform &block_transform);
+			World *world, const Transform3D &block_transform);
 
 	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
 
 	struct Block;
 
-	static void remove_floating_multimesh_instances(Block &block, const Transform &parent_transform, Box3i p_voxel_box,
+	static void remove_floating_multimesh_instances(Block &block, const Transform3D &parent_transform, Box3i p_voxel_box,
 			const VoxelTool &voxel_tool, int block_size_po2);
 
-	static void remove_floating_scene_instances(Block &block, const Transform &parent_transform, Box3i p_voxel_box,
+	static void remove_floating_scene_instances(Block &block, const Transform3D &parent_transform, Box3i p_voxel_box,
 			const VoxelTool &voxel_tool, int block_size_po2);
 
 	static void _bind_methods();
@@ -187,7 +187,7 @@ private:
 	HashMap<int, Layer> _layers; // Each layer corresponds to a library item
 	Ref<VoxelInstanceLibrary> _library;
 
-	std::vector<Transform> _transform_cache;
+	std::vector<Transform3D> _transform_cache;
 
 	VoxelLodTerrain *_parent;
 };

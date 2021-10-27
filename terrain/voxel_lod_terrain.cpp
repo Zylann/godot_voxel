@@ -27,7 +27,7 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 	for (int i = 0; i < surfaces.size(); ++i) {
 		Array surface = surfaces[i];
 
-		if (surface.empty()) {
+		if (surface.is_empty()) {
 			continue;
 		}
 
@@ -49,9 +49,9 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 		if (wireframe_surface.size() > 0) {
 			const int wireframe_surface_index = mesh->get_surface_count();
 			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, wireframe_surface);
-			Ref<Node3DGizmoMaterial> line_material;
+			Ref<StandardMaterial3D> line_material;
 			line_material.instantiate();
-			line_material->set_flag(Node3DGizmoMaterial::FLAG_UNSHADED, true);
+			line_material->set_flag(StandardMaterial3D::FLAG_UNSHADED, true);
 			line_material->set_albedo(Color(1.0, 0.0, 1.0));
 			mesh->surface_set_material(wireframe_surface_index, line_material);
 		}
@@ -832,7 +832,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 		case NOTIFICATION_TRANSFORM_CHANGED: {
 			VOXEL_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
 
-			const Transform transform = get_global_transform();
+			const Transform3D transform = get_global_transform();
 			VoxelServer::get_singleton()->set_volume_transform(_volume_id, transform);
 
 			if (!is_inside_tree()) {
@@ -862,7 +862,7 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 		pos = viewer.world_position;
 	});
 
-	const Transform world_to_local = get_global_transform().affine_inverse();
+	const Transform3D world_to_local = get_global_transform().affine_inverse();
 	pos = world_to_local.xform(pos);
 	return pos;
 }
@@ -1140,7 +1140,7 @@ void VoxelLodTerrain::_process(float delta) {
 			// Eliminate pending blocks that aren't needed
 
 			// This vector must be empty at this point.
-			ERR_FAIL_COND(!lod.blocks_to_load.empty());
+			ERR_FAIL_COND(!lod.blocks_to_load.is_empty());
 
 			if (prev_box != new_box) {
 				VOXEL_PROFILE_SCOPE_NAMED("Unload data");
@@ -1983,7 +1983,7 @@ void VoxelLodTerrain::unload_mesh_block(VOX_Vector3i block_pos, int lod_index) {
 
 // This function is primarily intented for editor use cases at the moment.
 // It will be slower than using the instancing generation events,
-// because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
+// because it has to query RenderingServer, which then allocates and decodes vertex buffers (assuming they are cached).
 Array VoxelLodTerrain::get_mesh_block_surface(VOX_Vector3i block_pos, int lod_index) const {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(lod_index >= static_cast<int>(_lod_count), Array());
@@ -2238,7 +2238,7 @@ float VoxelLodTerrain::get_lod_fade_duration() const {
 
 String VoxelLodTerrain::get_configuration_warning() const {
 	String w = VoxelNode::get_configuration_warning();
-	if (!w.empty()) {
+	if (!w.is_empty()) {
 		return w;
 	}
 	Ref<VoxelMesher> mesher = get_mesher();
@@ -2265,7 +2265,7 @@ AABB VoxelLodTerrain::_b_get_voxel_bounds() const {
 // DEBUG LAND
 
 Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 world_direction) const {
-	const Transform world_to_local = get_global_transform().affine_inverse();
+	const Transform3D world_to_local = get_global_transform().affine_inverse();
 	Vector3 pos = world_to_local.xform(world_origin);
 	const Vector3 dir = world_to_local.basis.xform(world_direction);
 	const float max_distance = 256;
@@ -2434,14 +2434,14 @@ void VoxelLodTerrain::update_gizmos() {
 	VoxelDebug::DebugRenderer &dr = _debug_renderer;
 	dr.begin();
 
-	const Transform parent_transform = get_global_transform();
+	const Transform3D parent_transform = get_global_transform();
 
 	// Octree bounds
 	if (_show_octree_bounds_gizmos) {
 		const int octree_size = 1 << get_octree_size_po2(*this);
 		const Basis local_octree_basis = Basis().scaled(Vector3(octree_size, octree_size, octree_size));
 		for (Map<VOX_Vector3i, OctreeItem>::Element *e = _lod_octrees.front(); e; e = e->next()) {
-			const Transform local_transform(local_octree_basis, (e->key() * octree_size).to_vec3());
+			const Transform3D local_transform(local_octree_basis, (e->key() * octree_size).to_vec3());
 			dr.draw_box(parent_transform * local_transform, VoxelDebug::ID_OCTREE_BOUNDS);
 		}
 	}
@@ -2452,7 +2452,7 @@ void VoxelLodTerrain::update_gizmos() {
 		if (bounds_in_voxels_len < 10000) {
 			const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
 			const Vector3 size = _bounds_in_voxels.size.to_vec3();
-			const Transform local_transform(Basis().scaled(size + margin * 2.f), _bounds_in_voxels.pos.to_vec3() - margin);
+			const Transform3D local_transform(Basis().scaled(size + margin * 2.f), _bounds_in_voxels.pos.to_vec3() - margin);
 			dr.draw_box(parent_transform * local_transform, VoxelDebug::ID_VOXEL_BOUNDS);
 		}
 	}
@@ -2473,8 +2473,8 @@ void VoxelLodTerrain::update_gizmos() {
 				//
 				const int size = mesh_block_size << lod_index;
 				const VOX_Vector3i voxel_pos = mesh_block_size * ((node_pos << lod_index) + block_offset_lod0);
-				const Transform local_transform(Basis().scaled(Vector3(size, size, size)), voxel_pos.to_vec3());
-				const Transform t = parent_transform * local_transform;
+				const Transform3D local_transform(Basis().scaled(Vector3(size, size, size)), voxel_pos.to_vec3());
+				const Transform3D t = parent_transform * local_transform;
 				// Squaring because lower lod indexes are more interesting to see, so we give them more contrast.
 				// Also this might be better with sRGB?
 				float g = squared(max(1.f - float(lod_index) / lod_count_f, 0.f));
@@ -2550,7 +2550,7 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath) const {
 		const Lod &lod = _lods[lod_index];
 
 		lod.mesh_map.for_all_blocks([root](const VoxelMeshBlock *block) {
-			block->for_each_mesh_instance_with_transform([root, block](const DirectMeshInstance &dmi, Transform t) {
+			block->for_each_mesh_instance_with_transform([root, block](const DirectMeshInstance &dmi, Transform3D t) {
 				Ref<Mesh> mesh = dmi.get_mesh();
 
 				if (mesh.is_valid()) {

@@ -121,12 +121,12 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 	// The mesher is required to know how collisions should be processed
 	ERR_FAIL_COND_V(p_terrain->get_mesher().is_null(), Vector3());
 
-	// Transform to local in case the volume is transformed
-	const Transform to_world = p_terrain->get_global_transform();
-	const Transform to_local = to_world.affine_inverse();
+	// Transform3D to local in case the volume is transformed
+	const Transform3D to_world = p_terrain->get_global_transform();
+	const Transform3D to_local = to_world.affine_inverse();
 	const Vector3 pos = to_local.xform(p_pos);
 	const Vector3 motion = to_local.basis.xform(p_motion);
-	const AABB aabb = Transform(to_local.basis, Vector3()).xform(p_aabb);
+	const AABB aabb = Transform3D(to_local.basis, Vector3()).xform(p_aabb);
 
 	const AABB box(aabb.position + pos, aabb.size);
 	const AABB expanded_box = expand_with_vector(box, motion);

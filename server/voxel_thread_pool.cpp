@@ -32,7 +32,7 @@ void VoxelThreadPool::create_thread(ThreadData &d, uint32_t i) {
 	d.stop = false;
 	d.waiting = false;
 	d.index = i;
-	if (!_name.empty()) {
+	if (!_name.is_empty()) {
 		d.name = String("{0} {1}").format(varray(_name, i));
 	}
 	d.thread.start(thread_func_static, &d);
@@ -115,7 +115,7 @@ void VoxelThreadPool::thread_func_static(void *p_data) {
 	ThreadData &data = *static_cast<ThreadData *>(p_data);
 	VoxelThreadPool &pool = *data.pool;
 
-	if (!data.name.empty()) {
+	if (!data.name.is_empty()) {
 		Thread::set_name(data.name);
 
 #ifdef VOXEL_PROFILER_ENABLED
@@ -195,7 +195,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 
 		//print_line(String("Processing {0} tasks").format(varray(tasks.size())));
 
-		if (tasks.empty()) {
+		if (tasks.is_empty()) {
 			data.debug_state = STATE_WAITING;
 
 			// Wait for more tasks

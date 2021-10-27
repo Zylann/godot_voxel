@@ -130,7 +130,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 
 	MutexLock lock(_mutex);
 
-	if (_directory_path.empty()) {
+	if (_directory_path.is_empty()) {
 		return EMERGE_OK_FALLBACK;
 	}
 
@@ -183,7 +183,7 @@ void VoxelStreamRegionFiles::_immerge_block(VoxelBufferInternal &voxel_buffer, V
 
 	MutexLock lock(_mutex);
 
-	ERR_FAIL_COND(_directory_path.empty());
+	ERR_FAIL_COND(_directory_path.is_empty());
 
 	if (!_meta_loaded) {
 		// If it's not loaded, always try to load meta file first if it exists already,

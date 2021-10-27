@@ -32,12 +32,12 @@ inline float get_triangle_area(Vector3 p0, Vector3 p1, Vector3 p2) {
 }
 
 void VoxelInstanceGenerator::generate_transforms(
-		std::vector<Transform> &out_transforms,
+		std::vector<Transform3D> &out_transforms,
 		VOX_Vector3i grid_position,
 		int lod_index,
 		int layer_id,
 		Array surface_arrays,
-		const Transform &block_local_transform,
+		const Transform3D &block_local_transform,
 		UpMode up_mode,
 		uint8_t octant_mask,
 		float block_size) {
@@ -300,7 +300,7 @@ void VoxelInstanceGenerator::generate_transforms(
 
 	// Calculate orientations and scales
 	for (size_t vertex_index = 0; vertex_index < vertex_cache.size(); ++vertex_index) {
-		Transform t;
+		Transform3D t;
 		t.origin = vertex_cache[vertex_index];
 
 		// Warning: sometimes mesh normals are not perfectly normalized.
@@ -450,7 +450,7 @@ void VoxelInstanceGenerator::generate_transforms(
 	// TODO Investigate if this helps (won't help with authored terrain)
 	// if (graph_generator.is_valid()) {
 	// 	for (size_t i = 0; i < _transform_cache.size(); ++i) {
-	// 		Transform &t = _transform_cache[i];
+	// 		Transform3D &t = _transform_cache[i];
 	// 		const Vector3 up = t.get_basis().get_axis(Vector3::AXIS_Y);
 	// 		t.origin = graph_generator->approximate_surface(t.origin, up * 0.5f);
 	// 	}

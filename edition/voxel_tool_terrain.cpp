@@ -68,7 +68,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 				return true;
 			}
 
-			if (voxel.is_transparent() && voxel.get_collision_aabbs().empty() == false) {
+			if (voxel.is_transparent() && voxel.get_collision_aabbs().is_empty() == false) {
 				return true;
 			}
 
@@ -84,8 +84,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 	VOX_Vector3i hit_pos;
 	VOX_Vector3i prev_pos;
 
-	const Transform to_world = _terrain->get_global_transform();
-	const Transform to_local = to_world.affine_inverse();
+	const Transform3D to_world = _terrain->get_global_transform();
+	const Transform3D to_local = to_world.affine_inverse();
 	const Vector3 local_pos = to_local.xform(p_pos);
 	const Vector3 local_dir = to_local.basis.xform(p_dir).normalized();
 	const float to_world_scale = to_world.basis.get_axis(0).length();

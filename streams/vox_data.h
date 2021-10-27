@@ -52,7 +52,7 @@ struct Rotation {
 	Basis basis;
 };
 
-struct TransformNode : public Node {
+struct Transform3DNode : public Node {
 	int child_node_id;
 	int layer_id;
 	// Pivot position, which turns out to be at the center in MagicaVoxel
@@ -61,7 +61,7 @@ struct TransformNode : public Node {
 	String name;
 	bool hidden;
 
-	TransformNode() :
+	Transform3DNode() :
 			Node(Node::TYPE_TRANSFORM) {}
 };
 

@@ -2,6 +2,7 @@
 #define VOXEL_BUFFER_H
 
 #include "voxel_buffer_internal.h"
+#include <memory>
 
 class VoxelTool;
 class Image;

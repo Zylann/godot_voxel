@@ -527,7 +527,7 @@ VoxelStreamSQLite::VoxelStreamSQLite() {
 
 VoxelStreamSQLite::~VoxelStreamSQLite() {
 	PRINT_VERBOSE("~VoxelStreamSQLite");
-	if (!_connection_path.empty() && _cache.get_indicative_block_count() > 0) {
+	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
 		PRINT_VERBOSE("~VoxelStreamSQLite flushy flushy");
 		flush_cache();
 		PRINT_VERBOSE("~VoxelStreamSQLite flushy done");
@@ -544,7 +544,7 @@ void VoxelStreamSQLite::set_database_path(String path) {
 	if (path == _connection_path) {
 		return;
 	}
-	if (!_connection_path.empty() && _cache.get_indicative_block_count() > 0) {
+	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
 		// Save cached data before changing the path.
 		// Not using get_connection() because it locks.
 		VoxelStreamSQLiteInternal con;
@@ -821,7 +821,7 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 
 VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 	_connection_mutex.lock();
-	if (_connection_path.empty()) {
+	if (_connection_path.is_empty()) {
 		_connection_mutex.unlock();
 		return nullptr;
 	}
@@ -834,7 +834,7 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 	String fpath = _connection_path;
 	_connection_mutex.unlock();
 
-	if (fpath.empty()) {
+	if (fpath.is_empty()) {
 		return nullptr;
 	}
 	VoxelStreamSQLiteInternal *con = new VoxelStreamSQLiteInternal();

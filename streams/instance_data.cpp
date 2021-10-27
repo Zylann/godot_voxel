@@ -156,7 +156,7 @@ bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uin
 			const Quat q = cq.to_quat();
 
 			VoxelInstanceBlockData::InstanceData &instance = layer.instances[j];
-			instance.transform = Transform(Basis(q).scaled(Vector3(s, s, s)), Vector3(x, y, z));
+			instance.transform = Transform3D(Basis(q).scaled(Vector3(s, s, s)), Vector3(x, y, z));
 		}
 	}
 

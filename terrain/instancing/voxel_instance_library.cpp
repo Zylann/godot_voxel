@@ -12,7 +12,7 @@ VoxelInstanceLibrary::~VoxelInstanceLibrary() {
 }
 
 int VoxelInstanceLibrary::get_next_available_id() {
-	if (_items.empty()) {
+	if (_items.is_empty()) {
 		return 1;
 	} else {
 		return _items.back()->key() + 1;

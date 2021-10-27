@@ -56,9 +56,8 @@ Ref<Mesh> get_wirecube(ColorID id) {
 		PackedColorArray colors;
 		colors.resize(positions.size());
 		{
-			PackedColorArray::Write w = colors.write();
 			for (int i = 0; i < colors.size(); ++i) {
-				w[i] = white;
+				colors.set(i, white);
 			}
 		}
 
@@ -89,10 +88,10 @@ Ref<Mesh> get_wirecube(ColorID id) {
 		Ref<ArrayMesh> mesh = memnew(ArrayMesh);
 		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, arrays);
 
-		Ref<Node3DGizmoMaterial> mat;
+		Ref<StandardMaterial3D> mat;
 		mat.instantiate();
 		mat->set_albedo(get_color(id));
-		mat->set_flag(Node3DGizmoMaterial::FLAG_UNSHADED, true);
+		mat->set_shading_mode(StandardMaterial3D::SHADING_MODE_UNSHADED);
 		mesh->surface_set_material(0, mat);
 
 		wirecube = mesh;
@@ -117,7 +116,7 @@ public:
 		// TODO When shadow casting is on, directional shadows completely break.
 		// The reason is still unknown.
 		// It should be off anyways, but it's rather concerning.
-		_mesh_instance.set_cast_shadows_setting(VisualServer::SHADOW_CASTING_SETTING_OFF);
+		_mesh_instance.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_OFF);
 	}
 
 	void set_mesh(Ref<Mesh> mesh) {
@@ -127,7 +126,7 @@ public:
 		}
 	}
 
-	void set_transform(Transform t) {
+	void set_transform(Transform3D t) {
 		if (_transform != t) {
 			_transform = t;
 			_mesh_instance.set_transform(t);
@@ -146,7 +145,7 @@ public:
 	}
 
 private:
-	Transform _transform;
+	Transform3D _transform;
 	bool _visible = true;
 	Ref<Mesh> _mesh;
 	DirectMeshInstance _mesh_instance;
@@ -182,7 +181,7 @@ void DebugRenderer::begin() {
 	_mm_renderer.begin();
 }
 
-void DebugRenderer::draw_box(const Transform &t, ColorID color) {
+void DebugRenderer::draw_box(const Transform3D &t, ColorID color) {
 	// Pick an existing item, or create one
 	DebugRendererItem *item;
 	if (_current >= _items.size()) {
@@ -200,7 +199,7 @@ void DebugRenderer::draw_box(const Transform &t, ColorID color) {
 	++_current;
 }
 
-void DebugRenderer::draw_box_mm(const Transform &t, Color8 color) {
+void DebugRenderer::draw_box_mm(const Transform3D &t, Color8 color) {
 	_mm_renderer.draw_box(t, color);
 }
 
@@ -222,19 +221,19 @@ DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
 	// TODO When shadow casting is on, directional shadows completely break.
 	// The reason is still unknown.
 	// It should be off anyways, but it's rather concerning.
-	_multimesh_instance.set_cast_shadows_setting(VisualServer::SHADOW_CASTING_SETTING_OFF);
+	_multimesh_instance.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_OFF);
 	_multimesh.instantiate();
 	Ref<Mesh> wirecube = get_wirecube(ID_WHITE);
 	_multimesh->set_mesh(wirecube);
 	_multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
 	_multimesh->set_color_format(MultiMesh::COLOR_8BIT);
-	_multimesh->set_custom_data_format(MultiMesh::CUSTOM_DATA_NONE);
+	_multimesh->set_use_custom_data(false);
 	_multimesh_instance.set_multimesh(_multimesh);
 	_material.instantiate();
-	_material->set_flag(Node3DGizmoMaterial::FLAG_UNSHADED, true);
-	_material->set_flag(Node3DGizmoMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+	_material->set_shading_mode(StandardMaterial3D::ShadingMode::SHADING_MODE_UNSHADED);
+	_material->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 	_multimesh_instance.set_material_override(_material);
-}
+}\
 
 void DebugMultiMeshRenderer::set_world(World *world) {
 	_multimesh_instance.set_world(world);
@@ -247,8 +246,8 @@ void DebugMultiMeshRenderer::begin() {
 	_inside_block = true;
 }
 
-void DebugMultiMeshRenderer::draw_box(const Transform &t, Color8 color) {
-	_items.push_back(DirectMultiMeshInstance::TransformAndColor8{ t, color });
+void DebugMultiMeshRenderer::draw_box(const Transform3D &t, Color8 color) {
+	_items.push_back(DirectMultiMeshInstance::Transform3DAndColor8{ t, color });
 }
 
 void DebugMultiMeshRenderer::end() {

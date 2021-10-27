@@ -108,7 +108,7 @@ public:
 
 	// TODO Rename functions to C convention
 	uint32_t add_volume(ReceptionBuffers *buffers, VolumeType type);
-	void set_volume_transform(uint32_t volume_id, Transform t);
+	void set_volume_transform(uint32_t volume_id, Transform3D t);
 	void set_volume_render_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_data_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
@@ -228,7 +228,7 @@ private:
 	struct Volume {
 		VolumeType type;
 		ReceptionBuffers *reception_buffers = nullptr;
-		Transform transform;
+		Transform3D transform;
 		Ref<VoxelStream> stream;
 		Ref<VoxelGenerator> generator;
 		Ref<VoxelMesher> mesher;

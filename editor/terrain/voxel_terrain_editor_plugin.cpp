@@ -6,7 +6,7 @@
 #include "../graph/voxel_graph_node_inspector_wrapper.h"
 
 #include <editor/editor_scale.h>
-#include <scene/3d/camera.h>
+#include <scene/3d/camera_3d.h>
 #include <scene/gui/menu_button.h>
 
 class VoxelTerrainEditorTaskIndicator : public HBoxContainer {
@@ -276,15 +276,15 @@ void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 	// So we'll need to check if _node is null all over the place
 }
 
-bool VoxelTerrainEditorPlugin::forward_spatial_gui_input(Camera *p_camera, const Ref<InputEvent> &p_event) {
-	VoxelServer::get_singleton()->set_viewer_distance(_editor_viewer_id, p_camera->get_zfar());
+EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_spatial_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) {
+	VoxelServer::get_singleton()->set_viewer_distance(_editor_viewer_id, p_camera->get_far());
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
 
 	if (_editor_viewer_follows_camera) {
 		VoxelServer::get_singleton()->set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
 	}
 
-	return false;
+	return AfterGUIInput::AFTER_GUI_INPUT_STOP;
 }
 
 void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {

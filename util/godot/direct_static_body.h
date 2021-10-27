@@ -17,10 +17,10 @@ public:
 	void create();
 	void destroy();
 	bool is_valid() const;
-	void set_transform(Transform transform);
-	void add_shape(Ref<Shape> shape);
+	void set_transform(Transform3D transform);
+	void add_shape(Ref<Shape3D> shape);
 	void remove_shape(int shape_index);
-	Ref<Shape> get_shape(int shape_index);
+	Ref<Shape3D> get_shape(int shape_index);
 	void set_world(World *world);
 	void set_shape_enabled(int shape_index, bool disabled);
 	void set_attached_object(Object *obj);
@@ -31,7 +31,7 @@ public:
 
 private:
 	RID _body;
-	Ref<Shape> _shape;
+	Ref<Shape3D> _shape;
 	DirectMeshInstance _debug_mesh_instance;
 };
 

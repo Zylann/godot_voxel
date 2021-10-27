@@ -135,7 +135,7 @@ In performance-critical areas which run a lot:
 
 ### Godot API
 
-- Use the most direct APIs for the job. Especially, don't use nodes. See `VisualServer` and `PhysicsServer`.
+- Use the most direct APIs for the job. Especially, don't use nodes. See `RenderingServer` and `PhysicsServer`.
 - Always use `Read` and `Write` when modifying `PoolVector`.
 - Only expose a function to the script API if it is safe to use and guaranteed to remain present for a while
 - use `memnew`, `memdelete`, `memalloc` and `memfree` so memory usage is counted within Godot monitors

@@ -174,7 +174,7 @@ public:
 	bool is_showing_gizmos() const { return _show_gizmos_enabled; }
 #endif
 
-	String get_configuration_warning() const override;
+	String get_configuration_warning() const; //override;
 
 	// Internal
 

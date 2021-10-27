@@ -277,8 +277,8 @@ Error Data::_load_from_file(String fpath) {
 			f.get_32();
 
 		} else if (strcmp(chunk_id, "nTRN") == 0) {
-			std::unique_ptr<TransformNode> node_ptr = std::make_unique<TransformNode>();
-			TransformNode &node = *node_ptr;
+			std::unique_ptr<Transform3DNode> node_ptr = std::make_unique<Transform3DNode>();
+			Transform3DNode &node = *node_ptr;
 
 			Error header_err = parse_node_common_header(node, f, _scene_graph);
 			ERR_FAIL_COND_V(header_err != OK, header_err);
@@ -493,7 +493,7 @@ Error Data::_load_from_file(String fpath) {
 
 		switch (node->type) {
 			case Node::TYPE_TRANSFORM: {
-				const TransformNode *transform_node = reinterpret_cast<const TransformNode *>(node);
+				const Transform3DNode *transform_node = reinterpret_cast<const Transform3DNode *>(node);
 
 				const int child_id = transform_node->child_node_id;
 				ERR_FAIL_COND_V_MSG(_scene_graph.find(child_id) == _scene_graph.end(), ERR_INVALID_DATA,

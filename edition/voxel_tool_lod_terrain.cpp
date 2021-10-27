@@ -88,7 +88,7 @@ float approximate_distance_to_isosurface_binary_search(
 
 Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 		Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
-	// TODO Transform input if the terrain is rotated
+	// TODO Transform3D input if the terrain is rotated
 	// TODO Implement broad-phase on blocks to minimize locking and increase performance
 	// TODO Implement reverse raycast? (going from inside ground to air, could be useful for undigging)
 
@@ -273,7 +273,7 @@ void VoxelToolLodTerrain::set_raycast_binary_search_iterations(int iterations) {
 // the source volume, and turned into a rigidbody.
 // This is one way of doing it, I don't know if it's the best way (there is rarely a best way)
 // so there are probably other approaches that could be explored in the future, if they have better performance
-static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *parent_node, Transform transform,
+static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *parent_node, Transform3D transform,
 		Ref<VoxelMesher> mesher, Array materials) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -513,7 +513,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 			// 	print_line("//");
 			// }
 
-			const Transform local_transform(Basis(), info.world_pos.to_vec3());
+			const Transform3D local_transform(Basis(), info.world_pos.to_vec3());
 
 			for (int i = 0; i < materials.size(); ++i) {
 				Ref<ShaderMaterial> sm = materials[i];
@@ -556,7 +556,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 			// TODO Option to make multiple convex shapes
 			// TODO Use the fast way. This is slow because of the internal TriangleMesh thing.
 			// TODO Don't create a body if the mesh has no triangles
-			Ref<Shape> shape = mesh->create_convex_shape();
+			Ref<Shape3D> shape = mesh->create_convex_shape();
 			ERR_CONTINUE(shape.is_null());
 			CollisionShape *collision_shape = memnew(CollisionShape);
 			collision_shape->set_shape(shape);

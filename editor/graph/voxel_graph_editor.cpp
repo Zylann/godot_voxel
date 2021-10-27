@@ -795,11 +795,11 @@ void VoxelGraphEditor::update_range_analysis_gizmo() {
 		return;
 	}
 
-	const Transform parent_transform = _voxel_node->get_global_transform();
+	const Transform3D parent_transform = _voxel_node->get_global_transform();
 	const AABB aabb = _range_analysis_dialog->get_aabb();
 	_debug_renderer.begin();
 	_debug_renderer.draw_box(
-			parent_transform * Transform(Basis().scaled(aabb.size), aabb.position),
+			parent_transform * Transform3D(Basis().scaled(aabb.size), aabb.position),
 			VoxelDebug::ID_VOXEL_GRAPH_DEBUG_BOUNDS);
 	_debug_renderer.end();
 }

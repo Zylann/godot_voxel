@@ -707,7 +707,7 @@ void test_instance_data_serialization() {
 		static VoxelInstanceBlockData::InstanceData create_instance(
 				float x, float y, float z, float rotx, float roty, float rotz, float scale) {
 			VoxelInstanceBlockData::InstanceData d;
-			d.transform = Transform(
+			d.transform = Transform3D(
 					Basis().rotated(Vector3(rotx, roty, rotz)).scaled(Vector3(scale, scale, scale)),
 					Vector3(x, y, z));
 			return d;

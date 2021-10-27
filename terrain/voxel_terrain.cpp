@@ -93,7 +93,7 @@ void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 	p_list->push_back(PropertyInfo(Variant::NIL, "Materials", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP));
 	for (unsigned int i = 0; i < VoxelMesherBlocky::MAX_MATERIALS; ++i) {
 		p_list->push_back(PropertyInfo(
-				Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,Node3DGizmoMaterial"));
+				Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,StandardMaterial3D"));
 	}
 }
 
@@ -720,7 +720,7 @@ void VoxelTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
-			const Transform transform = get_global_transform();
+			const Transform3D transform = get_global_transform();
 			VoxelServer::get_singleton()->set_volume_transform(_volume_id, transform);
 
 			if (!is_inside_tree()) {
@@ -835,8 +835,8 @@ void VoxelTerrain::process_viewers() {
 			}
 		}
 
-		const Transform local_to_world_transform = get_global_transform();
-		const Transform world_to_local_transform = local_to_world_transform.affine_inverse();
+		const Transform3D local_to_world_transform = get_global_transform();
+		const Transform3D world_to_local_transform = local_to_world_transform.affine_inverse();
 
 		// Note, this does not support non-uniform scaling
 		// TODO There is probably a better way to do this
@@ -849,7 +849,7 @@ void VoxelTerrain::process_viewers() {
 			VoxelTerrain &self;
 			const Box3i bounds_in_data_blocks;
 			const Box3i bounds_in_mesh_blocks;
-			const Transform world_to_local_transform;
+			const Transform3D world_to_local_transform;
 			const float view_distance_scale;
 
 			inline void operator()(const VoxelServer::Viewer &viewer, uint32_t viewer_id) {
@@ -1233,7 +1233,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	int surface_index = 0;
 	for (int i = 0; i < ob.surfaces.surfaces.size(); ++i) {
 		Array surface = ob.surfaces.surfaces[i];
-		if (surface.empty()) {
+		if (surface.is_empty()) {
 			continue;
 		}
 

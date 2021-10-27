@@ -82,7 +82,7 @@ public:
 	bool is_visible() const;
 
 	void set_parent_visible(bool parent_visible);
-	void set_parent_transform(const Transform &parent_transform);
+	void set_parent_transform(const Transform3D &parent_transform);
 
 	void set_transition_mask(uint8_t m);
 	//void set_transition_bit(uint8_t side, bool value);
@@ -90,8 +90,8 @@ public:
 
 	template <typename F>
 	void for_each_mesh_instance_with_transform(F f) const {
-		const Transform local_transform(Basis(), _position_in_voxels.to_vec3());
-		const Transform world_transform = local_transform;
+		const Transform3D local_transform(Basis(), _position_in_voxels.to_vec3());
+		const Transform3D world_transform = local_transform;
 		f(_mesh_instance, world_transform);
 		for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 			const DirectMeshInstance &mi = _transition_mesh_instances[i];

@@ -282,10 +282,10 @@ void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
 }
 
 inline void scale_positions(PackedVector3Array &positions, float scale) {
-	PackedVector3Array::Write w = positions.write();
+	// PackedVector3Array::Write w = positions.write();
 	const uint32_t size = positions.size();
 	for (unsigned int i = 0; i < size; ++i) {
-		w[i] *= scale;
+		positions.set(i, positions[i] * scale);
 	}
 }
 
@@ -1486,7 +1486,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	// Maybe a shader with a `light()` function can prevent shadows from being applied to these,
 	// but in longer term, proper seams remain a better solution.
 	// Unfortunately, such seams require the ability to quickly swap index buffers of the mesh using OpenGL/Vulkan,
-	// which is not possible with current Godot's VisualServer without forking the whole lot (dang!),
+	// which is not possible with current Godot's RenderingServer without forking the whole lot (dang!),
 	// and we are forced to at least re-upload the mesh entirely or have 16 versions of it just swapping seams...
 	// So we can't improve this further until Godot's API gives us that possibility, or other approaches like skirts need to be taken.
 
@@ -1565,7 +1565,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 		stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
 	}
 
-	if (surface.empty()) {
+	if (surface.is_empty()) {
 		time_before = OS::get_singleton()->get_ticks_usec();
 		if (input.lod > 0) {
 			cache.mesh_builder.scale(1 << input.lod);

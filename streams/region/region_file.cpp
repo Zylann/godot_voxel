@@ -575,7 +575,7 @@ bool VoxelRegionFile::migrate_from_v2_to_v3(FileAccess *f, VoxelRegionFormat &fo
 
 bool VoxelRegionFile::migrate_to_latest(FileAccess *f) {
 	ERR_FAIL_COND_V(f == nullptr, false);
-	ERR_FAIL_COND_V(_file_path.empty(), false);
+	ERR_FAIL_COND_V(_file_path.is_empty(), false);
 
 	uint8_t version = _header.version;
 

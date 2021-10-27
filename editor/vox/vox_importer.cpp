@@ -93,8 +93,8 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 				parent_node->add_child(node);
 				node->set_owner(root_node);
 			}
-			const vox::TransformNode *vox_transform_node = reinterpret_cast<const vox::TransformNode *>(vox_node);
-			node->set_transform(Transform(
+			const vox::Transform3DNode *vox_transform_node = reinterpret_cast<const vox::Transform3DNode *>(vox_node);
+			node->set_transform(Transform3D(
 					vox_transform_node->rotation.basis,
 					vox_transform_node->position.to_vec3() * scale));
 			process_scene_node_recursively(
@@ -263,17 +263,17 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 	mesher->set_greedy_meshing_enabled(true);
 	mesher->set_store_colors_in_texture(p_store_colors_in_textures);
 
-	FixedArray<Ref<Node3DGizmoMaterial>, 2> materials;
+	FixedArray<Ref<StandardMaterial3D>, 2> materials;
 	for (unsigned int i = 0; i < materials.size(); ++i) {
-		Ref<Node3DGizmoMaterial> &mat = materials[i];
+		Ref<StandardMaterial3D> &mat = materials[i];
 		mat.instantiate();
 		mat->set_roughness(1.f);
 		if (!p_store_colors_in_textures) {
 			// In this case we store colors in vertices
-			mat->set_flag(Node3DGizmoMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+			mat->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 		}
 	}
-	materials[1]->set_feature(Node3DGizmoMaterial::FEATURE_TRANSPARENT, true);
+	materials[1]->set_feature(StandardMaterial3D::FEATURE_TRANSPARENT, true);
 
 	// Build meshes from voxel models
 	for (unsigned int model_index = 0; model_index < data.get_model_count(); ++model_index) {
@@ -320,7 +320,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 			for (unsigned int surface_index = 0; surface_index < surface_index_to_material.size(); ++surface_index) {
 				const unsigned int material_index = surface_index_to_material[surface_index];
 				CRASH_COND(material_index >= materials.size());
-				Ref<Node3DGizmoMaterial> material = materials[material_index]->duplicate();
+				Ref<StandardMaterial3D> material = materials[material_index]->duplicate();
 				if (atlas.is_valid()) {
 					// TODO Do I absolutely HAVE to load this texture back to memory AND renderer just so import works??
 					//Ref<Texture> texture = ResourceLoader::load(atlas_path);
@@ -329,7 +329,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 					Ref<ImageTexture> texture;
 					texture.instantiate();
 					texture->create_from_image(atlas, 0);
-					material->set_texture(Node3DGizmoMaterial::TEXTURE_ALBEDO, texture);
+					material->set_texture(StandardMaterial3D::TEXTURE_ALBEDO, texture);
 				}
 				mesh->surface_set_material(surface_index, material);
 			}

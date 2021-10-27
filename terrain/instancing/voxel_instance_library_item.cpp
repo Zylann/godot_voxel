@@ -47,7 +47,7 @@ Ref<Material> VoxelInstanceLibraryItem::get_material_override() const {
 	return _material_override;
 }
 
-void VoxelInstanceLibraryItem::set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode) {
+void VoxelInstanceLibraryItem::set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode) {
 	if (mode == _shadow_casting_setting) {
 		return;
 	}
@@ -55,7 +55,7 @@ void VoxelInstanceLibraryItem::set_cast_shadows_setting(VisualServer::ShadowCast
 	notify_listeners(CHANGE_VISUAL);
 }
 
-VisualServer::ShadowCastingSetting VoxelInstanceLibraryItem::get_cast_shadows_setting() const {
+RenderingServer::ShadowCastingSetting VoxelInstanceLibraryItem::get_cast_shadows_setting() const {
 	return _shadow_casting_setting;
 }
 
@@ -75,23 +75,23 @@ int VoxelInstanceLibraryItem::get_collision_mask() const {
 	return _collision_mask;
 }
 
-static VisualServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance::ShadowCastingSetting v) {
+static RenderingServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance::ShadowCastingSetting v) {
 	switch (v) {
 		case GeometryInstance::SHADOW_CASTING_SETTING_OFF:
-			return VisualServer::SHADOW_CASTING_SETTING_OFF;
+			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
 
 		case GeometryInstance::SHADOW_CASTING_SETTING_ON:
-			return VisualServer::SHADOW_CASTING_SETTING_ON;
+			return RenderingServer::SHADOW_CASTING_SETTING_ON;
 
 		case GeometryInstance::SHADOW_CASTING_SETTING_DOUBLE_SIDED:
-			return VisualServer::SHADOW_CASTING_SETTING_DOUBLE_SIDED;
+			return RenderingServer::SHADOW_CASTING_SETTING_DOUBLE_SIDED;
 
 		case GeometryInstance::SHADOW_CASTING_SETTING_SHADOWS_ONLY:
-			return VisualServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+			return RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
 
 		default:
 			ERR_PRINT("Unknown ShadowCastingSetting value");
-			return VisualServer::SHADOW_CASTING_SETTING_OFF;
+			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
 	}
 }
 
@@ -184,7 +184,7 @@ void VoxelInstanceLibraryItem::deserialize_multimesh_item_properties(Array a) {
 	}
 	_mesh_lod_count = a[ai++];
 	_material_override = a[ai++];
-	_shadow_casting_setting = VisualServer::ShadowCastingSetting(int(a[ai++])); // ugh...
+	_shadow_casting_setting = RenderingServer::ShadowCastingSetting(int(a[ai++])); // ugh...
 	_collision_layer = a[ai++];
 	_collision_mask = a[ai++];
 	_collision_shapes = deserialize_collision_shape_infos(a[ai++]);

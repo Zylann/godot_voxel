@@ -66,16 +66,16 @@ struct ForEachModelInstanceArgs {
 
 template <typename F>
 static Error for_each_model_instance_in_scene_graph(
-		const vox::Data &data, int node_id, Transform transform, int depth, F f) {
+		const vox::Data &data, int node_id, Transform3D transform, int depth, F f) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const vox::Node *vox_node = data.get_node(node_id);
 
 	switch (vox_node->type) {
 		case vox::Node::TYPE_TRANSFORM: {
-			const vox::TransformNode *vox_transform_node = reinterpret_cast<const vox::TransformNode *>(vox_node);
+			const vox::Transform3DNode *vox_transform_node = reinterpret_cast<const vox::Transform3DNode *>(vox_node);
 			// Calculate global transform of the child
-			const Transform child_trans(
+			const Transform3D child_trans(
 					transform.basis * vox_transform_node->rotation.basis,
 					transform.xform(vox_transform_node->position.to_vec3()));
 			for_each_model_instance_in_scene_graph(data, vox_transform_node->child_node_id, child_trans, depth + 1, f);
@@ -121,7 +121,7 @@ void for_each_model_instance(const vox::Data &vox_data, F f) {
 		f(args);
 		return;
 	}
-	for_each_model_instance_in_scene_graph(vox_data, vox_data.get_root_node_id(), Transform(), 0, f);
+	for_each_model_instance_in_scene_graph(vox_data, vox_data.get_root_node_id(), Transform3D(), 0, f);
 }
 
 // Find intersecting or touching models, merge their voxels into the same grid, mesh the result, then combine meshes.
@@ -310,17 +310,17 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 	// 	atlas->save_png(String("debug_atlas{0}.png").format(varray(model_index)));
 	// }
 
-	FixedArray<Ref<Node3DGizmoMaterial>, 2> materials;
+	FixedArray<Ref<StandardMaterial3D>, 2> materials;
 	for (unsigned int i = 0; i < materials.size(); ++i) {
-		Ref<Node3DGizmoMaterial> &mat = materials[i];
+		Ref<StandardMaterial3D> &mat = materials[i];
 		mat.instantiate();
 		mat->set_roughness(1.f);
 		if (!p_store_colors_in_textures) {
 			// In this case we store colors in vertices
-			mat->set_flag(Node3DGizmoMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+			mat->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 		}
 	}
-	materials[1]->set_feature(Node3DGizmoMaterial::FEATURE_TRANSPARENT, true);
+	materials[1]->set_feature(StandardMaterial3D::FEATURE_TRANSPARENT, true);
 
 	// Assign materials
 	if (p_store_colors_in_textures) {
@@ -328,7 +328,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 		for (unsigned int surface_index = 0; surface_index < surface_index_to_material.size(); ++surface_index) {
 			const unsigned int material_index = surface_index_to_material[surface_index];
 			CRASH_COND(material_index >= materials.size());
-			Ref<Node3DGizmoMaterial> material = materials[material_index]->duplicate();
+			Ref<StandardMaterial3D> material = materials[material_index]->duplicate();
 			if (atlas.is_valid()) {
 				// TODO Do I absolutely HAVE to load this texture back to memory AND renderer just so import works??
 				//Ref<Texture> texture = ResourceLoader::load(atlas_path);
@@ -337,7 +337,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 				Ref<ImageTexture> texture;
 				texture.instantiate();
 				texture->create_from_image(atlas, 0);
-				material->set_texture(Node3DGizmoMaterial::TEXTURE_ALBEDO, texture);
+				material->set_texture(StandardMaterial3D::TEXTURE_ALBEDO, texture);
 			}
 			mesh->surface_set_material(surface_index, material);
 		}

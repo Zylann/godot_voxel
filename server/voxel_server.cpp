@@ -48,7 +48,7 @@ void VoxelTimeSpreadTaskRunner::process(uint64_t time_budget_usec) {
 }
 
 void VoxelTimeSpreadTaskRunner::flush() {
-	while (!_tasks.empty()) {
+	while (!_tasks.is_empty()) {
 		IVoxelTimeSpreadTask *task = _tasks.front();
 		_tasks.pop();
 		task->run();
@@ -224,7 +224,7 @@ uint32_t VoxelServer::add_volume(ReceptionBuffers *buffers, VolumeType type) {
 	return _world.volumes.create(volume);
 }
 
-void VoxelServer::set_volume_transform(uint32_t volume_id, Transform t) {
+void VoxelServer::set_volume_transform(uint32_t volume_id, Transform3D t) {
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.transform = t;
 }
@@ -542,7 +542,7 @@ int VoxelServer::get_main_thread_time_budget_usec() const {
 void VoxelServer::process() {
 	// Note, this shouldn't be here. It should normally done just after SwapBuffers.
 	// Godot does not have any C++ profiler usage anywhere, so when using Tracy Profiler I have to put it somewhere...
-	// TODO Could connect to VisualServer end_frame_draw signal? How to make sure the singleton is available?
+	// TODO Could connect to RenderingServer end_frame_draw signal? How to make sure the singleton is available?
 	//VOXEL_PROFILE_MARK_FRAME();
 	VOXEL_PROFILE_SCOPE();
 

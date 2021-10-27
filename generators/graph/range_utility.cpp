@@ -497,8 +497,8 @@ void fnl_transform_noise_coordinate(const fast_noise_lite::FastNoiseLite &fn, In
 	y *= fn.mFrequency;
 	z *= fn.mFrequency;
 
-	switch (fn.mTransformType3D) {
-		case fast_noise_lite::FastNoiseLite::TransformType3D_ImproveXYPlanes: {
+	switch (fn.mTransform3DType3D) {
+		case fast_noise_lite::FastNoiseLite::Transform3DType3D_ImproveXYPlanes: {
 			Interval xy = x + y;
 			Interval s2 = xy * (-0.211324865405187);
 			z *= 0.577350269189626;
@@ -506,7 +506,7 @@ void fnl_transform_noise_coordinate(const fast_noise_lite::FastNoiseLite &fn, In
 			y = y + s2 - z;
 			z += xy * 0.577350269189626;
 		} break;
-		case fast_noise_lite::FastNoiseLite::TransformType3D_ImproveXZPlanes: {
+		case fast_noise_lite::FastNoiseLite::Transform3DType3D_ImproveXZPlanes: {
 			Interval xz = x + z;
 			Interval s2 = xz * (-0.211324865405187);
 			y *= 0.577350269189626;
@@ -514,7 +514,7 @@ void fnl_transform_noise_coordinate(const fast_noise_lite::FastNoiseLite &fn, In
 			z += s2 - y;
 			y += xz * 0.577350269189626;
 		} break;
-		case fast_noise_lite::FastNoiseLite::TransformType3D_DefaultOpenSimplex2: {
+		case fast_noise_lite::FastNoiseLite::Transform3DType3D_DefaultOpenSimplex2: {
 			const float R3 = (2.0 / 3.0);
 			Interval r = (x + y + z) * R3; // Rotation, not skew
 			x = r - x;
