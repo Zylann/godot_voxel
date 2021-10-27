@@ -12,86 +12,9 @@ env:
 
 jobs:
 
-  mono-glue-windows:
-    runs-on: "windows-latest"
-    name: Generate Windows Mono Glue
-
-    steps:
-      # Clone Godot
-      - uses: actions/checkout@v2
-        with:
-          repository: godotengine/godot
-          ref: 3.x
-
-      # Clone our module under the correct directory
-      - uses: actions/checkout@v2
-        with:
-          path: modules/voxel
-
-      # Install mono
-      - name: Configure dependencies
-        run: |
-          choco install -y mono
-          choco install glfw3
-          
-      - name: Install MinGW
-        uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: x64
-
-
-      # Upload cache on completion and check it out now
-      - name: Load .scons_cache directory
-        id: mono-glue-cache
-        uses: actions/cache@v2
-        with:
-          path: ${{github.workspace}}/.scons_cache/
-          key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
-          restore-keys: |
-            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
-            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
-            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
-
-      # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v2
-        with:
-          # Semantic version range syntax or exact version of a Python version
-          python-version: '3.x'
-          # Optional - x64 or x86 architecture, defaults to x64
-          architecture: 'x64'
-
-      # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
-      - name: Configuring Python packages
-        run: |
-          python -c "import sys; print(sys.version)"
-          python -m pip install scons
-          python --version
-          scons --version
-
-      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
-      - name: Compile Godot (module_mono_enabled=yes mono_glue=no)
-        env:
-          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
-        run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes
-
-      - name: Generate Mono Glue
-        run: |
-          ./bin/godot.windows.opt.tools.64.mono.exe --generate-mono-glue modules/mono/glue
-
-      # Make glue available as artifact for dependent jobs
-      - uses: actions/upload-artifact@v2
-        with:
-          name: mono-glue-windows
-          path: |
-            modules/mono/glue/**.gen.*
-            modules/mono/glue/GodotSharp/GodotSharp/Generated/
-            modules/mono/glue/GodotSharp/GodotSharpEditor/Generated/
-
-  mono-glue-linux:
+  mono-glue:
     runs-on: "ubuntu-20.04"
-    name: Generate Linux Mono Glue
+    name: Generate Mono Glue
 
     steps:
       # Clone Godot
@@ -106,18 +29,16 @@ jobs:
           path: modules/voxel
 
       # Azure repositories are not reliable, we need to prevent azure giving us packages.
-      - name: Make apt sources.list use the default Ubuntu repositories
-        run: |
-          sudo rm -f /etc/apt/sources.list.d/*
-          sudo cp -f misc/ci/sources.list /etc/apt/sources.list
-          sudo apt-get update
-
+      # - name: Make apt sources.list use the default Ubuntu repositories
+      #  run: |
+      #    sudo rm -f /etc/apt/sources.list.d/*
+      #    sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+      #    sudo apt-get update
       # Install all packages (except scons)
       - name: Configure dependencies
         run: |
           sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev xvfb \
             libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm
-
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: mono-glue-cache
@@ -129,7 +50,6 @@ jobs:
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
-
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
         uses: actions/setup-python@v2
@@ -146,31 +66,27 @@ jobs:
           python -m pip install scons
           python --version
           scons --version
-
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compile Godot (module_mono_enabled=yes mono_glue=no)
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes
-
       - name: Generate Mono Glue
         run: |
           xvfb-run ./bin/godot.x11.opt.tools.64.mono --generate-mono-glue modules/mono/glue || true
-
       # Make glue available as artifact for dependent jobs
       - uses: actions/upload-artifact@v2
         with:
-          name: mono-glue-linux
+          name: mono-glue
           path: |
             modules/mono/glue/**.gen.*
             modules/mono/glue/GodotSharp/GodotSharp/Generated/
             modules/mono/glue/GodotSharp/GodotSharpEditor/Generated/
-
   linux-editor-mono:
     runs-on: "ubuntu-20.04"
     name: Linux Editor w/ Mono
-    needs: mono-glue-linux
+    needs: mono-glue
 
     steps:
       # Clone Godot
@@ -190,13 +106,11 @@ jobs:
           sudo rm -f /etc/apt/sources.list.d/*
           sudo cp -f misc/ci/sources.list /etc/apt/sources.list
           sudo apt-get update
-
       # Install all packages (except scons)
       - name: Configure dependencies
         run: |
           sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
             libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm
-
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: linux-editor-mono-cache
@@ -208,7 +122,6 @@ jobs:
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
-
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
         uses: actions/setup-python@v2
@@ -225,12 +138,11 @@ jobs:
           python -m pip install scons
           python --version
           scons --version
-
       # Download glue from the mono-glue job
       - name: Download Glue
         uses: actions/download-artifact@v2
         with:
-          name: mono-glue-linux
+          name: mono-glue
           path: modules/mono/glue
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
@@ -239,7 +151,6 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=yes mono_static=yes copy_mono_root=yes
-
       # TODO Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
       #- name: Unit Tests
@@ -256,7 +167,7 @@ jobs:
     # Windows 10 with latest image
     runs-on: "windows-latest"
     name: Windows Editor w/ Mono
-    needs: mono-glue-windows
+    needs: mono-glue
 
     steps:
       # Clone Godot
@@ -278,7 +189,6 @@ jobs:
       - name: Configure dependencies
         run: |
           choco install -y mono
-
       # Upload cache on completion and check it out now
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
       - name: Load .scons_cache directory
@@ -291,7 +201,6 @@ jobs:
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
-
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
         uses: actions/setup-python@v2
@@ -308,12 +217,11 @@ jobs:
           python -m pip install scons pywin32
           python --version
           scons --version
-
       # Download glue from the mono-glue job
       - name: Download Glue
         uses: actions/download-artifact@v2
         with:
-          name: mono-glue-windows
+          name: mono-glue
           path: modules/mono/glue
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
@@ -323,7 +231,6 @@ jobs:
           SCONS_CACHE: /.scons_cache/
         run: |
           scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes
-
       # TODO Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
       #- name: Unit Tests
