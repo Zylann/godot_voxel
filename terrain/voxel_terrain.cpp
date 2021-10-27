@@ -1353,6 +1353,7 @@ void VoxelTerrain::_b_save_block(Vector3 p_block_pos) {
 }
 
 void VoxelTerrain::_b_set_bounds(AABB aabb) {
+	ERR_FAIL_COND(!is_valid_size(aabb.size));
 	// TODO Please Godot, have an integer AABB!
 	set_bounds(Box3i(aabb.position.round(), aabb.size.round()));
 }

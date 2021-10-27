@@ -154,6 +154,10 @@ inline Vector3 fract(const Vector3 &p) {
 	return Vector3(fract(p.x), fract(p.y), fract(p.z));
 }
 
+inline bool is_valid_size(const Vector3 &s) {
+	return s.x >= 0 && s.y >= 0 && s.z >= 0;
+}
+
 // inline bool is_power_of_two(int i) {
 // 	return i & (i - 1);
 // }

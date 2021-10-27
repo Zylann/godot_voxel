@@ -229,6 +229,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 	ERR_FAIL_COND(callback.is_null());
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);
+	ERR_FAIL_COND(!is_valid_size(voxel_area.size));
 
 	if (voxel_count == 0) {
 		return;
@@ -327,6 +328,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<FuncRef> callback) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(callback.is_null());
+	ERR_FAIL_COND(!is_valid_size(voxel_area.size));
 
 	const Box3i voxel_box = Box3i(Vector3i(voxel_area.position), Vector3i(voxel_area.size));
 	ERR_FAIL_COND(!is_area_editable(voxel_box));

@@ -2253,6 +2253,7 @@ void VoxelLodTerrain::_b_save_modified_blocks() {
 }
 
 void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {
+	ERR_FAIL_COND(!is_valid_size(aabb.size));
 	// TODO Please Godot, have an integer AABB!
 	set_voxel_bounds(Box3i(aabb.position.round(), aabb.size.round()));
 }
