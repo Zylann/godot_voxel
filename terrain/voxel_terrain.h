@@ -38,7 +38,7 @@ public:
 	inline unsigned int get_mesh_block_size() const { return 1 << get_mesh_block_size_pow2(); }
 	void set_mesh_block_size(unsigned int p_block_size);
 
-	void post_edit_voxel(Vector3i pos);
+	void post_edit_voxel(VOX_Vector3i pos);
 	void post_edit_area(Box3i box_in_voxels);
 
 	void set_generate_collisions(bool enabled);
@@ -94,7 +94,7 @@ public:
 
 	struct BlockToSave {
 		std::shared_ptr<VoxelBufferInternal> voxels;
-		Vector3i position;
+		VOX_Vector3i position;
 	};
 
 protected:
@@ -120,13 +120,13 @@ private:
 	void stop_streamer();
 	void reset_map();
 
-	void view_data_block(Vector3i bpos);
-	void view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag);
-	void unview_data_block(Vector3i bpos);
-	void unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag);
-	void unload_data_block(Vector3i bpos);
-	void unload_mesh_block(Vector3i bpos);
-	//void make_data_block_dirty(Vector3i bpos);
+	void view_data_block(VOX_Vector3i bpos);
+	void view_mesh_block(VOX_Vector3i bpos, bool mesh_flag, bool collision_flag);
+	void unview_data_block(VOX_Vector3i bpos);
+	void unview_mesh_block(VOX_Vector3i bpos, bool mesh_flag, bool collision_flag);
+	void unload_data_block(VOX_Vector3i bpos);
+	void unload_mesh_block(VOX_Vector3i bpos);
+	//void make_data_block_dirty(VOX_Vector3i bpos);
 	void try_schedule_mesh_update(VoxelMeshBlock *block);
 	void try_schedule_mesh_update_from_data(const Box3i &box_in_voxels);
 
@@ -156,7 +156,7 @@ private:
 
 	struct PairedViewer {
 		struct State {
-			Vector3i local_position_voxels;
+			VOX_Vector3i local_position_voxels;
 			Box3i data_box;
 			Box3i mesh_box;
 			int view_distance_voxels = 0;
@@ -189,9 +189,9 @@ private:
 		VoxelRefCount viewers;
 	};
 
-	HashMap<Vector3i, LoadingBlock, Vector3iHasher> _loading_blocks;
-	std::vector<Vector3i> _blocks_pending_load;
-	std::vector<Vector3i> _blocks_pending_update;
+	HashMap<VOX_Vector3i, LoadingBlock, VOX_Vector3iHasher> _loading_blocks;
+	std::vector<VOX_Vector3i> _blocks_pending_load;
+	std::vector<VOX_Vector3i> _blocks_pending_update;
 	std::vector<BlockToSave> _blocks_to_save;
 
 	Ref<VoxelStream> _stream;

@@ -2,7 +2,7 @@
 #define SPAN_H
 
 #include "fixed_array.h"
-#include <core/error_macros.h>
+#include <core/error/error_macros.h>
 #include <vector>
 
 // View into an array, referencing a pointer and a size.

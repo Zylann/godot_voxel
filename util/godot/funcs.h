@@ -1,8 +1,8 @@
 #ifndef VOXEL_UTILITY_GODOT_FUNCS_H
 #define VOXEL_UTILITY_GODOT_FUNCS_H
 
-#include <core/reference.h>
-#include <core/variant.h>
+#include <core/object/ref_counted.h>
+#include <core/variant/variant.h>
 #include <memory>
 
 class Mesh;

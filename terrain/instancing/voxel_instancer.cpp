@@ -228,7 +228,7 @@ void VoxelInstancer::process_mesh_lods() {
 
 		const int lod_block_size = block_size << lod_index;
 		const int hs = lod_block_size >> 1;
-		const Vector3 block_center_local = (block->grid_position * lod_block_size + Vector3i(hs, hs, hs)).to_vec3();
+		const Vector3 block_center_local = (block->grid_position * lod_block_size + VOX_Vector3i(hs, hs, hs)).to_vec3();
 		const float distance_squared = cam_pos_local.distance_squared_to(block_center_local);
 
 		if (block->current_mesh_lod + 1 < mesh_lod_count &&
@@ -344,9 +344,9 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 
 	if (regenerate_blocks) {
 		// Create blocks
-		Vector<Vector3i> positions = _parent->get_meshed_block_positions_at_lod(layer->lod_index);
+		Vector<VOX_Vector3i> positions = _parent->get_meshed_block_positions_at_lod(layer->lod_index);
 		for (int i = 0; i < positions.size(); ++i) {
-			const Vector3i pos = positions[i];
+			const VOX_Vector3i pos = positions[i];
 
 			const unsigned int *iptr = layer->blocks.getptr(pos);
 			if (iptr != nullptr) {
@@ -363,7 +363,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 	struct L {
 		// Does not return a bool so it can be used in bit-shifting operations without a compiler warning.
 		// Can be treated like a bool too.
-		static inline uint8_t has_edited_block(const Lod &lod, Vector3i pos) {
+		static inline uint8_t has_edited_block(const Lod &lod, VOX_Vector3i pos) {
 			return lod.modified_blocks.has(pos) ||
 				   lod.loaded_instances_data.find(pos) != lod.loaded_instances_data.end();
 		}
@@ -407,15 +407,15 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 		} else if (render_to_data_factor == 2) {
 			// The rendering block corresponds to 8 smaller data blocks
 			octant_mask = 0;
-			const Vector3i data_pos0 = block->grid_position * render_to_data_factor;
-			octant_mask |= L::has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y, data_pos0.z));
-			octant_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y, data_pos0.z)) << 1);
-			octant_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y + 1, data_pos0.z)) << 2);
-			octant_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y + 1, data_pos0.z)) << 3);
-			octant_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y, data_pos0.z + 1)) << 4);
-			octant_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y, data_pos0.z + 1)) << 5);
-			octant_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y + 1, data_pos0.z + 1)) << 6);
-			octant_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y + 1, data_pos0.z + 1)) << 7);
+			const VOX_Vector3i data_pos0 = block->grid_position * render_to_data_factor;
+			octant_mask |= L::has_edited_block(lod, VOX_Vector3i(data_pos0.x, data_pos0.y, data_pos0.z));
+			octant_mask |= (L::has_edited_block(lod, VOX_Vector3i(data_pos0.x + 1, data_pos0.y, data_pos0.z)) << 1);
+			octant_mask |= (L::has_edited_block(lod, VOX_Vector3i(data_pos0.x, data_pos0.y + 1, data_pos0.z)) << 2);
+			octant_mask |= (L::has_edited_block(lod, VOX_Vector3i(data_pos0.x + 1, data_pos0.y + 1, data_pos0.z)) << 3);
+			octant_mask |= (L::has_edited_block(lod, VOX_Vector3i(data_pos0.x, data_pos0.y, data_pos0.z + 1)) << 4);
+			octant_mask |= (L::has_edited_block(lod, VOX_Vector3i(data_pos0.x + 1, data_pos0.y, data_pos0.z + 1)) << 5);
+			octant_mask |= (L::has_edited_block(lod, VOX_Vector3i(data_pos0.x, data_pos0.y + 1, data_pos0.z + 1)) << 6);
+			octant_mask |= (L::has_edited_block(lod, VOX_Vector3i(data_pos0.x + 1, data_pos0.y + 1, data_pos0.z + 1)) << 7);
 			if (octant_mask == 0) {
 				// All data blocks were edited, no regen on the whole render block
 				continue;
@@ -595,7 +595,7 @@ void VoxelInstancer::remove_layer(int layer_id) {
 	}
 
 	Vector<int> to_remove;
-	const Vector3i *block_pos_ptr = nullptr;
+	const VOX_Vector3i *block_pos_ptr = nullptr;
 	while ((block_pos_ptr = layer->blocks.next(block_pos_ptr))) {
 		int block_index = layer->blocks.get(*block_pos_ptr);
 		to_remove.push_back(block_index);
@@ -645,21 +645,21 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 	}
 }
 
-void VoxelInstancer::on_data_block_loaded(Vector3i grid_position, unsigned int lod_index,
+void VoxelInstancer::on_data_block_loaded(VOX_Vector3i grid_position, unsigned int lod_index,
 		std::unique_ptr<VoxelInstanceBlockData> instances) {
 	ERR_FAIL_COND(lod_index >= _lods.size());
 	Lod &lod = _lods[lod_index];
 	lod.loaded_instances_data.insert(std::make_pair(grid_position, std::move(instances)));
 }
 
-void VoxelInstancer::on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays) {
+void VoxelInstancer::on_mesh_block_enter(VOX_Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays) {
 	if (lod_index >= _lods.size()) {
 		return;
 	}
 	create_render_blocks(render_grid_position, lod_index, surface_arrays);
 }
 
-void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index) {
+void VoxelInstancer::on_mesh_block_exit(VOX_Vector3i render_grid_position, unsigned int lod_index) {
 	if (lod_index >= _lods.size()) {
 		return;
 	}
@@ -670,9 +670,9 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 
 	// Remove data blocks
 	const int render_to_data_factor = _parent->get_mesh_block_size() / _parent->get_data_block_size();
-	const Vector3i data_min_pos = render_grid_position * render_to_data_factor;
-	const Vector3i data_max_pos = data_min_pos + Vector3i(render_to_data_factor);
-	Vector3i data_grid_pos;
+	const VOX_Vector3i data_min_pos = render_grid_position * render_to_data_factor;
+	const VOX_Vector3i data_max_pos = data_min_pos + VOX_Vector3i(render_to_data_factor);
+	VOX_Vector3i data_grid_pos;
 	for (data_grid_pos.z = data_min_pos.z; data_grid_pos.z < data_max_pos.z; ++data_grid_pos.z) {
 		for (data_grid_pos.y = data_min_pos.y; data_grid_pos.y < data_max_pos.y; ++data_grid_pos.y) {
 			for (data_grid_pos.x = data_min_pos.x; data_grid_pos.x < data_max_pos.x; ++data_grid_pos.x) {
@@ -704,7 +704,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 void VoxelInstancer::save_all_modified_blocks() {
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
-		const Vector3i *key = nullptr;
+		const VOX_Vector3i *key = nullptr;
 		while ((key = lod.modified_blocks.next(key))) {
 			save_block(*key, lod_index);
 		}
@@ -730,7 +730,7 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(const VoxelI
 	instance.component->attach(this);
 	instance.component->set_instance_index(instance_index);
 	instance.component->set_render_block_index(block_index);
-	instance.component->set_data_block_position(Vector3i::from_floored(transform.origin) >> data_block_size_po2);
+	instance.component->set_data_block_position(VOX_Vector3i::from_floored(transform.origin) >> data_block_size_po2);
 
 	instance.root->set_transform(transform);
 
@@ -740,7 +740,7 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(const VoxelI
 	return instance;
 }
 
-int VoxelInstancer::create_block(Layer *layer, uint16_t layer_id, Vector3i grid_position) {
+int VoxelInstancer::create_block(Layer *layer, uint16_t layer_id, VOX_Vector3i grid_position) {
 	Block *block = memnew(Block);
 	block->layer_id = layer_id;
 	block->current_mesh_lod = 0;
@@ -756,7 +756,7 @@ int VoxelInstancer::create_block(Layer *layer, uint16_t layer_id, Vector3i grid_
 }
 
 void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Transform> transforms,
-		Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id,
+		VOX_Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id,
 		World *world, const Transform &block_transform) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -833,7 +833,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 					body->attach(this);
 					body->set_instance_index(instance_index);
 					body->set_render_block_index(block_index);
-					body->set_data_block_position(Vector3i::from_floored(body_transform.origin) >> data_block_size_po2);
+					body->set_data_block_position(VOX_Vector3i::from_floored(body_transform.origin) >> data_block_size_po2);
 
 					for (int i = 0; i < collision_shapes.size(); ++i) {
 						const VoxelInstanceLibraryItem::CollisionShapeInfo &shape_info = collision_shapes[i];
@@ -912,7 +912,7 @@ static const VoxelInstanceBlockData::LayerData *find_layer_data(const VoxelInsta
 	return nullptr;
 }
 
-void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod_index, Array surface_arrays) {
+void VoxelInstancer::create_render_blocks(VOX_Vector3i render_grid_position, int lod_index, Array surface_arrays) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
 
@@ -929,8 +929,8 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 	const Transform block_transform = parent_transform * block_local_transform;
 
 	const int render_to_data_factor = _parent->get_mesh_block_size() / _parent->get_data_block_size();
-	const Vector3i data_min_pos = render_grid_position * render_to_data_factor;
-	const Vector3i data_max_pos = data_min_pos + Vector3i(render_to_data_factor);
+	const VOX_Vector3i data_min_pos = render_grid_position * render_to_data_factor;
+	const VOX_Vector3i data_max_pos = data_min_pos + VOX_Vector3i(render_to_data_factor);
 
 	const int lod_render_block_size = _parent->get_mesh_block_size() << lod_index;
 
@@ -952,7 +952,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 
 		// Fill in edited data
 		unsigned int octant_index = 0;
-		Vector3i data_grid_pos;
+		VOX_Vector3i data_grid_pos;
 		for (data_grid_pos.z = data_min_pos.z; data_grid_pos.z < data_max_pos.z; ++data_grid_pos.z) {
 			for (data_grid_pos.y = data_min_pos.y; data_grid_pos.y < data_max_pos.y; ++data_grid_pos.y) {
 				for (data_grid_pos.x = data_min_pos.x; data_grid_pos.x < data_max_pos.x; ++data_grid_pos.x) {
@@ -990,10 +990,10 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 
 		// Generate the rest
 		if (gen_octant_mask != 0 && surface_arrays.size() != 0 && item->get_generator().is_valid()) {
-			PoolVector3Array vertices = surface_arrays[ArrayMesh::ARRAY_VERTEX];
+			PackedVector3Array vertices = surface_arrays[ArrayMesh::ARRAY_VERTEX];
 
 			if (vertices.size() != 0) {
-				PoolVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
+				PackedVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
 				ERR_FAIL_COND(normals.size() == 0);
 
 				VOXEL_PROFILE_SCOPE();
@@ -1023,7 +1023,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 	}
 }
 
-void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
+void VoxelInstancer::save_block(VOX_Vector3i data_grid_pos, int lod_index) const {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
 
@@ -1040,7 +1040,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	ERR_FAIL_COND_MSG(render_to_data_factor < 1 || render_to_data_factor > 2, "Unsupported block size");
 
 	const int half_render_block_size = _parent->get_mesh_block_size() / 2;
-	const Vector3i render_block_pos = data_grid_pos.floordiv(render_to_data_factor);
+	const VOX_Vector3i render_block_pos = data_grid_pos.floordiv(render_to_data_factor);
 
 	const int octant_index = (data_grid_pos.x & 1) | ((data_grid_pos.y & 1) << 1) | ((data_grid_pos.z & 1) << 1);
 
@@ -1180,7 +1180,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Tra
 	for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
 		// TODO This is terrible in MT mode! Think about keeping a local copy...
 		const Transform mm_transform = multimesh->get_instance_transform(instance_index);
-		const Vector3i voxel_pos(mm_transform.origin + block_global_transform.origin);
+		const VOX_Vector3i voxel_pos(mm_transform.origin + block_global_transform.origin);
 
 		if (!p_voxel_box.contains(voxel_pos)) {
 			continue;
@@ -1261,7 +1261,7 @@ void VoxelInstancer::remove_floating_scene_instances(Block &block, const Transfo
 		SceneInstance instance = block.scene_instances[instance_index];
 		ERR_CONTINUE(instance.root == nullptr);
 		const Transform scene_transform = instance.root->get_transform();
-		const Vector3i voxel_pos(scene_transform.origin + block_global_transform.origin);
+		const VOX_Vector3i voxel_pos(scene_transform.origin + block_global_transform.origin);
 
 		if (!p_voxel_box.contains(voxel_pos)) {
 			continue;
@@ -1340,7 +1340,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 													parent_transform,
 													block_size_po2,
 													&lod, data_blocks_box](
-													Vector3i block_pos) {
+													VOX_Vector3i block_pos) {
 				const unsigned int *iptr = layer->blocks.getptr(block_pos);
 				if (iptr == nullptr) {
 					// No instancing block here
@@ -1361,7 +1361,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 				// All instances have to be frozen as edited.
 				// Because even if none of them were removed or added, the ground on which they can spawn has changed,
 				// and at the moment we don't want unexpected instances to generate when loading back this area.
-				data_blocks_box.for_each_cell([&lod](Vector3i data_block_pos) {
+				data_blocks_box.for_each_cell([&lod](VOX_Vector3i data_block_pos) {
 					lod.modified_blocks.set(data_block_pos, true);
 				});
 			});
@@ -1370,7 +1370,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 }
 
 // This is called if a user destroys or unparents the body node while it's still attached to the ground
-void VoxelInstancer::on_body_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index) {
+void VoxelInstancer::on_body_removed(VOX_Vector3i data_block_position, unsigned int render_block_index, int instance_index) {
 	Block *block = _blocks[render_block_index];
 	CRASH_COND(block == nullptr);
 	ERR_FAIL_INDEX(instance_index, block->bodies.size());
@@ -1408,7 +1408,7 @@ void VoxelInstancer::on_body_removed(Vector3i data_block_position, unsigned int 
 	lod.modified_blocks.set(data_block_position, true);
 }
 
-void VoxelInstancer::on_scene_instance_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index) {
+void VoxelInstancer::on_scene_instance_removed(VOX_Vector3i data_block_position, unsigned int render_block_index, int instance_index) {
 	Block *block = _blocks[render_block_index];
 	CRASH_COND(block == nullptr);
 	ERR_FAIL_INDEX(instance_index, block->bodies.size());
@@ -1431,7 +1431,7 @@ void VoxelInstancer::on_scene_instance_removed(Vector3i data_block_position, uns
 	lod.modified_blocks.set(data_block_position, true);
 }
 
-void VoxelInstancer::on_scene_instance_modified(Vector3i data_block_position, unsigned int render_block_index) {
+void VoxelInstancer::on_scene_instance_modified(VOX_Vector3i data_block_position, unsigned int render_block_index) {
 	Block *block = _blocks[render_block_index];
 	CRASH_COND(block == nullptr);
 

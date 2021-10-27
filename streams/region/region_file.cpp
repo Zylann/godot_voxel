@@ -35,7 +35,7 @@ bool VoxelRegionFormat::validate() const {
 	for (unsigned int i = 0; i < channel_depths.size(); ++i) {
 		bytes_per_block += VoxelBufferInternal::get_depth_bit_count(channel_depths[i]) / 8;
 	}
-	bytes_per_block *= Vector3i(1 << block_size_po2).volume();
+	bytes_per_block *= VOX_Vector3i(1 << block_size_po2).volume();
 	const size_t sectors_per_block = (bytes_per_block - 1) / sector_size + 1;
 	ERR_FAIL_COND_V(sectors_per_block > VoxelRegionBlockInfo::MAX_SECTOR_COUNT, false);
 	const size_t max_potential_sectors = region_size.volume() * sectors_per_block;
@@ -45,7 +45,7 @@ bool VoxelRegionFormat::validate() const {
 }
 
 bool VoxelRegionFormat::verify_block(const VoxelBufferInternal &block) const {
-	ERR_FAIL_COND_V(block.get_size() != Vector3i(1 << block_size_po2), false);
+	ERR_FAIL_COND_V(block.get_size() != VOX_Vector3i(1 << block_size_po2), false);
 	for (unsigned int i = 0; i < VoxelBufferInternal::MAX_CHANNELS; ++i) {
 		ERR_FAIL_COND_V(block.get_channel_depth(i) != channel_depths[i], false);
 	}
@@ -171,7 +171,7 @@ static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &
 VoxelRegionFile::VoxelRegionFile() {
 	// Defaults
 	_header.format.block_size_po2 = 4;
-	_header.format.region_size = Vector3i(16, 16, 16);
+	_header.format.region_size = VOX_Vector3i(16, 16, 16);
 	_header.format.channel_depths.fill(VoxelBufferInternal::DEPTH_8_BIT);
 	_header.format.sector_size = 512;
 }
@@ -250,7 +250,7 @@ Error VoxelRegionFile::open(const String &fpath, bool create_if_not_found) {
 	CRASH_COND(_sectors.size() != 0);
 	for (unsigned int i = 0; i < blocks_sorted_by_offset.size(); ++i) {
 		const BlockInfoAndIndex b = blocks_sorted_by_offset[i];
-		Vector3i bpos = get_block_position_from_index(b.i);
+		VOX_Vector3i bpos = get_block_position_from_index(b.i);
 		for (unsigned int j = 0; j < b.b.get_sector_count(); ++j) {
 			_sectors.push_back(bpos);
 		}
@@ -302,7 +302,7 @@ const VoxelRegionFormat &VoxelRegionFile::get_format() const {
 }
 
 Error VoxelRegionFile::load_block(
-		Vector3i position, VoxelBufferInternal &out_block, VoxelBlockSerializerInternal &serializer) {
+		VOX_Vector3i position, VoxelBufferInternal &out_block, VoxelBlockSerializerInternal &serializer) {
 	//
 	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_READ);
 	FileAccess *f = _file_access;
@@ -335,7 +335,7 @@ Error VoxelRegionFile::load_block(
 	return OK;
 }
 
-Error VoxelRegionFile::save_block(Vector3i position, VoxelBufferInternal &block,
+Error VoxelRegionFile::save_block(VOX_Vector3i position, VoxelBufferInternal &block,
 		VoxelBlockSerializerInternal &serializer) {
 	//
 	ERR_FAIL_COND_V(_header.format.verify_block(block) == false, ERR_INVALID_PARAMETER);
@@ -460,7 +460,7 @@ void VoxelRegionFile::pad_to_sector_size(FileAccess *f) {
 	}
 }
 
-void VoxelRegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int p_sector_count) {
+void VoxelRegionFile::remove_sectors_from_block(VOX_Vector3i block_pos, unsigned int p_sector_count) {
 	VOXEL_PROFILE_SCOPE();
 
 	// Removes sectors from a block, starting from the last ones.
@@ -606,12 +606,12 @@ Error VoxelRegionFile::load_header(FileAccess *f) {
 	return OK;
 }
 
-unsigned int VoxelRegionFile::get_block_index_in_header(const Vector3i &rpos) const {
+unsigned int VoxelRegionFile::get_block_index_in_header(const VOX_Vector3i &rpos) const {
 	return rpos.get_zxy_index(_header.format.region_size);
 }
 
-Vector3i VoxelRegionFile::get_block_position_from_index(uint32_t i) const {
-	return Vector3i::from_zxy_index(i, _header.format.region_size);
+VOX_Vector3i VoxelRegionFile::get_block_position_from_index(uint32_t i) const {
+	return VOX_Vector3i::from_zxy_index(i, _header.format.region_size);
 }
 
 uint32_t VoxelRegionFile::get_sector_count_from_bytes(uint32_t size_in_bytes) const {
@@ -623,7 +623,7 @@ unsigned int VoxelRegionFile::get_header_block_count() const {
 	return _header.blocks.size();
 }
 
-bool VoxelRegionFile::has_block(Vector3i position) const {
+bool VoxelRegionFile::has_block(VOX_Vector3i position) const {
 	ERR_FAIL_COND_V(!is_open(), false);
 	const unsigned int bi = get_block_index_in_header(position);
 	return _header.blocks[bi].data != 0;
@@ -644,7 +644,7 @@ void VoxelRegionFile::debug_check() {
 
 	for (unsigned int lut_index = 0; lut_index < _header.blocks.size(); ++lut_index) {
 		const VoxelRegionBlockInfo &block_info = _header.blocks[lut_index];
-		const Vector3i position = get_block_position_from_index(lut_index);
+		const VOX_Vector3i position = get_block_position_from_index(lut_index);
 		if (block_info.data == 0) {
 			continue;
 		}

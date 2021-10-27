@@ -2,7 +2,7 @@
 #include "../constants/voxel_constants.h"
 #include "../util/math/funcs.h"
 #include "../util/serialization.h"
-#include <core/variant.h>
+#include <core/variant/variant.h>
 
 namespace {
 const uint32_t TRAILING_MAGIC = 0x900df00d;

@@ -28,7 +28,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 	struct RaycastPredicateColor {
 		const VoxelDataMap &map;
 
-		bool operator()(const Vector3i pos) const {
+		bool operator()(const VOX_Vector3i pos) const {
 			const uint64_t v = map.get_voxel(pos, VoxelBuffer::CHANNEL_COLOR);
 			return v != 0;
 		}
@@ -37,7 +37,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 	struct RaycastPredicateSDF {
 		const VoxelDataMap &map;
 
-		bool operator()(const Vector3i pos) const {
+		bool operator()(const VOX_Vector3i pos) const {
 			const float v = map.get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
 			return v < 0;
 		}
@@ -48,7 +48,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 		const VoxelLibrary &library;
 		const uint32_t collision_mask;
 
-		bool operator()(const Vector3i pos) const {
+		bool operator()(const VOX_Vector3i pos) const {
 			const int v = map.get_voxel(pos, VoxelBuffer::CHANNEL_TYPE);
 
 			if (library.has_voxel(v) == false) {
@@ -81,8 +81,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 	Ref<VoxelMesherBlocky> mesher_blocky;
 	Ref<VoxelMesherCubes> mesher_cubes;
 
-	Vector3i hit_pos;
-	Vector3i prev_pos;
+	VOX_Vector3i hit_pos;
+	VOX_Vector3i prev_pos;
 
 	const Transform to_world = _terrain->get_global_transform();
 	const Transform to_local = to_world.affine_inverse();
@@ -132,7 +132,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 	return res;
 }
 
-void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const {
+void VoxelToolTerrain::copy(VOX_Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(dst.is_null());
 	if (channels_mask == 0) {
@@ -141,7 +141,7 @@ void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels
 	_terrain->get_storage().copy(pos, dst->get_buffer(), channels_mask);
 }
 
-void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
+void VoxelToolTerrain::paste(VOX_Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
 		uint64_t mask_value) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(p_voxels.is_null());
@@ -162,7 +162,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 
 	VOXEL_PROFILE_SCOPE();
 
-	const Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	const Box3i box(VOX_Vector3i(center) - VOX_Vector3i(Math::floor(radius)), VOX_Vector3i(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -175,22 +175,22 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 	_post_edit(box);
 }
 
-uint64_t VoxelToolTerrain::_get_voxel(Vector3i pos) const {
+uint64_t VoxelToolTerrain::_get_voxel(VOX_Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _terrain->get_storage().get_voxel(pos, _channel);
 }
 
-float VoxelToolTerrain::_get_voxel_f(Vector3i pos) const {
+float VoxelToolTerrain::_get_voxel_f(VOX_Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _terrain->get_storage().get_voxel_f(pos, _channel);
 }
 
-void VoxelToolTerrain::_set_voxel(Vector3i pos, uint64_t v) {
+void VoxelToolTerrain::_set_voxel(VOX_Vector3i pos, uint64_t v) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	_terrain->get_storage().set_voxel(v, pos, _channel);
 }
 
-void VoxelToolTerrain::_set_voxel_f(Vector3i pos, float v) {
+void VoxelToolTerrain::_set_voxel_f(VOX_Vector3i pos, float v) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	_terrain->get_storage().set_voxel_f(v, pos, _channel);
 }
@@ -200,7 +200,7 @@ void VoxelToolTerrain::_post_edit(const Box3i &box) {
 	_terrain->post_edit_area(box);
 }
 
-void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
+void VoxelToolTerrain::set_voxel_metadata(VOX_Vector3i pos, Variant meta) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	VoxelDataMap &map = _terrain->get_storage();
 	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
@@ -209,7 +209,7 @@ void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
 	block->get_voxels().set_voxel_metadata(map.to_local(pos), meta);
 }
 
-Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
+Variant VoxelToolTerrain::get_voxel_metadata(VOX_Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, Variant());
 	VoxelDataMap &map = _terrain->get_storage();
 	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
@@ -236,14 +236,14 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 
 	const VoxelLibrary &lib = **_terrain->get_voxel_library();
 
-	const Vector3i min_pos = Vector3i(voxel_area.position);
-	const Vector3i max_pos = min_pos + Vector3i(voxel_area.size);
+	const VOX_Vector3i min_pos = VOX_Vector3i(voxel_area.position);
+	const VOX_Vector3i max_pos = min_pos + VOX_Vector3i(voxel_area.size);
 
 	VoxelDataMap &map = _terrain->get_storage();
 
-	const Vector3i min_block_pos = map.voxel_to_block(min_pos);
-	const Vector3i max_block_pos = map.voxel_to_block(max_pos);
-	const Vector3i block_area_size = max_block_pos - min_block_pos;
+	const VOX_Vector3i min_block_pos = map.voxel_to_block(min_pos);
+	const VOX_Vector3i max_block_pos = map.voxel_to_block(max_pos);
+	const VOX_Vector3i block_area_size = max_block_pos - min_block_pos;
 
 	const int block_count = voxel_count / batch_count;
 	const int bs_mask = map.get_block_size_mask();
@@ -251,19 +251,19 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 
 	struct Pick {
 		uint64_t value;
-		Vector3i rpos;
+		VOX_Vector3i rpos;
 	};
 	std::vector<Pick> picks;
 	picks.resize(batch_count);
 
 	// Choose blocks at random
 	for (int bi = 0; bi < block_count; ++bi) {
-		const Vector3i block_pos = min_block_pos + Vector3i(
+		const VOX_Vector3i block_pos = min_block_pos + VOX_Vector3i(
 														   Math::rand() % block_area_size.x,
 														   Math::rand() % block_area_size.y,
 														   Math::rand() % block_area_size.z);
 
-		const Vector3i block_origin = map.block_to_voxel(block_pos);
+		const VOX_Vector3i block_origin = map.block_to_voxel(block_pos);
 
 		VoxelDataBlock *block = map.get_block(block_pos);
 		if (block != nullptr) {
@@ -286,7 +286,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 				// Choose a bunch of voxels at random within the block.
 				// Batching this way improves performance a little by reducing block lookups.
 				for (int vi = 0; vi < batch_count; ++vi) {
-					const Vector3i rpos(
+					const VOX_Vector3i rpos(
 							Math::rand() & bs_mask,
 							Math::rand() & bs_mask,
 							Math::rand() & bs_mask);
@@ -328,25 +328,25 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<Func
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(callback.is_null());
 
-	const Box3i voxel_box = Box3i(Vector3i(voxel_area.position), Vector3i(voxel_area.size));
+	const Box3i voxel_box = Box3i(VOX_Vector3i(voxel_area.position), VOX_Vector3i(voxel_area.size));
 	ERR_FAIL_COND(!is_area_editable(voxel_box));
 
 	const Box3i data_block_box = voxel_box.downscaled(_terrain->get_data_block_size());
 
 	VoxelDataMap &map = _terrain->get_storage();
 
-	data_block_box.for_each_cell([&map, &callback, voxel_box](Vector3i block_pos) {
+	data_block_box.for_each_cell([&map, &callback, voxel_box](VOX_Vector3i block_pos) {
 		VoxelDataBlock *block = map.get_block(block_pos);
 
 		if (block == nullptr) {
 			return;
 		}
 
-		const Vector3i block_origin = block_pos * map.get_block_size();
+		const VOX_Vector3i block_origin = block_pos * map.get_block_size();
 		const Box3i rel_voxel_box(voxel_box.pos - block_origin, voxel_box.size);
 		// TODO Worth it locking blocks for metadata?
 
-		block->get_voxels().for_each_voxel_metadata_in_area(rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, Variant meta) {
+		block->get_voxels().for_each_voxel_metadata_in_area(rel_voxel_box, [&callback, block_origin](VOX_Vector3i rel_pos, Variant meta) {
 			const Variant key = (rel_pos + block_origin).to_vec3();
 			const Variant *args[2] = { &key, &meta };
 			Variant::CallError err;

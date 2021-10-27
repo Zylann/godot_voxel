@@ -32,21 +32,21 @@ inline void clip_copy_region_coord(int &src_min, int &src_max, const int src_siz
 // Clips coordinates that may be used to copy a sub-region of a 3D container into another 3D container.
 // The result can have zero or negative size, so it must be checked before proceeding.
 inline void clip_copy_region(
-		Vector3i &src_min, Vector3i &src_max, const Vector3i &src_size, Vector3i &dst_min, const Vector3i &dst_size) {
+		VOX_Vector3i &src_min, VOX_Vector3i &src_max, const VOX_Vector3i &src_size, VOX_Vector3i &dst_min, const VOX_Vector3i &dst_size) {
 	clip_copy_region_coord(src_min.x, src_max.x, src_size.x, dst_min.x, dst_size.x);
 	clip_copy_region_coord(src_min.y, src_max.y, src_size.y, dst_min.y, dst_size.y);
 	clip_copy_region_coord(src_min.z, src_max.z, src_size.z, dst_min.z, dst_size.z);
 }
 
 void copy_3d_region_zxy(
-		Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min,
-		Span<const uint8_t> src, Vector3i src_size, Vector3i src_min, Vector3i src_max,
+		Span<uint8_t> dst, VOX_Vector3i dst_size, VOX_Vector3i dst_min,
+		Span<const uint8_t> src, VOX_Vector3i src_size, VOX_Vector3i src_min, VOX_Vector3i src_max,
 		size_t item_size);
 
 template <typename T>
 inline void copy_3d_region_zxy(
-		Span<T> dst, Vector3i dst_size, Vector3i dst_min,
-		Span<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max) {
+		Span<T> dst, VOX_Vector3i dst_size, VOX_Vector3i dst_min,
+		Span<const T> src, VOX_Vector3i src_size, VOX_Vector3i src_min, VOX_Vector3i src_max) {
 	// The `template` keyword before method name is required when compiling with GCC
 	copy_3d_region_zxy(
 			dst.template reinterpret_cast_to<uint8_t>(), dst_size, dst_min,
@@ -55,15 +55,15 @@ inline void copy_3d_region_zxy(
 }
 
 template <typename T>
-void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i dst_max, const T value) {
-	Vector3i::sort_min_max(dst_min, dst_max);
+void fill_3d_region_zxy(Span<T> dst, VOX_Vector3i dst_size, VOX_Vector3i dst_min, VOX_Vector3i dst_max, const T value) {
+	VOX_Vector3i::sort_min_max(dst_min, dst_max);
 	dst_min.x = clamp(dst_min.x, 0, dst_size.x);
 	dst_min.y = clamp(dst_min.y, 0, dst_size.y);
 	dst_min.z = clamp(dst_min.z, 0, dst_size.z);
 	dst_max.x = clamp(dst_max.x, 0, dst_size.x);
 	dst_max.y = clamp(dst_max.y, 0, dst_size.y);
 	dst_max.z = clamp(dst_max.z, 0, dst_size.z);
-	const Vector3i area_size = dst_max - dst_min;
+	const VOX_Vector3i area_size = dst_max - dst_min;
 	if (area_size.x <= 0 || area_size.y <= 0 || area_size.z <= 0) {
 		// Degenerate area, we'll not copy anything.
 		return;
@@ -80,9 +80,9 @@ void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector
 
 	} else {
 		const unsigned int dst_row_offset = dst_size.y;
-		Vector3i pos;
+		VOX_Vector3i pos;
 		for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
-			unsigned int dst_ri = Vector3i(dst_min + pos).get_zxy_index(dst_size);
+			unsigned int dst_ri = VOX_Vector3i(dst_min + pos).get_zxy_index(dst_size);
 			for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
 				// Fill row
 				for (pos.y = 0; pos.y < area_size.y; ++pos.y) {
@@ -183,18 +183,18 @@ inline void debug_check_texture_indices(FixedArray<uint8_t, 4> indices) {
 }
 
 struct IntBasis {
-	Vector3i x;
-	Vector3i y;
-	Vector3i z;
+	VOX_Vector3i x;
+	VOX_Vector3i y;
+	VOX_Vector3i z;
 
-	Vector3i get_axis(int i) const {
+	VOX_Vector3i get_axis(int i) const {
 		// TODO Optimization: could use a union with an array
 		switch (i) {
-			case Vector3i::AXIS_X:
+			case VOX_Vector3i::AXIS_X:
 				return x;
-			case Vector3i::AXIS_Y:
+			case VOX_Vector3i::AXIS_Y:
 				return y;
-			case Vector3i::AXIS_Z:
+			case VOX_Vector3i::AXIS_Z:
 				return z;
 			default:
 				CRASH_NOW();
@@ -206,7 +206,7 @@ struct IntBasis {
 // Returns the transformed size. Volume remains the same.
 // The array's coordinate convention uses ZXY (index+1 does Y+1).
 template <typename T>
-Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector3i src_size, IntBasis basis) {
+VOX_Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, VOX_Vector3i src_size, IntBasis basis) {
 	ERR_FAIL_COND_V(!basis.x.is_unit_vector(), src_size);
 	ERR_FAIL_COND_V(!basis.y.is_unit_vector(), src_size);
 	ERR_FAIL_COND_V(!basis.z.is_unit_vector(), src_size);
@@ -217,7 +217,7 @@ Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector
 	const int ya = basis.y.x != 0 ? 0 : basis.y.y != 0 ? 1 : 2;
 	const int za = basis.z.x != 0 ? 0 : basis.z.y != 0 ? 1 : 2;
 
-	Vector3i dst_size;
+	VOX_Vector3i dst_size;
 	dst_size[xa] = src_size.x;
 	dst_size[ya] = src_size.y;
 	dst_size[za] = src_size.z;

@@ -1,7 +1,7 @@
 #include "program_graph.h"
 #include <core/os/file_access.h>
-#include <core/resource.h>
-#include <core/variant.h>
+#include <core/io/resource.h>
+#include <core/variant/variant.h>
 #include <unordered_set>
 
 template <typename T>
@@ -429,11 +429,11 @@ uint32_t ProgramGraph::find_node_by_name(StringName name) const {
 //	}
 //}
 
-PoolVector<int> ProgramGraph::get_node_ids() const {
-	PoolIntArray ids;
+Vector<int> ProgramGraph::get_node_ids() const {
+	PackedIntArray ids;
 	ids.resize(_nodes.size());
 	{
-		PoolIntArray::Write w = ids.write();
+		PackedIntArray::Write w = ids.write();
 		int i = 0;
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 			w[i++] = it->first;

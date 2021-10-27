@@ -1,6 +1,6 @@
 #include "voxel_stream_cache.h"
 
-bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &out_voxels) {
+bool VoxelStreamCache::load_voxel_block(VOX_Vector3i position, uint8_t lod_index, VoxelBufferInternal &out_voxels) {
 	const Lod &lod = _cache[lod_index];
 	lod.rw_lock.read_lock();
 	auto it = lod.blocks.find(position);
@@ -24,7 +24,7 @@ bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, Vo
 	}
 }
 
-void VoxelStreamCache::save_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &voxels) {
+void VoxelStreamCache::save_voxel_block(VOX_Vector3i position, uint8_t lod_index, VoxelBufferInternal &voxels) {
 	Lod &lod = _cache[lod_index];
 	RWLockWrite wlock(lod.rw_lock);
 	auto it = lod.blocks.find(position);
@@ -48,7 +48,7 @@ void VoxelStreamCache::save_voxel_block(Vector3i position, uint8_t lod_index, Vo
 }
 
 bool VoxelStreamCache::load_instance_block(
-		Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> &out_instances) {
+		VOX_Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> &out_instances) {
 	const Lod &lod = _cache[lod_index];
 	lod.rw_lock.read_lock();
 	auto it = lod.blocks.find(position);
@@ -76,7 +76,7 @@ bool VoxelStreamCache::load_instance_block(
 }
 
 void VoxelStreamCache::save_instance_block(
-		Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> instances) {
+		VOX_Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> instances) {
 	Lod &lod = _cache[lod_index];
 	RWLockWrite wlock(lod.rw_lock);
 	auto it = lod.blocks.find(position);

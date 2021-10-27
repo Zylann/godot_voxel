@@ -256,13 +256,13 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 
 	ERR_FAIL_COND(arrays.size() == 0);
 
-	PoolIntArray indices = arrays[Mesh::ARRAY_INDEX];
+	PackedIntArray indices = arrays[Mesh::ARRAY_INDEX];
 	ERR_FAIL_COND_MSG(indices.size() % 3 != 0, "Mesh is empty or does not contain triangles");
 
-	PoolVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
-	PoolVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
-	PoolVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
-	PoolVector<float> tangents = arrays[Mesh::ARRAY_TANGENT];
+	PackedVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
+	PackedVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
+	PackedVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
+	Vector<float> tangents = arrays[Mesh::ARRAY_TANGENT];
 
 	baked_data.empty = positions.size() == 0;
 
@@ -301,7 +301,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 
 	if (uvs.size() == 0) {
 		// TODO Properly generate UVs if there arent any
-		uvs = PoolVector2Array();
+		uvs = PackedVector2Array();
 		uvs.resize(positions.size());
 	}
 
@@ -318,11 +318,11 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 
 	// Separate triangles belonging to faces of the cube
 	{
-		PoolIntArray::Read indices_read = indices.read();
-		PoolVector3Array::Read positions_read = positions.read();
-		PoolVector3Array::Read normals_read = normals.read();
-		PoolVector2Array::Read uvs_read = uvs.read();
-		PoolVector<float>::Read tangents_read = tangents.read();
+		PackedIntArray::Read indices_read = indices.read();
+		PackedVector3Array::Read positions_read = positions.read();
+		PackedVector3Array::Read normals_read = normals.read();
+		PackedVector2Array::Read uvs_read = uvs.read();
+		Vector<float>::Read tangents_read = tangents.read();
 
 		FixedArray<HashMap<int, int>, Cube::SIDE_COUNT> added_side_indices;
 		HashMap<int, int> added_regular_indices;

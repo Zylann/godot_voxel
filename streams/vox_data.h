@@ -22,7 +22,7 @@ struct hash<String> {
 namespace vox {
 
 struct Model {
-	Vector3i size;
+	VOX_Vector3i size;
 	// TODO Optimization: implement lazy loading/streaming to reduce intermediary memory allocations?
 	// Loading a full 256^3 model needs 16 megabytes, but a lot of areas might actually be uniform,
 	// and we might not need the actual model immediately
@@ -56,7 +56,7 @@ struct TransformNode : public Node {
 	int child_node_id;
 	int layer_id;
 	// Pivot position, which turns out to be at the center in MagicaVoxel
-	Vector3i position;
+	VOX_Vector3i position;
 	Rotation rotation;
 	String name;
 	bool hidden;

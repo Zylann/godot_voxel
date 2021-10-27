@@ -1,7 +1,7 @@
 #ifndef FAST_NOISE_LITE_H
 #define FAST_NOISE_LITE_H
 
-#include <core/resource.h>
+#include <core/io/resource.h>
 
 #include "fast_noise_lite_gradient.h"
 

@@ -211,7 +211,7 @@ VoxelGeneratorGraph::NodeTypeID VoxelGeneratorGraph::get_node_type_id(uint32_t n
 	return (NodeTypeID)node->type_id;
 }
 
-PoolIntArray VoxelGeneratorGraph::get_node_ids() const {
+PackedIntArray VoxelGeneratorGraph::get_node_ids() const {
 	return _graph.get_node_ids();
 }
 
@@ -275,7 +275,7 @@ bool VoxelGeneratorGraph::is_using_xz_caching() const {
 // Instead, we could only generate them near zero-crossings, because this is where materials will be seen.
 // The problem is that it's harder to manage at the moment, to support edited blocks and LOD...
 void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> weight_outputs,
-		const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
+		const VoxelGraphRuntime::State &state, VOX_Vector3i rmin, VOX_Vector3i rmax, int ry,
 		VoxelBufferInternal &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -403,9 +403,9 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 
 	VoxelBufferInternal &out_buffer = input.voxel_buffer;
 
-	const Vector3i bs = out_buffer.get_size();
+	const VOX_Vector3i bs = out_buffer.get_size();
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
-	const Vector3i origin = input.origin_in_voxels;
+	const VOX_Vector3i origin = input.origin_in_voxels;
 
 	// TODO This may be shared across the module
 	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
@@ -453,10 +453,10 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 			for (int sx = 0; sx < bs.x; sx += section_size) {
 				VOXEL_PROFILE_SCOPE_NAMED("Section");
 
-				const Vector3i rmin(sx, sy, sz);
-				const Vector3i rmax = rmin + Vector3i(section_size);
-				const Vector3i gmin = origin + (rmin << input.lod);
-				const Vector3i gmax = origin + (rmax << input.lod);
+				const VOX_Vector3i rmin(sx, sy, sz);
+				const VOX_Vector3i rmax = rmin + VOX_Vector3i(section_size);
+				const VOX_Vector3i gmin = origin + (rmin << input.lod);
+				const VOX_Vector3i gmax = origin + (rmax << input.lod);
 
 				runtime.analyze_range(cache.state, gmin, gmax);
 				const Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
@@ -1045,7 +1045,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 }
 
 // TODO This function isn't used yet, but whatever uses it should probably put locking and cache outside
-float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
+float VoxelGeneratorGraph::generate_single(const VOX_Vector3i &position) {
 	std::shared_ptr<const Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);
@@ -1064,7 +1064,7 @@ float VoxelGeneratorGraph::generate_single(const Vector3i &position) {
 
 // Note, this wrapper may not be used for main generation tasks.
 // It is mostly used as a debug tool.
-Interval VoxelGeneratorGraph::debug_analyze_range(Vector3i min_pos, Vector3i max_pos,
+Interval VoxelGeneratorGraph::debug_analyze_range(VOX_Vector3i min_pos, VOX_Vector3i max_pos,
 		bool optimize_execution_map) const {
 	std::shared_ptr<const Runtime> runtime_ptr;
 	{
@@ -1096,9 +1096,9 @@ Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 
 static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 	Dictionary nodes_data;
-	PoolVector<int> node_ids = graph.get_node_ids();
+	Vector<int> node_ids = graph.get_node_ids();
 	{
-		PoolVector<int>::Read r = node_ids.read();
+		Vector<int>::Read r = node_ids.read();
 		for (int i = 0; i < node_ids.size(); ++i) {
 			uint32_t node_id = r[i];
 			const ProgramGraph::Node *node = graph.get_node(node_id);
@@ -1300,7 +1300,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 			for (uint32_t z = 0; z < cube_size; ++z) {
 				for (uint32_t y = 0; y < cube_size; ++y) {
 					for (uint32_t x = 0; x < cube_size; ++x) {
-						runtime.generate_single(cache.state, Vector3i(x, y, z).to_vec3(), nullptr);
+						runtime.generate_single(cache.state, VOX_Vector3i(x, y, z).to_vec3(), nullptr);
 					}
 				}
 			}
@@ -1442,12 +1442,12 @@ void VoxelGeneratorGraph::_b_set_node_param_null(int node_id, int param_index) {
 }
 
 float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
-	return generate_single(Vector3i(pos));
+	return generate_single(VOX_Vector3i(pos));
 }
 
 Vector2 VoxelGeneratorGraph::_b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const {
 	const Interval r = debug_analyze_range(
-			Vector3i::from_floored(min_pos), Vector3i::from_floored(max_pos), false);
+			VOX_Vector3i::from_floored(min_pos), VOX_Vector3i::from_floored(max_pos), false);
 	return Vector2(r.min, r.max);
 }
 

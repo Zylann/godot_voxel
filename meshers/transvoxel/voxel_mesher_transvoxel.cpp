@@ -36,11 +36,11 @@ int VoxelMesherTransvoxel::get_used_channels_mask() const {
 }
 
 void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const Transvoxel::MeshArrays &src) {
-	PoolVector<Vector3> vertices;
-	PoolVector<Vector3> normals;
-	PoolVector<Color> extra;
-	PoolVector<Vector2> uv;
-	PoolVector<int> indices;
+	Vector<Vector3> vertices;
+	Vector<Vector3> normals;
+	Vector<Color> extra;
+	Vector<Vector2> uv;
+	Vector<int> indices;
 
 	raw_copy_to(vertices, src.vertices);
 	raw_copy_to(extra, src.extra);
@@ -228,7 +228,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> vox
 
 	Array arrays;
 	fill_surface_arrays(arrays, s_mesh_arrays);
-	mesh.instance();
+	mesh.instantiate();
 	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays, Array(), MESH_COMPRESSION_FLAGS);
 	return mesh;
 }

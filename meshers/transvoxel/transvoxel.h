@@ -5,7 +5,7 @@
 #include "../../util/fixed_array.h"
 #include "../../util/math/vector3i.h"
 
-#include <core/color.h>
+#include <core/math/color.h>
 #include <core/math/vector2.h>
 #include <core/math/vector3.h>
 #include <vector>
@@ -65,7 +65,7 @@ struct ReuseTransitionCell {
 
 class Cache {
 public:
-	void reset_reuse_cells(Vector3i p_block_size) {
+	void reset_reuse_cells(VOX_Vector3i p_block_size) {
 		_block_size = p_block_size;
 		unsigned int deck_area = _block_size.x * _block_size.y;
 		for (unsigned int i = 0; i < _cache.size(); ++i) {
@@ -77,7 +77,7 @@ public:
 		}
 	}
 
-	void reset_reuse_cells_2d(Vector3i p_block_size) {
+	void reset_reuse_cells_2d(VOX_Vector3i p_block_size) {
 		for (unsigned int i = 0; i < _cache_2d.size(); ++i) {
 			std::vector<ReuseTransitionCell> &row = _cache_2d[i];
 			row.resize(p_block_size.x);
@@ -87,7 +87,7 @@ public:
 		}
 	}
 
-	ReuseCell &get_reuse_cell(Vector3i pos) {
+	ReuseCell &get_reuse_cell(VOX_Vector3i pos) {
 		unsigned int j = pos.z & 1;
 		unsigned int i = pos.y * _block_size.x + pos.x;
 		CRASH_COND(i >= _cache[j].size());
@@ -104,7 +104,7 @@ public:
 private:
 	FixedArray<std::vector<ReuseCell>, 2> _cache;
 	FixedArray<std::vector<ReuseTransitionCell>, 2> _cache_2d;
-	Vector3i _block_size;
+	VOX_Vector3i _block_size;
 };
 
 // This is only to re-use some data computed for regular mesh into transition meshes

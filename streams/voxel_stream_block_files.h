@@ -15,8 +15,8 @@ class VoxelStreamBlockFiles : public VoxelStream {
 public:
 	VoxelStreamBlockFiles();
 
-	Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
+	Result emerge_block(VoxelBufferInternal &out_buffer, VOX_Vector3i origin_in_voxels, int lod) override;
+	void immerge_block(VoxelBufferInternal &buffer, VOX_Vector3i origin_in_voxels, int lod) override;
 
 	int get_used_channels_mask() const override;
 
@@ -32,8 +32,8 @@ private:
 	VoxelFileResult save_meta();
 	VoxelFileResult load_meta();
 	VoxelFileResult load_or_create_meta();
-	String get_block_file_path(const Vector3i &block_pos, unsigned int lod) const;
-	Vector3i get_block_position(const Vector3i &origin_in_voxels) const;
+	String get_block_file_path(const VOX_Vector3i &block_pos, unsigned int lod) const;
+	VOX_Vector3i get_block_position(const VOX_Vector3i &origin_in_voxels) const;
 
 	static thread_local VoxelBlockSerializerInternal _block_serializer;
 

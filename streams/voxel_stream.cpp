@@ -7,12 +7,12 @@ VoxelStream::VoxelStream() {
 VoxelStream::~VoxelStream() {
 }
 
-VoxelStream::Result VoxelStream::emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStream::Result VoxelStream::emerge_block(VoxelBufferInternal &out_buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	// Can be implemented in subclasses
 	return RESULT_BLOCK_NOT_FOUND;
 }
 
-void VoxelStream::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStream::immerge_block(VoxelBufferInternal &buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	// Can be implemented in subclasses
 }
 
@@ -76,13 +76,13 @@ int VoxelStream::get_lod_count() const {
 VoxelStream::Result VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND_V(lod < 0, RESULT_ERROR);
 	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
-	return emerge_block(out_buffer->get_buffer(), Vector3i(origin_in_voxels), lod);
+	return emerge_block(out_buffer->get_buffer(), VOX_Vector3i(origin_in_voxels), lod);
 }
 
 void VoxelStream::_b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	ERR_FAIL_COND(buffer.is_null());
-	immerge_block(buffer->get_buffer(), Vector3i(origin_in_voxels), lod);
+	immerge_block(buffer->get_buffer(), VOX_Vector3i(origin_in_voxels), lod);
 }
 
 int VoxelStream::_b_get_used_channels_mask() const {
@@ -90,7 +90,7 @@ int VoxelStream::_b_get_used_channels_mask() const {
 }
 
 Vector3 VoxelStream::_b_get_block_size() const {
-	return Vector3i(1 << get_block_size_po2()).to_vec3();
+	return VOX_Vector3i(1 << get_block_size_po2()).to_vec3();
 }
 
 void VoxelStream::_bind_methods() {

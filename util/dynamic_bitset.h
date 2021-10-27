@@ -1,7 +1,7 @@
 #ifndef DYNAMIC_BITSET_H
 #define DYNAMIC_BITSET_H
 
-#include <core/error_macros.h>
+#include <core/error/error_macros.h>
 #include <vector>
 
 // STL's bitset is fixed size, and I don't want to depend on Boost

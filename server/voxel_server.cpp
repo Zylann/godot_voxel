@@ -286,13 +286,13 @@ void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	volume.meshing_dependency->mesher = volume.mesher;
 }
 
-static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
-	return (pos << lod) * bs + Vector3i(bs / 2);
+static inline VOX_Vector3i get_block_center(VOX_Vector3i pos, int bs, int lod) {
+	return (pos << lod) * bs + VOX_Vector3i(bs / 2);
 }
 
 void VoxelServer::init_priority_dependency(
-		VoxelServer::PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size) {
-	const Vector3i voxel_pos = get_block_center(block_position, block_size, lod);
+		VoxelServer::PriorityDependency &dep, VOX_Vector3i block_position, uint8_t lod, const Volume &volume, int block_size) {
+	const VOX_Vector3i voxel_pos = get_block_center(block_position, block_size, lod);
 	const float block_radius = (block_size << lod) / 2;
 	dep.shared = _world.shared_priority_dependency;
 	dep.world_position = volume.transform.xform(voxel_pos.to_vec3());
@@ -341,7 +341,7 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &i
 	_general_thread_pool.enqueue(r);
 }
 
-void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances) {
+void VoxelServer::request_block_load(uint32_t volume_id, VOX_Vector3i block_pos, int lod, bool request_instances) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream_dependency == nullptr);
 
@@ -377,7 +377,7 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 }
 
 void VoxelServer::request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels,
-		Vector3i block_pos, int lod) {
+		VOX_Vector3i block_pos, int lod) {
 	//
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
@@ -400,7 +400,7 @@ void VoxelServer::request_voxel_block_save(uint32_t volume_id, std::shared_ptr<V
 }
 
 void VoxelServer::request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
-		Vector3i block_pos, int lod) {
+		VOX_Vector3i block_pos, int lod) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
@@ -665,7 +665,7 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 	Ref<VoxelStream> stream = stream_dependency->stream;
 	CRASH_COND(stream.is_null());
 
-	const Vector3i origin_in_voxels = (position << lod) * block_size;
+	const VOX_Vector3i origin_in_voxels = (position << lod) * block_size;
 
 	switch (type) {
 		case TYPE_LOAD: {
@@ -825,7 +825,7 @@ void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
 	Ref<VoxelGenerator> generator = stream_dependency->generator;
 	ERR_FAIL_COND(generator.is_null());
 
-	const Vector3i origin_in_voxels = (position << lod) * block_size;
+	const VOX_Vector3i origin_in_voxels = (position << lod) * block_size;
 
 	if (voxels == nullptr) {
 		voxels = gd_make_shared<VoxelBufferInternal>();
@@ -932,15 +932,15 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 		dst.set_channel_depth(ci, central_buffer->get_channel_depth(ci));
 	}
 
-	const Vector3i min_pos = -Vector3i(min_padding);
-	const Vector3i max_pos = Vector3i(mesh_block_size + max_padding);
+	const VOX_Vector3i min_pos = -VOX_Vector3i(min_padding);
+	const VOX_Vector3i max_pos = VOX_Vector3i(mesh_block_size + max_padding);
 
 	// Using ZXY as convention to reconstruct positions with thread locking consistency
 	unsigned int i = 0;
 	for (int z = -1; z < edge_size - 1; ++z) {
 		for (int x = -1; x < edge_size - 1; ++x) {
 			for (int y = -1; y < edge_size - 1; ++y) {
-				const Vector3i offset = data_block_size * Vector3i(x, y, z);
+				const VOX_Vector3i offset = data_block_size * VOX_Vector3i(x, y, z);
 				const std::shared_ptr<VoxelBufferInternal> &src = blocks[i];
 				++i;
 
@@ -948,8 +948,8 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 					continue;
 				}
 
-				const Vector3i src_min = min_pos - offset;
-				const Vector3i src_max = max_pos - offset;
+				const VOX_Vector3i src_min = min_pos - offset;
+				const VOX_Vector3i src_max = max_pos - offset;
 
 				{
 					RWLockRead read(src->get_lock());

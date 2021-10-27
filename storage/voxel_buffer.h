@@ -13,8 +13,8 @@ class FuncRef;
 // Scripts-facing wrapper around VoxelBufferInternal.
 // It is separate because being a Godot object requires to carry more baggage, and because this data type can
 // be instanced many times while being rarely accessed directly from scripts, it is a bit better to take this part out
-class VoxelBuffer : public Reference {
-	GDCLASS(VoxelBuffer, Reference)
+class VoxelBuffer : public RefCounted {
+	GDCLASS(VoxelBuffer, RefCounted)
 
 public:
 	enum ChannelId {
@@ -92,7 +92,7 @@ public:
 	void fill(uint64_t defval, unsigned int channel_index = 0);
 	void fill_f(real_t value, unsigned int channel = 0);
 	void fill_area(uint64_t defval, Vector3 min, Vector3 max, unsigned int channel_index) {
-		_buffer->fill_area(defval, Vector3i(min), Vector3i(max), channel_index);
+		_buffer->fill_area(defval, VOX_Vector3i(min), VOX_Vector3i(max), channel_index);
 	}
 
 	bool is_uniform(unsigned int channel_index) const;
@@ -120,10 +120,10 @@ public:
 	void set_block_metadata(Variant meta);
 
 	Variant get_voxel_metadata(Vector3 pos) const {
-		return _buffer->get_voxel_metadata(Vector3i(pos));
+		return _buffer->get_voxel_metadata(VOX_Vector3i(pos));
 	}
 	void set_voxel_metadata(Vector3 pos, Variant meta) {
-		_buffer->set_voxel_metadata(Vector3i(pos), meta);
+		_buffer->set_voxel_metadata(VOX_Vector3i(pos), meta);
 	}
 	void for_each_voxel_metadata(Ref<FuncRef> callback) const;
 	void for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Vector3 min_pos, Vector3 max_pos);

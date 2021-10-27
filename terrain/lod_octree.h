@@ -42,12 +42,12 @@ public:
 	};
 
 	struct NoDestroyAction {
-		inline void operator()(Vector3i node_pos, int lod) {}
+		inline void operator()(VOX_Vector3i node_pos, int lod) {}
 	};
 
 	template <typename DestroyAction_T>
 	void clear(DestroyAction_T &destroy_action) {
-		join_all_recursively(&_root, Vector3i(), _max_depth, destroy_action);
+		join_all_recursively(&_root, VOX_Vector3i(), _max_depth, destroy_action);
 		_is_root_created = false;
 		_max_depth = 0;
 		_base_size = 0;
@@ -93,13 +93,13 @@ public:
 
 	// Signature examples
 	struct DefaultUpdateActions {
-		void create_child(Vector3i node_pos, int lod, NodeData &data) {} // Occurs on split
-		void destroy_child(Vector3i node_pos, int lod) {} // Occurs on merge
-		void show_parent(Vector3i node_pos, int lod) {} // Occurs on merge
-		void hide_parent(Vector3i node_pos, int lod) {} // Occurs on split
+		void create_child(VOX_Vector3i node_pos, int lod, NodeData &data) {} // Occurs on split
+		void destroy_child(VOX_Vector3i node_pos, int lod) {} // Occurs on merge
+		void show_parent(VOX_Vector3i node_pos, int lod) {} // Occurs on merge
+		void hide_parent(VOX_Vector3i node_pos, int lod) {} // Occurs on split
 		bool can_create_root(int lod) { return true; }
-		bool can_split(Vector3i node_pos, int child_lod_index, NodeData &data) { return true; }
-		bool can_join(Vector3i node_pos, int lod) { return true; }
+		bool can_split(VOX_Vector3i node_pos, int child_lod_index, NodeData &data) { return true; }
+		bool can_join(VOX_Vector3i node_pos, int lod) { return true; }
 	};
 
 	// TODO Have a version of `update` that works recursively
@@ -112,19 +112,19 @@ public:
 	template <typename UpdateActions_T>
 	void update(Vector3 view_pos, UpdateActions_T &actions) {
 		if (_is_root_created || _root.has_children()) {
-			update(ROOT_INDEX, Vector3i(), _max_depth, view_pos, actions);
+			update(ROOT_INDEX, VOX_Vector3i(), _max_depth, view_pos, actions);
 		} else {
 			// TODO I don't like this much
 			// Treat the root in a slightly different way the first time.
 			if (actions.can_create_root(_max_depth)) {
-				actions.create_child(Vector3i(), _max_depth, _root.data);
+				actions.create_child(VOX_Vector3i(), _max_depth, _root.data);
 				_is_root_created = true;
 			}
 		}
 	}
 
-	static inline Vector3i get_child_position(Vector3i parent_position, int i) {
-		return Vector3i(
+	static inline VOX_Vector3i get_child_position(VOX_Vector3i parent_position, int i) {
+		return VOX_Vector3i(
 				parent_position.x * 2 + (i & 1),
 				parent_position.y * 2 + ((i >> 1) & 1),
 				parent_position.z * 2 + ((i >> 2) & 1));
@@ -143,28 +143,28 @@ public:
 	// Runs a predicate on all leaf nodes intersecting the box, and stops as soon as it is true.
 	// The box is given in unit coordinates of the octree (1 unit is the size of a leaf node at maximum depth).
 	// Returns true if the predicate matches any node, false otherwise.
-	// predicate: `bool is_match(Vector3i node_pos, int lod_index, const NodeData &data)`
+	// predicate: `bool is_match(VOX_Vector3i node_pos, int lod_index, const NodeData &data)`
 	template <typename Predicate_T>
 	bool find_in_box(Box3i box, Predicate_T predicate) const {
-		Box3i root_box(Vector3i(), Vector3i(1 << _max_depth));
+		Box3i root_box(VOX_Vector3i(), VOX_Vector3i(1 << _max_depth));
 		box.clip(root_box);
-		return find_in_box_recursive(box, Vector3i(), ROOT_INDEX, _max_depth, predicate);
+		return find_in_box_recursive(box, VOX_Vector3i(), ROOT_INDEX, _max_depth, predicate);
 	}
 
 	// Executes a function on all leaf nodes intersecting the box.
-	// f: `void f(Vector3i node_pos, int lod_index, NodeData &data)`
+	// f: `void f(VOX_Vector3i node_pos, int lod_index, NodeData &data)`
 	template <typename F>
 	void for_leaves_in_box(Box3i box, F f) {
-		Box3i root_box(Vector3i(), Vector3i(1 << _max_depth));
+		Box3i root_box(VOX_Vector3i(), VOX_Vector3i(1 << _max_depth));
 		box.clip(root_box);
-		return for_leaves_in_box_recursive(box, Vector3i(), ROOT_INDEX, _max_depth, f);
+		return for_leaves_in_box_recursive(box, VOX_Vector3i(), ROOT_INDEX, _max_depth, f);
 	}
 
 	// Executes a function on all leaf nodes of the octree.
-	// f: `void f(Vector3i node_pos, int lod_index, const NodeData &data)`
+	// f: `void f(VOX_Vector3i node_pos, int lod_index, const NodeData &data)`
 	template <typename F>
 	void for_each_leaf(F f) const {
-		return for_each_leaf_recursive(Vector3i(), ROOT_INDEX, _max_depth, f);
+		return for_each_leaf_recursive(VOX_Vector3i(), ROOT_INDEX, _max_depth, f);
 	}
 
 	unsigned int get_node_count() const {
@@ -172,27 +172,27 @@ public:
 	}
 
 	struct SubdivideActionsDefault {
-		bool can_split(Vector3i node_pos, int lod_index, const NodeData &node_data) { return true; }
-		void create_child(Vector3i node_pos, int lod_index, NodeData &node_data) {}
+		bool can_split(VOX_Vector3i node_pos, int lod_index, const NodeData &node_data) { return true; }
+		void create_child(VOX_Vector3i node_pos, int lod_index, NodeData &node_data) {}
 	};
 
 	// Subdivides the octree recursively, solely based on `can_split`.
 	// Does not unsubdivide existing nodes.
 	template <typename Actions_T>
 	void subdivide(Actions_T &actions) {
-		if (!_is_root_created && actions.can_split(Vector3i(), _max_depth, _root.data)) {
-			actions.create_child(Vector3i(), _max_depth, _root.data);
+		if (!_is_root_created && actions.can_split(VOX_Vector3i(), _max_depth, _root.data)) {
+			actions.create_child(VOX_Vector3i(), _max_depth, _root.data);
 			_is_root_created = true;
 		} else {
 			return;
 		}
-		subdivide_recursively(ROOT_INDEX, Vector3i(), _max_depth, actions);
+		subdivide_recursively(ROOT_INDEX, VOX_Vector3i(), _max_depth, actions);
 	}
 
 	// Gets the bounding box of a node within the LOD0 coordinate system
 	// (i.e a leaf node will always be 1x1x1, a LOD1 node will be 2x2x2 etc)
-	static inline Box3i get_node_box(Vector3i pos_within_lod, int lod_index) {
-		return Box3i(pos_within_lod << lod_index, Vector3i(1 << lod_index));
+	static inline Box3i get_node_box(VOX_Vector3i pos_within_lod, int lod_index) {
+		return Box3i(pos_within_lod << lod_index, VOX_Vector3i(1 << lod_index));
 	}
 
 private:
@@ -260,7 +260,7 @@ private:
 	}
 
 	template <typename UpdateActions_T>
-	void update(unsigned int node_index, Vector3i node_pos, int lod, Vector3 view_pos, UpdateActions_T &actions) {
+	void update(unsigned int node_index, VOX_Vector3i node_pos, int lod, Vector3 view_pos, UpdateActions_T &actions) {
 		// This function should be called regularly over frames.
 
 		const int lod_factor = get_lod_factor(lod);
@@ -321,7 +321,7 @@ private:
 	}
 
 	template <typename DestroyAction_T>
-	void join_all_recursively(Node *node, Vector3i node_pos, int lod, DestroyAction_T &destroy_action) {
+	void join_all_recursively(Node *node, VOX_Vector3i node_pos, int lod, DestroyAction_T &destroy_action) {
 		// We can use pointers here because we won't allocate new nodes,
 		// and won't shrink the node pool either
 
@@ -342,7 +342,7 @@ private:
 	}
 
 	template <typename Predicate_T>
-	bool find_in_box_recursive(Box3i box, Vector3i node_pos, int node_index, int depth, Predicate_T predicate) const {
+	bool find_in_box_recursive(Box3i box, VOX_Vector3i node_pos, int node_index, int depth, Predicate_T predicate) const {
 		const Node *node = get_node(node_index);
 		const Box3i node_box = get_node_box(node_pos, depth);
 		if (!node_box.intersects(box)) {
@@ -368,7 +368,7 @@ private:
 	}
 
 	template <typename F>
-	void for_leaves_in_box_recursive(Box3i box, Vector3i node_pos, int node_index, int depth, F f) {
+	void for_leaves_in_box_recursive(Box3i box, VOX_Vector3i node_pos, int node_index, int depth, F f) {
 		Node *node = get_node(node_index);
 		const Box3i node_box = get_node_box(node_pos, depth);
 		if (!node_box.intersects(box)) {
@@ -398,7 +398,7 @@ private:
 	}
 
 	template <typename F>
-	void for_each_leaf_recursive(Vector3i node_pos, int node_index, int depth, F f) const {
+	void for_each_leaf_recursive(VOX_Vector3i node_pos, int node_index, int depth, F f) const {
 		const Node *node = get_node(node_index);
 		if (node->has_children()) {
 			const int first_child_index = node->first_child;
@@ -412,7 +412,7 @@ private:
 	}
 
 	template <typename Actions_T>
-	void subdivide_recursively(unsigned int node_index, Vector3i node_pos, int lod, Actions_T &actions) {
+	void subdivide_recursively(unsigned int node_index, VOX_Vector3i node_pos, int lod, Actions_T &actions) {
 		Node *node = get_node(node_index);
 		if (node->has_children()) {
 			if (lod == 1) {
@@ -435,7 +435,7 @@ private:
 
 			for (unsigned int i = 0; i < 8; ++i) {
 				const int child_index = first_child_index + i;
-				const Vector3i child_pos = get_child_position(node_pos, i);
+				const VOX_Vector3i child_pos = get_child_position(node_pos, i);
 				Node *child = get_node(child_index);
 				actions.create_child(child_pos, lod - 1, child->data);
 				// `child` might be invalidated

@@ -21,7 +21,7 @@ struct VoxelRegionFormat {
 	// How many voxels in a cubic block, as power of two
 	uint8_t block_size_po2 = 0;
 	// How many blocks across all dimensions (stored as 3 bytes)
-	Vector3i region_size;
+	VOX_Vector3i region_size;
 	FixedArray<VoxelBufferInternal::Depth, CHANNEL_COUNT> channel_depths;
 	// Blocks are stored at offsets multiple of that size
 	uint32_t sector_size = 0;
@@ -81,13 +81,13 @@ public:
 	bool set_format(const VoxelRegionFormat &format);
 	const VoxelRegionFormat &get_format() const;
 
-	Error load_block(Vector3i position, VoxelBufferInternal &out_block, VoxelBlockSerializerInternal &serializer);
-	Error save_block(Vector3i position, VoxelBufferInternal &block, VoxelBlockSerializerInternal &serializer);
+	Error load_block(VOX_Vector3i position, VoxelBufferInternal &out_block, VoxelBlockSerializerInternal &serializer);
+	Error save_block(VOX_Vector3i position, VoxelBufferInternal &block, VoxelBlockSerializerInternal &serializer);
 
 	unsigned int get_header_block_count() const;
-	bool has_block(Vector3i position) const;
+	bool has_block(VOX_Vector3i position) const;
 	bool has_block(unsigned int index) const;
-	Vector3i get_block_position_from_index(uint32_t i) const;
+	VOX_Vector3i get_block_position_from_index(uint32_t i) const;
 
 	void debug_check();
 
@@ -95,11 +95,11 @@ private:
 	bool save_header(FileAccess *f);
 	Error load_header(FileAccess *f);
 
-	unsigned int get_block_index_in_header(const Vector3i &rpos) const;
+	unsigned int get_block_index_in_header(const VOX_Vector3i &rpos) const;
 	uint32_t get_sector_count_from_bytes(uint32_t size_in_bytes) const;
 
 	void pad_to_sector_size(FileAccess *f);
-	void remove_sectors_from_block(Vector3i block_pos, unsigned int p_sector_count);
+	void remove_sectors_from_block(VOX_Vector3i block_pos, unsigned int p_sector_count);
 
 	bool migrate_to_latest(FileAccess *f);
 	bool migrate_from_v2_to_v3(FileAccess *f, VoxelRegionFormat &format);
@@ -123,7 +123,7 @@ private:
 		uint16_t y;
 		uint16_t z;
 
-		Vector3u16(Vector3i p) :
+		Vector3u16(VOX_Vector3i p) :
 				x(p.x), y(p.y), z(p.z) {}
 	};
 

@@ -12,7 +12,7 @@ struct BlockLocation {
 	int16_t z;
 	uint8_t lod;
 
-	static bool validate(const Vector3i pos, uint8_t lod) {
+	static bool validate(const VOX_Vector3i pos, uint8_t lod) {
 		ERR_FAIL_COND_V(pos.x < std::numeric_limits<int16_t>::min(), false);
 		ERR_FAIL_COND_V(pos.y < std::numeric_limits<int16_t>::min(), false);
 		ERR_FAIL_COND_V(pos.z < std::numeric_limits<int16_t>::min(), false);
@@ -569,7 +569,7 @@ String VoxelStreamSQLite::get_database_path() const {
 	return _connection_path;
 }
 
-VoxelStream::Result VoxelStreamSQLite::emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStream::Result VoxelStreamSQLite::emerge_block(VoxelBufferInternal &out_buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	VoxelBlockRequest r{ out_buffer, origin_in_voxels, lod };
 	Vector<Result> results;
 	emerge_blocks(Span<VoxelBlockRequest>(&r, 1), results);
@@ -577,7 +577,7 @@ VoxelStream::Result VoxelStreamSQLite::emerge_block(VoxelBufferInternal &out_buf
 	return results[0];
 }
 
-void VoxelStreamSQLite::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamSQLite::immerge_block(VoxelBufferInternal &buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	VoxelBlockRequest r{ buffer, origin_in_voxels, lod };
 	immerge_blocks(Span<VoxelBlockRequest>(&r, 1));
 }
@@ -594,7 +594,7 @@ void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<R
 	Vector<int> blocks_to_load;
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		VoxelBlockRequest &wr = p_blocks[i];
-		const Vector3i pos = wr.origin_in_voxels >> (bs_po2 + wr.lod);
+		const VOX_Vector3i pos = wr.origin_in_voxels >> (bs_po2 + wr.lod);
 
 		Ref<VoxelBuffer> vb;
 		if (_cache.load_voxel_block(pos, wr.lod, wr.voxel_buffer)) {
@@ -651,7 +651,7 @@ void VoxelStreamSQLite::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
 	// First put in cache
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		VoxelBlockRequest &r = p_blocks[i];
-		const Vector3i pos = r.origin_in_voxels >> (bs_po2 + r.lod);
+		const VOX_Vector3i pos = r.origin_in_voxels >> (bs_po2 + r.lod);
 
 		if (!BlockLocation::validate(pos, r.lod)) {
 			ERR_PRINT(String("Block position {0} is outside of supported range").format(varray(pos.to_vec3())));

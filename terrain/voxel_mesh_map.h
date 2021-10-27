@@ -9,23 +9,23 @@ class VoxelMeshMap {
 public:
 	// Converts voxel coodinates into block coordinates.
 	// Don't use division because it introduces an offset in negative coordinates.
-	static inline Vector3i voxel_to_block_b(Vector3i pos, int block_size_pow2) {
+	static inline VOX_Vector3i voxel_to_block_b(VOX_Vector3i pos, int block_size_pow2) {
 		return pos >> block_size_pow2;
 	}
 
-	inline Vector3i voxel_to_block(Vector3i pos) const {
+	inline VOX_Vector3i voxel_to_block(VOX_Vector3i pos) const {
 		return voxel_to_block_b(pos, _block_size_pow2);
 	}
 
-	inline Vector3i to_local(Vector3i pos) const {
-		return Vector3i(
+	inline VOX_Vector3i to_local(VOX_Vector3i pos) const {
+		return VOX_Vector3i(
 				pos.x & _block_size_mask,
 				pos.y & _block_size_mask,
 				pos.z & _block_size_mask);
 	}
 
 	// Converts block coodinates into voxel coordinates
-	inline Vector3i block_to_voxel(Vector3i bpos) const {
+	inline VOX_Vector3i block_to_voxel(VOX_Vector3i bpos) const {
 		return bpos * _block_size;
 	}
 
@@ -46,7 +46,7 @@ public:
 	};
 
 	template <typename Action_T>
-	void remove_block(Vector3i bpos, Action_T pre_delete) {
+	void remove_block(VOX_Vector3i bpos, Action_T pre_delete) {
 		if (_last_accessed_block && _last_accessed_block->position == bpos) {
 			_last_accessed_block = nullptr;
 		}
@@ -64,13 +64,13 @@ public:
 		}
 	}
 
-	VoxelMeshBlock *get_block(Vector3i bpos);
-	const VoxelMeshBlock *get_block(Vector3i bpos) const;
+	VoxelMeshBlock *get_block(VOX_Vector3i bpos);
+	const VoxelMeshBlock *get_block(VOX_Vector3i bpos) const;
 
-	void set_block(Vector3i bpos, VoxelMeshBlock *block);
+	void set_block(VOX_Vector3i bpos, VoxelMeshBlock *block);
 
-	bool has_block(Vector3i pos) const;
-	bool is_block_surrounded(Vector3i pos) const;
+	bool has_block(VOX_Vector3i pos) const;
+	bool is_block_surrounded(VOX_Vector3i pos) const;
 
 	void clear();
 
@@ -93,9 +93,9 @@ public:
 	}
 
 private:
-	//VoxelMeshBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
-	VoxelMeshBlock *create_default_block(Vector3i bpos);
-	void remove_block_internal(Vector3i bpos, unsigned int index);
+	//VoxelMeshBlock *get_or_create_block_at_voxel_pos(VOX_Vector3i pos);
+	VoxelMeshBlock *create_default_block(VOX_Vector3i bpos);
+	void remove_block_internal(VOX_Vector3i bpos, unsigned int index);
 	void queue_free_mesh_block(VoxelMeshBlock *block);
 
 	void set_block_size_pow2(unsigned int p);
@@ -103,7 +103,7 @@ private:
 private:
 	// Blocks stored with a spatial hash in all 3D directions.
 	// RELATIONSHIP = 2 because it delivers better performance with this kind of key and hash (less collisions).
-	HashMap<Vector3i, unsigned int, Vector3iHasher, HashMapComparatorDefault<Vector3i>, 3, 2> _blocks_map;
+	HashMap<VOX_Vector3i, unsigned int, VOX_Vector3iHasher, HashMapComparatorDefault<VOX_Vector3i>, 3, 2> _blocks_map;
 	// Blocks are stored in a vector to allow faster iteration over all of them
 	std::vector<VoxelMeshBlock *> _blocks;
 

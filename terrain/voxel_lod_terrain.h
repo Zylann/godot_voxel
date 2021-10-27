@@ -80,9 +80,9 @@ public:
 	void set_mesh_block_size(unsigned int mesh_block_size);
 
 	bool is_area_editable(Box3i p_box) const;
-	uint64_t get_voxel(Vector3i pos, unsigned int channel, uint64_t defval) const;
-	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
-	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask) const;
+	uint64_t get_voxel(VOX_Vector3i pos, unsigned int channel, uint64_t defval) const;
+	bool try_set_voxel_without_update(VOX_Vector3i pos, unsigned int channel, uint64_t value);
+	void copy(VOX_Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask) const;
 
 	template <typename F>
 	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
@@ -152,7 +152,7 @@ public:
 
 	struct BlockToSave {
 		std::shared_ptr<VoxelBufferInternal> voxels;
-		Vector3i position;
+		VOX_Vector3i position;
 		uint8_t lod;
 	};
 
@@ -181,8 +181,8 @@ public:
 	void set_instancer(VoxelInstancer *instancer);
 	uint32_t get_volume_id() const { return _volume_id; }
 
-	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
-	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
+	Array get_mesh_block_surface(VOX_Vector3i block_pos, int lod_index) const;
+	Vector<VOX_Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
 
 protected:
 	void _notification(int p_what);
@@ -191,8 +191,8 @@ private:
 	void _process(float delta);
 	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
 
-	void unload_data_block(Vector3i block_pos, int lod_index);
-	void unload_mesh_block(Vector3i block_pos, int lod_index);
+	void unload_data_block(VOX_Vector3i block_pos, int lod_index);
+	void unload_mesh_block(VOX_Vector3i block_pos, int lod_index);
 
 	static inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 		return (data_block_size == 16 || data_block_size == 32) &&
@@ -207,9 +207,9 @@ private:
 	void reset_maps();
 
 	Vector3 get_local_viewer_pos() const;
-	void try_schedule_loading_with_neighbors(const Vector3i &p_data_block_pos, int lod_index);
-	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelDataMap &map) const;
-	bool check_block_loaded_and_meshed(const Vector3i &p_mesh_block_pos, int lod_index);
+	void try_schedule_loading_with_neighbors(const VOX_Vector3i &p_data_block_pos, int lod_index);
+	bool is_block_surrounded(const VOX_Vector3i &p_bpos, int lod_index, const VoxelDataMap &map) const;
+	bool check_block_loaded_and_meshed(const VOX_Vector3i &p_mesh_block_pos, int lod_index);
 	bool check_block_mesh_updated(VoxelMeshBlock *block);
 	void _set_lod_count(int p_lod_count);
 	void _set_block_size_po2(int p_block_size_po2);
@@ -224,9 +224,9 @@ private:
 	void process_fading_blocks(float delta);
 
 	void add_transition_update(VoxelMeshBlock *block);
-	void add_transition_updates_around(Vector3i block_pos, int lod_index);
+	void add_transition_updates_around(VOX_Vector3i block_pos, int lod_index);
 	void process_transition_updates();
-	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
+	uint8_t get_transition_mask(VOX_Vector3i block_pos, int lod_index) const;
 
 	void _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
@@ -251,7 +251,7 @@ private:
 	// This terrain type is a sparse grid of octrees.
 	// Indexed by a grid coordinate whose step is the size of the highest-LOD block.
 	// Not using a pointer because Map storage is stable.
-	Map<Vector3i, OctreeItem> _lod_octrees;
+	Map<VOX_Vector3i, OctreeItem> _lod_octrees;
 	Box3i _last_octree_region_box;
 
 	// Area within which voxels can exist.
@@ -289,24 +289,24 @@ private:
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
 		VoxelDataMap data_map;
-		std::unordered_set<Vector3i> loading_blocks;
+		std::unordered_set<VOX_Vector3i> loading_blocks;
 		// Blocks that were edited and need their LOD counterparts to be updated
-		std::vector<Vector3i> blocks_pending_lodding;
+		std::vector<VOX_Vector3i> blocks_pending_lodding;
 		// These are relative to this LOD, in block coordinates
-		Vector3i last_viewer_data_block_pos;
+		VOX_Vector3i last_viewer_data_block_pos;
 		int last_view_distance_data_blocks = 0;
 
 		VoxelMeshMap mesh_map;
-		std::vector<Vector3i> blocks_pending_update;
-		std::vector<Vector3i> deferred_collision_updates;
-		Map<Vector3i, VoxelMeshBlock *> fading_blocks;
-		Vector3i last_viewer_mesh_block_pos;
+		std::vector<VOX_Vector3i> blocks_pending_update;
+		std::vector<VOX_Vector3i> deferred_collision_updates;
+		Map<VOX_Vector3i, VoxelMeshBlock *> fading_blocks;
+		VOX_Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;
 
 		// Members for memory caching
-		std::vector<Vector3i> blocks_to_load;
+		std::vector<VOX_Vector3i> blocks_to_load;
 
-		inline bool has_loading_block(const Vector3i &pos) const {
+		inline bool has_loading_block(const VOX_Vector3i &pos) const {
 			return loading_blocks.find(pos) != loading_blocks.end();
 		}
 	};

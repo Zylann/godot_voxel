@@ -26,7 +26,7 @@ public:
 		FADING_OUT
 	};
 
-	Vector3i position; // In blocks
+	VOX_Vector3i position; // In blocks
 	unsigned int lod_index = 0;
 	bool pending_transition_update = false;
 	VoxelRefCount mesh_viewers;
@@ -47,7 +47,7 @@ public:
 	// Hence the need to use this boolean.
 	bool active = false;
 
-	static VoxelMeshBlock *create(Vector3i bpos, unsigned int size, unsigned int p_lod_index);
+	static VoxelMeshBlock *create(VOX_Vector3i bpos, unsigned int size, unsigned int p_lod_index);
 
 	~VoxelMeshBlock();
 
@@ -118,7 +118,7 @@ private:
 	}
 
 private:
-	Vector3i _position_in_voxels;
+	VOX_Vector3i _position_in_voxels;
 
 	Ref<ShaderMaterial> _shader_material;
 	DirectMeshInstance _mesh_instance;

@@ -42,14 +42,14 @@ unsigned int VoxelMeshMap::get_lod_index() const {
 	return _lod_index;
 }
 
-// VoxelMeshBlock *VoxelMeshMap::create_default_block(Vector3i bpos) {
+// VoxelMeshBlock *VoxelMeshMap::create_default_block(VOX_Vector3i bpos) {
 // 	VoxelMeshBlock *block = VoxelMeshBlock::create(bpos, _block_size, _lod_index);
 // 	set_block(bpos, block);
 // 	return block;
 // }
 
-// VoxelMeshBlock *VoxelMeshMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
-// 	Vector3i bpos = voxel_to_block(pos);
+// VoxelMeshBlock *VoxelMeshMap::get_or_create_block_at_voxel_pos(VOX_Vector3i pos) {
+// 	VOX_Vector3i bpos = voxel_to_block(pos);
 // 	VoxelMeshBlock *block = get_block(bpos);
 // 	if (block == nullptr) {
 // 		block = create_default_block(bpos);
@@ -57,7 +57,7 @@ unsigned int VoxelMeshMap::get_lod_index() const {
 // 	return block;
 // }
 
-VoxelMeshBlock *VoxelMeshMap::get_block(Vector3i bpos) {
+VoxelMeshBlock *VoxelMeshMap::get_block(VOX_Vector3i bpos) {
 	if (_last_accessed_block && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
@@ -75,7 +75,7 @@ VoxelMeshBlock *VoxelMeshMap::get_block(Vector3i bpos) {
 	return nullptr;
 }
 
-const VoxelMeshBlock *VoxelMeshMap::get_block(Vector3i bpos) const {
+const VoxelMeshBlock *VoxelMeshMap::get_block(VOX_Vector3i bpos) const {
 	if (_last_accessed_block != nullptr && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
@@ -93,7 +93,7 @@ const VoxelMeshBlock *VoxelMeshMap::get_block(Vector3i bpos) const {
 	return nullptr;
 }
 
-void VoxelMeshMap::set_block(Vector3i bpos, VoxelMeshBlock *block) {
+void VoxelMeshMap::set_block(VOX_Vector3i bpos, VoxelMeshBlock *block) {
 	ERR_FAIL_COND(block == nullptr);
 	CRASH_COND(bpos != block->position);
 	if (_last_accessed_block == nullptr || _last_accessed_block->position == bpos) {
@@ -107,7 +107,7 @@ void VoxelMeshMap::set_block(Vector3i bpos, VoxelMeshBlock *block) {
 	_blocks_map.set(bpos, i);
 }
 
-void VoxelMeshMap::remove_block_internal(Vector3i bpos, unsigned int index) {
+void VoxelMeshMap::remove_block_internal(VOX_Vector3i bpos, unsigned int index) {
 	// TODO `erase` can occasionally be very slow (milliseconds) if the map contains lots of items.
 	// This might be caused by internal rehashing/resizing.
 	// We should look for a faster container, or reduce the number of entries.
@@ -142,14 +142,14 @@ void VoxelMeshMap::queue_free_mesh_block(VoxelMeshBlock *block) {
 	VoxelServer::get_singleton()->push_time_spread_task(task);
 }
 
-bool VoxelMeshMap::has_block(Vector3i pos) const {
+bool VoxelMeshMap::has_block(VOX_Vector3i pos) const {
 	return /*(_last_accessed_block != nullptr && _last_accessed_block->pos == pos) ||*/ _blocks_map.has(pos);
 }
 
-bool VoxelMeshMap::is_block_surrounded(Vector3i pos) const {
+bool VoxelMeshMap::is_block_surrounded(VOX_Vector3i pos) const {
 	// TODO If that check proves to be too expensive with all blocks we deal with, cache it in VoxelBlocks
 	for (unsigned int i = 0; i < Cube::MOORE_NEIGHBORING_3D_COUNT; ++i) {
-		Vector3i bpos = pos + Cube::g_moore_neighboring_3d[i];
+		VOX_Vector3i bpos = pos + Cube::g_moore_neighboring_3d[i];
 		if (!has_block(bpos)) {
 			return false;
 		}

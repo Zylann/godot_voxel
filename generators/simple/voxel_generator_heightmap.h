@@ -26,7 +26,7 @@ public:
 
 protected:
 	template <typename Height_F>
-	Result generate(VoxelBufferInternal &out_buffer, Height_F height_func, Vector3i origin, int lod) {
+	Result generate(VoxelBufferInternal &out_buffer, Height_F height_func, VOX_Vector3i origin, int lod) {
 		Parameters params;
 		{
 			RWLockRead rlock(_parameters_lock);
@@ -34,7 +34,7 @@ protected:
 		}
 
 		const int channel = params.channel;
-		const Vector3i bs = out_buffer.get_size();
+		const VOX_Vector3i bs = out_buffer.get_size();
 		const bool use_sdf = channel == VoxelBufferInternal::CHANNEL_SDF;
 
 		if (origin.y > get_height_start() + get_height_range()) {
@@ -88,7 +88,7 @@ protected:
 							ih = bs.y;
 						}
 						out_buffer.fill_area(
-								params.matter_type, Vector3i(x, 0, z), Vector3i(x + 1, ih, z + 1), channel);
+								params.matter_type, VOX_Vector3i(x, 0, z), VOX_Vector3i(x + 1, ih, z + 1), channel);
 					}
 
 				} // for x

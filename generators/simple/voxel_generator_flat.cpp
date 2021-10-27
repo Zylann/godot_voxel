@@ -62,9 +62,9 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelBlockRequest &inp
 	}
 
 	VoxelBufferInternal &out_buffer = input.voxel_buffer;
-	const Vector3i origin = input.origin_in_voxels;
+	const VOX_Vector3i origin = input.origin_in_voxels;
 	const int channel = params.channel;
-	const Vector3i bs = out_buffer.get_size();
+	const VOX_Vector3i bs = out_buffer.get_size();
 	const bool use_sdf = channel == VoxelBuffer::CHANNEL_SDF;
 	const float margin = 1 << input.lod;
 	const int lod = input.lod;
@@ -110,7 +110,7 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelBlockRequest &inp
 					if (ih > bs.y) {
 						ih = bs.y;
 					}
-					out_buffer.fill_area(params.voxel_type, Vector3i(x, 0, z), Vector3i(x + 1, ih, z + 1), channel);
+					out_buffer.fill_area(params.voxel_type, VOX_Vector3i(x, 0, z), VOX_Vector3i(x + 1, ih, z + 1), channel);
 				}
 
 			} // for x

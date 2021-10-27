@@ -9,13 +9,13 @@
 // TODO Rename VoxelStreamBlockRequest
 struct VoxelBlockRequest {
 	VoxelBufferInternal &voxel_buffer;
-	Vector3i origin_in_voxels;
+	VOX_Vector3i origin_in_voxels;
 	int lod;
 };
 
 struct VoxelStreamInstanceDataRequest {
 	std::unique_ptr<VoxelInstanceBlockData> data;
-	Vector3i position;
+	VOX_Vector3i position;
 	uint8_t lod;
 };
 

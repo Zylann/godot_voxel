@@ -175,7 +175,7 @@
 			</description>
 		</method>
 		<method name="get_node_ids" qualifiers="const">
-			<return type="PoolIntArray">
+			<return type="PackedIntArray">
 			</return>
 			<description>
 			</description>

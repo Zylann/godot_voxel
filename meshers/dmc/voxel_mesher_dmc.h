@@ -15,7 +15,7 @@ typedef ObjectPool<OctreeNode> OctreeNodePool;
 // Octree used only for dual grid construction
 struct OctreeNode {
 
-	Vector3i origin;
+	VOX_Vector3i origin;
 	int size; // Nodes are cubic
 	HermiteValue center_value;
 	OctreeNode *children[8];

@@ -10,7 +10,7 @@ VoxelToolBuffer::VoxelToolBuffer(Ref<VoxelBuffer> vb) {
 
 bool VoxelToolBuffer::is_area_editable(const Box3i &box) const {
 	ERR_FAIL_COND_V(_buffer.is_null(), false);
-	return Box3i(Vector3i(), _buffer->get_size()).encloses(box);
+	return Box3i(VOX_Vector3i(), _buffer->get_size()).encloses(box);
 }
 
 void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
@@ -24,34 +24,34 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 
 	VOXEL_PROFILE_SCOPE();
 
-	Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
-	box.clip(Box3i(Vector3i(), _buffer->get_size()));
+	Box3i box(VOX_Vector3i(center) - VOX_Vector3i(Math::floor(radius)), VOX_Vector3i(Math::ceil(radius) * 2));
+	box.clip(Box3i(VOX_Vector3i(), _buffer->get_size()));
 
 	_buffer->get_buffer().write_box_2_template<TextureBlendSphereOp, uint16_t, uint16_t>(box,
 			VoxelBufferInternal::CHANNEL_INDICES,
 			VoxelBufferInternal::CHANNEL_WEIGHTS,
 			TextureBlendSphereOp(center, radius, _texture_params),
-			Vector3i());
+			VOX_Vector3i());
 
 	_post_edit(box);
 }
 
-uint64_t VoxelToolBuffer::_get_voxel(Vector3i pos) const {
+uint64_t VoxelToolBuffer::_get_voxel(VOX_Vector3i pos) const {
 	ERR_FAIL_COND_V(_buffer.is_null(), 0);
 	return _buffer->get_buffer().get_voxel(pos, _channel);
 }
 
-float VoxelToolBuffer::_get_voxel_f(Vector3i pos) const {
+float VoxelToolBuffer::_get_voxel_f(VOX_Vector3i pos) const {
 	ERR_FAIL_COND_V(_buffer.is_null(), 0);
 	return _buffer->get_buffer().get_voxel_f(pos.x, pos.y, pos.z, _channel);
 }
 
-void VoxelToolBuffer::_set_voxel(Vector3i pos, uint64_t v) {
+void VoxelToolBuffer::_set_voxel(VOX_Vector3i pos, uint64_t v) {
 	ERR_FAIL_COND(_buffer.is_null());
 	return _buffer->get_buffer().set_voxel(v, pos, _channel);
 }
 
-void VoxelToolBuffer::_set_voxel_f(Vector3i pos, float v) {
+void VoxelToolBuffer::_set_voxel_f(VOX_Vector3i pos, float v) {
 	ERR_FAIL_COND(_buffer.is_null());
 	return _buffer->set_voxel_f(v, pos.x, pos.y, pos.z, _channel);
 }
@@ -61,17 +61,17 @@ void VoxelToolBuffer::_post_edit(const Box3i &box) {
 	// Nothing special to do
 }
 
-void VoxelToolBuffer::set_voxel_metadata(Vector3i pos, Variant meta) {
+void VoxelToolBuffer::set_voxel_metadata(VOX_Vector3i pos, Variant meta) {
 	ERR_FAIL_COND(_buffer.is_null());
 	_buffer->get_buffer().set_voxel_metadata(pos, meta);
 }
 
-Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) const {
+Variant VoxelToolBuffer::get_voxel_metadata(VOX_Vector3i pos) const {
 	ERR_FAIL_COND_V(_buffer.is_null(), Variant());
 	return _buffer->get_buffer().get_voxel_metadata(pos);
 }
 
-void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
+void VoxelToolBuffer::paste(VOX_Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
 		uint64_t mask_value) {
 	// TODO Support `use_mask` properly
 	if (use_mask) {
@@ -85,8 +85,8 @@ void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t c
 	const VoxelBufferInternal &src = p_voxels->get_buffer();
 
 	Box3i box(p_pos, p_voxels->get_size());
-	const Vector3i min_noclamp = box.pos;
-	box.clip(Box3i(Vector3i(), _buffer->get_size()));
+	const VOX_Vector3i min_noclamp = box.pos;
+	box.clip(Box3i(VOX_Vector3i(), _buffer->get_size()));
 
 	if (channels_mask == 0) {
 		channels_mask = (1 << get_channel());
@@ -96,7 +96,7 @@ void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t c
 	FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels =
 			VoxelBufferInternal::mask_to_channels_list(channels_mask, channel_count);
 
-	const Vector3i box_max = box.pos + box.size;
+	const VOX_Vector3i box_max = box.pos + box.size;
 
 	for (unsigned int ci = 0; ci < channel_count; ++ci) {
 		const unsigned int channel_index = channels[ci];
@@ -115,7 +115,7 @@ void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t c
 						dst.set_voxel(v, x, y, z, channel_index);
 
 						// Overwrite previous metadata
-						dst.set_voxel_metadata(Vector3i(x, y, z), Variant());
+						dst.set_voxel_metadata(VOX_Vector3i(x, y, z), Variant());
 					}
 				}
 			}
@@ -123,5 +123,5 @@ void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t c
 	}
 
 	_buffer->get_buffer().copy_voxel_metadata_in_area(
-			p_voxels->get_buffer(), Box3i(Vector3i(), p_voxels->get_size()), p_pos);
+			p_voxels->get_buffer(), Box3i(VOX_Vector3i(), p_voxels->get_size()), p_pos);
 }

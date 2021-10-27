@@ -5,11 +5,11 @@
 namespace VoxImportUtils {
 
 static void scale_surface(Array &surface, float scale) {
-	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
+	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
 	// Avoiding stupid CoW, assuming this array holds the only instance of this vector
-	surface[Mesh::ARRAY_VERTEX] = PoolVector3Array();
+	surface[Mesh::ARRAY_VERTEX] = PackedVector3Array();
 	{
-		PoolVector3Array::Write w = positions.write();
+		PackedVector3Array::Write w = positions.write();
 		for (int vertex_index = 0; vertex_index < positions.size(); ++vertex_index) {
 			w[vertex_index] *= scale;
 		}
@@ -18,11 +18,11 @@ static void scale_surface(Array &surface, float scale) {
 }
 
 static void offset_surface(Array &surface, Vector3 offset) {
-	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
+	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
 	// Avoiding stupid CoW, assuming this array holds the only instance of this vector
-	surface[Mesh::ARRAY_VERTEX] = PoolVector3Array();
+	surface[Mesh::ARRAY_VERTEX] = PackedVector3Array();
 	{
-		PoolVector3Array::Write w = positions.write();
+		PackedVector3Array::Write w = positions.write();
 		for (int vertex_index = 0; vertex_index < positions.size(); ++vertex_index) {
 			w[vertex_index] += offset;
 		}

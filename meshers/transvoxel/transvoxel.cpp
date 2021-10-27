@@ -13,7 +13,7 @@ inline uint8_t sign_f(float v) {
 	return v < 0.f;
 }
 
-Vector3 get_border_offset(const Vector3 pos, const int lod_index, const Vector3i block_size) {
+Vector3 get_border_offset(const Vector3 pos, const int lod_index, const VOX_Vector3i block_size) {
 	// When transition meshes are inserted between blocks of different LOD, we need to make space for them.
 	// Secondary vertex positions can be calculated by linearly transforming positions inside boundary cells
 	// so that the full-size cell is scaled to a smaller size that allows space for between one and three
@@ -28,7 +28,7 @@ Vector3 get_border_offset(const Vector3 pos, const int lod_index, const Vector3i
 
 	const float wk = TRANSITION_CELL_SCALE * p2k; // 2 ^ (lod - 2), if scale is 0.25
 
-	for (unsigned int i = 0; i < Vector3i::AXIS_COUNT; ++i) {
+	for (unsigned int i = 0; i < VOX_Vector3i::AXIS_COUNT; ++i) {
 		const float p = pos[i];
 		const float s = block_size[i];
 
@@ -59,13 +59,13 @@ inline Vector3 project_border_offset(Vector3 delta, Vector3 normal) {
 }
 
 inline Vector3 get_secondary_position(
-		const Vector3 primary, const Vector3 normal, const int lod_index, const Vector3i block_size) {
+		const Vector3 primary, const Vector3 normal, const int lod_index, const VOX_Vector3i block_size) {
 	Vector3 delta = get_border_offset(primary, lod_index, block_size);
 	delta = project_border_offset(delta, normal);
 	return primary + delta;
 }
 
-inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &block_size) {
+inline uint8_t get_border_mask(const VOX_Vector3i &pos, const VOX_Vector3i &block_size) {
 	uint8_t mask = 0;
 
 	//  1: -X
@@ -75,7 +75,7 @@ inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &block_size) 
 	// 16: -Z
 	// 32: +Z
 
-	for (unsigned int i = 0; i < Vector3i::AXIS_COUNT; i++) {
+	for (unsigned int i = 0; i < VOX_Vector3i::AXIS_COUNT; i++) {
 		// Close to negative face.
 		if (pos[i] == 0) {
 			mask |= (1 << (i * 2));
@@ -99,9 +99,9 @@ inline Vector3 normalized_not_null(Vector3 n) {
 	}
 }
 
-inline Vector3i dir_to_prev_vec(uint8_t dir) {
+inline VOX_Vector3i dir_to_prev_vec(uint8_t dir) {
 	//return g_corner_dirs[mask] - Vector3(1,1,1);
-	return Vector3i(
+	return VOX_Vector3i(
 			-(dir & 1),
 			-((dir >> 1) & 1),
 			-((dir >> 2) & 1));
@@ -125,7 +125,7 @@ inline float sdf_as_float(double v) {
 
 template <typename Sdf_T>
 inline Vector3 get_corner_gradient(
-		unsigned int data_index, Span<const Sdf_T> sdf_data, const Vector3i block_size) {
+		unsigned int data_index, Span<const Sdf_T> sdf_data, const VOX_Vector3i block_size) {
 	const unsigned int n010 = 1; // Y+1
 	const unsigned int n100 = block_size.y; // X+1
 	const unsigned int n001 = block_size.y * block_size.x; // Z+1
@@ -291,22 +291,22 @@ void build_regular_mesh(
 		Span<const Sdf_T> sdf_data,
 		TextureIndicesData texture_indices_data,
 		const WeightSampler_T &weights_sampler,
-		const Vector3i block_size_with_padding,
+		const VOX_Vector3i block_size_with_padding,
 		int lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output) {
 	VOXEL_PROFILE_SCOPE();
 
 	// This function has some comments as quotes from the Transvoxel paper.
 
-	const Vector3i block_size = block_size_with_padding - Vector3i(MIN_PADDING + MAX_PADDING);
-	const Vector3i block_size_scaled = block_size << lod_index;
+	const VOX_Vector3i block_size = block_size_with_padding - VOX_Vector3i(MIN_PADDING + MAX_PADDING);
+	const VOX_Vector3i block_size_scaled = block_size << lod_index;
 
 	// Prepare vertex reuse cache
 	cache.reset_reuse_cells(block_size_with_padding);
 
 	// We iterate 2x2 voxel groups, which the paper calls "cells".
 	// We also reach one voxel further to compute normals, so we adjust the iterated area
-	const Vector3i min_pos = Vector3i(MIN_PADDING);
-	const Vector3i max_pos = block_size_with_padding - Vector3i(MAX_PADDING);
+	const VOX_Vector3i min_pos = VOX_Vector3i(MIN_PADDING);
+	const VOX_Vector3i max_pos = block_size_with_padding - VOX_Vector3i(MAX_PADDING);
 
 	// How much to advance in the data array to get neighbor voxels
 	const unsigned int n010 = 1; // Y+1
@@ -321,11 +321,11 @@ void build_regular_mesh(
 	const Sdf_T isolevel = get_isolevel<Sdf_T>();
 
 	// Iterate all cells with padding (expected to be neighbors)
-	Vector3i pos;
+	VOX_Vector3i pos;
 	for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
 		for (pos.y = min_pos.y; pos.y < max_pos.y; ++pos.y) {
 			// TODO Optimization: change iteration to be ZXY? (Data is laid out with Y as deepest coordinate)
-			unsigned int data_index = Vector3i(min_pos.x, pos.y, pos.z).get_zxy_index(block_size_with_padding);
+			unsigned int data_index = VOX_Vector3i(min_pos.x, pos.y, pos.z).get_zxy_index(block_size_with_padding);
 
 			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x, data_index += block_size_with_padding.y) {
 				{
@@ -407,15 +407,15 @@ void build_regular_mesh(
 
 				CRASH_COND(case_code > 255);
 
-				FixedArray<Vector3i, 8> padded_corner_positions;
-				padded_corner_positions[0] = Vector3i(pos.x, pos.y, pos.z);
-				padded_corner_positions[1] = Vector3i(pos.x + 1, pos.y, pos.z);
-				padded_corner_positions[2] = Vector3i(pos.x, pos.y + 1, pos.z);
-				padded_corner_positions[3] = Vector3i(pos.x + 1, pos.y + 1, pos.z);
-				padded_corner_positions[4] = Vector3i(pos.x, pos.y, pos.z + 1);
-				padded_corner_positions[5] = Vector3i(pos.x + 1, pos.y, pos.z + 1);
-				padded_corner_positions[6] = Vector3i(pos.x, pos.y + 1, pos.z + 1);
-				padded_corner_positions[7] = Vector3i(pos.x + 1, pos.y + 1, pos.z + 1);
+				FixedArray<VOX_Vector3i, 8> padded_corner_positions;
+				padded_corner_positions[0] = VOX_Vector3i(pos.x, pos.y, pos.z);
+				padded_corner_positions[1] = VOX_Vector3i(pos.x + 1, pos.y, pos.z);
+				padded_corner_positions[2] = VOX_Vector3i(pos.x, pos.y + 1, pos.z);
+				padded_corner_positions[3] = VOX_Vector3i(pos.x + 1, pos.y + 1, pos.z);
+				padded_corner_positions[4] = VOX_Vector3i(pos.x, pos.y, pos.z + 1);
+				padded_corner_positions[5] = VOX_Vector3i(pos.x + 1, pos.y, pos.z + 1);
+				padded_corner_positions[6] = VOX_Vector3i(pos.x, pos.y + 1, pos.z + 1);
+				padded_corner_positions[7] = VOX_Vector3i(pos.x + 1, pos.y + 1, pos.z + 1);
 
 				CellTextureDatas<8> cell_textures;
 				if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
@@ -423,9 +423,9 @@ void build_regular_mesh(
 					current_reuse_cell.packed_texture_indices = cell_textures.packed_indices;
 				}
 
-				FixedArray<Vector3i, 8> corner_positions;
+				FixedArray<VOX_Vector3i, 8> corner_positions;
 				for (unsigned int i = 0; i < padded_corner_positions.size(); ++i) {
-					const Vector3i p = padded_corner_positions[i];
+					const VOX_Vector3i p = padded_corner_positions[i];
 					// Undo padding here. From this point, corner positions are actual positions.
 					corner_positions[i] = (p - min_pos) << lod_index;
 				}
@@ -448,7 +448,7 @@ void build_regular_mesh(
 
 				FixedArray<int, 12> cell_vertex_indices(-1);
 
-				const uint8_t cell_border_mask = get_border_mask(pos - min_pos, block_size - Vector3i(1));
+				const uint8_t cell_border_mask = get_border_mask(pos - min_pos, block_size - VOX_Vector3i(1));
 
 				// For each vertex in the case
 				for (unsigned int vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
@@ -483,8 +483,8 @@ void build_regular_mesh(
 					//const int t = (sample1 << 8) / (sample1 - sample0);
 					const float t = sample1 / (sample1 - sample0);
 
-					const Vector3i p0 = corner_positions[v0];
-					const Vector3i p1 = corner_positions[v1];
+					const VOX_Vector3i p0 = corner_positions[v0];
+					const VOX_Vector3i p1 = corner_positions[v1];
 
 					if (t > 0.f && t < 1.f) {
 						// Vertex is between p0 and p1 (inside the edge)
@@ -506,7 +506,7 @@ void build_regular_mesh(
 						const bool present = (reuse_dir & direction_validity_mask) == reuse_dir;
 
 						if (present) {
-							const Vector3i cache_pos = pos + dir_to_prev_vec(reuse_dir);
+							const VOX_Vector3i cache_pos = pos + dir_to_prev_vec(reuse_dir);
 							const ReuseCell &prev_cell = cache.get_reuse_cell(cache_pos);
 							if (prev_cell.packed_texture_indices == cell_textures.packed_indices) {
 								// Will reuse a previous vertice
@@ -532,7 +532,7 @@ void build_regular_mesh(
 							//const int ti0 = t;
 							//const int ti1 = 0x100 - t;
 
-							//const Vector3i primary = p0 * ti0 + p1 * ti1;
+							//const VOX_Vector3i primary = p0 * ti0 + p1 * ti1;
 							const Vector3 primaryf = p0.to_vec3() * t0 + p1.to_vec3() * t1;
 							const Vector3 cg0 = get_corner_gradient<Sdf_T>(corner_data_indices[v0], sdf_data,
 									block_size_with_padding);
@@ -575,7 +575,7 @@ void build_regular_mesh(
 						// v1 == 7: p1 on the max corner of the cell
 						// This cell owns the vertex, so it should be created.
 
-						const Vector3i primary = p1;
+						const VOX_Vector3i primary = p1;
 						const Vector3 primaryf = primary.to_vec3();
 						const Vector3 cg1 = get_corner_gradient<Sdf_T>(
 								corner_data_indices[v1], sdf_data, block_size_with_padding);
@@ -612,7 +612,7 @@ void build_regular_mesh(
 
 						// Note: the only difference with similar code above is that we take vertice 0 in the `else`
 						if (present) {
-							const Vector3i cache_pos = pos + dir_to_prev_vec(reuse_dir);
+							const VOX_Vector3i cache_pos = pos + dir_to_prev_vec(reuse_dir);
 							const ReuseCell &prev_cell = cache.get_reuse_cell(cache_pos);
 							cell_vertex_indices[vertex_index] = prev_cell.vertices[0];
 						}
@@ -623,7 +623,7 @@ void build_regular_mesh(
 							// TODO Earlier we associated t==0 to p0, why are we doing p1 here?
 							const unsigned int vi = t == 0 ? v1 : v0;
 
-							const Vector3i primary = t == 0 ? p1 : p0;
+							const VOX_Vector3i primary = t == 0 ? p1 : p0;
 							const Vector3 primaryf = primary.to_vec3();
 							const Vector3 cg = get_corner_gradient<Sdf_T>(corner_data_indices[vi], sdf_data,
 									block_size_with_padding);
@@ -673,32 +673,32 @@ void build_regular_mesh(
 //  z
 
 // Convert from face-space to block-space coordinates, considering which face we are working on.
-inline Vector3i face_to_block(int x, int y, int z, int dir, const Vector3i &bs) {
+inline VOX_Vector3i face_to_block(int x, int y, int z, int dir, const VOX_Vector3i &bs) {
 	// There are several possible solutions to this, because we can rotate the axes.
 	// We'll take configurations where XY map different axes at the same relative orientations,
 	// so only Z is flipped in half cases.
 	switch (dir) {
 		case Cube::SIDE_NEGATIVE_X:
-			return Vector3i(z, x, y);
+			return VOX_Vector3i(z, x, y);
 
 		case Cube::SIDE_POSITIVE_X:
-			return Vector3i(bs.x - 1 - z, y, x);
+			return VOX_Vector3i(bs.x - 1 - z, y, x);
 
 		case Cube::SIDE_NEGATIVE_Y:
-			return Vector3i(y, z, x);
+			return VOX_Vector3i(y, z, x);
 
 		case Cube::SIDE_POSITIVE_Y:
-			return Vector3i(x, bs.y - 1 - z, y);
+			return VOX_Vector3i(x, bs.y - 1 - z, y);
 
 		case Cube::SIDE_NEGATIVE_Z:
-			return Vector3i(x, y, z);
+			return VOX_Vector3i(x, y, z);
 
 		case Cube::SIDE_POSITIVE_Z:
-			return Vector3i(y, x, bs.z - 1 - z);
+			return VOX_Vector3i(y, x, bs.z - 1 - z);
 
 		default:
 			CRASH_NOW();
-			return Vector3i();
+			return VOX_Vector3i();
 	}
 }
 
@@ -706,33 +706,33 @@ inline Vector3i face_to_block(int x, int y, int z, int dir, const Vector3i &bs) 
 inline void get_face_axes(int &ax, int &ay, int dir) {
 	switch (dir) {
 		case Cube::SIDE_NEGATIVE_X:
-			ax = Vector3i::AXIS_Y;
-			ay = Vector3i::AXIS_Z;
+			ax = VOX_Vector3i::AXIS_Y;
+			ay = VOX_Vector3i::AXIS_Z;
 			break;
 
 		case Cube::SIDE_POSITIVE_X:
-			ax = Vector3i::AXIS_Z;
-			ay = Vector3i::AXIS_Y;
+			ax = VOX_Vector3i::AXIS_Z;
+			ay = VOX_Vector3i::AXIS_Y;
 			break;
 
 		case Cube::SIDE_NEGATIVE_Y:
-			ax = Vector3i::AXIS_Z;
-			ay = Vector3i::AXIS_X;
+			ax = VOX_Vector3i::AXIS_Z;
+			ay = VOX_Vector3i::AXIS_X;
 			break;
 
 		case Cube::SIDE_POSITIVE_Y:
-			ax = Vector3i::AXIS_X;
-			ay = Vector3i::AXIS_Z;
+			ax = VOX_Vector3i::AXIS_X;
+			ay = VOX_Vector3i::AXIS_Z;
 			break;
 
 		case Cube::SIDE_NEGATIVE_Z:
-			ax = Vector3i::AXIS_X;
-			ay = Vector3i::AXIS_Y;
+			ax = VOX_Vector3i::AXIS_X;
+			ay = VOX_Vector3i::AXIS_Y;
 			break;
 
 		case Cube::SIDE_POSITIVE_Z:
-			ax = Vector3i::AXIS_Y;
-			ay = Vector3i::AXIS_X;
+			ax = VOX_Vector3i::AXIS_Y;
+			ay = VOX_Vector3i::AXIS_X;
 			break;
 
 		default:
@@ -745,13 +745,13 @@ void build_transition_mesh(
 		Span<const Sdf_T> sdf_data,
 		TextureIndicesData texture_indices_data,
 		const WeightSampler_T &weights_sampler,
-		const Vector3i block_size_with_padding,
+		const VOX_Vector3i block_size_with_padding,
 		int direction, int lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output) {
 	// From this point, we expect the buffer to contain allocated data.
 	// This function has some comments as quotes from the Transvoxel paper.
 
-	const Vector3i block_size_without_padding = block_size_with_padding - Vector3i(MIN_PADDING + MAX_PADDING);
-	const Vector3i block_size_scaled = block_size_without_padding << lod_index;
+	const VOX_Vector3i block_size_without_padding = block_size_with_padding - VOX_Vector3i(MIN_PADDING + MAX_PADDING);
+	const VOX_Vector3i block_size_scaled = block_size_without_padding << lod_index;
 
 	ERR_FAIL_COND(block_size_with_padding.x < 3);
 	ERR_FAIL_COND(block_size_with_padding.y < 3);
@@ -772,8 +772,8 @@ void build_transition_mesh(
 	// This represents the actual box of voxels we are working on.
 	// It also represents positions of the minimum and maximum vertices that can be generated.
 	// Padding is present to allow reaching 1 voxel further for calculating normals
-	const Vector3i min_pos = Vector3i(MIN_PADDING);
-	const Vector3i max_pos = block_size_with_padding - Vector3i(MAX_PADDING);
+	const VOX_Vector3i min_pos = VOX_Vector3i(MIN_PADDING);
+	const VOX_Vector3i max_pos = block_size_with_padding - VOX_Vector3i(MAX_PADDING);
 
 	int axis_x, axis_y;
 	get_face_axes(axis_x, axis_y, direction);
@@ -802,7 +802,7 @@ void build_transition_mesh(
 	const int fn20 = 2 * fn10;
 	const int fn02 = 2 * fn01;
 
-	FixedArray<Vector3i, 13> cell_positions;
+	FixedArray<VOX_Vector3i, 13> cell_positions;
 	const int fz = MIN_PADDING;
 
 	const Sdf_T isolevel = get_isolevel<Sdf_T>();
@@ -1014,13 +1014,13 @@ void build_transition_mesh(
 					if (!present || cell_vertex_indices[vertex_index] == -1) {
 						// Going to create a new vertex
 
-						const Vector3i p0 = cell_positions[index_vertex_a];
-						const Vector3i p1 = cell_positions[index_vertex_b];
+						const VOX_Vector3i p0 = cell_positions[index_vertex_a];
+						const VOX_Vector3i p1 = cell_positions[index_vertex_b];
 
 						const Vector3 n0 = cell_gradients[index_vertex_a];
 						const Vector3 n1 = cell_gradients[index_vertex_b];
 
-						//Vector3i primary = p0 * ti0 + p1 * ti1;
+						//VOX_Vector3i primary = p0 * ti0 + p1 * ti1;
 						const Vector3 primaryf = p0.to_vec3() * t0 + p1.to_vec3() * t1;
 						const Vector3 normal = normalized_not_null(n0 * t0 + n1 * t1);
 
@@ -1087,7 +1087,7 @@ void build_transition_mesh(
 					if (!present || cell_vertex_indices[vertex_index] == -1) {
 						// Going to create a new vertex
 
-						const Vector3i primary = cell_positions[cell_index];
+						const VOX_Vector3i primary = cell_positions[cell_index];
 						const Vector3 primaryf = primary.to_vec3();
 						const Vector3 normal = normalized_not_null(cell_gradients[cell_index]);
 
@@ -1145,7 +1145,7 @@ Span<const T> get_or_decompress_channel(
 
 	if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
 		backing_buffer.resize(voxels.get_size().volume());
-		const T v = voxels.get_voxel(Vector3i(), channel);
+		const T v = voxels.get_voxel(VOX_Vector3i(), channel);
 		// TODO Could use a fast fill using 8-byte blocks or intrinsics?
 		for (unsigned int i = 0; i < backing_buffer.size(); ++i) {
 			backing_buffer[i] = v;
@@ -1166,7 +1166,7 @@ TextureIndicesData get_texture_indices_data(const VoxelBufferInternal &voxels, u
 	TextureIndicesData data;
 
 	if (voxels.is_uniform(channel)) {
-		const uint16_t encoded_indices = voxels.get_voxel(Vector3i(), channel);
+		const uint16_t encoded_indices = voxels.get_voxel(VOX_Vector3i(), channel);
 		data.default_indices = decode_indices_from_packed_u16(encoded_indices);
 		data.packed_default_indices = pack_bytes(data.default_indices);
 

@@ -48,8 +48,8 @@ unsigned int VoxelDataMap::get_lod_index() const {
 	return _lod_index;
 }
 
-int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
-	Vector3i bpos = voxel_to_block(pos);
+int VoxelDataMap::get_voxel(VOX_Vector3i pos, unsigned int c) const {
+	VOX_Vector3i bpos = voxel_to_block(pos);
 	const VoxelDataBlock *block = get_block(bpos);
 	if (block == nullptr) {
 		return _default_voxel[c];
@@ -58,7 +58,7 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 	return block->get_voxels_const().get_voxel(to_local(pos), c);
 }
 
-VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
+VoxelDataBlock *VoxelDataMap::create_default_block(VOX_Vector3i bpos) {
 	std::shared_ptr<VoxelBufferInternal> buffer = gd_make_shared<VoxelBufferInternal>();
 	buffer->create(_block_size, _block_size, _block_size);
 	buffer->set_default_values(_default_voxel);
@@ -67,8 +67,8 @@ VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 	return block;
 }
 
-VoxelDataBlock *VoxelDataMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
-	Vector3i bpos = voxel_to_block(pos);
+VoxelDataBlock *VoxelDataMap::get_or_create_block_at_voxel_pos(VOX_Vector3i pos) {
+	VOX_Vector3i bpos = voxel_to_block(pos);
 	VoxelDataBlock *block = get_block(bpos);
 	if (block == nullptr) {
 		block = create_default_block(bpos);
@@ -76,7 +76,7 @@ VoxelDataBlock *VoxelDataMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
 	return block;
 }
 
-void VoxelDataMap::set_voxel(int value, Vector3i pos, unsigned int c) {
+void VoxelDataMap::set_voxel(int value, VOX_Vector3i pos, unsigned int c) {
 	VoxelDataBlock *block = get_or_create_block_at_voxel_pos(pos);
 	// TODO If it turns out to be a problem, use CoW
 	VoxelBufferInternal &voxels = block->get_voxels();
@@ -84,21 +84,21 @@ void VoxelDataMap::set_voxel(int value, Vector3i pos, unsigned int c) {
 	voxels.set_voxel(value, to_local(pos), c);
 }
 
-float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
-	Vector3i bpos = voxel_to_block(pos);
+float VoxelDataMap::get_voxel_f(VOX_Vector3i pos, unsigned int c) const {
+	VOX_Vector3i bpos = voxel_to_block(pos);
 	const VoxelDataBlock *block = get_block(bpos);
 	if (block == nullptr) {
 		// TODO Not valid for a float return value
 		return _default_voxel[c];
 	}
-	Vector3i lpos = to_local(pos);
+	VOX_Vector3i lpos = to_local(pos);
 	RWLockRead lock(block->get_voxels_const().get_lock());
 	return block->get_voxels_const().get_voxel_f(lpos.x, lpos.y, lpos.z, c);
 }
 
-void VoxelDataMap::set_voxel_f(real_t value, Vector3i pos, unsigned int c) {
+void VoxelDataMap::set_voxel_f(real_t value, VOX_Vector3i pos, unsigned int c) {
 	VoxelDataBlock *block = get_or_create_block_at_voxel_pos(pos);
-	Vector3i lpos = to_local(pos);
+	VOX_Vector3i lpos = to_local(pos);
 	VoxelBufferInternal &voxels = block->get_voxels();
 	RWLockWrite lock(voxels.get_lock());
 	voxels.set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
@@ -114,7 +114,7 @@ int VoxelDataMap::get_default_voxel(unsigned int channel) {
 	return _default_voxel[channel];
 }
 
-VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) {
+VoxelDataBlock *VoxelDataMap::get_block(VOX_Vector3i bpos) {
 	if (_last_accessed_block && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
@@ -132,7 +132,7 @@ VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) {
 	return nullptr;
 }
 
-const VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) const {
+const VoxelDataBlock *VoxelDataMap::get_block(VOX_Vector3i bpos) const {
 	if (_last_accessed_block != nullptr && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
 	}
@@ -150,7 +150,7 @@ const VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) const {
 	return nullptr;
 }
 
-void VoxelDataMap::set_block(Vector3i bpos, VoxelDataBlock *block) {
+void VoxelDataMap::set_block(VOX_Vector3i bpos, VoxelDataBlock *block) {
 	ERR_FAIL_COND(block == nullptr);
 	CRASH_COND(bpos != block->position);
 	if (_last_accessed_block == nullptr || _last_accessed_block->position == bpos) {
@@ -164,7 +164,7 @@ void VoxelDataMap::set_block(Vector3i bpos, VoxelDataBlock *block) {
 	_blocks_map.insert(std::make_pair(bpos, i));
 }
 
-void VoxelDataMap::remove_block_internal(Vector3i bpos, unsigned int index) {
+void VoxelDataMap::remove_block_internal(VOX_Vector3i bpos, unsigned int index) {
 	// TODO `erase` can occasionally be very slow (milliseconds) if the map contains lots of items.
 	// This might be caused by internal rehashing/resizing.
 	// We should look for a faster container, or reduce the number of entries.
@@ -186,7 +186,7 @@ void VoxelDataMap::remove_block_internal(Vector3i bpos, unsigned int index) {
 	}
 }
 
-VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer) {
+VoxelDataBlock *VoxelDataMap::set_block_buffer(VOX_Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer) {
 	ERR_FAIL_COND_V(buffer == nullptr, nullptr);
 	VoxelDataBlock *block = get_block(bpos);
 	if (block == nullptr) {
@@ -198,15 +198,15 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, std::shared_ptr<Vo
 	return block;
 }
 
-bool VoxelDataMap::has_block(Vector3i pos) const {
+bool VoxelDataMap::has_block(VOX_Vector3i pos) const {
 	return /*(_last_accessed_block != nullptr && _last_accessed_block->pos == pos) ||*/
 			_blocks_map.find(pos) != _blocks_map.end();
 }
 
-bool VoxelDataMap::is_block_surrounded(Vector3i pos) const {
+bool VoxelDataMap::is_block_surrounded(VOX_Vector3i pos) const {
 	// TODO If that check proves to be too expensive with all blocks we deal with, cache it in VoxelBlocks
 	for (unsigned int i = 0; i < Cube::MOORE_NEIGHBORING_3D_COUNT; ++i) {
-		Vector3i bpos = pos + Cube::g_moore_neighboring_3d[i];
+		VOX_Vector3i bpos = pos + Cube::g_moore_neighboring_3d[i];
 		if (!has_block(bpos)) {
 			return false;
 		}
@@ -214,15 +214,15 @@ bool VoxelDataMap::is_block_surrounded(Vector3i pos) const {
 	return true;
 }
 
-void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
-	const Vector3i max_pos = min_pos + dst_buffer.get_size();
+void VoxelDataMap::copy(VOX_Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
+	const VOX_Vector3i max_pos = min_pos + dst_buffer.get_size();
 
-	const Vector3i min_block_pos = voxel_to_block(min_pos);
-	const Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1, 1, 1)) + Vector3i(1, 1, 1);
+	const VOX_Vector3i min_block_pos = voxel_to_block(min_pos);
+	const VOX_Vector3i max_block_pos = voxel_to_block(max_pos - VOX_Vector3i(1, 1, 1)) + VOX_Vector3i(1, 1, 1);
 
-	const Vector3i block_size_v(_block_size, _block_size, _block_size);
+	const VOX_Vector3i block_size_v(_block_size, _block_size, _block_size);
 
-	Vector3i bpos;
+	VOX_Vector3i bpos;
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
@@ -231,7 +231,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 						continue;
 					}
 					const VoxelDataBlock *block = get_block(bpos);
-					const Vector3i src_block_origin = block_to_voxel(bpos);
+					const VOX_Vector3i src_block_origin = block_to_voxel(bpos);
 
 					if (block != nullptr) {
 						const VoxelBufferInternal &src_buffer = block->get_voxels_const();
@@ -244,7 +244,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 						dst_buffer.copy_from(src_buffer,
 								min_pos - src_block_origin,
 								src_buffer.get_size(),
-								Vector3i(),
+								VOX_Vector3i(),
 								channel);
 
 					} else {
@@ -262,15 +262,15 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 	}
 }
 
-void VoxelDataMap::paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
+void VoxelDataMap::paste(VOX_Vector3i min_pos, VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
 		uint64_t mask_value, bool create_new_blocks) {
 	//
-	const Vector3i max_pos = min_pos + src_buffer.get_size();
+	const VOX_Vector3i max_pos = min_pos + src_buffer.get_size();
 
-	const Vector3i min_block_pos = voxel_to_block(min_pos);
-	const Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1, 1, 1)) + Vector3i(1, 1, 1);
+	const VOX_Vector3i min_block_pos = voxel_to_block(min_pos);
+	const VOX_Vector3i max_block_pos = voxel_to_block(max_pos - VOX_Vector3i(1, 1, 1)) + VOX_Vector3i(1, 1, 1);
 
-	Vector3i bpos;
+	VOX_Vector3i bpos;
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
@@ -288,7 +288,7 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsi
 						}
 					}
 
-					const Vector3i dst_block_origin = block_to_voxel(bpos);
+					const VOX_Vector3i dst_block_origin = block_to_voxel(bpos);
 
 					VoxelBufferInternal &dst_buffer = block->get_voxels();
 					RWLockWrite lock(dst_buffer.get_lock());
@@ -296,10 +296,10 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsi
 					if (use_mask) {
 						const Box3i dst_box(min_pos - dst_block_origin, src_buffer.get_size());
 
-						const Vector3i src_offset = -dst_box.pos;
+						const VOX_Vector3i src_offset = -dst_box.pos;
 
 						dst_buffer.read_write_action(dst_box, channel,
-								[&src_buffer, mask_value, src_offset, channel](const Vector3i pos, uint64_t dst_v) {
+								[&src_buffer, mask_value, src_offset, channel](const VOX_Vector3i pos, uint64_t dst_v) {
 									const uint64_t src_v = src_buffer.get_voxel(pos + src_offset, channel);
 									if (src_v == mask_value) {
 										return dst_v;
@@ -309,7 +309,7 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsi
 
 					} else {
 						dst_buffer.copy_from(src_buffer,
-								Vector3i(),
+								VOX_Vector3i(),
 								src_buffer.get_size(),
 								min_pos - dst_block_origin,
 								channel);
@@ -344,7 +344,7 @@ int VoxelDataMap::get_block_count() const {
 
 bool VoxelDataMap::is_area_fully_loaded(const Box3i voxels_box) const {
 	Box3i block_box = voxels_box.downscaled(get_block_size());
-	return block_box.all_cells_match([this](Vector3i pos) {
+	return block_box.all_cells_match([this](VOX_Vector3i pos) {
 		return has_block(pos);
 	});
 }

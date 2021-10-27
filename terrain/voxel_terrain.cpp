@@ -22,7 +22,7 @@ VoxelTerrain::VoxelTerrain() {
 
 	// TODO Should it actually be finite for better discovery?
 	// Infinite by default
-	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(0), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
+	_bounds_in_voxels = Box3i::from_center_extents(VOX_Vector3i(0), VOX_Vector3i(VoxelConstants::MAX_VOLUME_EXTENT));
 
 	struct ApplyMeshUpdateTask : public IVoxelTimeSpreadTask {
 		void run() override {
@@ -350,7 +350,7 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock *mesh_block) {
 	const int render_to_data_factor = get_mesh_block_size() / get_data_block_size();
 	const Box3i bounds_in_data_blocks = _bounds_in_voxels.downscaled(get_data_block_size());
 	// Pad by 1 because meshing needs neighbors
-	const Box3i data_box = Box3i(mesh_block->position * render_to_data_factor, Vector3i(render_to_data_factor))
+	const Box3i data_box = Box3i(mesh_block->position * render_to_data_factor, VOX_Vector3i(render_to_data_factor))
 								   .padded(1)
 								   .clipped(bounds_in_data_blocks);
 
@@ -358,7 +358,7 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock *mesh_block) {
 	ERR_FAIL_COND(data_box.is_empty());
 
 	// Check if we have the data
-	const bool data_available = data_box.all_cells_match([this](Vector3i bpos) {
+	const bool data_available = data_box.all_cells_match([this](VOX_Vector3i bpos) {
 		return _data_map.has_block(bpos);
 	});
 
@@ -370,7 +370,7 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock *mesh_block) {
 	}
 }
 
-void VoxelTerrain::view_data_block(Vector3i bpos) {
+void VoxelTerrain::view_data_block(VOX_Vector3i bpos) {
 	VoxelDataBlock *block = _data_map.get_block(bpos);
 
 	if (block == nullptr) {
@@ -400,7 +400,7 @@ void VoxelTerrain::view_data_block(Vector3i bpos) {
 	}
 }
 
-void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag) {
+void VoxelTerrain::view_mesh_block(VOX_Vector3i bpos, bool mesh_flag, bool collision_flag) {
 	if (mesh_flag == false && collision_flag == false) {
 		// Why even call the function?
 		return;
@@ -431,7 +431,7 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 	// They have to be re-created, which may cause world re-load...
 }
 
-void VoxelTerrain::unview_data_block(Vector3i bpos) {
+void VoxelTerrain::unview_data_block(VOX_Vector3i bpos) {
 	VoxelDataBlock *block = _data_map.get_block(bpos);
 
 	if (block == nullptr) {
@@ -469,7 +469,7 @@ void VoxelTerrain::unview_data_block(Vector3i bpos) {
 	}
 }
 
-void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag) {
+void VoxelTerrain::unview_mesh_block(VOX_Vector3i bpos, bool mesh_flag, bool collision_flag) {
 	VoxelMeshBlock *block = _mesh_map.get_block(bpos);
 	// Mesh blocks are created on first view call,
 	// so that would mean we unview one without viewing it in the first place
@@ -521,7 +521,7 @@ struct ScheduleSaveAction {
 };
 } // namespace
 
-void VoxelTerrain::unload_data_block(Vector3i bpos) {
+void VoxelTerrain::unload_data_block(VOX_Vector3i bpos) {
 	_data_map.remove_block(bpos, [this, bpos](VoxelDataBlock *block) {
 		emit_data_block_unloaded(block);
 		// Note: no need to copy the block because it gets removed from the map anyways
@@ -534,7 +534,7 @@ void VoxelTerrain::unload_data_block(Vector3i bpos) {
 	// because it's too expensive to linear-search all blocks for each block
 }
 
-void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
+void VoxelTerrain::unload_mesh_block(VOX_Vector3i bpos) {
 	_mesh_map.remove_block(bpos, VoxelMeshMap::NoAction());
 }
 
@@ -638,14 +638,14 @@ void VoxelTerrain::reset_map() {
 	_paired_viewers.clear();
 }
 
-void VoxelTerrain::post_edit_voxel(Vector3i pos) {
-	post_edit_area(Box3i(pos, Vector3i(1, 1, 1)));
+void VoxelTerrain::post_edit_voxel(VOX_Vector3i pos) {
+	post_edit_area(Box3i(pos, VOX_Vector3i(1, 1, 1)));
 }
 
 void VoxelTerrain::try_schedule_mesh_update_from_data(const Box3i &box_in_voxels) {
 	// We pad by 1 because neighbor blocks might be affected visually (for example, baked ambient occlusion)
 	const Box3i mesh_box = box_in_voxels.padded(1).downscaled(get_mesh_block_size());
-	mesh_box.for_each_cell([this](Vector3i pos) {
+	mesh_box.for_each_cell([this](VOX_Vector3i pos) {
 		VoxelMeshBlock *block = _mesh_map.get_block(pos);
 		// There isn't necessarily a mesh block, if the edit happens in a boundary,
 		// or if it is done next to a viewer that doesn't need meshes
@@ -660,7 +660,7 @@ void VoxelTerrain::post_edit_area(Box3i box_in_voxels) {
 
 	// Mark data as modified
 	const Box3i data_box = box_in_voxels.downscaled(get_data_block_size());
-	data_box.for_each_cell([this](Vector3i pos) {
+	data_box.for_each_cell([this](VOX_Vector3i pos) {
 		VoxelDataBlock *block = _data_map.get_block(pos);
 		// The edit can happen next to a boundary
 		if (block != nullptr) {
@@ -745,7 +745,7 @@ void VoxelTerrain::send_block_data_requests() {
 
 	// Blocks to load
 	for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
-		const Vector3i block_pos = _blocks_pending_load[i];
+		const VOX_Vector3i block_pos = _blocks_pending_load[i];
 		// TODO Batch request
 		VoxelServer::get_singleton()->request_block_load(_volume_id, block_pos, 0, false);
 	}
@@ -870,7 +870,7 @@ void VoxelTerrain::process_viewers() {
 				const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
 
 				state.view_distance_voxels = min(view_distance_voxels, self._max_view_distance_voxels);
-				state.local_position_voxels = Vector3i::from_floored(local_position);
+				state.local_position_voxels = VOX_Vector3i::from_floored(local_position);
 				state.requires_collisions = VoxelServer::get_singleton()->is_viewer_requiring_collisions(viewer_id);
 				state.requires_meshes = VoxelServer::get_singleton()->is_viewer_requiring_visuals(viewer_id);
 
@@ -880,18 +880,18 @@ void VoxelTerrain::process_viewers() {
 				const int mesh_block_size = self.get_mesh_block_size();
 
 				int view_distance_data_blocks;
-				Vector3i data_block_pos;
+				VOX_Vector3i data_block_pos;
 
 				if (state.requires_meshes || state.requires_collisions) {
 					const int view_distance_mesh_blocks = ceildiv(state.view_distance_voxels, mesh_block_size);
 					const int render_to_data_factor = (mesh_block_size / data_block_size);
-					const Vector3i mesh_block_pos = state.local_position_voxels.floordiv(mesh_block_size);
+					const VOX_Vector3i mesh_block_pos = state.local_position_voxels.floordiv(mesh_block_size);
 
 					// Adding one block of padding because meshing requires neighbors
 					view_distance_data_blocks = view_distance_mesh_blocks * render_to_data_factor + 1;
 
 					data_block_pos = mesh_block_pos * render_to_data_factor;
-					state.mesh_box = Box3i::from_center_extents(mesh_block_pos, Vector3i(view_distance_mesh_blocks))
+					state.mesh_box = Box3i::from_center_extents(mesh_block_pos, VOX_Vector3i(view_distance_mesh_blocks))
 											 .clipped(bounds_in_mesh_blocks);
 
 				} else {
@@ -901,7 +901,7 @@ void VoxelTerrain::process_viewers() {
 					state.mesh_box = Box3i();
 				}
 
-				state.data_box = Box3i::from_center_extents(data_block_pos, Vector3i(view_distance_data_blocks))
+				state.data_box = Box3i::from_center_extents(data_block_pos, VOX_Vector3i(view_distance_data_blocks))
 										 .clipped(bounds_in_data_blocks);
 			}
 		};
@@ -936,14 +936,14 @@ void VoxelTerrain::process_viewers() {
 
 					// Unview blocks that just fell out of range
 					prev_data_box.difference(new_data_box, [this, &viewer](Box3i out_of_range_box) {
-						out_of_range_box.for_each_cell([this, &viewer](Vector3i bpos) {
+						out_of_range_box.for_each_cell([this, &viewer](VOX_Vector3i bpos) {
 							unview_data_block(bpos);
 						});
 					});
 
 					// View blocks that just entered the range
 					new_data_box.difference(prev_data_box, [this, &viewer](Box3i box_to_load) {
-						box_to_load.for_each_cell([this, &viewer](Vector3i bpos) {
+						box_to_load.for_each_cell([this, &viewer](VOX_Vector3i bpos) {
 							// Load or update block
 							view_data_block(bpos);
 						});
@@ -960,7 +960,7 @@ void VoxelTerrain::process_viewers() {
 
 					// Unview blocks that just fell out of range
 					prev_mesh_box.difference(new_mesh_box, [this, &viewer](Box3i out_of_range_box) {
-						out_of_range_box.for_each_cell([this, &viewer](Vector3i bpos) {
+						out_of_range_box.for_each_cell([this, &viewer](VOX_Vector3i bpos) {
 							unview_mesh_block(bpos,
 									viewer.prev_state.requires_meshes,
 									viewer.prev_state.requires_collisions);
@@ -969,7 +969,7 @@ void VoxelTerrain::process_viewers() {
 
 					// View blocks that just entered the range
 					new_mesh_box.difference(prev_mesh_box, [this, &viewer](Box3i box_to_load) {
-						box_to_load.for_each_cell([this, &viewer](Vector3i bpos) {
+						box_to_load.for_each_cell([this, &viewer](VOX_Vector3i bpos) {
 							// Load or update block
 							view_mesh_block(bpos,
 									viewer.state.requires_meshes,
@@ -984,12 +984,12 @@ void VoxelTerrain::process_viewers() {
 				if (viewer.state.requires_collisions != viewer.prev_state.requires_collisions) {
 					const Box3i box = new_mesh_box.clipped(prev_mesh_box);
 					if (viewer.state.requires_collisions) {
-						box.for_each_cell([this](Vector3i bpos) {
+						box.for_each_cell([this](VOX_Vector3i bpos) {
 							view_mesh_block(bpos, false, true);
 						});
 
 					} else {
-						box.for_each_cell([this](Vector3i bpos) {
+						box.for_each_cell([this](VOX_Vector3i bpos) {
 							unview_mesh_block(bpos, false, true);
 						});
 					}
@@ -998,12 +998,12 @@ void VoxelTerrain::process_viewers() {
 				if (viewer.state.requires_meshes != viewer.prev_state.requires_meshes) {
 					const Box3i box = new_mesh_box.clipped(prev_mesh_box);
 					if (viewer.state.requires_meshes) {
-						box.for_each_cell([this](Vector3i bpos) {
+						box.for_each_cell([this](VOX_Vector3i bpos) {
 							view_mesh_block(bpos, true, false);
 						});
 
 					} else {
-						box.for_each_cell([this](Vector3i bpos) {
+						box.for_each_cell([this](VOX_Vector3i bpos) {
 							unview_mesh_block(bpos, true, false);
 						});
 					}
@@ -1057,7 +1057,7 @@ void VoxelTerrain::process_received_data_blocks() {
 
 			CRASH_COND(ob.type != VoxelServer::BlockDataOutput::TYPE_LOAD);
 
-			const Vector3i block_pos = ob.position;
+			const VOX_Vector3i block_pos = ob.position;
 
 			LoadingBlock loading_block;
 			{
@@ -1089,7 +1089,7 @@ void VoxelTerrain::process_received_data_blocks() {
 
 			CRASH_COND(ob.voxels == nullptr);
 
-			const Vector3i expected_block_size(_data_map.get_block_size());
+			const VOX_Vector3i expected_block_size(_data_map.get_block_size());
 			if (ob.voxels->get_size() != expected_block_size) {
 				// Voxel block size is incorrect, drop it
 				ERR_PRINT(String("Block size obtained from stream is different from expected size. "
@@ -1115,7 +1115,7 @@ void VoxelTerrain::process_received_data_blocks() {
 			{
 				VOXEL_PROFILE_SCOPE();
 				try_schedule_mesh_update_from_data(
-						Box3i(_data_map.block_to_voxel(block_pos), Vector3i(get_data_block_size())));
+						Box3i(_data_map.block_to_voxel(block_pos), VOX_Vector3i(get_data_block_size())));
 			}
 		}
 
@@ -1143,7 +1143,7 @@ void VoxelTerrain::process_meshing() {
 		const int mesh_to_data_factor = get_mesh_block_size() / get_data_block_size();
 
 		for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
-			const Vector3i mesh_block_pos = _blocks_pending_update[bi];
+			const VOX_Vector3i mesh_block_pos = _blocks_pending_update[bi];
 
 			VoxelMeshBlock *mesh_block = _mesh_map.get_block(mesh_block_pos);
 
@@ -1153,12 +1153,12 @@ void VoxelTerrain::process_meshing() {
 
 			// Pad by 1 because meshing requires neighbors
 			const Box3i data_box =
-					Box3i(mesh_block_pos * mesh_to_data_factor, Vector3i(mesh_to_data_factor)).padded(1);
+					Box3i(mesh_block_pos * mesh_to_data_factor, VOX_Vector3i(mesh_to_data_factor)).padded(1);
 
 #ifdef DEBUG_ENABLED
 			// We must have picked up a valid data block
 			{
-				const Vector3i anchor_pos = data_box.pos + Vector3i(1, 1, 1);
+				const VOX_Vector3i anchor_pos = data_box.pos + VOX_Vector3i(1, 1, 1);
 				const VoxelDataBlock *data_block = _data_map.get_block(anchor_pos);
 				ERR_CONTINUE(data_block == nullptr);
 			}
@@ -1170,7 +1170,7 @@ void VoxelTerrain::process_meshing() {
 			//mesh_request.data_blocks_count = data_box.size.volume();
 
 			// This iteration order is specifically chosen to match VoxelServer and threaded access
-			data_box.for_each_cell_zxy([this, &mesh_request](Vector3i data_block_pos) {
+			data_box.for_each_cell_zxy([this, &mesh_request](VOX_Vector3i data_block_pos) {
 				VoxelDataBlock *data_block = _data_map.get_block(data_block_pos);
 				if (data_block != nullptr) {
 					mesh_request.data_blocks[mesh_request.data_blocks_count] = data_block->get_voxels_shared();
@@ -1306,7 +1306,7 @@ bool VoxelTerrain::is_stream_running_in_editor() const {
 
 void VoxelTerrain::set_bounds(Box3i box) {
 	_bounds_in_voxels = box.clipped(
-			Box3i::from_center_extents(Vector3i(), Vector3i(VoxelConstants::MAX_VOLUME_EXTENT)));
+			Box3i::from_center_extents(VOX_Vector3i(), VOX_Vector3i(VoxelConstants::MAX_VOLUME_EXTENT)));
 
 	// Round to block size
 	_bounds_in_voxels = _bounds_in_voxels.snapped(get_data_block_size());
@@ -1327,11 +1327,11 @@ Box3i VoxelTerrain::get_bounds() const {
 }
 
 Vector3 VoxelTerrain::_b_voxel_to_data_block(Vector3 pos) const {
-	return Vector3i(_data_map.voxel_to_block(pos)).to_vec3();
+	return VOX_Vector3i(_data_map.voxel_to_block(pos)).to_vec3();
 }
 
 Vector3 VoxelTerrain::_b_data_block_to_voxel(Vector3 pos) const {
-	return Vector3i(_data_map.block_to_voxel(pos)).to_vec3();
+	return VOX_Vector3i(_data_map.block_to_voxel(pos)).to_vec3();
 }
 
 void VoxelTerrain::_b_save_modified_blocks() {
@@ -1340,7 +1340,7 @@ void VoxelTerrain::_b_save_modified_blocks() {
 
 // Explicitely ask to save a block if it was modified
 void VoxelTerrain::_b_save_block(Vector3 p_block_pos) {
-	const Vector3i block_pos(p_block_pos);
+	const VOX_Vector3i block_pos(p_block_pos);
 
 	VoxelDataBlock *block = _data_map.get_block(block_pos);
 	ERR_FAIL_COND(block == nullptr);

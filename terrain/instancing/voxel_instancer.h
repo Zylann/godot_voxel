@@ -56,14 +56,14 @@ public:
 
 	// Event handlers
 
-	void on_data_block_loaded(Vector3i grid_position, unsigned int lod_index,
+	void on_data_block_loaded(VOX_Vector3i grid_position, unsigned int lod_index,
 			std::unique_ptr<VoxelInstanceBlockData> instances);
-	void on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays);
-	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
+	void on_mesh_block_enter(VOX_Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays);
+	void on_mesh_block_exit(VOX_Vector3i render_grid_position, unsigned int lod_index);
 	void on_area_edited(Box3i p_voxel_box);
-	void on_body_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index);
-	void on_scene_instance_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index);
-	void on_scene_instance_modified(Vector3i data_block_position, unsigned int render_block_index);
+	void on_body_removed(VOX_Vector3i data_block_position, unsigned int render_block_index, int instance_index);
+	void on_scene_instance_removed(VOX_Vector3i data_block_position, unsigned int render_block_index, int instance_index);
+	void on_scene_instance_modified(VOX_Vector3i data_block_position, unsigned int render_block_index);
 
 	// Debug
 
@@ -83,20 +83,20 @@ private:
 
 	void add_layer(int layer_id, int lod_index);
 	void remove_layer(int layer_id);
-	int create_block(Layer *layer, uint16_t layer_id, Vector3i grid_position);
+	int create_block(Layer *layer, uint16_t layer_id, VOX_Vector3i grid_position);
 	void remove_block(unsigned int block_index);
 	void set_world(World *world);
 	void clear_blocks();
 	void clear_blocks_in_layer(int layer_id);
 	void clear_layers();
 	void update_visibility();
-	void save_block(Vector3i data_grid_pos, int lod_index) const;
+	void save_block(VOX_Vector3i data_grid_pos, int lod_index) const;
 	Layer *get_layer(int id);
 	const Layer *get_layer_const(int id) const;
 	void regenerate_layer(uint16_t layer_id, bool regenerate_blocks);
 	void update_layer_meshes(int layer_id);
 	void update_layer_scenes(int layer_id);
-	void create_render_blocks(Vector3i grid_position, int lod_index, Array surface_arrays);
+	void create_render_blocks(VOX_Vector3i grid_position, int lod_index, Array surface_arrays);
 
 	struct SceneInstance {
 		VoxelInstanceComponent *component = nullptr;
@@ -107,7 +107,7 @@ private:
 			int instance_index, unsigned int block_index, Transform transform, int data_block_size_po2);
 
 	void update_block_from_transforms(int block_index, Span<const Transform> transforms,
-			Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id,
+			VOX_Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id,
 			World *world, const Transform &block_transform);
 
 	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
@@ -128,7 +128,7 @@ private:
 		uint8_t current_mesh_lod = 0;
 		uint8_t lod_index;
 		// Position in mesh block coordinate system
-		Vector3i grid_position;
+		VOX_Vector3i grid_position;
 		DirectMultiMeshInstance multimesh_instance;
 		// For physics we use nodes because it's easier to manage.
 		// Such instances may be less numerous.
@@ -142,7 +142,7 @@ private:
 		unsigned int lod_index;
 		// Blocks indexed by grid position.
 		// Keys follow the mesh block coordinate system.
-		HashMap<Vector3i, unsigned int, Vector3iHasher> blocks;
+		HashMap<VOX_Vector3i, unsigned int, VOX_Vector3iHasher> blocks;
 	};
 
 	struct MeshLodDistances {
@@ -164,14 +164,14 @@ private:
 
 		// Blocks that have have unsaved changes.
 		// Keys follows the data block coordinate system.
-		HashMap<Vector3i, bool, Vector3iHasher> modified_blocks;
+		HashMap<VOX_Vector3i, bool, VOX_Vector3iHasher> modified_blocks;
 
 		// This is a temporary place to store loaded instances data while it's not visible yet.
 		// These instances are user-authored ones. If a block does not have an entry there,
 		// it will get generated instances.
 		// Keys follows the data block coordinate system.
 		// Can't use `HashMap` because it lacks move semantics.
-		std::unordered_map<Vector3i, std::unique_ptr<VoxelInstanceBlockData>> loaded_instances_data;
+		std::unordered_map<VOX_Vector3i, std::unique_ptr<VoxelInstanceBlockData>> loaded_instances_data;
 
 		FixedArray<MeshLodDistances, VoxelInstanceLibraryItem::MAX_MESH_LODS> mesh_lod_distances;
 

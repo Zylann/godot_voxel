@@ -53,17 +53,17 @@ const int g_side_quad_triangles[SIDE_COUNT][6] = {
 //const unsigned int g_side_coord[SIDE_COUNT] = { 0, 0, 1, 1, 2, 2 };
 //const unsigned int g_side_sign[SIDE_COUNT] = { 0, 1, 0, 1, 0, 1 };
 
-const Vector3i g_side_normals[SIDE_COUNT] = {
+const VOX_Vector3i g_side_normals[SIDE_COUNT] = {
 	// TODO Wrong! Left should be -X
-	Vector3i(1, 0, 0), // LEFT
-	Vector3i(-1, 0, 0), // RIGHT
+	VOX_Vector3i(1, 0, 0), // LEFT
+	VOX_Vector3i(-1, 0, 0), // RIGHT
 
-	Vector3i(0, -1, 0), // BOTTOM
-	Vector3i(0, 1, 0), // TOP
+	VOX_Vector3i(0, -1, 0), // BOTTOM
+	VOX_Vector3i(0, 1, 0), // TOP
 
 	// TODO Wrong! Front should be -Z
-	Vector3i(0, 0, -1), // BACK
-	Vector3i(0, 0, 1), // FRONT
+	VOX_Vector3i(0, 0, -1), // BACK
+	VOX_Vector3i(0, 0, 1), // FRONT
 };
 
 const float g_side_tangents[SIDE_COUNT][4] = {
@@ -108,33 +108,33 @@ const unsigned int g_side_edges[SIDE_COUNT][4] = {
 //    { 3, 2, 6, 3, 6, 7 }
 //};
 
-const Vector3i g_corner_inormals[CORNER_COUNT] = {
-	Vector3i(1, -1, -1),
-	Vector3i(-1, -1, -1),
-	Vector3i(-1, -1, 1),
-	Vector3i(1, -1, 1),
+const VOX_Vector3i g_corner_inormals[CORNER_COUNT] = {
+	VOX_Vector3i(1, -1, -1),
+	VOX_Vector3i(-1, -1, -1),
+	VOX_Vector3i(-1, -1, 1),
+	VOX_Vector3i(1, -1, 1),
 
-	Vector3i(1, 1, -1),
-	Vector3i(-1, 1, -1),
-	Vector3i(-1, 1, 1),
-	Vector3i(1, 1, 1)
+	VOX_Vector3i(1, 1, -1),
+	VOX_Vector3i(-1, 1, -1),
+	VOX_Vector3i(-1, 1, 1),
+	VOX_Vector3i(1, 1, 1)
 };
 
-const Vector3i g_edge_inormals[EDGE_COUNT] = {
-	Vector3i(0, -1, -1),
-	Vector3i(-1, -1, 0),
-	Vector3i(0, -1, 1),
-	Vector3i(1, -1, 0),
+const VOX_Vector3i g_edge_inormals[EDGE_COUNT] = {
+	VOX_Vector3i(0, -1, -1),
+	VOX_Vector3i(-1, -1, 0),
+	VOX_Vector3i(0, -1, 1),
+	VOX_Vector3i(1, -1, 0),
 
-	Vector3i(1, 0, -1),
-	Vector3i(-1, 0, -1),
-	Vector3i(-1, 0, 1),
-	Vector3i(1, 0, 1),
+	VOX_Vector3i(1, 0, -1),
+	VOX_Vector3i(-1, 0, -1),
+	VOX_Vector3i(-1, 0, 1),
+	VOX_Vector3i(1, 0, 1),
 
-	Vector3i(0, 1, -1),
-	Vector3i(-1, 1, 0),
-	Vector3i(0, 1, 1),
-	Vector3i(1, 1, 0)
+	VOX_Vector3i(0, 1, -1),
+	VOX_Vector3i(-1, 1, 0),
+	VOX_Vector3i(0, 1, 1),
+	VOX_Vector3i(1, 1, 0)
 };
 
 const unsigned int g_edge_corners[EDGE_COUNT][2] = {
@@ -144,70 +144,70 @@ const unsigned int g_edge_corners[EDGE_COUNT][2] = {
 };
 
 // Order is irrelevant
-const Vector3i g_moore_neighboring_3d[MOORE_NEIGHBORING_3D_COUNT] = {
-	Vector3i(-1, -1, -1),
-	Vector3i(0, -1, -1),
-	Vector3i(1, -1, -1),
-	Vector3i(-1, -1, 0),
-	Vector3i(0, -1, 0),
-	Vector3i(1, -1, 0),
-	Vector3i(-1, -1, 1),
-	Vector3i(0, -1, 1),
-	Vector3i(1, -1, 1),
+const VOX_Vector3i g_moore_neighboring_3d[MOORE_NEIGHBORING_3D_COUNT] = {
+	VOX_Vector3i(-1, -1, -1),
+	VOX_Vector3i(0, -1, -1),
+	VOX_Vector3i(1, -1, -1),
+	VOX_Vector3i(-1, -1, 0),
+	VOX_Vector3i(0, -1, 0),
+	VOX_Vector3i(1, -1, 0),
+	VOX_Vector3i(-1, -1, 1),
+	VOX_Vector3i(0, -1, 1),
+	VOX_Vector3i(1, -1, 1),
 
-	Vector3i(-1, 0, -1),
-	Vector3i(0, 0, -1),
-	Vector3i(1, 0, -1),
-	Vector3i(-1, 0, 0),
-	//Vector3i(0,0,0),
-	Vector3i(1, 0, 0),
-	Vector3i(-1, 0, 1),
-	Vector3i(0, 0, 1),
-	Vector3i(1, 0, 1),
+	VOX_Vector3i(-1, 0, -1),
+	VOX_Vector3i(0, 0, -1),
+	VOX_Vector3i(1, 0, -1),
+	VOX_Vector3i(-1, 0, 0),
+	//VOX_Vector3i(0,0,0),
+	VOX_Vector3i(1, 0, 0),
+	VOX_Vector3i(-1, 0, 1),
+	VOX_Vector3i(0, 0, 1),
+	VOX_Vector3i(1, 0, 1),
 
-	Vector3i(-1, 1, -1),
-	Vector3i(0, 1, -1),
-	Vector3i(1, 1, -1),
-	Vector3i(-1, 1, 0),
-	Vector3i(0, 1, 0),
-	Vector3i(1, 1, 0),
-	Vector3i(-1, 1, 1),
-	Vector3i(0, 1, 1),
-	Vector3i(1, 1, 1),
+	VOX_Vector3i(-1, 1, -1),
+	VOX_Vector3i(0, 1, -1),
+	VOX_Vector3i(1, 1, -1),
+	VOX_Vector3i(-1, 1, 0),
+	VOX_Vector3i(0, 1, 0),
+	VOX_Vector3i(1, 1, 0),
+	VOX_Vector3i(-1, 1, 1),
+	VOX_Vector3i(0, 1, 1),
+	VOX_Vector3i(1, 1, 1),
 };
 
 // Order is IMPORTANT:
 // This is used in multithread context, in which we may iterate blocks in XYZ order, to avoid deadlocks.
-const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT] = {
-	Vector3i(-1, -1, -1),
-	Vector3i(0, -1, -1),
-	Vector3i(1, -1, -1),
-	Vector3i(-1, 0, -1),
-	Vector3i(0, 0, -1),
-	Vector3i(1, 0, -1),
-	Vector3i(-1, 1, -1),
-	Vector3i(0, 1, -1),
-	Vector3i(1, 1, -1),
+const VOX_Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT] = {
+	VOX_Vector3i(-1, -1, -1),
+	VOX_Vector3i(0, -1, -1),
+	VOX_Vector3i(1, -1, -1),
+	VOX_Vector3i(-1, 0, -1),
+	VOX_Vector3i(0, 0, -1),
+	VOX_Vector3i(1, 0, -1),
+	VOX_Vector3i(-1, 1, -1),
+	VOX_Vector3i(0, 1, -1),
+	VOX_Vector3i(1, 1, -1),
 
-	Vector3i(-1, -1, 0),
-	Vector3i(0, -1, 0),
-	Vector3i(1, -1, 0),
-	Vector3i(-1, 0, 0),
-	Vector3i(0, 0, 0),
-	Vector3i(1, 0, 0),
-	Vector3i(-1, 1, 0),
-	Vector3i(0, 1, 0),
-	Vector3i(1, 1, 0),
+	VOX_Vector3i(-1, -1, 0),
+	VOX_Vector3i(0, -1, 0),
+	VOX_Vector3i(1, -1, 0),
+	VOX_Vector3i(-1, 0, 0),
+	VOX_Vector3i(0, 0, 0),
+	VOX_Vector3i(1, 0, 0),
+	VOX_Vector3i(-1, 1, 0),
+	VOX_Vector3i(0, 1, 0),
+	VOX_Vector3i(1, 1, 0),
 
-	Vector3i(-1, -1, 1),
-	Vector3i(0, -1, 1),
-	Vector3i(1, -1, 1),
-	Vector3i(-1, 0, 1),
-	Vector3i(0, 0, 1),
-	Vector3i(1, 0, 1),
-	Vector3i(-1, 1, 1),
-	Vector3i(0, 1, 1),
-	Vector3i(1, 1, 1)
+	VOX_Vector3i(-1, -1, 1),
+	VOX_Vector3i(0, -1, 1),
+	VOX_Vector3i(1, -1, 1),
+	VOX_Vector3i(-1, 0, 1),
+	VOX_Vector3i(0, 0, 1),
+	VOX_Vector3i(1, 0, 1),
+	VOX_Vector3i(-1, 1, 1),
+	VOX_Vector3i(0, 1, 1),
+	VOX_Vector3i(1, 1, 1)
 };
 
 } // namespace Cube

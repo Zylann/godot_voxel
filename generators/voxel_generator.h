@@ -2,7 +2,7 @@
 #define VOXEL_GENERATOR_H
 
 #include "../streams/voxel_block_request.h"
-#include <core/resource.h>
+#include <core/io/resource.h>
 
 // Provides access to read-only generated voxels.
 // Must be implemented in a multi-thread-safe way.

@@ -2,7 +2,7 @@
 #define VOXEL_DEBUG_H
 
 #include "../util/godot/direct_multimesh_instance.h"
-#include <core/reference.h>
+#include <core/object/ref_counted.h>
 #include <vector>
 
 class Mesh;

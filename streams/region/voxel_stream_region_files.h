@@ -24,8 +24,8 @@ public:
 	VoxelStreamRegionFiles();
 	~VoxelStreamRegionFiles();
 
-	Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
+	Result emerge_block(VoxelBufferInternal &out_buffer, VOX_Vector3i origin_in_voxels, int lod) override;
+	void immerge_block(VoxelBufferInternal &buffer, VOX_Vector3i origin_in_voxels, int lod) override;
 
 	void emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) override;
 	void immerge_blocks(Span<VoxelBlockRequest> p_blocks) override;
@@ -35,7 +35,7 @@ public:
 	String get_directory() const;
 	void set_directory(String dirpath);
 
-	Vector3i get_region_size() const;
+	VOX_Vector3i get_region_size() const;
 	Vector3 get_region_size_v() const;
 	int get_region_size_po2() const;
 
@@ -65,18 +65,18 @@ private:
 		EMERGE_FAILED
 	};
 
-	EmergeResult _emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
-	void _immerge_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod);
+	EmergeResult _emerge_block(VoxelBufferInternal &out_buffer, VOX_Vector3i origin_in_voxels, int lod);
+	void _immerge_block(VoxelBufferInternal &voxel_buffer, VOX_Vector3i origin_in_voxels, int lod);
 
 	VoxelFileResult save_meta();
 	VoxelFileResult load_meta();
-	Vector3i get_block_position_from_voxels(const Vector3i &origin_in_voxels) const;
-	Vector3i get_region_position_from_blocks(const Vector3i &block_position) const;
+	VOX_Vector3i get_block_position_from_voxels(const VOX_Vector3i &origin_in_voxels) const;
+	VOX_Vector3i get_region_position_from_blocks(const VOX_Vector3i &block_position) const;
 	void close_all_regions();
-	String get_region_file_path(const Vector3i &region_pos, unsigned int lod) const;
-	CachedRegion *open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found);
+	String get_region_file_path(const VOX_Vector3i &region_pos, unsigned int lod) const;
+	CachedRegion *open_region(const VOX_Vector3i region_pos, unsigned int lod, bool create_if_not_found);
 	void close_region(CachedRegion *cache);
-	CachedRegion *get_region_from_cache(const Vector3i pos, int lod) const;
+	CachedRegion *get_region_from_cache(const VOX_Vector3i pos, int lod) const;
 	int get_sectors_count(const RegionHeader &header) const;
 	void close_oldest_region();
 
@@ -103,10 +103,10 @@ private:
 			} else if (a.lod > b.lod) {
 				return false;
 			}
-			Vector3i bpos_a = self->get_block_position_from_voxels(a.origin_in_voxels);
-			Vector3i bpos_b = self->get_block_position_from_voxels(b.origin_in_voxels);
-			Vector3i rpos_a = self->get_region_position_from_blocks(bpos_a);
-			Vector3i rpos_b = self->get_region_position_from_blocks(bpos_b);
+			VOX_Vector3i bpos_a = self->get_block_position_from_voxels(a.origin_in_voxels);
+			VOX_Vector3i bpos_b = self->get_block_position_from_voxels(b.origin_in_voxels);
+			VOX_Vector3i rpos_a = self->get_region_position_from_blocks(bpos_a);
+			VOX_Vector3i rpos_b = self->get_region_position_from_blocks(bpos_b);
 			return rpos_a < rpos_b;
 		}
 	};
@@ -118,7 +118,7 @@ private:
 	// A refactoring should be done to allow better threading.
 
 	struct CachedRegion {
-		Vector3i position;
+		VOX_Vector3i position;
 		int lod = 0;
 		bool file_exists = false;
 		VoxelRegionFile region;

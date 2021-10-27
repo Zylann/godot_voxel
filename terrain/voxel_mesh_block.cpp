@@ -7,7 +7,7 @@
 #include <scene/3d/spatial.h>
 #include <scene/resources/concave_polygon_shape.h>
 
-VoxelMeshBlock *VoxelMeshBlock::create(Vector3i bpos, unsigned int size, unsigned int p_lod_index) {
+VoxelMeshBlock *VoxelMeshBlock::create(VOX_Vector3i bpos, unsigned int size, unsigned int p_lod_index) {
 	VoxelMeshBlock *block = memnew(VoxelMeshBlock);
 	block->position = bpos;
 	block->lod_index = p_lod_index;

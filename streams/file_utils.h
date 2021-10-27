@@ -5,29 +5,29 @@
 #include <core/os/dir_access.h>
 #include <core/os/file_access.h>
 
-inline Vector3i get_vec3u8(FileAccess *f) {
-	Vector3i v;
+inline VOX_Vector3i get_vec3u8(FileAccess *f) {
+	VOX_Vector3i v;
 	v.x = f->get_8();
 	v.y = f->get_8();
 	v.z = f->get_8();
 	return v;
 }
 
-inline void store_vec3u8(FileAccess *f, const Vector3i v) {
+inline void store_vec3u8(FileAccess *f, const VOX_Vector3i v) {
 	f->store_8(v.x);
 	f->store_8(v.y);
 	f->store_8(v.z);
 }
 
-inline Vector3i get_vec3u32(FileAccess *f) {
-	Vector3i v;
+inline VOX_Vector3i get_vec3u32(FileAccess *f) {
+	VOX_Vector3i v;
 	v.x = f->get_32();
 	v.y = f->get_32();
 	v.z = f->get_32();
 	return v;
 }
 
-inline void store_vec3u32(FileAccess *f, const Vector3i v) {
+inline void store_vec3u32(FileAccess *f, const VOX_Vector3i v) {
 	f->store_32(v.x);
 	f->store_32(v.y);
 	f->store_32(v.z);

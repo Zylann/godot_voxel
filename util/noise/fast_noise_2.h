@@ -2,7 +2,7 @@
 #define VOXEL_FAST_NOISE_2_H
 
 #include "FastNoise/FastNoise.h"
-#include <core/resource.h>
+#include <core/io/resource.h>
 
 // Can't call it FastNoise? because FastNoise is a namespace already
 class FastNoise2 : public Resource {

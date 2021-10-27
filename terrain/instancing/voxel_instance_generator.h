@@ -5,7 +5,7 @@
 #include "../../util/math/vector3i.h"
 #include "../../util/noise/fast_noise_lite.h"
 
-#include <core/resource.h>
+#include <core/io/resource.h>
 #include <limits>
 #include <vector>
 
@@ -56,7 +56,7 @@ public:
 	// This API might change so for now it's not exposed to scripts
 	void generate_transforms(
 			std::vector<Transform> &out_transforms,
-			Vector3i grid_position,
+			VOX_Vector3i grid_position,
 			int lod_index,
 			int layer_id,
 			Array surface_arrays,

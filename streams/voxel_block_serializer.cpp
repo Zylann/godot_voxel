@@ -8,7 +8,7 @@
 
 #include <core/io/marshalls.h>
 #include <core/io/stream_peer.h>
-//#include <core/map.h>
+//#include <core/templates/map.h>
 #include <core/os/file_access.h>
 #include <limits>
 
@@ -22,9 +22,9 @@ const unsigned int BLOCK_METADATA_HEADER_SIZE = sizeof(uint32_t);
 size_t get_metadata_size_in_bytes(const VoxelBufferInternal &buffer) {
 	size_t size = 0;
 
-	const Map<Vector3i, Variant>::Element *elem = buffer.get_voxel_metadata().front();
+	const Map<VOX_Vector3i, Variant>::Element *elem = buffer.get_voxel_metadata().front();
 	while (elem != nullptr) {
-		const Vector3i pos = elem->key();
+		const VOX_Vector3i pos = elem->key();
 
 		ERR_FAIL_COND_V_MSG(pos.x < 0 || static_cast<uint32_t>(pos.x) >= VoxelBufferInternal::MAX_SIZE, 0,
 				"Invalid voxel metadata X position");
@@ -85,11 +85,11 @@ void serialize_metadata(uint8_t *p_dst, const VoxelBufferInternal &buffer, const
 		CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) > metadata_size, "Wrote block metadata out of expected bounds");
 	}
 
-	const Map<Vector3i, Variant>::Element *elem = buffer.get_voxel_metadata().front();
+	const Map<VOX_Vector3i, Variant>::Element *elem = buffer.get_voxel_metadata().front();
 	while (elem != nullptr) {
 		// Serializing key as ushort because it's more than enough for a 3D dense array
 		static_assert(VoxelBufferInternal::MAX_SIZE <= 65535, "Maximum size exceeds serialization support");
-		const Vector3i pos = elem->key();
+		const VOX_Vector3i pos = elem->key();
 		write<uint16_t>(dst, pos.x);
 		write<uint16_t>(dst, pos.y);
 		write<uint16_t>(dst, pos.z);
@@ -125,7 +125,7 @@ bool deserialize_metadata(uint8_t *p_src, VoxelBufferInternal &buffer, const siz
 	}
 
 	while (remaining_length > 0) {
-		Vector3i pos;
+		VOX_Vector3i pos;
 		pos.x = read<uint16_t>(src);
 		pos.y = read<uint16_t>(src);
 		pos.z = read<uint16_t>(src);
@@ -150,7 +150,7 @@ size_t get_size_in_bytes(const VoxelBufferInternal &buffer, size_t &metadata_siz
 	// Version and size
 	size_t size = 1 * sizeof(uint8_t) + 3 * sizeof(uint16_t);
 
-	const Vector3i size_in_voxels = buffer.get_size();
+	const VOX_Vector3i size_in_voxels = buffer.get_size();
 
 	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
 		const VoxelBufferInternal::Compression compression = buffer.get_channel_compression(channel_index);
@@ -225,7 +225,7 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 			} break;
 
 			case VoxelBufferInternal::COMPRESSION_UNIFORM: {
-				const uint64_t v = voxel_buffer.get_voxel(Vector3i(), channel_index);
+				const uint64_t v = voxel_buffer.get_voxel(VOX_Vector3i(), channel_index);
 				switch (depth) {
 					case VoxelBufferInternal::DEPTH_8_BIT:
 						f->store_8(v);
@@ -296,7 +296,7 @@ bool VoxelBlockSerializerInternal::deserialize(Span<const uint8_t> p_data,
 		const unsigned int size_y = f->get_16();
 		const unsigned int size_z = f->get_16();
 
-		out_voxel_buffer.create(Vector3i(size_x, size_y, size_z));
+		out_voxel_buffer.create(VOX_Vector3i(size_x, size_y, size_z));
 	}
 
 	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {

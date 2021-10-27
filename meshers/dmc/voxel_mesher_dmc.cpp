@@ -20,9 +20,9 @@ const float SQRT3 = 1.7320508075688772;
 // Helper to access padded voxel data
 struct VoxelAccess {
 	const VoxelBufferInternal &buffer;
-	const Vector3i offset;
+	const VOX_Vector3i offset;
 
-	VoxelAccess(const VoxelBufferInternal &p_buffer, Vector3i p_offset) :
+	VoxelAccess(const VoxelBufferInternal &p_buffer, VOX_Vector3i p_offset) :
 			buffer(p_buffer),
 			offset(p_offset) {}
 
@@ -38,18 +38,18 @@ struct VoxelAccess {
 	}
 };
 
-bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, float geometric_error) {
+bool can_split(VOX_Vector3i node_origin, int node_size, const VoxelAccess &voxels, float geometric_error) {
 	if (node_size == 1) {
 		// Voxel resolution, can't split further
 		return false;
 	}
 
-	Vector3i origin = node_origin + voxels.offset;
+	VOX_Vector3i origin = node_origin + voxels.offset;
 	int step = node_size;
 	int channel = VoxelBufferInternal::CHANNEL_SDF;
 
 	// Don't split if nothing is inside, i.e isolevel distance is greater than the size of the cube we are in
-	Vector3i center_pos = node_origin + Vector3i(node_size / 2);
+	VOX_Vector3i center_pos = node_origin + VOX_Vector3i(node_size / 2);
 	HermiteValue center_value = voxels.get_hermite_value(center_pos.x, center_pos.y, center_pos.z);
 	if (Math::abs(center_value.sdf) > SQRT3 * (float)node_size) {
 		return false;
@@ -69,30 +69,30 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 
 	int hstep = step / 2;
 
-	Vector3i positions[19] = {
+	VOX_Vector3i positions[19] = {
 		// Starting from point 8
-		Vector3i(origin.x + hstep, /**/ origin.y, /*        */ origin.z), // 8
-		Vector3i(origin.x + step, /* */ origin.y, /*        */ origin.z + hstep), // 9
-		Vector3i(origin.x + hstep, /**/ origin.y, /*        */ origin.z + step), // 10
-		Vector3i(origin.x, /*        */ origin.y, /*        */ origin.z + hstep), // 11
+		VOX_Vector3i(origin.x + hstep, /**/ origin.y, /*        */ origin.z), // 8
+		VOX_Vector3i(origin.x + step, /* */ origin.y, /*        */ origin.z + hstep), // 9
+		VOX_Vector3i(origin.x + hstep, /**/ origin.y, /*        */ origin.z + step), // 10
+		VOX_Vector3i(origin.x, /*        */ origin.y, /*        */ origin.z + hstep), // 11
 
-		Vector3i(origin.x, /*        */ origin.y + hstep, /**/ origin.z), // 12
-		Vector3i(origin.x + step, /* */ origin.y + hstep, /**/ origin.z), // 13
-		Vector3i(origin.x + step, /* */ origin.y + hstep, /**/ origin.z + step), // 14
-		Vector3i(origin.x, /*        */ origin.y + hstep, /**/ origin.z + step), // 15
+		VOX_Vector3i(origin.x, /*        */ origin.y + hstep, /**/ origin.z), // 12
+		VOX_Vector3i(origin.x + step, /* */ origin.y + hstep, /**/ origin.z), // 13
+		VOX_Vector3i(origin.x + step, /* */ origin.y + hstep, /**/ origin.z + step), // 14
+		VOX_Vector3i(origin.x, /*        */ origin.y + hstep, /**/ origin.z + step), // 15
 
-		Vector3i(origin.x + hstep, /**/ origin.y + step, /* */ origin.z), // 16
-		Vector3i(origin.x + step, /* */ origin.y + step, /* */ origin.z + hstep), // 17
-		Vector3i(origin.x + hstep, /**/ origin.y + step, /* */ origin.z + step), // 18
-		Vector3i(origin.x, /*        */ origin.y + step, /* */ origin.z + hstep), // 19
+		VOX_Vector3i(origin.x + hstep, /**/ origin.y + step, /* */ origin.z), // 16
+		VOX_Vector3i(origin.x + step, /* */ origin.y + step, /* */ origin.z + hstep), // 17
+		VOX_Vector3i(origin.x + hstep, /**/ origin.y + step, /* */ origin.z + step), // 18
+		VOX_Vector3i(origin.x, /*        */ origin.y + step, /* */ origin.z + hstep), // 19
 
-		Vector3i(origin.x + hstep, /**/ origin.y, /*        */ origin.z + hstep), // 20
-		Vector3i(origin.x + hstep, /**/ origin.y + hstep, /**/ origin.z), // 21
-		Vector3i(origin.x + step, /* */ origin.y + hstep, /**/ origin.z + hstep), // 22
-		Vector3i(origin.x + hstep, /**/ origin.y + hstep, /**/ origin.z + step), // 23
-		Vector3i(origin.x, /*        */ origin.y + hstep, /**/ origin.z + hstep), // 24
-		Vector3i(origin.x + hstep, /**/ origin.y + step, /* */ origin.z + hstep), // 25
-		Vector3i(origin.x + hstep, /**/ origin.y + hstep, /**/ origin.z + hstep) // 26
+		VOX_Vector3i(origin.x + hstep, /**/ origin.y, /*        */ origin.z + hstep), // 20
+		VOX_Vector3i(origin.x + hstep, /**/ origin.y + hstep, /**/ origin.z), // 21
+		VOX_Vector3i(origin.x + step, /* */ origin.y + hstep, /**/ origin.z + hstep), // 22
+		VOX_Vector3i(origin.x + hstep, /**/ origin.y + hstep, /**/ origin.z + step), // 23
+		VOX_Vector3i(origin.x, /*        */ origin.y + hstep, /**/ origin.z + hstep), // 24
+		VOX_Vector3i(origin.x + hstep, /**/ origin.y + step, /* */ origin.z + hstep), // 25
+		VOX_Vector3i(origin.x + hstep, /**/ origin.y + hstep, /**/ origin.z + hstep) // 26
 	};
 
 	Vector3 positions_ratio[19] = {
@@ -123,7 +123,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 	float error = 0.0;
 
 	for (int i = 0; i < 19; ++i) {
-		Vector3i pos = positions[i];
+		VOX_Vector3i pos = positions[i];
 
 		HermiteValue value = get_hermite_value(voxels.buffer, pos.x, pos.y, pos.z);
 
@@ -154,7 +154,7 @@ public:
 			_pool(pool) {
 	}
 
-	OctreeNode *build(Vector3i origin, int size) {
+	OctreeNode *build(VOX_Vector3i origin, int size) {
 		OctreeNode *root = _pool.create();
 		root->origin = origin;
 		root->size = size;
@@ -182,7 +182,7 @@ private:
 			OctreeNode *child = _pool.create();
 			const int *v = OctreeTables::g_octant_position[i];
 			child->size = node->size / 2;
-			child->origin = node->origin + Vector3i(v[0], v[1], v[2]) * child->size;
+			child->origin = node->origin + VOX_Vector3i(v[0], v[1], v[2]) * child->size;
 
 			node->children[i] = child;
 		}
@@ -203,7 +203,7 @@ public:
 			_pool(pool) {
 	}
 
-	OctreeNode *build(Vector3i node_origin, int node_size) const {
+	OctreeNode *build(VOX_Vector3i node_origin, int node_size) const {
 		OctreeNode *children[8] = { nullptr };
 		bool any_node = false;
 
@@ -212,7 +212,7 @@ public:
 			for (int i = 0; i < 8; ++i) {
 				const int *dir = OctreeTables::g_octant_position[i];
 				int child_size = node_size / 2;
-				children[i] = build(node_origin + child_size * Vector3i(dir[0], dir[1], dir[2]), child_size);
+				children[i] = build(node_origin + child_size * VOX_Vector3i(dir[0], dir[1], dir[2]), child_size);
 				any_node |= children[i] != nullptr;
 			}
 		}
@@ -256,11 +256,11 @@ public:
 	}
 
 private:
-	inline OctreeNode *create_child(Vector3i parent_origin, int parent_size, int i) const {
+	inline OctreeNode *create_child(VOX_Vector3i parent_origin, int parent_size, int i) const {
 		const int *dir = OctreeTables::g_octant_position[i];
 		OctreeNode *child = _pool.create();
 		child->size = parent_size / 2;
-		child->origin = parent_origin + child->size * Vector3i(dir[0], dir[1], dir[2]);
+		child->origin = parent_origin + child->size * VOX_Vector3i(dir[0], dir[1], dir[2]);
 		child->center_value = _voxels.get_interpolated_hermite_value(get_center(child));
 		return child;
 	}
@@ -281,8 +281,8 @@ void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
 	}
 }
 
-inline void scale_positions(PoolVector3Array &positions, float scale) {
-	PoolVector3Array::Write w = positions.write();
+inline void scale_positions(PackedVector3Array &positions, float scale) {
+	PackedVector3Array::Write w = positions.write();
 	const uint32_t size = positions.size();
 	for (unsigned int i = 0; i < size; ++i) {
 		w[i] *= scale;
@@ -300,9 +300,9 @@ Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 	};
 
 	struct Arrays {
-		PoolVector3Array positions;
+		PackedVector3Array positions;
 		PoolColorArray colors;
-		PoolIntArray indices;
+		PackedIntArray indices;
 	};
 
 	struct AddCube {
@@ -357,8 +357,8 @@ Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 }
 
 Array generate_debug_dual_grid_mesh(const DualGrid &grid, int scale) {
-	PoolVector3Array positions;
-	PoolIntArray indices;
+	PackedVector3Array positions;
+	PackedIntArray indices;
 
 	for (unsigned int i = 0; i < grid.cells.size(); ++i) {
 		const DualCell &cell = grid.cells[i];
@@ -1353,12 +1353,12 @@ inline void polygonize_dual_grid(const DualGrid &grid, const VoxelAccess &voxels
 	}
 }
 
-void polygonize_volume_directly(const VoxelBufferInternal &voxels, Vector3i min, Vector3i size,
+void polygonize_volume_directly(const VoxelBufferInternal &voxels, VOX_Vector3i min, VOX_Vector3i size,
 		MeshBuilder &mesh_builder, bool skirts_enabled) {
 	Vector3 corners[8];
 	HermiteValue values[8];
 
-	const Vector3i max = min + size;
+	const VOX_Vector3i max = min + size;
 	const Vector3 minf = min.to_vec3();
 
 	const Vector3 min_vertex_pos = Vector3();
@@ -1465,7 +1465,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 		return;
 	}
 
-	const Vector3i buffer_size = voxels.get_size();
+	const VOX_Vector3i buffer_size = voxels.get_size();
 	// Taking previous power of two because the algorithm uses an integer cubic octree, and data should be padded
 	const int chunk_size = previous_power_of_2(MIN(MIN(buffer_size.x, buffer_size.y), buffer_size.z));
 
@@ -1491,7 +1491,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	// So we can't improve this further until Godot's API gives us that possibility, or other approaches like skirts need to be taken.
 
 	// Construct an intermediate to handle padding transparently
-	dmc::VoxelAccess voxels_access(voxels, Vector3i(PADDING));
+	dmc::VoxelAccess voxels_access(voxels, VOX_Vector3i(PADDING));
 
 	Stats stats;
 	real_t time_before = OS::get_singleton()->get_ticks_usec();
@@ -1518,11 +1518,11 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	dmc::OctreeNode *root = nullptr;
 	if (params.simplify_mode == SIMPLIFY_OCTREE_BOTTOM_UP) {
 		dmc::OctreeBuilderBottomUp octree_builder(voxels_access, params.geometric_error, cache.octree_node_pool);
-		root = octree_builder.build(Vector3i(), chunk_size);
+		root = octree_builder.build(VOX_Vector3i(), chunk_size);
 
 	} else if (params.simplify_mode == SIMPLIFY_OCTREE_TOP_DOWN) {
 		dmc::OctreeBuilderTopDown octree_builder(voxels_access, params.geometric_error, cache.octree_node_pool);
-		root = octree_builder.build(Vector3i(), chunk_size);
+		root = octree_builder.build(VOX_Vector3i(), chunk_size);
 	}
 
 	stats.octree_build_time = OS::get_singleton()->get_ticks_usec() - time_before;
@@ -1561,7 +1561,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 		// This is essentially regular marching cubes.
 		time_before = OS::get_singleton()->get_ticks_usec();
 		dmc::polygonize_volume_directly(
-				voxels, Vector3i(PADDING), Vector3i(chunk_size), cache.mesh_builder, skirts_enabled);
+				voxels, VOX_Vector3i(PADDING), VOX_Vector3i(chunk_size), cache.mesh_builder, skirts_enabled);
 		stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
 	}
 

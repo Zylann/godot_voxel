@@ -60,7 +60,7 @@ bool VoxelVoxMeshImporter::get_option_visibility(const String &p_option,
 struct ForEachModelInstanceArgs {
 	const vox::Model *model;
 	// Pivot position, which turns out to be at the center in MagicaVoxel
-	Vector3i position;
+	VOX_Vector3i position;
 	Basis basis;
 };
 
@@ -93,7 +93,7 @@ static Error for_each_model_instance_in_scene_graph(
 			const vox::ShapeNode *vox_shape_node = reinterpret_cast<const vox::ShapeNode *>(vox_node);
 			ForEachModelInstanceArgs args;
 			args.model = &data.get_model(vox_shape_node->model_id);
-			args.position = Vector3i::from_rounded(transform.origin);
+			args.position = VOX_Vector3i::from_rounded(transform.origin);
 			args.basis = transform.basis;
 			f(args);
 		} break;
@@ -130,7 +130,7 @@ struct ModelInstance {
 	// Model with baked rotation
 	std::unique_ptr<VoxelBufferInternal> voxels;
 	// Lowest corner position
-	Vector3i position;
+	VOX_Vector3i position;
 };
 
 static void extract_model_instances(const vox::Data &vox_data, std::vector<ModelInstance> &out_instances) {
@@ -140,7 +140,7 @@ static void extract_model_instances(const vox::Data &vox_data, std::vector<Model
 		const vox::Model &model = *args.model;
 
 		Span<const uint8_t> src_color_indices;
-		Vector3i dst_size = model.size;
+		VOX_Vector3i dst_size = model.size;
 
 		// Using temporary copy to rotate the data
 		std::vector<uint8_t> temp_voxels;
@@ -178,7 +178,7 @@ static void extract_model_instances(const vox::Data &vox_data, std::vector<Model
 	});
 }
 
-static bool make_single_voxel_grid(Span<const ModelInstance> instances, Vector3i &out_origin,
+static bool make_single_voxel_grid(Span<const ModelInstance> instances, VOX_Vector3i &out_origin,
 		VoxelBufferInternal &out_voxels) {
 	// Determine total size
 	const ModelInstance &first_instance = instances[0];
@@ -196,15 +196,15 @@ static bool make_single_voxel_grid(Span<const ModelInstance> instances, Vector3i
 			String("Vox data is too big to be meshed as a single mesh ({0}: {0} bytes)")
 					.format(varray(bounding_box.size.to_vec3(), SIZE_T_TO_VARIANT(volume))));
 
-	out_voxels.create(bounding_box.size + Vector3i(VoxelMesherCubes::PADDING * 2));
+	out_voxels.create(bounding_box.size + VOX_Vector3i(VoxelMesherCubes::PADDING * 2));
 	out_voxels.set_channel_depth(VoxelBufferInternal::CHANNEL_COLOR, VoxelBufferInternal::DEPTH_8_BIT);
 	out_voxels.decompress_channel(VoxelBufferInternal::CHANNEL_COLOR);
 
 	for (unsigned int instance_index = 0; instance_index < instances.size(); ++instance_index) {
 		const ModelInstance &mi = instances[instance_index];
 		ERR_FAIL_COND_V(mi.voxels == nullptr, false);
-		out_voxels.copy_from(*mi.voxels, Vector3i(), mi.voxels->get_size(),
-				mi.position - bounding_box.pos + Vector3i(VoxelMesherCubes::PADDING),
+		out_voxels.copy_from(*mi.voxels, VOX_Vector3i(), mi.voxels->get_size(),
+				mi.position - bounding_box.pos + VOX_Vector3i(VoxelMesherCubes::PADDING),
 				VoxelBufferInternal::CHANNEL_COLOR);
 	}
 
@@ -251,7 +251,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 
 		// TODO Optimization: this approach uses a lot of memory, might fail on scenes with a large bounding box.
 		// One workaround would be to mesh the scene incrementally in chunks, giving up greedy meshing beyond 256 or so.
-		Vector3i bounding_box_origin;
+		VOX_Vector3i bounding_box_origin;
 		VoxelBufferInternal voxels;
 		const bool single_grid_succeeded =
 				make_single_voxel_grid(to_span_const(model_instances), bounding_box_origin, voxels);
@@ -275,7 +275,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 				offset = bounding_box_origin.to_vec3();
 				break;
 			case PIVOT_CENTER:
-				offset = -((voxels.get_size() - Vector3i(1)) / 2).to_vec3();
+				offset = -((voxels.get_size() - VOX_Vector3i(1)) / 2).to_vec3();
 				break;
 			default:
 				ERR_FAIL_V(ERR_BUG);

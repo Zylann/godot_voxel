@@ -324,9 +324,9 @@ void VoxelGraphEditor::build_gui_from_graph() {
 
 	// Nodes
 
-	PoolIntArray node_ids = graph.get_node_ids();
+	PackedIntArray node_ids = graph.get_node_ids();
 	{
-		PoolIntArray::Read node_ids_read = node_ids.read();
+		PackedIntArray::Read node_ids_read = node_ids.read();
 		for (int i = 0; i < node_ids.size(); ++i) {
 			const uint32_t node_id = node_ids_read[i];
 			create_node_gui(node_id);

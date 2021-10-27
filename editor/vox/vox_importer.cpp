@@ -206,7 +206,7 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 			image->shrink_x2();
 		}
 
-		PoolVector<uint8_t> data;
+		Vector<uint8_t> data;
 		if (use_webp) {
 			data = Image::webp_lossless_packer(image);
 		} else {
@@ -215,7 +215,7 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 		const int data_len = data.size();
 		f->store_32(data_len);
 
-		PoolVector<uint8_t>::Read r = data.read();
+		Vector<uint8_t>::Read r = data.read();
 		f->store_buffer(r.ptr(), data_len);
 	}
 
@@ -280,14 +280,14 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 		const vox::Model &model = data.get_model(model_index);
 
 		VoxelBufferInternal voxels;
-		voxels.create(model.size + Vector3i(VoxelMesherCubes::PADDING * 2));
+		voxels.create(model.size + VOX_Vector3i(VoxelMesherCubes::PADDING * 2));
 		voxels.decompress_channel(VoxelBuffer::CHANNEL_COLOR);
 
 		Span<uint8_t> dst_color_indices;
 		ERR_FAIL_COND_V(!voxels.get_channel_raw(VoxelBuffer::CHANNEL_COLOR, dst_color_indices), ERR_BUG);
 		Span<const uint8_t> src_color_indices = to_span_const(model.color_indexes);
-		copy_3d_region_zxy(dst_color_indices, voxels.get_size(), Vector3i(VoxelMesherCubes::PADDING),
-				src_color_indices, model.size, Vector3i(), model.size);
+		copy_3d_region_zxy(dst_color_indices, voxels.get_size(), VOX_Vector3i(VoxelMesherCubes::PADDING),
+				src_color_indices, model.size, VOX_Vector3i(), model.size);
 
 		std::vector<unsigned int> surface_index_to_material;
 		Ref<Image> atlas;
@@ -345,7 +345,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 		mesh_info.mesh = mesh;
 		// In MagicaVoxel scene graph, pivots are at the center of models, not at the lower corner.
 		// TODO I don't know if this is correct, but I could not find a reference saying how that pivot should be calculated
-		mesh_info.pivot = (voxels.get_size() / 2 - Vector3i(1)).to_vec3();
+		mesh_info.pivot = (voxels.get_size() / 2 - VOX_Vector3i(1)).to_vec3();
 		meshes.write[model_index] = mesh_info;
 	}
 

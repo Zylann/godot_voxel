@@ -9,8 +9,8 @@
 class VoxelStreamScript : public VoxelStream {
 	GDCLASS(VoxelStreamScript, VoxelStream)
 public:
-	Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
+	Result emerge_block(VoxelBufferInternal &out_buffer, VOX_Vector3i origin_in_voxels, int lod) override;
+	void immerge_block(VoxelBufferInternal &buffer, VOX_Vector3i origin_in_voxels, int lod) override;
 
 	int get_used_channels_mask() const override;
 

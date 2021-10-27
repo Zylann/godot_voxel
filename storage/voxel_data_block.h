@@ -8,15 +8,15 @@
 // Stores loaded voxel data for a chunk of the volume. Mesh and colliders are stored separately.
 class VoxelDataBlock {
 public:
-	const Vector3i position;
+	const VOX_Vector3i position;
 	const unsigned int lod_index = 0;
 	VoxelRefCount viewers;
 
-	static VoxelDataBlock *create(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int size,
+	static VoxelDataBlock *create(VOX_Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int size,
 			unsigned int p_lod_index) {
 		const int bs = size;
 		ERR_FAIL_COND_V(buffer == nullptr, nullptr);
-		ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), nullptr);
+		ERR_FAIL_COND_V(buffer->get_size() != VOX_Vector3i(bs, bs, bs), nullptr);
 		return memnew(VoxelDataBlock(bpos, buffer, p_lod_index));
 	}
 
@@ -68,7 +68,7 @@ public:
 	}
 
 private:
-	VoxelDataBlock(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int p_lod_index) :
+	VoxelDataBlock(VOX_Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int p_lod_index) :
 			position(bpos), lod_index(p_lod_index), _voxels(buffer) {}
 
 	std::shared_ptr<VoxelBufferInternal> _voxels;

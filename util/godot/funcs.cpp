@@ -8,8 +8,8 @@
 #include <scene/resources/multimesh.h>
 
 bool is_surface_triangulated(Array surface) {
-	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
-	PoolIntArray indices = surface[Mesh::ARRAY_INDEX];
+	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
+	PackedIntArray indices = surface[Mesh::ARRAY_INDEX];
 	return positions.size() >= 3 && indices.size() >= 3;
 }
 
@@ -64,7 +64,7 @@ bool try_call_script(
 Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
 	VOXEL_PROFILE_SCOPE();
 
-	PoolVector<Vector3> face_points;
+	Vector<Vector3> face_points;
 	int face_points_size = 0;
 
 	//find the correct size for face_points
@@ -76,7 +76,7 @@ Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
 		}
 		// If the surface is not empty then it must have an expected amount of data arrays
 		ERR_CONTINUE(surface_arrays.size() != Mesh::ARRAY_MAX);
-		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
+		Vector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
 		face_points_size += indices.size();
 	}
 	face_points.resize(face_points_size);
@@ -92,8 +92,8 @@ Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
 		if (surface_arrays.size() == 0) {
 			continue;
 		}
-		PoolVector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];
-		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
+		Vector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];
+		Vector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
 
 		ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape>());
 		ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape>());
@@ -102,9 +102,9 @@ Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
 		int face_points_count = face_points_offset + indices.size();
 
 		{
-			PoolVector<Vector3>::Write w = face_points.write();
-			PoolVector<int>::Read index_r = indices.read();
-			PoolVector<Vector3>::Read position_r = positions.read();
+			Vector<Vector3>::Write w = face_points.write();
+			Vector<int>::Read index_r = indices.read();
+			Vector<Vector3>::Read position_r = positions.read();
 
 			for (int p = face_points_offset; p < face_points_count; ++p) {
 				w[p] = position_r[index_r[p - face_points_offset]];
@@ -135,9 +135,9 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	if (src_surface.empty()) {
 		return Array();
 	}
-	PoolVector3Array src_positions = src_surface[Mesh::ARRAY_VERTEX];
-	PoolVector3Array src_normals = src_surface[Mesh::ARRAY_NORMAL];
-	PoolIntArray src_indices = src_surface[Mesh::ARRAY_INDEX];
+	PackedVector3Array src_positions = src_surface[Mesh::ARRAY_VERTEX];
+	PackedVector3Array src_normals = src_surface[Mesh::ARRAY_NORMAL];
+	PackedIntArray src_indices = src_surface[Mesh::ARRAY_INDEX];
 	if (src_indices.size() < 3) {
 		return Array();
 	}
@@ -151,8 +151,8 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	HashMap<int, int> src_index_to_dst_index;
 	std::vector<Vector3> dst_positions;
 	{
-		PoolVector3Array::Read src_positions_read = src_positions.read();
-		PoolVector3Array::Read src_normals_read = src_normals.read();
+		PackedVector3Array::Read src_positions_read = src_positions.read();
+		PackedVector3Array::Read src_normals_read = src_normals.read();
 		for (int i = 0; i < src_positions.size(); ++i) {
 			const Vector3 pos = src_positions[i];
 			Dupe *dptr = vertex_to_dupe.getptr(pos);
@@ -171,7 +171,7 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 
 	std::vector<int> dst_indices;
 	{
-		PoolIntArray::Read r = src_indices.read();
+		PackedIntArray::Read r = src_indices.read();
 		for (int i = 0; i < src_indices.size(); i += 3) {
 			const int vi0 = r[i];
 			const int vi1 = r[i + 1];
@@ -201,8 +201,8 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	ERR_FAIL_COND_V(dst_indices.size() % 2 != 0, Array());
 	ERR_FAIL_COND_V(dst_positions.size() < 2, Array());
 
-	PoolVector3Array dst_positions_pv;
-	PoolIntArray dst_indices_pv;
+	PackedVector3Array dst_positions_pv;
+	PackedIntArray dst_indices_pv;
 	raw_copy_to(dst_positions_pv, dst_positions);
 	raw_copy_to(dst_indices_pv, dst_indices);
 	Array dst_surface;

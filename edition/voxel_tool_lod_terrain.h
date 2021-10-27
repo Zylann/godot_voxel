@@ -20,7 +20,7 @@ public:
 
 	void do_sphere(Vector3 center, float radius) override;
 
-	void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const override;
+	void copy(VOX_Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const override;
 
 	// Specialized API
 
@@ -28,10 +28,10 @@ public:
 	Array separate_floating_chunks(AABB world_box, Node *parent_node);
 
 protected:
-	uint64_t _get_voxel(Vector3i pos) const override;
-	float _get_voxel_f(Vector3i pos) const override;
-	void _set_voxel(Vector3i pos, uint64_t v) override;
-	void _set_voxel_f(Vector3i pos, float v) override;
+	uint64_t _get_voxel(VOX_Vector3i pos) const override;
+	float _get_voxel_f(VOX_Vector3i pos) const override;
+	void _set_voxel(VOX_Vector3i pos, uint64_t v) override;
+	void _set_voxel_f(VOX_Vector3i pos, float v) override;
 	void _post_edit(const Box3i &box) override;
 
 private:

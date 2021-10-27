@@ -15,7 +15,7 @@ int VoxelGenerator::get_used_channels_mask() const {
 void VoxelGenerator::_b_generate_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	ERR_FAIL_COND(out_buffer.is_null());
-	VoxelBlockRequest r = { out_buffer->get_buffer(), Vector3i(origin_in_voxels), lod };
+	VoxelBlockRequest r = { out_buffer->get_buffer(), VOX_Vector3i(origin_in_voxels), lod };
 	generate_block(r);
 }
 

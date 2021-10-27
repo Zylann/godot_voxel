@@ -6,7 +6,7 @@
 #include "../../util/span.h"
 #include "program_graph.h"
 
-#include <core/reference.h>
+#include <core/object/ref_counted.h>
 
 // CPU VM to execute a voxel graph generator.
 // This is a more generic class implementing the core of a 3D expression processing system.
@@ -138,7 +138,7 @@ public:
 	// Analyzes a specific region of inputs to find out what ranges of outputs we can expect.
 	// It can be used to speed up calls to `generate_set` thanks to execution mapping,
 	// so that operations can be optimized out if they don't contribute to the result.
-	void analyze_range(State &state, Vector3i min_pos, Vector3i max_pos) const;
+	void analyze_range(State &state, VOX_Vector3i min_pos, VOX_Vector3i max_pos) const;
 
 	// Call this after `analyze_range` if you intend to actually generate a set or single values in the area.
 	// This allows to use the execution map optimization, until you choose another area.
@@ -395,7 +395,7 @@ private:
 
 		// Heap-allocated parameters data, when too large to fit in `operations`.
 		// We keep a reference to them so they won't be freed until the program is cleared.
-		std::vector<Ref<Reference>> ref_resources;
+		std::vector<Ref<RefCounted>> ref_resources;
 
 		// Describes the list of buffers to prepare in `State` before the program can be run
 		std::vector<BufferSpec> buffer_specs;

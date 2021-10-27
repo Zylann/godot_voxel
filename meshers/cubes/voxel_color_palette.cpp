@@ -48,11 +48,11 @@ void VoxelColorPalette::clear() {
 	}
 }
 
-PoolIntArray VoxelColorPalette::_b_get_data() const {
-	PoolIntArray colors;
+PackedIntArray VoxelColorPalette::_b_get_data() const {
+	PackedIntArray colors;
 	colors.resize(_colors.size());
 	{
-		PoolIntArray::Write w = colors.write();
+		PackedIntArray::Write w = colors.write();
 		for (size_t i = 0; i < _colors.size(); ++i) {
 			w[i] = _colors[i].to_u32();
 		}
@@ -60,9 +60,9 @@ PoolIntArray VoxelColorPalette::_b_get_data() const {
 	return colors;
 }
 
-void VoxelColorPalette::_b_set_data(PoolIntArray colors) {
+void VoxelColorPalette::_b_set_data(PackedIntArray colors) {
 	ERR_FAIL_COND(colors.size() > static_cast<int>(_colors.size()));
-	PoolIntArray::Read r = colors.read();
+	PackedIntArray::Read r = colors.read();
 	for (int i = 0; i < colors.size(); ++i) {
 		_colors[i] = Color8::from_u32(r[i]);
 	}

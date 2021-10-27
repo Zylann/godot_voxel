@@ -31,7 +31,7 @@ public:
 		int back_label = 0;
 		int next_unique_label = 1;
 
-		Vector3i pos;
+		VOX_Vector3i pos;
 		for (pos.z = 0; pos.z < box.size.z; ++pos.z) {
 			for (pos.x = 0; pos.x < box.size.x; ++pos.x) {
 				// TODO I initially wrote this algorithm in ZYX order, but translated to ZXY when porting to C++.
@@ -43,13 +43,13 @@ public:
 
 					if (volume_predicate_func(box.pos + pos)) {
 						if (pos.z > 0) {
-							back_label = output[Vector3i(pos.x, pos.y, pos.z - 1).get_zxy_index(box.size)];
+							back_label = output[VOX_Vector3i(pos.x, pos.y, pos.z - 1).get_zxy_index(box.size)];
 						} else {
 							back_label = 0;
 						}
 
 						if (pos.x > 0) {
-							top_label = output[Vector3i(pos.x - 1, pos.y, pos.z).get_zxy_index(box.size)];
+							top_label = output[VOX_Vector3i(pos.x - 1, pos.y, pos.z).get_zxy_index(box.size)];
 						} else {
 							top_label = 0;
 						}

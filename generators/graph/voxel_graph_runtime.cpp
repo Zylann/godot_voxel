@@ -842,7 +842,7 @@ void VoxelGraphRuntime::generate_set(State &state,
 }
 
 // TODO Accept float bounds
-void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i max_pos) const {
+void VoxelGraphRuntime::analyze_range(State &state, VOX_Vector3i min_pos, VOX_Vector3i max_pos) const {
 	VOXEL_PROFILE_SCOPE();
 
 #ifdef TOOLS_ENABLED

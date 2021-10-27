@@ -5,8 +5,8 @@
 #include <core/math/aabb.h>
 
 // Helper to get simple AABB physics
-class VoxelBoxMover : public Reference {
-	GDCLASS(VoxelBoxMover, Reference)
+class VoxelBoxMover : public RefCounted {
+	GDCLASS(VoxelBoxMover, RefCounted)
 public:
 	Vector3 get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelTerrain *terrain);
 

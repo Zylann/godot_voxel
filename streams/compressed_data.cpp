@@ -4,7 +4,7 @@
 #include "../util/serialization.h"
 
 #include <core/io/file_access_memory.h>
-#include <core/variant.h>
+#include <core/variant/variant.h>
 #include <limits>
 
 namespace VoxelCompressedData {

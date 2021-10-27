@@ -138,7 +138,7 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelBlockRequest &in
 
 	OpenSimplexNoise &noise = **params.noise;
 	VoxelBufferInternal &buffer = input.voxel_buffer;
-	Vector3i origin_in_voxels = input.origin_in_voxels;
+	VOX_Vector3i origin_in_voxels = input.origin_in_voxels;
 	int lod = input.lod;
 
 	int isosurface_lower_bound = static_cast<int>(Math::floor(params.height_start));
@@ -175,7 +175,7 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelBlockRequest &in
 
 	} else {
 		const float iso_scale = noise.get_period() * 0.1;
-		const Vector3i size = buffer.get_size();
+		const VOX_Vector3i size = buffer.get_size();
 		const float height_range_inv = 1.f / params.height_range;
 		const float one_minus_persistence = 1.f - noise.get_persistence();
 

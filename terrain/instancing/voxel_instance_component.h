@@ -56,7 +56,7 @@ public:
 		_instance_index = instance_index;
 	}
 
-	void set_data_block_position(Vector3i data_block_position) {
+	void set_data_block_position(VOX_Vector3i data_block_position) {
 		_data_block_position = data_block_position;
 	}
 
@@ -104,7 +104,7 @@ private:
 	}
 
 	VoxelInstancer *_instancer = nullptr;
-	Vector3i _data_block_position;
+	VOX_Vector3i _data_block_position;
 	unsigned int _render_block_index;
 	int _instance_index = -1;
 };

@@ -30,7 +30,7 @@
 //
 //================================================================================
 
-#include <core/error_macros.h>
+#include <core/error/error_macros.h>
 
 namespace Transvoxel {
 namespace Tables {

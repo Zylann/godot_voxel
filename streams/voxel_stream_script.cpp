@@ -2,7 +2,7 @@
 #include "../constants/voxel_string_names.h"
 #include "../util/godot/funcs.h"
 
-VoxelStream::Result VoxelStreamScript::emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStream::Result VoxelStreamScript::emerge_block(VoxelBufferInternal &out_buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	Variant output;
 	// Create a temporary wrapper so Godot can pass it to scripts
 	Ref<VoxelBuffer> buffer_wrapper;
@@ -20,7 +20,7 @@ VoxelStream::Result VoxelStreamScript::emerge_block(VoxelBufferInternal &out_buf
 	return RESULT_ERROR;
 }
 
-void VoxelStreamScript::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamScript::immerge_block(VoxelBufferInternal &buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	Ref<VoxelBuffer> buffer_wrapper;
 	buffer_wrapper.instance();
 	buffer.duplicate_to(buffer_wrapper->get_buffer(), true);

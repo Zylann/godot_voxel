@@ -25,7 +25,7 @@ VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 // TODO Have configurable block size
 
 VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
-		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+		VoxelBufferInternal &out_buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	//
 	if (_directory_path.empty()) {
 		return RESULT_BLOCK_NOT_FOUND;
@@ -39,12 +39,12 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 
 	CRASH_COND(!_meta_loaded);
 
-	const Vector3i block_size(1 << _meta.block_size_po2);
+	const VOX_Vector3i block_size(1 << _meta.block_size_po2);
 
 	ERR_FAIL_COND_V(lod >= _meta.lod_count, RESULT_ERROR);
 	ERR_FAIL_COND_V(block_size != out_buffer.get_size(), RESULT_ERROR);
 
-	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
+	VOX_Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
 	String file_path = get_block_file_path(block_pos, lod);
 
 	FileAccess *f = nullptr;
@@ -89,7 +89,7 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 	return RESULT_BLOCK_FOUND;
 }
 
-void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND(_directory_path.empty());
 
 	if (!_meta_loaded) {
@@ -114,13 +114,13 @@ void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i 
 	}
 
 	// Check format
-	const Vector3i block_size = Vector3i(1 << _meta.block_size_po2);
+	const VOX_Vector3i block_size = VOX_Vector3i(1 << _meta.block_size_po2);
 	ERR_FAIL_COND(buffer.get_size() != block_size);
 	for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
 		ERR_FAIL_COND(buffer.get_channel_depth(channel_index) != _meta.channel_depths[channel_index]);
 	}
 
-	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
+	VOX_Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
 	String file_path = get_block_file_path(block_pos, lod);
 
 	{
@@ -263,7 +263,7 @@ VoxelFileResult VoxelStreamBlockFiles::load_meta() {
 	return VOXEL_FILE_OK;
 }
 
-String VoxelStreamBlockFiles::get_block_file_path(const Vector3i &block_pos, unsigned int lod) const {
+String VoxelStreamBlockFiles::get_block_file_path(const VOX_Vector3i &block_pos, unsigned int lod) const {
 	// TODO This is probably extremely inefficient, also given the nature of Godot strings
 
 	// Save under a folder, because there could be other kinds of data to store in this terrain
@@ -280,7 +280,7 @@ String VoxelStreamBlockFiles::get_block_file_path(const Vector3i &block_pos, uns
 	return _directory_path.plus_file(path);
 }
 
-Vector3i VoxelStreamBlockFiles::get_block_position(const Vector3i &origin_in_voxels) const {
+VOX_Vector3i VoxelStreamBlockFiles::get_block_position(const VOX_Vector3i &origin_in_voxels) const {
 	return origin_in_voxels >> _meta.block_size_po2;
 }
 

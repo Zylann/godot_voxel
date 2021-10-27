@@ -33,7 +33,7 @@ inline float get_triangle_area(Vector3 p0, Vector3 p1, Vector3 p2) {
 
 void VoxelInstanceGenerator::generate_transforms(
 		std::vector<Transform> &out_transforms,
-		Vector3i grid_position,
+		VOX_Vector3i grid_position,
 		int lod_index,
 		int layer_id,
 		Array surface_arrays,
@@ -49,7 +49,7 @@ void VoxelInstanceGenerator::generate_transforms(
 		return;
 	}
 
-	PoolVector3Array vertices = surface_arrays[ArrayMesh::ARRAY_VERTEX];
+	PackedVector3Array vertices = surface_arrays[ArrayMesh::ARRAY_VERTEX];
 	if (vertices.size() == 0) {
 		return;
 	}
@@ -58,14 +58,14 @@ void VoxelInstanceGenerator::generate_transforms(
 		return;
 	}
 
-	PoolVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
+	PackedVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
 	ERR_FAIL_COND(normals.size() == 0);
 
-	PoolIntArray indices = surface_arrays[ArrayMesh::ARRAY_INDEX];
+	PackedIntArray indices = surface_arrays[ArrayMesh::ARRAY_INDEX];
 	ERR_FAIL_COND(indices.size() == 0);
 	ERR_FAIL_COND(indices.size() % 3 != 0);
 
-	const uint32_t block_pos_hash = Vector3iHasher::hash(grid_position);
+	const uint32_t block_pos_hash = VOX_Vector3iHasher::hash(grid_position);
 
 	Vector3 global_up(0.f, 1.f, 0.f);
 
@@ -94,8 +94,8 @@ void VoxelInstanceGenerator::generate_transforms(
 	{
 		VOXEL_PROFILE_SCOPE_NAMED("mesh to points");
 
-		PoolVector3Array::Read vertices_r = vertices.read();
-		PoolVector3Array::Read normals_r = normals.read();
+		PackedVector3Array::Read vertices_r = vertices.read();
+		PackedVector3Array::Read normals_r = normals.read();
 
 		// Generate base positions
 		switch (_emit_mode) {
@@ -118,7 +118,7 @@ void VoxelInstanceGenerator::generate_transforms(
 			} break;
 
 			case EMIT_FROM_FACES_FAST: {
-				PoolIntArray::Read indices_r = indices.read();
+				PackedIntArray::Read indices_r = indices.read();
 
 				const int triangle_count = indices.size() / 3;
 
@@ -162,7 +162,7 @@ void VoxelInstanceGenerator::generate_transforms(
 			} break;
 
 			case EMIT_FROM_FACES: {
-				PoolIntArray::Read indices_r = indices.read();
+				PackedIntArray::Read indices_r = indices.read();
 
 				const int triangle_count = indices.size() / 3;
 

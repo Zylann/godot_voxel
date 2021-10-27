@@ -1,7 +1,7 @@
 #ifndef COLOR8_H
 #define COLOR8_H
 
-#include <core/color.h>
+#include <core/math/color.h>
 
 struct Color8 {
 	union {

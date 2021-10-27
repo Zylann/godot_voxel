@@ -148,7 +148,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 	const int max_y = int(Math::ceil(expanded_box_end.y));
 	const int max_z = int(Math::ceil(expanded_box_end.z));
 
-	Vector3i i(min_x, min_y, min_z);
+	VOX_Vector3i i(min_x, min_y, min_z);
 
 	Ref<VoxelMesherBlocky> mesher_blocky;
 	Ref<VoxelMesherCubes> mesher_cubes;

@@ -11,28 +11,28 @@
 
 void test_box3i_intersects() {
 	{
-		Box3i a(Vector3i(0, 0, 0), Vector3i(1, 1, 1));
-		Box3i b(Vector3i(0, 0, 0), Vector3i(1, 1, 1));
+		Box3i a(VOX_Vector3i(0, 0, 0), VOX_Vector3i(1, 1, 1));
+		Box3i b(VOX_Vector3i(0, 0, 0), VOX_Vector3i(1, 1, 1));
 		ERR_FAIL_COND(a.intersects(b) == false);
 	}
 	{
-		Box3i a(Vector3i(0, 0, 0), Vector3i(1, 1, 1));
-		Box3i b(Vector3i(1, 0, 0), Vector3i(1, 1, 1));
+		Box3i a(VOX_Vector3i(0, 0, 0), VOX_Vector3i(1, 1, 1));
+		Box3i b(VOX_Vector3i(1, 0, 0), VOX_Vector3i(1, 1, 1));
 		ERR_FAIL_COND(a.intersects(b) == true);
 	}
 	{
-		Box3i a(Vector3i(0, 0, 0), Vector3i(2, 2, 2));
-		Box3i b(Vector3i(1, 0, 0), Vector3i(2, 2, 2));
+		Box3i a(VOX_Vector3i(0, 0, 0), VOX_Vector3i(2, 2, 2));
+		Box3i b(VOX_Vector3i(1, 0, 0), VOX_Vector3i(2, 2, 2));
 		ERR_FAIL_COND(a.intersects(b) == false);
 	}
 	{
-		Box3i a(Vector3i(-5, 0, 0), Vector3i(10, 1, 1));
-		Box3i b(Vector3i(0, -5, 0), Vector3i(1, 10, 1));
+		Box3i a(VOX_Vector3i(-5, 0, 0), VOX_Vector3i(10, 1, 1));
+		Box3i b(VOX_Vector3i(0, -5, 0), VOX_Vector3i(1, 10, 1));
 		ERR_FAIL_COND(a.intersects(b) == false);
 	}
 	{
-		Box3i a(Vector3i(-5, 0, 0), Vector3i(10, 1, 1));
-		Box3i b(Vector3i(0, -5, 1), Vector3i(1, 10, 1));
+		Box3i a(VOX_Vector3i(-5, 0, 0), VOX_Vector3i(10, 1, 1));
+		Box3i b(VOX_Vector3i(0, -5, 1), VOX_Vector3i(1, 10, 1));
 		ERR_FAIL_COND(a.intersects(b) == true);
 	}
 }
@@ -40,15 +40,15 @@ void test_box3i_intersects() {
 void test_box3i_for_inner_outline() {
 	const Box3i box(-1, 2, 3, 8, 6, 5);
 
-	HashMap<Vector3i, bool, Vector3iHasher> expected_coords;
+	HashMap<VOX_Vector3i, bool, VOX_Vector3iHasher> expected_coords;
 	const Box3i inner_box = box.padded(-1);
-	box.for_each_cell([&expected_coords, inner_box](Vector3i pos) {
+	box.for_each_cell([&expected_coords, inner_box](VOX_Vector3i pos) {
 		if (!inner_box.contains(pos)) {
 			expected_coords.set(pos, false);
 		}
 	});
 
-	box.for_inner_outline([&expected_coords](Vector3i pos) {
+	box.for_inner_outline([&expected_coords](VOX_Vector3i pos) {
 		bool *b = expected_coords.getptr(pos);
 		if (b == nullptr) {
 			ERR_FAIL_MSG("Unexpected position");
@@ -59,7 +59,7 @@ void test_box3i_for_inner_outline() {
 		*b = true;
 	});
 
-	const Vector3i *key = nullptr;
+	const VOX_Vector3i *key = nullptr;
 	while ((key = expected_coords.next(key))) {
 		bool v = expected_coords[*key];
 		if (!v) {
@@ -80,12 +80,12 @@ void test_voxel_data_map_paste_fill() {
 	VoxelDataMap map;
 	map.create(4, 0);
 
-	const Box3i box(Vector3i(10, 10, 10), buffer.get_size());
+	const Box3i box(VOX_Vector3i(10, 10, 10), buffer.get_size());
 
 	map.paste(box.pos, buffer, (1 << channel), false, 0, true);
 
 	// All voxels in the area must be as pasted
-	const bool is_match = box.all_cells_match([&map](const Vector3i &pos) {
+	const bool is_match = box.all_cells_match([&map](const VOX_Vector3i &pos) {
 		return map.get_voxel(pos, channel) == voxel_value;
 	});
 
@@ -94,7 +94,7 @@ void test_voxel_data_map_paste_fill() {
 	// Check neighbor voxels to make sure they were not changed
 	const Box3i padded_box = box.padded(1);
 	bool outside_is_ok = true;
-	padded_box.for_inner_outline([&map, &outside_is_ok](const Vector3i &pos) {
+	padded_box.for_inner_outline([&map, &outside_is_ok](const VOX_Vector3i &pos) {
 		if (map.get_voxel(pos, channel) != default_value) {
 			outside_is_ok = false;
 		}
@@ -124,19 +124,19 @@ void test_voxel_data_map_paste_mask() {
 	VoxelDataMap map;
 	map.create(4, 0);
 
-	const Box3i box(Vector3i(10, 10, 10), buffer.get_size());
+	const Box3i box(VOX_Vector3i(10, 10, 10), buffer.get_size());
 
 	map.paste(box.pos, buffer, (1 << channel), true, masked_value, true);
 
 	// All voxels in the area must be as pasted. Ignoring the outline.
-	const bool is_match = box.padded(-1).all_cells_match([&map](const Vector3i &pos) {
+	const bool is_match = box.padded(-1).all_cells_match([&map](const VOX_Vector3i &pos) {
 		return map.get_voxel(pos, channel) == voxel_value;
 	});
 
 	/*for (int y = 0; y < buffer->get_size().y; ++y) {
 		String line = String("y={0} | ").format(varray(y));
 		for (int x = 0; x < buffer->get_size().x; ++x) {
-			const int v = buffer->get_voxel(Vector3i(x, y, box.pos.z + 5), channel);
+			const int v = buffer->get_voxel(VOX_Vector3i(x, y, box.pos.z + 5), channel);
 			if (v == default_value) {
 				line += "- ";
 			} else if (v == voxel_value) {
@@ -151,7 +151,7 @@ void test_voxel_data_map_paste_mask() {
 	for (int y = 0; y < 64; ++y) {
 		String line = String("y={0} | ").format(varray(y));
 		for (int x = 0; x < 64; ++x) {
-			const int v = map.get_voxel(Vector3i(x, y, box.pos.z + 5), channel);
+			const int v = map.get_voxel(VOX_Vector3i(x, y, box.pos.z + 5), channel);
 			if (v == default_value) {
 				line += "- ";
 			} else if (v == voxel_value) {
@@ -167,7 +167,7 @@ void test_voxel_data_map_paste_mask() {
 
 	// Now check the outline voxels, they should be the same as before
 	bool outside_is_ok = true;
-	box.for_inner_outline([&map, &outside_is_ok](const Vector3i &pos) {
+	box.for_inner_outline([&map, &outside_is_ok](const VOX_Vector3i &pos) {
 		if (map.get_voxel(pos, channel) != default_value) {
 			outside_is_ok = false;
 		}
@@ -208,7 +208,7 @@ void test_voxel_data_map_copy() {
 	// for (int y = 0; y < buffer2->get_size().y; ++y) {
 	// 	String line = String("y={0} | ").format(varray(y));
 	// 	for (int x = 0; x < buffer2->get_size().x; ++x) {
-	// 		const int v = buffer2->get_voxel(Vector3i(x, y, 5), channel);
+	// 		const int v = buffer2->get_voxel(VOX_Vector3i(x, y, 5), channel);
 	// 		if (v == default_value) {
 	// 			line += "- ";
 	// 		} else if (v == voxel_value) {
@@ -240,9 +240,9 @@ void test_encode_weights_packed_u16() {
 void test_copy_3d_region_zxy() {
 	struct L {
 		static void compare(
-				Span<const uint16_t> srcs, Vector3i src_size, Vector3i src_min, Vector3i src_max,
-				Span<const uint16_t> dsts, Vector3i dst_size, Vector3i dst_min) {
-			Vector3i pos;
+				Span<const uint16_t> srcs, VOX_Vector3i src_size, VOX_Vector3i src_min, VOX_Vector3i src_max,
+				Span<const uint16_t> dsts, VOX_Vector3i dst_size, VOX_Vector3i dst_min) {
+			VOX_Vector3i pos;
 			for (pos.z = src_min.z; pos.z < src_max.z; ++pos.z) {
 				for (pos.x = src_min.x; pos.x < src_max.x; ++pos.x) {
 					for (pos.y = src_min.y; pos.y < src_max.y; ++pos.y) {
@@ -258,8 +258,8 @@ void test_copy_3d_region_zxy() {
 	{
 		std::vector<uint16_t> src;
 		std::vector<uint16_t> dst;
-		const Vector3i src_size(8, 8, 8);
-		const Vector3i dst_size(3, 4, 5);
+		const VOX_Vector3i src_size(8, 8, 8);
+		const VOX_Vector3i dst_size(3, 4, 5);
 		src.resize(src_size.volume(), 0);
 		dst.resize(dst_size.volume(), 0);
 		for (unsigned int i = 0; i < src.size(); ++i) {
@@ -268,9 +268,9 @@ void test_copy_3d_region_zxy() {
 
 		Span<const uint16_t> srcs = to_span_const(src);
 		Span<uint16_t> dsts = to_span(dst);
-		const Vector3i dst_min(0, 0, 0);
-		const Vector3i src_min(2, 1, 0);
-		const Vector3i src_max(5, 4, 3);
+		const VOX_Vector3i dst_min(0, 0, 0);
+		const VOX_Vector3i src_min(2, 1, 0);
+		const VOX_Vector3i src_max(5, 4, 3);
 		copy_3d_region_zxy(dsts, dst_size, dst_min, srcs, src_size, src_min, src_max);
 
 		/*for (pos.y = src_min.y; pos.y < src_max.y; ++pos.y) {
@@ -288,8 +288,8 @@ void test_copy_3d_region_zxy() {
 		print_line(s);
 	}
 	print_line("----");
-	const Vector3i dst_max = dst_min + (src_max - src_min);
-	pos = Vector3i();
+	const VOX_Vector3i dst_max = dst_min + (src_max - src_min);
+	pos = VOX_Vector3i();
 	for (pos.y = dst_min.y; pos.y < dst_max.y; ++pos.y) {
 		String s;
 		for (pos.x = dst_min.x; pos.x < dst_max.x; ++pos.x) {
@@ -311,8 +311,8 @@ void test_copy_3d_region_zxy() {
 	{
 		std::vector<uint16_t> src;
 		std::vector<uint16_t> dst;
-		const Vector3i src_size(3, 4, 5);
-		const Vector3i dst_size(3, 4, 5);
+		const VOX_Vector3i src_size(3, 4, 5);
+		const VOX_Vector3i dst_size(3, 4, 5);
 		src.resize(src_size.volume(), 0);
 		dst.resize(dst_size.volume(), 0);
 		for (unsigned int i = 0; i < src.size(); ++i) {
@@ -321,9 +321,9 @@ void test_copy_3d_region_zxy() {
 
 		Span<const uint16_t> srcs = to_span_const(src);
 		Span<uint16_t> dsts = to_span(dst);
-		const Vector3i dst_min(0, 0, 0);
-		const Vector3i src_min(0, 0, 0);
-		const Vector3i src_max = src_size;
+		const VOX_Vector3i dst_min(0, 0, 0);
+		const VOX_Vector3i src_min(0, 0, 0);
+		const VOX_Vector3i src_max = src_size;
 		copy_3d_region_zxy(dsts, dst_size, dst_min, srcs, src_size, src_min, src_max);
 
 		L::compare(srcs, src_size, src_min, src_max, to_span_const(dsts), dst_size, dst_min);
@@ -388,8 +388,8 @@ void test_voxel_graph_generator_texturing() {
 
 	// Single value tests
 	{
-		const float sdf_must_be_in_air = generator->generate_single(Vector3i(-2, 0, 0));
-		const float sdf_must_be_in_ground = generator->generate_single(Vector3i(2, 0, 0));
+		const float sdf_must_be_in_air = generator->generate_single(VOX_Vector3i(-2, 0, 0));
+		const float sdf_must_be_in_ground = generator->generate_single(VOX_Vector3i(2, 0, 0));
 		ERR_FAIL_COND(sdf_must_be_in_air <= 0.f);
 		ERR_FAIL_COND(sdf_must_be_in_ground >= 0.f);
 
@@ -403,7 +403,7 @@ void test_voxel_graph_generator_texturing() {
 		// Sample two points 1 unit below ground at to heights on the slope
 
 		{
-			const float sdf = generator->generate_single(Vector3i(-2, -3, 0));
+			const float sdf = generator->generate_single(VOX_Vector3i(-2, -3, 0));
 			ERR_FAIL_COND(sdf >= 0.f);
 			const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
@@ -419,7 +419,7 @@ void test_voxel_graph_generator_texturing() {
 			ERR_FAIL_COND(out_weight1_buffer.data[0] > 0.f);
 		}
 		{
-			const float sdf = generator->generate_single(Vector3i(2, 1, 0));
+			const float sdf = generator->generate_single(VOX_Vector3i(2, 1, 0));
 			ERR_FAIL_COND(sdf >= 0.f);
 			const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
@@ -442,7 +442,7 @@ void test_voxel_graph_generator_texturing() {
 		const uint8_t WEIGHT_MAX = 240;
 
 		struct L {
-			static void check_weights(VoxelBufferInternal &buffer, Vector3i pos,
+			static void check_weights(VoxelBufferInternal &buffer, VOX_Vector3i pos,
 					bool weight0_must_be_1, bool weight1_must_be_1) {
 				const uint16_t encoded_indices = buffer.get_voxel(pos, VoxelBufferInternal::CHANNEL_INDICES);
 				const uint16_t encoded_weights = buffer.get_voxel(pos, VoxelBufferInternal::CHANNEL_WEIGHTS);
@@ -475,13 +475,13 @@ void test_voxel_graph_generator_texturing() {
 				{
 					// Block centered on origin
 					VoxelBufferInternal buffer;
-					buffer.create(Vector3i(16, 16, 16));
+					buffer.create(VOX_Vector3i(16, 16, 16));
 
 					VoxelBlockRequest request{ buffer, -buffer.get_size() / 2, 0 };
 					generator->generate_block(request);
 
-					L::check_weights(buffer, Vector3i(4, 3, 8), true, false);
-					L::check_weights(buffer, Vector3i(12, 11, 8), false, true);
+					L::check_weights(buffer, VOX_Vector3i(4, 3, 8), true, false);
+					L::check_weights(buffer, VOX_Vector3i(12, 11, 8), false, true);
 				}
 				{
 					// Two blocks: one above 0, the other below.
@@ -490,7 +490,7 @@ void test_voxel_graph_generator_texturing() {
 					// Below 0
 					VoxelBufferInternal buffer0;
 					{
-						buffer0.create(Vector3i(16, 16, 16));
+						buffer0.create(VOX_Vector3i(16, 16, 16));
 						VoxelBlockRequest request{ buffer0, Vector3(0, -16, 0), 0 };
 						generator->generate_block(request);
 					}
@@ -498,13 +498,13 @@ void test_voxel_graph_generator_texturing() {
 					// Above 0
 					VoxelBufferInternal buffer1;
 					{
-						buffer1.create(Vector3i(16, 16, 16));
+						buffer1.create(VOX_Vector3i(16, 16, 16));
 						VoxelBlockRequest request{ buffer1, Vector3(0, 0, 0), 0 };
 						generator->generate_block(request);
 					}
 
-					L::check_weights(buffer0, Vector3i(8, 8, 8), true, false);
-					L::check_weights(buffer1, Vector3i(8, 8, 8), false, true);
+					L::check_weights(buffer0, VOX_Vector3i(8, 8, 8), true, false);
+					L::check_weights(buffer1, VOX_Vector3i(8, 8, 8), false, true);
 				}
 			}
 		};
@@ -555,7 +555,7 @@ void test_island_finder() {
 			//
 			;
 
-	const Vector3i grid_size(5, 5, 5);
+	const VOX_Vector3i grid_size(5, 5, 5);
 	ERR_FAIL_COND(grid_size.volume() != strlen(cdata) / 2);
 
 	std::vector<int> grid;
@@ -577,8 +577,8 @@ void test_island_finder() {
 
 	IslandFinder island_finder;
 	island_finder.scan_3d(
-			Box3i(Vector3i(), grid_size),
-			[&grid, grid_size](Vector3i pos) {
+			Box3i(VOX_Vector3i(), grid_size),
+			[&grid, grid_size](VOX_Vector3i pos) {
 				const unsigned int i = pos.get_zxy_index(grid_size);
 				CRASH_COND(i >= grid.size());
 				return grid[i] == 1;
@@ -814,7 +814,7 @@ void test_transform_3d_array_zxy() {
 		16, 17, 18, 19,
 		20, 21, 22, 23
 	};
-	const Vector3i src_size(3, 4, 2);
+	const VOX_Vector3i src_size(3, 4, 2);
 	const int volume = src_size.volume();
 
 	FixedArray<int, 24> dst_grid;
@@ -832,13 +832,13 @@ void test_transform_3d_array_zxy() {
 			14, 18, 22,
 			15, 19, 23
 		};
-		const Vector3i expected_dst_size(4, 3, 2);
+		const VOX_Vector3i expected_dst_size(4, 3, 2);
 		IntBasis basis;
-		basis.x = Vector3i(0, 1, 0);
-		basis.y = Vector3i(1, 0, 0);
-		basis.z = Vector3i(0, 0, 1);
+		basis.x = VOX_Vector3i(0, 1, 0);
+		basis.y = VOX_Vector3i(1, 0, 0);
+		basis.z = VOX_Vector3i(0, 0, 1);
 
-		const Vector3i dst_size = transform_3d_array_zxy(
+		const VOX_Vector3i dst_size = transform_3d_array_zxy(
 				Span<const int>(src_grid, 0, volume),
 				to_span(dst_grid), src_size, basis);
 
@@ -858,13 +858,13 @@ void test_transform_3d_array_zxy() {
 			19, 18, 17, 16,
 			23, 22, 21, 20
 		};
-		const Vector3i expected_dst_size(3, 4, 2);
+		const VOX_Vector3i expected_dst_size(3, 4, 2);
 		IntBasis basis;
-		basis.x = Vector3i(1, 0, 0);
-		basis.y = Vector3i(0, -1, 0);
-		basis.z = Vector3i(0, 0, 1);
+		basis.x = VOX_Vector3i(1, 0, 0);
+		basis.y = VOX_Vector3i(0, -1, 0);
+		basis.z = VOX_Vector3i(0, 0, 1);
 
-		const Vector3i dst_size = transform_3d_array_zxy(
+		const VOX_Vector3i dst_size = transform_3d_array_zxy(
 				Span<const int>(src_grid, 0, volume),
 				to_span(dst_grid), src_size, basis);
 
@@ -884,13 +884,13 @@ void test_transform_3d_array_zxy() {
 			7, 6, 5, 4,
 			11, 10, 9, 8
 		};
-		const Vector3i expected_dst_size(3, 4, 2);
+		const VOX_Vector3i expected_dst_size(3, 4, 2);
 		IntBasis basis;
-		basis.x = Vector3i(1, 0, 0);
-		basis.y = Vector3i(0, -1, 0);
-		basis.z = Vector3i(0, 0, -1);
+		basis.x = VOX_Vector3i(1, 0, 0);
+		basis.y = VOX_Vector3i(0, -1, 0);
+		basis.z = VOX_Vector3i(0, 0, -1);
 
-		const Vector3i dst_size = transform_3d_array_zxy(
+		const VOX_Vector3i dst_size = transform_3d_array_zxy(
 				Span<const int>(src_grid, 0, volume),
 				to_span(dst_grid), src_size, basis);
 
@@ -1031,14 +1031,14 @@ void test_get_curve_monotonic_sections() {
 void test_voxel_buffer_create() {
 	// This test was a repro for a memory corruption crash.
 	VoxelBufferInternal generated_voxels;
-	generated_voxels.create(Vector3i(5, 5, 5));
+	generated_voxels.create(VOX_Vector3i(5, 5, 5));
 	generated_voxels.set_voxel_f(-0.7f, 3, 3, 3, VoxelBufferInternal::CHANNEL_SDF);
-	generated_voxels.create(Vector3i(16, 16, 18));
+	generated_voxels.create(VOX_Vector3i(16, 16, 18));
 	// This was found to cause memory corruption at this point because channels got re-allocated using the new size,
 	// but were filled using the old size, which was greater, and accessed out of bounds memory.
 	// The old size was used because the `_size` member was assigned too late in the process.
 	// The corruption did not cause a crash here, but somewhere random where malloc was used shortly after.
-	generated_voxels.create(Vector3i(1, 16, 18));
+	generated_voxels.create(VOX_Vector3i(1, 16, 18));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

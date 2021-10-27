@@ -94,7 +94,7 @@ public:
 	void set_node_gui_position(uint32_t node_id, Vector2 pos);
 
 	NodeTypeID get_node_type_id(uint32_t node_id) const;
-	PoolIntArray get_node_ids() const;
+	PackedIntArray get_node_ids() const;
 	uint32_t generate_node_id() { return _graph.generate_node_id(); }
 
 	int get_nodes_count() const;
@@ -126,7 +126,7 @@ public:
 	int get_used_channels_mask() const override;
 
 	Result generate_block(VoxelBlockRequest &input) override;
-	float generate_single(const Vector3i &position);
+	float generate_single(const VOX_Vector3i &position);
 
 	Ref<Resource> duplicate(bool p_subresources) const override;
 
@@ -152,7 +152,7 @@ public:
 
 	// Debug
 
-	Interval debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map) const;
+	Interval debug_analyze_range(VOX_Vector3i min_pos, VOX_Vector3i max_pos, bool optimize_execution_map) const;
 	float debug_measure_microseconds_per_voxel(bool singular);
 	void debug_load_waves_preset();
 
@@ -167,7 +167,7 @@ private:
 
 	int _b_get_node_type_count() const;
 	Dictionary _b_get_node_type_info(int type_id) const;
-	PoolIntArray _b_get_node_ids() const;
+	PackedIntArray _b_get_node_ids() const;
 	Array _b_get_connections() const;
 	// TODO Only exists because the UndoRedo API is confusing `null` with `absence of argument`...
 	// See https://github.com/godotengine/godot/issues/36895
@@ -182,7 +182,7 @@ private:
 	};
 
 	static void gather_indices_and_weights(Span<const WeightOutput> weight_outputs,
-			const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
+			const VoxelGraphRuntime::State &state, VOX_Vector3i rmin, VOX_Vector3i rmax, int ry,
 			VoxelBufferInternal &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices);
 
 	static void _bind_methods();

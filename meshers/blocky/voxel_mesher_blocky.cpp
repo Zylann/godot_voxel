@@ -9,9 +9,9 @@
 namespace {
 
 template <typename T>
-void raw_copy_to(PoolVector<T> &to, const Vector<T> &from) {
+void raw_copy_to(Vector<T> &to, const Vector<T> &from) {
 	to.resize(from.size());
-	typename PoolVector<T>::Write w = to.write();
+	typename Vector<T>::Write w = to.write();
 	memcpy(w.ptr(), from.ptr(), from.size() * sizeof(T));
 }
 
@@ -53,7 +53,7 @@ template <typename Type_T>
 static void generate_blocky_mesh(
 		FixedArray<VoxelMesherBlocky::Arrays, VoxelMesherBlocky::MAX_MATERIALS> &out_arrays_per_material,
 		const Span<Type_T> type_buffer,
-		const Vector3i block_size,
+		const VOX_Vector3i block_size,
 		const VoxelLibrary::BakedData &library,
 		bool bake_occlusion, float baked_occlusion_darkness) {
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
@@ -67,8 +67,8 @@ static void generate_blocky_mesh(
 	const int deck_size = block_size.x * row_size;
 
 	// Data must be padded, hence the off-by-one
-	const Vector3i min = Vector3i(VoxelMesherBlocky::PADDING);
-	const Vector3i max = block_size - Vector3i(VoxelMesherBlocky::PADDING);
+	const VOX_Vector3i min = VOX_Vector3i(VoxelMesherBlocky::PADDING);
+	const VOX_Vector3i max = block_size - VOX_Vector3i(VoxelMesherBlocky::PADDING);
 
 	int index_offsets[VoxelMesherBlocky::MAX_MATERIALS] = { 0 };
 
@@ -464,7 +464,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		return;
 	}
 
-	const Vector3i block_size = voxels.get_size();
+	const VOX_Vector3i block_size = voxels.get_size();
 	const VoxelBufferInternal::Depth channel_depth = voxels.get_channel_depth(channel);
 
 	{
@@ -498,11 +498,11 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
 
 			{
-				PoolVector<Vector3> positions;
-				PoolVector<Vector2> uvs;
-				PoolVector<Vector3> normals;
-				PoolVector<Color> colors;
-				PoolVector<int> indices;
+				Vector<Vector3> positions;
+				Vector<Vector2> uvs;
+				Vector<Vector3> normals;
+				Vector<Color> colors;
+				Vector<int> indices;
 
 				raw_copy_to(positions, arrays.positions);
 				raw_copy_to(uvs, arrays.uvs);
@@ -516,7 +516,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
 				if (arrays.tangents.size() > 0) {
-					PoolVector<float> tangents;
+					Vector<float> tangents;
 					raw_copy_to(tangents, arrays.tangents);
 					mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
 				}

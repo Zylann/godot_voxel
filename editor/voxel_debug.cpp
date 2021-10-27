@@ -11,9 +11,9 @@ FixedArray<Ref<Mesh>, ID_COUNT> g_wirecubes;
 bool g_finalized = false;
 
 template <typename T>
-void raw_copy_to(PoolVector<T> &dst, const T *src, unsigned int count) {
+void raw_copy_to(Vector<T> &dst, const T *src, unsigned int count) {
 	dst.resize(count);
-	typename PoolVector<T>::Write w = dst.write();
+	typename Vector<T>::Write w = dst.write();
 	memcpy(w.ptr(), src, count * sizeof(T));
 }
 
@@ -49,7 +49,7 @@ Ref<Mesh> get_wirecube(ColorID id) {
 			Vector3(1, 1, 1),
 			Vector3(0, 1, 1)
 		};
-		PoolVector3Array positions;
+		PackedVector3Array positions;
 		raw_copy_to(positions, positions_raw, 8);
 
 		Color white(1.0, 1.0, 1.0);
@@ -78,7 +78,7 @@ Ref<Mesh> get_wirecube(ColorID id) {
 			2, 6,
 			3, 7
 		};
-		PoolIntArray indices;
+		PackedIntArray indices;
 		raw_copy_to(indices, indices_raw, 24);
 
 		Array arrays;

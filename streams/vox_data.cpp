@@ -3,7 +3,7 @@
 #include "../util/profiling.h"
 
 #include <core/os/file_access.h>
-#include <core/variant.h>
+#include <core/variant/variant.h>
 #include <unordered_set>
 
 namespace vox {
@@ -96,15 +96,15 @@ static Error parse_dictionary(FileAccess &f, std::unordered_map<String, String> 
 //
 //   MagicaVoxel     OpenGL
 //
-inline Vector3i magica_to_opengl(const Vector3i &src) {
-	Vector3i dst;
+inline VOX_Vector3i magica_to_opengl(const VOX_Vector3i &src) {
+	VOX_Vector3i dst;
 	dst.x = src.y;
 	dst.y = src.z;
 	dst.z = src.x;
 	return dst;
 }
 
-void transpose(Vector3i sx, Vector3i sy, Vector3i sz, Vector3i &dx, Vector3i &dy, Vector3i &dz) {
+void transpose(VOX_Vector3i sx, VOX_Vector3i sy, VOX_Vector3i sz, VOX_Vector3i &dx, VOX_Vector3i &dy, VOX_Vector3i &dz) {
 	dx.x = sx.x;
 	dx.y = sy.x;
 	dx.z = sz.x;
@@ -133,7 +133,7 @@ static Basis parse_basis(uint8_t data) {
 	const int y_sign = ((data >> 5) & 0x01) == 0 ? 1 : -1;
 	const int z_sign = ((data >> 6) & 0x01) == 0 ? 1 : -1;
 
-	Vector3i x, y, z;
+	VOX_Vector3i x, y, z;
 	x[xi] = x_sign;
 	y[yi] = y_sign;
 	z[zi] = z_sign;
@@ -142,7 +142,7 @@ static Basis parse_basis(uint8_t data) {
 	// to bring MagicaVoxel rotations to Godot rotations.
 	// TODO Maybe this can be simplified?
 
-	Vector3i magica_x, magica_y, magica_z;
+	VOX_Vector3i magica_x, magica_y, magica_z;
 	transpose(x, y, z, magica_x, magica_y, magica_z);
 	// PRINT_VERBOSE(String("---\nX: {0}\nY: {1}\nZ: {2}")
 	// 					  .format(varray(magica_x.to_vec3(), magica_y.to_vec3(), magica_z.to_vec3())));
@@ -218,7 +218,7 @@ Error Data::_load_from_file(String fpath) {
 
 	const size_t file_length = f.get_len();
 
-	Vector3i last_size;
+	VOX_Vector3i last_size;
 
 	clear();
 
@@ -233,7 +233,7 @@ Error Data::_load_from_file(String fpath) {
 							  .format(varray(chunk_id, SIZE_T_TO_VARIANT(f.get_position()), chunk_size)));
 
 		if (strcmp(chunk_id, "SIZE") == 0) {
-			Vector3i size;
+			VOX_Vector3i size;
 			size.x = f.get_32();
 			size.y = f.get_32();
 			size.z = f.get_32();
@@ -250,7 +250,7 @@ Error Data::_load_from_file(String fpath) {
 			const uint32_t num_voxels = f.get_32();
 
 			for (uint32_t i = 0; i < num_voxels; ++i) {
-				Vector3i pos;
+				VOX_Vector3i pos;
 				pos.x = f.get_8();
 				pos.y = f.get_8();
 				pos.z = f.get_8();
@@ -317,7 +317,7 @@ Error Data::_load_from_file(String fpath) {
 				Vector<float> coords = t_it->second.split_floats(" ");
 				ERR_FAIL_COND_V(coords.size() < 3, ERR_PARSE_ERROR);
 				//PRINT_VERBOSE(String("Pos: {0}, {1}, {2}").format(varray(coords[0], coords[1], coords[2])));
-				node.position = magica_to_opengl(Vector3i(coords[0], coords[1], coords[2]));
+				node.position = magica_to_opengl(VOX_Vector3i(coords[0], coords[1], coords[2]));
 			}
 
 			auto r_it = frame.find("_r");

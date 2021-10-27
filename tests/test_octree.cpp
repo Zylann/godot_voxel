@@ -2,7 +2,7 @@
 #include "../constants/cube_tables.h"
 #include "../terrain/lod_octree.h"
 #include "../util/profiling_clock.h"
-#include <core/map.h>
+#include <core/templates/map.h>
 #include <core/print_string.h>
 #include <unordered_map>
 #include <unordered_set>
@@ -17,12 +17,12 @@ void test_octree_update() {
 	const int octree_size = block_size << (lod_count - 1);
 
 	// Testing as an octree forest, as it is the way they are used in VoxelLodTerrain
-	Map<Vector3i, LodOctree> octrees;
+	Map<VOX_Vector3i, LodOctree> octrees;
 	const Box3i viewer_box_voxels =
-			Box3i::from_center_extents(Vector3i::from_floored(viewer_pos), Vector3i(view_distance));
+			Box3i::from_center_extents(VOX_Vector3i::from_floored(viewer_pos), VOX_Vector3i(view_distance));
 	const Box3i viewer_box_octrees = viewer_box_voxels.downscaled(octree_size);
-	viewer_box_octrees.for_each_cell([&octrees, lod_distance, block_size, lod_count](Vector3i pos) {
-		Map<Vector3i, LodOctree>::Element *e = octrees.insert(pos, LodOctree());
+	viewer_box_octrees.for_each_cell([&octrees, lod_distance, block_size, lod_count](VOX_Vector3i pos) {
+		Map<VOX_Vector3i, LodOctree>::Element *e = octrees.insert(pos, LodOctree());
 		LodOctree &octree = e->value();
 		LodOctree::NoDestroyAction nda;
 		octree.create_from_lod_count(block_size, lod_count, nda);
@@ -33,29 +33,29 @@ void test_octree_update() {
 		int created_count = 0;
 		int destroyed_count = 0;
 
-		void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
+		void create_child(VOX_Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
 			++created_count;
 		}
 
-		void destroy_child(Vector3i node_pos, int lod_index) {
+		void destroy_child(VOX_Vector3i node_pos, int lod_index) {
 			++destroyed_count;
 		}
 
-		void show_parent(Vector3i node_pos, int lod_index) {
+		void show_parent(VOX_Vector3i node_pos, int lod_index) {
 		}
 
-		void hide_parent(Vector3i node_pos, int lod_index) {
+		void hide_parent(VOX_Vector3i node_pos, int lod_index) {
 		}
 
 		bool can_create_root(int lod_index) {
 			return true;
 		}
 
-		bool can_split(Vector3i node_pos, int child_lod_index, LodOctree::NodeData &data) {
+		bool can_split(VOX_Vector3i node_pos, int child_lod_index, LodOctree::NodeData &data) {
 			return true;
 		}
 
-		bool can_join(Vector3i node_pos, int parent_lod_index) {
+		bool can_join(VOX_Vector3i node_pos, int parent_lod_index) {
 			return true;
 		}
 	};
@@ -66,11 +66,11 @@ void test_octree_update() {
 	// Initial
 	// Needs multiple passes because the current version is not recursive...
 	for (int i = 0; i < 10; ++i) {
-		for (Map<Vector3i, LodOctree>::Element *e = octrees.front(); e; e = e->next()) {
+		for (Map<VOX_Vector3i, LodOctree>::Element *e = octrees.front(); e; e = e->next()) {
 			LodOctree &octree = e->value();
 
-			const Vector3i block_pos_maxlod = e->key();
-			const Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
+			const VOX_Vector3i block_pos_maxlod = e->key();
+			const VOX_Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
 			const Vector3 relative_viewer_pos = viewer_pos - block_size_v * block_offset_lod0.to_vec3();
 
 			OctreeActions actions;
@@ -83,7 +83,7 @@ void test_octree_update() {
 	const int time_init = profiling_clock.restart();
 
 	int initial_block_count_rec = 0;
-	for (Map<Vector3i, LodOctree>::Element *e = octrees.front(); e; e = e->next()) {
+	for (Map<VOX_Vector3i, LodOctree>::Element *e = octrees.front(); e; e = e->next()) {
 		const LodOctree &octree = e->value();
 		initial_block_count_rec += octree.get_node_count();
 	}
@@ -99,11 +99,11 @@ void test_octree_update() {
 		profiling_clock.restart();
 
 		created_block_count = 0;
-		for (Map<Vector3i, LodOctree>::Element *e = octrees.front(); e; e = e->next()) {
+		for (Map<VOX_Vector3i, LodOctree>::Element *e = octrees.front(); e; e = e->next()) {
 			LodOctree &octree = e->value();
 
-			const Vector3i block_pos_maxlod = e->key();
-			const Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
+			const VOX_Vector3i block_pos_maxlod = e->key();
+			const VOX_Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
 			const Vector3 relative_viewer_pos = viewer_pos - block_size_v * block_offset_lod0.to_vec3();
 
 			OctreeActions actions;
@@ -122,12 +122,12 @@ void test_octree_update() {
 
 	// Clearing
 	int block_count = initial_block_count;
-	for (Map<Vector3i, LodOctree>::Element *e = octrees.front(); e; e = e->next()) {
+	for (Map<VOX_Vector3i, LodOctree>::Element *e = octrees.front(); e; e = e->next()) {
 		LodOctree &octree = e->value();
 
 		struct DestroyAction {
 			int destroyed_blocks = 0;
-			inline void operator()(Vector3i node_pos, int lod) {
+			inline void operator()(VOX_Vector3i node_pos, int lod) {
 				++destroyed_blocks;
 			}
 		};
@@ -159,28 +159,28 @@ void test_octree_find_in_box() {
 	LodOctree::NoDestroyAction nda;
 	octree.create_from_lod_count(block_size, lods, nda);
 	struct SubdivideActions {
-		bool can_split(Vector3i node_pos, int lod_index, const LodOctree::NodeData &node_data) {
+		bool can_split(VOX_Vector3i node_pos, int lod_index, const LodOctree::NodeData &node_data) {
 			return true;
 		}
-		void create_child(Vector3i pos, int lod_index, LodOctree::NodeData &node_data) {
+		void create_child(VOX_Vector3i pos, int lod_index, LodOctree::NodeData &node_data) {
 			node_data.state = pos.x + pos.y + pos.z;
 		}
 	};
 	SubdivideActions sa;
 	octree.subdivide(sa);
 
-	std::unordered_map<Vector3i, std::unordered_set<Vector3i>> expected_positions;
+	std::unordered_map<VOX_Vector3i, std::unordered_set<VOX_Vector3i>> expected_positions;
 
-	const Box3i full_box(Vector3i(), Vector3i(blocks_across, blocks_across, blocks_across));
+	const Box3i full_box(VOX_Vector3i(), VOX_Vector3i(blocks_across, blocks_across, blocks_across));
 
 	// Build expected result
-	full_box.for_each_cell([full_box, &expected_positions](Vector3i pos) {
-		Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
+	full_box.for_each_cell([full_box, &expected_positions](VOX_Vector3i pos) {
+		Box3i area_box(pos - VOX_Vector3i(1, 1, 1), VOX_Vector3i(3, 3, 3));
 		area_box.clip(full_box);
-		auto insert_result = expected_positions.insert(std::make_pair(pos, std::unordered_set<Vector3i>()));
+		auto insert_result = expected_positions.insert(std::make_pair(pos, std::unordered_set<VOX_Vector3i>()));
 		ERR_FAIL_COND(insert_result.second == false);
-		std::unordered_set<Vector3i> &area_positions = insert_result.first->second;
-		area_box.for_each_cell([&area_positions](Vector3i npos) {
+		std::unordered_set<VOX_Vector3i> &area_positions = insert_result.first->second;
+		area_box.for_each_cell([&area_positions](VOX_Vector3i npos) {
 			auto it = area_positions.insert(npos);
 			ERR_FAIL_COND(it.second == false);
 		});
@@ -188,14 +188,14 @@ void test_octree_find_in_box() {
 
 	// Get octree results
 	int checksum = 0;
-	full_box.for_each_cell([&octree, &expected_positions, &checksum](Vector3i pos) {
-		const Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
+	full_box.for_each_cell([&octree, &expected_positions, &checksum](VOX_Vector3i pos) {
+		const Box3i area_box(pos - VOX_Vector3i(1, 1, 1), VOX_Vector3i(3, 3, 3));
 		auto it = expected_positions.find(pos);
 		ERR_FAIL_COND(it == expected_positions.end());
-		const std::unordered_set<Vector3i> &expected_area_positions = it->second;
-		std::unordered_set<Vector3i> found_positions;
+		const std::unordered_set<VOX_Vector3i> &expected_area_positions = it->second;
+		std::unordered_set<VOX_Vector3i> found_positions;
 		octree.for_leaves_in_box(area_box, [&found_positions, &expected_area_positions, &checksum](
-												   Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
+												   VOX_Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
 			auto insert_result = found_positions.insert(node_pos);
 			// Must be one of the expected positions
 			ERR_FAIL_COND(expected_area_positions.find(node_pos) == expected_area_positions.end());
@@ -209,9 +209,9 @@ void test_octree_find_in_box() {
 	{
 		ProfilingClock profiling_clock;
 		int checksum2 = 0;
-		full_box.for_each_cell([&octree, &expected_positions, &checksum2](Vector3i pos) {
-			const Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
-			octree.for_leaves_in_box(area_box, [&checksum2](Vector3i node_pos, int lod,
+		full_box.for_each_cell([&octree, &expected_positions, &checksum2](VOX_Vector3i pos) {
+			const Box3i area_box(pos - VOX_Vector3i(1, 1, 1), VOX_Vector3i(3, 3, 3));
+			octree.for_leaves_in_box(area_box, [&checksum2](VOX_Vector3i node_pos, int lod,
 													   const LodOctree::NodeData &node_data) {
 				checksum2 += node_data.state;
 			});

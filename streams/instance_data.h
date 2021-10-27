@@ -2,12 +2,12 @@
 #define VOXEL_INSTANCE_DATA_H
 
 #include "../util/span.h"
-#include <core/math/transform.h>
+#include <core/math/transform_3d.h>
 
 // Stores data to pass around until it either gets saved or turned into actual instances
 struct VoxelInstanceBlockData {
 	struct InstanceData {
-		Transform transform;
+		Transform3D transform;
 	};
 
 	enum VoxelInstanceFormat {

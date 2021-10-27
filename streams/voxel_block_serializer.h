@@ -4,7 +4,7 @@
 #include "../util/span.h"
 
 #include <core/io/file_access_memory.h>
-#include <core/reference.h>
+#include <core/object/ref_counted.h>
 #include <vector>
 
 class StreamPeer;
@@ -41,8 +41,8 @@ private:
 
 class VoxelBuffer;
 
-class VoxelBlockSerializer : public Reference {
-	GDCLASS(VoxelBlockSerializer, Reference)
+class VoxelBlockSerializer : public RefCounted {
+	GDCLASS(VoxelBlockSerializer, RefCounted)
 public:
 	int serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress);
 	void deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress);

@@ -48,7 +48,7 @@ public:
 
 		Type type;
 		VoxelMesher::Output surfaces;
-		Vector3i position;
+		VOX_Vector3i position;
 		uint8_t lod;
 	};
 
@@ -61,7 +61,7 @@ public:
 		Type type;
 		std::shared_ptr<VoxelBufferInternal> voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
-		Vector3i position;
+		VOX_Vector3i position;
 		uint8_t lod;
 		bool dropped;
 		bool max_lod_hint;
@@ -71,7 +71,7 @@ public:
 		// Moore area ordered by forward XYZ iteration
 		FixedArray<std::shared_ptr<VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> data_blocks;
 		unsigned int data_blocks_count = 0;
-		Vector3i render_block_position;
+		VOX_Vector3i render_block_position;
 		uint8_t lod = 0;
 	};
 
@@ -117,11 +117,11 @@ public:
 	void set_volume_octree_lod_distance(uint32_t volume_id, float lod_distance);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, const BlockMeshInput &input);
-	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
-	void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos,
+	void request_block_load(uint32_t volume_id, VOX_Vector3i block_pos, int lod, bool request_instances);
+	void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, VOX_Vector3i block_pos,
 			int lod);
 	void request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
-			Vector3i block_pos, int lod);
+			VOX_Vector3i block_pos, int lod);
 	void remove_volume(uint32_t volume_id);
 	bool is_volume_valid(uint32_t volume_id) const;
 
@@ -263,7 +263,7 @@ private:
 		float drop_distance_squared;
 	};
 
-	void init_priority_dependency(PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume,
+	void init_priority_dependency(PriorityDependency &dep, VOX_Vector3i block_position, uint8_t lod, const Volume &volume,
 			int block_size);
 	static int get_priority(const PriorityDependency &dep, uint8_t lod_index, float *out_closest_distance_sq);
 
@@ -285,7 +285,7 @@ private:
 
 		std::shared_ptr<VoxelBufferInternal> voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
-		Vector3i position; // In data blocks of the specified lod
+		VOX_Vector3i position; // In data blocks of the specified lod
 		uint32_t volume_id;
 		uint8_t lod;
 		uint8_t block_size;
@@ -311,7 +311,7 @@ private:
 		void apply_result() override;
 
 		std::shared_ptr<VoxelBufferInternal> voxels;
-		Vector3i position;
+		VOX_Vector3i position;
 		uint32_t volume_id;
 		uint8_t lod;
 		uint8_t block_size;
@@ -333,7 +333,7 @@ private:
 		void apply_result() override;
 
 		FixedArray<std::shared_ptr<VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
-		Vector3i position; // In mesh blocks of the specified lod
+		VOX_Vector3i position; // In mesh blocks of the specified lod
 		uint32_t volume_id;
 		uint8_t lod;
 		uint8_t blocks_count;
