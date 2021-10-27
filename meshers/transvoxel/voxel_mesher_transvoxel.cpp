@@ -297,10 +297,10 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "mesh_optimization_enabled"),
 			"set_mesh_optimization_enabled", "is_mesh_optimization_enabled");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "mesh_optimization_error_threshold"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "mesh_optimization_error_threshold"),
 			"set_mesh_optimization_error_threshold", "get_mesh_optimization_error_threshold");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "mesh_optimization_target_ratio"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "mesh_optimization_target_ratio"),
 			"set_mesh_optimization_target_ratio", "get_mesh_optimization_target_ratio");
 
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);

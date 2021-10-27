@@ -336,8 +336,8 @@ void VoxelTool::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Add,Remove,Set"), "set_mode", "get_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "sdf_scale"), "set_sdf_scale", "get_sdf_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "texture_index"), "set_texture_index", "get_texture_index");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "texture_opacity"), "set_texture_opacity", "get_texture_opacity");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "texture_falloff"), "set_texture_falloff", "get_texture_falloff");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "texture_opacity"), "set_texture_opacity", "get_texture_opacity");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "texture_falloff"), "set_texture_falloff", "get_texture_falloff");
 
 	BIND_ENUM_CONSTANT(MODE_ADD);
 	BIND_ENUM_CONSTANT(MODE_REMOVE);

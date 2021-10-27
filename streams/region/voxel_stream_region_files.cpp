@@ -241,7 +241,7 @@ void VoxelStreamRegionFiles::set_directory(String dirpath) {
 }
 
 static bool u8_from_json_variant(Variant v, uint8_t &i) {
-	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::REAL, false);
+	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::FLOAT, false);
 	int n = v;
 	ERR_FAIL_COND_V(n < 0 || n > 255, false);
 	i = v;
@@ -249,7 +249,7 @@ static bool u8_from_json_variant(Variant v, uint8_t &i) {
 }
 
 static bool u32_from_json_variant(Variant v, uint32_t &i) {
-	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::REAL, false);
+	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::FLOAT, false);
 	ERR_FAIL_COND_V(v.operator int64_t() < 0, false);
 	i = v;
 	return true;
@@ -568,7 +568,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	close_all_regions();
 
 	Ref<VoxelStreamRegionFiles> old_stream;
-	old_stream.instance();
+	old_stream.instantiate();
 	// Keep file cache to a minimum for the old stream, we'll query all blocks once anyways
 	old_stream->_max_open_regions = MAX(1, FOPEN_MAX);
 

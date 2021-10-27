@@ -1,6 +1,6 @@
 #include "voxel_viewer.h"
 #include "../server/voxel_server.h"
-#include <core/engine.h>
+#include <core/config/engine.h>
 
 VoxelViewer::VoxelViewer() {
 	set_notify_transform(!Engine::get_singleton()->is_editor_hint());

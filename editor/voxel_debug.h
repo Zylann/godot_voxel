@@ -39,7 +39,7 @@ private:
 	World *_world = nullptr;
 	bool _inside_block = false;
 	PoolRealArray _bulk_array;
-	Ref<SpatialMaterial> _material;
+	Ref<Node3DGizmoMaterial> _material;
 };
 
 class DebugRendererItem;

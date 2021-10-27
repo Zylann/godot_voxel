@@ -211,7 +211,7 @@ VoxelGeneratorGraph::NodeTypeID VoxelGeneratorGraph::get_node_type_id(uint32_t n
 	return (NodeTypeID)node->type_id;
 }
 
-PackedIntArray VoxelGeneratorGraph::get_node_ids() const {
+PackedInt32Array VoxelGeneratorGraph::get_node_ids() const {
 	return _graph.get_node_ids();
 }
 
@@ -1085,7 +1085,7 @@ Interval VoxelGeneratorGraph::debug_analyze_range(VOX_Vector3i min_pos, VOX_Vect
 
 Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 	Ref<VoxelGeneratorGraph> d;
-	d.instance();
+	d.instantiate();
 
 	d->_graph.copy_from(_graph, p_subresources);
 	d->register_subresources();
@@ -1546,7 +1546,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 
 	ADD_GROUP("Performance Tuning", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "sdf_clip_threshold"), "set_sdf_clip_threshold", "get_sdf_clip_threshold");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "sdf_clip_threshold"), "set_sdf_clip_threshold", "get_sdf_clip_threshold");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_optimized_execution_map"),
 			"set_use_optimized_execution_map", "is_using_optimized_execution_map");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_subdivision"), "set_use_subdivision", "is_using_subdivision");

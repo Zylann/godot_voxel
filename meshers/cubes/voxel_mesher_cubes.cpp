@@ -641,14 +641,14 @@ static Ref<Image> make_greedy_atlas(const VoxelMesherCubes::GreedyAtlasData &atl
 
 	// DEBUG
 	// Ref<Image> debug_im;
-	// debug_im.instance();
+	// debug_im.instantiate();
 	// debug_im->create(result_size.x, result_size.y, false, Image::FORMAT_RGBA8);
 	// debug_im->fill(Color(0, 0, 0));
 	// for (unsigned int i = 0; i < atlas_data.images.size(); ++i) {
 	// 	const Vector2i dst_pos = result_points[i];
 	// 	const VoxelMesherCubes::GreedyAtlasData::ImageInfo &im = atlas_data.images[i];
 	// 	Ref<Image> tmp;
-	// 	tmp.instance();
+	// 	tmp.instantiate();
 	// 	tmp->create(im.size_x, im.size_y, false, debug_im->get_format());
 	// 	tmp->fill(Color(Math::randf(), Math::randf(), Math::randf()));
 	// 	debug_im->blit_rect(tmp, Rect2(0, 0, tmp->get_width(), tmp->get_height()), Vector2(dst_pos));
@@ -677,8 +677,8 @@ static Ref<Image> make_greedy_atlas(const VoxelMesherCubes::GreedyAtlasData &atl
 	Vector<uint8_t> im_data;
 	im_data.resize(result_size.x * result_size.y * 4 * sizeof(uint8_t));
 	{
-		Vector<uint8_t>::Write w = im_data.write();
-		Span<Color8> dst_data = Span<Color8>(reinterpret_cast<Color8 *>(w.ptr()), result_size.x * result_size.y);
+		// Vector<uint8_t>::Write w = im_data.write();
+		Span<Color8> dst_data = Span<Color8>(reinterpret_cast<Color8 *>((void *)im_data.ptr()), result_size.x * result_size.y);
 
 		// For all rectangles
 		for (unsigned int i = 0; i < atlas_data.images.size(); ++i) {
@@ -698,7 +698,7 @@ static Ref<Image> make_greedy_atlas(const VoxelMesherCubes::GreedyAtlasData &atl
 		}
 	}
 	Ref<Image> image;
-	image.instance();
+	image.instantiate();
 	image->create(result_size.x, result_size.y, false, Image::FORMAT_RGBA8, im_data);
 
 	return image;

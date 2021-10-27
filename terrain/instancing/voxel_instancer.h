@@ -9,7 +9,7 @@
 #include "voxel_instance_library.h"
 #include "voxel_instance_library_item.h"
 
-#include <scene/3d/spatial.h>
+#include <scene/3d/node_3d.h>
 //#include <scene/resources/material.h> // Included by node.h lol
 #include <limits>
 #include <memory>
@@ -28,8 +28,8 @@ class PhysicsBody;
 
 // Add-on to voxel nodes, allowing to spawn elements on the surface.
 // These elements are rendered with hardware instancing, can have collisions, and also be persistent.
-class VoxelInstancer : public Spatial, public VoxelInstanceLibrary::IListener {
-	GDCLASS(VoxelInstancer, Spatial)
+class VoxelInstancer : public Node3DGizmo, public VoxelInstanceLibrary::IListener {
+	GDCLASS(VoxelInstancer, Node3DGizmo)
 public:
 	static const int MAX_LOD = 8;
 
@@ -100,7 +100,7 @@ private:
 
 	struct SceneInstance {
 		VoxelInstanceComponent *component = nullptr;
-		Spatial *root = nullptr;
+		Node3DGizmo *root = nullptr;
 	};
 
 	SceneInstance create_scene_instance(const VoxelInstanceLibrarySceneItem &scene_item,

@@ -1,6 +1,6 @@
 # VoxelViewer
 
-Inherits: [Spatial](https://docs.godotengine.org/en/stable/classes/class_spatial.html)
+Inherits: [Node3DGizmo](https://docs.godotengine.org/en/stable/classes/class_spatial.html)
 
 
 Attach this as a child node of characters, so the voxel world will know where to load blocks around them.

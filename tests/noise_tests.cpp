@@ -2,7 +2,7 @@
 #include "../util/noise/fast_noise_lite.h"
 #include "tests.h"
 
-#include <core/image.h>
+#include <core/io/image.h>
 #include <modules/opensimplex/open_simplex_noise.h>
 
 namespace NoiseTests {
@@ -187,7 +187,7 @@ void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
 	const double max_value = 10.0;
 
 	Ref<Image> im;
-	im.instance();
+	im.instantiate();
 	im->create(size_x, size_z, false, Image::FORMAT_RGB8);
 	im->lock();
 
@@ -239,7 +239,7 @@ void test_fnl_noise(fast_noise_lite::FastNoiseLite &fnl, String name, int tests)
 
 void test_noises() {
 	Ref<FastNoiseLite> noise;
-	noise.instance();
+	noise.instantiate();
 
 	fast_noise_lite::FastNoiseLite fn;
 	fn.SetFractalType(fast_noise_lite::FastNoiseLite::FractalType_None);

@@ -1,5 +1,5 @@
 #include "program_graph.h"
-#include <core/os/file_access.h>
+#include <core/io/file_access.h>
 #include <core/io/resource.h>
 #include <core/variant/variant.h>
 #include <unordered_set>
@@ -430,10 +430,10 @@ uint32_t ProgramGraph::find_node_by_name(StringName name) const {
 //}
 
 Vector<int> ProgramGraph::get_node_ids() const {
-	PackedIntArray ids;
+	PackedInt32Array ids;
 	ids.resize(_nodes.size());
 	{
-		PackedIntArray::Write w = ids.write();
+		PackedInt32Array::Write w = ids.write();
 		int i = 0;
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 			w[i++] = it->first;

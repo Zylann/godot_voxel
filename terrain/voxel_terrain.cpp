@@ -10,8 +10,8 @@
 #include "../util/profiling_clock.h"
 
 #include <core/core_string_names.h>
-#include <core/engine.h>
-#include <scene/3d/mesh_instance.h>
+#include <core/config/engine.h>
+#include <scene/3d/mesh_instance_3d.h>
 
 VoxelTerrain::VoxelTerrain() {
 	// Note: don't do anything heavy in the constructor.
@@ -55,7 +55,7 @@ VoxelTerrain::VoxelTerrain() {
 
 	// For ease of use in editor
 	Ref<VoxelMesherBlocky> default_mesher;
-	default_mesher.instance();
+	default_mesher.instantiate();
 	_mesher = default_mesher;
 }
 
@@ -93,7 +93,7 @@ void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 	p_list->push_back(PropertyInfo(Variant::NIL, "Materials", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP));
 	for (unsigned int i = 0; i < VoxelMesherBlocky::MAX_MATERIALS; ++i) {
 		p_list->push_back(PropertyInfo(
-				Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,SpatialMaterial"));
+				Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,Node3DGizmoMaterial"));
 	}
 }
 
@@ -1226,7 +1226,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	}
 
 	Ref<ArrayMesh> mesh;
-	mesh.instance();
+	mesh.instantiate();
 
 	Vector<Array> collidable_surfaces; //need to put both blocky and smooth surfaces into one list
 
@@ -1417,7 +1417,7 @@ void VoxelTerrain::_bind_methods() {
 			"set_collision_layer", "get_collision_layer");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
 			"set_collision_mask", "get_collision_mask");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "collision_margin"), "set_collision_margin", "get_collision_margin");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "collision_margin"), "set_collision_margin", "get_collision_margin");
 
 	ADD_GROUP("Advanced", "");
 

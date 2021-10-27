@@ -26,9 +26,9 @@ public:
 	static const int RESOLUTION = 128;
 
 	VoxelGraphEditorNodePreview() {
-		_image.instance();
+		_image.instantiate();
 		_image->create(RESOLUTION, RESOLUTION, false, Image::FORMAT_L8);
-		_texture.instance();
+		_texture.instantiate();
 		update_texture();
 		_texture_rect = memnew(TextureRect);
 		_texture_rect->set_stretch_mode(TextureRect::STRETCH_SCALE);
@@ -324,9 +324,9 @@ void VoxelGraphEditor::build_gui_from_graph() {
 
 	// Nodes
 
-	PackedIntArray node_ids = graph.get_node_ids();
+	PackedInt32Array node_ids = graph.get_node_ids();
 	{
-		PackedIntArray::Read node_ids_read = node_ids.read();
+		PackedInt32Array::Read node_ids_read = node_ids.read();
 		for (int i = 0; i < node_ids.size(); ++i) {
 			const uint32_t node_id = node_ids_read[i];
 			create_node_gui(node_id);
@@ -432,7 +432,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 		}
 
 		node_view->add_child(property_control);
-		node_view->set_slot(i, has_left, Variant::REAL, port_color, has_right, Variant::REAL, port_color);
+		node_view->set_slot(i, has_left, Variant::FLOAT, port_color, has_right, Variant::FLOAT, port_color);
 	}
 
 	if (node_type_id == VoxelGeneratorGraph::NODE_SDF_PREVIEW) {

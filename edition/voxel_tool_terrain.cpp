@@ -100,7 +100,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 		float hit_distance;
 		float hit_distance_prev;
 		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
-			res.instance();
+			res.instantiate();
 			res->position = hit_pos;
 			res->previous_position = prev_pos;
 			res->distance_along_ray = hit_distance * to_world_scale;
@@ -111,7 +111,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 		float hit_distance;
 		float hit_distance_prev;
 		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
-			res.instance();
+			res.instantiate();
 			res->position = hit_pos;
 			res->previous_position = prev_pos;
 			res->distance_along_ray = hit_distance * to_world_scale;
@@ -122,7 +122,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 		float hit_distance;
 		float hit_distance_prev;
 		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
-			res.instance();
+			res.instantiate();
 			res->position = hit_pos;
 			res->previous_position = prev_pos;
 			res->distance_along_ray = hit_distance * to_world_scale;

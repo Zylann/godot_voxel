@@ -10,7 +10,7 @@ VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelBlockRequest &i
 	Variant ret;
 	// Create a temporary wrapper so Godot can pass it to scripts
 	Ref<VoxelBuffer> buffer_wrapper;
-	buffer_wrapper.instance();
+	buffer_wrapper.instantiate();
 	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
 	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());
 	try_call_script(this, VoxelStringNames::get_singleton()->_generate_block,

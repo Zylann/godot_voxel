@@ -34,7 +34,7 @@ Array MeshBuilder::commit(bool wireframe) {
 
 	PackedVector3Array positions;
 	PackedVector3Array normals;
-	PackedIntArray indices;
+	PackedInt32Array indices;
 
 	raw_copy_to(positions, _positions);
 	raw_copy_to(normals, _normals);

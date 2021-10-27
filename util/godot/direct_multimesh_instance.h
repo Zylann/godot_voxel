@@ -4,7 +4,7 @@
 #include "../math/color8.h"
 #include "../span.h"
 
-#include <core/rid.h>
+#include <core/templates/rid.h>
 #include <scene/resources/multimesh.h>
 
 class World;

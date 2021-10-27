@@ -7,9 +7,9 @@
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
 
-#include <core/os/file_access.h>
-#include <scene/3d/mesh_instance.h>
-#include <scene/3d/spatial.h>
+#include <core/io/file_access.h>
+#include <scene/3d/mesh_instance_3d.h>
+#include <scene/3d/node_3d.h>
 #include <scene/resources/mesh.h>
 #include <scene/resources/packed_scene.h>
 
@@ -53,7 +53,7 @@ float VoxelVoxImporter::get_priority() const {
 void VoxelVoxImporter::get_import_options(List<ImportOption> *r_options, int p_preset) const {
 	VoxelStringNames *sn = VoxelStringNames::get_singleton();
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->store_colors_in_texture), false));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::REAL, sn->scale), 1.f));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, sn->scale), 1.f));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->enable_baked_lighting), true));
 }
 
@@ -77,15 +77,15 @@ struct VoxMesh {
 	Vector3 pivot;
 };
 
-static Error process_scene_node_recursively(const vox::Data &data, int node_id, Spatial *parent_node,
-		Spatial *&root_node, int depth, const Vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
+static Error process_scene_node_recursively(const vox::Data &data, int node_id, Node3DGizmo *parent_node,
+		Node3DGizmo *&root_node, int depth, const Vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const vox::Node *vox_node = data.get_node(node_id);
 
 	switch (vox_node->type) {
 		case vox::Node::TYPE_TRANSFORM: {
-			Spatial *node = memnew(Spatial);
+			Node3DGizmo *node = memnew(Node3DGizmo);
 			if (root_node == nullptr) {
 				root_node = node;
 			} else {
@@ -104,8 +104,8 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 			// If the parent isn't anything special and has only one child,
 			// it may be cleaner to flatten the hierarchy. We keep the root node unaffected.
 			// TODO Any way to not need a string to check if a node is a specific class?
-			if (node != root_node && node->get_class() == "Spatial" && node->get_child_count() == 1) {
-				Spatial *child = Object::cast_to<Spatial>(node->get_child(0));
+			if (node != root_node && node->get_class() == "Node3DGizmo" && node->get_child_count() == 1) {
+				Node3DGizmo *child = Object::cast_to<Node3DGizmo>(node->get_child(0));
 				if (child != nullptr) {
 					node->remove_child(child);
 					parent_node->remove_child(node);
@@ -250,30 +250,30 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 	// Get color palette
 	Ref<VoxelColorPalette> palette;
-	palette.instance();
+	palette.instantiate();
 	for (unsigned int i = 0; i < data.get_palette().size(); ++i) {
 		Color8 color = data.get_palette()[i];
 		palette->set_color8(i, color);
 	}
 
 	Ref<VoxelMesherCubes> mesher;
-	mesher.instance();
+	mesher.instantiate();
 	mesher->set_color_mode(VoxelMesherCubes::COLOR_MESHER_PALETTE);
 	mesher->set_palette(palette);
 	mesher->set_greedy_meshing_enabled(true);
 	mesher->set_store_colors_in_texture(p_store_colors_in_textures);
 
-	FixedArray<Ref<SpatialMaterial>, 2> materials;
+	FixedArray<Ref<Node3DGizmoMaterial>, 2> materials;
 	for (unsigned int i = 0; i < materials.size(); ++i) {
-		Ref<SpatialMaterial> &mat = materials[i];
-		mat.instance();
+		Ref<Node3DGizmoMaterial> &mat = materials[i];
+		mat.instantiate();
 		mat->set_roughness(1.f);
 		if (!p_store_colors_in_textures) {
 			// In this case we store colors in vertices
-			mat->set_flag(SpatialMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+			mat->set_flag(Node3DGizmoMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 		}
 	}
-	materials[1]->set_feature(SpatialMaterial::FEATURE_TRANSPARENT, true);
+	materials[1]->set_feature(Node3DGizmoMaterial::FEATURE_TRANSPARENT, true);
 
 	// Build meshes from voxel models
 	for (unsigned int model_index = 0; model_index < data.get_model_count(); ++model_index) {
@@ -320,16 +320,16 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 			for (unsigned int surface_index = 0; surface_index < surface_index_to_material.size(); ++surface_index) {
 				const unsigned int material_index = surface_index_to_material[surface_index];
 				CRASH_COND(material_index >= materials.size());
-				Ref<SpatialMaterial> material = materials[material_index]->duplicate();
+				Ref<Node3DGizmoMaterial> material = materials[material_index]->duplicate();
 				if (atlas.is_valid()) {
 					// TODO Do I absolutely HAVE to load this texture back to memory AND renderer just so import works??
 					//Ref<Texture> texture = ResourceLoader::load(atlas_path);
 					// TODO THIS IS A WORKAROUND, it is not supposed to be an ImageTexture...
 					// See earlier code, I could not find any way to reference a separate StreamTexture.
 					Ref<ImageTexture> texture;
-					texture.instance();
+					texture.instantiate();
 					texture->create_from_image(atlas, 0);
-					material->set_texture(SpatialMaterial::TEXTURE_ALBEDO, texture);
+					material->set_texture(Node3DGizmoMaterial::TEXTURE_ALBEDO, texture);
 				}
 				mesh->surface_set_material(surface_index, material);
 			}
@@ -349,7 +349,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 		meshes.write[model_index] = mesh_info;
 	}
 
-	Spatial *root_node = nullptr;
+	Node3DGizmo *root_node = nullptr;
 	if (data.get_root_node_id() != -1) {
 		// Convert scene graph into a node tree
 		process_scene_node_recursively(
@@ -358,7 +358,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 	} else if (meshes.size() > 0) {
 		// Some vox files don't have a scene graph
-		root_node = memnew(Spatial);
+		root_node = memnew(Node3DGizmo);
 		const VoxMesh &mesh0 = meshes[0];
 		add_mesh_instance(mesh0.mesh, root_node, root_node, Vector3(), p_enable_baked_lighting);
 	}
@@ -381,7 +381,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 	{
 		VOXEL_PROFILE_SCOPE();
 		Ref<PackedScene> scene;
-		scene.instance();
+		scene.instantiate();
 		scene->pack(root_node);
 		String scene_save_path = p_save_path + ".tscn";
 		const Error save_err = ResourceSaver::save(scene_save_path, scene);

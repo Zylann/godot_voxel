@@ -1,7 +1,7 @@
 #include "image_range_grid.h"
 #include "range_utility.h"
 
-#include <core/image.h>
+#include <core/io/image.h>
 
 ImageRangeGrid::~ImageRangeGrid() {
 	clear();

@@ -2,7 +2,7 @@
 #define VOXEL_INSTANCER_RIGIDBODY_H
 
 #include "voxel_instancer.h"
-#include <scene/3d/physics_body.h>
+#include <scene/3d/physics_body_3d.h>
 
 // Provides collision to VoxelInstancer multimesh instances
 class VoxelInstancerRigidBody : public RigidBody {

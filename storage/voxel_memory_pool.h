@@ -1,7 +1,7 @@
 #ifndef VOXEL_MEMORY_POOL_H
 #define VOXEL_MEMORY_POOL_H
 
-#include "core/hash_map.h"
+#include "core/templates/hash_map.h"
 #include "core/os/mutex.h"
 
 #include <vector>

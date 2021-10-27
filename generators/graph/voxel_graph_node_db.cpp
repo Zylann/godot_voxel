@@ -257,7 +257,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.name = "Constant";
 		t.category = CATEGORY_INPUT;
 		t.outputs.push_back(Port("value"));
-		t.params.push_back(Param("value", Variant::REAL));
+		t.params.push_back(Param("value", Variant::FLOAT));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_X];
@@ -600,8 +600,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("min", Variant::REAL, -1.f));
-		t.params.push_back(Param("max", Variant::REAL, 1.f));
+		t.params.push_back(Param("min", Variant::FLOAT, -1.f));
+		t.params.push_back(Param("max", Variant::FLOAT, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
 			Params p;
 			p.min = ctx.get_param(0).operator float();
@@ -716,10 +716,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("min0", Variant::REAL, -1.f));
-		t.params.push_back(Param("max0", Variant::REAL, 1.f));
-		t.params.push_back(Param("min1", Variant::REAL, -1.f));
-		t.params.push_back(Param("max1", Variant::REAL, 1.f));
+		t.params.push_back(Param("min0", Variant::FLOAT, -1.f));
+		t.params.push_back(Param("max0", Variant::FLOAT, 1.f));
+		t.params.push_back(Param("min1", Variant::FLOAT, -1.f));
+		t.params.push_back(Param("max1", Variant::FLOAT, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
 			Params p;
 			const float min0 = ctx.get_param(0).operator float();
@@ -764,8 +764,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("edge0", Variant::REAL, 0.f));
-		t.params.push_back(Param("edge1", Variant::REAL, 1.f));
+		t.params.push_back(Param("edge0", Variant::FLOAT, 0.f));
+		t.params.push_back(Param("edge1", Variant::FLOAT, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
 			Params p;
 			p.edge0 = ctx.get_param(0).operator float();
@@ -1088,7 +1088,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("a"));
 		t.inputs.push_back(Port("b"));
 		t.outputs.push_back(Port("sdf"));
-		t.params.push_back(Param("smoothness", Variant::REAL, 0.f));
+		t.params.push_back(Param("smoothness", Variant::FLOAT, 0.f));
 		t.compile_func = [](CompileContext &ctx) {
 			Params p;
 			p.smoothness = ctx.get_param(0).operator float();
@@ -1172,7 +1172,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("a"));
 		t.inputs.push_back(Port("b"));
 		t.outputs.push_back(Port("sdf"));
-		t.params.push_back(Param("smoothness", Variant::REAL, 0.f));
+		t.params.push_back(Param("smoothness", Variant::FLOAT, 0.f));
 		t.compile_func = [](CompileContext &ctx) {
 			Params p;
 			p.smoothness = ctx.get_param(0).operator float();
@@ -1251,8 +1251,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.name = "SdfPreview";
 		t.category = CATEGORY_DEBUG;
 		t.inputs.push_back(Port("value"));
-		t.params.push_back(Param("min_value", Variant::REAL, -1.f));
-		t.params.push_back(Param("max_value", Variant::REAL, 1.f));
+		t.params.push_back(Param("min_value", Variant::FLOAT, -1.f));
+		t.params.push_back(Param("max_value", Variant::FLOAT, 1.f));
 		t.debug_only = true;
 	}
 	{
@@ -1315,8 +1315,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("z"));
 		t.outputs.push_back(Port("sdf"));
 		t.params.push_back(Param("image", "Image"));
-		t.params.push_back(Param("radius", Variant::REAL, 10.f));
-		t.params.push_back(Param("factor", Variant::REAL, 1.f));
+		t.params.push_back(Param("radius", Variant::FLOAT, 10.f));
+		t.params.push_back(Param("factor", Variant::FLOAT, 1.f));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Image> image = ctx.get_param(0);
@@ -1619,7 +1619,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			p.index = param_index;
 
 			switch (p.type) {
-				case Variant::REAL:
+				case Variant::FLOAT:
 					if (p.default_value.get_type() == Variant::NIL) {
 						p.default_value = 0.f;
 					}

@@ -1,9 +1,9 @@
 #include "voxel_instance_library.h"
 #include "voxel_instancer.h"
 
-#include <scene/3d/collision_shape.h>
-#include <scene/3d/mesh_instance.h>
-#include <scene/3d/physics_body.h>
+#include <scene/3d/collision_shape_3d.h>
+#include <scene/3d/mesh_instance_3d.h>
+#include <scene/3d/physics_body_3d.h>
 
 VoxelInstanceLibrary::~VoxelInstanceLibrary() {
 	for_each_item([this](int id, VoxelInstanceLibraryItemBase &item) {

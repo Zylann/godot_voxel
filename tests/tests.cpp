@@ -6,7 +6,7 @@
 #include "../util/math/box3i.h"
 #include "test_octree.h"
 
-#include <core/hash_map.h>
+#include <core/templates/hash_map.h>
 #include <core/print_string.h>
 
 void test_box3i_intersects() {
@@ -332,7 +332,7 @@ void test_copy_3d_region_zxy() {
 
 void test_voxel_graph_generator_default_graph_compilation() {
 	Ref<VoxelGeneratorGraph> generator;
-	generator.instance();
+	generator.instantiate();
 	generator->load_plane_preset();
 	VoxelGraphRuntime::CompilationResult result = generator->compile();
 	ERR_FAIL_COND_MSG(!result.success,
@@ -341,7 +341,7 @@ void test_voxel_graph_generator_default_graph_compilation() {
 
 void test_voxel_graph_generator_texturing() {
 	Ref<VoxelGeneratorGraph> generator;
-	generator.instance();
+	generator.instantiate();
 
 	// Plane centered on Y=0, angled 45 degrees, going up towards +X
 	// When Y<0, weight0 must be 1 and weight1 must be 0.
@@ -912,7 +912,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// One segment going up
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(1, 1));
 		std::vector<CurveMonotonicSection> sections;
@@ -943,7 +943,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// One flat segment
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(1, 0));
 		std::vector<CurveMonotonicSection> sections;
@@ -957,7 +957,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// Two segments: going up, then flat
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.5, 1));
 		curve->add_point(Vector2(1, 1));
@@ -968,7 +968,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// Two segments: flat, then up
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.5, 0));
 		curve->add_point(Vector2(1, 1));
@@ -979,7 +979,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// Three segments: flat, then up, then flat
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.3, 0));
 		curve->add_point(Vector2(0.6, 1));
@@ -991,7 +991,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// Three segments: up, down, up
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.3, 1));
 		curve->add_point(Vector2(0.6, 0));
@@ -1005,7 +1005,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// Two segments: going up, then down
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.5, 1));
 		curve->add_point(Vector2(1, 0));
@@ -1016,7 +1016,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// One segment, curved as a parabola going up then down
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0), 0.f, 1.f);
 		curve->add_point(Vector2(1, 0));
 		std::vector<CurveMonotonicSection> sections;

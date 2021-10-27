@@ -3,7 +3,7 @@
 
 #include <core/io/resource.h>
 #include <scene/resources/mesh.h>
-#include <scene/resources/shape.h>
+#include <scene/resources/shape_3d.h>
 
 #include "../../util/fixed_array.h"
 #include "voxel_instance_generator.h"

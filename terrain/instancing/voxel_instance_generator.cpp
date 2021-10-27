@@ -61,7 +61,7 @@ void VoxelInstanceGenerator::generate_transforms(
 	PackedVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
 	ERR_FAIL_COND(normals.size() == 0);
 
-	PackedIntArray indices = surface_arrays[ArrayMesh::ARRAY_INDEX];
+	PackedInt32Array indices = surface_arrays[ArrayMesh::ARRAY_INDEX];
 	ERR_FAIL_COND(indices.size() == 0);
 	ERR_FAIL_COND(indices.size() % 3 != 0);
 
@@ -118,7 +118,7 @@ void VoxelInstanceGenerator::generate_transforms(
 			} break;
 
 			case EMIT_FROM_FACES_FAST: {
-				PackedIntArray::Read indices_r = indices.read();
+				PackedInt32Array::Read indices_r = indices.read();
 
 				const int triangle_count = indices.size() / 3;
 
@@ -162,7 +162,7 @@ void VoxelInstanceGenerator::generate_transforms(
 			} break;
 
 			case EMIT_FROM_FACES: {
-				PackedIntArray::Read indices_r = indices.read();
+				PackedInt32Array::Read indices_r = indices.read();
 
 				const int triangle_count = indices.size() / 3;
 
@@ -724,29 +724,29 @@ void VoxelInstanceGenerator::_bind_methods() {
 
 	ADD_GROUP("Emission", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "density", PROPERTY_HINT_RANGE, DENSITY_HINT_STRING),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "density", PROPERTY_HINT_RANGE, DENSITY_HINT_STRING),
 			"set_density", "get_density");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,FacesFast,Faces"),
 			"set_emit_mode", "get_emit_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
 			"set_min_slope_degrees", "get_min_slope_degrees");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
 			"set_max_slope_degrees", "get_max_slope_degrees");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_height"), "set_min_height", "get_min_height");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_height"), "set_max_height", "get_max_height");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_height"), "set_min_height", "get_min_height");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_height"), "set_max_height", "get_max_height");
 
 	ADD_GROUP("Scale", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "min_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
 			"set_min_scale", "get_min_scale");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "max_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
 			"set_max_scale", "get_max_scale");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "scale_distribution", PROPERTY_HINT_ENUM, "Linear,Quadratic,Cubic,Quintic"),
 			"set_scale_distribution", "get_scale_distribution");
 
 	ADD_GROUP("Rotation", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "vertical_alignment", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "vertical_alignment", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
 			"set_vertical_alignment", "get_vertical_alignment");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_vertical_flip"),
 			"set_random_vertical_flip", "get_random_vertical_flip");
@@ -754,7 +754,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 
 	ADD_GROUP("Offset", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "offset_along_normal"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "offset_along_normal"),
 			"set_offset_along_normal", "get_offset_along_normal");
 
 	ADD_GROUP("Noise", "");
@@ -763,7 +763,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"set_noise", "get_noise");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_dimension", PROPERTY_HINT_ENUM, "2D,3D"),
 			"set_noise_dimension", "get_noise_dimension");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "noise_on_scale", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "noise_on_scale", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
 			"set_noise_on_scale", "get_noise_on_scale");
 
 	BIND_ENUM_CONSTANT(EMIT_FROM_VERTICES);

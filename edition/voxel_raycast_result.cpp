@@ -19,5 +19,5 @@ void VoxelRaycastResult::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "position"), "", "get_position");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "previous_position"), "", "get_previous_position");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "distance"), "", "get_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "distance"), "", "get_distance");
 }

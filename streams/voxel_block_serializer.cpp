@@ -9,7 +9,7 @@
 #include <core/io/marshalls.h>
 #include <core/io/stream_peer.h>
 //#include <core/templates/map.h>
-#include <core/os/file_access.h>
+#include <core/io/file_access.h>
 #include <limits>
 
 namespace {

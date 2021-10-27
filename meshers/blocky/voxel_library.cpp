@@ -356,7 +356,7 @@ void VoxelLibrary::generate_side_culling_matrix() {
 		print_line(line);
 
 		Ref<Image> im;
-		im.instance();
+		im.instantiate();
 		im->create(RASTER_SIZE, RASTER_SIZE, false, Image::FORMAT_RGB8);
 		im->lock();
 		for (int y = 0; y < RASTER_SIZE; ++y) {

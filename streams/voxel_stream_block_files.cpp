@@ -1,8 +1,8 @@
 #include "voxel_stream_block_files.h"
 #include "../server/voxel_server.h"
 
-#include <core/os/dir_access.h>
-#include <core/os/file_access.h>
+#include <core/io/dir_access.h>
+#include <core/io/file_access.h>
 
 namespace {
 const uint8_t FORMAT_VERSION = 1;

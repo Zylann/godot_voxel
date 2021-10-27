@@ -16,8 +16,8 @@ public:
 	void set_color(int index, Color color);
 	Color get_color(int index) const;
 
-	PoolColorArray get_colors() const;
-	void set_colors(PoolColorArray colors);
+	PackedColorArray get_colors() const;
+	void set_colors(PackedColorArray colors);
 
 	void clear();
 
@@ -32,8 +32,8 @@ public:
 	}
 
 private:
-	PackedIntArray _b_get_data() const;
-	void _b_set_data(PackedIntArray colors);
+	PackedInt32Array _b_get_data() const;
+	void _b_set_data(PackedInt32Array colors);
 
 	static void _bind_methods();
 

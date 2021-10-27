@@ -96,7 +96,7 @@ VoxelServer::VoxelServer() {
 
 	GLOBAL_DEF_RST("voxel/threads/count/ratio_over_max", 0.5f);
 	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/ratio_over_max",
-			PropertyInfo(Variant::REAL, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1"));
+			PropertyInfo(Variant::FLOAT, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1"));
 
 	GLOBAL_DEF_RST("voxel/threads/main/time_budget_ms", 8);
 	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/main/time_budget_ms",

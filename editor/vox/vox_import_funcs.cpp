@@ -42,7 +42,7 @@ Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 	}
 
 	Ref<ArrayMesh> mesh;
-	mesh.instance();
+	mesh.instantiate();
 
 	int surface_index = 0;
 	for (int i = 0; i < output.surfaces.size(); ++i) {

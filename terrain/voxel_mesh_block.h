@@ -6,7 +6,7 @@
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
 
-class Spatial;
+class Node3DGizmo;
 
 // Stores mesh and collider for one chunk of the rendered volume.
 // It doesn't store voxel data, because it may be using different block size, or different data structure.
@@ -66,7 +66,7 @@ public:
 
 	// Collisions
 
-	void set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Spatial *node, float margin);
+	void set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Node3DGizmo *node, float margin);
 	void set_collision_layer(int layer);
 	void set_collision_mask(int mask);
 	void set_collision_margin(float margin);

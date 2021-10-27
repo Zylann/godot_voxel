@@ -92,7 +92,7 @@ private:
 		const Vector2i preview_size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
 		Ref<Image> im;
-		im.instance();
+		im.instantiate();
 		im->create(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
 
 		im->lock();
@@ -129,7 +129,7 @@ private:
 		im->unlock();
 
 		Ref<ImageTexture> tex;
-		tex.instance();
+		tex.instantiate();
 		tex->create_from_image(im);
 		_texture_rect->set_texture(tex);
 	}
@@ -180,6 +180,6 @@ public:
 
 FastNoiseLiteEditorPlugin::FastNoiseLiteEditorPlugin(EditorNode *p_node) {
 	Ref<FastNoiseLiteEditorInspectorPlugin> plugin;
-	plugin.instance();
+	plugin.instantiate();
 	add_inspector_plugin(plugin);
 }

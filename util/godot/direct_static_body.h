@@ -3,8 +3,8 @@
 
 #include "direct_mesh_instance.h"
 
-#include <core/rid.h>
-#include <scene/resources/shape.h>
+#include <core/templates/rid.h>
+#include <scene/resources/shape_3d.h>
 
 class World;
 

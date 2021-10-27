@@ -2,7 +2,7 @@
 #include "../util/macros.h"
 #include "../util/profiling.h"
 
-#include <core/os/file_access.h>
+#include <core/io/file_access.h>
 #include <core/variant/variant.h>
 #include <unordered_set>
 

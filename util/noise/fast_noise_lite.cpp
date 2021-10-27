@@ -285,7 +285,7 @@ void FastNoiseLite::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "seed"), "set_seed", "get_seed");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "period", PROPERTY_HINT_EXP_RANGE, "0.0001,10000.0"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_EXP_RANGE, "0.0001,10000.0"),
 			"set_period", "get_period");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "warp_noise", PROPERTY_HINT_RESOURCE_TYPE, "FastNoiseLiteGradient"),
@@ -300,13 +300,13 @@ void FastNoiseLite::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE, vformat("1,%d,1", _MAX_OCTAVES)),
 			"set_fractal_octaves", "get_fractal_octaves");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "fractal_gain"), "set_fractal_gain", "get_fractal_gain");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_gain"), "set_fractal_gain", "get_fractal_gain");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "fractal_ping_pong_strength"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_ping_pong_strength"),
 			"set_fractal_ping_pong_strength", "get_fractal_ping_pong_strength");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "fractal_weighted_strength"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_weighted_strength"),
 			"set_fractal_weighted_strength", "get_fractal_weighted_strength");
 
 	ADD_GROUP("Cellular", "");
@@ -319,7 +319,7 @@ void FastNoiseLite::_bind_methods() {
 						 "CellValue,Distance,Distance2,Distance2Add,Distance2Sub,Distance2Mul,Distance2Div"),
 			"set_cellular_return_type", "get_cellular_return_type");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "cellular_jitter", PROPERTY_HINT_RANGE, "0.0,1.0"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "cellular_jitter", PROPERTY_HINT_RANGE, "0.0,1.0"),
 			"set_cellular_jitter", "get_cellular_jitter");
 
 	ADD_GROUP("Advanced", "");

@@ -2,14 +2,14 @@
 #include "../funcs.h"
 #include "../profiling.h"
 
-#include <core/engine.h>
+#include <core/config/engine.h>
 #include <scene/resources/concave_polygon_shape.h>
 #include <scene/resources/mesh.h>
 #include <scene/resources/multimesh.h>
 
 bool is_surface_triangulated(Array surface) {
 	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
-	PackedIntArray indices = surface[Mesh::ARRAY_INDEX];
+	PackedInt32Array indices = surface[Mesh::ARRAY_INDEX];
 	return positions.size() >= 3 && indices.size() >= 3;
 }
 
@@ -137,7 +137,7 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	}
 	PackedVector3Array src_positions = src_surface[Mesh::ARRAY_VERTEX];
 	PackedVector3Array src_normals = src_surface[Mesh::ARRAY_NORMAL];
-	PackedIntArray src_indices = src_surface[Mesh::ARRAY_INDEX];
+	PackedInt32Array src_indices = src_surface[Mesh::ARRAY_INDEX];
 	if (src_indices.size() < 3) {
 		return Array();
 	}
@@ -171,7 +171,7 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 
 	std::vector<int> dst_indices;
 	{
-		PackedIntArray::Read r = src_indices.read();
+		PackedInt32Array::Read r = src_indices.read();
 		for (int i = 0; i < src_indices.size(); i += 3) {
 			const int vi0 = r[i];
 			const int vi1 = r[i + 1];
@@ -202,7 +202,7 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	ERR_FAIL_COND_V(dst_positions.size() < 2, Array());
 
 	PackedVector3Array dst_positions_pv;
-	PackedIntArray dst_indices_pv;
+	PackedInt32Array dst_indices_pv;
 	raw_copy_to(dst_positions_pv, dst_positions);
 	raw_copy_to(dst_indices_pv, dst_indices);
 	Array dst_surface;
@@ -212,11 +212,11 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	return dst_surface;
 
 	// Ref<ArrayMesh> wire_mesh;
-	// wire_mesh.instance();
+	// wire_mesh.instantiate();
 	// wire_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, dst_surface);
 
-	// Ref<SpatialMaterial> line_material;
-	// line_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
+	// Ref<Node3DGizmoMaterial> line_material;
+	// line_material->set_flag(Node3DGizmoMaterial::FLAG_UNSHADED, true);
 	// line_material->set_albedo(Color(1.0, 0.0, 1.0));
 	// wire_mesh->surface_set_material(0, line_material);
 

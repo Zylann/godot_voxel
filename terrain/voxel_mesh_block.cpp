@@ -4,7 +4,7 @@
 #include "../util/macros.h"
 #include "../util/profiling.h"
 
-#include <scene/3d/spatial.h>
+#include <scene/3d/node_3d.h>
 #include <scene/resources/concave_polygon_shape.h>
 
 VoxelMeshBlock *VoxelMeshBlock::create(VOX_Vector3i bpos, unsigned int size, unsigned int p_lod_index) {
@@ -14,16 +14,16 @@ VoxelMeshBlock *VoxelMeshBlock::create(VOX_Vector3i bpos, unsigned int size, uns
 	block->_position_in_voxels = bpos * (size << p_lod_index);
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
-	Ref<SpatialMaterial> debug_material;
-	debug_material.instance();
+	Ref<Node3DGizmoMaterial> debug_material;
+	debug_material.instantiate();
 	int checker = (bpos.x + bpos.y + bpos.z) & 1;
 	Color debug_color = Color(0.8, 0.4, 0.8).linear_interpolate(Color(0.0, 0.0, 0.5), static_cast<float>(p_lod_index) / 8.f);
 	debug_color = debug_color.lightened(checker * 0.1f);
 	debug_material->set_albedo(debug_color);
 	block->_debug_material = debug_material;
 
-	Ref<SpatialMaterial> debug_transition_material;
-	debug_transition_material.instance();
+	Ref<Node3DGizmoMaterial> debug_transition_material;
+	debug_transition_material.instantiate();
 	debug_transition_material->set_albedo(Color(1, 1, 0));
 	block->_debug_transition_material = debug_transition_material;
 #endif
@@ -254,7 +254,7 @@ void VoxelMeshBlock::set_parent_transform(const Transform &parent_transform) {
 	}
 }
 
-void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Spatial *node, float margin) {
+void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Node3DGizmo *node, float margin) {
 	if (surface_arrays.size() == 0) {
 		drop_collision();
 		return;

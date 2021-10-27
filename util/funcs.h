@@ -3,6 +3,7 @@
 
 // #include <core/pool_vector.h>
 #include <core/templates/vector.h>
+#include <core/string/ustring.h>
 #include <utility>
 #include <vector>
 
@@ -116,8 +117,8 @@ void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
 	to.resize(from.size());
 	// resize can fail in case allocation was not possible
 	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));
-	typename Vector<T>::Write w = to.write();
-	memcpy(w.ptr(), from.data(), from.size() * sizeof(T));
+	// typename Vector<T>::Write w = to.write();
+	memcpy((void *)to.ptr(), from.data(), from.size() * sizeof(T));
 }
 
 template <typename T>

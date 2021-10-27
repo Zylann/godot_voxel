@@ -7,7 +7,7 @@
 // Used as child of scene items instanced with VoxelInstancer.
 //
 // It is needed because such instances are tied with some of the logic in VoxelInstancer.
-// The root of a scene could be anything derived from Spatial,
+// The root of a scene could be anything derived from Node3DGizmo,
 // so offering an API using inheritance on the root node is impractical.
 // So instead the component approach is taken.
 // If a huge amount of instances is needed, prefer using fast/multimesh instances.
@@ -80,9 +80,9 @@ protected:
 	void _notification(int p_what) {
 		switch (p_what) {
 				// case NOTIFICATION_PARENTED:
-				// 	Spatial *spatial = Object::cast_to<Spatial>(get_parent());
+				// 	Node3DGizmo *spatial = Object::cast_to<Node3DGizmo>(get_parent());
 				// 	if (spatial == nullptr) {
-				// 		ERR_PRINT("VoxelInstanceComponent must have a parent derived from Spatial");
+				// 		ERR_PRINT("VoxelInstanceComponent must have a parent derived from Node3DGizmo");
 				// 	}
 				// 	break;
 

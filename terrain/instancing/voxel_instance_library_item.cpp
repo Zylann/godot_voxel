@@ -2,9 +2,9 @@
 #include "voxel_instancer.h"
 
 #include <core/core_string_names.h>
-#include <scene/3d/collision_shape.h>
-#include <scene/3d/mesh_instance.h>
-#include <scene/3d/physics_body.h>
+#include <scene/3d/collision_shape_3d.h>
+#include <scene/3d/mesh_instance_3d.h>
+#include <scene/3d/physics_body_3d.h>
 
 void VoxelInstanceLibraryItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_index) {
 	ERR_FAIL_INDEX(mesh_lod_index, static_cast<int>(_mesh_lods.size()));

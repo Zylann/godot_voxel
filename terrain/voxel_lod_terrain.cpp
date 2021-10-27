@@ -11,8 +11,8 @@
 #include "instancing/voxel_instancer.h"
 
 #include <core/core_string_names.h>
-#include <core/engine.h>
-#include <scene/3d/mesh_instance.h>
+#include <core/config/engine.h>
+#include <scene/3d/mesh_instance_3d.h>
 #include <scene/resources/packed_scene.h>
 
 namespace {
@@ -21,7 +21,7 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 		Ref<Material> material) {
 	VOXEL_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
-	mesh.instance();
+	mesh.instantiate();
 
 	unsigned int surface_index = 0;
 	for (int i = 0; i < surfaces.size(); ++i) {
@@ -49,9 +49,9 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 		if (wireframe_surface.size() > 0) {
 			const int wireframe_surface_index = mesh->get_surface_count();
 			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, wireframe_surface);
-			Ref<SpatialMaterial> line_material;
-			line_material.instance();
-			line_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
+			Ref<Node3DGizmoMaterial> line_material;
+			line_material.instantiate();
+			line_material->set_flag(Node3DGizmoMaterial::FLAG_UNSHADED, true);
 			line_material->set_albedo(Color(1.0, 0.0, 1.0));
 			mesh->surface_set_material(wireframe_surface_index, line_material);
 		}
@@ -194,7 +194,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	// For ease of use in editor
 	Ref<VoxelMesherTransvoxel> default_mesher;
-	default_mesher.instance();
+	default_mesher.instantiate();
 	_mesher = default_mesher;
 }
 
@@ -2543,7 +2543,7 @@ int VoxelLodTerrain::_b_debug_get_data_block_count() const {
 }
 
 Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath) const {
-	Spatial *root = memnew(Spatial);
+	Node3DGizmo *root = memnew(Node3DGizmo);
 	root->set_name(get_name());
 
 	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
@@ -2665,7 +2665,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_GROUP("Level of detail", "");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "lod_distance"), "set_lod_distance", "get_lod_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_distance"), "set_lod_distance", "get_lod_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
 
 	ADD_GROUP("Material", "");
@@ -2685,7 +2685,7 @@ void VoxelLodTerrain::_bind_methods() {
 			"set_collision_lod_count", "get_collision_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_update_delay"),
 			"set_collision_update_delay", "get_collision_update_delay");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "collision_margin"), "set_collision_margin", "get_collision_margin");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "collision_margin"), "set_collision_margin", "get_collision_margin");
 
 	ADD_GROUP("Advanced", "");
 

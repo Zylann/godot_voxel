@@ -470,7 +470,7 @@ MESHOPTIMIZER_EXPERIMENTAL struct meshopt_Bounds meshopt_computeClusterBounds(co
 MESHOPTIMIZER_EXPERIMENTAL struct meshopt_Bounds meshopt_computeMeshletBounds(const unsigned int* meshlet_vertices, const unsigned char* meshlet_triangles, size_t triangle_count, const float* vertex_positions, size_t vertex_count, size_t vertex_positions_stride);
 
 /**
- * Experimental: Spatial sorter
+ * Experimental: Node3DGizmo sorter
  * Generates a remap table that can be used to reorder points for spatial locality.
  * Resulting remap table maps old vertices to new vertices and can be used in meshopt_remapVertexBuffer.
  *
@@ -479,7 +479,7 @@ MESHOPTIMIZER_EXPERIMENTAL struct meshopt_Bounds meshopt_computeMeshletBounds(co
 MESHOPTIMIZER_EXPERIMENTAL void meshopt_spatialSortRemap(unsigned int* destination, const float* vertex_positions, size_t vertex_count, size_t vertex_positions_stride);
 
 /**
- * Experimental: Spatial sorter
+ * Experimental: Node3DGizmo sorter
  * Reorders triangles for spatial locality, and generates a new index buffer. The resulting index buffer can be used with other functions like optimizeVertexCache.
  *
  * destination must contain enough space for the resulting index buffer (index_count elements)

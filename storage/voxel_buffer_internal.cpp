@@ -9,7 +9,7 @@
 #include "voxel_buffer_internal.h"
 
 #include <core/func_ref.h>
-#include <core/image.h>
+#include <core/io/image.h>
 #include <core/io/marshalls.h>
 #include <core/math/math_funcs.h>
 #include <string.h>

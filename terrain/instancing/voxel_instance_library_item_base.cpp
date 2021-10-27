@@ -2,9 +2,9 @@
 #include "voxel_instancer.h"
 
 #include <core/core_string_names.h>
-#include <scene/3d/collision_shape.h>
-#include <scene/3d/mesh_instance.h>
-#include <scene/3d/physics_body.h>
+#include <scene/3d/collision_shape_3d.h>
+#include <scene/3d/mesh_instance_3d.h>
+#include <scene/3d/physics_body_3d.h>
 
 void VoxelInstanceLibraryItemBase::set_item_name(String name) {
 	_name = name;

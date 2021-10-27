@@ -175,7 +175,7 @@
 			</description>
 		</method>
 		<method name="get_node_ids" qualifiers="const">
-			<return type="PackedIntArray">
+			<return type="PackedInt32Array">
 			</return>
 			<description>
 			</description>

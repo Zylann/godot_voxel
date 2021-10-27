@@ -131,6 +131,6 @@ void VoxelGeneratorFlat::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_height"), &VoxelGeneratorFlat::get_height);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING), "set_channel", "get_channel");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "height"), "set_height", "get_height");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height"), "set_height", "get_height");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_type", PROPERTY_HINT_RANGE, "0,65536,1"), "set_voxel_type", "get_voxel_type");
 }

@@ -53,10 +53,10 @@ Ref<Mesh> get_wirecube(ColorID id) {
 		raw_copy_to(positions, positions_raw, 8);
 
 		Color white(1.0, 1.0, 1.0);
-		PoolColorArray colors;
+		PackedColorArray colors;
 		colors.resize(positions.size());
 		{
-			PoolColorArray::Write w = colors.write();
+			PackedColorArray::Write w = colors.write();
 			for (int i = 0; i < colors.size(); ++i) {
 				w[i] = white;
 			}
@@ -78,7 +78,7 @@ Ref<Mesh> get_wirecube(ColorID id) {
 			2, 6,
 			3, 7
 		};
-		PackedIntArray indices;
+		PackedInt32Array indices;
 		raw_copy_to(indices, indices_raw, 24);
 
 		Array arrays;
@@ -89,10 +89,10 @@ Ref<Mesh> get_wirecube(ColorID id) {
 		Ref<ArrayMesh> mesh = memnew(ArrayMesh);
 		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, arrays);
 
-		Ref<SpatialMaterial> mat;
-		mat.instance();
+		Ref<Node3DGizmoMaterial> mat;
+		mat.instantiate();
 		mat->set_albedo(get_color(id));
-		mat->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
+		mat->set_flag(Node3DGizmoMaterial::FLAG_UNSHADED, true);
 		mesh->surface_set_material(0, mat);
 
 		wirecube = mesh;
@@ -223,16 +223,16 @@ DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
 	// The reason is still unknown.
 	// It should be off anyways, but it's rather concerning.
 	_multimesh_instance.set_cast_shadows_setting(VisualServer::SHADOW_CASTING_SETTING_OFF);
-	_multimesh.instance();
+	_multimesh.instantiate();
 	Ref<Mesh> wirecube = get_wirecube(ID_WHITE);
 	_multimesh->set_mesh(wirecube);
 	_multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
 	_multimesh->set_color_format(MultiMesh::COLOR_8BIT);
 	_multimesh->set_custom_data_format(MultiMesh::CUSTOM_DATA_NONE);
 	_multimesh_instance.set_multimesh(_multimesh);
-	_material.instance();
-	_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
-	_material->set_flag(SpatialMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+	_material.instantiate();
+	_material->set_flag(Node3DGizmoMaterial::FLAG_UNSHADED, true);
+	_material->set_flag(Node3DGizmoMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 	_multimesh_instance.set_material_override(_material);
 }
 

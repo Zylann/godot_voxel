@@ -2,8 +2,8 @@
 #define FILE_UTILS_H
 
 #include "../util/math/vector3i.h"
-#include <core/os/dir_access.h>
-#include <core/os/file_access.h>
+#include <core/io/dir_access.h>
+#include <core/io/file_access.h>
 
 inline VOX_Vector3i get_vec3u8(FileAccess *f) {
 	VOX_Vector3i v;

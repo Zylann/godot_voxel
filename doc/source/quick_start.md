@@ -31,7 +31,7 @@ For more in-depth information, see the rest of the documentation.
 1) Create a new project and a new 3D scene. Give it some light by adding a `DirectionalLight` node, and orientate it so it shines approximately downwards. You can enable `Shadows` too.
 
 2) Add a `VoxelTerrain` node, and adjust the following settings in the inspector:
-	2.1) Under the `materials` section, create a new `SpatialMaterial` in the first slot. Then click on it and enable the `vertex_color_as_albedo` option. This will give the blocks better shading.
+	2.1) Under the `materials` section, create a new `Node3DGizmoMaterial` in the first slot. Then click on it and enable the `vertex_color_as_albedo` option. This will give the blocks better shading.
 	2.1) `Generator`: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`.
 	2.2) `Mesher`: create a new `VoxelMesherBlocky`.
 

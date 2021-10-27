@@ -7,9 +7,9 @@
 #include "../util/voxel_raycast.h"
 #include "funcs.h"
 
-#include <scene/3d/collision_shape.h>
-#include <scene/3d/mesh_instance.h>
-#include <scene/3d/physics_body.h>
+#include <scene/3d/collision_shape_3d.h>
+#include <scene/3d/mesh_instance_3d.h>
+#include <scene/3d/physics_body_3d.h>
 #include <scene/main/timer.h>
 
 VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain) :
@@ -153,7 +153,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 											_raycast_binary_search_iterations);
 		}
 
-		res.instance();
+		res.instantiate();
 		res->position = hit_pos;
 		res->previous_position = prev_pos;
 		res->distance_along_ray = d;
@@ -291,7 +291,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 	Ref<VoxelBuffer> source_copy_buffer_ref;
 	{
 		VOXEL_PROFILE_SCOPE_NAMED("Copy");
-		source_copy_buffer_ref.instance();
+		source_copy_buffer_ref.instantiate();
 		source_copy_buffer_ref->create(world_box.size.x, world_box.size.y, world_box.size.z);
 		voxel_tool.copy(world_box.pos, source_copy_buffer_ref, channels_mask);
 	}
@@ -423,7 +423,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 
 			// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
 			Ref<VoxelBuffer> buffer_ref;
-			buffer_ref.instance();
+			buffer_ref.instantiate();
 			buffer_ref->create(size.x, size.y, size.z);
 
 			// Read voxels from the source volume
@@ -540,9 +540,9 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 			// DEBUG
 			// {
 			// 	Ref<VoxelBlockSerializer> serializer;
-			// 	serializer.instance();
+			// 	serializer.instantiate();
 			// 	Ref<StreamPeerBuffer> peer;
-			// 	peer.instance();
+			// 	peer.instantiate();
 			// 	serializer->serialize(peer, info.voxels, false);
 			// 	String fpath = String("debug_data/split_dump_{0}.bin").format(varray(instance_index));
 			// 	FileAccess *f = FileAccess::open(fpath, FileAccess::WRITE);

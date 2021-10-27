@@ -69,7 +69,7 @@ bool Voxel::_get(const StringName &p_name, Variant &r_ret) const {
 
 void Voxel::_get_property_list(List<PropertyInfo> *p_list) const {
 	if (_geometry_type == GEOMETRY_CUBE) {
-		p_list->push_back(PropertyInfo(Variant::REAL, "cube_geometry/padding_y"));
+		p_list->push_back(PropertyInfo(Variant::FLOAT, "cube_geometry/padding_y"));
 		p_list->push_back(PropertyInfo(Variant::VECTOR2, "cube_tiles/left"));
 		p_list->push_back(PropertyInfo(Variant::VECTOR2, "cube_tiles/right"));
 		p_list->push_back(PropertyInfo(Variant::VECTOR2, "cube_tiles/bottom"));
@@ -158,7 +158,7 @@ void Voxel::set_cube_uv_side(int side, Vector2 tile_pos) {
 
 Ref<Resource> Voxel::duplicate(bool p_subresources) const {
 	Ref<Voxel> d_ref;
-	d_ref.instance();
+	d_ref.instantiate();
 	Voxel &d = **d_ref;
 
 	d._id = -1;
@@ -256,7 +256,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 
 	ERR_FAIL_COND(arrays.size() == 0);
 
-	PackedIntArray indices = arrays[Mesh::ARRAY_INDEX];
+	PackedInt32Array indices = arrays[Mesh::ARRAY_INDEX];
 	ERR_FAIL_COND_MSG(indices.size() % 3 != 0, "Mesh is empty or does not contain triangles");
 
 	PackedVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
@@ -318,11 +318,11 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 
 	// Separate triangles belonging to faces of the cube
 	{
-		PackedIntArray::Read indices_read = indices.read();
-		PackedVector3Array::Read positions_read = positions.read();
-		PackedVector3Array::Read normals_read = normals.read();
-		PackedVector2Array::Read uvs_read = uvs.read();
-		Vector<float>::Read tangents_read = tangents.read();
+		PackedInt32Array indices_read = indices;
+		PackedVector3Array positions_read = positions;
+		PackedVector3Array normals_read = normals;
+		PackedVector2Array uvs_read = uvs;
+		Vector<float> tangents_read = tangents;
 
 		FixedArray<HashMap<int, int>, Cube::SIDE_COUNT> added_side_indices;
 		HashMap<int, int> added_regular_indices;

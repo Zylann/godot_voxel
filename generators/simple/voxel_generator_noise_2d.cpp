@@ -1,13 +1,13 @@
 #include "voxel_generator_noise_2d.h"
 #include <core/core_string_names.h>
-#include <core/engine.h>
+#include <core/config/engine.h>
 
 VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {
 #ifdef TOOLS_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		// Have one by default in editor
 		Ref<OpenSimplexNoise> noise;
-		noise.instance();
+		noise.instantiate();
 		set_noise(noise);
 	}
 #endif

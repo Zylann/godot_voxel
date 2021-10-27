@@ -1,6 +1,6 @@
 # VoxelInstancer
 
-Inherits: [Spatial](https://docs.godotengine.org/en/stable/classes/class_spatial.html)
+Inherits: [Node3DGizmo](https://docs.godotengine.org/en/stable/classes/class_spatial.html)
 
 
 Spawns items on top of voxel surfaces.

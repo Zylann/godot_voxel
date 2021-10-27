@@ -9,8 +9,8 @@
 #include "voxel_instancer_rigidbody.h"
 
 #include <scene/3d/camera.h>
-#include <scene/3d/collision_shape.h>
-#include <scene/3d/mesh_instance.h>
+#include <scene/3d/collision_shape_3d.h>
+#include <scene/3d/mesh_instance_3d.h>
 #include <scene/main/viewport.h>
 #include <algorithm>
 
@@ -718,8 +718,8 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(const VoxelI
 	ERR_FAIL_COND_V(scene_item.get_scene().is_null(), instance);
 	Node *root = scene_item.get_scene()->instance();
 	ERR_FAIL_COND_V(root == nullptr, instance);
-	instance.root = Object::cast_to<Spatial>(root);
-	ERR_FAIL_COND_V_MSG(instance.root == nullptr, instance, "Root of scene instance must be derived from Spatial");
+	instance.root = Object::cast_to<Node3DGizmo>(root);
+	ERR_FAIL_COND_V_MSG(instance.root == nullptr, instance, "Root of scene instance must be derived from Node3DGizmo");
 
 	instance.component = VoxelInstanceComponent::find_in(instance.root);
 	if (instance.component == nullptr) {
@@ -784,7 +784,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 		} else {
 			Ref<MultiMesh> multimesh = block->multimesh_instance.get_multimesh();
 			if (multimesh.is_null()) {
-				multimesh.instance();
+				multimesh.instantiate();
 				multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
 				multimesh->set_color_format(MultiMesh::COLOR_NONE);
 				multimesh->set_custom_data_format(MultiMesh::CUSTOM_DATA_NONE);
@@ -1217,7 +1217,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Tra
 
 		// DEBUG
 		// Ref<CubeMesh> cm;
-		// cm.instance();
+		// cm.instantiate();
 		// cm->set_size(Vector3(0.5, 0.5, 0.5));
 		// MeshInstance *mi = memnew(MeshInstance);
 		// mi->set_mesh(cm);

@@ -351,7 +351,7 @@ VoxelMesherBlocky::VoxelMesherBlocky() {
 
 	// Default library, less steps to setup in editor
 	Ref<VoxelLibrary> library;
-	library.instance();
+	library.instantiate();
 	library->load_default();
 	_parameters.library = library;
 }
@@ -566,6 +566,6 @@ void VoxelMesherBlocky::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"),
 			"set_library", "get_library");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "occlusion_enabled"), "set_occlusion_enabled", "get_occlusion_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
 			"set_occlusion_darkness", "get_occlusion_darkness");
 }

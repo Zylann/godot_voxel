@@ -301,8 +301,8 @@ Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 
 	struct Arrays {
 		PackedVector3Array positions;
-		PoolColorArray colors;
-		PackedIntArray indices;
+		PackedColorArray colors;
+		PackedInt32Array indices;
 	};
 
 	struct AddCube {
@@ -358,7 +358,7 @@ Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 
 Array generate_debug_dual_grid_mesh(const DualGrid &grid, int scale) {
 	PackedVector3Array positions;
-	PackedIntArray indices;
+	PackedInt32Array indices;
 
 	for (unsigned int i = 0; i < grid.cells.size(); ++i) {
 		const DualCell &cell = grid.cells[i];
@@ -1630,7 +1630,7 @@ void VoxelMesherDMC::_bind_methods() {
 			PropertyInfo(Variant::INT, "simplify_mode", PROPERTY_HINT_ENUM, "OctreeBottomUp,OctreeTopDown,None"),
 			"set_simplify_mode", "get_simplify_mode");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "geometric_error"), "set_simplify_mode", "get_simplify_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "geometric_error"), "set_simplify_mode", "get_simplify_mode");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "seam_mode", PROPERTY_HINT_ENUM, "None,MarchingSquareSkirts"),
 			"set_seam_mode", "get_seam_mode");

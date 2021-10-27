@@ -68,14 +68,14 @@ void VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed(int id) {
 			ERR_FAIL_COND(_library.is_null());
 
 			Ref<VoxelInstanceLibraryItem> item;
-			item.instance();
+			item.instantiate();
 			// Setup some defaults
 			Ref<CubeMesh> mesh;
-			mesh.instance();
+			mesh.instantiate();
 			item->set_mesh(mesh, 0);
 			item->set_lod_index(2);
 			Ref<VoxelInstanceGenerator> generator;
-			generator.instance();
+			generator.instantiate();
 			item->set_generator(generator);
 
 			const int item_id = _library->get_next_available_id();
@@ -177,12 +177,12 @@ void VoxelInstanceLibraryEditorPlugin::add_scene_item(String fpath) {
 	ERR_FAIL_COND(scene.is_null());
 
 	Ref<VoxelInstanceLibrarySceneItem> item;
-	item.instance();
+	item.instantiate();
 	// Setup some defaults
 	item->set_lod_index(2);
 	item->set_scene(scene);
 	Ref<VoxelInstanceGenerator> generator;
-	generator.instance();
+	generator.instantiate();
 	generator->set_density(0.01f); // Low density for scenes because that's heavier
 	item->set_generator(generator);
 

@@ -227,11 +227,11 @@ void fragment() {
 
 ### Recommended Reading
 
-- [SpatialMaterial](https://docs.godotengine.org/en/stable/classes/class_spatialmaterial.html) - demonstrates many of the shader options available in Godot.
+- [Node3DGizmoMaterial](https://docs.godotengine.org/en/stable/classes/class_spatialmaterial.html) - demonstrates many of the shader options available in Godot.
 - [Shading Index](https://docs.godotengine.org/en/stable/tutorials/shading/index.html) - tutorials and the shader language API
 - Shader API Reference - some of the most frequently accessed references
 	- [Shading Language](https://docs.godotengine.org/en/stable/tutorials/shading/shading_reference/shading_language.html)
-	- [SpatialShader](https://docs.godotengine.org/en/stable/tutorials/shading/shading_reference/spatial_shader.html)
+	- [Node3DGizmoShader](https://docs.godotengine.org/en/stable/tutorials/shading/shading_reference/spatial_shader.html)
 
 
 

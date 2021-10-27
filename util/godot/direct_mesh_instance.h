@@ -1,7 +1,7 @@
 #ifndef DIRECT_MESH_INSTANCE_H
 #define DIRECT_MESH_INSTANCE_H
 
-#include <core/rid.h>
+#include <core/templates/rid.h>
 #include <scene/resources/mesh.h>
 
 class World;

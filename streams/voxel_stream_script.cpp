@@ -6,7 +6,7 @@ VoxelStream::Result VoxelStreamScript::emerge_block(VoxelBufferInternal &out_buf
 	Variant output;
 	// Create a temporary wrapper so Godot can pass it to scripts
 	Ref<VoxelBuffer> buffer_wrapper;
-	buffer_wrapper.instance();
+	buffer_wrapper.instantiate();
 	buffer_wrapper->get_buffer().copy_format(out_buffer);
 	buffer_wrapper->get_buffer().create(out_buffer.get_size());
 	if (try_call_script(this, VoxelStringNames::get_singleton()->_emerge_block,
@@ -22,7 +22,7 @@ VoxelStream::Result VoxelStreamScript::emerge_block(VoxelBufferInternal &out_buf
 
 void VoxelStreamScript::immerge_block(VoxelBufferInternal &buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	Ref<VoxelBuffer> buffer_wrapper;
-	buffer_wrapper.instance();
+	buffer_wrapper.instantiate();
 	buffer.duplicate_to(buffer_wrapper->get_buffer(), true);
 	try_call_script(this, VoxelStringNames::get_singleton()->_immerge_block,
 			buffer_wrapper, origin_in_voxels.to_vec3(), lod, nullptr);

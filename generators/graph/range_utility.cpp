@@ -2,7 +2,7 @@
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite.h"
 
-#include <core/image.h>
+#include <core/io/image.h>
 #include <modules/opensimplex/open_simplex_noise.h>
 #include <scene/resources/curve.h>
 

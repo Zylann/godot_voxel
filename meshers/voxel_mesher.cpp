@@ -14,7 +14,7 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
 	}
 
 	Ref<ArrayMesh> mesh;
-	mesh.instance();
+	mesh.instantiate();
 
 	int surface_index = 0;
 	for (int i = 0; i < output.surfaces.size(); ++i) {

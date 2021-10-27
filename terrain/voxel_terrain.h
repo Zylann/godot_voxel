@@ -6,7 +6,7 @@
 #include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
-#include <scene/3d/spatial.h>
+#include <scene/3d/node_3d.h>
 
 class VoxelTool;
 

@@ -3,7 +3,7 @@
 #include "../util/godot/funcs.h"
 
 #include <core/func_ref.h>
-#include <core/image.h>
+#include <core/io/image.h>
 
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
 
@@ -73,7 +73,7 @@ void VoxelBuffer::downscale_to(Ref<VoxelBuffer> dst, Vector3 src_min, Vector3 sr
 
 Ref<VoxelBuffer> VoxelBuffer::duplicate(bool include_metadata) const {
 	Ref<VoxelBuffer> d;
-	d.instance();
+	d.instantiate();
 	_buffer->duplicate_to(d->get_buffer(), include_metadata);
 	return d;
 }

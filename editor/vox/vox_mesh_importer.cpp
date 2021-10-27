@@ -47,7 +47,7 @@ float VoxelVoxMeshImporter::get_priority() const {
 void VoxelVoxMeshImporter::get_import_options(List<ImportOption> *r_options, int p_preset) const {
 	VoxelStringNames *sn = VoxelStringNames::get_singleton();
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->store_colors_in_texture), false));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::REAL, sn->scale), 1.f));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, sn->scale), 1.f));
 	r_options->push_back(ImportOption(
 			PropertyInfo(Variant::INT, sn->pivot_mode, PROPERTY_HINT_ENUM, "LowerCorner,SceneOrigin,Center"), 1));
 }
@@ -228,7 +228,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 
 	// Get color palette
 	Ref<VoxelColorPalette> palette;
-	palette.instance();
+	palette.instantiate();
 	for (unsigned int i = 0; i < vox_data.get_palette().size(); ++i) {
 		const Color8 color = vox_data.get_palette()[i];
 		palette->set_color8(i, color);
@@ -261,7 +261,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 		model_instances.clear();
 
 		Ref<VoxelMesherCubes> mesher;
-		mesher.instance();
+		mesher.instantiate();
 		mesher->set_color_mode(VoxelMesherCubes::COLOR_MESHER_PALETTE);
 		mesher->set_palette(palette);
 		mesher->set_greedy_meshing_enabled(true);
@@ -310,17 +310,17 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 	// 	atlas->save_png(String("debug_atlas{0}.png").format(varray(model_index)));
 	// }
 
-	FixedArray<Ref<SpatialMaterial>, 2> materials;
+	FixedArray<Ref<Node3DGizmoMaterial>, 2> materials;
 	for (unsigned int i = 0; i < materials.size(); ++i) {
-		Ref<SpatialMaterial> &mat = materials[i];
-		mat.instance();
+		Ref<Node3DGizmoMaterial> &mat = materials[i];
+		mat.instantiate();
 		mat->set_roughness(1.f);
 		if (!p_store_colors_in_textures) {
 			// In this case we store colors in vertices
-			mat->set_flag(SpatialMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+			mat->set_flag(Node3DGizmoMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 		}
 	}
-	materials[1]->set_feature(SpatialMaterial::FEATURE_TRANSPARENT, true);
+	materials[1]->set_feature(Node3DGizmoMaterial::FEATURE_TRANSPARENT, true);
 
 	// Assign materials
 	if (p_store_colors_in_textures) {
@@ -328,16 +328,16 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 		for (unsigned int surface_index = 0; surface_index < surface_index_to_material.size(); ++surface_index) {
 			const unsigned int material_index = surface_index_to_material[surface_index];
 			CRASH_COND(material_index >= materials.size());
-			Ref<SpatialMaterial> material = materials[material_index]->duplicate();
+			Ref<Node3DGizmoMaterial> material = materials[material_index]->duplicate();
 			if (atlas.is_valid()) {
 				// TODO Do I absolutely HAVE to load this texture back to memory AND renderer just so import works??
 				//Ref<Texture> texture = ResourceLoader::load(atlas_path);
 				// TODO THIS IS A WORKAROUND, it is not supposed to be an ImageTexture...
 				// See earlier code, I could not find any way to reference a separate StreamTexture.
 				Ref<ImageTexture> texture;
-				texture.instance();
+				texture.instantiate();
 				texture->create_from_image(atlas, 0);
-				material->set_texture(SpatialMaterial::TEXTURE_ALBEDO, texture);
+				material->set_texture(Node3DGizmoMaterial::TEXTURE_ALBEDO, texture);
 			}
 			mesh->surface_set_material(surface_index, material);
 		}

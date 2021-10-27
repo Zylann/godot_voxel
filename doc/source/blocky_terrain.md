@@ -48,9 +48,9 @@ So far we defined a cubic voxel with specific texture coordinates on its faces, 
 
 ![VoxelTerrain material properties screenshot](images/voxel_terrain_material_properties.png)
 
-You may assign a new `SpatialMaterial` in the first slot, and assign its `albedo_texture` to your texture. You may also check the `Vertex Color/Use as albedo` property, because this will allow the mesher to bake ambient occlusion on the edge of cubes.
+You may assign a new `Node3DGizmoMaterial` in the first slot, and assign its `albedo_texture` to your texture. You may also check the `Vertex Color/Use as albedo` property, because this will allow the mesher to bake ambient occlusion on the edge of cubes.
 
-![SpatialMaterial for blocky terrain](images/material_blocky_game.png)
+![Node3DGizmoMaterial for blocky terrain](images/material_blocky_game.png)
 
 You can use more atlases or more materials by adding them to the `VoxelTerrain` node. Voxel types can only use one of them at a time. In order to choose which material a voxel will use, you may assign its `material ID` property. This property corresponds to the ID of the material assigned on the `VoxelTerrain`.
 
