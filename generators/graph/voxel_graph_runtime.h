@@ -64,6 +64,10 @@ public:
 	// The same state can be re-used with multiple programs, but it should be prepared before doing that.
 	class State {
 	public:
+		~State() {
+			clear();
+		}
+		
 		inline const Buffer &get_buffer(uint16_t address) const {
 			// TODO Just for convenience because STL bound checks aren't working in Godot 3
 			CRASH_COND(address >= buffers.size());
