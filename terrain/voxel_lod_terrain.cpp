@@ -2499,6 +2499,8 @@ void VoxelLodTerrain::set_show_gizmos(bool enable) {
 #endif
 
 Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const {
+	ERR_FAIL_COND_V(!is_valid_size(extents), Array());
+
 	Array image_array;
 	image_array.resize(get_lod_count());
 
