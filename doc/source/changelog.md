@@ -40,6 +40,7 @@ Ongoing development - `master`
     - `VoxelInstanceGenerator`: `EMIT_FROM_FACES` got renamed `EMIT_FROM_FACES_FAST`. `EMIT_FROM_FACES` still exists but is a different algorithm.
     - `VoxelServer`: `get_stats()` format has changed, check documentation
     - `VoxelLodTerrain`: `get_statistics()` format has changed: `time_process_update_responses` and `remaining_main_thread_blocks` are no longer available
+    - `VoxelLodTerrain`: Maximum LOD count was decreased to 24, which is still largely enough. Higher maximums were likely to cause integer overflows.
     - `VoxelTerrain`: `get_statistics()` format has changed: `time_process_update_responses` and `remaining_main_thread_blocks` are no longer available
     - `VoxelViewer`: `requires_collisions` is now `true` by default
 

@@ -14,7 +14,12 @@ static const unsigned int MAX_BLOCK_SIZE = 32;
 
 static const unsigned int MAX_BLOCK_COUNT_PER_REQUEST = 4 * 4 * 4;
 
-static const unsigned int MAX_LOD = 32;
+// 24 should be largely enough.
+// With a block size of 32 voxels, and if 1 voxel is 1m large,
+// then the largest blocks will span 268,435.456 kilometers, which is roughly 20 times Earth's diameter.
+// Using a higher maximum can cause int32 overflows when calculating dimensions. There is no use case for it.
+static const unsigned int MAX_LOD = 24;
+
 static const unsigned int MAX_VOLUME_EXTENT = 0x1fffffff;
 static const unsigned int MAX_VOLUME_SIZE = 2 * MAX_VOLUME_EXTENT; // 1,073,741,822 voxels
 

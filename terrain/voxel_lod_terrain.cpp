@@ -356,6 +356,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 }*/
 
 void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
+	// Mesh block size cannot be smaller than data block size, for now
 	mesh_block_size = clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
 
 	unsigned int po2;
