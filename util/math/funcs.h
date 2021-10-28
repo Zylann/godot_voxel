@@ -158,6 +158,19 @@ inline bool is_valid_size(const Vector3 &s) {
 	return s.x >= 0 && s.y >= 0 && s.z >= 0;
 }
 
+inline bool is_power_of_two(size_t x) {
+	return x != 0 && (x & (x - 1)) == 0;
+}
+
+// If the provided address `a` is not aligned to the number of bytes specified in `align`,
+// returns the next aligned address. `align` must be a power of two.
+inline size_t alignup(size_t a, size_t align) {
+#ifdef DEBUG_ENABLED
+	CRASH_COND(!is_power_of_two(align));
+#endif
+	return (a + align - 1) & ~(align - 1);
+}
+
 // inline bool is_power_of_two(int i) {
 // 	return i & (i - 1);
 // }
