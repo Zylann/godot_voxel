@@ -112,7 +112,7 @@ inline T squared(const T x) {
 //    6   | 2   | 2
 inline int floordiv(int x, int d) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(d < 0);
+	CRASH_COND(d <= 0);
 #endif
 	if (x < 0) {
 		return (x - d + 1) / d;
