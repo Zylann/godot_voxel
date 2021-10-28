@@ -111,7 +111,7 @@ static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &
 	ERR_FAIL_COND_V(f == nullptr, false);
 
 	ERR_FAIL_COND_V(f->get_position() != 0, false);
-	ERR_FAIL_COND_V(f->get_len() < MAGIC_AND_VERSION_SIZE, false);
+	ERR_FAIL_COND_V(f->get_length() < MAGIC_AND_VERSION_SIZE, false);
 
 	FixedArray<char, 5> magic(0);
 	ERR_FAIL_COND_V(f->get_buffer(reinterpret_cast<uint8_t *>(magic.data()), 4) != 4, false);
@@ -640,7 +640,7 @@ void VoxelRegionFile::debug_check() {
 	ERR_FAIL_COND(!is_open());
 	ERR_FAIL_COND(_file_access == nullptr);
 	FileAccess *f = _file_access;
-	const size_t file_len = f->get_len();
+	const size_t file_len = f->get_length();
 
 	for (unsigned int lut_index = 0; lut_index < _header.blocks.size(); ++lut_index) {
 		const VoxelRegionBlockInfo &block_info = _header.blocks[lut_index];

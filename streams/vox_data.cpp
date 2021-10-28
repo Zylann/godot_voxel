@@ -5,6 +5,7 @@
 #include <core/io/file_access.h>
 #include <core/variant/variant.h>
 #include <unordered_set>
+#include <memory>
 
 namespace vox {
 
@@ -216,7 +217,7 @@ Error Data::_load_from_file(String fpath) {
 	const uint32_t version = f.get_32();
 	ERR_FAIL_COND_V(version != 150, ERR_PARSE_ERROR);
 
-	const size_t file_length = f.get_len();
+	const size_t file_length = f.get_length();
 
 	VOX_Vector3i last_size;
 

@@ -5,8 +5,8 @@
 
 // Triggers loading of voxel nodes around its position. Voxels will update in priority closer to viewers.
 // Usually added as child of the player's camera.
-class VoxelViewer : public Node3DGizmo {
-	GDCLASS(VoxelViewer, Node3DGizmo)
+class VoxelViewer : public Node3D {
+	GDCLASS(VoxelViewer, Node3D)
 public:
 	VoxelViewer();
 

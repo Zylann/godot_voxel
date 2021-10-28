@@ -28,7 +28,7 @@ struct CompressedQuaternion4b {
 	uint8_t z;
 	uint8_t w;
 
-	static CompressedQuaternion4b from_quat(Quat q) {
+	static CompressedQuaternion4b from_quat(Quaternion q) {
 		CompressedQuaternion4b c;
 		c.x = norm_to_u8(q.x);
 		c.y = norm_to_u8(q.y);
@@ -37,8 +37,8 @@ struct CompressedQuaternion4b {
 		return c;
 	}
 
-	Quat to_quat() const {
-		Quat q;
+	Quaternion to_quat() const {
+		Quaternion q;
 		q.x = u8_to_norm(x);
 		q.y = u8_to_norm(y);
 		q.z = u8_to_norm(z);
@@ -97,7 +97,7 @@ bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 			const float scale = instance.transform.get_basis().get_scale().y;
 			w.store_8(static_cast<uint8_t>(scale_norm_scale * (scale - scale_min) * 0xff));
 
-			const Quat q = instance.transform.get_basis().get_rotation_quat();
+			const Quaternion q = instance.transform.get_basis().get_rotation_quaternion();
 			const CompressedQuaternion4b cq = CompressedQuaternion4b::from_quat(q);
 			w.store_8(cq.x);
 			w.store_8(cq.y);
@@ -153,7 +153,7 @@ bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uin
 			cq.y = r.get_8();
 			cq.z = r.get_8();
 			cq.w = r.get_8();
-			const Quat q = cq.to_quat();
+			const Quaternion q = cq.to_quat();
 
 			VoxelInstanceBlockData::InstanceData &instance = layer.instances[j];
 			instance.transform = Transform3D(Basis(q).scaled(Vector3(s, s, s)), Vector3(x, y, z));

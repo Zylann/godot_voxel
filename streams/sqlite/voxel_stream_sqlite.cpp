@@ -540,7 +540,7 @@ VoxelStreamSQLite::~VoxelStreamSQLite() {
 }
 
 void VoxelStreamSQLite::set_database_path(String path) {
-	MutexLock lock(_connection_mutex);
+	MutexLock<Mutex> lock(_connection_mutex);
 	if (path == _connection_path) {
 		return;
 	}
@@ -565,7 +565,7 @@ void VoxelStreamSQLite::set_database_path(String path) {
 }
 
 String VoxelStreamSQLite::get_database_path() const {
-	MutexLock lock(_connection_mutex);
+	MutexLock<Mutex> lock(_connection_mutex);
 	return _connection_path;
 }
 

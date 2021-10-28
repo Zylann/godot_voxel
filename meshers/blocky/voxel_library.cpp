@@ -1,6 +1,7 @@
 #include "voxel_library.h"
 #include "../../util/macros.h"
 #include <bitset>
+#include <core/math/geometry_2d.h>
 
 VoxelLibrary::VoxelLibrary() {
 }
@@ -19,7 +20,7 @@ void VoxelLibrary::set_voxel_count(unsigned int type_count) {
 	}
 	// Note: a smaller size may cause a loss of data
 	_voxel_types.resize(type_count);
-	_change_notify();
+	
 	_needs_baking = true;
 }
 
@@ -148,7 +149,7 @@ static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F ou
 
 	for (int y = min_y; y < max_y; ++y) {
 		for (int x = min_x; x < max_x; ++x) {
-			if (Geometry::is_point_in_triangle(Vector2(x, y) + offset, a, b, c)) {
+			if (Geometry2D::is_point_in_triangle(Vector2(x, y) + offset, a, b, c)) {
 				output_func(x, y);
 			}
 		}

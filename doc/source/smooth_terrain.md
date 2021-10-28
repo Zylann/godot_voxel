@@ -231,7 +231,7 @@ void fragment() {
 - [Shading Index](https://docs.godotengine.org/en/stable/tutorials/shading/index.html) - tutorials and the shader language API
 - Shader API Reference - some of the most frequently accessed references
 	- [Shading Language](https://docs.godotengine.org/en/stable/tutorials/shading/shading_reference/shading_language.html)
-	- [Node3DGizmoShader](https://docs.godotengine.org/en/stable/tutorials/shading/shading_reference/spatial_shader.html)
+	- [Node3DShader](https://docs.godotengine.org/en/stable/tutorials/shading/shading_reference/spatial_shader.html)
 
 
 

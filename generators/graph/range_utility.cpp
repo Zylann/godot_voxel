@@ -238,7 +238,7 @@ Interval get_heightmap_range(Image &im, Rect2i rect) {
 		case Image::FORMAT_RGBAF: {
 			Interval r;
 
-			im.lock();
+			// im.lock();
 
 			r.min = im.get_pixel(0, 0).r;
 			r.max = r.min;
@@ -252,7 +252,7 @@ Interval get_heightmap_range(Image &im, Rect2i rect) {
 				}
 			}
 
-			im.unlock();
+			// im.unlock();
 
 			return r;
 		} break;

@@ -21,7 +21,7 @@ public:
 		Vector<Array> surfaces;
 		FixedArray<Vector<Array>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
-		unsigned int compression_flags = Mesh::ARRAY_COMPRESS_DEFAULT;
+		// unsigned int compression_flags = Mesh::ARRAY_COMPRESS_DEFAULT;
 		Ref<Image> atlas_image;
 	};
 

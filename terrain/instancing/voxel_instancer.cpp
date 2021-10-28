@@ -85,7 +85,7 @@ void VoxelInstancer::clear_layers() {
 void VoxelInstancer::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_WORLD:
-			set_world(*get_world());
+			set_world(*get_world_3d());
 			update_visibility();
 			break;
 
@@ -267,7 +267,7 @@ void VoxelInstancer::update_visibility() {
 	}
 }
 
-void VoxelInstancer::set_world(World *world) {
+void VoxelInstancer::set_world(World3D *world) {
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		Block *block = *it;
 		if (block->multimesh_instance.is_valid()) {
@@ -316,7 +316,7 @@ void VoxelInstancer::set_library(Ref<VoxelInstanceLibrary> library) {
 		_library->add_listener(this);
 	}
 
-	update_configuration_warning();
+	update_configuration_warnings();
 }
 
 Ref<VoxelInstanceLibrary> VoxelInstancer::get_library() const {
@@ -327,9 +327,9 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_parent == nullptr);
 
-	Ref<World> world_ref = get_world();
+	Ref<World3D> world_ref = get_world_3d();
 	ERR_FAIL_COND(world_ref.is_null());
-	World *world = *world_ref;
+	World3D *world = *world_ref;
 
 	Layer *layer = get_layer(layer_id);
 	CRASH_COND(layer == nullptr);
@@ -516,12 +516,12 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 			ERR_FAIL_COND(item.is_null());
 			add_layer(item_id, item->get_lod_index());
 			regenerate_layer(item_id, true);
-			update_configuration_warning();
+			update_configuration_warnings();
 		} break;
 
 		case VoxelInstanceLibraryItemBase::CHANGE_REMOVED:
 			remove_layer(item_id);
-			update_configuration_warning();
+			update_configuration_warnings();
 			break;
 
 		case VoxelInstanceLibraryItemBase::CHANGE_GENERATOR:
@@ -718,8 +718,8 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(const VoxelI
 	ERR_FAIL_COND_V(scene_item.get_scene().is_null(), instance);
 	Node *root = scene_item.get_scene()->instance();
 	ERR_FAIL_COND_V(root == nullptr, instance);
-	instance.root = Object::cast_to<Node3DGizmo>(root);
-	ERR_FAIL_COND_V_MSG(instance.root == nullptr, instance, "Root of scene instance must be derived from Node3DGizmo");
+	instance.root = Object::cast_to<Node3D>(root);
+	ERR_FAIL_COND_V_MSG(instance.root == nullptr, instance, "Root of scene instance must be derived from Node3D");
 
 	instance.component = VoxelInstanceComponent::find_in(instance.root);
 	if (instance.component == nullptr) {
@@ -757,7 +757,7 @@ int VoxelInstancer::create_block(Layer *layer, uint16_t layer_id, VOX_Vector3i g
 
 void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Transform3D> transforms,
 		VOX_Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id,
-		World *world, const Transform3D &block_transform) {
+		World3D *world, const Transform3D &block_transform) {
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(layer == nullptr);
@@ -920,9 +920,9 @@ void VoxelInstancer::create_render_blocks(VOX_Vector3i render_grid_position, int
 
 	Lod &lod = _lods[lod_index];
 	const Transform3D parent_transform = get_global_transform();
-	Ref<World> world_ref = get_world();
+	Ref<World3D> world_ref = get_world_3d();
 	ERR_FAIL_COND(world_ref.is_null());
-	World *world = *world_ref;
+	World3D *world = *world_ref;
 
 	const int lod_block_size = _parent->get_mesh_block_size() << lod_index;
 	const Transform3D block_local_transform = Transform3D(Basis(), (render_grid_position * lod_block_size).to_vec3());

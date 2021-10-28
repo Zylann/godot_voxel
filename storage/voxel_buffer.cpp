@@ -2,7 +2,7 @@
 #include "../edition/voxel_tool_buffer.h"
 #include "../util/godot/funcs.h"
 
-#include <core/func_ref.h>
+#include <core/variant/callable.h>
 #include <core/io/image.h>
 
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
@@ -97,12 +97,12 @@ void VoxelBuffer::set_block_metadata(Variant meta) {
 	_buffer->set_block_metadata(meta);
 }
 
-void VoxelBuffer::for_each_voxel_metadata(Ref<FuncRef> callback) const {
+void VoxelBuffer::for_each_voxel_metadata(Ref<Callable> callback) const {
 	ERR_FAIL_COND(callback.is_null());
 	_buffer->for_each_voxel_metadata(callback);
 }
 
-void VoxelBuffer::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Vector3 min_pos, Vector3 max_pos) {
+void VoxelBuffer::for_each_voxel_metadata_in_area(Ref<Callable> callback, Vector3 min_pos, Vector3 max_pos) {
 	ERR_FAIL_COND(callback.is_null());
 	_buffer->for_each_voxel_metadata_in_area(callback, Box3i::from_min_max(VOX_Vector3i(min_pos), VOX_Vector3i(max_pos)));
 }

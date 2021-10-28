@@ -6,7 +6,7 @@
 #include <core/templates/rid.h>
 #include <scene/resources/shape_3d.h>
 
-class World;
+class World3D;
 
 // Thin wrapper around static body API
 class DirectStaticBody {
@@ -21,13 +21,13 @@ public:
 	void add_shape(Ref<Shape3D> shape);
 	void remove_shape(int shape_index);
 	Ref<Shape3D> get_shape(int shape_index);
-	void set_world(World *world);
+	void set_world(World3D *world);
 	void set_shape_enabled(int shape_index, bool disabled);
 	void set_attached_object(Object *obj);
 	void set_collision_layer(int layer);
 	void set_collision_mask(int mask);
 
-	void set_debug(bool enabled, World *world);
+	void set_debug(bool enabled, World3D *world);
 
 private:
 	RID _body;

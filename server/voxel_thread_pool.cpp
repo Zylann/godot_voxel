@@ -84,7 +84,7 @@ void VoxelThreadPool::set_priority_update_period(uint32_t milliseconds) {
 void VoxelThreadPool::enqueue(IVoxelTask *task) {
 	CRASH_COND(task == nullptr);
 	{
-		MutexLock lock(_tasks_mutex);
+		MutexLock<Mutex> lock(_tasks_mutex);
 		TaskItem t;
 		t.task = task;
 		_tasks.push_back(t);
@@ -96,7 +96,7 @@ void VoxelThreadPool::enqueue(IVoxelTask *task) {
 
 void VoxelThreadPool::enqueue(Span<IVoxelTask *> tasks) {
 	{
-		MutexLock lock(_tasks_mutex);
+		MutexLock<Mutex> lock(_tasks_mutex);
 		for (size_t i = 0; i < tasks.size(); ++i) {
 			TaskItem t;
 			t.task = tasks[i];
@@ -140,7 +140,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 			data.debug_state = STATE_PICKING;
 			const uint32_t now = OS::get_singleton()->get_ticks_msec();
 
-			MutexLock lock(_tasks_mutex);
+			MutexLock<Mutex> lock(_tasks_mutex);
 
 			// Pick best tasks
 			for (uint32_t bi = 0; bi < _batch_count && _tasks.size() != 0; ++bi) {
@@ -185,7 +185,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 		}
 
 		if (cancelled_tasks.size() > 0) {
-			MutexLock lock(_completed_tasks_mutex);
+			MutexLock<Mutex> lock(_completed_tasks_mutex);
 			for (size_t i = 0; i < cancelled_tasks.size(); ++i) {
 				_completed_tasks.push_back(cancelled_tasks[i]);
 				++_debug_completed_tasks;
@@ -195,7 +195,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 
 		//print_line(String("Processing {0} tasks").format(varray(tasks.size())));
 
-		if (tasks.is_empty()) {
+		if (tasks.empty()) {
 			data.debug_state = STATE_WAITING;
 
 			// Wait for more tasks
@@ -215,7 +215,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 				}
 			}
 			{
-				MutexLock lock(_completed_tasks_mutex);
+				MutexLock<Mutex> lock(_completed_tasks_mutex);
 				for (size_t i = 0; i < tasks.size(); ++i) {
 					TaskItem &item = tasks[i];
 					_completed_tasks.push_back(item.task);
@@ -239,7 +239,7 @@ void VoxelThreadPool::wait_for_all_tasks() {
 	// Wait until all tasks have been taken
 	while (true) {
 		{
-			MutexLock lock(_tasks_mutex);
+			MutexLock<Mutex> lock(_tasks_mutex);
 			if (_tasks.size() == 0) {
 				break;
 			}

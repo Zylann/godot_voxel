@@ -1,5 +1,5 @@
 #include "voxel_stream.h"
-#include <core/script_language.h>
+#include <core/object/script_language.h>
 
 VoxelStream::VoxelStream() {
 }

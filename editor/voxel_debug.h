@@ -7,7 +7,7 @@
 
 class Mesh;
 class DirectMeshInstance;
-class World;
+class World3D;
 
 namespace VoxelDebug {
 
@@ -26,7 +26,7 @@ class DebugMultiMeshRenderer {
 public:
 	DebugMultiMeshRenderer();
 
-	void set_world(World *world);
+	void set_world(World3D *world);
 	void begin();
 	void draw_box(const Transform3D &t, Color8 color);
 	void end();
@@ -36,7 +36,7 @@ private:
 	std::vector<DirectMultiMeshInstance::Transform3DAndColor8> _items;
 	Ref<MultiMesh> _multimesh;
 	DirectMultiMeshInstance _multimesh_instance;
-	World *_world = nullptr;
+	World3D *_world = nullptr;
 	bool _inside_block = false;
 	PackedFloat32Array _bulk_array;
 	Ref<StandardMaterial3D> _material;
@@ -48,7 +48,7 @@ class DebugRenderer {
 public:
 	~DebugRenderer();
 
-	void set_world(World *world);
+	void set_world(World3D *world);
 
 	void begin();
 	void draw_box(const Transform3D &t, ColorID color);
@@ -60,7 +60,7 @@ private:
 	std::vector<DebugRendererItem *> _items;
 	unsigned int _current = 0;
 	bool _inside_block = false;
-	World *_world = nullptr;
+	World3D *_world = nullptr;
 	DebugMultiMeshRenderer _mm_renderer;
 };
 

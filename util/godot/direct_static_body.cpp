@@ -72,7 +72,7 @@ Ref<Shape3D> DirectStaticBody::get_shape(int shape_index) {
 	return _shape;
 }
 
-void DirectStaticBody::set_world(World *world) {
+void DirectStaticBody::set_world(World3D *world) {
 	ERR_FAIL_COND(!_body.is_valid());
 	PhysicsServer &ps = *PhysicsServer::get_singleton();
 	ps.body_set_space(_body, world != nullptr ? world->get_space() : RID());
@@ -108,7 +108,7 @@ void DirectStaticBody::set_collision_mask(int mask) {
 	PhysicsServer::get_singleton()->body_set_collision_mask(_body, mask);
 }
 
-void DirectStaticBody::set_debug(bool enabled, World *world) {
+void DirectStaticBody::set_debug(bool enabled, World3D *world) {
 	ERR_FAIL_COND(world == nullptr);
 
 	if (enabled && !_debug_mesh_instance.is_valid()) {

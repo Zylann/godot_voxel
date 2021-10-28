@@ -26,7 +26,7 @@ void VoxelInstanceLibrary::add_item(int id, Ref<VoxelInstanceLibraryItemBase> it
 	_items.insert(id, item);
 	item->add_listener(this, id);
 	notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_ADDED);
-	_change_notify();
+	
 }
 
 void VoxelInstanceLibrary::remove_item(int id) {
@@ -38,7 +38,7 @@ void VoxelInstanceLibrary::remove_item(int id) {
 	}
 	_items.erase(E);
 	notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_REMOVED);
-	_change_notify();
+	
 }
 
 void VoxelInstanceLibrary::clear() {
@@ -46,7 +46,7 @@ void VoxelInstanceLibrary::clear() {
 		notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_REMOVED);
 	});
 	_items.clear();
-	_change_notify();
+	
 }
 
 int VoxelInstanceLibrary::find_item_by_name(String name) const {

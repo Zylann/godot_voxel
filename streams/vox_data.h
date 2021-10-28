@@ -6,9 +6,10 @@
 #include "../util/math/vector3i.h"
 
 #include <core/math/basis.h>
-#include <core/ustring.h>
+#include <core/string/ustring.h>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace std {
 template <>

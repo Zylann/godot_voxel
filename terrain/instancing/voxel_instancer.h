@@ -28,8 +28,8 @@ class PhysicsBody;
 
 // Add-on to voxel nodes, allowing to spawn elements on the surface.
 // These elements are rendered with hardware instancing, can have collisions, and also be persistent.
-class VoxelInstancer : public Node3DGizmo, public VoxelInstanceLibrary::IListener {
-	GDCLASS(VoxelInstancer, Node3DGizmo)
+class VoxelInstancer : public Node3D, public VoxelInstanceLibrary::IListener {
+	GDCLASS(VoxelInstancer, Node3D)
 public:
 	static const int MAX_LOD = 8;
 
@@ -70,7 +70,7 @@ public:
 	int debug_get_block_count() const;
 	Dictionary debug_get_instance_counts() const;
 
-	String get_configuration_warning() const; //override;
+	String get_configuration_warning() const; //override; //CHECKME strover
 
 protected:
 	void _notification(int p_what);
@@ -85,7 +85,7 @@ private:
 	void remove_layer(int layer_id);
 	int create_block(Layer *layer, uint16_t layer_id, VOX_Vector3i grid_position);
 	void remove_block(unsigned int block_index);
-	void set_world(World *world);
+	void set_world(World3D *world);
 	void clear_blocks();
 	void clear_blocks_in_layer(int layer_id);
 	void clear_layers();
@@ -100,7 +100,7 @@ private:
 
 	struct SceneInstance {
 		VoxelInstanceComponent *component = nullptr;
-		Node3DGizmo *root = nullptr;
+		Node3D *root = nullptr;
 	};
 
 	SceneInstance create_scene_instance(const VoxelInstanceLibrarySceneItem &scene_item,
@@ -108,7 +108,7 @@ private:
 
 	void update_block_from_transforms(int block_index, Span<const Transform3D> transforms,
 			VOX_Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id,
-			World *world, const Transform3D &block_transform);
+			World3D *world, const Transform3D &block_transform);
 
 	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
 

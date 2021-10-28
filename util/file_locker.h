@@ -40,7 +40,7 @@ private:
 	void lock(String fpath, bool read_only) {
 		File *fp = nullptr;
 		{
-			MutexLock lock(_files_mutex);
+			MutexLock<Mutex> lock(_files_mutex);
 			File **fpp = _files.getptr(fpath);
 
 			if (fpp == nullptr) {
@@ -68,7 +68,7 @@ private:
 		File *fp = nullptr;
 		// I assume `get_path` returns the same string that was used to open it
 		{
-			MutexLock lock(_files_mutex);
+			MutexLock<Mutex> lock(_files_mutex);
 			File **fpp = _files.getptr(fpath);
 			if (fpp != nullptr) {
 				fp = *fpp;

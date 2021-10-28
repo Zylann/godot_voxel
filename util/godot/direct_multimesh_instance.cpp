@@ -30,7 +30,7 @@ void DirectMultiMeshInstance::destroy() {
 	}
 }
 
-void DirectMultiMeshInstance::set_world(World *world) {
+void DirectMultiMeshInstance::set_world(World3D *world) {
 	ERR_FAIL_COND(!_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	if (world != nullptr) {

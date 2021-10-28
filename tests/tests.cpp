@@ -7,7 +7,7 @@
 #include "test_octree.h"
 
 #include <core/templates/hash_map.h>
-#include <core/print_string.h>
+#include <core/string/print_string.h>
 
 void test_box3i_intersects() {
 	{
@@ -788,9 +788,9 @@ void test_instance_data_serialization() {
 			const Vector3 dst_scale = dst_instance.transform.basis.get_scale();
 			ERR_FAIL_COND(src_scale.distance_to(dst_scale) > scale_error);
 
-			// Had to normalize here because Godot doesn't want to give you a Quat if the basis is scaled (even uniformly)
-			const Quat src_rot = src_instance.transform.basis.orthonormalized().get_quat();
-			const Quat dst_rot = dst_instance.transform.basis.orthonormalized().get_quat();
+			// Had to normalize here because Godot doesn't want to give you a Quaternion if the basis is scaled (even uniformly)
+			const Quaternion src_rot = src_instance.transform.basis.orthonormalized().get_quat();
+			const Quaternion dst_rot = dst_instance.transform.basis.orthonormalized().get_quat();
 			const float rot_dx = Math::abs(src_rot.x - dst_rot.x);
 			const float rot_dy = Math::abs(src_rot.y - dst_rot.y);
 			const float rot_dz = Math::abs(src_rot.z - dst_rot.z);

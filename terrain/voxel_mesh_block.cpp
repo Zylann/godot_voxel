@@ -37,7 +37,7 @@ VoxelMeshBlock::VoxelMeshBlock() {
 VoxelMeshBlock::~VoxelMeshBlock() {
 }
 
-void VoxelMeshBlock::set_world(Ref<World> p_world) {
+void VoxelMeshBlock::set_world(Ref<World3D> p_world) {
 	if (_world != p_world) {
 		_world = p_world;
 
@@ -254,14 +254,14 @@ void VoxelMeshBlock::set_parent_transform(const Transform3D &parent_transform) {
 	}
 }
 
-void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Node3DGizmo *node, float margin) {
+void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Node3D *node, float margin) {
 	if (surface_arrays.size() == 0) {
 		drop_collision();
 		return;
 	}
 
 	ERR_FAIL_COND(node == nullptr);
-	ERR_FAIL_COND_MSG(node->get_world() != _world, "Physics body and attached node must be from the same world");
+	ERR_FAIL_COND_MSG(node->get_world_3d() != _world, "Physics body and attached node must be from the same world");
 
 	Ref<Shape3D> shape = create_concave_polygon_shape(surface_arrays);
 	if (shape.is_null()) {

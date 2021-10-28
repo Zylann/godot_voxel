@@ -8,7 +8,7 @@
 #include "../util/profiling.h"
 #include "voxel_buffer_internal.h"
 
-#include <core/func_ref.h>
+#include <core/variant/callable.h>
 #include <core/io/image.h>
 #include <core/io/marshalls.h>
 #include <core/math/math_funcs.h>
@@ -782,38 +782,40 @@ void VoxelBufferInternal::set_voxel_metadata(VOX_Vector3i pos, Variant meta) {
 	}
 }
 
-void VoxelBufferInternal::for_each_voxel_metadata(Ref<FuncRef> callback) const {
+void VoxelBufferInternal::for_each_voxel_metadata(Ref<Callable> callback) const {
 	ERR_FAIL_COND(callback.is_null());
 	const Map<VOX_Vector3i, Variant>::Element *elem = _voxel_metadata.front();
 
 	while (elem != nullptr) {
 		const Variant key = elem->key().to_vec3();
 		const Variant *args[2] = { &key, &elem->value() };
-		Variant::CallError err;
-		callback->call_func(args, 2, err);
+		Callable::CallError err;
+		Variant ret;
+		callback->call(args, 2, ret, err);
 
-		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-				String("FuncRef call failed at {0}").format(varray(key)));
-		// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
-		// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
+		ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK,
+				String("Callable call failed at {0}").format(varray(key)));
+		// TODO Can't provide detailed error because Callable doesn't give us access to the object
+		// ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, false,
 		// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
 
 		elem = elem->next();
 	}
 }
 
-void VoxelBufferInternal::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Box3i box) const {
+void VoxelBufferInternal::for_each_voxel_metadata_in_area(Ref<Callable> callback, Box3i box) const {
 	ERR_FAIL_COND(callback.is_null());
 	for_each_voxel_metadata_in_area(box, [&callback](VOX_Vector3i pos, Variant meta) {
 		const Variant key = pos.to_vec3();
 		const Variant *args[2] = { &key, &meta };
-		Variant::CallError err;
-		callback->call_func(args, 2, err);
+		Callable::CallError err;
+		Variant ret;
+		callback->call(args, 2, ret, err);
 
-		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-				String("FuncRef call failed at {0}").format(varray(key)));
-		// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
-		// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
+		ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK,
+				String("Callable call failed at {0}").format(varray(key)));
+		// TODO Can't provide detailed error because Callable doesn't give us access to the object
+		// ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, false,
 		// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
 	});
 }
@@ -870,7 +872,7 @@ void VoxelBufferInternal::copy_voxel_metadata(const VoxelBufferInternal &src_buf
 Ref<Image> VoxelBufferInternal::debug_print_sdf_to_image_top_down() {
 	Image *im = memnew(Image);
 	im->create(_size.x, _size.z, false, Image::FORMAT_RGB8);
-	im->lock();
+	// im->lock();
 	VOX_Vector3i pos;
 	for (pos.z = 0; pos.z < _size.z; ++pos.z) {
 		for (pos.x = 0; pos.x < _size.x; ++pos.x) {
@@ -885,6 +887,6 @@ Ref<Image> VoxelBufferInternal::debug_print_sdf_to_image_top_down() {
 			im->set_pixel(pos.x, pos.z, Color(c, c, c));
 		}
 	}
-	im->unlock();
+	// im->unlock();
 	return Ref<Image>(im);
 }

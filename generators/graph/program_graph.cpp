@@ -433,10 +433,9 @@ Vector<int> ProgramGraph::get_node_ids() const {
 	PackedInt32Array ids;
 	ids.resize(_nodes.size());
 	{
-		PackedInt32Array::Write w = ids.write();
 		int i = 0;
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
-			w[i++] = it->first;
+			ids.set(i++, it->first);
 		}
 	}
 	return ids;

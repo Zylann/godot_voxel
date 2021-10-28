@@ -400,7 +400,7 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 
 #if defined(TOOLS_ENABLED) || defined(DEBUG_ENABLED)
 	const size_t fpos = f->get_position();
-	const size_t remaining_file_size = f->get_len() - fpos;
+	const size_t remaining_file_size = f->get_length() - fpos;
 	ERR_FAIL_COND_V(size_to_read > remaining_file_size, false);
 #endif
 

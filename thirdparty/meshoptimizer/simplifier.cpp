@@ -24,7 +24,7 @@
 // Michael Garland and Paul S. Heckbert. Surface simplification using quadric error metrics. 1997
 // Michael Garland. Quadric-based polygonal surface simplification. 1999
 // Peter Lindstrom. Out-of-Core Simplification of Large Polygonal Models. 2000
-// Matthias Teschner, Bruno Heidelberger, Matthias Mueller, Danat Pomeranets, Markus Gross. Optimized Node3DGizmo Hashing for Collision Detection of Deformable Objects. 2003
+// Matthias Teschner, Bruno Heidelberger, Matthias Mueller, Danat Pomeranets, Markus Gross. Optimized Node3D Hashing for Collision Detection of Deformable Objects. 2003
 // Peter Van Sandt, Yannis Chronis, Jignesh M. Patel. Efficiently Searching In-Memory Sorted Arrays: Revenge of the Interpolation Search? 2019
 namespace meshopt
 {
@@ -123,7 +123,7 @@ struct PositionHasher
 		unsigned int y = key[1] ^ (key[1] >> 17);
 		unsigned int z = key[2] ^ (key[2] >> 17);
 
-		// Optimized Node3DGizmo Hashing for Collision Detection of Deformable Objects
+		// Optimized Node3D Hashing for Collision Detection of Deformable Objects
 		return (x * 73856093) ^ (y * 19349663) ^ (z * 83492791);
 	}
 
@@ -1055,7 +1055,7 @@ struct TriangleHasher
 	{
 		const unsigned int* tri = indices + i * 3;
 
-		// Optimized Node3DGizmo Hashing for Collision Detection of Deformable Objects
+		// Optimized Node3D Hashing for Collision Detection of Deformable Objects
 		return (tri[0] * 73856093) ^ (tri[1] * 19349663) ^ (tri[2] * 83492791);
 	}
 

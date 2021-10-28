@@ -35,6 +35,17 @@ int VoxelGeneratorScript::get_used_channels_mask() const {
 	return 0;
 }
 
+#ifdef TOOLS_ENABLED
+
+#define BIND_VMETHOD(m_method) \
+	ClassDB::add_virtual_method(get_class_static(), m_method);
+
+#else
+
+#define BIND_VMETHOD(m_method)
+
+#endif
+
 void VoxelGeneratorScript::_bind_methods() {
 	BIND_VMETHOD(MethodInfo("_generate_block",
 			PropertyInfo(Variant::OBJECT, "out_buffer", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT, "VoxelBuffer"),

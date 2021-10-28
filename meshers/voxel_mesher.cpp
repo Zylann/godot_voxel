@@ -28,7 +28,7 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
 			continue;
 		}
 
-		mesh->add_surface_from_arrays(output.primitive_type, surface, Array(), output.compression_flags);
+		mesh->add_surface_from_arrays(output.primitive_type, surface, Array());
 		if (i < materials.size()) {
 			mesh->surface_set_material(surface_index, materials[i]);
 		}

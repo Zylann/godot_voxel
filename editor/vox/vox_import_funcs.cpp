@@ -9,9 +9,8 @@ static void scale_surface(Array &surface, float scale) {
 	// Avoiding stupid CoW, assuming this array holds the only instance of this vector
 	surface[Mesh::ARRAY_VERTEX] = PackedVector3Array();
 	{
-		PackedVector3Array::Write w = positions.write();
 		for (int vertex_index = 0; vertex_index < positions.size(); ++vertex_index) {
-			w[vertex_index] *= scale;
+			positions.set(vertex_index, positions[vertex_index] * scale);
 		}
 	}
 	surface[Mesh::ARRAY_VERTEX] = positions;
@@ -22,9 +21,8 @@ static void offset_surface(Array &surface, Vector3 offset) {
 	// Avoiding stupid CoW, assuming this array holds the only instance of this vector
 	surface[Mesh::ARRAY_VERTEX] = PackedVector3Array();
 	{
-		PackedVector3Array::Write w = positions.write();
 		for (int vertex_index = 0; vertex_index < positions.size(); ++vertex_index) {
-			w[vertex_index] += offset;
+			positions.set(vertex_index, positions[vertex_index] + offset);
 		}
 	}
 	surface[Mesh::ARRAY_VERTEX] = positions;
@@ -65,7 +63,7 @@ Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 			offset_surface(surface, p_offset);
 		}
 
-		mesh->add_surface_from_arrays(output.primitive_type, surface, Array(), output.compression_flags);
+		mesh->add_surface_from_arrays(output.primitive_type, surface, Array());
 		surface_index_to_material.push_back(i);
 		++surface_index;
 	}

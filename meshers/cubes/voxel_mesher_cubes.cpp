@@ -992,7 +992,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 
 	if (params.store_colors_in_texture) {
 		// Don't compress UVs, they need to be precise. Not doing this causes noticeable offsets.
-		output.compression_flags = Mesh::ARRAY_COMPRESS_DEFAULT & ~Mesh::ARRAY_COMPRESS_TEX_UV;
+		// output.compression_flags = Mesh::ARRAY_COMPRESS_DEFAULT & ~Mesh::ARRAY_COMPRESS_TEX_UV;
 	}
 	//output.compression_flags = Mesh::ARRAY_COMPRESS_COLOR;
 }

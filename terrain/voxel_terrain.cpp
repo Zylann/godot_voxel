@@ -112,7 +112,7 @@ void VoxelTerrain::set_stream(Ref<VoxelStream> p_stream) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_run_stream_in_editor = false;
-				_change_notify();
+				
 			}
 		}
 	}
@@ -140,7 +140,7 @@ void VoxelTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_run_stream_in_editor = false;
-				_change_notify();
+				
 			}
 		}
 	}
@@ -245,7 +245,7 @@ void VoxelTerrain::_on_stream_params_changed() {
 		start_updater();
 	}
 
-	update_configuration_warning();
+	update_configuration_warnings();
 }
 
 Ref<VoxelMesher> VoxelTerrain::get_mesher() const {
@@ -267,7 +267,7 @@ void VoxelTerrain::set_mesher(Ref<VoxelMesher> mesher) {
 		remesh_all_blocks();
 	}
 
-	update_configuration_warning();
+	update_configuration_warnings();
 }
 
 Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
@@ -411,7 +411,7 @@ void VoxelTerrain::view_mesh_block(VOX_Vector3i bpos, bool mesh_flag, bool colli
 	if (block == nullptr) {
 		// Create if not found
 		block = VoxelMeshBlock::create(bpos, get_mesh_block_size(), 0);
-		block->set_world(get_world());
+		block->set_world(get_world_3d());
 		_mesh_map.set_block(bpos, block);
 	}
 
@@ -672,9 +672,9 @@ void VoxelTerrain::post_edit_area(Box3i box_in_voxels) {
 }
 
 void VoxelTerrain::_notification(int p_what) {
-	struct SetWorldAction {
-		World *world;
-		SetWorldAction(World *w) :
+	struct SetWorld3DAction {
+		World3D *world;
+		SetWorld3DAction(World3D *w) :
 				world(w) {}
 		void operator()(VoxelMeshBlock *block) {
 			block->set_world(world);
@@ -708,11 +708,11 @@ void VoxelTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_ENTER_WORLD:
-			_mesh_map.for_all_blocks(SetWorldAction(*get_world()));
+			_mesh_map.for_all_blocks(SetWorld3DAction(*get_world_3d()));
 			break;
 
 		case NOTIFICATION_EXIT_WORLD:
-			_mesh_map.for_all_blocks(SetWorldAction(nullptr));
+			_mesh_map.for_all_blocks(SetWorld3DAction(nullptr));
 			break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
@@ -1245,7 +1245,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 		collidable_surfaces.push_back(surface);
 
 		mesh->add_surface_from_arrays(
-				ob.surfaces.primitive_type, surface, Array(), ob.surfaces.compression_flags);
+				ob.surfaces.primitive_type, surface, Array());
 		mesh->surface_set_material(surface_index, _materials[i]);
 		++surface_index;
 	}
@@ -1316,7 +1316,7 @@ void VoxelTerrain::set_bounds(Box3i box) {
 		// Cap view distance to make sure you don't accidentally blow up memory when changing parameters
 		if (_max_view_distance_voxels > MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME) {
 			_max_view_distance_voxels = min(_max_view_distance_voxels, MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME);
-			_change_notify();
+			
 		}
 	}
 	// TODO Editor gizmo bounds

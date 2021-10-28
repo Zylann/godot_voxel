@@ -862,7 +862,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 			const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(sdf_buffer_index);
 
 			// Calculate final pixels
-			im->lock();
+			// im->lock();
 			i = 0;
 			for (int iy = y0; iy < ymax; ++iy) {
 				for (int ix = x0; ix < xmax; ++ix) {
@@ -872,7 +872,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 					++i;
 				}
 			}
-			im->unlock();
+			// im->unlock();
 		}
 	};
 
@@ -1008,7 +1008,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 			// Compute the 3D normal from gradient, then project it?
 
 			// Calculate final pixels
-			im->lock();
+			// im->lock();
 			i = 0;
 			for (int iy = y0; iy < ymax; ++iy) {
 				for (int ix = x0; ix < xmax; ++ix) {
@@ -1024,7 +1024,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 					im->set_pixel(ix, iy, en);
 				}
 			}
-			im->unlock();
+			// im->unlock();
 		}
 	};
 
@@ -1098,9 +1098,8 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 	Dictionary nodes_data;
 	Vector<int> node_ids = graph.get_node_ids();
 	{
-		Vector<int>::Read r = node_ids.read();
 		for (int i = 0; i < node_ids.size(); ++i) {
-			uint32_t node_id = r[i];
+			uint32_t node_id = node_ids[i];
 			const ProgramGraph::Node *node = graph.get_node(node_id);
 			ERR_FAIL_COND_V(node == nullptr, Dictionary());
 
@@ -1172,7 +1171,7 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 	const Variant *id_key = nullptr;
 	while ((id_key = nodes_data.next(id_key))) {
 		const String id_str = *id_key;
-		ERR_FAIL_COND_V(!id_str.is_valid_integer(), false);
+		ERR_FAIL_COND_V(!id_str.is_valid_int(), false);
 		const int sid = id_str.to_int();
 		ERR_FAIL_COND_V(sid < static_cast<int>(ProgramGraph::NULL_ID), false);
 		const uint32_t id = sid;

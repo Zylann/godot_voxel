@@ -17,7 +17,7 @@
 
 namespace {
 
-Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType primitive, int compression_flags,
+Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType primitive,
 		Ref<Material> material) {
 	VOXEL_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
@@ -37,7 +37,7 @@ Ref<ArrayMesh> build_mesh(const Vector<Array> surfaces, Mesh::PrimitiveType prim
 		}
 
 		// TODO Use `add_surface`, it's about 20% faster after measuring in Tracy (though we may see if Godot 4 expects the same)
-		mesh->add_surface_from_arrays(primitive, surface, Array(), compression_flags);
+		mesh->add_surface_from_arrays(primitive, surface, Array());
 		mesh->surface_set_material(surface_index, material);
 		// No multi-material supported yet
 		++surface_index;
@@ -243,7 +243,7 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_run_stream_in_editor = false;
-				_change_notify();
+				
 			}
 		}
 	}
@@ -271,7 +271,7 @@ void VoxelLodTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_run_stream_in_editor = false;
-				_change_notify();
+				
 			}
 		}
 	}
@@ -298,7 +298,7 @@ void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
 		remesh_all_blocks();
 	}
 
-	update_configuration_warning();
+	update_configuration_warnings();
 }
 
 Ref<VoxelMesher> VoxelLodTerrain::get_mesher() const {
@@ -336,7 +336,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 		lod.last_view_distance_mesh_blocks = 0;
 	}
 
-	update_configuration_warning();
+	update_configuration_warnings();
 }
 
 /*void VoxelLodTerrain::set_data_block_size_po2(unsigned int p_block_size_po2) {
@@ -789,7 +789,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_ENTER_WORLD: {
-			World *world = *get_world();
+			World3D *world = *get_world_3d();
 			for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 				_lods[lod_index].mesh_map.for_all_blocks([world](VoxelMeshBlock *block) {
 					block->set_world(world);
@@ -824,7 +824,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			}
 #ifdef TOOLS_ENABLED
 			if (is_showing_gizmos()) {
-				_debug_renderer.set_world(is_visible_in_tree() ? *get_world() : nullptr);
+				_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
 			}
 #endif
 		} break;
@@ -1140,7 +1140,7 @@ void VoxelLodTerrain::_process(float delta) {
 			// Eliminate pending blocks that aren't needed
 
 			// This vector must be empty at this point.
-			ERR_FAIL_COND(!lod.blocks_to_load.is_empty());
+			ERR_FAIL_COND(!lod.blocks_to_load.empty());
 
 			if (prev_box != new_box) {
 				VOXEL_PROFILE_SCOPE_NAMED("Unload data");
@@ -1683,7 +1683,6 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	Ref<ArrayMesh> mesh = build_mesh(
 			mesh_data.surfaces,
 			mesh_data.primitive_type,
-			mesh_data.compression_flags,
 			_material);
 
 	bool has_collision = _generate_collisions;
@@ -1706,7 +1705,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 		//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
 		//set_mesh_block_active(*block, false);
 		block->set_parent_visible(is_visible());
-		block->set_world(get_world());
+		block->set_world(get_world_3d());
 
 		Ref<ShaderMaterial> shader_material = _material;
 		if (shader_material.is_valid() && block->get_shader_material().is_null()) {
@@ -1739,7 +1738,6 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 			Ref<ArrayMesh> transition_mesh = build_mesh(
 					mesh_data.transition_surfaces[dir],
 					mesh_data.primitive_type,
-					mesh_data.compression_flags,
 					_material);
 
 			block->set_transition_mesh(transition_mesh, dir);
@@ -2134,7 +2132,7 @@ uint8_t VoxelLodTerrain::get_transition_mask(VOX_Vector3i block_pos, int lod_ind
 				const VoxelMeshBlock *upper_neighbor_block = upper_lod.mesh_map.get_block(upper_neighbor_pos);
 
 				if (upper_neighbor_block == nullptr || upper_neighbor_block->active == false) {
-					// The block has no visible neighbor yet. World border? Assume lower LOD.
+					// The block has no visible neighbor yet. World3D border? Assume lower LOD.
 					transition_mask |= dir_mask;
 				}
 			}
@@ -2489,7 +2487,7 @@ void VoxelLodTerrain::update_gizmos() {
 void VoxelLodTerrain::set_show_gizmos(bool enable) {
 	_show_gizmos_enabled = enable;
 	if (_show_gizmos_enabled) {
-		_debug_renderer.set_world(is_visible_in_tree() ? *get_world() : nullptr);
+		_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
 	} else {
 		_debug_renderer.clear();
 	}
@@ -2543,7 +2541,7 @@ int VoxelLodTerrain::_b_debug_get_data_block_count() const {
 }
 
 Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath) const {
-	Node3DGizmo *root = memnew(Node3DGizmo);
+	Node3D *root = memnew(Node3D);
 	root->set_name(get_name());
 
 	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
@@ -2554,7 +2552,7 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath) const {
 				Ref<Mesh> mesh = dmi.get_mesh();
 
 				if (mesh.is_valid()) {
-					MeshInstance *mi = memnew(MeshInstance);
+					MeshInstance3D *mi = memnew(MeshInstance3D);
 					mi->set_mesh(mesh);
 					mi->set_transform(t);
 					// TODO Transition mesh visibility?

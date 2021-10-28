@@ -6,7 +6,7 @@
 
 #include <core/core_string_names.h>
 #include <core/os/os.h>
-#include <core/undo_redo.h>
+#include <core/object/undo_redo.h>
 #include <editor/editor_scale.h>
 #include <scene/gui/check_box.h>
 #include <scene/gui/dialogs.h>
@@ -270,14 +270,14 @@ void VoxelGraphEditor::set_voxel_node(VoxelNode *node) {
 		_debug_renderer.set_world(nullptr);
 	} else {
 		PRINT_VERBOSE(String("Reference node for VoxelGraph previews: {0}").format(varray(node->get_path())));
-		_debug_renderer.set_world(_voxel_node->get_world().ptr());
+		_debug_renderer.set_world(_voxel_node->get_world_3d().ptr());
 	}
 }
 
 void VoxelGraphEditor::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_INTERNAL_PROCESS:
-			_process(get_tree()->get_idle_process_time());
+			_process(get_tree()->get_process_time());
 			break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
@@ -885,7 +885,7 @@ void VoxelGraphEditor::update_slice_previews() {
 		Image &im = **info.control->get_image();
 		ERR_FAIL_COND(im.get_width() * im.get_height() != static_cast<int>(buffer.size));
 
-		im.lock();
+		// im.lock();
 
 		unsigned int i = 0;
 		for (int y = 0; y < im.get_height(); ++y) {
@@ -897,7 +897,7 @@ void VoxelGraphEditor::update_slice_previews() {
 			}
 		}
 
-		im.unlock();
+		// im.unlock();
 
 		info.control->update_texture();
 	}

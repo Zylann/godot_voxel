@@ -5,7 +5,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/voxel_raycast.h"
 
-#include <core/func_ref.h>
+#include <core/variant/callable.h>
 
 VoxelToolTerrain::VoxelToolTerrain() {
 }
@@ -220,7 +220,7 @@ Variant VoxelToolTerrain::get_voxel_metadata(VOX_Vector3i pos) const {
 
 // Executes a function on random voxels in the provided area, using the type channel.
 // This allows to implement slow "natural" cellular automata behavior, as can be seen in Minecraft.
-void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<FuncRef> callback, int batch_count) const {
+void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<Callable> callback, int batch_count) const {
 	VOXEL_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(_terrain == nullptr);
@@ -311,11 +311,12 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 						const Variant *args[2];
 						args[0] = &vpos;
 						args[1] = &vv;
-						Variant::CallError error;
-						callback->call_func(args, 2, error);
+						Callable::CallError error;
+						Variant ret;
+						callback->call(args, 2, ret, error);
 						// TODO I would really like to know what's the correct way to report such errors...
 						// Examples I found in the engine are inconsistent
-						ERR_FAIL_COND(error.error != Variant::CallError::CALL_OK);
+						ERR_FAIL_COND(error.error != Callable::CallError::CALL_OK);
 						// Return if it fails, we don't want an error spam
 					}
 				}
@@ -324,7 +325,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 	}
 }
 
-void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<FuncRef> callback) {
+void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<Callable> callback) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(callback.is_null());
 
@@ -349,14 +350,15 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<Func
 		block->get_voxels().for_each_voxel_metadata_in_area(rel_voxel_box, [&callback, block_origin](VOX_Vector3i rel_pos, Variant meta) {
 			const Variant key = (rel_pos + block_origin).to_vec3();
 			const Variant *args[2] = { &key, &meta };
-			Variant::CallError err;
-			callback->call_func(args, 2, err);
+			Callable::CallError err;
+			Variant ret;
+			callback->call(args, 2, ret, err);
 
-			ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-					String("FuncRef call failed at {0}").format(varray(key)));
+			ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK,
+					String("Callable call failed at {0}").format(varray(key)));
 
-			// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
-			// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
+			// TODO Can't provide detailed error because Callable doesn't give us access to the object
+			// ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, false,
 			// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
 		});
 	});

@@ -77,15 +77,15 @@ struct VoxMesh {
 	Vector3 pivot;
 };
 
-static Error process_scene_node_recursively(const vox::Data &data, int node_id, Node3DGizmo *parent_node,
-		Node3DGizmo *&root_node, int depth, const Vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
+static Error process_scene_node_recursively(const vox::Data &data, int node_id, Node3D *parent_node,
+		Node3D *&root_node, int depth, const Vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const vox::Node *vox_node = data.get_node(node_id);
 
 	switch (vox_node->type) {
 		case vox::Node::TYPE_TRANSFORM: {
-			Node3DGizmo *node = memnew(Node3DGizmo);
+			Node3D *node = memnew(Node3D);
 			if (root_node == nullptr) {
 				root_node = node;
 			} else {
@@ -104,8 +104,8 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 			// If the parent isn't anything special and has only one child,
 			// it may be cleaner to flatten the hierarchy. We keep the root node unaffected.
 			// TODO Any way to not need a string to check if a node is a specific class?
-			if (node != root_node && node->get_class() == "Node3DGizmo" && node->get_child_count() == 1) {
-				Node3DGizmo *child = Object::cast_to<Node3DGizmo>(node->get_child(0));
+			if (node != root_node && node->get_class() == "Node3D" && node->get_child_count() == 1) {
+				Node3D *child = Object::cast_to<Node3D>(node->get_child(0));
 				if (child != nullptr) {
 					node->remove_child(child);
 					parent_node->remove_child(node);
@@ -349,7 +349,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 		meshes.write[model_index] = mesh_info;
 	}
 
-	Node3DGizmo *root_node = nullptr;
+	Node3D *root_node = nullptr;
 	if (data.get_root_node_id() != -1) {
 		// Convert scene graph into a node tree
 		process_scene_node_recursively(
@@ -358,7 +358,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 	} else if (meshes.size() > 0) {
 		// Some vox files don't have a scene graph
-		root_node = memnew(Node3DGizmo);
+		root_node = memnew(Node3D);
 		const VoxMesh &mesh0 = meshes[0];
 		add_mesh_instance(mesh0.mesh, root_node, root_node, Vector3(), p_enable_baked_lighting);
 	}

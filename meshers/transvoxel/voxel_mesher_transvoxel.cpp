@@ -6,13 +6,13 @@
 #include "transvoxel_tables.cpp"
 
 namespace {
-static const unsigned int MESH_COMPRESSION_FLAGS =
-		Mesh::ARRAY_COMPRESS_NORMAL |
-		Mesh::ARRAY_COMPRESS_TANGENT |
-		//Mesh::ARRAY_COMPRESS_COLOR | // Using color as 4 full floats to transfer extra attributes for now...
-		//Mesh::ARRAY_COMPRESS_TEX_UV | // Not compressing UV, we use it for different texturing information
-		Mesh::ARRAY_COMPRESS_TEX_UV2 |
-		Mesh::ARRAY_COMPRESS_WEIGHTS;
+// static const unsigned int MESH_COMPRESSION_FLAGS =
+// 		Mesh::ARRAY_COMPRESS_NORMAL |
+// 		Mesh::ARRAY_COMPRESS_TANGENT |
+// 		//Mesh::ARRAY_COMPRESS_COLOR | // Using color as 4 full floats to transfer extra attributes for now...
+// 		//Mesh::ARRAY_COMPRESS_TEX_UV | // Not compressing UV, we use it for different texturing information
+// 		Mesh::ARRAY_COMPRESS_TEX_UV2 |
+// 		Mesh::ARRAY_COMPRESS_WEIGHTS;
 }
 
 VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
@@ -195,7 +195,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// print_line(String("VoxelMesherTransvoxel spent {0} us").format(varray(time_spent)));
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
-	output.compression_flags = MESH_COMPRESSION_FLAGS;
+	// output.compression_flags = MESH_COMPRESSION_FLAGS;
 }
 
 // TODO For testing at the moment
@@ -229,7 +229,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> vox
 	Array arrays;
 	fill_surface_arrays(arrays, s_mesh_arrays);
 	mesh.instantiate();
-	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays, Array(), MESH_COMPRESSION_FLAGS);
+	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays, Array());
 	return mesh;
 }
 

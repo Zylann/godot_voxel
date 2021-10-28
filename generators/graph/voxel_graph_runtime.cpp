@@ -41,7 +41,7 @@ void VoxelGraphRuntime::Program::lock_images() {
 	for (size_t i = 0; i < ref_resources.size(); ++i) {
 		Ref<Image> im = ref_resources[i];
 		if (im.is_valid()) {
-			im->lock();
+			// im->lock();
 		}
 	}
 }
@@ -50,7 +50,7 @@ void VoxelGraphRuntime::Program::unlock_images() {
 	for (size_t i = 0; i < ref_resources.size(); ++i) {
 		Ref<Image> im = ref_resources[i];
 		if (im.is_valid()) {
-			im->unlock();
+			// im->unlock();
 		}
 	}
 }

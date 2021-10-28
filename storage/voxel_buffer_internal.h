@@ -13,7 +13,7 @@
 
 class VoxelTool;
 class Image;
-class FuncRef;
+class Callable;
 
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.
@@ -412,8 +412,8 @@ public:
 		}
 	}
 
-	void for_each_voxel_metadata(Ref<FuncRef> callback) const;
-	void for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Box3i box) const;
+	void for_each_voxel_metadata(Ref<Callable> callback) const;
+	void for_each_voxel_metadata_in_area(Ref<Callable> callback, Box3i box) const;
 
 	void clear_voxel_metadata();
 	void clear_voxel_metadata_in_area(Box3i box);

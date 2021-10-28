@@ -8,8 +8,8 @@
 #include <scene/3d/node_3d.h>
 
 // Base class for voxel volumes
-class VoxelNode : public Node3DGizmo {
-	GDCLASS(VoxelNode, Node3DGizmo)
+class VoxelNode : public Node3D {
+	GDCLASS(VoxelNode, Node3D)
 public:
 	virtual void set_mesher(Ref<VoxelMesher> mesher);
 	virtual Ref<VoxelMesher> get_mesher() const;
@@ -23,7 +23,7 @@ public:
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
 
-	virtual String get_configuration_warning() const; //override;
+	virtual String get_configuration_warning() const; //override; //CHECKME strover
 
 protected:
 	int get_used_channels_mask() const;

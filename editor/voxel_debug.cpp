@@ -140,7 +140,7 @@ public:
 		}
 	}
 
-	void set_world(World *world) {
+	void set_world(World3D *world) {
 		_mesh_instance.set_world(world);
 	}
 
@@ -165,7 +165,7 @@ void DebugRenderer::clear() {
 	_mm_renderer.clear();
 }
 
-void DebugRenderer::set_world(World *world) {
+void DebugRenderer::set_world(World3D *world) {
 	_world = world;
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		(*it)->set_world(world);
@@ -235,7 +235,7 @@ DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
 	_multimesh_instance.set_material_override(_material);
 }\
 
-void DebugMultiMeshRenderer::set_world(World *world) {
+void DebugMultiMeshRenderer::set_world(World3D *world) {
 	_multimesh_instance.set_world(world);
 	_world = world;
 }

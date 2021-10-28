@@ -1,6 +1,6 @@
 # VoxelNode
 
-Inherits: [Node3DGizmo](https://docs.godotengine.org/en/stable/classes/class_spatial.html)
+Inherits: [Node3D](https://docs.godotengine.org/en/stable/classes/class_spatial.html)
 
 
 Base class for voxel volumes.

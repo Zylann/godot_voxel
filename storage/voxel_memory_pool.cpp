@@ -3,7 +3,7 @@
 #include "../util/profiling.h"
 
 #include <core/os/os.h>
-#include <core/print_string.h>
+#include <core/string/print_string.h>
 #include <core/variant/variant.h>
 
 namespace {
@@ -41,7 +41,7 @@ VoxelMemoryPool::~VoxelMemoryPool() {
 
 uint8_t *VoxelMemoryPool::allocate(size_t size) {
 	VOXEL_PROFILE_SCOPE();
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	Pool *pool = get_or_create_pool(size);
 	uint8_t *block;
 	if (pool->blocks.size() > 0) {
@@ -60,7 +60,7 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 void VoxelMemoryPool::recycle(uint8_t *block, size_t size) {
 	CRASH_COND(size == 0);
 	CRASH_COND(block == nullptr);
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	Pool *pool = _pools[size]; // If not found, entry will be created! It would be an error
 	// Check recycling before having allocated
 	CRASH_COND(pool == nullptr);
@@ -70,7 +70,7 @@ void VoxelMemoryPool::recycle(uint8_t *block, size_t size) {
 }
 
 void VoxelMemoryPool::clear_unused_blocks() {
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	const size_t *key = nullptr;
 	while ((key = _pools.next(key))) {
 		Pool *pool = _pools.get(*key);
@@ -86,7 +86,7 @@ void VoxelMemoryPool::clear_unused_blocks() {
 }
 
 void VoxelMemoryPool::clear() {
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	const size_t *key = nullptr;
 	while ((key = _pools.next(key))) {
 		Pool *pool = _pools.get(*key);
@@ -105,7 +105,7 @@ void VoxelMemoryPool::clear() {
 }
 
 void VoxelMemoryPool::debug_print() {
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	print_line("-------- VoxelMemoryPool ----------");
 	if (_pools.size() == 0) {
 		print_line("No pools created");
@@ -122,17 +122,17 @@ void VoxelMemoryPool::debug_print() {
 }
 
 unsigned int VoxelMemoryPool::debug_get_used_blocks() const {
-	//MutexLock lock(_mutex);
+	//MutexLock<Mutex> lock(_mutex);
 	return _used_blocks;
 }
 
 size_t VoxelMemoryPool::debug_get_used_memory() const {
-	//MutexLock lock(_mutex);
+	//MutexLock<Mutex> lock(_mutex);
 	return _used_memory;
 }
 
 size_t VoxelMemoryPool::debug_get_total_memory() const {
-	//MutexLock lock(_mutex);
+	//MutexLock<Mutex> lock(_mutex);
 	return _total_memory;
 }
 

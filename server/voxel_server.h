@@ -248,7 +248,7 @@ private:
 		float highest_view_distance = 999999;
 	};
 
-	struct World {
+	struct World3D {
 		StructDB<Volume> volumes;
 		StructDB<Viewer> viewers;
 
@@ -345,7 +345,7 @@ private:
 	};
 
 	// TODO multi-world support in the future
-	World _world;
+	World3D _world;
 
 	// Pool specialized in file I/O
 	VoxelThreadPool _streaming_thread_pool;

@@ -7,7 +7,7 @@
 #include <core/templates/rid.h>
 #include <scene/resources/multimesh.h>
 
-class World;
+class World3D;
 
 // Thin wrapper around RenderingServer multimesh instance API
 class DirectMultiMeshInstance {
@@ -18,7 +18,7 @@ public:
 	void create();
 	void destroy();
 	bool is_valid() const;
-	void set_world(World *world);
+	void set_world(World3D *world);
 	void set_multimesh(Ref<MultiMesh> multimesh);
 	Ref<MultiMesh> get_multimesh() const;
 	void set_transform(Transform3D world_transform);

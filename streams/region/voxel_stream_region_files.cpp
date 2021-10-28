@@ -128,7 +128,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 		VoxelBufferInternal &out_buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	VOXEL_PROFILE_SCOPE();
 
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 
 	if (_directory_path.is_empty()) {
 		return EMERGE_OK_FALLBACK;
@@ -181,7 +181,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 void VoxelStreamRegionFiles::_immerge_block(VoxelBufferInternal &voxel_buffer, VOX_Vector3i origin_in_voxels, int lod) {
 	VOXEL_PROFILE_SCOPE();
 
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 
 	ERR_FAIL_COND(_directory_path.is_empty());
 
@@ -224,19 +224,19 @@ void VoxelStreamRegionFiles::_immerge_block(VoxelBufferInternal &voxel_buffer, V
 }
 
 String VoxelStreamRegionFiles::get_directory() const {
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	return _directory_path;
 }
 
 void VoxelStreamRegionFiles::set_directory(String dirpath) {
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	if (_directory_path != dirpath) {
 		close_all_regions();
 		_directory_path = dirpath.strip_edges();
 		_meta_loaded = false;
 		_meta_saved = false;
 		load_meta();
-		_change_notify();
+		
 	}
 }
 
@@ -280,7 +280,8 @@ VoxelFileResult VoxelStreamRegionFiles::save_meta() {
 	}
 	d["channel_depths"] = channel_depths;
 
-	String json = JSON::print(d, "\t", true);
+	JSON json_obj;
+	String json = json_obj.stringify(d, "\t", true);
 
 	// Make sure the directory exists
 	{
@@ -350,19 +351,16 @@ VoxelFileResult VoxelStreamRegionFiles::load_meta() {
 	}
 
 	// Note: I chose JSON purely for debugging purposes. This file is not meant to be edited by hand.
-	// World configuration changes may need a full converter.
-
-	Variant res;
-	String json_err_msg;
-	int json_err_line;
-	Error json_err = JSON::parse(json, res, json_err_msg, json_err_line);
+	// World3D configuration changes may need a full converter.
+	JSON json_obj;
+	Error json_err = json_obj.parse(json);
 	if (json_err != OK) {
 		ERR_PRINT(String("Error when parsing {0}: line {1}: {2}")
-						  .format(varray(meta_path, json_err_line, json_err_msg)));
+						  .format(varray(meta_path, json_obj.get_error_line(), json_obj.get_error_message())));
 		return VOXEL_FILE_INVALID_DATA;
 	}
 
-	Dictionary d = res;
+	Dictionary d = json_obj.get_data();
 	migrate_region_meta_data(d);
 	Meta meta;
 	ERR_FAIL_COND_V(!u8_from_json_variant(d["version"], meta.version), VOXEL_FILE_INVALID_DATA);
@@ -742,7 +740,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 }
 
 VOX_Vector3i VoxelStreamRegionFiles::get_region_size() const {
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	return VOX_Vector3i(1 << _meta.region_size_po2);
 }
 
@@ -751,22 +749,22 @@ Vector3 VoxelStreamRegionFiles::get_region_size_v() const {
 }
 
 int VoxelStreamRegionFiles::get_region_size_po2() const {
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	return _meta.region_size_po2;
 }
 
 int VoxelStreamRegionFiles::get_block_size_po2() const {
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	return _meta.block_size_po2;
 }
 
 int VoxelStreamRegionFiles::get_lod_count() const {
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	return _meta.lod_count;
 }
 
 int VoxelStreamRegionFiles::get_sector_size() const {
-	MutexLock lock(_mutex);
+	MutexLock<Mutex> lock(_mutex);
 	return _meta.sector_size;
 }
 
@@ -777,7 +775,7 @@ int VoxelStreamRegionFiles::get_sector_size() const {
 
 void VoxelStreamRegionFiles::set_region_size_po2(int p_region_size_po2) {
 	{
-		MutexLock lock(_mutex);
+		MutexLock<Mutex> lock(_mutex);
 		if (_meta.region_size_po2 == p_region_size_po2) {
 			return;
 		}
@@ -791,7 +789,7 @@ void VoxelStreamRegionFiles::set_region_size_po2(int p_region_size_po2) {
 
 void VoxelStreamRegionFiles::set_block_size_po2(int p_block_size_po2) {
 	{
-		MutexLock lock(_mutex);
+		MutexLock<Mutex> lock(_mutex);
 		if (_meta.block_size_po2 == p_block_size_po2) {
 			return;
 		}
@@ -806,7 +804,7 @@ void VoxelStreamRegionFiles::set_block_size_po2(int p_block_size_po2) {
 
 void VoxelStreamRegionFiles::set_sector_size(int p_sector_size) {
 	{
-		MutexLock lock(_mutex);
+		MutexLock<Mutex> lock(_mutex);
 		if (static_cast<int>(_meta.sector_size) == p_sector_size) {
 			return;
 		}
@@ -821,7 +819,7 @@ void VoxelStreamRegionFiles::set_sector_size(int p_sector_size) {
 
 void VoxelStreamRegionFiles::set_lod_count(int p_lod_count) {
 	{
-		MutexLock lock(_mutex);
+		MutexLock<Mutex> lock(_mutex);
 		if (_meta.lod_count == p_lod_count) {
 			return;
 		}
@@ -843,7 +841,7 @@ void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 	meta.lod_count = int(d["lod_count"]);
 
 	{
-		MutexLock lock(_mutex);
+		MutexLock<Mutex> lock(_mutex);
 
 		ERR_FAIL_COND_MSG(!check_meta(meta), "Invalid setting");
 

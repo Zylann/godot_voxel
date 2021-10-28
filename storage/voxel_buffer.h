@@ -6,7 +6,7 @@
 
 class VoxelTool;
 class Image;
-class FuncRef;
+class Callable;
 
 // TODO I wish I could call the original class `VoxelBuffer` and expose this other one with that name.
 // Godot doesn't seem to allow doing that. So the original class had to be named `VoxelBufferInternal`...
@@ -126,8 +126,8 @@ public:
 	void set_voxel_metadata(Vector3 pos, Variant meta) {
 		_buffer->set_voxel_metadata(VOX_Vector3i(pos), meta);
 	}
-	void for_each_voxel_metadata(Ref<FuncRef> callback) const;
-	void for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Vector3 min_pos, Vector3 max_pos);
+	void for_each_voxel_metadata(Ref<Callable> callback) const;
+	void for_each_voxel_metadata_in_area(Ref<Callable> callback, Vector3 min_pos, Vector3 max_pos);
 	void copy_voxel_metadata_in_area(
 			Ref<VoxelBuffer> src_buffer, Vector3 src_min_pos, Vector3 src_max_pos, Vector3 dst_pos);
 

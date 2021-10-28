@@ -6,7 +6,7 @@
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
 
-class Node3DGizmo;
+class Node3D;
 
 // Stores mesh and collider for one chunk of the rendered volume.
 // It doesn't store voxel data, because it may be using different block size, or different data structure.
@@ -51,7 +51,7 @@ public:
 
 	~VoxelMeshBlock();
 
-	void set_world(Ref<World> p_world);
+	void set_world(Ref<World3D> p_world);
 
 	// Visuals
 
@@ -66,7 +66,7 @@ public:
 
 	// Collisions
 
-	void set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Node3DGizmo *node, float margin);
+	void set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Node3D *node, float margin);
 	void set_collision_layer(int layer);
 	void set_collision_mask(int mask);
 	void set_collision_margin(float margin);
@@ -124,7 +124,7 @@ private:
 	DirectMeshInstance _mesh_instance;
 	FixedArray<DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
 	DirectStaticBody _static_body;
-	Ref<World> _world;
+	Ref<World3D> _world;
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
 	Ref<Material> _debug_material;

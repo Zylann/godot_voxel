@@ -3,7 +3,7 @@
 #include "../terrain/lod_octree.h"
 #include "../util/profiling_clock.h"
 #include <core/templates/map.h>
-#include <core/print_string.h>
+#include <core/string/print_string.h>
 #include <unordered_map>
 #include <unordered_set>
 
