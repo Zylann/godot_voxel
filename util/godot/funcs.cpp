@@ -3,7 +3,7 @@
 #include "../profiling.h"
 
 #include <core/config/engine.h>
-#include <scene/resources/concave_polygon_shape.h>
+#include <scene/resources/concave_polygon_shape_3d.h>
 #include <scene/resources/mesh.h>
 #include <scene/resources/multimesh.h>
 
@@ -61,7 +61,7 @@ bool try_call_script(
 // Faster version of Mesh::create_trimesh_shape()
 // See https://github.com/Zylann/godot_voxel/issues/54
 //
-Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Vector<Array> surfaces) {
 	VOXEL_PROFILE_SCOPE();
 
 	Vector<Vector3> face_points;
@@ -82,7 +82,7 @@ Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
 	face_points.resize(face_points_size);
 
 	if (face_points_size < 3) {
-		return Ref<ConcavePolygonShape>();
+		return Ref<ConcavePolygonShape3D>();
 	}
 
 	//copy the points into it
@@ -95,26 +95,22 @@ Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
 		Vector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];
 		Vector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
 
-		ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape>());
-		ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape>());
-		ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape>());
+		ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape3D>());
+		ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape3D>());
+		ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape3D>());
 
 		int face_points_count = face_points_offset + indices.size();
 
 		{
-			Vector<Vector3>::Write w = face_points.write();
-			Vector<int>::Read index_r = indices.read();
-			Vector<Vector3>::Read position_r = positions.read();
-
 			for (int p = face_points_offset; p < face_points_count; ++p) {
-				w[p] = position_r[index_r[p - face_points_offset]];
+				face_points.set(p, positions[indices[p - face_points_offset]]);
 			}
 		}
 
 		face_points_offset += indices.size();
 	}
 
-	Ref<ConcavePolygonShape> shape = memnew(ConcavePolygonShape);
+	Ref<ConcavePolygonShape3D> shape = memnew(ConcavePolygonShape3D);
 	shape->set_faces(face_points);
 	return shape;
 }
@@ -151,8 +147,6 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	HashMap<int, int> src_index_to_dst_index;
 	std::vector<Vector3> dst_positions;
 	{
-		PackedVector3Array::Read src_positions_read = src_positions.read();
-		PackedVector3Array::Read src_normals_read = src_normals.read();
 		for (int i = 0; i < src_positions.size(); ++i) {
 			const Vector3 pos = src_positions[i];
 			Dupe *dptr = vertex_to_dupe.getptr(pos);
@@ -161,7 +155,7 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 			} else {
 				if (dptr->count == 0) {
 					dptr->dst_index = dst_positions.size();
-					dst_positions.push_back(pos + src_normals_read[i] * 0.05);
+					dst_positions.push_back(pos + src_normals[i] * 0.05);
 				}
 				++dptr->count;
 				src_index_to_dst_index.set(i, dptr->dst_index);
@@ -171,11 +165,10 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 
 	std::vector<int> dst_indices;
 	{
-		PackedInt32Array::Read r = src_indices.read();
 		for (int i = 0; i < src_indices.size(); i += 3) {
-			const int vi0 = r[i];
-			const int vi1 = r[i + 1];
-			const int vi2 = r[i + 2];
+			const int vi0 = src_indices[i];
+			const int vi1 = src_indices[i + 1];
+			const int vi2 = src_indices[i + 2];
 			const int *v0ptr = src_index_to_dst_index.getptr(vi0);
 			const int *v1ptr = src_index_to_dst_index.getptr(vi1);
 			const int *v2ptr = src_index_to_dst_index.getptr(vi2);

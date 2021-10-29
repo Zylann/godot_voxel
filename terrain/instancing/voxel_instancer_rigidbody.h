@@ -5,12 +5,12 @@
 #include <scene/3d/physics_body_3d.h>
 
 // Provides collision to VoxelInstancer multimesh instances
-class VoxelInstancerRigidBody : public RigidBody {
-	GDCLASS(VoxelInstancerRigidBody, RigidBody);
+class VoxelInstancerRigidDynamicBody3D : public RigidDynamicBody3D {
+	GDCLASS(VoxelInstancerRigidDynamicBody3D, RigidDynamicBody3D);
 
 public:
-	VoxelInstancerRigidBody() {
-		set_mode(RigidBody::MODE_STATIC);
+	VoxelInstancerRigidDynamicBody3D() {
+		set_body_mode(PhysicsServer3D::BodyMode::BODY_MODE_STATIC);
 	}
 
 	void set_data_block_position(VOX_Vector3i data_block_position) {

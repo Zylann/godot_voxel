@@ -68,7 +68,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 				return true;
 			}
 
-			if (voxel.is_transparent() && voxel.get_collision_aabbs().is_empty() == false) {
+			if (voxel.is_transparent() && voxel.get_collision_aabbs().empty() == false) {
 				return true;
 			}
 
@@ -220,7 +220,7 @@ Variant VoxelToolTerrain::get_voxel_metadata(VOX_Vector3i pos) const {
 
 // Executes a function on random voxels in the provided area, using the type channel.
 // This allows to implement slow "natural" cellular automata behavior, as can be seen in Minecraft.
-void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<Callable> callback, int batch_count) const {
+void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, Callable callback, int batch_count) const {
 	VOXEL_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(_terrain == nullptr);
@@ -313,7 +313,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 						args[1] = &vv;
 						Callable::CallError error;
 						Variant ret;
-						callback->call(args, 2, ret, error);
+						callback.call(args, 2, ret, error);
 						// TODO I would really like to know what's the correct way to report such errors...
 						// Examples I found in the engine are inconsistent
 						ERR_FAIL_COND(error.error != Callable::CallError::CALL_OK);
@@ -325,7 +325,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 	}
 }
 
-void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<Callable> callback) {
+void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Callable callback) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(callback.is_null());
 
@@ -352,7 +352,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<Call
 			const Variant *args[2] = { &key, &meta };
 			Callable::CallError err;
 			Variant ret;
-			callback->call(args, 2, ret, err);
+			callback.call(args, 2, ret, err);
 
 			ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK,
 					String("Callable call failed at {0}").format(varray(key)));

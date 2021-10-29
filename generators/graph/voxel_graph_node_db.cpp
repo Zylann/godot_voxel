@@ -462,7 +462,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("step"));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
-			do_binop(ctx, [](float a, float b) { return Math::stepify(a, b); });
+			do_binop(ctx, [](float a, float b) { return Math::snapped(a, b); });
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);

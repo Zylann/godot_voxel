@@ -285,7 +285,7 @@ void FastNoiseLite::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "seed"), "set_seed", "get_seed");
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_EXP_RANGE, "0.0001,10000.0"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_RANGE, "0.0001,10000.0"),
 			"set_period", "get_period");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "warp_noise", PROPERTY_HINT_RESOURCE_TYPE, "FastNoiseLiteGradient"),

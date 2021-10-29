@@ -75,18 +75,18 @@ int VoxelInstanceLibraryItem::get_collision_mask() const {
 	return _collision_mask;
 }
 
-static RenderingServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance::ShadowCastingSetting v) {
+static RenderingServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance3D::ShadowCastingSetting v) {
 	switch (v) {
-		case GeometryInstance::SHADOW_CASTING_SETTING_OFF:
+		case GeometryInstance3D::SHADOW_CASTING_SETTING_OFF:
 			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
 
-		case GeometryInstance::SHADOW_CASTING_SETTING_ON:
+		case GeometryInstance3D::SHADOW_CASTING_SETTING_ON:
 			return RenderingServer::SHADOW_CASTING_SETTING_ON;
 
-		case GeometryInstance::SHADOW_CASTING_SETTING_DOUBLE_SIDED:
+		case GeometryInstance3D::SHADOW_CASTING_SETTING_DOUBLE_SIDED:
 			return RenderingServer::SHADOW_CASTING_SETTING_DOUBLE_SIDED;
 
-		case GeometryInstance::SHADOW_CASTING_SETTING_SHADOWS_ONLY:
+		case GeometryInstance3D::SHADOW_CASTING_SETTING_SHADOWS_ONLY:
 			return RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
 
 		default:
@@ -100,14 +100,14 @@ void VoxelInstanceLibraryItem::setup_from_template(Node *root) {
 
 	_collision_shapes.clear();
 
-	PhysicsBody *physics_body = Object::cast_to<PhysicsBody>(root);
+	PhysicsBody3D *physics_body = Object::cast_to<PhysicsBody3D>(root);
 	if (physics_body != nullptr) {
 		_collision_layer = physics_body->get_collision_layer();
 		_collision_mask = physics_body->get_collision_mask();
 	}
 
 	for (int i = 0; i < root->get_child_count(); ++i) {
-		MeshInstance *mi = Object::cast_to<MeshInstance>(root->get_child(i));
+		MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(root->get_child(i));
 		if (mi != nullptr) {
 			_mesh_lods[0] = mi->get_mesh();
 			_mesh_lod_count = 1;
@@ -116,10 +116,10 @@ void VoxelInstanceLibraryItem::setup_from_template(Node *root) {
 		}
 
 		if (physics_body != nullptr) {
-			CollisionShape *cs = Object::cast_to<CollisionShape>(physics_body->get_child(i));
+			CollisionShape3D *cs = Object::cast_to<CollisionShape3D>(physics_body->get_child(i));
 
 			if (cs != nullptr) {
-				CollisionShapeInfo info;
+				CollisionShape3DInfo info;
 				info.shape = cs->get_shape();
 				info.transform = cs->get_transform();
 
@@ -131,10 +131,10 @@ void VoxelInstanceLibraryItem::setup_from_template(Node *root) {
 	notify_listeners(CHANGE_VISUAL);
 }
 
-static Array serialize_collision_shape_infos(Vector<VoxelInstanceLibraryItem::CollisionShapeInfo> infos) {
+static Array serialize_collision_shape_infos(Vector<VoxelInstanceLibraryItem::CollisionShape3DInfo> infos) {
 	Array a;
 	for (int i = 0; i < infos.size(); ++i) {
-		const VoxelInstanceLibraryItem::CollisionShapeInfo &info = infos[i];
+		const VoxelInstanceLibraryItem::CollisionShape3DInfo &info = infos[i];
 		ERR_FAIL_COND_V(info.shape.is_null(), Array());
 		// TODO Shape might or might not be shared, could have odd side-effects,
 		// but not sure how to properly fix these edge cases without convoluted code
@@ -144,16 +144,16 @@ static Array serialize_collision_shape_infos(Vector<VoxelInstanceLibraryItem::Co
 	return a;
 }
 
-static Vector<VoxelInstanceLibraryItem::CollisionShapeInfo> deserialize_collision_shape_infos(Array a) {
-	Vector<VoxelInstanceLibraryItem::CollisionShapeInfo> infos;
+static Vector<VoxelInstanceLibraryItem::CollisionShape3DInfo> deserialize_collision_shape_infos(Array a) {
+	Vector<VoxelInstanceLibraryItem::CollisionShape3DInfo> infos;
 	ERR_FAIL_COND_V(a.size() % 2 != 0, infos);
 
 	for (int i = 0; i < a.size(); i += 2) {
-		VoxelInstanceLibraryItem::CollisionShapeInfo info;
+		VoxelInstanceLibraryItem::CollisionShape3DInfo info;
 		info.shape = a[i];
 		info.transform = a[i + 1];
 
-		ERR_FAIL_COND_V(info.shape.is_null(), Vector<VoxelInstanceLibraryItem::CollisionShapeInfo>());
+		ERR_FAIL_COND_V(info.shape.is_null(), Vector<VoxelInstanceLibraryItem::CollisionShape3DInfo>());
 
 		infos.push_back(info);
 	}

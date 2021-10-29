@@ -6,8 +6,8 @@
 class TextureRect;
 class RichTextLabel;
 
-class VoxelAboutWindow : public WindowDialog {
-	GDCLASS(VoxelAboutWindow, WindowDialog)
+class VoxelAboutWindow : public AcceptDialog {
+	GDCLASS(VoxelAboutWindow, AcceptDialog)
 public:
 	VoxelAboutWindow();
 

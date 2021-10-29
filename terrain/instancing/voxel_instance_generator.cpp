@@ -94,9 +94,6 @@ void VoxelInstanceGenerator::generate_transforms(
 	{
 		VOXEL_PROFILE_SCOPE_NAMED("mesh to points");
 
-		PackedVector3Array::Read vertices_r = vertices.read();
-		PackedVector3Array::Read normals_r = normals.read();
-
 		// Generate base positions
 		switch (_emit_mode) {
 			case EMIT_FROM_VERTICES: {
@@ -112,13 +109,12 @@ void VoxelInstanceGenerator::generate_transforms(
 					if (pcg0.rand() >= density_u32) {
 						continue;
 					}
-					vertex_cache.push_back(vertices_r[i]);
-					normal_cache.push_back(normals_r[i]);
+					vertex_cache.push_back(vertices[i]);
+					normal_cache.push_back(normals[i]);
 				}
 			} break;
 
 			case EMIT_FROM_FACES_FAST: {
-				PackedInt32Array::Read indices_r = indices.read();
 
 				const int triangle_count = indices.size() / 3;
 
@@ -133,27 +129,27 @@ void VoxelInstanceGenerator::generate_transforms(
 					// Pick a random triangle
 					const uint32_t ii = (pcg0.rand() % triangle_count) * 3;
 
-					const int ia = indices_r[ii];
-					const int ib = indices_r[ii + 1];
-					const int ic = indices_r[ii + 2];
+					const int ia = indices[ii];
+					const int ib = indices[ii + 1];
+					const int ic = indices[ii + 2];
 
-					const Vector3 &pa = vertices_r[ia];
-					const Vector3 &pb = vertices_r[ib];
-					const Vector3 &pc = vertices_r[ic];
+					const Vector3 &pa = vertices[ia];
+					const Vector3 &pb = vertices[ib];
+					const Vector3 &pc = vertices[ic];
 
-					const Vector3 &na = normals_r[ia];
-					const Vector3 &nb = normals_r[ib];
-					const Vector3 &nc = normals_r[ic];
+					const Vector3 &na = normals[ia];
+					const Vector3 &nb = normals[ib];
+					const Vector3 &nc = normals[ic];
 
 					const float t0 = pcg1.randf();
 					const float t1 = pcg1.randf();
 
 					// This formula gives pretty uniform distribution but involves a square root
-					//const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
+					//const Vector3 p = pa.lerp(pb, t0).lerp(pc, 1.f - sqrt(t1));
 
 					// This is an approximation
-					const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, t1);
-					const Vector3 n = na.linear_interpolate(nb, t0).linear_interpolate(nc, t1);
+					const Vector3 p = pa.lerp(pb, t0).lerp(pc, t1);
+					const Vector3 n = na.lerp(nb, t0).lerp(nc, t1);
 
 					vertex_cache[instance_index] = p;
 					normal_cache[instance_index] = n;
@@ -162,7 +158,6 @@ void VoxelInstanceGenerator::generate_transforms(
 			} break;
 
 			case EMIT_FROM_FACES: {
-				PackedInt32Array::Read indices_r = indices.read();
 
 				const int triangle_count = indices.size() / 3;
 
@@ -181,17 +176,17 @@ void VoxelInstanceGenerator::generate_transforms(
 				for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
 					const uint32_t ii = triangle_index * 3;
 
-					const int ia = indices_r[ii];
-					const int ib = indices_r[ii + 1];
-					const int ic = indices_r[ii + 2];
+					const int ia = indices[ii];
+					const int ib = indices[ii + 1];
+					const int ic = indices[ii + 2];
 
-					const Vector3 &pa = vertices_r[ia];
-					const Vector3 &pb = vertices_r[ib];
-					const Vector3 &pc = vertices_r[ic];
+					const Vector3 &pa = vertices[ia];
+					const Vector3 &pb = vertices[ib];
+					const Vector3 &pc = vertices[ic];
 
-					const Vector3 &na = normals_r[ia];
-					const Vector3 &nb = normals_r[ib];
-					const Vector3 &nc = normals_r[ic];
+					const Vector3 &na = normals[ia];
+					const Vector3 &nb = normals[ib];
+					const Vector3 &nc = normals[ic];
 
 					const float triangle_area = get_triangle_area(pa, pb, pc);
 					accumulator += triangle_area;
@@ -203,11 +198,11 @@ void VoxelInstanceGenerator::generate_transforms(
 						const float t1 = pcg1.randf();
 
 						// This formula gives pretty uniform distribution but involves a square root
-						//const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
+						//const Vector3 p = pa.lerp(pb, t0).lerp(pc, 1.f - sqrt(t1));
 
 						// This is an approximation
-						const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, t1);
-						const Vector3 n = na.linear_interpolate(nb, t0).linear_interpolate(nc, t1);
+						const Vector3 p = pa.lerp(pb, t0).lerp(pc, t1);
+						const Vector3 n = na.lerp(nb, t0).lerp(nc, t1);
 
 						vertex_cache.push_back(p);
 						normal_cache.push_back(n);
@@ -327,7 +322,7 @@ void VoxelInstanceGenerator::generate_transforms(
 			}
 
 			if (vertical_alignment < 1.f) {
-				axis_y = surface_normal.linear_interpolate(global_up, vertical_alignment).normalized();
+				axis_y = surface_normal.lerp(global_up, vertical_alignment).normalized();
 
 			} else {
 				axis_y = global_up;

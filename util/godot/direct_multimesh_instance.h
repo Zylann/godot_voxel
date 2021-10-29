@@ -10,10 +10,10 @@
 class World3D;
 
 // Thin wrapper around RenderingServer multimesh instance API
-class DirectMultiMeshInstance {
+class DirectMultiMeshInstance3D {
 public:
-	DirectMultiMeshInstance();
-	~DirectMultiMeshInstance();
+	DirectMultiMeshInstance3D();
+	~DirectMultiMeshInstance3D();
 
 	void create();
 	void destroy();

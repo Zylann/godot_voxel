@@ -48,7 +48,7 @@ void VoxelTimeSpreadTaskRunner::process(uint64_t time_budget_usec) {
 }
 
 void VoxelTimeSpreadTaskRunner::flush() {
-	while (!_tasks.is_empty()) {
+	while (!_tasks.empty()) {
 		IVoxelTimeSpreadTask *task = _tasks.front();
 		_tasks.pop();
 		task->run();
@@ -1056,7 +1056,7 @@ void VoxelServerUpdater::ensure_existence(SceneTree *st) {
 	if (g_updater_created) {
 		return;
 	}
-	Viewport *root = st->get_root();
+	Viewport *root = (Viewport *)st->get_root();
 	for (int i = 0; i < root->get_child_count(); ++i) {
 		VoxelServerUpdater *u = Object::cast_to<VoxelServerUpdater>(root->get_child(i));
 		if (u != nullptr) {

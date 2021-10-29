@@ -17,11 +17,11 @@
 #include <vector>
 
 class VoxelLodTerrain;
-class VoxelInstancerRigidBody;
+class VoxelInstancerRigidDynamicBody3D;
 class VoxelInstanceComponent;
 class VoxelInstanceLibrarySceneItem;
 class VoxelTool;
-class PhysicsBody;
+class PhysicsBody3D;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
 // Even nodes like gridmaps could be rebuilt on top of this, if its concept of "grid" was decoupled.
@@ -129,12 +129,12 @@ private:
 		uint8_t lod_index;
 		// Position in mesh block coordinate system
 		VOX_Vector3i grid_position;
-		DirectMultiMeshInstance multimesh_instance;
+		DirectMultiMeshInstance3D multimesh_instance;
 		// For physics we use nodes because it's easier to manage.
 		// Such instances may be less numerous.
 		// If the item associated to this block has no collisions, this will be empty.
 		// Indices in the vector correspond to index of the instance in multimesh.
-		Vector<VoxelInstancerRigidBody *> bodies;
+		Vector<VoxelInstancerRigidDynamicBody3D *> bodies;
 		Vector<SceneInstance> scene_instances;
 	};
 

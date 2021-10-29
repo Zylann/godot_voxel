@@ -62,12 +62,12 @@ bool VoxelVoxImporter::get_option_visibility(const String &p_option, const Map<S
 }
 
 static void add_mesh_instance(Ref<Mesh> mesh, Node *parent, Node *owner, Vector3 offset, bool p_enable_baked_lighting) {
-	MeshInstance *mesh_instance = memnew(MeshInstance);
+	MeshInstance3D *mesh_instance = memnew(MeshInstance3D);
 	mesh_instance->set_mesh(mesh);
 	parent->add_child(mesh_instance);
 	mesh_instance->set_owner(owner);
 	mesh_instance->set_translation(offset);
-	mesh_instance->set_flag(GeometryInstance::FLAG_USE_BAKED_LIGHT, p_enable_baked_lighting);
+	mesh_instance->set_flag(GeometryInstance3D::FLAG_USE_BAKED_LIGHT, p_enable_baked_lighting);
 	// TODO Colliders? Needs conventions or attributes probably.
 	// But due to the nature of voxels, users may often prefer to place colliders themselves (slopes notably).
 }

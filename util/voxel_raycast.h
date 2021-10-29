@@ -88,7 +88,7 @@ bool voxel_raycast(
 
 	// Workaround for integer positions
 	// Adapted from https://github.com/bulletphysics/bullet3/blob/3dbe5426bf7387e532c17df9a1c5e5a4972c298a/src/
-	// BulletCollision/CollisionShapes/btHeightfieldTerrainShape.cpp#L418
+	// BulletCollision/CollisionShape3Ds/btHeightfieldTerrainShape.cpp#L418
 	if (tcross_x == 0.0) {
 		tcross_x += tdelta_x;
 		// If going backwards, we should ignore the position we would get by the above flooring,

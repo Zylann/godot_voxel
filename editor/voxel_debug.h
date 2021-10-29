@@ -6,7 +6,7 @@
 #include <vector>
 
 class Mesh;
-class DirectMeshInstance;
+class DirectMeshInstance3D;
 class World3D;
 
 namespace VoxelDebug {
@@ -33,9 +33,9 @@ public:
 	void clear();
 
 private:
-	std::vector<DirectMultiMeshInstance::Transform3DAndColor8> _items;
+	std::vector<DirectMultiMeshInstance3D::Transform3DAndColor8> _items;
 	Ref<MultiMesh> _multimesh;
-	DirectMultiMeshInstance _multimesh_instance;
+	DirectMultiMeshInstance3D _multimesh_instance;
 	World3D *_world = nullptr;
 	bool _inside_block = false;
 	PackedFloat32Array _bulk_array;

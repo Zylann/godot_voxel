@@ -5,7 +5,7 @@
 #include "../util/profiling.h"
 
 #include <scene/3d/node_3d.h>
-#include <scene/resources/concave_polygon_shape.h>
+#include <scene/resources/concave_polygon_shape_3d.h>
 
 VoxelMeshBlock *VoxelMeshBlock::create(VOX_Vector3i bpos, unsigned int size, unsigned int p_lod_index) {
 	VoxelMeshBlock *block = memnew(VoxelMeshBlock);
@@ -88,7 +88,7 @@ Ref<Mesh> VoxelMeshBlock::get_mesh() const {
 }
 
 void VoxelMeshBlock::set_transition_mesh(Ref<Mesh> mesh, int side) {
-	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
+	DirectMeshInstance3D &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
 		if (!mesh_instance.is_valid()) {
@@ -149,7 +149,7 @@ void VoxelMeshBlock::_set_visible(bool visible) {
 		set_mesh_instance_visible(_mesh_instance, visible);
 	}
 	for (unsigned int dir = 0; dir < _transition_mesh_instances.size(); ++dir) {
-		DirectMeshInstance &mi = _transition_mesh_instances[dir];
+		DirectMeshInstance3D &mi = _transition_mesh_instances[dir];
 		if (mi.is_valid()) {
 			set_mesh_instance_visible(mi, visible && _is_transition_visible(dir));
 		}
@@ -166,7 +166,7 @@ void VoxelMeshBlock::set_shader_material(Ref<ShaderMaterial> material) {
 		_mesh_instance.set_material_override(_shader_material);
 
 		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-			DirectMeshInstance &mi = _transition_mesh_instances[dir];
+			DirectMeshInstance3D &mi = _transition_mesh_instances[dir];
 			if (mi.is_valid()) {
 				mi.set_material_override(_shader_material);
 			}
@@ -215,7 +215,7 @@ void VoxelMeshBlock::set_transition_mask(uint8_t m) {
 		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, tm);
 	}
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-		DirectMeshInstance &mi = _transition_mesh_instances[dir];
+		DirectMeshInstance3D &mi = _transition_mesh_instances[dir];
 		if ((diff & (1 << dir)) && mi.is_valid()) {
 			set_mesh_instance_visible(mi, _visible && _parent_visible && _is_transition_visible(dir));
 		}
@@ -241,7 +241,7 @@ void VoxelMeshBlock::set_parent_transform(const Transform3D &parent_transform) {
 			_mesh_instance.set_transform(world_transform);
 
 			for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-				DirectMeshInstance &mi = _transition_mesh_instances[i];
+				DirectMeshInstance3D &mi = _transition_mesh_instances[i];
 				if (mi.is_valid()) {
 					mi.set_transform(world_transform);
 				}

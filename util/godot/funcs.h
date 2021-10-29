@@ -6,7 +6,7 @@
 #include <memory>
 
 class Mesh;
-class ConcavePolygonShape;
+class ConcavePolygonShape3D;
 class MultiMesh;
 
 bool is_surface_triangulated(Array surface);
@@ -21,7 +21,7 @@ inline bool try_call_script(
 	return try_call_script(obj, method_name, args, 3, out_ret);
 }
 
-Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces);
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Vector<Array> surfaces);
 
 // This API can be confusing so I made a wrapper
 int get_visible_instance_count(const MultiMesh &mm);

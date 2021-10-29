@@ -24,7 +24,7 @@ VoxelGeneratorImage::VoxelGeneratorImage() {
 
 VoxelGeneratorImage::~VoxelGeneratorImage() {
 	if (_parameters.image.is_valid()) {
-		_parameters.image->unlock();
+		// _parameters.image->unlock();
 	}
 }
 
@@ -41,11 +41,11 @@ void VoxelGeneratorImage::set_image(Ref<Image> im) {
 	// lock() prevents us from reading the same image from multiple threads, so we lock it up-front.
 	// This might no longer be needed in Godot 4.
 	if (_parameters.image.is_valid()) {
-		_parameters.image->unlock();
+		// _parameters.image->unlock();
 	}
 	_parameters.image = copy;
 	if (_parameters.image.is_valid()) {
-		_parameters.image->lock();
+		// _parameters.image->lock();
 	}
 }
 

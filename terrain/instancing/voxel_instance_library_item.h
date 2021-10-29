@@ -11,7 +11,7 @@ class VoxelInstanceLibraryItem : public VoxelInstanceLibraryItemBase {
 public:
 	static const int MAX_MESH_LODS = 4;
 
-	struct CollisionShapeInfo {
+	struct CollisionShape3DInfo {
 		Transform3D transform;
 		Ref<Shape3D> shape;
 	};
@@ -36,7 +36,7 @@ public:
 
 	// Internal
 
-	inline const Vector<CollisionShapeInfo> &get_collision_shapes() const {
+	inline const Vector<CollisionShape3DInfo> &get_collision_shapes() const {
 		return _collision_shapes;
 	}
 
@@ -70,7 +70,7 @@ private:
 
 	int _collision_mask = 1;
 	int _collision_layer = 1;
-	Vector<CollisionShapeInfo> _collision_shapes;
+	Vector<CollisionShape3DInfo> _collision_shapes;
 };
 
 #endif // VOXEL_INSTANCE_LIBRARY_ITEM_H

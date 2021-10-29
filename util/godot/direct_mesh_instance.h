@@ -7,10 +7,10 @@
 class World3D;
 
 // Thin wrapper around RenderingServer mesh instance API
-class DirectMeshInstance {
+class DirectMeshInstance3D {
 public:
-	DirectMeshInstance();
-	~DirectMeshInstance();
+	DirectMeshInstance3D();
+	~DirectMeshInstance3D();
 
 	bool is_valid() const;
 	void create();

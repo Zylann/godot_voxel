@@ -1482,7 +1482,7 @@ void VoxelLodTerrain::_process(float delta) {
 			octree_actions.self = this;
 			octree_actions.block_offset_lod0 = block_offset_lod0;
 
-			Vector3 relative_viewer_pos = viewer_pos - get_mesh_block_size() * block_offset_lod0.to_vec3();
+			Vector3 relative_viewer_pos = viewer_pos - (real_t)get_mesh_block_size() * block_offset_lod0.to_vec3();
 			item.octree.update(relative_viewer_pos, octree_actions);
 
 			// Ideally, this stat should stabilize to zero.
@@ -2548,7 +2548,7 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath) const {
 		const Lod &lod = _lods[lod_index];
 
 		lod.mesh_map.for_all_blocks([root](const VoxelMeshBlock *block) {
-			block->for_each_mesh_instance_with_transform([root, block](const DirectMeshInstance &dmi, Transform3D t) {
+			block->for_each_mesh_instance_with_transform([root, block](const DirectMeshInstance3D &dmi, Transform3D t) {
 				Ref<Mesh> mesh = dmi.get_mesh();
 
 				if (mesh.is_valid()) {

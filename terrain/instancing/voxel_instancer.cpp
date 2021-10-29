@@ -36,7 +36,7 @@ void VoxelInstancer::clear_blocks() {
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		Block *block = *it;
 		for (int i = 0; i < block->bodies.size(); ++i) {
-			VoxelInstancerRigidBody *body = block->bodies[i];
+			VoxelInstancerRigidDynamicBody3D *body = block->bodies[i];
 			body->detach_and_destroy();
 		}
 		for (int i = 0; i < block->scene_instances.size(); ++i) {
@@ -166,7 +166,7 @@ void VoxelInstancer::process_mesh_lods() {
 
 	// Get viewer position
 	const Viewport *viewport = get_viewport();
-	const Camera *camera = viewport->get_camera();
+	const Camera3D *camera = viewport->get_camera_3d();
 	if (camera == nullptr) {
 		return;
 	}
@@ -623,7 +623,7 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 	_blocks.pop_back();
 
 	for (int i = 0; i < block->bodies.size(); ++i) {
-		VoxelInstancerRigidBody *body = block->bodies[i];
+		VoxelInstancerRigidDynamicBody3D *body = block->bodies[i];
 		body->detach_and_destroy();
 	}
 
@@ -716,7 +716,7 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(const VoxelI
 		int instance_index, unsigned int block_index, Transform3D transform, int data_block_size_po2) {
 	SceneInstance instance;
 	ERR_FAIL_COND_V(scene_item.get_scene().is_null(), instance);
-	Node *root = scene_item.get_scene()->instance();
+	Node *root = scene_item.get_scene()->instantiate();
 	ERR_FAIL_COND_V(root == nullptr, instance);
 	instance.root = Object::cast_to<Node3D>(root);
 	ERR_FAIL_COND_V_MSG(instance.root == nullptr, instance, "Root of scene instance must be derived from Node3D");
@@ -783,18 +783,20 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 
 		} else {
 			Ref<MultiMesh> multimesh = block->multimesh_instance.get_multimesh();
+
 			if (multimesh.is_null()) {
 				multimesh.instantiate();
 				multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
-				multimesh->set_color_format(MultiMesh::COLOR_NONE);
-				multimesh->set_custom_data_format(MultiMesh::CUSTOM_DATA_NONE);
+				multimesh->set_use_colors(false);
+				multimesh->set_use_custom_data(false);
 			} else {
 				multimesh->set_visible_instance_count(-1);
 			}
 			PackedFloat32Array bulk_array;
-			DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms, bulk_array);
+			DirectMultiMeshInstance3D::make_transform_3d_bulk_array(transforms, bulk_array);
 			multimesh->set_instance_count(transforms.size());
-			multimesh->set_as_bulk_array(bulk_array);
+			// multimesh->set_as_bulk_array(bulk_array);
+			RenderingServer::get_singleton()->multimesh_set_buffer(multimesh->get_rid(), bulk_array);
 
 			if (item->get_mesh_lod_count() > 0) {
 				multimesh->set_mesh(item->get_mesh(item->get_mesh_lod_count() - 1));
@@ -812,7 +814,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 		}
 
 		// Update bodies
-		const Vector<VoxelInstanceLibraryItem::CollisionShapeInfo> &collision_shapes = item->get_collision_shapes();
+		const Vector<VoxelInstanceLibraryItem::CollisionShape3DInfo> &collision_shapes = item->get_collision_shapes();
 		if (collision_shapes.size() > 0) {
 			VOXEL_PROFILE_SCOPE_NAMED("Update multimesh bodies");
 
@@ -823,21 +825,21 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 				const Transform3D &local_transform = transforms[instance_index];
 				const Transform3D body_transform = block_transform * local_transform;
 
-				VoxelInstancerRigidBody *body;
+				VoxelInstancerRigidDynamicBody3D *body;
 
 				if (instance_index < static_cast<unsigned int>(block->bodies.size())) {
 					body = block->bodies.write[instance_index];
 
 				} else {
-					body = memnew(VoxelInstancerRigidBody);
+					body = memnew(VoxelInstancerRigidDynamicBody3D);
 					body->attach(this);
 					body->set_instance_index(instance_index);
 					body->set_render_block_index(block_index);
 					body->set_data_block_position(VOX_Vector3i::from_floored(body_transform.origin) >> data_block_size_po2);
 
 					for (int i = 0; i < collision_shapes.size(); ++i) {
-						const VoxelInstanceLibraryItem::CollisionShapeInfo &shape_info = collision_shapes[i];
-						CollisionShape *cs = memnew(CollisionShape);
+						const VoxelInstanceLibraryItem::CollisionShape3DInfo &shape_info = collision_shapes[i];
+						CollisionShape3D *cs = memnew(CollisionShape3D);
 						cs->set_shape(shape_info.shape);
 						cs->set_transform(shape_info.transform);
 						body->add_child(cs);
@@ -852,7 +854,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 
 			// Remove old bodies
 			for (int instance_index = transforms.size(); instance_index < block->bodies.size(); ++instance_index) {
-				VoxelInstancerRigidBody *body = block->bodies[instance_index];
+				VoxelInstancerRigidDynamicBody3D *body = block->bodies[instance_index];
 				body->detach_and_destroy();
 			}
 
@@ -1202,11 +1204,11 @@ void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Tra
 		// Remove the body if this block has some
 		// TODO In the case of bodies, we could use an overlap check
 		if (block.bodies.size() > 0) {
-			VoxelInstancerRigidBody *rb = block.bodies[instance_index];
+			VoxelInstancerRigidDynamicBody3D *rb = block.bodies[instance_index];
 			// Detach so it won't try to update our instances, we already do it here
 			rb->detach_and_destroy();
 
-			VoxelInstancerRigidBody *moved_rb = block.bodies[last_instance_index];
+			VoxelInstancerRigidDynamicBody3D *moved_rb = block.bodies[last_instance_index];
 			if (moved_rb != rb) {
 				moved_rb->set_instance_index(instance_index);
 				block.bodies.write[instance_index] = moved_rb;
@@ -1219,7 +1221,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Tra
 		// Ref<CubeMesh> cm;
 		// cm.instantiate();
 		// cm->set_size(Vector3(0.5, 0.5, 0.5));
-		// MeshInstance *mi = memnew(MeshInstance);
+		// MeshInstance3D *mi = memnew(MeshInstance3D);
 		// mi->set_mesh(cm);
 		// mi->set_transform(get_global_transform() *
 		// 				  (Transform3D(Basis(), (block_pos << layer->lod_index).to_vec3()) * t));
@@ -1394,7 +1396,7 @@ void VoxelInstancer::on_body_removed(VOX_Vector3i data_block_position, unsigned 
 	// Unregister the body
 	int body_count = block->bodies.size();
 	int last_instance_index = --body_count;
-	VoxelInstancerRigidBody *moved_body = block->bodies[last_instance_index];
+	VoxelInstancerRigidDynamicBody3D *moved_body = block->bodies[last_instance_index];
 	if (instance_index != last_instance_index) {
 		moved_body->set_instance_index(instance_index);
 		block->bodies.write[instance_index] = moved_body;

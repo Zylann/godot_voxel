@@ -1,27 +1,27 @@
 #include "direct_multimesh_instance.h"
 #include "../profiling.h"
 
-#include <scene/resources/world.h>
+#include <scene/resources/world_3d.h>
 
-DirectMultiMeshInstance::DirectMultiMeshInstance() {
+DirectMultiMeshInstance3D::DirectMultiMeshInstance3D() {
 }
 
-DirectMultiMeshInstance::~DirectMultiMeshInstance() {
+DirectMultiMeshInstance3D::~DirectMultiMeshInstance3D() {
 	destroy();
 }
 
-bool DirectMultiMeshInstance::is_valid() const {
+bool DirectMultiMeshInstance3D::is_valid() const {
 	return _multimesh_instance.is_valid();
 }
 
-void DirectMultiMeshInstance::create() {
+void DirectMultiMeshInstance3D::create() {
 	ERR_FAIL_COND(_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	_multimesh_instance = vs.instance_create();
 	vs.instance_set_visible(_multimesh_instance, true); // TODO Is it needed?
 }
 
-void DirectMultiMeshInstance::destroy() {
+void DirectMultiMeshInstance3D::destroy() {
 	if (_multimesh_instance.is_valid()) {
 		RenderingServer &vs = *RenderingServer::get_singleton();
 		vs.free(_multimesh_instance);
@@ -30,7 +30,7 @@ void DirectMultiMeshInstance::destroy() {
 	}
 }
 
-void DirectMultiMeshInstance::set_world(World3D *world) {
+void DirectMultiMeshInstance3D::set_world(World3D *world) {
 	ERR_FAIL_COND(!_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	if (world != nullptr) {
@@ -40,7 +40,7 @@ void DirectMultiMeshInstance::set_world(World3D *world) {
 	}
 }
 
-void DirectMultiMeshInstance::set_multimesh(Ref<MultiMesh> multimesh) {
+void DirectMultiMeshInstance3D::set_multimesh(Ref<MultiMesh> multimesh) {
 	ERR_FAIL_COND(!_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	if (multimesh.is_valid()) {
@@ -53,24 +53,24 @@ void DirectMultiMeshInstance::set_multimesh(Ref<MultiMesh> multimesh) {
 	_multimesh = multimesh;
 }
 
-Ref<MultiMesh> DirectMultiMeshInstance::get_multimesh() const {
+Ref<MultiMesh> DirectMultiMeshInstance3D::get_multimesh() const {
 	return _multimesh;
 }
 
-void DirectMultiMeshInstance::set_transform(Transform3D world_transform) {
+void DirectMultiMeshInstance3D::set_transform(Transform3D world_transform) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(!_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	vs.instance_set_transform(_multimesh_instance, world_transform);
 }
 
-void DirectMultiMeshInstance::set_visible(bool visible) {
+void DirectMultiMeshInstance3D::set_visible(bool visible) {
 	ERR_FAIL_COND(!_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	vs.instance_set_visible(_multimesh_instance, visible);
 }
 
-void DirectMultiMeshInstance::set_material_override(Ref<Material> material) {
+void DirectMultiMeshInstance3D::set_material_override(Ref<Material> material) {
 	ERR_FAIL_COND(!_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	if (material.is_valid()) {
@@ -80,7 +80,7 @@ void DirectMultiMeshInstance::set_material_override(Ref<Material> material) {
 	}
 }
 
-void DirectMultiMeshInstance::set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode) {
+void DirectMultiMeshInstance3D::set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode) {
 	ERR_FAIL_COND(!_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	vs.instance_geometry_set_cast_shadows_setting(_multimesh_instance, mode);
@@ -103,7 +103,7 @@ inline void write_bulk_array_transform(float *dst, const Transform3D &t) {
 	dst[11] = t.origin.z;
 }
 
-void DirectMultiMeshInstance::make_transform_3d_bulk_array(
+void DirectMultiMeshInstance3D::make_transform_3d_bulk_array(
 		Span<const Transform3D> transforms, PackedFloat32Array &bulk_array) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -115,19 +115,18 @@ void DirectMultiMeshInstance::make_transform_3d_bulk_array(
 	}
 	CRASH_COND(transforms.size() * sizeof(Transform3D) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
 
-	PackedFloat32Array::Write w = bulk_array.write();
 
 	//memcpy(w.ptr(), _transform_cache.data(), bulk_array.size() * sizeof(float));
 	// Nope, you can't memcpy that, nonono. It's said to be for performance, but doesnt specify why.
 
 	for (size_t i = 0; i < transforms.size(); ++i) {
-		float *ptr = w.ptr() + item_size * i;
+		float *ptr = (float *)bulk_array.ptr() + item_size * i;
 		const Transform3D &t = transforms[i];
 		write_bulk_array_transform(ptr, t);
 	}
 }
 
-void DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(
+void DirectMultiMeshInstance3D::make_transform_and_color8_3d_bulk_array(
 		Span<const Transform3DAndColor8> data, PackedFloat32Array &bulk_array) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -140,10 +139,10 @@ void DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(
 	}
 	CRASH_COND(data.size() * sizeof(Transform3DAndColor8) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
 
-	PackedFloat32Array::Write w = bulk_array.write();
+	// PackedFloat32Array::Write w = bulk_array.write();
 
 	for (size_t i = 0; i < data.size(); ++i) {
-		float *ptr = w.ptr() + item_size * i;
+		float *ptr = (float *)bulk_array.ptr() + item_size * i;
 		const Transform3DAndColor8 &d = data[i];
 		write_bulk_array_transform(ptr, d.transform);
 		ptr[transform_size] = *reinterpret_cast<const float *>(d.color.components);

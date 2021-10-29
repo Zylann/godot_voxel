@@ -782,7 +782,7 @@ void VoxelBufferInternal::set_voxel_metadata(VOX_Vector3i pos, Variant meta) {
 	}
 }
 
-void VoxelBufferInternal::for_each_voxel_metadata(Ref<Callable> callback) const {
+void VoxelBufferInternal::for_each_voxel_metadata(Callable callback) const {
 	ERR_FAIL_COND(callback.is_null());
 	const Map<VOX_Vector3i, Variant>::Element *elem = _voxel_metadata.front();
 
@@ -791,7 +791,7 @@ void VoxelBufferInternal::for_each_voxel_metadata(Ref<Callable> callback) const 
 		const Variant *args[2] = { &key, &elem->value() };
 		Callable::CallError err;
 		Variant ret;
-		callback->call(args, 2, ret, err);
+		callback.call(args, 2, ret, err);
 
 		ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK,
 				String("Callable call failed at {0}").format(varray(key)));
@@ -803,14 +803,14 @@ void VoxelBufferInternal::for_each_voxel_metadata(Ref<Callable> callback) const 
 	}
 }
 
-void VoxelBufferInternal::for_each_voxel_metadata_in_area(Ref<Callable> callback, Box3i box) const {
+void VoxelBufferInternal::for_each_voxel_metadata_in_area(Callable callback, Box3i box) const {
 	ERR_FAIL_COND(callback.is_null());
 	for_each_voxel_metadata_in_area(box, [&callback](VOX_Vector3i pos, Variant meta) {
 		const Variant key = pos.to_vec3();
 		const Variant *args[2] = { &key, &meta };
 		Callable::CallError err;
 		Variant ret;
-		callback->call(args, 2, ret, err);
+		callback.call(args, 2, ret, err);
 
 		ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK,
 				String("Callable call failed at {0}").format(varray(key)));

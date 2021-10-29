@@ -148,7 +148,7 @@ private:
 	Transform3D _transform;
 	bool _visible = true;
 	Ref<Mesh> _mesh;
-	DirectMeshInstance _mesh_instance;
+	DirectMeshInstance3D _mesh_instance;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -247,14 +247,14 @@ void DebugMultiMeshRenderer::begin() {
 }
 
 void DebugMultiMeshRenderer::draw_box(const Transform3D &t, Color8 color) {
-	_items.push_back(DirectMultiMeshInstance::Transform3DAndColor8{ t, color });
+	_items.push_back(DirectMultiMeshInstance3D::Transform3DAndColor8{ t, color });
 }
 
 void DebugMultiMeshRenderer::end() {
 	ERR_FAIL_COND(!_inside_block);
 	_inside_block = false;
 
-	DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(to_span_const(_items), _bulk_array);
+	DirectMultiMeshInstance3D::make_transform_and_color8_3d_bulk_array(to_span_const(_items), _bulk_array);
 	if (_items.size() != static_cast<unsigned int>(_multimesh->get_instance_count())) {
 		_multimesh->set_instance_count(_items.size());
 	}

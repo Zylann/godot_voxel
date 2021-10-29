@@ -94,7 +94,7 @@ public:
 		const Transform3D world_transform = local_transform;
 		f(_mesh_instance, world_transform);
 		for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-			const DirectMeshInstance &mi = _transition_mesh_instances[i];
+			const DirectMeshInstance3D &mi = _transition_mesh_instances[i];
 			if (mi.is_valid()) {
 				f(mi, world_transform);
 			}
@@ -109,7 +109,7 @@ private:
 	void _set_visible(bool visible);
 	inline bool _is_transition_visible(int side) const { return _transition_mask & (1 << side); }
 
-	inline void set_mesh_instance_visible(DirectMeshInstance &mi, bool visible) {
+	inline void set_mesh_instance_visible(DirectMeshInstance3D &mi, bool visible) {
 		if (visible) {
 			mi.set_world(*_world);
 		} else {
@@ -121,8 +121,8 @@ private:
 	VOX_Vector3i _position_in_voxels;
 
 	Ref<ShaderMaterial> _shader_material;
-	DirectMeshInstance _mesh_instance;
-	FixedArray<DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
+	DirectMeshInstance3D _mesh_instance;
+	FixedArray<DirectMeshInstance3D, Cube::SIDE_COUNT> _transition_mesh_instances;
 	DirectStaticBody _static_body;
 	Ref<World3D> _world;
 

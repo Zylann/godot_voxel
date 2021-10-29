@@ -558,32 +558,32 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 			// TODO Don't create a body if the mesh has no triangles
 			Ref<Shape3D> shape = mesh->create_convex_shape();
 			ERR_CONTINUE(shape.is_null());
-			CollisionShape *collision_shape = memnew(CollisionShape);
+			CollisionShape3D *collision_shape = memnew(CollisionShape3D);
 			collision_shape->set_shape(shape);
 			// Center the shape somewhat, because Godot is confusing node origin with center of mass
 			const VOX_Vector3i size = local_bounds.max_pos - local_bounds.min_pos + VOX_Vector3i(1 + max_padding + min_padding);
 			const Vector3 offset = -size.to_vec3() * 0.5f;
-			collision_shape->set_translation(offset);
+			collision_shape->translate(offset);
 
-			RigidBody *rigid_body = memnew(RigidBody);
+			RigidDynamicBody3D *rigid_body = memnew(RigidDynamicBody3D);
 			rigid_body->set_transform(transform * local_transform.translated(-offset));
 			rigid_body->add_child(collision_shape);
-			rigid_body->set_mode(RigidBody::MODE_KINEMATIC);
+			rigid_body->set_freeze_mode(RigidDynamicBody3D::FREEZE_MODE_KINEMATIC);
 
 			// Switch to rigid after a short time to workaround clipping with terrain,
 			// because colliders are updated asynchronously
 			Timer *timer = memnew(Timer);
 			timer->set_wait_time(0.2);
 			timer->set_one_shot(true);
-			timer->connect("timeout", rigid_body, "set_mode", varray(RigidBody::MODE_RIGID));
+			timer->connect("timeout", rigid_body, "set_freeze_mode", varray(RigidDynamicBody3D::FREEZE_MODE_STATIC));
 			// Cannot use start() here because it requires to be inside the SceneTree,
 			// and we don't know if it will be after we add to the parent.
 			timer->set_autostart(true);
 			rigid_body->add_child(timer);
 
-			MeshInstance *mesh_instance = memnew(MeshInstance);
+			MeshInstance3D *mesh_instance = memnew(MeshInstance3D);
 			mesh_instance->set_mesh(mesh);
-			mesh_instance->set_translation(offset);
+			mesh_instance->translate(offset);
 			rigid_body->add_child(mesh_instance);
 
 			parent_node->add_child(rigid_body);
