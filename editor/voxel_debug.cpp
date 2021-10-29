@@ -226,6 +226,7 @@ DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
 	_multimesh->set_mesh(wirecube);
 	_multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
 	// _multimesh->set_color_format(MultiMesh::COLOR_8BIT);
+	_multimesh->set_use_colors(true);
 	_multimesh->set_use_custom_data(false);
 	_multimesh_instance.set_multimesh(_multimesh);
 	_material.instantiate();
