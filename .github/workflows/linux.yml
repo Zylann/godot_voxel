@@ -19,7 +19,7 @@ jobs:
       # Clone Godot
       - uses: actions/checkout@v2
         with:
-          repository: godotengine/godot
+          repository: tasgon/godot
           ref: 3.x
 
       # Clone our module under the correct directory
