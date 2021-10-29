@@ -47,6 +47,7 @@ Ongoing development - `master`
 - Fixes
     - `VoxelGeneratorGraph`: changes to node properties are now saved properly
     - `VoxelGeneratorGraph`: fix some per-thread memory not freed on exit
+    - `VoxelGeneratorGraph`: `debug_analyze_range` was crashing when given a negative-size area
     - `VoxelBuffer`: `copy_voxel_metadata_in_area` was checking the source box incorrectly
     - `VoxelBuffer`: multiple calls to `create()` with different sizes could lead to heap corruption if a channel was not uniform
     - `VoxelBuffer`: `copy_channel_from_area` could lead to heap corruption if the source and destination had the same size and were copied entirely
