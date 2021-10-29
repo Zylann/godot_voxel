@@ -189,7 +189,7 @@ void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
 	Ref<Image> im;
 	im.instantiate();
 	im->create(size_x, size_z, false, Image::FORMAT_RGB8);
-	im->lock();
+	// im->lock();
 
 	for (int py = 0; py < size_z; ++py) {
 		for (int px = 0; px < size_x; ++px) {
@@ -201,7 +201,7 @@ void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
 		}
 	}
 
-	im->unlock();
+	// im->unlock();
 
 	print_line(String("Saving {0}").format(varray(fpath)));
 	im->save_png(fpath);

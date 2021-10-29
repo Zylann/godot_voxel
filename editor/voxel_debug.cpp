@@ -13,8 +13,7 @@ bool g_finalized = false;
 template <typename T>
 void raw_copy_to(Vector<T> &dst, const T *src, unsigned int count) {
 	dst.resize(count);
-	typename Vector<T>::Write w = dst.write();
-	memcpy(w.ptr(), src, count * sizeof(T));
+	memcpy(dst.ptrw(), src, count * sizeof(T));
 }
 
 static Color get_color(ColorID id) {
@@ -226,7 +225,7 @@ DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
 	Ref<Mesh> wirecube = get_wirecube(ID_WHITE);
 	_multimesh->set_mesh(wirecube);
 	_multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
-	_multimesh->set_color_format(MultiMesh::COLOR_8BIT);
+	// _multimesh->set_color_format(MultiMesh::COLOR_8BIT);
 	_multimesh->set_use_custom_data(false);
 	_multimesh_instance.set_multimesh(_multimesh);
 	_material.instantiate();
@@ -261,7 +260,8 @@ void DebugMultiMeshRenderer::end() {
 
 	// Apparently Godot doesn't like empty bulk arrays, it breaks RasterizerStorageGLES3
 	if (_items.size() > 0) {
-		_multimesh->set_as_bulk_array(_bulk_array);
+		RenderingServer::get_singleton()->multimesh_set_buffer(_multimesh->get_rid(), _bulk_array);
+		// _multimesh->set_as_bulk_array(_bulk_array);
 	}
 
 	_items.clear();

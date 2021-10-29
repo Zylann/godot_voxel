@@ -42,7 +42,7 @@ public:
 	}
 
 	void update_texture() {
-		_texture->create_from_image(_image, 0);
+		_texture->create_from_image(_image);
 	}
 
 private:
@@ -69,7 +69,7 @@ class VoxelRangeAnalysisDialog : public AcceptDialog {
 public:
 	VoxelRangeAnalysisDialog() {
 		set_title(TTR("Debug Range Analysis"));
-		set_custom_minimum_size(EDSCALE * Vector2(300, 280));
+		set_min_size(EDSCALE * Vector2(300, 280));
 
 		VBoxContainer *vb = memnew(VBoxContainer);
 		//vb->set_anchors_preset(Control::PRESET_TOP_WIDE);
@@ -160,7 +160,7 @@ private:
 
 VoxelGraphEditor::VoxelGraphEditor() {
 	VBoxContainer *vbox_container = memnew(VBoxContainer);
-	vbox_container->set_anchors_and_margins_preset(Control::PRESET_WIDE);
+	vbox_container->set_anchors_and_offsets_preset(Control::PRESET_WIDE);
 
 	{
 		HBoxContainer *toolbar = memnew(HBoxContainer);
@@ -326,9 +326,8 @@ void VoxelGraphEditor::build_gui_from_graph() {
 
 	PackedInt32Array node_ids = graph.get_node_ids();
 	{
-		PackedInt32Array::Read node_ids_read = node_ids.read();
 		for (int i = 0; i < node_ids.size(); ++i) {
-			const uint32_t node_id = node_ids_read[i];
+			const uint32_t node_id = node_ids[i];
 			create_node_gui(node_id);
 		}
 	}
@@ -370,7 +369,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	ERR_FAIL_COND(_graph_edit->has_node(ui_node_name));
 
 	VoxelGraphEditorNode *node_view = memnew(VoxelGraphEditorNode);
-	node_view->set_offset(graph.get_node_gui_position(node_id) * EDSCALE);
+	node_view->set_position_offset(graph.get_node_gui_position(node_id) * EDSCALE);
 
 	StringName node_name = graph.get_node_name(node_id);
 	update_node_view_title(node_view, node_name, node_type.name);
@@ -500,7 +499,7 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 
 	if (mb.is_valid()) {
 		if (mb->is_pressed()) {
-			if (mb->get_button_index() == BUTTON_RIGHT) {
+			if (mb->get_button_index() == MOUSE_BUTTON_RIGHT) {
 				_click_position = mb->get_position();
 				_context_menu->set_position(get_global_mouse_position());
 				_context_menu->popup();
@@ -624,7 +623,7 @@ void VoxelGraphEditor::set_node_position(int id, Vector2 offset) {
 	String node_name = node_to_gui_name(id);
 	GraphNode *node_view = Object::cast_to<GraphNode>(_graph_edit->get_node(node_name));
 	if (node_view != nullptr) {
-		node_view->set_offset(offset);
+		node_view->set_position_offset(offset);
 	}
 	_graph->set_node_gui_position(id, offset / EDSCALE);
 }
@@ -950,7 +949,8 @@ void VoxelGraphEditor::_on_profile_button_pressed() {
 }
 
 void VoxelGraphEditor::_on_analyze_range_button_pressed() {
-	_range_analysis_dialog->popup_centered_minsize();
+	// _range_analysis_dialog->popup_centered_minsize();
+	_range_analysis_dialog->popup_centered();
 }
 
 void VoxelGraphEditor::_on_range_analysis_toggled(bool enabled) {

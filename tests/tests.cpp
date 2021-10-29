@@ -789,8 +789,8 @@ void test_instance_data_serialization() {
 			ERR_FAIL_COND(src_scale.distance_to(dst_scale) > scale_error);
 
 			// Had to normalize here because Godot doesn't want to give you a Quaternion if the basis is scaled (even uniformly)
-			const Quaternion src_rot = src_instance.transform.basis.orthonormalized().get_quat();
-			const Quaternion dst_rot = dst_instance.transform.basis.orthonormalized().get_quat();
+			const Quaternion src_rot = src_instance.transform.basis.orthonormalized().get_quaternion();
+			const Quaternion dst_rot = dst_instance.transform.basis.orthonormalized().get_quaternion();
 			const float rot_dx = Math::abs(src_rot.x - dst_rot.x);
 			const float rot_dy = Math::abs(src_rot.y - dst_rot.y);
 			const float rot_dz = Math::abs(src_rot.z - dst_rot.z);

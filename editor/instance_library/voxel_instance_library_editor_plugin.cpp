@@ -36,7 +36,8 @@ VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin(EditorNode *p
 	for (List<String>::Element *E = extensions.front(); E; E = E->next()) {
 		_open_scene_dialog->add_filter("*." + E->get());
 	}
-	_open_scene_dialog->set_mode(EditorFileDialog::MODE_OPEN_FILE);
+	// _open_scene_dialog->set_mode(EditorFileDialog::MODE_OPEN_FILE);
+	_open_scene_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
 	base_control->add_child(_open_scene_dialog);
 	_open_scene_dialog->connect("file_selected", this, "_on_open_scene_dialog_file_selected");
 
@@ -70,7 +71,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed(int id) {
 			Ref<VoxelInstanceLibraryItem> item;
 			item.instantiate();
 			// Setup some defaults
-			Ref<CubeMesh> mesh;
+			Ref<BoxMesh> mesh;
 			mesh.instantiate();
 			item->set_mesh(mesh, 0);
 			item->set_lod_index(2);
@@ -206,7 +207,7 @@ void VoxelInstanceLibraryEditorPlugin::update_multimesh_item_from_scene(String f
 	Ref<VoxelInstanceLibraryItem> item = item_base;
 	ERR_FAIL_COND_MSG(item.is_null(), "Item not using multimeshes");
 
-	Node *node = scene->instance();
+	Node *node = scene->instantiate();
 	ERR_FAIL_COND(node == nullptr);
 
 	Variant data_before = item->serialize_multimesh_item_properties();

@@ -36,7 +36,7 @@ public:
 				// Set a monospace font.
 				// Can't do this in constructor, fonts are not available then. Also the theme can change.
 				for (unsigned int i = 0; i < _stats.size(); ++i) {
-					_stats[i].label->add_font_override("font", get_font("source", "EditorFonts"));
+					_stats[i].label->add_theme_font_override("font", get_theme_font("source", "EditorFonts"));
 				}
 				break;
 		}

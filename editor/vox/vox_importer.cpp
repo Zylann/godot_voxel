@@ -66,8 +66,13 @@ static void add_mesh_instance(Ref<Mesh> mesh, Node *parent, Node *owner, Vector3
 	mesh_instance->set_mesh(mesh);
 	parent->add_child(mesh_instance);
 	mesh_instance->set_owner(owner);
-	mesh_instance->set_translation(offset);
-	mesh_instance->set_flag(GeometryInstance3D::FLAG_USE_BAKED_LIGHT, p_enable_baked_lighting);
+	mesh_instance->set_transform(Transform3D().translated(offset));
+	if (p_enable_baked_lighting) {
+		mesh_instance->set_gi_mode(GeometryInstance3D::GI_MODE_BAKED);
+	} else {
+		// TODO dynamic instead?
+		mesh_instance->set_gi_mode(GeometryInstance3D::GI_MODE_DISABLED);
+	}
 	// TODO Colliders? Needs conventions or attributes probably.
 	// But due to the nature of voxels, users may often prefer to place colliders themselves (slopes notably).
 }
@@ -273,7 +278,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 			mat->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 		}
 	}
-	materials[1]->set_feature(StandardMaterial3D::FEATURE_TRANSPARENT, true);
+	materials[1]->set_transparency(StandardMaterial3D::TRANSPARENCY_ALPHA);
 
 	// Build meshes from voxel models
 	for (unsigned int model_index = 0; model_index < data.get_model_count(); ++model_index) {
@@ -328,7 +333,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 					// See earlier code, I could not find any way to reference a separate StreamTexture.
 					Ref<ImageTexture> texture;
 					texture.instantiate();
-					texture->create_from_image(atlas, 0);
+					texture->create_from_image(atlas);
 					material->set_texture(StandardMaterial3D::TEXTURE_ALBEDO, texture);
 				}
 				mesh->surface_set_material(surface_index, material);

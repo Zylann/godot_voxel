@@ -15,7 +15,7 @@ public:
 		set_custom_minimum_size(Vector2(0, EDSCALE * PREVIEW_HEIGHT));
 
 		_texture_rect = memnew(TextureRect);
-		_texture_rect->set_anchors_and_margins_preset(Control::PRESET_WIDE);
+		_texture_rect->set_anchors_and_offsets_preset(Control::PRESET_WIDE);
 		_texture_rect->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_COVERED);
 		add_child(_texture_rect);
 	}
@@ -95,7 +95,7 @@ private:
 		im.instantiate();
 		im->create(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
 
-		im->lock();
+		// im->lock();
 
 		if (_noise.is_valid()) {
 			for (int y = 0; y < preview_size.y; ++y) {
@@ -126,7 +126,7 @@ private:
 			}
 		}
 
-		im->unlock();
+		// im->unlock();
 
 		Ref<ImageTexture> tex;
 		tex.instantiate();

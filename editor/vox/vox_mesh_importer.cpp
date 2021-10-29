@@ -320,7 +320,8 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 			mat->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 		}
 	}
-	materials[1]->set_feature(StandardMaterial3D::FEATURE_TRANSPARENT, true);
+	materials[1]->set_transparency(StandardMaterial3D::TRANSPARENCY_ALPHA);
+	// materials[1]->set_feature(StandardMaterial3D::Feature::T, true);
 
 	// Assign materials
 	if (p_store_colors_in_textures) {
@@ -336,7 +337,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 				// See earlier code, I could not find any way to reference a separate StreamTexture.
 				Ref<ImageTexture> texture;
 				texture.instantiate();
-				texture->create_from_image(atlas, 0);
+				texture->create_from_image(atlas);
 				material->set_texture(StandardMaterial3D::TEXTURE_ALBEDO, texture);
 			}
 			mesh->surface_set_material(surface_index, material);
