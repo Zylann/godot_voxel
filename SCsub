@@ -47,8 +47,8 @@ voxel_files = [
 	"edition/*.cpp",
 
 	"thirdparty/lz4/*.c",
-	"thirdparty/sqlite/*.c",
-	"thirdparty/meshoptimizer/*.cpp"
+	"thirdparty/sqlite/*.c"
+	#"thirdparty/meshoptimizer/*.cpp"
 ]
 
 if env["tools"]:
