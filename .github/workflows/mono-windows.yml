@@ -34,17 +34,8 @@ jobs:
         run: |
           choco install python git
 
-      # Cache Mono Sources
-      - name: Cache Mono Sources
-        id: cache_mono_sources
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.MONO_SOURCE_ROOT }}
-          key: ${{ runner.os }}-${{ env.MONO_TAG }}-mono-sources
-      
       # Clone/Use Cached Mono
       - name: Checkout Mono Sources
-        if: steps.cache_mono_sources.outputs.cache-hit != 'true'
         uses: actions/checkout@v2
         with:
           repository: mono/mono
