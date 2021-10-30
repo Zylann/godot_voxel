@@ -34,7 +34,7 @@ jobs:
 
       # Install Mono
       - name: Install Mono
-        runs: choco install mono
+        run: choco install mono
       
       # Clone/Use Cached Mono
       - name: Checkout Mono Sources
