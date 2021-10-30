@@ -356,6 +356,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 }*/
 
 void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
+	// Mesh block size cannot be smaller than data block size, for now
 	mesh_block_size = clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
 
 	unsigned int po2;
@@ -2253,6 +2254,7 @@ void VoxelLodTerrain::_b_save_modified_blocks() {
 }
 
 void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {
+	ERR_FAIL_COND(!is_valid_size(aabb.size));
 	// TODO Please Godot, have an integer AABB!
 	set_voxel_bounds(Box3i(aabb.position.round(), aabb.size.round()));
 }
@@ -2498,6 +2500,8 @@ void VoxelLodTerrain::set_show_gizmos(bool enable) {
 #endif
 
 Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const {
+	ERR_FAIL_COND_V(!is_valid_size(extents), Array());
+
 	Array image_array;
 	image_array.resize(get_lod_count());
 

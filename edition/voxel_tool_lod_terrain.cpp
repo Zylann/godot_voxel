@@ -597,6 +597,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 
 Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Node *parent_node) {
 	ERR_FAIL_COND_V(_terrain == nullptr, Array());
+	ERR_FAIL_COND_V(!is_valid_size(world_box.size), Array());
 	Ref<VoxelMesher> mesher = _terrain->get_mesher();
 	Array materials;
 	materials.append(_terrain->get_material());

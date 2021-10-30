@@ -1446,6 +1446,9 @@ float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
 }
 
 Vector2 VoxelGeneratorGraph::_b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const {
+	ERR_FAIL_COND_V(min_pos.x > max_pos.x, Vector2());
+	ERR_FAIL_COND_V(min_pos.y > max_pos.y, Vector2());
+	ERR_FAIL_COND_V(min_pos.z > max_pos.z, Vector2());
 	const Interval r = debug_analyze_range(
 			Vector3i::from_floored(min_pos), Vector3i::from_floored(max_pos), false);
 	return Vector2(r.min, r.max);

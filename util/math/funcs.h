@@ -112,7 +112,7 @@ inline T squared(const T x) {
 //    6   | 2   | 2
 inline int floordiv(int x, int d) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(d < 0);
+	CRASH_COND(d <= 0);
 #endif
 	if (x < 0) {
 		return (x - d + 1) / d;
@@ -152,6 +152,23 @@ inline float fract(float x) {
 
 inline Vector3 fract(const Vector3 &p) {
 	return Vector3(fract(p.x), fract(p.y), fract(p.z));
+}
+
+inline bool is_valid_size(const Vector3 &s) {
+	return s.x >= 0 && s.y >= 0 && s.z >= 0;
+}
+
+inline bool is_power_of_two(size_t x) {
+	return x != 0 && (x & (x - 1)) == 0;
+}
+
+// If the provided address `a` is not aligned to the number of bytes specified in `align`,
+// returns the next aligned address. `align` must be a power of two.
+inline size_t alignup(size_t a, size_t align) {
+#ifdef DEBUG_ENABLED
+	CRASH_COND(!is_power_of_two(align));
+#endif
+	return (a + align - 1) & ~(align - 1);
 }
 
 // inline bool is_power_of_two(int i) {
