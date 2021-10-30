@@ -49,10 +49,10 @@ jobs:
       # Apply the debugger fix
       - name: Patch Mono
         run: |
-          cd ${{ env.MONO_SOURCE_ROOT }}
+          pushd ${{ env.MONO_SOURCE_ROOT }}
           curl --location https://raw.githubusercontent.com/godotengine/godot-mono-builds/master/files/patches/mono-dbg-agent-clear-tls-instead-of-abort.diff
           git apply mono-dbg-agent-clear-tls-instead-of-abort.diff
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+          popd
 
       # Build mono for Windows
       - name: Build Mono
