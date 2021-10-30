@@ -49,9 +49,10 @@ jobs:
       # Apply the debugger fix
       - name: Patch Mono
         run: |
-          pushd ${{ env.MONO_SOURCE_ROOT }}
-          git apply godot_voxel/godot_voxel/.github/files/mono-dbg-agent-clear-tls-instead-of-abort.diff
-          popd
+          cd ${{ env.MONO_SOURCE_ROOT }}
+          curl --location https://raw.githubusercontent.com/godotengine/godot-mono-builds/master/files/patches/mono-dbg-agent-clear-tls-instead-of-abort.diff
+          git apply mono-dbg-agent-clear-tls-instead-of-abort.diff
+        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
 
       # Build mono for Windows
       - name: Build Mono
