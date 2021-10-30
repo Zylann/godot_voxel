@@ -26,7 +26,6 @@ jobs:
       # Set Mono Root
       - name: Set Environment Variables
         run: |
-          git config core.autocrlf input
           echo "MONO_SOURCE_ROOT=$GITHUB_WORKSPACE/mono_sources" >> $GITHUB_ENV
           echo "MONO_PREFIX=$GITHUB_WORKSPACE/mono_builds" >> $GITHUB_ENV
           echo "MONO_SOURCE_ROOT_SH=$GITHUB_WORKSPACE/mono_sources" | tr \ / >> $GITHUB_ENV
