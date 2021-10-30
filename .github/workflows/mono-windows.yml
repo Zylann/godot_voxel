@@ -42,17 +42,11 @@ jobs:
       - name: Clean Mono
         run: pushd ${{ env.MONO_SOURCE_ROOT }} && git reset --hard && git clean -xffd && git submodule foreach --recursive git reset --hard && git submodule foreach --recursive git clean -xffd && git submodule update --init --recursive && popd
 
-      # Clone our lib for file access
-      - name: Clone Voxel
-        uses: actions/checkout@v2
-        with:
-          path: godot-voxel 
-
       # Apply the debugger fix
       - name: Patch Mono
         run: |
           pushd ${{ env.MONO_SOURCE_ROOT }}
-          git apply godot-voxel/.github/files/mono-dbg-agent-clear-tls-instead-of-abort.diff
+          git apply $GITHUB_WORKSPACE/.github/files/mono-dbg-agent-clear-tls-instead-of-abort.diff
           popd
 
       # Build mono for Windows
