@@ -29,10 +29,13 @@ jobs:
           platform: x64
           packages: autoconf automake bison gcc-core gcc-g++ mingw64-i686-runtime mingw64-i686-binutils mingw64-i686-gcc-core mingw64-i686-gcc-g++ mingw64-i686-pthreads mingw64-i686-w32api mingw64-x86_64-runtime mingw64-x86_64-binutils mingw64-x86_64-gcc-core mingw64-x86_64-gcc-g++ mingw64-x86_64-pthreads mingw64-x86_64-w32api libtool make python gettext-devel gettext intltool libiconv pkg-config git curl wget libxslt bc patch cmake perl yasm unzip
 
+      - name: Install Chocolately (Packages for windows)
+        uses: crazy-max/ghaction-chocolatey@v1
+
       # Install Dependencies for Windows build
       - name: Install Dependencies (x86_64)
         run: |
-          scoop install python git
+          choco install python git
 
       # Cache Mono Sources
       - name: Cache Mono Sources
@@ -88,6 +91,7 @@ jobs:
   mono-glue:
     runs-on: "windows-latest"
     name: Generate Mono Glue
+    needs: build-mono
 
     steps:
       # Clone Godot
@@ -106,6 +110,9 @@ jobs:
       - name: Move nuget.config
         run: mv godot/modules/voxel/nuget.config godot/nuget.config
 
+      - name: Install Chocolately (Packages for windows)
+        uses: crazy-max/ghaction-chocolatey@v1
+
       # Azure repositories are not reliable, we need to prevent azure giving us packages.
       # - name: Make apt sources.list use the default Ubuntu repositories
       #  run: |
@@ -122,7 +129,7 @@ jobs:
 
       # Install all packages (except scons)
       - name: Configure dependencies
-        run: scoop install gcc python scons yasm make
+        run: choco install gcc python scons yasm make
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
