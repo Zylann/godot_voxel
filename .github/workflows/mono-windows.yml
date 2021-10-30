@@ -36,7 +36,6 @@ jobs:
         with:
           repository: mono/mono
           ref: ${{ env.MONO_TAG }}
-          submodules: true
           path: ${{ env.MONO_SOURCE_ROOT }}
 
       # Clean the Mono repo, get submodules
