@@ -1,0 +1,181 @@
+name: 🐒 Mono Windows Builds
+on:
+  push:
+    branches: [ master, github_actions ]
+  pull_request:
+    branches: [ master ]
+
+# Global Cache Settings
+env:
+  GODOT_BASE_BRANCH: 3.x
+  SCONS_CACHE_LIMIT: 4096
+  MONO_TAG: mono-6.12.0.147
+
+jobs:
+  build-mono:
+    runs-on: "windows-latest"
+    name: Build Mono
+
+    steps:
+      # Set Mono Root
+      - name: Set Environment Variables
+        run: |
+          echo "MONO_SOURCE_ROOT=$GITHUB_WORKSPACE/mono_sources" >> $GITHUB_ENV
+          echo "MONO_PREFIX=$GITHUB_WORKSPACE/mono_builds" >> $GITHUB_ENV
+
+      - name: Set up Cygwin
+        uses: egor-tensin/setup-cygwin@v3
+        with:
+          platform: x64
+          packages: autoconf automake bison gcc-core gcc-g++ mingw64-i686-runtime mingw64-i686-binutils mingw64-i686-gcc-core mingw64-i686-gcc-g++ mingw64-i686-pthreads mingw64-i686-w32api mingw64-x86_64-runtime mingw64-x86_64-binutils mingw64-x86_64-gcc-core mingw64-x86_64-gcc-g++ mingw64-x86_64-pthreads mingw64-x86_64-w32api libtool make python gettext-devel gettext intltool libiconv pkg-config git curl wget libxslt bc patch cmake perl yasm unzip
+
+      # Install Dependencies for Windows build
+      - name: Install Dependencies (x86_64)
+        run: |
+          scoop install python git
+
+      # Cache Mono Sources
+      - name: Cache Mono Sources
+        id: cache_mono_sources
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.MONO_SOURCE_ROOT }}
+          key: ${{ runner.os }}-${{ env.MONO_TAG }}-mono-sources
+      
+      # Clone/Use Cached Mono
+      - name: Checkout Mono Sources
+        if: steps.cache_mono_sources.outputs.cache-hit != 'true'
+        uses: actions/checkout@v2
+        with:
+          repository: mono/mono
+          ref: ${{ env.MONO_TAG }}
+          submodules: true
+          path: ${{ env.MONO_SOURCE_ROOT }}
+
+      # Clean the Mono repo, get submodules
+      - name: Clean Mono
+        run: pushd ${{ env.MONO_SOURCE_ROOT }} && git reset --hard && git clean -xffd && git submodule foreach --recursive git reset --hard && git submodule foreach --recursive git clean -xffd && git submodule update --init --recursive && popd
+
+      # Clone our lib for file access
+      - name: Clone Voxel
+        uses: actions/checkout@v2
+        with:
+          path: godot-voxel 
+
+      # Apply the debugger fix
+      - name: Patch Mono
+        run: |
+          pushd ${{ env.MONO_SOURCE_ROOT }}
+          git apply godot-voxel/.github/files/mono-dbg-agent-clear-tls-instead-of-abort.diff
+          popd
+
+      # Build mono for Windows
+      - name: Build Mono
+        run: |
+          cd ${{ env.MONO_SOURCE_ROOT }}
+          ./autogen.sh --prefix=${{ env.MONO_PREFIX }} --host=x86_64-w64-mingw32 --enable-msvc --disable-boehm --with-static_mono=yes --with-tls=pthread --without-ikvm-native
+          make get-monolite-latest
+          make -j2
+          make install
+        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+
+      # Make glue available as artifact for dependent jobs
+      - uses: actions/upload-artifact@v2
+        with:
+          name: mono-builds
+          path: ${{ env.MONO_PREFIX }}
+          
+  mono-glue:
+    runs-on: "windows-latest"
+    name: Generate Mono Glue
+
+    steps:
+      # Clone Godot
+      - uses: actions/checkout@v2
+        with:
+          repository: godotengine/godot
+          ref: 3.x
+          path: godot
+
+      # Clone our module under the correct directory
+      - uses: actions/checkout@v2
+        with:
+          path: godot/modules/voxel
+
+      # Move nuget.config from voxel repo to root of checkout, so msbuild can find it
+      - name: Move nuget.config
+        run: mv godot/modules/voxel/nuget.config godot/nuget.config
+
+      # Azure repositories are not reliable, we need to prevent azure giving us packages.
+      # - name: Make apt sources.list use the default Ubuntu repositories
+      #  run: |
+      #    sudo rm -f /etc/apt/sources.list.d/*
+      #    sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+      #    sudo apt-get update
+
+      # Download Mono Build
+      - name: Download Mono
+        uses: actions/download-artifact@v2
+        with:
+          name: mono-builds
+          path: mono-build
+
+      # Install all packages (except scons)
+      - name: Configure dependencies
+        run: scoop install gcc python scons yasm make
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: mono-glue-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
+      # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          # Semantic version range syntax or exact version of a Python version
+          python-version: '3.x'
+          # Optional - x64 or x86 architecture, defaults to x64
+          architecture: 'x64'
+
+      # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
+      - name: Configuring Python packages
+        run: |
+          python -c "import sys; print(sys.version)"
+          python -m pip install scons
+          python --version
+          scons --version
+      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      - name: Compile Godot (module_mono_enabled=yes mono_glue=no)
+        env:
+          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
+        run: |
+          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_prefix=mono-build mono_bcl=mono-build/lib/mono/4.5
+      - name: Generate Mono Glue
+        run: |
+          /bin/godot.windows.opt.tools.64.mono.exe --generate-mono-glue godot/modules/mono/glue
+
+      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      - name: Compilation
+        env:
+          SCONS_CACHE_MSVC_CONFIG: true
+          SCONS_CACHE: /.scons_cache/
+        run: |
+          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=mono-build mono_bcl=mono/lib/mono/4.5
+      # TODO Such tests are able to run from Godot 4.0 only
+      # Execute unit tests for the editor
+      #- name: Unit Tests
+      #  run: |
+      #    ./bin/godot.windows.opt.tools.64.mono.exe --test
+
+      # Make build available
+      - uses: actions/upload-artifact@v2
+        with:
+          name: godot.windows.opt.tools.64.mono
+          path: bin/*
