@@ -65,6 +65,7 @@ jobs:
         run: |
           cd ${{ env.MONO_SOURCE_ROOT_SH }}
           ./autogen.sh --prefix=${{ env.MONO_PREFIX_SH }} --host=x86_64-w64-mingw32 --enable-msvc --disable-boehm --with-static_mono=yes --with-tls=pthread --without-ikvm-native
+          make get-monolite-latest
           make -j2
           make install
         shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
