@@ -104,6 +104,7 @@ jobs:
           cd mono-builds
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
           cd mono-build
+          Get-ChildItem
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
 
       - name: Download Mono BCL
