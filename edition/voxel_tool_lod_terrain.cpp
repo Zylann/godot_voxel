@@ -166,7 +166,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	const Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	const Box3i box(Vector3i::from_floored(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
 		return;
@@ -601,7 +601,7 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Node *parent
 	Ref<VoxelMesher> mesher = _terrain->get_mesher();
 	Array materials;
 	materials.append(_terrain->get_material());
-	const Box3i int_world_box(world_box.position.floor(), world_box.size.ceil());
+	const Box3i int_world_box(Vector3i::from_floored(world_box.position), Vector3i::from_ceiled(world_box.size));
 	return ::separate_floating_chunks(
 			*this, int_world_box, parent_node, _terrain->get_global_transform(), mesher, materials);
 }

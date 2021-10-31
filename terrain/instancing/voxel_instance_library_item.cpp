@@ -161,7 +161,6 @@ static Vector<VoxelInstanceLibraryItem::CollisionShapeInfo> deserialize_collisio
 	return infos;
 }
 
-// This is used to support undo/redo with the "setup from scene" feature
 Array VoxelInstanceLibraryItem::serialize_multimesh_item_properties() const {
 	Array a;
 	for (unsigned int i = 0; i < _mesh_lods.size(); ++i) {
@@ -258,6 +257,8 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 			"set_collision_layer", "get_collision_layer");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
 			"set_collision_mask", "get_collision_mask");
+
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_shapes"), "set_collision_shapes", "get_collision_shapes");
 
 	BIND_CONSTANT(MAX_MESH_LODS);
 }

@@ -55,8 +55,19 @@ public:
 
 	~VoxelBuffer();
 
-	inline const VoxelBufferInternal &get_buffer() const { return *_buffer; }
-	inline VoxelBufferInternal &get_buffer() { return *_buffer; }
+	inline const VoxelBufferInternal &get_buffer() const {
+#ifdef DEBUG_ENABLED
+		CRASH_COND(_buffer == nullptr);
+#endif
+		return *_buffer;
+	}
+
+	inline VoxelBufferInternal &get_buffer() {
+#ifdef DEBUG_ENABLED
+		CRASH_COND(_buffer == nullptr);
+#endif
+		return *_buffer;
+	}
 
 	//inline std::shared_ptr<VoxelBufferInternal> get_buffer_shared() { return _buffer; }
 
@@ -92,7 +103,7 @@ public:
 	void fill(uint64_t defval, unsigned int channel_index = 0);
 	void fill_f(real_t value, unsigned int channel = 0);
 	void fill_area(uint64_t defval, Vector3 min, Vector3 max, unsigned int channel_index) {
-		_buffer->fill_area(defval, Vector3i(min), Vector3i(max), channel_index);
+		_buffer->fill_area(defval, Vector3i::from_floored(min), Vector3i::from_floored(max), channel_index);
 	}
 
 	bool is_uniform(unsigned int channel_index) const;
@@ -120,10 +131,10 @@ public:
 	void set_block_metadata(Variant meta);
 
 	Variant get_voxel_metadata(Vector3 pos) const {
-		return _buffer->get_voxel_metadata(Vector3i(pos));
+		return _buffer->get_voxel_metadata(Vector3i::from_floored(pos));
 	}
 	void set_voxel_metadata(Vector3 pos, Variant meta) {
-		_buffer->set_voxel_metadata(Vector3i(pos), meta);
+		_buffer->set_voxel_metadata(Vector3i::from_floored(pos), meta);
 	}
 	void for_each_voxel_metadata(Ref<FuncRef> callback) const;
 	void for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Vector3 min_pos, Vector3 max_pos);

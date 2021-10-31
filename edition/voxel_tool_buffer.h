@@ -3,8 +3,6 @@
 
 #include "voxel_tool.h"
 
-class VoxelBuffer;
-
 class VoxelToolBuffer : public VoxelTool {
 	GDCLASS(VoxelToolBuffer, VoxelTool)
 public:

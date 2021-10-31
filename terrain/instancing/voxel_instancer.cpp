@@ -1180,7 +1180,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Tra
 	for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
 		// TODO This is terrible in MT mode! Think about keeping a local copy...
 		const Transform mm_transform = multimesh->get_instance_transform(instance_index);
-		const Vector3i voxel_pos(mm_transform.origin + block_global_transform.origin);
+		const Vector3i voxel_pos(Vector3i::from_floored(mm_transform.origin + block_global_transform.origin));
 
 		if (!p_voxel_box.contains(voxel_pos)) {
 			continue;
@@ -1261,7 +1261,7 @@ void VoxelInstancer::remove_floating_scene_instances(Block &block, const Transfo
 		SceneInstance instance = block.scene_instances[instance_index];
 		ERR_CONTINUE(instance.root == nullptr);
 		const Transform scene_transform = instance.root->get_transform();
-		const Vector3i voxel_pos(scene_transform.origin + block_global_transform.origin);
+		const Vector3i voxel_pos(Vector3i::from_floored(scene_transform.origin + block_global_transform.origin));
 
 		if (!p_voxel_box.contains(voxel_pos)) {
 			continue;
