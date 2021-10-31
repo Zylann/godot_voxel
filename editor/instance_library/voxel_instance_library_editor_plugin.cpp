@@ -134,7 +134,7 @@ int VoxelInstanceLibraryEditorPlugin::try_get_selected_item_id() {
 				TTR(String("Could not determine selected item from property path: `{0}`.\n"
 						   "You must select the `item_X` property label of the item you want to remove."))
 						.format(varray(path)));
-		_info_dialog->popup();
+		_info_dialog->popup_centered();
 		return -1;
 	}
 }
