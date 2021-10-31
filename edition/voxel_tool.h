@@ -192,7 +192,7 @@ private:
 		do_sphere(pos, radius);
 	}
 	void _b_do_box(Vector3 begin, Vector3 end) {
-		do_box(Vector3i::from_floored(begin), Vector3i(end));
+		do_box(Vector3i::from_floored(begin), Vector3i::from_floored(end));
 	}
 	void _b_copy(Vector3 pos, Ref<Reference> voxels, int channel_mask) {
 		copy(Vector3i::from_floored(pos), voxels, channel_mask);

@@ -33,7 +33,7 @@ private:
 	uint32_t _viewer_id = 0;
 	unsigned int _view_distance = 128;
 	bool _requires_visuals = true;
-	bool _requires_collisions = false;
+	bool _requires_collisions = true;
 };
 
 #endif // VOXEL_VIEWER_H

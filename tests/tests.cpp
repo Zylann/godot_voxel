@@ -493,7 +493,7 @@ void test_voxel_graph_generator_texturing() {
 					VoxelBufferInternal buffer0;
 					{
 						buffer0.create(Vector3i(16, 16, 16));
-						VoxelBlockRequest request{ buffer0, Vector3(0, -16, 0), 0 };
+						VoxelBlockRequest request{ buffer0, Vector3i(0, -16, 0), 0 };
 						generator->generate_block(request);
 					}
 
@@ -501,7 +501,7 @@ void test_voxel_graph_generator_texturing() {
 					VoxelBufferInternal buffer1;
 					{
 						buffer1.create(Vector3i(16, 16, 16));
-						VoxelBlockRequest request{ buffer1, Vector3(0, 0, 0), 0 };
+						VoxelBlockRequest request{ buffer1, Vector3i(0, 0, 0), 0 };
 						generator->generate_block(request);
 					}
 

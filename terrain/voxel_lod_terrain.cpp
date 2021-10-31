@@ -376,6 +376,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 }*/
 
 void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
+	// Mesh block size cannot be smaller than data block size, for now
 	mesh_block_size = clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
 
 	// Only these sizes are allowed at the moment. This stuff is still not supported in a generic way yet,
@@ -959,7 +960,7 @@ Vector3 VoxelLodTerrain::voxel_to_data_block_position(Vector3 vpos, int lod_inde
 	ERR_FAIL_COND_V(lod_index < 0, Vector3());
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3());
 	const VoxelDataLodMap::Lod &lod = _data->lods[lod_index];
-	Vector3i bpos = lod.map.voxel_to_block(Vector3i(vpos)) >> lod_index;
+	Vector3i bpos = lod.map.voxel_to_block(Vector3i::from_floored(vpos)) >> lod_index;
 	return bpos.to_vec3();
 }
 
@@ -967,7 +968,7 @@ Vector3 VoxelLodTerrain::voxel_to_mesh_block_position(Vector3 vpos, int lod_inde
 	ERR_FAIL_COND_V(lod_index < 0, Vector3());
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3());
 	const Lod &lod = _lods[lod_index];
-	Vector3i bpos = lod.mesh_map.voxel_to_block(Vector3i(vpos)) >> lod_index;
+	Vector3i bpos = lod.mesh_map.voxel_to_block(Vector3i::from_floored(vpos)) >> lod_index;
 	return bpos.to_vec3();
 }
 
@@ -1412,7 +1413,8 @@ void VoxelLodTerrain::process_unload_data_blocks_sliding_box(Vector3 p_viewer_po
 		// The player can edit them so changes can be propagated to lower lods.
 
 		const unsigned int block_size_po2 = get_data_block_size_pow2() + lod_index;
-		const Vector3i viewer_block_pos_within_lod = VoxelDataMap::voxel_to_block_b(p_viewer_pos, block_size_po2);
+		const Vector3i viewer_block_pos_within_lod =
+				VoxelDataMap::voxel_to_block_b(Vector3i::from_floored(p_viewer_pos), block_size_po2);
 
 		const Box3i bounds_in_blocks = Box3i(
 				_bounds_in_voxels.pos >> block_size_po2,
@@ -1491,7 +1493,8 @@ void VoxelLodTerrain::process_unload_mesh_blocks_sliding_box(Vector3 p_viewer_po
 		Lod &lod = _lods[lod_index];
 
 		unsigned int block_size_po2 = _lods[0].mesh_map.get_block_size_pow2() + lod_index;
-		Vector3i viewer_block_pos_within_lod = VoxelMeshMap::voxel_to_block_b(p_viewer_pos, block_size_po2);
+		const Vector3i viewer_block_pos_within_lod =
+				VoxelMeshMap::voxel_to_block_b(Vector3i::from_floored(p_viewer_pos), block_size_po2);
 
 		const Box3i bounds_in_blocks = Box3i(
 				_bounds_in_voxels.pos >> block_size_po2,
@@ -1540,7 +1543,8 @@ void VoxelLodTerrain::process_octrees_sliding_box(Vector3 p_viewer_pos) {
 	const unsigned int octree_size = 1 << octree_size_po2;
 	const unsigned int octree_region_extent = 1 + _view_distance_voxels / (1 << octree_size_po2);
 
-	const Vector3i viewer_octree_pos = (Vector3i(p_viewer_pos) + Vector3i(octree_size / 2)) >> octree_size_po2;
+	const Vector3i viewer_octree_pos =
+			(Vector3i::from_floored(p_viewer_pos) + Vector3i(octree_size / 2)) >> octree_size_po2;
 
 	const Box3i bounds_in_octrees = _bounds_in_voxels.downscaled(octree_size);
 
@@ -2605,8 +2609,8 @@ void VoxelLodTerrain::_b_save_modified_blocks() {
 }
 
 void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {
-	// TODO Please Godot, have an integer AABB!
-	set_voxel_bounds(Box3i(aabb.position.round(), aabb.size.round()));
+	ERR_FAIL_COND(!is_valid_size(aabb.size));
+	set_voxel_bounds(Box3i(Vector3i::from_rounded(aabb.position), Vector3i::from_rounded(aabb.size)));
 }
 
 AABB VoxelLodTerrain::_b_get_voxel_bounds() const {
@@ -2628,7 +2632,7 @@ Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 wo
 	while (distance < max_distance && hits.size() == 0) {
 		for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 			const Lod &lod = _lods[lod_index];
-			Vector3i bpos = lod.mesh_map.voxel_to_block(Vector3i(pos)) >> lod_index;
+			const Vector3i bpos = lod.mesh_map.voxel_to_block(Vector3i::from_floored(pos)) >> lod_index;
 			const VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
 			if (block != nullptr && block->is_visible() && block->has_mesh()) {
 				Dictionary d;
@@ -2871,11 +2875,14 @@ void VoxelLodTerrain::set_show_gizmos(bool enable) {
 
 // This copies at multiple LOD levels to debug mips
 Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) {
+	ERR_FAIL_COND_V(!is_valid_size(extents), Array());
+
 	Array image_array;
 	image_array.resize(get_lod_count());
 
 	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
-		const Box3i world_box = Box3i::from_center_extents(Vector3i(center) >> lod_index, Vector3i(extents) >> lod_index);
+		const Box3i world_box = Box3i::from_center_extents(
+				Vector3i::from_floored(center) >> lod_index, Vector3i::from_floored(extents) >> lod_index);
 
 		if (world_box.size.volume() == 0) {
 			continue;

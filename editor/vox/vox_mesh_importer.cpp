@@ -150,9 +150,9 @@ static void extract_model_instances(const vox::Data &vox_data, std::vector<Model
 			src_color_indices = to_span_const(model.color_indexes);
 		} else {
 			IntBasis basis;
-			basis.x = args.basis.get_axis(Vector3::AXIS_X);
-			basis.y = args.basis.get_axis(Vector3::AXIS_Y);
-			basis.z = args.basis.get_axis(Vector3::AXIS_Z);
+			basis.x = Vector3i::from_cast(args.basis.get_axis(Vector3::AXIS_X));
+			basis.y = Vector3i::from_cast(args.basis.get_axis(Vector3::AXIS_Y));
+			basis.z = Vector3i::from_cast(args.basis.get_axis(Vector3::AXIS_Z));
 			temp_voxels.resize(model.color_indexes.size());
 			dst_size = transform_3d_array_zxy(
 					to_span_const(model.color_indexes), to_span(temp_voxels), model.size, basis);

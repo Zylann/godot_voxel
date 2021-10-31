@@ -17,23 +17,6 @@
 //#define VOXEL_DEBUG_GRAPH_PROG_SENTINEL uint16_t(12345) // 48, 57 (base 10)
 //#endif
 
-template <typename T>
-inline const T &read(const Span<const uint8_t> &mem, uint32_t &p) {
-#ifdef DEBUG_ENABLED
-	CRASH_COND(p + sizeof(T) > mem.size());
-#endif
-	const T *v = reinterpret_cast<const T *>(&mem[p]);
-	p += sizeof(T);
-	return *v;
-}
-
-template <typename T>
-inline void append(std::vector<uint8_t> &mem, const T &v) {
-	size_t p = mem.size();
-	mem.resize(p + sizeof(T));
-	*(T *)(&mem[p]) = v;
-}
-
 // The Image lock() API prevents us from reading the same image in multiple threads.
 // Compiling makes a read-only copy of all resources, so we can lock all images up-front if successful.
 // This might no longer needed in Godot 4.
@@ -217,7 +200,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	_program.y_input_address = mem.add_binding();
 	_program.z_input_address = mem.add_binding();
 
-	std::vector<uint8_t> &operations = _program.operations;
+	std::vector<uint16_t> &operations = _program.operations;
 	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
 
 	// Run through each node in order, and turn them into program instructions
@@ -284,7 +267,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		}
 		_program.default_execution_map.operation_adresses.push_back(operations.size());
 
-		append(operations, static_cast<uint8_t>(node->type_id));
+		operations.push_back(node->type_id);
 
 		// Inputs and outputs use a convention so we can have generic code for them.
 		// Parameters are more specific, and may be affected by alignment so better just do them by hand
@@ -314,7 +297,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 				++dg_node.end_dependency;
 			}
 
-			append(operations, a);
+			operations.push_back(a);
 
 			BufferSpec &bs = _program.buffer_specs[a];
 			++bs.users_count;
@@ -328,12 +311,12 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 			const ProgramGraph::PortLocation op{ node_id, static_cast<uint32_t>(j) };
 			_program.output_port_addresses[op] = a;
 
-			append(operations, a);
+			operations.push_back(a);
 		}
 
 		// Add space for params size, default is no params so size is 0
 		size_t params_size_index = operations.size();
-		append<uint16_t>(operations, 0);
+		operations.push_back(0);
 
 		// Get params, copy resources when used, and hold a reference to them
 		std::vector<Variant> params_copy;
@@ -364,7 +347,6 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		}
 
 		if (type.compile_func != nullptr) {
-			const size_t size_before = operations.size();
 			CompileContext ctx(*node, operations, _program.heap_resources, params_copy);
 			type.compile_func(ctx);
 			if (ctx.has_error()) {
@@ -374,9 +356,9 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 				result.node_id = node_id;
 				return result;
 			}
-			const size_t params_size = operations.size() - size_before;
+			const size_t params_size = ctx.get_params_size_in_words();
 			CRASH_COND(params_size > std::numeric_limits<uint16_t>::max());
-			*reinterpret_cast<uint16_t *>(&operations[params_size_index]) = params_size;
+			operations[params_size_index] = params_size;
 		}
 
 		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
@@ -414,7 +396,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 	PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, buffers: {1}")
 						  .format(varray(
-								  SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(float)),
+								  SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(uint16_t)),
 								  SIZE_T_TO_VARIANT(_program.buffer_count))));
 
 	_program.lock_images();
@@ -425,15 +407,15 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 }
 
 static Span<const uint16_t> get_outputs_from_op_address(
-		Span<const uint8_t> operations, uint16_t op_address) {
-	const uint8_t opid = operations[op_address];
+		Span<const uint16_t> operations, uint16_t op_address) {
+	const uint16_t opid = operations[op_address];
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
-	const uint32_t inputs_size = node_type.inputs.size() * sizeof(uint16_t);
-	const uint32_t outputs_size = node_type.outputs.size() * sizeof(uint16_t);
+	const uint32_t inputs_count = node_type.inputs.size();
+	const uint32_t outputs_count = node_type.outputs.size();
 
 	// The +1 is for `opid`
-	return operations.sub(op_address + 1 + inputs_size, outputs_size).reinterpret_cast_to<const uint16_t>();
+	return operations.sub(op_address + 1 + inputs_count, outputs_count);
 }
 
 bool VoxelGraphRuntime::is_operation_constant(const State &state, uint16_t op_address) const {
@@ -548,7 +530,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 		}
 	}
 
-	Span<const uint8_t> operations(program.operations.data(), 0, program.operations.size());
+	Span<const uint16_t> operations(program.operations.data(), 0, program.operations.size());
 	bool xzy_start_not_assigned = true;
 
 	// Now we have to fill buffers with the local constants we may have found.
@@ -637,7 +619,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 				CRASH_COND(buffer.data != nullptr);
 			} else if (buffer.data != nullptr) {
 				// Deallocate this buffer if it wasnt a binding and contained something
-				memdelete(buffer.data);
+				memfree(buffer.data);
 			}
 		}
 
@@ -730,6 +712,20 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 	}*/
 }
 
+static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, unsigned int &pc) {
+	const uint16_t params_size_in_words = operations[pc];
+	++pc;
+	Span<const uint8_t> params;
+	if (params_size_in_words > 0) {
+		const size_t params_offset_in_words = operations[pc];
+		// Seek to aligned position where params start
+		pc += params_offset_in_words;
+		params = operations.sub(pc, params_size_in_words).reinterpret_cast_to<const uint8_t>();
+		pc += params_size_in_words;
+	}
+	return params;
+}
+
 void VoxelGraphRuntime::generate_set(State &state,
 		Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
 		const ExecutionMap *execution_map) const {
@@ -789,7 +785,7 @@ void VoxelGraphRuntime::generate_set(State &state,
 		L::bind_buffer(buffers, _program.z_input_address, in_z);
 	}
 
-	const Span<const uint8_t> operations(_program.operations.data(), 0, _program.operations.size());
+	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
 	Span<const uint16_t> op_adresses = execution_map != nullptr ?
 											   to_span_const(execution_map->operation_adresses) :
@@ -804,25 +800,18 @@ void VoxelGraphRuntime::generate_set(State &state,
 	for (unsigned int execution_map_index = 0; execution_map_index < op_adresses.size(); ++execution_map_index) {
 		unsigned int pc = op_adresses[execution_map_index];
 
-		const uint8_t opid = operations[pc++];
+		const uint16_t opid = operations[pc++];
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
-		const uint32_t inputs_size = node_type.inputs.size() * sizeof(uint16_t);
-		const uint32_t outputs_size = node_type.outputs.size() * sizeof(uint16_t);
+		const uint32_t inputs_count = node_type.inputs.size();
+		const uint32_t outputs_count = node_type.outputs.size();
 
-		const Span<const uint16_t> inputs =
-				operations.sub(pc, inputs_size).reinterpret_cast_to<const uint16_t>();
-		pc += inputs_size;
-		const Span<const uint16_t> outputs =
-				operations.sub(pc, outputs_size).reinterpret_cast_to<const uint16_t>();
-		pc += outputs_size;
+		const Span<const uint16_t> inputs = operations.sub(pc, inputs_count);
+		pc += inputs_count;
+		const Span<const uint16_t> outputs = operations.sub(pc, outputs_count);
+		pc += outputs_count;
 
-		const uint16_t params_size = read<uint16_t>(operations, pc);
-		Span<const uint8_t> params;
-		if (params_size > 0) {
-			params = operations.sub(pc, params_size);
-			//pc += params_size;
-		}
+		Span<const uint8_t> params = read_params(operations, pc);
 
 		ERR_FAIL_COND(node_type.process_buffer_func == nullptr);
 		ProcessBufferContext ctx(inputs, outputs, params, buffers, execution_map != nullptr);
@@ -863,31 +852,24 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 	ranges[_program.y_input_address] = Interval(min_pos.y, max_pos.y);
 	ranges[_program.z_input_address] = Interval(min_pos.z, max_pos.z);
 
-	const Span<const uint8_t> operations(_program.operations.data(), 0, _program.operations.size());
+	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
 	// Here operations must all be analyzed, because we do this as a broad-phase.
 	// Only narrow-phase may skip some operations eventually.
 	uint32_t pc = 0;
 	while (pc < operations.size()) {
-		const uint8_t opid = operations[pc++];
+		const uint16_t opid = operations[pc++];
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
-		const uint32_t inputs_size = node_type.inputs.size() * sizeof(uint16_t);
-		const uint32_t outputs_size = node_type.outputs.size() * sizeof(uint16_t);
+		const uint32_t inputs_count = node_type.inputs.size();
+		const uint32_t outputs_count = node_type.outputs.size();
 
-		const Span<const uint16_t> inputs =
-				operations.sub(pc, inputs_size).reinterpret_cast_to<const uint16_t>();
-		pc += inputs_size;
-		const Span<const uint16_t> outputs =
-				operations.sub(pc, outputs_size).reinterpret_cast_to<const uint16_t>();
-		pc += outputs_size;
+		const Span<const uint16_t> inputs = operations.sub(pc, inputs_count);
+		pc += inputs_count;
+		const Span<const uint16_t> outputs = operations.sub(pc, outputs_count);
+		pc += outputs_count;
 
-		const uint16_t params_size = read<uint16_t>(operations, pc);
-		Span<const uint8_t> params;
-		if (params_size > 0) {
-			params = operations.sub(pc, params_size);
-			pc += params_size;
-		}
+		Span<const uint8_t> params = read_params(operations, pc);
 
 		ERR_FAIL_COND(node_type.range_analysis_func == nullptr);
 		RangeAnalysisContext ctx(inputs, outputs, params, ranges, buffers);

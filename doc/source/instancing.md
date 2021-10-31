@@ -4,6 +4,7 @@ Instancing
 The module provides an instancing system with the [VoxelInstancer](api/VoxelInstancer.md) node. This node must be added as child of a voxel terrain. It allows to spawn 3D models on top of the terrain's surface, which can later be removed when modified.
 
 It can spawn two different kinds of objects:
+
 - **Multimesh instances**. They can be extremely numerous, and can optionally have collision.
 - **Scene instances**. They use regular scenes, however it is much slower so should be tuned to low numbers.
 
@@ -19,11 +20,11 @@ VoxelInstanceLibrary
 
 In order to spawn items, `VoxelInstancer` needs a [VoxelInstanceLibrary](api/VoxelInstanceLibrary.md) resource. This resource contains a list of all the items that can be spawned, and how they will be placed.
 
-Select a `VoxelInstancer`. In the inspector, assign a library to the `library` property, or create a new embedded one. Then click on the library resource. Now a menu should show up in the top bar of the main viewport:
+Select a `VoxelInstancer`. In the inspector, assign a library to the `library` property, or create a new embedded one. Then click on the library resource. Buttons appear at the top of the inspector:
 
 ![Screenshot of the VoxelInstanceLibrary menu](images/instance_library_menu.png)
 
-In this menu, you can add items to the library by clicking `VoxelInstanceLibrary -> Add Multimesh item`.
+You can add items to the library by clicking the "+" icon, and choose `Add Multimesh item`.
 
 Items created this way come with a default setup, so you should be able to see something appear on top of the voxel surface.
 
@@ -97,7 +98,7 @@ The save format is described in [this document](specs/instances_format.md).
 
 ### Setting up a Multimesh item from a scene
 
-It is possible to setup a Multimesh Item from an existing scene, as an alternative to setting it up in the inspector. One reason you could need this is to setup colliders, because although they are supported, it is not possible to set them in the inspector at the moment. It might also be more convenient to design instances in the 3D editor using nodes.
+It is possible to setup a Multimesh Item from an existing scene, as an alternative to setting it up in the inspector. One reason you could need this is to setup colliders, because although they are supported, it is not possible to set them in the inspector at the moment. It is also more convenient to design instances in the 3D editor using nodes.
 
 This conversion process expects your scene to follow a specific structure:
 
@@ -110,10 +111,11 @@ This conversion process expects your scene to follow a specific structure:
 ```
 
 Materials can be setup in two ways:
+
 - `material_override` on the MeshInstance
 - Materials on the mesh resource directly
 
-Surface material properties on the MeshInstance are not supported.
+Surface material properties on the `MeshInstance` node are not supported.
 
 ### Scene instances
 

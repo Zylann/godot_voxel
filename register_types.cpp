@@ -109,12 +109,12 @@ void register_voxel_types() {
 	// Utilities
 	ClassDB::register_class<VoxelBoxMover>();
 	ClassDB::register_class<VoxelRaycastResult>();
-	ClassDB::register_class<VoxelTool>();
-	ClassDB::register_class<VoxelToolTerrain>();
-	ClassDB::register_class<VoxelToolLodTerrain>();
+	ClassDB::register_virtual_class<VoxelTool>();
+	ClassDB::register_virtual_class<VoxelToolTerrain>();
+	ClassDB::register_virtual_class<VoxelToolLodTerrain>();
 	// I had to bind this one despite it being useless as-is because otherwise Godot lazily initializes its class.
 	// And this can happen in a thread, causing crashes due to the concurrent access
-	ClassDB::register_class<VoxelToolBuffer>();
+	ClassDB::register_virtual_class<VoxelToolBuffer>();
 	ClassDB::register_class<VoxelBlockSerializer>();
 	ClassDB::register_class<VoxelVoxLoader>();
 	ClassDB::register_class<FastNoiseLite>();
@@ -142,6 +142,7 @@ void register_voxel_types() {
 	PRINT_VERBOSE(String("Size of VoxelTerrain: {0}").format(varray((int)sizeof(VoxelTerrain))));
 	PRINT_VERBOSE(String("Size of VoxelLodTerrain: {0}").format(varray((int)sizeof(VoxelLodTerrain))));
 	PRINT_VERBOSE(String("Size of VoxelInstancer: {0}").format(varray((int)sizeof(VoxelInstancer))));
+	PRINT_VERBOSE(String("Size of VoxelDataMap: {0}").format(varray((int)sizeof(VoxelDataMap))));
 
 #ifdef TOOLS_ENABLED
 	EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();

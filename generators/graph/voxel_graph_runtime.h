@@ -64,6 +64,10 @@ public:
 	// The same state can be re-used with multiple programs, but it should be prepared before doing that.
 	class State {
 	public:
+		~State() {
+			clear();
+		}
+
 		inline const Buffer &get_buffer(uint16_t address) const {
 			// TODO Just for convenience because STL bound checks aren't working in Godot 3
 			CRASH_COND(address >= buffers.size());
@@ -156,11 +160,10 @@ public:
 	// Functions usable by node implementations during the compilation stage
 	class CompileContext {
 	public:
-		CompileContext(const ProgramGraph::Node &node, std::vector<uint8_t> &program,
+		CompileContext(const ProgramGraph::Node &node, std::vector<uint16_t> &program,
 				std::vector<HeapResource> &heap_resources,
 				std::vector<Variant> &params) :
 				_node(node),
-				_offset(program.size()),
 				_program(program),
 				_heap_resources(heap_resources),
 				_params(params) {}
@@ -174,10 +177,33 @@ public:
 		template <typename T>
 		void set_params(T params) {
 			// Can be called only once per node
-			CRASH_COND(_offset != _program.size());
-			_program.resize(_program.size() + sizeof(T));
-			T &p = *reinterpret_cast<T *>(&_program[_offset]);
+			CRASH_COND(_params_added);
+			// We will need to align memory, so the struct will not be immediately stored here.
+			// Instead we put a header that tells how much to advance in order to reach the beginning of the struct,
+			// which will be at an aligned position.
+			// We align to the maximum alignment between the struct,
+			// and the type of word we store inside the program buffer, which is uint16.
+			const size_t params_alignment = max(alignof(T), alignof(uint16_t));
+			const size_t params_offset_index = _program.size();
+			// Prepare space to store the offset (at least 1 since that header is one word)
+			_program.push_back(1);
+			// Align memory for the struct.
+			// Note, we index with words, not bytes.
+			const size_t struct_offset =
+					alignup(_program.size() * sizeof(uint16_t), params_alignment) / sizeof(uint16_t);
+			if (struct_offset > _program.size()) {
+				_program.resize(struct_offset);
+			}
+			// Write offset in header
+			_program[params_offset_index] = struct_offset - params_offset_index;
+			// Allocate space for the struct. It is measured in words, so it can be up to 1 byte larger.
+			_params_size_in_words = (sizeof(T) + sizeof(uint16_t) - 1) / sizeof(uint16_t);
+			_program.resize(_program.size() + _params_size_in_words);
+			// Write struct
+			T &p = *reinterpret_cast<T *>(&_program[struct_offset]);
 			p = params;
+
+			_params_added = true;
 		}
 
 		// In case the compilation step produces a resource to be deleted
@@ -206,14 +232,19 @@ public:
 			return _error_message;
 		}
 
+		size_t get_params_size_in_words() const {
+			return _params_size_in_words;
+		}
+
 	private:
 		const ProgramGraph::Node &_node;
-		const size_t _offset;
-		std::vector<uint8_t> &_program;
+		std::vector<uint16_t> &_program;
 		std::vector<HeapResource> &_heap_resources;
 		std::vector<Variant> &_params;
 		String _error_message;
+		size_t _params_size_in_words = 0;
 		bool _has_error = false;
+		bool _params_added = false;
 	};
 
 	class _ProcessContext {
@@ -228,6 +259,9 @@ public:
 
 		template <typename T>
 		inline const T &get_params() const {
+#ifdef DEBUG_ENABLED
+			CRASH_COND(sizeof(T) > _params.size());
+#endif
 			return *reinterpret_cast<const T *>(_params.data());
 		}
 
@@ -370,11 +404,21 @@ private:
 	// Precalculated program data.
 	// Remains constant and read-only after compilation.
 	struct Program {
-		// Serialized operations and arguments.
-		// They come up as series of <opid><inputs><outputs><parameters_size><parameters>.
+		// Serialized operations and arguments, aligned at minimum with uint16.
+		// They come up as series of:
+		//
+		// - uint16 opid
+		// - uint16 inputs[0..*]
+		// - uint16 outputs[0..*]
+		// - uint16 parameters_size
+		// - uint16 parameters_offset // how much to advance from here to reach the beginning of `parameters`
+		// - <optional padding>
+		// - T parameters, where T could be any struct
+		// - <optional padding to keep alignment with uint16>
+		//
 		// They should be laid out in the same order they will be run in, although it's not absolutely required.
 		// It's better to have it ordered because memory access will be more predictable.
-		std::vector<uint8_t> operations;
+		std::vector<uint16_t> operations;
 
 		// Describes dependencies between operations. It is generated at compile time.
 		// It is used to perform dynamic optimization in case some operations can be predicted as constant.

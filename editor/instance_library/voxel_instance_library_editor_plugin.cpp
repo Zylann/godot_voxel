@@ -6,21 +6,66 @@
 #include <scene/gui/menu_button.h>
 #include <scene/resources/primitive_meshes.h>
 
-VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin(EditorNode *p_node) {
-	_menu_button = memnew(MenuButton);
-	_menu_button->set_text(TTR("VoxelInstanceLibrary"));
-	// TODO Icon
-	//_menu_button->set_icon(EditorNode::get_singleton()->get_gui_base()->get_icon("MeshLibrary", "EditorIcons"));
-	_menu_button->get_popup()->add_item(TTR("Add Multimesh Item (fast)"), MENU_ADD_MULTIMESH_ITEM);
-	_menu_button->get_popup()->add_item(TTR("Update Multimesh Item From Scene"), MENU_UPDATE_MULTIMESH_ITEM_FROM_SCENE);
-	_menu_button->get_popup()->add_separator();
-	_menu_button->get_popup()->add_item(TTR("Add Scene Item (slow)"), MENU_ADD_SCENE_ITEM);
-	_menu_button->get_popup()->add_separator();
-	_menu_button->get_popup()->add_item(TTR("Remove Selected Item"), MENU_REMOVE_ITEM);
-	// TODO Add and update from scene
-	_menu_button->get_popup()->connect("id_pressed", this, "_on_menu_id_pressed");
-	_menu_button->hide();
+namespace {
+enum Buttons {
+	BUTTON_ADD_MULTIMESH_ITEM,
+	BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE,
+	BUTTON_ADD_SCENE_ITEM,
+	BUTTON_REMOVE_ITEM
+};
+} // namespace
 
+bool VoxelInstanceLibraryEditorInspectorPlugin::can_handle(Object *p_object) {
+	return Object::cast_to<VoxelInstanceLibrary>(p_object) != nullptr;
+}
+
+void VoxelInstanceLibraryEditorInspectorPlugin::parse_begin(Object *p_object) {
+	// TODO How can I make sure the buttons will be at the beginning of the "VoxelInstanceLibrary" category?
+	// This is a better place than the Spatial editor toolbar (which would get hidden if you are not in the 3D tab
+	// of the editor), but it will appear at the very top of the inspector, even above the "VoxelInstanceLibrary"
+	// catgeory of properties. That looks a bit off, and if the class were to be inherited, it would start to be
+	// confusing because these buttons are about the property list of "VoxelInstanceLibrary" specifically.
+	// I could neither use `parse_property` nor `parse_category`, because when the list is empty,
+	// the class returns no properties AND no category.
+	add_buttons();
+}
+
+void VoxelInstanceLibraryEditorInspectorPlugin::add_buttons() {
+	CRASH_COND(icon_provider == nullptr);
+	CRASH_COND(button_listener == nullptr);
+
+	// Put buttons on top of the list of items
+	HBoxContainer *hb = memnew(HBoxContainer);
+
+	MenuButton *button_add = memnew(MenuButton);
+	button_add->set_icon(icon_provider->get_icon("Add", "EditorIcons"));
+	button_add->get_popup()->add_item("MultiMesh item (fast)", BUTTON_ADD_MULTIMESH_ITEM);
+	button_add->get_popup()->add_item("Scene item (slow)", BUTTON_ADD_SCENE_ITEM);
+	button_add->get_popup()->connect("id_pressed", button_listener, "_on_button_pressed");
+	hb->add_child(button_add);
+
+	Button *button_remove = memnew(Button);
+	button_remove->set_icon(icon_provider->get_icon("Remove", "EditorIcons"));
+	button_remove->set_flat(true);
+	button_remove->connect("pressed", button_listener, "_on_button_pressed", varray(BUTTON_REMOVE_ITEM));
+	hb->add_child(button_remove);
+
+	Control *spacer = memnew(Control);
+	spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	hb->add_child(spacer);
+
+	Button *button_update = memnew(Button);
+	button_update->set_text(TTR("Update From Scene..."));
+	button_update->connect("pressed", button_listener, "_on_button_pressed",
+			varray(BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE));
+	hb->add_child(button_update);
+
+	add_custom_control(hb);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin(EditorNode *p_node) {
 	Control *base_control = get_editor_interface()->get_base_control();
 
 	_confirmation_dialog = memnew(ConfirmationDialog);
@@ -39,11 +84,6 @@ VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin(EditorNode *p
 	_open_scene_dialog->set_mode(EditorFileDialog::MODE_OPEN_FILE);
 	base_control->add_child(_open_scene_dialog);
 	_open_scene_dialog->connect("file_selected", this, "_on_open_scene_dialog_file_selected");
-
-	// TODO Perhaps it's a better idea to put this menu in the inspector directly?
-	// Because it won't be visible if the user is in 2D or script mode,
-	// and it's confusing to see it outside the inspector
-	add_control_to_container(EditorPlugin::CONTAINER_SPATIAL_EDITOR_MENU, _menu_button);
 }
 
 bool VoxelInstanceLibraryEditorPlugin::handles(Object *p_object) const {
@@ -56,15 +96,27 @@ void VoxelInstanceLibraryEditorPlugin::edit(Object *p_object) {
 	_library.reference_ptr(lib);
 }
 
-void VoxelInstanceLibraryEditorPlugin::make_visible(bool visible) {
-	_menu_button->set_visible(visible);
+void VoxelInstanceLibraryEditorPlugin::_notification(int p_what) {
+	if (p_what == NOTIFICATION_ENTER_TREE) {
+		Control *base_control = get_editor_interface()->get_base_control();
+		_inspector_plugin.instance();
+		_inspector_plugin->button_listener = this;
+		_inspector_plugin->icon_provider = base_control;
+		// TODO Why can other Godot plugins do this in the constructor??
+		// I found I could not put this in the constructor,
+		// otherwise `add_inspector_plugin` causes ANOTHER editor plugin to leak on exit... Oo
+		add_inspector_plugin(_inspector_plugin);
+
+	} else if (p_what == NOTIFICATION_EXIT_TREE) {
+		remove_inspector_plugin(_inspector_plugin);
+	}
 }
 
-void VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed(int id) {
-	_last_used_menu_option = MenuOption(id);
+void VoxelInstanceLibraryEditorPlugin::_on_button_pressed(int id) {
+	_last_used_button = id;
 
 	switch (id) {
-		case MENU_ADD_MULTIMESH_ITEM: {
+		case BUTTON_ADD_MULTIMESH_ITEM: {
 			ERR_FAIL_COND(_library.is_null());
 
 			Ref<VoxelInstanceLibraryItem> item;
@@ -87,7 +139,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed(int id) {
 			ur.commit_action();
 		} break;
 
-		case MENU_UPDATE_MULTIMESH_ITEM_FROM_SCENE: {
+		case BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE: {
 			ERR_FAIL_COND(_library.is_null());
 			const int item_id = try_get_selected_item_id();
 			if (item_id != -1) {
@@ -96,11 +148,11 @@ void VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed(int id) {
 			}
 		} break;
 
-		case MENU_ADD_SCENE_ITEM: {
+		case BUTTON_ADD_SCENE_ITEM: {
 			_open_scene_dialog->popup_centered_ratio();
 		} break;
 
-		case MENU_REMOVE_ITEM: {
+		case BUTTON_REMOVE_ITEM: {
 			ERR_FAIL_COND(_library.is_null());
 			const int item_id = try_get_selected_item_id();
 			if (item_id != -1) {
@@ -134,7 +186,7 @@ int VoxelInstanceLibraryEditorPlugin::try_get_selected_item_id() {
 				TTR(String("Could not determine selected item from property path: `{0}`.\n"
 						   "You must select the `item_X` property label of the item you want to remove."))
 						.format(varray(path)));
-		_info_dialog->popup();
+		_info_dialog->popup_centered();
 		return -1;
 	}
 }
@@ -155,12 +207,12 @@ void VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed() {
 }
 
 void VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected(String fpath) {
-	switch (_last_used_menu_option) {
-		case MENU_ADD_SCENE_ITEM:
+	switch (_last_used_button) {
+		case BUTTON_ADD_SCENE_ITEM:
 			add_scene_item(fpath);
 			break;
 
-		case MENU_UPDATE_MULTIMESH_ITEM_FROM_SCENE:
+		case BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE:
 			update_multimesh_item_from_scene(fpath, _item_id_to_update);
 			break;
 
@@ -223,7 +275,7 @@ void VoxelInstanceLibraryEditorPlugin::update_multimesh_item_from_scene(String f
 }
 
 void VoxelInstanceLibraryEditorPlugin::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_menu_id_pressed", "id"), &VoxelInstanceLibraryEditorPlugin::_on_menu_id_pressed);
+	ClassDB::bind_method(D_METHOD("_on_button_pressed", "id"), &VoxelInstanceLibraryEditorPlugin::_on_button_pressed);
 	ClassDB::bind_method(D_METHOD("_on_remove_item_confirmed"),
 			&VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed);
 	ClassDB::bind_method(D_METHOD("_on_open_scene_dialog_file_selected", "fpath"),

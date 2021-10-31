@@ -34,16 +34,21 @@ Ongoing development - `master`
     - `VoxelInstancer`: added menu to setup a multimesh item from a scene (similarly to GridMap), which also allows to set up colliders
     - `VoxelInstancer`: added initial support for instancing regular scenes (slower than multimeshes)
     - `VoxelInstancer`: added option to turn off random rotation
+    - `VoxelInstanceLibrary`: moved menu to add/remove/update items to the inspector, instead of the 3D editor toolbar
 
 - Breaking changes
     - `VoxelBuffer`: channels `DATA3` and `DATA4` were renamed `INDICES` and `WEIGHTS`
     - `VoxelInstanceGenerator`: `EMIT_FROM_FACES` got renamed `EMIT_FROM_FACES_FAST`. `EMIT_FROM_FACES` still exists but is a different algorithm.
     - `VoxelServer`: `get_stats()` format has changed, check documentation
     - `VoxelLodTerrain`: `get_statistics()` format has changed: `time_process_update_responses` and `remaining_main_thread_blocks` are no longer available
+    - `VoxelLodTerrain`: Maximum LOD count was decreased to 24, which is still largely enough. Higher maximums were likely to cause integer overflows.
     - `VoxelTerrain`: `get_statistics()` format has changed: `time_process_update_responses` and `remaining_main_thread_blocks` are no longer available
+    - `VoxelViewer`: `requires_collisions` is now `true` by default
 
 - Fixes
     - `VoxelGeneratorGraph`: changes to node properties are now saved properly
+    - `VoxelGeneratorGraph`: fix some per-thread memory not freed on exit
+    - `VoxelGeneratorGraph`: `debug_analyze_range` was crashing when given a negative-size area
     - `VoxelBuffer`: `copy_voxel_metadata_in_area` was checking the source box incorrectly
     - `VoxelBuffer`: multiple calls to `create()` with different sizes could lead to heap corruption if a channel was not uniform
     - `VoxelBuffer`: `copy_channel_from_area` could lead to heap corruption if the source and destination had the same size and were copied entirely
@@ -59,6 +64,7 @@ Ongoing development - `master`
     - `VoxelStreamBlockFiles`: fixed warning about channels always shown in the scene tree
     - `VoxelStreamSQLite`: fixed blocks above LOD0 being saved at wrong locations, causing them to be reloaded often floating in the air
     - Fix some crashes occurring when all PoolVector allocs are in use (Godot 3.x limitation). It will print errors instead, but crashes can still occur inside Godot's code as it's not often checking for this
+    - Fix some crashes occurring when negative sizes are sent to AABB function parameters
 
 
 09/05/2021 - `godot3.3`

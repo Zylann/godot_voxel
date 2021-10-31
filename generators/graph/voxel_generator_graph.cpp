@@ -1453,10 +1453,13 @@ void VoxelGeneratorGraph::_b_set_node_param_null(int node_id, int param_index) {
 }
 
 float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
-	return generate_single(Vector3i(pos), VoxelBufferInternal::CHANNEL_SDF).f;
+	return generate_single(Vector3i::from_floored(pos), VoxelBufferInternal::CHANNEL_SDF).f;
 }
 
 Vector2 VoxelGeneratorGraph::_b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const {
+	ERR_FAIL_COND_V(min_pos.x > max_pos.x, Vector2());
+	ERR_FAIL_COND_V(min_pos.y > max_pos.y, Vector2());
+	ERR_FAIL_COND_V(min_pos.z > max_pos.z, Vector2());
 	const Interval r = debug_analyze_range(
 			Vector3i::from_floored(min_pos), Vector3i::from_floored(max_pos), false);
 	return Vector2(r.min, r.max);
