@@ -99,14 +99,14 @@ jobs:
 
       - name: Uncompress Mono-Build
         run: |
-          Expand-Archive -Path ./mono-builds.zip -DestinationPath ./mono-build
+          Expand-Archive -Path mono-builds.zip -DestinationPath mono-build
           cd mono-build
-          Expand-Archive -Path ./mono-build.zip -DestinationPath ./mono-build
+          Expand-Archive -Path mono-build.zip -DestinationPath mono-build
 
       - name: Download Mono BCL
         run: |
           curl https://github.com/godotengine/godot-mono-builds/releases/download/release-c3a9d31/bcl-desktop-win32.zip -O
-          Expand-Archive -Path ./bcl-desktop-win32.zip -DestinationPath ./bcl-desktop-win32
+          Expand-Archive -Path bcl-desktop-win32.zip -DestinationPath bcl-desktop-win32
 
       # Install all packages (except scons)
       - name: Configure dependencies
