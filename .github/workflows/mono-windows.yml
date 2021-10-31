@@ -51,6 +51,7 @@ jobs:
       # Build Mono for Windows (MSVC)
       - name: Build Mono
         run: |
+          pwd
           cd ${{ env.MONO_SOURCE_ROOT }}
           msbuild mono\msvc\mono.sln /p:Platform=x64 /p:Configuration=Release /p:MONO_TARGET_GC=sgen
 
