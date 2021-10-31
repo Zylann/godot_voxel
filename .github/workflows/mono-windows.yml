@@ -53,7 +53,7 @@ jobs:
         run: |
           cd mono-source
           msbuild msvc\mono.sln /p:Platform=x64 /p:Configuration=Release /p:MONO_TARGET_GC=sgen
-          Compress-Archive -Path ./msvc/build -DestinationPath ../mono-build.zip
+          Compress-Archive -Path ./msvc/build/sgen/x64/lib -DestinationPath ../mono-build.zip
 
       # Make glue available as artifact for dependent jobs
       - uses: actions/upload-artifact@v2
@@ -83,9 +83,6 @@ jobs:
       - name: Move nuget.config
         run: mv godot/modules/voxel/nuget.config godot/nuget.config
 
-      - name: Install Chocolately (Packages for windows)
-        uses: crazy-max/ghaction-chocolatey@v1
-
       # Azure repositories are not reliable, we need to prevent azure giving us packages.
       # - name: Make apt sources.list use the default Ubuntu repositories
       #  run: |
@@ -98,7 +95,18 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: mono-builds
-          path: mono-build
+          path: .
+
+      - name: Uncompress Mono-Build
+        run: |
+          Expand-Archive -Path ./mono-builds.zip -Destination-Path ./mono-build
+          cd mono-build
+          Expand-Archive -Path ./mono-build.zip -Destination-Path ./mono-build
+
+      - name: Download Mono BCL
+        run: |
+          curl https://github.com/godotengine/godot-mono-builds/releases/download/release-c3a9d31/bcl-desktop-win32.zip -O
+          Expand-Archive -Path ./bcl-desktop-win32.zip -Destination-Path ./bcl-desktop-win32
 
       # Install all packages (except scons)
       - name: Configure dependencies
@@ -137,7 +145,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           cd godot
-          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_prefix=mono-build mono_bcl=mono-build/lib/mono/4.5
+          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_prefix=mono-build/mono-build/Release mono_bcl=bcl-desktop-win32\desktop-win32-bcl\net_4_x-win32
       - name: Generate Mono Glue
         run: |
           cd godot
