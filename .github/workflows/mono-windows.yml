@@ -106,8 +106,7 @@ jobs:
       - name: Download Mono BCL
         run: |
           curl https://github.com/godotengine/godot-mono-builds/releases/download/${{ env.MONO_BCL_RELEASE_TAG}}/bcl-desktop-win32.zip -O
-          Get-ChildItem
-          Expand-Archive -LiteralPath bcl-desktop-win32.zip -DestinationPath bcl-desktop-win32
+          7z x bcl-desktop-win32.zip
 
       # Install all packages (except scons)
       - name: Configure dependencies
