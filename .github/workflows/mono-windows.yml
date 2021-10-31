@@ -38,7 +38,7 @@ jobs:
       # Apply the debugger fix
       - name: Patch Mono
         run: |
-          pushd ${{ env.MONO_SOURCE_ROOT }}
+          pushd mono-source
           curl --location https://raw.githubusercontent.com/godotengine/godot-mono-builds/master/files/patches/mono-dbg-agent-clear-tls-instead-of-abort.diff -O
           git apply mono-dbg-agent-clear-tls-instead-of-abort.diff
           popd
