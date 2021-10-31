@@ -102,7 +102,7 @@ jobs:
         run: |
           Get-ChildItem
           cd mono-builds
-          Expand-Archive -Path mono-builds.zip -DestinationPath mono-build
+          Expand-Archive -Path mono-build.zip -DestinationPath mono-build
           cd mono-build
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
 
