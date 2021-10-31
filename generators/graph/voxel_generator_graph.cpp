@@ -1442,7 +1442,7 @@ void VoxelGeneratorGraph::_b_set_node_param_null(int node_id, int param_index) {
 }
 
 float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
-	return generate_single(Vector3i(pos));
+	return generate_single(Vector3i::from_floored(pos));
 }
 
 Vector2 VoxelGeneratorGraph::_b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const {

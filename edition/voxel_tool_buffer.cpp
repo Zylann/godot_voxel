@@ -10,7 +10,7 @@ VoxelToolBuffer::VoxelToolBuffer(Ref<VoxelBuffer> vb) {
 
 bool VoxelToolBuffer::is_area_editable(const Box3i &box) const {
 	ERR_FAIL_COND_V(_buffer.is_null(), false);
-	return Box3i(Vector3i(), _buffer->get_size()).encloses(box);
+	return Box3i(Vector3i(), _buffer->get_buffer().get_size()).encloses(box);
 }
 
 void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
@@ -24,8 +24,8 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 
 	VOXEL_PROFILE_SCOPE();
 
-	Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
-	box.clip(Box3i(Vector3i(), _buffer->get_size()));
+	Box3i box(Vector3i::from_floored(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
 
 	_buffer->get_buffer().write_box_2_template<TextureBlendSphereOp, uint16_t, uint16_t>(box,
 			VoxelBufferInternal::CHANNEL_INDICES,
@@ -84,9 +84,9 @@ void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t c
 	VoxelBufferInternal &dst = _buffer->get_buffer();
 	const VoxelBufferInternal &src = p_voxels->get_buffer();
 
-	Box3i box(p_pos, p_voxels->get_size());
+	Box3i box(p_pos, p_voxels->get_buffer().get_size());
 	const Vector3i min_noclamp = box.pos;
-	box.clip(Box3i(Vector3i(), _buffer->get_size()));
+	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
 
 	if (channels_mask == 0) {
 		channels_mask = (1 << get_channel());
@@ -123,5 +123,5 @@ void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t c
 	}
 
 	_buffer->get_buffer().copy_voxel_metadata_in_area(
-			p_voxels->get_buffer(), Box3i(Vector3i(), p_voxels->get_size()), p_pos);
+			p_voxels->get_buffer(), Box3i(Vector3i(), p_voxels->get_buffer().get_size()), p_pos);
 }

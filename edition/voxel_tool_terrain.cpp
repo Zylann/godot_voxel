@@ -149,7 +149,7 @@ void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t ch
 		channels_mask = (1 << _channel);
 	}
 	_terrain->get_storage().paste(pos, p_voxels->get_buffer(), channels_mask, use_mask, mask_value, false);
-	_post_edit(Box3i(pos, p_voxels->get_size()));
+	_post_edit(Box3i(pos, p_voxels->get_buffer().get_size()));
 }
 
 void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
@@ -162,7 +162,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 
 	VOXEL_PROFILE_SCOPE();
 
-	const Box3i box(Vector3i(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	const Box3i box(Vector3i::from_floored(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -237,8 +237,8 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 
 	const VoxelLibrary &lib = **_terrain->get_voxel_library();
 
-	const Vector3i min_pos = Vector3i(voxel_area.position);
-	const Vector3i max_pos = min_pos + Vector3i(voxel_area.size);
+	const Vector3i min_pos = Vector3i::from_floored(voxel_area.position);
+	const Vector3i max_pos = min_pos + Vector3i::from_floored(voxel_area.size);
 
 	VoxelDataMap &map = _terrain->get_storage();
 
@@ -330,7 +330,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<Func
 	ERR_FAIL_COND(callback.is_null());
 	ERR_FAIL_COND(!is_valid_size(voxel_area.size));
 
-	const Box3i voxel_box = Box3i(Vector3i(voxel_area.position), Vector3i(voxel_area.size));
+	const Box3i voxel_box = Box3i(Vector3i::from_floored(voxel_area.position), Vector3i::from_floored(voxel_area.size));
 	ERR_FAIL_COND(!is_area_editable(voxel_box));
 
 	const Box3i data_block_box = voxel_box.downscaled(_terrain->get_data_block_size());

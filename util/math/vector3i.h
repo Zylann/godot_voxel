@@ -41,11 +41,8 @@ struct Vector3i {
 		*this = other;
 	}
 
-	// TODO Deprecate this constructor, it is ambiguous because there are multiple ways to convert a float to an int
-	_FORCE_INLINE_ Vector3i(const Vector3 &f) {
-		x = Math::floor(f.x);
-		y = Math::floor(f.y);
-		z = Math::floor(f.z);
+	static inline Vector3i from_cast(const Vector3 &f) {
+		return Vector3i(f.x, f.y, f.z);
 	}
 
 	static inline Vector3i from_floored(const Vector3 &f) {
@@ -60,6 +57,13 @@ struct Vector3i {
 				Math::round(f.x),
 				Math::round(f.y),
 				Math::round(f.z));
+	}
+
+	static inline Vector3i from_ceiled(const Vector3 &f) {
+		return Vector3i(
+				Math::ceil(f.x),
+				Math::ceil(f.y),
+				Math::ceil(f.z));
 	}
 
 	_FORCE_INLINE_ Vector3 to_vec3() const {

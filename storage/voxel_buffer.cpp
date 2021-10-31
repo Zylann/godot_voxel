@@ -39,7 +39,10 @@ void VoxelBuffer::copy_channel_from(Ref<VoxelBuffer> other, unsigned int channel
 void VoxelBuffer::copy_channel_from_area(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min,
 		unsigned int channel) {
 	ERR_FAIL_COND(other.is_null());
-	_buffer->copy_from(other->get_buffer(), Vector3i(src_min), Vector3i(src_max), Vector3i(dst_min), channel);
+	_buffer->copy_from(other->get_buffer(),
+			Vector3i::from_floored(src_min),
+			Vector3i::from_floored(src_max),
+			Vector3i::from_floored(dst_min), channel);
 }
 
 void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
@@ -68,7 +71,10 @@ VoxelBuffer::Compression VoxelBuffer::get_channel_compression(unsigned int chann
 
 void VoxelBuffer::downscale_to(Ref<VoxelBuffer> dst, Vector3 src_min, Vector3 src_max, Vector3 dst_min) const {
 	ERR_FAIL_COND(dst.is_null());
-	_buffer->downscale_to(dst->get_buffer(), Vector3i(src_min), Vector3i(src_max), Vector3i(dst_min));
+	_buffer->downscale_to(dst->get_buffer(),
+			Vector3i::from_floored(src_min),
+			Vector3i::from_floored(src_max),
+			Vector3i::from_floored(dst_min));
 }
 
 Ref<VoxelBuffer> VoxelBuffer::duplicate(bool include_metadata) const {
@@ -104,18 +110,22 @@ void VoxelBuffer::for_each_voxel_metadata(Ref<FuncRef> callback) const {
 
 void VoxelBuffer::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Vector3 min_pos, Vector3 max_pos) {
 	ERR_FAIL_COND(callback.is_null());
-	_buffer->for_each_voxel_metadata_in_area(callback, Box3i::from_min_max(Vector3i(min_pos), Vector3i(max_pos)));
+	_buffer->for_each_voxel_metadata_in_area(callback,
+			Box3i::from_min_max(Vector3i::from_floored(min_pos), Vector3i::from_floored(max_pos)));
 }
 
 void VoxelBuffer::copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Vector3 src_min_pos, Vector3 src_max_pos,
 		Vector3 dst_pos) {
 	ERR_FAIL_COND(src_buffer.is_null());
 	_buffer->copy_voxel_metadata_in_area(
-			src_buffer->get_buffer(), Box3i::from_min_max(Vector3i(src_min_pos), Vector3i(src_max_pos)), dst_pos);
+			src_buffer->get_buffer(),
+			Box3i::from_min_max(Vector3i::from_floored(src_min_pos), Vector3i::from_floored(src_max_pos)),
+			Vector3i::from_floored(dst_pos));
 }
 
 void VoxelBuffer::clear_voxel_metadata_in_area(Vector3 min_pos, Vector3 max_pos) {
-	_buffer->clear_voxel_metadata_in_area(Box3i::from_min_max(Vector3i(min_pos), Vector3i(max_pos)));
+	_buffer->clear_voxel_metadata_in_area(
+			Box3i::from_min_max(Vector3i::from_floored(min_pos), Vector3i::from_floored(max_pos)));
 }
 
 void VoxelBuffer::clear_voxel_metadata() {

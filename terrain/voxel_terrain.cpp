@@ -1327,11 +1327,11 @@ Box3i VoxelTerrain::get_bounds() const {
 }
 
 Vector3 VoxelTerrain::_b_voxel_to_data_block(Vector3 pos) const {
-	return Vector3i(_data_map.voxel_to_block(pos)).to_vec3();
+	return Vector3i(_data_map.voxel_to_block(Vector3i::from_floored(pos))).to_vec3();
 }
 
 Vector3 VoxelTerrain::_b_data_block_to_voxel(Vector3 pos) const {
-	return Vector3i(_data_map.block_to_voxel(pos)).to_vec3();
+	return Vector3i(_data_map.block_to_voxel(Vector3i::from_floored(pos))).to_vec3();
 }
 
 void VoxelTerrain::_b_save_modified_blocks() {
@@ -1340,7 +1340,7 @@ void VoxelTerrain::_b_save_modified_blocks() {
 
 // Explicitely ask to save a block if it was modified
 void VoxelTerrain::_b_save_block(Vector3 p_block_pos) {
-	const Vector3i block_pos(p_block_pos);
+	const Vector3i block_pos(Vector3i::from_floored(p_block_pos));
 
 	VoxelDataBlock *block = _data_map.get_block(block_pos);
 	ERR_FAIL_COND(block == nullptr);
@@ -1354,8 +1354,7 @@ void VoxelTerrain::_b_save_block(Vector3 p_block_pos) {
 
 void VoxelTerrain::_b_set_bounds(AABB aabb) {
 	ERR_FAIL_COND(!is_valid_size(aabb.size));
-	// TODO Please Godot, have an integer AABB!
-	set_bounds(Box3i(aabb.position.round(), aabb.size.round()));
+	set_bounds(Box3i(Vector3i::from_rounded(aabb.position), Vector3i::from_rounded(aabb.size)));
 }
 
 AABB VoxelTerrain::_b_get_bounds() const {
