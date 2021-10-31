@@ -12,11 +12,12 @@ env:
   MONO_TAG: mono-6.12.0.147
 
 jobs:
+
   build-mono:
     runs-on: "windows-latest"
     name: Build Mono
-    steps:
     
+    steps:
       # Clone/Use Cached Mono
       - name: Checkout Mono Sources
         uses: actions/checkout@v2
@@ -46,16 +47,6 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64
-
-      # Build mono for Windows
-      #- name: Build Mono
-      #  run: |
-      #    cd ${{ env.MONO_SOURCE_ROOT_SH }}
-      #    ./autogen.sh --prefix=${{ env.MONO_PREFIX_SH }} --host=x86_64-w64-mingw32 --enable-msvc --disable-boehm --with-static_mono=yes --with-tls=pthread --without-ikvm-native
-      #    make get-monolite-latest
-      #    make -j2
-      #    make install
-      #  shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
 
       # Build Mono for Windows (MSVC)
       - name: Build Mono
