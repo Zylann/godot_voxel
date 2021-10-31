@@ -53,12 +53,14 @@ jobs:
         run: |
           cd mono-source
           msbuild msvc\mono.sln /p:Platform=x64 /p:Configuration=Release /p:MONO_TARGET_GC=sgen
+          $path = (pwd) | Output-String
+          Compress-Archive -Path ./bin ../mono-build.zip
 
       # Make glue available as artifact for dependent jobs
       - uses: actions/upload-artifact@v2
         with:
           name: mono-builds
-          path: mono-source/*
+          path: mono-build.zip
           
   mono-glue:
     runs-on: "windows-latest"
