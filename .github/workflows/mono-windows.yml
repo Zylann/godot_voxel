@@ -58,7 +58,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: mono-builds
-          path: mono-build/*
+          path: mono-source/*
           
   mono-glue:
     runs-on: "windows-latest"
