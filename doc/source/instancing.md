@@ -110,10 +110,11 @@ This conversion process expects your scene to follow a specific structure:
 ```
 
 Materials can be setup in two ways:
+
 - `material_override` on the MeshInstance
 - Materials on the mesh resource directly
 
-Surface material properties on the MeshInstance are not supported.
+Surface material properties on the `MeshInstance` node are not supported.
 
 ### Scene instances
 
