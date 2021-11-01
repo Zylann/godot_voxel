@@ -54,7 +54,7 @@ jobs:
         run: |
           cd mono-source
           msbuild msvc\mono.sln /p:Platform=x64 /p:Configuration=Release /p:MONO_TARGET_GC=sgen
-          Compress-Archive -Path ./msvc/build/sgen/x64/lib -DestinationPath ../mono-build.zip
+          Compress-Archive -Path ./msvc/build/sgen/x64 -DestinationPath ../mono-build.zip
 
       # Make glue available as artifact for dependent jobs
       - uses: actions/upload-artifact@v2
@@ -96,10 +96,11 @@ jobs:
           cd mono-builds
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
           cd mono-build
+          cd x64
           cd lib
           cd Release
           Get-ChildItem -Path ./ -Recurse -File | Move-Item -Destination ../
-          cd ../../
+          cd ../../../
           Get-ChildItem -Path ./ -Recurse
 
       - name: Download Mono BCL
@@ -109,7 +110,7 @@ jobs:
 
       # Install all packages (except scons)
       - name: Configure dependencies
-        run: choco install python yasm make mono
+        run: choco install python yasm make
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
@@ -145,7 +146,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           cd godot
-          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\mono-builds\mono-build mono_bcl=bcl-desktop-win32\desktop-win32-bcl\net_4_x-win32
+          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\mono-builds\mono-build\x64 mono_bcl=bcl-desktop-win32\desktop-win32-bcl\net_4_x-win32
       - name: Generate Mono Glue
         run: |
           cd godot
@@ -158,7 +159,7 @@ jobs:
           SCONS_CACHE: /.scons_cache/
         run: |
           cd godot
-          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\mono-builds\mono-build mono_bcl=bcl-desktop-win32\desktop-win32-bcl\net_4_x-win32
+          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\mono-builds\mono-build\x64 mono_bcl=bcl-desktop-win32\desktop-win32-bcl\net_4_x-win32
       # TODO Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
       #- name: Unit Tests
