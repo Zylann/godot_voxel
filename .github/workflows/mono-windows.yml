@@ -96,7 +96,11 @@ jobs:
           cd mono-builds
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
           cd mono-build
-          Get-ChildItem
+          cd lib
+          Rename-Item Release include
+          cd include
+          New-Item -Path mono-2.0 -ItemType Directory
+          Get-ChildItem -Path ./ -Recurse -File | Move-Item -Destination mono-2.0
 
       - name: Download Mono BCL
         run: |
