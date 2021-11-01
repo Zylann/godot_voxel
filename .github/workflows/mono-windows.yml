@@ -54,7 +54,7 @@ jobs:
         run: |
           cd mono-source
           msbuild msvc\mono.sln /p:Platform=x64 /p:Configuration=Release /p:MONO_TARGET_GC=sgen
-          Compress-Archive -Path ./msvc/build -DestinationPath ../mono-build.zip
+          Compress-Archive -Path ./msvc/build/sgen/x64 -DestinationPath ../mono-build.zip
 
       # Make glue available as artifact for dependent jobs
       - uses: actions/upload-artifact@v2
@@ -85,7 +85,7 @@ jobs:
         run: mv godot/modules/voxel/nuget.config godot/nuget.config
 
       # Download Mono Build
-      - name: Download Mono
+      - name: Download Mono Build
         uses: actions/download-artifact@v2
         with:
           name: mono-builds
@@ -96,8 +96,6 @@ jobs:
           cd mono-builds
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
           cd mono-build
-          cd build
-          cd sgen
           cd x64
           cd lib
           cd Release
@@ -113,6 +111,12 @@ jobs:
       # Install all packages (except scons)
       - name: Configure dependencies
         run: choco install python yasm make
+
+      # For copy_mono_root
+      - name: Install Mono Runtime (for copy_mono_root)
+        run: |
+          curl --location https://download.mono-project.com/archive/6.12.0/windows-installer/${{ env.MONO_TAG }}-x64-0.msi -O
+          Start-Process msiexec.exe -Wait -ArgumentList '/I D:\a\godot_voxel\godot_voxel\${{ env.MONO_TAG }}-x64-0.msi /quiet'
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
