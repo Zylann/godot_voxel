@@ -54,7 +54,7 @@ jobs:
         run: |
           cd mono-source
           msbuild msvc\mono.sln /p:Platform=x64 /p:Configuration=Release /p:MONO_TARGET_GC=sgen
-          Compress-Archive -Path ./msvc/build/sgen/x64 -DestinationPath ../mono-build.zip
+          Compress-Archive -Path ./msvc/build -DestinationPath ../mono-build.zip
 
       # Make glue available as artifact for dependent jobs
       - uses: actions/upload-artifact@v2
@@ -96,6 +96,8 @@ jobs:
           cd mono-builds
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
           cd mono-build
+          cd build
+          cd sgen
           cd x64
           cd lib
           cd Release
