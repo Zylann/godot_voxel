@@ -99,6 +99,8 @@ jobs:
           cd lib
           cd Release
           Get-ChildItem -Path ./ -Recurse -File | Move-Item -Destination ../
+          cd ../../
+          Get-ChildItem -Path ./ -Recurse
 
       - name: Download Mono BCL
         run: |
