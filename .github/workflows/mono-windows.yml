@@ -109,7 +109,7 @@ jobs:
 
       # Install all packages (except scons)
       - name: Configure dependencies
-        run: choco install python yasm make
+        run: choco install python yasm make mono
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
