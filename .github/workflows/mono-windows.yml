@@ -93,6 +93,7 @@ jobs:
 
       - name: Uncompress Mono-Build
         run: |
+          Expand-Archive -Path mono-builds.zip -DestinationPath mono-builds
           cd mono-builds
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
 
