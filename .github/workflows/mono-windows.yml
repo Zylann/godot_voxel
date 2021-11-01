@@ -84,13 +84,6 @@ jobs:
       - name: Move nuget.config
         run: mv godot/modules/voxel/nuget.config godot/nuget.config
 
-      # Azure repositories are not reliable, we need to prevent azure giving us packages.
-      # - name: Make apt sources.list use the default Ubuntu repositories
-      #  run: |
-      #    sudo rm -f /etc/apt/sources.list.d/*
-      #    sudo cp -f misc/ci/sources.list /etc/apt/sources.list
-      #    sudo apt-get update
-
       # Download Mono Build
       - name: Download Mono
         uses: actions/download-artifact@v2
@@ -110,7 +103,7 @@ jobs:
 
       # Install all packages (except scons)
       - name: Configure dependencies
-        run: choco install gcc python yasm make
+        run: choco install python yasm make
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
