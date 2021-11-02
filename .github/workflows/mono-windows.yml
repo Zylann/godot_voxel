@@ -13,60 +13,10 @@ env:
   MONO_BCL_RELEASE_TAG: release-c3a9d31
   MONO_INSTALL_DIR: C:\'Program Files'\Mono
 
-jobs:
-
-  build-mono:
-    runs-on: "windows-latest"
-    name: Build Mono
-    
-    steps:
-      # Clone/Use Cached Mono
-      - name: Checkout Mono Sources
-        uses: actions/checkout@v2
-        with:
-          repository: mono/mono
-          ref: ${{ env.MONO_TAG }}
-          path: mono-source
-
-      # Clean the Mono repo, get submodules
-      - name: Clean Mono
-        run: pushd mono-source && git reset --hard && git clean -xffd && git submodule foreach --recursive git reset --hard && git submodule foreach --recursive git clean -xffd && git submodule update --init --recursive && popd
-
-      - name: Get Voxel Repo
-        uses: actions/checkout@v2
-        with:
-          path: godot_voxel
-
-      # Apply the debugger fix
-      - name: Patch Mono
-        run: |
-          pushd mono-source
-          curl --location https://raw.githubusercontent.com/godotengine/godot-mono-builds/master/files/patches/mono-dbg-agent-clear-tls-instead-of-abort.diff -O
-          git apply mono-dbg-agent-clear-tls-instead-of-abort.diff
-          popd
-
-      - name: Configure build for amd64
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
-
-      # Build Mono for Windows (MSVC)
-      - name: Build Mono
-        run: |
-          cd mono-source
-          msbuild msvc\mono.sln /p:Platform=x64 /p:Configuration=Release /p:MONO_TARGET_GC=sgen
-          Compress-Archive -Path ./msvc/build/sgen/x64 -DestinationPath ../mono-build.zip
-
-      # Make glue available as artifact for dependent jobs
-      - uses: actions/upload-artifact@v2
-        with:
-          name: mono-builds
-          path: mono-build.zip
-          
+jobs:     
   mono-glue:
     runs-on: "windows-latest"
     name: Generate Mono Glue
-    needs: build-mono
 
     steps:
       # Clone Godot
@@ -87,13 +37,12 @@ jobs:
 
       # Download Mono Build
       - name: Download Mono Build
-        uses: actions/download-artifact@v2
-        with:
-          name: mono-builds
-          path: mono-builds
+        run: |
+          curl --location https://github.dev/Gamerfiend/godot_voxel/blob/95a6f96fd22e34f24751c7ef10fc5abfd6d9b4ca/.github/files/mono-builds.zip -O
 
       - name: Uncompress Mono-Build
         run: |
+          Expand-Archive -Path mono-builds.zip -DestinationPath mono-build
           cd mono-builds
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
           cd mono-build
