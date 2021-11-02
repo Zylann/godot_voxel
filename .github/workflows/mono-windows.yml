@@ -119,7 +119,7 @@ jobs:
           curl --location https://download.mono-project.com/archive/6.12.0/windows-installer/${{ env.MONO_TAG }}-x64-0.msi -O
           Start-Process msiexec.exe -Wait -ArgumentList '/I D:\a\godot_voxel\godot_voxel\${{ env.MONO_TAG }}-x64-0.msi /quiet'
           Copy-Item -Path ${{ env.MONO_INSTALL_DIR }}\etc -Destination ./mono-builds/mono-build/x64/
-          Get-ChildItem -Path mono-builds/mono-build/x64/
+          Get-ChildItem -Path mono-builds/mono-build/x64/etc/
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
