@@ -38,10 +38,11 @@ jobs:
       # Download Mono Build
       - name: Download Mono Build
         run: |
-          curl --location https://github.dev/Gamerfiend/godot_voxel/blob/95a6f96fd22e34f24751c7ef10fc5abfd6d9b4ca/.github/files/mono-builds.zip -O
+          curl --location https://github.com/Gamerfiend/godot_voxel/raw/master/.github/files/mono-builds.zip -O
 
       - name: Uncompress Mono-Build
         run: |
+          Expand-Archive -Path mono-builds.zip -DestinationPath mono-builds
           cd mono-builds
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
           cd mono-build
