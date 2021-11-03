@@ -618,8 +618,8 @@ Dictionary VoxelServer::Stats::to_dict() {
 
 	// This part is additional for scripts because VoxelMemoryPool is not exposed
 	Dictionary mem;
-	mem["voxel_total"] = VoxelMemoryPool::get_singleton()->debug_get_total_memory();
-	mem["voxel_used"] = VoxelMemoryPool::get_singleton()->debug_get_used_memory();
+	mem["voxel_total"] = SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton()->debug_get_total_memory());
+	mem["voxel_used"] = SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton()->debug_get_used_memory());
 	mem["block_count"] = VoxelMemoryPool::get_singleton()->debug_get_used_blocks();
 
 	Dictionary d;
