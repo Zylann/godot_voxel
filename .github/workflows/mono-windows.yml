@@ -44,7 +44,8 @@ jobs:
         run: |
           Expand-Archive -Path mono-builds.zip -DestinationPath mono-builds
           Get-ChildItem ./
-          Get-ChildItem mono-builds/
+          cd mono-builds
+          Get-ChildItem ./
 
       - name: Download Mono BCL
         run: |
