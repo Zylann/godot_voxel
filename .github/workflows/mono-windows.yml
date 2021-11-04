@@ -43,15 +43,6 @@ jobs:
       - name: Uncompress Mono-Build
         run: |
           Expand-Archive -Path mono-builds.zip -DestinationPath mono-builds
-          cd mono-builds
-          Expand-Archive -Path mono-build.zip -DestinationPath mono-build
-          cd mono-build
-          cd x64
-          cd lib
-          cd Release
-          Get-ChildItem -Path ./ -Recurse -File | Move-Item -Destination ../
-          cd ../../../
-          Get-ChildItem -Path ./ -Recurse
 
       - name: Download Mono BCL
         run: |
