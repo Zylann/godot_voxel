@@ -46,6 +46,8 @@ jobs:
           Get-ChildItem ./
           cd mono-builds
           Get-ChildItem ./
+          cd mono-builds 
+          Get-ChildItem ./
 
       - name: Download Mono BCL
         run: |
