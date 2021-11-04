@@ -38,11 +38,11 @@ jobs:
       # Download Mono Build
       - name: Download Mono Build
         run: |
-          curl --location https://github.dev/Gamerfiend/godot_voxel/blob/95a6f96fd22e34f24751c7ef10fc5abfd6d9b4ca/.github/files/mono-builds.zip -O
+          curl --location https://github.com/Gamerfiend/godot_voxel/raw/master/.github/files/mono-builds.zip -O
 
       - name: Uncompress Mono-Build
         run: |
-          Expand-Archive -Path mono-builds.zip -DestinationPath mono-build
+          Expand-Archive -Path mono-builds.zip -DestinationPath mono-builds
           cd mono-builds
           Expand-Archive -Path mono-build.zip -DestinationPath mono-build
           cd mono-build
@@ -68,6 +68,7 @@ jobs:
           curl --location https://download.mono-project.com/archive/6.12.0/windows-installer/${{ env.MONO_TAG }}-x64-0.msi -O
           Start-Process msiexec.exe -Wait -ArgumentList '/I D:\a\godot_voxel\godot_voxel\${{ env.MONO_TAG }}-x64-0.msi /quiet'
           Copy-Item -Path ${{ env.MONO_INSTALL_DIR }}\etc -Destination ./mono-builds/mono-build/x64/
+          Copy-Item -Path ${{ env.MONO_INSTALL_DIR }}\include -Destination ./mono-builds/mono-build/x64/
           Get-ChildItem -Path mono-builds/mono-build/x64/etc/
 
       # Upload cache on completion and check it out now
