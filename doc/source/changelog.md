@@ -8,8 +8,8 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
 
-Ongoing development - `master`
--------------------------------
+06/11/2021 - `godot3.4`
+-------------------------
 
 - General
     - `VoxelTerrain`: added `get_data_block_size()`
