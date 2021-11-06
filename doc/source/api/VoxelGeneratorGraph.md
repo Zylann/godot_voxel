@@ -7,7 +7,9 @@ Graph-based generator for smooth voxel worlds.
 
 ## Description: 
 
-Generates SDF voxel data from a graph of operations.
+Generates SDF voxel data from a graph of per-voxel operations.
+
+The graph must be created, compiled, and only then blocks can be generated.
 
 Warning: methods to modify the graph should only be called from the main thread.
 
@@ -144,15 +146,45 @@ enum **NodeTypeID**:
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_can_connect"></span> **can_connect**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_port_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_port_index ) 
 
+Tests if two ports can be connected together.
 
 - [void](#)<span id="i_clear"></span> **clear**( ) 
 
+Erases all nodes and connections from the graph.
 
 - [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_compile"></span> **compile**( ) 
 
+Compiles the graph so it can be used to generate blocks.
+
+If it succeeds, the returned result is a dictionary with the following layout:
+
+```gdscript
+{
+	"success": true
+}
+
+```
+
+If it fails, the returned result may contain a message and the ID of a graph node that could be the cause:
+
+```gdscript
+{
+	"success": false,
+	"node_id": int,
+	"message": String
+}
+
+```
+
+The node ID will be -1 if the error is not about a particular node.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_create_node"></span> **create_node**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) type_id, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 ) 
 
+Creates a graph node of a given type at a specific visual position. That position does not affect how the graph will perform, however it helps organizing nodes.
+
+An optional ID can be specified. If left to 0, the ID will be generated.
+
+This function then returns the ID of the node, which may be useful to modify other properties of the node later.
 
 - [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)<span id="i_debug_analyze_range"></span> **debug_analyze_range**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) min_pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) max_pos ) 
 
@@ -211,4 +243,4 @@ enum **NodeTypeID**:
 - [void](#)<span id="i_set_node_param_null"></span> **set_node_param_null**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
 
-_Generated on May 31, 2021_
+_Generated on Nov 06, 2021_

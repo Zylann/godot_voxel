@@ -50,6 +50,8 @@ nav:
     - api/VoxelInstanceGenerator.md
     - api/VoxelInstanceLibrary.md
     - api/VoxelInstanceLibraryItem.md
+    - api/VoxelInstanceLibraryItemBase.md
+    - api/VoxelInstanceLibrarySceneItem.md
     - api/VoxelInstancer.md
     - api/VoxelLibrary.md
     - api/VoxelLodTerrain.md
@@ -69,6 +71,7 @@ nav:
     - api/VoxelTerrain.md
     - api/VoxelTool.md
     - api/VoxelToolBuffer.md
+    - api/VoxelToolLodTerrain.md
     - api/VoxelToolTerrain.md
     - api/VoxelViewer.md
     - api/VoxelVoxLoader.md

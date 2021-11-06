@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorHeightmap" inherits="VoxelGenerator" version="3.4">
+<class name="VoxelGeneratorHeightmap" inherits="VoxelGenerator" version="3.5">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -11,11 +11,15 @@
 	<members>
 		<member name="channel" type="int" setter="set_channel" getter="get_channel" enum="VoxelBuffer.ChannelId" default="1">
 		</member>
-		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" default="200.0">
+		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" default="30.0">
+			Maximum distance between the lowest and highest surface points that can generate. 
+			NOTE: due to a bug in Godot's documentation tool, the default value shown here is not 30.0, but 200.0. This seems to be because one of the subclasses, [code]VoxelGeneratorWaves[/code], has a different default value, chosen for better practical results. This property also appears in some subclasses now, despite being defined in the base class.
 		</member>
 		<member name="height_start" type="float" setter="set_height_start" getter="get_height_start" default="-50.0">
+			Minimum height where the surface will generate.
 		</member>
 		<member name="iso_scale" type="float" setter="set_iso_scale" getter="get_iso_scale" default="0.1">
+			Scale applied to the signed distance field. This is useful when smooth voxels are used, to reduce blockyness over large distances.
 		</member>
 	</members>
 	<constants>

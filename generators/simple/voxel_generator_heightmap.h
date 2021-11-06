@@ -102,8 +102,8 @@ private:
 	static void _bind_methods();
 
 	struct Range {
-		float start = -50;
-		float height = 200;
+		float start = -50.f;
+		float height = 200.f;
 
 		inline float xform(float x) const {
 			return x * height + start;

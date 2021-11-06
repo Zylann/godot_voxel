@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorScript" inherits="VoxelGenerator" version="3.4">
+<class name="VoxelGeneratorScript" inherits="VoxelGenerator" version="3.5">
 	<brief_description>
 		Base class for custom generators defined with a script.
 		Important: this engine makes heavy use of threads. Generators will run in one of them, so make sure you don't access the scene tree or other unsafe APIs from within a generator.
@@ -10,14 +10,10 @@
 	</tutorials>
 	<methods>
 		<method name="_generate_block" qualifiers="virtual">
-			<return type="void">
-			</return>
-			<argument index="0" name="out_buffer" type="VoxelBuffer">
-			</argument>
-			<argument index="1" name="origin_in_voxels" type="Vector3">
-			</argument>
-			<argument index="2" name="lod" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="out_buffer" type="VoxelBuffer" />
+			<argument index="1" name="origin_in_voxels" type="Vector3" />
+			<argument index="2" name="lod" type="int" />
 			<description>
 				[code]out_buffer[/code]: Buffer in which to populate voxel data. It will never be [code]null[/code] and will have the requested size. It is only valid for this function, do not store it anywhere after the end.
 				[code]origin_in_voxels[/code]: Coordinates of the lower corner of the box to generate, relative to LOD0. The size of the box is known from [code]out_buffer[/code].
@@ -25,8 +21,7 @@
 			</description>
 		</method>
 		<method name="_get_used_channels_mask" qualifiers="virtual">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 				Use this to indicate which channels your generator will use. It returns a bitmask, so for example you may provide information like this: [code](1 &lt;&lt; channel1) | (1 &lt;&lt; channel2)[/code]
 			</description>

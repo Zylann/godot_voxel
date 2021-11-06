@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="FastNoiseLite" inherits="Resource" version="3.4">
+<class name="FastNoiseLite" inherits="Resource" version="3.5">
 	<brief_description>
 		Generates coherent and fractal noise using the [url=https://github.com/Auburn/FastNoise]FastNoiseLite[/url] library.
 	</brief_description>
@@ -9,40 +9,29 @@
 	</tutorials>
 	<methods>
 		<method name="get_noise_2d">
-			<return type="float">
-			</return>
-			<argument index="0" name="x" type="float">
-			</argument>
-			<argument index="1" name="y" type="float">
-			</argument>
+			<return type="float" />
+			<argument index="0" name="x" type="float" />
+			<argument index="1" name="y" type="float" />
 			<description>
 			</description>
 		</method>
 		<method name="get_noise_2dv">
-			<return type="float">
-			</return>
-			<argument index="0" name="position" type="Vector2">
-			</argument>
+			<return type="float" />
+			<argument index="0" name="position" type="Vector2" />
 			<description>
 			</description>
 		</method>
 		<method name="get_noise_3d">
-			<return type="float">
-			</return>
-			<argument index="0" name="x" type="float">
-			</argument>
-			<argument index="1" name="y" type="float">
-			</argument>
-			<argument index="2" name="z" type="float">
-			</argument>
+			<return type="float" />
+			<argument index="0" name="x" type="float" />
+			<argument index="1" name="y" type="float" />
+			<argument index="2" name="z" type="float" />
 			<description>
 			</description>
 		</method>
 		<method name="get_noise_3dv">
-			<return type="float">
-			</return>
-			<argument index="0" name="position" type="Vector3">
-			</argument>
+			<return type="float" />
+			<argument index="0" name="position" type="Vector3" />
 			<description>
 			</description>
 		</method>

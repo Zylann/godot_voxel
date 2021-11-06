@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelViewer" inherits="Spatial" version="3.4">
+<class name="VoxelViewer" inherits="Spatial" version="3.5">
 	<brief_description>
 		Attach this as a child node of characters, so the voxel world will know where to load blocks around them.
 		If no viewer is present in the world, nothing will generate.
@@ -12,7 +12,7 @@
 	<methods>
 	</methods>
 	<members>
-		<member name="requires_collisions" type="bool" setter="set_requires_collisions" getter="is_requiring_collisions" default="false">
+		<member name="requires_collisions" type="bool" setter="set_requires_collisions" getter="is_requiring_collisions" default="true">
 			If set to [code]true[/code], the engine will generate classic collision shapes around this viewer.
 		</member>
 		<member name="requires_visuals" type="bool" setter="set_requires_visuals" getter="is_requiring_visuals" default="true">

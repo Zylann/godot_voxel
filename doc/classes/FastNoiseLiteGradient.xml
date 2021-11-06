@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="FastNoiseLiteGradient" inherits="Resource" version="3.4">
+<class name="FastNoiseLiteGradient" inherits="Resource" version="3.5">
 	<brief_description>
 		Generates coherent and fractal noise gradients using the [url=https://github.com/Auburn/FastNoise]FastNoiseLite[/url] library.
 	</brief_description>
@@ -8,6 +8,18 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="warp_2d">
+			<return type="Vector2" />
+			<argument index="0" name="position" type="Vector2" />
+			<description>
+			</description>
+		</method>
+		<method name="warp_3d">
+			<return type="Vector3" />
+			<argument index="0" name="position" type="Vector3" />
+			<description>
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="amplitude" type="float" setter="set_amplitude" getter="get_amplitude" default="30.0">

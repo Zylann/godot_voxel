@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="3.4">
+<class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="3.5">
 	<brief_description>
 		Graph-based generator for smooth voxel worlds.
 	</brief_description>
@@ -12,70 +12,49 @@
 	</tutorials>
 	<methods>
 		<method name="add_connection">
-			<return type="void">
-			</return>
-			<argument index="0" name="src_node_id" type="int">
-			</argument>
-			<argument index="1" name="src_port_index" type="int">
-			</argument>
-			<argument index="2" name="dst_node_id" type="int">
-			</argument>
-			<argument index="3" name="dst_port_index" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="src_node_id" type="int" />
+			<argument index="1" name="src_port_index" type="int" />
+			<argument index="2" name="dst_node_id" type="int" />
+			<argument index="3" name="dst_port_index" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="bake_sphere_bumpmap">
-			<return type="void">
-			</return>
-			<argument index="0" name="im" type="Image">
-			</argument>
-			<argument index="1" name="ref_radius" type="float">
-			</argument>
-			<argument index="2" name="sdf_min" type="float">
-			</argument>
-			<argument index="3" name="sdf_max" type="float">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="im" type="Image" />
+			<argument index="1" name="ref_radius" type="float" />
+			<argument index="2" name="sdf_min" type="float" />
+			<argument index="3" name="sdf_max" type="float" />
 			<description>
 			</description>
 		</method>
 		<method name="bake_sphere_normalmap">
-			<return type="void">
-			</return>
-			<argument index="0" name="im" type="Image">
-			</argument>
-			<argument index="1" name="ref_radius" type="float">
-			</argument>
-			<argument index="2" name="strength" type="float">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="im" type="Image" />
+			<argument index="1" name="ref_radius" type="float" />
+			<argument index="2" name="strength" type="float" />
 			<description>
 			</description>
 		</method>
 		<method name="can_connect" qualifiers="const">
-			<return type="bool">
-			</return>
-			<argument index="0" name="src_node_id" type="int">
-			</argument>
-			<argument index="1" name="src_port_index" type="int">
-			</argument>
-			<argument index="2" name="dst_node_id" type="int">
-			</argument>
-			<argument index="3" name="dst_port_index" type="int">
-			</argument>
+			<return type="bool" />
+			<argument index="0" name="src_node_id" type="int" />
+			<argument index="1" name="src_port_index" type="int" />
+			<argument index="2" name="dst_node_id" type="int" />
+			<argument index="3" name="dst_port_index" type="int" />
 			<description>
 				Tests if two ports can be connected together.
 			</description>
 		</method>
 		<method name="clear">
-			<return type="void">
-			</return>
+			<return type="void" />
 			<description>
 				Erases all nodes and connections from the graph.
 			</description>
 		</method>
 		<method name="compile">
-			<return type="Dictionary">
-			</return>
+			<return type="Dictionary" />
 			<description>
 				Compiles the graph so it can be used to generate blocks.
 				If it succeeds, the returned result is a dictionary with the following layout:
@@ -96,14 +75,10 @@
 			</description>
 		</method>
 		<method name="create_node">
-			<return type="int">
-			</return>
-			<argument index="0" name="type_id" type="int" enum="VoxelGeneratorGraph.NodeTypeID">
-			</argument>
-			<argument index="1" name="position" type="Vector2">
-			</argument>
-			<argument index="2" name="id" type="int" default="0">
-			</argument>
+			<return type="int" />
+			<argument index="0" name="type_id" type="int" enum="VoxelGeneratorGraph.NodeTypeID" />
+			<argument index="1" name="position" type="Vector2" />
+			<argument index="2" name="id" type="int" default="0" />
 			<description>
 				Creates a graph node of a given type at a specific visual position. That position does not affect how the graph will perform, however it helps organizing nodes.
 				An optional ID can be specified. If left to 0, the ID will be generated.
@@ -111,170 +86,124 @@
 			</description>
 		</method>
 		<method name="debug_analyze_range" qualifiers="const">
-			<return type="Vector2">
-			</return>
-			<argument index="0" name="min_pos" type="Vector3">
-			</argument>
-			<argument index="1" name="max_pos" type="Vector3">
-			</argument>
+			<return type="Vector2" />
+			<argument index="0" name="min_pos" type="Vector3" />
+			<argument index="1" name="max_pos" type="Vector3" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_load_waves_preset">
-			<return type="void">
-			</return>
+			<return type="void" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_measure_microseconds_per_voxel">
-			<return type="float">
-			</return>
-			<argument index="0" name="use_singular_queries" type="bool">
-			</argument>
+			<return type="float" />
+			<argument index="0" name="use_singular_queries" type="bool" />
 			<description>
 			</description>
 		</method>
 		<method name="find_node_by_name" qualifiers="const">
-			<return type="int">
-			</return>
-			<argument index="0" name="name" type="String">
-			</argument>
+			<return type="int" />
+			<argument index="0" name="name" type="String" />
 			<description>
 			</description>
 		</method>
 		<method name="generate_single">
-			<return type="float">
-			</return>
-			<argument index="0" name="arg0" type="Vector3">
-			</argument>
+			<return type="float" />
+			<argument index="0" name="arg0" type="Vector3" />
 			<description>
 			</description>
 		</method>
 		<method name="get_connections" qualifiers="const">
-			<return type="Array">
-			</return>
+			<return type="Array" />
 			<description>
 			</description>
 		</method>
 		<method name="get_node_default_input" qualifiers="const">
-			<return type="Variant">
-			</return>
-			<argument index="0" name="node_id" type="int">
-			</argument>
-			<argument index="1" name="input_index" type="int">
-			</argument>
+			<return type="Variant" />
+			<argument index="0" name="node_id" type="int" />
+			<argument index="1" name="input_index" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="get_node_gui_position" qualifiers="const">
-			<return type="Vector2">
-			</return>
-			<argument index="0" name="node_id" type="int">
-			</argument>
+			<return type="Vector2" />
+			<argument index="0" name="node_id" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="get_node_ids" qualifiers="const">
-			<return type="PoolIntArray">
-			</return>
+			<return type="PoolIntArray" />
 			<description>
 			</description>
 		</method>
 		<method name="get_node_param" qualifiers="const">
-			<return type="Variant">
-			</return>
-			<argument index="0" name="node_id" type="int">
-			</argument>
-			<argument index="1" name="param_index" type="int">
-			</argument>
+			<return type="Variant" />
+			<argument index="0" name="node_id" type="int" />
+			<argument index="1" name="param_index" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="get_node_type_count" qualifiers="const">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="get_node_type_id" qualifiers="const">
-			<return type="int" enum="VoxelGeneratorGraph.NodeTypeID">
-			</return>
-			<argument index="0" name="node_id" type="int">
-			</argument>
+			<return type="int" enum="VoxelGeneratorGraph.NodeTypeID" />
+			<argument index="0" name="node_id" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="get_node_type_info" qualifiers="const">
-			<return type="Dictionary">
-			</return>
-			<argument index="0" name="type_id" type="int">
-			</argument>
+			<return type="Dictionary" />
+			<argument index="0" name="type_id" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="remove_connection">
-			<return type="void">
-			</return>
-			<argument index="0" name="src_node_id" type="int">
-			</argument>
-			<argument index="1" name="src_port_index" type="int">
-			</argument>
-			<argument index="2" name="dst_node_id" type="int">
-			</argument>
-			<argument index="3" name="dst_port_index" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="src_node_id" type="int" />
+			<argument index="1" name="src_port_index" type="int" />
+			<argument index="2" name="dst_node_id" type="int" />
+			<argument index="3" name="dst_port_index" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="remove_node">
-			<return type="void">
-			</return>
-			<argument index="0" name="node_id" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="node_id" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="set_node_default_input">
-			<return type="void">
-			</return>
-			<argument index="0" name="node_id" type="int">
-			</argument>
-			<argument index="1" name="input_index" type="int">
-			</argument>
-			<argument index="2" name="value" type="Variant">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="node_id" type="int" />
+			<argument index="1" name="input_index" type="int" />
+			<argument index="2" name="value" type="Variant" />
 			<description>
 			</description>
 		</method>
 		<method name="set_node_gui_position">
-			<return type="void">
-			</return>
-			<argument index="0" name="node_id" type="int">
-			</argument>
-			<argument index="1" name="position" type="Vector2">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="node_id" type="int" />
+			<argument index="1" name="position" type="Vector2" />
 			<description>
 			</description>
 		</method>
 		<method name="set_node_param">
-			<return type="void">
-			</return>
-			<argument index="0" name="node_id" type="int">
-			</argument>
-			<argument index="1" name="param_index" type="int">
-			</argument>
-			<argument index="2" name="value" type="Variant">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="node_id" type="int" />
+			<argument index="1" name="param_index" type="int" />
+			<argument index="2" name="value" type="Variant" />
 			<description>
 			</description>
 		</method>
 		<method name="set_node_param_null">
-			<return type="void">
-			</return>
-			<argument index="0" name="node_id" type="int">
-			</argument>
-			<argument index="1" name="param_index" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="node_id" type="int" />
+			<argument index="1" name="param_index" type="int" />
 			<description>
 			</description>
 		</method>
@@ -295,8 +224,7 @@
 	</members>
 	<signals>
 		<signal name="node_name_changed">
-			<argument index="0" name="node_id" type="int">
-			</argument>
+			<argument index="0" name="node_id" type="int" />
 			<description>
 			</description>
 		</signal>

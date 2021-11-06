@@ -12,6 +12,7 @@ Type           | Name                                                 | Default
 -------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------
 `int`          | [collision_layer](#i_collision_layer)                | 1                                                                                       
 `int`          | [collision_lod_count](#i_collision_lod_count)        | 0                                                                                       
+`float`        | [collision_margin](#i_collision_margin)              | 0.04                                                                                    
 `int`          | [collision_mask](#i_collision_mask)                  | 1                                                                                       
 `int`          | [collision_update_delay](#i_collision_update_delay)  | 0                                                                                       
 `bool`         | [generate_collisions](#i_generate_collisions)        | true                                                                                    
@@ -65,6 +66,9 @@ enum **ProcessMode**:
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_lod_count"></span> **collision_lod_count** = 0
+
+
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_collision_margin"></span> **collision_margin** = 0.04
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_mask"></span> **collision_mask** = 1
@@ -175,4 +179,4 @@ The returned dictionary has the following structure:
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_voxel_to_mesh_block_position"></span> **voxel_to_mesh_block_position**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) lod_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) arg1 ) 
 
 
-_Generated on May 31, 2021_
+_Generated on Nov 06, 2021_

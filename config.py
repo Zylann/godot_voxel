@@ -19,6 +19,8 @@ def get_doc_classes():
     "VoxelColorPalette",
     "VoxelInstanceLibrary",
     "VoxelInstanceLibraryItem",
+    "VoxelInstanceLibraryItemBase",
+    "VoxelInstanceLibrarySceneItem",
     "VoxelInstanceGenerator",
 
     "VoxelBuffer",
@@ -50,6 +52,7 @@ def get_doc_classes():
     "VoxelRaycastResult",
     "VoxelTool",
     "VoxelToolTerrain",
+    "VoxelToolLodTerrain",
     "VoxelToolBuffer",
     "VoxelBlockSerializer",
     "VoxelVoxLoader",

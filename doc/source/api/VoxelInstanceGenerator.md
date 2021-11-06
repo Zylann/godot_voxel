@@ -28,6 +28,7 @@ Type             | Name                                             | Default
 `int`            | [noise_dimension](#i_noise_dimension)            | 1           
 `float`          | [noise_on_scale](#i_noise_on_scale)              | 0.0         
 `float`          | [offset_along_normal](#i_offset_along_normal)    | 0.0         
+`bool`           | [random_rotation](#i_random_rotation)            | true        
 `bool`           | [random_vertical_flip](#i_random_vertical_flip)  | false       
 `int`            | [scale_distribution](#i_scale_distribution)      | 1           
 `float`          | [vertical_alignment](#i_vertical_alignment)      | 1.0         
@@ -38,8 +39,9 @@ Type             | Name                                             | Default
 enum **EmitMode**: 
 
 - **EMIT_FROM_VERTICES** = **0**
-- **EMIT_FROM_FACES** = **1**
-- **EMIT_MODE_COUNT** = **2**
+- **EMIT_FROM_FACES_FAST** = **1**
+- **EMIT_FROM_FACES** = **2**
+- **EMIT_MODE_COUNT** = **3**
 
 enum **Distribution**: 
 
@@ -94,6 +96,9 @@ enum **Dimension**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_offset_along_normal"></span> **offset_along_normal** = 0.0
 
 
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_random_rotation"></span> **random_rotation** = true
+
+
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_random_vertical_flip"></span> **random_vertical_flip** = false
 
 
@@ -103,4 +108,4 @@ enum **Dimension**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_vertical_alignment"></span> **vertical_alignment** = 1.0
 
 
-_Generated on May 31, 2021_
+_Generated on Nov 06, 2021_

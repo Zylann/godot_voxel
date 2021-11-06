@@ -21,6 +21,15 @@ Type     | Name                                         | Default
 `int`    | [seed](#i_seed)                              | 0       
 <p></p>
 
+## Methods: 
+
+
+Return                                                                        | Signature                                                                                                        
+----------------------------------------------------------------------------- | -----------------------------------------------------------------------------------------------------------------
+[Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)  | [warp_2d](#i_warp_2d) ( [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position )  
+[Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)  | [warp_3d](#i_warp_3d) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position )  
+<p></p>
+
 ## Enumerations: 
 
 enum **NoiseType**: 
@@ -71,4 +80,12 @@ enum **RotationType3D**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_seed"></span> **seed** = 0
 
 
-_Generated on May 31, 2021_
+## Method Descriptions
+
+- [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)<span id="i_warp_2d"></span> **warp_2d**( [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position ) 
+
+
+- [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_warp_3d"></span> **warp_3d**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
+
+
+_Generated on Nov 06, 2021_
