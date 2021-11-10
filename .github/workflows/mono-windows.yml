@@ -56,7 +56,7 @@ jobs:
 
       # Install all packages (except scons)
       - name: Configure dependencies
-        run: choco install python yasm make
+        run: choco install python make
 
       # For copy_mono_root
       - name: Install Mono Runtime (for copy_mono_root)
