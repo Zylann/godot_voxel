@@ -1,0 +1,55 @@
+use_parent_methods: true
+add_to_tree: true
+delay_removing_added_nodes_to_next_frame: true
+test_one_class_multiple_times: true
+
+custom_classes:
+FastNoiseLite
+FastNoiseLiteGradient
+Voxel
+VoxelBlockSerializer
+VoxelBoxMover
+VoxelBuffer
+VoxelColorPalette
+VoxelGenerator
+VoxelGeneratorFlat
+VoxelGeneratorGraph
+VoxelGeneratorHeightmap
+VoxelGeneratorImage
+VoxelGeneratorNoise
+VoxelGeneratorNoise2D
+VoxelGeneratorScript
+VoxelGeneratorWaves
+VoxelInstanceComponent
+VoxelInstanceGenerator
+VoxelInstanceLibrary
+VoxelInstanceLibraryItem
+VoxelInstanceLibraryItemBase
+VoxelInstanceLibrarySceneItem
+VoxelInstancer
+VoxelLibrary
+VoxelLodTerrain
+VoxelMesher
+VoxelMesherBlocky
+VoxelMesherCubes
+VoxelMesherDMC
+VoxelMesherTransvoxel
+VoxelNode
+VoxelRaycastResult
+VoxelServer
+VoxelStream
+VoxelStreamBlockFiles
+VoxelStreamRegionFiles
+VoxelStreamSQLite
+VoxelStreamScript
+VoxelTerrain
+VoxelTool
+VoxelToolBuffer
+VoxelToolLodTerrain
+VoxelToolTerrain
+VoxelViewer # Cause freeze when using with VoxelTerrain, due iterating each cell
+VoxelVoxLoader
+
+#function_exceptions_append:
+#debug_print_sdf_top_down # Look at https://github.com/Zylann/godot_voxel/issues/330
+
