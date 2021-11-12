@@ -4,6 +4,7 @@
 #include "../../util/profiling.h"
 
 namespace {
+// Table of indices for vertices of cube faces
 // 2-----3
 // |     |
 // |     |
