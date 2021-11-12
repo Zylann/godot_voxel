@@ -1355,7 +1355,7 @@ void VoxelLodTerrain::_process(float delta) {
 	CRASH_COND(_blocks_pending_transition_update.size() != 0);
 
 	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
-								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
+			(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
 
 	// Find which blocks we need to load and see, within each octree
 	if (stream_enabled) {

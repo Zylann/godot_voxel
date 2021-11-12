@@ -547,7 +547,7 @@ void build_regular_mesh(
 								secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
 								border_mask |= (get_border_mask(p0, block_size_scaled) &
 													   get_border_mask(p1, block_size_scaled))
-											   << 6;
+										<< 6;
 							}
 
 							cell_vertex_indices[vertex_index] =
@@ -1032,7 +1032,7 @@ void build_transition_mesh(
 							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
 							border_mask |= (get_border_mask(p0, block_size_scaled) &
 												   get_border_mask(p1, block_size_scaled))
-										   << 6;
+									<< 6;
 
 						} else {
 							// If the vertex is on the half-res side (in our implementation,
