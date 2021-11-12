@@ -97,6 +97,7 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Indent with tabs
 - Private wrapper functions can be used to adapt to the script API and are prefixed with `_b_`.
 - Use Clang-format to automate most of these rules (the one included in Godot should do it)
+- Prefer comments with `//` only
 
 ### File structure
 
