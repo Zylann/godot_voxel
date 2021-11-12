@@ -1,16 +1,24 @@
 #ifndef VOXEL_MEMORY_POOL_H
 #define VOXEL_MEMORY_POOL_H
 
-#include "core/hash_map.h"
+#include "../util/fixed_array.h"
+#include "../util/math/funcs.h"
 #include "core/os/mutex.h"
 
+#include <limits>
+#include <unordered_set>
 #include <vector>
 
 // Pool based on a scenario where allocated blocks are often the same size.
-// A pool of blocks is assigned for each size.
+// A pool of blocks is assigned for each power of two.
+// The majority of VoxelBuffers use powers of two so most of the time
+// we won't waste memory. Sometimes non-power-of-two buffers are created,
+// but they are often temporary and less numerous.
 class VoxelMemoryPool {
 private:
 	struct Pool {
+		Mutex mutex;
+		// Would a linked list be better?
 		std::vector<uint8_t *> blocks;
 	};
 
@@ -33,20 +41,54 @@ public:
 	size_t debug_get_total_memory() const;
 
 private:
-	Pool *get_or_create_pool(size_t size);
 	void clear();
 
-	struct SizeTHasher {
-		static _FORCE_INLINE_ uint32_t hash(const size_t p_int) {
-			return HashMapHasherDefault::hash(uint64_t(p_int));
-		}
-	};
+#ifdef DEBUG_ENABLED
+	void debug_add_allock(void *block) {
+		MutexLock lock(_debug_allocs_mutex);
+		auto it = _debug_allocs.find(block);
+		CRASH_COND(it != _debug_allocs.end());
+		_debug_allocs.insert(block);
+	}
 
-	HashMap<size_t, Pool *, SizeTHasher> _pools;
-	unsigned int _used_blocks = 0;
+	void debug_remove_alloc(void *block) {
+		MutexLock lock(_debug_allocs_mutex);
+		auto it = _debug_allocs.find(block);
+		CRASH_COND(it == _debug_allocs.end());
+		_debug_allocs.erase(it);
+	}
+#endif
+
+	inline size_t get_highest_supported_size() const {
+		return size_t(1) << (_pot_pools.size() - 1);
+	}
+
+	inline unsigned int get_pool_index_from_size(size_t size) const {
+#ifdef DEBUG_ENABLED
+		// `next_power_of_2` takes unsigned int
+		CRASH_COND(size > std::numeric_limits<unsigned int>::max());
+#endif
+		return get_shift_from_power_of_two(next_power_of_2(size));
+	}
+
+	inline size_t get_size_from_pool_index(unsigned int i) const {
+		return size_t(1) << i;
+	}
+
+	// We handle allocations with up to 2^20 = 1,048,576 bytes.
+	// This is chosen based on practical needs.
+	// Each slot in this array corresponds to allocations
+	// that contain 2^index bytes in them.
+	FixedArray<Pool, 21> _pot_pools;
+
+#ifdef DEBUG_ENABLED
+	std::unordered_set<void *> _debug_allocs;
+	Mutex _debug_allocs_mutex;
+#endif
+
+	unsigned int _used_blocks = 0; // TODO Make atomic?
 	size_t _used_memory = 0;
 	size_t _total_memory = 0;
-	Mutex _mutex;
 };
 
 #endif // VOXEL_MEMORY_POOL_H
