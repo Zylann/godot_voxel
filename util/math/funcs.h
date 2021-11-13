@@ -162,12 +162,28 @@ inline bool is_power_of_two(size_t x) {
 	return x != 0 && (x & (x - 1)) == 0;
 }
 
-inline unsigned int get_shift_from_power_of_two(unsigned int pot) {
+// If `x` is a power of two, returns `x`.
+// Otherwise, returns the closest power of two greater than `x`.
+inline unsigned int get_next_power_of_two_32(unsigned int x) {
+	if (x == 0) {
+		return 0;
+	}
+	--x;
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return ++x;
+}
+
+// Assuming `pot == (1 << i)`, returns `i`.
+inline unsigned int get_shift_from_power_of_two_32(unsigned int pot) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(!is_power_of_two(pot));
 #endif
 	for (unsigned int i = 0; i < 32; ++i) {
-		if (pot == (1 << i)) {
+		if (pot == (1u << i)) {
 			return i;
 		}
 	}

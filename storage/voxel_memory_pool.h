@@ -65,10 +65,10 @@ private:
 
 	inline unsigned int get_pool_index_from_size(size_t size) const {
 #ifdef DEBUG_ENABLED
-		// `next_power_of_2` takes unsigned int
+		// `get_next_power_of_two_32` takes unsigned int
 		CRASH_COND(size > std::numeric_limits<unsigned int>::max());
 #endif
-		return get_shift_from_power_of_two(next_power_of_2(size));
+		return get_shift_from_power_of_two_32(get_next_power_of_two_32(size));
 	}
 
 	inline size_t get_size_from_pool_index(unsigned int i) const {
