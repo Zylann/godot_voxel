@@ -102,7 +102,19 @@ jobs:
       - name: Generate Mono Glue
         run: |
           cd godot
-          /bin/godot.windows.opt.tools.64.mono.exe --generate-mono-glue godot/modules/mono/glue
+          Get-ChildItem .\bin
+          Get-ChildItem .\modules\mono\glue
+          Echo running .\bin\godot.windows.opt.tools.64.mono.exe --version
+          .\bin\godot.windows.opt.tools.64.mono.exe --version > output1.txt 2>&1
+          Echo =1=
+          type output1.txt
+          Echo =end1=
+          Echo running .\bin\godot.windows.opt.tools.64.mono.exe --generate-mono-glue ${{github.workspace}}/godot/modules/mono/glue
+          .\bin\godot.windows.opt.tools.64.mono.exe --generate-mono-glue ${{github.workspace}}/godot/modules/mono/glue  > output2.txt 2>&1
+          Echo =2=
+          type output2.txt
+          Echo =end2=
+          Get-ChildItem .\modules\mono\glue
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
