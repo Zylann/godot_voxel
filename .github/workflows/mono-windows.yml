@@ -46,7 +46,6 @@ jobs:
           Get-ChildItem ./
           cd mono-build
           Get-ChildItem ./
-          xcopy include\mono include\mono-2.0\mono\ /E
 
       - name: Download Mono BCL
         run: |

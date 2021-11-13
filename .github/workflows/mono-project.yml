@@ -61,8 +61,8 @@ jobs:
           md $Env:MONO_OUTPUT_DIR\lib
           copy msvc\build\sgen\x64\lib\Release\*.lib $Env:MONO_OUTPUT_DIR\lib
           copy msvc\build\sgen\x64\lib\Release\*.exp $Env:MONO_OUTPUT_DIR\lib
-          md $Env:MONO_OUTPUT_DIR\include
-          xcopy msvc\include $Env:MONO_OUTPUT_DIR\include /E
+          md $Env:MONO_OUTPUT_DIR\include\mono-2.0
+          xcopy msvc\include $Env:MONO_OUTPUT_DIR\include\mono-2.0 /E
           md $Env:MONO_OUTPUT_DIR\etc
           xcopy data\net_2_0\machine.config                $Env:MONO_OUTPUT_DIR\etc\mono\2.0\
           xcopy data\net_2_0\DefaultWsdlHelpGenerator.aspx $Env:MONO_OUTPUT_DIR\etc\mono\2.0\
