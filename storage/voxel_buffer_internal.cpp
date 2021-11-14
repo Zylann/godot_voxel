@@ -620,7 +620,7 @@ size_t VoxelBufferInternal::get_size_in_bytes_for_volume(Vector3i size, Depth de
 bool VoxelBufferInternal::create_channel_noinit(int i, Vector3i size) {
 	Channel &channel = _channels[i];
 	const size_t size_in_bytes = get_size_in_bytes_for_volume(size, channel.depth);
-	ERR_FAIL_COND_V(size_in_bytes > Channel::MAX_SIZE_IN_BYTES, "Buffer is too big", false);
+	ERR_FAIL_COND_V_MSG(size_in_bytes > Channel::MAX_SIZE_IN_BYTES, false, "Buffer is too big");
 	CRASH_COND(channel.data != nullptr); // The channel must not already be allocated
 	channel.data = allocate_channel_data(size_in_bytes);
 	ERR_FAIL_COND_V(channel.data == nullptr, false);
