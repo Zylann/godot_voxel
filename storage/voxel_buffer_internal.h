@@ -10,6 +10,7 @@
 #include <core/map.h>
 #include <core/reference.h>
 #include <core/vector.h>
+#include <limits>
 
 class VoxelTool;
 class Image;
@@ -89,7 +90,10 @@ public:
 
 		Depth depth = DEFAULT_CHANNEL_DEPTH;
 
+		// Storing gigabytes in a single buffer is neither supported nor practical.
 		uint32_t size_in_bytes = 0;
+
+		static const size_t MAX_SIZE_IN_BYTES = std::numeric_limits<uint32_t>::max();
 	};
 
 	VoxelBufferInternal();
@@ -133,7 +137,7 @@ public:
 	void decompress_channel(unsigned int channel_index);
 	Compression get_channel_compression(unsigned int channel_index) const;
 
-	static uint32_t get_size_in_bytes_for_volume(Vector3i size, Depth depth);
+	static size_t get_size_in_bytes_for_volume(Vector3i size, Depth depth);
 
 	void copy_format(const VoxelBufferInternal &other);
 

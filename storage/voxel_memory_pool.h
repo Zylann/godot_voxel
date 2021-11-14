@@ -16,10 +16,36 @@
 // but they are often temporary and less numerous.
 class VoxelMemoryPool {
 private:
+#ifdef DEBUG_ENABLED
+	struct DebugUsedBlocks {
+		Mutex mutex;
+		std::unordered_set<void *> blocks;
+
+		void add(void *block) {
+			MutexLock lock(mutex);
+			auto it = blocks.find(block);
+			// Must not add twice
+			CRASH_COND(it != blocks.end());
+			blocks.insert(block);
+		}
+
+		void remove(void *block) {
+			MutexLock lock(mutex);
+			auto it = blocks.find(block);
+			// Must exist
+			CRASH_COND(it == blocks.end());
+			blocks.erase(it);
+		}
+	};
+#endif
+
 	struct Pool {
 		Mutex mutex;
 		// Would a linked list be better?
 		std::vector<uint8_t *> blocks;
+#ifdef DEBUG_ENABLED
+		DebugUsedBlocks debug_used_blocks;
+#endif
 	};
 
 public:
@@ -43,22 +69,6 @@ public:
 private:
 	void clear();
 
-#ifdef DEBUG_ENABLED
-	void debug_add_allock(void *block) {
-		MutexLock lock(_debug_allocs_mutex);
-		auto it = _debug_allocs.find(block);
-		CRASH_COND(it != _debug_allocs.end());
-		_debug_allocs.insert(block);
-	}
-
-	void debug_remove_alloc(void *block) {
-		MutexLock lock(_debug_allocs_mutex);
-		auto it = _debug_allocs.find(block);
-		CRASH_COND(it == _debug_allocs.end());
-		_debug_allocs.erase(it);
-	}
-#endif
-
 	inline size_t get_highest_supported_size() const {
 		return size_t(1) << (_pot_pools.size() - 1);
 	}
@@ -80,10 +90,8 @@ private:
 	// Each slot in this array corresponds to allocations
 	// that contain 2^index bytes in them.
 	FixedArray<Pool, 21> _pot_pools;
-
 #ifdef DEBUG_ENABLED
-	std::unordered_set<void *> _debug_allocs;
-	Mutex _debug_allocs_mutex;
+	DebugUsedBlocks _debug_nonpooled_used_blocks;
 #endif
 
 	unsigned int _used_blocks = 0; // TODO Make atomic?

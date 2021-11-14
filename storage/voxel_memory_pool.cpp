@@ -48,6 +48,11 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 	if (size > get_highest_supported_size()) {
 		// Sorry, memory is not pooled past this size
 		block = (uint8_t *)memalloc(size * sizeof(uint8_t));
+#ifdef DEBUG_ENABLED
+		if (block != nullptr) {
+			_debug_nonpooled_used_blocks.add(block);
+		}
+#endif
 	} else {
 		const unsigned int pot = get_pool_index_from_size(size);
 		Pool &pool = _pot_pools[pot];
@@ -60,28 +65,39 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 			pool.mutex.unlock();
 			block = (uint8_t *)memalloc(size * sizeof(uint8_t));
 		}
-	}
 #ifdef DEBUG_ENABLED
-	debug_add_allock(block);
+		if (block != nullptr) {
+			pool.debug_used_blocks.add(block);
+		}
 #endif
-	++_used_blocks;
-	_used_memory += size;
+	}
+	if (block == nullptr) {
+		ERR_PRINT("Out of memory");
+	} else {
+		++_used_blocks;
+		_used_memory += size;
+	}
 	return block;
 }
 
 void VoxelMemoryPool::recycle(uint8_t *block, size_t size) {
 	CRASH_COND(size == 0);
 	CRASH_COND(block == nullptr);
-#ifdef DEBUG_ENABLED
-	debug_remove_alloc(block);
-#endif
 	// Not calculating `pot` immediately because the function we use to calculate it uses 32 bits,
 	// while `size_t` can be larger than that.
 	if (size > get_highest_supported_size()) {
+#ifdef DEBUG_ENABLED
+		// Make sure this allocation was done by this pool in this scenario
+		_debug_nonpooled_used_blocks.remove(block);
+#endif
 		memfree(block);
 	} else {
 		const unsigned int pot = get_pool_index_from_size(size);
 		Pool &pool = _pot_pools[pot];
+#ifdef DEBUG_ENABLED
+		// Make sure this allocation was done by this pool in this scenario
+		pool.debug_used_blocks.remove(block);
+#endif
 		MutexLock lock(pool.mutex);
 		pool.blocks.push_back(block);
 	}
