@@ -63,7 +63,13 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 			pool.mutex.unlock();
 		} else {
 			pool.mutex.unlock();
-			block = (uint8_t *)memalloc(size * sizeof(uint8_t));
+			// All allocations done in this pool have the same size,
+			// which must be greater or equal to `size`
+			const size_t capacity = get_size_from_pool_index(pot);
+#ifdef DEBUG_ENABLED
+			CRASH_COND(capacity < size);
+#endif
+			block = (uint8_t *)memalloc(capacity * sizeof(uint8_t));
 		}
 #ifdef DEBUG_ENABLED
 		if (block != nullptr) {
