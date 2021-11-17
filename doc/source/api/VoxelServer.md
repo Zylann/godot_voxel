@@ -23,18 +23,29 @@ The returned dictionary has the following structure:
 
 ```gdscript
 {
-	"streaming": {
-		"tasks": int,
-		"active_threads": int,
-		"thread_count": int
+	"thread_pools": {
+		"streaming": {
+			"tasks": int,
+			"active_threads": int,
+			"thread_count": int
+		},
+		"general": {
+			"tasks": int,
+			"active_threads": int,
+			"thread_count": int
+		}
 	},
-	"meshing": {
-		"tasks": int,
-		"active_threads": int,
-		"thread_count": int
+	"tasks": {
+		"streaming": int,
+		"meshing": int,
+		"generation": int
+	},
+	"memory_pools": {
+		"voxel_used": int,
+		"voxel_total": int
 	}
 }
 
 ```
 
-_Generated on May 31, 2021_
+_Generated on Nov 06, 2021_

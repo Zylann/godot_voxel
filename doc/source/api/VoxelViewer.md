@@ -16,14 +16,14 @@ The voxel world uses the position and options of all the [VoxelViewer](VoxelView
 
 Type    | Name                                           | Default 
 ------- | ---------------------------------------------- | --------
-`bool`  | [requires_collisions](#i_requires_collisions)  | false   
+`bool`  | [requires_collisions](#i_requires_collisions)  | true    
 `bool`  | [requires_visuals](#i_requires_visuals)        | true    
 `int`   | [view_distance](#i_view_distance)              | 128     
 <p></p>
 
 ## Property Descriptions
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_requires_collisions"></span> **requires_collisions** = false
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_requires_collisions"></span> **requires_collisions** = true
 
 If set to `true`, the engine will generate classic collision shapes around this viewer.
 
@@ -35,4 +35,4 @@ If set to `true`, the engine will generate meshes around this viewer. This may b
 
 How far should voxels generate around this viewer.
 
-_Generated on May 31, 2021_
+_Generated on Nov 06, 2021_

@@ -5,6 +5,7 @@
 #include "../storage/voxel_ref_count.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
+#include "../util/fixed_array.h"
 
 class Spatial;
 

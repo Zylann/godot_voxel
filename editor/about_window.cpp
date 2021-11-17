@@ -147,7 +147,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Justin Swanhart (Greenlion)\n"
 						"Sebastian Clausen (sclausen)\n"
 						"MrGreaterThan\n"
-						"baals\n";
+						"baals\n"
+						"Treer\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique

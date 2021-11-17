@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorWaves" inherits="VoxelGeneratorHeightmap" version="3.4">
+<class name="VoxelGeneratorWaves" inherits="VoxelGeneratorHeightmap" version="3.5">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -9,7 +9,6 @@
 	<methods>
 	</methods>
 	<members>
-		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" override="true" default="30.0" />
 		<member name="pattern_offset" type="Vector2" setter="set_pattern_offset" getter="get_pattern_offset" default="Vector2( 0, 0 )">
 		</member>
 		<member name="pattern_size" type="Vector2" setter="set_pattern_size" getter="get_pattern_size" default="Vector2( 30, 30 )">

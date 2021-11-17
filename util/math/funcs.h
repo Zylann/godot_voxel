@@ -162,6 +162,35 @@ inline bool is_power_of_two(size_t x) {
 	return x != 0 && (x & (x - 1)) == 0;
 }
 
+// If `x` is a power of two, returns `x`.
+// Otherwise, returns the closest power of two greater than `x`.
+inline unsigned int get_next_power_of_two_32(unsigned int x) {
+	if (x == 0) {
+		return 0;
+	}
+	--x;
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return ++x;
+}
+
+// Assuming `pot == (1 << i)`, returns `i`.
+inline unsigned int get_shift_from_power_of_two_32(unsigned int pot) {
+#ifdef DEBUG_ENABLED
+	CRASH_COND(!is_power_of_two(pot));
+#endif
+	for (unsigned int i = 0; i < 32; ++i) {
+		if (pot == (1u << i)) {
+			return i;
+		}
+	}
+	// Input was not a valid power of two
+	CRASH_COND(true);
+}
+
 // If the provided address `a` is not aligned to the number of bytes specified in `align`,
 // returns the next aligned address. `align` must be a power of two.
 inline size_t alignup(size_t a, size_t align) {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelStream" inherits="Resource" version="3.4">
+<class name="VoxelStream" inherits="Resource" version="3.5">
 	<brief_description>
 		Implements loading and saving voxel blocks, mainly using files.
 	</brief_description>
@@ -9,38 +9,28 @@
 	</tutorials>
 	<methods>
 		<method name="emerge_block">
-			<return type="int" enum="VoxelStream.Result">
-			</return>
-			<argument index="0" name="out_buffer" type="VoxelBuffer">
-			</argument>
-			<argument index="1" name="origin_in_voxels" type="Vector3">
-			</argument>
-			<argument index="2" name="lod" type="int">
-			</argument>
+			<return type="int" enum="VoxelStream.Result" />
+			<argument index="0" name="out_buffer" type="VoxelBuffer" />
+			<argument index="1" name="origin_in_voxels" type="Vector3" />
+			<argument index="2" name="lod" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="get_block_size" qualifiers="const">
-			<return type="Vector3">
-			</return>
+			<return type="Vector3" />
 			<description>
 			</description>
 		</method>
 		<method name="get_used_channels_mask" qualifiers="const">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="immerge_block">
-			<return type="void">
-			</return>
-			<argument index="0" name="buffer" type="VoxelBuffer">
-			</argument>
-			<argument index="1" name="origin_in_voxels" type="Vector3">
-			</argument>
-			<argument index="2" name="lod" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="buffer" type="VoxelBuffer" />
+			<argument index="1" name="origin_in_voxels" type="Vector3" />
+			<argument index="2" name="lod" type="int" />
 			<description>
 				[code]buffer[/code]: Block of voxels to save. It is strongly recommended to not keep a reference to that data afterward, because streams are allowed to cache it, and saved data must represent either snapshots (copies) or last references to the data after the volume they belonged to is destroyed.
 			</description>

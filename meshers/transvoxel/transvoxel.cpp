@@ -303,7 +303,7 @@ void build_regular_mesh(
 	// Prepare vertex reuse cache
 	cache.reset_reuse_cells(block_size_with_padding);
 
-	// We iterate 2x2 voxel groups, which the paper calls "cells".
+	// We iterate 2x2x2 voxel groups, which the paper calls "cells".
 	// We also reach one voxel further to compute normals, so we adjust the iterated area
 	const Vector3i min_pos = Vector3i(MIN_PADDING);
 	const Vector3i max_pos = block_size_with_padding - Vector3i(MAX_PADDING);
@@ -547,7 +547,7 @@ void build_regular_mesh(
 								secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
 								border_mask |= (get_border_mask(p0, block_size_scaled) &
 													   get_border_mask(p1, block_size_scaled))
-											   << 6;
+										<< 6;
 							}
 
 							cell_vertex_indices[vertex_index] =
@@ -1032,7 +1032,7 @@ void build_transition_mesh(
 							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
 							border_mask |= (get_border_mask(p0, block_size_scaled) &
 												   get_border_mask(p1, block_size_scaled))
-										   << 6;
+									<< 6;
 
 						} else {
 							// If the vertex is on the half-res side (in our implementation,

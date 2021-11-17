@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelInstanceLibrarySceneItem" inherits="VoxelInstanceLibraryItemBase" version="3.5">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="scene" type="PackedScene" setter="set_scene" getter="get_scene">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

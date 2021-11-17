@@ -8,8 +8,8 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
 
-Ongoing development - `master`
--------------------------------
+06/11/2021 - `godot3.4`
+-------------------------
 
 - General
     - `VoxelTerrain`: added `get_data_block_size()`
@@ -59,6 +59,8 @@ Ongoing development - `master`
     - `VoxelTool` channel no longer defaults to 7 when using `get_voxel_tool` from a terrain with a stream assigned. Instead it picks first used channel of the mesher (fallback order is mesher, then generator, then stream).
     - `VoxelInstancer`: fixed error when node visibility changes
     - `VoxelInstancer`: fixed no instances generated when density is 1 in vertex emission mode 
+    - `VoxelInstanceLibraryItem`: fixed collision shapes setup in editor not being saved
+    - `VoxelInstanceLibrarySceneItem`: fixed associated scene not being saved
     - `VoxelTerrain`: fixed materials shown under the wrong inspector category
     - `VoxelStreamRegionFiles`: fixed errors caused by meta file being sometimes written with wrong depth values
     - `VoxelStreamBlockFiles`: fixed warning about channels always shown in the scene tree

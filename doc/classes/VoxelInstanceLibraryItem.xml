@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstanceLibraryItem" inherits="Resource" version="3.4">
+<class name="VoxelInstanceLibraryItem" inherits="VoxelInstanceLibraryItemBase" version="3.5">
 	<brief_description>
 		Settings for a model that can be used by [VoxelInstancer]
 	</brief_description>
@@ -8,43 +8,22 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="get_collision_shapes" qualifiers="const">
-			<return type="Array">
-			</return>
-			<description>
-			</description>
-		</method>
 		<method name="get_mesh" qualifiers="const">
-			<return type="Mesh">
-			</return>
-			<argument index="0" name="mesh_lod_index" type="int">
-			</argument>
-			<description>
-			</description>
-		</method>
-		<method name="set_collision_shapes">
-			<return type="void">
-			</return>
-			<argument index="0" name="shape_infos" type="Array">
-			</argument>
+			<return type="Mesh" />
+			<argument index="0" name="mesh_lod_index" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="set_mesh">
-			<return type="void">
-			</return>
-			<argument index="0" name="mesh" type="Mesh">
-			</argument>
-			<argument index="1" name="mesh_lod_index" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="mesh" type="Mesh" />
+			<argument index="1" name="mesh_lod_index" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="setup_from_template">
-			<return type="void">
-			</return>
-			<argument index="0" name="node" type="Node">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="node" type="Node" />
 			<description>
 			</description>
 		</method>
@@ -56,9 +35,7 @@
 		</member>
 		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
 		</member>
-		<member name="generator" type="VoxelInstanceGenerator" setter="set_generator" getter="get_generator">
-		</member>
-		<member name="lod_index" type="int" setter="set_lod_index" getter="get_lod_index" default="0">
+		<member name="collision_shapes" type="Array" setter="set_collision_shapes" getter="get_collision_shapes" default="[  ]">
 		</member>
 		<member name="material_override" type="Material" setter="set_material_override" getter="get_material_override">
 		</member>
@@ -69,10 +46,6 @@
 		<member name="mesh_lod2" type="Mesh" setter="_set_mesh_lod2" getter="_get_mesh_lod2">
 		</member>
 		<member name="mesh_lod3" type="Mesh" setter="_set_mesh_lod3" getter="_get_mesh_lod3">
-		</member>
-		<member name="name" type="String" setter="set_item_name" getter="get_item_name" default="&quot;&quot;">
-		</member>
-		<member name="persistent" type="bool" setter="set_persistent" getter="is_persistent" default="false">
 		</member>
 	</members>
 	<constants>

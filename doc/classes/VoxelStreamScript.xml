@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelStreamScript" inherits="VoxelStream" version="3.4">
+<class name="VoxelStreamScript" inherits="VoxelStream" version="3.5">
 	<brief_description>
 		Base class for custom streams defined with a script.
 	</brief_description>
@@ -9,33 +9,24 @@
 	</tutorials>
 	<methods>
 		<method name="_emerge_block" qualifiers="virtual">
-			<return type="void">
-			</return>
-			<argument index="0" name="out_buffer" type="VoxelBuffer">
-			</argument>
-			<argument index="1" name="origin_in_voxels" type="Vector3">
-			</argument>
-			<argument index="2" name="lod" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="out_buffer" type="VoxelBuffer" />
+			<argument index="1" name="origin_in_voxels" type="Vector3" />
+			<argument index="2" name="lod" type="int" />
 			<description>
 				[code]out_buffer[/code]: Buffer in which to populate voxel data. It will never be [code]null[/code] and will have the requested size. It is only valid for this function, do not store it anywhere after the end.
 			</description>
 		</method>
 		<method name="_get_used_channels_mask" qualifiers="virtual">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="_immerge_block" qualifiers="virtual">
-			<return type="void">
-			</return>
-			<argument index="0" name="buffer" type="VoxelBuffer">
-			</argument>
-			<argument index="1" name="origin_in_voxels" type="Vector3">
-			</argument>
-			<argument index="2" name="lod" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="buffer" type="VoxelBuffer" />
+			<argument index="1" name="origin_in_voxels" type="Vector3" />
+			<argument index="2" name="lod" type="int" />
 			<description>
 				[code]buffer[/code]: Buffer of voxel data to save. It is allowed to keep a reference to it for caching purposes, as saved data will either be snapshots or only references left after removal of a volume.
 			</description>

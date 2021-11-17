@@ -95,16 +95,25 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Never omit braces
 - Space between binary operators and control flow: `if (a + b == 42)`
 - Indent with tabs
+- Private wrapper functions can be used to adapt to the script API and are prefixed with `_b_`.
 - Use Clang-format to automate most of these rules (the one included in Godot should do it)
+- Prefer comments with `//` only
+
+### File structure
+
+- Use `.h` for headers and `.cpp` for implementation files.
+- File names use `snake_case`.
 - Constructors and destructors go on top
 - Public API goes on top, private stuff goes below
-- Bindings go at the bottom. Private wrapper functions can be used to adapt to the script API and are prefixed with `_b_`.
+- Bindings go at the bottom.
 - Avoid long lines. Preferred ruler is 120 characters. Don't fit too many operations on the same line, use locals.
+- Defining types or functions in `.cpp` may be better for compilation times than in header if they are internal.
 
 ### C++ features
 
 - Don't use `auto` unless the type is impossible to express or a horrible template (like STL ones). IDEs aren't granted (Github reviews and diffs)
 - Moderate use of lambdas and functors are fine. Not `std::function`.
+- Lambda captures should be defined explicitely (try to reduce usage of `=` or `&`)
 - STL is ok if it measurably performs better than Godot alternatives.
 - Initialize variables next to declaration
 - Avoid using macros to define logic or constants. Prefer `static const`, `constexpr` and `inline` functions.
@@ -113,12 +122,11 @@ For the most part, use `clang-format` and follow Godot conventions.
 - If possible, avoid plain arrays like `int a[42]`. Debuggers don't catch overruns on them. Prefer using wrappers such as `FixedArray` and `Span` (or `std::array` and `std::span` once [this](https://github.com/godotengine/godot/issues/31608) is fixed)
 - Use `uint32_t`, `uint16_t`, `uint8_t` in case integer size matters.
 
-
 ### Error handling
 
 - No exceptions
 - Check invariants, fail early. Use `CRASH_COND` in debug mode to make sure states are as expected even if they don't cause immediate harm.
-- Crashes aren't nice to users, so in those cases use `ERR_FAIL_COND` macros for code that can recover from error
+- Crashes aren't nice to users, so in user-facing code use `ERR_FAIL_COND` macros for code that can recover from error, or to prevent hitting internal assertions
 
 ### Performance
 

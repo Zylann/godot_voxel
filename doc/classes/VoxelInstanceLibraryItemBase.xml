@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelInstanceLibraryItemBase" inherits="Resource" version="3.5">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="generator" type="VoxelInstanceGenerator" setter="set_generator" getter="get_generator">
+		</member>
+		<member name="lod_index" type="int" setter="set_lod_index" getter="get_lod_index" default="0">
+		</member>
+		<member name="name" type="String" setter="set_item_name" getter="get_item_name" default="&quot;&quot;">
+		</member>
+		<member name="persistent" type="bool" setter="set_persistent" getter="is_persistent" default="false">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

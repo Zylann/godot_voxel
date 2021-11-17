@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelLodTerrain" inherits="VoxelNode" version="3.4">
+<class name="VoxelLodTerrain" inherits="VoxelNode" version="3.5">
 	<brief_description>
 		Voxel volume using variable level of detail.
 	</brief_description>
@@ -9,92 +9,71 @@
 	</tutorials>
 	<methods>
 		<method name="debug_dump_as_scene" qualifiers="const">
-			<return type="int" enum="Error">
-			</return>
-			<argument index="0" name="path" type="String">
-			</argument>
+			<return type="int" enum="Error" />
+			<argument index="0" name="path" type="String" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_get_data_block_count" qualifiers="const">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_get_data_block_info" qualifiers="const">
-			<return type="Dictionary">
-			</return>
-			<argument index="0" name="block_pos" type="Vector3">
-			</argument>
-			<argument index="1" name="lod" type="int">
-			</argument>
+			<return type="Dictionary" />
+			<argument index="0" name="block_pos" type="Vector3" />
+			<argument index="1" name="lod" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_get_mesh_block_count" qualifiers="const">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_get_mesh_block_info" qualifiers="const">
-			<return type="Dictionary">
-			</return>
-			<argument index="0" name="block_pos" type="Vector3">
-			</argument>
-			<argument index="1" name="lod" type="int">
-			</argument>
+			<return type="Dictionary" />
+			<argument index="0" name="block_pos" type="Vector3" />
+			<argument index="1" name="lod" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_get_octrees_detailed" qualifiers="const">
-			<return type="Array">
-			</return>
+			<return type="Array" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_print_sdf_top_down" qualifiers="const">
-			<return type="Array">
-			</return>
-			<argument index="0" name="center" type="Vector3">
-			</argument>
-			<argument index="1" name="extents" type="Vector3">
-			</argument>
+			<return type="Array" />
+			<argument index="0" name="center" type="Vector3" />
+			<argument index="1" name="extents" type="Vector3" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_raycast_mesh_block" qualifiers="const">
-			<return type="Array">
-			</return>
-			<argument index="0" name="origin" type="Vector3">
-			</argument>
-			<argument index="1" name="dir" type="Vector3">
-			</argument>
+			<return type="Array" />
+			<argument index="0" name="origin" type="Vector3" />
+			<argument index="1" name="dir" type="Vector3" />
 			<description>
 			</description>
 		</method>
 		<method name="get_data_block_region_extent" qualifiers="const">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="get_data_block_size" qualifiers="const">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="get_process_mode" qualifiers="const">
-			<return type="int" enum="VoxelLodTerrain.ProcessMode">
-			</return>
+			<return type="int" enum="VoxelLodTerrain.ProcessMode" />
 			<description>
 			</description>
 		</method>
 		<method name="get_statistics" qualifiers="const">
-			<return type="Dictionary">
-			</return>
+			<return type="Dictionary" />
 			<description>
 				Gets debug information about how much time is spent processing the terrain.
 				The returned dictionary has the following structure:
@@ -115,42 +94,32 @@
 			</description>
 		</method>
 		<method name="get_voxel_tool">
-			<return type="VoxelTool">
-			</return>
+			<return type="VoxelTool" />
 			<description>
 			</description>
 		</method>
 		<method name="save_modified_blocks">
-			<return type="void">
-			</return>
+			<return type="void" />
 			<description>
 			</description>
 		</method>
 		<method name="set_process_mode">
-			<return type="void">
-			</return>
-			<argument index="0" name="mode" type="int" enum="VoxelLodTerrain.ProcessMode">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="mode" type="int" enum="VoxelLodTerrain.ProcessMode" />
 			<description>
 			</description>
 		</method>
 		<method name="voxel_to_data_block_position" qualifiers="const">
-			<return type="Vector3">
-			</return>
-			<argument index="0" name="lod_index" type="Vector3">
-			</argument>
-			<argument index="1" name="arg1" type="int">
-			</argument>
+			<return type="Vector3" />
+			<argument index="0" name="lod_index" type="Vector3" />
+			<argument index="1" name="arg1" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="voxel_to_mesh_block_position" qualifiers="const">
-			<return type="Vector3">
-			</return>
-			<argument index="0" name="lod_index" type="Vector3">
-			</argument>
-			<argument index="1" name="arg1" type="int">
-			</argument>
+			<return type="Vector3" />
+			<argument index="0" name="lod_index" type="Vector3" />
+			<argument index="1" name="arg1" type="int" />
 			<description>
 			</description>
 		</method>
@@ -159,6 +128,8 @@
 		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
 		</member>
 		<member name="collision_lod_count" type="int" setter="set_collision_lod_count" getter="get_collision_lod_count" default="0">
+		</member>
+		<member name="collision_margin" type="float" setter="set_collision_margin" getter="get_collision_margin" default="0.04">
 		</member>
 		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
 		</member>

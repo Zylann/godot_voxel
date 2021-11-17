@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelTool" inherits="Reference" version="3.4">
+<class name="VoxelTool" inherits="Reference" version="3.5">
 	<brief_description>
 		Helper class to easily access and modify voxels
 	</brief_description>
@@ -11,159 +11,120 @@
 	</tutorials>
 	<methods>
 		<method name="copy">
-			<return type="void">
-			</return>
-			<argument index="0" name="src_pos" type="Vector3">
-			</argument>
-			<argument index="1" name="dst_buffer" type="Reference">
-			</argument>
-			<argument index="2" name="channels_mask" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="src_pos" type="Vector3" />
+			<argument index="1" name="dst_buffer" type="Reference" />
+			<argument index="2" name="channels_mask" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="do_box">
-			<return type="void">
-			</return>
-			<argument index="0" name="begin" type="Vector3">
-			</argument>
-			<argument index="1" name="end" type="Vector3">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="begin" type="Vector3" />
+			<argument index="1" name="end" type="Vector3" />
 			<description>
 				Operate on a rectangular cuboid section of the terrain. [code]begin[/code] and [code]end[/code] are inclusive. Choose operation and which voxel to use by setting [code]value[/code] and [code]mode[/code] before calling this function.
 			</description>
 		</method>
 		<method name="do_point">
-			<return type="void">
-			</return>
-			<argument index="0" name="pos" type="Vector3">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="pos" type="Vector3" />
 			<description>
 			</description>
 		</method>
 		<method name="do_sphere">
-			<return type="void">
-			</return>
-			<argument index="0" name="center" type="Vector3">
-			</argument>
-			<argument index="1" name="radius" type="float">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="center" type="Vector3" />
+			<argument index="1" name="radius" type="float" />
 			<description>
 			</description>
 		</method>
 		<method name="get_voxel">
-			<return type="int">
-			</return>
-			<argument index="0" name="pos" type="Vector3">
-			</argument>
+			<return type="int" />
+			<argument index="0" name="pos" type="Vector3" />
 			<description>
 			</description>
 		</method>
 		<method name="get_voxel_f">
-			<return type="float">
-			</return>
-			<argument index="0" name="pos" type="Vector3">
-			</argument>
+			<return type="float" />
+			<argument index="0" name="pos" type="Vector3" />
 			<description>
 			</description>
 		</method>
-		<method name="get_voxel_metadata">
-			<return type="Variant">
-			</return>
-			<argument index="0" name="pos" type="Vector3">
-			</argument>
+		<method name="get_voxel_metadata" qualifiers="const">
+			<return type="Variant" />
+			<argument index="0" name="pos" type="Vector3" />
 			<description>
 			</description>
 		</method>
-		<method name="is_area_editable">
-			<return type="bool">
-			</return>
-			<argument index="0" name="box" type="AABB">
-			</argument>
+		<method name="is_area_editable" qualifiers="const">
+			<return type="bool" />
+			<argument index="0" name="box" type="AABB" />
 			<description>
 			</description>
 		</method>
 		<method name="paste">
-			<return type="void">
-			</return>
-			<argument index="0" name="dst_pos" type="Vector3">
-			</argument>
-			<argument index="1" name="src_buffer" type="Reference">
-			</argument>
-			<argument index="2" name="channels_mask" type="int">
-			</argument>
-			<argument index="3" name="src_mask_value" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="dst_pos" type="Vector3" />
+			<argument index="1" name="src_buffer" type="Reference" />
+			<argument index="2" name="channels_mask" type="int" />
+			<argument index="3" name="src_mask_value" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="raycast">
-			<return type="VoxelRaycastResult">
-			</return>
-			<argument index="0" name="origin" type="Vector3">
-			</argument>
-			<argument index="1" name="direction" type="Vector3">
-			</argument>
-			<argument index="2" name="max_distance" type="float" default="10.0">
-			</argument>
-			<argument index="3" name="collision_mask" type="int" default="4294967295">
-			</argument>
+			<return type="VoxelRaycastResult" />
+			<argument index="0" name="origin" type="Vector3" />
+			<argument index="1" name="direction" type="Vector3" />
+			<argument index="2" name="max_distance" type="float" default="10.0" />
+			<argument index="3" name="collision_mask" type="int" default="4294967295" />
 			<description>
 			</description>
 		</method>
 		<method name="set_voxel">
-			<return type="void">
-			</return>
-			<argument index="0" name="pos" type="Vector3">
-			</argument>
-			<argument index="1" name="v" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="pos" type="Vector3" />
+			<argument index="1" name="v" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="set_voxel_f">
-			<return type="void">
-			</return>
-			<argument index="0" name="pos" type="Vector3">
-			</argument>
-			<argument index="1" name="v" type="float">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="pos" type="Vector3" />
+			<argument index="1" name="v" type="float" />
 			<description>
 			</description>
 		</method>
 		<method name="set_voxel_metadata">
-			<return type="void">
-			</return>
-			<argument index="0" name="pos" type="Vector3">
-			</argument>
-			<argument index="1" name="meta" type="Variant">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="pos" type="Vector3" />
+			<argument index="1" name="meta" type="Variant" />
 			<description>
 			</description>
 		</method>
 	</methods>
 	<members>
-		<member name="channel" type="int" setter="set_channel" getter="get_channel" default="0">
+		<member name="channel" type="int" setter="set_channel" getter="get_channel">
 			Set which channel will be edited. When used on a terrain node, it will default to the first available channel, based on the stream and generator.
 		</member>
-		<member name="eraser_value" type="int" setter="set_eraser_value" getter="get_eraser_value" default="0">
+		<member name="eraser_value" type="int" setter="set_eraser_value" getter="get_eraser_value">
 			Sets which value will be used to erase voxels when editing the [enum VoxelBuffer.CHANNEL_TYPE] channel in [enum MODE_REMOVE] mode.
 		</member>
-		<member name="mode" type="int" setter="set_mode" getter="get_mode" enum="VoxelTool.Mode" default="0">
+		<member name="mode" type="int" setter="set_mode" getter="get_mode" enum="VoxelTool.Mode">
 			Sets how [code]do_*[/code] functions will behave. This may vary depending on the channel.
 		</member>
-		<member name="sdf_scale" type="float" setter="set_sdf_scale" getter="get_sdf_scale" default="0.002">
+		<member name="sdf_scale" type="float" setter="set_sdf_scale" getter="get_sdf_scale">
 			When working with smooth voxels, applies a scale to the signed distance field. A high scale (1 or higher) will tend to produce blocky results, and a low scale (below 1, but not too close to zero) will tend to be smoother.
 
 			This is related to the [enum VoxelBuffer.Depth] configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
 		</member>
-		<member name="texture_falloff" type="float" setter="set_texture_falloff" getter="get_texture_falloff" default="0.5">
+		<member name="texture_falloff" type="float" setter="set_texture_falloff" getter="get_texture_falloff">
 		</member>
-		<member name="texture_index" type="int" setter="set_texture_index" getter="get_texture_index" default="0">
+		<member name="texture_index" type="int" setter="set_texture_index" getter="get_texture_index">
 		</member>
-		<member name="texture_opacity" type="float" setter="set_texture_opacity" getter="get_texture_opacity" default="1.0">
+		<member name="texture_opacity" type="float" setter="set_texture_opacity" getter="get_texture_opacity">
 		</member>
-		<member name="value" type="int" setter="set_value" getter="get_value" default="0">
+		<member name="value" type="int" setter="set_value" getter="get_value">
 			Sets which voxel value will be used. This is not relevant when editing [enum VoxelBuffer.CHANNEL_SDF].
 		</member>
 	</members>
