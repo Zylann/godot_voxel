@@ -1,10 +1,11 @@
-name: ⚙️ Mono Project
+name: ⚙️ Precompile Mono-for-Windows x64
 on:
   workflow_dispatch:
 env:
   MONO_TAG: mono-6.12.0.147
   MONO_BCL_RELEASE_TAG: release-c3a9d31
   MONO_INSTALL_DIR: C:\'Program Files'\Mono
+  MONO_OUTPUT_DIR: msvc\build\output\x64
 
 jobs:
 
@@ -47,9 +48,42 @@ jobs:
         run: |
           cd mono-source
           msbuild msvc\mono.sln /p:Platform=x64 /p:Configuration=Release /p:MONO_TARGET_GC=sgen
-          Compress-Archive -Path ./msvc -DestinationPath ../mono-build.zip
+
+      # Perform the tasks in msvc/win32.xml to get \etc\, since monkeybuilder was abandoned
+      #   win32.xml is https://github.com/mono/mono/blob/1ed1688a543c0c03f8fc0cc8e6ca234a6bd45eb0/msvc/win32.xml (as it was deleted in 90103ee)
+      - name: pretend to be MonkeyBuilder win32.xml
+        run: |
+          pushd mono-source
+          md $Env:MONO_OUTPUT_DIR\bin
+          copy msvc\build\sgen\x64\bin\Release\*.exe $Env:MONO_OUTPUT_DIR\bin
+          copy msvc\build\sgen\x64\bin\Release\*.dll $Env:MONO_OUTPUT_DIR\bin
+          copy msvc\build\sgen\x64\bin\Release\*.lib $Env:MONO_OUTPUT_DIR\bin
+          md $Env:MONO_OUTPUT_DIR\lib
+          copy msvc\build\sgen\x64\lib\Release\*.lib $Env:MONO_OUTPUT_DIR\lib
+          copy msvc\build\sgen\x64\lib\Release\*.exp $Env:MONO_OUTPUT_DIR\lib
+          md $Env:MONO_OUTPUT_DIR\include\mono-2.0
+          xcopy msvc\include $Env:MONO_OUTPUT_DIR\include\mono-2.0 /E
+          md $Env:MONO_OUTPUT_DIR\etc
+          xcopy data\net_2_0\machine.config                $Env:MONO_OUTPUT_DIR\etc\mono\2.0\
+          xcopy data\net_2_0\DefaultWsdlHelpGenerator.aspx $Env:MONO_OUTPUT_DIR\etc\mono\2.0\
+          xcopy data\net_2_0\settings.map                  $Env:MONO_OUTPUT_DIR\etc\mono\2.0\
+          xcopy data\net_2_0\web.config                    $Env:MONO_OUTPUT_DIR\etc\mono\2.0\
+          xcopy data\net_4_0\machine.config                $Env:MONO_OUTPUT_DIR\etc\mono\4.0\
+          xcopy data\net_4_0\DefaultWsdlHelpGenerator.aspx $Env:MONO_OUTPUT_DIR\etc\mono\4.0\
+          xcopy data\net_4_0\settings.map                  $Env:MONO_OUTPUT_DIR\etc\mono\4.0\
+          xcopy data\net_4_0\web.config                    $Env:MONO_OUTPUT_DIR\etc\mono\4.0\
+          xcopy data\net_4_5\machine.config                $Env:MONO_OUTPUT_DIR\etc\mono\4.5\
+          xcopy data\net_4_5\DefaultWsdlHelpGenerator.aspx $Env:MONO_OUTPUT_DIR\etc\mono\4.5\
+          xcopy data\net_4_5\settings.map                  $Env:MONO_OUTPUT_DIR\etc\mono\4.5\
+          xcopy data\net_4_5\web.config                    $Env:MONO_OUTPUT_DIR\etc\mono\4.5\
+          xcopy data\Browsers\Compat.browser               $Env:MONO_OUTPUT_DIR\etc\mono\2.0\Browsers\
+          xcopy data\Browsers\Compat.browser               $Env:MONO_OUTPUT_DIR\etc\mono\4.0\Browsers\
+          xcopy data\Browsers\Compat.browser               $Env:MONO_OUTPUT_DIR\etc\mono\4.5\Browsers\
+          xcopy data\browscap.ini                          $Env:MONO_OUTPUT_DIR\etc\mono\
+          popd
+
       # Make glue available as artifact for dependent jobs
       - uses: actions/upload-artifact@v2
         with:
-          name: mono-builds
-          path: mono-build.zip
+          name: mono-build-x64
+          path: mono-source\${{ env.MONO_OUTPUT_DIR }}
