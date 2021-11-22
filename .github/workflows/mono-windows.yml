@@ -102,7 +102,13 @@ jobs:
       - name: Generate Mono Glue
         run: |
           cd godot
-          bin\godot.windows.opt.tools.64.mono.exe --generate-mono-glue modules/mono/glue 
+          Try {
+            bin\godot.windows.opt.tools.64.mono.exe --generate-mono-glue modules/mono/glue
+          } 
+          Catch {
+            echo $_.Exception
+            Break
+          }
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
