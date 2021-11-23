@@ -102,6 +102,10 @@ jobs:
       - name: Generate Mono Glue
         run: |
           cd godot
+          Get-ChildItem ./
+          cd bin
+          Get-ChildItem ./
+          cd ../
           Try {
             bin\godot.windows.opt.tools.64.mono.exe --generate-mono-glue modules/mono/glue
           } 
