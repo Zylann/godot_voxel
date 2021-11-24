@@ -107,7 +107,7 @@ jobs:
           Get-ChildItem ./
           cd ../
           Try {
-            bin\godot.windows.opt.tools.64.mono.exe --generate-mono-glue modules/mono/glue
+            .\bin\godot.windows.opt.tools.64.mono.exe --generate-mono-glue modules/mono/glue
           } 
           Catch {
             echo $_.Exception
