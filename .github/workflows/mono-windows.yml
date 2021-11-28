@@ -99,6 +99,11 @@ jobs:
           scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\mono-build mono_bcl=bcl-desktop-win32\desktop-win32-bcl\net_4_x-win32
 
 
+      - uses: actions/upload-artifact@v2
+        with:
+          name: pre-mono-glue
+          path: godot/bin/*
+
       - name: Generate Mono Glue
         run: |
           cd godot
