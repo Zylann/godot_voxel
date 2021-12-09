@@ -48,6 +48,7 @@ jobs:
         run: |
           curl --location https://github.com/godotengine/godot-mono-builds/releases/download/${{ env.MONO_BCL_RELEASE_TAG}}/bcl-desktop-win32.zip -O
           Expand-Archive -Path bcl-desktop-win32.zip -DestinationPath bcl-desktop-win32
+          New-Item -Path mono-build/lib/mono/4.5 -ItemType Directory
           Copy-Item -Path bcl-desktop-win32/desktop-win32-bcl/net_4_x-win32/* -Destination mono-build/lib/mono/4.5/ -Recurse
 
       # Install all packages (except scons)
