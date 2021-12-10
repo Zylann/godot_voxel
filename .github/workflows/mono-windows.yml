@@ -54,7 +54,7 @@ jobs:
 
       # Install all packages (except scons)
       - name: Configure dependencies
-        run: choco install python make mingw
+        run: choco install python make mingw --limit-output
 
       # For copy_mono_root
       - name: Install Mono Runtime (for copy_mono_root)
