@@ -49,7 +49,7 @@ jobs:
         run: |
           curl --location https://github.com/godotengine/godot-mono-builds/releases/download/${{ env.MONO_BCL_RELEASE_TAG}}/bcl-desktop-win32.zip -O
           Expand-Archive -Path bcl-desktop-win32.zip -DestinationPath bcl-desktop-win32
-          New-Item -Path mono-build/lib/mono/4.5 -ItemType Directory
+          New-Item -Path desktop-windows-x86_64-release/lib/mono/4.5 -ItemType Directory
           Copy-Item -Path bcl-desktop-win32/desktop-win32-bcl/net_4_x-win32/* -Destination desktop-windows-x86_64-release/lib/mono/4.5/ -Recurse
 
       # Install all packages (except scons)
@@ -96,7 +96,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           cd godot
-          scons -j4 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\desktop-windows-x86_64-release
+          scons -j4 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no use_mingw=yes module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\desktop-windows-x86_64-release
 
 
       - uses: actions/upload-artifact@v2
@@ -126,7 +126,7 @@ jobs:
           SCONS_CACHE: /.scons_cache/
         run: |
           cd godot
-          scons -j4 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\desktop-windows-x86_64-release
+          scons -j4 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no use_mingw=yes module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\desktop-windows-x86_64-release
 
       # Make build available
       - uses: actions/upload-artifact@v2
