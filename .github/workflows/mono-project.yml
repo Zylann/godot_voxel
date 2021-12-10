@@ -38,6 +38,11 @@ jobs:
           curl --location https://raw.githubusercontent.com/godotengine/godot-mono-builds/master/files/patches/mono-dbg-agent-clear-tls-instead-of-abort.diff -O
           git apply mono-dbg-agent-clear-tls-instead-of-abort.diff
           popd
+      
+       # Install all packages (except scons)
+      - name: Configure dependencies
+        run: choco install cmake
+      
       - name: Configure build for amd64
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -47,7 +52,7 @@ jobs:
       - name: Build Mono
         run: |
           cd mono-source
-          msbuild msvc\mono.sln /p:Platform=x64 /p:Configuration=Release /p:MONO_TARGET_GC=sgen
+          msbuild msvc\mono.sln /p:Platform=x64 /p:PlatformToolset=v141 /p:Configuration=Release /p:MONO_TARGET_GC=sgen /p:MONO_ENABLE_BTLS=true /p:MONO_DISABLE_BOEHM=true /p:MONO_WITH_TLS=pthread
 
       # Perform the tasks in msvc/win32.xml to get \etc\, since monkeybuilder was abandoned
       #   win32.xml is https://github.com/mono/mono/blob/1ed1688a543c0c03f8fc0cc8e6ca234a6bd45eb0/msvc/win32.xml (as it was deleted in 90103ee)
