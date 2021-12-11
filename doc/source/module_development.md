@@ -192,7 +192,7 @@ Example of options setup in in VSCode `launch.json` on Windows:
             "stopAtEntry": false,
             "cwd": "D:/PROJETS/INFO/GODOT/Games/SolarSystem/Project",
             "environment": [],
-            "visualizerFile": "${workspaceFolder}/modules/voxel/voxel.natvis"
+            "visualizerFile": "${workspaceFolder}/modules/voxel/misc/voxel.natvis"
         }
     ]
 }
@@ -224,7 +224,7 @@ In VSCode, the cpp-tools extension supports Natvis files. Godot comes with such 
 Unfortunately, only one file can be provided at the moment. [An issue is open](https://github.com/Microsoft/vscode-cpptools/issues/925) to request support for multiple files.
 That means if you also want pretty-printing for structures of the voxel module, you have to replace the natvis path with the following:
 ```json
-            "visualizerFile": "${workspaceFolder}/modules/voxel/voxel.natvis"
+            "visualizerFile": "${workspaceFolder}/modules/voxel/misc/voxel.natvis"
 ```
 
 
