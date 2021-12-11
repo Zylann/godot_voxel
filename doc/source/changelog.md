@@ -11,6 +11,10 @@ Semver is not yet in place, so each version can have breaking changes, although 
 Ongoing development
 -----------------------
 
+- Smooth voxels
+    - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
+    - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
+
 - Fixes
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
     - `Voxel`: properties were not refreshed when changing `geometry_type`
