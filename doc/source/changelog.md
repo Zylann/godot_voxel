@@ -8,6 +8,14 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
 
+Ongoing development
+-----------------------
+
+- Fixes
+    - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
+    - `Voxel`: properties were not refreshed when changing `geometry_type`
+
+
 06/11/2021 - `godot3.4`
 -------------------------
 
