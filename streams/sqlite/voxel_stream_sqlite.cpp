@@ -27,9 +27,9 @@ struct BlockLocation {
 	uint64_t encode() const {
 		// 0l xx yy zz
 		return ((static_cast<uint64_t>(lod) & 0xffff) << 48) |
-			   ((static_cast<uint64_t>(x) & 0xffff) << 32) |
-			   ((static_cast<uint64_t>(y) & 0xffff) << 16) |
-			   (static_cast<uint64_t>(z) & 0xffff);
+				((static_cast<uint64_t>(x) & 0xffff) << 32) |
+				((static_cast<uint64_t>(y) & 0xffff) << 16) |
+				(static_cast<uint64_t>(z) & 0xffff);
 	}
 
 	static BlockLocation decode(uint64_t id) {
@@ -831,46 +831,51 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 		FullLoadingResult &result;
 	};
 
-	Context ctx{ *this, result };
+	// Using local function instead of a lambda for quite stupid reason admittedly:
+	// Godot's clang-format does not allow to write function parameters in column,
+	// which makes the lambda break line length.
+	struct L {
+		static void process_block_func(void *callback_data, const BlockLocation location,
+				Span<const uint8_t> voxel_data, Span<const uint8_t> instances_data) {
+			Context *ctx = reinterpret_cast<Context *>(callback_data);
 
-	const bool request_result = con->load_all_blocks(&ctx, [](void *callback_data,
-																   const BlockLocation location,
-																   Span<const uint8_t> voxel_data,
-																   Span<const uint8_t> instances_data) {
-		Context *ctx = reinterpret_cast<Context *>(callback_data);
-
-		if (voxel_data.size() == 0 && instances_data.size() == 0) {
-			PRINT_VERBOSE(String("Unexpected empty voxel data and instances data at {0} lod {1}")
-								  .format(varray(Vector3(location.x, location.y, location.z), location.lod)));
-			return;
-		}
-
-		FullLoadingResult::Block result_block;
-		result_block.position = Vector3i(location.x, location.y, location.z);
-		result_block.lod = location.lod;
-
-		if (voxel_data.size() > 0) {
-			std::shared_ptr<VoxelBufferInternal> voxels = gd_make_shared<VoxelBufferInternal>();
-			ERR_FAIL_COND(!ctx->stream._voxel_block_serializer.decompress_and_deserialize(voxel_data, *voxels));
-			result_block.voxels = voxels;
-		}
-
-		if (instances_data.size() > 0) {
-			std::vector<uint8_t> &temp_block_data = ctx->stream._temp_block_data;
-			if (!VoxelCompressedData::decompress(instances_data, temp_block_data)) {
-				ERR_PRINT("Failed to decompress instance block");
+			if (voxel_data.size() == 0 && instances_data.size() == 0) {
+				PRINT_VERBOSE(String("Unexpected empty voxel data and instances data at {0} lod {1}")
+									  .format(varray(Vector3(location.x, location.y, location.z), location.lod)));
 				return;
 			}
-			result_block.instances_data = std::make_unique<VoxelInstanceBlockData>();
-			if (!deserialize_instance_block_data(*result_block.instances_data, to_span_const(temp_block_data))) {
-				ERR_PRINT("Failed to deserialize instance block");
-				return;
+
+			FullLoadingResult::Block result_block;
+			result_block.position = Vector3i(location.x, location.y, location.z);
+			result_block.lod = location.lod;
+
+			if (voxel_data.size() > 0) {
+				std::shared_ptr<VoxelBufferInternal> voxels = gd_make_shared<VoxelBufferInternal>();
+				ERR_FAIL_COND(!ctx->stream._voxel_block_serializer.decompress_and_deserialize(voxel_data, *voxels));
+				result_block.voxels = voxels;
 			}
+
+			if (instances_data.size() > 0) {
+				std::vector<uint8_t> &temp_block_data = ctx->stream._temp_block_data;
+				if (!VoxelCompressedData::decompress(instances_data, temp_block_data)) {
+					ERR_PRINT("Failed to decompress instance block");
+					return;
+				}
+				result_block.instances_data = std::make_unique<VoxelInstanceBlockData>();
+				if (!deserialize_instance_block_data(*result_block.instances_data, to_span_const(temp_block_data))) {
+					ERR_PRINT("Failed to deserialize instance block");
+					return;
+				}
+			}
+
+			ctx->result.blocks.push_back(std::move(result_block));
 		}
+	};
 
-		ctx->result.blocks.push_back(std::move(result_block));
-	});
-
+	// Had to suffix `_outer`,
+	// because otherwise GCC thinks it shadows a variable inside the local function/captureless lambda
+	Context ctx_outer{ *this, result };
+	const bool request_result = con->load_all_blocks(&ctx_outer, L::process_block_func);
 	ERR_FAIL_COND(request_result == false);
 }
 
