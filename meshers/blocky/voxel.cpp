@@ -114,6 +114,9 @@ void Voxel::set_transparency_index(int i) {
 }
 
 void Voxel::set_geometry_type(GeometryType type) {
+	if (type == _geometry_type) {
+		return;
+	}
 	_geometry_type = type;
 
 	switch (_geometry_type) {
@@ -135,6 +138,9 @@ void Voxel::set_geometry_type(GeometryType type) {
 			ERR_PRINT("Wtf? Unknown geometry type");
 			break;
 	}
+#ifdef TOOLS_ENABLED
+	property_list_changed_notify();
+#endif
 }
 
 Voxel::GeometryType Voxel::get_geometry_type() const {
