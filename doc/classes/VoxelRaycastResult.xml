@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelRaycastResult" inherits="Reference" version="3.4">
+<class name="VoxelRaycastResult" inherits="Reference" version="3.5">
 	<brief_description>
 		Result of a raycast performed with [method VoxelTool.raycast]
 	</brief_description>
@@ -10,7 +10,7 @@
 	<methods>
 	</methods>
 	<members>
-		<member name="distance" type="float" setter="" getter="get_distance" default="0.0">
+		<member name="distance" type="float" setter="" getter="get_distance" default="2.94273e-44">
 		</member>
 		<member name="position" type="Vector3" setter="" getter="get_position" default="Vector3( 0, 0, 0 )">
 			Integer position of the voxel that was hit.

@@ -1,6 +1,7 @@
 #ifndef VOXEL_BUFFER_H
 #define VOXEL_BUFFER_H
 
+#include <memory>
 #include "voxel_buffer_internal.h"
 
 class VoxelTool;

@@ -43,4 +43,4 @@ Return                                                                    | Sign
 - [void](#)<span id="i_set_color"></span> **set_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) color, [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) arg1 ) 
 
 
-_Generated on May 31, 2021_
+_Generated on Nov 06, 2021_

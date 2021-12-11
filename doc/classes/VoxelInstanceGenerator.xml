@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstanceGenerator" inherits="Resource" version="3.4">
+<class name="VoxelInstanceGenerator" inherits="Resource" version="3.5">
 	<brief_description>
 		Decides where to spawn instances on top of a voxel surface.
 	</brief_description>
@@ -36,6 +36,8 @@
 		</member>
 		<member name="offset_along_normal" type="float" setter="set_offset_along_normal" getter="get_offset_along_normal" default="0.0">
 		</member>
+		<member name="random_rotation" type="bool" setter="set_random_rotation" getter="get_random_rotation" default="true">
+		</member>
 		<member name="random_vertical_flip" type="bool" setter="set_random_vertical_flip" getter="get_random_vertical_flip" default="false">
 		</member>
 		<member name="scale_distribution" type="int" setter="set_scale_distribution" getter="get_scale_distribution" enum="VoxelInstanceGenerator.Distribution" default="1">
@@ -46,9 +48,11 @@
 	<constants>
 		<constant name="EMIT_FROM_VERTICES" value="0" enum="EmitMode">
 		</constant>
-		<constant name="EMIT_FROM_FACES" value="1" enum="EmitMode">
+		<constant name="EMIT_FROM_FACES_FAST" value="1" enum="EmitMode">
 		</constant>
-		<constant name="EMIT_MODE_COUNT" value="2" enum="EmitMode">
+		<constant name="EMIT_FROM_FACES" value="2" enum="EmitMode">
+		</constant>
+		<constant name="EMIT_MODE_COUNT" value="3" enum="EmitMode">
 		</constant>
 		<constant name="DISTRIBUTION_LINEAR" value="0" enum="Distribution">
 		</constant>

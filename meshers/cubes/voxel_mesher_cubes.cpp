@@ -4,6 +4,7 @@
 #include "../../util/profiling.h"
 
 namespace {
+// Table of indices for vertices of cube faces
 // 2-----3
 // |     |
 // |     |
@@ -66,8 +67,8 @@ void build_voxel_mesh_as_simple_cubes(
 		Color_F color_func) {
 	//
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
-				  block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
-				  block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
+			block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
+			block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
 
 	const Vector3i min_pos = Vector3i(VoxelMesherCubes::PADDING);
 	const Vector3i max_pos = block_size - Vector3i(VoxelMesherCubes::PADDING);
@@ -98,8 +99,8 @@ void build_voxel_mesh_as_simple_cubes(
 					pos[za] = d;
 
 					const unsigned int voxel_index = pos[Vector3i::AXIS_Y] +
-													 pos[Vector3i::AXIS_X] * row_size +
-													 pos[Vector3i::AXIS_Z] * deck_size;
+							pos[Vector3i::AXIS_X] * row_size +
+							pos[Vector3i::AXIS_Z] * deck_size;
 
 					const Voxel_T raw_color0 = voxel_buffer[voxel_index];
 					const Voxel_T raw_color1 = voxel_buffer[voxel_index + neighbor_offset_d_lut[za]];
@@ -200,8 +201,8 @@ void build_voxel_mesh_as_greedy_cubes(
 		Color_F color_func) {
 	//
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
-				  block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
-				  block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
+			block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
+			block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
 
 	struct MaskValue {
 		Voxel_T color;
@@ -252,8 +253,8 @@ void build_voxel_mesh_as_greedy_cubes(
 					pos[za] = d;
 
 					const unsigned int voxel_index = pos[Vector3i::AXIS_Y] +
-													 pos[Vector3i::AXIS_X] * row_size +
-													 pos[Vector3i::AXIS_Z] * deck_size;
+							pos[Vector3i::AXIS_X] * row_size +
+							pos[Vector3i::AXIS_Z] * deck_size;
 
 					const Voxel_T raw_color0 = voxel_buffer[voxel_index];
 					const Voxel_T raw_color1 = voxel_buffer[voxel_index + neighbor_offset_d_lut[za]];
@@ -395,8 +396,8 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 	//
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
-				  block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
-				  block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
+			block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
+			block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
 
 	struct MaskValue {
 		uint8_t side;
@@ -452,8 +453,8 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 					pos[za] = d;
 
 					const unsigned int voxel_index = pos[Vector3i::AXIS_Y] +
-													 pos[Vector3i::AXIS_X] * row_size +
-													 pos[Vector3i::AXIS_Z] * deck_size;
+							pos[Vector3i::AXIS_X] * row_size +
+							pos[Vector3i::AXIS_Z] * deck_size;
 
 					const Voxel_T raw_color0 = voxel_buffer[voxel_index];
 					const Voxel_T raw_color1 = voxel_buffer[voxel_index + neighbor_offset_d_lut[za]];

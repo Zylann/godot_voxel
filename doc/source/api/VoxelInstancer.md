@@ -55,4 +55,4 @@ enum **UpMode**:
 - [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_debug_get_instance_counts"></span> **debug_get_instance_counts**( ) 
 
 
-_Generated on May 31, 2021_
+_Generated on Nov 06, 2021_

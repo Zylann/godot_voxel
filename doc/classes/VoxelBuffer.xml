@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelBuffer" inherits="Reference" version="3.4">
+<class name="VoxelBuffer" inherits="Reference" version="3.5">
 	<brief_description>
 		3D grid storing voxel data.
 	</brief_description>
@@ -11,54 +11,40 @@
 	</tutorials>
 	<methods>
 		<method name="clear">
-			<return type="void">
-			</return>
+			<return type="void" />
 			<description>
 				Erases all contents of the buffer and resets its size to zero. Channel depths and default values are preserved.
 			</description>
 		</method>
 		<method name="clear_voxel_metadata">
-			<return type="void">
-			</return>
+			<return type="void" />
 			<description>
 				Erases all per-voxel metadata.
 			</description>
 		</method>
 		<method name="clear_voxel_metadata_in_area">
-			<return type="void">
-			</return>
-			<argument index="0" name="min_pos" type="Vector3">
-			</argument>
-			<argument index="1" name="max_pos" type="Vector3">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="min_pos" type="Vector3" />
+			<argument index="1" name="max_pos" type="Vector3" />
 			<description>
 				Erases per-voxel metadata within the specified area.
 			</description>
 		</method>
 		<method name="copy_channel_from">
-			<return type="void">
-			</return>
-			<argument index="0" name="other" type="VoxelBuffer">
-			</argument>
-			<argument index="1" name="channel" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="other" type="VoxelBuffer" />
+			<argument index="1" name="channel" type="int" />
 			<description>
 				Copies all values from the channel of another [VoxelBuffer] into the same channel for the current buffer. The depth formats must match.
 			</description>
 		</method>
 		<method name="copy_channel_from_area">
-			<return type="void">
-			</return>
-			<argument index="0" name="other" type="VoxelBuffer">
-			</argument>
-			<argument index="1" name="src_min" type="Vector3">
-			</argument>
-			<argument index="2" name="src_max" type="Vector3">
-			</argument>
-			<argument index="3" name="dst_min" type="Vector3">
-			</argument>
-			<argument index="4" name="channel" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="other" type="VoxelBuffer" />
+			<argument index="1" name="src_min" type="Vector3" />
+			<argument index="2" name="src_max" type="Vector3" />
+			<argument index="3" name="dst_min" type="Vector3" />
+			<argument index="4" name="channel" type="int" />
 			<description>
 				Copies values from a channel's sub-region of another [VoxelBuffer] into the same channel for the current buffer, at a specific location. The depth formats must match.
 				If corners of the area represent a negative-size area, they will be sorted back.
@@ -67,16 +53,11 @@
 			</description>
 		</method>
 		<method name="copy_voxel_metadata_in_area">
-			<return type="void">
-			</return>
-			<argument index="0" name="src_buffer" type="VoxelBuffer">
-			</argument>
-			<argument index="1" name="src_min_pos" type="Vector3">
-			</argument>
-			<argument index="2" name="src_max_pos" type="Vector3">
-			</argument>
-			<argument index="3" name="dst_min_pos" type="Vector3">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="src_buffer" type="VoxelBuffer" />
+			<argument index="1" name="src_min_pos" type="Vector3" />
+			<argument index="2" name="src_max_pos" type="Vector3" />
+			<argument index="3" name="dst_min_pos" type="Vector3" />
 			<description>
 				Copies per-voxel metadata from a sub-region of another [VoxelBuffer] into the the current buffer, at a specific location. Values will be a shallow copy.
 				If corners of the area represent a negative-size area, they will be sorted back.
@@ -85,283 +66,208 @@
 			</description>
 		</method>
 		<method name="create">
-			<return type="void">
-			</return>
-			<argument index="0" name="sx" type="int">
-			</argument>
-			<argument index="1" name="sy" type="int">
-			</argument>
-			<argument index="2" name="sz" type="int">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="sx" type="int" />
+			<argument index="1" name="sy" type="int" />
+			<argument index="2" name="sz" type="int" />
 			<description>
 				Clears the buffer and gives it the specified size.
 			</description>
 		</method>
 		<method name="downscale_to" qualifiers="const">
-			<return type="void">
-			</return>
-			<argument index="0" name="dst" type="VoxelBuffer">
-			</argument>
-			<argument index="1" name="src_min" type="Vector3">
-			</argument>
-			<argument index="2" name="src_max" type="Vector3">
-			</argument>
-			<argument index="3" name="dst_min" type="Vector3">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="dst" type="VoxelBuffer" />
+			<argument index="1" name="src_min" type="Vector3" />
+			<argument index="2" name="src_max" type="Vector3" />
+			<argument index="3" name="dst_min" type="Vector3" />
 			<description>
 				Produces a downscaled version of this buffer, by a factor of 2, without any form of interpolation (i.e using nearest-neighbor).
 				Metadata is not copied.
 			</description>
 		</method>
 		<method name="fill">
-			<return type="void">
-			</return>
-			<argument index="0" name="value" type="int">
-			</argument>
-			<argument index="1" name="channel" type="int" default="0">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="value" type="int" />
+			<argument index="1" name="channel" type="int" default="0" />
 			<description>
 				Fills one channel of this buffer with a specific raw value.
 			</description>
 		</method>
 		<method name="fill_area">
-			<return type="void">
-			</return>
-			<argument index="0" name="value" type="int">
-			</argument>
-			<argument index="1" name="min" type="Vector3">
-			</argument>
-			<argument index="2" name="max" type="Vector3">
-			</argument>
-			<argument index="3" name="channel" type="int" default="0">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="value" type="int" />
+			<argument index="1" name="min" type="Vector3" />
+			<argument index="2" name="max" type="Vector3" />
+			<argument index="3" name="channel" type="int" default="0" />
 			<description>
 				Fills an area of a channel in this buffer with a specific raw value.
 			</description>
 		</method>
 		<method name="fill_f">
-			<return type="void">
-			</return>
-			<argument index="0" name="value" type="float">
-			</argument>
-			<argument index="1" name="channel" type="int" default="0">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="value" type="float" />
+			<argument index="1" name="channel" type="int" default="0" />
 			<description>
 				Fills one channel of this buffer with a specific float value.
 			</description>
 		</method>
 		<method name="for_each_voxel_metadata" qualifiers="const">
-			<return type="void">
-			</return>
-			<argument index="0" name="callback" type="FuncRef">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="callback" type="FuncRef" />
 			<description>
 				Executes a function on every voxel in this buffer which have associated metadata.
 			</description>
 		</method>
 		<method name="for_each_voxel_metadata_in_area">
-			<return type="void">
-			</return>
-			<argument index="0" name="callback" type="FuncRef">
-			</argument>
-			<argument index="1" name="min_pos" type="Vector3">
-			</argument>
-			<argument index="2" name="max_pos" type="Vector3">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="callback" type="FuncRef" />
+			<argument index="1" name="min_pos" type="Vector3" />
+			<argument index="2" name="max_pos" type="Vector3" />
 			<description>
 				Executes a function on every voxel in this buffer which have associated metadata, within the specified area.
 			</description>
 		</method>
 		<method name="get_block_metadata" qualifiers="const">
-			<return type="Variant">
-			</return>
+			<return type="Variant" />
 			<description>
 				Gets metadata associated to this [VoxelBuffer].
 			</description>
 		</method>
 		<method name="get_channel_compression" qualifiers="const">
-			<return type="int" enum="VoxelBuffer.Compression">
-			</return>
-			<argument index="0" name="channel" type="int">
-			</argument>
+			<return type="int" enum="VoxelBuffer.Compression" />
+			<argument index="0" name="channel" type="int" />
 			<description>
 				Gets which compression mode the specified channel has.
 			</description>
 		</method>
 		<method name="get_channel_depth" qualifiers="const">
-			<return type="int" enum="VoxelBuffer.Depth">
-			</return>
-			<argument index="0" name="channel" type="int">
-			</argument>
+			<return type="int" enum="VoxelBuffer.Depth" />
+			<argument index="0" name="channel" type="int" />
 			<description>
 				Gets which bit depth the specified channel has.
 			</description>
 		</method>
 		<method name="get_size" qualifiers="const">
-			<return type="Vector3">
-			</return>
+			<return type="Vector3" />
 			<description>
 				Gets the 3D size of the buffer in voxels.
 			</description>
 		</method>
 		<method name="get_size_x" qualifiers="const">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 				Gets how many voxels the buffer contains across the X axis.
 			</description>
 		</method>
 		<method name="get_size_y" qualifiers="const">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 				Gets how many voxels the buffer contains across the Y axis.
 			</description>
 		</method>
 		<method name="get_size_z" qualifiers="const">
-			<return type="int">
-			</return>
+			<return type="int" />
 			<description>
 				Gets how many voxels the buffer contains across the Z axis.
 			</description>
 		</method>
 		<method name="get_voxel" qualifiers="const">
-			<return type="int">
-			</return>
-			<argument index="0" name="x" type="int">
-			</argument>
-			<argument index="1" name="y" type="int">
-			</argument>
-			<argument index="2" name="z" type="int">
-			</argument>
-			<argument index="3" name="channel" type="int" default="0">
-			</argument>
+			<return type="int" />
+			<argument index="0" name="x" type="int" />
+			<argument index="1" name="y" type="int" />
+			<argument index="2" name="z" type="int" />
+			<argument index="3" name="channel" type="int" default="0" />
 			<description>
 				Gets the raw value of a voxel within this buffer.
 			</description>
 		</method>
 		<method name="get_voxel_f" qualifiers="const">
-			<return type="float">
-			</return>
-			<argument index="0" name="x" type="int">
-			</argument>
-			<argument index="1" name="y" type="int">
-			</argument>
-			<argument index="2" name="z" type="int">
-			</argument>
-			<argument index="3" name="channel" type="int" default="0">
-			</argument>
+			<return type="float" />
+			<argument index="0" name="x" type="int" />
+			<argument index="1" name="y" type="int" />
+			<argument index="2" name="z" type="int" />
+			<argument index="3" name="channel" type="int" default="0" />
 			<description>
 				Gets the float value of a voxel within this buffer. You may use this function if you work with SDF volumes (smooth voxels).
 			</description>
 		</method>
 		<method name="get_voxel_metadata" qualifiers="const">
-			<return type="Variant">
-			</return>
-			<argument index="0" name="pos" type="Vector3">
-			</argument>
+			<return type="Variant" />
+			<argument index="0" name="pos" type="Vector3" />
 			<description>
 				Gets the metadata attached to a specific voxel in this buffer.
 			</description>
 		</method>
 		<method name="get_voxel_tool">
-			<return type="VoxelTool">
-			</return>
+			<return type="VoxelTool" />
 			<description>
 				Constructs a [VoxelTool] instance bound to this buffer. This provides access to some extra common functions.
 			</description>
 		</method>
 		<method name="is_uniform" qualifiers="const">
-			<return type="bool">
-			</return>
-			<argument index="0" name="channel" type="int">
-			</argument>
+			<return type="bool" />
+			<argument index="0" name="channel" type="int" />
 			<description>
 				Checks if every voxel within a channel has the same value.
 			</description>
 		</method>
 		<method name="optimize">
-			<return type="void">
-			</return>
+			<return type="void" />
 			<description>
 			</description>
 		</method>
 		<method name="set_block_metadata">
-			<return type="void">
-			</return>
-			<argument index="0" name="meta" type="Variant">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="meta" type="Variant" />
 			<description>
 				Sets arbitrary data on this buffer. Old data is replaced. Note, this is separate storage from per-voxel metadata.
 				If this [VoxelBuffer] is saved, this metadata will also be saved along voxels, so make sure the data supports serialization (i.e you can't put nodes or arbitrary objects in it).
 			</description>
 		</method>
 		<method name="set_channel_depth">
-			<return type="void">
-			</return>
-			<argument index="0" name="channel" type="int">
-			</argument>
-			<argument index="1" name="depth" type="int" enum="VoxelBuffer.Depth">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="channel" type="int" />
+			<argument index="1" name="depth" type="int" enum="VoxelBuffer.Depth" />
 			<description>
 				Changes the bit depth of a given channel. This controls the range of values a channel can hold. See [enum VoxelBuffer.Depth] for more information.
 			</description>
 		</method>
 		<method name="set_voxel">
-			<return type="void">
-			</return>
-			<argument index="0" name="value" type="int">
-			</argument>
-			<argument index="1" name="x" type="int">
-			</argument>
-			<argument index="2" name="y" type="int">
-			</argument>
-			<argument index="3" name="z" type="int">
-			</argument>
-			<argument index="4" name="channel" type="int" default="0">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="value" type="int" />
+			<argument index="1" name="x" type="int" />
+			<argument index="2" name="y" type="int" />
+			<argument index="3" name="z" type="int" />
+			<argument index="4" name="channel" type="int" default="0" />
 			<description>
 				Sets the raw value of a voxel. If you use smooth voxels, you may prefer using [method set_voxel_f].
 			</description>
 		</method>
 		<method name="set_voxel_f">
-			<return type="void">
-			</return>
-			<argument index="0" name="value" type="float">
-			</argument>
-			<argument index="1" name="x" type="int">
-			</argument>
-			<argument index="2" name="y" type="int">
-			</argument>
-			<argument index="3" name="z" type="int">
-			</argument>
-			<argument index="4" name="channel" type="int" default="0">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="value" type="float" />
+			<argument index="1" name="x" type="int" />
+			<argument index="2" name="y" type="int" />
+			<argument index="3" name="z" type="int" />
+			<argument index="4" name="channel" type="int" default="0" />
 			<description>
 				Sets the float value of a voxel. This method should be used if you work on SDF data (smooth voxels).
 			</description>
 		</method>
 		<method name="set_voxel_metadata">
-			<return type="void">
-			</return>
-			<argument index="0" name="pos" type="Vector3">
-			</argument>
-			<argument index="1" name="value" type="Variant">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="pos" type="Vector3" />
+			<argument index="1" name="value" type="Variant" />
 			<description>
 				Attaches arbitrary data on a specific voxel. Old data is replaced.
 				If this [VoxelBuffer] is saved, this metadata will also be saved along voxels, so make sure the data supports serialization (i.e you can't put nodes or arbitrary objects in it).
 			</description>
 		</method>
 		<method name="set_voxel_v">
-			<return type="void">
-			</return>
-			<argument index="0" name="value" type="int">
-			</argument>
-			<argument index="1" name="pos" type="Vector3">
-			</argument>
-			<argument index="2" name="channel" type="int" default="0">
-			</argument>
+			<return type="void" />
+			<argument index="0" name="value" type="int" />
+			<argument index="1" name="pos" type="Vector3" />
+			<argument index="2" name="channel" type="int" default="0" />
 			<description>
 			</description>
 		</method>

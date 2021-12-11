@@ -3,6 +3,8 @@
 
 VoxelGeneratorWaves::VoxelGeneratorWaves() {
 	_parameters.pattern_size = Vector2(30, 30);
+	// This might be a different default value than the base class,
+	// because in practice this generator is more discoverable with a small pattern size
 	set_height_range(30);
 }
 

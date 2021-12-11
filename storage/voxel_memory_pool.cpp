@@ -41,83 +41,113 @@ VoxelMemoryPool::~VoxelMemoryPool() {
 
 uint8_t *VoxelMemoryPool::allocate(size_t size) {
 	VOXEL_PROFILE_SCOPE();
-	MutexLock lock(_mutex);
-	Pool *pool = get_or_create_pool(size);
-	uint8_t *block;
-	if (pool->blocks.size() > 0) {
-		block = pool->blocks.back();
-		pool->blocks.pop_back();
-	} else {
+	CRASH_COND(size == 0);
+	uint8_t *block = nullptr;
+	// Not calculating `pot` immediately because the function we use to calculate it uses 32 bits,
+	// while `size_t` can be larger than that.
+	if (size > get_highest_supported_size()) {
+		// Sorry, memory is not pooled past this size
 		block = (uint8_t *)memalloc(size * sizeof(uint8_t));
-		ERR_FAIL_COND_V(block == nullptr, nullptr);
-		_total_memory += size;
+#ifdef DEBUG_ENABLED
+		if (block != nullptr) {
+			_debug_nonpooled_used_blocks.add(block);
+		}
+#endif
+	} else {
+		const unsigned int pot = get_pool_index_from_size(size);
+		Pool &pool = _pot_pools[pot];
+		pool.mutex.lock();
+		if (pool.blocks.size() > 0) {
+			block = pool.blocks.back();
+			pool.blocks.pop_back();
+			pool.mutex.unlock();
+		} else {
+			pool.mutex.unlock();
+			// All allocations done in this pool have the same size,
+			// which must be greater or equal to `size`
+			const size_t capacity = get_size_from_pool_index(pot);
+#ifdef DEBUG_ENABLED
+			CRASH_COND(capacity < size);
+#endif
+			block = (uint8_t *)memalloc(capacity * sizeof(uint8_t));
+		}
+#ifdef DEBUG_ENABLED
+		if (block != nullptr) {
+			pool.debug_used_blocks.add(block);
+		}
+#endif
 	}
-	++_used_blocks;
-	_used_memory += size;
+	if (block == nullptr) {
+		ERR_PRINT("Out of memory");
+	} else {
+		++_used_blocks;
+		_used_memory += size;
+	}
 	return block;
 }
 
 void VoxelMemoryPool::recycle(uint8_t *block, size_t size) {
 	CRASH_COND(size == 0);
 	CRASH_COND(block == nullptr);
-	MutexLock lock(_mutex);
-	Pool *pool = _pools[size]; // If not found, entry will be created! It would be an error
-	// Check recycling before having allocated
-	CRASH_COND(pool == nullptr);
-	pool->blocks.push_back(block);
+	// Not calculating `pot` immediately because the function we use to calculate it uses 32 bits,
+	// while `size_t` can be larger than that.
+	if (size > get_highest_supported_size()) {
+#ifdef DEBUG_ENABLED
+		// Make sure this allocation was done by this pool in this scenario
+		_debug_nonpooled_used_blocks.remove(block);
+#endif
+		memfree(block);
+	} else {
+		const unsigned int pot = get_pool_index_from_size(size);
+		Pool &pool = _pot_pools[pot];
+#ifdef DEBUG_ENABLED
+		// Make sure this allocation was done by this pool in this scenario
+		pool.debug_used_blocks.remove(block);
+#endif
+		MutexLock lock(pool.mutex);
+		pool.blocks.push_back(block);
+	}
 	--_used_blocks;
 	_used_memory -= size;
 }
 
 void VoxelMemoryPool::clear_unused_blocks() {
-	MutexLock lock(_mutex);
-	const size_t *key = nullptr;
-	while ((key = _pools.next(key))) {
-		Pool *pool = _pools.get(*key);
-		CRASH_COND(pool == nullptr);
-		for (auto it = pool->blocks.begin(); it != pool->blocks.end(); ++it) {
-			uint8_t *ptr = *it;
-			CRASH_COND(ptr == nullptr);
-			memfree(ptr);
+	for (unsigned int pot = 0; pot < _pot_pools.size(); ++pot) {
+		Pool &pool = _pot_pools[pot];
+		MutexLock lock(pool.mutex);
+		for (unsigned int i = 0; i < pool.blocks.size(); ++i) {
+			void *block = pool.blocks[i];
+			memfree(block);
 		}
-		_total_memory -= (*key) * pool->blocks.size();
-		pool->blocks.clear();
+		_total_memory -= get_size_from_pool_index(pot) * pool.blocks.size();
+		pool.blocks.clear();
 	}
 }
 
 void VoxelMemoryPool::clear() {
-	MutexLock lock(_mutex);
-	const size_t *key = nullptr;
-	while ((key = _pools.next(key))) {
-		Pool *pool = _pools.get(*key);
-		CRASH_COND(pool == nullptr);
-		for (auto it = pool->blocks.begin(); it != pool->blocks.end(); ++it) {
-			uint8_t *ptr = *it;
-			CRASH_COND(ptr == nullptr);
-			memfree(ptr);
+	for (unsigned int pot = 0; pot < _pot_pools.size(); ++pot) {
+		Pool &pool = _pot_pools[pot];
+		MutexLock lock(pool.mutex);
+		for (unsigned int i = 0; i < pool.blocks.size(); ++i) {
+			void *block = pool.blocks[i];
+			memfree(block);
 		}
-		memdelete(pool);
+		pool.blocks.clear();
 	}
-	_pools.clear();
 	_used_memory = 0;
 	_total_memory = 0;
 	_used_blocks = 0;
 }
 
 void VoxelMemoryPool::debug_print() {
-	MutexLock lock(_mutex);
 	print_line("-------- VoxelMemoryPool ----------");
-	if (_pools.size() == 0) {
-		print_line("No pools created");
-	} else {
-		const size_t *key = nullptr;
-		int i = 0;
-		while ((key = _pools.next(key))) {
-			Pool *pool = _pools.get(*key);
-			print_line(String("Pool {0} for size {1}: {2} blocks")
-							   .format(varray(i, SIZE_T_TO_VARIANT(*key), SIZE_T_TO_VARIANT(pool->blocks.size()))));
-			++i;
-		}
+	for (unsigned int pot = 0; pot < _pot_pools.size(); ++pot) {
+		Pool &pool = _pot_pools[pot];
+		MutexLock lock(pool.mutex);
+		print_line(String("Pool {0}: {1} blocks (capacity {2})")
+						   .format(varray(pot,
+								   SIZE_T_TO_VARIANT(pool.blocks.size()),
+								   SIZE_T_TO_VARIANT(pool.blocks.capacity()))));
 	}
 }
 
@@ -134,18 +164,4 @@ size_t VoxelMemoryPool::debug_get_used_memory() const {
 size_t VoxelMemoryPool::debug_get_total_memory() const {
 	//MutexLock lock(_mutex);
 	return _total_memory;
-}
-
-VoxelMemoryPool::Pool *VoxelMemoryPool::get_or_create_pool(size_t size) {
-	Pool *pool;
-	Pool **ppool = _pools.getptr(size);
-	if (ppool == nullptr) {
-		pool = memnew(Pool);
-		CRASH_COND(pool == nullptr);
-		_pools.set(size, pool);
-	} else {
-		pool = *ppool;
-		CRASH_COND(pool == nullptr);
-	}
-	return pool;
 }

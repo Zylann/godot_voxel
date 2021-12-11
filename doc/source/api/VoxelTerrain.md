@@ -8,15 +8,16 @@ Voxel volume using constant level of detail.
 ## Properties: 
 
 
-Type    | Name                                             | Default                                                                                 
-------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------
-`AABB`  | [bounds](#i_bounds)                              | AABB( -5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09 ) 
-`int`   | [collision_layer](#i_collision_layer)            | 1                                                                                       
-`int`   | [collision_mask](#i_collision_mask)              | 1                                                                                       
-`bool`  | [generate_collisions](#i_generate_collisions)    | true                                                                                    
-`int`   | [max_view_distance](#i_max_view_distance)        | 128                                                                                     
-`int`   | [mesh_block_size](#i_mesh_block_size)            | 16                                                                                      
-`bool`  | [run_stream_in_editor](#i_run_stream_in_editor)  | true                                                                                    
+Type     | Name                                             | Default                                                                                 
+-------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------
+`AABB`   | [bounds](#i_bounds)                              | AABB( -5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09 ) 
+`int`    | [collision_layer](#i_collision_layer)            | 1                                                                                       
+`float`  | [collision_margin](#i_collision_margin)          | 0.04                                                                                    
+`int`    | [collision_mask](#i_collision_mask)              | 1                                                                                       
+`bool`   | [generate_collisions](#i_generate_collisions)    | true                                                                                    
+`int`    | [max_view_distance](#i_max_view_distance)        | 128                                                                                     
+`int`    | [mesh_block_size](#i_mesh_block_size)            | 16                                                                                      
+`bool`   | [run_stream_in_editor](#i_run_stream_in_editor)  | true                                                                                    
 <p></p>
 
 ## Methods: 
@@ -25,6 +26,7 @@ Type    | Name                                             | Default
 Return                                                                              | Signature                                                                                                                                                                                             
 ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)        | [data_block_to_voxel](#i_data_block_to_voxel) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos ) const                                                        
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_size](#i_get_data_block_size) ( ) const                                                                                                                                               
 [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)      | [get_material](#i_get_material) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) const                                                                                     
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                         
 [VoxelTool](VoxelTool.md)                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                               
@@ -38,13 +40,13 @@ Return                                                                          
 
 - block_loaded( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
 
-Emitted when a new block is loaded from stream.
+Emitted when a new data block is loaded from stream.
 
 Note: it might be not visible yet.
 
 - block_unloaded( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
 
-Emitted when a block unloaded due to being outside view distance.
+Emitted when a data block is unloaded due to being outside view distance.
 
 ## Property Descriptions
 
@@ -53,6 +55,9 @@ Emitted when a block unloaded due to being outside view distance.
 Defines the bounds within which the terrain is allowed to have voxels. If an infinite world generator is used, blocks will only generate within this region. Everything outside will be left empty.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_layer"></span> **collision_layer** = 1
+
+
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_collision_margin"></span> **collision_margin** = 0.04
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_mask"></span> **collision_mask** = 1
@@ -84,6 +89,10 @@ Important: this option will turn off automatically if you setup a script world g
 ## Method Descriptions
 
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_data_block_to_voxel"></span> **data_block_to_voxel**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos ) 
+
+Converts data block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
+
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_data_block_size"></span> **get_data_block_size**( ) 
 
 
 - [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_get_material"></span> **get_material**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
@@ -142,4 +151,4 @@ Note 3: saving is asynchronous and won't block the game. the save may complete o
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_voxel_to_data_block"></span> **voxel_to_data_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
 
 
-_Generated on May 31, 2021_
+_Generated on Nov 06, 2021_
