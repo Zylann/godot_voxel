@@ -6,6 +6,7 @@ env:
   MONO_BCL_RELEASE_TAG: release-c3a9d31
   MONO_INSTALL_DIR: C:\'Program Files'\Mono
   MONO_OUTPUT_DIR: msvc\build\output\x64
+  MONO_BUILD_DIR: ${{ env.GITHUB_WORKSPACE }}\mono-build
 
 jobs:
 
@@ -20,11 +21,10 @@ jobs:
         with:
           repository: mono/mono
           ref: ${{ env.MONO_TAG }}
-          path: mono-source
 
       # Clean the Mono repo, get submodules
       - name: Clean Mono
-        run: pushd mono-source && git reset --hard && git clean -xffd && git submodule foreach --recursive git reset --hard && git submodule foreach --recursive git clean -xffd && git submodule update --init --recursive && popd
+        run: pushd mono && git reset --hard && git clean -xffd && git submodule foreach --recursive git reset --hard && git submodule foreach --recursive git clean -xffd && git submodule update --init --recursive && popd
 
       - name: Get Voxel Repo
         uses: actions/checkout@v2
@@ -34,14 +34,21 @@ jobs:
       # Apply the debugger fix
       - name: Patch Mono
         run: |
-          pushd mono-source
+          pushd mono
           curl --location https://raw.githubusercontent.com/godotengine/godot-mono-builds/master/files/patches/mono-dbg-agent-clear-tls-instead-of-abort.diff -O
           git apply mono-dbg-agent-clear-tls-instead-of-abort.diff
           popd
+
+      - name: Configure Build
+        run: |
+          cd mono
+          ./autogen.sh --prefix=${{ env.MONO_OUTPUT_DIR }} --host=x86_64-w64-mingw32 --enable-msvc --disable-boehm --with-tls=pthread --enable-btls --enable-btls-lib
+          make -j4
+          make install
       
        # Install all packages (except scons)
       - name: Configure dependencies
-        run: choco install cmake
+        run: choco install cmake, activeperl, ninja, yasm
       
       - name: Configure build for amd64
         uses: ilammy/msvc-dev-cmd@v1
@@ -49,16 +56,16 @@ jobs:
           arch: amd64
 
       # Build Mono for Windows (MSVC)
-      - name: Build Mono
-        run: |
-          cd mono-source
-          msbuild msvc\mono.sln /p:Platform=x64 /p:PlatformToolset=v141 /p:Configuration=Release /p:MONO_TARGET_GC=sgen /p:MONO_ENABLE_BTLS=true /p:MONO_DISABLE_BOEHM=true /p:MONO_WITH_TLS=pthread
+      # - name: Build Mono
+      #  run: |
+      #    cd mono
+      #    msbuild msvc\mono.sln /p:Platform=x64 /p:PlatformToolset=v141 /p:Configuration=Release /p:MONO_TARGET_GC=sgen
 
       # Perform the tasks in msvc/win32.xml to get \etc\, since monkeybuilder was abandoned
       #   win32.xml is https://github.com/mono/mono/blob/1ed1688a543c0c03f8fc0cc8e6ca234a6bd45eb0/msvc/win32.xml (as it was deleted in 90103ee)
       - name: pretend to be MonkeyBuilder win32.xml
         run: |
-          pushd mono-source
+          pushd mono
           md $Env:MONO_OUTPUT_DIR\bin
           copy msvc\build\sgen\x64\bin\Release\*.exe $Env:MONO_OUTPUT_DIR\bin
           copy msvc\build\sgen\x64\bin\Release\*.dll $Env:MONO_OUTPUT_DIR\bin
@@ -91,4 +98,4 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: mono-build-x64
-          path: mono-source\${{ env.MONO_OUTPUT_DIR }}
+          path: mono\${{ env.MONO_OUTPUT_DIR }}
