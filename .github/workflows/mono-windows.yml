@@ -35,6 +35,11 @@ jobs:
       - name: Move nuget.config
         run: mv godot/modules/voxel/nuget.config godot/nuget.config
 
+      - name: Download certs for nuget
+        run: |
+          curl https://curl.haxx.se/ca/cacert.pem 
+          cert-sync --user cacert.pem  
+
       # Download Mono Build
       # - name: Download Mono Build
       #  run: |
