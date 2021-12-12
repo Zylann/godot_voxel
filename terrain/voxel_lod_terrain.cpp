@@ -529,8 +529,7 @@ std::shared_ptr<VoxelAsyncDependencyTracker> VoxelLodTerrain::preload_boxes_asyn
 		// it would destroy `next_tasks`.
 
 		// This may first run the generation tasks, and then the edits
-		std::shared_ptr<VoxelAsyncDependencyTracker> tracker =
-				gd_make_shared<VoxelAsyncDependencyTracker>(todo.size(), next_tasks);
+		tracker = gd_make_shared<VoxelAsyncDependencyTracker>(todo.size(), next_tasks);
 
 		for (unsigned int i = 0; i < todo.size(); ++i) {
 			const TaskArguments args = todo[i];
@@ -638,7 +637,7 @@ bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int ch
 			return false;
 		}
 		if (_generator.is_valid()) {
-			std::shared_ptr<VoxelBufferInternal> voxels = gd_make_shared<VoxelBufferInternal>();
+			voxels = gd_make_shared<VoxelBufferInternal>();
 			voxels->create(Vector3i(get_data_block_size()));
 			VoxelBlockRequest r{ *voxels, pos, 0 };
 			_generator->generate_block(r);
@@ -659,9 +658,8 @@ bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int ch
 void VoxelLodTerrain::copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask) {
 	const VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 	if (_full_load_mode && _generator.is_valid()) {
-		VoxelGenerator *generator = *_generator;
 		RWLockRead rlock(data_lod0.map_lock);
-		data_lod0.map.copy(p_origin_voxels, dst_buffer, channels_mask, generator,
+		data_lod0.map.copy(p_origin_voxels, dst_buffer, channels_mask, *_generator,
 				[](void *callback_data, VoxelBufferInternal &voxels, Vector3i pos) {
 					VoxelGenerator *generator = reinterpret_cast<VoxelGenerator *>(callback_data);
 					VoxelBlockRequest r{ voxels, pos, 0 };
