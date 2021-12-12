@@ -6,7 +6,6 @@ env:
   MONO_BCL_RELEASE_TAG: release-c3a9d31
   MONO_INSTALL_DIR: C:\'Program Files'\Mono
   MONO_OUTPUT_DIR: msvc\build\output\x64
-  MONO_BUILD_DIR: ${{ env.GITHUB_WORKSPACE }}\mono-build
 
 jobs:
 
