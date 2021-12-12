@@ -41,7 +41,7 @@ jobs:
       - name: Configure Build
         run: |
           cd mono
-          ./autogen.sh --prefix=${{ env.MONO_OUTPUT_DIR }} --host=x86_64-w64-mingw32 --enable-msvc --disable-boehm --with-tls=pthread --enable-btls --enable-btls-lib
+          sh autogen.sh --prefix=${{ env.MONO_OUTPUT_DIR }} --host=x86_64-w64-mingw32 --enable-msvc --disable-boehm --with-tls=pthread --enable-btls --enable-btls-lib
           make -j4
           make install
       
