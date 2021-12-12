@@ -36,24 +36,28 @@ jobs:
         run: mv godot/modules/voxel/nuget.config godot/nuget.config
 
       # Download Mono Build
+      # - name: Download Mono Build
+      #  run: |
+      #   curl --location https://github.com/${{github.repository}}/raw/master/.github/files/mono-build-x64.zip -O
+
+      #- name: Uncompress Mono-Build
+      #  run: |
+      #    Expand-Archive -Path mono-build-x64.zip -Destination mono-build
+
+      # Download Mono Build
       - name: Download Mono Build
         run: |
-          curl --location https://github.com/${{github.repository}}/raw/master/.github/files/mono-build-x64.zip -O
-
-      - name: Uncompress Mono-Build
-        run: |
-          Expand-Archive -Path mono-build-x64.zip -Destination mono-build
+          curl --location https://github.com/godotengine/godot-mono-builds/releases/download/${{ env.MONO_BCL_RELEASE_TAG}}/windows-x86_64.zip -O
+          Expand-Archive -Path windows-x86_64.zip -DestinationPath windows-x86_64
 
       - name: Download Mono BCL
         run: |
           curl --location https://github.com/godotengine/godot-mono-builds/releases/download/${{ env.MONO_BCL_RELEASE_TAG}}/bcl-desktop-win32.zip -O
           Expand-Archive -Path bcl-desktop-win32.zip -DestinationPath bcl-desktop-win32
-          New-Item -Path mono-build/lib/mono/4.5 -ItemType Directory
-          Copy-Item -Path bcl-desktop-win32/desktop-win32-bcl/net_4_x-win32/* -Destination mono-build/lib/mono/4.5/ -Recurse
 
       # Install all packages (except scons)
       - name: Configure dependencies
-        run: choco install python make mingw --limit-output
+        run: choco install python make mingw
 
       # For copy_mono_root
       - name: Install Mono Runtime (for copy_mono_root)
@@ -95,7 +99,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           cd godot
-          scons -j4 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\mono-build
+          scons -j4 use_mingw=yes verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\windows-x86_64\desktop-windows-x86_64-release mono_bcl=D:\a\godot_voxel\godot_voxel\bcl-desktop-win32\desktop-win32-bcl\net_4_x-win32
 
 
       - uses: actions/upload-artifact@v2
@@ -125,7 +129,7 @@ jobs:
           SCONS_CACHE: /.scons_cache/
         run: |
           cd godot
-          scons -j4 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\mono-build
+          scons -j4 use_mingw=yes verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=D:\a\godot_voxel\godot_voxel\windows-x86_64\desktop-windows-x86_64-release mono_bcl=D:\a\godot_voxel\godot_voxel\bcl-desktop-win32\desktop-win32-bcl\net_4_x-win32
 
       # Make build available
       - uses: actions/upload-artifact@v2
