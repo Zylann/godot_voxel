@@ -65,11 +65,6 @@ jobs:
           curl --location https://download.mono-project.com/archive/6.12.0/windows-installer/${{ env.MONO_TAG }}-x64-0.msi -O
           Start-Process msiexec.exe -Wait -ArgumentList '/I D:\a\godot_voxel\godot_voxel\${{ env.MONO_TAG }}-x64-0.msi /quiet'
           
-      - name: Download certs for nuget
-        run: |
-          curl https://curl.se/ca/cacert.pem
-          cert-sync --user cacert.pem  
-          
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: mono-glue-cache
