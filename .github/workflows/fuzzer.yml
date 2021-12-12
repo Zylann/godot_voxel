@@ -35,58 +35,9 @@ jobs:
           ref: 3.x
           path: fuzzer
 
-      # Currently configuration is done by modifing source code
-      - name: Configure fuzzer
-        working-directory: fuzzer
+      - name: Copy fuzzer settings
         run: |
-          sed -i 's/var use_parent_methods: bool = false/var use_parent_methods: bool = true/' FunctionExecutor.gd
-          sed -i 's/var add_to_tree: bool = false/var add_to_tree: bool = true/' FunctionExecutor.gd
-          sed -i 's/var delay_removing_added_nodes_to_next_frame: bool = false/var delay_removing_added_nodes_to_next_frame: bool = true/' FunctionExecutor.gd
-          echo "FastNoiseLite" >> classes.txt
-          echo "FastNoiseLiteGradient" >> classes.txt
-          echo "Voxel" >> classes.txt
-          echo "VoxelBlockSerializer" >> classes.txt
-          echo "VoxelBoxMover" >> classes.txt
-          echo "VoxelBuffer" >> classes.txt
-          echo "VoxelColorPalette" >> classes.txt
-          echo "VoxelGenerator" >> classes.txt
-          echo "VoxelGeneratorFlat" >> classes.txt
-          echo "VoxelGeneratorGraph" >> classes.txt
-          echo "VoxelGeneratorHeightmap" >> classes.txt
-          echo "VoxelGeneratorImage" >> classes.txt
-          echo "VoxelGeneratorNoise" >> classes.txt
-          echo "VoxelGeneratorNoise2D" >> classes.txt
-          echo "VoxelGeneratorScript" >> classes.txt
-          echo "VoxelGeneratorWaves" >> classes.txt
-          echo "VoxelInstanceComponent" >> classes.txt
-          echo "VoxelInstanceGenerator" >> classes.txt
-          echo "VoxelInstanceLibrary" >> classes.txt
-          echo "VoxelInstanceLibraryItem" >> classes.txt
-          echo "VoxelInstanceLibraryItemBase" >> classes.txt
-          echo "VoxelInstanceLibrarySceneItem" >> classes.txt
-          echo "VoxelInstancer" >> classes.txt
-          echo "VoxelLibrary" >> classes.txt
-          echo "VoxelLodTerrain" >> classes.txt
-          echo "VoxelMesher" >> classes.txt
-          echo "VoxelMesherBlocky" >> classes.txt
-          echo "VoxelMesherCubes" >> classes.txt
-          echo "VoxelMesherDMC" >> classes.txt
-          echo "VoxelMesherTransvoxel" >> classes.txt
-          echo "VoxelNode" >> classes.txt
-          echo "VoxelRaycastResult" >> classes.txt
-          echo "VoxelServer" >> classes.txt
-          echo "VoxelStream" >> classes.txt
-          echo "VoxelStreamBlockFiles" >> classes.txt
-          echo "VoxelStreamRegionFiles" >> classes.txt
-          echo "VoxelStreamSQLite" >> classes.txt
-          echo "VoxelStreamScript" >> classes.txt
-          echo "VoxelTerrain" >> classes.txt
-          echo "VoxelTool" >> classes.txt
-          echo "VoxelToolBuffer" >> classes.txt
-          echo "VoxelToolLodTerrain" >> classes.txt
-          echo "VoxelToolTerrain" >> classes.txt
-          echo "VoxelViewer" >> classes.txt
-          echo "VoxelVoxLoader" >> classes.txt
+          mv modules/voxel/misc/fuzzer_config.txt fuzzer/settings.txt
 
       # Azure repositories are not reliable, we need to prevent azure giving us packages.
       - name: Make apt sources.list use the default Ubuntu repositories
@@ -160,6 +111,12 @@ jobs:
         with:
           name: timer
           path: fuzzer/timer.txt
+
+      - name: Store memory usage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: memory_usage
+          path: fuzzer/memory_usage.txt
 
       - name: Check fuzzer output
         run: |

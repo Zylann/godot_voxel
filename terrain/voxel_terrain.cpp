@@ -41,8 +41,9 @@ VoxelTerrain::VoxelTerrain() {
 	// Mesh updates are spread over frames by scheduling them in a task runner of VoxelServer,
 	// but instead of using a reception buffer we use a callback,
 	// because this kind of task scheduling would otherwise delay the update by 1 frame
-	_reception_buffers.callback_data = this;
-	_reception_buffers.mesh_output_callback = [](void *cb_data, const VoxelServer::BlockMeshOutput &ob) {
+	VoxelServer::VolumeCallbacks callbacks;
+	callbacks.data = this;
+	callbacks.mesh_output_callback = [](void *cb_data, const VoxelServer::BlockMeshOutput &ob) {
 		VoxelTerrain *self = reinterpret_cast<VoxelTerrain *>(cb_data);
 		ApplyMeshUpdateTask *task = memnew(ApplyMeshUpdateTask);
 		task->volume_id = self->_volume_id;
@@ -50,8 +51,12 @@ VoxelTerrain::VoxelTerrain() {
 		task->data = ob;
 		VoxelServer::get_singleton()->push_time_spread_task(task);
 	};
+	callbacks.data_output_callback = [](void *cb_data, VoxelServer::BlockDataOutput &ob) {
+		VoxelTerrain *self = reinterpret_cast<VoxelTerrain *>(cb_data);
+		self->apply_data_block_response(ob);
+	};
 
-	_volume_id = VoxelServer::get_singleton()->add_volume(&_reception_buffers, VoxelServer::VOLUME_SPARSE_GRID);
+	_volume_id = VoxelServer::get_singleton()->add_volume(callbacks, VoxelServer::VOLUME_SPARSE_GRID);
 
 	// For ease of use in editor
 	Ref<VoxelMesherBlocky> default_mesher;
@@ -616,7 +621,6 @@ void VoxelTerrain::stop_streamer() {
 	VoxelServer::get_singleton()->set_volume_generator(_volume_id, Ref<VoxelGenerator>());
 	_loading_blocks.clear();
 	_blocks_pending_load.clear();
-	_reception_buffers.data_output.clear();
 }
 
 void VoxelTerrain::reset_map() {
@@ -807,7 +811,7 @@ bool VoxelTerrain::try_get_paired_viewer_index(uint32_t id, size_t &out_i) const
 void VoxelTerrain::_process() {
 	VOXEL_PROFILE_SCOPE();
 	process_viewers();
-	process_received_data_blocks();
+	//process_received_data_blocks();
 	process_meshing();
 }
 
@@ -1031,103 +1035,88 @@ void VoxelTerrain::process_viewers() {
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
 }
 
-void VoxelTerrain::process_received_data_blocks() {
-	ProfilingClock profiling_clock;
-
-	_stats.dropped_block_loads = 0;
+void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
+	VOXEL_PROFILE_SCOPE();
 
 	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
 								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
 
-	// Get block loading responses
-	// Note: if block loading is too fast, this can cause stutters. It should only happen on first load, though.
-	{
-		VOXEL_PROFILE_SCOPE();
+	//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 
-		//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
-		for (size_t i = 0; i < _reception_buffers.data_output.size(); ++i) {
-			VoxelServer::BlockDataOutput &ob = _reception_buffers.data_output[i];
-
-			if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVE) {
-				if (ob.dropped) {
-					ERR_PRINT(String("Could not save block {0}").format(varray(ob.position.to_vec3())));
-				}
-				continue;
-			}
-
-			CRASH_COND(ob.type != VoxelServer::BlockDataOutput::TYPE_LOAD);
-
-			const Vector3i block_pos = ob.position;
-
-			LoadingBlock loading_block;
-			{
-				LoadingBlock *loading_block_ptr = _loading_blocks.getptr(block_pos);
-
-				if (loading_block_ptr == nullptr) {
-					// That block was not requested or is no longer needed, drop it.
-					++_stats.dropped_block_loads;
-					continue;
-				}
-
-				loading_block = *loading_block_ptr;
-			}
-
-			if (ob.dropped) {
-				// That block was cancelled by the server, but we are still expecting it.
-				// We'll have to request it again.
-				PRINT_VERBOSE(String("Received a block loading drop while we were still expecting it: "
-									 "lod{0} ({1}, {2}, {3}), re-requesting it")
-									  .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
-				++_stats.dropped_block_loads;
-
-				_blocks_pending_load.push_back(ob.position);
-				continue;
-			}
-
-			// Now we got the block. If we still have to drop it, the cause will be an error.
-			_loading_blocks.erase(block_pos);
-
-			CRASH_COND(ob.voxels == nullptr);
-
-			const Vector3i expected_block_size(_data_map.get_block_size());
-			if (ob.voxels->get_size() != expected_block_size) {
-				// Voxel block size is incorrect, drop it
-				ERR_PRINT(String("Block size obtained from stream is different from expected size. "
-								 "Expected {0}, got {1}")
-								  .format(varray(expected_block_size.to_vec3(), ob.voxels->get_size().to_vec3())));
-				++_stats.dropped_block_loads;
-				continue;
-			}
-
-			// Create or update block data
-			VoxelDataBlock *block = _data_map.get_block(block_pos);
-			const bool was_not_loaded = block == nullptr;
-			block = _data_map.set_block_buffer(block_pos, ob.voxels);
-
-			if (was_not_loaded) {
-				// Set viewers count that are currently expecting the block
-				block->viewers = loading_block.viewers;
-			}
-
-			emit_data_block_loaded(block);
-
-			// The block itself might not be suitable for meshing yet, but blocks surrounding it might be now
-			{
-				VOXEL_PROFILE_SCOPE();
-				try_schedule_mesh_update_from_data(
-						Box3i(_data_map.block_to_voxel(block_pos), Vector3i(get_data_block_size())));
-			}
+	if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVE) {
+		if (ob.dropped) {
+			ERR_PRINT(String("Could not save block {0}").format(varray(ob.position.to_vec3())));
 		}
-
-		_reception_buffers.data_output.clear();
-
-		// We might have requested some blocks again (if we got a dropped one while we still need them)
-		if (stream_enabled) {
-			send_block_data_requests();
-		}
+		return;
 	}
 
-	_stats.time_process_load_responses = profiling_clock.restart();
+	CRASH_COND(ob.type != VoxelServer::BlockDataOutput::TYPE_LOAD);
+
+	const Vector3i block_pos = ob.position;
+
+	LoadingBlock loading_block;
+	{
+		LoadingBlock *loading_block_ptr = _loading_blocks.getptr(block_pos);
+
+		if (loading_block_ptr == nullptr) {
+			// That block was not requested or is no longer needed, drop it.
+			++_stats.dropped_block_loads;
+			return;
+		}
+
+		loading_block = *loading_block_ptr;
+	}
+
+	if (ob.dropped) {
+		// That block was cancelled by the server, but we are still expecting it.
+		// We'll have to request it again.
+		PRINT_VERBOSE(String("Received a block loading drop while we were still expecting it: "
+							 "lod{0} ({1}, {2}, {3}), re-requesting it")
+							  .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
+		++_stats.dropped_block_loads;
+
+		_blocks_pending_load.push_back(ob.position);
+		return;
+	}
+
+	// Now we got the block. If we still have to drop it, the cause will be an error.
+	_loading_blocks.erase(block_pos);
+
+	CRASH_COND(ob.voxels == nullptr);
+
+	const Vector3i expected_block_size(_data_map.get_block_size());
+	if (ob.voxels->get_size() != expected_block_size) {
+		// Voxel block size is incorrect, drop it
+		ERR_PRINT(String("Block size obtained from stream is different from expected size. "
+						 "Expected {0}, got {1}")
+						  .format(varray(expected_block_size.to_vec3(), ob.voxels->get_size().to_vec3())));
+		++_stats.dropped_block_loads;
+		return;
+	}
+
+	// Create or update block data
+	VoxelDataBlock *block = _data_map.get_block(block_pos);
+	const bool was_not_loaded = block == nullptr;
+	block = _data_map.set_block_buffer(block_pos, ob.voxels);
+
+	if (was_not_loaded) {
+		// Set viewers count that are currently expecting the block
+		block->viewers = loading_block.viewers;
+	}
+
+	emit_data_block_loaded(block);
+
+	// The block itself might not be suitable for meshing yet, but blocks surrounding it might be now
+	{
+		VOXEL_PROFILE_SCOPE();
+		try_schedule_mesh_update_from_data(
+				Box3i(_data_map.block_to_voxel(block_pos), Vector3i(get_data_block_size())));
+	}
+
+	// We might have requested some blocks again (if we got a dropped one while we still need them)
+	if (stream_enabled) {
+		send_block_data_requests();
+	}
 }
 
 void VoxelTerrain::process_meshing() {

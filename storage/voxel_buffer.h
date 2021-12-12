@@ -51,7 +51,9 @@ public:
 	// Limit was made explicit for serialization reasons, and also because there must be a reasonable one
 	static const uint32_t MAX_SIZE = 65535;
 
+	// Constructs a new buffer
 	VoxelBuffer();
+	// Reference an existing buffer
 	VoxelBuffer(std::shared_ptr<VoxelBufferInternal> &other);
 
 	~VoxelBuffer();

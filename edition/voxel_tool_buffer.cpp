@@ -27,10 +27,10 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 	Box3i box(Vector3i::from_floored(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
 	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
 
-	_buffer->get_buffer().write_box_2_template<TextureBlendSphereOp, uint16_t, uint16_t>(box,
+	_buffer->get_buffer().write_box_2_template<VoxelToolOps::TextureBlendSphereOp, uint16_t, uint16_t>(box,
 			VoxelBufferInternal::CHANNEL_INDICES,
 			VoxelBufferInternal::CHANNEL_WEIGHTS,
-			TextureBlendSphereOp(center, radius, _texture_params),
+			VoxelToolOps::TextureBlendSphereOp(center, radius, _texture_params),
 			Vector3i());
 
 	_post_edit(box);

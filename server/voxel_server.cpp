@@ -5,6 +5,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
+#include "voxel_async_dependency_tracker.h"
 
 #include <core/os/memory.h>
 #include <scene/main/viewport.h>
@@ -215,11 +216,11 @@ int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod_index, 
 	return priority;
 }
 
-uint32_t VoxelServer::add_volume(ReceptionBuffers *buffers, VolumeType type) {
-	CRASH_COND(buffers == nullptr);
+uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks, VolumeType type) {
+	CRASH_COND(!callbacks.check_callbacks());
 	Volume volume;
 	volume.type = type;
-	volume.reception_buffers = buffers;
+	volume.callbacks = callbacks;
 	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
 	return _world.volumes.create(volume);
 }
@@ -265,13 +266,27 @@ void VoxelServer::set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> g
 	volume.stream_dependency = gd_make_shared<StreamingDependency>();
 	volume.stream_dependency->generator = volume.generator;
 	volume.stream_dependency->stream = volume.stream;
+
+	if (volume.meshing_dependency != nullptr) {
+		volume.meshing_dependency->valid = false;
+	}
+
+	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
+	volume.meshing_dependency->mesher = volume.mesher;
+	volume.meshing_dependency->generator = volume.generator;
 }
 
 void VoxelServer::set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher) {
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.mesher = mesher;
+
+	if (volume.meshing_dependency != nullptr) {
+		volume.meshing_dependency->valid = false;
+	}
+
 	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
+	volume.meshing_dependency->generator = volume.generator;
 }
 
 void VoxelServer::set_volume_octree_lod_distance(uint32_t volume_id, float lod_distance) {
@@ -284,6 +299,7 @@ void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	volume.meshing_dependency->valid = false;
 	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
+	volume.meshing_dependency->generator = volume.generator;
 }
 
 static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
@@ -325,6 +341,7 @@ void VoxelServer::init_priority_dependency(
 void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &input) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.meshing_dependency == nullptr);
+	ERR_FAIL_COND(volume.data_block_size > 255);
 
 	BlockMeshRequest *r = memnew(BlockMeshRequest);
 	r->volume_id = volume_id;
@@ -333,6 +350,7 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &i
 	r->position = input.render_block_position;
 	r->lod = input.lod;
 	r->meshing_dependency = volume.meshing_dependency;
+	r->data_block_size = volume.data_block_size;
 
 	init_priority_dependency(
 			r->priority_dependency, input.render_block_position, input.lod, volume, volume.render_block_size);
@@ -344,6 +362,7 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &i
 void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream_dependency == nullptr);
+	ERR_FAIL_COND(volume.data_block_size > 255);
 
 	if (volume.stream_dependency->stream.is_valid()) {
 		BlockDataRequest *r = memnew(BlockDataRequest);
@@ -374,6 +393,39 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 
 		_general_thread_pool.enqueue(r);
 	}
+}
+
+void VoxelServer::request_block_generate(uint32_t volume_id, Vector3i block_pos, int lod,
+		std::shared_ptr<VoxelAsyncDependencyTracker> tracker) {
+	//
+	const Volume &volume = _world.volumes.get(volume_id);
+	ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
+
+	BlockGenerateRequest *r = memnew(BlockGenerateRequest);
+	r->volume_id = volume_id;
+	r->position = block_pos;
+	r->lod = lod;
+	r->block_size = volume.data_block_size;
+	r->stream_dependency = volume.stream_dependency;
+	r->tracker = tracker;
+	r->drop_beyond_max_distance = false;
+
+	init_priority_dependency(r->priority_dependency, block_pos, lod, volume, volume.data_block_size);
+
+	_general_thread_pool.enqueue(r);
+}
+
+void VoxelServer::request_all_stream_blocks(uint32_t volume_id) {
+	PRINT_VERBOSE(String("Request all blocks for volume {0}").format(varray(volume_id)));
+	const Volume &volume = _world.volumes.get(volume_id);
+	ERR_FAIL_COND(volume.stream.is_null());
+	CRASH_COND(volume.stream_dependency == nullptr);
+
+	AllBlocksDataRequest *r = memnew(AllBlocksDataRequest);
+	r->volume_id = volume_id;
+	r->stream_dependency = volume.stream_dependency;
+
+	_general_thread_pool.enqueue(r);
 }
 
 void VoxelServer::request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels,
@@ -539,21 +591,30 @@ int VoxelServer::get_main_thread_time_budget_usec() const {
 	return _main_thread_time_budget_usec;
 }
 
+void VoxelServer::push_async_task(IVoxelTask *task) {
+	_general_thread_pool.enqueue(task);
+}
+
+void VoxelServer::push_async_tasks(Span<IVoxelTask *> tasks) {
+	_general_thread_pool.enqueue(tasks);
+}
+
 void VoxelServer::process() {
 	// Note, this shouldn't be here. It should normally done just after SwapBuffers.
 	// Godot does not have any C++ profiler usage anywhere, so when using Tracy Profiler I have to put it somewhere...
 	// TODO Could connect to VisualServer end_frame_draw signal? How to make sure the singleton is available?
 	//VOXEL_PROFILE_MARK_FRAME();
 	VOXEL_PROFILE_SCOPE();
+	VOXEL_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));
 
 	// Receive data updates
-	_streaming_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
+	_streaming_thread_pool.dequeue_completed_tasks([](IVoxelTask *task) {
 		task->apply_result();
 		memdelete(task);
 	});
 
 	// Receive generation and meshing results
-	_general_thread_pool.dequeue_completed_tasks([this](IVoxelTask *task) {
+	_general_thread_pool.dequeue_completed_tasks([](IVoxelTask *task) {
 		task->apply_result();
 		memdelete(task);
 	});
@@ -785,6 +846,7 @@ void VoxelServer::BlockDataRequest::apply_result() {
 			o.lod = lod;
 			o.dropped = !has_run;
 			o.max_lod_hint = max_lod_hint;
+			o.initial_load = false;
 
 			switch (type) {
 				case BlockDataRequest::TYPE_SAVE:
@@ -799,7 +861,68 @@ void VoxelServer::BlockDataRequest::apply_result() {
 					CRASH_NOW_MSG("Unexpected data request response type");
 			}
 
-			volume->reception_buffers->data_output.push_back(std::move(o));
+			CRASH_COND(volume->callbacks.data_output_callback == nullptr);
+			volume->callbacks.data_output_callback(volume->callbacks.data, o);
+		}
+
+	} else {
+		// This can happen if the user removes the volume while requests are still about to return
+		PRINT_VERBOSE("Stream data request response came back but volume wasn't found");
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+VoxelServer::AllBlocksDataRequest::AllBlocksDataRequest() {
+}
+
+VoxelServer::AllBlocksDataRequest::~AllBlocksDataRequest() {
+}
+
+void VoxelServer::AllBlocksDataRequest::run(VoxelTaskContext ctx) {
+	VOXEL_PROFILE_SCOPE();
+
+	CRASH_COND(stream_dependency == nullptr);
+	Ref<VoxelStream> stream = stream_dependency->stream;
+	CRASH_COND(stream.is_null());
+
+	stream->load_all_blocks(result);
+
+	PRINT_VERBOSE(String("Loaded {0} blocks for volume {1}").format(varray(result.blocks.size(), volume_id)));
+}
+
+int VoxelServer::AllBlocksDataRequest::get_priority() {
+	return 0;
+}
+
+bool VoxelServer::AllBlocksDataRequest::is_cancelled() {
+	return !stream_dependency->valid;
+}
+
+void VoxelServer::AllBlocksDataRequest::apply_result() {
+	Volume *volume = VoxelServer::get_singleton()->_world.volumes.try_get(volume_id);
+
+	if (volume != nullptr) {
+		// TODO Comparing pointer may not be guaranteed
+		// The request response must match the dependency it would have been requested with.
+		// If it doesn't match, we are no longer interested in the result.
+		if (stream_dependency == volume->stream_dependency) {
+			ERR_FAIL_COND(volume->callbacks.data_output_callback == nullptr);
+
+			for (auto it = result.blocks.begin(); it != result.blocks.end(); ++it) {
+				VoxelStream::FullLoadingResult::Block &rb = *it;
+
+				BlockDataOutput o;
+				o.voxels = rb.voxels;
+				o.instances = std::move(rb.instances_data);
+				o.position = rb.position;
+				o.lod = rb.lod;
+				o.dropped = false;
+				o.max_lod_hint = false;
+				o.initial_load = true;
+
+				volume->callbacks.data_output_callback(volume->callbacks.data, o);
+			}
 		}
 
 	} else {
@@ -849,7 +972,7 @@ void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
 int VoxelServer::BlockGenerateRequest::get_priority() {
 	float closest_viewer_distance_sq;
 	const int p = VoxelServer::get_priority(priority_dependency, lod, &closest_viewer_distance_sq);
-	too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
+	too_far = drop_beyond_max_distance && closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
 
@@ -859,6 +982,8 @@ bool VoxelServer::BlockGenerateRequest::is_cancelled() {
 
 void VoxelServer::BlockGenerateRequest::apply_result() {
 	Volume *volume = VoxelServer::get_singleton()->_world.volumes.try_get(volume_id);
+
+	bool aborted = true;
 
 	if (volume != nullptr) {
 		// TODO Comparing pointer may not be guaranteed
@@ -872,12 +997,28 @@ void VoxelServer::BlockGenerateRequest::apply_result() {
 			o.dropped = !has_run;
 			o.type = BlockDataOutput::TYPE_LOAD;
 			o.max_lod_hint = max_lod_hint;
-			volume->reception_buffers->data_output.push_back(std::move(o));
+			o.initial_load = false;
+
+			ERR_FAIL_COND(volume->callbacks.data_output_callback == nullptr);
+			volume->callbacks.data_output_callback(volume->callbacks.data, o);
+
+			aborted = !has_run;
 		}
 
 	} else {
 		// This can happen if the user removes the volume while requests are still about to return
 		PRINT_VERBOSE("Gemerated data request response came back but volume wasn't found");
+	}
+
+	// TODO We could complete earlier inside run() if we had access to the data structure to write the block into.
+	// This would reduce latency a little. The rest of things the terrain needs to do with the generated block could
+	// run later.
+	if (tracker != nullptr) {
+		if (aborted) {
+			tracker->abort();
+		} else {
+			tracker->post_complete();
+		}
 	}
 }
 
@@ -887,18 +1028,14 @@ void VoxelServer::BlockGenerateRequest::apply_result() {
 // Voxels from central blocks are copied, and part of side blocks are also copied so we get a temporary buffer
 // which includes enough neighbors for the mesher to avoid doing bound checks.
 static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
-		int min_padding, int max_padding, int channels_mask) {
+		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator, int data_block_size,
+		int lod_index, Vector3i mesh_block_pos) {
 	VOXEL_PROFILE_SCOPE();
 
 	// Extract wanted channels in a list
-	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels;
 	unsigned int channels_count = 0;
-	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
-		if ((channels_mask & (1 << i)) != 0) {
-			channels[channels_count] = i;
-			++channels_count;
-		}
-	}
+	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
+			VoxelBufferInternal::mask_to_channels_list(channels_mask, channels_count);
 
 	// Determine size of the cube of blocks
 	int edge_size;
@@ -920,29 +1057,37 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 	const unsigned int anchor_buffer_index = edge_size * edge_size + edge_size + 1;
 
 	std::shared_ptr<VoxelBufferInternal> &central_buffer = blocks[anchor_buffer_index];
-	ERR_FAIL_COND_MSG(central_buffer == nullptr, "Central buffer must be valid");
-	ERR_FAIL_COND_MSG(central_buffer->get_size().all_members_equal() == false, "Central buffer must be cubic");
-	const int data_block_size = central_buffer->get_size().x;
+	ERR_FAIL_COND_MSG(central_buffer == nullptr && generator.is_null(), "Central buffer must be valid");
+	if (central_buffer != nullptr) {
+		ERR_FAIL_COND_MSG(central_buffer->get_size().all_members_equal() == false, "Central buffer must be cubic");
+	}
 	const int mesh_block_size = data_block_size * mesh_block_size_factor;
 	const int padded_mesh_block_size = mesh_block_size + min_padding + max_padding;
 
 	dst.create(padded_mesh_block_size, padded_mesh_block_size, padded_mesh_block_size);
 
-	for (unsigned int ci = 0; ci < channels.size(); ++ci) {
-		dst.set_channel_depth(ci, central_buffer->get_channel_depth(ci));
-	}
+	// TODO Need to provide format
+	// for (unsigned int ci = 0; ci < channels.size(); ++ci) {
+	// 	dst.set_channel_depth(ci, central_buffer->get_channel_depth(ci));
+	// }
 
 	const Vector3i min_pos = -Vector3i(min_padding);
 	const Vector3i max_pos = Vector3i(mesh_block_size + max_padding);
 
+	std::vector<Box3i> boxes_to_generate;
+	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
+	if (generator.is_valid()) {
+		boxes_to_generate.push_back(mesh_data_box);
+	}
+
 	// Using ZXY as convention to reconstruct positions with thread locking consistency
-	unsigned int i = 0;
+	unsigned int block_index = 0;
 	for (int z = -1; z < edge_size - 1; ++z) {
 		for (int x = -1; x < edge_size - 1; ++x) {
 			for (int y = -1; y < edge_size - 1; ++y) {
 				const Vector3i offset = data_block_size * Vector3i(x, y, z);
-				const std::shared_ptr<VoxelBufferInternal> &src = blocks[i];
-				++i;
+				const std::shared_ptr<VoxelBufferInternal> &src = blocks[block_index];
+				++block_index;
 
 				if (src == nullptr) {
 					continue;
@@ -957,6 +1102,47 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 						dst.copy_from(*src, src_min, src_max, Vector3i(), channels[ci]);
 					}
 				}
+
+				if (generator.is_valid()) {
+					// Subtract edited box from the area to generate
+					// TODO This approach allows to batch boxes if necessary,
+					// but is it just better to do it anyways for every clipped box?
+					VOXEL_PROFILE_SCOPE_NAMED("Box subtract");
+					unsigned int count = boxes_to_generate.size();
+					Box3i block_box = Box3i(offset, Vector3i(data_block_size)).clipped(mesh_data_box);
+
+					for (unsigned int box_index = 0; box_index < count; ++box_index) {
+						Box3i box = boxes_to_generate[box_index];
+						box.difference(block_box, boxes_to_generate);
+#ifdef DEBUG_ENABLED
+						CRASH_COND(box_index >= boxes_to_generate.size());
+#endif
+						boxes_to_generate[box_index] = boxes_to_generate.back();
+						boxes_to_generate.pop_back();
+					}
+				}
+			}
+		}
+	}
+
+	if (generator.is_valid()) {
+		// Complete data with generated voxels
+		VOXEL_PROFILE_SCOPE_NAMED("Generate");
+		VoxelBufferInternal generated_voxels;
+
+		const Vector3i origin_in_voxels = mesh_block_pos * (mesh_block_size_factor * data_block_size << lod_index);
+
+		for (unsigned int i = 0; i < boxes_to_generate.size(); ++i) {
+			const Box3i &box = boxes_to_generate[i];
+			//print_line(String("size={0}").format(varray(box.size.to_vec3())));
+			generated_voxels.create(box.size);
+			//generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2, VoxelBufferInternal::CHANNEL_SDF);
+			VoxelBlockRequest r{ generated_voxels, (box.pos << lod_index) + origin_in_voxels, lod_index };
+			generator->generate_block(r);
+
+			for (unsigned int ci = 0; ci < channels_count; ++ci) {
+				dst.copy_from(generated_voxels, Vector3i(), generated_voxels.get_size(),
+						box.pos + Vector3i(min_padding), channels[ci]);
 			}
 		}
 	}
@@ -982,7 +1168,8 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 	// TODO Cache?
 	VoxelBufferInternal voxels;
 	copy_block_and_neighbors(to_span(blocks, blocks_count),
-			voxels, min_padding, max_padding, mesher->get_used_channels_mask());
+			voxels, min_padding, max_padding, mesher->get_used_channels_mask(),
+			meshing_dependency->generator, data_block_size, lod, position);
 
 	const VoxelMesher::Input input = { voxels, lod };
 	mesher->build(surfaces_output, input);
@@ -1022,9 +1209,9 @@ void VoxelServer::BlockMeshRequest::apply_result() {
 			o.lod = lod;
 			o.surfaces = surfaces_output;
 
-			ERR_FAIL_COND(volume->reception_buffers->mesh_output_callback == nullptr);
-			ERR_FAIL_COND(volume->reception_buffers->callback_data == nullptr);
-			volume->reception_buffers->mesh_output_callback(volume->reception_buffers->callback_data, o);
+			ERR_FAIL_COND(volume->callbacks.mesh_output_callback == nullptr);
+			ERR_FAIL_COND(volume->callbacks.data == nullptr);
+			volume->callbacks.mesh_output_callback(volume->callbacks.data, o);
 		}
 
 	} else {

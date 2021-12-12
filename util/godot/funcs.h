@@ -37,10 +37,21 @@ inline bool try_get_as(Ref<From_T> from, Ref<To_T> &to) {
 	return to.is_valid();
 }
 
+// Creates a shared_ptr which will use Godot's allocation functions
 template <typename T>
 inline std::shared_ptr<T> gd_make_shared() {
 	// std::make_shared() apparently wont allow us to specify custom new and delete
 	return std::shared_ptr<T>(memnew(T), memdelete<T>);
+}
+
+template <typename T, typename Arg_T>
+inline std::shared_ptr<T> gd_make_shared(Arg_T arg) {
+	return std::shared_ptr<T>(memnew(T(arg)), memdelete<T>);
+}
+
+template <typename T, typename Arg0_T, typename Arg1_T>
+inline std::shared_ptr<T> gd_make_shared(Arg0_T arg0, Arg1_T arg1) {
+	return std::shared_ptr<T>(memnew(T(arg0, arg1)), memdelete<T>);
 }
 
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

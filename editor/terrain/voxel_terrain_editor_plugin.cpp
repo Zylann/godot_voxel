@@ -84,14 +84,26 @@ private:
 		return res;
 	}
 
+	// There is `String::humanize_size` but:
+	//1) it is specifically for bytes, 2) it works on a 1024 base
+	// This function allows any unit, and works on a base of 1000
 	static String with_unit(int64_t n, const char *unit) {
 		String s = "";
 		if (n < 0) {
 			s += "-";
 			n = -n;
 		}
+		// TODO Perhaps use a for loop
+		if (n >= 1000'000'000'000) {
+			s += with_commas(n / 1000'000'000'000);
+			s += ".";
+			s += String::num_int64((n % 1000'000'000'000) / 1000'000'000).pad_zeros(3);
+			s += " T";
+			s += unit;
+			return s;
+		}
 		if (n >= 1000'000'000) {
-			s += with_commas(n / 1000'000'000);
+			s += String::num_int64(n / 1000'000'000);
 			s += ".";
 			s += String::num_int64((n % 1000'000'000) / 1000'000).pad_zeros(3);
 			s += " G";

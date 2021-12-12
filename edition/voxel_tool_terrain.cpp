@@ -170,7 +170,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 	}
 
 	_terrain->get_storage().write_box_2(box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
-			TextureBlendSphereOp{ center, radius, _texture_params });
+			VoxelToolOps::TextureBlendSphereOp{ center, radius, _texture_params });
 
 	_post_edit(box);
 }

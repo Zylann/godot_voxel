@@ -28,7 +28,7 @@ public:
 	};
 
 	Vector3i position; // In blocks
-	unsigned int lod_index = 0;
+	uint8_t lod_index = 0;
 	bool pending_transition_update = false;
 	VoxelRefCount mesh_viewers;
 	VoxelRefCount collision_viewers;

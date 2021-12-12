@@ -50,12 +50,27 @@ public:
 	// This function is recommended if you save to files, because you can batch their access.
 	virtual void immerge_blocks(Span<VoxelBlockRequest> p_blocks);
 
+	// TODO Merge support functions into a single getter with Feature bitmask
 	virtual bool supports_instance_blocks() const;
 
 	virtual void load_instance_blocks(
 			Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results);
 
 	virtual void save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks);
+
+	struct FullLoadingResult {
+		struct Block {
+			std::shared_ptr<VoxelBufferInternal> voxels;
+			std::unique_ptr<VoxelInstanceBlockData> instances_data;
+			Vector3i position;
+			unsigned int lod;
+		};
+		std::vector<Block> blocks;
+	};
+
+	virtual bool supports_loading_all_blocks() const { return false; }
+
+	virtual void load_all_blocks(FullLoadingResult &result);
 
 	// Tells which channels can be found in this stream.
 	// The simplest implementation is to return them all.

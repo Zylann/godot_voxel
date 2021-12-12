@@ -32,6 +32,7 @@ private:
 };
 
 class VoxelNode;
+class VoxelAsyncDependencyTracker;
 
 // TODO Don't inherit Object. Instead have a Godot wrapper, there is very little use for Object stuff
 
@@ -65,6 +66,8 @@ public:
 		uint8_t lod;
 		bool dropped;
 		bool max_lod_hint;
+		// Blocks with this flag set should not be ignored
+		bool initial_load;
 	};
 
 	struct BlockMeshInput {
@@ -75,10 +78,17 @@ public:
 		uint8_t lod = 0;
 	};
 
-	struct ReceptionBuffers {
+	struct VolumeCallbacks {
 		void (*mesh_output_callback)(void *, const BlockMeshOutput &) = nullptr;
-		void *callback_data = nullptr;
-		std::vector<BlockDataOutput> data_output;
+		void (*data_output_callback)(void *, BlockDataOutput &) = nullptr;
+		void *data = nullptr;
+
+		inline bool check_callbacks() const {
+			ERR_FAIL_COND_V(mesh_output_callback == nullptr, false);
+			ERR_FAIL_COND_V(data_output_callback == nullptr, false);
+			ERR_FAIL_COND_V(data == nullptr, false);
+			return true;
+		}
 	};
 
 	struct Viewer {
@@ -107,7 +117,7 @@ public:
 	~VoxelServer();
 
 	// TODO Rename functions to C convention
-	uint32_t add_volume(ReceptionBuffers *buffers, VolumeType type);
+	uint32_t add_volume(VolumeCallbacks callbacks, VolumeType type);
 	void set_volume_transform(uint32_t volume_id, Transform t);
 	void set_volume_render_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_data_block_size(uint32_t volume_id, uint32_t block_size);
@@ -117,7 +127,11 @@ public:
 	void set_volume_octree_lod_distance(uint32_t volume_id, float lod_distance);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, const BlockMeshInput &input);
+	// TODO Add parameter to skip stream loading
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
+	void request_block_generate(uint32_t volume_id, Vector3i block_pos, int lod,
+			std::shared_ptr<VoxelAsyncDependencyTracker> tracker);
+	void request_all_stream_blocks(uint32_t volume_id);
 	void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos,
 			int lod);
 	void request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
@@ -144,6 +158,9 @@ public:
 
 	void push_time_spread_task(IVoxelTimeSpreadTask *task);
 	int get_main_thread_time_budget_usec() const;
+
+	void push_async_task(IVoxelTask *task);
+	void push_async_tasks(Span<IVoxelTask *> tasks);
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
 	// void get_min_max_block_padding(
@@ -222,12 +239,13 @@ private:
 
 	struct MeshingDependency {
 		Ref<VoxelMesher> mesher;
+		Ref<VoxelGenerator> generator;
 		bool valid = true;
 	};
 
 	struct Volume {
 		VolumeType type;
-		ReceptionBuffers *reception_buffers = nullptr;
+		VolumeCallbacks callbacks;
 		Transform transform;
 		Ref<VoxelStream> stream;
 		Ref<VoxelGenerator> generator;
@@ -300,6 +318,21 @@ private:
 		// TODO Find a way to separate save, it doesnt need sorting
 	};
 
+	class AllBlocksDataRequest : public IVoxelTask {
+	public:
+		AllBlocksDataRequest();
+		~AllBlocksDataRequest();
+
+		void run(VoxelTaskContext ctx) override;
+		int get_priority() override;
+		bool is_cancelled() override;
+		void apply_result() override;
+
+		VoxelStream::FullLoadingResult result;
+		uint32_t volume_id;
+		std::shared_ptr<StreamingDependency> stream_dependency;
+	};
+
 	class BlockGenerateRequest : public IVoxelTask {
 	public:
 		BlockGenerateRequest();
@@ -318,8 +351,10 @@ private:
 		bool has_run = false;
 		bool too_far = false;
 		bool max_lod_hint = false;
+		bool drop_beyond_max_distance = true;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
+		std::shared_ptr<VoxelAsyncDependencyTracker> tracker;
 	};
 
 	class BlockMeshRequest : public IVoxelTask {
@@ -333,10 +368,13 @@ private:
 		void apply_result() override;
 
 		FixedArray<std::shared_ptr<VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
+		// TODO Need to provide format
+		//FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
 		Vector3i position; // In mesh blocks of the specified lod
 		uint32_t volume_id;
 		uint8_t lod;
 		uint8_t blocks_count;
+		uint8_t data_block_size;
 		bool has_run = false;
 		bool too_far = false;
 		PriorityDependency priority_dependency;

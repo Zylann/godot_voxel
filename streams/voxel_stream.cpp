@@ -49,6 +49,10 @@ void VoxelStream::save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_bl
 	// Can be implemented in subclasses
 }
 
+void VoxelStream::load_all_blocks(FullLoadingResult &result) {
+	ERR_PRINT(String("{0} does not support `load_all_blocks`").format(varray(get_class_name())));
+}
+
 int VoxelStream::get_used_channels_mask() const {
 	return 0;
 }

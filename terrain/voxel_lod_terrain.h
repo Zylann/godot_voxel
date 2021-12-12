@@ -79,35 +79,65 @@ public:
 	unsigned int get_mesh_block_size() const;
 	void set_mesh_block_size(unsigned int mesh_block_size);
 
+	void set_full_load_mode_enabled(bool enabled);
+	bool is_full_load_mode_enabled() const;
+
 	bool is_area_editable(Box3i p_box) const;
-	uint64_t get_voxel(Vector3i pos, unsigned int channel, uint64_t defval) const;
+	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel, VoxelSingleValue defval);
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
-	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask) const;
+	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask);
 
 	template <typename F>
 	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
 		const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
-		if (is_area_editable(voxel_box)) {
-			_lods[0].data_map.write_box(voxel_box, channel, action);
-			post_edit_area(voxel_box);
-		} else {
+		if (_full_load_mode == false && !is_area_editable(voxel_box)) {
 			PRINT_VERBOSE("Area not editable");
+			return;
 		}
+		Ref<VoxelGenerator> generator = _generator;
+		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
+		{
+			RWLockWrite wlock(data_lod0.map_lock);
+			data_lod0.map.write_box(voxel_box, channel, action,
+					[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
+						if (generator.is_valid()) {
+							VoxelBlockRequest r{ voxels, pos, 0 };
+							generator->generate_block(r);
+						}
+					});
+		}
+		post_edit_area(voxel_box);
 	}
 
 	template <typename F>
 	void write_box_2(const Box3i &p_voxel_box, unsigned int channel1, unsigned int channel2, F action) {
 		const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
-		if (is_area_editable(voxel_box)) {
-			_lods[0].data_map.write_box_2(voxel_box, channel1, channel2, action);
-			post_edit_area(voxel_box);
-		} else {
+		if (_full_load_mode == false && !is_area_editable(voxel_box)) {
 			PRINT_VERBOSE("Area not editable");
+			return;
 		}
+		Ref<VoxelGenerator> generator = _generator;
+		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
+		{
+			RWLockWrite wlock(data_lod0.map_lock);
+			data_lod0.map.write_box_2(voxel_box, channel1, channel2, action,
+					[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
+						if (generator.is_valid()) {
+							VoxelBlockRequest r{ voxels, pos, 0 };
+							generator->generate_block(r);
+						}
+					});
+		}
+		post_edit_area(voxel_box);
 	}
 
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
+
+	// TODO This still sucks atm cuz the edit will still run on the main thread
+	void push_async_edit(IVoxelTask *task, Box3i box, std::shared_ptr<VoxelAsyncDependencyTracker> tracker);
+	void process_async_edits();
+	void abort_async_edits();
 
 	void set_voxel_bounds(Box3i p_box);
 	inline Box3i get_voxel_bounds() const { return _bounds_in_voxels; }
@@ -184,15 +214,30 @@ public:
 	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
 	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
 
+	std::shared_ptr<VoxelDataLodMap> get_storage() const { return _data; }
+
 protected:
 	void _notification(int p_what);
 
 private:
-	void _process(float delta);
-	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
+	struct BlockLocation {
+		Vector3i position;
+		uint8_t lod;
+	};
 
-	void unload_data_block(Vector3i block_pos, int lod_index);
-	void unload_mesh_block(Vector3i block_pos, int lod_index);
+	void _process(float delta);
+	void process_unload_data_blocks_sliding_box(Vector3 p_viewer_pos, std::vector<BlockToSave> &blocks_to_save);
+	void process_unload_mesh_blocks_sliding_box(Vector3 p_viewer_pos);
+	void process_octrees_sliding_box(Vector3 p_viewer_pos);
+	void process_octrees_fitting(Vector3 p_viewer_pos, std::vector<BlockLocation> &data_blocks_to_load);
+	//void process_block_loading_responses();
+	void send_mesh_requests();
+
+	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
+	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);
+
+	void unload_data_block_no_lock(Vector3i block_pos, uint8_t lod_index, std::vector<BlockToSave> &blocks_to_save);
+	void unload_mesh_block(Vector3i block_pos, uint8_t lod_index);
 
 	static inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 		return (data_block_size == 16 || data_block_size == 32) &&
@@ -207,19 +252,24 @@ private:
 	void reset_maps();
 
 	Vector3 get_local_viewer_pos() const;
-	void try_schedule_loading_with_neighbors(const Vector3i &p_data_block_pos, int lod_index);
+	void try_schedule_loading_with_neighbors_no_lock(const Vector3i &p_data_block_pos, uint8_t lod_index,
+			std::vector<BlockLocation> &blocks_to_load);
 	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelDataMap &map) const;
-	bool check_block_loaded_and_meshed(const Vector3i &p_mesh_block_pos, int lod_index);
-	bool check_block_mesh_updated(VoxelMeshBlock *block);
+	bool check_block_loaded_and_meshed(const Vector3i &p_mesh_block_pos, uint8_t lod_index,
+			std::vector<BlockLocation> &blocks_to_load);
+	bool check_block_mesh_updated(VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load);
 	void _set_lod_count(int p_lod_count);
-	void _set_block_size_po2(int p_block_size_po2);
 	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
+
+	std::shared_ptr<VoxelAsyncDependencyTracker> preload_boxes_async(Span<const Box3i> voxel_boxes,
+			Span<IVoxelTask *> next_tasks);
 
 	void _on_stream_params_changed();
 
 	void flush_pending_lod_edits();
 	void save_all_modified_blocks(bool with_copy);
-	void send_block_data_requests();
+	void send_block_data_requests(Span<const BlockLocation> blocks_to_load);
+	void send_block_save_requests(Span<BlockToSave> blocks_to_save);
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
 
@@ -231,7 +281,7 @@ private:
 	void _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
 	AABB _b_get_voxel_bounds() const;
-	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents) const;
+	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents);
 	int _b_debug_get_mesh_block_count() const;
 	int _b_debug_get_data_block_count() const;
 	Error _b_debug_dump_as_scene(String fpath) const;
@@ -264,13 +314,10 @@ private:
 	Ref<VoxelGenerator> _generator;
 	Ref<VoxelMesher> _mesher;
 
-	// TODO Might put this batch into VoxelServer directly instead of here
-	std::vector<BlockToSave> _blocks_to_save;
-
-	VoxelServer::ReceptionBuffers _reception_buffers;
 	uint32_t _volume_id = 0;
 	ProcessMode _process_mode = PROCESS_MODE_IDLE;
 
+	// TODO Get rid of this kind of member, use threadlocal pooling instead
 	// Only populated and then cleared inside _process, so lifetime of pointers should be valid
 	std::vector<VoxelMeshBlock *> _blocks_pending_transition_update;
 
@@ -286,9 +333,26 @@ private:
 
 	VoxelInstancer *_instancer = nullptr;
 
+	struct AsyncEdit {
+		IVoxelTask *task;
+		Box3i box;
+		std::shared_ptr<VoxelAsyncDependencyTracker> task_tracker;
+	};
+
+	std::vector<AsyncEdit> _pending_async_edits;
+
+	struct RunningAsyncEdit {
+		std::shared_ptr<VoxelAsyncDependencyTracker> tracker;
+		Box3i box;
+	};
+	std::vector<RunningAsyncEdit> _running_async_edits;
+
+	// Data stored with a shared pointer so it can be sent to asynchronous tasks
+	std::shared_ptr<VoxelDataLodMap> _data;
+
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
-		VoxelDataMap data_map;
+		// Keeping track of asynchronously loading blocks so we don't try to redundantly load them
 		std::unordered_set<Vector3i> loading_blocks;
 		// Blocks that were edited and need their LOD counterparts to be updated
 		std::vector<Vector3i> blocks_pending_lodding;
@@ -303,9 +367,6 @@ private:
 		Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;
 
-		// Members for memory caching
-		std::vector<Vector3i> blocks_to_load;
-
 		inline bool has_loading_block(const Vector3i &pos) const {
 			return loading_blocks.find(pos) != loading_blocks.end();
 		}
@@ -317,6 +378,7 @@ private:
 	float _lod_distance = 0.f;
 	float _lod_fade_duration = 0.f;
 	unsigned int _view_distance_voxels = 512;
+	bool _full_load_mode = false;
 
 	bool _run_stream_in_editor = true;
 #ifdef TOOLS_ENABLED
@@ -324,6 +386,8 @@ private:
 	bool _show_octree_bounds_gizmos = true;
 	bool _show_volume_bounds_gizmos = true;
 	bool _show_octree_node_gizmos = false;
+	bool _show_edited_blocks = false;
+	unsigned int _edited_blocks_gizmos_lod_index = 0;
 	VoxelDebug::DebugRenderer _debug_renderer;
 #endif
 
