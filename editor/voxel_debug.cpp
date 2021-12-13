@@ -37,8 +37,16 @@ Ref<Mesh> get_wirecube(ColorID id) {
 	Ref<Mesh> &wirecube = g_wirecubes[id];
 
 	if (wirecube.is_null()) {
-		const Vector3 positions_raw[] = { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(1, 0, 1), Vector3(0, 0, 1),
-			Vector3(0, 1, 0), Vector3(1, 1, 0), Vector3(1, 1, 1), Vector3(0, 1, 1) };
+		const Vector3 positions_raw[] = {
+			Vector3(0, 0, 0), //
+			Vector3(1, 0, 0), //
+			Vector3(1, 0, 1), //
+			Vector3(0, 0, 1), //
+			Vector3(0, 1, 0), //
+			Vector3(1, 1, 0), //
+			Vector3(1, 1, 1), //
+			Vector3(0, 1, 1) //
+		};
 		PackedVector3Array positions;
 		raw_copy_to(positions, positions_raw, 8);
 
@@ -49,11 +57,22 @@ Ref<Mesh> get_wirecube(ColorID id) {
 			colors.write[i] = white;
 		}
 
-		const int indices_raw[] = { 0, 1, 1, 2, 2, 3, 3, 0,
+		const int indices_raw[] = {
+			0, 1, //
+			1, 2, //
+			2, 3, //
+			3, 0, //
 
-			4, 5, 5, 6, 6, 7, 7, 4,
+			4, 5, //
+			5, 6, //
+			6, 7, //
+			7, 4, //
 
-			0, 4, 1, 5, 2, 6, 3, 7 };
+			0, 4, //
+			1, 5, //
+			2, 6, //
+			3, 7 //
+		};
 		PackedInt32Array indices;
 		raw_copy_to(indices, indices_raw, 24);
 
