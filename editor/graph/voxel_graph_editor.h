@@ -51,7 +51,7 @@ private:
 	void _on_graph_edit_disconnection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
 	void _on_graph_edit_delete_nodes_request();
 	void _on_graph_edit_node_selected(Node *p_node);
-	void _on_graph_edit_node_unselected(Node *p_node);
+	void _on_graph_edit_node_deselected(Node *p_node);
 	void _on_graph_node_dragged(Vector2 from, Vector2 to, int id);
 	void _on_context_menu_id_pressed(int id);
 	void _on_update_previews_button_pressed();

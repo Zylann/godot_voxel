@@ -207,7 +207,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	_graph_edit->connect(
 			"disconnection_request", callable_mp(this, &VoxelGraphEditor::_on_graph_edit_disconnection_request));
 	_graph_edit->connect("node_selected", callable_mp(this, &VoxelGraphEditor::_on_graph_edit_node_selected));
-	_graph_edit->connect("node_unselected", callable_mp(this, &VoxelGraphEditor::_on_graph_edit_node_unselected));
+	_graph_edit->connect("node_deselected", callable_mp(this, &VoxelGraphEditor::_on_graph_edit_node_deselected));
 	vbox_container->add_child(_graph_edit);
 
 	add_child(vbox_container);
@@ -668,7 +668,7 @@ void VoxelGraphEditor::_on_graph_edit_node_selected(Node *p_node) {
 	emit_signal(SIGNAL_NODE_SELECTED, node->node_id);
 }
 
-void VoxelGraphEditor::_on_graph_edit_node_unselected(Node *p_node) {
+void VoxelGraphEditor::_on_graph_edit_node_deselected(Node *p_node) {
 	// Just checking if nothing is selected _now_ is unreliable, because the user could have just selected another
 	// node, and I don't know when `GraphEdit` will update the `selected` flags in the current call stack.
 	// GraphEdit doesn't have an API giving us enough context to guess that, so have to rely on dirty workaround.
