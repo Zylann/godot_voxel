@@ -2,7 +2,7 @@
 #define HEADER_VOXEL_GENERATOR_IMAGE
 
 #include "voxel_generator_heightmap.h"
-#include <core/image.h>
+#include <core/io/image.h>
 
 // Provides infinite tiling heightmap based on an image
 class VoxelGeneratorImage : public VoxelGeneratorHeightmap {

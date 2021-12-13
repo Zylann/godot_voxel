@@ -17,27 +17,6 @@
 //#define VOXEL_DEBUG_GRAPH_PROG_SENTINEL uint16_t(12345) // 48, 57 (base 10)
 //#endif
 
-// The Image lock() API prevents us from reading the same image in multiple threads.
-// Compiling makes a read-only copy of all resources, so we can lock all images up-front if successful.
-// This might no longer needed in Godot 4.
-void VoxelGraphRuntime::Program::lock_images() {
-	for (size_t i = 0; i < ref_resources.size(); ++i) {
-		Ref<Image> im = ref_resources[i];
-		if (im.is_valid()) {
-			im->lock();
-		}
-	}
-}
-
-void VoxelGraphRuntime::Program::unlock_images() {
-	for (size_t i = 0; i < ref_resources.size(); ++i) {
-		Ref<Image> im = ref_resources[i];
-		if (im.is_valid()) {
-			im->unlock();
-		}
-	}
-}
-
 VoxelGraphRuntime::VoxelGraphRuntime() {
 	clear();
 }
@@ -398,8 +377,6 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 						  .format(varray(
 								  SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(uint16_t)),
 								  SIZE_T_TO_VARIANT(_program.buffer_count))));
-
-	_program.lock_images();
 
 	CompilationResult result;
 	result.success = true;
@@ -787,13 +764,9 @@ void VoxelGraphRuntime::generate_set(State &state,
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	Span<const uint16_t> op_adresses = execution_map != nullptr ?
-											   to_span_const(execution_map->operation_adresses) :
-											   to_span_const(_program.default_execution_map.operation_adresses);
+	Span<const uint16_t> op_adresses = execution_map != nullptr ? to_span_const(execution_map->operation_adresses) : to_span_const(_program.default_execution_map.operation_adresses);
 	if (skip_xz && op_adresses.size() > 0) {
-		const unsigned int offset = execution_map != nullptr ?
-											execution_map->xzy_start_index :
-											_program.default_execution_map.xzy_start_index;
+		const unsigned int offset = execution_map != nullptr ? execution_map->xzy_start_index : _program.default_execution_map.xzy_start_index;
 		op_adresses = op_adresses.sub(offset);
 	}
 

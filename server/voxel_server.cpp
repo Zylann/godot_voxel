@@ -8,7 +8,7 @@
 #include "voxel_async_dependency_tracker.h"
 
 #include <core/os/memory.h>
-#include <scene/main/viewport.h>
+#include <scene/main/window.h> // Needed for doing `Node *root = SceneTree::get_root()`, Window* is forward-declared
 #include <thread>
 
 namespace {
@@ -97,7 +97,7 @@ VoxelServer::VoxelServer() {
 
 	GLOBAL_DEF_RST("voxel/threads/count/ratio_over_max", 0.5f);
 	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/ratio_over_max",
-			PropertyInfo(Variant::REAL, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1"));
+			PropertyInfo(Variant::FLOAT, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1"));
 
 	GLOBAL_DEF_RST("voxel/threads/main/time_budget_ms", 8);
 	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/main/time_budget_ms",
@@ -225,7 +225,7 @@ uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks, VolumeType type) {
 	return _world.volumes.create(volume);
 }
 
-void VoxelServer::set_volume_transform(uint32_t volume_id, Transform t) {
+void VoxelServer::set_volume_transform(uint32_t volume_id, Transform3D t) {
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.transform = t;
 }
@@ -303,15 +303,15 @@ void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 }
 
 static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
-	return (pos << lod) * bs + Vector3i(bs / 2);
+	return (pos << lod) * bs + Vector3iUtil::create(bs / 2);
 }
 
-void VoxelServer::init_priority_dependency(
-		VoxelServer::PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size) {
+void VoxelServer::init_priority_dependency(VoxelServer::PriorityDependency &dep, Vector3i block_position, uint8_t lod,
+		const Volume &volume, int block_size) {
 	const Vector3i voxel_pos = get_block_center(block_position, block_size, lod);
 	const float block_radius = (block_size << lod) / 2;
 	dep.shared = _world.shared_priority_dependency;
-	dep.world_position = volume.transform.xform(voxel_pos.to_vec3());
+	dep.world_position = volume.transform.xform(voxel_pos);
 	const float transformed_block_radius =
 			volume.transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
 
@@ -327,9 +327,8 @@ void VoxelServer::init_priority_dependency(
 		case VOLUME_SPARSE_OCTREE:
 			// Distance beyond which it is safe to drop a block without risking to block LOD subdivision.
 			// This does not depend on viewer's view distance, but on LOD precision instead.
-			dep.drop_distance_squared =
-					squared(2.f * transformed_block_radius *
-							get_octree_lod_block_region_extent(volume.octree_lod_distance, block_size));
+			dep.drop_distance_squared = squared(2.f * transformed_block_radius *
+					get_octree_lod_block_region_extent(volume.octree_lod_distance, block_size));
 			break;
 
 		default:
@@ -395,8 +394,8 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 	}
 }
 
-void VoxelServer::request_block_generate(uint32_t volume_id, Vector3i block_pos, int lod,
-		std::shared_ptr<VoxelAsyncDependencyTracker> tracker) {
+void VoxelServer::request_block_generate(
+		uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<VoxelAsyncDependencyTracker> tracker) {
 	//
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
@@ -428,8 +427,8 @@ void VoxelServer::request_all_stream_blocks(uint32_t volume_id) {
 	_general_thread_pool.enqueue(r);
 }
 
-void VoxelServer::request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels,
-		Vector3i block_pos, int lod) {
+void VoxelServer::request_voxel_block_save(
+		uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos, int lod) {
 	//
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
@@ -451,8 +450,8 @@ void VoxelServer::request_voxel_block_save(uint32_t volume_id, std::shared_ptr<V
 	_streaming_thread_pool.enqueue(r);
 }
 
-void VoxelServer::request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
-		Vector3i block_pos, int lod) {
+void VoxelServer::request_instance_block_save(
+		uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances, Vector3i block_pos, int lod) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
@@ -491,8 +490,8 @@ void VoxelServer::request_block_generate_from_data_request(BlockDataRequest &src
 void VoxelServer::request_block_save_from_generate_request(BlockGenerateRequest &src) {
 	// This can be called from another thread
 
-	PRINT_VERBOSE(String("Requesting save of generator output for block {0} lod {1}")
-						  .format(varray(src.position.to_vec3(), src.lod)));
+	PRINT_VERBOSE(
+			String("Requesting save of generator output for block {0} lod {1}").format(varray(src.position, src.lod)));
 
 	BlockDataRequest *r = memnew(BlockDataRequest());
 	// TODO Optimization: `r->voxels` doesnt actually need to be shared
@@ -765,8 +764,7 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 				instance_data_request.lod = lod;
 				instance_data_request.position = position;
 				VoxelStream::Result instances_result;
-				stream->load_instance_blocks(
-						Span<VoxelStreamInstanceDataRequest>(&instance_data_request, 1),
+				stream->load_instance_blocks(Span<VoxelStreamInstanceDataRequest>(&instance_data_request, 1),
 						Span<VoxelStream::Result>(&instances_result, 1));
 
 				if (instances_result == VoxelStream::RESULT_ERROR) {
@@ -786,7 +784,8 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 				VoxelBufferInternal voxels_copy;
 				{
 					RWLockRead lock(voxels->get_lock());
-					// TODO Optimization: is that copy necessary? It's possible it was already done while issuing the request
+					// TODO Optimization: is that copy necessary? It's possible it was already done while issuing the
+					// request
 					voxels->duplicate_to(voxels_copy, true);
 				}
 				voxels = nullptr;
@@ -800,7 +799,7 @@ void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
 				// this should not be null.
 
 				PRINT_VERBOSE(String("Saving instance block {0} lod {1} with data {2}")
-									  .format(varray(position.to_vec3(), lod, ptr2s(instances.get()))));
+									  .format(varray(position, lod, ptr2s(instances.get()))));
 
 				VoxelStreamInstanceDataRequest instance_data_request;
 				instance_data_request.lod = lod;
@@ -873,11 +872,9 @@ void VoxelServer::BlockDataRequest::apply_result() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VoxelServer::AllBlocksDataRequest::AllBlocksDataRequest() {
-}
+VoxelServer::AllBlocksDataRequest::AllBlocksDataRequest() {}
 
-VoxelServer::AllBlocksDataRequest::~AllBlocksDataRequest() {
-}
+VoxelServer::AllBlocksDataRequest::~AllBlocksDataRequest() {}
 
 void VoxelServer::AllBlocksDataRequest::run(VoxelTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
@@ -1059,7 +1056,8 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 	std::shared_ptr<VoxelBufferInternal> &central_buffer = blocks[anchor_buffer_index];
 	ERR_FAIL_COND_MSG(central_buffer == nullptr && generator.is_null(), "Central buffer must be valid");
 	if (central_buffer != nullptr) {
-		ERR_FAIL_COND_MSG(central_buffer->get_size().all_members_equal() == false, "Central buffer must be cubic");
+		ERR_FAIL_COND_MSG(
+				Vector3iUtil::all_members_equal(central_buffer->get_size()) == false, "Central buffer must be cubic");
 	}
 	const int mesh_block_size = data_block_size * mesh_block_size_factor;
 	const int padded_mesh_block_size = mesh_block_size + min_padding + max_padding;
@@ -1071,8 +1069,8 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 	// 	dst.set_channel_depth(ci, central_buffer->get_channel_depth(ci));
 	// }
 
-	const Vector3i min_pos = -Vector3i(min_padding);
-	const Vector3i max_pos = Vector3i(mesh_block_size + max_padding);
+	const Vector3i min_pos = -Vector3iUtil::create(min_padding);
+	const Vector3i max_pos = Vector3iUtil::create(mesh_block_size + max_padding);
 
 	std::vector<Box3i> boxes_to_generate;
 	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
@@ -1109,7 +1107,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 					// but is it just better to do it anyways for every clipped box?
 					VOXEL_PROFILE_SCOPE_NAMED("Box subtract");
 					unsigned int count = boxes_to_generate.size();
-					Box3i block_box = Box3i(offset, Vector3i(data_block_size)).clipped(mesh_data_box);
+					Box3i block_box = Box3i(offset, Vector3iUtil::create(data_block_size)).clipped(mesh_data_box);
 
 					for (unsigned int box_index = 0; box_index < count; ++box_index) {
 						Box3i box = boxes_to_generate[box_index];
@@ -1136,13 +1134,14 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 			const Box3i &box = boxes_to_generate[i];
 			//print_line(String("size={0}").format(varray(box.size.to_vec3())));
 			generated_voxels.create(box.size);
-			//generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2, VoxelBufferInternal::CHANNEL_SDF);
+			//generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
+			//VoxelBufferInternal::CHANNEL_SDF);
 			VoxelBlockRequest r{ generated_voxels, (box.pos << lod_index) + origin_in_voxels, lod_index };
 			generator->generate_block(r);
 
 			for (unsigned int ci = 0; ci < channels_count; ++ci) {
 				dst.copy_from(generated_voxels, Vector3i(), generated_voxels.get_size(),
-						box.pos + Vector3i(min_padding), channels[ci]);
+						box.pos + Vector3iUtil::create(min_padding), channels[ci]);
 			}
 		}
 	}
@@ -1167,9 +1166,8 @@ void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
 
 	// TODO Cache?
 	VoxelBufferInternal voxels;
-	copy_block_and_neighbors(to_span(blocks, blocks_count),
-			voxels, min_padding, max_padding, mesher->get_used_channels_mask(),
-			meshing_dependency->generator, data_block_size, lod, position);
+	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
+			mesher->get_used_channels_mask(), meshing_dependency->generator, data_block_size, lod, position);
 
 	const VoxelMesher::Input input = { voxels, lod };
 	mesher->build(surfaces_output, input);
@@ -1243,7 +1241,7 @@ void VoxelServerUpdater::ensure_existence(SceneTree *st) {
 	if (g_updater_created) {
 		return;
 	}
-	Viewport *root = st->get_root();
+	Node *root = st->get_root();
 	for (int i = 0; i < root->get_child_count(); ++i) {
 		VoxelServerUpdater *u = Object::cast_to<VoxelServerUpdater>(root->get_child(i));
 		if (u != nullptr) {

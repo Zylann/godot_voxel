@@ -24,14 +24,13 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 
 	VOXEL_PROFILE_SCOPE();
 
-	Box3i box(Vector3i::from_floored(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	Box3i box(Vector3iUtil::from_floored(center) - Vector3iUtil::create(Math::floor(radius)),
+			Vector3iUtil::create(Math::ceil(radius) * 2));
 	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
 
 	_buffer->get_buffer().write_box_2_template<VoxelToolOps::TextureBlendSphereOp, uint16_t, uint16_t>(box,
-			VoxelBufferInternal::CHANNEL_INDICES,
-			VoxelBufferInternal::CHANNEL_WEIGHTS,
-			VoxelToolOps::TextureBlendSphereOp(center, radius, _texture_params),
-			Vector3i());
+			VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
+			VoxelToolOps::TextureBlendSphereOp(center, radius, _texture_params), Vector3i());
 
 	_post_edit(box);
 }
@@ -71,8 +70,8 @@ Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) const {
 	return _buffer->get_buffer().get_voxel_metadata(pos);
 }
 
-void VoxelToolBuffer::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
-		uint64_t mask_value) {
+void VoxelToolBuffer::paste(
+		Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
 	// TODO Support `use_mask` properly
 	if (use_mask) {
 		mask_value = 0xffffffffffffffff;

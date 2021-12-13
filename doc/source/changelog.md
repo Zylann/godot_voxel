@@ -17,7 +17,7 @@ Ongoing development
 
 - Fixes
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
-    - `Voxel`: properties were not refreshed when changing `geometry_type`
+    - `Voxel`: properties of the inspector were not refreshed when changing `geometry_type`
 
 
 06/11/2021 - `godot3.4`

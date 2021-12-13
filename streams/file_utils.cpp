@@ -23,7 +23,8 @@ const char *to_string(VoxelFileResult res) {
 	}
 }
 
-VoxelFileResult check_magic_and_version(FileAccess *f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version) {
+VoxelFileResult check_magic_and_version(
+		FileAccess *f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version) {
 	uint8_t magic[5] = { '\0' };
 	int count = f->get_buffer(magic, 4);
 	if (count != 4) {
@@ -77,7 +78,7 @@ void insert_bytes(FileAccess *f, size_t count, size_t temp_chunk_size) {
 	CRASH_COND(f == nullptr);
 	CRASH_COND(temp_chunk_size == 0);
 
-	const size_t prev_file_len = f->get_len();
+	const size_t prev_file_len = f->get_length();
 	const size_t insert_pos = f->get_position();
 
 	// Make the file larger
@@ -90,7 +91,7 @@ void insert_bytes(FileAccess *f, size_t count, size_t temp_chunk_size) {
 	size_t bytes_to_move = initial_bytes_to_move;
 	std::vector<uint8_t> temp;
 	size_t src_pos = prev_file_len;
-	size_t dst_pos = f->get_len();
+	size_t dst_pos = f->get_length();
 
 	// Copy chunks of the file at a later position, from last to first.
 	// The last copied chunk can be smaller.

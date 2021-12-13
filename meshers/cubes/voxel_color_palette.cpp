@@ -19,26 +19,20 @@ Color VoxelColorPalette::get_color(int index) const {
 	return _colors[index];
 }
 
-PoolColorArray VoxelColorPalette::get_colors() const {
-	PoolColorArray colors;
+PackedColorArray VoxelColorPalette::get_colors() const {
+	PackedColorArray colors;
 	colors.resize(_colors.size());
-	{
-		PoolColorArray::Write w = colors.write();
-		for (unsigned int i = 0; i < _colors.size(); ++i) {
-			w[i] = _colors[i];
-		}
+	for (unsigned int i = 0; i < _colors.size(); ++i) {
+		colors.write[i] = _colors[i];
 	}
 	return colors;
 }
 
-void VoxelColorPalette::set_colors(PoolColorArray colors) {
+void VoxelColorPalette::set_colors(PackedColorArray colors) {
 	// Color count is fixed, but we can't easily prevent Godot from allowing users to set a dynamic array
 	ERR_FAIL_COND(colors.size() != static_cast<int>(_colors.size()));
-	{
-		PoolColorArray::Read r = colors.read();
-		for (unsigned int i = 0; i < _colors.size(); ++i) {
-			_colors[i] = Color8(r[i]);
-		}
+	for (unsigned int i = 0; i < _colors.size(); ++i) {
+		_colors[i] = Color8(colors[i]);
 	}
 }
 
@@ -48,23 +42,19 @@ void VoxelColorPalette::clear() {
 	}
 }
 
-PoolIntArray VoxelColorPalette::_b_get_data() const {
-	PoolIntArray colors;
+PackedInt32Array VoxelColorPalette::_b_get_data() const {
+	PackedInt32Array colors;
 	colors.resize(_colors.size());
-	{
-		PoolIntArray::Write w = colors.write();
-		for (size_t i = 0; i < _colors.size(); ++i) {
-			w[i] = _colors[i].to_u32();
-		}
+	for (size_t i = 0; i < _colors.size(); ++i) {
+		colors.write[i] = _colors[i].to_u32();
 	}
 	return colors;
 }
 
-void VoxelColorPalette::_b_set_data(PoolIntArray colors) {
+void VoxelColorPalette::_b_set_data(PackedInt32Array colors) {
 	ERR_FAIL_COND(colors.size() > static_cast<int>(_colors.size()));
-	PoolIntArray::Read r = colors.read();
 	for (int i = 0; i < colors.size(); ++i) {
-		_colors[i] = Color8::from_u32(r[i]);
+		_colors[i] = Color8::from_u32(colors[i]);
 	}
 }
 
@@ -79,10 +69,10 @@ void VoxelColorPalette::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_data"), &VoxelColorPalette::_b_get_data);
 
 	// This is just to allow editing colors in the editor
-	ADD_PROPERTY(PropertyInfo(Variant::POOL_COLOR_ARRAY, "colors", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_COLOR_ARRAY, "colors", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
 			"set_colors", "get_colors");
 
-	ADD_PROPERTY(PropertyInfo(Variant::POOL_INT_ARRAY, "data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
 			"set_data", "get_data");
 
 	BIND_CONSTANT(MAX_COLORS);

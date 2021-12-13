@@ -26,10 +26,8 @@ struct BlockLocation {
 
 	uint64_t encode() const {
 		// 0l xx yy zz
-		return ((static_cast<uint64_t>(lod) & 0xffff) << 48) |
-				((static_cast<uint64_t>(x) & 0xffff) << 32) |
-				((static_cast<uint64_t>(y) & 0xffff) << 16) |
-				(static_cast<uint64_t>(z) & 0xffff);
+		return ((static_cast<uint64_t>(lod) & 0xffff) << 48) | ((static_cast<uint64_t>(x) & 0xffff) << 32) |
+				((static_cast<uint64_t>(y) & 0xffff) << 16) | (static_cast<uint64_t>(z) & 0xffff);
 	}
 
 	static BlockLocation decode(uint64_t id) {
@@ -61,10 +59,7 @@ public:
 		FixedArray<Channel, VoxelBuffer::MAX_CHANNELS> channels;
 	};
 
-	enum BlockType {
-		VOXELS,
-		INSTANCES
-	};
+	enum BlockType { VOXELS, INSTANCES };
 
 	VoxelStreamSQLiteInternal();
 	~VoxelStreamSQLiteInternal();
@@ -72,7 +67,9 @@ public:
 	bool open(const char *fpath);
 	void close();
 
-	bool is_open() const { return _db != nullptr; }
+	bool is_open() const {
+		return _db != nullptr;
+	}
 
 	// Returns the file path from SQLite
 	const char *get_file_path() const;
@@ -90,10 +87,7 @@ public:
 	VoxelStream::Result load_block(BlockLocation loc, std::vector<uint8_t> &out_block_data, BlockType type);
 
 	bool load_all_blocks(void *callback_data,
-			void (*process_block_func)(
-					void *callback_data,
-					BlockLocation location,
-					Span<const uint8_t> voxel_data,
+			void (*process_block_func)(void *callback_data, BlockLocation location, Span<const uint8_t> voxel_data,
 					Span<const uint8_t> instances_data));
 
 	Meta load_meta();
@@ -102,8 +96,7 @@ public:
 private:
 	struct TransactionScope {
 		VoxelStreamSQLiteInternal &db;
-		TransactionScope(VoxelStreamSQLiteInternal &p_db) :
-				db(p_db) {
+		TransactionScope(VoxelStreamSQLiteInternal &p_db) : db(p_db) {
 			db.begin_transaction();
 		}
 		~TransactionScope() {
@@ -142,8 +135,7 @@ private:
 	sqlite3_stmt *_load_all_blocks_statement = nullptr;
 };
 
-VoxelStreamSQLiteInternal::VoxelStreamSQLiteInternal() {
-}
+VoxelStreamSQLiteInternal::VoxelStreamSQLiteInternal() {}
 
 VoxelStreamSQLiteInternal::~VoxelStreamSQLiteInternal() {
 	close();
@@ -164,11 +156,9 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 	char *error_message = nullptr;
 
 	// Create tables if they dont exist
-	const char *tables[3] = {
-		"CREATE TABLE IF NOT EXISTS meta (version INTEGER, block_size_po2 INTEGER)",
+	const char *tables[3] = { "CREATE TABLE IF NOT EXISTS meta (version INTEGER, block_size_po2 INTEGER)",
 		"CREATE TABLE IF NOT EXISTS blocks (loc INTEGER PRIMARY KEY, vb BLOB, instances BLOB)",
-		"CREATE TABLE IF NOT EXISTS channels (idx INTEGER PRIMARY KEY, depth INTEGER)"
-	};
+		"CREATE TABLE IF NOT EXISTS channels (idx INTEGER PRIMARY KEY, depth INTEGER)" };
 	for (size_t i = 0; i < 3; ++i) {
 		rc = sqlite3_exec(db, tables[i], nullptr, nullptr, &error_message);
 		if (rc != SQLITE_OK) {
@@ -404,10 +394,7 @@ VoxelStream::Result VoxelStreamSQLiteInternal::load_block(
 }
 
 bool VoxelStreamSQLiteInternal::load_all_blocks(void *callback_data,
-		void (*process_block_func)(
-				void *callback_data,
-				BlockLocation location,
-				Span<const uint8_t> voxel_data,
+		void (*process_block_func)(void *callback_data, BlockLocation location, Span<const uint8_t> voxel_data,
 				Span<const uint8_t> instances_data)) {
 	VOXEL_PROFILE_SCOPE();
 	CRASH_COND(process_block_func == nullptr);
@@ -589,12 +576,11 @@ thread_local VoxelBlockSerializerInternal VoxelStreamSQLite::_voxel_block_serial
 thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_block_data;
 thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_compressed_block_data;
 
-VoxelStreamSQLite::VoxelStreamSQLite() {
-}
+VoxelStreamSQLite::VoxelStreamSQLite() {}
 
 VoxelStreamSQLite::~VoxelStreamSQLite() {
 	PRINT_VERBOSE("~VoxelStreamSQLite");
-	if (!_connection_path.empty() && _cache.get_indicative_block_count() > 0) {
+	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
 		PRINT_VERBOSE("~VoxelStreamSQLite flushy flushy");
 		flush_cache();
 		PRINT_VERBOSE("~VoxelStreamSQLite flushy done");
@@ -611,7 +597,7 @@ void VoxelStreamSQLite::set_database_path(String path) {
 	if (path == _connection_path) {
 		return;
 	}
-	if (!_connection_path.empty() && _cache.get_indicative_block_count() > 0) {
+	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
 		// Save cached data before changing the path.
 		// Not using get_connection() because it locks.
 		VoxelStreamSQLiteInternal con;
@@ -636,7 +622,8 @@ String VoxelStreamSQLite::get_database_path() const {
 	return _connection_path;
 }
 
-VoxelStream::Result VoxelStreamSQLite::emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStream::Result VoxelStreamSQLite::emerge_block(
+		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	VoxelBlockRequest r{ out_buffer, origin_in_voxels, lod };
 	Vector<Result> results;
 	emerge_blocks(Span<VoxelBlockRequest>(&r, 1), results);
@@ -721,7 +708,7 @@ void VoxelStreamSQLite::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
 		const Vector3i pos = r.origin_in_voxels >> (bs_po2 + r.lod);
 
 		if (!BlockLocation::validate(pos, r.lod)) {
-			ERR_PRINT(String("Block position {0} is outside of supported range").format(varray(pos.to_vec3())));
+			ERR_PRINT(String("Block position {0} is outside of supported range").format(varray(pos)));
 			continue;
 		}
 
@@ -947,7 +934,7 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 
 VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 	_connection_mutex.lock();
-	if (_connection_path.empty()) {
+	if (_connection_path.is_empty()) {
 		_connection_mutex.unlock();
 		return nullptr;
 	}
@@ -960,7 +947,7 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 	String fpath = _connection_path;
 	_connection_mutex.unlock();
 
-	if (fpath.empty()) {
+	if (fpath.is_empty()) {
 		return nullptr;
 	}
 	VoxelStreamSQLiteInternal *con = new VoxelStreamSQLiteInternal();
@@ -989,6 +976,6 @@ void VoxelStreamSQLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_database_path", "path"), &VoxelStreamSQLite::set_database_path);
 	ClassDB::bind_method(D_METHOD("get_database_path"), &VoxelStreamSQLite::get_database_path);
 
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_FILE),
-			"set_database_path", "get_database_path");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_FILE), "set_database_path",
+			"get_database_path");
 }

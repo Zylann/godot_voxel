@@ -6,7 +6,7 @@
 #include "../../util/span.h"
 #include "program_graph.h"
 
-#include <core/reference.h>
+#include <core/object/ref_counted.h>
 
 // CPU VM to execute a voxel graph generator.
 // This is a more generic class implementing the core of a 3D expression processing system.
@@ -435,7 +435,7 @@ private:
 
 		// Heap-allocated parameters data, when too large to fit in `operations`.
 		// We keep a reference to them so they won't be freed until the program is cleared.
-		std::vector<Ref<Reference>> ref_resources;
+		std::vector<Ref<RefCounted>> ref_resources;
 
 		// Describes the list of buffers to prepare in `State` before the program can be run
 		std::vector<BufferSpec> buffer_specs;
@@ -489,13 +489,9 @@ private:
 				r.deleter(r.ptr);
 			}
 			heap_resources.clear();
-			unlock_images();
 			ref_resources.clear();
 			buffer_count = 0;
 		}
-
-		void lock_images();
-		void unlock_images();
 	};
 
 	Program _program;

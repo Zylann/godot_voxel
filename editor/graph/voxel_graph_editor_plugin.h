@@ -23,7 +23,7 @@ private:
 	static void _bind_methods();
 
 	VoxelGraphEditor *_graph_editor = nullptr;
-	ToolButton *_bottom_panel_button = nullptr;
+	Button *_bottom_panel_button = nullptr;
 	bool _deferred_visibility_scheduled = false;
 };
 

@@ -2,8 +2,7 @@
 #include "../edition/voxel_tool_buffer.h"
 #include "../util/godot/funcs.h"
 
-#include <core/func_ref.h>
-#include <core/image.h>
+#include <core/io/image.h>
 
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
 
@@ -16,8 +15,7 @@ VoxelBuffer::VoxelBuffer(std::shared_ptr<VoxelBufferInternal> &other) {
 	_buffer = other;
 }
 
-VoxelBuffer::~VoxelBuffer() {
-}
+VoxelBuffer::~VoxelBuffer() {}
 
 void VoxelBuffer::clear() {
 	_buffer->clear();
@@ -36,13 +34,10 @@ void VoxelBuffer::copy_channel_from(Ref<VoxelBuffer> other, unsigned int channel
 	_buffer->copy_from(other->get_buffer(), channel);
 }
 
-void VoxelBuffer::copy_channel_from_area(Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min,
-		unsigned int channel) {
+void VoxelBuffer::copy_channel_from_area(
+		Ref<VoxelBuffer> other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel) {
 	ERR_FAIL_COND(other.is_null());
-	_buffer->copy_from(other->get_buffer(),
-			Vector3i::from_floored(src_min),
-			Vector3i::from_floored(src_max),
-			Vector3i::from_floored(dst_min), channel);
+	_buffer->copy_from(other->get_buffer(), src_min, src_max, dst_min, channel);
 }
 
 void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
@@ -69,17 +64,14 @@ VoxelBuffer::Compression VoxelBuffer::get_channel_compression(unsigned int chann
 	return VoxelBuffer::Compression(_buffer->get_channel_compression(channel_index));
 }
 
-void VoxelBuffer::downscale_to(Ref<VoxelBuffer> dst, Vector3 src_min, Vector3 src_max, Vector3 dst_min) const {
+void VoxelBuffer::downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const {
 	ERR_FAIL_COND(dst.is_null());
-	_buffer->downscale_to(dst->get_buffer(),
-			Vector3i::from_floored(src_min),
-			Vector3i::from_floored(src_max),
-			Vector3i::from_floored(dst_min));
+	_buffer->downscale_to(dst->get_buffer(), src_min, src_max, dst_min);
 }
 
 Ref<VoxelBuffer> VoxelBuffer::duplicate(bool include_metadata) const {
 	Ref<VoxelBuffer> d;
-	d.instance();
+	d.instantiate();
 	_buffer->duplicate_to(d->get_buffer(), include_metadata);
 	return d;
 }
@@ -103,29 +95,25 @@ void VoxelBuffer::set_block_metadata(Variant meta) {
 	_buffer->set_block_metadata(meta);
 }
 
-void VoxelBuffer::for_each_voxel_metadata(Ref<FuncRef> callback) const {
+void VoxelBuffer::for_each_voxel_metadata(const Callable &callback) const {
 	ERR_FAIL_COND(callback.is_null());
 	_buffer->for_each_voxel_metadata(callback);
 }
 
-void VoxelBuffer::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Vector3 min_pos, Vector3 max_pos) {
+void VoxelBuffer::for_each_voxel_metadata_in_area(const Callable &callback, Vector3i min_pos, Vector3i max_pos) {
 	ERR_FAIL_COND(callback.is_null());
-	_buffer->for_each_voxel_metadata_in_area(callback,
-			Box3i::from_min_max(Vector3i::from_floored(min_pos), Vector3i::from_floored(max_pos)));
+	_buffer->for_each_voxel_metadata_in_area(callback, Box3i::from_min_max(min_pos, max_pos));
 }
 
-void VoxelBuffer::copy_voxel_metadata_in_area(Ref<VoxelBuffer> src_buffer, Vector3 src_min_pos, Vector3 src_max_pos,
-		Vector3 dst_pos) {
+void VoxelBuffer::copy_voxel_metadata_in_area(
+		Ref<VoxelBuffer> src_buffer, Vector3i src_min_pos, Vector3i src_max_pos, Vector3i dst_pos) {
 	ERR_FAIL_COND(src_buffer.is_null());
 	_buffer->copy_voxel_metadata_in_area(
-			src_buffer->get_buffer(),
-			Box3i::from_min_max(Vector3i::from_floored(src_min_pos), Vector3i::from_floored(src_max_pos)),
-			Vector3i::from_floored(dst_pos));
+			src_buffer->get_buffer(), Box3i::from_min_max(src_min_pos, src_max_pos), dst_pos);
 }
 
-void VoxelBuffer::clear_voxel_metadata_in_area(Vector3 min_pos, Vector3 max_pos) {
-	_buffer->clear_voxel_metadata_in_area(
-			Box3i::from_min_max(Vector3i::from_floored(min_pos), Vector3i::from_floored(max_pos)));
+void VoxelBuffer::clear_voxel_metadata_in_area(Vector3i min_pos, Vector3i max_pos) {
+	_buffer->clear_voxel_metadata_in_area(Box3i::from_min_max(min_pos, max_pos));
 }
 
 void VoxelBuffer::clear_voxel_metadata() {
@@ -145,10 +133,9 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_size_y"), &VoxelBuffer::get_size_y);
 	ClassDB::bind_method(D_METHOD("get_size_z"), &VoxelBuffer::get_size_z);
 
-	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "channel"),
-			&VoxelBuffer::set_voxel, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("set_voxel_f", "value", "x", "y", "z", "channel"),
-			&VoxelBuffer::set_voxel_f, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_voxel", "value", "x", "y", "z", "channel"), &VoxelBuffer::set_voxel, DEFVAL(0));
+	ClassDB::bind_method(
+			D_METHOD("set_voxel_f", "value", "x", "y", "z", "channel"), &VoxelBuffer::set_voxel_f, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::set_voxel_v, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel_f, DEFVAL(0));
@@ -159,13 +146,11 @@ void VoxelBuffer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("fill", "value", "channel"), &VoxelBuffer::fill, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("fill_f", "value", "channel"), &VoxelBuffer::fill_f, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("fill_area", "value", "min", "max", "channel"),
-			&VoxelBuffer::fill_area, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("fill_area", "value", "min", "max", "channel"), &VoxelBuffer::fill_area, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("copy_channel_from", "other", "channel"), &VoxelBuffer::copy_channel_from);
 	ClassDB::bind_method(D_METHOD("copy_channel_from_area", "other", "src_min", "src_max", "dst_min", "channel"),
 			&VoxelBuffer::copy_channel_from_area);
-	ClassDB::bind_method(D_METHOD("downscale_to", "dst", "src_min", "src_max", "dst_min"),
-			&VoxelBuffer::downscale_to);
+	ClassDB::bind_method(D_METHOD("downscale_to", "dst", "src_min", "src_max", "dst_min"), &VoxelBuffer::downscale_to);
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);
 	// TODO Rename `compress_uniform_channels`
@@ -180,8 +165,8 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("for_each_voxel_metadata_in_area", "callback", "min_pos", "max_pos"),
 			&VoxelBuffer::for_each_voxel_metadata_in_area);
 	ClassDB::bind_method(D_METHOD("clear_voxel_metadata"), &VoxelBuffer::clear_voxel_metadata);
-	ClassDB::bind_method(D_METHOD("clear_voxel_metadata_in_area", "min_pos", "max_pos"),
-			&VoxelBuffer::clear_voxel_metadata_in_area);
+	ClassDB::bind_method(
+			D_METHOD("clear_voxel_metadata_in_area", "min_pos", "max_pos"), &VoxelBuffer::clear_voxel_metadata_in_area);
 	ClassDB::bind_method(
 			D_METHOD("copy_voxel_metadata_in_area", "src_buffer", "src_min_pos", "src_max_pos", "dst_min_pos"),
 			&VoxelBuffer::copy_voxel_metadata_in_area);

@@ -94,8 +94,10 @@ public:
 	void set_node_gui_position(uint32_t node_id, Vector2 pos);
 
 	NodeTypeID get_node_type_id(uint32_t node_id) const;
-	PoolIntArray get_node_ids() const;
-	uint32_t generate_node_id() { return _graph.generate_node_id(); }
+	PackedInt32Array get_node_ids() const;
+	uint32_t generate_node_id() {
+		return _graph.generate_node_id();
+	}
 
 	int get_nodes_count() const;
 
@@ -127,7 +129,9 @@ public:
 
 	Result generate_block(VoxelBlockRequest &input) override;
 	//float generate_single(const Vector3i &position);
-	bool supports_single_generation() const override { return true; }
+	bool supports_single_generation() const override {
+		return true;
+	}
 	VoxelSingleValue generate_single(Vector3i position, unsigned int channel) override;
 
 	Ref<Resource> duplicate(bool p_subresources) const override;
@@ -169,7 +173,6 @@ private:
 
 	int _b_get_node_type_count() const;
 	Dictionary _b_get_node_type_info(int type_id) const;
-	PoolIntArray _b_get_node_ids() const;
 	Array _b_get_connections() const;
 	// TODO Only exists because the UndoRedo API is confusing `null` with `absence of argument`...
 	// See https://github.com/godotengine/godot/issues/36895

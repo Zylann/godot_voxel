@@ -1,8 +1,8 @@
 #ifndef MESH_BUILDER_H
 #define MESH_BUILDER_H
 
-#include <core/map.h>
 #include <core/math/vector3.h>
+#include <core/templates/map.h>
 #include <vector>
 
 namespace dmc {
@@ -14,18 +14,15 @@ public:
 			_reused_vertices(0) {}
 
 	inline void add_vertex(Vector3 position, Vector3 normal) {
-
 		int i = 0;
 
 		Map<Vector3, int>::Element *e = _position_to_index.find(position);
 
 		if (e) {
-
 			i = e->get();
 			++_reused_vertices;
 
 		} else {
-
 			i = _positions.size();
 			_position_to_index.insert(position, i);
 

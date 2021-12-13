@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <string.h>
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 // This work is based on:
 // Tom Forsyth. Linear-Speed Vertex Cache Optimisation. 2006
 // Pedro Sander, Diego Nehab and Joshua Barczak. Fast Triangle Reordering for Vertex Locality and Reduced Overdraw. 2007
@@ -471,3 +473,5 @@ void meshopt_optimizeVertexCacheFifo(unsigned int* destination, const unsigned i
 
 	assert(output_triangle == face_count);
 }
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END

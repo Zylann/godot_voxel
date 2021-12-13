@@ -8,8 +8,7 @@
 #include "../util/profiling.h"
 #include "voxel_buffer_internal.h"
 
-#include <core/func_ref.h>
-#include <core/image.h>
+#include <core/io/image.h>
 #include <core/io/marshalls.h>
 #include <core/math/math_funcs.h>
 #include <string.h>
@@ -350,9 +349,9 @@ void VoxelBufferInternal::fill(uint64_t defval, unsigned int channel_index) {
 void VoxelBufferInternal::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
-	Vector3i::sort_min_max(min, max);
-	min.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1, 1, 1));
-	max.clamp_to(Vector3i(0, 0, 0), _size + Vector3i(1, 1, 1));
+	Vector3iUtil::sort_min_max(min, max);
+	min = min.clamp(Vector3i(0, 0, 0), _size);
+	max = max.clamp(Vector3i(0, 0, 0), _size); // `_size` is included
 	const Vector3i area_size = max - min;
 	if (area_size.x == 0 || area_size.y == 0 || area_size.z == 0) {
 		return;
@@ -420,8 +419,7 @@ void VoxelBufferInternal::fill_f(real_t value, unsigned int channel) {
 	fill(real_to_raw_voxel(value, _channels[channel].depth), channel);
 }
 
-template <typename T>
-inline bool is_uniform_b(const uint8_t *data, size_t item_count) {
+template <typename T> inline bool is_uniform_b(const uint8_t *data, size_t item_count) {
 	return is_uniform<T>(reinterpret_cast<const T *>(data), item_count);
 }
 
@@ -575,7 +573,7 @@ void VoxelBufferInternal::copy_from(const VoxelBufferInternal &other, Vector3i s
 	} else if (channel.defval != other_channel.defval) {
 		// This logic is still required due to how source and destination regions can be specified.
 		// The actual size of the destination area must be determined from the source area, after it has been clipped.
-		Vector3i::sort_min_max(src_min, src_max);
+		Vector3iUtil::sort_min_max(src_min, src_max);
 		clip_copy_region(src_min, src_max, other._size, dst_min, _size);
 		const Vector3i area_size = src_max - src_min;
 		if (area_size.x <= 0 || area_size.y <= 0 || area_size.z <= 0) {
@@ -673,18 +671,18 @@ void VoxelBufferInternal::delete_channel(Channel &channel) {
 	channel.size_in_bytes = 0;
 }
 
-void VoxelBufferInternal::downscale_to(VoxelBufferInternal &dst, Vector3i src_min, Vector3i src_max,
-		Vector3i dst_min) const {
+void VoxelBufferInternal::downscale_to(
+		VoxelBufferInternal &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const {
 	// TODO Align input to multiple of two
 
-	src_min.clamp_to(Vector3i(), _size);
-	src_max.clamp_to(Vector3i(), _size + Vector3i(1));
+	src_min = src_min.clamp(Vector3i(), _size - Vector3i(1, 1, 1));
+	src_max = src_max.clamp(Vector3i(), _size);
 
 	Vector3i dst_max = dst_min + ((src_max - src_min) >> 1);
 
 	// TODO This will be wrong if it overlaps the border?
-	dst_min.clamp_to(Vector3i(), dst._size);
-	dst_max.clamp_to(Vector3i(), dst._size + Vector3i(1));
+	dst_min = dst_min.clamp(Vector3i(), dst._size - Vector3i(1, 1, 1));
+	dst_max = dst_max.clamp(Vector3i(), dst._size);
 
 	for (int channel_index = 0; channel_index < MAX_CHANNELS; ++channel_index) {
 		const Channel &src_channel = _channels[channel_index];
@@ -818,18 +816,19 @@ void VoxelBufferInternal::set_voxel_metadata(Vector3i pos, Variant meta) {
 	}
 }
 
-void VoxelBufferInternal::for_each_voxel_metadata(Ref<FuncRef> callback) const {
+void VoxelBufferInternal::for_each_voxel_metadata(const Callable &callback) const {
 	ERR_FAIL_COND(callback.is_null());
 	const Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
 
 	while (elem != nullptr) {
-		const Variant key = elem->key().to_vec3();
+		const Variant key = elem->key();
 		const Variant *args[2] = { &key, &elem->value() };
-		Variant::CallError err;
-		callback->call_func(args, 2, err);
+		Callable::CallError err;
+		Variant retval; // We don't care about the return value, Callable API requires it
+		callback.call(args, 2, retval, err);
 
-		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-				String("FuncRef call failed at {0}").format(varray(key)));
+		ERR_FAIL_COND_MSG(
+				err.error != Callable::CallError::CALL_OK, String("Callable failed at {0}").format(varray(key)));
 		// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
 		// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
 		// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
@@ -838,16 +837,17 @@ void VoxelBufferInternal::for_each_voxel_metadata(Ref<FuncRef> callback) const {
 	}
 }
 
-void VoxelBufferInternal::for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Box3i box) const {
+void VoxelBufferInternal::for_each_voxel_metadata_in_area(const Callable &callback, Box3i box) const {
 	ERR_FAIL_COND(callback.is_null());
 	for_each_voxel_metadata_in_area(box, [&callback](Vector3i pos, Variant meta) {
-		const Variant key = pos.to_vec3();
+		const Variant key = pos;
 		const Variant *args[2] = { &key, &meta };
-		Variant::CallError err;
-		callback->call_func(args, 2, err);
+		Callable::CallError err;
+		Variant retval; // We don't care about the return value, Callable API requires it
+		callback.call(args, 2, retval, err);
 
-		ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-				String("FuncRef call failed at {0}").format(varray(key)));
+		ERR_FAIL_COND_MSG(
+				err.error != Callable::CallError::CALL_OK, String("Callable failed at {0}").format(varray(key)));
 		// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
 		// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
 		// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
@@ -869,8 +869,8 @@ void VoxelBufferInternal::clear_voxel_metadata_in_area(Box3i box) {
 	}
 }
 
-void VoxelBufferInternal::copy_voxel_metadata_in_area(const VoxelBufferInternal &src_buffer, Box3i src_box,
-		Vector3i dst_origin) {
+void VoxelBufferInternal::copy_voxel_metadata_in_area(
+		const VoxelBufferInternal &src_buffer, Box3i src_box, Vector3i dst_origin) {
 	ERR_FAIL_COND(!src_buffer.is_box_valid(src_box));
 
 	const Box3i clipped_src_box = src_box.clipped(Box3i(src_box.pos - dst_origin, _size));
@@ -904,9 +904,9 @@ void VoxelBufferInternal::copy_voxel_metadata(const VoxelBufferInternal &src_buf
 }
 
 Ref<Image> VoxelBufferInternal::debug_print_sdf_to_image_top_down() {
-	Image *im = memnew(Image);
+	Ref<Image> im;
+	im.instantiate();
 	im->create(_size.x, _size.z, false, Image::FORMAT_RGB8);
-	im->lock();
 	Vector3i pos;
 	for (pos.z = 0; pos.z < _size.z; ++pos.z) {
 		for (pos.x = 0; pos.x < _size.x; ++pos.x) {
@@ -921,6 +921,5 @@ Ref<Image> VoxelBufferInternal::debug_print_sdf_to_image_top_down() {
 			im->set_pixel(pos.x, pos.z, Color(c, c, c));
 		}
 	}
-	im->unlock();
-	return Ref<Image>(im);
+	return im;
 }

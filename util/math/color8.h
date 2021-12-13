@@ -1,7 +1,7 @@
 #ifndef COLOR8_H
 #define COLOR8_H
 
-#include <core/color.h>
+#include <core/math/color.h>
 
 struct Color8 {
 	union {
@@ -57,17 +57,17 @@ struct Color8 {
 	inline uint8_t to_u8() const {
 		// Lossy
 		return ((r >> 6) << 6) |
-			   ((g >> 6) << 4) |
-			   ((b >> 6) << 2) |
-			   (a >> 6);
+				((g >> 6) << 4) |
+				((b >> 6) << 2) |
+				(a >> 6);
 	}
 
 	inline uint16_t to_u16() const {
 		// Lossy
 		return ((r >> 4) << 12) |
-			   ((g >> 4) << 8) |
-			   ((b >> 4) << 4) |
-			   (a >> 4);
+				((g >> 4) << 8) |
+				((b >> 4) << 4) |
+				(a >> 4);
 	}
 
 	inline uint32_t to_u32() const {

@@ -1,7 +1,7 @@
 #include "voxel_graph_node_inspector_wrapper.h"
 #include "../../generators/graph/voxel_graph_node_db.h"
 #include "../../util/macros.h"
-#include <core/undo_redo.h>
+#include <core/object/undo_redo.h>
 
 void VoxelGraphNodeInspectorWrapper::setup(Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id, UndoRedo *ur) {
 	_graph = p_graph;
@@ -36,7 +36,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 		pi.name = param.name;
 		pi.type = param.type;
 		pi.class_name = param.class_name;
-		if (!param.class_name.empty()) {
+		if (!param.class_name.is_empty()) {
 			pi.hint = PROPERTY_HINT_RESOURCE_TYPE;
 			pi.hint_string = pi.class_name;
 		} else if (param.has_range) {
@@ -135,7 +135,8 @@ bool VoxelGraphNodeInspectorWrapper::_get(const StringName &p_name, Variant &r_r
 }
 
 // This method is an undocumented hack used in `EditorInspector::_edit_set` so we can implement UndoRedo ourselves.
-// If we don't do this, then the inspector's UndoRedo will use the wrapper, which won't mark the real resource as modified.
+// If we don't do this, then the inspector's UndoRedo will use the wrapper, which won't mark the real resource as
+// modified.
 bool VoxelGraphNodeInspectorWrapper::_dont_undo_redo() const {
 	return true;
 }

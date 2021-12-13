@@ -1,7 +1,7 @@
 #ifndef VOXEL_STRUCT_DB_H
 #define VOXEL_STRUCT_DB_H
 
-#include <core/error_macros.h>
+#include <core/error/error_macros.h>
 #include <vector>
 
 // Stores uniquely-identified structs in a packed array.

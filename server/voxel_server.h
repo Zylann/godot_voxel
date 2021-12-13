@@ -54,10 +54,7 @@ public:
 	};
 
 	struct BlockDataOutput {
-		enum Type {
-			TYPE_LOAD,
-			TYPE_SAVE
-		};
+		enum Type { TYPE_LOAD, TYPE_SAVE };
 
 		Type type;
 		std::shared_ptr<VoxelBufferInternal> voxels;
@@ -104,7 +101,7 @@ public:
 		bool require_visuals = true;
 	};
 
-	enum VolumeType {
+	enum VolumeType { //
 		VOLUME_SPARSE_GRID,
 		VOLUME_SPARSE_OCTREE
 	};
@@ -118,7 +115,7 @@ public:
 
 	// TODO Rename functions to C convention
 	uint32_t add_volume(VolumeCallbacks callbacks, VolumeType type);
-	void set_volume_transform(uint32_t volume_id, Transform t);
+	void set_volume_transform(uint32_t volume_id, Transform3D t);
 	void set_volume_render_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_data_block_size(uint32_t volume_id, uint32_t block_size);
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
@@ -129,13 +126,13 @@ public:
 	void request_block_mesh(uint32_t volume_id, const BlockMeshInput &input);
 	// TODO Add parameter to skip stream loading
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
-	void request_block_generate(uint32_t volume_id, Vector3i block_pos, int lod,
-			std::shared_ptr<VoxelAsyncDependencyTracker> tracker);
+	void request_block_generate(
+			uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<VoxelAsyncDependencyTracker> tracker);
 	void request_all_stream_blocks(uint32_t volume_id);
-	void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos,
-			int lod);
-	void request_instance_block_save(uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances,
-			Vector3i block_pos, int lod);
+	void request_voxel_block_save(
+			uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos, int lod);
+	void request_instance_block_save(
+			uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances, Vector3i block_pos, int lod);
 	void remove_volume(uint32_t volume_id);
 	bool is_volume_valid(uint32_t volume_id) const;
 
@@ -151,8 +148,7 @@ public:
 	bool is_viewer_requiring_collisions(uint32_t viewer_id) const;
 	bool viewer_exists(uint32_t viewer_id) const;
 
-	template <typename F>
-	inline void for_each_viewer(F f) const {
+	template <typename F> inline void for_each_viewer(F f) const {
 		_world.viewers.for_each_with_id(f);
 	}
 
@@ -246,7 +242,7 @@ private:
 	struct Volume {
 		VolumeType type;
 		VolumeCallbacks callbacks;
-		Transform transform;
+		Transform3D transform;
 		Ref<VoxelStream> stream;
 		Ref<VoxelGenerator> generator;
 		Ref<VoxelMesher> mesher;
@@ -281,17 +277,13 @@ private:
 		float drop_distance_squared;
 	};
 
-	void init_priority_dependency(PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume,
-			int block_size);
+	void init_priority_dependency(
+			PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size);
 	static int get_priority(const PriorityDependency &dep, uint8_t lod_index, float *out_closest_distance_sq);
 
 	class BlockDataRequest : public IVoxelTask {
 	public:
-		enum Type {
-			TYPE_LOAD = 0,
-			TYPE_SAVE,
-			TYPE_FALLBACK_ON_GENERATOR
-		};
+		enum Type { TYPE_LOAD = 0, TYPE_SAVE, TYPE_FALLBACK_ON_GENERATOR };
 
 		BlockDataRequest();
 		~BlockDataRequest();
@@ -411,8 +403,7 @@ private:
 };
 
 struct VoxelFileLockerRead {
-	VoxelFileLockerRead(String path) :
-			_path(path) {
+	VoxelFileLockerRead(String path) : _path(path) {
 		VoxelServer::get_singleton()->get_file_locker().lock_read(path);
 	}
 
@@ -424,8 +415,7 @@ struct VoxelFileLockerRead {
 };
 
 struct VoxelFileLockerWrite {
-	VoxelFileLockerWrite(String path) :
-			_path(path) {
+	VoxelFileLockerWrite(String path) : _path(path) {
 		VoxelServer::get_singleton()->get_file_locker().lock_write(path);
 	}
 

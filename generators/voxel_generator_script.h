@@ -2,6 +2,8 @@
 #define VOXEL_GENERATOR_SCRIPT_H
 
 #include "voxel_generator.h"
+#include <core/object/script_language.h> // needed for GDVIRTUAL macro
+#include <core/object/gdvirtual.gen.inc> // Also needed for GDVIRTUAL macro...
 
 // Generator based on a script, like GDScript, C# or NativeScript.
 // The script is expected to properly handle multithreading.
@@ -12,6 +14,10 @@ public:
 
 	Result generate_block(VoxelBlockRequest &input) override;
 	int get_used_channels_mask() const override;
+
+protected:
+	GDVIRTUAL3(_generate_block, Ref<VoxelBuffer>, Vector3i, int)
+	GDVIRTUAL0RC(int, _get_used_channels_mask) // I think `C` means `const`?
 
 private:
 	static void _bind_methods();

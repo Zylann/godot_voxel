@@ -2,7 +2,7 @@
 #define VOXEL_GENERATOR_H
 
 #include "../streams/voxel_block_request.h"
-#include <core/resource.h>
+#include <core/io/resource.h>
 
 union VoxelSingleValue {
 	uint64_t i;

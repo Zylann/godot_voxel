@@ -16,7 +16,7 @@ public:
 	bool handles(Object *p_object) const override;
 	void edit(Object *p_object) override;
 	void make_visible(bool visible) override;
-	bool forward_spatial_gui_input(Camera *p_camera, const Ref<InputEvent> &p_event) override;
+	EditorPlugin::AfterGUIInput forward_spatial_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
 
 protected:
 	void _notification(int p_what);
@@ -30,7 +30,7 @@ private:
 
 	static void _bind_methods();
 
-	enum MenuID {
+	enum MenuID { //
 		MENU_RESTART_STREAM,
 		MENU_REMESH,
 		MENU_STREAM_FOLLOW_CAMERA,

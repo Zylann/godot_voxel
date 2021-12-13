@@ -11,7 +11,7 @@ class AcceptDialog;
 class UndoRedo;
 class VoxelRangeAnalysisDialog;
 class VoxelNode;
-class Spatial;
+class Node3D;
 
 class VoxelGraphEditor : public Control {
 	GDCLASS(VoxelGraphEditor, Control)
@@ -22,7 +22,9 @@ public:
 	VoxelGraphEditor();
 
 	void set_graph(Ref<VoxelGeneratorGraph> graph);
-	inline Ref<VoxelGeneratorGraph> get_graph() const { return _graph; }
+	inline Ref<VoxelGeneratorGraph> get_graph() const {
+		return _graph;
+	}
 
 	void set_undo_redo(UndoRedo *undo_redo);
 	void set_voxel_node(VoxelNode *node);
@@ -75,7 +77,7 @@ private:
 	Vector2 _click_position;
 	bool _nothing_selected_check_scheduled = false;
 	float _time_before_preview_update = 0.f;
-	Spatial *_voxel_node = nullptr;
+	Node3D *_voxel_node = nullptr;
 	VoxelDebug::DebugRenderer _debug_renderer;
 };
 

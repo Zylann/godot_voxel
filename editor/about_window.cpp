@@ -93,6 +93,7 @@ const ThirdParty g_third_parties[] = {
 			"   May you do good and not evil.\n"
 			"   May you find forgiveness for yourself and forgive others.\n"
 			"   May you share freely, never taking more than you give.\n" }
+	// TODO Mention Transvoxel Lengyel tables
 };
 const unsigned int VOXEL_THIRD_PARTY_COUNT = VOXEL_ARRAY_LENGTH(g_third_parties);
 } // namespace
@@ -101,17 +102,17 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	// Generated with the help of https://github.com/Zylann/godot_scene_code_converter
 
 	set_title(TTR("About Voxel Tools"));
-	set_resizable(true);
-	set_custom_minimum_size(Vector2(600, 300) * EDSCALE);
+	//set_resizable(true); // TODO How to set if a Window is resizable or not?
+	set_min_size(Vector2(600, 300) * EDSCALE);
 	set_visible(true);
 
 	VBoxContainer *v_box_container = memnew(VBoxContainer);
-	v_box_container->set_anchor(MARGIN_RIGHT, 1);
-	v_box_container->set_anchor(MARGIN_BOTTOM, 1);
-	v_box_container->set_margin(MARGIN_LEFT, 4 * EDSCALE);
-	v_box_container->set_margin(MARGIN_TOP, 4 * EDSCALE);
-	v_box_container->set_margin(MARGIN_RIGHT, -4 * EDSCALE);
-	v_box_container->set_margin(MARGIN_BOTTOM, -4 * EDSCALE);
+	v_box_container->set_anchor(SIDE_RIGHT, 1);
+	v_box_container->set_anchor(SIDE_BOTTOM, 1);
+	v_box_container->set_offset(SIDE_LEFT, 4 * EDSCALE);
+	v_box_container->set_offset(SIDE_TOP, 4 * EDSCALE);
+	v_box_container->set_offset(SIDE_RIGHT, -4 * EDSCALE);
+	v_box_container->set_offset(SIDE_BOTTOM, -4 * EDSCALE);
 
 	// HB
 	HBoxContainer *h_box_container = memnew(HBoxContainer);
@@ -157,8 +158,9 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	}
 	RichTextLabel *rich_text_label = memnew(RichTextLabel);
 	rich_text_label->set_use_bbcode(true);
-	rich_text_label->set_bbcode(about_text);
-	rich_text_label->connect("meta_clicked", this, "_on_about_rich_text_label_meta_clicked");
+	rich_text_label->set_text(about_text);
+	rich_text_label->connect(
+			"meta_clicked", callable_mp(this, &VoxelAboutWindow::_on_about_rich_text_label_meta_clicked));
 
 	tab_container->add_child(rich_text_label);
 
@@ -200,7 +202,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 			third_party_list->add_item(third_party.name);
 		}
 
-		third_party_list->connect("item_selected", this, "_on_third_party_list_item_selected");
+		third_party_list->connect(
+				"item_selected", callable_mp(this, &VoxelAboutWindow::_on_third_party_list_item_selected));
 
 		_third_party_rich_text_label = memnew(RichTextLabel);
 		_third_party_rich_text_label->set_selection_enabled(true);
@@ -220,12 +223,12 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	v_box_container->add_child(h_box_container);
 
 	HBoxContainer *h_box_container2 = memnew(HBoxContainer);
-	h_box_container2->set_alignment(BoxContainer::ALIGN_CENTER);
+	h_box_container2->set_alignment(BoxContainer::ALIGNMENT_CENTER);
 
 	Button *button = memnew(Button);
 	button->set_text(TTR("Ok"));
 	button->set_custom_minimum_size(Vector2(100 * EDSCALE, 0));
-	button->connect("pressed", this, "hide");
+	button->connect("pressed", callable_mp(this, &VoxelAboutWindow::_on_ok_button_pressed));
 	h_box_container2->add_child(button);
 
 	v_box_container->add_child(h_box_container2);
@@ -235,7 +238,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 
 void VoxelAboutWindow::_notification(int p_what) {
 	if (p_what == NOTIFICATION_THEME_CHANGED) {
-		_icon_texture_rect->set_texture(get_icon("VoxelTerrainLarge", "EditorIcons"));
+		_icon_texture_rect->set_texture(get_theme_icon("VoxelTerrainLarge", "EditorIcons"));
 	}
 }
 
@@ -251,14 +254,14 @@ void VoxelAboutWindow::_on_about_rich_text_label_meta_clicked(Variant meta) {
 void VoxelAboutWindow::_on_third_party_list_item_selected(int index) {
 	ERR_FAIL_COND(index < 0 || index >= int(VOXEL_THIRD_PARTY_COUNT));
 	const ThirdParty &third_party = g_third_parties[index];
-	_third_party_rich_text_label->set_text(String("{0}\n------------------------------\n{1}")
-												   .format(varray(third_party.name, third_party.license)));
+	_third_party_rich_text_label->set_text(
+			String("{0}\n------------------------------\n{1}").format(varray(third_party.name, third_party.license)));
 }
 
 void VoxelAboutWindow::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_ok_button_pressed"), &VoxelAboutWindow::_on_ok_button_pressed);
-	ClassDB::bind_method(D_METHOD("_on_about_rich_text_label_meta_clicked", "meta"),
-			&VoxelAboutWindow::_on_about_rich_text_label_meta_clicked);
-	ClassDB::bind_method(D_METHOD("_on_third_party_list_item_selected"),
-			&VoxelAboutWindow::_on_third_party_list_item_selected);
+	// ClassDB::bind_method(D_METHOD("_on_ok_button_pressed"), &VoxelAboutWindow::_on_ok_button_pressed);
+	// ClassDB::bind_method(D_METHOD("_on_about_rich_text_label_meta_clicked", "meta"),
+	// 		&VoxelAboutWindow::_on_about_rich_text_label_meta_clicked);
+	// ClassDB::bind_method(
+	// 		D_METHOD("_on_third_party_list_item_selected"), &VoxelAboutWindow::_on_third_party_list_item_selected);
 }

@@ -44,16 +44,16 @@ float VoxelVoxMeshImporter::get_priority() const {
 // int VoxelVoxMeshImporter::get_import_order() const {
 // }
 
-void VoxelVoxMeshImporter::get_import_options(List<ImportOption> *r_options, int p_preset) const {
+void VoxelVoxMeshImporter::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
 	VoxelStringNames *sn = VoxelStringNames::get_singleton();
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->store_colors_in_texture), false));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::REAL, sn->scale), 1.f));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, sn->scale), 1.f));
 	r_options->push_back(ImportOption(
 			PropertyInfo(Variant::INT, sn->pivot_mode, PROPERTY_HINT_ENUM, "LowerCorner,SceneOrigin,Center"), 1));
 }
 
-bool VoxelVoxMeshImporter::get_option_visibility(const String &p_option,
-		const Map<StringName, Variant> &p_options) const {
+bool VoxelVoxMeshImporter::get_option_visibility(
+		const String &p_path, const String &p_option, const Map<StringName, Variant> &p_options) const {
 	return true;
 }
 
@@ -66,7 +66,7 @@ struct ForEachModelInstanceArgs {
 
 template <typename F>
 static Error for_each_model_instance_in_scene_graph(
-		const vox::Data &data, int node_id, Transform transform, int depth, F f) {
+		const vox::Data &data, int node_id, Transform3D transform, int depth, F f) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const vox::Node *vox_node = data.get_node(node_id);
@@ -75,9 +75,8 @@ static Error for_each_model_instance_in_scene_graph(
 		case vox::Node::TYPE_TRANSFORM: {
 			const vox::TransformNode *vox_transform_node = reinterpret_cast<const vox::TransformNode *>(vox_node);
 			// Calculate global transform of the child
-			const Transform child_trans(
-					transform.basis * vox_transform_node->rotation.basis,
-					transform.xform(vox_transform_node->position.to_vec3()));
+			const Transform3D child_trans(transform.basis * vox_transform_node->rotation.basis,
+					transform.xform(vox_transform_node->position));
 			for_each_model_instance_in_scene_graph(data, vox_transform_node->child_node_id, child_trans, depth + 1, f);
 		} break;
 
@@ -93,7 +92,7 @@ static Error for_each_model_instance_in_scene_graph(
 			const vox::ShapeNode *vox_shape_node = reinterpret_cast<const vox::ShapeNode *>(vox_node);
 			ForEachModelInstanceArgs args;
 			args.model = &data.get_model(vox_shape_node->model_id);
-			args.position = Vector3i::from_rounded(transform.origin);
+			args.position = Vector3iUtil::from_rounded(transform.origin);
 			args.basis = transform.basis;
 			f(args);
 		} break;
@@ -106,8 +105,7 @@ static Error for_each_model_instance_in_scene_graph(
 	return OK;
 }
 
-template <typename F>
-void for_each_model_instance(const vox::Data &vox_data, F f) {
+template <typename F> void for_each_model_instance(const vox::Data &vox_data, F f) {
 	if (vox_data.get_model_count() == 0) {
 		return;
 	}
@@ -121,7 +119,7 @@ void for_each_model_instance(const vox::Data &vox_data, F f) {
 		f(args);
 		return;
 	}
-	for_each_model_instance_in_scene_graph(vox_data, vox_data.get_root_node_id(), Transform(), 0, f);
+	for_each_model_instance_in_scene_graph(vox_data, vox_data.get_root_node_id(), Transform3D(), 0, f);
 }
 
 // Find intersecting or touching models, merge their voxels into the same grid, mesh the result, then combine meshes.
@@ -150,17 +148,18 @@ static void extract_model_instances(const vox::Data &vox_data, std::vector<Model
 			src_color_indices = to_span_const(model.color_indexes);
 		} else {
 			IntBasis basis;
-			basis.x = Vector3i::from_cast(args.basis.get_axis(Vector3::AXIS_X));
-			basis.y = Vector3i::from_cast(args.basis.get_axis(Vector3::AXIS_Y));
-			basis.z = Vector3i::from_cast(args.basis.get_axis(Vector3::AXIS_Z));
+			basis.x = Vector3iUtil::from_cast(args.basis.get_axis(Vector3::AXIS_X));
+			basis.y = Vector3iUtil::from_cast(args.basis.get_axis(Vector3::AXIS_Y));
+			basis.z = Vector3iUtil::from_cast(args.basis.get_axis(Vector3::AXIS_Z));
 			temp_voxels.resize(model.color_indexes.size());
-			dst_size = transform_3d_array_zxy(
-					to_span_const(model.color_indexes), to_span(temp_voxels), model.size, basis);
+			dst_size =
+					transform_3d_array_zxy(to_span_const(model.color_indexes), to_span(temp_voxels), model.size, basis);
 			src_color_indices = to_span_const(temp_voxels);
 		}
 
 		// TODO Optimization: implement transformation for VoxelBuffers so we can avoid using a temporary copy.
-		// Didn't do it yet because VoxelBuffers also have metadata and the `transform_3d_array_zxy` function only works on arrays.
+		// Didn't do it yet because VoxelBuffers also have metadata and the `transform_3d_array_zxy` function only works
+		// on arrays.
 		std::unique_ptr<VoxelBufferInternal> voxels = std::make_unique<VoxelBufferInternal>();
 		voxels->create(dst_size);
 		voxels->decompress_channel(VoxelBufferInternal::CHANNEL_COLOR);
@@ -178,8 +177,8 @@ static void extract_model_instances(const vox::Data &vox_data, std::vector<Model
 	});
 }
 
-static bool make_single_voxel_grid(Span<const ModelInstance> instances, Vector3i &out_origin,
-		VoxelBufferInternal &out_voxels) {
+static bool make_single_voxel_grid(
+		Span<const ModelInstance> instances, Vector3i &out_origin, VoxelBufferInternal &out_voxels) {
 	// Determine total size
 	const ModelInstance &first_instance = instances[0];
 	Box3i bounding_box(first_instance.position, first_instance.voxels->get_size());
@@ -191,12 +190,12 @@ static bool make_single_voxel_grid(Span<const ModelInstance> instances, Vector3i
 	// Extra sanity check
 	// 3 gigabytes
 	const size_t limit = 3'000'000'000ull;
-	const size_t volume = bounding_box.size.volume();
+	const size_t volume = Vector3iUtil::get_volume(bounding_box.size);
 	ERR_FAIL_COND_V_MSG(volume > limit, false,
 			String("Vox data is too big to be meshed as a single mesh ({0}: {0} bytes)")
-					.format(varray(bounding_box.size.to_vec3(), SIZE_T_TO_VARIANT(volume))));
+					.format(varray(bounding_box.size, SIZE_T_TO_VARIANT(volume))));
 
-	out_voxels.create(bounding_box.size + Vector3i(VoxelMesherCubes::PADDING * 2));
+	out_voxels.create(bounding_box.size + Vector3iUtil::create(VoxelMesherCubes::PADDING * 2));
 	out_voxels.set_channel_depth(VoxelBufferInternal::CHANNEL_COLOR, VoxelBufferInternal::DEPTH_8_BIT);
 	out_voxels.decompress_channel(VoxelBufferInternal::CHANNEL_COLOR);
 
@@ -204,7 +203,7 @@ static bool make_single_voxel_grid(Span<const ModelInstance> instances, Vector3i
 		const ModelInstance &mi = instances[instance_index];
 		ERR_FAIL_COND_V(mi.voxels == nullptr, false);
 		out_voxels.copy_from(*mi.voxels, Vector3i(), mi.voxels->get_size(),
-				mi.position - bounding_box.pos + Vector3i(VoxelMesherCubes::PADDING),
+				mi.position - bounding_box.pos + Vector3iUtil::create(VoxelMesherCubes::PADDING),
 				VoxelBufferInternal::CHANNEL_COLOR);
 	}
 
@@ -228,7 +227,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 
 	// Get color palette
 	Ref<VoxelColorPalette> palette;
-	palette.instance();
+	palette.instantiate();
 	for (unsigned int i = 0; i < vox_data.get_palette().size(); ++i) {
 		const Color8 color = vox_data.get_palette()[i];
 		palette->set_color8(i, color);
@@ -261,7 +260,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 		model_instances.clear();
 
 		Ref<VoxelMesherCubes> mesher;
-		mesher.instance();
+		mesher.instantiate();
 		mesher->set_color_mode(VoxelMesherCubes::COLOR_MESHER_PALETTE);
 		mesher->set_palette(palette);
 		mesher->set_greedy_meshing_enabled(true);
@@ -272,10 +271,10 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 			case PIVOT_LOWER_CORNER:
 				break;
 			case PIVOT_SCENE_ORIGIN:
-				offset = bounding_box_origin.to_vec3();
+				offset = bounding_box_origin;
 				break;
 			case PIVOT_CENTER:
-				offset = -((voxels.get_size() - Vector3i(1)) / 2).to_vec3();
+				offset = -((voxels.get_size() - Vector3iUtil::create(1)) / 2);
 				break;
 			default:
 				ERR_FAIL_V(ERR_BUG);
@@ -310,17 +309,17 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 	// 	atlas->save_png(String("debug_atlas{0}.png").format(varray(model_index)));
 	// }
 
-	FixedArray<Ref<SpatialMaterial>, 2> materials;
+	FixedArray<Ref<StandardMaterial3D>, 2> materials;
 	for (unsigned int i = 0; i < materials.size(); ++i) {
-		Ref<SpatialMaterial> &mat = materials[i];
-		mat.instance();
+		Ref<StandardMaterial3D> &mat = materials[i];
+		mat.instantiate();
 		mat->set_roughness(1.f);
 		if (!p_store_colors_in_textures) {
 			// In this case we store colors in vertices
-			mat->set_flag(SpatialMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+			mat->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 		}
 	}
-	materials[1]->set_feature(SpatialMaterial::FEATURE_TRANSPARENT, true);
+	materials[1]->set_transparency(StandardMaterial3D::TRANSPARENCY_ALPHA);
 
 	// Assign materials
 	if (p_store_colors_in_textures) {
@@ -328,16 +327,17 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 		for (unsigned int surface_index = 0; surface_index < surface_index_to_material.size(); ++surface_index) {
 			const unsigned int material_index = surface_index_to_material[surface_index];
 			CRASH_COND(material_index >= materials.size());
-			Ref<SpatialMaterial> material = materials[material_index]->duplicate();
+			Ref<StandardMaterial3D> material = materials[material_index]->duplicate();
 			if (atlas.is_valid()) {
 				// TODO Do I absolutely HAVE to load this texture back to memory AND renderer just so import works??
 				//Ref<Texture> texture = ResourceLoader::load(atlas_path);
 				// TODO THIS IS A WORKAROUND, it is not supposed to be an ImageTexture...
 				// See earlier code, I could not find any way to reference a separate StreamTexture.
 				Ref<ImageTexture> texture;
-				texture.instance();
-				texture->create_from_image(atlas, 0);
-				material->set_texture(SpatialMaterial::TEXTURE_ALBEDO, texture);
+				texture.instantiate();
+				texture->create_from_image(atlas);
+				material->set_texture(StandardMaterial3D::TEXTURE_ALBEDO, texture);
+				material->set_texture_filter(StandardMaterial3D::TEXTURE_FILTER_NEAREST);
 			}
 			mesh->surface_set_material(surface_index, material);
 		}
@@ -354,8 +354,8 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 		VOXEL_PROFILE_SCOPE();
 		String mesh_save_path = String("{0}.mesh").format(varray(p_save_path));
 		const Error mesh_save_err = ResourceSaver::save(mesh_save_path, mesh);
-		ERR_FAIL_COND_V_MSG(mesh_save_err != OK, mesh_save_err,
-				String("Failed to save {0}").format(varray(mesh_save_path)));
+		ERR_FAIL_COND_V_MSG(
+				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(mesh_save_path)));
 	}
 
 	return OK;

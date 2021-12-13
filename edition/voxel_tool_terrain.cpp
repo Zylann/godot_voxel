@@ -5,10 +5,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/voxel_raycast.h"
 
-#include <core/func_ref.h>
-
-VoxelToolTerrain::VoxelToolTerrain() {
-}
+VoxelToolTerrain::VoxelToolTerrain() {}
 
 VoxelToolTerrain::VoxelToolTerrain(VoxelTerrain *terrain) {
 	ERR_FAIL_COND(terrain == nullptr);
@@ -22,7 +19,8 @@ bool VoxelToolTerrain::is_area_editable(const Box3i &box) const {
 	return _terrain->get_storage().is_area_fully_loaded(box);
 }
 
-Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, float p_max_distance, uint32_t p_collision_mask) {
+Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
+		Vector3 p_pos, Vector3 p_dir, float p_max_distance, uint32_t p_collision_mask) {
 	// TODO Implement broad-phase on blocks to minimize locking and increase performance
 
 	struct RaycastPredicateColor {
@@ -84,8 +82,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 	Vector3i hit_pos;
 	Vector3i prev_pos;
 
-	const Transform to_world = _terrain->get_global_transform();
-	const Transform to_local = to_world.affine_inverse();
+	const Transform3D to_world = _terrain->get_global_transform();
+	const Transform3D to_local = to_world.affine_inverse();
 	const Vector3 local_pos = to_local.xform(p_pos);
 	const Vector3 local_dir = to_local.basis.xform(p_dir).normalized();
 	const float to_world_scale = to_world.basis.get_axis(0).length();
@@ -99,8 +97,9 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 		RaycastPredicateBlocky predicate{ _terrain->get_storage(), **library_ref, p_collision_mask };
 		float hit_distance;
 		float hit_distance_prev;
-		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
-			res.instance();
+		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
+					hit_distance_prev)) {
+			res.instantiate();
 			res->position = hit_pos;
 			res->previous_position = prev_pos;
 			res->distance_along_ray = hit_distance * to_world_scale;
@@ -110,8 +109,9 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 		RaycastPredicateColor predicate{ _terrain->get_storage() };
 		float hit_distance;
 		float hit_distance_prev;
-		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
-			res.instance();
+		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
+					hit_distance_prev)) {
+			res.instantiate();
 			res->position = hit_pos;
 			res->previous_position = prev_pos;
 			res->distance_along_ray = hit_distance * to_world_scale;
@@ -121,8 +121,9 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(Vector3 p_pos, Vector3 p_dir, 
 		RaycastPredicateSDF predicate{ _terrain->get_storage() };
 		float hit_distance;
 		float hit_distance_prev;
-		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
-			res.instance();
+		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
+					hit_distance_prev)) {
+			res.instantiate();
 			res->position = hit_pos;
 			res->previous_position = prev_pos;
 			res->distance_along_ray = hit_distance * to_world_scale;
@@ -141,8 +142,8 @@ void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels
 	_terrain->get_storage().copy(pos, dst->get_buffer(), channels_mask);
 }
 
-void VoxelToolTerrain::paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
-		uint64_t mask_value) {
+void VoxelToolTerrain::paste(
+		Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(p_voxels.is_null());
 	if (channels_mask == 0) {
@@ -162,7 +163,8 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 
 	VOXEL_PROFILE_SCOPE();
 
-	const Box3i box(Vector3i::from_floored(center) - Vector3i(Math::floor(radius)), Vector3i(Math::ceil(radius) * 2));
+	const Box3i box(Vector3iUtil::from_floored(center) - Vector3iUtil::create(Math::floor(radius)),
+			Vector3iUtil::create(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
 		PRINT_VERBOSE("Area not editable");
@@ -220,12 +222,13 @@ Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
 
 // Executes a function on random voxels in the provided area, using the type channel.
 // This allows to implement slow "natural" cellular automata behavior, as can be seen in Minecraft.
-void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, Ref<FuncRef> callback, int batch_count) const {
+void VoxelToolTerrain::run_blocky_random_tick(
+		AABB voxel_area, int voxel_count, const Callable &callback, int batch_count) const {
 	VOXEL_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(_terrain == nullptr);
-	ERR_FAIL_COND_MSG(_terrain->get_voxel_library().is_null(),
-			"This function requires a volume using VoxelMesherBlocky");
+	ERR_FAIL_COND_MSG(
+			_terrain->get_voxel_library().is_null(), "This function requires a volume using VoxelMesherBlocky");
 	ERR_FAIL_COND(callback.is_null());
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);
@@ -237,8 +240,8 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 
 	const VoxelLibrary &lib = **_terrain->get_voxel_library();
 
-	const Vector3i min_pos = Vector3i::from_floored(voxel_area.position);
-	const Vector3i max_pos = min_pos + Vector3i::from_floored(voxel_area.size);
+	const Vector3i min_pos = Vector3iUtil::from_floored(voxel_area.position);
+	const Vector3i max_pos = min_pos + Vector3iUtil::from_floored(voxel_area.size);
 
 	VoxelDataMap &map = _terrain->get_storage();
 
@@ -259,10 +262,9 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 
 	// Choose blocks at random
 	for (int bi = 0; bi < block_count; ++bi) {
-		const Vector3i block_pos = min_block_pos + Vector3i(
-														   Math::rand() % block_area_size.x,
-														   Math::rand() % block_area_size.y,
-														   Math::rand() % block_area_size.z);
+		const Vector3i block_pos = min_block_pos +
+				Vector3i(Math::rand() % block_area_size.x, Math::rand() % block_area_size.y,
+						Math::rand() % block_area_size.z);
 
 		const Vector3i block_origin = map.block_to_voxel(block_pos);
 
@@ -287,10 +289,7 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 				// Choose a bunch of voxels at random within the block.
 				// Batching this way improves performance a little by reducing block lookups.
 				for (int vi = 0; vi < batch_count; ++vi) {
-					const Vector3i rpos(
-							Math::rand() & bs_mask,
-							Math::rand() & bs_mask,
-							Math::rand() & bs_mask);
+					const Vector3i rpos(Math::rand() & bs_mask, Math::rand() & bs_mask, Math::rand() & bs_mask);
 
 					const uint64_t v = voxels.get_voxel(rpos, channel);
 					picks[vi] = Pick{ v, rpos };
@@ -307,16 +306,17 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 					const Voxel &vt = lib.get_voxel_const(pick.value);
 
 					if (vt.is_random_tickable()) {
-						const Variant vpos = (pick.rpos + block_origin).to_vec3();
+						const Variant vpos = pick.rpos + block_origin;
 						const Variant vv = pick.value;
 						const Variant *args[2];
 						args[0] = &vpos;
 						args[1] = &vv;
-						Variant::CallError error;
-						callback->call_func(args, 2, error);
+						Callable::CallError error;
+						Variant retval; // We don't care about the return value, Callable API requires it
+						callback.call(args, 2, retval, error);
 						// TODO I would really like to know what's the correct way to report such errors...
 						// Examples I found in the engine are inconsistent
-						ERR_FAIL_COND(error.error != Variant::CallError::CALL_OK);
+						ERR_FAIL_COND(error.error != Callable::CallError::CALL_OK);
 						// Return if it fails, we don't want an error spam
 					}
 				}
@@ -325,12 +325,13 @@ void VoxelToolTerrain::run_blocky_random_tick(AABB voxel_area, int voxel_count, 
 	}
 }
 
-void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<FuncRef> callback) {
+void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(callback.is_null());
 	ERR_FAIL_COND(!is_valid_size(voxel_area.size));
 
-	const Box3i voxel_box = Box3i(Vector3i::from_floored(voxel_area.position), Vector3i::from_floored(voxel_area.size));
+	const Box3i voxel_box =
+			Box3i(Vector3iUtil::from_floored(voxel_area.position), Vector3iUtil::from_floored(voxel_area.size));
 	ERR_FAIL_COND(!is_area_editable(voxel_box));
 
 	const Box3i data_block_box = voxel_box.downscaled(_terrain->get_data_block_size());
@@ -348,19 +349,21 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, Ref<Func
 		const Box3i rel_voxel_box(voxel_box.pos - block_origin, voxel_box.size);
 		// TODO Worth it locking blocks for metadata?
 
-		block->get_voxels().for_each_voxel_metadata_in_area(rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, Variant meta) {
-			const Variant key = (rel_pos + block_origin).to_vec3();
-			const Variant *args[2] = { &key, &meta };
-			Variant::CallError err;
-			callback->call_func(args, 2, err);
+		block->get_voxels().for_each_voxel_metadata_in_area(
+				rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, Variant meta) {
+					const Variant key = rel_pos + block_origin;
+					const Variant *args[2] = { &key, &meta };
+					Callable::CallError err;
+					Variant retval; // We don't care about the return value, Callable API requires it
+					callback.call(args, 2, retval, err);
 
-			ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK,
-					String("FuncRef call failed at {0}").format(varray(key)));
+					ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK,
+							String("Callable failed at {0}").format(varray(key)));
 
-			// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
-			// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
-			// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
-		});
+					// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
+					// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
+					// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
+				});
 	});
 }
 

@@ -1,6 +1,8 @@
 #ifndef VOXEL_VIEWER_REF_COUNT_H
 #define VOXEL_VIEWER_REF_COUNT_H
 
+#include <core/error/error_macros.h>
+
 class VoxelRefCount {
 public:
 	inline void add() {

@@ -9,13 +9,12 @@
 #include "../util/voxel_raycast.h"
 #include "funcs.h"
 
-#include <scene/3d/collision_shape.h>
-#include <scene/3d/mesh_instance.h>
-#include <scene/3d/physics_body.h>
+#include <scene/3d/collision_shape_3d.h>
+#include <scene/3d/mesh_instance_3d.h>
+#include <scene/3d/physics_body_3d.h>
 #include <scene/main/timer.h>
 
-VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain) :
-		_terrain(terrain) {
+VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain) : _terrain(terrain) {
 	ERR_FAIL_COND(terrain == nullptr);
 	// At the moment, only LOD0 is supported.
 	// Don't destroy the terrain while a voxel tool still references it
@@ -26,9 +25,8 @@ bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 	return _terrain->is_area_editable(box);
 }
 
-template <typename Volume_F>
-float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
-	const Vector3i c = Vector3i::from_floored(pos);
+template <typename Volume_F> float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
+	const Vector3i c = Vector3iUtil::from_floored(pos);
 
 	const float s000 = f(Vector3i(c.x, c.y, c.z));
 	const float s100 = f(Vector3i(c.x + 1, c.y, c.z));
@@ -149,13 +147,12 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 			};
 
 			VolumeSampler sampler{ _terrain };
-			d = hit_distance_prev + approximate_distance_to_isosurface_binary_search(sampler,
-											pos + dir * hit_distance_prev,
-											dir, hit_distance - hit_distance_prev,
-											_raycast_binary_search_iterations);
+			d = hit_distance_prev +
+					approximate_distance_to_isosurface_binary_search(sampler, pos + dir * hit_distance_prev, dir,
+							hit_distance - hit_distance_prev, _raycast_binary_search_iterations);
 		}
 
-		res.instance();
+		res.instantiate();
 		res->position = hit_pos;
 		res->previous_position = prev_pos;
 		res->distance_along_ray = d;
@@ -223,9 +220,8 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	const Box3i box = Box3i(
-			Vector3i::from_floored(center) - Vector3i(Math::floor(radius)),
-			Vector3i(Math::ceil(radius) * 2))
+	const Box3i box = Box3i(Vector3iUtil::from_floored(center) - Vector3iUtil::create(Math::floor(radius)),
+			Vector3iUtil::create(Math::ceil(radius) * 2))
 							  .clipped(_terrain->get_voxel_bounds());
 
 	if (!is_area_editable(box)) {
@@ -257,11 +253,9 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	_post_edit(box);
 }
 
-template <typename Op_T>
-class VoxelToolAsyncEdit : public IVoxelTask {
+template <typename Op_T> class VoxelToolAsyncEdit : public IVoxelTask {
 public:
-	VoxelToolAsyncEdit(Op_T op, std::shared_ptr<VoxelDataLodMap> data) :
-			_op(op), _data(data) {
+	VoxelToolAsyncEdit(Op_T op, std::shared_ptr<VoxelDataLodMap> data) : _op(op), _data(data) {
 		_tracker = gd_make_shared<VoxelAsyncDependencyTracker>(1);
 	}
 
@@ -283,7 +277,9 @@ public:
 	}
 
 	void apply_result() override {}
-	std::shared_ptr<VoxelAsyncDependencyTracker> get_tracker() { return _tracker; }
+	std::shared_ptr<VoxelAsyncDependencyTracker> get_tracker() {
+		return _tracker;
+	}
 
 private:
 	Op_T _op;
@@ -295,9 +291,8 @@ private:
 void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	const Box3i box = Box3i(
-			Vector3i::from_floored(center) - Vector3i(Math::floor(radius)),
-			Vector3i(Math::ceil(radius) * 2))
+	const Box3i box = Box3i(Vector3iUtil::from_floored(center) - Vector3iUtil::create(Math::floor(radius)),
+			Vector3iUtil::create(Math::ceil(radius) * 2))
 							  .clipped(_terrain->get_voxel_bounds());
 
 	if (!is_area_editable(box)) {
@@ -337,12 +332,13 @@ float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	const int channel = get_channel();
 	VoxelLodTerrain *terrain = _terrain;
 	// TODO Optimization: is it worth a making a fast-path for this?
-	return get_sdf_interpolated([terrain, channel](Vector3i ipos) {
-		VoxelSingleValue defval;
-		defval.f = 1.f;
-		VoxelSingleValue value = terrain->get_voxel(ipos, VoxelBufferInternal::CHANNEL_SDF, defval);
-		return value.f;
-	},
+	return get_sdf_interpolated(
+			[terrain, channel](Vector3i ipos) {
+				VoxelSingleValue defval;
+				defval.f = 1.f;
+				VoxelSingleValue value = terrain->get_voxel(ipos, VoxelBufferInternal::CHANNEL_SDF, defval);
+				return value.f;
+			},
 			position);
 }
 
@@ -389,7 +385,7 @@ void VoxelToolLodTerrain::set_raycast_binary_search_iterations(int iterations) {
 // the source volume, and turned into a rigidbody.
 // This is one way of doing it, I don't know if it's the best way (there is rarely a best way)
 // so there are probably other approaches that could be explored in the future, if they have better performance
-static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *parent_node, Transform transform,
+static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *parent_node, Transform3D transform,
 		Ref<VoxelMesher> mesher, Array materials) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -407,7 +403,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 	Ref<VoxelBuffer> source_copy_buffer_ref;
 	{
 		VOXEL_PROFILE_SCOPE_NAMED("Copy");
-		source_copy_buffer_ref.instance();
+		source_copy_buffer_ref.instantiate();
 		source_copy_buffer_ref->create(world_box.size.x, world_box.size.y, world_box.size.z);
 		voxel_tool.copy(world_box.pos, source_copy_buffer_ref, channels_mask);
 	}
@@ -416,7 +412,7 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 	// Label distinct voxel groups
 
 	static thread_local std::vector<uint8_t> ccl_output;
-	ccl_output.resize(world_box.size.volume());
+	ccl_output.resize(Vector3iUtil::get_volume(world_box.size));
 
 	unsigned int label_count = 0;
 
@@ -425,7 +421,8 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 		VOXEL_PROFILE_SCOPE_NAMED("CCL scan");
 		IslandFinder island_finder;
 		island_finder.scan_3d(
-				Box3i(Vector3i(), world_box.size), [&source_copy_buffer](Vector3i pos) {
+				Box3i(Vector3i(), world_box.size),
+				[&source_copy_buffer](Vector3i pos) {
 					// TODO Can be optimized further with direct access
 					return source_copy_buffer.get_voxel_f(pos.x, pos.y, pos.z, main_channel) < 0.f;
 				},
@@ -494,18 +491,14 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 	// Eliminate groups that touch the box border,
 	// because that means we can't tell if they are truly hanging in the air or attached to land further away
 
-	const Vector3i lbmax = world_box.size - Vector3i(1);
+	const Vector3i lbmax = world_box.size - Vector3i(1, 1, 1);
 	for (unsigned int label = 1; label < bounds_per_label.size(); ++label) {
 		CRASH_COND(label >= bounds_per_label.size());
 		Bounds &local_bounds = bounds_per_label[label];
 		ERR_CONTINUE(!local_bounds.valid);
 
-		if (
-				local_bounds.min_pos.x == 0 ||
-				local_bounds.min_pos.y == 0 ||
-				local_bounds.min_pos.z == 0 ||
-				local_bounds.max_pos.x == lbmax.x ||
-				local_bounds.max_pos.y == lbmax.y ||
+		if (local_bounds.min_pos.x == 0 || local_bounds.min_pos.y == 0 || local_bounds.min_pos.z == 0 ||
+				local_bounds.max_pos.x == lbmax.x || local_bounds.max_pos.y == lbmax.y ||
 				local_bounds.max_pos.z == lbmax.z) {
 			//
 			local_bounds.valid = false;
@@ -535,12 +528,13 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 				continue;
 			}
 
-			const Vector3i world_pos = world_box.pos + local_bounds.min_pos - Vector3i(min_padding);
-			const Vector3i size = local_bounds.max_pos - local_bounds.min_pos + Vector3i(1 + max_padding + min_padding);
+			const Vector3i world_pos = world_box.pos + local_bounds.min_pos - Vector3iUtil::create(min_padding);
+			const Vector3i size =
+					local_bounds.max_pos - local_bounds.min_pos + Vector3iUtil::create(1 + max_padding + min_padding);
 
 			// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
 			Ref<VoxelBuffer> buffer_ref;
-			buffer_ref.instance();
+			buffer_ref.instantiate();
 			buffer_ref->create(size.x, size.y, size.z);
 
 			// Read voxels from the source volume
@@ -549,25 +543,24 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 			VoxelBufferInternal &buffer = buffer_ref->get_buffer();
 
 			// Cleanup padding borders
-			const Box3i inner_box(Vector3i(min_padding), buffer.get_size() - Vector3i(min_padding + max_padding));
-			Box3i(Vector3i(), buffer.get_size())
-					.difference(inner_box, [&buffer](Box3i box) {
-						buffer.fill_area_f(1.f, box.pos, box.pos + box.size, main_channel);
-					});
+			const Box3i inner_box(Vector3iUtil::create(min_padding),
+					buffer.get_size() - Vector3iUtil::create(min_padding + max_padding));
+			Box3i(Vector3i(), buffer.get_size()).difference(inner_box, [&buffer](Box3i box) {
+				buffer.fill_area_f(1.f, box.pos, box.pos + box.size, main_channel);
+			});
 
 			// Filter out voxels that don't belong to this label
 			for (int z = local_bounds.min_pos.z; z <= local_bounds.max_pos.z; ++z) {
 				for (int x = local_bounds.min_pos.x; x <= local_bounds.max_pos.x; ++x) {
 					for (int y = local_bounds.min_pos.y; y <= local_bounds.max_pos.y; ++y) {
-						const unsigned int ccl_index = Vector3i(x, y, z).get_zxy_index(world_box.size);
+						const unsigned int ccl_index = Vector3iUtil::get_zxy_index(Vector3i(x, y, z), world_box.size);
 						CRASH_COND(ccl_index >= ccl_output.size());
 						const uint8_t label2 = ccl_output[ccl_index];
 
 						if (label2 != 0 && label != label2) {
-							buffer.set_voxel_f(1.f,
-									min_padding + x - local_bounds.min_pos.x,
-									min_padding + y - local_bounds.min_pos.y,
-									min_padding + z - local_bounds.min_pos.z, main_channel);
+							buffer.set_voxel_f(1.f, min_padding + x - local_bounds.min_pos.x,
+									min_padding + y - local_bounds.min_pos.y, min_padding + z - local_bounds.min_pos.z,
+									main_channel);
 						}
 					}
 				}
@@ -630,15 +623,15 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 			// 	print_line("//");
 			// }
 
-			const Transform local_transform(Basis(), info.world_pos.to_vec3());
+			const Transform3D local_transform(Basis(), info.world_pos);
 
 			for (int i = 0; i < materials.size(); ++i) {
 				Ref<ShaderMaterial> sm = materials[i];
-				if (sm.is_valid() &&
-						sm->get_shader().is_valid() &&
+				if (sm.is_valid() && sm->get_shader().is_valid() &&
 						sm->get_shader()->has_param(VoxelStringNames::get_singleton()->u_block_local_transform)) {
-					// That parameter should have a valid default value matching the local transform relative to the volume,
-					// which is usually per-instance, but in Godot 3 we have no such feature, so we have to duplicate.
+					// That parameter should have a valid default value matching the local transform relative to the
+					// volume, which is usually per-instance, but in Godot 3 we have no such feature, so we have to
+					// duplicate.
 					sm = sm->duplicate(false);
 					sm->set_shader_param(VoxelStringNames::get_singleton()->u_block_local_transform, local_transform);
 					materials[i] = sm;
@@ -673,34 +666,36 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 			// TODO Option to make multiple convex shapes
 			// TODO Use the fast way. This is slow because of the internal TriangleMesh thing.
 			// TODO Don't create a body if the mesh has no triangles
-			Ref<Shape> shape = mesh->create_convex_shape();
+			Ref<Shape3D> shape = mesh->create_convex_shape();
 			ERR_CONTINUE(shape.is_null());
-			CollisionShape *collision_shape = memnew(CollisionShape);
+			CollisionShape3D *collision_shape = memnew(CollisionShape3D);
 			collision_shape->set_shape(shape);
 			// Center the shape somewhat, because Godot is confusing node origin with center of mass
-			const Vector3i size = local_bounds.max_pos - local_bounds.min_pos + Vector3i(1 + max_padding + min_padding);
-			const Vector3 offset = -size.to_vec3() * 0.5f;
-			collision_shape->set_translation(offset);
+			const Vector3i size =
+					local_bounds.max_pos - local_bounds.min_pos + Vector3iUtil::create(1 + max_padding + min_padding);
+			const Vector3 offset = -Vector3(size) * 0.5f;
+			collision_shape->set_position(offset);
 
-			RigidBody *rigid_body = memnew(RigidBody);
+			RigidDynamicBody3D *rigid_body = memnew(RigidDynamicBody3D);
 			rigid_body->set_transform(transform * local_transform.translated(-offset));
 			rigid_body->add_child(collision_shape);
-			rigid_body->set_mode(RigidBody::MODE_KINEMATIC);
+			rigid_body->set_freeze_mode(RigidDynamicBody3D::FREEZE_MODE_KINEMATIC);
+			rigid_body->set_freeze_enabled(true);
 
 			// Switch to rigid after a short time to workaround clipping with terrain,
 			// because colliders are updated asynchronously
 			Timer *timer = memnew(Timer);
 			timer->set_wait_time(0.2);
 			timer->set_one_shot(true);
-			timer->connect("timeout", rigid_body, "set_mode", varray(RigidBody::MODE_RIGID));
+			timer->connect("timeout", callable_mp(rigid_body, &RigidDynamicBody3D::set_freeze_enabled), varray(false));
 			// Cannot use start() here because it requires to be inside the SceneTree,
 			// and we don't know if it will be after we add to the parent.
 			timer->set_autostart(true);
 			rigid_body->add_child(timer);
 
-			MeshInstance *mesh_instance = memnew(MeshInstance);
+			MeshInstance3D *mesh_instance = memnew(MeshInstance3D);
 			mesh_instance->set_mesh(mesh);
-			mesh_instance->set_translation(offset);
+			mesh_instance->set_position(offset);
 			rigid_body->add_child(mesh_instance);
 
 			parent_node->add_child(rigid_body);
@@ -718,7 +713,8 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Node *parent
 	Ref<VoxelMesher> mesher = _terrain->get_mesher();
 	Array materials;
 	materials.append(_terrain->get_material());
-	const Box3i int_world_box(Vector3i::from_floored(world_box.position), Vector3i::from_ceiled(world_box.size));
+	const Box3i int_world_box(
+			Vector3iUtil::from_floored(world_box.position), Vector3iUtil::from_ceiled(world_box.size));
 	return ::separate_floating_chunks(
 			*this, int_world_box, parent_node, _terrain->get_global_transform(), mesher, materials);
 }
@@ -728,9 +724,9 @@ void VoxelToolLodTerrain::_bind_methods() {
 			&VoxelToolLodTerrain::set_raycast_binary_search_iterations);
 	ClassDB::bind_method(D_METHOD("get_raycast_binary_search_iterations"),
 			&VoxelToolLodTerrain::get_raycast_binary_search_iterations);
-	ClassDB::bind_method(D_METHOD("get_voxel_f_interpolated", "position"),
-			&VoxelToolLodTerrain::get_voxel_f_interpolated);
-	ClassDB::bind_method(D_METHOD("separate_floating_chunks", "box", "parent_node"),
-			&VoxelToolLodTerrain::separate_floating_chunks);
+	ClassDB::bind_method(
+			D_METHOD("get_voxel_f_interpolated", "position"), &VoxelToolLodTerrain::get_voxel_f_interpolated);
+	ClassDB::bind_method(
+			D_METHOD("separate_floating_chunks", "box", "parent_node"), &VoxelToolLodTerrain::separate_floating_chunks);
 	ClassDB::bind_method(D_METHOD("do_sphere_async", "center", "radius"), &VoxelToolLodTerrain::do_sphere_async);
 }

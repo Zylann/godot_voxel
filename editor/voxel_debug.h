@@ -2,12 +2,12 @@
 #define VOXEL_DEBUG_H
 
 #include "../util/godot/direct_multimesh_instance.h"
-#include <core/reference.h>
+#include <core/object/ref_counted.h>
 #include <vector>
 
 class Mesh;
 class DirectMeshInstance;
-class World;
+class World3D;
 
 namespace VoxelDebug {
 
@@ -26,20 +26,20 @@ class DebugMultiMeshRenderer {
 public:
 	DebugMultiMeshRenderer();
 
-	void set_world(World *world);
+	void set_world(World3D *world);
 	void begin();
-	void draw_box(const Transform &t, Color8 color);
+	void draw_box(const Transform3D &t, Color8 color);
 	void end();
 	void clear();
 
 private:
-	std::vector<DirectMultiMeshInstance::TransformAndColor8> _items;
+	std::vector<DirectMultiMeshInstance::TransformAndColor32> _items;
 	Ref<MultiMesh> _multimesh;
 	DirectMultiMeshInstance _multimesh_instance;
-	World *_world = nullptr;
+	World3D *_world = nullptr;
 	bool _inside_block = false;
-	PoolRealArray _bulk_array;
-	Ref<SpatialMaterial> _material;
+	PackedFloat32Array _bulk_array;
+	Ref<StandardMaterial3D> _material;
 };
 
 class DebugRendererItem;
@@ -48,11 +48,11 @@ class DebugRenderer {
 public:
 	~DebugRenderer();
 
-	void set_world(World *world);
+	void set_world(World3D *world);
 
 	void begin();
-	void draw_box(const Transform &t, ColorID color);
-	void draw_box_mm(const Transform &t, Color8 color);
+	void draw_box(const Transform3D &t, ColorID color);
+	void draw_box_mm(const Transform3D &t, Color8 color);
 	void end();
 	void clear();
 
@@ -60,7 +60,7 @@ private:
 	std::vector<DebugRendererItem *> _items;
 	unsigned int _current = 0;
 	bool _inside_block = false;
-	World *_world = nullptr;
+	World3D *_world = nullptr;
 	DebugMultiMeshRenderer _mm_renderer;
 };
 

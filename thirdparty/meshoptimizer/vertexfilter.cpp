@@ -62,6 +62,8 @@
 #define wasmx_unziphi_v32x4(a, b) wasm_v32x4_shuffle(a, b, 1, 3, 5, 7)
 #endif
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 namespace meshopt
 {
 
@@ -837,6 +839,8 @@ void meshopt_decodeFilterExp(void* buffer, size_t vertex_count, size_t vertex_si
 	decodeFilterExp(static_cast<unsigned int*>(buffer), vertex_count * (vertex_size / 4));
 #endif
 }
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END
 
 #undef SIMD_SSE
 #undef SIMD_NEON

@@ -7,14 +7,13 @@
 #include "../util/span.h"
 #include "funcs.h"
 
-#include <core/map.h>
-#include <core/reference.h>
-#include <core/vector.h>
+#include <core/object/ref_counted.h>
+#include <core/templates/map.h>
+#include <core/templates/vector.h>
 #include <limits>
 
 class VoxelTool;
 class Image;
-class FuncRef;
 
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.
@@ -43,13 +42,7 @@ public:
 		COMPRESSION_COUNT
 	};
 
-	enum Depth {
-		DEPTH_8_BIT,
-		DEPTH_16_BIT,
-		DEPTH_32_BIT,
-		DEPTH_64_BIT,
-		DEPTH_COUNT
-	};
+	enum Depth { DEPTH_8_BIT, DEPTH_16_BIT, DEPTH_32_BIT, DEPTH_64_BIT, DEPTH_COUNT };
 
 	static inline uint32_t get_depth_byte_count(VoxelBufferInternal::Depth d) {
 		CRASH_COND(d < 0 || d >= VoxelBufferInternal::DEPTH_COUNT);
@@ -69,6 +62,7 @@ public:
 			default:
 				CRASH_NOW();
 		}
+		return DEPTH_COUNT;
 	}
 
 	static const Depth DEFAULT_CHANNEL_DEPTH = DEPTH_8_BIT;
@@ -109,7 +103,9 @@ public:
 	void clear_channel(unsigned int channel_index, uint64_t clear_value = 0);
 	void clear_channel_f(unsigned int channel_index, real_t clear_value);
 
-	_FORCE_INLINE_ const Vector3i &get_size() const { return _size; }
+	_FORCE_INLINE_ const Vector3i &get_size() const {
+		return _size;
+	}
 
 	void set_default_values(FixedArray<uint64_t, VoxelBufferInternal::MAX_CHANNELS> values);
 
@@ -203,8 +199,7 @@ public:
 	// `action_func` receives a voxel value from the channel, and returns a modified value.
 	// if the returned value is different, it will be applied to the buffer.
 	// Can be used to blend voxels together.
-	template <typename F>
-	inline void read_write_action(Box3i box, unsigned int channel_index, F action_func) {
+	template <typename F> inline void read_write_action(Box3i box, unsigned int channel_index, F action_func) {
 		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
 		box.clip(Box3i(Vector3i(), _size));
@@ -226,15 +221,14 @@ public:
 	}
 
 	static _FORCE_INLINE_ size_t get_index(const Vector3i pos, const Vector3i size) {
-		return pos.get_zxy_index(size);
+		return Vector3iUtil::get_zxy_index(pos, size);
 	}
 
 	_FORCE_INLINE_ size_t get_index(unsigned int x, unsigned int y, unsigned int z) const {
 		return y + _size.y * (x + _size.x * z); // ZXY index
 	}
 
-	template <typename F>
-	inline void for_each_index_and_pos(const Box3i &box, F f) {
+	template <typename F> inline void for_each_index_and_pos(const Box3i &box, F f) {
 		const Vector3i min_pos = box.pos;
 		const Vector3i max_pos = box.pos + box.size;
 		Vector3i pos;
@@ -259,8 +253,7 @@ public:
 		ERR_FAIL_COND(!Box3i(Vector3i(), _size).contains(box));
 		ERR_FAIL_COND(get_depth_byte_count(channel.depth) != sizeof(Data_T));
 #endif
-		Span<Data_T> data = Span<uint8_t>(channel.data, channel.size_in_bytes)
-									.reinterpret_cast_to<Data_T>();
+		Span<Data_T> data = Span<uint8_t>(channel.data, channel.size_in_bytes).reinterpret_cast_to<Data_T>();
 		// `&` is required because lambda captures are `const` by default and `mutable` can be used only from C++23
 		for_each_index_and_pos(box, [&data, action_func, offset](size_t i, Vector3i pos) {
 			data.set(i, action_func(pos + offset, data[i]));
@@ -270,8 +263,8 @@ public:
 
 	// void action_func(Vector3i pos, Data0_T &inout_v0, Data1_T &inout_v1)
 	template <typename F, typename Data0_T, typename Data1_T>
-	void write_box_2_template(const Box3i &box, unsigned int channel_index0, unsigned channel_index1, F action_func,
-			Vector3i offset) {
+	void write_box_2_template(
+			const Box3i &box, unsigned int channel_index0, unsigned channel_index1, F action_func, Vector3i offset) {
 		decompress_channel(channel_index0);
 		decompress_channel(channel_index1);
 		Channel &channel0 = _channels[channel_index0];
@@ -281,10 +274,8 @@ public:
 		ERR_FAIL_COND(get_depth_byte_count(channel0.depth) != sizeof(Data0_T));
 		ERR_FAIL_COND(get_depth_byte_count(channel1.depth) != sizeof(Data1_T));
 #endif
-		Span<Data0_T> data0 = Span<uint8_t>(channel0.data, channel0.size_in_bytes)
-									  .reinterpret_cast_to<Data0_T>();
-		Span<Data1_T> data1 = Span<uint8_t>(channel1.data, channel1.size_in_bytes)
-									  .reinterpret_cast_to<Data1_T>();
+		Span<Data0_T> data0 = Span<uint8_t>(channel0.data, channel0.size_in_bytes).reinterpret_cast_to<Data0_T>();
+		Span<Data1_T> data1 = Span<uint8_t>(channel1.data, channel1.size_in_bytes).reinterpret_cast_to<Data1_T>();
 		for_each_index_and_pos(box, [action_func, offset, &data0, &data1](size_t i, Vector3i pos) {
 			// TODO The caller must still specify exactly the correct type, maybe some conversion could be used
 			action_func(pos + offset, data0[i], data1[i]);
@@ -293,8 +284,7 @@ public:
 		compress_if_uniform(channel1);
 	}
 
-	template <typename F>
-	void write_box(const Box3i &box, unsigned int channel_index, F action_func, Vector3i offset) {
+	template <typename F> void write_box(const Box3i &box, unsigned int channel_index, F action_func, Vector3i offset) {
 #ifdef DEBUG_ENABLED
 		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 #endif
@@ -382,7 +372,7 @@ public:
 	}
 
 	_FORCE_INLINE_ uint64_t get_volume() const {
-		return _size.volume();
+		return Vector3iUtil::get_volume(_size);
 	}
 
 	// TODO Have a template version based on channel depth
@@ -403,13 +393,14 @@ public:
 
 	// Metadata
 
-	Variant get_block_metadata() const { return _block_metadata; }
+	Variant get_block_metadata() const {
+		return _block_metadata;
+	}
 	void set_block_metadata(Variant meta);
 	Variant get_voxel_metadata(Vector3i pos) const;
 	void set_voxel_metadata(Vector3i pos, Variant meta);
 
-	template <typename F>
-	void for_each_voxel_metadata_in_area(Box3i box, F callback) const {
+	template <typename F> void for_each_voxel_metadata_in_area(Box3i box, F callback) const {
 		const Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
 		while (elem != nullptr) {
 			if (box.contains(elem->key())) {
@@ -419,20 +410,26 @@ public:
 		}
 	}
 
-	void for_each_voxel_metadata(Ref<FuncRef> callback) const;
-	void for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Box3i box) const;
+	void for_each_voxel_metadata(const Callable &callback) const;
+	void for_each_voxel_metadata_in_area(const Callable &callback, Box3i box) const;
 
 	void clear_voxel_metadata();
 	void clear_voxel_metadata_in_area(Box3i box);
 	void copy_voxel_metadata_in_area(const VoxelBufferInternal &src_buffer, Box3i src_box, Vector3i dst_origin);
 	void copy_voxel_metadata(const VoxelBufferInternal &src_buffer);
 
-	const Map<Vector3i, Variant> &get_voxel_metadata() const { return _voxel_metadata; }
+	const Map<Vector3i, Variant> &get_voxel_metadata() const {
+		return _voxel_metadata;
+	}
 
 	// Internal synchronization.
 	// This lock is optional, and used internally at the moment, only in multithreaded areas.
-	inline const RWLock &get_lock() const { return _rw_lock; }
-	inline RWLock &get_lock() { return _rw_lock; }
+	inline const RWLock &get_lock() const {
+		return _rw_lock;
+	}
+	inline RWLock &get_lock() {
+		return _rw_lock;
+	}
 
 	// Debugging
 

@@ -6,12 +6,7 @@
 #define STRLEN(x) (sizeof(x) / sizeof(x[0]))
 
 Voxel::Voxel() :
-		_id(-1),
-		_material_id(0),
-		_transparency_index(0),
-		_color(1.f, 1.f, 1.f),
-		_geometry_type(GEOMETRY_NONE) {
-}
+		_id(-1), _material_id(0), _transparency_index(0), _color(1.f, 1.f, 1.f), _geometry_type(GEOMETRY_NONE) {}
 
 static Cube::Side name_to_side(const String &s) {
 	if (s == "left") {
@@ -69,7 +64,7 @@ bool Voxel::_get(const StringName &p_name, Variant &r_ret) const {
 
 void Voxel::_get_property_list(List<PropertyInfo> *p_list) const {
 	if (_geometry_type == GEOMETRY_CUBE) {
-		p_list->push_back(PropertyInfo(Variant::REAL, "cube_geometry/padding_y"));
+		p_list->push_back(PropertyInfo(Variant::FLOAT, "cube_geometry/padding_y"));
 		p_list->push_back(PropertyInfo(Variant::VECTOR2, "cube_tiles/left"));
 		p_list->push_back(PropertyInfo(Variant::VECTOR2, "cube_tiles/right"));
 		p_list->push_back(PropertyInfo(Variant::VECTOR2, "cube_tiles/bottom"));
@@ -139,7 +134,7 @@ void Voxel::set_geometry_type(GeometryType type) {
 			break;
 	}
 #ifdef TOOLS_ENABLED
-	property_list_changed_notify();
+	notify_property_list_changed();
 #endif
 }
 
@@ -151,8 +146,7 @@ void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
 	_custom_mesh = mesh;
 }
 
-void Voxel::set_cube_geometry() {
-}
+void Voxel::set_cube_geometry() {}
 
 void Voxel::set_random_tickable(bool rt) {
 	_random_tickable = rt;
@@ -164,7 +158,7 @@ void Voxel::set_cube_uv_side(int side, Vector2 tile_pos) {
 
 Ref<Resource> Voxel::duplicate(bool p_subresources) const {
 	Ref<Voxel> d_ref;
-	d_ref.instance();
+	d_ref.instantiate();
 	Voxel &d = **d_ref;
 
 	d._id = -1;
@@ -262,13 +256,13 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 
 	ERR_FAIL_COND(arrays.size() == 0);
 
-	PoolIntArray indices = arrays[Mesh::ARRAY_INDEX];
+	PackedInt32Array indices = arrays[Mesh::ARRAY_INDEX];
 	ERR_FAIL_COND_MSG(indices.size() % 3 != 0, "Mesh is empty or does not contain triangles");
 
-	PoolVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
-	PoolVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
-	PoolVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
-	PoolVector<float> tangents = arrays[Mesh::ARRAY_TANGENT];
+	PackedVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
+	PackedVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
+	PackedVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
+	PackedFloat32Array tangents = arrays[Mesh::ARRAY_TANGENT];
 
 	baked_data.empty = positions.size() == 0;
 
@@ -307,7 +301,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 
 	if (uvs.size() == 0) {
 		// TODO Properly generate UVs if there arent any
-		uvs = PoolVector2Array();
+		uvs = PackedVector2Array();
 		uvs.resize(positions.size());
 	}
 
@@ -324,11 +318,11 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 
 	// Separate triangles belonging to faces of the cube
 	{
-		PoolIntArray::Read indices_read = indices.read();
-		PoolVector3Array::Read positions_read = positions.read();
-		PoolVector3Array::Read normals_read = normals.read();
-		PoolVector2Array::Read uvs_read = uvs.read();
-		PoolVector<float>::Read tangents_read = tangents.read();
+		// PackedInt32Array::Read indices_read = indices.read();
+		// PackedVector3Array::Read positions_read = positions.read();
+		// PackedVector3Array::Read normals_read = normals.read();
+		// PackedVector2Array::Read uvs_read = uvs.read();
+		// PackedFloat32Array::Read tangents_read = tangents.read();
 
 		FixedArray<HashMap<int, int>, Cube::SIDE_COUNT> added_side_indices;
 		HashMap<int, int> added_regular_indices;
@@ -339,16 +333,16 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 		for (int i = 0; i < indices.size(); i += 3) {
 			Cube::SideAxis side;
 
-			tri_positions[0] = positions_read[indices_read[i]];
-			tri_positions[1] = positions_read[indices_read[i + 1]];
-			tri_positions[2] = positions_read[indices_read[i + 2]];
+			tri_positions[0] = positions[indices[i]];
+			tri_positions[1] = positions[indices[i + 1]];
+			tri_positions[2] = positions[indices[i + 2]];
 
 			FixedArray<float, 4> tangent;
 
 			if (tangents_empty && bake_tangents) {
 				//If tangents are empty then we calculate them
-				Vector2 delta_uv1 = uvs_read[indices_read[i + 1]] - uvs_read[indices_read[i]];
-				Vector2 delta_uv2 = uvs_read[indices_read[i + 2]] - uvs_read[indices_read[i]];
+				Vector2 delta_uv1 = uvs[indices[i + 1]] - uvs[indices[i]];
+				Vector2 delta_uv2 = uvs[indices[i + 2]] - uvs[indices[i]];
 				Vector3 delta_pos1 = tri_positions[1] - tri_positions[0];
 				Vector3 delta_pos2 = tri_positions[2] - tri_positions[0];
 				float r = 1.0f / (delta_uv1[0] * delta_uv2[1] - delta_uv1[1] * delta_uv2[0]);
@@ -357,7 +351,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 				tangent[0] = t[0];
 				tangent[1] = t[1];
 				tangent[2] = t[2];
-				tangent[3] = (bt.dot(normals_read[indices_read[i]].cross(t))) < 0 ? -1.0f : 1.0f;
+				tangent[3] = (bt.dot(normals[indices[i]].cross(t))) < 0 ? -1.0f : 1.0f;
 			}
 
 			if (L::get_triangle_side(tri_positions[0], tri_positions[1], tri_positions[2], side)) {
@@ -366,7 +360,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 				int next_side_index = model.side_positions[side].size();
 
 				for (int j = 0; j < 3; ++j) {
-					int src_index = indices_read[i + j];
+					int src_index = indices[i + j];
 					const int *existing_dst_index = added_side_indices[side].getptr(src_index);
 
 					if (existing_dst_index == nullptr) {
@@ -374,7 +368,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 
 						model.side_indices[side].push_back(next_side_index);
 						model.side_positions[side].push_back(tri_positions[j]);
-						model.side_uvs[side].push_back(uvs_read[indices_read[i + j]]);
+						model.side_uvs[side].push_back(uvs[indices[i + j]]);
 
 						if (bake_tangents) {
 							if (tangents_empty) {
@@ -387,10 +381,10 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 								// i is the first vertex of each triangle which increments by steps of 3.
 								// There are 4 floats per tangent.
 								int ti = (i / 3) * 4;
-								model.side_tangents[side].push_back(tangents_read[ti]);
-								model.side_tangents[side].push_back(tangents_read[ti + 1]);
-								model.side_tangents[side].push_back(tangents_read[ti + 2]);
-								model.side_tangents[side].push_back(tangents_read[ti + 3]);
+								model.side_tangents[side].push_back(tangents[ti]);
+								model.side_tangents[side].push_back(tangents[ti + 1]);
+								model.side_tangents[side].push_back(tangents[ti + 2]);
+								model.side_tangents[side].push_back(tangents[ti + 3]);
 							}
 						}
 
@@ -409,14 +403,14 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 				int next_regular_index = model.positions.size();
 
 				for (int j = 0; j < 3; ++j) {
-					int src_index = indices_read[i + j];
+					int src_index = indices[i + j];
 					const int *existing_dst_index = added_regular_indices.getptr(src_index);
 
 					if (existing_dst_index == nullptr) {
 						model.indices.push_back(next_regular_index);
 						model.positions.push_back(tri_positions[j]);
-						model.normals.push_back(normals_read[indices_read[i + j]]);
-						model.uvs.push_back(uvs_read[indices_read[i + j]]);
+						model.normals.push_back(normals[indices[i + j]]);
+						model.uvs.push_back(uvs[indices[i + j]]);
 
 						if (bake_tangents) {
 							if (tangents_empty) {
@@ -429,10 +423,10 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 								// i is the first vertex of each triangle which increments by steps of 3.
 								// There are 4 floats per tangent.
 								int ti = (i / 3) * 4;
-								model.tangents.push_back(tangents_read[ti]);
-								model.tangents.push_back(tangents_read[ti + 1]);
-								model.tangents.push_back(tangents_read[ti + 2]);
-								model.tangents.push_back(tangents_read[ti + 3]);
+								model.tangents.push_back(tangents[ti]);
+								model.tangents.push_back(tangents[ti + 1]);
+								model.tangents.push_back(tangents[ti + 2]);
+								model.tangents.push_back(tangents[ti + 3]);
 							}
 						}
 
@@ -524,12 +518,12 @@ void Voxel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "material_id"), "set_material_id", "get_material_id");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "geometry_type", PROPERTY_HINT_ENUM, "None,Cube,CustomMesh"),
 			"set_geometry_type", "get_geometry_type");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"),
-			"set_custom_mesh", "get_custom_mesh");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), "set_custom_mesh",
+			"get_custom_mesh");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING, itos(Variant::AABB) + ":"),
 			"set_collision_aabbs", "get_collision_aabbs");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
-			"set_collision_mask", "get_collision_mask");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask",
+			"get_collision_mask");
 
 	BIND_ENUM_CONSTANT(GEOMETRY_NONE);
 	BIND_ENUM_CONSTANT(GEOMETRY_CUBE);

@@ -3,7 +3,7 @@
 
 #include "../../util/dynamic_bitset.h"
 #include "voxel.h"
-#include <core/resource.h>
+#include <core/object/ref_counted.h>
 
 // TODO Rename VoxelBlockyLibrary
 

@@ -2,19 +2,19 @@
 #define VOXEL_RAYCAST_RESULT_H
 
 #include "../util/math/vector3i.h"
-#include <core/reference.h>
+#include <core/object/ref_counted.h>
 
 // This class exists only to make the script API nicer.
-class VoxelRaycastResult : public Reference {
-	GDCLASS(VoxelRaycastResult, Reference)
+class VoxelRaycastResult : public RefCounted {
+	GDCLASS(VoxelRaycastResult, RefCounted)
 public:
 	Vector3i position;
 	Vector3i previous_position;
 	float distance_along_ray;
 
 private:
-	Vector3 _b_get_position() const;
-	Vector3 _b_get_previous_position() const;
+	Vector3i _b_get_position() const;
+	Vector3i _b_get_previous_position() const;
 	float _b_get_distance() const;
 
 	static void _bind_methods();

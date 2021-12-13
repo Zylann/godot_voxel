@@ -1,12 +1,12 @@
 #ifndef VOXEL_VIEWER_H
 #define VOXEL_VIEWER_H
 
-#include <scene/3d/spatial.h>
+#include <scene/3d/node_3d.h>
 
 // Triggers loading of voxel nodes around its position. Voxels will update in priority closer to viewers.
 // Usually added as child of the player's camera.
-class VoxelViewer : public Spatial {
-	GDCLASS(VoxelViewer, Spatial)
+class VoxelViewer : public Node3D {
+	GDCLASS(VoxelViewer, Node3D)
 public:
 	VoxelViewer();
 

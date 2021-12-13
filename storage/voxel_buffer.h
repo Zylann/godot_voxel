@@ -1,12 +1,11 @@
 #ifndef VOXEL_BUFFER_H
 #define VOXEL_BUFFER_H
 
-#include <memory>
 #include "voxel_buffer_internal.h"
+#include <memory>
 
 class VoxelTool;
 class Image;
-class FuncRef;
 
 // TODO I wish I could call the original class `VoxelBuffer` and expose this other one with that name.
 // Godot doesn't seem to allow doing that. So the original class had to be named `VoxelBufferInternal`...
@@ -14,8 +13,8 @@ class FuncRef;
 // Scripts-facing wrapper around VoxelBufferInternal.
 // It is separate because being a Godot object requires to carry more baggage, and because this data type can
 // be instanced many times while being rarely accessed directly from scripts, it is a bit better to take this part out
-class VoxelBuffer : public Reference {
-	GDCLASS(VoxelBuffer, Reference)
+class VoxelBuffer : public RefCounted {
+	GDCLASS(VoxelBuffer, RefCounted)
 
 public:
 	enum ChannelId {
@@ -74,39 +73,34 @@ public:
 
 	//inline std::shared_ptr<VoxelBufferInternal> get_buffer_shared() { return _buffer; }
 
-	Vector3 get_size() const {
-		return _buffer->get_size().to_vec3();
-	}
+	Vector3i get_size() const { return _buffer->get_size(); }
+	// TODO Deprecate
 	int get_size_x() const { return _buffer->get_size().x; }
 	int get_size_y() const { return _buffer->get_size().x; }
 	int get_size_z() const { return _buffer->get_size().x; }
 
-	void create(int x, int y, int z) {
-		_buffer->create(x, y, z);
-	}
+	void create(int x, int y, int z) { _buffer->create(x, y, z); }
 	void clear();
 
-	uint64_t get_voxel(int x, int y, int z, unsigned int channel) const {
-		return _buffer->get_voxel(x, y, z, channel);
-	}
+	uint64_t get_voxel(int x, int y, int z, unsigned int channel) const { return _buffer->get_voxel(x, y, z, channel); }
 	void set_voxel(uint64_t value, int x, int y, int z, unsigned int channel) {
 		_buffer->set_voxel(value, x, y, z, channel);
 	}
 	real_t get_voxel_f(int x, int y, int z, unsigned int channel_index) const;
 	void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index);
 
-	void set_voxel_v(uint64_t value, Vector3 pos, unsigned int channel_index) {
+	void set_voxel_v(uint64_t value, Vector3i pos, unsigned int channel_index) {
 		_buffer->set_voxel(value, pos.x, pos.y, pos.z, channel_index);
 	}
 
 	void copy_channel_from(Ref<VoxelBuffer> other, unsigned int channel);
 	void copy_channel_from_area(
-			Ref<VoxelBuffer> other, Vector3 src_min, Vector3 src_max, Vector3 dst_min, unsigned int channel);
+			Ref<VoxelBuffer> other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel);
 
 	void fill(uint64_t defval, unsigned int channel_index = 0);
 	void fill_f(real_t value, unsigned int channel = 0);
-	void fill_area(uint64_t defval, Vector3 min, Vector3 max, unsigned int channel_index) {
-		_buffer->fill_area(defval, Vector3i::from_floored(min), Vector3i::from_floored(max), channel_index);
+	void fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigned int channel_index) {
+		_buffer->fill_area(defval, min, max, channel_index);
 	}
 
 	bool is_uniform(unsigned int channel_index) const;
@@ -114,7 +108,7 @@ public:
 	void compress_uniform_channels();
 	Compression get_channel_compression(unsigned int channel_index) const;
 
-	void downscale_to(Ref<VoxelBuffer> dst, Vector3 src_min, Vector3 src_max, Vector3 dst_min) const;
+	void downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 
 	Ref<VoxelBuffer> duplicate(bool include_metadata) const;
 
@@ -133,19 +127,15 @@ public:
 	Variant get_block_metadata() const { return _buffer->get_block_metadata(); }
 	void set_block_metadata(Variant meta);
 
-	Variant get_voxel_metadata(Vector3 pos) const {
-		return _buffer->get_voxel_metadata(Vector3i::from_floored(pos));
-	}
-	void set_voxel_metadata(Vector3 pos, Variant meta) {
-		_buffer->set_voxel_metadata(Vector3i::from_floored(pos), meta);
-	}
-	void for_each_voxel_metadata(Ref<FuncRef> callback) const;
-	void for_each_voxel_metadata_in_area(Ref<FuncRef> callback, Vector3 min_pos, Vector3 max_pos);
+	Variant get_voxel_metadata(Vector3i pos) const { return _buffer->get_voxel_metadata(pos); }
+	void set_voxel_metadata(Vector3i pos, Variant meta) { _buffer->set_voxel_metadata(pos, meta); }
+	void for_each_voxel_metadata(const Callable &callback) const;
+	void for_each_voxel_metadata_in_area(const Callable &callback, Vector3i min_pos, Vector3i max_pos);
 	void copy_voxel_metadata_in_area(
-			Ref<VoxelBuffer> src_buffer, Vector3 src_min_pos, Vector3 src_max_pos, Vector3 dst_pos);
+			Ref<VoxelBuffer> src_buffer, Vector3i src_min_pos, Vector3i src_max_pos, Vector3i dst_pos);
 
 	void clear_voxel_metadata();
-	void clear_voxel_metadata_in_area(Vector3 min_pos, Vector3 max_pos);
+	void clear_voxel_metadata_in_area(Vector3i min_pos, Vector3i max_pos);
 
 	// Debugging
 

@@ -38,25 +38,20 @@ inline void clip_copy_region(
 	clip_copy_region_coord(src_min.z, src_max.z, src_size.z, dst_min.z, dst_size.z);
 }
 
-void copy_3d_region_zxy(
-		Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min,
-		Span<const uint8_t> src, Vector3i src_size, Vector3i src_min, Vector3i src_max,
-		size_t item_size);
+void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, Span<const uint8_t> src,
+		Vector3i src_size, Vector3i src_min, Vector3i src_max, size_t item_size);
 
 template <typename T>
-inline void copy_3d_region_zxy(
-		Span<T> dst, Vector3i dst_size, Vector3i dst_min,
-		Span<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max) {
+inline void copy_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Span<const T> src, Vector3i src_size,
+		Vector3i src_min, Vector3i src_max) {
 	// The `template` keyword before method name is required when compiling with GCC
-	copy_3d_region_zxy(
-			dst.template reinterpret_cast_to<uint8_t>(), dst_size, dst_min,
-			src.template reinterpret_cast_to<const uint8_t>(), src_size, src_min, src_max,
-			sizeof(T));
+	copy_3d_region_zxy(dst.template reinterpret_cast_to<uint8_t>(), dst_size, dst_min,
+			src.template reinterpret_cast_to<const uint8_t>(), src_size, src_min, src_max, sizeof(T));
 }
 
 template <typename T>
 void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i dst_max, const T value) {
-	Vector3i::sort_min_max(dst_min, dst_max);
+	Vector3iUtil::sort_min_max(dst_min, dst_max);
 	dst_min.x = clamp(dst_min.x, 0, dst_size.x);
 	dst_min.y = clamp(dst_min.y, 0, dst_size.y);
 	dst_min.z = clamp(dst_min.z, 0, dst_size.z);
@@ -70,7 +65,7 @@ void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector
 	}
 
 #ifdef DEBUG_ENABLED
-	ERR_FAIL_COND(area_size.volume() > dst.size());
+	ERR_FAIL_COND(Vector3iUtil::get_volume(area_size) > dst.size());
 #endif
 
 	if (area_size == dst_size) {
@@ -199,6 +194,7 @@ struct IntBasis {
 			default:
 				CRASH_NOW();
 		}
+		return Vector3i();
 	}
 };
 
@@ -207,11 +203,11 @@ struct IntBasis {
 // The array's coordinate convention uses ZXY (index+1 does Y+1).
 template <typename T>
 Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector3i src_size, IntBasis basis) {
-	ERR_FAIL_COND_V(!basis.x.is_unit_vector(), src_size);
-	ERR_FAIL_COND_V(!basis.y.is_unit_vector(), src_size);
-	ERR_FAIL_COND_V(!basis.z.is_unit_vector(), src_size);
-	ERR_FAIL_COND_V(src_grid.size() != static_cast<size_t>(src_size.volume()), src_size);
-	ERR_FAIL_COND_V(dst_grid.size() != static_cast<size_t>(src_size.volume()), src_size);
+	ERR_FAIL_COND_V(!Vector3iUtil::is_unit_vector(basis.x), src_size);
+	ERR_FAIL_COND_V(!Vector3iUtil::is_unit_vector(basis.y), src_size);
+	ERR_FAIL_COND_V(!Vector3iUtil::is_unit_vector(basis.z), src_size);
+	ERR_FAIL_COND_V(src_grid.size() != static_cast<size_t>(Vector3iUtil::get_volume(src_size)), src_size);
+	ERR_FAIL_COND_V(dst_grid.size() != static_cast<size_t>(Vector3iUtil::get_volume(src_size)), src_size);
 
 	const int xa = basis.x.x != 0 ? 0 : basis.x.y != 0 ? 1 : 2;
 	const int ya = basis.y.x != 0 ? 0 : basis.y.y != 0 ? 1 : 2;

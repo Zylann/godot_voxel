@@ -33,33 +33,27 @@ inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4,
 	return res;
 }
 
-template <typename T>
-inline T min(const T a, const T b) {
+template <typename T> inline T min(const T a, const T b) {
 	return a < b ? a : b;
 }
 
-template <typename T>
-inline T max(const T a, const T b) {
+template <typename T> inline T max(const T a, const T b) {
 	return a > b ? a : b;
 }
 
-template <typename T>
-inline T min(const T a, const T b, const T c, const T d) {
+template <typename T> inline T min(const T a, const T b, const T c, const T d) {
 	return min(min(a, b), min(c, d));
 }
 
-template <typename T>
-inline T max(const T a, const T b, const T c, const T d) {
+template <typename T> inline T max(const T a, const T b, const T c, const T d) {
 	return max(max(a, b), max(c, d));
 }
 
-template <typename T>
-inline T min(const T a, const T b, const T c, const T d, const T e, const T f) {
+template <typename T> inline T min(const T a, const T b, const T c, const T d, const T e, const T f) {
 	return min(min(min(a, b), min(c, d)), min(e, f));
 }
 
-template <typename T>
-inline T max(const T a, const T b, const T c, const T d, const T e, const T f) {
+template <typename T> inline T max(const T a, const T b, const T c, const T d, const T e, const T f) {
 	return max(max(max(a, b), max(c, d)), max(e, f));
 }
 
@@ -73,8 +67,7 @@ inline T max(const T a, const T b, const T c, const T d, const T e, const T f, c
 	return max(max(a, b, c, d), max(e, f, g, h));
 }
 
-template <typename T>
-inline T clamp(const T x, const T min_value, const T max_value) {
+template <typename T> inline T clamp(const T x, const T min_value, const T max_value) {
 	// TODO Optimization: clang can optimize a min/max implementation. Worth changing to that?
 	if (x < min_value) {
 		return min_value;
@@ -85,8 +78,7 @@ inline T clamp(const T x, const T min_value, const T max_value) {
 	return x;
 }
 
-template <typename T>
-inline T squared(const T x) {
+template <typename T> inline T squared(const T x) {
 	return x * x;
 }
 
@@ -158,6 +150,10 @@ inline bool is_valid_size(const Vector3 &s) {
 	return s.x >= 0 && s.y >= 0 && s.z >= 0;
 }
 
+inline bool is_valid_size(const Vector3i &s) {
+	return s.x >= 0 && s.y >= 0 && s.z >= 0;
+}
+
 inline bool is_power_of_two(size_t x) {
 	return x != 0 && (x & (x - 1)) == 0;
 }
@@ -187,8 +183,8 @@ inline unsigned int get_shift_from_power_of_two_32(unsigned int pot) {
 			return i;
 		}
 	}
-	// Input was not a valid power of two
-	CRASH_COND(true);
+	CRASH_NOW_MSG("Input was not a valid power of two");
+	return 0;
 }
 
 // If the provided address `a` is not aligned to the number of bytes specified in `align`,

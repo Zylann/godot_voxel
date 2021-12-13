@@ -69,13 +69,15 @@ void FastNoiseLite::set_warp_noise(Ref<FastNoiseLiteGradient> warp_noise) {
 	}
 
 	if (_warp_noise.is_valid()) {
-		_warp_noise->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_warp_noise_changed");
+		_warp_noise->disconnect(
+				CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoiseLite::_on_warp_noise_changed));
 	}
 
 	_warp_noise = warp_noise;
 
 	if (_warp_noise.is_valid()) {
-		_warp_noise->connect(CoreStringNames::get_singleton()->changed, this, "_on_warp_noise_changed");
+		_warp_noise->connect(
+				CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoiseLite::_on_warp_noise_changed));
 	}
 
 	emit_changed();
@@ -100,8 +102,8 @@ FastNoiseLite::FractalType FastNoiseLite::get_fractal_type() const {
 
 void FastNoiseLite::set_fractal_octaves(int octaves) {
 	ERR_FAIL_COND(octaves <= 0);
-	if (octaves > _MAX_OCTAVES) {
-		octaves = _MAX_OCTAVES;
+	if (octaves > MAX_OCTAVES) {
+		octaves = MAX_OCTAVES;
 	}
 	if (_fractal_octaves == octaves) {
 		return;
@@ -249,12 +251,12 @@ void FastNoiseLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_fractal_gain", "gain"), &FastNoiseLite::set_fractal_gain);
 	ClassDB::bind_method(D_METHOD("get_fractal_gain"), &FastNoiseLite::get_fractal_gain);
 
-	ClassDB::bind_method(D_METHOD("set_fractal_ping_pong_strength", "strength"),
-			&FastNoiseLite::set_fractal_ping_pong_strength);
+	ClassDB::bind_method(
+			D_METHOD("set_fractal_ping_pong_strength", "strength"), &FastNoiseLite::set_fractal_ping_pong_strength);
 	ClassDB::bind_method(D_METHOD("get_fractal_ping_pong_strength"), &FastNoiseLite::get_fractal_ping_pong_strength);
 
-	ClassDB::bind_method(D_METHOD("set_fractal_weighted_strength", "strength"),
-			&FastNoiseLite::set_fractal_weighted_strength);
+	ClassDB::bind_method(
+			D_METHOD("set_fractal_weighted_strength", "strength"), &FastNoiseLite::set_fractal_weighted_strength);
 	ClassDB::bind_method(D_METHOD("get_fractal_weighted_strength"), &FastNoiseLite::get_fractal_weighted_strength);
 
 	ClassDB::bind_method(D_METHOD("set_cellular_distance_function", "cell_distance_func"),
@@ -276,8 +278,7 @@ void FastNoiseLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_noise_2dv", "position"), &FastNoiseLite::_b_get_noise_2dv);
 	ClassDB::bind_method(D_METHOD("get_noise_3dv", "position"), &FastNoiseLite::_b_get_noise_3dv);
 
-	// TODO This is an internal method, it should be hidden from scripts
-	ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &FastNoiseLite::_on_warp_noise_changed);
+	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &FastNoiseLite::_on_warp_noise_changed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM,
 						 "OpenSimplex2,OpenSimplex2S,Cellular,Perlin,ValueCubic,Value"),
@@ -285,29 +286,29 @@ void FastNoiseLite::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "seed"), "set_seed", "get_seed");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "period", PROPERTY_HINT_EXP_RANGE, "0.0001,10000.0"),
-			"set_period", "get_period");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_RANGE, "0.0001,10000.0,0.1,exp"), "set_period",
+			"get_period");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "warp_noise", PROPERTY_HINT_RESOURCE_TYPE, "FastNoiseLiteGradient"),
 			"set_warp_noise", "get_warp_noise");
 
 	ADD_GROUP("Fractal", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_type", PROPERTY_HINT_ENUM,
-						 "None,FBm,Ridged,PingPong"),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_type", PROPERTY_HINT_ENUM, "None,FBm,Ridged,PingPong"),
 			"set_fractal_type", "get_fractal_type");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE, vformat("1,%d,1", _MAX_OCTAVES)),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE, vformat("1,%d,1", MAX_OCTAVES)),
 			"set_fractal_octaves", "get_fractal_octaves");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "fractal_gain"), "set_fractal_gain", "get_fractal_gain");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_gain"), "set_fractal_gain", "get_fractal_gain");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "fractal_ping_pong_strength"),
-			"set_fractal_ping_pong_strength", "get_fractal_ping_pong_strength");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_ping_pong_strength"), "set_fractal_ping_pong_strength",
+			"get_fractal_ping_pong_strength");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "fractal_weighted_strength"),
-			"set_fractal_weighted_strength", "get_fractal_weighted_strength");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_weighted_strength"), "set_fractal_weighted_strength",
+			"get_fractal_weighted_strength");
 
 	ADD_GROUP("Cellular", "");
 
@@ -319,13 +320,13 @@ void FastNoiseLite::_bind_methods() {
 						 "CellValue,Distance,Distance2,Distance2Add,Distance2Sub,Distance2Mul,Distance2Div"),
 			"set_cellular_return_type", "get_cellular_return_type");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "cellular_jitter", PROPERTY_HINT_RANGE, "0.0,1.0"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "cellular_jitter", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"),
 			"set_cellular_jitter", "get_cellular_jitter");
 
 	ADD_GROUP("Advanced", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "rotation_type_3d", PROPERTY_HINT_ENUM,
-						 "None,ImproveXYPlanes,ImproveXZPlanes"),
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "rotation_type_3d", PROPERTY_HINT_ENUM, "None,ImproveXYPlanes,ImproveXZPlanes"),
 			"set_rotation_type_3d", "get_rotation_type_3d");
 
 	BIND_ENUM_CONSTANT(TYPE_OPEN_SIMPLEX_2);

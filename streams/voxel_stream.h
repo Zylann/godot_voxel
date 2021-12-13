@@ -3,7 +3,7 @@
 
 #include "instance_data.h"
 #include "voxel_block_request.h"
-#include <core/resource.h>
+#include <core/io/resource.h>
 
 // Provides access to a source of paged voxel data, which may load and save.
 // This is intented for files, so it may run in a single background thread and gets requests in batches.

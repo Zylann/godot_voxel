@@ -1,10 +1,10 @@
 #ifndef VOXEL_FILE_LOCKER_H
 #define VOXEL_FILE_LOCKER_H
 
-#include <core/hash_map.h>
-#include <core/os/file_access.h>
+#include <core/io/file_access.h>
 #include <core/os/mutex.h>
 #include <core/os/rw_lock.h>
+#include <core/templates/hash_map.h>
 
 // Performs software locking on paths,
 // so that multiple threads (controlled by this module) wanting to access the same file will lock a shared mutex.
@@ -46,8 +46,7 @@ private:
 			if (fpp == nullptr) {
 				fp = memnew(File);
 				_files.set(fpath, fp);
-			}
-			else {
+			} else {
 				fp = *fpp;
 			}
 		}

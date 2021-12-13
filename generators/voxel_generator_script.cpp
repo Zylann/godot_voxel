@@ -2,19 +2,21 @@
 #include "../constants/voxel_string_names.h"
 #include "../util/godot/funcs.h"
 
-VoxelGeneratorScript::VoxelGeneratorScript() {
-}
+VoxelGeneratorScript::VoxelGeneratorScript() {}
 
 VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelBlockRequest &input) {
 	Result result;
-	Variant ret;
+
 	// Create a temporary wrapper so Godot can pass it to scripts
 	Ref<VoxelBuffer> buffer_wrapper;
-	buffer_wrapper.instance();
+	buffer_wrapper.instantiate();
 	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
 	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());
-	try_call_script(this, VoxelStringNames::get_singleton()->_generate_block,
-			buffer_wrapper, input.origin_in_voxels.to_vec3(), input.lod, &ret);
+
+	if (!GDVIRTUAL_CALL(_generate_block, buffer_wrapper, input.origin_in_voxels, input.lod)) {
+		WARN_PRINT_ONCE("VoxelGeneratorScript::_generate_block is unimplemented!");
+	}
+
 	// The wrapper is discarded
 	buffer_wrapper->get_buffer().move_to(input.voxel_buffer);
 
@@ -28,18 +30,21 @@ VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelBlockRequest &i
 }
 
 int VoxelGeneratorScript::get_used_channels_mask() const {
-	Variant ret;
-	if (try_call_script(this, VoxelStringNames::get_singleton()->_get_used_channels_mask, nullptr, 0, &ret)) {
-		return ret;
+	int mask = 0;
+	if (!GDVIRTUAL_CALL(_get_used_channels_mask, mask)) {
+		WARN_PRINT_ONCE("VoxelGeneratorScript::_get_used_channels_mask is unimplemented!");
 	}
-	return 0;
+	return mask;
 }
 
 void VoxelGeneratorScript::_bind_methods() {
-	BIND_VMETHOD(MethodInfo("_generate_block",
-			PropertyInfo(Variant::OBJECT, "out_buffer", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT, "VoxelBuffer"),
-			PropertyInfo(Variant::VECTOR3, "origin_in_voxels"),
-			PropertyInfo(Variant::INT, "lod")));
+	// TODO Test if GDVIRTUAL can print errors properly when GDScript fails inside a different thread.
+	GDVIRTUAL_BIND(_generate_block, "out_buffer", "origin_in_voxels", "lod");
+	GDVIRTUAL_BIND(_get_used_channels_mask);
 
-	BIND_VMETHOD(MethodInfo(Variant::INT, "_get_used_channels_mask"));
+	// BIND_VMETHOD(MethodInfo("_generate_block",
+	// 		PropertyInfo(Variant::OBJECT, "out_buffer", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT, "VoxelBuffer"),
+	// 		PropertyInfo(Variant::VECTOR3, "origin_in_voxels"), PropertyInfo(Variant::INT, "lod")));
+
+	// BIND_VMETHOD(MethodInfo(Variant::INT, "_get_used_channels_mask"));
 }

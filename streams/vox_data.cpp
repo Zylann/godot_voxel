@@ -2,14 +2,15 @@
 #include "../util/macros.h"
 #include "../util/profiling.h"
 
-#include <core/os/file_access.h>
-#include <core/variant.h>
+#include <core/io/file_access.h>
+#include <core/variant/variant.h>
 #include <unordered_set>
 
 namespace vox {
 
 const uint32_t PALETTE_SIZE = 256;
 
+// clang-format off
 uint32_t g_default_palette[PALETTE_SIZE] = {
 	0x00000000, 0xffffffff, 0xffccffff, 0xff99ffff, 0xff66ffff, 0xff33ffff, 0xff00ffff, 0xffffccff,
 	0xffccccff, 0xff99ccff, 0xff66ccff, 0xff33ccff, 0xff00ccff, 0xffff99ff, 0xffcc99ff, 0xff9999ff,
@@ -44,6 +45,7 @@ uint32_t g_default_palette[PALETTE_SIZE] = {
 	0xff880000, 0xff770000, 0xff550000, 0xff440000, 0xff220000, 0xff110000, 0xffeeeeee, 0xffdddddd,
 	0xffbbbbbb, 0xffaaaaaa, 0xff888888, 0xff777777, 0xff555555, 0xff444444, 0xff222222, 0xff111111
 };
+// clang-format on
 
 static Error parse_string(FileAccess &f, String &s) {
 	const int size = f.get_32();
@@ -154,16 +156,13 @@ static Basis parse_basis(uint8_t data) {
 	y = magica_z;
 
 	Basis b;
-	b.set(
-			x.x, y.x, z.x,
-			x.y, y.y, z.y,
-			x.z, y.z, z.z);
+	b.set(x.x, y.x, z.x, x.y, y.y, z.y, x.z, y.z, z.z);
 
 	return b;
 }
 
-Error parse_node_common_header(Node &node, FileAccess &f,
-		const std::unordered_map<int, std::unique_ptr<Node>> &scene_graph) {
+Error parse_node_common_header(
+		Node &node, FileAccess &f, const std::unordered_map<int, std::unique_ptr<Node>> &scene_graph) {
 	//
 	const int node_id = f.get_32();
 	ERR_FAIL_COND_V_MSG(scene_graph.find(node_id) != scene_graph.end(), ERR_INVALID_DATA,
@@ -216,7 +215,7 @@ Error Data::_load_from_file(String fpath) {
 	const uint32_t version = f.get_32();
 	ERR_FAIL_COND_V(version != 150, ERR_PARSE_ERROR);
 
-	const size_t file_length = f.get_len();
+	const size_t file_length = f.get_length();
 
 	Vector3i last_size;
 
@@ -259,7 +258,7 @@ Error Data::_load_from_file(String fpath) {
 				ERR_FAIL_COND_V(pos.x >= model->size.x || pos.x < 0, ERR_PARSE_ERROR);
 				ERR_FAIL_COND_V(pos.y >= model->size.y || pos.y < 0, ERR_PARSE_ERROR);
 				ERR_FAIL_COND_V(pos.z >= model->size.z || pos.z < 0, ERR_PARSE_ERROR);
-				model->color_indexes[pos.get_zxy_index(model->size)] = c;
+				model->color_indexes[Vector3iUtil::get_zxy_index(pos, model->size)] = c;
 			}
 
 			_models.push_back(std::move(model));

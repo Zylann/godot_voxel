@@ -2,9 +2,6 @@
 #include "voxel_instancer.h"
 
 #include <core/core_string_names.h>
-#include <scene/3d/collision_shape.h>
-#include <scene/3d/mesh_instance.h>
-#include <scene/3d/physics_body.h>
 
 void VoxelInstanceLibraryItemBase::set_item_name(String name) {
 	_name = name;
@@ -32,11 +29,13 @@ void VoxelInstanceLibraryItemBase::set_generator(Ref<VoxelInstanceGenerator> gen
 		return;
 	}
 	if (_generator.is_valid()) {
-		_generator->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_generator_changed");
+		_generator->disconnect(CoreStringNames::get_singleton()->changed,
+				callable_mp(this, &VoxelInstanceLibraryItemBase::_on_generator_changed));
 	}
 	_generator = generator;
 	if (_generator.is_valid()) {
-		_generator->connect(CoreStringNames::get_singleton()->changed, this, "_on_generator_changed");
+		_generator->connect(CoreStringNames::get_singleton()->changed,
+				callable_mp(this, &VoxelInstanceLibraryItemBase::_on_generator_changed));
 	}
 	notify_listeners(CHANGE_GENERATOR);
 }
@@ -67,7 +66,7 @@ void VoxelInstanceLibraryItemBase::remove_listener(IListener *listener, int id) 
 	slot.id = id;
 	int i = _listeners.find(slot);
 	ERR_FAIL_COND(i == -1);
-	_listeners.remove(i);
+	_listeners.remove_at(i);
 }
 
 void VoxelInstanceLibraryItemBase::notify_listeners(ChangeType change) {
@@ -95,11 +94,11 @@ void VoxelInstanceLibraryItemBase::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_persistent", "persistent"), &VoxelInstanceLibraryItemBase::set_persistent);
 	ClassDB::bind_method(D_METHOD("is_persistent"), &VoxelInstanceLibraryItemBase::is_persistent);
 
-	ClassDB::bind_method(D_METHOD("_on_generator_changed"), &VoxelInstanceLibraryItemBase::_on_generator_changed);
+	//ClassDB::bind_method(D_METHOD("_on_generator_changed"), &VoxelInstanceLibraryItemBase::_on_generator_changed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "name"), "set_item_name", "get_item_name");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_index", PROPERTY_HINT_RANGE, "0,8,1"),
-			"set_lod_index", "get_lod_index");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "lod_index", PROPERTY_HINT_RANGE, "0,8,1"), "set_lod_index", "get_lod_index");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceGenerator"),
 			"set_generator", "get_generator");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "persistent"), "set_persistent", "is_persistent");

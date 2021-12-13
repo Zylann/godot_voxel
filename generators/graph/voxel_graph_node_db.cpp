@@ -12,8 +12,7 @@ namespace {
 VoxelGraphNodeDB *g_node_type_db = nullptr;
 }
 
-template <typename F>
-inline void do_monop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
+template <typename F> inline void do_monop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
 	const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 	VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 	for (uint32_t i = 0; i < a.size; ++i) {
@@ -21,8 +20,7 @@ inline void do_monop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
 	}
 }
 
-template <typename F>
-inline void do_binop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
+template <typename F> inline void do_binop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
 	const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 	const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
 	VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
@@ -145,8 +143,8 @@ inline Interval skew3(Interval x) {
 }
 
 // This is mostly useful for generating planets from an existing heightmap
-inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, const Image &im,
-		float min_h, float max_h, float norm_x, float norm_y) {
+inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, const Image &im, float min_h,
+		float max_h, float norm_x, float norm_y) {
 	const float d = Math::sqrt(x * x + y * y + z * z) + 0.0001f;
 	const float sd = d - r;
 	// Optimize when far enough from heightmap.
@@ -257,7 +255,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.name = "Constant";
 		t.category = CATEGORY_INPUT;
 		t.outputs.push_back(Port("value"));
-		t.params.push_back(Param("value", Variant::REAL));
+		t.params.push_back(Param("value", Variant::FLOAT));
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_X];
@@ -390,9 +388,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_MATH;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.process_buffer_func = [](ProcessBufferContext &ctx) {
-			do_monop(ctx, [](float a) { return Math::sin(a); });
-		};
+		t.process_buffer_func = [](ProcessBufferContext &ctx) { do_monop(ctx, [](float a) { return Math::sin(a); }); };
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, sin(a));
@@ -418,9 +414,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_MATH;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.process_buffer_func = [](ProcessBufferContext &ctx) {
-			do_monop(ctx, [](float a) { return Math::abs(a); });
-		};
+		t.process_buffer_func = [](ProcessBufferContext &ctx) { do_monop(ctx, [](float a) { return Math::abs(a); }); };
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, abs(a));
@@ -432,9 +426,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_MATH;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.process_buffer_func = [](ProcessBufferContext &ctx) {
-			do_monop(ctx, [](float a) { return Math::sqrt(a); });
-		};
+		t.process_buffer_func = [](ProcessBufferContext &ctx) { do_monop(ctx, [](float a) { return Math::sqrt(a); }); };
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, sqrt(a));
@@ -462,7 +454,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("step"));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
-			do_binop(ctx, [](float a, float b) { return Math::stepify(a, b); });
+			do_binop(ctx, [](float a, float b) { return Math::snapped(a, b); });
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
@@ -534,9 +526,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &y1 = ctx.get_input(3);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = Math::sqrt(
-						squared(x1.data[i] - x0.data[i]) +
-						squared(y1.data[i] - y0.data[i]));
+				out.data[i] = Math::sqrt(squared(x1.data[i] - x0.data[i]) + squared(y1.data[i] - y0.data[i]));
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -570,9 +560,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &z1 = ctx.get_input(5);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = Math::sqrt(
-						squared(x1.data[i] - x0.data[i]) +
-						squared(y1.data[i] - y0.data[i]) +
+				out.data[i] = Math::sqrt(squared(x1.data[i] - x0.data[i]) + squared(y1.data[i] - y0.data[i]) +
 						squared(z1.data[i] - z0.data[i]));
 			}
 		};
@@ -600,8 +588,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("min", Variant::REAL, -1.f));
-		t.params.push_back(Param("max", Variant::REAL, 1.f));
+		t.params.push_back(Param("min", Variant::FLOAT, -1.f));
+		t.params.push_back(Param("max", Variant::FLOAT, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
 			Params p;
 			p.min = ctx.get_param(0).operator float();
@@ -716,10 +704,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("min0", Variant::REAL, -1.f));
-		t.params.push_back(Param("max0", Variant::REAL, 1.f));
-		t.params.push_back(Param("min1", Variant::REAL, -1.f));
-		t.params.push_back(Param("max1", Variant::REAL, 1.f));
+		t.params.push_back(Param("min0", Variant::FLOAT, -1.f));
+		t.params.push_back(Param("max0", Variant::FLOAT, 1.f));
+		t.params.push_back(Param("min1", Variant::FLOAT, -1.f));
+		t.params.push_back(Param("max1", Variant::FLOAT, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
 			Params p;
 			const float min0 = ctx.get_param(0).operator float();
@@ -764,8 +752,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("edge0", Variant::REAL, 0.f));
-		t.params.push_back(Param("edge1", Variant::REAL, 1.f));
+		t.params.push_back(Param("edge0", Variant::FLOAT, 0.f));
+		t.params.push_back(Param("edge1", Variant::FLOAT, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
 			Params p;
 			p.edge0 = ctx.get_param(0).operator float();
@@ -1006,9 +994,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &sz = ctx.get_input(5);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = sdf_box(
-						Vector3(x.data[i], y.data[i], z.data[i]),
-						Vector3(sx.data[i], sy.data[i], sz.data[i]));
+				out.data[i] =
+						sdf_box(Vector3(x.data[i], y.data[i], z.data[i]), Vector3(sx.data[i], sy.data[i], sz.data[i]));
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -1088,7 +1075,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("a"));
 		t.inputs.push_back(Port("b"));
 		t.outputs.push_back(Port("sdf"));
-		t.params.push_back(Param("smoothness", Variant::REAL, 0.f));
+		t.params.push_back(Param("smoothness", Variant::FLOAT, 0.f));
 		t.compile_func = [](CompileContext &ctx) {
 			Params p;
 			p.smoothness = ctx.get_param(0).operator float();
@@ -1172,7 +1159,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("a"));
 		t.inputs.push_back(Port("b"));
 		t.outputs.push_back(Port("sdf"));
-		t.params.push_back(Param("smoothness", Variant::REAL, 0.f));
+		t.params.push_back(Param("smoothness", Variant::FLOAT, 0.f));
 		t.compile_func = [](CompileContext &ctx) {
 			Params p;
 			p.smoothness = ctx.get_param(0).operator float();
@@ -1251,8 +1238,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.name = "SdfPreview";
 		t.category = CATEGORY_DEBUG;
 		t.inputs.push_back(Port("value"));
-		t.params.push_back(Param("min_value", Variant::REAL, -1.f));
-		t.params.push_back(Param("max_value", Variant::REAL, 1.f));
+		t.params.push_back(Param("min_value", Variant::FLOAT, -1.f));
+		t.params.push_back(Param("max_value", Variant::FLOAT, 1.f));
 		t.debug_only = true;
 	}
 	{
@@ -1315,8 +1302,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("z"));
 		t.outputs.push_back(Port("sdf"));
 		t.params.push_back(Param("image", "Image"));
-		t.params.push_back(Param("radius", Variant::REAL, 10.f));
-		t.params.push_back(Param("factor", Variant::REAL, 1.f));
+		t.params.push_back(Param("radius", Variant::FLOAT, 10.f));
+		t.params.push_back(Param("factor", Variant::FLOAT, 1.f));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Image> image = ctx.get_param(0);
@@ -1351,8 +1338,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Params p = ctx.get_params<Params>();
 			const Image &im = *p.image;
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i],
-						p.radius, p.factor, im, p.min_height, p.max_height, p.norm_x, p.norm_y);
+				out.data[i] = sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i], p.radius, p.factor, im,
+						p.min_height, p.max_height, p.norm_x, p.norm_y);
 			}
 		};
 
@@ -1361,8 +1348,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0,
-					sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y));
+			ctx.set_output(
+					0, sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y));
 		};
 	}
 	{
@@ -1619,7 +1606,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			p.index = param_index;
 
 			switch (p.type) {
-				case Variant::REAL:
+				case Variant::FLOAT:
 					if (p.default_value.get_type() == Variant::NIL) {
 						p.default_value = 0.f;
 					}

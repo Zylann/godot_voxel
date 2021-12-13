@@ -4,11 +4,11 @@
 
 VoxEditorPlugin::VoxEditorPlugin(EditorNode *p_node) {
 	Ref<VoxelVoxImporter> vox_scene_importer;
-	vox_scene_importer.instance();
+	vox_scene_importer.instantiate();
 	//add_import_plugin(vox_importer);
 	ResourceFormatImporter::get_singleton()->add_importer(vox_scene_importer);
 
 	Ref<VoxelVoxMeshImporter> vox_mesh_importer;
-	vox_mesh_importer.instance();
+	vox_mesh_importer.instantiate();
 	ResourceFormatImporter::get_singleton()->add_importer(vox_mesh_importer);
 }

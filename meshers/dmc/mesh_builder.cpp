@@ -5,7 +5,6 @@
 namespace dmc {
 
 Array MeshBuilder::commit(bool wireframe) {
-
 	if (_positions.size() == 0) {
 		return Array();
 	}
@@ -13,12 +12,10 @@ Array MeshBuilder::commit(bool wireframe) {
 	ERR_FAIL_COND_V(_indices.size() % 3 != 0, Array());
 
 	if (wireframe) {
-
 		// Debug purpose, no effort to be fast here
 		std::vector<int> wireframe_indices;
 
 		for (unsigned int i = 0; i < _indices.size(); i += 3) {
-
 			wireframe_indices.push_back(_indices[i]);
 			wireframe_indices.push_back(_indices[i + 1]);
 
@@ -32,9 +29,9 @@ Array MeshBuilder::commit(bool wireframe) {
 		_indices = wireframe_indices;
 	}
 
-	PoolVector3Array positions;
-	PoolVector3Array normals;
-	PoolIntArray indices;
+	PackedVector3Array positions;
+	PackedVector3Array normals;
+	PackedInt32Array indices;
 
 	raw_copy_to(positions, _positions);
 	raw_copy_to(normals, _normals);

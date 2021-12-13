@@ -22,10 +22,25 @@
 /* Experimental APIs have unstable interface and might have implementation that's not fully tested or optimized */
 #define MESHOPTIMIZER_EXPERIMENTAL MESHOPTIMIZER_API
 
+#ifdef MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE
+
+#define MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN namespace zylannmeshopt {
+#define MESHOPTIMIZER_ZYLANN_NAMESPACE_END }
+// No C interface here, this is exclusively for a C++ source integration
+
+#else
+
+#define MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+#define MESHOPTIMIZER_ZYLANN_NAMESPACE_END
+
 /* C interface */
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#endif // MESHOPTIMIZER_API
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
 
 /**
  * Vertex attribute stream, similar to glVertexPointer
@@ -495,9 +510,11 @@ MESHOPTIMIZER_EXPERIMENTAL void meshopt_spatialSortTriangles(unsigned int* desti
  */
 MESHOPTIMIZER_API void meshopt_setAllocator(void* (*allocate)(size_t), void (*deallocate)(void*));
 
+#ifndef MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
+#endif // MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE
 
 /* Quantization into commonly supported data formats */
 #ifdef __cplusplus
@@ -1027,3 +1044,5 @@ inline void meshopt_spatialSortTriangles(T* destination, const T* indices, size_
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END

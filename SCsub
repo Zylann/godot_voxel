@@ -63,8 +63,15 @@ if env["tools"]:
 	]
 	voxel_files += voxel_editor_files
 
-# See https://github.com/zeux/meshoptimizer/issues/311
-env_voxel.Append(CPPDEFINES=["MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS"])
+env_voxel.Append(CPPDEFINES=[
+	# See https://github.com/zeux/meshoptimizer/issues/311
+	"MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS",
+	# Because of the above, the MeshOptimizer library in this module is different to an official one.
+	# Godot 4 includes an official version, which means they would both conflict at linking time.
+	# To prevent this clash we wrap the entire library within an additional namespace.
+	# This should be solved either by solving issue #311 or by porting the module to a dynamic library (GDExtension).
+	"MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE"
+])
 
 if RUN_TESTS:
 	voxel_files += [

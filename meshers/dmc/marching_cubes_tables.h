@@ -7,6 +7,8 @@ namespace MarchingCubes {
 // in http://paulbourke.net/geometry/polygonise/marchingsource.cpp
 // Thanks!
 
+// clang-format off
+
 // Edges table
 int mc_edges[256] = {
 	0x000, 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c, 0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
@@ -344,6 +346,8 @@ int ms_triangles[18][13] = {
 	{ 1, 0, 7, 1, 7, 5, 1, 5, 4, 1, 4, 3, -1 }, // 0 2 alternative
 	{ 1, 3, 2, 1, 5, 3, 1, 6, 5, 1, 7, 6, -1 } // 1 3 alternative
 };
+
+// clang-format on
 
 } // namespace MarchingCubes
 

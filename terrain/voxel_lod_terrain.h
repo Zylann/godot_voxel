@@ -7,7 +7,6 @@
 #include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
-#include <scene/3d/spatial.h>
 #include <unordered_set>
 
 #ifdef TOOLS_ENABLED
@@ -50,7 +49,9 @@ public:
 	int get_lod_count() const;
 
 	void set_generate_collisions(bool enabled);
-	bool get_generate_collisions() const { return _generate_collisions; }
+	bool get_generate_collisions() const {
+		return _generate_collisions;
+	}
 
 	// Sets up to which amount of LODs collision will generate. -1 means all of them.
 	void set_collision_lod_count(int lod_count);
@@ -68,8 +69,8 @@ public:
 	int get_data_block_region_extent() const;
 	int get_mesh_block_region_extent() const;
 
-	Vector3 voxel_to_data_block_position(Vector3 vpos, int lod_index) const;
-	Vector3 voxel_to_mesh_block_position(Vector3 vpos, int lod_index) const;
+	Vector3i voxel_to_data_block_position(Vector3 vpos, int lod_index) const;
+	Vector3i voxel_to_mesh_block_position(Vector3 vpos, int lod_index) const;
 
 	unsigned int get_data_block_size_pow2() const;
 	unsigned int get_data_block_size() const;
@@ -87,8 +88,7 @@ public:
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
 	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask);
 
-	template <typename F>
-	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
+	template <typename F> void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
 		const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
 		if (_full_load_mode == false && !is_area_editable(voxel_box)) {
 			PRINT_VERBOSE("Area not editable");
@@ -98,8 +98,8 @@ public:
 		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 		{
 			RWLockWrite wlock(data_lod0.map_lock);
-			data_lod0.map.write_box(voxel_box, channel, action,
-					[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
+			data_lod0.map.write_box(
+					voxel_box, channel, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
 						if (generator.is_valid()) {
 							VoxelBlockRequest r{ voxels, pos, 0 };
 							generator->generate_block(r);
@@ -120,8 +120,8 @@ public:
 		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 		{
 			RWLockWrite wlock(data_lod0.map_lock);
-			data_lod0.map.write_box_2(voxel_box, channel1, channel2, action,
-					[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
+			data_lod0.map.write_box_2(
+					voxel_box, channel1, channel2, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
 						if (generator.is_valid()) {
 							VoxelBlockRequest r{ voxels, pos, 0 };
 							generator->generate_block(r);
@@ -140,7 +140,9 @@ public:
 	void abort_async_edits();
 
 	void set_voxel_bounds(Box3i p_box);
-	inline Box3i get_voxel_bounds() const { return _bounds_in_voxels; }
+	inline Box3i get_voxel_bounds() const {
+		return _bounds_in_voxels;
+	}
 
 	void set_collision_update_delay(int delay_msec);
 	int get_collision_update_delay() const;
@@ -148,11 +150,7 @@ public:
 	void set_lod_fade_duration(float seconds);
 	float get_lod_fade_duration() const;
 
-	enum ProcessMode {
-		PROCESS_MODE_IDLE = 0,
-		PROCESS_MODE_PHYSICS,
-		PROCESS_MODE_DISABLED
-	};
+	enum ProcessMode { PROCESS_MODE_IDLE = 0, PROCESS_MODE_PHYSICS, PROCESS_MODE_DISABLED };
 
 	// This was originally added to fix a problem with rigidbody teleportation and floating world origin:
 	// The player teleported at a different rate than the rest of the world due to delays in transform updates,
@@ -160,7 +158,9 @@ public:
 	// producing flickers and CPU lag. Changing process mode allows to align update rate,
 	// and freeze LOD for the duration of the teleport.
 	void set_process_mode(ProcessMode mode);
-	ProcessMode get_process_mode() const { return _process_mode; }
+	ProcessMode get_process_mode() const {
+		return _process_mode;
+	}
 
 	Ref<VoxelTool> get_voxel_tool();
 
@@ -201,20 +201,26 @@ public:
 
 #ifdef TOOLS_ENABLED
 	void set_show_gizmos(bool enable);
-	bool is_showing_gizmos() const { return _show_gizmos_enabled; }
+	bool is_showing_gizmos() const {
+		return _show_gizmos_enabled;
+	}
 #endif
 
-	String get_configuration_warning() const override;
+	TypedArray<String> get_configuration_warnings() const override;
 
 	// Internal
 
 	void set_instancer(VoxelInstancer *instancer);
-	uint32_t get_volume_id() const { return _volume_id; }
+	uint32_t get_volume_id() const {
+		return _volume_id;
+	}
 
 	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
 	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
 
-	std::shared_ptr<VoxelDataLodMap> get_storage() const { return _data; }
+	std::shared_ptr<VoxelDataLodMap> get_storage() const {
+		return _data;
+	}
 
 protected:
 	void _notification(int p_what);
@@ -240,9 +246,8 @@ private:
 	void unload_mesh_block(Vector3i block_pos, uint8_t lod_index);
 
 	static inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
-		return (data_block_size == 16 || data_block_size == 32) &&
-			   (mesh_block_size == 16 || mesh_block_size == 32) &&
-			   mesh_block_size >= data_block_size;
+		return (data_block_size == 16 || data_block_size == 32) && (mesh_block_size == 16 || mesh_block_size == 32) &&
+				mesh_block_size >= data_block_size;
 	}
 
 	void start_updater();
@@ -252,17 +257,17 @@ private:
 	void reset_maps();
 
 	Vector3 get_local_viewer_pos() const;
-	void try_schedule_loading_with_neighbors_no_lock(const Vector3i &p_data_block_pos, uint8_t lod_index,
-			std::vector<BlockLocation> &blocks_to_load);
+	void try_schedule_loading_with_neighbors_no_lock(
+			const Vector3i &p_data_block_pos, uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load);
 	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelDataMap &map) const;
-	bool check_block_loaded_and_meshed(const Vector3i &p_mesh_block_pos, uint8_t lod_index,
-			std::vector<BlockLocation> &blocks_to_load);
+	bool check_block_loaded_and_meshed(
+			const Vector3i &p_mesh_block_pos, uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load);
 	bool check_block_mesh_updated(VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load);
 	void _set_lod_count(int p_lod_count);
 	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
 
-	std::shared_ptr<VoxelAsyncDependencyTracker> preload_boxes_async(Span<const Box3i> voxel_boxes,
-			Span<IVoxelTask *> next_tasks);
+	std::shared_ptr<VoxelAsyncDependencyTracker> preload_boxes_async(
+			Span<const Box3i> voxel_boxes, Span<IVoxelTask *> next_tasks);
 
 	void _on_stream_params_changed();
 
@@ -281,7 +286,7 @@ private:
 	void _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
 	AABB _b_get_voxel_bounds() const;
-	Array _b_debug_print_sdf_top_down(Vector3 center, Vector3 extents);
+	Array _b_debug_print_sdf_top_down(Vector3i center, Vector3i extents);
 	int _b_debug_get_mesh_block_count() const;
 	int _b_debug_get_data_block_count() const;
 	Error _b_debug_dump_as_scene(String fpath) const;

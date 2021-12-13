@@ -1,7 +1,7 @@
 #ifndef FAST_NOISE_LITE_H
 #define FAST_NOISE_LITE_H
 
-#include <core/resource.h>
+#include <core/io/resource.h>
 
 #include "fast_noise_lite_gradient.h"
 
@@ -11,8 +11,7 @@ class FastNoiseLite : public Resource {
 	typedef fast_noise_lite::FastNoiseLite _FastNoise;
 
 public:
-	// TODO Had to prefix it because of https://github.com/godotengine/godot/issues/44860
-	static const int _MAX_OCTAVES = 32;
+	static const int MAX_OCTAVES = 32;
 
 	enum NoiseType {
 		TYPE_OPEN_SIMPLEX_2 = _FastNoise::NoiseType_OpenSimplex2,
@@ -125,11 +124,19 @@ private:
 
 	void _on_warp_noise_changed();
 
-	float _b_get_noise_2d(float x, float y) { return get_noise_2d(x, y); }
-	float _b_get_noise_3d(float x, float y, float z) { return get_noise_3d(x, y, z); }
+	float _b_get_noise_2d(float x, float y) {
+		return get_noise_2d(x, y);
+	}
+	float _b_get_noise_3d(float x, float y, float z) {
+		return get_noise_3d(x, y, z);
+	}
 
-	float _b_get_noise_2dv(Vector2 p) { return get_noise_2d(p.x, p.y); }
-	float _b_get_noise_3dv(Vector3 p) { return get_noise_3d(p.x, p.y, p.z); }
+	float _b_get_noise_2dv(Vector2 p) {
+		return get_noise_2d(p.x, p.y);
+	}
+	float _b_get_noise_3dv(Vector3 p) {
+		return get_noise_3d(p.x, p.y, p.z);
+	}
 
 	fast_noise_lite::FastNoiseLite _fn;
 

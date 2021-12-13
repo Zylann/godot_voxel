@@ -14,7 +14,6 @@ typedef ObjectPool<OctreeNode> OctreeNodePool;
 
 // Octree used only for dual grid construction
 struct OctreeNode {
-
 	Vector3i origin;
 	int size; // Nodes are cubic
 	HermiteValue center_value;
@@ -67,20 +66,20 @@ class VoxelMesherDMC : public VoxelMesher {
 public:
 	static const int PADDING = 2;
 
-	enum MeshMode {
+	enum MeshMode { //
 		MESH_NORMAL,
 		MESH_WIREFRAME,
 		MESH_DEBUG_OCTREE,
 		MESH_DEBUG_DUAL_GRID
 	};
 
-	enum SimplifyMode {
+	enum SimplifyMode { //
 		SIMPLIFY_OCTREE_BOTTOM_UP,
 		SIMPLIFY_OCTREE_TOP_DOWN,
 		SIMPLIFY_NONE
 	};
 
-	enum SeamMode {
+	enum SeamMode { //
 		SEAM_NONE, // No seam management
 		SEAM_MARCHING_SQUARE_SKIRTS,
 		// SEAM_OVERLAP // Polygonize extra voxels with lower isolevel

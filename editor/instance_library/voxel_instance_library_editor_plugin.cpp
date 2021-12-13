@@ -38,16 +38,19 @@ void VoxelInstanceLibraryEditorInspectorPlugin::add_buttons() {
 	HBoxContainer *hb = memnew(HBoxContainer);
 
 	MenuButton *button_add = memnew(MenuButton);
-	button_add->set_icon(icon_provider->get_icon("Add", "EditorIcons"));
+	button_add->set_icon(icon_provider->get_theme_icon(SNAME("Add"), SNAME("EditorIcons")));
 	button_add->get_popup()->add_item("MultiMesh item (fast)", BUTTON_ADD_MULTIMESH_ITEM);
 	button_add->get_popup()->add_item("Scene item (slow)", BUTTON_ADD_SCENE_ITEM);
-	button_add->get_popup()->connect("id_pressed", button_listener, "_on_button_pressed");
+	button_add->get_popup()->connect(
+			"id_pressed", callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_button_pressed));
 	hb->add_child(button_add);
 
 	Button *button_remove = memnew(Button);
-	button_remove->set_icon(icon_provider->get_icon("Remove", "EditorIcons"));
+	button_remove->set_icon(icon_provider->get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
 	button_remove->set_flat(true);
-	button_remove->connect("pressed", button_listener, "_on_button_pressed", varray(BUTTON_REMOVE_ITEM));
+	button_remove->connect("pressed",
+			callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_button_pressed),
+			varray(BUTTON_REMOVE_ITEM));
 	hb->add_child(button_remove);
 
 	Control *spacer = memnew(Control);
@@ -56,7 +59,8 @@ void VoxelInstanceLibraryEditorInspectorPlugin::add_buttons() {
 
 	Button *button_update = memnew(Button);
 	button_update->set_text(TTR("Update From Scene..."));
-	button_update->connect("pressed", button_listener, "_on_button_pressed",
+	button_update->connect("pressed",
+			callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_button_pressed),
 			varray(BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE));
 	hb->add_child(button_update);
 
@@ -69,7 +73,8 @@ VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin(EditorNode *p
 	Control *base_control = get_editor_interface()->get_base_control();
 
 	_confirmation_dialog = memnew(ConfirmationDialog);
-	_confirmation_dialog->connect("confirmed", this, "_on_remove_item_confirmed");
+	_confirmation_dialog->connect(
+			"confirmed", callable_mp(this, &VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed));
 	base_control->add_child(_confirmation_dialog);
 
 	_info_dialog = memnew(AcceptDialog);
@@ -81,9 +86,10 @@ VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin(EditorNode *p
 	for (List<String>::Element *E = extensions.front(); E; E = E->next()) {
 		_open_scene_dialog->add_filter("*." + E->get());
 	}
-	_open_scene_dialog->set_mode(EditorFileDialog::MODE_OPEN_FILE);
+	_open_scene_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
 	base_control->add_child(_open_scene_dialog);
-	_open_scene_dialog->connect("file_selected", this, "_on_open_scene_dialog_file_selected");
+	_open_scene_dialog->connect(
+			"file_selected", callable_mp(this, &VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected));
 }
 
 bool VoxelInstanceLibraryEditorPlugin::handles(Object *p_object) const {
@@ -99,7 +105,7 @@ void VoxelInstanceLibraryEditorPlugin::edit(Object *p_object) {
 void VoxelInstanceLibraryEditorPlugin::_notification(int p_what) {
 	if (p_what == NOTIFICATION_ENTER_TREE) {
 		Control *base_control = get_editor_interface()->get_base_control();
-		_inspector_plugin.instance();
+		_inspector_plugin.instantiate();
 		_inspector_plugin->button_listener = this;
 		_inspector_plugin->icon_provider = base_control;
 		// TODO Why can other Godot plugins do this in the constructor??
@@ -120,14 +126,14 @@ void VoxelInstanceLibraryEditorPlugin::_on_button_pressed(int id) {
 			ERR_FAIL_COND(_library.is_null());
 
 			Ref<VoxelInstanceLibraryItem> item;
-			item.instance();
+			item.instantiate();
 			// Setup some defaults
-			Ref<CubeMesh> mesh;
-			mesh.instance();
+			Ref<BoxMesh> mesh;
+			mesh.instantiate();
 			item->set_mesh(mesh, 0);
 			item->set_lod_index(2);
 			Ref<VoxelInstanceGenerator> generator;
-			generator.instance();
+			generator.instantiate();
 			item->set_generator(generator);
 
 			const int item_id = _library->get_next_available_id();
@@ -229,12 +235,12 @@ void VoxelInstanceLibraryEditorPlugin::add_scene_item(String fpath) {
 	ERR_FAIL_COND(scene.is_null());
 
 	Ref<VoxelInstanceLibrarySceneItem> item;
-	item.instance();
+	item.instantiate();
 	// Setup some defaults
 	item->set_lod_index(2);
 	item->set_scene(scene);
 	Ref<VoxelInstanceGenerator> generator;
-	generator.instance();
+	generator.instantiate();
 	generator->set_density(0.01f); // Low density for scenes because that's heavier
 	item->set_generator(generator);
 
@@ -258,7 +264,7 @@ void VoxelInstanceLibraryEditorPlugin::update_multimesh_item_from_scene(String f
 	Ref<VoxelInstanceLibraryItem> item = item_base;
 	ERR_FAIL_COND_MSG(item.is_null(), "Item not using multimeshes");
 
-	Node *node = scene->instance();
+	Node *node = scene->instantiate();
 	ERR_FAIL_COND(node == nullptr);
 
 	Variant data_before = item->serialize_multimesh_item_properties();
@@ -275,9 +281,9 @@ void VoxelInstanceLibraryEditorPlugin::update_multimesh_item_from_scene(String f
 }
 
 void VoxelInstanceLibraryEditorPlugin::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_button_pressed", "id"), &VoxelInstanceLibraryEditorPlugin::_on_button_pressed);
-	ClassDB::bind_method(D_METHOD("_on_remove_item_confirmed"),
-			&VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed);
-	ClassDB::bind_method(D_METHOD("_on_open_scene_dialog_file_selected", "fpath"),
-			&VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected);
+	// ClassDB::bind_method(D_METHOD("_on_button_pressed", "id"),
+	// &VoxelInstanceLibraryEditorPlugin::_on_button_pressed); ClassDB::bind_method(
+	// 		D_METHOD("_on_remove_item_confirmed"), &VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed);
+	// ClassDB::bind_method(D_METHOD("_on_open_scene_dialog_file_selected", "fpath"),
+	// 		&VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected);
 }

@@ -10,11 +10,9 @@ namespace VoxelDebug {
 FixedArray<Ref<Mesh>, ID_COUNT> g_wirecubes;
 bool g_finalized = false;
 
-template <typename T>
-void raw_copy_to(PoolVector<T> &dst, const T *src, unsigned int count) {
+template <typename T> void raw_copy_to(Vector<T> &dst, const T *src, unsigned int count) {
 	dst.resize(count);
-	typename PoolVector<T>::Write w = dst.write();
-	memcpy(w.ptr(), src, count * sizeof(T));
+	memcpy(dst.ptrw(), src, count * sizeof(T));
 }
 
 static Color get_color(ColorID id) {
@@ -39,46 +37,24 @@ Ref<Mesh> get_wirecube(ColorID id) {
 	Ref<Mesh> &wirecube = g_wirecubes[id];
 
 	if (wirecube.is_null()) {
-		const Vector3 positions_raw[] = {
-			Vector3(0, 0, 0),
-			Vector3(1, 0, 0),
-			Vector3(1, 0, 1),
-			Vector3(0, 0, 1),
-			Vector3(0, 1, 0),
-			Vector3(1, 1, 0),
-			Vector3(1, 1, 1),
-			Vector3(0, 1, 1)
-		};
-		PoolVector3Array positions;
+		const Vector3 positions_raw[] = { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(1, 0, 1), Vector3(0, 0, 1),
+			Vector3(0, 1, 0), Vector3(1, 1, 0), Vector3(1, 1, 1), Vector3(0, 1, 1) };
+		PackedVector3Array positions;
 		raw_copy_to(positions, positions_raw, 8);
 
 		Color white(1.0, 1.0, 1.0);
-		PoolColorArray colors;
+		PackedColorArray colors;
 		colors.resize(positions.size());
-		{
-			PoolColorArray::Write w = colors.write();
-			for (int i = 0; i < colors.size(); ++i) {
-				w[i] = white;
-			}
+		for (int i = 0; i < colors.size(); ++i) {
+			colors.write[i] = white;
 		}
 
-		const int indices_raw[] = {
-			0, 1,
-			1, 2,
-			2, 3,
-			3, 0,
+		const int indices_raw[] = { 0, 1, 1, 2, 2, 3, 3, 0,
 
-			4, 5,
-			5, 6,
-			6, 7,
-			7, 4,
+			4, 5, 5, 6, 6, 7, 7, 4,
 
-			0, 4,
-			1, 5,
-			2, 6,
-			3, 7
-		};
-		PoolIntArray indices;
+			0, 4, 1, 5, 2, 6, 3, 7 };
+		PackedInt32Array indices;
 		raw_copy_to(indices, indices_raw, 24);
 
 		Array arrays;
@@ -89,10 +65,10 @@ Ref<Mesh> get_wirecube(ColorID id) {
 		Ref<ArrayMesh> mesh = memnew(ArrayMesh);
 		mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, arrays);
 
-		Ref<SpatialMaterial> mat;
-		mat.instance();
+		Ref<StandardMaterial3D> mat;
+		mat.instantiate();
 		mat->set_albedo(get_color(id));
-		mat->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
+		mat->set_shading_mode(StandardMaterial3D::SHADING_MODE_UNSHADED);
 		mesh->surface_set_material(0, mat);
 
 		wirecube = mesh;
@@ -117,7 +93,7 @@ public:
 		// TODO When shadow casting is on, directional shadows completely break.
 		// The reason is still unknown.
 		// It should be off anyways, but it's rather concerning.
-		_mesh_instance.set_cast_shadows_setting(VisualServer::SHADOW_CASTING_SETTING_OFF);
+		_mesh_instance.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_OFF);
 	}
 
 	void set_mesh(Ref<Mesh> mesh) {
@@ -127,7 +103,7 @@ public:
 		}
 	}
 
-	void set_transform(Transform t) {
+	void set_transform(Transform3D t) {
 		if (_transform != t) {
 			_transform = t;
 			_mesh_instance.set_transform(t);
@@ -141,12 +117,12 @@ public:
 		}
 	}
 
-	void set_world(World *world) {
+	void set_world(World3D *world) {
 		_mesh_instance.set_world(world);
 	}
 
 private:
-	Transform _transform;
+	Transform3D _transform;
 	bool _visible = true;
 	Ref<Mesh> _mesh;
 	DirectMeshInstance _mesh_instance;
@@ -166,7 +142,7 @@ void DebugRenderer::clear() {
 	_mm_renderer.clear();
 }
 
-void DebugRenderer::set_world(World *world) {
+void DebugRenderer::set_world(World3D *world) {
 	_world = world;
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		(*it)->set_world(world);
@@ -182,7 +158,7 @@ void DebugRenderer::begin() {
 	_mm_renderer.begin();
 }
 
-void DebugRenderer::draw_box(const Transform &t, ColorID color) {
+void DebugRenderer::draw_box(const Transform3D &t, ColorID color) {
 	// Pick an existing item, or create one
 	DebugRendererItem *item;
 	if (_current >= _items.size()) {
@@ -200,7 +176,7 @@ void DebugRenderer::draw_box(const Transform &t, ColorID color) {
 	++_current;
 }
 
-void DebugRenderer::draw_box_mm(const Transform &t, Color8 color) {
+void DebugRenderer::draw_box_mm(const Transform3D &t, Color8 color) {
 	_mm_renderer.draw_box(t, color);
 }
 
@@ -222,21 +198,23 @@ DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
 	// TODO When shadow casting is on, directional shadows completely break.
 	// The reason is still unknown.
 	// It should be off anyways, but it's rather concerning.
-	_multimesh_instance.set_cast_shadows_setting(VisualServer::SHADOW_CASTING_SETTING_OFF);
-	_multimesh.instance();
+	_multimesh_instance.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_OFF);
+	_multimesh.instantiate();
 	Ref<Mesh> wirecube = get_wirecube(ID_WHITE);
 	_multimesh->set_mesh(wirecube);
 	_multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
-	_multimesh->set_color_format(MultiMesh::COLOR_8BIT);
-	_multimesh->set_custom_data_format(MultiMesh::CUSTOM_DATA_NONE);
+	// TODO Optimize: Godot needs to bring back 8-bit color attributes on multimesh, 32-bit colors are too much
+	//_multimesh->set_color_format(MultiMesh::COLOR_8BIT);
+	_multimesh->set_use_colors(true);
+	_multimesh->set_use_custom_data(false);
 	_multimesh_instance.set_multimesh(_multimesh);
-	_material.instance();
-	_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
-	_material->set_flag(SpatialMaterial::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+	_material.instantiate();
+	_material->set_shading_mode(StandardMaterial3D::SHADING_MODE_UNSHADED);
+	_material->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 	_multimesh_instance.set_material_override(_material);
 }
 
-void DebugMultiMeshRenderer::set_world(World *world) {
+void DebugMultiMeshRenderer::set_world(World3D *world) {
 	_multimesh_instance.set_world(world);
 	_world = world;
 }
@@ -247,22 +225,23 @@ void DebugMultiMeshRenderer::begin() {
 	_inside_block = true;
 }
 
-void DebugMultiMeshRenderer::draw_box(const Transform &t, Color8 color) {
-	_items.push_back(DirectMultiMeshInstance::TransformAndColor8{ t, color });
+void DebugMultiMeshRenderer::draw_box(const Transform3D &t, Color8 color) {
+	_items.push_back(DirectMultiMeshInstance::TransformAndColor32{ t, color });
 }
 
 void DebugMultiMeshRenderer::end() {
 	ERR_FAIL_COND(!_inside_block);
 	_inside_block = false;
 
-	DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(to_span_const(_items), _bulk_array);
+	DirectMultiMeshInstance::make_transform_and_color32_3d_bulk_array(to_span_const(_items), _bulk_array);
 	if (_items.size() != static_cast<unsigned int>(_multimesh->get_instance_count())) {
 		_multimesh->set_instance_count(_items.size());
 	}
 
 	// Apparently Godot doesn't like empty bulk arrays, it breaks RasterizerStorageGLES3
 	if (_items.size() > 0) {
-		_multimesh->set_as_bulk_array(_bulk_array);
+		//_multimesh->set_as_bulk_array(_bulk_array);
+		RenderingServer::get_singleton()->multimesh_set_buffer(_multimesh->get_rid(), _bulk_array);
 	}
 
 	_items.clear();

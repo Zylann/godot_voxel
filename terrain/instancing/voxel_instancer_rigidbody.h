@@ -2,15 +2,16 @@
 #define VOXEL_INSTANCER_RIGIDBODY_H
 
 #include "voxel_instancer.h"
-#include <scene/3d/physics_body.h>
+#include <scene/3d/physics_body_3d.h>
 
 // Provides collision to VoxelInstancer multimesh instances
-class VoxelInstancerRigidBody : public RigidBody {
-	GDCLASS(VoxelInstancerRigidBody, RigidBody);
+class VoxelInstancerRigidBody : public RigidDynamicBody3D {
+	GDCLASS(VoxelInstancerRigidBody, RigidDynamicBody3D);
 
 public:
 	VoxelInstancerRigidBody() {
-		set_mode(RigidBody::MODE_STATIC);
+		set_freeze_mode(RigidDynamicBody3D::FREEZE_MODE_STATIC);
+		set_freeze_enabled(true);
 	}
 
 	void set_data_block_position(Vector3i data_block_position) {

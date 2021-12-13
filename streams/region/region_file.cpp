@@ -3,7 +3,7 @@
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../file_utils.h"
-#include <core/os/file_access.h>
+#include <core/io/file_access.h>
 #include <algorithm>
 
 namespace {
@@ -35,17 +35,17 @@ bool VoxelRegionFormat::validate() const {
 	for (unsigned int i = 0; i < channel_depths.size(); ++i) {
 		bytes_per_block += VoxelBufferInternal::get_depth_bit_count(channel_depths[i]) / 8;
 	}
-	bytes_per_block *= Vector3i(1 << block_size_po2).volume();
+	bytes_per_block *= Vector3iUtil::get_volume(Vector3iUtil::create(1 << block_size_po2));
 	const size_t sectors_per_block = (bytes_per_block - 1) / sector_size + 1;
 	ERR_FAIL_COND_V(sectors_per_block > VoxelRegionBlockInfo::MAX_SECTOR_COUNT, false);
-	const size_t max_potential_sectors = region_size.volume() * sectors_per_block;
+	const size_t max_potential_sectors = Vector3iUtil::get_volume(region_size) * sectors_per_block;
 	ERR_FAIL_COND_V(max_potential_sectors > VoxelRegionBlockInfo::MAX_SECTOR_INDEX, false);
 
 	return true;
 }
 
 bool VoxelRegionFormat::verify_block(const VoxelBufferInternal &block) const {
-	ERR_FAIL_COND_V(block.get_size() != Vector3i(1 << block_size_po2), false);
+	ERR_FAIL_COND_V(block.get_size() != Vector3iUtil::create(1 << block_size_po2), false);
 	for (unsigned int i = 0; i < VoxelBufferInternal::MAX_CHANNELS; ++i) {
 		ERR_FAIL_COND_V(block.get_channel_depth(i) != channel_depths[i], false);
 	}
@@ -55,9 +55,8 @@ bool VoxelRegionFormat::verify_block(const VoxelBufferInternal &block) const {
 static uint32_t get_header_size_v3(const VoxelRegionFormat &format) {
 	// Which file offset blocks data is starting
 	// magic + version + blockinfos
-	return MAGIC_AND_VERSION_SIZE + FIXED_HEADER_DATA_SIZE +
-		   (format.has_palette ? PALETTE_SIZE_IN_BYTES : 0) +
-		   format.region_size.volume() * sizeof(VoxelRegionBlockInfo);
+	return MAGIC_AND_VERSION_SIZE + FIXED_HEADER_DATA_SIZE + (format.has_palette ? PALETTE_SIZE_IN_BYTES : 0) +
+			Vector3iUtil::get_volume(format.region_size) * sizeof(VoxelRegionBlockInfo);
 }
 
 static bool save_header(FileAccess *f, uint8_t version, const VoxelRegionFormat &format,
@@ -95,8 +94,8 @@ static bool save_header(FileAccess *f, uint8_t version, const VoxelRegionFormat 
 	}
 
 	// TODO Deal with endianess
-	f->store_buffer(reinterpret_cast<const uint8_t *>(block_infos.data()),
-			block_infos.size() * sizeof(VoxelRegionBlockInfo));
+	f->store_buffer(
+			reinterpret_cast<const uint8_t *>(block_infos.data()), block_infos.size() * sizeof(VoxelRegionBlockInfo));
 
 	size_t blocks_begin_offset = f->get_position();
 #ifdef DEBUG_ENABLED
@@ -111,7 +110,7 @@ static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &
 	ERR_FAIL_COND_V(f == nullptr, false);
 
 	ERR_FAIL_COND_V(f->get_position() != 0, false);
-	ERR_FAIL_COND_V(f->get_len() < MAGIC_AND_VERSION_SIZE, false);
+	ERR_FAIL_COND_V(f->get_length() < MAGIC_AND_VERSION_SIZE, false);
 
 	FixedArray<char, 5> magic(0);
 	ERR_FAIL_COND_V(f->get_buffer(reinterpret_cast<uint8_t *>(magic.data()), 4) != 4, false);
@@ -156,7 +155,7 @@ static bool load_header(FileAccess *f, uint8_t &out_version, VoxelRegionFormat &
 	}
 
 	out_version = version;
-	out_block_infos.resize(out_format.region_size.volume());
+	out_block_infos.resize(Vector3iUtil::get_volume(out_format.region_size));
 
 	// TODO Deal with endianess
 	const size_t blocks_len = out_block_infos.size() * sizeof(VoxelRegionBlockInfo);
@@ -292,7 +291,7 @@ bool VoxelRegionFile::set_format(const VoxelRegionFormat &format) {
 
 	// This will be the format used to create the next file if not found on open()
 	_header.format = format;
-	_header.blocks.resize(format.region_size.volume());
+	_header.blocks.resize(Vector3iUtil::get_volume(format.region_size));
 
 	return true;
 }
@@ -330,13 +329,13 @@ Error VoxelRegionFile::load_block(
 	CRASH_COND(f->eof_reached());
 
 	ERR_FAIL_COND_V_MSG(!serializer.decompress_and_deserialize(f, block_data_size, out_block), ERR_PARSE_ERROR,
-			String("Failed to read block {0}").format(varray(position.to_vec3())));
+			String("Failed to read block {0}").format(varray(position)));
 
 	return OK;
 }
 
-Error VoxelRegionFile::save_block(Vector3i position, VoxelBufferInternal &block,
-		VoxelBlockSerializerInternal &serializer) {
+Error VoxelRegionFile::save_block(
+		Vector3i position, VoxelBufferInternal &block, VoxelBlockSerializerInternal &serializer) {
 	//
 	ERR_FAIL_COND_V(_header.format.verify_block(block) == false, ERR_INVALID_PARAMETER);
 
@@ -478,8 +477,8 @@ void VoxelRegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int
 	CRASH_COND(block_index >= _header.blocks.size());
 	VoxelRegionBlockInfo &block_info = _header.blocks[block_index];
 
-	unsigned int src_offset = _blocks_begin_offset +
-							  (block_info.get_sector_index() + block_info.get_sector_count()) * sector_size;
+	unsigned int src_offset =
+			_blocks_begin_offset + (block_info.get_sector_index() + block_info.get_sector_count()) * sector_size;
 
 	unsigned int dst_offset = src_offset - p_sector_count * sector_size;
 
@@ -511,8 +510,7 @@ void VoxelRegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int
 	// but FileAccess doesn't have any function to do that... so can't rely on EOF either
 
 	// Erase sectors from cache
-	_sectors.erase(
-			_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count() - p_sector_count),
+	_sectors.erase(_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count() - p_sector_count),
 			_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count()));
 
 	const unsigned int old_sector_index = block_info.get_sector_index();
@@ -555,7 +553,7 @@ bool VoxelRegionFile::migrate_from_v2_to_v3(FileAccess *f, VoxelRegionFormat &fo
 
 	// Which file offset blocks data is starting
 	// magic + version + blockinfos
-	const unsigned int old_header_size = format.region_size.volume() * sizeof(uint32_t);
+	const unsigned int old_header_size = Vector3iUtil::get_volume(format.region_size) * sizeof(uint32_t);
 
 	const unsigned int new_header_size = get_header_size_v3(format) - MAGIC_AND_VERSION_SIZE;
 	ERR_FAIL_COND_V_MSG(new_header_size < old_header_size, false, "New version is supposed to have larger header");
@@ -575,7 +573,7 @@ bool VoxelRegionFile::migrate_from_v2_to_v3(FileAccess *f, VoxelRegionFormat &fo
 
 bool VoxelRegionFile::migrate_to_latest(FileAccess *f) {
 	ERR_FAIL_COND_V(f == nullptr, false);
-	ERR_FAIL_COND_V(_file_path.empty(), false);
+	ERR_FAIL_COND_V(_file_path.is_empty(), false);
 
 	uint8_t version = _header.version;
 
@@ -607,11 +605,11 @@ Error VoxelRegionFile::load_header(FileAccess *f) {
 }
 
 unsigned int VoxelRegionFile::get_block_index_in_header(const Vector3i &rpos) const {
-	return rpos.get_zxy_index(_header.format.region_size);
+	return Vector3iUtil::get_zxy_index(rpos, _header.format.region_size);
 }
 
 Vector3i VoxelRegionFile::get_block_position_from_index(uint32_t i) const {
-	return Vector3i::from_zxy_index(i, _header.format.region_size);
+	return Vector3iUtil::from_zxy_index(i, _header.format.region_size);
 }
 
 uint32_t VoxelRegionFile::get_sector_count_from_bytes(uint32_t size_in_bytes) const {
@@ -640,7 +638,7 @@ void VoxelRegionFile::debug_check() {
 	ERR_FAIL_COND(!is_open());
 	ERR_FAIL_COND(_file_access == nullptr);
 	FileAccess *f = _file_access;
-	const size_t file_len = f->get_len();
+	const size_t file_len = f->get_length();
 
 	for (unsigned int lut_index = 0; lut_index < _header.blocks.size(); ++lut_index) {
 		const VoxelRegionBlockInfo &block_info = _header.blocks[lut_index];
@@ -652,8 +650,7 @@ void VoxelRegionFile::debug_check() {
 		const unsigned int block_begin = _blocks_begin_offset + sector_index * _header.format.sector_size;
 		if (block_begin >= file_len) {
 			print_line(String("ERROR: LUT {0} ({1}): offset {2} is larger than file size {3}")
-							   .format(varray(lut_index, position.to_vec3(), block_begin,
-									   SIZE_T_TO_VARIANT(file_len))));
+							   .format(varray(lut_index, position, block_begin, SIZE_T_TO_VARIANT(file_len))));
 			continue;
 		}
 		f->seek(block_begin);
@@ -662,8 +659,7 @@ void VoxelRegionFile::debug_check() {
 		const size_t remaining_size = file_len - pos;
 		if (block_data_size > remaining_size) {
 			print_line(String("ERROR: LUT {0} ({1}): block size at offset {2} is larger than remaining size {3}")
-							   .format(varray(lut_index, position.to_vec3(),
-									   SIZE_T_TO_VARIANT(block_data_size),
+							   .format(varray(lut_index, position, SIZE_T_TO_VARIANT(block_data_size),
 									   SIZE_T_TO_VARIANT(remaining_size))));
 		}
 	}

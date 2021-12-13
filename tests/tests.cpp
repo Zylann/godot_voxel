@@ -6,8 +6,8 @@
 #include "../util/math/box3i.h"
 #include "test_octree.h"
 
-#include <core/hash_map.h>
-#include <core/print_string.h>
+#include <core/string/print_string.h>
+#include <core/templates/hash_map.h>
 
 void test_box3i_intersects() {
 	{
@@ -85,9 +85,8 @@ void test_voxel_data_map_paste_fill() {
 	map.paste(box.pos, buffer, (1 << channel), false, 0, true);
 
 	// All voxels in the area must be as pasted
-	const bool is_match = box.all_cells_match([&map](const Vector3i &pos) {
-		return map.get_voxel(pos, channel) == voxel_value;
-	});
+	const bool is_match =
+			box.all_cells_match([&map](const Vector3i &pos) { return map.get_voxel(pos, channel) == voxel_value; });
 
 	ERR_FAIL_COND(!is_match);
 
@@ -129,9 +128,8 @@ void test_voxel_data_map_paste_mask() {
 	map.paste(box.pos, buffer, (1 << channel), true, masked_value, true);
 
 	// All voxels in the area must be as pasted. Ignoring the outline.
-	const bool is_match = box.padded(-1).all_cells_match([&map](const Vector3i &pos) {
-		return map.get_voxel(pos, channel) == voxel_value;
-	});
+	const bool is_match = box.padded(-1).all_cells_match(
+			[&map](const Vector3i &pos) { return map.get_voxel(pos, channel) == voxel_value; });
 
 	/*for (int y = 0; y < buffer->get_size().y; ++y) {
 		String line = String("y={0} | ").format(varray(y));
@@ -239,15 +237,14 @@ void test_encode_weights_packed_u16() {
 
 void test_copy_3d_region_zxy() {
 	struct L {
-		static void compare(
-				Span<const uint16_t> srcs, Vector3i src_size, Vector3i src_min, Vector3i src_max,
+		static void compare(Span<const uint16_t> srcs, Vector3i src_size, Vector3i src_min, Vector3i src_max,
 				Span<const uint16_t> dsts, Vector3i dst_size, Vector3i dst_min) {
 			Vector3i pos;
 			for (pos.z = src_min.z; pos.z < src_max.z; ++pos.z) {
 				for (pos.x = src_min.x; pos.x < src_max.x; ++pos.x) {
 					for (pos.y = src_min.y; pos.y < src_max.y; ++pos.y) {
-						const uint16_t srcv = srcs[pos.get_zxy_index(src_size)];
-						const uint16_t dstv = dsts[(pos - src_min + dst_min).get_zxy_index(dst_size)];
+						const uint16_t srcv = srcs[Vector3iUtil::get_zxy_index(pos, src_size)];
+						const uint16_t dstv = dsts[Vector3iUtil::get_zxy_index(pos - src_min + dst_min, dst_size)];
 						ERR_FAIL_COND(srcv != dstv);
 					}
 				}
@@ -260,8 +257,8 @@ void test_copy_3d_region_zxy() {
 		std::vector<uint16_t> dst;
 		const Vector3i src_size(8, 8, 8);
 		const Vector3i dst_size(3, 4, 5);
-		src.resize(src_size.volume(), 0);
-		dst.resize(dst_size.volume(), 0);
+		src.resize(Vector3iUtil::get_volume(src_size), 0);
+		dst.resize(Vector3iUtil::get_volume(dst_size), 0);
 		for (unsigned int i = 0; i < src.size(); ++i) {
 			src[i] = i;
 		}
@@ -313,8 +310,8 @@ void test_copy_3d_region_zxy() {
 		std::vector<uint16_t> dst;
 		const Vector3i src_size(3, 4, 5);
 		const Vector3i dst_size(3, 4, 5);
-		src.resize(src_size.volume(), 0);
-		dst.resize(dst_size.volume(), 0);
+		src.resize(Vector3iUtil::get_volume(src_size), 0);
+		dst.resize(Vector3iUtil::get_volume(dst_size), 0);
 		for (unsigned int i = 0; i < src.size(); ++i) {
 			src[i] = i;
 		}
@@ -332,7 +329,7 @@ void test_copy_3d_region_zxy() {
 
 void test_voxel_graph_generator_default_graph_compilation() {
 	Ref<VoxelGeneratorGraph> generator;
-	generator.instance();
+	generator.instantiate();
 	generator->load_plane_preset();
 	VoxelGraphRuntime::CompilationResult result = generator->compile();
 	ERR_FAIL_COND_MSG(!result.success,
@@ -341,7 +338,7 @@ void test_voxel_graph_generator_default_graph_compilation() {
 
 void test_voxel_graph_generator_texturing() {
 	Ref<VoxelGeneratorGraph> generator;
-	generator.instance();
+	generator.instantiate();
 
 	// Plane centered on Y=0, angled 45 degrees, going up towards +X
 	// When Y<0, weight0 must be 1 and weight1 must be 0.
@@ -354,7 +351,7 @@ void test_voxel_graph_generator_texturing() {
 	 *  Z   Y        Weight1
 	 *       \
 	 *  X --- Sub0 --- Sdf
-	 * 
+	 *
 	 */
 
 	const uint32_t in_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
@@ -444,8 +441,8 @@ void test_voxel_graph_generator_texturing() {
 		const uint8_t WEIGHT_MAX = 240;
 
 		struct L {
-			static void check_weights(VoxelBufferInternal &buffer, Vector3i pos,
-					bool weight0_must_be_1, bool weight1_must_be_1) {
+			static void check_weights(
+					VoxelBufferInternal &buffer, Vector3i pos, bool weight0_must_be_1, bool weight1_must_be_1) {
 				const uint16_t encoded_indices = buffer.get_voxel(pos, VoxelBufferInternal::CHANNEL_INDICES);
 				const uint16_t encoded_weights = buffer.get_voxel(pos, VoxelBufferInternal::CHANNEL_WEIGHTS);
 				const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(encoded_indices);
@@ -524,44 +521,43 @@ void test_voxel_graph_generator_texturing() {
 }
 
 void test_island_finder() {
-	const char *cdata =
-			"X X X - X "
-			"X X X - - "
-			"X X X - - "
-			"X X X - - "
-			"X X X - - "
-			//
-			"- - - - - "
-			"X X - - - "
-			"X X - - - "
-			"X X X X X "
-			"X X - - X "
-			//
-			"- - - - - "
-			"- - - - - "
-			"- - - - - "
-			"- - - - - "
-			"- - - - - "
-			//
-			"- - - - - "
-			"- - - - - "
-			"- - X - - "
-			"- - X X - "
-			"- - - - - "
-			//
-			"- - - - - "
-			"- - - - - "
-			"- - - - - "
-			"- - - X - "
-			"- - - - - "
+	const char *cdata = "X X X - X "
+						"X X X - - "
+						"X X X - - "
+						"X X X - - "
+						"X X X - - "
+						//
+						"- - - - - "
+						"X X - - - "
+						"X X - - - "
+						"X X X X X "
+						"X X - - X "
+						//
+						"- - - - - "
+						"- - - - - "
+						"- - - - - "
+						"- - - - - "
+						"- - - - - "
+						//
+						"- - - - - "
+						"- - - - - "
+						"- - X - - "
+						"- - X X - "
+						"- - - - - "
+						//
+						"- - - - - "
+						"- - - - - "
+						"- - - - - "
+						"- - - X - "
+						"- - - - - "
 			//
 			;
 
 	const Vector3i grid_size(5, 5, 5);
-	ERR_FAIL_COND(grid_size.volume() != strlen(cdata) / 2);
+	ERR_FAIL_COND(Vector3iUtil::get_volume(grid_size) != strlen(cdata) / 2);
 
 	std::vector<int> grid;
-	grid.resize(grid_size.volume());
+	grid.resize(Vector3iUtil::get_volume(grid_size));
 	for (unsigned int i = 0; i < grid.size(); ++i) {
 		const char c = cdata[i * 2];
 		if (c == 'X') {
@@ -574,14 +570,14 @@ void test_island_finder() {
 	}
 
 	std::vector<uint8_t> output;
-	output.resize(grid_size.volume());
+	output.resize(Vector3iUtil::get_volume(grid_size));
 	unsigned int label_count;
 
 	IslandFinder island_finder;
 	island_finder.scan_3d(
 			Box3i(Vector3i(), grid_size),
 			[&grid, grid_size](Vector3i pos) {
-				const unsigned int i = pos.get_zxy_index(grid_size);
+				const unsigned int i = Vector3iUtil::get_zxy_index(pos, grid_size);
 				CRASH_COND(i >= grid.size());
 				return grid[i] == 1;
 			},
@@ -623,15 +619,10 @@ void test_unordered_remove_if() {
 		vec.push_back(2);
 		vec.push_back(3);
 
-		unordered_remove_if(vec, [](int v) {
-			return v == 0;
-		});
+		unordered_remove_if(vec, [](int v) { return v == 0; });
 
 		ERR_FAIL_COND(vec.size() != 3);
-		ERR_FAIL_COND((
-							  L::count(vec, 0) == 0 &&
-							  L::count(vec, 1) == 1 &&
-							  L::count(vec, 2) == 1 &&
+		ERR_FAIL_COND((L::count(vec, 0) == 0 && L::count(vec, 1) == 1 && L::count(vec, 2) == 1 &&
 							  L::count(vec, 3) == 1) == false);
 	}
 	// Remove one in middle
@@ -642,15 +633,10 @@ void test_unordered_remove_if() {
 		vec.push_back(2);
 		vec.push_back(3);
 
-		unordered_remove_if(vec, [](int v) {
-			return v == 2;
-		});
+		unordered_remove_if(vec, [](int v) { return v == 2; });
 
 		ERR_FAIL_COND(vec.size() != 3);
-		ERR_FAIL_COND((
-							  L::count(vec, 0) == 1 &&
-							  L::count(vec, 1) == 1 &&
-							  L::count(vec, 2) == 0 &&
+		ERR_FAIL_COND((L::count(vec, 0) == 1 && L::count(vec, 1) == 1 && L::count(vec, 2) == 0 &&
 							  L::count(vec, 3) == 1) == false);
 	}
 	// Remove one at end
@@ -661,15 +647,10 @@ void test_unordered_remove_if() {
 		vec.push_back(2);
 		vec.push_back(3);
 
-		unordered_remove_if(vec, [](int v) {
-			return v == 3;
-		});
+		unordered_remove_if(vec, [](int v) { return v == 3; });
 
 		ERR_FAIL_COND(vec.size() != 3);
-		ERR_FAIL_COND((
-							  L::count(vec, 0) == 1 &&
-							  L::count(vec, 1) == 1 &&
-							  L::count(vec, 2) == 1 &&
+		ERR_FAIL_COND((L::count(vec, 0) == 1 && L::count(vec, 1) == 1 && L::count(vec, 2) == 1 &&
 							  L::count(vec, 3) == 0) == false);
 	}
 	// Remove multiple
@@ -680,15 +661,10 @@ void test_unordered_remove_if() {
 		vec.push_back(2);
 		vec.push_back(3);
 
-		unordered_remove_if(vec, [](int v) {
-			return v == 1 || v == 2;
-		});
+		unordered_remove_if(vec, [](int v) { return v == 1 || v == 2; });
 
 		ERR_FAIL_COND(vec.size() != 2);
-		ERR_FAIL_COND((
-							  L::count(vec, 0) == 1 &&
-							  L::count(vec, 1) == 0 &&
-							  L::count(vec, 2) == 0 &&
+		ERR_FAIL_COND((L::count(vec, 0) == 1 && L::count(vec, 1) == 0 && L::count(vec, 2) == 0 &&
 							  L::count(vec, 3) == 1) == false);
 	}
 	// Remove last
@@ -696,9 +672,7 @@ void test_unordered_remove_if() {
 		std::vector<int> vec;
 		vec.push_back(0);
 
-		unordered_remove_if(vec, [](int v) {
-			return v == 0;
-		});
+		unordered_remove_if(vec, [](int v) { return v == 0; });
 
 		ERR_FAIL_COND(vec.size() != 0);
 	}
@@ -709,9 +683,8 @@ void test_instance_data_serialization() {
 		static VoxelInstanceBlockData::InstanceData create_instance(
 				float x, float y, float z, float rotx, float roty, float rotz, float scale) {
 			VoxelInstanceBlockData::InstanceData d;
-			d.transform = Transform(
-					Basis().rotated(Vector3(rotx, roty, rotz)).scaled(Vector3(scale, scale, scale)),
-					Vector3(x, y, z));
+			d.transform = Transform3D(
+					Basis().rotated(Vector3(rotx, roty, rotz)).scaled(Vector3(scale, scale, scale)), Vector3(x, y, z));
 			return d;
 		}
 	};
@@ -757,7 +730,7 @@ void test_instance_data_serialization() {
 	ERR_FAIL_COND(dst_data.position_range != src_data.position_range);
 
 	const float distance_error = max(src_data.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM) /
-								 float(VoxelInstanceBlockData::POSITION_RESOLUTION);
+			float(VoxelInstanceBlockData::POSITION_RESOLUTION);
 
 	// Compare layers
 	for (unsigned int layer_index = 0; layer_index < dst_data.layers.size(); ++layer_index) {
@@ -773,8 +746,8 @@ void test_instance_data_serialization() {
 		}
 		ERR_FAIL_COND(src_layer.instances.size() != dst_layer.instances.size());
 
-		const float scale_error =
-				max(src_layer.scale_max - src_layer.scale_min, VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) /
+		const float scale_error = max(src_layer.scale_max - src_layer.scale_min,
+										  VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) /
 				float(VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RESOLUTION);
 
 		const float rotation_error = 2.f / float(VoxelInstanceBlockData::SIMPLE_11B_V1_QUAT_RESOLUTION);
@@ -790,9 +763,10 @@ void test_instance_data_serialization() {
 			const Vector3 dst_scale = dst_instance.transform.basis.get_scale();
 			ERR_FAIL_COND(src_scale.distance_to(dst_scale) > scale_error);
 
-			// Had to normalize here because Godot doesn't want to give you a Quat if the basis is scaled (even uniformly)
-			const Quat src_rot = src_instance.transform.basis.orthonormalized().get_quat();
-			const Quat dst_rot = dst_instance.transform.basis.orthonormalized().get_quat();
+			// Had to normalize here because Godot doesn't want to give you a Quat if the basis is scaled (even
+			// uniformly)
+			const Quaternion src_rot = src_instance.transform.basis.orthonormalized().get_quaternion();
+			const Quaternion dst_rot = dst_instance.transform.basis.orthonormalized().get_quaternion();
 			const float rot_dx = Math::abs(src_rot.x - dst_rot.x);
 			const float rot_dy = Math::abs(src_rot.y - dst_rot.y);
 			const float rot_dz = Math::abs(src_rot.z - dst_rot.z);
@@ -808,31 +782,31 @@ void test_instance_data_serialization() {
 void test_transform_3d_array_zxy() {
 	// YXZ
 	int src_grid[] = {
-		0, 1, 2, 3,
-		4, 5, 6, 7,
-		8, 9, 10, 11,
+		0, 1, 2, 3, //
+		4, 5, 6, 7, //
+		8, 9, 10, 11, //
 
-		12, 13, 14, 15,
-		16, 17, 18, 19,
-		20, 21, 22, 23
+		12, 13, 14, 15, //
+		16, 17, 18, 19, //
+		20, 21, 22, 23 //
 	};
 	const Vector3i src_size(3, 4, 2);
-	const int volume = src_size.volume();
+	const int volume = Vector3iUtil::get_volume(src_size);
 
 	FixedArray<int, 24> dst_grid;
 	ERR_FAIL_COND(dst_grid.size() != volume);
 
 	{
 		int expected_dst_grid[] = {
-			0, 4, 8,
-			1, 5, 9,
-			2, 6, 10,
-			3, 7, 11,
+			0, 4, 8, //
+			1, 5, 9, //
+			2, 6, 10, //
+			3, 7, 11, //
 
-			12, 16, 20,
-			13, 17, 21,
-			14, 18, 22,
-			15, 19, 23
+			12, 16, 20, //
+			13, 17, 21, //
+			14, 18, 22, //
+			15, 19, 23 //
 		};
 		const Vector3i expected_dst_size(4, 3, 2);
 		IntBasis basis;
@@ -840,9 +814,8 @@ void test_transform_3d_array_zxy() {
 		basis.y = Vector3i(1, 0, 0);
 		basis.z = Vector3i(0, 0, 1);
 
-		const Vector3i dst_size = transform_3d_array_zxy(
-				Span<const int>(src_grid, 0, volume),
-				to_span(dst_grid), src_size, basis);
+		const Vector3i dst_size =
+				transform_3d_array_zxy(Span<const int>(src_grid, 0, volume), to_span(dst_grid), src_size, basis);
 
 		ERR_FAIL_COND(dst_size != expected_dst_size);
 
@@ -852,13 +825,13 @@ void test_transform_3d_array_zxy() {
 	}
 	{
 		int expected_dst_grid[] = {
-			3, 2, 1, 0,
-			7, 6, 5, 4,
-			11, 10, 9, 8,
+			3, 2, 1, 0, //
+			7, 6, 5, 4, //
+			11, 10, 9, 8, //
 
-			15, 14, 13, 12,
-			19, 18, 17, 16,
-			23, 22, 21, 20
+			15, 14, 13, 12, //
+			19, 18, 17, 16, //
+			23, 22, 21, 20 //
 		};
 		const Vector3i expected_dst_size(3, 4, 2);
 		IntBasis basis;
@@ -866,9 +839,8 @@ void test_transform_3d_array_zxy() {
 		basis.y = Vector3i(0, -1, 0);
 		basis.z = Vector3i(0, 0, 1);
 
-		const Vector3i dst_size = transform_3d_array_zxy(
-				Span<const int>(src_grid, 0, volume),
-				to_span(dst_grid), src_size, basis);
+		const Vector3i dst_size =
+				transform_3d_array_zxy(Span<const int>(src_grid, 0, volume), to_span(dst_grid), src_size, basis);
 
 		ERR_FAIL_COND(dst_size != expected_dst_size);
 
@@ -878,13 +850,13 @@ void test_transform_3d_array_zxy() {
 	}
 	{
 		int expected_dst_grid[] = {
-			15, 14, 13, 12,
-			19, 18, 17, 16,
-			23, 22, 21, 20,
+			15, 14, 13, 12, //
+			19, 18, 17, 16, //
+			23, 22, 21, 20, //
 
-			3, 2, 1, 0,
-			7, 6, 5, 4,
-			11, 10, 9, 8
+			3, 2, 1, 0, //
+			7, 6, 5, 4, //
+			11, 10, 9, 8 //
 		};
 		const Vector3i expected_dst_size(3, 4, 2);
 		IntBasis basis;
@@ -892,9 +864,8 @@ void test_transform_3d_array_zxy() {
 		basis.y = Vector3i(0, -1, 0);
 		basis.z = Vector3i(0, 0, -1);
 
-		const Vector3i dst_size = transform_3d_array_zxy(
-				Span<const int>(src_grid, 0, volume),
-				to_span(dst_grid), src_size, basis);
+		const Vector3i dst_size =
+				transform_3d_array_zxy(Span<const int>(src_grid, 0, volume), to_span(dst_grid), src_size, basis);
 
 		ERR_FAIL_COND(dst_size != expected_dst_size);
 
@@ -914,7 +885,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// One segment going up
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(1, 1));
 		std::vector<CurveMonotonicSection> sections;
@@ -945,7 +916,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// One flat segment
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(1, 0));
 		std::vector<CurveMonotonicSection> sections;
@@ -959,7 +930,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// Two segments: going up, then flat
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.5, 1));
 		curve->add_point(Vector2(1, 1));
@@ -970,7 +941,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// Two segments: flat, then up
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.5, 0));
 		curve->add_point(Vector2(1, 1));
@@ -981,7 +952,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// Three segments: flat, then up, then flat
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.3, 0));
 		curve->add_point(Vector2(0.6, 1));
@@ -993,7 +964,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// Three segments: up, down, up
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.3, 1));
 		curve->add_point(Vector2(0.6, 0));
@@ -1007,7 +978,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// Two segments: going up, then down
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.5, 1));
 		curve->add_point(Vector2(1, 0));
@@ -1018,7 +989,7 @@ void test_get_curve_monotonic_sections() {
 	{
 		// One segment, curved as a parabola going up then down
 		Ref<Curve> curve;
-		curve.instance();
+		curve.instantiate();
 		curve->add_point(Vector2(0, 0), 0.f, 1.f);
 		curve->add_point(Vector2(1, 0));
 		std::vector<CurveMonotonicSection> sections;
@@ -1045,8 +1016,8 @@ void test_voxel_buffer_create() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define VOXEL_TEST(fname)                                     \
-	print_line(String("Running {0}").format(varray(#fname))); \
+#define VOXEL_TEST(fname)                                                                                              \
+	print_line(String("Running {0}").format(varray(#fname)));                                                          \
 	fname()
 
 void run_voxel_tests() {

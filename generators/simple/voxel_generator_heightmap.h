@@ -3,7 +3,7 @@
 
 #include "../../storage/voxel_buffer.h"
 #include "../voxel_generator.h"
-#include <core/image.h>
+#include <core/io/image.h>
 
 class VoxelGeneratorHeightmap : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorHeightmap, VoxelGenerator)

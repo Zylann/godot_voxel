@@ -6,7 +6,7 @@
 #include "../graph/voxel_graph_node_inspector_wrapper.h"
 
 #include <editor/editor_scale.h>
-#include <scene/3d/camera.h>
+#include <scene/3d/camera_3d.h>
 #include <scene/gui/menu_button.h>
 
 class VoxelTerrainEditorTaskIndicator : public HBoxContainer {
@@ -36,7 +36,7 @@ public:
 				// Set a monospace font.
 				// Can't do this in constructor, fonts are not available then. Also the theme can change.
 				for (unsigned int i = 0; i < _stats.size(); ++i) {
-					_stats[i].label->add_font_override("font", get_font("source", "EditorFonts"));
+					_stats[i].label->add_theme_font_override("font", get_theme_font("source", "EditorFonts"));
 				}
 				break;
 		}
@@ -170,7 +170,8 @@ VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
 	}
 	menu_button->get_popup()->add_separator();
 	menu_button->get_popup()->add_item(TTR("About Voxel Tools..."), MENU_ABOUT);
-	menu_button->get_popup()->connect("id_pressed", this, "_on_menu_item_selected");
+	menu_button->get_popup()->connect(
+			"id_pressed", callable_mp(this, &VoxelTerrainEditorPlugin::_on_menu_item_selected));
 	menu_button->hide();
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, menu_button);
 	_menu_button = menu_button;
@@ -247,8 +248,8 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 		// Using this to know when the node becomes really invalid, because ObjectID is unreliable in Godot 3.x,
 		// and we may want to keep access to the node when we select some different kinds of objects.
 		// Also moving the node around in the tree triggers exit/enter so have to listen for both.
-		_node->disconnect("tree_entered", this, "_on_terrain_tree_entered");
-		_node->disconnect("tree_exited", this, "_on_terrain_tree_exited");
+		_node->disconnect("tree_entered", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_entered));
+		_node->disconnect("tree_exited", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_exited));
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 		if (vlt != nullptr) {
@@ -259,8 +260,10 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 	_node = node;
 
 	if (_node != nullptr) {
-		_node->connect("tree_entered", this, "_on_terrain_tree_entered", varray(_node));
-		_node->connect("tree_exited", this, "_on_terrain_tree_exited", varray(_node));
+		_node->connect(
+				"tree_entered", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_entered), varray(_node));
+		_node->connect(
+				"tree_exited", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_exited), varray(_node));
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 		if (vlt != nullptr) {
@@ -288,15 +291,16 @@ void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 	// So we'll need to check if _node is null all over the place
 }
 
-bool VoxelTerrainEditorPlugin::forward_spatial_gui_input(Camera *p_camera, const Ref<InputEvent> &p_event) {
-	VoxelServer::get_singleton()->set_viewer_distance(_editor_viewer_id, p_camera->get_zfar());
+EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_spatial_gui_input(
+		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
+	VoxelServer::get_singleton()->set_viewer_distance(_editor_viewer_id, p_camera->get_far());
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
 
 	if (_editor_viewer_follows_camera) {
 		VoxelServer::get_singleton()->set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
 	}
 
-	return false;
+	return EditorPlugin::AFTER_GUI_INPUT_PASS;
 }
 
 void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
@@ -339,7 +343,8 @@ void VoxelTerrainEditorPlugin::_on_terrain_tree_exited(Node *node) {
 }
 
 void VoxelTerrainEditorPlugin::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"), &VoxelTerrainEditorPlugin::_on_menu_item_selected);
-	ClassDB::bind_method(D_METHOD("_on_terrain_tree_entered"), &VoxelTerrainEditorPlugin::_on_terrain_tree_entered);
-	ClassDB::bind_method(D_METHOD("_on_terrain_tree_exited"), &VoxelTerrainEditorPlugin::_on_terrain_tree_exited);
+	// ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"),
+	// 		&VoxelTerrainEditorPlugin::_on_menu_item_selected);
+	// ClassDB::bind_method(D_METHOD("_on_terrain_tree_entered"), &VoxelTerrainEditorPlugin::_on_terrain_tree_entered);
+	// ClassDB::bind_method(D_METHOD("_on_terrain_tree_exited"), &VoxelTerrainEditorPlugin::_on_terrain_tree_exited);
 }

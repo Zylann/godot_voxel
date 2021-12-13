@@ -2,18 +2,20 @@
 #define VOXEL_GRAPH_NODE_INSPECTOR_WRAPPER_H
 
 #include "../../generators/graph/voxel_generator_graph.h"
-#include <core/reference.h>
+#include <core/object/ref_counted.h>
 
 class UndoRedo;
 
 // Nodes aren't resources so this translates them into a form the inspector can understand.
 // This makes it easier to support undo/redo and sub-resources.
 // WARNING: `AnimationPlayer` will allow to keyframe properties, but there really is no support for that.
-class VoxelGraphNodeInspectorWrapper : public Reference {
-	GDCLASS(VoxelGraphNodeInspectorWrapper, Reference)
+class VoxelGraphNodeInspectorWrapper : public RefCounted {
+	GDCLASS(VoxelGraphNodeInspectorWrapper, RefCounted)
 public:
 	void setup(Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id, UndoRedo *ur);
-	inline Ref<VoxelGeneratorGraph> get_graph() const { return _graph; }
+	inline Ref<VoxelGeneratorGraph> get_graph() const {
+		return _graph;
+	}
 
 protected:
 	void _get_property_list(List<PropertyInfo> *p_list) const;

@@ -40,7 +40,7 @@
 #include "util/noise/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite_gradient.h"
 
-#include <core/engine.h>
+#include <core/config/engine.h>
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_plugin.h"
@@ -135,7 +135,7 @@ void register_voxel_types() {
 	// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
 
 	PRINT_VERBOSE(String("Size of Object: {0}").format(varray((int)sizeof(Object))));
-	PRINT_VERBOSE(String("Size of Reference: {0}").format(varray((int)sizeof(Reference))));
+	PRINT_VERBOSE(String("Size of RefCounted: {0}").format(varray((int)sizeof(RefCounted))));
 	PRINT_VERBOSE(String("Size of Node: {0}").format(varray((int)sizeof(Node))));
 	PRINT_VERBOSE(String("Size of VoxelBuffer: {0}").format(varray((int)sizeof(VoxelBuffer))));
 	PRINT_VERBOSE(String("Size of VoxelMeshBlock: {0}").format(varray((int)sizeof(VoxelMeshBlock))));

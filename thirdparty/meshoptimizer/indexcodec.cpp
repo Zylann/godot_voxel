@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <string.h>
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 // This work is based on:
 // Fabian Giesen. Simple lossless index buffer compression & follow-up. 2013
 // Conor Stokes. Vertex Cache Optimised Index Buffer Compression. 2014
@@ -672,3 +674,5 @@ int meshopt_decodeIndexSequence(void* destination, size_t index_count, size_t in
 
 	return 0;
 }
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END
