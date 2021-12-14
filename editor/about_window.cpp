@@ -104,7 +104,6 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	set_title(TTR("About Voxel Tools"));
 	//set_resizable(true); // TODO How to set if a Window is resizable or not?
 	set_min_size(Vector2(600, 300) * EDSCALE);
-	set_visible(true);
 
 	VBoxContainer *v_box_container = memnew(VBoxContainer);
 	v_box_container->set_anchor(SIDE_RIGHT, 1);
@@ -222,16 +221,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 
 	v_box_container->add_child(h_box_container);
 
-	HBoxContainer *h_box_container2 = memnew(HBoxContainer);
-	h_box_container2->set_alignment(BoxContainer::ALIGNMENT_CENTER);
-
-	Button *button = memnew(Button);
-	button->set_text(TTR("Ok"));
+	Button *button = get_ok_button();
 	button->set_custom_minimum_size(Vector2(100 * EDSCALE, 0));
-	button->connect("pressed", callable_mp(this, &VoxelAboutWindow::_on_ok_button_pressed));
-	h_box_container2->add_child(button);
-
-	v_box_container->add_child(h_box_container2);
 
 	add_child(v_box_container);
 }
@@ -240,10 +231,6 @@ void VoxelAboutWindow::_notification(int p_what) {
 	if (p_what == NOTIFICATION_THEME_CHANGED) {
 		_icon_texture_rect->set_texture(get_theme_icon("VoxelTerrainLarge", "EditorIcons"));
 	}
-}
-
-void VoxelAboutWindow::_on_ok_button_pressed() {
-	hide();
 }
 
 void VoxelAboutWindow::_on_about_rich_text_label_meta_clicked(Variant meta) {

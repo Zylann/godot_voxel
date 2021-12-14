@@ -6,8 +6,8 @@
 class TextureRect;
 class RichTextLabel;
 
-class VoxelAboutWindow : public Window {
-	GDCLASS(VoxelAboutWindow, Window)
+class VoxelAboutWindow : public AcceptDialog {
+	GDCLASS(VoxelAboutWindow, AcceptDialog)
 public:
 	VoxelAboutWindow();
 
@@ -15,7 +15,6 @@ protected:
 	void _notification(int p_what);
 
 private:
-	void _on_ok_button_pressed();
 	void _on_about_rich_text_label_meta_clicked(Variant meta);
 	void _on_third_party_list_item_selected(int index);
 
