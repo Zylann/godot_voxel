@@ -150,16 +150,20 @@ public:
 	void set_lod_fade_duration(float seconds);
 	float get_lod_fade_duration() const;
 
-	enum ProcessMode { PROCESS_MODE_IDLE = 0, PROCESS_MODE_PHYSICS, PROCESS_MODE_DISABLED };
+	enum ProcessCallback { //
+		PROCESS_CALLBACK_IDLE = 0,
+		PROCESS_CALLBACK_PHYSICS,
+		PROCESS_CALLBACK_DISABLED
+	};
 
 	// This was originally added to fix a problem with rigidbody teleportation and floating world origin:
 	// The player teleported at a different rate than the rest of the world due to delays in transform updates,
 	// which caused the world to unload and then reload entirely over the course of 3 frames,
 	// producing flickers and CPU lag. Changing process mode allows to align update rate,
 	// and freeze LOD for the duration of the teleport.
-	void set_process_mode(ProcessMode mode);
-	ProcessMode get_process_mode() const {
-		return _process_mode;
+	void set_process_callback(ProcessCallback mode);
+	ProcessCallback get_process_callback() const {
+		return _process_callback;
 	}
 
 	Ref<VoxelTool> get_voxel_tool();
@@ -320,7 +324,7 @@ private:
 	Ref<VoxelMesher> _mesher;
 
 	uint32_t _volume_id = 0;
-	ProcessMode _process_mode = PROCESS_MODE_IDLE;
+	ProcessCallback _process_callback = PROCESS_CALLBACK_IDLE;
 
 	// TODO Get rid of this kind of member, use threadlocal pooling instead
 	// Only populated and then cleared inside _process, so lifetime of pointers should be valid
@@ -399,6 +403,6 @@ private:
 	Stats _stats;
 };
 
-VARIANT_ENUM_CAST(VoxelLodTerrain::ProcessMode)
+VARIANT_ENUM_CAST(VoxelLodTerrain::ProcessCallback)
 
 #endif // VOXEL_LOD_TERRAIN_HPP
