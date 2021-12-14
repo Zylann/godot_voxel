@@ -51,10 +51,10 @@ jobs:
         run: choco install python make mingw
 
       # For copy_mono_root
-      - name: Install Mono Runtime (for copy_mono_root)
-        run: |
-          curl --location https://download.mono-project.com/archive/6.12.0/windows-installer/${{ env.MONO_TAG }}-x64-0.msi -O
-          Start-Process msiexec.exe -Wait -ArgumentList '/I D:\a\godot_voxel\godot_voxel\${{ env.MONO_TAG }}-x64-0.msi /quiet'
+      # - name: Install Mono Runtime (for copy_mono_root)
+      #  run: |
+      #    curl --location https://download.mono-project.com/archive/6.12.0/windows-installer/${{ env.MONO_TAG }}-x64-0.msi -O
+      #    Start-Process msiexec.exe -Wait -ArgumentList '/I D:\a\godot_voxel\godot_voxel\${{ env.MONO_TAG }}-x64-0.msi /quiet'
           
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
