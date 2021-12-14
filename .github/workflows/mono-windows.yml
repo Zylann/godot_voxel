@@ -49,7 +49,7 @@ jobs:
       
       - name: Copy Mono BCL to Build
         run: |
-          Create-Item -Path 'windows-x86_64/desktop-windows-x86_64-release/lib/mono/4.5' -ItemType Directory
+          New-Item -Path 'windows-x86_64/desktop-windows-x86_64-release/lib/mono/4.5' -ItemType Directory
           Copy-Item -Path 'bcl-desktop-win32/desktop-win32-bcl/net_4_x-win32/*' -Destination 'windows-x86_64/desktop-windows-x86_64-release/lib/mono/4.5' -Recurse
 
 
