@@ -233,6 +233,13 @@ DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
 	_multimesh_instance.set_material_override(_material);
 }
 
+DebugMultiMeshRenderer::~DebugMultiMeshRenderer() {
+	// A MultiMeshInstance created without nodes does not hold ownership on its material.
+	// So we need to destroy it before we release ownership at the end of this destructor.
+	// Otherwise RenderingServer produces errors.
+	_multimesh_instance.destroy();
+}
+
 void DebugMultiMeshRenderer::set_world(World3D *world) {
 	_multimesh_instance.set_world(world);
 	_world = world;

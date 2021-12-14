@@ -11,7 +11,7 @@ class World3D;
 
 namespace VoxelDebug {
 
-enum ColorID {
+enum ColorID { //
 	ID_VOXEL_BOUNDS = 0,
 	ID_OCTREE_BOUNDS,
 	ID_VOXEL_GRAPH_DEBUG_BOUNDS,
@@ -25,6 +25,7 @@ void free_resources();
 class DebugMultiMeshRenderer {
 public:
 	DebugMultiMeshRenderer();
+	~DebugMultiMeshRenderer();
 
 	void set_world(World3D *world);
 	void begin();
