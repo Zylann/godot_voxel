@@ -5,16 +5,6 @@
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
-// namespace {
-// static const unsigned int MESH_COMPRESSION_FLAGS = //
-// 		Mesh::ARRAY_FORMAT_NORMAL | //
-// 		Mesh::ARRAY_FORMAT_TANGENT | //
-// 		//Mesh::ARRAY_COMPRESS_COLOR | // Using color as 4 full floats to transfer extra attributes for now...
-// 		//Mesh::ARRAY_COMPRESS_TEX_UV | // Not compressing UV, we use it for different texturing information
-// 		Mesh::ARRAY_FORMAT_TEX_UV2 | //
-// 		Mesh::ARRAY_FORMAT_WEIGHTS;
-// }
-
 VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
 	set_padding(Transvoxel::MIN_PADDING, Transvoxel::MAX_PADDING);
 }
@@ -36,12 +26,16 @@ int VoxelMesherTransvoxel::get_used_channels_mask() const {
 void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const Transvoxel::MeshArrays &src) {
 	PackedVector3Array vertices;
 	PackedVector3Array normals;
-	PackedColorArray lod_data; // 4*float32
-	PackedVector2Array texturing_data; // 2*4*uint8
+	PackedFloat32Array lod_data; // 4*float32
+	PackedFloat32Array texturing_data; // 2*4*uint8 as 2*float32
 	PackedInt32Array indices;
 
 	raw_copy_to(vertices, src.vertices);
-	raw_copy_to(lod_data, src.lod_data);
+
+	//raw_copy_to(lod_data, src.lod_data);
+	lod_data.resize(src.lod_data.size() * 4);
+	memcpy(lod_data.ptrw(), src.lod_data.data(), lod_data.size() * sizeof(float));
+
 	raw_copy_to(indices, src.indices);
 
 	arrays.resize(Mesh::ARRAY_MAX);
@@ -51,10 +45,12 @@ void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const Transvoxel:
 		arrays[Mesh::ARRAY_NORMAL] = normals;
 	}
 	if (src.texturing_data.size() != 0) {
-		raw_copy_to(texturing_data, src.texturing_data);
-		arrays[Mesh::ARRAY_CUSTOM0] = texturing_data;
+		//raw_copy_to(texturing_data, src.texturing_data);
+		texturing_data.resize(src.texturing_data.size() * 2);
+		memcpy(texturing_data.ptrw(), src.texturing_data.data(), texturing_data.size() * sizeof(float));
+		arrays[Mesh::ARRAY_CUSTOM1] = texturing_data;
 	}
-	arrays[Mesh::ARRAY_CUSTOM1] = lod_data;
+	arrays[Mesh::ARRAY_CUSTOM0] = lod_data;
 	arrays[Mesh::ARRAY_INDEX] = indices;
 }
 
@@ -194,7 +190,9 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// print_line(String("VoxelMesherTransvoxel spent {0} us").format(varray(time_spent)));
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
-	//output.compression_flags = MESH_COMPRESSION_FLAGS;
+	output.mesh_flags = //
+			(RenderingServer::ARRAY_CUSTOM_RGBA_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT) |
+			(RenderingServer::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
 }
 
 // TODO For testing at the moment
