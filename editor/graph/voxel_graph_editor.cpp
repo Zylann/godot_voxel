@@ -16,6 +16,7 @@
 
 const char *VoxelGraphEditor::SIGNAL_NODE_SELECTED = "node_selected";
 const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
+const char *VoxelGraphEditor::SIGNAL_NODES_DELETED = "nodes_deleted";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -617,6 +618,8 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 	}
 
 	_undo_redo->commit_action();
+
+	emit_signal(SIGNAL_NODES_DELETED);
 }
 
 void VoxelGraphEditor::_on_graph_node_dragged(Vector2 from, Vector2 to, int id) {
@@ -998,4 +1001,5 @@ void VoxelGraphEditor::_bind_methods() {
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_SELECTED, PropertyInfo(Variant::INT, "node_id")));
 	ADD_SIGNAL(MethodInfo(SIGNAL_NOTHING_SELECTED, PropertyInfo(Variant::INT, "nothing_selected")));
+	ADD_SIGNAL(MethodInfo(SIGNAL_NODES_DELETED, PropertyInfo(Variant::INT, "nodes_deleted")));
 }

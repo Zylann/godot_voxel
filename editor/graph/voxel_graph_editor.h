@@ -18,6 +18,7 @@ class VoxelGraphEditor : public Control {
 public:
 	static const char *SIGNAL_NODE_SELECTED;
 	static const char *SIGNAL_NOTHING_SELECTED;
+	static const char *SIGNAL_NODES_DELETED;
 
 	VoxelGraphEditor();
 

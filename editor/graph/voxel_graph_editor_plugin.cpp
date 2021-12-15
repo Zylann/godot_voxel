@@ -15,6 +15,8 @@ VoxelGraphEditorPlugin::VoxelGraphEditorPlugin(EditorNode *p_node) {
 			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_node_selected));
 	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NOTHING_SELECTED,
 			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected));
+	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NODES_DELETED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted));
 	_bottom_panel_button = add_control_to_bottom_panel(_graph_editor, TTR("Voxel Graph"));
 	_bottom_panel_button->hide();
 }
@@ -112,6 +114,14 @@ void VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected() {
 	if (graph.is_valid()) {
 		get_editor_interface()->inspect_object(*graph);
 	}
+}
+
+void VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted() {
+	// When deleting nodes, the selected one can be in them, but the inspector wrapper will still point at it.
+	// Clean it up and inspect the graph itself.
+	Ref<VoxelGeneratorGraph> graph = _graph_editor->get_graph();
+	ERR_FAIL_COND(graph.is_null());
+	get_editor_interface()->inspect_object(*graph);
 }
 
 void VoxelGraphEditorPlugin::_bind_methods() {

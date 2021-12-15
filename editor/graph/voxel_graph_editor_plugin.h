@@ -18,6 +18,7 @@ public:
 private:
 	void _on_graph_editor_node_selected(uint32_t node_id);
 	void _on_graph_editor_nothing_selected();
+	void _on_graph_editor_nodes_deleted();
 	void _hide_deferred();
 
 	static void _bind_methods();
