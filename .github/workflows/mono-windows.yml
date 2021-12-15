@@ -12,7 +12,6 @@ env:
   MONO_TAG: mono-6.12.0.147
   MONO_BCL_RELEASE_TAG: release-c3a9d31
   MONO_INSTALL_DIR: C:\'Program Files'\Mono
-  MONO_ROOT: D:\a\godot_voxel\godot_voxel\windows-x86_64\desktop-windows-x86_64-release\
   MONO_PREFIX: D:\a\godot_voxel\godot_voxel\windows-x86_64\desktop-windows-x86_64-release\
 
 jobs:     
@@ -92,7 +91,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           cd godot
-          scons -j4 use_lto=no use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes
+          scons -j4 use_lto=no use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
 
 
       - uses: actions/upload-artifact@v2
@@ -122,7 +121,7 @@ jobs:
           SCONS_CACHE: /.scons_cache/
         run: |
           cd godot
-          scons -j4 use_lto=no use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes
+          scons -j4 use_lto=no use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
 
       # Make build available
       - uses: actions/upload-artifact@v2
