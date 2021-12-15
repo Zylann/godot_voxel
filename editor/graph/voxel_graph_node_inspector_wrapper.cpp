@@ -73,8 +73,8 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 		ur->create_action("Set VoxelGeneratorGraph node name");
 		ur->add_do_method(graph.ptr(), "set_node_name", _node_id, p_value);
 		ur->add_undo_method(graph.ptr(), "set_node_name", _node_id, previous_name);
-		ur->add_do_method(this, "property_list_changed_notify");
-		ur->add_undo_method(this, "property_list_changed_notify");
+		ur->add_do_method(this, "notify_property_list_changed");
+		ur->add_undo_method(this, "notify_property_list_changed");
 		ur->commit_action();
 		return true;
 	}
@@ -87,8 +87,8 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 		ur->create_action("Set VoxelGeneratorGraph node parameter");
 		ur->add_do_method(graph.ptr(), "set_node_param", _node_id, index, p_value);
 		ur->add_undo_method(graph.ptr(), "set_node_param", _node_id, index, previous_value);
-		ur->add_do_method(this, "property_list_changed_notify");
-		ur->add_undo_method(this, "property_list_changed_notify");
+		ur->add_do_method(this, "notify_property_list_changed");
+		ur->add_undo_method(this, "notify_property_list_changed");
 		ur->commit_action();
 
 	} else if (VoxelGraphNodeDB::get_singleton()->try_get_input_index_from_name(node_type_id, p_name, index)) {
@@ -96,8 +96,8 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 		ur->create_action("Set VoxelGeneratorGraph node default input");
 		ur->add_do_method(graph.ptr(), "set_node_default_input", _node_id, index, p_value);
 		ur->add_undo_method(graph.ptr(), "set_node_default_input", _node_id, index, previous_value);
-		ur->add_do_method(this, "property_list_changed_notify");
-		ur->add_undo_method(this, "property_list_changed_notify");
+		ur->add_do_method(this, "notify_property_list_changed");
+		ur->add_undo_method(this, "notify_property_list_changed");
 		ur->commit_action();
 
 	} else {
