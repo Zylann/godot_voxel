@@ -202,9 +202,9 @@ private:
 	};
 
 	HashMap<Vector3i, LoadingBlock, Vector3iHasher> _loading_blocks;
-	std::vector<Vector3i> _blocks_pending_load;
-	std::vector<Vector3i> _blocks_pending_update;
-	std::vector<BlockToSave> _blocks_to_save;
+	std::vector<Vector3i> _blocks_pending_load; // The order in that list does not matter
+	std::vector<Vector3i> _blocks_pending_update; // The order in that list does not matter
+	std::vector<BlockToSave> _blocks_to_save; // The order in that list does not matter
 
 	Ref<VoxelStream> _stream;
 	Ref<VoxelMesher> _mesher;
