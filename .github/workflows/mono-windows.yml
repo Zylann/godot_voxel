@@ -132,7 +132,7 @@ jobs:
           MINGW64_PREFIX: ${{github.workspace}}/mingw64/
         run: |
           cd godot
-          scons -j4 use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
+          scons -j2 use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
 
       # Make build available
       - uses: actions/upload-artifact@v2
