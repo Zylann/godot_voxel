@@ -53,14 +53,14 @@ jobs:
           Copy-Item -Path 'bcl-desktop-win32/desktop-win32-bcl/net_4_x-win32/*' -Destination 'windows-x86_64/desktop-windows-x86_64-release/lib/mono/4.5' -Recurse
 
 
-      # Install all packages (except scons)
+      # Install all packages (except scons, mingw)
       - name: Configure dependencies
         run: choco install python make
 
-      - name: Set up MinGW
-        uses: egor-tensin/setup-mingw@v2
-        with:
-         platform: x64
+      - name: Configure Mingw
+        run: |
+          curl --location https://github.com/rcpacini/mingw-w64/blob/master/MinGW-W64%20GCC-8.1.0/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -o release.7z
+          7z release.7z
     
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
@@ -93,11 +93,12 @@ jobs:
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compile Godot (module_mono_enabled=yes mono_glue=no)
         env:
+          SCONS_CACHE_MSVC_CONFIG: true
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
+          MINGW64_PREFIX: ${{github.workspace}}/mingw64/
         run: |
           cd godot
-          scons -j4 use_lto=no use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
-
+          scons -j4 use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
 
       - uses: actions/upload-artifact@v2
         with:
@@ -124,9 +125,10 @@ jobs:
         env:
           SCONS_CACHE_MSVC_CONFIG: true
           SCONS_CACHE: /.scons_cache/
+          MINGW64_PREFIX: ${{github.workspace}}/mingw64/
         run: |
           cd godot
-          scons -j4 use_lto=no use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
+          scons -j4 use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
 
       # Make build available
       - uses: actions/upload-artifact@v2
