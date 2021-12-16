@@ -98,6 +98,8 @@ jobs:
           SCONS_CACHE_MSVC_CONFIG: true
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
           MINGW64_PREFIX: ${{github.workspace}}/mingw64/
+          CC: ${{github.workspace}}/mingw64/bin/gcc.exe
+          CXX: ${{github.workspace}}/mingw64/bin/g++.exe
         run: |
           cd godot
           scons -j4 use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
