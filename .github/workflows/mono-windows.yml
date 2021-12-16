@@ -60,8 +60,8 @@ jobs:
       - name: Configure Mingw
         run: |
           curl --location https://raw.githubusercontent.com/rcpacini/mingw-w64/master/MinGW-W64%20GCC-8.1.0/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -O
-          New-Item -Path mingw -ItemType Directory
-          7z e x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -o${{github.workspace}}mingw
+          New-Item -Path ${{github.workspace}}/mingw -ItemType Directory
+          7z e x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -o${{github.workspace}}/mingw/
     
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
