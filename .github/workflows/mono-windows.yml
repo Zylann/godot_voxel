@@ -55,7 +55,12 @@ jobs:
 
       # Install all packages (except scons)
       - name: Configure dependencies
-        run: choco install python make mingw
+        run: choco install python make
+
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+         platform: x64
     
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
