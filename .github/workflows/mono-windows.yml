@@ -60,7 +60,7 @@ jobs:
       - name: Configure Mingw
         run: |
           curl --location https://github.com/rcpacini/mingw-w64/blob/master/MinGW-W64%20GCC-8.1.0/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -o release.7z
-          7z release.7z
+          7z e release.7z
     
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
