@@ -59,6 +59,7 @@ jobs:
 
       - name: Configure Mingw
         run: |
+          Install-Module -Name 7Zip4Powershell -RequiredVersion 1.9.0
           curl --location https://raw.githubusercontent.com/rcpacini/mingw-w64/master/MinGW-W64%20GCC-8.1.0/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -O
           New-Item -Path ${{github.workspace}}/mingw64 -ItemType Directory
           Expand-7Zip -ArchiveFileName x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -TargetPath {{github.workspace}}/mingw64/
