@@ -276,6 +276,10 @@ inline Vector3i create(int xyz) {
 	return Vector3i(xyz, xyz, xyz);
 }
 
+inline bool has_nan(const Vector3 &v) {
+	return Math::is_nan(v.x) || Math::is_nan(v.y) || Math::is_nan(v.z);
+}
+
 inline Vector3i from_floored(const Vector3 &f) {
 	return Vector3i(Math::floor(f.x), Math::floor(f.y), Math::floor(f.z));
 }
