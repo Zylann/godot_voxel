@@ -58,10 +58,11 @@ VoxelTerrain::VoxelTerrain() {
 
 	_volume_id = VoxelServer::get_singleton()->add_volume(callbacks, VoxelServer::VOLUME_SPARSE_GRID);
 
+	// TODO Can't setup a default mesher anymore due to a Godot 4 warning...
 	// For ease of use in editor
-	Ref<VoxelMesherBlocky> default_mesher;
-	default_mesher.instantiate();
-	_mesher = default_mesher;
+	// Ref<VoxelMesherBlocky> default_mesher;
+	// default_mesher.instantiate();
+	// _mesher = default_mesher;
 }
 
 VoxelTerrain::~VoxelTerrain() {

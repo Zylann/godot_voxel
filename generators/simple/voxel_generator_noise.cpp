@@ -2,16 +2,7 @@
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
 
-VoxelGeneratorNoise::VoxelGeneratorNoise() {
-#ifdef TOOLS_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		// Have one by default in editor
-		Ref<OpenSimplexNoise> noise;
-		noise.instantiate();
-		set_noise(noise);
-	}
-#endif
-}
+VoxelGeneratorNoise::VoxelGeneratorNoise() {}
 
 VoxelGeneratorNoise::~VoxelGeneratorNoise() {}
 
@@ -252,8 +243,9 @@ void VoxelGeneratorNoise::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING),
 			"set_channel", "get_channel");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise"), "set_noise",
-			"get_noise");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise",
+						 PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
+			"set_noise", "get_noise");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_start"), "set_height_start", "get_height_start");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_range"), "set_height_range", "get_height_range");
 }

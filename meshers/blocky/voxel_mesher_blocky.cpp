@@ -333,12 +333,6 @@ thread_local VoxelMesherBlocky::Cache VoxelMesherBlocky::_cache;
 
 VoxelMesherBlocky::VoxelMesherBlocky() {
 	set_padding(PADDING, PADDING);
-
-	// Default library, less steps to setup in editor
-	Ref<VoxelLibrary> library;
-	library.instantiate();
-	library->load_default();
-	_parameters.library = library;
 }
 
 VoxelMesherBlocky::~VoxelMesherBlocky() {}
@@ -547,8 +541,9 @@ void VoxelMesherBlocky::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"), "set_library",
-			"get_library");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary",
+						 PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
+			"set_library", "get_library");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "occlusion_enabled"), "set_occlusion_enabled", "get_occlusion_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
 			"set_occlusion_darkness", "get_occlusion_darkness");

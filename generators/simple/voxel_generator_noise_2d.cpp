@@ -2,16 +2,7 @@
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
 
-VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {
-#ifdef TOOLS_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		// Have one by default in editor
-		Ref<OpenSimplexNoise> noise;
-		noise.instantiate();
-		set_noise(noise);
-	}
-#endif
-}
+VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {}
 
 VoxelGeneratorNoise2D::~VoxelGeneratorNoise2D() {}
 
@@ -118,8 +109,9 @@ void VoxelGeneratorNoise2D::_bind_methods() {
 	// ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelGeneratorNoise2D::_on_noise_changed);
 	// ClassDB::bind_method(D_METHOD("_on_curve_changed"), &VoxelGeneratorNoise2D::_on_curve_changed);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise"), "set_noise",
-			"get_noise");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise",
+						 PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
+			"set_noise", "get_noise");
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "curve", PROPERTY_HINT_RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");
 }

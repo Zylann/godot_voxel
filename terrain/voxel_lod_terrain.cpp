@@ -200,11 +200,6 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	set_lod_count(4);
 
 	set_lod_distance(48.f);
-
-	// For ease of use in editor
-	Ref<VoxelMesherTransvoxel> default_mesher;
-	default_mesher.instantiate();
-	_mesher = default_mesher;
 }
 
 VoxelLodTerrain::~VoxelLodTerrain() {
