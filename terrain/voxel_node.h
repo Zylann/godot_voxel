@@ -20,6 +20,16 @@ public:
 	virtual void set_generator(Ref<VoxelGenerator> generator);
 	virtual Ref<VoxelGenerator> get_generator() const;
 
+	enum GIMode { //
+		GI_MODE_DISABLED = 0,
+		GI_MODE_BAKED,
+		GI_MODE_DYNAMIC,
+		_GI_MODE_COUNT
+	};
+
+	void set_gi_mode(GIMode mode);
+	GIMode get_gi_mode() const;
+
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
 
@@ -27,6 +37,8 @@ public:
 
 protected:
 	int get_used_channels_mask() const;
+
+	virtual void _on_gi_mode_changed() {}
 
 private:
 	Ref<VoxelMesher> _b_get_mesher() {
@@ -51,6 +63,10 @@ private:
 	}
 
 	static void _bind_methods();
+
+	GIMode _gi_mode = GI_MODE_DISABLED;
 };
+
+VARIANT_ENUM_CAST(VoxelNode::GIMode);
 
 #endif // VOXEL_NODE_H

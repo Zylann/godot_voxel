@@ -253,6 +253,13 @@ void VoxelTerrain::_on_stream_params_changed() {
 	update_configuration_warnings();
 }
 
+void VoxelTerrain::_on_gi_mode_changed() {
+	const GIMode gi_mode = get_gi_mode();
+	_mesh_map.for_all_blocks([gi_mode](VoxelMeshBlock *block) { //
+		block->set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
+	});
+}
+
 Ref<VoxelMesher> VoxelTerrain::get_mesher() const {
 	return _mesher;
 }
@@ -1217,7 +1224,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 
 	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
 
-	block->set_mesh(mesh);
+	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
 	if (gen_collisions) {
 		block->set_collision_mesh(
 				collidable_surfaces, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);

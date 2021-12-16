@@ -2,8 +2,7 @@
 #include "../profiling.h"
 #include <scene/resources/world_3d.h>
 
-DirectMeshInstance::DirectMeshInstance() {
-}
+DirectMeshInstance::DirectMeshInstance() {}
 
 DirectMeshInstance::~DirectMeshInstance() {
 	destroy();
@@ -83,4 +82,44 @@ void DirectMeshInstance::set_cast_shadows_setting(RenderingServer::ShadowCasting
 
 Ref<Mesh> DirectMeshInstance::get_mesh() const {
 	return _mesh;
+}
+
+// void DirectMeshInstance::set_use_baked_light(bool enable) {
+// 	ERR_FAIL_COND(!_mesh_instance.is_valid());
+// 	RenderingServer &vs = *RenderingServer::get_singleton();
+// 	vs.instance_geometry_set_flag(_mesh_instance, RenderingServer::INSTANCE_FLAG_USE_BAKED_LIGHT, true);
+// }
+
+// void DirectMeshInstance::set_use_dynamic_gi(bool enable) {
+// 	ERR_FAIL_COND(!_mesh_instance.is_valid());
+// 	RenderingServer &vs = *RenderingServer::get_singleton();
+// 	vs.instance_geometry_set_flag(_mesh_instance, RenderingServer::INSTANCE_FLAG_USE_DYNAMIC_GI, true);
+// }
+
+void DirectMeshInstance::set_gi_mode(GIMode mode) {
+	ERR_FAIL_COND(!_mesh_instance.is_valid());
+	RenderingServer &vs = *RenderingServer::get_singleton();
+
+	bool baked_light;
+	bool dynamic_gi;
+
+	switch (mode) {
+		case GI_MODE_DISABLED:
+			baked_light = false;
+			dynamic_gi = false;
+			break;
+		case GI_MODE_BAKED:
+			baked_light = true;
+			dynamic_gi = false;
+			break;
+		case GI_MODE_DYNAMIC:
+			baked_light = false;
+			dynamic_gi = true;
+			break;
+		default:
+			CRASH_NOW_MSG("Unexpected GIMode");
+	}
+
+	vs.instance_geometry_set_flag(_mesh_instance, RenderingServer::INSTANCE_FLAG_USE_BAKED_LIGHT, baked_light);
+	vs.instance_geometry_set_flag(_mesh_instance, RenderingServer::INSTANCE_FLAG_USE_DYNAMIC_GI, dynamic_gi);
 }

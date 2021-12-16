@@ -110,6 +110,8 @@ public:
 protected:
 	void _notification(int p_what);
 
+	void _on_gi_mode_changed() override;
+
 private:
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;

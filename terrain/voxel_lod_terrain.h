@@ -229,6 +229,8 @@ public:
 protected:
 	void _notification(int p_what);
 
+	void _on_gi_mode_changed() override;
+
 private:
 	struct BlockLocation {
 		Vector3i position;

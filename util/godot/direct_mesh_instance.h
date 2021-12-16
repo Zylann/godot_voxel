@@ -21,6 +21,18 @@ public:
 	void set_material_override(Ref<Material> material);
 	void set_visible(bool visible);
 	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
+	// void set_use_baked_light(bool enable);
+	// void set_use_dynamic_gi(bool enable);
+
+	// Convenience
+	enum GIMode { //
+		GI_MODE_DISABLED = 0,
+		GI_MODE_BAKED,
+		GI_MODE_DYNAMIC,
+		_GI_MODE_COUNT
+	};
+
+	void set_gi_mode(GIMode mode);
 
 	Ref<Mesh> get_mesh() const;
 

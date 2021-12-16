@@ -21,7 +21,11 @@ public:
 		MESH_UPDATE_SENT // The mesh is out of date, and an update request was sent, pending response
 	};
 
-	enum FadingState { FADING_NONE, FADING_IN, FADING_OUT };
+	enum FadingState { //
+		FADING_NONE,
+		FADING_IN,
+		FADING_OUT
+	};
 
 	Vector3i position; // In blocks
 	uint8_t lod_index = 0;
@@ -52,9 +56,9 @@ public:
 
 	// Visuals
 
-	void set_mesh(Ref<Mesh> mesh);
+	void set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode);
 	Ref<Mesh> get_mesh() const;
-	void set_transition_mesh(Ref<Mesh> mesh, int side);
+	void set_transition_mesh(Ref<Mesh> mesh, int side, DirectMeshInstance::GIMode gi_mode);
 	bool has_mesh() const;
 	void drop_mesh();
 
@@ -62,6 +66,10 @@ public:
 	inline Ref<ShaderMaterial> get_shader_material() const {
 		return _shader_material;
 	}
+
+	// Note, GIMode is not stored per block, it is a shared option so we provide it in several functions.
+	// Call this function only if the mesh block already exists and has not changed mesh
+	void set_gi_mode(DirectMeshInstance::GIMode mode);
 
 	// Collisions
 

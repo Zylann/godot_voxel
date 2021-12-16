@@ -294,6 +294,15 @@ Ref<VoxelGenerator> VoxelLodTerrain::get_generator() const {
 	return _generator;
 }
 
+void VoxelLodTerrain::_on_gi_mode_changed() {
+	const GIMode gi_mode = get_gi_mode();
+	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+		_lods[lod_index].mesh_map.for_all_blocks([gi_mode](VoxelMeshBlock *block) { //
+			block->set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
+		});
+	}
+}
+
 void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
 	if (_mesher == p_mesher) {
 		return;
@@ -1973,14 +1982,14 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 		}
 	}
 
-	block->set_mesh(mesh);
+	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
 	{
 		VOXEL_PROFILE_SCOPE();
 		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
 			Ref<ArrayMesh> transition_mesh = build_mesh(
 					mesh_data.transition_surfaces[dir], mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 
-			block->set_transition_mesh(transition_mesh, dir);
+			block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()));
 		}
 	}
 

@@ -122,6 +122,18 @@ int VoxelNode::get_used_channels_mask() const {
 	return 0;
 }
 
+void VoxelNode::set_gi_mode(VoxelNode::GIMode mode) {
+	ERR_FAIL_INDEX(mode, _GI_MODE_COUNT);
+	if (mode != _gi_mode) {
+		_gi_mode = mode;
+		_on_gi_mode_changed();
+	}
+}
+
+VoxelNode::GIMode VoxelNode::get_gi_mode() const {
+	return _gi_mode;
+}
+
 void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelNode::_b_set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelNode::_b_get_stream);
@@ -132,10 +144,15 @@ void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_mesher", "mesher"), &VoxelNode::_b_set_mesher);
 	ClassDB::bind_method(D_METHOD("get_mesher"), &VoxelNode::_b_get_mesher);
 
+	ClassDB::bind_method(D_METHOD("set_gi_mode", "mode"), &VoxelNode::set_gi_mode);
+	ClassDB::bind_method(D_METHOD("get_gi_mode"), &VoxelNode::get_gi_mode);
+
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream",
 			"get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelGenerator"),
 			"set_generator", "get_generator");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMesher"), "set_mesher",
 			"get_mesher");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, "Disabled,Baked,Dynamic"), "set_gi_mode",
+			"get_gi_mode");
 }
