@@ -77,7 +77,7 @@ void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector
 		const unsigned int dst_row_offset = dst_size.y;
 		Vector3i pos;
 		for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
-			unsigned int dst_ri = Vector3i(dst_min + pos).get_zxy_index(dst_size);
+			unsigned int dst_ri = Vector3iUtil::get_zxy_index(dst_min + pos, dst_size);
 			for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
 				// Fill row
 				for (pos.y = 0; pos.y < area_size.y; ++pos.y) {
