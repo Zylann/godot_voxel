@@ -297,7 +297,9 @@ void VoxelTerrain::set_generate_collisions(bool enabled) {
 
 void VoxelTerrain::set_collision_layer(int layer) {
 	_collision_layer = layer;
-	_mesh_map.for_all_blocks([layer](VoxelMeshBlock *block) { block->set_collision_layer(layer); });
+	_mesh_map.for_all_blocks([layer](VoxelMeshBlock *block) { //
+		block->set_collision_layer(layer);
+	});
 }
 
 int VoxelTerrain::get_collision_layer() const {
@@ -306,7 +308,9 @@ int VoxelTerrain::get_collision_layer() const {
 
 void VoxelTerrain::set_collision_mask(int mask) {
 	_collision_mask = mask;
-	_mesh_map.for_all_blocks([mask](VoxelMeshBlock *block) { block->set_collision_mask(mask); });
+	_mesh_map.for_all_blocks([mask](VoxelMeshBlock *block) { //
+		block->set_collision_mask(mask);
+	});
 }
 
 int VoxelTerrain::get_collision_mask() const {
@@ -315,7 +319,9 @@ int VoxelTerrain::get_collision_mask() const {
 
 void VoxelTerrain::set_collision_margin(float margin) {
 	_collision_margin = margin;
-	_mesh_map.for_all_blocks([margin](VoxelMeshBlock *block) { block->set_collision_margin(margin); });
+	_mesh_map.for_all_blocks([margin](VoxelMeshBlock *block) { //
+		block->set_collision_margin(margin);
+	});
 }
 
 float VoxelTerrain::get_collision_margin() const {
@@ -607,7 +613,9 @@ void VoxelTerrain::stop_updater() {
 }
 
 void VoxelTerrain::remesh_all_blocks() {
-	_mesh_map.for_all_blocks([this](VoxelMeshBlock *block) { try_schedule_mesh_update(block); });
+	_mesh_map.for_all_blocks([this](VoxelMeshBlock *block) { //
+		try_schedule_mesh_update(block);
+	});
 }
 
 void VoxelTerrain::start_streamer() {
@@ -728,7 +736,9 @@ void VoxelTerrain::_notification(int p_what) {
 				return;
 			}
 
-			_mesh_map.for_all_blocks([&transform](VoxelMeshBlock *block) { block->set_parent_transform(transform); });
+			_mesh_map.for_all_blocks([&transform](VoxelMeshBlock *block) { //
+				block->set_parent_transform(transform);
+			});
 
 		} break;
 
@@ -771,11 +781,11 @@ void VoxelTerrain::emit_data_block_loaded(const VoxelDataBlock *block) {
 	const Variant vpos = block->position;
 	// Not sure about exposDing buffers directly... some stuff on them is useful to obtain directly,
 	// but also it allows scripters to mess with voxels in a way they should not.
-	// Example: modifying voxels without locking them first, while another thread may be reading them at the same time.
-	// The same thing could happen the other way around (threaded task modifying voxels while you try to read them).
-	// It isn't planned to expose VoxelBuffer locks because there are too many of them,
-	// it may likely shift to another system in the future, and might even be changed to no longer inherit Reference.
-	// So unless this is absolutely necessary, buffers aren't exposed. Workaround: use VoxelTool
+	// Example: modifying voxels without locking them first, while another thread may be reading them at the same
+	// time. The same thing could happen the other way around (threaded task modifying voxels while you try to read
+	// them). It isn't planned to expose VoxelBuffer locks because there are too many of them, it may likely shift
+	// to another system in the future, and might even be changed to no longer inherit Reference. So unless this is
+	// absolutely necessary, buffers aren't exposed. Workaround: use VoxelTool
 	//const Variant vbuffer = block->voxels;
 	//const Variant *args[2] = { &vpos, &vbuffer };
 	const Variant *args[1] = { &vpos };
