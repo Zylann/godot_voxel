@@ -8,8 +8,11 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
 
-Ongoing development
------------------------
+Ongoing development - `godot4` branch
+--------------------------------------
+
+- General
+    - Added `gi_mode` to terrain nodes to choose how they behave with Godot's global illumination
 
 - Smooth voxels
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
@@ -18,6 +21,18 @@ Ongoing development
 - Fixes
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
     - `Voxel`: properties of the inspector were not refreshed when changing `geometry_type`
+    - `VoxelGeneratorGraph`: editor: fix inspector starting to throw errors after deleting a node, as it is still inspecting it
+    - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
+    - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
+
+- Breaking changes
+    - Some functions now take `Vector3i` instead of `Vector3`. If you used to send `Vector3` without `floor()` or `round()`, it can have side-effects in negative coordinates.
+    - `VoxelLodTerrain`: `set_process_mode` and `get_process_mode` were renamed `set_process_callback` and `get_process_callback` (due to a name conflict)
+    - `VoxelMesherTransvoxel`: Shader API: The data in `COLOR` and `UV` was moved respectively to `CUSTOM0` and `CUSTOM1` (old attributes no longer work for this use case)
+
+- Known issues
+    - Some nodes and resources no longer start with predefined properties due to a warning introduced in Godot4 when properties are resources.
+    - SDFGI does not work all the time and can only be forced to update by moving away and coming back, pre-generating the terrain, or toggling it off and on. This is a limitation of Godot not supporting well meshes created dynamically.
 
 
 06/11/2021 - `godot3.4`
