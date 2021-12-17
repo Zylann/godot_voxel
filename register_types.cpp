@@ -153,7 +153,7 @@ void register_voxel_types() {
 #endif
 
 #ifdef VOXEL_RUN_TESTS
-	run_voxel_tests();
+	zylann::voxel::tests::run_voxel_tests();
 #endif
 }
 

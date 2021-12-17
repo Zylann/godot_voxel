@@ -2,12 +2,18 @@
 #include "../generators/graph/range_utility.h"
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../storage/voxel_data_map.h"
+#include "../streams/region/region_file.h"
+#include "../streams/voxel_block_serializer.h"
 #include "../util/island_finder.h"
 #include "../util/math/box3i.h"
 #include "test_octree.h"
+#include "testing.h"
 
+#include <core/io/dir_access.h>
 #include <core/string/print_string.h>
 #include <core/templates/hash_map.h>
+
+namespace zylann::voxel::tests {
 
 void test_box3i_intersects() {
 	{
@@ -1014,6 +1020,90 @@ void test_voxel_buffer_create() {
 	generated_voxels.create(Vector3i(1, 16, 18));
 }
 
+void test_block_serializer() {
+	// Create an example buffer
+	const Vector3i block_size(8, 9, 10);
+	VoxelBufferInternal voxel_buffer;
+	voxel_buffer.create(block_size);
+	voxel_buffer.fill_area(42, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 0);
+	voxel_buffer.fill_area(43, Vector3i(2, 3, 4), Vector3i(6, 6, 6), 0);
+	voxel_buffer.fill_area(44, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 1);
+
+	// Serialize
+	VoxelBlockSerializerInternal serializer;
+	VoxelBlockSerializerInternal::SerializeResult result = serializer.serialize_and_compress(voxel_buffer);
+	ERR_FAIL_COND(!result.success);
+	std::vector<uint8_t> data = result.data;
+
+	// Deserialize
+	VoxelBufferInternal deserialized_voxel_buffer;
+	ERR_FAIL_COND(!serializer.decompress_and_deserialize(to_span_const(data), deserialized_voxel_buffer));
+
+	// Must be equal
+	ERR_FAIL_COND(!voxel_buffer.equals(deserialized_voxel_buffer));
+}
+
+void test_region_file() {
+	const int block_size_po2 = 4;
+	const int block_size = 1 << block_size_po2;
+	const char *region_file_name = "test_region_file.vxr";
+	zylann::testing::TestDirectory test_dir;
+	ERR_FAIL_COND(!test_dir.is_valid());
+	String region_file_path = test_dir.get_path().plus_file(region_file_name);
+
+	// Create a block of voxels
+	VoxelBufferInternal voxel_buffer;
+	voxel_buffer.create(Vector3iUtil::create(block_size));
+	voxel_buffer.fill_area(42, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 0);
+	voxel_buffer.fill_area(43, Vector3i(2, 3, 4), Vector3i(6, 6, 6), 0);
+
+	{
+		VoxelRegionFile region_file;
+
+		// Configure region format
+		VoxelRegionFormat region_format = region_file.get_format();
+		region_format.block_size_po2 = block_size_po2;
+		for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
+			region_format.channel_depths[channel_index] = voxel_buffer.get_channel_depth(channel_index);
+		}
+		ERR_FAIL_COND(!region_file.set_format(region_format));
+
+		// Open file
+		const Error open_error = region_file.open(region_file_path, true);
+		ERR_FAIL_COND(open_error != OK);
+
+		// Save block
+		VoxelBlockSerializerInternal serializer;
+		const Error save_error = region_file.save_block(Vector3i(1, 2, 3), voxel_buffer, serializer);
+		ERR_FAIL_COND(save_error != OK);
+
+		// Read back
+		VoxelBufferInternal loaded_voxel_buffer;
+		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer, serializer);
+		ERR_FAIL_COND(load_error != OK);
+
+		// Must be equal
+		ERR_FAIL_COND(!voxel_buffer.equals(loaded_voxel_buffer));
+	}
+	// Load again but using a new region file object
+	{
+		VoxelRegionFile region_file;
+
+		// Open file
+		const Error open_error = region_file.open(region_file_path, false);
+		ERR_FAIL_COND(open_error != OK);
+
+		// Read back
+		VoxelBufferInternal loaded_voxel_buffer;
+		VoxelBlockSerializerInternal serializer;
+		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer, serializer);
+		ERR_FAIL_COND(load_error != OK);
+
+		// Must be equal
+		ERR_FAIL_COND(!voxel_buffer.equals(loaded_voxel_buffer));
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
@@ -1040,6 +1130,10 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_octree_find_in_box);
 	VOXEL_TEST(test_get_curve_monotonic_sections);
 	VOXEL_TEST(test_voxel_buffer_create);
+	VOXEL_TEST(test_block_serializer);
+	VOXEL_TEST(test_region_file);
 
 	print_line("------------ Voxel tests end -------------");
 }
+
+} // namespace zylann::voxel::tests

@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+namespace zylann::voxel::tests {
+
 void test_octree_update() {
 	const float lod_distance = 80;
 	const float view_distance = 1024;
@@ -222,3 +224,5 @@ void test_octree_find_in_box() {
 						   .format(varray(lods, for_each_cell_time, single_query_time, checksum2)));
 	}
 }
+
+} // namespace zylann::voxel::tests

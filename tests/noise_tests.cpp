@@ -5,22 +5,21 @@
 #include <core/io/image.h>
 #include <modules/opensimplex/open_simplex_noise.h>
 
-namespace NoiseTests {
+namespace zylann::voxel::noise_tests {
 
 const int ITERATIONS = 1000000;
 const int STEP_RESOLUTION_COUNT = 100;
 const double STEP_MIN = 0.0001;
 const double STEP_MAX = 0.01;
 
-enum Tests {
+enum Tests { //
 	TEST_MIN_MAX = 1,
 	TEST_DERIVATIVES = 2
 };
 
 // Sample a maximum change across the given step.
 // The result is not normalized for performance.
-template <typename F2, typename FloatT>
-FloatT get_derivative(FloatT x, FloatT y, FloatT step, F2 noise_func_2d) {
+template <typename F2, typename FloatT> FloatT get_derivative(FloatT x, FloatT y, FloatT step, F2 noise_func_2d) {
 	FloatT n0, n1, d;
 	FloatT max_derivative = 0.0;
 
@@ -69,8 +68,7 @@ FloatT get_derivative(FloatT x, FloatT y, FloatT z, FloatT step, F3 noise_func_3
 	return max_derivative;
 }
 
-template <typename F2, typename F3, typename FloatT>
-void test_min_max(F2 noise_func_2d, F3 noise_func_3d) {
+template <typename F2, typename F3, typename FloatT> void test_min_max(F2 noise_func_2d, F3 noise_func_3d) {
 	FloatT min_value_2d = std::numeric_limits<FloatT>::max();
 	FloatT max_value_2d = std::numeric_limits<FloatT>::min();
 
@@ -98,8 +96,7 @@ void test_min_max(F2 noise_func_2d, F3 noise_func_3d) {
 }
 
 // Generic analysis for noise functions
-template <typename F2, typename F3, typename FloatT>
-void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
+template <typename F2, typename F3, typename FloatT> void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
 	const int iterations = ITERATIONS;
 	const int step_resolution_count = STEP_RESOLUTION_COUNT;
 	const FloatT step_min = STEP_MIN;
@@ -169,8 +166,7 @@ void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
 	print_line(String("Min max derivative: {0}").format(varray(min_max_derivative)));
 }
 
-template <typename F3>
-void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
+template <typename F3> void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
 	const double x_min = 500.0;
 	const double y = 500.0;
 	const double z_min = 500.0;
@@ -204,8 +200,7 @@ void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
 	im->save_png(fpath);
 }
 
-template <typename F3>
-void test_derivatives_with_image(String fname, int steps_resolution, F3 noise_func_3d) {
+template <typename F3> void test_derivatives_with_image(String fname, int steps_resolution, F3 noise_func_3d) {
 	for (int i = 0; i < steps_resolution; ++i) {
 		const double step =
 				Math::lerp(STEP_MIN, STEP_MAX, static_cast<double>(i) / static_cast<double>(steps_resolution));
@@ -214,8 +209,7 @@ void test_derivatives_with_image(String fname, int steps_resolution, F3 noise_fu
 	}
 }
 
-template <typename F2, typename F3>
-void test_noise(String name, int tests, F2 noise_func_2d, F3 noise_func_3d) {
+template <typename F2, typename F3> void test_noise(String name, int tests, F2 noise_func_2d, F3 noise_func_3d) {
 	print_line(String("--- {0}:").format(varray(name)));
 
 	if (tests & TEST_MIN_MAX) {
@@ -229,8 +223,7 @@ void test_noise(String name, int tests, F2 noise_func_2d, F3 noise_func_3d) {
 
 void test_fnl_noise(fast_noise_lite::FastNoiseLite &fnl, String name, int tests) {
 	test_noise(
-			name, tests,
-			[&fnl](double x, double y) { return fnl.GetNoise(x, y); },
+			name, tests, [&fnl](double x, double y) { return fnl.GetNoise(x, y); },
 			[&fnl](double x, double y, double z) { return fnl.GetNoise(x, y, z); });
 }
 
@@ -271,27 +264,26 @@ void test_noises() {
 	fn.SetNoiseType(fast_noise_lite::FastNoiseLite::NoiseType_Cellular);
 
 	const char *cell_distance_function_names[] = {
-		"Euclidean",
-		"EuclideanSq",
-		"Manhattan",
-		"Hybrid"
+		"Euclidean", //
+		"EuclideanSq", //
+		"Manhattan", //
+		"Hybrid" //
 	};
 	const char *cell_return_type_names[] = {
-		"CellValue",
-		"Distance",
-		"Distance2",
-		"Distance2Add",
-		"Distance2Sub",
-		"Distance2Mul",
-		"Distance2Div"
+		"CellValue", //
+		"Distance", //
+		"Distance2", //
+		"Distance2Add", //
+		"Distance2Sub", //
+		"Distance2Mul", //
+		"Distance2Div" //
 	};
 
 	for (int cell_distance_function = 0; cell_distance_function < 4; ++cell_distance_function) {
 		for (int cell_return_type = 0; cell_return_type < 7; ++cell_return_type) {
 			fn.SetCellularDistanceFunction(
 					static_cast<fast_noise_lite::FastNoiseLite::CellularDistanceFunction>(cell_distance_function));
-			fn.SetCellularReturnType(
-					static_cast<fast_noise_lite::FastNoiseLite::CellularReturnType>(cell_return_type));
+			fn.SetCellularReturnType(static_cast<fast_noise_lite::FastNoiseLite::CellularReturnType>(cell_return_type));
 
 			const char *cell_distance_function_name = cell_distance_function_names[cell_distance_function];
 			const char *cell_return_type_name = cell_return_type_names[cell_return_type];
@@ -326,11 +318,11 @@ void test_noises() {
 	}
 }
 
-} // namespace NoiseTests
-
 // These are not actually unit tests, but rather analysis. They could be used with tests in the future, but
 // it can be relatively hard for derivatives because empiric tests may bump on irregularities causing false-positives,
 // so for now derivative ranges are estimated manually from the results
 void run_noise_tests() {
-	NoiseTests::test_noises();
+	test_noises();
 }
+
+} //namespace zylann::voxel::noise_tests
