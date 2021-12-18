@@ -30,11 +30,7 @@ jobs:
       # Clone our module under the correct directory
       - uses: actions/checkout@v2
         with:
-          path: godot/modules/voxel
-
-      # Move nuget.config from voxel repo to root of checkout, so msbuild can find it
-      - name: Move nuget.config
-        run: mv godot/modules/voxel/nuget.config godot/nuget.config
+          path: voxel
 
       # Download Mono Build
       - name: Download Mono Build
@@ -61,8 +57,7 @@ jobs:
         run: |
           Install-Module -Name 7Zip4Powershell -RequiredVersion 1.9.0 -Force
           curl --location https://raw.githubusercontent.com/rcpacini/mingw-w64/master/MinGW-W64%20GCC-8.1.0/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -O
-          New-Item -Path ${{github.workspace}}/mingw64 -ItemType Directory
-          Expand-7Zip -ArchiveFileName x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -TargetPath ${{github.workspace}}/mingw64
+          Expand-7Zip -ArchiveFileName x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -TargetPath ${{github.workspace}}
     
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
@@ -95,14 +90,11 @@ jobs:
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compile Godot (module_mono_enabled=yes mono_glue=no)
         env:
-      #   SCONS_CACHE_MSVC_CONFIG: true
-      #   SCONS_CACHE: ${{github.workspace}}/.scons_cache/
-          MINGW64_PREFIX: ${{github.workspace}}/mingw64/mingw64
-          CC: ${{github.workspace}}/mingw64/mingw64/bin/gcc.exe
-          CXX: ${{github.workspace}}/mingw64/mingw64/bin/g++.exe
+          SCONS_CACHE_MSVC_CONFIG: true
+          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           cd godot
-          scons use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
+          scons use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }} custom_modules="../voxel"
 
       - uses: actions/upload-artifact@v2
         with:
@@ -129,12 +121,9 @@ jobs:
         env:
           SCONS_CACHE_MSVC_CONFIG: true
           SCONS_CACHE: /.scons_cache/
-          MINGW64_PREFIX: ${{github.workspace}}/mingw64/mingw64
-          CC: ${{github.workspace}}/mingw64/mingw64/bin/gcc.exe
-          CXX: ${{github.workspace}}/mingw64/mingw64/bin/g++.exe
         run: |
           cd godot
-          scons -j2 use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }}
+          scons -j2 use_mingw=yes bits=64 verbose=yes warnings=all werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }} custom_modules="../voxel"
 
       # Make build available
       - uses: actions/upload-artifact@v2
