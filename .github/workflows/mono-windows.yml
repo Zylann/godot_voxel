@@ -53,7 +53,20 @@ jobs:
       - name: Configure dependencies
         run: choco install python make
 
+        # Upload cache on completion and check it out now
+      - name: Load mingw directory
+        id: mingw-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/mingw64/
+          key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}-mingw
+          restore-keys: |
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}-mingw
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-mingw
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-mingw
+
       - name: Configure Mingw
+        if: steps.mingw-cache.outputs.cache-hit != 'true'
         run: |
           Install-Module -Name 7Zip4Powershell -RequiredVersion 1.9.0 -Force
           curl --location https://raw.githubusercontent.com/rcpacini/mingw-w64/master/MinGW-W64%20GCC-8.1.0/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z -O
