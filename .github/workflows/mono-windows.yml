@@ -59,11 +59,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{github.workspace}}/mingw64/
-          key: ${{github.job}}-${{github.ref}}-${{github.sha}}-mingw
-          restore-keys: |
-            ${{github.job}}-${{github.ref}}-${{github.sha}}-mingw
-            ${{github.job}}-${{github.ref}}-mingw
-            ${{github.job}}-mingw
+          key: mingw-8.1.0
 
       - name: Configure Mingw
         if: steps.mingw-cache.outputs.cache-hit != 'true'
