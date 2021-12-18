@@ -1,7 +1,7 @@
 name: 🐒 Mono Linux Builds
 on:
-  push:
-    branches: [ ] #  master, github_actions
+  # push:
+   # branches: [ ] #  master, github_actions
   pull_request:
     branches: [ master ]
 
