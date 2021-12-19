@@ -16,7 +16,7 @@ env:
 
 jobs:     
   mono-glue:
-    runs-on: "windows-latest"
+    runs-on: "windows-2019"
     name: Generate Mono Glue
 
     steps:
@@ -103,7 +103,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           cd godot
-          scons use_mingw=yes bits=64 verbose=yes warnings=no werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }} custom_modules="../voxel"
+          scons use_mingw=yes verbose=yes warnings=no werror=no platform=windows tools=yes tests=no target=release_debug debug_symbols=no module_mono_enabled=yes module_voxel_enabled=yes mono_glue=no copy_mono_root=yes mono_static=yes mono_prefix=${{ env.MONO_PREFIX }} custom_modules="../voxel"
 
       - uses: actions/upload-artifact@v2
         with:
