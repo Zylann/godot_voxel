@@ -619,7 +619,6 @@ VoxelSingleValue VoxelLodTerrain::get_voxel(Vector3i pos, unsigned int channel, 
 		Vector3i voxel_pos = pos;
 		for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 			const VoxelDataLodMap::Lod &data_lod = _data->lods[lod_index];
-			data_lod.map_lock.read_lock();
 			std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod, block_pos);
 			if (voxels != nullptr) {
 				return get_voxel_with_lock(*voxels, data_lod.map.to_local(voxel_pos), channel);
