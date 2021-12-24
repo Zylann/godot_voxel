@@ -24,7 +24,7 @@ jobs:
       # Clone Godot
       - uses: actions/checkout@v2
         with:
-          repository: godotengine/godot
+          repository: Gamerfiend/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
           path: godot
 
