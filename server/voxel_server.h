@@ -5,8 +5,10 @@
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../streams/voxel_stream.h"
 #include "../util/file_locker.h"
+#include "progressive_task_runner.h"
 #include "struct_db.h"
 #include "voxel_thread_pool.h"
+
 #include <scene/main/node.h>
 
 #include <memory>
@@ -154,6 +156,8 @@ public:
 
 	void push_time_spread_task(IVoxelTimeSpreadTask *task);
 	int get_main_thread_time_budget_usec() const;
+
+	void push_progressive_task(zylann::IProgressiveTask *task);
 
 	void push_async_task(IVoxelTask *task);
 	void push_async_tasks(Span<IVoxelTask *> tasks);
@@ -384,6 +388,7 @@ private:
 	// For tasks that can only run on the main thread and be spread out over frames
 	VoxelTimeSpreadTaskRunner _time_spread_task_runner;
 	int _main_thread_time_budget_usec = 8000;
+	zylann::ProgressiveTaskRunner _progressive_task_runner;
 
 	VoxelFileLocker _file_locker;
 };

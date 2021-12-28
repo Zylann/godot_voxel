@@ -586,6 +586,10 @@ void VoxelServer::push_time_spread_task(IVoxelTimeSpreadTask *task) {
 	_time_spread_task_runner.push(task);
 }
 
+void VoxelServer::push_progressive_task(zylann::IProgressiveTask *task) {
+	_progressive_task_runner.push(task);
+}
+
 int VoxelServer::get_main_thread_time_budget_usec() const {
 	return _main_thread_time_budget_usec;
 }
@@ -605,6 +609,8 @@ void VoxelServer::process() {
 	//VOXEL_PROFILE_MARK_FRAME();
 	VOXEL_PROFILE_SCOPE();
 	VOXEL_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));
+	VOXEL_PROFILE_PLOT("TimeSpread tasks", int64_t(_time_spread_task_runner.get_pending_count()));
+	VOXEL_PROFILE_PLOT("Progressive tasks", int64_t(_progressive_task_runner.get_pending_count()));
 
 	// Receive data updates
 	_streaming_thread_pool.dequeue_completed_tasks([](IVoxelTask *task) {
@@ -621,6 +627,8 @@ void VoxelServer::process() {
 	// Run this after dequeueing threaded tasks, because they can add some to this runner,
 	// which could in turn complete right away (we avoid 1-frame delays this way).
 	_time_spread_task_runner.process(_main_thread_time_budget_usec);
+
+	_progressive_task_runner.process();
 
 	// Update viewer dependencies
 	{
@@ -696,7 +704,7 @@ VoxelServer::Stats VoxelServer::get_stats() const {
 	s.generation_tasks = g_debug_generate_tasks_count;
 	s.meshing_tasks = g_debug_mesh_tasks_count;
 	s.streaming_tasks = g_debug_stream_tasks_count;
-	s.main_thread_tasks = _time_spread_task_runner.get_pending_count();
+	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
 	return s;
 }
 

@@ -1,5 +1,7 @@
 #include "voxel_mesh_block.h"
 #include "../constants/voxel_string_names.h"
+#include "../server/progressive_task_runner.h"
+#include "../server/voxel_server.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
@@ -34,7 +36,43 @@ VoxelMeshBlock *VoxelMeshBlock::create(Vector3i bpos, unsigned int size, unsigne
 
 VoxelMeshBlock::VoxelMeshBlock() {}
 
-VoxelMeshBlock::~VoxelMeshBlock() {}
+VoxelMeshBlock::~VoxelMeshBlock() {
+	// Had to resort to this in Godot4 because deleting meshes is particularly expensive,
+	// because of the Vulkan allocator used by the renderer
+	class FreeMeshTask : public zylann::IProgressiveTask {
+	public:
+		static inline void try_add_and_destroy(DirectMeshInstance &mi) {
+			if (mi.get_mesh().is_valid()) {
+				add(mi.get_mesh());
+			}
+			mi.destroy();
+		}
+
+		static void add(Ref<Mesh> mesh) {
+			CRASH_COND(mesh.is_null());
+			FreeMeshTask *task = memnew(FreeMeshTask());
+			task->mesh = mesh;
+			VoxelServer::get_singleton()->push_progressive_task(task);
+		}
+
+		void run() override {
+#ifdef DEBUG_ENABLED
+			if (mesh->reference_get_count() > 1) {
+				WARN_PRINT("Mesh has more than one ref left, task spreading will not be effective at smoothing "
+						   "destruction cost");
+			}
+#endif
+			mesh.unref();
+		}
+
+		Ref<Mesh> mesh;
+	};
+
+	FreeMeshTask::try_add_and_destroy(_mesh_instance);
+	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+		FreeMeshTask::try_add_and_destroy(_transition_mesh_instances[i]);
+	}
+}
 
 void VoxelMeshBlock::set_world(Ref<World3D> p_world) {
 	if (_world != p_world) {

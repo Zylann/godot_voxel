@@ -24,8 +24,8 @@ void DirectMeshInstance::destroy() {
 		RenderingServer &vs = *RenderingServer::get_singleton();
 		vs.free(_mesh_instance);
 		_mesh_instance = RID();
-		_mesh.unref();
 	}
+	_mesh.unref();
 }
 
 void DirectMeshInstance::set_world(World3D *world) {
