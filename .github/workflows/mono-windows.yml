@@ -7,7 +7,7 @@ on:
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: 3.x
+  GODOT_BASE_BRANCH: 3.4
   SCONS_CACHE_LIMIT: 4096
   MONO_TAG: mono-6.12.0.147
   MONO_BCL_RELEASE_TAG: release-c3a9d31
@@ -31,6 +31,7 @@ jobs:
       # Clone our module under the correct directory
       - uses: actions/checkout@v2
         with:
+          ref: godot3.4
           path: voxel
 
       # Download Mono Build
