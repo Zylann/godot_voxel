@@ -21,7 +21,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 		return;
 	}
 
-	p_list->push_back(PropertyInfo(Variant::STRING, "name", PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_EDITOR));
+	p_list->push_back(PropertyInfo(Variant::STRING_NAME, "name", PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_EDITOR));
 
 	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
@@ -73,8 +73,8 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 		ur->create_action("Set VoxelGeneratorGraph node name");
 		ur->add_do_method(graph.ptr(), "set_node_name", _node_id, p_value);
 		ur->add_undo_method(graph.ptr(), "set_node_name", _node_id, previous_name);
-		ur->add_do_method(this, "notify_property_list_changed");
-		ur->add_undo_method(this, "notify_property_list_changed");
+		// ur->add_do_method(this, "notify_property_list_changed");
+		// ur->add_undo_method(this, "notify_property_list_changed");
 		ur->commit_action();
 		return true;
 	}
