@@ -98,8 +98,9 @@ void VoxelTerrain::_get_property_list(List<PropertyInfo> *p_list) const {
 	// Need to add a group here because otherwise it appears under the last group declared in `_bind_methods`
 	p_list->push_back(PropertyInfo(Variant::NIL, "Materials", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP));
 	for (unsigned int i = 0; i < VoxelMesherBlocky::MAX_MATERIALS; ++i) {
+		// TODO Can I specify the class names in a type-safe way?
 		p_list->push_back(PropertyInfo(
-				Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,SpatialMaterial"));
+				Variant::OBJECT, "material/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,BaseMaterial3D"));
 	}
 }
 
