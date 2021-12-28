@@ -1,6 +1,7 @@
 #ifndef DIRECT_STATIC_BODY_H
 #define DIRECT_STATIC_BODY_H
 
+#include "../non_copyable.h"
 #include "direct_mesh_instance.h"
 
 #include <core/templates/rid.h>
@@ -9,7 +10,7 @@
 class World3D;
 
 // Thin wrapper around static body API
-class DirectStaticBody {
+class DirectStaticBody : public zylann::NonCopyable {
 public:
 	DirectStaticBody();
 	~DirectStaticBody();

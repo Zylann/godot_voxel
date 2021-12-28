@@ -2,6 +2,7 @@
 #define DIRECT_MULTIMESH_INSTANCE_H
 
 #include "../math/color8.h"
+#include "../non_copyable.h"
 #include "../span.h"
 
 #include <core/templates/rid.h>
@@ -10,7 +11,7 @@
 class World3D;
 
 // Thin wrapper around VisualServer multimesh instance API
-class DirectMultiMeshInstance {
+class DirectMultiMeshInstance : public zylann::NonCopyable {
 public:
 	DirectMultiMeshInstance();
 	~DirectMultiMeshInstance();
@@ -33,14 +34,16 @@ public:
 		Color8 color;
 	};
 
-	static void make_transform_and_color8_3d_bulk_array(Span<const TransformAndColor8> data, PackedFloat32Array &bulk_array);
+	static void make_transform_and_color8_3d_bulk_array(
+			Span<const TransformAndColor8> data, PackedFloat32Array &bulk_array);
 
 	struct TransformAndColor32 {
 		Transform3D transform;
 		Color color;
 	};
 
-	static void make_transform_and_color32_3d_bulk_array(Span<const TransformAndColor32> data, PackedFloat32Array &bulk_array);
+	static void make_transform_and_color32_3d_bulk_array(
+			Span<const TransformAndColor32> data, PackedFloat32Array &bulk_array);
 
 private:
 	RID _multimesh_instance;
