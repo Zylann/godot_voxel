@@ -99,20 +99,6 @@ struct BeforeUnloadDataAction {
 	}
 };
 
-struct BeforeUnloadMeshAction {
-	std::vector<Ref<ShaderMaterial>> &shader_material_pool;
-
-	void operator()(VoxelMeshBlock *block) {
-		VOXEL_PROFILE_SCOPE_NAMED("Recycle material");
-		// Recycle material
-		Ref<ShaderMaterial> sm = block->get_shader_material();
-		if (sm.is_valid()) {
-			shader_material_pool.push_back(sm);
-			block->set_shader_material(Ref<ShaderMaterial>());
-		}
-	}
-};
-
 struct ScheduleSaveAction {
 	std::vector<VoxelLodTerrain::BlockToSave> &blocks_to_save;
 
@@ -414,7 +400,7 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 			});
 		}
 		// Unload mesh blocks
-		lod.mesh_map.for_all_blocks(BeforeUnloadMeshAction{ _shader_material_pool });
+		lod.mesh_map.for_all_blocks(VoxelMeshMap::NoAction());
 		lod.mesh_map.create(po2, lod_index);
 		// Reset view distance cache so they will be re-entered
 		lod.last_view_distance_mesh_blocks = 0;
@@ -1955,28 +1941,13 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 		Ref<ShaderMaterial> shader_material = _material;
 		if (shader_material.is_valid() && block->get_shader_material().is_null()) {
 			VOXEL_PROFILE_SCOPE();
-
-			// Pooling shader materials is necessary for now, to avoid stuttering in the editor.
-			// Due to a signal used to keep the inspector up to date, even though these
-			// material copies will never be seen in the inspector
-			// See https://github.com/godotengine/godot/issues/34741
-			Ref<ShaderMaterial> sm;
-			if (_shader_material_pool.size() > 0) {
-				sm = _shader_material_pool.back();
-				// The joys of pooling materials
-				sm->set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, 0);
-				_shader_material_pool.pop_back();
-			} else {
-				sm = shader_material->duplicate(false);
-			}
-
-			// Set individual shader material, because each block can have dynamic parameters,
-			// used to smooth seams without re-uploading meshes and allow to implement LOD fading
-			block->set_shader_material(sm);
+			block->set_shader_material(shader_material);
+			block->set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, 0);
 		}
 	}
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
+
 	{
 		VOXEL_PROFILE_SCOPE();
 		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
@@ -2304,7 +2275,7 @@ void VoxelLodTerrain::unload_mesh_block(Vector3i block_pos, uint8_t lod_index) {
 
 	Lod &lod = _lods[lod_index];
 
-	lod.mesh_map.remove_block(block_pos, BeforeUnloadMeshAction{ _shader_material_pool });
+	lod.mesh_map.remove_block(block_pos, VoxelMeshMap::NoAction());
 
 	lod.fading_blocks.erase(block_pos);
 

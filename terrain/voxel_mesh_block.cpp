@@ -117,6 +117,7 @@ void VoxelMeshBlock::set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode
 
 		if (_shader_material.is_valid()) {
 			_mesh_instance.set_material_override(_shader_material);
+			set_shader_param(VoxelStringNames::get_singleton()->u_block_local_position, Vector3(_position_in_voxels));
 		}
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
 		_mesh_instance.set_material_override(_debug_material);
@@ -225,8 +226,20 @@ void VoxelMeshBlock::set_shader_material(Ref<ShaderMaterial> material) {
 	}
 
 	if (_shader_material.is_valid()) {
-		const Transform3D local_transform(Basis(), _position_in_voxels);
-		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_block_local_transform, local_transform);
+		set_shader_param(VoxelStringNames::get_singleton()->u_block_local_position, Vector3(_position_in_voxels));
+	}
+}
+
+void VoxelMeshBlock::set_shader_param(StringName key, Variant value) {
+	if (_mesh_instance.is_valid()) {
+		_mesh_instance.set_shader_instance_uniform(key, value);
+
+		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+			DirectMeshInstance &mi = _transition_mesh_instances[dir];
+			if (mi.is_valid()) {
+				mi.set_shader_instance_uniform(key, value);
+			}
+		}
 	}
 }
 
@@ -262,8 +275,7 @@ void VoxelMeshBlock::set_transition_mask(uint8_t m) {
 		tm |= bits[Cube::SIDE_NEGATIVE_Z] << 4;
 		tm |= bits[Cube::SIDE_POSITIVE_Z] << 5;
 
-		// TODO Godot 4: we may replace this with a per-instance parameter so we can lift material access limitation
-		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, tm);
+		set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, tm);
 	}
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		DirectMeshInstance &mi = _transition_mesh_instances[dir];
@@ -411,7 +423,7 @@ bool VoxelMeshBlock::update_fading(float speed) {
 	}
 
 	if (_shader_material.is_valid()) {
-		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_lod_fade, p);
+		set_shader_param(VoxelStringNames::get_singleton()->u_lod_fade, p);
 	}
 
 	return finished;

@@ -333,7 +333,6 @@ private:
 	std::vector<VoxelMeshBlock *> _blocks_pending_transition_update;
 
 	Ref<Material> _material;
-	std::vector<Ref<ShaderMaterial>> _shader_material_pool;
 
 	bool _generate_collisions = true;
 	unsigned int _collision_lod_count = 0;

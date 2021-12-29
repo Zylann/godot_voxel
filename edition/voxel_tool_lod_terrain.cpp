@@ -625,16 +625,12 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 
 			const Transform3D local_transform(Basis(), info.world_pos);
 
+			bool has_block_local_position_uniform = false;
 			for (int i = 0; i < materials.size(); ++i) {
 				Ref<ShaderMaterial> sm = materials[i];
 				if (sm.is_valid() && sm->get_shader().is_valid() &&
-						sm->get_shader()->has_param(VoxelStringNames::get_singleton()->u_block_local_transform)) {
-					// That parameter should have a valid default value matching the local transform relative to the
-					// volume, which is usually per-instance, but in Godot 3 we have no such feature, so we have to
-					// duplicate.
-					sm = sm->duplicate(false);
-					sm->set_shader_param(VoxelStringNames::get_singleton()->u_block_local_transform, local_transform);
-					materials[i] = sm;
+						sm->get_shader()->has_param(VoxelStringNames::get_singleton()->u_block_local_position)) {
+					has_block_local_position_uniform = true;
 				}
 			}
 
@@ -696,6 +692,11 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 			MeshInstance3D *mesh_instance = memnew(MeshInstance3D);
 			mesh_instance->set_mesh(mesh);
 			mesh_instance->set_position(offset);
+			if (has_block_local_position_uniform) {
+				// TODO Is this origin actually correct? It should have been the local position within the volume
+				mesh_instance->set_shader_instance_uniform(
+						VoxelStringNames::get_singleton()->u_block_local_position, local_transform.origin);
+			}
 			rigid_body->add_child(mesh_instance);
 
 			parent_node->add_child(rigid_body);

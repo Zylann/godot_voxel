@@ -31,7 +31,7 @@ public:
 	StringName pivot_mode;
 
 	StringName u_transition_mask;
-	StringName u_block_local_transform;
+	StringName u_block_local_position;
 	StringName u_lod_fade;
 };
 

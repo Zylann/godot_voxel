@@ -28,6 +28,6 @@ VoxelStringNames::VoxelStringNames() {
 	pivot_mode = StaticCString::create("pivot_mode");
 
 	u_transition_mask = StaticCString::create("u_transition_mask");
-	u_block_local_transform = StaticCString::create("u_block_local_transform");
+	u_block_local_position = StaticCString::create("u_block_local_position");
 	u_lod_fade = StaticCString::create("u_lod_fade");
 }

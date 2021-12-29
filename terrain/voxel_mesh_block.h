@@ -67,6 +67,8 @@ public:
 		return _shader_material;
 	}
 
+	void set_shader_param(StringName key, Variant value);
+
 	// Note, GIMode is not stored per block, it is a shared option so we provide it in several functions.
 	// Call this function only if the mesh block already exists and has not changed mesh
 	void set_gi_mode(DirectMeshInstance::GIMode mode);
