@@ -5,7 +5,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
-#include "async_dependency_tracker.h"
+#include "../util/tasks/async_dependency_tracker.h"
 
 #include <core/os/memory.h>
 #include <scene/main/window.h> // Needed for doing `Node *root = SceneTree::get_root()`, Window* is forward-declared

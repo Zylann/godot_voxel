@@ -1,8 +1,8 @@
 #ifndef ZYLANN_THREADED_TASK_RUNNER_H
 #define ZYLANN_THREADED_TASK_RUNNER_H
 
-#include "../util/fixed_array.h"
-#include "../util/span.h"
+#include "../fixed_array.h"
+#include "../span.h"
 
 #include <core/os/mutex.h>
 #include <core/os/semaphore.h>

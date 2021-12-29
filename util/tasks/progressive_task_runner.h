@@ -1,7 +1,7 @@
 #ifndef PROGRESSIVE_TASK_RUNNER_H
 #define PROGRESSIVE_TASK_RUNNER_H
 
-#include "../util/math/funcs.h"
+#include "../math/funcs.h"
 #include <core/os/time.h>
 #include <queue>
 

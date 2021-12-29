@@ -1,6 +1,5 @@
 #include "voxel_mesh_block.h"
 #include "../constants/voxel_string_names.h"
-#include "../server/progressive_task_runner.h"
 #include "../server/voxel_server.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"

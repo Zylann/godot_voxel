@@ -2,13 +2,13 @@
 #include "../constants/voxel_string_names.h"
 #include "../edition/voxel_tool_lod_terrain.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
-#include "../server/async_dependency_tracker.h"
 #include "../server/voxel_server.h"
 #include "../util/funcs.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/profiling_clock.h"
+#include "../util/tasks/async_dependency_tracker.h"
 #include "instancing/voxel_instancer.h"
 
 #include <core/config/engine.h>
