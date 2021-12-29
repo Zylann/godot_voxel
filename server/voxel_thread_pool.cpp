@@ -2,6 +2,7 @@
 #include "../util/profiling.h"
 
 #include <core/os/os.h>
+#include <core/os/time.h>
 
 // template <typename T>
 // static bool contains(const std::vector<T> vec, T v) {
@@ -137,7 +138,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 			VOXEL_PROFILE_SCOPE();
 
 			data.debug_state = STATE_PICKING;
-			const uint32_t now = OS::get_singleton()->get_ticks_msec();
+			const uint32_t now = Time::get_singleton()->get_ticks_msec();
 
 			MutexLock lock(_tasks_mutex);
 
@@ -232,7 +233,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 void VoxelThreadPool::wait_for_all_tasks() {
 	const uint32_t suspicious_delay_msec = 10000;
 
-	uint32_t before = OS::get_singleton()->get_ticks_msec();
+	uint32_t before = Time::get_singleton()->get_ticks_msec();
 	bool error1_reported = false;
 
 	// Wait until all tasks have been taken
@@ -246,13 +247,13 @@ void VoxelThreadPool::wait_for_all_tasks() {
 
 		OS::get_singleton()->delay_usec(2000);
 
-		if (!error1_reported && OS::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
+		if (!error1_reported && Time::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
 			WARN_PRINT("Waiting for all tasks to be picked is taking a long time");
 			error1_reported = true;
 		}
 	}
 
-	before = OS::get_singleton()->get_ticks_msec();
+	before = Time::get_singleton()->get_ticks_msec();
 	bool error2_reported = false;
 
 	// Wait until all threads have done all their tasks
@@ -269,7 +270,7 @@ void VoxelThreadPool::wait_for_all_tasks() {
 
 		OS::get_singleton()->delay_usec(2000);
 
-		if (!error2_reported && OS::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
+		if (!error2_reported && Time::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
 			WARN_PRINT("Waiting for all tasks to be completed is taking a long time");
 			error2_reported = true;
 		}

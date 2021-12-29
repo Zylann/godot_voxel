@@ -3,7 +3,7 @@
 #include "../../constants/octree_tables.h"
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
-#include <core/os/os.h>
+#include <core/os/time.h>
 
 // Dual marching cubes
 // Algorithm taken from https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/
@@ -1430,7 +1430,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	dmc::VoxelAccess voxels_access(voxels, Vector3iUtil::create(PADDING));
 
 	Stats stats;
-	real_t time_before = OS::get_singleton()->get_ticks_usec();
+	real_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	Cache &cache = _cache;
 
@@ -1461,7 +1461,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 		root = octree_builder.build(Vector3i(), chunk_size);
 	}
 
-	stats.octree_build_time = OS::get_singleton()->get_ticks_usec() - time_before;
+	stats.octree_build_time = Time::get_singleton()->get_ticks_usec() - time_before;
 
 	Array surface;
 
@@ -1470,21 +1470,21 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 			surface = dmc::generate_debug_octree_mesh(root, 1 << input.lod);
 
 		} else {
-			time_before = OS::get_singleton()->get_ticks_usec();
+			time_before = Time::get_singleton()->get_ticks_usec();
 
 			dmc::DualGridGenerator dual_grid_generator(cache.dual_grid, root->size);
 			dual_grid_generator.node_proc(root);
 			// TODO Handle non-subdivided octree
 
-			stats.dualgrid_derivation_time = OS::get_singleton()->get_ticks_usec() - time_before;
+			stats.dualgrid_derivation_time = Time::get_singleton()->get_ticks_usec() - time_before;
 
 			if (params.mesh_mode == MESH_DEBUG_DUAL_GRID) {
 				surface = dmc::generate_debug_dual_grid_mesh(cache.dual_grid, 1 << input.lod);
 
 			} else {
-				time_before = OS::get_singleton()->get_ticks_usec();
+				time_before = Time::get_singleton()->get_ticks_usec();
 				dmc::polygonize_dual_grid(cache.dual_grid, voxels_access, cache.mesh_builder, skirts_enabled);
-				stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
+				stats.meshing_time = Time::get_singleton()->get_ticks_usec() - time_before;
 			}
 
 			cache.dual_grid.cells.clear();
@@ -1495,19 +1495,19 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	} else if (params.simplify_mode == SIMPLIFY_NONE) {
 		// We throw away adaptivity for meshing speed.
 		// This is essentially regular marching cubes.
-		time_before = OS::get_singleton()->get_ticks_usec();
+		time_before = Time::get_singleton()->get_ticks_usec();
 		dmc::polygonize_volume_directly(voxels, Vector3iUtil::create(PADDING), Vector3iUtil::create(chunk_size),
 				cache.mesh_builder, skirts_enabled);
-		stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
+		stats.meshing_time = Time::get_singleton()->get_ticks_usec() - time_before;
 	}
 
 	if (surface.is_empty()) {
-		time_before = OS::get_singleton()->get_ticks_usec();
+		time_before = Time::get_singleton()->get_ticks_usec();
 		if (input.lod > 0) {
 			cache.mesh_builder.scale(1 << input.lod);
 		}
 		surface = cache.mesh_builder.commit(params.mesh_mode == MESH_WIREFRAME);
-		stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
+		stats.commit_time = Time::get_singleton()->get_ticks_usec() - time_before;
 	}
 
 	// surfaces[material][array_type], for now single material

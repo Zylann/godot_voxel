@@ -5,7 +5,7 @@
 #include "../../util/profiling.h"
 
 #include <core/io/json.h>
-#include <core/os/os.h>
+#include <core/os/time.h>
 #include <algorithm>
 
 namespace {
@@ -510,7 +510,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 	_region_cache.push_back(cached_region);
 
 	cached_region->file_exists = true;
-	cached_region->last_opened = OS::get_singleton()->get_ticks_usec();
+	cached_region->last_opened = Time::get_singleton()->get_ticks_usec();
 
 	return cached_region;
 }
@@ -529,7 +529,7 @@ void VoxelStreamRegionFiles::close_oldest_region() {
 
 	int oldest_index = -1;
 	uint64_t oldest_time = 0;
-	const uint64_t now = OS::get_singleton()->get_ticks_usec();
+	const uint64_t now = Time::get_singleton()->get_ticks_usec();
 
 	for (unsigned int i = 0; i < _region_cache.size(); ++i) {
 		const CachedRegion *r = _region_cache[i];

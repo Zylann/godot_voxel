@@ -6,7 +6,7 @@
 
 #include <core/core_string_names.h>
 #include <core/object/undo_redo.h>
-#include <core/os/os.h>
+#include <core/os/time.h>
 #include <editor/editor_scale.h>
 #include <scene/gui/check_box.h>
 #include <scene/gui/dialogs.h>
@@ -706,7 +706,7 @@ void VoxelGraphEditor::update_previews() {
 	clear_range_analysis_tooltips();
 	reset_modulates(*_graph_edit);
 
-	uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+	uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	const VoxelGraphRuntime::CompilationResult result = _graph->compile();
 	if (!result.success) {
@@ -741,7 +741,7 @@ void VoxelGraphEditor::update_previews() {
 		update_range_analysis_previews();
 	}
 
-	uint64_t time_taken = OS::get_singleton()->get_ticks_usec() - time_before;
+	uint64_t time_taken = Time::get_singleton()->get_ticks_usec() - time_before;
 	PRINT_VERBOSE(String("Previews generated in {0} us").format(varray(time_taken)));
 }
 

@@ -117,8 +117,8 @@ static void generate_blocky_mesh(
 	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] +
 			side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
 
-	//uint64_t time_prep = OS::get_singleton()->get_ticks_usec() - time_before;
-	//time_before = OS::get_singleton()->get_ticks_usec();
+	//uint64_t time_prep = Time::get_singleton()->get_ticks_usec() - time_before;
+	//time_before = Time::get_singleton()->get_ticks_usec();
 
 	for (unsigned int z = min.z; z < (unsigned int)max.z; ++z) {
 		for (unsigned int x = min.x; x < (unsigned int)max.x; ++x) {

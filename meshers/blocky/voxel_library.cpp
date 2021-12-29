@@ -1,6 +1,9 @@
 #include "voxel_library.h"
 #include "../../util/macros.h"
+
 #include <core/math/geometry_2d.h>
+#include <core/os/time.h>
+
 #include <bitset>
 
 VoxelLibrary::VoxelLibrary() {}
@@ -156,7 +159,7 @@ template <typename F> static void rasterize_triangle_barycentric(Vector2 a, Vect
 void VoxelLibrary::bake() {
 	RWLockWrite lock(_baked_data_rw_lock);
 
-	const uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+	const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	// This is the only place we modify the data.
 
@@ -172,7 +175,7 @@ void VoxelLibrary::bake() {
 
 	generate_side_culling_matrix();
 
-	uint64_t time_spent = OS::get_singleton()->get_ticks_usec() - time_before;
+	uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	PRINT_VERBOSE(String("Took {0} us to bake VoxelLibrary").format(varray(time_spent)));
 }
 
