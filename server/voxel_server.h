@@ -7,15 +7,18 @@
 #include "../util/file_locker.h"
 #include "progressive_task_runner.h"
 #include "struct_db.h"
+#include "threaded_task_runner.h"
 #include "time_spread_task_runner.h"
-#include "voxel_thread_pool.h"
 
 #include <scene/main/node.h>
 
 #include <memory>
 
 class VoxelNode;
-class VoxelAsyncDependencyTracker;
+
+namespace zylann {
+class AsyncDependencyTracker;
+}
 
 // TODO Don't inherit Object. Instead have a Godot wrapper, there is very little use for Object stuff
 
@@ -110,7 +113,7 @@ public:
 	// TODO Add parameter to skip stream loading
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
 	void request_block_generate(
-			uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<VoxelAsyncDependencyTracker> tracker);
+			uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<zylann::AsyncDependencyTracker> tracker);
 	void request_all_stream_blocks(uint32_t volume_id);
 	void request_voxel_block_save(
 			uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos, int lod);
@@ -140,8 +143,8 @@ public:
 
 	void push_progressive_task(zylann::IProgressiveTask *task);
 
-	void push_async_task(IVoxelTask *task);
-	void push_async_tasks(Span<IVoxelTask *> tasks);
+	void push_async_task(zylann::IThreadedTask *task);
+	void push_async_tasks(Span<zylann::IThreadedTask *> tasks);
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
 	// void get_min_max_block_padding(
@@ -267,7 +270,7 @@ private:
 			PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size);
 	static int get_priority(const PriorityDependency &dep, uint8_t lod_index, float *out_closest_distance_sq);
 
-	class BlockDataRequest : public IVoxelTask {
+	class BlockDataRequest : public zylann::IThreadedTask {
 	public:
 		enum Type { //
 			TYPE_LOAD = 0,
@@ -278,7 +281,7 @@ private:
 		BlockDataRequest();
 		~BlockDataRequest();
 
-		void run(VoxelTaskContext ctx) override;
+		void run(zylann::ThreadedTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
 		void apply_result() override;
@@ -300,12 +303,12 @@ private:
 		// TODO Find a way to separate save, it doesnt need sorting
 	};
 
-	class AllBlocksDataRequest : public IVoxelTask {
+	class AllBlocksDataRequest : public zylann::IThreadedTask {
 	public:
 		AllBlocksDataRequest();
 		~AllBlocksDataRequest();
 
-		void run(VoxelTaskContext ctx) override;
+		void run(zylann::ThreadedTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
 		void apply_result() override;
@@ -315,12 +318,12 @@ private:
 		std::shared_ptr<StreamingDependency> stream_dependency;
 	};
 
-	class BlockGenerateRequest : public IVoxelTask {
+	class BlockGenerateRequest : public zylann::IThreadedTask {
 	public:
 		BlockGenerateRequest();
 		~BlockGenerateRequest();
 
-		void run(VoxelTaskContext ctx) override;
+		void run(zylann::ThreadedTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
 		void apply_result() override;
@@ -336,15 +339,15 @@ private:
 		bool drop_beyond_max_distance = true;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
-		std::shared_ptr<VoxelAsyncDependencyTracker> tracker;
+		std::shared_ptr<zylann::AsyncDependencyTracker> tracker;
 	};
 
-	class BlockMeshRequest : public IVoxelTask {
+	class BlockMeshRequest : public zylann::IThreadedTask {
 	public:
 		BlockMeshRequest();
 		~BlockMeshRequest();
 
-		void run(VoxelTaskContext ctx) override;
+		void run(zylann::ThreadedTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
 		void apply_result() override;
@@ -368,9 +371,9 @@ private:
 	World _world;
 
 	// Pool specialized in file I/O
-	VoxelThreadPool _streaming_thread_pool;
+	zylann::ThreadedTaskRunner _streaming_thread_pool;
 	// Pool for every other task
-	VoxelThreadPool _general_thread_pool;
+	zylann::ThreadedTaskRunner _general_thread_pool;
 	// For tasks that can only run on the main thread and be spread out over frames
 	zylann::TimeSpreadTaskRunner _time_spread_task_runner;
 	int _main_thread_time_budget_usec = 8000;

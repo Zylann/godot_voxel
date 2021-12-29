@@ -1,5 +1,5 @@
-#ifndef VOXEL_THREAD_POOL_H
-#define VOXEL_THREAD_POOL_H
+#ifndef ZYLANN_THREADED_TASK_RUNNER_H
+#define ZYLANN_THREADED_TASK_RUNNER_H
 
 #include "../util/fixed_array.h"
 #include "../util/span.h"
@@ -13,16 +13,18 @@
 
 class Thread;
 
-struct VoxelTaskContext {
+namespace zylann {
+
+struct ThreadedTaskContext {
 	uint8_t thread_index;
 };
 
-class IVoxelTask {
+class IThreadedTask {
 public:
-	virtual ~IVoxelTask() {}
+	virtual ~IThreadedTask() {}
 
 	// Called from within the thread pool
-	virtual void run(VoxelTaskContext ctx) = 0;
+	virtual void run(ThreadedTaskContext ctx) = 0;
 
 	// Convenience method which can be called by the scheduler of the task (usually on the main thread)
 	// in order to apply results. It is not called from the thread pool.
@@ -41,7 +43,7 @@ public:
 };
 
 // Generic thread pool that performs batches of tasks based on dynamic priority
-class VoxelThreadPool {
+class ThreadedTaskRunner {
 public:
 	static const uint32_t MAX_THREADS = 8;
 
@@ -52,8 +54,8 @@ public:
 		STATE_STOPPED
 	};
 
-	VoxelThreadPool();
-	~VoxelThreadPool();
+	ThreadedTaskRunner();
+	~ThreadedTaskRunner();
 
 	// Set name prefix to recognize threads of this pool in debug tools.
 	// Must be called before configuring thread count.
@@ -81,15 +83,15 @@ public:
 
 	// Schedules a task.
 	// Ownership is NOT passed to the pool, so make sure you get them back when completed if you want to delete them.
-	void enqueue(IVoxelTask *task);
+	void enqueue(IThreadedTask *task);
 	// Schedules multiple tasks at once. Involves less internal locking.
-	void enqueue(Span<IVoxelTask *> tasks);
+	void enqueue(Span<IThreadedTask *> tasks);
 
 	// TODO Lambda might not be the best API. memcpying to a vector would ensure we lock for a shorter time.
 	template <typename F> void dequeue_completed_tasks(F f) {
 		MutexLock lock(_completed_tasks_mutex);
 		for (size_t i = 0; i < _completed_tasks.size(); ++i) {
-			IVoxelTask *task = _completed_tasks[i];
+			IThreadedTask *task = _completed_tasks[i];
 			f(task);
 		}
 		_completed_tasks.clear();
@@ -103,14 +105,14 @@ public:
 
 private:
 	struct TaskItem {
-		IVoxelTask *task = nullptr;
+		IThreadedTask *task = nullptr;
 		int cached_priority = 99999;
 		uint32_t last_priority_update_time = 0;
 	};
 
 	struct ThreadData {
 		Thread thread;
-		VoxelThreadPool *pool = nullptr;
+		ThreadedTaskRunner *pool = nullptr;
 		uint32_t index = 0;
 		bool stop = false;
 		bool waiting = false;
@@ -142,7 +144,7 @@ private:
 	Mutex _tasks_mutex;
 	Semaphore _tasks_semaphore;
 
-	std::vector<IVoxelTask *> _completed_tasks;
+	std::vector<IThreadedTask *> _completed_tasks;
 	Mutex _completed_tasks_mutex;
 
 	uint32_t _batch_count = 1;
@@ -154,4 +156,6 @@ private:
 	unsigned int _debug_completed_tasks = 0;
 };
 
-#endif // VOXEL_THREAD_TASK_MANAGER_H
+} // namespace zylann
+
+#endif // ZYLANN_THREADED_TASK_RUNNER_H

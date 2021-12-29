@@ -135,7 +135,8 @@ public:
 	void post_edit_area(Box3i p_box);
 
 	// TODO This still sucks atm cuz the edit will still run on the main thread
-	void push_async_edit(IVoxelTask *task, Box3i box, std::shared_ptr<VoxelAsyncDependencyTracker> tracker);
+	void push_async_edit(
+			zylann::IThreadedTask *task, Box3i box, std::shared_ptr<zylann::AsyncDependencyTracker> tracker);
 	void process_async_edits();
 	void abort_async_edits();
 
@@ -272,8 +273,8 @@ private:
 	void _set_lod_count(int p_lod_count);
 	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
 
-	std::shared_ptr<VoxelAsyncDependencyTracker> preload_boxes_async(
-			Span<const Box3i> voxel_boxes, Span<IVoxelTask *> next_tasks);
+	std::shared_ptr<zylann::AsyncDependencyTracker> preload_boxes_async(
+			Span<const Box3i> voxel_boxes, Span<zylann::IThreadedTask *> next_tasks);
 
 	void _on_stream_params_changed();
 
@@ -345,15 +346,15 @@ private:
 	VoxelInstancer *_instancer = nullptr;
 
 	struct AsyncEdit {
-		IVoxelTask *task;
+		zylann::IThreadedTask *task;
 		Box3i box;
-		std::shared_ptr<VoxelAsyncDependencyTracker> task_tracker;
+		std::shared_ptr<zylann::AsyncDependencyTracker> task_tracker;
 	};
 
 	std::vector<AsyncEdit> _pending_async_edits;
 
 	struct RunningAsyncEdit {
-		std::shared_ptr<VoxelAsyncDependencyTracker> tracker;
+		std::shared_ptr<zylann::AsyncDependencyTracker> tracker;
 		Box3i box;
 	};
 	std::vector<RunningAsyncEdit> _running_async_edits;

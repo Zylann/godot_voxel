@@ -1,17 +1,17 @@
-#include "voxel_async_dependency_tracker.h"
+#include "async_dependency_tracker.h"
 #include "voxel_server.h"
 
-VoxelAsyncDependencyTracker::VoxelAsyncDependencyTracker(int initial_count) :
-		_count(initial_count), _aborted(false) {
-}
+namespace zylann {
 
-VoxelAsyncDependencyTracker::VoxelAsyncDependencyTracker(int initial_count, Span<IVoxelTask *> next_tasks) :
+AsyncDependencyTracker::AsyncDependencyTracker(int initial_count) : _count(initial_count), _aborted(false) {}
+
+AsyncDependencyTracker::AsyncDependencyTracker(int initial_count, Span<IThreadedTask *> next_tasks) :
 		_count(initial_count), _aborted(false) {
 	//
 	_next_tasks.resize(next_tasks.size());
 
 	for (unsigned int i = 0; i < next_tasks.size(); ++i) {
-		IVoxelTask *task = next_tasks[i];
+		IThreadedTask *task = next_tasks[i];
 #ifdef DEBUG_ENABLED
 		for (unsigned int j = i + 1; j < next_tasks.size(); ++j) {
 			// Cannot add twice the same task
@@ -22,14 +22,14 @@ VoxelAsyncDependencyTracker::VoxelAsyncDependencyTracker(int initial_count, Span
 	}
 }
 
-VoxelAsyncDependencyTracker::~VoxelAsyncDependencyTracker() {
+AsyncDependencyTracker::~AsyncDependencyTracker() {
 	for (auto it = _next_tasks.begin(); it != _next_tasks.end(); ++it) {
-		IVoxelTask *task = *it;
+		IThreadedTask *task = *it;
 		memdelete(task);
 	}
 }
 
-void VoxelAsyncDependencyTracker::post_complete() {
+void AsyncDependencyTracker::post_complete() {
 	ERR_FAIL_COND_MSG(_count <= 0, "post_complete() called more times than expected");
 	ERR_FAIL_COND_MSG(_aborted == true, "post_complete() called after abortion");
 	--_count;
@@ -43,3 +43,5 @@ void VoxelAsyncDependencyTracker::post_complete() {
 	// which one has ownership is fuzzy. It could be any of them that finish last.
 	// Putting next tasks in the tracker instead has a clear unique ownership.
 }
+
+} // namespace zylann

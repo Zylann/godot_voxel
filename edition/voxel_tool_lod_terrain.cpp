@@ -1,6 +1,6 @@
 #include "voxel_tool_lod_terrain.h"
 #include "../constants/voxel_string_names.h"
-#include "../server/voxel_async_dependency_tracker.h"
+#include "../server/async_dependency_tracker.h"
 #include "../storage/voxel_data_grid.h"
 #include "../terrain/voxel_lod_terrain.h"
 #include "../util/funcs.h"
@@ -253,13 +253,13 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	_post_edit(box);
 }
 
-template <typename Op_T> class VoxelToolAsyncEdit : public IVoxelTask {
+template <typename Op_T> class VoxelToolAsyncEdit : public zylann::IThreadedTask {
 public:
 	VoxelToolAsyncEdit(Op_T op, std::shared_ptr<VoxelDataLodMap> data) : _op(op), _data(data) {
-		_tracker = gd_make_shared<VoxelAsyncDependencyTracker>(1);
+		_tracker = gd_make_shared<zylann::AsyncDependencyTracker>(1);
 	}
 
-	void run(VoxelTaskContext ctx) override {
+	void run(zylann::ThreadedTaskContext ctx) override {
 		VOXEL_PROFILE_SCOPE();
 		CRASH_COND(_data == nullptr);
 		VoxelDataLodMap::Lod &data_lod = _data->lods[0];
@@ -277,7 +277,7 @@ public:
 	}
 
 	void apply_result() override {}
-	std::shared_ptr<VoxelAsyncDependencyTracker> get_tracker() {
+	std::shared_ptr<zylann::AsyncDependencyTracker> get_tracker() {
 		return _tracker;
 	}
 
@@ -285,7 +285,7 @@ private:
 	Op_T _op;
 	// We reference this just to keep map pointers alive
 	std::shared_ptr<VoxelDataLodMap> _data;
-	std::shared_ptr<VoxelAsyncDependencyTracker> _tracker;
+	std::shared_ptr<zylann::AsyncDependencyTracker> _tracker;
 };
 
 void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {

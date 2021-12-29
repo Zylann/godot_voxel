@@ -2,7 +2,7 @@
 #include "../constants/voxel_string_names.h"
 #include "../edition/voxel_tool_lod_terrain.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
-#include "../server/voxel_async_dependency_tracker.h"
+#include "../server/async_dependency_tracker.h"
 #include "../server/voxel_server.h"
 #include "../util/funcs.h"
 #include "../util/godot/funcs.h"
@@ -484,8 +484,8 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlock &block, bool active) 
 // Generates all non-present blocks in preparation for an edit.
 // This function schedules one parallel task for every block.
 // The returned tracker may be polled to detect when it is complete.
-std::shared_ptr<VoxelAsyncDependencyTracker> VoxelLodTerrain::preload_boxes_async(
-		Span<const Box3i> voxel_boxes, Span<IVoxelTask *> next_tasks) {
+std::shared_ptr<zylann::AsyncDependencyTracker> VoxelLodTerrain::preload_boxes_async(
+		Span<const Box3i> voxel_boxes, Span<zylann::IThreadedTask *> next_tasks) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V_MSG(_full_load_mode == false, nullptr, "This function can only be used in full load mode");
 	const uint32_t volume_id = _volume_id;
@@ -522,7 +522,7 @@ std::shared_ptr<VoxelAsyncDependencyTracker> VoxelLodTerrain::preload_boxes_asyn
 
 	PRINT_VERBOSE(String("Preloading boxes with {1} tasks").format(varray(SIZE_T_TO_VARIANT(todo.size()))));
 
-	std::shared_ptr<VoxelAsyncDependencyTracker> tracker = nullptr;
+	std::shared_ptr<zylann::AsyncDependencyTracker> tracker = nullptr;
 
 	// TODO `next_tasks` is executed in parallel. But since they can be edits, may we do them in sequence?
 
@@ -534,7 +534,7 @@ std::shared_ptr<VoxelAsyncDependencyTracker> VoxelLodTerrain::preload_boxes_asyn
 		// it would destroy `next_tasks`.
 
 		// This may first run the generation tasks, and then the edits
-		tracker = gd_make_shared<VoxelAsyncDependencyTracker>(todo.size(), next_tasks);
+		tracker = gd_make_shared<zylann::AsyncDependencyTracker>(todo.size(), next_tasks);
 
 		for (unsigned int i = 0; i < todo.size(); ++i) {
 			const TaskArguments args = todo[i];
@@ -716,7 +716,7 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 }
 
 void VoxelLodTerrain::push_async_edit(
-		IVoxelTask *task, Box3i box, std::shared_ptr<VoxelAsyncDependencyTracker> tracker) {
+		zylann::IThreadedTask *task, Box3i box, std::shared_ptr<zylann::AsyncDependencyTracker> tracker) {
 	CRASH_COND(task == nullptr);
 	CRASH_COND(tracker == nullptr);
 	AsyncEdit e;
@@ -2072,8 +2072,8 @@ void VoxelLodTerrain::process_async_edits() {
 		// Schedule all next edits when the previous ones are done
 
 		std::vector<Box3i> boxes_to_preload;
-		std::vector<IVoxelTask *> tasks_to_schedule;
-		std::shared_ptr<VoxelAsyncDependencyTracker> last_tracker = nullptr;
+		std::vector<zylann::IThreadedTask *> tasks_to_schedule;
+		std::shared_ptr<zylann::AsyncDependencyTracker> last_tracker = nullptr;
 
 		for (unsigned int edit_index = 0; edit_index < _pending_async_edits.size(); ++edit_index) {
 			AsyncEdit &edit = _pending_async_edits[edit_index];

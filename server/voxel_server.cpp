@@ -5,7 +5,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
-#include "voxel_async_dependency_tracker.h"
+#include "async_dependency_tracker.h"
 
 #include <core/os/memory.h>
 #include <scene/main/window.h> // Needed for doing `Node *root = SceneTree::get_root()`, Window* is forward-declared
@@ -129,7 +129,7 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	// Wait a second time because the generation pool can generate streaming requests
 	_streaming_thread_pool.wait_for_all_tasks();
 
-	_streaming_thread_pool.dequeue_completed_tasks([warn](IVoxelTask *task) {
+	_streaming_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
 		if (warn) {
 			WARN_PRINT("Streaming tasks remain on module cleanup, "
 					   "this could become a problem if they reference scripts");
@@ -137,7 +137,7 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 		memdelete(task);
 	});
 
-	_general_thread_pool.dequeue_completed_tasks([warn](IVoxelTask *task) {
+	_general_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
 		if (warn) {
 			WARN_PRINT("General tasks remain on module cleanup, "
 					   "this could become a problem if they reference scripts");
@@ -361,7 +361,7 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 }
 
 void VoxelServer::request_block_generate(
-		uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<VoxelAsyncDependencyTracker> tracker) {
+		uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<zylann::AsyncDependencyTracker> tracker) {
 	//
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
@@ -560,11 +560,11 @@ int VoxelServer::get_main_thread_time_budget_usec() const {
 	return _main_thread_time_budget_usec;
 }
 
-void VoxelServer::push_async_task(IVoxelTask *task) {
+void VoxelServer::push_async_task(zylann::IThreadedTask *task) {
 	_general_thread_pool.enqueue(task);
 }
 
-void VoxelServer::push_async_tasks(Span<IVoxelTask *> tasks) {
+void VoxelServer::push_async_tasks(Span<zylann::IThreadedTask *> tasks) {
 	_general_thread_pool.enqueue(tasks);
 }
 
@@ -581,13 +581,13 @@ void VoxelServer::process() {
 	VOXEL_PROFILE_PLOT("Progressive tasks", int64_t(_progressive_task_runner.get_pending_count()));
 
 	// Receive data updates
-	_streaming_thread_pool.dequeue_completed_tasks([](IVoxelTask *task) {
+	_streaming_thread_pool.dequeue_completed_tasks([](zylann::IThreadedTask *task) {
 		task->apply_result();
 		memdelete(task);
 	});
 
 	// Receive generation and meshing results
-	_general_thread_pool.dequeue_completed_tasks([](IVoxelTask *task) {
+	_general_thread_pool.dequeue_completed_tasks([](zylann::IThreadedTask *task) {
 		task->apply_result();
 		memdelete(task);
 	});
@@ -622,18 +622,18 @@ void VoxelServer::process() {
 	}
 }
 
-static unsigned int debug_get_active_thread_count(const VoxelThreadPool &pool) {
+static unsigned int debug_get_active_thread_count(const zylann::ThreadedTaskRunner &pool) {
 	unsigned int active_count = 0;
 	for (unsigned int i = 0; i < pool.get_thread_count(); ++i) {
-		VoxelThreadPool::State s = pool.get_thread_debug_state(i);
-		if (s == VoxelThreadPool::STATE_RUNNING) {
+		zylann::ThreadedTaskRunner::State s = pool.get_thread_debug_state(i);
+		if (s == zylann::ThreadedTaskRunner::STATE_RUNNING) {
 			++active_count;
 		}
 	}
 	return active_count;
 }
 
-static VoxelServer::Stats::ThreadPoolStats debug_get_pool_stats(const VoxelThreadPool &pool) {
+static VoxelServer::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::ThreadedTaskRunner &pool) {
 	VoxelServer::Stats::ThreadPoolStats d;
 	d.tasks = pool.get_debug_remaining_tasks();
 	d.active_threads = debug_get_active_thread_count(pool);
@@ -694,7 +694,7 @@ VoxelServer::BlockDataRequest::~BlockDataRequest() {
 	--g_debug_stream_tasks_count;
 }
 
-void VoxelServer::BlockDataRequest::run(VoxelTaskContext ctx) {
+void VoxelServer::BlockDataRequest::run(zylann::ThreadedTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);
@@ -852,7 +852,7 @@ VoxelServer::AllBlocksDataRequest::AllBlocksDataRequest() {}
 
 VoxelServer::AllBlocksDataRequest::~AllBlocksDataRequest() {}
 
-void VoxelServer::AllBlocksDataRequest::run(VoxelTaskContext ctx) {
+void VoxelServer::AllBlocksDataRequest::run(zylann::ThreadedTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);
@@ -914,7 +914,7 @@ VoxelServer::BlockGenerateRequest::~BlockGenerateRequest() {
 	--g_debug_generate_tasks_count;
 }
 
-void VoxelServer::BlockGenerateRequest::run(VoxelTaskContext ctx) {
+void VoxelServer::BlockGenerateRequest::run(zylann::ThreadedTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);
@@ -1131,7 +1131,7 @@ VoxelServer::BlockMeshRequest::~BlockMeshRequest() {
 	--g_debug_mesh_tasks_count;
 }
 
-void VoxelServer::BlockMeshRequest::run(VoxelTaskContext ctx) {
+void VoxelServer::BlockMeshRequest::run(zylann::ThreadedTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 	CRASH_COND(meshing_dependency == nullptr);
 
