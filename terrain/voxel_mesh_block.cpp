@@ -38,7 +38,8 @@ VoxelMeshBlock::VoxelMeshBlock() {}
 
 VoxelMeshBlock::~VoxelMeshBlock() {
 	// Had to resort to this in Godot4 because deleting meshes is particularly expensive,
-	// because of the Vulkan allocator used by the renderer
+	// because of the Vulkan allocator used by the renderer.
+	// It is a deferred cost, so had to use a different type of task
 	class FreeMeshTask : public zylann::IProgressiveTask {
 	public:
 		static inline void try_add_and_destroy(DirectMeshInstance &mi) {

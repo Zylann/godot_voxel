@@ -160,7 +160,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	// Infinite by default
 	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(VoxelConstants::MAX_VOLUME_EXTENT));
 
-	struct ApplyMeshUpdateTask : public IVoxelTimeSpreadTask {
+	struct ApplyMeshUpdateTask : public zylann::ITimeSpreadTask {
 		void run() override {
 			if (!VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
 				// The node can have been destroyed while this task was still pending

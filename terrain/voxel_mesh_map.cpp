@@ -6,8 +6,7 @@
 
 #include <limits>
 
-VoxelMeshMap::VoxelMeshMap() :
-		_last_accessed_block(nullptr) {
+VoxelMeshMap::VoxelMeshMap() : _last_accessed_block(nullptr) {
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
 	set_block_size_pow2(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2);
 }
@@ -85,7 +84,8 @@ const VoxelMeshBlock *VoxelMeshMap::get_block(Vector3i bpos) const {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(i >= _blocks.size());
 #endif
-		// TODO This function can't cache _last_accessed_block, because it's const, so repeated accesses are hashing again...
+		// TODO This function can't cache _last_accessed_block, because it's const, so repeated accesses are hashing
+		// again...
 		const VoxelMeshBlock *block = _blocks[i];
 		CRASH_COND(block == nullptr); // The map should not contain null blocks
 		return block;
@@ -130,7 +130,9 @@ void VoxelMeshMap::remove_block_internal(Vector3i bpos, unsigned int index) {
 }
 
 void VoxelMeshMap::queue_free_mesh_block(VoxelMeshBlock *block) {
-	struct FreeMeshBlockTask : public IVoxelTimeSpreadTask {
+	// We spread this out because of physics
+	// TODO Could it be enough to do both render and physic deallocation with the task in ~VoxelMeshBlock()?
+	struct FreeMeshBlockTask : public zylann::ITimeSpreadTask {
 		void run() override {
 			memdelete(block);
 		}

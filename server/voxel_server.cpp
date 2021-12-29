@@ -21,48 +21,6 @@ int g_debug_mesh_tasks_count = 0;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VoxelTimeSpreadTaskRunner::~VoxelTimeSpreadTaskRunner() {
-	flush();
-}
-
-void VoxelTimeSpreadTaskRunner::push(IVoxelTimeSpreadTask *task) {
-	_tasks.push(task);
-}
-
-void VoxelTimeSpreadTaskRunner::process(uint64_t time_budget_usec) {
-	VOXEL_PROFILE_SCOPE();
-	const OS &os = *OS::get_singleton();
-
-	if (_tasks.size() > 0) {
-		const uint64_t time_before = os.get_ticks_usec();
-
-		// Do at least one task
-		do {
-			IVoxelTimeSpreadTask *task = _tasks.front();
-			_tasks.pop();
-			task->run();
-			// TODO Call recycling function instead?
-			memdelete(task);
-
-		} while (_tasks.size() > 0 && os.get_ticks_usec() - time_before < time_budget_usec);
-	}
-}
-
-void VoxelTimeSpreadTaskRunner::flush() {
-	while (!_tasks.empty()) {
-		IVoxelTimeSpreadTask *task = _tasks.front();
-		_tasks.pop();
-		task->run();
-		memdelete(task);
-	}
-}
-
-unsigned int VoxelTimeSpreadTaskRunner::get_pending_count() const {
-	return _tasks.size();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 VoxelServer *VoxelServer::get_singleton() {
 	CRASH_COND_MSG(g_voxel_server == nullptr, "Accessing singleton while it's null");
 	return g_voxel_server;
@@ -582,7 +540,7 @@ bool VoxelServer::viewer_exists(uint32_t viewer_id) const {
 	return _world.viewers.is_valid(viewer_id);
 }
 
-void VoxelServer::push_time_spread_task(IVoxelTimeSpreadTask *task) {
+void VoxelServer::push_time_spread_task(zylann::ITimeSpreadTask *task) {
 	_time_spread_task_runner.push(task);
 }
 

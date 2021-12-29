@@ -7,31 +7,12 @@
 #include "../util/file_locker.h"
 #include "progressive_task_runner.h"
 #include "struct_db.h"
+#include "time_spread_task_runner.h"
 #include "voxel_thread_pool.h"
 
 #include <scene/main/node.h>
 
 #include <memory>
-
-class IVoxelTimeSpreadTask {
-public:
-	virtual ~IVoxelTimeSpreadTask() {}
-	virtual void run() = 0;
-};
-
-// Runs tasks in the caller thread, within a time budget per call.
-class VoxelTimeSpreadTaskRunner {
-public:
-	~VoxelTimeSpreadTaskRunner();
-
-	void push(IVoxelTimeSpreadTask *task);
-	void process(uint64_t time_budget_usec);
-	void flush();
-	unsigned int get_pending_count() const;
-
-private:
-	std::queue<IVoxelTimeSpreadTask *> _tasks;
-};
 
 class VoxelNode;
 class VoxelAsyncDependencyTracker;
@@ -154,7 +135,7 @@ public:
 		_world.viewers.for_each_with_id(f);
 	}
 
-	void push_time_spread_task(IVoxelTimeSpreadTask *task);
+	void push_time_spread_task(zylann::ITimeSpreadTask *task);
 	int get_main_thread_time_budget_usec() const;
 
 	void push_progressive_task(zylann::IProgressiveTask *task);
@@ -287,7 +268,11 @@ private:
 
 	class BlockDataRequest : public IVoxelTask {
 	public:
-		enum Type { TYPE_LOAD = 0, TYPE_SAVE, TYPE_FALLBACK_ON_GENERATOR };
+		enum Type { //
+			TYPE_LOAD = 0,
+			TYPE_SAVE,
+			TYPE_FALLBACK_ON_GENERATOR
+		};
 
 		BlockDataRequest();
 		~BlockDataRequest();
@@ -386,7 +371,7 @@ private:
 	// Pool for every other task
 	VoxelThreadPool _general_thread_pool;
 	// For tasks that can only run on the main thread and be spread out over frames
-	VoxelTimeSpreadTaskRunner _time_spread_task_runner;
+	zylann::TimeSpreadTaskRunner _time_spread_task_runner;
 	int _main_thread_time_budget_usec = 8000;
 	zylann::ProgressiveTaskRunner _progressive_task_runner;
 
