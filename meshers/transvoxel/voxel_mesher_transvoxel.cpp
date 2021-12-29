@@ -142,7 +142,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		return;
 	}
 
-	// const uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+	// const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	Transvoxel::DefaultTextureIndicesData default_texture_indices_data = Transvoxel::build_regular_mesh(voxels,
 			sdf_channel, input.lod, static_cast<Transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays);
@@ -186,7 +186,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		output.transition_surfaces[dir].push_back(transition_arrays);
 	}
 
-	// const uint64_t time_spent = OS::get_singleton()->get_ticks_usec() - time_before;
+	// const uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	// print_line(String("VoxelMesherTransvoxel spent {0} us").format(varray(time_spent)));
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;

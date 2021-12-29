@@ -599,7 +599,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
-	const int64_t time_before = OS::get_singleton()->get_ticks_usec();
+	const int64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	std::shared_ptr<Runtime> r = std::make_shared<Runtime>();
 	VoxelGraphRuntime &runtime = r->runtime;
@@ -726,7 +726,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 	RWLockWrite wlock(_runtime_lock);
 	_runtime = r;
 
-	const int64_t time_spent = OS::get_singleton()->get_ticks_usec() - time_before;
+	const int64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	PRINT_VERBOSE(String("Voxel graph compiled in {0} us").format(varray(time_spent)));
 
 	return result;
