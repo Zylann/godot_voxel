@@ -38,6 +38,14 @@ void VoxelServer::destroy_singleton() {
 }
 
 VoxelServer::VoxelServer() {
+	CRASH_COND(ProjectSettings::get_singleton() == nullptr);
+
+#ifdef VOXEL_PROFILER_ENABLED
+	CRASH_COND(RenderingServer::get_singleton() == nullptr);
+	RenderingServer::get_singleton()->connect(
+			SNAME("frame_post_draw"), callable_mp(this, &VoxelServer::_on_rendering_server_frame_post_draw));
+#endif
+
 	const int hw_threads_hint = std::thread::hardware_concurrency();
 	PRINT_VERBOSE(String("Voxel: HW threads hint: {0}").format(varray(hw_threads_hint)));
 
@@ -560,11 +568,13 @@ void VoxelServer::push_async_tasks(Span<IVoxelTask *> tasks) {
 	_general_thread_pool.enqueue(tasks);
 }
 
+void VoxelServer::_on_rendering_server_frame_post_draw() {
+#ifdef VOXEL_PROFILER_ENABLED
+	VOXEL_PROFILE_MARK_FRAME();
+#endif
+}
+
 void VoxelServer::process() {
-	// Note, this shouldn't be here. It should normally done just after SwapBuffers.
-	// Godot does not have any C++ profiler usage anywhere, so when using Tracy Profiler I have to put it somewhere...
-	// TODO Could connect to VisualServer end_frame_draw signal? How to make sure the singleton is available?
-	//VOXEL_PROFILE_MARK_FRAME();
 	VOXEL_PROFILE_SCOPE();
 	VOXEL_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));
 	VOXEL_PROFILE_PLOT("TimeSpread tasks", int64_t(_time_spread_task_runner.get_pending_count()));
