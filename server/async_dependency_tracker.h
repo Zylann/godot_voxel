@@ -16,10 +16,12 @@ public:
 	// The tracker may be passed by shared pointer to each of these tasks so they can notify completion.
 	AsyncDependencyTracker(int initial_count);
 
+	typedef void (*ScheduleNextTasksCallback)(Span<IThreadedTask *> tasks);
+
 	// Alternate constructor where a collection of tasks will be scheduled on completion.
 	// All the next tasks will be run in parallel.
 	// If a dependency is aborted, these tasks will be destroyed instead.
-	AsyncDependencyTracker(int initial_count, Span<IThreadedTask *> next_tasks);
+	AsyncDependencyTracker(int initial_count, Span<IThreadedTask *> next_tasks, ScheduleNextTasksCallback scheduler_cb);
 
 	~AsyncDependencyTracker();
 
@@ -54,6 +56,7 @@ private:
 	std::atomic_int _count;
 	std::atomic_bool _aborted;
 	std::vector<IThreadedTask *> _next_tasks;
+	ScheduleNextTasksCallback _next_tasks_schedule_callback = nullptr;
 };
 
 } // namespace zylann

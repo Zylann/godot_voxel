@@ -534,7 +534,10 @@ std::shared_ptr<zylann::AsyncDependencyTracker> VoxelLodTerrain::preload_boxes_a
 		// it would destroy `next_tasks`.
 
 		// This may first run the generation tasks, and then the edits
-		tracker = gd_make_shared<zylann::AsyncDependencyTracker>(todo.size(), next_tasks);
+		tracker = gd_make_shared<zylann::AsyncDependencyTracker>(
+				todo.size(), next_tasks, [](Span<zylann::IThreadedTask *> p_next_tasks) {
+					VoxelServer::get_singleton()->push_async_tasks(p_next_tasks);
+				});
 
 		for (unsigned int i = 0; i < todo.size(); ++i) {
 			const TaskArguments args = todo[i];

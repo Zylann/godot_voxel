@@ -1,13 +1,16 @@
 #include "async_dependency_tracker.h"
-#include "voxel_server.h"
+#include "threaded_task_runner.h"
 
 namespace zylann {
 
 AsyncDependencyTracker::AsyncDependencyTracker(int initial_count) : _count(initial_count), _aborted(false) {}
 
-AsyncDependencyTracker::AsyncDependencyTracker(int initial_count, Span<IThreadedTask *> next_tasks) :
-		_count(initial_count), _aborted(false) {
+AsyncDependencyTracker::AsyncDependencyTracker(
+		int initial_count, Span<IThreadedTask *> next_tasks, ScheduleNextTasksCallback scheduler_cb) :
+		_count(initial_count), _aborted(false), _next_tasks_schedule_callback(scheduler_cb) {
 	//
+	CRASH_COND(scheduler_cb == nullptr);
+
 	_next_tasks.resize(next_tasks.size());
 
 	for (unsigned int i = 0; i < next_tasks.size(); ++i) {
@@ -35,7 +38,7 @@ void AsyncDependencyTracker::post_complete() {
 	--_count;
 	// Note, this class only allows decrementing this counter up to zero
 	if (_count == 0) {
-		VoxelServer::get_singleton()->push_async_tasks(to_span(_next_tasks));
+		_next_tasks_schedule_callback(to_span(_next_tasks));
 		_next_tasks.clear();
 	}
 	// The idea of putting next tasks inside this class instead of the tasks directly,
