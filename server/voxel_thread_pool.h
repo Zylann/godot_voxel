@@ -1,12 +1,13 @@
 #ifndef VOXEL_THREAD_POOL_H
 #define VOXEL_THREAD_POOL_H
 
-#include "../storage/voxel_buffer.h"
 #include "../util/fixed_array.h"
 #include "../util/span.h"
+
 #include <core/os/mutex.h>
 #include <core/os/semaphore.h>
 #include <core/os/thread.h>
+#include <core/string/ustring.h>
 
 #include <queue>
 
@@ -29,10 +30,14 @@ public:
 
 	// Lower values means higher priority.
 	// Can change between two calls. The thread pool will poll this value regularly over some time interval.
-	virtual int get_priority() { return 0; }
+	virtual int get_priority() {
+		return 0;
+	}
 
 	// May return `true` in order for the thread pool to skip the task
-	virtual bool is_cancelled() { return false; }
+	virtual bool is_cancelled() {
+		return false;
+	}
 };
 
 // Generic thread pool that performs batches of tasks based on dynamic priority
@@ -40,7 +45,7 @@ class VoxelThreadPool {
 public:
 	static const uint32_t MAX_THREADS = 8;
 
-	enum State {
+	enum State { //
 		STATE_RUNNING = 0,
 		STATE_PICKING,
 		STATE_WAITING,
@@ -57,7 +62,9 @@ public:
 	// TODO Add ability to change it while running without skipping tasks
 	// Can't be changed after tasks have been queued
 	void set_thread_count(uint32_t count);
-	uint32_t get_thread_count() const { return _thread_count; }
+	uint32_t get_thread_count() const {
+		return _thread_count;
+	}
 
 	// TODO Add ability to change it while running
 	// Sets how many tasks each thread will attempt to dequeue on each iteration.
@@ -79,8 +86,7 @@ public:
 	void enqueue(Span<IVoxelTask *> tasks);
 
 	// TODO Lambda might not be the best API. memcpying to a vector would ensure we lock for a shorter time.
-	template <typename F>
-	void dequeue_completed_tasks(F f) {
+	template <typename F> void dequeue_completed_tasks(F f) {
 		MutexLock lock(_completed_tasks_mutex);
 		for (size_t i = 0; i < _completed_tasks.size(); ++i) {
 			IVoxelTask *task = _completed_tasks[i];

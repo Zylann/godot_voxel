@@ -2,8 +2,6 @@
 #include "../util/profiling.h"
 
 #include <core/os/os.h>
-#include <core/os/semaphore.h>
-#include <core/os/thread.h>
 
 // template <typename T>
 // static bool contains(const std::vector<T> vec, T v) {
