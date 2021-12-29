@@ -6,12 +6,13 @@
 #include <core/os/rw_lock.h>
 #include <core/templates/hash_map.h>
 
+namespace zylann {
+
 // Performs software locking on paths,
 // so that multiple threads (controlled by this module) wanting to access the same file will lock a shared mutex.
-// Note: has nothing to do with voxels, it's just prefixed.
-class VoxelFileLocker {
+class FileLocker {
 public:
-	~VoxelFileLocker() {
+	~FileLocker() {
 		const String *key = nullptr;
 		while ((key = _files.next(key))) {
 			File *f = _files[*key];
@@ -89,5 +90,7 @@ private:
 	// Had to use dynamic allocs because HashMap does not implement move semantics
 	HashMap<String, File *> _files;
 };
+
+} // namespace zylann
 
 #endif // VOXEL_FILE_LOCKER_H

@@ -154,7 +154,7 @@ public:
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
 
-	inline VoxelFileLocker &get_file_locker() {
+	inline zylann::FileLocker &get_file_locker() {
 		return _file_locker;
 	}
 
@@ -379,7 +379,7 @@ private:
 	int _main_thread_time_budget_usec = 8000;
 	zylann::ProgressiveTaskRunner _progressive_task_runner;
 
-	VoxelFileLocker _file_locker;
+	zylann::FileLocker _file_locker;
 };
 
 // TODO Hack to make VoxelServer update... need ways to integrate callbacks from main loop!
