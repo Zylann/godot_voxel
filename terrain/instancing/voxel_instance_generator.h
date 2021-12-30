@@ -51,6 +51,8 @@ public:
 	// This API might change so for now it's not exposed to scripts
 	void generate_transforms(std::vector<Transform3D> &out_transforms, Vector3i grid_position, int lod_index,
 			int layer_id, Array surface_arrays, const Transform3D &block_local_transform, UpMode up_mode,
+			// When generating a 2x2x2 data block area, bits in `octant_mask` tell which octant should be generated.
+			// Bits set to zero will cause all instances in the corresponding octant to not be generated.
 			uint8_t octant_mask, float block_size);
 
 	void set_density(float d);
