@@ -90,10 +90,16 @@ void VoxelInstancer::_notification(int p_what) {
 		case NOTIFICATION_ENTER_WORLD:
 			set_world(*get_world_3d());
 			update_visibility();
+#ifdef TOOLS_ENABLED
+			_debug_renderer.set_world(get_world_3d().ptr());
+#endif
 			break;
 
 		case NOTIFICATION_EXIT_WORLD:
 			set_world(nullptr);
+#ifdef TOOLS_ENABLED
+			_debug_renderer.set_world(nullptr);
+#endif
 			break;
 
 		case NOTIFICATION_PARENTED:
@@ -141,15 +147,76 @@ void VoxelInstancer::_notification(int p_what) {
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
 			update_visibility();
+#ifdef TOOLS_ENABLED
+			if (_gizmos_enabled) {
+				_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
+			}
+#endif
 			break;
 
 		case NOTIFICATION_INTERNAL_PROCESS:
 			if (_parent != nullptr && _library.is_valid()) {
 				process_mesh_lods();
 			}
+#ifdef TOOLS_ENABLED
+			if (_gizmos_enabled) {
+				process_gizmos();
+			}
+#endif
 			break;
 	}
 }
+
+#ifdef TOOLS_ENABLED
+
+void VoxelInstancer::set_show_gizmos(bool enable) {
+	_gizmos_enabled = enable;
+	if (_gizmos_enabled) {
+		_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
+	} else {
+		_debug_renderer.clear();
+	}
+}
+
+void VoxelInstancer::process_gizmos() {
+	ERR_FAIL_COND(_parent == nullptr);
+	const Transform3D parent_transform = get_global_transform();
+	const int base_block_size_po2 = _parent->get_mesh_block_size_pow2();
+
+	_debug_renderer.begin();
+
+	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
+		const Block *block = *it;
+		CRASH_COND(block == nullptr);
+
+		Color8 color(0, 255, 0, 255);
+		if (block->multimesh_instance.is_valid()) {
+			if (block->multimesh_instance.get_multimesh().is_null()) {
+				// Allocated but without multimesh (wut?)
+				color = Color8(128, 0, 0, 255);
+			} else if (get_visible_instance_count(**block->multimesh_instance.get_multimesh()) == 0) {
+				// Allocated but empty multimesh
+				color = Color8(255, 64, 0, 255);
+			}
+		} else if (block->scene_instances.size() == 0) {
+			// Only draw blocks that are setup
+			continue;
+		}
+
+		const int block_size_po2 = base_block_size_po2 + block->lod_index;
+		const int block_size = 1 << block_size_po2;
+		const Vector3 block_local_pos(block->grid_position << block_size_po2);
+		const Transform3D box_transform(
+				parent_transform.basis * (Basis().scaled(Vector3(block_size, block_size, block_size))),
+				parent_transform.xform(block_local_pos));
+
+		_debug_renderer.draw_box_mm(box_transform, color);
+	}
+
+	_debug_renderer.end();
+}
+
+#endif
 
 VoxelInstancer::Layer *VoxelInstancer::get_layer(int id) {
 	Layer *ptr = _layers.getptr(id);

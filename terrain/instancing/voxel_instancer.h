@@ -9,6 +9,10 @@
 #include "voxel_instance_library.h"
 #include "voxel_instance_library_item.h"
 
+#ifdef TOOLS_ENABLED
+#include "../../editor/voxel_debug.h"
+#endif
+
 #include <scene/3d/node_3d.h>
 //#include <scene/resources/material.h> // Included by node.h lol
 #include <limits>
@@ -72,6 +76,10 @@ public:
 	void debug_dump_as_scene(String fpath) const;
 	Node *debug_dump_as_nodes() const;
 
+#ifdef TOOLS_ENABLED
+	void set_show_gizmos(bool enable);
+#endif
+
 	TypedArray<String> get_configuration_warnings() const override;
 
 protected:
@@ -99,6 +107,10 @@ private:
 	void update_layer_meshes(int layer_id);
 	void update_layer_scenes(int layer_id);
 	void create_render_blocks(Vector3i grid_position, int lod_index, Array surface_arrays);
+
+#ifdef TOOLS_ENABLED
+	void process_gizmos();
+#endif
 
 	struct SceneInstance {
 		VoxelInstanceComponent *component = nullptr;
@@ -192,6 +204,11 @@ private:
 	std::vector<Transform3D> _transform_cache;
 
 	VoxelLodTerrain *_parent;
+
+#ifdef TOOLS_ENABLED
+	VoxelDebug::DebugRenderer _debug_renderer;
+	bool _gizmos_enabled = true;
+#endif
 };
 
 VARIANT_ENUM_CAST(VoxelInstancer::UpMode);

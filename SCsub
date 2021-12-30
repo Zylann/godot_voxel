@@ -59,6 +59,7 @@ if env["tools"]:
 		"editor/graph/*.cpp",
 		"editor/terrain/*.cpp",
 		"editor/fast_noise_lite/*.cpp",
+		"editor/instancer/*.cpp",
 		"editor/instance_library/*.cpp",
 		"editor/vox/*.cpp",
 	]

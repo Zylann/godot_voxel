@@ -47,6 +47,7 @@
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
 #include "editor/instance_library/voxel_instance_library_editor_plugin.h"
+#include "editor/instancer/voxel_instancer_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/vox/vox_editor_plugin.h"
 #include "editor/voxel_debug.h"
@@ -151,6 +152,7 @@ void register_voxel_types() {
 	EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
 	EditorPlugins::add_by_type<FastNoiseLiteEditorPlugin>();
 	EditorPlugins::add_by_type<VoxEditorPlugin>();
+	EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
 #endif
 
 #ifdef VOXEL_RUN_TESTS

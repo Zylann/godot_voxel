@@ -252,7 +252,7 @@ void DebugMultiMeshRenderer::begin() {
 }
 
 void DebugMultiMeshRenderer::draw_box(const Transform3D &t, Color8 color) {
-	_items.push_back(DirectMultiMeshInstance::TransformAndColor32{ t, color });
+	_items.push_back(DirectMultiMeshInstance::TransformAndColor32{ t, Color(color) });
 }
 
 void DebugMultiMeshRenderer::end() {
