@@ -3,6 +3,7 @@
 #include "../profiling.h"
 
 #include <core/config/engine.h>
+#include <scene/main/node.h>
 #include <scene/resources/concave_polygon_shape_3d.h>
 #include <scene/resources/mesh.h>
 #include <scene/resources/multimesh.h>
@@ -229,4 +230,25 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	// wire_mesh->surface_set_material(0, line_material);
 
 	// return wire_mesh;
+}
+
+template <typename F> void for_each_node_depth_first(Node *parent, F f) {
+	ERR_FAIL_COND(parent == nullptr);
+	f(parent);
+	for (int i = 0; i < parent->get_child_count(); ++i) {
+		for_each_node_depth_first(parent->get_child(i), f);
+	}
+}
+
+void set_nodes_owner(Node *root, Node *owner) {
+	for_each_node_depth_first(root, [owner](Node *node) { //
+		node->set_owner(owner);
+	});
+}
+
+void set_nodes_owner_except_root(Node *root, Node *owner) {
+	ERR_FAIL_COND(root == nullptr);
+	for (int i = 0; i < root->get_child_count(); ++i) {
+		set_nodes_owner(root->get_child(i), owner);
+	}
 }

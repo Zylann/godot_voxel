@@ -296,7 +296,7 @@ private:
 	Array _b_debug_print_sdf_top_down(Vector3i center, Vector3i extents);
 	int _b_debug_get_mesh_block_count() const;
 	int _b_debug_get_data_block_count() const;
-	Error _b_debug_dump_as_scene(String fpath) const;
+	Error _b_debug_dump_as_scene(String fpath, bool include_instancer) const;
 	Dictionary _b_get_statistics() const;
 
 	struct OctreeItem {

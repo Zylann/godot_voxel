@@ -69,6 +69,8 @@ public:
 
 	int debug_get_block_count() const;
 	Dictionary debug_get_instance_counts() const;
+	void debug_dump_as_scene(String fpath) const;
+	Node *debug_dump_as_nodes() const;
 
 	TypedArray<String> get_configuration_warnings() const override;
 

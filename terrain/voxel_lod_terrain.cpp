@@ -2914,7 +2914,7 @@ int VoxelLodTerrain::_b_debug_get_data_block_count() const {
 	return sum;
 }
 
-Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath) const {
+Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
 	Node3D *root = memnew(Node3D);
 	root->set_name(get_name());
 
@@ -2939,16 +2939,24 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath) const {
 		});
 	}
 
-	Ref<PackedScene> scene = memnew(PackedScene);
-	Error err = scene->pack(root);
-	if (err != OK) {
-		return err;
+	if (include_instancer && _instancer != nullptr) {
+		Node *instances_root = _instancer->debug_dump_as_nodes();
+		if (instances_root != nullptr) {
+			root->add_child(instances_root);
+			set_nodes_owner(instances_root, root);
+		}
 	}
-	err = ResourceSaver::save(fpath, scene, ResourceSaver::FLAG_BUNDLE_RESOURCES);
 
+	Ref<PackedScene> scene;
+	scene.instantiate();
+	const Error pack_result = scene->pack(root);
 	memdelete(root);
+	if (pack_result != OK) {
+		return pack_result;
+	}
 
-	return err;
+	const Error save_result = ResourceSaver::save(fpath, scene, ResourceSaver::FLAG_BUNDLE_RESOURCES);
+	return save_result;
 }
 
 void VoxelLodTerrain::_bind_methods() {
@@ -3024,7 +3032,8 @@ void VoxelLodTerrain::_bind_methods() {
 			D_METHOD("debug_print_sdf_top_down", "center", "extents"), &VoxelLodTerrain::_b_debug_print_sdf_top_down);
 	ClassDB::bind_method(D_METHOD("debug_get_mesh_block_count"), &VoxelLodTerrain::_b_debug_get_mesh_block_count);
 	ClassDB::bind_method(D_METHOD("debug_get_data_block_count"), &VoxelLodTerrain::_b_debug_get_data_block_count);
-	ClassDB::bind_method(D_METHOD("debug_dump_as_scene", "path"), &VoxelLodTerrain::_b_debug_dump_as_scene);
+	ClassDB::bind_method(
+			D_METHOD("debug_dump_as_scene", "path", "include_instancer"), &VoxelLodTerrain::_b_debug_dump_as_scene);
 
 	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 

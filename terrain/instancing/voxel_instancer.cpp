@@ -12,6 +12,9 @@
 #include <scene/3d/collision_shape_3d.h>
 #include <scene/3d/mesh_instance_3d.h>
 #include <scene/main/viewport.h>
+// Only needed for debug purposes, otherwise RenderingServer is used directly
+#include <scene/3d/multimesh_instance_3d.h>
+
 #include <algorithm>
 
 VoxelInstancer::VoxelInstancer() {
@@ -1457,6 +1460,84 @@ Dictionary VoxelInstancer::debug_get_instance_counts() const {
 	return d;
 }
 
+void VoxelInstancer::debug_dump_as_scene(String fpath) const {
+	Node *root = debug_dump_as_nodes();
+
+	set_nodes_owner_except_root(root, root);
+
+	Ref<PackedScene> packed_scene;
+	packed_scene.instantiate();
+	const Error pack_result = packed_scene->pack(root);
+	memdelete(root);
+	ERR_FAIL_COND(pack_result != OK);
+
+	const Error save_result = ResourceSaver::save(fpath, packed_scene, ResourceSaver::FLAG_BUNDLE_RESOURCES);
+	ERR_FAIL_COND(save_result != OK);
+}
+
+Node *VoxelInstancer::debug_dump_as_nodes() const {
+	ERR_FAIL_COND_V(_parent == nullptr, nullptr);
+	const unsigned int mesh_block_size = _parent->get_mesh_block_size();
+
+	Node3D *root = memnew(Node3D);
+	root->set_transform(get_transform());
+	root->set_name("VoxelInstancerRoot");
+
+	HashMap<Ref<Mesh>, Ref<Mesh>, RefHasher<Mesh>> mesh_copies;
+
+	// For each layer
+	const int *layer_key = nullptr;
+	while ((layer_key = _layers.next(layer_key))) {
+		const Layer *layer = _layers.getptr(*layer_key);
+		CRASH_COND(layer == nullptr);
+		const int lod_block_size = mesh_block_size << layer->lod_index;
+
+		Node3D *layer_node = memnew(Node3D);
+		layer_node->set_name(String("Layer{0}").format(varray(*layer_key)));
+		root->add_child(layer_node);
+
+		// For each block in layer
+		const Vector3i *block_key = nullptr;
+		while ((block_key = layer->blocks.next(block_key))) {
+			const unsigned int *block_index = layer->blocks.getptr(*block_key);
+			CRASH_COND(block_index == nullptr);
+			CRASH_COND(*block_index >= _blocks.size());
+			const Block *block = _blocks[*block_index];
+
+			if (block->multimesh_instance.is_valid()) {
+				const Transform3D block_local_transform(Basis(), Vector3(block->grid_position * lod_block_size));
+
+				Ref<MultiMesh> multimesh = block->multimesh_instance.get_multimesh();
+				ERR_CONTINUE(multimesh.is_null());
+				Ref<Mesh> src_mesh = multimesh->get_mesh();
+				ERR_CONTINUE(src_mesh.is_null());
+
+				// Duplicating the meshes because often they don't get saved even with `FLAG_BUNDLE_RESOURCES`
+				Ref<Mesh> *mesh_copy_ptr = mesh_copies.getptr(src_mesh);
+				Ref<Mesh> mesh_copy;
+				if (mesh_copy_ptr == nullptr) {
+					mesh_copy = src_mesh->duplicate();
+					mesh_copies.set(src_mesh, mesh_copy);
+				} else {
+					mesh_copy = *mesh_copy_ptr;
+				}
+
+				Ref<MultiMesh> multimesh_copy = multimesh->duplicate();
+				multimesh_copy->set_mesh(mesh_copy);
+
+				MultiMeshInstance3D *mmi = memnew(MultiMeshInstance3D);
+				mmi->set_multimesh(multimesh_copy);
+				mmi->set_transform(block_local_transform);
+				layer_node->add_child(mmi);
+			}
+
+			// TODO Dump scene instances too
+		}
+	}
+
+	return root;
+}
+
 TypedArray<String> VoxelInstancer::get_configuration_warnings() const {
 	TypedArray<String> warnings;
 	if (_parent == nullptr) {
@@ -1479,6 +1560,7 @@ void VoxelInstancer::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelInstancer::debug_get_block_count);
 	ClassDB::bind_method(D_METHOD("debug_get_instance_counts"), &VoxelInstancer::debug_get_instance_counts);
+	ClassDB::bind_method(D_METHOD("debug_dump_as_scene", "fpath"), &VoxelInstancer::debug_dump_as_scene);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceLibrary"),
 			"set_library", "get_library");
