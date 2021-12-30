@@ -583,6 +583,7 @@ void VoxelInstancer::add_layer(int layer_id, int lod_index) {
 void VoxelInstancer::remove_layer(int layer_id) {
 	Layer *layer = get_layer(layer_id);
 
+	// Unregister that layer from the corresponding LOD structure
 	Lod &lod = _lods[layer->lod_index];
 	for (size_t i = 0; i < lod.layers.size(); ++i) {
 		if (lod.layers[i] == layer_id) {
@@ -592,17 +593,7 @@ void VoxelInstancer::remove_layer(int layer_id) {
 		}
 	}
 
-	Vector<int> to_remove;
-	const Vector3i *block_pos_ptr = nullptr;
-	while ((block_pos_ptr = layer->blocks.next(block_pos_ptr))) {
-		int block_index = layer->blocks.get(*block_pos_ptr);
-		to_remove.push_back(block_index);
-	}
-
-	for (int i = 0; i < to_remove.size(); ++i) {
-		int block_index = to_remove[i];
-		remove_block(block_index);
-	}
+	clear_blocks_in_layer(layer_id);
 
 	_layers.erase(layer_id);
 }
