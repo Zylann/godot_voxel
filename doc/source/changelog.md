@@ -17,6 +17,8 @@ Ongoing development - `godot4` branch
 - Smooth voxels
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
     - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
+    - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
+    - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
 
 - Fixes
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
@@ -24,6 +26,8 @@ Ongoing development - `godot4` branch
     - `VoxelGeneratorGraph`: editor: fix inspector starting to throw errors after deleting a node, as it is still inspecting it
     - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
+    - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
+    - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
 
 - Breaking changes
     - Some functions now take `Vector3i` instead of `Vector3`. If you used to send `Vector3` without `floor()` or `round()`, it can have side-effects in negative coordinates.
