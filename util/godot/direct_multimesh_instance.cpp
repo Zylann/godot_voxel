@@ -3,8 +3,7 @@
 
 #include <scene/resources/world_3d.h>
 
-DirectMultiMeshInstance::DirectMultiMeshInstance() {
-}
+DirectMultiMeshInstance::DirectMultiMeshInstance() {}
 
 DirectMultiMeshInstance::~DirectMultiMeshInstance() {
 	destroy();
@@ -166,6 +165,9 @@ void DirectMultiMeshInstance::make_transform_and_color32_3d_bulk_array(
 		float *ptr = w + item_size * i;
 		const TransformAndColor32 &d = data[i];
 		write_bulk_array_transform(ptr, d.transform);
-		ptr[transform_size] = *reinterpret_cast<const float *>(d.color.components);
+		ptr[transform_size] = d.color.r;
+		ptr[transform_size + 1] = d.color.g;
+		ptr[transform_size + 2] = d.color.b;
+		ptr[transform_size + 3] = d.color.a;
 	}
 }
