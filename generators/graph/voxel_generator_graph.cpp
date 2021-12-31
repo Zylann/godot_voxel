@@ -396,6 +396,60 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 	}
 }
 
+template <typename F, typename Data_T>
+void fill_zx_slice(Span<Data_T> channel_data, float sdf_scale, Vector3i rmin, Vector3i rmax, int ry, int x_stride,
+		const float *src_data, Vector3i buffer_size, F convert_func) {
+	unsigned int src_i = 0;
+	for (int rz = rmin.z; rz < rmax.z; ++rz) {
+		unsigned int dst_i = Vector3iUtil::get_zxy_index(Vector3i(rmin.x, ry, rz), buffer_size);
+		for (int rx = rmin.x; rx < rmax.x; ++rx) {
+			channel_data[dst_i] = convert_func(sdf_scale * src_data[src_i]);
+			++src_i;
+			dst_i += x_stride;
+		}
+	}
+}
+
+static void fill_zx_slice(const VoxelGraphRuntime::Buffer &sdf_buffer, VoxelBufferInternal &out_buffer,
+		unsigned int channel, VoxelBufferInternal::Depth channel_depth, float sdf_scale, Vector3i rmin, Vector3i rmax,
+		int ry) {
+	VOXEL_PROFILE_SCOPE_NAMED("Copy SDF to block");
+
+	if (out_buffer.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
+		out_buffer.decompress_channel(channel);
+	}
+	Span<uint8_t> channel_bytes;
+	ERR_FAIL_COND(!out_buffer.get_channel_raw(channel, channel_bytes));
+	const Vector3i buffer_size = out_buffer.get_size();
+	const unsigned int x_stride = Vector3iUtil::get_zxy_index(Vector3i(1, 0, 0), buffer_size) -
+			Vector3iUtil::get_zxy_index(Vector3i(0, 0, 0), buffer_size);
+
+	switch (channel_depth) {
+		case VoxelBufferInternal::DEPTH_8_BIT:
+			fill_zx_slice(channel_bytes, sdf_scale, rmin, rmax, ry, x_stride, sdf_buffer.data, buffer_size, norm_to_u8);
+			break;
+
+		case VoxelBufferInternal::DEPTH_16_BIT:
+			fill_zx_slice(channel_bytes.reinterpret_cast_to<uint16_t>(), sdf_scale, rmin, rmax, ry, x_stride,
+					sdf_buffer.data, buffer_size, norm_to_u16);
+			break;
+
+		case VoxelBufferInternal::DEPTH_32_BIT:
+			fill_zx_slice(channel_bytes.reinterpret_cast_to<float>(), sdf_scale, rmin, rmax, ry, x_stride,
+					sdf_buffer.data, buffer_size, [](float v) { return v; });
+			break;
+
+		case VoxelBufferInternal::DEPTH_64_BIT:
+			fill_zx_slice(channel_bytes.reinterpret_cast_to<double>(), sdf_scale, rmin, rmax, ry, x_stride,
+					sdf_buffer.data, buffer_size, [](double v) { return v; });
+			break;
+
+		default:
+			ERR_PRINT(String("Unknown depth {0}").format(varray(channel_depth)));
+			break;
+	}
+}
+
 VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	std::shared_ptr<Runtime> runtime_ptr;
 	{
@@ -418,8 +472,8 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 	// TODO This may be shared across the module
 	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
 	// so we must scale the values to make better use of the offered resolution
-	const float sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(
-			out_buffer.get_channel_depth(out_buffer.get_channel_depth(channel)));
+	const VoxelBufferInternal::Depth channel_depth = out_buffer.get_channel_depth(channel);
+	const float sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(channel_depth);
 
 	const int stride = 1 << input.lod;
 
@@ -522,17 +576,9 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 								_use_optimized_execution_map ? &cache.optimized_execution_map : nullptr);
 
 						{
-							VOXEL_PROFILE_SCOPE_NAMED("Copy SDF to block");
-							unsigned int i = 0;
 							const VoxelGraphRuntime::Buffer &sdf_buffer =
 									cache.state.get_buffer(sdf_output_buffer_index);
-							for (int rz = rmin.z; rz < rmax.z; ++rz) {
-								for (int rx = rmin.x; rx < rmax.x; ++rx) {
-									// TODO Flatten this further, this may run checks we don't need
-									out_buffer.set_voxel_f(sdf_scale * sdf_buffer.data[i], rx, ry, rz, channel);
-									++i;
-								}
-							}
+							fill_zx_slice(sdf_buffer, out_buffer, channel, channel_depth, sdf_scale, rmin, rmax, ry);
 						}
 
 						if (runtime_ptr->weight_outputs_count > 0) {
@@ -589,7 +635,8 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 		// they will find it's all default weights.
 		// Possible workarounds:
 		// - Only do it for air
-		// - Also take indices and weights into account, but may lead to way less compression, or none, for stuff that
+		// - Also take indices and weights into account, but may lead to way less compression, or none, for stuff
+		// that
 		//   essentially isnt showing up until dug out
 		// - Invoke generator to produce LOD0 blocks somehow, but main thread could stall
 		result.max_lod_hint = true;
