@@ -13,6 +13,7 @@ Ongoing development - `godot4` branch
 
 - General
     - Added `gi_mode` to terrain nodes to choose how they behave with Godot's global illumination
+    - Added `FastNoise2` for faster SIMD noise
 
 - Smooth voxels
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
