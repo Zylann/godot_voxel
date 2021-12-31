@@ -306,6 +306,7 @@ void VoxelServer::init_priority_dependency(VoxelServer::PriorityDependency &dep,
 void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &input) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.meshing_dependency == nullptr);
+	ERR_FAIL_COND(volume.meshing_dependency->mesher.is_null());
 	ERR_FAIL_COND(volume.data_block_size > 255);
 
 	BlockMeshRequest *r = memnew(BlockMeshRequest);
