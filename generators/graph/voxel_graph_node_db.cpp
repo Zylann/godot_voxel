@@ -1,10 +1,13 @@
 #include "voxel_graph_node_db.h"
 #include "../../util/math/sdf.h"
-#include "../../util/noise/fast_noise_2.h"
 #include "../../util/noise/fast_noise_lite.h"
 #include "../../util/profiling.h"
 #include "image_range_grid.h"
 #include "range_utility.h"
+
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+#include "../../util/noise/fast_noise_2.h"
+#endif
 
 #include <modules/opensimplex/open_simplex_noise.h>
 #include <scene/resources/curve.h>
@@ -1596,6 +1599,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ctx.set_output(2, r.z);
 		};
 	}
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
 	{
 		struct Params {
 			FastNoise2 *noise;
@@ -1693,6 +1697,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ctx.set_output(0, p.noise->get_estimated_output_range());
 		};
 	}
+#endif // VOXEL_ENABLE_FAST_NOISE_2
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];
