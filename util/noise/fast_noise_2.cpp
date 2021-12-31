@@ -210,26 +210,48 @@ bool FastNoise2::is_remap_enabled() const {
 	return _remap_enabled;
 }
 
-void FastNoise2::set_remap_min(float min_value) {
-	if (min_value != _remap_min) {
-		_remap_min = min_value;
+void FastNoise2::set_remap_input_min(float min_value) {
+	if (min_value != _remap_src_min) {
+		_remap_src_min = min_value;
 		emit_changed();
 	}
 }
 
-float FastNoise2::get_remap_min() const {
-	return _remap_min;
+float FastNoise2::get_remap_input_min() const {
+	return _remap_src_min;
 }
 
-void FastNoise2::set_remap_max(float max_value) {
-	if (max_value != _remap_max) {
-		_remap_max = max_value;
+void FastNoise2::set_remap_input_max(float max_value) {
+	if (max_value != _remap_src_max) {
+		_remap_src_max = max_value;
 		emit_changed();
 	}
 }
 
-float FastNoise2::get_remap_max() const {
-	return _remap_max;
+float FastNoise2::get_remap_input_max() const {
+	return _remap_src_max;
+}
+
+void FastNoise2::set_remap_output_min(float min_value) {
+	if (min_value != _remap_dst_min) {
+		_remap_dst_min = min_value;
+		emit_changed();
+	}
+}
+
+float FastNoise2::get_remap_output_min() const {
+	return _remap_dst_min;
+}
+
+void FastNoise2::set_remap_output_max(float max_value) {
+	if (max_value != _remap_dst_max) {
+		_remap_dst_max = max_value;
+		emit_changed();
+	}
+}
+
+float FastNoise2::get_remap_output_max() const {
+	return _remap_dst_max;
 }
 
 void FastNoise2::set_cellular_distance_function(CellularDistanceFunction cdf) {
@@ -434,7 +456,7 @@ void FastNoise2::update_generator() {
 
 	if (_remap_enabled) {
 		FastNoise::SmartNode<FastNoise::Remap> remap_node = FastNoise::New<FastNoise::Remap>();
-		remap_node->SetRemap(-1.0, 1.0, _remap_min, _remap_max);
+		remap_node->SetRemap(_remap_src_min, _remap_src_max, _remap_dst_min, _remap_dst_max);
 		remap_node->SetSource(generator_node);
 		generator_node = remap_node;
 	}
@@ -505,11 +527,17 @@ void FastNoise2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_remap_enabled", "enabled"), &FastNoise2::set_remap_enabled);
 	ClassDB::bind_method(D_METHOD("is_remap_enabled"), &FastNoise2::is_remap_enabled);
 
-	ClassDB::bind_method(D_METHOD("set_remap_min", "min_value"), &FastNoise2::set_remap_min);
-	ClassDB::bind_method(D_METHOD("get_remap_min"), &FastNoise2::get_remap_min);
+	ClassDB::bind_method(D_METHOD("set_remap_input_min", "min_value"), &FastNoise2::set_remap_input_min);
+	ClassDB::bind_method(D_METHOD("get_remap_input_min"), &FastNoise2::get_remap_input_min);
 
-	ClassDB::bind_method(D_METHOD("set_remap_max", "max_value"), &FastNoise2::set_remap_max);
-	ClassDB::bind_method(D_METHOD("get_remap_max"), &FastNoise2::get_remap_max);
+	ClassDB::bind_method(D_METHOD("set_remap_input_max", "max_value"), &FastNoise2::set_remap_input_max);
+	ClassDB::bind_method(D_METHOD("get_remap_input_max"), &FastNoise2::get_remap_input_max);
+
+	ClassDB::bind_method(D_METHOD("set_remap_output_min", "min_value"), &FastNoise2::set_remap_output_min);
+	ClassDB::bind_method(D_METHOD("get_remap_output_min"), &FastNoise2::get_remap_output_min);
+
+	ClassDB::bind_method(D_METHOD("set_remap_output_max", "max_value"), &FastNoise2::set_remap_output_max);
+	ClassDB::bind_method(D_METHOD("get_remap_output_max"), &FastNoise2::get_remap_output_max);
 
 	ClassDB::bind_method(D_METHOD("set_encoded_node_tree", "code"), &FastNoise2::set_encoded_node_tree);
 	ClassDB::bind_method(D_METHOD("get_encoded_node_tree"), &FastNoise2::get_encoded_node_tree);
@@ -576,8 +604,10 @@ void FastNoise2::_bind_methods() {
 	ADD_GROUP("Remap", "");
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "remap_enabled"), "set_remap_enabled", "is_remap_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "remap_min"), "set_remap_min", "get_remap_min");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "remap_max"), "set_remap_max", "get_remap_max");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "remap_input_min"), "set_remap_input_min", "get_remap_input_min");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "remap_input_max"), "set_remap_input_max", "get_remap_input_max");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "remap_output_min"), "set_remap_output_min", "get_remap_output_min");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "remap_output_max"), "set_remap_output_max", "get_remap_output_max");
 
 	ADD_GROUP("Advanced", "");
 

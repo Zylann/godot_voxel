@@ -119,11 +119,17 @@ public:
 	void set_remap_enabled(bool enabled);
 	bool is_remap_enabled() const;
 
-	void set_remap_min(float min_value);
-	float get_remap_min() const;
+	void set_remap_input_min(float min_value);
+	float get_remap_input_min() const;
 
-	void set_remap_max(float max_value);
-	float get_remap_max() const;
+	void set_remap_input_max(float max_value);
+	float get_remap_input_max() const;
+
+	void set_remap_output_min(float min_value);
+	float get_remap_output_min() const;
+
+	void set_remap_output_max(float max_value);
+	float get_remap_output_max() const;
 
 	// Cellular
 
@@ -189,8 +195,10 @@ private:
 	float _cellular_jitter = 1.0;
 
 	bool _remap_enabled = false;
-	float _remap_min = -1.0;
-	float _remap_max = 1.0;
+	float _remap_src_min = -1.0;
+	float _remap_src_max = 1.0;
+	float _remap_dst_min = -1.0;
+	float _remap_dst_max = 1.0;
 
 	FastNoise::SmartNode<> _generator;
 };
