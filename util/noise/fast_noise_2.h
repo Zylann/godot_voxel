@@ -154,7 +154,9 @@ public:
 	void get_noise_2d_grid(Vector2 origin, Vector2i size, Span<float> dst) const;
 	void get_noise_3d_grid(Vector3 origin, Vector3i size, Span<float> dst) const;
 
-	void generate_image(Ref<Image> image) const;
+	void get_noise_2d_grid_tileable(Vector2i size, Span<float> dst) const;
+
+	void generate_image(Ref<Image> image, bool tileable) const;
 
 private:
 	static void _bind_methods();

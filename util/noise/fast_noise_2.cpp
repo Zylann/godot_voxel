@@ -306,20 +306,33 @@ void FastNoise2::get_noise_3d_grid(Vector3 origin, Vector3i size, Span<float> ds
 	_generator->GenUniformGrid3D(dst.data(), origin.x, origin.y, origin.z, size.x, size.y, size.z, 1.f, _seed);
 }
 
-void FastNoise2::generate_image(Ref<Image> image) const {
+void FastNoise2::get_noise_2d_grid_tileable(Vector2i size, Span<float> dst) const {
+	ERR_FAIL_COND(!is_valid());
+	ERR_FAIL_COND(size.x < 0 || size.y < 0);
+	ERR_FAIL_COND(dst.size() != size.x * size.y);
+	_generator->GenTileable2D(dst.data(), size.x, size.y, 1.f, _seed);
+}
+
+void FastNoise2::generate_image(Ref<Image> image, bool tileable) const {
 	ERR_FAIL_COND(!is_valid());
 	ERR_FAIL_COND(image.is_null());
 
 	std::vector<float> buffer;
 	buffer.resize(image->get_width() * image->get_height());
 
-	get_noise_2d_grid(Vector2(), Vector2i(image->get_width(), image->get_height()), to_span(buffer));
+	if (tileable) {
+		get_noise_2d_grid_tileable(Vector2i(image->get_width(), image->get_height()), to_span(buffer));
+	} else {
+		get_noise_2d_grid(Vector2(), Vector2i(image->get_width(), image->get_height()), to_span(buffer));
+	}
 
 	unsigned int i = 0;
 	for (int y = 0; y < image->get_height(); ++y) {
 		for (int x = 0; x < image->get_width(); ++x) {
-			// Assuming -1..1 output. Some noise types can have different range though.
+#ifdef DEBUG_ENABLED
 			CRASH_COND(i >= buffer.size());
+#endif
+			// Assuming -1..1 output. Some noise types can have different range though.
 			const float n = buffer[i] * 0.5f + 0.5f;
 			++i;
 			image->set_pixel(x, y, Color(n, n, n));
@@ -499,7 +512,8 @@ void FastNoise2::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_noise_2d_single", "pos"), &FastNoise2::get_noise_2d_single);
 	ClassDB::bind_method(D_METHOD("get_noise_3d_single", "pos"), &FastNoise2::get_noise_3d_single);
-	// TODO Expose series generation
+
+	ClassDB::bind_method(D_METHOD("generate_image", "image", "tileable"), &FastNoise2::generate_image);
 
 	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &FastNoiseLite::_on_warp_noise_changed);
 

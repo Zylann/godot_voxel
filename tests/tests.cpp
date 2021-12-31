@@ -1120,7 +1120,7 @@ void test_fast_noise_2() {
 	Ref<Image> im;
 	im.instantiate();
 	im->create(256, 256, false, Image::FORMAT_RGB8);
-	noise->generate_image(im);
+	noise->generate_image(im, false);
 	//im->save_png("zylann_test_fastnoise2.png");
 }
 

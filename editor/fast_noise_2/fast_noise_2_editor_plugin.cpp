@@ -72,7 +72,7 @@ private:
 		im->create(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
 
 		if (_noise.is_valid()) {
-			_noise->generate_image(im);
+			_noise->generate_image(im, false);
 		}
 
 		Ref<ImageTexture> tex;
