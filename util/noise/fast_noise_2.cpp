@@ -443,6 +443,10 @@ void FastNoise2::update_generator() {
 	_generator = generator_node;
 }
 
+String FastNoise2::_b_get_simd_level_name(SIMDLevel level) {
+	return get_simd_level_name(level);
+}
+
 void FastNoise2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_noise_type", "type"), &FastNoise2::set_noise_type);
 	ClassDB::bind_method(D_METHOD("get_noise_type"), &FastNoise2::get_noise_type);
@@ -514,6 +518,8 @@ void FastNoise2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_noise_3d_single", "pos"), &FastNoise2::get_noise_3d_single);
 
 	ClassDB::bind_method(D_METHOD("generate_image", "image", "tileable"), &FastNoise2::generate_image);
+
+	ClassDB::bind_method(D_METHOD("get_simd_level_name", "level"), &FastNoise2::_b_get_simd_level_name);
 
 	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &FastNoiseLite::_on_warp_noise_changed);
 

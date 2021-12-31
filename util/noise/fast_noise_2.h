@@ -35,8 +35,10 @@ public:
 		TYPE_PERLIN,
 		TYPE_VALUE,
 		TYPE_CELLULAR,
-		TYPE_ENCODED_NODE_TREE // Special type overriding most options with a tree made in Auburn's NoiseTool
-		//TYPE_NODE_TREE, // TODO Implement NoiseTool inside Godot?
+		// Special type overriding most options with a tree made in Auburn's NoiseTool
+		TYPE_ENCODED_NODE_TREE
+		// TODO Implement NoiseTool graph editor inside Godot?
+		//TYPE_NODE_TREE,
 	};
 
 	static constexpr char *NOISE_TYPE_HINT_STRING = "OpenSimplex2,Simplex,Perlin,Value,Cellular,EncodedNodeTree";
@@ -159,6 +161,10 @@ public:
 	void generate_image(Ref<Image> image, bool tileable) const;
 
 private:
+	// Non-static method for scripts because Godot4 does not support binding static methods (it's only implemented for
+	// primitive types)
+	String _b_get_simd_level_name(SIMDLevel level);
+
 	static void _bind_methods();
 
 	int _seed = 1337;
