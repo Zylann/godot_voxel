@@ -1,5 +1,6 @@
 #include "voxel_graph_node_db.h"
 #include "../../util/math/sdf.h"
+#include "../../util/noise/fast_noise_2.h"
 #include "../../util/noise/fast_noise_lite.h"
 #include "../../util/profiling.h"
 #include "image_range_grid.h"
@@ -1593,6 +1594,103 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ctx.set_output(0, r.x);
 			ctx.set_output(1, r.y);
 			ctx.set_output(2, r.z);
+		};
+	}
+	{
+		struct Params {
+			FastNoise2 *noise;
+		};
+
+		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_2_2D];
+		t.name = "FastNoise2_2D";
+		t.category = CATEGORY_GENERATE;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("noise", "FastNoise2"));
+
+		t.compile_func = [](CompileContext &ctx) {
+			Ref<FastNoise2> noise = ctx.get_param(0);
+			if (noise.is_null()) {
+				ctx.make_error("FastNoise2 instance is null");
+				return;
+			}
+			noise->update_generator();
+			if (!noise->is_valid()) {
+				ctx.make_error("FastNoise2 setup is invalid");
+				return;
+			}
+			Params p;
+			p.noise = *noise;
+			ctx.set_params(p);
+		};
+
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_FAST_NOISE_2_2D");
+			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
+			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			const Params p = ctx.get_params<Params>();
+			p.noise->get_noise_2d_series(Span<const float>(x.data, x.size), Span<const float>(y.data, y.size),
+					Span<float>(out.data, out.size));
+		};
+
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval x = ctx.get_input(0);
+			const Interval y = ctx.get_input(1);
+			const Params p = ctx.get_params<Params>();
+			ERR_FAIL_COND(p.noise == nullptr);
+			ctx.set_output(0, p.noise->get_estimated_output_range());
+		};
+	}
+	{
+		struct Params {
+			FastNoise2 *noise;
+		};
+
+		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_2_3D];
+		t.name = "FastNoise2_3D";
+		t.category = CATEGORY_GENERATE;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("y"));
+		t.inputs.push_back(Port("z"));
+		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("noise", "FastNoise2"));
+
+		t.compile_func = [](CompileContext &ctx) {
+			Ref<FastNoise2> noise = ctx.get_param(0);
+			if (noise.is_null()) {
+				ctx.make_error("FastNoise2 instance is null");
+				return;
+			}
+			noise->update_generator();
+			if (!noise->is_valid()) {
+				ctx.make_error("FastNoise2 setup is invalid");
+				return;
+			}
+			Params p;
+			p.noise = *noise;
+			ctx.set_params(p);
+		};
+
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			VOXEL_PROFILE_SCOPE_NAMED("NODE_FAST_NOISE_2_3D");
+			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
+			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
+			const VoxelGraphRuntime::Buffer &z = ctx.get_input(2);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			const Params p = ctx.get_params<Params>();
+			p.noise->get_noise_3d_series(Span<const float>(x.data, x.size), Span<const float>(y.data, y.size),
+					Span<const float>(z.data, z.size), Span<float>(out.data, out.size));
+		};
+
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval x = ctx.get_input(0);
+			const Interval y = ctx.get_input(1);
+			const Interval z = ctx.get_input(2);
+			const Params p = ctx.get_params<Params>();
+			ERR_FAIL_COND(p.noise == nullptr);
+			ctx.set_output(0, p.noise->get_estimated_output_range());
 		};
 	}
 

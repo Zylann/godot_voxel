@@ -1,6 +1,7 @@
 #ifndef VOXEL_FAST_NOISE_2_H
 #define VOXEL_FAST_NOISE_2_H
 
+#include "../math/interval.h"
 #include "../span.h"
 #include "FastNoise/FastNoise.h"
 #include <core/io/resource.h>
@@ -165,6 +166,8 @@ public:
 	void get_noise_2d_grid_tileable(Vector2i size, Span<float> dst) const;
 
 	void generate_image(Ref<Image> image, bool tileable) const;
+
+	Interval get_estimated_output_range() const;
 
 private:
 	// Non-static method for scripts because Godot4 does not support binding static methods (it's only implemented for

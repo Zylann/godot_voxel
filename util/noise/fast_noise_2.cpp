@@ -465,6 +465,17 @@ void FastNoise2::update_generator() {
 	_generator = generator_node;
 }
 
+Interval FastNoise2::get_estimated_output_range() const {
+	// TODO Optimize: better range analysis on FastNoise2
+	// Most noises should have known bounds like FastNoiseLite, but the node-graph nature of this library
+	// can make it difficult to calculate. Would be nice if the library could provide that out of the box.
+	if (is_remap_enabled()) {
+		return Interval(get_remap_output_min(), get_remap_output_max());
+	} else {
+		return Interval(-1.f, 1.f);
+	}
+}
+
 String FastNoise2::_b_get_simd_level_name(SIMDLevel level) {
 	return get_simd_level_name(level);
 }
