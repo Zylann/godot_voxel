@@ -114,8 +114,33 @@ const ThirdParty g_third_parties[] = {
 			"\n"
 			"   May you do good and not evil.\n"
 			"   May you find forgiveness for yourself and forgive others.\n"
-			"   May you share freely, never taking more than you give.\n" }
-	// TODO Mention Transvoxel Lengyel tables
+			"   May you share freely, never taking more than you give.\n" },
+	{ "Transvoxel tables",
+			"Copyright 2009 by Eric Lengyel\n"
+			"\n"
+			"The following data originates from Eric Lengyel's Transvoxel Algorithm.\n"
+			"http://transvoxel.org/\n"
+			"\n"
+			"The data in this file may be freely used in implementations of the Transvoxel\n"
+			"Algorithm. If you do use this data, or any transformation of it, in your own\n"
+			"projects, commercial or otherwise, please give credit by indicating in your\n"
+			"source code that the data is part of the author's implementation of the\n"
+			"Transvoxel Algorithm and that it came from the web address given above.\n"
+			"(Simply copying and pasting the two lines of the previous paragraph would be\n"
+			"perfect.) If you distribute a commercial product with source code included,\n"
+			"then the credit in the source code is required.\n"
+			"\n"
+			"If you distribute any kind of product that uses this data, a credit visible to\n"
+			"the end-user would be appreciated, but it is not required. However, you may\n"
+			"not claim that the entire implementation of the Transvoxel Algorithm is your\n"
+			"own if you use the data in this file or any transformation of it.\n"
+			"\n"
+			"The format of the data in this file is described in the dissertation \"Voxel-\n"
+			"Based Terrain for Real-Time Virtual Simulations\", available at the web page\n"
+			"given above. References to sections and figures below pertain to that paper.\n"
+			"\n"
+			"The contents of this file are protected by copyright and may not be publicly\n"
+			"reproduced without permission.\n" }
 };
 const unsigned int VOXEL_THIRD_PARTY_COUNT = VOXEL_ARRAY_LENGTH(g_third_parties);
 } // namespace
