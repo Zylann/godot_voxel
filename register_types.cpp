@@ -1,4 +1,5 @@
 #include "register_types.h"
+#include "constants/voxel_string_names.h"
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_buffer.h"
 #include "edition/voxel_tool_lod_terrain.h"
@@ -24,6 +25,8 @@
 #include "streams/vox_loader.h"
 #include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_script.h"
+#include "terrain/instancing/voxel_instance_component.h"
+#include "terrain/instancing/voxel_instance_library_scene_item.h"
 #include "terrain/instancing/voxel_instancer.h"
 #include "terrain/voxel_box_mover.h"
 #include "terrain/voxel_lod_terrain.h"
@@ -31,14 +34,12 @@
 #include "terrain/voxel_terrain.h"
 #include "terrain/voxel_viewer.h"
 #include "util/macros.h"
-#ifdef VOXEL_FAST_NOISE_2_SUPPORT
-#include "util/noise/fast_noise_2.h"
-#endif
-#include "constants/voxel_string_names.h"
-#include "terrain/instancing/voxel_instance_component.h"
-#include "terrain/instancing/voxel_instance_library_scene_item.h"
 #include "util/noise/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite_gradient.h"
+
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+#include "util/noise/fast_noise_2.h"
+#endif
 
 #include <core/config/engine.h>
 
@@ -51,7 +52,10 @@
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/vox/vox_editor_plugin.h"
 #include "editor/voxel_debug.h"
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+#include "editor/fast_noise_2/fast_noise_2_editor_plugin.h"
 #endif
+#endif // TOOLS_ENABLED
 
 #ifdef VOXEL_RUN_TESTS
 #include "tests/tests.h"
@@ -121,7 +125,7 @@ void register_voxel_types() {
 	ClassDB::register_class<FastNoiseLite>();
 	ClassDB::register_class<FastNoiseLiteGradient>();
 	// See SCsub
-#ifdef VOXEL_FAST_NOISE_2_SUPPORT
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
 	ClassDB::register_class<FastNoise2>();
 #endif
 
@@ -153,7 +157,10 @@ void register_voxel_types() {
 	EditorPlugins::add_by_type<FastNoiseLiteEditorPlugin>();
 	EditorPlugins::add_by_type<VoxEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+	EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
 #endif
+#endif // TOOLS_ENABLED
 
 #ifdef VOXEL_RUN_TESTS
 	zylann::voxel::tests::run_voxel_tests();

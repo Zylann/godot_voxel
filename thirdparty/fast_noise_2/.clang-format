@@ -1,0 +1,47 @@
+---
+Language: Cpp
+BasedOnStyle: Microsoft
+AccessModifierOffset: -4
+AlignOperands: false
+AlignTrailingComments: false
+AlwaysBreakTemplateDeclarations: Yes
+BraceWrapping: 
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: false
+  BeforeCatch: true
+  BeforeElse: true
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+BreakConstructorInitializers: AfterColon
+ColumnLimit: 0
+Cpp11BracedListStyle: false
+IncludeCategories: 
+  - Regex: '^<.*'
+    Priority: 1
+  - Regex: '^".*'
+    Priority: 2
+  - Regex: '.*'
+    Priority: 3
+IncludeIsMainRegex: '([-_](test|unittest))?$'
+MaxEmptyLinesToKeep: 2
+NamespaceIndentation: All
+PointerAlignment: Left
+SpaceAfterTemplateKeyword: 'false'
+SpaceBeforeCpp11BracedList: 'true'
+SpaceBeforeParens: Never
+SpaceBeforeRangeBasedForLoopColon: 'false'
+SpaceInEmptyParentheses: 'false'
+SpacesInCStyleCastParentheses: 'false'
+SpacesInContainerLiterals: 'false'
+SpacesInParentheses: 'true'
+SpacesInSquareBrackets: 'false'
+UseTab: Never
+...

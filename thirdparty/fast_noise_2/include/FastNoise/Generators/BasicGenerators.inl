@@ -1,4 +1,3 @@
-#include <cassert>
 #include "FastSIMD/InlInclude.h"
 
 #include "BasicGenerators.h"
@@ -83,7 +82,7 @@ class FS_T<FastNoise::PositionOutput, FS> : public virtual FastNoise::PositionOu
 };
 
 template<typename FS>
-class FS_T<FastNoise::DistanceToOrigin, FS> : public virtual FastNoise::DistanceToOrigin, public FS_T<FastNoise::Generator, FS>
+class FS_T<FastNoise::DistanceToPoint, FS> : public virtual FastNoise::DistanceToPoint, public FS_T<FastNoise::Generator, FS>
 {
     FASTSIMD_DECLARE_FS_TYPES;
     FASTNOISE_IMPL_GEN_T;
@@ -91,6 +90,9 @@ class FS_T<FastNoise::DistanceToOrigin, FS> : public virtual FastNoise::Distance
     template<typename... P>
     FS_INLINE float32v GenT( int32v seed, P... pos ) const
     {
+        size_t pointIdx = 0;
+
+        ((pos -= float32v( mPoint[pointIdx++] )), ...);
         return FnUtils::CalcDistance( mDistanceFunction, pos... );
     }
 };

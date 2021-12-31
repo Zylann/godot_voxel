@@ -1,11 +1,8 @@
 Import('env')
 Import('env_modules')
 
-# TODO Support is turned off for now because Godot 3 doesn't compile with C++17.
-# FastNoise2 use C++17 features and STL both in its headers and runtime as well.
-# SIMD noise support would have to wait for Godot 4 (or GDNative port, which will only be worth in Godot 4 too)
-FAST_NOISE_2_SRC = False
-FAST_NOISE_2_STATIC = False
+# Note, support for FastNoise2 requires C++17
+FAST_NOISE_2_SRC = True
 
 RUN_TESTS = False
 if env['target'] == 'debug':
@@ -94,34 +91,17 @@ if env["platform"] == "windows":
 if FAST_NOISE_2_SRC:
 	# Build from source. Should be the simplest, but requires C++17
 	SConscript('thirdparty/fast_noise_2/SConscript', exports = ["env", "env_voxel"])
-
-if FAST_NOISE_2_STATIC:
-	# Build from a pre-built static lib. This requires to check every build combination (and have them as well),
-	# AND it also requires C++17 due to differences of runtimes.
-	fn2_path = "C:/Projects/FastNoise2/0.7-alpha"
-
-	if env["platform"] == "windows":
-		if env.msvc:
-			if env['bits'] == '64':
-				env_voxel.Append(LIBPATH = [fn2_path + "/lib/win64-msvc"])
-			else:
-				raise RuntimeError("FastNoise2 32-bit builds are not supported yet")
-		else:
-			raise RuntimeError("FastNoise2 can only be built with MSVC at the moment")
-
-		env_voxel.Append(CPPPATH = [fn2_path + '/include'])
-		if env['target'] == 'debug':
-			env_voxel.Append(LIBS = ['FastNoise'])
-		else:
-			env_voxel.Append(LIBS = ['FastNoiseD'])
-	else:
-		raise RuntimeError("FastNoise2 can only be built on Windows at the moment")
-
+	
+	env_voxel.Append(CPPPATH=["thirdparty/fast_noise_2/include"])
+	
 	voxel_files += [
 		"util/noise/fast_noise_2.cpp"
 	]
 
-	env_voxel.Append(CPPDEFINES = ["VOXEL_FAST_NOISE_2_SUPPORT"])
+	if env["tools"]:
+		voxel_files += [
+			"editor/fast_noise_2/*.cpp"
+		]
 
 # ----------------------------------------------------------------------------------------------------------------------
 

@@ -15,23 +15,34 @@ namespace FastNoise
         GeneratorSource mSource;
         HybridSource mWarpAmplitude = 1.0f;
         float mWarpFrequency = 0.5f;
-
-        FASTNOISE_METADATA_ABSTRACT( Generator )
-        
-            Metadata( const char* className ) : Generator::Metadata( className )
-            {
-                groups.push_back( "Domain Warp" );                
-                this->AddGeneratorSource( "Source", &DomainWarp::SetSource );
-                this->AddHybridSource( "Warp Amplitude", 1.0f, &DomainWarp::SetWarpAmplitude, &DomainWarp::SetWarpAmplitude );
-                this->AddVariable( "Warp Frequency", 0.5f, &DomainWarp::SetWarpFrequency );
-            }
-        };
     };
+
+#ifdef FASTNOISE_METADATA
+    template<>
+    struct MetadataT<DomainWarp> : MetadataT<Generator>
+    {
+        MetadataT()
+        {
+            groups.push_back( "Domain Warp" );
+            this->AddGeneratorSource( "Source", &DomainWarp::SetSource );
+            this->AddHybridSource( "Warp Amplitude", 1.0f, &DomainWarp::SetWarpAmplitude, &DomainWarp::SetWarpAmplitude );
+            this->AddVariable( "Warp Frequency", 0.5f, &DomainWarp::SetWarpFrequency );
+        }
+    };
+#endif
 
     class DomainWarpGradient : public virtual DomainWarp
     {
-        FASTNOISE_METADATA( DomainWarp )
-            using DomainWarp::Metadata::Metadata;
-        };        
+    public:
+        FASTSIMD_LEVEL_SUPPORT( FastNoise::SUPPORTED_SIMD_LEVELS );
+        const Metadata& GetMetadata() const override;
     };
+
+#ifdef FASTNOISE_METADATA
+    template<>
+    struct MetadataT<DomainWarpGradient> : MetadataT<DomainWarp>
+    {
+        SmartNode<> CreateNode( FastSIMD::eLevel ) const override;
+    };
+#endif
 }

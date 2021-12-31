@@ -18,45 +18,24 @@ class FS_T<FastNoise::FractalFBm, FS> : public virtual FastNoise::FractalFBm, pu
     FS_INLINE float32v GenT( int32v seed, P... pos ) const
     {
         float32v gain = this->GetSourceValue( mGain  , seed, pos... );
-        float32v sum  = this->GetSourceValue( mSource, seed, pos... );
-
+        float32v weightedStrength = this->GetSourceValue( mWeightedStrength, seed, pos... );
         float32v lacunarity( mLacunarity );
-        float32v amp( 1 );
+        float32v amp( mFractalBounding );
+        float32v noise = this->GetSourceValue( mSource, seed, pos... );
+
+        float32v sum = noise * amp;
 
         for( int i = 1; i < mOctaves; i++ )
         {
             seed -= int32v( -1 );
+            amp *= FnUtils::Lerp( float32v( 1 ), (noise + float32v( 1 )) * float32v( 0.5f ), weightedStrength );
             amp *= gain;
-            sum += this->GetSourceValue( mSource, seed, (pos *= lacunarity)... ) * amp;
+
+            noise = this->GetSourceValue( mSource, seed, (pos *= lacunarity)... );
+            sum += noise * amp;
         }
 
-        return sum * float32v( mFractalBounding );
-    }
-};
-
-template<typename FS>
-class FS_T<FastNoise::FractalBillow, FS> : public virtual FastNoise::FractalBillow, public FS_T<FastNoise::Fractal<>, FS>
-{
-    FASTSIMD_DECLARE_FS_TYPES;
-    FASTNOISE_IMPL_GEN_T;
-
-    template<typename... P>
-    FS_INLINE float32v GenT( int32v seed, P... pos ) const
-    {
-        float32v sum = FS_Abs_f32( this->GetSourceValue( mSource, seed, pos... ) ) * float32v( 2 ) - float32v( 1 );
-        float32v gain = this->GetSourceValue( mGain, seed, pos... );
-
-        float32v lacunarity( mLacunarity );
-        float32v amp( 1 );
-
-        for( int i = 1; i < mOctaves; i++ )
-        {
-            seed -= int32v( -1 );
-            amp *= gain;
-            sum += (FS_Abs_f32(this->GetSourceValue( mSource, seed, (pos *= lacunarity)... ) ) * float32v( 2 ) - float32v( 1 )) * amp;
-        }
-
-        return sum * float32v( mFractalBounding );
+        return sum;
     }
 };
 
@@ -69,17 +48,22 @@ class FS_T<FastNoise::FractalRidged, FS> : public virtual FastNoise::FractalRidg
     template<typename... P>
     FS_INLINE float32v GenT(int32v seed, P... pos) const
     {
-        float32v sum = float32v( 1 ) - FS_Abs_f32( this->GetSourceValue( mSource, seed, pos... ) );
         float32v gain = this->GetSourceValue( mGain, seed, pos... );
-
+        float32v weightedStrength = this->GetSourceValue( mWeightedStrength, seed, pos... );
         float32v lacunarity( mLacunarity );
-        float32v amp( 1 );
+        float32v amp( mFractalBounding );
+        float32v noise = FS_Abs_f32( this->GetSourceValue( mSource, seed, pos... ) );
+
+        float32v sum = (noise * float32v( -2 ) + float32v( 1 )) * amp;
 
         for( int i = 1; i < mOctaves; i++ )
         {
             seed -= int32v( -1 );
+            amp *= FnUtils::Lerp( float32v( 1 ), float32v( 1 ) - noise, weightedStrength );
             amp *= gain;
-            sum -= (float32v( 1 ) - FS_Abs_f32( this->GetSourceValue( mSource, seed, (pos *= lacunarity)... ) )) * amp;
+
+            noise = FS_Abs_f32( this->GetSourceValue( mSource, seed, (pos *= lacunarity)... ) );
+            sum += (noise * float32v( -2 ) + float32v( 1 )) * amp;
         }
 
         return sum;
@@ -87,42 +71,39 @@ class FS_T<FastNoise::FractalRidged, FS> : public virtual FastNoise::FractalRidg
 };
 
 template<typename FS>
-class FS_T<FastNoise::FractalRidgedMulti, FS> : public virtual FastNoise::FractalRidgedMulti, public FS_T<FastNoise::Fractal<>, FS>
+class FS_T<FastNoise::FractalPingPong, FS> : public virtual FastNoise::FractalPingPong, public FS_T<FastNoise::Fractal<>, FS>
 {
     FASTSIMD_DECLARE_FS_TYPES;
     FASTNOISE_IMPL_GEN_T;
 
+    static float32v PingPong( float32v t )
+    {
+        t -= FS_Round_f32( t * float32v( 0.5f ) ) * float32v( 2 );
+        return FS_Select_f32( t < float32v( 1 ), t, float32v( 2 ) - t );
+    }
+
     template<typename... P>
     FS_INLINE float32v GenT( int32v seed, P... pos ) const
     {
-        float32v offset( 1 );
-        float32v sum = offset - FS_Abs_f32( this->GetSourceValue( mSource, seed, pos... ) );
-        float32v gain = this->GetSourceValue( mGain, seed, pos... ) * float32v( 6 );
-        
+        float32v gain = this->GetSourceValue( mGain  , seed, pos... );
+        float32v weightedStrength = this->GetSourceValue( mWeightedStrength, seed, pos... );
+        float32v pingPongStrength = this->GetSourceValue( mPingPongStrength, seed, pos... );
         float32v lacunarity( mLacunarity );
-        float32v amp = sum;
+        float32v amp( mFractalBounding );
+        float32v noise = PingPong( (this->GetSourceValue( mSource, seed, pos... ) + float32v( 1 )) * pingPongStrength );
 
-        float32v weightAmp( mWeightAmp );
-        float32v weight = weightAmp;
-        float32v totalWeight( 1.0f );
+        float32v sum = noise * amp;
 
         for( int i = 1; i < mOctaves; i++ )
         {
-            amp *= gain;
-            amp = FS_Min_f32( FS_Max_f32( amp, float32v( 0 ) ), float32v( 1 ) );
-
             seed -= int32v( -1 );
-            float32v value = offset - FS_Abs_f32( this->GetSourceValue( mSource, seed, (pos *= lacunarity)... ));
+            amp *= FnUtils::Lerp( float32v( 1 ), (noise + float32v( 1 )) * float32v( 0.5f ), weightedStrength );
+            amp *= gain;
 
-            value *= amp;
-            amp = value;
-
-            float32v weightRecip = FS_Reciprocal_f32( float32v( weight ) );
-            sum += value * weightRecip;
-            totalWeight += weightRecip;
-            weight *= weightAmp;
+            noise = PingPong( (this->GetSourceValue( mSource, seed, (pos *= lacunarity)... ) + float32v( 1 )) * pingPongStrength );
+            sum += noise * amp;
         }
 
-        return sum * float32v( mWeightBounding ) - offset;
+        return sum;
     }
 };

@@ -150,7 +150,7 @@ class FastNoiseLiteEditorInspectorPlugin : public EditorInspectorPlugin {
 	GDCLASS(FastNoiseLiteEditorInspectorPlugin, EditorInspectorPlugin)
 public:
 	bool can_handle(Object *p_object) override {
-		return Object::cast_to<FastNoiseLite>(p_object) != NULL || Object::cast_to<FastNoiseLiteGradient>(p_object);
+		return Object::cast_to<FastNoiseLite>(p_object) != nullptr || Object::cast_to<FastNoiseLiteGradient>(p_object);
 	}
 
 	void parse_begin(Object *p_object) override {

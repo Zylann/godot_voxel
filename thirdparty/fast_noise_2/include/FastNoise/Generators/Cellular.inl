@@ -9,6 +9,11 @@
 template<typename FS>
 class FS_T<FastNoise::Cellular, FS> : public virtual FastNoise::Cellular, public FS_T<FastNoise::Generator, FS>
 {
+protected:
+    const float kJitter2D = 0.437016f;
+    const float kJitter3D = 0.396144f;
+    const float kJitter4D = 0.366025f;
+    const float kJitterIdx23 = 0.190983f;
 };
 
 template<typename FS>
@@ -18,7 +23,7 @@ class FS_T<FastNoise::CellularValue, FS> : public virtual FastNoise::CellularVal
 
     float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y ) const final
     {
-        float32v jitter = float32v( kJitter2D ) * this->GetSourceValue( mJitterModifier, seed, x, y );
+        float32v jitter = float32v( this->kJitter2D ) * this->GetSourceValue( mJitterModifier, seed, x, y );
         std::array<float32v, kMaxDistanceCount> value;
         std::array<float32v, kMaxDistanceCount> distance;
         
@@ -82,7 +87,7 @@ class FS_T<FastNoise::CellularValue, FS> : public virtual FastNoise::CellularVal
 
     float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y, float32v z ) const final
     {
-        float32v jitter = float32v( kJitter3D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z );
+        float32v jitter = float32v( this->kJitter3D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z );
         std::array<float32v, kMaxDistanceCount> value;
         std::array<float32v, kMaxDistanceCount> distance;
         
@@ -158,7 +163,7 @@ class FS_T<FastNoise::CellularValue, FS> : public virtual FastNoise::CellularVal
 
     float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y, float32v z , float32v w ) const final
     {
-        float32v jitter = float32v( kJitter4D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z, w );
+        float32v jitter = float32v( this->kJitter4D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z, w );
         std::array<float32v, kMaxDistanceCount> value;
         std::array<float32v, kMaxDistanceCount> distance;
         
@@ -252,7 +257,7 @@ class FS_T<FastNoise::CellularDistance, FS> : public virtual FastNoise::Cellular
 
     float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y ) const final
     {
-        float32v jitter = float32v( kJitter2D ) * this->GetSourceValue( mJitterModifier, seed, x, y );
+        float32v jitter = float32v( this->kJitter2D ) * this->GetSourceValue( mJitterModifier, seed, x, y );
 
         std::array<float32v, kMaxDistanceCount> distance;
         distance.fill( float32v( INFINITY ) );
@@ -301,7 +306,7 @@ class FS_T<FastNoise::CellularDistance, FS> : public virtual FastNoise::Cellular
 
     float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y, float32v z ) const final
     {
-        float32v jitter = float32v( kJitter3D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z );
+        float32v jitter = float32v( this->kJitter3D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z );
 
         std::array<float32v, kMaxDistanceCount> distance;
         distance.fill( float32v( INFINITY ) );
@@ -362,7 +367,7 @@ class FS_T<FastNoise::CellularDistance, FS> : public virtual FastNoise::Cellular
 
     float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y, float32v z, float32v w ) const final
     {
-        float32v jitter = float32v( kJitter4D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z, w );
+        float32v jitter = float32v( this->kJitter4D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z, w );
 
         std::array<float32v, kMaxDistanceCount> distance;
         distance.fill( float32v( INFINITY ) );
@@ -475,7 +480,7 @@ class FS_T<FastNoise::CellularLookup, FS> : public virtual FastNoise::CellularLo
 
     float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y ) const final
     {
-        float32v jitter = float32v( kJitter2D ) * this->GetSourceValue( mJitterModifier, seed, x, y );
+        float32v jitter = float32v( this->kJitter2D ) * this->GetSourceValue( mJitterModifier, seed, x, y );
         float32v distance( FLT_MAX );
         float32v cellX, cellY;
 
@@ -522,7 +527,7 @@ class FS_T<FastNoise::CellularLookup, FS> : public virtual FastNoise::CellularLo
 
     float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y, float32v z ) const final
     {
-        float32v jitter = float32v( kJitter3D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z );
+        float32v jitter = float32v( this->kJitter3D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z );
         float32v distance( FLT_MAX );
         float32v cellX, cellY, cellZ;
 
@@ -582,7 +587,7 @@ class FS_T<FastNoise::CellularLookup, FS> : public virtual FastNoise::CellularLo
 
     float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y, float32v z, float32v w ) const final
     {
-        float32v jitter = float32v( kJitter4D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z, w );
+        float32v jitter = float32v( this->kJitter4D ) * this->GetSourceValue( mJitterModifier, seed, x, y, z, w );
         float32v distance( FLT_MAX );
         float32v cellX, cellY, cellZ, cellW;
 

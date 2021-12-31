@@ -9,11 +9,16 @@ if env["use_lto"]:
     # Need to either produce an error, fallback on Scalar, or turn off support entirely?
     pass
 
-env_voxel.Append(CPPPATH=["thirdparty/fast_noise_2/include"])
-#env_voxel.Append(CPPDEFINES=["VOXEL_SUPPORT_FAST_NOISE_2"])
+#env_voxel.Append(CPPPATH=["thirdparty/fast_noise_2/include"])
+env_voxel.Append(CPPPATH=["include"])
+env_voxel.Append(CPPDEFINES=["VOXEL_ENABLE_FAST_NOISE_2"])
+env_voxel.Append(CPPDEFINES=["FASTNOISE_STATIC_LIB"])
 
 fn2_sources_common = [
-    "src/FastNoise/FastNoiseMetadata.cpp",
+    "src/FastNoise/Metadata.cpp",
+    "src/FastNoise/FastNoise_C.cpp",
+    "src/FastNoise/SmartNode.cpp",
+
     "src/FastSIMD/FastSIMD.cpp"
 ]
 fn2_sources_scalar = [
@@ -56,6 +61,7 @@ env_fn2_sse42 = env_fn2.Clone()
 env_fn2_avx2 = env_fn2.Clone()
 env_fn2_avx512 = env_fn2.Clone()
 env_fn2_arm = env_fn2.Clone()
+# TODO NEON?
 
 if env.msvc:
     if env["bits"] == "32":
@@ -109,3 +115,4 @@ elif env["platform"] in ["windows", "x11", "osx"]:
     # AVX is supported on desktop only
     env_fn2_avx2.add_source_files(env.modules_sources, fn2_sources_avx2)
     env_fn2_avx512.add_source_files(env.modules_sources, fn2_sources_avx512)
+

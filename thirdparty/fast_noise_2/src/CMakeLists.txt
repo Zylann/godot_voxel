@@ -1,10 +1,14 @@
 set(CMAKE_CXX_STANDARD 17)
 
+set(install_targets ${install_targets} FastNoise PARENT_SCOPE)
+
 file(GLOB_RECURSE FastSIMD_headers "../include/FastSIMD/*.h")
 file(GLOB_RECURSE FastSIMD_include_inl "../include/FastSIMD/*.inl")
 file(GLOB FastSIMD_inline "FastSIMD/*.inl")
 file(GLOB_RECURSE FastSIMD_internal_headers "FastSIMD/Internal/*.h")
 file(GLOB_RECURSE FastSIMD_internal_inl "FastSIMD/Internal/*.inl")
+
+set(install_fastsimd_headers ${FastSIMD_headers} PARENT_SCOPE)
 
 list(APPEND FastSIMD_headers ${FastSIMD_inline})
 list(APPEND FastSIMD_headers ${FastSIMD_include_inl})
@@ -28,16 +32,20 @@ file(GLOB FastNoise_inl "../include/FastNoise/*.inl")
 file(GLOB_RECURSE FastNoise_generators_headers "../include/FastNoise/Generators/*.h")
 file(GLOB_RECURSE FastNoise_generators_inl "../include/FastNoise/Generators/*.inl")
 
+set(install_fastnoise_headers ${FastNoise_headers} PARENT_SCOPE)
+set(install_fastnoise_generators_headers ${FastNoise_generators_headers} PARENT_SCOPE)
+
 list(APPEND FastNoise_headers ${FastNoise_inl})
 list(APPEND FastNoise_generators_headers ${FastNoise_generators_inl})
 
 set(FastNoise_source
-    FastNoise/FastNoiseMetadata.cpp
-)
+    FastNoise/Metadata.cpp
+    FastNoise/SmartNode.cpp
+    FastNoise/FastNoise_C.cpp)
 
-source_group("SIMD" FILES ${FastSIMD_headers})
-source_group("SIMD" FILES ${FastSIMD_sources})
-source_group("SIMD\\internals" FILES ${FastSIMD_internal_headers})
+source_group("FastSIMD" FILES ${FastSIMD_headers})
+source_group("FastSIMD" FILES ${FastSIMD_sources})
+source_group("FastSIMD\\internals" FILES ${FastSIMD_internal_headers})
 
 source_group("FastNoise" FILES ${FastNoise_headers})
 source_group("FastNoise" FILES ${FastNoise_source})
@@ -51,17 +59,25 @@ add_library(FastNoise
     ${FastSIMD_internal_headers}
     ${FastSIMD_sources}
 )
-set(install_targets ${install_targets} FastNoise PARENT_SCOPE)
-set(install_fastnoise_headers ${FastNoise_headers} PARENT_SCOPE)
-set(install_fastsimd_headers ${FastSIMD_headers} PARENT_SCOPE)
+
+add_library(FastNoise2 ALIAS FastNoise)
 
 target_include_directories(FastNoise PUBLIC 
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${FastNoise2_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
+if(NOT BUILD_SHARED_LIBS)
+    target_compile_definitions(FastNoise PUBLIC FASTNOISE_STATIC_LIB)
+endif()
+
+set_target_properties(FastNoise PROPERTIES
+    DEFINE_SYMBOL FASTNOISE_EXPORT
+    DEBUG_POSTFIX D
+    COMPILE_PDB_NAME_DEBUG FastNoiseD)
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    target_compile_options(FastNoise PRIVATE /GL- /GS- /fp:fast)
+    target_compile_options(FastNoise PRIVATE /GL- /GS- /fp:fast /wd4251)
     
     if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         set_source_files_properties(FastSIMD/FastSIMD_Level_Scalar.cpp PROPERTIES COMPILE_FLAGS "/arch:SSE")
@@ -76,9 +92,9 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     if(MSVC)
-        target_compile_options(FastNoise PRIVATE /GS- /fp:fast)
+        target_compile_options(FastNoise PRIVATE /GL- /GS- /fp:fast)
     else()
-        target_compile_options(FastNoise PRIVATE "-ffast-math")        
+        target_compile_options(FastNoise PRIVATE -ffast-math -fno-stack-protector)        
     endif()
 
     if(CMAKE_SIZEOF_VOID_P EQUAL 4 OR "${CMAKE_CXX_FLAGS}" MATCHES "-m32")

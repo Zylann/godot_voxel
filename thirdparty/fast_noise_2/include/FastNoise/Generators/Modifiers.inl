@@ -243,10 +243,10 @@ class FS_T<FastNoise::GeneratorCache, FS> : public virtual FastNoise::GeneratorC
     template<typename... P>
     FS_INLINE float32v GenT( int32v seed, P... pos ) const
     {
-        thread_local static void* CachedGenerator = nullptr;
-        thread_local static float32v CachedValue;
-        thread_local static float32v CachedPos[sizeof...( P )];
-        // TLS is not always aligned, so use FS_Load/FS_Store to access SIMD types
+        thread_local static const void* CachedGenerator = nullptr;
+        thread_local static float CachedValue[FS_Size_32()];
+        thread_local static float CachedPos[FS_Size_32()][sizeof...( P )];
+        // TLS is not always aligned (compiler bug), need to avoid using SIMD types
 
         float32v arrayPos[] = { pos... };
 
