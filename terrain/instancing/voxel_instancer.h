@@ -207,7 +207,7 @@ private:
 
 #ifdef TOOLS_ENABLED
 	VoxelDebug::DebugRenderer _debug_renderer;
-	bool _gizmos_enabled = true;
+	bool _gizmos_enabled = false;
 #endif
 };
 
