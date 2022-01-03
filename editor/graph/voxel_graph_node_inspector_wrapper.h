@@ -27,7 +27,7 @@ private:
 	static void _bind_methods();
 
 	Ref<VoxelGeneratorGraph> _graph;
-	uint32_t _node_id = ProgramGraph::NULL_ID;
+	uint32_t _node_id = zylann::ProgramGraph::NULL_ID;
 	UndoRedo *_undo_redo = nullptr;
 };
 

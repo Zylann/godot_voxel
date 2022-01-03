@@ -25,12 +25,12 @@ void VoxelGeneratorGraph::clear() {
 	}
 }
 
-static ProgramGraph::Node *create_node_internal(
-		ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position, uint32_t id) {
+static zylann::ProgramGraph::Node *create_node_internal(
+		zylann::ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position, uint32_t id) {
 	const zylann::voxel::VoxelGraphNodeDB::NodeType &type =
 			zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(type_id);
 
-	ProgramGraph::Node *node = graph.create_node(type_id, id);
+	zylann::ProgramGraph::Node *node = graph.create_node(type_id, id);
 	ERR_FAIL_COND_V(node == nullptr, nullptr);
 	node->inputs.resize(type.inputs.size());
 	node->outputs.resize(type.outputs.size());
@@ -49,15 +49,15 @@ static ProgramGraph::Node *create_node_internal(
 }
 
 uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
-	ERR_FAIL_COND_V(
-			!zylann::voxel::VoxelGraphNodeDB::get_singleton()->is_valid_type_id(type_id), ProgramGraph::NULL_ID);
-	const ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id);
-	ERR_FAIL_COND_V(node == nullptr, ProgramGraph::NULL_ID);
+	ERR_FAIL_COND_V(!zylann::voxel::VoxelGraphNodeDB::get_singleton()->is_valid_type_id(type_id),
+			zylann::ProgramGraph::NULL_ID);
+	const zylann::ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id);
+	ERR_FAIL_COND_V(node == nullptr, zylann::ProgramGraph::NULL_ID);
 	return node->id;
 }
 
 void VoxelGeneratorGraph::remove_node(uint32_t node_id) {
-	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	zylann::ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
 	for (size_t i = 0; i < node->params.size(); ++i) {
 		Ref<Resource> resource = node->params[i];
@@ -71,8 +71,8 @@ void VoxelGeneratorGraph::remove_node(uint32_t node_id) {
 
 bool VoxelGeneratorGraph::can_connect(
 		uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const {
-	const ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };
-	const ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
+	const zylann::ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };
+	const zylann::ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
 	ERR_FAIL_COND_V(!_graph.is_output_port_valid(src_port), false);
 	ERR_FAIL_COND_V(!_graph.is_input_port_valid(dst_port), false);
 	return _graph.can_connect(src_port, dst_port);
@@ -80,8 +80,8 @@ bool VoxelGeneratorGraph::can_connect(
 
 void VoxelGeneratorGraph::add_connection(
 		uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) {
-	const ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };
-	const ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
+	const zylann::ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };
+	const zylann::ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
 	ERR_FAIL_COND(!_graph.is_output_port_valid(src_port));
 	ERR_FAIL_COND(!_graph.is_input_port_valid(dst_port));
 	_graph.connect(src_port, dst_port);
@@ -90,24 +90,24 @@ void VoxelGeneratorGraph::add_connection(
 
 void VoxelGeneratorGraph::remove_connection(
 		uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) {
-	const ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };
-	const ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
+	const zylann::ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };
+	const zylann::ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
 	ERR_FAIL_COND(!_graph.is_output_port_valid(src_port));
 	ERR_FAIL_COND(!_graph.is_input_port_valid(dst_port));
 	_graph.disconnect(src_port, dst_port);
 	emit_changed();
 }
 
-void VoxelGeneratorGraph::get_connections(std::vector<ProgramGraph::Connection> &connections) const {
+void VoxelGeneratorGraph::get_connections(std::vector<zylann::ProgramGraph::Connection> &connections) const {
 	_graph.get_connections(connections);
 }
 
 bool VoxelGeneratorGraph::try_get_connection_to(
-		ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const {
-	const ProgramGraph::Node *node = _graph.get_node(dst.node_id);
+		zylann::ProgramGraph::PortLocation dst, zylann::ProgramGraph::PortLocation &out_src) const {
+	const zylann::ProgramGraph::Node *node = _graph.get_node(dst.node_id);
 	CRASH_COND(node == nullptr);
 	CRASH_COND(dst.port_index >= node->inputs.size());
-	const ProgramGraph::Port &port = node->inputs[dst.port_index];
+	const zylann::ProgramGraph::Port &port = node->inputs[dst.port_index];
 	if (port.connections.size() == 0) {
 		return false;
 	}
@@ -120,14 +120,14 @@ bool VoxelGeneratorGraph::has_node(uint32_t node_id) const {
 }
 
 void VoxelGeneratorGraph::set_node_name(uint32_t node_id, StringName name) {
-	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	zylann::ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_MSG(node == nullptr, "No node was found with the specified ID");
 	if (node->name == name) {
 		return;
 	}
 	if (name != StringName()) {
 		const uint32_t existing_node_id = _graph.find_node_by_name(name);
-		if (existing_node_id != ProgramGraph::NULL_ID && node_id == existing_node_id) {
+		if (existing_node_id != zylann::ProgramGraph::NULL_ID && node_id == existing_node_id) {
 			ERR_PRINT(String("More than one graph node has the name \"{0}\"").format(varray(name)));
 		}
 	}
@@ -136,7 +136,7 @@ void VoxelGeneratorGraph::set_node_name(uint32_t node_id, StringName name) {
 }
 
 StringName VoxelGeneratorGraph::get_node_name(uint32_t node_id) const {
-	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	zylann::ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, StringName());
 	return node->name;
 }
@@ -146,7 +146,7 @@ uint32_t VoxelGeneratorGraph::find_node_by_name(StringName name) const {
 }
 
 void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index, Variant value) {
-	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	zylann::ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_INDEX(param_index, node->params.size());
 
@@ -168,21 +168,21 @@ void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index,
 }
 
 Variant VoxelGeneratorGraph::get_node_param(uint32_t node_id, uint32_t param_index) const {
-	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	const zylann::ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, Variant());
 	ERR_FAIL_INDEX_V(param_index, node->params.size(), Variant());
 	return node->params[param_index];
 }
 
 Variant VoxelGeneratorGraph::get_node_default_input(uint32_t node_id, uint32_t input_index) const {
-	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	const zylann::ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, Variant());
 	ERR_FAIL_INDEX_V(input_index, node->default_inputs.size(), Variant());
 	return node->default_inputs[input_index];
 }
 
 void VoxelGeneratorGraph::set_node_default_input(uint32_t node_id, uint32_t input_index, Variant value) {
-	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	zylann::ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_INDEX(input_index, node->default_inputs.size());
 	if (node->default_inputs[input_index] != value) {
@@ -192,13 +192,13 @@ void VoxelGeneratorGraph::set_node_default_input(uint32_t node_id, uint32_t inpu
 }
 
 Vector2 VoxelGeneratorGraph::get_node_gui_position(uint32_t node_id) const {
-	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	const zylann::ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, Vector2());
 	return node->gui_position;
 }
 
 void VoxelGeneratorGraph::set_node_gui_position(uint32_t node_id, Vector2 pos) {
-	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	zylann::ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
 	if (node->gui_position != pos) {
 		node->gui_position = pos;
@@ -206,7 +206,7 @@ void VoxelGeneratorGraph::set_node_gui_position(uint32_t node_id, Vector2 pos) {
 }
 
 VoxelGeneratorGraph::NodeTypeID VoxelGeneratorGraph::get_node_type_id(uint32_t node_id) const {
-	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	const zylann::ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, NODE_TYPE_COUNT);
 	CRASH_COND(node->type_id >= NODE_TYPE_COUNT);
 	return (NodeTypeID)node->type_id;
@@ -669,7 +669,7 @@ zylann::voxel::VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile
 	// Extra steps
 	for (unsigned int output_index = 0; output_index < runtime.get_output_count(); ++output_index) {
 		const zylann::voxel::VoxelGraphRuntime::OutputInfo output = runtime.get_output_info(output_index);
-		const ProgramGraph::Node *node = _graph.get_node(output.node_id);
+		const zylann::ProgramGraph::Node *node = _graph.get_node(output.node_id);
 
 		ERR_FAIL_COND_V(node == nullptr, zylann::voxel::VoxelGraphRuntime::CompilationResult());
 
@@ -809,7 +809,8 @@ Span<const int> VoxelGeneratorGraph::get_last_execution_map_debug_from_current_t
 	return to_span_const(_cache.optimized_execution_map.debug_nodes);
 }
 
-bool VoxelGeneratorGraph::try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const {
+bool VoxelGeneratorGraph::try_get_output_port_address(
+		zylann::ProgramGraph::PortLocation port, uint32_t &out_address) const {
 	RWLockRead rlock(_runtime_lock);
 	ERR_FAIL_COND_V(_runtime == nullptr, false);
 	uint16_t addr;
@@ -1155,10 +1156,10 @@ Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 	return d;
 }
 
-static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
+static Dictionary get_graph_as_variant_data(const zylann::ProgramGraph &graph) {
 	Dictionary nodes_data;
 	graph.for_each_node_id([&graph, &nodes_data](uint32_t node_id) {
-		const ProgramGraph::Node *node = graph.get_node(node_id);
+		const zylann::ProgramGraph::Node *node = graph.get_node(node_id);
 		ERR_FAIL_COND(node == nullptr);
 
 		Dictionary node_data;
@@ -1189,11 +1190,11 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 	});
 
 	Array connections_data;
-	std::vector<ProgramGraph::Connection> connections;
+	std::vector<zylann::ProgramGraph::Connection> connections;
 	graph.get_connections(connections);
 	connections_data.resize(connections.size());
 	for (size_t i = 0; i < connections.size(); ++i) {
-		const ProgramGraph::Connection &con = connections[i];
+		const zylann::ProgramGraph::Connection &con = connections[i];
 		Array con_data;
 		con_data.resize(4);
 		con_data[0] = con.src.node_id;
@@ -1221,7 +1222,7 @@ static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
 	return true;
 }
 
-static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
+static bool load_graph_from_variant_data(zylann::ProgramGraph &graph, Dictionary data) {
 	Dictionary nodes_data = data["nodes"];
 	Array connections_data = data["connections"];
 	const zylann::voxel::VoxelGraphNodeDB &type_db = *zylann::voxel::VoxelGraphNodeDB::get_singleton();
@@ -1231,7 +1232,7 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 		const String id_str = *id_key;
 		ERR_FAIL_COND_V(!id_str.is_valid_int(), false);
 		const int sid = id_str.to_int();
-		ERR_FAIL_COND_V(sid < static_cast<int>(ProgramGraph::NULL_ID), false);
+		ERR_FAIL_COND_V(sid < static_cast<int>(zylann::ProgramGraph::NULL_ID), false);
 		const uint32_t id = sid;
 
 		Dictionary node_data = nodes_data[*id_key];
@@ -1240,7 +1241,7 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 		const Vector2 gui_position = node_data["gui_position"];
 		VoxelGeneratorGraph::NodeTypeID type_id;
 		ERR_FAIL_COND_V(!type_db.try_get_type_id_from_name(type_name, type_id), false);
-		ProgramGraph::Node *node = create_node_internal(graph, type_id, gui_position, id);
+		zylann::ProgramGraph::Node *node = create_node_internal(graph, type_id, gui_position, id);
 		ERR_FAIL_COND_V(node == nullptr, false);
 
 		const Variant *param_key = nullptr;
@@ -1269,11 +1270,11 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 	for (int i = 0; i < connections_data.size(); ++i) {
 		Array con_data = connections_data[i];
 		ERR_FAIL_COND_V(con_data.size() != 4, false);
-		ProgramGraph::PortLocation src;
-		ProgramGraph::PortLocation dst;
-		ERR_FAIL_COND_V(!var_to_id(con_data[0], src.node_id, ProgramGraph::NULL_ID), false);
+		zylann::ProgramGraph::PortLocation src;
+		zylann::ProgramGraph::PortLocation dst;
+		ERR_FAIL_COND_V(!var_to_id(con_data[0], src.node_id, zylann::ProgramGraph::NULL_ID), false);
 		ERR_FAIL_COND_V(!var_to_id(con_data[1], src.port_index), false);
-		ERR_FAIL_COND_V(!var_to_id(con_data[2], dst.node_id, ProgramGraph::NULL_ID), false);
+		ERR_FAIL_COND_V(!var_to_id(con_data[2], dst.node_id, zylann::ProgramGraph::NULL_ID), false);
 		ERR_FAIL_COND_V(!var_to_id(con_data[3], dst.port_index), false);
 		graph.connect(src, dst);
 	}
@@ -1308,7 +1309,7 @@ void VoxelGeneratorGraph::unregister_subresource(Resource &resource) {
 }
 
 void VoxelGeneratorGraph::register_subresources() {
-	_graph.for_each_node([this](ProgramGraph::Node &node) {
+	_graph.for_each_node([this](zylann::ProgramGraph::Node &node) {
 		for (size_t i = 0; i < node.params.size(); ++i) {
 			Ref<Resource> resource = node.params[i];
 			if (resource.is_valid()) {
@@ -1319,7 +1320,7 @@ void VoxelGeneratorGraph::register_subresources() {
 }
 
 void VoxelGeneratorGraph::unregister_subresources() {
-	_graph.for_each_node([this](ProgramGraph::Node &node) {
+	_graph.for_each_node([this](zylann::ProgramGraph::Node &node) {
 		for (size_t i = 0; i < node.params.size(); ++i) {
 			Ref<Resource> resource = node.params[i];
 			if (resource.is_valid()) {
@@ -1479,12 +1480,12 @@ Dictionary VoxelGeneratorGraph::_b_get_node_type_info(int type_id) const {
 
 Array VoxelGeneratorGraph::_b_get_connections() const {
 	Array con_array;
-	std::vector<ProgramGraph::Connection> cons;
+	std::vector<zylann::ProgramGraph::Connection> cons;
 	_graph.get_connections(cons);
 	con_array.resize(cons.size());
 
 	for (size_t i = 0; i < cons.size(); ++i) {
-		const ProgramGraph::Connection &con = cons[i];
+		const zylann::ProgramGraph::Connection &con = cons[i];
 		Dictionary d;
 		d["src_node_id"] = con.src.node_id;
 		d["src_port_index"] = con.src.port_index;
@@ -1531,7 +1532,7 @@ void VoxelGeneratorGraph::_on_subresource_changed() {
 void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGeneratorGraph::clear);
 	ClassDB::bind_method(D_METHOD("create_node", "type_id", "position", "id"), &VoxelGeneratorGraph::create_node,
-			DEFVAL(ProgramGraph::NULL_ID));
+			DEFVAL(zylann::ProgramGraph::NULL_ID));
 	ClassDB::bind_method(D_METHOD("remove_node", "node_id"), &VoxelGeneratorGraph::remove_node);
 	ClassDB::bind_method(D_METHOD("can_connect", "src_node_id", "src_port_index", "dst_node_id", "dst_port_index"),
 			&VoxelGeneratorGraph::can_connect);

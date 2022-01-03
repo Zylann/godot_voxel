@@ -4,8 +4,9 @@
 #include <core/variant/variant.h>
 #include <unordered_set>
 
-template <typename T>
-inline bool range_contains(const std::vector<T> &vec, const T &v, uint32_t begin, uint32_t end) {
+namespace zylann {
+
+template <typename T> inline bool range_contains(const std::vector<T> &vec, const T &v, uint32_t begin, uint32_t end) {
 	CRASH_COND(end > vec.size());
 	for (size_t i = begin; i < end; ++i) {
 		if (vec[i] == v) {
@@ -402,9 +403,8 @@ uint32_t ProgramGraph::find_node_by_name(StringName name) const {
 	return NULL_ID;
 }
 
-//void ProgramGraph::get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const {
-//	const Node *node = get_node(node_id);
-//	ERR_FAIL_COND(node == nullptr);
+//void ProgramGraph::get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id)
+//const { 	const Node *node = get_node(node_id); 	ERR_FAIL_COND(node == nullptr);
 
 //	for (size_t i = 0; i < node->outputs.size(); ++i) {
 //		const Port &port = node->outputs[i];
@@ -436,3 +436,5 @@ int ProgramGraph::get_nodes_count() const {
 uint32_t ProgramGraph::generate_node_id() {
 	return _next_node_id++;
 }
+
+} // namespace zylann

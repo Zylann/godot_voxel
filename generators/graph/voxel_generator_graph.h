@@ -76,7 +76,7 @@ public:
 	// Important: functions editing the graph are NOT thread-safe.
 	// They are expected to be used by the main thread (editor or game logic).
 
-	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = ProgramGraph::NULL_ID);
+	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = zylann::ProgramGraph::NULL_ID);
 	void remove_node(uint32_t node_id);
 
 	bool can_connect(
@@ -84,8 +84,9 @@ public:
 	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void remove_connection(
 			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
-	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
-	bool try_get_connection_to(ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const;
+	void get_connections(std::vector<zylann::ProgramGraph::Connection> &connections) const;
+	bool try_get_connection_to(
+			zylann::ProgramGraph::PortLocation dst, zylann::ProgramGraph::PortLocation &out_src) const;
 
 	bool has_node(uint32_t node_id) const;
 
@@ -161,7 +162,7 @@ public:
 	static const zylann::voxel::VoxelGraphRuntime::State &get_last_state_from_current_thread();
 	static Span<const int> get_last_execution_map_debug_from_current_thread();
 
-	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
+	bool try_get_output_port_address(zylann::ProgramGraph::PortLocation port, uint32_t &out_address) const;
 
 	void find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_dependencies) const;
 
@@ -201,7 +202,7 @@ private:
 
 	static void _bind_methods();
 
-	ProgramGraph _graph;
+	zylann::ProgramGraph _graph;
 	// This generator performs range analysis using nodes of the graph. Terrain surface can only appear when SDF
 	// crosses zero within a block. For each generated block, an estimated range of the output is calculated.
 	// If that range is beyond this threshold (either negatively or positively), then blocks will be given a uniform

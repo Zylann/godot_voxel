@@ -346,11 +346,11 @@ void VoxelGraphEditor::build_gui_from_graph() {
 
 	// Connections
 
-	std::vector<ProgramGraph::Connection> connections;
+	std::vector<zylann::ProgramGraph::Connection> connections;
 	graph.get_connections(connections);
 
 	for (size_t i = 0; i < connections.size(); ++i) {
-		const ProgramGraph::Connection &con = connections[i];
+		const zylann::ProgramGraph::Connection &con = connections[i];
 		const String from_node_name = node_to_gui_name(con.src.node_id);
 		const String to_node_name = node_to_gui_name(con.dst.node_id);
 		VoxelGraphEditorNode *to_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(to_node_name));
@@ -580,7 +580,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 
 	_undo_redo->create_action(TTR("Delete Nodes"));
 
-	std::vector<ProgramGraph::Connection> connections;
+	std::vector<zylann::ProgramGraph::Connection> connections;
 	_graph->get_connections(connections);
 
 	for (size_t i = 0; i < to_erase.size(); ++i) {
@@ -606,7 +606,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 
 		// Connections undo
 		for (size_t j = 0; j < connections.size(); ++j) {
-			const ProgramGraph::Connection &con = connections[j];
+			const zylann::ProgramGraph::Connection &con = connections[j];
 
 			if (con.src.node_id == node_id || con.dst.node_id == node_id) {
 				_undo_redo->add_undo_method(*_graph, "add_connection", con.src.node_id, con.src.port_index,
@@ -775,7 +775,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 		node_view->set_modulate(greyed_out_color);
 
 		for (int port_index = 0; port_index < node_view->output_labels.size(); ++port_index) {
-			ProgramGraph::PortLocation loc;
+			zylann::ProgramGraph::PortLocation loc;
 			loc.node_id = node_view->node_id;
 			loc.port_index = port_index;
 			uint32_t address;
@@ -834,10 +834,10 @@ void VoxelGraphEditor::update_slice_previews() {
 		if (node == nullptr || node->preview == nullptr) {
 			continue;
 		}
-		ProgramGraph::PortLocation dst;
+		zylann::ProgramGraph::PortLocation dst;
 		dst.node_id = node->node_id;
 		dst.port_index = 0;
-		ProgramGraph::PortLocation src;
+		zylann::ProgramGraph::PortLocation src;
 		if (!_graph->try_get_connection_to(dst, src)) {
 			// Not connected?
 			continue;
