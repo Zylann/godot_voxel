@@ -11,6 +11,8 @@ class Image;
 class FastNoiseLite;
 class FastNoiseLiteGradient;
 
+namespace zylann {
+
 Interval get_osn_range_2d(OpenSimplexNoise *noise, Interval x, Interval y);
 Interval get_osn_range_3d(OpenSimplexNoise *noise, Interval x, Interval y, Interval z);
 
@@ -45,6 +47,8 @@ Interval get_curve_range(Curve &curve, bool &is_monotonic_increasing);
 Interval get_heightmap_range(Image &im);
 Interval get_heightmap_range(Image &im, Rect2i rect);
 
+namespace math {
+
 inline Interval sdf_union(Interval a, Interval b) {
 	return min_interval(a, b);
 }
@@ -59,7 +63,7 @@ Interval sdf_smooth_union(Interval p_b, Interval p_a, float p_s);
 // Does b - a
 Interval sdf_smooth_subtract(Interval p_b, Interval p_a, float p_s);
 
-enum SdfAffectingArguments {
+enum SdfAffectingArguments { //
 	SDF_ONLY_A,
 	SDF_ONLY_B,
 	SDF_BOTH
@@ -85,9 +89,13 @@ struct Interval3 {
 	Interval z;
 };
 
+} // namespace math
+
 Interval get_fnl_range_2d(const FastNoiseLite *noise, Interval x, Interval y);
 Interval get_fnl_range_3d(const FastNoiseLite *noise, Interval x, Interval y, Interval z);
-Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient *noise, Interval x, Interval y);
-Interval3 get_fnl_gradient_range_3d(const FastNoiseLiteGradient *noise, Interval x, Interval y, Interval z);
+math::Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient *noise, Interval x, Interval y);
+math::Interval3 get_fnl_gradient_range_3d(const FastNoiseLiteGradient *noise, Interval x, Interval y, Interval z);
+
+} // namespace zylann
 
 #endif // RANGE_UTILITY_H

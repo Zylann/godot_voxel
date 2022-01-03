@@ -6,6 +6,8 @@
 #include <modules/opensimplex/open_simplex_noise.h>
 #include <scene/resources/curve.h>
 
+namespace zylann {
+
 // TODO We could skew max derivative estimation if the anchor is on a bump or a dip
 // because in these cases, it becomes impossible for noise to go further up or further down
 
@@ -259,6 +261,8 @@ Interval get_heightmap_range(Image &im, Rect2i rect) {
 	return Interval();
 }
 
+namespace math {
+
 SdfAffectingArguments sdf_subtract_side(Interval a, Interval b) {
 	if (b.min > -a.min) {
 		return SDF_ONLY_A;
@@ -375,6 +379,8 @@ Interval sdf_smooth_subtract(Interval p_b, Interval p_a, float p_s) {
 	return sdf_smooth_op(
 			p_b, p_a, p_s, [](float b, float a, float s) { return zylann::math::sdf_smooth_subtract(b, a, s); });
 }
+
+} // namespace math
 
 static Interval get_fnl_cellular_value_range_2d(const FastNoiseLite *noise, Interval x, Interval y) {
 	const float c0 = noise->get_noise_2d(x.min, y.min);
@@ -685,15 +691,17 @@ Interval get_fnl_range_3d(const FastNoiseLite *noise, Interval x, Interval y, In
 	}
 }
 
-Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient *noise, Interval x, Interval y) {
+math::Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient *noise, Interval x, Interval y) {
 	// TODO More precise analysis
 	const float amp = Math::abs(noise->get_amplitude());
-	return Interval2{ Interval{ x.min - amp, x.max + amp }, Interval{ y.min - amp, y.max + amp } };
+	return math::Interval2{ Interval{ x.min - amp, x.max + amp }, Interval{ y.min - amp, y.max + amp } };
 }
 
-Interval3 get_fnl_gradient_range_3d(const FastNoiseLiteGradient *noise, Interval x, Interval y, Interval z) {
+math::Interval3 get_fnl_gradient_range_3d(const FastNoiseLiteGradient *noise, Interval x, Interval y, Interval z) {
 	// TODO More precise analysis
 	const float amp = Math::abs(noise->get_amplitude());
-	return Interval3{ Interval{ x.min - amp, x.max + amp }, Interval{ y.min - amp, y.max + amp },
+	return math::Interval3{ Interval{ x.min - amp, x.max + amp }, Interval{ y.min - amp, y.max + amp },
 		Interval{ z.min - amp, z.max + amp } };
 }
+
+} // namespace zylann

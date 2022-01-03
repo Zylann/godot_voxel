@@ -42,7 +42,7 @@ void ImageRangeGrid::generate(Image &im) {
 				const int max_x = min(min_x + chunk_size, im.get_width());
 				const int max_y = min(min_y + chunk_size, im.get_height());
 
-				const Interval r = get_heightmap_range(im, Rect2i(min_x, min_y, max_x - min_x, max_y - min_y));
+				const Interval r = zylann::get_heightmap_range(im, Rect2i(min_x, min_y, max_x - min_x, max_y - min_y));
 
 				lod.data[cx + cy * lod.size_x] = r;
 			}
