@@ -423,7 +423,7 @@ String VoxelStreamRegionFiles::get_region_file_path(const Vector3i &region_pos, 
 	a[1] = region_pos.x;
 	a[2] = region_pos.y;
 	a[3] = region_pos.z;
-	a[4] = VoxelRegionFormat::FILE_EXTENSION;
+	a[4] = zylann::voxel::RegionFormat::FILE_EXTENSION;
 	return _directory_path.plus_file(String("regions/lod{0}/r.{1}.{2}.{3}.{4}").format(a));
 }
 
@@ -461,7 +461,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 
 	// Configure format because we might have to create the file, and some old file versions don't embed format
 	{
-		VoxelRegionFormat format;
+		zylann::voxel::RegionFormat format;
 		format.block_size_po2 = _meta.block_size_po2;
 		format.channel_depths = _meta.channel_depths;
 		// TODO Palette support
@@ -495,7 +495,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 
 	// Make sure it has correct format
 	{
-		const VoxelRegionFormat &format = cached_region->region.get_format();
+		const zylann::voxel::RegionFormat &format = cached_region->region.get_format();
 		if (format.block_size_po2 != _meta.block_size_po2 //
 				|| format.channel_depths != _meta.channel_depths //
 				|| format.region_size != Vector3iUtil::create(1 << _meta.region_size_po2) //
@@ -616,7 +616,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 		for (int lod = 0; lod < old_meta.lod_count; ++lod) {
 			const String lod_folder =
 					old_stream->_directory_path.plus_file("regions").plus_file("lod") + String::num_int64(lod);
-			const String ext = String(".") + VoxelRegionFormat::FILE_EXTENSION;
+			const String ext = String(".") + zylann::voxel::RegionFormat::FILE_EXTENSION;
 
 			DirAccessRef da = DirAccess::open(lod_folder);
 			if (!da) {

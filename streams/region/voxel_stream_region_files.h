@@ -56,10 +56,9 @@ protected:
 
 private:
 	struct CachedRegion;
-	struct RegionHeader;
 
 	// TODO Redundant with VoxelStream::Result. May be replaced
-	enum EmergeResult {
+	enum EmergeResult { //
 		EMERGE_OK,
 		EMERGE_OK_FALLBACK,
 		EMERGE_FAILED
@@ -77,7 +76,6 @@ private:
 	CachedRegion *open_region(const Vector3i region_pos, unsigned int lod, bool create_if_not_found);
 	void close_region(CachedRegion *cache);
 	CachedRegion *get_region_from_cache(const Vector3i pos, int lod) const;
-	int get_sectors_count(const RegionHeader &header) const;
 	void close_oldest_region();
 
 	struct Meta {
@@ -121,7 +119,7 @@ private:
 		Vector3i position;
 		int lod = 0;
 		bool file_exists = false;
-		VoxelRegionFile region;
+		zylann::voxel::RegionFile region;
 		uint64_t last_opened = 0;
 		//uint64_t last_accessed;
 	};

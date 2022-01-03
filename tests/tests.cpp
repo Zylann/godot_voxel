@@ -1062,10 +1062,10 @@ void test_region_file() {
 	voxel_buffer.fill_area(43, Vector3i(2, 3, 4), Vector3i(6, 6, 6), 0);
 
 	{
-		VoxelRegionFile region_file;
+		RegionFile region_file;
 
 		// Configure region format
-		VoxelRegionFormat region_format = region_file.get_format();
+		RegionFormat region_format = region_file.get_format();
 		region_format.block_size_po2 = block_size_po2;
 		for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
 			region_format.channel_depths[channel_index] = voxel_buffer.get_channel_depth(channel_index);
@@ -1091,7 +1091,7 @@ void test_region_file() {
 	}
 	// Load again but using a new region file object
 	{
-		VoxelRegionFile region_file;
+		RegionFile region_file;
 
 		// Open file
 		const Error open_error = region_file.open(region_file_path, false);

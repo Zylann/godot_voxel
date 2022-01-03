@@ -10,13 +10,15 @@
 class FileAccess;
 class VoxelBlockSerializerInternal;
 
-struct VoxelRegionFormat {
+namespace zylann::voxel {
+
+struct RegionFormat {
 	static const char *FILE_EXTENSION;
 	static const uint32_t MAX_BLOCKS_ACROSS = 255;
 	static const uint32_t CHANNEL_COUNT = 8;
 
-	static_assert(CHANNEL_COUNT == VoxelBufferInternal::MAX_CHANNELS,
-			"This format doesn't support variable channel count");
+	static_assert(
+			CHANNEL_COUNT == VoxelBufferInternal::MAX_CHANNELS, "This format doesn't support variable channel count");
 
 	// How many voxels in a cubic block, as power of two
 	uint8_t block_size_po2 = 0;
@@ -32,7 +34,7 @@ struct VoxelRegionFormat {
 	bool verify_block(const VoxelBufferInternal &block) const;
 };
 
-struct VoxelRegionBlockInfo {
+struct RegionBlockInfo {
 	static const unsigned int MAX_SECTOR_INDEX = 0xffffff;
 	static const unsigned int MAX_SECTOR_COUNT = 0xff;
 
@@ -69,17 +71,17 @@ struct VoxelRegionBlockInfo {
 // of data in memory.
 // It isn't thread-safe.
 //
-class VoxelRegionFile {
+class RegionFile {
 public:
-	VoxelRegionFile();
-	~VoxelRegionFile();
+	RegionFile();
+	~RegionFile();
 
 	Error open(const String &fpath, bool create_if_not_found);
 	Error close();
 	bool is_open() const;
 
-	bool set_format(const VoxelRegionFormat &format);
-	const VoxelRegionFormat &get_format() const;
+	bool set_format(const RegionFormat &format);
+	const RegionFormat &get_format() const;
 
 	Error load_block(Vector3i position, VoxelBufferInternal &out_block, VoxelBlockSerializerInternal &serializer);
 	Error save_block(Vector3i position, VoxelBufferInternal &block, VoxelBlockSerializerInternal &serializer);
@@ -102,15 +104,15 @@ private:
 	void remove_sectors_from_block(Vector3i block_pos, unsigned int p_sector_count);
 
 	bool migrate_to_latest(FileAccess *f);
-	bool migrate_from_v2_to_v3(FileAccess *f, VoxelRegionFormat &format);
+	bool migrate_from_v2_to_v3(FileAccess *f, RegionFormat &format);
 
 	struct Header {
 		uint8_t version = -1;
-		VoxelRegionFormat format;
+		RegionFormat format;
 		// Location and size of blocks, indexed by flat position.
 		// This table always has the same size,
 		// and the same index always corresponds to the same 3D position.
-		std::vector<VoxelRegionBlockInfo> blocks;
+		std::vector<RegionBlockInfo> blocks;
 	};
 
 	FileAccess *_file_access = nullptr;
@@ -123,8 +125,7 @@ private:
 		uint16_t y;
 		uint16_t z;
 
-		Vector3u16(Vector3i p) :
-				x(p.x), y(p.y), z(p.z) {}
+		Vector3u16(Vector3i p) : x(p.x), y(p.y), z(p.z) {}
 	};
 
 	// TODO Is it ever read?
@@ -135,5 +136,7 @@ private:
 	uint32_t _blocks_begin_offset;
 	String _file_path;
 };
+
+} // namespace zylann::voxel
 
 #endif // REGION_FILE_H
