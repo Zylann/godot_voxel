@@ -3,6 +3,9 @@
 #include "../util/profiling.h"
 #include "funcs.h"
 
+using namespace zylann;
+using namespace voxel;
+
 VoxelToolBuffer::VoxelToolBuffer(Ref<VoxelBuffer> vb) {
 	ERR_FAIL_COND(vb.is_null());
 	_buffer = vb;
@@ -28,9 +31,9 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 			Vector3iUtil::create(Math::ceil(radius) * 2));
 	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
 
-	_buffer->get_buffer().write_box_2_template<VoxelToolOps::TextureBlendSphereOp, uint16_t, uint16_t>(box,
+	_buffer->get_buffer().write_box_2_template<ops::TextureBlendSphereOp, uint16_t, uint16_t>(box,
 			VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
-			VoxelToolOps::TextureBlendSphereOp(center, radius, _texture_params), Vector3i());
+			ops::TextureBlendSphereOp(center, radius, _texture_params), Vector3i());
 
 	_post_edit(box);
 }

@@ -9,9 +9,7 @@
 
 class VoxelBuffer;
 
-using namespace zylann;
-
-namespace VoxelToolOps {
+namespace zylann::voxel::ops {
 
 template <typename Op, typename Shape> struct SdfOperation16bit {
 	Op op;
@@ -74,12 +72,12 @@ struct TextureBlendSphereOp {
 			const float distance_from_radius = radius - Math::sqrt(distance_squared);
 			const float target_weight =
 					tp.opacity * math::clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
-			voxel::blend_texture_packed_u16(tp.index, target_weight, indices, weights);
+			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
 		}
 	}
 };
 
-}; // namespace VoxelToolOps
+}; // namespace zylann::voxel::ops
 
 // TODO Need to review VoxelTool to account for transformed volumes
 
@@ -223,7 +221,7 @@ protected:
 	Mode _mode = MODE_ADD;
 
 	// Used on smooth terrain
-	VoxelToolOps::TextureParams _texture_params;
+	zylann::voxel::ops::TextureParams _texture_params;
 };
 
 VARIANT_ENUM_CAST(VoxelTool::Mode)

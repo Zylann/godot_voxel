@@ -6,6 +6,7 @@
 #include "../util/voxel_raycast.h"
 
 using namespace zylann;
+using namespace voxel;
 
 VoxelToolTerrain::VoxelToolTerrain() {}
 
@@ -174,7 +175,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 	}
 
 	_terrain->get_storage().write_box_2(box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
-			VoxelToolOps::TextureBlendSphereOp{ center, radius, _texture_params });
+			ops::TextureBlendSphereOp{ center, radius, _texture_params });
 
 	_post_edit(box);
 }

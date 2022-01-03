@@ -165,7 +165,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	return res;
 }
 
-namespace {
+namespace zylann::voxel::ops {
 
 struct DoSphere {
 	Vector3 center;
@@ -174,11 +174,10 @@ struct DoSphere {
 	VoxelDataGrid blocks;
 	float sdf_scale;
 	Box3i box;
-	VoxelToolOps::TextureParams texture_params;
+	TextureParams texture_params;
 
 	void operator()() {
 		VOXEL_PROFILE_SCOPE();
-		using namespace VoxelToolOps;
 
 		switch (mode) {
 			case VoxelTool::MODE_ADD: {
@@ -218,7 +217,7 @@ struct DoSphere {
 	}
 };
 
-} // namespace
+} //namespace zylann::voxel::ops
 
 void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	VOXEL_PROFILE_SCOPE();
@@ -241,7 +240,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 		preload_box(*data, box, _terrain->get_generator().ptr());
 	}
 
-	DoSphere op;
+	ops::DoSphere op;
 	op.box = box;
 	op.center = center;
 	op.mode = get_mode();
@@ -257,13 +256,15 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	_post_edit(box);
 }
 
-template <typename Op_T> class VoxelToolAsyncEdit : public zylann::IThreadedTask {
+namespace zylann::voxel {
+
+template <typename Op_T> class VoxelToolAsyncEdit : public IThreadedTask {
 public:
 	VoxelToolAsyncEdit(Op_T op, std::shared_ptr<VoxelDataLodMap> data) : _op(op), _data(data) {
 		_tracker = gd_make_shared<zylann::AsyncDependencyTracker>(1);
 	}
 
-	void run(zylann::ThreadedTaskContext ctx) override {
+	void run(ThreadedTaskContext ctx) override {
 		VOXEL_PROFILE_SCOPE();
 		CRASH_COND(_data == nullptr);
 		VoxelDataLodMap::Lod &data_lod = _data->lods[0];
@@ -281,7 +282,7 @@ public:
 	}
 
 	void apply_result() override {}
-	std::shared_ptr<zylann::AsyncDependencyTracker> get_tracker() {
+	std::shared_ptr<AsyncDependencyTracker> get_tracker() {
 		return _tracker;
 	}
 
@@ -289,8 +290,10 @@ private:
 	Op_T _op;
 	// We reference this just to keep map pointers alive
 	std::shared_ptr<VoxelDataLodMap> _data;
-	std::shared_ptr<zylann::AsyncDependencyTracker> _tracker;
+	std::shared_ptr<AsyncDependencyTracker> _tracker;
 };
+
+} // namespace zylann::voxel
 
 void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
@@ -307,7 +310,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
 	ERR_FAIL_COND(data == nullptr);
 
-	DoSphere op;
+	ops::DoSphere op;
 	op.box = box;
 	op.center = center;
 	op.mode = get_mode();
@@ -318,7 +321,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	// TODO How do I use unique_ptr with Godot's memnew/memdelete instead?
 	// (without having to mention it everywhere I pass this around)
 
-	VoxelToolAsyncEdit<DoSphere> *task = memnew(VoxelToolAsyncEdit<DoSphere>(op, data));
+	VoxelToolAsyncEdit<ops::DoSphere> *task = memnew(VoxelToolAsyncEdit<ops::DoSphere>(op, data));
 	_terrain->push_async_edit(task, op.box, task->get_tracker());
 }
 
