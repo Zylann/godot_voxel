@@ -144,12 +144,29 @@ In performance-critical areas which run a lot:
 
 ### Godot API
 
-- Use the most direct APIs for the job. Especially, don't use nodes. See `VisualServer` and `PhysicsServer`.
+- In areas where performance matters, use the most direct APIs for the job. Especially, don't use nodes. See `RenderingServer` and `PhysicsServer`.
 - Always use `Read` and `Write` when modifying `PoolVector`.
 - Only expose a function to the script API if it is safe to use and guaranteed to remain present for a while
 - use `memnew`, `memdelete`, `memalloc` and `memfree` so memory usage is counted within Godot monitors
 - Don't leave random prints. For verbose mode you may also use `PRINT_VERBOSE()` instead of `print_verbose()`.
 - Use `int` as argument for functions exposed to scripts if they don't need to exceed 2^31, even if they are never negative, so errors are clearer if the user makes a mistake
+
+### Namespaces
+
+The intented namespaces are `zylann::` as main, and `zylann::voxel::` for voxel-related stuff. There may be others for different parts of the module. Namespaces are a work in progress, so a lot of places still miss them. 
+
+Classes are largely prefixed with `Voxel`.
+Godot's core codebase is generally not using namespaces. Classes registered to the engine must have a unique name regardless of namespaces, so in this module, they are primarily used to wrap the rest of the code. It is however desirable for registered classes to be in a namespace as well for consistency, and to avoid having to type fully-qualified names all the time.
+
+It should be possible to use namespaces around a module class, since Godot4 started using them [here](https://github.com/godotengine/godot/blob/a8a20a0e02c8459513542f77eaed9b7350812c94/core/core_bind.h#L47) for core bindings (the [reason](https://github.com/godotengine/godot/pull/51627) was very specific though).
+
+However, because of [This redundant function](https://github.com/godotengine/godot/blob/a8a20a0e02c8459513542f77eaed9b7350812c94/core/object/object.h#L362), it is theoretically not possible for a class bound to the engine to inherit a class from another namespace:
+```cpp
+class ClassA : public other::ClassB {
+    GDCLASS(ClassA, other::ClassB) // Would fail, as `other::ClassB` would be stringified with the `::`.
+}
+```
+There doesn't seem to be a use of `inherits_static()` anywhere though, and another function exists which does not have this issue. So maybe it will be removed?
 
 
 Debugging
@@ -201,7 +218,7 @@ Example of options setup in in VSCode `launch.json` on Windows:
 
 ### Breakpoint on error
 
-It is recommended to use a debugger to have better information when errors or crashes occur. It may be useful to open `core/error_macros.cpp` (in Godot 3.x) and leave a breakpoint in `_err_print_error`, so that every time an error occurs, the debugger will break in there, providing you with the live call stack and variable states to inspect.
+It is recommended to use a debugger to have better information when errors or crashes occur. It may be useful to open `core/error/error_macros.cpp` (in Godot 4.x) and leave a breakpoint in `_err_print_error`, so that every time an error occurs, the debugger will break in there, providing you with the live call stack and variable states to inspect.
 
 If you debug the editor, Godot tends to print a lot more errors for things that aren't critical, such as making temporary mistakes in the script editor, or trying to index a resource file in the explorer dock and failing for whatever reason. In this case you may either need clean dedicated test projects, or place breakpoints after launch.
 
@@ -304,6 +321,7 @@ Compilation flags
 The module has a few preprocessor macros that can be defined in order to turn off parts of the code getting compiled.
 At the moment, flags are specified within the `SCsub` file, and correspond to C++ defines:
 
-- `VOXEL_RUN_TESTS`: this is mostly for debug builds when doing C++ development on the module. If `True`, tests will be compiled and run on startup to verify if some features of the engine still work correctly. It is off by default in production builds.
 - `MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS`: this one must be defined to fix an issue with `MeshOptimizer`. See [https://github.com/zeux/meshoptimizer/issues/311](https://github.com/zeux/meshoptimizer/issues/311)
-- `VOXEL_FAST_NOISE_2_SUPPORT`: this is an upcoming dependency that doesn't work at the moment. It is not defined by default.
+- `MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE`: this one must be defined to prevent conflict with Godot's own version of MeshOptimizer. See [https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624](https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624)
+- `VOXEL_ENABLE_FAST_NOISE_2`: if defined, the module will compile with integrated support for SIMD noise using FastNoise2. It is optional in case it causes problem on some compilers or platforms.
+- `VOXEL_RUN_TESTS`: If `True`, tests will be compiled and run on startup to verify if some features of the engine still work correctly. It is off by default in production builds. This is mostly for debug builds when doing C++ development on the module.
