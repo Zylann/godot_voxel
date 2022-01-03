@@ -13,6 +13,8 @@
 #include <core/core_string_names.h>
 #include <scene/3d/mesh_instance_3d.h>
 
+using namespace zylann;
+
 VoxelTerrain::VoxelTerrain() {
 	// Note: don't do anything heavy in the constructor.
 	// Godot may create and destroy dozens of instances of all node types on startup,
@@ -190,7 +192,7 @@ unsigned int VoxelTerrain::get_mesh_block_size_pow2() const {
 }
 
 void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
-	mesh_block_size = clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
+	mesh_block_size = math::clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
 
 	unsigned int po2;
 	switch (mesh_block_size) {
@@ -885,7 +887,7 @@ void VoxelTerrain::process_viewers() {
 						static_cast<unsigned int>(static_cast<float>(viewer.view_distance) * view_distance_scale);
 				const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
 
-				state.view_distance_voxels = min(view_distance_voxels, self._max_view_distance_voxels);
+				state.view_distance_voxels = math::min(view_distance_voxels, self._max_view_distance_voxels);
 				state.local_position_voxels = Vector3iUtil::from_floored(local_position);
 				state.requires_collisions = VoxelServer::get_singleton()->is_viewer_requiring_collisions(viewer_id);
 				state.requires_meshes = VoxelServer::get_singleton()->is_viewer_requiring_visuals(viewer_id);
@@ -899,7 +901,7 @@ void VoxelTerrain::process_viewers() {
 				Vector3i data_block_pos;
 
 				if (state.requires_meshes || state.requires_collisions) {
-					const int view_distance_mesh_blocks = ceildiv(state.view_distance_voxels, mesh_block_size);
+					const int view_distance_mesh_blocks = math::ceildiv(state.view_distance_voxels, mesh_block_size);
 					const int render_to_data_factor = (mesh_block_size / data_block_size);
 					const Vector3i mesh_block_pos =
 							Vector3iUtil::floordiv(state.local_position_voxels, mesh_block_size);
@@ -913,7 +915,7 @@ void VoxelTerrain::process_viewers() {
 									.clipped(bounds_in_mesh_blocks);
 
 				} else {
-					view_distance_data_blocks = ceildiv(state.view_distance_voxels, data_block_size);
+					view_distance_data_blocks = math::ceildiv(state.view_distance_voxels, data_block_size);
 
 					data_block_pos = Vector3iUtil::floordiv(state.local_position_voxels, data_block_size);
 					state.mesh_box = Box3i();
@@ -1298,11 +1300,12 @@ void VoxelTerrain::set_bounds(Box3i box) {
 	// Round to block size
 	_bounds_in_voxels = _bounds_in_voxels.snapped(get_data_block_size());
 
-	const unsigned int largest_dimension = static_cast<unsigned int>(max(max(box.size.x, box.size.y), box.size.z));
+	const unsigned int largest_dimension =
+			static_cast<unsigned int>(math::max(math::max(box.size.x, box.size.y), box.size.z));
 	if (largest_dimension > MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME) {
 		// Cap view distance to make sure you don't accidentally blow up memory when changing parameters
 		if (_max_view_distance_voxels > MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME) {
-			_max_view_distance_voxels = min(_max_view_distance_voxels, MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME);
+			_max_view_distance_voxels = math::min(_max_view_distance_voxels, MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME);
 			notify_property_list_changed();
 		}
 	}
@@ -1340,7 +1343,7 @@ void VoxelTerrain::_b_save_block(Vector3i p_block_pos) {
 }
 
 void VoxelTerrain::_b_set_bounds(AABB aabb) {
-	ERR_FAIL_COND(!is_valid_size(aabb.size));
+	ERR_FAIL_COND(!math::is_valid_size(aabb.size));
 	set_bounds(Box3i(Vector3iUtil::from_rounded(aabb.position), Vector3iUtil::from_rounded(aabb.size)));
 }
 

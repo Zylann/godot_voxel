@@ -5,6 +5,8 @@
 #include <core/core_string_names.h>
 #include <scene/resources/mesh.h>
 
+using namespace zylann;
+
 namespace {
 const float MAX_DENSITY = 1.f;
 const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
@@ -96,7 +98,8 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 				// so it's possible a different emit mode will produce different amounts of instances.
 				// I had to use `uint64` and clamp it because floats can't contain `0xffffffff` accurately. Instead
 				// it results in `0x100000000`, one unit above.
-				const uint32_t density_u32 = min(uint64_t(0xffffffff * (_density / MAX_DENSITY)), uint64_t(0xffffffff));
+				const uint32_t density_u32 =
+						math::min(uint64_t(0xffffffff * (_density / MAX_DENSITY)), uint64_t(0xffffffff));
 				const int size = vertices.size();
 				for (int i = 0; i < size; ++i) {
 					// TODO We could actually generate indexes and pick those,
@@ -418,7 +421,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 				CRASH_COND(vertex_index >= noise_cache.size());
 #endif
 				// Multiplied noise because it gives more pronounced results
-				const float n = clamp(noise_cache[vertex_index] * 2.f, 0.f, 1.f);
+				const float n = math::clamp(noise_cache[vertex_index] * 2.f, 0.f, 1.f);
 				r *= Math::lerp(1.f, n, _noise_on_scale);
 			}
 
@@ -444,7 +447,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 }
 
 void VoxelInstanceGenerator::set_density(float density) {
-	density = max(density, 0.f);
+	density = math::max(density, 0.f);
 	if (density == _density) {
 		return;
 	}
@@ -507,7 +510,7 @@ VoxelInstanceGenerator::Distribution VoxelInstanceGenerator::get_scale_distribut
 }
 
 void VoxelInstanceGenerator::set_vertical_alignment(float amount) {
-	amount = clamp(amount, 0.f, 1.f);
+	amount = math::clamp(amount, 0.f, 1.f);
 	if (_vertical_alignment == amount) {
 		return;
 	}
@@ -532,8 +535,8 @@ float VoxelInstanceGenerator::get_offset_along_normal() const {
 }
 
 void VoxelInstanceGenerator::set_min_slope_degrees(float degrees) {
-	_min_slope_degrees = clamp(degrees, 0.f, 180.f);
-	const float max_surface_normal_y = min(1.f, Math::cos(Math::deg2rad(_min_slope_degrees)));
+	_min_slope_degrees = math::clamp(degrees, 0.f, 180.f);
+	const float max_surface_normal_y = math::min(1.f, Math::cos(Math::deg2rad(_min_slope_degrees)));
 	if (max_surface_normal_y == _max_surface_normal_y) {
 		return;
 	}
@@ -546,8 +549,8 @@ float VoxelInstanceGenerator::get_min_slope_degrees() const {
 }
 
 void VoxelInstanceGenerator::set_max_slope_degrees(float degrees) {
-	_max_slope_degrees = clamp(degrees, 0.f, 180.f);
-	const float min_surface_normal_y = max(-1.f, Math::cos(Math::deg2rad(_max_slope_degrees)));
+	_max_slope_degrees = math::clamp(degrees, 0.f, 180.f);
+	const float min_surface_normal_y = math::max(-1.f, Math::cos(Math::deg2rad(_max_slope_degrees)));
 	if (min_surface_normal_y == _min_surface_normal_y) {
 		return;
 	}
@@ -640,7 +643,7 @@ VoxelInstanceGenerator::Dimension VoxelInstanceGenerator::get_noise_dimension() 
 }
 
 void VoxelInstanceGenerator::set_noise_on_scale(float amount) {
-	amount = clamp(amount, 0.f, 1.f);
+	amount = math::clamp(amount, 0.f, 1.f);
 	if (amount == _noise_on_scale) {
 		return;
 	}

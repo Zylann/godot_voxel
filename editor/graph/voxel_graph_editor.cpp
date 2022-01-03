@@ -398,7 +398,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	// These nodes have an output for implementation reasons, some outputs can process the data like any other node.
 	const bool hide_outputs = node_type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT;
 
-	const unsigned int row_count = max(node_type.inputs.size(), hide_outputs ? 0 : node_type.outputs.size());
+	const unsigned int row_count = math::max(node_type.inputs.size(), hide_outputs ? 0 : node_type.outputs.size());
 	const Color port_color(0.4, 0.4, 1.0);
 
 	// TODO Insert a summary so the graph would be readable without having to inspect nodes
@@ -898,7 +898,7 @@ void VoxelGraphEditor::update_slice_previews() {
 		for (int y = 0; y < im.get_height(); ++y) {
 			for (int x = 0; x < im.get_width(); ++x) {
 				const float v = buffer.data[i];
-				const float g = clamp((v - info.min_value) * info.value_scale, 0.f, 1.f);
+				const float g = math::clamp((v - info.min_value) * info.value_scale, 0.f, 1.f);
 				im.set_pixel(x, im.get_height() - y - 1, Color(g, g, g));
 				++i;
 			}

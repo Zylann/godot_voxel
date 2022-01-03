@@ -11,6 +11,8 @@
 #include <scene/main/window.h> // Needed for doing `Node *root = SceneTree::get_root()`, Window* is forward-declared
 #include <thread>
 
+using namespace zylann;
+
 namespace {
 VoxelServer *g_voxel_server = nullptr;
 // Could be atomics, but it's for debugging so I don't bother for now
@@ -72,20 +74,21 @@ VoxelServer::VoxelServer() {
 	_main_thread_time_budget_usec =
 			1000 * int(ProjectSettings::get_singleton()->get("voxel/threads/main/time_budget_ms"));
 
-	const int minimum_thread_count = max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/minimum")));
+	const int minimum_thread_count =
+			math::max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/minimum")));
 
 	// How many threads below available count on the CPU should we set as limit
 	const int thread_count_margin =
-			max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/margin_below_max")));
+			math::max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/margin_below_max")));
 
 	// Portion of available CPU threads to attempt using
 	const float threads_ratio =
-			clamp(float(ProjectSettings::get_singleton()->get("voxel/threads/count/ratio_over_max")), 0.f, 1.f);
+			math::clamp(float(ProjectSettings::get_singleton()->get("voxel/threads/count/ratio_over_max")), 0.f, 1.f);
 
-	const int maximum_thread_count = max(hw_threads_hint - thread_count_margin, minimum_thread_count);
+	const int maximum_thread_count = math::max(hw_threads_hint - thread_count_margin, minimum_thread_count);
 	// `-1` is for the stream thread
 	const int thread_count_by_ratio = int(Math::round(float(threads_ratio) * hw_threads_hint)) - 1;
-	const int thread_count = clamp(thread_count_by_ratio, minimum_thread_count, maximum_thread_count);
+	const int thread_count = math::clamp(thread_count_by_ratio, minimum_thread_count, maximum_thread_count);
 	PRINT_VERBOSE(String("Voxel: automatic thread count set to {0}").format(varray(thread_count)));
 
 	if (thread_count > hw_threads_hint) {
@@ -286,14 +289,14 @@ void VoxelServer::init_priority_dependency(VoxelServer::PriorityDependency &dep,
 			// Distance beyond which no field of view can overlap the block.
 			// Doubling block radius to account for an extra margin of blocks,
 			// since they are used to provide neighbors when meshing
-			dep.drop_distance_squared =
-					squared(_world.shared_priority_dependency->highest_view_distance + 2.f * transformed_block_radius);
+			dep.drop_distance_squared = math::squared(
+					_world.shared_priority_dependency->highest_view_distance + 2.f * transformed_block_radius);
 			break;
 
 		case VOLUME_SPARSE_OCTREE:
 			// Distance beyond which it is safe to drop a block without risking to block LOD subdivision.
 			// This does not depend on viewer's view distance, but on LOD precision instead.
-			dep.drop_distance_squared = squared(2.f * transformed_block_radius *
+			dep.drop_distance_squared = math::squared(2.f * transformed_block_radius *
 					get_octree_lod_block_region_extent(volume.octree_lod_distance, block_size));
 			break;
 

@@ -8,6 +8,8 @@
 #include <core/os/time.h>
 #include <algorithm>
 
+using namespace zylann;
+
 namespace {
 const uint8_t FORMAT_VERSION = 3;
 
@@ -547,7 +549,7 @@ void VoxelStreamRegionFiles::close_oldest_region() {
 }
 
 static inline int convert_block_coordinate(int p_x, int old_size, int new_size) {
-	return ::floordiv(p_x * old_size, new_size);
+	return math::floordiv(p_x * old_size, new_size);
 }
 
 static Vector3i convert_block_coordinates(Vector3i pos, Vector3i old_size, Vector3i new_size) {

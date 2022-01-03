@@ -11,9 +11,7 @@ struct HermiteValue {
 	float sdf; // Signed "distance" to surface
 	Vector3 gradient; // Derivation of the density
 
-	HermiteValue() :
-			sdf(1.0) {
-	}
+	HermiteValue() : sdf(1.0) {}
 };
 
 inline float get_isolevel_clamped(const VoxelBufferInternal &voxels, unsigned int x, unsigned int y, unsigned int z) {
@@ -23,8 +21,8 @@ inline float get_isolevel_clamped(const VoxelBufferInternal &voxels, unsigned in
 	return voxels.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
 }
 
-inline HermiteValue get_hermite_value(const VoxelBufferInternal &voxels,
-		unsigned int x, unsigned int y, unsigned int z) {
+inline HermiteValue get_hermite_value(
+		const VoxelBufferInternal &voxels, unsigned int x, unsigned int y, unsigned int z) {
 	HermiteValue v;
 
 	v.sdf = voxels.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
@@ -69,10 +67,9 @@ inline HermiteValue get_interpolated_hermite_value(const VoxelBufferInternal &vo
 	Vector3 rpos = pos - Vector3(x0, y0, z0);
 
 	HermiteValue v;
-	v.sdf = ::interpolate(v0.sdf, v1.sdf, v2.sdf, v3.sdf, v4.sdf, v5.sdf, v6.sdf, v7.sdf, rpos);
-	v.gradient = ::interpolate(
-			v0.gradient, v1.gradient, v2.gradient, v3.gradient,
-			v4.gradient, v5.gradient, v6.gradient, v7.gradient, rpos);
+	v.sdf = zylann::math::interpolate(v0.sdf, v1.sdf, v2.sdf, v3.sdf, v4.sdf, v5.sdf, v6.sdf, v7.sdf, rpos);
+	v.gradient = zylann::math::interpolate(v0.gradient, v1.gradient, v2.gradient, v3.gradient, v4.gradient, v5.gradient,
+			v6.gradient, v7.gradient, rpos);
 
 	return v;
 }

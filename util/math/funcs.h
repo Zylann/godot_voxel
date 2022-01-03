@@ -3,6 +3,8 @@
 
 #include <core/math/vector3.h>
 
+namespace zylann::math {
+
 // Trilinear interpolation between corner values of a cube.
 //
 //      6---------------7
@@ -199,5 +201,7 @@ inline size_t alignup(size_t a, size_t align) {
 // inline bool is_power_of_two(int i) {
 // 	return i & (i - 1);
 // }
+
+} // namespace zylann::math
 
 #endif // VOXEL_MATH_FUNCS_H

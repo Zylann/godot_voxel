@@ -243,7 +243,7 @@ float VoxelGeneratorGraph::get_sdf_clip_threshold() const {
 }
 
 void VoxelGeneratorGraph::set_sdf_clip_threshold(float t) {
-	_sdf_clip_threshold = max(t, 0.f);
+	_sdf_clip_threshold = math::max(t, 0.f);
 }
 
 int VoxelGeneratorGraph::get_used_channels_mask() const {
@@ -314,7 +314,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 					const float weight = buffers[oi][value_index];
 					// TODO Optimization: weight output nodes could already multiply by 255 and clamp afterward
 					// so we would not need to do it here
-					weights[oi] = clamp(weight * 255.f, 0.f, 255.f);
+					weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
 					indices[oi] = weight_outputs[oi].layer_index;
 				}
 				debug_check_texture_indices(indices);
@@ -338,7 +338,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				FixedArray<uint8_t, 4> indices;
 				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
 					const float weight = buffers[oi][value_index];
-					weights[oi] = clamp(weight * 255.f, 0.f, 255.f);
+					weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
 					indices[oi] = weight_outputs[oi].layer_index;
 				}
 				const uint16_t encoded_indices =
@@ -372,7 +372,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				for (unsigned int oi = 0; oi < buffers_count && recorded_weights < indices.size(); ++oi) {
 					const float weight = buffers[oi][value_index];
 					if (weight > pivot) {
-						weights[recorded_weights] = clamp(weight * 255.f, 0.f, 255.f);
+						weights[recorded_weights] = math::clamp(weight * 255.f, 0.f, 255.f);
 						indices[recorded_weights] = weight_outputs[oi].layer_index;
 						++recorded_weights;
 					} else {

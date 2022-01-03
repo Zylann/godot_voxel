@@ -5,6 +5,8 @@
 #include "../util/godot/funcs.h"
 #include "../util/voxel_raycast.h"
 
+using namespace zylann;
+
 VoxelToolTerrain::VoxelToolTerrain() {}
 
 VoxelToolTerrain::VoxelToolTerrain(VoxelTerrain *terrain) {
@@ -232,7 +234,7 @@ void VoxelToolTerrain::run_blocky_random_tick(
 	ERR_FAIL_COND(callback.is_null());
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);
-	ERR_FAIL_COND(!is_valid_size(voxel_area.size));
+	ERR_FAIL_COND(!math::is_valid_size(voxel_area.size));
 
 	if (voxel_count == 0) {
 		return;
@@ -328,7 +330,7 @@ void VoxelToolTerrain::run_blocky_random_tick(
 void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(callback.is_null());
-	ERR_FAIL_COND(!is_valid_size(voxel_area.size));
+	ERR_FAIL_COND(!math::is_valid_size(voxel_area.size));
 
 	const Box3i voxel_box =
 			Box3i(Vector3iUtil::from_floored(voxel_area.position), Vector3iUtil::from_floored(voxel_area.size));

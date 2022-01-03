@@ -4,6 +4,8 @@
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
+using namespace zylann;
+
 namespace Transvoxel {
 
 static const float TRANSITION_CELL_SCALE = 0.25;
@@ -542,7 +544,7 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 								FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights;
 								for (unsigned int i = 0; i < MAX_TEXTURE_BLENDS; ++i) {
 									weights[i] = static_cast<uint8_t>(
-											clamp(Math::lerp(weights0[i], weights1[i], t1), 0.f, 255.f));
+											math::clamp(Math::lerp(weights0[i], weights1[i], t1), 0.f, 255.f));
 								}
 								add_texture_data(output.texturing_data, cell_textures.packed_indices, weights);
 							}
@@ -1037,7 +1039,7 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 							FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights;
 							for (unsigned int i = 0; i < cell_textures.indices.size(); ++i) {
 								weights[i] = static_cast<uint8_t>(
-										clamp(Math::lerp(weights0[i], weights1[i], t1), 0.f, 255.f));
+										math::clamp(Math::lerp(weights0[i], weights1[i], t1), 0.f, 255.f));
 							}
 							add_texture_data(output.texturing_data, cell_textures.packed_indices, weights);
 						}

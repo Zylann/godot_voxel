@@ -78,7 +78,7 @@ private:
 		// `get_next_power_of_two_32` takes unsigned int
 		CRASH_COND(size > std::numeric_limits<unsigned int>::max());
 #endif
-		return get_shift_from_power_of_two_32(get_next_power_of_two_32(size));
+		return zylann::math::get_shift_from_power_of_two_32(zylann::math::get_next_power_of_two_32(size));
 	}
 
 	inline size_t get_size_from_pool_index(unsigned int i) const {

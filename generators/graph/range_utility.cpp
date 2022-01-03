@@ -23,11 +23,11 @@ inline Interval get_noise_range_2d(Noise_F noise_func, const Interval &x, const 
 	const float mid_y = 0.5 * (y.min + y.max);
 	const float mid_value = noise_func(mid_x, mid_y);
 
-	const float diag = Math::sqrt(::squared(x.length()) + ::squared(y.length()));
+	const float diag = Math::sqrt(squared(x.length()) + squared(y.length()));
 
 	return Interval( //
-			::max(mid_value - max_derivative_half_diagonal * diag, -1.f),
-			::min(mid_value + max_derivative_half_diagonal * diag, 1.f));
+			max(mid_value - max_derivative_half_diagonal * diag, -1.f),
+			min(mid_value + max_derivative_half_diagonal * diag, 1.f));
 }
 
 template <typename Noise_F>
@@ -40,11 +40,11 @@ inline Interval get_noise_range_3d(
 	const float mid_z = 0.5 * (z.min + z.max);
 	const float mid_value = noise_func(mid_x, mid_y, mid_z);
 
-	const float diag = Math::sqrt(::squared(x.length()) + ::squared(y.length()) + ::squared(z.length()));
+	const float diag = Math::sqrt(squared(x.length()) + squared(y.length()) + squared(z.length()));
 
 	return Interval( //
-			::max(mid_value - max_derivative_half_diagonal * diag, -1.f),
-			::min(mid_value + max_derivative_half_diagonal * diag, 1.f));
+			max(mid_value - max_derivative_half_diagonal * diag, -1.f),
+			min(mid_value + max_derivative_half_diagonal * diag, 1.f));
 }
 
 Interval get_osn_octave_range_2d(OpenSimplexNoise *noise, const Interval &p_x, const Interval &p_y, int octave) {

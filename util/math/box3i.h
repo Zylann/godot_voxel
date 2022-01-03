@@ -33,16 +33,16 @@ public:
 	static inline Box3i get_bounding_box(Box3i a, Box3i b) {
 		Box3i box;
 
-		box.pos.x = min(a.pos.x, b.pos.x);
-		box.pos.y = min(a.pos.y, b.pos.y);
-		box.pos.z = min(a.pos.z, b.pos.z);
+		box.pos.x = zylann::math::min(a.pos.x, b.pos.x);
+		box.pos.y = zylann::math::min(a.pos.y, b.pos.y);
+		box.pos.z = zylann::math::min(a.pos.z, b.pos.z);
 
 		Vector3i max_a = a.pos + a.size;
 		Vector3i max_b = b.pos + b.size;
 
-		box.size.x = max(max_a.x, max_b.x) - box.pos.x;
-		box.size.y = max(max_a.y, max_b.y) - box.pos.y;
-		box.size.z = max(max_a.z, max_b.z) - box.pos.z;
+		box.size.x = zylann::math::max(max_a.x, max_b.x) - box.pos.x;
+		box.size.y = zylann::math::max(max_a.y, max_b.y) - box.pos.y;
+		box.size.z = zylann::math::max(max_a.z, max_b.z) - box.pos.z;
 
 		return box;
 	}
@@ -288,8 +288,8 @@ public:
 		int max_pos = pos + size;
 		int lim_max_pos = lim_pos + lim_size;
 
-		pos = clamp(pos, lim_pos, lim_max_pos);
-		max_pos = clamp(max_pos, lim_pos, lim_max_pos);
+		pos = zylann::math::clamp(pos, lim_pos, lim_max_pos);
+		max_pos = zylann::math::clamp(max_pos, lim_pos, lim_max_pos);
 
 		size = max_pos - pos;
 		if (size < 0) {
@@ -329,13 +329,13 @@ public:
 
 	void merge_with(const Box3i &other) {
 		const Vector3i min_pos( //
-				min(pos.x, other.pos.x), //
-				min(pos.y, other.pos.y), //
-				min(pos.z, other.pos.z));
+				zylann::math::min(pos.x, other.pos.x), //
+				zylann::math::min(pos.y, other.pos.y), //
+				zylann::math::min(pos.z, other.pos.z));
 		const Vector3i max_pos( //
-				max(pos.x + size.x, other.pos.x + other.size.x), //
-				max(pos.y + size.y, other.pos.y + other.size.y), //
-				max(pos.z + size.z, other.pos.z + other.size.z));
+				zylann::math::max(pos.x + size.x, other.pos.x + other.size.x), //
+				zylann::math::max(pos.y + size.y, other.pos.y + other.size.y), //
+				zylann::math::max(pos.z + size.z, other.pos.z + other.size.z));
 		pos = min_pos;
 		size = max_pos - min_pos;
 	}

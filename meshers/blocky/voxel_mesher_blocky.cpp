@@ -5,6 +5,8 @@
 #include "../../util/span.h"
 #include <core/os/os.h>
 
+using namespace zylann;
+
 // Utility functions
 namespace {
 
@@ -349,7 +351,7 @@ Ref<VoxelLibrary> VoxelMesherBlocky::get_library() const {
 
 void VoxelMesherBlocky::set_occlusion_darkness(float darkness) {
 	RWLockWrite wlock(_parameters_lock);
-	_parameters.baked_occlusion_darkness = clamp(darkness, 0.0f, 1.0f);
+	_parameters.baked_occlusion_darkness = math::clamp(darkness, 0.0f, 1.0f);
 }
 
 float VoxelMesherBlocky::get_occlusion_darkness() const {

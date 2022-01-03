@@ -2,6 +2,8 @@
 #include "../math/funcs.h"
 #include <core/io/image.h>
 
+using namespace zylann;
+
 FastNoise2::FastNoise2() {
 	// Setup default
 	update_generator();
@@ -174,7 +176,7 @@ bool FastNoise2::is_terrace_enabled() const {
 }
 
 void FastNoise2::set_terrace_multiplier(float m) {
-	const float clamped_multiplier = max(m, 0.f);
+	const float clamped_multiplier = math::max(m, 0.f);
 	if (clamped_multiplier == _terrace_multiplier) {
 		return;
 	}
@@ -187,7 +189,7 @@ float FastNoise2::get_terrace_multiplier() const {
 }
 
 void FastNoise2::set_terrace_smoothness(float s) {
-	const float clamped_smoothness = max(s, 0.f);
+	const float clamped_smoothness = math::max(s, 0.f);
 	if (_terrace_smoothness == clamped_smoothness) {
 		return;
 	}
@@ -279,7 +281,7 @@ FastNoise2::CellularReturnType FastNoise2::get_cellular_return_type() const {
 }
 
 void FastNoise2::set_cellular_jitter(float jitter) {
-	jitter = clamp(jitter, 0.f, 1.f);
+	jitter = math::clamp(jitter, 0.f, 1.f);
 	if (_cellular_jitter == jitter) {
 		return;
 	}
@@ -323,7 +325,7 @@ void FastNoise2::get_noise_2d_grid(Vector2 origin, Vector2i size, Span<float> ds
 
 void FastNoise2::get_noise_3d_grid(Vector3 origin, Vector3i size, Span<float> dst) const {
 	ERR_FAIL_COND(!is_valid());
-	ERR_FAIL_COND(!is_valid_size(size));
+	ERR_FAIL_COND(!math::is_valid_size(size));
 	ERR_FAIL_COND(dst.size() != size.x * size.y * size.z);
 	_generator->GenUniformGrid3D(dst.data(), origin.x, origin.y, origin.z, size.x, size.y, size.z, 1.f, _seed);
 }

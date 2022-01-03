@@ -14,6 +14,9 @@
 #include <scene/3d/physics_body_3d.h>
 #include <scene/main/timer.h>
 
+using namespace zylann;
+using namespace voxel;
+
 VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain) : _terrain(terrain) {
 	ERR_FAIL_COND(terrain == nullptr);
 	// At the moment, only LOD0 is supported.
@@ -37,7 +40,7 @@ template <typename Volume_F> float get_sdf_interpolated(const Volume_F &f, Vecto
 	const float s011 = f(Vector3i(c.x, c.y + 1, c.z + 1));
 	const float s111 = f(Vector3i(c.x + 1, c.y + 1, c.z + 1));
 
-	return interpolate(s000, s100, s101, s001, s010, s110, s111, s011, fract(pos));
+	return math::interpolate(s000, s100, s101, s001, s010, s110, s111, s011, math::fract(pos));
 }
 
 // Binary search can be more accurate than linear regression because the SDF can be inaccurate in the first place.
@@ -378,7 +381,7 @@ int VoxelToolLodTerrain::get_raycast_binary_search_iterations() const {
 }
 
 void VoxelToolLodTerrain::set_raycast_binary_search_iterations(int iterations) {
-	_raycast_binary_search_iterations = clamp(iterations, 0, 16);
+	_raycast_binary_search_iterations = math::clamp(iterations, 0, 16);
 }
 
 namespace zylann::voxel {
@@ -714,7 +717,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Node *parent_node) {
 	ERR_FAIL_COND_V(_terrain == nullptr, Array());
-	ERR_FAIL_COND_V(!is_valid_size(world_box.size), Array());
+	ERR_FAIL_COND_V(!math::is_valid_size(world_box.size), Array());
 	Ref<VoxelMesher> mesher = _terrain->get_mesher();
 	Array materials;
 	materials.append(_terrain->get_material());

@@ -4,6 +4,8 @@
 #include "../util/serialization.h"
 #include <core/variant/variant.h>
 
+using namespace zylann;
+
 namespace {
 const uint32_t TRAILING_MAGIC = 0x900df00d;
 }
@@ -15,7 +17,7 @@ const float VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM = 0.01f;
 // TODO Unify with functions from VoxelBuffer?
 
 inline uint8_t norm_to_u8(float x) {
-	return clamp(static_cast<int>(128.f * x + 128.f), 0, 0xff);
+	return math::clamp(static_cast<int>(128.f * x + 128.f), 0, 0xff);
 }
 
 inline float u8_to_norm(uint8_t v) {
@@ -57,7 +59,7 @@ bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 	zylann::MemoryWriter w(dst, zylann::ENDIANESS_BIG_ENDIAN);
 
 	ERR_FAIL_COND_V(src.position_range < 0.f, false);
-	const float position_range = max(src.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM);
+	const float position_range = math::max(src.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM);
 
 	w.store_8(version);
 	w.store_8(src.layers.size());

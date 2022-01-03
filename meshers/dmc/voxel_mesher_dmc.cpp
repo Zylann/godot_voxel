@@ -5,6 +5,8 @@
 #include "mesh_builder.h"
 #include <core/os/time.h>
 
+using namespace zylann;
+
 // Dual marching cubes
 // Algorithm taken from https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/
 // Partially based on Ogre's implementation, adapted for requirements of this module with a few extras
@@ -123,7 +125,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 
 		HermiteValue value = get_hermite_value(voxels.buffer, pos.x, pos.y, pos.z);
 
-		float interpolated_value = ::interpolate(v0, v1, v2, v3, v4, v5, v6, v7, positions_ratio[i]);
+		float interpolated_value = math::interpolate(v0, v1, v2, v3, v4, v5, v6, v7, positions_ratio[i]);
 
 		float gradient_magnitude = value.gradient.length();
 		if (gradient_magnitude < FLT_EPSILON) {

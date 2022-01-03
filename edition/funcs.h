@@ -51,8 +51,8 @@ inline void normalize_weights_preserving(FixedArray<float, 4> &weights, unsigned
 	}
 }*/
 
-inline void blend_texture_packed_u16(int texture_index, float target_weight,
-		uint16_t &encoded_indices, uint16_t &encoded_weights) {
+inline void blend_texture_packed_u16(
+		int texture_index, float target_weight, uint16_t &encoded_indices, uint16_t &encoded_weights) {
 #ifdef DEBUG_ENABLED
 	ERR_FAIL_COND(target_weight < 0.f || target_weight > 1.f);
 #endif
@@ -98,7 +98,7 @@ inline void blend_texture_packed_u16(int texture_index, float target_weight,
 		normalize_weights_preserving(weights_f, component_index);
 
 		for (unsigned int i = 0; i < weights_f.size(); ++i) {
-			weights[i] = clamp(weights_f[i] * 255.f, 0.f, 255.f);
+			weights[i] = zylann::math::clamp(weights_f[i] * 255.f, 0.f, 255.f);
 		}
 
 		encoded_indices = encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);

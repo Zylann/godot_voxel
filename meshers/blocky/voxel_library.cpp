@@ -6,6 +6,8 @@
 
 #include <bitset>
 
+using namespace zylann;
+
 VoxelLibrary::VoxelLibrary() {}
 
 VoxelLibrary::~VoxelLibrary() {}
@@ -138,6 +140,8 @@ template <typename F> static void rasterize_triangle_barycentric(Vector2 a, Vect
 	a += 0.001 * (a - m);
 	b += 0.001 * (b - m);
 	c += 0.001 * (c - m);
+
+	using namespace math;
 
 	const int min_x = (int)Math::floor(min(min(a.x, b.x), c.x));
 	const int min_y = (int)Math::floor(min(min(a.y, b.y), c.y));

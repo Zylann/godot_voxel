@@ -609,7 +609,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 			CRASH_COND(buffer.data != nullptr);
 			// TODO Use pool?
 			// New buffers get an up-to-date size, but must also comply with common capacity
-			const unsigned int bs = max(state.buffer_capacity, buffer_size);
+			const unsigned int bs = math::max(state.buffer_capacity, buffer_size);
 			buffer.data = reinterpret_cast<float *>(memalloc(bs * sizeof(float)));
 			buffer.capacity = bs;
 		}

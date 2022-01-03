@@ -2,10 +2,12 @@
 #include "../../util/fixed_array.h"
 #include "../../util/span.h"
 
+using namespace zylann;
+
 namespace {
 
 inline float get_height_repeat(const Image &im, int x, int y) {
-	return im.get_pixel(wrap(x, im.get_width()), wrap(y, im.get_height())).r;
+	return im.get_pixel(math::wrap(x, im.get_width()), math::wrap(y, im.get_height())).r;
 }
 
 inline float get_height_blurred(const Image &im, int x, int y) {

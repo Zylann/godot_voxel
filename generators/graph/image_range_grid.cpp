@@ -127,8 +127,8 @@ static void interval_to_pixels(Interval i, int &out_min, int &out_max, int len) 
 	// Images are finite, intervals are not.
 	// It's useless to let the range span a potentially infinite area.
 	// The image can repeat, so we clamp to one repetition.
-	out_min = ::clamp(imin, -len, len);
-	out_max = ::clamp(imax, -len, len);
+	out_min = clamp(imin, -len, len);
+	out_max = clamp(imax, -len, len);
 }
 
 Interval ImageRangeGrid::get_range(Interval xr, Interval yr) const {

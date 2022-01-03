@@ -101,11 +101,11 @@ inline float u16_to_norm(uint16_t v) {
 }
 
 inline uint8_t norm_to_u8(float v) {
-	return clamp(static_cast<int>(128.f * v + 128.f), 0, 0xff);
+	return zylann::math::clamp(static_cast<int>(128.f * v + 128.f), 0, 0xff);
 }
 
 inline uint16_t norm_to_u16(float v) {
-	return clamp(static_cast<int>(0x8000 * v + 0x8000), 0, 0xffff);
+	return zylann::math::clamp(static_cast<int>(0x8000 * v + 0x8000), 0, 0xffff);
 }
 
 /*static inline float quantized_u8_to_real(uint8_t v) {

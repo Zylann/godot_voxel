@@ -196,7 +196,7 @@ FastNoiseLite::CellularReturnType FastNoiseLite::get_cellular_return_type() cons
 }
 
 void FastNoiseLite::set_cellular_jitter(float jitter) {
-	jitter = clamp(jitter, 0.f, 1.f);
+	jitter = zylann::math::clamp(jitter, 0.f, 1.f);
 	if (_cellular_jitter == jitter) {
 		return;
 	}

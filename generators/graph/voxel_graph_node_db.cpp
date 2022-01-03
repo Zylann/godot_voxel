@@ -314,7 +314,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &input = ctx.get_input(0);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (unsigned int i = 0; i < out.size; ++i) {
-				out.data[i] = ::clamp(input.data[i], 0.f, 1.f);
+				out.data[i] = clamp(input.data[i], 0.f, 1.f);
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -478,7 +478,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("length"));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
-			do_binop(ctx, [](float a, float b) { return ::wrapf(a, b); });
+			do_binop(ctx, [](float a, float b) { return wrapf(a, b); });
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
@@ -534,7 +534,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &y1 = ctx.get_input(3);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = Math::sqrt(::squared(x1.data[i] - x0.data[i]) + ::squared(y1.data[i] - y0.data[i]));
+				out.data[i] = Math::sqrt(squared(x1.data[i] - x0.data[i]) + squared(y1.data[i] - y0.data[i]));
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -568,8 +568,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &z1 = ctx.get_input(5);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = Math::sqrt(::squared(x1.data[i] - x0.data[i]) + ::squared(y1.data[i] - y0.data[i]) +
-						::squared(z1.data[i] - z0.data[i]));
+				out.data[i] = Math::sqrt(squared(x1.data[i] - x0.data[i]) + squared(y1.data[i] - y0.data[i]) +
+						squared(z1.data[i] - z0.data[i]));
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -609,7 +609,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const Params p = ctx.get_params<Params>();
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = ::clamp(a.data[i], p.min, p.max);
+				out.data[i] = clamp(a.data[i], p.min, p.max);
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -773,7 +773,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const Params p = ctx.get_params<Params>();
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = ::smoothstep(p.edge0, p.edge1, a.data[i]);
+				out.data[i] = smoothstep(p.edge0, p.edge1, a.data[i]);
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -1032,8 +1032,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &r = ctx.get_input(3);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] =
-						Math::sqrt(::squared(x.data[i]) + ::squared(y.data[i]) + ::squared(z.data[i])) - r.data[i];
+				out.data[i] = Math::sqrt(squared(x.data[i]) + squared(y.data[i]) + squared(z.data[i])) - r.data[i];
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -1389,7 +1388,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				const float x = xb.data[i];
 				const float y = yb.data[i];
 				const float z = zb.data[i];
-				const float len = Math::sqrt(::squared(x) + ::squared(y) + ::squared(z));
+				const float len = Math::sqrt(squared(x) + squared(y) + squared(z));
 				out_nx.data[i] = x / len;
 				out_ny.data[i] = y / len;
 				out_nz.data[i] = z / len;

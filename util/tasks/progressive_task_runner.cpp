@@ -25,8 +25,8 @@ void ProgressiveTaskRunner::process() {
 	// As the number of pending tasks decreases, we want to keep running the highest amount we calculated.
 	// we reset when we are done.
 
-	_dequeue_count = max(int64_t(_dequeue_count), (int64_t(_tasks.size()) * delta_msec) / COMPLETION_TIME_MSEC);
-	_dequeue_count = min(_dequeue_count, max(MIN_COUNT, unsigned int(_tasks.size())));
+	_dequeue_count = math::max(int64_t(_dequeue_count), (int64_t(_tasks.size()) * delta_msec) / COMPLETION_TIME_MSEC);
+	_dequeue_count = math::min(_dequeue_count, math::max(MIN_COUNT, unsigned int(_tasks.size())));
 
 	unsigned int count = _dequeue_count;
 	while (_tasks.size() > 0 && count > 0) {

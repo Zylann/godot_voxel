@@ -324,19 +324,20 @@ inline Vector3i from_zxy_index(unsigned int i, const Vector3i area_size) {
 }
 
 inline Vector3i floordiv(const Vector3i v, const Vector3i d) {
-	return Vector3i(::floordiv(v.x, d.x), ::floordiv(v.y, d.y), ::floordiv(v.z, d.z));
+	return Vector3i(
+			zylann::math::floordiv(v.x, d.x), zylann::math::floordiv(v.y, d.y), zylann::math::floordiv(v.z, d.z));
 }
 
 inline Vector3i floordiv(const Vector3i v, const int d) {
-	return Vector3i(::floordiv(v.x, d), ::floordiv(v.y, d), ::floordiv(v.z, d));
+	return Vector3i(zylann::math::floordiv(v.x, d), zylann::math::floordiv(v.y, d), zylann::math::floordiv(v.z, d));
 }
 
 inline Vector3i ceildiv(const Vector3i v, const int d) {
-	return Vector3i(::ceildiv(v.x, d), ::ceildiv(v.y, d), ::ceildiv(v.z, d));
+	return Vector3i(zylann::math::ceildiv(v.x, d), zylann::math::ceildiv(v.y, d), zylann::math::ceildiv(v.z, d));
 }
 
 inline Vector3i wrap(const Vector3i v, const Vector3i d) {
-	return Vector3i(::wrap(v.x, d.x), ::wrap(v.y, d.y), ::wrap(v.z, d.z));
+	return Vector3i(zylann::math::wrap(v.x, d.x), zylann::math::wrap(v.y, d.y), zylann::math::wrap(v.z, d.z));
 }
 
 inline bool all_members_equal(const Vector3i v) {

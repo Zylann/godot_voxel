@@ -5,6 +5,8 @@
 
 #define STRLEN(x) (sizeof(x) / sizeof(x[0]))
 
+using namespace zylann;
+
 Voxel::Voxel() :
 		_id(-1), _material_id(0), _transparency_index(0), _color(1.f, 1.f, 1.f), _geometry_type(GEOMETRY_NONE) {}
 
@@ -105,7 +107,7 @@ void Voxel::set_transparent(bool t) {
 }
 
 void Voxel::set_transparency_index(int i) {
-	_transparency_index = clamp(i, 0, 255);
+	_transparency_index = math::clamp(i, 0, 255);
 }
 
 void Voxel::set_geometry_type(GeometryType type) {

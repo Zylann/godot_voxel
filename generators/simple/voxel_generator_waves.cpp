@@ -1,6 +1,8 @@
 #include "voxel_generator_waves.h"
 #include <cmath>
 
+using namespace zylann;
+
 VoxelGeneratorWaves::VoxelGeneratorWaves() {
 	_parameters.pattern_size = Vector2(30, 30);
 	// This might be a different default value than the base class,
@@ -8,8 +10,7 @@ VoxelGeneratorWaves::VoxelGeneratorWaves() {
 	set_height_range(30);
 }
 
-VoxelGeneratorWaves::~VoxelGeneratorWaves() {
-}
+VoxelGeneratorWaves::~VoxelGeneratorWaves() {}
 
 VoxelGenerator::Result VoxelGeneratorWaves::generate_block(VoxelBlockRequest &input) {
 	Parameters params;
@@ -20,8 +21,7 @@ VoxelGenerator::Result VoxelGeneratorWaves::generate_block(VoxelBlockRequest &in
 
 	VoxelBufferInternal &out_buffer = input.voxel_buffer;
 	const Vector2 freq(
-			Math_PI / static_cast<float>(params.pattern_size.x),
-			Math_PI / static_cast<float>(params.pattern_size.y));
+			Math_PI / static_cast<float>(params.pattern_size.x), Math_PI / static_cast<float>(params.pattern_size.y));
 	const Vector2 offset = params.pattern_offset;
 
 	return VoxelGeneratorHeightmap::generate(
@@ -39,8 +39,8 @@ Vector2 VoxelGeneratorWaves::get_pattern_size() const {
 
 void VoxelGeneratorWaves::set_pattern_size(Vector2 size) {
 	RWLockWrite wlock(_parameters_lock);
-	size.x = max(size.x, 0.1f);
-	size.y = max(size.y, 0.1f);
+	size.x = math::max(size.x, 0.1f);
+	size.y = math::max(size.y, 0.1f);
 	_parameters.pattern_size = size;
 }
 

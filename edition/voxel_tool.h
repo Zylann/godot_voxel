@@ -9,6 +9,8 @@
 
 class VoxelBuffer;
 
+using namespace zylann;
+
 namespace VoxelToolOps {
 
 template <typename Op, typename Shape> struct SdfOperation16bit {
@@ -70,7 +72,8 @@ struct TextureBlendSphereOp {
 		const float distance_squared = Vector3(pos).distance_squared_to(center);
 		if (distance_squared < radius_squared) {
 			const float distance_from_radius = radius - Math::sqrt(distance_squared);
-			const float target_weight = tp.opacity * clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
+			const float target_weight =
+					tp.opacity * math::clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
 			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
 		}
 	}

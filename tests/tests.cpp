@@ -739,7 +739,7 @@ void test_instance_data_serialization() {
 	ERR_FAIL_COND(dst_data.position_range < 0.f);
 	ERR_FAIL_COND(dst_data.position_range != src_data.position_range);
 
-	const float distance_error = max(src_data.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM) /
+	const float distance_error = math::max(src_data.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM) /
 			float(VoxelInstanceBlockData::POSITION_RESOLUTION);
 
 	// Compare layers
@@ -756,7 +756,7 @@ void test_instance_data_serialization() {
 		}
 		ERR_FAIL_COND(src_layer.instances.size() != dst_layer.instances.size());
 
-		const float scale_error = max(src_layer.scale_max - src_layer.scale_min,
+		const float scale_error = math::max(src_layer.scale_max - src_layer.scale_min,
 										  VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) /
 				float(VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RESOLUTION);
 

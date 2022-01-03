@@ -3,6 +3,8 @@
 #include "../util/macros.h"
 #include "../util/profiling.h"
 
+using namespace zylann;
+
 VoxelTool::VoxelTool() {
 	_sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH);
 }
@@ -45,7 +47,7 @@ float VoxelTool::get_sdf_scale() const {
 }
 
 void VoxelTool::set_sdf_scale(float s) {
-	_sdf_scale = max(s, 0.00001f);
+	_sdf_scale = math::max(s, 0.00001f);
 }
 
 void VoxelTool::set_texture_index(int ti) {
@@ -58,7 +60,7 @@ int VoxelTool::get_texture_index() const {
 }
 
 void VoxelTool::set_texture_opacity(float opacity) {
-	_texture_params.opacity = clamp(opacity, 0.f, 1.f);
+	_texture_params.opacity = math::clamp(opacity, 0.f, 1.f);
 }
 
 float VoxelTool::get_texture_opacity() const {
@@ -66,7 +68,7 @@ float VoxelTool::get_texture_opacity() const {
 }
 
 void VoxelTool::set_texture_falloff(float falloff) {
-	_texture_params.sharpness = 1.f / clamp(falloff, 0.001f, 1.f);
+	_texture_params.sharpness = 1.f / math::clamp(falloff, 0.001f, 1.f);
 }
 
 float VoxelTool::get_texture_falloff() const {

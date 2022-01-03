@@ -82,13 +82,13 @@ template <typename F2, typename F3, typename FloatT> void test_min_max(F2 noise_
 
 		FloatT n = noise_func_2d(x, y);
 
-		min_value_2d = min(n, min_value_2d);
-		max_value_2d = max(n, max_value_2d);
+		min_value_2d = math::min(n, min_value_2d);
+		max_value_2d = math::max(n, max_value_2d);
 
 		n = noise_func_3d(x, y, z);
 
-		min_value_3d = min(n, min_value_3d);
-		max_value_3d = max(n, max_value_3d);
+		min_value_3d = math::min(n, min_value_3d);
+		max_value_3d = math::max(n, max_value_3d);
 	}
 
 	print_line(String("2D | Min: {0}, Max: {1}").format(varray(min_value_2d, max_value_2d)));

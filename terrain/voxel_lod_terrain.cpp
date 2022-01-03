@@ -16,6 +16,9 @@
 #include <scene/3d/mesh_instance_3d.h>
 #include <scene/resources/packed_scene.h>
 
+using namespace zylann;
+//using namespace voxel;
+
 namespace {
 
 Ref<ArrayMesh> build_mesh(
@@ -382,7 +385,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 
 void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	// Mesh block size cannot be smaller than data block size, for now
-	mesh_block_size = clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
+	mesh_block_size = math::clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
 
 	// Only these sizes are allowed at the moment. This stuff is still not supported in a generic way yet,
 	// some code still exploits the fact it's a multiple of data block size, for performance
@@ -814,7 +817,8 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 		return;
 	}
 
-	_lod_distance = clamp(p_lod_distance, VoxelConstants::MINIMUM_LOD_DISTANCE, VoxelConstants::MAXIMUM_LOD_DISTANCE);
+	_lod_distance =
+			math::clamp(p_lod_distance, VoxelConstants::MINIMUM_LOD_DISTANCE, VoxelConstants::MAXIMUM_LOD_DISTANCE);
 
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 		OctreeItem &item = E->value();
@@ -907,7 +911,7 @@ void VoxelLodTerrain::set_generate_collisions(bool enabled) {
 
 void VoxelLodTerrain::set_collision_lod_count(int lod_count) {
 	ERR_FAIL_COND(lod_count < 0);
-	_collision_lod_count = static_cast<unsigned int>(min(lod_count, get_lod_count()));
+	_collision_lod_count = static_cast<unsigned int>(math::min(lod_count, get_lod_count()));
 }
 
 int VoxelLodTerrain::get_collision_lod_count() const {
@@ -1097,12 +1101,12 @@ void VoxelLodTerrain::try_schedule_loading_with_neighbors_no_lock(
 	const int bound_max_y = (_bounds_in_voxels.pos.y + _bounds_in_voxels.size.y) >> p;
 	const int bound_max_z = (_bounds_in_voxels.pos.z + _bounds_in_voxels.size.z) >> p;
 
-	const int min_x = max(p_data_block_pos.x - 1, bound_min_x);
-	const int min_y = max(p_data_block_pos.y - 1, bound_min_y);
-	const int min_z = max(p_data_block_pos.z - 1, bound_min_z);
-	const int max_x = min(p_data_block_pos.x + 2, bound_max_x);
-	const int max_y = min(p_data_block_pos.y + 2, bound_max_y);
-	const int max_z = min(p_data_block_pos.z + 2, bound_max_z);
+	const int min_x = math::max(p_data_block_pos.x - 1, bound_min_x);
+	const int min_y = math::max(p_data_block_pos.y - 1, bound_min_y);
+	const int min_z = math::max(p_data_block_pos.z - 1, bound_min_z);
+	const int max_x = math::min(p_data_block_pos.x + 2, bound_max_x);
+	const int max_y = math::min(p_data_block_pos.y + 2, bound_max_y);
+	const int max_z = math::min(p_data_block_pos.z + 2, bound_max_z);
 
 	// Not locking here, we assume it's done by the caller
 	//RWLockRead rlock(data_lod.map_lock);
@@ -2562,7 +2566,7 @@ void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
 }
 
 void VoxelLodTerrain::set_collision_update_delay(int delay_msec) {
-	_collision_update_delay = clamp(delay_msec, 0, 4000);
+	_collision_update_delay = math::clamp(delay_msec, 0, 4000);
 }
 
 int VoxelLodTerrain::get_collision_update_delay() const {
@@ -2570,7 +2574,7 @@ int VoxelLodTerrain::get_collision_update_delay() const {
 }
 
 void VoxelLodTerrain::set_lod_fade_duration(float seconds) {
-	_lod_fade_duration = clamp(seconds, 0.f, 1.f);
+	_lod_fade_duration = math::clamp(seconds, 0.f, 1.f);
 }
 
 float VoxelLodTerrain::get_lod_fade_duration() const {
@@ -2594,7 +2598,7 @@ void VoxelLodTerrain::_b_save_modified_blocks() {
 }
 
 void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {
-	ERR_FAIL_COND(!is_valid_size(aabb.size));
+	ERR_FAIL_COND(!math::is_valid_size(aabb.size));
 	set_voxel_bounds(Box3i(Vector3iUtil::from_rounded(aabb.position), Vector3iUtil::from_rounded(aabb.size)));
 }
 
@@ -2824,7 +2828,7 @@ void VoxelLodTerrain::update_gizmos() {
 				const Transform3D t = parent_transform * local_transform;
 				// Squaring because lower lod indexes are more interesting to see, so we give them more contrast.
 				// Also this might be better with sRGB?
-				const float g = squared(max(1.f - float(lod_index) / lod_count_f, 0.f));
+				const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
 				dr.draw_box_mm(t, Color8(255, uint8_t(g * 254.f), 0, 255));
 			});
 		}
@@ -2861,7 +2865,7 @@ void VoxelLodTerrain::set_show_gizmos(bool enable) {
 
 // This copies at multiple LOD levels to debug mips
 Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i extents) {
-	ERR_FAIL_COND_V(!is_valid_size(extents), Array());
+	ERR_FAIL_COND_V(!math::is_valid_size(extents), Array());
 
 	Array image_array;
 	image_array.resize(get_lod_count());

@@ -27,7 +27,7 @@ struct Interval {
 	}
 
 	inline static Interval from_unordered_values(float a, float b) {
-		return Interval(::min(a, b), ::max(a, b));
+		return Interval(math::min(a, b), math::max(a, b));
 	}
 
 	inline static Interval from_infinity() {
@@ -112,7 +112,7 @@ struct Interval {
 		const float b = min * other.max;
 		const float c = max * other.min;
 		const float d = max * other.max;
-		return Interval{ ::min(a, b, c, d), ::max(a, b, c, d) };
+		return Interval{ math::min(a, b, c, d), math::max(a, b, c, d) };
 	}
 
 	inline void operator*=(float x) {
@@ -136,7 +136,7 @@ struct Interval {
 		const float b = min / other.max;
 		const float c = max / other.min;
 		const float d = max / other.max;
-		return Interval{ ::min(a, b, c, d), ::max(a, b, c, d) };
+		return Interval{ math::min(a, b, c, d), math::max(a, b, c, d) };
 	}
 
 	inline Interval operator/(float x) const {
@@ -156,33 +156,33 @@ inline Interval operator*(float b, const Interval &a) {
 // Functions declared outside, so using intervals or numbers can be the same code (templatable)
 
 inline Interval min_interval(const Interval &a, const Interval &b) {
-	return Interval(::min(a.min, b.min), ::min(a.max, b.max));
+	return Interval(min(a.min, b.min), min(a.max, b.max));
 }
 
 inline Interval max_interval(const Interval &a, const Interval &b) {
-	return Interval(::max(a.min, b.min), ::max(a.max, b.max));
+	return Interval(max(a.min, b.min), max(a.max, b.max));
 }
 
 inline Interval min_interval(const Interval &a, const float b) {
-	return Interval(::min(a.min, b), ::min(a.max, b));
+	return Interval(min(a.min, b), min(a.max, b));
 }
 
 inline Interval max_interval(const Interval &a, const float b) {
-	return Interval(::max(a.min, b), ::max(a.max, b));
+	return Interval(max(a.min, b), max(a.max, b));
 }
 
 inline Interval sqrt(const Interval &i) {
-	return Interval{ Math::sqrt(::max(0.f, i.min)), Math::sqrt(::max(0.f, i.max)) };
+	return Interval{ Math::sqrt(max(0.f, i.min)), Math::sqrt(max(0.f, i.max)) };
 }
 
 inline Interval abs(const Interval &i) {
-	return Interval{ i.contains(0) ? 0 : ::min(Math::abs(i.min), Math::abs(i.max)),
-		::max(Math::abs(i.min), Math::abs(i.max)) };
+	return Interval{ i.contains(0) ? 0 : min(Math::abs(i.min), Math::abs(i.max)),
+		max(Math::abs(i.min), Math::abs(i.max)) };
 }
 
 inline Interval clamp(const Interval &i, const Interval &p_min, const Interval &p_max) {
 	if (p_min.is_single_value() && p_max.is_single_value()) {
-		return { ::clamp(i.min, p_min.min, p_max.min), ::clamp(i.max, p_min.min, p_max.min) };
+		return { clamp(i.min, p_min.min, p_max.min), clamp(i.max, p_min.min, p_max.min) };
 	}
 	if (i.min >= p_min.max && i.max <= p_max.min) {
 		return i;
@@ -338,8 +338,8 @@ inline Interval smoothstep(float p_from, float p_to, Interval p_weight) {
 		return Interval::from_single_value(p_from);
 	}
 	// Smoothstep is monotonic
-	float v0 = ::smoothstep(p_from, p_to, p_weight.min);
-	float v1 = ::smoothstep(p_from, p_to, p_weight.max);
+	float v0 = smoothstep(p_from, p_to, p_weight.min);
+	float v1 = smoothstep(p_from, p_to, p_weight.max);
 	if (v0 <= v1) {
 		return Interval(v0, v1);
 	} else {

@@ -5,6 +5,8 @@
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
+using namespace zylann;
+
 VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
 	set_padding(Transvoxel::MIN_PADDING, Transvoxel::MAX_PADDING);
 }
@@ -250,7 +252,7 @@ bool VoxelMesherTransvoxel::is_mesh_optimization_enabled() const {
 }
 
 void VoxelMesherTransvoxel::set_mesh_optimization_error_threshold(float threshold) {
-	_mesh_optimization_params.error_threshold = clamp(threshold, 0.f, 1.f);
+	_mesh_optimization_params.error_threshold = math::clamp(threshold, 0.f, 1.f);
 }
 
 float VoxelMesherTransvoxel::get_mesh_optimization_error_threshold() const {
@@ -258,7 +260,7 @@ float VoxelMesherTransvoxel::get_mesh_optimization_error_threshold() const {
 }
 
 void VoxelMesherTransvoxel::set_mesh_optimization_target_ratio(float ratio) {
-	_mesh_optimization_params.target_ratio = clamp(ratio, 0.f, 1.f);
+	_mesh_optimization_params.target_ratio = math::clamp(ratio, 0.f, 1.f);
 }
 
 float VoxelMesherTransvoxel::get_mesh_optimization_target_ratio() const {
