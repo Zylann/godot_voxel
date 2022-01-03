@@ -20,6 +20,9 @@ const char *VoxelGraphEditor::SIGNAL_NODES_DELETED = "nodes_deleted";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+using namespace zylann;
+using namespace voxel;
+
 // Shows a 2D slice of the 3D set of values coming from an output port
 class VoxelGraphEditorNodePreview : public VBoxContainer {
 	GDCLASS(VoxelGraphEditorNodePreview, VBoxContainer)
@@ -214,9 +217,9 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	add_child(vbox_container);
 
 	_context_menu = memnew(PopupMenu);
-	FixedArray<PopupMenu *, zylann::voxel::VoxelGraphNodeDB::CATEGORY_COUNT> category_menus;
+	FixedArray<PopupMenu *, VoxelGraphNodeDB::CATEGORY_COUNT> category_menus;
 	for (unsigned int i = 0; i < category_menus.size(); ++i) {
-		String name = zylann::voxel::VoxelGraphNodeDB::get_category_name(zylann::voxel::VoxelGraphNodeDB::Category(i));
+		String name = VoxelGraphNodeDB::get_category_name(VoxelGraphNodeDB::Category(i));
 		PopupMenu *menu = memnew(PopupMenu);
 		menu->set_name(name);
 		menu->connect("id_pressed", callable_mp(this, &VoxelGraphEditor::_on_context_menu_id_pressed));
@@ -224,9 +227,8 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_context_menu->add_submenu_item(name, name, i);
 		category_menus[i] = menu;
 	}
-	for (int i = 0; i < zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type_count(); ++i) {
-		const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
-				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(i);
+	for (int i = 0; i < VoxelGraphNodeDB::get_singleton()->get_type_count(); ++i) {
+		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(i);
 		PopupMenu *menu = category_menus[node_type.category];
 		menu->add_item(node_type.name, i);
 	}
@@ -346,11 +348,11 @@ void VoxelGraphEditor::build_gui_from_graph() {
 
 	// Connections
 
-	std::vector<zylann::ProgramGraph::Connection> connections;
+	std::vector<ProgramGraph::Connection> connections;
 	graph.get_connections(connections);
 
 	for (size_t i = 0; i < connections.size(); ++i) {
-		const zylann::ProgramGraph::Connection &con = connections[i];
+		const ProgramGraph::Connection &con = connections[i];
 		const String from_node_name = node_to_gui_name(con.src.node_id);
 		const String to_node_name = node_to_gui_name(con.dst.node_id);
 		VoxelGraphEditorNode *to_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(to_node_name));
@@ -375,8 +377,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	CRASH_COND(_graph.is_null());
 	const VoxelGeneratorGraph &graph = **_graph;
 	const uint32_t node_type_id = graph.get_node_type_id(node_id);
-	const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
-			zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
+	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
 
 	const String ui_node_name = node_to_gui_name(node_id);
 	ERR_FAIL_COND(_graph_edit->has_node(ui_node_name));
@@ -395,7 +396,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 	// We artificially hide output ports if the node is an output.
 	// These nodes have an output for implementation reasons, some outputs can process the data like any other node.
-	const bool hide_outputs = node_type.category == zylann::voxel::VoxelGraphNodeDB::CATEGORY_OUTPUT;
+	const bool hide_outputs = node_type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT;
 
 	const unsigned int row_count = max(node_type.inputs.size(), hide_outputs ? 0 : node_type.outputs.size());
 	const Color port_color(0.4, 0.4, 1.0);
@@ -580,7 +581,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 
 	_undo_redo->create_action(TTR("Delete Nodes"));
 
-	std::vector<zylann::ProgramGraph::Connection> connections;
+	std::vector<ProgramGraph::Connection> connections;
 	_graph->get_connections(connections);
 
 	for (size_t i = 0; i < to_erase.size(); ++i) {
@@ -595,8 +596,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 				*_graph, "create_node", node_type_id, _graph->get_node_gui_position(node_id), node_id);
 
 		// Params undo
-		const size_t param_count =
-				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).params.size();
+		const size_t param_count = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).params.size();
 		for (size_t j = 0; j < param_count; ++j) {
 			Variant param_value = _graph->get_node_param(node_id, j);
 			_undo_redo->add_undo_method(*_graph, "set_node_param", node_id, SIZE_T_TO_VARIANT(j), param_value);
@@ -606,7 +606,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 
 		// Connections undo
 		for (size_t j = 0; j < connections.size(); ++j) {
-			const zylann::ProgramGraph::Connection &con = connections[j];
+			const ProgramGraph::Connection &con = connections[j];
 
 			if (con.src.node_id == node_id || con.dst.node_id == node_id) {
 				_undo_redo->add_undo_method(*_graph, "add_connection", con.src.node_id, con.src.port_index,
@@ -711,7 +711,7 @@ void VoxelGraphEditor::update_previews() {
 
 	uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
-	const zylann::voxel::VoxelGraphRuntime::CompilationResult result = _graph->compile();
+	const VoxelGraphRuntime::CompilationResult result = _graph->compile();
 	if (!result.success) {
 		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
 
@@ -756,7 +756,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	_graph->debug_analyze_range(
 			Vector3iUtil::from_floored(aabb.position), Vector3iUtil::from_floored(aabb.position + aabb.size), true);
 
-	const zylann::voxel::VoxelGraphRuntime::State &state = _graph->get_last_state_from_current_thread();
+	const VoxelGraphRuntime::State &state = _graph->get_last_state_from_current_thread();
 
 	const Color greyed_out_color(1, 1, 1, 0.5);
 
@@ -775,7 +775,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 		node_view->set_modulate(greyed_out_color);
 
 		for (int port_index = 0; port_index < node_view->output_labels.size(); ++port_index) {
-			zylann::ProgramGraph::PortLocation loc;
+			ProgramGraph::PortLocation loc;
 			loc.node_id = node_view->node_id;
 			loc.port_index = port_index;
 			uint32_t address;
@@ -834,10 +834,10 @@ void VoxelGraphEditor::update_slice_previews() {
 		if (node == nullptr || node->preview == nullptr) {
 			continue;
 		}
-		zylann::ProgramGraph::PortLocation dst;
+		ProgramGraph::PortLocation dst;
 		dst.node_id = node->node_id;
 		dst.port_index = 0;
-		zylann::ProgramGraph::PortLocation src;
+		ProgramGraph::PortLocation src;
 		if (!_graph->try_get_connection_to(dst, src)) {
 			// Not connected?
 			continue;
@@ -884,13 +884,12 @@ void VoxelGraphEditor::update_slice_previews() {
 	_graph->generate_set(Span<float>(x_vec, 0, x_vec.size()), Span<float>(y_vec, 0, y_vec.size()),
 			Span<float>(z_vec, 0, z_vec.size()));
 
-	const zylann::voxel::VoxelGraphRuntime::State &last_state =
-			VoxelGeneratorGraph::get_last_state_from_current_thread();
+	const VoxelGraphRuntime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
 	for (size_t preview_index = 0; preview_index < previews.size(); ++preview_index) {
 		PreviewInfo &info = previews[preview_index];
 
-		const zylann::voxel::VoxelGraphRuntime::Buffer &buffer = last_state.get_buffer(info.address);
+		const VoxelGraphRuntime::Buffer &buffer = last_state.get_buffer(info.address);
 
 		Image &im = **info.control->get_image();
 		ERR_FAIL_COND(im.get_width() * im.get_height() != static_cast<int>(buffer.size));
@@ -934,7 +933,7 @@ void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
 	StringName node_name = _graph->get_node_name(node_id);
 
 	const uint32_t node_type_id = _graph->get_node_type_id(node_id);
-	String node_type_name = zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).name;
+	String node_type_name = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).name;
 
 	const String ui_node_name = node_to_gui_name(node_id);
 	VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(ui_node_name));

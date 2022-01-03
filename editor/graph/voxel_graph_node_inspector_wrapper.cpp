@@ -3,6 +3,9 @@
 #include "../../util/macros.h"
 #include <core/object/undo_redo.h>
 
+using namespace zylann;
+using namespace voxel;
+
 void VoxelGraphNodeInspectorWrapper::setup(Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id, UndoRedo *ur) {
 	_graph = p_graph;
 	_node_id = p_node_id;
@@ -24,15 +27,14 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 	p_list->push_back(PropertyInfo(Variant::STRING_NAME, "name", PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_EDITOR));
 
 	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
-	const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
-			zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
+	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
 
 	// Params
 
 	p_list->push_back(PropertyInfo(Variant::NIL, "Params", PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_CATEGORY));
 
 	for (size_t i = 0; i < node_type.params.size(); ++i) {
-		const zylann::voxel::VoxelGraphNodeDB::Param &param = node_type.params[i];
+		const VoxelGraphNodeDB::Param &param = node_type.params[i];
 		PropertyInfo pi;
 		pi.name = param.name;
 		pi.type = param.type;
@@ -54,7 +56,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 			PropertyInfo(Variant::NIL, "Input Defaults", PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_CATEGORY));
 
 	for (size_t i = 0; i < node_type.inputs.size(); ++i) {
-		const zylann::voxel::VoxelGraphNodeDB::Port &port = node_type.inputs[i];
+		const VoxelGraphNodeDB::Port &port = node_type.inputs[i];
 		PropertyInfo pi;
 		pi.name = port.name;
 		pi.type = port.default_value.get_type();
@@ -82,7 +84,7 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 
 	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
 
-	const zylann::voxel::VoxelGraphNodeDB *db = zylann::voxel::VoxelGraphNodeDB::get_singleton();
+	const VoxelGraphNodeDB *db = VoxelGraphNodeDB::get_singleton();
 
 	uint32_t index;
 	if (db->try_get_param_index_from_name(node_type_id, p_name, index)) {
@@ -122,7 +124,7 @@ bool VoxelGraphNodeInspectorWrapper::_get(const StringName &p_name, Variant &r_r
 
 	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
 
-	const zylann::voxel::VoxelGraphNodeDB *db = zylann::voxel::VoxelGraphNodeDB::get_singleton();
+	const VoxelGraphNodeDB *db = VoxelGraphNodeDB::get_singleton();
 
 	uint32_t index;
 	if (db->try_get_param_index_from_name(node_type_id, p_name, index)) {
