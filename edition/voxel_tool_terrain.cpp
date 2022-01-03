@@ -97,7 +97,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		RaycastPredicateBlocky predicate{ _terrain->get_storage(), **library_ref, p_collision_mask };
 		float hit_distance;
 		float hit_distance_prev;
-		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
+		if (zylann::voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
 					hit_distance_prev)) {
 			res.instantiate();
 			res->position = hit_pos;
@@ -109,7 +109,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		RaycastPredicateColor predicate{ _terrain->get_storage() };
 		float hit_distance;
 		float hit_distance_prev;
-		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
+		if (zylann::voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
 					hit_distance_prev)) {
 			res.instantiate();
 			res->position = hit_pos;
@@ -121,7 +121,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		RaycastPredicateSDF predicate{ _terrain->get_storage() };
 		float hit_distance;
 		float hit_distance_prev;
-		if (voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
+		if (zylann::voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
 					hit_distance_prev)) {
 			res.instantiate();
 			res->position = hit_pos;

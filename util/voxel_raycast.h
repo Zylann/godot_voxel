@@ -2,6 +2,8 @@
 #include "../util/profiling.h"
 #include <core/math/vector3.h>
 
+namespace zylann {
+
 template <typename Predicate_F> // f(Vector3i position) -> bool
 bool voxel_raycast(Vector3 ray_origin, Vector3 ray_direction, Predicate_F predicate, real_t max_distance,
 		Vector3i &out_hit_pos, Vector3i &out_prev_pos, float &out_distance_along_ray,
@@ -165,3 +167,5 @@ bool voxel_raycast(Vector3 ray_origin, Vector3 ray_direction, Predicate_F predic
 
 	return true;
 }
+
+} // namespace zylann

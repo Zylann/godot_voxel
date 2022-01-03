@@ -128,7 +128,8 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	// `voxel_raycast` operates on a discrete grid of cubic voxels, so to account for the smooth interpolation,
 	// we may offset the ray so that cubes act as if they were centered on the filtered result.
 	const Vector3 offset(0.5, 0.5, 0.5);
-	if (voxel_raycast(pos + offset, dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
+	if (zylann::voxel_raycast(
+				pos + offset, dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
 		// Approximate surface
 
 		float d = hit_distance;
