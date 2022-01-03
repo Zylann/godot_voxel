@@ -998,8 +998,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &sz = ctx.get_input(5);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] =
-						sdf_box(Vector3(x.data[i], y.data[i], z.data[i]), Vector3(sx.data[i], sy.data[i], sz.data[i]));
+				out.data[i] = zylann::math::sdf_box(
+						Vector3(x.data[i], y.data[i], z.data[i]), Vector3(sx.data[i], sy.data[i], sz.data[i]));
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -1009,7 +1009,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval sx = ctx.get_input(3);
 			const Interval sy = ctx.get_input(4);
 			const Interval sz = ctx.get_input(5);
-			ctx.set_output(0, sdf_box(x, y, z, sx, sy, sz));
+			ctx.set_output(0, zylann::math::sdf_box(x, y, z, sx, sy, sz));
 		};
 	}
 	{
@@ -1057,7 +1057,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &r1 = ctx.get_input(4);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = sdf_torus(x.data[i], y.data[i], z.data[i], r0.data[i], r1.data[i]);
+				out.data[i] = zylann::math::sdf_torus(x.data[i], y.data[i], z.data[i], r0.data[i], r1.data[i]);
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -1066,7 +1066,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval z = ctx.get_input(2);
 			const Interval r0 = ctx.get_input(3);
 			const Interval r1 = ctx.get_input(4);
-			ctx.set_output(0, sdf_torus(x, y, z, r0, r1));
+			ctx.set_output(0, zylann::math::sdf_torus(x, y, z, r0, r1));
 		};
 	}
 	{
@@ -1103,12 +1103,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				}
 			} else if (params.smoothness > 0.0001f) {
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = sdf_smooth_union(a.data[i], b.data[i], params.smoothness);
+					out.data[i] = zylann::math::sdf_smooth_union(a.data[i], b.data[i], params.smoothness);
 				}
 			} else {
 				// Fallback on hard-union, smooth union does not support zero smoothness
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = sdf_union(a.data[i], b.data[i]);
+					out.data[i] = zylann::math::sdf_union(a.data[i], b.data[i]);
 				}
 			}
 		};
@@ -1187,12 +1187,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				}
 			} else if (params.smoothness > 0.0001f) {
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = sdf_smooth_subtract(a.data[i], b.data[i], params.smoothness);
+					out.data[i] = zylann::math::sdf_smooth_subtract(a.data[i], b.data[i], params.smoothness);
 				}
 			} else {
 				// Fallback on hard-subtract, smooth subtract does not support zero smoothness
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = sdf_subtract(a.data[i], b.data[i]);
+					out.data[i] = zylann::math::sdf_subtract(a.data[i], b.data[i]);
 				}
 			}
 		};

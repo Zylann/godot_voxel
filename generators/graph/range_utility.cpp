@@ -367,11 +367,13 @@ template <typename F> inline Interval sdf_smooth_op(Interval b, Interval a, floa
 Interval sdf_smooth_union(Interval p_b, Interval p_a, float p_s) {
 	// TODO Not tested
 	// Had to use a lambda because otherwise it's ambiguous
-	return sdf_smooth_op(p_b, p_a, p_s, [](float b, float a, float s) { return sdf_smooth_union(b, a, s); });
+	return sdf_smooth_op(
+			p_b, p_a, p_s, [](float b, float a, float s) { return zylann::math::sdf_smooth_union(b, a, s); });
 }
 
 Interval sdf_smooth_subtract(Interval p_b, Interval p_a, float p_s) {
-	return sdf_smooth_op(p_b, p_a, p_s, [](float b, float a, float s) { return sdf_smooth_subtract(b, a, s); });
+	return sdf_smooth_op(
+			p_b, p_a, p_s, [](float b, float a, float s) { return zylann::math::sdf_smooth_subtract(b, a, s); });
 }
 
 static Interval get_fnl_cellular_value_range_2d(const FastNoiseLite *noise, Interval x, Interval y) {

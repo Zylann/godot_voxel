@@ -156,12 +156,12 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 	float res;
 	switch (mode) {
 		case VoxelTool::MODE_ADD:
-			res = sdf_union(src_value, dst_value);
+			res = zylann::math::sdf_union(src_value, dst_value);
 			break;
 
 		case VoxelTool::MODE_REMOVE:
 			// Relative complement (or difference)
-			res = sdf_subtract(dst_value, src_value);
+			res = zylann::math::sdf_subtract(dst_value, src_value);
 			break;
 
 		case VoxelTool::MODE_SET:
@@ -189,7 +189,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		box.for_each_cell([this, center, radius](Vector3i pos) {
-			float d = _sdf_scale * sdf_sphere(pos, center, radius);
+			float d = _sdf_scale * zylann::math::sdf_sphere(pos, center, radius);
 			_set_voxel_f(pos, sdf_blend(d, get_voxel_f(pos), _mode));
 		});
 
@@ -220,8 +220,8 @@ void VoxelTool::sdf_stamp_erase(Ref<VoxelBuffer> stamp, Vector3i pos) {
 
 	box.for_each_cell_zxy([this, stamp, pos](Vector3i pos_in_volume) {
 		const Vector3i pos_in_stamp = pos_in_volume - pos;
-		const float dst_sdf = stamp->get_voxel_f(
-				pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBuffer::CHANNEL_SDF);
+		const float dst_sdf =
+				stamp->get_voxel_f(pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBuffer::CHANNEL_SDF);
 		if (dst_sdf <= 0.f) {
 			_set_voxel_f(pos_in_volume, 1.f);
 		}
@@ -242,15 +242,11 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// TODO Better quality
-		box.for_each_cell([this](Vector3i pos) {
-			_set_voxel_f(pos, sdf_blend(-1.0, get_voxel_f(pos), _mode));
-		});
+		box.for_each_cell([this](Vector3i pos) { _set_voxel_f(pos, sdf_blend(-1.0, get_voxel_f(pos), _mode)); });
 
 	} else {
 		int value = _mode == MODE_REMOVE ? _eraser_value : _value;
-		box.for_each_cell([this, value](Vector3i pos) {
-			_set_voxel(pos, value);
-		});
+		box.for_each_cell([this, value](Vector3i pos) { _set_voxel(pos, value); });
 	}
 
 	_post_edit(box);
@@ -261,8 +257,8 @@ void VoxelTool::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channel_mask) c
 	ERR_PRINT("Not implemented");
 }
 
-void VoxelTool::paste(Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
-		uint64_t mask_value) {
+void VoxelTool::paste(
+		Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	ERR_PRINT("Not implemented");
 }
@@ -322,8 +318,8 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);
 
 	ClassDB::bind_method(D_METHOD("copy", "src_pos", "dst_buffer", "channels_mask"), &VoxelTool::_b_copy);
-	ClassDB::bind_method(D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask", "src_mask_value"),
-			&VoxelTool::_b_paste);
+	ClassDB::bind_method(
+			D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask", "src_mask_value"), &VoxelTool::_b_paste);
 
 	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance", "collision_mask"),
 			&VoxelTool::_b_raycast, DEFVAL(10.0), DEFVAL(0xffffffff));

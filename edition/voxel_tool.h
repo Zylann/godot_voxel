@@ -21,13 +21,13 @@ template <typename Op, typename Shape> struct SdfOperation16bit {
 
 struct SdfUnion {
 	inline float operator()(float a, float b) const {
-		return sdf_union(a, b);
+		return zylann::math::sdf_union(a, b);
 	}
 };
 
 struct SdfSubtract {
 	inline float operator()(float a, float b) const {
-		return sdf_subtract(a, b);
+		return zylann::math::sdf_subtract(a, b);
 	}
 };
 
@@ -43,7 +43,7 @@ struct SdfSphere {
 	float scale;
 
 	inline float operator()(Vector3 pos) const {
-		return scale * sdf_sphere(pos, center, radius);
+		return scale * zylann::math::sdf_sphere(pos, center, radius);
 	}
 };
 
