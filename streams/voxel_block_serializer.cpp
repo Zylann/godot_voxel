@@ -12,6 +12,8 @@
 #include <core/io/file_access.h>
 #include <limits>
 
+namespace zylann::voxel {
+
 namespace {
 const uint8_t BLOCK_VERSION = 2;
 const unsigned int BLOCK_TRAILING_MAGIC = 0x900df00d;
@@ -182,8 +184,7 @@ size_t get_size_in_bytes(const VoxelBufferInternal &buffer, size_t &metadata_siz
 	return size + metadata_size_with_header + BLOCK_TRAILING_MAGIC_SIZE;
 }
 
-VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize(
-		const VoxelBufferInternal &voxel_buffer) {
+BlockSerializer::SerializeResult BlockSerializer::serialize(const VoxelBufferInternal &voxel_buffer) {
 	//
 	VOXEL_PROFILE_SCOPE();
 	// Cannot serialize an empty block
@@ -262,7 +263,7 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 	return SerializeResult(_data, true);
 }
 
-bool VoxelBlockSerializerInternal::deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
+bool BlockSerializer::deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	//
 	VOXEL_PROFILE_SCOPE();
 
@@ -364,32 +365,30 @@ bool VoxelBlockSerializerInternal::deserialize(Span<const uint8_t> p_data, Voxel
 	return true;
 }
 
-VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize_and_compress(
-		const VoxelBufferInternal &voxel_buffer) {
+BlockSerializer::SerializeResult BlockSerializer::serialize_and_compress(const VoxelBufferInternal &voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
 	SerializeResult res = serialize(voxel_buffer);
 	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
 	const std::vector<uint8_t> &data = res.data;
 
-	res.success = zylann::voxel::CompressedData::compress(Span<const uint8_t>(data.data(), 0, data.size()),
-			_compressed_data, zylann::voxel::CompressedData::COMPRESSION_LZ4);
+	res.success = CompressedData::compress(
+			Span<const uint8_t>(data.data(), 0, data.size()), _compressed_data, CompressedData::COMPRESSION_LZ4);
 	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
 
 	return SerializeResult(_compressed_data, true);
 }
 
-bool VoxelBlockSerializerInternal::decompress_and_deserialize(
-		Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
+bool BlockSerializer::decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
-	const bool res = zylann::voxel::CompressedData::decompress(p_data, _data);
+	const bool res = CompressedData::decompress(p_data, _data);
 	ERR_FAIL_COND_V(!res, false);
 
 	return deserialize(to_span_const(_data), out_voxel_buffer);
 }
 
-bool VoxelBlockSerializerInternal::decompress_and_deserialize(
+bool BlockSerializer::decompress_and_deserialize(
 		FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(f == nullptr, false);
@@ -407,7 +406,7 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 	return decompress_and_deserialize(to_span_const(_compressed_data), out_voxel_buffer);
 }
 
-int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress) {
+int BlockSerializer::serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress) {
 	if (compress) {
 		SerializeResult res = serialize_and_compress(voxel_buffer);
 		ERR_FAIL_COND_V(!res.success, -1);
@@ -422,8 +421,7 @@ int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, VoxelBufferInt
 	}
 }
 
-void VoxelBlockSerializerInternal::deserialize(
-		Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress) {
+void BlockSerializer::deserialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress) {
 	if (decompress) {
 		_compressed_data.resize(size);
 		const Error err = peer->get_data(_compressed_data.data(), _compressed_data.size());
@@ -438,6 +436,8 @@ void VoxelBlockSerializerInternal::deserialize(
 		deserialize(to_span_const(_data), voxel_buffer);
 	}
 }
+
+} // namespace zylann::voxel
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

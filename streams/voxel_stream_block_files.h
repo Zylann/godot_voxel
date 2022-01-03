@@ -35,7 +35,7 @@ private:
 	String get_block_file_path(const Vector3i &block_pos, unsigned int lod) const;
 	Vector3i get_block_position(const Vector3i &origin_in_voxels) const;
 
-	static thread_local VoxelBlockSerializerInternal _block_serializer;
+	static thread_local zylann::voxel::BlockSerializer _block_serializer;
 
 	String _directory_path;
 

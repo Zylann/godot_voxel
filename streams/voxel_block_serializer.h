@@ -10,15 +10,16 @@
 class StreamPeer;
 class VoxelBufferInternal;
 
-class VoxelBlockSerializerInternal {
+namespace zylann::voxel {
+
+class BlockSerializer {
 	// Had to be named differently to not conflict with the wrapper for Godot script API
 public:
 	struct SerializeResult {
 		const std::vector<uint8_t> &data;
 		bool success;
 
-		inline SerializeResult(const std::vector<uint8_t> &p_data, bool p_success) :
-				data(p_data), success(p_success) {}
+		inline SerializeResult(const std::vector<uint8_t> &p_data, bool p_success) : data(p_data), success(p_success) {}
 	};
 
 	SerializeResult serialize(const VoxelBufferInternal &voxel_buffer);
@@ -39,6 +40,8 @@ private:
 	FileAccessMemory _file_access_memory;
 };
 
+} // namespace zylann::voxel
+
 class VoxelBuffer;
 
 class VoxelBlockSerializer : public RefCounted {
@@ -50,7 +53,7 @@ public:
 private:
 	static void _bind_methods();
 
-	VoxelBlockSerializerInternal _serializer;
+	zylann::voxel::BlockSerializer _serializer;
 };
 
 #endif // VOXEL_BLOCK_SERIALIZER_H

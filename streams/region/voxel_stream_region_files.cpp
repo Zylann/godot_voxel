@@ -19,7 +19,7 @@ const char *META_FILE_NAME = "meta.vxrm";
 
 } // namespace
 
-thread_local VoxelBlockSerializerInternal VoxelStreamRegionFiles::_block_serializer;
+thread_local zylann::voxel::BlockSerializer VoxelStreamRegionFiles::_block_serializer;
 
 // Sorts a sequence without modifying it, returning a sorted list of pointers
 template <typename T, typename Comparer_T>

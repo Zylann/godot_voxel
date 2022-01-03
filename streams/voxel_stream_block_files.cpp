@@ -12,7 +12,7 @@ const char *META_FILE_NAME = "meta.vxbm";
 const char *BLOCK_FILE_EXTENSION = ".vxb";
 } // namespace
 
-thread_local VoxelBlockSerializerInternal VoxelStreamBlockFiles::_block_serializer;
+thread_local zylann::voxel::BlockSerializer VoxelStreamBlockFiles::_block_serializer;
 
 VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 	// Defaults
@@ -141,7 +141,7 @@ void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i 
 		f->store_buffer((uint8_t *)FORMAT_BLOCK_MAGIC, 4);
 		f->store_8(FORMAT_VERSION);
 
-		VoxelBlockSerializerInternal::SerializeResult res = _block_serializer.serialize_and_compress(buffer);
+		zylann::voxel::BlockSerializer::SerializeResult res = _block_serializer.serialize_and_compress(buffer);
 		if (!res.success) {
 			memdelete(f);
 			ERR_PRINT("Failed to save block");

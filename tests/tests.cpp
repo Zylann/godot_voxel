@@ -1034,8 +1034,8 @@ void test_block_serializer() {
 	voxel_buffer.fill_area(44, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 1);
 
 	// Serialize
-	VoxelBlockSerializerInternal serializer;
-	VoxelBlockSerializerInternal::SerializeResult result = serializer.serialize_and_compress(voxel_buffer);
+	BlockSerializer serializer;
+	BlockSerializer::SerializeResult result = serializer.serialize_and_compress(voxel_buffer);
 	ERR_FAIL_COND(!result.success);
 	std::vector<uint8_t> data = result.data;
 
@@ -1077,7 +1077,7 @@ void test_region_file() {
 		ERR_FAIL_COND(open_error != OK);
 
 		// Save block
-		VoxelBlockSerializerInternal serializer;
+		BlockSerializer serializer;
 		const Error save_error = region_file.save_block(Vector3i(1, 2, 3), voxel_buffer, serializer);
 		ERR_FAIL_COND(save_error != OK);
 
@@ -1099,7 +1099,7 @@ void test_region_file() {
 
 		// Read back
 		VoxelBufferInternal loaded_voxel_buffer;
-		VoxelBlockSerializerInternal serializer;
+		BlockSerializer serializer;
 		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer, serializer);
 		ERR_FAIL_COND(load_error != OK);
 

@@ -8,9 +8,10 @@
 #include <vector>
 
 class FileAccess;
-class VoxelBlockSerializerInternal;
 
 namespace zylann::voxel {
+
+class BlockSerializer;
 
 struct RegionFormat {
 	static const char *FILE_EXTENSION;
@@ -83,8 +84,8 @@ public:
 	bool set_format(const RegionFormat &format);
 	const RegionFormat &get_format() const;
 
-	Error load_block(Vector3i position, VoxelBufferInternal &out_block, VoxelBlockSerializerInternal &serializer);
-	Error save_block(Vector3i position, VoxelBufferInternal &block, VoxelBlockSerializerInternal &serializer);
+	Error load_block(Vector3i position, VoxelBufferInternal &out_block, zylann::voxel::BlockSerializer &serializer);
+	Error save_block(Vector3i position, VoxelBufferInternal &block, zylann::voxel::BlockSerializer &serializer);
 
 	unsigned int get_header_block_count() const;
 	bool has_block(Vector3i position) const;

@@ -109,7 +109,7 @@ private:
 		}
 	};
 
-	static thread_local VoxelBlockSerializerInternal _block_serializer;
+	static thread_local zylann::voxel::BlockSerializer _block_serializer;
 
 	// TODO This is not thread-friendly.
 	// `VoxelRegionFile` is not thread-safe so we have to limit the usage to one thread at once, blocking the others.
