@@ -1335,7 +1335,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 	// const uint32_t cube_size = 100;
 	// const uint32_t cube_count = 1;
 	const uint32_t voxel_count = cube_size * cube_size * cube_size * cube_count;
-	ProfilingClock profiling_clock;
+	zylann::ProfilingClock profiling_clock;
 	uint64_t elapsed_us = 0;
 
 	Cache &cache = _cache;

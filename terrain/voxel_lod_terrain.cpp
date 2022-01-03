@@ -1322,7 +1322,7 @@ void VoxelLodTerrain::_process(float delta) {
 	// It has to happen first because blocks can be unloaded afterwards.
 	flush_pending_lod_edits();
 
-	ProfilingClock profiling_clock;
+	zylann::ProfilingClock profiling_clock;
 
 	static thread_local std::vector<BlockToSave> data_blocks_to_save;
 

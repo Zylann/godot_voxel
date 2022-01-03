@@ -828,7 +828,7 @@ void VoxelTerrain::_process() {
 }
 
 void VoxelTerrain::process_viewers() {
-	ProfilingClock profiling_clock;
+	zylann::ProfilingClock profiling_clock;
 
 	// Ordered by ascending index in paired viewers list
 	std::vector<size_t> unpaired_viewer_indexes;
@@ -1117,7 +1117,7 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 }
 
 void VoxelTerrain::process_meshing() {
-	ProfilingClock profiling_clock;
+	zylann::ProfilingClock profiling_clock;
 
 	_stats.dropped_block_meshs = 0;
 

@@ -3,6 +3,8 @@
 
 #include <core/os/time.h>
 
+namespace zylann {
+
 struct ProfilingClock {
 	uint64_t time_before = 0;
 
@@ -17,5 +19,7 @@ struct ProfilingClock {
 		return time_spent;
 	}
 };
+
+} // namespace zylann
 
 #endif // PROFILING_CLOCK_H
