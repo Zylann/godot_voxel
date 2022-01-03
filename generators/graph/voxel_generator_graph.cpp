@@ -532,7 +532,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 				const Vector3i gmax = origin + (rmax << input.lod);
 
 				runtime.analyze_range(cache.state, gmin, gmax);
-				const Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
+				const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
 				bool sdf_is_uniform = false;
 				if (sdf_range.min > clip_threshold && sdf_range.max > clip_threshold) {
 					out_buffer.fill_area_f(air_sdf, rmin, rmax, channel);
@@ -1123,14 +1123,14 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 
 // Note, this wrapper may not be used for main generation tasks.
 // It is mostly used as a debug tool.
-Interval VoxelGeneratorGraph::debug_analyze_range(
+math::Interval VoxelGeneratorGraph::debug_analyze_range(
 		Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map) const {
 	std::shared_ptr<const Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);
 		runtime_ptr = _runtime;
 	}
-	ERR_FAIL_COND_V(runtime_ptr == nullptr, Interval::from_single_value(0.f));
+	ERR_FAIL_COND_V(runtime_ptr == nullptr, math::Interval::from_single_value(0.f));
 	Cache &cache = _cache;
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	// Note, buffer size is irrelevant here, because range analysis doesn't use buffers
@@ -1505,7 +1505,7 @@ Vector2 VoxelGeneratorGraph::_b_debug_analyze_range(Vector3 min_pos, Vector3 max
 	ERR_FAIL_COND_V(min_pos.x > max_pos.x, Vector2());
 	ERR_FAIL_COND_V(min_pos.y > max_pos.y, Vector2());
 	ERR_FAIL_COND_V(min_pos.z > max_pos.z, Vector2());
-	const Interval r =
+	const math::Interval r =
 			debug_analyze_range(Vector3iUtil::from_floored(min_pos), Vector3iUtil::from_floored(max_pos), false);
 	return Vector2(r.min, r.max);
 }

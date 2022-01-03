@@ -906,19 +906,19 @@ void test_get_curve_monotonic_sections() {
 		ERR_FAIL_COND(sections[0].y_min != 0.f);
 		ERR_FAIL_COND(sections[0].y_max != 1.f);
 		{
-			Interval yi = get_curve_range(**curve, sections, Interval(0.f, 1.f));
+			math::Interval yi = get_curve_range(**curve, sections, math::Interval(0.f, 1.f));
 			ERR_FAIL_COND(!L::is_equal_approx(yi.min, 0.f));
 			ERR_FAIL_COND(!L::is_equal_approx(yi.max, 1.f));
 		}
 		{
-			Interval yi = get_curve_range(**curve, sections, Interval(-2.f, 2.f));
+			math::Interval yi = get_curve_range(**curve, sections, math::Interval(-2.f, 2.f));
 			ERR_FAIL_COND(!L::is_equal_approx(yi.min, 0.f));
 			ERR_FAIL_COND(!L::is_equal_approx(yi.max, 1.f));
 		}
 		{
-			Interval xi(0.2f, 0.8f);
-			Interval yi = get_curve_range(**curve, sections, xi);
-			Interval yi_expected(curve->interpolate_baked(xi.min), curve->interpolate_baked(xi.max));
+			math::Interval xi(0.2f, 0.8f);
+			math::Interval yi = get_curve_range(**curve, sections, xi);
+			math::Interval yi_expected(curve->interpolate_baked(xi.min), curve->interpolate_baked(xi.max));
 			ERR_FAIL_COND(!L::is_equal_approx(yi.min, yi_expected.min));
 			ERR_FAIL_COND(!L::is_equal_approx(yi.max, yi_expected.max));
 		}

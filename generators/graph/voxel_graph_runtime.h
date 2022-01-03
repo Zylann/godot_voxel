@@ -76,7 +76,7 @@ public:
 			return buffers[address];
 		}
 
-		inline const Interval get_range(uint16_t address) const {
+		inline const math::Interval get_range(uint16_t address) const {
 			// TODO Just for convenience because STL bound checks aren't working in Godot 3
 			CRASH_COND(address >= buffers.size());
 			return ranges[address];
@@ -98,7 +98,7 @@ public:
 	private:
 		friend class VoxelGraphRuntime;
 
-		std::vector<Interval> ranges;
+		std::vector<math::Interval> ranges;
 		std::vector<Buffer> buffers;
 
 		unsigned int buffer_size = 0;
@@ -316,15 +316,15 @@ public:
 	class RangeAnalysisContext : public _ProcessContext {
 	public:
 		inline RangeAnalysisContext(const Span<const uint16_t> inputs, const Span<const uint16_t> outputs,
-				const Span<const uint8_t> params, Span<Interval> ranges, Span<Buffer> buffers) :
+				const Span<const uint8_t> params, Span<math::Interval> ranges, Span<Buffer> buffers) :
 				_ProcessContext(inputs, outputs, params), _ranges(ranges), _buffers(buffers) {}
 
-		inline const Interval get_input(uint32_t i) const {
+		inline const math::Interval get_input(uint32_t i) const {
 			const uint32_t address = get_input_address(i);
 			return _ranges[address];
 		}
 
-		inline void set_output(uint32_t i, const Interval r) {
+		inline void set_output(uint32_t i, const math::Interval r) {
 			const uint32_t address = get_output_address(i);
 			_ranges[address] = r;
 		}
@@ -336,7 +336,7 @@ public:
 		}
 
 	private:
-		Span<Interval> _ranges;
+		Span<math::Interval> _ranges;
 		Span<Buffer> _buffers;
 	};
 

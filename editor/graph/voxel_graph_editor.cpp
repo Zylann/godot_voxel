@@ -782,7 +782,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 			if (!_graph->try_get_output_port_address(loc, address)) {
 				continue;
 			}
-			const Interval range = state.get_range(address);
+			const math::Interval range = state.get_range(address);
 			Control *label = node_view->output_labels[port_index];
 			label->set_tooltip(String("Min: {0}\nMax: {1}").format(varray(range.min, range.max)));
 		}

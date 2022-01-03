@@ -536,7 +536,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 					// The node is considered skippable, which means its outputs are either locally constant or unused.
 					// Unused buffers can be left as-is, but local constants must be filled in.
 					if (buffer.local_users_count > 0) {
-						const Interval range = state.ranges[output_address];
+						const math::Interval range = state.ranges[output_address];
 						// If this interval is not a single value then the node should not have been skippable
 						CRASH_COND(!range.is_single_value());
 						const float v = range.min;
@@ -651,7 +651,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 				buffer.data[j] = bs.constant_value;
 			}
 			CRASH_COND(bs.address >= state.ranges.size());
-			state.ranges[bs.address] = Interval::from_single_value(bs.constant_value);
+			state.ranges[bs.address] = math::Interval::from_single_value(bs.constant_value);
 		}
 	}
 
@@ -806,7 +806,7 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 	ERR_FAIL_COND(state.ranges.size() != _program.buffer_count);
 #endif
 
-	Span<Interval> ranges(state.ranges, 0, state.ranges.size());
+	Span<math::Interval> ranges(state.ranges, 0, state.ranges.size());
 	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
 
 	// Reset users count, as they might be decreased during the analysis
@@ -816,9 +816,9 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 		b.local_users_count = bs.users_count;
 	}
 
-	ranges[_program.x_input_address] = Interval(min_pos.x, max_pos.x);
-	ranges[_program.y_input_address] = Interval(min_pos.y, max_pos.y);
-	ranges[_program.z_input_address] = Interval(min_pos.z, max_pos.z);
+	ranges[_program.x_input_address] = math::Interval(min_pos.x, max_pos.x);
+	ranges[_program.y_input_address] = math::Interval(min_pos.y, max_pos.y);
+	ranges[_program.z_input_address] = math::Interval(min_pos.z, max_pos.z);
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 

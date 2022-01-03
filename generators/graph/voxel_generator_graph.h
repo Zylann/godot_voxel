@@ -168,7 +168,7 @@ public:
 
 	// Debug
 
-	Interval debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map) const;
+	zylann::math::Interval debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map) const;
 	float debug_measure_microseconds_per_voxel(bool singular);
 	void debug_load_waves_preset();
 

@@ -167,7 +167,7 @@ public:
 
 	void generate_image(Ref<Image> image, bool tileable) const;
 
-	Interval get_estimated_output_range() const;
+	zylann::math::Interval get_estimated_output_range() const;
 
 private:
 	// Non-static method for scripts because Godot4 does not support binding static methods (it's only implemented for

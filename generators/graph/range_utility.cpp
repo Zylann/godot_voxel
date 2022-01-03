@@ -8,6 +8,8 @@
 
 namespace zylann {
 
+using namespace math;
+
 // TODO We could skew max derivative estimation if the anchor is on a bump or a dip
 // because in these cases, it becomes impossible for noise to go further up or further down
 
@@ -21,7 +23,7 @@ inline Interval get_noise_range_2d(Noise_F noise_func, const Interval &x, const 
 	const float mid_y = 0.5 * (y.min + y.max);
 	const float mid_value = noise_func(mid_x, mid_y);
 
-	const float diag = Math::sqrt(squared(x.length()) + squared(y.length()));
+	const float diag = Math::sqrt(::squared(x.length()) + ::squared(y.length()));
 
 	return Interval( //
 			::max(mid_value - max_derivative_half_diagonal * diag, -1.f),
@@ -38,7 +40,7 @@ inline Interval get_noise_range_3d(
 	const float mid_z = 0.5 * (z.min + z.max);
 	const float mid_value = noise_func(mid_x, mid_y, mid_z);
 
-	const float diag = Math::sqrt(squared(x.length()) + squared(y.length()) + squared(z.length()));
+	const float diag = Math::sqrt(::squared(x.length()) + ::squared(y.length()) + ::squared(z.length()));
 
 	return Interval( //
 			::max(mid_value - max_derivative_half_diagonal * diag, -1.f),

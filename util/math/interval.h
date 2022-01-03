@@ -4,27 +4,23 @@
 #include "funcs.h"
 #include <limits>
 
+namespace zylann::math {
+
 // For interval arithmetic
 struct Interval {
 	// Both inclusive
 	float min;
 	float max;
 
-	inline Interval() :
-			min(0),
-			max(0) {}
+	inline Interval() : min(0), max(0) {}
 
-	inline Interval(float p_min, float p_max) :
-			min(p_min),
-			max(p_max) {
+	inline Interval(float p_min, float p_max) : min(p_min), max(p_max) {
 #if DEBUG_ENABLED
 		CRASH_COND(p_min > p_max);
 #endif
 	}
 
-	inline Interval(const Interval &other) :
-			min(other.min),
-			max(other.max) {}
+	inline Interval(const Interval &other) : min(other.min), max(other.max) {}
 
 	inline static Interval from_single_value(float p_val) {
 		return Interval(p_val, p_val);
@@ -35,9 +31,7 @@ struct Interval {
 	}
 
 	inline static Interval from_infinity() {
-		return Interval(
-				-std::numeric_limits<float>::infinity(),
-				std::numeric_limits<float>::infinity());
+		return Interval(-std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
 	}
 
 	inline bool contains(float v) const {
@@ -178,25 +172,17 @@ inline Interval max_interval(const Interval &a, const float b) {
 }
 
 inline Interval sqrt(const Interval &i) {
-	return Interval{
-		Math::sqrt(::max(0.f, i.min)),
-		Math::sqrt(::max(0.f, i.max))
-	};
+	return Interval{ Math::sqrt(::max(0.f, i.min)), Math::sqrt(::max(0.f, i.max)) };
 }
 
 inline Interval abs(const Interval &i) {
-	return Interval{
-		i.contains(0) ? 0 : ::min(Math::abs(i.min), Math::abs(i.max)),
-		::max(Math::abs(i.min), Math::abs(i.max))
-	};
+	return Interval{ i.contains(0) ? 0 : ::min(Math::abs(i.min), Math::abs(i.max)),
+		::max(Math::abs(i.min), Math::abs(i.max)) };
 }
 
 inline Interval clamp(const Interval &i, const Interval &p_min, const Interval &p_max) {
 	if (p_min.is_single_value() && p_max.is_single_value()) {
-		return {
-			::clamp(i.min, p_min.min, p_max.min),
-			::clamp(i.max, p_min.min, p_max.min)
-		};
+		return { ::clamp(i.min, p_min.min, p_max.min), ::clamp(i.max, p_min.min, p_max.min) };
 	}
 	if (i.min >= p_min.max && i.max <= p_max.min) {
 		return i;
@@ -224,9 +210,7 @@ inline Interval lerp(const Interval &a, const Interval &b, const Interval &t) {
 	const float v6 = a.min + t.max * (b.max - a.min);
 	const float v7 = a.max + t.max * (b.max - a.max);
 
-	return Interval(
-			min(v0, v1, v2, v3, v4, v5, v6, v7),
-			max(v0, v1, v2, v3, v4, v5, v6, v7));
+	return Interval(min(v0, v1, v2, v3, v4, v5, v6, v7), max(v0, v1, v2, v3, v4, v5, v6, v7));
 }
 
 inline Interval sin(const Interval &i) {
@@ -354,8 +338,8 @@ inline Interval smoothstep(float p_from, float p_to, Interval p_weight) {
 		return Interval::from_single_value(p_from);
 	}
 	// Smoothstep is monotonic
-	float v0 = smoothstep(p_from, p_to, p_weight.min);
-	float v1 = smoothstep(p_from, p_to, p_weight.max);
+	float v0 = ::smoothstep(p_from, p_to, p_weight.min);
+	float v1 = ::smoothstep(p_from, p_to, p_weight.max);
 	if (v0 <= v1) {
 		return Interval(v0, v1);
 	} else {
@@ -430,5 +414,7 @@ inline Interval get_length(const Interval &x, const Interval &y) {
 inline Interval get_length(const Interval &x, const Interval &y, const Interval &z) {
 	return sqrt(squared(x) + squared(y) + squared(z));
 }
+
+} //namespace zylann::math
 
 #endif // INTERVAL_H
