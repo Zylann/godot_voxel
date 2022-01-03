@@ -2,6 +2,8 @@
 #include "../storage/voxel_buffer.h"
 #include "../util/godot/funcs.h"
 
+using namespace zylann;
+
 Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 

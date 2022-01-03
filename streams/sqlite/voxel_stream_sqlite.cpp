@@ -838,7 +838,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 			result_block.lod = location.lod;
 
 			if (voxel_data.size() > 0) {
-				std::shared_ptr<VoxelBufferInternal> voxels = gd_make_shared<VoxelBufferInternal>();
+				std::shared_ptr<VoxelBufferInternal> voxels = zylann::gd_make_shared<VoxelBufferInternal>();
 				ERR_FAIL_COND(!ctx->stream._voxel_block_serializer.decompress_and_deserialize(voxel_data, *voxels));
 				result_block.voxels = voxels;
 			}

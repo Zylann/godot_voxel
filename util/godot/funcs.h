@@ -10,6 +10,8 @@ class ConcavePolygonShape3D;
 class MultiMesh;
 class Node;
 
+namespace zylann {
+
 bool is_surface_triangulated(Array surface);
 bool is_mesh_empty(Ref<Mesh> mesh_ref);
 
@@ -65,5 +67,7 @@ template <typename T> struct RefHasher {
 		return uint32_t(uint64_t(v.ptr())) * (0x9e3779b1L);
 	}
 };
+
+} // namespace zylann
 
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

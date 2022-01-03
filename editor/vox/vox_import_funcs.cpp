@@ -4,6 +4,8 @@
 
 namespace VoxImportUtils {
 
+using namespace zylann;
+
 static void scale_surface(Array &surface, float scale) {
 	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
 	// Avoiding stupid CoW, assuming this array holds the only instance of this vector

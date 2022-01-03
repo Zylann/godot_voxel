@@ -8,6 +8,8 @@
 #include <scene/resources/mesh.h>
 #include <scene/resources/multimesh.h>
 
+namespace zylann {
+
 bool is_surface_triangulated(Array surface) {
 	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
 	PackedInt32Array indices = surface[Mesh::ARRAY_INDEX];
@@ -252,3 +254,5 @@ void set_nodes_owner_except_root(Node *root, Node *owner) {
 		set_nodes_owner(root->get_child(i), owner);
 	}
 }
+
+} // namespace zylann

@@ -3,6 +3,8 @@
 #include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../util/godot/funcs.h"
 
+using namespace zylann;
+
 static AABB expand_with_vector(AABB box, Vector3 v) {
 	if (v.x > 0) {
 		box.size.x += v.x;

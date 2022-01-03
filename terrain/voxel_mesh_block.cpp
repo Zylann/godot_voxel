@@ -8,6 +8,8 @@
 #include <scene/3d/node_3d.h>
 #include <scene/resources/concave_polygon_shape_3d.h>
 
+using namespace zylann;
+
 VoxelMeshBlock *VoxelMeshBlock::create(Vector3i bpos, unsigned int size, unsigned int p_lod_index) {
 	VoxelMeshBlock *block = memnew(VoxelMeshBlock);
 	block->position = bpos;

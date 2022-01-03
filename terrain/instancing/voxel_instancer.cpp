@@ -17,6 +17,8 @@
 
 #include <algorithm>
 
+using namespace zylann;
+
 VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
 	set_process_internal(true);
