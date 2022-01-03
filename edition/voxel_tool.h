@@ -74,7 +74,7 @@ struct TextureBlendSphereOp {
 			const float distance_from_radius = radius - Math::sqrt(distance_squared);
 			const float target_weight =
 					tp.opacity * math::clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
-			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
+			voxel::blend_texture_packed_u16(tp.index, target_weight, indices, weights);
 		}
 	}
 };
