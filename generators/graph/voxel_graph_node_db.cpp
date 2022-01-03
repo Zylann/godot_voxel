@@ -12,6 +12,8 @@
 #include <modules/opensimplex/open_simplex_noise.h>
 #include <scene/resources/curve.h>
 
+namespace zylann::voxel {
+
 namespace {
 VoxelGraphNodeDB *g_node_type_db = nullptr;
 }
@@ -138,8 +140,6 @@ inline Interval select(const Interval &a, const Interval &b, const Interval &thr
 	return Interval(min(a.min, b.min), max(a.max, b.max));
 }
 
-namespace zylann {
-
 inline float skew3(float x) {
 	return (x * x * x + x) * 0.5f;
 }
@@ -205,8 +205,6 @@ inline Interval sdf_sphere_heightmap(Interval x, Interval y, Interval z, float r
 
 	return sd - m * h;
 }
-
-} // namespace zylann
 
 VoxelGraphNodeDB *VoxelGraphNodeDB::get_singleton() {
 	CRASH_COND(g_node_type_db == nullptr);
@@ -786,7 +784,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		struct Params {
 			// TODO Should be `const` but isn't because it auto-bakes, and it's a concern for multithreading
 			Curve *curve;
-			zylann::CurveRangeData *curve_range_data;
+			CurveRangeData *curve_range_data;
 		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CURVE];
 		t.name = "Curve";
@@ -803,7 +801,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			// Make sure it is baked. We don't want multithreading to bail out because of a write operation
 			// happening in `interpolate_baked`...
 			curve->bake();
-			zylann::CurveRangeData *curve_range_data = memnew(zylann::CurveRangeData);
+			CurveRangeData *curve_range_data = memnew(CurveRangeData);
 			get_curve_monotonic_sections(**curve, curve_range_data->sections);
 			Params p;
 			p.curve_range_data = curve_range_data;
@@ -872,7 +870,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, zylann::get_osn_range_2d(p.noise, x, y));
+			ctx.set_output(0, get_osn_range_2d(p.noise, x, y));
 		};
 	}
 	{
@@ -918,13 +916,13 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, zylann::get_osn_range_3d(p.noise, x, y, z));
+			ctx.set_output(0, get_osn_range_3d(p.noise, x, y, z));
 		};
 	}
 	{
 		struct Params {
 			const Image *image;
-			const zylann::ImageRangeGrid *image_range_grid;
+			const ImageRangeGrid *image_range_grid;
 		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_IMAGE_2D];
 		t.name = "Image";
@@ -939,7 +937,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				ctx.make_error("Image instance is null");
 				return;
 			}
-			zylann::ImageRangeGrid *im_range = memnew(zylann::ImageRangeGrid);
+			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
 			im_range->generate(**image);
 			Params p;
 			p.image = *image;
@@ -1002,7 +1000,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &sz = ctx.get_input(5);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = zylann::math::sdf_box(
+				out.data[i] = math::sdf_box(
 						Vector3(x.data[i], y.data[i], z.data[i]), Vector3(sx.data[i], sy.data[i], sz.data[i]));
 			}
 		};
@@ -1013,7 +1011,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval sx = ctx.get_input(3);
 			const Interval sy = ctx.get_input(4);
 			const Interval sz = ctx.get_input(5);
-			ctx.set_output(0, zylann::math::sdf_box(x, y, z, sx, sy, sz));
+			ctx.set_output(0, math::sdf_box(x, y, z, sx, sy, sz));
 		};
 	}
 	{
@@ -1061,7 +1059,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &r1 = ctx.get_input(4);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = zylann::math::sdf_torus(x.data[i], y.data[i], z.data[i], r0.data[i], r1.data[i]);
+				out.data[i] = math::sdf_torus(x.data[i], y.data[i], z.data[i], r0.data[i], r1.data[i]);
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -1070,7 +1068,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval z = ctx.get_input(2);
 			const Interval r0 = ctx.get_input(3);
 			const Interval r1 = ctx.get_input(4);
-			ctx.set_output(0, zylann::math::sdf_torus(x, y, z, r0, r1));
+			ctx.set_output(0, math::sdf_torus(x, y, z, r0, r1));
 		};
 	}
 	{
@@ -1107,12 +1105,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				}
 			} else if (params.smoothness > 0.0001f) {
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = zylann::math::sdf_smooth_union(a.data[i], b.data[i], params.smoothness);
+					out.data[i] = math::sdf_smooth_union(a.data[i], b.data[i], params.smoothness);
 				}
 			} else {
 				// Fallback on hard-union, smooth union does not support zero smoothness
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = zylann::math::sdf_union(a.data[i], b.data[i]);
+					out.data[i] = math::sdf_union(a.data[i], b.data[i]);
 				}
 			}
 		};
@@ -1122,39 +1120,39 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Params params = ctx.get_params<Params>();
 
 			if (params.smoothness > 0.0001f) {
-				const zylann::math::SdfAffectingArguments args =
-						zylann::math::sdf_polynomial_smooth_union_side(a, b, params.smoothness);
+				const math::SdfAffectingArguments args =
+						math::sdf_polynomial_smooth_union_side(a, b, params.smoothness);
 				switch (args) {
-					case zylann::math::SDF_ONLY_A:
+					case math::SDF_ONLY_A:
 						ctx.ignore_input(0);
 						break;
-					case zylann::math::SDF_ONLY_B:
+					case math::SDF_ONLY_B:
 						ctx.ignore_input(1);
 						break;
-					case zylann::math::SDF_BOTH:
+					case math::SDF_BOTH:
 						break;
 					default:
 						CRASH_NOW();
 						break;
 				}
-				ctx.set_output(0, zylann::math::sdf_smooth_union(a, b, params.smoothness));
+				ctx.set_output(0, math::sdf_smooth_union(a, b, params.smoothness));
 
 			} else {
-				const zylann::math::SdfAffectingArguments args = zylann::math::sdf_union_side(a, b);
+				const math::SdfAffectingArguments args = math::sdf_union_side(a, b);
 				switch (args) {
-					case zylann::math::SDF_ONLY_A:
+					case math::SDF_ONLY_A:
 						ctx.ignore_input(0);
 						break;
-					case zylann::math::SDF_ONLY_B:
+					case math::SDF_ONLY_B:
 						ctx.ignore_input(1);
 						break;
-					case zylann::math::SDF_BOTH:
+					case math::SDF_BOTH:
 						break;
 					default:
 						CRASH_NOW();
 						break;
 				}
-				ctx.set_output(0, zylann::math::sdf_union(a, b));
+				ctx.set_output(0, math::sdf_union(a, b));
 			}
 		};
 	}
@@ -1192,12 +1190,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				}
 			} else if (params.smoothness > 0.0001f) {
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = zylann::math::sdf_smooth_subtract(a.data[i], b.data[i], params.smoothness);
+					out.data[i] = math::sdf_smooth_subtract(a.data[i], b.data[i], params.smoothness);
 				}
 			} else {
 				// Fallback on hard-subtract, smooth subtract does not support zero smoothness
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = zylann::math::sdf_subtract(a.data[i], b.data[i]);
+					out.data[i] = math::sdf_subtract(a.data[i], b.data[i]);
 				}
 			}
 		};
@@ -1207,39 +1205,39 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Params params = ctx.get_params<Params>();
 
 			if (params.smoothness > 0.0001f) {
-				const zylann::math::SdfAffectingArguments args =
-						zylann::math::sdf_polynomial_smooth_subtract_side(a, b, params.smoothness);
+				const math::SdfAffectingArguments args =
+						math::sdf_polynomial_smooth_subtract_side(a, b, params.smoothness);
 				switch (args) {
-					case zylann::math::SDF_ONLY_A:
+					case math::SDF_ONLY_A:
 						ctx.ignore_input(0);
 						break;
-					case zylann::math::SDF_ONLY_B:
+					case math::SDF_ONLY_B:
 						ctx.ignore_input(1);
 						break;
-					case zylann::math::SDF_BOTH:
+					case math::SDF_BOTH:
 						break;
 					default:
 						CRASH_NOW();
 						break;
 				}
-				ctx.set_output(0, zylann::math::sdf_smooth_subtract(a, b, params.smoothness));
+				ctx.set_output(0, math::sdf_smooth_subtract(a, b, params.smoothness));
 
 			} else {
-				const zylann::math::SdfAffectingArguments args = zylann::math::sdf_subtract_side(a, b);
+				const math::SdfAffectingArguments args = math::sdf_subtract_side(a, b);
 				switch (args) {
-					case zylann::math::SDF_ONLY_A:
+					case math::SDF_ONLY_A:
 						ctx.ignore_input(0);
 						break;
-					case zylann::math::SDF_ONLY_B:
+					case math::SDF_ONLY_B:
 						ctx.ignore_input(1);
 						break;
-					case zylann::math::SDF_BOTH:
+					case math::SDF_BOTH:
 						break;
 					default:
 						CRASH_NOW();
 						break;
 				}
-				ctx.set_output(0, zylann::math::sdf_subtract(a, b));
+				ctx.set_output(0, math::sdf_subtract(a, b));
 			}
 		};
 	}
@@ -1301,7 +1299,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			float norm_x;
 			float norm_y;
 			const Image *image;
-			const zylann::ImageRangeGrid *image_range_grid;
+			const ImageRangeGrid *image_range_grid;
 		};
 
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SPHERE_HEIGHTMAP];
@@ -1321,7 +1319,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				ctx.make_error("Image instance is null");
 				return;
 			}
-			zylann::ImageRangeGrid *im_range = memnew(zylann::ImageRangeGrid);
+			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
 			im_range->generate(**image);
 			const float factor = ctx.get_param(2);
 			const Interval range = im_range->get_range() * factor;
@@ -1348,7 +1346,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Params p = ctx.get_params<Params>();
 			const Image &im = *p.image;
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = zylann::sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i], p.radius, p.factor, im,
+				out.data[i] = sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i], p.radius, p.factor, im,
 						p.min_height, p.max_height, p.norm_x, p.norm_y);
 			}
 		};
@@ -1358,8 +1356,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0,
-					zylann::sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y));
+			ctx.set_output(
+					0, sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y));
 		};
 	}
 	{
@@ -1449,7 +1447,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, zylann::get_fnl_range_2d(p.noise, x, y));
+			ctx.set_output(0, get_fnl_range_2d(p.noise, x, y));
 		};
 	}
 	{
@@ -1494,7 +1492,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, zylann::get_fnl_range_3d(p.noise, x, y, z));
+			ctx.set_output(0, get_fnl_range_3d(p.noise, x, y, z));
 		};
 	}
 	{
@@ -1542,7 +1540,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
-			const zylann::math::Interval2 r = zylann::get_fnl_gradient_range_2d(p.noise, x, y);
+			const math::Interval2 r = get_fnl_gradient_range_2d(p.noise, x, y);
 			ctx.set_output(0, r.x);
 			ctx.set_output(1, r.y);
 		};
@@ -1599,7 +1597,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
-			const zylann::math::Interval3 r = zylann::get_fnl_gradient_range_3d(p.noise, x, y, z);
+			const math::Interval3 r = get_fnl_gradient_range_3d(p.noise, x, y, z);
 			ctx.set_output(0, r.x);
 			ctx.set_output(1, r.y);
 			ctx.set_output(2, r.z);
@@ -1819,3 +1817,5 @@ bool VoxelGraphNodeDB::try_get_input_index_from_name(
 	out_input_index = *p;
 	return true;
 }
+
+} // namespace zylann::voxel

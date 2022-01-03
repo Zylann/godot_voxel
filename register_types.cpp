@@ -64,7 +64,7 @@
 void register_voxel_types() {
 	VoxelMemoryPool::create_singleton();
 	VoxelStringNames::create_singleton();
-	VoxelGraphNodeDB::create_singleton();
+	zylann::voxel::VoxelGraphNodeDB::create_singleton();
 	VoxelServer::create_singleton();
 
 	Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelServer", VoxelServer::get_singleton()));
@@ -174,7 +174,7 @@ void unregister_voxel_types() {
 	// See https://github.com/Zylann/godot_voxel/issues/189
 
 	VoxelStringNames::destroy_singleton();
-	VoxelGraphNodeDB::destroy_singleton();
+	zylann::voxel::VoxelGraphNodeDB::destroy_singleton();
 	VoxelServer::destroy_singleton();
 
 	// Do this last as VoxelServer might still be holding some refs to voxel blocks

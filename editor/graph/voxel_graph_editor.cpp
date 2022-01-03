@@ -214,9 +214,9 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	add_child(vbox_container);
 
 	_context_menu = memnew(PopupMenu);
-	FixedArray<PopupMenu *, VoxelGraphNodeDB::CATEGORY_COUNT> category_menus;
+	FixedArray<PopupMenu *, zylann::voxel::VoxelGraphNodeDB::CATEGORY_COUNT> category_menus;
 	for (unsigned int i = 0; i < category_menus.size(); ++i) {
-		String name = VoxelGraphNodeDB::get_category_name(VoxelGraphNodeDB::Category(i));
+		String name = zylann::voxel::VoxelGraphNodeDB::get_category_name(zylann::voxel::VoxelGraphNodeDB::Category(i));
 		PopupMenu *menu = memnew(PopupMenu);
 		menu->set_name(name);
 		menu->connect("id_pressed", callable_mp(this, &VoxelGraphEditor::_on_context_menu_id_pressed));
@@ -224,8 +224,9 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_context_menu->add_submenu_item(name, name, i);
 		category_menus[i] = menu;
 	}
-	for (int i = 0; i < VoxelGraphNodeDB::get_singleton()->get_type_count(); ++i) {
-		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(i);
+	for (int i = 0; i < zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type_count(); ++i) {
+		const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
+				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(i);
 		PopupMenu *menu = category_menus[node_type.category];
 		menu->add_item(node_type.name, i);
 	}
@@ -374,7 +375,8 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	CRASH_COND(_graph.is_null());
 	const VoxelGeneratorGraph &graph = **_graph;
 	const uint32_t node_type_id = graph.get_node_type_id(node_id);
-	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
+	const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
+			zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
 
 	const String ui_node_name = node_to_gui_name(node_id);
 	ERR_FAIL_COND(_graph_edit->has_node(ui_node_name));
@@ -393,7 +395,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 	// We artificially hide output ports if the node is an output.
 	// These nodes have an output for implementation reasons, some outputs can process the data like any other node.
-	const bool hide_outputs = node_type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT;
+	const bool hide_outputs = node_type.category == zylann::voxel::VoxelGraphNodeDB::CATEGORY_OUTPUT;
 
 	const unsigned int row_count = max(node_type.inputs.size(), hide_outputs ? 0 : node_type.outputs.size());
 	const Color port_color(0.4, 0.4, 1.0);
@@ -593,7 +595,8 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 				*_graph, "create_node", node_type_id, _graph->get_node_gui_position(node_id), node_id);
 
 		// Params undo
-		const size_t param_count = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).params.size();
+		const size_t param_count =
+				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).params.size();
 		for (size_t j = 0; j < param_count; ++j) {
 			Variant param_value = _graph->get_node_param(node_id, j);
 			_undo_redo->add_undo_method(*_graph, "set_node_param", node_id, SIZE_T_TO_VARIANT(j), param_value);
@@ -930,7 +933,7 @@ void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
 	StringName node_name = _graph->get_node_name(node_id);
 
 	const uint32_t node_type_id = _graph->get_node_type_id(node_id);
-	String node_type_name = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).name;
+	String node_type_name = zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).name;
 
 	const String ui_node_name = node_to_gui_name(node_id);
 	VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(ui_node_name));

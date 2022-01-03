@@ -27,7 +27,8 @@ void VoxelGeneratorGraph::clear() {
 
 static ProgramGraph::Node *create_node_internal(
 		ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position, uint32_t id) {
-	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(type_id);
+	const zylann::voxel::VoxelGraphNodeDB::NodeType &type =
+			zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(type_id);
 
 	ProgramGraph::Node *node = graph.create_node(type_id, id);
 	ERR_FAIL_COND_V(node == nullptr, nullptr);
@@ -48,7 +49,8 @@ static ProgramGraph::Node *create_node_internal(
 }
 
 uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
-	ERR_FAIL_COND_V(!VoxelGraphNodeDB::get_singleton()->is_valid_type_id(type_id), ProgramGraph::NULL_ID);
+	ERR_FAIL_COND_V(
+			!zylann::voxel::VoxelGraphNodeDB::get_singleton()->is_valid_type_id(type_id), ProgramGraph::NULL_ID);
 	const ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id);
 	ERR_FAIL_COND_V(node == nullptr, ProgramGraph::NULL_ID);
 	return node->id;
@@ -1154,7 +1156,8 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 
 		Dictionary node_data;
 
-		const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
+		const zylann::voxel::VoxelGraphNodeDB::NodeType &type =
+				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
 		node_data["type"] = type.name;
 		node_data["gui_position"] = node->gui_position;
 
@@ -1163,13 +1166,13 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 		}
 
 		for (size_t j = 0; j < type.params.size(); ++j) {
-			const VoxelGraphNodeDB::Param &param = type.params[j];
+			const zylann::voxel::VoxelGraphNodeDB::Param &param = type.params[j];
 			node_data[param.name] = node->params[j];
 		}
 
 		for (size_t j = 0; j < type.inputs.size(); ++j) {
 			if (node->inputs[j].connections.size() == 0) {
-				const VoxelGraphNodeDB::Port &port = type.inputs[j];
+				const zylann::voxel::VoxelGraphNodeDB::Port &port = type.inputs[j];
 				node_data[port.name] = node->default_inputs[j];
 			}
 		}
@@ -1214,7 +1217,7 @@ static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
 static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 	Dictionary nodes_data = data["nodes"];
 	Array connections_data = data["connections"];
-	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
+	const zylann::voxel::VoxelGraphNodeDB &type_db = *zylann::voxel::VoxelGraphNodeDB::get_singleton();
 
 	const Variant *id_key = nullptr;
 	while ((id_key = nodes_data.next(id_key))) {
@@ -1459,12 +1462,12 @@ void VoxelGeneratorGraph::debug_load_waves_preset() {
 // Binding land
 
 int VoxelGeneratorGraph::_b_get_node_type_count() const {
-	return VoxelGraphNodeDB::get_singleton()->get_type_count();
+	return zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type_count();
 }
 
 Dictionary VoxelGeneratorGraph::_b_get_node_type_info(int type_id) const {
-	ERR_FAIL_COND_V(!VoxelGraphNodeDB::get_singleton()->is_valid_type_id(type_id), Dictionary());
-	return VoxelGraphNodeDB::get_singleton()->get_type_info_dict(type_id);
+	ERR_FAIL_COND_V(!zylann::voxel::VoxelGraphNodeDB::get_singleton()->is_valid_type_id(type_id), Dictionary());
+	return zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type_info_dict(type_id);
 }
 
 Array VoxelGeneratorGraph::_b_get_connections() const {

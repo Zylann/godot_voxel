@@ -46,8 +46,9 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 	// Not using the generic `get_terminal_nodes` function because our terminal nodes do have outputs
 	graph.for_each_node_const([&terminal_nodes](const ProgramGraph::Node &node) {
-		const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node.type_id);
-		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
+		const zylann::voxel::VoxelGraphNodeDB::NodeType &type =
+				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node.type_id);
+		if (type.category == zylann::voxel::VoxelGraphNodeDB::CATEGORY_OUTPUT) {
 			terminal_nodes.push_back(node.id);
 		}
 	});
@@ -56,7 +57,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		// Exclude debug nodes
 		unordered_remove_if(terminal_nodes, [&graph](uint32_t node_id) {
 			const ProgramGraph::Node *node = graph.get_node(node_id);
-			const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
+			const zylann::voxel::VoxelGraphNodeDB::NodeType &type =
+					zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
 			return type.debug_only;
 		});
 	}
@@ -180,13 +182,13 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	_program.z_input_address = mem.add_binding();
 
 	std::vector<uint16_t> &operations = _program.operations;
-	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
+	const zylann::voxel::VoxelGraphNodeDB &type_db = *zylann::voxel::VoxelGraphNodeDB::get_singleton();
 
 	// Run through each node in order, and turn them into program instructions
 	for (size_t order_index = 0; order_index < order.size(); ++order_index) {
 		const uint32_t node_id = order[order_index];
 		const ProgramGraph::Node *node = graph.get_node(node_id);
-		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node->type_id);
+		const zylann::voxel::VoxelGraphNodeDB::NodeType &type = type_db.get_type(node->type_id);
 
 		CRASH_COND(node == nullptr);
 		CRASH_COND(node->inputs.size() != type.inputs.size());
@@ -340,7 +342,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 			operations[params_size_index] = params_size;
 		}
 
-		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
+		if (type.category == zylann::voxel::VoxelGraphNodeDB::CATEGORY_OUTPUT) {
 			CRASH_COND(node->outputs.size() != 1);
 			{
 				const uint16_t *aptr = _program.output_port_addresses.getptr(ProgramGraph::PortLocation{ node_id, 0 });
@@ -374,8 +376,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	_program.buffer_count = mem.next_address;
 
 	PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, buffers: {1}")
-						  .format(varray(
-								  SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(uint16_t)),
+						  .format(varray(SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(uint16_t)),
 								  SIZE_T_TO_VARIANT(_program.buffer_count))));
 
 	CompilationResult result;
@@ -383,10 +384,10 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	return result;
 }
 
-static Span<const uint16_t> get_outputs_from_op_address(
-		Span<const uint16_t> operations, uint16_t op_address) {
+static Span<const uint16_t> get_outputs_from_op_address(Span<const uint16_t> operations, uint16_t op_address) {
 	const uint16_t opid = operations[op_address];
-	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
+	const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
+			zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
 	const uint32_t inputs_count = node_type.inputs.size();
 	const uint32_t outputs_count = node_type.outputs.size();
@@ -401,8 +402,7 @@ bool VoxelGraphRuntime::is_operation_constant(const State &state, uint16_t op_ad
 	for (unsigned int i = 0; i < outputs.size(); ++i) {
 		const uint16_t output_address = outputs[i];
 		const Buffer &buffer = state.get_buffer(output_address);
-		if (!(buffer.is_constant ||
-					state.get_range(output_address).is_single_value() ||
+		if (!(buffer.is_constant || state.get_range(output_address).is_single_value() ||
 					buffer.local_users_count == 0)) {
 			// At least one of the outputs cannot be predicted in the current area
 			return false;
@@ -412,8 +412,8 @@ bool VoxelGraphRuntime::is_operation_constant(const State &state, uint16_t op_ad
 	return true;
 }
 
-void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
-		bool debug) const {
+void VoxelGraphRuntime::generate_optimized_execution_map(
+		const State &state, ExecutionMap &execution_map, bool debug) const {
 	FixedArray<unsigned int, MAX_OUTPUTS> all_outputs;
 	for (unsigned int i = 0; i < _program.outputs_count; ++i) {
 		all_outputs[i] = i;
@@ -426,8 +426,8 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 // If a non-constant operation only contributes to a constant one, it will also be skipped.
 // This has the effect of optimizing locally at runtime without relying on explicit conditionals.
 // It can be useful for biomes, where some branches become constant when not used in the final blending.
-void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
-		Span<const unsigned int> required_outputs, bool debug) const {
+void VoxelGraphRuntime::generate_optimized_execution_map(
+		const State &state, ExecutionMap &execution_map, Span<const unsigned int> required_outputs, bool debug) const {
 	VOXEL_PROFILE_SCOPE();
 
 	// Range analysis results must have been computed
@@ -453,11 +453,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 		to_process.push_back(dg_index);
 	}
 
-	enum ProcessResult {
-		NOT_PROCESSED,
-		SKIPPABLE,
-		REQUIRED
-	};
+	enum ProcessResult { NOT_PROCESSED, SKIPPABLE, REQUIRED };
 
 	static thread_local std::vector<ProcessResult> results;
 	results.clear();
@@ -570,10 +566,8 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 }
 
 void VoxelGraphRuntime::generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const {
-	generate_set(state,
-			Span<float>(&position.x, 1),
-			Span<float>(&position.y, 1),
-			Span<float>(&position.z, 1), false, execution_map);
+	generate_set(state, Span<float>(&position.x, 1), Span<float>(&position.y, 1), Span<float>(&position.z, 1), false,
+			execution_map);
 }
 
 void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) const {
@@ -703,8 +697,7 @@ static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, u
 	return params;
 }
 
-void VoxelGraphRuntime::generate_set(State &state,
-		Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
+void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
 		const ExecutionMap *execution_map) const {
 	// I don't like putting private helper functions in headers.
 	struct L {
@@ -764,9 +757,12 @@ void VoxelGraphRuntime::generate_set(State &state,
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	Span<const uint16_t> op_adresses = execution_map != nullptr ? to_span_const(execution_map->operation_adresses) : to_span_const(_program.default_execution_map.operation_adresses);
+	Span<const uint16_t> op_adresses = execution_map != nullptr
+			? to_span_const(execution_map->operation_adresses)
+			: to_span_const(_program.default_execution_map.operation_adresses);
 	if (skip_xz && op_adresses.size() > 0) {
-		const unsigned int offset = execution_map != nullptr ? execution_map->xzy_start_index : _program.default_execution_map.xzy_start_index;
+		const unsigned int offset = execution_map != nullptr ? execution_map->xzy_start_index
+															 : _program.default_execution_map.xzy_start_index;
 		op_adresses = op_adresses.sub(offset);
 	}
 
@@ -774,7 +770,8 @@ void VoxelGraphRuntime::generate_set(State &state,
 		unsigned int pc = op_adresses[execution_map_index];
 
 		const uint16_t opid = operations[pc++];
-		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
+		const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
+				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
 		const uint32_t inputs_count = node_type.inputs.size();
 		const uint32_t outputs_count = node_type.outputs.size();
@@ -832,7 +829,8 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 	uint32_t pc = 0;
 	while (pc < operations.size()) {
 		const uint16_t opid = operations[pc++];
-		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
+		const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
+				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
 		const uint32_t inputs_count = node_type.inputs.size();
 		const uint32_t outputs_count = node_type.outputs.size();
