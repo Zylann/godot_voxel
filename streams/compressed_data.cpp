@@ -7,7 +7,7 @@
 #include <core/variant/variant.h>
 #include <limits>
 
-namespace VoxelCompressedData {
+namespace zylann::voxel::CompressedData {
 
 bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
 	VOXEL_PROFILE_SCOPE();
@@ -15,7 +15,7 @@ bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
 	// TODO Apparently big-endian is dead
 	// I chose it originally to match "network byte order",
 	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
-	VoxelUtility::MemoryReader f(src, VoxelUtility::ENDIANESS_BIG_ENDIAN);
+	MemoryReader f(src, ENDIANESS_BIG_ENDIAN);
 
 	const Compression comp = static_cast<Compression>(f.get_8());
 	ERR_FAIL_INDEX_V(comp, COMPRESSION_COUNT, false);
@@ -69,7 +69,7 @@ bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression co
 			// Write header
 			// Must clear first because MemoryWriter writes from the end
 			dst.clear();
-			VoxelUtility::MemoryWriter f(dst, VoxelUtility::ENDIANESS_BIG_ENDIAN);
+			MemoryWriter f(dst, ENDIANESS_BIG_ENDIAN);
 			f.store_8(comp);
 			f.store_32(src.size());
 
@@ -93,4 +93,4 @@ bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression co
 	return true;
 }
 
-} // namespace VoxelCompressedData
+} // namespace zylann::voxel::CompressedData

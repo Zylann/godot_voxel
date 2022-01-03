@@ -54,7 +54,7 @@ bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 	// TODO Apparently big-endian is dead
 	// I chose it originally to match "network byte order",
 	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
-	VoxelUtility::MemoryWriter w(dst, VoxelUtility::ENDIANESS_BIG_ENDIAN);
+	zylann::MemoryWriter w(dst, zylann::ENDIANESS_BIG_ENDIAN);
 
 	ERR_FAIL_COND_V(src.position_range < 0.f, false);
 	const float position_range = max(src.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM);
@@ -115,7 +115,7 @@ bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uin
 	const uint8_t expected_version = 0;
 	const uint8_t expected_instance_format = VoxelInstanceBlockData::FORMAT_SIMPLE_11B_V1;
 
-	VoxelUtility::MemoryReader r(src, VoxelUtility::ENDIANESS_BIG_ENDIAN);
+	zylann::MemoryReader r(src, zylann::ENDIANESS_BIG_ENDIAN);
 
 	const uint8_t version = r.get_8();
 	ERR_FAIL_COND_V(version != expected_version, false);

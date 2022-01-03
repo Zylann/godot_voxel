@@ -3,9 +3,9 @@
 
 #include "span.h"
 
-namespace VoxelUtility {
+namespace zylann {
 
-enum Endianess {
+enum Endianess { //
 	ENDIANESS_BIG_ENDIAN,
 	ENDIANESS_LITTLE_ENDIAN
 };
@@ -28,8 +28,7 @@ struct MemoryWriter {
 	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
 	Endianess endianess = ENDIANESS_BIG_ENDIAN;
 
-	MemoryWriter(std::vector<uint8_t> &p_data, Endianess p_endianess) :
-			data(p_data), endianess(p_endianess) {}
+	MemoryWriter(std::vector<uint8_t> &p_data, Endianess p_endianess) : data(p_data), endianess(p_endianess) {}
 
 	inline void store_8(uint8_t v) {
 		data.push_back(v);
@@ -75,8 +74,7 @@ struct MemoryReader {
 	// Using network-order by default
 	Endianess endianess = ENDIANESS_BIG_ENDIAN;
 
-	MemoryReader(Span<const uint8_t> p_data, Endianess p_endianess) :
-			data(p_data), endianess(p_endianess) {}
+	MemoryReader(Span<const uint8_t> p_data, Endianess p_endianess) : data(p_data), endianess(p_endianess) {}
 
 	inline uint8_t get_8() {
 		ERR_FAIL_COND_V(pos >= data.size(), 0);
@@ -99,15 +97,15 @@ struct MemoryReader {
 		ERR_FAIL_COND_V(pos + 3 >= data.size(), 0);
 		uint32_t v;
 		if (endianess == ENDIANESS_BIG_ENDIAN) {
-			v = (static_cast<uint32_t>(data[pos]) << 24) |
-				(static_cast<uint32_t>(data[pos + 1]) << 16) |
-				(static_cast<uint32_t>(data[pos + 2]) << 8) |
-				data[pos + 3];
+			v = //
+					(static_cast<uint32_t>(data[pos]) << 24) | //
+					(static_cast<uint32_t>(data[pos + 1]) << 16) | //
+					(static_cast<uint32_t>(data[pos + 2]) << 8) | data[pos + 3];
 		} else {
-			v = static_cast<uint32_t>(data[pos]) |
-				(static_cast<uint32_t>(data[pos + 1]) << 8) |
-				(static_cast<uint32_t>(data[pos + 2]) << 16) |
-				(static_cast<uint32_t>(data[pos + 3]) << 24);
+			v = //
+					static_cast<uint32_t>(data[pos]) | //
+					(static_cast<uint32_t>(data[pos + 1]) << 8) | //
+					(static_cast<uint32_t>(data[pos + 2]) << 16) | (static_cast<uint32_t>(data[pos + 3]) << 24);
 		}
 		pos += sizeof(uint32_t);
 		return v;
@@ -123,6 +121,6 @@ struct MemoryReader {
 	}
 };
 
-} // namespace VoxelUtility
+} // namespace zylann
 
 #endif // VOXEL_UTIL_SERIALIZATION_H

@@ -770,7 +770,8 @@ void VoxelStreamSQLite::load_instance_blocks(
 		const Result res = con->load_block(loc, _temp_compressed_block_data, VoxelStreamSQLiteInternal::INSTANCES);
 
 		if (res == RESULT_BLOCK_FOUND) {
-			if (!VoxelCompressedData::decompress(to_span_const(_temp_compressed_block_data), _temp_block_data)) {
+			if (!zylann::voxel::CompressedData::decompress(
+						to_span_const(_temp_compressed_block_data), _temp_block_data)) {
 				ERR_PRINT("Failed to decompress instance block");
 				out_results[i] = RESULT_ERROR;
 				continue;
@@ -844,7 +845,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 
 			if (instances_data.size() > 0) {
 				std::vector<uint8_t> &temp_block_data = ctx->stream._temp_block_data;
-				if (!VoxelCompressedData::decompress(instances_data, temp_block_data)) {
+				if (!zylann::voxel::CompressedData::decompress(instances_data, temp_block_data)) {
 					ERR_PRINT("Failed to decompress instance block");
 					return;
 				}
@@ -921,8 +922,8 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 
 			ERR_FAIL_COND(!serialize_instance_block_data(*block.instances, temp_data));
 
-			ERR_FAIL_COND(!VoxelCompressedData::compress(
-					to_span_const(temp_data), temp_compressed_data, VoxelCompressedData::COMPRESSION_NONE));
+			ERR_FAIL_COND(!zylann::voxel::CompressedData::compress(
+					to_span_const(temp_data), temp_compressed_data, zylann::voxel::CompressedData::COMPRESSION_NONE));
 		}
 		con->save_block(loc, temp_compressed_data, VoxelStreamSQLiteInternal::INSTANCES);
 

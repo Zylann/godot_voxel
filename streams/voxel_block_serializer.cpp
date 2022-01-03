@@ -372,8 +372,8 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
 	const std::vector<uint8_t> &data = res.data;
 
-	res.success = VoxelCompressedData::compress(
-			Span<const uint8_t>(data.data(), 0, data.size()), _compressed_data, VoxelCompressedData::COMPRESSION_LZ4);
+	res.success = zylann::voxel::CompressedData::compress(Span<const uint8_t>(data.data(), 0, data.size()),
+			_compressed_data, zylann::voxel::CompressedData::COMPRESSION_LZ4);
 	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
 
 	return SerializeResult(_compressed_data, true);
@@ -383,7 +383,7 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 		Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
-	const bool res = VoxelCompressedData::decompress(p_data, _data);
+	const bool res = zylann::voxel::CompressedData::decompress(p_data, _data);
 	ERR_FAIL_COND_V(!res, false);
 
 	return deserialize(to_span_const(_data), out_voxel_buffer);
