@@ -7,11 +7,11 @@ Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> p_voxels, Re
 	ERR_FAIL_COND_V(p_voxels.is_null(), ERR_INVALID_PARAMETER);
 	VoxelBufferInternal &voxels = p_voxels->get_buffer();
 
-	vox::Data data;
+	zylann::voxel::magica::Data data;
 	Error load_err = data.load_from_file(fpath);
 	ERR_FAIL_COND_V(load_err != OK, load_err);
 
-	const vox::Model &model = data.get_model(0);
+	const zylann::voxel::magica::Model &model = data.get_model(0);
 
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_COLOR;
 	Span<const Color8> src_palette = to_span_const(data.get_palette());

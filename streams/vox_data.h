@@ -19,7 +19,7 @@ template <> struct hash<String> {
 };
 } // namespace std
 
-namespace vox {
+namespace zylann::voxel::magica {
 
 struct Model {
 	Vector3i size;
@@ -30,7 +30,11 @@ struct Model {
 };
 
 struct Node {
-	enum Type { TYPE_TRANSFORM = 0, TYPE_GROUP, TYPE_SHAPE };
+	enum Type { //
+		TYPE_TRANSFORM = 0,
+		TYPE_GROUP,
+		TYPE_SHAPE
+	};
 
 	int id;
 	// Depending on the type, a node pointer can be casted to different structs
@@ -80,7 +84,12 @@ struct Layer {
 };
 
 struct Material {
-	enum Type { TYPE_DIFFUSE, TYPE_METAL, TYPE_GLASS, TYPE_EMIT };
+	enum Type { //
+		TYPE_DIFFUSE,
+		TYPE_METAL,
+		TYPE_GLASS,
+		TYPE_EMIT
+	};
 	int id;
 	Type type = TYPE_DIFFUSE;
 	float weight = 0.f;
@@ -127,6 +136,6 @@ private:
 	FixedArray<Color8, 256> _palette;
 };
 
-} // namespace vox
+} // namespace zylann::voxel::magica
 
 #endif // VOX_DATA_H

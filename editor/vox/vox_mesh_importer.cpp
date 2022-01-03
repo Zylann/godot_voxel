@@ -57,8 +57,10 @@ bool VoxelVoxMeshImporter::get_option_visibility(
 	return true;
 }
 
+namespace zylann::voxel::magica {
+
 struct ForEachModelInstanceArgs {
-	const vox::Model *model;
+	const Model *model;
 	// Pivot position, which turns out to be at the center in MagicaVoxel
 	Vector3i position;
 	Basis basis;
@@ -66,30 +68,30 @@ struct ForEachModelInstanceArgs {
 
 template <typename F>
 static Error for_each_model_instance_in_scene_graph(
-		const vox::Data &data, int node_id, Transform3D transform, int depth, F f) {
+		const Data &data, int node_id, Transform3D transform, int depth, F f) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
-	const vox::Node *vox_node = data.get_node(node_id);
+	const Node *vox_node = data.get_node(node_id);
 
 	switch (vox_node->type) {
-		case vox::Node::TYPE_TRANSFORM: {
-			const vox::TransformNode *vox_transform_node = reinterpret_cast<const vox::TransformNode *>(vox_node);
+		case Node::TYPE_TRANSFORM: {
+			const TransformNode *vox_transform_node = reinterpret_cast<const TransformNode *>(vox_node);
 			// Calculate global transform of the child
 			const Transform3D child_trans(transform.basis * vox_transform_node->rotation.basis,
 					transform.xform(vox_transform_node->position));
 			for_each_model_instance_in_scene_graph(data, vox_transform_node->child_node_id, child_trans, depth + 1, f);
 		} break;
 
-		case vox::Node::TYPE_GROUP: {
-			const vox::GroupNode *vox_group_node = reinterpret_cast<const vox::GroupNode *>(vox_node);
+		case Node::TYPE_GROUP: {
+			const GroupNode *vox_group_node = reinterpret_cast<const GroupNode *>(vox_node);
 			for (unsigned int i = 0; i < vox_group_node->child_node_ids.size(); ++i) {
 				const int child_node_id = vox_group_node->child_node_ids[i];
 				for_each_model_instance_in_scene_graph(data, child_node_id, transform, depth + 1, f);
 			}
 		} break;
 
-		case vox::Node::TYPE_SHAPE: {
-			const vox::ShapeNode *vox_shape_node = reinterpret_cast<const vox::ShapeNode *>(vox_node);
+		case Node::TYPE_SHAPE: {
+			const ShapeNode *vox_shape_node = reinterpret_cast<const ShapeNode *>(vox_node);
 			ForEachModelInstanceArgs args;
 			args.model = &data.get_model(vox_shape_node->model_id);
 			args.position = Vector3iUtil::from_rounded(transform.origin);
@@ -105,7 +107,7 @@ static Error for_each_model_instance_in_scene_graph(
 	return OK;
 }
 
-template <typename F> void for_each_model_instance(const vox::Data &vox_data, F f) {
+template <typename F> void for_each_model_instance(const Data &vox_data, F f) {
 	if (vox_data.get_model_count() == 0) {
 		return;
 	}
@@ -131,11 +133,11 @@ struct ModelInstance {
 	Vector3i position;
 };
 
-static void extract_model_instances(const vox::Data &vox_data, std::vector<ModelInstance> &out_instances) {
+void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &out_instances) {
 	// Gather all models and bake their rotations
 	for_each_model_instance(vox_data, [&out_instances](ForEachModelInstanceArgs args) {
 		ERR_FAIL_COND(args.model == nullptr);
-		const vox::Model &model = *args.model;
+		const Model &model = *args.model;
 
 		Span<const uint8_t> src_color_indices;
 		Vector3i dst_size = model.size;
@@ -177,7 +179,7 @@ static void extract_model_instances(const vox::Data &vox_data, std::vector<Model
 	});
 }
 
-static bool make_single_voxel_grid(
+bool make_single_voxel_grid(
 		Span<const ModelInstance> instances, Vector3i &out_origin, VoxelBufferInternal &out_voxels) {
 	// Determine total size
 	const ModelInstance &first_instance = instances[0];
@@ -211,6 +213,8 @@ static bool make_single_voxel_grid(
 	return true;
 }
 
+} // namespace zylann::voxel::magica
+
 Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_save_path,
 		const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
 		Variant *r_metadata) {
@@ -221,7 +225,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 
 	ERR_FAIL_INDEX_V(p_pivot_mode, PIVOT_MODES_COUNT, ERR_INVALID_PARAMETER);
 
-	vox::Data vox_data;
+	zylann::voxel::magica::Data vox_data;
 	const Error load_err = vox_data.load_from_file(p_source_file);
 	ERR_FAIL_COND_V(load_err != OK, load_err);
 
@@ -242,7 +246,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 	Ref<Mesh> mesh;
 	std::vector<unsigned int> surface_index_to_material;
 	{
-		std::vector<ModelInstance> model_instances;
+		std::vector<zylann::voxel::magica::ModelInstance> model_instances;
 		extract_model_instances(vox_data, model_instances);
 
 		// From this point we no longer need vox data so we can free some memory

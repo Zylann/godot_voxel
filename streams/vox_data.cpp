@@ -6,7 +6,7 @@
 #include <core/variant/variant.h>
 #include <unordered_set>
 
-namespace vox {
+namespace zylann::voxel::magica {
 
 const uint32_t PALETTE_SIZE = 256;
 
@@ -607,4 +607,4 @@ const Material &Data::get_material_by_id(int id) const {
 	return *material;
 }
 
-} // namespace vox
+} // namespace zylann::voxel::magica

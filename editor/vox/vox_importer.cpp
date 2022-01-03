@@ -79,14 +79,16 @@ struct VoxMesh {
 	Vector3 pivot;
 };
 
-static Error process_scene_node_recursively(const vox::Data &data, int node_id, Node3D *parent_node,
-		Node3D *&out_root_node, int depth, const Vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
+namespace zylann::voxel::magica {
+
+static Error process_scene_node_recursively(const Data &data, int node_id, Node3D *parent_node, Node3D *&out_root_node,
+		int depth, const Vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
-	const vox::Node *vox_node = data.get_node(node_id);
+	const Node *vox_node = data.get_node(node_id);
 
 	switch (vox_node->type) {
-		case vox::Node::TYPE_TRANSFORM: {
+		case Node::TYPE_TRANSFORM: {
 			Node3D *node = memnew(Node3D);
 			if (out_root_node == nullptr) {
 				out_root_node = node;
@@ -95,7 +97,7 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 				parent_node->add_child(node);
 				node->set_owner(out_root_node);
 			}
-			const vox::TransformNode *vox_transform_node = reinterpret_cast<const vox::TransformNode *>(vox_node);
+			const TransformNode *vox_transform_node = reinterpret_cast<const TransformNode *>(vox_node);
 			node->set_transform(
 					Transform3D(vox_transform_node->rotation.basis, Vector3(vox_transform_node->position) * scale));
 			process_scene_node_recursively(data, vox_transform_node->child_node_id, node, out_root_node, depth + 1,
@@ -119,8 +121,8 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 			}
 		} break;
 
-		case vox::Node::TYPE_GROUP: {
-			const vox::GroupNode *vox_group_node = reinterpret_cast<const vox::GroupNode *>(vox_node);
+		case Node::TYPE_GROUP: {
+			const GroupNode *vox_group_node = reinterpret_cast<const GroupNode *>(vox_node);
 			for (unsigned int i = 0; i < vox_group_node->child_node_ids.size(); ++i) {
 				const int child_node_id = vox_group_node->child_node_ids[i];
 				process_scene_node_recursively(data, child_node_id, parent_node, out_root_node, depth + 1, meshes,
@@ -128,10 +130,10 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 			}
 		} break;
 
-		case vox::Node::TYPE_SHAPE: {
+		case Node::TYPE_SHAPE: {
 			ERR_FAIL_COND_V(parent_node == nullptr, ERR_BUG);
 			ERR_FAIL_COND_V(out_root_node == nullptr, ERR_BUG);
-			const vox::ShapeNode *vox_shape_node = reinterpret_cast<const vox::ShapeNode *>(vox_node);
+			const ShapeNode *vox_shape_node = reinterpret_cast<const ShapeNode *>(vox_node);
 			const VoxMesh &mesh_data = meshes[vox_shape_node->model_id];
 			ERR_FAIL_COND_V(mesh_data.mesh.is_null(), ERR_BUG);
 			const Vector3 offset = -mesh_data.pivot * scale;
@@ -145,6 +147,8 @@ static Error process_scene_node_recursively(const vox::Data &data, int node_id, 
 
 	return OK;
 }
+
+} // namespace zylann::voxel::magica
 
 /*static Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
 		bool p_mipmaps, int p_texture_flags, bool p_streamable,
@@ -241,7 +245,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 	const float p_scale = p_options[VoxelStringNames::get_singleton()->scale];
 	const bool p_enable_baked_lighting = p_options[VoxelStringNames::get_singleton()->enable_baked_lighting];
 
-	vox::Data data;
+	zylann::voxel::magica::Data data;
 	const Error load_err = data.load_from_file(p_source_file);
 	ERR_FAIL_COND_V(load_err != OK, load_err);
 
@@ -277,7 +281,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 	// Build meshes from voxel models
 	for (unsigned int model_index = 0; model_index < data.get_model_count(); ++model_index) {
-		const vox::Model &model = data.get_model(model_index);
+		const zylann::voxel::magica::Model &model = data.get_model(model_index);
 
 		VoxelBufferInternal voxels;
 		voxels.create(model.size + Vector3iUtil::create(VoxelMesherCubes::PADDING * 2));
