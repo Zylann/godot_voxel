@@ -2,7 +2,7 @@
 #include "../../util/funcs.h"
 #include <scene/resources/mesh.h>
 
-namespace dmc {
+namespace zylann::voxel::dmc {
 
 Array MeshBuilder::commit(bool wireframe) {
 	if (_positions.size() == 0) {
@@ -62,4 +62,4 @@ void MeshBuilder::clear() {
 	_reused_vertices = 0;
 }
 
-} // namespace dmc
+} // namespace zylann::voxel::dmc

@@ -5,13 +5,11 @@
 #include "mesh_builder.h"
 #include <core/os/time.h>
 
-using namespace zylann;
-
 // Dual marching cubes
 // Algorithm taken from https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/
 // Partially based on Ogre's implementation, adapted for requirements of this module with a few extras
 
-namespace dmc {
+namespace zylann::voxel::dmc {
 
 // Surface is defined when isolevel crosses 0
 const float SURFACE_ISO_LEVEL = 0.0;
@@ -1337,7 +1335,7 @@ void polygonize_volume_directly(const VoxelBufferInternal &voxels, Vector3i min,
 	}
 }
 
-} // namespace dmc
+} //namespace zylann::voxel::dmc
 
 #define BUILD_OCTREE_BOTTOM_UP
 
@@ -1390,6 +1388,8 @@ VoxelMesherDMC::SeamMode VoxelMesherDMC::get_seam_mode() const {
 }
 
 void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+	using namespace zylann::voxel;
+
 	// Requirements:
 	// - Voxel data must be padded
 	// - The non-padded area size is cubic and power of two
