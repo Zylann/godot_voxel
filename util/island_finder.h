@@ -4,6 +4,8 @@
 #include "math/box3i.h"
 #include "span.h"
 
+namespace zylann::voxel {
+
 // Scans a grid of binary values and returns another grid
 // where all contiguous islands are labelled with a unique ID.
 // It is based on a two-pass version of Connected-Component-Labeling.
@@ -208,5 +210,7 @@ private:
 private:
 	FixedArray<uint8_t, MAX_ISLANDS> _equivalences;
 };
+
+} // namespace zylann::voxel
 
 #endif // ISLAND_FINDER_H

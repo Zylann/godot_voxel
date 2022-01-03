@@ -380,12 +380,14 @@ void VoxelToolLodTerrain::set_raycast_binary_search_iterations(int iterations) {
 	_raycast_binary_search_iterations = clamp(iterations, 0, 16);
 }
 
+namespace zylann::voxel {
+
 // Turns floating chunks of voxels into rigidbodies:
 // Detects separate groups of connected voxels within a box. Each group fully contained in the box is removed from
 // the source volume, and turned into a rigidbody.
 // This is one way of doing it, I don't know if it's the best way (there is rarely a best way)
 // so there are probably other approaches that could be explored in the future, if they have better performance
-static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *parent_node, Transform3D transform,
+Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *parent_node, Transform3D transform,
 		Ref<VoxelMesher> mesher, Array materials) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -707,6 +709,8 @@ static Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, No
 	return nodes;
 }
 
+} // namespace zylann::voxel
+
 Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Node *parent_node) {
 	ERR_FAIL_COND_V(_terrain == nullptr, Array());
 	ERR_FAIL_COND_V(!is_valid_size(world_box.size), Array());
@@ -715,7 +719,7 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Node *parent
 	materials.append(_terrain->get_material());
 	const Box3i int_world_box(
 			Vector3iUtil::from_floored(world_box.position), Vector3iUtil::from_ceiled(world_box.size));
-	return ::separate_floating_chunks(
+	return zylann::voxel::separate_floating_chunks(
 			*this, int_world_box, parent_node, _terrain->get_global_transform(), mesher, materials);
 }
 
