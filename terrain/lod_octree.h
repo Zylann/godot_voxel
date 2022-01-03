@@ -5,6 +5,8 @@
 #include "../constants/voxel_constants.h"
 #include "../util/math/box3i.h"
 
+namespace zylann::voxel {
+
 // Octree designed to handle level of detail.
 class LodOctree {
 public:
@@ -78,8 +80,8 @@ public:
 	void set_lod_distance(float p_lod_distance) {
 		// Distance must be greater than a threshold,
 		// otherwise lods will decimate too fast and it will look messy
-		_lod_distance = zylann::math::clamp(
-				p_lod_distance, VoxelConstants::MINIMUM_LOD_DISTANCE, VoxelConstants::MAXIMUM_LOD_DISTANCE);
+		_lod_distance =
+				math::clamp(p_lod_distance, VoxelConstants::MINIMUM_LOD_DISTANCE, VoxelConstants::MAXIMUM_LOD_DISTANCE);
 	}
 
 	float get_lod_distance() const {
@@ -266,7 +268,7 @@ private:
 		const int lod_factor = get_lod_factor(lod);
 		const int chunk_size = _base_size * lod_factor;
 		const Vector3 world_center = static_cast<real_t>(chunk_size) * (Vector3(node_pos) + Vector3(0.5, 0.5, 0.5));
-		const float split_distance_sq = zylann::math::squared(_lod_distance * lod_factor);
+		const float split_distance_sq = math::squared(_lod_distance * lod_factor);
 		Node *node = get_node(node_index);
 
 		if (!node->has_children()) {
@@ -452,6 +454,8 @@ private:
 	// TODO May be worth making this pool external for sharing purpose
 	NodePool _pool;
 };
+
+} // namespace zylann::voxel
 
 // Notes:
 // Population of an octree given its depth, thanks to Sage:

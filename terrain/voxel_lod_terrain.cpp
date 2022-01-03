@@ -17,7 +17,7 @@
 #include <scene/resources/packed_scene.h>
 
 using namespace zylann;
-//using namespace voxel;
+using namespace voxel;
 
 namespace {
 

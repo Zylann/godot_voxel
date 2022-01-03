@@ -300,7 +300,7 @@ private:
 	Dictionary _b_get_statistics() const;
 
 	struct OctreeItem {
-		LodOctree octree;
+		zylann::voxel::LodOctree octree;
 	};
 
 #ifdef TOOLS_ENABLED
