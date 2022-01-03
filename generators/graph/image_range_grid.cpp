@@ -3,6 +3,8 @@
 
 #include <core/io/image.h>
 
+namespace zylann {
+
 ImageRangeGrid::~ImageRangeGrid() {
 	clear();
 }
@@ -165,3 +167,5 @@ Interval ImageRangeGrid::get_range(Interval xr, Interval yr) const {
 
 	return r;
 }
+
+} // namespace zylann

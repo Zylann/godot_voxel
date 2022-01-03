@@ -6,6 +6,8 @@
 
 class Image;
 
+namespace zylann {
+
 // Stores minimum and maximum values over a 2D image at multiple levels of detail
 class ImageRangeGrid {
 public:
@@ -13,7 +15,9 @@ public:
 
 	void clear();
 	void generate(Image &im);
-	inline Interval get_range() const { return _total_range; }
+	inline Interval get_range() const {
+		return _total_range;
+	}
 	Interval get_range(Interval xr, Interval yr) const;
 
 private:
@@ -36,5 +40,7 @@ private:
 
 	FixedArray<Lod, MAX_LODS> _lods;
 };
+
+} // namespace zylann
 
 #endif // IMAGE_RANGE_GRID_H

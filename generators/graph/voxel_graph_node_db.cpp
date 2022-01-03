@@ -138,6 +138,8 @@ inline Interval select(const Interval &a, const Interval &b, const Interval &thr
 	return Interval(min(a.min, b.min), max(a.max, b.max));
 }
 
+namespace zylann {
+
 inline float skew3(float x) {
 	return (x * x * x + x) * 0.5f;
 }
@@ -203,6 +205,8 @@ inline Interval sdf_sphere_heightmap(Interval x, Interval y, Interval z, float r
 
 	return sd - m * h;
 }
+
+} // namespace zylann
 
 VoxelGraphNodeDB *VoxelGraphNodeDB::get_singleton() {
 	CRASH_COND(g_node_type_db == nullptr);
@@ -920,7 +924,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	{
 		struct Params {
 			const Image *image;
-			const ImageRangeGrid *image_range_grid;
+			const zylann::ImageRangeGrid *image_range_grid;
 		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_IMAGE_2D];
 		t.name = "Image";
@@ -935,7 +939,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				ctx.make_error("Image instance is null");
 				return;
 			}
-			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
+			zylann::ImageRangeGrid *im_range = memnew(zylann::ImageRangeGrid);
 			im_range->generate(**image);
 			Params p;
 			p.image = *image;
@@ -1297,7 +1301,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			float norm_x;
 			float norm_y;
 			const Image *image;
-			const ImageRangeGrid *image_range_grid;
+			const zylann::ImageRangeGrid *image_range_grid;
 		};
 
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SPHERE_HEIGHTMAP];
@@ -1317,7 +1321,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				ctx.make_error("Image instance is null");
 				return;
 			}
-			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
+			zylann::ImageRangeGrid *im_range = memnew(zylann::ImageRangeGrid);
 			im_range->generate(**image);
 			const float factor = ctx.get_param(2);
 			const Interval range = im_range->get_range() * factor;
@@ -1344,7 +1348,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Params p = ctx.get_params<Params>();
 			const Image &im = *p.image;
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i], p.radius, p.factor, im,
+				out.data[i] = zylann::sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i], p.radius, p.factor, im,
 						p.min_height, p.max_height, p.norm_x, p.norm_y);
 			}
 		};
@@ -1354,8 +1358,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(
-					0, sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y));
+			ctx.set_output(0,
+					zylann::sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y));
 		};
 	}
 	{
