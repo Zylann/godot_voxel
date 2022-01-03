@@ -561,7 +561,7 @@ bool VoxelRegionFile::migrate_from_v2_to_v3(FileAccess *f, VoxelRegionFormat &fo
 	const unsigned int extra_bytes_needed = new_header_size - old_header_size;
 
 	f->seek(MAGIC_AND_VERSION_SIZE);
-	VoxelFileUtils::insert_bytes(f, extra_bytes_needed);
+	zylann::insert_bytes(f, extra_bytes_needed);
 
 	f->seek(0);
 

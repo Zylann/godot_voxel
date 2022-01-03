@@ -67,7 +67,7 @@ Error check_directory_created(const String &directory_path) {
 	return OK;
 }
 
-namespace VoxelFileUtils {
+namespace zylann {
 
 // TODO Write tests
 
@@ -110,4 +110,4 @@ void insert_bytes(FileAccess *f, size_t count, size_t temp_chunk_size) {
 	}
 }
 
-} // namespace VoxelFileUtils
+} // namespace zylann
