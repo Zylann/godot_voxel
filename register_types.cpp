@@ -62,9 +62,12 @@
 #endif
 
 void register_voxel_types() {
+	using namespace zylann;
+	using namespace voxel;
+
 	VoxelMemoryPool::create_singleton();
 	VoxelStringNames::create_singleton();
-	zylann::voxel::VoxelGraphNodeDB::create_singleton();
+	VoxelGraphNodeDB::create_singleton();
 	VoxelServer::create_singleton();
 
 	Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelServer", VoxelServer::get_singleton()));
@@ -168,13 +171,16 @@ void register_voxel_types() {
 }
 
 void unregister_voxel_types() {
+	using namespace zylann;
+	using namespace voxel;
+
 	// At this point, the GDScript module has nullified GDScriptLanguage::singleton!!
 	// That means it's impossible to free scripts still referenced by VoxelServer. And that can happen, because
 	// users can write custom generators, which run inside threads, and these threads are hosted in the server...
 	// See https://github.com/Zylann/godot_voxel/issues/189
 
 	VoxelStringNames::destroy_singleton();
-	zylann::voxel::VoxelGraphNodeDB::destroy_singleton();
+	VoxelGraphNodeDB::destroy_singleton();
 	VoxelServer::destroy_singleton();
 
 	// Do this last as VoxelServer might still be holding some refs to voxel blocks

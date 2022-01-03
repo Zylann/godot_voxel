@@ -12,6 +12,7 @@
 #include <thread>
 
 using namespace zylann;
+using namespace voxel;
 
 namespace {
 VoxelServer *g_voxel_server = nullptr;

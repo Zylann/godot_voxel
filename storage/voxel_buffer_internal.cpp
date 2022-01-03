@@ -13,6 +13,9 @@
 #include <core/math/math_funcs.h>
 #include <string.h>
 
+using namespace zylann;
+using namespace voxel;
+
 namespace {
 
 inline uint8_t *allocate_channel_data(size_t size) {

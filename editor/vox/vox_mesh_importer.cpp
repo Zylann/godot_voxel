@@ -8,6 +8,9 @@
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
 
+using namespace zylann;
+using namespace voxel;
+
 String VoxelVoxMeshImporter::get_importer_name() const {
 	return "VoxelVoxMeshImporter";
 }
@@ -225,7 +228,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 
 	ERR_FAIL_INDEX_V(p_pivot_mode, PIVOT_MODES_COUNT, ERR_INVALID_PARAMETER);
 
-	zylann::voxel::magica::Data vox_data;
+	magica::Data vox_data;
 	const Error load_err = vox_data.load_from_file(p_source_file);
 	ERR_FAIL_COND_V(load_err != OK, load_err);
 
@@ -246,7 +249,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 	Ref<Mesh> mesh;
 	std::vector<unsigned int> surface_index_to_material;
 	{
-		std::vector<zylann::voxel::magica::ModelInstance> model_instances;
+		std::vector<magica::ModelInstance> model_instances;
 		extract_model_instances(vox_data, model_instances);
 
 		// From this point we no longer need vox data so we can free some memory

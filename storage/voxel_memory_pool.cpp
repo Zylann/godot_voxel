@@ -6,6 +6,8 @@
 #include <core/string/print_string.h>
 #include <core/variant/variant.h>
 
+namespace zylann::voxel {
+
 namespace {
 VoxelMemoryPool *g_memory_pool = nullptr;
 } // namespace
@@ -163,3 +165,5 @@ size_t VoxelMemoryPool::debug_get_total_memory() const {
 	//MutexLock lock(_mutex);
 	return _total_memory;
 }
+
+} // namespace zylann::voxel
