@@ -10,7 +10,7 @@
 namespace dmc {
 
 struct OctreeNode;
-typedef ObjectPool<OctreeNode> OctreeNodePool;
+typedef zylann::ObjectPool<OctreeNode> OctreeNodePool;
 
 // Octree used only for dual grid construction
 struct OctreeNode {

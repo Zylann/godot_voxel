@@ -4,8 +4,9 @@
 #include "core/os/memory.h"
 #include <vector>
 
-template <class T>
-class ObjectPool {
+namespace zylann {
+
+template <class T> class ObjectPool {
 public:
 	T *create() {
 		if (_objects.empty()) {
@@ -31,5 +32,7 @@ public:
 private:
 	std::vector<T *> _objects;
 };
+
+} // namespace zylann
 
 #endif // OBJECT_POOL_H
