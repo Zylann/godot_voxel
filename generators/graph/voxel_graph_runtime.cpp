@@ -17,6 +17,8 @@
 //#define VOXEL_DEBUG_GRAPH_PROG_SENTINEL uint16_t(12345) // 48, 57 (base 10)
 //#endif
 
+namespace zylann::voxel {
+
 VoxelGraphRuntime::VoxelGraphRuntime() {
 	clear();
 }
@@ -46,9 +48,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 	// Not using the generic `get_terminal_nodes` function because our terminal nodes do have outputs
 	graph.for_each_node_const([&terminal_nodes](const ProgramGraph::Node &node) {
-		const zylann::voxel::VoxelGraphNodeDB::NodeType &type =
-				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node.type_id);
-		if (type.category == zylann::voxel::VoxelGraphNodeDB::CATEGORY_OUTPUT) {
+		const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node.type_id);
+		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
 			terminal_nodes.push_back(node.id);
 		}
 	});
@@ -57,8 +58,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		// Exclude debug nodes
 		unordered_remove_if(terminal_nodes, [&graph](uint32_t node_id) {
 			const ProgramGraph::Node *node = graph.get_node(node_id);
-			const zylann::voxel::VoxelGraphNodeDB::NodeType &type =
-					zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
+			const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
 			return type.debug_only;
 		});
 	}
@@ -182,13 +182,13 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	_program.z_input_address = mem.add_binding();
 
 	std::vector<uint16_t> &operations = _program.operations;
-	const zylann::voxel::VoxelGraphNodeDB &type_db = *zylann::voxel::VoxelGraphNodeDB::get_singleton();
+	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
 
 	// Run through each node in order, and turn them into program instructions
 	for (size_t order_index = 0; order_index < order.size(); ++order_index) {
 		const uint32_t node_id = order[order_index];
 		const ProgramGraph::Node *node = graph.get_node(node_id);
-		const zylann::voxel::VoxelGraphNodeDB::NodeType &type = type_db.get_type(node->type_id);
+		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node->type_id);
 
 		CRASH_COND(node == nullptr);
 		CRASH_COND(node->inputs.size() != type.inputs.size());
@@ -342,7 +342,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 			operations[params_size_index] = params_size;
 		}
 
-		if (type.category == zylann::voxel::VoxelGraphNodeDB::CATEGORY_OUTPUT) {
+		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
 			CRASH_COND(node->outputs.size() != 1);
 			{
 				const uint16_t *aptr = _program.output_port_addresses.getptr(ProgramGraph::PortLocation{ node_id, 0 });
@@ -386,8 +386,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 static Span<const uint16_t> get_outputs_from_op_address(Span<const uint16_t> operations, uint16_t op_address) {
 	const uint16_t opid = operations[op_address];
-	const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
-			zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(opid);
+	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
 	const uint32_t inputs_count = node_type.inputs.size();
 	const uint32_t outputs_count = node_type.outputs.size();
@@ -770,8 +769,7 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 		unsigned int pc = op_adresses[execution_map_index];
 
 		const uint16_t opid = operations[pc++];
-		const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
-				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(opid);
+		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
 		const uint32_t inputs_count = node_type.inputs.size();
 		const uint32_t outputs_count = node_type.outputs.size();
@@ -829,8 +827,7 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 	uint32_t pc = 0;
 	while (pc < operations.size()) {
 		const uint16_t opid = operations[pc++];
-		const zylann::voxel::VoxelGraphNodeDB::NodeType &node_type =
-				zylann::voxel::VoxelGraphNodeDB::get_singleton()->get_type(opid);
+		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
 		const uint32_t inputs_count = node_type.inputs.size();
 		const uint32_t outputs_count = node_type.outputs.size();
@@ -862,3 +859,5 @@ bool VoxelGraphRuntime::try_get_output_port_address(ProgramGraph::PortLocation p
 	out_address = *aptr;
 	return true;
 }
+
+} // namespace zylann::voxel

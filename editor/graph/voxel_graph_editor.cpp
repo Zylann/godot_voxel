@@ -711,7 +711,7 @@ void VoxelGraphEditor::update_previews() {
 
 	uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
-	const VoxelGraphRuntime::CompilationResult result = _graph->compile();
+	const zylann::voxel::VoxelGraphRuntime::CompilationResult result = _graph->compile();
 	if (!result.success) {
 		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
 
@@ -756,7 +756,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	_graph->debug_analyze_range(
 			Vector3iUtil::from_floored(aabb.position), Vector3iUtil::from_floored(aabb.position + aabb.size), true);
 
-	const VoxelGraphRuntime::State &state = _graph->get_last_state_from_current_thread();
+	const zylann::voxel::VoxelGraphRuntime::State &state = _graph->get_last_state_from_current_thread();
 
 	const Color greyed_out_color(1, 1, 1, 0.5);
 
@@ -884,12 +884,13 @@ void VoxelGraphEditor::update_slice_previews() {
 	_graph->generate_set(Span<float>(x_vec, 0, x_vec.size()), Span<float>(y_vec, 0, y_vec.size()),
 			Span<float>(z_vec, 0, z_vec.size()));
 
-	const VoxelGraphRuntime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
+	const zylann::voxel::VoxelGraphRuntime::State &last_state =
+			VoxelGeneratorGraph::get_last_state_from_current_thread();
 
 	for (size_t preview_index = 0; preview_index < previews.size(); ++preview_index) {
 		PreviewInfo &info = previews[preview_index];
 
-		const VoxelGraphRuntime::Buffer &buffer = last_state.get_buffer(info.address);
+		const zylann::voxel::VoxelGraphRuntime::Buffer &buffer = last_state.get_buffer(info.address);
 
 		Image &im = **info.control->get_image();
 		ERR_FAIL_COND(im.get_width() * im.get_height() != static_cast<int>(buffer.size));

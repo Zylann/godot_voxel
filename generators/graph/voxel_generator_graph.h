@@ -152,13 +152,13 @@ public:
 
 	// Internal
 
-	VoxelGraphRuntime::CompilationResult compile();
+	zylann::voxel::VoxelGraphRuntime::CompilationResult compile();
 	bool is_good() const;
 
 	void generate_set(Span<float> in_x, Span<float> in_y, Span<float> in_z);
 
 	// Returns state from the last generator used in the current thread
-	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
+	static const zylann::voxel::VoxelGraphRuntime::State &get_last_state_from_current_thread();
 	static Span<const int> get_last_execution_map_debug_from_current_thread();
 
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
@@ -196,7 +196,7 @@ private:
 	};
 
 	static void gather_indices_and_weights(Span<const WeightOutput> weight_outputs,
-			const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
+			const zylann::voxel::VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
 			VoxelBufferInternal &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices);
 
 	static void _bind_methods();
@@ -226,7 +226,7 @@ private:
 	// Only compiling and generation methods are thread-safe.
 
 	struct Runtime {
-		VoxelGraphRuntime runtime;
+		zylann::voxel::VoxelGraphRuntime runtime;
 		// Indices that are not used in the graph.
 		// This is used when there are less than 4 texture weight outputs.
 		FixedArray<uint8_t, 4> spare_texture_indices;
@@ -245,8 +245,8 @@ private:
 		std::vector<float> x_cache;
 		std::vector<float> y_cache;
 		std::vector<float> z_cache;
-		VoxelGraphRuntime::State state;
-		VoxelGraphRuntime::ExecutionMap optimized_execution_map;
+		zylann::voxel::VoxelGraphRuntime::State state;
+		zylann::voxel::VoxelGraphRuntime::ExecutionMap optimized_execution_map;
 	};
 
 	static thread_local Cache _cache;

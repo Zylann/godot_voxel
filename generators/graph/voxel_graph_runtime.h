@@ -8,6 +8,8 @@
 
 #include <core/object/ref_counted.h>
 
+namespace zylann::voxel {
+
 // CPU VM to execute a voxel graph generator.
 // This is a more generic class implementing the core of a 3D expression processing system.
 // Some of the logic dedicated to voxel data is moved in other classes.
@@ -124,8 +126,8 @@ public:
 	// Convenience for set generation with only one value
 	void generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const;
 
-	void generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z,
-			bool skip_xz, const ExecutionMap *execution_map) const;
+	void generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
+			const ExecutionMap *execution_map) const;
 
 	inline unsigned int get_output_count() const {
 		return _program.outputs_count;
@@ -161,12 +163,8 @@ public:
 	class CompileContext {
 	public:
 		CompileContext(const ProgramGraph::Node &node, std::vector<uint16_t> &program,
-				std::vector<HeapResource> &heap_resources,
-				std::vector<Variant> &params) :
-				_node(node),
-				_program(program),
-				_heap_resources(heap_resources),
-				_params(params) {}
+				std::vector<HeapResource> &heap_resources, std::vector<Variant> &params) :
+				_node(node), _program(program), _heap_resources(heap_resources), _params(params) {}
 
 		Variant get_param(size_t i) const {
 			CRASH_COND(i > _params.size());
@@ -174,8 +172,7 @@ public:
 		}
 
 		// Typical use is to pass a struct containing all compile-time arguments the operation will need
-		template <typename T>
-		void set_params(T params) {
+		template <typename T> void set_params(T params) {
 			// Can be called only once per node
 			CRASH_COND(_params_added);
 			// We will need to align memory, so the struct will not be immediately stored here.
@@ -207,8 +204,7 @@ public:
 		}
 
 		// In case the compilation step produces a resource to be deleted
-		template <typename T>
-		void add_memdelete_cleanup(T *ptr) {
+		template <typename T> void add_memdelete_cleanup(T *ptr) {
 			HeapResource hr;
 			hr.ptr = ptr;
 			hr.deleter = [](void *p) {
@@ -249,16 +245,11 @@ public:
 
 	class _ProcessContext {
 	public:
-		inline _ProcessContext(
-				const Span<const uint16_t> inputs,
-				const Span<const uint16_t> outputs,
+		inline _ProcessContext(const Span<const uint16_t> inputs, const Span<const uint16_t> outputs,
 				const Span<const uint8_t> params) :
-				_inputs(inputs),
-				_outputs(outputs),
-				_params(params) {}
+				_inputs(inputs), _outputs(outputs), _params(params) {}
 
-		template <typename T>
-		inline const T &get_params() const {
+		template <typename T> inline const T &get_params() const {
 #ifdef DEBUG_ENABLED
 			CRASH_COND(sizeof(T) > _params.size());
 #endif
@@ -283,12 +274,8 @@ public:
 	// Functions usable by node implementations during execution
 	class ProcessBufferContext : public _ProcessContext {
 	public:
-		inline ProcessBufferContext(
-				const Span<const uint16_t> inputs,
-				const Span<const uint16_t> outputs,
-				const Span<const uint8_t> params,
-				Span<Buffer> buffers,
-				bool using_execution_map) :
+		inline ProcessBufferContext(const Span<const uint16_t> inputs, const Span<const uint16_t> outputs,
+				const Span<const uint8_t> params, Span<Buffer> buffers, bool using_execution_map) :
 				_ProcessContext(inputs, outputs, params),
 				_buffers(buffers),
 				_using_execution_map(using_execution_map) {}
@@ -328,15 +315,9 @@ public:
 	// Functions usable by node implementations during range analysis
 	class RangeAnalysisContext : public _ProcessContext {
 	public:
-		inline RangeAnalysisContext(
-				const Span<const uint16_t> inputs,
-				const Span<const uint16_t> outputs,
-				const Span<const uint8_t> params,
-				Span<Interval> ranges,
-				Span<Buffer> buffers) :
-				_ProcessContext(inputs, outputs, params),
-				_ranges(ranges),
-				_buffers(buffers) {}
+		inline RangeAnalysisContext(const Span<const uint16_t> inputs, const Span<const uint16_t> outputs,
+				const Span<const uint8_t> params, Span<Interval> ranges, Span<Buffer> buffers) :
+				_ProcessContext(inputs, outputs, params), _ranges(ranges), _buffers(buffers) {}
 
 		inline const Interval get_input(uint32_t i) const {
 			const uint32_t address = get_input_address(i);
@@ -496,5 +477,7 @@ private:
 
 	Program _program;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_GRAPH_RUNTIME_H
