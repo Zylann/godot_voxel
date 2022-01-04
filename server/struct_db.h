@@ -4,11 +4,12 @@
 #include <core/error/error_macros.h>
 #include <vector>
 
+namespace zylann {
+
 // Stores uniquely-identified structs in a packed array.
 // Always use the IDs if you want to store a reference somewhere. Addresses aren't stable.
 // IDs are made unique with a generation system.
-template <typename T>
-class StructDB {
+template <typename T> class StructDB {
 private:
 	struct Slot {
 		T data;
@@ -129,8 +130,7 @@ public:
 		return c;
 	}
 
-	template <typename F>
-	inline void for_each(F f) {
+	template <typename F> inline void for_each(F f) {
 		for (size_t i = 0; i < _slots.size(); ++i) {
 			Slot &s = _slots[i];
 			if (s.valid) {
@@ -139,8 +139,7 @@ public:
 		}
 	}
 
-	template <typename F>
-	inline void for_each(F f) const {
+	template <typename F> inline void for_each(F f) const {
 		for (size_t i = 0; i < _slots.size(); ++i) {
 			const Slot &s = _slots[i];
 			if (s.valid) {
@@ -149,8 +148,7 @@ public:
 		}
 	}
 
-	template <typename F>
-	inline void for_each_with_id(F f) {
+	template <typename F> inline void for_each_with_id(F f) {
 		for (size_t i = 0; i < _slots.size(); ++i) {
 			Slot &s = _slots[i];
 			if (s.valid) {
@@ -159,8 +157,7 @@ public:
 		}
 	}
 
-	template <typename F>
-	inline void for_each_with_id(F f) const {
+	template <typename F> inline void for_each_with_id(F f) const {
 		for (size_t i = 0; i < _slots.size(); ++i) {
 			const Slot &s = _slots[i];
 			if (s.valid) {
@@ -185,5 +182,7 @@ private:
 
 	std::vector<Slot> _slots;
 };
+
+} // namespace zylann
 
 #endif // VOXEL_STRUCT_DB_H

@@ -252,8 +252,8 @@ private:
 	};
 
 	struct World {
-		StructDB<Volume> volumes;
-		StructDB<Viewer> viewers;
+		zylann::StructDB<Volume> volumes;
+		zylann::StructDB<Viewer> viewers;
 
 		// Must be overwritten with a new instance if count changes.
 		std::shared_ptr<PriorityDependencyShared> shared_priority_dependency;
