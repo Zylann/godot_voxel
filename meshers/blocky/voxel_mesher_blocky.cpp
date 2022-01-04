@@ -7,9 +7,10 @@
 
 using namespace zylann;
 
+namespace zylann::voxel {
+
 // Utility functions
 namespace {
-
 const int g_opposite_side[6] = {
 	Cube::SIDE_NEGATIVE_X, //
 	Cube::SIDE_POSITIVE_X, //
@@ -46,7 +47,7 @@ inline bool contributes_to_ao(const VoxelLibrary::BakedData &lib, uint32_t voxel
 } // namespace
 
 template <typename Type_T>
-static void generate_blocky_mesh(
+void generate_blocky_mesh(
 		FixedArray<VoxelMesherBlocky::Arrays, VoxelMesherBlocky::MAX_MATERIALS> &out_arrays_per_material,
 		const Span<Type_T> type_buffer, const Vector3i block_size, const VoxelLibrary::BakedData &library,
 		bool bake_occlusion, float baked_occlusion_darkness) {
@@ -331,6 +332,8 @@ static void generate_blocky_mesh(
 	}
 }
 
+} // namespace zylann::voxel
+
 thread_local VoxelMesherBlocky::Cache VoxelMesherBlocky::_cache;
 
 VoxelMesherBlocky::VoxelMesherBlocky() {
@@ -370,6 +373,8 @@ bool VoxelMesherBlocky::get_occlusion_enabled() const {
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+	using namespace zylann::voxel;
+
 	const int channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
 	{

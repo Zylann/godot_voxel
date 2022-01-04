@@ -4,6 +4,8 @@
 #include "../../util/profiling.h"
 #include <core/math/geometry_2d.h>
 
+namespace zylann::voxel {
+
 namespace {
 // Table of indices for vertices of cube faces
 // 2-----3
@@ -608,7 +610,7 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 	}
 }
 
-static Ref<Image> make_greedy_atlas(
+Ref<Image> make_greedy_atlas(
 		const VoxelMesherCubes::GreedyAtlasData &atlas_data, Span<VoxelMesherCubes::Arrays> surfaces) {
 	//
 	ERR_FAIL_COND_V(atlas_data.images.size() == 0, Ref<Image>());
@@ -692,6 +694,8 @@ static Ref<Image> make_greedy_atlas(
 	return image;
 }
 
+} // namespace zylann::voxel
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 thread_local VoxelMesherCubes::Cache VoxelMesherCubes::_cache;
@@ -703,6 +707,8 @@ VoxelMesherCubes::VoxelMesherCubes() {
 VoxelMesherCubes::~VoxelMesherCubes() {}
 
 void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+	using namespace zylann::voxel;
+
 	VOXEL_PROFILE_SCOPE();
 	const int channel = VoxelBufferInternal::CHANNEL_COLOR;
 	Cache &cache = _cache;
