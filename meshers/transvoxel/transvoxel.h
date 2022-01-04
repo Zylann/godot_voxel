@@ -10,7 +10,7 @@
 #include <core/math/vector3.h>
 #include <vector>
 
-namespace Transvoxel {
+namespace zylann::voxel::transvoxel {
 
 // How many extra voxels are needed towards the negative axes
 static const int MIN_PADDING = 1;
@@ -121,6 +121,6 @@ void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_c
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data);
 
-} // namespace Transvoxel
+} //namespace zylann::voxel::transvoxel
 
 #endif // TRANSVOXEL_H

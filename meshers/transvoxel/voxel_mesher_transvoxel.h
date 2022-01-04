@@ -11,8 +11,8 @@ class VoxelMesherTransvoxel : public VoxelMesher {
 
 public:
 	enum TexturingMode {
-		TEXTURES_NONE = Transvoxel::TEXTURES_NONE,
-		TEXTURES_BLEND_4_OVER_16 = Transvoxel::TEXTURES_BLEND_4_OVER_16
+		TEXTURES_NONE = zylann::voxel::transvoxel::TEXTURES_NONE,
+		TEXTURES_BLEND_4_OVER_16 = zylann::voxel::transvoxel::TEXTURES_BLEND_4_OVER_16
 	};
 
 	VoxelMesherTransvoxel();
@@ -40,7 +40,7 @@ protected:
 	static void _bind_methods();
 
 private:
-	void fill_surface_arrays(Array &arrays, const Transvoxel::MeshArrays &src);
+	void fill_surface_arrays(Array &arrays, const zylann::voxel::transvoxel::MeshArrays &src);
 
 	TexturingMode _texture_mode = TEXTURES_NONE;
 

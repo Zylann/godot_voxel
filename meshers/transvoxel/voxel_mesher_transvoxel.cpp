@@ -6,9 +6,10 @@
 #include "transvoxel_tables.cpp"
 
 using namespace zylann;
+using namespace voxel;
 
 VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
-	set_padding(Transvoxel::MIN_PADDING, Transvoxel::MAX_PADDING);
+	set_padding(transvoxel::MIN_PADDING, transvoxel::MAX_PADDING);
 }
 
 VoxelMesherTransvoxel::~VoxelMesherTransvoxel() {}
@@ -25,7 +26,7 @@ int VoxelMesherTransvoxel::get_used_channels_mask() const {
 	return (1 << VoxelBufferInternal::CHANNEL_SDF);
 }
 
-void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const Transvoxel::MeshArrays &src) {
+void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
 	PackedVector3Array vertices;
 	PackedVector3Array normals;
 	PackedFloat32Array lod_data; // 4*float32
@@ -68,7 +69,7 @@ static void remap_vertex_array(const std::vector<T> &src_data, std::vector<T> &d
 			&dst_data[0], &src_data[0], src_data.size(), sizeof(T), remap_indices.data());
 }
 
-static void simplify(const Transvoxel::MeshArrays &src_mesh, Transvoxel::MeshArrays &dst_mesh, float p_target_ratio,
+static void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArrays &dst_mesh, float p_target_ratio,
 		float p_error_threshold) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -126,9 +127,9 @@ static void simplify(const Transvoxel::MeshArrays &src_mesh, Transvoxel::MeshArr
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	VOXEL_PROFILE_SCOPE();
 
-	static thread_local Transvoxel::Cache s_cache;
-	static thread_local Transvoxel::MeshArrays s_mesh_arrays;
-	static thread_local Transvoxel::MeshArrays s_simplified_mesh_arrays;
+	static thread_local transvoxel::Cache s_cache;
+	static thread_local transvoxel::MeshArrays s_mesh_arrays;
+	static thread_local transvoxel::MeshArrays s_simplified_mesh_arrays;
 
 	const int sdf_channel = VoxelBufferInternal::CHANNEL_SDF;
 
@@ -146,8 +147,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 	// const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
-	Transvoxel::DefaultTextureIndicesData default_texture_indices_data = Transvoxel::build_regular_mesh(voxels,
-			sdf_channel, input.lod, static_cast<Transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays);
+	transvoxel::DefaultTextureIndicesData default_texture_indices_data = transvoxel::build_regular_mesh(voxels,
+			sdf_channel, input.lod, static_cast<transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays);
 
 	if (s_mesh_arrays.vertices.size() == 0) {
 		// The mesh can be empty
@@ -175,8 +176,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		VOXEL_PROFILE_SCOPE();
 		s_mesh_arrays.clear();
 
-		Transvoxel::build_transition_mesh(voxels, sdf_channel, dir, input.lod,
-				static_cast<Transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays,
+		transvoxel::build_transition_mesh(voxels, sdf_channel, dir, input.lod,
+				static_cast<transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays,
 				default_texture_indices_data);
 
 		if (s_mesh_arrays.vertices.size() == 0) {
@@ -199,8 +200,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 // TODO For testing at the moment
 Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> voxels, int direction) {
-	static thread_local Transvoxel::Cache s_cache;
-	static thread_local Transvoxel::MeshArrays s_mesh_arrays;
+	static thread_local transvoxel::Cache s_cache;
+	static thread_local transvoxel::MeshArrays s_mesh_arrays;
 
 	s_mesh_arrays.clear();
 
@@ -213,10 +214,10 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> vox
 
 	// TODO We need to output transition meshes through the generic interface, they are part of the result
 	// For now we can't support proper texture indices in this specific case
-	Transvoxel::DefaultTextureIndicesData default_texture_indices_data;
+	transvoxel::DefaultTextureIndicesData default_texture_indices_data;
 	default_texture_indices_data.use = false;
-	Transvoxel::build_transition_mesh(voxels->get_buffer(), VoxelBufferInternal::CHANNEL_SDF, direction, 0,
-			static_cast<Transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays,
+	transvoxel::build_transition_mesh(voxels->get_buffer(), VoxelBufferInternal::CHANNEL_SDF, direction, 0,
+			static_cast<transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays,
 			default_texture_indices_data);
 
 	Ref<ArrayMesh> mesh;

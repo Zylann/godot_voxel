@@ -4,9 +4,7 @@
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
-using namespace zylann;
-
-namespace Transvoxel {
+namespace zylann::voxel::transvoxel {
 
 static const float TRANSITION_CELL_SCALE = 0.25;
 
@@ -425,9 +423,9 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 				const uint8_t direction_validity_mask = (pos.x > min_pos.x ? 1 : 0) |
 						((pos.y > min_pos.y ? 1 : 0) << 1) | ((pos.z > min_pos.z ? 1 : 0) << 2);
 
-				const uint8_t regular_cell_class_index = Tables::get_regular_cell_class(case_code);
-				const Tables::RegularCellData &regular_cell_data =
-						Tables::get_regular_cell_data(regular_cell_class_index);
+				const uint8_t regular_cell_class_index = tables::get_regular_cell_class(case_code);
+				const tables::RegularCellData &regular_cell_data =
+						tables::get_regular_cell_data(regular_cell_class_index);
 				const uint8_t triangle_count = regular_cell_data.geometryCounts & 0x0f;
 				const uint8_t vertex_count = (regular_cell_data.geometryCounts & 0xf0) >> 4;
 
@@ -440,7 +438,7 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 					// The case index maps to a list of 16-bit codes providing information about the edges on which the
 					// vertices lie. The low byte of each 16-bit code contains the corner indexes of the edge’s
 					// endpoints in one nibble each, and the high byte contains the mapping code shown in Figure 3.8(b)
-					const unsigned short rvd = Tables::get_regular_vertex_data(case_code, vertex_index);
+					const unsigned short rvd = tables::get_regular_vertex_data(case_code, vertex_index);
 					const uint8_t edge_code_low = rvd & 0xff;
 					const uint8_t edge_code_high = (rvd >> 8) & 0xff;
 
@@ -930,11 +928,11 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 			cell_positions[0xB] = cell_positions[6];
 			cell_positions[0xC] = cell_positions[8];
 
-			const uint8_t cell_class = Tables::get_transition_cell_class(case_code);
+			const uint8_t cell_class = tables::get_transition_cell_class(case_code);
 
 			CRASH_COND((cell_class & 0x7f) > 55);
 
-			const Tables::TransitionCellData cell_data = Tables::get_transition_cell_data(cell_class & 0x7f);
+			const tables::TransitionCellData cell_data = tables::get_transition_cell_data(cell_class & 0x7f);
 			const bool flip_triangles = ((cell_class & 128) != 0);
 
 			const unsigned int vertex_count = cell_data.GetVertexCount();
@@ -946,7 +944,7 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 			const uint8_t cell_border_mask = get_border_mask(cell_positions[0], block_size_scaled);
 
 			for (unsigned int vertex_index = 0; vertex_index < vertex_count; ++vertex_index) {
-				const uint16_t edge_code = Tables::get_transition_vertex_data(case_code, vertex_index);
+				const uint16_t edge_code = tables::get_transition_vertex_data(case_code, vertex_index);
 				const uint8_t index_vertex_a = (edge_code >> 4) & 0xf;
 				const uint8_t index_vertex_b = (edge_code & 0xf);
 
@@ -1058,7 +1056,7 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 
 					const uint8_t cell_index = (t == 0 ? index_vertex_b : index_vertex_a);
 					CRASH_COND(cell_index >= 13);
-					const uint8_t corner_data = Tables::get_transition_corner_data(cell_index);
+					const uint8_t corner_data = tables::get_transition_corner_data(cell_index);
 					const uint8_t vertex_index_to_reuse_or_create = (corner_data & 0xf);
 					const uint8_t reuse_direction = ((corner_data >> 4) & 0xf);
 
@@ -1370,4 +1368,4 @@ void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_c
 	}
 }
 
-} // namespace Transvoxel
+} // namespace zylann::voxel::transvoxel

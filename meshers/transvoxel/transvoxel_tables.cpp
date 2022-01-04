@@ -32,8 +32,7 @@
 
 #include <core/error/error_macros.h>
 
-namespace Transvoxel {
-namespace Tables {
+namespace zylann::voxel::transvoxel::tables {
 
 // The RegularCellData structure holds information about the triangulation
 // used for a single equivalence class in the modified Marching Cubes algorithm,
@@ -50,9 +49,13 @@ struct RegularCellData {
 		return vertexIndex[i];
 	}
 
-	long GetVertexCount(void) const { return (geometryCounts >> 4); }
+	long GetVertexCount(void) const {
+		return (geometryCounts >> 4);
+	}
 
-	long GetTriangleCount(void) const { return (geometryCounts & 0x0F); }
+	long GetTriangleCount(void) const {
+		return (geometryCounts & 0x0F);
+	}
 };
 
 // The TransitionCellData structure holds information about the triangulation
@@ -70,9 +73,13 @@ struct TransitionCellData {
 		return vertexIndex[i];
 	}
 
-	long GetVertexCount(void) const { return (geometryCounts >> 4); }
+	long GetVertexCount(void) const {
+		return (geometryCounts >> 4);
+	}
 
-	long GetTriangleCount(void) const { return (geometryCounts & 0x0F); }
+	long GetTriangleCount(void) const {
+		return (geometryCounts & 0x0F);
+	}
 };
 
 // The regularCellClass table maps an 8-bit regular Marching Cubes case index to
@@ -1071,5 +1078,4 @@ inline unsigned short get_transition_vertex_data(unsigned int i, unsigned int j)
 	return transitionVertexData[i][j];
 }
 
-} // namespace Tables
-} // namespace Transvoxel
+} // namespace zylann::voxel::transvoxel::tables
