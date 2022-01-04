@@ -6,7 +6,9 @@
 class FastNoiseLiteEditorPlugin : public EditorPlugin {
 	GDCLASS(FastNoiseLiteEditorPlugin, EditorPlugin)
 public:
-	virtual String get_name() const { return "FastNoiseLite"; }
+	String get_name() const override {
+		return "FastNoiseLite";
+	}
 
 	FastNoiseLiteEditorPlugin(EditorNode *p_node);
 };
