@@ -23,11 +23,11 @@ public:
 
 	// Internal
 
-	inline void set_color8(uint8_t i, Color8 c) {
+	inline void set_color8(uint8_t i, zylann::Color8 c) {
 		_colors[i] = c;
 	}
 
-	inline Color8 get_color8(uint8_t i) const {
+	inline zylann::Color8 get_color8(uint8_t i) const {
 		return _colors[i];
 	}
 
@@ -37,7 +37,7 @@ private:
 
 	static void _bind_methods();
 
-	FixedArray<Color8, MAX_COLORS> _colors;
+	FixedArray<zylann::Color8, MAX_COLORS> _colors;
 };
 
 #endif // VOXEL_COLOR_PALETTE_H

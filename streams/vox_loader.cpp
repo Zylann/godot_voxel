@@ -3,6 +3,8 @@
 #include "../storage/voxel_buffer.h"
 #include "vox_data.h"
 
+using namespace zylann;
+
 Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> p_voxels, Ref<VoxelColorPalette> palette) {
 	ERR_FAIL_COND_V(p_voxels.is_null(), ERR_INVALID_PARAMETER);
 	VoxelBufferInternal &voxels = p_voxels->get_buffer();

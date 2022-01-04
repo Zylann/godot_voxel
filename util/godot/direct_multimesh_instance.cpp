@@ -3,6 +3,8 @@
 
 #include <scene/resources/world_3d.h>
 
+using namespace zylann;
+
 DirectMultiMeshInstance::DirectMultiMeshInstance() {}
 
 DirectMultiMeshInstance::~DirectMultiMeshInstance() {

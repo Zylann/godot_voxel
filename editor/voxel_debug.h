@@ -29,7 +29,7 @@ public:
 
 	void set_world(World3D *world);
 	void begin();
-	void draw_box(const Transform3D &t, Color8 color);
+	void draw_box(const Transform3D &t, zylann::Color8 color);
 	void end();
 	void clear();
 
@@ -60,7 +60,7 @@ public:
 
 	// Draws a box wireframe using MultiMesh, allowing to draw much more without slowing down.
 	// The box's origin is its lower corner. Size is defined by the transform's basis.
-	void draw_box_mm(const Transform3D &t, Color8 color);
+	void draw_box_mm(const Transform3D &t, zylann::Color8 color);
 
 	// Call this after issuing all drawing commands
 	void end();

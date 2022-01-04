@@ -5,12 +5,15 @@
 
 #include <scene/resources/mesh.h>
 
+using namespace zylann;
+
 namespace VoxelDebug {
 
 FixedArray<Ref<Mesh>, ID_COUNT> g_wirecubes;
 bool g_finalized = false;
 
-template <typename T> void raw_copy_to(Vector<T> &dst, const T *src, unsigned int count) {
+template <typename T>
+void raw_copy_to(Vector<T> &dst, const T *src, unsigned int count) {
 	dst.resize(count);
 	memcpy(dst.ptrw(), src, count * sizeof(T));
 }

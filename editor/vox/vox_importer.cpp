@@ -13,7 +13,8 @@
 #include <scene/resources/mesh.h>
 #include <scene/resources/packed_scene.h>
 
-using namespace zylann::voxel;
+using namespace zylann;
+using namespace voxel;
 
 String VoxelVoxImporter::get_importer_name() const {
 	return "VoxelVoxImporter";

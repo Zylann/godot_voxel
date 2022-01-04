@@ -1,5 +1,7 @@
 #include "voxel_color_palette.h"
 
+using namespace zylann;
+
 VoxelColorPalette::VoxelColorPalette() {
 	// Default palette
 	_colors[0] = Color8(0, 0, 0, 0);

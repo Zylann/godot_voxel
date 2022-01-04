@@ -31,7 +31,7 @@ public:
 
 	struct TransformAndColor8 {
 		Transform3D transform;
-		Color8 color;
+		zylann::Color8 color;
 	};
 
 	static void make_transform_and_color8_3d_bulk_array(
