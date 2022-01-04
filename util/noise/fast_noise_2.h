@@ -54,21 +54,21 @@ public:
 	static constexpr char *FRACTAL_TYPE_HINT_STRING = "None,FBm,Ridged,PingPong";
 
 	enum CellularDistanceFunction { //
-		CELLULAR_DISTANCE_EUCLIDEAN = FastNoise::DistanceFunction::Euclidean,
-		CELLULAR_DISTANCE_EUCLIDEAN_SQ = FastNoise::DistanceFunction::EuclideanSquared,
-		CELLULAR_DISTANCE_MANHATTAN = FastNoise::DistanceFunction::Manhattan,
-		CELLULAR_DISTANCE_HYBRID = FastNoise::DistanceFunction::Hybrid,
-		CELLULAR_DISTANCE_MAX_AXIS = FastNoise::DistanceFunction::MaxAxis
+		CELLULAR_DISTANCE_EUCLIDEAN = (int)FastNoise::DistanceFunction::Euclidean,
+		CELLULAR_DISTANCE_EUCLIDEAN_SQ = (int)FastNoise::DistanceFunction::EuclideanSquared,
+		CELLULAR_DISTANCE_MANHATTAN = (int)FastNoise::DistanceFunction::Manhattan,
+		CELLULAR_DISTANCE_HYBRID = (int)FastNoise::DistanceFunction::Hybrid,
+		CELLULAR_DISTANCE_MAX_AXIS = (int)FastNoise::DistanceFunction::MaxAxis
 	};
 
 	static constexpr char *CELLULAR_DISTANCE_FUNCTION_HINT_STRING = "Euclidean,EuclideanSq,Manhattan,Hybrid,MaxAxis";
 
 	enum CellularReturnType { //
-		CELLULAR_RETURN_INDEX_0 = FastNoise::CellularDistance::ReturnType::Index0,
-		CELLULAR_RETURN_INDEX_0_ADD_1 = FastNoise::CellularDistance::ReturnType::Index0Add1,
-		CELLULAR_RETURN_INDEX_0_SUB_1 = FastNoise::CellularDistance::ReturnType::Index0Sub1,
-		CELLULAR_RETURN_INDEX_0_MUL_1 = FastNoise::CellularDistance::ReturnType::Index0Mul1,
-		CELLULAR_RETURN_INDEX_0_DIV_1 = FastNoise::CellularDistance::ReturnType::Index0Div1
+		CELLULAR_RETURN_INDEX_0 = (int)FastNoise::CellularDistance::ReturnType::Index0,
+		CELLULAR_RETURN_INDEX_0_ADD_1 = (int)FastNoise::CellularDistance::ReturnType::Index0Add1,
+		CELLULAR_RETURN_INDEX_0_SUB_1 = (int)FastNoise::CellularDistance::ReturnType::Index0Sub1,
+		CELLULAR_RETURN_INDEX_0_MUL_1 = (int)FastNoise::CellularDistance::ReturnType::Index0Mul1,
+		CELLULAR_RETURN_INDEX_0_DIV_1 = (int)FastNoise::CellularDistance::ReturnType::Index0Div1
 	};
 
 	static constexpr char *CELLULAR_RETURN_TYPE_HINT_STRING = "Index0,Index0Add1,Index0Sub1,Index0Mul1,Index0Div1";
