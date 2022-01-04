@@ -134,7 +134,7 @@ private:
 	Ref<ShaderMaterial> _shader_material;
 	zylann::DirectMeshInstance _mesh_instance;
 	FixedArray<zylann::DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
-	DirectStaticBody _static_body;
+	zylann::DirectStaticBody _static_body;
 	Ref<World3D> _world;
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS

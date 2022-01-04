@@ -4,6 +4,8 @@
 #include <scene/resources/world_3d.h>
 #include <servers/physics_server_3d.h>
 
+namespace zylann {
+
 DirectStaticBody::DirectStaticBody() {}
 
 DirectStaticBody::~DirectStaticBody() {
@@ -129,3 +131,5 @@ void DirectStaticBody::set_debug(bool enabled, World3D *world) {
 		_debug_mesh_instance.destroy();
 	}
 }
+
+} // namespace zylann

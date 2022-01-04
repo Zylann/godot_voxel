@@ -9,6 +9,8 @@
 
 class World3D;
 
+namespace zylann {
+
 // Thin wrapper around static body API
 class DirectStaticBody : public zylann::NonCopyable {
 public:
@@ -35,5 +37,7 @@ private:
 	Ref<Shape3D> _shape;
 	zylann::DirectMeshInstance _debug_mesh_instance;
 };
+
+} // namespace zylann
 
 #endif // DIRECT_STATIC_BODY_H
