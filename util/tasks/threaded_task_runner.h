@@ -88,7 +88,8 @@ public:
 	void enqueue(Span<IThreadedTask *> tasks);
 
 	// TODO Lambda might not be the best API. memcpying to a vector would ensure we lock for a shorter time.
-	template <typename F> void dequeue_completed_tasks(F f) {
+	template <typename F>
+	void dequeue_completed_tasks(F f) {
 		MutexLock lock(_completed_tasks_mutex);
 		for (size_t i = 0; i < _completed_tasks.size(); ++i) {
 			IThreadedTask *task = _completed_tasks[i];

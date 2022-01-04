@@ -53,8 +53,7 @@ public:
 	// TODO Merge support functions into a single getter with Feature bitmask
 	virtual bool supports_instance_blocks() const;
 
-	virtual void load_instance_blocks(
-			Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results);
+	virtual void load_instance_blocks(Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results);
 
 	virtual void save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks);
 
@@ -68,7 +67,9 @@ public:
 		std::vector<Block> blocks;
 	};
 
-	virtual bool supports_loading_all_blocks() const { return false; }
+	virtual bool supports_loading_all_blocks() const {
+		return false;
+	}
 
 	virtual void load_all_blocks(FullLoadingResult &result);
 

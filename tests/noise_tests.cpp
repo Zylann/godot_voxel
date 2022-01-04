@@ -19,7 +19,8 @@ enum Tests { //
 
 // Sample a maximum change across the given step.
 // The result is not normalized for performance.
-template <typename F2, typename FloatT> FloatT get_derivative(FloatT x, FloatT y, FloatT step, F2 noise_func_2d) {
+template <typename F2, typename FloatT>
+FloatT get_derivative(FloatT x, FloatT y, FloatT step, F2 noise_func_2d) {
 	FloatT n0, n1, d;
 	FloatT max_derivative = 0.0;
 
@@ -68,7 +69,8 @@ FloatT get_derivative(FloatT x, FloatT y, FloatT z, FloatT step, F3 noise_func_3
 	return max_derivative;
 }
 
-template <typename F2, typename F3, typename FloatT> void test_min_max(F2 noise_func_2d, F3 noise_func_3d) {
+template <typename F2, typename F3, typename FloatT>
+void test_min_max(F2 noise_func_2d, F3 noise_func_3d) {
 	FloatT min_value_2d = std::numeric_limits<FloatT>::max();
 	FloatT max_value_2d = std::numeric_limits<FloatT>::min();
 
@@ -96,7 +98,8 @@ template <typename F2, typename F3, typename FloatT> void test_min_max(F2 noise_
 }
 
 // Generic analysis for noise functions
-template <typename F2, typename F3, typename FloatT> void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
+template <typename F2, typename F3, typename FloatT>
+void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
 	const int iterations = ITERATIONS;
 	const int step_resolution_count = STEP_RESOLUTION_COUNT;
 	const FloatT step_min = STEP_MIN;
@@ -166,7 +169,8 @@ template <typename F2, typename F3, typename FloatT> void test_derivatives_tpl(F
 	print_line(String("Min max derivative: {0}").format(varray(min_max_derivative)));
 }
 
-template <typename F3> void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
+template <typename F3>
+void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
 	const double x_min = 500.0;
 	const double y = 500.0;
 	const double z_min = 500.0;
@@ -200,7 +204,8 @@ template <typename F3> void test_derivatives_with_image(String fpath, double ste
 	im->save_png(fpath);
 }
 
-template <typename F3> void test_derivatives_with_image(String fname, int steps_resolution, F3 noise_func_3d) {
+template <typename F3>
+void test_derivatives_with_image(String fname, int steps_resolution, F3 noise_func_3d) {
 	for (int i = 0; i < steps_resolution; ++i) {
 		const double step =
 				Math::lerp(STEP_MIN, STEP_MAX, static_cast<double>(i) / static_cast<double>(steps_resolution));
@@ -209,7 +214,8 @@ template <typename F3> void test_derivatives_with_image(String fname, int steps_
 	}
 }
 
-template <typename F2, typename F3> void test_noise(String name, int tests, F2 noise_func_2d, F3 noise_func_3d) {
+template <typename F2, typename F3>
+void test_noise(String name, int tests, F2 noise_func_2d, F3 noise_func_3d) {
 	print_line(String("--- {0}:").format(varray(name)));
 
 	if (tests & TEST_MIN_MAX) {

@@ -12,7 +12,8 @@
 #include <vector>
 
 namespace std {
-template <> struct hash<String> {
+template <>
+struct hash<String> {
 	size_t operator()(const String &v) const {
 		return v.hash();
 	}

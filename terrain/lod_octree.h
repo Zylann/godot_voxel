@@ -47,7 +47,8 @@ public:
 		inline void operator()(Vector3i node_pos, int lod) {}
 	};
 
-	template <typename DestroyAction_T> void clear(DestroyAction_T &destroy_action) {
+	template <typename DestroyAction_T>
+	void clear(DestroyAction_T &destroy_action) {
 		join_all_recursively(&_root, Vector3i(), _max_depth, destroy_action);
 		_is_root_created = false;
 		_max_depth = 0;
@@ -116,7 +117,8 @@ public:
 	// Nodes may be subdivided if conditions are met, or unsubdivided if they aren't.
 	// This is not fully recursive. It is expected to be called over several frames,
 	// so the shape is obtained progressively.
-	template <typename UpdateActions_T> void update(Vector3 view_pos, UpdateActions_T &actions) {
+	template <typename UpdateActions_T>
+	void update(Vector3 view_pos, UpdateActions_T &actions) {
 		if (_is_root_created || _root.has_children()) {
 			update(ROOT_INDEX, Vector3i(), _max_depth, view_pos, actions);
 		} else {
@@ -148,7 +150,8 @@ public:
 	// The box is given in unit coordinates of the octree (1 unit is the size of a leaf node at maximum depth).
 	// Returns true if the predicate matches any node, false otherwise.
 	// predicate: `bool is_match(Vector3i node_pos, int lod_index, const NodeData &data)`
-	template <typename Predicate_T> bool find_in_box(Box3i box, Predicate_T predicate) const {
+	template <typename Predicate_T>
+	bool find_in_box(Box3i box, Predicate_T predicate) const {
 		Box3i root_box(Vector3i(), Vector3iUtil::create(1 << _max_depth));
 		box.clip(root_box);
 		return find_in_box_recursive(box, Vector3i(), ROOT_INDEX, _max_depth, predicate);
@@ -156,7 +159,8 @@ public:
 
 	// Executes a function on all leaf nodes intersecting the box.
 	// f: `void f(Vector3i node_pos, int lod_index, NodeData &data)`
-	template <typename F> void for_leaves_in_box(Box3i box, F f) {
+	template <typename F>
+	void for_leaves_in_box(Box3i box, F f) {
 		Box3i root_box(Vector3i(), Vector3iUtil::create(1 << _max_depth));
 		box.clip(root_box);
 		return for_leaves_in_box_recursive(box, Vector3i(), ROOT_INDEX, _max_depth, f);
@@ -164,7 +168,8 @@ public:
 
 	// Executes a function on all leaf nodes of the octree.
 	// f: `void f(Vector3i node_pos, int lod_index, const NodeData &data)`
-	template <typename F> void for_each_leaf(F f) const {
+	template <typename F>
+	void for_each_leaf(F f) const {
 		return for_each_leaf_recursive(Vector3i(), ROOT_INDEX, _max_depth, f);
 	}
 
@@ -181,7 +186,8 @@ public:
 
 	// Subdivides the octree recursively, solely based on `can_split`.
 	// Does not unsubdivide existing nodes.
-	template <typename Actions_T> void subdivide(Actions_T &actions) {
+	template <typename Actions_T>
+	void subdivide(Actions_T &actions) {
 		if (!_is_root_created && actions.can_split(Vector3i(), _max_depth, _root.data)) {
 			actions.create_child(Vector3i(), _max_depth, _root.data);
 			_is_root_created = true;
@@ -398,7 +404,8 @@ private:
 		return count;
 	}
 
-	template <typename F> void for_each_leaf_recursive(Vector3i node_pos, int node_index, int depth, F f) const {
+	template <typename F>
+	void for_each_leaf_recursive(Vector3i node_pos, int node_index, int depth, F f) const {
 		const Node *node = get_node(node_index);
 		if (node->has_children()) {
 			const int first_child_index = node->first_child;

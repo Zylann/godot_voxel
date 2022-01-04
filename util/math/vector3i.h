@@ -377,7 +377,8 @@ struct Vector3iHasher {
 
 // For STL
 namespace std {
-template <> struct hash<Vector3i> {
+template <>
+struct hash<Vector3i> {
 	size_t operator()(const Vector3i &v) const {
 		return Vector3iHasher::hash(v);
 	}

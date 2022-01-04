@@ -35,27 +35,33 @@ inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4,
 	return res;
 }
 
-template <typename T> inline T min(const T a, const T b) {
+template <typename T>
+inline T min(const T a, const T b) {
 	return a < b ? a : b;
 }
 
-template <typename T> inline T max(const T a, const T b) {
+template <typename T>
+inline T max(const T a, const T b) {
 	return a > b ? a : b;
 }
 
-template <typename T> inline T min(const T a, const T b, const T c, const T d) {
+template <typename T>
+inline T min(const T a, const T b, const T c, const T d) {
 	return min(min(a, b), min(c, d));
 }
 
-template <typename T> inline T max(const T a, const T b, const T c, const T d) {
+template <typename T>
+inline T max(const T a, const T b, const T c, const T d) {
 	return max(max(a, b), max(c, d));
 }
 
-template <typename T> inline T min(const T a, const T b, const T c, const T d, const T e, const T f) {
+template <typename T>
+inline T min(const T a, const T b, const T c, const T d, const T e, const T f) {
 	return min(min(min(a, b), min(c, d)), min(e, f));
 }
 
-template <typename T> inline T max(const T a, const T b, const T c, const T d, const T e, const T f) {
+template <typename T>
+inline T max(const T a, const T b, const T c, const T d, const T e, const T f) {
 	return max(max(max(a, b), max(c, d)), max(e, f));
 }
 
@@ -69,7 +75,8 @@ inline T max(const T a, const T b, const T c, const T d, const T e, const T f, c
 	return max(max(a, b, c, d), max(e, f, g, h));
 }
 
-template <typename T> inline T clamp(const T x, const T min_value, const T max_value) {
+template <typename T>
+inline T clamp(const T x, const T min_value, const T max_value) {
 	// TODO Optimization: clang can optimize a min/max implementation. Worth changing to that?
 	if (x < min_value) {
 		return min_value;
@@ -80,7 +87,8 @@ template <typename T> inline T clamp(const T x, const T min_value, const T max_v
 	return x;
 }
 
-template <typename T> inline T squared(const T x) {
+template <typename T>
+inline T squared(const T x) {
 	return x * x;
 }
 

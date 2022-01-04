@@ -9,10 +9,7 @@
 template <typename T>
 class Span {
 public:
-	inline Span() :
-			_ptr(nullptr),
-			_size(0) {
-	}
+	inline Span() : _ptr(nullptr), _size(0) {}
 
 	inline Span(T *p_ptr, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end < p_begin);
@@ -20,8 +17,7 @@ public:
 		_size = p_end - p_begin;
 	}
 
-	inline Span(T *p_ptr, size_t p_size) :
-			_ptr(p_ptr), _size(p_size) {}
+	inline Span(T *p_ptr, size_t p_size) : _ptr(p_ptr), _size(p_size) {}
 
 	inline Span(Span<T> &p_other, size_t p_begin, size_t p_end) {
 		CRASH_COND(p_end < p_begin);

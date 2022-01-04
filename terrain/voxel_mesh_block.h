@@ -97,7 +97,8 @@ public:
 		return _transition_mask;
 	}
 
-	template <typename F> void for_each_mesh_instance_with_transform(F f) const {
+	template <typename F>
+	void for_each_mesh_instance_with_transform(F f) const {
 		const Transform3D local_transform(Basis(), _position_in_voxels);
 		const Transform3D world_transform = local_transform;
 		f(_mesh_instance, world_transform);

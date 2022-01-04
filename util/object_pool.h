@@ -6,7 +6,8 @@
 
 namespace zylann {
 
-template <class T> class ObjectPool {
+template <class T>
+class ObjectPool {
 public:
 	T *create() {
 		if (_objects.empty()) {

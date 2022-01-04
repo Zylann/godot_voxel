@@ -60,12 +60,14 @@ size_t get_metadata_size_in_bytes(const VoxelBufferInternal &buffer) {
 	return size;
 }
 
-template <typename T> inline void write(uint8_t *&dst, T d) {
+template <typename T>
+inline void write(uint8_t *&dst, T d) {
 	*(T *)dst = d;
 	dst += sizeof(T);
 }
 
-template <typename T> inline T read(uint8_t *&src) {
+template <typename T>
+inline T read(uint8_t *&src) {
 	T d = *(T *)src;
 	src += sizeof(T);
 	return d;

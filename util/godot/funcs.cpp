@@ -234,7 +234,8 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	// return wire_mesh;
 }
 
-template <typename F> void for_each_node_depth_first(Node *parent, F f) {
+template <typename F>
+void for_each_node_depth_first(Node *parent, F f) {
 	ERR_FAIL_COND(parent == nullptr);
 	f(parent);
 	for (int i = 0; i < parent->get_child_count(); ++i) {

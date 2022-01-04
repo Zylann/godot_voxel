@@ -18,10 +18,7 @@ public:
 	}
 
 	inline Vector3i to_local(Vector3i pos) const {
-		return Vector3i(
-				pos.x & _block_size_mask,
-				pos.y & _block_size_mask,
-				pos.z & _block_size_mask);
+		return Vector3i(pos.x & _block_size_mask, pos.y & _block_size_mask, pos.z & _block_size_mask);
 	}
 
 	// Converts block coodinates into voxel coordinates
@@ -34,9 +31,15 @@ public:
 
 	void create(unsigned int block_size_po2, int lod_index);
 
-	inline unsigned int get_block_size() const { return _block_size; }
-	inline unsigned int get_block_size_pow2() const { return _block_size_pow2; }
-	inline unsigned int get_block_size_mask() const { return _block_size_mask; }
+	inline unsigned int get_block_size() const {
+		return _block_size;
+	}
+	inline unsigned int get_block_size_pow2() const {
+		return _block_size_pow2;
+	}
+	inline unsigned int get_block_size_mask() const {
+		return _block_size_mask;
+	}
 
 	void set_lod_index(int lod_index);
 	unsigned int get_lod_index() const;

@@ -88,7 +88,8 @@ public:
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
 	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask);
 
-	template <typename F> void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
+	template <typename F>
+	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
 		const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
 		if (_full_load_mode == false && !is_area_editable(voxel_box)) {
 			PRINT_VERBOSE("Area not editable");

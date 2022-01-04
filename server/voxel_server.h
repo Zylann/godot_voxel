@@ -134,7 +134,8 @@ public:
 	bool is_viewer_requiring_collisions(uint32_t viewer_id) const;
 	bool viewer_exists(uint32_t viewer_id) const;
 
-	template <typename F> inline void for_each_viewer(F f) const {
+	template <typename F>
+	inline void for_each_viewer(F f) const {
 		_world.viewers.for_each_with_id(f);
 	}
 

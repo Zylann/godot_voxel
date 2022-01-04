@@ -98,7 +98,8 @@ public:
 		inline void operator()(const Vector3i pos) {}
 	};
 
-	template <typename A> inline void for_each_cell(A a) const {
+	template <typename A>
+	inline void for_each_cell(A a) const {
 		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
@@ -110,7 +111,8 @@ public:
 		}
 	}
 
-	template <typename A> inline void for_each_cell_zxy(A a) const {
+	template <typename A>
+	inline void for_each_cell_zxy(A a) const {
 		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
@@ -123,7 +125,8 @@ public:
 	}
 
 	// Returns true if all cells of the box comply with the given predicate on their position.
-	template <typename A> inline bool all_cells_match(A a) const {
+	template <typename A>
+	inline bool all_cells_match(A a) const {
 		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
@@ -151,7 +154,8 @@ public:
 	//       | B       |
 	//       o---------o
 	//
-	template <typename A> void difference(const Box3i &b, A action) const {
+	template <typename A>
+	void difference(const Box3i &b, A action) const {
 		if (!intersects(b)) {
 			action(*this);
 			return;
@@ -214,7 +218,8 @@ public:
 
 	// Calls a function on all side cell positions belonging to the box.
 	// This function was implemented with no particular order in mind.
-	template <typename F> void for_inner_outline(F f) const {
+	template <typename F>
+	void for_inner_outline(F f) const {
 		//     o-------o
 		//    /|      /|
 		//   / |     / |

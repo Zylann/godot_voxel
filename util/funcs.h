@@ -12,7 +12,8 @@
 
 // Takes elements starting from a given position and moves them at the beginning,
 // then shrink the array to fit them. Other elements are discarded.
-template <typename T> void shift_up(Vector<T> &v, unsigned int pos) {
+template <typename T>
+void shift_up(Vector<T> &v, unsigned int pos) {
 	unsigned int j = 0;
 	for (unsigned int i = pos; i < (unsigned int)v.size(); ++i, ++j) {
 		v.write[j] = v[i];
@@ -21,7 +22,8 @@ template <typename T> void shift_up(Vector<T> &v, unsigned int pos) {
 	v.resize(remaining);
 }
 
-template <typename T> void shift_up(std::vector<T> &v, unsigned int pos) {
+template <typename T>
+void shift_up(std::vector<T> &v, unsigned int pos) {
 	unsigned int j = 0;
 	for (unsigned int i = pos; i < v.size(); ++i, ++j) {
 		v[j] = v[i];
@@ -32,20 +34,23 @@ template <typename T> void shift_up(std::vector<T> &v, unsigned int pos) {
 
 // Pops the last element of the vector and place it at the given position.
 // (The element that was at this position is the one removed).
-template <typename T> void unordered_remove(Vector<T> &v, unsigned int pos) {
+template <typename T>
+void unordered_remove(Vector<T> &v, unsigned int pos) {
 	int last = v.size() - 1;
 	v.write[pos] = v[last];
 	v.resize(last);
 }
 
-template <typename T> void unordered_remove(std::vector<T> &v, unsigned int pos) {
+template <typename T>
+void unordered_remove(std::vector<T> &v, unsigned int pos) {
 	v[pos] = v.back();
 	v.pop_back();
 }
 
 // Removes all items satisfying the given predicate.
 // This can change the size of the container, and original order of items is not preserved.
-template <typename T, typename F> inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
+template <typename T, typename F>
+inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
 	for (unsigned int i = 0; i < vec.size(); ++i) {
 		if (predicate(vec[i])) {
 			vec[i] = vec.back();
@@ -57,7 +62,8 @@ template <typename T, typename F> inline void unordered_remove_if(std::vector<T>
 	}
 }
 
-template <typename T> inline bool unordered_remove_value(std::vector<T> &vec, T v) {
+template <typename T>
+inline bool unordered_remove_value(std::vector<T> &vec, T v) {
 	for (size_t i = 0; i < vec.size(); ++i) {
 		if (vec[i] == v) {
 			vec[i] = vec.back();
@@ -68,7 +74,8 @@ template <typename T> inline bool unordered_remove_value(std::vector<T> &vec, T 
 	return false;
 }
 
-template <typename T> inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
+template <typename T>
+inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
 	dst.insert(dst.end(), src.begin(), src.end());
 }
 
@@ -94,20 +101,23 @@ inline String ptr2s(const void *p) {
 	return String::num_uint64((uint64_t)p, 16);
 }
 
-template <typename T> void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
+template <typename T>
+void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
 	to.resize(from.size());
 	// resize can fail in case allocation was not possible
 	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));
 	memcpy(to.ptrw(), from.data(), from.size() * sizeof(T));
 }
 
-template <typename T> inline void sort(T &a, T &b) {
+template <typename T>
+inline void sort(T &a, T &b) {
 	if (a > b) {
 		std::swap(a, b);
 	}
 }
 
-template <typename T> inline void sort(T &a, T &b, T &c, T &d) {
+template <typename T>
+inline void sort(T &a, T &b, T &c, T &d) {
 	sort(a, b);
 	sort(c, d);
 	sort(a, c);
@@ -117,7 +127,8 @@ template <typename T> inline void sort(T &a, T &b, T &c, T &d) {
 
 // Tests if POD items in an array are all the same.
 // Better tailored for more than hundred items that have power-of-two size.
-template <typename Item_T> inline bool is_uniform(const Item_T *p_data, size_t item_count) {
+template <typename Item_T>
+inline bool is_uniform(const Item_T *p_data, size_t item_count) {
 	const Item_T v0 = p_data[0];
 
 	//typedef size_t Bucket_T;

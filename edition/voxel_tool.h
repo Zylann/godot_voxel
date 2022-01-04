@@ -11,7 +11,8 @@ class VoxelBuffer;
 
 namespace zylann::voxel::ops {
 
-template <typename Op, typename Shape> struct SdfOperation16bit {
+template <typename Op, typename Shape>
+struct SdfOperation16bit {
 	Op op;
 	Shape shape;
 	inline uint16_t operator()(Vector3i pos, uint16_t sdf) const {
