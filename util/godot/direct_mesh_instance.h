@@ -7,8 +7,10 @@
 
 class World3D;
 
+namespace zylann {
+
 // Thin wrapper around VisualServer mesh instance API
-class DirectMeshInstance : public zylann::NonCopyable {
+class DirectMeshInstance : public NonCopyable {
 public:
 	DirectMeshInstance();
 	~DirectMeshInstance();
@@ -42,5 +44,7 @@ private:
 	RID _mesh_instance;
 	Ref<Mesh> _mesh;
 };
+
+} // namespace zylann
 
 #endif // DIRECT_MESH_INSTANCE_H

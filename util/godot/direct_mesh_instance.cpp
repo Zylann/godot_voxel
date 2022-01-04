@@ -2,6 +2,8 @@
 #include "../profiling.h"
 #include <scene/resources/world_3d.h>
 
+namespace zylann {
+
 DirectMeshInstance::DirectMeshInstance() {}
 
 DirectMeshInstance::~DirectMeshInstance() {
@@ -127,3 +129,5 @@ void DirectMeshInstance::set_gi_mode(GIMode mode) {
 // 	_mesh_instance = RID();
 // 	_mesh.unref();
 // }
+
+} // namespace zylann

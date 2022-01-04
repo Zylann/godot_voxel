@@ -56,9 +56,9 @@ public:
 
 	// Visuals
 
-	void set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode);
+	void set_mesh(Ref<Mesh> mesh, zylann::DirectMeshInstance::GIMode gi_mode);
 	Ref<Mesh> get_mesh() const;
-	void set_transition_mesh(Ref<Mesh> mesh, int side, DirectMeshInstance::GIMode gi_mode);
+	void set_transition_mesh(Ref<Mesh> mesh, int side, zylann::DirectMeshInstance::GIMode gi_mode);
 	bool has_mesh() const;
 	void drop_mesh();
 
@@ -69,7 +69,7 @@ public:
 
 	// Note, GIMode is not stored per block, it is a shared option so we provide it in several functions.
 	// Call this function only if the mesh block already exists and has not changed mesh
-	void set_gi_mode(DirectMeshInstance::GIMode mode);
+	void set_gi_mode(zylann::DirectMeshInstance::GIMode mode);
 
 	// Collisions
 
@@ -103,7 +103,7 @@ public:
 		const Transform3D world_transform = local_transform;
 		f(_mesh_instance, world_transform);
 		for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-			const DirectMeshInstance &mi = _transition_mesh_instances[i];
+			const zylann::DirectMeshInstance &mi = _transition_mesh_instances[i];
 			if (mi.is_valid()) {
 				f(mi, world_transform);
 			}
@@ -120,7 +120,7 @@ private:
 		return _transition_mask & (1 << side);
 	}
 
-	inline void set_mesh_instance_visible(DirectMeshInstance &mi, bool visible) {
+	inline void set_mesh_instance_visible(zylann::DirectMeshInstance &mi, bool visible) {
 		if (visible) {
 			mi.set_world(*_world);
 		} else {
@@ -132,8 +132,8 @@ private:
 	Vector3i _position_in_voxels;
 
 	Ref<ShaderMaterial> _shader_material;
-	DirectMeshInstance _mesh_instance;
-	FixedArray<DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
+	zylann::DirectMeshInstance _mesh_instance;
+	FixedArray<zylann::DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
 	DirectStaticBody _static_body;
 	Ref<World3D> _world;
 

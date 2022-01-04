@@ -33,7 +33,7 @@ public:
 private:
 	RID _body;
 	Ref<Shape3D> _shape;
-	DirectMeshInstance _debug_mesh_instance;
+	zylann::DirectMeshInstance _debug_mesh_instance;
 };
 
 #endif // DIRECT_STATIC_BODY_H

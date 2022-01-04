@@ -6,7 +6,9 @@
 #include <vector>
 
 class Mesh;
+namespace zylann {
 class DirectMeshInstance;
+}
 class World3D;
 
 namespace VoxelDebug {
