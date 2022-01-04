@@ -288,7 +288,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 				break;
 		};
 
-		mesh = VoxImportUtils::build_mesh(voxels, **mesher, surface_index_to_material, atlas, p_scale, offset);
+		mesh = magica::build_mesh(voxels, **mesher, surface_index_to_material, atlas, p_scale, offset);
 		// Deallocate large temporary memory to free space.
 		// This is a workaround because VoxelBuffer uses this by default, however it doesn't fit the present use case.
 		// Eventually we should avoid using this pool here.

@@ -2,9 +2,7 @@
 //#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/godot/funcs.h"
 
-namespace VoxImportUtils {
-
-using namespace zylann;
+namespace zylann {
 
 static void scale_surface(Array &surface, float scale) {
 	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
@@ -25,6 +23,8 @@ static void offset_surface(Array &surface, Vector3 offset) {
 	}
 	surface[Mesh::ARRAY_VERTEX] = positions;
 }
+
+namespace voxel::magica {
 
 Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 		std::vector<unsigned int> &surface_index_to_material, Ref<Image> &out_atlas, float p_scale, Vector3 p_offset) {
@@ -73,4 +73,5 @@ Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 	return mesh;
 }
 
-} // namespace VoxImportUtils
+} //namespace voxel::magica
+} // namespace zylann

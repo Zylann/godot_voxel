@@ -13,6 +13,8 @@
 #include <scene/resources/mesh.h>
 #include <scene/resources/packed_scene.h>
 
+using namespace zylann::voxel;
+
 String VoxelVoxImporter::get_importer_name() const {
 	return "VoxelVoxImporter";
 }
@@ -245,7 +247,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 	const float p_scale = p_options[VoxelStringNames::get_singleton()->scale];
 	const bool p_enable_baked_lighting = p_options[VoxelStringNames::get_singleton()->enable_baked_lighting];
 
-	zylann::voxel::magica::Data data;
+	magica::Data data;
 	const Error load_err = data.load_from_file(p_source_file);
 	ERR_FAIL_COND_V(load_err != OK, load_err);
 
@@ -281,7 +283,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 	// Build meshes from voxel models
 	for (unsigned int model_index = 0; model_index < data.get_model_count(); ++model_index) {
-		const zylann::voxel::magica::Model &model = data.get_model(model_index);
+		const magica::Model &model = data.get_model(model_index);
 
 		VoxelBufferInternal voxels;
 		voxels.create(model.size + Vector3iUtil::create(VoxelMesherCubes::PADDING * 2));
@@ -295,8 +297,7 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 		std::vector<unsigned int> surface_index_to_material;
 		Ref<Image> atlas;
-		Ref<Mesh> mesh =
-				VoxImportUtils::build_mesh(voxels, **mesher, surface_index_to_material, atlas, p_scale, Vector3());
+		Ref<Mesh> mesh = magica::build_mesh(voxels, **mesher, surface_index_to_material, atlas, p_scale, Vector3());
 
 		if (mesh.is_null()) {
 			continue;
