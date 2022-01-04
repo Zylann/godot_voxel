@@ -2781,7 +2781,7 @@ Array VoxelLodTerrain::debug_get_octrees_detailed() const {
 void VoxelLodTerrain::update_gizmos() {
 	VOXEL_PROFILE_SCOPE();
 
-	VoxelDebug::DebugRenderer &dr = _debug_renderer;
+	DebugRenderer &dr = _debug_renderer;
 	dr.begin();
 
 	const Transform3D parent_transform = get_global_transform();
@@ -2792,7 +2792,7 @@ void VoxelLodTerrain::update_gizmos() {
 		const Basis local_octree_basis = Basis().scaled(Vector3(octree_size, octree_size, octree_size));
 		for (Map<Vector3i, OctreeItem>::Element *e = _lod_octrees.front(); e; e = e->next()) {
 			const Transform3D local_transform(local_octree_basis, e->key() * octree_size);
-			dr.draw_box(parent_transform * local_transform, VoxelDebug::ID_OCTREE_BOUNDS);
+			dr.draw_box(parent_transform * local_transform, DebugColors::ID_OCTREE_BOUNDS);
 		}
 	}
 
@@ -2804,7 +2804,7 @@ void VoxelLodTerrain::update_gizmos() {
 			const Vector3 size = _bounds_in_voxels.size;
 			const Transform3D local_transform(
 					Basis().scaled(size + margin * 2.f), Vector3(_bounds_in_voxels.pos) - margin);
-			dr.draw_box(parent_transform * local_transform, VoxelDebug::ID_VOXEL_BOUNDS);
+			dr.draw_box(parent_transform * local_transform, DebugColors::ID_VOXEL_BOUNDS);
 		}
 	}
 

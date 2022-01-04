@@ -206,7 +206,7 @@ private:
 	VoxelLodTerrain *_parent;
 
 #ifdef TOOLS_ENABLED
-	VoxelDebug::DebugRenderer _debug_renderer;
+	zylann::DebugRenderer _debug_renderer;
 	bool _gizmos_enabled = false;
 #endif
 };

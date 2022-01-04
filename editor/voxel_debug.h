@@ -6,12 +6,13 @@
 #include <vector>
 
 class Mesh;
-namespace zylann {
-class DirectMeshInstance;
-}
 class World3D;
 
-namespace VoxelDebug {
+namespace zylann {
+
+class DirectMeshInstance;
+
+namespace DebugColors {
 
 enum ColorID { //
 	ID_VOXEL_BOUNDS = 0,
@@ -21,8 +22,10 @@ enum ColorID { //
 	ID_COUNT
 };
 
-Ref<Mesh> get_wirecube(ColorID id);
-void free_resources();
+} //namespace DebugColors
+
+Ref<Mesh> get_debug_wirecube(DebugColors::ColorID id);
+void free_debug_resources();
 
 class DebugMultiMeshRenderer {
 public:
@@ -31,7 +34,7 @@ public:
 
 	void set_world(World3D *world);
 	void begin();
-	void draw_box(const Transform3D &t, zylann::Color8 color);
+	void draw_box(const Transform3D &t, Color8 color);
 	void end();
 	void clear();
 
@@ -58,11 +61,11 @@ public:
 	// Call this before issuing drawing commands
 	void begin();
 
-	void draw_box(const Transform3D &t, ColorID color);
+	void draw_box(const Transform3D &t, DebugColors::ColorID color);
 
 	// Draws a box wireframe using MultiMesh, allowing to draw much more without slowing down.
 	// The box's origin is its lower corner. Size is defined by the transform's basis.
-	void draw_box_mm(const Transform3D &t, zylann::Color8 color);
+	void draw_box_mm(const Transform3D &t, Color8 color);
 
 	// Call this after issuing all drawing commands
 	void end();
@@ -78,6 +81,6 @@ private:
 	DebugMultiMeshRenderer _mm_renderer;
 };
 
-} // namespace VoxelDebug
+} //namespace zylann
 
 #endif // VOXEL_DEBUG_H

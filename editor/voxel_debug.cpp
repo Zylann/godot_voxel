@@ -5,11 +5,9 @@
 
 #include <scene/resources/mesh.h>
 
-using namespace zylann;
+namespace zylann {
 
-namespace VoxelDebug {
-
-FixedArray<Ref<Mesh>, ID_COUNT> g_wirecubes;
+FixedArray<Ref<Mesh>, DebugColors::ID_COUNT> g_wirecubes;
 bool g_finalized = false;
 
 template <typename T>
@@ -18,15 +16,15 @@ void raw_copy_to(Vector<T> &dst, const T *src, unsigned int count) {
 	memcpy(dst.ptrw(), src, count * sizeof(T));
 }
 
-static Color get_color(ColorID id) {
+static Color get_color(DebugColors::ColorID id) {
 	switch (id) {
-		case ID_VOXEL_BOUNDS:
+		case DebugColors::ID_VOXEL_BOUNDS:
 			return Color(1, 1, 1);
-		case ID_OCTREE_BOUNDS:
+		case DebugColors::ID_OCTREE_BOUNDS:
 			return Color(0.5, 0.5, 0.5);
-		case ID_VOXEL_GRAPH_DEBUG_BOUNDS:
+		case DebugColors::ID_VOXEL_GRAPH_DEBUG_BOUNDS:
 			return Color(1.0, 1.0, 0.0);
-		case ID_WHITE:
+		case DebugColors::ID_WHITE:
 			return Color(1, 1, 1);
 		default:
 			CRASH_NOW_MSG("Unexpected index");
@@ -34,7 +32,7 @@ static Color get_color(ColorID id) {
 	return Color();
 }
 
-Ref<Mesh> get_wirecube(ColorID id) {
+Ref<Mesh> get_debug_wirecube(DebugColors::ColorID id) {
 	CRASH_COND(g_finalized);
 
 	Ref<Mesh> &wirecube = g_wirecubes[id];
@@ -99,7 +97,7 @@ Ref<Mesh> get_wirecube(ColorID id) {
 	return wirecube;
 }
 
-void free_resources() {
+void free_debug_resources() {
 	for (unsigned int i = 0; i < g_wirecubes.size(); ++i) {
 		g_wirecubes[i].unref();
 	}
@@ -147,7 +145,7 @@ private:
 	Transform3D _transform;
 	bool _visible = true;
 	Ref<Mesh> _mesh;
-	DirectMeshInstance _mesh_instance;
+	zylann::DirectMeshInstance _mesh_instance;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +178,7 @@ void DebugRenderer::begin() {
 	_mm_renderer.begin();
 }
 
-void DebugRenderer::draw_box(const Transform3D &t, ColorID color) {
+void DebugRenderer::draw_box(const Transform3D &t, DebugColors::ColorID color) {
 	// Pick an existing item, or create one
 	DebugRendererItem *item;
 	if (_current >= _items.size()) {
@@ -191,7 +189,7 @@ void DebugRenderer::draw_box(const Transform3D &t, ColorID color) {
 		item = _items[_current];
 	}
 
-	item->set_mesh(get_wirecube(color));
+	item->set_mesh(get_debug_wirecube(color));
 	item->set_transform(t);
 	item->set_visible(true);
 
@@ -222,7 +220,7 @@ DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
 	// It should be off anyways, but it's rather concerning.
 	_multimesh_instance.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_OFF);
 	_multimesh.instantiate();
-	Ref<Mesh> wirecube = get_wirecube(ID_WHITE);
+	Ref<Mesh> wirecube = get_debug_wirecube(DebugColors::ID_WHITE);
 	_multimesh->set_mesh(wirecube);
 	_multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
 	// TODO Optimize: Godot needs to bring back 8-bit color attributes on multimesh, 32-bit colors are too much
@@ -281,4 +279,4 @@ void DebugMultiMeshRenderer::clear() {
 	_multimesh->set_instance_count(0);
 }
 
-} // namespace VoxelDebug
+} // namespace zylann

@@ -194,7 +194,7 @@ void unregister_voxel_types() {
 	// TODO No remove?
 
 #ifdef TOOLS_ENABLED
-	VoxelDebug::free_resources();
+	zylann::free_debug_resources();
 
 	// TODO Seriously, no remove?
 	//EditorPlugins::remove_by_type<VoxelGraphEditorPlugin>();

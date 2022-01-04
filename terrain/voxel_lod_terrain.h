@@ -401,7 +401,7 @@ private:
 	bool _show_octree_node_gizmos = false;
 	bool _show_edited_blocks = false;
 	unsigned int _edited_blocks_gizmos_lod_index = 0;
-	VoxelDebug::DebugRenderer _debug_renderer;
+	zylann::DebugRenderer _debug_renderer;
 #endif
 
 	Stats _stats;

@@ -79,7 +79,7 @@ private:
 	bool _nothing_selected_check_scheduled = false;
 	float _time_before_preview_update = 0.f;
 	Node3D *_voxel_node = nullptr;
-	VoxelDebug::DebugRenderer _debug_renderer;
+	zylann::DebugRenderer _debug_renderer;
 };
 
 #endif // VOXEL_GRAPH_EDITOR_H
