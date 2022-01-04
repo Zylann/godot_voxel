@@ -82,7 +82,7 @@ private:
 
 	// Tells if it's worth requesting a more precise version of the data.
 	// Will be `true` if it's not worth it.
-	bool _max_lod_hint = false;
+	//bool _max_lod_hint = false;
 };
 
 #endif // VOXEL_DATA_BLOCK_H
