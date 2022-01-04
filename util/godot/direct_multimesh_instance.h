@@ -10,6 +10,8 @@
 
 class World3D;
 
+namespace zylann {
+
 // Thin wrapper around VisualServer multimesh instance API
 class DirectMultiMeshInstance : public zylann::NonCopyable {
 public:
@@ -49,5 +51,7 @@ private:
 	RID _multimesh_instance;
 	Ref<MultiMesh> _multimesh;
 };
+
+} // namespace zylann
 
 #endif // DIRECT_MULTIMESH_INSTANCE_H

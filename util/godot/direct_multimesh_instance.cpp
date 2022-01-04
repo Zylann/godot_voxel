@@ -3,7 +3,7 @@
 
 #include <scene/resources/world_3d.h>
 
-using namespace zylann;
+namespace zylann {
 
 DirectMultiMeshInstance::DirectMultiMeshInstance() {}
 
@@ -173,3 +173,5 @@ void DirectMultiMeshInstance::make_transform_and_color32_3d_bulk_array(
 		ptr[transform_size + 3] = d.color.a;
 	}
 }
+
+} // namespace zylann
