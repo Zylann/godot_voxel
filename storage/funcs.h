@@ -6,6 +6,8 @@
 #include "../util/span.h"
 #include <stdint.h>
 
+namespace zylann::voxel {
+
 inline void clip_copy_region_coord(int &src_min, int &src_max, const int src_size, int &dst_min, const int dst_size) {
 	// Clamp source and shrink destination for moved borders
 	if (src_min < 0) {
@@ -51,6 +53,7 @@ inline void copy_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min,
 
 template <typename T>
 void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i dst_max, const T value) {
+	using namespace math;
 	Vector3iUtil::sort_min_max(dst_min, dst_max);
 	dst_min.x = clamp(dst_min.x, 0, dst_size.x);
 	dst_min.y = clamp(dst_min.y, 0, dst_size.y);
@@ -241,5 +244,7 @@ Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector
 
 	return dst_size;
 }
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_STORAGE_FUNCS_H

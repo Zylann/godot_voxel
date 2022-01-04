@@ -461,6 +461,8 @@ private:
 	RWLock _rw_lock;
 };
 
+namespace zylann::voxel {
+
 inline void debug_check_texture_indices_packed_u16(const VoxelBufferInternal &voxels) {
 	for (int z = 0; z < voxels.get_size().z; ++z) {
 		for (int x = 0; x < voxels.get_size().x; ++x) {
@@ -472,5 +474,7 @@ inline void debug_check_texture_indices_packed_u16(const VoxelBufferInternal &vo
 		}
 	}
 }
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_BUFFER_INTERNAL_H

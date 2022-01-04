@@ -1,6 +1,8 @@
 #include "funcs.h"
 #include "../util/math/box3i.h"
 
+namespace zylann::voxel {
+
 void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, Span<const uint8_t> src,
 		Vector3i src_size, Vector3i src_min, Vector3i src_max, size_t item_size) {
 	//
@@ -52,3 +54,5 @@ void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, 
 		}
 	}
 }
+
+} // namespace zylann::voxel
