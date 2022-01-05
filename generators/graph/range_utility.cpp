@@ -221,46 +221,29 @@ Interval get_curve_range(Curve &curve, bool &is_monotonic_increasing) {
 	return range;
 }
 
-Interval get_heightmap_range(Image &im) {
+Interval get_heightmap_range(const Image &im) {
 	return get_heightmap_range(im, Rect2i(0, 0, im.get_width(), im.get_height()));
 }
 
-Interval get_heightmap_range(Image &im, Rect2i rect) {
-	switch (im.get_format()) {
-		case Image::FORMAT_R8:
-		case Image::FORMAT_RG8:
-		case Image::FORMAT_RGB8:
-		case Image::FORMAT_RGBA8:
-		case Image::FORMAT_RH:
-		case Image::FORMAT_RGH:
-		case Image::FORMAT_RGBH:
-		case Image::FORMAT_RGBAH:
-		case Image::FORMAT_RF:
-		case Image::FORMAT_RGF:
-		case Image::FORMAT_RGBF:
-		case Image::FORMAT_RGBAF: {
-			Interval r;
+Interval get_heightmap_range(const Image &im, Rect2i rect) {
+	ERR_FAIL_COND_V_MSG(
+			im.is_compressed(), Interval(), String("Image format not supported: {0}").format(varray(im.get_format())));
 
-			r.min = im.get_pixel(0, 0).r;
-			r.max = r.min;
+	Interval r;
 
-			const int max_x = rect.position.x + rect.size.x;
-			const int max_y = rect.position.y + rect.size.y;
+	r.min = im.get_pixel(0, 0).r;
+	r.max = r.min;
 
-			for (int y = rect.position.y; y < max_y; ++y) {
-				for (int x = rect.position.x; x < max_x; ++x) {
-					r.add_point(im.get_pixel(x, y).r);
-				}
-			}
+	const int max_x = rect.position.x + rect.size.x;
+	const int max_y = rect.position.y + rect.size.y;
 
-			return r;
-		} break;
-
-		default:
-			ERR_FAIL_V_MSG(Interval(), "Image format not supported");
-			break;
+	for (int y = rect.position.y; y < max_y; ++y) {
+		for (int x = rect.position.x; x < max_x; ++x) {
+			r.add_point(im.get_pixel(x, y).r);
+		}
 	}
-	return Interval();
+
+	return r;
 }
 
 namespace math {
@@ -315,7 +298,8 @@ SdfAffectingArguments sdf_polynomial_smooth_union_side(Interval a, Interval b, f
 	return SDF_BOTH;
 }
 
-template <typename F> inline Interval sdf_smooth_op(Interval b, Interval a, float s, F smooth_op_func) {
+template <typename F>
+inline Interval sdf_smooth_op(Interval b, Interval a, float s, F smooth_op_func) {
 	// Smooth union and subtract are a generalization of `min(a, b)` and `max(-a, b)`, with a smooth junction.
 	// That junction runs in a diagonal crossing zero (with equation `y = -x`).
 	// Areas on the two sides of the junction are monotonic, i.e their derivatives should never cross zero,

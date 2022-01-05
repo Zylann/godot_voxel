@@ -20,7 +20,8 @@ VoxelGraphNodeDB *g_node_type_db = nullptr;
 
 using namespace math;
 
-template <typename F> inline void do_monop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
+template <typename F>
+inline void do_monop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
 	const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 	VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 	for (uint32_t i = 0; i < a.size; ++i) {
@@ -28,7 +29,8 @@ template <typename F> inline void do_monop(VoxelGraphRuntime::ProcessBufferConte
 	}
 }
 
-template <typename F> inline void do_binop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
+template <typename F>
+inline void do_binop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
 	const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 	const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
 	VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
@@ -937,6 +939,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
 				ctx.make_error("Image instance is null");
+				return;
+			}
+			if (image->is_compressed()) {
+				ctx.make_error("Image has a compressed format, this is not supported");
 				return;
 			}
 			ImageRangeGrid *im_range = memnew(ImageRangeGrid);

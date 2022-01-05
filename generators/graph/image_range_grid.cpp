@@ -25,7 +25,9 @@ void ImageRangeGrid::clear() {
 	_lod_count = 0;
 }
 
-void ImageRangeGrid::generate(Image &im) {
+void ImageRangeGrid::generate(const Image &im) {
+	ERR_FAIL_COND_MSG(im.is_compressed(), String("Image format not supported: {0}").format(varray(im.get_format())));
+
 	clear();
 
 	const int lod_base = 4; // Start at 16

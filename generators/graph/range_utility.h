@@ -44,8 +44,8 @@ math::Interval get_curve_range(Curve &curve, const std::vector<CurveMonotonicSec
 // Legacy
 math::Interval get_curve_range(Curve &curve, bool &is_monotonic_increasing);
 
-math::Interval get_heightmap_range(Image &im);
-math::Interval get_heightmap_range(Image &im, Rect2i rect);
+math::Interval get_heightmap_range(const Image &im);
+math::Interval get_heightmap_range(const Image &im, Rect2i rect);
 
 namespace math {
 

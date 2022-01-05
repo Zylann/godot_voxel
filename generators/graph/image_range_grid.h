@@ -14,7 +14,7 @@ public:
 	~ImageRangeGrid();
 
 	void clear();
-	void generate(Image &im);
+	void generate(const Image &im);
 	inline math::Interval get_range() const {
 		return _total_range;
 	}
