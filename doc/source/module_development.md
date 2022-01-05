@@ -160,14 +160,6 @@ Godot's core codebase is generally not using namespaces. Classes registered to t
 
 It should be possible to use namespaces around a module class, since Godot4 started using them [here](https://github.com/godotengine/godot/blob/a8a20a0e02c8459513542f77eaed9b7350812c94/core/core_bind.h#L47) for core bindings (the [reason](https://github.com/godotengine/godot/pull/51627) was very specific though).
 
-However, because of [This redundant function](https://github.com/godotengine/godot/blob/a8a20a0e02c8459513542f77eaed9b7350812c94/core/object/object.h#L362), it is theoretically not possible for a class bound to the engine to inherit a class from another namespace:
-```cpp
-class ClassA : public other::ClassB {
-    GDCLASS(ClassA, other::ClassB) // Would fail, as `other::ClassB` would be stringified with the `::`.
-}
-```
-There doesn't seem to be a use of `inherits_static()` anywhere though, and another function exists which does not have this issue. So maybe it will be removed?
-
 
 Debugging
 ----------
