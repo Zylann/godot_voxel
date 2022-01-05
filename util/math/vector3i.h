@@ -297,9 +297,9 @@ inline Vector3i from_cast(const Vector3 &f) {
 }
 
 inline void sort_min_max(Vector3i &a, Vector3i &b) {
-	::sort(a.x, b.x);
-	::sort(a.y, b.y);
-	::sort(a.z, b.z);
+	zylann::sort(a.x, b.x);
+	zylann::sort(a.y, b.y);
+	zylann::sort(a.z, b.z);
 }
 
 // Returning a 64-bit integer because volumes can quickly overflow INT_MAX (like 1300^3),

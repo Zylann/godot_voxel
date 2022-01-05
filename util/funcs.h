@@ -10,6 +10,8 @@
 #include <core/error/error_macros.h>
 #endif
 
+namespace zylann {
+
 // Takes elements starting from a given position and moves them at the beginning,
 // then shrink the array to fit them. Other elements are discarded.
 template <typename T>
@@ -179,5 +181,7 @@ inline bool is_uniform(const Item_T *p_data, size_t item_count) {
 
 	return true;
 }
+
+} // namespace zylann
 
 #endif // HEADER_VOXEL_UTILITY_H
