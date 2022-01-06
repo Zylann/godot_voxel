@@ -223,51 +223,44 @@ Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
 	return block->get_voxels_const().get_voxel_metadata(map.to_local(pos));
 }
 
-// Executes a function on random voxels in the provided area, using the type channel.
-// This allows to implement slow "natural" cellular automata behavior, as can be seen in Minecraft.
-void VoxelToolTerrain::run_blocky_random_tick(
-		AABB voxel_area, int voxel_count, const Callable &callback, int batch_count) const {
-	VOXEL_PROFILE_SCOPE();
-
-	ERR_FAIL_COND(_terrain == nullptr);
-	ERR_FAIL_COND_MSG(
-			_terrain->get_voxel_library().is_null(), "This function requires a volume using VoxelMesherBlocky");
-	ERR_FAIL_COND(callback.is_null());
+void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i voxel_box, const VoxelLibrary &lib,
+		int voxel_count, int batch_count, void *callback_data, bool (*callback)(void *, Vector3i, int64_t)) {
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);
-	ERR_FAIL_COND(!math::is_valid_size(voxel_area.size));
+	ERR_FAIL_COND(!math::is_valid_size(voxel_box.size));
+	ERR_FAIL_COND(callback == nullptr);
 
-	if (voxel_count == 0) {
-		return;
-	}
-
-	const VoxelLibrary &lib = **_terrain->get_voxel_library();
-
-	const Vector3i min_pos = Vector3iUtil::from_floored(voxel_area.position);
-	const Vector3i max_pos = min_pos + Vector3iUtil::from_floored(voxel_area.size);
-
-	VoxelDataMap &map = _terrain->get_storage();
-
-	const Vector3i min_block_pos = map.voxel_to_block(min_pos);
-	const Vector3i max_block_pos = map.voxel_to_block(max_pos);
-	const Vector3i block_area_size = max_block_pos - min_block_pos;
+	const Box3i block_box = voxel_box.downscaled(map.get_block_size());
 
 	const int block_count = voxel_count / batch_count;
-	const int bs_mask = map.get_block_size_mask();
+	//const int bs_mask = map.get_block_size_mask();
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_TYPE;
 
 	struct Pick {
 		uint64_t value;
 		Vector3i rpos;
 	};
-	std::vector<Pick> picks;
-	picks.resize(batch_count);
+	static thread_local std::vector<Pick> picks;
+	picks.reserve(batch_count);
+
+	const float block_volume = map.get_block_size() * map.get_block_size() * map.get_block_size();
+	CRASH_COND(block_volume < 0.1f);
+
+	struct L {
+		static inline int urand(uint32_t max_value) {
+			return Math::rand() % max_value;
+		}
+		static inline Vector3i urand_vec3i(Vector3i s) {
+#ifdef DEBUG_ENABLED
+			CRASH_COND(s.x <= 0 || s.y <= 0 || s.z <= 0);
+#endif
+			return Vector3i(urand(s.x), urand(s.y), urand(s.z));
+		}
+	};
 
 	// Choose blocks at random
 	for (int bi = 0; bi < block_count; ++bi) {
-		const Vector3i block_pos = min_block_pos +
-				Vector3i(Math::rand() % block_area_size.x, Math::rand() % block_area_size.y,
-						Math::rand() % block_area_size.z);
+		const Vector3i block_pos = block_box.pos + L::urand_vec3i(block_box.size);
 
 		const Vector3i block_origin = map.block_to_voxel(block_pos);
 
@@ -289,13 +282,20 @@ void VoxelToolTerrain::run_blocky_random_tick(
 					}
 				}
 
+				Box3i block_voxel_box(block_origin, Vector3iUtil::create(map.get_block_size()));
+				Box3i local_voxel_box = voxel_box.clipped(block_voxel_box);
+				local_voxel_box.pos -= block_origin;
+				const float volume_ratio = Vector3iUtil::get_volume(local_voxel_box.size) / block_volume;
+				const int local_batch_count = Math::ceil(batch_count * volume_ratio);
+
 				// Choose a bunch of voxels at random within the block.
 				// Batching this way improves performance a little by reducing block lookups.
-				for (int vi = 0; vi < batch_count; ++vi) {
-					const Vector3i rpos(Math::rand() & bs_mask, Math::rand() & bs_mask, Math::rand() & bs_mask);
+				picks.clear();
+				for (int vi = 0; vi < local_batch_count; ++vi) {
+					const Vector3i rpos = local_voxel_box.pos + L::urand_vec3i(local_voxel_box.size);
 
 					const uint64_t v = voxels.get_voxel(rpos, channel);
-					picks[vi] = Pick{ v, rpos };
+					picks.push_back(Pick{ v, rpos });
 				}
 			}
 
@@ -309,23 +309,59 @@ void VoxelToolTerrain::run_blocky_random_tick(
 					const Voxel &vt = lib.get_voxel_const(pick.value);
 
 					if (vt.is_random_tickable()) {
-						const Variant vpos = pick.rpos + block_origin;
-						const Variant vv = pick.value;
-						const Variant *args[2];
-						args[0] = &vpos;
-						args[1] = &vv;
-						Callable::CallError error;
-						Variant retval; // We don't care about the return value, Callable API requires it
-						callback.call(args, 2, retval, error);
-						// TODO I would really like to know what's the correct way to report such errors...
-						// Examples I found in the engine are inconsistent
-						ERR_FAIL_COND(error.error != Callable::CallError::CALL_OK);
-						// Return if it fails, we don't want an error spam
+						ERR_FAIL_COND(!callback(callback_data, pick.rpos + block_origin, pick.value));
 					}
 				}
 			}
 		}
 	}
+}
+
+// TODO This function snaps the given AABB to blocks, this is not intuitive. Should figure out a way to respect the
+// area. Executes a function on random voxels in the provided area, using the type channel. This allows to implement
+// slow "natural" cellular automata behavior, as can be seen in Minecraft.
+void VoxelToolTerrain::run_blocky_random_tick(
+		AABB voxel_area, int voxel_count, const Callable &callback, int batch_count) const {
+	VOXEL_PROFILE_SCOPE();
+
+	ERR_FAIL_COND(_terrain == nullptr);
+	ERR_FAIL_COND_MSG(
+			_terrain->get_voxel_library().is_null(), "This function requires a volume using VoxelMesherBlocky");
+	ERR_FAIL_COND(callback.is_null());
+	ERR_FAIL_COND(batch_count <= 0);
+	ERR_FAIL_COND(voxel_count < 0);
+	ERR_FAIL_COND(!math::is_valid_size(voxel_area.size));
+
+	if (voxel_count == 0) {
+		return;
+	}
+
+	struct CallbackData {
+		const Callable &callable;
+	};
+	CallbackData cb_self{ callback };
+
+	const VoxelLibrary &lib = **_terrain->get_voxel_library();
+	VoxelDataMap &map = _terrain->get_storage();
+	const Box3i voxel_box(Vector3iUtil::from_floored(voxel_area.position), Vector3iUtil::from_floored(voxel_area.size));
+
+	run_blocky_random_tick_static(
+			map, voxel_box, lib, voxel_count, batch_count, &cb_self, [](void *self, Vector3i pos, int64_t val) {
+				const Variant vpos = pos;
+				const Variant vv = val;
+				const Variant *args[2];
+				args[0] = &vpos;
+				args[1] = &vv;
+				Callable::CallError error;
+				Variant retval; // We don't care about the return value, Callable API requires it
+				const CallbackData *cd = (const CallbackData *)self;
+				cd->callable.call(args, 2, retval, error);
+				// TODO I would really like to know what's the correct way to report such errors...
+				// Examples I found in the engine are inconsistent
+				ERR_FAIL_COND_V(error.error != Callable::CallError::CALL_OK, false);
+				// Return if it fails, we don't want an error spam
+				return true;
+			});
 }
 
 void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback) {

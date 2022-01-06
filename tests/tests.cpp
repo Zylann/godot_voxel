@@ -1,9 +1,12 @@
 #include "tests.h"
+#include "../edition/voxel_tool_terrain.h"
 #include "../generators/graph/range_utility.h"
 #include "../generators/graph/voxel_generator_graph.h"
+#include "../meshers/blocky/voxel_library.h"
 #include "../storage/voxel_data_map.h"
 #include "../streams/region/region_file.h"
 #include "../streams/voxel_block_serializer.h"
+#include "../util/godot/funcs.h"
 #include "../util/island_finder.h"
 #include "../util/math/box3i.h"
 #include "test_octree.h"
@@ -1126,6 +1129,102 @@ void test_fast_noise_2() {
 
 #endif
 
+void test_run_blocky_random_tick() {
+	const Box3i voxel_box(Vector3i(-24, -23, -22), Vector3i(64, 40, 40));
+
+	// Create library with tickable voxels
+	Ref<VoxelLibrary> library;
+	library.instantiate();
+	library->set_voxel_count(3);
+	library->create_voxel(0, "air");
+	library->create_voxel(1, "non_tickable");
+	const int TICKABLE_ID = 2;
+	Ref<Voxel> tickable_voxel = library->create_voxel(TICKABLE_ID, "tickable");
+	tickable_voxel->set_random_tickable(true);
+
+	// Create test map
+	VoxelDataMap map;
+	map.create(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2, 0);
+	{
+		// All blocks of this map will be the same,
+		// an interleaving of all block types
+		VoxelBufferInternal model_buffer;
+		model_buffer.create(Vector3iUtil::create(map.get_block_size()));
+		for (int z = 0; z < model_buffer.get_size().z; ++z) {
+			for (int x = 0; x < model_buffer.get_size().x; ++x) {
+				for (int y = 0; y < model_buffer.get_size().y; ++y) {
+					const int block_id = (x + y + z) % 3;
+					model_buffer.set_voxel(block_id, x, y, z, VoxelBufferInternal::CHANNEL_TYPE);
+				}
+			}
+		}
+
+		const Box3i world_blocks_box(-4, -4, -4, 8, 8, 8);
+		world_blocks_box.for_each_cell_zxy([&map, &model_buffer](Vector3i block_pos) {
+			std::shared_ptr<VoxelBufferInternal> buffer = gd_make_shared<VoxelBufferInternal>();
+			buffer->create(model_buffer.get_size());
+			buffer->copy_from(model_buffer);
+			map.set_block_buffer(block_pos, buffer, false);
+		});
+	}
+
+	struct Callback {
+		Box3i voxel_box;
+		Box3i pick_box;
+		bool first_pick = true;
+		bool ok = true;
+
+		Callback(Box3i p_voxel_box) : voxel_box(p_voxel_box) {}
+
+		bool exec(Vector3i pos, int block_id) {
+			if (ok) {
+				ok = _exec(pos, block_id);
+			}
+			return ok;
+		}
+
+		inline bool _exec(Vector3i pos, int block_id) {
+			ERR_FAIL_COND_V(block_id != TICKABLE_ID, false);
+			ERR_FAIL_COND_V(!voxel_box.contains(pos), false);
+			if (first_pick) {
+				first_pick = false;
+				pick_box = Box3i(pos, Vector3i(1, 1, 1));
+			} else {
+				pick_box.merge_with(Box3i(pos, Vector3i(1, 1, 1)));
+			}
+			return true;
+		}
+	};
+
+	Callback cb(voxel_box);
+
+	Math::seed(131183);
+
+	VoxelToolTerrain::run_blocky_random_tick_static(
+			map, voxel_box, **library, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
+				Callback *cb = (Callback *)self;
+				return cb->exec(pos, val);
+			});
+
+	ERR_FAIL_COND(!cb.ok);
+
+	// Even though there is randomness, we expect to see at least one hit
+	ERR_FAIL_COND(cb.first_pick);
+
+	// Check that the points were more or less uniformly sparsed within the provided box.
+	// They should, because we populated the world with a checkerboard of tickable voxels.
+	// There is randomness at play, so unfortunately we may have to use a margin or pick the right seed,
+	// and we only check the enclosing area.
+	const int error_margin = 0;
+	for (int axis_index = 0; axis_index < Vector3iUtil::AXIS_COUNT; ++axis_index) {
+		const int nd = cb.pick_box.pos[axis_index] - voxel_box.pos[axis_index];
+		const int pd = cb.pick_box.pos[axis_index] + cb.pick_box.size[axis_index] -
+				(voxel_box.pos[axis_index] + voxel_box.size[axis_index]);
+		ERR_FAIL_COND(Math::abs(nd) > error_margin);
+		ERR_FAIL_COND(Math::abs(pd) > error_margin);
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
@@ -1157,6 +1256,7 @@ void run_voxel_tests() {
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	VOXEL_TEST(test_fast_noise_2);
 #endif
+	VOXEL_TEST(test_run_blocky_random_tick);
 
 	print_line("------------ Voxel tests end -------------");
 }

@@ -30,6 +30,7 @@ Ongoing development - `godot4` branch
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
     - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
     - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
+    - `VoxelToolTerrain`: `run_blocky_random_tick` no longer snaps area borders to chunk borders in unintuitive ways
 
 - Breaking changes
     - Some functions now take `Vector3i` instead of `Vector3`. If you used to send `Vector3` without `floor()` or `round()`, it can have side-effects in negative coordinates.
