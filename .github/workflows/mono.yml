@@ -55,6 +55,13 @@ jobs:
           ref: ${{ env.VOXEL_BASE_BRANCH }}
           path: godot/modules/voxel
 
+      # Azure repositories are not reliable, we need to prevent azure giving us packages.
+      - name: Make apt sources.list use the default Ubuntu repositories
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/*
+          sudo cp -f godot/misc/ci/sources.list /etc/apt/sources.list
+          sudo apt-get update
+
       # Install all packages (except scons)
       - name: Configure dependencies
         run: |
@@ -187,6 +194,13 @@ jobs:
           mkdir windows-x86_64/desktop-windows-x86_64-release/lib/mono/4.5
           mv -f bcl-desktop-win32/desktop-win32-bcl/net_4_x-win32/* windows-x86_64/desktop-windows-x86_64-release/lib/mono/4.5
 
+      # Azure repositories are not reliable, we need to prevent azure giving us packages.
+      - name: Make apt sources.list use the default Ubuntu repositories
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/*
+          sudo cp -f godot/misc/ci/sources.list /etc/apt/sources.list
+          sudo apt-get update
+
       # Install all packages (except scons)
       - name: Configure dependencies
         run: |
@@ -302,6 +316,13 @@ jobs:
         run: |
           mkdir linux-x86_64/desktop-linux-x86_64-release/lib/mono/4.5
           mv -f bcl-desktop/desktop-bcl/net_4_x/* linux-x86_64/desktop-linux-x86_64-release/lib/mono/4.5
+
+      # Azure repositories are not reliable, we need to prevent azure giving us packages.
+      - name: Make apt sources.list use the default Ubuntu repositories
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/*
+          sudo cp -f godot/misc/ci/sources.list /etc/apt/sources.list
+          sudo apt-get update
 
       # Install all packages (except scons)
       - name: Configure dependencies
