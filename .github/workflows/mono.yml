@@ -21,26 +21,26 @@ jobs:
       - name: Get Env
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
-          export GODOT_BASE_BRANCH="3.x"
-          export VOXEL_BASE_BRANCH="master"
+          echo "GODOT_BASE_BRANCH=3.x"
+          echo "VOXEL_BASE_BRANCH=master"
 
       - name: Get Env
         if: ${{ github.ref == 'refs/heads/godot3.4' }}
         run: |
-          export GODOT_BASE_BRANCH="3.4"
-          export VOXEL_BASE_BRANCH="godot3.4"
+          echo "GODOT_BASE_BRANCH=3.4"
+          echo "VOXEL_BASE_BRANCH=godot3.4"
 
       - name: Get Env PR
         if: ${{ github.head_ref == 'refs/heads/master' }}
         run: |
-          export GODOT_BASE_BRANCH="3.x"
-          export VOXEL_BASE_BRANCH="master"
+          echo "GODOT_BASE_BRANCH=3.x"
+          echo "VOXEL_BASE_BRANCH=master"
 
       - name: Get Env PR
         if: ${{ github.head_ref == 'refs/heads/godot3.4' }}
         run: |
-          export GODOT_BASE_BRANCH="3.4"
-          export VOXEL_BASE_BRANCH="godot3.4"
+          echo "GODOT_BASE_BRANCH=3.4"
+          echo "VOXEL_BASE_BRANCH=godot3.4"
 
       # Clone Godot
       - uses: actions/checkout@v2
@@ -145,26 +145,26 @@ jobs:
       - name: Get Env
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
-          export GODOT_BASE_BRANCH="3.x"
-          export VOXEL_BASE_BRANCH="master"
+          echo "GODOT_BASE_BRANCH=3.x"
+          echo "VOXEL_BASE_BRANCH=master"
 
       - name: Get Env
         if: ${{ github.ref == 'refs/heads/godot3.4' }}
         run: |
-          export GODOT_BASE_BRANCH="3.4"
-          export VOXEL_BASE_BRANCH="godot3.4"
+          echo "GODOT_BASE_BRANCH=3.4"
+          echo "VOXEL_BASE_BRANCH=godot3.4"
 
       - name: Get Env PR
         if: ${{ github.head_ref == 'refs/heads/master' }}
         run: |
-          export GODOT_BASE_BRANCH="3.x"
-          export VOXEL_BASE_BRANCH="master"
+          echo "GODOT_BASE_BRANCH=3.x"
+          echo "VOXEL_BASE_BRANCH=master"
 
       - name: Get Env PR
         if: ${{ github.head_ref == 'refs/heads/godot3.4' }}
         run: |
-          export GODOT_BASE_BRANCH="3.4"
-          export VOXEL_BASE_BRANCH="godot3.4"
+          echo "GODOT_BASE_BRANCH=3.4"
+          echo "VOXEL_BASE_BRANCH=godot3.4"
 
       # Clone Godot
       - uses: actions/checkout@v2
@@ -268,26 +268,26 @@ jobs:
       - name: Get Env
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
-          export GODOT_BASE_BRANCH="3.x"
-          export VOXEL_BASE_BRANCH="master"
+          echo "GODOT_BASE_BRANCH=3.x"
+          echo "VOXEL_BASE_BRANCH=master"
 
       - name: Get Env
         if: ${{ github.ref == 'refs/heads/godot3.4' }}
         run: |
-          export GODOT_BASE_BRANCH="3.4"
-          export VOXEL_BASE_BRANCH="godot3.4"
+          echo "GODOT_BASE_BRANCH=3.4"
+          echo "VOXEL_BASE_BRANCH=godot3.4"
 
       - name: Get Env PR
         if: ${{ github.head_ref == 'refs/heads/master' }}
         run: |
-          export GODOT_BASE_BRANCH="3.x"
-          export VOXEL_BASE_BRANCH="master"
+          echo "GODOT_BASE_BRANCH=3.x"
+          echo "VOXEL_BASE_BRANCH=master"
 
       - name: Get Env PR
         if: ${{ github.head_ref == 'refs/heads/godot3.4' }}
         run: |
-          export GODOT_BASE_BRANCH="3.4"
-          export VOXEL_BASE_BRANCH="godot3.4"
+          echo "GODOT_BASE_BRANCH=3.4"
+          echo "VOXEL_BASE_BRANCH=godot3.4"
 
       # Clone Godot
       - uses: actions/checkout@v2
