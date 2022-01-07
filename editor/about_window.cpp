@@ -103,7 +103,6 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	set_title(TTR("About Voxel Tools"));
 	set_resizable(true);
 	set_custom_minimum_size(Vector2(600, 300) * EDSCALE);
-	set_visible(true);
 
 	VBoxContainer *v_box_container = memnew(VBoxContainer);
 	v_box_container->set_anchor(MARGIN_RIGHT, 1);
