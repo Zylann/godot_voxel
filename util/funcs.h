@@ -63,14 +63,15 @@ inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
 }
 
 template <typename T>
-inline void unordered_remove_value(std::vector<T> &vec, T v) {
+inline bool unordered_remove_value(std::vector<T> &vec, T v) {
 	for (size_t i = 0; i < vec.size(); ++i) {
 		if (vec[i] == v) {
 			vec[i] = vec.back();
 			vec.pop_back();
-			break;
+			return true;
 		}
 	}
+	return false;
 }
 
 template <typename T>

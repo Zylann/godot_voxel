@@ -540,7 +540,15 @@ void VoxelTerrain::unload_data_block(Vector3i bpos) {
 }
 
 void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
-	_mesh_map.remove_block(bpos, VoxelMeshMap::NoAction());
+	std::vector<Vector3i> &blocks_pending_update = _blocks_pending_update;
+
+	_mesh_map.remove_block(bpos, [&blocks_pending_update](const VoxelMeshBlock *block) {
+		if (block->get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_NOT_SENT) {
+			// That block was in the list of blocks to update later in the process loop, we'll need to unregister it.
+			// We expect that block to be in that list. If it isn't, something wrong happened with its state.
+			ERR_FAIL_COND(!unordered_remove_value(blocks_pending_update, block->position));
+		}
+	});
 }
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
