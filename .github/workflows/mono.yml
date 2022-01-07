@@ -1,4 +1,4 @@
-name: 🐒 Mono Windows Cross Builds
+name: 🐒 Mono Builds
 on:
   push:
     branches: [ master, godot3.4, github_actions ]
