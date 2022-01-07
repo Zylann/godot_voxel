@@ -496,7 +496,7 @@ void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collisi
 		}
 	}
 
-	if (block->collision_viewers.get() == 0 && block->collision_viewers.get() == 0) {
+	if (block->mesh_viewers.get() == 0 && block->collision_viewers.get() == 0) {
 		unload_mesh_block(bpos);
 	}
 }
