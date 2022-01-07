@@ -922,7 +922,7 @@ void VoxelTerrain::process_viewers() {
 	}
 
 	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
-								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
+			(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
 
 	// Find out which blocks need to appear and which need to be unloaded
 	if (stream_enabled) {
@@ -1039,7 +1039,7 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 	VOXEL_PROFILE_SCOPE();
 
 	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
-								(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
+			(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
 
 	//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 
