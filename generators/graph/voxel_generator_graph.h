@@ -174,6 +174,7 @@ private:
 	// TODO Only exists because the UndoRedo API is confusing `null` with `absence of argument`...
 	// See https://github.com/godotengine/godot/issues/36895
 	void _b_set_node_param_null(int node_id, int param_index);
+	void _b_set_node_name(int node_id, String name);
 	float _b_generate_single(Vector3 pos);
 	Vector2 _b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const;
 	Dictionary _b_compile();

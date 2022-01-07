@@ -1353,10 +1353,10 @@ void VoxelGeneratorGraph::load_plane_preset() {
 	clear();
 
 	/*
-	 *     X  
-	 * 
+	 *     X
+	 *
 	 *     Y --- SdfPlane --- OutputSDF
-	 * 
+	 *
 	 *     Z
 	 */
 
@@ -1401,7 +1401,7 @@ void VoxelGeneratorGraph::debug_load_waves_preset() {
 	 *       1/20         + --- * --- - --- O
 	 *         \         /     /
 	 *    Z --- * --- sin    10.0
-	*/
+	 */
 
 	add_connection(n_x, 0, n_mul0, 0);
 	add_connection(n_z, 0, n_mul1, 0);
@@ -1450,6 +1450,10 @@ Array VoxelGeneratorGraph::_b_get_connections() const {
 
 void VoxelGeneratorGraph::_b_set_node_param_null(int node_id, int param_index) {
 	set_node_param(node_id, param_index, Variant());
+}
+
+void VoxelGeneratorGraph::_b_set_node_name(int node_id, String name) {
+	set_node_name(node_id, name);
 }
 
 float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
@@ -1509,6 +1513,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_node_gui_position", "node_id"), &VoxelGeneratorGraph::get_node_gui_position);
 	ClassDB::bind_method(D_METHOD("set_node_gui_position", "node_id", "position"),
 			&VoxelGeneratorGraph::set_node_gui_position);
+	ClassDB::bind_method(D_METHOD("set_node_name", "node_id", "name"), &VoxelGeneratorGraph::_b_set_node_name);
 
 	ClassDB::bind_method(D_METHOD("set_sdf_clip_threshold", "threshold"), &VoxelGeneratorGraph::set_sdf_clip_threshold);
 	ClassDB::bind_method(D_METHOD("get_sdf_clip_threshold"), &VoxelGeneratorGraph::get_sdf_clip_threshold);
