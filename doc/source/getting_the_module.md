@@ -6,7 +6,7 @@ This is a C++ module, which needs to get compiled into Godot Engine.
 Precompiled builds
 -------------------
 
-### Development builds
+### Godot 4 development builds
 
 - Available on [Github Actions](https://github.com/Zylann/godot_voxel/actions)
 
@@ -17,6 +17,9 @@ In case there are multiple downloadable artifacts, the editor build will be the 
 
 ![Github actions screenshot](images/github_actions_windows_artifacts.png)
 
+### Godot 3 branch
+
+The legacy branch for Godot 3.x is `godot3.x`.
 
 ### Tokisan builds (old)
 
@@ -33,7 +36,7 @@ These steps will walk you through creating a custom build of Godot with the Voxe
 ### Build Godot
 
 1. Download and compile the [Godot source](https://github.com/godotengine/godot) by following [the official guide](https://docs.godotengine.org/en/latest/development/compiling/index.html). If you want to regularly update your build (recommended), clone the repository with Git instead of downloading a zip file.
-1. Make sure to select the appropriate branches. If you want to use the latest Voxel Tools, the matching Godot branch is `3.x`. If there is a versioned Voxel Tools branch (e.g. `godot3.1`), that is intended to match the corresponding version of Godot. 
+1. Make sure to select the appropriate branches. If you want the latest build compatible with Godot 4, use the `master` branch of the module. If you want Godot 3, use Godot's `3.x` branch, and the module's `godot3.x` branch. There are other branches for feature freezes of other versions of Godot. 
 1. Build Godot before adding this or any other modules and make sure it produces an executable.
 1. Run the newly built executable found in `godot/bin`. Look under Help/About and confirm that the version string indicates you are running a development version (e.g. `3.2dev.custom_build.ee5ba3e`).
 
