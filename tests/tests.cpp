@@ -1118,7 +1118,7 @@ void test_fast_noise_2() {
 	Ref<FastNoise2> noise;
 	noise.instantiate();
 	float nv = noise->get_noise_2d_single(Vector2(42, 666));
-	print_line(String("SIMD level: {0}").format(varray(noise->get_simd_level())));
+	print_line(String("SIMD level: {0}").format(varray(FastNoise2::get_simd_level_name(noise->get_simd_level()))));
 	print_line(String("Noise: {0}").format(varray(nv)));
 	Ref<Image> im;
 	im.instantiate();
