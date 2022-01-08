@@ -1,7 +1,7 @@
 name: 🐒 Mono Builds
 on:
   push:
-    branches: [ godot3.x, godot3.4, github_actions ]
+    branches: [ master, godot3.x, godot3.4, github_actions ]
   pull_request:
     branches: [ godot3.x, godot3.4 ]
 
