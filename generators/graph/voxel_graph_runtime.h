@@ -181,16 +181,14 @@ public:
 			// which will be at an aligned position.
 			// We align to the maximum alignment between the struct,
 			// and the type of word we store inside the program buffer, which is uint16.
-			// Template param of `max` is specified otherwise GCC does not find the right type automatically
-			// (could not reproduce that in IDEone, weird)
-			const size_t params_alignment = max<size_t>(alignof(T), alignof(uint16_t));
+			const size_t params_alignment = math::max(alignof(T), alignof(uint16_t));
 			const size_t params_offset_index = _program.size();
 			// Prepare space to store the offset (at least 1 since that header is one word)
 			_program.push_back(1);
 			// Align memory for the struct.
 			// Note, we index with words, not bytes.
 			const size_t struct_offset =
-					alignup(_program.size() * sizeof(uint16_t), params_alignment) / sizeof(uint16_t);
+					math::alignup(_program.size() * sizeof(uint16_t), params_alignment) / sizeof(uint16_t);
 			if (struct_offset > _program.size()) {
 				_program.resize(struct_offset);
 			}
