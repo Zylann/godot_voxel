@@ -172,7 +172,8 @@ public:
 		}
 
 		// Typical use is to pass a struct containing all compile-time arguments the operation will need
-		template <typename T> void set_params(T params) {
+		template <typename T>
+		void set_params(T params) {
 			// Can be called only once per node
 			CRASH_COND(_params_added);
 			// We will need to align memory, so the struct will not be immediately stored here.
@@ -180,7 +181,9 @@ public:
 			// which will be at an aligned position.
 			// We align to the maximum alignment between the struct,
 			// and the type of word we store inside the program buffer, which is uint16.
-			const size_t params_alignment = max(alignof(T), alignof(uint16_t));
+			// Template param of `max` is specified otherwise GCC does not find the right type automatically
+			// (could not reproduce that in IDEone, weird)
+			const size_t params_alignment = max<size_t>(alignof(T), alignof(uint16_t));
 			const size_t params_offset_index = _program.size();
 			// Prepare space to store the offset (at least 1 since that header is one word)
 			_program.push_back(1);
@@ -204,7 +207,8 @@ public:
 		}
 
 		// In case the compilation step produces a resource to be deleted
-		template <typename T> void add_memdelete_cleanup(T *ptr) {
+		template <typename T>
+		void add_memdelete_cleanup(T *ptr) {
 			HeapResource hr;
 			hr.ptr = ptr;
 			hr.deleter = [](void *p) {
@@ -249,7 +253,8 @@ public:
 				const Span<const uint8_t> params) :
 				_inputs(inputs), _outputs(outputs), _params(params) {}
 
-		template <typename T> inline const T &get_params() const {
+		template <typename T>
+		inline const T &get_params() const {
 #ifdef DEBUG_ENABLED
 			CRASH_COND(sizeof(T) > _params.size());
 #endif
