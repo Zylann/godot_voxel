@@ -8,8 +8,10 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
 
-Ongoing development
------------------------
+Ongoing development - `master` branch (to become legacy Godot 3 branch)
+-------------------------------------------------------------------------
+
+This branch is the last supporting Godot 3
 
 - Smooth voxels
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
@@ -18,6 +20,11 @@ Ongoing development
 - Fixes
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
     - `Voxel`: properties were not refreshed when changing `geometry_type`
+    - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
+    - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
+    - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
+    - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
+    - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
 
 
 06/11/2021 - `godot3.4`
