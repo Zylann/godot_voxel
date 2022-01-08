@@ -15,6 +15,10 @@ bool voxel_raycast(
 
 	VOXEL_PROFILE_SCOPE();
 
+	ERR_FAIL_COND_V(has_nan(ray_origin), false);
+	ERR_FAIL_COND_V(has_nan(ray_direction), false);
+	ERR_FAIL_COND_V(Math::is_nan(max_distance), false);
+
 	const float g_infinite = 9999999;
 
 	// Equation : p + v*t

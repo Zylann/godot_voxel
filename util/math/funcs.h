@@ -200,6 +200,10 @@ inline size_t alignup(size_t a, size_t align) {
 	return (a + align - 1) & ~(align - 1);
 }
 
+inline bool has_nan(const Vector3 &v) {
+	return Math::is_nan(v.x) || Math::is_nan(v.y) || Math::is_nan(v.z);
+}
+
 // inline bool is_power_of_two(int i) {
 // 	return i & (i - 1);
 // }
