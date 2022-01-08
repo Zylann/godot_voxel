@@ -1656,8 +1656,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
-			const Interval x = ctx.get_input(0);
-			const Interval y = ctx.get_input(1);
+			// const Interval x = ctx.get_input(0);
+			// const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
 			ERR_FAIL_COND(p.noise == nullptr);
 			ctx.set_output(0, p.noise->get_estimated_output_range());
@@ -1705,9 +1705,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
-			const Interval x = ctx.get_input(0);
-			const Interval y = ctx.get_input(1);
-			const Interval z = ctx.get_input(2);
+			// const Interval x = ctx.get_input(0);
+			// const Interval y = ctx.get_input(1);
+			// const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
 			ERR_FAIL_COND(p.noise == nullptr);
 			ctx.set_output(0, p.noise->get_estimated_output_range());
