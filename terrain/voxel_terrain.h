@@ -69,10 +69,10 @@ public:
 	void set_material(unsigned int id, Ref<Material> material);
 	Ref<Material> get_material(unsigned int id) const;
 
-	VoxelDataMap &get_storage() {
+	zylann::voxel::VoxelDataMap &get_storage() {
 		return _data_map;
 	}
-	const VoxelDataMap &get_storage() const {
+	const zylann::voxel::VoxelDataMap &get_storage() const {
 		return _data_map;
 	}
 
@@ -147,8 +147,8 @@ private:
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
 	void send_block_data_requests();
 
-	void emit_data_block_loaded(const VoxelDataBlock *block);
-	void emit_data_block_unloaded(const VoxelDataBlock *block);
+	void emit_data_block_loaded(const zylann::voxel::VoxelDataBlock *block);
+	void emit_data_block_unloaded(const zylann::voxel::VoxelDataBlock *block);
 
 	bool try_get_paired_viewer_index(uint32_t id, size_t &out_i) const;
 
@@ -183,7 +183,7 @@ private:
 	std::vector<PairedViewer> _paired_viewers;
 
 	// Voxel storage
-	VoxelDataMap _data_map;
+	zylann::voxel::VoxelDataMap _data_map;
 	// Mesh storage
 	VoxelMeshMap _mesh_map;
 

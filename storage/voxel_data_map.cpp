@@ -7,8 +7,7 @@
 
 #include <limits>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelDataMap::VoxelDataMap() {
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
@@ -434,3 +433,5 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 		}
 	}
 }
+
+} // namespace zylann::voxel

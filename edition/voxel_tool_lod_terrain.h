@@ -4,7 +4,10 @@
 #include "voxel_tool.h"
 
 class VoxelLodTerrain;
+
+namespace zylann::voxel {
 class VoxelDataMap;
+}
 
 class VoxelToolLodTerrain : public VoxelTool {
 	GDCLASS(VoxelToolLodTerrain, VoxelTool)

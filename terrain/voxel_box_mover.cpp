@@ -4,6 +4,7 @@
 #include "../util/godot/funcs.h"
 
 using namespace zylann;
+using namespace voxel;
 
 static AABB expand_with_vector(AABB box, Vector3 v) {
 	if (v.x > 0) {

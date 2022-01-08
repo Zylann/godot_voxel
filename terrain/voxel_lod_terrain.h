@@ -96,7 +96,7 @@ public:
 			return;
 		}
 		Ref<VoxelGenerator> generator = _generator;
-		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
+		zylann::voxel::VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 		{
 			RWLockWrite wlock(data_lod0.map_lock);
 			data_lod0.map.write_box(
@@ -118,11 +118,11 @@ public:
 			return;
 		}
 		Ref<VoxelGenerator> generator = _generator;
-		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
+		zylann::voxel::VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 		{
 			RWLockWrite wlock(data_lod0.map_lock);
-			data_lod0.map.write_box_2(
-					voxel_box, channel1, channel2, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
+			data_lod0.map.write_box_2(voxel_box, channel1, channel2, action,
+					[&generator](zylann::voxel::VoxelBufferInternal &voxels, Vector3i pos) {
 						if (generator.is_valid()) {
 							VoxelBlockRequest r{ voxels, pos, 0 };
 							generator->generate_block(r);
@@ -224,7 +224,7 @@ public:
 	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
 	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
 
-	std::shared_ptr<VoxelDataLodMap> get_storage() const {
+	std::shared_ptr<zylann::voxel::VoxelDataLodMap> get_storage() const {
 		return _data;
 	}
 
@@ -267,7 +267,7 @@ private:
 	Vector3 get_local_viewer_pos() const;
 	void try_schedule_loading_with_neighbors_no_lock(
 			const Vector3i &p_data_block_pos, uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load);
-	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelDataMap &map) const;
+	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const zylann::voxel::VoxelDataMap &map) const;
 	bool check_block_loaded_and_meshed(
 			const Vector3i &p_mesh_block_pos, uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load);
 	bool check_block_mesh_updated(VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load);
@@ -361,7 +361,7 @@ private:
 	std::vector<RunningAsyncEdit> _running_async_edits;
 
 	// Data stored with a shared pointer so it can be sent to asynchronous tasks
-	std::shared_ptr<VoxelDataLodMap> _data;
+	std::shared_ptr<zylann::voxel::VoxelDataLodMap> _data;
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {

@@ -3,6 +3,8 @@
 
 #include "voxel_data_map.h"
 
+namespace zylann::voxel {
+
 // Stores blocks of voxel data in a finite grid.
 // This is used as temporary storage for some operations, to avoid holding exclusive locks on maps for too long.
 class VoxelDataGrid {
@@ -87,7 +89,7 @@ private:
 				pos.z < _size_in_blocks.z;
 	}
 
-	inline void set_block(Vector3i position, std::shared_ptr<zylann::voxel::VoxelBufferInternal> block) {
+	inline void set_block(Vector3i position, std::shared_ptr<VoxelBufferInternal> block) {
 		ERR_FAIL_COND(!is_valid_position(position));
 		position -= _offset_in_blocks;
 		const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
@@ -95,7 +97,7 @@ private:
 		_blocks[index] = block;
 	}
 
-	inline zylann::voxel::VoxelBufferInternal *get_block(Vector3i position) {
+	inline VoxelBufferInternal *get_block(Vector3i position) {
 		ERR_FAIL_COND_V(!is_valid_position(position), nullptr);
 		position -= _offset_in_blocks;
 		const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
@@ -104,7 +106,7 @@ private:
 	}
 
 	// Flat grid indexed in ZXY order
-	std::vector<std::shared_ptr<zylann::voxel::VoxelBufferInternal>> _blocks;
+	std::vector<std::shared_ptr<VoxelBufferInternal>> _blocks;
 	// Size of the grid in blocks
 	Vector3i _size_in_blocks;
 	// Block coordinates offset. This is used for when we cache a sub-region of a map, we need to keep the origin
@@ -113,5 +115,7 @@ private:
 	// Size of a block in voxels
 	unsigned int _block_size = 1 << VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_DATA_GRID_H
