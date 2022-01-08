@@ -8,10 +8,10 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
 
-Ongoing development - `master` branch (to become legacy Godot 3 branch)
--------------------------------------------------------------------------
+Legacy Godot 3 branch - `godot3.x`
+------------------------------------
 
-This branch is the last supporting Godot 3
+This branch is the last supporting Godot 3.
 
 - Smooth voxels
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
