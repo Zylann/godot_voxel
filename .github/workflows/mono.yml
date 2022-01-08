@@ -258,3 +258,4 @@ jobs:
         with:
           name: godot.windows.opt.tools.64.mono
           path: bin/*
+
