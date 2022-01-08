@@ -22,9 +22,9 @@ public:
     const FastNoise::HybridSource& GetWarpAmplitude() const { return mWarpAmplitude; }
     const FastNoise::GeneratorSource& GetWarpSource() const { return mSource; }
 
-    virtual void FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v& xOut, float32v& yOut ) const = 0;
-    virtual void FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v z, float32v& xOut, float32v& yOut, float32v& zOut ) const = 0;
-    virtual void FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v z, float32v w, float32v& xOut, float32v& yOut, float32v& zOut, float32v& wOut ) const = 0;
+    virtual float32v FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v& xOut, float32v& yOut ) const = 0;
+    virtual float32v FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v z, float32v& xOut, float32v& yOut, float32v& zOut ) const = 0;
+    virtual float32v FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v z, float32v w, float32v& xOut, float32v& yOut, float32v& zOut, float32v& wOut ) const = 0;
 };
 
 template<typename FS>
@@ -33,7 +33,7 @@ class FS_T<FastNoise::DomainWarpGradient, FS> : public virtual FastNoise::Domain
     FASTSIMD_DECLARE_FS_TYPES;
 
 public:
-    void FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v& xOut, float32v& yOut ) const final
+    float32v FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v& xOut, float32v& yOut ) const final
     {
         float32v xs = FS_Floor_f32( x );
         float32v ys = FS_Floor_f32( y );
@@ -58,13 +58,20 @@ public:
 
     #undef GRADIENT_COORD
 
-        float32v normalise = warpAmp * float32v( 1.0f / (0xffff / 2.0f) );
+        float32v normalise = float32v( 1.0f / (0xffff / 2.0f) );
 
-        xOut = FS_FMulAdd_f32( FnUtils::Lerp( FnUtils::Lerp( x00, x10, xs ), FnUtils::Lerp( x01, x11, xs ), ys ) - float32v( 0xffff / 2.0f ), normalise, xOut );
-        yOut = FS_FMulAdd_f32( FnUtils::Lerp( FnUtils::Lerp( y00, y10, xs ), FnUtils::Lerp( y01, y11, xs ), ys ) - float32v( 0xffff / 2.0f ), normalise, yOut );
+        float32v xWarp = (FnUtils::Lerp( FnUtils::Lerp( x00, x10, xs ), FnUtils::Lerp( x01, x11, xs ), ys ) - float32v( 0xffff / 2.0f )) * normalise;
+        float32v yWarp = (FnUtils::Lerp( FnUtils::Lerp( y00, y10, xs ), FnUtils::Lerp( y01, y11, xs ), ys ) - float32v( 0xffff / 2.0f )) * normalise;
+
+        xOut = FS_FMulAdd_f32( xWarp, warpAmp, xOut );
+        yOut = FS_FMulAdd_f32( yWarp, warpAmp, yOut );
+
+        float32v warpLengthSq = FS_FMulAdd_f32( xWarp, xWarp, yWarp * yWarp );
+
+        return warpLengthSq * FS_InvSqrt_f32( warpLengthSq );
     }
             
-    void FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v z, float32v& xOut, float32v& yOut, float32v& zOut ) const final
+    float32v FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v z, float32v& xOut, float32v& yOut, float32v& zOut ) const final
     {
         float32v xs = FS_Floor_f32( x );
         float32v ys = FS_Floor_f32( y );
@@ -106,14 +113,22 @@ public:
         float32v y1z = FnUtils::Lerp( FnUtils::Lerp( y001, y101, xs ), FnUtils::Lerp( y011, y111, xs ), ys );
         float32v z1z = FnUtils::Lerp( FnUtils::Lerp( z001, z101, xs ), FnUtils::Lerp( z011, z111, xs ), ys );
 
-        float32v normalise = warpAmp * float32v( 1.0f / (0x3ff / 2.0f) );
+        float32v normalise = float32v( 1.0f / (0x3ff / 2.0f) );
 
-        xOut = FS_FMulAdd_f32( FnUtils::Lerp( x0z, x1z, zs ) - float32v( 0x3ff / 2.0f ), normalise, xOut );
-        yOut = FS_FMulAdd_f32( FnUtils::Lerp( y0z, y1z, zs ) - float32v( 0x3ff / 2.0f ), normalise, yOut );
-        zOut = FS_FMulAdd_f32( FnUtils::Lerp( z0z, z1z, zs ) - float32v( 0x3ff / 2.0f ), normalise, zOut );
+        float32v xWarp = (FnUtils::Lerp( x0z, x1z, zs ) - float32v( 0x3ff / 2.0f )) * normalise;
+        float32v yWarp = (FnUtils::Lerp( y0z, y1z, zs ) - float32v( 0x3ff / 2.0f )) * normalise;
+        float32v zWarp = (FnUtils::Lerp( z0z, z1z, zs ) - float32v( 0x3ff / 2.0f )) * normalise;
+
+        xOut = FS_FMulAdd_f32( xWarp, warpAmp, xOut );
+        yOut = FS_FMulAdd_f32( yWarp, warpAmp, yOut );
+        zOut = FS_FMulAdd_f32( zWarp, warpAmp, zOut );
+
+        float32v warpLengthSq = FS_FMulAdd_f32( xWarp, xWarp, FS_FMulAdd_f32( yWarp, yWarp, zWarp * zWarp ) );
+
+        return warpLengthSq * FS_InvSqrt_f32( warpLengthSq );
     }
             
-    void FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v z, float32v w, float32v& xOut, float32v& yOut, float32v& zOut, float32v& wOut ) const final
+    float32v FS_VECTORCALL Warp( int32v seed, float32v warpAmp, float32v x, float32v y, float32v z, float32v w, float32v& xOut, float32v& yOut, float32v& zOut, float32v& wOut ) const final
     {
         float32v xs = FS_Floor_f32( x );
         float32v ys = FS_Floor_f32( y );
@@ -170,12 +185,21 @@ public:
         float32v z1w = FnUtils::Lerp( FnUtils::Lerp( FnUtils::Lerp( z0001, z1001, xs ), FnUtils::Lerp( z0101, z1101, xs ), ys ), FnUtils::Lerp( FnUtils::Lerp( z0011, z1011, xs ), FnUtils::Lerp( z0111, z1111, xs ), ys ), zs );
         float32v w1w = FnUtils::Lerp( FnUtils::Lerp( FnUtils::Lerp( w0001, w1001, xs ), FnUtils::Lerp( w0101, w1101, xs ), ys ), FnUtils::Lerp( FnUtils::Lerp( w0011, w1011, xs ), FnUtils::Lerp( w0111, w1111, xs ), ys ), zs );                        
 
-        float32v normalise = warpAmp * float32v( 1.0f / (0xff / 2.0f) );
+        float32v normalise = float32v( 1.0f / (0xff / 2.0f) );
 
-        xOut = FS_FMulAdd_f32( FnUtils::Lerp( x0w, x1w, ws ) - float32v( 0xff / 2.0f ), normalise, xOut );
-        yOut = FS_FMulAdd_f32( FnUtils::Lerp( y0w, y1w, ws ) - float32v( 0xff / 2.0f ), normalise, yOut );
-        zOut = FS_FMulAdd_f32( FnUtils::Lerp( z0w, z1w, ws ) - float32v( 0xff / 2.0f ), normalise, zOut );
-        wOut = FS_FMulAdd_f32( FnUtils::Lerp( w0w, w1w, ws ) - float32v( 0xff / 2.0f ), normalise, wOut );
+        float32v xWarp = (FnUtils::Lerp( x0w, x1w, ws ) - float32v( 0xff / 2.0f )) * normalise;
+        float32v yWarp = (FnUtils::Lerp( y0w, y1w, ws ) - float32v( 0xff / 2.0f )) * normalise;
+        float32v zWarp = (FnUtils::Lerp( z0w, z1w, ws ) - float32v( 0xff / 2.0f )) * normalise;
+        float32v wWarp = (FnUtils::Lerp( w0w, w1w, ws ) - float32v( 0xff / 2.0f )) * normalise;
+
+        xOut = FS_FMulAdd_f32( xWarp, warpAmp, xOut );
+        yOut = FS_FMulAdd_f32( yWarp, warpAmp, yOut );
+        zOut = FS_FMulAdd_f32( zWarp, warpAmp, zOut );
+        wOut = FS_FMulAdd_f32( wWarp, warpAmp, wOut );
+
+        float32v warpLengthSq = FS_FMulAdd_f32( xWarp, xWarp, FS_FMulAdd_f32( yWarp, yWarp, FS_FMulAdd_f32( zWarp, zWarp, wWarp * wWarp ) ) );
+
+        return warpLengthSq * FS_InvSqrt_f32( warpLengthSq );
     }
 };
 

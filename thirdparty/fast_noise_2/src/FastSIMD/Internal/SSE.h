@@ -244,8 +244,8 @@ namespace FastSIMD
 
         static constexpr eLevel SIMD_Level = LEVEL_T;
 
-        template<size_t ElementSize = 8>
-        static constexpr size_t VectorSize = 128 / ElementSize;
+        template<size_t ElementSize>
+        static constexpr size_t VectorSize = (128 / 8) / ElementSize;
 
         typedef SSE_f32x4          float32v;
         typedef SSE_i32x4<LEVEL_T> int32v;
@@ -273,6 +273,32 @@ namespace FastSIMD
         FS_INLINE static void Store_i32( void* p, int32v a )
         {
             _mm_storeu_si128( reinterpret_cast<__m128i*>(p), a );
+        }
+
+        // Extract
+
+        FS_INLINE static float Extract0_f32( float32v a )
+        {
+            return _mm_cvtss_f32( a );
+        }
+
+        FS_INLINE static int32_t Extract0_i32( int32v a )
+        {
+            return _mm_cvtsi128_si32( a );
+        }
+
+        FS_INLINE static float Extract_f32( float32v a, size_t idx )
+        {
+            float f[4];
+            Store_f32( &f, a );
+            return f[idx & 3];
+        }
+
+        FS_INLINE static int32_t Extract_i32( int32v a, size_t idx )
+        {
+            int32_t i[4];
+            Store_i32( &i, a );
+            return i[idx & 3];
         }
 
         // Cast
@@ -514,9 +540,16 @@ namespace FastSIMD
             return _mm_andnot_ps( _mm_castsi128_ps( m ), a );
         }
 
+        template<eLevel L = LEVEL_T, std::enable_if_t<( L < Level_SSE41 )>* = nullptr>
         FS_INLINE static bool AnyMask_bool( mask32v m )
         {
             return _mm_movemask_ps( _mm_castsi128_ps( m ) );
+        }
+
+        template<eLevel L = LEVEL_T, std::enable_if_t<( L >= Level_SSE41 )>* = nullptr>
+        FS_INLINE static bool AnyMask_bool( mask32v m )
+        {
+            return !_mm_testz_si128( m, m );
         }
     };
 

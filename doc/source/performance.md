@@ -47,12 +47,14 @@ Terrains are rendered with many unique meshes. That can amount for a lot of draw
 - Increase mesh block size: they default to 16, but it can be set to 32 instead. This reduces the number of draw calls, but may increase the time it takes to modify voxels.
 
 
-Slow mesh updates issue
-------------------------
+Slow mesh updates issue with OpenGL
+------------------------------------
 
 ### Issue
 
 Godot 3.x is using OpenGL, and there is an issue which currently degrades performance of this voxel engine a lot. Framerate is not necessarily bad, but the speed at which voxel terrain updates is very low, compared to what it should be. So far the issue has been seen on Windows, on both Intel or nVidia cards.
+
+Note: Godot 4.x will have an OpenGL renderer, but this issue has not been tested here yet.
 
 ### Workarounds
 
@@ -71,6 +73,35 @@ Unfortunately, the first call to OpenGL during the frame appears to take a whopp
 
 When one workaround is used, like enabling `verbose_stdout`, this slowdown completely disappears. Instead, the "delay" moves at the end of the frame. This has been linked to a debugging OpenGL extension getting turned on.
 For more information, see [Godot issue #52801](https://github.com/godotengine/godot/issues/52801).
+
+
+Slowdown when moving fast with Vulkan
+--------------------------------------
+
+### Issue
+
+If you move fast while near a terrain with a lot of chunks (mesh size 16 and high LOD detail), the renderer can cause noticeable slowdowns. This is because Godot4's Vulkan allocator is much slower to destroy mesh buffers than Godot 3 was, and it does that on the main thread. When you move fast, a lot of meshes get created in front of the camera, and a lot get destroyed behind the camera at the same time. Creation is cheap, destruction is expensive.
+
+This was observed by profiling with Tracy in a `release_debug` build (typical mode used for official optimized builds):
+
+![Screenshot of Tracy profiler showing slow buffer deallocation](images/tracy_profile_slow_vulkan_dealloc.png)
+
+Lots of buffers get freed on the main thread at the end of the frame, and it can take a while, causing a CPU spike.
+On the other hand, there is no such issue when the same amount of meshes is allocated.
+This issue also was not noticeable in Godot 3.
+
+This problem reproduces specifically when a lot of small meshes are destroyed (small as in 16x16 pieces of terrain, variable size), while a lot of them (thousands) already exist at the same time. Note, some of them are not necessarily visible.
+
+### Workarounds
+
+It is not possible for the module to just "pool the meshes", because when new meshes need to be created, the API requires to create new buffers anyways and drops the old ones (AFAIK). It is also not possible to use a thread on our side because the work is deferred to the end of the frame, not on the call site.
+
+A mitigation is in place to smooth the spikes by spreading the amount of destroyed meshes over time, but the slowdown is still noticeable.
+
+The only workarounds involve limiting the game:
+- Increase mesh block size to 32 to reduce their number, at the expense of edition cost
+- Limit the speed at which the player can move when close to voxels
+- Reduce LOD distance so less blocks have to be destroyed, at the expense of quality
 
 
 Access to voxels

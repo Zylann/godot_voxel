@@ -3,8 +3,10 @@
 #include "../util/profiling.h"
 
 #include <core/os/os.h>
-#include <core/print_string.h>
-#include <core/variant.h>
+#include <core/string/print_string.h>
+#include <core/variant/variant.h>
+
+namespace zylann::voxel {
 
 namespace {
 VoxelMemoryPool *g_memory_pool = nullptr;
@@ -27,8 +29,7 @@ VoxelMemoryPool *VoxelMemoryPool::get_singleton() {
 	return g_memory_pool;
 }
 
-VoxelMemoryPool::VoxelMemoryPool() {
-}
+VoxelMemoryPool::VoxelMemoryPool() {}
 
 VoxelMemoryPool::~VoxelMemoryPool() {
 #ifdef TOOLS_ENABLED
@@ -145,8 +146,7 @@ void VoxelMemoryPool::debug_print() {
 		Pool &pool = _pot_pools[pot];
 		MutexLock lock(pool.mutex);
 		print_line(String("Pool {0}: {1} blocks (capacity {2})")
-						   .format(varray(pot,
-								   SIZE_T_TO_VARIANT(pool.blocks.size()),
+						   .format(varray(pot, SIZE_T_TO_VARIANT(pool.blocks.size()),
 								   SIZE_T_TO_VARIANT(pool.blocks.capacity()))));
 	}
 }
@@ -165,3 +165,5 @@ size_t VoxelMemoryPool::debug_get_total_memory() const {
 	//MutexLock lock(_mutex);
 	return _total_memory;
 }
+
+} // namespace zylann::voxel

@@ -15,7 +15,7 @@ public:
 		set_custom_minimum_size(Vector2(0, EDSCALE * PREVIEW_HEIGHT));
 
 		_texture_rect = memnew(TextureRect);
-		_texture_rect->set_anchors_and_margins_preset(Control::PRESET_WIDE);
+		_texture_rect->set_anchors_and_offsets_preset(Control::PRESET_WIDE);
 		_texture_rect->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_COVERED);
 		add_child(_texture_rect);
 	}
@@ -29,14 +29,16 @@ public:
 		}
 
 		if (_noise.is_valid()) {
-			_noise->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_noise_changed");
+			_noise->disconnect(CoreStringNames::get_singleton()->changed,
+					callable_mp(this, &FastNoiseLiteViewer::_on_noise_changed));
 		}
 
 		_noise = noise;
 
 		if (_noise.is_valid()) {
 			set_noise_gradient(Ref<FastNoiseLiteGradient>());
-			_noise->connect(CoreStringNames::get_singleton()->changed, this, "_on_noise_changed");
+			_noise->connect(CoreStringNames::get_singleton()->changed,
+					callable_mp(this, &FastNoiseLiteViewer::_on_noise_changed));
 			set_process(true);
 			update_preview();
 
@@ -52,14 +54,16 @@ public:
 		}
 
 		if (_noise_gradient.is_valid()) {
-			_noise_gradient->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_noise_changed");
+			_noise_gradient->disconnect(CoreStringNames::get_singleton()->changed,
+					callable_mp(this, &FastNoiseLiteViewer::_on_noise_changed));
 		}
 
 		_noise_gradient = noise_gradient;
 
 		if (_noise_gradient.is_valid()) {
 			set_noise(Ref<FastNoiseLite>());
-			_noise_gradient->connect(CoreStringNames::get_singleton()->changed, this, "_on_noise_changed");
+			_noise_gradient->connect(CoreStringNames::get_singleton()->changed,
+					callable_mp(this, &FastNoiseLiteViewer::_on_noise_changed));
 			set_process(true);
 			update_preview();
 
@@ -92,10 +96,8 @@ private:
 		const Vector2i preview_size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
 		Ref<Image> im;
-		im.instance();
+		im.instantiate();
 		im->create(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
-
-		im->lock();
 
 		if (_noise.is_valid()) {
 			for (int y = 0; y < preview_size.y; ++y) {
@@ -126,16 +128,14 @@ private:
 			}
 		}
 
-		im->unlock();
-
 		Ref<ImageTexture> tex;
-		tex.instance();
+		tex.instantiate();
 		tex->create_from_image(im);
 		_texture_rect->set_texture(tex);
 	}
 
 	static void _bind_methods() {
-		ClassDB::bind_method(D_METHOD("_on_noise_changed"), &FastNoiseLiteViewer::_on_noise_changed);
+		// ClassDB::bind_method(D_METHOD("_on_noise_changed"), &FastNoiseLiteViewer::_on_noise_changed);
 	}
 
 	Ref<FastNoiseLite> _noise;
@@ -150,8 +150,7 @@ class FastNoiseLiteEditorInspectorPlugin : public EditorInspectorPlugin {
 	GDCLASS(FastNoiseLiteEditorInspectorPlugin, EditorInspectorPlugin)
 public:
 	bool can_handle(Object *p_object) override {
-		return Object::cast_to<FastNoiseLite>(p_object) != NULL ||
-			   Object::cast_to<FastNoiseLiteGradient>(p_object);
+		return Object::cast_to<FastNoiseLite>(p_object) != nullptr || Object::cast_to<FastNoiseLiteGradient>(p_object);
 	}
 
 	void parse_begin(Object *p_object) override {
@@ -180,6 +179,6 @@ public:
 
 FastNoiseLiteEditorPlugin::FastNoiseLiteEditorPlugin(EditorNode *p_node) {
 	Ref<FastNoiseLiteEditorInspectorPlugin> plugin;
-	plugin.instance();
+	plugin.instantiate();
 	add_inspector_plugin(plugin);
 }

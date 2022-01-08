@@ -1,11 +1,11 @@
 #include "voxel_raycast_result.h"
 
-Vector3 VoxelRaycastResult::_b_get_position() const {
-	return position.to_vec3();
+Vector3i VoxelRaycastResult::_b_get_position() const {
+	return position;
 }
 
-Vector3 VoxelRaycastResult::_b_get_previous_position() const {
-	return previous_position.to_vec3();
+Vector3i VoxelRaycastResult::_b_get_previous_position() const {
+	return previous_position;
 }
 
 float VoxelRaycastResult::_b_get_distance() const {
@@ -19,5 +19,5 @@ void VoxelRaycastResult::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "position"), "", "get_position");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "previous_position"), "", "get_previous_position");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "distance"), "", "get_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "distance"), "", "get_distance");
 }

@@ -14,6 +14,8 @@
 			<argument index="0" name="voxel_area" type="AABB" />
 			<argument index="1" name="callback" type="FuncRef" />
 			<description>
+				Executes a function for each voxel holding metadata in the given area.
+				The given callback takes two arguments: voxel position (Vector3i), voxel metadata (Variant)
 			</description>
 		</method>
 		<method name="run_blocky_random_tick" qualifiers="const">
@@ -24,6 +26,7 @@
 			<argument index="3" name="batch_count" type="int" default="16" />
 			<description>
 				Picks random voxels within the specified area and executes a function on them. This only works for terrains using [VoxelMesherBlocky]. Only voxels where [member Voxel.random_tickable] is [code]true[/code] will be picked.
+				The given callback takes two arguments: voxel position (Vector3i), voxel value (int).
 			</description>
 		</method>
 	</methods>

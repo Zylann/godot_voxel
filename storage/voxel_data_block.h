@@ -1,10 +1,10 @@
 #ifndef VOXEL_DATA_BLOCK_H
 #define VOXEL_DATA_BLOCK_H
 
-#include <memory>
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/macros.h"
 #include "voxel_ref_count.h"
+#include <memory>
 
 // Stores loaded voxel data for a chunk of the volume. Mesh and colliders are stored separately.
 class VoxelDataBlock {
@@ -13,8 +13,8 @@ public:
 	const unsigned int lod_index = 0;
 	VoxelRefCount viewers;
 
-	static VoxelDataBlock *create(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int size,
-			unsigned int p_lod_index) {
+	static VoxelDataBlock *create(
+			Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int size, unsigned int p_lod_index) {
 		const int bs = size;
 		ERR_FAIL_COND_V(buffer == nullptr, nullptr);
 		ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), nullptr);
@@ -50,7 +50,7 @@ public:
 	void set_modified(bool modified) {
 #ifdef TOOLS_ENABLED
 		if (_modified == false && modified) {
-			PRINT_VERBOSE(String("Marking block {0} as modified").format(varray(position.to_vec3())));
+			PRINT_VERBOSE(String("Marking block {0} as modified").format(varray(position)));
 		}
 #endif
 		_modified = modified;
@@ -82,7 +82,7 @@ private:
 
 	// Tells if it's worth requesting a more precise version of the data.
 	// Will be `true` if it's not worth it.
-	bool _max_lod_hint = false;
+	//bool _max_lod_hint = false;
 };
 
 #endif // VOXEL_DATA_BLOCK_H

@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include <vector>
 
+namespace zylann::voxel {
+
 // Pool based on a scenario where allocated blocks are often the same size.
 // A pool of blocks is assigned for each power of two.
 // The majority of VoxelBuffers use powers of two so most of the time
@@ -78,7 +80,7 @@ private:
 		// `get_next_power_of_two_32` takes unsigned int
 		CRASH_COND(size > std::numeric_limits<unsigned int>::max());
 #endif
-		return get_shift_from_power_of_two_32(get_next_power_of_two_32(size));
+		return math::get_shift_from_power_of_two_32(math::get_next_power_of_two_32(size));
 	}
 
 	inline size_t get_size_from_pool_index(unsigned int i) const {
@@ -98,5 +100,7 @@ private:
 	size_t _used_memory = 0;
 	size_t _total_memory = 0;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_MEMORY_POOL_H

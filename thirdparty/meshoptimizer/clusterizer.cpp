@@ -6,6 +6,8 @@
 #include <math.h>
 #include <string.h>
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 // This work is based on:
 // Graham Wihlidal. Optimizing the Graphics Pipeline with Compute. 2016
 // Matthaeus Chajdas. GeometryFX 1.2 - Cluster Culling. 2016
@@ -854,3 +856,5 @@ meshopt_Bounds meshopt_computeMeshletBounds(const unsigned int* meshlet_vertices
 
 	return meshopt_computeClusterBounds(indices, triangle_count * 3, vertex_positions, vertex_count, vertex_positions_stride);
 }
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END

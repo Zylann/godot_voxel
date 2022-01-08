@@ -1,7 +1,7 @@
 #ifndef VOXEL_STRING_NAMES_H
 #define VOXEL_STRING_NAMES_H
 
-#include <core/string_name.h>
+#include <core/string/string_name.h>
 
 class VoxelStringNames {
 private:

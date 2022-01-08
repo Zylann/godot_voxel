@@ -9,7 +9,11 @@
 #include "voxel_instance_library.h"
 #include "voxel_instance_library_item.h"
 
-#include <scene/3d/spatial.h>
+#ifdef TOOLS_ENABLED
+#include "../../editor/voxel_debug.h"
+#endif
+
+#include <scene/3d/node_3d.h>
 //#include <scene/resources/material.h> // Included by node.h lol
 #include <limits>
 #include <memory>
@@ -21,15 +25,15 @@ class VoxelInstancerRigidBody;
 class VoxelInstanceComponent;
 class VoxelInstanceLibrarySceneItem;
 class VoxelTool;
-class PhysicsBody;
+class PhysicsBody3D;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
 // Even nodes like gridmaps could be rebuilt on top of this, if its concept of "grid" was decoupled.
 
 // Add-on to voxel nodes, allowing to spawn elements on the surface.
 // These elements are rendered with hardware instancing, can have collisions, and also be persistent.
-class VoxelInstancer : public Spatial, public VoxelInstanceLibrary::IListener {
-	GDCLASS(VoxelInstancer, Spatial)
+class VoxelInstancer : public Node3D, public VoxelInstanceLibrary::IListener {
+	GDCLASS(VoxelInstancer, Node3D)
 public:
 	static const int MAX_LOD = 8;
 
@@ -56,8 +60,8 @@ public:
 
 	// Event handlers
 
-	void on_data_block_loaded(Vector3i grid_position, unsigned int lod_index,
-			std::unique_ptr<VoxelInstanceBlockData> instances);
+	void on_data_block_loaded(
+			Vector3i grid_position, unsigned int lod_index, std::unique_ptr<VoxelInstanceBlockData> instances);
 	void on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays);
 	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
 	void on_area_edited(Box3i p_voxel_box);
@@ -69,8 +73,14 @@ public:
 
 	int debug_get_block_count() const;
 	Dictionary debug_get_instance_counts() const;
+	void debug_dump_as_scene(String fpath) const;
+	Node *debug_dump_as_nodes() const;
 
-	String get_configuration_warning() const override;
+#ifdef TOOLS_ENABLED
+	void set_show_gizmos(bool enable);
+#endif
+
+	TypedArray<String> get_configuration_warnings() const override;
 
 protected:
 	void _notification(int p_what);
@@ -85,7 +95,7 @@ private:
 	void remove_layer(int layer_id);
 	int create_block(Layer *layer, uint16_t layer_id, Vector3i grid_position);
 	void remove_block(unsigned int block_index);
-	void set_world(World *world);
+	void set_world(World3D *world);
 	void clear_blocks();
 	void clear_blocks_in_layer(int layer_id);
 	void clear_layers();
@@ -98,26 +108,30 @@ private:
 	void update_layer_scenes(int layer_id);
 	void create_render_blocks(Vector3i grid_position, int lod_index, Array surface_arrays);
 
+#ifdef TOOLS_ENABLED
+	void process_gizmos();
+#endif
+
 	struct SceneInstance {
 		VoxelInstanceComponent *component = nullptr;
-		Spatial *root = nullptr;
+		Node3D *root = nullptr;
 	};
 
-	SceneInstance create_scene_instance(const VoxelInstanceLibrarySceneItem &scene_item,
-			int instance_index, unsigned int block_index, Transform transform, int data_block_size_po2);
+	SceneInstance create_scene_instance(const VoxelInstanceLibrarySceneItem &scene_item, int instance_index,
+			unsigned int block_index, Transform3D transform, int data_block_size_po2);
 
-	void update_block_from_transforms(int block_index, Span<const Transform> transforms,
-			Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id,
-			World *world, const Transform &block_transform);
+	void update_block_from_transforms(int block_index, Span<const Transform3D> transforms, Vector3i grid_position,
+			Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id, World3D *world,
+			const Transform3D &block_transform);
 
 	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
 
 	struct Block;
 
-	static void remove_floating_multimesh_instances(Block &block, const Transform &parent_transform, Box3i p_voxel_box,
-			const VoxelTool &voxel_tool, int block_size_po2);
+	static void remove_floating_multimesh_instances(Block &block, const Transform3D &parent_transform,
+			Box3i p_voxel_box, const VoxelTool &voxel_tool, int block_size_po2);
 
-	static void remove_floating_scene_instances(Block &block, const Transform &parent_transform, Box3i p_voxel_box,
+	static void remove_floating_scene_instances(Block &block, const Transform3D &parent_transform, Box3i p_voxel_box,
 			const VoxelTool &voxel_tool, int block_size_po2);
 
 	static void _bind_methods();
@@ -129,7 +143,7 @@ private:
 		uint8_t lod_index;
 		// Position in mesh block coordinate system
 		Vector3i grid_position;
-		DirectMultiMeshInstance multimesh_instance;
+		zylann::DirectMultiMeshInstance multimesh_instance;
 		// For physics we use nodes because it's easier to manage.
 		// Such instances may be less numerous.
 		// If the item associated to this block has no collisions, this will be empty.
@@ -187,9 +201,14 @@ private:
 	HashMap<int, Layer> _layers; // Each layer corresponds to a library item
 	Ref<VoxelInstanceLibrary> _library;
 
-	std::vector<Transform> _transform_cache;
+	std::vector<Transform3D> _transform_cache;
 
 	VoxelLodTerrain *_parent;
+
+#ifdef TOOLS_ENABLED
+	zylann::DebugRenderer _debug_renderer;
+	bool _gizmos_enabled = false;
+#endif
 };
 
 VARIANT_ENUM_CAST(VoxelInstancer::UpMode);

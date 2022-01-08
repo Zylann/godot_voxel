@@ -90,6 +90,8 @@
 #define wasmx_unpackhi_v64x2(a, b) wasm_v64x2_shuffle(a, b, 1, 3)
 #endif
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 namespace meshopt
 {
 
@@ -1185,9 +1187,12 @@ int meshopt_decodeVertexBuffer(void* destination, size_t vertex_count, size_t ve
 	return 0;
 }
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END
+
 #undef SIMD_NEON
 #undef SIMD_SSE
 #undef SIMD_AVX
 #undef SIMD_WASM
 #undef SIMD_FALLBACK
 #undef SIMD_TARGET
+

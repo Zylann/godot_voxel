@@ -2,17 +2,17 @@
 #include "../util/noise/fast_noise_lite.h"
 #include "tests.h"
 
-#include <core/image.h>
+#include <core/io/image.h>
 #include <modules/opensimplex/open_simplex_noise.h>
 
-namespace NoiseTests {
+namespace zylann::voxel::noise_tests {
 
 const int ITERATIONS = 1000000;
 const int STEP_RESOLUTION_COUNT = 100;
 const double STEP_MIN = 0.0001;
 const double STEP_MAX = 0.01;
 
-enum Tests {
+enum Tests { //
 	TEST_MIN_MAX = 1,
 	TEST_DERIVATIVES = 2
 };
@@ -84,13 +84,13 @@ void test_min_max(F2 noise_func_2d, F3 noise_func_3d) {
 
 		FloatT n = noise_func_2d(x, y);
 
-		min_value_2d = min(n, min_value_2d);
-		max_value_2d = max(n, max_value_2d);
+		min_value_2d = math::min(n, min_value_2d);
+		max_value_2d = math::max(n, max_value_2d);
 
 		n = noise_func_3d(x, y, z);
 
-		min_value_3d = min(n, min_value_3d);
-		max_value_3d = max(n, max_value_3d);
+		min_value_3d = math::min(n, min_value_3d);
+		max_value_3d = math::max(n, max_value_3d);
 	}
 
 	print_line(String("2D | Min: {0}, Max: {1}").format(varray(min_value_2d, max_value_2d)));
@@ -187,9 +187,8 @@ void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
 	const double max_value = 10.0;
 
 	Ref<Image> im;
-	im.instance();
+	im.instantiate();
 	im->create(size_x, size_z, false, Image::FORMAT_RGB8);
-	im->lock();
 
 	for (int py = 0; py < size_z; ++py) {
 		for (int px = 0; px < size_x; ++px) {
@@ -200,8 +199,6 @@ void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
 			im->set_pixel(px, py, Color(g, g, g));
 		}
 	}
-
-	im->unlock();
 
 	print_line(String("Saving {0}").format(varray(fpath)));
 	im->save_png(fpath);
@@ -232,14 +229,13 @@ void test_noise(String name, int tests, F2 noise_func_2d, F3 noise_func_3d) {
 
 void test_fnl_noise(fast_noise_lite::FastNoiseLite &fnl, String name, int tests) {
 	test_noise(
-			name, tests,
-			[&fnl](double x, double y) { return fnl.GetNoise(x, y); },
+			name, tests, [&fnl](double x, double y) { return fnl.GetNoise(x, y); },
 			[&fnl](double x, double y, double z) { return fnl.GetNoise(x, y, z); });
 }
 
 void test_noises() {
 	Ref<FastNoiseLite> noise;
-	noise.instance();
+	noise.instantiate();
 
 	fast_noise_lite::FastNoiseLite fn;
 	fn.SetFractalType(fast_noise_lite::FastNoiseLite::FractalType_None);
@@ -274,27 +270,26 @@ void test_noises() {
 	fn.SetNoiseType(fast_noise_lite::FastNoiseLite::NoiseType_Cellular);
 
 	const char *cell_distance_function_names[] = {
-		"Euclidean",
-		"EuclideanSq",
-		"Manhattan",
-		"Hybrid"
+		"Euclidean", //
+		"EuclideanSq", //
+		"Manhattan", //
+		"Hybrid" //
 	};
 	const char *cell_return_type_names[] = {
-		"CellValue",
-		"Distance",
-		"Distance2",
-		"Distance2Add",
-		"Distance2Sub",
-		"Distance2Mul",
-		"Distance2Div"
+		"CellValue", //
+		"Distance", //
+		"Distance2", //
+		"Distance2Add", //
+		"Distance2Sub", //
+		"Distance2Mul", //
+		"Distance2Div" //
 	};
 
 	for (int cell_distance_function = 0; cell_distance_function < 4; ++cell_distance_function) {
 		for (int cell_return_type = 0; cell_return_type < 7; ++cell_return_type) {
 			fn.SetCellularDistanceFunction(
 					static_cast<fast_noise_lite::FastNoiseLite::CellularDistanceFunction>(cell_distance_function));
-			fn.SetCellularReturnType(
-					static_cast<fast_noise_lite::FastNoiseLite::CellularReturnType>(cell_return_type));
+			fn.SetCellularReturnType(static_cast<fast_noise_lite::FastNoiseLite::CellularReturnType>(cell_return_type));
 
 			const char *cell_distance_function_name = cell_distance_function_names[cell_distance_function];
 			const char *cell_return_type_name = cell_return_type_names[cell_return_type];
@@ -329,11 +324,11 @@ void test_noises() {
 	}
 }
 
-} // namespace NoiseTests
-
 // These are not actually unit tests, but rather analysis. They could be used with tests in the future, but
 // it can be relatively hard for derivatives because empiric tests may bump on irregularities causing false-positives,
 // so for now derivative ranges are estimated manually from the results
 void run_noise_tests() {
-	NoiseTests::test_noises();
+	test_noises();
 }
+
+} //namespace zylann::voxel::noise_tests

@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <string.h>
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 size_t meshopt_optimizeVertexFetchRemap(unsigned int* destination, const unsigned int* indices, size_t index_count, size_t vertex_count)
 {
 	assert(index_count % 3 == 0);
@@ -72,3 +74,5 @@ size_t meshopt_optimizeVertexFetch(void* destination, unsigned int* indices, siz
 
 	return next_vertex;
 }
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END

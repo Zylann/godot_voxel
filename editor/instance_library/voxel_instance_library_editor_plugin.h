@@ -32,6 +32,8 @@ public:
 	bool handles(Object *p_object) const override;
 	void edit(Object *p_object) override;
 
+	void _on_button_pressed(int id);
+
 private:
 	void _notification(int p_what);
 
@@ -39,7 +41,6 @@ private:
 	void add_scene_item(String fpath);
 	void update_multimesh_item_from_scene(String fpath, int item_id);
 
-	void _on_button_pressed(int id);
 	void _on_remove_item_confirmed();
 	void _on_open_scene_dialog_file_selected(String fpath);
 

@@ -5,11 +5,11 @@
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
 
-#include <scene/3d/spatial.h>
+#include <scene/3d/node_3d.h>
 
 // Base class for voxel volumes
-class VoxelNode : public Spatial {
-	GDCLASS(VoxelNode, Spatial)
+class VoxelNode : public Node3D {
+	GDCLASS(VoxelNode, Node3D)
 public:
 	virtual void set_mesher(Ref<VoxelMesher> mesher);
 	virtual Ref<VoxelMesher> get_mesher() const;
@@ -20,25 +20,53 @@ public:
 	virtual void set_generator(Ref<VoxelGenerator> generator);
 	virtual Ref<VoxelGenerator> get_generator() const;
 
+	enum GIMode { //
+		GI_MODE_DISABLED = 0,
+		GI_MODE_BAKED,
+		GI_MODE_DYNAMIC,
+		_GI_MODE_COUNT
+	};
+
+	void set_gi_mode(GIMode mode);
+	GIMode get_gi_mode() const;
+
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
 
-	virtual String get_configuration_warning() const override;
+	virtual TypedArray<String> get_configuration_warnings() const override;
 
 protected:
 	int get_used_channels_mask() const;
 
+	virtual void _on_gi_mode_changed() {}
+
 private:
-	Ref<VoxelMesher> _b_get_mesher() { return get_mesher(); }
-	void _b_set_mesher(Ref<VoxelMesher> mesher) { set_mesher(mesher); }
+	Ref<VoxelMesher> _b_get_mesher() {
+		return get_mesher();
+	}
+	void _b_set_mesher(Ref<VoxelMesher> mesher) {
+		set_mesher(mesher);
+	}
 
-	Ref<VoxelStream> _b_get_stream() { return get_stream(); }
-	void _b_set_stream(Ref<VoxelStream> stream) { set_stream(stream); }
+	Ref<VoxelStream> _b_get_stream() {
+		return get_stream();
+	}
+	void _b_set_stream(Ref<VoxelStream> stream) {
+		set_stream(stream);
+	}
 
-	Ref<VoxelGenerator> _b_get_generator() { return get_generator(); }
-	void _b_set_generator(Ref<VoxelGenerator> g) { set_generator(g); }
+	Ref<VoxelGenerator> _b_get_generator() {
+		return get_generator();
+	}
+	void _b_set_generator(Ref<VoxelGenerator> g) {
+		set_generator(g);
+	}
 
 	static void _bind_methods();
+
+	GIMode _gi_mode = GI_MODE_DISABLED;
 };
+
+VARIANT_ENUM_CAST(VoxelNode::GIMode);
 
 #endif // VOXEL_NODE_H

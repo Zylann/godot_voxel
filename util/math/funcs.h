@@ -3,6 +3,8 @@
 
 #include <core/math/vector3.h>
 
+namespace zylann::math {
+
 // Trilinear interpolation between corner values of a cube.
 //
 //      6---------------7
@@ -158,6 +160,10 @@ inline bool is_valid_size(const Vector3 &s) {
 	return s.x >= 0 && s.y >= 0 && s.z >= 0;
 }
 
+inline bool is_valid_size(const Vector3i &s) {
+	return s.x >= 0 && s.y >= 0 && s.z >= 0;
+}
+
 inline bool is_power_of_two(size_t x) {
 	return x != 0 && (x & (x - 1)) == 0;
 }
@@ -187,8 +193,8 @@ inline unsigned int get_shift_from_power_of_two_32(unsigned int pot) {
 			return i;
 		}
 	}
-	// Input was not a valid power of two
-	CRASH_COND(true);
+	CRASH_NOW_MSG("Input was not a valid power of two");
+	return 0;
 }
 
 // If the provided address `a` is not aligned to the number of bytes specified in `align`,
@@ -207,5 +213,7 @@ inline bool has_nan(const Vector3 &v) {
 // inline bool is_power_of_two(int i) {
 // 	return i & (i - 1);
 // }
+
+} // namespace zylann::math
 
 #endif // VOXEL_MATH_FUNCS_H

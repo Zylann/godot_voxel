@@ -2,10 +2,12 @@
 #include "../constants/cube_tables.h"
 #include "../terrain/lod_octree.h"
 #include "../util/profiling_clock.h"
-#include <core/map.h>
-#include <core/print_string.h>
+#include <core/string/print_string.h>
+#include <core/templates/map.h>
 #include <unordered_map>
 #include <unordered_set>
+
+namespace zylann::voxel::tests {
 
 void test_octree_update() {
 	const float lod_distance = 80;
@@ -19,7 +21,7 @@ void test_octree_update() {
 	// Testing as an octree forest, as it is the way they are used in VoxelLodTerrain
 	Map<Vector3i, LodOctree> octrees;
 	const Box3i viewer_box_voxels =
-			Box3i::from_center_extents(Vector3i::from_floored(viewer_pos), Vector3i(view_distance));
+			Box3i::from_center_extents(Vector3iUtil::from_floored(viewer_pos), Vector3iUtil::create(view_distance));
 	const Box3i viewer_box_octrees = viewer_box_voxels.downscaled(octree_size);
 	viewer_box_octrees.for_each_cell([&octrees, lod_distance, block_size, lod_count](Vector3i pos) {
 		Map<Vector3i, LodOctree>::Element *e = octrees.insert(pos, LodOctree());
@@ -41,11 +43,9 @@ void test_octree_update() {
 			++destroyed_count;
 		}
 
-		void show_parent(Vector3i node_pos, int lod_index) {
-		}
+		void show_parent(Vector3i node_pos, int lod_index) {}
 
-		void hide_parent(Vector3i node_pos, int lod_index) {
-		}
+		void hide_parent(Vector3i node_pos, int lod_index) {}
 
 		bool can_create_root(int lod_index) {
 			return true;
@@ -71,7 +71,7 @@ void test_octree_update() {
 
 			const Vector3i block_pos_maxlod = e->key();
 			const Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
-			const Vector3 relative_viewer_pos = viewer_pos - block_size_v * block_offset_lod0.to_vec3();
+			const Vector3 relative_viewer_pos = viewer_pos - block_size_v * Vector3(block_offset_lod0);
 
 			OctreeActions actions;
 			octree.update(relative_viewer_pos, actions);
@@ -104,7 +104,7 @@ void test_octree_update() {
 
 			const Vector3i block_pos_maxlod = e->key();
 			const Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
-			const Vector3 relative_viewer_pos = viewer_pos - block_size_v * block_offset_lod0.to_vec3();
+			const Vector3 relative_viewer_pos = viewer_pos - block_size_v * Vector3(block_offset_lod0);
 
 			OctreeActions actions;
 			octree.update(relative_viewer_pos, actions);
@@ -194,15 +194,16 @@ void test_octree_find_in_box() {
 		ERR_FAIL_COND(it == expected_positions.end());
 		const std::unordered_set<Vector3i> &expected_area_positions = it->second;
 		std::unordered_set<Vector3i> found_positions;
-		octree.for_leaves_in_box(area_box, [&found_positions, &expected_area_positions, &checksum](
-												   Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
-			auto insert_result = found_positions.insert(node_pos);
-			// Must be one of the expected positions
-			ERR_FAIL_COND(expected_area_positions.find(node_pos) == expected_area_positions.end());
-			// Must not be a duplicate
-			ERR_FAIL_COND(insert_result.second == false);
-			checksum += node_data.state;
-		});
+		octree.for_leaves_in_box(area_box,
+				[&found_positions, &expected_area_positions, &checksum](
+						Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
+					auto insert_result = found_positions.insert(node_pos);
+					// Must be one of the expected positions
+					ERR_FAIL_COND(expected_area_positions.find(node_pos) == expected_area_positions.end());
+					// Must not be a duplicate
+					ERR_FAIL_COND(insert_result.second == false);
+					checksum += node_data.state;
+				});
 	});
 
 	// Doing it again just to measure time
@@ -211,15 +212,17 @@ void test_octree_find_in_box() {
 		int checksum2 = 0;
 		full_box.for_each_cell([&octree, &expected_positions, &checksum2](Vector3i pos) {
 			const Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
-			octree.for_leaves_in_box(area_box, [&checksum2](Vector3i node_pos, int lod,
-													   const LodOctree::NodeData &node_data) {
-				checksum2 += node_data.state;
-			});
+			octree.for_leaves_in_box(
+					area_box, [&checksum2](Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
+						checksum2 += node_data.state;
+					});
 		});
 		ERR_FAIL_COND(checksum2 != checksum);
 		const int for_each_cell_time = profiling_clock.restart();
-		const float single_query_time = float(for_each_cell_time) / full_box.size.volume();
+		const float single_query_time = float(for_each_cell_time) / Vector3iUtil::get_volume(full_box.size);
 		print_line(String("for_each_cell time with {0} lods: total {1} us, single query {2} us, checksum: {3}")
 						   .format(varray(lods, for_each_cell_time, single_query_time, checksum2)));
 	}
 }
+
+} // namespace zylann::voxel::tests

@@ -1,10 +1,6 @@
 #ifndef VOXEL_INSTANCE_LIBRARY_ITEM_BASE_H
 #define VOXEL_INSTANCE_LIBRARY_ITEM_BASE_H
 
-#include <core/resource.h>
-#include <scene/resources/mesh.h>
-#include <scene/resources/shape.h>
-
 #include "../../util/fixed_array.h"
 #include "voxel_instance_generator.h"
 

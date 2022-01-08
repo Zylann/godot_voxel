@@ -1,4 +1,5 @@
 #include "register_types.h"
+#include "constants/voxel_string_names.h"
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_buffer.h"
 #include "edition/voxel_tool_lod_terrain.h"
@@ -24,6 +25,8 @@
 #include "streams/vox_loader.h"
 #include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_script.h"
+#include "terrain/instancing/voxel_instance_component.h"
+#include "terrain/instancing/voxel_instance_library_scene_item.h"
 #include "terrain/instancing/voxel_instancer.h"
 #include "terrain/voxel_box_mover.h"
 #include "terrain/voxel_lod_terrain.h"
@@ -31,32 +34,37 @@
 #include "terrain/voxel_terrain.h"
 #include "terrain/voxel_viewer.h"
 #include "util/macros.h"
-#ifdef VOXEL_FAST_NOISE_2_SUPPORT
-#include "util/noise/fast_noise_2.h"
-#endif
-#include "constants/voxel_string_names.h"
-#include "terrain/instancing/voxel_instance_component.h"
-#include "terrain/instancing/voxel_instance_library_scene_item.h"
 #include "util/noise/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite_gradient.h"
 
-#include <core/engine.h>
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+#include "util/noise/fast_noise_2.h"
+#endif
+
+#include <core/config/engine.h>
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
 #include "editor/instance_library/voxel_instance_library_editor_plugin.h"
+#include "editor/instancer/voxel_instancer_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/vox/vox_editor_plugin.h"
 #include "editor/voxel_debug.h"
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+#include "editor/fast_noise_2/fast_noise_2_editor_plugin.h"
 #endif
+#endif // TOOLS_ENABLED
 
 #ifdef VOXEL_RUN_TESTS
 #include "tests/tests.h"
 #endif
 
 void register_voxel_types() {
+	using namespace zylann;
+	using namespace voxel;
+
 	VoxelMemoryPool::create_singleton();
 	VoxelStringNames::create_singleton();
 	VoxelGraphNodeDB::create_singleton();
@@ -120,7 +128,7 @@ void register_voxel_types() {
 	ClassDB::register_class<FastNoiseLite>();
 	ClassDB::register_class<FastNoiseLiteGradient>();
 	// See SCsub
-#ifdef VOXEL_FAST_NOISE_2_SUPPORT
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
 	ClassDB::register_class<FastNoise2>();
 #endif
 
@@ -135,8 +143,9 @@ void register_voxel_types() {
 	// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
 
 	PRINT_VERBOSE(String("Size of Object: {0}").format(varray((int)sizeof(Object))));
-	PRINT_VERBOSE(String("Size of Reference: {0}").format(varray((int)sizeof(Reference))));
+	PRINT_VERBOSE(String("Size of RefCounted: {0}").format(varray((int)sizeof(RefCounted))));
 	PRINT_VERBOSE(String("Size of Node: {0}").format(varray((int)sizeof(Node))));
+	PRINT_VERBOSE(String("Size of Node3D: {0}").format(varray((int)sizeof(Node3D))));
 	PRINT_VERBOSE(String("Size of VoxelBuffer: {0}").format(varray((int)sizeof(VoxelBuffer))));
 	PRINT_VERBOSE(String("Size of VoxelMeshBlock: {0}").format(varray((int)sizeof(VoxelMeshBlock))));
 	PRINT_VERBOSE(String("Size of VoxelTerrain: {0}").format(varray((int)sizeof(VoxelTerrain))));
@@ -150,14 +159,21 @@ void register_voxel_types() {
 	EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
 	EditorPlugins::add_by_type<FastNoiseLiteEditorPlugin>();
 	EditorPlugins::add_by_type<VoxEditorPlugin>();
+	EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+	EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
 #endif
+#endif // TOOLS_ENABLED
 
 #ifdef VOXEL_RUN_TESTS
-	run_voxel_tests();
+	zylann::voxel::tests::run_voxel_tests();
 #endif
 }
 
 void unregister_voxel_types() {
+	using namespace zylann;
+	using namespace voxel;
+
 	// At this point, the GDScript module has nullified GDScriptLanguage::singleton!!
 	// That means it's impossible to free scripts still referenced by VoxelServer. And that can happen, because
 	// users can write custom generators, which run inside threads, and these threads are hosted in the server...
@@ -178,7 +194,7 @@ void unregister_voxel_types() {
 	// TODO No remove?
 
 #ifdef TOOLS_ENABLED
-	VoxelDebug::free_resources();
+	zylann::free_debug_resources();
 
 	// TODO Seriously, no remove?
 	//EditorPlugins::remove_by_type<VoxelGraphEditorPlugin>();

@@ -2,9 +2,13 @@
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite.h"
 
-#include <core/image.h>
+#include <core/io/image.h>
 #include <modules/opensimplex/open_simplex_noise.h>
 #include <scene/resources/curve.h>
+
+namespace zylann {
+
+using namespace math;
 
 // TODO We could skew max derivative estimation if the anchor is on a bump or a dip
 // because in these cases, it becomes impossible for noise to go further up or further down
@@ -21,14 +25,14 @@ inline Interval get_noise_range_2d(Noise_F noise_func, const Interval &x, const 
 
 	const float diag = Math::sqrt(squared(x.length()) + squared(y.length()));
 
-	return Interval(
-			::max(mid_value - max_derivative_half_diagonal * diag, -1.f),
-			::min(mid_value + max_derivative_half_diagonal * diag, 1.f));
+	return Interval( //
+			max(mid_value - max_derivative_half_diagonal * diag, -1.f),
+			min(mid_value + max_derivative_half_diagonal * diag, 1.f));
 }
 
 template <typename Noise_F>
-inline Interval get_noise_range_3d(Noise_F noise_func, const Interval &x, const Interval &y, const Interval &z,
-		float max_derivative) {
+inline Interval get_noise_range_3d(
+		Noise_F noise_func, const Interval &x, const Interval &y, const Interval &z, float max_derivative) {
 	const float max_derivative_half_diagonal = 0.5f * max_derivative * Math_SQRT2;
 
 	const float mid_x = 0.5 * (x.min + x.max);
@@ -38,22 +42,21 @@ inline Interval get_noise_range_3d(Noise_F noise_func, const Interval &x, const 
 
 	const float diag = Math::sqrt(squared(x.length()) + squared(y.length()) + squared(z.length()));
 
-	return Interval(
-			::max(mid_value - max_derivative_half_diagonal * diag, -1.f),
-			::min(mid_value + max_derivative_half_diagonal * diag, 1.f));
+	return Interval( //
+			max(mid_value - max_derivative_half_diagonal * diag, -1.f),
+			min(mid_value + max_derivative_half_diagonal * diag, 1.f));
 }
 
 Interval get_osn_octave_range_2d(OpenSimplexNoise *noise, const Interval &p_x, const Interval &p_y, int octave) {
 	return get_noise_range_2d(
-			[octave, noise](float x, float y) { return noise->_get_octave_noise_2d(octave, x, y); },
-			p_x, p_y, 2.35f);
+			[octave, noise](float x, float y) { return noise->_get_octave_noise_2d(octave, x, y); }, p_x, p_y, 2.35f);
 }
 
 Interval get_osn_octave_range_3d(
 		OpenSimplexNoise *noise, const Interval &p_x, const Interval &p_y, const Interval &p_z, int octave) {
 	return get_noise_range_3d(
-			[octave, noise](float x, float y, float z) { return noise->_get_octave_noise_3d(octave, x, y, z); },
-			p_x, p_y, p_z, 2.5f);
+			[octave, noise](float x, float y, float z) { return noise->_get_octave_noise_3d(octave, x, y, z); }, p_x,
+			p_y, p_z, 2.5f);
 }
 
 Interval get_osn_range_2d(OpenSimplexNoise *noise, Interval x, Interval y) {
@@ -218,17 +221,15 @@ Interval get_curve_range(Curve &curve, bool &is_monotonic_increasing) {
 	return range;
 }
 
-Interval get_heightmap_range(Image &im) {
+Interval get_heightmap_range(const Image &im) {
 	return get_heightmap_range(im, Rect2i(0, 0, im.get_width(), im.get_height()));
 }
 
-Interval get_heightmap_range(Image &im, Rect2i rect) {
+Interval get_heightmap_range(const Image &im, Rect2i rect) {
 	ERR_FAIL_COND_V_MSG(
 			im.is_compressed(), Interval(), String("Image format not supported: {0}").format(varray(im.get_format())));
 
 	Interval r;
-
-	im.lock();
 
 	r.min = im.get_pixel(0, 0).r;
 	r.max = r.min;
@@ -242,10 +243,10 @@ Interval get_heightmap_range(Image &im, Rect2i rect) {
 		}
 	}
 
-	im.unlock();
-
 	return r;
 }
+
+namespace math {
 
 SdfAffectingArguments sdf_subtract_side(Interval a, Interval b) {
 	if (b.min > -a.min) {
@@ -356,12 +357,16 @@ inline Interval sdf_smooth_op(Interval b, Interval a, float s, F smooth_op_func)
 Interval sdf_smooth_union(Interval p_b, Interval p_a, float p_s) {
 	// TODO Not tested
 	// Had to use a lambda because otherwise it's ambiguous
-	return sdf_smooth_op(p_b, p_a, p_s, [](float b, float a, float s) { return sdf_smooth_union(b, a, s); });
+	return sdf_smooth_op(
+			p_b, p_a, p_s, [](float b, float a, float s) { return zylann::math::sdf_smooth_union(b, a, s); });
 }
 
 Interval sdf_smooth_subtract(Interval p_b, Interval p_a, float p_s) {
-	return sdf_smooth_op(p_b, p_a, p_s, [](float b, float a, float s) { return sdf_smooth_subtract(b, a, s); });
+	return sdf_smooth_op(
+			p_b, p_a, p_s, [](float b, float a, float s) { return zylann::math::sdf_smooth_subtract(b, a, s); });
 }
+
+} // namespace math
 
 static Interval get_fnl_cellular_value_range_2d(const FastNoiseLite *noise, Interval x, Interval y) {
 	const float c0 = noise->get_noise_2d(x.min, y.min);
@@ -509,21 +514,19 @@ void fnl_transform_noise_coordinate(const fast_noise_lite::FastNoiseLite &fn, In
 	}
 }
 
-Interval fnl_single_opensimplex2(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y,
-		Interval p_z) {
+Interval fnl_single_opensimplex2(
+		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
 	// According to OpenSimplex2 author, the 3D version is supposed to have a max derivative around 4.23718
 	// https://www.wolframalpha.com/input/?i=max+d%2Fdx+32.69428253173828125+*+x+*+%28%280.6-x%5E2%29%5E4%29+from+-0.6+to+0.6
 	// But empiric measures have shown it around 8. Discontinuities do exist in this noise though,
 	// which makes this measuring harder
-	return get_noise_range_3d(
-			[&fn, seed](float x, float y, float z) { return fn.SingleOpenSimplex2(seed, x, y, z); },
+	return get_noise_range_3d([&fn, seed](float x, float y, float z) { return fn.SingleOpenSimplex2(seed, x, y, z); },
 			p_x, p_y, p_z, 4.23718f);
 }
 
-Interval fnl_single_opensimplex2s(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y,
-		Interval p_z) {
-	return get_noise_range_3d(
-			[&fn, seed](float x, float y, float z) { return fn.SingleOpenSimplex2(seed, x, y, z); },
+Interval fnl_single_opensimplex2s(
+		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
+	return get_noise_range_3d([&fn, seed](float x, float y, float z) { return fn.SingleOpenSimplex2(seed, x, y, z); },
 			// Max derivative found from empiric tests
 			p_x, p_y, p_z, 2.5f);
 }
@@ -536,26 +539,23 @@ Interval fnl_single_cellular(const FastNoiseLite *noise, Interval x, Interval y,
 	return get_fnl_cellular_range(noise);
 }
 
-Interval fnl_single_perlin(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y,
-		Interval p_z) {
-	return get_noise_range_3d(
-			[&fn, seed](float x, float y, float z) { return fn.SinglePerlin(seed, x, y, z); },
+Interval fnl_single_perlin(
+		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
+	return get_noise_range_3d([&fn, seed](float x, float y, float z) { return fn.SinglePerlin(seed, x, y, z); },
 			// Max derivative found from empiric tests
 			p_x, p_y, p_z, 3.2f);
 }
 
-Interval fnl_single_value_cubic(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y,
-		Interval p_z) {
-	return get_noise_range_3d(
-			[&fn, seed](float x, float y, float z) { return fn.SingleValueCubic(seed, x, y, z); },
+Interval fnl_single_value_cubic(
+		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
+	return get_noise_range_3d([&fn, seed](float x, float y, float z) { return fn.SingleValueCubic(seed, x, y, z); },
 			// Max derivative found from empiric tests
 			p_x, p_y, p_z, 1.2f);
 }
 
-Interval fnl_single_value(const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y,
-		Interval p_z) {
-	return get_noise_range_3d(
-			[&fn, seed](float x, float y, float z) { return fn.SingleValue(seed, x, y, z); },
+Interval fnl_single_value(
+		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
+	return get_noise_range_3d([&fn, seed](float x, float y, float z) { return fn.SingleValue(seed, x, y, z); },
 			// Max derivative found from empiric tests
 			p_x, p_y, p_z, 3.0f);
 }
@@ -593,9 +593,7 @@ Interval fnl_gen_fractal_fbm(const FastNoiseLite *p_noise, Interval x, Interval 
 	for (int i = 0; i < fn.mOctaves; i++) {
 		Interval noise = fnl_gen_noise_single(p_noise, seed++, x, y, z);
 		sum += noise * amp;
-		amp *= lerp(
-				Interval::from_single_value(1.0f),
-				(noise + Interval::from_single_value(1.0f)) * 0.5f,
+		amp *= lerp(Interval::from_single_value(1.0f), (noise + Interval::from_single_value(1.0f)) * 0.5f,
 				Interval::from_single_value(fn.mWeightedStrength));
 
 		x *= fn.mLacunarity;
@@ -618,9 +616,7 @@ Interval fnl_gen_fractal_ridged(const FastNoiseLite *p_noise, Interval x, Interv
 	for (int i = 0; i < fn.mOctaves; i++) {
 		Interval noise = abs(fnl_gen_noise_single(p_noise, seed++, x, y, z));
 		sum += (noise * -2 + 1) * amp;
-		amp *= lerp(
-				Interval::from_single_value(1.0f),
-				Interval::from_single_value(1.0f) - noise,
+		amp *= lerp(Interval::from_single_value(1.0f), Interval::from_single_value(1.0f) - noise,
 				Interval::from_single_value(fn.mWeightedStrength));
 
 		x *= fn.mLacunarity;
@@ -681,21 +677,17 @@ Interval get_fnl_range_3d(const FastNoiseLite *noise, Interval x, Interval y, In
 	}
 }
 
-Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient *noise, Interval x, Interval y) {
+math::Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient *noise, Interval x, Interval y) {
 	// TODO More precise analysis
 	const float amp = Math::abs(noise->get_amplitude());
-	return Interval2{
-		Interval{ x.min - amp, x.max + amp },
-		Interval{ y.min - amp, y.max + amp }
-	};
+	return math::Interval2{ Interval{ x.min - amp, x.max + amp }, Interval{ y.min - amp, y.max + amp } };
 }
 
-Interval3 get_fnl_gradient_range_3d(const FastNoiseLiteGradient *noise, Interval x, Interval y, Interval z) {
+math::Interval3 get_fnl_gradient_range_3d(const FastNoiseLiteGradient *noise, Interval x, Interval y, Interval z) {
 	// TODO More precise analysis
 	const float amp = Math::abs(noise->get_amplitude());
-	return Interval3{
-		Interval{ x.min - amp, x.max + amp },
-		Interval{ y.min - amp, y.max + amp },
-		Interval{ z.min - amp, z.max + amp }
-	};
+	return math::Interval3{ Interval{ x.min - amp, x.max + amp }, Interval{ y.min - amp, y.max + amp },
+		Interval{ z.min - amp, z.max + amp } };
 }
+
+} // namespace zylann

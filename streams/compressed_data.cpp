@@ -4,10 +4,10 @@
 #include "../util/serialization.h"
 
 #include <core/io/file_access_memory.h>
-#include <core/variant.h>
+#include <core/variant/variant.h>
 #include <limits>
 
-namespace VoxelCompressedData {
+namespace zylann::voxel::CompressedData {
 
 bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
 	VOXEL_PROFILE_SCOPE();
@@ -15,7 +15,7 @@ bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
 	// TODO Apparently big-endian is dead
 	// I chose it originally to match "network byte order",
 	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
-	VoxelUtility::MemoryReader f(src, VoxelUtility::ENDIANESS_BIG_ENDIAN);
+	MemoryReader f(src, ENDIANESS_BIG_ENDIAN);
 
 	const Compression comp = static_cast<Compression>(f.get_8());
 	ERR_FAIL_INDEX_V(comp, COMPRESSION_COUNT, false);
@@ -35,10 +35,7 @@ bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
 			dst.resize(decompressed_size);
 
 			const uint32_t actually_decompressed_size = LZ4_decompress_safe(
-					(const char *)src.data() + header_size,
-					(char *)dst.data(),
-					src.size() - header_size,
-					dst.size());
+					(const char *)src.data() + header_size, (char *)dst.data(), src.size() - header_size, dst.size());
 
 			ERR_FAIL_COND_V_MSG(actually_decompressed_size < 0, false,
 					String("LZ4 decompression error {0}").format(varray(actually_decompressed_size)));
@@ -72,7 +69,7 @@ bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression co
 			// Write header
 			// Must clear first because MemoryWriter writes from the end
 			dst.clear();
-			VoxelUtility::MemoryWriter f(dst, VoxelUtility::ENDIANESS_BIG_ENDIAN);
+			MemoryWriter f(dst, ENDIANESS_BIG_ENDIAN);
 			f.store_8(comp);
 			f.store_32(src.size());
 
@@ -80,10 +77,7 @@ bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression co
 			dst.resize(header_size + LZ4_compressBound(src.size()));
 
 			const uint32_t compressed_size = LZ4_compress_default(
-					(const char *)src.data(),
-					(char *)dst.data() + header_size,
-					src.size(),
-					dst.size() - header_size);
+					(const char *)src.data(), (char *)dst.data() + header_size, src.size(), dst.size() - header_size);
 
 			ERR_FAIL_COND_V(compressed_size < 0, false);
 			ERR_FAIL_COND_V(compressed_size == 0, false);
@@ -99,4 +93,4 @@ bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression co
 	return true;
 }
 
-} // namespace VoxelCompressedData
+} // namespace zylann::voxel::CompressedData

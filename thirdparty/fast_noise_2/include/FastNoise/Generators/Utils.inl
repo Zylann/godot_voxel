@@ -6,12 +6,12 @@ namespace FastNoise
 {    
     namespace Primes
     {
-        static constexpr int32_t X = 501125321;
-        static constexpr int32_t Y = 1136930381;
-        static constexpr int32_t Z = 1720413743;
-        static constexpr int32_t W = 1066037191;
+        static constexpr int X = 501125321;
+        static constexpr int Y = 1136930381;
+        static constexpr int Z = 1720413743;
+        static constexpr int W = 1066037191;
 
-        static constexpr int32_t Lookup[] = { X,Y,Z,W };
+        static constexpr int Lookup[] = { X,Y,Z,W };
     }
 
     template<typename FS>
@@ -296,6 +296,14 @@ namespace FastNoise
                     ((both += FS_FMulAdd_f32( d, d, FS_Abs_f32( d ) )), ...);
 
                     return both;
+                }
+
+                case DistanceFunction::MaxAxis:
+                {
+                    float32v max = FS_Abs_f32( dX );
+                    ((max = FS_Max_f32( FS_Abs_f32(d), max )), ...);
+
+                    return max;
                 }
             }
         }

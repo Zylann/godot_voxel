@@ -1,13 +1,16 @@
 #ifndef VOXEL_UTILITY_GODOT_FUNCS_H
 #define VOXEL_UTILITY_GODOT_FUNCS_H
 
-#include <core/reference.h>
-#include <core/variant.h>
+#include <core/object/ref_counted.h>
+#include <core/variant/variant.h>
 #include <memory>
 
 class Mesh;
-class ConcavePolygonShape;
+class ConcavePolygonShape3D;
 class MultiMesh;
+class Node;
+
+namespace zylann {
 
 bool is_surface_triangulated(Array surface);
 bool is_mesh_empty(Ref<Mesh> mesh_ref);
@@ -21,7 +24,7 @@ inline bool try_call_script(
 	return try_call_script(obj, method_name, args, 3, out_ret);
 }
 
-Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces);
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Vector<Array> surfaces);
 
 // This API can be confusing so I made a wrapper
 int get_visible_instance_count(const MultiMesh &mm);
@@ -53,5 +56,22 @@ template <typename T, typename Arg0_T, typename Arg1_T>
 inline std::shared_ptr<T> gd_make_shared(Arg0_T arg0, Arg1_T arg1) {
 	return std::shared_ptr<T>(memnew(T(arg0, arg1)), memdelete<T>);
 }
+
+template <typename T, typename Arg0_T, typename Arg1_T, typename Arg2_T>
+inline std::shared_ptr<T> gd_make_shared(Arg0_T arg0, Arg1_T arg1, Arg2_T arg2) {
+	return std::shared_ptr<T>(memnew(T(arg0, arg1, arg2)), memdelete<T>);
+}
+
+void set_nodes_owner(Node *root, Node *owner);
+void set_nodes_owner_except_root(Node *root, Node *owner);
+
+template <typename T>
+struct RefHasher {
+	static _FORCE_INLINE_ uint32_t hash(const Ref<T> &v) {
+		return uint32_t(uint64_t(v.ptr())) * (0x9e3779b1L);
+	}
+};
+
+} // namespace zylann
 
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

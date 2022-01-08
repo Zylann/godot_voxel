@@ -1,8 +1,10 @@
 #ifndef VOXEL_STRUCT_DB_H
 #define VOXEL_STRUCT_DB_H
 
-#include <core/error_macros.h>
+#include <core/error/error_macros.h>
 #include <vector>
+
+namespace zylann {
 
 // Stores uniquely-identified structs in a packed array.
 // Always use the IDs if you want to store a reference somewhere. Addresses aren't stable.
@@ -185,5 +187,7 @@ private:
 
 	std::vector<Slot> _slots;
 };
+
+} // namespace zylann
 
 #endif // VOXEL_STRUCT_DB_H

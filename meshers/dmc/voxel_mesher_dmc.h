@@ -7,14 +7,13 @@
 #include "mesh_builder.h"
 #include <scene/resources/mesh.h>
 
-namespace dmc {
+namespace zylann::voxel::dmc {
 
 struct OctreeNode;
-typedef ObjectPool<OctreeNode> OctreeNodePool;
+typedef zylann::ObjectPool<OctreeNode> OctreeNodePool;
 
 // Octree used only for dual grid construction
 struct OctreeNode {
-
 	Vector3i origin;
 	int size; // Nodes are cubic
 	HermiteValue center_value;
@@ -59,7 +58,7 @@ struct DualGrid {
 	std::vector<DualCell> cells;
 };
 
-} // namespace dmc
+} // namespace zylann::voxel::dmc
 
 // Mesher extending Marching Cubes using a dual grid.
 class VoxelMesherDMC : public VoxelMesher {
@@ -67,20 +66,20 @@ class VoxelMesherDMC : public VoxelMesher {
 public:
 	static const int PADDING = 2;
 
-	enum MeshMode {
+	enum MeshMode { //
 		MESH_NORMAL,
 		MESH_WIREFRAME,
 		MESH_DEBUG_OCTREE,
 		MESH_DEBUG_DUAL_GRID
 	};
 
-	enum SimplifyMode {
+	enum SimplifyMode { //
 		SIMPLIFY_OCTREE_BOTTOM_UP,
 		SIMPLIFY_OCTREE_TOP_DOWN,
 		SIMPLIFY_NONE
 	};
 
-	enum SeamMode {
+	enum SeamMode { //
 		SEAM_NONE, // No seam management
 		SEAM_MARCHING_SQUARE_SKIRTS,
 		// SEAM_OVERLAP // Polygonize extra voxels with lower isolevel
@@ -121,9 +120,9 @@ private:
 	};
 
 	struct Cache {
-		dmc::MeshBuilder mesh_builder;
-		dmc::DualGrid dual_grid;
-		dmc::OctreeNodePool octree_node_pool;
+		zylann::voxel::dmc::MeshBuilder mesh_builder;
+		zylann::voxel::dmc::DualGrid dual_grid;
+		zylann::voxel::dmc::OctreeNodePool octree_node_pool;
 	};
 
 	// Parameters

@@ -2,14 +2,17 @@
 #include "../funcs.h"
 #include "../profiling.h"
 
-#include <core/engine.h>
-#include <scene/resources/concave_polygon_shape.h>
+#include <core/config/engine.h>
+#include <scene/main/node.h>
+#include <scene/resources/concave_polygon_shape_3d.h>
 #include <scene/resources/mesh.h>
 #include <scene/resources/multimesh.h>
 
+namespace zylann {
+
 bool is_surface_triangulated(Array surface) {
-	PoolVector3Array positions = surface[Mesh::ARRAY_VERTEX];
-	PoolIntArray indices = surface[Mesh::ARRAY_INDEX];
+	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
+	PackedInt32Array indices = surface[Mesh::ARRAY_INDEX];
 	return positions.size() >= 3 && indices.size() >= 3;
 }
 
@@ -29,7 +32,6 @@ bool is_mesh_empty(Ref<Mesh> mesh_ref) {
 
 bool try_call_script(
 		const Object *obj, StringName method_name, const Variant **args, unsigned int argc, Variant *out_ret) {
-
 	ScriptInstance *script = obj->get_script_instance();
 	// TODO Is has_method() needed? I've seen `call()` being called anyways in ButtonBase
 	if (script == nullptr || !script->has_method(method_name)) {
@@ -43,11 +45,11 @@ bool try_call_script(
 	}
 #endif
 
-	Variant::CallError err;
+	Callable::CallError err;
 	Variant ret = script->call(method_name, args, argc, err);
 
 	// TODO Why does Variant::get_call_error_text want a non-const Object pointer??? It only uses const methods
-	ERR_FAIL_COND_V_MSG(err.error != Variant::CallError::CALL_OK, false,
+	ERR_FAIL_COND_V_MSG(err.error != Callable::CallError::CALL_OK, false,
 			Variant::get_call_error_text(const_cast<Object *>(obj), method_name, nullptr, 0, err));
 	// This had to be explicitely logged due to the usual GD debugger not working with threads
 
@@ -61,10 +63,10 @@ bool try_call_script(
 // Faster version of Mesh::create_trimesh_shape()
 // See https://github.com/Zylann/godot_voxel/issues/54
 //
-Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Vector<Array> surfaces) {
 	VOXEL_PROFILE_SCOPE();
 
-	PoolVector<Vector3> face_points;
+	PackedVector3Array face_points;
 	int face_points_size = 0;
 
 	//find the correct size for face_points
@@ -76,13 +78,13 @@ Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
 		}
 		// If the surface is not empty then it must have an expected amount of data arrays
 		ERR_CONTINUE(surface_arrays.size() != Mesh::ARRAY_MAX);
-		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
+		PackedInt32Array indices = surface_arrays[Mesh::ARRAY_INDEX];
 		face_points_size += indices.size();
 	}
 	face_points.resize(face_points_size);
 
 	if (face_points_size < 3) {
-		return Ref<ConcavePolygonShape>();
+		return Ref<ConcavePolygonShape3D>();
 	}
 
 	//copy the points into it
@@ -92,29 +94,38 @@ Ref<ConcavePolygonShape> create_concave_polygon_shape(Vector<Array> surfaces) {
 		if (surface_arrays.size() == 0) {
 			continue;
 		}
-		PoolVector<Vector3> positions = surface_arrays[Mesh::ARRAY_VERTEX];
-		PoolVector<int> indices = surface_arrays[Mesh::ARRAY_INDEX];
+		PackedVector3Array positions = surface_arrays[Mesh::ARRAY_VERTEX];
+		PackedInt32Array indices = surface_arrays[Mesh::ARRAY_INDEX];
 
-		ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape>());
-		ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape>());
-		ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape>());
+		ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape3D>());
+		ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape3D>());
+		ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape3D>());
 
 		int face_points_count = face_points_offset + indices.size();
 
 		{
-			PoolVector<Vector3>::Write w = face_points.write();
-			PoolVector<int>::Read index_r = indices.read();
-			PoolVector<Vector3>::Read position_r = positions.read();
+			Vector3 *w = face_points.ptrw();
+			const int *index_r = indices.ptr();
+			const Vector3 *position_r = positions.ptr();
 
 			for (int p = face_points_offset; p < face_points_count; ++p) {
-				w[p] = position_r[index_r[p - face_points_offset]];
+				const int ii = p - face_points_offset;
+#ifdef DEBUG_ENABLED
+				CRASH_COND(ii < 0 || ii >= indices.size());
+#endif
+				const int index = index_r[ii];
+#ifdef DEBUG_ENABLED
+				CRASH_COND(index < 0 || index >= positions.size());
+#endif
+				w[p] = position_r[index];
 			}
 		}
 
 		face_points_offset += indices.size();
 	}
 
-	Ref<ConcavePolygonShape> shape = memnew(ConcavePolygonShape);
+	Ref<ConcavePolygonShape3D> shape;
+	shape.instantiate();
 	shape->set_faces(face_points);
 	return shape;
 }
@@ -132,12 +143,12 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 		return Array();
 	}
 	Array src_surface = src_mesh->surface_get_arrays(surface_index);
-	if (src_surface.empty()) {
+	if (src_surface.is_empty()) {
 		return Array();
 	}
-	PoolVector3Array src_positions = src_surface[Mesh::ARRAY_VERTEX];
-	PoolVector3Array src_normals = src_surface[Mesh::ARRAY_NORMAL];
-	PoolIntArray src_indices = src_surface[Mesh::ARRAY_INDEX];
+	PackedVector3Array src_positions = src_surface[Mesh::ARRAY_VERTEX];
+	PackedVector3Array src_normals = src_surface[Mesh::ARRAY_NORMAL];
+	PackedInt32Array src_indices = src_surface[Mesh::ARRAY_INDEX];
 	if (src_indices.size() < 3) {
 		return Array();
 	}
@@ -151,8 +162,8 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	HashMap<int, int> src_index_to_dst_index;
 	std::vector<Vector3> dst_positions;
 	{
-		PoolVector3Array::Read src_positions_read = src_positions.read();
-		PoolVector3Array::Read src_normals_read = src_normals.read();
+		//const Vector3 *src_positions_read = src_positions.ptr();
+		//const Vector3 *src_normals_read = src_normals.ptr();
 		for (int i = 0; i < src_positions.size(); ++i) {
 			const Vector3 pos = src_positions[i];
 			Dupe *dptr = vertex_to_dupe.getptr(pos);
@@ -161,7 +172,7 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 			} else {
 				if (dptr->count == 0) {
 					dptr->dst_index = dst_positions.size();
-					dst_positions.push_back(pos + src_normals_read[i] * 0.05);
+					dst_positions.push_back(pos + src_normals[i] * 0.05);
 				}
 				++dptr->count;
 				src_index_to_dst_index.set(i, dptr->dst_index);
@@ -171,11 +182,11 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 
 	std::vector<int> dst_indices;
 	{
-		PoolIntArray::Read r = src_indices.read();
+		//PoolIntArray::Read r = src_indices.read();
 		for (int i = 0; i < src_indices.size(); i += 3) {
-			const int vi0 = r[i];
-			const int vi1 = r[i + 1];
-			const int vi2 = r[i + 2];
+			const int vi0 = src_indices[i];
+			const int vi1 = src_indices[i + 1];
+			const int vi2 = src_indices[i + 2];
 			const int *v0ptr = src_index_to_dst_index.getptr(vi0);
 			const int *v1ptr = src_index_to_dst_index.getptr(vi1);
 			const int *v2ptr = src_index_to_dst_index.getptr(vi2);
@@ -201,8 +212,8 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 	ERR_FAIL_COND_V(dst_indices.size() % 2 != 0, Array());
 	ERR_FAIL_COND_V(dst_positions.size() < 2, Array());
 
-	PoolVector3Array dst_positions_pv;
-	PoolIntArray dst_indices_pv;
+	PackedVector3Array dst_positions_pv;
+	PackedInt32Array dst_indices_pv;
 	raw_copy_to(dst_positions_pv, dst_positions);
 	raw_copy_to(dst_indices_pv, dst_indices);
 	Array dst_surface;
@@ -222,3 +233,27 @@ Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_ind
 
 	// return wire_mesh;
 }
+
+template <typename F>
+void for_each_node_depth_first(Node *parent, F f) {
+	ERR_FAIL_COND(parent == nullptr);
+	f(parent);
+	for (int i = 0; i < parent->get_child_count(); ++i) {
+		for_each_node_depth_first(parent->get_child(i), f);
+	}
+}
+
+void set_nodes_owner(Node *root, Node *owner) {
+	for_each_node_depth_first(root, [owner](Node *node) { //
+		node->set_owner(owner);
+	});
+}
+
+void set_nodes_owner_except_root(Node *root, Node *owner) {
+	ERR_FAIL_COND(root == nullptr);
+	for (int i = 0; i < root->get_child_count(); ++i) {
+		set_nodes_owner(root->get_child(i), owner);
+	}
+}
+
+} // namespace zylann

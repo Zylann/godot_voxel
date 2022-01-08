@@ -5,6 +5,8 @@
 #include "../constants/voxel_constants.h"
 #include "../util/math/box3i.h"
 
+namespace zylann::voxel {
+
 // Octree designed to handle level of detail.
 class LodOctree {
 public:
@@ -80,7 +82,7 @@ public:
 		// Distance must be greater than a threshold,
 		// otherwise lods will decimate too fast and it will look messy
 		_lod_distance =
-				clamp(p_lod_distance, VoxelConstants::MINIMUM_LOD_DISTANCE, VoxelConstants::MAXIMUM_LOD_DISTANCE);
+				math::clamp(p_lod_distance, VoxelConstants::MINIMUM_LOD_DISTANCE, VoxelConstants::MAXIMUM_LOD_DISTANCE);
 	}
 
 	float get_lod_distance() const {
@@ -97,9 +99,15 @@ public:
 		void destroy_child(Vector3i node_pos, int lod) {} // Occurs on merge
 		void show_parent(Vector3i node_pos, int lod) {} // Occurs on merge
 		void hide_parent(Vector3i node_pos, int lod) {} // Occurs on split
-		bool can_create_root(int lod) { return true; }
-		bool can_split(Vector3i node_pos, int child_lod_index, NodeData &data) { return true; }
-		bool can_join(Vector3i node_pos, int lod) { return true; }
+		bool can_create_root(int lod) {
+			return true;
+		}
+		bool can_split(Vector3i node_pos, int child_lod_index, NodeData &data) {
+			return true;
+		}
+		bool can_join(Vector3i node_pos, int lod) {
+			return true;
+		}
 	};
 
 	// TODO Have a version of `update` that works recursively
@@ -124,9 +132,7 @@ public:
 	}
 
 	static inline Vector3i get_child_position(Vector3i parent_position, int i) {
-		return Vector3i(
-				parent_position.x * 2 + (i & 1),
-				parent_position.y * 2 + ((i >> 1) & 1),
+		return Vector3i(parent_position.x * 2 + (i & 1), parent_position.y * 2 + ((i >> 1) & 1),
 				parent_position.z * 2 + ((i >> 2) & 1));
 	}
 
@@ -146,7 +152,7 @@ public:
 	// predicate: `bool is_match(Vector3i node_pos, int lod_index, const NodeData &data)`
 	template <typename Predicate_T>
 	bool find_in_box(Box3i box, Predicate_T predicate) const {
-		Box3i root_box(Vector3i(), Vector3i(1 << _max_depth));
+		Box3i root_box(Vector3i(), Vector3iUtil::create(1 << _max_depth));
 		box.clip(root_box);
 		return find_in_box_recursive(box, Vector3i(), ROOT_INDEX, _max_depth, predicate);
 	}
@@ -155,7 +161,7 @@ public:
 	// f: `void f(Vector3i node_pos, int lod_index, NodeData &data)`
 	template <typename F>
 	void for_leaves_in_box(Box3i box, F f) {
-		Box3i root_box(Vector3i(), Vector3i(1 << _max_depth));
+		Box3i root_box(Vector3i(), Vector3iUtil::create(1 << _max_depth));
 		box.clip(root_box);
 		return for_leaves_in_box_recursive(box, Vector3i(), ROOT_INDEX, _max_depth, f);
 	}
@@ -172,7 +178,9 @@ public:
 	}
 
 	struct SubdivideActionsDefault {
-		bool can_split(Vector3i node_pos, int lod_index, const NodeData &node_data) { return true; }
+		bool can_split(Vector3i node_pos, int lod_index, const NodeData &node_data) {
+			return true;
+		}
 		void create_child(Vector3i node_pos, int lod_index, NodeData &node_data) {}
 	};
 
@@ -192,7 +200,7 @@ public:
 	// Gets the bounding box of a node within the LOD0 coordinate system
 	// (i.e a leaf node will always be 1x1x1, a LOD1 node will be 2x2x2 etc)
 	static inline Box3i get_node_box(Vector3i pos_within_lod, int lod_index) {
-		return Box3i(pos_within_lod << lod_index, Vector3i(1 << lod_index));
+		return Box3i(pos_within_lod << lod_index, Vector3iUtil::create(1 << lod_index));
 	}
 
 private:
@@ -265,8 +273,8 @@ private:
 
 		const int lod_factor = get_lod_factor(lod);
 		const int chunk_size = _base_size * lod_factor;
-		const Vector3 world_center = static_cast<real_t>(chunk_size) * (node_pos.to_vec3() + Vector3(0.5, 0.5, 0.5));
-		const float split_distance_sq = squared(_lod_distance * lod_factor);
+		const Vector3 world_center = static_cast<real_t>(chunk_size) * (Vector3(node_pos) + Vector3(0.5, 0.5, 0.5));
+		const float split_distance_sq = math::squared(_lod_distance * lod_factor);
 		Node *node = get_node(node_index);
 
 		if (!node->has_children()) {
@@ -354,9 +362,8 @@ private:
 			// TODO Optimization: we could do breadth-first search instead of depth-first,
 			// because packs of children are contiguous in memory and would help the pre-fetcher
 			for (int ri = 0; ri < 8; ++ri) {
-				const bool found = find_in_box_recursive(box,
-						get_child_position(node_pos, ri),
-						first_child_index + ri, lower_depth, predicate);
+				const bool found = find_in_box_recursive(
+						box, get_child_position(node_pos, ri), first_child_index + ri, lower_depth, predicate);
 				if (found) {
 					return true;
 				}
@@ -454,6 +461,8 @@ private:
 	// TODO May be worth making this pool external for sharing purpose
 	NodePool _pool;
 };
+
+} // namespace zylann::voxel
 
 // Notes:
 // Population of an octree given its depth, thanks to Sage:

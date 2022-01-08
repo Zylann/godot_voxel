@@ -2,7 +2,7 @@
 #define BOX3I_H
 
 #include "vector3i.h"
-#include <core/variant.h>
+#include <core/variant/variant.h>
 
 // Axis-aligned 3D box using integer coordinates
 class Box3i {
@@ -12,17 +12,11 @@ public:
 
 	Box3i() {}
 
-	Box3i(Vector3i p_pos, Vector3i p_size) :
-			pos(p_pos),
-			size(p_size) {}
+	Box3i(Vector3i p_pos, Vector3i p_size) : pos(p_pos), size(p_size) {}
 
-	Box3i(int ox, int oy, int oz, int sx, int sy, int sz) :
-			pos(ox, oy, oz),
-			size(sx, sy, sz) {}
+	Box3i(int ox, int oy, int oz, int sx, int sy, int sz) : pos(ox, oy, oz), size(sx, sy, sz) {}
 
-	Box3i(const Box3i &other) :
-			pos(other.pos),
-			size(other.size) {}
+	Box3i(const Box3i &other) : pos(other.pos), size(other.size) {}
 
 	// Creates a box centered on a point, specifying half its size.
 	// Warning: if you consider the center being a 1x1x1 box which would be extended, instead of a mathematical point,
@@ -39,43 +33,43 @@ public:
 	static inline Box3i get_bounding_box(Box3i a, Box3i b) {
 		Box3i box;
 
-		box.pos.x = min(a.pos.x, b.pos.x);
-		box.pos.y = min(a.pos.y, b.pos.y);
-		box.pos.z = min(a.pos.z, b.pos.z);
+		box.pos.x = zylann::math::min(a.pos.x, b.pos.x);
+		box.pos.y = zylann::math::min(a.pos.y, b.pos.y);
+		box.pos.z = zylann::math::min(a.pos.z, b.pos.z);
 
 		Vector3i max_a = a.pos + a.size;
 		Vector3i max_b = b.pos + b.size;
 
-		box.size.x = max(max_a.x, max_b.x) - box.pos.x;
-		box.size.y = max(max_a.y, max_b.y) - box.pos.y;
-		box.size.z = max(max_a.z, max_b.z) - box.pos.z;
+		box.size.x = zylann::math::max(max_a.x, max_b.x) - box.pos.x;
+		box.size.y = zylann::math::max(max_a.y, max_b.y) - box.pos.y;
+		box.size.z = zylann::math::max(max_a.z, max_b.z) - box.pos.z;
 
 		return box;
 	}
 
 	bool inline contains(Vector3i p_pos) const {
 		const Vector3i end = pos + size;
-		return p_pos.x >= pos.x &&
-			   p_pos.y >= pos.y &&
-			   p_pos.z >= pos.z &&
-			   p_pos.x < end.x &&
-			   p_pos.y < end.y &&
-			   p_pos.z < end.z;
+		return p_pos.x >= pos.x && //
+				p_pos.y >= pos.y && //
+				p_pos.z >= pos.z && //
+				p_pos.x < end.x && //
+				p_pos.y < end.y && //
+				p_pos.z < end.z;
 	}
 
 	bool inline contains(const Box3i other) const {
 		const Vector3i other_end = other.pos + other.size;
 		const Vector3i end = pos + size;
-		return other.pos.x >= pos.x &&
-			   other.pos.y >= pos.y &&
-			   other.pos.z >= pos.z &&
-			   other_end.x <= end.x &&
-			   other_end.y <= end.y &&
-			   other_end.z <= end.z;
+		return other.pos.x >= pos.x && //
+				other.pos.y >= pos.y && //
+				other.pos.z >= pos.z && //
+				other_end.x <= end.x && //
+				other_end.y <= end.y && //
+				other_end.z <= end.z;
 	}
 
 	String to_string() const {
-		return String("(o:{0}, s:{1})").format(varray(pos.to_vec3(), size.to_vec3()));
+		return String("(o:{0}, s:{1})").format(varray(pos, size));
 	}
 
 	bool intersects(const Box3i &other) const {
@@ -219,9 +213,7 @@ public:
 	}
 
 	inline void difference(const Box3i &b, std::vector<Box3i> &output) {
-		difference(b, [&output](const Box3i &sub_box) {
-			output.push_back(sub_box);
-		});
+		difference(b, [&output](const Box3i &sub_box) { output.push_back(sub_box); });
 	}
 
 	// Calls a function on all side cell positions belonging to the box.
@@ -274,23 +266,17 @@ public:
 	}
 
 	inline Box3i padded(int m) const {
-		return Box3i(
-				pos.x - m,
-				pos.y - m,
-				pos.z - m,
-				size.x + 2 * m,
-				size.y + 2 * m,
-				size.z + 2 * m);
+		return Box3i(pos.x - m, pos.y - m, pos.z - m, size.x + 2 * m, size.y + 2 * m, size.z + 2 * m);
 	}
 
 	// Converts the rectangle into a coordinate system of higher step size,
 	// rounding outwards of the area covered by the original rectangle if divided coordinates have remainders.
 	inline Box3i downscaled(int step_size) const {
 		Box3i o;
-		o.pos = pos.floordiv(step_size);
+		o.pos = Vector3iUtil::floordiv(pos, step_size);
 		// TODO Is that ceildiv?
-		Vector3i max_pos = (pos + size - Vector3i(1)).floordiv(step_size);
-		o.size = max_pos - o.pos + Vector3i(1);
+		Vector3i max_pos = Vector3iUtil::floordiv(pos + size - Vector3i(1, 1, 1), step_size);
+		o.size = max_pos - o.pos + Vector3i(1, 1, 1);
 		return o;
 	}
 
@@ -299,15 +285,16 @@ public:
 	// This is such that the result is included in the original rectangle (assuming a common coordinate system).
 	// The result can be an empty rectangle.
 	inline Box3i downscaled_inner(int step_size) const {
-		return Box3i::from_min_max(pos.ceildiv(step_size), (pos + size).floordiv(step_size));
+		return Box3i::from_min_max(
+				Vector3iUtil::ceildiv(pos, step_size), Vector3iUtil::floordiv(pos + size, step_size));
 	}
 
 	static inline void clip_range(int &pos, int &size, int lim_pos, int lim_size) {
 		int max_pos = pos + size;
 		int lim_max_pos = lim_pos + lim_size;
 
-		pos = clamp(pos, lim_pos, lim_max_pos);
-		max_pos = clamp(max_pos, lim_pos, lim_max_pos);
+		pos = zylann::math::clamp(pos, lim_pos, lim_max_pos);
+		max_pos = zylann::math::clamp(max_pos, lim_pos, lim_max_pos);
 
 		size = max_pos - pos;
 		if (size < 0) {
@@ -328,10 +315,10 @@ public:
 	}
 
 	inline bool encloses(const Box3i &other) const {
-		return pos.x <= other.pos.x &&
-			   pos.y <= other.pos.y &&
-			   pos.x + size.x >= other.pos.x + other.size.x &&
-			   pos.y + size.y >= other.pos.y + other.size.y;
+		return pos.x <= other.pos.x && //
+				pos.y <= other.pos.y && //
+				pos.x + size.x >= other.pos.x + other.size.x && //
+				pos.y + size.y >= other.pos.y + other.size.y;
 	}
 
 	inline Box3i snapped(int step) const {
@@ -346,14 +333,14 @@ public:
 	}
 
 	void merge_with(const Box3i &other) {
-		const Vector3i min_pos(
-				min(pos.x, other.pos.x),
-				min(pos.y, other.pos.y),
-				min(pos.z, other.pos.z));
-		const Vector3i max_pos(
-				max(pos.x + size.x, other.pos.x + other.size.x),
-				max(pos.y + size.y, other.pos.y + other.size.y),
-				max(pos.z + size.z, other.pos.z + other.size.z));
+		const Vector3i min_pos( //
+				zylann::math::min(pos.x, other.pos.x), //
+				zylann::math::min(pos.y, other.pos.y), //
+				zylann::math::min(pos.z, other.pos.z));
+		const Vector3i max_pos( //
+				zylann::math::max(pos.x + size.x, other.pos.x + other.size.x), //
+				zylann::math::max(pos.y + size.y, other.pos.y + other.size.y), //
+				zylann::math::max(pos.z + size.z, other.pos.z + other.size.z));
 		pos = min_pos;
 		size = max_pos - min_pos;
 	}

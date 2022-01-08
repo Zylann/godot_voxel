@@ -11,18 +11,21 @@ class AcceptDialog;
 class UndoRedo;
 class VoxelRangeAnalysisDialog;
 class VoxelNode;
-class Spatial;
+class Node3D;
 
 class VoxelGraphEditor : public Control {
 	GDCLASS(VoxelGraphEditor, Control)
 public:
 	static const char *SIGNAL_NODE_SELECTED;
 	static const char *SIGNAL_NOTHING_SELECTED;
+	static const char *SIGNAL_NODES_DELETED;
 
 	VoxelGraphEditor();
 
 	void set_graph(Ref<VoxelGeneratorGraph> graph);
-	inline Ref<VoxelGeneratorGraph> get_graph() const { return _graph; }
+	inline Ref<VoxelGeneratorGraph> get_graph() const {
+		return _graph;
+	}
 
 	void set_undo_redo(UndoRedo *undo_redo);
 	void set_voxel_node(VoxelNode *node);
@@ -49,7 +52,7 @@ private:
 	void _on_graph_edit_disconnection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
 	void _on_graph_edit_delete_nodes_request();
 	void _on_graph_edit_node_selected(Node *p_node);
-	void _on_graph_edit_node_unselected(Node *p_node);
+	void _on_graph_edit_node_deselected(Node *p_node);
 	void _on_graph_node_dragged(Vector2 from, Vector2 to, int id);
 	void _on_context_menu_id_pressed(int id);
 	void _on_update_previews_button_pressed();
@@ -75,8 +78,8 @@ private:
 	Vector2 _click_position;
 	bool _nothing_selected_check_scheduled = false;
 	float _time_before_preview_update = 0.f;
-	Spatial *_voxel_node = nullptr;
-	VoxelDebug::DebugRenderer _debug_renderer;
+	Node3D *_voxel_node = nullptr;
+	zylann::DebugRenderer _debug_renderer;
 };
 
 #endif // VOXEL_GRAPH_EDITOR_H

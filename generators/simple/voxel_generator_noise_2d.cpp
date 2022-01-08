@@ -1,32 +1,24 @@
 #include "voxel_generator_noise_2d.h"
+#include <core/config/engine.h>
 #include <core/core_string_names.h>
-#include <core/engine.h>
 
-VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {
-#ifdef TOOLS_ENABLED
-	if (Engine::get_singleton()->is_editor_hint()) {
-		// Have one by default in editor
-		Ref<OpenSimplexNoise> noise;
-		noise.instance();
-		set_noise(noise);
-	}
-#endif
-}
+VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {}
 
-VoxelGeneratorNoise2D::~VoxelGeneratorNoise2D() {
-}
+VoxelGeneratorNoise2D::~VoxelGeneratorNoise2D() {}
 
 void VoxelGeneratorNoise2D::set_noise(Ref<OpenSimplexNoise> noise) {
 	if (_noise == noise) {
 		return;
 	}
 	if (_noise.is_valid()) {
-		_noise->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_noise_changed");
+		_noise->disconnect(CoreStringNames::get_singleton()->changed,
+				callable_mp(this, &VoxelGeneratorNoise2D::_on_noise_changed));
 	}
 	_noise = noise;
 	Ref<OpenSimplexNoise> copy;
 	if (_noise.is_valid()) {
-		_noise->connect(CoreStringNames::get_singleton()->changed, this, "_on_noise_changed");
+		_noise->connect(CoreStringNames::get_singleton()->changed,
+				callable_mp(this, &VoxelGeneratorNoise2D::_on_noise_changed));
 		// The OpenSimplexNoise resource is not thread-safe so we make a copy of it for use in threads
 		copy = _noise->duplicate();
 	}
@@ -43,12 +35,14 @@ void VoxelGeneratorNoise2D::set_curve(Ref<Curve> curve) {
 		return;
 	}
 	if (_curve.is_valid()) {
-		_curve->disconnect(CoreStringNames::get_singleton()->changed, this, "_on_curve_changed");
+		_curve->disconnect(CoreStringNames::get_singleton()->changed,
+				callable_mp(this, &VoxelGeneratorNoise2D::_on_curve_changed));
 	}
 	_curve = curve;
 	RWLockWrite wlock(_parameters_lock);
 	if (_curve.is_valid()) {
-		_curve->connect(CoreStringNames::get_singleton()->changed, this, "_on_curve_changed");
+		_curve->connect(CoreStringNames::get_singleton()->changed,
+				callable_mp(this, &VoxelGeneratorNoise2D::_on_curve_changed));
 		// The Curve resource is not thread-safe so we make a copy of it for use in threads
 		_parameters.curve = _curve->duplicate();
 		_parameters.curve->bake();
@@ -77,16 +71,14 @@ VoxelGenerator::Result VoxelGeneratorNoise2D::generate_block(VoxelBlockRequest &
 
 	if (_curve.is_null()) {
 		result = VoxelGeneratorHeightmap::generate(
-				out_buffer,
-				[&noise](int x, int z) { return 0.5 + 0.5 * noise.get_noise_2d(x, z); },
+				out_buffer, [&noise](int x, int z) { return 0.5 + 0.5 * noise.get_noise_2d(x, z); },
 				input.origin_in_voxels, input.lod);
 	} else {
 		Curve &curve = **params.curve;
 		result = VoxelGeneratorHeightmap::generate(
 				out_buffer,
-				[&noise, &curve](int x, int z) {
-					return curve.interpolate_baked(0.5 + 0.5 * noise.get_noise_2d(x, z));
-				},
+				[&noise, &curve](
+						int x, int z) { return curve.interpolate_baked(0.5 + 0.5 * noise.get_noise_2d(x, z)); },
 				input.origin_in_voxels, input.lod);
 	}
 
@@ -114,9 +106,12 @@ void VoxelGeneratorNoise2D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_curve", "curve"), &VoxelGeneratorNoise2D::set_curve);
 	ClassDB::bind_method(D_METHOD("get_curve"), &VoxelGeneratorNoise2D::get_curve);
 
-	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelGeneratorNoise2D::_on_noise_changed);
-	ClassDB::bind_method(D_METHOD("_on_curve_changed"), &VoxelGeneratorNoise2D::_on_curve_changed);
+	// ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelGeneratorNoise2D::_on_noise_changed);
+	// ClassDB::bind_method(D_METHOD("_on_curve_changed"), &VoxelGeneratorNoise2D::_on_curve_changed);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise"), "set_noise", "get_noise");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "curve", PROPERTY_HINT_RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "OpenSimplexNoise",
+						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
+			"set_noise", "get_noise");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "curve", PROPERTY_HINT_RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");
 }

@@ -4,23 +4,23 @@
 #include "interval.h"
 #include <core/math/vector2.h>
 
+namespace zylann::math {
+
 // Signed-distance-field functions.
 // For more, see https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
 
 inline float sdf_box(const Vector3 pos, const Vector3 extents) {
 	Vector3 d = pos.abs() - extents;
-	return min(max(d.x, max(d.y, d.z)), 0.f) +
-		   Vector3(max(d.x, 0.f), max(d.y, 0.f), max(d.z, 0.f)).length();
+	return min(max(d.x, max(d.y, d.z)), 0.f) + Vector3(max(d.x, 0.f), max(d.y, 0.f), max(d.z, 0.f)).length();
 }
 
-inline Interval sdf_box(
-		const Interval &x, const Interval &y, const Interval &z,
-		const Interval &sx, const Interval &sy, const Interval &sz) {
+inline Interval sdf_box(const Interval &x, const Interval &y, const Interval &z, const Interval &sx, const Interval &sy,
+		const Interval &sz) {
 	Interval dx = abs(x) - sx;
 	Interval dy = abs(y) - sy;
 	Interval dz = abs(z) - sz;
 	return min_interval(max_interval(dx, max_interval(dy, dz)), 0.f) +
-		   get_length(max_interval(dx, 0.f), max_interval(dy, 0.f), max_interval(dz, 0.f));
+			get_length(max_interval(dx, 0.f), max_interval(dy, 0.f), max_interval(dz, 0.f));
 }
 
 inline float sdf_sphere(Vector3 pos, Vector3 center, float radius) {
@@ -57,5 +57,7 @@ inline float sdf_smooth_subtract(float b, float a, float s) {
 	float h = clamp(0.5f - 0.5f * (b + a) / s, 0.0f, 1.0f);
 	return Math::lerp(b, -a, h) + s * h * (1.0f - h);
 }
+
+} // namespace zylann::math
 
 #endif // VOXEL_MATH_SDF_H

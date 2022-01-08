@@ -12,6 +12,11 @@
             "inheritEnvironments": [ "msvc_x64" ],
             "variables": [
                 {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\out\\build\\cpm-cache",
+                    "type": "PATH"
+                },
+                {
                     "name": "FASTNOISE2_TESTS",
                     "value": "True",
                     "type": "BOOL"
@@ -27,8 +32,14 @@
             "cmakeCommandArgs": "",
             "buildCommandArgs": "-v",
             "ctestCommandArgs": "",
+            "addressSanitizerEnabled": true,
             "inheritEnvironments": [ "msvc_x64" ],
             "variables": [
+                {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
                 {
                     "name": "FASTNOISE2_TESTS",
                     "value": "True",
@@ -48,6 +59,11 @@
             "inheritEnvironments": [ "msvc_x86" ],
             "variables": [
                 {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
+                {
                     "name": "FASTNOISE2_TESTS",
                     "value": "True",
                     "type": "BOOL"
@@ -65,6 +81,11 @@
             "ctestCommandArgs": "",
             "inheritEnvironments": [ "msvc_x86" ],
             "variables": [
+                {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
                 {
                     "name": "FASTNOISE2_TESTS",
                     "value": "True",
@@ -84,6 +105,11 @@
             "inheritEnvironments": [ "clang_cl_x64" ],
             "variables": [
                 {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
+                {
                     "name": "FASTNOISE2_TESTS",
                     "value": "True",
                     "type": "BOOL"
@@ -101,6 +127,11 @@
             "ctestCommandArgs": "",
             "inheritEnvironments": [ "clang_cl_x64" ],
             "variables": [
+                {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
                 {
                     "name": "FASTNOISE2_TESTS",
                     "value": "True",
@@ -120,6 +151,11 @@
             "inheritEnvironments": [ "clang_cl_x86" ],
             "variables": [
                 {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
+                {
                     "name": "FASTNOISE2_TESTS",
                     "value": "True",
                     "type": "BOOL"
@@ -138,13 +174,18 @@
             "inheritEnvironments": [ "clang_cl_x86" ],
             "variables": [
                 {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
+                {
                     "name": "FASTNOISE2_TESTS",
                     "value": "True",
                     "type": "BOOL"
                 }
             ]
         },
-        {
+        {            
             "name": "x64-WSL-GCC-Debug",
             "generator": "Ninja",
             "configurationType": "Debug",
@@ -158,6 +199,11 @@
             "wslPath": "${defaultWSLPath}",
             "addressSanitizerRuntimeFlags": "detect_leaks=0",
             "variables": [
+                {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
                 {
                     "name": "FASTNOISE2_TESTS",
                     "value": "True",
@@ -180,6 +226,11 @@
             "addressSanitizerRuntimeFlags": "detect_leaks=0",
             "variables": [
                 {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
+                {
                     "name": "FASTNOISE2_TESTS",
                     "value": "True",
                     "type": "BOOL"
@@ -201,8 +252,14 @@
             "addressSanitizerRuntimeFlags": "detect_leaks=0",
             "variables": [
                 {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
+                {
                     "name": "CMAKE_CXX_FLAGS",
-                    "value": "-m32"
+                    "value": "-m32",
+                    "type": "STRING"
                 },
                 {
                     "name": "FASTNOISE2_TESTS",
@@ -226,8 +283,14 @@
             "addressSanitizerRuntimeFlags": "detect_leaks=0",
             "variables": [
                 {
+                    "name": "CPM_SOURCE_CACHE",
+                    "value": "${projectDir}\\cpm-cache",
+                    "type": "PATH"
+                },
+                {
                     "name": "CMAKE_CXX_FLAGS",
-                    "value": "-m32"
+                    "value": "-m32",
+                    "type": "STRING"
                 },
                 {
                     "name": "FASTNOISE2_TESTS",

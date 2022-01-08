@@ -1,14 +1,16 @@
 #ifndef HEADER_VOXEL_UTILITY_H
 #define HEADER_VOXEL_UTILITY_H
 
-#include <core/pool_vector.h>
-#include <core/vector.h>
+#include <core/string/ustring.h>
+#include <core/templates/vector.h>
 #include <utility>
 #include <vector>
 
 #ifdef DEBUG_ENABLED
-#include <core/error_macros.h>
+#include <core/error/error_macros.h>
 #endif
+
+namespace zylann {
 
 // Takes elements starting from a given position and moves them at the beginning,
 // then shrink the array to fit them. Other elements are discarded.
@@ -97,28 +99,16 @@ inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
 //	vec.resize(j);
 //}
 
-template <typename T>
-void copy_to(PoolVector<T> &to, const Vector<T> &from) {
-	to.resize(from.size());
-	// resize can fail in case allocation was not possible
-	ERR_FAIL_COND(from.size() != to.size());
-	typename PoolVector<T>::Write w = to.write();
-	for (unsigned int i = 0; i < from.size(); ++i) {
-		w[i] = from[i];
-	}
-}
-
 inline String ptr2s(const void *p) {
 	return String::num_uint64((uint64_t)p, 16);
 }
 
 template <typename T>
-void raw_copy_to(PoolVector<T> &to, const std::vector<T> &from) {
+void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
 	to.resize(from.size());
 	// resize can fail in case allocation was not possible
 	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));
-	typename PoolVector<T>::Write w = to.write();
-	memcpy(w.ptr(), from.data(), from.size() * sizeof(T));
+	memcpy(to.ptrw(), from.data(), from.size() * sizeof(T));
 }
 
 template <typename T>
@@ -191,5 +181,7 @@ inline bool is_uniform(const Item_T *p_data, size_t item_count) {
 
 	return true;
 }
+
+} // namespace zylann
 
 #endif // HEADER_VOXEL_UTILITY_H

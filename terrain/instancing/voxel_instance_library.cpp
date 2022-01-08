@@ -1,18 +1,16 @@
 #include "voxel_instance_library.h"
 #include "voxel_instancer.h"
 
-#include <scene/3d/collision_shape.h>
-#include <scene/3d/mesh_instance.h>
-#include <scene/3d/physics_body.h>
+#include <scene/3d/collision_shape_3d.h>
+#include <scene/3d/mesh_instance_3d.h>
+#include <scene/3d/physics_body_3d.h>
 
 VoxelInstanceLibrary::~VoxelInstanceLibrary() {
-	for_each_item([this](int id, VoxelInstanceLibraryItemBase &item) {
-		item.remove_listener(this, id);
-	});
+	for_each_item([this](int id, VoxelInstanceLibraryItemBase &item) { item.remove_listener(this, id); });
 }
 
 int VoxelInstanceLibrary::get_next_available_id() {
-	if (_items.empty()) {
+	if (_items.is_empty()) {
 		return 1;
 	} else {
 		return _items.back()->key() + 1;
@@ -26,7 +24,7 @@ void VoxelInstanceLibrary::add_item(int id, Ref<VoxelInstanceLibraryItemBase> it
 	_items.insert(id, item);
 	item->add_listener(this, id);
 	notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_ADDED);
-	_change_notify();
+	notify_property_list_changed();
 }
 
 void VoxelInstanceLibrary::remove_item(int id) {
@@ -38,7 +36,7 @@ void VoxelInstanceLibrary::remove_item(int id) {
 	}
 	_items.erase(E);
 	notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_REMOVED);
-	_change_notify();
+	notify_property_list_changed();
 }
 
 void VoxelInstanceLibrary::clear() {
@@ -46,7 +44,7 @@ void VoxelInstanceLibrary::clear() {
 		notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_REMOVED);
 	});
 	_items.clear();
-	_change_notify();
+	notify_property_list_changed();
 }
 
 int VoxelInstanceLibrary::find_item_by_name(String name) const {
@@ -112,7 +110,7 @@ void VoxelInstanceLibrary::add_listener(IListener *listener) {
 void VoxelInstanceLibrary::remove_listener(IListener *listener) {
 	const int i = _listeners.find(listener);
 	ERR_FAIL_COND(i == -1);
-	_listeners.remove(i);
+	_listeners.remove_at(i);
 }
 
 bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value) {

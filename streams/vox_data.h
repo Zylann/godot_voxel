@@ -6,10 +6,10 @@
 #include "../util/math/vector3i.h"
 
 #include <core/math/basis.h>
-#include <core/ustring.h>
+#include <core/string/ustring.h>
+#include <memory>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 namespace std {
 template <>
@@ -20,7 +20,7 @@ struct hash<String> {
 };
 } // namespace std
 
-namespace vox {
+namespace zylann::voxel::magica {
 
 struct Model {
 	Vector3i size;
@@ -31,7 +31,7 @@ struct Model {
 };
 
 struct Node {
-	enum Type {
+	enum Type { //
 		TYPE_TRANSFORM = 0,
 		TYPE_GROUP,
 		TYPE_SHAPE
@@ -42,8 +42,7 @@ struct Node {
 	const Type type;
 	std::unordered_map<String, String> attributes;
 
-	Node(Type p_type) :
-			type(p_type) {}
+	Node(Type p_type) : type(p_type) {}
 
 	virtual ~Node() {}
 };
@@ -62,23 +61,20 @@ struct TransformNode : public Node {
 	String name;
 	bool hidden;
 
-	TransformNode() :
-			Node(Node::TYPE_TRANSFORM) {}
+	TransformNode() : Node(Node::TYPE_TRANSFORM) {}
 };
 
 struct GroupNode : public Node {
 	std::vector<int> child_node_ids;
 
-	GroupNode() :
-			Node(Node::TYPE_GROUP) {}
+	GroupNode() : Node(Node::TYPE_GROUP) {}
 };
 
 struct ShapeNode : public Node {
 	int model_id; // corresponds to index in the array of models
 	std::unordered_map<String, String> model_attributes;
 
-	ShapeNode() :
-			Node(Node::TYPE_SHAPE) {}
+	ShapeNode() : Node(Node::TYPE_SHAPE) {}
 };
 
 struct Layer {
@@ -89,7 +85,7 @@ struct Layer {
 };
 
 struct Material {
-	enum Type {
+	enum Type { //
 		TYPE_DIFFUSE,
 		TYPE_METAL,
 		TYPE_GLASS,
@@ -141,6 +137,6 @@ private:
 	FixedArray<Color8, 256> _palette;
 };
 
-} // namespace vox
+} // namespace zylann::voxel::magica
 
 #endif // VOX_DATA_H

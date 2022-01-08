@@ -1,25 +1,29 @@
-#ifndef VOXEL_ASYNC_DEPENDENCY_TRACKER_H
-#define VOXEL_ASYNC_DEPENDENCY_TRACKER_H
+#ifndef ZYLANN_ASYNC_DEPENDENCY_TRACKER_H
+#define ZYLANN_ASYNC_DEPENDENCY_TRACKER_H
 
-#include "../util/span.h"
+#include "../span.h"
 #include <atomic>
 #include <vector>
 
-class IVoxelTask;
+namespace zylann {
+
+class IThreadedTask;
 
 // Tracks the status of one or more tasks.
-class VoxelAsyncDependencyTracker {
+class AsyncDependencyTracker {
 public:
 	// Creates a tracker which will track `initial_count` tasks.
 	// The tracker may be passed by shared pointer to each of these tasks so they can notify completion.
-	VoxelAsyncDependencyTracker(int initial_count);
+	AsyncDependencyTracker(int initial_count);
+
+	typedef void (*ScheduleNextTasksCallback)(Span<IThreadedTask *> tasks);
 
 	// Alternate constructor where a collection of tasks will be scheduled on completion.
 	// All the next tasks will be run in parallel.
 	// If a dependency is aborted, these tasks will be destroyed instead.
-	VoxelAsyncDependencyTracker(int initial_count, Span<IVoxelTask *> next_tasks);
+	AsyncDependencyTracker(int initial_count, Span<IThreadedTask *> next_tasks, ScheduleNextTasksCallback scheduler_cb);
 
-	~VoxelAsyncDependencyTracker();
+	~AsyncDependencyTracker();
 
 	// Call this when one of the tracked dependencies is complete
 	void post_complete();
@@ -51,7 +55,10 @@ public:
 private:
 	std::atomic_int _count;
 	std::atomic_bool _aborted;
-	std::vector<IVoxelTask *> _next_tasks;
+	std::vector<IThreadedTask *> _next_tasks;
+	ScheduleNextTasksCallback _next_tasks_schedule_callback = nullptr;
 };
 
-#endif // VOXEL_ASYNC_DEPENDENCY_TRACKER_H
+} // namespace zylann
+
+#endif // ZYLANN_ASYNC_DEPENDENCY_TRACKER_H

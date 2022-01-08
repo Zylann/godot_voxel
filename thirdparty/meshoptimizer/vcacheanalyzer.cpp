@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <string.h>
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 meshopt_VertexCacheStatistics meshopt_analyzeVertexCache(const unsigned int* indices, size_t index_count, size_t vertex_count, unsigned int cache_size, unsigned int warp_size, unsigned int primgroup_size)
 {
 	assert(index_count % 3 == 0);
@@ -71,3 +73,5 @@ meshopt_VertexCacheStatistics meshopt_analyzeVertexCache(const unsigned int* ind
 
 	return result;
 }
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END

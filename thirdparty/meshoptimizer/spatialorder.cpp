@@ -5,6 +5,8 @@
 #include <float.h>
 #include <string.h>
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 // This work is based on:
 // Fabian Giesen. Decoding Morton codes. 2009
 namespace meshopt
@@ -192,3 +194,6 @@ void meshopt_spatialSortTriangles(unsigned int* destination, const unsigned int*
 		destination[r * 3 + 2] = c;
 	}
 }
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END
+

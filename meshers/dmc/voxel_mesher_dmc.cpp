@@ -3,13 +3,13 @@
 #include "../../constants/octree_tables.h"
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
-#include <core/os/os.h>
+#include <core/os/time.h>
 
 // Dual marching cubes
 // Algorithm taken from https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/
 // Partially based on Ogre's implementation, adapted for requirements of this module with a few extras
 
-namespace dmc {
+namespace zylann::voxel::dmc {
 
 // Surface is defined when isolevel crosses 0
 const float SURFACE_ISO_LEVEL = 0.0;
@@ -22,9 +22,7 @@ struct VoxelAccess {
 	const VoxelBufferInternal &buffer;
 	const Vector3i offset;
 
-	VoxelAccess(const VoxelBufferInternal &p_buffer, Vector3i p_offset) :
-			buffer(p_buffer),
-			offset(p_offset) {}
+	VoxelAccess(const VoxelBufferInternal &p_buffer, Vector3i p_offset) : buffer(p_buffer), offset(p_offset) {}
 
 	inline HermiteValue get_hermite_value(int x, int y, int z) const {
 		return dmc::get_hermite_value(buffer, x + offset.x, y + offset.y, z + offset.z);
@@ -49,7 +47,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 	int channel = VoxelBufferInternal::CHANNEL_SDF;
 
 	// Don't split if nothing is inside, i.e isolevel distance is greater than the size of the cube we are in
-	Vector3i center_pos = node_origin + Vector3i(node_size / 2);
+	Vector3i center_pos = node_origin + Vector3iUtil::create(node_size / 2);
 	HermiteValue center_value = voxels.get_hermite_value(center_pos.x, center_pos.y, center_pos.z);
 	if (Math::abs(center_value.sdf) > SQRT3 * (float)node_size) {
 		return false;
@@ -95,30 +93,28 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 		Vector3i(origin.x + hstep, /**/ origin.y + hstep, /**/ origin.z + hstep) // 26
 	};
 
-	Vector3 positions_ratio[19] = {
-		Vector3(0.5, 0.0, 0.0),
-		Vector3(1.0, 0.0, 0.5),
-		Vector3(0.5, 0.0, 1.0),
-		Vector3(0.0, 0.0, 0.5),
+	Vector3 positions_ratio[19] = { Vector3(0.5, 0.0, 0.0), //
+		Vector3(1.0, 0.0, 0.5), //
+		Vector3(0.5, 0.0, 1.0), //
+		Vector3(0.0, 0.0, 0.5), //
 
-		Vector3(0.0, 0.5, 0.0),
-		Vector3(1.0, 0.5, 0.0),
-		Vector3(1.0, 0.5, 1.0),
-		Vector3(0.0, 0.5, 1.0),
+		Vector3(0.0, 0.5, 0.0), //
+		Vector3(1.0, 0.5, 0.0), //
+		Vector3(1.0, 0.5, 1.0), //
+		Vector3(0.0, 0.5, 1.0), //
 
-		Vector3(0.5, 1.0, 0.0),
-		Vector3(1.0, 1.0, 0.5),
-		Vector3(0.5, 1.0, 1.0),
-		Vector3(0.0, 1.0, 0.5),
+		Vector3(0.5, 1.0, 0.0), //
+		Vector3(1.0, 1.0, 0.5), //
+		Vector3(0.5, 1.0, 1.0), //
+		Vector3(0.0, 1.0, 0.5), //
 
-		Vector3(0.5, 0.0, 0.5),
-		Vector3(0.5, 0.5, 0.0),
-		Vector3(1.0, 0.5, 0.5),
-		Vector3(0.5, 0.5, 1.0),
-		Vector3(0.0, 0.5, 0.5),
-		Vector3(0.5, 1.0, 0.5),
-		Vector3(0.5, 0.5, 0.5)
-	};
+		Vector3(0.5, 0.0, 0.5), //
+		Vector3(0.5, 0.5, 0.0), //
+		Vector3(1.0, 0.5, 0.5), //
+		Vector3(0.5, 0.5, 1.0), //
+		Vector3(0.0, 0.5, 0.5), //
+		Vector3(0.5, 1.0, 0.5), //
+		Vector3(0.5, 0.5, 0.5) };
 
 	float error = 0.0;
 
@@ -127,7 +123,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 
 		HermiteValue value = get_hermite_value(voxels.buffer, pos.x, pos.y, pos.z);
 
-		float interpolated_value = ::interpolate(v0, v1, v2, v3, v4, v5, v6, v7, positions_ratio[i]);
+		float interpolated_value = math::interpolate(v0, v1, v2, v3, v4, v5, v6, v7, positions_ratio[i]);
 
 		float gradient_magnitude = value.gradient.length();
 		if (gradient_magnitude < FLT_EPSILON) {
@@ -143,16 +139,13 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 }
 
 inline Vector3 get_center(const OctreeNode *node) {
-	return node->origin.to_vec3() + 0.5 * Vector3(node->size, node->size, node->size);
+	return Vector3(node->origin) + 0.5 * Vector3(node->size, node->size, node->size);
 }
 
 class OctreeBuilderTopDown {
 public:
 	OctreeBuilderTopDown(const VoxelAccess &voxels, float geometry_error, OctreeNodePool &pool) :
-			_voxels(voxels),
-			_geometry_error(geometry_error),
-			_pool(pool) {
-	}
+			_voxels(voxels), _geometry_error(geometry_error), _pool(pool) {}
 
 	OctreeNode *build(Vector3i origin, int size) {
 		OctreeNode *root = _pool.create();
@@ -198,10 +191,7 @@ private:
 class OctreeBuilderBottomUp {
 public:
 	OctreeBuilderBottomUp(const VoxelAccess &voxels, float geometry_error, OctreeNodePool &pool) :
-			_voxels(voxels),
-			_geometry_error(geometry_error),
-			_pool(pool) {
-	}
+			_voxels(voxels), _geometry_error(geometry_error), _pool(pool) {}
 
 	OctreeNode *build(Vector3i node_origin, int node_size) const {
 		OctreeNode *children[8] = { nullptr };
@@ -271,8 +261,7 @@ private:
 	OctreeNodePool &_pool;
 };
 
-template <typename Action_T>
-void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
+template <typename Action_T> void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
 	a(root, depth);
 	for (int i = 0; i < 8; ++i) {
 		if (root->children[i]) {
@@ -281,11 +270,10 @@ void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
 	}
 }
 
-inline void scale_positions(PoolVector3Array &positions, float scale) {
-	PoolVector3Array::Write w = positions.write();
+inline void scale_positions(PackedVector3Array &positions, float scale) {
 	const uint32_t size = positions.size();
 	for (unsigned int i = 0; i < size; ++i) {
-		w[i] *= scale;
+		positions.write[i] *= scale;
 	}
 }
 
@@ -300,9 +288,9 @@ Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 	};
 
 	struct Arrays {
-		PoolVector3Array positions;
-		PoolColorArray colors;
-		PoolIntArray indices;
+		PackedVector3Array positions;
+		PackedColorArray colors;
+		PackedInt32Array indices;
 	};
 
 	struct AddCube {
@@ -311,7 +299,7 @@ Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 
 		void operator()(OctreeNode *node, int depth) {
 			float shrink = depth * 0.005;
-			Vector3 o = node->origin.to_vec3() + Vector3(shrink, shrink, shrink);
+			Vector3 o = Vector3(node->origin) + Vector3(shrink, shrink, shrink);
 			float s = node->size - 2.0 * shrink;
 
 			Color col(1.0, (float)depth / (float)max_depth, 0.0);
@@ -357,8 +345,8 @@ Array generate_debug_octree_mesh(OctreeNode *root, int scale) {
 }
 
 Array generate_debug_dual_grid_mesh(const DualGrid &grid, int scale) {
-	PoolVector3Array positions;
-	PoolIntArray indices;
+	PackedVector3Array positions;
+	PackedInt32Array indices;
 
 	for (unsigned int i = 0; i < grid.cells.size(); ++i) {
 		const DualCell &cell = grid.cells[i];
@@ -418,14 +406,14 @@ inline bool is_border_front(const OctreeNode *node, int root_size) {
 }
 
 inline Vector3 get_center_back(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size * 0.5;
 	p.y += node->size * 0.5;
 	return p;
 }
 
 inline Vector3 get_center_front(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size * 0.5;
 	p.y += node->size * 0.5;
 	p.z += node->size;
@@ -433,14 +421,14 @@ inline Vector3 get_center_front(const OctreeNode *node) {
 }
 
 inline Vector3 get_center_left(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.y += node->size * 0.5;
 	p.z += node->size * 0.5;
 	return p;
 }
 
 inline Vector3 get_center_right(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size;
 	p.y += node->size * 0.5;
 	p.z += node->size * 0.5;
@@ -448,7 +436,7 @@ inline Vector3 get_center_right(const OctreeNode *node) {
 }
 
 inline Vector3 get_center_top(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size * 0.5;
 	p.y += node->size;
 	p.z += node->size * 0.5;
@@ -456,27 +444,27 @@ inline Vector3 get_center_top(const OctreeNode *node) {
 }
 
 inline Vector3 get_center_bottom(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size * 0.5;
 	p.z += node->size * 0.5;
 	return p;
 }
 
 inline Vector3 get_center_back_top(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size * 0.5;
 	p.y += node->size;
 	return p;
 }
 
 inline Vector3 get_center_back_bottom(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size * 0.5;
 	return p;
 }
 
 inline Vector3 get_center_front_top(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size * 0.5;
 	p.y += node->size;
 	p.z += node->size;
@@ -484,27 +472,27 @@ inline Vector3 get_center_front_top(const OctreeNode *node) {
 }
 
 inline Vector3 get_center_front_bottom(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size * 0.5;
 	p.z += node->size;
 	return p;
 }
 
 inline Vector3 get_center_left_top(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.y += node->size;
 	p.z += node->size * 0.5;
 	return p;
 }
 
 inline Vector3 get_center_left_bottom(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.z += node->size * 0.5;
 	return p;
 }
 
 inline Vector3 get_center_right_top(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size;
 	p.y += node->size;
 	p.z += node->size * 0.5;
@@ -512,34 +500,34 @@ inline Vector3 get_center_right_top(const OctreeNode *node) {
 }
 
 inline Vector3 get_center_right_bottom(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size;
 	p.z += node->size * 0.5;
 	return p;
 }
 
 inline Vector3 get_center_back_left(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.y += node->size * 0.5;
 	return p;
 }
 
 inline Vector3 get_center_front_left(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.y += node->size * 0.5;
 	p.z += node->size;
 	return p;
 }
 
 inline Vector3 get_center_back_right(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size;
 	p.y += node->size * 0.5;
 	return p;
 }
 
 inline Vector3 get_center_front_right(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size;
 	p.y += node->size * 0.5;
 	p.z += node->size;
@@ -547,39 +535,39 @@ inline Vector3 get_center_front_right(const OctreeNode *node) {
 }
 
 inline Vector3 get_corner1(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size;
 	return p;
 }
 
 inline Vector3 get_corner2(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size;
 	p.z += node->size;
 	return p;
 }
 
 inline Vector3 get_corner3(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.z += node->size;
 	return p;
 }
 
 inline Vector3 get_corner4(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.y += node->size;
 	return p;
 }
 
 inline Vector3 get_corner5(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size;
 	p.y += node->size;
 	return p;
 }
 
 inline Vector3 get_corner6(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.x += node->size;
 	p.y += node->size;
 	p.z += node->size;
@@ -587,7 +575,7 @@ inline Vector3 get_corner6(const OctreeNode *node) {
 }
 
 inline Vector3 get_corner7(const OctreeNode *node) {
-	Vector3 p = node->origin.to_vec3();
+	Vector3 p = node->origin;
 	p.y += node->size;
 	p.z += node->size;
 	return p;
@@ -595,9 +583,7 @@ inline Vector3 get_corner7(const OctreeNode *node) {
 
 class DualGridGenerator {
 public:
-	DualGridGenerator(DualGrid &grid, int octree_root_size) :
-			_grid(grid),
-			_octree_root_size(octree_root_size) {}
+	DualGridGenerator(DualGrid &grid, int octree_root_size) : _grid(grid), _octree_root_size(octree_root_size) {}
 
 	void node_proc(OctreeNode *node);
 
@@ -605,17 +591,11 @@ private:
 	DualGrid &_grid;
 	int _octree_root_size;
 
-	void create_border_cells(
-			const OctreeNode *n0,
-			const OctreeNode *n1,
-			const OctreeNode *n2,
-			const OctreeNode *n3,
-			const OctreeNode *n4,
-			const OctreeNode *n5,
-			const OctreeNode *n6,
-			const OctreeNode *n7);
+	void create_border_cells(const OctreeNode *n0, const OctreeNode *n1, const OctreeNode *n2, const OctreeNode *n3,
+			const OctreeNode *n4, const OctreeNode *n5, const OctreeNode *n6, const OctreeNode *n7);
 
-	void vert_proc(OctreeNode *n0, OctreeNode *n1, OctreeNode *n2, OctreeNode *n3, OctreeNode *n4, OctreeNode *n5, OctreeNode *n6, OctreeNode *n7);
+	void vert_proc(OctreeNode *n0, OctreeNode *n1, OctreeNode *n2, OctreeNode *n3, OctreeNode *n4, OctreeNode *n5,
+			OctreeNode *n6, OctreeNode *n7);
 
 	void edge_proc_x(OctreeNode *n0, OctreeNode *n1, OctreeNode *n2, OctreeNode *n3);
 	void edge_proc_y(OctreeNode *n0, OctreeNode *n1, OctreeNode *n2, OctreeNode *n3);
@@ -626,15 +606,8 @@ private:
 	void face_proc_xz(OctreeNode *n0, OctreeNode *n1);
 };
 
-inline void add_cell(DualGrid &grid,
-		const Vector3 c0,
-		const Vector3 c1,
-		const Vector3 c2,
-		const Vector3 c3,
-		const Vector3 c4,
-		const Vector3 c5,
-		const Vector3 c6,
-		const Vector3 c7) {
+inline void add_cell(DualGrid &grid, const Vector3 c0, const Vector3 c1, const Vector3 c2, const Vector3 c3,
+		const Vector3 c4, const Vector3 c5, const Vector3 c6, const Vector3 c7) {
 	DualCell cell;
 	cell.corners[0] = c0;
 	cell.corners[1] = c1;
@@ -648,185 +621,155 @@ inline void add_cell(DualGrid &grid,
 	grid.cells.push_back(cell);
 }
 
-void DualGridGenerator::create_border_cells(
-		const OctreeNode *n0,
-		const OctreeNode *n1,
-		const OctreeNode *n2,
-		const OctreeNode *n3,
-		const OctreeNode *n4,
-		const OctreeNode *n5,
-		const OctreeNode *n6,
-		const OctreeNode *n7) {
+void DualGridGenerator::create_border_cells(const OctreeNode *n0, const OctreeNode *n1, const OctreeNode *n2,
+		const OctreeNode *n3, const OctreeNode *n4, const OctreeNode *n5, const OctreeNode *n6, const OctreeNode *n7) {
 	DualGrid &grid = _grid;
 
 	// Most boring function ever
 
 	if (is_border_back(n0) && is_border_back(n1) && is_border_back(n4) && is_border_back(n5)) {
-		add_cell(grid,
-				get_center_back(n0), get_center_back(n1), get_center(n1), get_center(n0),
-				get_center_back(n4), get_center_back(n5), get_center(n5), get_center(n4));
+		add_cell(grid, get_center_back(n0), get_center_back(n1), get_center(n1), get_center(n0), get_center_back(n4),
+				get_center_back(n5), get_center(n5), get_center(n4));
 
 		// Generate back edge border cells
 		if (is_border_top(n4, _octree_root_size) && is_border_top(n5, _octree_root_size)) {
-			add_cell(grid,
-					get_center_back(n4), get_center_back(n5), get_center(n5), get_center(n4),
+			add_cell(grid, get_center_back(n4), get_center_back(n5), get_center(n5), get_center(n4),
 					get_center_back_top(n4), get_center_back_top(n5), get_center_top(n5), get_center_top(n4));
 
 			// Generate back top corner cells
 			if (is_border_left(n4)) {
-				add_cell(grid,
-						get_center_back_left(n4), get_center_back(n4), get_center(n4), get_center_left(n4),
+				add_cell(grid, get_center_back_left(n4), get_center_back(n4), get_center(n4), get_center_left(n4),
 						get_corner4(n4), get_center_back_top(n4), get_center_top(n4), get_center_left_top(n4));
 			}
 
 			if (is_border_right(n4, _octree_root_size)) {
-				add_cell(grid,
-						get_center_back(n5), get_center_back_right(n5), get_center_right(n5), get_center(n5),
+				add_cell(grid, get_center_back(n5), get_center_back_right(n5), get_center_right(n5), get_center(n5),
 						get_center_back_top(n5), get_corner5(n5), get_center_right_top(n5), get_center_top(n5));
 			}
 		}
 
 		if (is_border_bottom(n0) && is_border_bottom(n1)) {
-			add_cell(grid,
-					get_center_back_bottom(n0), get_center_back_bottom(n1), get_center_bottom(n1), get_center_bottom(n0),
-					get_center_back(n0), get_center_back(n1), get_center(n1), get_center(n0));
+			add_cell(grid, get_center_back_bottom(n0), get_center_back_bottom(n1), get_center_bottom(n1),
+					get_center_bottom(n0), get_center_back(n0), get_center_back(n1), get_center(n1), get_center(n0));
 
 			// Generate back bottom corner cells
 			if (is_border_left(n0)) {
-				add_cell(grid, n0->origin.to_vec3(), get_center_back_bottom(n0), get_center_bottom(n0), get_center_left_bottom(n0),
-						get_center_back_left(n0), get_center_back(n0), get_center(n0), get_center_left(n0));
+				add_cell(grid, n0->origin, get_center_back_bottom(n0), get_center_bottom(n0),
+						get_center_left_bottom(n0), get_center_back_left(n0), get_center_back(n0), get_center(n0),
+						get_center_left(n0));
 			}
 
 			if (is_border_right(n1, _octree_root_size)) {
-				add_cell(grid, get_center_back_bottom(n1), get_corner1(n1), get_center_right_bottom(n1), get_center_bottom(n1),
-						get_center_back(n1), get_center_back_right(n1), get_center_right(n1), get_center(n1));
+				add_cell(grid, get_center_back_bottom(n1), get_corner1(n1), get_center_right_bottom(n1),
+						get_center_bottom(n1), get_center_back(n1), get_center_back_right(n1), get_center_right(n1),
+						get_center(n1));
 			}
 		}
 	}
 
-	if (is_border_front(n2, _octree_root_size) &&
-			is_border_front(n3, _octree_root_size) &&
-			is_border_front(n6, _octree_root_size) &&
-			is_border_front(n7, _octree_root_size)) {
-		add_cell(grid,
-				get_center(n3), get_center(n2), get_center_front(n2), get_center_front(n3),
-				get_center(n7), get_center(n6), get_center_front(n6), get_center_front(n7));
+	if (is_border_front(n2, _octree_root_size) && is_border_front(n3, _octree_root_size) &&
+			is_border_front(n6, _octree_root_size) && is_border_front(n7, _octree_root_size)) {
+		add_cell(grid, get_center(n3), get_center(n2), get_center_front(n2), get_center_front(n3), get_center(n7),
+				get_center(n6), get_center_front(n6), get_center_front(n7));
 
 		// Generate front edge border cells
 		if (is_border_top(n6, _octree_root_size) && is_border_top(n7, _octree_root_size)) {
-			add_cell(grid,
-					get_center(n7), get_center(n6), get_center_front(n6), get_center_front(n7),
+			add_cell(grid, get_center(n7), get_center(n6), get_center_front(n6), get_center_front(n7),
 					get_center_top(n7), get_center_top(n6), get_center_front_top(n6), get_center_front_top(n7));
 
 			// Generate back bottom corner cells
 			if (is_border_left(n7)) {
-				add_cell(grid,
-						get_center_left(n7), get_center(n7), get_center_front(n7), get_center_front_left(n7),
+				add_cell(grid, get_center_left(n7), get_center(n7), get_center_front(n7), get_center_front_left(n7),
 						get_center_left_top(n7), get_center_top(n7), get_center_front_top(n7), get_corner7(n7));
 			}
 
 			if (is_border_right(n6, _octree_root_size)) {
-				add_cell(grid,
-						get_center(n6), get_center_right(n6), get_center_front_right(n6), get_center_front(n6),
+				add_cell(grid, get_center(n6), get_center_right(n6), get_center_front_right(n6), get_center_front(n6),
 						get_center_top(n6), get_center_right_top(n6), get_corner6(n6), get_center_front_top(n6));
 			}
 		}
 
 		if (is_border_bottom(n3) && is_border_bottom(n2)) {
-			add_cell(grid,
-					get_center_bottom(n3), get_center_bottom(n2), get_center_front_bottom(n2), get_center_front_bottom(n3),
-					get_center(n3), get_center(n2), get_center_front(n2), get_center_front(n3));
+			add_cell(grid, get_center_bottom(n3), get_center_bottom(n2), get_center_front_bottom(n2),
+					get_center_front_bottom(n3), get_center(n3), get_center(n2), get_center_front(n2),
+					get_center_front(n3));
 
 			// Generate back bottom corner cells
 			if (is_border_left(n3)) {
-				add_cell(grid,
-						get_center_left_bottom(n3), get_center_bottom(n3), get_center_front_bottom(n3), get_corner3(n3),
-						get_center_left(n3), get_center(n3), get_center_front(n3), get_center_front_left(n3));
+				add_cell(grid, get_center_left_bottom(n3), get_center_bottom(n3), get_center_front_bottom(n3),
+						get_corner3(n3), get_center_left(n3), get_center(n3), get_center_front(n3),
+						get_center_front_left(n3));
 			}
 			if (is_border_right(n2, _octree_root_size)) {
-				add_cell(grid, get_center_bottom(n2), get_center_right_bottom(n2), get_corner2(n2), get_center_front_bottom(n2),
-						get_center(n2), get_center_right(n2), get_center_front_right(n2), get_center_front(n2));
+				add_cell(grid, get_center_bottom(n2), get_center_right_bottom(n2), get_corner2(n2),
+						get_center_front_bottom(n2), get_center(n2), get_center_right(n2), get_center_front_right(n2),
+						get_center_front(n2));
 			}
 		}
 	}
 
 	if (is_border_left(n0) && is_border_left(n3) && is_border_left(n4) && is_border_left(n7)) {
-		add_cell(grid,
-				get_center_left(n0), get_center(n0), get_center(n3), get_center_left(n3),
-				get_center_left(n4), get_center(n4), get_center(n7), get_center_left(n7));
+		add_cell(grid, get_center_left(n0), get_center(n0), get_center(n3), get_center_left(n3), get_center_left(n4),
+				get_center(n4), get_center(n7), get_center_left(n7));
 
 		// Generate left edge border cells
 		if (is_border_top(n4, _octree_root_size) && is_border_top(n7, _octree_root_size)) {
-			add_cell(grid,
-					get_center_left(n4), get_center(n4), get_center(n7), get_center_left(n7),
+			add_cell(grid, get_center_left(n4), get_center(n4), get_center(n7), get_center_left(n7),
 					get_center_left_top(n4), get_center_top(n4), get_center_top(n7), get_center_left_top(n7));
 		}
 
 		if (is_border_bottom(n0) && is_border_bottom(n3)) {
-			add_cell(grid,
-					get_center_left_bottom(n0), get_center_bottom(n0), get_center_bottom(n3), get_center_left_bottom(n3),
-					get_center_left(n0), get_center(n0), get_center(n3), get_center_left(n3));
+			add_cell(grid, get_center_left_bottom(n0), get_center_bottom(n0), get_center_bottom(n3),
+					get_center_left_bottom(n3), get_center_left(n0), get_center(n0), get_center(n3),
+					get_center_left(n3));
 		}
 
 		if (is_border_back(n0) && is_border_back(n4)) {
-			add_cell(grid,
-					get_center_back_left(n0), get_center_back(n0), get_center(n0), get_center_left(n0),
+			add_cell(grid, get_center_back_left(n0), get_center_back(n0), get_center(n0), get_center_left(n0),
 					get_center_back_left(n4), get_center_back(n4), get_center(n4), get_center_left(n4));
 		}
 
 		if (is_border_front(n3, _octree_root_size) && is_border_front(n7, _octree_root_size)) {
-			add_cell(grid,
-					get_center_left(n3), get_center(n3), get_center_front(n3), get_center_front_left(n3),
+			add_cell(grid, get_center_left(n3), get_center(n3), get_center_front(n3), get_center_front_left(n3),
 					get_center_left(n7), get_center(n7), get_center_front(n7), get_center_front_left(n7));
 		}
 	}
 
-	if (is_border_right(n1, _octree_root_size) &&
-			is_border_right(n2, _octree_root_size) &&
-			is_border_right(n5, _octree_root_size) &&
-			is_border_right(n6, _octree_root_size)) {
-		add_cell(grid,
-				get_center(n1), get_center_right(n1), get_center_right(n2), get_center(n2),
-				get_center(n5), get_center_right(n5), get_center_right(n6), get_center(n6));
+	if (is_border_right(n1, _octree_root_size) && is_border_right(n2, _octree_root_size) &&
+			is_border_right(n5, _octree_root_size) && is_border_right(n6, _octree_root_size)) {
+		add_cell(grid, get_center(n1), get_center_right(n1), get_center_right(n2), get_center(n2), get_center(n5),
+				get_center_right(n5), get_center_right(n6), get_center(n6));
 
 		// Generate right edge border cells
 		if (is_border_top(n5, _octree_root_size) && is_border_top(n6, _octree_root_size)) {
-			add_cell(grid,
-					get_center(n5), get_center_right(n5), get_center_right(n6), get_center(n6),
+			add_cell(grid, get_center(n5), get_center_right(n5), get_center_right(n6), get_center(n6),
 					get_center_top(n5), get_center_right_top(n5), get_center_right_top(n6), get_center_top(n6));
 		}
 
 		if (is_border_bottom(n1) && is_border_bottom(n2)) {
-			add_cell(grid,
-					get_center_bottom(n1), get_center_right_bottom(n1), get_center_right_bottom(n2), get_center_bottom(n2),
-					get_center(n1), get_center_right(n1), get_center_right(n2), get_center(n2));
+			add_cell(grid, get_center_bottom(n1), get_center_right_bottom(n1), get_center_right_bottom(n2),
+					get_center_bottom(n2), get_center(n1), get_center_right(n1), get_center_right(n2), get_center(n2));
 		}
 
 		if (is_border_back(n1) && is_border_back(n5)) {
-			add_cell(grid,
-					get_center_back(n1), get_center_back_right(n1), get_center_right(n1), get_center(n1),
+			add_cell(grid, get_center_back(n1), get_center_back_right(n1), get_center_right(n1), get_center(n1),
 					get_center_back(n5), get_center_back_right(n5), get_center_right(n5), get_center(n5));
 		}
 
 		if (is_border_front(n2, _octree_root_size) && is_border_front(n6, _octree_root_size)) {
-			add_cell(grid,
-					get_center(n2), get_center_right(n2), get_center_front_right(n2), get_center_front(n2),
+			add_cell(grid, get_center(n2), get_center_right(n2), get_center_front_right(n2), get_center_front(n2),
 					get_center(n6), get_center_right(n6), get_center_front_right(n6), get_center_front(n6));
 		}
 	}
 
-	if (is_border_top(n4, _octree_root_size) &&
-			is_border_top(n5, _octree_root_size) &&
-			is_border_top(n6, _octree_root_size) &&
-			is_border_top(n7, _octree_root_size)) {
-		add_cell(grid,
-				get_center(n4), get_center(n5), get_center(n6), get_center(n7),
-				get_center_top(n4), get_center_top(n5), get_center_top(n6), get_center_top(n7));
+	if (is_border_top(n4, _octree_root_size) && is_border_top(n5, _octree_root_size) &&
+			is_border_top(n6, _octree_root_size) && is_border_top(n7, _octree_root_size)) {
+		add_cell(grid, get_center(n4), get_center(n5), get_center(n6), get_center(n7), get_center_top(n4),
+				get_center_top(n5), get_center_top(n6), get_center_top(n7));
 	}
 
 	if (is_border_bottom(n0) && is_border_bottom(n1) && is_border_bottom(n2) && is_border_bottom(n3)) {
-		add_cell(grid,
-				get_center_bottom(n0), get_center_bottom(n1), get_center_bottom(n2), get_center_bottom(n3),
+		add_cell(grid, get_center_bottom(n0), get_center_bottom(n1), get_center_bottom(n2), get_center_bottom(n3),
 				get_center(n0), get_center(n1), get_center(n2), get_center(n3));
 	}
 }
@@ -838,15 +781,8 @@ inline bool is_surface_near(OctreeNode *node) {
 	return Math::abs(node->center_value.sdf) < node->size * SQRT3 * NEAR_SURFACE_FACTOR;
 }
 
-void DualGridGenerator::vert_proc(
-		OctreeNode *n0,
-		OctreeNode *n1,
-		OctreeNode *n2,
-		OctreeNode *n3,
-		OctreeNode *n4,
-		OctreeNode *n5,
-		OctreeNode *n6,
-		OctreeNode *n7) {
+void DualGridGenerator::vert_proc(OctreeNode *n0, OctreeNode *n1, OctreeNode *n2, OctreeNode *n3, OctreeNode *n4,
+		OctreeNode *n5, OctreeNode *n6, OctreeNode *n7) {
 	const bool n0_has_children = n0->has_children();
 	const bool n1_has_children = n1->has_children();
 	const bool n2_has_children = n2->has_children();
@@ -856,9 +792,8 @@ void DualGridGenerator::vert_proc(
 	const bool n6_has_children = n6->has_children();
 	const bool n7_has_children = n7->has_children();
 
-	if (
-			n0_has_children || n1_has_children || n2_has_children || n3_has_children ||
-			n4_has_children || n5_has_children || n6_has_children || n7_has_children) {
+	if (n0_has_children || n1_has_children || n2_has_children || n3_has_children || n4_has_children ||
+			n5_has_children || n6_has_children || n7_has_children) {
 		OctreeNode *c0 = n0_has_children ? n0->children[6] : n0;
 		OctreeNode *c1 = n1_has_children ? n1->children[7] : n1;
 		OctreeNode *c2 = n2_has_children ? n2->children[4] : n2;
@@ -871,15 +806,8 @@ void DualGridGenerator::vert_proc(
 		vert_proc(c0, c1, c2, c3, c4, c5, c6, c7);
 
 	} else {
-		if (!(
-					is_surface_near(n0) ||
-					is_surface_near(n1) ||
-					is_surface_near(n2) ||
-					is_surface_near(n3) ||
-					is_surface_near(n4) ||
-					is_surface_near(n5) ||
-					is_surface_near(n6) ||
-					is_surface_near(n7))) {
+		if (!(is_surface_near(n0) || is_surface_near(n1) || is_surface_near(n2) || is_surface_near(n3) ||
+					is_surface_near(n4) || is_surface_near(n5) || is_surface_near(n6) || is_surface_near(n7))) {
 			return;
 		}
 
@@ -1103,7 +1031,8 @@ void DualGridGenerator::node_proc(OctreeNode *node) {
 	vert_proc(children[0], children[1], children[2], children[3], children[4], children[5], children[6], children[7]);
 }
 
-inline Vector3 interpolate(const Vector3 &v0, const Vector3 &v1, const HermiteValue &val0, const HermiteValue &val1, Vector3 &out_normal) {
+inline Vector3 interpolate(
+		const Vector3 &v0, const Vector3 &v1, const HermiteValue &val0, const HermiteValue &val1, Vector3 &out_normal) {
 	if (Math::abs(val0.sdf - SURFACE_ISO_LEVEL) <= FLT_EPSILON) {
 		out_normal = val0.gradient;
 		out_normal.normalize();
@@ -1129,10 +1058,11 @@ inline Vector3 interpolate(const Vector3 &v0, const Vector3 &v1, const HermiteVa
 	return v0 + mu * (v1 - v0);
 }
 
-void polygonize_cell_marching_squares(const Vector3 *cube_corners, const HermiteValue *cube_values, float max_distance, MeshBuilder &mesh_builder, const int *corner_map) {
+void polygonize_cell_marching_squares(const Vector3 *cube_corners, const HermiteValue *cube_values, float max_distance,
+		MeshBuilder &mesh_builder, const int *corner_map) {
 	// Note:
-	// Using Ogre's implementation directly resulted in inverted result, because it expects density values instead of SDF,
-	// So I had to flip a few things around in order to make it work
+	// Using Ogre's implementation directly resulted in inverted result, because it expects density values instead of
+	// SDF, So I had to flip a few things around in order to make it work
 
 	unsigned char square_index = 0;
 	HermiteValue values[4];
@@ -1147,11 +1077,8 @@ void polygonize_cell_marching_squares(const Vector3 *cube_corners, const Hermite
 
 	// Don't generate triangles if we are completely inside and far enough away from the surface
 	max_distance = -max_distance;
-	if (square_index == 15 &&
-			values[0].sdf <= max_distance &&
-			values[1].sdf <= max_distance &&
-			values[2].sdf <= max_distance &&
-			values[3].sdf <= max_distance) {
+	if (square_index == 15 && values[0].sdf <= max_distance && values[1].sdf <= max_distance &&
+			values[2].sdf <= max_distance && values[3].sdf <= max_distance) {
 		return;
 	}
 
@@ -1181,22 +1108,27 @@ void polygonize_cell_marching_squares(const Vector3 *cube_corners, const Hermite
 	intersection_normals[6] = inner_val.gradient.normalized(); // * (inner_val.value + 1.0);
 
 	if (edge & 1) {
-		intersection_points[1] = interpolate(cube_corners[corner_map[0]], cube_corners[corner_map[1]], values[0], values[1], intersection_normals[1]);
+		intersection_points[1] = interpolate(cube_corners[corner_map[0]], cube_corners[corner_map[1]], values[0],
+				values[1], intersection_normals[1]);
 	}
 	if (edge & 2) {
-		intersection_points[3] = interpolate(cube_corners[corner_map[1]], cube_corners[corner_map[2]], values[1], values[2], intersection_normals[3]);
+		intersection_points[3] = interpolate(cube_corners[corner_map[1]], cube_corners[corner_map[2]], values[1],
+				values[2], intersection_normals[3]);
 	}
 	if (edge & 4) {
-		intersection_points[5] = interpolate(cube_corners[corner_map[2]], cube_corners[corner_map[3]], values[2], values[3], intersection_normals[5]);
+		intersection_points[5] = interpolate(cube_corners[corner_map[2]], cube_corners[corner_map[3]], values[2],
+				values[3], intersection_normals[5]);
 	}
 	if (edge & 8) {
-		intersection_points[7] = interpolate(cube_corners[corner_map[3]], cube_corners[corner_map[0]], values[3], values[0], intersection_normals[7]);
+		intersection_points[7] = interpolate(cube_corners[corner_map[3]], cube_corners[corner_map[0]], values[3],
+				values[0], intersection_normals[7]);
 	}
 
 	// Ambigous case handling, 5 = 0 2 and 10 = 1 3
 	/*if (squareIndex == 5 || squareIndex == 10)
 			{
-				Vector3 avg = (corners[corner_map[0]] + corners[corner_map[1]] + corners[corner_map[2]] + corners[corner_map[3]]) / (Real)4.0;
+				Vector3 avg = (corners[corner_map[0]] + corners[corner_map[1]] + corners[corner_map[2]] +
+	   corners[corner_map[3]]) / (Real)4.0;
 				// Lets take the alternative.
 				if (mSrc->getValue(avg) >= ISO_LEVEL)
 				{
@@ -1206,16 +1138,13 @@ void polygonize_cell_marching_squares(const Vector3 *cube_corners, const Hermite
 
 	// Create the triangles according to the table.
 	for (int i = 0; MarchingCubes::ms_triangles[square_index][i] != -1; i += 3) {
-		mesh_builder.add_vertex(
-				intersection_points[MarchingCubes::ms_triangles[square_index][i]],
+		mesh_builder.add_vertex(intersection_points[MarchingCubes::ms_triangles[square_index][i]],
 				intersection_normals[MarchingCubes::ms_triangles[square_index][i]]);
 
-		mesh_builder.add_vertex(
-				intersection_points[MarchingCubes::ms_triangles[square_index][i + 2]],
+		mesh_builder.add_vertex(intersection_points[MarchingCubes::ms_triangles[square_index][i + 2]],
 				intersection_normals[MarchingCubes::ms_triangles[square_index][i + 2]]);
 
-		mesh_builder.add_vertex(
-				intersection_points[MarchingCubes::ms_triangles[square_index][i + 1]],
+		mesh_builder.add_vertex(intersection_points[MarchingCubes::ms_triangles[square_index][i + 1]],
 				intersection_normals[MarchingCubes::ms_triangles[square_index][i + 1]]);
 	}
 }
@@ -1231,26 +1160,33 @@ static const int g_corner_map_bottom[4] = { 3, 2, 1, 0 };
 
 } // namespace MarchingSquares
 
-void add_marching_squares_skirts(const Vector3 *corners, const HermiteValue *values, MeshBuilder &mesh_builder, Vector3 min_pos, Vector3 max_pos) {
+void add_marching_squares_skirts(const Vector3 *corners, const HermiteValue *values, MeshBuilder &mesh_builder,
+		Vector3 min_pos, Vector3 max_pos) {
 	float max_distance = 0.2f; // Max distance to the isosurface
 
 	if (corners[0].z == min_pos.z) {
-		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_back);
+		polygonize_cell_marching_squares(
+				corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_back);
 	}
 	if (corners[2].z == max_pos.z) {
-		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_front);
+		polygonize_cell_marching_squares(
+				corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_front);
 	}
 	if (corners[0].x == min_pos.x) {
-		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_left);
+		polygonize_cell_marching_squares(
+				corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_left);
 	}
 	if (corners[1].x == max_pos.x) {
-		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_right);
+		polygonize_cell_marching_squares(
+				corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_right);
 	}
 	if (corners[5].y == max_pos.y) {
-		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_top);
+		polygonize_cell_marching_squares(
+				corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_top);
 	}
 	if (corners[0].y == min_pos.y) {
-		polygonize_cell_marching_squares(corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_bottom);
+		polygonize_cell_marching_squares(
+				corners, values, max_distance, mesh_builder, MarchingSquares::g_corner_map_bottom);
 	}
 }
 
@@ -1312,23 +1248,21 @@ void polygonize_cell_marching_cubes(const Vector3 *corners, const HermiteValue *
 
 	// Create the triangles according to the table.
 	for (int i = 0; MarchingCubes::mc_triangles[case_index][i] != -1; i += 3) {
-		mesh_builder.add_vertex(
-				intersection_points[MarchingCubes::mc_triangles[case_index][i]],
+		mesh_builder.add_vertex(intersection_points[MarchingCubes::mc_triangles[case_index][i]],
 				intersection_normals[MarchingCubes::mc_triangles[case_index][i]]);
 
-		mesh_builder.add_vertex(
-				intersection_points[MarchingCubes::mc_triangles[case_index][i + 1]],
+		mesh_builder.add_vertex(intersection_points[MarchingCubes::mc_triangles[case_index][i + 1]],
 				intersection_normals[MarchingCubes::mc_triangles[case_index][i + 1]]);
 
-		mesh_builder.add_vertex(
-				intersection_points[MarchingCubes::mc_triangles[case_index][i + 2]],
+		mesh_builder.add_vertex(intersection_points[MarchingCubes::mc_triangles[case_index][i + 2]],
 				intersection_normals[MarchingCubes::mc_triangles[case_index][i + 2]]);
 	}
 
 	return;
 }
 
-void polygonize_dual_cell(const DualCell &cell, const VoxelAccess &voxels, MeshBuilder &mesh_builder, bool skirts_enabled) {
+void polygonize_dual_cell(
+		const DualCell &cell, const VoxelAccess &voxels, MeshBuilder &mesh_builder, bool skirts_enabled) {
 	const Vector3 *corners = cell.corners;
 	HermiteValue values[8];
 
@@ -1343,11 +1277,13 @@ void polygonize_dual_cell(const DualCell &cell, const VoxelAccess &voxels, MeshB
 	polygonize_cell_marching_cubes(corners, values, mesh_builder);
 
 	if (skirts_enabled) {
-		add_marching_squares_skirts(corners, values, mesh_builder, Vector3(), (voxels.buffer.get_size() + voxels.offset).to_vec3());
+		add_marching_squares_skirts(
+				corners, values, mesh_builder, Vector3(), (voxels.buffer.get_size() + voxels.offset));
 	}
 }
 
-inline void polygonize_dual_grid(const DualGrid &grid, const VoxelAccess &voxels, MeshBuilder &mesh_builder, bool skirts_enabled) {
+inline void polygonize_dual_grid(
+		const DualGrid &grid, const VoxelAccess &voxels, MeshBuilder &mesh_builder, bool skirts_enabled) {
 	for (unsigned int i = 0; i < grid.cells.size(); ++i) {
 		polygonize_dual_cell(grid.cells[i], voxels, mesh_builder, skirts_enabled);
 	}
@@ -1359,10 +1295,10 @@ void polygonize_volume_directly(const VoxelBufferInternal &voxels, Vector3i min,
 	HermiteValue values[8];
 
 	const Vector3i max = min + size;
-	const Vector3 minf = min.to_vec3();
+	const Vector3 minf = min;
 
 	const Vector3 min_vertex_pos = Vector3();
-	const Vector3 max_vertex_pos = (voxels.get_size() - 2 * min).to_vec3();
+	const Vector3 max_vertex_pos = voxels.get_size() - 2 * min;
 
 	for (int z = min.z; z < max.z; ++z) {
 		for (int x = min.x; x < max.x; ++x) {
@@ -1399,7 +1335,7 @@ void polygonize_volume_directly(const VoxelBufferInternal &voxels, Vector3i min,
 	}
 }
 
-} // namespace dmc
+} //namespace zylann::voxel::dmc
 
 #define BUILD_OCTREE_BOTTOM_UP
 
@@ -1409,8 +1345,7 @@ VoxelMesherDMC::VoxelMesherDMC() {
 	set_padding(PADDING, PADDING);
 }
 
-VoxelMesherDMC::~VoxelMesherDMC() {
-}
+VoxelMesherDMC::~VoxelMesherDMC() {}
 
 void VoxelMesherDMC::set_mesh_mode(MeshMode mode) {
 	RWLockWrite wlock(_parameters_lock);
@@ -1453,6 +1388,8 @@ VoxelMesherDMC::SeamMode VoxelMesherDMC::get_seam_mode() const {
 }
 
 void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+	using namespace zylann::voxel;
+
 	// Requirements:
 	// - Voxel data must be padded
 	// - The non-padded area size is cubic and power of two
@@ -1488,13 +1425,14 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	// Unfortunately, such seams require the ability to quickly swap index buffers of the mesh using OpenGL/Vulkan,
 	// which is not possible with current Godot's VisualServer without forking the whole lot (dang!),
 	// and we are forced to at least re-upload the mesh entirely or have 16 versions of it just swapping seams...
-	// So we can't improve this further until Godot's API gives us that possibility, or other approaches like skirts need to be taken.
+	// So we can't improve this further until Godot's API gives us that possibility, or other approaches like skirts
+	// need to be taken.
 
 	// Construct an intermediate to handle padding transparently
-	dmc::VoxelAccess voxels_access(voxels, Vector3i(PADDING));
+	dmc::VoxelAccess voxels_access(voxels, Vector3iUtil::create(PADDING));
 
 	Stats stats;
-	real_t time_before = OS::get_singleton()->get_ticks_usec();
+	real_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	Cache &cache = _cache;
 
@@ -1525,7 +1463,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 		root = octree_builder.build(Vector3i(), chunk_size);
 	}
 
-	stats.octree_build_time = OS::get_singleton()->get_ticks_usec() - time_before;
+	stats.octree_build_time = Time::get_singleton()->get_ticks_usec() - time_before;
 
 	Array surface;
 
@@ -1534,21 +1472,21 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 			surface = dmc::generate_debug_octree_mesh(root, 1 << input.lod);
 
 		} else {
-			time_before = OS::get_singleton()->get_ticks_usec();
+			time_before = Time::get_singleton()->get_ticks_usec();
 
 			dmc::DualGridGenerator dual_grid_generator(cache.dual_grid, root->size);
 			dual_grid_generator.node_proc(root);
 			// TODO Handle non-subdivided octree
 
-			stats.dualgrid_derivation_time = OS::get_singleton()->get_ticks_usec() - time_before;
+			stats.dualgrid_derivation_time = Time::get_singleton()->get_ticks_usec() - time_before;
 
 			if (params.mesh_mode == MESH_DEBUG_DUAL_GRID) {
 				surface = dmc::generate_debug_dual_grid_mesh(cache.dual_grid, 1 << input.lod);
 
 			} else {
-				time_before = OS::get_singleton()->get_ticks_usec();
+				time_before = Time::get_singleton()->get_ticks_usec();
 				dmc::polygonize_dual_grid(cache.dual_grid, voxels_access, cache.mesh_builder, skirts_enabled);
-				stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
+				stats.meshing_time = Time::get_singleton()->get_ticks_usec() - time_before;
 			}
 
 			cache.dual_grid.cells.clear();
@@ -1559,19 +1497,19 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	} else if (params.simplify_mode == SIMPLIFY_NONE) {
 		// We throw away adaptivity for meshing speed.
 		// This is essentially regular marching cubes.
-		time_before = OS::get_singleton()->get_ticks_usec();
-		dmc::polygonize_volume_directly(
-				voxels, Vector3i(PADDING), Vector3i(chunk_size), cache.mesh_builder, skirts_enabled);
-		stats.meshing_time = OS::get_singleton()->get_ticks_usec() - time_before;
+		time_before = Time::get_singleton()->get_ticks_usec();
+		dmc::polygonize_volume_directly(voxels, Vector3iUtil::create(PADDING), Vector3iUtil::create(chunk_size),
+				cache.mesh_builder, skirts_enabled);
+		stats.meshing_time = Time::get_singleton()->get_ticks_usec() - time_before;
 	}
 
-	if (surface.empty()) {
-		time_before = OS::get_singleton()->get_ticks_usec();
+	if (surface.is_empty()) {
+		time_before = Time::get_singleton()->get_ticks_usec();
 		if (input.lod > 0) {
 			cache.mesh_builder.scale(1 << input.lod);
 		}
 		surface = cache.mesh_builder.commit(params.mesh_mode == MESH_WIREFRAME);
-		stats.commit_time = OS::get_singleton()->get_ticks_usec() - time_before;
+		stats.commit_time = Time::get_singleton()->get_ticks_usec() - time_before;
 	}
 
 	// surfaces[material][array_type], for now single material
@@ -1626,11 +1564,10 @@ void VoxelMesherDMC::_bind_methods() {
 			PropertyInfo(Variant::INT, "mesh_mode", PROPERTY_HINT_ENUM, "Normal,Wireframe,DebugOctree,DebugDualGrid"),
 			"set_mesh_mode", "get_mesh_mode");
 
-	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "simplify_mode", PROPERTY_HINT_ENUM, "OctreeBottomUp,OctreeTopDown,None"),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "simplify_mode", PROPERTY_HINT_ENUM, "OctreeBottomUp,OctreeTopDown,None"),
 			"set_simplify_mode", "get_simplify_mode");
 
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "geometric_error"), "set_simplify_mode", "get_simplify_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "geometric_error"), "set_simplify_mode", "get_simplify_mode");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "seam_mode", PROPERTY_HINT_ENUM, "None,MarchingSquareSkirts"),
 			"set_seam_mode", "get_seam_mode");

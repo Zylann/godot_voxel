@@ -1,11 +1,8 @@
 Import('env')
 Import('env_modules')
 
-# TODO Support is turned off for now because Godot 3 doesn't compile with C++17.
-# FastNoise2 use C++17 features and STL both in its headers and runtime as well.
-# SIMD noise support would have to wait for Godot 4 (or GDNative port, which will only be worth in Godot 4 too)
-FAST_NOISE_2_SRC = False
-FAST_NOISE_2_STATIC = False
+# Note, support for FastNoise2 requires C++17
+FAST_NOISE_2_SRC = True
 
 RUN_TESTS = False
 if env['target'] == 'debug':
@@ -39,6 +36,7 @@ voxel_files = [
 	#"util/noise/*.cpp",
 	"util/noise/fast_noise_lite.cpp",
 	"util/noise/fast_noise_lite_gradient.cpp",
+	"util/tasks/*.cpp",
 
 	"terrain/*.cpp",
 	"terrain/instancing/*.cpp",
@@ -58,13 +56,21 @@ if env["tools"]:
 		"editor/graph/*.cpp",
 		"editor/terrain/*.cpp",
 		"editor/fast_noise_lite/*.cpp",
+		"editor/instancer/*.cpp",
 		"editor/instance_library/*.cpp",
 		"editor/vox/*.cpp",
 	]
 	voxel_files += voxel_editor_files
 
-# See https://github.com/zeux/meshoptimizer/issues/311
-env_voxel.Append(CPPDEFINES=["MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS"])
+env_voxel.Append(CPPDEFINES=[
+	# See https://github.com/zeux/meshoptimizer/issues/311
+	"MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS",
+	# Because of the above, the MeshOptimizer library in this module is different to an official one.
+	# Godot 4 includes an official version, which means they would both conflict at linking time.
+	# To prevent this clash we wrap the entire library within an additional namespace.
+	# This should be solved either by solving issue #311 or by porting the module to a dynamic library (GDExtension).
+	"MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE"
+])
 
 if RUN_TESTS:
 	voxel_files += [
@@ -85,34 +91,17 @@ if env["platform"] == "windows":
 if FAST_NOISE_2_SRC:
 	# Build from source. Should be the simplest, but requires C++17
 	SConscript('thirdparty/fast_noise_2/SConscript', exports = ["env", "env_voxel"])
-
-if FAST_NOISE_2_STATIC:
-	# Build from a pre-built static lib. This requires to check every build combination (and have them as well),
-	# AND it also requires C++17 due to differences of runtimes.
-	fn2_path = "C:/Projects/FastNoise2/0.7-alpha"
-
-	if env["platform"] == "windows":
-		if env.msvc:
-			if env['bits'] == '64':
-				env_voxel.Append(LIBPATH = [fn2_path + "/lib/win64-msvc"])
-			else:
-				raise RuntimeError("FastNoise2 32-bit builds are not supported yet")
-		else:
-			raise RuntimeError("FastNoise2 can only be built with MSVC at the moment")
-
-		env_voxel.Append(CPPPATH = [fn2_path + '/include'])
-		if env['target'] == 'debug':
-			env_voxel.Append(LIBS = ['FastNoise'])
-		else:
-			env_voxel.Append(LIBS = ['FastNoiseD'])
-	else:
-		raise RuntimeError("FastNoise2 can only be built on Windows at the moment")
-
+	
+	env_voxel.Append(CPPPATH=["thirdparty/fast_noise_2/include"])
+	
 	voxel_files += [
 		"util/noise/fast_noise_2.cpp"
 	]
 
-	env_voxel.Append(CPPDEFINES = ["VOXEL_FAST_NOISE_2_SUPPORT"])
+	if env["tools"]:
+		voxel_files += [
+			"editor/fast_noise_2/*.cpp"
+		]
 
 # ----------------------------------------------------------------------------------------------------------------------
 

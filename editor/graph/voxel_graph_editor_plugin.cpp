@@ -11,8 +11,12 @@ VoxelGraphEditorPlugin::VoxelGraphEditorPlugin(EditorNode *p_node) {
 	//EditorInterface *ed = get_editor_interface();
 	_graph_editor = memnew(VoxelGraphEditor);
 	_graph_editor->set_custom_minimum_size(Size2(0, 300) * EDSCALE);
-	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NODE_SELECTED, this, "_on_graph_editor_node_selected");
-	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NOTHING_SELECTED, this, "_on_graph_editor_nothing_selected");
+	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NODE_SELECTED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_node_selected));
+	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NOTHING_SELECTED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected));
+	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NODES_DELETED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted));
 	_bottom_panel_button = add_control_to_bottom_panel(_graph_editor, TTR("Voxel Graph"));
 	_bottom_panel_button->hide();
 }
@@ -91,14 +95,14 @@ void VoxelGraphEditorPlugin::_hide_deferred() {
 
 void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 	Ref<VoxelGraphNodeInspectorWrapper> wrapper;
-	wrapper.instance();
+	wrapper.instantiate();
 	wrapper->setup(_graph_editor->get_graph(), node_id, &get_undo_redo());
 	// Note: it's neither explicit nor documented, but the reference will stay alive due to EditorHistory::_add_object
 	get_editor_interface()->inspect_object(*wrapper);
 	// TODO Absurd situation here...
 	// `inspect_object()` gets to a point where Godot hides ALL plugins for some reason...
-	// And all this, to have the graph editor rebuilt and shown again, because it DOES also handle that resource type -_-
-	// https://github.com/godotengine/godot/issues/40166
+	// And all this, to have the graph editor rebuilt and shown again, because it DOES also handle that resource type
+	// -_- https://github.com/godotengine/godot/issues/40166
 }
 
 void VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected() {
@@ -112,10 +116,18 @@ void VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected() {
 	}
 }
 
+void VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted() {
+	// When deleting nodes, the selected one can be in them, but the inspector wrapper will still point at it.
+	// Clean it up and inspect the graph itself.
+	Ref<VoxelGeneratorGraph> graph = _graph_editor->get_graph();
+	ERR_FAIL_COND(graph.is_null());
+	get_editor_interface()->inspect_object(*graph);
+}
+
 void VoxelGraphEditorPlugin::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_graph_editor_node_selected", "node_id"),
-			&VoxelGraphEditorPlugin::_on_graph_editor_node_selected);
-	ClassDB::bind_method(D_METHOD("_on_graph_editor_nothing_selected"),
-			&VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected);
+	// ClassDB::bind_method(D_METHOD("_on_graph_editor_node_selected", "node_id"),
+	// 		&VoxelGraphEditorPlugin::_on_graph_editor_node_selected);
+	// ClassDB::bind_method(
+	// 		D_METHOD("_on_graph_editor_nothing_selected"), &VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected);
 	ClassDB::bind_method(D_METHOD("_hide_deferred"), &VoxelGraphEditorPlugin::_hide_deferred);
 }

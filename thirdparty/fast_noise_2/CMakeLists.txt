@@ -1,11 +1,14 @@
-# CMakeList.txt : CMake project for FastNoise
+# CMakeList.txt : CMake project for FastNoise2
 cmake_minimum_required(VERSION 3.7.1)
 
-project(FastNoise2 VERSION 0.5.0)
+project(FastNoise2 VERSION 0.9.4)
 set(CMAKE_CXX_STANDARD 17)
 
-option(FASTNOISE2_NOISETOOL "Build Noise Tool" ON)
-option(FASTNOISE2_TESTS "Build Test" OFF)
+# Build DLL
+#set(BUILD_SHARED_LIBS ON) 
+
+option(FASTNOISE2_NOISETOOL "Build NoiseTool application" ON)
+option(FASTNOISE2_TESTS "Build tests" OFF)
 
 if(MSVC)
     #setup pdb target location
@@ -14,29 +17,30 @@ if(MSVC)
     set(CMAKE_PDB_OUTPUT_DIRECTORY "${pdb_output_dir}")
     set(CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY "${pdb_output_dir}") 
 
-    #need to sync pdp files
+    #need to sync pdb files
     add_compile_options("/FS")
 endif()
-
-set(install_targets "")
-
-add_subdirectory(src)
-
-if(FASTNOISE2_NOISETOOL)
-	add_subdirectory(NoiseTool)
-endif()
-
-if(FASTNOISE2_TESTS)
-	add_subdirectory(tests)
-endif()
-
-
-#Install -----------------------------------------------------------
 
 # Introduce variables:
 # * CMAKE_INSTALL_LIBDIR
 # * CMAKE_INSTALL_BINDIR
 include(GNUInstallDirs) 
+set(install_targets "")
+
+add_subdirectory(src)
+
+if(FASTNOISE2_NOISETOOL)
+    include(cmake/CPM.cmake)
+    add_subdirectory(NoiseTool)
+endif()
+
+if(FASTNOISE2_TESTS)
+    include(cmake/CPM.cmake)  
+    add_subdirectory(tests)
+endif()
+
+
+#Install -----------------------------------------------------------
 
 # Layout. This works for all platforms:
 #   * <prefix>/lib*/cmake/<PROJECT-NAME>
@@ -84,23 +88,6 @@ install(
     INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
-if(FASTNOISE2_NOISETOOL)
-	if(WIN32)
-		#need sdl2 dll on windows, linux its expected to be installed
-		if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4") #32bit
-			install(
-				FILES NoiseTool/ThirdParty/SDL2-2.0.12/lib/x86/SDL2.dll
-				DESTINATION "${CMAKE_INSTALL_BINDIR}"
-			)
-		else()
-			install(
-				FILES NoiseTool/ThirdParty/SDL2-2.0.12/lib/x64/SDL2.dll
-				DESTINATION "${CMAKE_INSTALL_BINDIR}"
-			)
-		endif()
-	endif()
-endif()
-
 # Headers:
 install(
     FILES ${install_fastsimd_headers}
@@ -109,6 +96,10 @@ install(
 install(
     FILES ${install_fastnoise_headers}
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/FastNoise"
+)
+install(
+    FILES ${install_fastnoise_generators_headers}
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/FastNoise/Generators"
 )
 
 # Config

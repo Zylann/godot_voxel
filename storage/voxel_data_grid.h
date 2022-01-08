@@ -23,8 +23,7 @@ public:
 	}
 
 	// D action(Vector3i pos, D value)
-	template <typename F>
-	void write_box(Box3i voxel_box, unsigned int channel, F action) {
+	template <typename F> void write_box(Box3i voxel_box, unsigned int channel, F action) {
 		_box_loop(voxel_box, [action, channel](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
 			voxels.write_box(local_box, channel, action, voxel_offset);
 		});
@@ -33,10 +32,11 @@ public:
 	// void action(Vector3i pos, D0 &value, D1 &value)
 	template <typename F>
 	void write_box_2(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
-		_box_loop(voxel_box, [action, channel0, channel1](
-									 VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
-			voxels.write_box_2_template<F, uint16_t, uint16_t>(local_box, channel0, channel1, action, voxel_offset);
-		});
+		_box_loop(voxel_box,
+				[action, channel0, channel1](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
+					voxels.write_box_2_template<F, uint16_t, uint16_t>(
+							local_box, channel0, channel1, action, voxel_offset);
+				});
 	}
 
 private:
@@ -44,8 +44,7 @@ private:
 		return _block_size;
 	}
 
-	template <typename Block_F>
-	inline void _box_loop(Box3i voxel_box, Block_F block_action) {
+	template <typename Block_F> inline void _box_loop(Box3i voxel_box, Block_F block_action) {
 		Vector3i block_rpos;
 		const Vector3i area_origin_in_voxels = _offset_in_blocks * _block_size;
 		unsigned int index = 0;
@@ -60,7 +59,7 @@ private:
 					}
 					const Vector3i block_origin = block_rpos * _block_size + area_origin_in_voxels;
 					Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
-					local_box.clip(Box3i(Vector3i(), Vector3i(_block_size)));
+					local_box.clip(Box3i(Vector3i(), Vector3iUtil::create(_block_size)));
 					RWLockWrite wlock(block->get_lock());
 					block_action(*block, local_box, block_origin);
 				}
@@ -75,25 +74,21 @@ private:
 
 	inline void create(Vector3i size, unsigned int block_size) {
 		_blocks.clear();
-		_blocks.resize(size.volume());
+		_blocks.resize(Vector3iUtil::get_volume(size));
 		_size_in_blocks = size;
 		_block_size = block_size;
 	}
 
 	inline bool is_valid_position(Vector3i pos) {
 		pos -= _offset_in_blocks;
-		return pos.x >= 0 &&
-			   pos.y >= 0 &&
-			   pos.z >= 0 &&
-			   pos.x < _size_in_blocks.x &&
-			   pos.y < _size_in_blocks.y &&
-			   pos.z < _size_in_blocks.z;
+		return pos.x >= 0 && pos.y >= 0 && pos.z >= 0 && pos.x < _size_in_blocks.x && pos.y < _size_in_blocks.y &&
+				pos.z < _size_in_blocks.z;
 	}
 
 	inline void set_block(Vector3i position, std::shared_ptr<VoxelBufferInternal> block) {
 		ERR_FAIL_COND(!is_valid_position(position));
 		position -= _offset_in_blocks;
-		const unsigned int index = position.get_zxy_index(_size_in_blocks);
+		const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
 		CRASH_COND(index >= _blocks.size());
 		_blocks[index] = block;
 	}
@@ -101,7 +96,7 @@ private:
 	inline VoxelBufferInternal *get_block(Vector3i position) {
 		ERR_FAIL_COND_V(!is_valid_position(position), nullptr);
 		position -= _offset_in_blocks;
-		const unsigned int index = position.get_zxy_index(_size_in_blocks);
+		const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
 		CRASH_COND(index >= _blocks.size());
 		return _blocks[index].get();
 	}

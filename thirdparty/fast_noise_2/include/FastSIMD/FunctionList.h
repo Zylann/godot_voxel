@@ -31,7 +31,7 @@
 /// <code>
 /// size_t FS_Size_32()
 /// </code>
-#define FS_Size_32() FS::template VectorSize<32>
+#define FS_Size_32() FS::template VectorSize<sizeof( int32_t )>
 
 
 // Vector builders
@@ -88,6 +88,41 @@
 /// void FS_Store_i32( void* ptr, int32v i )
 /// </code>
 #define FS_Store_i32( ... ) FS::Store_i32( __VA_ARGS__ )
+
+
+// Extract
+
+/// <summary>
+/// Retreive element 0 from vector
+/// </summary>
+/// <code>
+/// float FS_Extract0_f32( float32v f )
+/// </code>
+#define FS_Extract0_f32( ... ) FS::Extract0_f32( __VA_ARGS__ )
+
+/// <summary>
+/// Retreive element 0 from vector
+/// </summary>
+/// <code>
+/// int32_t FS_Extract0_i32( int32v i )
+/// </code>
+#define FS_Extract0_i32( ... ) FS::Extract0_i32( __VA_ARGS__ )
+
+/// <summary>
+/// Retreive element from vector at position
+/// </summary>
+/// <code>
+/// float FS_Extract_f32( float32v f, size_t idx )
+/// </code>
+#define FS_Extract_f32( ... ) FS::Extract_f32( __VA_ARGS__ )
+
+/// <summary>
+/// Retreive element from vector at position
+/// </summary>
+/// <code>
+/// int32_t FS_Extract_i32( int32v i, size_t idx )
+/// </code>
+#define FS_Extract_i32( ... ) FS::Extract_i32( __VA_ARGS__ )
 
 
 // Cast

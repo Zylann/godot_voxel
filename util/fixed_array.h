@@ -1,7 +1,7 @@
 #ifndef FIXED_ARRAY_H
 #define FIXED_ARRAY_H
 
-#include <core/error_macros.h>
+#include <core/error/error_macros.h>
 
 // TODO Could use std::array, but due to how Godot compiles,
 // I couldn't find a way to enable boundary checks without failing to link my module with the rest of Godot...

@@ -10,14 +10,17 @@ namespace FastNoise
         void SetSource( SmartNodeArg<T> gen ) { this->SetSourceMemberVariable( mSource, gen ); }
         void SetGain( float value ) { mGain = value; CalculateFractalBounding(); } 
         void SetGain( SmartNodeArg<> gen ) { mGain = 1.0f; this->SetSourceMemberVariable( mGain, gen ); CalculateFractalBounding(); }
-        void SetOctaveCount( int32_t value ) { mOctaves = value; CalculateFractalBounding(); } 
+        void SetWeightedStrength( float value ) { mWeightedStrength = value; } 
+        void SetWeightedStrength( SmartNodeArg<> gen ) { this->SetSourceMemberVariable( mWeightedStrength, gen ); }
+        void SetOctaveCount( int value ) { mOctaves = value; CalculateFractalBounding(); } 
         void SetLacunarity( float value ) { mLacunarity = value; } 
 
     protected:
         GeneratorSourceT<T> mSource;
         HybridSource mGain = 0.5f;
+        HybridSource mWeightedStrength = 0.0f;
 
-        int32_t mOctaves = 3;
+        int   mOctaves = 3;
         float mLacunarity = 2.0f;
         float mFractalBounding = 1.0f / 1.75f;
 
@@ -26,78 +29,85 @@ namespace FastNoise
             float gain = std::abs( mGain.constant );
             float amp = gain;
             float ampFractal = 1.0f;
-            for( int32_t i = 1; i < mOctaves; i++ )
+            for( int i = 1; i < mOctaves; i++ )
             {
                 ampFractal += amp;
                 amp *= gain;
             }
             mFractalBounding = 1.0f / ampFractal;
-        }
-
-        FASTNOISE_METADATA_ABSTRACT( Generator )
-
-            Metadata( const char* className, const char* sourceName = "Source" ) : Generator::Metadata( className )
-            {
-                groups.push_back( "Fractal" );
-
-                this->AddGeneratorSource( sourceName, &Fractal::SetSource );
-                this->AddHybridSource( "Gain", 0.5f, &Fractal::SetGain, &Fractal::SetGain );
-                this->AddVariable( "Octaves", 3, &Fractal::SetOctaveCount, 2, 16 );
-                this->AddVariable( "Lacunarity", 2.0f, &Fractal::SetLacunarity );
-            }
-        };        
+        }     
     };
+
+#ifdef FASTNOISE_METADATA
+    template<typename T>
+    struct MetadataT<Fractal<T>> : MetadataT<Generator>
+    {
+        MetadataT( const char* sourceName = "Source" )
+        {
+            groups.push_back( "Fractal" );
+
+            this->AddGeneratorSource( sourceName, &Fractal<T>::SetSource );
+            this->AddHybridSource( "Gain", 0.5f, &Fractal<T>::SetGain, &Fractal<T>::SetGain );
+            this->AddHybridSource( "Weighted Strength", 0.0f, &Fractal<T>::SetWeightedStrength, &Fractal<T>::SetWeightedStrength );
+            this->AddVariable( "Octaves", 3, &Fractal<T>::SetOctaveCount, 2, 16 );
+            this->AddVariable( "Lacunarity", 2.0f, &Fractal<T>::SetLacunarity );
+        }
+    };
+#endif
 
     class FractalFBm : public virtual Fractal<>
     {
-        FASTNOISE_METADATA( Fractal )        
-            using Fractal::Metadata::Metadata;
-        };    
+    public:
+        FASTSIMD_LEVEL_SUPPORT( FastNoise::SUPPORTED_SIMD_LEVELS );
+        const Metadata& GetMetadata() const override;
     };
 
-    class FractalBillow : public virtual Fractal<>
+#ifdef FASTNOISE_METADATA
+    template<>
+    struct MetadataT<FractalFBm> : MetadataT<Fractal<>>
     {
-        FASTNOISE_METADATA( Fractal )
-            using Fractal::Metadata::Metadata;
-        };    
+        SmartNode<> CreateNode( FastSIMD::eLevel ) const override;
     };
+#endif
 
     class FractalRidged : public virtual Fractal<>
     {
-        FASTNOISE_METADATA( Fractal )
-            using Fractal::Metadata::Metadata;
-        };              
+    public:
+        FASTSIMD_LEVEL_SUPPORT( FastNoise::SUPPORTED_SIMD_LEVELS );
+        const Metadata& GetMetadata() const override;
     };
 
-    class FractalRidgedMulti : public virtual Fractal<>
+#ifdef FASTNOISE_METADATA
+    template<>
+    struct MetadataT<FractalRidged> : MetadataT<Fractal<>>
+    {
+        SmartNode<> CreateNode( FastSIMD::eLevel ) const override;
+    };
+#endif
+
+    class FractalPingPong : public virtual Fractal<>
     {
     public:
-        void SetWeightAmplitude( float value ) { mWeightAmp = value; CalculateFractalBounding(); }
+        FASTSIMD_LEVEL_SUPPORT( FastNoise::SUPPORTED_SIMD_LEVELS );
+        const Metadata& GetMetadata() const override;
+
+        void SetPingPongStrength( float value ) { mPingPongStrength = value; }
+        void SetPingPongStrength( SmartNodeArg<> gen ) { this->SetSourceMemberVariable( mPingPongStrength, gen ); }
 
     protected:
-        float mWeightAmp = 2.0f;
-        float mWeightBounding = 2.0f / 1.75f;
-
-        void CalculateFractalBounding() override
-        {
-            Fractal::CalculateFractalBounding();
-
-            float weight = 1.0f;
-            float totalWeight = weight;
-            for( int32_t i = 1; i < mOctaves; i++ )
-            {
-                weight *= mWeightAmp;
-                totalWeight += 1.0f / weight;
-            }
-            mWeightBounding = 2.0f / totalWeight;
-        }
-
-        FASTNOISE_METADATA( Fractal )
-
-            Metadata( const char* className ) : Fractal::Metadata( className )
-            {
-                this->AddVariable( "Weight Amplitude", 2.0f, &FractalRidgedMulti::SetWeightAmplitude );
-            }
-        };      
+        HybridSource mPingPongStrength = 0.0f;
     };
+
+#ifdef FASTNOISE_METADATA
+    template<>
+    struct MetadataT<FractalPingPong> : MetadataT<Fractal<>>
+    {
+        SmartNode<> CreateNode( FastSIMD::eLevel ) const override;
+
+        MetadataT()
+        {
+            this->AddHybridSource( "Ping Pong Strength", 2.0f, &FractalPingPong::SetPingPongStrength, &FractalPingPong::SetPingPongStrength );
+        }
+    };
+#endif
 }

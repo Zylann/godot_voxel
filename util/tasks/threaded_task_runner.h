@@ -1,27 +1,30 @@
-#ifndef VOXEL_THREAD_POOL_H
-#define VOXEL_THREAD_POOL_H
+#ifndef ZYLANN_THREADED_TASK_RUNNER_H
+#define ZYLANN_THREADED_TASK_RUNNER_H
 
-#include "../storage/voxel_buffer.h"
-#include "../util/fixed_array.h"
-#include "../util/span.h"
+#include "../fixed_array.h"
+#include "../span.h"
+
 #include <core/os/mutex.h>
 #include <core/os/semaphore.h>
 #include <core/os/thread.h>
+#include <core/string/ustring.h>
 
 #include <queue>
 
 class Thread;
 
-struct VoxelTaskContext {
+namespace zylann {
+
+struct ThreadedTaskContext {
 	uint8_t thread_index;
 };
 
-class IVoxelTask {
+class IThreadedTask {
 public:
-	virtual ~IVoxelTask() {}
+	virtual ~IThreadedTask() {}
 
 	// Called from within the thread pool
-	virtual void run(VoxelTaskContext ctx) = 0;
+	virtual void run(ThreadedTaskContext ctx) = 0;
 
 	// Convenience method which can be called by the scheduler of the task (usually on the main thread)
 	// in order to apply results. It is not called from the thread pool.
@@ -29,26 +32,30 @@ public:
 
 	// Lower values means higher priority.
 	// Can change between two calls. The thread pool will poll this value regularly over some time interval.
-	virtual int get_priority() { return 0; }
+	virtual int get_priority() {
+		return 0;
+	}
 
 	// May return `true` in order for the thread pool to skip the task
-	virtual bool is_cancelled() { return false; }
+	virtual bool is_cancelled() {
+		return false;
+	}
 };
 
 // Generic thread pool that performs batches of tasks based on dynamic priority
-class VoxelThreadPool {
+class ThreadedTaskRunner {
 public:
 	static const uint32_t MAX_THREADS = 8;
 
-	enum State {
+	enum State { //
 		STATE_RUNNING = 0,
 		STATE_PICKING,
 		STATE_WAITING,
 		STATE_STOPPED
 	};
 
-	VoxelThreadPool();
-	~VoxelThreadPool();
+	ThreadedTaskRunner();
+	~ThreadedTaskRunner();
 
 	// Set name prefix to recognize threads of this pool in debug tools.
 	// Must be called before configuring thread count.
@@ -57,7 +64,9 @@ public:
 	// TODO Add ability to change it while running without skipping tasks
 	// Can't be changed after tasks have been queued
 	void set_thread_count(uint32_t count);
-	uint32_t get_thread_count() const { return _thread_count; }
+	uint32_t get_thread_count() const {
+		return _thread_count;
+	}
 
 	// TODO Add ability to change it while running
 	// Sets how many tasks each thread will attempt to dequeue on each iteration.
@@ -74,16 +83,16 @@ public:
 
 	// Schedules a task.
 	// Ownership is NOT passed to the pool, so make sure you get them back when completed if you want to delete them.
-	void enqueue(IVoxelTask *task);
+	void enqueue(IThreadedTask *task);
 	// Schedules multiple tasks at once. Involves less internal locking.
-	void enqueue(Span<IVoxelTask *> tasks);
+	void enqueue(Span<IThreadedTask *> tasks);
 
 	// TODO Lambda might not be the best API. memcpying to a vector would ensure we lock for a shorter time.
 	template <typename F>
 	void dequeue_completed_tasks(F f) {
 		MutexLock lock(_completed_tasks_mutex);
 		for (size_t i = 0; i < _completed_tasks.size(); ++i) {
-			IVoxelTask *task = _completed_tasks[i];
+			IThreadedTask *task = _completed_tasks[i];
 			f(task);
 		}
 		_completed_tasks.clear();
@@ -97,14 +106,14 @@ public:
 
 private:
 	struct TaskItem {
-		IVoxelTask *task = nullptr;
+		IThreadedTask *task = nullptr;
 		int cached_priority = 99999;
 		uint32_t last_priority_update_time = 0;
 	};
 
 	struct ThreadData {
 		Thread thread;
-		VoxelThreadPool *pool = nullptr;
+		ThreadedTaskRunner *pool = nullptr;
 		uint32_t index = 0;
 		bool stop = false;
 		bool waiting = false;
@@ -136,7 +145,7 @@ private:
 	Mutex _tasks_mutex;
 	Semaphore _tasks_semaphore;
 
-	std::vector<IVoxelTask *> _completed_tasks;
+	std::vector<IThreadedTask *> _completed_tasks;
 	Mutex _completed_tasks_mutex;
 
 	uint32_t _batch_count = 1;
@@ -148,4 +157,6 @@ private:
 	unsigned int _debug_completed_tasks = 0;
 };
 
-#endif // VOXEL_THREAD_TASK_MANAGER_H
+} // namespace zylann
+
+#endif // ZYLANN_THREADED_TASK_RUNNER_H

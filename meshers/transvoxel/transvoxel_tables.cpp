@@ -30,10 +30,9 @@
 //
 //================================================================================
 
-#include <core/error_macros.h>
+#include <core/error/error_macros.h>
 
-namespace Transvoxel {
-namespace Tables {
+namespace zylann::voxel::transvoxel::tables {
 
 // The RegularCellData structure holds information about the triangulation
 // used for a single equivalence class in the modified Marching Cubes algorithm,
@@ -88,7 +87,7 @@ struct TransitionCellData {
 // modified Marching Cubes algorithm, a couple of them use the same exact triangulations,
 // just with different vertex locations. We combined those classes for this table so
 // that the class index ranges from 0 to 15.
-
+// clang-format off
 const unsigned char regularCellClass[256] = {
 	0x00, 0x01, 0x01, 0x03, 0x01, 0x03, 0x02, 0x04, 0x01, 0x02, 0x03, 0x04, 0x03, 0x04, 0x04, 0x03,
 	0x01, 0x03, 0x02, 0x04, 0x02, 0x04, 0x06, 0x0C, 0x02, 0x05, 0x05, 0x0B, 0x05, 0x0A, 0x07, 0x04,
@@ -107,6 +106,7 @@ const unsigned char regularCellClass[256] = {
 	0x04, 0x07, 0x0A, 0x0E, 0x0B, 0x0E, 0x0E, 0x02, 0x0C, 0x0F, 0x04, 0x0D, 0x04, 0x0D, 0x03, 0x01,
 	0x03, 0x04, 0x04, 0x03, 0x04, 0x03, 0x0D, 0x01, 0x04, 0x0D, 0x03, 0x01, 0x03, 0x01, 0x01, 0x00
 };
+// clang-format on
 inline unsigned char get_regular_cell_class(unsigned int i) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 256);
@@ -116,7 +116,7 @@ inline unsigned char get_regular_cell_class(unsigned int i) {
 
 // The regularCellData table holds the triangulation data for all 16 distinct classes to
 // which a case can be mapped by the regularCellClass table.
-
+// clang-format off
 const RegularCellData regularCellData[16] = {
 	{ 0x00, {} },
 	{ 0x31, { 0, 1, 2 } },
@@ -135,6 +135,7 @@ const RegularCellData regularCellData[16] = {
 	{ 0x75, { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6 } },
 	{ 0x95, { 0, 4, 5, 0, 3, 4, 0, 1, 3, 1, 2, 3, 6, 7, 8 } }
 };
+// clang-format on
 inline const RegularCellData &get_regular_cell_data(unsigned int i) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 16);
@@ -147,7 +148,7 @@ inline const RegularCellData &get_regular_cell_data(unsigned int i) {
 // about whether a vertex can be reused from a neighboring cell. See Section 3.3 for details.
 // The low byte contains the indexes for the two endpoints of the edge on which the vertex lies,
 // as numbered in Figure 3.7. The high byte contains the vertex reuse data shown in Figure 3.8.
-
+// clang-format off
 const unsigned short regularVertexData[256][12] = {
 	{},
 	{ 0x6201, 0x5102, 0x3304 },
@@ -406,6 +407,7 @@ const unsigned short regularVertexData[256][12] = {
 	{ 0x6201, 0x3304, 0x5102 },
 	{}
 };
+// clang-format on
 inline unsigned short get_regular_vertex_data(unsigned int i, unsigned int j) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 256);
@@ -420,7 +422,7 @@ inline unsigned short get_regular_vertex_data(unsigned int i, unsigned int j) {
 // We combined those classes for this table so that the class index ranges from 0 to 55.
 // The high bit is set in the cases for which the inverse state of the voxel data maps to
 // the equivalence class, meaning that the winding order of each triangle should be reversed.
-
+// clang-format off
 const unsigned char transitionCellClass[512] = {
 	0x00, 0x01, 0x02, 0x84, 0x01, 0x05, 0x04, 0x04, 0x02, 0x87, 0x09, 0x8C, 0x84, 0x0B, 0x05, 0x05,
 	0x01, 0x08, 0x07, 0x8D, 0x05, 0x0F, 0x8B, 0x0B, 0x04, 0x0D, 0x0C, 0x1C, 0x04, 0x8B, 0x85, 0x85,
@@ -455,6 +457,7 @@ const unsigned char transitionCellClass[512] = {
 	0x05, 0x05, 0x0B, 0x84, 0x2F, 0x26, 0x35, 0x84, 0x8B, 0x0B, 0x8F, 0x85, 0xB5, 0x87, 0x34, 0x81,
 	0x85, 0x85, 0x8B, 0x04, 0xA6, 0x25, 0x07, 0x82, 0x84, 0x84, 0x85, 0x81, 0x04, 0x82, 0x81, 0x80
 };
+// clang-format on
 inline unsigned char get_transition_cell_class(unsigned int i) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 512);
@@ -465,7 +468,7 @@ inline unsigned char get_transition_cell_class(unsigned int i) {
 // The transitionCellData table holds the triangulation data for all 56 distinct classes to
 // which a case can be mapped by the transitionCellClass table. The class index should be ANDed
 // with 0x7F before using it to look up triangulation data in this table.
-
+// clang-format off
 const TransitionCellData transitionCellData[56] = {
 	{ 0x00, {} },
 	{ 0x42, { 0, 1, 3, 1, 2, 3 } },
@@ -524,6 +527,7 @@ const TransitionCellData transitionCellData[56] = {
 	{ 0xA8, { 0, 1, 5, 1, 4, 5, 1, 2, 4, 2, 3, 4, 3, 6, 7, 3, 7, 4, 0, 8, 9, 0, 5, 8 } },
 	{ 0xA8, { 0, 1, 5, 1, 4, 5, 1, 2, 4, 2, 3, 4, 2, 6, 3, 3, 6, 7, 0, 8, 9, 0, 5, 8 } }
 };
+// clang-format on
 inline const TransitionCellData &get_transition_cell_data(unsigned int i) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 56);
@@ -533,10 +537,11 @@ inline const TransitionCellData &get_transition_cell_data(unsigned int i) {
 
 // The transitionCornerData table contains the transition cell corner reuse data
 // shown in Figure 4.18.
-
+// clang-format off
 const unsigned char transitionCornerData[13] = {
 	0x30, 0x21, 0x20, 0x12, 0x40, 0x82, 0x10, 0x81, 0x80, 0x37, 0x27, 0x17, 0x87
 };
+// clang-format on
 inline unsigned char get_transition_corner_data(unsigned int i) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 13);
@@ -549,7 +554,7 @@ inline unsigned char get_transition_corner_data(unsigned int i) {
 // a vertex can be reused from a neighboring cell. See Section 4.5 for details. The low byte
 // contains the indexes for the two endpoints of the edge on which the vertex lies, as numbered
 // in Figure 4.16. The high byte contains the vertex reuse data shown in Figure 4.17.
-
+// clang-format off
 const unsigned short transitionVertexData[512][12] = {
 	{},
 	{ 0x2301, 0x1503, 0x199B, 0x289A },
@@ -1064,6 +1069,7 @@ const unsigned short transitionVertexData[512][12] = {
 	{ 0x2301, 0x1503, 0x199B, 0x289A },
 	{}
 };
+// clang-format on
 inline unsigned short get_transition_vertex_data(unsigned int i, unsigned int j) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(i >= 512);
@@ -1072,5 +1078,4 @@ inline unsigned short get_transition_vertex_data(unsigned int i, unsigned int j)
 	return transitionVertexData[i][j];
 }
 
-} // namespace Tables
-} // namespace Transvoxel
+} // namespace zylann::voxel::transvoxel::tables

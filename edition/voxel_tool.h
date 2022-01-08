@@ -9,26 +9,26 @@
 
 class VoxelBuffer;
 
-namespace VoxelToolOps {
+namespace zylann::voxel::ops {
 
 template <typename Op, typename Shape>
 struct SdfOperation16bit {
 	Op op;
 	Shape shape;
 	inline uint16_t operator()(Vector3i pos, uint16_t sdf) const {
-		return norm_to_u16(op(u16_to_norm(sdf), shape(pos.to_vec3())));
+		return norm_to_u16(op(u16_to_norm(sdf), shape(Vector3(pos))));
 	}
 };
 
 struct SdfUnion {
 	inline float operator()(float a, float b) const {
-		return sdf_union(a, b);
+		return zylann::math::sdf_union(a, b);
 	}
 };
 
 struct SdfSubtract {
 	inline float operator()(float a, float b) const {
-		return sdf_subtract(a, b);
+		return zylann::math::sdf_subtract(a, b);
 	}
 };
 
@@ -44,7 +44,7 @@ struct SdfSphere {
 	float scale;
 
 	inline float operator()(Vector3 pos) const {
-		return scale * sdf_sphere(pos, center, radius);
+		return scale * zylann::math::sdf_sphere(pos, center, radius);
 	}
 };
 
@@ -68,26 +68,27 @@ struct TextureBlendSphereOp {
 	}
 
 	inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
-		const float distance_squared = pos.to_vec3().distance_squared_to(center);
+		const float distance_squared = Vector3(pos).distance_squared_to(center);
 		if (distance_squared < radius_squared) {
 			const float distance_from_radius = radius - Math::sqrt(distance_squared);
-			const float target_weight = tp.opacity * clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
+			const float target_weight =
+					tp.opacity * math::clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
 			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
 		}
 	}
 };
 
-}; // namespace VoxelToolOps
+}; // namespace zylann::voxel::ops
 
 // TODO Need to review VoxelTool to account for transformed volumes
 
 // High-level generic voxel edition utility.
 // Ease of use comes at cost.
 // It's not a class to instantiate alone, get it from the voxel objects you want to work with
-class VoxelTool : public Reference {
-	GDCLASS(VoxelTool, Reference)
+class VoxelTool : public RefCounted {
+	GDCLASS(VoxelTool, RefCounted)
 public:
-	enum Mode {
+	enum Mode { //
 		MODE_ADD,
 		MODE_REMOVE,
 		MODE_SET,
@@ -138,8 +139,8 @@ public:
 	void sdf_stamp_erase(Ref<VoxelBuffer> stamp, Vector3i pos);
 
 	virtual void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const;
-	virtual void paste(Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
-			uint64_t mask_value);
+	virtual void paste(
+			Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value);
 
 	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
 
@@ -164,53 +165,53 @@ private:
 	// Bindings to convert to more specialized C++ types and handle virtuality,
 	// cuz I don't know if it works by binding straight
 
-	uint64_t _b_get_voxel(Vector3 pos) {
-		return get_voxel(Vector3i::from_floored(pos));
+	uint64_t _b_get_voxel(Vector3i pos) {
+		return get_voxel(pos);
 	}
-	float _b_get_voxel_f(Vector3 pos) {
-		return get_voxel_f(Vector3i::from_floored(pos));
+	float _b_get_voxel_f(Vector3i pos) {
+		return get_voxel_f(pos);
 	}
-	void _b_set_voxel(Vector3 pos, uint64_t v) {
-		set_voxel(Vector3i::from_floored(pos), v);
+	void _b_set_voxel(Vector3i pos, uint64_t v) {
+		set_voxel(pos, v);
 	}
-	void _b_set_voxel_f(Vector3 pos, float v) {
-		set_voxel_f(Vector3i::from_floored(pos), v);
+	void _b_set_voxel_f(Vector3i pos, float v) {
+		set_voxel_f(pos, v);
 	}
 	Ref<VoxelRaycastResult> _b_raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
 		return raycast(pos, dir, max_distance, collision_mask);
 	}
-	void _b_do_point(Vector3 pos) {
-		do_point(Vector3i::from_floored(pos));
+	void _b_do_point(Vector3i pos) {
+		do_point(pos);
 	}
 	void _b_do_line(Vector3 begin, Vector3 end) {
-		do_line(Vector3i::from_floored(begin), Vector3i::from_floored(end));
+		do_line(Vector3iUtil::from_floored(begin), Vector3iUtil::from_floored(end));
 	}
 	void _b_do_circle(Vector3 pos, float radius, Vector3 direction) {
-		do_circle(Vector3i::from_floored(pos), radius, Vector3i::from_floored(direction));
+		do_circle(Vector3iUtil::from_floored(pos), radius, Vector3iUtil::from_floored(direction));
 	}
 	void _b_do_sphere(Vector3 pos, float radius) {
 		do_sphere(pos, radius);
 	}
-	void _b_do_box(Vector3 begin, Vector3 end) {
-		do_box(Vector3i::from_floored(begin), Vector3i::from_floored(end));
+	void _b_do_box(Vector3i begin, Vector3i end) {
+		do_box(begin, end);
 	}
-	void _b_copy(Vector3 pos, Ref<Reference> voxels, int channel_mask) {
-		copy(Vector3i::from_floored(pos), voxels, channel_mask);
+	void _b_copy(Vector3i pos, Ref<VoxelBuffer> voxels, int channel_mask) {
+		copy(pos, voxels, channel_mask);
 	}
-	void _b_paste(Vector3 pos, Ref<Reference> voxels, int channels_mask, int64_t mask_value) {
+	void _b_paste(Vector3i pos, Ref<VoxelBuffer> voxels, int channels_mask, int64_t mask_value) {
 		// TODO May need two functions, one masked, one not masked, or add a parameter, but it breaks compat
-		paste(Vector3i::from_floored(pos), voxels, channels_mask, mask_value > 0xffffffff, mask_value);
+		paste(pos, voxels, channels_mask, mask_value > 0xffffffff, mask_value);
 	}
 
-	Variant _b_get_voxel_metadata(Vector3 pos) const {
-		return get_voxel_metadata(Vector3i::from_floored(pos));
+	Variant _b_get_voxel_metadata(Vector3i pos) const {
+		return get_voxel_metadata(pos);
 	}
-	void _b_set_voxel_metadata(Vector3 pos, Variant meta) {
-		return set_voxel_metadata(Vector3i::from_floored(pos), meta);
+	void _b_set_voxel_metadata(Vector3i pos, Variant meta) {
+		return set_voxel_metadata(pos, meta);
 	}
 
 	bool _b_is_area_editable(AABB box) const {
-		return is_area_editable(Box3i(Vector3i::from_floored(box.position), Vector3i::from_floored(box.size)));
+		return is_area_editable(Box3i(Vector3iUtil::from_floored(box.position), Vector3iUtil::from_floored(box.size)));
 	}
 
 protected:
@@ -221,7 +222,7 @@ protected:
 	Mode _mode = MODE_ADD;
 
 	// Used on smooth terrain
-	VoxelToolOps::TextureParams _texture_params;
+	zylann::voxel::ops::TextureParams _texture_params;
 };
 
 VARIANT_ENUM_CAST(VoxelTool::Mode)

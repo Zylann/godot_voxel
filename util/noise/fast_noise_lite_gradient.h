@@ -1,7 +1,7 @@
 #ifndef FAST_NOISE_LITE_GRADIENT_H
 #define FAST_NOISE_LITE_GRADIENT_H
 
-#include <core/resource.h>
+#include <core/io/resource.h>
 
 #include "../../thirdparty/fast_noise/FastNoiseLite.h"
 
@@ -30,7 +30,7 @@ public:
 
 	// This one does not map directly to FastNoise unfortunately,
 	// because Godot's UI wants consecutive values starting from 0...
-	enum FractalType {
+	enum FractalType { //
 		FRACTAL_NONE,
 		FRACTAL_DOMAIN_WARP_PROGRESSIVE,
 		FRACTAL_DOMAIN_WARP_INDEPENDENT

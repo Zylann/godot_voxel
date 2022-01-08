@@ -1,8 +1,8 @@
 #include "voxel_stream_block_files.h"
 #include "../server/voxel_server.h"
 
-#include <core/os/dir_access.h>
-#include <core/os/file_access.h>
+#include <core/io/dir_access.h>
+#include <core/io/file_access.h>
 
 namespace {
 const uint8_t FORMAT_VERSION = 1;
@@ -12,7 +12,7 @@ const char *META_FILE_NAME = "meta.vxbm";
 const char *BLOCK_FILE_EXTENSION = ".vxb";
 } // namespace
 
-thread_local VoxelBlockSerializerInternal VoxelStreamBlockFiles::_block_serializer;
+thread_local zylann::voxel::BlockSerializer VoxelStreamBlockFiles::_block_serializer;
 
 VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 	// Defaults
@@ -27,7 +27,7 @@ VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	//
-	if (_directory_path.empty()) {
+	if (_directory_path.is_empty()) {
 		return RESULT_BLOCK_NOT_FOUND;
 	}
 
@@ -39,7 +39,7 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 
 	CRASH_COND(!_meta_loaded);
 
-	const Vector3i block_size(1 << _meta.block_size_po2);
+	const Vector3i block_size = Vector3iUtil::create(1 << _meta.block_size_po2);
 
 	ERR_FAIL_COND_V(lod >= _meta.lod_count, RESULT_ERROR);
 	ERR_FAIL_COND_V(block_size != out_buffer.get_size(), RESULT_ERROR);
@@ -90,7 +90,7 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 }
 
 void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
-	ERR_FAIL_COND(_directory_path.empty());
+	ERR_FAIL_COND(_directory_path.is_empty());
 
 	if (!_meta_loaded) {
 		// If it's not loaded, always try to load meta file first if it exists already,
@@ -114,7 +114,7 @@ void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i 
 	}
 
 	// Check format
-	const Vector3i block_size = Vector3i(1 << _meta.block_size_po2);
+	const Vector3i block_size = Vector3iUtil::create(1 << _meta.block_size_po2);
 	ERR_FAIL_COND(buffer.get_size() != block_size);
 	for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
 		ERR_FAIL_COND(buffer.get_channel_depth(channel_index) != _meta.channel_depths[channel_index]);
@@ -141,7 +141,7 @@ void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i 
 		f->store_buffer((uint8_t *)FORMAT_BLOCK_MAGIC, 4);
 		f->store_8(FORMAT_VERSION);
 
-		VoxelBlockSerializerInternal::SerializeResult res = _block_serializer.serialize_and_compress(buffer);
+		zylann::voxel::BlockSerializer::SerializeResult res = _block_serializer.serialize_and_compress(buffer);
 		if (!res.success) {
 			memdelete(f);
 			ERR_PRINT("Failed to save block");
@@ -176,7 +176,7 @@ int VoxelStreamBlockFiles::get_block_size_po2() const {
 }
 
 VoxelFileResult VoxelStreamBlockFiles::save_meta() {
-	CRASH_COND(_directory_path.empty());
+	CRASH_COND(_directory_path.is_empty());
 
 	// Make sure the directory exists
 	{
@@ -224,7 +224,7 @@ VoxelFileResult VoxelStreamBlockFiles::load_or_create_meta() {
 }
 
 VoxelFileResult VoxelStreamBlockFiles::load_meta() {
-	CRASH_COND(_directory_path.empty());
+	CRASH_COND(_directory_path.is_empty());
 
 	String meta_path = _directory_path.plus_file(META_FILE_NAME);
 

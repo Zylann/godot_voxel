@@ -6,6 +6,8 @@
 #include "../util/span.h"
 #include <stdint.h>
 
+namespace zylann::voxel {
+
 inline void clip_copy_region_coord(int &src_min, int &src_max, const int src_size, int &dst_min, const int dst_size) {
 	// Clamp source and shrink destination for moved borders
 	if (src_min < 0) {
@@ -38,25 +40,21 @@ inline void clip_copy_region(
 	clip_copy_region_coord(src_min.z, src_max.z, src_size.z, dst_min.z, dst_size.z);
 }
 
-void copy_3d_region_zxy(
-		Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min,
-		Span<const uint8_t> src, Vector3i src_size, Vector3i src_min, Vector3i src_max,
-		size_t item_size);
+void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, Span<const uint8_t> src,
+		Vector3i src_size, Vector3i src_min, Vector3i src_max, size_t item_size);
 
 template <typename T>
-inline void copy_3d_region_zxy(
-		Span<T> dst, Vector3i dst_size, Vector3i dst_min,
-		Span<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max) {
+inline void copy_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Span<const T> src, Vector3i src_size,
+		Vector3i src_min, Vector3i src_max) {
 	// The `template` keyword before method name is required when compiling with GCC
-	copy_3d_region_zxy(
-			dst.template reinterpret_cast_to<uint8_t>(), dst_size, dst_min,
-			src.template reinterpret_cast_to<const uint8_t>(), src_size, src_min, src_max,
-			sizeof(T));
+	copy_3d_region_zxy(dst.template reinterpret_cast_to<uint8_t>(), dst_size, dst_min,
+			src.template reinterpret_cast_to<const uint8_t>(), src_size, src_min, src_max, sizeof(T));
 }
 
 template <typename T>
 void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i dst_max, const T value) {
-	Vector3i::sort_min_max(dst_min, dst_max);
+	using namespace math;
+	Vector3iUtil::sort_min_max(dst_min, dst_max);
 	dst_min.x = clamp(dst_min.x, 0, dst_size.x);
 	dst_min.y = clamp(dst_min.y, 0, dst_size.y);
 	dst_min.z = clamp(dst_min.z, 0, dst_size.z);
@@ -70,7 +68,7 @@ void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector
 	}
 
 #ifdef DEBUG_ENABLED
-	ERR_FAIL_COND(area_size.volume() > dst.size());
+	ERR_FAIL_COND(Vector3iUtil::get_volume(area_size) > dst.size());
 #endif
 
 	if (area_size == dst_size) {
@@ -82,7 +80,7 @@ void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector
 		const unsigned int dst_row_offset = dst_size.y;
 		Vector3i pos;
 		for (pos.z = 0; pos.z < area_size.z; ++pos.z) {
-			unsigned int dst_ri = Vector3i(dst_min + pos).get_zxy_index(dst_size);
+			unsigned int dst_ri = Vector3iUtil::get_zxy_index(dst_min + pos, dst_size);
 			for (pos.x = 0; pos.x < area_size.x; ++pos.x) {
 				// Fill row
 				for (pos.y = 0; pos.y < area_size.y; ++pos.y) {
@@ -106,11 +104,11 @@ inline float u16_to_norm(uint16_t v) {
 }
 
 inline uint8_t norm_to_u8(float v) {
-	return clamp(static_cast<int>(128.f * v + 128.f), 0, 0xff);
+	return zylann::math::clamp(static_cast<int>(128.f * v + 128.f), 0, 0xff);
 }
 
 inline uint16_t norm_to_u16(float v) {
-	return clamp(static_cast<int>(0x8000 * v + 0x8000), 0, 0xffff);
+	return zylann::math::clamp(static_cast<int>(0x8000 * v + 0x8000), 0, 0xffff);
 }
 
 /*static inline float quantized_u8_to_real(uint8_t v) {
@@ -199,6 +197,7 @@ struct IntBasis {
 			default:
 				CRASH_NOW();
 		}
+		return Vector3i();
 	}
 };
 
@@ -207,11 +206,11 @@ struct IntBasis {
 // The array's coordinate convention uses ZXY (index+1 does Y+1).
 template <typename T>
 Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector3i src_size, IntBasis basis) {
-	ERR_FAIL_COND_V(!basis.x.is_unit_vector(), src_size);
-	ERR_FAIL_COND_V(!basis.y.is_unit_vector(), src_size);
-	ERR_FAIL_COND_V(!basis.z.is_unit_vector(), src_size);
-	ERR_FAIL_COND_V(src_grid.size() != static_cast<size_t>(src_size.volume()), src_size);
-	ERR_FAIL_COND_V(dst_grid.size() != static_cast<size_t>(src_size.volume()), src_size);
+	ERR_FAIL_COND_V(!Vector3iUtil::is_unit_vector(basis.x), src_size);
+	ERR_FAIL_COND_V(!Vector3iUtil::is_unit_vector(basis.y), src_size);
+	ERR_FAIL_COND_V(!Vector3iUtil::is_unit_vector(basis.z), src_size);
+	ERR_FAIL_COND_V(src_grid.size() != static_cast<size_t>(Vector3iUtil::get_volume(src_size)), src_size);
+	ERR_FAIL_COND_V(dst_grid.size() != static_cast<size_t>(Vector3iUtil::get_volume(src_size)), src_size);
 
 	const int xa = basis.x.x != 0 ? 0 : basis.x.y != 0 ? 1 : 2;
 	const int ya = basis.y.x != 0 ? 0 : basis.y.y != 0 ? 1 : 2;
@@ -245,5 +244,7 @@ Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector
 
 	return dst_size;
 }
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_STORAGE_FUNCS_H

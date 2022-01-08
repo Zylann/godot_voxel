@@ -7,6 +7,8 @@
 
 #include <limits>
 
+using namespace zylann;
+
 VoxelDataMap::VoxelDataMap() {
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
 	set_block_size_pow2(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2);
@@ -136,7 +138,8 @@ const VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) const {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(i >= _blocks.size());
 #endif
-		// TODO This function can't cache _last_accessed_block, because it's const, so repeated accesses are hashing again...
+		// TODO This function can't cache _last_accessed_block, because it's const, so repeated accesses are hashing
+		// again...
 		const VoxelDataBlock *block = _blocks[i];
 		CRASH_COND(block == nullptr); // The map should not contain null blocks
 		return block;
@@ -177,8 +180,8 @@ void VoxelDataMap::remove_block_internal(Vector3i bpos, unsigned int index) {
 	}
 }
 
-VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer,
-		bool overwrite) {
+VoxelDataBlock *VoxelDataMap::set_block_buffer(
+		Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite) {
 	ERR_FAIL_COND_V(buffer == nullptr, nullptr);
 	VoxelDataBlock *block = get_block(bpos);
 	if (block == nullptr) {
@@ -188,7 +191,7 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, std::shared_ptr<Vo
 		block->set_voxels(buffer);
 	} else {
 		PRINT_VERBOSE(String("Discarded block {0} lod {1}, there was already data and overwriting is not enabled")
-							  .format(varray(bpos.to_vec3(), _lod_index)));
+							  .format(varray(bpos, _lod_index)));
 	}
 	return block;
 }
@@ -237,15 +240,12 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 						const uint8_t channel = channels[ci];
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
 						// Note: copy_from takes care of clamping the area if it's on an edge
-						dst_buffer.copy_from(src_buffer,
-								min_pos - src_block_origin,
-								src_buffer.get_size(),
-								Vector3i(),
-								channel);
+						dst_buffer.copy_from(
+								src_buffer, min_pos - src_block_origin, src_buffer.get_size(), Vector3i(), channel);
 					}
 
 				} else if (gen_func != nullptr) {
-					const Box3i box = Box3i(bpos << _block_size_pow2, Vector3i(_block_size))
+					const Box3i box = Box3i(bpos << _block_size_pow2, Vector3iUtil::create(_block_size))
 											  .clipped(Box3i(min_pos, dst_buffer.get_size()));
 
 					// TODO Format?
@@ -262,11 +262,8 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 						const uint8_t channel = channels[ci];
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
-						dst_buffer.fill_area(
-								_default_voxel[channel],
-								src_block_origin - min_pos,
-								src_block_origin - min_pos + block_size_v,
-								channel);
+						dst_buffer.fill_area(_default_voxel[channel], src_block_origin - min_pos,
+								src_block_origin - min_pos + block_size_v, channel);
 					}
 				}
 			}
@@ -320,11 +317,8 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsi
 								});
 
 					} else {
-						dst_buffer.copy_from(src_buffer,
-								Vector3i(),
-								src_buffer.get_size(),
-								min_pos - dst_block_origin,
-								channel);
+						dst_buffer.copy_from(
+								src_buffer, Vector3i(), src_buffer.get_size(), min_pos - dst_block_origin, channel);
 					}
 				}
 			}
@@ -355,9 +349,7 @@ int VoxelDataMap::get_block_count() const {
 
 bool VoxelDataMap::is_area_fully_loaded(const Box3i voxels_box) const {
 	Box3i block_box = voxels_box.downscaled(get_block_size());
-	return block_box.all_cells_match([this](Vector3i pos) {
-		return has_block(pos);
-	});
+	return block_box.all_cells_match([this](Vector3i pos) { return has_block(pos); });
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -382,8 +374,8 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 	for (unsigned int lod_index = 0; lod_index < data.lod_count; ++lod_index) {
 		const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
 
-		PRINT_VERBOSE(String("Preloading box {0} at lod {1} synchronously")
-							  .format(varray(block_box.to_string(), lod_index)));
+		PRINT_VERBOSE(
+				String("Preloading box {0} at lod {1} synchronously").format(varray(block_box.to_string(), lod_index)));
 
 		VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
 		const unsigned int prev_size = todo.size();
@@ -401,7 +393,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 		count_per_lod.push_back(todo.size() - prev_size);
 	}
 
-	const Vector3i block_size(data_block_size);
+	const Vector3i block_size = Vector3iUtil::create(data_block_size);
 
 	// Generate
 	for (unsigned int i = 0; i < todo.size(); ++i) {
@@ -410,11 +402,8 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 		task.voxels->create(block_size);
 		// TODO Format?
 		if (generator != nullptr) {
-			VoxelBlockRequest r{
-				*task.voxels,
-				task.block_pos * (data_block_size << task.lod_index),
-				int(task.lod_index)
-			};
+			VoxelBlockRequest r{ *task.voxels, task.block_pos * (data_block_size << task.lod_index),
+				int(task.lod_index) };
 			generator->generate_block(r);
 		}
 	}

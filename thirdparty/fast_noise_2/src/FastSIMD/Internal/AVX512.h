@@ -230,8 +230,8 @@ namespace FastSIMD
 
         static constexpr eLevel SIMD_Level = LEVEL_T;
 
-        template<size_t ElementSize = 8>
-        static constexpr size_t VectorSize = 512 / ElementSize;
+        template<size_t ElementSize>
+        static constexpr size_t VectorSize = (512 / 8) / ElementSize;
 
         typedef AVX512_f32x16  float32v;
         typedef AVX512_i32x16  int32v;
@@ -271,6 +271,30 @@ namespace FastSIMD
         FS_INLINE static int32v Castf32_i32( float32v a )
         {
             return _mm512_castps_si512( a );
+        }
+
+        // Extract
+
+        FS_INLINE static float Extract0_f32( float32v a )
+        {
+            return _mm512_cvtss_f32( a );
+        }
+
+        FS_INLINE static int32_t Extract0_i32( int32v a )
+        {
+            return _mm_cvtsi128_si32( _mm512_castsi512_si128( a ) );
+        }
+
+        FS_INLINE static float Extract_f32( float32v a, size_t idx )
+        {
+            float32v x = _mm512_maskz_compress_ps( mask32v( 1u << (idx & 15) ), a );
+            return _mm512_cvtss_f32( x );
+        }
+
+        FS_INLINE static int32_t Extract_i32( int32v a, size_t idx )
+        {
+            int32v x = _mm512_maskz_compress_epi32( mask32v( 1u << (idx & 15) ), a );
+            return _mm_cvtsi128_si32( _mm512_castsi512_si128( x ) );
         }
 
         // Convert

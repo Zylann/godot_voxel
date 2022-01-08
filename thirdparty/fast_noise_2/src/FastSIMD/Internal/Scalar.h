@@ -238,7 +238,7 @@ namespace FastSIMD
         static constexpr eLevel SIMD_Level = FastSIMD::Level_Scalar;
 
         template<size_t ElementSize = 8>
-        static constexpr size_t VectorSize = 32 / ElementSize;
+        static constexpr size_t VectorSize = sizeof(int32_t) / ElementSize;
 
         typedef Scalar_Float float32v;
         typedef Scalar_Int   int32v;
@@ -266,6 +266,28 @@ namespace FastSIMD
         FS_INLINE static void Store_i32( void* p, int32v a )
         {
             *reinterpret_cast<int32v*>(p) = a;
+        }
+
+        // Extract
+
+        FS_INLINE static float Extract0_f32( float32v a )
+        {
+            return a;
+        }
+
+        FS_INLINE static int32_t Extract0_i32( int32v a )
+        {
+            return a;
+        }
+
+        FS_INLINE static float Extract_f32( float32v a, size_t idx )
+        {
+            return a;
+        }
+
+        FS_INLINE static int32_t Extract_i32( int32v a, size_t idx )
+        {
+            return a;
         }
 
         // Cast

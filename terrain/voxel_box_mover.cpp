@@ -3,6 +3,8 @@
 #include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../util/godot/funcs.h"
 
+using namespace zylann;
+
 static AABB expand_with_vector(AABB box, Vector3 v) {
 	if (v.x > 0) {
 		box.size.x += v.x;
@@ -122,11 +124,11 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 	ERR_FAIL_COND_V(p_terrain->get_mesher().is_null(), Vector3());
 
 	// Transform to local in case the volume is transformed
-	const Transform to_world = p_terrain->get_global_transform();
-	const Transform to_local = to_world.affine_inverse();
+	const Transform3D to_world = p_terrain->get_global_transform();
+	const Transform3D to_local = to_world.affine_inverse();
 	const Vector3 pos = to_local.xform(p_pos);
 	const Vector3 motion = to_local.basis.xform(p_motion);
-	const AABB aabb = Transform(to_local.basis, Vector3()).xform(p_aabb);
+	const AABB aabb = Transform3D(to_local.basis, Vector3()).xform(p_aabb);
 
 	const AABB box(aabb.position + pos, aabb.size);
 	const AABB expanded_box = expand_with_vector(box, motion);
@@ -175,7 +177,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 
 						for (auto it = local_boxes.begin(); it != local_boxes.end(); ++it) {
 							AABB world_box = *it;
-							world_box.position += i.to_vec3();
+							world_box.position += i;
 							potential_boxes.push_back(world_box);
 						}
 					}
@@ -191,7 +193,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 				for (i.x = min_x; i.x < max_x; ++i.x) {
 					const int color_data = voxels.get_voxel(i, channel);
 					if (color_data != 0) {
-						potential_boxes.push_back(AABB(i.to_vec3(), Vector3(1, 1, 1)));
+						potential_boxes.push_back(AABB(i, Vector3(1, 1, 1)));
 					}
 				}
 			}

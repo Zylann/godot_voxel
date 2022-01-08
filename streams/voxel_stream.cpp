@@ -1,11 +1,9 @@
 #include "voxel_stream.h"
-#include <core/script_language.h>
+#include <core/object/script_language.h>
 
-VoxelStream::VoxelStream() {
-}
+VoxelStream::VoxelStream() {}
 
-VoxelStream::~VoxelStream() {
-}
+VoxelStream::~VoxelStream() {}
 
 VoxelStream::Result VoxelStream::emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	// Can be implemented in subclasses
@@ -37,8 +35,7 @@ bool VoxelStream::supports_instance_blocks() const {
 	return false;
 }
 
-void VoxelStream::load_instance_blocks(
-		Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) {
+void VoxelStream::load_instance_blocks(Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) {
 	// Can be implemented in subclasses
 	for (size_t i = 0; i < out_results.size(); ++i) {
 		out_results[i] = RESULT_BLOCK_NOT_FOUND;
@@ -80,13 +77,13 @@ int VoxelStream::get_lod_count() const {
 VoxelStream::Result VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND_V(lod < 0, RESULT_ERROR);
 	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
-	return emerge_block(out_buffer->get_buffer(), Vector3i::from_floored(origin_in_voxels), lod);
+	return emerge_block(out_buffer->get_buffer(), Vector3iUtil::from_floored(origin_in_voxels), lod);
 }
 
 void VoxelStream::_b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	ERR_FAIL_COND(buffer.is_null());
-	immerge_block(buffer->get_buffer(), Vector3i::from_floored(origin_in_voxels), lod);
+	immerge_block(buffer->get_buffer(), Vector3iUtil::from_floored(origin_in_voxels), lod);
 }
 
 int VoxelStream::_b_get_used_channels_mask() const {
@@ -94,14 +91,14 @@ int VoxelStream::_b_get_used_channels_mask() const {
 }
 
 Vector3 VoxelStream::_b_get_block_size() const {
-	return Vector3i(1 << get_block_size_po2()).to_vec3();
+	return Vector3iUtil::create(1 << get_block_size_po2());
 }
 
 void VoxelStream::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod"),
-			&VoxelStream::_b_emerge_block);
-	ClassDB::bind_method(D_METHOD("immerge_block", "buffer", "origin_in_voxels", "lod"),
-			&VoxelStream::_b_immerge_block);
+	ClassDB::bind_method(
+			D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelStream::_b_emerge_block);
+	ClassDB::bind_method(
+			D_METHOD("immerge_block", "buffer", "origin_in_voxels", "lod"), &VoxelStream::_b_immerge_block);
 	ClassDB::bind_method(D_METHOD("get_used_channels_mask"), &VoxelStream::_b_get_used_channels_mask);
 
 	ClassDB::bind_method(D_METHOD("set_save_generator_output", "enabled"), &VoxelStream::set_save_generator_output);
@@ -109,8 +106,8 @@ void VoxelStream::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_block_size"), &VoxelStream::_b_get_block_size);
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "save_generator_output"),
-			"set_save_generator_output", "get_save_generator_output");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "save_generator_output"), "set_save_generator_output",
+			"get_save_generator_output");
 
 	BIND_ENUM_CONSTANT(RESULT_ERROR);
 	BIND_ENUM_CONSTANT(RESULT_BLOCK_FOUND);

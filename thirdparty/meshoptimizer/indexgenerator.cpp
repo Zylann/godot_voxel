@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <string.h>
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 // This work is based on:
 // John McDonald, Mark Kilgard. Crack-Free Point-Normal Triangles using Adjacent Edge Normals. 2010
 namespace meshopt
@@ -549,3 +551,6 @@ void meshopt_generateTessellationIndexBuffer(unsigned int* destination, const un
 		memcpy(destination + i * 4, patch, sizeof(patch));
 	}
 }
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END
+

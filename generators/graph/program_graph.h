@@ -1,11 +1,12 @@
 #ifndef PROGRAM_GRAPH_H
 #define PROGRAM_GRAPH_H
 
-#include <core/hashfuncs.h>
 #include <core/math/vector2.h>
-#include <core/pool_vector.h>
+#include <core/templates/hashfuncs.h>
 #include <unordered_map>
 #include <vector>
+
+namespace zylann {
 
 // Generic graph representing a program
 class ProgramGraph {
@@ -67,8 +68,13 @@ public:
 	void find_depth_first(uint32_t start_node_id, std::vector<uint32_t> &order) const;
 	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
 
-	template <typename F>
-	inline void for_each_node_const(F f) const {
+	template <typename F> inline void for_each_node_id(F f) const {
+		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+			f(it->first);
+		}
+	}
+
+	template <typename F> inline void for_each_node_const(F f) const {
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 			const Node *node = it->second;
 			ERR_CONTINUE(node == nullptr);
@@ -76,8 +82,7 @@ public:
 		}
 	}
 
-	template <typename F>
-	inline void for_each_node(F f) {
+	template <typename F> inline void for_each_node(F f) {
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 			Node *node = it->second;
 			ERR_CONTINUE(node == nullptr);
@@ -91,7 +96,6 @@ public:
 
 	uint32_t find_node_by_name(StringName name) const;
 
-	PoolVector<int> get_node_ids() const;
 	uint32_t generate_node_id();
 
 	int get_nodes_count() const;
@@ -106,5 +110,7 @@ private:
 inline bool operator==(const ProgramGraph::PortLocation &a, const ProgramGraph::PortLocation &b) {
 	return a.node_id == b.node_id && a.port_index == b.port_index;
 }
+
+} // namespace zylann
 
 #endif // PROGRAM_GRAPH_H

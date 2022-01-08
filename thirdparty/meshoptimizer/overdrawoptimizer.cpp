@@ -5,6 +5,8 @@
 #include <math.h>
 #include <string.h>
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 // This work is based on:
 // Pedro Sander, Diego Nehab and Joshua Barczak. Fast Triangle Reordering for Vertex Locality and Reduced Overdraw. 2007
 namespace meshopt
@@ -331,3 +333,6 @@ void meshopt_optimizeOverdraw(unsigned int* destination, const unsigned int* ind
 
 	assert(offset == index_count);
 }
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END
+

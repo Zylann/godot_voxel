@@ -5,12 +5,12 @@
 #include "../../util/fixed_array.h"
 #include "../../util/math/vector3i.h"
 
-#include <core/color.h>
+#include <core/math/color.h>
 #include <core/math/vector2.h>
 #include <core/math/vector3.h>
 #include <vector>
 
-namespace Transvoxel {
+namespace zylann::voxel::transvoxel {
 
 // How many extra voxels are needed towards the negative axes
 static const int MIN_PADDING = 1;
@@ -32,15 +32,15 @@ enum TexturingMode {
 struct MeshArrays {
 	std::vector<Vector3> vertices;
 	std::vector<Vector3> normals;
-	std::vector<Color> extra;
-	std::vector<Vector2> uv;
+	std::vector<Color> lod_data;
+	std::vector<Vector2> texturing_data;
 	std::vector<int> indices;
 
 	void clear() {
 		vertices.clear();
 		normals.clear();
-		extra.clear();
-		uv.clear();
+		lod_data.clear();
+		texturing_data.clear();
 		indices.clear();
 	}
 
@@ -48,7 +48,7 @@ struct MeshArrays {
 		int vi = vertices.size();
 		vertices.push_back(primary);
 		normals.push_back(normal);
-		extra.push_back(Color(secondary.x, secondary.y, secondary.z, border_mask));
+		lod_data.push_back(Color(secondary.x, secondary.y, secondary.z, border_mask));
 		return vi;
 	}
 };
@@ -121,6 +121,6 @@ void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_c
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data);
 
-} // namespace Transvoxel
+} //namespace zylann::voxel::transvoxel
 
 #endif // TRANSVOXEL_H

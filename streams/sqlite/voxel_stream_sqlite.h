@@ -28,11 +28,12 @@ public:
 	void immerge_blocks(Span<VoxelBlockRequest> p_blocks) override;
 
 	bool supports_instance_blocks() const override;
-	void load_instance_blocks(
-			Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) override;
+	void load_instance_blocks(Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) override;
 	void save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks) override;
 
-	bool supports_loading_all_blocks() const override { return true; }
+	bool supports_loading_all_blocks() const override {
+		return true;
+	}
 	void load_all_blocks(FullLoadingResult &result) override;
 
 	int get_used_channels_mask() const override;
@@ -66,7 +67,7 @@ private:
 	VoxelStreamCache _cache;
 
 	// TODO I should consider specialized memory allocators
-	static thread_local VoxelBlockSerializerInternal _voxel_block_serializer;
+	static thread_local zylann::voxel::BlockSerializer _voxel_block_serializer;
 	static thread_local std::vector<uint8_t> _temp_block_data;
 	static thread_local std::vector<uint8_t> _temp_compressed_block_data;
 };

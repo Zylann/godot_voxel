@@ -5,26 +5,23 @@
 #include "../../util/span.h"
 #include <core/os/os.h>
 
+using namespace zylann;
+
+namespace zylann::voxel {
+
 // Utility functions
 namespace {
-
-template <typename T>
-void raw_copy_to(PoolVector<T> &to, const Vector<T> &from) {
-	to.resize(from.size());
-	typename PoolVector<T>::Write w = to.write();
-	memcpy(w.ptr(), from.ptr(), from.size() * sizeof(T));
-}
-
 const int g_opposite_side[6] = {
-	Cube::SIDE_NEGATIVE_X,
-	Cube::SIDE_POSITIVE_X,
-	Cube::SIDE_POSITIVE_Y,
-	Cube::SIDE_NEGATIVE_Y,
-	Cube::SIDE_POSITIVE_Z,
-	Cube::SIDE_NEGATIVE_Z
+	Cube::SIDE_NEGATIVE_X, //
+	Cube::SIDE_POSITIVE_X, //
+	Cube::SIDE_POSITIVE_Y, //
+	Cube::SIDE_NEGATIVE_Y, //
+	Cube::SIDE_POSITIVE_Z, //
+	Cube::SIDE_NEGATIVE_Z //
 };
 
-inline bool is_face_visible(const VoxelLibrary::BakedData &lib, const Voxel::BakedData &vt, uint32_t other_voxel_id, int side) {
+inline bool is_face_visible(
+		const VoxelLibrary::BakedData &lib, const Voxel::BakedData &vt, uint32_t other_voxel_id, int side) {
 	if (other_voxel_id < lib.models.size()) {
 		const Voxel::BakedData &other_vt = lib.models[other_voxel_id];
 		if (other_vt.empty || (other_vt.transparency_index > vt.transparency_index)) {
@@ -50,15 +47,13 @@ inline bool contributes_to_ao(const VoxelLibrary::BakedData &lib, uint32_t voxel
 } // namespace
 
 template <typename Type_T>
-static void generate_blocky_mesh(
+void generate_blocky_mesh(
 		FixedArray<VoxelMesherBlocky::Arrays, VoxelMesherBlocky::MAX_MATERIALS> &out_arrays_per_material,
-		const Span<Type_T> type_buffer,
-		const Vector3i block_size,
-		const VoxelLibrary::BakedData &library,
+		const Span<Type_T> type_buffer, const Vector3i block_size, const VoxelLibrary::BakedData &library,
 		bool bake_occlusion, float baked_occlusion_darkness) {
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
-				  block_size.y < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
-				  block_size.z < static_cast<int>(2 * VoxelMesherBlocky::PADDING));
+			block_size.y < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
+			block_size.z < static_cast<int>(2 * VoxelMesherBlocky::PADDING));
 
 	// Build lookup tables so to speed up voxel access.
 	// These are values to add to an address in order to get given neighbor.
@@ -67,8 +62,8 @@ static void generate_blocky_mesh(
 	const int deck_size = block_size.x * row_size;
 
 	// Data must be padded, hence the off-by-one
-	const Vector3i min = Vector3i(VoxelMesherBlocky::PADDING);
-	const Vector3i max = block_size - Vector3i(VoxelMesherBlocky::PADDING);
+	const Vector3i min = Vector3iUtil::create(VoxelMesherBlocky::PADDING);
+	const Vector3i max = block_size - Vector3iUtil::create(VoxelMesherBlocky::PADDING);
 
 	int index_offsets[VoxelMesherBlocky::MAX_MATERIALS] = { 0 };
 
@@ -81,14 +76,19 @@ static void generate_blocky_mesh(
 	side_neighbor_lut[Cube::SIDE_TOP] = 1;
 
 	FixedArray<int, Cube::EDGE_COUNT> edge_neighbor_lut;
-	edge_neighbor_lut[Cube::EDGE_BOTTOM_BACK] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_BACK];
-	edge_neighbor_lut[Cube::EDGE_BOTTOM_FRONT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_FRONT];
-	edge_neighbor_lut[Cube::EDGE_BOTTOM_LEFT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_LEFT];
-	edge_neighbor_lut[Cube::EDGE_BOTTOM_RIGHT] = side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_BACK] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_BACK];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_FRONT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_FRONT];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_LEFT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_LEFT];
+	edge_neighbor_lut[Cube::EDGE_BOTTOM_RIGHT] =
+			side_neighbor_lut[Cube::SIDE_BOTTOM] + side_neighbor_lut[Cube::SIDE_RIGHT];
 	edge_neighbor_lut[Cube::EDGE_BACK_LEFT] = side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_LEFT];
 	edge_neighbor_lut[Cube::EDGE_BACK_RIGHT] = side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_RIGHT];
 	edge_neighbor_lut[Cube::EDGE_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
-	edge_neighbor_lut[Cube::EDGE_FRONT_RIGHT] = side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
+	edge_neighbor_lut[Cube::EDGE_FRONT_RIGHT] =
+			side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
 	edge_neighbor_lut[Cube::EDGE_TOP_BACK] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_BACK];
 	edge_neighbor_lut[Cube::EDGE_TOP_FRONT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_FRONT];
 	edge_neighbor_lut[Cube::EDGE_TOP_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_LEFT];
@@ -96,53 +96,38 @@ static void generate_blocky_mesh(
 
 	FixedArray<int, Cube::CORNER_COUNT> corner_neighbor_lut;
 
-	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_LEFT] =
-			side_neighbor_lut[Cube::SIDE_BOTTOM] +
-			side_neighbor_lut[Cube::SIDE_BACK] +
-			side_neighbor_lut[Cube::SIDE_LEFT];
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_LEFT] = side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_LEFT];
 
-	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_RIGHT] =
-			side_neighbor_lut[Cube::SIDE_BOTTOM] +
-			side_neighbor_lut[Cube::SIDE_BACK] +
-			side_neighbor_lut[Cube::SIDE_RIGHT];
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_BACK_RIGHT] = side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_RIGHT];
 
-	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_RIGHT] =
-			side_neighbor_lut[Cube::SIDE_BOTTOM] +
-			side_neighbor_lut[Cube::SIDE_FRONT] +
-			side_neighbor_lut[Cube::SIDE_RIGHT];
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_RIGHT] = side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
 
-	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_LEFT] =
-			side_neighbor_lut[Cube::SIDE_BOTTOM] +
-			side_neighbor_lut[Cube::SIDE_FRONT] +
-			side_neighbor_lut[Cube::SIDE_LEFT];
+	corner_neighbor_lut[Cube::CORNER_BOTTOM_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_BOTTOM] +
+			side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
 
 	corner_neighbor_lut[Cube::CORNER_TOP_BACK_LEFT] =
-			side_neighbor_lut[Cube::SIDE_TOP] +
-			side_neighbor_lut[Cube::SIDE_BACK] +
-			side_neighbor_lut[Cube::SIDE_LEFT];
+			side_neighbor_lut[Cube::SIDE_TOP] + side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_LEFT];
 
-	corner_neighbor_lut[Cube::CORNER_TOP_BACK_RIGHT] =
-			side_neighbor_lut[Cube::SIDE_TOP] +
-			side_neighbor_lut[Cube::SIDE_BACK] +
-			side_neighbor_lut[Cube::SIDE_RIGHT];
+	corner_neighbor_lut[Cube::CORNER_TOP_BACK_RIGHT] = side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_BACK] + side_neighbor_lut[Cube::SIDE_RIGHT];
 
-	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_RIGHT] =
-			side_neighbor_lut[Cube::SIDE_TOP] +
-			side_neighbor_lut[Cube::SIDE_FRONT] +
-			side_neighbor_lut[Cube::SIDE_RIGHT];
+	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_RIGHT] = side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_RIGHT];
 
-	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] =
-			side_neighbor_lut[Cube::SIDE_TOP] +
-			side_neighbor_lut[Cube::SIDE_FRONT] +
-			side_neighbor_lut[Cube::SIDE_LEFT];
+	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] +
+			side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
 
-	//uint64_t time_prep = OS::get_singleton()->get_ticks_usec() - time_before;
-	//time_before = OS::get_singleton()->get_ticks_usec();
+	//uint64_t time_prep = Time::get_singleton()->get_ticks_usec() - time_before;
+	//time_before = Time::get_singleton()->get_ticks_usec();
 
 	for (unsigned int z = min.z; z < (unsigned int)max.z; ++z) {
 		for (unsigned int x = min.x; x < (unsigned int)max.x; ++x) {
 			for (unsigned int y = min.y; y < (unsigned int)max.y; ++y) {
-				// min and max are chosen such that you can visit 1 neighbor away from the current voxel without size check
+				// min and max are chosen such that you can visit 1 neighbor away from the current voxel without size
+				// check
 
 				const int voxel_index = y + x * row_size + z * deck_size;
 				const int voxel_id = type_buffer[voxel_index];
@@ -176,8 +161,8 @@ static void generate_blocky_mesh(
 						int shaded_corner[8] = { 0 };
 
 						if (bake_occlusion) {
-							// Combinatory solution for https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/
-							// (inverted)
+							// Combinatory solution for
+							// https://0fps.net/2013/07/03/ambient-occlusion-for-minecraft-like-worlds/ (inverted)
 							//	function vertexAO(side1, side2, corner) {
 							//	  if(side1 && side2) {
 							//		return 0
@@ -198,7 +183,8 @@ static void generate_blocky_mesh(
 								if (shaded_corner[corner] == 2) {
 									shaded_corner[corner] = 3;
 								} else {
-									const int corner_neigbor_id = type_buffer[voxel_index + corner_neighbor_lut[corner]];
+									const int corner_neigbor_id =
+											type_buffer[voxel_index + corner_neighbor_lut[corner]];
 									if (contributes_to_ao(library, corner_neigbor_id)) {
 										++shaded_corner[corner];
 									}
@@ -241,7 +227,7 @@ static void generate_blocky_mesh(
 							arrays.normals.resize(arrays.normals.size() + vertex_count);
 							Vector3 *w = arrays.normals.data() + append_index;
 							for (unsigned int i = 0; i < vertex_count; ++i) {
-								w[i] = Cube::g_side_normals[side].to_vec3();
+								w[i] = Cube::g_side_normals[side];
 							}
 						}
 
@@ -257,12 +243,14 @@ static void generate_blocky_mesh(
 
 									// General purpose occlusion colouring.
 									// TODO Optimize for cubes
-									// TODO Fix occlusion inconsistency caused by triangles orientation? Not sure if worth it
+									// TODO Fix occlusion inconsistency caused by triangles orientation? Not sure if
+									// worth it
 									float shade = 0;
 									for (unsigned int j = 0; j < 4; ++j) {
 										unsigned int corner = Cube::g_side_corners[side][j];
 										if (shaded_corner[corner]) {
-											float s = baked_occlusion_darkness * static_cast<float>(shaded_corner[corner]);
+											float s = baked_occlusion_darkness *
+													static_cast<float>(shaded_corner[corner]);
 											//float k = 1.f - Cube::g_corner_position[corner].distance_to(v);
 											float k = 1.f - Cube::g_corner_position[corner].distance_squared_to(v);
 											if (k < 0.0) {
@@ -344,20 +332,15 @@ static void generate_blocky_mesh(
 	}
 }
 
+} // namespace zylann::voxel
+
 thread_local VoxelMesherBlocky::Cache VoxelMesherBlocky::_cache;
 
 VoxelMesherBlocky::VoxelMesherBlocky() {
 	set_padding(PADDING, PADDING);
-
-	// Default library, less steps to setup in editor
-	Ref<VoxelLibrary> library;
-	library.instance();
-	library->load_default();
-	_parameters.library = library;
 }
 
-VoxelMesherBlocky::~VoxelMesherBlocky() {
-}
+VoxelMesherBlocky::~VoxelMesherBlocky() {}
 
 void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {
 	RWLockWrite wlock(_parameters_lock);
@@ -371,7 +354,7 @@ Ref<VoxelLibrary> VoxelMesherBlocky::get_library() const {
 
 void VoxelMesherBlocky::set_occlusion_darkness(float darkness) {
 	RWLockWrite wlock(_parameters_lock);
-	_parameters.baked_occlusion_darkness = clamp(darkness, 0.0f, 1.0f);
+	_parameters.baked_occlusion_darkness = math::clamp(darkness, 0.0f, 1.0f);
 }
 
 float VoxelMesherBlocky::get_occlusion_darkness() const {
@@ -390,6 +373,8 @@ bool VoxelMesherBlocky::get_occlusion_enabled() const {
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+	using namespace zylann::voxel;
+
 	const int channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
 	{
@@ -437,8 +422,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		// All voxels have the same type.
 		// If it's all air, nothing to do. If it's all cubes, nothing to do either.
 		// TODO Handle edge case of uniform block with non-cubic voxels!
-		// If the type of voxel still produces geometry in this situation (which is an absurd use case but not an error),
-		// decompress into a backing array to still allow the use of the same algorithm.
+		// If the type of voxel still produces geometry in this situation (which is an absurd use case but not an
+		// error), decompress into a backing array to still allow the use of the same algorithm.
 		return;
 
 	} else if (voxels.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
@@ -474,13 +459,13 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 		switch (channel_depth) {
 			case VoxelBufferInternal::DEPTH_8_BIT:
-				generate_blocky_mesh(cache.arrays_per_material, raw_channel,
-						block_size, library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
+				generate_blocky_mesh(cache.arrays_per_material, raw_channel, block_size, library_baked_data,
+						params.bake_occlusion, baked_occlusion_darkness);
 				break;
 
 			case VoxelBufferInternal::DEPTH_16_BIT:
-				generate_blocky_mesh(cache.arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(),
-						block_size, library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
+				generate_blocky_mesh(cache.arrays_per_material, raw_channel.reinterpret_cast_to<uint16_t>(), block_size,
+						library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
 				break;
 
 			default:
@@ -498,11 +483,11 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
 
 			{
-				PoolVector<Vector3> positions;
-				PoolVector<Vector2> uvs;
-				PoolVector<Vector3> normals;
-				PoolVector<Color> colors;
-				PoolVector<int> indices;
+				PackedVector3Array positions;
+				PackedVector2Array uvs;
+				PackedVector3Array normals;
+				PackedColorArray colors;
+				PackedInt32Array indices;
 
 				raw_copy_to(positions, arrays.positions);
 				raw_copy_to(uvs, arrays.uvs);
@@ -516,7 +501,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
 				if (arrays.tangents.size() > 0) {
-					PoolVector<float> tangents;
+					PackedFloat32Array tangents;
 					raw_copy_to(tangents, arrays.tangents);
 					mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
 				}
@@ -563,9 +548,10 @@ void VoxelMesherBlocky::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary"),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelLibrary",
+						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
 			"set_library", "get_library");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "occlusion_enabled"), "set_occlusion_enabled", "get_occlusion_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
 			"set_occlusion_darkness", "get_occlusion_darkness");
 }

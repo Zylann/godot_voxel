@@ -3,7 +3,7 @@
 
 #include "../../util/dynamic_bitset.h"
 #include "voxel.h"
-#include <core/resource.h>
+#include <core/object/ref_counted.h>
 
 // TODO Rename VoxelBlockyLibrary
 
@@ -19,7 +19,7 @@ public:
 	struct BakedData {
 		// 2D array: { X : pattern A, Y : pattern B } => Does A occlude B
 		// Where index is X + Y * pattern count
-		DynamicBitset side_pattern_culling;
+		zylann::DynamicBitset side_pattern_culling;
 		unsigned int side_pattern_count = 0;
 		// Lots of data can get moved but it's only on load.
 		std::vector<Voxel::BakedData> models;
@@ -40,7 +40,9 @@ public:
 	VoxelLibrary();
 	~VoxelLibrary();
 
-	int get_atlas_size() const { return _atlas_size; }
+	int get_atlas_size() const {
+		return _atlas_size;
+	}
 	void set_atlas_size(int s);
 
 	// Use this factory rather than creating voxels from scratch
@@ -49,7 +51,9 @@ public:
 	unsigned int get_voxel_count() const;
 	void set_voxel_count(unsigned int type_count);
 
-	bool get_bake_tangents() const { return _bake_tangents; }
+	bool get_bake_tangents() const {
+		return _bake_tangents;
+	}
 	void set_bake_tangents(bool bt);
 
 	void load_default();
@@ -69,8 +73,12 @@ public:
 		return **_voxel_types[id];
 	}
 
-	const BakedData &get_baked_data() const { return _baked_data; }
-	const RWLock &get_baked_data_rw_lock() const { return _baked_data_rw_lock; }
+	const BakedData &get_baked_data() const {
+		return _baked_data;
+	}
+	const RWLock &get_baked_data_rw_lock() const {
+		return _baked_data_rw_lock;
+	}
 
 private:
 	void set_voxel(unsigned int id, Ref<Voxel> voxel);

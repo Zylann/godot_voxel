@@ -11,7 +11,7 @@ class VoxelMesherCubes : public VoxelMesher {
 public:
 	static const unsigned int PADDING = 1;
 
-	enum Materials {
+	enum Materials { //
 		MATERIAL_OPAQUE = 0,
 		MATERIAL_TRANSPARENT,
 		MATERIAL_COUNT
@@ -51,7 +51,9 @@ public:
 	void set_store_colors_in_texture(bool enable);
 	bool get_store_colors_in_texture() const;
 
-	bool supports_lod() const override { return true; }
+	bool supports_lod() const override {
+		return true;
+	}
 
 	// Structs
 
@@ -81,7 +83,7 @@ public:
 			unsigned int size_y;
 			unsigned int surface_index;
 		};
-		std::vector<Color8> colors;
+		std::vector<zylann::Color8> colors;
 		std::vector<ImageInfo> images;
 
 		void clear() {

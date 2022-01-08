@@ -6,7 +6,7 @@
 #include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
-#include <scene/3d/spatial.h>
+#include <scene/3d/node_3d.h>
 
 class VoxelTool;
 
@@ -31,18 +31,24 @@ public:
 	Ref<VoxelMesher> get_mesher() const override;
 
 	unsigned int get_data_block_size_pow2() const;
-	inline unsigned int get_data_block_size() const { return 1 << get_data_block_size_pow2(); }
+	inline unsigned int get_data_block_size() const {
+		return 1 << get_data_block_size_pow2();
+	}
 	//void set_data_block_size_po2(unsigned int p_block_size_po2);
 
 	unsigned int get_mesh_block_size_pow2() const;
-	inline unsigned int get_mesh_block_size() const { return 1 << get_mesh_block_size_pow2(); }
+	inline unsigned int get_mesh_block_size() const {
+		return 1 << get_mesh_block_size_pow2();
+	}
 	void set_mesh_block_size(unsigned int p_block_size);
 
 	void post_edit_voxel(Vector3i pos);
 	void post_edit_area(Box3i box_in_voxels);
 
 	void set_generate_collisions(bool enabled);
-	bool get_generate_collisions() const { return _generate_collisions; }
+	bool get_generate_collisions() const {
+		return _generate_collisions;
+	}
 
 	void set_collision_layer(int layer);
 	int get_collision_layer() const;
@@ -63,8 +69,12 @@ public:
 	void set_material(unsigned int id, Ref<Material> material);
 	Ref<Material> get_material(unsigned int id) const;
 
-	VoxelDataMap &get_storage() { return _data_map; }
-	const VoxelDataMap &get_storage() const { return _data_map; }
+	VoxelDataMap &get_storage() {
+		return _data_map;
+	}
+	const VoxelDataMap &get_storage() const {
+		return _data_map;
+	}
 
 	Ref<VoxelTool> get_voxel_tool();
 
@@ -99,6 +109,8 @@ public:
 
 protected:
 	void _notification(int p_what);
+
+	void _on_gi_mode_changed() override;
 
 private:
 	bool _set(const StringName &p_name, const Variant &p_value);
@@ -143,11 +155,11 @@ private:
 	static void _bind_methods();
 
 	// Bindings
-	Vector3 _b_voxel_to_data_block(Vector3 pos) const;
-	Vector3 _b_data_block_to_voxel(Vector3 pos) const;
+	Vector3i _b_voxel_to_data_block(Vector3 pos) const;
+	Vector3i _b_data_block_to_voxel(Vector3i pos) const;
 	//void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
 	void _b_save_modified_blocks();
-	void _b_save_block(Vector3 p_block_pos);
+	void _b_save_block(Vector3i p_block_pos);
 	void _b_set_bounds(AABB aabb);
 	AABB _b_get_bounds() const;
 	Dictionary _b_get_statistics() const;
@@ -190,9 +202,9 @@ private:
 	};
 
 	HashMap<Vector3i, LoadingBlock, Vector3iHasher> _loading_blocks;
-	std::vector<Vector3i> _blocks_pending_load;
-	std::vector<Vector3i> _blocks_pending_update;
-	std::vector<BlockToSave> _blocks_to_save;
+	std::vector<Vector3i> _blocks_pending_load; // The order in that list does not matter
+	std::vector<Vector3i> _blocks_pending_update; // The order in that list does not matter
+	std::vector<BlockToSave> _blocks_to_save; // The order in that list does not matter
 
 	Ref<VoxelStream> _stream;
 	Ref<VoxelMesher> _mesher;

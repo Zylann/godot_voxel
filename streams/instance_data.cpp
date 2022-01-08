@@ -2,7 +2,9 @@
 #include "../constants/voxel_constants.h"
 #include "../util/math/funcs.h"
 #include "../util/serialization.h"
-#include <core/variant.h>
+#include <core/variant/variant.h>
+
+using namespace zylann;
 
 namespace {
 const uint32_t TRAILING_MAGIC = 0x900df00d;
@@ -15,7 +17,7 @@ const float VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM = 0.01f;
 // TODO Unify with functions from VoxelBuffer?
 
 inline uint8_t norm_to_u8(float x) {
-	return clamp(static_cast<int>(128.f * x + 128.f), 0, 0xff);
+	return math::clamp(static_cast<int>(128.f * x + 128.f), 0, 0xff);
 }
 
 inline float u8_to_norm(uint8_t v) {
@@ -28,7 +30,7 @@ struct CompressedQuaternion4b {
 	uint8_t z;
 	uint8_t w;
 
-	static CompressedQuaternion4b from_quat(Quat q) {
+	static CompressedQuaternion4b from_quaternion(Quaternion q) {
 		CompressedQuaternion4b c;
 		c.x = norm_to_u8(q.x);
 		c.y = norm_to_u8(q.y);
@@ -37,8 +39,8 @@ struct CompressedQuaternion4b {
 		return c;
 	}
 
-	Quat to_quat() const {
-		Quat q;
+	Quaternion to_quaternion() const {
+		Quaternion q;
 		q.x = u8_to_norm(x);
 		q.y = u8_to_norm(y);
 		q.z = u8_to_norm(z);
@@ -54,10 +56,10 @@ bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 	// TODO Apparently big-endian is dead
 	// I chose it originally to match "network byte order",
 	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
-	VoxelUtility::MemoryWriter w(dst, VoxelUtility::ENDIANESS_BIG_ENDIAN);
+	zylann::MemoryWriter w(dst, zylann::ENDIANESS_BIG_ENDIAN);
 
 	ERR_FAIL_COND_V(src.position_range < 0.f, false);
-	const float position_range = max(src.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM);
+	const float position_range = math::max(src.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM);
 
 	w.store_8(version);
 	w.store_8(src.layers.size());
@@ -97,8 +99,8 @@ bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 			const float scale = instance.transform.get_basis().get_scale().y;
 			w.store_8(static_cast<uint8_t>(scale_norm_scale * (scale - scale_min) * 0xff));
 
-			const Quat q = instance.transform.get_basis().get_rotation_quat();
-			const CompressedQuaternion4b cq = CompressedQuaternion4b::from_quat(q);
+			const Quaternion q = instance.transform.get_basis().get_rotation_quaternion();
+			const CompressedQuaternion4b cq = CompressedQuaternion4b::from_quaternion(q);
 			w.store_8(cq.x);
 			w.store_8(cq.y);
 			w.store_8(cq.z);
@@ -115,7 +117,7 @@ bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uin
 	const uint8_t expected_version = 0;
 	const uint8_t expected_instance_format = VoxelInstanceBlockData::FORMAT_SIMPLE_11B_V1;
 
-	VoxelUtility::MemoryReader r(src, VoxelUtility::ENDIANESS_BIG_ENDIAN);
+	zylann::MemoryReader r(src, zylann::ENDIANESS_BIG_ENDIAN);
 
 	const uint8_t version = r.get_8();
 	ERR_FAIL_COND_V(version != expected_version, false);
@@ -153,10 +155,10 @@ bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uin
 			cq.y = r.get_8();
 			cq.z = r.get_8();
 			cq.w = r.get_8();
-			const Quat q = cq.to_quat();
+			const Quaternion q = cq.to_quaternion();
 
 			VoxelInstanceBlockData::InstanceData &instance = layer.instances[j];
-			instance.transform = Transform(Basis(q).scaled(Vector3(s, s, s)), Vector3(x, y, z));
+			instance.transform = Transform3D(Basis(q).scaled(Vector3(s, s, s)), Vector3(x, y, z));
 		}
 	}
 

@@ -38,14 +38,16 @@ void VoxelNode::remesh_all_blocks() {
 	// Not implemented
 }
 
-String VoxelNode::get_configuration_warning() const {
+TypedArray<String> VoxelNode::get_configuration_warnings() const {
 	Ref<VoxelMesher> mesher = get_mesher();
 	Ref<VoxelStream> stream = get_stream();
 	Ref<VoxelGenerator> generator = get_generator();
 
+	TypedArray<String> warnings = Node3D::get_configuration_warnings();
+
 	if (mesher.is_null()) {
-		return TTR("This node has no mesher assigned, it wont produce any mesh visuals. "
-				   "You can assign one on the `mesher` property.");
+		warnings.append(TTR("This node has no mesher assigned, it wont produce any mesh visuals. "
+							"You can assign one on the `mesher` property."));
 	}
 
 	if (stream.is_valid()) {
@@ -53,20 +55,23 @@ String VoxelNode::get_configuration_warning() const {
 
 		if (script.is_valid()) {
 			if (script->is_tool()) {
-				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this properly?
-				return TTR("Careful, don't edit your custom stream while it's running, "
-						   "it can cause crashes. Turn off `run_stream_in_editor` before doing so.");
+				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this
+				// properly?
+				warnings.append(TTR("Careful, don't edit your custom stream while it's running, "
+									"it can cause crashes. Turn off `run_stream_in_editor` before doing so."));
 			} else {
-				return TTR("The custom stream is not tool, the editor won't be able to use it.");
+				warnings.append(TTR("The custom stream is not tool, the editor won't be able to use it."));
 			}
 		}
 
-		const int stream_channels = stream->get_used_channels_mask();
-		const int mesher_channels = mesher->get_used_channels_mask();
+		if (mesher.is_valid()) {
+			const int stream_channels = stream->get_used_channels_mask();
+			const int mesher_channels = mesher->get_used_channels_mask();
 
-		if ((stream_channels & mesher_channels) == 0) {
-			return TTR("The current stream is providing voxel data only on channels that are not used by "
-					   "the current mesher. This will result in nothing being visible.");
+			if ((stream_channels & mesher_channels) == 0) {
+				warnings.append(TTR("The current stream is providing voxel data only on channels that are not used by "
+									"the current mesher. This will result in nothing being visible."));
+			}
 		}
 	}
 
@@ -76,27 +81,29 @@ String VoxelNode::get_configuration_warning() const {
 
 		if (script.is_valid()) {
 			if (script->is_tool()) {
-				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this properly?
-				return TTR("Careful, don't edit your custom generator while it's running, "
-						   "it can cause crashes. Turn off `run_stream_in_editor` before doing so.");
+				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this
+				// properly?
+				warnings.append(TTR("Careful, don't edit your custom generator while it's running, "
+									"it can cause crashes. Turn off `run_stream_in_editor` before doing so."));
 			} else {
 				can_check_generator_channels = false;
 				// return TTR("The custom generator is not tool, the editor won't be able to use it.");
 			}
 		}
 
-		if (can_check_generator_channels) {
+		if (can_check_generator_channels && mesher.is_valid()) {
 			const int generator_channels = generator->get_used_channels_mask();
 			const int mesher_channels = mesher->get_used_channels_mask();
 
 			if ((generator_channels & mesher_channels) == 0) {
-				return TTR("The current generator is providing voxel data only on channels that are not used by "
-						   "the current mesher. This will result in nothing being visible.");
+				warnings.append(
+						TTR("The current generator is providing voxel data only on channels that are not used by "
+							"the current mesher. This will result in nothing being visible."));
 			}
 		}
 	}
 
-	return String();
+	return warnings;
 }
 
 int VoxelNode::get_used_channels_mask() const {
@@ -115,6 +122,18 @@ int VoxelNode::get_used_channels_mask() const {
 	return 0;
 }
 
+void VoxelNode::set_gi_mode(VoxelNode::GIMode mode) {
+	ERR_FAIL_INDEX(mode, _GI_MODE_COUNT);
+	if (mode != _gi_mode) {
+		_gi_mode = mode;
+		_on_gi_mode_changed();
+	}
+}
+
+VoxelNode::GIMode VoxelNode::get_gi_mode() const {
+	return _gi_mode;
+}
+
 void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelNode::_b_set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelNode::_b_get_stream);
@@ -125,10 +144,15 @@ void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_mesher", "mesher"), &VoxelNode::_b_set_mesher);
 	ClassDB::bind_method(D_METHOD("get_mesher"), &VoxelNode::_b_get_mesher);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"),
-			"set_stream", "get_stream");
+	ClassDB::bind_method(D_METHOD("set_gi_mode", "mode"), &VoxelNode::set_gi_mode);
+	ClassDB::bind_method(D_METHOD("get_gi_mode"), &VoxelNode::get_gi_mode);
+
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream",
+			"get_stream");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelGenerator"),
 			"set_generator", "get_generator");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMesher"),
-			"set_mesher", "get_mesher");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMesher"), "set_mesher",
+			"get_mesher");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, "Disabled,Baked,Dynamic"), "set_gi_mode",
+			"get_gi_mode");
 }

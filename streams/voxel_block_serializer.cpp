@@ -9,8 +9,10 @@
 #include <core/io/marshalls.h>
 #include <core/io/stream_peer.h>
 //#include <core/map.h>
-#include <core/os/file_access.h>
+#include <core/io/file_access.h>
 #include <limits>
+
+namespace zylann::voxel {
 
 namespace {
 const uint8_t BLOCK_VERSION = 2;
@@ -184,12 +186,11 @@ size_t get_size_in_bytes(const VoxelBufferInternal &buffer, size_t &metadata_siz
 	return size + metadata_size_with_header + BLOCK_TRAILING_MAGIC_SIZE;
 }
 
-VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize(
-		const VoxelBufferInternal &voxel_buffer) {
+BlockSerializer::SerializeResult BlockSerializer::serialize(const VoxelBufferInternal &voxel_buffer) {
 	//
 	VOXEL_PROFILE_SCOPE();
 	// Cannot serialize an empty block
-	ERR_FAIL_COND_V(voxel_buffer.get_size().volume() == 0, SerializeResult(_data, false));
+	ERR_FAIL_COND_V(Vector3iUtil::get_volume(voxel_buffer.get_size()) == 0, SerializeResult(_data, false));
 
 	size_t metadata_size = 0;
 	const size_t data_size = get_size_in_bytes(voxel_buffer, metadata_size);
@@ -264,8 +265,7 @@ VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::seri
 	return SerializeResult(_data, true);
 }
 
-bool VoxelBlockSerializerInternal::deserialize(Span<const uint8_t> p_data,
-		VoxelBufferInternal &out_voxel_buffer) {
+bool BlockSerializer::deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	//
 	VOXEL_PROFILE_SCOPE();
 
@@ -362,45 +362,42 @@ bool VoxelBlockSerializerInternal::deserialize(Span<const uint8_t> p_data,
 	}
 
 	// Failure at this indicates file corruption
-	ERR_FAIL_COND_V_MSG(f->get_32() != BLOCK_TRAILING_MAGIC, false,
-			"At offset 0x" + String::num_int64(f->get_position() - 4, 16));
+	ERR_FAIL_COND_V_MSG(
+			f->get_32() != BLOCK_TRAILING_MAGIC, false, "At offset 0x" + String::num_int64(f->get_position() - 4, 16));
 	return true;
 }
 
-VoxelBlockSerializerInternal::SerializeResult VoxelBlockSerializerInternal::serialize_and_compress(
-		const VoxelBufferInternal &voxel_buffer) {
+BlockSerializer::SerializeResult BlockSerializer::serialize_and_compress(const VoxelBufferInternal &voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
 	SerializeResult res = serialize(voxel_buffer);
 	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
 	const std::vector<uint8_t> &data = res.data;
 
-	res.success = VoxelCompressedData::compress(
-			Span<const uint8_t>(data.data(), 0, data.size()), _compressed_data,
-			VoxelCompressedData::COMPRESSION_LZ4);
+	res.success = CompressedData::compress(
+			Span<const uint8_t>(data.data(), 0, data.size()), _compressed_data, CompressedData::COMPRESSION_LZ4);
 	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
 
 	return SerializeResult(_compressed_data, true);
 }
 
-bool VoxelBlockSerializerInternal::decompress_and_deserialize(
-		Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
+bool BlockSerializer::decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
-	const bool res = VoxelCompressedData::decompress(p_data, _data);
+	const bool res = CompressedData::decompress(p_data, _data);
 	ERR_FAIL_COND_V(!res, false);
 
 	return deserialize(to_span_const(_data), out_voxel_buffer);
 }
 
-bool VoxelBlockSerializerInternal::decompress_and_deserialize(
+bool BlockSerializer::decompress_and_deserialize(
 		FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(f == nullptr, false);
 
 #if defined(TOOLS_ENABLED) || defined(DEBUG_ENABLED)
 	const size_t fpos = f->get_position();
-	const size_t remaining_file_size = f->get_len() - fpos;
+	const size_t remaining_file_size = f->get_length() - fpos;
 	ERR_FAIL_COND_V(size_to_read > remaining_file_size, false);
 #endif
 
@@ -411,7 +408,7 @@ bool VoxelBlockSerializerInternal::decompress_and_deserialize(
 	return decompress_and_deserialize(to_span_const(_compressed_data), out_voxel_buffer);
 }
 
-int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress) {
+int BlockSerializer::serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress) {
 	if (compress) {
 		SerializeResult res = serialize_and_compress(voxel_buffer);
 		ERR_FAIL_COND_V(!res.success, -1);
@@ -426,8 +423,7 @@ int VoxelBlockSerializerInternal::serialize(Ref<StreamPeer> peer, VoxelBufferInt
 	}
 }
 
-void VoxelBlockSerializerInternal::deserialize(
-		Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress) {
+void BlockSerializer::deserialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress) {
 	if (decompress) {
 		_compressed_data.resize(size);
 		const Error err = peer->get_data(_compressed_data.data(), _compressed_data.size());
@@ -442,6 +438,8 @@ void VoxelBlockSerializerInternal::deserialize(
 		deserialize(to_span_const(_data), voxel_buffer);
 	}
 }
+
+} // namespace zylann::voxel
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -460,6 +458,6 @@ void VoxelBlockSerializer::deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> vo
 
 void VoxelBlockSerializer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("serialize", "peer", "voxel_buffer", "compress"), &VoxelBlockSerializer::serialize);
-	ClassDB::bind_method(D_METHOD("deserialize", "peer", "voxel_buffer", "size", "decompress"),
-			&VoxelBlockSerializer::deserialize);
+	ClassDB::bind_method(
+			D_METHOD("deserialize", "peer", "voxel_buffer", "size", "decompress"), &VoxelBlockSerializer::deserialize);
 }

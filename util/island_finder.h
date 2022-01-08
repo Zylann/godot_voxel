@@ -4,6 +4,8 @@
 #include "math/box3i.h"
 #include "span.h"
 
+namespace zylann::voxel {
+
 // Scans a grid of binary values and returns another grid
 // where all contiguous islands are labelled with a unique ID.
 // It is based on a two-pass version of Connected-Component-Labeling.
@@ -20,7 +22,7 @@ public:
 
 	template <typename VolumePredicate_F>
 	void scan_3d(Box3i box, VolumePredicate_F volume_predicate_func, Span<uint8_t> output, unsigned int *out_count) {
-		const unsigned int volume = box.size.volume();
+		const size_t volume = Vector3iUtil::get_volume(box.size);
 		CRASH_COND(output.size() != volume);
 		memset(output.data(), 0, volume * sizeof(uint8_t));
 
@@ -43,13 +45,15 @@ public:
 
 					if (volume_predicate_func(box.pos + pos)) {
 						if (pos.z > 0) {
-							back_label = output[Vector3i(pos.x, pos.y, pos.z - 1).get_zxy_index(box.size)];
+							back_label =
+									output[Vector3iUtil::get_zxy_index(Vector3i(pos.x, pos.y, pos.z - 1), box.size)];
 						} else {
 							back_label = 0;
 						}
 
 						if (pos.x > 0) {
-							top_label = output[Vector3i(pos.x - 1, pos.y, pos.z).get_zxy_index(box.size)];
+							top_label =
+									output[Vector3iUtil::get_zxy_index(Vector3i(pos.x - 1, pos.y, pos.z), box.size)];
 						} else {
 							top_label = 0;
 						}
@@ -72,8 +76,9 @@ public:
 						} else if (top_label == 0 && back_label == 0) {
 							label = left_label;
 
-						} else if (left_label == 0 || (top_label != 0 && back_label != 0 &&
-															  (left_label == top_label || left_label == back_label))) {
+						} else if (left_label == 0 ||
+								(top_label != 0 && back_label != 0 &&
+										(left_label == top_label || left_label == back_label))) {
 							if (top_label == back_label) {
 								label = back_label;
 
@@ -86,8 +91,9 @@ public:
 								add_equivalence(top_label, back_label);
 							}
 
-						} else if (top_label == 0 || (left_label != 0 && back_label != 0 &&
-															 (top_label == left_label || top_label == back_label))) {
+						} else if (top_label == 0 ||
+								(left_label != 0 && back_label != 0 &&
+										(top_label == left_label || top_label == back_label))) {
 							if (left_label == back_label) {
 								label = back_label;
 
@@ -100,8 +106,9 @@ public:
 								add_equivalence(left_label, back_label);
 							}
 
-						} else if (back_label == 0 || (left_label != 0 && top_label != 0 &&
-															  (back_label == left_label || back_label == top_label))) {
+						} else if (back_label == 0 ||
+								(left_label != 0 && top_label != 0 &&
+										(back_label == left_label || back_label == top_label))) {
 							if (left_label == top_label) {
 								label = top_label;
 
@@ -123,7 +130,7 @@ public:
 							add_equivalence(a[2], a[1]);
 						}
 
-						output[pos.get_zxy_index(box.size)] = label;
+						output[Vector3iUtil::get_zxy_index(pos, box.size)] = label;
 					}
 
 					left_label = label;
@@ -203,5 +210,7 @@ private:
 private:
 	FixedArray<uint8_t, MAX_ISLANDS> _equivalences;
 };
+
+} // namespace zylann::voxel
 
 #endif // ISLAND_FINDER_H

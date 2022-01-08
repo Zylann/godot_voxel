@@ -1,11 +1,14 @@
 #include "voxel_mesh_block.h"
 #include "../constants/voxel_string_names.h"
+#include "../server/voxel_server.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 
-#include <scene/3d/spatial.h>
-#include <scene/resources/concave_polygon_shape.h>
+#include <scene/3d/node_3d.h>
+#include <scene/resources/concave_polygon_shape_3d.h>
+
+using namespace zylann;
 
 VoxelMeshBlock *VoxelMeshBlock::create(Vector3i bpos, unsigned int size, unsigned int p_lod_index) {
 	VoxelMeshBlock *block = memnew(VoxelMeshBlock);
@@ -17,7 +20,8 @@ VoxelMeshBlock *VoxelMeshBlock::create(Vector3i bpos, unsigned int size, unsigne
 	Ref<SpatialMaterial> debug_material;
 	debug_material.instance();
 	int checker = (bpos.x + bpos.y + bpos.z) & 1;
-	Color debug_color = Color(0.8, 0.4, 0.8).linear_interpolate(Color(0.0, 0.0, 0.5), static_cast<float>(p_lod_index) / 8.f);
+	Color debug_color =
+			Color(0.8, 0.4, 0.8).linear_interpolate(Color(0.0, 0.0, 0.5), static_cast<float>(p_lod_index) / 8.f);
 	debug_color = debug_color.lightened(checker * 0.1f);
 	debug_material->set_albedo(debug_color);
 	block->_debug_material = debug_material;
@@ -31,13 +35,48 @@ VoxelMeshBlock *VoxelMeshBlock::create(Vector3i bpos, unsigned int size, unsigne
 	return block;
 }
 
-VoxelMeshBlock::VoxelMeshBlock() {
-}
+VoxelMeshBlock::VoxelMeshBlock() {}
 
 VoxelMeshBlock::~VoxelMeshBlock() {
+	// Had to resort to this in Godot4 because deleting meshes is particularly expensive,
+	// because of the Vulkan allocator used by the renderer.
+	// It is a deferred cost, so had to use a different type of task
+	class FreeMeshTask : public zylann::IProgressiveTask {
+	public:
+		static inline void try_add_and_destroy(DirectMeshInstance &mi) {
+			if (mi.get_mesh().is_valid()) {
+				add(mi.get_mesh());
+			}
+			mi.destroy();
+		}
+
+		static void add(Ref<Mesh> mesh) {
+			CRASH_COND(mesh.is_null());
+			FreeMeshTask *task = memnew(FreeMeshTask());
+			task->mesh = mesh;
+			VoxelServer::get_singleton()->push_progressive_task(task);
+		}
+
+		void run() override {
+#ifdef DEBUG_ENABLED
+			if (mesh->reference_get_count() > 1) {
+				WARN_PRINT("Mesh has more than one ref left, task spreading will not be effective at smoothing "
+						   "destruction cost");
+			}
+#endif
+			mesh.unref();
+		}
+
+		Ref<Mesh> mesh;
+	};
+
+	FreeMeshTask::try_add_and_destroy(_mesh_instance);
+	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+		FreeMeshTask::try_add_and_destroy(_transition_mesh_instances[i]);
+	}
 }
 
-void VoxelMeshBlock::set_world(Ref<World> p_world) {
+void VoxelMeshBlock::set_world(Ref<World3D> p_world) {
 	if (_world != p_world) {
 		_world = p_world;
 
@@ -50,7 +89,19 @@ void VoxelMeshBlock::set_world(Ref<World> p_world) {
 	}
 }
 
-void VoxelMeshBlock::set_mesh(Ref<Mesh> mesh) {
+void VoxelMeshBlock::set_gi_mode(DirectMeshInstance::GIMode mode) {
+	if (_mesh_instance.is_valid()) {
+		_mesh_instance.set_gi_mode(mode);
+	}
+	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+		DirectMeshInstance &mi = _transition_mesh_instances[i];
+		if (mi.is_valid()) {
+			mi.set_gi_mode(mode);
+		}
+	}
+}
+
+void VoxelMeshBlock::set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
@@ -60,6 +111,7 @@ void VoxelMeshBlock::set_mesh(Ref<Mesh> mesh) {
 		if (!_mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
 			_mesh_instance.create();
+			_mesh_instance.set_gi_mode(gi_mode);
 			set_mesh_instance_visible(_mesh_instance, _visible && _parent_visible);
 		}
 
@@ -87,13 +139,14 @@ Ref<Mesh> VoxelMeshBlock::get_mesh() const {
 	return Ref<Mesh>();
 }
 
-void VoxelMeshBlock::set_transition_mesh(Ref<Mesh> mesh, int side) {
+void VoxelMeshBlock::set_transition_mesh(Ref<Mesh> mesh, int side, DirectMeshInstance::GIMode gi_mode) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
 		if (!mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
 			mesh_instance.create();
+			mesh_instance.set_gi_mode(gi_mode);
 			set_mesh_instance_visible(mesh_instance, _visible && _parent_visible && _is_transition_visible(side));
 		}
 
@@ -174,7 +227,7 @@ void VoxelMeshBlock::set_shader_material(Ref<ShaderMaterial> material) {
 	}
 
 	if (_shader_material.is_valid()) {
-		const Transform local_transform(Basis(), _position_in_voxels.to_vec3());
+		const Transform3D local_transform(Basis(), _position_in_voxels);
 		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_block_local_transform, local_transform);
 	}
 }
@@ -230,12 +283,12 @@ void VoxelMeshBlock::set_parent_visible(bool parent_visible) {
 	_set_visible(_visible && _parent_visible);
 }
 
-void VoxelMeshBlock::set_parent_transform(const Transform &parent_transform) {
+void VoxelMeshBlock::set_parent_transform(const Transform3D &parent_transform) {
 	VOXEL_PROFILE_SCOPE();
 
 	if (_mesh_instance.is_valid() || _static_body.is_valid()) {
-		const Transform local_transform(Basis(), _position_in_voxels.to_vec3());
-		const Transform world_transform = parent_transform * local_transform;
+		const Transform3D local_transform(Basis(), _position_in_voxels);
+		const Transform3D world_transform = parent_transform * local_transform;
 
 		if (_mesh_instance.is_valid()) {
 			_mesh_instance.set_transform(world_transform);
@@ -254,16 +307,17 @@ void VoxelMeshBlock::set_parent_transform(const Transform &parent_transform) {
 	}
 }
 
-void VoxelMeshBlock::set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Spatial *node, float margin) {
+void VoxelMeshBlock::set_collision_mesh(
+		Vector<Array> surface_arrays, bool debug_collision, Node3D *node, float margin) {
 	if (surface_arrays.size() == 0) {
 		drop_collision();
 		return;
 	}
 
 	ERR_FAIL_COND(node == nullptr);
-	ERR_FAIL_COND_MSG(node->get_world() != _world, "Physics body and attached node must be from the same world");
+	ERR_FAIL_COND_MSG(node->get_world_3d() != _world, "Physics body and attached node must be from the same world");
 
-	Ref<Shape> shape = create_concave_polygon_shape(surface_arrays);
+	Ref<Shape3D> shape = create_concave_polygon_shape(surface_arrays);
 	if (shape.is_null()) {
 		drop_collision();
 		return;
@@ -300,7 +354,7 @@ void VoxelMeshBlock::set_collision_mask(int mask) {
 
 void VoxelMeshBlock::set_collision_margin(float margin) {
 	if (_static_body.is_valid()) {
-		Ref<Shape> shape = _static_body.get_shape(0);
+		Ref<Shape3D> shape = _static_body.get_shape(0);
 		if (shape.is_valid()) {
 			shape->set_margin(margin);
 		}

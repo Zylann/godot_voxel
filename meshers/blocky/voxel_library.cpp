@@ -1,12 +1,16 @@
 #include "voxel_library.h"
 #include "../../util/macros.h"
+
+#include <core/math/geometry_2d.h>
+#include <core/os/time.h>
+
 #include <bitset>
 
-VoxelLibrary::VoxelLibrary() {
-}
+using namespace zylann;
 
-VoxelLibrary::~VoxelLibrary() {
-}
+VoxelLibrary::VoxelLibrary() {}
+
+VoxelLibrary::~VoxelLibrary() {}
 
 unsigned int VoxelLibrary::get_voxel_count() const {
 	return _voxel_types.size();
@@ -19,7 +23,7 @@ void VoxelLibrary::set_voxel_count(unsigned int type_count) {
 	}
 	// Note: a smaller size may cause a loss of data
 	_voxel_types.resize(type_count);
-	_change_notify();
+	notify_property_list_changed();
 	_needs_baking = true;
 }
 
@@ -128,8 +132,7 @@ void VoxelLibrary::set_voxel(unsigned int idx, Ref<Voxel> voxel) {
 	_needs_baking = true;
 }
 
-template <typename F>
-static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F output_func) {
+template <typename F> static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F output_func) {
 	// Slower than scanline method, but looks better
 
 	// Grow the triangle a tiny bit, to help against floating point error
@@ -137,6 +140,8 @@ static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F ou
 	a += 0.001 * (a - m);
 	b += 0.001 * (b - m);
 	c += 0.001 * (c - m);
+
+	using namespace math;
 
 	const int min_x = (int)Math::floor(min(min(a.x, b.x), c.x));
 	const int min_y = (int)Math::floor(min(min(a.y, b.y), c.y));
@@ -148,7 +153,7 @@ static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F ou
 
 	for (int y = min_y; y < max_y; ++y) {
 		for (int x = min_x; x < max_x; ++x) {
-			if (Geometry::is_point_in_triangle(Vector2(x, y) + offset, a, b, c)) {
+			if (Geometry2D::is_point_in_triangle(Vector2(x, y) + offset, a, b, c)) {
 				output_func(x, y);
 			}
 		}
@@ -158,7 +163,7 @@ static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F ou
 void VoxelLibrary::bake() {
 	RWLockWrite lock(_baked_data_rw_lock);
 
-	const uint64_t time_before = OS::get_singleton()->get_ticks_usec();
+	const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	// This is the only place we modify the data.
 
@@ -174,7 +179,7 @@ void VoxelLibrary::bake() {
 
 	generate_side_culling_matrix();
 
-	uint64_t time_spent = OS::get_singleton()->get_ticks_usec() - time_before;
+	uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	PRINT_VERBOSE(String("Took {0} us to bake VoxelLibrary").format(varray(time_spent)));
 }
 
@@ -407,7 +412,8 @@ void VoxelLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("bake"), &VoxelLibrary::bake);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "atlas_size"), "set_atlas_size", "get_atlas_size");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_count", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_voxel_count", "get_voxel_count");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_count", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"set_voxel_count", "get_voxel_count");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "bake_tangents"), "set_bake_tangents", "get_bake_tangents");
 
 	BIND_CONSTANT(MAX_VOXEL_TYPES);

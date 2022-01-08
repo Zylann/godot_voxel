@@ -17,26 +17,7 @@
 //#define VOXEL_DEBUG_GRAPH_PROG_SENTINEL uint16_t(12345) // 48, 57 (base 10)
 //#endif
 
-// The Image lock() API prevents us from reading the same image in multiple threads.
-// Compiling makes a read-only copy of all resources, so we can lock all images up-front if successful.
-// This might no longer needed in Godot 4.
-void VoxelGraphRuntime::Program::lock_images() {
-	for (size_t i = 0; i < ref_resources.size(); ++i) {
-		Ref<Image> im = ref_resources[i];
-		if (im.is_valid()) {
-			im->lock();
-		}
-	}
-}
-
-void VoxelGraphRuntime::Program::unlock_images() {
-	for (size_t i = 0; i < ref_resources.size(); ++i) {
-		Ref<Image> im = ref_resources[i];
-		if (im.is_valid()) {
-			im->unlock();
-		}
-	}
-}
+namespace zylann::voxel {
 
 VoxelGraphRuntime::VoxelGraphRuntime() {
 	clear();
@@ -395,19 +376,15 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	_program.buffer_count = mem.next_address;
 
 	PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, buffers: {1}")
-						  .format(varray(
-								  SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(uint16_t)),
+						  .format(varray(SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(uint16_t)),
 								  SIZE_T_TO_VARIANT(_program.buffer_count))));
-
-	_program.lock_images();
 
 	CompilationResult result;
 	result.success = true;
 	return result;
 }
 
-static Span<const uint16_t> get_outputs_from_op_address(
-		Span<const uint16_t> operations, uint16_t op_address) {
+static Span<const uint16_t> get_outputs_from_op_address(Span<const uint16_t> operations, uint16_t op_address) {
 	const uint16_t opid = operations[op_address];
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
 
@@ -424,8 +401,7 @@ bool VoxelGraphRuntime::is_operation_constant(const State &state, uint16_t op_ad
 	for (unsigned int i = 0; i < outputs.size(); ++i) {
 		const uint16_t output_address = outputs[i];
 		const Buffer &buffer = state.get_buffer(output_address);
-		if (!(buffer.is_constant ||
-					state.get_range(output_address).is_single_value() ||
+		if (!(buffer.is_constant || state.get_range(output_address).is_single_value() ||
 					buffer.local_users_count == 0)) {
 			// At least one of the outputs cannot be predicted in the current area
 			return false;
@@ -435,8 +411,8 @@ bool VoxelGraphRuntime::is_operation_constant(const State &state, uint16_t op_ad
 	return true;
 }
 
-void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
-		bool debug) const {
+void VoxelGraphRuntime::generate_optimized_execution_map(
+		const State &state, ExecutionMap &execution_map, bool debug) const {
 	FixedArray<unsigned int, MAX_OUTPUTS> all_outputs;
 	for (unsigned int i = 0; i < _program.outputs_count; ++i) {
 		all_outputs[i] = i;
@@ -449,8 +425,8 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 // If a non-constant operation only contributes to a constant one, it will also be skipped.
 // This has the effect of optimizing locally at runtime without relying on explicit conditionals.
 // It can be useful for biomes, where some branches become constant when not used in the final blending.
-void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
-		Span<const unsigned int> required_outputs, bool debug) const {
+void VoxelGraphRuntime::generate_optimized_execution_map(
+		const State &state, ExecutionMap &execution_map, Span<const unsigned int> required_outputs, bool debug) const {
 	VOXEL_PROFILE_SCOPE();
 
 	// Range analysis results must have been computed
@@ -476,11 +452,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 		to_process.push_back(dg_index);
 	}
 
-	enum ProcessResult {
-		NOT_PROCESSED,
-		SKIPPABLE,
-		REQUIRED
-	};
+	enum ProcessResult { NOT_PROCESSED, SKIPPABLE, REQUIRED };
 
 	static thread_local std::vector<ProcessResult> results;
 	results.clear();
@@ -564,7 +536,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 					// The node is considered skippable, which means its outputs are either locally constant or unused.
 					// Unused buffers can be left as-is, but local constants must be filled in.
 					if (buffer.local_users_count > 0) {
-						const Interval range = state.ranges[output_address];
+						const math::Interval range = state.ranges[output_address];
 						// If this interval is not a single value then the node should not have been skippable
 						CRASH_COND(!range.is_single_value());
 						const float v = range.min;
@@ -593,10 +565,8 @@ void VoxelGraphRuntime::generate_optimized_execution_map(const State &state, Exe
 }
 
 void VoxelGraphRuntime::generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const {
-	generate_set(state,
-			Span<float>(&position.x, 1),
-			Span<float>(&position.y, 1),
-			Span<float>(&position.z, 1), false, execution_map);
+	generate_set(state, Span<float>(&position.x, 1), Span<float>(&position.y, 1), Span<float>(&position.z, 1), false,
+			execution_map);
 }
 
 void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) const {
@@ -639,7 +609,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 			CRASH_COND(buffer.data != nullptr);
 			// TODO Use pool?
 			// New buffers get an up-to-date size, but must also comply with common capacity
-			const unsigned int bs = max(state.buffer_capacity, buffer_size);
+			const unsigned int bs = math::max(state.buffer_capacity, buffer_size);
 			buffer.data = reinterpret_cast<float *>(memalloc(bs * sizeof(float)));
 			buffer.capacity = bs;
 		}
@@ -681,7 +651,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 				buffer.data[j] = bs.constant_value;
 			}
 			CRASH_COND(bs.address >= state.ranges.size());
-			state.ranges[bs.address] = Interval::from_single_value(bs.constant_value);
+			state.ranges[bs.address] = math::Interval::from_single_value(bs.constant_value);
 		}
 	}
 
@@ -726,8 +696,7 @@ static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, u
 	return params;
 }
 
-void VoxelGraphRuntime::generate_set(State &state,
-		Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
+void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
 		const ExecutionMap *execution_map) const {
 	// I don't like putting private helper functions in headers.
 	struct L {
@@ -787,13 +756,12 @@ void VoxelGraphRuntime::generate_set(State &state,
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	Span<const uint16_t> op_adresses = execution_map != nullptr ?
-											   to_span_const(execution_map->operation_adresses) :
-											   to_span_const(_program.default_execution_map.operation_adresses);
+	Span<const uint16_t> op_adresses = execution_map != nullptr
+			? to_span_const(execution_map->operation_adresses)
+			: to_span_const(_program.default_execution_map.operation_adresses);
 	if (skip_xz && op_adresses.size() > 0) {
-		const unsigned int offset = execution_map != nullptr ?
-											execution_map->xzy_start_index :
-											_program.default_execution_map.xzy_start_index;
+		const unsigned int offset = execution_map != nullptr ? execution_map->xzy_start_index
+															 : _program.default_execution_map.xzy_start_index;
 		op_adresses = op_adresses.sub(offset);
 	}
 
@@ -838,7 +806,7 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 	ERR_FAIL_COND(state.ranges.size() != _program.buffer_count);
 #endif
 
-	Span<Interval> ranges(state.ranges, 0, state.ranges.size());
+	Span<math::Interval> ranges(state.ranges, 0, state.ranges.size());
 	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
 
 	// Reset users count, as they might be decreased during the analysis
@@ -848,9 +816,9 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 		b.local_users_count = bs.users_count;
 	}
 
-	ranges[_program.x_input_address] = Interval(min_pos.x, max_pos.x);
-	ranges[_program.y_input_address] = Interval(min_pos.y, max_pos.y);
-	ranges[_program.z_input_address] = Interval(min_pos.z, max_pos.z);
+	ranges[_program.x_input_address] = math::Interval(min_pos.x, max_pos.x);
+	ranges[_program.y_input_address] = math::Interval(min_pos.y, max_pos.y);
+	ranges[_program.z_input_address] = math::Interval(min_pos.z, max_pos.z);
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
@@ -891,3 +859,5 @@ bool VoxelGraphRuntime::try_get_output_port_address(ProgramGraph::PortLocation p
 	out_address = *aptr;
 	return true;
 }
+
+} // namespace zylann::voxel

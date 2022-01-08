@@ -5,6 +5,8 @@
 #include <float.h>
 #include <string.h>
 
+MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
+
 // This work is based on:
 // Nicolas Capens. Advanced Rasterization. 2004
 namespace meshopt
@@ -228,3 +230,6 @@ meshopt_OverdrawStatistics meshopt_analyzeOverdraw(const unsigned int* indices, 
 
 	return result;
 }
+
+MESHOPTIMIZER_ZYLANN_NAMESPACE_END
+

@@ -39,6 +39,28 @@ const ThirdParty g_third_parties[] = {
 			"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
 			"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
 			"SOFTWARE.\n" },
+	{ "FastNoise2",
+			"MIT License\n"
+			"\n"
+			"Copyright (c) 2020 Jordan Peck\n"
+			"\n"
+			"Permission is hereby granted, free of charge, to any person obtaining a copy\n"
+			"of this software and associated documentation files (the \"Software\"), to deal\n"
+			"in the Software without restriction, including without limitation the rights\n"
+			"to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n"
+			"copies of the Software, and to permit persons to whom the Software is\n"
+			"furnished to do so, subject to the following conditions:\n"
+			"\n"
+			"The above copyright notice and this permission notice shall be included in all\n"
+			"copies or substantial portions of the Software.\n"
+			"\n"
+			"THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
+			"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
+			"FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n"
+			"AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+			"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
+			"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+			"SOFTWARE.\n" },
 	{ "LZ4 compression library",
 			"Copyright (c) 2011-2016, Yann Collet\n"
 			"All rights reserved.\n"
@@ -92,7 +114,33 @@ const ThirdParty g_third_parties[] = {
 			"\n"
 			"   May you do good and not evil.\n"
 			"   May you find forgiveness for yourself and forgive others.\n"
-			"   May you share freely, never taking more than you give.\n" }
+			"   May you share freely, never taking more than you give.\n" },
+	{ "Transvoxel tables",
+			"Copyright 2009 by Eric Lengyel\n"
+			"\n"
+			"The following data originates from Eric Lengyel's Transvoxel Algorithm.\n"
+			"http://transvoxel.org/\n"
+			"\n"
+			"The data in this file may be freely used in implementations of the Transvoxel\n"
+			"Algorithm. If you do use this data, or any transformation of it, in your own\n"
+			"projects, commercial or otherwise, please give credit by indicating in your\n"
+			"source code that the data is part of the author's implementation of the\n"
+			"Transvoxel Algorithm and that it came from the web address given above.\n"
+			"(Simply copying and pasting the two lines of the previous paragraph would be\n"
+			"perfect.) If you distribute a commercial product with source code included,\n"
+			"then the credit in the source code is required.\n"
+			"\n"
+			"If you distribute any kind of product that uses this data, a credit visible to\n"
+			"the end-user would be appreciated, but it is not required. However, you may\n"
+			"not claim that the entire implementation of the Transvoxel Algorithm is your\n"
+			"own if you use the data in this file or any transformation of it.\n"
+			"\n"
+			"The format of the data in this file is described in the dissertation \"Voxel-\n"
+			"Based Terrain for Real-Time Virtual Simulations\", available at the web page\n"
+			"given above. References to sections and figures below pertain to that paper.\n"
+			"\n"
+			"The contents of this file are protected by copyright and may not be publicly\n"
+			"reproduced without permission.\n" }
 };
 const unsigned int VOXEL_THIRD_PARTY_COUNT = VOXEL_ARRAY_LENGTH(g_third_parties);
 } // namespace
@@ -101,16 +149,16 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	// Generated with the help of https://github.com/Zylann/godot_scene_code_converter
 
 	set_title(TTR("About Voxel Tools"));
-	set_resizable(true);
-	set_custom_minimum_size(Vector2(600, 300) * EDSCALE);
+	//set_resizable(true); // TODO How to set if a Window is resizable or not?
+	set_min_size(Vector2(600, 300) * EDSCALE);
 
 	VBoxContainer *v_box_container = memnew(VBoxContainer);
-	v_box_container->set_anchor(MARGIN_RIGHT, 1);
-	v_box_container->set_anchor(MARGIN_BOTTOM, 1);
-	v_box_container->set_margin(MARGIN_LEFT, 4 * EDSCALE);
-	v_box_container->set_margin(MARGIN_TOP, 4 * EDSCALE);
-	v_box_container->set_margin(MARGIN_RIGHT, -4 * EDSCALE);
-	v_box_container->set_margin(MARGIN_BOTTOM, -4 * EDSCALE);
+	v_box_container->set_anchor(SIDE_RIGHT, 1);
+	v_box_container->set_anchor(SIDE_BOTTOM, 1);
+	v_box_container->set_offset(SIDE_LEFT, 4 * EDSCALE);
+	v_box_container->set_offset(SIDE_TOP, 4 * EDSCALE);
+	v_box_container->set_offset(SIDE_RIGHT, -4 * EDSCALE);
+	v_box_container->set_offset(SIDE_BOTTOM, -4 * EDSCALE);
 
 	// HB
 	HBoxContainer *h_box_container = memnew(HBoxContainer);
@@ -147,7 +195,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Sebastian Clausen (sclausen)\n"
 						"MrGreaterThan\n"
 						"baals\n"
-						"Treer\n";
+						"Treer\n"
+						"stackdump.eth\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
@@ -156,8 +205,9 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	}
 	RichTextLabel *rich_text_label = memnew(RichTextLabel);
 	rich_text_label->set_use_bbcode(true);
-	rich_text_label->set_bbcode(about_text);
-	rich_text_label->connect("meta_clicked", this, "_on_about_rich_text_label_meta_clicked");
+	rich_text_label->set_text(about_text);
+	rich_text_label->connect(
+			"meta_clicked", callable_mp(this, &VoxelAboutWindow::_on_about_rich_text_label_meta_clicked));
 
 	tab_container->add_child(rich_text_label);
 
@@ -199,7 +249,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 			third_party_list->add_item(third_party.name);
 		}
 
-		third_party_list->connect("item_selected", this, "_on_third_party_list_item_selected");
+		third_party_list->connect(
+				"item_selected", callable_mp(this, &VoxelAboutWindow::_on_third_party_list_item_selected));
 
 		_third_party_rich_text_label = memnew(RichTextLabel);
 		_third_party_rich_text_label->set_selection_enabled(true);
@@ -218,28 +269,16 @@ VoxelAboutWindow::VoxelAboutWindow() {
 
 	v_box_container->add_child(h_box_container);
 
-	HBoxContainer *h_box_container2 = memnew(HBoxContainer);
-	h_box_container2->set_alignment(BoxContainer::ALIGN_CENTER);
-
-	Button *button = memnew(Button);
-	button->set_text(TTR("Ok"));
+	Button *button = get_ok_button();
 	button->set_custom_minimum_size(Vector2(100 * EDSCALE, 0));
-	button->connect("pressed", this, "hide");
-	h_box_container2->add_child(button);
-
-	v_box_container->add_child(h_box_container2);
 
 	add_child(v_box_container);
 }
 
 void VoxelAboutWindow::_notification(int p_what) {
 	if (p_what == NOTIFICATION_THEME_CHANGED) {
-		_icon_texture_rect->set_texture(get_icon("VoxelTerrainLarge", "EditorIcons"));
+		_icon_texture_rect->set_texture(get_theme_icon("VoxelTerrainLarge", "EditorIcons"));
 	}
-}
-
-void VoxelAboutWindow::_on_ok_button_pressed() {
-	hide();
 }
 
 void VoxelAboutWindow::_on_about_rich_text_label_meta_clicked(Variant meta) {
@@ -250,14 +289,14 @@ void VoxelAboutWindow::_on_about_rich_text_label_meta_clicked(Variant meta) {
 void VoxelAboutWindow::_on_third_party_list_item_selected(int index) {
 	ERR_FAIL_COND(index < 0 || index >= int(VOXEL_THIRD_PARTY_COUNT));
 	const ThirdParty &third_party = g_third_parties[index];
-	_third_party_rich_text_label->set_text(String("{0}\n------------------------------\n{1}")
-												   .format(varray(third_party.name, third_party.license)));
+	_third_party_rich_text_label->set_text(
+			String("{0}\n------------------------------\n{1}").format(varray(third_party.name, third_party.license)));
 }
 
 void VoxelAboutWindow::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_ok_button_pressed"), &VoxelAboutWindow::_on_ok_button_pressed);
-	ClassDB::bind_method(D_METHOD("_on_about_rich_text_label_meta_clicked", "meta"),
-			&VoxelAboutWindow::_on_about_rich_text_label_meta_clicked);
-	ClassDB::bind_method(D_METHOD("_on_third_party_list_item_selected"),
-			&VoxelAboutWindow::_on_third_party_list_item_selected);
+	// ClassDB::bind_method(D_METHOD("_on_ok_button_pressed"), &VoxelAboutWindow::_on_ok_button_pressed);
+	// ClassDB::bind_method(D_METHOD("_on_about_rich_text_label_meta_clicked", "meta"),
+	// 		&VoxelAboutWindow::_on_about_rich_text_label_meta_clicked);
+	// ClassDB::bind_method(
+	// 		D_METHOD("_on_third_party_list_item_selected"), &VoxelAboutWindow::_on_third_party_list_item_selected);
 }

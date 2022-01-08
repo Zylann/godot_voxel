@@ -3,7 +3,7 @@
 
 #include "../util/span.h"
 
-namespace VoxelCompressedData {
+namespace zylann::voxel::CompressedData {
 
 // Compressed data starts with a single byte telling which compression format is used.
 // What follows depends on it.
@@ -22,6 +22,6 @@ enum Compression {
 bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp);
 bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst);
 
-} // namespace VoxelCompressedData
+} // namespace zylann::voxel::CompressedData
 
 #endif // VOXEL_COMPRESSED_DATA_H

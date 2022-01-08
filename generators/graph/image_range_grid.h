@@ -6,21 +6,25 @@
 
 class Image;
 
+namespace zylann {
+
 // Stores minimum and maximum values over a 2D image at multiple levels of detail
 class ImageRangeGrid {
 public:
 	~ImageRangeGrid();
 
 	void clear();
-	void generate(Image &im);
-	inline Interval get_range() const { return _total_range; }
-	Interval get_range(Interval xr, Interval yr) const;
+	void generate(const Image &im);
+	inline math::Interval get_range() const {
+		return _total_range;
+	}
+	math::Interval get_range(math::Interval xr, math::Interval yr) const;
 
 private:
 	static const int MAX_LODS = 16;
 
 	struct Lod {
-		Interval *data = nullptr;
+		math::Interval *data = nullptr;
 		int size_x = 0;
 		int size_y = 0;
 	};
@@ -32,9 +36,11 @@ private:
 	int _lod_base = 0;
 	int _lod_count = 0;
 
-	Interval _total_range;
+	math::Interval _total_range;
 
 	FixedArray<Lod, MAX_LODS> _lods;
 };
+
+} // namespace zylann
 
 #endif // IMAGE_RANGE_GRID_H

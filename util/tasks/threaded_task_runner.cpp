@@ -1,9 +1,10 @@
-#include "voxel_thread_pool.h"
-#include "../util/profiling.h"
+#include "threaded_task_runner.h"
+#include "../profiling.h"
 
 #include <core/os/os.h>
-#include <core/os/semaphore.h>
-#include <core/os/thread.h>
+#include <core/os/time.h>
+
+namespace zylann {
 
 // template <typename T>
 // static bool contains(const std::vector<T> vec, T v) {
@@ -15,10 +16,9 @@
 // 	return false;
 // }
 
-VoxelThreadPool::VoxelThreadPool() {
-}
+ThreadedTaskRunner::ThreadedTaskRunner() {}
 
-VoxelThreadPool::~VoxelThreadPool() {
+ThreadedTaskRunner::~ThreadedTaskRunner() {
 	destroy_all_threads();
 
 	if (_completed_tasks.size() != 0) {
@@ -27,18 +27,18 @@ VoxelThreadPool::~VoxelThreadPool() {
 	}
 }
 
-void VoxelThreadPool::create_thread(ThreadData &d, uint32_t i) {
+void ThreadedTaskRunner::create_thread(ThreadData &d, uint32_t i) {
 	d.pool = this;
 	d.stop = false;
 	d.waiting = false;
 	d.index = i;
-	if (!_name.empty()) {
+	if (!_name.is_empty()) {
 		d.name = String("{0} {1}").format(varray(_name, i));
 	}
 	d.thread.start(thread_func_static, &d);
 }
 
-void VoxelThreadPool::destroy_all_threads() {
+void ThreadedTaskRunner::destroy_all_threads() {
 	// We have only one semaphore to signal threads to resume, and one `post()` lets only one pass.
 	// We cannot tell one single thread to stop, because when we post and other threads are waiting, we can't guarantee
 	// the one to pass will be the one we want.
@@ -57,11 +57,11 @@ void VoxelThreadPool::destroy_all_threads() {
 	}
 }
 
-void VoxelThreadPool::set_name(String name) {
+void ThreadedTaskRunner::set_name(String name) {
 	_name = name;
 }
 
-void VoxelThreadPool::set_thread_count(uint32_t count) {
+void ThreadedTaskRunner::set_thread_count(uint32_t count) {
 	if (count > MAX_THREADS) {
 		count = MAX_THREADS;
 	}
@@ -73,15 +73,15 @@ void VoxelThreadPool::set_thread_count(uint32_t count) {
 	_thread_count = count;
 }
 
-void VoxelThreadPool::set_batch_count(uint32_t count) {
+void ThreadedTaskRunner::set_batch_count(uint32_t count) {
 	_batch_count = count;
 }
 
-void VoxelThreadPool::set_priority_update_period(uint32_t milliseconds) {
+void ThreadedTaskRunner::set_priority_update_period(uint32_t milliseconds) {
 	_priority_update_period = milliseconds;
 }
 
-void VoxelThreadPool::enqueue(IVoxelTask *task) {
+void ThreadedTaskRunner::enqueue(IThreadedTask *task) {
 	CRASH_COND(task == nullptr);
 	{
 		MutexLock lock(_tasks_mutex);
@@ -94,7 +94,7 @@ void VoxelThreadPool::enqueue(IVoxelTask *task) {
 	_tasks_semaphore.post();
 }
 
-void VoxelThreadPool::enqueue(Span<IVoxelTask *> tasks) {
+void ThreadedTaskRunner::enqueue(Span<IThreadedTask *> tasks) {
 	for (size_t i = 0; i < tasks.size(); ++i) {
 		CRASH_COND(tasks[i] == nullptr);
 	}
@@ -113,11 +113,11 @@ void VoxelThreadPool::enqueue(Span<IVoxelTask *> tasks) {
 	}
 }
 
-void VoxelThreadPool::thread_func_static(void *p_data) {
+void ThreadedTaskRunner::thread_func_static(void *p_data) {
 	ThreadData &data = *static_cast<ThreadData *>(p_data);
-	VoxelThreadPool &pool = *data.pool;
+	ThreadedTaskRunner &pool = *data.pool;
 
-	if (!data.name.empty()) {
+	if (!data.name.is_empty()) {
 		Thread::set_name(data.name);
 
 #ifdef VOXEL_PROFILER_ENABLED
@@ -129,18 +129,18 @@ void VoxelThreadPool::thread_func_static(void *p_data) {
 	pool.thread_func(data);
 }
 
-void VoxelThreadPool::thread_func(ThreadData &data) {
+void ThreadedTaskRunner::thread_func(ThreadData &data) {
 	data.debug_state = STATE_RUNNING;
 
 	std::vector<TaskItem> tasks;
-	std::vector<IVoxelTask *> cancelled_tasks;
+	std::vector<IThreadedTask *> cancelled_tasks;
 
 	while (!data.stop) {
 		{
 			VOXEL_PROFILE_SCOPE();
 
 			data.debug_state = STATE_PICKING;
-			const uint32_t now = OS::get_singleton()->get_ticks_msec();
+			const uint32_t now = Time::get_singleton()->get_ticks_msec();
 
 			MutexLock lock(_tasks_mutex);
 
@@ -211,7 +211,7 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 			for (size_t i = 0; i < tasks.size(); ++i) {
 				TaskItem &item = tasks[i];
 				if (!item.task->is_cancelled()) {
-					VoxelTaskContext ctx;
+					ThreadedTaskContext ctx;
 					ctx.thread_index = data.index;
 					item.task->run(ctx);
 				}
@@ -232,10 +232,10 @@ void VoxelThreadPool::thread_func(ThreadData &data) {
 	data.debug_state = STATE_STOPPED;
 }
 
-void VoxelThreadPool::wait_for_all_tasks() {
+void ThreadedTaskRunner::wait_for_all_tasks() {
 	const uint32_t suspicious_delay_msec = 10000;
 
-	uint32_t before = OS::get_singleton()->get_ticks_msec();
+	uint32_t before = Time::get_singleton()->get_ticks_msec();
 	bool error1_reported = false;
 
 	// Wait until all tasks have been taken
@@ -249,13 +249,13 @@ void VoxelThreadPool::wait_for_all_tasks() {
 
 		OS::get_singleton()->delay_usec(2000);
 
-		if (!error1_reported && OS::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
+		if (!error1_reported && Time::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
 			WARN_PRINT("Waiting for all tasks to be picked is taking a long time");
 			error1_reported = true;
 		}
 	}
 
-	before = OS::get_singleton()->get_ticks_msec();
+	before = Time::get_singleton()->get_ticks_msec();
 	bool error2_reported = false;
 
 	// Wait until all threads have done all their tasks
@@ -272,7 +272,7 @@ void VoxelThreadPool::wait_for_all_tasks() {
 
 		OS::get_singleton()->delay_usec(2000);
 
-		if (!error2_reported && OS::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
+		if (!error2_reported && Time::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
 			WARN_PRINT("Waiting for all tasks to be completed is taking a long time");
 			error2_reported = true;
 		}
@@ -283,10 +283,12 @@ void VoxelThreadPool::wait_for_all_tasks() {
 // The variables should be safely updated, but computing or reading from them is not thread safe.
 // Thought it wasnt worth locking for debugging.
 
-VoxelThreadPool::State VoxelThreadPool::get_thread_debug_state(uint32_t i) const {
+ThreadedTaskRunner::State ThreadedTaskRunner::get_thread_debug_state(uint32_t i) const {
 	return _threads[i].debug_state;
 }
 
-unsigned int VoxelThreadPool::get_debug_remaining_tasks() const {
+unsigned int ThreadedTaskRunner::get_debug_remaining_tasks() const {
 	return _debug_received_tasks - _debug_completed_tasks;
 }
+
+} // namespace zylann

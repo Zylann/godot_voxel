@@ -16,13 +16,14 @@ public:
 	String get_resource_type() const override;
 	float get_priority() const override;
 	//int get_import_order() const override;
-	void get_import_options(List<ImportOption> *r_options, int p_preset = 0) const override;
-	bool get_option_visibility(const String &p_option, const Map<StringName, Variant> &p_options) const override;
+	void get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset = 0) const override;
+	bool get_option_visibility(
+			const String &p_path, const String &p_option, const Map<StringName, Variant> &p_options) const override;
 
 	Error import(const String &p_source_file, const String &p_save_path, const Map<StringName, Variant> &p_options,
 			List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata = nullptr) override;
 
-	enum PivotMode {
+	enum PivotMode { //
 		PIVOT_LOWER_CORNER,
 		PIVOT_SCENE_ORIGIN,
 		PIVOT_CENTER,
