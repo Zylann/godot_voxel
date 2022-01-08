@@ -223,45 +223,28 @@ Interval get_heightmap_range(Image &im) {
 }
 
 Interval get_heightmap_range(Image &im, Rect2i rect) {
-	switch (im.get_format()) {
-		case Image::FORMAT_R8:
-		case Image::FORMAT_RG8:
-		case Image::FORMAT_RGB8:
-		case Image::FORMAT_RGBA8:
-		case Image::FORMAT_RH:
-		case Image::FORMAT_RGH:
-		case Image::FORMAT_RGBH:
-		case Image::FORMAT_RGBAH:
-		case Image::FORMAT_RF:
-		case Image::FORMAT_RGF:
-		case Image::FORMAT_RGBF:
-		case Image::FORMAT_RGBAF: {
-			Interval r;
+	ERR_FAIL_COND_V_MSG(
+			im.is_compressed(), Interval(), String("Image format not supported: {0}").format(varray(im.get_format())));
 
-			im.lock();
+	Interval r;
 
-			r.min = im.get_pixel(0, 0).r;
-			r.max = r.min;
+	im.lock();
 
-			const int max_x = rect.position.x + rect.size.x;
-			const int max_y = rect.position.y + rect.size.y;
+	r.min = im.get_pixel(0, 0).r;
+	r.max = r.min;
 
-			for (int y = rect.position.y; y < max_y; ++y) {
-				for (int x = rect.position.x; x < max_x; ++x) {
-					r.add_point(im.get_pixel(x, y).r);
-				}
-			}
+	const int max_x = rect.position.x + rect.size.x;
+	const int max_y = rect.position.y + rect.size.y;
 
-			im.unlock();
-
-			return r;
-		} break;
-
-		default:
-			ERR_FAIL_V_MSG(Interval(), "Image format not supported");
-			break;
+	for (int y = rect.position.y; y < max_y; ++y) {
+		for (int x = rect.position.x; x < max_x; ++x) {
+			r.add_point(im.get_pixel(x, y).r);
+		}
 	}
-	return Interval();
+
+	im.unlock();
+
+	return r;
 }
 
 SdfAffectingArguments sdf_subtract_side(Interval a, Interval b) {

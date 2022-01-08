@@ -943,6 +943,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				ctx.make_error("Image instance is null");
 				return;
 			}
+			if (image->is_compressed()) {
+				ctx.make_error("Image has a compressed format, this is not supported");
+				return;
+			}
 			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
 			im_range->generate(**image);
 			Params p;
@@ -1322,6 +1326,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
 				ctx.make_error("Image instance is null");
+				return;
+			}
+			if (image->is_compressed()) {
+				ctx.make_error("Image has a compressed format, this is not supported");
 				return;
 			}
 			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
