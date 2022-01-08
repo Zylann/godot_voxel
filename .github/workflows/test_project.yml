@@ -7,7 +7,7 @@ on:
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: 3.x
+  GODOT_BASE_BRANCH: master
   SCONS_CACHE_LIMIT: 4096
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           repository: godotengine/godot
-          ref: 3.x
+          ref: master
 
       # Clone our module under the correct directory
       - uses: actions/checkout@v2
@@ -80,9 +80,9 @@ jobs:
       # Download and extract zip archive with project, folder is renamed to be able to easy change used project
       - name: Download test project
         run: |
-          wget https://github.com/qarmin/RegressionTestProject/archive/3.x.zip
-          unzip 3.x.zip
-          mv "RegressionTestProject-3.x" "test_project"
+          wget https://github.com/qarmin/RegressionTestProject/archive/master.zip
+          unzip master.zip
+          mv "RegressionTestProject-master" "test_project"
 
       # Editor is quite complicated piece of software, so it is easy to introduce bug here
       - name: Open and close editor

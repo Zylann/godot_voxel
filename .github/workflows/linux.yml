@@ -7,7 +7,7 @@ on:
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: 3.x
+  GODOT_BASE_BRANCH: master
   SCONS_CACHE_LIMIT: 4096
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           repository: godotengine/godot
-          ref: 3.x
+          ref: master
 
       # Clone our module under the correct directory
       - uses: actions/checkout@v2
