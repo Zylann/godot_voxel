@@ -572,7 +572,10 @@ void VoxelStreamSQLiteInternal::save_meta(Meta meta) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-thread_local zylann::voxel::BlockSerializer VoxelStreamSQLite::_voxel_block_serializer;
+using namespace zylann;
+using namespace voxel;
+
+thread_local BlockSerializer VoxelStreamSQLite::_voxel_block_serializer;
 thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_block_data;
 thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_compressed_block_data;
 
@@ -770,8 +773,7 @@ void VoxelStreamSQLite::load_instance_blocks(
 		const Result res = con->load_block(loc, _temp_compressed_block_data, VoxelStreamSQLiteInternal::INSTANCES);
 
 		if (res == RESULT_BLOCK_FOUND) {
-			if (!zylann::voxel::CompressedData::decompress(
-						to_span_const(_temp_compressed_block_data), _temp_block_data)) {
+			if (!CompressedData::decompress(to_span_const(_temp_compressed_block_data), _temp_block_data)) {
 				ERR_PRINT("Failed to decompress instance block");
 				out_results[i] = RESULT_ERROR;
 				continue;
@@ -838,14 +840,14 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 			result_block.lod = location.lod;
 
 			if (voxel_data.size() > 0) {
-				std::shared_ptr<VoxelBufferInternal> voxels = zylann::gd_make_shared<VoxelBufferInternal>();
+				std::shared_ptr<VoxelBufferInternal> voxels = gd_make_shared<VoxelBufferInternal>();
 				ERR_FAIL_COND(!ctx->stream._voxel_block_serializer.decompress_and_deserialize(voxel_data, *voxels));
 				result_block.voxels = voxels;
 			}
 
 			if (instances_data.size() > 0) {
 				std::vector<uint8_t> &temp_block_data = ctx->stream._temp_block_data;
-				if (!zylann::voxel::CompressedData::decompress(instances_data, temp_block_data)) {
+				if (!CompressedData::decompress(instances_data, temp_block_data)) {
 					ERR_PRINT("Failed to decompress instance block");
 					return;
 				}
@@ -885,7 +887,7 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 	PRINT_VERBOSE(String("VoxelStreamSQLite: Flushing cache ({0} elements)")
 						  .format(varray(_cache.get_indicative_block_count())));
 
-	zylann::voxel::BlockSerializer &serializer = _voxel_block_serializer;
+	BlockSerializer &serializer = _voxel_block_serializer;
 
 	ERR_FAIL_COND(con == nullptr);
 	ERR_FAIL_COND(con->begin_transaction() == false);
@@ -909,7 +911,7 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 				const std::vector<uint8_t> empty;
 				con->save_block(loc, empty, VoxelStreamSQLiteInternal::VOXELS);
 			} else {
-				zylann::voxel::BlockSerializer::SerializeResult res = serializer.serialize_and_compress(block.voxels);
+				BlockSerializer::SerializeResult res = serializer.serialize_and_compress(block.voxels);
 				ERR_FAIL_COND(!res.success);
 				con->save_block(loc, res.data, VoxelStreamSQLiteInternal::VOXELS);
 			}
@@ -922,8 +924,8 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 
 			ERR_FAIL_COND(!serialize_instance_block_data(*block.instances, temp_data));
 
-			ERR_FAIL_COND(!zylann::voxel::CompressedData::compress(
-					to_span_const(temp_data), temp_compressed_data, zylann::voxel::CompressedData::COMPRESSION_NONE));
+			ERR_FAIL_COND(!CompressedData::compress(
+					to_span_const(temp_data), temp_compressed_data, CompressedData::COMPRESSION_NONE));
 		}
 		con->save_block(loc, temp_compressed_data, VoxelStreamSQLiteInternal::INSTANCES);
 

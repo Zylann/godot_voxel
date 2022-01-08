@@ -1,6 +1,8 @@
 #include "voxel_generator.h"
 #include "../constants/voxel_string_names.h"
 
+using namespace zylann::voxel;
+
 VoxelGenerator::VoxelGenerator() {}
 
 VoxelGenerator::Result VoxelGenerator::generate_block(VoxelBlockRequest &input) {

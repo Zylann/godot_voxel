@@ -86,7 +86,7 @@ public:
 	bool is_area_editable(Box3i p_box) const;
 	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel, VoxelSingleValue defval);
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
-	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask);
+	void copy(Vector3i p_origin_voxels, zylann::voxel::VoxelBufferInternal &dst_buffer, uint8_t channels_mask);
 
 	template <typename F>
 	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
@@ -100,7 +100,7 @@ public:
 		{
 			RWLockWrite wlock(data_lod0.map_lock);
 			data_lod0.map.write_box(
-					voxel_box, channel, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
+					voxel_box, channel, action, [&generator](zylann::voxel::VoxelBufferInternal &voxels, Vector3i pos) {
 						if (generator.is_valid()) {
 							VoxelBlockRequest r{ voxels, pos, 0 };
 							generator->generate_block(r);
@@ -187,7 +187,7 @@ public:
 	void remesh_all_blocks() override;
 
 	struct BlockToSave {
-		std::shared_ptr<VoxelBufferInternal> voxels;
+		std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
 		Vector3i position;
 		uint8_t lod;
 	};

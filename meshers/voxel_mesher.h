@@ -6,13 +6,16 @@
 #include <scene/resources/mesh.h>
 
 class VoxelBuffer;
+
+namespace zylann::voxel {
 class VoxelBufferInternal;
+}
 
 class VoxelMesher : public Resource {
 	GDCLASS(VoxelMesher, Resource)
 public:
 	struct Input {
-		const VoxelBufferInternal &voxels;
+		const zylann::voxel::VoxelBufferInternal &voxels;
 		int lod; // = 0; // Not initialized because it confused GCC
 	};
 

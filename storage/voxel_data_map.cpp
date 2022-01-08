@@ -8,6 +8,7 @@
 #include <limits>
 
 using namespace zylann;
+using namespace voxel;
 
 VoxelDataMap::VoxelDataMap() {
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)

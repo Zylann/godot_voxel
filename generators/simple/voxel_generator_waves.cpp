@@ -2,6 +2,7 @@
 #include <cmath>
 
 using namespace zylann;
+using namespace voxel;
 
 VoxelGeneratorWaves::VoxelGeneratorWaves() {
 	_parameters.pattern_size = Vector2(30, 30);

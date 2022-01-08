@@ -4,6 +4,7 @@
 #include "../util/profiling.h"
 
 using namespace zylann;
+using namespace voxel;
 
 VoxelTool::VoxelTool() {
 	_sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH);

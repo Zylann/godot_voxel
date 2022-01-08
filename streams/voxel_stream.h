@@ -36,10 +36,10 @@ public:
 	// Queries a block of voxels beginning at the given world-space voxel position and LOD.
 	// If you use LOD, the result at a given coordinate must always remain the same regardless of it.
 	// In other words, voxels values must solely depend on their coordinates or fixed parameters.
-	virtual Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
+	virtual Result emerge_block(zylann::voxel::VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
 
 	// TODO Deprecate
-	virtual void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod);
+	virtual void immerge_block(zylann::voxel::VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod);
 
 	// TODO Rename load_voxel_blocks
 	// Note: Don't modify the order of `p_blocks`.
@@ -59,7 +59,7 @@ public:
 
 	struct FullLoadingResult {
 		struct Block {
-			std::shared_ptr<VoxelBufferInternal> voxels;
+			std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
 			std::unique_ptr<VoxelInstanceBlockData> instances_data;
 			Vector3i position;
 			unsigned int lod;

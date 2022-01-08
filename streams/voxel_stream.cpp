@@ -1,6 +1,8 @@
 #include "voxel_stream.h"
 #include <core/object/script_language.h>
 
+using namespace zylann::voxel;
+
 VoxelStream::VoxelStream() {}
 
 VoxelStream::~VoxelStream() {}

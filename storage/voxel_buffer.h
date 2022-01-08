@@ -18,33 +18,33 @@ class VoxelBuffer : public RefCounted {
 
 public:
 	enum ChannelId {
-		CHANNEL_TYPE = VoxelBufferInternal::CHANNEL_TYPE,
-		CHANNEL_SDF = VoxelBufferInternal::CHANNEL_SDF,
-		CHANNEL_COLOR = VoxelBufferInternal::CHANNEL_COLOR,
-		CHANNEL_INDICES = VoxelBufferInternal::CHANNEL_INDICES,
-		CHANNEL_WEIGHTS = VoxelBufferInternal::CHANNEL_WEIGHTS,
-		CHANNEL_DATA5 = VoxelBufferInternal::CHANNEL_DATA5,
-		CHANNEL_DATA6 = VoxelBufferInternal::CHANNEL_DATA6,
-		CHANNEL_DATA7 = VoxelBufferInternal::CHANNEL_DATA7,
-		MAX_CHANNELS = VoxelBufferInternal::MAX_CHANNELS,
+		CHANNEL_TYPE = zylann::voxel::VoxelBufferInternal::CHANNEL_TYPE,
+		CHANNEL_SDF = zylann::voxel::VoxelBufferInternal::CHANNEL_SDF,
+		CHANNEL_COLOR = zylann::voxel::VoxelBufferInternal::CHANNEL_COLOR,
+		CHANNEL_INDICES = zylann::voxel::VoxelBufferInternal::CHANNEL_INDICES,
+		CHANNEL_WEIGHTS = zylann::voxel::VoxelBufferInternal::CHANNEL_WEIGHTS,
+		CHANNEL_DATA5 = zylann::voxel::VoxelBufferInternal::CHANNEL_DATA5,
+		CHANNEL_DATA6 = zylann::voxel::VoxelBufferInternal::CHANNEL_DATA6,
+		CHANNEL_DATA7 = zylann::voxel::VoxelBufferInternal::CHANNEL_DATA7,
+		MAX_CHANNELS = zylann::voxel::VoxelBufferInternal::MAX_CHANNELS,
 	};
 
 	// TODO use C++17 inline to initialize right here...
 	static const char *CHANNEL_ID_HINT_STRING;
 
 	enum Compression {
-		COMPRESSION_NONE = VoxelBufferInternal::COMPRESSION_NONE,
-		COMPRESSION_UNIFORM = VoxelBufferInternal::COMPRESSION_UNIFORM,
+		COMPRESSION_NONE = zylann::voxel::VoxelBufferInternal::COMPRESSION_NONE,
+		COMPRESSION_UNIFORM = zylann::voxel::VoxelBufferInternal::COMPRESSION_UNIFORM,
 		//COMPRESSION_RLE,
-		COMPRESSION_COUNT = VoxelBufferInternal::COMPRESSION_COUNT
+		COMPRESSION_COUNT = zylann::voxel::VoxelBufferInternal::COMPRESSION_COUNT
 	};
 
 	enum Depth {
-		DEPTH_8_BIT = VoxelBufferInternal::DEPTH_8_BIT,
-		DEPTH_16_BIT = VoxelBufferInternal::DEPTH_16_BIT,
-		DEPTH_32_BIT = VoxelBufferInternal::DEPTH_32_BIT,
-		DEPTH_64_BIT = VoxelBufferInternal::DEPTH_64_BIT,
-		DEPTH_COUNT = VoxelBufferInternal::DEPTH_COUNT
+		DEPTH_8_BIT = zylann::voxel::VoxelBufferInternal::DEPTH_8_BIT,
+		DEPTH_16_BIT = zylann::voxel::VoxelBufferInternal::DEPTH_16_BIT,
+		DEPTH_32_BIT = zylann::voxel::VoxelBufferInternal::DEPTH_32_BIT,
+		DEPTH_64_BIT = zylann::voxel::VoxelBufferInternal::DEPTH_64_BIT,
+		DEPTH_COUNT = zylann::voxel::VoxelBufferInternal::DEPTH_COUNT
 	};
 
 	// Limit was made explicit for serialization reasons, and also because there must be a reasonable one
@@ -53,18 +53,18 @@ public:
 	// Constructs a new buffer
 	VoxelBuffer();
 	// Reference an existing buffer
-	VoxelBuffer(std::shared_ptr<VoxelBufferInternal> &other);
+	VoxelBuffer(std::shared_ptr<zylann::voxel::VoxelBufferInternal> &other);
 
 	~VoxelBuffer();
 
-	inline const VoxelBufferInternal &get_buffer() const {
+	inline const zylann::voxel::VoxelBufferInternal &get_buffer() const {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(_buffer == nullptr);
 #endif
 		return *_buffer;
 	}
 
-	inline VoxelBufferInternal &get_buffer() {
+	inline zylann::voxel::VoxelBufferInternal &get_buffer() {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(_buffer == nullptr);
 #endif
@@ -73,16 +73,28 @@ public:
 
 	//inline std::shared_ptr<VoxelBufferInternal> get_buffer_shared() { return _buffer; }
 
-	Vector3i get_size() const { return _buffer->get_size(); }
+	Vector3i get_size() const {
+		return _buffer->get_size();
+	}
 	// TODO Deprecate
-	int get_size_x() const { return _buffer->get_size().x; }
-	int get_size_y() const { return _buffer->get_size().x; }
-	int get_size_z() const { return _buffer->get_size().x; }
+	int get_size_x() const {
+		return _buffer->get_size().x;
+	}
+	int get_size_y() const {
+		return _buffer->get_size().x;
+	}
+	int get_size_z() const {
+		return _buffer->get_size().x;
+	}
 
-	void create(int x, int y, int z) { _buffer->create(x, y, z); }
+	void create(int x, int y, int z) {
+		_buffer->create(x, y, z);
+	}
 	void clear();
 
-	uint64_t get_voxel(int x, int y, int z, unsigned int channel) const { return _buffer->get_voxel(x, y, z, channel); }
+	uint64_t get_voxel(int x, int y, int z, unsigned int channel) const {
+		return _buffer->get_voxel(x, y, z, channel);
+	}
 	void set_voxel(uint64_t value, int x, int y, int z, unsigned int channel) {
 		_buffer->set_voxel(value, x, y, z, channel);
 	}
@@ -124,11 +136,17 @@ public:
 
 	// Metadata
 
-	Variant get_block_metadata() const { return _buffer->get_block_metadata(); }
+	Variant get_block_metadata() const {
+		return _buffer->get_block_metadata();
+	}
 	void set_block_metadata(Variant meta);
 
-	Variant get_voxel_metadata(Vector3i pos) const { return _buffer->get_voxel_metadata(pos); }
-	void set_voxel_metadata(Vector3i pos, Variant meta) { _buffer->set_voxel_metadata(pos, meta); }
+	Variant get_voxel_metadata(Vector3i pos) const {
+		return _buffer->get_voxel_metadata(pos);
+	}
+	void set_voxel_metadata(Vector3i pos, Variant meta) {
+		_buffer->set_voxel_metadata(pos, meta);
+	}
 	void for_each_voxel_metadata(const Callable &callback) const;
 	void for_each_voxel_metadata_in_area(const Callable &callback, Vector3i min_pos, Vector3i max_pos);
 	void copy_voxel_metadata_in_area(
@@ -145,7 +163,7 @@ private:
 	static void _bind_methods();
 
 	// Not sure yet if we'll really need shared_ptr or just no pointer
-	std::shared_ptr<VoxelBufferInternal> _buffer;
+	std::shared_ptr<zylann::voxel::VoxelBufferInternal> _buffer;
 };
 
 VARIANT_ENUM_CAST(VoxelBuffer::ChannelId)

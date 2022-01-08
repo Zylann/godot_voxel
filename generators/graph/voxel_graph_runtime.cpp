@@ -781,6 +781,7 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 
 		Span<const uint8_t> params = read_params(operations, pc);
 
+		// TODO Buffers will stay bound if this error occurs!
 		ERR_FAIL_COND(node_type.process_buffer_func == nullptr);
 		ProcessBufferContext ctx(inputs, outputs, params, buffers, execution_map != nullptr);
 		node_type.process_buffer_func(ctx);

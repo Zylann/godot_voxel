@@ -26,7 +26,7 @@ public:
 
 protected:
 	template <typename Height_F>
-	Result generate(VoxelBufferInternal &out_buffer, Height_F height_func, Vector3i origin, int lod) {
+	Result generate(zylann::voxel::VoxelBufferInternal &out_buffer, Height_F height_func, Vector3i origin, int lod) {
 		Parameters params;
 		{
 			RWLockRead rlock(_parameters_lock);
@@ -35,7 +35,7 @@ protected:
 
 		const int channel = params.channel;
 		const Vector3i bs = out_buffer.get_size();
-		const bool use_sdf = channel == VoxelBufferInternal::CHANNEL_SDF;
+		const bool use_sdf = channel == zylann::voxel::VoxelBufferInternal::CHANNEL_SDF;
 
 		if (origin.y > get_height_start() + get_height_range()) {
 			// The bottom of the block is above the highest ground can go (default is air)
@@ -111,7 +111,7 @@ private:
 	};
 
 	struct Parameters {
-		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+		zylann::voxel::VoxelBufferInternal::ChannelId channel = zylann::voxel::VoxelBufferInternal::CHANNEL_SDF;
 		int matter_type = 1;
 		Range range;
 		float iso_scale = 0.1;

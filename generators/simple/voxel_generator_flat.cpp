@@ -1,5 +1,7 @@
 #include "voxel_generator_flat.h"
 
+using namespace zylann::voxel;
+
 VoxelGeneratorFlat::VoxelGeneratorFlat() {}
 
 VoxelGeneratorFlat::~VoxelGeneratorFlat() {}

@@ -35,7 +35,7 @@ private:
 	Ref<OpenSimplexNoise> _noise;
 
 	struct Parameters {
-		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+		zylann::voxel::VoxelBufferInternal::ChannelId channel = zylann::voxel::VoxelBufferInternal::CHANNEL_SDF;
 		Ref<OpenSimplexNoise> noise;
 		float height_start = 0;
 		float height_range = 300;

@@ -2,6 +2,8 @@
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
 
+using namespace zylann::voxel;
+
 VoxelGeneratorNoise::VoxelGeneratorNoise() {}
 
 VoxelGeneratorNoise::~VoxelGeneratorNoise() {}

@@ -8,9 +8,10 @@
 #include <vector>
 
 class StreamPeer;
-class VoxelBufferInternal;
 
 namespace zylann::voxel {
+
+class VoxelBufferInternal;
 
 class BlockSerializer {
 	// Had to be named differently to not conflict with the wrapper for Godot script API

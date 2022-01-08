@@ -2,6 +2,8 @@
 #include "../../util/fixed_array.h"
 #include "../../util/span.h"
 
+using namespace zylann::voxel;
+
 VoxelGeneratorHeightmap::VoxelGeneratorHeightmap() {}
 
 VoxelGeneratorHeightmap::~VoxelGeneratorHeightmap() {}

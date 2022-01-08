@@ -13,10 +13,7 @@
 #include <core/math/math_funcs.h>
 #include <string.h>
 
-using namespace zylann;
-using namespace voxel;
-
-namespace {
+namespace zylann::voxel {
 
 inline uint8_t *allocate_channel_data(size_t size) {
 #ifdef VOXEL_BUFFER_USE_MEMORY_POOL
@@ -40,11 +37,6 @@ uint64_t g_depth_max_values[] = {
 	0xffffffff, // 32
 	0xffffffffffffffff // 64
 };
-
-inline uint32_t get_depth_bit_count(VoxelBufferInternal::Depth d) {
-	CRASH_COND(d < 0 || d >= VoxelBufferInternal::DEPTH_COUNT);
-	return VoxelBufferInternal::get_depth_byte_count(d) << 3;
-}
 
 inline uint64_t get_max_value_for_depth(VoxelBufferInternal::Depth d) {
 	CRASH_COND(d < 0 || d >= VoxelBufferInternal::DEPTH_COUNT);
@@ -113,21 +105,19 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBufferInternal::Depth depth
 	}
 }
 
-} // namespace
-
 VoxelBufferInternal::VoxelBufferInternal() {
 	// Minecraft uses way more than 255 block types and there is room for eventual metadata such as rotation
-	_channels[CHANNEL_TYPE].depth = VoxelBufferInternal::DEFAULT_TYPE_CHANNEL_DEPTH;
+	_channels[CHANNEL_TYPE].depth = DEFAULT_TYPE_CHANNEL_DEPTH;
 	_channels[CHANNEL_TYPE].defval = 0;
 
 	// 16-bit is better on average to handle large worlds
-	_channels[CHANNEL_SDF].depth = VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH;
+	_channels[CHANNEL_SDF].depth = DEFAULT_SDF_CHANNEL_DEPTH;
 	_channels[CHANNEL_SDF].defval = 0xffff;
 
-	_channels[CHANNEL_INDICES].depth = VoxelBufferInternal::DEPTH_16_BIT;
+	_channels[CHANNEL_INDICES].depth = DEPTH_16_BIT;
 	_channels[CHANNEL_INDICES].defval = encode_indices_to_packed_u16(0, 1, 2, 3);
 
-	_channels[CHANNEL_WEIGHTS].depth = VoxelBufferInternal::DEPTH_16_BIT;
+	_channels[CHANNEL_WEIGHTS].depth = DEPTH_16_BIT;
 	_channels[CHANNEL_WEIGHTS].defval = encode_weights_to_packed_u16(15, 0, 0, 0);
 }
 
@@ -422,7 +412,8 @@ void VoxelBufferInternal::fill_f(real_t value, unsigned int channel) {
 	fill(real_to_raw_voxel(value, _channels[channel].depth), channel);
 }
 
-template <typename T> inline bool is_uniform_b(const uint8_t *data, size_t item_count) {
+template <typename T>
+inline bool is_uniform_b(const uint8_t *data, size_t item_count) {
 	return is_uniform<T>(reinterpret_cast<const T *>(data), item_count);
 }
 
@@ -441,13 +432,13 @@ bool VoxelBufferInternal::is_uniform(const Channel &channel) {
 	// Channel isn't optimized, so must look at each voxel
 	switch (channel.depth) {
 		case DEPTH_8_BIT:
-			return ::is_uniform_b<uint8_t>(channel.data, channel.size_in_bytes);
+			return is_uniform_b<uint8_t>(channel.data, channel.size_in_bytes);
 		case DEPTH_16_BIT:
-			return ::is_uniform_b<uint16_t>(channel.data, channel.size_in_bytes / 2);
+			return is_uniform_b<uint16_t>(channel.data, channel.size_in_bytes / 2);
 		case DEPTH_32_BIT:
-			return ::is_uniform_b<uint32_t>(channel.data, channel.size_in_bytes / 4);
+			return is_uniform_b<uint32_t>(channel.data, channel.size_in_bytes / 4);
 		case DEPTH_64_BIT:
-			return ::is_uniform_b<uint64_t>(channel.data, channel.size_in_bytes / 8);
+			return is_uniform_b<uint64_t>(channel.data, channel.size_in_bytes / 8);
 		default:
 			CRASH_NOW();
 			break;
@@ -644,7 +635,7 @@ bool VoxelBufferInternal::create_channel(int i, uint64_t defval) {
 size_t VoxelBufferInternal::get_size_in_bytes_for_volume(Vector3i size, Depth depth) {
 	// Calculate appropriate size based on bit depth
 	const size_t volume = size.x * size.y * size.z;
-	const size_t bits = volume * ::get_depth_bit_count(depth);
+	const size_t bits = volume * get_depth_bit_count(depth);
 	const size_t size_in_bytes = (bits >> 3);
 	return size_in_bytes;
 }
@@ -777,10 +768,6 @@ void VoxelBufferInternal::set_channel_depth(unsigned int channel_index, Depth ne
 VoxelBufferInternal::Depth VoxelBufferInternal::get_channel_depth(unsigned int channel_index) const {
 	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, DEPTH_8_BIT);
 	return _channels[channel_index].depth;
-}
-
-uint32_t VoxelBufferInternal::get_depth_bit_count(Depth d) {
-	return ::get_depth_bit_count(d);
 }
 
 float VoxelBufferInternal::get_sdf_quantization_scale(Depth d) {
@@ -926,3 +913,5 @@ Ref<Image> VoxelBufferInternal::debug_print_sdf_to_image_top_down() {
 	}
 	return im;
 }
+
+} // namespace zylann::voxel

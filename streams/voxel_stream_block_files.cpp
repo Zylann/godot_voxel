@@ -4,6 +4,8 @@
 #include <core/io/dir_access.h>
 #include <core/io/file_access.h>
 
+using namespace zylann::voxel;
+
 namespace {
 const uint8_t FORMAT_VERSION = 1;
 const char *FORMAT_META_MAGIC = "VXBM";
@@ -12,7 +14,7 @@ const char *META_FILE_NAME = "meta.vxbm";
 const char *BLOCK_FILE_EXTENSION = ".vxb";
 } // namespace
 
-thread_local zylann::voxel::BlockSerializer VoxelStreamBlockFiles::_block_serializer;
+thread_local BlockSerializer VoxelStreamBlockFiles::_block_serializer;
 
 VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 	// Defaults
@@ -141,7 +143,7 @@ void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i 
 		f->store_buffer((uint8_t *)FORMAT_BLOCK_MAGIC, 4);
 		f->store_8(FORMAT_VERSION);
 
-		zylann::voxel::BlockSerializer::SerializeResult res = _block_serializer.serialize_and_compress(buffer);
+		BlockSerializer::SerializeResult res = _block_serializer.serialize_and_compress(buffer);
 		if (!res.success) {
 			memdelete(f);
 			ERR_PRINT("Failed to save block");

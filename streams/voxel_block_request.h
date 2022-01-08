@@ -8,7 +8,7 @@
 
 // TODO Rename VoxelStreamBlockRequest
 struct VoxelBlockRequest {
-	VoxelBufferInternal &voxel_buffer;
+	zylann::voxel::VoxelBufferInternal &voxel_buffer;
 	Vector3i origin_in_voxels;
 	int lod;
 };

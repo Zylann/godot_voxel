@@ -3,6 +3,7 @@
 #include "../../util/span.h"
 
 using namespace zylann;
+using namespace voxel;
 
 namespace {
 

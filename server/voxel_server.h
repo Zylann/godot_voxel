@@ -43,7 +43,7 @@ public:
 		enum Type { TYPE_LOAD, TYPE_SAVE };
 
 		Type type;
-		std::shared_ptr<VoxelBufferInternal> voxels;
+		std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
 		Vector3i position;
 		uint8_t lod;
@@ -55,7 +55,8 @@ public:
 
 	struct BlockMeshInput {
 		// Moore area ordered by forward XYZ iteration
-		FixedArray<std::shared_ptr<VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> data_blocks;
+		FixedArray<std::shared_ptr<zylann::voxel::VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST>
+				data_blocks;
 		unsigned int data_blocks_count = 0;
 		Vector3i render_block_position;
 		uint8_t lod = 0;
@@ -115,8 +116,8 @@ public:
 	void request_block_generate(
 			uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<zylann::AsyncDependencyTracker> tracker);
 	void request_all_stream_blocks(uint32_t volume_id);
-	void request_voxel_block_save(
-			uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos, int lod);
+	void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels,
+			Vector3i block_pos, int lod);
 	void request_instance_block_save(
 			uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances, Vector3i block_pos, int lod);
 	void remove_volume(uint32_t volume_id);
@@ -287,7 +288,7 @@ private:
 		bool is_cancelled() override;
 		void apply_result() override;
 
-		std::shared_ptr<VoxelBufferInternal> voxels;
+		std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
 		Vector3i position; // In data blocks of the specified lod
 		uint32_t volume_id;
@@ -329,7 +330,7 @@ private:
 		bool is_cancelled() override;
 		void apply_result() override;
 
-		std::shared_ptr<VoxelBufferInternal> voxels;
+		std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
 		Vector3i position;
 		uint32_t volume_id;
 		uint8_t lod;
@@ -353,7 +354,8 @@ private:
 		bool is_cancelled() override;
 		void apply_result() override;
 
-		FixedArray<std::shared_ptr<VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
+		FixedArray<std::shared_ptr<zylann::voxel::VoxelBufferInternal>, VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST>
+				blocks;
 		// TODO Need to provide format
 		//FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
 		Vector3i position; // In mesh blocks of the specified lod

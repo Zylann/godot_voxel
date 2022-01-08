@@ -2,6 +2,8 @@
 #include "../constants/voxel_string_names.h"
 #include "../util/godot/funcs.h"
 
+using namespace zylann::voxel;
+
 VoxelStream::Result VoxelStreamScript::emerge_block(
 		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	Variant output;

@@ -27,7 +27,7 @@ protected:
 
 private:
 	struct Parameters {
-		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+		zylann::voxel::VoxelBufferInternal::ChannelId channel = zylann::voxel::VoxelBufferInternal::CHANNEL_SDF;
 		int voxel_type = 1;
 		float height = 0;
 		float iso_scale = 0.1;

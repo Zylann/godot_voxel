@@ -261,7 +261,8 @@ private:
 	OctreeNodePool &_pool;
 };
 
-template <typename Action_T> void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
+template <typename Action_T>
+void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
 	a(root, depth);
 	for (int i = 0; i < 8; ++i) {
 		if (root->children[i]) {
@@ -1533,7 +1534,7 @@ Ref<Resource> VoxelMesherDMC::duplicate(bool p_subresources) const {
 }
 
 int VoxelMesherDMC::get_used_channels_mask() const {
-	return (1 << VoxelBufferInternal::CHANNEL_SDF);
+	return (1 << zylann::voxel::VoxelBufferInternal::CHANNEL_SDF);
 }
 
 Dictionary VoxelMesherDMC::get_statistics() const {

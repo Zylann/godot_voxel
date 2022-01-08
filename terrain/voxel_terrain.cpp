@@ -14,6 +14,7 @@
 #include <scene/3d/mesh_instance_3d.h>
 
 using namespace zylann;
+using namespace voxel;
 
 VoxelTerrain::VoxelTerrain() {
 	// Note: don't do anything heavy in the constructor.

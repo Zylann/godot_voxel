@@ -53,32 +53,34 @@ public:
 	int get_voxel(Vector3i pos, unsigned int c = 0) const;
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
 
-	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBufferInternal::CHANNEL_SDF) const;
-	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBufferInternal::CHANNEL_SDF);
+	float get_voxel_f(Vector3i pos, unsigned int c = zylann::voxel::VoxelBufferInternal::CHANNEL_SDF) const;
+	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = zylann::voxel::VoxelBufferInternal::CHANNEL_SDF);
 
 	void set_default_voxel(int value, unsigned int channel = 0);
 	int get_default_voxel(unsigned int channel = 0);
 
-	inline void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
+	inline void copy(
+			Vector3i min_pos, zylann::voxel::VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
 		copy(min_pos, dst_buffer, channels_mask, nullptr, nullptr);
 	}
 
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
-	void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask, void *,
-			void (*gen_func)(void *, VoxelBufferInternal &, Vector3i)) const;
+	void copy(Vector3i min_pos, zylann::voxel::VoxelBufferInternal &dst_buffer, unsigned int channels_mask, void *,
+			void (*gen_func)(void *, zylann::voxel::VoxelBufferInternal &, Vector3i)) const;
 
-	void paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
-			uint64_t mask_value, bool create_new_blocks);
+	void paste(Vector3i min_pos, zylann::voxel::VoxelBufferInternal &src_buffer, unsigned int channels_mask,
+			bool use_mask, uint64_t mask_value, bool create_new_blocks);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
 	VoxelDataBlock *set_block_buffer(
-			Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite = true);
+			Vector3i bpos, std::shared_ptr<zylann::voxel::VoxelBufferInternal> &buffer, bool overwrite = true);
 
 	struct NoAction {
 		inline void operator()(VoxelDataBlock *block) {}
 	};
 
-	template <typename Action_T> void remove_block(Vector3i bpos, Action_T pre_delete) {
+	template <typename Action_T>
+	void remove_block(Vector3i bpos, Action_T pre_delete) {
 		auto it = _blocks_map.find(bpos);
 		if (it != _blocks_map.end()) {
 			const unsigned int i = it->second;
@@ -104,14 +106,16 @@ public:
 	int get_block_count() const;
 
 	// TODO Rename for_each_block
-	template <typename Op_T> inline void for_all_blocks(Op_T op) {
+	template <typename Op_T>
+	inline void for_all_blocks(Op_T op) {
 		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 			op(*it);
 		}
 	}
 
 	// TODO Rename for_each_block
-	template <typename Op_T> inline void for_all_blocks(Op_T op) const {
+	template <typename Op_T>
+	inline void for_all_blocks(Op_T op) const {
 		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 			op(*it);
 		}
@@ -119,7 +123,8 @@ public:
 
 	bool is_area_fully_loaded(const Box3i voxels_box) const;
 
-	template <typename F> inline void write_box(const Box3i &voxel_box, unsigned int channel, F action) {
+	template <typename F>
+	inline void write_box(const Box3i &voxel_box, unsigned int channel, F action) {
 		write_box(voxel_box, channel, action, [](const VoxelBufferInternal &, const Vector3i &) {});
 	}
 
@@ -179,7 +184,7 @@ private:
 
 private:
 	// Voxel values that will be returned if access is out of map bounds
-	FixedArray<uint64_t, VoxelBufferInternal::MAX_CHANNELS> _default_voxel;
+	FixedArray<uint64_t, zylann::voxel::VoxelBufferInternal::MAX_CHANNELS> _default_voxel;
 
 	// Blocks stored with a spatial hash in all 3D directions.
 	// Before I used Godot's HashMap with RELATIONSHIP = 2 because that delivers better performance compared to

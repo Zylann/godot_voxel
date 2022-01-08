@@ -103,7 +103,7 @@ public:
 	const Stats &get_stats() const;
 
 	struct BlockToSave {
-		std::shared_ptr<VoxelBufferInternal> voxels;
+		std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
 		Vector3i position;
 	};
 

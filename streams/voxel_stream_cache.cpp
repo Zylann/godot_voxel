@@ -1,5 +1,7 @@
 #include "voxel_stream_cache.h"
 
+using namespace zylann::voxel;
+
 bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &out_voxels) {
 	const Lod &lod = _cache[lod_index];
 	lod.rw_lock.read_lock();

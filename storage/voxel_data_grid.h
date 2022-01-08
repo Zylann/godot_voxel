@@ -23,7 +23,8 @@ public:
 	}
 
 	// D action(Vector3i pos, D value)
-	template <typename F> void write_box(Box3i voxel_box, unsigned int channel, F action) {
+	template <typename F>
+	void write_box(Box3i voxel_box, unsigned int channel, F action) {
 		_box_loop(voxel_box, [action, channel](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
 			voxels.write_box(local_box, channel, action, voxel_offset);
 		});
@@ -44,7 +45,8 @@ private:
 		return _block_size;
 	}
 
-	template <typename Block_F> inline void _box_loop(Box3i voxel_box, Block_F block_action) {
+	template <typename Block_F>
+	inline void _box_loop(Box3i voxel_box, Block_F block_action) {
 		Vector3i block_rpos;
 		const Vector3i area_origin_in_voxels = _offset_in_blocks * _block_size;
 		unsigned int index = 0;
@@ -85,7 +87,7 @@ private:
 				pos.z < _size_in_blocks.z;
 	}
 
-	inline void set_block(Vector3i position, std::shared_ptr<VoxelBufferInternal> block) {
+	inline void set_block(Vector3i position, std::shared_ptr<zylann::voxel::VoxelBufferInternal> block) {
 		ERR_FAIL_COND(!is_valid_position(position));
 		position -= _offset_in_blocks;
 		const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
@@ -93,7 +95,7 @@ private:
 		_blocks[index] = block;
 	}
 
-	inline VoxelBufferInternal *get_block(Vector3i position) {
+	inline zylann::voxel::VoxelBufferInternal *get_block(Vector3i position) {
 		ERR_FAIL_COND_V(!is_valid_position(position), nullptr);
 		position -= _offset_in_blocks;
 		const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
@@ -102,7 +104,7 @@ private:
 	}
 
 	// Flat grid indexed in ZXY order
-	std::vector<std::shared_ptr<VoxelBufferInternal>> _blocks;
+	std::vector<std::shared_ptr<zylann::voxel::VoxelBufferInternal>> _blocks;
 	// Size of the grid in blocks
 	Vector3i _size_in_blocks;
 	// Block coordinates offset. This is used for when we cache a sub-region of a map, we need to keep the origin

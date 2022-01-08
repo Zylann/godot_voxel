@@ -9,6 +9,7 @@
 #include <algorithm>
 
 using namespace zylann;
+using namespace voxel;
 
 namespace {
 const uint8_t FORMAT_VERSION = 3;
@@ -21,7 +22,7 @@ const char *META_FILE_NAME = "meta.vxrm";
 
 } // namespace
 
-thread_local zylann::voxel::BlockSerializer VoxelStreamRegionFiles::_block_serializer;
+thread_local BlockSerializer VoxelStreamRegionFiles::_block_serializer;
 
 // Sorts a sequence without modifying it, returning a sorted list of pointers
 template <typename T, typename Comparer_T>
@@ -425,7 +426,7 @@ String VoxelStreamRegionFiles::get_region_file_path(const Vector3i &region_pos, 
 	a[1] = region_pos.x;
 	a[2] = region_pos.y;
 	a[3] = region_pos.z;
-	a[4] = zylann::voxel::RegionFormat::FILE_EXTENSION;
+	a[4] = RegionFormat::FILE_EXTENSION;
 	return _directory_path.plus_file(String("regions/lod{0}/r.{1}.{2}.{3}.{4}").format(a));
 }
 
@@ -463,7 +464,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 
 	// Configure format because we might have to create the file, and some old file versions don't embed format
 	{
-		zylann::voxel::RegionFormat format;
+		RegionFormat format;
 		format.block_size_po2 = _meta.block_size_po2;
 		format.channel_depths = _meta.channel_depths;
 		// TODO Palette support
@@ -497,7 +498,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 
 	// Make sure it has correct format
 	{
-		const zylann::voxel::RegionFormat &format = cached_region->region.get_format();
+		const RegionFormat &format = cached_region->region.get_format();
 		if (format.block_size_po2 != _meta.block_size_po2 //
 				|| format.channel_depths != _meta.channel_depths //
 				|| format.region_size != Vector3iUtil::create(1 << _meta.region_size_po2) //
@@ -618,7 +619,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 		for (int lod = 0; lod < old_meta.lod_count; ++lod) {
 			const String lod_folder =
 					old_stream->_directory_path.plus_file("regions").plus_file("lod") + String::num_int64(lod);
-			const String ext = String(".") + zylann::voxel::RegionFormat::FILE_EXTENSION;
+			const String ext = String(".") + RegionFormat::FILE_EXTENSION;
 
 			DirAccessRef da = DirAccess::open(lod_folder);
 			if (!da) {

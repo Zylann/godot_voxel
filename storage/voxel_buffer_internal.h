@@ -15,6 +15,12 @@
 class VoxelTool;
 class Image;
 
+namespace zylann::voxel {
+
+// TODO This class is still suffixed "Internal" to avoid conflict with the registered Godot class.
+// Even though the other class is not namespaced yet, it is unsure if it will remain that way after the future port
+// to GDExtension
+
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.
 // Values can be interpreted either as unsigned integers or normalized floats.
@@ -42,11 +48,22 @@ public:
 		COMPRESSION_COUNT
 	};
 
-	enum Depth { DEPTH_8_BIT, DEPTH_16_BIT, DEPTH_32_BIT, DEPTH_64_BIT, DEPTH_COUNT };
+	enum Depth { //
+		DEPTH_8_BIT,
+		DEPTH_16_BIT,
+		DEPTH_32_BIT,
+		DEPTH_64_BIT,
+		DEPTH_COUNT
+	};
 
 	static inline uint32_t get_depth_byte_count(VoxelBufferInternal::Depth d) {
 		CRASH_COND(d < 0 || d >= VoxelBufferInternal::DEPTH_COUNT);
 		return 1 << d;
+	}
+
+	static inline uint32_t get_depth_bit_count(Depth d) {
+		//CRASH_COND(d < 0 || d >= VoxelBufferInternal::DEPTH_COUNT);
+		return get_depth_byte_count(d) << 3;
 	}
 
 	static inline Depth get_depth_from_size(size_t size) {
@@ -199,7 +216,8 @@ public:
 	// `action_func` receives a voxel value from the channel, and returns a modified value.
 	// if the returned value is different, it will be applied to the buffer.
 	// Can be used to blend voxels together.
-	template <typename F> inline void read_write_action(Box3i box, unsigned int channel_index, F action_func) {
+	template <typename F>
+	inline void read_write_action(Box3i box, unsigned int channel_index, F action_func) {
 		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
 		box.clip(Box3i(Vector3i(), _size));
@@ -228,7 +246,8 @@ public:
 		return y + _size.y * (x + _size.x * z); // ZXY index
 	}
 
-	template <typename F> inline void for_each_index_and_pos(const Box3i &box, F f) {
+	template <typename F>
+	inline void for_each_index_and_pos(const Box3i &box, F f) {
 		const Vector3i min_pos = box.pos;
 		const Vector3i max_pos = box.pos + box.size;
 		Vector3i pos;
@@ -284,7 +303,8 @@ public:
 		compress_if_uniform(channel1);
 	}
 
-	template <typename F> void write_box(const Box3i &box, unsigned int channel_index, F action_func, Vector3i offset) {
+	template <typename F>
+	void write_box(const Box3i &box, unsigned int channel_index, F action_func, Vector3i offset) {
 #ifdef DEBUG_ENABLED
 		ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 #endif
@@ -384,7 +404,6 @@ public:
 
 	void set_channel_depth(unsigned int channel_index, Depth new_depth);
 	Depth get_channel_depth(unsigned int channel_index) const;
-	static uint32_t get_depth_bit_count(Depth d);
 
 	// When using lower than 32-bit resolution for terrain signed distance fields,
 	// it should be scaled to better fit the range of represented values since the storage is normalized to -1..1.
@@ -400,7 +419,8 @@ public:
 	Variant get_voxel_metadata(Vector3i pos) const;
 	void set_voxel_metadata(Vector3i pos, Variant meta);
 
-	template <typename F> void for_each_voxel_metadata_in_area(Box3i box, F callback) const {
+	template <typename F>
+	void for_each_voxel_metadata_in_area(Box3i box, F callback) const {
 		const Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
 		while (elem != nullptr) {
 			if (box.contains(elem->key())) {
@@ -460,8 +480,6 @@ private:
 	// It worked so far on PC but other platforms like the PS5 might have a pretty low limit (8K?)
 	RWLock _rw_lock;
 };
-
-namespace zylann::voxel {
 
 inline void debug_check_texture_indices_packed_u16(const VoxelBufferInternal &voxels) {
 	for (int z = 0; z < voxels.get_size().z; ++z) {
