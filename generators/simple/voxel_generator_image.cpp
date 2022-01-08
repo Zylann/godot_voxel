@@ -29,6 +29,9 @@ void VoxelGeneratorImage::set_image(Ref<Image> im) {
 	if (im == _image) {
 		return;
 	}
+	if (im.is_valid()) {
+		ERR_FAIL_COND(im->is_compressed());
+	}
 	_image = im;
 	Ref<Image> copy;
 	if (im.is_valid()) {
