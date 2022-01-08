@@ -10,8 +10,8 @@ bool voxel_raycast(Vector3 ray_origin, Vector3 ray_direction, Predicate_F predic
 		float &out_distance_along_ray_prev) {
 	VOXEL_PROFILE_SCOPE();
 
-	ERR_FAIL_COND_V(Vector3iUtil::has_nan(ray_origin), false);
-	ERR_FAIL_COND_V(Vector3iUtil::has_nan(ray_direction), false);
+	ERR_FAIL_COND_V(math::has_nan(ray_origin), false);
+	ERR_FAIL_COND_V(math::has_nan(ray_direction), false);
 	ERR_FAIL_COND_V(Math::is_nan(max_distance), false);
 
 	const float g_infinite = 9999999;
