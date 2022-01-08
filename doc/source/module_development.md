@@ -97,7 +97,7 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Space between binary operators and control flow: `if (a + b == 42)`
 - Indent with tabs
 - Private wrapper functions can be used to adapt to the script API and are prefixed with `_b_`.
-- Use Clang-format to automate most of these rules (the one included in Godot should do it)
+- Use Clang-format to automate most of these rules (there should be a file included at the root of the C++ project)
 - Prefer comments with `//` only
 
 ### File structure
@@ -118,16 +118,17 @@ For the most part, use `clang-format` and follow Godot conventions.
 - STL is ok if it measurably performs better than Godot alternatives.
 - Initialize variables next to declaration
 - Avoid using macros to define logic or constants. Prefer `static const`, `constexpr` and `inline` functions.
-- Prefer adding `const` to variables that won't change after being initialized
-- Don't exploit booleanization. Example: use `if (a == nullptr)` instead of `if (a)`
+- Prefer adding `const` to variables that won't change after being initialized (function arguments are spared for now as it would make signatures very long)
+- Don't exploit booleanization when an explicit alternative exists. Example: use `if (a == nullptr)` instead of `if (a)`
 - If possible, avoid plain arrays like `int a[42]`. Debuggers don't catch overruns on them. Prefer using wrappers such as `FixedArray` and `Span` (or `std::array` and `std::span` once [this](https://github.com/godotengine/godot/issues/31608) is fixed)
 - Use `uint32_t`, `uint16_t`, `uint8_t` in case integer size matters.
+- If possible, use forward declarations in headers instead of including files
 
 ### Error handling
 
 - No exceptions
 - Check invariants, fail early. Use `CRASH_COND` in debug mode to make sure states are as expected even if they don't cause immediate harm.
-- Crashes aren't nice to users, so in user-facing code use `ERR_FAIL_COND` macros for code that can recover from error, or to prevent hitting internal assertions
+- Crashes aren't nice to users, so in user-facing code (scripting) use `ERR_FAIL_COND` macros for code that can recover from error, or to prevent hitting internal assertions
 
 ### Performance
 
@@ -155,10 +156,15 @@ In performance-critical areas which run a lot:
 
 The intented namespaces are `zylann::` as main, and `zylann::voxel::` for voxel-related stuff. There may be others for different parts of the module. Namespaces are a work in progress, so a lot of places still miss them. 
 
-Classes are largely prefixed with `Voxel`.
+Registered classes are largely prefixed with `Voxel`, and not namespaced yet.
 Godot's core codebase is generally not using namespaces. Classes registered to the engine must have a unique name regardless of namespaces, so in this module, they are primarily used to wrap the rest of the code. It is however desirable for registered classes to be in a namespace as well for consistency, and to avoid having to type fully-qualified names all the time.
 
-It should be possible to use namespaces around a module class, since Godot4 started using them [here](https://github.com/godotengine/godot/blob/a8a20a0e02c8459513542f77eaed9b7350812c94/core/core_bind.h#L47) for core bindings (the [reason](https://github.com/godotengine/godot/pull/51627) was very specific though).
+It should be possible to use namespaces around a module class, since Godot4 started using them [here](https://github.com/godotengine/godot/blob/a8a20a0e02c8459513542f77eaed9b7350812c94/core/core_bind.h#L47) for core bindings (the [reason](https://github.com/godotengine/godot/pull/51627) was very specific though). In GDExtension it was not tested yet, but if there is a problem we'll have to do a PR to fix it.
+
+### Version control
+
+- Prefer separating commits with logic changes and commits with code formatting
+- When doing a PR, prefer to squash WIP commits
 
 
 Debugging
