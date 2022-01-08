@@ -241,8 +241,7 @@ namespace FastNoise
             }
             
             slotHeader->~SlotHeader();
-            // <Zylann> Added (void*) to avoid GCC warning `class-memaccess`
-            assert( memset( (void*)slotHeader, 255, slot->size ) );
+            assert( memset( slotHeader, 255, slot->size ) );
 
             usedSlots.erase( slot );
         }
