@@ -270,9 +270,9 @@ private:
 	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const zylann::voxel::VoxelDataMap &map) const;
 	bool check_block_loaded_and_meshed(
 			const Vector3i &p_mesh_block_pos, uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load);
-	bool check_block_mesh_updated(VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load);
+	bool check_block_mesh_updated(zylann::voxel::VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load);
 	void _set_lod_count(int p_lod_count);
-	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
+	void set_mesh_block_active(zylann::voxel::VoxelMeshBlock &block, bool active);
 
 	std::shared_ptr<zylann::AsyncDependencyTracker> preload_boxes_async(
 			Span<const Box3i> voxel_boxes, Span<zylann::IThreadedTask *> next_tasks);
@@ -286,7 +286,7 @@ private:
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
 
-	void add_transition_update(VoxelMeshBlock *block);
+	void add_transition_update(zylann::voxel::VoxelMeshBlock *block);
 	void add_transition_updates_around(Vector3i block_pos, int lod_index);
 	void process_transition_updates();
 	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
@@ -332,7 +332,7 @@ private:
 
 	// TODO Get rid of this kind of member, use threadlocal pooling instead
 	// Only populated and then cleared inside _process, so lifetime of pointers should be valid
-	std::vector<VoxelMeshBlock *> _blocks_pending_transition_update;
+	std::vector<zylann::voxel::VoxelMeshBlock *> _blocks_pending_transition_update;
 
 	Ref<Material> _material;
 	std::vector<Ref<ShaderMaterial>> _shader_material_pool;
@@ -373,10 +373,10 @@ private:
 		Vector3i last_viewer_data_block_pos;
 		int last_view_distance_data_blocks = 0;
 
-		VoxelMeshMap mesh_map;
+		zylann::voxel::VoxelMeshMap mesh_map;
 		std::vector<Vector3i> blocks_pending_update;
 		std::vector<Vector3i> deferred_collision_updates;
-		Map<Vector3i, VoxelMeshBlock *> fading_blocks;
+		Map<Vector3i, zylann::voxel::VoxelMeshBlock *> fading_blocks;
 		Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;
 

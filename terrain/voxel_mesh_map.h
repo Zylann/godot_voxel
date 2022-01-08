@@ -4,6 +4,8 @@
 #include "voxel_mesh_block.h"
 #include <vector>
 
+namespace zylann::voxel {
+
 // Stores meshes and colliders in an infinite sparse grid of chunks (aka blocks).
 class VoxelMeshMap {
 public:
@@ -120,5 +122,7 @@ private:
 
 	unsigned int _lod_index = 0;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_MESH_BLOCK_MAP_H

@@ -6,6 +6,8 @@
 
 #include <limits>
 
+namespace zylann::voxel {
+
 VoxelMeshMap::VoxelMeshMap() : _last_accessed_block(nullptr) {
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
 	set_block_size_pow2(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2);
@@ -180,3 +182,5 @@ int VoxelMeshMap::get_block_count() const {
 #endif
 	return _blocks.size();
 }
+
+} // namespace zylann::voxel

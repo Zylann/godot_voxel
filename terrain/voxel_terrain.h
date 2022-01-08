@@ -140,7 +140,7 @@ private:
 	void unload_data_block(Vector3i bpos);
 	void unload_mesh_block(Vector3i bpos);
 	//void make_data_block_dirty(Vector3i bpos);
-	void try_schedule_mesh_update(VoxelMeshBlock *block);
+	void try_schedule_mesh_update(zylann::voxel::VoxelMeshBlock *block);
 	void try_schedule_mesh_update_from_data(const Box3i &box_in_voxels);
 
 	void save_all_modified_blocks(bool with_copy);
@@ -185,7 +185,7 @@ private:
 	// Voxel storage
 	zylann::voxel::VoxelDataMap _data_map;
 	// Mesh storage
-	VoxelMeshMap _mesh_map;
+	zylann::voxel::VoxelMeshMap _mesh_map;
 
 	// Area within which voxels can exist.
 	// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be
