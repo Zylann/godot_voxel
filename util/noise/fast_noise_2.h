@@ -42,7 +42,7 @@ public:
 		//TYPE_NODE_TREE,
 	};
 
-	static constexpr char *NOISE_TYPE_HINT_STRING = "OpenSimplex2,Simplex,Perlin,Value,Cellular,EncodedNodeTree";
+	static constexpr const char *NOISE_TYPE_HINT_STRING = "OpenSimplex2,Simplex,Perlin,Value,Cellular,EncodedNodeTree";
 
 	enum FractalType { //
 		FRACTAL_NONE = 0,
@@ -51,7 +51,7 @@ public:
 		FRACTAL_PING_PONG
 	};
 
-	static constexpr char *FRACTAL_TYPE_HINT_STRING = "None,FBm,Ridged,PingPong";
+	static constexpr const char *FRACTAL_TYPE_HINT_STRING = "None,FBm,Ridged,PingPong";
 
 	enum CellularDistanceFunction { //
 		CELLULAR_DISTANCE_EUCLIDEAN = (int)FastNoise::DistanceFunction::Euclidean,
@@ -61,7 +61,8 @@ public:
 		CELLULAR_DISTANCE_MAX_AXIS = (int)FastNoise::DistanceFunction::MaxAxis
 	};
 
-	static constexpr char *CELLULAR_DISTANCE_FUNCTION_HINT_STRING = "Euclidean,EuclideanSq,Manhattan,Hybrid,MaxAxis";
+	static constexpr const char *CELLULAR_DISTANCE_FUNCTION_HINT_STRING =
+			"Euclidean,EuclideanSq,Manhattan,Hybrid,MaxAxis";
 
 	enum CellularReturnType { //
 		CELLULAR_RETURN_INDEX_0 = (int)FastNoise::CellularDistance::ReturnType::Index0,
@@ -71,7 +72,8 @@ public:
 		CELLULAR_RETURN_INDEX_0_DIV_1 = (int)FastNoise::CellularDistance::ReturnType::Index0Div1
 	};
 
-	static constexpr char *CELLULAR_RETURN_TYPE_HINT_STRING = "Index0,Index0Add1,Index0Sub1,Index0Mul1,Index0Div1";
+	static constexpr const char *CELLULAR_RETURN_TYPE_HINT_STRING =
+			"Index0,Index0Add1,Index0Sub1,Index0Mul1,Index0Div1";
 
 	FastNoise2();
 
