@@ -89,9 +89,15 @@ if env["platform"] == "windows":
 # FastNoise 2
 
 if FAST_NOISE_2_SRC:
+	if not env.msvc:
+		# TODO Workaround for https://github.com/Auburn/FastNoise2/issues/80
+		# FastNoise2 is using MSVC-specific compiler directives.
+		# Done before calling FastNoise2 SConscript, as FastNoise2 also includes the headers
+		env_voxel.Append(CXXFLAGS=["-Wno-unknown-pragmas"])
+	
 	# Build from source. Should be the simplest, but requires C++17
 	SConscript('thirdparty/fast_noise_2/SConscript', exports = ["env", "env_voxel"])
-	
+
 	env_voxel.Append(CPPPATH=["thirdparty/fast_noise_2/include"])
 	
 	voxel_files += [
