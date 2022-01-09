@@ -3,6 +3,8 @@
 
 #include <core/string/string_name.h>
 
+namespace zylann::voxel {
+
 class VoxelStringNames {
 private:
 	static VoxelStringNames *g_singleton;
@@ -34,5 +36,7 @@ public:
 	StringName u_block_local_transform;
 	StringName u_lod_fade;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_STRING_NAMES_H

@@ -1,5 +1,7 @@
 #include "voxel_string_names.h"
 
+namespace zylann::voxel {
+
 VoxelStringNames *VoxelStringNames::g_singleton;
 
 void VoxelStringNames::create_singleton() {
@@ -31,3 +33,5 @@ VoxelStringNames::VoxelStringNames() {
 	u_block_local_transform = StaticCString::create("u_block_local_transform");
 	u_lod_fade = StaticCString::create("u_lod_fade");
 }
+
+} // namespace zylann::voxel
