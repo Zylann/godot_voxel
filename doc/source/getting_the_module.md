@@ -31,6 +31,9 @@ In case there are multiple downloadable artifacts, the editor build will be the 
 !!! note
 	You will need a Github account to be able to download development builds. Otherwise, links will not work.
 
+!!! warning
+	Godot 4 has no stable version yet. It has the very latest new features but will be full of bugs. It is possible to work with it, but be aware many features may not work correctly and errors will often show up.
+
 #### For Godot 3 (legacy builds)
 
 On Github actions, you may search for builds occurring with the `godot3.x` branch.
