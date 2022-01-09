@@ -113,12 +113,14 @@ env_fn2_ssse3.add_source_files(env.modules_sources, fn2_sources_ssse3)
 env_fn2_sse41.add_source_files(env.modules_sources, fn2_sources_sse41)
 env_fn2_sse42.add_source_files(env.modules_sources, fn2_sources_sse42)
 
-if env["platform"] == "android":
-    # Both Android and IOS have ARM chips, but only android build tools have necessary headers
-    env_fn2_arm.add_source_files(env.modules_sources, fn2_sources_arm)
+# if env["platform"] == "android":
+#     # Both Android and IOS have ARM chips, but only android build tools have necessary headers
+#     env_fn2_arm.add_source_files(env.modules_sources, fn2_sources_arm)
 
-elif env["platform"] in ["windows", "x11", "osx"]:
-    # AVX is supported on desktop only
-    env_fn2_avx2.add_source_files(env.modules_sources, fn2_sources_avx2)
-    env_fn2_avx512.add_source_files(env.modules_sources, fn2_sources_avx512)
+# elif env["platform"] in ["windows", "linuxbsd", "osx"]:
+#     # AVX is supported on desktop only
+#     env_fn2_avx2.add_source_files(env.modules_sources, fn2_sources_avx2)
+#     env_fn2_avx512.add_source_files(env.modules_sources, fn2_sources_avx512)
 
+env_fn2_avx2.add_source_files(env.modules_sources, fn2_sources_avx2)
+env_fn2_avx512.add_source_files(env.modules_sources, fn2_sources_avx512)
