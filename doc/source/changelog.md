@@ -40,6 +40,7 @@ Godot 4 is required from this version.
     - `VoxelMesherTransvoxel`: Shader API: The data in `COLOR` and `UV` was moved respectively to `CUSTOM0` and `CUSTOM1` (old attributes no longer work for this use case)
     - `Voxel` was renamed `VoxelBlockyModel`
     - `VoxelLibrary` was renamed `VoxelBlockyLibrary`
+    - `VoxelVoxImporter` was renamed `VoxelVoxSceneImporter`
 
 - Known issues
     - Some nodes and resources no longer start with predefined properties due to a warning introduced in Godot4 when properties are resources.

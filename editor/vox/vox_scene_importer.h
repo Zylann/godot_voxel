@@ -5,10 +5,9 @@
 
 namespace zylann::voxel::magica {
 
-// TODO Rename VoxelVoxSceneImporter
 // Imports a vox file as a scene, where the internal scene layout is preserved as nodes
-class VoxelVoxImporter : public ResourceImporter {
-	GDCLASS(VoxelVoxImporter, ResourceImporter)
+class VoxelVoxSceneImporter : public ResourceImporter {
+	GDCLASS(VoxelVoxSceneImporter, ResourceImporter)
 public:
 	String get_importer_name() const override;
 	String get_visible_name() const override;

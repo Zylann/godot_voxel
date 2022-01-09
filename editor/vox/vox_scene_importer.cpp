@@ -1,4 +1,4 @@
-#include "vox_importer.h"
+#include "vox_scene_importer.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
 #include "../../storage/voxel_buffer.h"
@@ -15,35 +15,35 @@
 
 namespace zylann::voxel::magica {
 
-String VoxelVoxImporter::get_importer_name() const {
-	return "VoxelVoxImporter";
-}
-
-String VoxelVoxImporter::get_visible_name() const {
+String VoxelVoxSceneImporter::get_importer_name() const {
 	return "VoxelVoxSceneImporter";
 }
 
-void VoxelVoxImporter::get_recognized_extensions(List<String> *p_extensions) const {
+String VoxelVoxSceneImporter::get_visible_name() const {
+	return "VoxelVoxSceneImporter";
+}
+
+void VoxelVoxSceneImporter::get_recognized_extensions(List<String> *p_extensions) const {
 	p_extensions->push_back("vox");
 }
 
-String VoxelVoxImporter::get_preset_name(int p_idx) const {
+String VoxelVoxSceneImporter::get_preset_name(int p_idx) const {
 	return "Default";
 }
 
-int VoxelVoxImporter::get_preset_count() const {
+int VoxelVoxSceneImporter::get_preset_count() const {
 	return 1;
 }
 
-String VoxelVoxImporter::get_save_extension() const {
+String VoxelVoxSceneImporter::get_save_extension() const {
 	return "tscn";
 }
 
-String VoxelVoxImporter::get_resource_type() const {
+String VoxelVoxSceneImporter::get_resource_type() const {
 	return "PackedScene";
 }
 
-float VoxelVoxImporter::get_priority() const {
+float VoxelVoxSceneImporter::get_priority() const {
 	// Higher import priority means the importer is preferred over another.
 	// By default, use this importer.
 	return 1.0;
@@ -52,14 +52,15 @@ float VoxelVoxImporter::get_priority() const {
 // int VoxelVoxImporter::get_import_order() const {
 // }
 
-void VoxelVoxImporter::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
+void VoxelVoxSceneImporter::get_import_options(
+		const String &p_path, List<ImportOption> *r_options, int p_preset) const {
 	VoxelStringNames *sn = VoxelStringNames::get_singleton();
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->store_colors_in_texture), false));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, sn->scale), 1.f));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->enable_baked_lighting), true));
 }
 
-bool VoxelVoxImporter::get_option_visibility(
+bool VoxelVoxSceneImporter::get_option_visibility(
 		const String &p_path, const String &p_option, const Map<StringName, Variant> &p_options) const {
 	return true;
 }
@@ -235,7 +236,7 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 // 	return defval;
 // }
 
-Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save_path,
+Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p_save_path,
 		const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
 		Variant *r_metadata) {
 	VOXEL_PROFILE_SCOPE();
