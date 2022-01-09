@@ -1,4 +1,5 @@
 #include "about_window.h"
+#include "../util/macros.h"
 
 #include <core/os/os.h>
 #include <editor/editor_scale.h>
@@ -7,8 +8,6 @@
 #include <scene/gui/split_container.h>
 #include <scene/gui/tab_container.h>
 #include <scene/gui/texture_rect.h>
-
-#define VOXEL_ARRAY_LENGTH(a) (sizeof(a) / sizeof(a[0]))
 
 namespace zylann::voxel {
 
