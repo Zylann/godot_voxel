@@ -1,6 +1,7 @@
 #ifndef ZYLANN_TIME_SPREAD_TASK_RUNNER_H
 #define ZYLANN_TIME_SPREAD_TASK_RUNNER_H
 
+#include <cstdint>
 #include <queue>
 
 namespace zylann {
