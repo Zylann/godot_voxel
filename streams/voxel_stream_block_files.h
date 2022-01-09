@@ -29,9 +29,9 @@ protected:
 	static void _bind_methods();
 
 private:
-	VoxelFileResult save_meta();
-	VoxelFileResult load_meta();
-	VoxelFileResult load_or_create_meta();
+	zylann::FileResult save_meta();
+	zylann::FileResult load_meta();
+	zylann::FileResult load_or_create_meta();
 	String get_block_file_path(const Vector3i &block_pos, unsigned int lod) const;
 	Vector3i get_block_position(const Vector3i &origin_in_voxels) const;
 

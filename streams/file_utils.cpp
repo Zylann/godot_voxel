@@ -1,21 +1,23 @@
 #include "file_utils.h"
 #include "../server/voxel_server.h"
 
-const char *to_string(VoxelFileResult res) {
+namespace zylann {
+
+const char *to_string(FileResult res) {
 	switch (res) {
-		case VOXEL_FILE_OK:
+		case FILE_OK:
 			return "OK";
-		case VOXEL_FILE_CANT_OPEN:
+		case FILE_CANT_OPEN:
 			return "Can't open";
-		case VOXEL_FILE_DOES_NOT_EXIST:
+		case FILE_DOES_NOT_EXIST:
 			return "Doesn't exist";
-		case VOXEL_FILE_UNEXPECTED_EOF:
+		case FILE_UNEXPECTED_EOF:
 			return "Unexpected end of file";
-		case VOXEL_FILE_INVALID_MAGIC:
+		case FILE_INVALID_MAGIC:
 			return "Invalid magic";
-		case VOXEL_FILE_INVALID_VERSION:
+		case FILE_INVALID_VERSION:
 			return "Invalid version";
-		case VOXEL_FILE_INVALID_DATA:
+		case FILE_INVALID_DATA:
 			return "Invalid data";
 		default:
 			CRASH_NOW();
@@ -23,25 +25,25 @@ const char *to_string(VoxelFileResult res) {
 	}
 }
 
-VoxelFileResult check_magic_and_version(
+FileResult check_magic_and_version(
 		FileAccess *f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version) {
 	uint8_t magic[5] = { '\0' };
 	int count = f->get_buffer(magic, 4);
 	if (count != 4) {
-		return VOXEL_FILE_UNEXPECTED_EOF;
+		return FILE_UNEXPECTED_EOF;
 	}
 	for (int i = 0; i < 4; ++i) {
 		if (magic[i] != expected_magic[i]) {
-			return VOXEL_FILE_INVALID_MAGIC;
+			return FILE_INVALID_MAGIC;
 		}
 	}
 
 	out_version = f->get_8();
 	if (out_version != expected_version) {
-		return VOXEL_FILE_INVALID_VERSION;
+		return FILE_INVALID_VERSION;
 	}
 
-	return VOXEL_FILE_OK;
+	return FILE_OK;
 }
 
 Error check_directory_created(const String &directory_path) {
@@ -66,8 +68,6 @@ Error check_directory_created(const String &directory_path) {
 	memdelete(d);
 	return OK;
 }
-
-namespace zylann {
 
 // TODO Write tests
 

@@ -5,6 +5,8 @@
 #include <core/io/dir_access.h>
 #include <core/io/file_access.h>
 
+namespace zylann {
+
 inline Vector3i get_vec3u8(FileAccess *f) {
 	Vector3i v;
 	v.x = f->get_8();
@@ -33,23 +35,20 @@ inline void store_vec3u32(FileAccess *f, const Vector3i v) {
 	f->store_32(v.z);
 }
 
-enum VoxelFileResult {
-	VOXEL_FILE_OK = 0,
-	VOXEL_FILE_CANT_OPEN,
-	VOXEL_FILE_DOES_NOT_EXIST,
-	VOXEL_FILE_UNEXPECTED_EOF,
-	VOXEL_FILE_INVALID_MAGIC,
-	VOXEL_FILE_INVALID_VERSION,
-	VOXEL_FILE_INVALID_DATA
+enum FileResult {
+	FILE_OK = 0,
+	FILE_CANT_OPEN,
+	FILE_DOES_NOT_EXIST,
+	FILE_UNEXPECTED_EOF,
+	FILE_INVALID_MAGIC,
+	FILE_INVALID_VERSION,
+	FILE_INVALID_DATA
 };
 
-const char *to_string(VoxelFileResult res);
-VoxelFileResult check_magic_and_version(
+const char *to_string(FileResult res);
+FileResult check_magic_and_version(
 		FileAccess *f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version);
 Error check_directory_created(const String &directory_path);
-
-// TODO Wrap other stuff in that
-namespace zylann {
 
 void insert_bytes(FileAccess *f, size_t count, size_t temp_chunk_size = 512);
 

@@ -67,8 +67,8 @@ private:
 	EmergeResult _emerge_block(zylann::voxel::VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
 	void _immerge_block(zylann::voxel::VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod);
 
-	VoxelFileResult save_meta();
-	VoxelFileResult load_meta();
+	zylann::FileResult save_meta();
+	zylann::FileResult load_meta();
 	Vector3i get_block_position_from_voxels(const Vector3i &origin_in_voxels) const;
 	Vector3i get_region_position_from_blocks(const Vector3i &block_position) const;
 	void close_all_regions();
