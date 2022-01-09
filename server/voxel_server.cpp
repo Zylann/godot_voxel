@@ -181,7 +181,7 @@ int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod_index, 
 	//
 	// Higher lod indexes come first to allow the octree to subdivide.
 	// Then comes distance, which is modified by how much in view the block is
-	priority += (VoxelConstants::MAX_LOD - lod_index) * 10000;
+	priority += (constants::MAX_LOD - lod_index) * 10000;
 
 	return priority;
 }

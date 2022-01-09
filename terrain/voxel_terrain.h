@@ -213,7 +213,7 @@ private:
 	bool _generate_collisions = true;
 	unsigned int _collision_layer = 1;
 	unsigned int _collision_mask = 1;
-	float _collision_margin = VoxelConstants::DEFAULT_COLLISION_MARGIN;
+	float _collision_margin = zylann::voxel::constants::DEFAULT_COLLISION_MARGIN;
 	bool _run_stream_in_editor = true;
 	//bool _stream_enabled = false;
 

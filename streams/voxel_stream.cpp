@@ -67,7 +67,7 @@ bool VoxelStream::get_save_generator_output() const {
 }
 
 int VoxelStream::get_block_size_po2() const {
-	return VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
+	return constants::DEFAULT_BLOCK_SIZE_PO2;
 }
 
 int VoxelStream::get_lod_count() const {

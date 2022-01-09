@@ -96,11 +96,11 @@ void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector
 // The current ones seem to work but aren't really correct
 
 inline float u8_to_norm(uint8_t v) {
-	return (static_cast<float>(v) - 0x7f) * VoxelConstants::INV_0x7f;
+	return (static_cast<float>(v) - 0x7f) * constants::INV_0x7f;
 }
 
 inline float u16_to_norm(uint16_t v) {
-	return (static_cast<float>(v) - 0x7fff) * VoxelConstants::INV_0x7fff;
+	return (static_cast<float>(v) - 0x7fff) * constants::INV_0x7fff;
 }
 
 inline uint8_t norm_to_u8(float v) {
@@ -112,19 +112,19 @@ inline uint16_t norm_to_u16(float v) {
 }
 
 /*static inline float quantized_u8_to_real(uint8_t v) {
-	return u8_to_norm(v) * VoxelConstants::QUANTIZED_SDF_8_BITS_SCALE_INV;
+	return u8_to_norm(v) * constants::QUANTIZED_SDF_8_BITS_SCALE_INV;
 }
 
 static inline float quantized_u16_to_real(uint8_t v) {
-	return u8_to_norm(v) * VoxelConstants::QUANTIZED_SDF_16_BITS_SCALE_INV;
+	return u8_to_norm(v) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV;
 }
 
 static inline uint8_t real_to_quantized_u8(float v) {
-	return norm_to_u8(v * VoxelConstants::QUANTIZED_SDF_8_BITS_SCALE);
+	return norm_to_u8(v * constants::QUANTIZED_SDF_8_BITS_SCALE);
 }
 
 static inline uint16_t real_to_quantized_u16(float v) {
-	return norm_to_u16(v * VoxelConstants::QUANTIZED_SDF_16_BITS_SCALE);
+	return norm_to_u16(v * constants::QUANTIZED_SDF_16_BITS_SCALE);
 }*/
 
 inline FixedArray<uint8_t, 4> decode_weights_from_packed_u16(uint16_t packed_weights) {

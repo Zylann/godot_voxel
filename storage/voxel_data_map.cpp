@@ -11,7 +11,7 @@ namespace zylann::voxel {
 
 VoxelDataMap::VoxelDataMap() {
 	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
-	set_block_size_pow2(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2);
+	set_block_size_pow2(constants::DEFAULT_BLOCK_SIZE_PO2);
 
 	// Pick same defaults as VoxelBuffer
 	VoxelBufferInternal b;

@@ -66,7 +66,7 @@ public:
 
 	template <typename DestroyAction_T>
 	void create_from_lod_count(int base_size, unsigned int lod_count, DestroyAction_T &destroy_action) {
-		ERR_FAIL_COND(lod_count > VoxelConstants::MAX_LOD);
+		ERR_FAIL_COND(lod_count > constants::MAX_LOD);
 		clear(destroy_action);
 		_base_size = base_size;
 		_max_depth = lod_count - 1;
@@ -81,8 +81,7 @@ public:
 	void set_lod_distance(float p_lod_distance) {
 		// Distance must be greater than a threshold,
 		// otherwise lods will decimate too fast and it will look messy
-		_lod_distance =
-				math::clamp(p_lod_distance, VoxelConstants::MINIMUM_LOD_DISTANCE, VoxelConstants::MAXIMUM_LOD_DISTANCE);
+		_lod_distance = math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
 	}
 
 	float get_lod_distance() const {

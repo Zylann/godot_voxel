@@ -774,9 +774,9 @@ float VoxelBufferInternal::get_sdf_quantization_scale(Depth d) {
 	switch (d) {
 		// Normalized
 		case DEPTH_8_BIT:
-			return VoxelConstants::QUANTIZED_SDF_8_BITS_SCALE;
+			return constants::QUANTIZED_SDF_8_BITS_SCALE;
 		case DEPTH_16_BIT:
-			return VoxelConstants::QUANTIZED_SDF_16_BITS_SCALE;
+			return constants::QUANTIZED_SDF_16_BITS_SCALE;
 		// Direct
 		default:
 			return 1.f;

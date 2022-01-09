@@ -1144,7 +1144,7 @@ void test_run_blocky_random_tick() {
 
 	// Create test map
 	VoxelDataMap map;
-	map.create(VoxelConstants::DEFAULT_BLOCK_SIZE_PO2, 0);
+	map.create(constants::DEFAULT_BLOCK_SIZE_PO2, 0);
 	{
 		// All blocks of this map will be the same,
 		// an interleaving of all block types

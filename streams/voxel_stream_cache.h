@@ -60,7 +60,7 @@ private:
 		RWLock rw_lock;
 	};
 
-	zylann::FixedArray<Lod, VoxelConstants::MAX_LOD> _cache;
+	zylann::FixedArray<Lod, zylann::voxel::constants::MAX_LOD> _cache;
 	unsigned int _count = 0;
 };
 

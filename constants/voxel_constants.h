@@ -3,7 +3,7 @@
 
 #include <core/math/math_defs.h>
 
-namespace VoxelConstants {
+namespace zylann::voxel::constants {
 
 // These constants are chosen so you don't accidentally blow up resource usage
 static const float MINIMUM_LOD_DISTANCE = 16.f;
@@ -39,6 +39,6 @@ static const unsigned int DEFAULT_BLOCK_SIZE_PO2 = 4;
 
 static const float DEFAULT_COLLISION_MARGIN = 0.04f;
 
-} // namespace VoxelConstants
+} // namespace zylann::voxel::constants
 
 #endif // VOXEL_CONSTANTS_H

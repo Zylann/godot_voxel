@@ -161,7 +161,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	set_process_callback(_process_callback);
 
 	// Infinite by default
-	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(VoxelConstants::MAX_VOLUME_EXTENT));
+	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT));
 
 	struct ApplyMeshUpdateTask : public zylann::ITimeSpreadTask {
 		void run() override {
@@ -385,7 +385,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 
 void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	// Mesh block size cannot be smaller than data block size, for now
-	mesh_block_size = math::clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
+	mesh_block_size = math::clamp(mesh_block_size, get_data_block_size(), constants::MAX_BLOCK_SIZE);
 
 	// Only these sizes are allowed at the moment. This stuff is still not supported in a generic way yet,
 	// some code still exploits the fact it's a multiple of data block size, for performance
@@ -817,8 +817,7 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 		return;
 	}
 
-	_lod_distance =
-			math::clamp(p_lod_distance, VoxelConstants::MINIMUM_LOD_DISTANCE, VoxelConstants::MAXIMUM_LOD_DISTANCE);
+	_lod_distance = math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
 
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 		OctreeItem &item = E->value();
@@ -836,7 +835,7 @@ float VoxelLodTerrain::get_lod_distance() const {
 }
 
 void VoxelLodTerrain::set_lod_count(int p_lod_count) {
-	ERR_FAIL_COND(p_lod_count >= (int)VoxelConstants::MAX_LOD);
+	ERR_FAIL_COND(p_lod_count >= (int)constants::MAX_LOD);
 	ERR_FAIL_COND(p_lod_count < 1);
 
 	if (get_lod_count() != p_lod_count) {
@@ -845,7 +844,7 @@ void VoxelLodTerrain::set_lod_count(int p_lod_count) {
 }
 
 void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
-	CRASH_COND(p_lod_count >= (int)VoxelConstants::MAX_LOD);
+	CRASH_COND(p_lod_count >= (int)constants::MAX_LOD);
 	CRASH_COND(p_lod_count < 1);
 
 	_lod_count = p_lod_count;
@@ -2552,8 +2551,8 @@ void VoxelLodTerrain::remesh_all_blocks() {
 }
 
 void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
-	_bounds_in_voxels = p_box.clipped(
-			Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(VoxelConstants::MAX_VOLUME_EXTENT)));
+	_bounds_in_voxels =
+			p_box.clipped(Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT)));
 	// Round to octree size
 	const int octree_size = get_mesh_block_size() << (get_lod_count() - 1);
 	_bounds_in_voxels = _bounds_in_voxels.snapped(octree_size);

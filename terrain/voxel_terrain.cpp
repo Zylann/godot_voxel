@@ -25,7 +25,7 @@ VoxelTerrain::VoxelTerrain() {
 
 	// TODO Should it actually be finite for better discovery?
 	// Infinite by default
-	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(VoxelConstants::MAX_VOLUME_EXTENT));
+	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT));
 
 	struct ApplyMeshUpdateTask : public zylann::ITimeSpreadTask {
 		void run() override {
@@ -193,7 +193,7 @@ unsigned int VoxelTerrain::get_mesh_block_size_pow2() const {
 }
 
 void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
-	mesh_block_size = math::clamp(mesh_block_size, get_data_block_size(), VoxelConstants::MAX_BLOCK_SIZE);
+	mesh_block_size = math::clamp(mesh_block_size, get_data_block_size(), constants::MAX_BLOCK_SIZE);
 
 	unsigned int po2;
 	switch (mesh_block_size) {
@@ -1295,8 +1295,8 @@ bool VoxelTerrain::is_stream_running_in_editor() const {
 }
 
 void VoxelTerrain::set_bounds(Box3i box) {
-	_bounds_in_voxels = box.clipped(
-			Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(VoxelConstants::MAX_VOLUME_EXTENT)));
+	_bounds_in_voxels =
+			box.clipped(Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT)));
 
 	// Round to block size
 	_bounds_in_voxels = _bounds_in_voxels.snapped(get_data_block_size());

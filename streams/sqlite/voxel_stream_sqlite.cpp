@@ -8,6 +8,9 @@
 #include <limits>
 #include <string>
 
+using namespace zylann;
+using namespace voxel;
+
 struct BlockLocation {
 	int16_t x;
 	int16_t y;
@@ -56,7 +59,7 @@ public:
 			bool used = false;
 		};
 
-		zylann::FixedArray<Channel, VoxelBuffer::MAX_CHANNELS> channels;
+		FixedArray<Channel, VoxelBuffer::MAX_CHANNELS> channels;
 	};
 
 	enum BlockType { VOXELS, INSTANCES };
@@ -216,7 +219,7 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 		// Setup database
 		meta.version = VERSION;
 		// Defaults
-		meta.block_size_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
+		meta.block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 		for (unsigned int i = 0; i < meta.channels.size(); ++i) {
 			Meta::Channel &channel = meta.channels[i];
 			channel.used = true;
@@ -572,9 +575,6 @@ void VoxelStreamSQLiteInternal::save_meta(Meta meta) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using namespace zylann;
-using namespace voxel;
-
 thread_local BlockSerializer VoxelStreamSQLite::_voxel_block_serializer;
 thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_block_data;
 thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_compressed_block_data;
@@ -643,7 +643,7 @@ void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<R
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Get block size from database
-	const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
+	const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	out_results.resize(p_blocks.size());
 
@@ -703,7 +703,7 @@ void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<R
 
 void VoxelStreamSQLite::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
 	// TODO Get block size from database
-	const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
+	const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// First put in cache
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
@@ -733,7 +733,7 @@ void VoxelStreamSQLite::load_instance_blocks(
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Get block size from database
-	//const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
+	//const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// Check the cache first
 	Vector<int> blocks_to_load;
@@ -796,7 +796,7 @@ void VoxelStreamSQLite::load_instance_blocks(
 
 void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks) {
 	// TODO Get block size from database
-	//const int bs_po2 = VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
+	//const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// First put in cache
 	for (size_t i = 0; i < p_blocks.size(); ++i) {

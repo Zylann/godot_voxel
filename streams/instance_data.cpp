@@ -21,7 +21,7 @@ inline uint8_t norm_to_u8(float x) {
 }
 
 inline float u8_to_norm(uint8_t v) {
-	return (static_cast<real_t>(v) - 0x7f) * VoxelConstants::INV_0x7f;
+	return (static_cast<real_t>(v) - 0x7f) * zylann::voxel::constants::INV_0x7f;
 }
 
 struct CompressedQuaternion4b {

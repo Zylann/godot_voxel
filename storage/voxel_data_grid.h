@@ -113,7 +113,7 @@ private:
 	// of the area in memory so we can keep using the same coordinate space
 	Vector3i _offset_in_blocks;
 	// Size of a block in voxels
-	unsigned int _block_size = 1 << VoxelConstants::DEFAULT_BLOCK_SIZE_PO2;
+	unsigned int _block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;
 };
 
 } // namespace zylann::voxel

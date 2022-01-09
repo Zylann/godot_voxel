@@ -341,7 +341,7 @@ private:
 	unsigned int _collision_lod_count = 0;
 	unsigned int _collision_layer = 1;
 	unsigned int _collision_mask = 1;
-	float _collision_margin = VoxelConstants::DEFAULT_COLLISION_MARGIN;
+	float _collision_margin = zylann::voxel::constants::DEFAULT_COLLISION_MARGIN;
 	int _collision_update_delay = 0;
 
 	VoxelInstancer *_instancer = nullptr;
@@ -385,7 +385,7 @@ private:
 		}
 	};
 
-	zylann::FixedArray<Lod, VoxelConstants::MAX_LOD> _lods;
+	zylann::FixedArray<Lod, zylann::voxel::constants::MAX_LOD> _lods;
 	unsigned int _lod_count = 0;
 	// Distance between a viewer and the end of LOD0
 	float _lod_distance = 0.f;

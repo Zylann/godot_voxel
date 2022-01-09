@@ -56,7 +56,7 @@ public:
 	struct BlockMeshInput {
 		// Moore area ordered by forward XYZ iteration
 		zylann::FixedArray<std::shared_ptr<zylann::voxel::VoxelBufferInternal>,
-				VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST>
+				zylann::voxel::constants::MAX_BLOCK_COUNT_PER_REQUEST>
 				data_blocks;
 		unsigned int data_blocks_count = 0;
 		Vector3i render_block_position;
@@ -356,7 +356,7 @@ private:
 		void apply_result() override;
 
 		zylann::FixedArray<std::shared_ptr<zylann::voxel::VoxelBufferInternal>,
-				VoxelConstants::MAX_BLOCK_COUNT_PER_REQUEST>
+				zylann::voxel::constants::MAX_BLOCK_COUNT_PER_REQUEST>
 				blocks;
 		// TODO Need to provide format
 		//FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
