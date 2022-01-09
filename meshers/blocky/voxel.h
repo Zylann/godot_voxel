@@ -34,12 +34,12 @@ public:
 			// Model sides:
 			// They are separated because this way we can occlude them easily.
 			// Due to these defining cube side triangles, normals are known already.
-			zylann::FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> side_positions;
-			zylann::FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> side_uvs;
-			zylann::FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
-			zylann::FixedArray<std::vector<float>, Cube::SIDE_COUNT> side_tangents;
+			zylann::FixedArray<std::vector<Vector3>, zylann::voxel::Cube::SIDE_COUNT> side_positions;
+			zylann::FixedArray<std::vector<Vector2>, zylann::voxel::Cube::SIDE_COUNT> side_uvs;
+			zylann::FixedArray<std::vector<int>, zylann::voxel::Cube::SIDE_COUNT> side_indices;
+			zylann::FixedArray<std::vector<float>, zylann::voxel::Cube::SIDE_COUNT> side_tangents;
 
-			zylann::FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
+			zylann::FixedArray<uint32_t, zylann::voxel::Cube::SIDE_COUNT> side_pattern_indices;
 
 			void clear() {
 				positions.clear();
@@ -48,7 +48,7 @@ public:
 				indices.clear();
 				tangents.clear();
 
-				for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
+				for (int side = 0; side < zylann::voxel::Cube::SIDE_COUNT; ++side) {
 					side_positions[side].clear();
 					side_uvs[side].clear();
 					side_indices[side].clear();
@@ -73,13 +73,13 @@ public:
 	Voxel();
 
 	enum Side {
-		SIDE_NEGATIVE_X = Cube::SIDE_NEGATIVE_X,
-		SIDE_POSITIVE_X = Cube::SIDE_POSITIVE_X,
-		SIDE_NEGATIVE_Y = Cube::SIDE_NEGATIVE_Y,
-		SIDE_POSITIVE_Y = Cube::SIDE_POSITIVE_Y,
-		SIDE_NEGATIVE_Z = Cube::SIDE_NEGATIVE_Z,
-		SIDE_POSITIVE_Z = Cube::SIDE_POSITIVE_Z,
-		SIDE_COUNT = Cube::SIDE_COUNT
+		SIDE_NEGATIVE_X = zylann::voxel::Cube::SIDE_NEGATIVE_X,
+		SIDE_POSITIVE_X = zylann::voxel::Cube::SIDE_POSITIVE_X,
+		SIDE_NEGATIVE_Y = zylann::voxel::Cube::SIDE_NEGATIVE_Y,
+		SIDE_POSITIVE_Y = zylann::voxel::Cube::SIDE_POSITIVE_Y,
+		SIDE_NEGATIVE_Z = zylann::voxel::Cube::SIDE_NEGATIVE_Z,
+		SIDE_POSITIVE_Z = zylann::voxel::Cube::SIDE_POSITIVE_Z,
+		SIDE_COUNT = zylann::voxel::Cube::SIDE_COUNT
 	};
 
 	// Properties
@@ -192,7 +192,7 @@ private:
 
 	Color _color;
 	GeometryType _geometry_type;
-	zylann::FixedArray<Vector2, Cube::SIDE_COUNT> _cube_tiles;
+	zylann::FixedArray<Vector2, zylann::voxel::Cube::SIDE_COUNT> _cube_tiles;
 	Ref<Mesh> _custom_mesh;
 	std::vector<AABB> _collision_aabbs;
 	bool _random_tickable = false;

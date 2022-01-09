@@ -7,6 +7,7 @@
 #include <bitset>
 
 using namespace zylann;
+using namespace voxel;
 
 VoxelLibrary::VoxelLibrary() {}
 
@@ -132,7 +133,8 @@ void VoxelLibrary::set_voxel(unsigned int idx, Ref<Voxel> voxel) {
 	_needs_baking = true;
 }
 
-template <typename F> static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F output_func) {
+template <typename F>
+static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F output_func) {
 	// Slower than scanline method, but looks better
 
 	// Grow the triangle a tiny bit, to help against floating point error

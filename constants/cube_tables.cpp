@@ -1,6 +1,6 @@
 #include "cube_tables.h"
 
-namespace Cube {
+namespace zylann::voxel::Cube {
 
 // The following tables respect the following conventions
 //
@@ -209,4 +209,4 @@ const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT] = { //
 	Vector3i(1, 1, 1)
 };
 
-} // namespace Cube
+} //namespace zylann::voxel::Cube

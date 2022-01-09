@@ -4,7 +4,7 @@
 #include "../util/math/vector3i.h"
 #include <core/math/vector3.h>
 
-namespace Cube {
+namespace zylann::voxel::Cube {
 
 // Index convention used in some lookup tables
 enum Side {
@@ -86,6 +86,6 @@ const unsigned int MOORE_AREA_3D_COUNT = 27;
 const unsigned int MOORE_AREA_3D_CENTRAL_INDEX = 13;
 extern const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT];
 
-} // namespace Cube
+} // namespace zylann::voxel::Cube
 
 #endif // CUBE_TABLES_H

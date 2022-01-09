@@ -5,8 +5,6 @@
 #include "../../util/span.h"
 #include <core/os/os.h>
 
-using namespace zylann;
-
 namespace zylann::voxel {
 
 // Utility functions
@@ -334,6 +332,9 @@ void generate_blocky_mesh(
 
 } // namespace zylann::voxel
 
+using namespace zylann;
+using namespace voxel;
+
 thread_local VoxelMesherBlocky::Cache VoxelMesherBlocky::_cache;
 
 VoxelMesherBlocky::VoxelMesherBlocky() {
@@ -373,8 +374,6 @@ bool VoxelMesherBlocky::get_occlusion_enabled() const {
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	using namespace zylann::voxel;
-
 	const int channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
 	{
