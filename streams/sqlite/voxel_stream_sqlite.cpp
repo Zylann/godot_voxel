@@ -8,8 +8,7 @@
 #include <limits>
 #include <string>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 struct BlockLocation {
 	int16_t x;
@@ -573,7 +572,12 @@ void VoxelStreamSQLiteInternal::save_meta(Meta meta) {
 	}
 }
 
+} // namespace zylann::voxel
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+using namespace zylann;
+using namespace voxel;
 
 thread_local BlockSerializer VoxelStreamSQLite::_voxel_block_serializer;
 thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_block_data;

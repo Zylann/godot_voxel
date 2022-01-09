@@ -7,7 +7,9 @@
 #include <core/os/mutex.h>
 #include <vector>
 
+namespace zylann::voxel {
 class VoxelStreamSQLiteInternal;
+}
 
 // Saves voxel data into a single SQLite database file.
 class VoxelStreamSQLite : public VoxelStream {
@@ -55,14 +57,14 @@ private:
 	// Because of this, in our use case, it might be simpler to just leave SQLite in thread-safe mode,
 	// and synchronize ourselves.
 
-	VoxelStreamSQLiteInternal *get_connection();
-	void recycle_connection(VoxelStreamSQLiteInternal *con);
-	void flush_cache(VoxelStreamSQLiteInternal *con);
+	zylann::voxel::VoxelStreamSQLiteInternal *get_connection();
+	void recycle_connection(zylann::voxel::VoxelStreamSQLiteInternal *con);
+	void flush_cache(zylann::voxel::VoxelStreamSQLiteInternal *con);
 
 	static void _bind_methods();
 
 	String _connection_path;
-	std::vector<VoxelStreamSQLiteInternal *> _connection_pool;
+	std::vector<zylann::voxel::VoxelStreamSQLiteInternal *> _connection_pool;
 	Mutex _connection_mutex;
 	zylann::voxel::VoxelStreamCache _cache;
 
