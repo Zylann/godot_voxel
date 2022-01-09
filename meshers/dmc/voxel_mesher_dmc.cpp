@@ -1,8 +1,8 @@
 #include "voxel_mesher_dmc.h"
 #include "../../constants/cube_tables.h"
-#include "../../constants/octree_tables.h"
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
+#include "octree_tables.h"
 #include <core/os/time.h>
 
 // Dual marching cubes

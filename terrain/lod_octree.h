@@ -1,7 +1,6 @@
 #ifndef LOD_OCTREE_H
 #define LOD_OCTREE_H
 
-#include "../constants/octree_tables.h"
 #include "../constants/voxel_constants.h"
 #include "../util/math/box3i.h"
 

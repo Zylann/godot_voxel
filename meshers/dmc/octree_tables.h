@@ -1,7 +1,7 @@
 #ifndef OCTREE_TABLES_H
 #define OCTREE_TABLES_H
 
-namespace OctreeTables {
+namespace zylann::voxel::dmc::OctreeTables {
 
 //  Corners:                                    Octants:
 //
@@ -30,17 +30,17 @@ namespace OctreeTables {
 // The order is important for some algorithms (DMC)
 const int g_octant_position[8][3]{
 
-	{ 0, 0, 0 },
-	{ 1, 0, 0 },
-	{ 1, 0, 1 },
-	{ 0, 0, 1 },
+	{ 0, 0, 0 }, //
+	{ 1, 0, 0 }, //
+	{ 1, 0, 1 }, //
+	{ 0, 0, 1 }, //
 
-	{ 0, 1, 0 },
-	{ 1, 1, 0 },
-	{ 1, 1, 1 },
-	{ 0, 1, 1 }
+	{ 0, 1, 0 }, //
+	{ 1, 1, 0 }, //
+	{ 1, 1, 1 }, //
+	{ 0, 1, 1 } //
 };
 
-} // namespace OctreeTables
+} // namespace zylann::voxel::dmc::OctreeTables
 
 #endif // OCTREE_TABLES_H
