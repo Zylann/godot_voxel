@@ -195,7 +195,7 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 			CRASH_COND(f != nullptr);
 
 			// Checking folders, needed for region "forests"
-			const Error dir_err = check_directory_created(fpath.get_base_dir());
+			const Error dir_err = check_directory_created_using_file_locker(fpath.get_base_dir());
 			if (dir_err != OK) {
 				return ERR_CANT_CREATE;
 			}

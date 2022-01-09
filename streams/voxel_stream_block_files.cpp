@@ -127,7 +127,7 @@ void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i 
 	String file_path = get_block_file_path(block_pos, lod);
 
 	{
-		const Error err = check_directory_created(file_path.get_base_dir());
+		const Error err = check_directory_created_using_file_locker(file_path.get_base_dir());
 		ERR_FAIL_COND(err != OK);
 	}
 
@@ -183,7 +183,7 @@ FileResult VoxelStreamBlockFiles::save_meta() {
 
 	// Make sure the directory exists
 	{
-		Error err = check_directory_created(_directory_path);
+		Error err = check_directory_created_using_file_locker(_directory_path);
 		if (err != OK) {
 			ERR_PRINT("Could not save meta");
 			return FILE_CANT_OPEN;

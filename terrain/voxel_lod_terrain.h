@@ -247,8 +247,8 @@ private:
 	//void process_block_loading_responses();
 	void send_mesh_requests();
 
-	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
-	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);
+	void apply_mesh_update(const zylann::voxel::VoxelServer::BlockMeshOutput &ob);
+	void apply_data_block_response(zylann::voxel::VoxelServer::BlockDataOutput &ob);
 
 	void unload_data_block_no_lock(Vector3i block_pos, uint8_t lod_index, std::vector<BlockToSave> &blocks_to_save);
 	void unload_mesh_block(Vector3i block_pos, uint8_t lod_index);

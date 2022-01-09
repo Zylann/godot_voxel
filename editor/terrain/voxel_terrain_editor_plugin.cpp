@@ -10,6 +10,7 @@
 #include <scene/gui/menu_button.h>
 
 using namespace zylann;
+using namespace voxel;
 
 class VoxelTerrainEditorTaskIndicator : public HBoxContainer {
 	GDCLASS(VoxelTerrainEditorTaskIndicator, HBoxContainer)

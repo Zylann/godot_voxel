@@ -7,20 +7,17 @@
 #include "../util/profiling.h"
 #include "../util/tasks/async_dependency_tracker.h"
 
+#include <core/config/project_settings.h>
 #include <core/os/memory.h>
-#include <scene/main/window.h> // Needed for doing `Node *root = SceneTree::get_root()`, Window* is forward-declared
 #include <thread>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
-namespace {
 VoxelServer *g_voxel_server = nullptr;
 // Could be atomics, but it's for debugging so I don't bother for now
 int g_debug_generate_tasks_count = 0;
 int g_debug_stream_tasks_count = 0;
 int g_debug_mesh_tasks_count = 0;
-} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -42,12 +39,6 @@ void VoxelServer::destroy_singleton() {
 
 VoxelServer::VoxelServer() {
 	CRASH_COND(ProjectSettings::get_singleton() == nullptr);
-
-#ifdef VOXEL_PROFILER_ENABLED
-	CRASH_COND(RenderingServer::get_singleton() == nullptr);
-	RenderingServer::get_singleton()->connect(
-			SNAME("frame_post_draw"), callable_mp(this, &VoxelServer::_on_rendering_server_frame_post_draw));
-#endif
 
 	const int hw_threads_hint = std::thread::hardware_concurrency();
 	PRINT_VERBOSE(String("Voxel: HW threads hint: {0}").format(varray(hw_threads_hint)));
@@ -573,12 +564,6 @@ void VoxelServer::push_async_tasks(Span<zylann::IThreadedTask *> tasks) {
 	_general_thread_pool.enqueue(tasks);
 }
 
-void VoxelServer::_on_rendering_server_frame_post_draw() {
-#ifdef VOXEL_PROFILER_ENABLED
-	VOXEL_PROFILE_MARK_FRAME();
-#endif
-}
-
 void VoxelServer::process() {
 	VOXEL_PROFILE_SCOPE();
 	VOXEL_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));
@@ -679,14 +664,6 @@ VoxelServer::Stats VoxelServer::get_stats() const {
 	s.streaming_tasks = g_debug_stream_tasks_count;
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
 	return s;
-}
-
-Dictionary VoxelServer::_b_get_stats() {
-	return get_stats().to_dict();
-}
-
-void VoxelServer::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelServer::_b_get_stats);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1199,53 +1176,4 @@ void VoxelServer::BlockMeshRequest::apply_result() {
 	}
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-
-namespace {
-bool g_updater_created = false;
-}
-
-VoxelServerUpdater::VoxelServerUpdater() {
-	PRINT_VERBOSE("Creating VoxelServerUpdater");
-	set_process(true);
-	g_updater_created = true;
-}
-
-VoxelServerUpdater::~VoxelServerUpdater() {
-	g_updater_created = false;
-}
-
-void VoxelServerUpdater::ensure_existence(SceneTree *st) {
-	if (st == nullptr) {
-		return;
-	}
-	if (g_updater_created) {
-		return;
-	}
-	Node *root = st->get_root();
-	for (int i = 0; i < root->get_child_count(); ++i) {
-		VoxelServerUpdater *u = Object::cast_to<VoxelServerUpdater>(root->get_child(i));
-		if (u != nullptr) {
-			return;
-		}
-	}
-	VoxelServerUpdater *u = memnew(VoxelServerUpdater);
-	u->set_name("VoxelServerUpdater_dont_touch_this");
-	root->add_child(u);
-}
-
-void VoxelServerUpdater::_notification(int p_what) {
-	switch (p_what) {
-		case NOTIFICATION_PROCESS:
-			// To workaround the absence of API to have a custom server processing in the main loop
-			VoxelServer::get_singleton()->process();
-			break;
-
-		case NOTIFICATION_PREDELETE:
-			PRINT_VERBOSE("Deleting VoxelServerUpdater");
-			break;
-
-		default:
-			break;
-	}
-}
+} // namespace zylann::voxel

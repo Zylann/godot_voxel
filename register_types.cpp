@@ -18,6 +18,7 @@
 #include "meshers/cubes/voxel_mesher_cubes.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "server/voxel_server_gd.h"
 #include "storage/voxel_buffer.h"
 #include "storage/voxel_memory_pool.h"
 #include "streams/region/voxel_stream_region_files.h"
@@ -69,11 +70,12 @@ void register_voxel_types() {
 	VoxelStringNames::create_singleton();
 	VoxelGraphNodeDB::create_singleton();
 	VoxelServer::create_singleton();
+	gd::VoxelServer::create_singleton();
 
-	Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelServer", VoxelServer::get_singleton()));
+	Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelServer", gd::VoxelServer::get_singleton()));
 
 	// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not abstract?
-	ClassDB::register_class<VoxelServer>();
+	ClassDB::register_class<gd::VoxelServer>();
 
 	// Misc
 	ClassDB::register_class<Voxel>();
@@ -181,6 +183,7 @@ void unregister_voxel_types() {
 
 	VoxelStringNames::destroy_singleton();
 	VoxelGraphNodeDB::destroy_singleton();
+	gd::VoxelServer::destroy_singleton();
 	VoxelServer::destroy_singleton();
 
 	// Do this last as VoxelServer might still be holding some refs to voxel blocks

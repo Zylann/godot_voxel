@@ -10,8 +10,6 @@
 #include "../util/tasks/time_spread_task_runner.h"
 #include "struct_db.h"
 
-#include <scene/main/node.h>
-
 #include <memory>
 
 class VoxelNode;
@@ -20,12 +18,11 @@ namespace zylann {
 class AsyncDependencyTracker;
 }
 
-// TODO Don't inherit Object. Instead have a Godot wrapper, there is very little use for Object stuff
+namespace zylann::voxel {
 
 // Access point for asynchronous voxel processing APIs.
 // Functions must be used from the main thread.
-class VoxelServer : public Object {
-	GDCLASS(VoxelServer, Object)
+class VoxelServer {
 public:
 	struct BlockMeshOutput {
 		enum Type {
@@ -40,10 +37,13 @@ public:
 	};
 
 	struct BlockDataOutput {
-		enum Type { TYPE_LOAD, TYPE_SAVE };
+		enum Type { //
+			TYPE_LOAD,
+			TYPE_SAVE
+		};
 
 		Type type;
-		std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
+		std::shared_ptr<VoxelBufferInternal> voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
 		Vector3i position;
 		uint8_t lod;
@@ -55,9 +55,7 @@ public:
 
 	struct BlockMeshInput {
 		// Moore area ordered by forward XYZ iteration
-		zylann::FixedArray<std::shared_ptr<zylann::voxel::VoxelBufferInternal>,
-				zylann::voxel::constants::MAX_BLOCK_COUNT_PER_REQUEST>
-				data_blocks;
+		FixedArray<std::shared_ptr<VoxelBufferInternal>, constants::MAX_BLOCK_COUNT_PER_REQUEST> data_blocks;
 		unsigned int data_blocks_count = 0;
 		Vector3i render_block_position;
 		uint8_t lod = 0;
@@ -115,10 +113,10 @@ public:
 	// TODO Add parameter to skip stream loading
 	void request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances);
 	void request_block_generate(
-			uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<zylann::AsyncDependencyTracker> tracker);
+			uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<AsyncDependencyTracker> tracker);
 	void request_all_stream_blocks(uint32_t volume_id);
-	void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels,
-			Vector3i block_pos, int lod);
+	void request_voxel_block_save(
+			uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos, int lod);
 	void request_instance_block_save(
 			uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances, Vector3i block_pos, int lod);
 	void remove_volume(uint32_t volume_id);
@@ -141,13 +139,13 @@ public:
 		_world.viewers.for_each_with_id(f);
 	}
 
-	void push_time_spread_task(zylann::ITimeSpreadTask *task);
+	void push_time_spread_task(ITimeSpreadTask *task);
 	int get_main_thread_time_budget_usec() const;
 
-	void push_progressive_task(zylann::IProgressiveTask *task);
+	void push_progressive_task(IProgressiveTask *task);
 
-	void push_async_task(zylann::IThreadedTask *task);
-	void push_async_tasks(Span<zylann::IThreadedTask *> tasks);
+	void push_async_task(IThreadedTask *task);
+	void push_async_tasks(Span<IThreadedTask *> tasks);
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
 	// void get_min_max_block_padding(
@@ -157,7 +155,7 @@ public:
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
 
-	inline zylann::FileLocker &get_file_locker() {
+	inline FileLocker &get_file_locker() {
 		return _file_locker;
 	}
 
@@ -201,11 +199,6 @@ private:
 
 	void request_block_generate_from_data_request(BlockDataRequest &src);
 	void request_block_save_from_generate_request(BlockGenerateRequest &src);
-	void _on_rendering_server_frame_post_draw();
-
-	Dictionary _b_get_stats();
-
-	static void _bind_methods();
 
 	// Since we are going to send data to tasks running in multiple threads, a few strategies are in place:
 	//
@@ -255,8 +248,8 @@ private:
 	};
 
 	struct World {
-		zylann::StructDB<Volume> volumes;
-		zylann::StructDB<Viewer> viewers;
+		StructDB<Volume> volumes;
+		StructDB<Viewer> viewers;
 
 		// Must be overwritten with a new instance if count changes.
 		std::shared_ptr<PriorityDependencyShared> shared_priority_dependency;
@@ -273,7 +266,7 @@ private:
 			PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size);
 	static int get_priority(const PriorityDependency &dep, uint8_t lod_index, float *out_closest_distance_sq);
 
-	class BlockDataRequest : public zylann::IThreadedTask {
+	class BlockDataRequest : public IThreadedTask {
 	public:
 		enum Type { //
 			TYPE_LOAD = 0,
@@ -284,12 +277,12 @@ private:
 		BlockDataRequest();
 		~BlockDataRequest();
 
-		void run(zylann::ThreadedTaskContext ctx) override;
+		void run(ThreadedTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
 		void apply_result() override;
 
-		std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
+		std::shared_ptr<VoxelBufferInternal> voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
 		Vector3i position; // In data blocks of the specified lod
 		uint32_t volume_id;
@@ -306,12 +299,12 @@ private:
 		// TODO Find a way to separate save, it doesnt need sorting
 	};
 
-	class AllBlocksDataRequest : public zylann::IThreadedTask {
+	class AllBlocksDataRequest : public IThreadedTask {
 	public:
 		AllBlocksDataRequest();
 		~AllBlocksDataRequest();
 
-		void run(zylann::ThreadedTaskContext ctx) override;
+		void run(ThreadedTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
 		void apply_result() override;
@@ -321,17 +314,17 @@ private:
 		std::shared_ptr<StreamingDependency> stream_dependency;
 	};
 
-	class BlockGenerateRequest : public zylann::IThreadedTask {
+	class BlockGenerateRequest : public IThreadedTask {
 	public:
 		BlockGenerateRequest();
 		~BlockGenerateRequest();
 
-		void run(zylann::ThreadedTaskContext ctx) override;
+		void run(ThreadedTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
 		void apply_result() override;
 
-		std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
+		std::shared_ptr<VoxelBufferInternal> voxels;
 		Vector3i position;
 		uint32_t volume_id;
 		uint8_t lod;
@@ -342,22 +335,20 @@ private:
 		bool drop_beyond_max_distance = true;
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
-		std::shared_ptr<zylann::AsyncDependencyTracker> tracker;
+		std::shared_ptr<AsyncDependencyTracker> tracker;
 	};
 
-	class BlockMeshRequest : public zylann::IThreadedTask {
+	class BlockMeshRequest : public IThreadedTask {
 	public:
 		BlockMeshRequest();
 		~BlockMeshRequest();
 
-		void run(zylann::ThreadedTaskContext ctx) override;
+		void run(ThreadedTaskContext ctx) override;
 		int get_priority() override;
 		bool is_cancelled() override;
 		void apply_result() override;
 
-		zylann::FixedArray<std::shared_ptr<zylann::voxel::VoxelBufferInternal>,
-				zylann::voxel::constants::MAX_BLOCK_COUNT_PER_REQUEST>
-				blocks;
+		FixedArray<std::shared_ptr<VoxelBufferInternal>, constants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
 		// TODO Need to provide format
 		//FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
 		Vector3i position; // In mesh blocks of the specified lod
@@ -376,29 +367,15 @@ private:
 	World _world;
 
 	// Pool specialized in file I/O
-	zylann::ThreadedTaskRunner _streaming_thread_pool;
+	ThreadedTaskRunner _streaming_thread_pool;
 	// Pool for every other task
-	zylann::ThreadedTaskRunner _general_thread_pool;
+	ThreadedTaskRunner _general_thread_pool;
 	// For tasks that can only run on the main thread and be spread out over frames
-	zylann::TimeSpreadTaskRunner _time_spread_task_runner;
+	TimeSpreadTaskRunner _time_spread_task_runner;
 	int _main_thread_time_budget_usec = 8000;
-	zylann::ProgressiveTaskRunner _progressive_task_runner;
+	ProgressiveTaskRunner _progressive_task_runner;
 
-	zylann::FileLocker _file_locker;
-};
-
-// TODO Hack to make VoxelServer update... need ways to integrate callbacks from main loop!
-class VoxelServerUpdater : public Node {
-	GDCLASS(VoxelServerUpdater, Node)
-public:
-	~VoxelServerUpdater();
-	static void ensure_existence(SceneTree *st);
-
-protected:
-	void _notification(int p_what);
-
-private:
-	VoxelServerUpdater();
+	FileLocker _file_locker;
 };
 
 struct VoxelFileLockerRead {
@@ -424,5 +401,7 @@ struct VoxelFileLockerWrite {
 
 	String _path;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_SERVER_H

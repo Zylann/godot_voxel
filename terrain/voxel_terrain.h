@@ -121,8 +121,8 @@ private:
 	void process_viewers();
 	//void process_received_data_blocks();
 	void process_meshing();
-	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
-	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);
+	void apply_mesh_update(const zylann::voxel::VoxelServer::BlockMeshOutput &ob);
+	void apply_data_block_response(zylann::voxel::VoxelServer::BlockDataOutput &ob);
 
 	void _on_stream_params_changed();
 	void _set_block_size_po2(int p_block_size_po2);

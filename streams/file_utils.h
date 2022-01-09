@@ -48,7 +48,11 @@ enum FileResult {
 const char *to_string(FileResult res);
 FileResult check_magic_and_version(
 		FileAccess *f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version);
-Error check_directory_created(const String &directory_path);
+
+namespace voxel {
+// Specific to voxel because it uses a global lock found only in VoxelServer
+Error check_directory_created_using_file_locker(const String &directory_path);
+} // namespace voxel
 
 void insert_bytes(FileAccess *f, size_t count, size_t temp_chunk_size = 512);
 

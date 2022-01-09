@@ -47,7 +47,6 @@ FileResult check_magic_and_version(
 }
 
 Error check_directory_created(const String &directory_path) {
-	VoxelFileLockerWrite file_wlock(directory_path);
 	DirAccess *d = DirAccess::create_for_path(directory_path);
 
 	if (d == nullptr) {
@@ -68,6 +67,13 @@ Error check_directory_created(const String &directory_path) {
 	memdelete(d);
 	return OK;
 }
+
+namespace voxel {
+Error check_directory_created_using_file_locker(const String &directory_path) {
+	VoxelFileLockerWrite file_wlock(directory_path);
+	return check_directory_created(directory_path);
+}
+} // namespace voxel
 
 // TODO Write tests
 

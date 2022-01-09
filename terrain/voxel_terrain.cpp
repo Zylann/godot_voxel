@@ -3,6 +3,7 @@
 #include "../constants/voxel_string_names.h"
 #include "../edition/voxel_tool_terrain.h"
 #include "../server/voxel_server.h"
+#include "../server/voxel_server_updater.h"
 #include "../util/funcs.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"

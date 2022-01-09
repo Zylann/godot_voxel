@@ -2,6 +2,9 @@
 #include "../server/voxel_server.h"
 #include <core/config/engine.h>
 
+using namespace zylann;
+using namespace voxel;
+
 VoxelViewer::VoxelViewer() {
 	set_notify_transform(!Engine::get_singleton()->is_editor_hint());
 }
