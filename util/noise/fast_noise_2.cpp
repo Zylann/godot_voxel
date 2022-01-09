@@ -319,21 +319,21 @@ void FastNoise2::get_noise_3d_series(
 void FastNoise2::get_noise_2d_grid(Vector2 origin, Vector2i size, Span<float> dst) const {
 	ERR_FAIL_COND(!is_valid());
 	ERR_FAIL_COND(size.x < 0 || size.y < 0);
-	ERR_FAIL_COND(dst.size() != size.x * size.y);
+	ERR_FAIL_COND(dst.size() != size_t(size.x) * size_t(size.y));
 	_generator->GenUniformGrid2D(dst.data(), origin.x, origin.y, size.x, size.y, 1.f, _seed);
 }
 
 void FastNoise2::get_noise_3d_grid(Vector3 origin, Vector3i size, Span<float> dst) const {
 	ERR_FAIL_COND(!is_valid());
 	ERR_FAIL_COND(!math::is_valid_size(size));
-	ERR_FAIL_COND(dst.size() != size.x * size.y * size.z);
+	ERR_FAIL_COND(dst.size() != size_t(size.x) * size_t(size.y) * size_t(size.z));
 	_generator->GenUniformGrid3D(dst.data(), origin.x, origin.y, origin.z, size.x, size.y, size.z, 1.f, _seed);
 }
 
 void FastNoise2::get_noise_2d_grid_tileable(Vector2i size, Span<float> dst) const {
 	ERR_FAIL_COND(!is_valid());
 	ERR_FAIL_COND(size.x < 0 || size.y < 0);
-	ERR_FAIL_COND(dst.size() != size.x * size.y);
+	ERR_FAIL_COND(dst.size() != size_t(size.x) * size_t(size.y));
 	_generator->GenTileable2D(dst.data(), size.x, size.y, 1.f, _seed);
 }
 
