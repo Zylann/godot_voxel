@@ -6,7 +6,18 @@ This is a C++ module, which needs to get compiled into Godot Engine.
 Precompiled builds
 -------------------
 
-### Godot 4 development builds
+### Release builds
+
+There are no release builds yet. We need to setup Github Releases for this. For now you may either use development builds or compile yourself.
+
+Release builds correspond to a development milestone. Each has a branch (for example `godot3.4`, `godot3.3`...). They are feature freezes and may only receive bug fixes later on. Usually, they are made at the same time a new version of Godot comes out.
+Because the plugin is a module at the moment, and we don't have the same pipeline as the Godot devs, it comes as a whole custom build of the Godot editor, and might differ a little from the official version.
+
+Not all export templates might be available yet. So you can develop your game and test it with the editor, but if you want to export it, you may need to compile the templates yourself.
+
+### Development builds
+
+#### For Godot 4
 
 - Available on [Github Actions](https://github.com/Zylann/godot_voxel/actions)
 
@@ -15,13 +26,18 @@ A new build is made each time commits are pushed to the main branch, but also wh
 
 In case there are multiple downloadable artifacts, the editor build will be the one with `opt.tools` in the name (because it is built with optimizations enabled, and includes tools).
 
+!!! note
+	You will need a Github account to be able to download development builds.
+
 ![Github actions screenshot](images/github_actions_windows_artifacts.png)
 
-### Godot 3 branch
+#### For Godot 3 (legacy builds)
 
-The legacy branch for Godot 3.x is `godot3.x`.
+On Github actions, you may search for builds occurring with the `godot3.x` branch.
 
-### Tokisan builds (old)
+Development of new features on that branch stopped though, so it is possible the downloads expired. In which case you may look for a release or compile yourself.
+
+### Tokisan builds (very old)
 
 - Available on [Tokisan Games website](http://tokisan.com/godot-binaries/).
 
@@ -29,7 +45,7 @@ A long while ago, [Cory Petkovsek](https://github.com/tinmanjuggernaut) made ful
 
 
 Building yourself
-------------------------
+-------------------
 
 These steps will walk you through creating a custom build of Godot with the Voxel Tools module compiled into it.
 
