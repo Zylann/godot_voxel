@@ -4,6 +4,8 @@
 #include "vector3i.h"
 #include <core/variant/variant.h>
 
+namespace zylann {
+
 // Axis-aligned 3D box using integer coordinates
 class Box3i {
 public:
@@ -33,16 +35,16 @@ public:
 	static inline Box3i get_bounding_box(Box3i a, Box3i b) {
 		Box3i box;
 
-		box.pos.x = zylann::math::min(a.pos.x, b.pos.x);
-		box.pos.y = zylann::math::min(a.pos.y, b.pos.y);
-		box.pos.z = zylann::math::min(a.pos.z, b.pos.z);
+		box.pos.x = math::min(a.pos.x, b.pos.x);
+		box.pos.y = math::min(a.pos.y, b.pos.y);
+		box.pos.z = math::min(a.pos.z, b.pos.z);
 
 		Vector3i max_a = a.pos + a.size;
 		Vector3i max_b = b.pos + b.size;
 
-		box.size.x = zylann::math::max(max_a.x, max_b.x) - box.pos.x;
-		box.size.y = zylann::math::max(max_a.y, max_b.y) - box.pos.y;
-		box.size.z = zylann::math::max(max_a.z, max_b.z) - box.pos.z;
+		box.size.x = math::max(max_a.x, max_b.x) - box.pos.x;
+		box.size.y = math::max(max_a.y, max_b.y) - box.pos.y;
+		box.size.z = math::max(max_a.z, max_b.z) - box.pos.z;
 
 		return box;
 	}
@@ -293,8 +295,8 @@ public:
 		int max_pos = pos + size;
 		int lim_max_pos = lim_pos + lim_size;
 
-		pos = zylann::math::clamp(pos, lim_pos, lim_max_pos);
-		max_pos = zylann::math::clamp(max_pos, lim_pos, lim_max_pos);
+		pos = math::clamp(pos, lim_pos, lim_max_pos);
+		max_pos = math::clamp(max_pos, lim_pos, lim_max_pos);
 
 		size = max_pos - pos;
 		if (size < 0) {
@@ -334,13 +336,13 @@ public:
 
 	void merge_with(const Box3i &other) {
 		const Vector3i min_pos( //
-				zylann::math::min(pos.x, other.pos.x), //
-				zylann::math::min(pos.y, other.pos.y), //
-				zylann::math::min(pos.z, other.pos.z));
+				math::min(pos.x, other.pos.x), //
+				math::min(pos.y, other.pos.y), //
+				math::min(pos.z, other.pos.z));
 		const Vector3i max_pos( //
-				zylann::math::max(pos.x + size.x, other.pos.x + other.size.x), //
-				zylann::math::max(pos.y + size.y, other.pos.y + other.size.y), //
-				zylann::math::max(pos.z + size.z, other.pos.z + other.size.z));
+				math::max(pos.x + size.x, other.pos.x + other.size.x), //
+				math::max(pos.y + size.y, other.pos.y + other.size.y), //
+				math::max(pos.z + size.z, other.pos.z + other.size.z));
 		pos = min_pos;
 		size = max_pos - min_pos;
 	}
@@ -353,5 +355,7 @@ inline bool operator!=(const Box3i &a, const Box3i &b) {
 inline bool operator==(const Box3i &a, const Box3i &b) {
 	return a.pos == b.pos && a.size == b.size;
 }
+
+} // namespace zylann
 
 #endif // BOX3I_H

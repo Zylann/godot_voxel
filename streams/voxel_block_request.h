@@ -16,7 +16,7 @@ struct VoxelBlockRequest {
 };
 
 struct VoxelStreamInstanceDataRequest {
-	std::unique_ptr<VoxelInstanceBlockData> data;
+	std::unique_ptr<InstanceBlockData> data;
 	Vector3i position;
 	uint8_t lod;
 };

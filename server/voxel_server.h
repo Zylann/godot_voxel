@@ -42,7 +42,7 @@ public:
 
 		Type type;
 		std::shared_ptr<VoxelBufferInternal> voxels;
-		std::unique_ptr<VoxelInstanceBlockData> instances;
+		std::unique_ptr<InstanceBlockData> instances;
 		Vector3i position;
 		uint8_t lod;
 		bool dropped;
@@ -116,7 +116,7 @@ public:
 	void request_voxel_block_save(
 			uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos, int lod);
 	void request_instance_block_save(
-			uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances, Vector3i block_pos, int lod);
+			uint32_t volume_id, std::unique_ptr<InstanceBlockData> instances, Vector3i block_pos, int lod);
 	void remove_volume(uint32_t volume_id);
 	bool is_volume_valid(uint32_t volume_id) const;
 
@@ -281,7 +281,7 @@ private:
 		void apply_result() override;
 
 		std::shared_ptr<VoxelBufferInternal> voxels;
-		std::unique_ptr<VoxelInstanceBlockData> instances;
+		std::unique_ptr<InstanceBlockData> instances;
 		Vector3i position; // In data blocks of the specified lod
 		uint32_t volume_id;
 		uint8_t lod;

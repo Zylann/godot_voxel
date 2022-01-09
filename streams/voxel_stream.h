@@ -62,7 +62,7 @@ public:
 	struct FullLoadingResult {
 		struct Block {
 			std::shared_ptr<VoxelBufferInternal> voxels;
-			std::unique_ptr<VoxelInstanceBlockData> instances_data;
+			std::unique_ptr<InstanceBlockData> instances_data;
 			Vector3i position;
 			unsigned int lod;
 		};

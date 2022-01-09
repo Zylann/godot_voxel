@@ -704,7 +704,7 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 }
 
 void VoxelInstancer::on_data_block_loaded(
-		Vector3i grid_position, unsigned int lod_index, std::unique_ptr<VoxelInstanceBlockData> instances) {
+		Vector3i grid_position, unsigned int lod_index, std::unique_ptr<InstanceBlockData> instances) {
 	ERR_FAIL_COND(lod_index >= _lods.size());
 	Lod &lod = _lods[lod_index];
 	lod.loaded_instances_data.insert(std::make_pair(grid_position, std::move(instances)));
@@ -963,9 +963,9 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 	}
 }
 
-static const VoxelInstanceBlockData::LayerData *find_layer_data(const VoxelInstanceBlockData &instances_data, int id) {
+static const InstanceBlockData::LayerData *find_layer_data(const InstanceBlockData &instances_data, int id) {
 	for (size_t i = 0; i < instances_data.layers.size(); ++i) {
-		const VoxelInstanceBlockData::LayerData &layer = instances_data.layers[i];
+		const InstanceBlockData::LayerData &layer = instances_data.layers[i];
 		if (layer.id == id) {
 			return &layer;
 		}
@@ -1022,18 +1022,17 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 					if (instances_data_it != lod.loaded_instances_data.end()) {
 						// This area has user-edited instances
 
-						const VoxelInstanceBlockData *instances_data = instances_data_it->second.get();
+						const InstanceBlockData *instances_data = instances_data_it->second.get();
 						CRASH_COND(instances_data == nullptr);
 
-						const VoxelInstanceBlockData::LayerData *layer_data =
-								find_layer_data(*instances_data, layer_id);
+						const InstanceBlockData::LayerData *layer_data = find_layer_data(*instances_data, layer_id);
 
 						if (layer_data == nullptr) {
 							continue;
 						}
 
 						for (auto it = layer_data->instances.begin(); it != layer_data->instances.end(); ++it) {
-							const VoxelInstanceBlockData::InstanceData &d = *it;
+							const InstanceBlockData::InstanceData &d = *it;
 							_transform_cache.push_back(d.transform);
 						}
 
@@ -1085,7 +1084,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 
 	const Lod &lod = _lods[lod_index];
 
-	std::unique_ptr<VoxelInstanceBlockData> data = std::make_unique<VoxelInstanceBlockData>();
+	std::unique_ptr<InstanceBlockData> data = std::make_unique<InstanceBlockData>();
 	const int data_block_size = _parent->get_data_block_size() << lod_index;
 	data->position_range = data_block_size;
 
@@ -1124,8 +1123,8 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 		Block *render_block = _blocks[render_block_index];
 		ERR_CONTINUE(render_block == nullptr);
 
-		data->layers.push_back(VoxelInstanceBlockData::LayerData());
-		VoxelInstanceBlockData::LayerData &layer_data = data->layers.back();
+		data->layers.push_back(InstanceBlockData::LayerData());
+		InstanceBlockData::LayerData &layer_data = data->layers.back();
 
 		layer_data.instances.clear();
 		layer_data.id = layer_id;
@@ -1165,7 +1164,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 					const int instance_octant_index =
 							VoxelInstanceGenerator::get_octant_index(t.origin, half_render_block_size);
 					if (instance_octant_index == octant_index) {
-						VoxelInstanceBlockData::InstanceData d;
+						InstanceBlockData::InstanceData d;
 						d.transform = t;
 						layer_data.instances.push_back(d);
 					}
@@ -1195,7 +1194,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 					const int instance_octant_index =
 							VoxelInstanceGenerator::get_octant_index(t.origin, half_render_block_size);
 					if (instance_octant_index == octant_index) {
-						VoxelInstanceBlockData::InstanceData d;
+						InstanceBlockData::InstanceData d;
 						d.transform = t;
 						layer_data.instances.push_back(d);
 					}

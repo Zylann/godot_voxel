@@ -413,7 +413,7 @@ void VoxelServer::request_voxel_block_save(
 }
 
 void VoxelServer::request_instance_block_save(
-		uint32_t volume_id, std::unique_ptr<VoxelInstanceBlockData> instances, Vector3i block_pos, int lod) {
+		uint32_t volume_id, std::unique_ptr<InstanceBlockData> instances, Vector3i block_pos, int lod) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);

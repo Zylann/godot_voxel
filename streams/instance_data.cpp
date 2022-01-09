@@ -4,15 +4,15 @@
 #include "../util/serialization.h"
 #include <core/variant/variant.h>
 
-using namespace zylann;
+namespace zylann::voxel {
 
 namespace {
 const uint32_t TRAILING_MAGIC = 0x900df00d;
 }
 
-const float VoxelInstanceBlockData::POSITION_RANGE_MINIMUM = 0.01f;
+const float InstanceBlockData::POSITION_RANGE_MINIMUM = 0.01f;
 
-const float VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM = 0.01f;
+const float InstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM = 0.01f;
 
 // TODO Unify with functions from VoxelBuffer?
 
@@ -49,9 +49,9 @@ struct CompressedQuaternion4b {
 	}
 };
 
-bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vector<uint8_t> &dst) {
+bool serialize_instance_block_data(const InstanceBlockData &src, std::vector<uint8_t> &dst) {
 	const uint8_t version = 0;
-	const uint8_t instance_format = VoxelInstanceBlockData::FORMAT_SIMPLE_11B_V1;
+	const uint8_t instance_format = InstanceBlockData::FORMAT_SIMPLE_11B_V1;
 
 	// TODO Apparently big-endian is dead
 	// I chose it originally to match "network byte order",
@@ -59,7 +59,7 @@ bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 	zylann::MemoryWriter w(dst, zylann::ENDIANESS_BIG_ENDIAN);
 
 	ERR_FAIL_COND_V(src.position_range < 0.f, false);
-	const float position_range = math::max(src.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM);
+	const float position_range = math::max(src.position_range, InstanceBlockData::POSITION_RANGE_MINIMUM);
 
 	w.store_8(version);
 	w.store_8(src.layers.size());
@@ -70,15 +70,15 @@ bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 	const float pos_norm_scale = 1.f / position_range;
 
 	for (size_t i = 0; i < src.layers.size(); ++i) {
-		const VoxelInstanceBlockData::LayerData &layer = src.layers[i];
+		const InstanceBlockData::LayerData &layer = src.layers[i];
 
 		ERR_FAIL_COND_V(layer.scale_max < layer.scale_min, false);
 
 		float scale_min = layer.scale_min;
 		float scale_max = layer.scale_max;
-		if (scale_max - scale_min < VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) {
+		if (scale_max - scale_min < InstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) {
 			scale_min = layer.scale_min;
-			scale_max = scale_min + VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM;
+			scale_max = scale_min + InstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM;
 		}
 
 		w.store_16(layer.id);
@@ -90,7 +90,7 @@ bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 		const float scale_norm_scale = 1.f / (scale_max - scale_min);
 
 		for (size_t j = 0; j < layer.instances.size(); ++j) {
-			const VoxelInstanceBlockData::InstanceData &instance = layer.instances[j];
+			const InstanceBlockData::InstanceData &instance = layer.instances[j];
 
 			w.store_16(static_cast<uint16_t>(pos_norm_scale * instance.transform.origin.x * 0xffff));
 			w.store_16(static_cast<uint16_t>(pos_norm_scale * instance.transform.origin.y * 0xffff));
@@ -113,9 +113,9 @@ bool serialize_instance_block_data(const VoxelInstanceBlockData &src, std::vecto
 	return true;
 }
 
-bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uint8_t> src) {
+bool deserialize_instance_block_data(InstanceBlockData &dst, Span<const uint8_t> src) {
 	const uint8_t expected_version = 0;
-	const uint8_t expected_instance_format = VoxelInstanceBlockData::FORMAT_SIMPLE_11B_V1;
+	const uint8_t expected_instance_format = InstanceBlockData::FORMAT_SIMPLE_11B_V1;
 
 	zylann::MemoryReader r(src, zylann::ENDIANESS_BIG_ENDIAN);
 
@@ -128,7 +128,7 @@ bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uin
 	dst.position_range = r.get_float();
 
 	for (size_t i = 0; i < dst.layers.size(); ++i) {
-		VoxelInstanceBlockData::LayerData &layer = dst.layers[i];
+		InstanceBlockData::LayerData &layer = dst.layers[i];
 
 		layer.id = r.get_16();
 
@@ -157,7 +157,7 @@ bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uin
 			cq.w = r.get_8();
 			const Quaternion q = cq.to_quaternion();
 
-			VoxelInstanceBlockData::InstanceData &instance = layer.instances[j];
+			InstanceBlockData::InstanceData &instance = layer.instances[j];
 			instance.transform = Transform3D(Basis(q).scaled(Vector3(s, s, s)), Vector3(x, y, z));
 		}
 	}
@@ -168,3 +168,5 @@ bool deserialize_instance_block_data(VoxelInstanceBlockData &dst, Span<const uin
 
 	return true;
 }
+
+} // namespace zylann::voxel

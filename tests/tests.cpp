@@ -693,9 +693,9 @@ void test_unordered_remove_if() {
 
 void test_instance_data_serialization() {
 	struct L {
-		static VoxelInstanceBlockData::InstanceData create_instance(
+		static InstanceBlockData::InstanceData create_instance(
 				float x, float y, float z, float rotx, float roty, float rotz, float scale) {
-			VoxelInstanceBlockData::InstanceData d;
+			InstanceBlockData::InstanceData d;
 			d.transform = Transform3D(
 					Basis().rotated(Vector3(rotx, roty, rotz)).scaled(Vector3(scale, scale, scale)), Vector3(x, y, z));
 			return d;
@@ -703,11 +703,11 @@ void test_instance_data_serialization() {
 	};
 
 	// Create some example data
-	VoxelInstanceBlockData src_data;
+	InstanceBlockData src_data;
 	{
 		src_data.position_range = 30;
 		{
-			VoxelInstanceBlockData::LayerData layer;
+			InstanceBlockData::LayerData layer;
 			layer.id = 1;
 			layer.scale_min = 1.f;
 			layer.scale_max = 1.f;
@@ -718,7 +718,7 @@ void test_instance_data_serialization() {
 			src_data.layers.push_back(layer);
 		}
 		{
-			VoxelInstanceBlockData::LayerData layer;
+			InstanceBlockData::LayerData layer;
 			layer.id = 2;
 			layer.scale_min = 1.f;
 			layer.scale_max = 4.f;
@@ -734,7 +734,7 @@ void test_instance_data_serialization() {
 
 	ERR_FAIL_COND(!serialize_instance_block_data(src_data, serialized_data));
 
-	VoxelInstanceBlockData dst_data;
+	InstanceBlockData dst_data;
 	ERR_FAIL_COND(!deserialize_instance_block_data(dst_data, to_span_const(serialized_data)));
 
 	// Compare blocks
@@ -742,16 +742,16 @@ void test_instance_data_serialization() {
 	ERR_FAIL_COND(dst_data.position_range < 0.f);
 	ERR_FAIL_COND(dst_data.position_range != src_data.position_range);
 
-	const float distance_error = math::max(src_data.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM) /
-			float(VoxelInstanceBlockData::POSITION_RESOLUTION);
+	const float distance_error = math::max(src_data.position_range, InstanceBlockData::POSITION_RANGE_MINIMUM) /
+			float(InstanceBlockData::POSITION_RESOLUTION);
 
 	// Compare layers
 	for (unsigned int layer_index = 0; layer_index < dst_data.layers.size(); ++layer_index) {
-		const VoxelInstanceBlockData::LayerData &src_layer = src_data.layers[layer_index];
-		const VoxelInstanceBlockData::LayerData &dst_layer = dst_data.layers[layer_index];
+		const InstanceBlockData::LayerData &src_layer = src_data.layers[layer_index];
+		const InstanceBlockData::LayerData &dst_layer = dst_data.layers[layer_index];
 
 		ERR_FAIL_COND(src_layer.id != dst_layer.id);
-		if (src_layer.scale_max - src_layer.scale_min < VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) {
+		if (src_layer.scale_max - src_layer.scale_min < InstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) {
 			ERR_FAIL_COND(src_layer.scale_min != dst_layer.scale_min);
 		} else {
 			ERR_FAIL_COND(src_layer.scale_min != dst_layer.scale_min);
@@ -760,15 +760,15 @@ void test_instance_data_serialization() {
 		ERR_FAIL_COND(src_layer.instances.size() != dst_layer.instances.size());
 
 		const float scale_error = math::max(src_layer.scale_max - src_layer.scale_min,
-										  VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) /
-				float(VoxelInstanceBlockData::SIMPLE_11B_V1_SCALE_RESOLUTION);
+										  InstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) /
+				float(InstanceBlockData::SIMPLE_11B_V1_SCALE_RESOLUTION);
 
-		const float rotation_error = 2.f / float(VoxelInstanceBlockData::SIMPLE_11B_V1_QUAT_RESOLUTION);
+		const float rotation_error = 2.f / float(InstanceBlockData::SIMPLE_11B_V1_QUAT_RESOLUTION);
 
 		// Compare instances
 		for (unsigned int instance_index = 0; instance_index < src_layer.instances.size(); ++instance_index) {
-			const VoxelInstanceBlockData::InstanceData &src_instance = src_layer.instances[instance_index];
-			const VoxelInstanceBlockData::InstanceData &dst_instance = dst_layer.instances[instance_index];
+			const InstanceBlockData::InstanceData &src_instance = src_layer.instances[instance_index];
+			const InstanceBlockData::InstanceData &dst_instance = dst_layer.instances[instance_index];
 
 			ERR_FAIL_COND(src_instance.transform.origin.distance_to(dst_instance.transform.origin) > distance_error);
 

@@ -23,7 +23,7 @@ public:
 		bool voxels_deleted = false;
 
 		VoxelBufferInternal voxels;
-		std::unique_ptr<VoxelInstanceBlockData> instances;
+		std::unique_ptr<InstanceBlockData> instances;
 	};
 
 	// Copies cached block into provided buffer
@@ -33,11 +33,10 @@ public:
 	void save_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &voxels);
 
 	// Copies cached data into the provided pointer. A new instance will be made if found.
-	bool load_instance_block(
-			Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> &out_instances);
+	bool load_instance_block(Vector3i position, uint8_t lod_index, std::unique_ptr<InstanceBlockData> &out_instances);
 
 	// Stores provided block into the cache. The cache will take ownership of the provided data.
-	void save_instance_block(Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> instances);
+	void save_instance_block(Vector3i position, uint8_t lod_index, std::unique_ptr<InstanceBlockData> instances);
 
 	unsigned int get_indicative_block_count() const;
 

@@ -50,7 +50,7 @@ void VoxelStreamCache::save_voxel_block(Vector3i position, uint8_t lod_index, Vo
 }
 
 bool VoxelStreamCache::load_instance_block(
-		Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> &out_instances) {
+		Vector3i position, uint8_t lod_index, std::unique_ptr<InstanceBlockData> &out_instances) {
 	const Lod &lod = _cache[lod_index];
 	lod.rw_lock.read_lock();
 	auto it = lod.blocks.find(position);
@@ -68,7 +68,7 @@ bool VoxelStreamCache::load_instance_block(
 
 		} else {
 			// Copying is required since the cache has ownership on its data
-			out_instances = std::make_unique<VoxelInstanceBlockData>();
+			out_instances = std::make_unique<InstanceBlockData>();
 			it->second.instances->copy_to(*out_instances);
 		}
 
@@ -78,7 +78,7 @@ bool VoxelStreamCache::load_instance_block(
 }
 
 void VoxelStreamCache::save_instance_block(
-		Vector3i position, uint8_t lod_index, std::unique_ptr<VoxelInstanceBlockData> instances) {
+		Vector3i position, uint8_t lod_index, std::unique_ptr<InstanceBlockData> instances) {
 	Lod &lod = _cache[lod_index];
 	RWLockWrite wlock(lod.rw_lock);
 	auto it = lod.blocks.find(position);

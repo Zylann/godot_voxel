@@ -64,7 +64,7 @@ public:
 	// Event handlers
 
 	void on_data_block_loaded(
-			Vector3i grid_position, unsigned int lod_index, std::unique_ptr<VoxelInstanceBlockData> instances);
+			Vector3i grid_position, unsigned int lod_index, std::unique_ptr<InstanceBlockData> instances);
 	void on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays);
 	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
 	void on_area_edited(Box3i p_voxel_box);
@@ -188,7 +188,7 @@ private:
 		// it will get generated instances.
 		// Keys follows the data block coordinate system.
 		// Can't use `HashMap` because it lacks move semantics.
-		std::unordered_map<Vector3i, std::unique_ptr<VoxelInstanceBlockData>> loaded_instances_data;
+		std::unordered_map<Vector3i, std::unique_ptr<InstanceBlockData>> loaded_instances_data;
 
 		FixedArray<MeshLodDistances, VoxelInstanceLibraryItem::MAX_MESH_LODS> mesh_lod_distances;
 

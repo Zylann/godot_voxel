@@ -268,7 +268,7 @@ _FORCE_INLINE_ int64_t Vector3i::distance_sq(const Vector3i &other) const {
 
 #else
 
-namespace Vector3iUtil {
+namespace zylann::Vector3iUtil {
 
 constexpr int AXIS_COUNT = 3;
 
@@ -344,7 +344,7 @@ inline bool is_unit_vector(const Vector3i v) {
 	return Math::abs(v.x) + Math::abs(v.y) + Math::abs(v.z) == 1;
 }
 
-} // namespace Vector3iUtil
+} // namespace zylann::Vector3iUtil
 
 inline Vector3i operator<<(const Vector3i &a, int b) {
 #ifdef DEBUG_ENABLED

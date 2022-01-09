@@ -154,7 +154,7 @@ In performance-critical areas which run a lot:
 
 ### Namespaces
 
-The intented namespaces are `zylann::` as main, and `zylann::voxel::` for voxel-related stuff. There may be others for different parts of the module. Namespaces are a work in progress, so a lot of places still miss them. 
+The intented namespaces are `zylann::` as main, and `zylann::voxel::` for voxel-related stuff. There may be others for different parts of the module.
 
 Registered classes are also namespaced, but are still largely prefixed with `Voxel`. Classes registered to the engine must have a unique name regardless of namespaces.
 
