@@ -56,7 +56,7 @@ public:
 			bool used = false;
 		};
 
-		FixedArray<Channel, VoxelBuffer::MAX_CHANNELS> channels;
+		zylann::FixedArray<Channel, VoxelBuffer::MAX_CHANNELS> channels;
 	};
 
 	enum BlockType { VOXELS, INSTANCES };

@@ -34,12 +34,12 @@ public:
 			// Model sides:
 			// They are separated because this way we can occlude them easily.
 			// Due to these defining cube side triangles, normals are known already.
-			FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> side_positions;
-			FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> side_uvs;
-			FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
-			FixedArray<std::vector<float>, Cube::SIDE_COUNT> side_tangents;
+			zylann::FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> side_positions;
+			zylann::FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> side_uvs;
+			zylann::FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
+			zylann::FixedArray<std::vector<float>, Cube::SIDE_COUNT> side_tangents;
 
-			FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
+			zylann::FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
 
 			void clear() {
 				positions.clear();
@@ -85,39 +85,59 @@ public:
 	// Properties
 
 	void set_voxel_name(String name);
-	_FORCE_INLINE_ StringName get_voxel_name() const { return _name; }
+	_FORCE_INLINE_ StringName get_voxel_name() const {
+		return _name;
+	}
 
 	void set_id(int id);
-	_FORCE_INLINE_ int get_id() const { return _id; }
+	_FORCE_INLINE_ int get_id() const {
+		return _id;
+	}
 
 	void set_color(Color color);
-	_FORCE_INLINE_ Color get_color() const { return _color; }
+	_FORCE_INLINE_ Color get_color() const {
+		return _color;
+	}
 
 	void set_material_id(unsigned int id);
-	_FORCE_INLINE_ unsigned int get_material_id() const { return _material_id; }
+	_FORCE_INLINE_ unsigned int get_material_id() const {
+		return _material_id;
+	}
 
 	// TODO Might become obsolete
 	void set_transparent(bool t = true);
-	_FORCE_INLINE_ bool is_transparent() const { return _transparency_index != 0; }
+	_FORCE_INLINE_ bool is_transparent() const {
+		return _transparency_index != 0;
+	}
 
 	void set_transparency_index(int i);
-	int get_transparency_index() const { return _transparency_index; }
+	int get_transparency_index() const {
+		return _transparency_index;
+	}
 
 	void set_custom_mesh(Ref<Mesh> mesh);
-	Ref<Mesh> get_custom_mesh() const { return _custom_mesh; }
+	Ref<Mesh> get_custom_mesh() const {
+		return _custom_mesh;
+	}
 
 	void set_random_tickable(bool rt);
-	inline bool is_random_tickable() const { return _random_tickable; }
+	inline bool is_random_tickable() const {
+		return _random_tickable;
+	}
 
 	void set_collision_mask(uint32_t mask);
-	inline uint32_t get_collision_mask() const { return _collision_mask; }
+	inline uint32_t get_collision_mask() const {
+		return _collision_mask;
+	}
 
-	Vector2 get_cube_tile(int side) const { return _cube_tiles[side]; }
+	Vector2 get_cube_tile(int side) const {
+		return _cube_tiles[side];
+	}
 
 	//-------------------------------------------
 	// Built-in geometry generators
 
-	enum GeometryType {
+	enum GeometryType { //
 		GEOMETRY_NONE = 0,
 		GEOMETRY_CUBE,
 		GEOMETRY_CUSTOM_MESH,
@@ -127,7 +147,9 @@ public:
 	void set_geometry_type(GeometryType type);
 	GeometryType get_geometry_type() const;
 
-	inline bool is_empty() const { return _empty; }
+	inline bool is_empty() const {
+		return _empty;
+	}
 
 	Ref<Resource> duplicate(bool p_subresources) const override;
 
@@ -136,7 +158,9 @@ public:
 
 	void bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents);
 
-	const std::vector<AABB> &get_collision_aabbs() const { return _collision_aabbs; }
+	const std::vector<AABB> &get_collision_aabbs() const {
+		return _collision_aabbs;
+	}
 
 private:
 	bool _set(const StringName &p_name, const Variant &p_value);
@@ -168,7 +192,7 @@ private:
 
 	Color _color;
 	GeometryType _geometry_type;
-	FixedArray<Vector2, Cube::SIDE_COUNT> _cube_tiles;
+	zylann::FixedArray<Vector2, Cube::SIDE_COUNT> _cube_tiles;
 	Ref<Mesh> _custom_mesh;
 	std::vector<AABB> _collision_aabbs;
 	bool _random_tickable = false;

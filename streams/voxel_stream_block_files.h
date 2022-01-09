@@ -43,7 +43,7 @@ private:
 		uint8_t version = -1;
 		uint8_t lod_count = 0;
 		uint8_t block_size_po2 = 0; // How many voxels in a block
-		FixedArray<zylann::voxel::VoxelBufferInternal::Depth, zylann::voxel::VoxelBufferInternal::MAX_CHANNELS>
+		zylann::FixedArray<zylann::voxel::VoxelBufferInternal::Depth, zylann::voxel::VoxelBufferInternal::MAX_CHANNELS>
 				channel_depths;
 	};
 

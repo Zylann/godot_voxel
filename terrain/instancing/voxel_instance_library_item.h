@@ -77,7 +77,7 @@ private:
 		set_mesh(mesh, 3);
 	}
 
-	FixedArray<Ref<Mesh>, MAX_MESH_LODS> _mesh_lods;
+	zylann::FixedArray<Ref<Mesh>, MAX_MESH_LODS> _mesh_lods;
 	unsigned int _mesh_lod_count = 1;
 
 	// It is preferred to have materials on the mesh already,

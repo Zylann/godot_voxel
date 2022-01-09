@@ -3,6 +3,8 @@
 
 #include <core/error/error_macros.h>
 
+namespace zylann {
+
 // TODO Could use std::array, but due to how Godot compiles,
 // I couldn't find a way to enable boundary checks without failing to link my module with the rest of Godot...
 template <typename T, unsigned int N>
@@ -74,5 +76,7 @@ public:
 private:
 	T _data[N];
 };
+
+} // namespace zylann
 
 #endif // FIXED_ARRAY_H

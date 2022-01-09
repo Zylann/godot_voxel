@@ -9,6 +9,8 @@
 #include <scene/3d/camera_3d.h>
 #include <scene/gui/menu_button.h>
 
+using namespace zylann;
+
 class VoxelTerrainEditorTaskIndicator : public HBoxContainer {
 	GDCLASS(VoxelTerrainEditorTaskIndicator, HBoxContainer)
 private:

@@ -35,7 +35,9 @@ public:
 	Ref<Resource> duplicate(bool p_subresources = false) const override;
 	int get_used_channels_mask() const override;
 
-	bool supports_lod() const override { return false; }
+	bool supports_lod() const override {
+		return false;
+	}
 
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
@@ -68,7 +70,7 @@ private:
 	};
 
 	struct Cache {
-		FixedArray<Arrays, MAX_MATERIALS> arrays_per_material;
+		zylann::FixedArray<Arrays, MAX_MATERIALS> arrays_per_material;
 	};
 
 	// Parameters
