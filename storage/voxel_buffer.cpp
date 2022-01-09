@@ -126,6 +126,11 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 	return _buffer->debug_print_sdf_to_image_top_down();
 }
 
+void VoxelBuffer::_b_deprecated_optimize() {
+	ERR_PRINT_ONCE("VoxelBuffer.optimize() is deprecated. Use compress_uniform_channels() instead.");
+	compress_uniform_channels();
+}
+
 void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::create);
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelBuffer::clear);
@@ -155,8 +160,8 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("downscale_to", "dst", "src_min", "src_max", "dst_min"), &VoxelBuffer::downscale_to);
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);
-	// TODO Rename `compress_uniform_channels`
-	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::compress_uniform_channels);
+	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::_b_deprecated_optimize);
+	ClassDB::bind_method(D_METHOD("compress_uniform_channels"), &VoxelBuffer::compress_uniform_channels);
 	ClassDB::bind_method(D_METHOD("get_channel_compression", "channel"), &VoxelBuffer::get_channel_compression);
 
 	ClassDB::bind_method(D_METHOD("get_block_metadata"), &VoxelBuffer::get_block_metadata);

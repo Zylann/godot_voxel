@@ -163,6 +163,8 @@ public:
 	Ref<Image> debug_print_sdf_to_image_top_down();
 
 private:
+	void _b_deprecated_optimize();
+
 	static void _bind_methods();
 
 	// Not sure yet if we'll really need shared_ptr or just no pointer

@@ -7,8 +7,6 @@
 
 namespace zylann::voxel {
 
-// TODO Rename VoxelBlockyLibrary
-
 // Stores a list of models that can be used with VoxelMesherBlocky
 class VoxelBlockyLibrary : public Resource {
 	GDCLASS(VoxelBlockyLibrary, Resource)
