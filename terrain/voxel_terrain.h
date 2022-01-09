@@ -90,7 +90,7 @@ public:
 	void remesh_all_blocks() override;
 
 	// For convenience, this is actually stored in a particular type of mesher
-	Ref<VoxelLibrary> get_voxel_library() const;
+	Ref<VoxelBlockyLibrary> get_voxel_library() const;
 
 	struct Stats {
 		int updated_blocks = 0;

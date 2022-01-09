@@ -45,7 +45,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 
 	struct RaycastPredicateBlocky {
 		const VoxelDataMap &map;
-		const VoxelLibrary &library;
+		const VoxelBlockyLibrary &library;
 		const uint32_t collision_mask;
 
 		bool operator()(const Vector3i pos) const {
@@ -55,7 +55,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 				return false;
 			}
 
-			const Voxel &voxel = library.get_voxel_const(v);
+			const VoxelBlockyModel &voxel = library.get_voxel_const(v);
 			if (voxel.is_empty()) {
 				return false;
 			}
@@ -92,7 +92,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	const float max_distance = p_max_distance / to_world_scale;
 
 	if (try_get_as(_terrain->get_mesher(), mesher_blocky)) {
-		Ref<VoxelLibrary> library_ref = mesher_blocky->get_library();
+		Ref<VoxelBlockyLibrary> library_ref = mesher_blocky->get_library();
 		if (library_ref.is_null()) {
 			return res;
 		}
@@ -222,7 +222,7 @@ Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
 	return block->get_voxels_const().get_voxel_metadata(map.to_local(pos));
 }
 
-void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i voxel_box, const VoxelLibrary &lib,
+void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i voxel_box, const VoxelBlockyLibrary &lib,
 		int voxel_count, int batch_count, void *callback_data, bool (*callback)(void *, Vector3i, int64_t)) {
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);
@@ -273,7 +273,7 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i vo
 				if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
 					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
 					if (lib.has_voxel(v)) {
-						const Voxel &vt = lib.get_voxel_const(v);
+						const VoxelBlockyModel &vt = lib.get_voxel_const(v);
 						if (!vt.is_random_tickable()) {
 							// Skip whole block
 							continue;
@@ -305,7 +305,7 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i vo
 				const Pick pick = picks[i];
 
 				if (lib.has_voxel(pick.value)) {
-					const Voxel &vt = lib.get_voxel_const(pick.value);
+					const VoxelBlockyModel &vt = lib.get_voxel_const(pick.value);
 
 					if (vt.is_random_tickable()) {
 						ERR_FAIL_COND(!callback(callback_data, pick.rpos + block_origin, pick.value));
@@ -340,7 +340,7 @@ void VoxelToolTerrain::run_blocky_random_tick(
 	};
 	CallbackData cb_self{ callback };
 
-	const VoxelLibrary &lib = **_terrain->get_voxel_library();
+	const VoxelBlockyLibrary &lib = **_terrain->get_voxel_library();
 	VoxelDataMap &map = _terrain->get_storage();
 	const Box3i voxel_box(Vector3iUtil::from_floored(voxel_area.position), Vector3iUtil::from_floored(voxel_area.size));
 

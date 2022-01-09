@@ -1,4 +1,4 @@
-#include "voxel_library.h"
+#include "voxel_blocky_library.h"
 #include "../../util/macros.h"
 
 #include <core/math/geometry_2d.h>
@@ -8,15 +8,15 @@
 
 namespace zylann::voxel {
 
-VoxelLibrary::VoxelLibrary() {}
+VoxelBlockyLibrary::VoxelBlockyLibrary() {}
 
-VoxelLibrary::~VoxelLibrary() {}
+VoxelBlockyLibrary::~VoxelBlockyLibrary() {}
 
-unsigned int VoxelLibrary::get_voxel_count() const {
+unsigned int VoxelBlockyLibrary::get_voxel_count() const {
 	return _voxel_types.size();
 }
 
-void VoxelLibrary::set_voxel_count(unsigned int type_count) {
+void VoxelBlockyLibrary::set_voxel_count(unsigned int type_count) {
 	ERR_FAIL_COND(type_count > MAX_VOXEL_TYPES);
 	if (type_count == _voxel_types.size()) {
 		return;
@@ -27,9 +27,9 @@ void VoxelLibrary::set_voxel_count(unsigned int type_count) {
 	_needs_baking = true;
 }
 
-int VoxelLibrary::get_voxel_index_from_name(StringName name) const {
+int VoxelBlockyLibrary::get_voxel_index_from_name(StringName name) const {
 	for (size_t i = 0; i < _voxel_types.size(); ++i) {
-		const Ref<Voxel> &v = _voxel_types[i];
+		const Ref<VoxelBlockyModel> &v = _voxel_types[i];
 		if (v.is_null()) {
 			continue;
 		}
@@ -40,20 +40,20 @@ int VoxelLibrary::get_voxel_index_from_name(StringName name) const {
 	return -1;
 }
 
-void VoxelLibrary::load_default() {
+void VoxelBlockyLibrary::load_default() {
 	set_voxel_count(2);
 
-	Ref<Voxel> air = create_voxel(0, "air");
+	Ref<VoxelBlockyModel> air = create_voxel(0, "air");
 	air->set_transparent(true);
 
-	Ref<Voxel> solid = create_voxel(1, "solid");
+	Ref<VoxelBlockyModel> solid = create_voxel(1, "solid");
 	solid->set_transparent(false);
-	solid->set_geometry_type(Voxel::GEOMETRY_CUBE);
+	solid->set_geometry_type(VoxelBlockyModel::GEOMETRY_CUBE);
 }
 
 // TODO Add a way to add voxels
 
-bool VoxelLibrary::_set(const StringName &p_name, const Variant &p_value) {
+bool VoxelBlockyLibrary::_set(const StringName &p_name, const Variant &p_value) {
 	//	if(p_name == "voxels/max") {
 
 	//		int v = p_value;
@@ -73,7 +73,7 @@ bool VoxelLibrary::_set(const StringName &p_name, const Variant &p_value) {
 	return false;
 }
 
-bool VoxelLibrary::_get(const StringName &p_name, Variant &r_ret) const {
+bool VoxelBlockyLibrary::_get(const StringName &p_name, Variant &r_ret) const {
 	//	if(p_name == "voxels/max") {
 
 	//		r_ret = _max_count;
@@ -91,33 +91,33 @@ bool VoxelLibrary::_get(const StringName &p_name, Variant &r_ret) const {
 	return false;
 }
 
-void VoxelLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
+void VoxelBlockyLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
 	for (unsigned int i = 0; i < _voxel_types.size(); ++i) {
 		p_list->push_back(PropertyInfo(Variant::OBJECT, "voxels/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "Voxel"));
 	}
 }
 
-void VoxelLibrary::set_atlas_size(int s) {
+void VoxelBlockyLibrary::set_atlas_size(int s) {
 	ERR_FAIL_COND(s <= 0);
 	_atlas_size = s;
 	_needs_baking = true;
 }
 
-void VoxelLibrary::set_bake_tangents(bool bt) {
+void VoxelBlockyLibrary::set_bake_tangents(bool bt) {
 	_bake_tangents = bt;
 	_needs_baking = true;
 }
 
-Ref<Voxel> VoxelLibrary::create_voxel(unsigned int id, String name) {
-	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<Voxel>());
-	Ref<Voxel> voxel(memnew(Voxel));
+Ref<VoxelBlockyModel> VoxelBlockyLibrary::create_voxel(unsigned int id, String name) {
+	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<VoxelBlockyModel>());
+	Ref<VoxelBlockyModel> voxel(memnew(VoxelBlockyModel));
 	voxel->set_id(id);
 	voxel->set_voxel_name(name);
 	_voxel_types[id] = voxel;
 	return voxel;
 }
 
-void VoxelLibrary::set_voxel(unsigned int idx, Ref<Voxel> voxel) {
+void VoxelBlockyLibrary::set_voxel(unsigned int idx, Ref<VoxelBlockyModel> voxel) {
 	ERR_FAIL_INDEX(idx, MAX_VOXEL_TYPES);
 
 	if (idx >= _voxel_types.size()) {
@@ -161,7 +161,7 @@ static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F ou
 	}
 }
 
-void VoxelLibrary::bake() {
+void VoxelBlockyLibrary::bake() {
 	RWLockWrite lock(_baked_data_rw_lock);
 
 	const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
@@ -170,7 +170,7 @@ void VoxelLibrary::bake() {
 
 	_baked_data.models.resize(_voxel_types.size());
 	for (size_t i = 0; i < _voxel_types.size(); ++i) {
-		Ref<Voxel> config = _voxel_types[i];
+		Ref<VoxelBlockyModel> config = _voxel_types[i];
 		if (config.is_valid()) {
 			_voxel_types[i]->bake(_baked_data.models[i], _atlas_size, _bake_tangents);
 		} else {
@@ -184,7 +184,7 @@ void VoxelLibrary::bake() {
 	PRINT_VERBOSE(String("Took {0} us to bake VoxelLibrary").format(varray(time_spent)));
 }
 
-void VoxelLibrary::generate_side_culling_matrix() {
+void VoxelBlockyLibrary::generate_side_culling_matrix() {
 	// When two blocky voxels are next to each other, they share a side.
 	// Geometry of either side can be culled away if covered by the other,
 	// but it's very expensive to do a full polygon check when we build the mesh.
@@ -216,7 +216,7 @@ void VoxelLibrary::generate_side_culling_matrix() {
 			continue;
 		}
 
-		Voxel::BakedData &model_data = _baked_data.models[type_id];
+		VoxelBlockyModel::BakedData &model_data = _baked_data.models[type_id];
 		model_data.contributes_to_ao = true;
 
 		for (uint16_t side = 0; side < Cube::SIDE_COUNT; ++side) {
@@ -394,23 +394,34 @@ void VoxelLibrary::generate_side_culling_matrix() {
 	print_line("");*/
 }
 
-void VoxelLibrary::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("create_voxel", "id", "name"), &VoxelLibrary::create_voxel);
-	ClassDB::bind_method(D_METHOD("get_voxel", "id"), &VoxelLibrary::_b_get_voxel);
+Ref<VoxelBlockyModel> VoxelBlockyLibrary::_b_get_voxel(unsigned int id) {
+	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<VoxelBlockyModel>());
+	return _voxel_types[id];
+}
 
-	ClassDB::bind_method(D_METHOD("set_atlas_size", "square_size"), &VoxelLibrary::set_atlas_size);
-	ClassDB::bind_method(D_METHOD("get_atlas_size"), &VoxelLibrary::get_atlas_size);
+Ref<VoxelBlockyModel> VoxelBlockyLibrary::_b_get_voxel_by_name(StringName name) {
+	int id = get_voxel_index_from_name(name);
+	ERR_FAIL_COND_V(id == -1, Ref<VoxelBlockyModel>());
+	return _voxel_types[id];
+}
 
-	ClassDB::bind_method(D_METHOD("set_voxel_count", "count"), &VoxelLibrary::set_voxel_count);
-	ClassDB::bind_method(D_METHOD("get_voxel_count"), &VoxelLibrary::get_voxel_count);
+void VoxelBlockyLibrary::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("create_voxel", "id", "name"), &VoxelBlockyLibrary::create_voxel);
+	ClassDB::bind_method(D_METHOD("get_voxel", "id"), &VoxelBlockyLibrary::_b_get_voxel);
 
-	ClassDB::bind_method(D_METHOD("get_bake_tangents"), &VoxelLibrary::get_bake_tangents);
-	ClassDB::bind_method(D_METHOD("set_bake_tangents", "bake_tangents"), &VoxelLibrary::set_bake_tangents);
+	ClassDB::bind_method(D_METHOD("set_atlas_size", "square_size"), &VoxelBlockyLibrary::set_atlas_size);
+	ClassDB::bind_method(D_METHOD("get_atlas_size"), &VoxelBlockyLibrary::get_atlas_size);
 
-	ClassDB::bind_method(D_METHOD("get_voxel_index_from_name", "name"), &VoxelLibrary::get_voxel_index_from_name);
-	ClassDB::bind_method(D_METHOD("get_voxel_by_name", "name"), &VoxelLibrary::_b_get_voxel_by_name);
+	ClassDB::bind_method(D_METHOD("set_voxel_count", "count"), &VoxelBlockyLibrary::set_voxel_count);
+	ClassDB::bind_method(D_METHOD("get_voxel_count"), &VoxelBlockyLibrary::get_voxel_count);
 
-	ClassDB::bind_method(D_METHOD("bake"), &VoxelLibrary::bake);
+	ClassDB::bind_method(D_METHOD("get_bake_tangents"), &VoxelBlockyLibrary::get_bake_tangents);
+	ClassDB::bind_method(D_METHOD("set_bake_tangents", "bake_tangents"), &VoxelBlockyLibrary::set_bake_tangents);
+
+	ClassDB::bind_method(D_METHOD("get_voxel_index_from_name", "name"), &VoxelBlockyLibrary::get_voxel_index_from_name);
+	ClassDB::bind_method(D_METHOD("get_voxel_by_name", "name"), &VoxelBlockyLibrary::_b_get_voxel_by_name);
+
+	ClassDB::bind_method(D_METHOD("bake"), &VoxelBlockyLibrary::bake);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "atlas_size"), "set_atlas_size", "get_atlas_size");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_count", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
@@ -418,17 +429,6 @@ void VoxelLibrary::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "bake_tangents"), "set_bake_tangents", "get_bake_tangents");
 
 	BIND_CONSTANT(MAX_VOXEL_TYPES);
-}
-
-Ref<Voxel> VoxelLibrary::_b_get_voxel(unsigned int id) {
-	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<Voxel>());
-	return _voxel_types[id];
-}
-
-Ref<Voxel> VoxelLibrary::_b_get_voxel_by_name(StringName name) {
-	int id = get_voxel_index_from_name(name);
-	ERR_FAIL_COND_V(id == -1, Ref<Voxel>());
-	return _voxel_types[id];
 }
 
 } // namespace zylann::voxel

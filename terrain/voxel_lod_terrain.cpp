@@ -754,7 +754,7 @@ void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
 void VoxelLodTerrain::start_updater() {
 	Ref<VoxelMesherBlocky> blocky_mesher = _mesher;
 	if (blocky_mesher.is_valid()) {
-		Ref<VoxelLibrary> library = blocky_mesher->get_library();
+		Ref<VoxelBlockyLibrary> library = blocky_mesher->get_library();
 		if (library.is_valid()) {
 			// TODO Any way to execute this function just after the TRES resource loader has finished to load?
 			// VoxelLibrary should be baked ahead of time, like MeshLibrary

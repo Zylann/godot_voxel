@@ -18,10 +18,10 @@ const int g_opposite_side[6] = {
 	Cube::SIDE_NEGATIVE_Z //
 };
 
-inline bool is_face_visible(
-		const VoxelLibrary::BakedData &lib, const Voxel::BakedData &vt, uint32_t other_voxel_id, int side) {
+inline bool is_face_visible(const VoxelBlockyLibrary::BakedData &lib, const VoxelBlockyModel::BakedData &vt,
+		uint32_t other_voxel_id, int side) {
 	if (other_voxel_id < lib.models.size()) {
-		const Voxel::BakedData &other_vt = lib.models[other_voxel_id];
+		const VoxelBlockyModel::BakedData &other_vt = lib.models[other_voxel_id];
 		if (other_vt.empty || (other_vt.transparency_index > vt.transparency_index)) {
 			return true;
 		} else {
@@ -34,9 +34,9 @@ inline bool is_face_visible(
 	return true;
 }
 
-inline bool contributes_to_ao(const VoxelLibrary::BakedData &lib, uint32_t voxel_id) {
+inline bool contributes_to_ao(const VoxelBlockyLibrary::BakedData &lib, uint32_t voxel_id) {
 	if (voxel_id < lib.models.size()) {
-		const Voxel::BakedData &t = lib.models[voxel_id];
+		const VoxelBlockyModel::BakedData &t = lib.models[voxel_id];
 		return t.contributes_to_ao;
 	}
 	return true;
@@ -47,7 +47,7 @@ inline bool contributes_to_ao(const VoxelLibrary::BakedData &lib, uint32_t voxel
 template <typename Type_T>
 void generate_blocky_mesh(
 		FixedArray<VoxelMesherBlocky::Arrays, VoxelMesherBlocky::MAX_MATERIALS> &out_arrays_per_material,
-		const Span<Type_T> type_buffer, const Vector3i block_size, const VoxelLibrary::BakedData &library,
+		const Span<Type_T> type_buffer, const Vector3i block_size, const VoxelBlockyLibrary::BakedData &library,
 		bool bake_occlusion, float baked_occlusion_darkness) {
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
 			block_size.y < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
@@ -131,7 +131,7 @@ void generate_blocky_mesh(
 				const int voxel_id = type_buffer[voxel_index];
 
 				if (voxel_id != 0 && library.has_model(voxel_id)) {
-					const Voxel::BakedData &voxel = library.models[voxel_id];
+					const VoxelBlockyModel::BakedData &voxel = library.models[voxel_id];
 
 					VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[voxel.material_id];
 					int &index_offset = index_offsets[voxel.material_id];
@@ -340,12 +340,12 @@ VoxelMesherBlocky::VoxelMesherBlocky() {
 
 VoxelMesherBlocky::~VoxelMesherBlocky() {}
 
-void VoxelMesherBlocky::set_library(Ref<VoxelLibrary> library) {
+void VoxelMesherBlocky::set_library(Ref<VoxelBlockyLibrary> library) {
 	RWLockWrite wlock(_parameters_lock);
 	_parameters.library = library;
 }
 
-Ref<VoxelLibrary> VoxelMesherBlocky::get_library() const {
+Ref<VoxelBlockyLibrary> VoxelMesherBlocky::get_library() const {
 	RWLockRead rlock(_parameters_lock);
 	return _parameters.library;
 }
@@ -451,7 +451,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	{
 		// We can only access baked data. Only this data is made for multithreaded access.
 		RWLockRead lock(params.library->get_baked_data_rw_lock());
-		const VoxelLibrary::BakedData &library_baked_data = params.library->get_baked_data();
+		const VoxelBlockyLibrary::BakedData &library_baked_data = params.library->get_baked_data();
 
 		switch (channel_depth) {
 			case VoxelBufferInternal::DEPTH_8_BIT:

@@ -1,11 +1,11 @@
-#include "voxel.h"
+#include "voxel_blocky_model.h"
 #include "../../util/macros.h"
-#include "voxel_library.h"
+#include "voxel_blocky_library.h"
 #include "voxel_mesher_blocky.h" // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
 
 namespace zylann::voxel {
 
-Voxel::Voxel() :
+VoxelBlockyModel::VoxelBlockyModel() :
 		_id(-1), _material_id(0), _transparency_index(0), _color(1.f, 1.f, 1.f), _geometry_type(GEOMETRY_NONE) {}
 
 static Cube::Side name_to_side(const String &s) {
@@ -30,7 +30,7 @@ static Cube::Side name_to_side(const String &s) {
 	return Cube::SIDE_COUNT; // Invalid
 }
 
-bool Voxel::_set(const StringName &p_name, const Variant &p_value) {
+bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {
 	String name = p_name;
 
 	// TODO Eventualy these could be Rect2 for maximum flexibility?
@@ -47,7 +47,7 @@ bool Voxel::_set(const StringName &p_name, const Variant &p_value) {
 	return false;
 }
 
-bool Voxel::_get(const StringName &p_name, Variant &r_ret) const {
+bool VoxelBlockyModel::_get(const StringName &p_name, Variant &r_ret) const {
 	String name = p_name;
 
 	if (name.begins_with("cube_tiles/")) {
@@ -62,7 +62,7 @@ bool Voxel::_get(const StringName &p_name, Variant &r_ret) const {
 	return false;
 }
 
-void Voxel::_get_property_list(List<PropertyInfo> *p_list) const {
+void VoxelBlockyModel::_get_property_list(List<PropertyInfo> *p_list) const {
 	if (_geometry_type == GEOMETRY_CUBE) {
 		p_list->push_back(PropertyInfo(Variant::FLOAT, "cube_geometry/padding_y"));
 		p_list->push_back(PropertyInfo(Variant::VECTOR2, "cube_tiles/left"));
@@ -74,27 +74,27 @@ void Voxel::_get_property_list(List<PropertyInfo> *p_list) const {
 	}
 }
 
-void Voxel::set_voxel_name(String name) {
+void VoxelBlockyModel::set_voxel_name(String name) {
 	_name = name;
 }
 
-void Voxel::set_id(int id) {
-	ERR_FAIL_COND(id < 0 || (unsigned int)id >= VoxelLibrary::MAX_VOXEL_TYPES);
+void VoxelBlockyModel::set_id(int id) {
+	ERR_FAIL_COND(id < 0 || (unsigned int)id >= VoxelBlockyLibrary::MAX_VOXEL_TYPES);
 	// Cannot modify ID after creation
 	ERR_FAIL_COND_MSG(_id != -1, "ID cannot be modified after being added to a library");
 	_id = id;
 }
 
-void Voxel::set_color(Color color) {
+void VoxelBlockyModel::set_color(Color color) {
 	_color = color;
 }
 
-void Voxel::set_material_id(unsigned int id) {
+void VoxelBlockyModel::set_material_id(unsigned int id) {
 	ERR_FAIL_COND(id >= VoxelMesherBlocky::MAX_MATERIALS);
 	_material_id = id;
 }
 
-void Voxel::set_transparent(bool t) {
+void VoxelBlockyModel::set_transparent(bool t) {
 	if (t) {
 		if (_transparency_index == 0) {
 			_transparency_index = 1;
@@ -104,11 +104,11 @@ void Voxel::set_transparent(bool t) {
 	}
 }
 
-void Voxel::set_transparency_index(int i) {
+void VoxelBlockyModel::set_transparency_index(int i) {
 	_transparency_index = math::clamp(i, 0, 255);
 }
 
-void Voxel::set_geometry_type(GeometryType type) {
+void VoxelBlockyModel::set_geometry_type(GeometryType type) {
 	if (type == _geometry_type) {
 		return;
 	}
@@ -138,28 +138,28 @@ void Voxel::set_geometry_type(GeometryType type) {
 #endif
 }
 
-Voxel::GeometryType Voxel::get_geometry_type() const {
+VoxelBlockyModel::GeometryType VoxelBlockyModel::get_geometry_type() const {
 	return _geometry_type;
 }
 
-void Voxel::set_custom_mesh(Ref<Mesh> mesh) {
+void VoxelBlockyModel::set_custom_mesh(Ref<Mesh> mesh) {
 	_custom_mesh = mesh;
 }
 
-void Voxel::set_cube_geometry() {}
+void VoxelBlockyModel::set_cube_geometry() {}
 
-void Voxel::set_random_tickable(bool rt) {
+void VoxelBlockyModel::set_random_tickable(bool rt) {
 	_random_tickable = rt;
 }
 
-void Voxel::set_cube_uv_side(int side, Vector2 tile_pos) {
+void VoxelBlockyModel::set_cube_uv_side(int side, Vector2 tile_pos) {
 	_cube_tiles[side] = tile_pos;
 }
 
-Ref<Resource> Voxel::duplicate(bool p_subresources) const {
-	Ref<Voxel> d_ref;
+Ref<Resource> VoxelBlockyModel::duplicate(bool p_subresources) const {
+	Ref<VoxelBlockyModel> d_ref;
 	d_ref.instantiate();
-	Voxel &d = **d_ref;
+	VoxelBlockyModel &d = **d_ref;
 
 	d._id = -1;
 
@@ -183,11 +183,12 @@ Ref<Resource> Voxel::duplicate(bool p_subresources) const {
 	return d_ref;
 }
 
-void Voxel::set_collision_mask(uint32_t mask) {
+void VoxelBlockyModel::set_collision_mask(uint32_t mask) {
 	_collision_mask = mask;
 }
 
-static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int p_atlas_size, bool bake_tangents) {
+static void bake_cube_geometry(
+		VoxelBlockyModel &config, VoxelBlockyModel::BakedData &baked_data, int p_atlas_size, bool bake_tangents) {
 	const float sy = 1.0;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
@@ -244,7 +245,7 @@ static void bake_cube_geometry(Voxel &config, Voxel::BakedData &baked_data, int 
 	baked_data.empty = false;
 }
 
-static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool bake_tangents) {
+static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::BakedData &baked_data, bool bake_tangents) {
 	Ref<Mesh> mesh = config.get_custom_mesh();
 
 	if (mesh.is_null()) {
@@ -328,7 +329,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 		HashMap<int, int> added_regular_indices;
 		FixedArray<Vector3, 3> tri_positions;
 
-		Voxel::BakedData::Model &model = baked_data.model;
+		VoxelBlockyModel::BakedData::Model &model = baked_data.model;
 
 		for (int i = 0; i < indices.size(); i += 3) {
 			Cube::SideAxis side;
@@ -442,7 +443,7 @@ static void bake_mesh_geometry(Voxel &config, Voxel::BakedData &baked_data, bool
 	}
 }
 
-void Voxel::bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents) {
+void VoxelBlockyModel::bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents) {
 	baked_data.clear();
 
 	// baked_data.contributes_to_ao is set by the side culling phase
@@ -471,7 +472,7 @@ void Voxel::bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents) {
 	_empty = baked_data.empty;
 }
 
-Array Voxel::_b_get_collision_aabbs() const {
+Array VoxelBlockyModel::_b_get_collision_aabbs() const {
 	Array array;
 	array.resize(_collision_aabbs.size());
 	for (size_t i = 0; i < _collision_aabbs.size(); ++i) {
@@ -480,7 +481,7 @@ Array Voxel::_b_get_collision_aabbs() const {
 	return array;
 }
 
-void Voxel::_b_set_collision_aabbs(Array array) {
+void VoxelBlockyModel::_b_set_collision_aabbs(Array array) {
 	for (int i = 0; i < array.size(); ++i) {
 		const Variant v = array[i];
 		ERR_FAIL_COND(v.get_type() != Variant::AABB);
@@ -492,41 +493,42 @@ void Voxel::_b_set_collision_aabbs(Array array) {
 	}
 }
 
-void Voxel::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_voxel_name", "name"), &Voxel::set_voxel_name);
-	ClassDB::bind_method(D_METHOD("get_voxel_name"), &Voxel::get_voxel_name);
+void VoxelBlockyModel::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_voxel_name", "name"), &VoxelBlockyModel::set_voxel_name);
+	ClassDB::bind_method(D_METHOD("get_voxel_name"), &VoxelBlockyModel::get_voxel_name);
 
-	ClassDB::bind_method(D_METHOD("set_id", "id"), &Voxel::set_id);
-	ClassDB::bind_method(D_METHOD("get_id"), &Voxel::get_id);
+	ClassDB::bind_method(D_METHOD("set_id", "id"), &VoxelBlockyModel::set_id);
+	ClassDB::bind_method(D_METHOD("get_id"), &VoxelBlockyModel::get_id);
 
-	ClassDB::bind_method(D_METHOD("set_color", "color"), &Voxel::set_color);
-	ClassDB::bind_method(D_METHOD("get_color"), &Voxel::get_color);
+	ClassDB::bind_method(D_METHOD("set_color", "color"), &VoxelBlockyModel::set_color);
+	ClassDB::bind_method(D_METHOD("get_color"), &VoxelBlockyModel::get_color);
 
-	ClassDB::bind_method(D_METHOD("set_transparent", "transparent"), &Voxel::set_transparent);
-	ClassDB::bind_method(D_METHOD("is_transparent"), &Voxel::is_transparent);
+	ClassDB::bind_method(D_METHOD("set_transparent", "transparent"), &VoxelBlockyModel::set_transparent);
+	ClassDB::bind_method(D_METHOD("is_transparent"), &VoxelBlockyModel::is_transparent);
 
-	ClassDB::bind_method(D_METHOD("set_transparency_index", "transparency_index"), &Voxel::set_transparency_index);
-	ClassDB::bind_method(D_METHOD("get_transparency_index"), &Voxel::get_transparency_index);
+	ClassDB::bind_method(
+			D_METHOD("set_transparency_index", "transparency_index"), &VoxelBlockyModel::set_transparency_index);
+	ClassDB::bind_method(D_METHOD("get_transparency_index"), &VoxelBlockyModel::get_transparency_index);
 
-	ClassDB::bind_method(D_METHOD("set_random_tickable", "rt"), &Voxel::set_random_tickable);
-	ClassDB::bind_method(D_METHOD("is_random_tickable"), &Voxel::is_random_tickable);
+	ClassDB::bind_method(D_METHOD("set_random_tickable", "rt"), &VoxelBlockyModel::set_random_tickable);
+	ClassDB::bind_method(D_METHOD("is_random_tickable"), &VoxelBlockyModel::is_random_tickable);
 
-	ClassDB::bind_method(D_METHOD("set_material_id", "id"), &Voxel::set_material_id);
-	ClassDB::bind_method(D_METHOD("get_material_id"), &Voxel::get_material_id);
+	ClassDB::bind_method(D_METHOD("set_material_id", "id"), &VoxelBlockyModel::set_material_id);
+	ClassDB::bind_method(D_METHOD("get_material_id"), &VoxelBlockyModel::get_material_id);
 
-	ClassDB::bind_method(D_METHOD("set_geometry_type", "type"), &Voxel::set_geometry_type);
-	ClassDB::bind_method(D_METHOD("get_geometry_type"), &Voxel::get_geometry_type);
+	ClassDB::bind_method(D_METHOD("set_geometry_type", "type"), &VoxelBlockyModel::set_geometry_type);
+	ClassDB::bind_method(D_METHOD("get_geometry_type"), &VoxelBlockyModel::get_geometry_type);
 
-	ClassDB::bind_method(D_METHOD("set_custom_mesh", "type"), &Voxel::set_custom_mesh);
-	ClassDB::bind_method(D_METHOD("get_custom_mesh"), &Voxel::get_custom_mesh);
+	ClassDB::bind_method(D_METHOD("set_custom_mesh", "type"), &VoxelBlockyModel::set_custom_mesh);
+	ClassDB::bind_method(D_METHOD("get_custom_mesh"), &VoxelBlockyModel::get_custom_mesh);
 
-	ClassDB::bind_method(D_METHOD("set_collision_aabbs", "aabbs"), &Voxel::_b_set_collision_aabbs);
-	ClassDB::bind_method(D_METHOD("get_collision_aabbs"), &Voxel::_b_get_collision_aabbs);
+	ClassDB::bind_method(D_METHOD("set_collision_aabbs", "aabbs"), &VoxelBlockyModel::_b_set_collision_aabbs);
+	ClassDB::bind_method(D_METHOD("get_collision_aabbs"), &VoxelBlockyModel::_b_get_collision_aabbs);
 
-	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &Voxel::set_collision_mask);
-	ClassDB::bind_method(D_METHOD("get_collision_mask"), &Voxel::get_collision_mask);
+	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelBlockyModel::set_collision_mask);
+	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelBlockyModel::get_collision_mask);
 
-	ClassDB::bind_method(D_METHOD("is_empty"), &Voxel::is_empty);
+	ClassDB::bind_method(D_METHOD("is_empty"), &VoxelBlockyModel::is_empty);
 
 	// TODO Update to StringName in Godot 4
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "voxel_name"), "set_voxel_name", "get_voxel_name");

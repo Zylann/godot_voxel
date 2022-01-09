@@ -156,9 +156,9 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 	Ref<VoxelMesherCubes> mesher_cubes;
 
 	if (try_get_as(p_terrain->get_mesher(), mesher_blocky)) {
-		Ref<VoxelLibrary> library_ref = mesher_blocky->get_library();
+		Ref<VoxelBlockyLibrary> library_ref = mesher_blocky->get_library();
 		ERR_FAIL_COND_V_MSG(library_ref.is_null(), Vector3(), "VoxelMesherBlocky has no library assigned");
-		VoxelLibrary &library = **library_ref;
+		VoxelBlockyLibrary &library = **library_ref;
 		const int channel = VoxelBuffer::CHANNEL_TYPE;
 
 		for (i.z = min_z; i.z < max_z; ++i.z) {
@@ -167,7 +167,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 					const int type_id = voxels.get_voxel(i, channel);
 
 					if (library.has_voxel(type_id)) {
-						const Voxel &voxel_type = library.get_voxel_const(type_id);
+						const VoxelBlockyModel &voxel_type = library.get_voxel_const(type_id);
 
 						if ((voxel_type.get_collision_mask() & _collision_mask) == 0) {
 							continue;

@@ -13,7 +13,7 @@
 #include "generators/simple/voxel_generator_noise_2d.h"
 #include "generators/simple/voxel_generator_waves.h"
 #include "generators/voxel_generator_script.h"
-#include "meshers/blocky/voxel_library.h"
+#include "meshers/blocky/voxel_blocky_library.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/cubes/voxel_mesher_cubes.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
@@ -78,8 +78,8 @@ void register_voxel_types() {
 	ClassDB::register_class<gd::VoxelServer>();
 
 	// Misc
-	ClassDB::register_class<Voxel>();
-	ClassDB::register_class<VoxelLibrary>();
+	ClassDB::register_class<VoxelBlockyModel>();
+	ClassDB::register_class<VoxelBlockyLibrary>();
 	ClassDB::register_class<VoxelColorPalette>();
 	ClassDB::register_class<VoxelInstanceLibrary>();
 	ClassDB::register_class<VoxelInstanceLibraryItemBase>();
@@ -170,6 +170,10 @@ void register_voxel_types() {
 #ifdef VOXEL_RUN_TESTS
 	zylann::voxel::tests::run_voxel_tests();
 #endif
+
+	// Compatibility with older version
+	ClassDB::add_compatibility_class("VoxelLibrary", "VoxelBlockyLibrary");
+	ClassDB::add_compatibility_class("Voxel", "VoxelBlockyModel");
 }
 
 void unregister_voxel_types() {

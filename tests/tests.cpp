@@ -2,7 +2,7 @@
 #include "../edition/voxel_tool_terrain.h"
 #include "../generators/graph/range_utility.h"
 #include "../generators/graph/voxel_generator_graph.h"
-#include "../meshers/blocky/voxel_library.h"
+#include "../meshers/blocky/voxel_blocky_library.h"
 #include "../storage/voxel_data_map.h"
 #include "../streams/region/region_file.h"
 #include "../streams/voxel_block_serializer.h"
@@ -1133,13 +1133,13 @@ void test_run_blocky_random_tick() {
 	const Box3i voxel_box(Vector3i(-24, -23, -22), Vector3i(64, 40, 40));
 
 	// Create library with tickable voxels
-	Ref<VoxelLibrary> library;
+	Ref<VoxelBlockyLibrary> library;
 	library.instantiate();
 	library->set_voxel_count(3);
 	library->create_voxel(0, "air");
 	library->create_voxel(1, "non_tickable");
 	const int TICKABLE_ID = 2;
-	Ref<Voxel> tickable_voxel = library->create_voxel(TICKABLE_ID, "tickable");
+	Ref<VoxelBlockyModel> tickable_voxel = library->create_voxel(TICKABLE_ID, "tickable");
 	tickable_voxel->set_random_tickable(true);
 
 	// Create test map

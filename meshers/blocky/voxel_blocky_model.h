@@ -9,14 +9,13 @@
 
 namespace zylann::voxel {
 
-class VoxelLibrary;
+class VoxelBlockyLibrary;
 
-// TODO Rename VoxelBlockyLibraryItem?
 // Definition of one type of voxel for use with `VoxelMesherBlocky`.
 // A voxel can be a simple coloured cube, or a more complex model.
 // Important: it is recommended that you create voxels from a library rather than using new().
-class Voxel : public Resource {
-	GDCLASS(Voxel, Resource)
+class VoxelBlockyModel : public Resource {
+	GDCLASS(VoxelBlockyModel, Resource)
 
 public:
 	// Convention to mean "nothing".
@@ -72,7 +71,7 @@ public:
 		}
 	};
 
-	Voxel();
+	VoxelBlockyModel();
 
 	enum Side {
 		SIDE_NEGATIVE_X = Cube::SIDE_NEGATIVE_X,
@@ -204,7 +203,7 @@ private:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::Voxel::GeometryType)
-VARIANT_ENUM_CAST(zylann::voxel::Voxel::Side)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel::GeometryType)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel::Side)
 
 #endif // VOXEL_TYPE_H

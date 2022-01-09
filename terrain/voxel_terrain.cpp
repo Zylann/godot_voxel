@@ -287,12 +287,12 @@ void VoxelTerrain::set_mesher(Ref<VoxelMesher> mesher) {
 	update_configuration_warnings();
 }
 
-Ref<VoxelLibrary> VoxelTerrain::get_voxel_library() const {
+Ref<VoxelBlockyLibrary> VoxelTerrain::get_voxel_library() const {
 	Ref<VoxelMesherBlocky> blocky_mesher = _mesher;
 	if (blocky_mesher.is_valid()) {
 		return blocky_mesher->get_library();
 	}
-	return Ref<VoxelLibrary>();
+	return Ref<VoxelBlockyLibrary>();
 }
 
 void VoxelTerrain::set_generate_collisions(bool enabled) {
@@ -592,10 +592,10 @@ Dictionary VoxelTerrain::_b_get_statistics() const {
 void VoxelTerrain::start_updater() {
 	Ref<VoxelMesherBlocky> blocky_mesher = _mesher;
 	if (blocky_mesher.is_valid()) {
-		Ref<VoxelLibrary> library = blocky_mesher->get_library();
+		Ref<VoxelBlockyLibrary> library = blocky_mesher->get_library();
 		if (library.is_valid()) {
 			// TODO Any way to execute this function just after the TRES resource loader has finished to load?
-			// VoxelLibrary should be baked ahead of time, like MeshLibrary
+			// VoxelBlockyLibrary should be baked ahead of time, like MeshLibrary
 			library->bake();
 		}
 	}

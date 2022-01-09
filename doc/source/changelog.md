@@ -38,6 +38,8 @@ Godot 4 is required from this version.
     - Some functions now take `Vector3i` instead of `Vector3`. If you used to send `Vector3` without `floor()` or `round()`, it can have side-effects in negative coordinates.
     - `VoxelLodTerrain`: `set_process_mode` and `get_process_mode` were renamed `set_process_callback` and `get_process_callback` (due to a name conflict)
     - `VoxelMesherTransvoxel`: Shader API: The data in `COLOR` and `UV` was moved respectively to `CUSTOM0` and `CUSTOM1` (old attributes no longer work for this use case)
+    - `Voxel` was renamed `VoxelBlockyModel`
+    - `VoxelLibrary` was renamed `VoxelBlockyLibrary`
 
 - Known issues
     - Some nodes and resources no longer start with predefined properties due to a warning introduced in Godot4 when properties are resources.

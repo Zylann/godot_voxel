@@ -2,16 +2,14 @@
 #define VOXEL_MESHER_BLOCKY_H
 
 #include "../voxel_mesher.h"
-#include "voxel_library.h"
+#include "voxel_blocky_library.h"
 #include <core/object/ref_counted.h>
 #include <scene/resources/mesh.h>
 #include <vector>
 
 namespace zylann::voxel {
 
-// TODO Rename VoxelMesherModelBatch
-
-// Interprets voxel values as indexes to models in a VoxelLibrary, and batches them together.
+// Interprets voxel values as indexes to models in a VoxelBlockyLibrary, and batches them together.
 // Overlapping faces are removed from the final mesh.
 class VoxelMesherBlocky : public VoxelMesher {
 	GDCLASS(VoxelMesherBlocky, VoxelMesher)
@@ -23,8 +21,8 @@ public:
 	VoxelMesherBlocky();
 	~VoxelMesherBlocky();
 
-	void set_library(Ref<VoxelLibrary> library);
-	Ref<VoxelLibrary> get_library() const;
+	void set_library(Ref<VoxelBlockyLibrary> library);
+	Ref<VoxelBlockyLibrary> get_library() const;
 
 	void set_occlusion_darkness(float darkness);
 	float get_occlusion_darkness() const;
@@ -68,7 +66,7 @@ private:
 	struct Parameters {
 		float baked_occlusion_darkness = 0.8;
 		bool bake_occlusion = true;
-		Ref<VoxelLibrary> library;
+		Ref<VoxelBlockyLibrary> library;
 	};
 
 	struct Cache {
