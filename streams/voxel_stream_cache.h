@@ -6,6 +6,8 @@
 #include <memory>
 #include <unordered_map>
 
+namespace zylann::voxel {
+
 // In-memory database for voxel streams.
 // It allows to cache blocks so we can save to the filesystem later less frequently, or quickly reload recent blocks.
 class VoxelStreamCache {
@@ -20,15 +22,15 @@ public:
 		bool has_voxels = false;
 		bool voxels_deleted = false;
 
-		zylann::voxel::VoxelBufferInternal voxels;
+		VoxelBufferInternal voxels;
 		std::unique_ptr<VoxelInstanceBlockData> instances;
 	};
 
 	// Copies cached block into provided buffer
-	bool load_voxel_block(Vector3i position, uint8_t lod_index, zylann::voxel::VoxelBufferInternal &out_voxels);
+	bool load_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &out_voxels);
 
 	// Stores provided block into the cache. The cache will take ownership of the provided data.
-	void save_voxel_block(Vector3i position, uint8_t lod_index, zylann::voxel::VoxelBufferInternal &voxels);
+	void save_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &voxels);
 
 	// Copies cached data into the provided pointer. A new instance will be made if found.
 	bool load_instance_block(
@@ -60,8 +62,10 @@ private:
 		RWLock rw_lock;
 	};
 
-	zylann::FixedArray<Lod, zylann::voxel::constants::MAX_LOD> _cache;
+	FixedArray<Lod, constants::MAX_LOD> _cache;
 	unsigned int _count = 0;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_STREAM_CACHE_H

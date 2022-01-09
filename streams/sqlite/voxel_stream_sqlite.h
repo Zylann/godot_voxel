@@ -64,7 +64,7 @@ private:
 	String _connection_path;
 	std::vector<VoxelStreamSQLiteInternal *> _connection_pool;
 	Mutex _connection_mutex;
-	VoxelStreamCache _cache;
+	zylann::voxel::VoxelStreamCache _cache;
 
 	// TODO I should consider specialized memory allocators
 	static thread_local zylann::voxel::BlockSerializer _voxel_block_serializer;
