@@ -3,6 +3,8 @@
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
 
+namespace zylann::voxel {
+
 void VoxelNode::set_mesher(Ref<VoxelMesher> mesher) {
 	// Implemented in subclasses
 }
@@ -156,3 +158,5 @@ void VoxelNode::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, "Disabled,Baked,Dynamic"), "set_gi_mode",
 			"get_gi_mode");
 }
+
+} // namespace zylann::voxel

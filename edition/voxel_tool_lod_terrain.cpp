@@ -14,8 +14,7 @@
 #include <scene/3d/physics_body_3d.h>
 #include <scene/main/timer.h>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain) : _terrain(terrain) {
 	ERR_FAIL_COND(terrain == nullptr);
@@ -28,7 +27,8 @@ bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 	return _terrain->is_area_editable(box);
 }
 
-template <typename Volume_F> float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
+template <typename Volume_F>
+float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
 	const Vector3i c = Vector3iUtil::from_floored(pos);
 
 	const float s000 = f(Vector3i(c.x, c.y, c.z));
@@ -131,8 +131,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	// `voxel_raycast` operates on a discrete grid of cubic voxels, so to account for the smooth interpolation,
 	// we may offset the ray so that cubes act as if they were centered on the filtered result.
 	const Vector3 offset(0.5, 0.5, 0.5);
-	if (zylann::voxel_raycast(
-				pos + offset, dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
+	if (voxel_raycast(pos + offset, dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
 		// Approximate surface
 
 		float d = hit_distance;
@@ -165,7 +164,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	return res;
 }
 
-namespace zylann::voxel::ops {
+namespace ops {
 
 struct DoSphere {
 	Vector3 center;
@@ -217,7 +216,7 @@ struct DoSphere {
 	}
 };
 
-} //namespace zylann::voxel::ops
+} //namespace ops
 
 void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	VOXEL_PROFILE_SCOPE();
@@ -256,12 +255,11 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	_post_edit(box);
 }
 
-namespace zylann::voxel {
-
-template <typename Op_T> class VoxelToolAsyncEdit : public IThreadedTask {
+template <typename Op_T>
+class VoxelToolAsyncEdit : public IThreadedTask {
 public:
 	VoxelToolAsyncEdit(Op_T op, std::shared_ptr<VoxelDataLodMap> data) : _op(op), _data(data) {
-		_tracker = gd_make_shared<zylann::AsyncDependencyTracker>(1);
+		_tracker = gd_make_shared<AsyncDependencyTracker>(1);
 	}
 
 	void run(ThreadedTaskContext ctx) override {
@@ -292,8 +290,6 @@ private:
 	std::shared_ptr<VoxelDataLodMap> _data;
 	std::shared_ptr<AsyncDependencyTracker> _tracker;
 };
-
-} // namespace zylann::voxel
 
 void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
@@ -386,8 +382,6 @@ int VoxelToolLodTerrain::get_raycast_binary_search_iterations() const {
 void VoxelToolLodTerrain::set_raycast_binary_search_iterations(int iterations) {
 	_raycast_binary_search_iterations = math::clamp(iterations, 0, 16);
 }
-
-namespace zylann::voxel {
 
 // Turns floating chunks of voxels into rigidbodies:
 // Detects separate groups of connected voxels within a box. Each group fully contained in the box is removed from
@@ -716,8 +710,6 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	return nodes;
 }
 
-} // namespace zylann::voxel
-
 Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Node *parent_node) {
 	ERR_FAIL_COND_V(_terrain == nullptr, Array());
 	ERR_FAIL_COND_V(!math::is_valid_size(world_box.size), Array());
@@ -741,3 +733,5 @@ void VoxelToolLodTerrain::_bind_methods() {
 			D_METHOD("separate_floating_chunks", "box", "parent_node"), &VoxelToolLodTerrain::separate_floating_chunks);
 	ClassDB::bind_method(D_METHOD("do_sphere_async", "center", "radius"), &VoxelToolLodTerrain::do_sphere_async);
 }
+
+} // namespace zylann::voxel

@@ -1,6 +1,6 @@
 #include "voxel_color_palette.h"
 
-using namespace zylann;
+namespace zylann::voxel {
 
 VoxelColorPalette::VoxelColorPalette() {
 	// Default palette
@@ -79,3 +79,5 @@ void VoxelColorPalette::_bind_methods() {
 
 	BIND_CONSTANT(MAX_COLORS);
 }
+
+} // namespace zylann::voxel

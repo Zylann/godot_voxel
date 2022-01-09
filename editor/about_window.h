@@ -6,6 +6,8 @@
 class TextureRect;
 class RichTextLabel;
 
+namespace zylann::voxel {
+
 class VoxelAboutWindow : public AcceptDialog {
 	GDCLASS(VoxelAboutWindow, AcceptDialog)
 public:
@@ -23,5 +25,7 @@ private:
 	TextureRect *_icon_texture_rect;
 	RichTextLabel *_third_party_rich_text_label;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_ABOUT_WINDOW_H

@@ -5,6 +5,8 @@
 
 #include "../../thirdparty/fast_noise/FastNoiseLite.h"
 
+namespace zylann {
+
 // Domain warp is a transformation of coordinates before sampling the actual noise.
 // It can be done with another instance of noise, however it needs a sample for each coordinate,
 // so FastNoiseLite provides specialized versions of this using gradients.
@@ -117,8 +119,10 @@ private:
 	RotationType3D _rotation_type_3d = ROTATION_3D_NONE;
 };
 
-VARIANT_ENUM_CAST(FastNoiseLiteGradient::NoiseType);
-VARIANT_ENUM_CAST(FastNoiseLiteGradient::FractalType);
-VARIANT_ENUM_CAST(FastNoiseLiteGradient::RotationType3D);
+} // namespace zylann
+
+VARIANT_ENUM_CAST(zylann::FastNoiseLiteGradient::NoiseType);
+VARIANT_ENUM_CAST(zylann::FastNoiseLiteGradient::FractalType);
+VARIANT_ENUM_CAST(zylann::FastNoiseLiteGradient::RotationType3D);
 
 #endif // FAST_NOISE_LITE_GRADIENT_H

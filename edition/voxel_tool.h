@@ -7,7 +7,9 @@
 #include "funcs.h"
 #include "voxel_raycast_result.h"
 
+namespace zylann::voxel {
 class VoxelBuffer;
+}
 
 namespace zylann::voxel::ops {
 
@@ -81,6 +83,8 @@ struct TextureBlendSphereOp {
 }; // namespace zylann::voxel::ops
 
 // TODO Need to review VoxelTool to account for transformed volumes
+
+namespace zylann::voxel {
 
 // High-level generic voxel edition utility.
 // Ease of use comes at cost.
@@ -222,9 +226,11 @@ protected:
 	Mode _mode = MODE_ADD;
 
 	// Used on smooth terrain
-	zylann::voxel::ops::TextureParams _texture_params;
+	ops::TextureParams _texture_params;
 };
 
-VARIANT_ENUM_CAST(VoxelTool::Mode)
+} // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelTool::Mode)
 
 #endif // VOXEL_TOOL_H

@@ -3,6 +3,8 @@
 
 #include <editor/editor_plugin.h>
 
+namespace zylann::voxel {
+
 class VoxelInstancer;
 
 class VoxelInstancerEditorPlugin : public EditorPlugin {
@@ -17,5 +19,7 @@ public:
 private:
 	VoxelInstancer *_node = nullptr;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_INSTANCER_EDITOR_PLUGIN_H

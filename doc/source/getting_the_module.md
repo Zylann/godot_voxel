@@ -13,7 +13,7 @@ There are no release builds yet. We need to setup Github Releases for this. For 
 Release builds correspond to a development milestone. Each has a branch (for example `godot3.4`, `godot3.3`...). They are feature freezes and may only receive bug fixes later on. Usually, they are made at the same time a new version of Godot comes out.
 Because the plugin is a module at the moment, and we don't have the same pipeline as the Godot devs, it comes as a whole custom build of the Godot editor, and might differ a little from the official version.
 
-Not all export templates might be available yet. So you can develop your game and test it with the editor, but if you want to export it, you may need to compile the templates yourself.
+The engine is massive and targets a lot of platforms, while our module is small in comparison and we don't have dedicated build containers, so not all export templates are available. You can develop your game and test it with the editor on main desktop platforms, but if you want to export it, you may need to compile the templates yourself.
 
 ### Development builds
 

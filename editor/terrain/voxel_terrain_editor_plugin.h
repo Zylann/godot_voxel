@@ -4,6 +4,9 @@
 #include <editor/editor_plugin.h>
 
 class MenuButton;
+
+namespace zylann::voxel {
+
 class VoxelAboutWindow;
 class VoxelNode;
 class VoxelTerrainEditorTaskIndicator;
@@ -47,5 +50,7 @@ private:
 	VoxelAboutWindow *_about_window = nullptr;
 	VoxelTerrainEditorTaskIndicator *_task_indicator = nullptr;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_TERRAIN_EDITOR_PLUGIN_H

@@ -41,8 +41,6 @@ private:
 	FileAccessMemory _file_access_memory;
 };
 
-} // namespace zylann::voxel
-
 class VoxelBuffer;
 
 class VoxelBlockSerializer : public RefCounted {
@@ -54,7 +52,9 @@ public:
 private:
 	static void _bind_methods();
 
-	zylann::voxel::BlockSerializer _serializer;
+	BlockSerializer _serializer;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_BLOCK_SERIALIZER_H

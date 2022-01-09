@@ -3,8 +3,7 @@
 #include "../util/profiling.h"
 #include "funcs.h"
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelToolBuffer::VoxelToolBuffer(Ref<VoxelBuffer> vb) {
 	ERR_FAIL_COND(vb.is_null());
@@ -127,3 +126,5 @@ void VoxelToolBuffer::paste(
 	_buffer->get_buffer().copy_voxel_metadata_in_area(
 			p_voxels->get_buffer(), Box3i(Vector3i(), p_voxels->get_buffer().get_size()), p_pos);
 }
+
+} // namespace zylann::voxel

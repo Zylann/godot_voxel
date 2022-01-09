@@ -3,8 +3,7 @@
 #include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../util/godot/funcs.h"
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 static AABB expand_with_vector(AABB box, Vector3 v) {
 	if (v.x > 0) {
@@ -202,7 +201,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 	}
 
 	// Calculate collisions (narrow phase)
-	const Vector3 slided_motion = ::get_motion(box, motion, potential_boxes);
+	const Vector3 slided_motion = zylann::voxel::get_motion(box, motion, potential_boxes);
 
 	// Switch back to world
 	const Vector3 world_slided_motion = to_world.basis.xform(slided_motion);
@@ -226,3 +225,5 @@ Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Nod
 	ERR_FAIL_COND_V(terrain == nullptr, Vector3());
 	return get_motion(pos, motion, aabb, terrain);
 }
+
+} // namespace zylann::voxel

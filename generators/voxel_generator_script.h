@@ -5,6 +5,8 @@
 #include <core/object/script_language.h> // needed for GDVIRTUAL macro
 #include <core/object/gdvirtual.gen.inc> // Also needed for GDVIRTUAL macro...
 
+namespace zylann::voxel {
+
 // Generator based on a script, like GDScript, C# or NativeScript.
 // The script is expected to properly handle multithreading.
 class VoxelGeneratorScript : public VoxelGenerator {
@@ -22,5 +24,7 @@ protected:
 private:
 	static void _bind_methods();
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_GENERATOR_SCRIPT_H

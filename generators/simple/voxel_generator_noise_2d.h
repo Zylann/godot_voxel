@@ -4,6 +4,8 @@
 #include "voxel_generator_heightmap.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
+namespace zylann::voxel {
+
 class VoxelGeneratorNoise2D : public VoxelGeneratorHeightmap {
 	GDCLASS(VoxelGeneratorNoise2D, VoxelGeneratorHeightmap)
 
@@ -37,5 +39,7 @@ private:
 	Parameters _parameters;
 	RWLock _parameters_lock;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_GENERATOR_NOISE_2D_H

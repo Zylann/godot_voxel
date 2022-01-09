@@ -13,8 +13,7 @@
 #include <scene/resources/mesh.h>
 #include <scene/resources/packed_scene.h>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel::magica {
 
 String VoxelVoxImporter::get_importer_name() const {
 	return "VoxelVoxImporter";
@@ -65,7 +64,8 @@ bool VoxelVoxImporter::get_option_visibility(
 	return true;
 }
 
-static void add_mesh_instance(Ref<Mesh> mesh, Node *parent, Node *owner, Vector3 offset, bool p_enable_baked_lighting) {
+static void add_mesh_instance(
+		Ref<Mesh> mesh, ::Node *parent, ::Node *owner, Vector3 offset, bool p_enable_baked_lighting) {
 	MeshInstance3D *mesh_instance = memnew(MeshInstance3D);
 	mesh_instance->set_mesh(mesh);
 	parent->add_child(mesh_instance);
@@ -81,8 +81,6 @@ struct VoxMesh {
 	Ref<Mesh> mesh;
 	Vector3 pivot;
 };
-
-namespace zylann::voxel::magica {
 
 static Error process_scene_node_recursively(const Data &data, int node_id, Node3D *parent_node, Node3D *&out_root_node,
 		int depth, const Vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
@@ -150,8 +148,6 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 
 	return OK;
 }
-
-} // namespace zylann::voxel::magica
 
 /*static Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
 		bool p_mipmaps, int p_texture_flags, bool p_streamable,
@@ -399,3 +395,5 @@ Error VoxelVoxImporter::import(const String &p_source_file, const String &p_save
 
 	return OK;
 }
+
+} // namespace zylann::voxel::magica

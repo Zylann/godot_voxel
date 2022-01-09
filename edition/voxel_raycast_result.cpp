@@ -1,5 +1,7 @@
 #include "voxel_raycast_result.h"
 
+namespace zylann::voxel {
+
 Vector3i VoxelRaycastResult::_b_get_position() const {
 	return position;
 }
@@ -21,3 +23,5 @@ void VoxelRaycastResult::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "previous_position"), "", "get_previous_position");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "distance"), "", "get_distance");
 }
+
+} // namespace zylann::voxel

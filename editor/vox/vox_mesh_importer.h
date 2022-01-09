@@ -3,6 +3,8 @@
 
 #include <editor/import/editor_import_plugin.h>
 
+namespace zylann::voxel::magica {
+
 // Imports a vox file as a single mesh, where all contents of the vox scene is merged
 class VoxelVoxMeshImporter : public ResourceImporter {
 	GDCLASS(VoxelVoxMeshImporter, ResourceImporter)
@@ -30,5 +32,7 @@ public:
 		PIVOT_MODES_COUNT
 	};
 };
+
+} // namespace zylann::voxel::magica
 
 #endif // VOX_MESH_IMPORTER_H

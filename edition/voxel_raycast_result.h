@@ -4,6 +4,8 @@
 #include "../util/math/vector3i.h"
 #include <core/object/ref_counted.h>
 
+namespace zylann::voxel {
+
 // This class exists only to make the script API nicer.
 class VoxelRaycastResult : public RefCounted {
 	GDCLASS(VoxelRaycastResult, RefCounted)
@@ -19,5 +21,7 @@ private:
 
 	static void _bind_methods();
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_RAYCAST_RESULT_H

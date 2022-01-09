@@ -3,8 +3,7 @@
 #include "../storage/voxel_buffer.h"
 #include "vox_data.h"
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> p_voxels, Ref<VoxelColorPalette> palette) {
 	ERR_FAIL_COND_V(p_voxels.is_null(), ERR_INVALID_PARAMETER);
@@ -76,3 +75,5 @@ Error VoxelVoxLoader::load_from_file(String fpath, Ref<VoxelBuffer> p_voxels, Re
 void VoxelVoxLoader::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_from_file", "fpath", "voxels"), &VoxelVoxLoader::load_from_file);
 }
+
+} // namespace zylann::voxel

@@ -6,6 +6,8 @@
 
 class UndoRedo;
 
+namespace zylann::voxel {
+
 // Nodes aren't resources so this translates them into a form the inspector can understand.
 // This makes it easier to support undo/redo and sub-resources.
 // WARNING: `AnimationPlayer` will allow to keyframe properties, but there really is no support for that.
@@ -27,8 +29,10 @@ private:
 	static void _bind_methods();
 
 	Ref<VoxelGeneratorGraph> _graph;
-	uint32_t _node_id = zylann::ProgramGraph::NULL_ID;
+	uint32_t _node_id = ProgramGraph::NULL_ID;
 	UndoRedo *_undo_redo = nullptr;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_GRAPH_NODE_INSPECTOR_WRAPPER_H

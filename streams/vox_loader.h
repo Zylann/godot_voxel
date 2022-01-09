@@ -3,6 +3,8 @@
 
 #include <core/object/ref_counted.h>
 
+namespace zylann::voxel {
+
 class VoxelBuffer;
 class VoxelColorPalette;
 
@@ -18,5 +20,7 @@ public:
 private:
 	static void _bind_methods();
 };
+
+} // namespace zylann::voxel
 
 #endif // VOX_LOADER_H

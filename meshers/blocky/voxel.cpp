@@ -5,8 +5,7 @@
 
 #define STRLEN(x) (sizeof(x) / sizeof(x[0]))
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 Voxel::Voxel() :
 		_id(-1), _material_id(0), _transparency_index(0), _color(1.f, 1.f, 1.f), _geometry_type(GEOMETRY_NONE) {}
@@ -474,6 +473,27 @@ void Voxel::bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents) {
 	_empty = baked_data.empty;
 }
 
+Array Voxel::_b_get_collision_aabbs() const {
+	Array array;
+	array.resize(_collision_aabbs.size());
+	for (size_t i = 0; i < _collision_aabbs.size(); ++i) {
+		array[i] = _collision_aabbs[i];
+	}
+	return array;
+}
+
+void Voxel::_b_set_collision_aabbs(Array array) {
+	for (int i = 0; i < array.size(); ++i) {
+		const Variant v = array[i];
+		ERR_FAIL_COND(v.get_type() != Variant::AABB);
+	}
+	_collision_aabbs.resize(array.size());
+	for (int i = 0; i < array.size(); ++i) {
+		const AABB aabb = array[i];
+		_collision_aabbs[i] = aabb;
+	}
+}
+
 void Voxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_name", "name"), &Voxel::set_voxel_name);
 	ClassDB::bind_method(D_METHOD("get_voxel_name"), &Voxel::get_voxel_name);
@@ -542,23 +562,4 @@ void Voxel::_bind_methods() {
 	BIND_ENUM_CONSTANT(SIDE_COUNT);
 }
 
-Array Voxel::_b_get_collision_aabbs() const {
-	Array array;
-	array.resize(_collision_aabbs.size());
-	for (size_t i = 0; i < _collision_aabbs.size(); ++i) {
-		array[i] = _collision_aabbs[i];
-	}
-	return array;
-}
-
-void Voxel::_b_set_collision_aabbs(Array array) {
-	for (int i = 0; i < array.size(); ++i) {
-		const Variant v = array[i];
-		ERR_FAIL_COND(v.get_type() != Variant::AABB);
-	}
-	_collision_aabbs.resize(array.size());
-	for (int i = 0; i < array.size(); ++i) {
-		const AABB aabb = array[i];
-		_collision_aabbs[i] = aabb;
-	}
-}
+} // namespace zylann::voxel

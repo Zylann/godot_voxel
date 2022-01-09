@@ -5,6 +5,8 @@
 #include "voxel.h"
 #include <core/object/ref_counted.h>
 
+namespace zylann::voxel {
+
 // TODO Rename VoxelBlockyLibrary
 
 // Stores a list of models that can be used with VoxelMesherBlocky
@@ -19,7 +21,7 @@ public:
 	struct BakedData {
 		// 2D array: { X : pattern A, Y : pattern B } => Does A occlude B
 		// Where index is X + Y * pattern count
-		zylann::DynamicBitset side_pattern_culling;
+		DynamicBitset side_pattern_culling;
 		unsigned int side_pattern_count = 0;
 		// Lots of data can get moved but it's only on load.
 		std::vector<Voxel::BakedData> models;
@@ -106,5 +108,7 @@ private:
 	RWLock _baked_data_rw_lock;
 	BakedData _baked_data;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_LIBRARY_H

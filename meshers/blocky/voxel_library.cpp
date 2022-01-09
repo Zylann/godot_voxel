@@ -6,8 +6,7 @@
 
 #include <bitset>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelLibrary::VoxelLibrary() {}
 
@@ -431,3 +430,5 @@ Ref<Voxel> VoxelLibrary::_b_get_voxel_by_name(StringName name) {
 	ERR_FAIL_COND_V(id == -1, Ref<Voxel>());
 	return _voxel_types[id];
 }
+
+} // namespace zylann::voxel

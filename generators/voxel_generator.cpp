@@ -1,7 +1,7 @@
 #include "voxel_generator.h"
 #include "../constants/voxel_string_names.h"
 
-using namespace zylann::voxel;
+namespace zylann::voxel {
 
 VoxelGenerator::VoxelGenerator() {}
 
@@ -39,3 +39,5 @@ void VoxelGenerator::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("generate_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelGenerator::_b_generate_block);
 }
+
+} // namespace zylann::voxel

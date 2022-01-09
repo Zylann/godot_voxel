@@ -3,8 +3,9 @@
 
 #include <editor/editor_plugin.h>
 
+namespace zylann::voxel {
+
 class VoxelGraphEditor;
-//class ToolButton;
 
 class VoxelGraphEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelGraphEditorPlugin, EditorPlugin)
@@ -27,5 +28,7 @@ private:
 	Button *_bottom_panel_button = nullptr;
 	bool _deferred_visibility_scheduled = false;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_GRAPH_EDITOR_PLUGIN_H

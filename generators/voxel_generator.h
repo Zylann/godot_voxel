@@ -4,6 +4,8 @@
 #include "../streams/voxel_block_request.h"
 #include <core/io/resource.h>
 
+namespace zylann::voxel {
+
 union VoxelSingleValue {
 	uint64_t i;
 	float f;
@@ -27,7 +29,9 @@ public:
 	virtual Result generate_block(VoxelBlockRequest &input);
 	// TODO Single sample
 
-	virtual bool supports_single_generation() const { return false; }
+	virtual bool supports_single_generation() const {
+		return false;
+	}
 
 	// TODO Not sure if it's a good API regarding performance
 	virtual VoxelSingleValue generate_single(Vector3i pos, unsigned int channel);
@@ -45,5 +49,7 @@ protected:
 
 	void _b_generate_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_GENERATOR_H

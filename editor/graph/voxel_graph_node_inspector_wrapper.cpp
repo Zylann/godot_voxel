@@ -3,8 +3,7 @@
 #include "../../util/macros.h"
 #include <core/object/undo_redo.h>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 void VoxelGraphNodeInspectorWrapper::setup(Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id, UndoRedo *ur) {
 	_graph = p_graph;
@@ -151,3 +150,5 @@ bool VoxelGraphNodeInspectorWrapper::_dont_undo_redo() const {
 void VoxelGraphNodeInspectorWrapper::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_dont_undo_redo"), &VoxelGraphNodeInspectorWrapper::_dont_undo_redo);
 }
+
+} // namespace zylann::voxel

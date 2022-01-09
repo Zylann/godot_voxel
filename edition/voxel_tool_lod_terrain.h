@@ -3,11 +3,10 @@
 
 #include "voxel_tool.h"
 
-class VoxelLodTerrain;
-
 namespace zylann::voxel {
+
+class VoxelLodTerrain;
 class VoxelDataMap;
-}
 
 class VoxelToolLodTerrain : public VoxelTool {
 	GDCLASS(VoxelToolLodTerrain, VoxelTool)
@@ -44,5 +43,7 @@ private:
 	VoxelLodTerrain *_terrain = nullptr;
 	int _raycast_binary_search_iterations = 0;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_TOOL_LOD_TERRAIN_H

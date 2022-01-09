@@ -4,14 +4,17 @@
 #include "../voxel_debug.h"
 #include <scene/gui/control.h>
 
-class VoxelGeneratorGraph;
 class GraphEdit;
 class PopupMenu;
 class AcceptDialog;
 class UndoRedo;
+class Node3D;
+
+namespace zylann::voxel {
+
+class VoxelGeneratorGraph;
 class VoxelRangeAnalysisDialog;
 class VoxelNode;
-class Node3D;
 
 class VoxelGraphEditor : public Control {
 	GDCLASS(VoxelGraphEditor, Control)
@@ -79,7 +82,9 @@ private:
 	bool _nothing_selected_check_scheduled = false;
 	float _time_before_preview_update = 0.f;
 	Node3D *_voxel_node = nullptr;
-	zylann::DebugRenderer _debug_renderer;
+	DebugRenderer _debug_renderer;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_GRAPH_EDITOR_H

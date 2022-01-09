@@ -1,6 +1,6 @@
 #include "voxel_generator_flat.h"
 
-using namespace zylann::voxel;
+namespace zylann::voxel {
 
 VoxelGeneratorFlat::VoxelGeneratorFlat() {}
 
@@ -136,3 +136,5 @@ void VoxelGeneratorFlat::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_type", PROPERTY_HINT_RANGE, "0,65536,1"), "set_voxel_type",
 			"get_voxel_type");
 }
+
+} // namespace zylann::voxel

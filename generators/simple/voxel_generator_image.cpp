@@ -2,8 +2,7 @@
 #include "../../util/fixed_array.h"
 #include "../../util/span.h"
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 namespace {
 
@@ -95,3 +94,5 @@ void VoxelGeneratorImage::_bind_methods() {
 			PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, "Image"), "set_image", "get_image");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "blur_enabled"), "set_blur_enabled", "is_blur_enabled");
 }
+
+} // namespace zylann::voxel

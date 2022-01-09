@@ -5,6 +5,8 @@
 #include "../../util/math/color8.h"
 #include <core/io/resource.h>
 
+namespace zylann::voxel {
+
 // Associates small numbers to colors, so colored voxels can be specified using less memory.
 class VoxelColorPalette : public Resource {
 	GDCLASS(VoxelColorPalette, Resource)
@@ -23,11 +25,11 @@ public:
 
 	// Internal
 
-	inline void set_color8(uint8_t i, zylann::Color8 c) {
+	inline void set_color8(uint8_t i, Color8 c) {
 		_colors[i] = c;
 	}
 
-	inline zylann::Color8 get_color8(uint8_t i) const {
+	inline Color8 get_color8(uint8_t i) const {
 		return _colors[i];
 	}
 
@@ -37,7 +39,9 @@ private:
 
 	static void _bind_methods();
 
-	zylann::FixedArray<zylann::Color8, MAX_COLORS> _colors;
+	FixedArray<Color8, MAX_COLORS> _colors;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_COLOR_PALETTE_H

@@ -4,8 +4,7 @@
 
 #include <core/io/image.h>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
 
@@ -196,3 +195,5 @@ void VoxelBuffer::_bind_methods() {
 
 	BIND_CONSTANT(MAX_SIZE);
 }
+
+} // namespace zylann::voxel

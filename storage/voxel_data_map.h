@@ -8,9 +8,9 @@
 #include <scene/main/node.h>
 #include <unordered_map>
 
-class VoxelGenerator;
-
 namespace zylann::voxel {
+
+class VoxelGenerator;
 
 // Infinite voxel storage by means of octants like Gridmap, within a constant LOD.
 // Convenience functions to access VoxelBuffers internally will lock them to protect against multithreaded access.

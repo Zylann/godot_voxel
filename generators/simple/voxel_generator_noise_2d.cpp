@@ -2,7 +2,7 @@
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
 
-using namespace zylann::voxel;
+namespace zylann::voxel {
 
 VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {}
 
@@ -117,3 +117,5 @@ void VoxelGeneratorNoise2D::_bind_methods() {
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "curve", PROPERTY_HINT_RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");
 }
+
+} // namespace zylann::voxel

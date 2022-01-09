@@ -8,8 +8,8 @@
 #include <vector>
 
 namespace zylann::voxel {
+
 class VoxelStreamSQLiteInternal;
-}
 
 // Saves voxel data into a single SQLite database file.
 class VoxelStreamSQLite : public VoxelStream {
@@ -23,8 +23,8 @@ public:
 	void set_database_path(String path);
 	String get_database_path() const;
 
-	Result emerge_block(zylann::voxel::VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(zylann::voxel::VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
+	Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
+	void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
 
 	void emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) override;
 	void immerge_blocks(Span<VoxelBlockRequest> p_blocks) override;
@@ -57,21 +57,23 @@ private:
 	// Because of this, in our use case, it might be simpler to just leave SQLite in thread-safe mode,
 	// and synchronize ourselves.
 
-	zylann::voxel::VoxelStreamSQLiteInternal *get_connection();
-	void recycle_connection(zylann::voxel::VoxelStreamSQLiteInternal *con);
-	void flush_cache(zylann::voxel::VoxelStreamSQLiteInternal *con);
+	VoxelStreamSQLiteInternal *get_connection();
+	void recycle_connection(VoxelStreamSQLiteInternal *con);
+	void flush_cache(VoxelStreamSQLiteInternal *con);
 
 	static void _bind_methods();
 
 	String _connection_path;
-	std::vector<zylann::voxel::VoxelStreamSQLiteInternal *> _connection_pool;
+	std::vector<VoxelStreamSQLiteInternal *> _connection_pool;
 	Mutex _connection_mutex;
-	zylann::voxel::VoxelStreamCache _cache;
+	VoxelStreamCache _cache;
 
 	// TODO I should consider specialized memory allocators
-	static thread_local zylann::voxel::BlockSerializer _voxel_block_serializer;
+	static thread_local BlockSerializer _voxel_block_serializer;
 	static thread_local std::vector<uint8_t> _temp_block_data;
 	static thread_local std::vector<uint8_t> _temp_compressed_block_data;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_STREAM_SQLITE_H

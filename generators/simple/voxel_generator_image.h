@@ -4,6 +4,8 @@
 #include "voxel_generator_heightmap.h"
 #include <core/io/image.h>
 
+namespace zylann::voxel {
+
 // Provides infinite tiling heightmap based on an image
 class VoxelGeneratorImage : public VoxelGeneratorHeightmap {
 	GDCLASS(VoxelGeneratorImage, VoxelGeneratorHeightmap)
@@ -39,5 +41,7 @@ private:
 	Parameters _parameters;
 	RWLock _parameters_lock;
 };
+
+} // namespace zylann::voxel
 
 #endif // HEADER_VOXEL_GENERATOR_IMAGE

@@ -13,6 +13,8 @@
 #include "../editor/voxel_debug.h"
 #endif
 
+namespace zylann::voxel {
+
 class VoxelTool;
 class VoxelStream;
 class VoxelInstancer;
@@ -86,7 +88,7 @@ public:
 	bool is_area_editable(Box3i p_box) const;
 	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel, VoxelSingleValue defval);
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
-	void copy(Vector3i p_origin_voxels, zylann::voxel::VoxelBufferInternal &dst_buffer, uint8_t channels_mask);
+	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask);
 
 	template <typename F>
 	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
@@ -96,11 +98,11 @@ public:
 			return;
 		}
 		Ref<VoxelGenerator> generator = _generator;
-		zylann::voxel::VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
+		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 		{
 			RWLockWrite wlock(data_lod0.map_lock);
 			data_lod0.map.write_box(
-					voxel_box, channel, action, [&generator](zylann::voxel::VoxelBufferInternal &voxels, Vector3i pos) {
+					voxel_box, channel, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
 						if (generator.is_valid()) {
 							VoxelBlockRequest r{ voxels, pos, 0 };
 							generator->generate_block(r);
@@ -118,11 +120,11 @@ public:
 			return;
 		}
 		Ref<VoxelGenerator> generator = _generator;
-		zylann::voxel::VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
+		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 		{
 			RWLockWrite wlock(data_lod0.map_lock);
-			data_lod0.map.write_box_2(voxel_box, channel1, channel2, action,
-					[&generator](zylann::voxel::VoxelBufferInternal &voxels, Vector3i pos) {
+			data_lod0.map.write_box_2(
+					voxel_box, channel1, channel2, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
 						if (generator.is_valid()) {
 							VoxelBlockRequest r{ voxels, pos, 0 };
 							generator->generate_block(r);
@@ -136,8 +138,7 @@ public:
 	void post_edit_area(Box3i p_box);
 
 	// TODO This still sucks atm cuz the edit will still run on the main thread
-	void push_async_edit(
-			zylann::IThreadedTask *task, Box3i box, std::shared_ptr<zylann::AsyncDependencyTracker> tracker);
+	void push_async_edit(IThreadedTask *task, Box3i box, std::shared_ptr<AsyncDependencyTracker> tracker);
 	void process_async_edits();
 	void abort_async_edits();
 
@@ -187,7 +188,7 @@ public:
 	void remesh_all_blocks() override;
 
 	struct BlockToSave {
-		std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
+		std::shared_ptr<VoxelBufferInternal> voxels;
 		Vector3i position;
 		uint8_t lod;
 	};
@@ -224,7 +225,7 @@ public:
 	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
 	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
 
-	std::shared_ptr<zylann::voxel::VoxelDataLodMap> get_storage() const {
+	std::shared_ptr<VoxelDataLodMap> get_storage() const {
 		return _data;
 	}
 
@@ -247,8 +248,8 @@ private:
 	//void process_block_loading_responses();
 	void send_mesh_requests();
 
-	void apply_mesh_update(const zylann::voxel::VoxelServer::BlockMeshOutput &ob);
-	void apply_data_block_response(zylann::voxel::VoxelServer::BlockDataOutput &ob);
+	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
+	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);
 
 	void unload_data_block_no_lock(Vector3i block_pos, uint8_t lod_index, std::vector<BlockToSave> &blocks_to_save);
 	void unload_mesh_block(Vector3i block_pos, uint8_t lod_index);
@@ -267,15 +268,15 @@ private:
 	Vector3 get_local_viewer_pos() const;
 	void try_schedule_loading_with_neighbors_no_lock(
 			const Vector3i &p_data_block_pos, uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load);
-	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const zylann::voxel::VoxelDataMap &map) const;
+	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelDataMap &map) const;
 	bool check_block_loaded_and_meshed(
 			const Vector3i &p_mesh_block_pos, uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load);
-	bool check_block_mesh_updated(zylann::voxel::VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load);
+	bool check_block_mesh_updated(VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load);
 	void _set_lod_count(int p_lod_count);
-	void set_mesh_block_active(zylann::voxel::VoxelMeshBlock &block, bool active);
+	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
 
-	std::shared_ptr<zylann::AsyncDependencyTracker> preload_boxes_async(
-			Span<const Box3i> voxel_boxes, Span<zylann::IThreadedTask *> next_tasks);
+	std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(
+			Span<const Box3i> voxel_boxes, Span<IThreadedTask *> next_tasks);
 
 	void _on_stream_params_changed();
 
@@ -286,7 +287,7 @@ private:
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
 
-	void add_transition_update(zylann::voxel::VoxelMeshBlock *block);
+	void add_transition_update(VoxelMeshBlock *block);
 	void add_transition_updates_around(Vector3i block_pos, int lod_index);
 	void process_transition_updates();
 	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
@@ -301,7 +302,7 @@ private:
 	Dictionary _b_get_statistics() const;
 
 	struct OctreeItem {
-		zylann::voxel::LodOctree octree;
+		LodOctree octree;
 	};
 
 #ifdef TOOLS_ENABLED
@@ -332,7 +333,7 @@ private:
 
 	// TODO Get rid of this kind of member, use threadlocal pooling instead
 	// Only populated and then cleared inside _process, so lifetime of pointers should be valid
-	std::vector<zylann::voxel::VoxelMeshBlock *> _blocks_pending_transition_update;
+	std::vector<VoxelMeshBlock *> _blocks_pending_transition_update;
 
 	Ref<Material> _material;
 	std::vector<Ref<ShaderMaterial>> _shader_material_pool;
@@ -341,27 +342,27 @@ private:
 	unsigned int _collision_lod_count = 0;
 	unsigned int _collision_layer = 1;
 	unsigned int _collision_mask = 1;
-	float _collision_margin = zylann::voxel::constants::DEFAULT_COLLISION_MARGIN;
+	float _collision_margin = constants::DEFAULT_COLLISION_MARGIN;
 	int _collision_update_delay = 0;
 
 	VoxelInstancer *_instancer = nullptr;
 
 	struct AsyncEdit {
-		zylann::IThreadedTask *task;
+		IThreadedTask *task;
 		Box3i box;
-		std::shared_ptr<zylann::AsyncDependencyTracker> task_tracker;
+		std::shared_ptr<AsyncDependencyTracker> task_tracker;
 	};
 
 	std::vector<AsyncEdit> _pending_async_edits;
 
 	struct RunningAsyncEdit {
-		std::shared_ptr<zylann::AsyncDependencyTracker> tracker;
+		std::shared_ptr<AsyncDependencyTracker> tracker;
 		Box3i box;
 	};
 	std::vector<RunningAsyncEdit> _running_async_edits;
 
 	// Data stored with a shared pointer so it can be sent to asynchronous tasks
-	std::shared_ptr<zylann::voxel::VoxelDataLodMap> _data;
+	std::shared_ptr<VoxelDataLodMap> _data;
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
@@ -373,10 +374,10 @@ private:
 		Vector3i last_viewer_data_block_pos;
 		int last_view_distance_data_blocks = 0;
 
-		zylann::voxel::VoxelMeshMap mesh_map;
+		VoxelMeshMap mesh_map;
 		std::vector<Vector3i> blocks_pending_update;
 		std::vector<Vector3i> deferred_collision_updates;
-		Map<Vector3i, zylann::voxel::VoxelMeshBlock *> fading_blocks;
+		Map<Vector3i, VoxelMeshBlock *> fading_blocks;
 		Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;
 
@@ -385,7 +386,7 @@ private:
 		}
 	};
 
-	zylann::FixedArray<Lod, zylann::voxel::constants::MAX_LOD> _lods;
+	FixedArray<Lod, constants::MAX_LOD> _lods;
 	unsigned int _lod_count = 0;
 	// Distance between a viewer and the end of LOD0
 	float _lod_distance = 0.f;
@@ -401,12 +402,14 @@ private:
 	bool _show_octree_node_gizmos = false;
 	bool _show_edited_blocks = false;
 	unsigned int _edited_blocks_gizmos_lod_index = 0;
-	zylann::DebugRenderer _debug_renderer;
+	DebugRenderer _debug_renderer;
 #endif
 
 	Stats _stats;
 };
 
-VARIANT_ENUM_CAST(VoxelLodTerrain::ProcessCallback)
+} // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::ProcessCallback)
 
 #endif // VOXEL_LOD_TERRAIN_HPP

@@ -2,7 +2,7 @@
 #include "../constants/voxel_string_names.h"
 #include "../util/godot/funcs.h"
 
-using namespace zylann::voxel;
+namespace zylann::voxel {
 
 VoxelStream::Result VoxelStreamScript::emerge_block(
 		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
@@ -60,3 +60,5 @@ void VoxelStreamScript::_bind_methods() {
 
 	// BIND_VMETHOD(MethodInfo(Variant::INT, "_get_used_channels_mask"));
 }
+
+} // namespace zylann::voxel

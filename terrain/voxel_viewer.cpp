@@ -2,8 +2,7 @@
 #include "../server/voxel_server.h"
 #include <core/config/engine.h>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelViewer::VoxelViewer() {
 	set_notify_transform(!Engine::get_singleton()->is_editor_hint());
@@ -92,3 +91,5 @@ void VoxelViewer::_bind_methods() {
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "requires_collisions"), "set_requires_collisions", "is_requiring_collisions");
 }
+
+} // namespace zylann::voxel

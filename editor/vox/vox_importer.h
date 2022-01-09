@@ -3,6 +3,8 @@
 
 #include <editor/import/editor_import_plugin.h>
 
+namespace zylann::voxel::magica {
+
 // TODO Rename VoxelVoxSceneImporter
 // Imports a vox file as a scene, where the internal scene layout is preserved as nodes
 class VoxelVoxImporter : public ResourceImporter {
@@ -24,5 +26,7 @@ public:
 	Error import(const String &p_source_file, const String &p_save_path, const Map<StringName, Variant> &p_options,
 			List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata = nullptr) override;
 };
+
+} // namespace zylann::voxel::magica
 
 #endif // VOX_IMPORTER_H

@@ -1,6 +1,8 @@
 #include "voxel_instancer_editor_plugin.h"
 #include "../../terrain/instancing/voxel_instancer.h"
 
+namespace zylann::voxel {
+
 VoxelInstancerEditorPlugin::VoxelInstancerEditorPlugin(EditorNode *p_node) {}
 
 bool VoxelInstancerEditorPlugin::handles(Object *p_object) const {
@@ -23,3 +25,5 @@ void VoxelInstancerEditorPlugin::make_visible(bool visible) {
 		}
 	}
 }
+
+} // namespace zylann::voxel

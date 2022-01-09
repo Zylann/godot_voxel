@@ -3,6 +3,8 @@
 
 #include <editor/editor_plugin.h>
 
+namespace zylann {
+
 class FastNoiseLiteEditorPlugin : public EditorPlugin {
 	GDCLASS(FastNoiseLiteEditorPlugin, EditorPlugin)
 public:
@@ -12,5 +14,7 @@ public:
 
 	FastNoiseLiteEditorPlugin(EditorNode *p_node);
 };
+
+} // namespace zylann
 
 #endif // FAST_NOISE_LITE_EDITOR_PLUGIN_H

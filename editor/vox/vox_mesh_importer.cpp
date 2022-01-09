@@ -8,8 +8,7 @@
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel::magica {
 
 String VoxelVoxMeshImporter::get_importer_name() const {
 	return "VoxelVoxMeshImporter";
@@ -60,8 +59,6 @@ bool VoxelVoxMeshImporter::get_option_visibility(
 	return true;
 }
 
-namespace zylann::voxel::magica {
-
 struct ForEachModelInstanceArgs {
 	const Model *model;
 	// Pivot position, which turns out to be at the center in MagicaVoxel
@@ -70,8 +67,7 @@ struct ForEachModelInstanceArgs {
 };
 
 template <typename F>
-static Error for_each_model_instance_in_scene_graph(
-		const Data &data, int node_id, Transform3D transform, int depth, F f) {
+Error for_each_model_instance_in_scene_graph(const Data &data, int node_id, Transform3D transform, int depth, F f) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const Node *vox_node = data.get_node(node_id);
@@ -110,7 +106,8 @@ static Error for_each_model_instance_in_scene_graph(
 	return OK;
 }
 
-template <typename F> void for_each_model_instance(const Data &vox_data, F f) {
+template <typename F>
+void for_each_model_instance(const Data &vox_data, F f) {
 	if (vox_data.get_model_count() == 0) {
 		return;
 	}
@@ -216,8 +213,6 @@ bool make_single_voxel_grid(
 	return true;
 }
 
-} // namespace zylann::voxel::magica
-
 Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_save_path,
 		const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
 		Variant *r_metadata) {
@@ -228,7 +223,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 
 	ERR_FAIL_INDEX_V(p_pivot_mode, PIVOT_MODES_COUNT, ERR_INVALID_PARAMETER);
 
-	magica::Data vox_data;
+	Data vox_data;
 	const Error load_err = vox_data.load_from_file(p_source_file);
 	ERR_FAIL_COND_V(load_err != OK, load_err);
 
@@ -249,7 +244,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 	Ref<Mesh> mesh;
 	std::vector<unsigned int> surface_index_to_material;
 	{
-		std::vector<magica::ModelInstance> model_instances;
+		std::vector<ModelInstance> model_instances;
 		extract_model_instances(vox_data, model_instances);
 
 		// From this point we no longer need vox data so we can free some memory
@@ -288,7 +283,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 				break;
 		};
 
-		mesh = magica::build_mesh(voxels, **mesher, surface_index_to_material, atlas, p_scale, offset);
+		mesh = build_mesh(voxels, **mesher, surface_index_to_material, atlas, p_scale, offset);
 		// Deallocate large temporary memory to free space.
 		// This is a workaround because VoxelBuffer uses this by default, however it doesn't fit the present use case.
 		// Eventually we should avoid using this pool here.
@@ -367,3 +362,5 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 
 	return OK;
 }
+
+} // namespace zylann::voxel::magica

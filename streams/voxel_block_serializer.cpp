@@ -439,8 +439,6 @@ void BlockSerializer::deserialize(Ref<StreamPeer> peer, VoxelBufferInternal &vox
 	}
 }
 
-} // namespace zylann::voxel
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int VoxelBlockSerializer::serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress) {
@@ -461,3 +459,5 @@ void VoxelBlockSerializer::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("deserialize", "peer", "voxel_buffer", "size", "decompress"), &VoxelBlockSerializer::deserialize);
 }
+
+} // namespace zylann::voxel

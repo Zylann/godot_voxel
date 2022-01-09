@@ -12,10 +12,11 @@
 #include <core/templates/vector.h>
 #include <limits>
 
-class VoxelTool;
 class Image;
 
 namespace zylann::voxel {
+
+class VoxelTool;
 
 // TODO This class is still suffixed "Internal" to avoid conflict with the registered Godot class.
 // Even though the other class is not namespaced yet, it is unsure if it will remain that way after the future port

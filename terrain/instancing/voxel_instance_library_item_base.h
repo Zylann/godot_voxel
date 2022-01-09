@@ -6,10 +6,12 @@
 
 // TODO Rename VoxelInstanceLibraryItem (did not do it for compatibility)
 
+namespace zylann::voxel {
+
 class VoxelInstanceLibraryItemBase : public Resource {
 	GDCLASS(VoxelInstanceLibraryItemBase, Resource)
 public:
-	enum ChangeType {
+	enum ChangeType { //
 		CHANGE_LOD_INDEX,
 		CHANGE_GENERATOR,
 		CHANGE_VISUAL,
@@ -74,5 +76,7 @@ private:
 
 	Vector<ListenerSlot> _listeners;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_INSTANCE_LIBRARY_ITEM_BASE_H

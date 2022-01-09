@@ -8,6 +8,8 @@
 
 #include <scene/3d/node_3d.h>
 
+namespace zylann::voxel {
+
 class VoxelTool;
 
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
@@ -69,10 +71,10 @@ public:
 	void set_material(unsigned int id, Ref<Material> material);
 	Ref<Material> get_material(unsigned int id) const;
 
-	zylann::voxel::VoxelDataMap &get_storage() {
+	VoxelDataMap &get_storage() {
 		return _data_map;
 	}
-	const zylann::voxel::VoxelDataMap &get_storage() const {
+	const VoxelDataMap &get_storage() const {
 		return _data_map;
 	}
 
@@ -103,7 +105,7 @@ public:
 	const Stats &get_stats() const;
 
 	struct BlockToSave {
-		std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
+		std::shared_ptr<VoxelBufferInternal> voxels;
 		Vector3i position;
 	};
 
@@ -121,8 +123,8 @@ private:
 	void process_viewers();
 	//void process_received_data_blocks();
 	void process_meshing();
-	void apply_mesh_update(const zylann::voxel::VoxelServer::BlockMeshOutput &ob);
-	void apply_data_block_response(zylann::voxel::VoxelServer::BlockDataOutput &ob);
+	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
+	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);
 
 	void _on_stream_params_changed();
 	void _set_block_size_po2(int p_block_size_po2);
@@ -140,15 +142,15 @@ private:
 	void unload_data_block(Vector3i bpos);
 	void unload_mesh_block(Vector3i bpos);
 	//void make_data_block_dirty(Vector3i bpos);
-	void try_schedule_mesh_update(zylann::voxel::VoxelMeshBlock *block);
+	void try_schedule_mesh_update(VoxelMeshBlock *block);
 	void try_schedule_mesh_update_from_data(const Box3i &box_in_voxels);
 
 	void save_all_modified_blocks(bool with_copy);
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
 	void send_block_data_requests();
 
-	void emit_data_block_loaded(const zylann::voxel::VoxelDataBlock *block);
-	void emit_data_block_unloaded(const zylann::voxel::VoxelDataBlock *block);
+	void emit_data_block_loaded(const VoxelDataBlock *block);
+	void emit_data_block_unloaded(const VoxelDataBlock *block);
 
 	bool try_get_paired_viewer_index(uint32_t id, size_t &out_i) const;
 
@@ -183,9 +185,9 @@ private:
 	std::vector<PairedViewer> _paired_viewers;
 
 	// Voxel storage
-	zylann::voxel::VoxelDataMap _data_map;
+	VoxelDataMap _data_map;
 	// Mesh storage
-	zylann::voxel::VoxelMeshMap _mesh_map;
+	VoxelMeshMap _mesh_map;
 
 	// Area within which voxels can exist.
 	// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be
@@ -213,7 +215,7 @@ private:
 	bool _generate_collisions = true;
 	unsigned int _collision_layer = 1;
 	unsigned int _collision_mask = 1;
-	float _collision_margin = zylann::voxel::constants::DEFAULT_COLLISION_MARGIN;
+	float _collision_margin = constants::DEFAULT_COLLISION_MARGIN;
 	bool _run_stream_in_editor = true;
 	//bool _stream_enabled = false;
 
@@ -221,5 +223,7 @@ private:
 
 	Stats _stats;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_TERRAIN_H

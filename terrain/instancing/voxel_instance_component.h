@@ -4,6 +4,8 @@
 #include "voxel_instancer.h"
 #include <scene/main/node.h>
 
+namespace zylann::voxel {
+
 // Used as child of scene items instanced with VoxelInstancer.
 //
 // It is needed because such instances are tied with some of the logic in VoxelInstancer.
@@ -108,5 +110,7 @@ private:
 	unsigned int _render_block_index;
 	int _instance_index = -1;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_INSTANCE_COMPONENT_H

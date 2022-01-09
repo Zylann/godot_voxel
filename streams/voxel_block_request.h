@@ -6,9 +6,11 @@
 #include "instance_data.h"
 #include <memory>
 
+namespace zylann::voxel {
+
 // TODO Rename VoxelStreamBlockRequest
 struct VoxelBlockRequest {
-	zylann::voxel::VoxelBufferInternal &voxel_buffer;
+	VoxelBufferInternal &voxel_buffer;
 	Vector3i origin_in_voxels;
 	int lod;
 };
@@ -18,5 +20,7 @@ struct VoxelStreamInstanceDataRequest {
 	Vector3i position;
 	uint8_t lod;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_BLOCK_REQUEST_H

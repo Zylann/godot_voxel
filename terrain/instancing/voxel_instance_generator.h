@@ -8,6 +8,8 @@
 #include <limits>
 #include <vector>
 
+namespace zylann::voxel {
+
 // TODO This may have to be moved to the meshing thread some day
 
 // Decides where to spawn instances on top of a voxel surface.
@@ -46,7 +48,11 @@ public:
 		DISTRIBUTION_COUNT
 	};
 
-	enum Dimension { DIMENSION_2D = 0, DIMENSION_3D, DIMENSION_COUNT };
+	enum Dimension { //
+		DIMENSION_2D = 0,
+		DIMENSION_3D,
+		DIMENSION_COUNT
+	};
 
 	// This API might change so for now it's not exposed to scripts
 	void generate_transforms(std::vector<Transform3D> &out_transforms, Vector3i grid_position, int lod_index,
@@ -136,8 +142,10 @@ private:
 	float _max_slope_degrees = 180.f;
 };
 
-VARIANT_ENUM_CAST(VoxelInstanceGenerator::EmitMode);
-VARIANT_ENUM_CAST(VoxelInstanceGenerator::Distribution);
-VARIANT_ENUM_CAST(VoxelInstanceGenerator::Dimension);
+} // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceGenerator::EmitMode);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceGenerator::Distribution);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceGenerator::Dimension);
 
 #endif // VOXEL_INSTANCE_GENERATOR_H

@@ -3,8 +3,7 @@
 #include "../util/macros.h"
 #include "../util/profiling.h"
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelTool::VoxelTool() {
 	_sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH);
@@ -344,3 +343,5 @@ void VoxelTool::_bind_methods() {
 	BIND_ENUM_CONSTANT(MODE_SET);
 	BIND_ENUM_CONSTANT(MODE_TEXTURE_PAINT);
 }
+
+} // namespace zylann::voxel

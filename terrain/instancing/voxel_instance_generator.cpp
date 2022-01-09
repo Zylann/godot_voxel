@@ -5,7 +5,7 @@
 #include <core/core_string_names.h>
 #include <scene/resources/mesh.h>
 
-using namespace zylann;
+namespace zylann::voxel {
 
 namespace {
 const float MAX_DENSITY = 1.f;
@@ -772,3 +772,5 @@ void VoxelInstanceGenerator::_bind_methods() {
 	BIND_ENUM_CONSTANT(DIMENSION_3D);
 	BIND_ENUM_CONSTANT(DIMENSION_COUNT);
 }
+
+} // namespace zylann::voxel

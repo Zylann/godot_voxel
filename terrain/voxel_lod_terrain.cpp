@@ -17,8 +17,7 @@
 #include <scene/3d/mesh_instance_3d.h>
 #include <scene/resources/packed_scene.h>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 namespace {
 
@@ -164,7 +163,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	// Infinite by default
 	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT));
 
-	struct ApplyMeshUpdateTask : public zylann::ITimeSpreadTask {
+	struct ApplyMeshUpdateTask : public ITimeSpreadTask {
 		void run() override {
 			if (!VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
 				// The node can have been destroyed while this task was still pending
@@ -488,8 +487,8 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlock &block, bool active) 
 // Generates all non-present blocks in preparation for an edit.
 // This function schedules one parallel task for every block.
 // The returned tracker may be polled to detect when it is complete.
-std::shared_ptr<zylann::AsyncDependencyTracker> VoxelLodTerrain::preload_boxes_async(
-		Span<const Box3i> voxel_boxes, Span<zylann::IThreadedTask *> next_tasks) {
+std::shared_ptr<AsyncDependencyTracker> VoxelLodTerrain::preload_boxes_async(
+		Span<const Box3i> voxel_boxes, Span<IThreadedTask *> next_tasks) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V_MSG(_full_load_mode == false, nullptr, "This function can only be used in full load mode");
 	const uint32_t volume_id = _volume_id;
@@ -526,7 +525,7 @@ std::shared_ptr<zylann::AsyncDependencyTracker> VoxelLodTerrain::preload_boxes_a
 
 	PRINT_VERBOSE(String("Preloading boxes with {1} tasks").format(varray(SIZE_T_TO_VARIANT(todo.size()))));
 
-	std::shared_ptr<zylann::AsyncDependencyTracker> tracker = nullptr;
+	std::shared_ptr<AsyncDependencyTracker> tracker = nullptr;
 
 	// TODO `next_tasks` is executed in parallel. But since they can be edits, may we do them in sequence?
 
@@ -538,8 +537,8 @@ std::shared_ptr<zylann::AsyncDependencyTracker> VoxelLodTerrain::preload_boxes_a
 		// it would destroy `next_tasks`.
 
 		// This may first run the generation tasks, and then the edits
-		tracker = gd_make_shared<zylann::AsyncDependencyTracker>(
-				todo.size(), next_tasks, [](Span<zylann::IThreadedTask *> p_next_tasks) {
+		tracker =
+				gd_make_shared<AsyncDependencyTracker>(todo.size(), next_tasks, [](Span<IThreadedTask *> p_next_tasks) {
 					VoxelServer::get_singleton()->push_async_tasks(p_next_tasks);
 				});
 
@@ -722,8 +721,7 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 	}
 }
 
-void VoxelLodTerrain::push_async_edit(
-		zylann::IThreadedTask *task, Box3i box, std::shared_ptr<zylann::AsyncDependencyTracker> tracker) {
+void VoxelLodTerrain::push_async_edit(IThreadedTask *task, Box3i box, std::shared_ptr<AsyncDependencyTracker> tracker) {
 	CRASH_COND(task == nullptr);
 	CRASH_COND(tracker == nullptr);
 	AsyncEdit e;
@@ -1326,7 +1324,7 @@ void VoxelLodTerrain::_process(float delta) {
 	// It has to happen first because blocks can be unloaded afterwards.
 	flush_pending_lod_edits();
 
-	zylann::ProfilingClock profiling_clock;
+	ProfilingClock profiling_clock;
 
 	static thread_local std::vector<BlockToSave> data_blocks_to_save;
 
@@ -2079,8 +2077,8 @@ void VoxelLodTerrain::process_async_edits() {
 		// Schedule all next edits when the previous ones are done
 
 		std::vector<Box3i> boxes_to_preload;
-		std::vector<zylann::IThreadedTask *> tasks_to_schedule;
-		std::shared_ptr<zylann::AsyncDependencyTracker> last_tracker = nullptr;
+		std::vector<IThreadedTask *> tasks_to_schedule;
+		std::shared_ptr<AsyncDependencyTracker> last_tracker = nullptr;
 
 		for (unsigned int edit_index = 0; edit_index < _pending_async_edits.size(); ++edit_index) {
 			AsyncEdit &edit = _pending_async_edits[edit_index];
@@ -3084,3 +3082,5 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "full_load_mode_enabled"), "set_full_load_mode_enabled",
 			"is_full_load_mode_enabled");
 }
+
+} // namespace zylann::voxel

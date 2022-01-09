@@ -6,6 +6,8 @@
 #include "voxel_graph_runtime.h"
 #include <memory>
 
+namespace zylann::voxel {
+
 class VoxelGeneratorGraph : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorGraph, VoxelGenerator)
 public:
@@ -76,7 +78,7 @@ public:
 	// Important: functions editing the graph are NOT thread-safe.
 	// They are expected to be used by the main thread (editor or game logic).
 
-	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = zylann::ProgramGraph::NULL_ID);
+	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = ProgramGraph::NULL_ID);
 	void remove_node(uint32_t node_id);
 
 	bool can_connect(
@@ -84,9 +86,8 @@ public:
 	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void remove_connection(
 			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
-	void get_connections(std::vector<zylann::ProgramGraph::Connection> &connections) const;
-	bool try_get_connection_to(
-			zylann::ProgramGraph::PortLocation dst, zylann::ProgramGraph::PortLocation &out_src) const;
+	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
+	bool try_get_connection_to(ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const;
 
 	bool has_node(uint32_t node_id) const;
 
@@ -153,22 +154,22 @@ public:
 
 	// Internal
 
-	zylann::voxel::VoxelGraphRuntime::CompilationResult compile();
+	VoxelGraphRuntime::CompilationResult compile();
 	bool is_good() const;
 
 	void generate_set(Span<float> in_x, Span<float> in_y, Span<float> in_z);
 
 	// Returns state from the last generator used in the current thread
-	static const zylann::voxel::VoxelGraphRuntime::State &get_last_state_from_current_thread();
+	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
 	static Span<const int> get_last_execution_map_debug_from_current_thread();
 
-	bool try_get_output_port_address(zylann::ProgramGraph::PortLocation port, uint32_t &out_address) const;
+	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 
 	void find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_dependencies) const;
 
 	// Debug
 
-	zylann::math::Interval debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map) const;
+	math::Interval debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map) const;
 	float debug_measure_microseconds_per_voxel(bool singular);
 	void debug_load_waves_preset();
 
@@ -198,12 +199,12 @@ private:
 	};
 
 	static void gather_indices_and_weights(Span<const WeightOutput> weight_outputs,
-			const zylann::voxel::VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
-			zylann::voxel::VoxelBufferInternal &out_voxel_buffer, zylann::FixedArray<uint8_t, 4> spare_indices);
+			const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
+			VoxelBufferInternal &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices);
 
 	static void _bind_methods();
 
-	zylann::ProgramGraph _graph;
+	ProgramGraph _graph;
 	// This generator performs range analysis using nodes of the graph. Terrain surface can only appear when SDF
 	// crosses zero within a block. For each generated block, an estimated range of the output is calculated.
 	// If that range is beyond this threshold (either negatively or positively), then blocks will be given a uniform
@@ -228,15 +229,15 @@ private:
 	// Only compiling and generation methods are thread-safe.
 
 	struct Runtime {
-		zylann::voxel::VoxelGraphRuntime runtime;
+		VoxelGraphRuntime runtime;
 		// Indices that are not used in the graph.
 		// This is used when there are less than 4 texture weight outputs.
-		zylann::FixedArray<uint8_t, 4> spare_texture_indices;
+		FixedArray<uint8_t, 4> spare_texture_indices;
 		// Index to the SDF output
 		int sdf_output_buffer_index = -1;
-		zylann::FixedArray<WeightOutput, 16> weight_outputs;
+		FixedArray<WeightOutput, 16> weight_outputs;
 		// List of indices to feed queries. The order doesn't matter, can be different from `weight_outputs`.
-		zylann::FixedArray<unsigned int, 16> weight_output_indices;
+		FixedArray<unsigned int, 16> weight_output_indices;
 		unsigned int weight_outputs_count = 0;
 	};
 
@@ -247,13 +248,15 @@ private:
 		std::vector<float> x_cache;
 		std::vector<float> y_cache;
 		std::vector<float> z_cache;
-		zylann::voxel::VoxelGraphRuntime::State state;
-		zylann::voxel::VoxelGraphRuntime::ExecutionMap optimized_execution_map;
+		VoxelGraphRuntime::State state;
+		VoxelGraphRuntime::ExecutionMap optimized_execution_map;
 	};
 
 	static thread_local Cache _cache;
 };
 
-VARIANT_ENUM_CAST(VoxelGeneratorGraph::NodeTypeID)
+} // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelGeneratorGraph::NodeTypeID)
 
 #endif // VOXEL_GENERATOR_GRAPH_H

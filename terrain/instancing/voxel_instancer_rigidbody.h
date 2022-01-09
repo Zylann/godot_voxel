@@ -4,6 +4,8 @@
 #include "voxel_instancer.h"
 #include <scene/3d/physics_body_3d.h>
 
+namespace zylann::voxel {
+
 // Provides collision to VoxelInstancer multimesh instances
 class VoxelInstancerRigidBody : public RigidDynamicBody3D {
 	GDCLASS(VoxelInstancerRigidBody, RigidDynamicBody3D);
@@ -62,5 +64,7 @@ private:
 	unsigned int _render_block_index;
 	int _instance_index = -1;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_INSTANCER_RIGIDBODY_H

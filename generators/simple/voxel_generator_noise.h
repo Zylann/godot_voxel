@@ -4,6 +4,8 @@
 #include "../voxel_generator.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
+namespace zylann::voxel {
+
 class VoxelGeneratorNoise : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorNoise, VoxelGenerator)
 
@@ -35,7 +37,7 @@ private:
 	Ref<OpenSimplexNoise> _noise;
 
 	struct Parameters {
-		zylann::voxel::VoxelBufferInternal::ChannelId channel = zylann::voxel::VoxelBufferInternal::CHANNEL_SDF;
+		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 		Ref<OpenSimplexNoise> noise;
 		float height_start = 0;
 		float height_range = 300;
@@ -44,5 +46,7 @@ private:
 	Parameters _parameters;
 	RWLock _parameters_lock;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_GENERATOR_NOISE_H

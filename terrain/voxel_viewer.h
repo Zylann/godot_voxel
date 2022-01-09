@@ -3,6 +3,8 @@
 
 #include <scene/3d/node_3d.h>
 
+namespace zylann::voxel {
+
 // Triggers loading of voxel nodes around its position. Voxels will update in priority closer to viewers.
 // Usually added as child of the player's camera.
 class VoxelViewer : public Node3D {
@@ -35,5 +37,7 @@ private:
 	bool _requires_visuals = true;
 	bool _requires_collisions = true;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_VIEWER_H

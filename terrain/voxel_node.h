@@ -7,6 +7,8 @@
 
 #include <scene/3d/node_3d.h>
 
+namespace zylann::voxel {
+
 // Base class for voxel volumes
 class VoxelNode : public Node3D {
 	GDCLASS(VoxelNode, Node3D)
@@ -67,6 +69,8 @@ private:
 	GIMode _gi_mode = GI_MODE_DISABLED;
 };
 
-VARIANT_ENUM_CAST(VoxelNode::GIMode);
+} // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelNode::GIMode);
 
 #endif // VOXEL_NODE_H

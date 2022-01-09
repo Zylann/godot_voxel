@@ -5,6 +5,8 @@
 
 #include <scene/resources/packed_scene.h>
 
+namespace zylann::voxel {
+
 class VoxelInstanceLibrarySceneItem : public VoxelInstanceLibraryItemBase {
 	GDCLASS(VoxelInstanceLibrarySceneItem, VoxelInstanceLibraryItemBase)
 public:
@@ -16,5 +18,7 @@ private:
 
 	Ref<PackedScene> _scene;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_INSTANCE_LIBRARY_SCENE_ITEM_H

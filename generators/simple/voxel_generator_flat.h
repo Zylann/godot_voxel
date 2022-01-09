@@ -3,6 +3,8 @@
 
 #include "../voxel_generator.h"
 
+namespace zylann::voxel {
+
 class VoxelGeneratorFlat : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorFlat, VoxelGenerator)
 
@@ -27,7 +29,7 @@ protected:
 
 private:
 	struct Parameters {
-		zylann::voxel::VoxelBufferInternal::ChannelId channel = zylann::voxel::VoxelBufferInternal::CHANNEL_SDF;
+		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 		int voxel_type = 1;
 		float height = 0;
 		float iso_scale = 0.1;
@@ -36,5 +38,7 @@ private:
 	Parameters _parameters;
 	RWLock _parameters_lock;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_GENERATOR_FLAT_H

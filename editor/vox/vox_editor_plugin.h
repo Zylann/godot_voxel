@@ -3,10 +3,14 @@
 
 #include <editor/editor_plugin.h>
 
+namespace zylann::voxel::magica {
+
 class VoxEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxEditorPlugin, EditorPlugin)
 public:
 	VoxEditorPlugin(EditorNode *p_node);
 };
+
+} // namespace zylann::voxel::magica
 
 #endif // VOX_EDITOR_PLUGIN_H

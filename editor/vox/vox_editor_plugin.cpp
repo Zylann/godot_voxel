@@ -2,6 +2,8 @@
 #include "vox_importer.h"
 #include "vox_mesh_importer.h"
 
+namespace zylann::voxel::magica {
+
 VoxEditorPlugin::VoxEditorPlugin(EditorNode *p_node) {
 	Ref<VoxelVoxImporter> vox_scene_importer;
 	vox_scene_importer.instantiate();
@@ -12,3 +14,5 @@ VoxEditorPlugin::VoxEditorPlugin(EditorNode *p_node) {
 	vox_mesh_importer.instantiate();
 	ResourceFormatImporter::get_singleton()->add_importer(vox_mesh_importer);
 }
+
+} // namespace zylann::voxel::magica

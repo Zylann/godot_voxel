@@ -3,6 +3,8 @@
 
 #include "voxel_generator_heightmap.h"
 
+namespace zylann::voxel {
+
 class VoxelGeneratorWaves : public VoxelGeneratorHeightmap {
 	GDCLASS(VoxelGeneratorWaves, VoxelGeneratorHeightmap)
 
@@ -32,5 +34,7 @@ private:
 	Parameters _parameters;
 	RWLock _parameters_lock;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_GENERATOR_WAVES_H

@@ -6,8 +6,7 @@
 
 #include <core/core_string_names.h>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 const char *VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED = "node_name_changed";
 
@@ -399,8 +398,6 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 	}
 }
 
-namespace zylann::voxel {
-
 template <typename F, typename Data_T>
 void fill_zx_slice(Span<Data_T> channel_data, float sdf_scale, Vector3i rmin, Vector3i rmax, int ry, int x_stride,
 		const float *src_data, Vector3i buffer_size, F convert_func) {
@@ -454,8 +451,6 @@ static void fill_zx_slice(const VoxelGraphRuntime::Buffer &sdf_buffer, VoxelBuff
 			break;
 	}
 }
-
-} // namespace zylann::voxel
 
 VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
 	std::shared_ptr<Runtime> runtime_ptr;
@@ -1208,7 +1203,7 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 }
 
 Dictionary VoxelGeneratorGraph::get_graph_as_variant_data() const {
-	return ::get_graph_as_variant_data(_graph);
+	return zylann::voxel::get_graph_as_variant_data(_graph);
 }
 
 static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
@@ -1282,7 +1277,7 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 	clear();
 
-	if (::load_graph_from_variant_data(_graph, data)) {
+	if (zylann::voxel::load_graph_from_variant_data(_graph, data)) {
 		register_subresources();
 		// It's possible to auto-compile on load because `graph_data` is the only property set by the loader,
 		// which is enough to have all information we need
@@ -1673,3 +1668,5 @@ void VoxelGeneratorGraph::_bind_methods() {
 #endif
 	BIND_ENUM_CONSTANT(NODE_TYPE_COUNT);
 }
+
+} // namespace zylann::voxel

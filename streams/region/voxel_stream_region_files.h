@@ -9,6 +9,8 @@
 
 class FileAccess;
 
+namespace zylann::voxel {
+
 // TODO Rename VoxelStreamRegionForest
 
 // Loads and saves blocks to the filesystem, in multiple region files indexed by world position, under a directory.
@@ -24,8 +26,8 @@ public:
 	VoxelStreamRegionFiles();
 	~VoxelStreamRegionFiles();
 
-	Result emerge_block(zylann::voxel::VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(zylann::voxel::VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
+	Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
+	void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
 
 	void emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) override;
 	void immerge_blocks(Span<VoxelBlockRequest> p_blocks) override;
@@ -64,11 +66,11 @@ private:
 		EMERGE_FAILED
 	};
 
-	EmergeResult _emerge_block(zylann::voxel::VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
-	void _immerge_block(zylann::voxel::VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod);
+	EmergeResult _emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
+	void _immerge_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod);
 
-	zylann::FileResult save_meta();
-	zylann::FileResult load_meta();
+	FileResult save_meta();
+	FileResult load_meta();
 	Vector3i get_block_position_from_voxels(const Vector3i &origin_in_voxels) const;
 	Vector3i get_region_position_from_blocks(const Vector3i &block_position) const;
 	void close_all_regions();
@@ -83,8 +85,7 @@ private:
 		uint8_t lod_count = 0;
 		uint8_t block_size_po2 = 0; // How many voxels in a cubic block
 		uint8_t region_size_po2 = 0; // How many blocks in one cubic region
-		zylann::FixedArray<zylann::voxel::VoxelBufferInternal::Depth, zylann::voxel::VoxelBufferInternal::MAX_CHANNELS>
-				channel_depths;
+		FixedArray<VoxelBufferInternal::Depth, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
 		uint32_t sector_size = 0; // Blocks are stored at offsets multiple of that size
 	};
 
@@ -110,7 +111,7 @@ private:
 		}
 	};
 
-	static thread_local zylann::voxel::BlockSerializer _block_serializer;
+	static thread_local BlockSerializer _block_serializer;
 
 	// TODO This is not thread-friendly.
 	// `VoxelRegionFile` is not thread-safe so we have to limit the usage to one thread at once, blocking the others.
@@ -120,7 +121,7 @@ private:
 		Vector3i position;
 		int lod = 0;
 		bool file_exists = false;
-		zylann::voxel::RegionFile region;
+		RegionFile region;
 		uint64_t last_opened = 0;
 		//uint64_t last_accessed;
 	};
@@ -135,5 +136,7 @@ private:
 
 	Mutex _mutex;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_STREAM_REGION_H

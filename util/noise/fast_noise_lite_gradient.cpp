@@ -1,5 +1,7 @@
 #include "fast_noise_lite_gradient.h"
 
+namespace zylann {
+
 static fast_noise_lite::FastNoiseLite::FractalType to_fnl_fractal_type(FastNoiseLiteGradient::FractalType type) {
 	switch (type) {
 		case FastNoiseLiteGradient::FRACTAL_NONE:
@@ -226,3 +228,5 @@ void FastNoiseLiteGradient::_bind_methods() {
 	BIND_ENUM_CONSTANT(ROTATION_3D_IMPROVE_XY_PLANES);
 	BIND_ENUM_CONSTANT(ROTATION_3D_IMPROVE_XZ_PLANES);
 }
+
+} // namespace zylann

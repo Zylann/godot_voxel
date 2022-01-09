@@ -9,8 +9,7 @@
 #include <scene/3d/camera_3d.h>
 #include <scene/gui/menu_button.h>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 class VoxelTerrainEditorTaskIndicator : public HBoxContainer {
 	GDCLASS(VoxelTerrainEditorTaskIndicator, HBoxContainer)
@@ -351,3 +350,5 @@ void VoxelTerrainEditorPlugin::_bind_methods() {
 	// ClassDB::bind_method(D_METHOD("_on_terrain_tree_entered"), &VoxelTerrainEditorPlugin::_on_terrain_tree_entered);
 	// ClassDB::bind_method(D_METHOD("_on_terrain_tree_exited"), &VoxelTerrainEditorPlugin::_on_terrain_tree_exited);
 }
+
+} // namespace zylann::voxel

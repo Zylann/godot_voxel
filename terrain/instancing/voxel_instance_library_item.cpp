@@ -6,6 +6,8 @@
 #include <scene/3d/mesh_instance_3d.h>
 #include <scene/3d/physics_body_3d.h>
 
+namespace zylann::voxel {
+
 void VoxelInstanceLibraryItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_index) {
 	ERR_FAIL_INDEX(mesh_lod_index, static_cast<int>(_mesh_lods.size()));
 	if (_mesh_lods[mesh_lod_index] == mesh) {
@@ -262,3 +264,5 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 
 	BIND_CONSTANT(MAX_MESH_LODS);
 }
+
+} // namespace zylann::voxel

@@ -10,6 +10,8 @@
 
 #define VOXEL_ARRAY_LENGTH(a) (sizeof(a) / sizeof(a[0]))
 
+namespace zylann::voxel {
+
 namespace {
 struct ThirdParty {
 	const char *name;
@@ -300,3 +302,5 @@ void VoxelAboutWindow::_bind_methods() {
 	// ClassDB::bind_method(
 	// 		D_METHOD("_on_third_party_list_item_selected"), &VoxelAboutWindow::_on_third_party_list_item_selected);
 }
+
+} // namespace zylann::voxel

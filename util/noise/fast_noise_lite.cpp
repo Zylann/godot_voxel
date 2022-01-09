@@ -2,6 +2,8 @@
 #include "../math/funcs.h"
 #include <core/core_string_names.h>
 
+namespace zylann {
+
 FastNoiseLite::FastNoiseLite() {
 	_fn.SetNoiseType(static_cast<_FastNoise::NoiseType>(_noise_type));
 	_fn.SetSeed(_seed);
@@ -196,7 +198,7 @@ FastNoiseLite::CellularReturnType FastNoiseLite::get_cellular_return_type() cons
 }
 
 void FastNoiseLite::set_cellular_jitter(float jitter) {
-	jitter = zylann::math::clamp(jitter, 0.f, 1.f);
+	jitter = math::clamp(jitter, 0.f, 1.f);
 	if (_cellular_jitter == jitter) {
 		return;
 	}
@@ -358,3 +360,5 @@ void FastNoiseLite::_bind_methods() {
 	BIND_ENUM_CONSTANT(CELLULAR_RETURN_DISTANCE_2_MUL);
 	BIND_ENUM_CONSTANT(CELLULAR_RETURN_DISTANCE_2_DIV);
 }
+
+} // namespace zylann

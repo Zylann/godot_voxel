@@ -14,14 +14,13 @@
 #include <scene/gui/grid_container.h>
 #include <scene/gui/label.h>
 
+namespace zylann::voxel {
+
 const char *VoxelGraphEditor::SIGNAL_NODE_SELECTED = "node_selected";
 const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
 const char *VoxelGraphEditor::SIGNAL_NODES_DELETED = "nodes_deleted";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-using namespace zylann;
-using namespace voxel;
 
 // Shows a 2D slice of the 3D set of values coming from an output port
 class VoxelGraphEditorNodePreview : public VBoxContainer {
@@ -1006,3 +1005,5 @@ void VoxelGraphEditor::_bind_methods() {
 	ADD_SIGNAL(MethodInfo(SIGNAL_NOTHING_SELECTED, PropertyInfo(Variant::INT, "nothing_selected")));
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODES_DELETED, PropertyInfo(Variant::INT, "nodes_deleted")));
 }
+
+} // namespace zylann::voxel

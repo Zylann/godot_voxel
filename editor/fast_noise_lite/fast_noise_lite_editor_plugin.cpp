@@ -5,6 +5,8 @@
 #include <core/core_string_names.h>
 #include <editor/editor_scale.h>
 
+namespace zylann {
+
 class FastNoiseLiteViewer : public Control {
 	GDCLASS(FastNoiseLiteViewer, Control)
 public:
@@ -182,3 +184,5 @@ FastNoiseLiteEditorPlugin::FastNoiseLiteEditorPlugin(EditorNode *p_node) {
 	plugin.instantiate();
 	add_inspector_plugin(plugin);
 }
+
+} // namespace zylann

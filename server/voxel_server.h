@@ -12,8 +12,6 @@
 
 #include <memory>
 
-class VoxelNode;
-
 namespace zylann {
 class AsyncDependencyTracker;
 }

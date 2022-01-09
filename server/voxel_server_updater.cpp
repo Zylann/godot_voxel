@@ -5,9 +5,9 @@
 // Needed for doing `Node *root = SceneTree::get_root()`, Window* is forward-declared
 #include <scene/main/window.h>
 
-namespace {
+namespace zylann::voxel {
+
 bool g_updater_created = false;
-}
 
 VoxelServerUpdater::VoxelServerUpdater() {
 	PRINT_VERBOSE("Creating VoxelServerUpdater");
@@ -53,3 +53,5 @@ void VoxelServerUpdater::_notification(int p_what) {
 			break;
 	}
 }
+
+} // namespace zylann::voxel

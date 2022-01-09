@@ -1338,6 +1338,8 @@ void polygonize_volume_directly(const VoxelBufferInternal &voxels, Vector3i min,
 
 } //namespace zylann::voxel::dmc
 
+namespace zylann::voxel {
+
 #define BUILD_OCTREE_BOTTOM_UP
 
 thread_local VoxelMesherDMC::Cache VoxelMesherDMC::_cache;
@@ -1585,3 +1587,5 @@ void VoxelMesherDMC::_bind_methods() {
 	BIND_ENUM_CONSTANT(SEAM_NONE);
 	BIND_ENUM_CONSTANT(SEAM_MARCHING_SQUARE_SKIRTS);
 }
+
+} // namespace zylann::voxel

@@ -7,6 +7,8 @@
 #include <scene/resources/mesh.h>
 #include <vector>
 
+namespace zylann::voxel {
+
 // TODO Rename VoxelMesherModelBatch
 
 // Interprets voxel values as indexes to models in a VoxelLibrary, and batches them together.
@@ -70,7 +72,7 @@ private:
 	};
 
 	struct Cache {
-		zylann::FixedArray<Arrays, MAX_MATERIALS> arrays_per_material;
+		FixedArray<Arrays, MAX_MATERIALS> arrays_per_material;
 	};
 
 	// Parameters
@@ -80,5 +82,7 @@ private:
 	// Work cache
 	static thread_local Cache _cache;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_MESHER_BLOCKY_H

@@ -4,6 +4,8 @@
 #include "voxel_terrain.h"
 #include <core/math/aabb.h>
 
+namespace zylann::voxel {
+
 // Helper to get simple AABB physics
 class VoxelBoxMover : public RefCounted {
 	GDCLASS(VoxelBoxMover, RefCounted)
@@ -22,5 +24,7 @@ private:
 
 	uint32_t _collision_mask = 0xffffffff; // Everything
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_BOX_MOVER_H

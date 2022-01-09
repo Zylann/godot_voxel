@@ -5,6 +5,8 @@
 
 #include "fast_noise_lite_gradient.h"
 
+namespace zylann {
+
 class FastNoiseLite : public Resource {
 	GDCLASS(FastNoiseLite, Resource)
 
@@ -162,10 +164,12 @@ private:
 	Ref<FastNoiseLiteGradient> _warp_noise;
 };
 
-VARIANT_ENUM_CAST(FastNoiseLite::NoiseType);
-VARIANT_ENUM_CAST(FastNoiseLite::FractalType);
-VARIANT_ENUM_CAST(FastNoiseLite::RotationType3D);
-VARIANT_ENUM_CAST(FastNoiseLite::CellularDistanceFunction);
-VARIANT_ENUM_CAST(FastNoiseLite::CellularReturnType);
+} // namespace zylann
+
+VARIANT_ENUM_CAST(zylann::FastNoiseLite::NoiseType);
+VARIANT_ENUM_CAST(zylann::FastNoiseLite::FractalType);
+VARIANT_ENUM_CAST(zylann::FastNoiseLite::RotationType3D);
+VARIANT_ENUM_CAST(zylann::FastNoiseLite::CellularDistanceFunction);
+VARIANT_ENUM_CAST(zylann::FastNoiseLite::CellularReturnType);
 
 #endif // FAST_NOISE_LITE_H

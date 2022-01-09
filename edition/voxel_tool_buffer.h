@@ -3,6 +3,8 @@
 
 #include "voxel_tool.h"
 
+namespace zylann::voxel {
+
 class VoxelToolBuffer : public VoxelTool {
 	GDCLASS(VoxelToolBuffer, VoxelTool)
 public:
@@ -28,5 +30,7 @@ protected:
 private:
 	Ref<VoxelBuffer> _buffer;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_TOOL_BUFFER_H

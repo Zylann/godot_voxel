@@ -14,8 +14,7 @@
 #include <core/core_string_names.h>
 #include <scene/3d/mesh_instance_3d.h>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelTerrain::VoxelTerrain() {
 	// Note: don't do anything heavy in the constructor.
@@ -28,7 +27,7 @@ VoxelTerrain::VoxelTerrain() {
 	// Infinite by default
 	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT));
 
-	struct ApplyMeshUpdateTask : public zylann::ITimeSpreadTask {
+	struct ApplyMeshUpdateTask : public ITimeSpreadTask {
 		void run() override {
 			if (!VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
 				// The node can have been destroyed while this task was still pending
@@ -832,7 +831,7 @@ void VoxelTerrain::_process() {
 }
 
 void VoxelTerrain::process_viewers() {
-	zylann::ProfilingClock profiling_clock;
+	ProfilingClock profiling_clock;
 
 	// Ordered by ascending index in paired viewers list
 	std::vector<size_t> unpaired_viewer_indexes;
@@ -1121,7 +1120,7 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 }
 
 void VoxelTerrain::process_meshing() {
-	zylann::ProfilingClock profiling_clock;
+	ProfilingClock profiling_clock;
 
 	_stats.dropped_block_meshs = 0;
 
@@ -1423,3 +1422,5 @@ void VoxelTerrain::_bind_methods() {
 	ADD_SIGNAL(
 			MethodInfo(VoxelStringNames::get_singleton()->block_unloaded, PropertyInfo(Variant::VECTOR3, "position")));
 }
+
+} // namespace zylann::voxel

@@ -5,8 +5,7 @@
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
 	set_padding(transvoxel::MIN_PADDING, transvoxel::MAX_PADDING);
@@ -306,3 +305,5 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);
 	BIND_ENUM_CONSTANT(TEXTURES_BLEND_4_OVER_16);
 }
+
+} // namespace zylann::voxel

@@ -17,8 +17,7 @@
 
 #include <algorithm>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
@@ -1633,3 +1632,5 @@ void VoxelInstancer::_bind_methods() {
 	BIND_ENUM_CONSTANT(UP_MODE_POSITIVE_Y);
 	BIND_ENUM_CONSTANT(UP_MODE_SPHERE);
 }
+
+} // namespace zylann::voxel

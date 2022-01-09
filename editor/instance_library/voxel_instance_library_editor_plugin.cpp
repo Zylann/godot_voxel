@@ -6,14 +6,14 @@
 #include <scene/gui/menu_button.h>
 #include <scene/resources/primitive_meshes.h>
 
-namespace {
+namespace zylann::voxel {
+
 enum Buttons {
 	BUTTON_ADD_MULTIMESH_ITEM,
 	BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE,
 	BUTTON_ADD_SCENE_ITEM,
 	BUTTON_REMOVE_ITEM
 };
-} // namespace
 
 bool VoxelInstanceLibraryEditorInspectorPlugin::can_handle(Object *p_object) {
 	return Object::cast_to<VoxelInstanceLibrary>(p_object) != nullptr;
@@ -287,3 +287,5 @@ void VoxelInstanceLibraryEditorPlugin::_bind_methods() {
 	// ClassDB::bind_method(D_METHOD("_on_open_scene_dialog_file_selected", "fpath"),
 	// 		&VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected);
 }
+
+} // namespace zylann::voxel

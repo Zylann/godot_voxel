@@ -20,12 +20,15 @@
 #include <unordered_map>
 #include <vector>
 
+class PhysicsBody3D;
+
+namespace zylann::voxel {
+
 class VoxelLodTerrain;
 class VoxelInstancerRigidBody;
 class VoxelInstanceComponent;
 class VoxelInstanceLibrarySceneItem;
 class VoxelTool;
-class PhysicsBody3D;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
 // Even nodes like gridmaps could be rebuilt on top of this, if its concept of "grid" was decoupled.
@@ -143,7 +146,7 @@ private:
 		uint8_t lod_index;
 		// Position in mesh block coordinate system
 		Vector3i grid_position;
-		zylann::DirectMultiMeshInstance multimesh_instance;
+		DirectMultiMeshInstance multimesh_instance;
 		// For physics we use nodes because it's easier to manage.
 		// Such instances may be less numerous.
 		// If the item associated to this block has no collisions, this will be empty.
@@ -187,7 +190,7 @@ private:
 		// Can't use `HashMap` because it lacks move semantics.
 		std::unordered_map<Vector3i, std::unique_ptr<VoxelInstanceBlockData>> loaded_instances_data;
 
-		zylann::FixedArray<MeshLodDistances, VoxelInstanceLibraryItem::MAX_MESH_LODS> mesh_lod_distances;
+		FixedArray<MeshLodDistances, VoxelInstanceLibraryItem::MAX_MESH_LODS> mesh_lod_distances;
 
 		Lod() = default;
 		Lod(const Lod &) = delete; // non construction-copyable
@@ -196,7 +199,7 @@ private:
 
 	UpMode _up_mode = UP_MODE_POSITIVE_Y;
 
-	zylann::FixedArray<Lod, MAX_LOD> _lods;
+	FixedArray<Lod, MAX_LOD> _lods;
 	std::vector<Block *> _blocks; // Does not have nulls
 	HashMap<int, Layer> _layers; // Each layer corresponds to a library item
 	Ref<VoxelInstanceLibrary> _library;
@@ -206,11 +209,13 @@ private:
 	VoxelLodTerrain *_parent;
 
 #ifdef TOOLS_ENABLED
-	zylann::DebugRenderer _debug_renderer;
+	DebugRenderer _debug_renderer;
 	bool _gizmos_enabled = false;
 #endif
 };
 
-VARIANT_ENUM_CAST(VoxelInstancer::UpMode);
+} // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::UpMode);
 
 #endif // VOXEL_INSTANCER_H

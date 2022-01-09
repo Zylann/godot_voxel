@@ -5,6 +5,8 @@
 #include "voxel_block_request.h"
 #include <core/io/resource.h>
 
+namespace zylann::voxel {
+
 // Provides access to a source of paged voxel data, which may load and save.
 // This is intented for files, so it may run in a single background thread and gets requests in batches.
 // Must be implemented in a thread-safe way.
@@ -36,10 +38,10 @@ public:
 	// Queries a block of voxels beginning at the given world-space voxel position and LOD.
 	// If you use LOD, the result at a given coordinate must always remain the same regardless of it.
 	// In other words, voxels values must solely depend on their coordinates or fixed parameters.
-	virtual Result emerge_block(zylann::voxel::VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
+	virtual Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
 
 	// TODO Deprecate
-	virtual void immerge_block(zylann::voxel::VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod);
+	virtual void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod);
 
 	// TODO Rename load_voxel_blocks
 	// Note: Don't modify the order of `p_blocks`.
@@ -59,7 +61,7 @@ public:
 
 	struct FullLoadingResult {
 		struct Block {
-			std::shared_ptr<zylann::voxel::VoxelBufferInternal> voxels;
+			std::shared_ptr<VoxelBufferInternal> voxels;
 			std::unique_ptr<VoxelInstanceBlockData> instances_data;
 			Vector3i position;
 			unsigned int lod;
@@ -107,6 +109,8 @@ private:
 	RWLock _parameters_lock;
 };
 
-VARIANT_ENUM_CAST(VoxelStream::Result);
+} // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelStream::Result);
 
 #endif // VOXEL_STREAM_H

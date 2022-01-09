@@ -60,6 +60,8 @@ struct DualGrid {
 
 } // namespace zylann::voxel::dmc
 
+namespace zylann::voxel {
+
 // Mesher extending Marching Cubes using a dual grid.
 class VoxelMesherDMC : public VoxelMesher {
 	GDCLASS(VoxelMesherDMC, VoxelMesher)
@@ -120,9 +122,9 @@ private:
 	};
 
 	struct Cache {
-		zylann::voxel::dmc::MeshBuilder mesh_builder;
-		zylann::voxel::dmc::DualGrid dual_grid;
-		zylann::voxel::dmc::OctreeNodePool octree_node_pool;
+		dmc::MeshBuilder mesh_builder;
+		dmc::DualGrid dual_grid;
+		dmc::OctreeNodePool octree_node_pool;
 	};
 
 	// Parameters
@@ -142,8 +144,10 @@ private:
 	Stats _stats;
 };
 
-VARIANT_ENUM_CAST(VoxelMesherDMC::SimplifyMode)
-VARIANT_ENUM_CAST(VoxelMesherDMC::MeshMode)
-VARIANT_ENUM_CAST(VoxelMesherDMC::SeamMode)
+} // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC::SimplifyMode)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC::MeshMode)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC::SeamMode)
 
 #endif // VOXEL_MESHER_DMC_H

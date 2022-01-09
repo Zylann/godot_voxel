@@ -5,24 +5,23 @@
 #include "../util/fixed_array.h"
 #include <scene/resources/mesh.h>
 
-class VoxelBuffer;
-
 namespace zylann::voxel {
+
+class VoxelBuffer;
 class VoxelBufferInternal;
-}
 
 class VoxelMesher : public Resource {
 	GDCLASS(VoxelMesher, Resource)
 public:
 	struct Input {
-		const zylann::voxel::VoxelBufferInternal &voxels;
+		const VoxelBufferInternal &voxels;
 		int lod; // = 0; // Not initialized because it confused GCC
 	};
 
 	struct Output {
 		// Each surface correspond to a different material
 		Vector<Array> surfaces;
-		zylann::FixedArray<Vector<Array>, zylann::voxel::Cube::SIDE_COUNT> transition_surfaces;
+		FixedArray<Vector<Array>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 		unsigned int mesh_flags = 0;
 		Ref<Image> atlas_image;
@@ -67,5 +66,7 @@ private:
 	unsigned int _minimum_padding = 0;
 	unsigned int _maximum_padding = 0;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_MESHER_H

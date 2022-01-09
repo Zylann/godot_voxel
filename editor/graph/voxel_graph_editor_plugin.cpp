@@ -7,6 +7,8 @@
 #include <editor/editor_data.h>
 #include <editor/editor_scale.h>
 
+namespace zylann::voxel {
+
 VoxelGraphEditorPlugin::VoxelGraphEditorPlugin(EditorNode *p_node) {
 	//EditorInterface *ed = get_editor_interface();
 	_graph_editor = memnew(VoxelGraphEditor);
@@ -131,3 +133,5 @@ void VoxelGraphEditorPlugin::_bind_methods() {
 	// 		D_METHOD("_on_graph_editor_nothing_selected"), &VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected);
 	ClassDB::bind_method(D_METHOD("_hide_deferred"), &VoxelGraphEditorPlugin::_hide_deferred);
 }
+
+} // namespace zylann::voxel

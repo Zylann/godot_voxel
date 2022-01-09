@@ -7,6 +7,8 @@
 
 // TODO Rename VoxelInstanceLibraryMultimeshItem (did not do it for compatibility)
 
+namespace zylann::voxel {
+
 // Settings for a model that can be used by VoxelInstancer
 class VoxelInstanceLibraryItem : public VoxelInstanceLibraryItemBase {
 	GDCLASS(VoxelInstanceLibraryItem, VoxelInstanceLibraryItemBase)
@@ -77,7 +79,7 @@ private:
 		set_mesh(mesh, 3);
 	}
 
-	zylann::FixedArray<Ref<Mesh>, MAX_MESH_LODS> _mesh_lods;
+	FixedArray<Ref<Mesh>, MAX_MESH_LODS> _mesh_lods;
 	unsigned int _mesh_lod_count = 1;
 
 	// It is preferred to have materials on the mesh already,
@@ -90,5 +92,7 @@ private:
 	int _collision_layer = 1;
 	Vector<CollisionShapeInfo> _collision_shapes;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_INSTANCE_LIBRARY_ITEM_H

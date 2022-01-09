@@ -5,8 +5,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/voxel_raycast.h"
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelToolTerrain::VoxelToolTerrain() {}
 
@@ -412,3 +411,5 @@ void VoxelToolTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("for_each_voxel_metadata_in_area", "voxel_area", "callback"),
 			&VoxelToolTerrain::for_each_voxel_metadata_in_area);
 }
+
+} // namespace zylann::voxel

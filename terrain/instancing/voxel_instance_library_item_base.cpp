@@ -3,6 +3,8 @@
 
 #include <core/core_string_names.h>
 
+namespace zylann::voxel {
+
 void VoxelInstanceLibraryItemBase::set_item_name(String name) {
 	_name = name;
 }
@@ -103,3 +105,5 @@ void VoxelInstanceLibraryItemBase::_bind_methods() {
 			"set_generator", "get_generator");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "persistent"), "set_persistent", "is_persistent");
 }
+
+} // namespace zylann::voxel

@@ -2,7 +2,7 @@
 #include "../math/funcs.h"
 #include <core/io/image.h>
 
-using namespace zylann;
+namespace zylann {
 
 FastNoise2::FastNoise2() {
 	// Setup default
@@ -467,14 +467,14 @@ void FastNoise2::update_generator() {
 	_generator = generator_node;
 }
 
-zylann::math::Interval FastNoise2::get_estimated_output_range() const {
+math::Interval FastNoise2::get_estimated_output_range() const {
 	// TODO Optimize: better range analysis on FastNoise2
 	// Most noises should have known bounds like FastNoiseLite, but the node-graph nature of this library
 	// can make it difficult to calculate. Would be nice if the library could provide that out of the box.
 	if (is_remap_enabled()) {
-		return zylann::math::Interval(get_remap_output_min(), get_remap_output_max());
+		return math::Interval(get_remap_output_min(), get_remap_output_max());
 	} else {
-		return zylann::math::Interval(-1.f, 1.f);
+		return math::Interval(-1.f, 1.f);
 	}
 }
 
@@ -671,3 +671,5 @@ void FastNoise2::_bind_methods() {
 	BIND_ENUM_CONSTANT(SIMD_AVX512);
 	BIND_ENUM_CONSTANT(SIMD_NEON);
 }
+
+} // namespace zylann

@@ -8,6 +8,8 @@
 
 class Image;
 
+namespace zylann {
+
 // Can't call it FastNoise? because FastNoise is a namespace already
 class FastNoise2 : public Resource {
 	GDCLASS(FastNoise2, Resource)
@@ -169,7 +171,7 @@ public:
 
 	void generate_image(Ref<Image> image, bool tileable) const;
 
-	zylann::math::Interval get_estimated_output_range() const;
+	math::Interval get_estimated_output_range() const;
 
 private:
 	// Non-static method for scripts because Godot4 does not support binding static methods (it's only implemented for
@@ -208,10 +210,12 @@ private:
 	FastNoise::SmartNode<> _generator;
 };
 
-VARIANT_ENUM_CAST(FastNoise2::SIMDLevel);
-VARIANT_ENUM_CAST(FastNoise2::NoiseType);
-VARIANT_ENUM_CAST(FastNoise2::FractalType);
-VARIANT_ENUM_CAST(FastNoise2::CellularDistanceFunction);
-VARIANT_ENUM_CAST(FastNoise2::CellularReturnType);
+} // namespace zylann
+
+VARIANT_ENUM_CAST(zylann::FastNoise2::SIMDLevel);
+VARIANT_ENUM_CAST(zylann::FastNoise2::NoiseType);
+VARIANT_ENUM_CAST(zylann::FastNoise2::FractalType);
+VARIANT_ENUM_CAST(zylann::FastNoise2::CellularDistanceFunction);
+VARIANT_ENUM_CAST(zylann::FastNoise2::CellularReturnType);
 
 #endif // VOXEL_FAST_NOISE_2_H

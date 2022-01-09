@@ -160,7 +160,7 @@ void register_voxel_types() {
 	EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
 	EditorPlugins::add_by_type<FastNoiseLiteEditorPlugin>();
-	EditorPlugins::add_by_type<VoxEditorPlugin>();
+	EditorPlugins::add_by_type<magica::VoxEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	EditorPlugins::add_by_type<FastNoise2EditorPlugin>();

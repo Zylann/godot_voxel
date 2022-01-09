@@ -156,10 +156,9 @@ In performance-critical areas which run a lot:
 
 The intented namespaces are `zylann::` as main, and `zylann::voxel::` for voxel-related stuff. There may be others for different parts of the module. Namespaces are a work in progress, so a lot of places still miss them. 
 
-Registered classes are largely prefixed with `Voxel`, and not namespaced yet.
-Godot's core codebase is generally not using namespaces. Classes registered to the engine must have a unique name regardless of namespaces, so in this module, they are primarily used to wrap the rest of the code. It is however desirable for registered classes to be in a namespace as well for consistency, and to avoid having to type fully-qualified names all the time.
+Registered classes are also namespaced, but are still largely prefixed with `Voxel`. Classes registered to the engine must have a unique name regardless of namespaces.
 
-It should be possible to use namespaces around a module class, since Godot4 started using them [here](https://github.com/godotengine/godot/blob/a8a20a0e02c8459513542f77eaed9b7350812c94/core/core_bind.h#L47) for core bindings (the [reason](https://github.com/godotengine/godot/pull/51627) was very specific though). In GDExtension it was not tested yet, but if there is a problem we'll have to do a PR to fix it.
+If a registered class needs the same name as an internal one, it can be placed into a `::gd` sub-namespace. On the other hand, internal classes can also be suffixed `Internal`.
 
 ### Version control
 

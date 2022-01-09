@@ -6,13 +6,15 @@
 
 class ArrayMesh;
 
+namespace zylann::voxel {
+
 class VoxelMesherTransvoxel : public VoxelMesher {
 	GDCLASS(VoxelMesherTransvoxel, VoxelMesher)
 
 public:
 	enum TexturingMode {
-		TEXTURES_NONE = zylann::voxel::transvoxel::TEXTURES_NONE,
-		TEXTURES_BLEND_4_OVER_16 = zylann::voxel::transvoxel::TEXTURES_BLEND_4_OVER_16
+		TEXTURES_NONE = transvoxel::TEXTURES_NONE,
+		TEXTURES_BLEND_4_OVER_16 = transvoxel::TEXTURES_BLEND_4_OVER_16
 	};
 
 	VoxelMesherTransvoxel();
@@ -40,7 +42,7 @@ protected:
 	static void _bind_methods();
 
 private:
-	void fill_surface_arrays(Array &arrays, const zylann::voxel::transvoxel::MeshArrays &src);
+	void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src);
 
 	TexturingMode _texture_mode = TEXTURES_NONE;
 
@@ -53,6 +55,8 @@ private:
 	MeshOptimizationParams _mesh_optimization_params;
 };
 
-VARIANT_ENUM_CAST(VoxelMesherTransvoxel::TexturingMode);
+} // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherTransvoxel::TexturingMode);
 
 #endif // VOXEL_MESHER_TRANSVOXEL_H

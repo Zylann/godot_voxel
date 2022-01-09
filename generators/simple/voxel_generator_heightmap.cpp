@@ -2,7 +2,7 @@
 #include "../../util/fixed_array.h"
 #include "../../util/span.h"
 
-using namespace zylann::voxel;
+namespace zylann::voxel {
 
 VoxelGeneratorHeightmap::VoxelGeneratorHeightmap() {}
 
@@ -83,3 +83,5 @@ void VoxelGeneratorHeightmap::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_range"), "set_height_range", "get_height_range");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "iso_scale"), "set_iso_scale", "get_iso_scale");
 }
+
+} // namespace zylann::voxel

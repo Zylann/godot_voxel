@@ -3,6 +3,8 @@
 
 #include <scene/main/node.h>
 
+namespace zylann::voxel {
+
 // TODO Hack to make VoxelServer update... need ways to integrate callbacks from main loop!
 class VoxelServerUpdater : public Node {
 	GDCLASS(VoxelServerUpdater, Node)
@@ -16,5 +18,7 @@ protected:
 private:
 	VoxelServerUpdater();
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_SERVER_UPDATER_H

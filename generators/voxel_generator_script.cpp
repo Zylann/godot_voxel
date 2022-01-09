@@ -2,6 +2,8 @@
 #include "../constants/voxel_string_names.h"
 #include "../util/godot/funcs.h"
 
+namespace zylann::voxel {
+
 VoxelGeneratorScript::VoxelGeneratorScript() {}
 
 VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelBlockRequest &input) {
@@ -48,3 +50,5 @@ void VoxelGeneratorScript::_bind_methods() {
 
 	// BIND_VMETHOD(MethodInfo(Variant::INT, "_get_used_channels_mask"));
 }
+
+} // namespace zylann::voxel

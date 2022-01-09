@@ -330,10 +330,7 @@ void generate_blocky_mesh(
 	}
 }
 
-} // namespace zylann::voxel
-
-using namespace zylann;
-using namespace voxel;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 thread_local VoxelMesherBlocky::Cache VoxelMesherBlocky::_cache;
 
@@ -554,3 +551,5 @@ void VoxelMesherBlocky::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
 			"set_occlusion_darkness", "get_occlusion_darkness");
 }
+
+} // namespace zylann::voxel

@@ -2,7 +2,7 @@
 #include "../storage/voxel_buffer.h"
 #include "../util/godot/funcs.h"
 
-using namespace zylann;
+namespace zylann::voxel {
 
 Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
@@ -66,3 +66,5 @@ void VoxelMesher::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_minimum_padding"), &VoxelMesher::get_minimum_padding);
 	ClassDB::bind_method(D_METHOD("get_maximum_padding"), &VoxelMesher::get_maximum_padding);
 }
+
+} // namespace zylann::voxel

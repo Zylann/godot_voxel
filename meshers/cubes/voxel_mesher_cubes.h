@@ -5,6 +5,8 @@
 #include "voxel_color_palette.h"
 #include <vector>
 
+namespace zylann::voxel {
+
 // A super simple mesher only producing colored cubes
 class VoxelMesherCubes : public VoxelMesher {
 	GDCLASS(VoxelMesherCubes, VoxelMesher)
@@ -83,7 +85,7 @@ public:
 			unsigned int size_y;
 			unsigned int surface_index;
 		};
-		std::vector<zylann::Color8> colors;
+		std::vector<Color8> colors;
 		std::vector<ImageInfo> images;
 
 		void clear() {
@@ -104,7 +106,7 @@ private:
 	};
 
 	struct Cache {
-		zylann::FixedArray<Arrays, MATERIAL_COUNT> arrays_per_material;
+		FixedArray<Arrays, MATERIAL_COUNT> arrays_per_material;
 		std::vector<uint8_t> mask_memory_pool;
 		GreedyAtlasData greedy_atlas_data;
 	};
@@ -117,7 +119,9 @@ private:
 	static thread_local Cache _cache;
 };
 
-VARIANT_ENUM_CAST(VoxelMesherCubes::ColorMode);
-VARIANT_ENUM_CAST(VoxelMesherCubes::Materials);
+} // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherCubes::ColorMode);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherCubes::Materials);
 
 #endif // VOXEL_MESHER_CUBES_H

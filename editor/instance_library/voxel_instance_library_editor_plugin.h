@@ -7,6 +7,9 @@
 class Control;
 class MenuButton;
 class ConfirmationDialog;
+
+namespace zylann::voxel {
+
 class VoxelInstanceLibraryEditorPlugin;
 
 class VoxelInstanceLibraryEditorInspectorPlugin : public EditorInspectorPlugin {
@@ -25,7 +28,9 @@ private:
 class VoxelInstanceLibraryEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelInstanceLibraryEditorPlugin, EditorPlugin)
 public:
-	virtual String get_name() const { return "VoxelInstanceLibrary"; }
+	virtual String get_name() const {
+		return "VoxelInstanceLibrary";
+	}
 
 	VoxelInstanceLibraryEditorPlugin(EditorNode *p_node);
 
@@ -56,5 +61,7 @@ private:
 	Ref<VoxelInstanceLibrary> _library;
 	Ref<VoxelInstanceLibraryEditorInspectorPlugin> _inspector_plugin;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_INSTANCE_LIBRARY_EDITOR_PLUGIN_H

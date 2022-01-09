@@ -5,6 +5,8 @@
 #include <scene/3d/mesh_instance_3d.h>
 #include <scene/3d/physics_body_3d.h>
 
+namespace zylann::voxel {
+
 VoxelInstanceLibrary::~VoxelInstanceLibrary() {
 	for_each_item([this](int id, VoxelInstanceLibraryItemBase &item) { item.remove_listener(this, id); });
 }
@@ -176,3 +178,5 @@ void VoxelInstanceLibrary::_bind_methods() {
 
 	BIND_CONSTANT(MAX_ID);
 }
+
+} // namespace zylann::voxel

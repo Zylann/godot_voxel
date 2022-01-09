@@ -3,6 +3,8 @@
 
 #include "voxel_instance_library_item_base.h"
 
+namespace zylann::voxel {
+
 // Contains a list of items that can be used by VoxelInstancer, associated with a unique ID
 class VoxelInstanceLibrary : public Resource, public VoxelInstanceLibraryItemBase::IListener {
 	GDCLASS(VoxelInstanceLibrary, Resource)
@@ -58,5 +60,7 @@ private:
 
 	Vector<IListener *> _listeners;
 };
+
+} // namespace zylann::voxel
 
 #endif // VOXEL_INSTANCER_LIBRARY_H

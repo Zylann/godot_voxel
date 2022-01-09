@@ -2,7 +2,7 @@
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
 
-using namespace zylann::voxel;
+namespace zylann::voxel {
 
 VoxelGeneratorNoise::VoxelGeneratorNoise() {}
 
@@ -251,3 +251,5 @@ void VoxelGeneratorNoise::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_start"), "set_height_start", "get_height_start");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_range"), "set_height_range", "get_height_range");
 }
+
+} // namespace zylann::voxel

@@ -8,8 +8,7 @@
 #include <core/os/time.h>
 #include <algorithm>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 namespace {
 const uint8_t FORMAT_VERSION = 3;
@@ -195,7 +194,7 @@ void VoxelStreamRegionFiles::_immerge_block(VoxelBufferInternal &voxel_buffer, V
 		if (load_res != FILE_OK && load_res != FILE_CANT_OPEN) {
 			// The file is present but there is a problem with it
 			String meta_path = _directory_path.plus_file(META_FILE_NAME);
-			ERR_PRINT(String("Could not read {0}: error {1}").format(varray(meta_path, ::to_string(load_res))));
+			ERR_PRINT(String("Could not read {0}: error {1}").format(varray(meta_path, zylann::to_string(load_res))));
 			return;
 		}
 	}
@@ -896,3 +895,5 @@ void VoxelStreamRegionFiles::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "block_size_po2"), "set_block_size_po2", "get_region_size_po2");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "sector_size"), "set_sector_size", "get_sector_size");
 }
+
+} // namespace zylann::voxel

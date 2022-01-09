@@ -694,8 +694,6 @@ Ref<Image> make_greedy_atlas(
 	return image;
 }
 
-} // namespace zylann::voxel
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 thread_local VoxelMesherCubes::Cache VoxelMesherCubes::_cache;
@@ -707,9 +705,6 @@ VoxelMesherCubes::VoxelMesherCubes() {
 VoxelMesherCubes::~VoxelMesherCubes() {}
 
 void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	using namespace zylann;
-	using namespace voxel;
-
 	VOXEL_PROFILE_SCOPE();
 	const int channel = VoxelBufferInternal::CHANNEL_COLOR;
 	Cache &cache = _cache;
@@ -1032,3 +1027,5 @@ void VoxelMesherCubes::_bind_methods() {
 	BIND_ENUM_CONSTANT(COLOR_MESHER_PALETTE);
 	BIND_ENUM_CONSTANT(COLOR_SHADER_PALETTE);
 }
+
+} // namespace zylann::voxel
