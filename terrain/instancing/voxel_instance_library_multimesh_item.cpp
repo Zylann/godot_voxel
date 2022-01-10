@@ -98,6 +98,24 @@ static RenderingServer::ShadowCastingSetting node_to_visual_server_enum(Geometry
 }
 
 void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Node *root) {
+	struct L {
+		static unsigned int get_lod_index_from_name(const String &name) {
+			if (name.ends_with("LOD0")) {
+				return 0;
+			}
+			if (name.ends_with("LOD1")) {
+				return 1;
+			}
+			if (name.ends_with("LOD2")) {
+				return 2;
+			}
+			if (name.ends_with("LOD3")) {
+				return 3;
+			}
+			return 0;
+		}
+	};
+
 	ERR_FAIL_COND(root == nullptr);
 
 	_collision_shapes.clear();
@@ -111,9 +129,9 @@ void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Node *root) {
 	for (int i = 0; i < root->get_child_count(); ++i) {
 		MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(root->get_child(i));
 		if (mi != nullptr) {
-			// TODO Support LODs
-			_mesh_lods[0] = mi->get_mesh();
-			_mesh_lod_count = 1;
+			const unsigned int lod_index = L::get_lod_index_from_name(mi->get_name());
+			_mesh_lods[lod_index] = mi->get_mesh();
+			_mesh_lod_count = math::max(lod_index + 1, _mesh_lod_count);
 			_material_override = mi->get_material_override();
 			_shadow_casting_setting = node_to_visual_server_enum(mi->get_cast_shadows_setting());
 		}

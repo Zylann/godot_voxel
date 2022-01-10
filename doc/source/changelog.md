@@ -22,6 +22,7 @@ Godot 4 is required from this version.
     - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
     - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
     - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
+    - `VoxelInstanceLibraryMultiMeshItem`: Support setting up mesh LODs from a scene with name `LODx` suffixes
 
 - Fixes
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
@@ -41,6 +42,8 @@ Godot 4 is required from this version.
     - `Voxel` was renamed `VoxelBlockyModel`
     - `VoxelLibrary` was renamed `VoxelBlockyLibrary`
     - `VoxelVoxImporter` was renamed `VoxelVoxSceneImporter`
+    - `VoxelInstanceLibraryItem` was renamed `VoxelInstanceLibraryMultiMeshItem`
+    - `VoxelInstanceLibraryItemBase` was renamed `VoxelInstanceLibraryItem`
 
 - Known issues
     - Some nodes and resources no longer start with predefined properties due to a warning introduced in Godot4 when properties are resources.

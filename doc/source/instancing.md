@@ -104,7 +104,10 @@ This conversion process expects your scene to follow a specific structure:
 
 ```
 - PhysicsBody (StaticBody, RigidBody...)
-	- MeshInstance
+	- MeshInstance_LOD0 <-- "LOD" suffixes are optional but allow to specify the 4 LODs if needed
+	- MeshInstance_LOD1
+	- MeshInstance_LOD2
+	- MeshInstance_LOD3
 	- CollisionShape1
 	- CollisionShape2
 	- ...
