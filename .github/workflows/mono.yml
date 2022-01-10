@@ -1,14 +1,14 @@
 name: 🐒 Mono Builds
 on:
   push:
-    branches: [ master, godot3.x, godot3.4, github_actions ]
+    branches: [ godot3.x, github_actions ]
   pull_request:
-    branches: [ godot3.x, godot3.4 ]
+    branches: [ godot3.x ]
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: 3.4
-  VOXEL_BASE_BRANCH: godot3.4
+  GODOT_BASE_BRANCH: 3.x
+  VOXEL_BASE_BRANCH: godot3.x
   SCONS_CACHE_LIMIT: 4096
   MONO_BCL_RELEASE_TAG: release-c3a9d31
 
@@ -18,16 +18,6 @@ jobs:
     name: Generate Mono Glue
     
     steps:
-      - name: Get Env
-        if: ${{ github.head_ref == 'refs/heads/godot3.x' || github.ref == 'refs/heads/godot3.x' }}
-        run: |
-          echo "GODOT_BASE_BRANCH=3.x" >> $GITHUB_ENV
-          echo "VOXEL_BASE_BRANCH=godot3.x" >> $GITHUB_ENV
-      - name: Get Env Branch
-        if: ${{ github.head_ref == 'refs/heads/godot3.4' || github.ref == 'refs/heads/godot3.4' }}
-        run: |
-          echo "GODOT_BASE_BRANCH=3.4" >> $GITHUB_ENV
-          echo "VOXEL_BASE_BRANCH=godot3.4" >> $GITHUB_ENV
       # Clone Godot
       - uses: actions/checkout@v2
         with:
