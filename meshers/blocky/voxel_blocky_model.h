@@ -1,5 +1,5 @@
-#ifndef VOXEL_TYPE_H
-#define VOXEL_TYPE_H
+#ifndef VOXEL_BLOCKY_MODEL_H
+#define VOXEL_BLOCKY_MODEL_H
 
 #include "../../constants/cube_tables.h"
 #include "../../util/fixed_array.h"
@@ -206,4 +206,4 @@ private:
 VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel::GeometryType)
 VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel::Side)
 
-#endif // VOXEL_TYPE_H
+#endif // VOXEL_BLOCKY_MODEL_H

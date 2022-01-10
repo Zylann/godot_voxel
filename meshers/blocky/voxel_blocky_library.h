@@ -1,5 +1,5 @@
-#ifndef VOXEL_LIBRARY_H
-#define VOXEL_LIBRARY_H
+#ifndef VOXEL_BLOCKY_LIBRARY_H
+#define VOXEL_BLOCKY_LIBRARY_H
 
 #include "../../util/dynamic_bitset.h"
 #include "voxel_blocky_model.h"
@@ -109,4 +109,4 @@ private:
 
 } // namespace zylann::voxel
 
-#endif // VOXEL_LIBRARY_H
+#endif // VOXEL_BLOCKY_LIBRARY_H
