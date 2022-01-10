@@ -82,8 +82,8 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelBlockyLibrary>();
 	ClassDB::register_class<VoxelColorPalette>();
 	ClassDB::register_class<VoxelInstanceLibrary>();
-	ClassDB::register_class<VoxelInstanceLibraryItemBase>();
-	ClassDB::register_class<VoxelInstanceLibraryItem>();
+	ClassDB::register_virtual_class<VoxelInstanceLibraryItem>();
+	ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
 	ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
 
 	// Storage
@@ -174,6 +174,10 @@ void register_voxel_types() {
 	// Compatibility with older version
 	ClassDB::add_compatibility_class("VoxelLibrary", "VoxelBlockyLibrary");
 	ClassDB::add_compatibility_class("Voxel", "VoxelBlockyModel");
+	ClassDB::add_compatibility_class("VoxelInstanceLibraryItem", "VoxelInstanceLibraryMultiMeshItem");
+	// Not possible to add a compat class for this one because the new name is indistinguishable from an old one.
+	// However this is an abstract class so it should not be found in resources hopefully
+	//ClassDB::add_compatibility_class("VoxelInstanceLibraryItemBase", "VoxelInstanceLibraryItem");
 }
 
 void unregister_voxel_types() {

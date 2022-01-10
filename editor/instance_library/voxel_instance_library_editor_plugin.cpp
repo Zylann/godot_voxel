@@ -1,5 +1,5 @@
 #include "voxel_instance_library_editor_plugin.h"
-#include "../../terrain/instancing/voxel_instance_library_item.h"
+#include "../../terrain/instancing/voxel_instance_library_multimesh_item.h"
 #include "../../terrain/instancing/voxel_instance_library_scene_item.h"
 
 #include <scene/gui/dialogs.h>
@@ -125,7 +125,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_button_pressed(int id) {
 		case BUTTON_ADD_MULTIMESH_ITEM: {
 			ERR_FAIL_COND(_library.is_null());
 
-			Ref<VoxelInstanceLibraryItem> item;
+			Ref<VoxelInstanceLibraryMultiMeshItem> item;
 			item.instantiate();
 			// Setup some defaults
 			Ref<BoxMesh> mesh;
@@ -201,7 +201,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed() {
 	ERR_FAIL_COND(_library.is_null());
 	ERR_FAIL_COND(_item_id_to_remove == -1);
 
-	Ref<VoxelInstanceLibraryItemBase> item = _library->get_item(_item_id_to_remove);
+	Ref<VoxelInstanceLibraryItem> item = _library->get_item(_item_id_to_remove);
 
 	UndoRedo &ur = get_undo_redo();
 	ur.create_action("Remove item");
@@ -259,9 +259,9 @@ void VoxelInstanceLibraryEditorPlugin::update_multimesh_item_from_scene(String f
 	Ref<PackedScene> scene = ResourceLoader::load(fpath);
 	ERR_FAIL_COND(scene.is_null());
 
-	Ref<VoxelInstanceLibraryItemBase> item_base = _library->get_item(item_id);
+	Ref<VoxelInstanceLibraryItem> item_base = _library->get_item(item_id);
 	ERR_FAIL_COND_MSG(item_base.is_null(), "Item not found");
-	Ref<VoxelInstanceLibraryItem> item = item_base;
+	Ref<VoxelInstanceLibraryMultiMeshItem> item = item_base;
 	ERR_FAIL_COND_MSG(item.is_null(), "Item not using multimeshes");
 
 	Node *node = scene->instantiate();

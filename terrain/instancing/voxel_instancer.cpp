@@ -275,10 +275,10 @@ void VoxelInstancer::process_mesh_lods() {
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		Block *block = *it;
 
-		const VoxelInstanceLibraryItemBase *item_base = _library->get_item_const(block->layer_id);
+		const VoxelInstanceLibraryItem *item_base = _library->get_item_const(block->layer_id);
 		ERR_CONTINUE(item_base == nullptr);
 		// TODO Optimization: would be nice to not need this cast by iterating only the same item types
-		const VoxelInstanceLibraryItem *item = Object::cast_to<VoxelInstanceLibraryItem>(item_base);
+		const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
 		if (item == nullptr) {
 			// Not a multimesh item
 			continue;
@@ -294,7 +294,7 @@ void VoxelInstancer::process_mesh_lods() {
 		const int lod_index = item->get_lod_index();
 
 #ifdef DEBUG_ENABLED
-		ERR_FAIL_COND(mesh_lod_count < VoxelInstanceLibraryItem::MAX_MESH_LODS);
+		ERR_FAIL_COND(mesh_lod_count < VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS);
 #endif
 
 		const Lod &lod = _lods[lod_index];
@@ -379,7 +379,7 @@ void VoxelInstancer::set_library(Ref<VoxelInstanceLibrary> library) {
 	clear_layers();
 
 	if (_library.is_valid()) {
-		_library->for_each_item([this](int id, const VoxelInstanceLibraryItemBase &item) {
+		_library->for_each_item([this](int id, const VoxelInstanceLibraryItem &item) {
 			add_layer(id, item.get_lod_index());
 			if (_parent != nullptr && is_inside_tree()) {
 				regenerate_layer(id, true);
@@ -407,7 +407,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 	Layer *layer = get_layer(layer_id);
 	CRASH_COND(layer == nullptr);
 
-	Ref<VoxelInstanceLibraryItemBase> item = _library->get_item(layer_id);
+	Ref<VoxelInstanceLibraryItem> item = _library->get_item(layer_id);
 	ERR_FAIL_COND(item.is_null());
 	if (item->get_generator().is_null()) {
 		return;
@@ -522,9 +522,9 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 }
 
 void VoxelInstancer::update_layer_meshes(int layer_id) {
-	Ref<VoxelInstanceLibraryItemBase> item_base = _library->get_item(layer_id);
+	Ref<VoxelInstanceLibraryItem> item_base = _library->get_item(layer_id);
 	ERR_FAIL_COND(item_base.is_null());
-	VoxelInstanceLibraryItem *item = Object::cast_to<VoxelInstanceLibraryItem>(*item_base);
+	VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(*item_base);
 	ERR_FAIL_COND(item == nullptr);
 
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
@@ -548,7 +548,7 @@ void VoxelInstancer::update_layer_meshes(int layer_id) {
 }
 
 void VoxelInstancer::update_layer_scenes(int layer_id) {
-	Ref<VoxelInstanceLibraryItemBase> item_base = _library->get_item(layer_id);
+	Ref<VoxelInstanceLibraryItem> item_base = _library->get_item(layer_id);
 	ERR_FAIL_COND(item_base.is_null());
 	VoxelInstanceLibrarySceneItem *item = Object::cast_to<VoxelInstanceLibrarySceneItem>(*item_base);
 	ERR_FAIL_COND(item == nullptr);
@@ -572,39 +572,39 @@ void VoxelInstancer::update_layer_scenes(int layer_id) {
 	}
 }
 
-void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryItemBase::ChangeType change) {
+void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) {
 	ERR_FAIL_COND(_library.is_null());
 
 	// TODO It's unclear yet if some code paths do the right thing in case instances got edited
 
 	switch (change) {
-		case VoxelInstanceLibraryItemBase::CHANGE_ADDED: {
-			Ref<VoxelInstanceLibraryItemBase> item = _library->get_item(item_id);
+		case VoxelInstanceLibraryItem::CHANGE_ADDED: {
+			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
 			ERR_FAIL_COND(item.is_null());
 			add_layer(item_id, item->get_lod_index());
 			regenerate_layer(item_id, true);
 			update_configuration_warnings();
 		} break;
 
-		case VoxelInstanceLibraryItemBase::CHANGE_REMOVED:
+		case VoxelInstanceLibraryItem::CHANGE_REMOVED:
 			remove_layer(item_id);
 			update_configuration_warnings();
 			break;
 
-		case VoxelInstanceLibraryItemBase::CHANGE_GENERATOR:
+		case VoxelInstanceLibraryItem::CHANGE_GENERATOR:
 			regenerate_layer(item_id, false);
 			break;
 
-		case VoxelInstanceLibraryItemBase::CHANGE_VISUAL:
+		case VoxelInstanceLibraryItem::CHANGE_VISUAL:
 			update_layer_meshes(item_id);
 			break;
 
-		case VoxelInstanceLibraryItemBase::CHANGE_SCENE:
+		case VoxelInstanceLibraryItem::CHANGE_SCENE:
 			update_layer_scenes(item_id);
 			break;
 
-		case VoxelInstanceLibraryItemBase::CHANGE_LOD_INDEX: {
-			Ref<VoxelInstanceLibraryItemBase> item = _library->get_item(item_id);
+		case VoxelInstanceLibraryItem::CHANGE_LOD_INDEX: {
+			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
 			ERR_FAIL_COND(item.is_null());
 
 			clear_blocks_in_layer(item_id);
@@ -814,7 +814,7 @@ int VoxelInstancer::create_block(Layer *layer, uint16_t layer_id, Vector3i grid_
 }
 
 void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Transform3D> transforms,
-		Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id,
+		Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItem *item_base, uint16_t layer_id,
 		World3D *world, const Transform3D &block_transform) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -831,7 +831,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 	}
 
 	// Update multimesh
-	const VoxelInstanceLibraryItem *item = Object::cast_to<VoxelInstanceLibraryItem>(item_base);
+	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
 	if (item != nullptr) {
 		if (transforms.size() == 0) {
 			if (block->multimesh_instance.is_valid()) {
@@ -872,7 +872,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 		}
 
 		// Update bodies
-		const Vector<VoxelInstanceLibraryItem::CollisionShapeInfo> &collision_shapes = item->get_collision_shapes();
+		const Vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &collision_shapes =
+				item->get_collision_shapes();
 		if (collision_shapes.size() > 0) {
 			VOXEL_PROFILE_SCOPE_NAMED("Update multimesh bodies");
 
@@ -897,7 +898,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 							Vector3iUtil::from_floored(body_transform.origin) >> data_block_size_po2);
 
 					for (int i = 0; i < collision_shapes.size(); ++i) {
-						const VoxelInstanceLibraryItem::CollisionShapeInfo &shape_info = collision_shapes[i];
+						const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &shape_info = collision_shapes[i];
 						CollisionShape3D *cs = memnew(CollisionShape3D);
 						cs->set_shape(shape_info.shape);
 						cs->set_transform(shape_info.transform);
@@ -1045,7 +1046,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 			}
 		}
 
-		const VoxelInstanceLibraryItemBase *item = _library->get_item(layer_id);
+		const VoxelInstanceLibraryItem *item = _library->get_item(layer_id);
 		CRASH_COND(item == nullptr);
 
 		// Generate the rest
@@ -1099,7 +1100,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	for (auto it = lod.layers.begin(); it != lod.layers.end(); ++it) {
 		const int layer_id = *it;
 
-		const VoxelInstanceLibraryItemBase *item = _library->get_item_const(layer_id);
+		const VoxelInstanceLibraryItem *item = _library->get_item_const(layer_id);
 		CRASH_COND(item == nullptr);
 		if (!item->is_persistent()) {
 			continue;

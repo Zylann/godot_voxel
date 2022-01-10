@@ -8,7 +8,7 @@
 namespace zylann::voxel {
 
 VoxelInstanceLibrary::~VoxelInstanceLibrary() {
-	for_each_item([this](int id, VoxelInstanceLibraryItemBase &item) { item.remove_listener(this, id); });
+	for_each_item([this](int id, VoxelInstanceLibraryItem &item) { item.remove_listener(this, id); });
 }
 
 int VoxelInstanceLibrary::get_next_available_id() {
@@ -19,39 +19,39 @@ int VoxelInstanceLibrary::get_next_available_id() {
 	}
 }
 
-void VoxelInstanceLibrary::add_item(int id, Ref<VoxelInstanceLibraryItemBase> item) {
+void VoxelInstanceLibrary::add_item(int id, Ref<VoxelInstanceLibraryItem> item) {
 	ERR_FAIL_COND(_items.has(id));
 	ERR_FAIL_COND(id < 0 || id >= MAX_ID);
 	ERR_FAIL_COND(item.is_null());
 	_items.insert(id, item);
 	item->add_listener(this, id);
-	notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_ADDED);
+	notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_ADDED);
 	notify_property_list_changed();
 }
 
 void VoxelInstanceLibrary::remove_item(int id) {
-	Map<int, Ref<VoxelInstanceLibraryItemBase>>::Element *E = _items.find(id);
+	Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
 	ERR_FAIL_COND(E == nullptr);
-	Ref<VoxelInstanceLibraryItemBase> item = E->value();
+	Ref<VoxelInstanceLibraryItem> item = E->value();
 	if (item.is_valid()) {
 		item->remove_listener(this, id);
 	}
 	_items.erase(E);
-	notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_REMOVED);
+	notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
 	notify_property_list_changed();
 }
 
 void VoxelInstanceLibrary::clear() {
-	for_each_item([this](int id, const VoxelInstanceLibraryItemBase &item) {
-		notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_REMOVED);
+	for_each_item([this](int id, const VoxelInstanceLibraryItem &item) {
+		notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
 	});
 	_items.clear();
 	notify_property_list_changed();
 }
 
 int VoxelInstanceLibrary::find_item_by_name(String name) const {
-	for (Map<int, Ref<VoxelInstanceLibraryItemBase>>::Element *E = _items.front(); E != nullptr; E = E->next()) {
-		const Ref<VoxelInstanceLibraryItemBase> &item = E->value();
+	for (Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.front(); E != nullptr; E = E->next()) {
+		const Ref<VoxelInstanceLibraryItem> &item = E->value();
 		ERR_FAIL_COND_V(item.is_null(), -1);
 		if (item->get_name() == name) {
 			return E->key();
@@ -64,40 +64,40 @@ int VoxelInstanceLibrary::get_item_count() const {
 	return _items.size();
 }
 
-Ref<VoxelInstanceLibraryItemBase> VoxelInstanceLibrary::_b_get_item(int id) {
-	Map<int, Ref<VoxelInstanceLibraryItemBase>>::Element *E = _items.find(id);
-	Ref<VoxelInstanceLibraryItemBase> item;
+Ref<VoxelInstanceLibraryItem> VoxelInstanceLibrary::_b_get_item(int id) {
+	Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
+	Ref<VoxelInstanceLibraryItem> item;
 	if (E != nullptr) {
 		item = E->value();
 	}
 	return item;
 }
 
-VoxelInstanceLibraryItemBase *VoxelInstanceLibrary::get_item(int id) {
-	Map<int, Ref<VoxelInstanceLibraryItemBase>>::Element *E = _items.find(id);
+VoxelInstanceLibraryItem *VoxelInstanceLibrary::get_item(int id) {
+	Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
 	if (E != nullptr) {
-		Ref<VoxelInstanceLibraryItemBase> &item = E->value();
+		Ref<VoxelInstanceLibraryItem> &item = E->value();
 		ERR_FAIL_COND_V(item.is_null(), nullptr);
 		return *item;
 	}
 	return nullptr;
 }
 
-const VoxelInstanceLibraryItemBase *VoxelInstanceLibrary::get_item_const(int id) const {
-	const Map<int, Ref<VoxelInstanceLibraryItemBase>>::Element *E = _items.find(id);
+const VoxelInstanceLibraryItem *VoxelInstanceLibrary::get_item_const(int id) const {
+	const Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
 	if (E != nullptr) {
-		const Ref<VoxelInstanceLibraryItemBase> &item = E->value();
+		const Ref<VoxelInstanceLibraryItem> &item = E->value();
 		ERR_FAIL_COND_V(item.is_null(), nullptr);
 		return *item;
 	}
 	return nullptr;
 }
 
-void VoxelInstanceLibrary::on_library_item_changed(int id, VoxelInstanceLibraryItemBase::ChangeType change) {
+void VoxelInstanceLibrary::on_library_item_changed(int id, VoxelInstanceLibraryItem::ChangeType change) {
 	notify_listeners(id, change);
 }
 
-void VoxelInstanceLibrary::notify_listeners(int item_id, VoxelInstanceLibraryItemBase::ChangeType change) {
+void VoxelInstanceLibrary::notify_listeners(int item_id, VoxelInstanceLibraryItem::ChangeType change) {
 	for (int i = 0; i < _listeners.size(); ++i) {
 		IListener *listener = _listeners[i];
 		listener->on_library_item_changed(item_id, change);
@@ -121,10 +121,10 @@ bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value
 	if (name.begins_with("item_")) {
 		const int id = name.substr(5).to_int();
 
-		Ref<VoxelInstanceLibraryItemBase> item = p_value;
+		Ref<VoxelInstanceLibraryItem> item = p_value;
 		ERR_FAIL_COND_V_MSG(item.is_null(), false, "Setting a null item is not allowed");
 
-		Map<int, Ref<VoxelInstanceLibraryItemBase>>::Element *E = _items.find(id);
+		Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
 
 		if (E == nullptr) {
 			add_item(id, item);
@@ -132,14 +132,14 @@ bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value
 		} else {
 			// Replace
 			if (E->value() != item) {
-				Ref<VoxelInstanceLibraryItemBase> old_item = E->value();
+				Ref<VoxelInstanceLibraryItem> old_item = E->value();
 				if (old_item.is_valid()) {
 					old_item->remove_listener(this, id);
-					notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_REMOVED);
+					notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
 				}
 				E->value() = item;
 				item->add_listener(this, id);
-				notify_listeners(id, VoxelInstanceLibraryItemBase::CHANGE_ADDED);
+				notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_ADDED);
 			}
 		}
 
@@ -152,7 +152,7 @@ bool VoxelInstanceLibrary::_get(const StringName &p_name, Variant &r_ret) const 
 	const String name = p_name;
 	if (name.begins_with("item_")) {
 		const int id = name.substr(5).to_int();
-		const Map<int, Ref<VoxelInstanceLibraryItemBase>>::Element *E = _items.find(id);
+		const Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
 		if (E != nullptr) {
 			r_ret = E->value();
 			return true;
@@ -162,10 +162,9 @@ bool VoxelInstanceLibrary::_get(const StringName &p_name, Variant &r_ret) const 
 }
 
 void VoxelInstanceLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
-	for (Map<int, Ref<VoxelInstanceLibraryItemBase>>::Element *E = _items.front(); E != nullptr; E = E->next()) {
+	for (Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.front(); E != nullptr; E = E->next()) {
 		const String name = "item_" + itos(E->key());
-		p_list->push_back(
-				PropertyInfo(Variant::OBJECT, name, PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceLibraryItemBase"));
+		p_list->push_back(PropertyInfo(Variant::OBJECT, name, PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceLibraryItem"));
 	}
 }
 

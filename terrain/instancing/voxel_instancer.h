@@ -7,7 +7,7 @@
 #include "../../util/math/box3i.h"
 #include "voxel_instance_generator.h"
 #include "voxel_instance_library.h"
-#include "voxel_instance_library_item.h"
+#include "voxel_instance_library_multimesh_item.h"
 
 #ifdef TOOLS_ENABLED
 #include "../../editor/voxel_debug.h"
@@ -124,7 +124,7 @@ private:
 			unsigned int block_index, Transform3D transform, int data_block_size_po2);
 
 	void update_block_from_transforms(int block_index, Span<const Transform3D> transforms, Vector3i grid_position,
-			Layer *layer, const VoxelInstanceLibraryItemBase *item_base, uint16_t layer_id, World3D *world,
+			Layer *layer, const VoxelInstanceLibraryItem *item_base, uint16_t layer_id, World3D *world,
 			const Transform3D &block_transform);
 
 	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
@@ -190,7 +190,7 @@ private:
 		// Can't use `HashMap` because it lacks move semantics.
 		std::unordered_map<Vector3i, std::unique_ptr<InstanceBlockData>> loaded_instances_data;
 
-		FixedArray<MeshLodDistances, VoxelInstanceLibraryItem::MAX_MESH_LODS> mesh_lod_distances;
+		FixedArray<MeshLodDistances, VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS> mesh_lod_distances;
 
 		Lod() = default;
 		Lod(const Lod &) = delete; // non construction-copyable
