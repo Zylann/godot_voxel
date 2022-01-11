@@ -123,7 +123,7 @@ jobs:
       # Clone Godot
       - uses: actions/checkout@v2
         with:
-          repository: Gamerfiend/godot
+          repository: godotengine/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
           path: godot
 
@@ -229,7 +229,7 @@ jobs:
       # Clone Godot
       - uses: actions/checkout@v2
         with:
-          repository: Gamerfiend/godot
+          repository: godotengine/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
           path: godot
 
