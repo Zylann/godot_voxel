@@ -8,7 +8,7 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
 
 
-Ongoing development - `master`
+1.x - Ongoing development - `master`
 ------------------------------
 
 Godot 4 is required from this version.
@@ -51,7 +51,7 @@ Godot 4 is required from this version.
     - Moving fast near a terrain with mesh size 16 can cause more noticeable slowdowns compared to Godot3. This is because Godot's Vulkan allocator is much slower to free mesh buffers. A mitigation is in place to smooth the slowdown but it is not avoidable.
 
 
-Legacy Godot 3 branch - `godot3.x`
+0.5.x - Legacy Godot 3 branch - `godot3.x`
 ------------------------------------
 
 This branch is the last supporting Godot 3
@@ -71,7 +71,7 @@ This branch is the last supporting Godot 3
     - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
 
 
-06/11/2021 - `godot3.4`
+0.5 - 06/11/2021 - `godot3.4`
 -------------------------
 
 - General
@@ -132,7 +132,7 @@ This branch is the last supporting Godot 3
     - Fix some crashes occurring when negative sizes are sent to AABB function parameters
 
 
-09/05/2021 - `godot3.3`
+0.4 - 09/05/2021 - `godot3.3`
 -----------------------
 
 - General
@@ -196,7 +196,7 @@ This branch is the last supporting Godot 3
     - `VoxelLodTerrain` does not entirely support `VoxelViewer`, but a refactoring pass is planned for it.
 
 
-08/09/2020 - `godot3.2.3`
+0.3 - 08/09/2020 - `godot3.2.3`
 --------------------------
 
 - General
@@ -225,7 +225,7 @@ This branch is the last supporting Godot 3
     - Fixed `VoxelTool` truncating 64-bit values
 
 
-27/03/2020 - (no branch) - Tokisan Games binary version
+0.2 - 27/03/2020 - (no branch) - Tokisan Games binary version
 --------------------------------------------------------
 
 - General
@@ -263,7 +263,7 @@ This branch is the last supporting Godot 3
     - Replaced `VoxelGeneratorTest` by `VoxelGeneratorWaves` and `VoxelGeneratorFlat`
 
 
-03/10/2019 - `godot3.1`
+0.1 - 03/10/2019 - `godot3.1`
 ------------------------
 
 Initial reference version.
