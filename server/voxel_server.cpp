@@ -697,7 +697,7 @@ void VoxelServer::BlockDataRequest::run(zylann::ThreadedTaskContext ctx) {
 
 			// TODO Assign max_lod_hint when available
 
-			const VoxelStream::Result voxel_result = stream->emerge_block(*voxels, origin_in_voxels, lod);
+			const VoxelStream::Result voxel_result = stream->load_voxel_block(*voxels, origin_in_voxels, lod);
 
 			if (voxel_result == VoxelStream::RESULT_ERROR) {
 				ERR_PRINT("Error loading voxel block");
@@ -747,7 +747,7 @@ void VoxelServer::BlockDataRequest::run(zylann::ThreadedTaskContext ctx) {
 					voxels->duplicate_to(voxels_copy, true);
 				}
 				voxels = nullptr;
-				stream->immerge_block(voxels_copy, origin_in_voxels, lod);
+				stream->save_voxel_block(voxels_copy, origin_in_voxels, lod);
 			}
 
 			if (request_instances && stream->supports_instance_blocks()) {

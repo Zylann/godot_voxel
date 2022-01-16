@@ -44,6 +44,10 @@ Godot 4 is required from this version.
     - `VoxelVoxImporter` was renamed `VoxelVoxSceneImporter`
     - `VoxelInstanceLibraryItem` was renamed `VoxelInstanceLibraryMultiMeshItem`
     - `VoxelInstanceLibraryItemBase` was renamed `VoxelInstanceLibraryItem`
+    - `VoxelStream`: renamed `emerge_block` => `load_voxel_block`
+    - `VoxelStream`: renamed `immerge_block` => `save_voxel_block`
+    - `VoxelStreamScript`: renamed `_emerge_block` => `_load_voxel_block`
+    - `VoxelStreamScript`: renamed `_immerge_block` => `_save_voxel_block`
 
 - Known issues
     - Some nodes and resources no longer start with predefined properties due to a warning introduced in Godot4 when properties are resources.

@@ -38,25 +38,22 @@ public:
 	// Queries a block of voxels beginning at the given world-space voxel position and LOD.
 	// If you use LOD, the result at a given coordinate must always remain the same regardless of it.
 	// In other words, voxels values must solely depend on their coordinates or fixed parameters.
-	virtual Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
+	virtual Result load_voxel_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
 
 	// TODO Deprecate
-	virtual void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod);
+	virtual void save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod);
 
-	// TODO Rename load_voxel_blocks
 	// Note: Don't modify the order of `p_blocks`.
-	virtual void emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results);
+	virtual void load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results);
 
-	// TODO Rename save_voxel_blocks
 	// Returns multiple blocks of voxels to the stream.
 	// This function is recommended if you save to files, because you can batch their access.
-	virtual void immerge_blocks(Span<VoxelBlockRequest> p_blocks);
+	virtual void save_voxel_blocks(Span<VoxelBlockRequest> p_blocks);
 
 	// TODO Merge support functions into a single getter with Feature bitmask
 	virtual bool supports_instance_blocks() const;
 
 	virtual void load_instance_blocks(Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results);
-
 	virtual void save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks);
 
 	struct FullLoadingResult {
@@ -96,10 +93,13 @@ public:
 private:
 	static void _bind_methods();
 
-	Result _b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
-	void _b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
+	Result _b_load_voxel_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
+	void _b_save_voxel_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
 	int _b_get_used_channels_mask() const;
 	Vector3 _b_get_block_size() const;
+	// Deprecated
+	Result _b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
+	void _b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
 
 	struct Parameters {
 		bool save_generator_output = false;

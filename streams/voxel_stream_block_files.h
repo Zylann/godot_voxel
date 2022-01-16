@@ -16,8 +16,8 @@ class VoxelStreamBlockFiles : public VoxelStream {
 public:
 	VoxelStreamBlockFiles();
 
-	Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
+	Result load_voxel_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
+	void save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
 
 	int get_used_channels_mask() const override;
 

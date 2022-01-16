@@ -25,11 +25,11 @@ public:
 	VoxelStreamRegionFiles();
 	~VoxelStreamRegionFiles();
 
-	Result emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
+	Result load_voxel_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
+	void save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
 
-	void emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) override;
-	void immerge_blocks(Span<VoxelBlockRequest> p_blocks) override;
+	void load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) override;
+	void save_voxel_blocks(Span<VoxelBlockRequest> p_blocks) override;
 
 	int get_used_channels_mask() const override;
 
@@ -65,8 +65,8 @@ private:
 		EMERGE_FAILED
 	};
 
-	EmergeResult _emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
-	void _immerge_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod);
+	EmergeResult _load_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
+	void _save_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod);
 
 	FileResult save_meta();
 	FileResult load_meta();

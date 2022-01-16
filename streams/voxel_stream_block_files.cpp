@@ -26,7 +26,7 @@ VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 
 // TODO Have configurable block size
 
-VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
+VoxelStream::Result VoxelStreamBlockFiles::load_voxel_block(
 		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	//
 	if (_directory_path.is_empty()) {
@@ -91,7 +91,7 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 	return RESULT_BLOCK_FOUND;
 }
 
-void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamBlockFiles::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND(_directory_path.is_empty());
 
 	if (!_meta_loaded) {

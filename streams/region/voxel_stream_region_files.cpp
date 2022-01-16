@@ -58,20 +58,20 @@ VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
 	close_all_regions();
 }
 
-VoxelStream::Result VoxelStreamRegionFiles::emerge_block(
+VoxelStream::Result VoxelStreamRegionFiles::load_voxel_block(
 		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	VoxelBlockRequest r{ out_buffer, origin_in_voxels, lod };
 	Vector<Result> results;
-	emerge_blocks(Span<VoxelBlockRequest>(&r, 1), results);
+	load_voxel_blocks(Span<VoxelBlockRequest>(&r, 1), results);
 	return results[0];
 }
 
-void VoxelStreamRegionFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamRegionFiles::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
 	VoxelBlockRequest r{ buffer, origin_in_voxels, lod };
-	immerge_blocks(Span<VoxelBlockRequest>(&r, 1));
+	save_voxel_blocks(Span<VoxelBlockRequest>(&r, 1));
 }
 
-void VoxelStreamRegionFiles::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) {
+void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) {
 	VOXEL_PROFILE_SCOPE();
 
 	// In order to minimize opening/closing files, requests are grouped according to their region.
@@ -86,7 +86,7 @@ void VoxelStreamRegionFiles::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vec
 
 	for (unsigned int i = 0; i < sorted_blocks.size(); ++i) {
 		VoxelBlockRequest &r = *sorted_blocks[i];
-		const EmergeResult result = _emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		const EmergeResult result = _load_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 		switch (result) {
 			case EMERGE_OK:
 				out_results.push_back(RESULT_BLOCK_FOUND);
@@ -104,7 +104,7 @@ void VoxelStreamRegionFiles::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vec
 	}
 }
 
-void VoxelStreamRegionFiles::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
+void VoxelStreamRegionFiles::save_voxel_blocks(Span<VoxelBlockRequest> p_blocks) {
 	VOXEL_PROFILE_SCOPE();
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
@@ -115,7 +115,7 @@ void VoxelStreamRegionFiles::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
 
 	for (unsigned int i = 0; i < sorted_blocks.size(); ++i) {
 		VoxelBlockRequest &r = *sorted_blocks[i];
-		_immerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		_save_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 	}
 }
 
@@ -124,7 +124,7 @@ int VoxelStreamRegionFiles::get_used_channels_mask() const {
 	return VoxelBufferInternal::ALL_CHANNELS_MASK;
 }
 
-VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
+VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -178,7 +178,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 	}
 }
 
-void VoxelStreamRegionFiles::_immerge_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod) {
 	VOXEL_PROFILE_SCOPE();
 
 	MutexLock lock(_mutex);
@@ -685,11 +685,11 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			// Load block from old stream
 			Vector3i block_rpos = old_region->region.get_block_position_from_index(j);
 			Vector3i block_pos = block_rpos + region_info.position * old_region_size;
-			old_stream->emerge_block(old_block, block_pos * old_block_size << region_info.lod, region_info.lod);
+			old_stream->load_voxel_block(old_block, block_pos * old_block_size << region_info.lod, region_info.lod);
 
 			// Save it in the new one
 			if (old_block_size == new_block_size) {
-				immerge_block(old_block, block_pos * new_block_size << region_info.lod, region_info.lod);
+				save_voxel_block(old_block, block_pos * new_block_size << region_info.lod, region_info.lod);
 
 			} else {
 				Vector3i new_block_pos = convert_block_coordinates(block_pos, old_block_size, new_block_size);
@@ -700,7 +700,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					Vector3i rel = block_pos % ratio;
 
 					// Copy to a sub-area of one block
-					emerge_block(new_block, new_block_pos * new_block_size << region_info.lod, region_info.lod);
+					load_voxel_block(new_block, new_block_pos * new_block_size << region_info.lod, region_info.lod);
 
 					Vector3i dst_pos = rel * old_block.get_size();
 
@@ -709,7 +709,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					}
 
 					new_block.compress_uniform_channels();
-					immerge_block(new_block, new_block_pos * new_block_size << region_info.lod, region_info.lod);
+					save_voxel_block(new_block, new_block_pos * new_block_size << region_info.lod, region_info.lod);
 
 				} else {
 					// Copy to multiple blocks
@@ -727,7 +727,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 									new_block.copy_from(old_block, src_min, src_max, Vector3i(), channel_index);
 								}
 
-								immerge_block(new_block, (new_block_pos + rpos) * new_block_size << region_info.lod,
+								save_voxel_block(new_block, (new_block_pos + rpos) * new_block_size << region_info.lod,
 										region_info.lod);
 							}
 						}

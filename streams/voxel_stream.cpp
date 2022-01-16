@@ -7,28 +7,28 @@ VoxelStream::VoxelStream() {}
 
 VoxelStream::~VoxelStream() {}
 
-VoxelStream::Result VoxelStream::emerge_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStream::Result VoxelStream::load_voxel_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	// Can be implemented in subclasses
 	return RESULT_BLOCK_NOT_FOUND;
 }
 
-void VoxelStream::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStream::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
 	// Can be implemented in subclasses
 }
 
-void VoxelStream::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) {
+void VoxelStream::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) {
 	// Default implementation. May matter for some stream types to optimize loading.
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		VoxelBlockRequest &r = p_blocks[i];
-		const Result res = emerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		const Result res = load_voxel_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 		out_results.push_back(res);
 	}
 }
 
-void VoxelStream::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
+void VoxelStream::save_voxel_blocks(Span<VoxelBlockRequest> p_blocks) {
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		const VoxelBlockRequest &r = p_blocks[i];
-		immerge_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		save_voxel_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 	}
 }
 
@@ -76,16 +76,26 @@ int VoxelStream::get_lod_count() const {
 
 // Binding land
 
-VoxelStream::Result VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
+VoxelStream::Result VoxelStream::_b_load_voxel_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND_V(lod < 0, RESULT_ERROR);
 	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
-	return emerge_block(out_buffer->get_buffer(), Vector3iUtil::from_floored(origin_in_voxels), lod);
+	return load_voxel_block(out_buffer->get_buffer(), Vector3iUtil::from_floored(origin_in_voxels), lod);
+}
+
+void VoxelStream::_b_save_voxel_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
+	ERR_FAIL_COND(lod < 0);
+	ERR_FAIL_COND(buffer.is_null());
+	save_voxel_block(buffer->get_buffer(), Vector3iUtil::from_floored(origin_in_voxels), lod);
+}
+
+VoxelStream::Result VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
+	ERR_PRINT("VoxelStream.emerge_block is deprecated. Use `load_voxel_block` instead.");
+	return _b_load_voxel_block(out_buffer, origin_in_voxels, lod);
 }
 
 void VoxelStream::_b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod) {
-	ERR_FAIL_COND(lod < 0);
-	ERR_FAIL_COND(buffer.is_null());
-	immerge_block(buffer->get_buffer(), Vector3iUtil::from_floored(origin_in_voxels), lod);
+	ERR_PRINT("VoxelStream.immerge_block is deprecated. Use `save_voxel_block` instead.");
+	return _b_save_voxel_block(buffer, origin_in_voxels, lod);
 }
 
 int VoxelStream::_b_get_used_channels_mask() const {
@@ -101,6 +111,11 @@ void VoxelStream::_bind_methods() {
 			D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelStream::_b_emerge_block);
 	ClassDB::bind_method(
 			D_METHOD("immerge_block", "buffer", "origin_in_voxels", "lod"), &VoxelStream::_b_immerge_block);
+
+	ClassDB::bind_method(
+			D_METHOD("load_voxel_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelStream::_b_load_voxel_block);
+	ClassDB::bind_method(
+			D_METHOD("save_voxel_block", "buffer", "origin_in_voxels", "lod"), &VoxelStream::_b_save_voxel_block);
 	ClassDB::bind_method(D_METHOD("get_used_channels_mask"), &VoxelStream::_b_get_used_channels_mask);
 
 	ClassDB::bind_method(D_METHOD("set_save_generator_output", "enabled"), &VoxelStream::set_save_generator_output);

@@ -626,21 +626,21 @@ String VoxelStreamSQLite::get_database_path() const {
 	return _connection_path;
 }
 
-VoxelStream::Result VoxelStreamSQLite::emerge_block(
+VoxelStream::Result VoxelStreamSQLite::load_voxel_block(
 		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	VoxelBlockRequest r{ out_buffer, origin_in_voxels, lod };
 	Vector<Result> results;
-	emerge_blocks(Span<VoxelBlockRequest>(&r, 1), results);
+	load_voxel_blocks(Span<VoxelBlockRequest>(&r, 1), results);
 	CRASH_COND(results.size() != 1);
 	return results[0];
 }
 
-void VoxelStreamSQLite::immerge_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamSQLite::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
 	VoxelBlockRequest r{ buffer, origin_in_voxels, lod };
-	immerge_blocks(Span<VoxelBlockRequest>(&r, 1));
+	save_voxel_blocks(Span<VoxelBlockRequest>(&r, 1));
 }
 
-void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) {
+void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) {
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Get block size from database
@@ -702,7 +702,7 @@ void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<R
 	recycle_connection(con);
 }
 
-void VoxelStreamSQLite::immerge_blocks(Span<VoxelBlockRequest> p_blocks) {
+void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelBlockRequest> p_blocks) {
 	// TODO Get block size from database
 	const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
