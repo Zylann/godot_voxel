@@ -184,7 +184,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"[b]Donors:[/b]\n"
 						"wacyym\n"
 						"Sergey Lapin (slapin)\n"
-						"Jonas (NoFr1ends)\n"
+						"Lynx (NoFr1ends)\n"
 						"lenis0012\n"
 						"Phyronnaz\n"
 						"RonanZe\n"
@@ -197,7 +197,9 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"MrGreaterThan\n"
 						"baals\n"
 						"Treer\n"
-						"stackdump.eth\n";
+						"stackdump.eth\n"
+						"Snowminx (Gamerfiend)\n"
+						"Skyquakers\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
