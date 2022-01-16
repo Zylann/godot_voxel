@@ -13,17 +13,20 @@ VoxelStream::Result VoxelStreamScript::load_voxel_block(
 	buffer_wrapper->get_buffer().copy_format(out_buffer);
 	buffer_wrapper->get_buffer().create(out_buffer.get_size());
 
-	//Result res;
 	int res;
 	if (GDVIRTUAL_CALL(_load_voxel_block, buffer_wrapper, origin_in_voxels, lod, res)) {
+		// Check if the return enum is valid
 		ERR_FAIL_INDEX_V(res, _RESULT_COUNT, RESULT_ERROR);
+		// If the block was found, grab its data from the script-facing object to our internal buffer
+		if (res == RESULT_BLOCK_FOUND) {
+			buffer_wrapper->get_buffer().move_to(out_buffer);
+		}
 		return Result(res);
 	} else {
+		// The function wasn't found or failed?
 		WARN_PRINT_ONCE("VoxelStreamScript::_emerge_block is unimplemented!");
 	}
 
-	// The wrapper is discarded
-	buffer_wrapper->get_buffer().move_to(out_buffer);
 	return RESULT_ERROR;
 }
 
