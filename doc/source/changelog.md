@@ -26,6 +26,7 @@ This branch is the last supporting Godot 3.
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
     - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
     - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
+    - `VoxelStreamScript`: fix voxel data not getting retrieved when `BLOCK_FOUND` is returned
 
 
 06/11/2021 - `godot3.4`
