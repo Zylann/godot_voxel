@@ -9,7 +9,7 @@
 	</tutorials>
 	<methods>
 		<method name="_emerge_block" qualifiers="virtual">
-			<return type="void" />
+			<return type="VoxelStream.Result" />
 			<argument index="0" name="out_buffer" type="VoxelBuffer" />
 			<argument index="1" name="origin_in_voxels" type="Vector3" />
 			<argument index="2" name="lod" type="int" />
