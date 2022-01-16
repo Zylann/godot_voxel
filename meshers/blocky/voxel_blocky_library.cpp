@@ -93,7 +93,8 @@ bool VoxelBlockyLibrary::_get(const StringName &p_name, Variant &r_ret) const {
 
 void VoxelBlockyLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
 	for (unsigned int i = 0; i < _voxel_types.size(); ++i) {
-		p_list->push_back(PropertyInfo(Variant::OBJECT, "voxels/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE, "Voxel"));
+		p_list->push_back(PropertyInfo(Variant::OBJECT, "voxels/" + itos(i), PROPERTY_HINT_RESOURCE_TYPE,
+				VoxelBlockyModel::get_class_static()));
 	}
 }
 

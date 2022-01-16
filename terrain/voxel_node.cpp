@@ -149,12 +149,13 @@ void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_gi_mode", "mode"), &VoxelNode::set_gi_mode);
 	ClassDB::bind_method(D_METHOD("get_gi_mode"), &VoxelNode::get_gi_mode);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VoxelStream"), "set_stream",
-			"get_stream");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelGenerator"),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, VoxelStream::get_class_static()),
+			"set_stream", "get_stream");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, VoxelGenerator::get_class_static()),
 			"set_generator", "get_generator");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, "VoxelMesher"), "set_mesher",
-			"get_mesher");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, VoxelMesher::get_class_static()),
+			"set_mesher", "get_mesher");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, "Disabled,Baked,Dynamic"), "set_gi_mode",
 			"get_gi_mode");
 }

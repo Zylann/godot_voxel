@@ -3059,8 +3059,8 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ADD_GROUP("Material", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Material"), "set_material",
-			"get_material");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()),
+			"set_material", "get_material");
 
 	ADD_GROUP("Collisions", "");
 

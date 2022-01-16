@@ -291,7 +291,8 @@ void FastNoiseLite::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_RANGE, "0.0001,10000.0,0.1,exp"), "set_period",
 			"get_period");
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "warp_noise", PROPERTY_HINT_RESOURCE_TYPE, "FastNoiseLiteGradient"),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "warp_noise", PROPERTY_HINT_RESOURCE_TYPE,
+						 FastNoiseLiteGradient::get_class_static()),
 			"set_warp_noise", "get_warp_noise");
 
 	ADD_GROUP("Fractal", "");

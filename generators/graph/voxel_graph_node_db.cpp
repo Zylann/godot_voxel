@@ -795,7 +795,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("curve", "Curve"));
+		t.params.push_back(Param("curve", Curve::get_class_static()));
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Curve> curve = ctx.get_param(0);
 			if (curve.is_null()) {
@@ -846,7 +846,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("x"));
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", "OpenSimplexNoise"));
+		t.params.push_back(Param("noise", OpenSimplexNoise::get_class_static()));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<OpenSimplexNoise> noise = ctx.get_param(0);
@@ -890,7 +890,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.inputs.push_back(Port("z"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", "OpenSimplexNoise"));
+		t.params.push_back(Param("noise", OpenSimplexNoise::get_class_static()));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<OpenSimplexNoise> noise = ctx.get_param(0);
@@ -934,7 +934,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("x"));
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("image", "Image"));
+		t.params.push_back(Param("image", Image::get_class_static()));
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
@@ -1317,7 +1317,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.inputs.push_back(Port("z"));
 		t.outputs.push_back(Port("sdf"));
-		t.params.push_back(Param("image", "Image"));
+		t.params.push_back(Param("image", Image::get_class_static()));
 		t.params.push_back(Param("radius", Variant::FLOAT, 10.f));
 		t.params.push_back(Param("factor", Variant::FLOAT, 1.f));
 
@@ -1431,7 +1431,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("x"));
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", "FastNoiseLite"));
+		t.params.push_back(Param("noise", FastNoiseLite::get_class_static()));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoiseLite> noise = ctx.get_param(0);
@@ -1474,7 +1474,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.inputs.push_back(Port("z"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", "FastNoiseLite"));
+		t.params.push_back(Param("noise", FastNoiseLite::get_class_static()));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoiseLite> noise = ctx.get_param(0);
@@ -1519,7 +1519,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out_x"));
 		t.outputs.push_back(Port("out_y"));
-		t.params.push_back(Param("noise", "FastNoiseLiteGradient"));
+		t.params.push_back(Param("noise", FastNoiseLiteGradient::get_class_static()));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoiseLiteGradient> noise = ctx.get_param(0);
@@ -1571,7 +1571,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.outputs.push_back(Port("out_x"));
 		t.outputs.push_back(Port("out_y"));
 		t.outputs.push_back(Port("out_z"));
-		t.params.push_back(Param("noise", "FastNoiseLiteGradient"));
+		t.params.push_back(Param("noise", FastNoiseLiteGradient::get_class_static()));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoiseLiteGradient> noise = ctx.get_param(0);
@@ -1627,7 +1627,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("x"));
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", "FastNoise2"));
+		t.params.push_back(Param("noise", FastNoise2::get_class_static()));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoise2> noise = ctx.get_param(0);
@@ -1675,7 +1675,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.inputs.push_back(Port("z"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", "FastNoise2"));
+		t.params.push_back(Param("noise", FastNoise2::get_class_static()));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoise2> noise = ctx.get_param(0);
