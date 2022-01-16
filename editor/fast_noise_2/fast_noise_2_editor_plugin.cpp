@@ -1,5 +1,6 @@
 #include "fast_noise_2_editor_plugin.h"
 #include "../../util/noise/fast_noise_2.h"
+#include "noise_analysis_window.h"
 
 #include <core/core_string_names.h>
 #include <editor/editor_scale.h>
@@ -12,6 +13,10 @@ public:
 	static const int PREVIEW_WIDTH = 300;
 	static const int PREVIEW_HEIGHT = 150;
 
+	enum ContextMenuActions { //
+		MENU_ANALYZE = 0
+	};
+
 	FastNoise2Viewer() {
 		set_custom_minimum_size(Vector2(0, EDSCALE * PREVIEW_HEIGHT));
 
@@ -19,6 +24,24 @@ public:
 		_texture_rect->set_anchors_and_offsets_preset(Control::PRESET_WIDE);
 		_texture_rect->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_COVERED);
 		add_child(_texture_rect);
+
+		_context_menu = memnew(PopupMenu);
+		_context_menu->add_item("Analyze...", MENU_ANALYZE);
+		// TODO Add dialog to generate a texture?
+		_context_menu->connect("id_pressed", callable_mp(this, &FastNoise2Viewer::_on_context_menu_id_pressed));
+		add_child(_context_menu);
+
+		// TODO SIMD level indicator
+	}
+
+	void gui_input(const Ref<InputEvent> &p_event) override {
+		Ref<InputEventMouseButton> mb = p_event;
+		if (mb.is_valid()) {
+			if (mb->get_button_index() == MouseButton::RIGHT && mb->is_pressed()) {
+				_context_menu->set_position(mb->get_global_position());
+				_context_menu->popup();
+			}
+		}
 	}
 
 	void set_noise(Ref<FastNoise2> noise) {
@@ -45,6 +68,10 @@ public:
 		}
 	}
 
+	void set_noise_analysis_window(NoiseAnalysisWindow *win) {
+		_noise_analysis_window = win;
+	}
+
 private:
 	void _on_noise_changed() {
 		_time_before_update = 0.5f;
@@ -60,6 +87,21 @@ private:
 					}
 				}
 			} break;
+		}
+	}
+
+	void _on_context_menu_id_pressed(int id) {
+		switch (id) {
+			case MENU_ANALYZE:
+				ERR_FAIL_COND(_noise_analysis_window == nullptr);
+				ERR_FAIL_COND(_noise.is_null());
+				_noise_analysis_window->set_noise(_noise);
+				_noise_analysis_window->popup_centered();
+				break;
+
+			default:
+				ERR_PRINT(String("Unknown ID pressed: {0}").format(varray(id)));
+				break;
 		}
 	}
 
@@ -86,6 +128,8 @@ private:
 	Ref<FastNoise2> _noise;
 	float _time_before_update = -1.f;
 	TextureRect *_texture_rect = nullptr;
+	PopupMenu *_context_menu = nullptr;
+	NoiseAnalysisWindow *_noise_analysis_window = nullptr;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -104,17 +148,31 @@ public:
 
 			FastNoise2Viewer *viewer = memnew(FastNoise2Viewer);
 			viewer->set_noise(noise);
+			viewer->set_noise_analysis_window(_noise_analysis_window);
 			add_custom_control(viewer);
 			return;
 		}
 	}
+
+	void set_noise_analysis_window(NoiseAnalysisWindow *noise_analysis_window) {
+		_noise_analysis_window = noise_analysis_window;
+	}
+
+private:
+	NoiseAnalysisWindow *_noise_analysis_window = nullptr;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FastNoise2EditorPlugin::FastNoise2EditorPlugin(EditorNode *p_node) {
+	Control *base_control = get_editor_interface()->get_base_control();
+
+	_noise_analysis_window = memnew(NoiseAnalysisWindow);
+	base_control->add_child(_noise_analysis_window);
+
 	Ref<FastNoise2EditorInspectorPlugin> plugin;
 	plugin.instantiate();
+	plugin->set_noise_analysis_window(_noise_analysis_window);
 	add_inspector_plugin(plugin);
 }
 

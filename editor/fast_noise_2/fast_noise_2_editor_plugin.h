@@ -5,14 +5,19 @@
 
 namespace zylann {
 
+class NoiseAnalysisWindow;
+
 class FastNoise2EditorPlugin : public EditorPlugin {
 	GDCLASS(FastNoise2EditorPlugin, EditorPlugin)
 public:
+	FastNoise2EditorPlugin(EditorNode *p_node);
+
 	virtual String get_name() const {
 		return "FastNoise2";
 	}
 
-	FastNoise2EditorPlugin(EditorNode *p_node);
+private:
+	NoiseAnalysisWindow *_noise_analysis_window = nullptr;
 };
 
 } // namespace zylann

@@ -174,8 +174,8 @@ public:
 	math::Interval get_estimated_output_range() const;
 
 private:
-	// Non-static method for scripts because Godot4 does not support binding static methods (it's only implemented for
-	// primitive types)
+	// Non-static method for scripts because Godot4 does not support binding static methods (it's only
+	// implemented for primitive types)
 	String _b_get_simd_level_name(SIMDLevel level);
 
 	static void _bind_methods();
