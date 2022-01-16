@@ -69,7 +69,6 @@ private:
 	VoxelStreamCache _cache;
 
 	// TODO I should consider specialized memory allocators
-	static thread_local BlockSerializer _voxel_block_serializer;
 	static thread_local std::vector<uint8_t> _temp_block_data;
 	static thread_local std::vector<uint8_t> _temp_compressed_block_data;
 };

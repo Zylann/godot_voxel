@@ -1037,14 +1037,13 @@ void test_block_serializer() {
 	voxel_buffer.fill_area(44, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 1);
 
 	// Serialize
-	BlockSerializer serializer;
-	BlockSerializer::SerializeResult result = serializer.serialize_and_compress(voxel_buffer);
+	BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(voxel_buffer);
 	ERR_FAIL_COND(!result.success);
 	std::vector<uint8_t> data = result.data;
 
 	// Deserialize
 	VoxelBufferInternal deserialized_voxel_buffer;
-	ERR_FAIL_COND(!serializer.decompress_and_deserialize(to_span_const(data), deserialized_voxel_buffer));
+	ERR_FAIL_COND(!BlockSerializer::decompress_and_deserialize(to_span_const(data), deserialized_voxel_buffer));
 
 	// Must be equal
 	ERR_FAIL_COND(!voxel_buffer.equals(deserialized_voxel_buffer));
@@ -1080,13 +1079,12 @@ void test_region_file() {
 		ERR_FAIL_COND(open_error != OK);
 
 		// Save block
-		BlockSerializer serializer;
-		const Error save_error = region_file.save_block(Vector3i(1, 2, 3), voxel_buffer, serializer);
+		const Error save_error = region_file.save_block(Vector3i(1, 2, 3), voxel_buffer);
 		ERR_FAIL_COND(save_error != OK);
 
 		// Read back
 		VoxelBufferInternal loaded_voxel_buffer;
-		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer, serializer);
+		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer);
 		ERR_FAIL_COND(load_error != OK);
 
 		// Must be equal
@@ -1102,8 +1100,7 @@ void test_region_file() {
 
 		// Read back
 		VoxelBufferInternal loaded_voxel_buffer;
-		BlockSerializer serializer;
-		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer, serializer);
+		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer);
 		ERR_FAIL_COND(load_error != OK);
 
 		// Must be equal

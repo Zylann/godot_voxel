@@ -1,5 +1,6 @@
 #include "voxel_stream_block_files.h"
 #include "../server/voxel_server.h"
+#include "voxel_block_serializer.h"
 
 #include <core/io/dir_access.h>
 #include <core/io/file_access.h>
@@ -14,8 +15,6 @@ const char *FORMAT_BLOCK_MAGIC = "VXB_";
 const char *META_FILE_NAME = "meta.vxbm";
 const char *BLOCK_FILE_EXTENSION = ".vxb";
 } // namespace
-
-thread_local BlockSerializer VoxelStreamBlockFiles::_block_serializer;
 
 VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 	// Defaults
@@ -81,7 +80,7 @@ VoxelStream::Result VoxelStreamBlockFiles::emerge_block(
 		}
 
 		uint32_t size_to_read = f->get_32();
-		if (!_block_serializer.decompress_and_deserialize(f, size_to_read, out_buffer)) {
+		if (!BlockSerializer::decompress_and_deserialize(f, size_to_read, out_buffer)) {
 			ERR_PRINT("Failed to decompress and deserialize");
 		}
 	}
@@ -144,7 +143,7 @@ void VoxelStreamBlockFiles::immerge_block(VoxelBufferInternal &buffer, Vector3i 
 		f->store_buffer((uint8_t *)FORMAT_BLOCK_MAGIC, 4);
 		f->store_8(FORMAT_VERSION);
 
-		BlockSerializer::SerializeResult res = _block_serializer.serialize_and_compress(buffer);
+		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(buffer);
 		if (!res.success) {
 			memdelete(f);
 			ERR_PRINT("Failed to save block");

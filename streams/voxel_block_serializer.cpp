@@ -14,12 +14,17 @@
 
 namespace zylann::voxel {
 
-namespace {
+namespace BlockSerializer {
+
 const uint8_t BLOCK_VERSION = 2;
 const unsigned int BLOCK_TRAILING_MAGIC = 0x900df00d;
 const unsigned int BLOCK_TRAILING_MAGIC_SIZE = 4;
 const unsigned int BLOCK_METADATA_HEADER_SIZE = sizeof(uint32_t);
-} // namespace
+
+// Temporary data buffers, re-used to reduce allocations
+thread_local std::vector<uint8_t> tls_data;
+thread_local std::vector<uint8_t> tls_compressed_data;
+thread_local std::vector<uint8_t> tls_metadata_tmp;
 
 size_t get_metadata_size_in_bytes(const VoxelBufferInternal &buffer) {
 	size_t size = 0;
@@ -186,28 +191,36 @@ size_t get_size_in_bytes(const VoxelBufferInternal &buffer, size_t &metadata_siz
 	return size + metadata_size_with_header + BLOCK_TRAILING_MAGIC_SIZE;
 }
 
-BlockSerializer::SerializeResult BlockSerializer::serialize(const VoxelBufferInternal &voxel_buffer) {
+SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
 	//
 	VOXEL_PROFILE_SCOPE();
+
+	std::vector<uint8_t> &dst_data = tls_data;
+	std::vector<uint8_t> &metadata_tmp = tls_metadata_tmp;
+
 	// Cannot serialize an empty block
-	ERR_FAIL_COND_V(Vector3iUtil::get_volume(voxel_buffer.get_size()) == 0, SerializeResult(_data, false));
+	ERR_FAIL_COND_V(Vector3iUtil::get_volume(voxel_buffer.get_size()) == 0, SerializeResult(dst_data, false));
 
 	size_t metadata_size = 0;
 	const size_t data_size = get_size_in_bytes(voxel_buffer, metadata_size);
-	_data.resize(data_size);
+	dst_data.resize(data_size);
 
-	ERR_FAIL_COND_V(_file_access_memory.open_custom(_data.data(), _data.size()) != OK, SerializeResult(_data, false));
-	FileAccessMemory *f = &_file_access_memory;
+	FileAccessMemory file_access_memory;
+	FileAccessMemory *f = &file_access_memory;
+	ERR_FAIL_COND_V(f->open_custom(dst_data.data(), dst_data.size()) != OK, SerializeResult(dst_data, false));
 
 	f->store_8(BLOCK_VERSION);
 
-	ERR_FAIL_COND_V(voxel_buffer.get_size().x > std::numeric_limits<uint16_t>().max(), SerializeResult(_data, false));
+	ERR_FAIL_COND_V(
+			voxel_buffer.get_size().x > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false));
 	f->store_16(voxel_buffer.get_size().x);
 
-	ERR_FAIL_COND_V(voxel_buffer.get_size().y > std::numeric_limits<uint16_t>().max(), SerializeResult(_data, false));
+	ERR_FAIL_COND_V(
+			voxel_buffer.get_size().y > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false));
 	f->store_16(voxel_buffer.get_size().y);
 
-	ERR_FAIL_COND_V(voxel_buffer.get_size().z > std::numeric_limits<uint16_t>().max(), SerializeResult(_data, false));
+	ERR_FAIL_COND_V(
+			voxel_buffer.get_size().z > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false));
 	f->store_16(voxel_buffer.get_size().z);
 
 	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
@@ -221,7 +234,7 @@ BlockSerializer::SerializeResult BlockSerializer::serialize(const VoxelBufferInt
 		switch (compression) {
 			case VoxelBufferInternal::COMPRESSION_NONE: {
 				Span<uint8_t> data;
-				ERR_FAIL_COND_V(!voxel_buffer.get_channel_raw(channel_index, data), SerializeResult(_data, false));
+				ERR_FAIL_COND_V(!voxel_buffer.get_channel_raw(channel_index, data), SerializeResult(dst_data, false));
 				f->store_buffer(data.data(), data.size());
 			} break;
 
@@ -254,27 +267,32 @@ BlockSerializer::SerializeResult BlockSerializer::serialize(const VoxelBufferInt
 	// we just discard all metadata as if it was empty.
 	if (metadata_size > 0) {
 		f->store_32(metadata_size);
-		_metadata_tmp.resize(metadata_size);
+		metadata_tmp.resize(metadata_size);
 		// This function brings me joy. </irony>
-		serialize_metadata(_metadata_tmp.data(), voxel_buffer, metadata_size);
-		f->store_buffer(_metadata_tmp.data(), _metadata_tmp.size());
+		serialize_metadata(metadata_tmp.data(), voxel_buffer, metadata_size);
+		f->store_buffer(metadata_tmp.data(), metadata_tmp.size());
 	}
 
 	f->store_32(BLOCK_TRAILING_MAGIC);
 
-	return SerializeResult(_data, true);
+	// Check out of bounds writing
+	CRASH_COND(f->get_position() > dst_data.size());
+
+	return SerializeResult(dst_data, true);
 }
 
-bool BlockSerializer::deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
-	//
+bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
+
+	std::vector<uint8_t> &metadata_tmp = tls_metadata_tmp;
 
 	ERR_FAIL_COND_V(p_data.size() < sizeof(uint32_t), false);
 	const uint32_t magic = *reinterpret_cast<const uint32_t *>(&p_data[p_data.size() - sizeof(uint32_t)]);
 	ERR_FAIL_COND_V(magic != BLOCK_TRAILING_MAGIC, false);
 
-	ERR_FAIL_COND_V(_file_access_memory.open_custom(p_data.data(), p_data.size()) != OK, false);
-	FileAccessMemory *f = &_file_access_memory;
+	FileAccessMemory file_access_memory;
+	FileAccessMemory *f = &file_access_memory;
+	ERR_FAIL_COND_V(f->open_custom(p_data.data(), p_data.size()) != OK, false);
 
 	const uint8_t version = f->get_8();
 	if (version < 2) {
@@ -355,10 +373,11 @@ bool BlockSerializer::deserialize(Span<const uint8_t> p_data, VoxelBufferInterna
 	}
 
 	if (p_data.size() - f->get_position() > BLOCK_TRAILING_MAGIC_SIZE) {
-		size_t metadata_size = f->get_32();
-		_metadata_tmp.resize(metadata_size);
-		f->get_buffer(_metadata_tmp.data(), _metadata_tmp.size());
-		deserialize_metadata(_metadata_tmp.data(), out_voxel_buffer, _metadata_tmp.size());
+		const size_t metadata_size = f->get_32();
+		ERR_FAIL_COND_V(f->get_position() + metadata_size > p_data.size(), false);
+		metadata_tmp.resize(metadata_size);
+		f->get_buffer(metadata_tmp.data(), metadata_tmp.size());
+		deserialize_metadata(metadata_tmp.data(), out_voxel_buffer, metadata_tmp.size());
 	}
 
 	// Failure at this indicates file corruption
@@ -367,31 +386,34 @@ bool BlockSerializer::deserialize(Span<const uint8_t> p_data, VoxelBufferInterna
 	return true;
 }
 
-BlockSerializer::SerializeResult BlockSerializer::serialize_and_compress(const VoxelBufferInternal &voxel_buffer) {
+SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
+	std::vector<uint8_t> &compressed_data = tls_compressed_data;
+
 	SerializeResult res = serialize(voxel_buffer);
-	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
+	ERR_FAIL_COND_V(!res.success, SerializeResult(compressed_data, false));
 	const std::vector<uint8_t> &data = res.data;
 
 	res.success = CompressedData::compress(
-			Span<const uint8_t>(data.data(), 0, data.size()), _compressed_data, CompressedData::COMPRESSION_LZ4);
-	ERR_FAIL_COND_V(!res.success, SerializeResult(_compressed_data, false));
+			Span<const uint8_t>(data.data(), 0, data.size()), compressed_data, CompressedData::COMPRESSION_LZ4);
+	ERR_FAIL_COND_V(!res.success, SerializeResult(compressed_data, false));
 
-	return SerializeResult(_compressed_data, true);
+	return SerializeResult(compressed_data, true);
 }
 
-bool BlockSerializer::decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
+bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
-	const bool res = CompressedData::decompress(p_data, _data);
+	std::vector<uint8_t> &data = tls_data;
+
+	const bool res = CompressedData::decompress(p_data, data);
 	ERR_FAIL_COND_V(!res, false);
 
-	return deserialize(to_span_const(_data), out_voxel_buffer);
+	return deserialize(to_span_const(data), out_voxel_buffer);
 }
 
-bool BlockSerializer::decompress_and_deserialize(
-		FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
+bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(f == nullptr, false);
 
@@ -401,14 +423,16 @@ bool BlockSerializer::decompress_and_deserialize(
 	ERR_FAIL_COND_V(size_to_read > remaining_file_size, false);
 #endif
 
-	_compressed_data.resize(size_to_read);
-	const unsigned int read_size = f->get_buffer(_compressed_data.data(), size_to_read);
+	std::vector<uint8_t> &compressed_data = tls_compressed_data;
+
+	compressed_data.resize(size_to_read);
+	const unsigned int read_size = f->get_buffer(compressed_data.data(), size_to_read);
 	ERR_FAIL_COND_V(read_size != size_to_read, false);
 
-	return decompress_and_deserialize(to_span_const(_compressed_data), out_voxel_buffer);
+	return decompress_and_deserialize(to_span_const(compressed_data), out_voxel_buffer);
 }
 
-int BlockSerializer::serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress) {
+int serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress) {
 	if (compress) {
 		SerializeResult res = serialize_and_compress(voxel_buffer);
 		ERR_FAIL_COND_V(!res.success, -1);
@@ -423,35 +447,39 @@ int BlockSerializer::serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_
 	}
 }
 
-void BlockSerializer::deserialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress) {
+void deserialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress) {
 	if (decompress) {
-		_compressed_data.resize(size);
-		const Error err = peer->get_data(_compressed_data.data(), _compressed_data.size());
+		std::vector<uint8_t> &compressed_data = tls_compressed_data;
+		compressed_data.resize(size);
+		const Error err = peer->get_data(compressed_data.data(), compressed_data.size());
 		ERR_FAIL_COND(err != OK);
-		bool success = decompress_and_deserialize(to_span_const(_compressed_data), voxel_buffer);
+		bool success = decompress_and_deserialize(to_span_const(compressed_data), voxel_buffer);
 		ERR_FAIL_COND(!success);
 
 	} else {
-		_data.resize(size);
-		const Error err = peer->get_data(_data.data(), _data.size());
+		std::vector<uint8_t> &data = tls_data;
+		data.resize(size);
+		const Error err = peer->get_data(data.data(), data.size());
 		ERR_FAIL_COND(err != OK);
-		deserialize(to_span_const(_data), voxel_buffer);
+		deserialize(to_span_const(data), voxel_buffer);
 	}
 }
+
+} // namespace BlockSerializer
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int VoxelBlockSerializer::serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress) {
 	ERR_FAIL_COND_V(voxel_buffer.is_null(), 0);
 	ERR_FAIL_COND_V(peer.is_null(), 0);
-	return _serializer.serialize(peer, voxel_buffer->get_buffer(), compress);
+	return BlockSerializer::serialize(peer, voxel_buffer->get_buffer(), compress);
 }
 
 void VoxelBlockSerializer::deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress) {
 	ERR_FAIL_COND(voxel_buffer.is_null());
 	ERR_FAIL_COND(peer.is_null());
 	ERR_FAIL_COND(size <= 0);
-	_serializer.deserialize(peer, voxel_buffer->get_buffer(), size, decompress);
+	BlockSerializer::deserialize(peer, voxel_buffer->get_buffer(), size, decompress);
 }
 
 void VoxelBlockSerializer::_bind_methods() {

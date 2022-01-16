@@ -3,7 +3,6 @@
 
 #include "../../util/fixed_array.h"
 #include "../file_utils.h"
-#include "../voxel_block_serializer.h"
 #include "../voxel_stream.h"
 #include "region_file.h"
 
@@ -110,8 +109,6 @@ private:
 			return rpos_a < rpos_b;
 		}
 	};
-
-	static thread_local BlockSerializer _block_serializer;
 
 	// TODO This is not thread-friendly.
 	// `VoxelRegionFile` is not thread-safe so we have to limit the usage to one thread at once, blocking the others.

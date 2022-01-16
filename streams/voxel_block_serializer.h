@@ -13,36 +13,32 @@ namespace zylann::voxel {
 
 class VoxelBufferInternal;
 
-class BlockSerializer {
-	// Had to be named differently to not conflict with the wrapper for Godot script API
-public:
-	struct SerializeResult {
-		const std::vector<uint8_t> &data;
-		bool success;
+namespace BlockSerializer {
 
-		inline SerializeResult(const std::vector<uint8_t> &p_data, bool p_success) : data(p_data), success(p_success) {}
-	};
+struct SerializeResult {
+	// The lifetime of the pointed object is only valid in the calling thread,
+	// until another serialization or deserialization call is made
+	const std::vector<uint8_t> &data;
+	bool success;
 
-	SerializeResult serialize(const VoxelBufferInternal &voxel_buffer);
-	bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
-
-	SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer);
-	bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
-	bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
-
-	int serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress);
-	void deserialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress);
-
-private:
-	// Make thread-locals?
-	std::vector<uint8_t> _data;
-	std::vector<uint8_t> _compressed_data;
-	std::vector<uint8_t> _metadata_tmp;
-	FileAccessMemory _file_access_memory;
+	inline SerializeResult(const std::vector<uint8_t> &p_data, bool p_success) : data(p_data), success(p_success) {}
 };
+
+SerializeResult serialize(const VoxelBufferInternal &voxel_buffer);
+bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
+
+SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer);
+bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
+bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
+
+int serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress);
+void deserialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress);
+
+} // namespace BlockSerializer
 
 class VoxelBuffer;
 
+// Godot-facing API for BlockSerializer
 class VoxelBlockSerializer : public RefCounted {
 	GDCLASS(VoxelBlockSerializer, RefCounted)
 public:
@@ -51,8 +47,6 @@ public:
 
 private:
 	static void _bind_methods();
-
-	BlockSerializer _serializer;
 };
 
 } // namespace zylann::voxel

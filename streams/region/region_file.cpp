@@ -302,9 +302,7 @@ const RegionFormat &RegionFile::get_format() const {
 	return _header.format;
 }
 
-Error RegionFile::load_block(
-		Vector3i position, VoxelBufferInternal &out_block, zylann::voxel::BlockSerializer &serializer) {
-	//
+Error RegionFile::load_block(Vector3i position, VoxelBufferInternal &out_block) {
 	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_READ);
 	FileAccess *f = _file_access;
 
@@ -330,15 +328,13 @@ Error RegionFile::load_block(
 	unsigned int block_data_size = f->get_32();
 	CRASH_COND(f->eof_reached());
 
-	ERR_FAIL_COND_V_MSG(!serializer.decompress_and_deserialize(f, block_data_size, out_block), ERR_PARSE_ERROR,
+	ERR_FAIL_COND_V_MSG(!BlockSerializer::decompress_and_deserialize(f, block_data_size, out_block), ERR_PARSE_ERROR,
 			String("Failed to read block {0}").format(varray(position)));
 
 	return OK;
 }
 
-Error RegionFile::save_block(
-		Vector3i position, VoxelBufferInternal &block, zylann::voxel::BlockSerializer &serializer) {
-	//
+Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
 	ERR_FAIL_COND_V(_header.format.verify_block(block) == false, ERR_INVALID_PARAMETER);
 
 	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_WRITE);
@@ -362,7 +358,7 @@ Error RegionFile::save_block(
 		// Check position matches the sectors rule
 		CRASH_COND((block_offset - _blocks_begin_offset) % _header.format.sector_size != 0);
 
-		zylann::voxel::BlockSerializer::SerializeResult res = serializer.serialize_and_compress(block);
+		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block);
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
 		f->store_32(res.data.size());
 		const unsigned int written_size = sizeof(int) + res.data.size();
@@ -390,7 +386,7 @@ Error RegionFile::save_block(
 		const int old_sector_count = block_info.get_sector_count();
 		CRASH_COND(old_sector_count < 1);
 
-		zylann::voxel::BlockSerializer::SerializeResult res = serializer.serialize_and_compress(block);
+		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block);
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
 		const std::vector<uint8_t> &data = res.data;
 		const int written_size = sizeof(int) + data.size();
@@ -563,7 +559,7 @@ bool RegionFile::migrate_from_v2_to_v3(FileAccess *f, RegionFormat &format) {
 	const unsigned int extra_bytes_needed = new_header_size - old_header_size;
 
 	f->seek(MAGIC_AND_VERSION_SIZE);
-	zylann::insert_bytes(f, extra_bytes_needed);
+	insert_bytes(f, extra_bytes_needed);
 
 	f->seek(0);
 

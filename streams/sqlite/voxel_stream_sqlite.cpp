@@ -61,7 +61,10 @@ public:
 		FixedArray<Channel, VoxelBuffer::MAX_CHANNELS> channels;
 	};
 
-	enum BlockType { VOXELS, INSTANCES };
+	enum BlockType { //
+		VOXELS,
+		INSTANCES
+	};
 
 	VoxelStreamSQLiteInternal();
 	~VoxelStreamSQLiteInternal();
@@ -574,7 +577,6 @@ void VoxelStreamSQLiteInternal::save_meta(Meta meta) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-thread_local BlockSerializer VoxelStreamSQLite::_voxel_block_serializer;
 thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_block_data;
 thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_compressed_block_data;
 
@@ -689,7 +691,7 @@ void VoxelStreamSQLite::emerge_blocks(Span<VoxelBlockRequest> p_blocks, Vector<R
 		if (res == RESULT_BLOCK_FOUND) {
 			VoxelBlockRequest &wr = p_blocks[ri];
 			// TODO Not sure if we should actually expect non-null. There can be legit not found blocks.
-			_voxel_block_serializer.decompress_and_deserialize(to_span_const(_temp_block_data), wr.voxel_buffer);
+			BlockSerializer::decompress_and_deserialize(to_span_const(_temp_block_data), wr.voxel_buffer);
 		}
 
 		out_results.write[i] = res;
@@ -840,7 +842,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 
 			if (voxel_data.size() > 0) {
 				std::shared_ptr<VoxelBufferInternal> voxels = gd_make_shared<VoxelBufferInternal>();
-				ERR_FAIL_COND(!ctx->stream._voxel_block_serializer.decompress_and_deserialize(voxel_data, *voxels));
+				ERR_FAIL_COND(!BlockSerializer::decompress_and_deserialize(voxel_data, *voxels));
 				result_block.voxels = voxels;
 			}
 
@@ -886,8 +888,6 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 	PRINT_VERBOSE(String("VoxelStreamSQLite: Flushing cache ({0} elements)")
 						  .format(varray(_cache.get_indicative_block_count())));
 
-	BlockSerializer &serializer = _voxel_block_serializer;
-
 	ERR_FAIL_COND(con == nullptr);
 	ERR_FAIL_COND(con->begin_transaction() == false);
 
@@ -895,7 +895,7 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 	std::vector<uint8_t> &temp_compressed_data = _temp_compressed_block_data;
 
 	// TODO Needs better error rollback handling
-	_cache.flush([&serializer, con, &temp_data, &temp_compressed_data](VoxelStreamCache::Block &block) {
+	_cache.flush([con, &temp_data, &temp_compressed_data](VoxelStreamCache::Block &block) {
 		ERR_FAIL_COND(!BlockLocation::validate(block.position, block.lod));
 
 		BlockLocation loc;
@@ -910,7 +910,7 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 				const std::vector<uint8_t> empty;
 				con->save_block(loc, empty, VoxelStreamSQLiteInternal::VOXELS);
 			} else {
-				BlockSerializer::SerializeResult res = serializer.serialize_and_compress(block.voxels);
+				BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block.voxels);
 				ERR_FAIL_COND(!res.success);
 				con->save_block(loc, res.data, VoxelStreamSQLiteInternal::VOXELS);
 			}

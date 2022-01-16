@@ -2,7 +2,6 @@
 #define VOXEL_STREAM_BLOCK_FILES_H
 
 #include "file_utils.h"
-#include "voxel_block_serializer.h"
 #include "voxel_stream.h"
 
 class FileAccess;
@@ -36,8 +35,6 @@ private:
 	FileResult load_or_create_meta();
 	String get_block_file_path(const Vector3i &block_pos, unsigned int lod) const;
 	Vector3i get_block_position(const Vector3i &origin_in_voxels) const;
-
-	static thread_local BlockSerializer _block_serializer;
 
 	String _directory_path;
 

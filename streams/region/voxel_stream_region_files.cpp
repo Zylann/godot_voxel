@@ -21,8 +21,6 @@ const char *META_FILE_NAME = "meta.vxrm";
 
 } // namespace
 
-thread_local BlockSerializer VoxelStreamRegionFiles::_block_serializer;
-
 // Sorts a sequence without modifying it, returning a sorted list of pointers
 template <typename T, typename Comparer_T>
 void get_sorted_pointers(Span<T> sequence, Comparer_T comparer, std::vector<T *> &out_sorted_sequence) {
@@ -167,7 +165,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_emerge_block(
 
 	const Vector3i block_rpos = Vector3iUtil::wrap(block_pos, region_size);
 
-	const Error err = cache->region.load_block(block_rpos, out_buffer, _block_serializer);
+	const Error err = cache->region.load_block(block_rpos, out_buffer);
 	switch (err) {
 		case OK:
 			return EMERGE_OK;
@@ -222,7 +220,7 @@ void VoxelStreamRegionFiles::_immerge_block(VoxelBufferInternal &voxel_buffer, V
 
 	CachedRegion *cache = open_region(region_pos, lod, true);
 	ERR_FAIL_COND_MSG(cache == nullptr, "Could not save region file data");
-	ERR_FAIL_COND(cache->region.save_block(block_rpos, voxel_buffer, _block_serializer) != OK);
+	ERR_FAIL_COND(cache->region.save_block(block_rpos, voxel_buffer) != OK);
 }
 
 String VoxelStreamRegionFiles::get_directory() const {
