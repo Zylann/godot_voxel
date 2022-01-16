@@ -203,7 +203,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
-		d["version"] = "godot3.3 dev";
+		d["version"] = "1.x DEV";
 		about_text = about_text.format(d);
 	}
 	RichTextLabel *rich_text_label = memnew(RichTextLabel);
