@@ -287,9 +287,11 @@ private:
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
 
-	void add_transition_update(VoxelMeshBlock *block);
-	void add_transition_updates_around(Vector3i block_pos, int lod_index);
-	void process_transition_updates();
+	static void add_transition_update(
+			VoxelMeshBlock *block, std::vector<VoxelMeshBlock *> &blocks_pending_transition_update);
+	void add_transition_updates_around(
+			Vector3i block_pos, int lod_index, std::vector<VoxelMeshBlock *> &blocks_pending_transition_update);
+	void process_transition_updates(const std::vector<VoxelMeshBlock *> &blocks_pending_transition_update);
 	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
 
 	void _b_save_modified_blocks();
@@ -330,10 +332,6 @@ private:
 
 	uint32_t _volume_id = 0;
 	ProcessCallback _process_callback = PROCESS_CALLBACK_IDLE;
-
-	// TODO Get rid of this kind of member, use threadlocal pooling instead
-	// Only populated and then cleared inside _process, so lifetime of pointers should be valid
-	std::vector<VoxelMeshBlock *> _blocks_pending_transition_update;
 
 	Ref<Material> _material;
 	std::vector<Ref<ShaderMaterial>> _shader_material_pool;

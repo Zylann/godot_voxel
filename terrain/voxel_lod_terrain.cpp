@@ -1340,8 +1340,6 @@ void VoxelLodTerrain::_process(float delta) {
 	// Mesh blocks drive the loading of voxel data and visuals.
 	process_octrees_sliding_box(viewer_pos);
 
-	CRASH_COND(_blocks_pending_transition_update.size() != 0);
-
 	const bool stream_enabled = (_stream.is_valid() || _generator.is_valid()) &&
 			(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
 
@@ -1352,8 +1350,6 @@ void VoxelLodTerrain::_process(float delta) {
 	if (stream_enabled) {
 		process_octrees_fitting(viewer_pos, data_blocks_to_load);
 	}
-
-	CRASH_COND(_blocks_pending_transition_update.size() != 0);
 
 	_stats.time_detect_required_blocks = profiling_clock.restart();
 
@@ -1637,6 +1633,9 @@ void VoxelLodTerrain::process_octrees_sliding_box(Vector3 p_viewer_pos) {
 void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<BlockLocation> &data_blocks_to_load) {
 	VOXEL_PROFILE_SCOPE_NAMED("Update octrees");
 
+	static thread_local std::vector<VoxelMeshBlock *> blocks_pending_transition_update;
+	CRASH_COND(!blocks_pending_transition_update.empty());
+
 	// TODO Maintain a vector to make iteration faster?
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 		VOXEL_PROFILE_SCOPE();
@@ -1650,6 +1649,7 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 			std::vector<BlockLocation> &data_blocks_to_load;
 			Vector3i block_offset_lod0;
 			unsigned int blocked_count = 0;
+			std::vector<VoxelMeshBlock *> &blocks_pending_transition_update;
 
 			void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
 				Lod &lod = self->_lods[lod_index];
@@ -1661,8 +1661,8 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 				CRASH_COND(block->get_mesh_state() != VoxelMeshBlock::MESH_UP_TO_DATE);
 
 				self->set_mesh_block_active(*block, true);
-				self->add_transition_update(block);
-				self->add_transition_updates_around(bpos, lod_index);
+				add_transition_update(block, blocks_pending_transition_update);
+				self->add_transition_updates_around(bpos, lod_index, blocks_pending_transition_update);
 			}
 
 			void destroy_child(Vector3i node_pos, int lod_index) {
@@ -1672,7 +1672,7 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 
 				if (block != nullptr) {
 					self->set_mesh_block_active(*block, false);
-					self->add_transition_updates_around(bpos, lod_index);
+					self->add_transition_updates_around(bpos, lod_index, blocks_pending_transition_update);
 				}
 			}
 
@@ -1687,8 +1687,8 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 				// Otherwise, there must always be a visible parent in the end, unless the octree vanished.
 				if (block != nullptr && block->get_mesh_state() == VoxelMeshBlock::MESH_UP_TO_DATE) {
 					self->set_mesh_block_active(*block, true);
-					self->add_transition_update(block);
-					self->add_transition_updates_around(bpos, lod_index);
+					add_transition_update(block, blocks_pending_transition_update);
+					self->add_transition_updates_around(bpos, lod_index, blocks_pending_transition_update);
 				}
 			}
 
@@ -1759,7 +1759,8 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 			}
 		};
 
-		OctreeActions octree_actions{ this, data_blocks_to_load, block_offset_lod0, 0 };
+		OctreeActions octree_actions{ this, data_blocks_to_load, block_offset_lod0, 0,
+			blocks_pending_transition_update };
 		Vector3 relative_viewer_pos = p_viewer_pos - Vector3(int(get_mesh_block_size()) * block_offset_lod0);
 		item.octree.update(relative_viewer_pos, octree_actions);
 
@@ -1770,7 +1771,8 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 
 	{
 		VOXEL_PROFILE_SCOPE_NAMED("Transition updates");
-		process_transition_updates();
+		process_transition_updates(blocks_pending_transition_update);
+		blocks_pending_transition_update.clear();
 	}
 }
 
@@ -2372,14 +2374,16 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 	send_block_save_requests(to_span(blocks_to_save));
 }
 
-void VoxelLodTerrain::add_transition_update(VoxelMeshBlock *block) {
+void VoxelLodTerrain::add_transition_update(
+		VoxelMeshBlock *block, std::vector<VoxelMeshBlock *> &blocks_pending_transition_update) {
 	if (!block->pending_transition_update) {
-		_blocks_pending_transition_update.push_back(block);
+		blocks_pending_transition_update.push_back(block);
 		block->pending_transition_update = true;
 	}
 }
 
-void VoxelLodTerrain::add_transition_updates_around(Vector3i block_pos, int lod_index) {
+void VoxelLodTerrain::add_transition_updates_around(
+		Vector3i block_pos, int lod_index, std::vector<VoxelMeshBlock *> &blocks_pending_transition_update) {
 	Lod &lod = _lods[lod_index];
 
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
@@ -2387,16 +2391,17 @@ void VoxelLodTerrain::add_transition_updates_around(Vector3i block_pos, int lod_
 		VoxelMeshBlock *nblock = lod.mesh_map.get_block(npos);
 
 		if (nblock != nullptr) {
-			add_transition_update(nblock);
+			add_transition_update(nblock, blocks_pending_transition_update);
 		}
 	}
 	// TODO If a block appears at lod, neighbor blocks at lod-1 need to be updated.
 	// or maybe get_transition_mask needs a different approach that also looks at higher lods?
 }
 
-void VoxelLodTerrain::process_transition_updates() {
-	for (unsigned int i = 0; i < _blocks_pending_transition_update.size(); ++i) {
-		VoxelMeshBlock *block = _blocks_pending_transition_update[i];
+void VoxelLodTerrain::process_transition_updates(
+		const std::vector<VoxelMeshBlock *> &blocks_pending_transition_update) {
+	for (unsigned int i = 0; i < blocks_pending_transition_update.size(); ++i) {
+		VoxelMeshBlock *block = blocks_pending_transition_update[i];
 		CRASH_COND(block == nullptr);
 
 		if (block->active) {
@@ -2405,8 +2410,6 @@ void VoxelLodTerrain::process_transition_updates() {
 
 		block->pending_transition_update = false;
 	}
-
-	_blocks_pending_transition_update.clear();
 }
 
 uint8_t VoxelLodTerrain::get_transition_mask(Vector3i block_pos, int lod_index) const {
