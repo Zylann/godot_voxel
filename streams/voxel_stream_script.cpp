@@ -16,14 +16,20 @@ VoxelStream::Result VoxelStreamScript::emerge_block(
 	//Result res;
 	int res;
 	if (GDVIRTUAL_CALL(_emerge_block, buffer_wrapper, origin_in_voxels, lod, res)) {
-		ERR_FAIL_INDEX_V(res, _RESULT_COUNT, RESULT_ERROR);
-		return Result(res);
+		if(res==RESULT_BLOCK_NOT_FOUND){
+			ERR_FAIL_INDEX_V(res, _RESULT_COUNT, RESULT_ERROR);
+			return Result(res);
+		}
+		if(res==RESULT_BLOCK_FOUND){
+			buffer_wrapper->get_buffer().move_to(out_buffer);
+			return Result(res);
+		}
+		
 	} else {
 		WARN_PRINT_ONCE("VoxelStreamScript::_emerge_block is unimplemented!");
 	}
 
-	// The wrapper is discarded
-	buffer_wrapper->get_buffer().move_to(out_buffer);
+	
 	return RESULT_ERROR;
 }
 
