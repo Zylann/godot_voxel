@@ -21,6 +21,7 @@ public:
 	void set_material_override(Ref<Material> material);
 	void set_visible(bool visible);
 	void set_cast_shadows_setting(VisualServer::ShadowCastingSetting mode);
+	void set_portal_mode(VisualServer::InstancePortalMode mode);
 
 	Ref<Mesh> get_mesh() const;
 

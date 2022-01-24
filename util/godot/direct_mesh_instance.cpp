@@ -81,6 +81,12 @@ void DirectMeshInstance::set_cast_shadows_setting(VisualServer::ShadowCastingSet
 	vs.instance_geometry_set_cast_shadows_setting(_mesh_instance, mode);
 }
 
+void DirectMeshInstance::set_portal_mode(VisualServer::InstancePortalMode mode) {
+	ERR_FAIL_COND(!_mesh_instance.is_valid());
+	VisualServer &vs = *VisualServer::get_singleton();
+	vs.instance_set_portal_mode(_mesh_instance, mode);
+}
+
 Ref<Mesh> DirectMeshInstance::get_mesh() const {
 	return _mesh;
 }

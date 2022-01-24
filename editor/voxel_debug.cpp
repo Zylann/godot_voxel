@@ -118,6 +118,7 @@ public:
 		// The reason is still unknown.
 		// It should be off anyways, but it's rather concerning.
 		_mesh_instance.set_cast_shadows_setting(VisualServer::SHADOW_CASTING_SETTING_OFF);
+		_mesh_instance.set_portal_mode(VisualServer::INSTANCE_PORTAL_MODE_GLOBAL);
 	}
 
 	void set_mesh(Ref<Mesh> mesh) {

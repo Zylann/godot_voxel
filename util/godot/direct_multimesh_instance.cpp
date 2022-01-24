@@ -86,6 +86,13 @@ void DirectMultiMeshInstance::set_cast_shadows_setting(VisualServer::ShadowCasti
 	vs.instance_geometry_set_cast_shadows_setting(_multimesh_instance, mode);
 }
 
+
+void DirectMultiMeshInstance::set_portal_mode(VisualServer::InstancePortalMode mode) {
+	ERR_FAIL_COND(!_multimesh_instance.is_valid());
+	VisualServer &vs = *VisualServer::get_singleton();
+	vs.instance_set_portal_mode(_multimesh_instance, mode);
+}
+
 inline void write_bulk_array_transform(float *dst, const Transform &t) {
 	dst[0] = t.basis.elements[0].x;
 	dst[1] = t.basis.elements[0].y;

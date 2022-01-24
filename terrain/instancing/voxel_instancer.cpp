@@ -796,6 +796,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			if (!block->multimesh_instance.is_valid()) {
 				block->multimesh_instance.create();
 				block->multimesh_instance.set_visible(is_visible());
+				block->multimesh_instance.set_portal_mode(VisualServer::INSTANCE_PORTAL_MODE_GLOBAL);
 			}
 			block->multimesh_instance.set_multimesh(multimesh);
 			block->multimesh_instance.set_world(world);
