@@ -3,6 +3,8 @@
 
 #include "voxel_tool.h"
 
+class Node;
+
 namespace zylann::voxel {
 
 class VoxelLodTerrain;

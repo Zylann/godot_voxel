@@ -53,7 +53,7 @@ void VoxelGraphEditorPlugin::edit(Object *p_object) {
 	VoxelNode *voxel_node = nullptr;
 	Array selected_nodes = get_editor_interface()->get_selection()->get_selected_nodes();
 	for (int i = 0; i < selected_nodes.size(); ++i) {
-		Node *node = selected_nodes[i];
+		Node *node = Object::cast_to<Node>(selected_nodes[i]);
 		ERR_FAIL_COND(node == nullptr);
 		VoxelNode *vn = Object::cast_to<VoxelNode>(node);
 		if (vn != nullptr && vn->get_generator() == graph_ptr) {
