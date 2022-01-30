@@ -61,6 +61,7 @@ void VoxelMeshBlock::set_mesh(Ref<Mesh> mesh) {
 			// Create instance if it doesn't exist
 			_mesh_instance.create();
 			set_mesh_instance_visible(_mesh_instance, _visible && _parent_visible);
+			_mesh_instance.set_portal_mode(VisualServer::INSTANCE_PORTAL_MODE_GLOBAL);
 		}
 
 		_mesh_instance.set_mesh(mesh);
@@ -95,6 +96,7 @@ void VoxelMeshBlock::set_transition_mesh(Ref<Mesh> mesh, int side) {
 			// Create instance if it doesn't exist
 			mesh_instance.create();
 			set_mesh_instance_visible(mesh_instance, _visible && _parent_visible && _is_transition_visible(side));
+			mesh_instance.set_portal_mode(VisualServer::INSTANCE_PORTAL_MODE_GLOBAL);
 		}
 
 		mesh_instance.set_mesh(mesh);
