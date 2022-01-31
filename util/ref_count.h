@@ -3,7 +3,11 @@
 
 #include <core/error/error_macros.h>
 
-class VoxelRefCount {
+namespace zylann {
+
+// Simple reference counter.
+// This one is not thread-safe.
+class RefCount {
 public:
 	inline void add() {
 		++_count;
@@ -21,5 +25,7 @@ public:
 private:
 	unsigned int _count = 0;
 };
+
+} // namespace zylann
 
 #endif // VOXEL_VIEWER_REF_COUNT_H

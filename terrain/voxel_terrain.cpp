@@ -1275,7 +1275,7 @@ bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBu
 					.format(varray(expected_block_size, voxel_data->get_size())));
 
 	// Setup viewers count intersecting with this block
-	VoxelRefCount refcount;
+	RefCount refcount;
 	for (unsigned int i = 0; i < _paired_viewers.size(); ++i) {
 		const PairedViewer &viewer = _paired_viewers[i];
 		if (viewer.state.data_box.contains(position)) {

@@ -234,7 +234,7 @@ private:
 	// Therefore, could a simple grid be better to use than a hashmap?
 
 	struct LoadingBlock {
-		VoxelRefCount viewers;
+		RefCount viewers;
 		// TODO Optimize allocations here
 		std::vector<uint32_t> viewers_to_notify;
 	};

@@ -2,10 +2,10 @@
 #define VOXEL_MESH_BLOCK_H
 
 #include "../constants/cube_tables.h"
-#include "../storage/voxel_ref_count.h"
 #include "../util/fixed_array.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
+#include "../util/ref_count.h"
 
 class Node3D;
 
@@ -32,8 +32,8 @@ public:
 	Vector3i position; // In blocks
 	uint8_t lod_index = 0;
 	bool pending_transition_update = false;
-	VoxelRefCount mesh_viewers;
-	VoxelRefCount collision_viewers;
+	RefCount mesh_viewers;
+	RefCount collision_viewers;
 	bool got_first_mesh_update = false;
 
 	uint32_t last_collider_update_time = 0;

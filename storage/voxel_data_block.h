@@ -3,7 +3,7 @@
 
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/macros.h"
-#include "voxel_ref_count.h"
+#include "../util/ref_count.h"
 #include <memory>
 
 namespace zylann::voxel {
@@ -13,7 +13,7 @@ class VoxelDataBlock {
 public:
 	const Vector3i position;
 	const unsigned int lod_index = 0;
-	VoxelRefCount viewers;
+	RefCount viewers;
 
 	static VoxelDataBlock *create(
 			Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int size, unsigned int p_lod_index) {
