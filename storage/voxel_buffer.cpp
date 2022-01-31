@@ -7,14 +7,26 @@
 namespace zylann::voxel {
 
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
+static thread_local bool s_create_shared = false;
 
 VoxelBuffer::VoxelBuffer() {
-	_buffer = gd_make_shared<VoxelBufferInternal>();
+	if (!s_create_shared) {
+		_buffer = gd_make_shared<VoxelBufferInternal>();
+	}
 }
 
 VoxelBuffer::VoxelBuffer(std::shared_ptr<VoxelBufferInternal> &other) {
 	CRASH_COND(other == nullptr);
 	_buffer = other;
+}
+
+Ref<VoxelBuffer> VoxelBuffer::create_shared(std::shared_ptr<VoxelBufferInternal> &other) {
+	Ref<VoxelBuffer> vb;
+	s_create_shared = true;
+	vb.instantiate();
+	s_create_shared = false;
+	vb->_buffer = other;
+	return vb;
 }
 
 VoxelBuffer::~VoxelBuffer() {}

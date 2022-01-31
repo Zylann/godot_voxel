@@ -1,0 +1,40 @@
+#include "voxel_data_block_enter_info.h"
+#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_data_block.h"
+
+namespace zylann::voxel {
+
+int VoxelDataBlockEnterInfo::_b_get_network_peer_id() const {
+	return network_peer_id;
+}
+
+Ref<VoxelBuffer> VoxelDataBlockEnterInfo::_b_get_voxels() const {
+	ERR_FAIL_COND_V(voxel_block == nullptr, Ref<VoxelBuffer>());
+	Ref<VoxelBuffer> vb = VoxelBuffer::create_shared(voxel_block->get_voxels_shared());
+	return vb;
+}
+
+Vector3i VoxelDataBlockEnterInfo::_b_get_position() const {
+	ERR_FAIL_COND_V(voxel_block == nullptr, Vector3i());
+	return voxel_block->position;
+}
+
+int VoxelDataBlockEnterInfo::_b_get_lod_index() const {
+	ERR_FAIL_COND_V(voxel_block == nullptr, 0);
+	return voxel_block->lod_index;
+}
+
+bool VoxelDataBlockEnterInfo::_b_are_voxels_edited() const {
+	ERR_FAIL_COND_V(voxel_block == nullptr, false);
+	return voxel_block->is_edited();
+}
+
+void VoxelDataBlockEnterInfo::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_network_peer_id"), &VoxelDataBlockEnterInfo::_b_get_network_peer_id);
+	ClassDB::bind_method(D_METHOD("get_voxels"), &VoxelDataBlockEnterInfo::_b_get_voxels);
+	ClassDB::bind_method(D_METHOD("get_position"), &VoxelDataBlockEnterInfo::_b_get_position);
+	ClassDB::bind_method(D_METHOD("get_lod_index"), &VoxelDataBlockEnterInfo::_b_get_lod_index);
+	ClassDB::bind_method(D_METHOD("are_voxels_edited"), &VoxelDataBlockEnterInfo::_b_are_voxels_edited);
+}
+
+} // namespace zylann::voxel

@@ -70,6 +70,14 @@ public:
 		return _needs_lodding;
 	}
 
+	inline void set_edited(bool edited) {
+		_edited = true;
+	}
+
+	inline bool is_edited() const {
+		return _edited;
+	}
+
 private:
 	VoxelDataBlock(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int p_lod_index) :
 			position(bpos), lod_index(p_lod_index), _voxels(buffer) {}
@@ -81,6 +89,11 @@ private:
 
 	// Indicates if this block is different from the time it was loaded (should be saved)
 	bool _modified = false;
+
+	// Tells if the block has ever been edited.
+	// If `false`, the same data can be obtained by running the generator.
+	// Once it becomes `true`, it usually never comes back to `false` unless reverted.
+	bool _edited = false;
 
 	// Tells if it's worth requesting a more precise version of the data.
 	// Will be `true` if it's not worth it.

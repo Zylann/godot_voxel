@@ -60,6 +60,9 @@ public:
 
 	~VoxelBuffer();
 
+	// Workaround because the constructor with arguments cannot always be used due to Godot limitations
+	static Ref<VoxelBuffer> create_shared(std::shared_ptr<VoxelBufferInternal> &other);
+
 	inline const VoxelBufferInternal &get_buffer() const {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(_buffer == nullptr);
@@ -72,6 +75,13 @@ public:
 		CRASH_COND(_buffer == nullptr);
 #endif
 		return *_buffer;
+	}
+
+	inline std::shared_ptr<VoxelBufferInternal> get_buffer_shared() {
+#ifdef DEBUG_ENABLED
+		CRASH_COND(_buffer == nullptr);
+#endif
+		return _buffer;
 	}
 
 	//inline std::shared_ptr<VoxelBufferInternal> get_buffer_shared() { return _buffer; }
@@ -167,7 +177,6 @@ private:
 
 	static void _bind_methods();
 
-	// Not sure yet if we'll really need shared_ptr or just no pointer
 	std::shared_ptr<VoxelBufferInternal> _buffer;
 };
 

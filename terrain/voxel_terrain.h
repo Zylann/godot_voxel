@@ -3,6 +3,8 @@
 
 #include "../server/voxel_server.h"
 #include "../storage/voxel_data_map.h"
+#include "../util/godot/funcs.h"
+#include "voxel_data_block_enter_info.h"
 #include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
@@ -64,9 +66,14 @@ public:
 	unsigned int get_max_view_distance() const;
 	void set_max_view_distance(unsigned int distance_in_voxels);
 
-	// TODO Make this obsolete with multi-viewers
-	void set_viewer_path(NodePath path);
-	NodePath get_viewer_path() const;
+	void set_block_enter_notification_enabled(bool enable);
+	bool is_block_enter_notification_enabled() const;
+
+	void set_area_edit_notification_enabled(bool enable);
+	bool is_area_edit_notification_enabled() const;
+
+	void set_automatic_loading_enabled(bool enable);
+	bool is_automatic_loading_enabled() const;
 
 	void set_material(unsigned int id, Ref<Material> material);
 	Ref<Material> get_material(unsigned int id) const;
@@ -80,6 +87,13 @@ public:
 
 	Ref<VoxelTool> get_voxel_tool();
 
+	// Creates or overrides whatever block data there is at the given position.
+	// The use case is multiplayer, client-side.
+	// If no local viewer is actually in range, the data will not be applied and the function returns `false`.
+	bool try_set_block_data(Vector3i position, std::shared_ptr<VoxelBufferInternal> &voxel_data);
+
+	bool has_block(Vector3i position) const;
+
 	void set_run_stream_in_editor(bool enable);
 	bool is_stream_running_in_editor() const;
 
@@ -88,6 +102,11 @@ public:
 
 	void restart_stream() override;
 	void remesh_all_blocks() override;
+
+	// Asks to generate (or re-generate) a block at the given position asynchronously.
+	// If the block already exists once the block is generated, it will be cancelled.
+	// If the block is out of range of any viewer, it will be cancelled.
+	void generate_block_async(Vector3i block_position);
 
 	// For convenience, this is actually stored in a particular type of mesher
 	Ref<VoxelBlockyLibrary> get_voxel_library() const;
@@ -135,7 +154,7 @@ private:
 	void stop_streamer();
 	void reset_map();
 
-	void view_data_block(Vector3i bpos);
+	void view_data_block(Vector3i bpos, uint32_t viewer_id, bool require_notification);
 	void view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag);
 	void unview_data_block(Vector3i bpos);
 	void unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag);
@@ -154,6 +173,18 @@ private:
 
 	bool try_get_paired_viewer_index(uint32_t id, size_t &out_i) const;
 
+	void notify_data_block_enter(VoxelDataBlock &block, uint32_t viewer_id);
+
+	void get_viewers_in_area(std::vector<int> &out_viewer_ids, Box3i voxel_box) const;
+
+	// Called each time a data block enters a viewer's area.
+	// This can be either when the block exists and the viewer gets close enough, or when it gets loaded.
+	// This only happens if data block enter notifications are enabled.
+	GDVIRTUAL1(_on_data_block_enter, VoxelDataBlockEnterInfo *);
+
+	// Called each time voxels are edited within a region.
+	GDVIRTUAL2(_on_area_edited, Vector3i, Vector3i);
+
 	static void _bind_methods();
 
 	// Bindings
@@ -164,14 +195,17 @@ private:
 	void _b_save_block(Vector3i p_block_pos);
 	void _b_set_bounds(AABB aabb);
 	AABB _b_get_bounds() const;
+	bool _b_try_set_block_data(Vector3i position, Ref<VoxelBuffer> voxel_data);
 	Dictionary _b_get_statistics() const;
+	PackedInt32Array _b_get_viewer_network_peer_ids_in_area(Vector3i area_origin, Vector3i area_size) const;
 
 	uint32_t _volume_id = 0;
 
+	// Paired viewers are VoxelViewers which intersect with the boundaries of the volume
 	struct PairedViewer {
 		struct State {
 			Vector3i local_position_voxels;
-			Box3i data_box;
+			Box3i data_box; // In block coordinates
 			Box3i mesh_box;
 			int view_distance_voxels = 0;
 			bool requires_collisions = false;
@@ -201,12 +235,21 @@ private:
 
 	struct LoadingBlock {
 		VoxelRefCount viewers;
+		// TODO Optimize allocations here
+		std::vector<uint32_t> viewers_to_notify;
 	};
 
+	// Blocks currently being loaded.
 	HashMap<Vector3i, LoadingBlock, Vector3iHasher> _loading_blocks;
-	std::vector<Vector3i> _blocks_pending_load; // The order in that list does not matter
-	std::vector<Vector3i> _blocks_pending_update; // The order in that list does not matter
-	std::vector<BlockToSave> _blocks_to_save; // The order in that list does not matter
+	// Blocks that should be loaded on the next process call.
+	// The order in that list does not matter.
+	std::vector<Vector3i> _blocks_pending_load;
+	// Block meshes that should be updated on the next process call.
+	// The order in that list does not matter.
+	std::vector<Vector3i> _blocks_pending_update;
+	// Blocks that should be saved on the next process call.
+	// The order in that list does not matter.
+	std::vector<BlockToSave> _blocks_to_save;
 
 	Ref<VoxelStream> _stream;
 	Ref<VoxelMesher> _mesher;
@@ -218,8 +261,14 @@ private:
 	float _collision_margin = constants::DEFAULT_COLLISION_MARGIN;
 	bool _run_stream_in_editor = true;
 	//bool _stream_enabled = false;
+	bool _block_enter_notification_enabled = false;
+	bool _area_edit_notification_enabled = false;
+	// If enabled, VoxelViewers will cause blocks to automatically load around them.
+	bool _automatic_loading_enabled = true;
 
 	Ref<Material> _materials[VoxelMesherBlocky::MAX_MATERIALS];
+
+	GodotUniqueObjectPtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
 
 	Stats _stats;
 };

@@ -36,8 +36,9 @@ public:
 
 	struct BlockDataOutput {
 		enum Type { //
-			TYPE_LOAD,
-			TYPE_SAVE
+			TYPE_LOADED,
+			TYPE_GENERATED,
+			TYPE_SAVED
 		};
 
 		Type type;
@@ -83,6 +84,8 @@ public:
 		unsigned int view_distance = 128;
 		bool require_collisions = true;
 		bool require_visuals = true;
+		bool requires_data_block_notifications = false;
+		int network_peer_id = -1;
 	};
 
 	enum VolumeType { //
@@ -130,6 +133,10 @@ public:
 	bool is_viewer_requiring_visuals(uint32_t viewer_id) const;
 	void set_viewer_requires_collisions(uint32_t viewer_id, bool enabled);
 	bool is_viewer_requiring_collisions(uint32_t viewer_id) const;
+	void set_viewer_requires_data_block_notifications(uint32_t viewer_id, bool enabled);
+	bool is_viewer_requiring_data_block_notifications(uint32_t viewer_id) const;
+	void set_viewer_network_peer_id(uint32_t viewer_id, int peer_id);
+	int get_viewer_network_peer_id(uint32_t viewer_id) const;
 	bool viewer_exists(uint32_t viewer_id) const;
 
 	template <typename F>

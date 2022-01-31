@@ -23,6 +23,12 @@ public:
 	void set_requires_collisions(bool enabled);
 	bool is_requiring_collisions() const;
 
+	void set_requires_data_block_notifications(bool enabled);
+	bool is_requiring_data_block_notifications() const;
+
+	void set_network_peer_id(int id);
+	int get_network_peer_id() const;
+
 protected:
 	void _notification(int p_what);
 
@@ -36,6 +42,8 @@ private:
 	unsigned int _view_distance = 128;
 	bool _requires_visuals = true;
 	bool _requires_collisions = true;
+	bool _requires_data_block_notifications = false;
+	int _network_peer_id = -1;
 };
 
 } // namespace zylann::voxel

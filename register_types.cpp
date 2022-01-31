@@ -85,6 +85,7 @@ void register_voxel_types() {
 	ClassDB::register_virtual_class<VoxelInstanceLibraryItem>();
 	ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
 	ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
+	ClassDB::register_class<VoxelDataBlockEnterInfo>();
 
 	// Storage
 	ClassDB::register_class<VoxelBuffer>();

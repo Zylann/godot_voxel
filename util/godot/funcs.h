@@ -62,9 +62,28 @@ inline std::shared_ptr<T> gd_make_shared(Arg0_T arg0, Arg1_T arg1, Arg2_T arg2) 
 	return std::shared_ptr<T>(memnew(T(arg0, arg1, arg2)), memdelete<T>);
 }
 
+// For use with smart pointers such as std::unique_ptr
+template <typename T>
+struct GodotObjectDeleter {
+	void operator()(T *obj) {
+		memdelete(obj);
+	}
+};
+
+// Specialization of `std::unique_ptr which uses `memdelete()` as deleter.
+template <typename T>
+using GodotUniqueObjectPtr = std::unique_ptr<T, GodotObjectDeleter<T>>;
+
+// Creates a `GodotUniqueObjectPtr<T>` with an object constructed with `memnew()` inside.
+template <typename T>
+GodotUniqueObjectPtr<T> gd_make_unique() {
+	return GodotUniqueObjectPtr<T>(memnew(T));
+}
+
 void set_nodes_owner(Node *root, Node *owner);
 void set_nodes_owner_except_root(Node *root, Node *owner);
 
+// To allow using Ref<T> as key in Godot's HashMap
 template <typename T>
 struct RefHasher {
 	static _FORCE_INLINE_ uint32_t hash(const Ref<T> &v) {

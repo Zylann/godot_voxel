@@ -22,7 +22,7 @@ class VoxelInstancer;
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
 // Voxels are polygonized around the viewer by distance in a very large sphere, usually extending beyond far clip.
-// Data is streamed using a VoxelStream, which must support LOD.
+// VoxelStream and VoxelGenerator must support LOD.
 class VoxelLodTerrain : public VoxelNode {
 	GDCLASS(VoxelLodTerrain, VoxelNode)
 public:

@@ -540,6 +540,26 @@ bool VoxelServer::is_viewer_requiring_collisions(uint32_t viewer_id) const {
 	return viewer.require_collisions;
 }
 
+void VoxelServer::set_viewer_requires_data_block_notifications(uint32_t viewer_id, bool enabled) {
+	Viewer &viewer = _world.viewers.get(viewer_id);
+	viewer.requires_data_block_notifications = enabled;
+}
+
+bool VoxelServer::is_viewer_requiring_data_block_notifications(uint32_t viewer_id) const {
+	const Viewer &viewer = _world.viewers.get(viewer_id);
+	return viewer.requires_data_block_notifications;
+}
+
+void VoxelServer::set_viewer_network_peer_id(uint32_t viewer_id, int peer_id) {
+	Viewer &viewer = _world.viewers.get(viewer_id);
+	viewer.network_peer_id = peer_id;
+}
+
+int VoxelServer::get_viewer_network_peer_id(uint32_t viewer_id) const {
+	const Viewer &viewer = _world.viewers.get(viewer_id);
+	return viewer.network_peer_id;
+}
+
 bool VoxelServer::viewer_exists(uint32_t viewer_id) const {
 	return _world.viewers.is_valid(viewer_id);
 }
@@ -807,11 +827,11 @@ void VoxelServer::BlockDataRequest::apply_result() {
 
 			switch (type) {
 				case BlockDataRequest::TYPE_SAVE:
-					o.type = BlockDataOutput::TYPE_SAVE;
+					o.type = BlockDataOutput::TYPE_SAVED;
 					break;
 
 				case BlockDataRequest::TYPE_LOAD:
-					o.type = BlockDataOutput::TYPE_LOAD;
+					o.type = BlockDataOutput::TYPE_LOADED;
 					break;
 
 				default:
@@ -950,7 +970,7 @@ void VoxelServer::BlockGenerateRequest::apply_result() {
 			o.position = position;
 			o.lod = lod;
 			o.dropped = !has_run;
-			o.type = BlockDataOutput::TYPE_LOAD;
+			o.type = BlockDataOutput::TYPE_GENERATED;
 			o.max_lod_hint = max_lod_hint;
 			o.initial_load = false;
 

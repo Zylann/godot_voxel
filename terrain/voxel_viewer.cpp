@@ -41,6 +41,28 @@ bool VoxelViewer::is_requiring_collisions() const {
 	return _requires_collisions;
 }
 
+void VoxelViewer::set_requires_data_block_notifications(bool enabled) {
+	_requires_data_block_notifications = enabled;
+	if (is_active()) {
+		VoxelServer::get_singleton()->set_viewer_requires_data_block_notifications(_viewer_id, enabled);
+	}
+}
+
+bool VoxelViewer::is_requiring_data_block_notifications() const {
+	return _requires_data_block_notifications;
+}
+
+void VoxelViewer::set_network_peer_id(int id) {
+	_network_peer_id = id;
+	if (is_active()) {
+		VoxelServer::get_singleton()->set_viewer_network_peer_id(_viewer_id, id);
+	}
+}
+
+int VoxelViewer::get_network_peer_id() const {
+	return _network_peer_id;
+}
+
 void VoxelViewer::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
@@ -49,6 +71,9 @@ void VoxelViewer::_notification(int p_what) {
 				VoxelServer::get_singleton()->set_viewer_distance(_viewer_id, _view_distance);
 				VoxelServer::get_singleton()->set_viewer_requires_visuals(_viewer_id, _requires_visuals);
 				VoxelServer::get_singleton()->set_viewer_requires_collisions(_viewer_id, _requires_collisions);
+				VoxelServer::get_singleton()->set_viewer_requires_data_block_notifications(
+						_viewer_id, _requires_data_block_notifications);
+				VoxelServer::get_singleton()->set_viewer_network_peer_id(_viewer_id, _network_peer_id);
 				const Vector3 pos = get_global_transform().origin;
 				VoxelServer::get_singleton()->set_viewer_position(_viewer_id, pos);
 			}
@@ -90,6 +115,8 @@ void VoxelViewer::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "requires_visuals"), "set_requires_visuals", "is_requiring_visuals");
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "requires_collisions"), "set_requires_collisions", "is_requiring_collisions");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "requires_data_block_notifications"),
+			"set_requires_data_block_notifications", "is_requiring_data_block_notifications");
 }
 
 } // namespace zylann::voxel

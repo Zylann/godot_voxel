@@ -1779,7 +1779,7 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 	VOXEL_PROFILE_SCOPE();
 
-	if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVE) {
+	if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVED) {
 		// That's a save confirmation event.
 		// Note: in the future, if blocks don't get copied before being sent for saving,
 		// we will need to use block versionning to know when we can reset the `modified` flag properly
@@ -1838,6 +1838,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 		RWLockWrite wlock(data_lod.map_lock);
 		VoxelDataBlock *block = data_lod.map.set_block_buffer(ob.position, ob.voxels, false);
 		CRASH_COND(block == nullptr);
+		block->set_edited(ob.type == VoxelServer::BlockDataOutput::TYPE_LOADED);
 	}
 
 	if (_instancer != nullptr && ob.instances != nullptr) {
