@@ -5,10 +5,10 @@
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../streams/voxel_stream.h"
 #include "../util/file_locker.h"
+#include "../util/struct_db.h"
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
-#include "struct_db.h"
 
 #include <memory>
 
