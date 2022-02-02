@@ -10,6 +10,7 @@
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
 #include "block_mesh_request.h"
+#include "streaming_dependency.h"
 
 #include <memory>
 
@@ -151,7 +152,9 @@ public:
 
 	void push_progressive_task(IProgressiveTask *task);
 
+	// Thread-safe.
 	void push_async_task(IThreadedTask *task);
+	// Thread-safe.
 	void push_async_tasks(Span<IThreadedTask *> tasks);
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
@@ -201,12 +204,6 @@ public:
 	Stats get_stats() const;
 
 private:
-	class BlockDataRequest;
-	class BlockGenerateRequest;
-
-	void request_block_generate_from_data_request(BlockDataRequest &src);
-	void request_block_save_from_generate_request(BlockGenerateRequest &src);
-
 	// Since we are going to send data to tasks running in multiple threads, a few strategies are in place:
 	//
 	// - Copy the data for each task. This is suitable for simple information that doesn't change after scheduling.
@@ -218,12 +215,6 @@ private:
 	//   This is often done without locking, but only if it's ok to have dirty reads.
 	//   If such data sets change structurally (like their size, or other non-dirty-readable fields),
 	//   then a new instance is created and old references are left to "die out".
-
-	struct StreamingDependency {
-		Ref<VoxelStream> stream;
-		Ref<VoxelGenerator> generator;
-		bool valid = true;
-	};
 
 	struct Volume {
 		VolumeType type;
@@ -249,78 +240,6 @@ private:
 
 	void init_priority_dependency(
 			PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size);
-
-	class BlockDataRequest : public IThreadedTask {
-	public:
-		enum Type { //
-			TYPE_LOAD = 0,
-			TYPE_SAVE,
-			TYPE_FALLBACK_ON_GENERATOR
-		};
-
-		BlockDataRequest();
-		~BlockDataRequest();
-
-		void run(ThreadedTaskContext ctx) override;
-		int get_priority() override;
-		bool is_cancelled() override;
-		void apply_result() override;
-
-		std::shared_ptr<VoxelBufferInternal> voxels;
-		std::unique_ptr<InstanceBlockData> instances;
-		Vector3i position; // In data blocks of the specified lod
-		uint32_t volume_id;
-		uint8_t lod;
-		uint8_t block_size;
-		uint8_t type;
-		bool has_run = false;
-		bool too_far = false;
-		bool request_instances = false;
-		bool request_voxels = false;
-		bool max_lod_hint = false;
-		PriorityDependency priority_dependency;
-		std::shared_ptr<StreamingDependency> stream_dependency;
-		// TODO Find a way to separate save, it doesnt need sorting
-	};
-
-	class AllBlocksDataRequest : public IThreadedTask {
-	public:
-		AllBlocksDataRequest();
-		~AllBlocksDataRequest();
-
-		void run(ThreadedTaskContext ctx) override;
-		int get_priority() override;
-		bool is_cancelled() override;
-		void apply_result() override;
-
-		VoxelStream::FullLoadingResult result;
-		uint32_t volume_id;
-		std::shared_ptr<StreamingDependency> stream_dependency;
-	};
-
-	class BlockGenerateRequest : public IThreadedTask {
-	public:
-		BlockGenerateRequest();
-		~BlockGenerateRequest();
-
-		void run(ThreadedTaskContext ctx) override;
-		int get_priority() override;
-		bool is_cancelled() override;
-		void apply_result() override;
-
-		std::shared_ptr<VoxelBufferInternal> voxels;
-		Vector3i position;
-		uint32_t volume_id;
-		uint8_t lod;
-		uint8_t block_size;
-		bool has_run = false;
-		bool too_far = false;
-		bool max_lod_hint = false;
-		bool drop_beyond_max_distance = true;
-		PriorityDependency priority_dependency;
-		std::shared_ptr<StreamingDependency> stream_dependency;
-		std::shared_ptr<AsyncDependencyTracker> tracker;
-	};
 
 	// TODO multi-world support in the future
 	World _world;

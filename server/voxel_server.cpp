@@ -5,7 +5,9 @@
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
-#include "../util/tasks/async_dependency_tracker.h"
+#include "all_blocks_data_request.h"
+#include "block_data_request.h"
+#include "block_generate_request.h"
 
 #include <core/config/project_settings.h>
 #include <core/os/memory.h>
@@ -14,11 +16,6 @@
 namespace zylann::voxel {
 
 VoxelServer *g_voxel_server = nullptr;
-// Could be atomics, but it's for debugging so I don't bother for now
-int g_debug_generate_tasks_count = 0;
-int g_debug_stream_tasks_count = 0;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 VoxelServer *VoxelServer::get_singleton() {
 	CRASH_COND_MSG(g_voxel_server == nullptr, "Accessing singleton while it's null");
@@ -294,16 +291,11 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 	ERR_FAIL_COND(volume.data_block_size > 255);
 
 	if (volume.stream_dependency->stream.is_valid()) {
-		BlockDataRequest *r = memnew(BlockDataRequest);
-		r->volume_id = volume_id;
-		r->position = block_pos;
-		r->lod = lod;
-		r->type = BlockDataRequest::TYPE_LOAD;
-		r->block_size = volume.data_block_size;
-		r->stream_dependency = volume.stream_dependency;
-		r->request_instances = request_instances;
+		PriorityDependency priority_dependency;
+		init_priority_dependency(priority_dependency, block_pos, lod, volume, volume.data_block_size);
 
-		init_priority_dependency(r->priority_dependency, block_pos, lod, volume, volume.data_block_size);
+		BlockDataRequest *r = memnew(BlockDataRequest(volume_id, block_pos, lod, volume.data_block_size,
+				request_instances, volume.stream_dependency, priority_dependency));
 
 		_streaming_thread_pool.enqueue(r);
 
@@ -364,16 +356,8 @@ void VoxelServer::request_voxel_block_save(
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
 
-	BlockDataRequest *r = memnew(BlockDataRequest);
-	r->voxels = voxels;
-	r->volume_id = volume_id;
-	r->position = block_pos;
-	r->lod = lod;
-	r->type = BlockDataRequest::TYPE_SAVE;
-	r->block_size = volume.data_block_size;
-	r->stream_dependency = volume.stream_dependency;
-	r->request_instances = false;
-	r->request_voxels = true;
+	BlockDataRequest *r = memnew(
+			BlockDataRequest(volume_id, block_pos, lod, volume.data_block_size, voxels, volume.stream_dependency));
 
 	// No priority data, saving doesnt need sorting
 
@@ -386,55 +370,9 @@ void VoxelServer::request_instance_block_save(
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
 
-	BlockDataRequest *r = memnew(BlockDataRequest);
-	r->instances = std::move(instances);
-	r->volume_id = volume_id;
-	r->position = block_pos;
-	r->lod = lod;
-	r->type = BlockDataRequest::TYPE_SAVE;
-	r->block_size = volume.data_block_size;
-	r->stream_dependency = volume.stream_dependency;
-	r->request_instances = true;
-	r->request_voxels = false;
+	BlockDataRequest *r = memnew(BlockDataRequest(
+			volume_id, block_pos, lod, volume.data_block_size, std::move(instances), volume.stream_dependency));
 
-	// No priority data, saving doesnt need sorting
-
-	_streaming_thread_pool.enqueue(r);
-}
-
-void VoxelServer::request_block_generate_from_data_request(BlockDataRequest &src) {
-	// This can be called from another thread
-
-	BlockGenerateRequest *r = memnew(BlockGenerateRequest);
-	r->voxels = src.voxels;
-	r->volume_id = src.volume_id;
-	r->position = src.position;
-	r->lod = src.lod;
-	r->block_size = src.block_size;
-	r->stream_dependency = src.stream_dependency;
-	r->priority_dependency = src.priority_dependency;
-
-	_general_thread_pool.enqueue(r);
-}
-
-void VoxelServer::request_block_save_from_generate_request(BlockGenerateRequest &src) {
-	// This can be called from another thread
-
-	PRINT_VERBOSE(
-			String("Requesting save of generator output for block {0} lod {1}").format(varray(src.position, src.lod)));
-
-	BlockDataRequest *r = memnew(BlockDataRequest());
-	// TODO Optimization: `r->voxels` doesnt actually need to be shared
-	r->voxels = gd_make_shared<VoxelBufferInternal>();
-	src.voxels->duplicate_to(*r->voxels, true);
-	r->volume_id = src.volume_id;
-	r->position = src.position;
-	r->lod = src.lod;
-	r->type = BlockDataRequest::TYPE_SAVE;
-	r->block_size = src.block_size;
-	r->stream_dependency = src.stream_dependency;
-
-	// No instances, generators are not designed to produce them at this stage yet.
 	// No priority data, saving doesnt need sorting
 
 	_streaming_thread_pool.enqueue(r);
@@ -647,324 +585,11 @@ VoxelServer::Stats VoxelServer::get_stats() const {
 	Stats s;
 	s.streaming = debug_get_pool_stats(_streaming_thread_pool);
 	s.general = debug_get_pool_stats(_general_thread_pool);
-	s.generation_tasks = g_debug_generate_tasks_count;
+	s.generation_tasks = BlockGenerateRequest::debug_get_running_count();
 	s.meshing_tasks = BlockMeshRequest::debug_get_running_count();
-	s.streaming_tasks = g_debug_stream_tasks_count;
+	s.streaming_tasks = BlockDataRequest::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
 	return s;
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-
-VoxelServer::BlockDataRequest::BlockDataRequest() {
-	++g_debug_stream_tasks_count;
-}
-
-VoxelServer::BlockDataRequest::~BlockDataRequest() {
-	--g_debug_stream_tasks_count;
-}
-
-void VoxelServer::BlockDataRequest::run(zylann::ThreadedTaskContext ctx) {
-	VOXEL_PROFILE_SCOPE();
-
-	CRASH_COND(stream_dependency == nullptr);
-	Ref<VoxelStream> stream = stream_dependency->stream;
-	CRASH_COND(stream.is_null());
-
-	const Vector3i origin_in_voxels = (position << lod) * block_size;
-
-	switch (type) {
-		case TYPE_LOAD: {
-			ERR_FAIL_COND(voxels != nullptr);
-			voxels = gd_make_shared<VoxelBufferInternal>();
-			voxels->create(block_size, block_size, block_size);
-
-			// TODO We should consider batching this again, but it needs to be done carefully.
-			// Each task is one block, and priority depends on distance to closest viewer.
-			// If we batch blocks, we have to do it by distance too.
-
-			// TODO Assign max_lod_hint when available
-
-			const VoxelStream::Result voxel_result = stream->load_voxel_block(*voxels, origin_in_voxels, lod);
-
-			if (voxel_result == VoxelStream::RESULT_ERROR) {
-				ERR_PRINT("Error loading voxel block");
-
-			} else if (voxel_result == VoxelStream::RESULT_BLOCK_NOT_FOUND) {
-				Ref<VoxelGenerator> generator = stream_dependency->generator;
-				if (generator.is_valid()) {
-					VoxelServer::get_singleton()->request_block_generate_from_data_request(*this);
-					type = TYPE_FALLBACK_ON_GENERATOR;
-				} else {
-					// If there is no generator... what do we do? What defines the format of that empty block?
-					// If the user leaves the defaults it's fine, but otherwise blocks of inconsistent format can
-					// end up in the volume and that can cause errors.
-					// TODO Define format on volume?
-				}
-			}
-
-			if (request_instances && stream->supports_instance_blocks()) {
-				ERR_FAIL_COND(instances != nullptr);
-
-				VoxelStreamInstanceDataRequest instance_data_request;
-				instance_data_request.lod = lod;
-				instance_data_request.position = position;
-				VoxelStream::Result instances_result;
-				stream->load_instance_blocks(Span<VoxelStreamInstanceDataRequest>(&instance_data_request, 1),
-						Span<VoxelStream::Result>(&instances_result, 1));
-
-				if (instances_result == VoxelStream::RESULT_ERROR) {
-					ERR_PRINT("Error loading instance block");
-
-				} else if (voxel_result == VoxelStream::RESULT_BLOCK_FOUND) {
-					instances = std::move(instance_data_request.data);
-				}
-				// If not found, instances will return null,
-				// which means it can be generated by the instancer after the meshing process
-			}
-		} break;
-
-		case TYPE_SAVE: {
-			if (request_voxels) {
-				ERR_FAIL_COND(voxels == nullptr);
-				VoxelBufferInternal voxels_copy;
-				{
-					RWLockRead lock(voxels->get_lock());
-					// TODO Optimization: is that copy necessary? It's possible it was already done while issuing the
-					// request
-					voxels->duplicate_to(voxels_copy, true);
-				}
-				voxels = nullptr;
-				stream->save_voxel_block(voxels_copy, origin_in_voxels, lod);
-			}
-
-			if (request_instances && stream->supports_instance_blocks()) {
-				// If the provided data is null, it means this instance block was never modified.
-				// Since we are in a save request, the saved data will revert to unmodified.
-				// On the other hand, if we want to represent the fact that "everything was deleted here",
-				// this should not be null.
-
-				PRINT_VERBOSE(String("Saving instance block {0} lod {1} with data {2}")
-									  .format(varray(position, lod, ptr2s(instances.get()))));
-
-				VoxelStreamInstanceDataRequest instance_data_request;
-				instance_data_request.lod = lod;
-				instance_data_request.position = position;
-				instance_data_request.data = std::move(instances);
-				stream->save_instance_blocks(Span<VoxelStreamInstanceDataRequest>(&instance_data_request, 1));
-			}
-		} break;
-
-		default:
-			CRASH_NOW_MSG("Invalid type");
-	}
-
-	has_run = true;
-}
-
-int VoxelServer::BlockDataRequest::get_priority() {
-	if (type == TYPE_SAVE) {
-		return 0;
-	}
-	float closest_viewer_distance_sq;
-	const int p = priority_dependency.evaluate(lod, &closest_viewer_distance_sq);
-	too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
-	return p;
-}
-
-bool VoxelServer::BlockDataRequest::is_cancelled() {
-	return type == TYPE_LOAD && (!stream_dependency->valid || too_far);
-}
-
-void VoxelServer::BlockDataRequest::apply_result() {
-	Volume *volume = VoxelServer::get_singleton()->_world.volumes.try_get(volume_id);
-
-	if (volume != nullptr) {
-		// TODO Comparing pointer may not be guaranteed
-		// The request response must match the dependency it would have been requested with.
-		// If it doesn't match, we are no longer interested in the result.
-		if (stream_dependency == volume->stream_dependency && type != BlockDataRequest::TYPE_FALLBACK_ON_GENERATOR) {
-			BlockDataOutput o;
-			o.voxels = voxels;
-			o.instances = std::move(instances);
-			o.position = position;
-			o.lod = lod;
-			o.dropped = !has_run;
-			o.max_lod_hint = max_lod_hint;
-			o.initial_load = false;
-
-			switch (type) {
-				case BlockDataRequest::TYPE_SAVE:
-					o.type = BlockDataOutput::TYPE_SAVED;
-					break;
-
-				case BlockDataRequest::TYPE_LOAD:
-					o.type = BlockDataOutput::TYPE_LOADED;
-					break;
-
-				default:
-					CRASH_NOW_MSG("Unexpected data request response type");
-			}
-
-			CRASH_COND(volume->callbacks.data_output_callback == nullptr);
-			volume->callbacks.data_output_callback(volume->callbacks.data, o);
-		}
-
-	} else {
-		// This can happen if the user removes the volume while requests are still about to return
-		PRINT_VERBOSE("Stream data request response came back but volume wasn't found");
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-VoxelServer::AllBlocksDataRequest::AllBlocksDataRequest() {}
-
-VoxelServer::AllBlocksDataRequest::~AllBlocksDataRequest() {}
-
-void VoxelServer::AllBlocksDataRequest::run(zylann::ThreadedTaskContext ctx) {
-	VOXEL_PROFILE_SCOPE();
-
-	CRASH_COND(stream_dependency == nullptr);
-	Ref<VoxelStream> stream = stream_dependency->stream;
-	CRASH_COND(stream.is_null());
-
-	stream->load_all_blocks(result);
-
-	PRINT_VERBOSE(String("Loaded {0} blocks for volume {1}").format(varray(result.blocks.size(), volume_id)));
-}
-
-int VoxelServer::AllBlocksDataRequest::get_priority() {
-	return 0;
-}
-
-bool VoxelServer::AllBlocksDataRequest::is_cancelled() {
-	return !stream_dependency->valid;
-}
-
-void VoxelServer::AllBlocksDataRequest::apply_result() {
-	Volume *volume = VoxelServer::get_singleton()->_world.volumes.try_get(volume_id);
-
-	if (volume != nullptr) {
-		// TODO Comparing pointer may not be guaranteed
-		// The request response must match the dependency it would have been requested with.
-		// If it doesn't match, we are no longer interested in the result.
-		if (stream_dependency == volume->stream_dependency) {
-			ERR_FAIL_COND(volume->callbacks.data_output_callback == nullptr);
-
-			for (auto it = result.blocks.begin(); it != result.blocks.end(); ++it) {
-				VoxelStream::FullLoadingResult::Block &rb = *it;
-
-				BlockDataOutput o;
-				o.voxels = rb.voxels;
-				o.instances = std::move(rb.instances_data);
-				o.position = rb.position;
-				o.lod = rb.lod;
-				o.dropped = false;
-				o.max_lod_hint = false;
-				o.initial_load = true;
-
-				volume->callbacks.data_output_callback(volume->callbacks.data, o);
-			}
-		}
-
-	} else {
-		// This can happen if the user removes the volume while requests are still about to return
-		PRINT_VERBOSE("Stream data request response came back but volume wasn't found");
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-VoxelServer::BlockGenerateRequest::BlockGenerateRequest() {
-	++g_debug_generate_tasks_count;
-}
-
-VoxelServer::BlockGenerateRequest::~BlockGenerateRequest() {
-	--g_debug_generate_tasks_count;
-}
-
-void VoxelServer::BlockGenerateRequest::run(zylann::ThreadedTaskContext ctx) {
-	VOXEL_PROFILE_SCOPE();
-
-	CRASH_COND(stream_dependency == nullptr);
-	Ref<VoxelGenerator> generator = stream_dependency->generator;
-	ERR_FAIL_COND(generator.is_null());
-
-	const Vector3i origin_in_voxels = (position << lod) * block_size;
-
-	if (voxels == nullptr) {
-		voxels = gd_make_shared<VoxelBufferInternal>();
-		voxels->create(block_size, block_size, block_size);
-	}
-
-	VoxelBlockRequest r{ *voxels, origin_in_voxels, lod };
-	const VoxelGenerator::Result result = generator->generate_block(r);
-	max_lod_hint = result.max_lod_hint;
-
-	if (stream_dependency->valid) {
-		Ref<VoxelStream> stream = stream_dependency->stream;
-		if (stream.is_valid() && stream->get_save_generator_output()) {
-			VoxelServer::get_singleton()->request_block_save_from_generate_request(*this);
-		}
-	}
-
-	has_run = true;
-}
-
-int VoxelServer::BlockGenerateRequest::get_priority() {
-	float closest_viewer_distance_sq;
-	const int p = priority_dependency.evaluate(lod, &closest_viewer_distance_sq);
-	too_far = drop_beyond_max_distance && closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
-	return p;
-}
-
-bool VoxelServer::BlockGenerateRequest::is_cancelled() {
-	return !stream_dependency->valid || too_far; // || stream_dependency->stream->get_fallback_generator().is_null();
-}
-
-void VoxelServer::BlockGenerateRequest::apply_result() {
-	Volume *volume = VoxelServer::get_singleton()->_world.volumes.try_get(volume_id);
-
-	bool aborted = true;
-
-	if (volume != nullptr) {
-		// TODO Comparing pointer may not be guaranteed
-		// The request response must match the dependency it would have been requested with.
-		// If it doesn't match, we are no longer interested in the result.
-		if (stream_dependency == volume->stream_dependency) {
-			BlockDataOutput o;
-			o.voxels = voxels;
-			o.position = position;
-			o.lod = lod;
-			o.dropped = !has_run;
-			o.type = BlockDataOutput::TYPE_GENERATED;
-			o.max_lod_hint = max_lod_hint;
-			o.initial_load = false;
-
-			ERR_FAIL_COND(volume->callbacks.data_output_callback == nullptr);
-			volume->callbacks.data_output_callback(volume->callbacks.data, o);
-
-			aborted = !has_run;
-		}
-
-	} else {
-		// This can happen if the user removes the volume while requests are still about to return
-		PRINT_VERBOSE("Gemerated data request response came back but volume wasn't found");
-	}
-
-	// TODO We could complete earlier inside run() if we had access to the data structure to write the block into.
-	// This would reduce latency a little. The rest of things the terrain needs to do with the generated block could
-	// run later.
-	if (tracker != nullptr) {
-		if (aborted) {
-			tracker->abort();
-		} else {
-			tracker->post_complete();
-		}
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 
 } // namespace zylann::voxel

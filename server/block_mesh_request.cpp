@@ -15,7 +15,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 
 	// Extract wanted channels in a list
 	unsigned int channels_count = 0;
-	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
+	FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels =
 			VoxelBufferInternal::mask_to_channels_list(channels_mask, channels_count);
 
 	// Determine size of the cube of blocks
@@ -90,8 +90,8 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 					// TODO This approach allows to batch boxes if necessary,
 					// but is it just better to do it anyways for every clipped box?
 					VOXEL_PROFILE_SCOPE_NAMED("Box subtract");
-					unsigned int count = boxes_to_generate.size();
-					Box3i block_box = Box3i(offset, Vector3iUtil::create(data_block_size)).clipped(mesh_data_box);
+					const unsigned int count = boxes_to_generate.size();
+					const Box3i block_box = Box3i(offset, Vector3iUtil::create(data_block_size)).clipped(mesh_data_box);
 
 					for (unsigned int box_index = 0; box_index < count; ++box_index) {
 						Box3i box = boxes_to_generate[box_index];

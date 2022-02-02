@@ -29,6 +29,7 @@ public:
 
 	static int debug_get_running_count();
 
+	// 3x3x3 or 4x4x4 grid of voxel blocks.
 	FixedArray<std::shared_ptr<VoxelBufferInternal>, constants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
 	// TODO Need to provide format
 	//FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;

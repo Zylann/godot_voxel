@@ -4,6 +4,8 @@
 #include "instance_data.h"
 #include "voxel_block_request.h"
 #include <core/io/resource.h>
+// TODO Should be forward-declared
+#include "../storage/voxel_buffer.h"
 
 namespace zylann::voxel {
 
