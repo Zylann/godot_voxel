@@ -9,6 +9,7 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
+#include "block_mesh_request.h"
 
 #include <memory>
 
@@ -108,6 +109,7 @@ public:
 	void set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream);
 	void set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> generator);
 	void set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher);
+	VolumeCallbacks get_volume_callbacks(uint32_t volume_id) const;
 	void set_volume_octree_lod_distance(uint32_t volume_id, float lod_distance);
 	void invalidate_volume_mesh_requests(uint32_t volume_id);
 	void request_block_mesh(uint32_t volume_id, const BlockMeshInput &input);
@@ -223,12 +225,6 @@ private:
 		bool valid = true;
 	};
 
-	struct MeshingDependency {
-		Ref<VoxelMesher> mesher;
-		Ref<VoxelGenerator> generator;
-		bool valid = true;
-	};
-
 	struct Volume {
 		VolumeType type;
 		VolumeCallbacks callbacks;
@@ -240,16 +236,7 @@ private:
 		uint32_t data_block_size = 16;
 		float octree_lod_distance = 0;
 		std::shared_ptr<StreamingDependency> stream_dependency;
-		std::shared_ptr<MeshingDependency> meshing_dependency;
-	};
-
-	struct PriorityDependencyShared {
-		// These positions are written by the main thread and read by block processing threads.
-		// Order doesn't matter.
-		// It's only used to adjust task priority so using a lock isn't worth it. In worst case scenario,
-		// a task will run much sooner or later than expected, but it will run in any case.
-		std::vector<Vector3> viewers;
-		float highest_view_distance = 999999;
+		std::shared_ptr<BlockMeshRequest::MeshingDependency> meshing_dependency;
 	};
 
 	struct World {
@@ -257,19 +244,11 @@ private:
 		StructDB<Viewer> viewers;
 
 		// Must be overwritten with a new instance if count changes.
-		std::shared_ptr<PriorityDependencyShared> shared_priority_dependency;
-	};
-
-	struct PriorityDependency {
-		std::shared_ptr<PriorityDependencyShared> shared;
-		Vector3 world_position; // TODO Won't update while in queue. Can it be bad?
-		// If the closest viewer is further away than this distance, the request can be cancelled as not worth it
-		float drop_distance_squared;
+		std::shared_ptr<PriorityDependency::ViewersData> shared_priority_dependency;
 	};
 
 	void init_priority_dependency(
 			PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size);
-	static int get_priority(const PriorityDependency &dep, uint8_t lod_index, float *out_closest_distance_sq);
 
 	class BlockDataRequest : public IThreadedTask {
 	public:
@@ -341,31 +320,6 @@ private:
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency;
 		std::shared_ptr<AsyncDependencyTracker> tracker;
-	};
-
-	class BlockMeshRequest : public IThreadedTask {
-	public:
-		BlockMeshRequest();
-		~BlockMeshRequest();
-
-		void run(ThreadedTaskContext ctx) override;
-		int get_priority() override;
-		bool is_cancelled() override;
-		void apply_result() override;
-
-		FixedArray<std::shared_ptr<VoxelBufferInternal>, constants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
-		// TODO Need to provide format
-		//FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
-		Vector3i position; // In mesh blocks of the specified lod
-		uint32_t volume_id;
-		uint8_t lod;
-		uint8_t blocks_count;
-		uint8_t data_block_size;
-		bool has_run = false;
-		bool too_far = false;
-		PriorityDependency priority_dependency;
-		std::shared_ptr<MeshingDependency> meshing_dependency;
-		VoxelMesher::Output surfaces_output;
 	};
 
 	// TODO multi-world support in the future

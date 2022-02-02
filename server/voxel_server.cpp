@@ -17,7 +17,6 @@ VoxelServer *g_voxel_server = nullptr;
 // Could be atomics, but it's for debugging so I don't bother for now
 int g_debug_generate_tasks_count = 0;
 int g_debug_stream_tasks_count = 0;
-int g_debug_mesh_tasks_count = 0;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -102,7 +101,7 @@ VoxelServer::VoxelServer() {
 	_general_thread_pool.set_batch_count(1);
 
 	// Init world
-	_world.shared_priority_dependency = gd_make_shared<PriorityDependencyShared>();
+	_world.shared_priority_dependency = gd_make_shared<PriorityDependency::ViewersData>();
 
 	PRINT_VERBOSE(String("Size of BlockDataRequest: {0}").format(varray((int)sizeof(BlockDataRequest))));
 	PRINT_VERBOSE(String("Size of BlockMeshRequest: {0}").format(varray((int)sizeof(BlockMeshRequest))));
@@ -141,48 +140,12 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	});
 }
 
-int VoxelServer::get_priority(const PriorityDependency &dep, uint8_t lod_index, float *out_closest_distance_sq) {
-	const std::vector<Vector3> &viewer_positions = dep.shared->viewers;
-	const Vector3 block_position = dep.world_position;
-
-	float closest_distance_sq = 99999.f;
-	if (viewer_positions.size() == 0) {
-		// Assume origin
-		closest_distance_sq = block_position.length_squared();
-	} else {
-		for (size_t i = 0; i < viewer_positions.size(); ++i) {
-			float d = viewer_positions[i].distance_squared_to(block_position);
-			if (d < closest_distance_sq) {
-				closest_distance_sq = d;
-			}
-		}
-	}
-
-	if (out_closest_distance_sq != nullptr) {
-		*out_closest_distance_sq = closest_distance_sq;
-	}
-
-	// TODO Any way to optimize out the sqrt?
-	// I added it because the LOD modifier was not working with squared distances,
-	// which led blocks to subdivide too much compared to their neighbors, making cracks more likely to happen
-	int priority = static_cast<int>(Math::sqrt(closest_distance_sq));
-
-	// TODO Prioritizing LOD makes generation slower... but not prioritizing makes cracks more likely to appear...
-	// This could be fixed by allowing the volume to preemptively request blocks of the next LOD?
-	//
-	// Higher lod indexes come first to allow the octree to subdivide.
-	// Then comes distance, which is modified by how much in view the block is
-	priority += (constants::MAX_LOD - lod_index) * 10000;
-
-	return priority;
-}
-
 uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks, VolumeType type) {
 	CRASH_COND(!callbacks.check_callbacks());
 	Volume volume;
 	volume.type = type;
 	volume.callbacks = callbacks;
-	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<BlockMeshRequest::MeshingDependency>();
 	return _world.volumes.create(volume);
 }
 
@@ -232,7 +195,7 @@ void VoxelServer::set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> g
 		volume.meshing_dependency->valid = false;
 	}
 
-	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<BlockMeshRequest::MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -245,7 +208,7 @@ void VoxelServer::set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher)
 		volume.meshing_dependency->valid = false;
 	}
 
-	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<BlockMeshRequest::MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -258,17 +221,22 @@ void VoxelServer::set_volume_octree_lod_distance(uint32_t volume_id, float lod_d
 void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.meshing_dependency->valid = false;
-	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<BlockMeshRequest::MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
+}
+
+VoxelServer::VolumeCallbacks VoxelServer::get_volume_callbacks(uint32_t volume_id) const {
+	const Volume &volume = _world.volumes.get(volume_id);
+	return volume.callbacks;
 }
 
 static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
 	return (pos << lod) * bs + Vector3iUtil::create(bs / 2);
 }
 
-void VoxelServer::init_priority_dependency(VoxelServer::PriorityDependency &dep, Vector3i block_position, uint8_t lod,
-		const Volume &volume, int block_size) {
+void VoxelServer::init_priority_dependency(
+		PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size) {
 	const Vector3i voxel_pos = get_block_center(block_position, block_size, lod);
 	const float block_radius = (block_size << lod) / 2;
 	dep.shared = _world.shared_priority_dependency;
@@ -613,7 +581,7 @@ void VoxelServer::process() {
 		const size_t viewer_count = _world.viewers.count();
 		if (_world.shared_priority_dependency->viewers.size() != viewer_count) {
 			// TODO We can avoid the invalidation by using an atomic size or memory barrier?
-			_world.shared_priority_dependency = gd_make_shared<PriorityDependencyShared>();
+			_world.shared_priority_dependency = gd_make_shared<PriorityDependency::ViewersData>();
 			_world.shared_priority_dependency->viewers.resize(viewer_count);
 		}
 		size_t i = 0;
@@ -680,7 +648,7 @@ VoxelServer::Stats VoxelServer::get_stats() const {
 	s.streaming = debug_get_pool_stats(_streaming_thread_pool);
 	s.general = debug_get_pool_stats(_general_thread_pool);
 	s.generation_tasks = g_debug_generate_tasks_count;
-	s.meshing_tasks = g_debug_mesh_tasks_count;
+	s.meshing_tasks = BlockMeshRequest::debug_get_running_count();
 	s.streaming_tasks = g_debug_stream_tasks_count;
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
 	return s;
@@ -799,7 +767,7 @@ int VoxelServer::BlockDataRequest::get_priority() {
 		return 0;
 	}
 	float closest_viewer_distance_sq;
-	const int p = VoxelServer::get_priority(priority_dependency, lod, &closest_viewer_distance_sq);
+	const int p = priority_dependency.evaluate(lod, &closest_viewer_distance_sq);
 	too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
@@ -946,7 +914,7 @@ void VoxelServer::BlockGenerateRequest::run(zylann::ThreadedTaskContext ctx) {
 
 int VoxelServer::BlockGenerateRequest::get_priority() {
 	float closest_viewer_distance_sq;
-	const int p = VoxelServer::get_priority(priority_dependency, lod, &closest_viewer_distance_sq);
+	const int p = priority_dependency.evaluate(lod, &closest_viewer_distance_sq);
 	too_far = drop_beyond_max_distance && closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
@@ -998,202 +966,5 @@ void VoxelServer::BlockGenerateRequest::apply_result() {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-
-// Takes a list of blocks and interprets it as a cube of blocks centered around the area we want to create a mesh from.
-// Voxels from central blocks are copied, and part of side blocks are also copied so we get a temporary buffer
-// which includes enough neighbors for the mesher to avoid doing bound checks.
-static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
-		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator, int data_block_size,
-		int lod_index, Vector3i mesh_block_pos) {
-	VOXEL_PROFILE_SCOPE();
-
-	// Extract wanted channels in a list
-	unsigned int channels_count = 0;
-	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
-			VoxelBufferInternal::mask_to_channels_list(channels_mask, channels_count);
-
-	// Determine size of the cube of blocks
-	int edge_size;
-	int mesh_block_size_factor;
-	switch (blocks.size()) {
-		case 3 * 3 * 3:
-			edge_size = 3;
-			mesh_block_size_factor = 1;
-			break;
-		case 4 * 4 * 4:
-			edge_size = 4;
-			mesh_block_size_factor = 2;
-			break;
-		default:
-			ERR_FAIL_MSG("Unsupported block count");
-	}
-
-	// Pick anchor block, usually within the central part of the cube (that block must be valid)
-	const unsigned int anchor_buffer_index = edge_size * edge_size + edge_size + 1;
-
-	std::shared_ptr<VoxelBufferInternal> &central_buffer = blocks[anchor_buffer_index];
-	ERR_FAIL_COND_MSG(central_buffer == nullptr && generator.is_null(), "Central buffer must be valid");
-	if (central_buffer != nullptr) {
-		ERR_FAIL_COND_MSG(
-				Vector3iUtil::all_members_equal(central_buffer->get_size()) == false, "Central buffer must be cubic");
-	}
-	const int mesh_block_size = data_block_size * mesh_block_size_factor;
-	const int padded_mesh_block_size = mesh_block_size + min_padding + max_padding;
-
-	dst.create(padded_mesh_block_size, padded_mesh_block_size, padded_mesh_block_size);
-
-	// TODO Need to provide format
-	// for (unsigned int ci = 0; ci < channels.size(); ++ci) {
-	// 	dst.set_channel_depth(ci, central_buffer->get_channel_depth(ci));
-	// }
-
-	const Vector3i min_pos = -Vector3iUtil::create(min_padding);
-	const Vector3i max_pos = Vector3iUtil::create(mesh_block_size + max_padding);
-
-	std::vector<Box3i> boxes_to_generate;
-	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
-	if (generator.is_valid()) {
-		boxes_to_generate.push_back(mesh_data_box);
-	}
-
-	// Using ZXY as convention to reconstruct positions with thread locking consistency
-	unsigned int block_index = 0;
-	for (int z = -1; z < edge_size - 1; ++z) {
-		for (int x = -1; x < edge_size - 1; ++x) {
-			for (int y = -1; y < edge_size - 1; ++y) {
-				const Vector3i offset = data_block_size * Vector3i(x, y, z);
-				const std::shared_ptr<VoxelBufferInternal> &src = blocks[block_index];
-				++block_index;
-
-				if (src == nullptr) {
-					continue;
-				}
-
-				const Vector3i src_min = min_pos - offset;
-				const Vector3i src_max = max_pos - offset;
-
-				{
-					RWLockRead read(src->get_lock());
-					for (unsigned int ci = 0; ci < channels_count; ++ci) {
-						dst.copy_from(*src, src_min, src_max, Vector3i(), channels[ci]);
-					}
-				}
-
-				if (generator.is_valid()) {
-					// Subtract edited box from the area to generate
-					// TODO This approach allows to batch boxes if necessary,
-					// but is it just better to do it anyways for every clipped box?
-					VOXEL_PROFILE_SCOPE_NAMED("Box subtract");
-					unsigned int count = boxes_to_generate.size();
-					Box3i block_box = Box3i(offset, Vector3iUtil::create(data_block_size)).clipped(mesh_data_box);
-
-					for (unsigned int box_index = 0; box_index < count; ++box_index) {
-						Box3i box = boxes_to_generate[box_index];
-						box.difference(block_box, boxes_to_generate);
-#ifdef DEBUG_ENABLED
-						CRASH_COND(box_index >= boxes_to_generate.size());
-#endif
-						boxes_to_generate[box_index] = boxes_to_generate.back();
-						boxes_to_generate.pop_back();
-					}
-				}
-			}
-		}
-	}
-
-	if (generator.is_valid()) {
-		// Complete data with generated voxels
-		VOXEL_PROFILE_SCOPE_NAMED("Generate");
-		VoxelBufferInternal generated_voxels;
-
-		const Vector3i origin_in_voxels = mesh_block_pos * (mesh_block_size_factor * data_block_size << lod_index);
-
-		for (unsigned int i = 0; i < boxes_to_generate.size(); ++i) {
-			const Box3i &box = boxes_to_generate[i];
-			//print_line(String("size={0}").format(varray(box.size.to_vec3())));
-			generated_voxels.create(box.size);
-			//generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
-			//VoxelBufferInternal::CHANNEL_SDF);
-			VoxelBlockRequest r{ generated_voxels, (box.pos << lod_index) + origin_in_voxels, lod_index };
-			generator->generate_block(r);
-
-			for (unsigned int ci = 0; ci < channels_count; ++ci) {
-				dst.copy_from(generated_voxels, Vector3i(), generated_voxels.get_size(),
-						box.pos + Vector3iUtil::create(min_padding), channels[ci]);
-			}
-		}
-	}
-}
-
-VoxelServer::BlockMeshRequest::BlockMeshRequest() {
-	++g_debug_mesh_tasks_count;
-}
-
-VoxelServer::BlockMeshRequest::~BlockMeshRequest() {
-	--g_debug_mesh_tasks_count;
-}
-
-void VoxelServer::BlockMeshRequest::run(zylann::ThreadedTaskContext ctx) {
-	VOXEL_PROFILE_SCOPE();
-	CRASH_COND(meshing_dependency == nullptr);
-
-	Ref<VoxelMesher> mesher = meshing_dependency->mesher;
-	CRASH_COND(mesher.is_null());
-	const unsigned int min_padding = mesher->get_minimum_padding();
-	const unsigned int max_padding = mesher->get_maximum_padding();
-
-	// TODO Cache?
-	VoxelBufferInternal voxels;
-	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
-			mesher->get_used_channels_mask(), meshing_dependency->generator, data_block_size, lod, position);
-
-	const VoxelMesher::Input input = { voxels, lod };
-	mesher->build(surfaces_output, input);
-
-	has_run = true;
-}
-
-int VoxelServer::BlockMeshRequest::get_priority() {
-	float closest_viewer_distance_sq;
-	const int p = VoxelServer::get_priority(priority_dependency, lod, &closest_viewer_distance_sq);
-	too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
-	return p;
-}
-
-bool VoxelServer::BlockMeshRequest::is_cancelled() {
-	return !meshing_dependency->valid || too_far;
-}
-
-void VoxelServer::BlockMeshRequest::apply_result() {
-	Volume *volume = VoxelServer::get_singleton()->_world.volumes.try_get(volume_id);
-
-	if (volume != nullptr) {
-		// TODO Comparing pointer may not be guaranteed
-		// The request response must match the dependency it would have been requested with.
-		// If it doesn't match, we are no longer interested in the result.
-		if (volume->meshing_dependency == meshing_dependency) {
-			BlockMeshOutput o;
-			// TODO Check for invalidation due to property changes
-
-			if (has_run) {
-				o.type = BlockMeshOutput::TYPE_MESHED;
-			} else {
-				o.type = BlockMeshOutput::TYPE_DROPPED;
-			}
-
-			o.position = position;
-			o.lod = lod;
-			o.surfaces = surfaces_output;
-
-			ERR_FAIL_COND(volume->callbacks.mesh_output_callback == nullptr);
-			ERR_FAIL_COND(volume->callbacks.data == nullptr);
-			volume->callbacks.mesh_output_callback(volume->callbacks.data, o);
-		}
-
-	} else {
-		// This can happen if the user removes the volume while requests are still about to return
-		PRINT_VERBOSE("Mesh request response came back but volume wasn't found");
-	}
-}
 
 } // namespace zylann::voxel
