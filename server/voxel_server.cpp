@@ -6,8 +6,9 @@
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "all_blocks_data_request.h"
-#include "block_data_request.h"
 #include "block_generate_request.h"
+#include "load_block_data_request.h"
+#include "save_block_data_request.h"
 
 #include <core/config/project_settings.h>
 #include <core/os/memory.h>
@@ -100,7 +101,8 @@ VoxelServer::VoxelServer() {
 	// Init world
 	_world.shared_priority_dependency = gd_make_shared<PriorityDependency::ViewersData>();
 
-	PRINT_VERBOSE(String("Size of BlockDataRequest: {0}").format(varray((int)sizeof(BlockDataRequest))));
+	PRINT_VERBOSE(String("Size of LoadBlockDataRequest: {0}").format(varray((int)sizeof(LoadBlockDataRequest))));
+	PRINT_VERBOSE(String("Size of SaveBlockDataRequest: {0}").format(varray((int)sizeof(SaveBlockDataRequest))));
 	PRINT_VERBOSE(String("Size of BlockMeshRequest: {0}").format(varray((int)sizeof(BlockMeshRequest))));
 }
 
@@ -294,7 +296,7 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 		PriorityDependency priority_dependency;
 		init_priority_dependency(priority_dependency, block_pos, lod, volume, volume.data_block_size);
 
-		BlockDataRequest *r = memnew(BlockDataRequest(volume_id, block_pos, lod, volume.data_block_size,
+		LoadBlockDataRequest *r = memnew(LoadBlockDataRequest(volume_id, block_pos, lod, volume.data_block_size,
 				request_instances, volume.stream_dependency, priority_dependency));
 
 		_streaming_thread_pool.enqueue(r);
@@ -356,8 +358,8 @@ void VoxelServer::request_voxel_block_save(
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
 
-	BlockDataRequest *r = memnew(
-			BlockDataRequest(volume_id, block_pos, lod, volume.data_block_size, voxels, volume.stream_dependency));
+	SaveBlockDataRequest *r = memnew(
+			SaveBlockDataRequest(volume_id, block_pos, lod, volume.data_block_size, voxels, volume.stream_dependency));
 
 	// No priority data, saving doesnt need sorting
 
@@ -370,7 +372,7 @@ void VoxelServer::request_instance_block_save(
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
 
-	BlockDataRequest *r = memnew(BlockDataRequest(
+	SaveBlockDataRequest *r = memnew(SaveBlockDataRequest(
 			volume_id, block_pos, lod, volume.data_block_size, std::move(instances), volume.stream_dependency));
 
 	// No priority data, saving doesnt need sorting
@@ -587,7 +589,8 @@ VoxelServer::Stats VoxelServer::get_stats() const {
 	s.general = debug_get_pool_stats(_general_thread_pool);
 	s.generation_tasks = BlockGenerateRequest::debug_get_running_count();
 	s.meshing_tasks = BlockMeshRequest::debug_get_running_count();
-	s.streaming_tasks = BlockDataRequest::debug_get_running_count();
+	s.streaming_tasks =
+			LoadBlockDataRequest::debug_get_running_count() + SaveBlockDataRequest::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
 	return s;
 }

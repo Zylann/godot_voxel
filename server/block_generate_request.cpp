@@ -2,7 +2,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
-#include "block_data_request.h"
+#include "save_block_data_request.h"
 #include "voxel_server.h"
 
 namespace zylann::voxel {
@@ -57,8 +57,8 @@ void BlockGenerateRequest::run(zylann::ThreadedTaskContext ctx) {
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesnt need sorting
 
-			BlockDataRequest *r =
-					memnew(BlockDataRequest(volume_id, position, lod, block_size, voxels_copy, stream_dependency));
+			SaveBlockDataRequest *r =
+					memnew(SaveBlockDataRequest(volume_id, position, lod, block_size, voxels_copy, stream_dependency));
 
 			VoxelServer::get_singleton()->push_async_task(r);
 		}
