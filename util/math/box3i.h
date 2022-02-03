@@ -214,6 +214,8 @@ public:
 		}
 	}
 
+	// Subtracts another box from the current box.
+	// If any, boxes composing the remaining volume are added to the given vector.
 	inline void difference(const Box3i &b, std::vector<Box3i> &output) {
 		difference(b, [&output](const Box3i &sub_box) { output.push_back(sub_box); });
 	}
