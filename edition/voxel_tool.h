@@ -199,13 +199,8 @@ private:
 	void _b_do_box(Vector3i begin, Vector3i end) {
 		do_box(begin, end);
 	}
-	void _b_copy(Vector3i pos, Ref<VoxelBuffer> voxels, int channel_mask) {
-		copy(pos, voxels, channel_mask);
-	}
-	void _b_paste(Vector3i pos, Ref<VoxelBuffer> voxels, int channels_mask, int64_t mask_value) {
-		// TODO May need two functions, one masked, one not masked, or add a parameter, but it breaks compat
-		paste(pos, voxels, channels_mask, mask_value > 0xffffffff, mask_value);
-	}
+	void _b_copy(Vector3i pos, Ref<VoxelBuffer> voxels, int channel_mask);
+	void _b_paste(Vector3i pos, Ref<VoxelBuffer> voxels, int channels_mask, int64_t mask_value);
 
 	Variant _b_get_voxel_metadata(Vector3i pos) const {
 		return get_voxel_metadata(pos);

@@ -376,7 +376,7 @@ FileResult VoxelStreamRegionFiles::load_meta() {
 	ERR_FAIL_COND_V(meta.version < 0, FILE_INVALID_DATA);
 
 	Array channel_depths_data = d["channel_depths"];
-	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBuffer::MAX_CHANNELS, FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBufferInternal::MAX_CHANNELS, FILE_INVALID_DATA);
 	for (int i = 0; i < channel_depths_data.size(); ++i) {
 		ERR_FAIL_COND_V(!depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), FILE_INVALID_DATA);
 	}
@@ -704,7 +704,8 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 					Vector3i dst_pos = rel * old_block.get_size();
 
-					for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
+					for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS;
+							++channel_index) {
 						new_block.copy_from(old_block, Vector3i(), old_block.get_size(), dst_pos, channel_index);
 					}
 
@@ -722,7 +723,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 								Vector3i src_min = rpos * new_block.get_size();
 								Vector3i src_max = src_min + new_block.get_size();
 
-								for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS;
+								for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS;
 										++channel_index) {
 									new_block.copy_from(old_block, src_min, src_max, Vector3i(), channel_index);
 								}

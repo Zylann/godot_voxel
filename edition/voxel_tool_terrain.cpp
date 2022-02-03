@@ -1,6 +1,7 @@
 #include "voxel_tool_terrain.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
+#include "../storage/voxel_buffer.h"
 #include "../terrain/voxel_terrain.h"
 #include "../util/godot/funcs.h"
 #include "../util/voxel_raycast.h"
@@ -29,7 +30,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		const VoxelDataMap &map;
 
 		bool operator()(const Vector3i pos) const {
-			const uint64_t v = map.get_voxel(pos, VoxelBuffer::CHANNEL_COLOR);
+			const uint64_t v = map.get_voxel(pos, VoxelBufferInternal::CHANNEL_COLOR);
 			return v != 0;
 		}
 	};
@@ -38,7 +39,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		const VoxelDataMap &map;
 
 		bool operator()(const Vector3i pos) const {
-			const float v = map.get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
+			const float v = map.get_voxel_f(pos, VoxelBufferInternal::CHANNEL_SDF);
 			return v < 0;
 		}
 	};
@@ -49,7 +50,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		const uint32_t collision_mask;
 
 		bool operator()(const Vector3i pos) const {
-			const int v = map.get_voxel(pos, VoxelBuffer::CHANNEL_TYPE);
+			const int v = map.get_voxel(pos, VoxelBufferInternal::CHANNEL_TYPE);
 
 			if (library.has_voxel(v) == false) {
 				return false;
@@ -173,7 +174,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 		return;
 	}
 
-	_terrain->get_storage().write_box_2(box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
+	_terrain->get_storage().write_box_2(box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
 			ops::TextureBlendSphereOp{ center, radius, _texture_params });
 
 	_post_edit(box);

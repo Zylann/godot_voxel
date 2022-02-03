@@ -1,6 +1,7 @@
 #ifndef VOXEL_GENERATOR_NOISE_H
 #define VOXEL_GENERATOR_NOISE_H
 
+#include "../../storage/voxel_buffer.h"
 #include "../voxel_generator.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
@@ -13,8 +14,9 @@ public:
 	VoxelGeneratorNoise();
 	~VoxelGeneratorNoise();
 
-	void set_channel(VoxelBuffer::ChannelId p_channel);
-	VoxelBuffer::ChannelId get_channel() const;
+	void set_channel(VoxelBufferInternal::ChannelId p_channel);
+	VoxelBufferInternal::ChannelId get_channel() const;
+
 	int get_used_channels_mask() const override;
 
 	void set_noise(Ref<OpenSimplexNoise> noise);
@@ -28,12 +30,14 @@ public:
 
 	Result generate_block(VoxelBlockRequest &input) override;
 
-protected:
+private:
 	void _on_noise_changed();
+
+	void _b_set_channel(VoxelBuffer::ChannelId p_channel);
+	VoxelBuffer::ChannelId _b_get_channel() const;
 
 	static void _bind_methods();
 
-private:
 	Ref<OpenSimplexNoise> _noise;
 
 	struct Parameters {

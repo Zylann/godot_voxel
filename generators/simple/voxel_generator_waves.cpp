@@ -1,8 +1,7 @@
 #include "voxel_generator_waves.h"
 #include <cmath>
 
-using namespace zylann;
-using namespace voxel;
+namespace zylann::voxel {
 
 VoxelGeneratorWaves::VoxelGeneratorWaves() {
 	_parameters.pattern_size = Vector2(30, 30);
@@ -65,3 +64,5 @@ void VoxelGeneratorWaves::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "pattern_size"), "set_pattern_size", "get_pattern_size");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "pattern_offset"), "set_pattern_offset", "get_pattern_offset");
 }
+
+} // namespace zylann::voxel

@@ -1,6 +1,7 @@
 #ifndef VOXEL_GENERATOR_FLAT_H
 #define VOXEL_GENERATOR_FLAT_H
 
+#include "../../storage/voxel_buffer.h"
 #include "../voxel_generator.h"
 
 namespace zylann::voxel {
@@ -12,8 +13,8 @@ public:
 	VoxelGeneratorFlat();
 	~VoxelGeneratorFlat();
 
-	void set_channel(VoxelBuffer::ChannelId p_channel);
-	VoxelBuffer::ChannelId get_channel() const;
+	void set_channel(VoxelBufferInternal::ChannelId p_channel);
+	VoxelBufferInternal::ChannelId get_channel() const;
 	int get_used_channels_mask() const override;
 
 	Result generate_block(VoxelBlockRequest &input) override;
@@ -28,6 +29,9 @@ protected:
 	static void _bind_methods();
 
 private:
+	void _b_set_channel(VoxelBuffer::ChannelId p_channel);
+	VoxelBuffer::ChannelId _b_get_channel() const;
+
 	struct Parameters {
 		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 		int voxel_type = 1;

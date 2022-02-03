@@ -1,4 +1,5 @@
 #include "voxel_stream.h"
+#include "../storage/voxel_buffer.h"
 #include <core/object/script_language.h>
 
 using namespace zylann::voxel;

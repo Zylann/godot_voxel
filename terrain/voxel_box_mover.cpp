@@ -159,7 +159,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 		Ref<VoxelBlockyLibrary> library_ref = mesher_blocky->get_library();
 		ERR_FAIL_COND_V_MSG(library_ref.is_null(), Vector3(), "VoxelMesherBlocky has no library assigned");
 		VoxelBlockyLibrary &library = **library_ref;
-		const int channel = VoxelBuffer::CHANNEL_TYPE;
+		const int channel = VoxelBufferInternal::CHANNEL_TYPE;
 
 		for (i.z = min_z; i.z < max_z; ++i.z) {
 			for (i.y = min_y; i.y < max_y; ++i.y) {
@@ -186,7 +186,7 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 		}
 
 	} else if (try_get_as(p_terrain->get_mesher(), mesher_cubes)) {
-		const int channel = VoxelBuffer::CHANNEL_COLOR;
+		const int channel = VoxelBufferInternal::CHANNEL_COLOR;
 
 		for (i.z = min_z; i.z < max_z; ++i.z) {
 			for (i.y = min_y; i.y < max_y; ++i.y) {

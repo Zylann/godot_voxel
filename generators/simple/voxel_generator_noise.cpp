@@ -35,14 +35,13 @@ void VoxelGeneratorNoise::_on_noise_changed() {
 	_parameters.noise = _noise->duplicate();
 }
 
-void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId p_channel) {
-	VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::ChannelId(p_channel);
-	ERR_FAIL_INDEX(channel, VoxelBufferInternal::MAX_CHANNELS);
+void VoxelGeneratorNoise::set_channel(VoxelBufferInternal::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);
-		if (_parameters.channel != channel) {
-			_parameters.channel = channel;
+		if (_parameters.channel != p_channel) {
+			_parameters.channel = p_channel;
 			changed = true;
 		}
 	}
@@ -51,9 +50,9 @@ void VoxelGeneratorNoise::set_channel(VoxelBuffer::ChannelId p_channel) {
 	}
 }
 
-VoxelBuffer::ChannelId VoxelGeneratorNoise::get_channel() const {
+VoxelBufferInternal::ChannelId VoxelGeneratorNoise::get_channel() const {
 	RWLockRead rlock(_parameters_lock);
-	return VoxelBuffer::ChannelId(_parameters.channel);
+	return _parameters.channel;
 }
 
 int VoxelGeneratorNoise::get_used_channels_mask() const {
@@ -228,9 +227,17 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelBlockRequest &in
 	return result;
 }
 
+void VoxelGeneratorNoise::_b_set_channel(VoxelBuffer::ChannelId p_channel) {
+	set_channel(VoxelBufferInternal::ChannelId(p_channel));
+}
+
+VoxelBuffer::ChannelId VoxelGeneratorNoise::_b_get_channel() const {
+	return VoxelBuffer::ChannelId(get_channel());
+}
+
 void VoxelGeneratorNoise::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorNoise::set_channel);
-	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorNoise::get_channel);
+	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorNoise::_b_set_channel);
+	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorNoise::_b_get_channel);
 
 	ClassDB::bind_method(D_METHOD("set_noise", "noise"), &VoxelGeneratorNoise::set_noise);
 	ClassDB::bind_method(D_METHOD("get_noise"), &VoxelGeneratorNoise::get_noise);

@@ -26,7 +26,7 @@ uint64_t VoxelTool::get_eraser_value() const {
 }
 
 void VoxelTool::set_channel(int channel) {
-	ERR_FAIL_INDEX(channel, VoxelBuffer::MAX_CHANNELS);
+	ERR_FAIL_INDEX(channel, VoxelBufferInternal::MAX_CHANNELS);
 	_channel = channel;
 }
 
@@ -281,6 +281,15 @@ void VoxelTool::set_voxel_metadata(Vector3i pos, Variant meta) {
 Variant VoxelTool::get_voxel_metadata(Vector3i pos) const {
 	ERR_PRINT("Not implemented");
 	return Variant();
+}
+
+void VoxelTool::_b_copy(Vector3i pos, Ref<VoxelBuffer> voxels, int channel_mask) {
+	copy(pos, voxels, channel_mask);
+}
+
+void VoxelTool::_b_paste(Vector3i pos, Ref<VoxelBuffer> voxels, int channels_mask, int64_t mask_value) {
+	// TODO May need two functions, one masked, one not masked, or add a parameter, but it breaks compat
+	paste(pos, voxels, channels_mask, mask_value > 0xffffffff, mask_value);
 }
 
 void VoxelTool::_bind_methods() {

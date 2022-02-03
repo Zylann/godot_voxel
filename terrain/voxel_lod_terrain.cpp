@@ -2890,9 +2890,10 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 			if (voxels == nullptr) {
 				return;
 			}
-			const float v = get_voxel_with_lock(*voxels, data_lod.map.to_local(world_pos), VoxelBuffer::CHANNEL_SDF).f;
+			const float v =
+					get_voxel_with_lock(*voxels, data_lod.map.to_local(world_pos), VoxelBufferInternal::CHANNEL_SDF).f;
 			const Vector3i rpos = world_pos - world_box.pos;
-			buffer.set_voxel_f(v, rpos.x, rpos.y, rpos.z, VoxelBuffer::CHANNEL_SDF);
+			buffer.set_voxel_f(v, rpos.x, rpos.y, rpos.z, VoxelBufferInternal::CHANNEL_SDF);
 		});
 
 		Ref<Image> image = buffer.debug_print_sdf_to_image_top_down();

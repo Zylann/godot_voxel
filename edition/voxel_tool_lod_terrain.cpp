@@ -1,5 +1,6 @@
 #include "voxel_tool_lod_terrain.h"
 #include "../constants/voxel_string_names.h"
+#include "../storage/voxel_buffer.h"
 #include "../storage/voxel_data_grid.h"
 #include "../terrain/voxel_lod_terrain.h"
 #include "../util/funcs.h"

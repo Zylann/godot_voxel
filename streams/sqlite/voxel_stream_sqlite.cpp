@@ -54,11 +54,11 @@ public:
 		int block_size_po2 = 0;
 
 		struct Channel {
-			VoxelBuffer::Depth depth;
+			VoxelBufferInternal::Depth depth;
 			bool used = false;
 		};
 
-		FixedArray<Channel, VoxelBuffer::MAX_CHANNELS> channels;
+		FixedArray<Channel, VoxelBufferInternal::MAX_CHANNELS> channels;
 	};
 
 	enum BlockType { //
@@ -225,7 +225,7 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 		for (unsigned int i = 0; i < meta.channels.size(); ++i) {
 			Meta::Channel &channel = meta.channels[i];
 			channel.used = true;
-			channel.depth = VoxelBuffer::DEPTH_16_BIT;
+			channel.depth = VoxelBufferInternal::DEPTH_16_BIT;
 		}
 		save_meta(meta);
 	}
@@ -494,13 +494,13 @@ VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
 				ERR_PRINT(String("Channel index {0} is invalid").format(varray(index)));
 				continue;
 			}
-			if (depth < 0 || depth >= VoxelBuffer::DEPTH_COUNT) {
+			if (depth < 0 || depth >= VoxelBufferInternal::DEPTH_COUNT) {
 				ERR_PRINT(String("Depth {0} is invalid").format(varray(depth)));
 				continue;
 			}
 			Meta::Channel &channel = meta.channels[index];
 			channel.used = true;
-			channel.depth = static_cast<VoxelBuffer::Depth>(depth);
+			channel.depth = static_cast<VoxelBufferInternal::Depth>(depth);
 			continue;
 		}
 		if (rc != SQLITE_DONE) {
@@ -654,7 +654,6 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Vect
 		VoxelBlockRequest &wr = p_blocks[i];
 		const Vector3i pos = wr.origin_in_voxels >> (bs_po2 + wr.lod);
 
-		Ref<VoxelBuffer> vb;
 		if (_cache.load_voxel_block(pos, wr.lod, wr.voxel_buffer)) {
 			out_results.write[i] = RESULT_BLOCK_FOUND;
 

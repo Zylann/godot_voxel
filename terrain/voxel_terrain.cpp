@@ -4,6 +4,7 @@
 #include "../edition/voxel_tool_terrain.h"
 #include "../server/voxel_server.h"
 #include "../server/voxel_server_updater.h"
+#include "../storage/voxel_buffer.h"
 #include "../util/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"

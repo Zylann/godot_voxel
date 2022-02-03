@@ -13,8 +13,9 @@ public:
 	VoxelGeneratorHeightmap();
 	~VoxelGeneratorHeightmap();
 
-	void set_channel(VoxelBuffer::ChannelId p_channel);
-	VoxelBuffer::ChannelId get_channel() const;
+	void set_channel(VoxelBufferInternal::ChannelId p_channel);
+	VoxelBufferInternal::ChannelId get_channel() const;
+
 	int get_used_channels_mask() const override;
 
 	void set_height_start(float start);
@@ -27,6 +28,9 @@ public:
 	float get_iso_scale() const;
 
 protected:
+	void _b_set_channel(VoxelBuffer::ChannelId p_channel);
+	VoxelBuffer::ChannelId _b_get_channel() const;
+
 	template <typename Height_F>
 	Result generate(VoxelBufferInternal &out_buffer, Height_F height_func, Vector3i origin, int lod) {
 		Parameters params;

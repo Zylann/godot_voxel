@@ -6,14 +6,13 @@ VoxelGeneratorFlat::VoxelGeneratorFlat() {}
 
 VoxelGeneratorFlat::~VoxelGeneratorFlat() {}
 
-void VoxelGeneratorFlat::set_channel(VoxelBuffer::ChannelId p_channel) {
-	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::ChannelId(p_channel);
-	ERR_FAIL_INDEX(channel, VoxelBufferInternal::MAX_CHANNELS);
+void VoxelGeneratorFlat::set_channel(VoxelBufferInternal::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);
-		if (_parameters.channel != channel) {
-			_parameters.channel = channel;
+		if (_parameters.channel != p_channel) {
+			_parameters.channel = p_channel;
 			changed = true;
 		}
 	}
@@ -22,9 +21,9 @@ void VoxelGeneratorFlat::set_channel(VoxelBuffer::ChannelId p_channel) {
 	}
 }
 
-VoxelBuffer::ChannelId VoxelGeneratorFlat::get_channel() const {
+VoxelBufferInternal::ChannelId VoxelGeneratorFlat::get_channel() const {
 	RWLockRead rlock(_parameters_lock);
-	return VoxelBuffer::ChannelId(_parameters.channel);
+	return _parameters.channel;
 }
 
 int VoxelGeneratorFlat::get_used_channels_mask() const {
@@ -120,9 +119,17 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelBlockRequest &inp
 	return result;
 }
 
+void VoxelGeneratorFlat::_b_set_channel(VoxelBuffer::ChannelId p_channel) {
+	set_channel(VoxelBufferInternal::ChannelId(p_channel));
+}
+
+VoxelBuffer::ChannelId VoxelGeneratorFlat::_b_get_channel() const {
+	return VoxelBuffer::ChannelId(get_channel());
+}
+
 void VoxelGeneratorFlat::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorFlat::set_channel);
-	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorFlat::get_channel);
+	ClassDB::bind_method(D_METHOD("set_channel", "channel"), &VoxelGeneratorFlat::_b_set_channel);
+	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelGeneratorFlat::_b_get_channel);
 
 	ClassDB::bind_method(D_METHOD("set_voxel_type", "id"), &VoxelGeneratorFlat::set_voxel_type);
 	ClassDB::bind_method(D_METHOD("get_voxel_type"), &VoxelGeneratorFlat::get_voxel_type);

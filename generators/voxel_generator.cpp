@@ -1,5 +1,6 @@
 #include "voxel_generator.h"
 #include "../constants/voxel_string_names.h"
+#include "../storage/voxel_buffer.h"
 
 namespace zylann::voxel {
 

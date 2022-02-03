@@ -1,7 +1,7 @@
 #ifndef VOXEL_STREAM_CACHE_H
 #define VOXEL_STREAM_CACHE_H
 
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_internal.h"
 #include "instance_data.h"
 #include <memory>
 #include <unordered_map>
