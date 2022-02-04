@@ -26,8 +26,8 @@ public:
 
 	struct PortLocationHasher {
 		static inline uint32_t hash(const PortLocation &v) {
-			uint32_t hash = hash_djb2_one_32(v.node_id);
-			return hash_djb2_one_32(v.node_id, hash);
+			const uint32_t hash = hash_djb2_one_32(v.node_id);
+			return hash_djb2_one_32(v.port_index, hash);
 		}
 	};
 
