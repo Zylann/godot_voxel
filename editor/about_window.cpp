@@ -199,7 +199,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Treer\n"
 						"stackdump.eth\n"
 						"Snowminx (Gamerfiend)\n"
-						"Skyquakers\n";
+						"Skyquakers\n"
+						"MadMartian\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
