@@ -68,13 +68,15 @@ public:
 	void find_depth_first(uint32_t start_node_id, std::vector<uint32_t> &order) const;
 	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
 
-	template <typename F> inline void for_each_node_id(F f) const {
+	template <typename F>
+	inline void for_each_node_id(F f) const {
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 			f(it->first);
 		}
 	}
 
-	template <typename F> inline void for_each_node_const(F f) const {
+	template <typename F>
+	inline void for_each_node_const(F f) const {
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 			const Node *node = it->second;
 			ERR_CONTINUE(node == nullptr);
@@ -82,7 +84,8 @@ public:
 		}
 	}
 
-	template <typename F> inline void for_each_node(F f) {
+	template <typename F>
+	inline void for_each_node(F f) {
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 			Node *node = it->second;
 			ERR_CONTINUE(node == nullptr);
