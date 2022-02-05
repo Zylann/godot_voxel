@@ -32,10 +32,17 @@ voxel_files = [
 	"generators/simple/*.cpp",
 
 	"util/*.cpp",
+
+	"util/math/*.cpp",
+
 	"util/godot/*.cpp",
+
 	#"util/noise/*.cpp",
 	"util/noise/fast_noise_lite.cpp",
 	"util/noise/fast_noise_lite_gradient.cpp",
+	"util/noise/fast_noise_lite_range.cpp",
+	"util/noise/osn_noise_range.cpp",
+
 	"util/tasks/*.cpp",
 
 	"terrain/*.cpp",

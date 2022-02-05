@@ -153,6 +153,17 @@ struct Interval {
 	}
 };
 
+struct Interval2 {
+	Interval x;
+	Interval y;
+};
+
+struct Interval3 {
+	Interval x;
+	Interval y;
+	Interval z;
+};
+
 inline Interval operator*(float b, const Interval &a) {
 	return a * b;
 }

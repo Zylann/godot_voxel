@@ -10,7 +10,8 @@ int VoxelDataBlockEnterInfo::_b_get_network_peer_id() const {
 
 Ref<VoxelBuffer> VoxelDataBlockEnterInfo::_b_get_voxels() const {
 	ERR_FAIL_COND_V(voxel_block == nullptr, Ref<VoxelBuffer>());
-	Ref<VoxelBuffer> vb = VoxelBuffer::create_shared(voxel_block->get_voxels_shared());
+	std::shared_ptr<VoxelBufferInternal> vbi = voxel_block->get_voxels_shared();
+	Ref<VoxelBuffer> vb = VoxelBuffer::create_shared(vbi);
 	return vb;
 }
 

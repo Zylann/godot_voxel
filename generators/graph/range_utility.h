@@ -6,15 +6,11 @@
 #include <vector>
 
 class Curve;
-class OpenSimplexNoise;
 class Image;
-class FastNoiseLite;
-class FastNoiseLiteGradient;
 
 namespace zylann {
 
-math::Interval get_osn_range_2d(OpenSimplexNoise *noise, math::Interval x, math::Interval y);
-math::Interval get_osn_range_3d(OpenSimplexNoise *noise, math::Interval x, math::Interval y, math::Interval z);
+// Curve ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct CurveMonotonicSection {
 	float x_min;
@@ -44,58 +40,10 @@ math::Interval get_curve_range(Curve &curve, const std::vector<CurveMonotonicSec
 // Legacy
 math::Interval get_curve_range(Curve &curve, bool &is_monotonic_increasing);
 
+// Heightmaps //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 math::Interval get_heightmap_range(const Image &im);
 math::Interval get_heightmap_range(const Image &im, Rect2i rect);
-
-namespace math {
-
-inline Interval sdf_union(Interval a, Interval b) {
-	return min_interval(a, b);
-}
-
-// Does a - b
-inline Interval sdf_subtract(Interval a, Interval b) {
-	return max_interval(a, -b);
-}
-
-Interval sdf_smooth_union(Interval p_b, Interval p_a, float p_s);
-
-// Does b - a
-Interval sdf_smooth_subtract(Interval p_b, Interval p_a, float p_s);
-
-enum SdfAffectingArguments { //
-	SDF_ONLY_A,
-	SDF_ONLY_B,
-	SDF_BOTH
-};
-
-// Tests which argument can affect the result.
-// for a - b
-SdfAffectingArguments sdf_subtract_side(Interval a, Interval b);
-// for a - b
-SdfAffectingArguments sdf_polynomial_smooth_subtract_side(Interval a, Interval b, float s);
-
-SdfAffectingArguments sdf_union_side(Interval a, Interval b);
-SdfAffectingArguments sdf_polynomial_smooth_union_side(Interval a, Interval b, float s);
-
-struct Interval2 {
-	Interval x;
-	Interval y;
-};
-
-struct Interval3 {
-	Interval x;
-	Interval y;
-	Interval z;
-};
-
-} // namespace math
-
-math::Interval get_fnl_range_2d(const FastNoiseLite *noise, math::Interval x, math::Interval y);
-math::Interval get_fnl_range_3d(const FastNoiseLite *noise, math::Interval x, math::Interval y, math::Interval z);
-math::Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient *noise, math::Interval x, math::Interval y);
-math::Interval3 get_fnl_gradient_range_3d(
-		const FastNoiseLiteGradient *noise, math::Interval x, math::Interval y, math::Interval z);
 
 } // namespace zylann
 

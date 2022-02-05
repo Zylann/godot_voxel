@@ -1,6 +1,8 @@
 #include "voxel_graph_node_db.h"
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite.h"
+#include "../../util/noise/fast_noise_lite_range.h"
+#include "../../util/noise/osn_noise_range.h"
 #include "../../util/profiling.h"
 #include "image_range_grid.h"
 #include "range_utility.h"
