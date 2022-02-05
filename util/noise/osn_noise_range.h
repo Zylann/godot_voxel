@@ -9,8 +9,8 @@ class OpenSimplexNoise;
 
 namespace zylann {
 
-math::Interval get_osn_range_2d(OpenSimplexNoise *noise, math::Interval x, math::Interval y);
-math::Interval get_osn_range_3d(OpenSimplexNoise *noise, math::Interval x, math::Interval y, math::Interval z);
+math::Interval get_osn_range_2d(OpenSimplexNoise &noise, math::Interval x, math::Interval y);
+math::Interval get_osn_range_3d(OpenSimplexNoise &noise, math::Interval x, math::Interval y, math::Interval z);
 
 } // namespace zylann
 

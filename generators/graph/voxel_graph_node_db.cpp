@@ -892,7 +892,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, get_osn_range_2d(p.noise, x, y));
+			// Shouldn't be null, it is checked when the graph is compiled
+			ctx.set_output(0, get_osn_range_2d(*p.noise, x, y));
 		};
 	}
 	{
@@ -938,7 +939,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, get_osn_range_3d(p.noise, x, y, z));
+			// Shouldn't be null, it is checked when the graph is compiled
+			ctx.set_output(0, get_osn_range_3d(*p.noise, x, y, z));
 		};
 	}
 	{
@@ -1510,7 +1512,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, get_fnl_range_2d(p.noise, x, y));
+			// Shouldn't be null, it is checked when the graph is compiled
+			ctx.set_output(0, get_fnl_range_2d(*p.noise, x, y));
 		};
 	}
 	{
@@ -1555,7 +1558,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, get_fnl_range_3d(p.noise, x, y, z));
+			// Shouldn't be null, it is checked when the graph is compiled
+			ctx.set_output(0, get_fnl_range_3d(*p.noise, x, y, z));
 		};
 	}
 	{
@@ -1603,7 +1607,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
-			const math::Interval2 r = get_fnl_gradient_range_2d(p.noise, x, y);
+			// Shouldn't be null, it is checked when the graph is compiled
+			const math::Interval2 r = get_fnl_gradient_range_2d(*p.noise, x, y);
 			ctx.set_output(0, r.x);
 			ctx.set_output(1, r.y);
 		};
@@ -1660,7 +1665,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
-			const math::Interval3 r = get_fnl_gradient_range_3d(p.noise, x, y, z);
+			// Shouldn't be null, it is checked when the graph is compiled
+			const math::Interval3 r = get_fnl_gradient_range_3d(*p.noise, x, y, z);
 			ctx.set_output(0, r.x);
 			ctx.set_output(1, r.y);
 			ctx.set_output(2, r.z);
