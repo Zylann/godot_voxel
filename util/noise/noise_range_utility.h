@@ -22,11 +22,11 @@ inline math::Interval get_noise_range_2d(
 	const float mid_y = 0.5 * (y.min + y.max);
 	const float mid_value = noise_func(mid_x, mid_y);
 
-	const float diag = Math::sqrt(squared(x.length()) + squared(y.length()));
+	const float diag = Math::sqrt(math::squared(x.length()) + math::squared(y.length()));
 
 	return math::Interval( //
-			max(mid_value - max_derivative_half_diagonal * diag, -1.f),
-			min(mid_value + max_derivative_half_diagonal * diag, 1.f));
+			math::max(mid_value - max_derivative_half_diagonal * diag, -1.f),
+			math::min(mid_value + max_derivative_half_diagonal * diag, 1.f));
 }
 
 template <typename Noise_F>
@@ -39,11 +39,11 @@ inline math::Interval get_noise_range_3d(Noise_F noise_func, const math::Interva
 	const float mid_z = 0.5 * (z.min + z.max);
 	const float mid_value = noise_func(mid_x, mid_y, mid_z);
 
-	const float diag = Math::sqrt(squared(x.length()) + squared(y.length()) + squared(z.length()));
+	const float diag = Math::sqrt(math::squared(x.length()) + math::squared(y.length()) + math::squared(z.length()));
 
 	return math::Interval( //
-			max(mid_value - max_derivative_half_diagonal * diag, -1.f),
-			min(mid_value + max_derivative_half_diagonal * diag, 1.f));
+			math::max(mid_value - max_derivative_half_diagonal * diag, -1.f),
+			math::min(mid_value + max_derivative_half_diagonal * diag, 1.f));
 }
 
 } // namespace zylann
