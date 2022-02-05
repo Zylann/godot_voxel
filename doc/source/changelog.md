@@ -19,6 +19,7 @@ Godot 4 is required from this version.
     - Added experimental support functions to help setting up basic multiplayer with `VoxelTerrain` (might change in the future)
     - `VoxelGeneratorGraph`: added support for outputting to the TYPE channel, allowing use with `VoxelMesherBlocky`
     - `VoxelGeneratorGraph`: editor: unconnected inputs show their default value directly on the node
+    - `VoxelGeneratorGraph`: editor: allow to change the axes on preview nodes 3D slices
 
 - Smooth voxels
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.

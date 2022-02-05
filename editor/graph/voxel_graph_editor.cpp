@@ -13,6 +13,7 @@
 #include <scene/gui/graph_edit.h>
 #include <scene/gui/grid_container.h>
 #include <scene/gui/label.h>
+#include <scene/gui/option_button.h>
 
 namespace zylann::voxel {
 
@@ -198,6 +199,13 @@ VoxelGraphEditor::VoxelGraphEditor() {
 				"pressed", callable_mp(this, &VoxelGraphEditor::_on_analyze_range_button_pressed));
 		toolbar->add_child(range_analysis_button);
 
+		OptionButton *preview_axes_menu = memnew(OptionButton);
+		preview_axes_menu->add_item("Preview XY", PREVIEW_XY);
+		preview_axes_menu->add_item("Preview XZ", PREVIEW_XZ);
+		preview_axes_menu->get_popup()->connect(
+				"id_pressed", callable_mp(this, &VoxelGraphEditor::_on_preview_axes_menu_id_pressed));
+		toolbar->add_child(preview_axes_menu);
+
 		vbox_container->add_child(toolbar);
 	}
 
@@ -283,10 +291,10 @@ void VoxelGraphEditor::set_undo_redo(UndoRedo *undo_redo) {
 void VoxelGraphEditor::set_voxel_node(VoxelNode *node) {
 	_voxel_node = node;
 	if (_voxel_node == nullptr) {
-		PRINT_VERBOSE("Reference node for VoxelGraph previews: null");
+		PRINT_VERBOSE("Reference node for VoxelGraph gizmos: null");
 		_debug_renderer.set_world(nullptr);
 	} else {
-		PRINT_VERBOSE(String("Reference node for VoxelGraph previews: {0}").format(varray(node->get_path())));
+		PRINT_VERBOSE(String("Reference node for VoxelGraph gizmos: {0}").format(varray(node->get_path())));
 		_debug_renderer.set_world(_voxel_node->get_world_3d().ptr());
 	}
 }
@@ -882,6 +890,7 @@ void VoxelGraphEditor::update_slice_previews() {
 
 	std::vector<PreviewInfo> previews;
 
+	// Gather preview nodes
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
 		VoxelGraphEditorNode *node = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(i));
 		if (node == nullptr || node->preview == nullptr) {
@@ -907,20 +916,21 @@ void VoxelGraphEditor::update_slice_previews() {
 		previews.push_back(info);
 	}
 
-	const int preview_size_x = VoxelGraphEditorNodePreview::RESOLUTION;
-	const int preview_size_y = VoxelGraphEditorNodePreview::RESOLUTION;
-	const int buffer_size = preview_size_x * preview_size_y;
-	std::vector<float> x_vec;
-	std::vector<float> y_vec;
-	std::vector<float> z_vec;
-	x_vec.resize(buffer_size);
-	y_vec.resize(buffer_size);
-	z_vec.resize(buffer_size);
-
-	const Vector3 min_pos(-preview_size_x / 2, -preview_size_y / 2, 0);
-	const Vector3 max_pos = min_pos + Vector3(preview_size_x, preview_size_x, 0);
-
+	// Generate data
 	{
+		const int preview_size_x = VoxelGraphEditorNodePreview::RESOLUTION;
+		const int preview_size_y = VoxelGraphEditorNodePreview::RESOLUTION;
+		const int buffer_size = preview_size_x * preview_size_y;
+		std::vector<float> x_vec;
+		std::vector<float> y_vec;
+		std::vector<float> z_vec;
+		x_vec.resize(buffer_size);
+		y_vec.resize(buffer_size);
+		z_vec.resize(buffer_size);
+
+		const Vector3 min_pos(-preview_size_x / 2, -preview_size_y / 2, 0);
+		const Vector3 max_pos = min_pos + Vector3(preview_size_x, preview_size_x, 0);
+
 		int i = 0;
 		for (int iy = 0; iy < preview_size_x; ++iy) {
 			const float y = Math::lerp(min_pos.y, max_pos.y, static_cast<float>(iy) / preview_size_y);
@@ -932,13 +942,24 @@ void VoxelGraphEditor::update_slice_previews() {
 				++i;
 			}
 		}
-	}
 
-	_graph->generate_set(Span<float>(x_vec, 0, x_vec.size()), Span<float>(y_vec, 0, y_vec.size()),
-			Span<float>(z_vec, 0, z_vec.size()));
+		Span<float> x_coords = to_span(x_vec);
+		Span<float> y_coords;
+		Span<float> z_coords;
+		if (_preview_axes == PREVIEW_XY) {
+			y_coords = to_span(y_vec);
+			z_coords = to_span(z_vec);
+		} else {
+			y_coords = to_span(z_vec);
+			z_coords = to_span(y_vec);
+		}
+
+		_graph->generate_set(x_coords, y_coords, z_coords);
+	}
 
 	const VoxelGraphRuntime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
+	// Update previews
 	for (size_t preview_index = 0; preview_index < previews.size(); ++preview_index) {
 		PreviewInfo &info = previews[preview_index];
 
@@ -1020,6 +1041,12 @@ void VoxelGraphEditor::_on_range_analysis_toggled(bool enabled) {
 void VoxelGraphEditor::_on_range_analysis_area_changed() {
 	schedule_preview_update();
 	update_range_analysis_gizmo();
+}
+
+void VoxelGraphEditor::_on_preview_axes_menu_id_pressed(int id) {
+	ERR_FAIL_COND(id < 0 || id >= PREVIEW_AXES_OPTIONS_COUNT);
+	_preview_axes = PreviewAxes(id);
+	schedule_preview_update();
 }
 
 void VoxelGraphEditor::_bind_methods() {

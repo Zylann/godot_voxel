@@ -65,6 +65,7 @@ private:
 	void _on_analyze_range_button_pressed();
 	void _on_range_analysis_toggled(bool enabled);
 	void _on_range_analysis_area_changed();
+	void _on_preview_axes_menu_id_pressed(int id);
 
 	void _check_nothing_selected();
 
@@ -83,6 +84,14 @@ private:
 	float _time_before_preview_update = 0.f;
 	Node3D *_voxel_node = nullptr;
 	DebugRenderer _debug_renderer;
+
+	enum PreviewAxes { //
+		PREVIEW_XY = 0,
+		PREVIEW_XZ,
+		PREVIEW_AXES_OPTIONS_COUNT
+	};
+
+	PreviewAxes _preview_axes = PREVIEW_XY;
 };
 
 } // namespace zylann::voxel
