@@ -37,8 +37,8 @@ void BlockGenerateRequest::run(zylann::ThreadedTaskContext ctx) {
 		voxels->create(block_size, block_size, block_size);
 	}
 
-	VoxelBlockRequest r{ *voxels, origin_in_voxels, lod };
-	const VoxelGenerator::Result result = generator->generate_block(r);
+	VoxelBlockRequest request_data{ *voxels, origin_in_voxels, lod };
+	const VoxelGenerator::Result result = generator->generate_block(request_data);
 	max_lod_hint = result.max_lod_hint;
 
 	if (stream_dependency->valid) {
@@ -57,10 +57,10 @@ void BlockGenerateRequest::run(zylann::ThreadedTaskContext ctx) {
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesnt need sorting
 
-			SaveBlockDataRequest *r =
+			SaveBlockDataRequest *save_request =
 					memnew(SaveBlockDataRequest(volume_id, position, lod, block_size, voxels_copy, stream_dependency));
 
-			VoxelServer::get_singleton()->push_async_task(r);
+			VoxelServer::get_singleton()->push_async_task(save_request);
 		}
 	}
 
