@@ -14,10 +14,10 @@ VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
 	VBoxContainer *vb = memnew(VBoxContainer);
 	//vb->set_anchors_preset(Control::PRESET_TOP_WIDE);
 
-	enabled_checkbox = memnew(CheckBox);
-	enabled_checkbox->set_text(TTR("Enabled"));
-	enabled_checkbox->connect("toggled", callable_mp(this, &VoxelRangeAnalysisDialog::_on_enabled_checkbox_toggled));
-	vb->add_child(enabled_checkbox);
+	_enabled_checkbox = memnew(CheckBox);
+	_enabled_checkbox->set_text(TTR("Enabled"));
+	_enabled_checkbox->connect("toggled", callable_mp(this, &VoxelRangeAnalysisDialog::_on_enabled_checkbox_toggled));
+	vb->add_child(_enabled_checkbox);
 
 	Label *tip = memnew(Label);
 	// TODO Had to use `\n` and disable autowrap, otherwise the popup height becomes crazy high
@@ -33,12 +33,12 @@ VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
 	gc->set_anchors_preset(Control::PRESET_TOP_WIDE);
 	gc->set_columns(2);
 
-	add_row(TTR("Position X"), pos_x_spinbox, gc, 0);
-	add_row(TTR("Position Y"), pos_y_spinbox, gc, 0);
-	add_row(TTR("Position Z"), pos_z_spinbox, gc, 0);
-	add_row(TTR("Size X"), size_x_spinbox, gc, 100);
-	add_row(TTR("Size Y"), size_y_spinbox, gc, 100);
-	add_row(TTR("Size Z"), size_z_spinbox, gc, 100);
+	add_row(TTR("Position X"), _pos_x_spinbox, gc, 0);
+	add_row(TTR("Position Y"), _pos_y_spinbox, gc, 0);
+	add_row(TTR("Position Z"), _pos_z_spinbox, gc, 0);
+	add_row(TTR("Size X"), _size_x_spinbox, gc, 100);
+	add_row(TTR("Size Y"), _size_y_spinbox, gc, 100);
+	add_row(TTR("Size Z"), _size_z_spinbox, gc, 100);
 
 	vb->add_child(gc);
 
@@ -46,13 +46,13 @@ VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
 }
 
 AABB VoxelRangeAnalysisDialog::get_aabb() const {
-	const Vector3 center(pos_x_spinbox->get_value(), pos_y_spinbox->get_value(), pos_z_spinbox->get_value());
-	const Vector3 size(size_x_spinbox->get_value(), size_y_spinbox->get_value(), size_z_spinbox->get_value());
+	const Vector3 center(_pos_x_spinbox->get_value(), _pos_y_spinbox->get_value(), _pos_z_spinbox->get_value());
+	const Vector3 size(_size_x_spinbox->get_value(), _size_y_spinbox->get_value(), _size_z_spinbox->get_value());
 	return AABB(center - 0.5f * size, size);
 }
 
 bool VoxelRangeAnalysisDialog::is_analysis_enabled() const {
-	return enabled_checkbox->is_pressed();
+	return _enabled_checkbox->is_pressed();
 }
 
 void VoxelRangeAnalysisDialog::_on_enabled_checkbox_toggled(bool enabled) {

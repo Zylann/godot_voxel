@@ -25,13 +25,13 @@ private:
 
 	static void _bind_methods();
 
-	CheckBox *enabled_checkbox;
-	SpinBox *pos_x_spinbox;
-	SpinBox *pos_y_spinbox;
-	SpinBox *pos_z_spinbox;
-	SpinBox *size_x_spinbox;
-	SpinBox *size_y_spinbox;
-	SpinBox *size_z_spinbox;
+	CheckBox *_enabled_checkbox;
+	SpinBox *_pos_x_spinbox;
+	SpinBox *_pos_y_spinbox;
+	SpinBox *_pos_z_spinbox;
+	SpinBox *_size_x_spinbox;
+	SpinBox *_size_y_spinbox;
+	SpinBox *_size_z_spinbox;
 };
 
 } // namespace zylann::voxel
