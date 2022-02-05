@@ -88,6 +88,9 @@ public:
 	void remove_connection(
 			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
+
+	// Finds which source port is connected to the given destination.
+	// Returns false if `dst` has no inbound connection.
 	bool try_get_connection_to(ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const;
 
 	bool has_node(uint32_t node_id) const;

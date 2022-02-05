@@ -111,6 +111,7 @@ bool VoxelGeneratorGraph::try_get_connection_to(
 	if (port.connections.size() == 0) {
 		return false;
 	}
+	// There can be at most one inbound connection
 	out_src = port.connections[0];
 	return true;
 }

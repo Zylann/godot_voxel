@@ -64,6 +64,13 @@ public:
 	uint32_t node_id = 0;
 	VoxelGraphEditorNodePreview *preview = nullptr;
 	Vector<Control *> output_labels;
+
+	struct InputHint {
+		Label *label;
+		Variant last_value;
+	};
+
+	std::vector<InputHint> input_hints;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,11 +150,6 @@ private:
 	}
 
 	static void _bind_methods() {
-		// ClassDB::bind_method(D_METHOD("_on_enabled_checkbox_toggled", "enabled"),
-		// 		&VoxelRangeAnalysisDialog::_on_enabled_checkbox_toggled);
-		// ClassDB::bind_method(D_METHOD("_on_area_spinbox_value_changed", "value"),
-		// 		&VoxelRangeAnalysisDialog::_on_area_spinbox_value_changed);
-
 		ADD_SIGNAL(MethodInfo("analysis_toggled", PropertyInfo(Variant::BOOL, "enabled")));
 		ADD_SIGNAL(MethodInfo("area_changed"));
 	}
@@ -308,6 +310,44 @@ void VoxelGraphEditor::_process(float delta) {
 			update_previews();
 		}
 	}
+
+	// When an input is left unconnected, it picks a default value. Input hints show this value.
+	// It is otherwise shown in the inspector when the node is selected, but seeing them at a glance helps.
+	// I decided to do by polling so all the code is here and there is no faffing around with signals.
+	if (_graph.is_valid() && is_visible_in_tree()) {
+		ProgramGraph::PortLocation src_loc_unused;
+		const String prefix = ": ";
+
+		for (int child_node_index = 0; child_node_index < _graph_edit->get_child_count(); ++child_node_index) {
+			Node *node = _graph_edit->get_child(child_node_index);
+			VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(node);
+			if (node_view == nullptr) {
+				continue;
+			}
+
+			for (unsigned int input_index = 0; input_index < node_view->input_hints.size(); ++input_index) {
+				VoxelGraphEditorNode::InputHint &input_hint = node_view->input_hints[input_index];
+				const ProgramGraph::PortLocation loc{ node_view->node_id, input_index };
+
+				if (_graph->try_get_connection_to(loc, src_loc_unused)) {
+					// There is an inbound connection, don't show the default value
+					if (input_hint.last_value != Variant()) {
+						input_hint.label->set_text("");
+						input_hint.last_value = Variant();
+					}
+
+				} else {
+					// There is no inbound connection, show the default value
+					const Variant current_value = _graph->get_node_default_input(loc.node_id, loc.port_index);
+					// Only update when it changes so we don't spam editor redraws
+					if (input_hint.last_value != current_value) {
+						input_hint.label->set_text(prefix + current_value);
+						input_hint.last_value = current_value;
+					}
+				}
+			}
+		}
+	}
 }
 
 void VoxelGraphEditor::clear() {
@@ -399,6 +439,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 	const unsigned int row_count = math::max(node_type.inputs.size(), hide_outputs ? 0 : node_type.outputs.size());
 	const Color port_color(0.4, 0.4, 1.0);
+	const Color hint_label_modulate(0.6, 0.6, 0.6);
 
 	// TODO Insert a summary so the graph would be readable without having to inspect nodes
 	// However left and right slots always start from the first child item,
@@ -414,6 +455,8 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	// 	node_view->add_child(sl);
 	// }
 
+	//const int middle_min_width = EDSCALE * 32.0;
+
 	for (unsigned int i = 0; i < row_count; ++i) {
 		const bool has_left = i < node_type.inputs.size();
 		const bool has_right = (i < node_type.outputs.size()) && !hide_outputs;
@@ -425,12 +468,23 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 			Label *label = memnew(Label);
 			label->set_text(node_type.inputs[i].name);
 			property_control->add_child(label);
+
+			Label *hint_label = memnew(Label);
+			hint_label->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+			hint_label->set_modulate(hint_label_modulate);
+			//hint_label->set_clip_text(true);
+			//hint_label->set_custom_minimum_size(Vector2(middle_min_width, 0));
+			property_control->add_child(hint_label);
+			VoxelGraphEditorNode::InputHint input_hint;
+			input_hint.label = hint_label;
+			node_view->input_hints.push_back(input_hint);
 		}
 
 		if (has_right) {
 			if (property_control->get_child_count() < 2) {
 				Control *spacer = memnew(Control);
 				spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+				//spacer->set_custom_minimum_size(Vector2(middle_min_width, 0));
 				property_control->add_child(spacer);
 			}
 
@@ -929,6 +983,7 @@ void VoxelGraphEditor::_on_graph_changed() {
 }
 
 void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
+	ERR_FAIL_COND(_graph.is_null());
 	StringName node_name = _graph->get_node_name(node_id);
 
 	const uint32_t node_type_id = _graph->get_node_type_id(node_id);
@@ -936,6 +991,7 @@ void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
 
 	const String ui_node_name = node_to_gui_name(node_id);
 	VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(ui_node_name));
+	ERR_FAIL_COND(node_view == nullptr);
 
 	update_node_view_title(node_view, node_name, node_type_name);
 }
@@ -967,34 +1023,6 @@ void VoxelGraphEditor::_on_range_analysis_area_changed() {
 }
 
 void VoxelGraphEditor::_bind_methods() {
-	// ClassDB::bind_method(D_METHOD("_on_graph_edit_gui_input", "event"), &VoxelGraphEditor::_on_graph_edit_gui_input);
-	// ClassDB::bind_method(
-	// 		D_METHOD("_on_graph_edit_connection_request", "from_node_name", "from_slot", "to_node_name", "to_slot"),
-	// 		&VoxelGraphEditor::_on_graph_edit_connection_request);
-	// ClassDB::bind_method(
-	// 		D_METHOD("_on_graph_edit_disconnection_request", "from_node_name", "from_slot", "to_node_name", "to_slot"),
-	// 		&VoxelGraphEditor::_on_graph_edit_disconnection_request);
-	// ClassDB::bind_method(
-	// 		D_METHOD("_on_graph_edit_delete_nodes_request"), &VoxelGraphEditor::_on_graph_edit_delete_nodes_request);
-	// ClassDB::bind_method(D_METHOD("_on_graph_edit_node_selected"), &VoxelGraphEditor::_on_graph_edit_node_selected);
-	// ClassDB::bind_method(D_METHOD("_on_graph_edit_node_unselected"),
-	// 		&VoxelGraphEditor::_on_graph_edit_node_unselected);
-	// ClassDB::bind_method(
-	// 		D_METHOD("_on_graph_node_dragged", "from", "to", "id"), &VoxelGraphEditor::_on_graph_node_dragged);
-	// ClassDB::bind_method(D_METHOD("_on_context_menu_id_pressed", "id"),
-	// 		&VoxelGraphEditor::_on_context_menu_id_pressed);
-	// ClassDB::bind_method(D_METHOD("_on_graph_changed"), &VoxelGraphEditor::_on_graph_changed);
-	// ClassDB::bind_method(D_METHOD("_on_graph_node_name_changed"), &VoxelGraphEditor::_on_graph_node_name_changed);
-	// ClassDB::bind_method(
-	// 		D_METHOD("_on_update_previews_button_pressed"), &VoxelGraphEditor::_on_update_previews_button_pressed);
-	// ClassDB::bind_method(D_METHOD("_on_profile_button_pressed"), &VoxelGraphEditor::_on_profile_button_pressed);
-	// ClassDB::bind_method(
-	// 		D_METHOD("_on_analyze_range_button_pressed"), &VoxelGraphEditor::_on_analyze_range_button_pressed);
-	// ClassDB::bind_method(
-	// 		D_METHOD("_on_range_analysis_toggled", "enabled"), &VoxelGraphEditor::_on_range_analysis_toggled);
-	// ClassDB::bind_method(
-	// 		D_METHOD("_on_range_analysis_area_changed"), &VoxelGraphEditor::_on_range_analysis_area_changed);
-
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);
 
 	ClassDB::bind_method(D_METHOD("create_node_gui", "node_id"), &VoxelGraphEditor::create_node_gui);

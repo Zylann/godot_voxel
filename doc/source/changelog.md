@@ -18,6 +18,7 @@ Godot 4 is required from this version.
     - Added `FastNoise2` for faster SIMD noise
     - Added experimental support functions to help setting up basic multiplayer with `VoxelTerrain` (might change in the future)
     - `VoxelGeneratorGraph`: added support for outputting to the TYPE channel, allowing use with `VoxelMesherBlocky`
+    - `VoxelGeneratorGraph`: editor: unconnected inputs show their default value directly on the node
 
 - Smooth voxels
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
