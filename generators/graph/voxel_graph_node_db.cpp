@@ -134,15 +134,15 @@ inline float select(float a, float b, float threshold, float t) {
 	return t < threshold ? a : b;
 }
 
-inline Interval select(const Interval &a, const Interval &b, const Interval &threshold, const Interval &t) {
-	if (t.max < threshold.min) {
-		return a;
-	}
-	if (t.min >= threshold.max) {
-		return b;
-	}
-	return Interval(min(a.min, b.min), max(a.max, b.max));
-}
+// inline Interval select(const Interval &a, const Interval &b, const Interval &threshold, const Interval &t) {
+// 	if (t.max < threshold.min) {
+// 		return a;
+// 	}
+// 	if (t.min >= threshold.max) {
+// 		return b;
+// 	}
+// 	return Interval(min(a.min, b.min), max(a.max, b.max));
+// }
 
 inline float skew3(float x) {
 	return (x * x * x + x) * 0.5f;
@@ -322,6 +322,22 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, clamp(a, Interval::from_single_value(0.f), Interval::from_single_value(1.f)));
+		};
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_TYPE];
+		t.name = "OutputType";
+		t.category = CATEGORY_OUTPUT;
+		t.inputs.push_back(Port("type"));
+		t.outputs.push_back(Port("_out"));
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const VoxelGraphRuntime::Buffer &input = ctx.get_input(0);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			memcpy(out.data, input.data, input.size * sizeof(float));
+		};
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval a = ctx.get_input(0);
+			ctx.set_output(0, a);
 		};
 	}
 	{
@@ -1259,43 +1275,76 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.debug_only = true;
 	}
 	{
+		struct Params {
+			float threshold;
+		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SELECT];
+		// t < threshold ? a : b
 		t.name = "Select";
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("a"));
 		t.inputs.push_back(Port("b"));
-		t.inputs.push_back(Port("threshold"));
 		t.inputs.push_back(Port("t"));
 		t.outputs.push_back(Port("out"));
+		t.params.push_back(Param("threshold", Variant::FLOAT, 0.f));
+
+		t.compile_func = [](CompileContext &ctx) {
+			Params p;
+			p.threshold = ctx.get_param(0).operator float();
+			ctx.set_params(p);
+		};
+
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
-			// TODO Mark ignored input to optimize things
-			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
-			const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
-			const VoxelGraphRuntime::Buffer &threshold = ctx.get_input(2);
-			const VoxelGraphRuntime::Buffer &tested_value = ctx.get_input(3);
+			bool a_ignored;
+			bool b_ignored;
+			const VoxelGraphRuntime::Buffer &a = ctx.try_get_input(0, a_ignored);
+			const VoxelGraphRuntime::Buffer &b = ctx.try_get_input(1, b_ignored);
+			const VoxelGraphRuntime::Buffer &tested_value = ctx.get_input(2);
+			const float threshold = ctx.get_params<Params>().threshold;
+
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+
 			const uint32_t buffer_size = out.size;
-			if (tested_value.is_constant && threshold.is_constant) {
-				const float *src = tested_value.constant_value < threshold.constant_value ? a.data : b.data;
-				for (uint32_t i = 0; i < buffer_size; ++i) {
-					memcpy(out.data, src, buffer_size * sizeof(float));
-				}
+
+			if (a_ignored) {
+				memcpy(out.data, b.data, buffer_size * sizeof(float));
+
+			} else if (b_ignored) {
+				memcpy(out.data, a.data, buffer_size * sizeof(float));
+
+			} else if (tested_value.is_constant) {
+				const float *src = tested_value.constant_value < threshold ? a.data : b.data;
+				memcpy(out.data, src, buffer_size * sizeof(float));
+
 			} else if (a.is_constant && b.is_constant && a.constant_value == b.constant_value) {
-				for (uint32_t i = 0; i < buffer_size; ++i) {
-					memcpy(out.data, a.data, buffer_size * sizeof(float));
-				}
+				memcpy(out.data, a.data, buffer_size * sizeof(float));
+
 			} else {
 				for (uint32_t i = 0; i < buffer_size; ++i) {
-					out.data[i] = select(a.data[i], b.data[i], threshold.data[i], tested_value.data[i]);
+					out.data[i] = select(a.data[i], b.data[i], threshold, tested_value.data[i]);
 				}
 			}
 		};
+
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
-			const Interval threshold = ctx.get_input(2);
-			const Interval tested_value = ctx.get_input(3);
-			ctx.set_output(0, select(a, b, threshold, tested_value));
+			const Interval tested_value = ctx.get_input(2);
+			const float threshold = ctx.get_params<Params>().threshold;
+
+			if (tested_value.min >= threshold) {
+				ctx.set_output(0, b);
+				// `a` won't be used
+				ctx.ignore_input(0);
+
+			} else if (tested_value.max < threshold) {
+				ctx.set_output(0, a);
+				// `b` won't be used
+				ctx.ignore_input(1);
+
+			} else {
+				ctx.set_output(0, Interval::from_union(a, b));
+			}
 		};
 	}
 	{

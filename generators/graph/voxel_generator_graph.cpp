@@ -246,7 +246,24 @@ void VoxelGeneratorGraph::set_sdf_clip_threshold(float t) {
 }
 
 int VoxelGeneratorGraph::get_used_channels_mask() const {
-	return 1 << VoxelBufferInternal::CHANNEL_SDF;
+	std::shared_ptr<const Runtime> runtime_ptr;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime_ptr = _runtime;
+	}
+	ERR_FAIL_COND_V(runtime_ptr == nullptr, 0);
+	int mask = 0;
+	if (runtime_ptr->sdf_output_index != -1) {
+		mask |= (1 << VoxelBufferInternal::CHANNEL_SDF);
+	}
+	if (runtime_ptr->type_output_index != -1) {
+		mask |= (1 << VoxelBufferInternal::CHANNEL_TYPE);
+	}
+	if (runtime_ptr->weight_outputs_count > 0) {
+		mask |= (1 << VoxelBufferInternal::CHANNEL_INDICES);
+		mask |= (1 << VoxelBufferInternal::CHANNEL_WEIGHTS);
+	}
+	return mask;
 }
 
 void VoxelGeneratorGraph::set_use_subdivision(bool use) {
@@ -399,7 +416,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 }
 
 template <typename F, typename Data_T>
-void fill_zx_slice(Span<Data_T> channel_data, float sdf_scale, Vector3i rmin, Vector3i rmax, int ry, int x_stride,
+void fill_zx_sdf_slice(Span<Data_T> channel_data, float sdf_scale, Vector3i rmin, Vector3i rmax, int ry, int x_stride,
 		const float *src_data, Vector3i buffer_size, F convert_func) {
 	unsigned int src_i = 0;
 	for (int rz = rmin.z; rz < rmax.z; ++rz) {
@@ -412,7 +429,7 @@ void fill_zx_slice(Span<Data_T> channel_data, float sdf_scale, Vector3i rmin, Ve
 	}
 }
 
-static void fill_zx_slice(const VoxelGraphRuntime::Buffer &sdf_buffer, VoxelBufferInternal &out_buffer,
+static void fill_zx_sdf_slice(const VoxelGraphRuntime::Buffer &sdf_buffer, VoxelBufferInternal &out_buffer,
 		unsigned int channel, VoxelBufferInternal::Depth channel_depth, float sdf_scale, Vector3i rmin, Vector3i rmax,
 		int ry) {
 	VOXEL_PROFILE_SCOPE_NAMED("Copy SDF to block");
@@ -428,22 +445,76 @@ static void fill_zx_slice(const VoxelGraphRuntime::Buffer &sdf_buffer, VoxelBuff
 
 	switch (channel_depth) {
 		case VoxelBufferInternal::DEPTH_8_BIT:
-			fill_zx_slice(channel_bytes, sdf_scale, rmin, rmax, ry, x_stride, sdf_buffer.data, buffer_size, norm_to_u8);
+			fill_zx_sdf_slice(
+					channel_bytes, sdf_scale, rmin, rmax, ry, x_stride, sdf_buffer.data, buffer_size, norm_to_u8);
 			break;
 
 		case VoxelBufferInternal::DEPTH_16_BIT:
-			fill_zx_slice(channel_bytes.reinterpret_cast_to<uint16_t>(), sdf_scale, rmin, rmax, ry, x_stride,
+			fill_zx_sdf_slice(channel_bytes.reinterpret_cast_to<uint16_t>(), sdf_scale, rmin, rmax, ry, x_stride,
 					sdf_buffer.data, buffer_size, norm_to_u16);
 			break;
 
 		case VoxelBufferInternal::DEPTH_32_BIT:
-			fill_zx_slice(channel_bytes.reinterpret_cast_to<float>(), sdf_scale, rmin, rmax, ry, x_stride,
+			fill_zx_sdf_slice(channel_bytes.reinterpret_cast_to<float>(), sdf_scale, rmin, rmax, ry, x_stride,
 					sdf_buffer.data, buffer_size, [](float v) { return v; });
 			break;
 
 		case VoxelBufferInternal::DEPTH_64_BIT:
-			fill_zx_slice(channel_bytes.reinterpret_cast_to<double>(), sdf_scale, rmin, rmax, ry, x_stride,
+			fill_zx_sdf_slice(channel_bytes.reinterpret_cast_to<double>(), sdf_scale, rmin, rmax, ry, x_stride,
 					sdf_buffer.data, buffer_size, [](double v) { return v; });
+			break;
+
+		default:
+			ERR_PRINT(String("Unknown depth {0}").format(varray(channel_depth)));
+			break;
+	}
+}
+
+template <typename F, typename Data_T>
+void fill_zx_integer_slice(Span<Data_T> channel_data, Vector3i rmin, Vector3i rmax, int ry, int x_stride,
+		const float *src_data, Vector3i buffer_size) {
+	unsigned int src_i = 0;
+	for (int rz = rmin.z; rz < rmax.z; ++rz) {
+		unsigned int dst_i = Vector3iUtil::get_zxy_index(Vector3i(rmin.x, ry, rz), buffer_size);
+		for (int rx = rmin.x; rx < rmax.x; ++rx) {
+			channel_data[dst_i] = Data_T(Math::round(src_data[src_i]));
+			++src_i;
+			dst_i += x_stride;
+		}
+	}
+}
+
+static void fill_zx_integer_slice(const VoxelGraphRuntime::Buffer &src_buffer, VoxelBufferInternal &out_buffer,
+		unsigned int channel, VoxelBufferInternal::Depth channel_depth, Vector3i rmin, Vector3i rmax, int ry) {
+	VOXEL_PROFILE_SCOPE_NAMED("Copy integer data to block");
+
+	if (out_buffer.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
+		out_buffer.decompress_channel(channel);
+	}
+	Span<uint8_t> channel_bytes;
+	ERR_FAIL_COND(!out_buffer.get_channel_raw(channel, channel_bytes));
+	const Vector3i buffer_size = out_buffer.get_size();
+	const unsigned int x_stride = Vector3iUtil::get_zxy_index(Vector3i(1, 0, 0), buffer_size) -
+			Vector3iUtil::get_zxy_index(Vector3i(0, 0, 0), buffer_size);
+
+	switch (channel_depth) {
+		case VoxelBufferInternal::DEPTH_8_BIT:
+			fill_zx_integer_slice<uint8_t>(channel_bytes, rmin, rmax, ry, x_stride, src_buffer.data, buffer_size);
+			break;
+
+		case VoxelBufferInternal::DEPTH_16_BIT:
+			fill_zx_integer_slice<uint16_t>(channel_bytes.reinterpret_cast_to<uint16_t>(), rmin, rmax, ry, x_stride,
+					src_buffer.data, buffer_size);
+			break;
+
+		case VoxelBufferInternal::DEPTH_32_BIT:
+			fill_zx_integer_slice<uint32_t>(channel_bytes.reinterpret_cast_to<uint32_t>(), rmin, rmax, ry, x_stride,
+					src_buffer.data, buffer_size);
+			break;
+
+		case VoxelBufferInternal::DEPTH_64_BIT:
+			fill_zx_integer_slice<uint64_t>(channel_bytes.reinterpret_cast_to<uint64_t>(), rmin, rmax, ry, x_stride,
+					src_buffer.data, buffer_size);
 			break;
 
 		default:
@@ -468,14 +539,17 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 	VoxelBufferInternal &out_buffer = input.voxel_buffer;
 
 	const Vector3i bs = out_buffer.get_size();
-	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	const VoxelBufferInternal::ChannelId sdf_channel = VoxelBufferInternal::CHANNEL_SDF;
 	const Vector3i origin = input.origin_in_voxels;
 
 	// TODO This may be shared across the module
 	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
 	// so we must scale the values to make better use of the offered resolution
-	const VoxelBufferInternal::Depth channel_depth = out_buffer.get_channel_depth(channel);
-	const float sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(channel_depth);
+	const VoxelBufferInternal::Depth sdf_channel_depth = out_buffer.get_channel_depth(sdf_channel);
+	const float sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(sdf_channel_depth);
+
+	const VoxelBufferInternal::ChannelId type_channel = VoxelBufferInternal::CHANNEL_TYPE;
+	const VoxelBufferInternal::Depth type_channel_depth = out_buffer.get_channel_depth(type_channel);
 
 	const int stride = 1 << input.lod;
 
@@ -511,9 +585,14 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 	const float matter_sdf = _debug_clipped_blocks ? 1.f : -1.f;
 
 	FixedArray<uint8_t, 4> spare_texture_indices = runtime_ptr->spare_texture_indices;
-	const unsigned int sdf_output_buffer_index = runtime_ptr->sdf_output_buffer_index;
+	const int sdf_output_buffer_index = runtime_ptr->sdf_output_buffer_index;
+	const int type_output_buffer_index = runtime_ptr->type_output_buffer_index;
 
-	bool all_sdf_is_uniform = true;
+	FixedArray<unsigned int, VoxelGraphRuntime::MAX_OUTPUTS> required_outputs;
+	unsigned int required_outputs_count = 0;
+
+	bool all_sdf_is_air = (sdf_output_buffer_index != -1) && (type_output_buffer_index == -1);
+	bool all_sdf_is_matter = all_sdf_is_air;
 
 	// For each subdivision of the block
 	for (int sz = 0; sz < bs.z; sz += section_size.z) {
@@ -526,80 +605,72 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 				const Vector3i gmin = origin + (rmin << input.lod);
 				const Vector3i gmax = origin + (rmax << input.lod);
 
+				// Do a quick analysis of the area. We'll only compute voxels if necessary.
 				runtime.analyze_range(cache.state, gmin, gmax);
-				const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
-				bool sdf_is_uniform = false;
-				if (sdf_range.min > clip_threshold && sdf_range.max > clip_threshold) {
-					out_buffer.fill_area_f(air_sdf, rmin, rmax, channel);
-					// In case of air, we skip weights because there is nothing to texture anyways
-					continue;
 
-				} else if (sdf_range.min < -clip_threshold && sdf_range.max < -clip_threshold) {
-					out_buffer.fill_area_f(matter_sdf, rmin, rmax, channel);
-					sdf_is_uniform = true;
+				bool sdf_is_air = true;
+				if (sdf_output_buffer_index != -1) {
+					const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
+					bool sdf_is_matter = false;
 
-				} else if (sdf_range.is_single_value()) {
-					out_buffer.fill_area_f(sdf_range.min, rmin, rmax, channel);
-					if (sdf_range.min > 0.f) {
-						continue;
+					if (sdf_range.min > clip_threshold && sdf_range.max > clip_threshold) {
+						out_buffer.fill_area_f(air_sdf, rmin, rmax, sdf_channel);
+						sdf_is_air = true;
+
+					} else if (sdf_range.min < -clip_threshold && sdf_range.max < -clip_threshold) {
+						out_buffer.fill_area_f(matter_sdf, rmin, rmax, sdf_channel);
+						sdf_is_air = false;
+						sdf_is_matter = true;
+
+					} else if (sdf_range.is_single_value()) {
+						out_buffer.fill_area_f(sdf_range.min, rmin, rmax, sdf_channel);
+						sdf_is_air = sdf_range.min > 0.f;
+						sdf_is_matter = !sdf_is_air;
+
+					} else {
+						// SDF is not uniform, we'll need to compute it per voxel
+						required_outputs[required_outputs_count] = runtime_ptr->sdf_output_index;
+						++required_outputs_count;
+						sdf_is_air = false;
 					}
-					sdf_is_uniform = true;
+
+					all_sdf_is_air = all_sdf_is_air && sdf_is_air;
+					all_sdf_is_matter = all_sdf_is_matter && sdf_is_matter;
 				}
 
-				// The section may have the surface in it, we have to calculate it
-
-				if (!sdf_is_uniform) {
-					// SDF is not uniform, we may do a full query
-					all_sdf_is_uniform = false;
-
-					if (_use_optimized_execution_map) {
-						// Optimize out branches of the graph that won't contribute to the result
-						runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map, false);
+				if (type_output_buffer_index != -1) {
+					const math::Interval type_range = cache.state.get_range(type_output_buffer_index);
+					if (type_range.is_single_value()) {
+						out_buffer.fill_area(int(type_range.min), rmin, rmax, type_channel);
+					} else {
+						// Types are not uniform, we'll need to compute them per voxel
+						required_outputs[required_outputs_count] = runtime_ptr->type_output_index;
+						++required_outputs_count;
 					}
+				}
 
-					{
-						unsigned int i = 0;
-						for (int rz = rmin.z, gz = gmin.z; rz < rmax.z; ++rz, gz += stride) {
-							for (int rx = rmin.x, gx = gmin.x; rx < rmax.x; ++rx, gx += stride) {
-								x_cache[i] = gx;
-								z_cache[i] = gz;
-								++i;
-							}
-						}
+				if (runtime_ptr->weight_outputs_count > 0 && !sdf_is_air) {
+					// We can skip this when SDF is air because there won't be any matter to give a texture to
+					// TODO Range analysis on that?
+					for (unsigned int i = 0; i < runtime_ptr->weight_outputs_count; ++i) {
+						required_outputs[required_outputs_count] = runtime_ptr->weight_output_indices[i];
+						++required_outputs_count;
 					}
+				}
 
-					for (int ry = rmin.y, gy = gmin.y; ry < rmax.y; ++ry, gy += stride) {
-						VOXEL_PROFILE_SCOPE_NAMED("Full slice");
+				if (required_outputs_count == 0) {
+					// We found all we need with range analysis, no need to calculate per voxel.
+					continue;
+				}
 
-						y_cache.fill(gy);
+				// At least one channel needs per-voxel computation.
 
-						// Full query
-						runtime.generate_set(cache.state, x_cache, y_cache, z_cache, _use_xz_caching && ry != rmin.y,
-								_use_optimized_execution_map ? &cache.optimized_execution_map : nullptr);
+				if (_use_optimized_execution_map) {
+					runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map,
+							to_span_const(required_outputs, required_outputs_count), false);
+				}
 
-						{
-							const VoxelGraphRuntime::Buffer &sdf_buffer =
-									cache.state.get_buffer(sdf_output_buffer_index);
-							fill_zx_slice(sdf_buffer, out_buffer, channel, channel_depth, sdf_scale, rmin, rmax, ry);
-						}
-
-						if (runtime_ptr->weight_outputs_count > 0) {
-							gather_indices_and_weights(
-									to_span_const(runtime_ptr->weight_outputs, runtime_ptr->weight_outputs_count),
-									cache.state, rmin, rmax, ry, out_buffer, spare_texture_indices);
-						}
-					}
-
-				} else if (runtime_ptr->weight_outputs_count > 0) {
-					// SDF is uniform and full of matter, but we may want to query weights
-
-					if (_use_optimized_execution_map) {
-						// Optimize out branches of the graph that won't contribute to the result
-						runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map,
-								to_span_const(runtime_ptr->weight_output_indices, runtime_ptr->weight_outputs_count),
-								false);
-					}
-
+				{
 					unsigned int i = 0;
 					for (int rz = rmin.z, gz = gmin.z; rz < rmax.z; ++rz, gz += stride) {
 						for (int rx = rmin.x, gx = gmin.x; rx < rmax.x; ++rx, gx += stride) {
@@ -608,15 +679,30 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 							++i;
 						}
 					}
+				}
 
-					for (int ry = rmin.y, gy = gmin.y; ry < rmax.y; ++ry, gy += stride) {
-						VOXEL_PROFILE_SCOPE_NAMED("Weights slice");
+				for (int ry = rmin.y, gy = gmin.y; ry < rmax.y; ++ry, gy += stride) {
+					VOXEL_PROFILE_SCOPE_NAMED("Full slice");
 
-						y_cache.fill(gy);
+					y_cache.fill(gy);
 
-						runtime.generate_set(cache.state, x_cache, y_cache, z_cache, _use_xz_caching && ry != rmin.y,
-								_use_optimized_execution_map ? &cache.optimized_execution_map : nullptr);
+					// Full query (unless using execution map)
+					runtime.generate_set(cache.state, x_cache, y_cache, z_cache, _use_xz_caching && ry != rmin.y,
+							_use_optimized_execution_map ? &cache.optimized_execution_map : nullptr);
 
+					if (sdf_output_buffer_index != -1) {
+						const VoxelGraphRuntime::Buffer &sdf_buffer = cache.state.get_buffer(sdf_output_buffer_index);
+						fill_zx_sdf_slice(
+								sdf_buffer, out_buffer, sdf_channel, sdf_channel_depth, sdf_scale, rmin, rmax, ry);
+					}
+
+					if (type_output_buffer_index != -1) {
+						const VoxelGraphRuntime::Buffer &type_buffer = cache.state.get_buffer(type_output_buffer_index);
+						fill_zx_integer_slice(
+								type_buffer, out_buffer, type_channel, type_channel_depth, rmin, rmax, ry);
+					}
+
+					if (runtime_ptr->weight_outputs_count > 0) {
 						gather_indices_and_weights(
 								to_span_const(runtime_ptr->weight_outputs, runtime_ptr->weight_outputs_count),
 								cache.state, rmin, rmax, ry, out_buffer, spare_texture_indices);
@@ -631,6 +717,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &in
 	// This is different from finding out that the buffer is uniform.
 	// This really means we predicted SDF will never cross zero in this area, no matter how precise we get.
 	// Relying on the block's uniform channels would bring up false positives due to LOD aliasing.
+	const bool all_sdf_is_uniform = all_sdf_is_air || all_sdf_is_matter;
 	if (all_sdf_is_uniform) {
 		// TODO If voxel texure weights are used, octree compression might be a bit more complicated.
 		// For now we only look at SDF but if texture weights are used and the player digs a bit inside terrain,
@@ -668,6 +755,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 
 		ERR_FAIL_COND_V(node == nullptr, VoxelGraphRuntime::CompilationResult());
 
+		// TODO Allow specifying max count in VoxelGraphNodeDB so we can make some of these checks more generic
 		switch (node->type_id) {
 			case NODE_OUTPUT_SDF:
 				if (r->sdf_output_buffer_index != -1) {
@@ -677,6 +765,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 					error.node_id = output.node_id;
 					return error;
 				} else {
+					r->sdf_output_index = output_index;
 					r->sdf_output_buffer_index = output.buffer_address;
 				}
 				break;
@@ -727,15 +816,28 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 				++r->weight_outputs_count;
 			} break;
 
+			case NODE_OUTPUT_TYPE:
+				if (r->type_output_buffer_index != -1) {
+					VoxelGraphRuntime::CompilationResult error;
+					error.success = false;
+					error.message = TTR("Multiple TYPE outputs are not supported");
+					error.node_id = output.node_id;
+					return error;
+				} else {
+					r->type_output_index = output_index;
+					r->type_output_buffer_index = output.buffer_address;
+				}
+				break;
+
 			default:
 				break;
 		}
 	}
 
-	if (r->sdf_output_buffer_index == -1) {
+	if (r->sdf_output_buffer_index == -1 && r->type_output_buffer_index == -1) {
 		VoxelGraphRuntime::CompilationResult error;
 		error.success = false;
-		error.message = String(TTR("An SDF output is required for the graph to be valid."));
+		error.message = String(TTR("An SDF or TYPE output is required for the graph to be valid."));
 		return error;
 	}
 
@@ -862,6 +964,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 	}
 
 	ERR_FAIL_COND(runtime_ptr == nullptr);
+	ERR_FAIL_COND_MSG(runtime_ptr->sdf_output_buffer_index == -1, "This function only works with an SDF output.");
 
 	// This process would use too much memory if run over the entire image at once,
 	// so we'll subdivide the load in smaller chunks
@@ -954,6 +1057,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	}
 
 	ERR_FAIL_COND(runtime_ptr == nullptr);
+	ERR_FAIL_COND_MSG(runtime_ptr->sdf_output_buffer_index == -1, "This function only works with an SDF output.");
 
 	// This process would use too much memory if run over the entire image at once,
 	// so we'll subdivide the load in smaller chunks
@@ -1106,6 +1210,10 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 		runtime_ptr = _runtime;
 	}
 	ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+	// TODO Allow return values from other outputs
+	if (runtime_ptr->sdf_output_buffer_index == -1) {
+		return v;
+	}
 	Cache &cache = _cache;
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, 1);
@@ -1135,7 +1243,11 @@ math::Interval VoxelGeneratorGraph::debug_analyze_range(
 	if (optimize_execution_map) {
 		runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map, true);
 	}
-	return cache.state.get_range(runtime_ptr->sdf_output_buffer_index);
+	// TODO Change return value to allow checking other outputs
+	if (runtime_ptr->sdf_output_buffer_index != -1) {
+		return cache.state.get_range(runtime_ptr->sdf_output_buffer_index);
+	}
+	return math::Interval();
 }
 
 Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {

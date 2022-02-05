@@ -5,7 +5,7 @@ This is a high-level list of features, changes and fixes that have been made ove
 
 At the moment, this module doesn't have a distinct release schedule, so this changelog follows Godot's version numbers and binary releases. Almost each version mentionned here should have an associated Git branch (for THIS repo, not Godot's) containing features at the time of the version. Backports aren't done so far.
 
-Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often.
+Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often across minor versions.
 
 
 1.x - Ongoing development - `master`
@@ -17,6 +17,7 @@ Godot 4 is required from this version.
     - Added `gi_mode` to terrain nodes to choose how they behave with Godot's global illumination
     - Added `FastNoise2` for faster SIMD noise
     - Added experimental support functions to help setting up basic multiplayer with `VoxelTerrain` (might change in the future)
+    - `VoxelGeneratorGraph`: added support for outputting to the TYPE channel, allowing use with `VoxelMesherBlocky`
 
 - Smooth voxels
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
@@ -50,6 +51,7 @@ Godot 4 is required from this version.
     - `VoxelStream`: renamed `immerge_block` => `save_voxel_block`
     - `VoxelStreamScript`: renamed `_emerge_block` => `_load_voxel_block`
     - `VoxelStreamScript`: renamed `_immerge_block` => `_save_voxel_block`
+    - `VoxelGeneratorGraph`: the `Select` node's `thresdold` port is now a parameter instead.
 
 - Known issues
     - Some nodes and resources no longer start with predefined properties due to a warning introduced in Godot4 when properties are resources.

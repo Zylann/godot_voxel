@@ -34,6 +34,10 @@ struct Interval {
 		return Interval(-std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
 	}
 
+	inline static Interval from_union(const Interval a, const Interval b) {
+		return Interval(math::min(a.min, b.min), math::max(a.max, b.max));
+	}
+
 	inline bool contains(float v) const {
 		return v >= min && v <= max;
 	}

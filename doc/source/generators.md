@@ -180,6 +180,13 @@ Finally, we can blend our terrain with caves by subtracting them. This can be do
 There are likely variants of this to obtain different results.
 
 
+### Usage with blocky voxels
+
+It is possible to use this generator with `VoxelMesherBlocky` by using an `OutputType` node instead of `OutputSDF`.
+
+TODO More info
+
+
 ### Performance tuning
 
 This is a more technical section.

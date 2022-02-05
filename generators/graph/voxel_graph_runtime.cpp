@@ -344,6 +344,15 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
 			CRASH_COND(node->outputs.size() != 1);
+
+			if (_program.outputs_count == _program.outputs.size()) {
+				CompilationResult result;
+				result.success = false;
+				result.message = "Maximum number of outputs has been reached";
+				result.node_id = node_id;
+				return result;
+			}
+
 			{
 				const uint16_t *aptr = _program.output_port_addresses.getptr(ProgramGraph::PortLocation{ node_id, 0 });
 				// Previous node ports must have been registered

@@ -57,15 +57,16 @@ public:
 		NODE_FAST_NOISE_GRADIENT_2D = 40,
 		NODE_FAST_NOISE_GRADIENT_3D = 41,
 		NODE_OUTPUT_WEIGHT = 42,
+		NODE_OUTPUT_TYPE = 43,
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
-		NODE_FAST_NOISE_2_2D = 43,
-		NODE_FAST_NOISE_2_3D = 44,
+		NODE_FAST_NOISE_2_2D = 44,
+		NODE_FAST_NOISE_2_3D = 45,
 #endif
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
-		NODE_TYPE_COUNT = 45
+		NODE_TYPE_COUNT = 46
 #else
-		NODE_TYPE_COUNT = 43
+		NODE_TYPE_COUNT = 44
 #endif
 	};
 
@@ -233,8 +234,10 @@ private:
 		// Indices that are not used in the graph.
 		// This is used when there are less than 4 texture weight outputs.
 		FixedArray<uint8_t, 4> spare_texture_indices;
-		// Index to the SDF output
+		int sdf_output_index = -1;
 		int sdf_output_buffer_index = -1;
+		int type_output_index = -1;
+		int type_output_buffer_index = -1;
 		FixedArray<WeightOutput, 16> weight_outputs;
 		// List of indices to feed queries. The order doesn't matter, can be different from `weight_outputs`.
 		FixedArray<unsigned int, 16> weight_output_indices;
