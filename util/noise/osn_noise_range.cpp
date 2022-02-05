@@ -6,19 +6,19 @@ namespace zylann {
 
 using namespace math;
 
-Interval get_osn_octave_range_2d(OpenSimplexNoise &noise, const Interval &p_x, const Interval &p_y, int octave) {
+Interval get_osn_octave_range_2d(const OpenSimplexNoise &noise, const Interval &p_x, const Interval &p_y, int octave) {
 	return get_noise_range_2d(
 			[octave, &noise](float x, float y) { return noise._get_octave_noise_2d(octave, x, y); }, p_x, p_y, 2.35f);
 }
 
 Interval get_osn_octave_range_3d(
-		OpenSimplexNoise &noise, const Interval &p_x, const Interval &p_y, const Interval &p_z, int octave) {
+		const OpenSimplexNoise &noise, const Interval &p_x, const Interval &p_y, const Interval &p_z, int octave) {
 	return get_noise_range_3d(
 			[octave, &noise](float x, float y, float z) { return noise._get_octave_noise_3d(octave, x, y, z); }, p_x,
 			p_y, p_z, 2.5f);
 }
 
-Interval get_osn_range_2d(OpenSimplexNoise &noise, Interval x, Interval y) {
+Interval get_osn_range_2d(const OpenSimplexNoise &noise, Interval x, Interval y) {
 	// Same implementation as `get_noise_2d`
 
 	if (x.is_single_value() && y.is_single_value()) {
@@ -44,7 +44,7 @@ Interval get_osn_range_2d(OpenSimplexNoise &noise, Interval x, Interval y) {
 	return sum / max;
 }
 
-Interval get_osn_range_3d(OpenSimplexNoise &noise, Interval x, Interval y, Interval z) {
+Interval get_osn_range_3d(const OpenSimplexNoise &noise, Interval x, Interval y, Interval z) {
 	// Same implementation as `get_noise_3d`
 
 	if (x.is_single_value() && y.is_single_value()) {

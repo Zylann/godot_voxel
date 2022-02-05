@@ -806,7 +806,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		struct Params {
 			// TODO Should be `const` but isn't because it auto-bakes, and it's a concern for multithreading
 			Curve *curve;
-			CurveRangeData *curve_range_data;
+			const CurveRangeData *curve_range_data;
 		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CURVE];
 		t.name = "Curve";
@@ -854,8 +854,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	}
 	{
 		struct Params {
-			// TODO Should be `const` but isn't because of an oversight in Godot
-			OpenSimplexNoise *noise;
+			const OpenSimplexNoise *noise;
 		};
 
 		NodeType &t = types[VoxelGeneratorGraph::NODE_NOISE_2D];
@@ -898,8 +897,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	}
 	{
 		struct Params {
-			// TODO Should be `const` but isn't because of an oversight in Godot
-			OpenSimplexNoise *noise;
+			const OpenSimplexNoise *noise;
 		};
 
 		NodeType &t = types[VoxelGeneratorGraph::NODE_NOISE_3D];
@@ -1475,7 +1473,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	}
 	{
 		struct Params {
-			FastNoiseLite *noise;
+			const FastNoiseLite *noise;
 		};
 
 		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_2D];
@@ -1518,7 +1516,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	}
 	{
 		struct Params {
-			FastNoiseLite *noise;
+			const FastNoiseLite *noise;
 		};
 
 		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_3D];
@@ -1675,7 +1673,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	{
 		struct Params {
-			FastNoise2 *noise;
+			const FastNoise2 *noise;
 		};
 
 		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_2_2D];
@@ -1722,7 +1720,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	}
 	{
 		struct Params {
-			FastNoise2 *noise;
+			const FastNoise2 *noise;
 		};
 
 		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_2_3D];
