@@ -16,6 +16,7 @@ class VoxelGeneratorGraph;
 class VoxelRangeAnalysisDialog;
 class VoxelNode;
 
+// Main GUI of the graph editor
 class VoxelGraphEditor : public Control {
 	GDCLASS(VoxelGraphEditor, Control)
 public:
