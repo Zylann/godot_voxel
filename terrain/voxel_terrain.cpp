@@ -1547,7 +1547,8 @@ AABB VoxelTerrain::_b_get_bounds() const {
 
 bool VoxelTerrain::_b_try_set_block_data(Vector3i position, Ref<VoxelBuffer> voxel_data) {
 	ERR_FAIL_COND_V(voxel_data.is_null(), false);
-	return try_set_block_data(position, voxel_data->get_buffer_shared());
+	std::shared_ptr<VoxelBufferInternal> buffer = voxel_data->get_buffer_shared();
+	return try_set_block_data(position, buffer);
 }
 
 PackedInt32Array VoxelTerrain::_b_get_viewer_network_peer_ids_in_area(Vector3i area_origin, Vector3i area_size) const {
