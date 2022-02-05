@@ -14,14 +14,14 @@ std::atomic_int g_debug_save_block_tasks_count;
 SaveBlockDataRequest::SaveBlockDataRequest(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
 		uint8_t p_block_size, std::shared_ptr<VoxelBufferInternal> p_voxels,
 		std::shared_ptr<StreamingDependency> p_stream_dependency) :
-		_volume_id(p_volume_id),
+		_voxels(p_voxels),
 		_position(p_block_pos),
+		_volume_id(p_volume_id),
 		_lod(p_lod),
 		_block_size(p_block_size),
-		_save_voxels(true),
 		_save_instances(false),
-		_stream_dependency(p_stream_dependency),
-		_voxels(p_voxels) {
+		_save_voxels(true),
+		_stream_dependency(p_stream_dependency) {
 	//
 	++g_debug_save_block_tasks_count;
 }
@@ -29,14 +29,14 @@ SaveBlockDataRequest::SaveBlockDataRequest(uint32_t p_volume_id, Vector3i p_bloc
 SaveBlockDataRequest::SaveBlockDataRequest(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
 		uint8_t p_block_size, std::unique_ptr<InstanceBlockData> p_instances,
 		std::shared_ptr<StreamingDependency> p_stream_dependency) :
-		_volume_id(p_volume_id),
+		_instances(std::move(p_instances)),
 		_position(p_block_pos),
+		_volume_id(p_volume_id),
 		_lod(p_lod),
 		_block_size(p_block_size),
-		_save_voxels(false),
 		_save_instances(true),
-		_stream_dependency(p_stream_dependency),
-		_instances(std::move(p_instances)) {
+		_save_voxels(false),
+		_stream_dependency(p_stream_dependency) {
 	//
 	++g_debug_save_block_tasks_count;
 }

@@ -14,14 +14,14 @@ std::atomic_int g_debug_load_block_tasks_count;
 LoadBlockDataRequest::LoadBlockDataRequest(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
 		uint8_t p_block_size, bool p_request_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
 		PriorityDependency p_priority_dependency) :
-		_volume_id(p_volume_id),
+		_priority_dependency(p_priority_dependency),
 		_position(p_block_pos),
+		_volume_id(p_volume_id),
 		_lod(p_lod),
 		_block_size(p_block_size),
-		_request_voxels(true),
 		_request_instances(p_request_instances),
-		_stream_dependency(p_stream_dependency),
-		_priority_dependency(p_priority_dependency) {
+		_request_voxels(true),
+		_stream_dependency(p_stream_dependency) {
 	//
 	++g_debug_load_block_tasks_count;
 }
