@@ -22,13 +22,13 @@ namespace zylann::voxel {
 namespace {
 
 Ref<ArrayMesh> build_mesh(
-		const Vector<Array> surfaces, Mesh::PrimitiveType primitive, int flags, Ref<Material> material) {
+		Span<const Array> surfaces, Mesh::PrimitiveType primitive, int flags, Ref<Material> material) {
 	VOXEL_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
 	mesh.instantiate();
 
 	unsigned int surface_index = 0;
-	for (int i = 0; i < surfaces.size(); ++i) {
+	for (unsigned int i = 0; i < surfaces.size(); ++i) {
 		Array surface = surfaces[i];
 
 		if (surface.is_empty()) {
@@ -1934,9 +1934,10 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 		block->set_mesh_state(VoxelMeshBlock::MESH_UP_TO_DATE);
 	}
 
-	const VoxelMesher::Output mesh_data = ob.surfaces;
+	const VoxelMesher::Output &mesh_data = ob.surfaces;
 
-	Ref<ArrayMesh> mesh = build_mesh(mesh_data.surfaces, mesh_data.primitive_type, mesh_data.mesh_flags, _material);
+	Ref<ArrayMesh> mesh =
+			build_mesh(to_span_const(mesh_data.surfaces), mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 
 	bool has_collision = _generate_collisions;
 	if (has_collision && _collision_lod_count != 0) {
@@ -1988,8 +1989,8 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	{
 		VOXEL_PROFILE_SCOPE();
 		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
-			Ref<ArrayMesh> transition_mesh = build_mesh(
-					mesh_data.transition_surfaces[dir], mesh_data.primitive_type, mesh_data.mesh_flags, _material);
+			Ref<ArrayMesh> transition_mesh = build_mesh(to_span_const(mesh_data.transition_surfaces[dir]),
+					mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 
 			block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()));
 		}
@@ -2011,6 +2012,11 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 				lod.deferred_collision_updates.push_back(ob.position);
 				block->has_deferred_collider_update = true;
 			}
+			// TODO Optimization: could avoid the small allocation.
+			// It's usually a small vectors with a handful of elements.
+			// The caller providing `mesh_data` doesnt use `mesh_data` later so we could have moved the vector,
+			// but at the moment it's passed with `const` so that isn't possible. Indeed we are only going to read the
+			// data, but `const` also means the structure holding it is read-only as well.
 			block->deferred_collider_data = mesh_data.surfaces;
 		}
 	}

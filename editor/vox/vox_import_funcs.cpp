@@ -33,7 +33,7 @@ Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 	VoxelMesher::Input input = { voxels, 0 };
 	mesher.build(output, input);
 
-	if (output.surfaces.is_empty()) {
+	if (output.surfaces.size() == 0) {
 		return Ref<ArrayMesh>();
 	}
 

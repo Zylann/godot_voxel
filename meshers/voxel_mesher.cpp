@@ -11,7 +11,7 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
 	Input input = { voxels->get_buffer(), 0 };
 	build(output, input);
 
-	if (output.surfaces.is_empty()) {
+	if (output.surfaces.size() == 0) {
 		return Ref<ArrayMesh>();
 	}
 
@@ -19,7 +19,7 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
 	mesh.instantiate();
 
 	int surface_index = 0;
-	for (int i = 0; i < output.surfaces.size(); ++i) {
+	for (unsigned int i = 0; i < output.surfaces.size(); ++i) {
 		Array surface = output.surfaces[i];
 		if (surface.is_empty()) {
 			continue;

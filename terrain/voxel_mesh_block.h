@@ -39,7 +39,7 @@ public:
 
 	uint32_t last_collider_update_time = 0;
 	bool has_deferred_collider_update = false;
-	Vector<Array> deferred_collider_data;
+	std::vector<Array> deferred_collider_data;
 
 	FadingState fading_state = FADING_NONE;
 	float fading_progress = 0.f;

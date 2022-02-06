@@ -20,8 +20,8 @@ public:
 
 	struct Output {
 		// Each surface correspond to a different material
-		Vector<Array> surfaces;
-		FixedArray<Vector<Array>, Cube::SIDE_COUNT> transition_surfaces;
+		std::vector<Array> surfaces;
+		FixedArray<std::vector<Array>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 		unsigned int mesh_flags = 0;
 		Ref<Image> atlas_image;

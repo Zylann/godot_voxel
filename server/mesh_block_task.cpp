@@ -197,7 +197,7 @@ void MeshBlockTask::apply_result() {
 
 			o.position = position;
 			o.lod = lod;
-			o.surfaces = _surfaces_output;
+			o.surfaces = std::move(_surfaces_output);
 
 			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton()->get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.mesh_output_callback == nullptr);
