@@ -178,36 +178,11 @@ void VoxelGraphEditor::_process(float delta) {
 	// It is otherwise shown in the inspector when the node is selected, but seeing them at a glance helps.
 	// I decided to do by polling so all the code is here and there is no faffing around with signals.
 	if (_graph.is_valid() && is_visible_in_tree()) {
-		ProgramGraph::PortLocation src_loc_unused;
-		const String prefix = ": ";
-
 		for (int child_node_index = 0; child_node_index < _graph_edit->get_child_count(); ++child_node_index) {
 			Node *node = _graph_edit->get_child(child_node_index);
 			VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(node);
-			if (node_view == nullptr) {
-				continue;
-			}
-
-			for (unsigned int input_index = 0; input_index < node_view->input_hints.size(); ++input_index) {
-				VoxelGraphEditorNode::InputHint &input_hint = node_view->input_hints[input_index];
-				const ProgramGraph::PortLocation loc{ node_view->node_id, input_index };
-
-				if (_graph->try_get_connection_to(loc, src_loc_unused)) {
-					// There is an inbound connection, don't show the default value
-					if (input_hint.last_value != Variant()) {
-						input_hint.label->set_text("");
-						input_hint.last_value = Variant();
-					}
-
-				} else {
-					// There is no inbound connection, show the default value
-					const Variant current_value = _graph->get_node_default_input(loc.node_id, loc.port_index);
-					// Only update when it changes so we don't spam editor redraws
-					if (input_hint.last_value != current_value) {
-						input_hint.label->set_text(prefix + current_value);
-						input_hint.last_value = current_value;
-					}
-				}
+			if (node_view != nullptr) {
+				node_view->poll_default_inputs(**_graph);
 			}
 		}
 	}
@@ -265,109 +240,17 @@ void VoxelGraphEditor::build_gui_from_graph() {
 	}
 }
 
-static void update_node_view_title(VoxelGraphEditorNode *node_view, StringName node_name, String node_type_name) {
-	if (node_name == StringName()) {
-		node_view->set_title(node_type_name);
-	} else {
-		node_view->set_title(String("{0} ({1})").format(varray(node_name, node_type_name)));
-	}
-}
-
 void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	// Build one GUI node
 
 	CRASH_COND(_graph.is_null());
-	const VoxelGeneratorGraph &graph = **_graph;
-	const uint32_t node_type_id = graph.get_node_type_id(node_id);
-	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
 
 	const String ui_node_name = node_to_gui_name(node_id);
 	ERR_FAIL_COND(_graph_edit->has_node(ui_node_name));
 
-	VoxelGraphEditorNode *node_view = memnew(VoxelGraphEditorNode);
-	node_view->set_position_offset(graph.get_node_gui_position(node_id) * EDSCALE);
-
-	StringName node_name = graph.get_node_name(node_id);
-	update_node_view_title(node_view, node_name, node_type.name);
-
+	VoxelGraphEditorNode *node_view = VoxelGraphEditorNode::create(**_graph, node_id);
 	node_view->set_name(ui_node_name);
-	node_view->node_id = node_id;
 	node_view->connect("dragged", callable_mp(this, &VoxelGraphEditor::_on_graph_node_dragged), varray(node_id));
-	//node_view.resizable = true
-	//node_view.rect_size = Vector2(200, 100)
-
-	// We artificially hide output ports if the node is an output.
-	// These nodes have an output for implementation reasons, some outputs can process the data like any other node.
-	const bool hide_outputs = node_type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT;
-
-	const unsigned int row_count = math::max(node_type.inputs.size(), hide_outputs ? 0 : node_type.outputs.size());
-	const Color port_color(0.4, 0.4, 1.0);
-	const Color hint_label_modulate(0.6, 0.6, 0.6);
-
-	// TODO Insert a summary so the graph would be readable without having to inspect nodes
-	// However left and right slots always start from the first child item,
-	// so we'd have to decouple the real slots indices from the view
-	// if (node_type_id == VoxelGeneratorGraph::NODE_CLAMP) {
-	// 	const float minv = graph.get_node_param(node_id, 0);
-	// 	const float maxv = graph.get_node_param(node_id, 1);
-	// 	Label *sl = memnew(Label);
-	// 	sl->set_modulate(Color(1, 1, 1, 0.5));
-	// 	sl->set_text(String("[{0}, {1}]").format(varray(minv, maxv)));
-	// 	sl->set_align(Label::ALIGN_CENTER);
-	// 	node_view->summary_label = sl;
-	// 	node_view->add_child(sl);
-	// }
-
-	//const int middle_min_width = EDSCALE * 32.0;
-
-	for (unsigned int i = 0; i < row_count; ++i) {
-		const bool has_left = i < node_type.inputs.size();
-		const bool has_right = (i < node_type.outputs.size()) && !hide_outputs;
-
-		HBoxContainer *property_control = memnew(HBoxContainer);
-		property_control->set_custom_minimum_size(Vector2(0, 24 * EDSCALE));
-
-		if (has_left) {
-			Label *label = memnew(Label);
-			label->set_text(node_type.inputs[i].name);
-			property_control->add_child(label);
-
-			Label *hint_label = memnew(Label);
-			hint_label->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-			hint_label->set_modulate(hint_label_modulate);
-			//hint_label->set_clip_text(true);
-			//hint_label->set_custom_minimum_size(Vector2(middle_min_width, 0));
-			property_control->add_child(hint_label);
-			VoxelGraphEditorNode::InputHint input_hint;
-			input_hint.label = hint_label;
-			node_view->input_hints.push_back(input_hint);
-		}
-
-		if (has_right) {
-			if (property_control->get_child_count() < 2) {
-				Control *spacer = memnew(Control);
-				spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-				//spacer->set_custom_minimum_size(Vector2(middle_min_width, 0));
-				property_control->add_child(spacer);
-			}
-
-			Label *label = memnew(Label);
-			label->set_text(node_type.outputs[i].name);
-			// Pass filter is required to allow tooltips to work
-			label->set_mouse_filter(Control::MOUSE_FILTER_PASS);
-			property_control->add_child(label);
-
-			node_view->output_labels.push_back(label);
-		}
-
-		node_view->add_child(property_control);
-		node_view->set_slot(i, has_left, Variant::FLOAT, port_color, has_right, Variant::FLOAT, port_color);
-	}
-
-	if (node_type_id == VoxelGeneratorGraph::NODE_SDF_PREVIEW) {
-		node_view->preview = memnew(VoxelGraphEditorNodePreview);
-		node_view->add_child(node_view->preview);
-	}
 
 	_graph_edit->add_child(node_view);
 }
@@ -445,18 +328,19 @@ void VoxelGraphEditor::_on_graph_edit_connection_request(
 	ERR_FAIL_COND(src_node_view == nullptr);
 	ERR_FAIL_COND(dst_node_view == nullptr);
 
+	const uint32_t src_node_id = src_node_view->get_generator_node_id();
+	const uint32_t dst_node_id = dst_node_view->get_generator_node_id();
+
 	// TODO Replace connection if one already exists
 
 	//print("Connection attempt from ", from, ":", from_slot, " to ", to, ":", to_slot)
-	if (_graph->can_connect(src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot)) {
+	if (_graph->can_connect(src_node_id, from_slot, dst_node_id, to_slot)) {
 		_undo_redo->create_action(TTR("Connect Nodes"));
 
-		_undo_redo->add_do_method(
-				*_graph, "add_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+		_undo_redo->add_do_method(*_graph, "add_connection", src_node_id, from_slot, dst_node_id, to_slot);
 		_undo_redo->add_do_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
 
-		_undo_redo->add_undo_method(
-				*_graph, "remove_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+		_undo_redo->add_undo_method(*_graph, "remove_connection", src_node_id, from_slot, dst_node_id, to_slot);
 		_undo_redo->add_undo_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
 
 		_undo_redo->commit_action();
@@ -470,14 +354,15 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 	ERR_FAIL_COND(src_node_view == nullptr);
 	ERR_FAIL_COND(dst_node_view == nullptr);
 
+	const uint32_t src_node_id = src_node_view->get_generator_node_id();
+	const uint32_t dst_node_id = dst_node_view->get_generator_node_id();
+
 	_undo_redo->create_action(TTR("Disconnect Nodes"));
 
-	_undo_redo->add_do_method(
-			*_graph, "remove_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+	_undo_redo->add_do_method(*_graph, "remove_connection", src_node_id, from_slot, dst_node_id, to_slot);
 	_undo_redo->add_do_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
 
-	_undo_redo->add_undo_method(
-			*_graph, "add_connection", src_node_view->node_id, from_slot, dst_node_view->node_id, to_slot);
+	_undo_redo->add_undo_method(*_graph, "add_connection", src_node_id, from_slot, dst_node_id, to_slot);
 	_undo_redo->add_undo_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
 
 	_undo_redo->commit_action();
@@ -502,7 +387,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 
 	for (size_t i = 0; i < to_erase.size(); ++i) {
 		const VoxelGraphEditorNode *node_view = to_erase[i];
-		const uint32_t node_id = node_view->node_id;
+		const uint32_t node_id = node_view->get_generator_node_id();
 		const uint32_t node_type_id = _graph->get_node_type_id(node_id);
 
 		_undo_redo->add_do_method(*_graph, "remove_node", node_id);
@@ -587,7 +472,7 @@ void VoxelGraphEditor::_on_context_menu_id_pressed(int id) {
 
 void VoxelGraphEditor::_on_graph_edit_node_selected(Node *p_node) {
 	VoxelGraphEditorNode *node = Object::cast_to<VoxelGraphEditorNode>(p_node);
-	emit_signal(SIGNAL_NODE_SELECTED, node->node_id);
+	emit_signal(SIGNAL_NODE_SELECTED, node->get_generator_node_id());
 }
 
 void VoxelGraphEditor::_on_graph_edit_node_deselected(Node *p_node) {
@@ -666,6 +551,7 @@ void VoxelGraphEditor::update_previews() {
 
 void VoxelGraphEditor::update_range_analysis_previews() {
 	PRINT_VERBOSE("Updating range analysis previews");
+	ERR_FAIL_COND(_graph.is_null());
 	ERR_FAIL_COND(!_graph->is_good());
 
 	const AABB aabb = _range_analysis_dialog->get_aabb();
@@ -682,7 +568,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 			continue;
 		}
 
-		if (node_view->output_labels.size() == 0) {
+		if (!node_view->has_outputs()) {
 			continue;
 		}
 
@@ -690,18 +576,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 		// TODO Would be nice if GraphEdit's minimap would take such coloring into account...
 		node_view->set_modulate(greyed_out_color);
 
-		for (int port_index = 0; port_index < node_view->output_labels.size(); ++port_index) {
-			ProgramGraph::PortLocation loc;
-			loc.node_id = node_view->node_id;
-			loc.port_index = port_index;
-			uint32_t address;
-			if (!_graph->try_get_output_port_address(loc, address)) {
-				continue;
-			}
-			const math::Interval range = state.get_range(address);
-			Control *label = node_view->output_labels[port_index];
-			label->set_tooltip(String("Min: {0}\nMax: {1}").format(varray(range.min, range.max)));
-		}
+		node_view->update_range_analysis_tooltips(**_graph, state);
 	}
 
 	// Highlight only nodes that will actually run
@@ -748,11 +623,11 @@ void VoxelGraphEditor::update_slice_previews() {
 	// Gather preview nodes
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
 		VoxelGraphEditorNode *node = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(i));
-		if (node == nullptr || node->preview == nullptr) {
+		if (node == nullptr || node->get_preview() == nullptr) {
 			continue;
 		}
 		ProgramGraph::PortLocation dst;
-		dst.node_id = node->node_id;
+		dst.node_id = node->get_generator_node_id();
 		dst.port_index = 0;
 		ProgramGraph::PortLocation src;
 		if (!_graph->try_get_connection_to(dst, src)) {
@@ -760,7 +635,7 @@ void VoxelGraphEditor::update_slice_previews() {
 			continue;
 		}
 		PreviewInfo info;
-		info.control = node->preview;
+		info.control = node->get_preview();
 		if (!_graph->try_get_output_port_address(src, info.address)) {
 			// Not part of the compiled result
 			continue;
@@ -843,10 +718,7 @@ void VoxelGraphEditor::clear_range_analysis_tooltips() {
 		if (node_view == nullptr) {
 			continue;
 		}
-		for (int i = 0; i < node_view->output_labels.size(); ++i) {
-			Control *oc = node_view->output_labels[i];
-			oc->set_tooltip("");
-		}
+		node_view->clear_range_analysis_tooltips();
 	}
 }
 
@@ -869,7 +741,7 @@ void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
 	VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(ui_node_name));
 	ERR_FAIL_COND(node_view == nullptr);
 
-	update_node_view_title(node_view, node_name, node_type_name);
+	node_view->update_title(node_name, node_type_name);
 }
 
 void VoxelGraphEditor::_on_update_previews_button_pressed() {
