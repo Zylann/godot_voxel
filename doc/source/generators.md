@@ -65,7 +65,7 @@ Node-graph generators (VoxelGraphs)
 Basic generators may often not be suited to make a whole game from, but you don't necessarily need to program one. C++ is a very fast language to program a generator but it can be a tedious workflow, especially when prototyping. If you need smooth terrain, a graph-based generator is available, which offers a very customizable approach to make procedural volumes.
 
 !!! warn
-    This generator currently doesn't support blocky terrains.
+    This generator was originally made for smooth terrain, but works with blocky too, to some extent.
 
 
 ### Concept
@@ -184,7 +184,19 @@ There are likely variants of this to obtain different results.
 
 It is possible to use this generator with `VoxelMesherBlocky` by using an `OutputType` node instead of `OutputSDF`.
 
-TODO More info
+The simplest example is to pick any existing SDF generator, and replace `OutputSDF` with a `Select` node connected to an `OutputType`. The idea is to choose between the ID of two different voxel types (like air or stone) if the SDF value is above or below a threshold.
+
+![Example screenshot of a basic blocky heightmap made with a graph generator](images/voxel_graph_blocky_basic_heightmap.png)
+
+If more variety is needed, `Select` nodes can be chained to combine multiple layers, using different thresholds and sources.
+
+![Example screenshot of a blocky heightmap with two biomes made with a graph generator](images/voxel_graph_blocky_biome.png)
+
+`Select` creates a "cut" between the two possible values, and it may be desirable to have some sort of transition. While this isn't possible without a lot of different types for each value of the gradient (usually done with a shader), it is however easy to add a bit of white noise to the threshold. This reproduces a similar "dithered" transition, as can be seen in Minecraft between sand and dirt.
+
+![Example screenshot of a blocky heightmap with two biomes and dithering](images/voxel_graph_blocky_biome_dithering.png)
+
+Currently, graph generators only work per voxel. That makes them good to generate base ground and biomes, but it isn't practical to generate structures like trees or villages with it. This may be easier to accomplish using a second pass on the whole block instead, using a custom generator.
 
 
 ### Performance tuning
