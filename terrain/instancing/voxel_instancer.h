@@ -69,7 +69,8 @@ public:
 	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
 	void on_area_edited(Box3i p_voxel_box);
 	void on_body_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index);
-	void on_scene_instance_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index);
+	void on_scene_instance_removed(
+			Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index);
 	void on_scene_instance_modified(Vector3i data_block_position, unsigned int render_block_index);
 
 	// Debug
@@ -151,8 +152,8 @@ private:
 		// Such instances may be less numerous.
 		// If the item associated to this block has no collisions, this will be empty.
 		// Indices in the vector correspond to index of the instance in multimesh.
-		Vector<VoxelInstancerRigidBody *> bodies;
-		Vector<SceneInstance> scene_instances;
+		std::vector<VoxelInstancerRigidBody *> bodies;
+		std::vector<SceneInstance> scene_instances;
 	};
 
 	struct Layer {

@@ -58,7 +58,7 @@ void VoxelInstanceLibraryItem::add_listener(IListener *listener, int id) {
 	ListenerSlot slot;
 	slot.listener = listener;
 	slot.id = id;
-	ERR_FAIL_COND(_listeners.find(slot) != -1);
+	ERR_FAIL_COND(std::find(_listeners.begin(), _listeners.end(), slot) != _listeners.end());
 	_listeners.push_back(slot);
 }
 
@@ -66,14 +66,14 @@ void VoxelInstanceLibraryItem::remove_listener(IListener *listener, int id) {
 	ListenerSlot slot;
 	slot.listener = listener;
 	slot.id = id;
-	int i = _listeners.find(slot);
-	ERR_FAIL_COND(i == -1);
-	_listeners.remove_at(i);
+	auto it = std::find(_listeners.begin(), _listeners.end(), slot);
+	ERR_FAIL_COND(it == _listeners.end());
+	_listeners.erase(it);
 }
 
 void VoxelInstanceLibraryItem::notify_listeners(ChangeType change) {
-	for (int i = 0; i < _listeners.size(); ++i) {
-		ListenerSlot &slot = _listeners.write[i];
+	for (unsigned int i = 0; i < _listeners.size(); ++i) {
+		ListenerSlot &slot = _listeners[i];
 		slot.listener->on_library_item_changed(slot.id, change);
 	}
 }

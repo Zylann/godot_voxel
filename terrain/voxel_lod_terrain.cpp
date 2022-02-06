@@ -1999,8 +1999,8 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	if (has_collision) {
 		if (_collision_update_delay == 0 ||
 				static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
-			block->set_collision_mesh(
-					mesh_data.surfaces, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
+			block->set_collision_mesh(to_span_const(mesh_data.surfaces), get_tree()->is_debugging_collisions_hint(),
+					this, _collision_margin);
 			block->set_collision_layer(_collision_layer);
 			block->set_collision_mask(_collision_mask);
 			block->last_collider_update_time = now;
@@ -2038,8 +2038,8 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 			const uint32_t now = get_ticks_msec();
 
 			if (static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
-				block->set_collision_mesh(block->deferred_collider_data, get_tree()->is_debugging_collisions_hint(),
-						this, _collision_margin);
+				block->set_collision_mesh(to_span_const(block->deferred_collider_data),
+						get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
 				block->set_collision_layer(_collision_layer);
 				block->set_collision_mask(_collision_mask);
 				block->last_collider_update_time = now;
@@ -2341,16 +2341,14 @@ Array VoxelLodTerrain::get_mesh_block_surface(Vector3i block_pos, int lod_index)
 	return Array();
 }
 
-Vector<Vector3i> VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index) const {
-	Vector<Vector3i> positions;
-	ERR_FAIL_COND_V(lod_index >= static_cast<int>(_lod_count), positions);
+void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, std::vector<Vector3i> &out_positions) const {
+	ERR_FAIL_COND(lod_index >= static_cast<int>(_lod_count));
 	const Lod &lod = _lods[lod_index];
-	lod.mesh_map.for_all_blocks([&positions](const VoxelMeshBlock *block) {
+	lod.mesh_map.for_all_blocks([&out_positions](const VoxelMeshBlock *block) {
 		if (block->has_mesh()) {
-			positions.push_back(block->position);
+			out_positions.push_back(block->position);
 		}
 	});
-	return positions;
 }
 
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {

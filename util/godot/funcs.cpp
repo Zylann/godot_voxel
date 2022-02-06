@@ -63,14 +63,14 @@ bool try_call_script(
 // Faster version of Mesh::create_trimesh_shape()
 // See https://github.com/Zylann/godot_voxel/issues/54
 //
-Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Vector<Array> surfaces) {
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces) {
 	VOXEL_PROFILE_SCOPE();
 
 	PackedVector3Array face_points;
 	int face_points_size = 0;
 
 	//find the correct size for face_points
-	for (int i = 0; i < surfaces.size(); i++) {
+	for (unsigned int i = 0; i < surfaces.size(); i++) {
 		const Array &surface_arrays = surfaces[i];
 		if (surface_arrays.size() == 0) {
 			// That surface is empty
@@ -88,8 +88,8 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Vector<Array> surfaces) 
 	}
 
 	//copy the points into it
-	int face_points_offset = 0;
-	for (int i = 0; i < surfaces.size(); i++) {
+	unsigned int face_points_offset = 0;
+	for (unsigned int i = 0; i < surfaces.size(); i++) {
 		const Array &surface_arrays = surfaces[i];
 		if (surface_arrays.size() == 0) {
 			continue;
@@ -101,14 +101,14 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Vector<Array> surfaces) 
 		ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape3D>());
 		ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape3D>());
 
-		int face_points_count = face_points_offset + indices.size();
+		unsigned int face_points_count = face_points_offset + indices.size();
 
 		{
 			Vector3 *w = face_points.ptrw();
 			const int *index_r = indices.ptr();
 			const Vector3 *position_r = positions.ptr();
 
-			for (int p = face_points_offset; p < face_points_count; ++p) {
+			for (unsigned int p = face_points_offset; p < face_points_count; ++p) {
 				const int ii = p - face_points_offset;
 #ifdef DEBUG_ENABLED
 				CRASH_COND(ii < 0 || ii >= indices.size());

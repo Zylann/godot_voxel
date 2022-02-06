@@ -223,7 +223,7 @@ public:
 	}
 
 	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
-	Vector<Vector3i> get_meshed_block_positions_at_lod(int lod_index) const;
+	void get_meshed_block_positions_at_lod(int lod_index, std::vector<Vector3i> &out_positions) const;
 
 	std::shared_ptr<VoxelDataLodMap> get_storage() const {
 		return _data;

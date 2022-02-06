@@ -6,6 +6,7 @@
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
 #include "../util/ref_count.h"
+#include "../util/span.h"
 
 class Node3D;
 
@@ -75,7 +76,7 @@ public:
 
 	// Collisions
 
-	void set_collision_mesh(Vector<Array> surface_arrays, bool debug_collision, Node3D *node, float margin);
+	void set_collision_mesh(Span<const Array> surface_arrays, bool debug_collision, Node3D *node, float margin);
 	void set_collision_layer(int layer);
 	void set_collision_mask(int mask);
 	void set_collision_margin(float margin);

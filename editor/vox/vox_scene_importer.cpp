@@ -84,7 +84,7 @@ struct VoxMesh {
 };
 
 static Error process_scene_node_recursively(const Data &data, int node_id, Node3D *parent_node, Node3D *&out_root_node,
-		int depth, const Vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
+		int depth, const std::vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const Node *vox_node = data.get_node(node_id);
@@ -249,7 +249,7 @@ Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p
 	const Error load_err = data.load_from_file(p_source_file);
 	ERR_FAIL_COND_V(load_err != OK, load_err);
 
-	Vector<VoxMesh> meshes;
+	std::vector<VoxMesh> meshes;
 	meshes.resize(data.get_model_count());
 
 	// Get color palette
@@ -351,7 +351,7 @@ Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p
 		// TODO I don't know if this is correct, but I could not find a reference saying how that pivot should be
 		// calculated
 		mesh_info.pivot = (voxels.get_size() / 2 - Vector3iUtil::create(1));
-		meshes.write[model_index] = mesh_info;
+		meshes[model_index] = mesh_info;
 	}
 
 	Node3D *root_node = nullptr;
@@ -369,7 +369,7 @@ Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p
 	}
 
 	// Save meshes
-	for (int model_index = 0; model_index < meshes.size(); ++model_index) {
+	for (unsigned int model_index = 0; model_index < meshes.size(); ++model_index) {
 		VOXEL_PROFILE_SCOPE();
 		Ref<Mesh> mesh = meshes[model_index].mesh;
 		String res_save_path = String("{0}.model{1}.mesh").format(varray(p_save_path, model_index));

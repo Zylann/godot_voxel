@@ -105,14 +105,14 @@ void VoxelInstanceLibrary::notify_listeners(int item_id, VoxelInstanceLibraryIte
 }
 
 void VoxelInstanceLibrary::add_listener(IListener *listener) {
-	ERR_FAIL_COND(_listeners.find(listener) != -1);
+	ERR_FAIL_COND(std::find(_listeners.begin(), _listeners.end(), listener) != _listeners.end());
 	_listeners.push_back(listener);
 }
 
 void VoxelInstanceLibrary::remove_listener(IListener *listener) {
-	const int i = _listeners.find(listener);
-	ERR_FAIL_COND(i == -1);
-	_listeners.remove_at(i);
+	auto it = std::find(_listeners.begin(), _listeners.end(), listener);
+	ERR_FAIL_COND(it == _listeners.end());
+	_listeners.erase(it);
 }
 
 bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value) {

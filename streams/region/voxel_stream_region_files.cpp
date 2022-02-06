@@ -23,22 +23,22 @@ const char *META_FILE_NAME = "meta.vxrm";
 
 // Sorts a sequence without modifying it, returning a sorted list of pointers
 template <typename T, typename Comparer_T>
-void get_sorted_pointers(Span<T> sequence, Comparer_T comparer, std::vector<T *> &out_sorted_sequence) {
-	struct PtrCompare {
+void get_sorted_indices(Span<T> sequence, Comparer_T comparer, std::vector<unsigned int> &out_sorted_indices) {
+	struct Compare {
 		Span<T> sequence;
 		Comparer_T comparer;
-		inline bool operator()(const T *a, const T *b) const {
-			return comparer(*a, *b);
+		inline bool operator()(unsigned int ia, unsigned int ib) const {
+			return comparer(sequence[ia], sequence[ib]);
 		}
 	};
-	out_sorted_sequence.resize(sequence.size());
+	out_sorted_indices.resize(sequence.size());
 	for (unsigned int i = 0; i < sequence.size(); ++i) {
-		out_sorted_sequence[i] = &sequence[i];
+		out_sorted_indices[i] = i;
 	}
-	SortArray<T *, PtrCompare> sort_array;
+	SortArray<unsigned int, Compare> sort_array;
 	sort_array.compare.sequence = sequence;
 	sort_array.compare.comparer = comparer;
-	sort_array.sort(out_sorted_sequence.data(), out_sorted_sequence.size());
+	sort_array.sort(out_sorted_indices.data(), out_sorted_indices.size());
 }
 
 VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
@@ -61,9 +61,9 @@ VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
 VoxelStream::Result VoxelStreamRegionFiles::load_voxel_block(
 		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
 	VoxelBlockRequest r{ out_buffer, origin_in_voxels, lod };
-	Vector<Result> results;
-	load_voxel_blocks(Span<VoxelBlockRequest>(&r, 1), results);
-	return results[0];
+	Result result;
+	load_voxel_blocks(Span<VoxelBlockRequest>(&r, 1), Span<Result>(&result, 1));
+	return result;
 }
 
 void VoxelStreamRegionFiles::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
@@ -71,31 +71,30 @@ void VoxelStreamRegionFiles::save_voxel_block(VoxelBufferInternal &buffer, Vecto
 	save_voxel_blocks(Span<VoxelBlockRequest>(&r, 1));
 }
 
-void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) {
+void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span<Result> out_results) {
 	VOXEL_PROFILE_SCOPE();
 
 	// In order to minimize opening/closing files, requests are grouped according to their region.
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
-	std::vector<VoxelBlockRequest *> sorted_blocks;
+	std::vector<unsigned int> sorted_block_indices;
 	BlockRequestComparator comparator;
 	comparator.self = this;
-	get_sorted_pointers(p_blocks, comparator, sorted_blocks);
+	get_sorted_indices(p_blocks, comparator, sorted_block_indices);
 
-	Vector<VoxelBlockRequest> fallback_requests;
-
-	for (unsigned int i = 0; i < sorted_blocks.size(); ++i) {
-		VoxelBlockRequest &r = *sorted_blocks[i];
+	for (unsigned int i = 0; i < sorted_block_indices.size(); ++i) {
+		const unsigned int bi = sorted_block_indices[i];
+		VoxelBlockRequest &r = p_blocks[bi];
 		const EmergeResult result = _load_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 		switch (result) {
 			case EMERGE_OK:
-				out_results.push_back(RESULT_BLOCK_FOUND);
+				out_results[bi] = RESULT_BLOCK_FOUND;
 				break;
 			case EMERGE_OK_FALLBACK:
-				out_results.push_back(RESULT_BLOCK_NOT_FOUND);
+				out_results[bi] = RESULT_BLOCK_NOT_FOUND;
 				break;
 			case EMERGE_FAILED:
-				out_results.push_back(RESULT_ERROR);
+				out_results[bi] = RESULT_ERROR;
 				break;
 			default:
 				CRASH_NOW();
@@ -108,13 +107,14 @@ void VoxelStreamRegionFiles::save_voxel_blocks(Span<VoxelBlockRequest> p_blocks)
 	VOXEL_PROFILE_SCOPE();
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
-	std::vector<VoxelBlockRequest *> sorted_blocks;
+	std::vector<unsigned int> sorted_block_indices;
 	BlockRequestComparator comparator;
 	comparator.self = this;
-	get_sorted_pointers(p_blocks, comparator, sorted_blocks);
+	get_sorted_indices(p_blocks, comparator, sorted_block_indices);
 
-	for (unsigned int i = 0; i < sorted_blocks.size(); ++i) {
-		VoxelBlockRequest &r = *sorted_blocks[i];
+	for (unsigned int i = 0; i < sorted_block_indices.size(); ++i) {
+		const unsigned int bi = sorted_block_indices[i];
+		VoxelBlockRequest &r = p_blocks[bi];
 		_save_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
 	}
 }

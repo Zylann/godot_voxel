@@ -1410,7 +1410,8 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	Ref<ArrayMesh> mesh;
 	mesh.instantiate();
 
-	Vector<Array> collidable_surfaces; //need to put both blocky and smooth surfaces into one list
+	//need to put both blocky and smooth surfaces into one list
+	std::vector<Array> collidable_surfaces;
 
 	int surface_index = 0;
 	for (int i = 0; i < ob.surfaces.surfaces.size(); ++i) {
@@ -1441,8 +1442,8 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
 	if (gen_collisions) {
-		block->set_collision_mesh(
-				collidable_surfaces, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
+		block->set_collision_mesh(to_span_const(collidable_surfaces), get_tree()->is_debugging_collisions_hint(), this,
+				_collision_margin);
 		block->set_collision_layer(_collision_layer);
 		block->set_collision_mask(_collision_mask);
 	}

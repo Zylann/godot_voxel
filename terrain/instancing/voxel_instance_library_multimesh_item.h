@@ -1,7 +1,9 @@
 #ifndef VOXEL_INSTANCE_LIBRARY_MULTIMESH_ITEM_H
 #define VOXEL_INSTANCE_LIBRARY_MULTIMESH_ITEM_H
 
+#include "../../util/span.h"
 #include "voxel_instance_library_item.h"
+
 #include <scene/resources/mesh.h>
 #include <scene/resources/shape_3d.h>
 
@@ -38,8 +40,8 @@ public:
 
 	// Internal
 
-	inline const Vector<CollisionShapeInfo> &get_collision_shapes() const {
-		return _collision_shapes;
+	inline Span<const CollisionShapeInfo> get_collision_shapes() const {
+		return to_span_const(_collision_shapes);
 	}
 
 	Array serialize_multimesh_item_properties() const;
@@ -88,7 +90,7 @@ private:
 
 	int _collision_mask = 1;
 	int _collision_layer = 1;
-	Vector<CollisionShapeInfo> _collision_shapes;
+	std::vector<CollisionShapeInfo> _collision_shapes;
 };
 
 } // namespace zylann::voxel

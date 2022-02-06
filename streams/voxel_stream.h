@@ -46,7 +46,7 @@ public:
 	virtual void save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod);
 
 	// Note: Don't modify the order of `p_blocks`.
-	virtual void load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results);
+	virtual void load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span<Result> out_results);
 
 	// Returns multiple blocks of voxels to the stream.
 	// This function is recommended if you save to files, because you can batch their access.

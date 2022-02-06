@@ -15,16 +15,6 @@ namespace zylann {
 // Takes elements starting from a given position and moves them at the beginning,
 // then shrink the array to fit them. Other elements are discarded.
 template <typename T>
-void shift_up(Vector<T> &v, unsigned int pos) {
-	unsigned int j = 0;
-	for (unsigned int i = pos; i < (unsigned int)v.size(); ++i, ++j) {
-		v.write[j] = v[i];
-	}
-	int remaining = v.size() - pos;
-	v.resize(remaining);
-}
-
-template <typename T>
 void shift_up(std::vector<T> &v, unsigned int pos) {
 	unsigned int j = 0;
 	for (unsigned int i = pos; i < v.size(); ++i, ++j) {
@@ -36,13 +26,6 @@ void shift_up(std::vector<T> &v, unsigned int pos) {
 
 // Pops the last element of the vector and place it at the given position.
 // (The element that was at this position is the one removed).
-template <typename T>
-void unordered_remove(Vector<T> &v, unsigned int pos) {
-	int last = v.size() - 1;
-	v.write[pos] = v[last];
-	v.resize(last);
-}
-
 template <typename T>
 void unordered_remove(std::vector<T> &v, unsigned int pos) {
 	v[pos] = v.back();

@@ -58,7 +58,7 @@ private:
 	// Using a Map keeps items ordered, so the last item has highest ID
 	Map<int, Ref<VoxelInstanceLibraryItem>> _items;
 
-	Vector<IListener *> _listeners;
+	std::vector<IListener *> _listeners;
 };
 
 } // namespace zylann::voxel

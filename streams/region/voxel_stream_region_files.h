@@ -28,7 +28,7 @@ public:
 	Result load_voxel_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
 	void save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
 
-	void load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) override;
+	void load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span<Result> out_results) override;
 	void save_voxel_blocks(Span<VoxelBlockRequest> p_blocks) override;
 
 	int get_used_channels_mask() const override;

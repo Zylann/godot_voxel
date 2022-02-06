@@ -72,7 +72,7 @@ private:
 		}
 	};
 
-	Vector<ListenerSlot> _listeners;
+	std::vector<ListenerSlot> _listeners;
 };
 
 } // namespace zylann::voxel

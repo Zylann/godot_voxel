@@ -308,7 +308,7 @@ void VoxelMeshBlock::set_parent_transform(const Transform3D &parent_transform) {
 }
 
 void VoxelMeshBlock::set_collision_mesh(
-		Vector<Array> surface_arrays, bool debug_collision, Node3D *node, float margin) {
+		Span<const Array> surface_arrays, bool debug_collision, Node3D *node, float margin) {
 	if (surface_arrays.size() == 0) {
 		drop_collision();
 		return;

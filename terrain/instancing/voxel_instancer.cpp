@@ -417,7 +417,8 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 
 	if (regenerate_blocks) {
 		// Create blocks
-		Vector<Vector3i> positions = _parent->get_meshed_block_positions_at_lod(layer->lod_index);
+		std::vector<Vector3i> positions;
+		_parent->get_meshed_block_positions_at_lod(layer->lod_index, positions);
 		for (int i = 0; i < positions.size(); ++i) {
 			const Vector3i pos = positions[i];
 
@@ -564,7 +565,7 @@ void VoxelInstancer::update_layer_scenes(int layer_id) {
 			SceneInstance instance = create_scene_instance(
 					*item, instance_index, block_index, prev_instance.root->get_transform(), data_block_size_po2);
 			ERR_CONTINUE(instance.root == nullptr);
-			block->scene_instances.write[instance_index] = instance;
+			block->scene_instances[instance_index] = instance;
 			// We just drop the instance without saving, because this function is supposed to occur only in editor,
 			// or in the very rare cases where library is modified in game (which would invalidate saves anyways).
 			prev_instance.root->queue_delete();
@@ -872,7 +873,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 		}
 
 		// Update bodies
-		const Vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &collision_shapes =
+		Span<const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> collision_shapes =
 				item->get_collision_shapes();
 		if (collision_shapes.size() > 0) {
 			VOXEL_PROFILE_SCOPE_NAMED("Update multimesh bodies");
@@ -887,7 +888,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 				VoxelInstancerRigidBody *body;
 
 				if (instance_index < static_cast<unsigned int>(block->bodies.size())) {
-					body = block->bodies.write[instance_index];
+					body = block->bodies[instance_index];
 
 				} else {
 					body = memnew(VoxelInstancerRigidBody);
@@ -897,7 +898,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 					body->set_data_block_position(
 							Vector3iUtil::from_floored(body_transform.origin) >> data_block_size_po2);
 
-					for (int i = 0; i < collision_shapes.size(); ++i) {
+					for (unsigned int i = 0; i < collision_shapes.size(); ++i) {
 						const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &shape_info = collision_shapes[i];
 						CollisionShape3D *cs = memnew(CollisionShape3D);
 						cs->set_shape(shape_info.shape);
@@ -938,7 +939,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			SceneInstance instance;
 
 			if (instance_index < static_cast<unsigned int>(block->bodies.size())) {
-				instance = block->scene_instances.write[instance_index];
+				instance = block->scene_instances[instance_index];
 				instance.root->set_transform(body_transform);
 
 			} else {
@@ -1261,7 +1262,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Tra
 			VoxelInstancerRigidBody *moved_rb = block.bodies[last_instance_index];
 			if (moved_rb != rb) {
 				moved_rb->set_instance_index(instance_index);
-				block.bodies.write[instance_index] = moved_rb;
+				block.bodies[instance_index] = moved_rb;
 			}
 		}
 
@@ -1299,8 +1300,8 @@ void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Tra
 
 void VoxelInstancer::remove_floating_scene_instances(Block &block, const Transform3D &parent_transform,
 		Box3i p_voxel_box, const VoxelTool &voxel_tool, int block_size_po2) {
-	const int initial_instance_count = block.scene_instances.size();
-	int instance_count = initial_instance_count;
+	const unsigned int initial_instance_count = block.scene_instances.size();
+	unsigned int instance_count = initial_instance_count;
 
 	const Transform3D block_global_transform =
 			Transform3D(parent_transform.basis, parent_transform.xform(block.grid_position << block_size_po2));
@@ -1309,7 +1310,7 @@ void VoxelInstancer::remove_floating_scene_instances(Block &block, const Transfo
 	// Note: the fact we have to query VisualServer in and out is pretty bad though.
 	// - We probably have to sync with its thread in MT mode
 	// - A hashmap RID lookup is performed to check `RID_Owner::id_map`
-	for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
+	for (unsigned int instance_index = 0; instance_index < instance_count; ++instance_index) {
 		SceneInstance instance = block.scene_instances[instance_index];
 		ERR_CONTINUE(instance.root == nullptr);
 		const Transform3D scene_transform = instance.root->get_transform();
@@ -1327,7 +1328,7 @@ void VoxelInstancer::remove_floating_scene_instances(Block &block, const Transfo
 		}
 
 		// Remove the MultiMesh instance
-		const int last_instance_index = --instance_count;
+		const unsigned int last_instance_index = --instance_count;
 
 		// TODO In the case of scene instances, we could use an overlap check or a signal.
 		// Detach so it won't try to update our instances, we already do it here
@@ -1344,7 +1345,7 @@ void VoxelInstancer::remove_floating_scene_instances(Block &block, const Transfo
 			} else {
 				moved_instance.component->set_instance_index(instance_index);
 			}
-			block.scene_instances.write[instance_index] = moved_instance;
+			block.scene_instances[instance_index] = moved_instance;
 		}
 
 		--instance_index;
@@ -1443,7 +1444,7 @@ void VoxelInstancer::on_body_removed(
 	VoxelInstancerRigidBody *moved_body = block->bodies[last_instance_index];
 	if (instance_index != last_instance_index) {
 		moved_body->set_instance_index(instance_index);
-		block->bodies.write[instance_index] = moved_body;
+		block->bodies[instance_index] = moved_body;
 	}
 	block->bodies.resize(body_count);
 
@@ -1455,7 +1456,7 @@ void VoxelInstancer::on_body_removed(
 }
 
 void VoxelInstancer::on_scene_instance_removed(
-		Vector3i data_block_position, unsigned int render_block_index, int instance_index) {
+		Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index) {
 	Block *block = _blocks[render_block_index];
 	CRASH_COND(block == nullptr);
 	ERR_FAIL_INDEX(instance_index, block->bodies.size());
@@ -1467,7 +1468,7 @@ void VoxelInstancer::on_scene_instance_removed(
 	if (instance_index != last_instance_index) {
 		ERR_FAIL_COND(moved_instance.component == nullptr);
 		moved_instance.component->set_instance_index(instance_index);
-		block->scene_instances.write[instance_index] = moved_instance;
+		block->scene_instances[instance_index] = moved_instance;
 	}
 	block->scene_instances.resize(instance_count);
 

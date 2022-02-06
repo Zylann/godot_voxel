@@ -17,12 +17,12 @@ void VoxelStream::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_
 	// Can be implemented in subclasses
 }
 
-void VoxelStream::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Vector<Result> &out_results) {
+void VoxelStream::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span<Result> out_results) {
 	// Default implementation. May matter for some stream types to optimize loading.
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		VoxelBlockRequest &r = p_blocks[i];
 		const Result res = load_voxel_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
-		out_results.push_back(res);
+		out_results[i] = res;
 	}
 }
 

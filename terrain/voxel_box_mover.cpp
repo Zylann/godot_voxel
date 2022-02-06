@@ -82,9 +82,9 @@ static float calculate_i_offset(AABB box, AABB other, float motion, int i, int j
 static Vector3 get_motion(AABB box, Vector3 motion, const std::vector<AABB> &environment_boxes) {
 	// The bounding box is expanded to include it's estimated version at next update.
 	// This also makes the algorithm tunnelling-free
-	AABB expanded_box = expand_with_vector(box, motion);
+	const AABB expanded_box = expand_with_vector(box, motion);
 
-	Vector<AABB> colliding_boxes;
+	std::vector<AABB> colliding_boxes;
 	for (size_t i = 0; i < environment_boxes.size(); ++i) {
 		const AABB &other = environment_boxes[i];
 		if (expanded_box.intersects(other)) {

@@ -1,6 +1,7 @@
 #ifndef VOXEL_UTILITY_GODOT_FUNCS_H
 #define VOXEL_UTILITY_GODOT_FUNCS_H
 
+#include "../span.h"
 #include <core/object/ref_counted.h>
 #include <core/variant/variant.h>
 #include <memory>
@@ -24,7 +25,7 @@ inline bool try_call_script(
 	return try_call_script(obj, method_name, args, 3, out_ret);
 }
 
-Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Vector<Array> surfaces);
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces);
 
 // This API can be confusing so I made a wrapper
 int get_visible_instance_count(const MultiMesh &mm);

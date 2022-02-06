@@ -152,9 +152,10 @@ void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Node *root) {
 	notify_listeners(CHANGE_VISUAL);
 }
 
-static Array serialize_collision_shape_infos(Vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> infos) {
+static Array serialize_collision_shape_infos(
+		const std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &infos) {
 	Array a;
-	for (int i = 0; i < infos.size(); ++i) {
+	for (unsigned int i = 0; i < infos.size(); ++i) {
 		const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &info = infos[i];
 		ERR_FAIL_COND_V(info.shape.is_null(), Array());
 		// TODO Shape might or might not be shared, could have odd side-effects,
@@ -165,21 +166,21 @@ static Array serialize_collision_shape_infos(Vector<VoxelInstanceLibraryMultiMes
 	return a;
 }
 
-static Vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> deserialize_collision_shape_infos(Array a) {
-	Vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> infos;
-	ERR_FAIL_COND_V(a.size() % 2 != 0, infos);
+static bool deserialize_collision_shape_infos(
+		Array a, std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &out_infos) {
+	ERR_FAIL_COND_V(a.size() % 2 != 0, false);
 
-	for (int i = 0; i < a.size(); i += 2) {
+	for (unsigned int i = 0; i < a.size(); i += 2) {
 		VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo info;
 		info.shape = a[i];
 		info.transform = a[i + 1];
 
-		ERR_FAIL_COND_V(info.shape.is_null(), Vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo>());
+		ERR_FAIL_COND_V(info.shape.is_null(), false);
 
-		infos.push_back(info);
+		out_infos.push_back(info);
 	}
 
-	return infos;
+	return false;
 }
 
 Array VoxelInstanceLibraryMultiMeshItem::serialize_multimesh_item_properties() const {
@@ -207,12 +208,14 @@ void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Ar
 	_shadow_casting_setting = RenderingServer::ShadowCastingSetting(int(a[ai++])); // ugh...
 	_collision_layer = a[ai++];
 	_collision_mask = a[ai++];
-	_collision_shapes = deserialize_collision_shape_infos(a[ai++]);
+	_collision_shapes.clear();
+	deserialize_collision_shape_infos(a[ai++], _collision_shapes);
 	notify_listeners(CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::_b_set_collision_shapes(Array shape_infos) {
-	_collision_shapes = deserialize_collision_shape_infos(shape_infos);
+	_collision_shapes.clear();
+	deserialize_collision_shape_infos(shape_infos, _collision_shapes);
 }
 
 Array VoxelInstanceLibraryMultiMeshItem::_b_get_collision_shapes() const {
