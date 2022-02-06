@@ -1,8 +1,8 @@
-#include "load_block_data_request.h"
+#include "load_block_data_task.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
-#include "block_generate_request.h"
+#include "generate_block_task.h"
 #include "voxel_server.h"
 
 namespace zylann::voxel {
@@ -11,8 +11,8 @@ namespace {
 std::atomic_int g_debug_load_block_tasks_count;
 }
 
-LoadBlockDataRequest::LoadBlockDataRequest(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
-		uint8_t p_block_size, bool p_request_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
+LoadBlockDataTask::LoadBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
+		bool p_request_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
 		PriorityDependency p_priority_dependency) :
 		_priority_dependency(p_priority_dependency),
 		_position(p_block_pos),
@@ -26,15 +26,15 @@ LoadBlockDataRequest::LoadBlockDataRequest(uint32_t p_volume_id, Vector3i p_bloc
 	++g_debug_load_block_tasks_count;
 }
 
-LoadBlockDataRequest::~LoadBlockDataRequest() {
+LoadBlockDataTask::~LoadBlockDataTask() {
 	--g_debug_load_block_tasks_count;
 }
 
-int LoadBlockDataRequest::debug_get_running_count() {
+int LoadBlockDataTask::debug_get_running_count() {
 	return g_debug_load_block_tasks_count;
 }
 
-void LoadBlockDataRequest::run(zylann::ThreadedTaskContext ctx) {
+void LoadBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(_stream_dependency == nullptr);
@@ -62,16 +62,16 @@ void LoadBlockDataRequest::run(zylann::ThreadedTaskContext ctx) {
 		Ref<VoxelGenerator> generator = _stream_dependency->generator;
 
 		if (generator.is_valid()) {
-			BlockGenerateRequest *r = memnew(BlockGenerateRequest);
-			r->voxels = _voxels;
-			r->volume_id = _volume_id;
-			r->position = _position;
-			r->lod = _lod;
-			r->block_size = _block_size;
-			r->stream_dependency = _stream_dependency;
-			r->priority_dependency = _priority_dependency;
+			GenerateBlockTask *task = memnew(GenerateBlockTask);
+			task->voxels = _voxels;
+			task->volume_id = _volume_id;
+			task->position = _position;
+			task->lod = _lod;
+			task->block_size = _block_size;
+			task->stream_dependency = _stream_dependency;
+			task->priority_dependency = _priority_dependency;
 
-			VoxelServer::get_singleton()->push_async_task(r);
+			VoxelServer::get_singleton()->push_async_task(task);
 			_fallback_on_generator = true;
 
 		} else {
@@ -105,18 +105,18 @@ void LoadBlockDataRequest::run(zylann::ThreadedTaskContext ctx) {
 	_has_run = true;
 }
 
-int LoadBlockDataRequest::get_priority() {
+int LoadBlockDataTask::get_priority() {
 	float closest_viewer_distance_sq;
 	const int p = _priority_dependency.evaluate(_lod, &closest_viewer_distance_sq);
 	_too_far = closest_viewer_distance_sq > _priority_dependency.drop_distance_squared;
 	return p;
 }
 
-bool LoadBlockDataRequest::is_cancelled() {
+bool LoadBlockDataTask::is_cancelled() {
 	return !_stream_dependency->valid || _too_far;
 }
 
-void LoadBlockDataRequest::apply_result() {
+void LoadBlockDataTask::apply_result() {
 	if (VoxelServer::get_singleton()->is_volume_valid(_volume_id)) {
 		// TODO Comparing pointer may not be guaranteed
 		// The request response must match the dependency it would have been requested with.

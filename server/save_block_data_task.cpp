@@ -1,8 +1,8 @@
-#include "save_block_data_request.h"
+#include "save_block_data_task.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
-#include "block_generate_request.h"
+#include "generate_block_task.h"
 #include "voxel_server.h"
 
 namespace zylann::voxel {
@@ -11,9 +11,8 @@ namespace {
 std::atomic_int g_debug_save_block_tasks_count;
 }
 
-SaveBlockDataRequest::SaveBlockDataRequest(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
-		uint8_t p_block_size, std::shared_ptr<VoxelBufferInternal> p_voxels,
-		std::shared_ptr<StreamingDependency> p_stream_dependency) :
+SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
+		std::shared_ptr<VoxelBufferInternal> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency) :
 		_voxels(p_voxels),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
@@ -26,9 +25,8 @@ SaveBlockDataRequest::SaveBlockDataRequest(uint32_t p_volume_id, Vector3i p_bloc
 	++g_debug_save_block_tasks_count;
 }
 
-SaveBlockDataRequest::SaveBlockDataRequest(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
-		uint8_t p_block_size, std::unique_ptr<InstanceBlockData> p_instances,
-		std::shared_ptr<StreamingDependency> p_stream_dependency) :
+SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
+		std::unique_ptr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency) :
 		_instances(std::move(p_instances)),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
@@ -41,15 +39,15 @@ SaveBlockDataRequest::SaveBlockDataRequest(uint32_t p_volume_id, Vector3i p_bloc
 	++g_debug_save_block_tasks_count;
 }
 
-SaveBlockDataRequest::~SaveBlockDataRequest() {
+SaveBlockDataTask::~SaveBlockDataTask() {
 	--g_debug_save_block_tasks_count;
 }
 
-int SaveBlockDataRequest::debug_get_running_count() {
+int SaveBlockDataTask::debug_get_running_count() {
 	return g_debug_save_block_tasks_count;
 }
 
-void SaveBlockDataRequest::run(zylann::ThreadedTaskContext ctx) {
+void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(_stream_dependency == nullptr);
@@ -90,15 +88,15 @@ void SaveBlockDataRequest::run(zylann::ThreadedTaskContext ctx) {
 	_has_run = true;
 }
 
-int SaveBlockDataRequest::get_priority() {
+int SaveBlockDataTask::get_priority() {
 	return 0;
 }
 
-bool SaveBlockDataRequest::is_cancelled() {
+bool SaveBlockDataTask::is_cancelled() {
 	return false;
 }
 
-void SaveBlockDataRequest::apply_result() {
+void SaveBlockDataTask::apply_result() {
 	if (VoxelServer::get_singleton()->is_volume_valid(_volume_id)) {
 		if (_stream_dependency->valid) {
 			VoxelServer::BlockDataOutput o;

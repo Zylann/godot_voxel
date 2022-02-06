@@ -1,5 +1,5 @@
-#ifndef VOXEL_BLOCK_MESH_REQUEST_H
-#define VOXEL_BLOCK_MESH_REQUEST_H
+#ifndef VOXEL_MESH_BLOCK_TASK_H
+#define VOXEL_MESH_BLOCK_TASK_H
 
 #include "../constants/voxel_constants.h"
 #include "../generators/voxel_generator.h"
@@ -11,7 +11,7 @@
 namespace zylann::voxel {
 
 // Asynchronous task generating a mesh from voxel blocks and their neighbors, in a particular volume
-class BlockMeshRequest : public IThreadedTask {
+class MeshBlockTask : public IThreadedTask {
 public:
 	struct MeshingDependency {
 		Ref<VoxelMesher> mesher;
@@ -19,8 +19,8 @@ public:
 		bool valid = true;
 	};
 
-	BlockMeshRequest();
-	~BlockMeshRequest();
+	MeshBlockTask();
+	~MeshBlockTask();
 
 	void run(ThreadedTaskContext ctx) override;
 	int get_priority() override;
@@ -49,4 +49,4 @@ private:
 
 } // namespace zylann::voxel
 
-#endif // VOXEL_BLOCK_MESH_REQUEST_H
+#endif // VOXEL_MESH_BLOCK_TASK_H

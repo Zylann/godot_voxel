@@ -9,7 +9,7 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
-#include "block_mesh_request.h"
+#include "mesh_block_task.h"
 #include "streaming_dependency.h"
 
 #include <memory>
@@ -227,7 +227,7 @@ private:
 		uint32_t data_block_size = 16;
 		float octree_lod_distance = 0;
 		std::shared_ptr<StreamingDependency> stream_dependency;
-		std::shared_ptr<BlockMeshRequest::MeshingDependency> meshing_dependency;
+		std::shared_ptr<MeshBlockTask::MeshingDependency> meshing_dependency;
 	};
 
 	struct World {

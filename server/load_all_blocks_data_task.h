@@ -1,5 +1,5 @@
-#ifndef ALL_BLOCKS_DATA_REQUEST_H
-#define ALL_BLOCKS_DATA_REQUEST_H
+#ifndef LOAD_ALL_BLOCKS_DATA_TASK_H
+#define LOAD_ALL_BLOCKS_DATA_TASK_H
 
 #include "../streams/voxel_stream.h"
 #include "../util/tasks/threaded_task.h"
@@ -8,7 +8,7 @@
 
 namespace zylann::voxel {
 
-class AllBlocksDataRequest : public IThreadedTask {
+class LoadAllBlocksDataTask : public IThreadedTask {
 public:
 	void run(ThreadedTaskContext ctx) override;
 	int get_priority() override;
@@ -24,4 +24,4 @@ private:
 
 } // namespace zylann::voxel
 
-#endif // ALL_BLOCKS_DATA_REQUEST_H
+#endif // LOAD_ALL_BLOCKS_DATA_TASK_H

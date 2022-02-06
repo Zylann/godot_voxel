@@ -5,10 +5,10 @@
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
-#include "all_blocks_data_request.h"
-#include "block_generate_request.h"
-#include "load_block_data_request.h"
-#include "save_block_data_request.h"
+#include "generate_block_task.h"
+#include "load_all_blocks_data_task.h"
+#include "load_block_data_task.h"
+#include "save_block_data_task.h"
 
 #include <core/config/project_settings.h>
 #include <core/os/memory.h>
@@ -101,9 +101,9 @@ VoxelServer::VoxelServer() {
 	// Init world
 	_world.shared_priority_dependency = gd_make_shared<PriorityDependency::ViewersData>();
 
-	PRINT_VERBOSE(String("Size of LoadBlockDataRequest: {0}").format(varray((int)sizeof(LoadBlockDataRequest))));
-	PRINT_VERBOSE(String("Size of SaveBlockDataRequest: {0}").format(varray((int)sizeof(SaveBlockDataRequest))));
-	PRINT_VERBOSE(String("Size of BlockMeshRequest: {0}").format(varray((int)sizeof(BlockMeshRequest))));
+	PRINT_VERBOSE(String("Size of LoadBlockDataTask: {0}").format(varray((int)sizeof(LoadBlockDataTask))));
+	PRINT_VERBOSE(String("Size of SaveBlockDataTask: {0}").format(varray((int)sizeof(SaveBlockDataTask))));
+	PRINT_VERBOSE(String("Size of MeshBlockTask: {0}").format(varray((int)sizeof(MeshBlockTask))));
 }
 
 VoxelServer::~VoxelServer() {
@@ -144,7 +144,7 @@ uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks, VolumeType type) {
 	Volume volume;
 	volume.type = type;
 	volume.callbacks = callbacks;
-	volume.meshing_dependency = gd_make_shared<BlockMeshRequest::MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<MeshBlockTask::MeshingDependency>();
 	return _world.volumes.create(volume);
 }
 
@@ -194,7 +194,7 @@ void VoxelServer::set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> g
 		volume.meshing_dependency->valid = false;
 	}
 
-	volume.meshing_dependency = gd_make_shared<BlockMeshRequest::MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<MeshBlockTask::MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -207,7 +207,7 @@ void VoxelServer::set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher)
 		volume.meshing_dependency->valid = false;
 	}
 
-	volume.meshing_dependency = gd_make_shared<BlockMeshRequest::MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<MeshBlockTask::MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -220,7 +220,7 @@ void VoxelServer::set_volume_octree_lod_distance(uint32_t volume_id, float lod_d
 void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.meshing_dependency->valid = false;
-	volume.meshing_dependency = gd_make_shared<BlockMeshRequest::MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<MeshBlockTask::MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -271,20 +271,20 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &i
 	ERR_FAIL_COND(volume.meshing_dependency->mesher.is_null());
 	ERR_FAIL_COND(volume.data_block_size > 255);
 
-	BlockMeshRequest *r = memnew(BlockMeshRequest);
-	r->volume_id = volume_id;
-	r->blocks = input.data_blocks;
-	r->blocks_count = input.data_blocks_count;
-	r->position = input.render_block_position;
-	r->lod = input.lod;
-	r->meshing_dependency = volume.meshing_dependency;
-	r->data_block_size = volume.data_block_size;
+	MeshBlockTask *task = memnew(MeshBlockTask);
+	task->volume_id = volume_id;
+	task->blocks = input.data_blocks;
+	task->blocks_count = input.data_blocks_count;
+	task->position = input.render_block_position;
+	task->lod = input.lod;
+	task->meshing_dependency = volume.meshing_dependency;
+	task->data_block_size = volume.data_block_size;
 
 	init_priority_dependency(
-			r->priority_dependency, input.render_block_position, input.lod, volume, volume.render_block_size);
+			task->priority_dependency, input.render_block_position, input.lod, volume, volume.render_block_size);
 
 	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
-	_general_thread_pool.enqueue(r);
+	_general_thread_pool.enqueue(task);
 }
 
 void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances) {
@@ -296,25 +296,25 @@ void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int
 		PriorityDependency priority_dependency;
 		init_priority_dependency(priority_dependency, block_pos, lod, volume, volume.data_block_size);
 
-		LoadBlockDataRequest *r = memnew(LoadBlockDataRequest(volume_id, block_pos, lod, volume.data_block_size,
+		LoadBlockDataTask *task = memnew(LoadBlockDataTask(volume_id, block_pos, lod, volume.data_block_size,
 				request_instances, volume.stream_dependency, priority_dependency));
 
-		_streaming_thread_pool.enqueue(r);
+		_streaming_thread_pool.enqueue(task);
 
 	} else {
 		// Directly generate the block without checking the stream
 		ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
 
-		BlockGenerateRequest *r = memnew(BlockGenerateRequest);
-		r->volume_id = volume_id;
-		r->position = block_pos;
-		r->lod = lod;
-		r->block_size = volume.data_block_size;
-		r->stream_dependency = volume.stream_dependency;
+		GenerateBlockTask *task = memnew(GenerateBlockTask);
+		task->volume_id = volume_id;
+		task->position = block_pos;
+		task->lod = lod;
+		task->block_size = volume.data_block_size;
+		task->stream_dependency = volume.stream_dependency;
 
-		init_priority_dependency(r->priority_dependency, block_pos, lod, volume, volume.data_block_size);
+		init_priority_dependency(task->priority_dependency, block_pos, lod, volume, volume.data_block_size);
 
-		_general_thread_pool.enqueue(r);
+		_general_thread_pool.enqueue(task);
 	}
 }
 
@@ -324,18 +324,18 @@ void VoxelServer::request_block_generate(
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
 
-	BlockGenerateRequest *r = memnew(BlockGenerateRequest);
-	r->volume_id = volume_id;
-	r->position = block_pos;
-	r->lod = lod;
-	r->block_size = volume.data_block_size;
-	r->stream_dependency = volume.stream_dependency;
-	r->tracker = tracker;
-	r->drop_beyond_max_distance = false;
+	GenerateBlockTask *task = memnew(GenerateBlockTask);
+	task->volume_id = volume_id;
+	task->position = block_pos;
+	task->lod = lod;
+	task->block_size = volume.data_block_size;
+	task->stream_dependency = volume.stream_dependency;
+	task->tracker = tracker;
+	task->drop_beyond_max_distance = false;
 
-	init_priority_dependency(r->priority_dependency, block_pos, lod, volume, volume.data_block_size);
+	init_priority_dependency(task->priority_dependency, block_pos, lod, volume, volume.data_block_size);
 
-	_general_thread_pool.enqueue(r);
+	_general_thread_pool.enqueue(task);
 }
 
 void VoxelServer::request_all_stream_blocks(uint32_t volume_id) {
@@ -344,11 +344,11 @@ void VoxelServer::request_all_stream_blocks(uint32_t volume_id) {
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
 
-	AllBlocksDataRequest *r = memnew(AllBlocksDataRequest);
-	r->volume_id = volume_id;
-	r->stream_dependency = volume.stream_dependency;
+	LoadAllBlocksDataTask *task = memnew(LoadAllBlocksDataTask);
+	task->volume_id = volume_id;
+	task->stream_dependency = volume.stream_dependency;
 
-	_general_thread_pool.enqueue(r);
+	_general_thread_pool.enqueue(task);
 }
 
 void VoxelServer::request_voxel_block_save(
@@ -358,12 +358,12 @@ void VoxelServer::request_voxel_block_save(
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
 
-	SaveBlockDataRequest *r = memnew(
-			SaveBlockDataRequest(volume_id, block_pos, lod, volume.data_block_size, voxels, volume.stream_dependency));
+	SaveBlockDataTask *task = memnew(
+			SaveBlockDataTask(volume_id, block_pos, lod, volume.data_block_size, voxels, volume.stream_dependency));
 
 	// No priority data, saving doesnt need sorting
 
-	_streaming_thread_pool.enqueue(r);
+	_streaming_thread_pool.enqueue(task);
 }
 
 void VoxelServer::request_instance_block_save(
@@ -372,12 +372,12 @@ void VoxelServer::request_instance_block_save(
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
 
-	SaveBlockDataRequest *r = memnew(SaveBlockDataRequest(
+	SaveBlockDataTask *task = memnew(SaveBlockDataTask(
 			volume_id, block_pos, lod, volume.data_block_size, std::move(instances), volume.stream_dependency));
 
 	// No priority data, saving doesnt need sorting
 
-	_streaming_thread_pool.enqueue(r);
+	_streaming_thread_pool.enqueue(task);
 }
 
 void VoxelServer::remove_volume(uint32_t volume_id) {
@@ -587,10 +587,9 @@ VoxelServer::Stats VoxelServer::get_stats() const {
 	Stats s;
 	s.streaming = debug_get_pool_stats(_streaming_thread_pool);
 	s.general = debug_get_pool_stats(_general_thread_pool);
-	s.generation_tasks = BlockGenerateRequest::debug_get_running_count();
-	s.meshing_tasks = BlockMeshRequest::debug_get_running_count();
-	s.streaming_tasks =
-			LoadBlockDataRequest::debug_get_running_count() + SaveBlockDataRequest::debug_get_running_count();
+	s.generation_tasks = GenerateBlockTask::debug_get_running_count();
+	s.meshing_tasks = GenerateBlockTask::debug_get_running_count();
+	s.streaming_tasks = LoadBlockDataTask::debug_get_running_count() + SaveBlockDataTask::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
 	return s;
 }

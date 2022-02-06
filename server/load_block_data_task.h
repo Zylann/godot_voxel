@@ -1,5 +1,5 @@
-#ifndef LOAD_BLOCK_DATA_REQUEST_H
-#define LOAD_BLOCK_DATA_REQUEST_H
+#ifndef LOAD_BLOCK_DATA_TASK_H
+#define LOAD_BLOCK_DATA_TASK_H
 
 #include "../util/tasks/threaded_task.h"
 #include "priority_dependency.h"
@@ -7,13 +7,13 @@
 
 namespace zylann::voxel {
 
-class LoadBlockDataRequest : public IThreadedTask {
+class LoadBlockDataTask : public IThreadedTask {
 public:
-	LoadBlockDataRequest(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
+	LoadBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 			bool p_request_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
 			PriorityDependency p_priority_dependency);
 
-	~LoadBlockDataRequest();
+	~LoadBlockDataTask();
 
 	void run(ThreadedTaskContext ctx) override;
 	int get_priority() override;
@@ -41,4 +41,4 @@ private:
 
 } // namespace zylann::voxel
 
-#endif // LOAD_BLOCK_DATA_REQUEST_H
+#endif // LOAD_BLOCK_DATA_TASK_H

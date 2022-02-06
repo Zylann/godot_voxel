@@ -1,4 +1,4 @@
-#include "block_mesh_request.h"
+#include "mesh_block_task.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "voxel_server.h"
@@ -137,19 +137,19 @@ namespace {
 std::atomic_int g_debug_mesh_tasks_count;
 } //namespace
 
-BlockMeshRequest::BlockMeshRequest() {
+MeshBlockTask::MeshBlockTask() {
 	++g_debug_mesh_tasks_count;
 }
 
-BlockMeshRequest::~BlockMeshRequest() {
+MeshBlockTask::~MeshBlockTask() {
 	--g_debug_mesh_tasks_count;
 }
 
-int BlockMeshRequest::debug_get_running_count() {
+int MeshBlockTask::debug_get_running_count() {
 	return g_debug_mesh_tasks_count;
 }
 
-void BlockMeshRequest::run(zylann::ThreadedTaskContext ctx) {
+void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 	CRASH_COND(meshing_dependency == nullptr);
 
@@ -169,18 +169,18 @@ void BlockMeshRequest::run(zylann::ThreadedTaskContext ctx) {
 	_has_run = true;
 }
 
-int BlockMeshRequest::get_priority() {
+int MeshBlockTask::get_priority() {
 	float closest_viewer_distance_sq;
 	const int p = priority_dependency.evaluate(lod, &closest_viewer_distance_sq);
 	_too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
 
-bool BlockMeshRequest::is_cancelled() {
+bool MeshBlockTask::is_cancelled() {
 	return !meshing_dependency->valid || _too_far;
 }
 
-void BlockMeshRequest::apply_result() {
+void MeshBlockTask::apply_result() {
 	if (VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.

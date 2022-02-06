@@ -1,8 +1,8 @@
-#include "block_generate_request.h"
+#include "generate_block_task.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
-#include "save_block_data_request.h"
+#include "save_block_data_task.h"
 #include "voxel_server.h"
 
 namespace zylann::voxel {
@@ -11,19 +11,19 @@ namespace {
 std::atomic_int g_debug_generate_tasks_count;
 }
 
-BlockGenerateRequest::BlockGenerateRequest() {
+GenerateBlockTask::GenerateBlockTask() {
 	++g_debug_generate_tasks_count;
 }
 
-BlockGenerateRequest::~BlockGenerateRequest() {
+GenerateBlockTask::~GenerateBlockTask() {
 	--g_debug_generate_tasks_count;
 }
 
-int BlockGenerateRequest::debug_get_running_count() {
+int GenerateBlockTask::debug_get_running_count() {
 	return g_debug_generate_tasks_count;
 }
 
-void BlockGenerateRequest::run(zylann::ThreadedTaskContext ctx) {
+void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);
@@ -57,28 +57,28 @@ void BlockGenerateRequest::run(zylann::ThreadedTaskContext ctx) {
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesnt need sorting
 
-			SaveBlockDataRequest *save_request =
-					memnew(SaveBlockDataRequest(volume_id, position, lod, block_size, voxels_copy, stream_dependency));
+			SaveBlockDataTask *save_task =
+					memnew(SaveBlockDataTask(volume_id, position, lod, block_size, voxels_copy, stream_dependency));
 
-			VoxelServer::get_singleton()->push_async_task(save_request);
+			VoxelServer::get_singleton()->push_async_task(save_task);
 		}
 	}
 
 	has_run = true;
 }
 
-int BlockGenerateRequest::get_priority() {
+int GenerateBlockTask::get_priority() {
 	float closest_viewer_distance_sq;
 	const int p = priority_dependency.evaluate(lod, &closest_viewer_distance_sq);
 	too_far = drop_beyond_max_distance && closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
 
-bool BlockGenerateRequest::is_cancelled() {
+bool GenerateBlockTask::is_cancelled() {
 	return !stream_dependency->valid || too_far; // || stream_dependency->stream->get_fallback_generator().is_null();
 }
 
-void BlockGenerateRequest::apply_result() {
+void GenerateBlockTask::apply_result() {
 	bool aborted = true;
 
 	if (VoxelServer::get_singleton()->is_volume_valid(volume_id)) {

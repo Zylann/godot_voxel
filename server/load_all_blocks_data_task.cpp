@@ -1,11 +1,11 @@
-#include "all_blocks_data_request.h"
+#include "load_all_blocks_data_task.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "voxel_server.h"
 
 namespace zylann::voxel {
 
-void AllBlocksDataRequest::run(zylann::ThreadedTaskContext ctx) {
+void LoadAllBlocksDataTask::run(zylann::ThreadedTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);
@@ -17,15 +17,15 @@ void AllBlocksDataRequest::run(zylann::ThreadedTaskContext ctx) {
 	PRINT_VERBOSE(String("Loaded {0} blocks for volume {1}").format(varray(_result.blocks.size(), volume_id)));
 }
 
-int AllBlocksDataRequest::get_priority() {
+int LoadAllBlocksDataTask::get_priority() {
 	return 0;
 }
 
-bool AllBlocksDataRequest::is_cancelled() {
+bool LoadAllBlocksDataTask::is_cancelled() {
 	return !stream_dependency->valid;
 }
 
-void AllBlocksDataRequest::apply_result() {
+void LoadAllBlocksDataTask::apply_result() {
 	if (VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
 		// TODO Comparing pointer may not be guaranteed
 		// The request response must match the dependency it would have been requested with.

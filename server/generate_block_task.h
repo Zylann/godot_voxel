@@ -1,5 +1,5 @@
-#ifndef BLOCK_GENERATE_REQUEST_H
-#define BLOCK_GENERATE_REQUEST_H
+#ifndef GENERATE_BLOCK_TASK_H
+#define GENERATE_BLOCK_TASK_H
 
 #include "../util/tasks/async_dependency_tracker.h"
 #include "../util/tasks/threaded_task.h"
@@ -8,10 +8,10 @@
 
 namespace zylann::voxel {
 
-class BlockGenerateRequest : public IThreadedTask {
+class GenerateBlockTask : public IThreadedTask {
 public:
-	BlockGenerateRequest();
-	~BlockGenerateRequest();
+	GenerateBlockTask();
+	~GenerateBlockTask();
 
 	void run(ThreadedTaskContext ctx) override;
 	int get_priority() override;
@@ -36,4 +36,4 @@ public:
 
 } // namespace zylann::voxel
 
-#endif // BLOCK_GENERATE_REQUEST_H
+#endif // GENERATE_BLOCK_TASK_H
