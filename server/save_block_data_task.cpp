@@ -99,9 +99,8 @@ bool SaveBlockDataTask::is_cancelled() {
 void SaveBlockDataTask::apply_result() {
 	if (VoxelServer::get_singleton()->is_volume_valid(_volume_id)) {
 		if (_stream_dependency->valid) {
+			// TODO Perhaps separate save and load callbacks?
 			VoxelServer::BlockDataOutput o;
-			o.voxels = _voxels;
-			o.instances = std::move(_instances);
 			o.position = _position;
 			o.lod = _lod;
 			o.dropped = !_has_run;
