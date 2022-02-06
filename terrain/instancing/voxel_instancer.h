@@ -176,7 +176,7 @@ private:
 		float exit_distance_squared;
 	};
 
-	struct Lod {
+	struct Lod : public NonCopyable {
 		std::vector<int> layers;
 
 		// Blocks that have have unsaved changes.
@@ -191,10 +191,6 @@ private:
 		std::unordered_map<Vector3i, std::unique_ptr<InstanceBlockData>> loaded_instances_data;
 
 		FixedArray<MeshLodDistances, VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS> mesh_lod_distances;
-
-		Lod() = default;
-		Lod(const Lod &) = delete; // non construction-copyable
-		Lod &operator=(const Lod &) = delete; // non copyable
 	};
 
 	UpMode _up_mode = UP_MODE_POSITIVE_Y;
