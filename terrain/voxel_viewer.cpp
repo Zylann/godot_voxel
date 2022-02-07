@@ -111,6 +111,11 @@ void VoxelViewer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_requires_collisions", "enabled"), &VoxelViewer::set_requires_collisions);
 	ClassDB::bind_method(D_METHOD("is_requiring_collisions"), &VoxelViewer::is_requiring_collisions);
 
+	ClassDB::bind_method(D_METHOD("set_requires_data_block_notifications", "enabled"),
+			&VoxelViewer::set_requires_data_block_notifications);
+	ClassDB::bind_method(
+			D_METHOD("is_requiring_data_block_notifications"), &VoxelViewer::is_requiring_data_block_notifications);
+
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "requires_visuals"), "set_requires_visuals", "is_requiring_visuals");
 	ADD_PROPERTY(
