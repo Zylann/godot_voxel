@@ -60,7 +60,7 @@ Thanks for your support :)
 ```
 wacyym
 Sergey Lapin (slapin)
-Jonas (NoFr1ends)
+Lynx (NoFr1ends)
 lenis0012
 Phyronnaz
 RonanZe
@@ -74,6 +74,7 @@ MrGreaterThan
 baals
 Treer
 stackdump.eth
+Snowminx (Gamerfiend)
 Skyquakers
 MadMartian
 ```
