@@ -13,7 +13,6 @@
 #include <limits>
 
 namespace zylann::voxel {
-
 namespace BlockSerializer {
 
 const uint8_t BLOCK_FORMAT_VERSION = 2;
@@ -432,26 +431,26 @@ bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelB
 	return decompress_and_deserialize(to_span_const(compressed_data), out_voxel_buffer);
 }
 
-int serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress) {
+int serialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, bool compress) {
 	if (compress) {
 		SerializeResult res = serialize_and_compress(voxel_buffer);
 		ERR_FAIL_COND_V(!res.success, -1);
-		peer->put_data(res.data.data(), res.data.size());
+		peer.put_data(res.data.data(), res.data.size());
 		return res.data.size();
 
 	} else {
 		SerializeResult res = serialize(voxel_buffer);
 		ERR_FAIL_COND_V(!res.success, -1);
-		peer->put_data(res.data.data(), res.data.size());
+		peer.put_data(res.data.data(), res.data.size());
 		return res.data.size();
 	}
 }
 
-void deserialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress) {
+void deserialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress) {
 	if (decompress) {
 		std::vector<uint8_t> &compressed_data = tls_compressed_data;
 		compressed_data.resize(size);
-		const Error err = peer->get_data(compressed_data.data(), compressed_data.size());
+		const Error err = peer.get_data(compressed_data.data(), compressed_data.size());
 		ERR_FAIL_COND(err != OK);
 		bool success = decompress_and_deserialize(to_span_const(compressed_data), voxel_buffer);
 		ERR_FAIL_COND(!success);
@@ -459,33 +458,11 @@ void deserialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int si
 	} else {
 		std::vector<uint8_t> &data = tls_data;
 		data.resize(size);
-		const Error err = peer->get_data(data.data(), data.size());
+		const Error err = peer.get_data(data.data(), data.size());
 		ERR_FAIL_COND(err != OK);
 		deserialize(to_span_const(data), voxel_buffer);
 	}
 }
 
 } // namespace BlockSerializer
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int VoxelBlockSerializer::serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress) {
-	ERR_FAIL_COND_V(voxel_buffer.is_null(), 0);
-	ERR_FAIL_COND_V(peer.is_null(), 0);
-	return BlockSerializer::serialize(peer, voxel_buffer->get_buffer(), compress);
-}
-
-void VoxelBlockSerializer::deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress) {
-	ERR_FAIL_COND(voxel_buffer.is_null());
-	ERR_FAIL_COND(peer.is_null());
-	ERR_FAIL_COND(size <= 0);
-	BlockSerializer::deserialize(peer, voxel_buffer->get_buffer(), size, decompress);
-}
-
-void VoxelBlockSerializer::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("serialize", "peer", "voxel_buffer", "compress"), &VoxelBlockSerializer::serialize);
-	ClassDB::bind_method(
-			D_METHOD("deserialize", "peer", "voxel_buffer", "size", "decompress"), &VoxelBlockSerializer::deserialize);
-}
-
 } // namespace zylann::voxel

@@ -4,7 +4,6 @@
 #include "../util/span.h"
 
 #include <core/io/file_access_memory.h>
-#include <core/object/ref_counted.h>
 #include <vector>
 
 class StreamPeer;
@@ -31,24 +30,10 @@ SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer);
 bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
 bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
 
-int serialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, bool compress);
-void deserialize(Ref<StreamPeer> peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress);
+int serialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, bool compress);
+void deserialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress);
 
 } // namespace BlockSerializer
-
-class VoxelBuffer;
-
-// Godot-facing API for BlockSerializer
-class VoxelBlockSerializer : public RefCounted {
-	GDCLASS(VoxelBlockSerializer, RefCounted)
-public:
-	int serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress);
-	void deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress);
-
-private:
-	static void _bind_methods();
-};
-
 } // namespace zylann::voxel
 
 #endif // VOXEL_BLOCK_SERIALIZER_H
