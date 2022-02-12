@@ -1,7 +1,6 @@
 #ifndef LOD_OCTREE_H
 #define LOD_OCTREE_H
 
-#include "../constants/voxel_constants.h"
 #include "../util/math/box3i.h"
 
 namespace zylann::voxel {
@@ -51,44 +50,16 @@ public:
 		join_all_recursively(&_root, Vector3i(), _max_depth, destroy_action);
 		_is_root_created = false;
 		_max_depth = 0;
-		_base_size = 0;
-	}
-
-	static int compute_lod_count(int base_size, int full_size) {
-		int po = 0;
-		while (full_size > base_size) {
-			full_size = full_size >> 1;
-			po += 1;
-		}
-		return po;
 	}
 
 	template <typename DestroyAction_T>
-	void create_from_lod_count(int base_size, unsigned int lod_count, DestroyAction_T &destroy_action) {
-		ERR_FAIL_COND(lod_count > constants::MAX_LOD);
+	void create(unsigned int lod_count, DestroyAction_T &destroy_action) {
 		clear(destroy_action);
-		_base_size = base_size;
 		_max_depth = lod_count - 1;
 	}
 
 	unsigned int get_lod_count() const {
 		return _max_depth + 1;
-	}
-
-	// The higher, the longer LODs will spread and higher the quality.
-	// The lower, the shorter LODs will spread and lower the quality.
-	void set_lod_distance(float p_lod_distance) {
-		// Distance must be greater than a threshold,
-		// otherwise lods will decimate too fast and it will look messy
-		_lod_distance = math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
-	}
-
-	float get_lod_distance() const {
-		return _lod_distance;
-	}
-
-	static inline int get_lod_factor(int lod) {
-		return 1 << lod;
 	}
 
 	// Signature examples
@@ -100,7 +71,7 @@ public:
 		bool can_create_root(int lod) {
 			return true;
 		}
-		bool can_split(Vector3i node_pos, int child_lod_index, NodeData &data) {
+		bool can_split(Vector3i node_pos, int lod_index, NodeData &data) {
 			return true;
 		}
 		bool can_join(Vector3i node_pos, int lod) {
@@ -108,17 +79,17 @@ public:
 		}
 	};
 
-	// TODO Have a version of `update` that works recursively
+	// TODO Have a version of `update` that works fully recursively.
+	// i.e one call should be enough to obtain the target shape
 
-	// Fits the octree around a viewer position by splitting nodes
-	// if they are closer than `_lod_distance*(2^lod_index)` and also fulfill some custom conditions.
-	// Nodes may be subdivided if conditions are met, or unsubdivided if they aren't.
+	// Fits the octree by splitting nodes if they satisfy the `can_split` predicate,
+	// and joining nodes if they satisfy the `can_join` predicate.
 	// This is not fully recursive. It is expected to be called over several frames,
 	// so the shape is obtained progressively.
 	template <typename UpdateActions_T>
-	void update(Vector3 view_pos, UpdateActions_T &actions) {
+	void update(UpdateActions_T &actions) {
 		if (_is_root_created || _root.has_children()) {
-			update(ROOT_INDEX, Vector3i(), _max_depth, view_pos, actions);
+			update(ROOT_INDEX, Vector3i(), _max_depth, actions);
 		} else {
 			// TODO I don't like this much
 			// Treat the root in a slightly different way the first time.
@@ -130,7 +101,9 @@ public:
 	}
 
 	static inline Vector3i get_child_position(Vector3i parent_position, int i) {
-		return Vector3i(parent_position.x * 2 + (i & 1), parent_position.y * 2 + ((i >> 1) & 1),
+		return Vector3i( //
+				parent_position.x * 2 + (i & 1), //
+				parent_position.y * 2 + ((i >> 1) & 1), //
 				parent_position.z * 2 + ((i >> 2) & 1));
 	}
 
@@ -201,6 +174,25 @@ public:
 		return Box3i(pos_within_lod << lod_index, Vector3iUtil::create(1 << lod_index));
 	}
 
+	// Convenience for use in UpdateActions::can_split.
+	// Coordinates are in octree space (where 1 unit = size of a leaf node)
+	static bool is_below_split_distance(Vector3i node_pos, int lod, Vector3 view_pos, float lod_distance) {
+		const int lod_factor = 1 << lod;
+		const Vector3 world_center = static_cast<real_t>(lod_factor) * (Vector3(node_pos) + Vector3(0.5, 0.5, 0.5));
+		const float split_distance_sq = math::squared(lod_distance * lod_factor);
+		return world_center.distance_squared_to(view_pos) < split_distance_sq;
+	}
+
+	// Helper for creating an octree with the right depth
+	static int compute_lod_count(int base_size, int full_size) {
+		int po = 0;
+		while (full_size > base_size) {
+			full_size = full_size >> 1;
+			po += 1;
+		}
+		return po;
+	}
+
 private:
 	// This pool treats nodes as packs of 8 so they can be addressed by only knowing the first child
 	class NodePool {
@@ -266,19 +258,13 @@ private:
 	}
 
 	template <typename UpdateActions_T>
-	void update(unsigned int node_index, Vector3i node_pos, int lod, Vector3 view_pos, UpdateActions_T &actions) {
+	void update(unsigned int node_index, Vector3i node_pos, int lod, UpdateActions_T &actions) {
 		// This function should be called regularly over frames.
-
-		const int lod_factor = get_lod_factor(lod);
-		const int chunk_size = _base_size * lod_factor;
-		const Vector3 world_center = static_cast<real_t>(chunk_size) * (Vector3(node_pos) + Vector3(0.5, 0.5, 0.5));
-		const float split_distance_sq = math::squared(_lod_distance * lod_factor);
 		Node *node = get_node(node_index);
 
 		if (!node->has_children()) {
 			// If it's not the last LOD, if close enough and custom conditions get fulfilled
-			if (lod > 0 && world_center.distance_squared_to(view_pos) < split_distance_sq &&
-					actions.can_split(node_pos, lod - 1, node->data)) {
+			if (lod > 0 && actions.can_split(node_pos, lod, node->data)) {
 				// Split
 				const unsigned int first_child = _pool.allocate_children();
 				// Get node again because `allocate_children` may invalidate the pointer
@@ -302,15 +288,14 @@ private:
 
 			for (unsigned int i = 0; i < 8; ++i) {
 				const unsigned int child_index = first_child + i;
-				update(child_index, get_child_position(node_pos, i), lod - 1, view_pos, actions);
+				update(child_index, get_child_position(node_pos, i), lod - 1, actions);
 				has_split_child |= _pool.get_node(child_index)->has_children();
 			}
 
 			// Get node again because `update` may invalidate the pointer
 			node = get_node(node_index);
 
-			if (!has_split_child && world_center.distance_squared_to(view_pos) > split_distance_sq &&
-					actions.can_join(node_pos, lod)) {
+			if (!has_split_child && actions.can_join(node_pos, lod)) {
 				// Join
 				if (node->has_children()) {
 					for (unsigned int i = 0; i < 8; ++i) {
@@ -454,8 +439,6 @@ private:
 	Node _root;
 	bool _is_root_created = false;
 	int _max_depth = 0;
-	float _base_size = 16;
-	float _lod_distance = 32.0;
 	// TODO May be worth making this pool external for sharing purpose
 	NodePool _pool;
 };

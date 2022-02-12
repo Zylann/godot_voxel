@@ -427,7 +427,7 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	LodOctree::NoDestroyAction nda;
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 		OctreeItem &item = E->value();
-		item.octree.create_from_lod_count(get_mesh_block_size(), _lod_count, nda);
+		item.octree.create(_lod_count, nda);
 	}
 
 	VoxelServer::get_singleton()->set_volume_render_block_size(_volume_id, mesh_block_size);
@@ -815,17 +815,9 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 	if (p_lod_distance == _lod_distance) {
 		return;
 	}
-
+	// Distance must be greater than a threshold,
+	// otherwise lods will decimate too fast and it will look messy
 	_lod_distance = math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
-
-	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
-		OctreeItem &item = E->value();
-		item.octree.set_lod_distance(_lod_distance);
-
-		// Because `set_lod_distance` may clamp it...
-		_lod_distance = item.octree.get_lod_distance();
-	}
-
 	VoxelServer::get_singleton()->set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 }
 
@@ -852,7 +844,7 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 		OctreeItem &item = E->value();
-		item.octree.create_from_lod_count(get_mesh_block_size(), p_lod_count, nda);
+		item.octree.create(p_lod_count, nda);
 	}
 
 	// Not entirely required, but changing LOD count at runtime is rarely needed
@@ -1592,7 +1584,6 @@ void VoxelLodTerrain::process_octrees_sliding_box(Vector3 p_viewer_pos) {
 
 		struct EnterAction {
 			VoxelLodTerrain *self;
-			int block_size;
 			void operator()(const Vector3i &pos) {
 				// That's a new cell we are entering, shouldn't be anything there
 				CRASH_COND(self->_lod_octrees.has(pos));
@@ -1603,18 +1594,12 @@ void VoxelLodTerrain::process_octrees_sliding_box(Vector3 p_viewer_pos) {
 				CRASH_COND(E == nullptr);
 				OctreeItem &item = E->value();
 				LodOctree::NoDestroyAction nda;
-				item.octree.create_from_lod_count(block_size, self->get_lod_count(), nda);
-				item.octree.set_lod_distance(self->get_lod_distance());
+				item.octree.create(self->get_lod_count(), nda);
 			}
 		};
 
-		ExitAction exit_action;
-		exit_action.self = this;
-
-		EnterAction enter_action;
-		enter_action.self = this;
-		enter_action.block_size = get_mesh_block_size();
-
+		ExitAction exit_action{ this };
+		EnterAction enter_action{ this };
 		{
 			VOXEL_PROFILE_SCOPE_NAMED("Unload octrees");
 			prev_box.difference(
@@ -1636,13 +1621,12 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 	static thread_local std::vector<VoxelMeshBlock *> blocks_pending_transition_update;
 	CRASH_COND(!blocks_pending_transition_update.empty());
 
+	const int octree_leaf_node_size = get_mesh_block_size();
+	const float lod_distance_octree_space = _lod_distance / octree_leaf_node_size;
+
 	// TODO Maintain a vector to make iteration faster?
 	for (Map<Vector3i, OctreeItem>::Element *E = _lod_octrees.front(); E; E = E->next()) {
 		VOXEL_PROFILE_SCOPE();
-
-		OctreeItem &item = E->value();
-		Vector3i block_pos_maxlod = E->key();
-		Vector3i block_offset_lod0 = block_pos_maxlod << (get_lod_count() - 1);
 
 		struct OctreeActions {
 			VoxelLodTerrain *self = nullptr;
@@ -1650,6 +1634,8 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 			Vector3i block_offset_lod0;
 			unsigned int blocked_count = 0;
 			std::vector<VoxelMeshBlock *> &blocks_pending_transition_update;
+			float lod_distance_octree_space;
+			Vector3 viewer_pos_octree_space;
 
 			void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
 				Lod &lod = self->_lods[lod_index];
@@ -1701,8 +1687,13 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 				return self->check_block_loaded_and_meshed(offset, lod_index, data_blocks_to_load);
 			}
 
-			bool can_split(Vector3i node_pos, int child_lod_index, LodOctree::NodeData &data) {
+			bool can_split(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
 				VOXEL_PROFILE_SCOPE();
+				if (!LodOctree::is_below_split_distance(
+							node_pos, lod_index, viewer_pos_octree_space, lod_distance_octree_space)) {
+					return false;
+				}
+				const int child_lod_index = lod_index - 1;
 				Vector3i offset = block_offset_lod0 >> child_lod_index;
 				bool can = true;
 
@@ -1735,6 +1726,10 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 
 			bool can_join(Vector3i node_pos, int parent_lod_index) {
 				VOXEL_PROFILE_SCOPE();
+				if (LodOctree::is_below_split_distance(
+							node_pos, parent_lod_index, viewer_pos_octree_space, lod_distance_octree_space)) {
+					return false;
+				}
 				// Can only unsubdivide if the parent mesh is ready
 				Lod &lod = self->_lods[parent_lod_index];
 
@@ -1759,10 +1754,21 @@ void VoxelLodTerrain::process_octrees_fitting(Vector3 p_viewer_pos, std::vector<
 			}
 		};
 
-		OctreeActions octree_actions{ this, data_blocks_to_load, block_offset_lod0, 0,
-			blocks_pending_transition_update };
-		Vector3 relative_viewer_pos = p_viewer_pos - Vector3(int(get_mesh_block_size()) * block_offset_lod0);
-		item.octree.update(relative_viewer_pos, octree_actions);
+		const Vector3i block_pos_maxlod = E->key();
+		const Vector3i block_offset_lod0 = block_pos_maxlod << (get_lod_count() - 1);
+		const Vector3 relative_viewer_pos = p_viewer_pos - Vector3(int(get_mesh_block_size()) * block_offset_lod0);
+
+		OctreeActions octree_actions{ //
+			this, //
+			data_blocks_to_load, //
+			block_offset_lod0, //
+			0, //
+			blocks_pending_transition_update, //
+			lod_distance_octree_space, //
+			relative_viewer_pos / octree_leaf_node_size
+		};
+		OctreeItem &item = E->value();
+		item.octree.update(octree_actions);
 
 		// Ideally, this stat should stabilize to zero.
 		// If not, something in block management prevents LODs from properly show up and should be fixed.

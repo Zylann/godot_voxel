@@ -10,10 +10,10 @@
 namespace zylann::voxel::tests {
 
 void test_octree_update() {
-	const float lod_distance = 80;
+	static const float lod_distance = 80;
 	const float view_distance = 1024;
-	const int lod_count = 6;
-	const int block_size = 16;
+	static const int lod_count = 6;
+	static const int block_size = 16;
 	const Vector3 block_size_v(block_size, block_size, block_size);
 	Vector3 viewer_pos = Vector3(100, 50, 200);
 	const int octree_size = block_size << (lod_count - 1);
@@ -23,17 +23,18 @@ void test_octree_update() {
 	const Box3i viewer_box_voxels =
 			Box3i::from_center_extents(Vector3iUtil::from_floored(viewer_pos), Vector3iUtil::create(view_distance));
 	const Box3i viewer_box_octrees = viewer_box_voxels.downscaled(octree_size);
-	viewer_box_octrees.for_each_cell([&octrees, lod_distance, block_size, lod_count](Vector3i pos) {
+	viewer_box_octrees.for_each_cell([&octrees](Vector3i pos) {
 		Map<Vector3i, LodOctree>::Element *e = octrees.insert(pos, LodOctree());
 		LodOctree &octree = e->value();
 		LodOctree::NoDestroyAction nda;
-		octree.create_from_lod_count(block_size, lod_count, nda);
-		octree.set_lod_distance(lod_distance);
+		octree.create(lod_count, nda);
 	});
 
 	struct OctreeActions {
 		int created_count = 0;
 		int destroyed_count = 0;
+		Vector3 viewer_pos_octree_space;
+		float lod_distance_octree_space;
 
 		void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
 			++created_count;
@@ -51,12 +52,14 @@ void test_octree_update() {
 			return true;
 		}
 
-		bool can_split(Vector3i node_pos, int child_lod_index, LodOctree::NodeData &data) {
-			return true;
+		bool can_split(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
+			return LodOctree::is_below_split_distance(
+					node_pos, lod_index, viewer_pos_octree_space, lod_distance_octree_space);
 		}
 
 		bool can_join(Vector3i node_pos, int parent_lod_index) {
-			return true;
+			return !LodOctree::is_below_split_distance(
+					node_pos, parent_lod_index, viewer_pos_octree_space, lod_distance_octree_space);
 		}
 	};
 
@@ -74,7 +77,10 @@ void test_octree_update() {
 			const Vector3 relative_viewer_pos = viewer_pos - block_size_v * Vector3(block_offset_lod0);
 
 			OctreeActions actions;
-			octree.update(relative_viewer_pos, actions);
+			actions.viewer_pos_octree_space = viewer_pos / block_size;
+			actions.lod_distance_octree_space = lod_distance / block_size;
+			octree.update(actions);
+
 			initial_block_count += actions.created_count;
 			ERR_FAIL_COND(actions.destroyed_count != 0);
 		}
@@ -107,7 +113,10 @@ void test_octree_update() {
 			const Vector3 relative_viewer_pos = viewer_pos - block_size_v * Vector3(block_offset_lod0);
 
 			OctreeActions actions;
-			octree.update(relative_viewer_pos, actions);
+			actions.viewer_pos_octree_space = viewer_pos / block_size;
+			actions.lod_distance_octree_space = lod_distance / block_size;
+			octree.update(actions);
+
 			created_block_count += actions.created_count;
 			destroyed_block_count += actions.destroyed_count;
 		}
@@ -157,7 +166,7 @@ void test_octree_find_in_box() {
 	// Build a fully populated octree with all its leaves at LOD0
 	LodOctree octree;
 	LodOctree::NoDestroyAction nda;
-	octree.create_from_lod_count(block_size, lods, nda);
+	octree.create(lods, nda);
 	struct SubdivideActions {
 		bool can_split(Vector3i node_pos, int lod_index, const LodOctree::NodeData &node_data) {
 			return true;
