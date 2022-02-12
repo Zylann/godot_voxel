@@ -5,38 +5,37 @@
 
 namespace zylann::voxel {
 
-VoxelStream::Result VoxelStreamScript::load_voxel_block(
-		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data) {
 	Variant output;
 	// Create a temporary wrapper so Godot can pass it to scripts
 	Ref<VoxelBuffer> buffer_wrapper;
 	buffer_wrapper.instantiate();
-	buffer_wrapper->get_buffer().copy_format(out_buffer);
-	buffer_wrapper->get_buffer().create(out_buffer.get_size());
+	buffer_wrapper->get_buffer().copy_format(query_data.voxel_buffer);
+	buffer_wrapper->get_buffer().create(query_data.voxel_buffer.get_size());
+
+	query_data.result = RESULT_ERROR;
 
 	int res;
-	if (GDVIRTUAL_CALL(_load_voxel_block, buffer_wrapper, origin_in_voxels, lod, res)) {
+	if (GDVIRTUAL_CALL(_load_voxel_block, buffer_wrapper, query_data.origin_in_voxels, query_data.lod, res)) {
 		// Check if the return enum is valid
-		ERR_FAIL_INDEX_V(res, _RESULT_COUNT, RESULT_ERROR);
+		ERR_FAIL_INDEX(res, _RESULT_COUNT);
 		// If the block was found, grab its data from the script-facing object to our internal buffer
 		if (res == RESULT_BLOCK_FOUND) {
-			buffer_wrapper->get_buffer().move_to(out_buffer);
+			buffer_wrapper->get_buffer().move_to(query_data.voxel_buffer);
 		}
-		return Result(res);
+		query_data.result = ResultCode(res);
 	} else {
 		// The function wasn't found or failed?
-		WARN_PRINT_ONCE("VoxelStreamScript::_emerge_block is unimplemented!");
+		WARN_PRINT_ONCE("VoxelStreamScript::_load_voxel_block is unimplemented!");
 	}
-
-	return RESULT_ERROR;
 }
 
-void VoxelStreamScript::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamScript::save_voxel_block(VoxelStream::VoxelQueryData &query_data) {
 	Ref<VoxelBuffer> buffer_wrapper;
 	buffer_wrapper.instantiate();
-	buffer.duplicate_to(buffer_wrapper->get_buffer(), true);
-	if (!GDVIRTUAL_CALL(_save_voxel_block, buffer_wrapper, origin_in_voxels, lod)) {
-		WARN_PRINT_ONCE("VoxelStreamScript::_immerge_block is unimplemented!");
+	query_data.voxel_buffer.duplicate_to(buffer_wrapper->get_buffer(), true);
+	if (!GDVIRTUAL_CALL(_save_voxel_block, buffer_wrapper, query_data.origin_in_voxels, query_data.lod)) {
+		WARN_PRINT_ONCE("VoxelStreamScript::_save_voxel_block is unimplemented!");
 	}
 }
 

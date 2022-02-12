@@ -1,4 +1,5 @@
 #include "voxel_graph_node_db.h"
+#include "../../constants/voxel_constants.h"
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite.h"
 #include "../../util/noise/fast_noise_lite_range.h"

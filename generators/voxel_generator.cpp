@@ -6,7 +6,7 @@ namespace zylann::voxel {
 
 VoxelGenerator::VoxelGenerator() {}
 
-VoxelGenerator::Result VoxelGenerator::generate_block(VoxelBlockRequest &input) {
+VoxelGenerator::Result VoxelGenerator::generate_block(VoxelQueryData &input) {
 	return Result();
 }
 
@@ -18,8 +18,8 @@ VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int chan
 	// Default slow implementation
 	VoxelBufferInternal buffer;
 	buffer.create(1, 1, 1);
-	VoxelBlockRequest r{ buffer, pos, 0 };
-	generate_block(r);
+	VoxelQueryData q{ buffer, pos, 0 };
+	generate_block(q);
 	VoxelSingleValue v;
 	if (channel == VoxelBufferInternal::CHANNEL_SDF) {
 		v.f = buffer.get_voxel_f(0, 0, 0, channel);
@@ -32,8 +32,8 @@ VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int chan
 void VoxelGenerator::_b_generate_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	ERR_FAIL_COND(out_buffer.is_null());
-	VoxelBlockRequest r = { out_buffer->get_buffer(), Vector3iUtil::from_floored(origin_in_voxels), lod };
-	generate_block(r);
+	VoxelQueryData q = { out_buffer->get_buffer(), origin_in_voxels, lod };
+	generate_block(q);
 }
 
 void VoxelGenerator::_bind_methods() {

@@ -16,7 +16,7 @@ namespace zylann::voxel {
 
 namespace BlockSerializer {
 
-const uint8_t BLOCK_VERSION = 2;
+const uint8_t BLOCK_FORMAT_VERSION = 2;
 const unsigned int BLOCK_TRAILING_MAGIC = 0x900df00d;
 const unsigned int BLOCK_TRAILING_MAGIC_SIZE = 4;
 const unsigned int BLOCK_METADATA_HEADER_SIZE = sizeof(uint32_t);
@@ -209,7 +209,7 @@ SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
 	FileAccessMemory *f = &file_access_memory;
 	ERR_FAIL_COND_V(f->open_custom(dst_data.data(), dst_data.size()) != OK, SerializeResult(dst_data, false));
 
-	f->store_8(BLOCK_VERSION);
+	f->store_8(BLOCK_FORMAT_VERSION);
 
 	ERR_FAIL_COND_V(
 			voxel_buffer.get_size().x > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false));
@@ -294,8 +294,8 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 	FileAccessMemory *f = &file_access_memory;
 	ERR_FAIL_COND_V(f->open_custom(p_data.data(), p_data.size()) != OK, false);
 
-	const uint8_t version = f->get_8();
-	if (version < 2) {
+	const uint8_t format_version = f->get_8();
+	if (format_version < 2) {
 		// In version 1, the first thing coming in block data is the compression value of the first channel.
 		// At the time, there was only 2 values this could take: 0 and 1.
 		// So we can recognize blocks using this old format and seek back.
@@ -305,10 +305,10 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 		// So we are kinda set to migrate without much changes, by assuming the block is already formatted properly.
 		f->seek(f->get_position() - 1);
 
-		WARN_PRINT("Reading block version < 2. Attempting to migrate.");
+		WARN_PRINT("Reading block format_version < 2. Attempting to migrate.");
 
 	} else {
-		ERR_FAIL_COND_V(version != BLOCK_VERSION, false);
+		ERR_FAIL_COND_V(format_version != BLOCK_FORMAT_VERSION, false);
 
 		const unsigned int size_x = f->get_16();
 		const unsigned int size_y = f->get_16();

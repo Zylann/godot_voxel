@@ -51,7 +51,7 @@ float VoxelGeneratorFlat::get_height() const {
 	return _parameters.height;
 }
 
-VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelBlockRequest &input) {
+VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQueryData &input) {
 	Result result;
 
 	Parameters params;

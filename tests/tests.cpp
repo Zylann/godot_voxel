@@ -4,6 +4,7 @@
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../meshers/blocky/voxel_blocky_library.h"
 #include "../storage/voxel_data_map.h"
+#include "../streams/instance_data.h"
 #include "../streams/region/region_file.h"
 #include "../streams/voxel_block_serializer.h"
 #include "../util/godot/funcs.h"
@@ -489,8 +490,8 @@ void test_voxel_graph_generator_texturing() {
 					VoxelBufferInternal buffer;
 					buffer.create(Vector3i(16, 16, 16));
 
-					VoxelBlockRequest request{ buffer, -buffer.get_size() / 2, 0 };
-					generator->generate_block(request);
+					VoxelGenerator::VoxelQueryData query{ buffer, -buffer.get_size() / 2, 0 };
+					generator->generate_block(query);
 
 					L::check_weights(buffer, Vector3i(4, 3, 8), true, false);
 					L::check_weights(buffer, Vector3i(12, 11, 8), false, true);
@@ -503,16 +504,16 @@ void test_voxel_graph_generator_texturing() {
 					VoxelBufferInternal buffer0;
 					{
 						buffer0.create(Vector3i(16, 16, 16));
-						VoxelBlockRequest request{ buffer0, Vector3i(0, -16, 0), 0 };
-						generator->generate_block(request);
+						VoxelGenerator::VoxelQueryData query{ buffer0, Vector3i(0, -16, 0), 0 };
+						generator->generate_block(query);
 					}
 
 					// Above 0
 					VoxelBufferInternal buffer1;
 					{
 						buffer1.create(Vector3i(16, 16, 16));
-						VoxelBlockRequest request{ buffer1, Vector3i(0, 0, 0), 0 };
-						generator->generate_block(request);
+						VoxelGenerator::VoxelQueryData query{ buffer1, Vector3i(0, 0, 0), 0 };
+						generator->generate_block(query);
 					}
 
 					L::check_weights(buffer0, Vector3i(8, 8, 8), true, false);

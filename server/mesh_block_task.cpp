@@ -120,8 +120,8 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 			generated_voxels.create(box.size);
 			//generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
 			//VoxelBufferInternal::CHANNEL_SDF);
-			VoxelBlockRequest r{ generated_voxels, (box.pos << lod_index) + origin_in_voxels, lod_index };
-			generator->generate_block(r);
+			VoxelGenerator::VoxelQueryData q{ generated_voxels, (box.pos << lod_index) + origin_in_voxels, lod_index };
+			generator->generate_block(q);
 
 			for (unsigned int ci = 0; ci < channels_count; ++ci) {
 				dst.copy_from(generated_voxels, Vector3i(), generated_voxels.get_size(),

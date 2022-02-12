@@ -89,7 +89,7 @@ public:
 	bool end_transaction();
 
 	bool save_block(BlockLocation loc, const std::vector<uint8_t> &block_data, BlockType type);
-	VoxelStream::Result load_block(BlockLocation loc, std::vector<uint8_t> &out_block_data, BlockType type);
+	VoxelStream::ResultCode load_block(BlockLocation loc, std::vector<uint8_t> &out_block_data, BlockType type);
 
 	bool load_all_blocks(void *callback_data,
 			void (*process_block_func)(void *callback_data, BlockLocation location, Span<const uint8_t> voxel_data,
@@ -340,7 +340,7 @@ bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, const std::vector<
 	return true;
 }
 
-VoxelStream::Result VoxelStreamSQLiteInternal::load_block(
+VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
 		BlockLocation loc, std::vector<uint8_t> &out_block_data, BlockType type) {
 	sqlite3 *db = _db;
 
@@ -372,7 +372,7 @@ VoxelStream::Result VoxelStreamSQLiteInternal::load_block(
 		return VoxelStream::RESULT_ERROR;
 	}
 
-	VoxelStream::Result result = VoxelStream::RESULT_BLOCK_NOT_FOUND;
+	VoxelStream::ResultCode result = VoxelStream::RESULT_BLOCK_NOT_FOUND;
 
 	while (true) {
 		rc = sqlite3_step(get_block_statement);
@@ -626,20 +626,15 @@ String VoxelStreamSQLite::get_database_path() const {
 	return _connection_path;
 }
 
-VoxelStream::Result VoxelStreamSQLite::load_voxel_block(
-		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
-	VoxelBlockRequest r{ out_buffer, origin_in_voxels, lod };
-	Result result;
-	load_voxel_blocks(Span<VoxelBlockRequest>(&r, 1), Span<Result>(&result, 1));
-	return result;
+void VoxelStreamSQLite::load_voxel_block(VoxelStream::VoxelQueryData &q) {
+	load_voxel_blocks(Span<VoxelStream::VoxelQueryData>(&q, 1));
 }
 
-void VoxelStreamSQLite::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
-	VoxelBlockRequest r{ buffer, origin_in_voxels, lod };
-	save_voxel_blocks(Span<VoxelBlockRequest>(&r, 1));
+void VoxelStreamSQLite::save_voxel_block(VoxelStream::VoxelQueryData &q) {
+	save_voxel_blocks(Span<VoxelStream::VoxelQueryData>(&q, 1));
 }
 
-void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span<Result> out_results) {
+void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Get block size from database
@@ -648,11 +643,11 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span
 	// Check the cache first
 	std::vector<unsigned int> blocks_to_load;
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
-		VoxelBlockRequest &wr = p_blocks[i];
-		const Vector3i pos = wr.origin_in_voxels >> (bs_po2 + wr.lod);
+		VoxelStream::VoxelQueryData &q = p_blocks[i];
+		const Vector3i pos = q.origin_in_voxels >> (bs_po2 + q.lod);
 
-		if (_cache.load_voxel_block(pos, wr.lod, wr.voxel_buffer)) {
-			out_results[i] = RESULT_BLOCK_FOUND;
+		if (_cache.load_voxel_block(pos, q.lod, q.voxel_buffer)) {
+			q.result = RESULT_BLOCK_FOUND;
 
 		} else {
 			blocks_to_load.push_back(i);
@@ -672,25 +667,24 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span
 
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
 		const unsigned int ri = blocks_to_load[i];
-		const VoxelBlockRequest &r = p_blocks[ri];
+		VoxelStream::VoxelQueryData &q = p_blocks[ri];
 
-		const unsigned int po2 = bs_po2 + r.lod;
+		const unsigned int po2 = bs_po2 + q.lod;
 
 		BlockLocation loc;
-		loc.x = r.origin_in_voxels.x >> po2;
-		loc.y = r.origin_in_voxels.y >> po2;
-		loc.z = r.origin_in_voxels.z >> po2;
-		loc.lod = r.lod;
+		loc.x = q.origin_in_voxels.x >> po2;
+		loc.y = q.origin_in_voxels.y >> po2;
+		loc.z = q.origin_in_voxels.z >> po2;
+		loc.lod = q.lod;
 
-		const Result res = con->load_block(loc, _temp_block_data, VoxelStreamSQLiteInternal::VOXELS);
+		const ResultCode res = con->load_block(loc, _temp_block_data, VoxelStreamSQLiteInternal::VOXELS);
 
 		if (res == RESULT_BLOCK_FOUND) {
-			VoxelBlockRequest &wr = p_blocks[ri];
 			// TODO Not sure if we should actually expect non-null. There can be legit not found blocks.
-			BlockSerializer::decompress_and_deserialize(to_span_const(_temp_block_data), wr.voxel_buffer);
+			BlockSerializer::decompress_and_deserialize(to_span_const(_temp_block_data), q.voxel_buffer);
 		}
 
-		out_results[ri] = res;
+		q.result = res;
 	}
 
 	ERR_FAIL_COND(con->end_transaction() == false);
@@ -698,21 +692,21 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span
 	recycle_connection(con);
 }
 
-void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelBlockRequest> p_blocks) {
+void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
 	// TODO Get block size from database
 	const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// First put in cache
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
-		VoxelBlockRequest &r = p_blocks[i];
-		const Vector3i pos = r.origin_in_voxels >> (bs_po2 + r.lod);
+		VoxelStream::VoxelQueryData &q = p_blocks[i];
+		const Vector3i pos = q.origin_in_voxels >> (bs_po2 + q.lod);
 
-		if (!BlockLocation::validate(pos, r.lod)) {
+		if (!BlockLocation::validate(pos, q.lod)) {
 			ERR_PRINT(String("Block position {0} is outside of supported range").format(varray(pos)));
 			continue;
 		}
 
-		_cache.save_voxel_block(pos, r.lod, r.voxel_buffer);
+		_cache.save_voxel_block(pos, q.lod, q.voxel_buffer);
 	}
 
 	// TODO We should consider using a serialized cache, and measure the threshold in bytes
@@ -725,8 +719,7 @@ bool VoxelStreamSQLite::supports_instance_blocks() const {
 	return true;
 }
 
-void VoxelStreamSQLite::load_instance_blocks(
-		Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) {
+void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryData> out_blocks) {
 	VOXEL_PROFILE_SCOPE();
 
 	// TODO Get block size from database
@@ -735,10 +728,10 @@ void VoxelStreamSQLite::load_instance_blocks(
 	// Check the cache first
 	std::vector<unsigned int> blocks_to_load;
 	for (size_t i = 0; i < out_blocks.size(); ++i) {
-		VoxelStreamInstanceDataRequest &r = out_blocks[i];
+		VoxelStream::InstancesQueryData &q = out_blocks[i];
 
-		if (_cache.load_instance_block(r.position, r.lod, r.data)) {
-			out_results[i] = RESULT_BLOCK_FOUND;
+		if (_cache.load_instance_block(q.position, q.lod, q.data)) {
+			q.result = RESULT_BLOCK_FOUND;
 
 		} else {
 			blocks_to_load.push_back(i);
@@ -759,31 +752,31 @@ void VoxelStreamSQLite::load_instance_blocks(
 
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
 		const unsigned int ri = blocks_to_load[i];
-		VoxelStreamInstanceDataRequest &r = out_blocks[ri];
+		VoxelStream::InstancesQueryData &q = out_blocks[ri];
 
 		BlockLocation loc;
-		loc.x = r.position.x;
-		loc.y = r.position.y;
-		loc.z = r.position.z;
-		loc.lod = r.lod;
+		loc.x = q.position.x;
+		loc.y = q.position.y;
+		loc.z = q.position.z;
+		loc.lod = q.lod;
 
-		const Result res = con->load_block(loc, _temp_compressed_block_data, VoxelStreamSQLiteInternal::INSTANCES);
+		const ResultCode res = con->load_block(loc, _temp_compressed_block_data, VoxelStreamSQLiteInternal::INSTANCES);
 
 		if (res == RESULT_BLOCK_FOUND) {
 			if (!CompressedData::decompress(to_span_const(_temp_compressed_block_data), _temp_block_data)) {
 				ERR_PRINT("Failed to decompress instance block");
-				out_results[ri] = RESULT_ERROR;
+				q.result = RESULT_ERROR;
 				continue;
 			}
-			r.data = std::make_unique<InstanceBlockData>();
-			if (!deserialize_instance_block_data(*r.data, to_span_const(_temp_block_data))) {
+			q.data = std::make_unique<InstanceBlockData>();
+			if (!deserialize_instance_block_data(*q.data, to_span_const(_temp_block_data))) {
 				ERR_PRINT("Failed to deserialize instance block");
-				out_results[ri] = RESULT_ERROR;
+				q.result = RESULT_ERROR;
 				continue;
 			}
 		}
 
-		out_results[ri] = res;
+		q.result = res;
 	}
 
 	ERR_FAIL_COND(con->end_transaction() == false);
@@ -791,14 +784,14 @@ void VoxelStreamSQLite::load_instance_blocks(
 	recycle_connection(con);
 }
 
-void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks) {
+void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryData> p_blocks) {
 	// TODO Get block size from database
 	//const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// First put in cache
 	for (size_t i = 0; i < p_blocks.size(); ++i) {
-		VoxelStreamInstanceDataRequest &r = p_blocks[i];
-		_cache.save_instance_block(r.position, r.lod, std::move(r.data));
+		VoxelStream::InstancesQueryData &q = p_blocks[i];
+		_cache.save_instance_block(q.position, q.lod, std::move(q.data));
 	}
 
 	// TODO Optimization: we should consider using a serialized cache, and measure the threshold in bytes

@@ -17,9 +17,8 @@ public:
 
 	static VoxelDataBlock *create(
 			Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int size, unsigned int p_lod_index) {
-		const int bs = size;
 		ERR_FAIL_COND_V(buffer == nullptr, nullptr);
-		ERR_FAIL_COND_V(buffer->get_size() != Vector3i(bs, bs, bs), nullptr);
+		ERR_FAIL_COND_V(buffer->get_size() != Vector3i(size, size, size), nullptr);
 		return memnew(VoxelDataBlock(bpos, buffer, p_lod_index));
 	}
 
@@ -94,6 +93,18 @@ private:
 	// If `false`, the same data can be obtained by running the generator.
 	// Once it becomes `true`, it usually never comes back to `false` unless reverted.
 	bool _edited = false;
+
+	// TODO Optimization: design a proper way to implement client-side caching for multiplayer
+	//
+	// Represents how many times the block was edited.
+	// This allows to implement client-side caching in multiplayer.
+	//
+	// Note: when doing client-side caching, if the server decides to revert a block to generator output,
+	// resetting version to 0 might not be a good idea, because if a client had version 1, it could mismatch with
+	// the "new version 1" after the next edit. All clients having ever joined the server would have to be aware
+	// of the revert before they start getting blocks with the server,
+	// or need to be told which version is the "generated" one.
+	//uint32_t _version;
 
 	// Tells if it's worth requesting a more precise version of the data.
 	// Will be `true` if it's not worth it.

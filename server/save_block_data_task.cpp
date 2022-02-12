@@ -54,8 +54,6 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 	Ref<VoxelStream> stream = _stream_dependency->stream;
 	CRASH_COND(stream.is_null());
 
-	const Vector3i origin_in_voxels = (_position << _lod) * _block_size;
-
 	if (_save_voxels) {
 		ERR_FAIL_COND(_voxels == nullptr);
 		VoxelBufferInternal voxels_copy;
@@ -66,7 +64,9 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 			_voxels->duplicate_to(voxels_copy, true);
 		}
 		_voxels = nullptr;
-		stream->save_voxel_block(voxels_copy, origin_in_voxels, _lod);
+		const Vector3i origin_in_voxels = (_position << _lod) * _block_size;
+		VoxelStream::VoxelQueryData q{ voxels_copy, origin_in_voxels, _lod };
+		stream->save_voxel_block(q);
 	}
 
 	if (_save_instances && stream->supports_instance_blocks()) {
@@ -78,11 +78,8 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 		PRINT_VERBOSE(String("Saving instance block {0} lod {1} with data {2}")
 							  .format(varray(_position, _lod, ptr2s(_instances.get()))));
 
-		VoxelStreamInstanceDataRequest instance_data_request;
-		instance_data_request.lod = _lod;
-		instance_data_request.position = _position;
-		instance_data_request.data = std::move(_instances);
-		stream->save_instance_blocks(Span<VoxelStreamInstanceDataRequest>(&instance_data_request, 1));
+		VoxelStream::InstancesQueryData instances_query{ std::move(_instances), _position, _lod };
+		stream->save_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
 	}
 
 	_has_run = true;

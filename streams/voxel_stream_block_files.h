@@ -1,6 +1,7 @@
 #ifndef VOXEL_STREAM_BLOCK_FILES_H
 #define VOXEL_STREAM_BLOCK_FILES_H
 
+#include "../storage/voxel_buffer_internal.h"
 #include "file_utils.h"
 #include "voxel_stream.h"
 
@@ -16,8 +17,8 @@ class VoxelStreamBlockFiles : public VoxelStream {
 public:
 	VoxelStreamBlockFiles();
 
-	Result load_voxel_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
+	void load_voxel_block(VoxelStream::VoxelQueryData &q) override;
+	void save_voxel_block(VoxelStream::VoxelQueryData &q) override;
 
 	int get_used_channels_mask() const override;
 

@@ -1,12 +1,13 @@
 #ifndef VOXEL_GENERATOR_H
 #define VOXEL_GENERATOR_H
 
-#include "../streams/voxel_block_request.h"
 #include <core/io/resource.h>
+#include <core/math/vector3i.h>
 
 namespace zylann::voxel {
 
 class VoxelBuffer;
+class VoxelBufferInternal;
 
 union VoxelSingleValue {
 	uint64_t i;
@@ -28,7 +29,13 @@ public:
 		bool max_lod_hint = false;
 	};
 
-	virtual Result generate_block(VoxelBlockRequest &input);
+	struct VoxelQueryData {
+		VoxelBufferInternal &voxel_buffer;
+		Vector3i origin_in_voxels;
+		uint8_t lod;
+	};
+
+	virtual Result generate_block(VoxelQueryData &input);
 	// TODO Single sample
 
 	virtual bool supports_single_generation() const {

@@ -1,4 +1,5 @@
 #include "voxel_generator_graph.h"
+#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
@@ -524,7 +525,7 @@ static void fill_zx_integer_slice(const VoxelGraphRuntime::Buffer &src_buffer, V
 	}
 }
 
-VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelBlockRequest &input) {
+VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::VoxelQueryData &input) {
 	std::shared_ptr<Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);

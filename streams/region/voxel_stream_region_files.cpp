@@ -58,43 +58,38 @@ VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
 	close_all_regions();
 }
 
-VoxelStream::Result VoxelStreamRegionFiles::load_voxel_block(
-		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
-	VoxelBlockRequest r{ out_buffer, origin_in_voxels, lod };
-	Result result;
-	load_voxel_blocks(Span<VoxelBlockRequest>(&r, 1), Span<Result>(&result, 1));
-	return result;
+void VoxelStreamRegionFiles::load_voxel_block(VoxelStream::VoxelQueryData &query) {
+	load_voxel_blocks(Span<VoxelStream::VoxelQueryData>(&query, 1));
 }
 
-void VoxelStreamRegionFiles::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
-	VoxelBlockRequest r{ buffer, origin_in_voxels, lod };
-	save_voxel_blocks(Span<VoxelBlockRequest>(&r, 1));
+void VoxelStreamRegionFiles::save_voxel_block(VoxelStream::VoxelQueryData &query) {
+	save_voxel_blocks(Span<VoxelStream::VoxelQueryData>(&query, 1));
 }
 
-void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span<Result> out_results) {
+void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
 	VOXEL_PROFILE_SCOPE();
 
 	// In order to minimize opening/closing files, requests are grouped according to their region.
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
 	std::vector<unsigned int> sorted_block_indices;
-	BlockRequestComparator comparator;
+	BlockQueryComparator comparator;
 	comparator.self = this;
 	get_sorted_indices(p_blocks, comparator, sorted_block_indices);
 
 	for (unsigned int i = 0; i < sorted_block_indices.size(); ++i) {
 		const unsigned int bi = sorted_block_indices[i];
-		VoxelBlockRequest &r = p_blocks[bi];
-		const EmergeResult result = _load_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		VoxelStream::VoxelQueryData &q = p_blocks[bi];
+		const EmergeResult result = _load_block(q.voxel_buffer, q.origin_in_voxels, q.lod);
 		switch (result) {
 			case EMERGE_OK:
-				out_results[bi] = RESULT_BLOCK_FOUND;
+				q.result = RESULT_BLOCK_FOUND;
 				break;
 			case EMERGE_OK_FALLBACK:
-				out_results[bi] = RESULT_BLOCK_NOT_FOUND;
+				q.result = RESULT_BLOCK_NOT_FOUND;
 				break;
 			case EMERGE_FAILED:
-				out_results[bi] = RESULT_ERROR;
+				q.result = RESULT_ERROR;
 				break;
 			default:
 				CRASH_NOW();
@@ -103,19 +98,19 @@ void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks,
 	}
 }
 
-void VoxelStreamRegionFiles::save_voxel_blocks(Span<VoxelBlockRequest> p_blocks) {
+void VoxelStreamRegionFiles::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
 	VOXEL_PROFILE_SCOPE();
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
 	std::vector<unsigned int> sorted_block_indices;
-	BlockRequestComparator comparator;
+	BlockQueryComparator comparator;
 	comparator.self = this;
 	get_sorted_indices(p_blocks, comparator, sorted_block_indices);
 
 	for (unsigned int i = 0; i < sorted_block_indices.size(); ++i) {
 		const unsigned int bi = sorted_block_indices[i];
-		VoxelBlockRequest &r = p_blocks[bi];
-		_save_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		VoxelStream::VoxelQueryData &q = p_blocks[bi];
+		_save_block(q.voxel_buffer, q.origin_in_voxels, q.lod);
 	}
 }
 
@@ -685,11 +680,21 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			// Load block from old stream
 			Vector3i block_rpos = old_region->region.get_block_position_from_index(j);
 			Vector3i block_pos = block_rpos + region_info.position * old_region_size;
-			old_stream->load_voxel_block(old_block, block_pos * old_block_size << region_info.lod, region_info.lod);
+			VoxelStream::VoxelQueryData old_block_load_query{
+				old_block, //
+				block_pos * old_block_size << region_info.lod, //
+				region_info.lod //
+			};
+			old_stream->load_voxel_block(old_block_load_query);
 
 			// Save it in the new one
 			if (old_block_size == new_block_size) {
-				save_voxel_block(old_block, block_pos * new_block_size << region_info.lod, region_info.lod);
+				VoxelStream::VoxelQueryData old_block_save_query{ //
+					old_block, //
+					block_pos * new_block_size << region_info.lod, //
+					region_info.lod
+				};
+				save_voxel_block(old_block_save_query);
 
 			} else {
 				Vector3i new_block_pos = convert_block_coordinates(block_pos, old_block_size, new_block_size);
@@ -700,7 +705,12 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					Vector3i rel = block_pos % ratio;
 
 					// Copy to a sub-area of one block
-					load_voxel_block(new_block, new_block_pos * new_block_size << region_info.lod, region_info.lod);
+					VoxelStream::VoxelQueryData new_block_load_query{ //
+						new_block, //
+						new_block_pos * new_block_size << region_info.lod, //
+						region_info.lod
+					};
+					load_voxel_block(new_block_load_query);
 
 					Vector3i dst_pos = rel * old_block.get_size();
 
@@ -710,7 +720,12 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					}
 
 					new_block.compress_uniform_channels();
-					save_voxel_block(new_block, new_block_pos * new_block_size << region_info.lod, region_info.lod);
+					VoxelStream::VoxelQueryData new_block_save_query{ //
+						new_block, //
+						new_block_pos * new_block_size << region_info.lod, //
+						region_info.lod
+					};
+					save_voxel_block(new_block_save_query);
 
 				} else {
 					// Copy to multiple blocks
@@ -728,8 +743,12 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 									new_block.copy_from(old_block, src_min, src_max, Vector3i(), channel_index);
 								}
 
-								save_voxel_block(new_block, (new_block_pos + rpos) * new_block_size << region_info.lod,
-										region_info.lod);
+								VoxelStream::VoxelQueryData new_block_save_query{ //
+									new_block, //
+									(new_block_pos + rpos) * new_block_size << region_info.lod, //
+									region_info.lod
+								};
+								save_voxel_block(new_block_save_query);
 							}
 						}
 					}

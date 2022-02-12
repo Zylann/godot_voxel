@@ -601,7 +601,7 @@ void VoxelBufferInternal::move_to(VoxelBufferInternal &dst) {
 
 	// TODO Optimization: Godot needs move semantics
 	dst._block_metadata = _block_metadata;
-	_block_metadata = Variant();
+	_block_metadata = BlockMetadata();
 
 	// TODO Optimization: Godot needs move semantics
 	dst._voxel_metadata = _voxel_metadata;
@@ -784,7 +784,7 @@ float VoxelBufferInternal::get_sdf_quantization_scale(Depth d) {
 }
 
 void VoxelBufferInternal::set_block_metadata(Variant meta) {
-	_block_metadata = meta;
+	_block_metadata.user_data = meta;
 }
 
 Variant VoxelBufferInternal::get_voxel_metadata(Vector3i pos) const {
@@ -890,7 +890,7 @@ void VoxelBufferInternal::copy_voxel_metadata(const VoxelBufferInternal &src_buf
 		elem = elem->next();
 	}
 
-	_block_metadata = src_buffer._block_metadata.duplicate();
+	_block_metadata.user_data = src_buffer._block_metadata.user_data.duplicate();
 }
 
 Ref<Image> VoxelBufferInternal::debug_print_sdf_to_image_top_down() {

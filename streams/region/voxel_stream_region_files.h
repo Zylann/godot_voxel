@@ -25,11 +25,11 @@ public:
 	VoxelStreamRegionFiles();
 	~VoxelStreamRegionFiles();
 
-	Result load_voxel_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
+	void load_voxel_block(VoxelStream::VoxelQueryData &query) override;
+	void save_voxel_block(VoxelStream::VoxelQueryData &query) override;
 
-	void load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span<Result> out_results) override;
-	void save_voxel_blocks(Span<VoxelBlockRequest> p_blocks) override;
+	void load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) override;
+	void save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) override;
 
 	int get_used_channels_mask() const override;
 
@@ -92,11 +92,12 @@ private:
 	void _convert_files(Meta new_meta);
 
 	// Orders block requests so those querying the same regions get grouped together
-	struct BlockRequestComparator {
+	struct BlockQueryComparator {
 		VoxelStreamRegionFiles *self = nullptr;
 
 		// operator<
-		_FORCE_INLINE_ bool operator()(const VoxelBlockRequest &a, const VoxelBlockRequest &b) const {
+		_FORCE_INLINE_ bool operator()(
+				const VoxelStream::VoxelQueryData &a, const VoxelStream::VoxelQueryData &b) const {
 			if (a.lod < b.lod) {
 				return true;
 			} else if (a.lod > b.lod) {

@@ -26,16 +26,18 @@ VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 
 // TODO Have configurable block size
 
-VoxelStream::Result VoxelStreamBlockFiles::load_voxel_block(
-		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamBlockFiles::load_voxel_block(VoxelStream::VoxelQueryData &q) {
 	//
 	if (_directory_path.is_empty()) {
-		return RESULT_BLOCK_NOT_FOUND;
+		q.result = RESULT_BLOCK_NOT_FOUND;
+		return;
 	}
+
+	q.result = RESULT_ERROR;
 
 	if (!_meta_loaded) {
 		if (load_meta() != FILE_OK) {
-			return RESULT_ERROR;
+			return;
 		}
 	}
 
@@ -43,11 +45,11 @@ VoxelStream::Result VoxelStreamBlockFiles::load_voxel_block(
 
 	const Vector3i block_size = Vector3iUtil::create(1 << _meta.block_size_po2);
 
-	ERR_FAIL_COND_V(lod >= _meta.lod_count, RESULT_ERROR);
-	ERR_FAIL_COND_V(block_size != out_buffer.get_size(), RESULT_ERROR);
+	ERR_FAIL_COND(q.lod >= _meta.lod_count);
+	ERR_FAIL_COND(block_size != q.voxel_buffer.get_size());
 
-	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
-	String file_path = get_block_file_path(block_pos, lod);
+	Vector3i block_pos = get_block_position(q.origin_in_voxels) >> q.lod;
+	String file_path = get_block_file_path(block_pos, q.lod);
 
 	FileAccess *f = nullptr;
 	VoxelFileLockerRead file_rlock(file_path);
@@ -56,11 +58,12 @@ VoxelStream::Result VoxelStreamBlockFiles::load_voxel_block(
 		f = FileAccess::open(file_path, FileAccess::READ, &err);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
 		if (f == nullptr && (err == ERR_FILE_NOT_FOUND || err == ERR_FILE_CANT_OPEN)) {
-			return RESULT_BLOCK_NOT_FOUND;
+			q.result = RESULT_BLOCK_NOT_FOUND;
+			return;
 		}
 	}
 
-	ERR_FAIL_COND_V(f == nullptr, RESULT_ERROR);
+	ERR_FAIL_COND(f == nullptr);
 
 	{
 		{
@@ -69,18 +72,18 @@ VoxelStream::Result VoxelStreamBlockFiles::load_voxel_block(
 			if (err != FILE_OK) {
 				memdelete(f);
 				ERR_PRINT(String("Invalid file header: ") + ::to_string(err));
-				return RESULT_ERROR;
+				return;
 			}
 		}
 
 		// Configure depths, as they currently are only specified in the meta file.
 		// Files are expected to contain such depths, and use those in the buffer to know how much data to read.
 		for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
-			out_buffer.set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
+			q.voxel_buffer.set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
 		}
 
 		uint32_t size_to_read = f->get_32();
-		if (!BlockSerializer::decompress_and_deserialize(f, size_to_read, out_buffer)) {
+		if (!BlockSerializer::decompress_and_deserialize(f, size_to_read, q.voxel_buffer)) {
 			ERR_PRINT("Failed to decompress and deserialize");
 		}
 	}
@@ -88,10 +91,10 @@ VoxelStream::Result VoxelStreamBlockFiles::load_voxel_block(
 	f->close();
 	memdelete(f);
 
-	return RESULT_BLOCK_FOUND;
+	q.result = RESULT_BLOCK_FOUND;
 }
 
-void VoxelStreamBlockFiles::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamBlockFiles::save_voxel_block(VoxelStream::VoxelQueryData &q) {
 	ERR_FAIL_COND(_directory_path.is_empty());
 
 	if (!_meta_loaded) {
@@ -109,7 +112,7 @@ void VoxelStreamBlockFiles::save_voxel_block(VoxelBufferInternal &buffer, Vector
 	if (!_meta_saved) {
 		// First time we save the meta file, initialize it from the first block format
 		for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
-			_meta.channel_depths[i] = buffer.get_channel_depth(i);
+			_meta.channel_depths[i] = q.voxel_buffer.get_channel_depth(i);
 		}
 		const FileResult res = save_meta();
 		ERR_FAIL_COND(res != FILE_OK);
@@ -117,13 +120,13 @@ void VoxelStreamBlockFiles::save_voxel_block(VoxelBufferInternal &buffer, Vector
 
 	// Check format
 	const Vector3i block_size = Vector3iUtil::create(1 << _meta.block_size_po2);
-	ERR_FAIL_COND(buffer.get_size() != block_size);
+	ERR_FAIL_COND(q.voxel_buffer.get_size() != block_size);
 	for (unsigned int channel_index = 0; channel_index < _meta.channel_depths.size(); ++channel_index) {
-		ERR_FAIL_COND(buffer.get_channel_depth(channel_index) != _meta.channel_depths[channel_index]);
+		ERR_FAIL_COND(q.voxel_buffer.get_channel_depth(channel_index) != _meta.channel_depths[channel_index]);
 	}
 
-	Vector3i block_pos = get_block_position(origin_in_voxels) >> lod;
-	String file_path = get_block_file_path(block_pos, lod);
+	const Vector3i block_pos = get_block_position(q.origin_in_voxels) >> q.lod;
+	const String file_path = get_block_file_path(block_pos, q.lod);
 
 	{
 		const Error err = check_directory_created_using_file_locker(file_path.get_base_dir());
@@ -143,7 +146,7 @@ void VoxelStreamBlockFiles::save_voxel_block(VoxelBufferInternal &buffer, Vector
 		f->store_buffer((uint8_t *)FORMAT_BLOCK_MAGIC, 4);
 		f->store_8(FORMAT_VERSION);
 
-		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(buffer);
+		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(q.voxel_buffer);
 		if (!res.success) {
 			memdelete(f);
 			ERR_PRINT("Failed to save block");

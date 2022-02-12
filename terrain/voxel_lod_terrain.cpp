@@ -649,14 +649,14 @@ bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int ch
 		if (_generator.is_valid()) {
 			voxels = gd_make_shared<VoxelBufferInternal>();
 			voxels->create(Vector3iUtil::create(get_data_block_size()));
-			VoxelBlockRequest r{ *voxels, pos, 0 };
-			_generator->generate_block(r);
+			VoxelGenerator::VoxelQueryData q{ *voxels, pos, 0 };
+			_generator->generate_block(q);
 			RWLockWrite wlock(data_lod0.map_lock);
 			if (data_lod0.map.has_block(block_pos_lod0)) {
 				// A block was loaded by another thread, cancel our edit.
 				return false;
 			}
-			data_lod0.map.set_block_buffer(block_pos_lod0, voxels);
+			data_lod0.map.set_block_buffer(block_pos_lod0, voxels, true);
 		}
 	}
 	// If it turns out to be a problem, use CoW?
@@ -672,8 +672,8 @@ void VoxelLodTerrain::copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_bu
 		data_lod0.map.copy(p_origin_voxels, dst_buffer, channels_mask, *_generator,
 				[](void *callback_data, VoxelBufferInternal &voxels, Vector3i pos) {
 					VoxelGenerator *generator = reinterpret_cast<VoxelGenerator *>(callback_data);
-					VoxelBlockRequest r{ voxels, pos, 0 };
-					generator->generate_block(r);
+					VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
+					generator->generate_block(q);
 				});
 	} else {
 		RWLockRead rlock(data_lod0.map_lock);
@@ -2228,11 +2228,11 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 					voxels->create(Vector3iUtil::create(get_data_block_size()));
 					if (_generator.is_valid()) {
 						VOXEL_PROFILE_SCOPE_NAMED("Generate");
-						VoxelBlockRequest r{ *voxels, dst_bpos << (dst_lod_index + get_data_block_size_pow2()),
-							int(dst_lod_index) };
-						_generator->generate_block(r);
+						VoxelGenerator::VoxelQueryData q{ *voxels,
+							dst_bpos << (dst_lod_index + get_data_block_size_pow2()), int(dst_lod_index) };
+						_generator->generate_block(q);
 					}
-					dst_block = dst_data_lod.map.set_block_buffer(dst_bpos, voxels);
+					dst_block = dst_data_lod.map.set_block_buffer(dst_bpos, voxels, true);
 
 				} else {
 					ERR_PRINT(String("Destination block {0} not found when cascading edits on LOD {1}")

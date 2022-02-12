@@ -2,12 +2,12 @@
 #define VOXEL_STREAM_H
 
 #include "instance_data.h"
-#include "voxel_block_request.h"
 #include <core/io/resource.h>
 
 namespace zylann::voxel {
 
 class VoxelBuffer;
+class VoxelBufferInternal;
 
 // Provides access to a source of paged voxel data, which may load and save.
 // This is intented for files, so it may run in a single background thread and gets requests in batches.
@@ -25,7 +25,7 @@ public:
 	VoxelStream();
 	~VoxelStream();
 
-	enum Result {
+	enum ResultCode {
 		// Something went wrong, the request should be aborted
 		RESULT_ERROR,
 		// The block could not be found in the stream. The requester may fallback on the generator.
@@ -36,27 +36,42 @@ public:
 		_RESULT_COUNT
 	};
 
+	struct VoxelQueryData {
+		VoxelBufferInternal &voxel_buffer;
+		Vector3i origin_in_voxels;
+		int lod;
+		// This is currently not used in save queries. Maybe it should?
+		ResultCode result;
+	};
+
+	struct InstancesQueryData {
+		std::unique_ptr<InstanceBlockData> data;
+		Vector3i position;
+		uint8_t lod;
+		ResultCode result;
+	};
+
 	// TODO Deprecate
 	// Queries a block of voxels beginning at the given world-space voxel position and LOD.
 	// If you use LOD, the result at a given coordinate must always remain the same regardless of it.
 	// In other words, voxels values must solely depend on their coordinates or fixed parameters.
-	virtual Result load_voxel_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
+	virtual void load_voxel_block(VoxelQueryData &query_data);
 
 	// TODO Deprecate
-	virtual void save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod);
+	virtual void save_voxel_block(VoxelQueryData &query_data);
 
 	// Note: Don't modify the order of `p_blocks`.
-	virtual void load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span<Result> out_results);
+	virtual void load_voxel_blocks(Span<VoxelQueryData> p_blocks);
 
 	// Returns multiple blocks of voxels to the stream.
 	// This function is recommended if you save to files, because you can batch their access.
-	virtual void save_voxel_blocks(Span<VoxelBlockRequest> p_blocks);
+	virtual void save_voxel_blocks(Span<VoxelQueryData> p_blocks);
 
 	// TODO Merge support functions into a single getter with Feature bitmask
 	virtual bool supports_instance_blocks() const;
 
-	virtual void load_instance_blocks(Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results);
-	virtual void save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks);
+	virtual void load_instance_blocks(Span<InstancesQueryData> out_blocks);
+	virtual void save_instance_blocks(Span<InstancesQueryData> p_blocks);
 
 	struct FullLoadingResult {
 		struct Block {
@@ -95,12 +110,12 @@ public:
 private:
 	static void _bind_methods();
 
-	Result _b_load_voxel_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
+	ResultCode _b_load_voxel_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
 	void _b_save_voxel_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
 	int _b_get_used_channels_mask() const;
 	Vector3 _b_get_block_size() const;
 	// Deprecated
-	Result _b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
+	ResultCode _b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
 	void _b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
 
 	struct Parameters {
@@ -113,6 +128,6 @@ private:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelStream::Result);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelStream::ResultCode);
 
 #endif // VOXEL_STREAM_H

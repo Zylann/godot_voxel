@@ -8,28 +8,25 @@ VoxelStream::VoxelStream() {}
 
 VoxelStream::~VoxelStream() {}
 
-VoxelStream::Result VoxelStream::load_voxel_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStream::load_voxel_block(VoxelQueryData &query_data) {
 	// Can be implemented in subclasses
-	return RESULT_BLOCK_NOT_FOUND;
+	query_data.result = RESULT_BLOCK_NOT_FOUND;
 }
 
-void VoxelStream::save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStream::save_voxel_block(VoxelQueryData &query_data) {
 	// Can be implemented in subclasses
 }
 
-void VoxelStream::load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span<Result> out_results) {
+void VoxelStream::load_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 	// Default implementation. May matter for some stream types to optimize loading.
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
-		VoxelBlockRequest &r = p_blocks[i];
-		const Result res = load_voxel_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
-		out_results[i] = res;
+		load_voxel_block(p_blocks[i]);
 	}
 }
 
-void VoxelStream::save_voxel_blocks(Span<VoxelBlockRequest> p_blocks) {
+void VoxelStream::save_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
-		const VoxelBlockRequest &r = p_blocks[i];
-		save_voxel_block(r.voxel_buffer, r.origin_in_voxels, r.lod);
+		save_voxel_block(p_blocks[i]);
 	}
 }
 
@@ -38,14 +35,14 @@ bool VoxelStream::supports_instance_blocks() const {
 	return false;
 }
 
-void VoxelStream::load_instance_blocks(Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) {
+void VoxelStream::load_instance_blocks(Span<InstancesQueryData> out_blocks) {
 	// Can be implemented in subclasses
-	for (size_t i = 0; i < out_results.size(); ++i) {
-		out_results[i] = RESULT_BLOCK_NOT_FOUND;
+	for (size_t i = 0; i < out_blocks.size(); ++i) {
+		out_blocks[i].result = RESULT_BLOCK_NOT_FOUND;
 	}
 }
 
-void VoxelStream::save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks) {
+void VoxelStream::save_instance_blocks(Span<InstancesQueryData> p_blocks) {
 	// Can be implemented in subclasses
 }
 
@@ -77,19 +74,23 @@ int VoxelStream::get_lod_count() const {
 
 // Binding land
 
-VoxelStream::Result VoxelStream::_b_load_voxel_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+VoxelStream::ResultCode VoxelStream::_b_load_voxel_block(
+		Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND_V(lod < 0, RESULT_ERROR);
 	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
-	return load_voxel_block(out_buffer->get_buffer(), Vector3iUtil::from_floored(origin_in_voxels), lod);
+	VoxelQueryData q{ out_buffer->get_buffer(), origin_in_voxels, lod, RESULT_ERROR };
+	load_voxel_block(q);
+	return q.result;
 }
 
 void VoxelStream::_b_save_voxel_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	ERR_FAIL_COND(buffer.is_null());
-	save_voxel_block(buffer->get_buffer(), Vector3iUtil::from_floored(origin_in_voxels), lod);
+	VoxelQueryData q{ buffer->get_buffer(), origin_in_voxels, lod, RESULT_ERROR };
+	save_voxel_block(q);
 }
 
-VoxelStream::Result VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
+VoxelStream::ResultCode VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_PRINT("VoxelStream.emerge_block is deprecated. Use `load_voxel_block` instead.");
 	return _b_load_voxel_block(out_buffer, origin_in_voxels, lod);
 }
@@ -108,6 +109,7 @@ Vector3 VoxelStream::_b_get_block_size() const {
 }
 
 void VoxelStream::_bind_methods() {
+	// Deprecated methods
 	ClassDB::bind_method(
 			D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelStream::_b_emerge_block);
 	ClassDB::bind_method(

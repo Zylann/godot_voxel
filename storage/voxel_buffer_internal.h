@@ -414,7 +414,7 @@ public:
 	// Metadata
 
 	Variant get_block_metadata() const {
-		return _block_metadata;
+		return _block_metadata.user_data;
 	}
 	void set_block_metadata(Variant meta);
 	Variant get_voxel_metadata(Vector3i pos) const;
@@ -443,7 +443,8 @@ public:
 		return _voxel_metadata;
 	}
 
-	// Internal synchronization.
+	// Internal synchronization
+
 	// This lock is optional, and used internally at the moment, only in multithreaded areas.
 	inline const RWLock &get_lock() const {
 		return _rw_lock;
@@ -473,7 +474,14 @@ private:
 	// How many voxels are there in the three directions. All populated channels have the same size.
 	Vector3i _size;
 
-	Variant _block_metadata;
+	struct BlockMetadata {
+		// User-defined data, not used by the engine
+		Variant user_data;
+	};
+
+	// TODO Could we separate metadata from VoxelBufferInternal?
+	BlockMetadata _block_metadata;
+	// TODO Optimization: could use a flat map instead. Per-voxel metadata is intented to be sparse.
 	Map<Vector3i, Variant> _voxel_metadata;
 
 	// TODO It may be preferable to actually move away from storing an RWLock in every buffer in the future.

@@ -1233,7 +1233,7 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 	// Create or update block data
 	VoxelDataBlock *block = _data_map.get_block(block_pos);
 	const bool was_not_loaded = block == nullptr;
-	block = _data_map.set_block_buffer(block_pos, ob.voxels);
+	block = _data_map.set_block_buffer(block_pos, ob.voxels, true);
 
 	block->set_edited(ob.type == VoxelServer::BlockDataOutput::TYPE_LOADED);
 
@@ -1295,7 +1295,7 @@ bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBu
 	_loading_blocks.erase(position);
 
 	// Create or update block data
-	VoxelDataBlock *block = _data_map.set_block_buffer(position, voxel_data);
+	VoxelDataBlock *block = _data_map.set_block_buffer(position, voxel_data, true);
 	CRASH_COND(block == nullptr);
 	block->viewers = refcount;
 	// TODO How to set the `edited` flag? Does it matter in use cases for this function?

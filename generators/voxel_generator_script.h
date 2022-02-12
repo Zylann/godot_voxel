@@ -14,7 +14,7 @@ class VoxelGeneratorScript : public VoxelGenerator {
 public:
 	VoxelGeneratorScript();
 
-	Result generate_block(VoxelBlockRequest &input) override;
+	Result generate_block(VoxelGenerator::VoxelQueryData &input) override;
 	int get_used_channels_mask() const override;
 
 protected:

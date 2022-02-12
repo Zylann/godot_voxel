@@ -75,8 +75,7 @@ public:
 			uint64_t mask_value, bool create_new_blocks);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
-	VoxelDataBlock *set_block_buffer(
-			Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite = true);
+	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite);
 
 	struct NoAction {
 		inline void operator()(VoxelDataBlock *block) {}

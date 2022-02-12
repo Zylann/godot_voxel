@@ -317,6 +317,7 @@ private:
 	// This terrain type is a sparse grid of octrees.
 	// Indexed by a grid coordinate whose step is the size of the highest-LOD block.
 	// Not using a pointer because Map storage is stable.
+	// TODO Optimization: could be replaced with a grid data structure
 	Map<Vector3i, OctreeItem> _lod_octrees;
 	Box3i _last_octree_region_box;
 

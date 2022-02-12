@@ -17,7 +17,7 @@ public:
 	VoxelBufferInternal::ChannelId get_channel() const;
 	int get_used_channels_mask() const override;
 
-	Result generate_block(VoxelBlockRequest &input) override;
+	Result generate_block(VoxelGenerator::VoxelQueryData &input) override;
 
 	void set_voxel_type(int t);
 	int get_voxel_type() const;

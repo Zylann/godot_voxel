@@ -19,7 +19,7 @@ public:
 	void set_curve(Ref<Curve> curve);
 	Ref<Curve> get_curve() const;
 
-	Result generate_block(VoxelBlockRequest &input) override;
+	Result generate_block(VoxelGenerator::VoxelQueryData &input) override;
 
 private:
 	void _on_noise_changed();

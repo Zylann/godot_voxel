@@ -23,15 +23,15 @@ public:
 	void set_database_path(String path);
 	String get_database_path() const;
 
-	Result load_voxel_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) override;
-	void save_voxel_block(VoxelBufferInternal &buffer, Vector3i origin_in_voxels, int lod) override;
+	void load_voxel_block(VoxelStream::VoxelQueryData &q) override;
+	void save_voxel_block(VoxelStream::VoxelQueryData &q) override;
 
-	void load_voxel_blocks(Span<VoxelBlockRequest> p_blocks, Span<Result> out_results) override;
-	void save_voxel_blocks(Span<VoxelBlockRequest> p_blocks) override;
+	void load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) override;
+	void save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) override;
 
 	bool supports_instance_blocks() const override;
-	void load_instance_blocks(Span<VoxelStreamInstanceDataRequest> out_blocks, Span<Result> out_results) override;
-	void save_instance_blocks(Span<VoxelStreamInstanceDataRequest> p_blocks) override;
+	void load_instance_blocks(Span<VoxelStream::InstancesQueryData> out_blocks) override;
+	void save_instance_blocks(Span<VoxelStream::InstancesQueryData> p_blocks) override;
 
 	bool supports_loading_all_blocks() const override {
 		return true;

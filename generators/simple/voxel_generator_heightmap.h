@@ -7,6 +7,7 @@
 
 namespace zylann::voxel {
 
+// Common base class for basic heightmap generators
 class VoxelGeneratorHeightmap : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorHeightmap, VoxelGenerator)
 public:

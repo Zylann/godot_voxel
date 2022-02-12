@@ -37,8 +37,8 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		voxels->create(block_size, block_size, block_size);
 	}
 
-	VoxelBlockRequest request_data{ *voxels, origin_in_voxels, lod };
-	const VoxelGenerator::Result result = generator->generate_block(request_data);
+	VoxelGenerator::VoxelQueryData query_data{ *voxels, origin_in_voxels, lod };
+	const VoxelGenerator::Result result = generator->generate_block(query_data);
 	max_lod_hint = result.max_lod_hint;
 
 	if (stream_dependency->valid) {
