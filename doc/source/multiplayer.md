@@ -9,6 +9,10 @@ Multiplayer
 
 In general, the plan is to expose APIs to implement a client/server architecture. There is no assumption of the networking library you use, so it could be Godot RPCs, Valve Networking Sockets or even TCP. There is however assumption that the server also runs a version of the game.
 
+Other points to explore:
+- Block caching and versionning: save blocks client-side so the server doesn't have to send them again next time if they didn't change
+- Client-requesting alternative model: having the client actively request blocks with custom code instead of passively receiving them from the server
+
 
 Server-side viewer with `VoxelTerrain`
 --------------------------------------
