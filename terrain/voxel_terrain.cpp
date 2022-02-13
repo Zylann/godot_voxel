@@ -1414,7 +1414,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	std::vector<Array> collidable_surfaces;
 
 	int surface_index = 0;
-	for (int i = 0; i < ob.surfaces.surfaces.size(); ++i) {
+	for (unsigned int i = 0; i < ob.surfaces.surfaces.size(); ++i) {
 		Array surface = ob.surfaces.surfaces[i];
 		if (surface.is_empty()) {
 			continue;
