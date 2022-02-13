@@ -44,7 +44,7 @@ public:
 			_items.push_back(Pair{ key, value });
 			return true;
 		}
-		std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it->key == key) {
 			return false;
 		}
@@ -58,7 +58,7 @@ public:
 			_items.push_back(Pair{ key, value });
 			return;
 		}
-		std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it->key == key) {
 			it->value = value;
 		} else {
@@ -78,7 +78,7 @@ public:
 	}
 
 	bool find(K key, T &out_value) const {
-		std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			out_value = it->value;
 			return true;
@@ -95,12 +95,12 @@ public:
 		// Making it work would require passing a struct with two operators() with arguments in both orders...
 		//return std::binary_search(_items.cbegin(), _items.cend(), key);
 
-		std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		return it != _items.end() && it->key == key;
 	}
 
 	bool erase(K key) {
-		std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			_items.erase(it);
 			return true;
