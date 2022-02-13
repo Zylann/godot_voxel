@@ -2873,6 +2873,10 @@ void VoxelLodTerrain::set_show_gizmos(bool enable) {
 	}
 }
 
+void VoxelLodTerrain::set_show_octree_gizmos(bool enable) {
+	_show_octree_node_gizmos = enable;
+}
+
 #endif
 
 // This copies at multiple LOD levels to debug mips

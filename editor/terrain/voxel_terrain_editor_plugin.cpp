@@ -15,17 +15,6 @@ namespace zylann::voxel {
 VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
 	MenuButton *menu_button = memnew(MenuButton);
 	menu_button->set_text(TTR("Terrain"));
-	menu_button->get_popup()->add_item(TTR("Re-generate"), MENU_RESTART_STREAM);
-	menu_button->get_popup()->add_item(TTR("Re-mesh"), MENU_REMESH);
-	menu_button->get_popup()->add_separator();
-	menu_button->get_popup()->add_item(TTR("Stream follow camera"), MENU_STREAM_FOLLOW_CAMERA);
-	{
-		const int i = menu_button->get_popup()->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
-		menu_button->get_popup()->set_item_as_checkable(i, true);
-		menu_button->get_popup()->set_item_checked(i, _editor_viewer_follows_camera);
-	}
-	menu_button->get_popup()->add_separator();
-	menu_button->get_popup()->add_item(TTR("About Voxel Tools..."), MENU_ABOUT);
 	menu_button->get_popup()->connect(
 			"id_pressed", callable_mp(this, &VoxelTerrainEditorPlugin::_on_menu_item_selected));
 	menu_button->hide();
@@ -40,6 +29,30 @@ VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
 
 	_about_window = memnew(VoxelAboutWindow);
 	base_control->add_child(_about_window);
+}
+
+void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool is_lod_terrain) {
+	PopupMenu *popup = menu_button->get_popup();
+	popup->clear();
+
+	popup->add_item(TTR("Re-generate"), MENU_RESTART_STREAM);
+	popup->add_item(TTR("Re-mesh"), MENU_REMESH);
+	popup->add_separator();
+	{
+		popup->add_item(TTR("Stream follow camera"), MENU_STREAM_FOLLOW_CAMERA);
+		const int i = popup->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
+		popup->set_item_as_checkable(i, true);
+		popup->set_item_checked(i, _editor_viewer_follows_camera);
+	}
+	if (is_lod_terrain) {
+		popup->add_separator();
+		popup->add_item(TTR("Show octree nodes"), MENU_SHOW_OCTREE_NODES);
+		const int i = popup->get_item_index(MENU_SHOW_OCTREE_NODES);
+		popup->set_item_as_checkable(i, true);
+		popup->set_item_checked(i, _show_octree_nodes);
+	}
+	popup->add_separator();
+	popup->add_item(TTR("About Voxel Tools..."), MENU_ABOUT);
 }
 
 void VoxelTerrainEditorPlugin::_notification(int p_what) {
@@ -90,8 +103,10 @@ bool VoxelTerrainEditorPlugin::handles(Object *p_object) const {
 
 void VoxelTerrainEditorPlugin::edit(Object *p_object) {
 	VoxelNode *node = Object::cast_to<VoxelNode>(p_object);
+
 	if (node != nullptr) {
 		set_node(node);
+
 	} else {
 		if (!is_side_handled(p_object)) {
 			set_node(nullptr);
@@ -122,8 +137,12 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 				"tree_exited", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_exited), varray(_node));
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
+
+		generate_menu_items(_menu_button, vlt != nullptr);
+
 		if (vlt != nullptr) {
 			vlt->set_show_gizmos(true);
+			vlt->set_show_octree_gizmos(_show_octree_nodes);
 		}
 	}
 }
@@ -182,6 +201,13 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			}
 		} break;
 
+		case MENU_SHOW_OCTREE_NODES: {
+			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
+			ERR_FAIL_COND(lod_terrain == nullptr);
+			_show_octree_nodes = !_show_octree_nodes;
+			lod_terrain->set_show_octree_gizmos(_show_octree_nodes);
+		} break;
+
 		case MENU_ABOUT:
 			_about_window->popup_centered_ratio(0.6);
 			break;
@@ -198,11 +224,6 @@ void VoxelTerrainEditorPlugin::_on_terrain_tree_exited(Node *node) {
 	_node = nullptr;
 }
 
-void VoxelTerrainEditorPlugin::_bind_methods() {
-	// ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"),
-	// 		&VoxelTerrainEditorPlugin::_on_menu_item_selected);
-	// ClassDB::bind_method(D_METHOD("_on_terrain_tree_entered"), &VoxelTerrainEditorPlugin::_on_terrain_tree_entered);
-	// ClassDB::bind_method(D_METHOD("_on_terrain_tree_exited"), &VoxelTerrainEditorPlugin::_on_terrain_tree_exited);
-}
+void VoxelTerrainEditorPlugin::_bind_methods() {}
 
 } // namespace zylann::voxel

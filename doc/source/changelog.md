@@ -23,6 +23,7 @@ Godot 4 is required from this version.
 
 - Smooth voxels
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
+    - `VoxelLodTerrain`: Editor: added option to show octree nodes in editor
     - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
     - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
     - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected

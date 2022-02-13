@@ -26,6 +26,7 @@ protected:
 
 private:
 	void set_node(VoxelNode *node);
+	void generate_menu_items(MenuButton *menu_button, bool is_lod_terrain);
 
 	void _on_menu_item_selected(int id);
 	void _on_terrain_tree_entered(Node *node);
@@ -37,6 +38,7 @@ private:
 		MENU_RESTART_STREAM,
 		MENU_REMESH,
 		MENU_STREAM_FOLLOW_CAMERA,
+		MENU_SHOW_OCTREE_NODES,
 		MENU_ABOUT
 	};
 
@@ -45,6 +47,7 @@ private:
 	uint32_t _editor_viewer_id = -1;
 	Vector3 _editor_camera_last_position;
 	bool _editor_viewer_follows_camera = false;
+	bool _show_octree_nodes = false;
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;
