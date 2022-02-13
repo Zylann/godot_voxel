@@ -15,7 +15,8 @@
 			<argument index="1" name="callback" type="FuncRef" />
 			<description>
 				Executes a function for each voxel holding metadata in the given area.
-				The given callback takes two arguments: voxel position (Vector3i), voxel metadata (Variant)
+				The given callback takes two arguments: voxel position (Vector3i), voxel metadata (Variant).
+				IMPORTANT: inserting new or removing metadata from inside this function is not allowed.
 			</description>
 		</method>
 		<method name="run_blocky_random_tick" qualifiers="const">

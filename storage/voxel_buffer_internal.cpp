@@ -789,12 +789,9 @@ void VoxelBufferInternal::set_block_metadata(Variant meta) {
 
 Variant VoxelBufferInternal::get_voxel_metadata(Vector3i pos) const {
 	ERR_FAIL_COND_V(!is_position_valid(pos), Variant());
-	const Map<Vector3i, Variant>::Element *elem = _voxel_metadata.find(pos);
-	if (elem != nullptr) {
-		return elem->value();
-	} else {
-		return Variant();
-	}
+	Variant metadata;
+	_voxel_metadata.find(pos, metadata);
+	return metadata;
 }
 
 void VoxelBufferInternal::set_voxel_metadata(Vector3i pos, Variant meta) {
@@ -802,17 +799,25 @@ void VoxelBufferInternal::set_voxel_metadata(Vector3i pos, Variant meta) {
 	if (meta.get_type() == Variant::NIL) {
 		_voxel_metadata.erase(pos);
 	} else {
-		_voxel_metadata[pos] = meta;
+		_voxel_metadata.insert_or_assign(pos, meta);
 	}
+}
+
+void VoxelBufferInternal::clear_and_set_voxel_metadata(Span<FlatMap<Vector3i, Variant>::Pair> pairs) {
+#ifdef DEBUG_ENABLED
+	for (size_t i = 0; i < pairs.size(); ++i) {
+		ERR_CONTINUE(!is_position_valid(pairs[i].key));
+	}
+#endif
+	_voxel_metadata.clear_and_insert(pairs);
 }
 
 void VoxelBufferInternal::for_each_voxel_metadata(const Callable &callback) const {
 	ERR_FAIL_COND(callback.is_null());
-	const Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
 
-	while (elem != nullptr) {
-		const Variant key = elem->key();
-		const Variant *args[2] = { &key, &elem->value() };
+	for (FlatMap<Vector3i, Variant>::ConstIterator it = _voxel_metadata.begin(); it != _voxel_metadata.end(); ++it) {
+		const Variant key = it->key;
+		const Variant *args[2] = { &key, &it->value };
 		Callable::CallError err;
 		Variant retval; // We don't care about the return value, Callable API requires it
 		callback.call(args, 2, retval, err);
@@ -822,8 +827,6 @@ void VoxelBufferInternal::for_each_voxel_metadata(const Callable &callback) cons
 		// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
 		// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
 		// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
-
-		elem = elem->next();
 	}
 }
 
@@ -849,14 +852,9 @@ void VoxelBufferInternal::clear_voxel_metadata() {
 }
 
 void VoxelBufferInternal::clear_voxel_metadata_in_area(Box3i box) {
-	Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
-	while (elem != nullptr) {
-		Map<Vector3i, Variant>::Element *next_elem = elem->next();
-		if (box.contains(elem->key())) {
-			_voxel_metadata.erase(elem);
-		}
-		elem = next_elem;
-	}
+	_voxel_metadata.remove_if([&box](const FlatMap<Vector3i, Variant>::Pair &p) { //
+		return box.contains(p.key);
+	});
 }
 
 void VoxelBufferInternal::copy_voxel_metadata_in_area(
@@ -866,28 +864,22 @@ void VoxelBufferInternal::copy_voxel_metadata_in_area(
 	const Box3i clipped_src_box = src_box.clipped(Box3i(src_box.pos - dst_origin, _size));
 	const Vector3i clipped_dst_offset = dst_origin + clipped_src_box.pos - src_box.pos;
 
-	const Map<Vector3i, Variant>::Element *elem = src_buffer._voxel_metadata.front();
-
-	while (elem != nullptr) {
-		const Vector3i src_pos = elem->key();
-		if (src_box.contains(src_pos)) {
-			const Vector3i dst_pos = src_pos + clipped_dst_offset;
+	for (FlatMap<Vector3i, Variant>::ConstIterator src_it = src_buffer._voxel_metadata.begin();
+			src_it != src_buffer._voxel_metadata.end(); ++src_it) {
+		if (src_box.contains(src_it->key)) {
+			const Vector3i dst_pos = src_it->key + clipped_dst_offset;
 			CRASH_COND(!is_position_valid(dst_pos));
-			_voxel_metadata[dst_pos] = elem->value().duplicate();
+			_voxel_metadata.insert_or_assign(dst_pos, src_it->value.duplicate());
 		}
-		elem = elem->next();
 	}
 }
 
 void VoxelBufferInternal::copy_voxel_metadata(const VoxelBufferInternal &src_buffer) {
 	ERR_FAIL_COND(src_buffer.get_size() != _size);
 
-	const Map<Vector3i, Variant>::Element *elem = src_buffer._voxel_metadata.front();
-
-	while (elem != nullptr) {
-		const Vector3i pos = elem->key();
-		_voxel_metadata[pos] = elem->value().duplicate();
-		elem = elem->next();
+	for (FlatMap<Vector3i, Variant>::ConstIterator src_it = src_buffer._voxel_metadata.begin();
+			src_it != src_buffer._voxel_metadata.end(); ++src_it) {
+		_voxel_metadata.insert_or_assign(src_it->key, src_it->value.duplicate());
 	}
 
 	_block_metadata.user_data = src_buffer._block_metadata.user_data.duplicate();

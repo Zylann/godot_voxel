@@ -7,6 +7,7 @@
 #include "../streams/instance_data.h"
 #include "../streams/region/region_file.h"
 #include "../streams/voxel_block_serializer.h"
+#include "../util/flat_map.h"
 #include "../util/godot/funcs.h"
 #include "../util/island_finder.h"
 #include "../util/math/box3i.h"
@@ -1223,6 +1224,97 @@ void test_run_blocky_random_tick() {
 	}
 }
 
+void test_flat_map() {
+	typedef FlatMap<int, int>::Pair Pair;
+
+	std::vector<Pair> sorted_pairs;
+	for (int i = 0; i < 10; ++i) {
+		sorted_pairs.push_back(Pair{ i, 100 * i });
+	}
+	const int inexistent_key1 = 11;
+	const int inexistent_key2 = -1;
+
+	struct L {
+		static bool validate_map(const FlatMap<int, int> &map, const std::vector<Pair> &sorted_pairs) {
+			ERR_FAIL_COND_V(sorted_pairs.size() != map.size(), false);
+			for (size_t i = 0; i < sorted_pairs.size(); ++i) {
+				const Pair expected_pair = sorted_pairs[i];
+				int value;
+				ERR_FAIL_COND_V(!map.has(expected_pair.key), false);
+				ERR_FAIL_COND_V(!map.find(expected_pair.key, value), false);
+				ERR_FAIL_COND_V(value != expected_pair.value, false);
+			}
+			return true;
+		}
+	};
+
+	std::vector<Pair> shuffled_pairs = sorted_pairs;
+	RandomPCG rng;
+	rng.seed(131183);
+	for (size_t i = 0; i < shuffled_pairs.size(); ++i) {
+		size_t dst_i = rng.rand() % shuffled_pairs.size();
+		const Pair temp = shuffled_pairs[dst_i];
+		shuffled_pairs[dst_i] = shuffled_pairs[i];
+		shuffled_pairs[i] = temp;
+	}
+
+	{
+		// Insert pre-sorted pairs
+		FlatMap<int, int> map;
+		for (size_t i = 0; i < sorted_pairs.size(); ++i) {
+			const Pair pair = sorted_pairs[i];
+			ERR_FAIL_COND(!map.insert(pair.key, pair.value));
+		}
+		ERR_FAIL_COND(!L::validate_map(map, sorted_pairs));
+	}
+	{
+		// Insert random pairs
+		FlatMap<int, int> map;
+		for (size_t i = 0; i < shuffled_pairs.size(); ++i) {
+			const Pair pair = shuffled_pairs[i];
+			ERR_FAIL_COND(!map.insert(pair.key, pair.value));
+		}
+		ERR_FAIL_COND(!L::validate_map(map, sorted_pairs));
+	}
+	{
+		// Insert random pairs with duplicates
+		FlatMap<int, int> map;
+		for (size_t i = 0; i < shuffled_pairs.size(); ++i) {
+			const Pair pair = shuffled_pairs[i];
+			ERR_FAIL_COND(!map.insert(pair.key, pair.value));
+			// This second one should fail
+			ERR_FAIL_COND(map.insert(pair.key, pair.value));
+		}
+		ERR_FAIL_COND(!L::validate_map(map, sorted_pairs));
+	}
+	{
+		// Init from collection
+		FlatMap<int, int> map;
+		map.clear_and_insert(to_span(shuffled_pairs));
+		ERR_FAIL_COND(!L::validate_map(map, sorted_pairs));
+	}
+	{
+		// Inexistent items
+		FlatMap<int, int> map;
+		map.clear_and_insert(to_span(shuffled_pairs));
+		ERR_FAIL_COND(map.has(inexistent_key1));
+		ERR_FAIL_COND(map.has(inexistent_key2));
+	}
+	{
+		// Iteration
+		FlatMap<int, int> map;
+		map.clear_and_insert(to_span(shuffled_pairs));
+		size_t i = 0;
+		for (FlatMap<int, int>::ConstIterator it = map.begin(); it != map.end(); ++it) {
+			ERR_FAIL_COND(i >= sorted_pairs.size());
+			const Pair expected_pair = sorted_pairs[i];
+			ERR_FAIL_COND(expected_pair.key != it->key);
+			ERR_FAIL_COND(expected_pair.value != it->value);
+			++i;
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
@@ -1255,6 +1347,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_fast_noise_2);
 #endif
 	VOXEL_TEST(test_run_blocky_random_tick);
+	VOXEL_TEST(test_flat_map);
 
 	print_line("------------ Voxel tests end -------------");
 }

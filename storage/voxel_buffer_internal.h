@@ -3,12 +3,11 @@
 
 #include "../constants/voxel_constants.h"
 #include "../util/fixed_array.h"
+#include "../util/flat_map.h"
 #include "../util/math/box3i.h"
-#include "../util/span.h"
 #include "funcs.h"
 
 #include <core/object/ref_counted.h>
-#include <core/templates/map.h>
 #include <core/templates/vector.h>
 #include <limits>
 
@@ -417,17 +416,19 @@ public:
 		return _block_metadata.user_data;
 	}
 	void set_block_metadata(Variant meta);
+
 	Variant get_voxel_metadata(Vector3i pos) const;
 	void set_voxel_metadata(Vector3i pos, Variant meta);
 
+	void clear_and_set_voxel_metadata(Span<FlatMap<Vector3i, Variant>::Pair> pairs);
+
 	template <typename F>
 	void for_each_voxel_metadata_in_area(Box3i box, F callback) const {
-		const Map<Vector3i, Variant>::Element *elem = _voxel_metadata.front();
-		while (elem != nullptr) {
-			if (box.contains(elem->key())) {
-				callback(elem->key(), elem->value());
+		for (FlatMap<Vector3i, Variant>::ConstIterator it = _voxel_metadata.begin(); it != _voxel_metadata.end();
+				++it) {
+			if (box.contains(it->key)) {
+				callback(it->key, it->value);
 			}
-			elem = elem->next();
 		}
 	}
 
@@ -439,7 +440,7 @@ public:
 	void copy_voxel_metadata_in_area(const VoxelBufferInternal &src_buffer, Box3i src_box, Vector3i dst_origin);
 	void copy_voxel_metadata(const VoxelBufferInternal &src_buffer);
 
-	const Map<Vector3i, Variant> &get_voxel_metadata() const {
+	const FlatMap<Vector3i, Variant> &get_voxel_metadata() const {
 		return _voxel_metadata;
 	}
 
@@ -481,8 +482,8 @@ private:
 
 	// TODO Could we separate metadata from VoxelBufferInternal?
 	BlockMetadata _block_metadata;
-	// TODO Optimization: could use a flat map instead. Per-voxel metadata is intented to be sparse.
-	Map<Vector3i, Variant> _voxel_metadata;
+	// This metadata is expected to be sparse, with low amount of items.
+	FlatMap<Vector3i, Variant> _voxel_metadata;
 
 	// TODO It may be preferable to actually move away from storing an RWLock in every buffer in the future.
 	// We should be able to find a solution because very few of these locks are actually used at a given time.

@@ -116,6 +116,8 @@
 			<argument index="0" name="callback" type="FuncRef" />
 			<description>
 				Executes a function on every voxel in this buffer which have associated metadata.
+				The function's arguments must be (position: Vector3i, metadata: Variant).
+				IMPORTANT: inserting new or removing metadata from inside this function is not allowed.
 			</description>
 		</method>
 		<method name="for_each_voxel_metadata_in_area">

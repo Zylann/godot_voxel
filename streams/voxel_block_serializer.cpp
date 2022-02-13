@@ -28,9 +28,9 @@ thread_local std::vector<uint8_t> tls_metadata_tmp;
 size_t get_metadata_size_in_bytes(const VoxelBufferInternal &buffer) {
 	size_t size = 0;
 
-	const Map<Vector3i, Variant>::Element *elem = buffer.get_voxel_metadata().front();
-	while (elem != nullptr) {
-		const Vector3i pos = elem->key();
+	const FlatMap<Vector3i, Variant> &voxel_metadata = buffer.get_voxel_metadata();
+	for (FlatMap<Vector3i, Variant>::ConstIterator it = voxel_metadata.begin(); it != voxel_metadata.end(); ++it) {
+		const Vector3i pos = it->key;
 
 		ERR_FAIL_COND_V_MSG(pos.x < 0 || static_cast<uint32_t>(pos.x) >= VoxelBufferInternal::MAX_SIZE, 0,
 				"Invalid voxel metadata X position");
@@ -42,11 +42,9 @@ size_t get_metadata_size_in_bytes(const VoxelBufferInternal &buffer) {
 		size += 3 * sizeof(uint16_t); // Positions are stored as 3 unsigned shorts
 
 		int len;
-		const Error err = encode_variant(elem->value(), nullptr, len, false);
+		const Error err = encode_variant(it->value, nullptr, len, false);
 		ERR_FAIL_COND_V_MSG(err != OK, 0, "Error when trying to encode voxel metadata.");
 		size += len;
-
-		elem = elem->next();
 	}
 
 	// If no metadata is found at all, nothing is serialized, not even null.
@@ -91,29 +89,38 @@ void serialize_metadata(uint8_t *p_dst, const VoxelBufferInternal &buffer, const
 		CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) > metadata_size, "Wrote block metadata out of expected bounds");
 	}
 
-	const Map<Vector3i, Variant>::Element *elem = buffer.get_voxel_metadata().front();
-	while (elem != nullptr) {
+	const FlatMap<Vector3i, Variant> &voxel_metadata = buffer.get_voxel_metadata();
+	for (FlatMap<Vector3i, Variant>::ConstIterator it = voxel_metadata.begin(); it != voxel_metadata.end(); ++it) {
 		// Serializing key as ushort because it's more than enough for a 3D dense array
-		static_assert(VoxelBufferInternal::MAX_SIZE <= 65535, "Maximum size exceeds serialization support");
-		const Vector3i pos = elem->key();
+		static_assert(VoxelBufferInternal::MAX_SIZE <= std::numeric_limits<uint16_t>::max(),
+				"Maximum size exceeds serialization support");
+		const Vector3i pos = it->key;
 		write<uint16_t>(dst, pos.x);
 		write<uint16_t>(dst, pos.y);
 		write<uint16_t>(dst, pos.z);
 
 		int written_length;
-		const Error err = encode_variant(elem->value(), dst, written_length, false);
+		const Error err = encode_variant(it->value, dst, written_length, false);
 		CRASH_COND_MSG(err != OK, "Error when trying to encode voxel metadata.");
 		dst += written_length;
 
 		CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) > metadata_size, "Wrote voxel metadata out of expected bounds");
-
-		elem = elem->next();
 	}
 
 	CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) != metadata_size,
 			String("Written metadata doesn't match expected count (expected {0}, got {1})")
 					.format(varray(SIZE_T_TO_VARIANT(metadata_size), (int)(dst - p_dst))));
 }
+
+template <typename T>
+struct ClearOnExit {
+	T &container;
+	~ClearOnExit() {
+		container.clear();
+	}
+};
+
+//#define CLEAR_ON_EXIT(container) ClearOnExit<decltype(container)> clear_on_exit_##__LINE__;
 
 bool deserialize_metadata(uint8_t *p_src, VoxelBufferInternal &buffer, const size_t metadata_size) {
 	uint8_t *src = p_src;
@@ -130,12 +137,21 @@ bool deserialize_metadata(uint8_t *p_src, VoxelBufferInternal &buffer, const siz
 		buffer.set_block_metadata(block_metadata);
 	}
 
+	typedef FlatMap<Vector3i, Variant>::Pair Pair;
+	static thread_local std::vector<Pair> tls_pairs;
+	// Clear when exiting scope (including cases of error) so we don't store dangling Variants
+	ClearOnExit<std::vector<Pair>> clear_tls_pairs{ tls_pairs };
+
 	while (remaining_length > 0) {
 		Vector3i pos;
 		pos.x = read<uint16_t>(src);
 		pos.y = read<uint16_t>(src);
 		pos.z = read<uint16_t>(src);
 		remaining_length -= 3 * sizeof(uint16_t);
+
+		ERR_CONTINUE_MSG(!buffer.is_position_valid(pos),
+				String("Invalid voxel metadata position {0} for buffer of size {1}")
+						.format(varray(pos, buffer.get_size())));
 
 		Variant metadata;
 		int read_length;
@@ -145,8 +161,11 @@ bool deserialize_metadata(uint8_t *p_src, VoxelBufferInternal &buffer, const siz
 		src += read_length;
 		CRASH_COND_MSG(remaining_length > metadata_size, "Block metadata size underflow");
 
-		buffer.set_voxel_metadata(pos, metadata);
+		tls_pairs.push_back(Pair{ pos, metadata });
 	}
+
+	// Set all metadata at once, FlatMap is faster to initialize this way
+	buffer.clear_and_set_voxel_metadata(to_span(tls_pairs));
 
 	CRASH_COND_MSG(remaining_length != 0, "Did not read expected size");
 	return true;
