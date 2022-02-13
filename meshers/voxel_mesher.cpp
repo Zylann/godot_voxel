@@ -31,7 +31,7 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
 		}
 
 		mesh->add_surface_from_arrays(output.primitive_type, surface, Array(), Dictionary(), output.mesh_flags);
-		if (i < materials.size()) {
+		if (int(i) < materials.size()) {
 			mesh->surface_set_material(surface_index, materials[i]);
 		}
 		++surface_index;
