@@ -104,8 +104,8 @@ public:
 			data_lod0.map.write_box(
 					voxel_box, channel, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
 						if (generator.is_valid()) {
-							VoxelBlockRequest r{ voxels, pos, 0 };
-							generator->generate_block(r);
+							VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
+							generator->generate_block(q);
 						}
 					});
 		}
@@ -126,8 +126,8 @@ public:
 			data_lod0.map.write_box_2(
 					voxel_box, channel1, channel2, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
 						if (generator.is_valid()) {
-							VoxelBlockRequest r{ voxels, pos, 0 };
-							generator->generate_block(r);
+							VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
+							generator->generate_block(q);
 						}
 					});
 		}
