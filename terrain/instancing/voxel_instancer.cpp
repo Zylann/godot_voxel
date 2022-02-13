@@ -40,11 +40,11 @@ void VoxelInstancer::clear_blocks() {
 	// Destroy blocks, keep configured layers
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		Block *block = *it;
-		for (int i = 0; i < block->bodies.size(); ++i) {
+		for (unsigned int i = 0; i < block->bodies.size(); ++i) {
 			VoxelInstancerRigidBody *body = block->bodies[i];
 			body->detach_and_destroy();
 		}
-		for (int i = 0; i < block->scene_instances.size(); ++i) {
+		for (unsigned int i = 0; i < block->scene_instances.size(); ++i) {
 			SceneInstance instance = block->scene_instances[i];
 			ERR_CONTINUE(instance.component == nullptr);
 			instance.component->detach();
@@ -419,7 +419,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 		// Create blocks
 		std::vector<Vector3i> positions;
 		_parent->get_meshed_block_positions_at_lod(layer->lod_index, positions);
-		for (int i = 0; i < positions.size(); ++i) {
+		for (unsigned int i = 0; i < positions.size(); ++i) {
 			const Vector3i pos = positions[i];
 
 			const unsigned int *iptr = layer->blocks.getptr(pos);
@@ -559,7 +559,7 @@ void VoxelInstancer::update_layer_scenes(int layer_id) {
 		Block *block = _blocks[block_index];
 		ERR_CONTINUE(block == nullptr);
 
-		for (int instance_index = 0; instance_index < block->scene_instances.size(); ++instance_index) {
+		for (unsigned int instance_index = 0; instance_index < block->scene_instances.size(); ++instance_index) {
 			SceneInstance prev_instance = block->scene_instances[instance_index];
 			ERR_CONTINUE(prev_instance.root == nullptr);
 			SceneInstance instance = create_scene_instance(
@@ -681,12 +681,12 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 	_blocks[block_index] = moved_block;
 	_blocks.pop_back();
 
-	for (int i = 0; i < block->bodies.size(); ++i) {
+	for (unsigned int i = 0; i < block->bodies.size(); ++i) {
 		VoxelInstancerRigidBody *body = block->bodies[i];
 		body->detach_and_destroy();
 	}
 
-	for (int i = 0; i < block->scene_instances.size(); ++i) {
+	for (unsigned int i = 0; i < block->scene_instances.size(); ++i) {
 		SceneInstance instance = block->scene_instances[i];
 		ERR_CONTINUE(instance.component == nullptr);
 		instance.component->detach();
@@ -914,7 +914,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			}
 
 			// Remove old bodies
-			for (int instance_index = transforms.size(); instance_index < block->bodies.size(); ++instance_index) {
+			for (unsigned int instance_index = transforms.size(); instance_index < block->bodies.size();
+					++instance_index) {
 				VoxelInstancerRigidBody *body = block->bodies[instance_index];
 				body->detach_and_destroy();
 			}
@@ -953,7 +954,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 		}
 
 		// Remove old instances
-		for (int instance_index = transforms.size(); instance_index < block->scene_instances.size(); ++instance_index) {
+		for (unsigned int instance_index = transforms.size(); instance_index < block->scene_instances.size();
+				++instance_index) {
 			SceneInstance instance = block->scene_instances[instance_index];
 			ERR_CONTINUE(instance.component == nullptr);
 			instance.component->detach();
@@ -1417,7 +1419,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 
 // This is called if a user destroys or unparents the body node while it's still attached to the ground
 void VoxelInstancer::on_body_removed(
-		Vector3i data_block_position, unsigned int render_block_index, int instance_index) {
+		Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index) {
 	Block *block = _blocks[render_block_index];
 	CRASH_COND(block == nullptr);
 	ERR_FAIL_INDEX(instance_index, block->bodies.size());
@@ -1429,7 +1431,7 @@ void VoxelInstancer::on_body_removed(
 		ERR_FAIL_COND(multimesh.is_null());
 
 		int visible_count = get_visible_instance_count(**multimesh);
-		ERR_FAIL_COND(instance_index >= visible_count);
+		ERR_FAIL_COND(int(instance_index) >= visible_count);
 
 		--visible_count;
 		// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
@@ -1439,8 +1441,8 @@ void VoxelInstancer::on_body_removed(
 	}
 
 	// Unregister the body
-	int body_count = block->bodies.size();
-	int last_instance_index = --body_count;
+	unsigned int body_count = block->bodies.size();
+	unsigned int last_instance_index = --body_count;
 	VoxelInstancerRigidBody *moved_body = block->bodies[last_instance_index];
 	if (instance_index != last_instance_index) {
 		moved_body->set_instance_index(instance_index);
@@ -1462,8 +1464,8 @@ void VoxelInstancer::on_scene_instance_removed(
 	ERR_FAIL_INDEX(instance_index, block->bodies.size());
 
 	// Unregister the scene instance
-	int instance_count = block->scene_instances.size();
-	int last_instance_index = --instance_count;
+	unsigned int instance_count = block->scene_instances.size();
+	unsigned int last_instance_index = --instance_count;
 	SceneInstance moved_instance = block->scene_instances[last_instance_index];
 	if (instance_index != last_instance_index) {
 		ERR_FAIL_COND(moved_instance.component == nullptr);
