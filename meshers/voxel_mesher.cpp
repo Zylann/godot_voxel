@@ -4,7 +4,7 @@
 
 namespace zylann::voxel {
 
-Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, Array materials) {
+Ref<Mesh> VoxelMesher::build_mesh(Ref<VoxelBuffer> voxels, TypedArray<Material> materials) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
 	Output output;

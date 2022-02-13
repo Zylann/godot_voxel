@@ -31,7 +31,7 @@ public:
 	virtual void build(Output &output, const Input &voxels);
 
 	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
-	Ref<Mesh> build_mesh(Ref<VoxelBuffer> voxels, Array materials);
+	Ref<Mesh> build_mesh(Ref<VoxelBuffer> voxels, TypedArray<Material> materials);
 
 	// Gets how many neighbor voxels need to be accessed around the meshed area, toward negative axes.
 	// If this is not respected, the mesher might produce seams at the edges, or an error
