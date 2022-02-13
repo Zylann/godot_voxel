@@ -100,17 +100,17 @@ static Vector3 get_motion(AABB box, Vector3 motion, const std::vector<AABB> &env
 
 	Vector3 new_motion = motion;
 
-	for (int i = 0; i < colliding_boxes.size(); ++i) {
+	for (unsigned int i = 0; i < colliding_boxes.size(); ++i) {
 		new_motion.y = calculate_i_offset(colliding_boxes[i], box, new_motion.y, 1, 0, 2);
 	}
 	box.position.y += new_motion.y;
 
-	for (int i = 0; i < colliding_boxes.size(); ++i) {
+	for (unsigned int i = 0; i < colliding_boxes.size(); ++i) {
 		new_motion.x = calculate_i_offset(colliding_boxes[i], box, new_motion.x, 0, 1, 2);
 	}
 	box.position.x += new_motion.x;
 
-	for (int i = 0; i < colliding_boxes.size(); ++i) {
+	for (unsigned int i = 0; i < colliding_boxes.size(); ++i) {
 		new_motion.z = calculate_i_offset(colliding_boxes[i], box, new_motion.z, 2, 1, 0);
 	}
 	box.position.z += new_motion.z;
