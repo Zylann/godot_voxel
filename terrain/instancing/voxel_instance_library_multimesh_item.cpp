@@ -170,7 +170,7 @@ static bool deserialize_collision_shape_infos(
 		Array a, std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &out_infos) {
 	ERR_FAIL_COND_V(a.size() % 2 != 0, false);
 
-	for (unsigned int i = 0; i < a.size(); i += 2) {
+	for (int i = 0; i < a.size(); i += 2) {
 		VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo info;
 		info.shape = a[i];
 		info.transform = a[i + 1];
