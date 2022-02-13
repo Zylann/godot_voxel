@@ -2,6 +2,7 @@
 #include "../../terrain/instancing/voxel_instance_library_multimesh_item.h"
 #include "../../terrain/instancing/voxel_instance_library_scene_item.h"
 
+#include <editor/editor_file_dialog.h>
 #include <scene/gui/dialogs.h>
 #include <scene/gui/menu_button.h>
 #include <scene/resources/primitive_meshes.h>
