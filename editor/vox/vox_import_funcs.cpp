@@ -40,8 +40,7 @@ Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 	Ref<ArrayMesh> mesh;
 	mesh.instantiate();
 
-	int surface_index = 0;
-	for (int i = 0; i < output.surfaces.size(); ++i) {
+	for (unsigned int i = 0; i < output.surfaces.size(); ++i) {
 		Array surface = output.surfaces[i];
 
 		if (surface.is_empty()) {
@@ -63,7 +62,6 @@ Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 
 		mesh->add_surface_from_arrays(output.primitive_type, surface, Array(), Dictionary(), output.mesh_flags);
 		surface_index_to_material.push_back(i);
-		++surface_index;
 	}
 
 	if (output.atlas_image.is_valid()) {
