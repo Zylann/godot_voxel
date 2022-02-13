@@ -98,7 +98,7 @@ void VoxelInstanceLibrary::on_library_item_changed(int id, VoxelInstanceLibraryI
 }
 
 void VoxelInstanceLibrary::notify_listeners(int item_id, VoxelInstanceLibraryItem::ChangeType change) {
-	for (int i = 0; i < _listeners.size(); ++i) {
+	for (unsigned int i = 0; i < _listeners.size(); ++i) {
 		IListener *listener = _listeners[i];
 		listener->on_library_item_changed(item_id, change);
 	}
