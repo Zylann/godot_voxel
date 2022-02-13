@@ -31,8 +31,9 @@ VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int chan
 
 void VoxelGenerator::_b_generate_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
+	ERR_FAIL_COND(lod >= constants::MAX_LOD);
 	ERR_FAIL_COND(out_buffer.is_null());
-	VoxelQueryData q = { out_buffer->get_buffer(), origin_in_voxels, lod };
+	VoxelQueryData q = { out_buffer->get_buffer(), origin_in_voxels, uint8_t(lod) };
 	generate_block(q);
 }
 

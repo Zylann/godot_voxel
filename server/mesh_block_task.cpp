@@ -10,7 +10,7 @@ namespace zylann::voxel {
 // which includes enough neighbors for the mesher to avoid doing bound checks.
 static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
 		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator, int data_block_size,
-		int lod_index, Vector3i mesh_block_pos) {
+		uint8_t lod_index, Vector3i mesh_block_pos) {
 	VOXEL_PROFILE_SCOPE();
 
 	// Extract wanted channels in a list

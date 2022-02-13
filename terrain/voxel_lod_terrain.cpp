@@ -2199,7 +2199,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 	// Process downscales upwards in pairs of consecutive LODs.
 	// This ensures we don't process multiple times the same blocks.
 	// Only LOD0 is editable at the moment, so we'll downscale from there
-	for (unsigned int dst_lod_index = 1; dst_lod_index < _lod_count; ++dst_lod_index) {
+	for (uint8_t dst_lod_index = 1; dst_lod_index < _lod_count; ++dst_lod_index) {
 		Lod &src_lod = _lods[dst_lod_index - 1];
 		Lod &dst_lod = _lods[dst_lod_index];
 
@@ -2229,7 +2229,7 @@ void VoxelLodTerrain::flush_pending_lod_edits() {
 					if (_generator.is_valid()) {
 						VOXEL_PROFILE_SCOPE_NAMED("Generate");
 						VoxelGenerator::VoxelQueryData q{ *voxels,
-							dst_bpos << (dst_lod_index + get_data_block_size_pow2()), int(dst_lod_index) };
+							dst_bpos << (dst_lod_index + get_data_block_size_pow2()), dst_lod_index };
 						_generator->generate_block(q);
 					}
 					dst_block = dst_data_lod.map.set_block_buffer(dst_bpos, voxels, true);

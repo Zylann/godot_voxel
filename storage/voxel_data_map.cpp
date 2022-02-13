@@ -359,7 +359,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 
 	struct Task {
 		Vector3i block_pos;
-		unsigned int lod_index;
+		uint8_t lod_index;
 		std::shared_ptr<VoxelBufferInternal> voxels;
 	};
 
@@ -370,7 +370,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 	const unsigned int data_block_size = data.lods[0].map.get_block_size();
 
 	// Find empty slots
-	for (unsigned int lod_index = 0; lod_index < data.lod_count; ++lod_index) {
+	for (uint8_t lod_index = 0; lod_index < data.lod_count; ++lod_index) {
 		const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
 
 		PRINT_VERBOSE(
@@ -402,7 +402,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 		// TODO Format?
 		if (generator != nullptr) {
 			VoxelGenerator::VoxelQueryData q{ *task.voxels, task.block_pos * (data_block_size << task.lod_index),
-				int(task.lod_index) };
+				task.lod_index };
 			generator->generate_block(q);
 		}
 	}
