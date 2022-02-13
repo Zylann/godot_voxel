@@ -3,6 +3,7 @@
 
 #include "../storage/voxel_buffer.h"
 #include "voxel_block_serializer.h"
+#include <core/io/stream_peer.h>
 
 namespace zylann::voxel {
 
