@@ -89,10 +89,9 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 		VoxelStream::InstancesQueryData instances_query;
 		instances_query.lod = _lod;
 		instances_query.position = _position;
-		VoxelStream::ResultCode instances_result;
 		stream->load_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
 
-		if (instances_result == VoxelStream::RESULT_ERROR) {
+		if (instances_query.result == VoxelStream::RESULT_ERROR) {
 			ERR_PRINT("Error loading instance block");
 
 		} else if (voxel_query_data.result == VoxelStream::RESULT_BLOCK_FOUND) {
