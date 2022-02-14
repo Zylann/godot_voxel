@@ -27,7 +27,6 @@ struct Vector3f {
 
 	Vector3f() : x(0), y(0), z(0) {}
 	Vector3f(float p_x, float p_y, float p_z) : x(p_x), y(p_y), z(p_z) {}
-	Vector3f(const Vector3f &other) : x(other.x), y(other.y), z(other.z) {}
 
 	inline float length_squared() const {
 		return x * x + y * y + z * z;
