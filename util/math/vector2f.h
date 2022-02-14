@@ -23,7 +23,6 @@ struct Vector2f {
 
 	Vector2f() : x(0), y(0) {}
 	Vector2f(float p_x, float p_y) : x(p_x), y(p_y) {}
-	Vector2f(const Vector2f &other) : x(other.x), y(other.y) {}
 
 	float cross(const Vector2f &p_other) const {
 		return x * p_other.y - y * p_other.x;
