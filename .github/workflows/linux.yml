@@ -13,7 +13,16 @@ env:
 jobs:
   linux-editor:
     runs-on: "ubuntu-20.04"
-    name: Editor
+    name: ${{matrix.name}}
+
+    strategy:
+      matrix:
+        include:
+          - name: Editor build
+            float: 32
+
+          - name: Editor build with 64-bit floats
+            float: 64
 
     steps:
       # Clone Godot
@@ -74,7 +83,7 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tools=yes tests=no target=release_debug production=yes
+          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tools=yes tests=no target=release_debug production=yes float=${{matrix.float}}
 
       # TODO Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
