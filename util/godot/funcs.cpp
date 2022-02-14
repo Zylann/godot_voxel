@@ -271,7 +271,7 @@ void copy_to(Vector<Vector3> &dst, const std::vector<Vector3f> &src) {
 	}
 #else
 	static_assert(sizeof(Vector3) == sizeof(Vector3f));
-	memcpy(dst.ptrw(), src.data(), src.size() * sizeof(Vector3f));
+	memcpy(dst.ptrw(), reinterpret_cast<const Vector3 *>(src.data()), src.size() * sizeof(Vector3f));
 #endif
 }
 
@@ -290,7 +290,7 @@ void copy_to(Vector<Vector2> &dst, const std::vector<Vector2f> &src) {
 	}
 #else
 	static_assert(sizeof(Vector2) == sizeof(Vector2f));
-	memcpy(dst.ptrw(), src.data(), src.size() * sizeof(Vector2f));
+	memcpy(dst.ptrw(), reinterpret_cast<const Vector2 *>(src.data()), src.size() * sizeof(Vector2f));
 #endif
 }
 
