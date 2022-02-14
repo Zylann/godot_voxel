@@ -114,7 +114,8 @@ void DirectMultiMeshInstance::make_transform_3d_bulk_array(
 	if (static_cast<unsigned int>(bulk_array.size()) != bulk_array_size) {
 		bulk_array.resize(bulk_array_size);
 	}
-	CRASH_COND(transforms.size() * sizeof(Transform3D) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
+	// Note, the actual size of `Transform3D` can be twice if `real_t` is `double`.
+	CRASH_COND(transforms.size() * sizeof(Transform3D) / sizeof(real_t) != static_cast<size_t>(bulk_array.size()));
 
 	//memcpy(w.ptr(), _transform_cache.data(), bulk_array.size() * sizeof(float));
 	// Nope, you can't memcpy that, nonono. It's said to be for performance, but doesnt specify why.
@@ -138,7 +139,9 @@ void DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(
 	if (static_cast<unsigned int>(bulk_array.size()) != bulk_array_size) {
 		bulk_array.resize(bulk_array_size);
 	}
-	CRASH_COND(data.size() * sizeof(TransformAndColor8) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
+	// Note, the actual size of `Transform3D` can be twice if `real_t` is `double`.
+	CRASH_COND(data.size() * (sizeof(Transform3D) / sizeof(real_t) + sizeof(Color8) / sizeof(float)) !=
+			static_cast<size_t>(bulk_array.size()));
 
 	float *w = bulk_array.ptrw();
 	for (size_t i = 0; i < data.size(); ++i) {
@@ -160,7 +163,10 @@ void DirectMultiMeshInstance::make_transform_and_color32_3d_bulk_array(
 	if (static_cast<unsigned int>(bulk_array.size()) != bulk_array_size) {
 		bulk_array.resize(bulk_array_size);
 	}
-	CRASH_COND(data.size() * sizeof(TransformAndColor32) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
+	// Note, the actual size of `Transform3D` can be twice if `real_t` is `double`.
+	// `Color` still uses `float` no matter the setting.
+	CRASH_COND(data.size() * (sizeof(Transform3D) / sizeof(real_t) + sizeof(Color) / sizeof(float)) !=
+			static_cast<size_t>(bulk_array.size()));
 
 	float *w = bulk_array.ptrw();
 	for (size_t i = 0; i < data.size(); ++i) {

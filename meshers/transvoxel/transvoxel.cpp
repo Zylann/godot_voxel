@@ -1,6 +1,7 @@
 #include "transvoxel.h"
 #include "../../constants/cube_tables.h"
 #include "../../util/funcs.h"
+#include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
@@ -13,7 +14,7 @@ inline uint8_t sign_f(float v) {
 	return v < 0.f;
 }
 
-Vector3 get_border_offset(const Vector3 pos, const int lod_index, const Vector3i block_size) {
+Vector3f get_border_offset(const Vector3f pos, const int lod_index, const Vector3i block_size) {
 	// When transition meshes are inserted between blocks of different LOD, we need to make space for them.
 	// Secondary vertex positions can be calculated by linearly transforming positions inside boundary cells
 	// so that the full-size cell is scaled to a smaller size that allows space for between one and three
@@ -21,7 +22,7 @@ Vector3 get_border_offset(const Vector3 pos, const int lod_index, const Vector3i
 	// entire block. This can be accomplished by computing offsets (Δx, Δy, Δz) for the coordinates (x, y, z)
 	// in any boundary cell.
 
-	Vector3 delta;
+	Vector3f delta;
 
 	const float p2k = 1 << lod_index; // 2 ^ lod
 	const float p2mk = 1.f / p2k; // 2 ^ (-lod)
@@ -45,14 +46,14 @@ Vector3 get_border_offset(const Vector3 pos, const int lod_index, const Vector3i
 	return delta;
 }
 
-inline Vector3 project_border_offset(Vector3 delta, Vector3 normal) {
+inline Vector3f project_border_offset(Vector3f delta, Vector3f normal) {
 	// Secondary position can be obtained with the following formula:
 	//
 	// | x |   | 1 - nx²   ,  -nx * ny  ,  -nx * nz |   | Δx |
 	// | y | + | -nx * ny  ,  1 - ny²   ,  -ny * nz | * | Δy |
 	// | z |   | -nx * nz  ,  -ny * nz  ,  1 - nz²  |   | Δz |
 	//
-	return Vector3((1 - normal.x * normal.x) * delta.x /**/ - normal.y * normal.x * delta.y /*     */ -
+	return Vector3f((1 - normal.x * normal.x) * delta.x /**/ - normal.y * normal.x * delta.y /*     */ -
 					normal.z * normal.x * delta.z,
 			/**/ -normal.x * normal.y * delta.x + (1 - normal.y * normal.y) * delta.y /*    */ -
 					normal.z * normal.y * delta.z,
@@ -60,9 +61,9 @@ inline Vector3 project_border_offset(Vector3 delta, Vector3 normal) {
 					(1 - normal.z * normal.z) * delta.z);
 }
 
-inline Vector3 get_secondary_position(
-		const Vector3 primary, const Vector3 normal, const int lod_index, const Vector3i block_size) {
-	Vector3 delta = get_border_offset(primary, lod_index, block_size);
+inline Vector3f get_secondary_position(
+		const Vector3f primary, const Vector3f normal, const int lod_index, const Vector3i block_size) {
+	Vector3f delta = get_border_offset(primary, lod_index, block_size);
 	delta = project_border_offset(delta, normal);
 	return primary + delta;
 }
@@ -91,18 +92,18 @@ inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &block_size) 
 	return mask;
 }
 
-inline Vector3 normalized_not_null(Vector3 n) {
-	real_t lengthsq = n.length_squared();
+inline Vector3f normalized_not_null(Vector3f n) {
+	const float lengthsq = n.length_squared();
 	if (lengthsq == 0) {
-		return Vector3(0, 1, 0);
+		return Vector3f(0, 1, 0);
 	} else {
-		real_t length = Math::sqrt(lengthsq);
-		return Vector3(n.x / length, n.y / length, n.z / length);
+		const float length = Math::sqrt(lengthsq);
+		return Vector3f(n.x / length, n.y / length, n.z / length);
 	}
 }
 
 inline Vector3i dir_to_prev_vec(uint8_t dir) {
-	//return g_corner_dirs[mask] - Vector3(1,1,1);
+	//return g_corner_dirs[mask] - Vector3f(1,1,1);
 	return Vector3i(-(dir & 1), -((dir >> 1) & 1), -((dir >> 2) & 1));
 }
 
@@ -123,7 +124,7 @@ inline float sdf_as_float(double v) {
 }
 
 template <typename Sdf_T>
-inline Vector3 get_corner_gradient(unsigned int data_index, Span<const Sdf_T> sdf_data, const Vector3i block_size) {
+inline Vector3f get_corner_gradient(unsigned int data_index, Span<const Sdf_T> sdf_data, const Vector3i block_size) {
 	const unsigned int n010 = 1; // Y+1
 	const unsigned int n100 = block_size.y; // X+1
 	const unsigned int n001 = block_size.y * block_size.x; // Z+1
@@ -136,7 +137,7 @@ inline Vector3 get_corner_gradient(unsigned int data_index, Span<const Sdf_T> sd
 	const float pz = sdf_as_float(sdf_data[data_index + n001]);
 
 	//get_gradient_normal(nx, px, ny, py, nz, pz, cell_samples[i]);
-	return Vector3(nx - px, ny - py, nz - pz);
+	return Vector3f(nx - px, ny - py, nz - pz);
 }
 
 inline uint32_t pack_bytes(const FixedArray<uint8_t, 4> &a) {
@@ -144,20 +145,21 @@ inline uint32_t pack_bytes(const FixedArray<uint8_t, 4> &a) {
 }
 
 void add_texture_data(
-		std::vector<Vector2> &uv, unsigned int packed_indices, FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights) {
+		std::vector<Vector2f> &uv, unsigned int packed_indices, FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights) {
 	struct IntUV {
 		uint32_t x;
 		uint32_t y;
 	};
-	static_assert(sizeof(IntUV) == sizeof(Vector2), "Expected same binary size");
-	uv.push_back(Vector2());
+	static_assert(sizeof(IntUV) == sizeof(Vector2f), "Expected same binary size");
+	uv.push_back(Vector2f());
 	IntUV &iuv = *(reinterpret_cast<IntUV *>(&uv.back()));
 	//print_line(String("{0}, {1}, {2}, {3}").format(varray(weights[0], weights[1], weights[2], weights[3])));
 	iuv.x = packed_indices;
 	iuv.y = pack_bytes(weights);
 }
 
-template <unsigned int NVoxels> struct CellTextureDatas {
+template <unsigned int NVoxels>
+struct CellTextureDatas {
 	uint32_t packed_indices = 0;
 	FixedArray<uint8_t, MAX_TEXTURE_BLENDS> indices;
 	FixedArray<FixedArray<uint8_t, MAX_TEXTURE_BLENDS>, NVoxels> weights;
@@ -259,17 +261,21 @@ inline void get_cell_texture_data(CellTextureDatas<NVoxels> &cell_textures,
 	}
 }
 
-template <typename Sdf_T> inline Sdf_T get_isolevel() = delete;
+template <typename Sdf_T>
+inline Sdf_T get_isolevel() = delete;
 
-template <> inline uint8_t get_isolevel<uint8_t>() {
+template <>
+inline uint8_t get_isolevel<uint8_t>() {
 	return 128;
 }
 
-template <> inline uint16_t get_isolevel<uint16_t>() {
+template <>
+inline uint16_t get_isolevel<uint16_t>() {
 	return 32768;
 }
 
-template <> inline float get_isolevel<float>() {
+template <>
+inline float get_isolevel<float>() {
 	return 0.f;
 }
 
@@ -516,14 +522,14 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 							//const int ti1 = 0x100 - t;
 
 							//const Vector3i primary = p0 * ti0 + p1 * ti1;
-							const Vector3 primaryf = Vector3(p0) * t0 + Vector3(p1) * t1;
-							const Vector3 cg0 = get_corner_gradient<Sdf_T>(
+							const Vector3f primaryf = to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
+							const Vector3f cg0 = get_corner_gradient<Sdf_T>(
 									corner_data_indices[v0], sdf_data, block_size_with_padding);
-							const Vector3 cg1 = get_corner_gradient<Sdf_T>(
+							const Vector3f cg1 = get_corner_gradient<Sdf_T>(
 									corner_data_indices[v1], sdf_data, block_size_with_padding);
-							const Vector3 normal = normalized_not_null(cg0 * t0 + cg1 * t1);
+							const Vector3f normal = normalized_not_null(cg0 * t0 + cg1 * t1);
 
-							Vector3 secondary;
+							Vector3f secondary;
 							uint16_t border_mask = cell_border_mask;
 
 							if (cell_border_mask > 0) {
@@ -559,12 +565,12 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 						// This cell owns the vertex, so it should be created.
 
 						const Vector3i primary = p1;
-						const Vector3 primaryf = primary;
-						const Vector3 cg1 =
+						const Vector3f primaryf = to_vec3f(primary);
+						const Vector3f cg1 =
 								get_corner_gradient<Sdf_T>(corner_data_indices[v1], sdf_data, block_size_with_padding);
-						const Vector3 normal = normalized_not_null(cg1);
+						const Vector3f normal = normalized_not_null(cg1);
 
-						Vector3 secondary;
+						Vector3f secondary;
 						uint16_t border_mask = cell_border_mask;
 
 						if (cell_border_mask > 0) {
@@ -606,13 +612,13 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 							const unsigned int vi = t == 0 ? v1 : v0;
 
 							const Vector3i primary = t == 0 ? p1 : p0;
-							const Vector3 primaryf = primary;
-							const Vector3 cg = get_corner_gradient<Sdf_T>(
+							const Vector3f primaryf = to_vec3f(primary);
+							const Vector3f cg = get_corner_gradient<Sdf_T>(
 									corner_data_indices[vi], sdf_data, block_size_with_padding);
-							const Vector3 normal = normalized_not_null(cg);
+							const Vector3f normal = normalized_not_null(cg);
 
 							// TODO This bit of code is repeated several times, factor it?
-							Vector3 secondary;
+							Vector3f secondary;
 							uint16_t border_mask = cell_border_mask;
 
 							if (cell_border_mask > 0) {
@@ -893,7 +899,7 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 			CRASH_COND(case_code > 511);
 
 			// TODO We may not need all of them!
-			FixedArray<Vector3, 13> cell_gradients;
+			FixedArray<Vector3f, 13> cell_gradients;
 			for (unsigned int i = 0; i < 9; ++i) {
 				const unsigned int di = cell_data_indices[i];
 
@@ -904,7 +910,7 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 				const float py = sdf_as_float(sdf_data[di + n010]);
 				const float pz = sdf_as_float(sdf_data[di + n001]);
 
-				cell_gradients[i] = Vector3(nx - px, ny - py, nz - pz);
+				cell_gradients[i] = Vector3f(nx - px, ny - py, nz - pz);
 			}
 			cell_gradients[0x9] = cell_gradients[0];
 			cell_gradients[0xA] = cell_gradients[2];
@@ -1002,17 +1008,17 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 						const Vector3i p0 = cell_positions[index_vertex_a];
 						const Vector3i p1 = cell_positions[index_vertex_b];
 
-						const Vector3 n0 = cell_gradients[index_vertex_a];
-						const Vector3 n1 = cell_gradients[index_vertex_b];
+						const Vector3f n0 = cell_gradients[index_vertex_a];
+						const Vector3f n1 = cell_gradients[index_vertex_b];
 
 						//Vector3i primary = p0 * ti0 + p1 * ti1;
-						const Vector3 primaryf = Vector3(p0) * t0 + Vector3(p1) * t1;
-						const Vector3 normal = normalized_not_null(n0 * t0 + n1 * t1);
+						const Vector3f primaryf = to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
+						const Vector3f normal = normalized_not_null(n0 * t0 + n1 * t1);
 
 						const bool fullres_side = (index_vertex_a < 9 || index_vertex_b < 9);
 						uint16_t border_mask = cell_border_mask;
 
-						Vector3 secondary;
+						Vector3f secondary;
 						if (fullres_side) {
 							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
 							border_mask |=
@@ -1075,13 +1081,13 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 						// Going to create a new vertex
 
 						const Vector3i primary = cell_positions[cell_index];
-						const Vector3 primaryf = primary;
-						const Vector3 normal = normalized_not_null(cell_gradients[cell_index]);
+						const Vector3f primaryf = to_vec3f(primary);
+						const Vector3f normal = normalized_not_null(cell_gradients[cell_index]);
 
 						const bool fullres_side = (cell_index < 9);
 						uint16_t border_mask = cell_border_mask;
 
-						Vector3 secondary;
+						Vector3f secondary;
 						if (fullres_side) {
 							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
 							border_mask |= get_border_mask(primary, block_size_scaled) << 6;
@@ -1264,6 +1270,9 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 					sdf_data, indices_data, weights_data, voxels.get_size(), lod_index, texturing_mode, cache, output);
 		} break;
 
+		// TODO Remove support for 32-bit SDF in Transvoxel?
+		// I don't think it's worth it. And it could reduce executable size significantly
+		// (the optimized obj size for just transvoxel.cpp is 1.2 Mb on Windows)
 		case VoxelBufferInternal::DEPTH_32_BIT: {
 			Span<const float> sdf_data = sdf_data_raw.reinterpret_cast_to<const float>();
 			build_regular_mesh<float>(

@@ -98,14 +98,14 @@ public:
 	void set_rotation_type_3d(RotationType3D type);
 	RotationType3D get_rotation_type_3d() const;
 
-	inline float get_noise_2d(float x, float y) const {
+	inline float get_noise_2d(real_t x, real_t y) const {
 		if (_warp_noise.is_valid()) {
 			_warp_noise->warp_2d(x, y);
 		}
 		return _fn.GetNoise(x, y);
 	}
 
-	inline float get_noise_3d(float x, float y, float z) const {
+	inline float get_noise_3d(real_t x, real_t y, real_t z) const {
 		if (_warp_noise.is_valid()) {
 			_warp_noise->warp_3d(x, y, z);
 		}
@@ -126,10 +126,10 @@ private:
 
 	void _on_warp_noise_changed();
 
-	float _b_get_noise_2d(float x, float y) {
+	float _b_get_noise_2d(real_t x, real_t y) {
 		return get_noise_2d(x, y);
 	}
-	float _b_get_noise_3d(float x, float y, float z) {
+	float _b_get_noise_3d(real_t x, real_t y, real_t z) {
 		return get_noise_3d(x, y, z);
 	}
 

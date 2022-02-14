@@ -3,13 +3,13 @@
 
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/math/funcs.h"
-#include <core/math/vector3.h>
+#include "../../util/math/vector3f.h"
 
 namespace zylann::voxel::dmc {
 
 struct HermiteValue {
 	float sdf; // Signed "distance" to surface
-	Vector3 gradient; // Derivation of the density
+	Vector3f gradient; // Derivation of the density
 
 	HermiteValue() : sdf(1.0) {}
 };
@@ -27,7 +27,7 @@ inline HermiteValue get_hermite_value(
 
 	v.sdf = voxels.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
 
-	Vector3 gradient;
+	Vector3f gradient;
 
 	gradient.x = get_isolevel_clamped(voxels, x + 1, y, z) - get_isolevel_clamped(voxels, x - 1, y, z);
 	gradient.y = get_isolevel_clamped(voxels, x, y + 1, z) - get_isolevel_clamped(voxels, x, y - 1, z);
@@ -38,7 +38,7 @@ inline HermiteValue get_hermite_value(
 	return v;
 }
 
-inline HermiteValue get_interpolated_hermite_value(const VoxelBufferInternal &voxels, Vector3 pos) {
+inline HermiteValue get_interpolated_hermite_value(const VoxelBufferInternal &voxels, Vector3f pos) {
 	int x0 = static_cast<int>(pos.x);
 	int y0 = static_cast<int>(pos.y);
 	int z0 = static_cast<int>(pos.z);
@@ -64,7 +64,7 @@ inline HermiteValue get_interpolated_hermite_value(const VoxelBufferInternal &vo
 	HermiteValue v6 = get_hermite_value(voxels, x1, y1, z1);
 	HermiteValue v7 = get_hermite_value(voxels, x0, y1, z1);
 
-	Vector3 rpos = pos - Vector3(x0, y0, z0);
+	Vector3f rpos = pos - Vector3f(x0, y0, z0);
 
 	HermiteValue v;
 	v.sdf = math::interpolate(v0.sdf, v1.sdf, v2.sdf, v3.sdf, v4.sdf, v5.sdf, v6.sdf, v7.sdf, rpos);

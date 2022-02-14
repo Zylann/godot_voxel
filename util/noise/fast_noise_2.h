@@ -156,6 +156,7 @@ public:
 	bool is_valid() const;
 
 	// Queries
+	// TODO Double-precision support. FastNoise2 doesn't have it yet, so it's all `float` for now.
 
 	float get_noise_2d_single(Vector2 pos) const;
 	float get_noise_3d_single(Vector3 pos) const;

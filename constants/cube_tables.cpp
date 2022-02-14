@@ -30,14 +30,14 @@ namespace zylann::voxel::Cube {
 //
 
 // Ordered as per the cube corners diagram
-const Vector3 g_corner_position[CORNER_COUNT] = { Vector3(1, 0, 0), //
-	Vector3(0, 0, 0), //
-	Vector3(0, 0, 1), //
-	Vector3(1, 0, 1), //
-	Vector3(1, 1, 0), //
-	Vector3(0, 1, 0), //
-	Vector3(0, 1, 1), //
-	Vector3(1, 1, 1) };
+const Vector3f g_corner_position[CORNER_COUNT] = { Vector3f(1, 0, 0), //
+	Vector3f(0, 0, 0), //
+	Vector3f(0, 0, 1), //
+	Vector3f(1, 0, 1), //
+	Vector3f(1, 1, 0), //
+	Vector3f(0, 1, 0), //
+	Vector3f(0, 1, 1), //
+	Vector3f(1, 1, 1) };
 
 const int g_side_quad_triangles[SIDE_COUNT][6] = {
 	{ 0, 2, 1, 0, 3, 2 }, // LEFT (+x)

@@ -1,5 +1,6 @@
 #include "mesh_builder.h"
 #include "../../util/funcs.h"
+#include "../../util/godot/funcs.h"
 #include <scene/resources/mesh.h>
 
 namespace zylann::voxel::dmc {
@@ -33,8 +34,8 @@ Array MeshBuilder::commit(bool wireframe) {
 	PackedVector3Array normals;
 	PackedInt32Array indices;
 
-	raw_copy_to(positions, _positions);
-	raw_copy_to(normals, _normals);
+	copy_to(positions, _positions);
+	copy_to(normals, _normals);
 	raw_copy_to(indices, _indices);
 
 	clear();

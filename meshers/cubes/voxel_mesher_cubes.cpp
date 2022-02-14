@@ -1,6 +1,7 @@
 #include "voxel_mesher_cubes.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../util/funcs.h"
+#include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
 #include <core/math/geometry_2d.h>
 
@@ -135,27 +136,27 @@ void build_voxel_mesh_as_simple_cubes(
 					const int vx1 = vx0 + 1;
 					const int vy1 = vy0 + 1;
 
-					Vector3 v0;
+					Vector3f v0;
 					v0[xa] = vx0;
 					v0[ya] = vy0;
 					v0[za] = d;
 
-					Vector3 v1;
+					Vector3f v1;
 					v1[xa] = vx1;
 					v1[ya] = vy0;
 					v1[za] = d;
 
-					Vector3 v2;
+					Vector3f v2;
 					v2[xa] = vx0;
 					v2[ya] = vy1;
 					v2[za] = d;
 
-					Vector3 v3;
+					Vector3f v3;
 					v3[xa] = vx1;
 					v3[ya] = vy1;
 					v3[za] = d;
 
-					Vector3 n;
+					Vector3f n;
 					n[za] = side == FACE_SIDE_FRONT ? -1 : 1;
 
 					// 2-----3
@@ -319,27 +320,27 @@ void build_voxel_mesh_as_greedy_cubes(
 					const uint8_t material_index = colorf.a < 0.999f;
 					VoxelMesherCubes::Arrays &arrays = out_arrays_per_material[material_index];
 
-					Vector3 v0;
+					Vector3f v0;
 					v0[xa] = fx;
 					v0[ya] = fy;
 					v0[za] = d;
 
-					Vector3 v1;
+					Vector3f v1;
 					v1[xa] = rx;
 					v1[ya] = fy;
 					v1[za] = d;
 
-					Vector3 v2;
+					Vector3f v2;
 					v2[xa] = fx;
 					v2[ya] = ry;
 					v2[za] = d;
 
-					Vector3 v3;
+					Vector3f v3;
 					v3[xa] = rx;
 					v3[ya] = ry;
 					v3[za] = d;
 
-					Vector3 n;
+					Vector3f n;
 					n[za] = m.side == FACE_SIDE_FRONT ? -1 : 1;
 
 					// 2-----3
@@ -518,27 +519,27 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 					const uint8_t material_index = m.material_index;
 					VoxelMesherCubes::Arrays &arrays = out_arrays_per_material[material_index];
 
-					Vector3 v0;
+					Vector3f v0;
 					v0[xa] = fx;
 					v0[ya] = fy;
 					v0[za] = d;
 
-					Vector3 v1;
+					Vector3f v1;
 					v1[xa] = rx;
 					v1[ya] = fy;
 					v1[za] = d;
 
-					Vector3 v2;
+					Vector3f v2;
 					v2[xa] = fx;
 					v2[ya] = ry;
 					v2[za] = d;
 
-					Vector3 v3;
+					Vector3f v3;
 					v3[xa] = rx;
 					v3[ya] = ry;
 					v3[za] = d;
 
-					Vector3 n;
+					Vector3f n;
 					n[za] = m.side == FACE_SIDE_FRONT ? -1 : 1;
 
 					// 2-----3
@@ -642,26 +643,26 @@ Ref<Image> make_greedy_atlas(
 	// 	tmp.instance();
 	// 	tmp->create(im.size_x, im.size_y, false, debug_im->get_format());
 	// 	tmp->fill(Color(Math::randf(), Math::randf(), Math::randf()));
-	// 	debug_im->blit_rect(tmp, Rect2(0, 0, tmp->get_width(), tmp->get_height()), Vector2(dst_pos));
+	// 	debug_im->blit_rect(tmp, Rect2(0, 0, tmp->get_width(), tmp->get_height()), Vector2f(dst_pos));
 	// }
 	// debug_im->save_png("debug_atlas_packing.png");
 
 	// Update UVs
-	const Vector2 uv_scale(1.f / float(result_size.x), 1.f / float(result_size.y));
+	const Vector2f uv_scale(1.f / float(result_size.x), 1.f / float(result_size.y));
 	for (unsigned int i = 0; i < atlas_data.images.size(); ++i) {
 		const VoxelMesherCubes::GreedyAtlasData::ImageInfo &im = atlas_data.images[i];
 		VoxelMesherCubes::Arrays &surface = surfaces[im.surface_index];
 		ERR_FAIL_COND_V(im.first_vertex_index + 4 > surface.uvs.size(), Ref<Image>());
 		const unsigned int vi = im.first_vertex_index;
-		const Vector2 pos(result_points[i]);
+		const Vector2f pos(to_vec2f(result_points[i]));
 		// 2-----3
 		// |     |
 		// |     |
 		// 0-----1
 		surface.uvs[vi] = pos * uv_scale;
-		surface.uvs[vi + 1] = (pos + Vector2(im.size_x, 0)) * uv_scale;
-		surface.uvs[vi + 2] = (pos + Vector2(0, im.size_y)) * uv_scale;
-		surface.uvs[vi + 3] = (pos + Vector2(im.size_x, im.size_y)) * uv_scale;
+		surface.uvs[vi + 1] = (pos + Vector2f(im.size_x, 0)) * uv_scale;
+		surface.uvs[vi + 2] = (pos + Vector2f(0, im.size_y)) * uv_scale;
+		surface.uvs[vi + 3] = (pos + Vector2f(im.size_x, im.size_y)) * uv_scale;
 	}
 
 	// Create image
@@ -903,8 +904,8 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 				PackedVector3Array normals;
 				PackedInt32Array indices;
 
-				raw_copy_to(positions, arrays.positions);
-				raw_copy_to(normals, arrays.normals);
+				copy_to(positions, arrays.positions);
+				copy_to(normals, arrays.normals);
 				raw_copy_to(indices, arrays.indices);
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
@@ -918,7 +919,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 				}
 				if (arrays.uvs.size() > 0) {
 					PackedVector2Array uvs;
-					raw_copy_to(uvs, arrays.uvs);
+					copy_to(uvs, arrays.uvs);
 					mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
 				}
 			}

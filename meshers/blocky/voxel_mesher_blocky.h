@@ -42,9 +42,9 @@ public:
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
 	struct Arrays {
-		std::vector<Vector3> positions;
-		std::vector<Vector3> normals;
-		std::vector<Vector2> uvs;
+		std::vector<Vector3f> positions;
+		std::vector<Vector3f> normals;
+		std::vector<Vector2f> uvs;
 		std::vector<Color> colors;
 		std::vector<int> indices;
 		std::vector<float> tangents;

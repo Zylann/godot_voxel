@@ -23,29 +23,29 @@ struct SdfOperation16bit {
 };
 
 struct SdfUnion {
-	inline float operator()(float a, float b) const {
+	inline real_t operator()(real_t a, real_t b) const {
 		return zylann::math::sdf_union(a, b);
 	}
 };
 
 struct SdfSubtract {
-	inline float operator()(float a, float b) const {
+	inline real_t operator()(real_t a, real_t b) const {
 		return zylann::math::sdf_subtract(a, b);
 	}
 };
 
 struct SdfSet {
-	inline float operator()(float a, float b) const {
+	inline real_t operator()(real_t a, real_t b) const {
 		return b;
 	}
 };
 
 struct SdfSphere {
 	Vector3 center;
-	float radius;
-	float scale;
+	real_t radius;
+	real_t scale;
 
-	inline float operator()(Vector3 pos) const {
+	inline real_t operator()(Vector3 pos) const {
 		return scale * zylann::math::sdf_sphere(pos, center, radius);
 	}
 };

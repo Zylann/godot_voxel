@@ -43,11 +43,11 @@ struct OctreeNode {
 };
 
 struct DualCell {
-	Vector3 corners[8];
+	Vector3f corners[8];
 	HermiteValue values[8];
 	bool has_values = false;
 
-	inline void set_corner(int i, Vector3 vertex, HermiteValue value) {
+	inline void set_corner(int i, Vector3f vertex, HermiteValue value) {
 		CRASH_COND(i < 0 || i >= 8);
 		corners[i] = vertex;
 		values[i] = value;
@@ -115,7 +115,7 @@ protected:
 
 private:
 	struct Parameters {
-		real_t geometric_error = 0.1;
+		float geometric_error = 0.1;
 		MeshMode mesh_mode = MESH_NORMAL;
 		SimplifyMode simplify_mode = SIMPLIFY_OCTREE_BOTTOM_UP;
 		SeamMode seam_mode = SEAM_NONE;
@@ -135,10 +135,10 @@ private:
 	static thread_local Cache _cache;
 
 	struct Stats {
-		real_t octree_build_time = 0;
-		real_t dualgrid_derivation_time = 0;
-		real_t meshing_time = 0;
-		real_t commit_time = 0;
+		float octree_build_time = 0;
+		float dualgrid_derivation_time = 0;
+		float meshing_time = 0;
+		float commit_time = 0;
 	};
 
 	Stats _stats;

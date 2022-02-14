@@ -1,8 +1,11 @@
 #ifndef VOXEL_MESHER_CUBES_H
 #define VOXEL_MESHER_CUBES_H
 
+#include "../../util/math/vector2f.h"
+#include "../../util/math/vector3f.h"
 #include "../voxel_mesher.h"
 #include "voxel_color_palette.h"
+
 #include <vector>
 
 namespace zylann::voxel {
@@ -62,10 +65,10 @@ public:
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
 	struct Arrays {
-		std::vector<Vector3> positions;
-		std::vector<Vector3> normals;
+		std::vector<Vector3f> positions;
+		std::vector<Vector3f> normals;
 		std::vector<Color> colors;
-		std::vector<Vector2> uvs;
+		std::vector<Vector2f> uvs;
 		std::vector<int> indices;
 
 		void clear() {

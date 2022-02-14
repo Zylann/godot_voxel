@@ -3,6 +3,8 @@
 
 #include "../../constants/cube_tables.h"
 #include "../../util/fixed_array.h"
+#include "../../util/math/vector2f.h"
+#include "../../util/math/vector3f.h"
 
 #include <scene/resources/mesh.h>
 #include <vector>
@@ -27,16 +29,16 @@ public:
 	// while the configuration that produced the data can be changed by the user at any time.
 	struct BakedData {
 		struct Model {
-			std::vector<Vector3> positions;
-			std::vector<Vector3> normals;
-			std::vector<Vector2> uvs;
+			std::vector<Vector3f> positions;
+			std::vector<Vector3f> normals;
+			std::vector<Vector2f> uvs;
 			std::vector<int> indices;
 			std::vector<float> tangents;
 			// Model sides:
 			// They are separated because this way we can occlude them easily.
 			// Due to these defining cube side triangles, normals are known already.
-			FixedArray<std::vector<Vector3>, Cube::SIDE_COUNT> side_positions;
-			FixedArray<std::vector<Vector2>, Cube::SIDE_COUNT> side_uvs;
+			FixedArray<std::vector<Vector3f>, Cube::SIDE_COUNT> side_positions;
+			FixedArray<std::vector<Vector2f>, Cube::SIDE_COUNT> side_uvs;
 			FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
 			FixedArray<std::vector<float>, Cube::SIDE_COUNT> side_tangents;
 
@@ -131,7 +133,7 @@ public:
 		return _collision_mask;
 	}
 
-	Vector2 get_cube_tile(int side) const {
+	Vector2f get_cube_tile(int side) const {
 		return _cube_tiles[side];
 	}
 
@@ -168,7 +170,7 @@ private:
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
-	void set_cube_uv_side(int side, Vector2 tile_pos);
+	void set_cube_uv_side(int side, Vector2f tile_pos);
 
 	static void _bind_methods();
 
@@ -193,7 +195,7 @@ private:
 
 	Color _color;
 	GeometryType _geometry_type;
-	FixedArray<Vector2, Cube::SIDE_COUNT> _cube_tiles;
+	FixedArray<Vector2f, Cube::SIDE_COUNT> _cube_tiles;
 	Ref<Mesh> _custom_mesh;
 	std::vector<AABB> _collision_aabbs;
 	bool _random_tickable = false;

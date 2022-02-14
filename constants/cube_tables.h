@@ -1,8 +1,8 @@
 #ifndef CUBE_TABLES_H
 #define CUBE_TABLES_H
 
+#include "../util/math/vector3f.h"
 #include "../util/math/vector3i.h"
-#include <core/math/vector3.h>
 
 namespace zylann::voxel::Cube {
 
@@ -60,7 +60,7 @@ enum Corner {
 	CORNER_COUNT
 };
 
-extern const Vector3 g_corner_position[CORNER_COUNT];
+extern const Vector3f g_corner_position[CORNER_COUNT];
 
 extern const int g_side_quad_triangles[SIDE_COUNT][6];
 

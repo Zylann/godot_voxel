@@ -134,14 +134,14 @@ void VoxelBlockyLibrary::set_voxel(unsigned int idx, Ref<VoxelBlockyModel> voxel
 }
 
 template <typename F>
-static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F output_func) {
+static void rasterize_triangle_barycentric(Vector2f a, Vector2f b, Vector2f c, F output_func) {
 	// Slower than scanline method, but looks better
 
 	// Grow the triangle a tiny bit, to help against floating point error
-	const Vector2 m = 0.333333 * (a + b + c);
-	a += 0.001 * (a - m);
-	b += 0.001 * (b - m);
-	c += 0.001 * (c - m);
+	const Vector2f m = 0.333333f * (a + b + c);
+	a += 0.001f * (a - m);
+	b += 0.001f * (b - m);
+	c += 0.001f * (c - m);
 
 	using namespace math;
 
@@ -151,11 +151,11 @@ static void rasterize_triangle_barycentric(Vector2 a, Vector2 b, Vector2 c, F ou
 	const int max_y = (int)Math::ceil(max(max(a.y, b.y), c.y));
 
 	// We test against points centered on grid cells
-	const Vector2 offset(0.5, 0.5);
+	const Vector2f offset(0.5, 0.5);
 
 	for (int y = min_y; y < max_y; ++y) {
 		for (int x = min_x; x < max_x; ++x) {
-			if (Geometry2D::is_point_in_triangle(Vector2(x, y) + offset, a, b, c)) {
+			if (is_point_in_triangle(Vector2f(x, y) + offset, a, b, c)) {
 				output_func(x, y);
 			}
 		}
@@ -221,39 +221,39 @@ void VoxelBlockyLibrary::generate_side_culling_matrix() {
 		model_data.contributes_to_ao = true;
 
 		for (uint16_t side = 0; side < Cube::SIDE_COUNT; ++side) {
-			const std::vector<Vector3> &positions = model_data.model.side_positions[side];
+			const std::vector<Vector3f> &positions = model_data.model.side_positions[side];
 			const std::vector<int> &indices = model_data.model.side_indices[side];
 			ERR_FAIL_COND(indices.size() % 3 != 0);
 
 			std::bitset<RASTER_SIZE * RASTER_SIZE> bitmap;
 
 			for (unsigned int j = 0; j < indices.size(); j += 3) {
-				const Vector3 va = positions[indices[j]];
-				const Vector3 vb = positions[indices[j + 1]];
-				const Vector3 vc = positions[indices[j + 2]];
+				const Vector3f va = positions[indices[j]];
+				const Vector3f vb = positions[indices[j + 1]];
+				const Vector3f vc = positions[indices[j + 2]];
 
 				// Convert 3D vertices into 2D
-				Vector2 a, b, c;
+				Vector2f a, b, c;
 				switch (side) {
 					case Cube::SIDE_NEGATIVE_X:
 					case Cube::SIDE_POSITIVE_X:
-						a = Vector2(va.y, va.z);
-						b = Vector2(vb.y, vb.z);
-						c = Vector2(vc.y, vc.z);
+						a = Vector2f(va.y, va.z);
+						b = Vector2f(vb.y, vb.z);
+						c = Vector2f(vc.y, vc.z);
 						break;
 
 					case Cube::SIDE_NEGATIVE_Y:
 					case Cube::SIDE_POSITIVE_Y:
-						a = Vector2(va.x, va.z);
-						b = Vector2(vb.x, vb.z);
-						c = Vector2(vc.x, vc.z);
+						a = Vector2f(va.x, va.z);
+						b = Vector2f(vb.x, vb.z);
+						c = Vector2f(vc.x, vc.z);
 						break;
 
 					case Cube::SIDE_NEGATIVE_Z:
 					case Cube::SIDE_POSITIVE_Z:
-						a = Vector2(va.x, va.y);
-						b = Vector2(vb.x, vb.y);
-						c = Vector2(vc.x, vc.y);
+						a = Vector2f(va.x, va.y);
+						b = Vector2f(vb.x, vb.y);
+						c = Vector2f(vc.x, vc.y);
 						break;
 
 					default:

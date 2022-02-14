@@ -12,7 +12,7 @@ SdfAffectingArguments sdf_subtract_side(Interval a, Interval b) {
 	return SDF_BOTH;
 }
 
-SdfAffectingArguments sdf_polynomial_smooth_subtract_side(Interval a, Interval b, float s) {
+SdfAffectingArguments sdf_polynomial_smooth_subtract_side(Interval a, Interval b, real_t s) {
 	//     |  \  \  \        |
 	//  ---1---x--x--x-------3--- b.max
 	//     |    \  \  \      |
@@ -42,7 +42,7 @@ SdfAffectingArguments sdf_union_side(Interval a, Interval b) {
 	return SDF_BOTH;
 }
 
-SdfAffectingArguments sdf_polynomial_smooth_union_side(Interval a, Interval b, float s) {
+SdfAffectingArguments sdf_polynomial_smooth_union_side(Interval a, Interval b, real_t s) {
 	if (a.max + s < b.min) {
 		return SDF_ONLY_A;
 	}
@@ -53,7 +53,7 @@ SdfAffectingArguments sdf_polynomial_smooth_union_side(Interval a, Interval b, f
 }
 
 template <typename F>
-inline Interval sdf_smooth_op(Interval b, Interval a, float s, F smooth_op_func) {
+inline Interval sdf_smooth_op(Interval b, Interval a, real_t s, F smooth_op_func) {
 	// Smooth union and subtract are a generalization of `min(a, b)` and `max(-a, b)`, with a smooth junction.
 	// That junction runs in a diagonal crossing zero (with equation `y = -x`).
 	// Areas on the two sides of the junction are monotonic, i.e their derivatives should never cross zero,
@@ -71,10 +71,10 @@ inline Interval sdf_smooth_op(Interval b, Interval a, float s, F smooth_op_func)
 	//     |         \       |
 	//    a.min             a.max
 
-	const float v0 = smooth_op_func(b.min, a.min, s);
-	const float v1 = smooth_op_func(b.max, a.min, s);
-	const float v2 = smooth_op_func(b.min, a.max, s);
-	const float v3 = smooth_op_func(b.max, a.max, s);
+	const real_t v0 = smooth_op_func(b.min, a.min, s);
+	const real_t v1 = smooth_op_func(b.max, a.min, s);
+	const real_t v2 = smooth_op_func(b.min, a.max, s);
+	const real_t v3 = smooth_op_func(b.max, a.max, s);
 
 	const Vector2 diag_b_min(-b.min, b.min);
 	const Vector2 diag_b_max(-b.max, b.max);
@@ -87,14 +87,14 @@ inline Interval sdf_smooth_op(Interval b, Interval a, float s, F smooth_op_func)
 	if (crossing_left || crossing_top) {
 		const bool crossing_right = (diag_a_max.y > b.min && diag_a_max.y < b.max);
 
-		float v4;
+		real_t v4;
 		if (crossing_left) {
 			v4 = smooth_op_func(diag_a_min.y, diag_a_min.x, s);
 		} else {
 			v4 = smooth_op_func(diag_b_max.y, diag_b_max.x, s);
 		}
 
-		float v5;
+		real_t v5;
 		if (crossing_right) {
 			v5 = smooth_op_func(diag_a_max.y, diag_a_max.x, s);
 		} else {
@@ -108,16 +108,18 @@ inline Interval sdf_smooth_op(Interval b, Interval a, float s, F smooth_op_func)
 	return Interval(min(v0, v1, v2, v3), max(v0, v1, v2, v3));
 }
 
-Interval sdf_smooth_union(Interval p_b, Interval p_a, float p_s) {
+Interval sdf_smooth_union(Interval p_b, Interval p_a, real_t p_s) {
 	// TODO Not tested
 	// Had to use a lambda because otherwise it's ambiguous
-	return sdf_smooth_op(
-			p_b, p_a, p_s, [](float b, float a, float s) { return zylann::math::sdf_smooth_union(b, a, s); });
+	return sdf_smooth_op(p_b, p_a, p_s, [](real_t b, real_t a, real_t s) { //
+		return zylann::math::sdf_smooth_union(b, a, s);
+	});
 }
 
-Interval sdf_smooth_subtract(Interval p_b, Interval p_a, float p_s) {
-	return sdf_smooth_op(
-			p_b, p_a, p_s, [](float b, float a, float s) { return zylann::math::sdf_smooth_subtract(b, a, s); });
+Interval sdf_smooth_subtract(Interval p_b, Interval p_a, real_t p_s) {
+	return sdf_smooth_op(p_b, p_a, p_s, [](real_t b, real_t a, real_t s) { //
+		return zylann::math::sdf_smooth_subtract(b, a, s);
+	});
 }
 
 } //namespace zylann::math

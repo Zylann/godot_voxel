@@ -9,12 +9,12 @@ namespace zylann::math {
 // For interval arithmetic
 struct Interval {
 	// Both inclusive
-	float min;
-	float max;
+	real_t min;
+	real_t max;
 
 	inline Interval() : min(0), max(0) {}
 
-	inline Interval(float p_min, float p_max) : min(p_min), max(p_max) {
+	inline Interval(real_t p_min, real_t p_max) : min(p_min), max(p_max) {
 #if DEBUG_ENABLED
 		CRASH_COND(p_min > p_max);
 #endif
@@ -22,23 +22,23 @@ struct Interval {
 
 	inline Interval(const Interval &other) : min(other.min), max(other.max) {}
 
-	inline static Interval from_single_value(float p_val) {
+	inline static Interval from_single_value(real_t p_val) {
 		return Interval(p_val, p_val);
 	}
 
-	inline static Interval from_unordered_values(float a, float b) {
+	inline static Interval from_unordered_values(real_t a, real_t b) {
 		return Interval(math::min(a, b), math::max(a, b));
 	}
 
 	inline static Interval from_infinity() {
-		return Interval(-std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity());
+		return Interval(-std::numeric_limits<real_t>::infinity(), std::numeric_limits<real_t>::infinity());
 	}
 
 	inline static Interval from_union(const Interval a, const Interval b) {
 		return Interval(math::min(a.min, b.min), math::max(a.max, b.max));
 	}
 
-	inline bool contains(float v) const {
+	inline bool contains(real_t v) const {
 		return v >= min && v <= max;
 	}
 
@@ -46,7 +46,7 @@ struct Interval {
 		return min == max;
 	}
 
-	inline void add_point(float x) {
+	inline void add_point(real_t x) {
 		if (x < min) {
 			min = x;
 		} else if (x > max) {
@@ -54,7 +54,7 @@ struct Interval {
 		}
 	}
 
-	inline Interval padded(float e) const {
+	inline Interval padded(real_t e) const {
 		return Interval(min - e, max + e);
 	}
 
@@ -63,7 +63,7 @@ struct Interval {
 		add_point(other.max);
 	}
 
-	inline float length() const {
+	inline real_t length() const {
 		return max - min;
 	}
 
@@ -75,7 +75,7 @@ struct Interval {
 		return min != other.min || max != other.max;
 	}
 
-	inline Interval operator+(float x) const {
+	inline Interval operator+(real_t x) const {
 		return Interval{ min + x, max + x };
 	}
 
@@ -87,7 +87,7 @@ struct Interval {
 		*this = *this + other;
 	}
 
-	inline Interval operator-(float x) const {
+	inline Interval operator-(real_t x) const {
 		return Interval{ min - x, max - x };
 	}
 
@@ -99,9 +99,9 @@ struct Interval {
 		return Interval{ -max, -min };
 	}
 
-	inline Interval operator*(float x) const {
-		const float a = min * x;
-		const float b = max * x;
+	inline Interval operator*(real_t x) const {
+		const real_t a = min * x;
+		const real_t b = max * x;
 		if (a < b) {
 			return Interval(a, b);
 		} else {
@@ -112,14 +112,14 @@ struct Interval {
 	inline Interval operator*(const Interval &other) const {
 		// Note, if the two operands have the same source (i.e you are doing x^2), this may lead to suboptimal results.
 		// You may then prefer using a more dedicated function.
-		const float a = min * other.min;
-		const float b = min * other.max;
-		const float c = max * other.min;
-		const float d = max * other.max;
+		const real_t a = min * other.min;
+		const real_t b = min * other.max;
+		const real_t c = max * other.min;
+		const real_t d = max * other.max;
 		return Interval{ math::min(a, b, c, d), math::max(a, b, c, d) };
 	}
 
-	inline void operator*=(float x) {
+	inline void operator*=(real_t x) {
 		*this = *this * x;
 	}
 
@@ -136,19 +136,19 @@ struct Interval {
 			// TODO May need something more precise
 			return Interval::from_infinity();
 		}
-		const float a = min / other.min;
-		const float b = min / other.max;
-		const float c = max / other.min;
-		const float d = max / other.max;
+		const real_t a = min / other.min;
+		const real_t b = min / other.max;
+		const real_t c = max / other.min;
+		const real_t d = max / other.max;
 		return Interval{ math::min(a, b, c, d), math::max(a, b, c, d) };
 	}
 
-	inline Interval operator/(float x) const {
+	inline Interval operator/(real_t x) const {
 		// TODO Implement proper division by interval
-		return *this * (1.f / x);
+		return *this * (1.0 / x);
 	}
 
-	inline void operator/=(float x) {
+	inline void operator/=(real_t x) {
 		*this = *this / x;
 	}
 };
@@ -164,7 +164,7 @@ struct Interval3 {
 	Interval z;
 };
 
-inline Interval operator*(float b, const Interval &a) {
+inline Interval operator*(real_t b, const Interval &a) {
 	return a * b;
 }
 
@@ -178,11 +178,11 @@ inline Interval max_interval(const Interval &a, const Interval &b) {
 	return Interval(max(a.min, b.min), max(a.max, b.max));
 }
 
-inline Interval min_interval(const Interval &a, const float b) {
+inline Interval min_interval(const Interval &a, const real_t b) {
 	return Interval(min(a.min, b), min(a.max, b));
 }
 
-inline Interval max_interval(const Interval &a, const float b) {
+inline Interval max_interval(const Interval &a, const real_t b) {
 	return Interval(max(a.min, b), max(a.max, b));
 }
 
@@ -216,14 +216,14 @@ inline Interval lerp(const Interval &a, const Interval &b, const Interval &t) {
 		return Interval(Math::lerp(a.min, b.min, t.min), Math::lerp(a.max, b.max, t.min));
 	}
 
-	const float v0 = a.min + t.min * (b.min - a.min);
-	const float v1 = a.max + t.min * (b.min - a.max);
-	const float v2 = a.min + t.max * (b.min - a.min);
-	const float v3 = a.max + t.max * (b.min - a.max);
-	const float v4 = a.min + t.min * (b.max - a.min);
-	const float v5 = a.max + t.min * (b.max - a.max);
-	const float v6 = a.min + t.max * (b.max - a.min);
-	const float v7 = a.max + t.max * (b.max - a.max);
+	const real_t v0 = a.min + t.min * (b.min - a.min);
+	const real_t v1 = a.max + t.min * (b.min - a.max);
+	const real_t v2 = a.min + t.max * (b.min - a.min);
+	const real_t v3 = a.max + t.max * (b.min - a.max);
+	const real_t v4 = a.min + t.min * (b.max - a.min);
+	const real_t v5 = a.max + t.min * (b.max - a.max);
+	const real_t v6 = a.min + t.max * (b.max - a.min);
+	const real_t v7 = a.max + t.max * (b.max - a.max);
 
 	return Interval(min(v0, v1, v2, v3, v4, v5, v6, v7), max(v0, v1, v2, v3, v4, v5, v6, v7));
 }
@@ -348,13 +348,13 @@ inline Interval wrapf(const Interval &x, const Interval &d) {
 	return x - (d * floor(x / d));
 }
 
-inline Interval smoothstep(float p_from, float p_to, Interval p_weight) {
+inline Interval smoothstep(real_t p_from, real_t p_to, Interval p_weight) {
 	if (Math::is_equal_approx(p_from, p_to)) {
 		return Interval::from_single_value(p_from);
 	}
 	// Smoothstep is monotonic
-	float v0 = smoothstep(p_from, p_to, p_weight.min);
-	float v1 = smoothstep(p_from, p_to, p_weight.max);
+	real_t v0 = smoothstep(p_from, p_to, p_weight.min);
+	real_t v1 = smoothstep(p_from, p_to, p_weight.max);
 	if (v0 <= v1) {
 		return Interval(v0, v1);
 	} else {
@@ -379,7 +379,7 @@ inline Interval squared(const Interval &x) {
 }
 
 // Prefer this instead of doing polynomials with a single interval, this will provide a more optimal result
-inline Interval polynomial_second_degree(const Interval x, float a, float b, float c) {
+inline Interval polynomial_second_degree(const Interval x, real_t a, real_t b, real_t c) {
 	// a*x*x + b*x + c
 
 	if (a == 0.f) {
@@ -390,14 +390,14 @@ inline Interval polynomial_second_degree(const Interval x, float a, float b, flo
 		}
 	}
 
-	const float parabola_x = -b / (2.f * a);
+	const real_t parabola_x = -b / (2.f * a);
 
-	const float y0 = a * x.min * x.min + b * x.min + c;
-	const float y1 = a * x.max * x.max + b * x.max + c;
+	const real_t y0 = a * x.min * x.min + b * x.min + c;
+	const real_t y1 = a * x.max * x.max + b * x.max + c;
 
 	if (x.min < parabola_x && x.max > parabola_x) {
 		// The interval includes the tip
-		const float parabola_y = a * parabola_x * parabola_x + b * parabola_x + c;
+		const real_t parabola_y = a * parabola_x * parabola_x + b * parabola_x + c;
 		if (a < 0) {
 			return Interval(min(y0, y1), parabola_y);
 		} else {
@@ -417,8 +417,8 @@ inline Interval polynomial_second_degree(const Interval x, float a, float b, flo
 // Prefer this over x*x*x, this will provide a more optimal result
 inline Interval cubed(const Interval &x) {
 	// x^3 is monotonic ascending
-	const float minv = x.min * x.min * x.min;
-	const float maxv = x.max * x.max * x.max;
+	const real_t minv = x.min * x.min * x.min;
+	const real_t maxv = x.max * x.max * x.max;
 	return Interval{ minv, maxv };
 }
 

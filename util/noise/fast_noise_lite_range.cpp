@@ -158,13 +158,19 @@ Interval fnl_single_opensimplex2(
 	// https://www.wolframalpha.com/input/?i=max+d%2Fdx+32.69428253173828125+*+x+*+%28%280.6-x%5E2%29%5E4%29+from+-0.6+to+0.6
 	// But empiric measures have shown it around 8. Discontinuities do exist in this noise though,
 	// which makes this measuring harder
-	return get_noise_range_3d([&fn, seed](float x, float y, float z) { return fn.SingleOpenSimplex2(seed, x, y, z); },
+	return get_noise_range_3d(
+			[&fn, seed](real_t x, real_t y, real_t z) { //
+				return fn.SingleOpenSimplex2(seed, x, y, z);
+			},
 			p_x, p_y, p_z, 4.23718f);
 }
 
 Interval fnl_single_opensimplex2s(
 		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
-	return get_noise_range_3d([&fn, seed](float x, float y, float z) { return fn.SingleOpenSimplex2(seed, x, y, z); },
+	return get_noise_range_3d(
+			[&fn, seed](real_t x, real_t y, real_t z) { //
+				return fn.SingleOpenSimplex2(seed, x, y, z);
+			},
 			// Max derivative found from empiric tests
 			p_x, p_y, p_z, 2.5f);
 }
@@ -179,21 +185,30 @@ Interval fnl_single_cellular(const FastNoiseLite &noise, Interval x, Interval y,
 
 Interval fnl_single_perlin(
 		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
-	return get_noise_range_3d([&fn, seed](float x, float y, float z) { return fn.SinglePerlin(seed, x, y, z); },
+	return get_noise_range_3d(
+			[&fn, seed](real_t x, real_t y, real_t z) { //
+				return fn.SinglePerlin(seed, x, y, z);
+			},
 			// Max derivative found from empiric tests
 			p_x, p_y, p_z, 3.2f);
 }
 
 Interval fnl_single_value_cubic(
 		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
-	return get_noise_range_3d([&fn, seed](float x, float y, float z) { return fn.SingleValueCubic(seed, x, y, z); },
+	return get_noise_range_3d(
+			[&fn, seed](real_t x, real_t y, real_t z) { //
+				return fn.SingleValueCubic(seed, x, y, z);
+			},
 			// Max derivative found from empiric tests
 			p_x, p_y, p_z, 1.2f);
 }
 
 Interval fnl_single_value(
 		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
-	return get_noise_range_3d([&fn, seed](float x, float y, float z) { return fn.SingleValue(seed, x, y, z); },
+	return get_noise_range_3d(
+			[&fn, seed](real_t x, real_t y, real_t z) { //
+				return fn.SingleValue(seed, x, y, z);
+			},
 			// Max derivative found from empiric tests
 			p_x, p_y, p_z, 3.0f);
 }
@@ -318,7 +333,10 @@ Interval get_fnl_range_3d(const FastNoiseLite &noise, Interval x, Interval y, In
 math::Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient &noise, Interval x, Interval y) {
 	// TODO More precise analysis
 	const float amp = Math::abs(noise.get_amplitude());
-	return math::Interval2{ Interval{ x.min - amp, x.max + amp }, Interval{ y.min - amp, y.max + amp } };
+	return math::Interval2{ //
+		Interval{ x.min - amp, x.max + amp }, //
+		Interval{ y.min - amp, y.max + amp }
+	};
 }
 
 math::Interval3 get_fnl_gradient_range_3d(const FastNoiseLiteGradient &noise, Interval x, Interval y, Interval z) {

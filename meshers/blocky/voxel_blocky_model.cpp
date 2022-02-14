@@ -1,4 +1,5 @@
 #include "voxel_blocky_model.h"
+#include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
 #include "voxel_blocky_library.h"
 #include "voxel_mesher_blocky.h" // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
@@ -39,7 +40,7 @@ bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			Vector2 v = p_value;
-			set_cube_uv_side(side, v);
+			set_cube_uv_side(side, Vector2f(v.x, v.y));
 			return true;
 		}
 	}
@@ -54,7 +55,8 @@ bool VoxelBlockyModel::_get(const StringName &p_name, Variant &r_ret) const {
 		String s = name.substr(VOXEL_ARRAY_LENGTH("cube_tiles/") - 1, name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
-			r_ret = _cube_tiles[side];
+			const Vector2f f = _cube_tiles[side];
+			r_ret = Vector2(f.x, f.y);
 			return true;
 		}
 	}
@@ -152,7 +154,7 @@ void VoxelBlockyModel::set_random_tickable(bool rt) {
 	_random_tickable = rt;
 }
 
-void VoxelBlockyModel::set_cube_uv_side(int side, Vector2 tile_pos) {
+void VoxelBlockyModel::set_cube_uv_side(int side, Vector2f tile_pos) {
 	_cube_tiles[side] = tile_pos;
 }
 
@@ -192,11 +194,11 @@ static void bake_cube_geometry(
 	const float sy = 1.0;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		std::vector<Vector3> &positions = baked_data.model.side_positions[side];
+		std::vector<Vector3f> &positions = baked_data.model.side_positions[side];
 		positions.resize(4);
 		for (unsigned int i = 0; i < 4; ++i) {
 			int corner = Cube::g_side_corners[side][i];
-			Vector3 p = Cube::g_corner_position[corner];
+			Vector3f p = Cube::g_corner_position[corner];
 			if (p.y > 0.9) {
 				p.y = sy;
 			}
@@ -214,11 +216,11 @@ static void bake_cube_geometry(
 	// Winding is the same as the one chosen in Cube:: vertices
 	// I am confused. I read in at least 3 OpenGL tutorials that texture coordinates start at bottom-left (0,0).
 	// But even though Godot is said to follow OpenGL's convention, the engine starts at top-left!
-	const Vector2 uv[4] = {
-		Vector2(e, 1.f - e),
-		Vector2(1.f - e, 1.f - e),
-		Vector2(1.f - e, e),
-		Vector2(e, e),
+	const Vector2f uv[4] = {
+		Vector2f(e, 1.f - e),
+		Vector2f(1.f - e, 1.f - e),
+		Vector2f(1.f - e, e),
+		Vector2f(e, e),
 	};
 
 	const float atlas_size = (float)p_atlas_size;
@@ -227,7 +229,7 @@ static void bake_cube_geometry(
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 		baked_data.model.side_uvs[side].resize(4);
-		std::vector<Vector2> &uvs = baked_data.model.side_uvs[side];
+		std::vector<Vector2f> &uvs = baked_data.model.side_uvs[side];
 		for (unsigned int i = 0; i < 4; ++i) {
 			uvs[i] = (config.get_cube_tile(side) + uv[i]) * s;
 		}
@@ -270,19 +272,20 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 	ERR_FAIL_COND(normals.size() == 0);
 
 	struct L {
-		static uint8_t get_sides(Vector3 pos) {
+		static uint8_t get_sides(Vector3f pos) {
 			uint8_t mask = 0;
-			const real_t tolerance = 0.001;
-			mask |= Math::is_equal_approx(pos.x, real_t(0.0), tolerance) << Cube::SIDE_NEGATIVE_X;
-			mask |= Math::is_equal_approx(pos.x, real_t(1.0), tolerance) << Cube::SIDE_POSITIVE_X;
-			mask |= Math::is_equal_approx(pos.y, real_t(0.0), tolerance) << Cube::SIDE_NEGATIVE_Y;
-			mask |= Math::is_equal_approx(pos.y, real_t(1.0), tolerance) << Cube::SIDE_POSITIVE_Y;
-			mask |= Math::is_equal_approx(pos.z, real_t(0.0), tolerance) << Cube::SIDE_NEGATIVE_Z;
-			mask |= Math::is_equal_approx(pos.z, real_t(1.0), tolerance) << Cube::SIDE_POSITIVE_Z;
+			const float tolerance = 0.001;
+			mask |= Math::is_equal_approx(pos.x, 0.f, tolerance) << Cube::SIDE_NEGATIVE_X;
+			mask |= Math::is_equal_approx(pos.x, 1.f, tolerance) << Cube::SIDE_POSITIVE_X;
+			mask |= Math::is_equal_approx(pos.y, 0.f, tolerance) << Cube::SIDE_NEGATIVE_Y;
+			mask |= Math::is_equal_approx(pos.y, 1.f, tolerance) << Cube::SIDE_POSITIVE_Y;
+			mask |= Math::is_equal_approx(pos.z, 0.f, tolerance) << Cube::SIDE_NEGATIVE_Z;
+			mask |= Math::is_equal_approx(pos.z, 1.f, tolerance) << Cube::SIDE_POSITIVE_Z;
 			return mask;
 		}
 
-		static bool get_triangle_side(const Vector3 &a, const Vector3 &b, const Vector3 &c, Cube::SideAxis &out_side) {
+		static bool get_triangle_side(
+				const Vector3f &a, const Vector3f &b, const Vector3f &c, Cube::SideAxis &out_side) {
 			const uint8_t m = get_sides(a) & get_sides(b) & get_sides(c);
 			if (m == 0) {
 				// At least one of the points doesn't belong to a face
@@ -327,32 +330,32 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 
 		FixedArray<HashMap<int, int>, Cube::SIDE_COUNT> added_side_indices;
 		HashMap<int, int> added_regular_indices;
-		FixedArray<Vector3, 3> tri_positions;
+		FixedArray<Vector3f, 3> tri_positions;
 
 		VoxelBlockyModel::BakedData::Model &model = baked_data.model;
 
 		for (int i = 0; i < indices.size(); i += 3) {
 			Cube::SideAxis side;
 
-			tri_positions[0] = positions[indices[i]];
-			tri_positions[1] = positions[indices[i + 1]];
-			tri_positions[2] = positions[indices[i + 2]];
+			tri_positions[0] = to_vec3f(positions[indices[i]]);
+			tri_positions[1] = to_vec3f(positions[indices[i + 1]]);
+			tri_positions[2] = to_vec3f(positions[indices[i + 2]]);
 
 			FixedArray<float, 4> tangent;
 
 			if (tangents_empty && bake_tangents) {
 				//If tangents are empty then we calculate them
-				Vector2 delta_uv1 = uvs[indices[i + 1]] - uvs[indices[i]];
-				Vector2 delta_uv2 = uvs[indices[i + 2]] - uvs[indices[i]];
-				Vector3 delta_pos1 = tri_positions[1] - tri_positions[0];
-				Vector3 delta_pos2 = tri_positions[2] - tri_positions[0];
-				float r = 1.0f / (delta_uv1[0] * delta_uv2[1] - delta_uv1[1] * delta_uv2[0]);
-				Vector3 t = (delta_pos1 * delta_uv2[1] - delta_pos2 * delta_uv1[1]) * r;
-				Vector3 bt = (delta_pos2 * delta_uv1[0] - delta_pos1 * delta_uv2[0]) * r;
+				const Vector2f delta_uv1 = to_vec2f(uvs[indices[i + 1]] - uvs[indices[i]]);
+				const Vector2f delta_uv2 = to_vec2f(uvs[indices[i + 2]] - uvs[indices[i]]);
+				const Vector3f delta_pos1 = tri_positions[1] - tri_positions[0];
+				const Vector3f delta_pos2 = tri_positions[2] - tri_positions[0];
+				const float r = 1.0f / (delta_uv1[0] * delta_uv2[1] - delta_uv1[1] * delta_uv2[0]);
+				const Vector3f t = (delta_pos1 * delta_uv2[1] - delta_pos2 * delta_uv1[1]) * r;
+				const Vector3f bt = (delta_pos2 * delta_uv1[0] - delta_pos1 * delta_uv2[0]) * r;
 				tangent[0] = t[0];
 				tangent[1] = t[1];
 				tangent[2] = t[2];
-				tangent[3] = (bt.dot(normals[indices[i]].cross(t))) < 0 ? -1.0f : 1.0f;
+				tangent[3] = (bt.dot(to_vec3f(normals[indices[i]]).cross(t))) < 0 ? -1.0f : 1.0f;
 			}
 
 			if (L::get_triangle_side(tri_positions[0], tri_positions[1], tri_positions[2], side)) {
@@ -369,7 +372,7 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 
 						model.side_indices[side].push_back(next_side_index);
 						model.side_positions[side].push_back(tri_positions[j]);
-						model.side_uvs[side].push_back(uvs[indices[i + j]]);
+						model.side_uvs[side].push_back(to_vec2f(uvs[indices[i + j]]));
 
 						if (bake_tangents) {
 							if (tangents_empty) {
@@ -410,8 +413,8 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 					if (existing_dst_index == nullptr) {
 						model.indices.push_back(next_regular_index);
 						model.positions.push_back(tri_positions[j]);
-						model.normals.push_back(normals[indices[i + j]]);
-						model.uvs.push_back(uvs[indices[i + j]]);
+						model.normals.push_back(to_vec3f(normals[indices[i + j]]));
+						model.uvs.push_back(to_vec2f(uvs[indices[i + j]]));
 
 						if (bake_tangents) {
 							if (tangents_empty) {

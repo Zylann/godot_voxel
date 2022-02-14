@@ -2,6 +2,7 @@
 #include "../../storage/voxel_buffer.h"
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
 #include "../../util/funcs.h"
+#include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
@@ -32,7 +33,7 @@ void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const transvoxel:
 	PackedFloat32Array texturing_data; // 2*4*uint8 as 2*float32
 	PackedInt32Array indices;
 
-	raw_copy_to(vertices, src.vertices);
+	copy_to(vertices, src.vertices);
 
 	//raw_copy_to(lod_data, src.lod_data);
 	lod_data.resize(src.lod_data.size() * 4);
@@ -43,7 +44,7 @@ void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const transvoxel:
 	arrays.resize(Mesh::ARRAY_MAX);
 	arrays[Mesh::ARRAY_VERTEX] = vertices;
 	if (src.normals.size() != 0) {
-		raw_copy_to(normals, src.normals);
+		copy_to(normals, src.normals);
 		arrays[Mesh::ARRAY_NORMAL] = normals;
 	}
 	if (src.texturing_data.size() != 0) {
@@ -94,7 +95,7 @@ static void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArr
 		// TODO See build script about the `zylannmeshopt::` namespace
 		const unsigned int lod_index_count = zylannmeshopt::meshopt_simplify(&lod_indices[0],
 				reinterpret_cast<const unsigned int *>(src_mesh.indices.data()), src_mesh.indices.size(),
-				&src_mesh.vertices[0].x, src_mesh.vertices.size(), sizeof(Vector3), target_index_count,
+				&src_mesh.vertices[0].x, src_mesh.vertices.size(), sizeof(Vector3f), target_index_count,
 				p_error_threshold, &lod_error);
 
 		lod_indices.resize(lod_index_count);

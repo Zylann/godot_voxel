@@ -2,6 +2,7 @@
 #include "../../constants/cube_tables.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../util/funcs.h"
+#include "../../util/godot/funcs.h"
 #include "../../util/span.h"
 #include <core/os/os.h>
 
@@ -141,7 +142,7 @@ void generate_blocky_mesh(
 
 					// Sides
 					for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-						const std::vector<Vector3> &side_positions = voxel.model.side_positions[side];
+						const std::vector<Vector3f> &side_positions = voxel.model.side_positions[side];
 						const unsigned int vertex_count = side_positions.size();
 
 						if (vertex_count == 0) {
@@ -190,18 +191,18 @@ void generate_blocky_mesh(
 							}
 						}
 
-						const std::vector<Vector2> &side_uvs = voxel.model.side_uvs[side];
+						const std::vector<Vector2f> &side_uvs = voxel.model.side_uvs[side];
 						const std::vector<float> &side_tangents = voxel.model.side_tangents[side];
 
 						// Subtracting 1 because the data is padded
-						Vector3 pos(x - 1, y - 1, z - 1);
+						Vector3f pos(x - 1, y - 1, z - 1);
 
 						// Append vertices of the faces in one go, don't use push_back
 
 						{
 							const int append_index = arrays.positions.size();
 							arrays.positions.resize(arrays.positions.size() + vertex_count);
-							Vector3 *w = arrays.positions.data() + append_index;
+							Vector3f *w = arrays.positions.data() + append_index;
 							for (unsigned int i = 0; i < vertex_count; ++i) {
 								w[i] = side_positions[i] + pos;
 							}
@@ -210,7 +211,7 @@ void generate_blocky_mesh(
 						{
 							const int append_index = arrays.uvs.size();
 							arrays.uvs.resize(arrays.uvs.size() + vertex_count);
-							memcpy(arrays.uvs.data() + append_index, side_uvs.data(), vertex_count * sizeof(Vector2));
+							memcpy(arrays.uvs.data() + append_index, side_uvs.data(), vertex_count * sizeof(Vector2f));
 						}
 
 						if (side_tangents.size() > 0) {
@@ -223,9 +224,9 @@ void generate_blocky_mesh(
 						{
 							const int append_index = arrays.normals.size();
 							arrays.normals.resize(arrays.normals.size() + vertex_count);
-							Vector3 *w = arrays.normals.data() + append_index;
+							Vector3f *w = arrays.normals.data() + append_index;
 							for (unsigned int i = 0; i < vertex_count; ++i) {
-								w[i] = Cube::g_side_normals[side];
+								w[i] = to_vec3f(Cube::g_side_normals[side]);
 							}
 						}
 
@@ -237,7 +238,7 @@ void generate_blocky_mesh(
 
 							if (bake_occlusion) {
 								for (unsigned int i = 0; i < vertex_count; ++i) {
-									Vector3 v = side_positions[i];
+									Vector3f v = side_positions[i];
 
 									// General purpose occlusion colouring.
 									// TODO Optimize for cubes
@@ -290,15 +291,15 @@ void generate_blocky_mesh(
 					if (voxel.model.positions.size() != 0) {
 						// TODO Get rid of push_backs
 
-						const std::vector<Vector3> &positions = voxel.model.positions;
+						const std::vector<Vector3f> &positions = voxel.model.positions;
 						const unsigned int vertex_count = positions.size();
 						const Color modulate_color = voxel.color;
 
-						const std::vector<Vector3> &normals = voxel.model.normals;
-						const std::vector<Vector2> &uvs = voxel.model.uvs;
+						const std::vector<Vector3f> &normals = voxel.model.normals;
+						const std::vector<Vector2f> &uvs = voxel.model.uvs;
 						const std::vector<float> &tangents = voxel.model.tangents;
 
-						const Vector3 pos(x - 1, y - 1, z - 1);
+						const Vector3f pos(x - 1, y - 1, z - 1);
 
 						if (tangents.size() > 0) {
 							const int append_index = arrays.tangents.size();
@@ -485,9 +486,9 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				PackedColorArray colors;
 				PackedInt32Array indices;
 
-				raw_copy_to(positions, arrays.positions);
-				raw_copy_to(uvs, arrays.uvs);
-				raw_copy_to(normals, arrays.normals);
+				copy_to(positions, arrays.positions);
+				copy_to(uvs, arrays.uvs);
+				copy_to(normals, arrays.normals);
 				raw_copy_to(colors, arrays.colors);
 				raw_copy_to(indices, arrays.indices);
 

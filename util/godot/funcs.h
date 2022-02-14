@@ -1,9 +1,13 @@
 #ifndef VOXEL_UTILITY_GODOT_FUNCS_H
 #define VOXEL_UTILITY_GODOT_FUNCS_H
 
+#include "../math/vector2f.h"
+#include "../math/vector3f.h"
 #include "../span.h"
+
 #include <core/object/ref_counted.h>
 #include <core/variant/variant.h>
+
 #include <memory>
 
 class Mesh;
@@ -91,6 +95,25 @@ struct RefHasher {
 		return uint32_t(uint64_t(v.ptr())) * (0x9e3779b1L);
 	}
 };
+
+void copy_to(Vector<Vector3> &dst, const std::vector<Vector3f> &src);
+void copy_to(Vector<Vector2> &dst, const std::vector<Vector2f> &src);
+
+inline Vector2f to_vec2f(Vector2i v) {
+	return Vector2f(v.x, v.y);
+}
+
+inline Vector2f to_vec2f(Vector2 v) {
+	return Vector2f(v.x, v.y);
+}
+
+inline Vector3f to_vec3f(Vector3i v) {
+	return Vector3f(v.x, v.y, v.z);
+}
+
+inline Vector3f to_vec3f(Vector3 v) {
+	return Vector3f(v.x, v.y, v.z);
+}
 
 } // namespace zylann
 

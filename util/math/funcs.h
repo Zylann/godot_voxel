@@ -1,6 +1,8 @@
 #ifndef VOXEL_MATH_FUNCS_H
 #define VOXEL_MATH_FUNCS_H
 
+#include "vector2f.h"
+#include "vector3f.h"
 #include <core/math/vector3.h>
 
 namespace zylann::math {
@@ -21,7 +23,7 @@ namespace zylann::math {
 //
 template <typename T>
 inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4, const T v5, const T v6, const T v7,
-		Vector3 position) {
+		Vector3f position) {
 	const float one_min_x = 1.f - position.x;
 	const float one_min_y = 1.f - position.y;
 	const float one_min_z = 1.f - position.z;
@@ -75,6 +77,25 @@ inline T max(const T a, const T b, const T c, const T d, const T e, const T f, c
 	return max(max(a, b, c, d), max(e, f, g, h));
 }
 
+// template versions require explicit types.
+// float versions do not require casting all the time, so optional double-precision support with `real_t` is easier.
+
+inline float minf(float a, float b) {
+	return a < b ? a : b;
+}
+
+inline double minf(double a, double b) {
+	return a < b ? a : b;
+}
+
+inline float maxf(float a, float b) {
+	return a > b ? a : b;
+}
+
+inline float maxf(double a, double b) {
+	return a > b ? a : b;
+}
+
 template <typename T>
 inline T clamp(const T x, const T min_value, const T max_value) {
 	// TODO Optimization: clang can optimize a min/max implementation. Worth changing to that?
@@ -85,6 +106,10 @@ inline T clamp(const T x, const T min_value, const T max_value) {
 		return max_value;
 	}
 	return x;
+}
+
+inline float clampf(float x, float min_value, float max_value) {
+	return fmin(fmax(x, min_value), max_value);
 }
 
 template <typename T>
@@ -139,6 +164,10 @@ inline float wrapf(float x, float d) {
 	return Math::is_zero_approx(d) ? 0.f : x - (d * Math::floor(x / d));
 }
 
+inline double wrapf(double x, double d) {
+	return Math::is_zero_approx(d) ? 0.0 : x - (d * Math::floor(x / d));
+}
+
 // Similar to Math::smoothstep but doesn't use macro to clamp
 inline float smoothstep(float p_from, float p_to, float p_weight) {
 	if (Math::is_equal_approx(p_from, p_to)) {
@@ -148,7 +177,19 @@ inline float smoothstep(float p_from, float p_to, float p_weight) {
 	return x * x * (3.0f - 2.0f * x);
 }
 
+inline double smoothstep(double p_from, double p_to, double p_weight) {
+	if (Math::is_equal_approx(p_from, p_to)) {
+		return p_from;
+	}
+	double x = clamp((p_weight - p_from) / (p_to - p_from), 0.0, 1.0);
+	return x * x * (3.0 - 2.0 * x);
+}
+
 inline float fract(float x) {
+	return x - Math::floor(x);
+}
+
+inline double fract(double x) {
 	return x - Math::floor(x);
 }
 
@@ -213,6 +254,21 @@ inline bool has_nan(const Vector3 &v) {
 // inline bool is_power_of_two(int i) {
 // 	return i & (i - 1);
 // }
+
+// Float version of Geometry::is_point_in_triangle()
+inline bool is_point_in_triangle(const Vector2f &s, const Vector2f &a, const Vector2f &b, const Vector2f &c) {
+	const Vector2f an = a - s;
+	const Vector2f bn = b - s;
+	const Vector2f cn = c - s;
+
+	const bool orientation = an.cross(bn) > 0;
+
+	if ((bn.cross(cn) > 0) != orientation) {
+		return false;
+	}
+
+	return (cn.cross(an) > 0) == orientation;
+}
 
 } // namespace zylann::math
 
