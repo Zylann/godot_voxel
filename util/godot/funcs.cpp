@@ -259,7 +259,7 @@ void set_nodes_owner_except_root(Node *root, Node *owner) {
 void copy_to(Vector<Vector3> &dst, const std::vector<Vector3f> &src) {
 	dst.resize(src.size());
 	// resize can fail in case allocation was not possible
-	ERR_FAIL_COND(dst.size() != static_cast<size_t>(src.size()));
+	ERR_FAIL_COND(dst.size() != static_cast<int>(src.size()));
 
 #ifdef REAL_T_IS_DOUBLE
 	// Convert floats to doubles
@@ -278,7 +278,7 @@ void copy_to(Vector<Vector3> &dst, const std::vector<Vector3f> &src) {
 void copy_to(Vector<Vector2> &dst, const std::vector<Vector2f> &src) {
 	dst.resize(src.size());
 	// resize can fail in case allocation was not possible
-	ERR_FAIL_COND(dst.size() != static_cast<size_t>(src.size()));
+	ERR_FAIL_COND(dst.size() != static_cast<int>(src.size()));
 
 #ifdef REAL_T_IS_DOUBLE
 	// Convert floats to doubles
