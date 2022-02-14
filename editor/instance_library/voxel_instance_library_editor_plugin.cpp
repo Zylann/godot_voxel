@@ -70,7 +70,7 @@ void VoxelInstanceLibraryEditorInspectorPlugin::add_buttons() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin(EditorNode *p_node) {
+VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin() {
 	Control *base_control = get_editor_interface()->get_base_control();
 
 	_confirmation_dialog = memnew(ConfirmationDialog);

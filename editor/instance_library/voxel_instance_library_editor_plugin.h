@@ -32,7 +32,7 @@ public:
 		return "VoxelInstanceLibrary";
 	}
 
-	VoxelInstanceLibraryEditorPlugin(EditorNode *p_node);
+	VoxelInstanceLibraryEditorPlugin();
 
 	bool handles(Object *p_object) const override;
 	void edit(Object *p_object) override;

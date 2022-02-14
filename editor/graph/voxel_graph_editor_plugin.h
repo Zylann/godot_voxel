@@ -10,7 +10,7 @@ class VoxelGraphEditor;
 class VoxelGraphEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelGraphEditorPlugin, EditorPlugin)
 public:
-	VoxelGraphEditorPlugin(EditorNode *p_node);
+	VoxelGraphEditorPlugin();
 
 	bool handles(Object *p_object) const override;
 	void edit(Object *p_object) override;

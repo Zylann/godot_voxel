@@ -14,7 +14,7 @@ class VoxelTerrainEditorTaskIndicator;
 class VoxelTerrainEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelTerrainEditorPlugin, EditorPlugin)
 public:
-	VoxelTerrainEditorPlugin(EditorNode *p_node);
+	VoxelTerrainEditorPlugin();
 
 	bool handles(Object *p_object) const override;
 	void edit(Object *p_object) override;

@@ -4,7 +4,7 @@
 
 namespace zylann::voxel::magica {
 
-VoxEditorPlugin::VoxEditorPlugin(EditorNode *p_node) {
+VoxEditorPlugin::VoxEditorPlugin() {
 	Ref<VoxelVoxSceneImporter> vox_scene_importer;
 	vox_scene_importer.instantiate();
 	//add_import_plugin(vox_importer);

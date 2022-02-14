@@ -179,7 +179,7 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FastNoiseLiteEditorPlugin::FastNoiseLiteEditorPlugin(EditorNode *p_node) {
+FastNoiseLiteEditorPlugin::FastNoiseLiteEditorPlugin() {
 	Ref<FastNoiseLiteEditorInspectorPlugin> plugin;
 	plugin.instantiate();
 	add_inspector_plugin(plugin);

@@ -3,7 +3,7 @@
 
 namespace zylann::voxel {
 
-VoxelInstancerEditorPlugin::VoxelInstancerEditorPlugin(EditorNode *p_node) {}
+VoxelInstancerEditorPlugin::VoxelInstancerEditorPlugin() {}
 
 bool VoxelInstancerEditorPlugin::handles(Object *p_object) const {
 	ERR_FAIL_COND_V(p_object == nullptr, false);

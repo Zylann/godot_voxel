@@ -12,7 +12,7 @@
 
 namespace zylann::voxel {
 
-VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin(EditorNode *p_node) {
+VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {
 	MenuButton *menu_button = memnew(MenuButton);
 	menu_button->set_text(TTR("Terrain"));
 	menu_button->get_popup()->connect(

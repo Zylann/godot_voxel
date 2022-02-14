@@ -164,7 +164,7 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FastNoise2EditorPlugin::FastNoise2EditorPlugin(EditorNode *p_node) {
+FastNoise2EditorPlugin::FastNoise2EditorPlugin() {
 	Control *base_control = get_editor_interface()->get_base_control();
 
 	_noise_analysis_window = memnew(NoiseAnalysisWindow);

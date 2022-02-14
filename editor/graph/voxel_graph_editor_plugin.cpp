@@ -9,7 +9,7 @@
 
 namespace zylann::voxel {
 
-VoxelGraphEditorPlugin::VoxelGraphEditorPlugin(EditorNode *p_node) {
+VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {
 	//EditorInterface *ed = get_editor_interface();
 	_graph_editor = memnew(VoxelGraphEditor);
 	_graph_editor->set_custom_minimum_size(Size2(0, 300) * EDSCALE);

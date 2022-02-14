@@ -12,7 +12,7 @@ public:
 		return "FastNoiseLite";
 	}
 
-	FastNoiseLiteEditorPlugin(EditorNode *p_node);
+	FastNoiseLiteEditorPlugin();
 };
 
 } // namespace zylann

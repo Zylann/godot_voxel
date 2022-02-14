@@ -10,7 +10,7 @@ class VoxelInstancer;
 class VoxelInstancerEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelInstancerEditorPlugin, EditorPlugin)
 public:
-	VoxelInstancerEditorPlugin(EditorNode *p_node);
+	VoxelInstancerEditorPlugin();
 
 	bool handles(Object *p_object) const override;
 	void edit(Object *p_object) override;

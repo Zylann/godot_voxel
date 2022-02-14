@@ -8,7 +8,7 @@ namespace zylann::voxel::magica {
 class VoxEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxEditorPlugin, EditorPlugin)
 public:
-	VoxEditorPlugin(EditorNode *p_node);
+	VoxEditorPlugin();
 };
 
 } // namespace zylann::voxel::magica
