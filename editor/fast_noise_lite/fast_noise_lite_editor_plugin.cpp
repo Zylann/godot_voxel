@@ -118,8 +118,8 @@ private:
 				for (int x = 0; x < preview_size.x; ++x) {
 					const float x0 = x;
 					const float y0 = y;
-					float x1 = x0;
-					float y1 = y0;
+					real_t x1 = x0;
+					real_t y1 = y0;
 					_noise_gradient->warp_2d(x1, y1);
 					const float dx = x1 - x0;
 					const float dy = y1 - y0;

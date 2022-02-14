@@ -187,7 +187,7 @@ inline Interval max_interval(const Interval &a, const real_t b) {
 }
 
 inline Interval sqrt(const Interval &i) {
-	return Interval{ Math::sqrt(max(0.f, i.min)), Math::sqrt(max(0.f, i.max)) };
+	return Interval{ Math::sqrt(maxf(0, i.min)), Math::sqrt(maxf(0, i.max)) };
 }
 
 inline Interval abs(const Interval &i) {

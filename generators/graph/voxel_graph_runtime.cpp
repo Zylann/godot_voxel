@@ -1,5 +1,6 @@
 #include "voxel_graph_runtime.h"
 #include "../../util/funcs.h"
+#include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/noise/fast_noise_lite.h"
 #include "../../util/profiling.h"
@@ -574,8 +575,10 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 }
 
 void VoxelGraphRuntime::generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const {
-	generate_set(state, Span<float>(&position.x, 1), Span<float>(&position.y, 1), Span<float>(&position.z, 1), false,
-			execution_map);
+	// TODO Evaluate needs for double-precision in VoxelGraphRuntime
+	Vector3f position_f = to_vec3f(position);
+	generate_set(state, Span<float>(&position_f.x, 1), Span<float>(&position_f.y, 1), Span<float>(&position_f.z, 1),
+			false, execution_map);
 }
 
 void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) const {

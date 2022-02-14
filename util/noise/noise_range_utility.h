@@ -25,8 +25,8 @@ inline math::Interval get_noise_range_2d(
 	const real_t diag = Math::sqrt(math::squared(x.length()) + math::squared(y.length()));
 
 	return math::Interval( //
-			math::maxf(mid_value - max_derivative_half_diagonal * diag, -1.f),
-			math::minf(mid_value + max_derivative_half_diagonal * diag, 1.f));
+			math::maxf(mid_value - max_derivative_half_diagonal * diag, -1),
+			math::minf(mid_value + max_derivative_half_diagonal * diag, 1));
 }
 
 template <typename Noise_F>
@@ -42,8 +42,8 @@ inline math::Interval get_noise_range_3d(Noise_F noise_func, const math::Interva
 	const real_t diag = Math::sqrt(math::squared(x.length()) + math::squared(y.length()) + math::squared(z.length()));
 
 	return math::Interval( //
-			math::maxf(mid_value - max_derivative_half_diagonal * diag, -1.f),
-			math::minf(mid_value + max_derivative_half_diagonal * diag, 1.f));
+			math::maxf(mid_value - max_derivative_half_diagonal * diag, -1),
+			math::minf(mid_value + max_derivative_half_diagonal * diag, 1));
 }
 
 } // namespace zylann

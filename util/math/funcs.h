@@ -92,7 +92,7 @@ inline float maxf(float a, float b) {
 	return a > b ? a : b;
 }
 
-inline float maxf(double a, double b) {
+inline double maxf(double a, double b) {
 	return a > b ? a : b;
 }
 
@@ -109,7 +109,11 @@ inline T clamp(const T x, const T min_value, const T max_value) {
 }
 
 inline float clampf(float x, float min_value, float max_value) {
-	return fmin(fmax(x, min_value), max_value);
+	return min(max(x, min_value), max_value);
+}
+
+inline double clampf(double x, double min_value, double max_value) {
+	return min(max(x, min_value), max_value);
 }
 
 template <typename T>

@@ -658,8 +658,8 @@ void VoxelGraphEditor::update_slice_previews() {
 		y_vec.resize(buffer_size);
 		z_vec.resize(buffer_size);
 
-		const Vector3 min_pos(-preview_size_x / 2, -preview_size_y / 2, 0);
-		const Vector3 max_pos = min_pos + Vector3(preview_size_x, preview_size_x, 0);
+		const Vector3f min_pos(-preview_size_x / 2, -preview_size_y / 2, 0);
+		const Vector3f max_pos = min_pos + Vector3f(preview_size_x, preview_size_x, 0);
 
 		int i = 0;
 		for (int iy = 0; iy < preview_size_x; ++iy) {

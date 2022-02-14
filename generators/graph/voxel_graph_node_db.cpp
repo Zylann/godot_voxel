@@ -1594,8 +1594,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			VoxelGraphRuntime::Buffer &out_y = ctx.get_output(1);
 			const Params p = ctx.get_params<Params>();
 			for (uint32_t i = 0; i < out_x.size; ++i) {
-				float x = xb.data[i];
-				float y = yb.data[i];
+				real_t x = xb.data[i];
+				real_t y = yb.data[i];
 				p.noise->warp_2d(x, y);
 				out_x.data[i] = x;
 				out_y.data[i] = y;
@@ -1649,9 +1649,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			VoxelGraphRuntime::Buffer &out_z = ctx.get_output(2);
 			const Params p = ctx.get_params<Params>();
 			for (uint32_t i = 0; i < out_x.size; ++i) {
-				float x = xb.data[i];
-				float y = yb.data[i];
-				float z = zb.data[i];
+				real_t x = xb.data[i];
+				real_t y = yb.data[i];
+				real_t z = zb.data[i];
 				p.noise->warp_3d(x, y, z);
 				out_x.data[i] = x;
 				out_y.data[i] = y;

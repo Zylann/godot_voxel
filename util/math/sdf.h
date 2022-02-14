@@ -11,7 +11,7 @@ namespace zylann::math {
 
 inline real_t sdf_box(const Vector3 pos, const Vector3 extents) {
 	Vector3 d = pos.abs() - extents;
-	return minf(maxf(d.x, maxf(d.y, d.z)), 0.f) + Vector3(maxf(d.x, 0.f), maxf(d.y, 0.f), maxf(d.z, 0.f)).length();
+	return minf(maxf(d.x, maxf(d.y, d.z)), 0) + Vector3(maxf(d.x, 0), maxf(d.y, 0), maxf(d.z, 0)).length();
 }
 
 inline Interval sdf_box(const Interval &x, const Interval &y, const Interval &z, const Interval &sx, const Interval &sy,
@@ -19,8 +19,8 @@ inline Interval sdf_box(const Interval &x, const Interval &y, const Interval &z,
 	Interval dx = abs(x) - sx;
 	Interval dy = abs(y) - sy;
 	Interval dz = abs(z) - sz;
-	return min_interval(max_interval(dx, max_interval(dy, dz)), 0.f) +
-			get_length(max_interval(dx, 0.f), max_interval(dy, 0.f), max_interval(dz, 0.f));
+	return min_interval(max_interval(dx, max_interval(dy, dz)), 0) +
+			get_length(max_interval(dx, 0), max_interval(dy, 0), max_interval(dz, 0));
 }
 
 inline real_t sdf_sphere(Vector3 pos, Vector3 center, real_t radius) {
@@ -48,14 +48,14 @@ inline real_t sdf_subtract(real_t a, real_t b) {
 }
 
 inline real_t sdf_smooth_union(real_t a, real_t b, real_t s) {
-	const real_t h = clampf(0.5f + 0.5f * (b - a) / s, 0.0f, 1.0f);
-	return Math::lerp(b, a, h) - s * h * (1.0f - h);
+	const real_t h = clampf(0.5 + 0.5 * (b - a) / s, 0.0, 1.0);
+	return Math::lerp(b, a, h) - s * h * (1.0 - h);
 }
 
 // Inverted a and b because it subtracts SDF a from SDF b
 inline real_t sdf_smooth_subtract(real_t b, real_t a, real_t s) {
-	const real_t h = clampf(0.5f - 0.5f * (b + a) / s, 0.0f, 1.0f);
-	return Math::lerp(b, -a, h) + s * h * (1.0f - h);
+	const real_t h = clampf(0.5 - 0.5 * (b + a) / s, 0.0, 1.0);
+	return Math::lerp(b, -a, h) + s * h * (1.0 - h);
 }
 
 inline Interval sdf_union(Interval a, Interval b) {
