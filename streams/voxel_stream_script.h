@@ -21,8 +21,8 @@ public:
 protected:
 	// TODO Why is it unable to convert `Result` into `Variant` even though a cast is defined in voxel_stream.h???
 	//GDVIRTUAL3R(VoxelStream::Result, _emerge_block, Ref<VoxelBuffer>, Vector3i, int)
-	GDVIRTUAL3R(int, _load_voxel_block, Ref<VoxelBuffer>, Vector3i, int)
-	GDVIRTUAL3(_save_voxel_block, Ref<VoxelBuffer>, Vector3i, int)
+	GDVIRTUAL3R(int, _load_voxel_block, Ref<gd::VoxelBuffer>, Vector3i, int)
+	GDVIRTUAL3(_save_voxel_block, Ref<gd::VoxelBuffer>, Vector3i, int)
 	GDVIRTUAL0RC(int, _get_used_channels_mask) // I think `C` means `const`?
 
 	static void _bind_methods();

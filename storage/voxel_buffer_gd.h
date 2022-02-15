@@ -1,5 +1,5 @@
-#ifndef VOXEL_BUFFER_H
-#define VOXEL_BUFFER_H
+#ifndef VOXEL_BUFFER_GD_H
+#define VOXEL_BUFFER_GD_H
 
 #include "voxel_buffer_internal.h"
 #include <memory>
@@ -10,8 +10,7 @@ namespace zylann::voxel {
 
 class VoxelTool;
 
-// TODO I wish I could call the original class `VoxelBuffer` and expose this other one with that name.
-// Godot doesn't seem to allow doing that. So the original class had to be named `VoxelBufferInternal`...
+namespace gd {
 
 // Scripts-facing wrapper around VoxelBufferInternal.
 // It is separate because being a Godot object requires to carry more baggage, and because this data type can
@@ -180,10 +179,11 @@ private:
 	std::shared_ptr<VoxelBufferInternal> _buffer;
 };
 
+} // namespace gd
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelBuffer::ChannelId)
-VARIANT_ENUM_CAST(zylann::voxel::VoxelBuffer::Depth)
-VARIANT_ENUM_CAST(zylann::voxel::VoxelBuffer::Compression)
+VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::ChannelId)
+VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::Depth)
+VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::Compression)
 
-#endif // VOXEL_BUFFER_H
+#endif // VOXEL_BUFFER_GD_H

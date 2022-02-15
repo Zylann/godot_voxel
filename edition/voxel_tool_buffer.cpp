@@ -1,11 +1,11 @@
 #include "voxel_tool_buffer.h"
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "../util/profiling.h"
 #include "funcs.h"
 
 namespace zylann::voxel {
 
-VoxelToolBuffer::VoxelToolBuffer(Ref<VoxelBuffer> vb) {
+VoxelToolBuffer::VoxelToolBuffer(Ref<gd::VoxelBuffer> vb) {
 	ERR_FAIL_COND(vb.is_null());
 	_buffer = vb;
 }
@@ -73,7 +73,7 @@ Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) const {
 }
 
 void VoxelToolBuffer::paste(
-		Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
+		Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
 	// TODO Support `use_mask` properly
 	if (use_mask) {
 		mask_value = 0xffffffffffffffff;

@@ -64,7 +64,7 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 	const Vector3i origin = input.origin_in_voxels;
 	const int channel = params.channel;
 	const Vector3i bs = out_buffer.get_size();
-	const bool use_sdf = channel == VoxelBuffer::CHANNEL_SDF;
+	const bool use_sdf = channel == VoxelBufferInternal::CHANNEL_SDF;
 	const float margin = 1 << input.lod;
 	const int lod = input.lod;
 
@@ -119,12 +119,12 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 	return result;
 }
 
-void VoxelGeneratorFlat::_b_set_channel(VoxelBuffer::ChannelId p_channel) {
+void VoxelGeneratorFlat::_b_set_channel(gd::VoxelBuffer::ChannelId p_channel) {
 	set_channel(VoxelBufferInternal::ChannelId(p_channel));
 }
 
-VoxelBuffer::ChannelId VoxelGeneratorFlat::_b_get_channel() const {
-	return VoxelBuffer::ChannelId(get_channel());
+gd::VoxelBuffer::ChannelId VoxelGeneratorFlat::_b_get_channel() const {
+	return gd::VoxelBuffer::ChannelId(get_channel());
 }
 
 void VoxelGeneratorFlat::_bind_methods() {
@@ -137,7 +137,7 @@ void VoxelGeneratorFlat::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_height", "h"), &VoxelGeneratorFlat::set_height);
 	ClassDB::bind_method(D_METHOD("get_height"), &VoxelGeneratorFlat::get_height);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, gd::VoxelBuffer::CHANNEL_ID_HINT_STRING),
 			"set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height"), "set_height", "get_height");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_type", PROPERTY_HINT_RANGE, "0,65536,1"), "set_voxel_type",

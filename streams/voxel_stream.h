@@ -6,8 +6,11 @@
 
 namespace zylann::voxel {
 
-class VoxelBuffer;
 class VoxelBufferInternal;
+
+namespace gd {
+class VoxelBuffer;
+}
 
 // Provides access to a source of paged voxel data, which may load and save.
 // This is intented for files, so it may run in a single background thread and gets requests in batches.
@@ -110,13 +113,13 @@ public:
 private:
 	static void _bind_methods();
 
-	ResultCode _b_load_voxel_block(Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
-	void _b_save_voxel_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
+	ResultCode _b_load_voxel_block(Ref<gd::VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
+	void _b_save_voxel_block(Ref<gd::VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
 	int _b_get_used_channels_mask() const;
 	Vector3 _b_get_block_size() const;
 	// Deprecated
-	ResultCode _b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
-	void _b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
+	ResultCode _b_emerge_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
+	void _b_immerge_block(Ref<gd::VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
 
 	struct Parameters {
 		bool save_generator_output = false;

@@ -6,8 +6,11 @@
 
 namespace zylann::voxel {
 
-class VoxelBuffer;
 class VoxelBufferInternal;
+
+namespace gd {
+class VoxelBuffer;
+}
 
 union VoxelSingleValue {
 	uint64_t i;
@@ -56,7 +59,7 @@ public:
 protected:
 	static void _bind_methods();
 
-	void _b_generate_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
+	void _b_generate_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
 };
 
 } // namespace zylann::voxel

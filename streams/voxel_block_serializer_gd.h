@@ -1,15 +1,13 @@
 #ifndef VOXEL_BLOCK_SERIALIZER_GD_H
 #define VOXEL_BLOCK_SERIALIZER_GD_H
 
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "voxel_block_serializer.h"
 #include <core/io/stream_peer.h>
 
-namespace zylann::voxel {
+namespace zylann::voxel::gd {
 
 class VoxelBuffer;
-
-namespace gd {
 
 // Godot-facing API for BlockSerializer
 // TODO Could be a singleton? Or methods on VoxelBuffer? This object has no state.
@@ -38,7 +36,6 @@ private:
 	}
 };
 
-} // namespace gd
-} // namespace zylann::voxel
+} // namespace zylann::voxel::gd
 
 #endif // VOXEL_BLOCK_SERIALIZER_GD_H

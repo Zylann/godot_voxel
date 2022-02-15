@@ -1,5 +1,5 @@
 #include "voxel_tool.h"
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 
@@ -115,7 +115,7 @@ void VoxelTool::do_point(Vector3i pos) {
 	if (!is_area_editable(box)) {
 		return;
 	}
-	if (_channel == VoxelBuffer::CHANNEL_SDF) {
+	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
 		_set_voxel_f(pos, _mode == MODE_REMOVE ? 1.0 : -1.0);
 	} else {
 		_set_voxel(pos, _mode == MODE_REMOVE ? _eraser_value : _value);
@@ -189,7 +189,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 		return;
 	}
 
-	if (_channel == VoxelBuffer::CHANNEL_SDF) {
+	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
 		box.for_each_cell([this, center, radius](Vector3i pos) {
 			float d = _sdf_scale * zylann::math::sdf_sphere(pos, center, radius);
 			_set_voxel_f(pos, sdf_blend(d, get_voxel_f(pos), _mode));
@@ -210,9 +210,10 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 }
 
 // Erases matter in every voxel where the provided buffer has matter.
-void VoxelTool::sdf_stamp_erase(Ref<VoxelBuffer> stamp, Vector3i pos) {
+void VoxelTool::sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos) {
 	VOXEL_PROFILE_SCOPE();
-	ERR_FAIL_COND_MSG(get_channel() != VoxelBuffer::CHANNEL_SDF, "This function only works when channel is set to SDF");
+	ERR_FAIL_COND_MSG(
+			get_channel() != VoxelBufferInternal::CHANNEL_SDF, "This function only works when channel is set to SDF");
 
 	const Box3i box(pos, stamp->get_buffer().get_size());
 	if (!is_area_editable(box)) {
@@ -223,7 +224,7 @@ void VoxelTool::sdf_stamp_erase(Ref<VoxelBuffer> stamp, Vector3i pos) {
 	box.for_each_cell_zxy([this, stamp, pos](Vector3i pos_in_volume) {
 		const Vector3i pos_in_stamp = pos_in_volume - pos;
 		const float dst_sdf =
-				stamp->get_voxel_f(pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBuffer::CHANNEL_SDF);
+				stamp->get_voxel_f(pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBufferInternal::CHANNEL_SDF);
 		if (dst_sdf <= 0.f) {
 			_set_voxel_f(pos_in_volume, 1.f);
 		}
@@ -242,7 +243,7 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 		return;
 	}
 
-	if (_channel == VoxelBuffer::CHANNEL_SDF) {
+	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
 		// TODO Better quality
 		box.for_each_cell([this](Vector3i pos) { _set_voxel_f(pos, sdf_blend(-1.0, get_voxel_f(pos), _mode)); });
 
@@ -254,13 +255,13 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	_post_edit(box);
 }
 
-void VoxelTool::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channel_mask) const {
+void VoxelTool::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channel_mask) const {
 	ERR_FAIL_COND(dst.is_null());
 	ERR_PRINT("Not implemented");
 }
 
 void VoxelTool::paste(
-		Vector3i p_pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
+		Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	ERR_PRINT("Not implemented");
 }
@@ -283,11 +284,11 @@ Variant VoxelTool::get_voxel_metadata(Vector3i pos) const {
 	return Variant();
 }
 
-void VoxelTool::_b_copy(Vector3i pos, Ref<VoxelBuffer> voxels, int channel_mask) {
+void VoxelTool::_b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask) {
 	copy(pos, voxels, channel_mask);
 }
 
-void VoxelTool::_b_paste(Vector3i pos, Ref<VoxelBuffer> voxels, int channels_mask, int64_t mask_value) {
+void VoxelTool::_b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask, int64_t mask_value) {
 	// TODO May need two functions, one masked, one not masked, or add a parameter, but it breaks compat
 	paste(pos, voxels, channels_mask, mask_value > 0xffffffff, mask_value);
 }
@@ -338,7 +339,7 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_area_editable", "box"), &VoxelTool::_b_is_area_editable);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "value"), "set_value", "get_value");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, VoxelBuffer::CHANNEL_ID_HINT_STRING),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, gd::VoxelBuffer::CHANNEL_ID_HINT_STRING),
 			"set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "eraser_value"), "set_eraser_value", "get_eraser_value");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Add,Remove,Set"), "set_mode", "get_mode");

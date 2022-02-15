@@ -1,5 +1,5 @@
 #include "voxel_data_block_enter_info.h"
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data_block.h"
 
 namespace zylann::voxel {
@@ -8,10 +8,10 @@ int VoxelDataBlockEnterInfo::_b_get_network_peer_id() const {
 	return network_peer_id;
 }
 
-Ref<VoxelBuffer> VoxelDataBlockEnterInfo::_b_get_voxels() const {
-	ERR_FAIL_COND_V(voxel_block == nullptr, Ref<VoxelBuffer>());
+Ref<gd::VoxelBuffer> VoxelDataBlockEnterInfo::_b_get_voxels() const {
+	ERR_FAIL_COND_V(voxel_block == nullptr, Ref<gd::VoxelBuffer>());
 	std::shared_ptr<VoxelBufferInternal> vbi = voxel_block->get_voxels_shared();
-	Ref<VoxelBuffer> vb = VoxelBuffer::create_shared(vbi);
+	Ref<gd::VoxelBuffer> vb = gd::VoxelBuffer::create_shared(vbi);
 	return vb;
 }
 

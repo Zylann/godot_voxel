@@ -8,6 +8,10 @@ class ArrayMesh;
 
 namespace zylann::voxel {
 
+namespace gd {
+class VoxelBuffer;
+}
+
 class VoxelMesherTransvoxel : public VoxelMesher {
 	GDCLASS(VoxelMesherTransvoxel, VoxelMesher)
 
@@ -21,7 +25,7 @@ public:
 	~VoxelMesherTransvoxel();
 
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
-	Ref<ArrayMesh> build_transition_mesh(Ref<VoxelBuffer> voxels, int direction);
+	Ref<ArrayMesh> build_transition_mesh(Ref<gd::VoxelBuffer> voxels, int direction);
 
 	Ref<Resource> duplicate(bool p_subresources = false) const override;
 	int get_used_channels_mask() const override;

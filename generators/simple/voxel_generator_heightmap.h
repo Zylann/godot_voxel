@@ -1,7 +1,7 @@
 #ifndef VOXEL_GENERATOR_HEIGHTMAP_H
 #define VOXEL_GENERATOR_HEIGHTMAP_H
 
-#include "../../storage/voxel_buffer.h"
+#include "../../storage/voxel_buffer_gd.h"
 #include "../voxel_generator.h"
 #include <core/io/image.h>
 
@@ -29,8 +29,8 @@ public:
 	float get_iso_scale() const;
 
 protected:
-	void _b_set_channel(VoxelBuffer::ChannelId p_channel);
-	VoxelBuffer::ChannelId _b_get_channel() const;
+	void _b_set_channel(gd::VoxelBuffer::ChannelId p_channel);
+	gd::VoxelBuffer::ChannelId _b_get_channel() const;
 
 	template <typename Height_F>
 	Result generate(VoxelBufferInternal &out_buffer, Height_F height_func, Vector3i origin, int lod) {

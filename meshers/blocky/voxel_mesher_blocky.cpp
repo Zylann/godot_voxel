@@ -1,6 +1,6 @@
 #include "voxel_mesher_blocky.h"
 #include "../../constants/cube_tables.h"
-#include "../../storage/voxel_buffer.h"
+#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/funcs.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/span.h"
@@ -372,7 +372,7 @@ bool VoxelMesherBlocky::get_occlusion_enabled() const {
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	const int channel = VoxelBuffer::CHANNEL_TYPE;
+	const int channel = VoxelBufferInternal::CHANNEL_TYPE;
 	Parameters params;
 	{
 		RWLockRead rlock(_parameters_lock);
@@ -532,7 +532,7 @@ Ref<Resource> VoxelMesherBlocky::duplicate(bool p_subresources) const {
 }
 
 int VoxelMesherBlocky::get_used_channels_mask() const {
-	return (1 << VoxelBuffer::CHANNEL_TYPE);
+	return (1 << VoxelBufferInternal::CHANNEL_TYPE);
 }
 
 void VoxelMesherBlocky::_bind_methods() {

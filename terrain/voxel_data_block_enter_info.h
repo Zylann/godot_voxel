@@ -6,7 +6,10 @@
 namespace zylann::voxel {
 
 class VoxelDataBlock;
+
+namespace gd {
 class VoxelBuffer;
+}
 
 // Information sent with data block entering notifications.
 // It is a class for script API convenience.
@@ -19,7 +22,7 @@ public:
 
 private:
 	int _b_get_network_peer_id() const;
-	Ref<VoxelBuffer> _b_get_voxels() const;
+	Ref<gd::VoxelBuffer> _b_get_voxels() const;
 	Vector3i _b_get_position() const;
 	int _b_get_lod_index() const;
 	bool _b_are_voxels_edited() const;

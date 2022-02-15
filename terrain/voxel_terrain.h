@@ -195,7 +195,7 @@ private:
 	void _b_save_block(Vector3i p_block_pos);
 	void _b_set_bounds(AABB aabb);
 	AABB _b_get_bounds() const;
-	bool _b_try_set_block_data(Vector3i position, Ref<VoxelBuffer> voxel_data);
+	bool _b_try_set_block_data(Vector3i position, Ref<gd::VoxelBuffer> voxel_data);
 	Dictionary _b_get_statistics() const;
 	PackedInt32Array _b_get_viewer_network_peer_ids_in_area(Vector3i area_origin, Vector3i area_size) const;
 

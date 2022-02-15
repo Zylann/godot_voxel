@@ -1,7 +1,7 @@
 #ifndef VOXEL_GENERATOR_NOISE_H
 #define VOXEL_GENERATOR_NOISE_H
 
-#include "../../storage/voxel_buffer.h"
+#include "../../storage/voxel_buffer_gd.h"
 #include "../voxel_generator.h"
 #include <modules/opensimplex/open_simplex_noise.h>
 
@@ -33,8 +33,8 @@ public:
 private:
 	void _on_noise_changed();
 
-	void _b_set_channel(VoxelBuffer::ChannelId p_channel);
-	VoxelBuffer::ChannelId _b_get_channel() const;
+	void _b_set_channel(gd::VoxelBuffer::ChannelId p_channel);
+	gd::VoxelBuffer::ChannelId _b_get_channel() const;
 
 	static void _bind_methods();
 

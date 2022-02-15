@@ -7,7 +7,7 @@
 #include "funcs.h"
 #include "voxel_raycast_result.h"
 
-namespace zylann::voxel {
+namespace zylann::voxel::gd {
 class VoxelBuffer;
 }
 
@@ -140,11 +140,11 @@ public:
 	virtual void do_sphere(Vector3 center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
 
-	void sdf_stamp_erase(Ref<VoxelBuffer> stamp, Vector3i pos);
+	void sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos);
 
-	virtual void copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const;
+	virtual void copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const;
 	virtual void paste(
-			Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value);
+			Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value);
 
 	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
 
@@ -199,8 +199,8 @@ private:
 	void _b_do_box(Vector3i begin, Vector3i end) {
 		do_box(begin, end);
 	}
-	void _b_copy(Vector3i pos, Ref<VoxelBuffer> voxels, int channel_mask);
-	void _b_paste(Vector3i pos, Ref<VoxelBuffer> voxels, int channels_mask, int64_t mask_value);
+	void _b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask);
+	void _b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask, int64_t mask_value);
 
 	Variant _b_get_voxel_metadata(Vector3i pos) const {
 		return get_voxel_metadata(pos);

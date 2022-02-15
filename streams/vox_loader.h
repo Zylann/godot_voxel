@@ -5,15 +5,18 @@
 
 namespace zylann::voxel {
 
-class VoxelBuffer;
 class VoxelColorPalette;
+
+namespace gd {
+class VoxelBuffer;
+}
 
 // Simple loader for MagicaVoxel
 class VoxelVoxLoader : public RefCounted {
 	GDCLASS(VoxelVoxLoader, RefCounted);
 
 public:
-	Error load_from_file(String fpath, Ref<VoxelBuffer> p_voxels, Ref<VoxelColorPalette> palette);
+	Error load_from_file(String fpath, Ref<gd::VoxelBuffer> p_voxels, Ref<VoxelColorPalette> palette);
 	// TODO Have chunked loading for better memory usage
 	// TODO Saving
 

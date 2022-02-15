@@ -1,6 +1,6 @@
 #include "voxel_generator.h"
 #include "../constants/voxel_string_names.h"
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 
 namespace zylann::voxel {
 
@@ -29,7 +29,7 @@ VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int chan
 	return v;
 }
 
-void VoxelGenerator::_b_generate_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
+void VoxelGenerator::_b_generate_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	ERR_FAIL_COND(lod >= int(constants::MAX_LOD));
 	ERR_FAIL_COND(out_buffer.is_null());

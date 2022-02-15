@@ -1,6 +1,6 @@
 #include "voxel_stream_script.h"
 #include "../constants/voxel_string_names.h"
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/funcs.h"
 
 namespace zylann::voxel {
@@ -8,7 +8,7 @@ namespace zylann::voxel {
 void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data) {
 	Variant output;
 	// Create a temporary wrapper so Godot can pass it to scripts
-	Ref<VoxelBuffer> buffer_wrapper;
+	Ref<gd::VoxelBuffer> buffer_wrapper;
 	buffer_wrapper.instantiate();
 	buffer_wrapper->get_buffer().copy_format(query_data.voxel_buffer);
 	buffer_wrapper->get_buffer().create(query_data.voxel_buffer.get_size());
@@ -31,7 +31,7 @@ void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data
 }
 
 void VoxelStreamScript::save_voxel_block(VoxelStream::VoxelQueryData &query_data) {
-	Ref<VoxelBuffer> buffer_wrapper;
+	Ref<gd::VoxelBuffer> buffer_wrapper;
 	buffer_wrapper.instantiate();
 	query_data.voxel_buffer.duplicate_to(buffer_wrapper->get_buffer(), true);
 	if (!GDVIRTUAL_CALL(_save_voxel_block, buffer_wrapper, query_data.origin_in_voxels, query_data.lod)) {

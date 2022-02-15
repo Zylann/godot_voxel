@@ -1,5 +1,5 @@
 #include "voxel_mesher_transvoxel.h"
-#include "../../storage/voxel_buffer.h"
+#include "../../storage/voxel_buffer_gd.h"
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
 #include "../../util/funcs.h"
 #include "../../util/godot/funcs.h"
@@ -199,7 +199,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 }
 
 // TODO For testing at the moment
-Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<VoxelBuffer> voxels, int direction) {
+Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<gd::VoxelBuffer> voxels, int direction) {
 	static thread_local transvoxel::Cache s_cache;
 	static thread_local transvoxel::MeshArrays s_mesh_arrays;
 

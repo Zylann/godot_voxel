@@ -1,7 +1,7 @@
 #include "voxel_tool_terrain.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "../terrain/voxel_terrain.h"
 #include "../util/godot/funcs.h"
 #include "../util/voxel_raycast.h"
@@ -136,7 +136,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	return res;
 }
 
-void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const {
+void VoxelToolTerrain::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(dst.is_null());
 	if (channels_mask == 0) {
@@ -146,7 +146,7 @@ void VoxelToolTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels
 }
 
 void VoxelToolTerrain::paste(
-		Vector3i pos, Ref<VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
+		Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(p_voxels.is_null());
 	if (channels_mask == 0) {

@@ -19,7 +19,7 @@
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "server/voxel_server_gd.h"
-#include "storage/voxel_buffer.h"
+#include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
 #include "streams/region/voxel_stream_region_files.h"
 #include "streams/sqlite/voxel_stream_sqlite.h"
@@ -89,7 +89,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelDataBlockEnterInfo>();
 
 	// Storage
-	ClassDB::register_class<VoxelBuffer>();
+	ClassDB::register_class<gd::VoxelBuffer>();
 
 	// Nodes
 	ClassDB::register_virtual_class<VoxelNode>();
@@ -146,11 +146,13 @@ void register_voxel_types() {
 	// Reminder: how to create a singleton accessible from scripts:
 	// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
 
+	// Reminders
+	PRINT_VERBOSE(String("Size of Variant: {0}").format(varray((int)sizeof(Variant))));
 	PRINT_VERBOSE(String("Size of Object: {0}").format(varray((int)sizeof(Object))));
 	PRINT_VERBOSE(String("Size of RefCounted: {0}").format(varray((int)sizeof(RefCounted))));
 	PRINT_VERBOSE(String("Size of Node: {0}").format(varray((int)sizeof(Node))));
 	PRINT_VERBOSE(String("Size of Node3D: {0}").format(varray((int)sizeof(Node3D))));
-	PRINT_VERBOSE(String("Size of VoxelBuffer: {0}").format(varray((int)sizeof(VoxelBuffer))));
+	PRINT_VERBOSE(String("Size of gd::VoxelBuffer: {0}").format(varray((int)sizeof(gd::VoxelBuffer))));
 	PRINT_VERBOSE(String("Size of VoxelMeshBlock: {0}").format(varray((int)sizeof(VoxelMeshBlock))));
 	PRINT_VERBOSE(String("Size of VoxelTerrain: {0}").format(varray((int)sizeof(VoxelTerrain))));
 	PRINT_VERBOSE(String("Size of VoxelLodTerrain: {0}").format(varray((int)sizeof(VoxelLodTerrain))));

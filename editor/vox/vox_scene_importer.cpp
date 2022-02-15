@@ -1,7 +1,7 @@
 #include "vox_scene_importer.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
-#include "../../storage/voxel_buffer.h"
+#include "../../storage/voxel_buffer_gd.h"
 #include "../../streams/vox_data.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
@@ -285,10 +285,10 @@ Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p
 
 		VoxelBufferInternal voxels;
 		voxels.create(model.size + Vector3iUtil::create(VoxelMesherCubes::PADDING * 2));
-		voxels.decompress_channel(VoxelBuffer::CHANNEL_COLOR);
+		voxels.decompress_channel(VoxelBufferInternal::CHANNEL_COLOR);
 
 		Span<uint8_t> dst_color_indices;
-		ERR_FAIL_COND_V(!voxels.get_channel_raw(VoxelBuffer::CHANNEL_COLOR, dst_color_indices), ERR_BUG);
+		ERR_FAIL_COND_V(!voxels.get_channel_raw(VoxelBufferInternal::CHANNEL_COLOR, dst_color_indices), ERR_BUG);
 		Span<const uint8_t> src_color_indices = to_span_const(model.color_indexes);
 		copy_3d_region_zxy(dst_color_indices, voxels.get_size(), Vector3iUtil::create(VoxelMesherCubes::PADDING),
 				src_color_indices, model.size, Vector3i(), model.size);

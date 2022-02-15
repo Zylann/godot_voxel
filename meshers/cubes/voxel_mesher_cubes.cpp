@@ -1,5 +1,5 @@
 #include "voxel_mesher_cubes.h"
-#include "../../storage/voxel_buffer.h"
+#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/funcs.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
@@ -757,7 +757,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	switch (params.color_mode) {
 		case COLOR_RAW:
 			switch (channel_depth) {
-				case VoxelBuffer::DEPTH_8_BIT:
+				case VoxelBufferInternal::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material, raw_channel, block_size,
 								cache.mask_memory_pool, Color8::from_u8);
@@ -767,7 +767,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
-				case VoxelBuffer::DEPTH_16_BIT:
+				case VoxelBufferInternal::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, cache.mask_memory_pool,
@@ -799,7 +799,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			const GetColorFromPalette get_color_from_palette{ **params.palette };
 
 			switch (channel_depth) {
-				case VoxelBuffer::DEPTH_8_BIT:
+				case VoxelBufferInternal::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
 						if (params.store_colors_in_texture) {
 							build_voxel_mesh_as_greedy_cubes_atlased(cache.arrays_per_material, cache.greedy_atlas_data,
@@ -816,7 +816,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
-				case VoxelBuffer::DEPTH_16_BIT:
+				case VoxelBufferInternal::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, cache.mask_memory_pool,
@@ -846,7 +846,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			const GetIndexFromPalette get_index_from_palette{ **params.palette };
 
 			switch (channel_depth) {
-				case VoxelBuffer::DEPTH_8_BIT:
+				case VoxelBufferInternal::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material, raw_channel, block_size,
 								cache.mask_memory_pool, get_index_from_palette);
@@ -856,7 +856,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
-				case VoxelBuffer::DEPTH_16_BIT:
+				case VoxelBufferInternal::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, cache.mask_memory_pool,
@@ -1000,7 +1000,7 @@ Ref<Resource> VoxelMesherCubes::duplicate(bool p_subresources) const {
 }
 
 int VoxelMesherCubes::get_used_channels_mask() const {
-	return (1 << VoxelBuffer::CHANNEL_COLOR);
+	return (1 << VoxelBufferInternal::CHANNEL_COLOR);
 }
 
 void VoxelMesherCubes::_bind_methods() {

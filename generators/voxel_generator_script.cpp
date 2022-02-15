@@ -1,6 +1,6 @@
 #include "voxel_generator_script.h"
 #include "../constants/voxel_string_names.h"
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/funcs.h"
 
 namespace zylann::voxel {
@@ -11,7 +11,7 @@ VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelGenerator::Voxe
 	Result result;
 
 	// Create a temporary wrapper so Godot can pass it to scripts
-	Ref<VoxelBuffer> buffer_wrapper;
+	Ref<gd::VoxelBuffer> buffer_wrapper;
 	buffer_wrapper.instantiate();
 	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
 	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());

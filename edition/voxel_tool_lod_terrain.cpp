@@ -1,6 +1,6 @@
 #include "voxel_tool_lod_terrain.h"
 #include "../constants/voxel_string_names.h"
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data_grid.h"
 #include "../terrain/voxel_lod_terrain.h"
 #include "../util/funcs.h"
@@ -322,7 +322,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	_terrain->push_async_edit(task, op.box, task->get_tracker());
 }
 
-void VoxelToolLodTerrain::copy(Vector3i pos, Ref<VoxelBuffer> dst, uint8_t channels_mask) const {
+void VoxelToolLodTerrain::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(dst.is_null());
 	if (channels_mask == 0) {
@@ -404,7 +404,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	static const int main_channel = VoxelBufferInternal::CHANNEL_SDF;
 
 	// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
-	Ref<VoxelBuffer> source_copy_buffer_ref;
+	Ref<gd::VoxelBuffer> source_copy_buffer_ref;
 	{
 		VOXEL_PROFILE_SCOPE_NAMED("Copy");
 		source_copy_buffer_ref.instantiate();
@@ -512,7 +512,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	// Create voxel buffer for each group
 
 	struct InstanceInfo {
-		Ref<VoxelBuffer> voxels;
+		Ref<gd::VoxelBuffer> voxels;
 		Vector3i world_pos;
 		unsigned int label;
 	};
@@ -537,7 +537,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 					local_bounds.max_pos - local_bounds.min_pos + Vector3iUtil::create(1 + max_padding + min_padding);
 
 			// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
-			Ref<VoxelBuffer> buffer_ref;
+			Ref<gd::VoxelBuffer> buffer_ref;
 			buffer_ref.instantiate();
 			buffer_ref->create(size.x, size.y, size.z);
 

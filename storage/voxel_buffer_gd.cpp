@@ -1,10 +1,10 @@
-#include "voxel_buffer.h"
+#include "voxel_buffer_gd.h"
 #include "../edition/voxel_tool_buffer.h"
 #include "../util/godot/funcs.h"
 
 #include <core/io/image.h>
 
-namespace zylann::voxel {
+namespace zylann::voxel::gd {
 
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
 static thread_local bool s_create_shared = false;
@@ -213,4 +213,4 @@ void VoxelBuffer::_bind_methods() {
 	BIND_CONSTANT(MAX_SIZE);
 }
 
-} // namespace zylann::voxel
+} //namespace zylann::voxel::gd

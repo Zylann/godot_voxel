@@ -4,7 +4,7 @@
 #include "../edition/voxel_tool_terrain.h"
 #include "../server/voxel_server.h"
 #include "../server/voxel_server_updater.h"
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "../util/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
@@ -1546,7 +1546,7 @@ AABB VoxelTerrain::_b_get_bounds() const {
 	return AABB(b.pos, b.size);
 }
 
-bool VoxelTerrain::_b_try_set_block_data(Vector3i position, Ref<VoxelBuffer> voxel_data) {
+bool VoxelTerrain::_b_try_set_block_data(Vector3i position, Ref<gd::VoxelBuffer> voxel_data) {
 	ERR_FAIL_COND_V(voxel_data.is_null(), false);
 	std::shared_ptr<VoxelBufferInternal> buffer = voxel_data->get_buffer_shared();
 	return try_set_block_data(position, buffer);

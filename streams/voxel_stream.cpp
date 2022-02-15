@@ -1,5 +1,5 @@
 #include "voxel_stream.h"
-#include "../storage/voxel_buffer.h"
+#include "../storage/voxel_buffer_gd.h"
 #include <core/object/script_language.h>
 
 using namespace zylann::voxel;
@@ -75,7 +75,7 @@ int VoxelStream::get_lod_count() const {
 // Binding land
 
 VoxelStream::ResultCode VoxelStream::_b_load_voxel_block(
-		Ref<VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
+		Ref<gd::VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND_V(lod < 0, RESULT_ERROR);
 	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
 	VoxelQueryData q{ out_buffer->get_buffer(), origin_in_voxels, lod, RESULT_ERROR };
@@ -83,19 +83,20 @@ VoxelStream::ResultCode VoxelStream::_b_load_voxel_block(
 	return q.result;
 }
 
-void VoxelStream::_b_save_voxel_block(Ref<VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStream::_b_save_voxel_block(Ref<gd::VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	ERR_FAIL_COND(buffer.is_null());
 	VoxelQueryData q{ buffer->get_buffer(), origin_in_voxels, lod, RESULT_ERROR };
 	save_voxel_block(q);
 }
 
-VoxelStream::ResultCode VoxelStream::_b_emerge_block(Ref<VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
+VoxelStream::ResultCode VoxelStream::_b_emerge_block(
+		Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_PRINT("VoxelStream.emerge_block is deprecated. Use `load_voxel_block` instead.");
 	return _b_load_voxel_block(out_buffer, origin_in_voxels, lod);
 }
 
-void VoxelStream::_b_immerge_block(Ref<VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod) {
+void VoxelStream::_b_immerge_block(Ref<gd::VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_PRINT("VoxelStream.immerge_block is deprecated. Use `save_voxel_block` instead.");
 	return _b_save_voxel_block(buffer, origin_in_voxels, lod);
 }

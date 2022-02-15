@@ -18,7 +18,7 @@ public:
 	int get_used_channels_mask() const override;
 
 protected:
-	GDVIRTUAL3(_generate_block, Ref<VoxelBuffer>, Vector3i, int)
+	GDVIRTUAL3(_generate_block, Ref<gd::VoxelBuffer>, Vector3i, int)
 	GDVIRTUAL0RC(int, _get_used_channels_mask) // I think `C` means `const`?
 
 private:
