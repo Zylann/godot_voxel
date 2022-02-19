@@ -1,5 +1,5 @@
-#ifndef TEST_UTIL_H
-#define TEST_UTIL_H
+#ifndef ZYLANN_TEST_UTIL_H
+#define ZYLANN_TEST_UTIL_H
 
 #include <core/string/ustring.h>
 
@@ -42,4 +42,4 @@ private:
 
 } // namespace zylann::testing
 
-#endif // TEST_UTIL_H
+#endif // ZYLANN_TEST_UTIL_H
