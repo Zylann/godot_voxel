@@ -19,7 +19,7 @@ struct FlatMapDefaultComparator {
 // Two elements with the same key is not allowed.
 // The address of keys and values is not guaranteed to be stable.
 // See https://riptutorial.com/cplusplus/example/7270/using-a-sorted-vector-for-fast-element-lookup
-template <typename K, typename T, typename KComp = FlatMapDefaultComparator<T>>
+template <typename K, typename T, typename KComp = FlatMapDefaultComparator<K>>
 class FlatMap {
 public:
 	struct Pair {

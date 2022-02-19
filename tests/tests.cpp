@@ -1222,21 +1222,27 @@ void test_run_blocky_random_tick() {
 }
 
 void test_flat_map() {
-	typedef FlatMap<int, int>::Pair Pair;
+	struct Value {
+		int i;
+		bool operator==(const Value &other) const {
+			return i == other.i;
+		}
+	};
+	typedef FlatMap<int, Value>::Pair Pair;
 
 	std::vector<Pair> sorted_pairs;
 	for (int i = 0; i < 100; ++i) {
-		sorted_pairs.push_back(Pair{ i, 1000 * i });
+		sorted_pairs.push_back(Pair{ i, Value{ 1000 * i } });
 	}
 	const int inexistent_key1 = 101;
 	const int inexistent_key2 = -1;
 
 	struct L {
-		static bool validate_map(const FlatMap<int, int> &map, const std::vector<Pair> &sorted_pairs) {
+		static bool validate_map(const FlatMap<int, Value> &map, const std::vector<Pair> &sorted_pairs) {
 			ZYLANN_TEST_ASSERT_V(sorted_pairs.size() == map.size(), false);
 			for (size_t i = 0; i < sorted_pairs.size(); ++i) {
 				const Pair expected_pair = sorted_pairs[i];
-				int value;
+				Value value;
 				ZYLANN_TEST_ASSERT_V(map.has(expected_pair.key), false);
 				ZYLANN_TEST_ASSERT_V(map.find(expected_pair.key, value), false);
 				ZYLANN_TEST_ASSERT_V(value == expected_pair.value, false);
@@ -1257,7 +1263,7 @@ void test_flat_map() {
 
 	{
 		// Insert pre-sorted pairs
-		FlatMap<int, int> map;
+		FlatMap<int, Value> map;
 		for (size_t i = 0; i < sorted_pairs.size(); ++i) {
 			const Pair pair = sorted_pairs[i];
 			ZYLANN_TEST_ASSERT(map.insert(pair.key, pair.value));
@@ -1266,7 +1272,7 @@ void test_flat_map() {
 	}
 	{
 		// Insert random pairs
-		FlatMap<int, int> map;
+		FlatMap<int, Value> map;
 		for (size_t i = 0; i < shuffled_pairs.size(); ++i) {
 			const Pair pair = shuffled_pairs[i];
 			ZYLANN_TEST_ASSERT(map.insert(pair.key, pair.value));
@@ -1275,7 +1281,7 @@ void test_flat_map() {
 	}
 	{
 		// Insert random pairs with duplicates
-		FlatMap<int, int> map;
+		FlatMap<int, Value> map;
 		for (size_t i = 0; i < shuffled_pairs.size(); ++i) {
 			const Pair pair = shuffled_pairs[i];
 			ZYLANN_TEST_ASSERT(map.insert(pair.key, pair.value));
@@ -1285,23 +1291,23 @@ void test_flat_map() {
 	}
 	{
 		// Init from collection
-		FlatMap<int, int> map;
+		FlatMap<int, Value> map;
 		map.clear_and_insert(to_span(shuffled_pairs));
 		ZYLANN_TEST_ASSERT(L::validate_map(map, sorted_pairs));
 	}
 	{
 		// Inexistent items
-		FlatMap<int, int> map;
+		FlatMap<int, Value> map;
 		map.clear_and_insert(to_span(shuffled_pairs));
 		ZYLANN_TEST_ASSERT(!map.has(inexistent_key1));
 		ZYLANN_TEST_ASSERT(!map.has(inexistent_key2));
 	}
 	{
 		// Iteration
-		FlatMap<int, int> map;
+		FlatMap<int, Value> map;
 		map.clear_and_insert(to_span(shuffled_pairs));
 		size_t i = 0;
-		for (FlatMap<int, int>::ConstIterator it = map.begin(); it != map.end(); ++it) {
+		for (FlatMap<int, Value>::ConstIterator it = map.begin(); it != map.end(); ++it) {
 			ZYLANN_TEST_ASSERT(i < sorted_pairs.size());
 			const Pair expected_pair = sorted_pairs[i];
 			ZYLANN_TEST_ASSERT(expected_pair.key == it->key);
