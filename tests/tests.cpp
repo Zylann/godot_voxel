@@ -1225,10 +1225,10 @@ void test_flat_map() {
 	typedef FlatMap<int, int>::Pair Pair;
 
 	std::vector<Pair> sorted_pairs;
-	for (int i = 0; i < 10; ++i) {
-		sorted_pairs.push_back(Pair{ i, 100 * i });
+	for (int i = 0; i < 100; ++i) {
+		sorted_pairs.push_back(Pair{ i, 1000 * i });
 	}
-	const int inexistent_key1 = 11;
+	const int inexistent_key1 = 101;
 	const int inexistent_key2 = -1;
 
 	struct L {

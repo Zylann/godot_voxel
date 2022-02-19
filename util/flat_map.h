@@ -40,12 +40,8 @@ public:
 	// If the key already exists, the item is not inserted and returns false.
 	// If insertion was successful, returns true.
 	bool insert(K key, T value) {
-		if (_items.size() == 0) {
-			_items.push_back(Pair{ key, value });
-			return true;
-		}
 		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
-		if (it->key == key) {
+		if (it != _items.end() && it->key == key) {
 			return false;
 		}
 		_items.insert(it, Pair{ key, value });
@@ -54,12 +50,8 @@ public:
 
 	// If the key already exists, the item will replace the previous value.
 	void insert_or_assign(K key, T value) {
-		if (_items.size() == 0) {
-			_items.push_back(Pair{ key, value });
-			return;
-		}
 		typename std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
-		if (it->key == key) {
+		if (it != _items.end() && it->key == key) {
 			it->value = value;
 		} else {
 			_items.insert(it, Pair{ key, value });
