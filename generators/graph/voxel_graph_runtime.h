@@ -124,7 +124,8 @@ public:
 	void prepare_state(State &state, unsigned int buffer_size) const;
 
 	// Convenience for set generation with only one value
-	void generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const;
+	// TODO Evaluate needs for double-precision in VoxelGraphRuntime
+	void generate_single(State &state, Vector3f position_f, const ExecutionMap *execution_map) const;
 
 	void generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
 			const ExecutionMap *execution_map) const;

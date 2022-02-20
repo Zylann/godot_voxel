@@ -1,5 +1,6 @@
 #include "voxel_generator_graph.h"
 #include "../../storage/voxel_buffer_internal.h"
+#include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
@@ -1219,7 +1220,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 	Cache &cache = _cache;
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, 1);
-	runtime.generate_single(cache.state, position, nullptr);
+	runtime.generate_single(cache.state, to_vec3f(position), nullptr);
 	const VoxelGraphRuntime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
 	ERR_FAIL_COND_V(buffer.size == 0, v);
 	ERR_FAIL_COND_V(buffer.data == nullptr, v);
@@ -1466,7 +1467,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 			for (uint32_t z = 0; z < cube_size; ++z) {
 				for (uint32_t y = 0; y < cube_size; ++y) {
 					for (uint32_t x = 0; x < cube_size; ++x) {
-						runtime.generate_single(cache.state, Vector3i(x, y, z), nullptr);
+						runtime.generate_single(cache.state, Vector3f(x, y, z), nullptr);
 					}
 				}
 			}

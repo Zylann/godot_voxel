@@ -1,17 +1,10 @@
 #include "voxel_graph_runtime.h"
 #include "../../util/funcs.h"
-#include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
-#include "../../util/noise/fast_noise_lite.h"
 #include "../../util/profiling.h"
-#include "image_range_grid.h"
-#include "range_utility.h"
 #include "voxel_generator_graph.h"
 #include "voxel_graph_node_db.h"
 
-#include <core/math/math_funcs.h>
-#include <modules/opensimplex/open_simplex_noise.h>
-#include <scene/resources/curve.h>
 #include <unordered_set>
 
 //#ifdef DEBUG_ENABLED
@@ -221,6 +214,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 				continue;
 			}
 
+			// Input nodes can appear multiple times in the graph, for convenience.
+			// Multiple instances of the same node will refer to the same data.
 			case VoxelGeneratorGraph::NODE_INPUT_X:
 				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _program.x_input_address;
 				dg_node.is_input = true;
@@ -574,9 +569,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 	}
 }
 
-void VoxelGraphRuntime::generate_single(State &state, Vector3 position, const ExecutionMap *execution_map) const {
-	// TODO Evaluate needs for double-precision in VoxelGraphRuntime
-	Vector3f position_f = to_vec3f(position);
+void VoxelGraphRuntime::generate_single(State &state, Vector3f position_f, const ExecutionMap *execution_map) const {
 	generate_set(state, Span<float>(&position_f.x, 1), Span<float>(&position_f.y, 1), Span<float>(&position_f.z, 1),
 			false, execution_map);
 }
