@@ -9,9 +9,6 @@ class Mesh;
 class World3D;
 
 namespace zylann {
-
-class DirectMeshInstance;
-
 namespace DebugColors {
 
 enum ColorID { //
