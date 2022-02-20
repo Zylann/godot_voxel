@@ -4,6 +4,7 @@
 #include "vector2f.h"
 #include "vector3f.h"
 #include <core/math/vector3.h>
+#include <core/math/vector3i.h>
 
 namespace zylann::math {
 
