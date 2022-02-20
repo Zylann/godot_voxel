@@ -11,7 +11,7 @@ namespace zylann::voxel {
 class VoxelGraphEditorNodePreview;
 class VoxelGeneratorGraph;
 
-// Graph node with a few custom data attached.
+// GUI graph node with a few custom data attached.
 class VoxelGraphEditorNode : public GraphNode {
 	GDCLASS(VoxelGraphEditorNode, GraphNode)
 public:

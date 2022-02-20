@@ -323,6 +323,7 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 
 void VoxelGraphEditor::_on_graph_edit_connection_request(
 		String from_node_name, int from_slot, String to_node_name, int to_slot) {
+	//
 	VoxelGraphEditorNode *src_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(from_node_name));
 	VoxelGraphEditorNode *dst_node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(to_node_name));
 	ERR_FAIL_COND(src_node_view == nullptr);
@@ -331,20 +332,44 @@ void VoxelGraphEditor::_on_graph_edit_connection_request(
 	const uint32_t src_node_id = src_node_view->get_generator_node_id();
 	const uint32_t dst_node_id = dst_node_view->get_generator_node_id();
 
-	// TODO Replace connection if one already exists
-
 	//print("Connection attempt from ", from, ":", from_slot, " to ", to, ":", to_slot)
-	if (_graph->can_connect(src_node_id, from_slot, dst_node_id, to_slot)) {
-		_undo_redo->create_action(TTR("Connect Nodes"));
 
-		_undo_redo->add_do_method(*_graph, "add_connection", src_node_id, from_slot, dst_node_id, to_slot);
-		_undo_redo->add_do_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
-
-		_undo_redo->add_undo_method(*_graph, "remove_connection", src_node_id, from_slot, dst_node_id, to_slot);
-		_undo_redo->add_undo_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
-
-		_undo_redo->commit_action();
+	if (!_graph->is_valid_connection(src_node_id, from_slot, dst_node_id, to_slot)) {
+		PRINT_VERBOSE("Connection is invalid");
+		return;
 	}
+
+	_undo_redo->create_action(TTR("Connect Nodes"));
+
+	ProgramGraph::PortLocation prev_src_port;
+	String prev_src_node_name;
+	const bool replacing =
+			_graph->try_get_connection_to(ProgramGraph::PortLocation{ dst_node_id, uint32_t(to_slot) }, prev_src_port);
+
+	if (replacing) {
+		// Remove existing connection so we can replace with the new one
+		prev_src_node_name = node_to_gui_name(prev_src_port.node_id);
+		_undo_redo->add_do_method(
+				*_graph, "remove_connection", prev_src_port.node_id, prev_src_port.port_index, dst_node_id, to_slot);
+		_undo_redo->add_do_method(
+				_graph_edit, "disconnect_node", prev_src_node_name, prev_src_port.port_index, to_node_name, to_slot);
+	}
+
+	_undo_redo->add_do_method(*_graph, "add_connection", src_node_id, from_slot, dst_node_id, to_slot);
+	_undo_redo->add_do_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
+
+	_undo_redo->add_undo_method(*_graph, "remove_connection", src_node_id, from_slot, dst_node_id, to_slot);
+	_undo_redo->add_undo_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
+
+	if (replacing) {
+		// After undoing the connection we added, put back the connection we replaced
+		_undo_redo->add_undo_method(
+				*_graph, "add_connection", prev_src_port.node_id, prev_src_port.port_index, dst_node_id, to_slot);
+		_undo_redo->add_undo_method(
+				_graph_edit, "connect_node", prev_src_node_name, prev_src_port.port_index, to_node_name, to_slot);
+	}
+
+	_undo_redo->commit_action();
 }
 
 void VoxelGraphEditor::_on_graph_edit_disconnection_request(

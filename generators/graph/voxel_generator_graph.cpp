@@ -80,6 +80,15 @@ bool VoxelGeneratorGraph::can_connect(
 	return _graph.can_connect(src_port, dst_port);
 }
 
+bool VoxelGeneratorGraph::is_valid_connection(
+		uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const {
+	const ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };
+	const ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
+	ERR_FAIL_COND_V(!_graph.is_output_port_valid(src_port), false);
+	ERR_FAIL_COND_V(!_graph.is_input_port_valid(dst_port), false);
+	return _graph.is_valid_connection(src_port, dst_port);
+}
+
 void VoxelGeneratorGraph::add_connection(
 		uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) {
 	const ProgramGraph::PortLocation src_port{ src_node_id, src_port_index };

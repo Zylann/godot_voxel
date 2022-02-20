@@ -6,7 +6,8 @@
 
 namespace zylann {
 
-template <typename T> inline bool range_contains(const std::vector<T> &vec, const T &v, uint32_t begin, uint32_t end) {
+template <typename T>
+inline bool range_contains(const std::vector<T> &vec, const T &v, uint32_t begin, uint32_t end) {
 	CRASH_COND(end > vec.size());
 	for (size_t i = begin; i < end; ++i) {
 		if (vec[i] == v) {
@@ -98,8 +99,8 @@ void ProgramGraph::clear() {
 }
 
 bool ProgramGraph::is_connected(PortLocation src, PortLocation dst) const {
-	Node *src_node = get_node(src.node_id);
-	Node *dst_node = get_node(dst.node_id);
+	const Node *src_node = get_node(src.node_id);
+	const Node *dst_node = get_node(dst.node_id);
 	if (src_node->find_output_connection(src.port_index, dst) != NULL_INDEX) {
 		CRASH_COND(dst_node->find_input_connection(src, dst.port_index) == NULL_INDEX);
 		return true;
@@ -109,13 +110,20 @@ bool ProgramGraph::is_connected(PortLocation src, PortLocation dst) const {
 	}
 }
 
+bool ProgramGraph::is_valid_connection(PortLocation src, PortLocation dst) const {
+	if (has_path(dst.node_id, src.node_id)) {
+		// Would create a loop
+		return false;
+	}
+	return true;
+}
+
 bool ProgramGraph::can_connect(PortLocation src, PortLocation dst) const {
 	if (is_connected(src, dst)) {
 		// Already exists
 		return false;
 	}
-	if (has_path(dst.node_id, src.node_id)) {
-		// Would create a loop
+	if (is_valid_connection(src, dst)) {
 		return false;
 	}
 	const Node *dst_node = get_node(dst.node_id);
@@ -128,7 +136,8 @@ void ProgramGraph::connect(PortLocation src, PortLocation dst) {
 	ERR_FAIL_COND(has_path(dst.node_id, src.node_id));
 	Node *src_node = get_node(src.node_id);
 	Node *dst_node = get_node(dst.node_id);
-	ERR_FAIL_COND(dst_node->inputs[dst.port_index].connections.size() != 0);
+	ERR_FAIL_COND_MSG(
+			dst_node->inputs[dst.port_index].connections.size() != 0, "Destination node's port is already connected");
 	src_node->outputs[src.port_index].connections.push_back(dst);
 	dst_node->inputs[dst.port_index].connections.push_back(src);
 }

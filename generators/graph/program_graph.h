@@ -56,7 +56,13 @@ public:
 	void clear();
 
 	bool is_connected(PortLocation src, PortLocation dst) const;
+
+	// Checks if the specified connection can be created
 	bool can_connect(PortLocation src, PortLocation dst) const;
+
+	// Checks if the specified connection is valid (without considering existing connections)
+	bool is_valid_connection(PortLocation src, PortLocation dst) const;
+
 	void connect(PortLocation src, PortLocation dst);
 	bool disconnect(PortLocation src, PortLocation dst);
 	bool is_input_port_valid(PortLocation loc) const;

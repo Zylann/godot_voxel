@@ -84,8 +84,14 @@ public:
 	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = ProgramGraph::NULL_ID);
 	void remove_node(uint32_t node_id);
 
+	// Checks if the specified connection can be created
 	bool can_connect(
 			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const;
+
+	// Checks if the specified connection is valid (without considering existing connections)
+	bool is_valid_connection(
+			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const;
+
 	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void remove_connection(
 			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
