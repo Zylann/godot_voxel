@@ -30,8 +30,8 @@ static AABB expand_with_vector(AABB box, Vector3 v) {
 	return box;
 }
 
-static float calculate_i_offset(AABB box, AABB other, float motion, int i, int j, int k) {
-	const float EPSILON = 0.001;
+static real_t calculate_i_offset(AABB box, AABB other, real_t motion, int i, int j, int k) {
+	const real_t EPSILON = 0.001;
 
 	Vector3 other_end = other.position + other.size;
 	Vector3 box_end = box.position + box.size;
@@ -45,14 +45,14 @@ static float calculate_i_offset(AABB box, AABB other, float motion, int i, int j
 	}
 
 	if (motion > 0.0 && other_end[i] <= box.position[i]) {
-		float off = box.position[i] - other_end[i] - EPSILON;
+		real_t off = box.position[i] - other_end[i] - EPSILON;
 		if (off < motion) {
 			motion = off;
 		}
 	}
 
 	if (motion < 0.0 && other.position[i] >= box_end[i]) {
-		float off = box_end[i] - other.position[i] + EPSILON;
+		real_t off = box_end[i] - other.position[i] + EPSILON;
 		if (off > motion) {
 			motion = off;
 		}
@@ -213,17 +213,17 @@ void VoxelBoxMover::set_collision_mask(uint32_t mask) {
 	_collision_mask = mask;
 }
 
-void VoxelBoxMover::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_motion", "pos", "motion", "aabb", "terrain"), &VoxelBoxMover::_b_get_motion);
-	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelBoxMover::set_collision_mask);
-	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelBoxMover::get_collision_mask);
-}
-
 Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Node *terrain_node) {
 	ERR_FAIL_COND_V(terrain_node == nullptr, Vector3());
 	VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(terrain_node);
 	ERR_FAIL_COND_V(terrain == nullptr, Vector3());
 	return get_motion(pos, motion, aabb, terrain);
+}
+
+void VoxelBoxMover::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_motion", "pos", "motion", "aabb", "terrain"), &VoxelBoxMover::_b_get_motion);
+	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelBoxMover::set_collision_mask);
+	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelBoxMover::get_collision_mask);
 }
 
 } // namespace zylann::voxel
