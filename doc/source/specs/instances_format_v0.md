@@ -1,6 +1,9 @@
 Instance block format
 =======================
 
+!!! warn
+    This document is about an old version of the format. You may check the most recent version.
+
 This page describes the binary format used by the module to save instances to files or databases.
 
 Specification
