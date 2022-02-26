@@ -79,7 +79,10 @@ nav:
   - 'Serialization formats':
     - 'specs/block_format_v1.md'
     - 'specs/block_format_v2.md'
-    - 'specs/instances_format.md'
+    - 'specs/block_format_v3.md'
+    - 'specs/compressed_container.md'
+    - 'specs/instances_format_v0.md'
+    - 'specs/instances_format_v1.md'
     - 'specs/region_format_v2.md'
     - 'specs/region_format_v3.md'
     - 'specs/sqlite_format.md'
