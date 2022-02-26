@@ -1,45 +1,33 @@
 Voxel block format
 ====================
 
-!!! warn
-    This document is about an old version of the format. You may check the most recent version.
-
-Version: 2
+Version: 3
 
 This page describes the binary format used by default in this module to serialize voxel blocks to files, network or databases.
 
-### Changes from version 1
+### Changes from version 2
 
-Overall the format can be more standalone than before, where information had to be known up-front.
-
-- Made compressed container a bit more independent with a header
-- Added version header
-- Added 3D size
-- Added depth information on each channel
-
-There is no migration available from version 1.
+- The second channel (at index 1) was used for SDF data but the format didn't dictate anything particular about it. It is now expected to be for SDF. It used to have an arbitrary format for fixed-point encoding. It is now using inorm16.
+- Compression format `1` is deprecated.
+- Moved compression wrapper to its own specification.
 
 
 Specification
 ----------------
 
+### Endianess
+
+By default, little-endian.
+
 ### Compressed container
 
-A block is usually serialized as compressed data.
+A block is usually serialized within a compressed data container.
 This is the format provided by the `VoxelBlockSerializer` utility class. If you don't use compression, the layout will correspond to `BlockData` described in the next listing, and won't have this wrapper.
-
-Compressed data starts with one byte. Depending on its value, what follows is different.
-
-- 0: no compression. Following bytes can be read as as block format directly. This is rarely used and could be for debugging.
-- 1: LZ4 compression. The next big-endian 32-bit unsigned integer is the size of the decompressed data, and following bytes are compressed data using LZ4 default parameters. This mode is used by default.
-
-Knowing the size of the decompressed data may be important when parsing the block later.
+See [Compressed container format](#compressed-container) for specification.
 
 ### Block format
 
-The obtained data then contains the actual block.
-
-It starts with version number `2` in one byte, then some metadata and the actual voxels.
+It starts with version number `3` in one byte, then some metadata and the actual voxels.
 
 !!! note
     The size and formats are present to make the format standalone. When used within a chunked container like region files, it is recommended to check if they match the format expected for the volume as a whole.
@@ -76,6 +64,16 @@ If compression is `COMPRESSION_UNIFORM` (1), the data will be a single voxel val
 
 Other compression values are invalid.
 
+#### SDF channel
+
+The second channel (at index 1) is used for SDF data. If depth is 8 or 16 bits, it may contain fixed-point values encoded as `inorm8` or `inorm16`. This is numbers in the range [-1..1].
+
+To obtain a `float` from an `int8`, use `max(i / 127, -1.f)`.
+To obtain a `float` from an `int16`, use `max(i / 32767, -1.f)`.
+
+For 32-bit depth, regular `float` are used.
+For 64-bit depth, regular `double` are used.
+
 ### Metadata
 
 After all channels information, block data can contain metadata information. Blocks that don't contain any will only have a fixed amount of bytes left (from the epilogue) before reaching the size of the total data to read. If there is more, the block contains metadata.
@@ -108,17 +106,17 @@ VoxelMetadata
 At the very end, block data finishes with a sequence of 4 bytes, which once read into a `uint32_t` integer must match the value `0x900df00d`. If that condition isn't fulfilled, the block must be assumed corrupted.
 
 !!! note
-    On little-endian architectures (mostly desktop), binary editors will not show the epilogue as `0x900df00d`, but as `0x0df00d90` instead.
+    On little-endian architectures (like desktop), binary editors will not show the epilogue as `0x900df00d`, but as `0x0df00d90` instead.
 
 
 Current Issues
 ----------------
 
-Although this format is currently implemented and usable, it has known issues.
-
 ### Endianess
 
+The format is intented to use little-endian, however the implementation of the engine does not fully guarantee this.
+
 Godot's `encode_variant` doesn't seem to care about endianess across architectures, so it's possible it becomes a problem in the future and gets changed to a custom format.
-The rest of this spec is not affected by this and assumes we use little-endian, however the implementation of block channels with depth greater than 8-bit currently doesn't consider this either. This might be refined in a later iteration.
+The implementation of block channels with depth greater than 8-bit currently doesn't consider this either. This might be refined in a later iteration.
 
 This will become important to address if voxel games require communication between mobile and desktop.

@@ -153,6 +153,7 @@ void register_voxel_types() {
 	PRINT_VERBOSE(String("Size of Node: {0}").format(varray((int)sizeof(Node))));
 	PRINT_VERBOSE(String("Size of Node3D: {0}").format(varray((int)sizeof(Node3D))));
 	PRINT_VERBOSE(String("Size of gd::VoxelBuffer: {0}").format(varray((int)sizeof(gd::VoxelBuffer))));
+	PRINT_VERBOSE(String("Size of VoxelBufferInternal: {0}").format(varray((int)sizeof(VoxelBufferInternal))));
 	PRINT_VERBOSE(String("Size of VoxelMeshBlock: {0}").format(varray((int)sizeof(VoxelMeshBlock))));
 	PRINT_VERBOSE(String("Size of VoxelTerrain: {0}").format(varray((int)sizeof(VoxelTerrain))));
 	PRINT_VERBOSE(String("Size of VoxelLodTerrain: {0}").format(varray((int)sizeof(VoxelLodTerrain))));

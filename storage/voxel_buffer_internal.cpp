@@ -31,25 +31,25 @@ inline void free_channel_data(uint8_t *data, uint32_t size) {
 #endif
 }
 
-uint64_t g_depth_max_values[] = {
-	0xff, // 8
-	0xffff, // 16
-	0xffffffff, // 32
-	0xffffffffffffffff // 64
-};
+// uint64_t g_depth_max_values[] = {
+// 	0xff, // 8
+// 	0xffff, // 16
+// 	0xffffffff, // 32
+// 	0xffffffffffffffff // 64
+// };
 
-inline uint64_t get_max_value_for_depth(VoxelBufferInternal::Depth d) {
-	CRASH_COND(d < 0 || d >= VoxelBufferInternal::DEPTH_COUNT);
-	return g_depth_max_values[d];
-}
+// inline uint64_t get_max_value_for_depth(VoxelBufferInternal::Depth d) {
+// 	CRASH_COND(d < 0 || d >= VoxelBufferInternal::DEPTH_COUNT);
+// 	return g_depth_max_values[d];
+// }
 
-inline uint64_t clamp_value_for_depth(uint64_t value, VoxelBufferInternal::Depth d) {
-	const uint64_t max_val = get_max_value_for_depth(d);
-	if (value >= max_val) {
-		return max_val;
-	}
-	return value;
-}
+// inline uint64_t clamp_value_for_depth(uint64_t value, VoxelBufferInternal::Depth d) {
+// 	const uint64_t max_val = get_max_value_for_depth(d);
+// 	if (value >= max_val) {
+// 		return max_val;
+// 	}
+// 	return value;
+// }
 
 static_assert(sizeof(uint32_t) == sizeof(float), "uint32_t and float cannot be marshalled back and forth");
 static_assert(sizeof(uint64_t) == sizeof(double), "uint64_t and double cannot be marshalled back and forth");
@@ -57,10 +57,10 @@ static_assert(sizeof(uint64_t) == sizeof(double), "uint64_t and double cannot be
 inline uint64_t real_to_raw_voxel(real_t value, VoxelBufferInternal::Depth depth) {
 	switch (depth) {
 		case VoxelBufferInternal::DEPTH_8_BIT:
-			return norm_to_u8(value);
+			return snorm_to_s8(value);
 
 		case VoxelBufferInternal::DEPTH_16_BIT:
-			return norm_to_u16(value);
+			return snorm_to_s16(value);
 
 		case VoxelBufferInternal::DEPTH_32_BIT: {
 			MarshallFloat m;
@@ -82,10 +82,10 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBufferInternal::Depth depth
 	// Depths below 32 are normalized between -1 and 1
 	switch (depth) {
 		case VoxelBufferInternal::DEPTH_8_BIT:
-			return u8_to_norm(value);
+			return s8_to_snorm(value);
 
 		case VoxelBufferInternal::DEPTH_16_BIT:
-			return u16_to_norm(value);
+			return s16_to_snorm(value);
 
 		case VoxelBufferInternal::DEPTH_32_BIT: {
 			MarshallFloat m;
@@ -112,7 +112,7 @@ VoxelBufferInternal::VoxelBufferInternal() {
 
 	// 16-bit is better on average to handle large worlds
 	_channels[CHANNEL_SDF].depth = DEFAULT_SDF_CHANNEL_DEPTH;
-	_channels[CHANNEL_SDF].defval = 0xffff;
+	_channels[CHANNEL_SDF].defval = snorm_to_s16(1.f);
 
 	_channels[CHANNEL_INDICES].depth = DEPTH_16_BIT;
 	_channels[CHANNEL_INDICES].defval = encode_indices_to_packed_u16(0, 1, 2, 3);
@@ -184,7 +184,7 @@ void VoxelBufferInternal::clear_channel(Channel &channel, uint64_t clear_value) 
 	if (channel.data != nullptr) {
 		delete_channel(channel);
 	}
-	channel.defval = clamp_value_for_depth(clear_value, channel.depth);
+	channel.defval = clear_value;
 }
 
 void VoxelBufferInternal::clear_channel_f(unsigned int channel_index, real_t clear_value) {
@@ -195,7 +195,7 @@ void VoxelBufferInternal::clear_channel_f(unsigned int channel_index, real_t cle
 
 void VoxelBufferInternal::set_default_values(FixedArray<uint64_t, VoxelBufferInternal::MAX_CHANNELS> values) {
 	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
-		_channels[i].defval = clamp_value_for_depth(values[i], _channels[i].depth);
+		_channels[i].defval = values[i];
 	}
 }
 
@@ -237,7 +237,6 @@ void VoxelBufferInternal::set_voxel(uint64_t value, int x, int y, int z, unsigne
 
 	Channel &channel = _channels[channel_index];
 
-	value = clamp_value_for_depth(value, channel.depth);
 	bool do_set = true;
 
 	if (channel.data == nullptr) {
@@ -254,6 +253,9 @@ void VoxelBufferInternal::set_voxel(uint64_t value, int x, int y, int z, unsigne
 
 		switch (channel.depth) {
 			case DEPTH_8_BIT:
+				// Note, if the value is negative, it may be in the range supported by int8_t.
+				// This use case might exist for SDF data, although it is preferable to use `set_voxel_f`.
+				// Similar for higher depths.
 				channel.data[i] = value;
 				break;
 
@@ -290,8 +292,6 @@ void VoxelBufferInternal::fill(uint64_t defval, unsigned int channel_index) {
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 
 	Channel &channel = _channels[channel_index];
-
-	defval = clamp_value_for_depth(defval, channel.depth);
 
 	if (channel.data == nullptr) {
 		// Channel is already optimized and uniform
@@ -351,7 +351,6 @@ void VoxelBufferInternal::fill_area(uint64_t defval, Vector3i min, Vector3i max,
 	}
 
 	Channel &channel = _channels[channel_index];
-	defval = clamp_value_for_depth(defval, channel.depth);
 
 	if (channel.data == nullptr) {
 		if (channel.defval == defval) {
@@ -761,7 +760,6 @@ void VoxelBufferInternal::set_channel_depth(unsigned int channel_index, Depth ne
 		WARN_PRINT("Changing VoxelBuffer depth with present data, this will reset the channel");
 		delete_channel(channel_index);
 	}
-	channel.defval = clamp_value_for_depth(channel.defval, new_depth);
 	channel.depth = new_depth;
 }
 

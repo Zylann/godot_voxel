@@ -17,12 +17,14 @@ Godot 4 is required from this version.
     - Added `gi_mode` to terrain nodes to choose how they behave with Godot's global illumination
     - Added `FastNoise2` for faster SIMD noise
     - Added experimental support functions to help setting up basic multiplayer with `VoxelTerrain` (might change in the future)
+    - Improved support for 64-bit floats
     - `VoxelGeneratorGraph`: added support for outputting to the TYPE channel, allowing use with `VoxelMesherBlocky`
     - `VoxelGeneratorGraph`: editor: unconnected inputs show their default value directly on the node
     - `VoxelGeneratorGraph`: editor: allow to change the axes on preview nodes 3D slices
     - `VoxelGeneratorGraph`: editor: replace existing connection if dragging from/to an input port having one already
 
 - Smooth voxels
+    - SDF data is now encoded with `inorm8` and `inorm16`, instead of an arbitrary version of `unorm8` and `unorm16`. Migration code is in place to load old save files, but *do a backup before running your project with the new version*.
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
     - `VoxelLodTerrain`: Editor: added option to show octree nodes in editor
     - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.

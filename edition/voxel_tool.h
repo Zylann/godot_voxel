@@ -17,8 +17,8 @@ template <typename Op, typename Shape>
 struct SdfOperation16bit {
 	Op op;
 	Shape shape;
-	inline uint16_t operator()(Vector3i pos, uint16_t sdf) const {
-		return norm_to_u16(op(u16_to_norm(sdf), shape(Vector3(pos))));
+	inline int16_t operator()(Vector3i pos, int16_t sdf) const {
+		return snorm_to_s16(op(s16_to_snorm(sdf), shape(Vector3(pos))));
 	}
 };
 

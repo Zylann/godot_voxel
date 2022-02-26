@@ -92,40 +92,56 @@ void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector
 	}
 }
 
-// TODO Switch to using GPU format inorm16 for these conversions
-// The current ones seem to work but aren't really correct
+// https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#fundamentals-fixedconv
+// Converts an int8 value into a float in the range [-1..1], which includes an exact value for 0.
+// -128 is one value of the int8 which will not have a corresponding result, it will be clamped to -1.
+inline float s8_to_snorm(int8_t v) {
+	return math::max(v / 127.f, -1.f);
+}
+inline float s8_to_snorm_noclamp(int8_t v) {
+	return v / 127.f;
+}
 
-inline float u8_to_norm(uint8_t v) {
+// Converts a float value in the range [-1..1] to an int8.
+// The float will be clamped if it lies outside of the expected range.
+inline int8_t snorm_to_s8(float v) {
+	return math::clamp(v, -1.f, 1.f) * 127;
+}
+
+// Converts an int8 value into a float in the range [-1..1], which includes an exact value for 0.
+// -32767 is one value of the int16 which will not have a corresponding result, it will be clamped to -1.
+inline float s16_to_snorm(int16_t v) {
+	return math::max(v / 32767.f, -1.f);
+}
+inline float s16_to_snorm_noclamp(int8_t v) {
+	return v / 32767.f;
+}
+
+// Converts a float value in the range [-1..1] to an int16.
+// The float will be clamped if it lies outside of the expected range.
+inline int16_t snorm_to_s16(float v) {
+	return math::clamp(v, -1.f, 1.f) * 32767;
+}
+
+namespace legacy {
+
+inline float u8_to_snorm(uint8_t v) {
 	return (static_cast<float>(v) - 0x7f) * constants::INV_0x7f;
 }
 
-inline float u16_to_norm(uint16_t v) {
+inline float u16_to_snorm(uint16_t v) {
 	return (static_cast<float>(v) - 0x7fff) * constants::INV_0x7fff;
 }
 
-inline uint8_t norm_to_u8(float v) {
+inline uint8_t snorm_to_u8(float v) {
 	return zylann::math::clamp(static_cast<int>(128.f * v + 128.f), 0, 0xff);
 }
 
-inline uint16_t norm_to_u16(float v) {
+inline uint16_t snorm_to_u16(float v) {
 	return zylann::math::clamp(static_cast<int>(0x8000 * v + 0x8000), 0, 0xffff);
 }
 
-/*static inline float quantized_u8_to_real(uint8_t v) {
-	return u8_to_norm(v) * constants::QUANTIZED_SDF_8_BITS_SCALE_INV;
-}
-
-static inline float quantized_u16_to_real(uint8_t v) {
-	return u8_to_norm(v) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV;
-}
-
-static inline uint8_t real_to_quantized_u8(float v) {
-	return norm_to_u8(v * constants::QUANTIZED_SDF_8_BITS_SCALE);
-}
-
-static inline uint16_t real_to_quantized_u16(float v) {
-	return norm_to_u16(v * constants::QUANTIZED_SDF_16_BITS_SCALE);
-}*/
+} // namespace legacy
 
 inline FixedArray<uint8_t, 4> decode_weights_from_packed_u16(uint16_t packed_weights) {
 	FixedArray<uint8_t, 4> weights;

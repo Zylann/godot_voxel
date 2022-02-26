@@ -216,6 +216,7 @@ struct VoxelDataLodMap {
 		// It is possible to unlock it after we are done querying the map.
 		RWLock map_lock;
 	};
+	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	FixedArray<Lod, constants::MAX_LOD> lods;
 	unsigned int lod_count = 1;
 };

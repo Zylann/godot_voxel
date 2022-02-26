@@ -458,12 +458,12 @@ static void fill_zx_sdf_slice(const VoxelGraphRuntime::Buffer &sdf_buffer, Voxel
 	switch (channel_depth) {
 		case VoxelBufferInternal::DEPTH_8_BIT:
 			fill_zx_sdf_slice(
-					channel_bytes, sdf_scale, rmin, rmax, ry, x_stride, sdf_buffer.data, buffer_size, norm_to_u8);
+					channel_bytes, sdf_scale, rmin, rmax, ry, x_stride, sdf_buffer.data, buffer_size, snorm_to_s8);
 			break;
 
 		case VoxelBufferInternal::DEPTH_16_BIT:
 			fill_zx_sdf_slice(channel_bytes.reinterpret_cast_to<uint16_t>(), sdf_scale, rmin, rmax, ry, x_stride,
-					sdf_buffer.data, buffer_size, norm_to_u16);
+					sdf_buffer.data, buffer_size, snorm_to_s16);
 			break;
 
 		case VoxelBufferInternal::DEPTH_32_BIT:

@@ -12,6 +12,8 @@ namespace gd {
 class VoxelBuffer;
 }
 
+// Non-encoded, generic voxel value.
+// (Voxels stored inside VoxelBuffers are encoded to take less space)
 union VoxelSingleValue {
 	uint64_t i;
 	float f;

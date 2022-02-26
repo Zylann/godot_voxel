@@ -368,7 +368,7 @@ void VoxelToolLodTerrain::_set_voxel(Vector3i pos, uint64_t v) {
 void VoxelToolLodTerrain::_set_voxel_f(Vector3i pos, float v) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	// TODO Format should be accessible from terrain
-	_terrain->try_set_voxel_without_update(pos, _channel, norm_to_u16(v));
+	_terrain->try_set_voxel_without_update(pos, _channel, snorm_to_s16(v));
 }
 
 void VoxelToolLodTerrain::_post_edit(const Box3i &box) {

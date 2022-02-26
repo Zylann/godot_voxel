@@ -4,6 +4,7 @@
 #include "../util/macros.h"
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
+#include "../util/serialization.h"
 #include "compressed_data.h"
 
 #include <core/io/marshalls.h>
@@ -15,7 +16,7 @@
 namespace zylann::voxel {
 namespace BlockSerializer {
 
-const uint8_t BLOCK_FORMAT_VERSION = 2;
+const uint8_t BLOCK_FORMAT_VERSION = 3;
 const unsigned int BLOCK_TRAILING_MAGIC = 0x900df00d;
 const unsigned int BLOCK_TRAILING_MAGIC_SIZE = 4;
 const unsigned int BLOCK_METADATA_HEADER_SIZE = sizeof(uint32_t);
@@ -299,6 +300,94 @@ SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
 	return SerializeResult(dst_data, true);
 }
 
+bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
+	// In v2, SDF data was using a legacy arbitrary formula to encode fixed-point numbers.
+	// In v3, it now uses inorm8 and inorm16.
+	// Serialized size does not change.
+
+	// Constants used at the time of this version
+	const unsigned int channel_count = 8;
+	const unsigned int sdf_channel_index = 2;
+	const unsigned int no_compression = 0;
+	const unsigned int uniform_compression = 1;
+
+	dst.resize(p_data.size());
+	memcpy(dst.data(), p_data.data(), p_data.size());
+
+	MemoryReader mr(p_data, ENDIANESS_LITTLE_ENDIAN);
+
+	const uint8_t rv = mr.get_8(); // version
+	CRASH_COND(rv != 2);
+
+	dst[0] = 3;
+
+	const unsigned short size_x = mr.get_16(); // size_x
+	const unsigned short size_y = mr.get_16(); // size_y
+	const unsigned short size_z = mr.get_16(); // size_z
+	const unsigned int volume = size_x * size_y * size_z;
+
+	for (unsigned int channel_index = 0; channel_index < 8; ++channel_index) {
+		const uint8_t channel_format = mr.get_8();
+		const uint8_t fmt = mr.get_8();
+		const uint8_t compression_value = fmt & 0xf;
+		const uint8_t depth_value = (fmt >> 4) & 0xf;
+
+		ERR_FAIL_INDEX_V(compression_value, 2, false);
+		ERR_FAIL_INDEX_V(depth_value, 4, false);
+
+		const unsigned int voxel_size = 1 << depth_value;
+
+		if (channel_index == sdf_channel_index) {
+			ByteSpanWithPosition dst2(to_span(dst), mr.pos);
+			MemoryWriterExistingBuffer mw(dst2, ENDIANESS_LITTLE_ENDIAN);
+
+			if (compression_value == no_compression) {
+				switch (depth_value) {
+					case 0:
+						for (unsigned int i = 0; i < volume; ++i) {
+							mw.store_8(snorm_to_s8(legacy::u8_to_snorm(mr.get_8())));
+						}
+						break;
+					case 1:
+						for (unsigned int i = 0; i < volume; ++i) {
+							mw.store_16(snorm_to_s16(legacy::u16_to_snorm(mr.get_16())));
+						}
+						break;
+					case 2:
+					case 3:
+						// Depths above 16bit use floats, just skip them
+						mr.pos += voxel_size * volume;
+						break;
+				}
+			} else if (compression_value == uniform_compression) {
+				switch (depth_value) {
+					case 0:
+						mw.store_8(snorm_to_s8(legacy::u8_to_snorm(mr.get_8())));
+						break;
+					case 1:
+						mw.store_16(snorm_to_s16(legacy::u16_to_snorm(mr.get_16())));
+						break;
+					case 2:
+					case 3:
+						// Depths above 16bit use floats, just skip them
+						mr.pos += voxel_size;
+						break;
+				}
+			}
+
+		} else {
+			// Skip
+			if (compression_value == no_compression) {
+				mr.pos += voxel_size * volume;
+			} else if (compression_value == uniform_compression) {
+				mr.pos += voxel_size;
+			}
+		}
+	}
+
+	return true;
+}
+
 bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -313,27 +402,21 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 	ERR_FAIL_COND_V(f->open_custom(p_data.data(), p_data.size()) != OK, false);
 
 	const uint8_t format_version = f->get_8();
-	if (format_version < 2) {
-		// In version 1, the first thing coming in block data is the compression value of the first channel.
-		// At the time, there was only 2 values this could take: 0 and 1.
-		// So we can recognize blocks using this old format and seek back.
-		// Formats before 2 also did not contain bit depth, they only had compression, leaving high nibble to 0.
-		// This means version 2 will read only 8-bit depth from the old block.
-		// "Fortunately", the old format also did not properly serialize formats using more than 8 bits.
-		// So we are kinda set to migrate without much changes, by assuming the block is already formatted properly.
-		f->seek(f->get_position() - 1);
 
-		WARN_PRINT("Reading block format_version < 2. Attempting to migrate.");
+	if (format_version == 2) {
+		std::vector<uint8_t> migrated_data;
+		ERR_FAIL_COND_V(!migrate_v2_to_v3(p_data, migrated_data), false);
+		return deserialize(to_span_const(migrated_data), out_voxel_buffer);
 
 	} else {
 		ERR_FAIL_COND_V(format_version != BLOCK_FORMAT_VERSION, false);
-
-		const unsigned int size_x = f->get_16();
-		const unsigned int size_y = f->get_16();
-		const unsigned int size_z = f->get_16();
-
-		out_voxel_buffer.create(Vector3i(size_x, size_y, size_z));
 	}
+
+	const unsigned int size_x = f->get_16();
+	const unsigned int size_y = f->get_16();
+	const unsigned int size_z = f->get_16();
+
+	out_voxel_buffer.create(Vector3i(size_x, size_y, size_z));
 
 	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
 		const uint8_t fmt = f->get_8();

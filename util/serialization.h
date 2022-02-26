@@ -20,15 +20,16 @@ inline Endianess get_platform_endianess() {
 	// TODO In C++20 we'll be able to use std::endian
 }
 
-struct MemoryWriter {
-	std::vector<uint8_t> &data;
+template <typename Container_T>
+struct MemoryWriterTemplate {
+	Container_T &data;
 	// Using network-order by default
 	// TODO Apparently big-endian is dead
 	// I chose it originally to match "network byte order",
 	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
 	Endianess endianess = ENDIANESS_BIG_ENDIAN;
 
-	MemoryWriter(std::vector<uint8_t> &p_data, Endianess p_endianess) : data(p_data), endianess(p_endianess) {}
+	MemoryWriterTemplate(Container_T &p_data, Endianess p_endianess) : data(p_data), endianess(p_endianess) {}
 
 	inline void store_8(uint8_t v) {
 		data.push_back(v);
@@ -68,6 +69,25 @@ struct MemoryWriter {
 	}
 };
 
+// Default
+typedef MemoryWriterTemplate<std::vector<uint8_t>> MemoryWriter;
+
+struct ByteSpanWithPosition {
+	Span<uint8_t> data;
+	size_t pos = 0;
+
+	ByteSpanWithPosition(Span<uint8_t> p_data, size_t initial_pos) : data(p_data), pos(initial_pos) {}
+
+	inline void push_back(uint8_t v) {
+#ifdef DEBUG_ENABLED
+		CRASH_COND(pos == data.size());
+#endif
+		data[pos++] = v;
+	}
+};
+
+typedef MemoryWriterTemplate<ByteSpanWithPosition> MemoryWriterExistingBuffer;
+
 struct MemoryReader {
 	Span<const uint8_t> data;
 	size_t pos = 0;
@@ -77,12 +97,12 @@ struct MemoryReader {
 	MemoryReader(Span<const uint8_t> p_data, Endianess p_endianess) : data(p_data), endianess(p_endianess) {}
 
 	inline uint8_t get_8() {
-		ERR_FAIL_COND_V(pos >= data.size(), 0);
+		//ERR_FAIL_COND_V(pos >= data.size(), 0);
 		return data[pos++];
 	}
 
 	inline uint16_t get_16() {
-		ERR_FAIL_COND_V(pos + 1 >= data.size(), 0);
+		//ERR_FAIL_COND_V(pos + 1 >= data.size(), 0);
 		uint16_t v;
 		if (endianess == ENDIANESS_BIG_ENDIAN) {
 			v = (static_cast<uint16_t>(data[pos]) << 8) | data[pos + 1];
@@ -94,7 +114,7 @@ struct MemoryReader {
 	}
 
 	inline uint32_t get_32() {
-		ERR_FAIL_COND_V(pos + 3 >= data.size(), 0);
+		//ERR_FAIL_COND_V(pos + 3 >= data.size(), 0);
 		uint32_t v;
 		if (endianess == ENDIANESS_BIG_ENDIAN) {
 			v = //
