@@ -61,6 +61,8 @@ struct RegionBlockInfo {
 	}
 };
 
+static_assert(sizeof(RegionBlockInfo) == 4, "Data in this struct must have a consistent size on all target platforms.");
+
 // Archive file storing voxels in a fixed sparse grid data structure.
 // The format is designed to be easily writable in chunks so it can be used for partial in-game loading and saving.
 // Inspired by https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game
