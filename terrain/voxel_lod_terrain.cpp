@@ -2884,7 +2884,6 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 	ERR_FAIL_COND_V(!math::is_valid_size(extents), Array());
 
 	Array image_array;
-	image_array.resize(get_lod_count());
 
 	for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
 		const Box3i world_box = Box3i::from_center_extents(center >> lod_index, extents >> lod_index);
@@ -2911,7 +2910,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 		});
 
 		Ref<Image> image = buffer.debug_print_sdf_to_image_top_down();
-		image_array[lod_index] = image;
+		image_array.append(image);
 	}
 
 	return image_array;
