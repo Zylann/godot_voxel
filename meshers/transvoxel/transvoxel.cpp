@@ -361,21 +361,6 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 				FixedArray<float, 8> cell_samples_sdf;
 				for (unsigned int i = 0; i < corner_data_indices.size(); ++i) {
 					cell_samples_sdf[i] = sdf_as_float(sdf_data[corner_data_indices[i]]);
-					// TODO Need to investigate if there is a better way to eliminate degenerate triangles.
-					//
-					// Presence of zeroes in samples occurs more often when precision is scarce
-					// (8-bit, scaled SDF, or slow gradients).
-					// This causes two symptoms:
-					// - Degenerate triangles. Potentially bad for systems using the mesh later (MeshOptimizer, physics)
-					// - Glitched triangles. Wrong vertices get re-used.
-					//   Needs closer investigation to know why, maybe related to case selection
-					//
-					// See also https://github.com/zeux/meshoptimizer/issues/312
-					//
-					// This is a quick fix to avoid it.
-					if (cell_samples_sdf[i] == 0.f) {
-						cell_samples_sdf[i] = 0.0001f;
-					}
 				}
 
 				// Concatenate the sign of cell values to obtain the case code.
@@ -1212,6 +1197,40 @@ struct WeightSamplerPackedU16 {
 
 thread_local std::vector<uint16_t> s_weights_backing_buffer_u16;
 #endif
+
+// Presence of zeroes in samples occurs more often when precision is scarce
+// (8-bit, scaled SDF, or slow gradients).
+// This causes two symptoms:
+// - Degenerate triangles. Potentially bad for systems using the mesh later (MeshOptimizer, physics)
+// - Glitched triangles. Wrong vertices get re-used.
+//   Needs closer investigation to know why, maybe related to case selection
+//
+// See also https://github.com/zeux/meshoptimizer/issues/312
+//
+// A quick fix to avoid it is to add a tiny offset to values equal to the isolevel.
+// It must be done on the whole buffer to ensure consistency (and not after early cell rejection),
+// otherwise it can create gaps in the final mesh.
+//
+// Not used anymore for now, but if we get this problem again we may have to investigate
+//
+/*template <typename Sdf_T>
+Span<const Sdf_T> apply_zero_sdf_fix(Span<const Sdf_T> p_sdf_data) {
+	VOXEL_PROFILE_SCOPE();
+
+	static thread_local std::vector<Sdf_T> s_sdf_backing_buffer;
+	std::vector<Sdf_T> &sdf_data = s_sdf_backing_buffer;
+
+	sdf_data.resize(p_sdf_data.size());
+	memcpy(sdf_data.data(), p_sdf_data.data(), p_sdf_data.size());
+
+	for (auto it = sdf_data.begin(); it != sdf_data.end(); ++it) {
+		if (*it == get_isolevel<Sdf_T>()) {
+			// Assuming Sdf_T is an integer. Might not be needed for floats.
+			*it += 1;
+		}
+	}
+	return to_span_const(sdf_data);
+}*/
 
 DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int lod_index,
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output) {
