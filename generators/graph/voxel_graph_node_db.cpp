@@ -344,6 +344,22 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_SINGLE_TEXTURE];
+		t.name = "OutputSingleTexture";
+		t.category = CATEGORY_OUTPUT;
+		t.inputs.push_back(Port("index"));
+		t.outputs.push_back(Port("_out"));
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const VoxelGraphRuntime::Buffer &input = ctx.get_input(0);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			memcpy(out.data, input.data, input.size * sizeof(float));
+		};
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval a = ctx.get_input(0);
+			ctx.set_output(0, a);
+		};
+	}
+	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_ADD];
 		t.name = "Add";
 		t.category = CATEGORY_MATH;

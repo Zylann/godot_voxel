@@ -271,7 +271,7 @@ int VoxelGeneratorGraph::get_used_channels_mask() const {
 	if (runtime_ptr->type_output_index != -1) {
 		mask |= (1 << VoxelBufferInternal::CHANNEL_TYPE);
 	}
-	if (runtime_ptr->weight_outputs_count > 0) {
+	if (runtime_ptr->weight_outputs_count > 0 || runtime_ptr->single_texture_output_index != -1) {
 		mask |= (1 << VoxelBufferInternal::CHANNEL_INDICES);
 		mask |= (1 << VoxelBufferInternal::CHANNEL_WEIGHTS);
 	}
@@ -423,6 +423,34 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBufferInternal::CHANNEL_WEIGHTS);
 				++value_index;
 			}
+		}
+	}
+}
+
+// TODO Optimization: this is a simplified output using a complex system.
+// We should implement a texturing system that knows each voxel has a single texture.
+void gather_indices_and_weights_from_single_texture(unsigned int output_buffer_index,
+		const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
+		VoxelBufferInternal &out_voxel_buffer) {
+	VOXEL_PROFILE_SCOPE();
+
+	const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(output_buffer_index);
+	Span<const float> buffer_data = Span<const float>(buffer.data, buffer.size);
+
+	// TODO Should not really be here, but may work. Left here for now so all code for this is in one place
+	const uint16_t encoded_weights = encode_weights_to_packed_u16(255, 0, 0, 0);
+	out_voxel_buffer.clear_channel(VoxelBufferInternal::CHANNEL_WEIGHTS, encoded_weights);
+
+	unsigned int value_index = 0;
+	for (int rz = rmin.z; rz < rmax.z; ++rz) {
+		for (int rx = rmin.x; rx < rmax.x; ++rx) {
+			const uint8_t index = math::clamp(int(Math::round(buffer_data[value_index])), 0, 15);
+			// Make sure other indices are different so the weights associated with them don't override the first
+			// index's weight
+			const uint8_t other_index = (index == 0 ? 1 : 0);
+			const uint16_t encoded_indices = encode_indices_to_packed_u16(index, other_index, other_index, other_index);
+			out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBufferInternal::CHANNEL_INDICES);
+			++value_index;
 		}
 	}
 }
@@ -670,6 +698,16 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					}
 				}
 
+				if (runtime_ptr->single_texture_output_index != -1 && !sdf_is_air) {
+					const math::Interval index_range = cache.state.get_range(runtime_ptr->single_texture_output_index);
+					if (index_range.is_single_value()) {
+						out_buffer.fill_area(int(index_range.min), rmin, rmax, type_channel);
+					} else {
+						required_outputs[required_outputs_count] = runtime_ptr->single_texture_output_index;
+						++required_outputs_count;
+					}
+				}
+
 				if (required_outputs_count == 0) {
 					// We found all we need with range analysis, no need to calculate per voxel.
 					continue;
@@ -714,6 +752,11 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 								type_buffer, out_buffer, type_channel, type_channel_depth, rmin, rmax, ry);
 					}
 
+					if (runtime_ptr->single_texture_output_index != -1) {
+						gather_indices_and_weights_from_single_texture(runtime_ptr->single_texture_output_buffer_index,
+								cache.state, rmin, rmax, ry, out_buffer);
+					}
+
 					if (runtime_ptr->weight_outputs_count > 0) {
 						gather_indices_and_weights(
 								to_span_const(runtime_ptr->weight_outputs, runtime_ptr->weight_outputs_count),
@@ -744,6 +787,19 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	}
 
 	return result;
+}
+
+static bool has_output_type(
+		const VoxelGraphRuntime &runtime, const ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID node_type_id) {
+	for (unsigned int other_output_index = 0; other_output_index < runtime.get_output_count(); ++other_output_index) {
+		const VoxelGraphRuntime::OutputInfo output = runtime.get_output_info(other_output_index);
+		const ProgramGraph::Node *node = graph.get_node(output.node_id);
+		ERR_CONTINUE(node == nullptr);
+		if (node->type_id == VoxelGeneratorGraph::NODE_OUTPUT_WEIGHT) {
+			return true;
+		}
+	}
+	return false;
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
@@ -839,6 +895,25 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 					r->type_output_index = output_index;
 					r->type_output_buffer_index = output.buffer_address;
 				}
+				break;
+
+			case NODE_OUTPUT_SINGLE_TEXTURE:
+				if (r->single_texture_output_buffer_index != -1) {
+					VoxelGraphRuntime::CompilationResult error;
+					error.success = false;
+					error.message = TTR("Multiple TYPE outputs are not supported");
+					error.node_id = output.node_id;
+					return error;
+				}
+				if (has_output_type(runtime, _graph, VoxelGeneratorGraph::NODE_OUTPUT_WEIGHT)) {
+					VoxelGraphRuntime::CompilationResult error;
+					error.success = false;
+					error.message = TTR("Using both OutputWeight nodes and an OutputSingleTexture node is not allowed");
+					error.node_id = output.node_id;
+					return error;
+				}
+				r->single_texture_output_index = output_index;
+				r->single_texture_output_buffer_index = output.buffer_address;
 				break;
 
 			default:
@@ -1790,6 +1865,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 	BIND_ENUM_CONSTANT(NODE_FAST_NOISE_2_2D);
 	BIND_ENUM_CONSTANT(NODE_FAST_NOISE_2_3D);
 #endif
+	BIND_ENUM_CONSTANT(NODE_OUTPUT_SINGLE_TEXTURE);
 	BIND_ENUM_CONSTANT(NODE_TYPE_COUNT);
 }
 

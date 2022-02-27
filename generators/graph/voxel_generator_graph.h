@@ -15,61 +15,61 @@ class VoxelGeneratorGraph : public VoxelGenerator {
 public:
 	static const char *SIGNAL_NODE_NAME_CHANGED;
 
+	// Node indexes within the DB.
+	// Don't use these in saved data,
+	// they can change depending on which features the module is compiled with.
 	enum NodeTypeID {
-		NODE_CONSTANT = 0,
-		NODE_INPUT_X = 1,
-		NODE_INPUT_Y = 2,
-		NODE_INPUT_Z = 3,
-		NODE_OUTPUT_SDF = 4,
-		NODE_ADD = 5,
-		NODE_SUBTRACT = 6,
-		NODE_MULTIPLY = 7,
-		NODE_DIVIDE = 8,
-		NODE_SIN = 9,
-		NODE_FLOOR = 10,
-		NODE_ABS = 11,
-		NODE_SQRT = 12,
-		NODE_FRACT = 13,
-		NODE_STEPIFY = 14,
-		NODE_WRAP = 15,
-		NODE_MIN = 16,
-		NODE_MAX = 17,
-		NODE_DISTANCE_2D = 18,
-		NODE_DISTANCE_3D = 19,
-		NODE_CLAMP = 20,
-		NODE_MIX = 21,
-		NODE_REMAP = 22,
-		NODE_SMOOTHSTEP = 23,
-		NODE_CURVE = 24,
-		NODE_SELECT = 25,
-		NODE_NOISE_2D = 26,
-		NODE_NOISE_3D = 27,
-		NODE_IMAGE_2D = 28,
-		NODE_SDF_PLANE = 29,
-		NODE_SDF_BOX = 30,
-		NODE_SDF_SPHERE = 31,
-		NODE_SDF_TORUS = 32,
-		NODE_SDF_PREVIEW = 33, // For debugging
-		NODE_SDF_SPHERE_HEIGHTMAP = 34,
-		NODE_SDF_SMOOTH_UNION = 35,
-		NODE_SDF_SMOOTH_SUBTRACT = 36,
-		NODE_NORMALIZE_3D = 37,
-		NODE_FAST_NOISE_2D = 38,
-		NODE_FAST_NOISE_3D = 39,
-		NODE_FAST_NOISE_GRADIENT_2D = 40,
-		NODE_FAST_NOISE_GRADIENT_3D = 41,
-		NODE_OUTPUT_WEIGHT = 42,
-		NODE_OUTPUT_TYPE = 43,
+		NODE_CONSTANT,
+		NODE_INPUT_X,
+		NODE_INPUT_Y,
+		NODE_INPUT_Z,
+		NODE_OUTPUT_SDF,
+		NODE_ADD,
+		NODE_SUBTRACT,
+		NODE_MULTIPLY,
+		NODE_DIVIDE,
+		NODE_SIN,
+		NODE_FLOOR,
+		NODE_ABS,
+		NODE_SQRT,
+		NODE_FRACT,
+		NODE_STEPIFY,
+		NODE_WRAP,
+		NODE_MIN,
+		NODE_MAX,
+		NODE_DISTANCE_2D,
+		NODE_DISTANCE_3D,
+		NODE_CLAMP,
+		NODE_MIX,
+		NODE_REMAP,
+		NODE_SMOOTHSTEP,
+		NODE_CURVE,
+		NODE_SELECT,
+		NODE_NOISE_2D,
+		NODE_NOISE_3D,
+		NODE_IMAGE_2D,
+		NODE_SDF_PLANE,
+		NODE_SDF_BOX,
+		NODE_SDF_SPHERE,
+		NODE_SDF_TORUS,
+		NODE_SDF_PREVIEW, // For debugging
+		NODE_SDF_SPHERE_HEIGHTMAP,
+		NODE_SDF_SMOOTH_UNION,
+		NODE_SDF_SMOOTH_SUBTRACT,
+		NODE_NORMALIZE_3D,
+		NODE_FAST_NOISE_2D,
+		NODE_FAST_NOISE_3D,
+		NODE_FAST_NOISE_GRADIENT_2D,
+		NODE_FAST_NOISE_GRADIENT_3D,
+		NODE_OUTPUT_WEIGHT,
+		NODE_OUTPUT_TYPE,
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
-		NODE_FAST_NOISE_2_2D = 44,
-		NODE_FAST_NOISE_2_3D = 45,
+		NODE_FAST_NOISE_2_2D,
+		NODE_FAST_NOISE_2_3D,
 #endif
+		NODE_OUTPUT_SINGLE_TEXTURE,
 
-#ifdef VOXEL_ENABLE_FAST_NOISE_2
-		NODE_TYPE_COUNT = 46
-#else
-		NODE_TYPE_COUNT = 44
-#endif
+		NODE_TYPE_COUNT
 	};
 
 	VoxelGeneratorGraph();
@@ -245,10 +245,16 @@ private:
 		// Indices that are not used in the graph.
 		// This is used when there are less than 4 texture weight outputs.
 		FixedArray<uint8_t, 4> spare_texture_indices;
+
 		int sdf_output_index = -1;
 		int sdf_output_buffer_index = -1;
+
 		int type_output_index = -1;
 		int type_output_buffer_index = -1;
+
+		int single_texture_output_index = -1;
+		int single_texture_output_buffer_index = -1;
+
 		FixedArray<WeightOutput, 16> weight_outputs;
 		// List of indices to feed queries. The order doesn't matter, can be different from `weight_outputs`.
 		FixedArray<unsigned int, 16> weight_output_indices;
