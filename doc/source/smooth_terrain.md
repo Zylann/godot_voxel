@@ -28,7 +28,7 @@ For more information, visit [https://transvoxel.org/](https://transvoxel.org/).
 
 ### Smooth stitches in vertex shader
 
-Transvoxel uses special meshes to stitch blocks of different level of detail. However the seams may still be visible as occasional sharp little steps. To smooth this out a bit, meshes produced by `VoxelMesherTransvoxel` contain extra information in their `COLOR` attribute, telling how to move vertices to smooth those steps, and make room for them in the regular part of the mesh.
+Transvoxel uses special meshes to stitch blocks of different level of detail. However the seams may still be visible as occasional sharp little steps. To smooth this out a bit, meshes produced by `VoxelMesherTransvoxel` contain extra information in their `CUSTOM0` attribute, telling how to move vertices to smooth those steps, and make room for them in the regular part of the mesh.
 
 Create and setup a `ShaderMaterial` on your terrain, and integrate this snippet to it:
 
@@ -56,7 +56,7 @@ vec3 get_transvoxel_position(vec3 vertex_pos, vec4 vertex_col) {
 }
 
 void vertex() {
-	VERTEX = get_transvoxel_position(VERTEX, COLOR);
+	VERTEX = get_transvoxel_position(VERTEX, CUSTOM0);
     //...
 }
 ```
@@ -126,10 +126,10 @@ It is also possible to generate this in `VoxelGeneratorGraph` using special outp
 
 #### Mesh data
 
-The mesher will include texturing information in the `UV` attribute of vertices. It has nothing to do with texture coordinates, it's just being repurposed. Contrary to voxel values, the packed information will have 8 bits of precision:
+The mesher will include texturing information in the `CUSTOM1` attribute of vertices. Contrary to voxel values, the packed information will have 8 bits of precision:
 
-- `UV.x` will contain 4 indices, encoded as 4 bytes, which can be obtained by reinterpreting the float number as an integer and using bit-shifting operators.
-- `UV.y` will contain 4 weights, again encoded as 4 bytes.
+- `CUSTOM1.x` will contain 4 indices, encoded as 4 bytes, which can be obtained by reinterpreting the float number as an integer and using bit-shifting operators.
+- `CUSTOM1.y` will contain 4 weights, again encoded as 4 bytes.
 
 Each index tell which texture needs to be used, and each weight respectively tells how much of that texture should be blended. It is essentially the same as a classic color splatmap, except textures can vary. One minor downside is that you cannot blend more than 4 textures per voxel, so if this happens, it might cause artifacts. But in practice, it is assumed this case is so infrequent it can be ignored.
 
@@ -146,6 +146,7 @@ uniform sampler2DArray u_texture_array : hint_albedo;
 varying vec4 v_indices;
 varying vec4 v_weights;
 varying vec3 v_normal;
+varying vec3 v_pos;
 
 // We'll use a utility function to decode components.
 // It returns 4 values in the range [0..255].
@@ -177,11 +178,12 @@ vec4 texture_array_triplanar(sampler2DArray tex, vec3 world_pos, vec3 blend, flo
 
 void vertex() {
 	// Indices are integer values so we can decode them as-is
-	v_indices = decode_8bit_vec4(UV.x);
+	v_indices = decode_8bit_vec4(CUSTOM1.x);
 
 	// Weights must be in [0..1] so we divide them
-	v_weights = decode_8bit_vec4(UV.y) / 255.0;
+	v_weights = decode_8bit_vec4(CUSTOM1.y) / 255.0;
 
+	v_pos = VERTEX;
 	v_normal = NORMAL;
 
 	//...
