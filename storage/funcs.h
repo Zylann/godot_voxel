@@ -113,7 +113,7 @@ inline int8_t snorm_to_s8(float v) {
 inline float s16_to_snorm(int16_t v) {
 	return math::max(v / 32767.f, -1.f);
 }
-inline float s16_to_snorm_noclamp(int8_t v) {
+inline float s16_to_snorm_noclamp(int16_t v) {
 	return v / 32767.f;
 }
 
