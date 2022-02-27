@@ -326,8 +326,7 @@ bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 	const unsigned short size_z = mr.get_16(); // size_z
 	const unsigned int volume = size_x * size_y * size_z;
 
-	for (unsigned int channel_index = 0; channel_index < 8; ++channel_index) {
-		const uint8_t channel_format = mr.get_8();
+	for (unsigned int channel_index = 0; channel_index < channel_count; ++channel_index) {
 		const uint8_t fmt = mr.get_8();
 		const uint8_t compression_value = fmt & 0xf;
 		const uint8_t depth_value = (fmt >> 4) & 0xf;
