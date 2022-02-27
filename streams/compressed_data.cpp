@@ -23,6 +23,8 @@ bool decompress_lz4(MemoryReader &f, Span<const uint8_t> src, std::vector<uint8_
 
 	ERR_FAIL_COND_V_MSG(actually_decompressed_size != decompressed_size, false,
 			String("Expected {0} bytes, obtained {1}").format(varray(decompressed_size, actually_decompressed_size)));
+
+	return true;
 }
 
 bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
@@ -74,6 +76,8 @@ bool compress_lz4(MemoryWriter &f, Span<const uint8_t> src, std::vector<uint8_t>
 	ERR_FAIL_COND_V(compressed_size == 0, false);
 
 	dst.resize(header_size + compressed_size);
+
+	return true;
 }
 
 bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp) {
