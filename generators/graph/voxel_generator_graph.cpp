@@ -391,10 +391,10 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				FixedArray<uint8_t, 4> indices;
 				unsigned int skipped_outputs_count = 0;
 				indices.fill(0);
-				weights[0] = 1.f;
-				weights[1] = 0.f;
-				weights[2] = 0.f;
-				weights[3] = 0.f;
+				weights[0] = 255;
+				weights[1] = 0;
+				weights[2] = 0;
+				weights[3] = 0;
 				unsigned int recorded_weights = 0;
 				// Pick up weights above pivot (this is not as correct as a sort but faster)
 				for (unsigned int oi = 0; oi < buffers_count && recorded_weights < indices.size(); ++oi) {
