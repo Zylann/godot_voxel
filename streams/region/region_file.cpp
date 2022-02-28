@@ -302,10 +302,20 @@ const RegionFormat &RegionFile::get_format() const {
 	return _header.format;
 }
 
+bool RegionFile::is_valid_block_position(const Vector3 position) const {
+	return position.x >= 0 && //
+			position.y >= 0 && //
+			position.z >= 0 && //
+			position.x < _header.format.region_size.x && //
+			position.y < _header.format.region_size.y && //
+			position.z < _header.format.region_size.z;
+}
+
 Error RegionFile::load_block(Vector3i position, VoxelBufferInternal &out_block) {
 	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_READ);
 	FileAccess *f = _file_access;
 
+	ERR_FAIL_COND_V(!is_valid_block_position(position), ERR_INVALID_PARAMETER);
 	const unsigned int lut_index = get_block_index_in_header(position);
 	ERR_FAIL_COND_V(lut_index >= _header.blocks.size(), ERR_INVALID_PARAMETER);
 	const RegionBlockInfo &block_info = _header.blocks[lut_index];
@@ -336,6 +346,7 @@ Error RegionFile::load_block(Vector3i position, VoxelBufferInternal &out_block) 
 
 Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
 	ERR_FAIL_COND_V(_header.format.verify_block(block) == false, ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V(!is_valid_block_position(position), ERR_INVALID_PARAMETER);
 
 	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_WRITE);
 	FileAccess *f = _file_access;
@@ -623,6 +634,7 @@ unsigned int RegionFile::get_header_block_count() const {
 
 bool RegionFile::has_block(Vector3i position) const {
 	ERR_FAIL_COND_V(!is_open(), false);
+	ERR_FAIL_COND_V(!is_valid_block_position(position), false);
 	const unsigned int bi = get_block_index_in_header(position);
 	return _header.blocks[bi].data != 0;
 }

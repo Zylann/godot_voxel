@@ -94,6 +94,8 @@ public:
 
 	void debug_check();
 
+	bool is_valid_block_position(const Vector3 position) const;
+
 private:
 	bool save_header(FileAccess *f);
 	Error load_header(FileAccess *f);
