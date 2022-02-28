@@ -429,7 +429,9 @@ Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
 			// The block now uses more sectors, we have to move others.
 			// Note: we could shift blocks forward, but we can also remove the block entirely and rewrite it at the end.
 			// Need to investigate if it's worth implementing forward shift instead.
+			// TODO Prefer doing an end swap kind of thing?
 
+			// This also shifts the rest of the file so the freed sectors may get re-occupied.
 			remove_sectors_from_block(position, old_sector_count);
 
 			const int block_offset = _blocks_begin_offset + _sectors.size() * _header.format.sector_size;
@@ -493,8 +495,7 @@ void RegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int p_se
 
 	unsigned int dst_offset = src_offset - p_sector_count * sector_size;
 
-	// Note: removing the last block from a region doesn't make the file invalid, but is not a known use case
-	CRASH_COND(_sectors.size() - p_sector_count <= 0);
+	CRASH_COND(_sectors.size() < p_sector_count);
 	CRASH_COND(src_offset - sector_size < dst_offset);
 	CRASH_COND(block_info.get_sector_index() + p_sector_count > _sectors.size());
 	CRASH_COND(p_sector_count > block_info.get_sector_count());
