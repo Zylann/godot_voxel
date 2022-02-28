@@ -446,7 +446,9 @@ public:
 
 	// Internal synchronization
 
-	// This lock is optional, and used internally at the moment, only in multithreaded areas.
+	// WARNING: This lock is only attached here as an intrusive component for convenience.
+	// None of the functions inside this class are using it, it is up to the user.
+	// It is used internally at the moment, in multithreaded areas.
 	inline const RWLock &get_lock() const {
 		return _rw_lock;
 	}
