@@ -3,6 +3,7 @@
 
 #include "instance_data.h"
 #include <core/io/resource.h>
+#include <memory>
 
 namespace zylann::voxel {
 
