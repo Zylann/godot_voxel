@@ -41,7 +41,7 @@
 			<argument index="1" name="voxel_buffer" type="VoxelBuffer" />
 			<argument index="2" name="compress" type="bool" />
 			<description>
-				Stores the data of a [VoxelBuffer] into a [StreamPeer].
+				Stores the data of a [VoxelBuffer] into a [StreamPeer]. Returns the number of written bytes.
 			</description>
 		</method>
 	</methods>
