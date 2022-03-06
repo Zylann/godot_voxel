@@ -2593,6 +2593,8 @@ float VoxelLodTerrain::get_lod_fade_duration() const {
 	return _lod_fade_duration;
 }
 
+#ifdef TOOLS_ENABLED
+
 TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 	TypedArray<String> warnings = VoxelNode::get_configuration_warnings();
 	if (!warnings.is_empty()) {
@@ -2604,6 +2606,8 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 	}
 	return warnings;
 }
+
+#endif // TOOLS_ENABLED
 
 void VoxelLodTerrain::_b_save_modified_blocks() {
 	save_all_modified_blocks(true);

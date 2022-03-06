@@ -3,6 +3,7 @@
 
 #include <core/io/resource.h>
 #include <core/math/vector3i.h>
+#include <core/variant/typed_array.h>
 
 namespace zylann::voxel {
 
@@ -57,6 +58,10 @@ public:
 
 	// Declares the channels this generator will use
 	virtual int get_used_channels_mask() const;
+
+#ifdef TOOLS_ENABLED
+	virtual void get_configuration_warnings(TypedArray<String> &out_warnings) const {}
+#endif
 
 protected:
 	static void _bind_methods();

@@ -185,6 +185,12 @@ public:
 	float debug_measure_microseconds_per_voxel(bool singular);
 	void debug_load_waves_preset();
 
+	// Editor
+
+#ifdef TOOLS_ENABLED
+	void get_configuration_warnings(TypedArray<String> &out_warnings) const override;
+#endif
+
 private:
 	Dictionary get_graph_as_variant_data() const;
 	void load_graph_from_variant_data(Dictionary data);

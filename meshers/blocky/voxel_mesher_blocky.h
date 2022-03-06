@@ -59,6 +59,10 @@ public:
 		}
 	};
 
+#ifdef TOOLS_ENABLED
+	void get_configuration_warnings(TypedArray<String> &out_warnings) const override;
+#endif
+
 protected:
 	static void _bind_methods();
 

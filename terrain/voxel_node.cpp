@@ -40,6 +40,8 @@ void VoxelNode::remesh_all_blocks() {
 	// Not implemented
 }
 
+#ifdef TOOLS_ENABLED
+
 TypedArray<String> VoxelNode::get_configuration_warnings() const {
 	Ref<VoxelMesher> mesher = get_mesher();
 	Ref<VoxelStream> stream = get_stream();
@@ -105,8 +107,14 @@ TypedArray<String> VoxelNode::get_configuration_warnings() const {
 		}
 	}
 
+	if (mesher.is_valid()) {
+		mesher->get_configuration_warnings(warnings);
+	}
+
 	return warnings;
 }
+
+#endif
 
 int VoxelNode::get_used_channels_mask() const {
 	Ref<VoxelMesher> mesher = get_mesher();

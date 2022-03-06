@@ -35,7 +35,9 @@ public:
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
 
+#ifdef TOOLS_ENABLED
 	virtual TypedArray<String> get_configuration_warnings() const override;
+#endif
 
 protected:
 	int get_used_channels_mask() const;

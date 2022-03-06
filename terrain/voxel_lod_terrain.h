@@ -207,6 +207,7 @@ public:
 	bool is_stream_running_in_editor() const;
 
 #ifdef TOOLS_ENABLED
+
 	void set_show_gizmos(bool enable);
 	bool is_showing_gizmos() const {
 		return _show_gizmos_enabled;
@@ -215,9 +216,10 @@ public:
 	bool is_showing_octree_gizmos() const {
 		return _show_octree_node_gizmos;
 	}
-#endif
 
 	TypedArray<String> get_configuration_warnings() const override;
+
+#endif // TOOLS_ENABLED
 
 	// Internal
 

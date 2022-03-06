@@ -1601,18 +1601,23 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 	return root;
 }
 
+#ifdef TOOLS_ENABLED
+
 TypedArray<String> VoxelInstancer::get_configuration_warnings() const {
 	TypedArray<String> warnings;
 	if (_parent == nullptr) {
-		warnings.append(TTR("This node must be child of a VoxelLodTerrain."));
+		warnings.append(TTR("This node must be child of a " + VoxelLodTerrain::get_class_static() + "."));
 	}
 	if (_library.is_null()) {
-		warnings.append(TTR("No library is assigned. A VoxelInstanceLibrary is needed to spawn items."));
+		warnings.append(TTR("No library is assigned. A " + VoxelInstanceLibrary::get_class_static() +
+				" is needed to spawn items."));
 	} else if (_library->get_item_count() == 0) {
 		warnings.append(TTR("The assigned library is empty. Add items to it so they can be spawned."));
 	}
 	return warnings;
 }
+
+#endif
 
 void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_library", "library"), &VoxelInstancer::set_library);
@@ -1625,7 +1630,8 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_get_instance_counts"), &VoxelInstancer::debug_get_instance_counts);
 	ClassDB::bind_method(D_METHOD("debug_dump_as_scene", "fpath"), &VoxelInstancer::debug_dump_as_scene);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceLibrary"),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE,
+						 VoxelInstanceLibrary::get_class_static()),
 			"set_library", "get_library");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "up_mode", PROPERTY_HINT_ENUM, "PositiveY,Sphere"), "set_up_mode",
 			"get_up_mode");

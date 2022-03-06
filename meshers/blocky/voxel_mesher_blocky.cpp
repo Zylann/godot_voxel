@@ -535,6 +535,50 @@ int VoxelMesherBlocky::get_used_channels_mask() const {
 	return (1 << VoxelBufferInternal::CHANNEL_TYPE);
 }
 
+#ifdef TOOLS_ENABLED
+
+void VoxelMesherBlocky::get_configuration_warnings(TypedArray<String> &out_warnings) const {
+	Ref<VoxelBlockyLibrary> library = get_library();
+
+	if (library.is_null()) {
+		out_warnings.append(TTR(VoxelMesherBlocky::get_class_static() + " has no " +
+				VoxelBlockyLibrary::get_class_static() + " assigned."));
+		return;
+	}
+
+	if (library->get_voxel_count() == 0) {
+		out_warnings.append(TTR("The " + VoxelBlockyLibrary::get_class_static() + " assigned to " +
+				VoxelMesherBlocky::get_class_static() + " has an empty list of " +
+				VoxelBlockyModel::get_class_static() + "s."));
+		return;
+	}
+
+	bool has_solid_model = false;
+	for (int i = 0; i < library->get_voxel_count() && !has_solid_model; ++i) {
+		const VoxelBlockyModel &model = library->get_voxel_const(i);
+		switch (model.get_geometry_type()) {
+			case VoxelBlockyModel::GEOMETRY_NONE:
+				break;
+			case VoxelBlockyModel::GEOMETRY_CUBE:
+				has_solid_model = true;
+				break;
+			case VoxelBlockyModel::GEOMETRY_CUSTOM_MESH:
+				has_solid_model = model.get_custom_mesh().is_valid();
+				break;
+			default:
+				ERR_PRINT("Unknown enum value");
+				break;
+		}
+	}
+	if (!has_solid_model) {
+		out_warnings.append(TTR("The " + VoxelBlockyLibrary::get_class_static() + " assigned to " +
+				VoxelMesherBlocky::get_class_static() + " only has empty " + VoxelBlockyModel::get_class_static() +
+				"s."));
+	}
+}
+
+#endif // TOOLS_ENABLED
+
 void VoxelMesherBlocky::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_library", "voxel_library"), &VoxelMesherBlocky::set_library);
 	ClassDB::bind_method(D_METHOD("get_library"), &VoxelMesherBlocky::get_library);

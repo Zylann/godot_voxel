@@ -1658,6 +1658,22 @@ void VoxelGeneratorGraph::debug_load_waves_preset() {
 	add_connection(n_sub, 0, n_o, 0);
 }
 
+#ifdef TOOLS_ENABLED
+
+void VoxelGeneratorGraph::get_configuration_warnings(TypedArray<String> &out_warnings) const {
+	if (get_nodes_count() == 0) {
+		out_warnings.append(VoxelGeneratorGraph::get_class_static() + " is empty.");
+		return;
+	}
+
+	if (!is_good()) {
+		out_warnings.append(VoxelGeneratorGraph::get_class_static() + " contains errors.");
+		return;
+	}
+}
+
+#endif // TOOLS_ENABLED
+
 // Binding land
 
 int VoxelGeneratorGraph::_b_get_node_type_count() const {

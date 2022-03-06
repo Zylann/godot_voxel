@@ -80,11 +80,12 @@ public:
 	void debug_dump_as_scene(String fpath) const;
 	Node *debug_dump_as_nodes() const;
 
+	// Editor
+
 #ifdef TOOLS_ENABLED
 	void set_show_gizmos(bool enable);
-#endif
-
 	TypedArray<String> get_configuration_warnings() const override;
+#endif
 
 protected:
 	void _notification(int p_what);
