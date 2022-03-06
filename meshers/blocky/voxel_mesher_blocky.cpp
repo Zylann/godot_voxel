@@ -554,7 +554,7 @@ void VoxelMesherBlocky::get_configuration_warnings(TypedArray<String> &out_warni
 	}
 
 	bool has_solid_model = false;
-	for (int i = 0; i < library->get_voxel_count() && !has_solid_model; ++i) {
+	for (unsigned int i = 0; i < library->get_voxel_count() && !has_solid_model; ++i) {
 		const VoxelBlockyModel &model = library->get_voxel_const(i);
 		switch (model.get_geometry_type()) {
 			case VoxelBlockyModel::GEOMETRY_NONE:
