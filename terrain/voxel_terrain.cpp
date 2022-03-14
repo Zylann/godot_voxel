@@ -1303,7 +1303,7 @@ bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBu
 	return true;
 }
 
-bool VoxelTerrain::has_block(Vector3i position) const {
+bool VoxelTerrain::has_data_block(Vector3i position) const {
 	return _data_map.has_block(position);
 }
 
@@ -1623,7 +1623,7 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_viewer_network_peer_ids_in_area", "area_origin", "area_size"),
 			&VoxelTerrain::_b_get_viewer_network_peer_ids_in_area);
 
-	ClassDB::bind_method(D_METHOD("has_block", "block_position"), &VoxelTerrain::has_block);
+	ClassDB::bind_method(D_METHOD("has_data_block", "block_position"), &VoxelTerrain::has_data_block);
 
 	GDVIRTUAL_BIND(_on_data_block_enter, "info");
 	GDVIRTUAL_BIND(_on_area_edited, "area_origin", "area_size");

@@ -92,7 +92,7 @@ public:
 	// If no local viewer is actually in range, the data will not be applied and the function returns `false`.
 	bool try_set_block_data(Vector3i position, std::shared_ptr<VoxelBufferInternal> &voxel_data);
 
-	bool has_block(Vector3i position) const;
+	bool has_data_block(Vector3i position) const;
 
 	void set_run_stream_in_editor(bool enable);
 	bool is_stream_running_in_editor() const;
