@@ -893,8 +893,7 @@ void VoxelTerrain::send_block_data_requests() {
 }
 
 void VoxelTerrain::emit_data_block_loaded(const VoxelDataBlock *block) {
-	const Variant vpos = block->position;
-	// Not sure about exposDing buffers directly... some stuff on them is useful to obtain directly,
+	// Not sure about exposing buffers directly... some stuff on them is useful to obtain directly,
 	// but also it allows scripters to mess with voxels in a way they should not.
 	// Example: modifying voxels without locking them first, while another thread may be reading them at the same
 	// time. The same thing could happen the other way around (threaded task modifying voxels while you try to read
@@ -903,16 +902,13 @@ void VoxelTerrain::emit_data_block_loaded(const VoxelDataBlock *block) {
 	// absolutely necessary, buffers aren't exposed. Workaround: use VoxelTool
 	//const Variant vbuffer = block->voxels;
 	//const Variant *args[2] = { &vpos, &vbuffer };
-	const Variant *args[1] = { &vpos };
-	emit_signal(VoxelStringNames::get_singleton()->block_loaded, args, 1);
+	emit_signal(VoxelStringNames::get_singleton()->block_loaded, block->position);
 }
 
 void VoxelTerrain::emit_data_block_unloaded(const VoxelDataBlock *block) {
-	const Variant vpos = block->position;
 	// const Variant vbuffer = block->voxels;
 	// const Variant *args[2] = { &vpos, &vbuffer };
-	const Variant *args[1] = { &vpos };
-	emit_signal(VoxelStringNames::get_singleton()->block_unloaded, args, 1);
+	emit_signal(VoxelStringNames::get_singleton()->block_unloaded, block->position);
 }
 
 bool VoxelTerrain::try_get_paired_viewer_index(uint32_t id, size_t &out_i) const {

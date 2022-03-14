@@ -46,7 +46,7 @@ bool try_call_script(
 #endif
 
 	Callable::CallError err;
-	Variant ret = script->call(method_name, args, argc, err);
+	Variant ret = script->callp(method_name, args, argc, err);
 
 	// TODO Why does Variant::get_call_error_text want a non-const Object pointer??? It only uses const methods
 	ERR_FAIL_COND_V_MSG(err.error != Callable::CallError::CALL_OK, false,

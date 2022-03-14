@@ -83,7 +83,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelBlockyLibrary>();
 	ClassDB::register_class<VoxelColorPalette>();
 	ClassDB::register_class<VoxelInstanceLibrary>();
-	ClassDB::register_virtual_class<VoxelInstanceLibraryItem>();
+	ClassDB::register_abstract_class<VoxelInstanceLibraryItem>();
 	ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
 	ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
 	ClassDB::register_class<VoxelDataBlockEnterInfo>();
@@ -92,7 +92,7 @@ void register_voxel_types() {
 	ClassDB::register_class<gd::VoxelBuffer>();
 
 	// Nodes
-	ClassDB::register_virtual_class<VoxelNode>();
+	ClassDB::register_abstract_class<VoxelNode>();
 	ClassDB::register_class<VoxelTerrain>();
 	ClassDB::register_class<VoxelLodTerrain>();
 	ClassDB::register_class<VoxelViewer>();
@@ -101,17 +101,17 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelInstanceComponent>();
 
 	// Streams
-	ClassDB::register_virtual_class<VoxelStream>();
+	ClassDB::register_abstract_class<VoxelStream>();
 	ClassDB::register_class<VoxelStreamBlockFiles>();
 	ClassDB::register_class<VoxelStreamRegionFiles>();
 	ClassDB::register_class<VoxelStreamScript>();
 	ClassDB::register_class<VoxelStreamSQLite>();
 
 	// Generators
-	ClassDB::register_virtual_class<VoxelGenerator>();
+	ClassDB::register_abstract_class<VoxelGenerator>();
 	ClassDB::register_class<VoxelGeneratorFlat>();
 	ClassDB::register_class<VoxelGeneratorWaves>();
-	ClassDB::register_virtual_class<VoxelGeneratorHeightmap>();
+	ClassDB::register_abstract_class<VoxelGeneratorHeightmap>();
 	ClassDB::register_class<VoxelGeneratorImage>();
 	ClassDB::register_class<VoxelGeneratorNoise2D>();
 	ClassDB::register_class<VoxelGeneratorNoise>();
@@ -121,12 +121,12 @@ void register_voxel_types() {
 	// Utilities
 	ClassDB::register_class<VoxelBoxMover>();
 	ClassDB::register_class<VoxelRaycastResult>();
-	ClassDB::register_virtual_class<VoxelTool>();
-	ClassDB::register_virtual_class<VoxelToolTerrain>();
-	ClassDB::register_virtual_class<VoxelToolLodTerrain>();
+	ClassDB::register_abstract_class<VoxelTool>();
+	ClassDB::register_abstract_class<VoxelToolTerrain>();
+	ClassDB::register_abstract_class<VoxelToolLodTerrain>();
 	// I had to bind this one despite it being useless as-is because otherwise Godot lazily initializes its class.
 	// And this can happen in a thread, causing crashes due to the concurrent access
-	ClassDB::register_virtual_class<VoxelToolBuffer>();
+	ClassDB::register_abstract_class<VoxelToolBuffer>();
 	ClassDB::register_class<gd::VoxelBlockSerializer>();
 	ClassDB::register_class<VoxelVoxLoader>();
 	ClassDB::register_class<FastNoiseLite>();
@@ -137,7 +137,7 @@ void register_voxel_types() {
 #endif
 
 	// Meshers
-	ClassDB::register_virtual_class<VoxelMesher>();
+	ClassDB::register_abstract_class<VoxelMesher>();
 	ClassDB::register_class<VoxelMesherBlocky>();
 	ClassDB::register_class<VoxelMesherTransvoxel>();
 	ClassDB::register_class<VoxelMesherDMC>();
