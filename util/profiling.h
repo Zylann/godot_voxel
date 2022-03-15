@@ -14,6 +14,7 @@
 #define VOXEL_PROFILE_SET_THREAD_NAME(name) tracy::SetThreadName(name)
 #define VOXEL_PROFILE_PLOT(name, number) TracyPlot(name, number)
 #define VOXEL_PROFILE_MESSAGE(message) TracyMessageL(message)
+#define VOXEL_PROFILE_MESSAGE_DYN(message, size) TracyMessage(message, size)
 
 #else
 
@@ -23,6 +24,9 @@
 #define VOXEL_PROFILE_MARK_FRAME()
 #define VOXEL_PROFILE_PLOT(name, number)
 #define VOXEL_PROFILE_MESSAGE(message)
+// Name must be const char*. An internal copy will be made so it can be temporary.
+// Size does not include the terminating character.
+#define VOXEL_PROFILE_MESSAGE_DYN(message, size)
 // Name must be const char*. An internal copy will be made so it can be temporary.
 #define VOXEL_PROFILE_SET_THREAD_NAME(name)
 
