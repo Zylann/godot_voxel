@@ -8,6 +8,7 @@
 #include "generate_block_task.h"
 #include "load_all_blocks_data_task.h"
 #include "load_block_data_task.h"
+#include "mesh_block_task.h"
 #include "save_block_data_task.h"
 
 #include <core/config/project_settings.h>
@@ -144,7 +145,7 @@ uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks, VolumeType type) {
 	Volume volume;
 	volume.type = type;
 	volume.callbacks = callbacks;
-	volume.meshing_dependency = gd_make_shared<MeshBlockTask::MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
 	return _world.volumes.create(volume);
 }
 
@@ -194,7 +195,7 @@ void VoxelServer::set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> g
 		volume.meshing_dependency->valid = false;
 	}
 
-	volume.meshing_dependency = gd_make_shared<MeshBlockTask::MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -207,7 +208,7 @@ void VoxelServer::set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher)
 		volume.meshing_dependency->valid = false;
 	}
 
-	volume.meshing_dependency = gd_make_shared<MeshBlockTask::MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -220,7 +221,7 @@ void VoxelServer::set_volume_octree_lod_distance(uint32_t volume_id, float lod_d
 void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.meshing_dependency->valid = false;
-	volume.meshing_dependency = gd_make_shared<MeshBlockTask::MeshingDependency>();
+	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -472,11 +473,11 @@ bool VoxelServer::viewer_exists(uint32_t viewer_id) const {
 	return _world.viewers.is_valid(viewer_id);
 }
 
-void VoxelServer::push_time_spread_task(zylann::ITimeSpreadTask *task) {
+void VoxelServer::push_main_thread_time_spread_task(zylann::ITimeSpreadTask *task) {
 	_time_spread_task_runner.push(task);
 }
 
-void VoxelServer::push_progressive_task(zylann::IProgressiveTask *task) {
+void VoxelServer::push_main_thread_progressive_task(zylann::IProgressiveTask *task) {
 	_progressive_task_runner.push(task);
 }
 
@@ -490,6 +491,14 @@ void VoxelServer::push_async_task(zylann::IThreadedTask *task) {
 
 void VoxelServer::push_async_tasks(Span<zylann::IThreadedTask *> tasks) {
 	_general_thread_pool.enqueue(tasks);
+}
+
+void VoxelServer::push_async_io_task(zylann::IThreadedTask *task) {
+	_streaming_thread_pool.enqueue(task);
+}
+
+void VoxelServer::push_async_io_tasks(Span<zylann::IThreadedTask *> tasks) {
+	_streaming_thread_pool.enqueue(tasks);
 }
 
 void VoxelServer::process() {

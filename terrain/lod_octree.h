@@ -193,6 +193,10 @@ public:
 		return po;
 	}
 
+	static inline unsigned int get_octree_size_po2(unsigned int block_size_po2, unsigned int lod_count) {
+		return block_size_po2 + lod_count - 1;
+	}
+
 private:
 	// This pool treats nodes as packs of 8 so they can be addressed by only knowing the first child
 	class NodePool {

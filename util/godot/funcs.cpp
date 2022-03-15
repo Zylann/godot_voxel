@@ -125,8 +125,11 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfac
 	}
 
 	Ref<ConcavePolygonShape3D> shape;
-	shape.instantiate();
-	shape->set_faces(face_points);
+	{
+		VOXEL_PROFILE_SCOPE_NAMED("Godot shape");
+		shape.instantiate();
+		shape->set_faces(face_points);
+	}
 	return shape;
 }
 

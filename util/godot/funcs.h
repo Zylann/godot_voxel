@@ -70,7 +70,7 @@ inline std::shared_ptr<T> gd_make_shared(Arg0_T arg0, Arg1_T arg1, Arg2_T arg2) 
 // For use with smart pointers such as std::unique_ptr
 template <typename T>
 struct GodotObjectDeleter {
-	void operator()(T *obj) {
+	inline void operator()(T *obj) {
 		memdelete(obj);
 	}
 };

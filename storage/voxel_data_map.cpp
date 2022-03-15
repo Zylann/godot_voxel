@@ -189,6 +189,7 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(
 	} else if (overwrite) {
 		block->set_voxels(buffer);
 	} else {
+		VOXEL_PROFILE_MESSAGE("Redundant data block");
 		PRINT_VERBOSE(String("Discarded block {0} lod {1}, there was already data and overwriting is not enabled")
 							  .format(varray(bpos, _lod_index)));
 	}

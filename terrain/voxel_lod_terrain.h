@@ -1,9 +1,11 @@
 #ifndef VOXEL_LOD_TERRAIN_HPP
 #define VOXEL_LOD_TERRAIN_HPP
 
+#include "../server/mesh_block_task.h"
 #include "../server/voxel_server.h"
 #include "../storage/voxel_data_map.h"
 #include "lod_octree.h"
+#include "voxel_lod_terrain_update_data.h"
 #include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
@@ -85,6 +87,9 @@ public:
 	void set_full_load_mode_enabled(bool enabled);
 	bool is_full_load_mode_enabled() const;
 
+	void set_threaded_update_enabled(bool enabled);
+	bool is_threaded_update_enabled() const;
+
 	bool is_area_editable(Box3i p_box) const;
 	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel, VoxelSingleValue defval);
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
@@ -139,12 +144,13 @@ public:
 
 	// TODO This still sucks atm cuz the edit will still run on the main thread
 	void push_async_edit(IThreadedTask *task, Box3i box, std::shared_ptr<AsyncDependencyTracker> tracker);
-	void process_async_edits();
 	void abort_async_edits();
 
 	void set_voxel_bounds(Box3i p_box);
+
 	inline Box3i get_voxel_bounds() const {
-		return _bounds_in_voxels;
+		CRASH_COND(_update_data == nullptr);
+		return _update_data->settings.bounds_in_voxels;
 	}
 
 	void set_collision_update_delay(int delay_msec);
@@ -241,29 +247,11 @@ protected:
 	void _on_gi_mode_changed() override;
 
 private:
-	struct BlockLocation {
-		Vector3i position;
-		uint8_t lod;
-	};
-
 	void _process(float delta);
-	void process_unload_data_blocks_sliding_box(Vector3 p_viewer_pos, std::vector<BlockToSave> &blocks_to_save);
-	void process_unload_mesh_blocks_sliding_box(Vector3 p_viewer_pos);
-	void process_octrees_sliding_box(Vector3 p_viewer_pos);
-	void process_octrees_fitting(Vector3 p_viewer_pos, std::vector<BlockLocation> &data_blocks_to_load);
-	//void process_block_loading_responses();
-	void send_mesh_requests();
+	void apply_deferred_update_tasks();
 
 	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
 	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);
-
-	void unload_data_block_no_lock(Vector3i block_pos, uint8_t lod_index, std::vector<BlockToSave> &blocks_to_save);
-	void unload_mesh_block(Vector3i block_pos, uint8_t lod_index);
-
-	static inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
-		return (data_block_size == 16 || data_block_size == 32) && (mesh_block_size == 16 || mesh_block_size == 32) &&
-				mesh_block_size >= data_block_size;
-	}
 
 	void start_updater();
 	void stop_updater();
@@ -272,33 +260,18 @@ private:
 	void reset_maps();
 
 	Vector3 get_local_viewer_pos() const;
-	void try_schedule_loading_with_neighbors_no_lock(
-			const Vector3i &p_data_block_pos, uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load);
-	bool is_block_surrounded(const Vector3i &p_bpos, int lod_index, const VoxelDataMap &map) const;
-	bool check_block_loaded_and_meshed(
-			const Vector3i &p_mesh_block_pos, uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load);
-	bool check_block_mesh_updated(VoxelMeshBlock *block, std::vector<BlockLocation> &blocks_to_load);
 	void _set_lod_count(int p_lod_count);
 	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
 
-	std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(
-			Span<const Box3i> voxel_boxes, Span<IThreadedTask *> next_tasks);
-
 	void _on_stream_params_changed();
 
-	void flush_pending_lod_edits();
 	void save_all_modified_blocks(bool with_copy);
-	void send_block_data_requests(Span<const BlockLocation> blocks_to_load);
+
+	// TODO Put in common with VoxelLodTerrainUpdateTask
 	void send_block_save_requests(Span<BlockToSave> blocks_to_save);
+
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
-
-	static void add_transition_update(
-			VoxelMeshBlock *block, std::vector<VoxelMeshBlock *> &blocks_pending_transition_update);
-	void add_transition_updates_around(
-			Vector3i block_pos, int lod_index, std::vector<VoxelMeshBlock *> &blocks_pending_transition_update);
-	void process_transition_updates(const std::vector<VoxelMeshBlock *> &blocks_pending_transition_update);
-	uint8_t get_transition_mask(Vector3i block_pos, int lod_index) const;
 
 	void _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
@@ -309,10 +282,6 @@ private:
 	Error _b_debug_dump_as_scene(String fpath, bool include_instancer) const;
 	Dictionary _b_get_statistics() const;
 
-	struct OctreeItem {
-		LodOctree octree;
-	};
-
 #ifdef TOOLS_ENABLED
 	void update_gizmos();
 #endif
@@ -320,23 +289,6 @@ private:
 	static void _bind_methods();
 
 private:
-	// This terrain type is a sparse grid of octrees.
-	// Indexed by a grid coordinate whose step is the size of the highest-LOD block.
-	// Not using a pointer because Map storage is stable.
-	// TODO Optimization: could be replaced with a grid data structure
-	Map<Vector3i, OctreeItem> _lod_octrees;
-	Box3i _last_octree_region_box;
-
-	// Area within which voxels can exist.
-	// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be
-	// approximated to the closest chunk.
-	Box3i _bounds_in_voxels;
-	//Box3i _prev_bounds_in_voxels;
-
-	Ref<VoxelStream> _stream;
-	Ref<VoxelGenerator> _generator;
-	Ref<VoxelMesher> _mesher;
-
 	uint32_t _volume_id = 0;
 	ProcessCallback _process_callback = PROCESS_CALLBACK_IDLE;
 
@@ -349,57 +301,27 @@ private:
 	unsigned int _collision_mask = 1;
 	float _collision_margin = constants::DEFAULT_COLLISION_MARGIN;
 	int _collision_update_delay = 0;
+	FixedArray<std::vector<Vector3i>, constants::MAX_LOD> _deferred_collision_updates_per_lod;
+
+	float _lod_fade_duration = 0.f;
+	// Note, direct pointers to mesh blocks should be safe because these blocks are always destroyed from the same
+	// thread that updates fading blocks. If a mesh block is destroyed, these maps should be updated at the same time.
+	// TODO Optimization: use FlatMap? Need to check how many blocks get in there, probably not many
+	FixedArray<Map<Vector3i, VoxelMeshBlock *>, constants::MAX_LOD> _fading_blocks_per_lod;
 
 	VoxelInstancer *_instancer = nullptr;
 
-	struct AsyncEdit {
-		IThreadedTask *task;
-		Box3i box;
-		std::shared_ptr<AsyncDependencyTracker> task_tracker;
-	};
-
-	std::vector<AsyncEdit> _pending_async_edits;
-
-	struct RunningAsyncEdit {
-		std::shared_ptr<AsyncDependencyTracker> tracker;
-		Box3i box;
-	};
-	std::vector<RunningAsyncEdit> _running_async_edits;
+	Ref<VoxelMesher> _mesher;
+	Ref<VoxelGenerator> _generator;
+	Ref<VoxelStream> _stream;
 
 	// Data stored with a shared pointer so it can be sent to asynchronous tasks
+	bool _threaded_update_enabled = false;
 	std::shared_ptr<VoxelDataLodMap> _data;
+	std::shared_ptr<VoxelLodTerrainUpdateData> _update_data;
+	std::shared_ptr<StreamingDependency> _streaming_dependency;
+	std::shared_ptr<MeshingDependency> _meshing_dependency;
 
-	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
-	struct Lod {
-		// Keeping track of asynchronously loading blocks so we don't try to redundantly load them
-		std::unordered_set<Vector3i> loading_blocks;
-		// Blocks that were edited and need their LOD counterparts to be updated
-		std::vector<Vector3i> blocks_pending_lodding;
-		// These are relative to this LOD, in block coordinates
-		Vector3i last_viewer_data_block_pos;
-		int last_view_distance_data_blocks = 0;
-
-		VoxelMeshMap mesh_map;
-		std::vector<Vector3i> blocks_pending_update;
-		std::vector<Vector3i> deferred_collision_updates;
-		Map<Vector3i, VoxelMeshBlock *> fading_blocks;
-		Vector3i last_viewer_mesh_block_pos;
-		int last_view_distance_mesh_blocks = 0;
-
-		inline bool has_loading_block(const Vector3i &pos) const {
-			return loading_blocks.find(pos) != loading_blocks.end();
-		}
-	};
-
-	FixedArray<Lod, constants::MAX_LOD> _lods;
-	unsigned int _lod_count = 0;
-	// Distance between a viewer and the end of LOD0
-	float _lod_distance = 0.f;
-	float _lod_fade_duration = 0.f;
-	unsigned int _view_distance_voxels = 512;
-	bool _full_load_mode = false;
-
-	bool _run_stream_in_editor = true;
 #ifdef TOOLS_ENABLED
 	bool _show_gizmos_enabled = false;
 	bool _show_octree_bounds_gizmos = true;

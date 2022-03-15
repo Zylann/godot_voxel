@@ -29,7 +29,7 @@ VoxelTerrain::VoxelTerrain() {
 	_bounds_in_voxels = Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT));
 
 	struct ApplyMeshUpdateTask : public ITimeSpreadTask {
-		void run() override {
+		void run(TimeSpreadTaskContext &ctx) override {
 			if (!VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
 				// The node can have been destroyed while this task was still pending
 				PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
@@ -53,7 +53,7 @@ VoxelTerrain::VoxelTerrain() {
 		task->volume_id = self->_volume_id;
 		task->self = self;
 		task->data = ob;
-		VoxelServer::get_singleton()->push_time_spread_task(task);
+		VoxelServer::get_singleton()->push_main_thread_time_spread_task(task);
 	};
 	callbacks.data_output_callback = [](void *cb_data, VoxelServer::BlockDataOutput &ob) {
 		VoxelTerrain *self = reinterpret_cast<VoxelTerrain *>(cb_data);

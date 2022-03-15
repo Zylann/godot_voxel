@@ -135,7 +135,7 @@ void VoxelMeshMap::queue_free_mesh_block(VoxelMeshBlock *block) {
 	// We spread this out because of physics
 	// TODO Could it be enough to do both render and physic deallocation with the task in ~VoxelMeshBlock()?
 	struct FreeMeshBlockTask : public zylann::ITimeSpreadTask {
-		void run() override {
+		void run(TimeSpreadTaskContext &ctx) override {
 			memdelete(block);
 		}
 		VoxelMeshBlock *block = nullptr;
@@ -143,7 +143,7 @@ void VoxelMeshMap::queue_free_mesh_block(VoxelMeshBlock *block) {
 	ERR_FAIL_COND(block == nullptr);
 	FreeMeshBlockTask *task = memnew(FreeMeshBlockTask);
 	task->block = block;
-	VoxelServer::get_singleton()->push_time_spread_task(task);
+	VoxelServer::get_singleton()->push_main_thread_time_spread_task(task);
 }
 
 bool VoxelMeshMap::has_block(Vector3i pos) const {

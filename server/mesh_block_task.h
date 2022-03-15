@@ -2,10 +2,9 @@
 #define VOXEL_MESH_BLOCK_TASK_H
 
 #include "../constants/voxel_constants.h"
-#include "../generators/voxel_generator.h"
-#include "../meshers/voxel_mesher.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/tasks/threaded_task.h"
+#include "meshing_dependency.h"
 #include "priority_dependency.h"
 
 namespace zylann::voxel {
@@ -13,12 +12,6 @@ namespace zylann::voxel {
 // Asynchronous task generating a mesh from voxel blocks and their neighbors, in a particular volume
 class MeshBlockTask : public IThreadedTask {
 public:
-	struct MeshingDependency {
-		Ref<VoxelMesher> mesher;
-		Ref<VoxelGenerator> generator;
-		bool valid = true;
-	};
-
 	MeshBlockTask();
 	~MeshBlockTask();
 

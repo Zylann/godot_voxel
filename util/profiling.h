@@ -13,6 +13,7 @@
 #define VOXEL_PROFILE_MARK_FRAME() FrameMark
 #define VOXEL_PROFILE_SET_THREAD_NAME(name) tracy::SetThreadName(name)
 #define VOXEL_PROFILE_PLOT(name, number) TracyPlot(name, number)
+#define VOXEL_PROFILE_MESSAGE(message) TracyMessageL(message)
 
 #else
 
@@ -21,6 +22,7 @@
 #define VOXEL_PROFILE_SCOPE_NAMED(name)
 #define VOXEL_PROFILE_MARK_FRAME()
 #define VOXEL_PROFILE_PLOT(name, number)
+#define VOXEL_PROFILE_MESSAGE(message)
 // Name must be const char*. An internal copy will be made so it can be temporary.
 #define VOXEL_PROFILE_SET_THREAD_NAME(name)
 

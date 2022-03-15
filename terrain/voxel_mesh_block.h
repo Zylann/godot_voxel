@@ -2,11 +2,13 @@
 #define VOXEL_MESH_BLOCK_H
 
 #include "../constants/cube_tables.h"
+#include "../meshers/voxel_mesher.h"
 #include "../util/fixed_array.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
 #include "../util/ref_count.h"
 #include "../util/span.h"
+#include <atomic>
 
 class Node3D;
 
@@ -86,6 +88,7 @@ public:
 	// State
 
 	void set_mesh_state(MeshState ms);
+	void set_mesh_state_if_equal(MeshState previous_state, MeshState new_state);
 	MeshState get_mesh_state() const;
 
 	void set_visible(bool visible);
@@ -149,7 +152,7 @@ private:
 	bool _visible = false;
 
 	bool _parent_visible = true;
-	MeshState _mesh_state = MESH_NEVER_UPDATED;
+	std::atomic<MeshState> _mesh_state = MESH_NEVER_UPDATED;
 	uint8_t _transition_mask = 0;
 };
 

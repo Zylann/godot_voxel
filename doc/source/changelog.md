@@ -28,6 +28,7 @@ Godot 4 is required from this version.
     - SDF data is now encoded with `inorm8` and `inorm16`, instead of an arbitrary version of `unorm8` and `unorm16`. Migration code is in place to load old save files, but *do a backup before running your project with the new version*.
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
     - `VoxelLodTerrain`: Editor: added option to show octree nodes in editor
+    - `VoxelLodTerrain`: Added option to run a major part of the process logic into another thread
     - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
     - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
     - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected

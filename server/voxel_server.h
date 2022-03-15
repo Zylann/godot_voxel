@@ -1,6 +1,7 @@
 #ifndef VOXEL_SERVER_H
 #define VOXEL_SERVER_H
 
+#include "../constants/voxel_constants.h"
 #include "../generators/voxel_generator.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../streams/voxel_stream.h"
@@ -9,7 +10,8 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
-#include "mesh_block_task.h"
+#include "meshing_dependency.h"
+#include "priority_dependency.h"
 #include "streaming_dependency.h"
 
 #include <memory>
@@ -102,7 +104,6 @@ public:
 	VoxelServer();
 	~VoxelServer();
 
-	// TODO Rename functions to C convention
 	uint32_t add_volume(VolumeCallbacks callbacks, VolumeType type);
 	void set_volume_transform(uint32_t volume_id, Transform3D t);
 	void set_volume_render_block_size(uint32_t volume_id, uint32_t block_size);
@@ -126,7 +127,10 @@ public:
 	void remove_volume(uint32_t volume_id);
 	bool is_volume_valid(uint32_t volume_id) const;
 
-	// TODO Rename functions to C convention
+	std::shared_ptr<PriorityDependency::ViewersData> get_shared_viewers_data_from_default_world() const {
+		return _world.shared_priority_dependency;
+	}
+
 	uint32_t add_viewer();
 	void remove_viewer(uint32_t viewer_id);
 	void set_viewer_position(uint32_t viewer_id, Vector3 position);
@@ -147,15 +151,19 @@ public:
 		_world.viewers.for_each_with_id(f);
 	}
 
-	void push_time_spread_task(ITimeSpreadTask *task);
+	void push_main_thread_time_spread_task(ITimeSpreadTask *task);
 	int get_main_thread_time_budget_usec() const;
 
-	void push_progressive_task(IProgressiveTask *task);
+	void push_main_thread_progressive_task(IProgressiveTask *task);
 
 	// Thread-safe.
 	void push_async_task(IThreadedTask *task);
 	// Thread-safe.
 	void push_async_tasks(Span<IThreadedTask *> tasks);
+	// Thread-safe.
+	void push_async_io_task(IThreadedTask *task);
+	// Thread-safe.
+	void push_async_io_tasks(Span<IThreadedTask *> tasks);
 
 	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
 	// void get_min_max_block_padding(
@@ -227,7 +235,7 @@ private:
 		uint32_t data_block_size = 16;
 		float octree_lod_distance = 0;
 		std::shared_ptr<StreamingDependency> stream_dependency;
-		std::shared_ptr<MeshBlockTask::MeshingDependency> meshing_dependency;
+		std::shared_ptr<MeshingDependency> meshing_dependency;
 	};
 
 	struct World {

@@ -1,4 +1,5 @@
 #include "generate_block_task.h"
+#include "../storage/voxel_buffer_internal.h"
 #include "../util/godot/funcs.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
