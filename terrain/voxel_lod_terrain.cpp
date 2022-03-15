@@ -25,7 +25,6 @@ Ref<ArrayMesh> build_mesh(
 		Span<const Array> surfaces, Mesh::PrimitiveType primitive, int flags, Ref<Material> material) {
 	VOXEL_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
-	mesh.instantiate();
 
 	unsigned int surface_index = 0;
 	for (unsigned int i = 0; i < surfaces.size(); ++i) {
@@ -38,6 +37,10 @@ Ref<ArrayMesh> build_mesh(
 		CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
 		if (!is_surface_triangulated(surface)) {
 			continue;
+		}
+
+		if (mesh.is_null()) {
+			mesh.instantiate();
 		}
 
 		// TODO Use `add_surface`, it's about 20% faster after measuring in Tracy (though we may see if Godot 4 expects
