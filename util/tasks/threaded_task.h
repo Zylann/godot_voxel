@@ -9,6 +9,8 @@ struct ThreadedTaskContext {
 	uint8_t thread_index;
 };
 
+// Interface for a task that will run in `ThreadedTaskRunner`.
+// The task will run in another thread.
 class IThreadedTask {
 public:
 	virtual ~IThreadedTask() {}
@@ -20,8 +22,10 @@ public:
 	// in order to apply results. It is not called from the thread pool.
 	virtual void apply_result() = 0;
 
+	// Hints how soon this task will be executed after being scheduled. This is relevant when there are a lot of tasks.
 	// Lower values means higher priority.
 	// Can change between two calls. The thread pool will poll this value regularly over some time interval.
+	// TODO Should we disallow negative values? I can't think of a use for it.
 	virtual int get_priority() {
 		return 0;
 	}

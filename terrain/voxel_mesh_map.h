@@ -84,6 +84,7 @@ public:
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) {
 		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
+			// TODO Send a ref? We only send non-null blocks
 			op(*it);
 		}
 	}
@@ -91,6 +92,7 @@ public:
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) const {
 		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
+			// TODO Send a ref? We only send non-null blocks
 			op(*it);
 		}
 	}

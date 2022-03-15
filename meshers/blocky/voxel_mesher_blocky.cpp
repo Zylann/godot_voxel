@@ -471,7 +471,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		}
 	}
 
-	// TODO We could return a single byte array and use Mesh::add_surface down the line?
+	// TODO Optimization: we could return a single byte array and use Mesh::add_surface down the line?
 
 	for (unsigned int i = 0; i < MAX_MATERIALS; ++i) {
 		const Arrays &arrays = cache.arrays_per_material[i];

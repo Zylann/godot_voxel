@@ -6,7 +6,10 @@
 
 namespace zylann {
 
-DirectStaticBody::DirectStaticBody() {}
+DirectStaticBody::DirectStaticBody() {
+	// Nothing here. It is a thin RID wrapper,
+	// no calls to PhysicsServer3D are made until we called one of the functions.
+}
 
 DirectStaticBody::~DirectStaticBody() {
 	destroy();

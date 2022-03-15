@@ -4,7 +4,10 @@
 
 namespace zylann {
 
-DirectMeshInstance::DirectMeshInstance() {}
+DirectMeshInstance::DirectMeshInstance() {
+	// Nothing here. It is a thin RID wrapper,
+	// no calls to RenderingServer are made until we called one of the functions.
+}
 
 DirectMeshInstance::~DirectMeshInstance() {
 	destroy();
