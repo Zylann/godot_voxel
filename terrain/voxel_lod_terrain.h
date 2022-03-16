@@ -248,7 +248,7 @@ protected:
 
 private:
 	void _process(float delta);
-	void apply_deferred_update_tasks();
+	void apply_main_thread_update_tasks();
 
 	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
 	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);

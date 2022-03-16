@@ -52,6 +52,9 @@ public:
 	// because blocks can use a cross-fade effect. Overlapping blocks of the same LOD group can be visible at once.
 	// Hence the need to use this boolean.
 	bool active = false;
+	// Active state as seen by the threaded update task. Do not use this outside of that task.
+	// Only used by VoxelLodTerrain for now.
+	bool pending_active = false;
 
 	static VoxelMeshBlock *create(Vector3i bpos, unsigned int size, unsigned int p_lod_index);
 

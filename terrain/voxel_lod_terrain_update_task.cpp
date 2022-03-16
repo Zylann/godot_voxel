@@ -722,7 +722,7 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 
 		const VoxelMeshBlock *nblock = lod.mesh_map.get_block(npos);
 
-		if (nblock != nullptr && nblock->active) {
+		if (nblock != nullptr && nblock->pending_active) {
 			visible_neighbors_of_same_lod |= (1 << dir);
 		}
 	}
@@ -743,7 +743,7 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 			if (lower_neighbor_pos != lower_pos) {
 				const VoxelMeshBlock *lower_neighbor_block = lower_lod.mesh_map.get_block(lower_neighbor_pos);
 
-				if (lower_neighbor_block != nullptr && lower_neighbor_block->active) {
+				if (lower_neighbor_block != nullptr && lower_neighbor_block->pending_active) {
 					// The block has a visible neighbor of lower LOD
 					transition_mask |= dir_mask;
 					continue;
@@ -766,7 +766,7 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 				const VoxelLodTerrainUpdateData::Lod &upper_lod = state.lods[lod_index - 1];
 				const VoxelMeshBlock *upper_neighbor_block = upper_lod.mesh_map.get_block(upper_neighbor_pos);
 
-				if (upper_neighbor_block == nullptr || upper_neighbor_block->active == false) {
+				if (upper_neighbor_block == nullptr || upper_neighbor_block->pending_active == false) {
 					// The block has no visible neighbor yet. World border? Assume lower LOD.
 					transition_mask |= dir_mask;
 				}
@@ -975,12 +975,25 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 	}
 
 	{
+		// TODO Transition updates are broken due to deferring some mesh block structural changes to main thread.
+		// So instead we'll use a different boolean than the one used on the main thread, which we update here.
+		// It might be preferable later on to split blocks into a map with our states used in this task,
+		// and another data structure only containing mesh and colliders.
+		for (unsigned int i = 0; i < state.mesh_blocks_to_activate.size(); ++i) {
+			VoxelMeshBlock *block = state.mesh_blocks_to_activate[i];
+			block->pending_active = true;
+		}
+		for (unsigned int i = 0; i < state.mesh_blocks_to_deactivate.size(); ++i) {
+			VoxelMeshBlock *block = state.mesh_blocks_to_deactivate[i];
+			block->pending_active = false;
+		}
+
 		VOXEL_PROFILE_SCOPE_NAMED("Transition masks");
 		for (unsigned int i = 0; i < blocks_pending_transition_update.size(); ++i) {
 			VoxelMeshBlock *block = blocks_pending_transition_update[i];
 			CRASH_COND(block == nullptr);
 
-			if (block->active) {
+			if (block->pending_active) {
 				const uint8_t mask = VoxelLodTerrainUpdateTask::get_transition_mask(
 						state, block->position, block->lod_index, settings.lod_count);
 				state.lods[block->lod_index].mesh_blocks_to_update_transitions.push_back(

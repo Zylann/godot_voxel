@@ -1108,7 +1108,7 @@ void VoxelLodTerrain::_process(float delta) {
 	if (_update_data->task_is_complete) {
 		VOXEL_PROFILE_SCOPE();
 
-		apply_deferred_update_tasks();
+		apply_main_thread_update_tasks();
 
 		// Get viewer location in voxel space
 		const Vector3 viewer_pos = get_local_viewer_pos();
@@ -1128,12 +1128,12 @@ void VoxelLodTerrain::_process(float delta) {
 		} else {
 			task->run(ThreadedTaskContext{ 0 });
 			memdelete(task);
-			apply_deferred_update_tasks();
+			apply_main_thread_update_tasks();
 		}
 	}
 }
 
-void VoxelLodTerrain::apply_deferred_update_tasks() {
+void VoxelLodTerrain::apply_main_thread_update_tasks() {
 	VOXEL_PROFILE_SCOPE();
 	// Dequeue outputs of the threadable part of the update for actions taking place on the main thread
 
