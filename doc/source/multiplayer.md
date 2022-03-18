@@ -2,7 +2,7 @@ Multiplayer
 =============
 
 !!! warn
-    Multiplayer is currently in experimental phase. It is possible to some extent, but may have issues to be improved and might even change completely in the future.
+    Multiplayer is currently in experimental phase. It is possible to some extent, but may have issues to be improved and might even change completely in the future. Features mentionned here are also only available in the `master` branch.
 
 !!! note
     This page assumes you already have knowledge in general multiplayer programming. It is strongly recommended you learn it beforehand. You can have a look at [Godot's documentation page about networking](https://docs.godotengine.org/en/stable/tutorials/networking/index.html).
@@ -10,6 +10,7 @@ Multiplayer
 In general, the plan is to expose APIs to implement a client/server architecture. There is no assumption of the networking library you use, so it could be Godot RPCs, Valve Networking Sockets or even TCP. There is however assumption that the server also runs a version of the game.
 
 Other points to explore:
+
 - Block caching and versionning: save blocks client-side so the server doesn't have to send them again next time if they didn't change
 - Client-requesting alternative model: having the client actively request blocks with custom code instead of passively receiving them from the server
 
