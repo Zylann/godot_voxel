@@ -321,16 +321,23 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 
 			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x, data_index += block_size_with_padding.y) {
 				{
-					const bool s = sdf_data[data_index] < isolevel;
+					// The chosen comparison here is very important. This relates to case selections where 4 samples
+					// are equal to the isolevel and 4 others are above or below:
+					// In one of these two cases, there has to be a surface to extract, otherwise no surface will be
+					// allowed to appear if it happens to line up with integer coordinates.
+					// If we used `<` instead of `>`, it would appear to work, but would break those edge cases.
+					// `>` is chosen because it must match the comparison we do with case selection (in Transvoxel
+					// it is inverted).
+					const bool s = sdf_data[data_index] > isolevel;
 
 					if ( //
-							(sdf_data[data_index + n010] < isolevel) == s &&
-							(sdf_data[data_index + n100] < isolevel) == s &&
-							(sdf_data[data_index + n110] < isolevel) == s &&
-							(sdf_data[data_index + n001] < isolevel) == s &&
-							(sdf_data[data_index + n011] < isolevel) == s &&
-							(sdf_data[data_index + n101] < isolevel) == s &&
-							(sdf_data[data_index + n111] < isolevel) == s) {
+							(sdf_data[data_index + n010] > isolevel) == s &&
+							(sdf_data[data_index + n100] > isolevel) == s &&
+							(sdf_data[data_index + n110] > isolevel) == s &&
+							(sdf_data[data_index + n001] > isolevel) == s &&
+							(sdf_data[data_index + n011] > isolevel) == s &&
+							(sdf_data[data_index + n101] > isolevel) == s &&
+							(sdf_data[data_index + n111] > isolevel) == s) {
 						// Not crossing the isolevel, this cell won't produce any geometry.
 						// We must figure this out as fast as possible, because it will happen a lot.
 						continue;
