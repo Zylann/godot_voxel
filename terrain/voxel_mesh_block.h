@@ -18,6 +18,7 @@ namespace zylann::voxel {
 // It doesn't store voxel data, because it may be using different block size, or different data structure.
 class VoxelMeshBlock {
 public:
+	// TODO This is now only relevant for `VoxelTerrain`
 	enum MeshState {
 		MESH_NEVER_UPDATED = 0, // TODO Redundant with MESH_NEED_UPDATE?
 		MESH_UP_TO_DATE,
@@ -34,7 +35,6 @@ public:
 
 	Vector3i position; // In blocks
 	uint8_t lod_index = 0;
-	bool pending_transition_update = false;
 	RefCount mesh_viewers;
 	RefCount collision_viewers;
 	bool got_first_mesh_update = false;
@@ -52,9 +52,6 @@ public:
 	// because blocks can use a cross-fade effect. Overlapping blocks of the same LOD group can be visible at once.
 	// Hence the need to use this boolean.
 	bool active = false;
-	// Active state as seen by the threaded update task. Do not use this outside of that task.
-	// Only used by VoxelLodTerrain for now.
-	bool pending_active = false;
 
 	static VoxelMeshBlock *create(Vector3i bpos, unsigned int size, unsigned int p_lod_index);
 
@@ -91,7 +88,6 @@ public:
 	// State
 
 	void set_mesh_state(MeshState ms);
-	void set_mesh_state_if_equal(MeshState previous_state, MeshState new_state);
 	MeshState get_mesh_state() const;
 
 	void set_visible(bool visible);
@@ -155,7 +151,7 @@ private:
 	bool _visible = false;
 
 	bool _parent_visible = true;
-	std::atomic<MeshState> _mesh_state = MESH_NEVER_UPDATED;
+	MeshState _mesh_state = MESH_NEVER_UPDATED;
 	uint8_t _transition_mask = 0;
 };
 

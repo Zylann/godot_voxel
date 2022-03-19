@@ -17,15 +17,6 @@ class AsyncDependencyTracker;
 
 namespace voxel {
 
-// struct VoxelMeshLodMap {
-// 	struct Lod {
-// 		VoxelMeshMap mesh_map;
-// 		RWLock mesh_map_lock;
-// 	};
-// 	FixedArray<Lod, constants::MAX_LOD> lods;
-// 	unsigned int lod_count;
-// };
-
 // Settings and states needed for the multi-threaded part of the update loop of VoxelLodTerrain.
 // See `VoxelLodTerrainUpdateTask` for more info.
 struct VoxelLodTerrainUpdateData {
@@ -36,6 +27,17 @@ struct VoxelLodTerrainUpdateData {
 	struct TransitionUpdate {
 		Vector3i block_position;
 		uint8_t transition_mask;
+	};
+
+	struct BlockLocation {
+		Vector3i position;
+		uint8_t lod;
+	};
+
+	struct BlockToSave {
+		std::shared_ptr<VoxelBufferInternal> voxels;
+		Vector3i position;
+		uint8_t lod;
 	};
 
 	// These values don't change during the update task.
@@ -50,6 +52,40 @@ struct VoxelLodTerrainUpdateData {
 		unsigned int view_distance_voxels = 512;
 		bool full_load_mode = false;
 		bool run_stream_in_editor = true;
+		unsigned int mesh_block_size_po2 = 4;
+	};
+
+	enum MeshState {
+		MESH_NEVER_UPDATED = 0, // TODO Redundant with MESH_NEED_UPDATE?
+		MESH_UP_TO_DATE,
+		MESH_NEED_UPDATE, // The mesh is out of date but was not yet scheduled for update
+		MESH_UPDATE_NOT_SENT, // The mesh is out of date and was scheduled for update, but no request have been sent
+							  // yet
+		MESH_UPDATE_SENT // The mesh is out of date, and an update request was sent, pending response
+	};
+
+	struct MeshBlockState {
+		std::atomic<MeshState> state;
+		uint8_t transition_mask;
+		bool active;
+		bool pending_transition_update;
+
+		MeshBlockState() :
+				state(MESH_NEVER_UPDATED), transition_mask(0), active(false), pending_transition_update(false) {}
+	};
+
+	// Version of the mesh map designed to be mainly used for the threaded update task.
+	// It contains states used to determine when to actually load/unload meshes.
+	struct MeshMapState {
+		// Values in this map are expected to have stable addresses.
+		std::unordered_map<Vector3i, MeshBlockState> map;
+		// Locked for writing when blocks get inserted or removed from the map.
+		// If you need to lock more than one Lod, always do so in increasing order, to avoid deadlocks.
+		// IMPORTANT:
+		// - The update task will add and remove blocks from this map.
+		// - Threads outside the update task must never add or remove blocks to the map (even with locking),
+		//   unless the task is not running in parallel.
+		RWLock map_lock;
 	};
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
@@ -62,14 +98,7 @@ struct VoxelLodTerrainUpdateData {
 		Vector3i last_viewer_data_block_pos;
 		int last_view_distance_data_blocks = 0;
 
-		VoxelMeshMap mesh_map;
-		// Locked for writing when blocks get inserted or removed from the map.
-		// If you need to lock more than one Lod, always do so in increasing order, to avoid deadlocks.
-		// IMPORTANT:
-		// - The update task only adds blocks to the map, and doesn't remove them
-		// - Threads outside the update task must never add or remove blocks to the map (even with locking),
-		//   unless the task has finished running
-		RWLock mesh_map_lock;
+		MeshMapState mesh_map_state;
 
 		std::vector<Vector3i> blocks_pending_update;
 		Vector3i last_viewer_mesh_block_pos;
@@ -78,6 +107,8 @@ struct VoxelLodTerrainUpdateData {
 		// Deferred outputs to main thread
 		std::vector<Vector3i> mesh_blocks_to_unload;
 		std::vector<TransitionUpdate> mesh_blocks_to_update_transitions;
+		std::vector<Vector3i> mesh_blocks_to_activate;
+		std::vector<Vector3i> mesh_blocks_to_deactivate;
 
 		inline bool has_loading_block(const Vector3i &pos) const {
 			return loading_blocks.find(pos) != loading_blocks.end();
@@ -115,10 +146,6 @@ struct VoxelLodTerrainUpdateData {
 		std::vector<AsyncEdit> pending_async_edits;
 		BinaryMutex pending_async_edits_mutex;
 		std::vector<RunningAsyncEdit> running_async_edits;
-
-		// Deferred outputs to main thread
-		std::vector<VoxelMeshBlock *> mesh_blocks_to_activate;
-		std::vector<VoxelMeshBlock *> mesh_blocks_to_deactivate;
 	};
 
 	// Set to true when the update task is finished

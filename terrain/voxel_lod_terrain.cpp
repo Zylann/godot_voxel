@@ -88,14 +88,14 @@ struct BeforeUnloadMeshAction {
 };
 
 struct ScheduleSaveAction {
-	std::vector<VoxelLodTerrain::BlockToSave> &blocks_to_save;
+	std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save;
 
 	void operator()(VoxelDataBlock *block) {
 		// Save if modified
 		// TODO Don't ask for save if the stream doesn't support it!
 		if (block->is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
-			VoxelLodTerrain::BlockToSave b;
+			VoxelLodTerrainUpdateData::BlockToSave b;
 
 			b.voxels = gd_make_shared<VoxelBufferInternal>();
 			{
@@ -205,11 +205,11 @@ unsigned int VoxelLodTerrain::get_data_block_size_pow2() const {
 }
 
 unsigned int VoxelLodTerrain::get_mesh_block_size_pow2() const {
-	return _update_data->state.lods[0].mesh_map.get_block_size_pow2();
+	return _update_data->settings.mesh_block_size_po2;
 }
 
 unsigned int VoxelLodTerrain::get_mesh_block_size() const {
-	return _update_data->state.lods[0].mesh_map.get_block_size();
+	return 1 << _update_data->settings.mesh_block_size_po2;
 }
 
 void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
@@ -285,10 +285,9 @@ Ref<VoxelGenerator> VoxelLodTerrain::get_generator() const {
 }
 
 void VoxelLodTerrain::_on_gi_mode_changed() {
-	_update_data->wait_for_end_of_task();
 	const GIMode gi_mode = get_gi_mode();
 	for (unsigned int lod_index = 0; lod_index < _update_data->state.lods.size(); ++lod_index) {
-		_update_data->state.lods[lod_index].mesh_map.for_each_block([gi_mode](VoxelMeshBlock *block) { //
+		_mesh_maps_per_lod[lod_index].for_each_block([gi_mode](VoxelMeshBlock *block) { //
 			block->set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
 		});
 	}
@@ -393,6 +392,7 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	}
 
 	_update_data->wait_for_end_of_task();
+	_update_data->settings.mesh_block_size_po2 = po2;
 
 	VoxelLodTerrainUpdateData::State &state = _update_data->state;
 	const unsigned int lod_count = _update_data->settings.lod_count;
@@ -400,16 +400,17 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	// Reset mesh maps
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
 		if (_instancer != nullptr) {
 			// Unload instances
 			VoxelInstancer *instancer = _instancer;
-			lod.mesh_map.for_each_block([lod_index, instancer](VoxelMeshBlock *block) {
+			mesh_map.for_each_block([lod_index, instancer](VoxelMeshBlock *block) {
 				instancer->on_mesh_block_exit(block->position, lod_index);
 			});
 		}
 		// Unload mesh blocks
-		lod.mesh_map.for_each_block(BeforeUnloadMeshAction{ _shader_material_pool });
-		lod.mesh_map.create(po2, lod_index);
+		mesh_map.for_each_block(BeforeUnloadMeshAction{ _shader_material_pool });
+		mesh_map.create(po2, lod_index);
 		// Reset view distance cache so they will be re-entered
 		lod.last_view_distance_mesh_blocks = 0;
 	}
@@ -704,14 +705,6 @@ void VoxelLodTerrain::start_updater() {
 }
 
 void VoxelLodTerrain::stop_updater() {
-	struct ResetMeshStateAction {
-		void operator()(VoxelMeshBlock *block) {
-			if (block->get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_SENT) {
-				block->set_mesh_state(VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
-			}
-		}
-	};
-
 	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, Ref<VoxelMesher>());
 
 	// TODO We can still receive a few mesh delayed mesh updates after this. Is it a problem?
@@ -723,8 +716,12 @@ void VoxelLodTerrain::stop_updater() {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[i];
 		lod.blocks_pending_update.clear();
 
-		ResetMeshStateAction a;
-		lod.mesh_map.for_each_block(a);
+		for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
+			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = it->second;
+			if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_UPDATE_SENT) {
+				mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+			}
+		}
 	}
 }
 
@@ -810,6 +807,7 @@ void VoxelLodTerrain::reset_maps() {
 
 	const unsigned int lod_count = _update_data->settings.lod_count;
 	VoxelLodTerrainUpdateData::State &state = _update_data->state;
+	const VoxelLodTerrainUpdateData::Settings &settings = _update_data->settings;
 
 	// Make a new one, so if threads still reference the old one it will be a different copy
 	_data = gd_make_shared<VoxelDataLodMap>();
@@ -827,14 +825,25 @@ void VoxelLodTerrain::reset_maps() {
 
 	for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+
 		// Instance new maps if we have more lods, or clear them otherwise
 		if (lod_index < lod_count) {
-			lod.mesh_map.create(lod.mesh_map.get_block_size_pow2(), lod_index);
+			mesh_map.create(settings.mesh_block_size_po2, lod_index);
+			// Reset view distance cache so blocks will be re-entered due to the difference
 			lod.last_view_distance_data_blocks = 0;
 			lod.last_view_distance_mesh_blocks = 0;
 		} else {
-			lod.mesh_map.clear();
+			mesh_map.clear();
 		}
+
+		lod.mesh_map_state.map.clear();
+
+		lod.mesh_blocks_to_activate.clear();
+		lod.mesh_blocks_to_deactivate.clear();
+		lod.mesh_blocks_to_unload.clear();
+		lod.mesh_blocks_to_update_transitions.clear();
+
 		_deferred_collision_updates_per_lod[lod_index].clear();
 	}
 
@@ -863,14 +872,12 @@ int VoxelLodTerrain::get_collision_lod_count() const {
 }
 
 void VoxelLodTerrain::set_collision_layer(int layer) {
-	_update_data->wait_for_end_of_task();
-
 	const unsigned int lod_count = _update_data->settings.lod_count;
-	VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
 	_collision_layer = layer;
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		state.lods[lod_index].mesh_map.for_each_block([layer](VoxelMeshBlock *block) { //
+		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+		mesh_map.for_each_block([layer](VoxelMeshBlock *block) { //
 			block->set_collision_layer(layer);
 		});
 	}
@@ -881,14 +888,12 @@ int VoxelLodTerrain::get_collision_layer() const {
 }
 
 void VoxelLodTerrain::set_collision_mask(int mask) {
-	_update_data->wait_for_end_of_task();
-
 	const unsigned int lod_count = _update_data->settings.lod_count;
-	VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
 	_collision_mask = mask;
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		state.lods[lod_index].mesh_map.for_each_block([mask](VoxelMeshBlock *block) { //
+		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+		mesh_map.for_each_block([mask](VoxelMeshBlock *block) { //
 			block->set_collision_mask(mask);
 		});
 	}
@@ -899,14 +904,12 @@ int VoxelLodTerrain::get_collision_mask() const {
 }
 
 void VoxelLodTerrain::set_collision_margin(float margin) {
-	_update_data->wait_for_end_of_task();
-
 	const unsigned int lod_count = _update_data->settings.lod_count;
-	VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
 	_collision_margin = margin;
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		state.lods[lod_index].mesh_map.for_each_block([margin](VoxelMeshBlock *block) { //
+		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+		mesh_map.for_each_block([margin](VoxelMeshBlock *block) { //
 			block->set_collision_margin(margin);
 		});
 	}
@@ -928,15 +931,16 @@ Vector3i VoxelLodTerrain::voxel_to_data_block_position(Vector3 vpos, int lod_ind
 	ERR_FAIL_COND_V(lod_index < 0, Vector3i());
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3i());
 	const VoxelDataLodMap::Lod &lod = _data->lods[lod_index];
-	Vector3i bpos = lod.map.voxel_to_block(Vector3iUtil::from_floored(vpos)) >> lod_index;
+	const Vector3i bpos = lod.map.voxel_to_block(Vector3iUtil::from_floored(vpos)) >> lod_index;
 	return bpos;
 }
 
 Vector3i VoxelLodTerrain::voxel_to_mesh_block_position(Vector3 vpos, int lod_index) const {
 	ERR_FAIL_COND_V(lod_index < 0, Vector3i());
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3i());
-	const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
-	Vector3i bpos = lod.mesh_map.voxel_to_block(Vector3iUtil::from_floored(vpos)) >> lod_index;
+	const unsigned int mesh_block_size_po2 = _update_data->settings.mesh_block_size_po2;
+	const Vector3i bpos =
+			VoxelMeshMap::voxel_to_block_b(Vector3iUtil::from_floored(vpos), mesh_block_size_po2) >> lod_index;
 	return bpos;
 }
 
@@ -974,11 +978,11 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_ENTER_WORLD: {
-			_update_data->wait_for_end_of_task();
 			World3D *world = *get_world_3d();
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
-				state.lods[lod_index].mesh_map.for_each_block([world](VoxelMeshBlock *block) { //
+				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+				mesh_map.for_each_block([world](VoxelMeshBlock *block) { //
 					block->set_world(world);
 				});
 			}
@@ -992,10 +996,10 @@ void VoxelLodTerrain::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD: {
-			_update_data->wait_for_end_of_task();
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
-				state.lods[lod_index].mesh_map.for_each_block([](VoxelMeshBlock *block) { //
+				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+				mesh_map.for_each_block([](VoxelMeshBlock *block) { //
 					block->set_world(nullptr);
 				});
 			}
@@ -1009,10 +1013,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
-				VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-				RWLockRead rlock(lod.mesh_map_lock);
-
-				lod.mesh_map.for_each_block([visible](VoxelMeshBlock *block) { //
+				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+				mesh_map.for_each_block([visible](VoxelMeshBlock *block) { //
 					block->set_parent_visible(visible);
 				});
 			}
@@ -1039,10 +1041,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
-				VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-				RWLockRead rlock(lod.mesh_map_lock);
-
-				lod.mesh_map.for_each_block([&transform](VoxelMeshBlock *block) { //
+				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+				mesh_map.for_each_block([&transform](VoxelMeshBlock *block) { //
 					block->set_parent_transform(transform);
 				});
 			}
@@ -1073,13 +1073,13 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 			mesh_block_size >= data_block_size;
 }
 
-void VoxelLodTerrain::send_block_save_requests(Span<BlockToSave> blocks_to_save) {
-	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
-		BlockToSave &b = blocks_to_save[i];
-		PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
-		VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
-	}
-}
+// void VoxelLodTerrain::send_block_save_requests(Span<BlockToSave> blocks_to_save) {
+// 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
+// 		BlockToSave &b = blocks_to_save[i];
+// 		PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
+// 		VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
+// 	}
+// }
 
 void VoxelLodTerrain::_process(float delta) {
 	VOXEL_PROFILE_SCOPE();
@@ -1141,25 +1141,34 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 	VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
-	for (unsigned int i = 0; i < state.mesh_blocks_to_activate.size(); ++i) {
-		for (unsigned int i = 0; i < state.mesh_blocks_to_activate.size(); ++i) {
-			VoxelMeshBlock *block = state.mesh_blocks_to_activate[i];
-			CRASH_COND(block == nullptr);
+	for (unsigned int lod_index = 0; lod_index < _update_data->settings.lod_count; ++lod_index) {
+		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
+		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+
+		for (unsigned int i = 0; i < lod.mesh_blocks_to_activate.size(); ++i) {
+			const Vector3i bpos = lod.mesh_blocks_to_activate[i];
+			VoxelMeshBlock *block = mesh_map.get_block(bpos);
+			// Can be null if there is actually no surface at this location
+			if (block == nullptr) {
+				continue;
+			}
+			//ERR_CONTINUE(block == nullptr);
 			set_mesh_block_active(*block, true);
 		}
 
-		for (unsigned int i = 0; i < state.mesh_blocks_to_deactivate.size(); ++i) {
-			VoxelMeshBlock *block = state.mesh_blocks_to_deactivate[i];
-			CRASH_COND(block == nullptr);
+		for (unsigned int i = 0; i < lod.mesh_blocks_to_deactivate.size(); ++i) {
+			const Vector3i bpos = lod.mesh_blocks_to_deactivate[i];
+			VoxelMeshBlock *block = mesh_map.get_block(bpos);
+			// Can be null if there is actually no surface at this location
+			if (block == nullptr) {
+				continue;
+			}
+			//ERR_CONTINUE(block == nullptr);
 			set_mesh_block_active(*block, false);
 		}
-	}
 
-	state.mesh_blocks_to_activate.clear();
-	state.mesh_blocks_to_deactivate.clear();
-
-	for (unsigned int lod_index = 0; lod_index < _update_data->settings.lod_count; ++lod_index) {
-		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
+		lod.mesh_blocks_to_activate.clear();
+		lod.mesh_blocks_to_deactivate.clear();
 
 #ifdef DEBUG_ENABLED
 		std::unordered_set<Vector3i> debug_removed_blocks;
@@ -1167,7 +1176,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_unload.size(); ++i) {
 			const Vector3i bpos = lod.mesh_blocks_to_unload[i];
-			lod.mesh_map.remove_block(bpos, BeforeUnloadMeshAction{ _shader_material_pool });
+			mesh_map.remove_block(bpos, BeforeUnloadMeshAction{ _shader_material_pool });
 
 			_fading_blocks_per_lod[lod_index].erase(bpos);
 
@@ -1183,19 +1192,17 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_update_transitions.size(); ++i) {
 			const VoxelLodTerrainUpdateData::TransitionUpdate tu = lod.mesh_blocks_to_update_transitions[i];
-			VoxelMeshBlock *block = lod.mesh_map.get_block(tu.block_position);
-			// In theory we should not find null blocks on scheduled transition updates.
-			// However, when using threaded update, the update task is not allowed to immediately remove blocks from
-			// the map. So when it goes on detecting transition updates, it might add some for blocks that were going
-			// to be removed. Instead of adding extra states and checks, we can just consider this normal instead
-			// of an error.
+			VoxelMeshBlock *block = mesh_map.get_block(tu.block_position);
+			// Can be null if there is actually no surface at this location
 			if (block == nullptr) {
+				/*
 #ifdef DEBUG_ENABLED
 				// If the block was removed for a different reason then it is unexpected
 				ERR_CONTINUE(debug_removed_blocks.find(tu.block_position) == debug_removed_blocks.end());
 #endif
 				PRINT_VERBOSE(String("Skipping TransitionUpdate at {0} lod {1}, block not found")
 									  .format(varray(tu.block_position, lod_index)));
+				*/
 				continue;
 			}
 			//CRASH_COND(block == nullptr);
@@ -1294,8 +1301,8 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 	}
 
 	{
-		// We have to do this after adding the block to the map, otherwise there is a small period of time where the
-		// threaded update task could request the block again needlessly
+		// We have to do this after adding the block to the map, otherwise there would be a small period of time where
+		// the threaded update task could request the block again needlessly
 		MutexLock lock(lod.loading_blocks_mutex);
 		lod.loading_blocks.erase(ob.position);
 	}
@@ -1322,46 +1329,66 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 		return;
 	}
 
-	VoxelLodTerrainUpdateData::Lod &lod = update_data.state.lods[ob.lod];
-
-	VoxelMeshBlock *block;
+	uint8_t transition_mask;
 	{
-		RWLockRead rlock(lod.mesh_map_lock);
-		block = lod.mesh_map.get_block(ob.position);
-		if (block == nullptr) {
-			// That block is no longer loaded, drop the result
+		VoxelLodTerrainUpdateData::Lod &lod = update_data.state.lods[ob.lod];
+		RWLockRead rlock(lod.mesh_map_state.map_lock);
+		auto mesh_block_state_it = lod.mesh_map_state.map.find(ob.position);
+		if (mesh_block_state_it == lod.mesh_map_state.map.end()) {
+			// That block is no longer loaded in the update map, drop the result
 			++_stats.dropped_block_meshs;
 			return;
 		}
+		if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
+			// That block is loaded, but its meshing request was dropped.
+			// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
+			PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
+			++_stats.dropped_block_meshs;
+			return;
+		}
+		transition_mask = mesh_block_state_it->second.transition_mask;
+		// The update task could be running at the same time, so we need to do this atomically.
+		// The state can become "up to date" only if no other unsent update was pending.
+		VoxelLodTerrainUpdateData::MeshState expected = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
+		mesh_block_state_it->second.state.compare_exchange_strong(expected, VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
 	}
-
-	if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
-		// That block is loaded, but its meshing request was dropped.
-		// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
-		PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
-		++_stats.dropped_block_meshs;
-		return;
-	}
-
-	// The update task could be running at the same time, so we need to do this atomically.
-	// The state can become "up to date" only if no other unsent update was pending.
-	block->set_mesh_state_if_equal(VoxelMeshBlock::MESH_UPDATE_SENT, VoxelMeshBlock::MESH_UP_TO_DATE);
 
 	// -------- Part where we invoke Godot functions ---------
 	// As far as I know, this is not yet threadable efficiently, for the most part.
 	// By that, I mean being able to call into RenderingServer and PhysicsServer,
 	// without inducing a stall of the main thread.
 
+	VoxelMeshMap &mesh_map = _mesh_maps_per_lod[ob.lod];
+	VoxelMeshBlock *block = mesh_map.get_block(ob.position);
+
 	const VoxelMesher::Output &mesh_data = ob.surfaces;
 
 	Ref<ArrayMesh> mesh =
 			build_mesh(to_span_const(mesh_data.surfaces), mesh_data.primitive_type, mesh_data.mesh_flags, _material);
+
+	if (mesh.is_null()) {
+		if (block != nullptr) {
+			// No surface anymore in this block, destroy it
+			// TODO Factor removal in a function, it's done in a few places
+			mesh_map.remove_block(ob.position, BeforeUnloadMeshAction{ _shader_material_pool });
+			if (_instancer != nullptr) {
+				_instancer->on_mesh_block_exit(ob.position, ob.lod);
+			}
+		}
+		return;
+	}
+
+	if (block == nullptr) {
+		block = VoxelMeshBlock::create(ob.position, get_mesh_block_size(), ob.lod);
+		mesh_map.set_block(ob.position, block);
+	}
 
 	bool has_collision = _generate_collisions;
 	if (has_collision && _collision_lod_count != 0) {
 		has_collision = ob.lod < _collision_lod_count;
 	}
 
+	// TODO Is this boolean needed anymore now that we create blocks only if a surface is present?
 	if (block->got_first_mesh_update == false) {
 		block->got_first_mesh_update = true;
 
@@ -1401,6 +1428,8 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 			// used to smooth seams without re-uploading meshes and allow to implement LOD fading
 			block->set_shader_material(sm);
 		}
+
+		block->set_transition_mask(transition_mask);
 	}
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
@@ -1448,15 +1477,12 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 	const unsigned int lod_count = _update_data->settings.lod_count;
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
+		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
 		std::vector<Vector3i> &deferred_collision_updates = _deferred_collision_updates_per_lod[lod_index];
-
-		// TODO Optimization: this is a potentially long locking duration
-		RWLockRead rlock(lod.mesh_map_lock);
 
 		for (unsigned int i = 0; i < deferred_collision_updates.size(); ++i) {
 			const Vector3i block_pos = deferred_collision_updates[i];
-			VoxelMeshBlock *block = lod.mesh_map.get_block(block_pos);
+			VoxelMeshBlock *block = mesh_map.get_block(block_pos);
 
 			if (block == nullptr || block->has_deferred_collider_update == false) {
 				// Block was unloaded or no longer needs a collision update
@@ -1548,12 +1574,11 @@ Array VoxelLodTerrain::get_mesh_block_surface(Vector3i block_pos, int lod_index)
 	const int lod_count = _update_data->settings.lod_count;
 	ERR_FAIL_COND_V(lod_index < 0 || lod_index >= lod_count, Array());
 
-	VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
+	const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
 
 	Ref<Mesh> mesh;
 	{
-		RWLockRead rlock(lod.mesh_map_lock);
-		const VoxelMeshBlock *block = lod.mesh_map.get_block(block_pos);
+		const VoxelMeshBlock *block = mesh_map.get_block(block_pos);
 		if (block != nullptr) {
 			mesh = block->get_mesh();
 		}
@@ -1570,10 +1595,9 @@ void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, std::vect
 	const int lod_count = _update_data->settings.lod_count;
 	ERR_FAIL_COND(lod_index < 0 || lod_index >= lod_count);
 
-	const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
+	const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
 
-	RWLockRead rlock(lod.mesh_map_lock);
-	lod.mesh_map.for_each_block([&out_positions](const VoxelMeshBlock *block) {
+	mesh_map.for_each_block([&out_positions](const VoxelMeshBlock *block) {
 		if (block->has_mesh()) {
 			out_positions.push_back(block->position);
 		}
@@ -1588,9 +1612,9 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 	_update_data->wait_for_end_of_task();
 
 	VoxelLodTerrainUpdateTask::flush_pending_lod_edits(
-			_update_data->state, *_data, _generator, _update_data->settings.full_load_mode);
+			_update_data->state, *_data, _generator, _update_data->settings.full_load_mode, get_mesh_block_size());
 
-	std::vector<BlockToSave> blocks_to_save;
+	std::vector<VoxelLodTerrainUpdateData::BlockToSave> blocks_to_save;
 
 	if (_stream.is_valid()) {
 		for (unsigned int i = 0; i < _data->lod_count; ++i) {
@@ -1606,7 +1630,8 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 	}
 
 	// And flush immediately
-	send_block_save_requests(to_span(blocks_to_save));
+	VoxelLodTerrainUpdateTask::send_block_save_requests(
+			_volume_id, to_span(blocks_to_save), _streaming_dependency, get_data_block_size());
 }
 
 const VoxelLodTerrain::Stats &VoxelLodTerrain::get_stats() const {
@@ -1665,28 +1690,12 @@ void VoxelLodTerrain::restart_stream() {
 }
 
 void VoxelLodTerrain::remesh_all_blocks() {
-	struct L {
-		// To use on loaded blocks
-		static inline void schedule_mesh_update(VoxelMeshBlock *block, std::vector<Vector3i> &blocks_pending_update) {
-			if (block->get_mesh_state() != VoxelMeshBlock::MESH_UPDATE_NOT_SENT) {
-				if (block->active) {
-					// Schedule an update
-					block->set_mesh_state(VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
-					blocks_pending_update.push_back(block->position);
-				} else {
-					// Just mark it as needing update, so the visibility system will schedule its update when needed
-					block->set_mesh_state(VoxelMeshBlock::MESH_NEED_UPDATE);
-				}
-			}
-		}
-	};
-
 	_update_data->wait_for_end_of_task();
 	for (unsigned int lod_index = 0; lod_index < _update_data->settings.lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
-		lod.mesh_map.for_each_block([&lod](VoxelMeshBlock *block) { //
-			L::schedule_mesh_update(block, lod.blocks_pending_update);
-		});
+		for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
+			VoxelLodTerrainUpdateTask::schedule_mesh_update(it->second, it->first, lod.blocks_pending_update);
+		}
 	}
 }
 
@@ -1766,10 +1775,9 @@ Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 wo
 	Array hits;
 	while (distance < max_distance && hits.size() == 0) {
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-			const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
-			RWLockRead rlock(lod.mesh_map_lock);
-			const Vector3i bpos = lod.mesh_map.voxel_to_block(Vector3iUtil::from_floored(pos)) >> lod_index;
-			const VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+			const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+			const Vector3i bpos = mesh_map.voxel_to_block(Vector3iUtil::from_floored(pos)) >> lod_index;
+			const VoxelMeshBlock *block = mesh_map.get_block(bpos);
 			if (block != nullptr && block->is_visible() && block->has_mesh()) {
 				Dictionary d;
 				d["position"] = block->position;
@@ -1820,8 +1828,7 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 	const int lod_count = get_lod_count();
 	ERR_FAIL_COND_V(lod_index >= lod_count, d);
 
-	const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
-	Vector3i bpos = Vector3iUtil::from_floored(fbpos);
+	const Vector3i bpos = Vector3iUtil::from_floored(fbpos);
 
 	bool loaded = false;
 	bool meshed = false;
@@ -1829,13 +1836,18 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 	bool active = false;
 	int mesh_state = VoxelMeshBlock::MESH_NEVER_UPDATED;
 
-	const VoxelMeshBlock *block;
-	{
-		RWLockRead rlock(lod.mesh_map_lock);
-		block = lod.mesh_map.get_block(bpos);
-	}
+	const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+	const VoxelMeshBlock *block = mesh_map.get_block(bpos);
 
 	if (block != nullptr) {
+		int recomputed_transition_mask;
+		{
+			const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
+			RWLockRead rlock(lod.mesh_map_state.map_lock);
+			recomputed_transition_mask = VoxelLodTerrainUpdateTask::get_transition_mask(
+					_update_data->state, block->position, block->lod_index, lod_count);
+		}
+
 		loaded = true;
 		meshed = block->has_mesh();
 		mesh_state = block->get_mesh_state();
@@ -1843,8 +1855,7 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 		active = block->active;
 		d["transition_mask"] = block->get_transition_mask();
 		// This can highlight possible bugs between the current state and what it should be
-		d["recomputed_transition_mask"] = VoxelLodTerrainUpdateTask::get_transition_mask(
-				_update_data->state, block->position, block->lod_index, lod_count);
+		d["recomputed_transition_mask"] = recomputed_transition_mask;
 	}
 
 	d["loaded"] = loaded;
@@ -1890,11 +1901,11 @@ Array VoxelLodTerrain::debug_get_octrees_detailed() const {
 			Variant node_state;
 
 			const VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-			const VoxelMeshBlock *block = lod.mesh_map.get_block(position);
-			if (block == nullptr) {
+			auto mesh_block_it = lod.mesh_map_state.map.find(position);
+			if (mesh_block_it == lod.mesh_map_state.map.end()) {
 				node_state = 0;
 			} else {
-				if (block->get_mesh_state() == VoxelMeshBlock::MESH_UP_TO_DATE) {
+				if (mesh_block_it->second.state == VoxelLodTerrainUpdateData::MESH_UP_TO_DATE) {
 					node_state = 2;
 				} else {
 					node_state = 1;
@@ -2084,9 +2095,8 @@ int VoxelLodTerrain::_b_debug_get_mesh_block_count() const {
 	int sum = 0;
 	const unsigned int lod_count = get_lod_count();
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
-		RWLockRead rlock(lod.mesh_map_lock);
-		sum += lod.mesh_map.get_block_count();
+		const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+		sum += mesh_map.get_block_count();
 	}
 	return sum;
 }
@@ -2102,17 +2112,15 @@ int VoxelLodTerrain::_b_debug_get_data_block_count() const {
 }
 
 Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
-	_update_data->wait_for_end_of_task();
-
 	Node3D *root = memnew(Node3D);
 	root->set_name(get_name());
 
 	const unsigned int lod_count = get_lod_count();
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
+		const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
 
-		lod.mesh_map.for_each_block([root](const VoxelMeshBlock *block) {
+		mesh_map.for_each_block([root](const VoxelMeshBlock *block) {
 			block->for_each_mesh_instance_with_transform([root, block](const DirectMeshInstance &dmi, Transform3D t) {
 				Ref<Mesh> mesh = dmi.get_mesh();
 

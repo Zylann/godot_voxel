@@ -9,35 +9,8 @@
 
 namespace zylann::voxel {
 
-namespace {
-struct BlockToSave {
-	std::shared_ptr<VoxelBufferInternal> voxels;
-	Vector3i position;
-	uint8_t lod;
-};
-
-struct BlockLocation {
-	Vector3i position;
-	uint8_t lod;
-};
-} //namespace
-
-// To use on loaded blocks
-static inline void schedule_mesh_update(VoxelMeshBlock *block, std::vector<Vector3i> &blocks_pending_update) {
-	if (block->get_mesh_state() != VoxelMeshBlock::MESH_UPDATE_NOT_SENT) {
-		if (block->active) {
-			// Schedule an update
-			block->set_mesh_state(VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
-			blocks_pending_update.push_back(block->position);
-		} else {
-			// Just mark it as needing update, so the visibility system will schedule its update when needed
-			block->set_mesh_state(VoxelMeshBlock::MESH_NEED_UPDATE);
-		}
-	}
-}
-
 void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
-		Ref<VoxelGenerator> generator, bool full_load_mode) {
+		Ref<VoxelGenerator> generator, bool full_load_mode, const int mesh_block_size) {
 	VOXEL_PROFILE_SCOPE();
 	// Propagates edits performed so far to other LODs.
 	// These LODs must be currently in memory, otherwise terrain data will miss it.
@@ -45,7 +18,6 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 	// i.e there is no way for a block to be loaded if its parent LOD isn't loaded already.
 	// In the future we may implement storing of edits to be applied later if blocks can't be found.
 
-	const int mesh_block_size = state.lods[0].mesh_map.get_block_size();
 	const int data_block_size = data.lods[0].map.get_block_size();
 	const int data_block_size_po2 = data.lods[0].map.get_block_size_pow2();
 	const int data_to_mesh_factor = mesh_block_size / data_block_size;
@@ -82,11 +54,11 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 			data_block->set_needs_lodding(false);
 
 			const Vector3i mesh_block_pos = Vector3iUtil::floordiv(data_block_pos, data_to_mesh_factor);
-			VoxelMeshBlock *mesh_block = lod0.mesh_map.get_block(mesh_block_pos);
-			if (mesh_block != nullptr) {
+			auto mesh_block_it = lod0.mesh_map_state.map.find(mesh_block_pos);
+			if (mesh_block_it != lod0.mesh_map_state.map.end()) {
 				// If a mesh exists here, it will need an update.
 				// If there is no mesh, it will probably get created later when we come closer to it
-				schedule_mesh_update(mesh_block, lod0.blocks_pending_update);
+				schedule_mesh_update(mesh_block_it->second, mesh_block_pos, lod0.blocks_pending_update);
 			}
 		}
 	}
@@ -151,9 +123,9 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 
 			{
 				const Vector3i mesh_block_pos = Vector3iUtil::floordiv(dst_bpos, data_to_mesh_factor);
-				VoxelMeshBlock *mesh_block = dst_lod.mesh_map.get_block(mesh_block_pos);
-				if (mesh_block != nullptr) {
-					schedule_mesh_update(mesh_block, dst_lod.blocks_pending_update);
+				auto mesh_block_it = dst_lod.mesh_map_state.map.find(mesh_block_pos);
+				if (mesh_block_it != dst_lod.mesh_map_state.map.end()) {
+					schedule_mesh_update(mesh_block_it->second, mesh_block_pos, dst_lod.blocks_pending_update);
 				}
 				// If there is no mesh, it will probably get created later when we come closer to it
 			}
@@ -190,7 +162,7 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 }
 
 struct BeforeUnloadDataAction {
-	std::vector<BlockToSave> &blocks_to_save;
+	std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save;
 	bool save;
 
 	void operator()(VoxelDataBlock *block) {
@@ -198,7 +170,7 @@ struct BeforeUnloadDataAction {
 		// TODO Don't ask for save if the stream doesn't support it!
 		if (save && block->is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
-			BlockToSave b;
+			VoxelLodTerrainUpdateData::BlockToSave b;
 			// We don't copy since the block will be unloaded anyways
 			b.voxels = block->get_voxels_shared();
 			b.position = block->position;
@@ -208,13 +180,9 @@ struct BeforeUnloadDataAction {
 	}
 };
 
-static void unload_data_block_no_lock(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
-		Vector3i block_pos, uint8_t lod_index, std::vector<BlockToSave> &blocks_to_save, bool can_save) {
+static void unload_data_block_no_lock(VoxelLodTerrainUpdateData::Lod &lod, VoxelDataLodMap::Lod &data_lod,
+		Vector3i block_pos, std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save, bool can_save) {
 	VOXEL_PROFILE_SCOPE();
-	ERR_FAIL_COND(lod_index >= data.lod_count);
-
-	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-	VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
 
 	data_lod.map.remove_block(block_pos, BeforeUnloadDataAction{ blocks_to_save, can_save });
 
@@ -232,7 +200,7 @@ static void unload_data_block_no_lock(VoxelLodTerrainUpdateData::State &state, V
 }
 
 static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
-		Vector3 p_viewer_pos, std::vector<BlockToSave> &blocks_to_save, bool can_save,
+		Vector3 p_viewer_pos, std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save, bool can_save,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
 	VOXEL_PROFILE_SCOPE_NAMED("Sliding box data unload");
 	// TODO Could it actually be enough to have a rolling update on all blocks?
@@ -243,7 +211,7 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 	const int data_block_region_extent =
 			VoxelServer::get_octree_lod_block_region_extent(settings.lod_distance, data_block_size);
 
-	const int mesh_block_size = state.lods[0].mesh_map.get_block_size();
+	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 
 	const int lod_count = data.lod_count;
 
@@ -281,12 +249,14 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 			VOXEL_PROFILE_SCOPE_NAMED("Unload data");
 			VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
 			RWLockWrite wlock(data_lod.map_lock);
-			prev_box.difference(new_box, [&state, &data, lod_index, &blocks_to_save, can_save](Box3i out_of_range_box) {
-				out_of_range_box.for_each_cell([&state, &data, lod_index, &blocks_to_save, can_save](Vector3i pos) {
-					//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
-					unload_data_block_no_lock(state, data, pos, lod_index, blocks_to_save, can_save);
-				});
-			});
+			prev_box.difference(
+					new_box, [&lod, &data_lod, lod_index, &blocks_to_save, can_save](Box3i out_of_range_box) {
+						out_of_range_box.for_each_cell(
+								[&lod, &data_lod, lod_index, &blocks_to_save, can_save](Vector3i pos) {
+									//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
+									unload_data_block_no_lock(lod, data_lod, pos, blocks_to_save, can_save);
+								});
+					});
 		}
 
 		{
@@ -307,9 +277,9 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 				if (mesh_box.contains(bpos)) {
 					return false;
 				} else {
-					VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
-					if (block != nullptr) {
-						block->set_mesh_state(VoxelMeshBlock::MESH_NEED_UPDATE);
+					auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
+					if (mesh_block_it != lod.mesh_map_state.map.end()) {
+						mesh_block_it->second.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
 					}
 					return true;
 				}
@@ -327,8 +297,8 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 	// TODO Could it actually be enough to have a rolling update on all blocks?
 
 	// This should be the same distance relatively to each LOD
-	const int mesh_block_size = state.lods[0].mesh_map.get_block_size();
-	const int mesh_block_size_po2 = state.lods[0].mesh_map.get_block_size_pow2();
+	const int mesh_block_size_po2 = settings.mesh_block_size_po2;
+	const int mesh_block_size = 1 << mesh_block_size_po2;
 	const int mesh_block_region_extent =
 			VoxelServer::get_octree_lod_block_region_extent(settings.lod_distance, mesh_block_size);
 
@@ -340,8 +310,7 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
 		unsigned int block_size_po2 = mesh_block_size_po2 + lod_index;
-		const Vector3i viewer_block_pos_within_lod =
-				VoxelMeshMap::voxel_to_block_b(Vector3iUtil::from_floored(p_viewer_pos), block_size_po2);
+		const Vector3i viewer_block_pos_within_lod = Vector3iUtil::from_floored(p_viewer_pos) >> block_size_po2;
 
 		const Box3i bounds_in_blocks = Box3i( //
 				settings.bounds_in_voxels.pos >> block_size_po2, //
@@ -361,10 +330,12 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 
 		if (prev_box != new_box) {
 			VOXEL_PROFILE_SCOPE_NAMED("Unload meshes");
+			RWLockWrite wlock(lod.mesh_map_state.map_lock);
 			prev_box.difference(new_box, [&lod](Box3i out_of_range_box) {
 				out_of_range_box.for_each_cell([&lod](Vector3i pos) {
 					//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
 					//unload_mesh_block(pos, lod_index);
+					lod.mesh_map_state.map.erase(pos);
 					lod.mesh_blocks_to_unload.push_back(pos);
 				});
 			});
@@ -388,7 +359,7 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 	VOXEL_PROFILE_SCOPE_NAMED("Sliding box octrees");
 	// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
 
-	const unsigned int mesh_block_size_po2 = state.lods[0].mesh_map.get_block_size_pow2();
+	const unsigned int mesh_block_size_po2 = settings.mesh_block_size_po2;
 	const unsigned int octree_size_po2 = LodOctree::get_octree_size_po2(mesh_block_size_po2, settings.lod_count);
 	const unsigned int octree_size = 1 << octree_size_po2;
 	const unsigned int octree_region_extent = 1 + settings.view_distance_voxels / (1 << octree_size_po2);
@@ -412,9 +383,10 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 
 				Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
 
-				VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
-				if (block != nullptr) {
-					state.mesh_blocks_to_deactivate.push_back(block);
+				auto block_it = lod.mesh_map_state.map.find(bpos);
+				if (block_it != lod.mesh_map_state.map.end()) {
+					lod.mesh_blocks_to_deactivate.push_back(bpos);
+					block_it->second.active = false;
 				}
 			}
 		};
@@ -445,6 +417,7 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 				// Unload last lod from here, as it may extend a bit further than the others.
 				// Other LODs are unloaded earlier using a sliding region.
 				VoxelLodTerrainUpdateData::Lod &last_lod = state.lods[last_lod_index];
+				last_lod.mesh_map_state.map.erase(pos);
 				last_lod.mesh_blocks_to_unload.push_back(pos);
 			}
 		};
@@ -472,37 +445,43 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 		EnterAction enter_action{ state, settings.lod_count };
 		{
 			VOXEL_PROFILE_SCOPE_NAMED("Unload octrees");
-			prev_box.difference(
-					new_box, [exit_action](Box3i out_of_range_box) { out_of_range_box.for_each_cell(exit_action); });
+
+			const unsigned int last_lod_index = settings.lod_count - 1;
+			VoxelLodTerrainUpdateData::Lod &last_lod = state.lods[last_lod_index];
+			RWLockWrite wlock(last_lod.mesh_map_state.map_lock);
+
+			prev_box.difference(new_box, [exit_action](Box3i out_of_range_box) { //
+				out_of_range_box.for_each_cell(exit_action);
+			});
 		}
 		{
 			VOXEL_PROFILE_SCOPE_NAMED("Load octrees");
-			new_box.difference(
-					prev_box, [enter_action](Box3i box_to_load) { box_to_load.for_each_cell(enter_action); });
+			new_box.difference(prev_box, [enter_action](Box3i box_to_load) { //
+				box_to_load.for_each_cell(enter_action);
+			});
 		}
 	}
 
 	state.last_octree_region_box = new_box;
 }
 
-static void add_transition_update(
-		VoxelMeshBlock *block, std::vector<VoxelMeshBlock *> &blocks_pending_transition_update) {
-	if (!block->pending_transition_update) {
-		blocks_pending_transition_update.push_back(block);
-		block->pending_transition_update = true;
+static void add_transition_update(VoxelLodTerrainUpdateData::MeshBlockState &block, Vector3i bpos,
+		std::vector<Vector3i> &blocks_pending_transition_update) {
+	if (!block.pending_transition_update) {
+		blocks_pending_transition_update.push_back(bpos);
+		block.pending_transition_update = true;
 	}
 }
 
-static void add_transition_updates_around(VoxelLodTerrainUpdateData::State &state, Vector3i block_pos, int lod_index,
-		std::vector<VoxelMeshBlock *> &blocks_pending_transition_update) {
-	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-
+static void add_transition_updates_around(VoxelLodTerrainUpdateData::Lod &lod, Vector3i block_pos,
+		std::vector<Vector3i> &blocks_pending_transition_update) {
+	//
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-		Vector3i npos = block_pos + Cube::g_side_normals[dir];
-		VoxelMeshBlock *nblock = lod.mesh_map.get_block(npos);
+		const Vector3i npos = block_pos + Cube::g_side_normals[dir];
+		auto nblock_it = lod.mesh_map_state.map.find(npos);
 
-		if (nblock != nullptr) {
-			add_transition_update(nblock, blocks_pending_transition_update);
+		if (nblock_it != lod.mesh_map_state.map.end()) {
+			add_transition_update(nblock_it->second, npos, blocks_pending_transition_update);
 		}
 	}
 	// TODO If a block appears at lod, neighbor blocks at lod-1 need to be updated.
@@ -510,8 +489,8 @@ static void add_transition_updates_around(VoxelLodTerrainUpdateData::State &stat
 }
 
 void try_schedule_loading_with_neighbors_no_lock(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
-		const Vector3i &p_data_block_pos, uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load,
-		const Box3i &bounds_in_voxels) {
+		const Vector3i &p_data_block_pos, uint8_t lod_index,
+		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load, const Box3i &bounds_in_voxels) {
 	//
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 	const VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
@@ -558,23 +537,27 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 			mesh_block_size >= data_block_size;
 }
 
-bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data, VoxelMeshBlock &block,
-		std::vector<BlockLocation> &blocks_to_load, const VoxelLodTerrainUpdateData::Settings &settings) {
+bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, Vector3i mesh_block_pos, uint8_t lod_index,
+		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load,
+		const VoxelLodTerrainUpdateData::Settings &settings) {
 	//VOXEL_PROFILE_SCOPE();
 
-	VoxelLodTerrainUpdateData::Lod &lod = state.lods[block.lod_index];
+	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
-	switch (block.get_mesh_state()) {
-		case VoxelMeshBlock::MESH_NEVER_UPDATED:
-		case VoxelMeshBlock::MESH_NEED_UPDATE: {
-			const int mesh_block_size = state.lods[0].mesh_map.get_block_size();
+	const VoxelLodTerrainUpdateData::MeshState mesh_state = mesh_block.state;
+
+	switch (mesh_state) {
+		case VoxelLodTerrainUpdateData::MESH_NEVER_UPDATED:
+		case VoxelLodTerrainUpdateData::MESH_NEED_UPDATE: {
+			const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 			const int data_block_size = data.lods[0].map.get_block_size();
 #ifdef DEBUG_ENABLED
 			ERR_FAIL_COND_V(!check_block_sizes(data_block_size, mesh_block_size), false);
 #endif
 			// Find data block neighbors positions
 			const int factor = mesh_block_size / data_block_size;
-			const Vector3i data_block_pos0 = factor * block.position;
+			const Vector3i data_block_pos0 = factor * mesh_block_pos;
 			const Box3i data_box(data_block_pos0 - Vector3i(1, 1, 1), Vector3iUtil::create(factor) + Vector3i(2, 2, 2));
 			const Box3i bounds = settings.bounds_in_voxels.downscaled(data_block_size);
 			FixedArray<Vector3i, 56> neighbor_positions;
@@ -588,7 +571,7 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, VoxelData
 
 			bool surrounded = true;
 			if (settings.full_load_mode == false) {
-				const VoxelDataLodMap::Lod &data_lod = data.lods[block.lod_index];
+				const VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
 				// Check if neighbors are loaded
 				RWLockRead rlock(data_lod.map_lock);
 				// TODO Optimization: could put in a temp vector and insert in one go after the loop?
@@ -600,7 +583,7 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, VoxelData
 						surrounded = false;
 						if (!lod.has_loading_block(npos)) {
 							// Schedule loading for that neighbor
-							blocks_to_load.push_back({ npos, block.lod_index });
+							blocks_to_load.push_back({ npos, lod_index });
 							lod.loading_blocks.insert(npos);
 						}
 					}
@@ -608,18 +591,18 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, VoxelData
 			}
 
 			if (surrounded) {
-				lod.blocks_pending_update.push_back(block.position);
-				block.set_mesh_state(VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
+				lod.blocks_pending_update.push_back(mesh_block_pos);
+				mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
 			}
 
 			return false;
 		}
 
-		case VoxelMeshBlock::MESH_UPDATE_NOT_SENT:
-		case VoxelMeshBlock::MESH_UPDATE_SENT:
+		case VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT:
+		case VoxelLodTerrainUpdateData::MESH_UPDATE_SENT:
 			return false;
 
-		case VoxelMeshBlock::MESH_UP_TO_DATE:
+		case VoxelLodTerrainUpdateData::MESH_UP_TO_DATE:
 			return true;
 
 		default:
@@ -630,14 +613,35 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, VoxelData
 	return true;
 }
 
+VoxelLodTerrainUpdateData::MeshBlockState &insert_new(
+		std::unordered_map<Vector3i, VoxelLodTerrainUpdateData::MeshBlockState> &mesh_map, Vector3i pos) {
+#ifdef DEBUG_ENABLED
+	// We got here because the map didn't contain the element. If it did contain it already, that's a bug.
+	static VoxelLodTerrainUpdateData::MeshBlockState s_default;
+	ERR_FAIL_COND_V(mesh_map.find(pos) != mesh_map.end(), s_default);
+#endif
+	// C++ standard says if the element is not present, it will be default-constructed.
+	// So here is how to insert a default, non-movable struct into an unordered_map.
+	// https://stackoverflow.com/questions/22229773/map-unordered-map-with-non-movable-default-constructible-value-type
+	VoxelLodTerrainUpdateData::MeshBlockState &block = mesh_map[pos];
+
+	// This approach doesn't compile, had to workaround with the writing [] operator.
+	/*
+	auto p = lod.mesh_map_state.map.emplace(pos, VoxelLodTerrainUpdateData::MeshBlockState());
+	// We got here because the map didn't contain the element. If it did contain it already, that's a bug.
+	CRASH_COND(p.second == false);
+	*/
+
+	return block;
+}
+
 static bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, VoxelDataLodMap &data, const Vector3i &p_mesh_block_pos,
-		uint8_t lod_index, std::vector<BlockLocation> &blocks_to_load,
-		FixedArray<std::vector<VoxelMeshBlock *>, constants::MAX_LOD> &mesh_blocks_to_add_per_lod) {
+		uint8_t lod_index, std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load) {
 	//
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
-	const int mesh_block_size = state.lods[0].mesh_map.get_block_size();
+	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 	const int data_block_size = data.lods[0].map.get_block_size();
 
 #ifdef DEBUG_ENABLED
@@ -686,15 +690,18 @@ static bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &stat
 		}
 	}
 
-	VoxelMeshBlock *mesh_block = lod.mesh_map.get_block(p_mesh_block_pos);
-	if (mesh_block == nullptr) {
-		mesh_block = VoxelMeshBlock::create(p_mesh_block_pos, mesh_block_size, lod_index);
-		mesh_blocks_to_add_per_lod[lod_index].push_back(mesh_block);
-		//lod.mesh_map.set_block(p_mesh_block_pos, mesh_block);
+	VoxelLodTerrainUpdateData::MeshBlockState *mesh_block = nullptr;
+	auto mesh_block_it = lod.mesh_map_state.map.find(p_mesh_block_pos);
+	if (mesh_block_it == lod.mesh_map_state.map.end()) {
+		// If this ever becomes a source of contention with the main thread's `apply_mesh_update`,
+		// we could defer additions to the end of octree fitting.
+		RWLockWrite wlock(lod.mesh_map_state.map_lock);
+		mesh_block = &insert_new(lod.mesh_map_state.map, p_mesh_block_pos);
+	} else {
+		mesh_block = &mesh_block_it->second;
 	}
 
-	CRASH_COND(mesh_block == nullptr);
-	return check_block_mesh_updated(state, data, *mesh_block, blocks_to_load, settings);
+	return check_block_mesh_updated(state, data, *mesh_block, p_mesh_block_pos, lod_index, blocks_to_load, settings);
 }
 
 uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
@@ -720,9 +727,9 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		Vector3i npos = block_pos + Cube::g_side_normals[dir];
 
-		const VoxelMeshBlock *nblock = lod.mesh_map.get_block(npos);
+		auto nblock_it = lod.mesh_map_state.map.find(npos);
 
-		if (nblock != nullptr && nblock->pending_active) {
+		if (nblock_it != lod.mesh_map_state.map.end() && nblock_it->second.active) {
 			visible_neighbors_of_same_lod |= (1 << dir);
 		}
 	}
@@ -741,9 +748,10 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 			const Vector3i lower_neighbor_pos = (block_pos + side_normal) >> 1;
 
 			if (lower_neighbor_pos != lower_pos) {
-				const VoxelMeshBlock *lower_neighbor_block = lower_lod.mesh_map.get_block(lower_neighbor_pos);
+				auto lower_neighbor_block_it = lower_lod.mesh_map_state.map.find(lower_neighbor_pos);
 
-				if (lower_neighbor_block != nullptr && lower_neighbor_block->pending_active) {
+				if (lower_neighbor_block_it != lower_lod.mesh_map_state.map.end() &&
+						lower_neighbor_block_it->second.active) {
 					// The block has a visible neighbor of lower LOD
 					transition_mask |= dir_mask;
 					continue;
@@ -764,9 +772,10 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 				}
 
 				const VoxelLodTerrainUpdateData::Lod &upper_lod = state.lods[lod_index - 1];
-				const VoxelMeshBlock *upper_neighbor_block = upper_lod.mesh_map.get_block(upper_neighbor_pos);
+				auto upper_neighbor_block_it = upper_lod.mesh_map_state.map.find(upper_neighbor_pos);
 
-				if (upper_neighbor_block == nullptr || upper_neighbor_block->pending_active == false) {
+				if (upper_neighbor_block_it == upper_lod.mesh_map_state.map.end() ||
+						upper_neighbor_block_it->second.active == false) {
 					// The block has no visible neighbor yet. World border? Assume lower LOD.
 					transition_mask |= dir_mask;
 				}
@@ -779,19 +788,20 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 
 static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, VoxelDataLodMap &data, Vector3 p_viewer_pos,
-		std::vector<BlockLocation> &data_blocks_to_load) {
+		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load) {
 	//
 	VOXEL_PROFILE_SCOPE_NAMED("Update octrees");
 
-	static thread_local std::vector<VoxelMeshBlock *> blocks_pending_transition_update;
-	static thread_local FixedArray<std::vector<VoxelMeshBlock *>, constants::MAX_LOD> mesh_blocks_to_add_per_lod;
-	CRASH_COND(!blocks_pending_transition_update.empty());
+	static thread_local FixedArray<std::vector<Vector3i>, constants::MAX_LOD>
+			tls_blocks_pending_transition_update_per_lod;
+	//static thread_local FixedArray<std::vector<Vector3i>, constants::MAX_LOD> tls_mesh_blocks_to_add_per_lod;
 
-	for (unsigned int i = 0; i < mesh_blocks_to_add_per_lod.size(); ++i) {
-		CRASH_COND(!mesh_blocks_to_add_per_lod[i].empty());
+	for (unsigned int i = 0; i < tls_blocks_pending_transition_update_per_lod.size(); ++i) {
+		CRASH_COND(!tls_blocks_pending_transition_update_per_lod[i].empty());
+		//CRASH_COND(!tls_mesh_blocks_to_add_per_lod[i].empty());
 	}
 
-	const int mesh_block_size = state.lods[0].mesh_map.get_block_size();
+	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 	const int octree_leaf_node_size = mesh_block_size;
 	const float lod_distance_octree_space = settings.lod_distance / octree_leaf_node_size;
 
@@ -804,55 +814,60 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			VoxelLodTerrainUpdateData::State &state;
 			const VoxelLodTerrainUpdateData::Settings &settings;
 			VoxelDataLodMap &data;
-			std::vector<BlockLocation> &data_blocks_to_load;
+			std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load;
 			//std::vector<VoxelMeshBlock *> &mesh_blocks_to_add;
 			Vector3i block_offset_lod0;
 			unsigned int blocked_count = 0;
-			std::vector<VoxelMeshBlock *> &blocks_pending_transition_update;
 			float lod_distance_octree_space;
 			Vector3 viewer_pos_octree_space;
 
 			void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
 				VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 				const Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
-				VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+				auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
-				// Never show a child that hasn't been meshed
-				CRASH_COND(block == nullptr);
-				CRASH_COND(block->get_mesh_state() != VoxelMeshBlock::MESH_UP_TO_DATE);
+				// Never show a child that hasn't been meshed, if we got here that would be a bug
+				CRASH_COND(mesh_block_it == lod.mesh_map_state.map.end());
+				CRASH_COND(mesh_block_it->second.state != VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
 
 				//self->set_mesh_block_active(*block, true);
-				state.mesh_blocks_to_activate.push_back(block);
-				add_transition_update(block, blocks_pending_transition_update);
-				add_transition_updates_around(state, bpos, lod_index, blocks_pending_transition_update);
+				lod.mesh_blocks_to_activate.push_back(bpos);
+				mesh_block_it->second.active = true;
+				add_transition_update(
+						mesh_block_it->second, bpos, tls_blocks_pending_transition_update_per_lod[lod_index]);
+				add_transition_updates_around(lod, bpos, tls_blocks_pending_transition_update_per_lod[lod_index]);
 			}
 
 			void destroy_child(Vector3i node_pos, int lod_index) {
 				VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 				const Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
-				VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+				auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
-				if (block != nullptr) {
+				if (mesh_block_it != lod.mesh_map_state.map.end()) {
 					//self->set_mesh_block_active(*block, false);
-					state.mesh_blocks_to_deactivate.push_back(block);
-					add_transition_updates_around(state, bpos, lod_index, blocks_pending_transition_update);
+					mesh_block_it->second.active = false;
+					lod.mesh_blocks_to_deactivate.push_back(bpos);
+					add_transition_updates_around(lod, bpos, tls_blocks_pending_transition_update_per_lod[lod_index]);
 				}
 			}
 
 			void show_parent(Vector3i node_pos, int lod_index) {
 				VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 				Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
-				VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+				auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
 				// If we teleport far away, the area we were in is going to merge,
 				// and blocks may have been unloaded completely.
 				// So in that case it's normal to not find any block.
 				// Otherwise, there must always be a visible parent in the end, unless the octree vanished.
-				if (block != nullptr && block->get_mesh_state() == VoxelMeshBlock::MESH_UP_TO_DATE) {
+				if (mesh_block_it != lod.mesh_map_state.map.end() &&
+						mesh_block_it->second.state == VoxelLodTerrainUpdateData::MESH_UP_TO_DATE) {
 					//self->set_mesh_block_active(*block, true);
-					state.mesh_blocks_to_activate.push_back(block);
-					add_transition_update(block, blocks_pending_transition_update);
-					add_transition_updates_around(state, bpos, lod_index, blocks_pending_transition_update);
+					mesh_block_it->second.active = true;
+					lod.mesh_blocks_to_activate.push_back(bpos);
+					add_transition_update(
+							mesh_block_it->second, bpos, tls_blocks_pending_transition_update_per_lod[lod_index]);
+					add_transition_updates_around(lod, bpos, tls_blocks_pending_transition_update_per_lod[lod_index]);
 				}
 			}
 
@@ -862,8 +877,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 
 			bool can_create_root(int lod_index) {
 				const Vector3i offset = block_offset_lod0 >> lod_index;
-				return check_block_loaded_and_meshed(
-						state, settings, data, offset, lod_index, data_blocks_to_load, mesh_blocks_to_add_per_lod);
+				return check_block_loaded_and_meshed(state, settings, data, offset, lod_index, data_blocks_to_load);
 			}
 
 			bool can_split(Vector3i node_pos, int lod_index, LodOctree::NodeData &node_data) {
@@ -883,8 +897,8 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 					// Convert to local-to-terrain
 					child_pos += offset;
 					// We have to ping ALL children, because the reason we are here is we want them loaded
-					can &= check_block_loaded_and_meshed(state, settings, data, child_pos, child_lod_index,
-							data_blocks_to_load, mesh_blocks_to_add_per_lod);
+					can &= check_block_loaded_and_meshed(
+							state, settings, data, child_pos, child_lod_index, data_blocks_to_load);
 				}
 
 				// Can only subdivide if blocks of a higher LOD index are present around,
@@ -914,9 +928,9 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 				VoxelLodTerrainUpdateData::Lod &lod = state.lods[parent_lod_index];
 
 				Vector3i bpos = node_pos + (block_offset_lod0 >> parent_lod_index);
-				VoxelMeshBlock *block = lod.mesh_map.get_block(bpos);
+				auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
-				if (block == nullptr) {
+				if (mesh_block_it == lod.mesh_map_state.map.end()) {
 					// The block got unloaded. Exceptionally, we can join.
 					// There will always be a grand-parent because we never destroy them when they split,
 					// and we never create a child without creating a parent first.
@@ -924,7 +938,8 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 				}
 
 				// The block is loaded (?) but the mesh isn't up to date, we need to ping and wait.
-				const bool can = check_block_mesh_updated(state, data, *block, data_blocks_to_load, settings);
+				const bool can = check_block_mesh_updated(
+						state, data, mesh_block_it->second, bpos, parent_lod_index, data_blocks_to_load, settings);
 
 				if (!can) {
 					++blocked_count;
@@ -945,7 +960,6 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			data_blocks_to_load, //
 			block_offset_lod0, //
 			0, //
-			blocks_pending_transition_update, //
 			lod_distance_octree_space, //
 			relative_viewer_pos / octree_leaf_node_size
 		};
@@ -957,52 +971,37 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 		//_stats.blocked_lods += octree_actions.blocked_count;
 	}
 
-	for (unsigned int lod_index = 0; lod_index < settings.lod_count; ++lod_index) {
-		std::vector<VoxelMeshBlock *> &mesh_blocks_to_add = mesh_blocks_to_add_per_lod[lod_index];
-
-		if (mesh_blocks_to_add.size() > 0) {
-			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-			RWLockWrite wlock(lod.mesh_map_lock);
-
-			for (unsigned int i = 0; i < mesh_blocks_to_add.size(); ++i) {
-				VoxelMeshBlock *block = mesh_blocks_to_add[i];
-				CRASH_COND(block == nullptr);
-				lod.mesh_map.set_block(block->position, block);
-			}
-
-			mesh_blocks_to_add.clear();
-		}
-	}
-
 	{
-		// TODO Transition updates are broken due to deferring some mesh block structural changes to main thread.
-		// So instead we'll use a different boolean than the one used on the main thread, which we update here.
-		// It might be preferable later on to split blocks into a map with our states used in this task,
-		// and another data structure only containing mesh and colliders.
-		for (unsigned int i = 0; i < state.mesh_blocks_to_activate.size(); ++i) {
-			VoxelMeshBlock *block = state.mesh_blocks_to_activate[i];
-			block->pending_active = true;
-		}
-		for (unsigned int i = 0; i < state.mesh_blocks_to_deactivate.size(); ++i) {
-			VoxelMeshBlock *block = state.mesh_blocks_to_deactivate[i];
-			block->pending_active = false;
-		}
+		// In theory, blocks containing no surface have no reason to need a transition mask,
+		// but when we get a new mesh update into a block that previously had no surface, we still need it.
 
 		VOXEL_PROFILE_SCOPE_NAMED("Transition masks");
-		for (unsigned int i = 0; i < blocks_pending_transition_update.size(); ++i) {
-			VoxelMeshBlock *block = blocks_pending_transition_update[i];
-			CRASH_COND(block == nullptr);
+		for (unsigned int lod_index = 0; lod_index < tls_blocks_pending_transition_update_per_lod.size(); ++lod_index) {
+			std::vector<Vector3i> &blocks_pending_transition_update =
+					tls_blocks_pending_transition_update_per_lod[lod_index];
 
-			if (block->pending_active) {
-				const uint8_t mask = VoxelLodTerrainUpdateTask::get_transition_mask(
-						state, block->position, block->lod_index, settings.lod_count);
-				state.lods[block->lod_index].mesh_blocks_to_update_transitions.push_back(
-						VoxelLodTerrainUpdateData::TransitionUpdate{ block->position, mask });
+			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+
+			for (unsigned int i = 0; i < blocks_pending_transition_update.size(); ++i) {
+				const Vector3i bpos = blocks_pending_transition_update[i];
+
+				auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
+				CRASH_COND(mesh_block_it == lod.mesh_map_state.map.end());
+				VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_block_it->second;
+
+				if (mesh_block.active) {
+					const uint8_t mask =
+							VoxelLodTerrainUpdateTask::get_transition_mask(state, bpos, lod_index, settings.lod_count);
+					mesh_block.transition_mask = mask;
+					lod.mesh_blocks_to_update_transitions.push_back(
+							VoxelLodTerrainUpdateData::TransitionUpdate{ bpos, mask });
+				}
+
+				mesh_block.pending_transition_update = false;
 			}
 
-			block->pending_transition_update = false;
+			blocks_pending_transition_update.clear();
 		}
-		blocks_pending_transition_update.clear();
 	}
 }
 
@@ -1081,13 +1080,14 @@ static void request_block_load(uint32_t volume_id, unsigned int data_block_size,
 	}
 }
 
-static void send_block_data_requests(uint32_t volume_id, Span<const BlockLocation> blocks_to_load,
+static void send_block_data_requests(uint32_t volume_id,
+		Span<const VoxelLodTerrainUpdateData::BlockLocation> blocks_to_load,
 		std::shared_ptr<StreamingDependency> &stream_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, unsigned int data_block_size,
 		bool request_instances, const Transform3D &volume_transform, float lod_distance) {
 	//
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
-		const BlockLocation loc = blocks_to_load[i];
+		const VoxelLodTerrainUpdateData::BlockLocation loc = blocks_to_load[i];
 		request_block_load(volume_id, data_block_size, stream_dependency, loc.position, loc.lod, request_instances,
 				shared_viewers_data, volume_transform, lod_distance);
 	}
@@ -1109,11 +1109,11 @@ static void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBu
 	VoxelServer::get_singleton()->push_async_io_task(task);
 }
 
-static void send_block_save_requests(uint32_t volume_id, Span<BlockToSave> blocks_to_save,
-		std::shared_ptr<StreamingDependency> &stream_dependency,
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, unsigned int data_block_size) {
+void VoxelLodTerrainUpdateTask::send_block_save_requests(uint32_t volume_id,
+		Span<VoxelLodTerrainUpdateData::BlockToSave> blocks_to_save,
+		std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size) {
 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
-		BlockToSave &b = blocks_to_save[i];
+		VoxelLodTerrainUpdateData::BlockToSave &b = blocks_to_save[i];
 		PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
 		request_voxel_block_save(volume_id, b.voxels, b.position, b.lod, stream_dependency, data_block_size);
 	}
@@ -1153,7 +1153,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 	VOXEL_PROFILE_SCOPE_NAMED("Send mesh requests");
 
 	const int data_block_size = data.lods[0].map.get_block_size();
-	const int mesh_block_size = state.lods[0].mesh_map.get_block_size();
+	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 	const int render_to_data_factor = mesh_block_size / mesh_block_size;
 
 	for (unsigned int lod_index = 0; lod_index < settings.lod_count; ++lod_index) {
@@ -1164,11 +1164,12 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			VOXEL_PROFILE_SCOPE();
 			const Vector3i mesh_block_pos = lod.blocks_pending_update[bi];
 
-			VoxelMeshBlock *block = lod.mesh_map.get_block(mesh_block_pos);
+			auto mesh_block_it = lod.mesh_map_state.map.find(mesh_block_pos);
 			// A block must have been allocated before we ask for a mesh update
-			ERR_CONTINUE(block == nullptr);
+			ERR_CONTINUE(mesh_block_it == lod.mesh_map_state.map.end());
+			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_block_it->second;
 			// All blocks we get here must be in the scheduled state
-			ERR_CONTINUE(block->get_mesh_state() != VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
+			ERR_CONTINUE(mesh_block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT);
 
 			// Get block and its neighbors
 			VoxelServer::BlockMeshInput mesh_request;
@@ -1198,7 +1199,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			request_block_mesh(volume_id, mesh_request, meshing_dependency, shared_viewers_data, data_block_size,
 					mesh_block_size, volume_transform, settings.lod_distance);
 
-			block->set_mesh_state(VoxelMeshBlock::MESH_UPDATE_SENT);
+			mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
 		}
 
 		lod.blocks_pending_update.clear();
@@ -1340,12 +1341,12 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 
 	CRASH_COND(data.lod_count != update_data.settings.lod_count);
 
-	CRASH_COND(state.mesh_blocks_to_activate.size() != 0);
-	CRASH_COND(state.mesh_blocks_to_deactivate.size() != 0);
 	for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
-		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+		const VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 		CRASH_COND(lod.mesh_blocks_to_unload.size() != 0);
 		CRASH_COND(lod.mesh_blocks_to_update_transitions.size() != 0);
+		CRASH_COND(lod.mesh_blocks_to_activate.size() != 0);
+		CRASH_COND(lod.mesh_blocks_to_deactivate.size() != 0);
 	}
 
 	CRASH_COND_MSG(update_data.task_is_complete, "Expected only one update task to run on a given volume");
@@ -1354,9 +1355,9 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	// Update pending LOD data modifications due to edits.
 	// These are deferred from edits so we can batch them.
 	// It has to happen first because blocks can be unloaded afterwards.
-	flush_pending_lod_edits(state, data, generator, settings.full_load_mode);
+	flush_pending_lod_edits(state, data, generator, settings.full_load_mode, 1 << settings.mesh_block_size_po2);
 
-	static thread_local std::vector<BlockToSave> data_blocks_to_save;
+	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockToSave> data_blocks_to_save;
 
 	// Unload data blocks falling out of block region extent
 	if (update_data.settings.full_load_mode == false) {
@@ -1374,7 +1375,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	const bool stream_enabled = (stream.is_valid() || generator.is_valid()) &&
 			(Engine::get_singleton()->is_editor_hint() == false || settings.run_stream_in_editor);
 
-	static thread_local std::vector<BlockLocation> data_blocks_to_load;
+	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockLocation> data_blocks_to_load;
 	data_blocks_to_load.clear();
 
 	// Find which blocks we need to load and see, within each octree
@@ -1390,8 +1391,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 		const unsigned int data_block_size = data.lods[0].map.get_block_size();
 		send_block_data_requests(_volume_id, to_span_const(data_blocks_to_load), _streaming_dependency,
 				_shared_viewers_data, data_block_size, _request_instances, _volume_transform, settings.lod_distance);
-		send_block_save_requests(
-				_volume_id, to_span(data_blocks_to_save), _streaming_dependency, _shared_viewers_data, data_block_size);
+		send_block_save_requests(_volume_id, to_span(data_blocks_to_save), _streaming_dependency, data_block_size);
 	}
 	data_blocks_to_load.clear();
 	data_blocks_to_save.clear();

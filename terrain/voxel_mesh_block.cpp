@@ -181,10 +181,6 @@ void VoxelMeshBlock::set_mesh_state(MeshState ms) {
 	_mesh_state = ms;
 }
 
-void VoxelMeshBlock::set_mesh_state_if_equal(MeshState previous_state, MeshState new_state) {
-	_mesh_state.compare_exchange_strong(previous_state, new_state);
-}
-
 VoxelMeshBlock::MeshState VoxelMeshBlock::get_mesh_state() const {
 	return _mesh_state;
 }

@@ -43,10 +43,29 @@ public:
 	// Functions also used outside of this task
 
 	static void flush_pending_lod_edits(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
-			Ref<VoxelGenerator> generator, bool full_load_mode);
+			Ref<VoxelGenerator> generator, bool full_load_mode, const int mesh_block_size);
 
 	static uint8_t get_transition_mask(
 			const VoxelLodTerrainUpdateData::State &state, Vector3i block_pos, int lod_index, unsigned int lod_count);
+
+	// To use on loaded blocks
+	static inline void schedule_mesh_update(VoxelLodTerrainUpdateData::MeshBlockState &block, Vector3i bpos,
+			std::vector<Vector3i> &blocks_pending_update) {
+		if (block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT) {
+			if (block.active) {
+				// Schedule an update
+				block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+				blocks_pending_update.push_back(bpos);
+			} else {
+				// Just mark it as needing update, so the visibility system will schedule its update when needed
+				block.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
+			}
+		}
+	}
+
+	static void send_block_save_requests(uint32_t volume_id,
+			Span<VoxelLodTerrainUpdateData::BlockToSave> blocks_to_save,
+			std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size);
 
 private:
 	std::shared_ptr<VoxelDataLodMap> _data;

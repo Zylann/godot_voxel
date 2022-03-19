@@ -193,12 +193,6 @@ public:
 	void restart_stream() override;
 	void remesh_all_blocks() override;
 
-	struct BlockToSave {
-		std::shared_ptr<VoxelBufferInternal> voxels;
-		Vector3i position;
-		uint8_t lod;
-	};
-
 	// Debugging
 
 	Array debug_raycast_mesh_block(Vector3 world_origin, Vector3 world_direction) const;
@@ -268,7 +262,7 @@ private:
 	void save_all_modified_blocks(bool with_copy);
 
 	// TODO Put in common with VoxelLodTerrainUpdateTask
-	void send_block_save_requests(Span<BlockToSave> blocks_to_save);
+	// void send_block_save_requests(Span<BlockToSave> blocks_to_save);
 
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
@@ -294,6 +288,8 @@ private:
 
 	Ref<Material> _material;
 	std::vector<Ref<ShaderMaterial>> _shader_material_pool;
+
+	FixedArray<VoxelMeshMap, constants::MAX_LOD> _mesh_maps_per_lod;
 
 	bool _generate_collisions = true;
 	unsigned int _collision_lod_count = 0;
