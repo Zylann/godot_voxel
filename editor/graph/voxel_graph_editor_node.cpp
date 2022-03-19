@@ -112,7 +112,7 @@ void VoxelGraphEditorNode::poll_default_inputs(const VoxelGeneratorGraph &graph)
 			const Variant current_value = graph.get_node_default_input(loc.node_id, loc.port_index);
 			// Only update when it changes so we don't spam editor redraws
 			if (input_hint.last_value != current_value) {
-				input_hint.label->set_text(prefix + current_value);
+				input_hint.label->set_text(prefix + String(current_value));
 				input_hint.last_value = current_value;
 			}
 		}
