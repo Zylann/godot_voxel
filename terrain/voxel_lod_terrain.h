@@ -97,8 +97,8 @@ public:
 
 	template <typename F>
 	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
-		const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
-		if (_full_load_mode == false && !is_area_editable(voxel_box)) {
+		const Box3i voxel_box = p_voxel_box.clipped(get_voxel_bounds());
+		if (is_full_load_mode_enabled() == false && !is_area_editable(voxel_box)) {
 			PRINT_VERBOSE("Area not editable");
 			return;
 		}
@@ -119,8 +119,8 @@ public:
 
 	template <typename F>
 	void write_box_2(const Box3i &p_voxel_box, unsigned int channel1, unsigned int channel2, F action) {
-		const Box3i voxel_box = p_voxel_box.clipped(_bounds_in_voxels);
-		if (_full_load_mode == false && !is_area_editable(voxel_box)) {
+		const Box3i voxel_box = p_voxel_box.clipped(get_voxel_bounds());
+		if (is_full_load_mode_enabled() == false && !is_area_editable(voxel_box)) {
 			PRINT_VERBOSE("Area not editable");
 			return;
 		}
