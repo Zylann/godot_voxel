@@ -213,7 +213,7 @@ unsigned int VoxelLodTerrain::get_mesh_block_size() const {
 }
 
 void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
-	if (p_stream == _streaming_dependency->stream) {
+	if (p_stream == _stream) {
 		return;
 	}
 
@@ -247,9 +247,11 @@ Ref<VoxelStream> VoxelLodTerrain::get_stream() const {
 }
 
 void VoxelLodTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
-	if (p_generator == _streaming_dependency->generator) {
+	if (p_generator == _generator) {
 		return;
 	}
+
+	_generator = p_generator;
 
 	_meshing_dependency->valid = false;
 	_meshing_dependency = gd_make_shared<MeshingDependency>();
