@@ -1235,7 +1235,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 template <typename T>
 bool thread_safe_contains(const std::unordered_set<T> &set, T v, BinaryMutex &mutex) {
 	MutexLock lock(mutex);
-	std::unordered_set<T>::iterator it = set.find(v);
+	typename std::unordered_set<T>::iterator it = set.find(v);
 	return it != set.end();
 }
 
