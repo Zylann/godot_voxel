@@ -43,21 +43,6 @@ unsigned int VoxelMeshMap::get_lod_index() const {
 	return _lod_index;
 }
 
-// VoxelMeshBlock *VoxelMeshMap::create_default_block(Vector3i bpos) {
-// 	VoxelMeshBlock *block = VoxelMeshBlock::create(bpos, _block_size, _lod_index);
-// 	set_block(bpos, block);
-// 	return block;
-// }
-
-// VoxelMeshBlock *VoxelMeshMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
-// 	Vector3i bpos = voxel_to_block(pos);
-// 	VoxelMeshBlock *block = get_block(bpos);
-// 	if (block == nullptr) {
-// 		block = create_default_block(bpos);
-// 	}
-// 	return block;
-// }
-
 VoxelMeshBlock *VoxelMeshMap::get_block(Vector3i bpos) {
 	if (_last_accessed_block && _last_accessed_block->position == bpos) {
 		return _last_accessed_block;
