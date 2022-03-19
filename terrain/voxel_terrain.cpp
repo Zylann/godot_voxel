@@ -935,7 +935,7 @@ void VoxelTerrain::notify_data_block_enter(VoxelDataBlock &block, uint32_t viewe
 	_data_block_enter_info_obj->network_peer_id = VoxelServer::get_singleton()->get_viewer_network_peer_id(viewer_id);
 	_data_block_enter_info_obj->voxel_block = &block;
 
-	if (!GDVIRTUAL_CALL(_on_data_block_enter, _data_block_enter_info_obj.get())) {
+	if (!GDVIRTUAL_CALL(_on_data_block_entered, _data_block_enter_info_obj.get())) {
 		WARN_PRINT_ONCE("VoxelTerrain::notify_data_block_enter is unimplemented!");
 	}
 }
@@ -1625,7 +1625,7 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("has_data_block", "block_position"), &VoxelTerrain::has_data_block);
 
-	GDVIRTUAL_BIND(_on_data_block_enter, "info");
+	GDVIRTUAL_BIND(_on_data_block_entered, "info");
 	GDVIRTUAL_BIND(_on_area_edited, "area_origin", "area_size");
 
 	ADD_GROUP("Bounds", "");
