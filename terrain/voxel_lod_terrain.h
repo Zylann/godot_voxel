@@ -178,14 +178,21 @@ public:
 	Ref<VoxelTool> get_voxel_tool();
 
 	struct Stats {
-		int blocked_lods = 0;
-		int updated_blocks = 0;
-		int dropped_block_loads = 0;
-		int dropped_block_meshs = 0;
+		// Amount of octree nodes waiting for data. It should reach zero when everything is loaded.
+		uint32_t blocked_lods = 0;
+		// How many data blocks were rejected this frame (due to loading too late for example).
+		uint32_t dropped_block_loads = 0;
+		// How many mesh blocks were rejected this frame (due to loading too late for example).
+		uint32_t dropped_block_meshs = 0;
+		// Time spent in the last update unloading unused blocks and detecting required ones, in microseconds
 		uint32_t time_detect_required_blocks = 0;
-		uint32_t time_request_blocks_to_load = 0;
-		uint32_t time_process_load_responses = 0;
-		uint32_t time_request_blocks_to_update = 0;
+		// Time spent in the last update requesting data blocks, in microseconds
+		uint32_t time_io_requests = 0;
+		// Time spent in the last update requesting meshes, in microseconds
+		uint32_t time_mesh_requests = 0;
+		// Total time spent in the last update task, in microseconds.
+		// This only includes the threadable part, not the whole `process` function.
+		uint32_t time_update_task = 0;
 	};
 
 	const Stats &get_stats() const;

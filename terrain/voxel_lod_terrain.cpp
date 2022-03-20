@@ -1086,6 +1086,9 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 void VoxelLodTerrain::_process(float delta) {
 	VOXEL_PROFILE_SCOPE();
 
+	_stats.dropped_block_loads = 0;
+	_stats.dropped_block_meshs = 0;
+
 	if (get_lod_count() == 0) {
 		// If there isn't a LOD 0, there is nothing to load
 		return;
@@ -1232,6 +1235,12 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 		return false;
 	});
+
+	_stats.blocked_lods = state.stats.blocked_lods;
+	_stats.time_detect_required_blocks = state.stats.time_detect_required_blocks;
+	_stats.time_io_requests = state.stats.time_io_requests;
+	_stats.time_mesh_requests = state.stats.time_mesh_requests;
+	_stats.time_update_task = state.stats.time_total;
 }
 
 template <typename T>
@@ -1650,16 +1659,18 @@ Dictionary VoxelLodTerrain::_b_get_statistics() const {
 		deferred_collision_updates += _deferred_collision_updates_per_lod[lod_index].size();
 	}
 
-	// Breakdown of time spent in _process
-	d["time_detect_required_blocks"] = _stats.time_detect_required_blocks;
-	d["time_request_blocks_to_load"] = _stats.time_request_blocks_to_load;
-	d["time_process_load_responses"] = _stats.time_process_load_responses;
-	d["time_request_blocks_to_update"] = _stats.time_request_blocks_to_update;
+	// Breakdown of information and time spent in _process and the update task.
 
+	// Update task
+	d["time_detect_required_blocks"] = _stats.time_detect_required_blocks;
+	d["time_io_requests"] = _stats.time_io_requests;
+	d["time_mesh_requests"] = _stats.time_mesh_requests;
+	d["time_update_task"] = _stats.time_update_task;
+	d["blocked_lods"] = _stats.blocked_lods;
+
+	// Process
 	d["dropped_block_loads"] = _stats.dropped_block_loads;
 	d["dropped_block_meshs"] = _stats.dropped_block_meshs;
-	d["updated_blocks"] = _stats.updated_blocks;
-	d["blocked_lods"] = _stats.blocked_lods;
 
 	return d;
 }

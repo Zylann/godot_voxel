@@ -126,6 +126,14 @@ struct VoxelLodTerrainUpdateData {
 		Box3i box;
 	};
 
+	struct Stats {
+		uint32_t blocked_lods;
+		uint32_t time_detect_required_blocks;
+		uint32_t time_io_requests;
+		uint32_t time_mesh_requests;
+		uint32_t time_total;
+	};
+
 	// Data modified by the update task
 	struct State {
 		// This terrain type is a sparse grid of octrees.
@@ -146,6 +154,8 @@ struct VoxelLodTerrainUpdateData {
 		std::vector<AsyncEdit> pending_async_edits;
 		BinaryMutex pending_async_edits_mutex;
 		std::vector<RunningAsyncEdit> running_async_edits;
+
+		Stats stats;
 	};
 
 	// Set to true when the update task is finished

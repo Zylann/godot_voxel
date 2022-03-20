@@ -6,6 +6,7 @@
 #include "../server/voxel_server.h"
 #include "../util/godot/funcs.h"
 #include "../util/profiling.h"
+#include "../util/profiling_clock.h"
 
 namespace zylann::voxel {
 
@@ -968,7 +969,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 
 		// Ideally, this stat should stabilize to zero.
 		// If not, something in block management prevents LODs from properly show up and should be fixed.
-		//_stats.blocked_lods += octree_actions.blocked_count;
+		state.stats.blocked_lods += octree_actions.blocked_count;
 	}
 
 	{
@@ -1327,6 +1328,14 @@ static void process_async_edits(VoxelLodTerrainUpdateData::State &state,
 void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	VOXEL_PROFILE_SCOPE();
 
+	struct SetCompleteOnScopeExit {
+		std::atomic_bool &_complete;
+		SetCompleteOnScopeExit(std::atomic_bool &b) : _complete(b) {}
+		~SetCompleteOnScopeExit() {
+			_complete = true;
+		}
+	};
+
 	CRASH_COND(_update_data == nullptr);
 	CRASH_COND(_data == nullptr);
 	CRASH_COND(_streaming_dependency == nullptr);
@@ -1338,6 +1347,11 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	VoxelDataLodMap &data = *_data;
 	Ref<VoxelGenerator> generator = _streaming_dependency->generator;
 	Ref<VoxelStream> stream = _streaming_dependency->stream;
+	ProfilingClock profiling_clock;
+	ProfilingClock profiling_clock_total;
+
+	const bool stream_enabled = (stream.is_valid() || generator.is_valid()) &&
+			(Engine::get_singleton()->is_editor_hint() == false || settings.run_stream_in_editor);
 
 	CRASH_COND(data.lod_count != update_data.settings.lod_count);
 
@@ -1349,6 +1363,8 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 		CRASH_COND(lod.mesh_blocks_to_deactivate.size() != 0);
 	}
 
+	SetCompleteOnScopeExit scoped_complete(update_data.task_is_complete);
+
 	CRASH_COND_MSG(update_data.task_is_complete, "Expected only one update task to run on a given volume");
 	MutexLock mutex_lock(update_data.completion_mutex);
 
@@ -1358,47 +1374,56 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	flush_pending_lod_edits(state, data, generator, settings.full_load_mode, 1 << settings.mesh_block_size_po2);
 
 	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockToSave> data_blocks_to_save;
-
-	// Unload data blocks falling out of block region extent
-	if (update_data.settings.full_load_mode == false) {
-		process_unload_data_blocks_sliding_box(
-				state, data, _viewer_pos, data_blocks_to_save, stream.is_valid(), settings);
-	}
-
-	// Unload mesh blocks falling out of block region extent
-	process_unload_mesh_blocks_sliding_box(state, _viewer_pos, settings);
-
-	// Create and remove octrees in a grid around the viewer.
-	// Mesh blocks drive the loading of voxel data and visuals.
-	process_octrees_sliding_box(state, _viewer_pos, settings);
-
-	const bool stream_enabled = (stream.is_valid() || generator.is_valid()) &&
-			(Engine::get_singleton()->is_editor_hint() == false || settings.run_stream_in_editor);
-
 	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockLocation> data_blocks_to_load;
 	data_blocks_to_load.clear();
 
-	// Find which blocks we need to load and see, within each octree
-	if (stream_enabled) {
-		process_octrees_fitting(state, settings, data, _viewer_pos, data_blocks_to_load);
+	profiling_clock.restart();
+	{
+		// Unload data blocks falling out of block region extent
+		if (update_data.settings.full_load_mode == false) {
+			process_unload_data_blocks_sliding_box(
+					state, data, _viewer_pos, data_blocks_to_save, stream.is_valid(), settings);
+		}
+
+		// Unload mesh blocks falling out of block region extent
+		process_unload_mesh_blocks_sliding_box(state, _viewer_pos, settings);
+
+		// Create and remove octrees in a grid around the viewer.
+		// Mesh blocks drive the loading of voxel data and visuals.
+		process_octrees_sliding_box(state, _viewer_pos, settings);
+
+		state.stats.blocked_lods = 0;
+
+		// Find which blocks we need to load and see, within each octree
+		if (stream_enabled) {
+			process_octrees_fitting(state, settings, data, _viewer_pos, data_blocks_to_load);
+		}
 	}
+	state.stats.time_detect_required_blocks = profiling_clock.restart();
 
 	process_async_edits(
 			state, settings, data, _volume_id, _streaming_dependency, _shared_viewers_data, _volume_transform);
 
-	// It's possible the user didn't set a stream yet, or it is turned off
-	if (stream_enabled) {
-		const unsigned int data_block_size = data.lods[0].map.get_block_size();
-		send_block_data_requests(_volume_id, to_span_const(data_blocks_to_load), _streaming_dependency,
-				_shared_viewers_data, data_block_size, _request_instances, _volume_transform, settings.lod_distance);
-		send_block_save_requests(_volume_id, to_span(data_blocks_to_save), _streaming_dependency, data_block_size);
+	profiling_clock.restart();
+	{
+		// It's possible the user didn't set a stream yet, or it is turned off
+		if (stream_enabled) {
+			const unsigned int data_block_size = data.lods[0].map.get_block_size();
+			send_block_data_requests(_volume_id, to_span_const(data_blocks_to_load), _streaming_dependency,
+					_shared_viewers_data, data_block_size, _request_instances, _volume_transform,
+					settings.lod_distance);
+			send_block_save_requests(_volume_id, to_span(data_blocks_to_save), _streaming_dependency, data_block_size);
+		}
+		data_blocks_to_load.clear();
+		data_blocks_to_save.clear();
 	}
-	data_blocks_to_load.clear();
-	data_blocks_to_save.clear();
+	state.stats.time_io_requests = profiling_clock.restart();
 
+	// TODO Don't request meshes if there is no mesher
 	send_mesh_requests(_volume_id, state, settings, data, _meshing_dependency, _shared_viewers_data, _volume_transform);
+	state.stats.time_mesh_requests = profiling_clock.restart();
 
-	update_data.task_is_complete = true;
+	state.stats.time_total = profiling_clock.restart();
 }
 
 } // namespace zylann::voxel
