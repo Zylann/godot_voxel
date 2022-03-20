@@ -936,7 +936,7 @@ void VoxelTerrain::notify_data_block_enter(VoxelDataBlock &block, uint32_t viewe
 	_data_block_enter_info_obj->voxel_block = &block;
 
 	if (!GDVIRTUAL_CALL(_on_data_block_entered, _data_block_enter_info_obj.get())) {
-		WARN_PRINT_ONCE("VoxelTerrain::notify_data_block_enter is unimplemented!");
+		WARN_PRINT_ONCE("VoxelTerrain::_on_data_block_entered is unimplemented!");
 	}
 }
 
