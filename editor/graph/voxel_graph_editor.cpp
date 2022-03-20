@@ -723,6 +723,11 @@ void VoxelGraphEditor::update_slice_previews() {
 		Image &im = **info.control->get_image();
 		ERR_FAIL_COND(im.get_width() * im.get_height() != static_cast<int>(buffer.size));
 
+		// TODO Support debugging inputs
+		ERR_CONTINUE_MSG(buffer.data == nullptr,
+				buffer.is_binding ? "Plugging a debug view on an input is not supported yet."
+								  : "Didn't expect buffer to be null");
+
 		unsigned int i = 0;
 		for (int y = 0; y < im.get_height(); ++y) {
 			for (int x = 0; x < im.get_width(); ++x) {
