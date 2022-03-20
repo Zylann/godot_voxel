@@ -4,7 +4,16 @@ def can_build(env, platform):
 
 
 def configure(env):
-    pass
+    from SCons.Script import BoolVariable, Variables, Help
+
+    env_vars = Variables()
+
+    env_vars.Add(BoolVariable("voxel_tests", 
+        "Build with tests for the voxel module, which will run on startup of the engine", False))
+
+    env_vars.Update(env)
+    Help(env_vars.GenerateHelpText(env))
+
 
 def get_icons_path():
     return "editor/icons"

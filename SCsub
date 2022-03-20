@@ -4,9 +4,7 @@ Import('env_modules')
 # Note, support for FastNoise2 requires C++17
 FAST_NOISE_2_SRC = True
 
-RUN_TESTS = False
-if env['target'] == 'debug':
-	RUN_TESTS = True
+RUN_TESTS = env["voxel_tests"]
 
 env_voxel = env_modules.Clone()
 
