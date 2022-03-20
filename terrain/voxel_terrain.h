@@ -168,8 +168,8 @@ private:
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
 	void send_block_data_requests();
 
-	void emit_data_block_loaded(const VoxelDataBlock *block);
-	void emit_data_block_unloaded(const VoxelDataBlock *block);
+	void emit_data_block_loaded(const VoxelDataBlock &block);
+	void emit_data_block_unloaded(const VoxelDataBlock &block);
 
 	bool try_get_paired_viewer_index(uint32_t id, size_t &out_i) const;
 

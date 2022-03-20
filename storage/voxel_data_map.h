@@ -78,7 +78,7 @@ public:
 	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite);
 
 	struct NoAction {
-		inline void operator()(VoxelDataBlock *block) {}
+		inline void operator()(VoxelDataBlock &block) {}
 	};
 
 	template <typename Action_T>
@@ -91,7 +91,7 @@ public:
 #endif
 			VoxelDataBlock *block = _blocks[i];
 			ERR_FAIL_COND(block == nullptr);
-			pre_delete(block);
+			pre_delete(*block);
 			memdelete(block);
 			remove_block_internal(bpos, i);
 		}
@@ -110,14 +110,22 @@ public:
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) {
 		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-			op(*it);
+			VoxelDataBlock *block = *it;
+#ifdef DEBUG_ENABLED
+			CRASH_COND(block == nullptr);
+#endif
+			op(*block);
 		}
 	}
 
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) const {
 		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-			op(*it);
+			const VoxelDataBlock *block = *it;
+#ifdef DEBUG_ENABLED
+			CRASH_COND(block == nullptr);
+#endif
+			op(*block);
 		}
 	}
 

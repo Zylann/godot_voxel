@@ -578,21 +578,21 @@ struct ScheduleSaveAction {
 	std::vector<VoxelTerrain::BlockToSave> &blocks_to_save;
 	bool with_copy;
 
-	void operator()(VoxelDataBlock *block) {
+	void operator()(VoxelDataBlock &block) {
 		// TODO Don't ask for save if the stream doesn't support it!
-		if (block->is_modified()) {
+		if (block.is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelTerrain::BlockToSave b;
 			if (with_copy) {
-				RWLockRead lock(block->get_voxels().get_lock());
+				RWLockRead lock(block.get_voxels().get_lock());
 				b.voxels = gd_make_shared<VoxelBufferInternal>();
-				block->get_voxels_const().duplicate_to(*b.voxels, true);
+				block.get_voxels_const().duplicate_to(*b.voxels, true);
 			} else {
-				b.voxels = block->get_voxels_shared();
+				b.voxels = block.get_voxels_shared();
 			}
-			b.position = block->position;
+			b.position = block.position;
 			blocks_to_save.push_back(b);
-			block->set_modified(false);
+			block.set_modified(false);
 		}
 	}
 };
@@ -601,7 +601,7 @@ struct ScheduleSaveAction {
 void VoxelTerrain::unload_data_block(Vector3i bpos) {
 	const bool save = _stream.is_valid() && (!Engine::get_singleton()->is_editor_hint() || _run_stream_in_editor);
 
-	_data_map.remove_block(bpos, [this, bpos, save](VoxelDataBlock *block) {
+	_data_map.remove_block(bpos, [this, bpos, save](VoxelDataBlock &block) {
 		emit_data_block_unloaded(block);
 		if (save) {
 			// Note: no need to copy the block because it gets removed from the map anyways
@@ -739,7 +739,7 @@ void VoxelTerrain::stop_streamer() {
 void VoxelTerrain::reset_map() {
 	// Discard everything, to reload it all
 
-	_data_map.for_each_block([this](VoxelDataBlock *block) { //
+	_data_map.for_each_block([this](VoxelDataBlock &block) { //
 		emit_data_block_unloaded(block);
 	});
 	_data_map.create(get_data_block_size_pow2(), 0);
@@ -890,7 +890,7 @@ void VoxelTerrain::send_block_data_requests() {
 	_blocks_to_save.clear();
 }
 
-void VoxelTerrain::emit_data_block_loaded(const VoxelDataBlock *block) {
+void VoxelTerrain::emit_data_block_loaded(const VoxelDataBlock &block) {
 	// Not sure about exposing buffers directly... some stuff on them is useful to obtain directly,
 	// but also it allows scripters to mess with voxels in a way they should not.
 	// Example: modifying voxels without locking them first, while another thread may be reading them at the same
@@ -900,13 +900,13 @@ void VoxelTerrain::emit_data_block_loaded(const VoxelDataBlock *block) {
 	// absolutely necessary, buffers aren't exposed. Workaround: use VoxelTool
 	//const Variant vbuffer = block->voxels;
 	//const Variant *args[2] = { &vpos, &vbuffer };
-	emit_signal(VoxelStringNames::get_singleton()->block_loaded, block->position);
+	emit_signal(VoxelStringNames::get_singleton()->block_loaded, block.position);
 }
 
-void VoxelTerrain::emit_data_block_unloaded(const VoxelDataBlock *block) {
+void VoxelTerrain::emit_data_block_unloaded(const VoxelDataBlock &block) {
 	// const Variant vbuffer = block->voxels;
 	// const Variant *args[2] = { &vpos, &vbuffer };
-	emit_signal(VoxelStringNames::get_singleton()->block_unloaded, block->position);
+	emit_signal(VoxelStringNames::get_singleton()->block_unloaded, block.position);
 }
 
 bool VoxelTerrain::try_get_paired_viewer_index(uint32_t id, size_t &out_i) const {
@@ -1228,6 +1228,7 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 	VoxelDataBlock *block = _data_map.get_block(block_pos);
 	const bool was_not_loaded = block == nullptr;
 	block = _data_map.set_block_buffer(block_pos, ob.voxels, true);
+	CRASH_COND(block == nullptr);
 
 	block->set_edited(ob.type == VoxelServer::BlockDataOutput::TYPE_LOADED);
 
@@ -1236,7 +1237,7 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 		block->viewers = loading_block.viewers;
 	}
 
-	emit_data_block_loaded(block);
+	emit_data_block_loaded(*block);
 
 	for (unsigned int i = 0; i < loading_block.viewers_to_notify.size(); ++i) {
 		const uint32_t viewer_id = loading_block.viewers_to_notify[i];
@@ -1527,7 +1528,7 @@ void VoxelTerrain::_b_save_block(Vector3i p_block_pos) {
 		return;
 	}
 
-	ScheduleSaveAction{ _blocks_to_save, true }(block);
+	ScheduleSaveAction{ _blocks_to_save, true }(*block);
 }
 
 void VoxelTerrain::_b_set_bounds(AABB aabb) {

@@ -166,16 +166,16 @@ struct BeforeUnloadDataAction {
 	std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save;
 	bool save;
 
-	void operator()(VoxelDataBlock *block) {
+	void operator()(VoxelDataBlock &block) {
 		// Save if modified
 		// TODO Don't ask for save if the stream doesn't support it!
-		if (save && block->is_modified()) {
+		if (save && block.is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelLodTerrainUpdateData::BlockToSave b;
 			// We don't copy since the block will be unloaded anyways
-			b.voxels = block->get_voxels_shared();
-			b.position = block->position;
-			b.lod = block->lod_index;
+			b.voxels = block.get_voxels_shared();
+			b.position = block.position;
+			b.lod = block.lod_index;
 			blocks_to_save.push_back(b);
 		}
 	}

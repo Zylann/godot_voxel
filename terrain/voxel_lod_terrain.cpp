@@ -90,23 +90,23 @@ struct BeforeUnloadMeshAction {
 struct ScheduleSaveAction {
 	std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save;
 
-	void operator()(VoxelDataBlock *block) {
+	void operator()(VoxelDataBlock &block) {
 		// Save if modified
 		// TODO Don't ask for save if the stream doesn't support it!
-		if (block->is_modified()) {
+		if (block.is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelLodTerrainUpdateData::BlockToSave b;
 
 			b.voxels = gd_make_shared<VoxelBufferInternal>();
 			{
-				RWLockRead lock(block->get_voxels().get_lock());
-				block->get_voxels_const().duplicate_to(*b.voxels, true);
+				RWLockRead lock(block.get_voxels().get_lock());
+				block.get_voxels_const().duplicate_to(*b.voxels, true);
 			}
 
-			b.position = block->position;
-			b.lod = block->lod_index;
+			b.position = block.position;
+			b.lod = block.lod_index;
 			blocks_to_save.push_back(b);
-			block->set_modified(false);
+			block.set_modified(false);
 		}
 	}
 };
@@ -2041,10 +2041,10 @@ void VoxelLodTerrain::update_gizmos() {
 		const Basis basis(Basis().scaled(Vector3(data_block_size, data_block_size, data_block_size)));
 
 		RWLockRead rlock(data_lod.map_lock);
-		data_lod.map.for_each_block([&dr, parent_transform, data_block_size, basis](const VoxelDataBlock *block) {
-			const Transform3D local_transform(basis, block->position * data_block_size);
+		data_lod.map.for_each_block([&dr, parent_transform, data_block_size, basis](const VoxelDataBlock &block) {
+			const Transform3D local_transform(basis, block.position * data_block_size);
 			const Transform3D t = parent_transform * local_transform;
-			const Color8 c = Color8(block->is_modified() ? 255 : 0, 255, 0, 255);
+			const Color8 c = Color8(block.is_modified() ? 255 : 0, 255, 0, 255);
 			dr.draw_box_mm(t, c);
 		});
 	}
