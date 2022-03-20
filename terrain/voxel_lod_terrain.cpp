@@ -76,13 +76,13 @@ Ref<ArrayMesh> build_mesh(
 struct BeforeUnloadMeshAction {
 	std::vector<Ref<ShaderMaterial>> &shader_material_pool;
 
-	void operator()(VoxelMeshBlock *block) {
+	void operator()(VoxelMeshBlock &block) {
 		VOXEL_PROFILE_SCOPE_NAMED("Recycle material");
 		// Recycle material
-		Ref<ShaderMaterial> sm = block->get_shader_material();
+		Ref<ShaderMaterial> sm = block.get_shader_material();
 		if (sm.is_valid()) {
 			shader_material_pool.push_back(sm);
-			block->set_shader_material(Ref<ShaderMaterial>());
+			block.set_shader_material(Ref<ShaderMaterial>());
 		}
 	}
 };
@@ -289,8 +289,8 @@ Ref<VoxelGenerator> VoxelLodTerrain::get_generator() const {
 void VoxelLodTerrain::_on_gi_mode_changed() {
 	const GIMode gi_mode = get_gi_mode();
 	for (unsigned int lod_index = 0; lod_index < _update_data->state.lods.size(); ++lod_index) {
-		_mesh_maps_per_lod[lod_index].for_each_block([gi_mode](VoxelMeshBlock *block) { //
-			block->set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
+		_mesh_maps_per_lod[lod_index].for_each_block([gi_mode](VoxelMeshBlock &block) { //
+			block.set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
 		});
 	}
 }
@@ -406,8 +406,8 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 		if (_instancer != nullptr) {
 			// Unload instances
 			VoxelInstancer *instancer = _instancer;
-			mesh_map.for_each_block([lod_index, instancer](VoxelMeshBlock *block) {
-				instancer->on_mesh_block_exit(block->position, lod_index);
+			mesh_map.for_each_block([lod_index, instancer](VoxelMeshBlock &block) {
+				instancer->on_mesh_block_exit(block.position, lod_index);
 			});
 		}
 		// Unload mesh blocks
@@ -879,8 +879,8 @@ void VoxelLodTerrain::set_collision_layer(int layer) {
 	_collision_layer = layer;
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-		mesh_map.for_each_block([layer](VoxelMeshBlock *block) { //
-			block->set_collision_layer(layer);
+		mesh_map.for_each_block([layer](VoxelMeshBlock &block) { //
+			block.set_collision_layer(layer);
 		});
 	}
 }
@@ -895,8 +895,8 @@ void VoxelLodTerrain::set_collision_mask(int mask) {
 	_collision_mask = mask;
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-		mesh_map.for_each_block([mask](VoxelMeshBlock *block) { //
-			block->set_collision_mask(mask);
+		mesh_map.for_each_block([mask](VoxelMeshBlock &block) { //
+			block.set_collision_mask(mask);
 		});
 	}
 }
@@ -911,8 +911,8 @@ void VoxelLodTerrain::set_collision_margin(float margin) {
 	_collision_margin = margin;
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-		mesh_map.for_each_block([margin](VoxelMeshBlock *block) { //
-			block->set_collision_margin(margin);
+		mesh_map.for_each_block([margin](VoxelMeshBlock &block) { //
+			block.set_collision_margin(margin);
 		});
 	}
 }
@@ -984,8 +984,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-				mesh_map.for_each_block([world](VoxelMeshBlock *block) { //
-					block->set_world(world);
+				mesh_map.for_each_block([world](VoxelMeshBlock &block) { //
+					block.set_world(world);
 				});
 			}
 #ifdef TOOLS_ENABLED
@@ -1001,8 +1001,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-				mesh_map.for_each_block([](VoxelMeshBlock *block) { //
-					block->set_world(nullptr);
+				mesh_map.for_each_block([](VoxelMeshBlock &block) { //
+					block.set_world(nullptr);
 				});
 			}
 #ifdef TOOLS_ENABLED
@@ -1016,8 +1016,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-				mesh_map.for_each_block([visible](VoxelMeshBlock *block) { //
-					block->set_parent_visible(visible);
+				mesh_map.for_each_block([visible](VoxelMeshBlock &block) { //
+					block.set_parent_visible(visible);
 				});
 			}
 
@@ -1044,8 +1044,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-				mesh_map.for_each_block([&transform](VoxelMeshBlock *block) { //
-					block->set_parent_transform(transform);
+				mesh_map.for_each_block([&transform](VoxelMeshBlock &block) { //
+					block.set_parent_transform(transform);
 				});
 			}
 		} break;
@@ -1608,9 +1608,9 @@ void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, std::vect
 
 	const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
 
-	mesh_map.for_each_block([&out_positions](const VoxelMeshBlock *block) {
-		if (block->has_mesh()) {
-			out_positions.push_back(block->position);
+	mesh_map.for_each_block([&out_positions](const VoxelMeshBlock &block) {
+		if (block.has_mesh()) {
+			out_positions.push_back(block.position);
 		}
 	});
 }
@@ -2133,8 +2133,8 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instanc
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
 
-		mesh_map.for_each_block([root](const VoxelMeshBlock *block) {
-			block->for_each_mesh_instance_with_transform([root, block](const DirectMeshInstance &dmi, Transform3D t) {
+		mesh_map.for_each_block([root](const VoxelMeshBlock &block) {
+			block.for_each_mesh_instance_with_transform([root, &block](const DirectMeshInstance &dmi, Transform3D t) {
 				Ref<Mesh> mesh = dmi.get_mesh();
 
 				if (mesh.is_valid()) {
@@ -2142,7 +2142,7 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instanc
 					mi->set_mesh(mesh);
 					mi->set_transform(t);
 					// TODO Transition mesh visibility?
-					mi->set_visible(block->is_visible());
+					mi->set_visible(block.is_visible());
 					root->add_child(mi);
 					// The owner must be set after adding to parent
 					mi->set_owner(root);

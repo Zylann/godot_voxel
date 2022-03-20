@@ -263,8 +263,8 @@ void VoxelTerrain::_on_stream_params_changed() {
 
 void VoxelTerrain::_on_gi_mode_changed() {
 	const GIMode gi_mode = get_gi_mode();
-	_mesh_map.for_each_block([gi_mode](VoxelMeshBlock *block) { //
-		block->set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
+	_mesh_map.for_each_block([gi_mode](VoxelMeshBlock &block) { //
+		block.set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
 	});
 }
 
@@ -316,8 +316,8 @@ void VoxelTerrain::set_generate_collisions(bool enabled) {
 
 void VoxelTerrain::set_collision_layer(int layer) {
 	_collision_layer = layer;
-	_mesh_map.for_each_block([layer](VoxelMeshBlock *block) { //
-		block->set_collision_layer(layer);
+	_mesh_map.for_each_block([layer](VoxelMeshBlock &block) { //
+		block.set_collision_layer(layer);
 	});
 }
 
@@ -327,8 +327,8 @@ int VoxelTerrain::get_collision_layer() const {
 
 void VoxelTerrain::set_collision_mask(int mask) {
 	_collision_mask = mask;
-	_mesh_map.for_each_block([mask](VoxelMeshBlock *block) { //
-		block->set_collision_mask(mask);
+	_mesh_map.for_each_block([mask](VoxelMeshBlock &block) { //
+		block.set_collision_mask(mask);
 	});
 }
 
@@ -338,8 +338,8 @@ int VoxelTerrain::get_collision_mask() const {
 
 void VoxelTerrain::set_collision_margin(float margin) {
 	_collision_margin = margin;
-	_mesh_map.for_each_block([margin](VoxelMeshBlock *block) { //
-		block->set_collision_margin(margin);
+	_mesh_map.for_each_block([margin](VoxelMeshBlock &block) { //
+		block.set_collision_margin(margin);
 	});
 }
 
@@ -400,14 +400,12 @@ Ref<Material> VoxelTerrain::get_material(unsigned int id) const {
 	return _materials[id];
 }
 
-void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock *mesh_block) {
-	CRASH_COND(mesh_block == nullptr);
-
-	if (mesh_block->get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_NOT_SENT) {
+void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock &mesh_block) {
+	if (mesh_block.get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_NOT_SENT) {
 		// Already in the list
 		return;
 	}
-	if (mesh_block->mesh_viewers.get() == 0 && mesh_block->collision_viewers.get() == 0) {
+	if (mesh_block.mesh_viewers.get() == 0 && mesh_block.collision_viewers.get() == 0) {
 		// No viewers want mesh on this block (why even call this function then?)
 		return;
 	}
@@ -416,7 +414,7 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock *mesh_block) {
 	const Box3i bounds_in_data_blocks = _bounds_in_voxels.downscaled(get_data_block_size());
 	// Pad by 1 because meshing needs neighbors
 	const Box3i data_box =
-			Box3i(mesh_block->position * render_to_data_factor, Vector3iUtil::create(render_to_data_factor))
+			Box3i(mesh_block.position * render_to_data_factor, Vector3iUtil::create(render_to_data_factor))
 					.padded(1)
 					.clipped(bounds_in_data_blocks);
 
@@ -424,13 +422,15 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock *mesh_block) {
 	ERR_FAIL_COND(data_box.is_empty());
 
 	// Check if we have the data
-	const bool data_available = data_box.all_cells_match([this](Vector3i bpos) { return _data_map.has_block(bpos); });
+	const bool data_available = data_box.all_cells_match([this](Vector3i bpos) { //
+		return _data_map.has_block(bpos);
+	});
 
 	if (data_available) {
 		// Regardless of if the updater is updating the block already,
 		// the block could have been modified again so we schedule another update
-		mesh_block->set_mesh_state(VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
-		_blocks_pending_update.push_back(mesh_block->position);
+		mesh_block.set_mesh_state(VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
+		_blocks_pending_update.push_back(mesh_block.position);
 	}
 }
 
@@ -490,6 +490,7 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 		block->set_world(get_world_3d());
 		_mesh_map.set_block(bpos, block);
 	}
+	CRASH_COND(block == nullptr);
 
 	if (mesh_flag) {
 		block->mesh_viewers.add();
@@ -501,7 +502,7 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 	// This is needed in case a viewer wants to view meshes in places data blocks are already present.
 	// Before that, meshes were updated only when a data block was loaded or modified,
 	// so changing block size or viewer flags did not make meshes appear.
-	try_schedule_mesh_update(block);
+	try_schedule_mesh_update(*block);
 
 	// TODO viewers with varying flags during the game is not supported at the moment.
 	// They have to be re-created, which may cause world re-load...
@@ -617,11 +618,11 @@ void VoxelTerrain::unload_data_block(Vector3i bpos) {
 void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 	std::vector<Vector3i> &blocks_pending_update = _blocks_pending_update;
 
-	_mesh_map.remove_block(bpos, [&blocks_pending_update](const VoxelMeshBlock *block) {
-		if (block->get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_NOT_SENT) {
+	_mesh_map.remove_block(bpos, [&blocks_pending_update](const VoxelMeshBlock &block) {
+		if (block.get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_NOT_SENT) {
 			// That block was in the list of blocks to update later in the process loop, we'll need to unregister it.
 			// We expect that block to be in that list. If it isn't, something wrong happened with its state.
-			ERR_FAIL_COND(!unordered_remove_value(blocks_pending_update, block->position));
+			ERR_FAIL_COND(!unordered_remove_value(blocks_pending_update, block.position));
 		}
 	});
 }
@@ -668,14 +669,6 @@ void VoxelTerrain::start_updater() {
 }
 
 void VoxelTerrain::stop_updater() {
-	struct ResetMeshStateAction {
-		void operator()(VoxelMeshBlock *block) {
-			if (block->get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_SENT) {
-				block->set_mesh_state(VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
-			}
-		}
-	};
-
 	VoxelServer::get_singleton()->invalidate_volume_mesh_requests(_volume_id);
 	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, Ref<VoxelMesher>());
 
@@ -684,12 +677,15 @@ void VoxelTerrain::stop_updater() {
 
 	_blocks_pending_update.clear();
 
-	ResetMeshStateAction a;
-	_mesh_map.for_each_block(a);
+	_mesh_map.for_each_block([](VoxelMeshBlock &block) {
+		if (block.get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_SENT) {
+			block.set_mesh_state(VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
+		}
+	});
 }
 
 void VoxelTerrain::remesh_all_blocks() {
-	_mesh_map.for_each_block([this](VoxelMeshBlock *block) { //
+	_mesh_map.for_each_block([this](VoxelMeshBlock &block) { //
 		try_schedule_mesh_update(block);
 	});
 }
@@ -743,7 +739,9 @@ void VoxelTerrain::stop_streamer() {
 void VoxelTerrain::reset_map() {
 	// Discard everything, to reload it all
 
-	_data_map.for_each_block([this](VoxelDataBlock *block) { emit_data_block_unloaded(block); });
+	_data_map.for_each_block([this](VoxelDataBlock *block) { //
+		emit_data_block_unloaded(block);
+	});
 	_data_map.create(get_data_block_size_pow2(), 0);
 
 	_mesh_map.create(get_mesh_block_size_pow2(), 0);
@@ -769,7 +767,7 @@ void VoxelTerrain::try_schedule_mesh_update_from_data(const Box3i &box_in_voxels
 		// There isn't necessarily a mesh block, if the edit happens in a boundary,
 		// or if it is done next to a viewer that doesn't need meshes
 		if (block != nullptr) {
-			try_schedule_mesh_update(block);
+			try_schedule_mesh_update(*block);
 		}
 	});
 }
@@ -799,16 +797,16 @@ void VoxelTerrain::_notification(int p_what) {
 	struct SetWorldAction {
 		World3D *world;
 		SetWorldAction(World3D *w) : world(w) {}
-		void operator()(VoxelMeshBlock *block) {
-			block->set_world(world);
+		void operator()(VoxelMeshBlock &block) {
+			block.set_world(world);
 		}
 	};
 
 	struct SetParentVisibilityAction {
 		bool visible;
 		SetParentVisibilityAction(bool v) : visible(v) {}
-		void operator()(VoxelMeshBlock *block) {
-			block->set_parent_visible(visible);
+		void operator()(VoxelMeshBlock &block) {
+			block.set_parent_visible(visible);
 		}
 	};
 
@@ -851,8 +849,8 @@ void VoxelTerrain::_notification(int p_what) {
 				return;
 			}
 
-			_mesh_map.for_each_block([&transform](VoxelMeshBlock *block) { //
-				block->set_parent_transform(transform);
+			_mesh_map.for_each_block([&transform](VoxelMeshBlock &block) { //
+				block.set_parent_transform(transform);
 			});
 
 		} break;

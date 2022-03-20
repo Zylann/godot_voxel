@@ -47,7 +47,7 @@ public:
 	unsigned int get_lod_index() const;
 
 	struct NoAction {
-		inline void operator()(VoxelMeshBlock *block) {}
+		inline void operator()(VoxelMeshBlock &block) {}
 	};
 
 	template <typename Action_T>
@@ -63,7 +63,7 @@ public:
 #endif
 			VoxelMeshBlock *block = _blocks[i];
 			ERR_FAIL_COND(block == nullptr);
-			pre_delete(block);
+			pre_delete(*block);
 			queue_free_mesh_block(block);
 			remove_block_internal(bpos, i);
 		}
@@ -84,16 +84,22 @@ public:
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) {
 		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-			// TODO Send a ref? We only send non-null blocks
-			op(*it);
+			VoxelMeshBlock *block = *it;
+#ifdef DEBUG_ENABLED
+			CRASH_COND(block == nullptr);
+#endif
+			op(*block);
 		}
 	}
 
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) const {
 		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-			// TODO Send a ref? We only send non-null blocks
-			op(*it);
+			const VoxelMeshBlock *block = *it;
+#ifdef DEBUG_ENABLED
+			CRASH_COND(block == nullptr);
+#endif
+			op(*block);
 		}
 	}
 

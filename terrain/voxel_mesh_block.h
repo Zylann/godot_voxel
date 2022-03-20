@@ -16,7 +16,7 @@ namespace zylann::voxel {
 
 // Stores mesh and collider for one chunk of the rendered volume.
 // It doesn't store voxel data, because it may be using different block size, or different data structure.
-class VoxelMeshBlock {
+class VoxelMeshBlock : public NonCopyable {
 public:
 	// TODO This is now only relevant for `VoxelTerrain`
 	enum MeshState {

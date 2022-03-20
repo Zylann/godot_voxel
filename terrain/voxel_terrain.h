@@ -161,7 +161,7 @@ private:
 	void unload_data_block(Vector3i bpos);
 	void unload_mesh_block(Vector3i bpos);
 	//void make_data_block_dirty(Vector3i bpos);
-	void try_schedule_mesh_update(VoxelMeshBlock *block);
+	void try_schedule_mesh_update(VoxelMeshBlock &block);
 	void try_schedule_mesh_update_from_data(const Box3i &box_in_voxels);
 
 	void save_all_modified_blocks(bool with_copy);
