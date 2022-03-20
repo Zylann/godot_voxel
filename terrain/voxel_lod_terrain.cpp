@@ -1341,6 +1341,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	}
 
 	uint8_t transition_mask;
+	bool active;
 	{
 		VoxelLodTerrainUpdateData::Lod &lod = update_data.state.lods[ob.lod];
 		RWLockRead rlock(lod.mesh_map_state.map_lock);
@@ -1362,6 +1363,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 		// The state can become "up to date" only if no other unsent update was pending.
 		VoxelLodTerrainUpdateData::MeshState expected = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
 		mesh_block_state_it->second.state.compare_exchange_strong(expected, VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
+		active = mesh_block_state_it->second.active;
 	}
 
 	// -------- Part where we invoke Godot functions ---------
@@ -1391,6 +1393,8 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 
 	if (block == nullptr) {
 		block = VoxelMeshBlock::create(ob.position, get_mesh_block_size(), ob.lod);
+		block->active = active;
+		block->set_visible(active);
 		mesh_map.set_block(ob.position, block);
 	}
 
