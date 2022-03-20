@@ -2,7 +2,7 @@
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../storage/voxel_buffer_gd.h"
-#include "../terrain/voxel_terrain.h"
+#include "../terrain/fixed_lod/voxel_terrain.h"
 #include "../util/godot/funcs.h"
 #include "../util/voxel_raycast.h"
 

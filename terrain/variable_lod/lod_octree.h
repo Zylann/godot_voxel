@@ -1,7 +1,7 @@
 #ifndef LOD_OCTREE_H
 #define LOD_OCTREE_H
 
-#include "../util/math/box3i.h"
+#include "../../util/math/box3i.h"
 
 namespace zylann::voxel {
 

@@ -45,6 +45,8 @@ voxel_files = [
 
 	"terrain/*.cpp",
 	"terrain/instancing/*.cpp",
+	"terrain/fixed_lod/*.cpp",
+	"terrain/variable_lod/*.cpp",
 
 	"server/*.cpp",
 	"edition/*.cpp",

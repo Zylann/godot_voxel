@@ -1,7 +1,7 @@
 #ifndef VOXEL_MESH_BLOCK_VLT_H
 #define VOXEL_MESH_BLOCK_VLT_H
 
-#include "voxel_mesh_block.h"
+#include "../voxel_mesh_block.h"
 
 namespace zylann::voxel {
 

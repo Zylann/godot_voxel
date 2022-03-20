@@ -1,13 +1,13 @@
 #ifndef VOXEL_LOD_TERRAIN_UPDATE_DATA_H
 #define VOXEL_LOD_TERRAIN_UPDATE_DATA_H
 
-#include "../constants/voxel_constants.h"
-#include "../generators/voxel_generator.h"
-#include "../storage/voxel_data_map.h"
-#include "../streams/voxel_stream.h"
-#include "../util/fixed_array.h"
+#include "../../constants/voxel_constants.h"
+#include "../../generators/voxel_generator.h"
+#include "../../storage/voxel_data_map.h"
+#include "../../streams/voxel_stream.h"
+#include "../../util/fixed_array.h"
+#include "../voxel_mesh_map.h"
 #include "lod_octree.h"
-#include "voxel_mesh_map.h"
 
 #include <unordered_set>
 

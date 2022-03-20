@@ -1,12 +1,12 @@
 #include "voxel_lod_terrain_update_task.h"
-#include "../server/generate_block_task.h"
-#include "../server/load_block_data_task.h"
-#include "../server/mesh_block_task.h"
-#include "../server/save_block_data_task.h"
-#include "../server/voxel_server.h"
-#include "../util/godot/funcs.h"
-#include "../util/profiling.h"
-#include "../util/profiling_clock.h"
+#include "../../server/generate_block_task.h"
+#include "../../server/load_block_data_task.h"
+#include "../../server/mesh_block_task.h"
+#include "../../server/save_block_data_task.h"
+#include "../../server/voxel_server.h"
+#include "../../util/godot/funcs.h"
+#include "../../util/profiling.h"
+#include "../../util/profiling_clock.h"
 
 namespace zylann::voxel {
 

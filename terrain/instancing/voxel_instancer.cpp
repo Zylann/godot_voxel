@@ -3,7 +3,7 @@
 #include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
-#include "../voxel_lod_terrain.h"
+#include "../variable_lod/voxel_lod_terrain.h"
 #include "voxel_instance_component.h"
 #include "voxel_instance_library_scene_item.h"
 #include "voxel_instancer_rigidbody.h"

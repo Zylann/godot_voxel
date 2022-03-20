@@ -1,19 +1,19 @@
 #ifndef VOXEL_LOD_TERRAIN_HPP
 #define VOXEL_LOD_TERRAIN_HPP
 
-#include "../server/mesh_block_task.h"
-#include "../server/voxel_server.h"
-#include "../storage/voxel_data_map.h"
+#include "../../server/mesh_block_task.h"
+#include "../../server/voxel_server.h"
+#include "../../storage/voxel_data_map.h"
+#include "../voxel_mesh_map.h"
+#include "../voxel_node.h"
 #include "lod_octree.h"
 #include "voxel_lod_terrain_update_data.h"
 #include "voxel_mesh_block_vlt.h"
-#include "voxel_mesh_map.h"
-#include "voxel_node.h"
 
 #include <unordered_set>
 
 #ifdef TOOLS_ENABLED
-#include "../editor/voxel_debug.h"
+#include "../../editor/voxel_debug.h"
 #endif
 
 namespace zylann::voxel {

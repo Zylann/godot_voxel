@@ -1,7 +1,7 @@
 #include "voxel_mesh_block_vlt.h"
-#include "../constants/voxel_string_names.h"
-#include "../util/profiling.h"
-#include "free_mesh_task.h"
+#include "../../constants/voxel_string_names.h"
+#include "../../util/profiling.h"
+#include "../free_mesh_task.h"
 
 namespace zylann::voxel {
 

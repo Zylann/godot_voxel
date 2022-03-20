@@ -1,13 +1,13 @@
 #ifndef VOXEL_TERRAIN_H
 #define VOXEL_TERRAIN_H
 
-#include "../server/voxel_server.h"
-#include "../storage/voxel_data_map.h"
-#include "../util/godot/funcs.h"
-#include "voxel_data_block_enter_info.h"
+#include "../../server/voxel_server.h"
+#include "../../storage/voxel_data_map.h"
+#include "../../util/godot/funcs.h"
+#include "../voxel_data_block_enter_info.h"
+#include "../voxel_mesh_map.h"
+#include "../voxel_node.h"
 #include "voxel_mesh_block_vt.h"
-#include "voxel_mesh_map.h"
-#include "voxel_node.h"
 
 #include <scene/3d/node_3d.h>
 
