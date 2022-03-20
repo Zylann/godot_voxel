@@ -1,71 +1,71 @@
 
 def can_build(env, platform):
-  return True
+    return True
 
 
 def configure(env):
-	pass
+    pass
 
 def get_icons_path():
-  return "editor/icons"
+    return "editor/icons"
 
 
 def get_doc_classes():
-  return [
-    "VoxelServer",
+    return [
+        "VoxelServer",
 
-    "Voxel",
-    "VoxelLibrary",
-    "VoxelColorPalette",
-    "VoxelInstanceLibrary",
-    "VoxelInstanceLibraryItem",
-    "VoxelInstanceLibraryItemBase",
-    "VoxelInstanceLibrarySceneItem",
-    "VoxelInstanceGenerator",
+        "Voxel",
+        "VoxelLibrary",
+        "VoxelColorPalette",
+        "VoxelInstanceLibrary",
+        "VoxelInstanceLibraryItem",
+        "VoxelInstanceLibraryItemBase",
+        "VoxelInstanceLibrarySceneItem",
+        "VoxelInstanceGenerator",
 
-    "VoxelBuffer",
+        "VoxelBuffer",
 
-    "VoxelNode",
-    "VoxelTerrain",
-    "VoxelLodTerrain",
-    "VoxelViewer",
-    "VoxelInstancer",
+        "VoxelNode",
+        "VoxelTerrain",
+        "VoxelLodTerrain",
+        "VoxelViewer",
+        "VoxelInstancer",
 
-    "VoxelStream",
-    "VoxelStreamFile",
-    "VoxelStreamBlockFiles",
-    "VoxelStreamRegionFiles",
-    "VoxelStreamSQLite",
-    "VoxelStreamScript",
+        "VoxelStream",
+        "VoxelStreamFile",
+        "VoxelStreamBlockFiles",
+        "VoxelStreamRegionFiles",
+        "VoxelStreamSQLite",
+        "VoxelStreamScript",
 
-    "VoxelGenerator",
-    "VoxelGeneratorFlat",
-    "VoxelGeneratorWaves",
-    "VoxelGeneratorHeightmap",
-    "VoxelGeneratorImage",
-    "VoxelGeneratorNoise2D",
-    "VoxelGeneratorNoise",
-    "VoxelGeneratorGraph",
-    "VoxelGeneratorScript",
+        "VoxelGenerator",
+        "VoxelGeneratorFlat",
+        "VoxelGeneratorWaves",
+        "VoxelGeneratorHeightmap",
+        "VoxelGeneratorImage",
+        "VoxelGeneratorNoise2D",
+        "VoxelGeneratorNoise",
+        "VoxelGeneratorGraph",
+        "VoxelGeneratorScript",
 
-    "VoxelBoxMover",
-    "VoxelRaycastResult",
-    "VoxelTool",
-    "VoxelToolTerrain",
-    "VoxelToolLodTerrain",
-    "VoxelToolBuffer",
-    "VoxelBlockSerializer",
-    "VoxelVoxLoader",
-    "FastNoiseLite",
-    "FastNoiseLiteGradient",
+        "VoxelBoxMover",
+        "VoxelRaycastResult",
+        "VoxelTool",
+        "VoxelToolTerrain",
+        "VoxelToolLodTerrain",
+        "VoxelToolBuffer",
+        "VoxelBlockSerializer",
+        "VoxelVoxLoader",
+        "FastNoiseLite",
+        "FastNoiseLiteGradient",
 
-    "VoxelMesher",
-    "VoxelMesherBlocky",
-    "VoxelMesherTransvoxel",
-    "VoxelMesherDMC",
-    "VoxelMesherCubes"
-]
+        "VoxelMesher",
+        "VoxelMesherBlocky",
+        "VoxelMesherTransvoxel",
+        "VoxelMesherDMC",
+        "VoxelMesherCubes"
+    ]
 
 
 def get_doc_path():
-  return "doc/classes"
+    return "doc/classes"
