@@ -1,12 +1,10 @@
 #ifndef VOXEL_MESH_MAP_H
 #define VOXEL_MESH_MAP_H
 
-#include "../constants/cube_tables.h"
-#include "../constants/voxel_constants.h"
 #include "../server/voxel_server.h"
 #include "../util/macros.h"
-#include "voxel_mesh_map.h"
 
+#include <unordered_map>
 #include <vector>
 
 namespace zylann::voxel {
@@ -30,9 +28,9 @@ public:
 		if (_last_accessed_block && _last_accessed_block->position == bpos) {
 			_last_accessed_block = nullptr;
 		}
-		unsigned int *iptr = _blocks_map.getptr(bpos);
-		if (iptr != nullptr) {
-			const unsigned int i = *iptr;
+		auto it = _blocks_map.find(bpos);
+		if (it != _blocks_map.end()) {
+			const unsigned int i = it->second;
 #ifdef DEBUG_ENABLED
 			CRASH_COND(i >= _blocks.size());
 #endif
@@ -40,7 +38,7 @@ public:
 			ERR_FAIL_COND(block == nullptr);
 			pre_delete(*block);
 			queue_free_mesh_block(block);
-			remove_block_internal(bpos, i);
+			remove_block_internal(it, i);
 		}
 	}
 
@@ -48,9 +46,9 @@ public:
 		if (_last_accessed_block && _last_accessed_block->position == bpos) {
 			return _last_accessed_block;
 		}
-		unsigned int *iptr = _blocks_map.getptr(bpos);
-		if (iptr != nullptr) {
-			const unsigned int i = *iptr;
+		auto it = _blocks_map.find(bpos);
+		if (it != _blocks_map.end()) {
+			const unsigned int i = it->second;
 #ifdef DEBUG_ENABLED
 			CRASH_COND(i >= _blocks.size());
 #endif
@@ -66,9 +64,9 @@ public:
 		if (_last_accessed_block != nullptr && _last_accessed_block->position == bpos) {
 			return _last_accessed_block;
 		}
-		const unsigned int *iptr = _blocks_map.getptr(bpos);
-		if (iptr != nullptr) {
-			const unsigned int i = *iptr;
+		auto it = _blocks_map.find(bpos);
+		if (it != _blocks_map.end()) {
+			const unsigned int i = it->second;
 #ifdef DEBUG_ENABLED
 			CRASH_COND(i >= _blocks.size());
 #endif
@@ -88,26 +86,16 @@ public:
 			_last_accessed_block = block;
 		}
 #ifdef DEBUG_ENABLED
-		CRASH_COND(_blocks_map.has(bpos));
+		CRASH_COND(has_block(bpos));
 #endif
 		unsigned int i = _blocks.size();
 		_blocks.push_back(block);
-		_blocks_map.set(bpos, i);
+		_blocks_map.insert({ bpos, i });
 	}
 
 	bool has_block(Vector3i pos) const {
-		return /*(_last_accessed_block != nullptr && _last_accessed_block->pos == pos) ||*/ _blocks_map.has(pos);
-	}
-
-	bool is_block_surrounded(Vector3i pos) const {
-		// TODO If that check proves to be too expensive with all blocks we deal with, cache it in VoxelBlocks
-		for (unsigned int i = 0; i < Cube::MOORE_NEIGHBORING_3D_COUNT; ++i) {
-			const Vector3i bpos = pos + Cube::g_moore_neighboring_3d[i];
-			if (!has_block(bpos)) {
-				return false;
-			}
-		}
-		return true;
+		//(_last_accessed_block != nullptr && _last_accessed_block->pos == pos) ||
+		return _blocks_map.find(pos) != _blocks_map.end();
 	}
 
 	void clear() {
@@ -155,13 +143,13 @@ public:
 	}
 
 private:
-	void remove_block_internal(Vector3i bpos, unsigned int index) {
+	void remove_block_internal(std::unordered_map<Vector3i, unsigned int>::iterator rm_it, unsigned int index) {
 		// TODO `erase` can occasionally be very slow (milliseconds) if the map contains lots of items.
 		// This might be caused by internal rehashing/resizing.
 		// We should look for a faster container, or reduce the number of entries.
 
 		// This function assumes the block is already freed
-		_blocks_map.erase(bpos);
+		_blocks_map.erase(rm_it);
 
 		MeshBlock_T *moved_block = _blocks.back();
 #ifdef DEBUG_ENABLED
@@ -171,13 +159,13 @@ private:
 		_blocks.pop_back();
 
 		if (index < _blocks.size()) {
-			unsigned int *moved_block_index = _blocks_map.getptr(moved_block->position);
-			CRASH_COND(moved_block_index == nullptr);
-			*moved_block_index = index;
+			auto moved_block_index_it = _blocks_map.find(moved_block->position);
+			CRASH_COND(moved_block_index_it == _blocks_map.end());
+			moved_block_index_it->second = index;
 		}
 	}
 
-	void queue_free_mesh_block(MeshBlock_T *block) {
+	static void queue_free_mesh_block(MeshBlock_T *block) {
 		// We spread this out because of physics
 		// TODO Could it be enough to do both render and physic deallocation with the task in ~MeshBlock_T()?
 		struct FreeMeshBlockTask : public zylann::ITimeSpreadTask {
@@ -194,8 +182,7 @@ private:
 
 private:
 	// Blocks stored with a spatial hash in all 3D directions.
-	// RELATIONSHIP = 2 because it delivers better performance with this kind of key and hash (less collisions).
-	HashMap<Vector3i, unsigned int, Vector3iHasher, HashMapComparatorDefault<Vector3i>, 3, 2> _blocks_map;
+	std::unordered_map<Vector3i, unsigned int> _blocks_map;
 	// Blocks are stored in a vector to allow faster iteration over all of them
 	std::vector<MeshBlock_T *> _blocks;
 
