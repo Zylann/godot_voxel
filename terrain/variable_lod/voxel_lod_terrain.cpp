@@ -809,7 +809,6 @@ void VoxelLodTerrain::reset_maps() {
 
 	const unsigned int lod_count = _update_data->settings.lod_count;
 	VoxelLodTerrainUpdateData::State &state = _update_data->state;
-	const VoxelLodTerrainUpdateData::Settings &settings = _update_data->settings;
 
 	// Make a new one, so if threads still reference the old one it will be a different copy
 	_data = gd_make_shared<VoxelDataLodMap>();
