@@ -1,0 +1,239 @@
+#include "voxel_mesh_block_vlt.h"
+#include "../constants/voxel_string_names.h"
+#include "../util/profiling.h"
+#include "free_mesh_task.h"
+
+namespace zylann::voxel {
+
+VoxelMeshBlockVLT::VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, unsigned int p_lod_index) :
+		VoxelMeshBlock(bpos) {
+	_position_in_voxels = bpos * (size << p_lod_index);
+	lod_index = p_lod_index;
+
+#ifdef VOXEL_DEBUG_LOD_MATERIALS
+	Ref<SpatialMaterial> debug_material;
+	debug_material.instance();
+	int checker = (bpos.x + bpos.y + bpos.z) & 1;
+	Color debug_color =
+			Color(0.8, 0.4, 0.8).linear_interpolate(Color(0.0, 0.0, 0.5), static_cast<float>(p_lod_index) / 8.f);
+	debug_color = debug_color.lightened(checker * 0.1f);
+	debug_material->set_albedo(debug_color);
+	block->_debug_material = debug_material;
+
+	Ref<SpatialMaterial> debug_transition_material;
+	debug_transition_material.instance();
+	debug_transition_material->set_albedo(Color(1, 1, 0));
+	block->_debug_transition_material = debug_transition_material;
+#endif
+}
+
+VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
+	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+		FreeMeshTask::try_add_and_destroy(_transition_mesh_instances[i]);
+	}
+}
+
+void VoxelMeshBlockVLT::set_gi_mode(DirectMeshInstance::GIMode mode) {
+	VoxelMeshBlock::set_gi_mode(mode);
+	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+		DirectMeshInstance &mi = _transition_mesh_instances[i];
+		if (mi.is_valid()) {
+			mi.set_gi_mode(mode);
+		}
+	}
+}
+
+void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, int side, DirectMeshInstance::GIMode gi_mode) {
+	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
+
+	if (mesh.is_valid()) {
+		if (!mesh_instance.is_valid()) {
+			// Create instance if it doesn't exist
+			mesh_instance.create();
+			mesh_instance.set_gi_mode(gi_mode);
+			set_mesh_instance_visible(mesh_instance, _visible && _parent_visible && _is_transition_visible(side));
+		}
+
+		mesh_instance.set_mesh(mesh);
+
+		if (_shader_material.is_valid()) {
+			mesh_instance.set_material_override(_shader_material);
+		}
+#ifdef VOXEL_DEBUG_LOD_MATERIALS
+		mesh_instance.set_material_override(_debug_transition_material);
+#endif
+
+	} else {
+		if (mesh_instance.is_valid()) {
+			// Delete instance if it exists
+			mesh_instance.destroy();
+		}
+	}
+}
+
+void VoxelMeshBlockVLT::set_visible(bool visible) {
+	if (_visible == visible) {
+		return;
+	}
+	_visible = visible;
+	_set_visible(_visible && _parent_visible);
+}
+
+void VoxelMeshBlockVLT::_set_visible(bool visible) {
+	VoxelMeshBlock::_set_visible(visible);
+	for (unsigned int dir = 0; dir < _transition_mesh_instances.size(); ++dir) {
+		DirectMeshInstance &mi = _transition_mesh_instances[dir];
+		if (mi.is_valid()) {
+			set_mesh_instance_visible(mi, visible && _is_transition_visible(dir));
+		}
+	}
+}
+
+void VoxelMeshBlockVLT::set_shader_material(Ref<ShaderMaterial> material) {
+	_shader_material = material;
+
+	if (_mesh_instance.is_valid()) {
+		_mesh_instance.set_material_override(_shader_material);
+
+		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+			DirectMeshInstance &mi = _transition_mesh_instances[dir];
+			if (mi.is_valid()) {
+				mi.set_material_override(_shader_material);
+			}
+		}
+	}
+
+	if (_shader_material.is_valid()) {
+		const Transform3D local_transform(Basis(), _position_in_voxels);
+		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_block_local_transform, local_transform);
+	}
+}
+
+//void VoxelMeshBlock::set_transition_bit(uint8_t side, bool value) {
+//	CRASH_COND(side >= Cube::SIDE_COUNT);
+//	uint32_t m = _transition_mask;
+//	if (value) {
+//		m |= (1 << side);
+//	} else {
+//		m &= ~(1 << side);
+//	}
+//	set_transition_mask(m);
+//}
+
+void VoxelMeshBlockVLT::set_transition_mask(uint8_t m) {
+	CRASH_COND(m >= (1 << Cube::SIDE_COUNT));
+	const uint8_t diff = _transition_mask ^ m;
+	if (diff == 0) {
+		return;
+	}
+	_transition_mask = m;
+	if (_shader_material.is_valid()) {
+		// TODO Needs translation here, because Cube:: tables use slightly different order...
+		// We may get rid of this once cube tables respects -x+x-y+y-z+z order
+		uint8_t bits[Cube::SIDE_COUNT];
+		for (unsigned int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+			bits[dir] = (m >> dir) & 1;
+		}
+		uint8_t tm = bits[Cube::SIDE_NEGATIVE_X];
+		tm |= bits[Cube::SIDE_POSITIVE_X] << 1;
+		tm |= bits[Cube::SIDE_NEGATIVE_Y] << 2;
+		tm |= bits[Cube::SIDE_POSITIVE_Y] << 3;
+		tm |= bits[Cube::SIDE_NEGATIVE_Z] << 4;
+		tm |= bits[Cube::SIDE_POSITIVE_Z] << 5;
+
+		// TODO Godot 4: we may replace this with a per-instance parameter so we can lift material access limitation
+		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, tm);
+	}
+	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+		DirectMeshInstance &mi = _transition_mesh_instances[dir];
+		if ((diff & (1 << dir)) && mi.is_valid()) {
+			set_mesh_instance_visible(mi, _visible && _parent_visible && _is_transition_visible(dir));
+		}
+	}
+}
+
+void VoxelMeshBlockVLT::set_parent_visible(bool parent_visible) {
+	if (_parent_visible && parent_visible) {
+		return;
+	}
+	_parent_visible = parent_visible;
+	_set_visible(_visible && _parent_visible);
+}
+
+void VoxelMeshBlockVLT::set_parent_transform(const Transform3D &parent_transform) {
+	VOXEL_PROFILE_SCOPE();
+
+	if (_mesh_instance.is_valid() || _static_body.is_valid()) {
+		const Transform3D local_transform(Basis(), _position_in_voxels);
+		const Transform3D world_transform = parent_transform * local_transform;
+
+		if (_mesh_instance.is_valid()) {
+			_mesh_instance.set_transform(world_transform);
+
+			for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+				DirectMeshInstance &mi = _transition_mesh_instances[i];
+				if (mi.is_valid()) {
+					mi.set_transform(world_transform);
+				}
+			}
+		}
+
+		if (_static_body.is_valid()) {
+			_static_body.set_transform(world_transform);
+		}
+	}
+}
+
+// Returns `true` when finished
+bool VoxelMeshBlockVLT::update_fading(float speed) {
+	// TODO Should probably not be on the block directly?
+	// Because we may want to fade transition meshes only
+
+	bool finished = false;
+
+	// x is progress in 0..1
+	// y is direction: 1 fades in, 0 fades out
+	Vector2 p;
+
+	switch (fading_state) {
+		case FADING_IN:
+			fading_progress += speed;
+			if (fading_progress >= 1.f) {
+				fading_progress = 1.f;
+				fading_state = FADING_NONE;
+				finished = true;
+			}
+			p.x = fading_progress;
+			p.y = 1.f;
+			break;
+
+		case FADING_OUT:
+			fading_progress -= speed;
+			if (fading_progress < 0.f) {
+				fading_progress = 0.f;
+				fading_state = FADING_NONE;
+				finished = true;
+				set_visible(false);
+			}
+			p.x = 1.f - fading_progress;
+			p.y = 0.f;
+			break;
+
+		case FADING_NONE:
+			p.x = 1.f;
+			p.y = active ? 1.f : 0.f;
+			break;
+
+		default:
+			CRASH_NOW();
+			break;
+	}
+
+	if (_shader_material.is_valid()) {
+		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_lod_fade, p);
+	}
+
+	return finished;
+}
+
+} // namespace zylann::voxel

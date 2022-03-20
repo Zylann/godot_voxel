@@ -192,7 +192,7 @@ unsigned int VoxelTerrain::get_data_block_size_pow2() const {
 }
 
 unsigned int VoxelTerrain::get_mesh_block_size_pow2() const {
-	return _mesh_map.get_block_size_pow2();
+	return _mesh_block_size_po2;
 }
 
 void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
@@ -215,8 +215,10 @@ void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 		return;
 	}
 
+	_mesh_block_size_po2 = po2;
+
 	// Unload all mesh blocks regardless of refcount
-	_mesh_map.create(po2, 0);
+	_mesh_map.clear();
 
 	// Make paired viewers re-view the new meshable area
 	for (unsigned int i = 0; i < _paired_viewers.size(); ++i) {
@@ -263,7 +265,7 @@ void VoxelTerrain::_on_stream_params_changed() {
 
 void VoxelTerrain::_on_gi_mode_changed() {
 	const GIMode gi_mode = get_gi_mode();
-	_mesh_map.for_each_block([gi_mode](VoxelMeshBlock &block) { //
+	_mesh_map.for_each_block([gi_mode](VoxelMeshBlockVT &block) { //
 		block.set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
 	});
 }
@@ -316,7 +318,7 @@ void VoxelTerrain::set_generate_collisions(bool enabled) {
 
 void VoxelTerrain::set_collision_layer(int layer) {
 	_collision_layer = layer;
-	_mesh_map.for_each_block([layer](VoxelMeshBlock &block) { //
+	_mesh_map.for_each_block([layer](VoxelMeshBlockVT &block) { //
 		block.set_collision_layer(layer);
 	});
 }
@@ -327,7 +329,7 @@ int VoxelTerrain::get_collision_layer() const {
 
 void VoxelTerrain::set_collision_mask(int mask) {
 	_collision_mask = mask;
-	_mesh_map.for_each_block([mask](VoxelMeshBlock &block) { //
+	_mesh_map.for_each_block([mask](VoxelMeshBlockVT &block) { //
 		block.set_collision_mask(mask);
 	});
 }
@@ -338,7 +340,7 @@ int VoxelTerrain::get_collision_mask() const {
 
 void VoxelTerrain::set_collision_margin(float margin) {
 	_collision_margin = margin;
-	_mesh_map.for_each_block([margin](VoxelMeshBlock &block) { //
+	_mesh_map.for_each_block([margin](VoxelMeshBlockVT &block) { //
 		block.set_collision_margin(margin);
 	});
 }
@@ -400,8 +402,8 @@ Ref<Material> VoxelTerrain::get_material(unsigned int id) const {
 	return _materials[id];
 }
 
-void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock &mesh_block) {
-	if (mesh_block.get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_NOT_SENT) {
+void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlockVT &mesh_block) {
+	if (mesh_block.get_mesh_state() == VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT) {
 		// Already in the list
 		return;
 	}
@@ -429,7 +431,7 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlock &mesh_block) {
 	if (data_available) {
 		// Regardless of if the updater is updating the block already,
 		// the block could have been modified again so we schedule another update
-		mesh_block.set_mesh_state(VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
+		mesh_block.set_mesh_state(VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT);
 		_blocks_pending_update.push_back(mesh_block.position);
 	}
 }
@@ -482,11 +484,11 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 		return;
 	}
 
-	VoxelMeshBlock *block = _mesh_map.get_block(bpos);
+	VoxelMeshBlockVT *block = _mesh_map.get_block(bpos);
 
 	if (block == nullptr) {
 		// Create if not found
-		block = VoxelMeshBlock::create(bpos, get_mesh_block_size(), 0);
+		block = memnew(VoxelMeshBlockVT(bpos, get_mesh_block_size()));
 		block->set_world(get_world_3d());
 		_mesh_map.set_block(bpos, block);
 	}
@@ -547,7 +549,7 @@ void VoxelTerrain::unview_data_block(Vector3i bpos) {
 }
 
 void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag) {
-	VoxelMeshBlock *block = _mesh_map.get_block(bpos);
+	VoxelMeshBlockVT *block = _mesh_map.get_block(bpos);
 	// Mesh blocks are created on first view call,
 	// so that would mean we unview one without viewing it in the first place
 	ERR_FAIL_COND(block == nullptr);
@@ -618,8 +620,8 @@ void VoxelTerrain::unload_data_block(Vector3i bpos) {
 void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 	std::vector<Vector3i> &blocks_pending_update = _blocks_pending_update;
 
-	_mesh_map.remove_block(bpos, [&blocks_pending_update](const VoxelMeshBlock &block) {
-		if (block.get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_NOT_SENT) {
+	_mesh_map.remove_block(bpos, [&blocks_pending_update](const VoxelMeshBlockVT &block) {
+		if (block.get_mesh_state() == VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT) {
 			// That block was in the list of blocks to update later in the process loop, we'll need to unregister it.
 			// We expect that block to be in that list. If it isn't, something wrong happened with its state.
 			ERR_FAIL_COND(!unordered_remove_value(blocks_pending_update, block.position));
@@ -677,15 +679,15 @@ void VoxelTerrain::stop_updater() {
 
 	_blocks_pending_update.clear();
 
-	_mesh_map.for_each_block([](VoxelMeshBlock &block) {
-		if (block.get_mesh_state() == VoxelMeshBlock::MESH_UPDATE_SENT) {
-			block.set_mesh_state(VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
+	_mesh_map.for_each_block([](VoxelMeshBlockVT &block) {
+		if (block.get_mesh_state() == VoxelMeshBlockVT::MESH_UPDATE_SENT) {
+			block.set_mesh_state(VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT);
 		}
 	});
 }
 
 void VoxelTerrain::remesh_all_blocks() {
-	_mesh_map.for_each_block([this](VoxelMeshBlock &block) { //
+	_mesh_map.for_each_block([this](VoxelMeshBlockVT &block) { //
 		try_schedule_mesh_update(block);
 	});
 }
@@ -744,7 +746,7 @@ void VoxelTerrain::reset_map() {
 	});
 	_data_map.create(get_data_block_size_pow2(), 0);
 
-	_mesh_map.create(get_mesh_block_size_pow2(), 0);
+	_mesh_map.clear();
 
 	_loading_blocks.clear();
 	_blocks_pending_load.clear();
@@ -763,7 +765,7 @@ void VoxelTerrain::try_schedule_mesh_update_from_data(const Box3i &box_in_voxels
 	// We pad by 1 because neighbor blocks might be affected visually (for example, baked ambient occlusion)
 	const Box3i mesh_box = box_in_voxels.padded(1).downscaled(get_mesh_block_size());
 	mesh_box.for_each_cell([this](Vector3i pos) {
-		VoxelMeshBlock *block = _mesh_map.get_block(pos);
+		VoxelMeshBlockVT *block = _mesh_map.get_block(pos);
 		// There isn't necessarily a mesh block, if the edit happens in a boundary,
 		// or if it is done next to a viewer that doesn't need meshes
 		if (block != nullptr) {
@@ -797,7 +799,7 @@ void VoxelTerrain::_notification(int p_what) {
 	struct SetWorldAction {
 		World3D *world;
 		SetWorldAction(World3D *w) : world(w) {}
-		void operator()(VoxelMeshBlock &block) {
+		void operator()(VoxelMeshBlockVT &block) {
 			block.set_world(world);
 		}
 	};
@@ -805,7 +807,7 @@ void VoxelTerrain::_notification(int p_what) {
 	struct SetParentVisibilityAction {
 		bool visible;
 		SetParentVisibilityAction(bool v) : visible(v) {}
-		void operator()(VoxelMeshBlock &block) {
+		void operator()(VoxelMeshBlockVT &block) {
 			block.set_parent_visible(visible);
 		}
 	};
@@ -849,7 +851,7 @@ void VoxelTerrain::_notification(int p_what) {
 				return;
 			}
 
-			_mesh_map.for_each_block([&transform](VoxelMeshBlock &block) { //
+			_mesh_map.for_each_block([&transform](VoxelMeshBlockVT &block) { //
 				block.set_parent_transform(transform);
 			});
 
@@ -1321,11 +1323,11 @@ void VoxelTerrain::process_meshing() {
 		for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
 			const Vector3i mesh_block_pos = _blocks_pending_update[bi];
 
-			VoxelMeshBlock *mesh_block = _mesh_map.get_block(mesh_block_pos);
+			VoxelMeshBlockVT *mesh_block = _mesh_map.get_block(mesh_block_pos);
 
 			// If we got here, it must have been because of scheduling an update
 			ERR_CONTINUE(mesh_block == nullptr);
-			ERR_CONTINUE(mesh_block->get_mesh_state() != VoxelMeshBlock::MESH_UPDATE_NOT_SENT);
+			ERR_CONTINUE(mesh_block->get_mesh_state() != VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT);
 
 			// Pad by 1 because meshing requires neighbors
 			const Box3i data_box =
@@ -1370,7 +1372,7 @@ void VoxelTerrain::process_meshing() {
 			//print_line(String("DDD request {0}").format(varray(mesh_request.render_block_position.to_vec3())));
 			VoxelServer::get_singleton()->request_block_mesh(_volume_id, mesh_request);
 
-			mesh_block->set_mesh_state(VoxelMeshBlock::MESH_UPDATE_SENT);
+			mesh_block->set_mesh_state(VoxelMeshBlockVT::MESH_UPDATE_SENT);
 		}
 
 		_blocks_pending_update.clear();
@@ -1386,7 +1388,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	VOXEL_PROFILE_SCOPE();
 	//print_line(String("DDD receive {0}").format(varray(ob.position.to_vec3())));
 
-	VoxelMeshBlock *block = _mesh_map.get_block(ob.position);
+	VoxelMeshBlockVT *block = _mesh_map.get_block(ob.position);
 	if (block == nullptr) {
 		//print_line("- no longer loaded");
 		// That block is no longer loaded, drop the result

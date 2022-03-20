@@ -76,7 +76,7 @@ Ref<ArrayMesh> build_mesh(
 struct BeforeUnloadMeshAction {
 	std::vector<Ref<ShaderMaterial>> &shader_material_pool;
 
-	void operator()(VoxelMeshBlock &block) {
+	void operator()(VoxelMeshBlockVLT &block) {
 		VOXEL_PROFILE_SCOPE_NAMED("Recycle material");
 		// Recycle material
 		Ref<ShaderMaterial> sm = block.get_shader_material();
@@ -289,7 +289,7 @@ Ref<VoxelGenerator> VoxelLodTerrain::get_generator() const {
 void VoxelLodTerrain::_on_gi_mode_changed() {
 	const GIMode gi_mode = get_gi_mode();
 	for (unsigned int lod_index = 0; lod_index < _update_data->state.lods.size(); ++lod_index) {
-		_mesh_maps_per_lod[lod_index].for_each_block([gi_mode](VoxelMeshBlock &block) { //
+		_mesh_maps_per_lod[lod_index].for_each_block([gi_mode](VoxelMeshBlockVLT &block) { //
 			block.set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
 		});
 	}
@@ -402,17 +402,17 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	// Reset mesh maps
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 		if (_instancer != nullptr) {
 			// Unload instances
 			VoxelInstancer *instancer = _instancer;
-			mesh_map.for_each_block([lod_index, instancer](VoxelMeshBlock &block) {
+			mesh_map.for_each_block([lod_index, instancer](VoxelMeshBlockVLT &block) {
 				instancer->on_mesh_block_exit(block.position, lod_index);
 			});
 		}
 		// Unload mesh blocks
 		mesh_map.for_each_block(BeforeUnloadMeshAction{ _shader_material_pool });
-		mesh_map.create(po2, lod_index);
+		mesh_map.clear();
 		// Reset view distance cache so they will be re-entered
 		lod.last_view_distance_mesh_blocks = 0;
 	}
@@ -456,7 +456,7 @@ bool VoxelLodTerrain::is_threaded_update_enabled() const {
 	return _threaded_update_enabled;
 }
 
-void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlock &block, bool active) {
+void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool active) {
 	if (block.active == active) {
 		return;
 	}
@@ -468,22 +468,22 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlock &block, bool active) 
 		return;
 	}
 
-	VoxelMeshBlock::FadingState fading_state;
+	VoxelMeshBlockVLT::FadingState fading_state;
 	// Initial progress has to be set too because it sometimes happens that a LOD must appear before its parent
 	// finished fading in. So the parent will have to fade out from solid with the same duration.
 	float initial_progress;
 	if (active) {
 		block.set_visible(true);
-		fading_state = VoxelMeshBlock::FADING_IN;
+		fading_state = VoxelMeshBlockVLT::FADING_IN;
 		initial_progress = 0.f;
 	} else {
-		fading_state = VoxelMeshBlock::FADING_OUT;
+		fading_state = VoxelMeshBlockVLT::FADING_OUT;
 		initial_progress = 1.f;
 	}
 
 	if (block.fading_state != fading_state) {
-		if (block.fading_state == VoxelMeshBlock::FADING_NONE) {
-			Map<Vector3i, VoxelMeshBlock *> &fading_blocks = _fading_blocks_per_lod[block.lod_index];
+		if (block.fading_state == VoxelMeshBlockVLT::FADING_NONE) {
+			Map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[block.lod_index];
 			// Must not have duplicates
 			ERR_FAIL_COND(fading_blocks.has(block.position));
 			fading_blocks.insert(block.position, &block);
@@ -827,11 +827,11 @@ void VoxelLodTerrain::reset_maps() {
 
 	for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 
 		// Instance new maps if we have more lods, or clear them otherwise
 		if (lod_index < lod_count) {
-			mesh_map.create(settings.mesh_block_size_po2, lod_index);
+			mesh_map.clear();
 			// Reset view distance cache so blocks will be re-entered due to the difference
 			lod.last_view_distance_data_blocks = 0;
 			lod.last_view_distance_mesh_blocks = 0;
@@ -878,8 +878,8 @@ void VoxelLodTerrain::set_collision_layer(int layer) {
 
 	_collision_layer = layer;
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-		mesh_map.for_each_block([layer](VoxelMeshBlock &block) { //
+		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+		mesh_map.for_each_block([layer](VoxelMeshBlockVLT &block) { //
 			block.set_collision_layer(layer);
 		});
 	}
@@ -894,8 +894,8 @@ void VoxelLodTerrain::set_collision_mask(int mask) {
 
 	_collision_mask = mask;
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-		mesh_map.for_each_block([mask](VoxelMeshBlock &block) { //
+		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+		mesh_map.for_each_block([mask](VoxelMeshBlockVLT &block) { //
 			block.set_collision_mask(mask);
 		});
 	}
@@ -910,8 +910,8 @@ void VoxelLodTerrain::set_collision_margin(float margin) {
 
 	_collision_margin = margin;
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-		mesh_map.for_each_block([margin](VoxelMeshBlock &block) { //
+		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+		mesh_map.for_each_block([margin](VoxelMeshBlockVLT &block) { //
 			block.set_collision_margin(margin);
 		});
 	}
@@ -941,8 +941,7 @@ Vector3i VoxelLodTerrain::voxel_to_mesh_block_position(Vector3 vpos, int lod_ind
 	ERR_FAIL_COND_V(lod_index < 0, Vector3i());
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3i());
 	const unsigned int mesh_block_size_po2 = _update_data->settings.mesh_block_size_po2;
-	const Vector3i bpos =
-			VoxelMeshMap::voxel_to_block_b(Vector3iUtil::from_floored(vpos), mesh_block_size_po2) >> lod_index;
+	const Vector3i bpos = (Vector3iUtil::from_floored(vpos) >> mesh_block_size_po2) >> lod_index;
 	return bpos;
 }
 
@@ -983,8 +982,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 			World3D *world = *get_world_3d();
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
-				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-				mesh_map.for_each_block([world](VoxelMeshBlock &block) { //
+				VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+				mesh_map.for_each_block([world](VoxelMeshBlockVLT &block) { //
 					block.set_world(world);
 				});
 			}
@@ -1000,8 +999,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 		case NOTIFICATION_EXIT_WORLD: {
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
-				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-				mesh_map.for_each_block([](VoxelMeshBlock &block) { //
+				VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+				mesh_map.for_each_block([](VoxelMeshBlockVLT &block) { //
 					block.set_world(nullptr);
 				});
 			}
@@ -1015,8 +1014,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
-				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-				mesh_map.for_each_block([visible](VoxelMeshBlock &block) { //
+				VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+				mesh_map.for_each_block([visible](VoxelMeshBlockVLT &block) { //
 					block.set_parent_visible(visible);
 				});
 			}
@@ -1043,8 +1042,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
-				VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-				mesh_map.for_each_block([&transform](VoxelMeshBlock &block) { //
+				VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+				mesh_map.for_each_block([&transform](VoxelMeshBlockVLT &block) { //
 					block.set_parent_transform(transform);
 				});
 			}
@@ -1148,11 +1147,11 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 	for (unsigned int lod_index = 0; lod_index < _update_data->settings.lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
-		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_activate.size(); ++i) {
 			const Vector3i bpos = lod.mesh_blocks_to_activate[i];
-			VoxelMeshBlock *block = mesh_map.get_block(bpos);
+			VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
 			// Can be null if there is actually no surface at this location
 			if (block == nullptr) {
 				continue;
@@ -1163,7 +1162,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_deactivate.size(); ++i) {
 			const Vector3i bpos = lod.mesh_blocks_to_deactivate[i];
-			VoxelMeshBlock *block = mesh_map.get_block(bpos);
+			VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
 			// Can be null if there is actually no surface at this location
 			if (block == nullptr) {
 				continue;
@@ -1197,7 +1196,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_update_transitions.size(); ++i) {
 			const VoxelLodTerrainUpdateData::TransitionUpdate tu = lod.mesh_blocks_to_update_transitions[i];
-			VoxelMeshBlock *block = mesh_map.get_block(tu.block_position);
+			VoxelMeshBlockVLT *block = mesh_map.get_block(tu.block_position);
 			// Can be null if there is actually no surface at this location
 			if (block == nullptr) {
 				/*
@@ -1371,8 +1370,8 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	// By that, I mean being able to call into RenderingServer and PhysicsServer,
 	// without inducing a stall of the main thread.
 
-	VoxelMeshMap &mesh_map = _mesh_maps_per_lod[ob.lod];
-	VoxelMeshBlock *block = mesh_map.get_block(ob.position);
+	VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[ob.lod];
+	VoxelMeshBlockVLT *block = mesh_map.get_block(ob.position);
 
 	const VoxelMesher::Output &mesh_data = ob.surfaces;
 
@@ -1392,7 +1391,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	}
 
 	if (block == nullptr) {
-		block = VoxelMeshBlock::create(ob.position, get_mesh_block_size(), ob.lod);
+		block = memnew(VoxelMeshBlockVLT(ob.position, get_mesh_block_size(), ob.lod));
 		block->active = active;
 		block->set_visible(active);
 		mesh_map.set_block(ob.position, block);
@@ -1492,12 +1491,12 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 	const unsigned int lod_count = _update_data->settings.lod_count;
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 		std::vector<Vector3i> &deferred_collision_updates = _deferred_collision_updates_per_lod[lod_index];
 
 		for (unsigned int i = 0; i < deferred_collision_updates.size(); ++i) {
 			const Vector3i block_pos = deferred_collision_updates[i];
-			VoxelMeshBlock *block = mesh_map.get_block(block_pos);
+			VoxelMeshBlockVLT *block = mesh_map.get_block(block_pos);
 
 			if (block == nullptr || block->has_deferred_collider_update == false) {
 				// Block was unloaded or no longer needs a collision update
@@ -1550,19 +1549,19 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 	const float speed = _lod_fade_duration < 0.001f ? 99999.f : delta / _lod_fade_duration;
 
 	for (unsigned int lod_index = 0; lod_index < _fading_blocks_per_lod.size(); ++lod_index) {
-		Map<Vector3i, VoxelMeshBlock *> &fading_blocks = _fading_blocks_per_lod[lod_index];
+		Map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[lod_index];
 
-		Map<Vector3i, VoxelMeshBlock *>::Element *e = fading_blocks.front();
+		Map<Vector3i, VoxelMeshBlockVLT *>::Element *e = fading_blocks.front();
 
 		while (e != nullptr) {
-			VoxelMeshBlock *block = e->value();
+			VoxelMeshBlockVLT *block = e->value();
 			// The collection of fading blocks must only contain fading blocks
-			ERR_FAIL_COND(block->fading_state == VoxelMeshBlock::FADING_NONE);
+			ERR_FAIL_COND(block->fading_state == VoxelMeshBlockVLT::FADING_NONE);
 
 			const bool finished = block->update_fading(speed);
 
 			if (finished) {
-				Map<Vector3i, VoxelMeshBlock *>::Element *next = e->next();
+				Map<Vector3i, VoxelMeshBlockVLT *>::Element *next = e->next();
 				fading_blocks.erase(e);
 				e = next;
 
@@ -1589,11 +1588,11 @@ Array VoxelLodTerrain::get_mesh_block_surface(Vector3i block_pos, int lod_index)
 	const int lod_count = _update_data->settings.lod_count;
 	ERR_FAIL_COND_V(lod_index < 0 || lod_index >= lod_count, Array());
 
-	const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+	const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 
 	Ref<Mesh> mesh;
 	{
-		const VoxelMeshBlock *block = mesh_map.get_block(block_pos);
+		const VoxelMeshBlockVLT *block = mesh_map.get_block(block_pos);
 		if (block != nullptr) {
 			mesh = block->get_mesh();
 		}
@@ -1610,9 +1609,9 @@ void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, std::vect
 	const int lod_count = _update_data->settings.lod_count;
 	ERR_FAIL_COND(lod_index < 0 || lod_index >= lod_count);
 
-	const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+	const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 
-	mesh_map.for_each_block([&out_positions](const VoxelMeshBlock &block) {
+	mesh_map.for_each_block([&out_positions](const VoxelMeshBlockVLT &block) {
 		if (block.has_mesh()) {
 			out_positions.push_back(block.position);
 		}
@@ -1788,13 +1787,15 @@ Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 wo
 	const float step = 2.f;
 	float distance = 0.f;
 	const unsigned int lod_count = _update_data->settings.lod_count;
+	const unsigned int mesh_block_size_po2 = _update_data->settings.mesh_block_size_po2;
 
 	Array hits;
 	while (distance < max_distance && hits.size() == 0) {
+		const Vector3i posi = Vector3iUtil::from_floored(pos);
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-			const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-			const Vector3i bpos = mesh_map.voxel_to_block(Vector3iUtil::from_floored(pos)) >> lod_index;
-			const VoxelMeshBlock *block = mesh_map.get_block(bpos);
+			const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+			const Vector3i bpos = (posi << mesh_block_size_po2) >> lod_index;
+			const VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
 			if (block != nullptr && block->is_visible() && block->has_mesh()) {
 				Dictionary d;
 				d["position"] = block->position;
@@ -1851,10 +1852,10 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 	bool meshed = false;
 	bool visible = false;
 	bool active = false;
-	int mesh_state = VoxelMeshBlock::MESH_NEVER_UPDATED;
+	int mesh_state = VoxelLodTerrainUpdateData::MESH_NEVER_UPDATED;
 
-	const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
-	const VoxelMeshBlock *block = mesh_map.get_block(bpos);
+	const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+	const VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
 
 	if (block != nullptr) {
 		int recomputed_transition_mask;
@@ -1862,12 +1863,15 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 			const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
 			RWLockRead rlock(lod.mesh_map_state.map_lock);
 			recomputed_transition_mask = VoxelLodTerrainUpdateTask::get_transition_mask(
-					_update_data->state, block->position, block->lod_index, lod_count);
+					_update_data->state, bpos, block->lod_index, lod_count);
+			auto it = lod.mesh_map_state.map.find(bpos);
+			if (it != lod.mesh_map_state.map.end()) {
+				mesh_state = it->second.state;
+			}
 		}
 
 		loaded = true;
 		meshed = block->has_mesh();
-		mesh_state = block->get_mesh_state();
 		visible = block->is_visible();
 		active = block->active;
 		d["transition_mask"] = block->get_transition_mask();
@@ -2112,7 +2116,7 @@ int VoxelLodTerrain::_b_debug_get_mesh_block_count() const {
 	int sum = 0;
 	const unsigned int lod_count = get_lod_count();
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+		const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 		sum += mesh_map.get_block_count();
 	}
 	return sum;
@@ -2135,9 +2139,9 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instanc
 	const unsigned int lod_count = get_lod_count();
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		const VoxelMeshMap &mesh_map = _mesh_maps_per_lod[lod_index];
+		const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 
-		mesh_map.for_each_block([root](const VoxelMeshBlock &block) {
+		mesh_map.for_each_block([root](const VoxelMeshBlockVLT &block) {
 			block.for_each_mesh_instance_with_transform([root, &block](const DirectMeshInstance &dmi, Transform3D t) {
 				Ref<Mesh> mesh = dmi.get_mesh();
 

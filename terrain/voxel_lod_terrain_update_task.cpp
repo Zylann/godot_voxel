@@ -816,7 +816,6 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			const VoxelLodTerrainUpdateData::Settings &settings;
 			VoxelDataLodMap &data;
 			std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load;
-			//std::vector<VoxelMeshBlock *> &mesh_blocks_to_add;
 			Vector3i block_offset_lod0;
 			unsigned int blocked_count = 0;
 			float lod_distance_octree_space;

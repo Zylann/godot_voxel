@@ -5,6 +5,7 @@
 #include "../storage/voxel_data_map.h"
 #include "../util/godot/funcs.h"
 #include "voxel_data_block_enter_info.h"
+#include "voxel_mesh_block_vt.h"
 #include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
@@ -161,7 +162,7 @@ private:
 	void unload_data_block(Vector3i bpos);
 	void unload_mesh_block(Vector3i bpos);
 	//void make_data_block_dirty(Vector3i bpos);
-	void try_schedule_mesh_update(VoxelMeshBlock &block);
+	void try_schedule_mesh_update(VoxelMeshBlockVT &block);
 	void try_schedule_mesh_update_from_data(const Box3i &box_in_voxels);
 
 	void save_all_modified_blocks(bool with_copy);
@@ -221,7 +222,8 @@ private:
 	// Voxel storage
 	VoxelDataMap _data_map;
 	// Mesh storage
-	VoxelMeshMap _mesh_map;
+	VoxelMeshMap<VoxelMeshBlockVT> _mesh_map;
+	uint32_t _mesh_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// Area within which voxels can exist.
 	// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be

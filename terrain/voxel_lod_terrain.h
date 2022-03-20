@@ -6,6 +6,7 @@
 #include "../storage/voxel_data_map.h"
 #include "lod_octree.h"
 #include "voxel_lod_terrain_update_data.h"
+#include "voxel_mesh_block_vlt.h"
 #include "voxel_mesh_map.h"
 #include "voxel_node.h"
 
@@ -262,7 +263,7 @@ private:
 
 	Vector3 get_local_viewer_pos() const;
 	void _set_lod_count(int p_lod_count);
-	void set_mesh_block_active(VoxelMeshBlock &block, bool active);
+	void set_mesh_block_active(VoxelMeshBlockVLT &block, bool active);
 
 	void _on_stream_params_changed();
 
@@ -296,7 +297,7 @@ private:
 	Ref<Material> _material;
 	std::vector<Ref<ShaderMaterial>> _shader_material_pool;
 
-	FixedArray<VoxelMeshMap, constants::MAX_LOD> _mesh_maps_per_lod;
+	FixedArray<VoxelMeshMap<VoxelMeshBlockVLT>, constants::MAX_LOD> _mesh_maps_per_lod;
 
 	bool _generate_collisions = true;
 	unsigned int _collision_lod_count = 0;
@@ -310,7 +311,7 @@ private:
 	// Note, direct pointers to mesh blocks should be safe because these blocks are always destroyed from the same
 	// thread that updates fading blocks. If a mesh block is destroyed, these maps should be updated at the same time.
 	// TODO Optimization: use FlatMap? Need to check how many blocks get in there, probably not many
-	FixedArray<Map<Vector3i, VoxelMeshBlock *>, constants::MAX_LOD> _fading_blocks_per_lod;
+	FixedArray<Map<Vector3i, VoxelMeshBlockVLT *>, constants::MAX_LOD> _fading_blocks_per_lod;
 
 	VoxelInstancer *_instancer = nullptr;
 
