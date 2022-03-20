@@ -3,11 +3,13 @@
 #include "../generators/graph/range_utility.h"
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../meshers/blocky/voxel_blocky_library.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data_map.h"
 #include "../streams/instance_data.h"
 #include "../streams/region/region_file.h"
 #include "../streams/region/voxel_stream_region_files.h"
 #include "../streams/voxel_block_serializer.h"
+#include "../streams/voxel_block_serializer_gd.h"
 #include "../util/flat_map.h"
 #include "../util/godot/funcs.h"
 #include "../util/island_finder.h"
@@ -1049,6 +1051,43 @@ void test_block_serializer() {
 	ZYLANN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
 }
 
+void test_block_serializer_stream_peer() {
+	// Create an example buffer
+	const Vector3i block_size(8, 9, 10);
+	Ref<gd::VoxelBuffer> voxel_buffer;
+	voxel_buffer.instantiate();
+	voxel_buffer->create(block_size.x, block_size.y, block_size.z);
+	voxel_buffer->fill_area(42, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 0);
+	voxel_buffer->fill_area(43, Vector3i(2, 3, 4), Vector3i(6, 6, 6), 0);
+	voxel_buffer->fill_area(44, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 1);
+
+	Ref<StreamPeerBuffer> peer;
+	peer.instantiate();
+	//peer->clear();
+
+	Ref<gd::VoxelBlockSerializer> serializer;
+	serializer.instantiate();
+	const int size = serializer->serialize(peer, voxel_buffer, true);
+
+	PackedByteArray data_array = peer->get_data_array();
+
+	// Client
+
+	Ref<gd::VoxelBuffer> voxel_buffer2;
+	voxel_buffer2.instantiate();
+
+	Ref<StreamPeerBuffer> peer2;
+	peer2.instantiate();
+	peer2->set_data_array(data_array);
+
+	Ref<gd::VoxelBlockSerializer> serializer2;
+	serializer2.instantiate();
+
+	serializer2->deserialize(peer2, voxel_buffer2, size, true);
+
+	ZYLANN_TEST_ASSERT(voxel_buffer2->get_buffer().equals(voxel_buffer->get_buffer()));
+}
+
 void test_region_file() {
 	const int block_size_po2 = 4;
 	const int block_size = 1 << block_size_po2;
@@ -1450,6 +1489,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_get_curve_monotonic_sections);
 	VOXEL_TEST(test_voxel_buffer_create);
 	VOXEL_TEST(test_block_serializer);
+	VOXEL_TEST(test_block_serializer_stream_peer);
 	VOXEL_TEST(test_region_file);
 	VOXEL_TEST(test_voxel_stream_region_files);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
