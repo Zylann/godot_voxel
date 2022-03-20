@@ -1545,6 +1545,19 @@ AABB VoxelTerrain::_b_get_bounds() const {
 bool VoxelTerrain::_b_try_set_block_data(Vector3i position, Ref<gd::VoxelBuffer> voxel_data) {
 	ERR_FAIL_COND_V(voxel_data.is_null(), false);
 	std::shared_ptr<VoxelBufferInternal> buffer = voxel_data->get_buffer_shared();
+
+#ifdef DEBUG_ENABLED
+	const StringName &key = VoxelStringNames::get_singleton()->_voxel_debug_vt_position;
+	if (voxel_data->has_meta(key)) {
+		const Vector3i meta_pos = voxel_data->get_meta(key);
+		ERR_FAIL_COND_V_MSG(meta_pos != position, false,
+				String(TTR("Setting the same {0} at different positions is not supported"))
+						.format(varray(gd::VoxelBuffer::get_class_static())));
+	} else {
+		voxel_data->set_meta(key, position);
+	}
+#endif
+
 	return try_set_block_data(position, buffer);
 }
 

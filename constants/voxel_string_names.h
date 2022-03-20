@@ -35,6 +35,10 @@ public:
 	StringName u_transition_mask;
 	StringName u_block_local_transform;
 	StringName u_lod_fade;
+
+#ifdef DEBUG_ENABLED
+	StringName _voxel_debug_vt_position;
+#endif
 };
 
 } // namespace zylann::voxel

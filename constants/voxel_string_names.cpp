@@ -32,6 +32,10 @@ VoxelStringNames::VoxelStringNames() {
 	u_transition_mask = StaticCString::create("u_transition_mask");
 	u_block_local_transform = StaticCString::create("u_block_local_transform");
 	u_lod_fade = StaticCString::create("u_lod_fade");
+
+#ifdef DEBUG_ENABLED
+	_voxel_debug_vt_position = StaticCString::create("_voxel_debug_vt_position");
+#endif
 }
 
 } // namespace zylann::voxel
