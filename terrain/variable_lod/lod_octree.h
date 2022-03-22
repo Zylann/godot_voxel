@@ -42,7 +42,7 @@ public:
 	};
 
 	struct NoDestroyAction {
-		inline void operator()(Vector3i node_pos, int lod) {}
+		inline void operator()(Vector3i node_pos, unsigned int lod) {}
 	};
 
 	template <typename DestroyAction_T>
@@ -52,9 +52,23 @@ public:
 		_max_depth = 0;
 	}
 
+	void clear() {
+		_pool.clear();
+		_root.init();
+		_is_root_created = false;
+		_max_depth = 0;
+	}
+
 	template <typename DestroyAction_T>
 	void create(unsigned int lod_count, DestroyAction_T &destroy_action) {
 		clear(destroy_action);
+		CRASH_COND(lod_count == 0);
+		_max_depth = lod_count - 1;
+	}
+
+	void create(unsigned int lod_count) {
+		clear();
+		CRASH_COND(lod_count == 0);
 		_max_depth = lod_count - 1;
 	}
 
@@ -64,17 +78,17 @@ public:
 
 	// Signature examples
 	struct DefaultUpdateActions {
-		void create_child(Vector3i node_pos, int lod, NodeData &data) {} // Occurs on split
-		void destroy_child(Vector3i node_pos, int lod) {} // Occurs on merge
-		void show_parent(Vector3i node_pos, int lod) {} // Occurs on merge
-		void hide_parent(Vector3i node_pos, int lod) {} // Occurs on split
+		void create_child(Vector3i node_pos, unsigned int lod, NodeData &data) {} // Occurs on split
+		void destroy_child(Vector3i node_pos, unsigned int lod) {} // Occurs on merge
+		void show_parent(Vector3i node_pos, unsigned int lod) {} // Occurs on merge
+		void hide_parent(Vector3i node_pos, unsigned int lod) {} // Occurs on split
 		bool can_create_root(int lod) {
 			return true;
 		}
-		bool can_split(Vector3i node_pos, int lod_index, NodeData &data) {
+		bool can_split(Vector3i node_pos, unsigned int lod_index, NodeData &data) {
 			return true;
 		}
-		bool can_join(Vector3i node_pos, int lod) {
+		bool can_join(Vector3i node_pos, unsigned int lod) {
 			return true;
 		}
 	};
@@ -96,11 +110,13 @@ public:
 			if (actions.can_create_root(_max_depth)) {
 				actions.create_child(Vector3i(), _max_depth, _root.data);
 				_is_root_created = true;
+
+				update(ROOT_INDEX, Vector3i(), _max_depth, actions);
 			}
 		}
 	}
 
-	static inline Vector3i get_child_position(Vector3i parent_position, int i) {
+	static inline Vector3i get_child_position(Vector3i parent_position, unsigned int i) {
 		return Vector3i( //
 				parent_position.x * 2 + (i & 1), //
 				parent_position.y * 2 + ((i >> 1) & 1), //
@@ -149,10 +165,10 @@ public:
 	}
 
 	struct SubdivideActionsDefault {
-		bool can_split(Vector3i node_pos, int lod_index, const NodeData &node_data) {
+		bool can_split(Vector3i node_pos, unsigned int lod_index, const NodeData &node_data) {
 			return true;
 		}
-		void create_child(Vector3i node_pos, int lod_index, NodeData &node_data) {}
+		void create_child(Vector3i node_pos, unsigned int lod_index, NodeData &node_data) {}
 	};
 
 	// Subdivides the octree recursively, solely based on `can_split`.
@@ -170,22 +186,22 @@ public:
 
 	// Gets the bounding box of a node within the LOD0 coordinate system
 	// (i.e a leaf node will always be 1x1x1, a LOD1 node will be 2x2x2 etc)
-	static inline Box3i get_node_box(Vector3i pos_within_lod, int lod_index) {
+	static inline Box3i get_node_box(Vector3i pos_within_lod, unsigned int lod_index) {
 		return Box3i(pos_within_lod << lod_index, Vector3iUtil::create(1 << lod_index));
 	}
 
 	// Convenience for use in UpdateActions::can_split.
 	// Coordinates are in octree space (where 1 unit = size of a leaf node)
-	static bool is_below_split_distance(Vector3i node_pos, int lod, Vector3 view_pos, float lod_distance) {
-		const int lod_factor = 1 << lod;
+	static bool is_below_split_distance(Vector3i node_pos, unsigned int lod, Vector3 view_pos, float lod_distance) {
+		const unsigned int lod_factor = 1 << lod;
 		const Vector3 world_center = static_cast<real_t>(lod_factor) * (Vector3(node_pos) + Vector3(0.5, 0.5, 0.5));
 		const float split_distance_sq = math::squared(lod_distance * lod_factor);
 		return world_center.distance_squared_to(view_pos) < split_distance_sq;
 	}
 
 	// Helper for creating an octree with the right depth
-	static int compute_lod_count(int base_size, int full_size) {
-		int po = 0;
+	static int compute_lod_count(unsigned int base_size, unsigned int full_size) {
+		unsigned int po = 0;
 		while (full_size > base_size) {
 			full_size = full_size >> 1;
 			po += 1;
@@ -238,6 +254,11 @@ private:
 			_free_indexes.push_back(i0);
 		}
 
+		void clear() {
+			_nodes.clear();
+			_free_indexes.clear();
+		}
+
 	private:
 		// TODO If this grows too much, mayyybe could implement a paged vector to fight fragmentation.
 		// If we do so, that may also solve pointer invalidation since pages would remain stable
@@ -262,7 +283,7 @@ private:
 	}
 
 	template <typename UpdateActions_T>
-	void update(unsigned int node_index, Vector3i node_pos, int lod, UpdateActions_T &actions) {
+	void update(unsigned int node_index, Vector3i node_pos, unsigned int lod, UpdateActions_T &actions) {
 		// This function should be called regularly over frames.
 		Node *node = get_node(node_index);
 
@@ -276,17 +297,22 @@ private:
 				node->first_child = first_child;
 
 				for (unsigned int i = 0; i < 8; ++i) {
-					Node *child = get_node(first_child + i);
-					actions.create_child(get_child_position(node_pos, i), lod - 1, child->data);
-					// If the node needs to split more, we'll ask more recycling at the next frame...
-					// That means the initialization of the game should do some warm up and fetch all leaves,
-					// otherwise it's gonna be rough
+					const Vector3i child_pos = get_child_position(node_pos, i);
+					const unsigned int child_lod = lod - 1;
+					const unsigned int child_index = first_child + i;
+
+					Node *child = get_node(child_index);
+					actions.create_child(child_pos, child_lod, child->data);
+
+					update(child_index, child_pos, child_lod, actions);
 				}
 
 				actions.hide_parent(node_pos, lod);
 			}
 
 		} else {
+			// `node` has children
+
 			bool has_split_child = false;
 			const unsigned int first_child = node->first_child;
 
@@ -296,27 +322,25 @@ private:
 				has_split_child |= _pool.get_node(child_index)->has_children();
 			}
 
-			// Get node again because `update` may invalidate the pointer
-			node = get_node(node_index);
-
 			if (!has_split_child && actions.can_join(node_pos, lod)) {
+				// Get node again because `update` may invalidate the pointer
+				node = get_node(node_index);
+
 				// Join
-				if (node->has_children()) {
-					for (unsigned int i = 0; i < 8; ++i) {
-						actions.destroy_child(get_child_position(node_pos, i), lod - 1);
-					}
-
-					_pool.recycle_children(first_child);
-					node->first_child = NO_CHILDREN;
-
-					actions.show_parent(node_pos, lod);
+				for (unsigned int i = 0; i < 8; ++i) {
+					actions.destroy_child(get_child_position(node_pos, i), lod - 1);
 				}
+
+				_pool.recycle_children(first_child);
+				node->first_child = NO_CHILDREN;
+
+				actions.show_parent(node_pos, lod);
 			}
 		}
 	}
 
 	template <typename DestroyAction_T>
-	void join_all_recursively(Node *node, Vector3i node_pos, int lod, DestroyAction_T &destroy_action) {
+	void join_all_recursively(Node *node, Vector3i node_pos, unsigned int lod, DestroyAction_T &destroy_action) {
 		// We can use pointers here because we won't allocate new nodes,
 		// and won't shrink the node pool either
 
@@ -337,18 +361,19 @@ private:
 	}
 
 	template <typename Predicate_T>
-	bool find_in_box_recursive(Box3i box, Vector3i node_pos, int node_index, int depth, Predicate_T predicate) const {
+	bool find_in_box_recursive(
+			Box3i box, Vector3i node_pos, unsigned int node_index, unsigned int depth, Predicate_T predicate) const {
 		const Node *node = get_node(node_index);
 		const Box3i node_box = get_node_box(node_pos, depth);
 		if (!node_box.intersects(box)) {
 			return false;
 		}
 		if (node->has_children()) {
-			const int first_child_index = node->first_child;
-			const int lower_depth = depth - 1;
+			const unsigned int first_child_index = node->first_child;
+			const unsigned int lower_depth = depth - 1;
 			// TODO Optimization: we could do breadth-first search instead of depth-first,
 			// because packs of children are contiguous in memory and would help the pre-fetcher
-			for (int ri = 0; ri < 8; ++ri) {
+			for (unsigned int ri = 0; ri < 8; ++ri) {
 				const bool found = find_in_box_recursive(
 						box, get_child_position(node_pos, ri), first_child_index + ri, lower_depth, predicate);
 				if (found) {
@@ -362,15 +387,15 @@ private:
 	}
 
 	template <typename F>
-	void for_leaves_in_box_recursive(Box3i box, Vector3i node_pos, int node_index, int depth, F f) {
+	void for_leaves_in_box_recursive(Box3i box, Vector3i node_pos, unsigned int node_index, unsigned int depth, F f) {
 		Node *node = get_node(node_index);
 		const Box3i node_box = get_node_box(node_pos, depth);
 		if (!node_box.intersects(box)) {
 			return;
 		}
 		if (node->has_children()) {
-			const int first_child_index = node->first_child;
-			const int lower_depth = depth - 1;
+			const unsigned int first_child_index = node->first_child;
+			const unsigned int lower_depth = depth - 1;
 			for (int ri = 0; ri < 8; ++ri) {
 				for_leaves_in_box_recursive(
 						box, get_child_position(node_pos, ri), first_child_index + ri, lower_depth, f);
@@ -380,11 +405,11 @@ private:
 		}
 	}
 
-	unsigned int get_node_count_recursive(int node_index) const {
+	unsigned int get_node_count_recursive(unsigned int node_index) const {
 		const Node *node = get_node(node_index);
 		unsigned int count = 1;
 		if (node->has_children()) {
-			for (int i = 0; i < 8; ++i) {
+			for (unsigned int i = 0; i < 8; ++i) {
 				count += get_node_count_recursive(node->first_child + i);
 			}
 		}
@@ -392,12 +417,12 @@ private:
 	}
 
 	template <typename F>
-	void for_each_leaf_recursive(Vector3i node_pos, int node_index, int depth, F f) const {
+	void for_each_leaf_recursive(Vector3i node_pos, unsigned int node_index, unsigned int depth, F f) const {
 		const Node *node = get_node(node_index);
 		if (node->has_children()) {
-			const int first_child_index = node->first_child;
-			const int lower_depth = depth - 1;
-			for (int ri = 0; ri < 8; ++ri) {
+			const unsigned int first_child_index = node->first_child;
+			const unsigned int lower_depth = depth - 1;
+			for (unsigned int ri = 0; ri < 8; ++ri) {
 				for_each_leaf_recursive(get_child_position(node_pos, ri), first_child_index + ri, lower_depth, f);
 			}
 		} else {
@@ -406,7 +431,7 @@ private:
 	}
 
 	template <typename Actions_T>
-	void subdivide_recursively(unsigned int node_index, Vector3i node_pos, int lod, Actions_T &actions) {
+	void subdivide_recursively(unsigned int node_index, Vector3i node_pos, unsigned int lod, Actions_T &actions) {
 		Node *node = get_node(node_index);
 		if (node->has_children()) {
 			if (lod == 1) {
@@ -414,21 +439,21 @@ private:
 				return;
 			}
 			// `node` might be invalidated during the loop
-			const int first_child_index = node->first_child;
+			const unsigned int first_child_index = node->first_child;
 			for (unsigned int i = 0; i < 8; ++i) {
 				subdivide_recursively(first_child_index + i, get_child_position(node_pos, i), lod - 1, actions);
 			}
 
 		} else if (lod > 0 && actions.can_split(node_pos, lod, node->data)) {
 			// Split
-			const int first_child_index = _pool.allocate_children();
+			const unsigned int first_child_index = _pool.allocate_children();
 			// Get node again because `allocate_children` may invalidate the pointer
 			node = get_node(node_index);
 			node->first_child = first_child_index;
 			// `node` might be invalidated during the loop
 
 			for (unsigned int i = 0; i < 8; ++i) {
-				const int child_index = first_child_index + i;
+				const unsigned int child_index = first_child_index + i;
 				const Vector3i child_pos = get_child_position(node_pos, i);
 				Node *child = get_node(child_index);
 				actions.create_child(child_pos, lod - 1, child->data);
@@ -442,8 +467,7 @@ private:
 
 	Node _root;
 	bool _is_root_created = false;
-	int _max_depth = 0;
-	// TODO May be worth making this pool external for sharing purpose
+	unsigned int _max_depth = 0;
 	NodePool _pool;
 };
 
