@@ -94,21 +94,25 @@ void ThreadedTaskRunner::enqueue(IThreadedTask *task) {
 	_tasks_semaphore.post();
 }
 
-void ThreadedTaskRunner::enqueue(Span<IThreadedTask *> tasks) {
-	for (size_t i = 0; i < tasks.size(); ++i) {
-		CRASH_COND(tasks[i] == nullptr);
+void ThreadedTaskRunner::enqueue(Span<IThreadedTask *> new_tasks) {
+#ifdef DEBUG_ENABLED
+	for (size_t i = 0; i < new_tasks.size(); ++i) {
+		CRASH_COND(new_tasks[i] == nullptr);
 	}
+#endif
 	{
 		MutexLock lock(_tasks_mutex);
-		for (size_t i = 0; i < tasks.size(); ++i) {
+		const size_t dst_begin = _tasks.size();
+		_tasks.resize(_tasks.size() + new_tasks.size());
+		for (size_t i = 0; i < new_tasks.size(); ++i) {
 			TaskItem t;
-			t.task = tasks[i];
-			_tasks.push_back(t);
+			t.task = new_tasks[i];
+			_tasks[dst_begin + i] = t;
 		}
-		_debug_received_tasks += tasks.size();
+		_debug_received_tasks += new_tasks.size();
 	}
 	// TODO Do I need to post a certain amount of times?
-	for (size_t i = 0; i < tasks.size(); ++i) {
+	for (size_t i = 0; i < new_tasks.size(); ++i) {
 		_tasks_semaphore.post();
 	}
 }

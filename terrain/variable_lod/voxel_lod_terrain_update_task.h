@@ -65,7 +65,8 @@ public:
 
 	static void send_block_save_requests(uint32_t volume_id,
 			Span<VoxelLodTerrainUpdateData::BlockToSave> blocks_to_save,
-			std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size);
+			std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size,
+			BufferedTaskScheduler &task_scheduler);
 
 private:
 	std::shared_ptr<VoxelDataLodMap> _data;

@@ -288,6 +288,32 @@ struct VoxelFileLockerWrite {
 	String _path;
 };
 
+class BufferedTaskScheduler {
+public:
+	static BufferedTaskScheduler &get_for_current_thread();
+
+	inline void push_main_task(IThreadedTask *task) {
+		_main_tasks.push_back(task);
+	}
+
+	inline void push_io_task(IThreadedTask *task) {
+		_io_tasks.push_back(task);
+	}
+
+	inline void flush() {
+		VoxelServer::get_singleton()->push_async_tasks(to_span(_main_tasks));
+		VoxelServer::get_singleton()->push_async_io_tasks(to_span(_io_tasks));
+		_main_tasks.clear();
+		_io_tasks.clear();
+	}
+
+	// No destructor! This does not take ownership, it is only a helper. Flush should be called after each use.
+
+private:
+	std::vector<IThreadedTask *> _main_tasks;
+	std::vector<IThreadedTask *> _io_tasks;
+};
+
 } // namespace zylann::voxel
 
 #endif // VOXEL_SERVER_H

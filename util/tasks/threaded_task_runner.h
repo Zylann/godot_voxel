@@ -59,7 +59,7 @@ public:
 	// Ownership is NOT passed to the pool, so make sure you get them back when completed if you want to delete them.
 	void enqueue(IThreadedTask *task);
 	// Schedules multiple tasks at once. Involves less internal locking.
-	void enqueue(Span<IThreadedTask *> tasks);
+	void enqueue(Span<IThreadedTask *> new_tasks);
 
 	// TODO Lambda might not be the best API. memcpying to a vector would ensure we lock for a shorter time.
 	template <typename F>

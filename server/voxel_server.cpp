@@ -603,4 +603,9 @@ VoxelServer::Stats VoxelServer::get_stats() const {
 	return s;
 }
 
+BufferedTaskScheduler &BufferedTaskScheduler::get_for_current_thread() {
+	static thread_local BufferedTaskScheduler tls_task_scheduler;
+	return tls_task_scheduler;
+}
+
 } // namespace zylann::voxel

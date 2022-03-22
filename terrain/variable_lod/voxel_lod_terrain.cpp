@@ -1647,8 +1647,10 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 	}
 
 	// And flush immediately
+	BufferedTaskScheduler task_scheduler;
 	VoxelLodTerrainUpdateTask::send_block_save_requests(
-			_volume_id, to_span(blocks_to_save), _streaming_dependency, get_data_block_size());
+			_volume_id, to_span(blocks_to_save), _streaming_dependency, get_data_block_size(), task_scheduler);
+	task_scheduler.flush();
 }
 
 const VoxelLodTerrain::Stats &VoxelLodTerrain::get_stats() const {
