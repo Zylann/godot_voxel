@@ -178,6 +178,14 @@ public:
 
 	Ref<VoxelTool> get_voxel_tool();
 
+	// Experimental feature to call when a viewer is added to the world, or teleported far from its previous position.
+	// By default octrees don't subdivide down to LOD0 immediately. They wait for each LOD to finish loading before
+	// subdividing next LODs, which can take some time.
+	// This function creates a temporary octree that subdivides down to LOD0 so data is immediately requested,
+	// allowing initial loading to take less time.
+	// This might be done automatically in the future.
+	void prefetch_octrees_data();
+
 	struct Stats {
 		// Amount of octree nodes waiting for data. It should reach zero when everything is loaded.
 		uint32_t blocked_lods = 0;

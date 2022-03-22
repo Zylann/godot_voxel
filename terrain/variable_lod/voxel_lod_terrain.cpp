@@ -1571,6 +1571,10 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 	}
 }
 
+void VoxelLodTerrain::prefetch_octrees_data() {
+	_update_data->state.prefetch_octree_data = true;
+}
+
 void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
 	if (_instancer != nullptr && instancer != nullptr) {
 		ERR_FAIL_COND_MSG(_instancer != nullptr, "No more than one VoxelInstancer per terrain");
@@ -2243,6 +2247,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("set_threaded_update_enabled", "enabled"), &VoxelLodTerrain::set_threaded_update_enabled);
 	ClassDB::bind_method(D_METHOD("is_threaded_update_enabled"), &VoxelLodTerrain::is_threaded_update_enabled);
+
+	ClassDB::bind_method(D_METHOD("prefetch_octrees_data"), &VoxelLodTerrain::prefetch_octrees_data);
 
 	ClassDB::bind_method(
 			D_METHOD("debug_raycast_mesh_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_mesh_block);

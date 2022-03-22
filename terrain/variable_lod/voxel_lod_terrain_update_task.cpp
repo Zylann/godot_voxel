@@ -787,11 +787,114 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 	return transition_mask;
 }
 
+// Finds the ideal octree shape and requests all data required up-front.
+static void prefetch_octrees_for_viewer(VoxelLodTerrainUpdateData::State &state,
+		const VoxelLodTerrainUpdateData::Settings &settings, VoxelDataLodMap &data, Vector3 p_viewer_pos,
+		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load) {
+	//
+	VOXEL_PROFILE_SCOPE();
+	/*
+	Notes:
+	Could this be the default way normal octrees work?
+	Subdivide them all the way? (excluding the fact they might not have to if generators return `max_lod_hint`)
+	Potential downside is much more strain on data requests when moving fast.
+	If they do, when do we know if a mesh should be shown or hidden? (previously done on subdiv/join)
+	For each node:
+		If the node has no children:
+			Show mesh.
+		Otherwise, if the node has children:
+			If any child has no mesh (yet), show mesh. Otherwise, hide mesh.
+	*/
+
+	static thread_local LodOctree tls_temp_octree;
+
+	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
+	const int octree_leaf_node_size = mesh_block_size;
+	const float lod_distance_octree_space = settings.lod_distance / octree_leaf_node_size;
+
+	const int data_blocks_to_load_previous_size = data_blocks_to_load.size();
+
+	// TODO Maintain a vector to make iteration faster?
+	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = state.lod_octrees.front(); E;
+			E = E->next()) {
+		VOXEL_PROFILE_SCOPE();
+
+		// Similar actions to progressive fitting but allows all subdivisions to gather data down to LOD0.
+		struct PreFetchOctreeActions {
+			VoxelLodTerrainUpdateData::State &state;
+			const VoxelLodTerrainUpdateData::Settings &settings;
+			VoxelDataLodMap &data;
+			std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load;
+			Vector3i block_offset_lod0;
+			float lod_distance_octree_space;
+			Vector3 viewer_pos_octree_space;
+
+			void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {}
+			void destroy_child(Vector3i node_pos, int lod_index) {}
+			void show_parent(Vector3i node_pos, int lod_index) {}
+			void hide_parent(Vector3i node_pos, int lod_index) {}
+
+			bool can_create_root(int lod_index) {
+				const Vector3i offset = block_offset_lod0 >> lod_index;
+				check_block_loaded_and_meshed(state, settings, data, offset, lod_index, data_blocks_to_load);
+				return true;
+			}
+
+			bool can_split(Vector3i node_pos, int lod_index, LodOctree::NodeData &node_data) {
+				if (!LodOctree::is_below_split_distance(
+							node_pos, lod_index, viewer_pos_octree_space, lod_distance_octree_space)) {
+					return false;
+				}
+				const int child_lod_index = lod_index - 1;
+				const Vector3i offset = block_offset_lod0 >> child_lod_index;
+
+				// Can only subdivide if higher detail meshes are ready to be shown, otherwise it will produce holes
+				for (int i = 0; i < 8; ++i) {
+					// Get block pos local-to-region + convert to local-to-terrain
+					const Vector3i child_pos = LodOctree::get_child_position(node_pos, i) + offset;
+					// We have to ping ALL children, because the reason we are here is we want them loaded
+					check_block_loaded_and_meshed(
+							state, settings, data, child_pos, child_lod_index, data_blocks_to_load);
+				}
+
+				return true;
+			}
+
+			bool can_join(Vector3i node_pos, int parent_lod_index) {
+				if (LodOctree::is_below_split_distance(
+							node_pos, parent_lod_index, viewer_pos_octree_space, lod_distance_octree_space)) {
+					return false;
+				}
+				return true;
+			}
+		};
+
+		const Vector3i block_pos_maxlod = E->key();
+		const Vector3i block_offset_lod0 = block_pos_maxlod << (settings.lod_count - 1);
+		const Vector3 relative_viewer_pos = p_viewer_pos - Vector3(mesh_block_size * block_offset_lod0);
+
+		PreFetchOctreeActions octree_actions{ //
+			state, //
+			settings, //
+			data, //
+			data_blocks_to_load, //
+			block_offset_lod0, //
+			lod_distance_octree_space, //
+			relative_viewer_pos / octree_leaf_node_size
+		};
+		tls_temp_octree.create(settings.lod_count);
+		tls_temp_octree.update(octree_actions);
+	}
+
+	PRINT_VERBOSE(String("Prefetching {0} data blocks")
+						  .format(varray(int(data_blocks_to_load.size()) - data_blocks_to_load_previous_size)));
+}
+
 static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, VoxelDataLodMap &data, Vector3 p_viewer_pos,
 		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load) {
 	//
-	VOXEL_PROFILE_SCOPE_NAMED("Update octrees");
+	VOXEL_PROFILE_SCOPE();
 
 	static thread_local FixedArray<std::vector<Vector3i>, constants::MAX_LOD>
 			tls_blocks_pending_transition_update_per_lod;
@@ -887,15 +990,13 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 					return false;
 				}
 				const int child_lod_index = lod_index - 1;
-				Vector3i offset = block_offset_lod0 >> child_lod_index;
+				const Vector3i offset = block_offset_lod0 >> child_lod_index;
 				bool can = true;
 
 				// Can only subdivide if higher detail meshes are ready to be shown, otherwise it will produce holes
 				for (int i = 0; i < 8; ++i) {
-					// Get block pos local-to-region
-					Vector3i child_pos = LodOctree::get_child_position(node_pos, i);
-					// Convert to local-to-terrain
-					child_pos += offset;
+					// Get block pos local-to-region + convert to local-to-terrain
+					const Vector3i child_pos = LodOctree::get_child_position(node_pos, i) + offset;
 					// We have to ping ALL children, because the reason we are here is we want them loaded
 					can &= check_block_loaded_and_meshed(
 							state, settings, data, child_pos, child_lod_index, data_blocks_to_load);
@@ -1395,6 +1496,12 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 
 		// Find which blocks we need to load and see, within each octree
 		if (stream_enabled) {
+			if (state.prefetch_octree_data) {
+				// Experimental feature
+				state.prefetch_octree_data = false;
+				prefetch_octrees_for_viewer(state, settings, data, _viewer_pos, data_blocks_to_load);
+			}
+
 			process_octrees_fitting(state, settings, data, _viewer_pos, data_blocks_to_load);
 		}
 	}
@@ -1405,6 +1512,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 
 	profiling_clock.restart();
 	{
+		VOXEL_PROFILE_SCOPE_NAMED("IO requests");
 		// It's possible the user didn't set a stream yet, or it is turned off
 		if (stream_enabled) {
 			const unsigned int data_block_size = data.lods[0].map.get_block_size();
