@@ -155,8 +155,6 @@ struct VoxelLodTerrainUpdateData {
 		BinaryMutex pending_async_edits_mutex;
 		std::vector<RunningAsyncEdit> running_async_edits;
 
-		bool prefetch_octree_data = false;
-
 		Stats stats;
 	};
 
