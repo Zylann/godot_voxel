@@ -182,7 +182,7 @@ There are likely variants of this to obtain different results.
 
 ### Usage with blocky voxels
 
-It is possible to use this generator with `VoxelMesherBlocky` by using an `OutputType` node instead of `OutputSDF`.
+It is possible to use this generator with `VoxelMesherBlocky` by using an `OutputType` node instead of `OutputSDF`. However, `VoxelMesherBlocky` expects voxels to be IDs, not SDF values.
 
 The simplest example is to pick any existing SDF generator, and replace `OutputSDF` with a `Select` node connected to an `OutputType`. The idea is to choose between the ID of two different voxel types (like air or stone) if the SDF value is above or below a threshold.
 
@@ -192,7 +192,7 @@ If more variety is needed, `Select` nodes can be chained to combine multiple lay
 
 ![Example screenshot of a blocky heightmap with two biomes made with a graph generator](images/voxel_graph_blocky_biome.png)
 
-`Select` creates a "cut" between the two possible values, and it may be desirable to have some sort of transition. While this isn't possible without a lot of different types for each value of the gradient (usually done with a shader), it is however easy to add a bit of white noise to the threshold. This reproduces a similar "dithered" transition, as can be seen in Minecraft between sand and dirt.
+`Select` creates a "cut" between the two possible values, and it may be desirable to have some sort of transition. While this isn't possible with `VoxelMesherBlocky` without a lot of different types for each value of the gradient (usually done with a shader), it is however easy to add a bit of noise to the threshold. This reproduces a similar "dithered" transition, as can be seen in Minecraft between sand and dirt.
 
 ![Example screenshot of a blocky heightmap with two biomes and dithering](images/voxel_graph_blocky_biome_dithering.png)
 
