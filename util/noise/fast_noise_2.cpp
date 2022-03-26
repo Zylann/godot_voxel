@@ -562,6 +562,8 @@ void FastNoise2::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_simd_level_name", "level"), &FastNoise2::_b_get_simd_level_name);
 
+	ClassDB::bind_method(D_METHOD("update_generator"), &FastNoise2::update_generator);
+
 	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &FastNoiseLite::_on_warp_noise_changed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM, NOISE_TYPE_HINT_STRING), "set_noise_type",
