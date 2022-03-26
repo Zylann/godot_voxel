@@ -33,6 +33,37 @@ VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
 	}
 }
 
+void VoxelMeshBlockVLT::set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode) {
+	// TODO Don't add mesh instance to the world if it's not visible.
+	// I suspect Godot is trying to include invisible mesh instances into the culling process,
+	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
+	// This needs investigation.
+
+	if (mesh.is_valid()) {
+		if (!_mesh_instance.is_valid()) {
+			// Create instance if it doesn't exist
+			_mesh_instance.create();
+			_mesh_instance.set_gi_mode(gi_mode);
+			set_mesh_instance_visible(_mesh_instance, _visible && _parent_visible);
+		}
+
+		_mesh_instance.set_mesh(mesh);
+
+		if (_shader_material.is_valid()) {
+			_mesh_instance.set_material_override(_shader_material);
+		}
+#ifdef VOXEL_DEBUG_LOD_MATERIALS
+		_mesh_instance.set_material_override(_debug_material);
+#endif
+
+	} else {
+		if (_mesh_instance.is_valid()) {
+			// Delete instance if it exists
+			_mesh_instance.destroy();
+		}
+	}
+}
+
 void VoxelMeshBlockVLT::set_gi_mode(DirectMeshInstance::GIMode mode) {
 	VoxelMeshBlock::set_gi_mode(mode);
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {

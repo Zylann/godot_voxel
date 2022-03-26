@@ -193,6 +193,7 @@ Ref<Material> VoxelLodTerrain::get_material() const {
 }
 
 void VoxelLodTerrain::set_material(Ref<Material> p_material) {
+	// TODO Update existing block surfaces
 	_material = p_material;
 }
 

@@ -392,13 +392,31 @@ bool VoxelTerrain::is_automatic_loading_enabled() const {
 }
 
 void VoxelTerrain::set_material(unsigned int id, Ref<Material> material) {
-	// TODO Update existing block surfaces
-	ERR_FAIL_COND(id < 0 || id >= VoxelMesherBlocky::MAX_MATERIALS);
-	_materials[id] = material;
+	ERR_FAIL_INDEX(id, VoxelMesherBlocky::MAX_MATERIALS);
+
+	Ref<Material> old_material = _materials[id];
+
+	if (material != old_material) {
+		// Update existing meshes
+		_mesh_map.for_each_block([material, old_material](VoxelMeshBlockVT &block) {
+			Ref<Mesh> mesh = block.get_mesh();
+			if (mesh.is_valid()) {
+				// We can't just assign by material index because some meshes don't use all materials of the terrain,
+				// therefore they don't have as many surfaces. So we have to find which surfaces use the old material.
+				for (int surface_index = 0; surface_index < mesh->get_surface_count(); ++surface_index) {
+					if (mesh->surface_get_material(surface_index) == old_material) {
+						mesh->surface_set_material(surface_index, material);
+					}
+				}
+			}
+		});
+
+		_materials[id] = material;
+	}
 }
 
 Ref<Material> VoxelTerrain::get_material(unsigned int id) const {
-	ERR_FAIL_COND_V(id < 0 || id >= VoxelMesherBlocky::MAX_MATERIALS, Ref<Material>());
+	ERR_FAIL_INDEX_V(id, VoxelMesherBlocky::MAX_MATERIALS, Ref<Material>());
 	return _materials[id];
 }
 

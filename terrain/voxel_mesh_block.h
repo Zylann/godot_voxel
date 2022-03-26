@@ -37,11 +37,6 @@ public:
 	bool has_mesh() const;
 	void drop_mesh();
 
-	void set_shader_material(Ref<ShaderMaterial> material);
-	inline Ref<ShaderMaterial> get_shader_material() const {
-		return _shader_material;
-	}
-
 	// Note, GIMode is not stored per block, it is a shared option so we provide it in several functions.
 	// Call this function only if the mesh block already exists and has not changed mesh
 	void set_gi_mode(DirectMeshInstance::GIMode mode);
@@ -76,7 +71,6 @@ protected:
 
 	Vector3i _position_in_voxels;
 
-	Ref<ShaderMaterial> _shader_material;
 	DirectMeshInstance _mesh_instance;
 	DirectStaticBody _static_body;
 	Ref<World3D> _world;

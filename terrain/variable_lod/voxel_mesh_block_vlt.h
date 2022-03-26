@@ -41,6 +41,8 @@ public:
 
 	void set_parent_visible(bool parent_visible);
 
+	void set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode);
+
 	void set_transition_mask(uint8_t m);
 	inline uint8_t get_transition_mask() const {
 		return _transition_mask;
@@ -49,6 +51,10 @@ public:
 	void set_gi_mode(DirectMeshInstance::GIMode mode);
 	void set_transition_mesh(Ref<Mesh> mesh, int side, DirectMeshInstance::GIMode gi_mode);
 	void set_shader_material(Ref<ShaderMaterial> material);
+	inline Ref<ShaderMaterial> get_shader_material() const {
+		return _shader_material;
+	}
+
 	void set_parent_transform(const Transform3D &parent_transform);
 
 	template <typename F>
@@ -70,6 +76,8 @@ private:
 	inline bool _is_transition_visible(int side) const {
 		return _transition_mask & (1 << side);
 	}
+
+	Ref<ShaderMaterial> _shader_material;
 
 	FixedArray<DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
 

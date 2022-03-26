@@ -42,6 +42,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
     - `VoxelMesherTransvoxel`: fixed surface not appearing if it lines up exactly at integer coordinates
     - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
+    - `VoxelTerrain`: changing a material now updates existing meshes instead of only new ones
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
     - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
     - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it

@@ -53,9 +53,6 @@ void VoxelMeshBlock::set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode
 
 		_mesh_instance.set_mesh(mesh);
 
-		if (_shader_material.is_valid()) {
-			_mesh_instance.set_material_override(_shader_material);
-		}
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
 		_mesh_instance.set_material_override(_debug_material);
 #endif
@@ -103,19 +100,6 @@ void VoxelMeshBlock::_set_visible(bool visible) {
 	}
 	if (_static_body.is_valid()) {
 		_static_body.set_shape_enabled(0, visible);
-	}
-}
-
-void VoxelMeshBlock::set_shader_material(Ref<ShaderMaterial> material) {
-	_shader_material = material;
-
-	if (_mesh_instance.is_valid()) {
-		_mesh_instance.set_material_override(_shader_material);
-	}
-
-	if (_shader_material.is_valid()) {
-		const Transform3D local_transform(Basis(), _position_in_voxels);
-		_shader_material->set_shader_param(VoxelStringNames::get_singleton()->u_block_local_transform, local_transform);
 	}
 }
 
