@@ -127,11 +127,11 @@ struct VoxelLodTerrainUpdateData {
 	};
 
 	struct Stats {
-		uint32_t blocked_lods;
-		uint32_t time_detect_required_blocks;
-		uint32_t time_io_requests;
-		uint32_t time_mesh_requests;
-		uint32_t time_total;
+		uint32_t blocked_lods = 0;
+		uint32_t time_detect_required_blocks = 0;
+		uint32_t time_io_requests = 0;
+		uint32_t time_mesh_requests = 0;
+		uint32_t time_total = 0;
 	};
 
 	// Data modified by the update task
@@ -142,6 +142,9 @@ struct VoxelLodTerrainUpdateData {
 		// TODO Optimization: could be replaced with a grid data structure
 		Map<Vector3i, OctreeItem> lod_octrees;
 		Box3i last_octree_region_box;
+		Vector3i local_viewer_pos_previous_octree_update;
+		bool had_blocked_octree_nodes_previous_update = false;
+		bool force_update_octrees_next_update = false;
 
 		FixedArray<Lod, constants::MAX_LOD> lods;
 

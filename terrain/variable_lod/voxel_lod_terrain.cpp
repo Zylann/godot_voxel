@@ -359,6 +359,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 	}
 
 	_update_data->wait_for_end_of_task();
+	_update_data->state.force_update_octrees_next_update = true;
 
 	// The whole map might change, so make all area dirty
 	for (unsigned int i = 0; i < _update_data->settings.lod_count; ++i) {
@@ -395,6 +396,7 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 
 	_update_data->wait_for_end_of_task();
 	_update_data->settings.mesh_block_size_po2 = po2;
+	_update_data->state.force_update_octrees_next_update = true;
 
 	VoxelLodTerrainUpdateData::State &state = _update_data->state;
 	const unsigned int lod_count = _update_data->settings.lod_count;
@@ -435,6 +437,7 @@ void VoxelLodTerrain::set_full_load_mode_enabled(bool enabled) {
 	if (enabled != _update_data->settings.full_load_mode) {
 		_update_data->wait_for_end_of_task();
 		_update_data->settings.full_load_mode = enabled;
+		_update_data->state.force_update_octrees_next_update = true;
 		_on_stream_params_changed();
 	}
 }
@@ -690,6 +693,7 @@ void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
 	// It is possible for blocks to still load beyond that distance.
 	_update_data->wait_for_end_of_task();
 	_update_data->settings.view_distance_voxels = p_distance_in_voxels;
+	_update_data->state.force_update_octrees_next_update = true;
 }
 
 void VoxelLodTerrain::start_updater() {
@@ -763,6 +767,7 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 	// otherwise lods will decimate too fast and it will look messy
 	_update_data->settings.lod_distance =
 			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
+	_update_data->state.force_update_octrees_next_update = true;
 	VoxelServer::get_singleton()->set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 }
 
@@ -786,6 +791,7 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 	_update_data->wait_for_end_of_task();
 
 	_update_data->settings.lod_count = p_lod_count;
+	_update_data->state.force_update_octrees_next_update = true;
 
 	LodOctree::NoDestroyAction nda;
 
@@ -1173,9 +1179,11 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 		lod.mesh_blocks_to_activate.clear();
 		lod.mesh_blocks_to_deactivate.clear();
 
+		/*
 #ifdef DEBUG_ENABLED
 		std::unordered_set<Vector3i> debug_removed_blocks;
 #endif
+		*/
 
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_unload.size(); ++i) {
 			const Vector3i bpos = lod.mesh_blocks_to_unload[i];
@@ -1186,9 +1194,11 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			if (_instancer != nullptr) {
 				_instancer->on_mesh_block_exit(bpos, lod_index);
 			}
+			/*
 #ifdef DEBUG_ENABLED
 			debug_removed_blocks.insert(bpos);
 #endif
+			*/
 			// Blocks in the update queue will be cancelled in _process,
 			// because it's too expensive to linear-search all blocks for each block
 		}
@@ -1730,6 +1740,7 @@ void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
 		}
 	}
 	_update_data->settings.bounds_in_voxels = bounds_in_voxels;
+	_update_data->state.force_update_octrees_next_update = true;
 }
 
 void VoxelLodTerrain::set_collision_update_delay(int delay_msec) {

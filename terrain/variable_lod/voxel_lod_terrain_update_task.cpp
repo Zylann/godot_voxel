@@ -461,6 +461,8 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 				box_to_load.for_each_cell(enter_action);
 			});
 		}
+
+		state.force_update_octrees_next_update = true;
 	}
 
 	state.last_octree_region_box = new_box;
@@ -793,6 +795,21 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 	//
 	VOXEL_PROFILE_SCOPE();
 
+	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
+	const int octree_leaf_node_size = mesh_block_size;
+
+	const bool force_update_octrees = state.force_update_octrees_next_update;
+	state.force_update_octrees_next_update = false;
+
+	// Octrees may not need to update every frame under certain conditions
+	if (!state.had_blocked_octree_nodes_previous_update && !force_update_octrees &&
+			p_viewer_pos.distance_squared_to(Vector3(state.local_viewer_pos_previous_octree_update)) <
+					math::squared(octree_leaf_node_size / 2)) {
+		return;
+	}
+
+	state.local_viewer_pos_previous_octree_update = p_viewer_pos;
+
 	static thread_local FixedArray<std::vector<Vector3i>, constants::MAX_LOD>
 			tls_blocks_pending_transition_update_per_lod;
 	//static thread_local FixedArray<std::vector<Vector3i>, constants::MAX_LOD> tls_mesh_blocks_to_add_per_lod;
@@ -802,9 +819,9 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 		//CRASH_COND(!tls_mesh_blocks_to_add_per_lod[i].empty());
 	}
 
-	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
-	const int octree_leaf_node_size = mesh_block_size;
 	const float lod_distance_octree_space = settings.lod_distance / octree_leaf_node_size;
+
+	unsigned int blocked_octree_nodes = 0;
 
 	// TODO Maintain a vector to make iteration faster?
 	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = state.lod_octrees.front(); E;
@@ -877,7 +894,12 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 
 			bool can_create_root(int lod_index) {
 				const Vector3i offset = block_offset_lod0 >> lod_index;
-				return check_block_loaded_and_meshed(state, settings, data, offset, lod_index, data_blocks_to_load);
+				const bool can =
+						check_block_loaded_and_meshed(state, settings, data, offset, lod_index, data_blocks_to_load);
+				if (!can) {
+					++blocked_count;
+				}
+				return can;
 			}
 
 			bool can_split(Vector3i node_pos, int lod_index, LodOctree::NodeData &node_data) {
@@ -964,10 +986,13 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 		VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
 		item.octree.update(octree_actions);
 
-		// Ideally, this stat should stabilize to zero.
-		// If not, something in block management prevents LODs from properly show up and should be fixed.
-		state.stats.blocked_lods += octree_actions.blocked_count;
+		blocked_octree_nodes += octree_actions.blocked_count;
 	}
+
+	// Ideally, this stat should stabilize to zero.
+	// If not, something in block management prevents LODs from properly show up and should be fixed.
+	state.stats.blocked_lods = blocked_octree_nodes;
+	state.had_blocked_octree_nodes_previous_update = blocked_octree_nodes > 0;
 
 	{
 		// In theory, blocks containing no surface have no reason to need a transition mask,
