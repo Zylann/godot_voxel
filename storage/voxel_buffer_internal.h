@@ -117,7 +117,7 @@ public:
 	void create(unsigned int sx, unsigned int sy, unsigned int sz);
 	void create(Vector3i size);
 	void clear();
-	void clear_channel(unsigned int channel_index, uint64_t clear_value = 0);
+	void clear_channel(unsigned int channel_index, uint64_t clear_value);
 	void clear_channel_f(unsigned int channel_index, real_t clear_value);
 
 	_FORCE_INLINE_ const Vector3i &get_size() const {
@@ -126,23 +126,23 @@ public:
 
 	void set_default_values(FixedArray<uint64_t, VoxelBufferInternal::MAX_CHANNELS> values);
 
-	uint64_t get_voxel(int x, int y, int z, unsigned int channel_index = 0) const;
-	void set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index = 0);
+	uint64_t get_voxel(int x, int y, int z, unsigned int channel_index) const;
+	void set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index);
 
-	real_t get_voxel_f(int x, int y, int z, unsigned int channel_index = 0) const;
-	void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index = 0);
+	real_t get_voxel_f(int x, int y, int z, unsigned int channel_index) const;
+	void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index);
 
-	_FORCE_INLINE_ uint64_t get_voxel(const Vector3i pos, unsigned int channel_index = 0) const {
+	_FORCE_INLINE_ uint64_t get_voxel(const Vector3i pos, unsigned int channel_index) const {
 		return get_voxel(pos.x, pos.y, pos.z, channel_index);
 	}
-	_FORCE_INLINE_ void set_voxel(int value, const Vector3i pos, unsigned int channel_index = 0) {
+	_FORCE_INLINE_ void set_voxel(int value, const Vector3i pos, unsigned int channel_index) {
 		set_voxel(value, pos.x, pos.y, pos.z, channel_index);
 	}
 
-	void fill(uint64_t defval, unsigned int channel_index = 0);
-	void fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigned int channel_index = 0);
+	void fill(uint64_t defval, unsigned int channel_index);
+	void fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigned int channel_index);
 	void fill_area_f(float fvalue, Vector3i min, Vector3i max, unsigned int channel_index);
-	void fill_f(real_t value, unsigned int channel = 0);
+	void fill_f(real_t value, unsigned int channel);
 
 	bool is_uniform(unsigned int channel_index) const;
 
