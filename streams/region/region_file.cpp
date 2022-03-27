@@ -56,8 +56,8 @@ static uint32_t get_header_size_v3(const VoxelRegionFormat &format) {
 	// Which file offset blocks data is starting
 	// magic + version + blockinfos
 	return MAGIC_AND_VERSION_SIZE + FIXED_HEADER_DATA_SIZE +
-		   (format.has_palette ? PALETTE_SIZE_IN_BYTES : 0) +
-		   format.region_size.volume() * sizeof(VoxelRegionBlockInfo);
+			(format.has_palette ? PALETTE_SIZE_IN_BYTES : 0) +
+			format.region_size.volume() * sizeof(VoxelRegionBlockInfo);
 }
 
 static bool save_header(FileAccess *f, uint8_t version, const VoxelRegionFormat &format,
@@ -364,11 +364,13 @@ Error VoxelRegionFile::save_block(Vector3i position, VoxelBufferInternal &block,
 		VoxelBlockSerializerInternal::SerializeResult res = serializer.serialize_and_compress(block);
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
 		f->store_32(res.data.size());
-		const unsigned int written_size = sizeof(int) + res.data.size();
+		const unsigned int written_size = sizeof(uint32_t) + res.data.size();
 		f->store_buffer(res.data.data(), res.data.size());
 
 		const unsigned int end_pos = f->get_position();
-		CRASH_COND(written_size != (end_pos - block_offset));
+		CRASH_COND_MSG(written_size != (end_pos - block_offset),
+				String("written_size: {0}, block_offset: {1}, end_pos: {2}")
+						.format(varray(written_size, end_pos, block_offset)));
 		pad_to_sector_size(f);
 
 		block_info.set_sector_index((block_offset - _blocks_begin_offset) / _header.format.sector_size);
@@ -479,7 +481,7 @@ void VoxelRegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int
 	VoxelRegionBlockInfo &block_info = _header.blocks[block_index];
 
 	unsigned int src_offset = _blocks_begin_offset +
-							  (block_info.get_sector_index() + block_info.get_sector_count()) * sector_size;
+			(block_info.get_sector_index() + block_info.get_sector_count()) * sector_size;
 
 	unsigned int dst_offset = src_offset - p_sector_count * sector_size;
 
