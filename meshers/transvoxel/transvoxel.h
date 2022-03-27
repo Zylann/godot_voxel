@@ -114,11 +114,17 @@ struct DefaultTextureIndicesData {
 	bool use;
 };
 
-DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int lod_index,
-		TexturingMode texturing_mode, Cache &cache, MeshArrays &output);
+class IDeepSDFSampler {
+public:
+	virtual float get_single(const Vector3i position_in_voxels, uint32_t lod_index) const = 0;
+};
 
-void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int direction, int lod_index,
-		TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
+DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel,
+		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
+		const IDeepSDFSampler *deep_sdf_sampler);
+
+void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int direction,
+		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data);
 
 } //namespace zylann::voxel::transvoxel

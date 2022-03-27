@@ -16,6 +16,9 @@ int VoxelGenerator::get_used_channels_mask() const {
 
 VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int channel) {
 	// Default slow implementation
+	// TODO Optimize: a small part of the slowness is caused by the allocator.
+	// It is not a good use of `VoxelMemoryPool` for such a small size called so often.
+	// Instead it would be faster if it was a thread-local using the default allocator.
 	VoxelBufferInternal buffer;
 	buffer.create(1, 1, 1);
 	VoxelQueryData q{ buffer, pos, 0 };

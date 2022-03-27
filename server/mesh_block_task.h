@@ -33,6 +33,7 @@ public:
 	uint8_t data_block_size;
 	PriorityDependency priority_dependency;
 	std::shared_ptr<MeshingDependency> meshing_dependency;
+	std::shared_ptr<VoxelDataLodMap> data;
 
 private:
 	bool _has_run = false;

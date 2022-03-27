@@ -163,7 +163,9 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
 			mesher->get_used_channels_mask(), meshing_dependency->generator, data_block_size, lod, position);
 
-	const VoxelMesher::Input input = { voxels, lod };
+	const Vector3i origin_in_voxels = position * (int(data_block_size) << lod);
+
+	const VoxelMesher::Input input = { voxels, meshing_dependency->generator.ptr(), data.get(), origin_in_voxels, lod };
 	mesher->build(_surfaces_output, input);
 
 	_has_run = true;

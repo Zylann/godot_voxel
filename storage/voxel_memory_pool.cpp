@@ -64,6 +64,7 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 			pool.mutex.unlock();
 		} else {
 			pool.mutex.unlock();
+			VOXEL_PROFILE_SCOPE("new alloc");
 			// All allocations done in this pool have the same size,
 			// which must be greater or equal to `size`
 			const size_t capacity = get_size_from_pool_index(pot);

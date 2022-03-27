@@ -279,11 +279,32 @@ inline float get_isolevel<float>() {
 	return 0.f;
 }
 
+Vector3f binary_search_interpolate(const IDeepSDFSampler &sampler, float s0, float s1, Vector3i p0, Vector3i p1,
+		uint32_t initial_lod_index, uint32_t min_lod_index) {
+	for (uint32_t lod_index = initial_lod_index; lod_index > min_lod_index; --lod_index) {
+		const Vector3i pm = (p0 + p1) >> 1;
+		// TODO Optimization: this is quite slow for a small difference in the result.
+		// Could be improved somewhat, but for now I don't think it's worth it
+		const float sm = -sampler.get_single(pm, lod_index - 1);
+		if (sign_f(s0) != sign_f(sm)) {
+			p1 = pm;
+			s1 = sm;
+		} else {
+			p0 = pm;
+			s0 = sm;
+		}
+	}
+	const float t = s1 / (s1 - s0);
+	const float t0 = t;
+	const float t1 = 1.f - t;
+	return to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
+}
+
 // This function is template so we avoid branches and checks when sampling voxels
 template <typename Sdf_T, typename WeightSampler_T>
 void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_indices_data,
-		const WeightSampler_T &weights_sampler, const Vector3i block_size_with_padding, int lod_index,
-		TexturingMode texturing_mode, Cache &cache, MeshArrays &output) {
+		const WeightSampler_T &weights_sampler, const Vector3i block_size_with_padding, uint32_t lod_index,
+		TexturingMode texturing_mode, Cache &cache, MeshArrays &output, const IDeepSDFSampler *deep_sdf_sampler) {
 	VOXEL_PROFILE_SCOPE();
 
 	// This function has some comments as quotes from the Transvoxel paper.
@@ -389,7 +410,9 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 
 				ReuseCell &current_reuse_cell = cache.get_reuse_cell(pos);
 
+#if DEBUG_ENABLED
 				CRASH_COND(case_code > 255);
+#endif
 
 				FixedArray<Vector3i, 8> padded_corner_positions;
 				padded_corner_positions[0] = Vector3i(pos.x, pos.y, pos.z);
@@ -499,23 +522,23 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 						if (!present || cell_vertex_indices[vertex_index] == -1) {
 							// Create new vertex
 
-							// TODO Implement surface shifting interpolation (see other places we interpolate too).
-							// See issue https://github.com/Zylann/godot_voxel/issues/60
-							// Seen in the paper, it fixes "steps" between LODs on flat surfaces.
-							// It is using a binary search through higher lods to find the zero-crossing edge.
-							// I did not do it here, because our data model is such that when we have low-resolution
-							// voxels, we cannot just have a look at the high-res ones, because they are not in memory.
-							// However, it might be possible on low-res blocks bordering high-res ones due to
-							// neighboring rules, or by falling back on the generator that was used to produce the
-							// volume.
-
 							const float t0 = t; //static_cast<float>(t) / 256.f;
 							const float t1 = 1.f - t; //static_cast<float>(0x100 - t) / 256.f;
 							//const int ti0 = t;
 							//const int ti1 = 0x100 - t;
-
 							//const Vector3i primary = p0 * ti0 + p1 * ti1;
-							const Vector3f primaryf = to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
+
+							Vector3f primaryf;
+							if (deep_sdf_sampler != nullptr) {
+								primaryf = binary_search_interpolate(
+										*deep_sdf_sampler, sample0, sample1, p0, p1, lod_index, 0);
+							} else {
+								primaryf = to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
+							}
+							// TODO Binary search gives better positional results, but does not improve normals.
+							// I'm not sure how to overcome this because if we sample low-detail normals, we get a
+							// "blocky" result due to SDF clipping. If we sample high-detail gradients, we get details,
+							// but if details are bumpy, we also get noisy results.
 							const Vector3f cg0 = get_corner_gradient<Sdf_T>(
 									corner_data_indices[v0], sdf_data, block_size_with_padding);
 							const Vector3f cg1 = get_corner_gradient<Sdf_T>(
@@ -1239,8 +1262,9 @@ Span<const Sdf_T> apply_zero_sdf_fix(Span<const Sdf_T> p_sdf_data) {
 	return to_span_const(sdf_data);
 }*/
 
-DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int lod_index,
-		TexturingMode texturing_mode, Cache &cache, MeshArrays &output) {
+DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel,
+		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
+		const IDeepSDFSampler *deep_sdf_sampler) {
 	VOXEL_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
@@ -1287,14 +1311,14 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 	switch (voxels.get_channel_depth(sdf_channel)) {
 		case VoxelBufferInternal::DEPTH_8_BIT: {
 			Span<const int8_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const int8_t>();
-			build_regular_mesh<int8_t>(
-					sdf_data, indices_data, weights_data, voxels.get_size(), lod_index, texturing_mode, cache, output);
+			build_regular_mesh<int8_t>(sdf_data, indices_data, weights_data, voxels.get_size(), lod_index,
+					texturing_mode, cache, output, deep_sdf_sampler);
 		} break;
 
 		case VoxelBufferInternal::DEPTH_16_BIT: {
 			Span<const int16_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const int16_t>();
-			build_regular_mesh<int16_t>(
-					sdf_data, indices_data, weights_data, voxels.get_size(), lod_index, texturing_mode, cache, output);
+			build_regular_mesh<int16_t>(sdf_data, indices_data, weights_data, voxels.get_size(), lod_index,
+					texturing_mode, cache, output, deep_sdf_sampler);
 		} break;
 
 		// TODO Remove support for 32-bit SDF in Transvoxel?
@@ -1302,8 +1326,8 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 		// (the optimized obj size for just transvoxel.cpp is 1.2 Mb on Windows)
 		case VoxelBufferInternal::DEPTH_32_BIT: {
 			Span<const float> sdf_data = sdf_data_raw.reinterpret_cast_to<const float>();
-			build_regular_mesh<float>(
-					sdf_data, indices_data, weights_data, voxels.get_size(), lod_index, texturing_mode, cache, output);
+			build_regular_mesh<float>(sdf_data, indices_data, weights_data, voxels.get_size(), lod_index,
+					texturing_mode, cache, output, deep_sdf_sampler);
 		} break;
 
 		case VoxelBufferInternal::DEPTH_64_BIT:
@@ -1319,8 +1343,8 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 	return default_texture_indices_data;
 }
 
-void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int direction, int lod_index,
-		TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
+void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int direction,
+		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data) {
 	VOXEL_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.

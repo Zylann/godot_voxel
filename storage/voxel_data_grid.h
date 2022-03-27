@@ -42,6 +42,14 @@ public:
 				});
 	}
 
+	// inline const VoxelBufferInternal *get_block(Vector3i position) const {
+	// 	ERR_FAIL_COND_V(!is_valid_position(position), nullptr);
+	// 	position -= _offset_in_blocks;
+	// 	const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
+	// 	CRASH_COND(index >= _blocks.size());
+	// 	return _blocks[index].get();
+	// }
+
 private:
 	inline unsigned int get_block_size() const {
 		return _block_size;
@@ -83,9 +91,13 @@ private:
 		_block_size = block_size;
 	}
 
-	inline bool is_valid_position(Vector3i pos) {
+	inline bool is_valid_position(Vector3i pos) const {
 		pos -= _offset_in_blocks;
-		return pos.x >= 0 && pos.y >= 0 && pos.z >= 0 && pos.x < _size_in_blocks.x && pos.y < _size_in_blocks.y &&
+		return pos.x >= 0 && //
+				pos.y >= 0 && //
+				pos.z >= 0 && //
+				pos.x < _size_in_blocks.x && //
+				pos.y < _size_in_blocks.y && //
 				pos.z < _size_in_blocks.z;
 	}
 

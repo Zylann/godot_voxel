@@ -1,5 +1,7 @@
 #include "voxel_mesher_transvoxel.h"
+#include "../../generators/voxel_generator.h"
 #include "../../storage/voxel_buffer_gd.h"
+#include "../../storage/voxel_data_map.h"
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
 #include "../../util/funcs.h"
 #include "../../util/godot/funcs.h"
@@ -124,6 +126,40 @@ static void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArr
 			lod_indices.data(), lod_indices.size(), remap_indices.data());
 }
 
+struct DeepSampler : transvoxel::IDeepSDFSampler {
+	VoxelGenerator &generator;
+	const VoxelDataLodMap &data;
+	const VoxelBufferInternal::ChannelId sdf_channel;
+	const Vector3i origin;
+
+	DeepSampler(VoxelGenerator &p_generator, const VoxelDataLodMap &p_data,
+			VoxelBufferInternal::ChannelId p_sdf_channel, Vector3i p_origin) :
+			generator(p_generator), data(p_data), sdf_channel(p_sdf_channel), origin(p_origin) {}
+
+	float get_single(Vector3i position_in_voxels, uint32_t lod_index) const override {
+		position_in_voxels += origin;
+		const Vector3i lod_pos = position_in_voxels >> lod_index;
+		const VoxelDataLodMap::Lod &lod = data.lods[lod_index];
+		unsigned int bsm = 0;
+		std::shared_ptr<VoxelBufferInternal> voxels;
+		{
+			RWLockRead rlock(lod.map_lock);
+			const Vector3i lod_bpos = lod_pos >> lod.map.get_block_size_pow2();
+			const VoxelDataBlock *block = lod.map.get_block(lod_bpos);
+			if (block != nullptr) {
+				voxels = block->get_voxels_shared();
+				bsm = lod.map.get_block_size_mask();
+			}
+		}
+		if (voxels != nullptr) {
+			RWLockRead rlock(voxels->get_lock());
+			return voxels->get_voxel_f(lod_pos & bsm, sdf_channel);
+		} else {
+			return generator.generate_single(position_in_voxels, sdf_channel).f;
+		}
+	}
+};
+
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	VOXEL_PROFILE_SCOPE();
 
@@ -131,7 +167,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	static thread_local transvoxel::MeshArrays s_mesh_arrays;
 	static thread_local transvoxel::MeshArrays s_simplified_mesh_arrays;
 
-	const int sdf_channel = VoxelBufferInternal::CHANNEL_SDF;
+	const VoxelBufferInternal::ChannelId sdf_channel = VoxelBufferInternal::CHANNEL_SDF;
 
 	// Initialize dynamic memory:
 	// These vectors are re-used.
@@ -147,8 +183,20 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 	// const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
-	transvoxel::DefaultTextureIndicesData default_texture_indices_data = transvoxel::build_regular_mesh(voxels,
-			sdf_channel, input.lod, static_cast<transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays);
+	transvoxel::DefaultTextureIndicesData default_texture_indices_data;
+
+	if (_deep_sampling_enabled && input.generator != nullptr && input.data != nullptr && input.lod > 0) {
+		const DeepSampler ds(*input.generator, *input.data, sdf_channel, input.origin_in_voxels);
+		// TODO Optimization: "area scope" feature on generators to optimize certain uses of `generate_single`.
+		// The idea is to call `begin_area(box)` and `end_area()`, so the generator can optimize random calls to
+		// `generate_single` in between, knowing they will all be done within the specified area.
+
+		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
+				static_cast<transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays, &ds);
+	} else {
+		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
+				static_cast<transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays, nullptr);
+	}
 
 	if (s_mesh_arrays.vertices.size() == 0) {
 		// The mesh can be empty
@@ -268,6 +316,14 @@ float VoxelMesherTransvoxel::get_mesh_optimization_target_ratio() const {
 	return _mesh_optimization_params.target_ratio;
 }
 
+void VoxelMesherTransvoxel::set_deep_sampling_enabled(bool enable) {
+	_deep_sampling_enabled = enable;
+}
+
+bool VoxelMesherTransvoxel::is_deep_sampling_enabled() const {
+	return _deep_sampling_enabled;
+}
+
 void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"),
 			&VoxelMesherTransvoxel::build_transition_mesh);
@@ -290,6 +346,10 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("get_mesh_optimization_target_ratio"), &VoxelMesherTransvoxel::get_mesh_optimization_target_ratio);
 
+	ClassDB::bind_method(
+			D_METHOD("set_deep_sampling_enabled", "enabled"), &VoxelMesherTransvoxel::set_deep_sampling_enabled);
+	ClassDB::bind_method(D_METHOD("is_deep_sampling_enabled"), &VoxelMesherTransvoxel::is_deep_sampling_enabled);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
 			"set_texturing_mode", "get_texturing_mode");
@@ -303,7 +363,11 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "mesh_optimization_target_ratio"), "set_mesh_optimization_target_ratio",
 			"get_mesh_optimization_target_ratio");
 
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "deep_sampling_enabled"), "set_deep_sampling_enabled",
+			"is_deep_sampling_enabled");
+
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);
+	// TODO Rename MIXEL
 	BIND_ENUM_CONSTANT(TEXTURES_BLEND_4_OVER_16);
 }
 

@@ -42,6 +42,9 @@ public:
 	void set_mesh_optimization_target_ratio(float ratio);
 	float get_mesh_optimization_target_ratio() const;
 
+	void set_deep_sampling_enabled(bool enable);
+	bool is_deep_sampling_enabled() const;
+
 protected:
 	static void _bind_methods();
 
@@ -57,6 +60,11 @@ private:
 	};
 
 	MeshOptimizationParams _mesh_optimization_params;
+
+	// If enabled, when meshing low-level-of-detail blocks, Transvoxel will attempt to access higher detail voxel data
+	// by querying the generator and edits. This can result in better quality meshes, but is also more expensive
+	// because voxel data shared between threads will have to be accessed randomly over denser data sets.
+	bool _deep_sampling_enabled = false;
 };
 
 } // namespace zylann::voxel

@@ -1147,7 +1147,7 @@ static void request_block_mesh(uint32_t volume_id, const VoxelServer::BlockMeshI
 		std::shared_ptr<MeshingDependency> meshing_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, unsigned int data_block_size,
 		unsigned int mesh_block_size, const Transform3D &volume_transform, float lod_distance,
-		BufferedTaskScheduler &task_scheduler) {
+		BufferedTaskScheduler &task_scheduler, const std::shared_ptr<VoxelDataLodMap> &data) {
 	//
 	ERR_FAIL_COND(meshing_dependency == nullptr);
 	ERR_FAIL_COND(meshing_dependency->mesher.is_null());
@@ -1162,6 +1162,7 @@ static void request_block_mesh(uint32_t volume_id, const VoxelServer::BlockMeshI
 	task->lod = input.lod;
 	task->meshing_dependency = meshing_dependency;
 	task->data_block_size = data_block_size;
+	task->data = data;
 
 	init_sparse_octree_priority_dependency(task->priority_dependency, input.render_block_position, input.lod,
 			mesh_block_size, shared_viewers_data, volume_transform, lod_distance);
@@ -1170,12 +1171,15 @@ static void request_block_mesh(uint32_t volume_id, const VoxelServer::BlockMeshI
 }
 
 static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::State &state,
-		const VoxelLodTerrainUpdateData::Settings &settings, const VoxelDataLodMap &data,
+		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelDataLodMap> &data_ptr,
 		std::shared_ptr<MeshingDependency> meshing_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {
 	//
 	VOXEL_PROFILE_SCOPE_NAMED("Send mesh requests");
+
+	CRASH_COND(data_ptr == nullptr);
+	const VoxelDataLodMap &data = *data_ptr;
 
 	const int data_block_size = data.lods[0].map.get_block_size();
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
@@ -1222,7 +1226,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			});
 
 			request_block_mesh(volume_id, mesh_request, meshing_dependency, shared_viewers_data, data_block_size,
-					mesh_block_size, volume_transform, settings.lod_distance, task_scheduler);
+					mesh_block_size, volume_transform, settings.lod_distance, task_scheduler, data_ptr);
 
 			mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
 		}
@@ -1450,7 +1454,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	state.stats.time_io_requests = profiling_clock.restart();
 
 	// TODO Don't request meshes if there is no mesher
-	send_mesh_requests(_volume_id, state, settings, data, _meshing_dependency, _shared_viewers_data, _volume_transform,
+	send_mesh_requests(_volume_id, state, settings, _data, _meshing_dependency, _shared_viewers_data, _volume_transform,
 			task_scheduler);
 
 	task_scheduler.flush();

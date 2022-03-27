@@ -10,14 +10,26 @@ namespace zylann::voxel {
 namespace gd {
 class VoxelBuffer;
 }
+
 class VoxelBufferInternal;
+class VoxelGenerator;
+struct VoxelDataLodMap;
 
 class VoxelMesher : public Resource {
 	GDCLASS(VoxelMesher, Resource)
 public:
 	struct Input {
+		// Voxels to be used as the primary source of data.
 		const VoxelBufferInternal &voxels;
-		int lod; // = 0; // Not initialized because it confused GCC
+		// When using LOD, some meshers can use the generator and edited voxels to affine results.
+		// If not provided, the mesher will only use `voxels`.
+		VoxelGenerator *generator;
+		const VoxelDataLodMap *data;
+		// Origin of the block is required when doing deep sampling.
+		Vector3i origin_in_voxels;
+		// LOD index. 0 means highest detail. 1 means half detail etc.
+		// Not initialized because it confused GCC.
+		int lod; // = 0;
 	};
 
 	struct Output {

@@ -130,7 +130,13 @@ public:
 	void set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index);
 
 	real_t get_voxel_f(int x, int y, int z, unsigned int channel_index) const;
+	inline real_t get_voxel_f(Vector3i pos, unsigned int channel_index) const {
+		return get_voxel_f(pos.x, pos.y, pos.z, channel_index);
+	}
 	void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index);
+	inline void set_voxel_f(real_t value, Vector3i pos, unsigned int channel_index) {
+		set_voxel_f(value, pos.x, pos.y, pos.z, channel_index);
+	}
 
 	_FORCE_INLINE_ uint64_t get_voxel(const Vector3i pos, unsigned int channel_index) const {
 		return get_voxel(pos.x, pos.y, pos.z, channel_index);

@@ -33,6 +33,7 @@ Godot 4 is required from this version.
     - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
     - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
     - `VoxelInstanceLibraryMultiMeshItem`: Support setting up mesh LODs from a scene with name `LODx` suffixes
+    - `VoxelMesherTransvoxel`: initial support for deep SDF sampling, to affine vertex positions at low levels of details (slow and limited for now).
 
 - Fixes
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
