@@ -357,7 +357,7 @@ Error VoxelRegionFile::save_block(Vector3i position, VoxelBufferInternal &block,
 
 		const unsigned int end_offset = _blocks_begin_offset + _sectors.size() * _header.format.sector_size;
 		f->seek(end_offset);
-		const unsigned int block_offset = f->get_position();
+		const uint64_t block_offset = f->get_position();
 		// Check position matches the sectors rule
 		CRASH_COND((block_offset - _blocks_begin_offset) % _header.format.sector_size != 0);
 
@@ -365,12 +365,25 @@ Error VoxelRegionFile::save_block(Vector3i position, VoxelBufferInternal &block,
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
 		f->store_32(res.data.size());
 		const unsigned int written_size = sizeof(uint32_t) + res.data.size();
-		f->store_buffer(res.data.data(), res.data.size());
 
-		const unsigned int end_pos = f->get_position();
-		CRASH_COND_MSG(written_size != (end_pos - block_offset),
+		// TODO Something strange is happening here but so far I could not figure out what...
+		// See https://github.com/Zylann/godot_voxel/issues/360
+		// See https://github.com/Zylann/godot_voxel/issues/365
+		const uint64_t position_before_buffer = f->get_position();
+		f->store_buffer(res.data.data(), res.data.size());
+		const uint64_t position_after_buffer = f->get_position();
+		CRASH_COND_MSG(position_after_buffer != position_before_buffer + res.data.size(),
+				String("File position doesn't match expected after writing buffer of size {0}. "
+					   "Before: {1}, after: {2}.")
+						.format(varray(
+								SIZE_T_TO_VARIANT(res.data.size()),
+								SIZE_T_TO_VARIANT(position_before_buffer),
+								SIZE_T_TO_VARIANT(position_after_buffer))));
+
+		const uint64_t end_pos = f->get_position();
+		CRASH_COND_MSG(end_pos != block_offset + written_size,
 				String("written_size: {0}, block_offset: {1}, end_pos: {2}")
-						.format(varray(written_size, end_pos, block_offset)));
+						.format(varray(written_size, SIZE_T_TO_VARIANT(block_offset), end_pos)));
 		pad_to_sector_size(f);
 
 		block_info.set_sector_index((block_offset - _blocks_begin_offset) / _header.format.sector_size);
