@@ -378,7 +378,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
 		const unsigned int end_pos = f->get_position();
 		CRASH_COND_MSG(written_size != (end_pos - block_offset),
 				String("written_size: {0}, block_offset: {1}, end_pos: {2}")
-						.format(varray(written_size, end_pos, block_offset)));
+						.format(varray(written_size, block_offset, end_pos)));
 		pad_to_sector_size(f);
 
 		block_info.set_sector_index((block_offset - _blocks_begin_offset) / _header.format.sector_size);
