@@ -163,9 +163,9 @@ public:
 	// Functions usable by node implementations during the compilation stage
 	class CompileContext {
 	public:
-		CompileContext(const ProgramGraph::Node &node, std::vector<uint16_t> &program,
+		CompileContext(/*const ProgramGraph::Node &node,*/ std::vector<uint16_t> &program,
 				std::vector<HeapResource> &heap_resources, std::vector<Variant> &params) :
-				_node(node), _program(program), _heap_resources(heap_resources), _params(params) {}
+				/*_node(node),*/ _program(program), _heap_resources(heap_resources), _params(params) {}
 
 		Variant get_param(size_t i) const {
 			CRASH_COND(i > _params.size());
@@ -236,7 +236,7 @@ public:
 		}
 
 	private:
-		const ProgramGraph::Node &_node;
+		//const ProgramGraph::Node &_node;
 		std::vector<uint16_t> &_program;
 		std::vector<HeapResource> &_heap_resources;
 		std::vector<Variant> &_params;
