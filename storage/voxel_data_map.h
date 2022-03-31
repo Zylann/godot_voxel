@@ -140,7 +140,7 @@ public:
 	template <typename F, typename G>
 	void write_box(const Box3i &voxel_box, unsigned int channel, F action, G gen_func) {
 		const Box3i block_box = voxel_box.downscaled(get_block_size());
-		const Vector3i block_size(get_block_size());
+		const Vector3i block_size = Vector3iUtil::create(get_block_size());
 		block_box.for_each_cell_zxy([this, action, voxel_box, channel, block_size, gen_func](Vector3i block_pos) {
 			VoxelDataBlock *block = get_block(block_pos);
 			if (block == nullptr) {
