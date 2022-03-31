@@ -91,7 +91,6 @@ protected:
 	void _notification(int p_what);
 
 private:
-	struct Block;
 	struct Layer;
 
 	void process_mesh_lods();
