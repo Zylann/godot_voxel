@@ -141,10 +141,10 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 
 	while (!data.stop) {
 		{
-			VOXEL_PROFILE_SCOPE();
+			VOXEL_PROFILE_SCOPE_NAMED("Task pickup");
 
 			data.debug_state = STATE_PICKING;
-			const uint32_t now = Time::get_singleton()->get_ticks_msec();
+			const uint64_t now = Time::get_singleton()->get_ticks_msec();
 
 			MutexLock lock(_tasks_mutex);
 
@@ -158,7 +158,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 					TaskItem &item = _tasks[i];
 					CRASH_COND(item.task == nullptr);
 
-					if (now - item.last_priority_update_time > _priority_update_period) {
+					if (now - item.last_priority_update_time_ms > _priority_update_period) {
 						// Calling `get_priority()` first since it can update cancellation
 						// (not clear API tho, might review that in the future)
 						item.cached_priority = item.task->get_priority();
@@ -171,7 +171,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 							continue;
 						}
 
-						item.last_priority_update_time = now;
+						item.last_priority_update_time_ms = now;
 					}
 
 					if (item.cached_priority < best_priority) {

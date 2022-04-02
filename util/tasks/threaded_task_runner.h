@@ -82,7 +82,7 @@ private:
 	struct TaskItem {
 		IThreadedTask *task = nullptr;
 		int cached_priority = 99999;
-		uint32_t last_priority_update_time = 0;
+		uint64_t last_priority_update_time_ms = 0;
 	};
 
 	struct ThreadData {
