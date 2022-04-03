@@ -36,8 +36,8 @@
 #include "terrain/voxel_mesh_block.h"
 #include "terrain/voxel_viewer.h"
 #include "util/macros.h"
-#include "util/noise/fast_noise_lite.h"
-#include "util/noise/fast_noise_lite_gradient.h"
+#include "util/noise/fast_noise_lite/fast_noise_lite.h"
+#include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "util/noise/fast_noise_2.h"
@@ -129,8 +129,8 @@ void register_voxel_types() {
 	ClassDB::register_abstract_class<VoxelToolBuffer>();
 	ClassDB::register_class<gd::VoxelBlockSerializer>();
 	ClassDB::register_class<VoxelVoxLoader>();
-	ClassDB::register_class<FastNoiseLite>();
-	ClassDB::register_class<FastNoiseLiteGradient>();
+	ClassDB::register_class<ZN_FastNoiseLite>();
+	ClassDB::register_class<ZN_FastNoiseLiteGradient>();
 	// See SCsub
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	ClassDB::register_class<FastNoise2>();
@@ -164,7 +164,7 @@ void register_voxel_types() {
 	EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
-	EditorPlugins::add_by_type<FastNoiseLiteEditorPlugin>();
+	EditorPlugins::add_by_type<ZN_FastNoiseLiteEditorPlugin>();
 	EditorPlugins::add_by_type<magica::VoxEditorPlugin>();
 	EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
 #ifdef VOXEL_ENABLE_FAST_NOISE_2

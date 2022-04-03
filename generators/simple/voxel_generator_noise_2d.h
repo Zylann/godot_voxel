@@ -2,7 +2,9 @@
 #define VOXEL_GENERATOR_NOISE_2D_H
 
 #include "voxel_generator_heightmap.h"
-#include <modules/opensimplex/open_simplex_noise.h>
+
+class Curve;
+class Noise;
 
 namespace zylann::voxel {
 
@@ -13,8 +15,8 @@ public:
 	VoxelGeneratorNoise2D();
 	~VoxelGeneratorNoise2D();
 
-	void set_noise(Ref<OpenSimplexNoise> noise);
-	Ref<OpenSimplexNoise> get_noise() const;
+	void set_noise(Ref<Noise> noise);
+	Ref<Noise> get_noise() const;
 
 	void set_curve(Ref<Curve> curve);
 	Ref<Curve> get_curve() const;
@@ -28,11 +30,11 @@ private:
 	static void _bind_methods();
 
 private:
-	Ref<OpenSimplexNoise> _noise;
+	Ref<Noise> _noise;
 	Ref<Curve> _curve;
 
 	struct Parameters {
-		Ref<OpenSimplexNoise> noise;
+		Ref<Noise> noise;
 		Ref<Curve> curve;
 	};
 

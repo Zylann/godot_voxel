@@ -3,7 +3,7 @@
 
 #include "../../storage/voxel_buffer_gd.h"
 #include "../voxel_generator.h"
-#include <modules/opensimplex/open_simplex_noise.h>
+#include <modules/noise/noise.h>
 
 namespace zylann::voxel {
 
@@ -19,8 +19,8 @@ public:
 
 	int get_used_channels_mask() const override;
 
-	void set_noise(Ref<OpenSimplexNoise> noise);
-	Ref<OpenSimplexNoise> get_noise() const;
+	void set_noise(Ref<Noise> noise);
+	Ref<Noise> get_noise() const;
 
 	void set_height_start(real_t y);
 	real_t get_height_start() const;
@@ -38,11 +38,11 @@ private:
 
 	static void _bind_methods();
 
-	Ref<OpenSimplexNoise> _noise;
+	Ref<Noise> _noise;
 
 	struct Parameters {
 		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
-		Ref<OpenSimplexNoise> noise;
+		Ref<Noise> noise;
 		float height_start = 0;
 		float height_range = 300;
 	};

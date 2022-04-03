@@ -1,10 +1,10 @@
 #include "fast_noise_lite.h"
-#include "../math/funcs.h"
+#include "../../math/funcs.h"
 #include <core/core_string_names.h>
 
 namespace zylann {
 
-FastNoiseLite::FastNoiseLite() {
+ZN_FastNoiseLite::ZN_FastNoiseLite() {
 	_fn.SetNoiseType(static_cast<_FastNoise::NoiseType>(_noise_type));
 	_fn.SetSeed(_seed);
 	_fn.SetFrequency(1.f / _period);
@@ -23,7 +23,7 @@ FastNoiseLite::FastNoiseLite() {
 	_fn.SetRotationType3D(static_cast<_FastNoise::RotationType3D>(_rotation_type_3d));
 }
 
-void FastNoiseLite::set_noise_type(NoiseType type) {
+void ZN_FastNoiseLite::set_noise_type(NoiseType type) {
 	if (_noise_type == type) {
 		return;
 	}
@@ -32,11 +32,11 @@ void FastNoiseLite::set_noise_type(NoiseType type) {
 	emit_changed();
 }
 
-FastNoiseLite::NoiseType FastNoiseLite::get_noise_type() const {
+ZN_FastNoiseLite::NoiseType ZN_FastNoiseLite::get_noise_type() const {
 	return _noise_type;
 }
 
-void FastNoiseLite::set_seed(int seed) {
+void ZN_FastNoiseLite::set_seed(int seed) {
 	if (_seed == seed) {
 		return;
 	}
@@ -45,11 +45,11 @@ void FastNoiseLite::set_seed(int seed) {
 	emit_changed();
 }
 
-int FastNoiseLite::get_seed() const {
+int ZN_FastNoiseLite::get_seed() const {
 	return _seed;
 }
 
-void FastNoiseLite::set_period(float p) {
+void ZN_FastNoiseLite::set_period(float p) {
 	if (p < 0.0001f) {
 		p = 0.0001f;
 	}
@@ -61,35 +61,35 @@ void FastNoiseLite::set_period(float p) {
 	emit_changed();
 }
 
-float FastNoiseLite::get_period() const {
+float ZN_FastNoiseLite::get_period() const {
 	return _period;
 }
 
-void FastNoiseLite::set_warp_noise(Ref<FastNoiseLiteGradient> warp_noise) {
+void ZN_FastNoiseLite::set_warp_noise(Ref<ZN_FastNoiseLiteGradient> warp_noise) {
 	if (_warp_noise == warp_noise) {
 		return;
 	}
 
 	if (_warp_noise.is_valid()) {
-		_warp_noise->disconnect(
-				CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoiseLite::_on_warp_noise_changed));
+		_warp_noise->disconnect(CoreStringNames::get_singleton()->changed,
+				callable_mp(this, &ZN_FastNoiseLite::_on_warp_noise_changed));
 	}
 
 	_warp_noise = warp_noise;
 
 	if (_warp_noise.is_valid()) {
-		_warp_noise->connect(
-				CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoiseLite::_on_warp_noise_changed));
+		_warp_noise->connect(CoreStringNames::get_singleton()->changed,
+				callable_mp(this, &ZN_FastNoiseLite::_on_warp_noise_changed));
 	}
 
 	emit_changed();
 }
 
-Ref<FastNoiseLiteGradient> FastNoiseLite::get_warp_noise() const {
+Ref<ZN_FastNoiseLiteGradient> ZN_FastNoiseLite::get_warp_noise() const {
 	return _warp_noise;
 }
 
-void FastNoiseLite::set_fractal_type(FractalType type) {
+void ZN_FastNoiseLite::set_fractal_type(FractalType type) {
 	if (_fractal_type == type) {
 		return;
 	}
@@ -98,11 +98,11 @@ void FastNoiseLite::set_fractal_type(FractalType type) {
 	emit_changed();
 }
 
-FastNoiseLite::FractalType FastNoiseLite::get_fractal_type() const {
+ZN_FastNoiseLite::FractalType ZN_FastNoiseLite::get_fractal_type() const {
 	return _fractal_type;
 }
 
-void FastNoiseLite::set_fractal_octaves(int octaves) {
+void ZN_FastNoiseLite::set_fractal_octaves(int octaves) {
 	ERR_FAIL_COND(octaves <= 0);
 	if (octaves > MAX_OCTAVES) {
 		octaves = MAX_OCTAVES;
@@ -115,11 +115,11 @@ void FastNoiseLite::set_fractal_octaves(int octaves) {
 	emit_changed();
 }
 
-int FastNoiseLite::get_fractal_octaves() const {
+int ZN_FastNoiseLite::get_fractal_octaves() const {
 	return _fractal_octaves;
 }
 
-void FastNoiseLite::set_fractal_lacunarity(float lacunarity) {
+void ZN_FastNoiseLite::set_fractal_lacunarity(float lacunarity) {
 	if (_fractal_lacunarity == lacunarity) {
 		return;
 	}
@@ -128,11 +128,11 @@ void FastNoiseLite::set_fractal_lacunarity(float lacunarity) {
 	emit_changed();
 }
 
-float FastNoiseLite::get_fractal_lacunarity() const {
+float ZN_FastNoiseLite::get_fractal_lacunarity() const {
 	return _fractal_lacunarity;
 }
 
-void FastNoiseLite::set_fractal_gain(float gain) {
+void ZN_FastNoiseLite::set_fractal_gain(float gain) {
 	if (_fractal_gain == gain) {
 		return;
 	}
@@ -141,11 +141,11 @@ void FastNoiseLite::set_fractal_gain(float gain) {
 	emit_changed();
 }
 
-float FastNoiseLite::get_fractal_gain() const {
+float ZN_FastNoiseLite::get_fractal_gain() const {
 	return _fractal_gain;
 }
 
-void FastNoiseLite::set_fractal_ping_pong_strength(float s) {
+void ZN_FastNoiseLite::set_fractal_ping_pong_strength(float s) {
 	if (_fractal_ping_pong_strength == s) {
 		return;
 	}
@@ -154,11 +154,11 @@ void FastNoiseLite::set_fractal_ping_pong_strength(float s) {
 	emit_changed();
 }
 
-float FastNoiseLite::get_fractal_ping_pong_strength() const {
+float ZN_FastNoiseLite::get_fractal_ping_pong_strength() const {
 	return _fractal_ping_pong_strength;
 }
 
-void FastNoiseLite::set_fractal_weighted_strength(float s) {
+void ZN_FastNoiseLite::set_fractal_weighted_strength(float s) {
 	if (_fractal_weighted_strength == s) {
 		return;
 	}
@@ -167,11 +167,11 @@ void FastNoiseLite::set_fractal_weighted_strength(float s) {
 	emit_changed();
 }
 
-float FastNoiseLite::get_fractal_weighted_strength() const {
+float ZN_FastNoiseLite::get_fractal_weighted_strength() const {
 	return _fractal_weighted_strength;
 }
 
-void FastNoiseLite::set_cellular_distance_function(CellularDistanceFunction cdf) {
+void ZN_FastNoiseLite::set_cellular_distance_function(CellularDistanceFunction cdf) {
 	if (cdf == _cellular_distance_function) {
 		return;
 	}
@@ -180,11 +180,11 @@ void FastNoiseLite::set_cellular_distance_function(CellularDistanceFunction cdf)
 	emit_changed();
 }
 
-FastNoiseLite::CellularDistanceFunction FastNoiseLite::get_cellular_distance_function() const {
+ZN_FastNoiseLite::CellularDistanceFunction ZN_FastNoiseLite::get_cellular_distance_function() const {
 	return _cellular_distance_function;
 }
 
-void FastNoiseLite::set_cellular_return_type(CellularReturnType rt) {
+void ZN_FastNoiseLite::set_cellular_return_type(CellularReturnType rt) {
 	if (_cellular_return_type == rt) {
 		return;
 	}
@@ -193,11 +193,11 @@ void FastNoiseLite::set_cellular_return_type(CellularReturnType rt) {
 	emit_changed();
 }
 
-FastNoiseLite::CellularReturnType FastNoiseLite::get_cellular_return_type() const {
+ZN_FastNoiseLite::CellularReturnType ZN_FastNoiseLite::get_cellular_return_type() const {
 	return _cellular_return_type;
 }
 
-void FastNoiseLite::set_cellular_jitter(float jitter) {
+void ZN_FastNoiseLite::set_cellular_jitter(float jitter) {
 	jitter = math::clamp(jitter, 0.f, 1.f);
 	if (_cellular_jitter == jitter) {
 		return;
@@ -207,11 +207,11 @@ void FastNoiseLite::set_cellular_jitter(float jitter) {
 	emit_changed();
 }
 
-float FastNoiseLite::get_cellular_jitter() const {
+float ZN_FastNoiseLite::get_cellular_jitter() const {
 	return _cellular_jitter;
 }
 
-void FastNoiseLite::set_rotation_type_3d(RotationType3D type) {
+void ZN_FastNoiseLite::set_rotation_type_3d(RotationType3D type) {
 	if (_rotation_type_3d == type) {
 		return;
 	}
@@ -220,67 +220,68 @@ void FastNoiseLite::set_rotation_type_3d(RotationType3D type) {
 	emit_changed();
 }
 
-FastNoiseLite::RotationType3D FastNoiseLite::get_rotation_type_3d() const {
+ZN_FastNoiseLite::RotationType3D ZN_FastNoiseLite::get_rotation_type_3d() const {
 	return _rotation_type_3d;
 }
 
-void FastNoiseLite::_on_warp_noise_changed() {
+void ZN_FastNoiseLite::_on_warp_noise_changed() {
 	emit_changed();
 }
 
-void FastNoiseLite::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_noise_type", "type"), &FastNoiseLite::set_noise_type);
-	ClassDB::bind_method(D_METHOD("get_noise_type"), &FastNoiseLite::get_noise_type);
+void ZN_FastNoiseLite::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_noise_type", "type"), &ZN_FastNoiseLite::set_noise_type);
+	ClassDB::bind_method(D_METHOD("get_noise_type"), &ZN_FastNoiseLite::get_noise_type);
 
-	ClassDB::bind_method(D_METHOD("set_seed", "seed"), &FastNoiseLite::set_seed);
-	ClassDB::bind_method(D_METHOD("get_seed"), &FastNoiseLite::get_seed);
+	ClassDB::bind_method(D_METHOD("set_seed", "seed"), &ZN_FastNoiseLite::set_seed);
+	ClassDB::bind_method(D_METHOD("get_seed"), &ZN_FastNoiseLite::get_seed);
 
-	ClassDB::bind_method(D_METHOD("set_period", "period"), &FastNoiseLite::set_period);
-	ClassDB::bind_method(D_METHOD("get_period"), &FastNoiseLite::get_period);
+	ClassDB::bind_method(D_METHOD("set_period", "period"), &ZN_FastNoiseLite::set_period);
+	ClassDB::bind_method(D_METHOD("get_period"), &ZN_FastNoiseLite::get_period);
 
-	ClassDB::bind_method(D_METHOD("set_warp_noise", "gradient_noise"), &FastNoiseLite::set_warp_noise);
-	ClassDB::bind_method(D_METHOD("get_warp_noise"), &FastNoiseLite::get_warp_noise);
+	ClassDB::bind_method(D_METHOD("set_warp_noise", "gradient_noise"), &ZN_FastNoiseLite::set_warp_noise);
+	ClassDB::bind_method(D_METHOD("get_warp_noise"), &ZN_FastNoiseLite::get_warp_noise);
 
-	ClassDB::bind_method(D_METHOD("set_fractal_type", "type"), &FastNoiseLite::set_fractal_type);
-	ClassDB::bind_method(D_METHOD("get_fractal_type"), &FastNoiseLite::get_fractal_type);
+	ClassDB::bind_method(D_METHOD("set_fractal_type", "type"), &ZN_FastNoiseLite::set_fractal_type);
+	ClassDB::bind_method(D_METHOD("get_fractal_type"), &ZN_FastNoiseLite::get_fractal_type);
 
-	ClassDB::bind_method(D_METHOD("set_fractal_octaves", "octaves"), &FastNoiseLite::set_fractal_octaves);
-	ClassDB::bind_method(D_METHOD("get_fractal_octaves"), &FastNoiseLite::get_fractal_octaves);
+	ClassDB::bind_method(D_METHOD("set_fractal_octaves", "octaves"), &ZN_FastNoiseLite::set_fractal_octaves);
+	ClassDB::bind_method(D_METHOD("get_fractal_octaves"), &ZN_FastNoiseLite::get_fractal_octaves);
 
-	ClassDB::bind_method(D_METHOD("set_fractal_lacunarity", "lacunarity"), &FastNoiseLite::set_fractal_lacunarity);
-	ClassDB::bind_method(D_METHOD("get_fractal_lacunarity"), &FastNoiseLite::get_fractal_lacunarity);
+	ClassDB::bind_method(D_METHOD("set_fractal_lacunarity", "lacunarity"), &ZN_FastNoiseLite::set_fractal_lacunarity);
+	ClassDB::bind_method(D_METHOD("get_fractal_lacunarity"), &ZN_FastNoiseLite::get_fractal_lacunarity);
 
-	ClassDB::bind_method(D_METHOD("set_fractal_gain", "gain"), &FastNoiseLite::set_fractal_gain);
-	ClassDB::bind_method(D_METHOD("get_fractal_gain"), &FastNoiseLite::get_fractal_gain);
-
-	ClassDB::bind_method(
-			D_METHOD("set_fractal_ping_pong_strength", "strength"), &FastNoiseLite::set_fractal_ping_pong_strength);
-	ClassDB::bind_method(D_METHOD("get_fractal_ping_pong_strength"), &FastNoiseLite::get_fractal_ping_pong_strength);
+	ClassDB::bind_method(D_METHOD("set_fractal_gain", "gain"), &ZN_FastNoiseLite::set_fractal_gain);
+	ClassDB::bind_method(D_METHOD("get_fractal_gain"), &ZN_FastNoiseLite::get_fractal_gain);
 
 	ClassDB::bind_method(
-			D_METHOD("set_fractal_weighted_strength", "strength"), &FastNoiseLite::set_fractal_weighted_strength);
-	ClassDB::bind_method(D_METHOD("get_fractal_weighted_strength"), &FastNoiseLite::get_fractal_weighted_strength);
+			D_METHOD("set_fractal_ping_pong_strength", "strength"), &ZN_FastNoiseLite::set_fractal_ping_pong_strength);
+	ClassDB::bind_method(D_METHOD("get_fractal_ping_pong_strength"), &ZN_FastNoiseLite::get_fractal_ping_pong_strength);
+
+	ClassDB::bind_method(
+			D_METHOD("set_fractal_weighted_strength", "strength"), &ZN_FastNoiseLite::set_fractal_weighted_strength);
+	ClassDB::bind_method(D_METHOD("get_fractal_weighted_strength"), &ZN_FastNoiseLite::get_fractal_weighted_strength);
 
 	ClassDB::bind_method(D_METHOD("set_cellular_distance_function", "cell_distance_func"),
-			&FastNoiseLite::set_cellular_distance_function);
-	ClassDB::bind_method(D_METHOD("get_cellular_distance_function"), &FastNoiseLite::get_cellular_distance_function);
+			&ZN_FastNoiseLite::set_cellular_distance_function);
+	ClassDB::bind_method(D_METHOD("get_cellular_distance_function"), &ZN_FastNoiseLite::get_cellular_distance_function);
 
-	ClassDB::bind_method(D_METHOD("set_cellular_return_type", "return_type"), &FastNoiseLite::set_cellular_return_type);
-	ClassDB::bind_method(D_METHOD("get_cellular_return_type"), &FastNoiseLite::get_cellular_return_type);
+	ClassDB::bind_method(
+			D_METHOD("set_cellular_return_type", "return_type"), &ZN_FastNoiseLite::set_cellular_return_type);
+	ClassDB::bind_method(D_METHOD("get_cellular_return_type"), &ZN_FastNoiseLite::get_cellular_return_type);
 
-	ClassDB::bind_method(D_METHOD("set_cellular_jitter", "return_type"), &FastNoiseLite::set_cellular_jitter);
-	ClassDB::bind_method(D_METHOD("get_cellular_jitter"), &FastNoiseLite::get_cellular_jitter);
+	ClassDB::bind_method(D_METHOD("set_cellular_jitter", "return_type"), &ZN_FastNoiseLite::set_cellular_jitter);
+	ClassDB::bind_method(D_METHOD("get_cellular_jitter"), &ZN_FastNoiseLite::get_cellular_jitter);
 
-	ClassDB::bind_method(D_METHOD("set_rotation_type_3d", "type"), &FastNoiseLite::set_rotation_type_3d);
-	ClassDB::bind_method(D_METHOD("get_rotation_type_3d"), &FastNoiseLite::get_rotation_type_3d);
+	ClassDB::bind_method(D_METHOD("set_rotation_type_3d", "type"), &ZN_FastNoiseLite::set_rotation_type_3d);
+	ClassDB::bind_method(D_METHOD("get_rotation_type_3d"), &ZN_FastNoiseLite::get_rotation_type_3d);
 
-	ClassDB::bind_method(D_METHOD("get_noise_2d", "x", "y"), &FastNoiseLite::_b_get_noise_2d);
-	ClassDB::bind_method(D_METHOD("get_noise_3d", "x", "y", "z"), &FastNoiseLite::_b_get_noise_3d);
+	ClassDB::bind_method(D_METHOD("get_noise_2d", "x", "y"), &ZN_FastNoiseLite::_b_get_noise_2d);
+	ClassDB::bind_method(D_METHOD("get_noise_3d", "x", "y", "z"), &ZN_FastNoiseLite::_b_get_noise_3d);
 
-	ClassDB::bind_method(D_METHOD("get_noise_2dv", "position"), &FastNoiseLite::_b_get_noise_2dv);
-	ClassDB::bind_method(D_METHOD("get_noise_3dv", "position"), &FastNoiseLite::_b_get_noise_3dv);
+	ClassDB::bind_method(D_METHOD("get_noise_2dv", "position"), &ZN_FastNoiseLite::_b_get_noise_2dv);
+	ClassDB::bind_method(D_METHOD("get_noise_3dv", "position"), &ZN_FastNoiseLite::_b_get_noise_3dv);
 
-	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &FastNoiseLite::_on_warp_noise_changed);
+	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &ZN_FastNoiseLite::_on_warp_noise_changed);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM,
 						 "OpenSimplex2,OpenSimplex2S,Cellular,Perlin,ValueCubic,Value"),
@@ -292,7 +293,7 @@ void FastNoiseLite::_bind_methods() {
 			"get_period");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "warp_noise", PROPERTY_HINT_RESOURCE_TYPE,
-						 FastNoiseLiteGradient::get_class_static()),
+						 ZN_FastNoiseLiteGradient::get_class_static()),
 			"set_warp_noise", "get_warp_noise");
 
 	ADD_GROUP("Fractal", "");

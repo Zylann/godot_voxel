@@ -65,6 +65,7 @@ Godot 4 is required from this version.
     - `VoxelStreamScript`: renamed `_emerge_block` => `_load_voxel_block`
     - `VoxelStreamScript`: renamed `_immerge_block` => `_save_voxel_block`
     - `VoxelGeneratorGraph`: the `Select` node's `threshold` port is now a parameter instead.
+    - `FastNoiseLite` was renamed `ZN_FastNoiseLite`, as now Godot 4 comes with its own implementation, with a few differences.
 
 - Known issues
     - Some nodes and resources no longer start with predefined properties due to a warning introduced in Godot4 when properties are resources.
