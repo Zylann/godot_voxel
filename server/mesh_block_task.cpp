@@ -48,10 +48,21 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 
 	dst.create(padded_mesh_block_size, padded_mesh_block_size, padded_mesh_block_size);
 
-	// TODO Need to provide format
+	// TODO Need to provide format differently, this won't work in full load mode where areas are generated on the fly
 	// for (unsigned int ci = 0; ci < channels.size(); ++ci) {
 	// 	dst.set_channel_depth(ci, central_buffer->get_channel_depth(ci));
 	// }
+	// This is a hack
+	for (unsigned int i = 0; i < blocks.size(); ++i) {
+		const std::shared_ptr<VoxelBufferInternal> &buffer = blocks[i];
+		if (buffer != nullptr) {
+			// Initialize channel depths from the first non-null block found
+			for (unsigned int ci = 0; ci < channels.size(); ++ci) {
+				dst.set_channel_depth(ci, buffer->get_channel_depth(ci));
+			}
+			break;
+		}
+	}
 
 	const Vector3i min_pos = -Vector3iUtil::create(min_padding);
 	const Vector3i max_pos = Vector3iUtil::create(mesh_block_size + max_padding);
