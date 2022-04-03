@@ -41,6 +41,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: editor: fix inspector starting to throw errors after deleting a node, as it is still inspecting it
     - `VoxelGeneratorGraph`: editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
     - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
+    - `VoxelMesherCubes`: editor: color mode is now a proper dropdown
     - `VoxelMesherTransvoxel`: fixed surface not appearing if it lines up exactly at integer coordinates
     - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
     - `VoxelTerrain`: changing a material now updates existing meshes instead of only new ones
