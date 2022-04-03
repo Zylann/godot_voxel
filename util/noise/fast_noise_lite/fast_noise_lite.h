@@ -27,6 +27,10 @@ namespace zylann {
 //
 // - Domain warp is not exposed as its own thing, so can't generate from (x,y,z) coordinates in a single call
 //
+// - The internal instance of the FastNoiseLite object is not accessible, and it doesn't have the access changes present
+//   in the module's version, so it is not possible to do range analysis more precisely. This is important for
+//   `VoxelGeneratorGraph`.
+//
 // - Does not have direct editor preview, requires to use a NoiseTexture even if the use case doesn't need it
 
 class ZN_FastNoiseLite : public Resource {
