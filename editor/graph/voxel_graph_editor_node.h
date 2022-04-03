@@ -23,6 +23,8 @@ public:
 	void update_range_analysis_tooltips(const VoxelGeneratorGraph &graph, const VoxelGraphRuntime::State &state);
 	void clear_range_analysis_tooltips();
 
+	void update_layout(const VoxelGeneratorGraph &graph);
+
 	bool has_outputs() const {
 		return _output_labels.size() > 0;
 	}
@@ -46,6 +48,7 @@ private:
 	};
 
 	std::vector<InputHint> _input_hints;
+	std::vector<Node *> _rows;
 };
 
 } // namespace zylann::voxel

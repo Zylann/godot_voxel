@@ -1,18 +1,24 @@
 #ifndef PROGRAM_GRAPH_H
 #define PROGRAM_GRAPH_H
 
+#include "../../util/non_copyable.h"
 #include <core/math/vector2.h>
 #include <core/templates/hashfuncs.h>
+#include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
 namespace zylann {
 
 // Generic graph representing a program
-class ProgramGraph {
+class ProgramGraph : NonCopyable {
 public:
 	static const uint32_t NULL_ID = 0;
 	static const uint32_t NULL_INDEX = -1;
+
+	// TODO Use typedef to make things explicit
+	//typedef uint32_t NodeID;
 
 	struct PortLocation {
 		uint32_t node_id;
@@ -24,15 +30,16 @@ public:
 		PortLocation dst;
 	};
 
-	struct PortLocationHasher {
-		static inline uint32_t hash(const PortLocation &v) {
-			const uint32_t hash = hash_djb2_one_32(v.node_id);
-			return hash_djb2_one_32(v.port_index, hash);
-		}
-	};
-
 	struct Port {
 		std::vector<PortLocation> connections;
+		// Dynamic ports are ports that are not inherited from `type_id`, they exist solely for this node.
+		// Because it can't be deduced from `type_id`, they must be given a name.
+		// Initially needed for expression nodes.
+		std::string dynamic_name;
+
+		inline bool is_dynamic() const {
+			return dynamic_name.size() > 0;
+		}
 	};
 
 	struct Node {
@@ -47,9 +54,12 @@ public:
 
 		uint32_t find_input_connection(PortLocation src, uint32_t input_port_index) const;
 		uint32_t find_output_connection(uint32_t output_port_index, PortLocation dst) const;
+
+		bool find_input_port_by_name(std::string_view name, unsigned int &out_i) const;
 	};
 
 	Node *create_node(uint32_t type_id, uint32_t id = NULL_ID);
+	// TODO Return a reference, this function is not allowed to fail
 	Node *get_node(uint32_t id) const;
 	Node *try_get_node(uint32_t id) const;
 	void remove_node(uint32_t id);
@@ -100,6 +110,7 @@ public:
 	}
 
 	void copy_from(const ProgramGraph &other, bool copy_subresources);
+
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
 	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
 
@@ -120,6 +131,24 @@ inline bool operator==(const ProgramGraph::PortLocation &a, const ProgramGraph::
 	return a.node_id == b.node_id && a.port_index == b.port_index;
 }
 
+// For Godot
+struct ProgramGraphPortLocationHasher {
+	static inline uint32_t hash(const ProgramGraph::PortLocation &v) {
+		const uint32_t hash = hash_djb2_one_32(v.node_id);
+		return hash_djb2_one_32(v.port_index, hash);
+	}
+};
+
 } // namespace zylann
+
+// For STL
+namespace std {
+template <>
+struct hash<zylann::ProgramGraph::PortLocation> {
+	size_t operator()(const zylann::ProgramGraph::PortLocation &v) const {
+		return zylann::ProgramGraphPortLocationHasher::hash(v);
+	}
+};
+} // namespace std
 
 #endif // PROGRAM_GRAPH_H

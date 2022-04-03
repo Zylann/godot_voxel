@@ -1,5 +1,6 @@
 #include "tests.h"
 #include "../edition/voxel_tool_terrain.h"
+#include "../generators/graph/expression_parser.h"
 #include "../generators/graph/range_utility.h"
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../meshers/blocky/voxel_blocky_library.h"
@@ -344,6 +345,33 @@ void test_voxel_graph_generator_default_graph_compilation() {
 	Ref<VoxelGeneratorGraph> generator;
 	generator.instantiate();
 	generator->load_plane_preset();
+	VoxelGraphRuntime::CompilationResult result = generator->compile();
+	ZYLANN_TEST_ASSERT_MSG(
+			result.success, String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+}
+
+void test_voxel_graph_generator_expressions() {
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+
+	const uint32_t in_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
+	const uint32_t in_y = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
+	const uint32_t in_z = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
+	const uint32_t out_sdf = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
+	const uint32_t n_expression = generator->create_node(VoxelGeneratorGraph::NODE_EXPRESSION, Vector2());
+
+	generator->set_node_param(n_expression, 0, "0.1 * x + 0.2 * z + y");
+	PackedStringArray var_names;
+	var_names.push_back("x");
+	var_names.push_back("y");
+	var_names.push_back("z");
+	generator->set_expression_node_inputs(n_expression, var_names);
+
+	generator->add_connection(in_x, 0, n_expression, 0);
+	generator->add_connection(in_y, 0, n_expression, 1);
+	generator->add_connection(in_z, 0, n_expression, 2);
+	generator->add_connection(n_expression, 0, out_sdf, 0);
+
 	VoxelGraphRuntime::CompilationResult result = generator->compile();
 	ZYLANN_TEST_ASSERT_MSG(
 			result.success, String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
@@ -1462,6 +1490,178 @@ void test_flat_map() {
 	}
 }
 
+void test_expression_parser() {
+	using namespace ExpressionParser;
+
+	{
+		Result result = parse("", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		Result result = parse("   ", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		Result result = parse("42", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root != nullptr);
+		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 42.f));
+		memdelete(result.root);
+	}
+	{
+		Result result = parse("()", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		Result result = parse("((()))", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		Result result = parse("(42)", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root != nullptr);
+		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 42.f));
+		memdelete(result.root);
+	}
+	{
+		Result result = parse("(", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_UNCLOSED_PARENTHESIS);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		Result result = parse("(666", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_UNCLOSED_PARENTHESIS);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		Result result = parse("1+", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_MISSING_OPERAND_ARGUMENTS);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		Result result = parse("++", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_MISSING_OPERAND_ARGUMENTS);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		Result result = parse("1 2 3", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_MULTIPLE_OPERANDS);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		Result result = parse("???", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_INVALID_TOKEN);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		Result result = parse("1+2-3*4/5", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root != nullptr);
+		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 0.6f));
+		memdelete(result.root);
+	}
+	{
+		Result result = parse("1*2-3/4+5", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root != nullptr);
+		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 6.25f));
+		memdelete(result.root);
+	}
+	{
+		Result result = parse("(5 - 3)^2 + 2.5/(4 + 6)", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root != nullptr);
+		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 4.25f));
+		memdelete(result.root);
+	}
+	{
+		/*
+					-
+				   / \
+				  /   \
+				 /     \
+				*       -
+			   / \     / \
+			  4   ^   c   d
+				 / \
+				+   2
+			   / \
+			  a   b
+		*/
+		VariableNode *node_a = memnew(VariableNode("a"));
+		VariableNode *node_b = memnew(VariableNode("b"));
+		OperatorNode *node_add = memnew(OperatorNode(OperatorNode::ADD, node_a, node_b));
+		NumberNode *node_two = memnew(NumberNode(2));
+		OperatorNode *node_power = memnew(OperatorNode(OperatorNode::POWER, node_add, node_two));
+		NumberNode *node_four = memnew(NumberNode(4));
+		OperatorNode *node_mul = memnew(OperatorNode(OperatorNode::MULTIPLY, node_four, node_power));
+		VariableNode *node_c = memnew(VariableNode("c"));
+		VariableNode *node_d = memnew(VariableNode("d"));
+		OperatorNode *node_sub = memnew(OperatorNode(OperatorNode::SUBTRACT, node_c, node_d));
+		OperatorNode *expected_root = memnew(OperatorNode(OperatorNode::SUBTRACT, node_mul, node_sub));
+
+		Result result = parse("4*(a+b)^2-(c-d)", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root != nullptr);
+		// {
+		// 	const std::string s1 = tree_to_string(*expected_root, Span<const Function>());
+		// 	print_line(String(s1.c_str()));
+		// 	print_line("---");
+		// 	const std::string s2 = tree_to_string(*result.root, Span<const Function>());
+		// 	print_line(String(s2.c_str()));
+		// }
+		ZYLANN_TEST_ASSERT(is_tree_equal(*result.root, *expected_root, Span<const Function>()));
+		memdelete(result.root);
+		memdelete(expected_root);
+	}
+	{
+		FixedArray<Function, 2> functions;
+
+		{
+			Function f;
+			f.name = "sqrt";
+			f.id = 0;
+			f.argument_count = 1;
+			f.func = [](Span<const float> args) { //
+				return Math::sqrt(args[0]);
+			};
+			functions[0] = f;
+		}
+		{
+			Function f;
+			f.name = "clamp";
+			f.id = 1;
+			f.argument_count = 3;
+			f.func = [](Span<const float> args) { //
+				return math::clamp(args[0], args[1], args[2]);
+			};
+			functions[1] = f;
+		}
+
+		Result result = parse("clamp(sqrt(20 + sqrt(25)), 1, 2.0 * 2.0)", to_span_const(functions));
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZYLANN_TEST_ASSERT(result.root != nullptr);
+		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 4.f));
+		memdelete(result.root);
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
@@ -1479,6 +1679,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_encode_weights_packed_u16);
 	VOXEL_TEST(test_copy_3d_region_zxy);
 	VOXEL_TEST(test_voxel_graph_generator_default_graph_compilation);
+	VOXEL_TEST(test_voxel_graph_generator_expressions);
 	VOXEL_TEST(test_voxel_graph_generator_texturing);
 	VOXEL_TEST(test_island_finder);
 	VOXEL_TEST(test_unordered_remove_if);
@@ -1497,6 +1698,7 @@ void run_voxel_tests() {
 #endif
 	VOXEL_TEST(test_run_blocky_random_tick);
 	VOXEL_TEST(test_flat_map);
+	VOXEL_TEST(test_expression_parser);
 
 	print_line("------------ Voxel tests end -------------");
 }

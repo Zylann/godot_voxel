@@ -1,4 +1,5 @@
 #include "voxel_graph_runtime.h"
+#include "../../util/expression_parser.h"
 #include "../../util/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
@@ -25,15 +26,297 @@ void VoxelGraphRuntime::clear() {
 	_program.clear();
 }
 
-VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGraph &graph, bool debug) {
+struct ToConnect {
+	std::string_view var_name;
+	ProgramGraph::PortLocation dst;
+};
+
+static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node, const VoxelGraphNodeDB &db,
+		std::vector<ToConnect> &to_connect, std::vector<uint32_t> &expanded_node_ids);
+
+static bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg, ProgramGraph::Node &pg_node,
+		uint32_t pg_node_input_index, const VoxelGraphNodeDB &db, std::vector<ToConnect> &to_connect,
+		std::vector<uint32_t> &expanded_node_ids) {
+	switch (arg.type) {
+		case ExpressionParser::Node::NUMBER: {
+			const ExpressionParser::NumberNode &arg_nn = reinterpret_cast<const ExpressionParser::NumberNode &>(arg);
+			pg_node.default_inputs[pg_node_input_index] = arg_nn.value;
+		} break;
+
+		case ExpressionParser::Node::VARIABLE: {
+			const ExpressionParser::VariableNode &arg_vn =
+					reinterpret_cast<const ExpressionParser::VariableNode &>(arg);
+			to_connect.push_back({ arg_vn.name, { pg_node.id, pg_node_input_index } });
+		} break;
+
+		case ExpressionParser::Node::OPERATOR:
+		case ExpressionParser::Node::FUNCTION: {
+			const uint32_t dependency_pg_node_id = expand_node(graph, arg, db, to_connect, expanded_node_ids);
+			ERR_FAIL_COND_V(dependency_pg_node_id == ProgramGraph::NULL_ID, false);
+			graph.connect({ dependency_pg_node_id, 0 }, { pg_node.id, pg_node_input_index });
+		} break;
+
+		default:
+			return false;
+	}
+	return true;
+}
+
+static ProgramGraph::Node &create_node(
+		ProgramGraph &graph, const VoxelGraphNodeDB &db, VoxelGeneratorGraph::NodeTypeID node_type_id) {
+	ProgramGraph::Node *node = create_node_internal(graph, node_type_id, Vector2(), ProgramGraph::NULL_ID);
+	CRASH_COND(node == nullptr);
+	return *node;
+}
+
+static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node, const VoxelGraphNodeDB &db,
+		std::vector<ToConnect> &to_connect, std::vector<uint32_t> &expanded_node_ids) {
+	switch (ep_node.type) {
+		case ExpressionParser::Node::NUMBER: {
+			// Note, this code should only run if the whole expression is only a number.
+			// Constant node inputs don't create a constant node, they just set the default value of the input.
+			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NODE_CONSTANT);
+			const ExpressionParser::NumberNode &nn = reinterpret_cast<const ExpressionParser::NumberNode &>(ep_node);
+			CRASH_COND(pg_node.params.size() != 1);
+			pg_node.params[0] = nn.value;
+			expanded_node_ids.push_back(pg_node.id);
+			return pg_node.id;
+		}
+
+		case ExpressionParser::Node::VARIABLE: {
+			// Note, this code should only run if the whole expression is only a variable.
+			// Variable node inputs don't create a node each time, they are turned into connections in a later pass.
+			// Here we need a pass-through node, so let's use `var + 0`. It's not a common case anyways.
+			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NODE_ADD);
+			const ExpressionParser::VariableNode &vn =
+					reinterpret_cast<const ExpressionParser::VariableNode &>(ep_node);
+			to_connect.push_back({ vn.name, { pg_node.id, 0 } });
+			CRASH_COND(pg_node.default_inputs.size() != 2);
+			pg_node.default_inputs[1] = 0;
+			expanded_node_ids.push_back(pg_node.id);
+			return pg_node.id;
+		}
+
+		case ExpressionParser::Node::OPERATOR: {
+			const ExpressionParser::OperatorNode &on =
+					reinterpret_cast<const ExpressionParser::OperatorNode &>(ep_node);
+
+			VoxelGeneratorGraph::NodeTypeID node_type_id;
+			switch (on.op) {
+				case ExpressionParser::OperatorNode::ADD:
+					node_type_id = VoxelGeneratorGraph::NODE_ADD;
+					break;
+				case ExpressionParser::OperatorNode::SUBTRACT:
+					node_type_id = VoxelGeneratorGraph::NODE_SUBTRACT;
+					break;
+				case ExpressionParser::OperatorNode::MULTIPLY:
+					node_type_id = VoxelGeneratorGraph::NODE_MULTIPLY;
+					break;
+				case ExpressionParser::OperatorNode::DIVIDE:
+					node_type_id = VoxelGeneratorGraph::NODE_DIVIDE;
+					break;
+				case ExpressionParser::OperatorNode::POWER:
+					// TODO Optimize: if exponent is constant we can use POWI, SQRT, DIVIDE or MULTIPLY
+					node_type_id = VoxelGeneratorGraph::NODE_POW;
+					break;
+				default:
+					CRASH_NOW();
+					break;
+			}
+
+			ProgramGraph::Node &pg_node = create_node(graph, db, node_type_id);
+			expanded_node_ids.push_back(pg_node.id);
+
+			CRASH_COND(on.n0 == nullptr);
+			ERR_FAIL_COND_V(
+					!expand_input(graph, *on.n0, pg_node, 0, db, to_connect, expanded_node_ids), ProgramGraph::NULL_ID);
+
+			CRASH_COND(on.n1 == nullptr);
+			ERR_FAIL_COND_V(
+					!expand_input(graph, *on.n1, pg_node, 1, db, to_connect, expanded_node_ids), ProgramGraph::NULL_ID);
+
+			return pg_node.id;
+		}
+
+		case ExpressionParser::Node::FUNCTION: {
+			// TODO Functions support
+
+			// const ExpressionParser::FunctionNode &fn =
+			// 		reinterpret_cast<const ExpressionParser::FunctionNode &>(ep_node);
+			// const ExpressionParser::Function *f = ExpressionParser::find_function_by_id(fn.function_id, functions);
+			// CRASH_COND(f == nullptr);
+			// const unsigned int arg_count = f->argument_count;
+
+			// for (unsigned int arg_index = 0; arg_index < arg_count; ++arg_index) {
+			// 	//...
+			// }
+
+			return ProgramGraph::NULL_ID;
+		}
+
+		default:
+			return ProgramGraph::NULL_ID;
+	}
+}
+
+static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph &graph, uint32_t original_node_id,
+		ProgramGraph::PortLocation &expanded_output_port, std::vector<uint32_t> &expanded_nodes) {
+	VOXEL_PROFILE_SCOPE();
+	const ProgramGraph::Node *original_node = graph.get_node(original_node_id);
+	CRASH_COND(original_node->params.size() == 0);
+	const String code = original_node->params[0];
+	const CharString code_utf8 = code.utf8();
+
+	// TODO Have functions
+	Span<const ExpressionParser::Function> functions;
+
+	// Extract the AST, so we can convert it into graph nodes,
+	// and benefit from all features of range analysis and buffer processing
+	ExpressionParser::Result parse_result = ExpressionParser::parse(code_utf8.get_data(), functions);
+
+	if (parse_result.error.id != ExpressionParser::ERROR_NONE) {
+		if (parse_result.root != nullptr) {
+			memdelete(parse_result.root);
+		}
+		const std::string error_message_utf8 = ExpressionParser::to_string(parse_result.error);
+		VoxelGraphRuntime::CompilationResult result;
+		result.success = false;
+		result.node_id = original_node_id;
+		result.message = String(error_message_utf8.c_str());
+		return result;
+	}
+
+	if (parse_result.root == nullptr) {
+		VoxelGraphRuntime::CompilationResult result;
+		result.success = false;
+		result.node_id = original_node_id;
+		result.message = "Expression is empty";
+		return result;
+	}
+
+	std::vector<ToConnect> to_connect;
+
+	const uint32_t expanded_root_node_id =
+			expand_node(graph, *parse_result.root, *VoxelGraphNodeDB::get_singleton(), to_connect, expanded_nodes);
+	if (expanded_root_node_id == ProgramGraph::NULL_ID) {
+		if (parse_result.root != nullptr) {
+			memdelete(parse_result.root);
+		}
+		VoxelGraphRuntime::CompilationResult result;
+		result.success = false;
+		result.node_id = original_node_id;
+		result.message = "Internal error";
+		return result;
+	}
+
+	expanded_output_port = { expanded_root_node_id, 0 };
+
+	for (unsigned int i = 0; i < to_connect.size(); ++i) {
+		const ToConnect tc = to_connect[i];
+
+		unsigned int original_port_index;
+		if (!original_node->find_input_port_by_name(tc.var_name, original_port_index)) {
+			if (parse_result.root != nullptr) {
+				memdelete(parse_result.root);
+			}
+			VoxelGraphRuntime::CompilationResult result;
+			result.success = false;
+			result.node_id = original_node_id;
+			result.message = "Could not resolve expression variable from input ports";
+			return result;
+		}
+		const ProgramGraph::Port &original_port = original_node->inputs[original_port_index];
+		for (unsigned int j = 0; j < original_port.connections.size(); ++j) {
+			const ProgramGraph::PortLocation src = original_port.connections[j];
+			graph.connect(src, tc.dst);
+		}
+	}
+
+	graph.remove_node(original_node_id);
+
+	if (parse_result.root != nullptr) {
+		memdelete(parse_result.root);
+	}
+
+	VoxelGraphRuntime::CompilationResult result;
+	result.success = true;
+	return result;
+}
+
+struct PortRemap {
+	ProgramGraph::PortLocation original;
+	ProgramGraph::PortLocation expanded;
+};
+
+struct ExpandedNodeRemap {
+	uint32_t expanded_node_id;
+	uint32_t original_node_id;
+};
+
+static VoxelGraphRuntime::CompilationResult expand_expression_nodes(ProgramGraph &graph,
+		std::vector<PortRemap> &user_to_expanded_ports, std::vector<ExpandedNodeRemap> &expanded_to_user_node_ids) {
+	VOXEL_PROFILE_SCOPE();
+	// Gather expression node IDs first, as expansion could invalidate the iterator
+	std::vector<uint32_t> expression_node_ids;
+	graph.for_each_node([&expression_node_ids](ProgramGraph::Node &node) {
+		if (node.type_id == VoxelGeneratorGraph::NODE_EXPRESSION) {
+			expression_node_ids.push_back(node.id);
+		}
+	});
+
+	std::vector<uint32_t> expanded_node_ids;
+
+	for (auto it = expression_node_ids.begin(); it != expression_node_ids.end(); ++it) {
+		const uint32_t node_id = *it;
+		ProgramGraph::PortLocation expanded_output_port;
+		expanded_node_ids.clear();
+		VoxelGraphRuntime::CompilationResult result =
+				expand_expression_node(graph, node_id, expanded_output_port, expanded_node_ids);
+		if (!result.success) {
+			return result;
+		}
+		user_to_expanded_ports.push_back({ { node_id, 0 }, expanded_output_port });
+		for (auto it2 = expanded_node_ids.begin(); it2 != expanded_node_ids.end(); ++it2) {
+			expanded_to_user_node_ids.push_back({ *it2, node_id });
+		}
+	}
+
+	VoxelGraphRuntime::CompilationResult result;
+	result.success = true;
+	return result;
+}
+
+VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGraph &p_graph, bool debug) {
+	VOXEL_PROFILE_SCOPE();
+
+	ProgramGraph graph;
+	graph.copy_from(p_graph, false);
+	// TODO Store a remapping to allow debugging with the expanded graph
+	std::vector<PortRemap> user_to_expanded_ports;
+	std::vector<ExpandedNodeRemap> expanded_to_user_node_ids;
+	VoxelGraphRuntime::CompilationResult expand_result =
+			expand_expression_nodes(graph, user_to_expanded_ports, expanded_to_user_node_ids);
+	if (!expand_result.success) {
+		return expand_result;
+	}
+
 	VoxelGraphRuntime::CompilationResult result = _compile(graph, debug);
 	if (!result.success) {
 		clear();
 	}
+
+	for (PortRemap r : user_to_expanded_ports) {
+		_program.user_port_to_expanded_port.insert({ r.original, r.expanded });
+	}
+	for (ExpandedNodeRemap r : expanded_to_user_node_ids) {
+		_program.expanded_node_id_to_user_node_id.insert({ r.expanded_node_id, r.original_node_id });
+	}
+
 	return result;
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
+	VOXEL_PROFILE_SCOPE();
 	clear();
 
 	std::vector<uint32_t> order;
@@ -498,11 +781,25 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 	}
 
 	if (debug) {
+		std::vector<uint32_t> &debug_nodes = execution_map.debug_nodes;
+
 		for (unsigned int node_index = 0; node_index < graph.nodes.size(); ++node_index) {
 			const ProcessResult res = results[node_index];
 			const DependencyGraph::Node &node = graph.nodes[node_index];
+
 			if (res == REQUIRED) {
-				execution_map.debug_nodes.push_back(node.debug_node_id);
+				uint32_t debug_node_id = node.debug_node_id;
+				auto it = _program.expanded_node_id_to_user_node_id.find(debug_node_id);
+
+				if (it != _program.expanded_node_id_to_user_node_id.end()) {
+					debug_node_id = it->second;
+					if (std::find(debug_nodes.begin(), debug_nodes.end(), debug_node_id) != debug_nodes.end()) {
+						// Ignore duplicates. Some nodes can have been expanded into multiple ones.
+						continue;
+					}
+				}
+
+				debug_nodes.push_back(node.debug_node_id);
 			}
 		}
 	}
@@ -857,6 +1154,10 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 }
 
 bool VoxelGraphRuntime::try_get_output_port_address(ProgramGraph::PortLocation port, uint16_t &out_address) const {
+	auto it = _program.user_port_to_expanded_port.find(port);
+	if (it != _program.user_port_to_expanded_port.end()) {
+		port = it->second;
+	}
 	const uint16_t *aptr = _program.output_port_addresses.getptr(port);
 	if (aptr == nullptr) {
 		// This port did not take part of the compiled result

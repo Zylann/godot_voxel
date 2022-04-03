@@ -51,7 +51,7 @@ public:
 		// TODO Typo?
 		std::vector<uint16_t> operation_adresses;
 		// Stores node IDs referring to the user-facing graph
-		std::vector<int> debug_nodes;
+		std::vector<uint32_t> debug_nodes;
 		// From which index in the adress list operations will start depending on Y
 		unsigned int xzy_start_index = 0;
 
@@ -116,7 +116,7 @@ public:
 	~VoxelGraphRuntime();
 
 	void clear();
-	CompilationResult compile(const ProgramGraph &graph, bool debug);
+	CompilationResult compile(const ProgramGraph &p_graph, bool debug);
 
 	// Call this before you use a state with generation functions.
 	// You need to call it once, until you want to use a different graph, buffer size or buffer count.
@@ -372,7 +372,8 @@ private:
 			uint16_t end_dependency;
 			uint16_t op_address;
 			bool is_input;
-			int debug_node_id;
+			// Node ID from the expanded ProgramGraph (non user-provided, so may need remap)
+			uint32_t debug_node_id;
 		};
 
 		// Indexes to the `nodes` array
@@ -448,9 +449,16 @@ private:
 		// Buffers are needed to hold values of arguments and outputs for each operation.
 		unsigned int buffer_count = 0;
 
-		// Associates a high-level port to its corresponding address within the compiled program.
+		// Associates a port from the input graph to its corresponding address within the compiled program.
 		// This is used for debugging intermediate values.
-		HashMap<ProgramGraph::PortLocation, uint16_t, ProgramGraph::PortLocationHasher> output_port_addresses;
+		HashMap<ProgramGraph::PortLocation, uint16_t, ProgramGraphPortLocationHasher> output_port_addresses;
+
+		// If you have a port location from the original user graph, before querying `output_port_addresses`, remap
+		// it first, in case it got expanded to different nodes during compilation.
+		std::unordered_map<ProgramGraph::PortLocation, ProgramGraph::PortLocation> user_port_to_expanded_port;
+
+		// Associates expanded graph ID to user graph node IDs.
+		std::unordered_map<uint32_t, uint32_t> expanded_node_id_to_user_node_id;
 
 		// Result of the last compilation attempt. The program should not be run if it failed.
 		CompilationResult compilation_result;
@@ -461,6 +469,8 @@ private:
 			xzy_start_op_address = 0;
 			default_execution_map.clear();
 			output_port_addresses.clear();
+			user_port_to_expanded_port.clear();
+			expanded_node_id_to_user_node_id.clear();
 			dependency_graph.clear();
 			x_input_address = -1;
 			y_input_address = -1;

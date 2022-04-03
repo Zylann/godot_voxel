@@ -46,7 +46,10 @@ public:
 
 	struct NodeType {
 		String name;
+		// Debug-only nodes are ignored in non-debug compilation.
 		bool debug_only = false;
+		// Pseudo nodes are replaced during compilation with one or multiple real nodes, they have no logic on their own
+		bool is_pseudo_node = false;
 		Category category;
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
@@ -60,6 +63,7 @@ public:
 
 	VoxelGraphNodeDB();
 
+	// TODO Return a reference, it should never be null or should crash
 	static VoxelGraphNodeDB *get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();

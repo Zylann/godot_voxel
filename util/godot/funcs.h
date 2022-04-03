@@ -115,6 +115,28 @@ inline Vector3f to_vec3f(Vector3 v) {
 	return Vector3f(v.x, v.y, v.z);
 }
 
+inline String to_godot(const std::string_view sv) {
+	return String::utf8(sv.data(), sv.size());
+}
+
+static PackedStringArray to_godot(const std::vector<std::string_view> &svv) {
+	PackedStringArray psa;
+	psa.resize(svv.size());
+	for (unsigned int i = 0; i < svv.size(); ++i) {
+		psa.write[i] = to_godot(svv[i]);
+	}
+	return psa;
+}
+
+static PackedStringArray to_godot(const std::vector<std::string> &sv) {
+	PackedStringArray psa;
+	psa.resize(sv.size());
+	for (unsigned int i = 0; i < sv.size(); ++i) {
+		psa.write[i] = to_godot(sv[i]);
+	}
+	return psa;
+}
+
 } // namespace zylann
 
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

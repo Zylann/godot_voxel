@@ -68,6 +68,9 @@ public:
 		NODE_FAST_NOISE_2_3D,
 #endif
 		NODE_OUTPUT_SINGLE_TEXTURE,
+		NODE_EXPRESSION,
+		NODE_POWI, // pow(x, constant positive integer)
+		NODE_POW, // pow(x, y)
 
 		NODE_TYPE_COUNT
 	};
@@ -109,6 +112,10 @@ public:
 
 	Variant get_node_param(uint32_t node_id, uint32_t param_index) const;
 	void set_node_param(uint32_t node_id, uint32_t param_index, Variant value);
+
+	static bool get_expression_variables(std::string_view code, std::vector<std::string_view> &vars);
+	void get_expression_node_inputs(uint32_t node_id, std::vector<std::string> &out_names) const;
+	void set_expression_node_inputs(uint32_t node_id, PackedStringArray names);
 
 	Variant get_node_default_input(uint32_t node_id, uint32_t input_index) const;
 	void set_node_default_input(uint32_t node_id, uint32_t input_index, Variant value);
@@ -173,7 +180,7 @@ public:
 
 	// Returns state from the last generator used in the current thread
 	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
-	static Span<const int> get_last_execution_map_debug_from_current_thread();
+	static Span<const uint32_t> get_last_execution_map_debug_from_current_thread();
 
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 
@@ -280,6 +287,9 @@ private:
 
 	static thread_local Cache _cache;
 };
+
+ProgramGraph::Node *create_node_internal(
+		ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position, uint32_t id);
 
 } // namespace zylann::voxel
 

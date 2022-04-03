@@ -255,15 +255,15 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	_graph_edit->add_child(node_view);
 }
 
-void remove_connections_from_and_to(GraphEdit *graph_edit, StringName node_name) {
+void remove_connections_from_and_to(GraphEdit &graph_edit, StringName node_name) {
 	// Get copy of connection list
 	List<GraphEdit::Connection> connections;
-	graph_edit->get_connection_list(&connections);
+	graph_edit.get_connection_list(&connections);
 
 	for (List<GraphEdit::Connection>::Element *E = connections.front(); E; E = E->next()) {
 		const GraphEdit::Connection &con = E->get();
 		if (con.from == node_name || con.to == node_name) {
-			graph_edit->disconnect_node(con.from, con.from_port, con.to, con.to_port);
+			graph_edit.disconnect_node(con.from, con.from_port, con.to, con.to_port);
 		}
 	}
 }
@@ -276,7 +276,7 @@ static NodePath to_node_path(StringName sn) {
 
 void VoxelGraphEditor::remove_node_gui(StringName gui_node_name) {
 	// Remove connections from the UI, because GraphNode doesn't do it...
-	remove_connections_from_and_to(_graph_edit, gui_node_name);
+	remove_connections_from_and_to(*_graph_edit, gui_node_name);
 	Node *node_view = _graph_edit->get_node(to_node_path(gui_node_name));
 	ERR_FAIL_COND(Object::cast_to<GraphNode>(node_view) == nullptr);
 	memdelete(node_view);
@@ -296,6 +296,52 @@ void VoxelGraphEditor::remove_node_gui(StringName gui_node_name) {
 // 	}
 // 	return nullptr;
 // }
+
+void VoxelGraphEditor::update_node_layout(uint32_t node_id) {
+	ERR_FAIL_COND(_graph.is_null());
+
+	GraphEdit &graph_edit = *_graph_edit;
+	const String view_name = node_to_gui_name(node_id);
+	VoxelGraphEditorNode *view = Object::cast_to<VoxelGraphEditorNode>(graph_edit.get_node(view_name));
+	ERR_FAIL_COND(view == nullptr);
+
+	// Remove all GUI connections going to the node
+
+	List<GraphEdit::Connection> old_connections;
+	graph_edit.get_connection_list(&old_connections);
+
+	for (List<GraphEdit::Connection>::Element *e = old_connections.front(); e; e = e->next()) {
+		const GraphEdit::Connection &con = e->get();
+		NodePath to = to_node_path(con.to);
+		const VoxelGraphEditorNode *to_view = Object::cast_to<VoxelGraphEditorNode>(graph_edit.get_node(to));
+		if (to_view == nullptr) {
+			continue;
+		}
+		if (to_view == view) {
+			graph_edit.disconnect_node(con.from, con.from_port, con.to, con.to_port);
+		}
+	}
+
+	// Update node layout
+
+	view->update_layout(**_graph);
+
+	// TODO What about output connections?
+	// Currently assuming there is always only one for expression nodes, therefore it might be ok?
+
+	// Add connections back by reading the graph
+
+	// TODO Optimize: the graph stores an adjacency list, we could use that
+	std::vector<ProgramGraph::Connection> connections;
+	_graph->get_connections(connections);
+	for (size_t i = 0; i < connections.size(); ++i) {
+		const ProgramGraph::Connection &con = connections[i];
+		if (con.dst.node_id == node_id) {
+			graph_edit.connect_node(node_to_gui_name(con.src.node_id), con.src.port_index,
+					node_to_gui_name(con.dst.node_id), con.dst.port_index);
+		}
+	}
+}
 
 static bool is_nothing_selected(GraphEdit *graph_edit) {
 	for (int i = 0; i < graph_edit->get_child_count(); ++i) {
@@ -605,7 +651,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	}
 
 	// Highlight only nodes that will actually run
-	Span<const int> execution_map = VoxelGeneratorGraph::get_last_execution_map_debug_from_current_thread();
+	Span<const uint32_t> execution_map = VoxelGeneratorGraph::get_last_execution_map_debug_from_current_thread();
 	for (unsigned int i = 0; i < execution_map.size(); ++i) {
 		String node_view_path = node_to_gui_name(execution_map[i]);
 		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(node_view_path));
@@ -812,6 +858,7 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_node_gui", "node_id"), &VoxelGraphEditor::create_node_gui);
 	ClassDB::bind_method(D_METHOD("remove_node_gui", "node_name"), &VoxelGraphEditor::remove_node_gui);
 	ClassDB::bind_method(D_METHOD("set_node_position", "node_id", "offset"), &VoxelGraphEditor::set_node_position);
+	ClassDB::bind_method(D_METHOD("update_node_layout", "node_id"), &VoxelGraphEditor::update_node_layout);
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_SELECTED, PropertyInfo(Variant::INT, "node_id")));
 	ADD_SIGNAL(MethodInfo(SIGNAL_NOTHING_SELECTED, PropertyInfo(Variant::INT, "nothing_selected")));

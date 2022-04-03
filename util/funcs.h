@@ -1,6 +1,7 @@
 #ifndef HEADER_VOXEL_UTILITY_H
 #define HEADER_VOXEL_UTILITY_H
 
+#include "span.h"
 #include <core/string/ustring.h>
 #include <core/templates/vector.h>
 #include <utility>
@@ -66,21 +67,34 @@ inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
 
 // Removes all items satisfying the given predicate.
 // This can reduce the size of the container. Items are moved to preserve order.
-//template <typename T, typename F>
-//inline void remove_if(std::vector<T> &vec, F predicate) {
-//	unsigned int j = 0;
-//	for (unsigned int i = 0; i < vec.size(); ++i) {
-//		if (predicate(vec[i])) {
-//			continue;
-//		} else {
-//			if (i != j) {
-//				vec[j] = vec[i];
-//			}
-//			++j;
-//		}
-//	}
-//	vec.resize(j);
-//}
+// template <typename T, typename F>
+// inline void remove_if(std::vector<T> &vec, F predicate) {
+// 	unsigned int j = 0;
+// 	for (unsigned int i = 0; i < vec.size(); ++i) {
+// 		if (predicate(vec[i])) {
+// 			continue;
+// 		} else {
+// 			if (i != j) {
+// 				vec[j] = vec[i];
+// 			}
+// 			++j;
+// 		}
+// 	}
+// 	vec.resize(j);
+// }
+
+template <typename T>
+size_t find_duplicate(Span<const T> items) {
+	for (unsigned int i = 0; i < items.size(); ++i) {
+		const T &a = items[i];
+		for (unsigned int j = i + 1; j < items.size(); ++j) {
+			if (items[j] == a) {
+				return j;
+			}
+		}
+	}
+	return items.size();
+}
 
 inline String ptr2s(const void *p) {
 	return String::num_uint64((uint64_t)p, 16);

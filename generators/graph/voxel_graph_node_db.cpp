@@ -1292,6 +1292,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("min_value", Variant::FLOAT, -1.f));
 		t.params.push_back(Param("max_value", Variant::FLOAT, 1.f));
 		t.debug_only = true;
+		t.is_pseudo_node = true;
 	}
 	{
 		struct Params {
@@ -1786,6 +1787,80 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 #endif // VOXEL_ENABLE_FAST_NOISE_2
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_EXPRESSION];
+		t.name = "Expression";
+		t.category = CATEGORY_MATH;
+		t.params.push_back(Param("expression", Variant::STRING, "0"));
+		t.outputs.push_back(Port("out"));
+		t.compile_func = [](CompileContext &ctx) { ctx.make_error("Internal error, expression wasn't expanded"); };
+		t.is_pseudo_node = true;
+	}
+	{
+		struct Params {
+			unsigned int power;
+		};
+
+		NodeType &t = types[VoxelGeneratorGraph::NODE_POWI];
+		t.name = "Powi";
+		t.category = CATEGORY_MATH;
+		t.inputs.push_back(Port("x"));
+		t.params.push_back(Param("power", Variant::INT, 2));
+		t.outputs.push_back(Port("out"));
+
+		t.compile_func = [](CompileContext &ctx) {
+			const int power = ctx.get_param(0).operator int();
+			if (power < 0) {
+				ctx.make_error("Power cannot be negative");
+			} else {
+				Params p;
+				p.power = power;
+				ctx.set_params(p);
+			}
+		};
+
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			const unsigned int power = ctx.get_params<Params>().power;
+			for (unsigned int i = 0; i < out.size; ++i) {
+				float v = x.data[i];
+				for (unsigned int p = 0; p < power; ++p) {
+					v *= v;
+				}
+				out.data[i] = v;
+			}
+		};
+
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval x = ctx.get_input(0);
+			const unsigned int power = ctx.get_params<Params>().power;
+			ctx.set_output(0, powi(x, power));
+		};
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_POW];
+		t.name = "Pow";
+		t.category = CATEGORY_MATH;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("p", 2.f));
+		t.outputs.push_back(Port("out"));
+
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
+			const VoxelGraphRuntime::Buffer &p = ctx.get_input(1);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			for (unsigned int i = 0; i < out.size; ++i) {
+				out.data[i] = Math::pow(x.data[i], p.data[i]);
+			}
+		};
+
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval x = ctx.get_input(0);
+			const Interval y = ctx.get_input(1);
+			ctx.set_output(0, pow(x, y));
+		};
+	}
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];
@@ -1810,6 +1885,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 					break;
 
 				case Variant::OBJECT:
+				case Variant::STRING:
 					break;
 
 				default:

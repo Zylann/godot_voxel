@@ -1,6 +1,7 @@
 #include "voxel_graph_editor_plugin.h"
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../terrain/voxel_node.h"
+#include "editor_property_text_change_on_submit.h"
 #include "voxel_graph_editor.h"
 #include "voxel_graph_node_inspector_wrapper.h"
 
@@ -8,6 +9,27 @@
 #include <editor/editor_scale.h>
 
 namespace zylann::voxel {
+
+// Changes string editors of the inspector to call setters only when enter key is pressed, similar to Unreal.
+// Because the default behavior of `EditorPropertyText` is to call the setter on every character typed, which is a
+// nightmare when editing an Expression node: inputs change constantly as the code is written which has much higher
+// chance of messing up existing connections, and creates individual UndoRedo actions as well.
+class VoxelGraphEditorInspectorPlugin : public EditorInspectorPlugin {
+	GDCLASS(VoxelGraphEditorInspectorPlugin, EditorInspectorPlugin)
+public:
+	bool can_handle(Object *obj) override {
+		return obj != nullptr && Object::cast_to<VoxelGraphNodeInspectorWrapper>(obj) != nullptr;
+	}
+
+	bool parse_property(Object *p_object, const Variant::Type p_type, const String &p_path, const PropertyHint p_hint,
+			const String &p_hint_text, const uint32_t p_usage, const bool p_wide = false) override {
+		if (p_type == Variant::STRING) {
+			add_property_editor(p_path, memnew(EditorPropertyTextChangeOnSubmit));
+			return true;
+		}
+		return false;
+	}
+};
 
 VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {
 	//EditorInterface *ed = get_editor_interface();
@@ -21,6 +43,10 @@ VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {
 			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted));
 	_bottom_panel_button = add_control_to_bottom_panel(_graph_editor, TTR("Voxel Graph"));
 	_bottom_panel_button->hide();
+
+	Ref<VoxelGraphEditorInspectorPlugin> inspector_plugin;
+	inspector_plugin.instantiate();
+	add_inspector_plugin(inspector_plugin);
 }
 
 bool VoxelGraphEditorPlugin::handles(Object *p_object) const {
@@ -98,7 +124,7 @@ void VoxelGraphEditorPlugin::_hide_deferred() {
 void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 	Ref<VoxelGraphNodeInspectorWrapper> wrapper;
 	wrapper.instantiate();
-	wrapper->setup(_graph_editor->get_graph(), node_id, &get_undo_redo());
+	wrapper->setup(_graph_editor->get_graph(), node_id, &get_undo_redo(), _graph_editor);
 	// Note: it's neither explicit nor documented, but the reference will stay alive due to EditorHistory::_add_object
 	get_editor_interface()->inspect_object(*wrapper);
 	// TODO Absurd situation here...
