@@ -1,5 +1,6 @@
 #include "voxel_graph_node_db.h"
 #include "../../constants/voxel_constants.h"
+#include "../../util/macros.h"
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite_range.h"
@@ -834,7 +835,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Curve> curve = ctx.get_param(0);
 			if (curve.is_null()) {
-				ctx.make_error("Curve instance is null");
+				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(Curve::get_class_static()))));
 				return;
 			}
 			// Make sure it is baked. We don't want multithreading to bail out because of a write operation
@@ -887,7 +888,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Noise> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error("Noise instance is null");
+				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(Noise::get_class_static()))));
 				return;
 			}
 			Params p;
@@ -933,7 +934,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Noise> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error("OpenSimplexNoise instance is null");
+				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(Noise::get_class_static()))));
 				return;
 			}
 			Params p;
@@ -977,11 +978,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
-				ctx.make_error("Image instance is null");
+				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(Image::get_class_static()))));
 				return;
 			}
 			if (image->is_compressed()) {
-				ctx.make_error("Image has a compressed format, this is not supported");
+				ctx.make_error(String(ZN_TTR("{0} has a compressed format, this is not supported")
+											  .format(varray(Image::get_class_static()))));
 				return;
 			}
 			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
@@ -1396,11 +1398,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
-				ctx.make_error("Image instance is null");
+				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(Image::get_class_static()))));
 				return;
 			}
 			if (image->is_compressed()) {
-				ctx.make_error("Image has a compressed format, this is not supported");
+				ctx.make_error(String(ZN_TTR("{0} has a compressed format, this is not supported")
+											  .format(varray(Image::get_class_static()))));
 				return;
 			}
 			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
@@ -1508,7 +1511,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error(ZN_FastNoiseLite::get_class_static() + " instance is null");
+				ctx.make_error(
+						String(ZN_TTR("{0} instance is null").format(varray(ZN_FastNoiseLite::get_class_static()))));
 				return;
 			}
 			Params p;
@@ -1552,7 +1556,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error("FastNoiseLite instance is null");
+				ctx.make_error(
+						String(ZN_TTR("{0} instance is null").format(varray(ZN_FastNoiseLite::get_class_static()))));
 				return;
 			}
 			Params p;
@@ -1598,7 +1603,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLiteGradient> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error("FastNoiseLiteGradient instance is null");
+				ctx.make_error(String(
+						ZN_TTR("{0} instance is null").format(varray(ZN_FastNoiseLiteGradient::get_class_static()))));
 				return;
 			}
 			Params p;
@@ -1651,7 +1657,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLiteGradient> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error("FastNoiseLiteGradient instance is null");
+				ctx.make_error(String(
+						ZN_TTR("{0} instance is null").format(varray(ZN_FastNoiseLiteGradient::get_class_static()))));
 				return;
 			}
 			Params p;
@@ -1708,12 +1715,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoise2> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error("FastNoise2 instance is null");
+				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(FastNoise2::get_class_static()))));
 				return;
 			}
 			noise->update_generator();
 			if (!noise->is_valid()) {
-				ctx.make_error("FastNoise2 setup is invalid");
+				ctx.make_error(String(ZN_TTR("{0} setup is invalid").format(varray(FastNoise2::get_class_static()))));
 				return;
 			}
 			Params p;
@@ -1756,12 +1763,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoise2> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error("FastNoise2 instance is null");
+				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(FastNoise2::get_class_static()))));
 				return;
 			}
 			noise->update_generator();
 			if (!noise->is_valid()) {
-				ctx.make_error("FastNoise2 setup is invalid");
+				ctx.make_error(String(ZN_TTR("{0} setup is invalid").format(varray(FastNoise2::get_class_static()))));
 				return;
 			}
 			Params p;

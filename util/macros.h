@@ -16,4 +16,12 @@
 
 #define VOXEL_ARRAY_LENGTH(a) (sizeof(a) / sizeof(a[0]))
 
+// Godot does not define the TTR macro for translation of messages in release builds. However, there are some non-editor
+// code that can produce errors in this module, and we still want them to compile properly.
+#ifdef TOOLS_ENABLED
+#define ZN_TTR(msg) TTR(msg)
+#else
+#define ZN_TTR(msg) msg
+#endif
+
 #endif // VOXEL_MACROS_H
