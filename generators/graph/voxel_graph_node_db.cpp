@@ -835,7 +835,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Curve> curve = ctx.get_param(0);
 			if (curve.is_null()) {
-				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(Curve::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Curve::get_class_static())));
 				return;
 			}
 			// Make sure it is baked. We don't want multithreading to bail out because of a write operation
@@ -888,7 +888,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Noise> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(Noise::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Noise::get_class_static())));
 				return;
 			}
 			Params p;
@@ -934,7 +934,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Noise> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(Noise::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Noise::get_class_static())));
 				return;
 			}
 			Params p;
@@ -978,12 +978,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
-				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(Image::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Image::get_class_static())));
 				return;
 			}
 			if (image->is_compressed()) {
-				ctx.make_error(String(ZN_TTR("{0} has a compressed format, this is not supported")
-											  .format(varray(Image::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} has a compressed format, this is not supported"))
+									   .format(varray(Image::get_class_static())));
 				return;
 			}
 			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
@@ -1398,12 +1398,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
-				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(Image::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Image::get_class_static())));
 				return;
 			}
 			if (image->is_compressed()) {
-				ctx.make_error(String(ZN_TTR("{0} has a compressed format, this is not supported")
-											  .format(varray(Image::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} has a compressed format, this is not supported"))
+									   .format(varray(Image::get_class_static())));
 				return;
 			}
 			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
@@ -1512,7 +1512,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
 			if (noise.is_null()) {
 				ctx.make_error(
-						String(ZN_TTR("{0} instance is null").format(varray(ZN_FastNoiseLite::get_class_static()))));
+						String(ZN_TTR("{0} instance is null")).format(varray(ZN_FastNoiseLite::get_class_static())));
 				return;
 			}
 			Params p;
@@ -1557,7 +1557,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
 			if (noise.is_null()) {
 				ctx.make_error(
-						String(ZN_TTR("{0} instance is null").format(varray(ZN_FastNoiseLite::get_class_static()))));
+						String(ZN_TTR("{0} instance is null")).format(varray(ZN_FastNoiseLite::get_class_static())));
 				return;
 			}
 			Params p;
@@ -1603,8 +1603,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLiteGradient> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error(String(
-						ZN_TTR("{0} instance is null").format(varray(ZN_FastNoiseLiteGradient::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} instance is null"))
+									   .format(varray(ZN_FastNoiseLiteGradient::get_class_static())));
 				return;
 			}
 			Params p;
@@ -1657,8 +1657,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLiteGradient> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error(String(
-						ZN_TTR("{0} instance is null").format(varray(ZN_FastNoiseLiteGradient::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} instance is null"))
+									   .format(varray(ZN_FastNoiseLiteGradient::get_class_static())));
 				return;
 			}
 			Params p;
@@ -1715,12 +1715,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoise2> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(FastNoise2::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(FastNoise2::get_class_static())));
 				return;
 			}
 			noise->update_generator();
 			if (!noise->is_valid()) {
-				ctx.make_error(String(ZN_TTR("{0} setup is invalid").format(varray(FastNoise2::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} setup is invalid")).format(varray(FastNoise2::get_class_static())));
 				return;
 			}
 			Params p;
@@ -1763,12 +1763,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoise2> noise = ctx.get_param(0);
 			if (noise.is_null()) {
-				ctx.make_error(String(ZN_TTR("{0} instance is null").format(varray(FastNoise2::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(FastNoise2::get_class_static())));
 				return;
 			}
 			noise->update_generator();
 			if (!noise->is_valid()) {
-				ctx.make_error(String(ZN_TTR("{0} setup is invalid").format(varray(FastNoise2::get_class_static()))));
+				ctx.make_error(String(ZN_TTR("{0} setup is invalid")).format(varray(FastNoise2::get_class_static())));
 				return;
 			}
 			Params p;
