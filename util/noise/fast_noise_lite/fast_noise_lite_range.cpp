@@ -1,12 +1,12 @@
-#include "fast_noise_lite_range.h"
+#include "../noise_range_utility.h"
 #include "fast_noise_lite.h"
-#include "noise_range_utility.h"
+#include "fast_noise_lite_gradient.h"
 
 namespace zylann {
 
 using namespace math;
 
-static Interval get_fnl_cellular_value_range_2d(const FastNoiseLite &noise, Interval x, Interval y) {
+static Interval get_fnl_cellular_value_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y) {
 	const float c0 = noise.get_noise_2d(x.min, y.min);
 	const float c1 = noise.get_noise_2d(x.max, y.min);
 	const float c2 = noise.get_noise_2d(x.min, y.max);
@@ -33,81 +33,81 @@ static Interval get_fnl_cellular_value_range_3d(
 	return Interval{ -1, 1 };
 }
 
-static Interval get_fnl_cellular_range(const FastNoiseLite &noise) {
+static Interval get_fnl_cellular_range(const ZN_FastNoiseLite &noise) {
 	// There are many combinations with Cellular noise so instead of implementing them with intervals,
 	// I used empiric tests to figure out some bounds.
 
 	// Value mode must be handled separately.
 
 	switch (noise.get_cellular_distance_function()) {
-		case FastNoiseLite::CELLULAR_DISTANCE_EUCLIDEAN:
+		case ZN_FastNoiseLite::CELLULAR_DISTANCE_EUCLIDEAN:
 			switch (noise.get_cellular_return_type()) {
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE:
 					return Interval{ -1.f, 0.08f };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2:
 					return Interval{ -0.92f, 0.35 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_ADD:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_ADD:
 					return Interval{ -0.92f, 0.1 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_SUB:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_SUB:
 					return Interval{ -1, 0.15 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_MUL:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_MUL:
 					return Interval{ -1, 0 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_DIV:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_DIV:
 					return Interval{ -1, 0 };
 				default:
 					ERR_FAIL_V(Interval(-1, 1));
 			}
 			break;
 
-		case FastNoiseLite::CELLULAR_DISTANCE_EUCLIDEAN_SQ:
+		case ZN_FastNoiseLite::CELLULAR_DISTANCE_EUCLIDEAN_SQ:
 			switch (noise.get_cellular_return_type()) {
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE:
 					return Interval{ -1, 0.2 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2:
 					return Interval{ -1, 0.8 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_ADD:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_ADD:
 					return Interval{ -1, 0.2 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_SUB:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_SUB:
 					return Interval{ -1, 0.7 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_MUL:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_MUL:
 					return Interval{ -1, 0 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_DIV:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_DIV:
 					return Interval{ -1, 0 };
 				default:
 					ERR_FAIL_V(Interval(-1, 1));
 			}
 
-		case FastNoiseLite::CELLULAR_DISTANCE_MANHATTAN:
+		case ZN_FastNoiseLite::CELLULAR_DISTANCE_MANHATTAN:
 			switch (noise.get_cellular_return_type()) {
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE:
 					return Interval{ -1, 0.75 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2:
 					return Interval{ -0.9, 0.8 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_ADD:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_ADD:
 					return Interval{ -0.8, 0.8 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_SUB:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_SUB:
 					return Interval{ -1.0, 0.5 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_MUL:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_MUL:
 					return Interval{ -1.0, 0.7 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_DIV:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_DIV:
 					return Interval{ -1.0, 0.0 };
 				default:
 					ERR_FAIL_V(Interval(-1, 1));
 			}
 
-		case FastNoiseLite::CELLULAR_DISTANCE_HYBRID:
+		case ZN_FastNoiseLite::CELLULAR_DISTANCE_HYBRID:
 			switch (noise.get_cellular_return_type()) {
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE:
 					return Interval{ -1, 1.75 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2:
 					return Interval{ -0.9, 2.3 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_ADD:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_ADD:
 					return Interval{ -0.9, 1.9 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_SUB:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_SUB:
 					return Interval{ -1.0, 1.85 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_MUL:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_MUL:
 					return Interval{ -1.0, 3.4 };
-				case FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_DIV:
+				case ZN_FastNoiseLite::CELLULAR_RETURN_DISTANCE_2_DIV:
 					return Interval{ -1.0, 0.0 };
 				default:
 					ERR_FAIL_V(Interval(-1, 1));
@@ -175,7 +175,7 @@ Interval fnl_single_opensimplex2s(
 			p_x, p_y, p_z, 2.5f);
 }
 
-Interval fnl_single_cellular(const FastNoiseLite &noise, Interval x, Interval y, Interval z) {
+Interval fnl_single_cellular(const ZN_FastNoiseLite &noise, Interval x, Interval y, Interval z) {
 	const fast_noise_lite::FastNoiseLite &fn = noise.get_noise_internal();
 	if (fn.mCellularReturnType == fast_noise_lite::FastNoiseLite::CellularReturnType_CellValue) {
 		return get_fnl_cellular_value_range_3d(fn, x, y, z);
@@ -213,7 +213,7 @@ Interval fnl_single_value(
 			p_x, p_y, p_z, 3.0f);
 }
 
-Interval fnl_gen_noise_single(const FastNoiseLite &noise, int seed, Interval x, Interval y, Interval z) {
+Interval fnl_gen_noise_single(const ZN_FastNoiseLite &noise, int seed, Interval x, Interval y, Interval z) {
 	// Same logic as in the FastNoiseLite internal function
 	const fast_noise_lite::FastNoiseLite &fn = noise.get_noise_internal();
 
@@ -235,7 +235,7 @@ Interval fnl_gen_noise_single(const FastNoiseLite &noise, int seed, Interval x, 
 	}
 }
 
-Interval fnl_gen_fractal_fbm(const FastNoiseLite &p_noise, Interval x, Interval y, Interval z) {
+Interval fnl_gen_fractal_fbm(const ZN_FastNoiseLite &p_noise, Interval x, Interval y, Interval z) {
 	// Same logic as in the FastNoiseLite internal function
 	const fast_noise_lite::FastNoiseLite &fn = p_noise.get_noise_internal();
 
@@ -258,7 +258,7 @@ Interval fnl_gen_fractal_fbm(const FastNoiseLite &p_noise, Interval x, Interval 
 	return sum;
 }
 
-Interval fnl_gen_fractal_ridged(const FastNoiseLite &p_noise, Interval x, Interval y, Interval z) {
+Interval fnl_gen_fractal_ridged(const ZN_FastNoiseLite &p_noise, Interval x, Interval y, Interval z) {
 	// Same logic as in the FastNoiseLite internal function
 	const fast_noise_lite::FastNoiseLite &fn = p_noise.get_noise_internal();
 
@@ -281,7 +281,7 @@ Interval fnl_gen_fractal_ridged(const FastNoiseLite &p_noise, Interval x, Interv
 	return sum;
 }
 
-Interval fnl_get_noise(const FastNoiseLite &noise, Interval x, Interval y, Interval z) {
+Interval fnl_get_noise(const ZN_FastNoiseLite &noise, Interval x, Interval y, Interval z) {
 	// Same logic as in the FastNoiseLite internal function
 	const fast_noise_lite::FastNoiseLite &fn = noise.get_noise_internal();
 
@@ -290,22 +290,22 @@ Interval fnl_get_noise(const FastNoiseLite &noise, Interval x, Interval y, Inter
 	switch (noise.get_fractal_type()) {
 		default:
 			return fnl_gen_noise_single(noise, noise.get_seed(), x, y, z);
-		case FastNoiseLite::FRACTAL_FBM:
+		case ZN_FastNoiseLite::FRACTAL_FBM:
 			return fnl_gen_fractal_fbm(noise, x, y, z);
-		case FastNoiseLite::FRACTAL_RIDGED:
+		case ZN_FastNoiseLite::FRACTAL_RIDGED:
 			return fnl_gen_fractal_ridged(noise, x, y, z);
-		case FastNoiseLite::FRACTAL_PING_PONG:
+		case ZN_FastNoiseLite::FRACTAL_PING_PONG:
 			// TODO Ping pong
 			return Interval(-1.f, 1.f);
 	}
 }
 
-Interval get_fnl_range_2d(const FastNoiseLite &noise, Interval x, Interval y) {
+Interval get_fnl_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y) {
 	// TODO More precise analysis using derivatives
 	// TODO Take warp noise into account
 	switch (noise.get_noise_type()) {
-		case FastNoiseLite::TYPE_CELLULAR:
-			if (noise.get_cellular_return_type() == FastNoiseLite::CELLULAR_RETURN_CELL_VALUE) {
+		case ZN_FastNoiseLite::TYPE_CELLULAR:
+			if (noise.get_cellular_return_type() == ZN_FastNoiseLite::CELLULAR_RETURN_CELL_VALUE) {
 				return get_fnl_cellular_value_range_2d(noise, x, y);
 			}
 			return get_fnl_cellular_range(noise);
@@ -314,14 +314,14 @@ Interval get_fnl_range_2d(const FastNoiseLite &noise, Interval x, Interval y) {
 	}
 }
 
-Interval get_fnl_range_3d(const FastNoiseLite &noise, Interval x, Interval y, Interval z) {
+Interval get_fnl_range_3d(const ZN_FastNoiseLite &noise, Interval x, Interval y, Interval z) {
 	if (noise.get_warp_noise().is_null()) {
 		return fnl_get_noise(noise, x, y, z);
 	}
 	// TODO Take warp noise into account
 	switch (noise.get_noise_type()) {
-		case FastNoiseLite::TYPE_CELLULAR:
-			if (noise.get_cellular_return_type() == FastNoiseLite::CELLULAR_RETURN_CELL_VALUE) {
+		case ZN_FastNoiseLite::TYPE_CELLULAR:
+			if (noise.get_cellular_return_type() == ZN_FastNoiseLite::CELLULAR_RETURN_CELL_VALUE) {
 				return get_fnl_cellular_value_range_3d(noise.get_noise_internal(), x, y, z);
 			}
 			return get_fnl_cellular_range(noise);
@@ -330,7 +330,7 @@ Interval get_fnl_range_3d(const FastNoiseLite &noise, Interval x, Interval y, In
 	}
 }
 
-math::Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient &noise, Interval x, Interval y) {
+math::Interval2 get_fnl_gradient_range_2d(const ZN_FastNoiseLiteGradient &noise, Interval x, Interval y) {
 	// TODO More precise analysis
 	const float amp = Math::abs(noise.get_amplitude());
 	return math::Interval2{ //
@@ -339,7 +339,7 @@ math::Interval2 get_fnl_gradient_range_2d(const FastNoiseLiteGradient &noise, In
 	};
 }
 
-math::Interval3 get_fnl_gradient_range_3d(const FastNoiseLiteGradient &noise, Interval x, Interval y, Interval z) {
+math::Interval3 get_fnl_gradient_range_3d(const ZN_FastNoiseLiteGradient &noise, Interval x, Interval y, Interval z) {
 	// TODO More precise analysis
 	const float amp = Math::abs(noise.get_amplitude());
 	return math::Interval3{

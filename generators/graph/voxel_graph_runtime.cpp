@@ -592,7 +592,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 					// so we have to limit to this instead of Reference or Object
 					CompilationResult result;
 					result.success = false;
-					result.message = "A parameter is an object but does not inherit Resource";
+					result.message = ZN_TTR("A parameter is an object but does not inherit Resource");
 					result.node_id = node_id;
 					return result;
 				}
@@ -627,7 +627,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 			if (_program.outputs_count == _program.outputs.size()) {
 				CompilationResult result;
 				result.success = false;
-				result.message = "Maximum number of outputs has been reached";
+				result.message = ZN_TTR("Maximum number of outputs has been reached");
 				result.node_id = node_id;
 				return result;
 			}

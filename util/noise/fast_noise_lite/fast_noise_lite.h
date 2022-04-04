@@ -1,5 +1,5 @@
-#ifndef FAST_NOISE_LITE_H
-#define FAST_NOISE_LITE_H
+#ifndef ZYLANN_FAST_NOISE_LITE_H
+#define ZYLANN_FAST_NOISE_LITE_H
 
 #include <core/io/resource.h>
 
@@ -7,8 +7,34 @@
 
 namespace zylann {
 
-class FastNoiseLite : public Resource {
-	GDCLASS(FastNoiseLite, Resource)
+// My own implementation of FastNoiseLite for Godot Engine.
+// Godot 4 comes with its own FastNoiseLite, but mine predated it. So it needs to be prefixed to avoid conflict.
+// Each has pros and cons. Godot's implementation has a few practical differences:
+//
+// - get_noise* methods are not inline. That means there is a potential performance loss when calling it many times
+//  (basically all the time in this module).
+//
+// - get_noise* methods are not `const`. Means any person creating a Noise implementation can mutate internal state,
+//   which is bad for multithreaded usage. IMO noise should not have state, and if it does, it must be explicit and not
+//   change "lazily". Devs aren't sure yet if they should change that.
+//
+// - `real_t` is used everywhere, instead of just coordinates. That means builds with `float=64` might be slower,
+//   especially in cases where such precision isn't necessary *for the use case of noise generation*.
+//
+// - Using it from a GDExtension has a lot more indirection and so will be much slower than a local implementation that
+//   can benefit from inlining. That could be solved with `get_noise_series(Vector3 *positions, float *noises)`, but no
+//   conventional Godot API allow to implement such a pattern without performance impact.
+//
+// - Domain warp is not exposed as its own thing, so can't generate from (x,y,z) coordinates in a single call
+//
+// - The internal instance of the FastNoiseLite object is not accessible, and it doesn't have the access changes present
+//   in the module's version, so it is not possible to do range analysis more precisely. This is important for
+//   `VoxelGeneratorGraph`.
+//
+// - Does not have direct editor preview, requires to use a NoiseTexture even if the use case doesn't need it
+
+class ZN_FastNoiseLite : public Resource {
+	GDCLASS(ZN_FastNoiseLite, Resource)
 
 	typedef fast_noise_lite::FastNoiseLite _FastNoise;
 
@@ -54,7 +80,7 @@ public:
 		CELLULAR_RETURN_DISTANCE_2_DIV = _FastNoise::CellularReturnType_Distance2Div
 	};
 
-	FastNoiseLite();
+	ZN_FastNoiseLite();
 
 	void set_noise_type(NoiseType type);
 	NoiseType get_noise_type() const;
@@ -65,8 +91,8 @@ public:
 	void set_period(float p);
 	float get_period() const;
 
-	void set_warp_noise(Ref<FastNoiseLiteGradient> warp_noise);
-	Ref<FastNoiseLiteGradient> get_warp_noise() const;
+	void set_warp_noise(Ref<ZN_FastNoiseLiteGradient> warp_noise);
+	Ref<ZN_FastNoiseLiteGradient> get_warp_noise() const;
 
 	void set_fractal_type(FractalType type);
 	FractalType get_fractal_type() const;
@@ -161,15 +187,15 @@ private:
 
 	RotationType3D _rotation_type_3d = ROTATION_3D_NONE;
 
-	Ref<FastNoiseLiteGradient> _warp_noise;
+	Ref<ZN_FastNoiseLiteGradient> _warp_noise;
 };
 
 } // namespace zylann
 
-VARIANT_ENUM_CAST(zylann::FastNoiseLite::NoiseType);
-VARIANT_ENUM_CAST(zylann::FastNoiseLite::FractalType);
-VARIANT_ENUM_CAST(zylann::FastNoiseLite::RotationType3D);
-VARIANT_ENUM_CAST(zylann::FastNoiseLite::CellularDistanceFunction);
-VARIANT_ENUM_CAST(zylann::FastNoiseLite::CellularReturnType);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::NoiseType);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::FractalType);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::RotationType3D);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::CellularDistanceFunction);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::CellularReturnType);
 
-#endif // FAST_NOISE_LITE_H
+#endif // ZYLANN_FAST_NOISE_LITE_H

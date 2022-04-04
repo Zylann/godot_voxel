@@ -1,6 +1,8 @@
 #include "voxel_generator_noise_2d.h"
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
+#include <modules/noise/noise.h>
+#include <scene/resources/curve.h>
 
 namespace zylann::voxel {
 
@@ -8,7 +10,7 @@ VoxelGeneratorNoise2D::VoxelGeneratorNoise2D() {}
 
 VoxelGeneratorNoise2D::~VoxelGeneratorNoise2D() {}
 
-void VoxelGeneratorNoise2D::set_noise(Ref<OpenSimplexNoise> noise) {
+void VoxelGeneratorNoise2D::set_noise(Ref<Noise> noise) {
 	if (_noise == noise) {
 		return;
 	}
@@ -17,7 +19,7 @@ void VoxelGeneratorNoise2D::set_noise(Ref<OpenSimplexNoise> noise) {
 				callable_mp(this, &VoxelGeneratorNoise2D::_on_noise_changed));
 	}
 	_noise = noise;
-	Ref<OpenSimplexNoise> copy;
+	Ref<Noise> copy;
 	if (_noise.is_valid()) {
 		_noise->connect(CoreStringNames::get_singleton()->changed,
 				callable_mp(this, &VoxelGeneratorNoise2D::_on_noise_changed));
@@ -28,7 +30,7 @@ void VoxelGeneratorNoise2D::set_noise(Ref<OpenSimplexNoise> noise) {
 	_parameters.noise = copy;
 }
 
-Ref<OpenSimplexNoise> VoxelGeneratorNoise2D::get_noise() const {
+Ref<Noise> VoxelGeneratorNoise2D::get_noise() const {
 	return _noise;
 }
 
@@ -67,7 +69,7 @@ VoxelGenerator::Result VoxelGeneratorNoise2D::generate_block(VoxelGenerator::Vox
 	Result result;
 
 	ERR_FAIL_COND_V(params.noise.is_null(), result);
-	OpenSimplexNoise &noise = **params.noise;
+	Noise &noise = **params.noise;
 
 	VoxelBufferInternal &out_buffer = input.voxel_buffer;
 
@@ -111,9 +113,8 @@ void VoxelGeneratorNoise2D::_bind_methods() {
 	// ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelGeneratorNoise2D::_on_noise_changed);
 	// ClassDB::bind_method(D_METHOD("_on_curve_changed"), &VoxelGeneratorNoise2D::_on_curve_changed);
 
-	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, OpenSimplexNoise::get_class_static(),
-					PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, Noise::get_class_static(),
+						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
 			"set_noise", "get_noise");
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "curve", PROPERTY_HINT_RESOURCE_TYPE, "Curve"), "set_curve", "get_curve");

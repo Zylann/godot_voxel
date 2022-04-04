@@ -1,19 +1,19 @@
 #include "fast_noise_lite_editor_plugin.h"
-#include "../../util/noise/fast_noise_lite.h"
-#include "../../util/noise/fast_noise_lite_gradient.h"
+#include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
+#include "../../util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
 
 #include <core/core_string_names.h>
 #include <editor/editor_scale.h>
 
 namespace zylann {
 
-class FastNoiseLiteViewer : public Control {
-	GDCLASS(FastNoiseLiteViewer, Control)
+class ZN_FastNoiseLiteViewer : public Control {
+	GDCLASS(ZN_FastNoiseLiteViewer, Control)
 public:
 	static const int PREVIEW_WIDTH = 300;
 	static const int PREVIEW_HEIGHT = 150;
 
-	FastNoiseLiteViewer() {
+	ZN_FastNoiseLiteViewer() {
 		set_custom_minimum_size(Vector2(0, EDSCALE * PREVIEW_HEIGHT));
 
 		_texture_rect = memnew(TextureRect);
@@ -22,25 +22,25 @@ public:
 		add_child(_texture_rect);
 	}
 
-	// ~FastNoiseLiteViewer() {
+	// ~ZN_FastNoiseLiteViewer() {
 	// }
 
-	void set_noise(Ref<FastNoiseLite> noise) {
+	void set_noise(Ref<ZN_FastNoiseLite> noise) {
 		if (_noise == noise) {
 			return;
 		}
 
 		if (_noise.is_valid()) {
 			_noise->disconnect(CoreStringNames::get_singleton()->changed,
-					callable_mp(this, &FastNoiseLiteViewer::_on_noise_changed));
+					callable_mp(this, &ZN_FastNoiseLiteViewer::_on_noise_changed));
 		}
 
 		_noise = noise;
 
 		if (_noise.is_valid()) {
-			set_noise_gradient(Ref<FastNoiseLiteGradient>());
+			set_noise_gradient(Ref<ZN_FastNoiseLiteGradient>());
 			_noise->connect(CoreStringNames::get_singleton()->changed,
-					callable_mp(this, &FastNoiseLiteViewer::_on_noise_changed));
+					callable_mp(this, &ZN_FastNoiseLiteViewer::_on_noise_changed));
 			set_process(true);
 			update_preview();
 
@@ -50,22 +50,22 @@ public:
 		}
 	}
 
-	void set_noise_gradient(Ref<FastNoiseLiteGradient> noise_gradient) {
+	void set_noise_gradient(Ref<ZN_FastNoiseLiteGradient> noise_gradient) {
 		if (_noise_gradient == noise_gradient) {
 			return;
 		}
 
 		if (_noise_gradient.is_valid()) {
 			_noise_gradient->disconnect(CoreStringNames::get_singleton()->changed,
-					callable_mp(this, &FastNoiseLiteViewer::_on_noise_changed));
+					callable_mp(this, &ZN_FastNoiseLiteViewer::_on_noise_changed));
 		}
 
 		_noise_gradient = noise_gradient;
 
 		if (_noise_gradient.is_valid()) {
-			set_noise(Ref<FastNoiseLite>());
+			set_noise(Ref<ZN_FastNoiseLite>());
 			_noise_gradient->connect(CoreStringNames::get_singleton()->changed,
-					callable_mp(this, &FastNoiseLiteViewer::_on_noise_changed));
+					callable_mp(this, &ZN_FastNoiseLiteViewer::_on_noise_changed));
 			set_process(true);
 			update_preview();
 
@@ -140,36 +140,37 @@ private:
 		// ClassDB::bind_method(D_METHOD("_on_noise_changed"), &FastNoiseLiteViewer::_on_noise_changed);
 	}
 
-	Ref<FastNoiseLite> _noise;
-	Ref<FastNoiseLiteGradient> _noise_gradient;
+	Ref<ZN_FastNoiseLite> _noise;
+	Ref<ZN_FastNoiseLiteGradient> _noise_gradient;
 	float _time_before_update = -1.f;
 	TextureRect *_texture_rect = nullptr;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class FastNoiseLiteEditorInspectorPlugin : public EditorInspectorPlugin {
-	GDCLASS(FastNoiseLiteEditorInspectorPlugin, EditorInspectorPlugin)
+class ZN_FastNoiseLiteEditorInspectorPlugin : public EditorInspectorPlugin {
+	GDCLASS(ZN_FastNoiseLiteEditorInspectorPlugin, EditorInspectorPlugin)
 public:
 	bool can_handle(Object *p_object) override {
-		return Object::cast_to<FastNoiseLite>(p_object) != nullptr || Object::cast_to<FastNoiseLiteGradient>(p_object);
+		return Object::cast_to<ZN_FastNoiseLite>(p_object) != nullptr ||
+				Object::cast_to<ZN_FastNoiseLiteGradient>(p_object);
 	}
 
 	void parse_begin(Object *p_object) override {
-		FastNoiseLite *noise_ptr = Object::cast_to<FastNoiseLite>(p_object);
+		ZN_FastNoiseLite *noise_ptr = Object::cast_to<ZN_FastNoiseLite>(p_object);
 		if (noise_ptr) {
-			Ref<FastNoiseLite> noise(noise_ptr);
+			Ref<ZN_FastNoiseLite> noise(noise_ptr);
 
-			FastNoiseLiteViewer *viewer = memnew(FastNoiseLiteViewer);
+			ZN_FastNoiseLiteViewer *viewer = memnew(ZN_FastNoiseLiteViewer);
 			viewer->set_noise(noise);
 			add_custom_control(viewer);
 			return;
 		}
-		FastNoiseLiteGradient *noise_gradient_ptr = Object::cast_to<FastNoiseLiteGradient>(p_object);
+		ZN_FastNoiseLiteGradient *noise_gradient_ptr = Object::cast_to<ZN_FastNoiseLiteGradient>(p_object);
 		if (noise_gradient_ptr) {
-			Ref<FastNoiseLiteGradient> noise_gradient(noise_gradient_ptr);
+			Ref<ZN_FastNoiseLiteGradient> noise_gradient(noise_gradient_ptr);
 
-			FastNoiseLiteViewer *viewer = memnew(FastNoiseLiteViewer);
+			ZN_FastNoiseLiteViewer *viewer = memnew(ZN_FastNoiseLiteViewer);
 			viewer->set_noise_gradient(noise_gradient);
 			add_custom_control(viewer);
 			return;
@@ -179,10 +180,14 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FastNoiseLiteEditorPlugin::FastNoiseLiteEditorPlugin() {
-	Ref<FastNoiseLiteEditorInspectorPlugin> plugin;
+ZN_FastNoiseLiteEditorPlugin::ZN_FastNoiseLiteEditorPlugin() {
+	Ref<ZN_FastNoiseLiteEditorInspectorPlugin> plugin;
 	plugin.instantiate();
 	add_inspector_plugin(plugin);
+}
+
+String ZN_FastNoiseLiteEditorPlugin::get_name() const {
+	return ZN_FastNoiseLite::get_class_static();
 }
 
 } // namespace zylann

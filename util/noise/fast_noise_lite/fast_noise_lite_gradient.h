@@ -1,9 +1,9 @@
-#ifndef FAST_NOISE_LITE_GRADIENT_H
-#define FAST_NOISE_LITE_GRADIENT_H
+#ifndef ZYLANN_FAST_NOISE_LITE_GRADIENT_H
+#define ZYLANN_FAST_NOISE_LITE_GRADIENT_H
 
 #include <core/io/resource.h>
 
-#include "../../thirdparty/fast_noise/FastNoiseLite.h"
+#include "../../../thirdparty/fast_noise/FastNoiseLite.h"
 
 namespace zylann {
 
@@ -15,8 +15,8 @@ namespace zylann {
 // Note: FastNoiseLite provides this with the same class, but then its unclear which applies to what,
 // so I made two classes, each with a specific purpose.
 //
-class FastNoiseLiteGradient : public Resource {
-	GDCLASS(FastNoiseLiteGradient, Resource)
+class ZN_FastNoiseLiteGradient : public Resource {
+	GDCLASS(ZN_FastNoiseLiteGradient, Resource)
 
 	typedef fast_noise_lite::FastNoiseLite _FastNoise;
 
@@ -44,7 +44,7 @@ public:
 		ROTATION_3D_IMPROVE_XZ_PLANES = _FastNoise::RotationType3D_ImproveXZPlanes
 	};
 
-	FastNoiseLiteGradient();
+	ZN_FastNoiseLiteGradient();
 
 	void set_noise_type(NoiseType type);
 	NoiseType get_noise_type() const;
@@ -121,8 +121,8 @@ private:
 
 } // namespace zylann
 
-VARIANT_ENUM_CAST(zylann::FastNoiseLiteGradient::NoiseType);
-VARIANT_ENUM_CAST(zylann::FastNoiseLiteGradient::FractalType);
-VARIANT_ENUM_CAST(zylann::FastNoiseLiteGradient::RotationType3D);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient::NoiseType);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient::FractalType);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient::RotationType3D);
 
-#endif // FAST_NOISE_LITE_GRADIENT_H
+#endif // ZYLANN_FAST_NOISE_LITE_GRADIENT_H

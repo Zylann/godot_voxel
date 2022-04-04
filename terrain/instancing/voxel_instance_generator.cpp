@@ -609,7 +609,7 @@ bool VoxelInstanceGenerator::get_random_rotation() const {
 	return _random_rotation;
 }
 
-void VoxelInstanceGenerator::set_noise(Ref<FastNoiseLite> noise) {
+void VoxelInstanceGenerator::set_noise(Ref<Noise> noise) {
 	if (_noise == noise) {
 		return;
 	}
@@ -625,7 +625,7 @@ void VoxelInstanceGenerator::set_noise(Ref<FastNoiseLite> noise) {
 	emit_changed();
 }
 
-Ref<FastNoiseLite> VoxelInstanceGenerator::get_noise() const {
+Ref<Noise> VoxelInstanceGenerator::get_noise() const {
 	return _noise;
 }
 

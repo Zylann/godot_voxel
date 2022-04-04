@@ -1,9 +1,8 @@
 #include "../util/math/funcs.h"
-#include "../util/noise/fast_noise_lite.h"
+#include "../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "tests.h"
 
 #include <core/io/image.h>
-#include <modules/opensimplex/open_simplex_noise.h>
 
 namespace zylann::voxel::noise_tests {
 
@@ -234,15 +233,9 @@ void test_fnl_noise(fast_noise_lite::FastNoiseLite &fnl, String name, int tests)
 }
 
 void test_noises() {
-	Ref<FastNoiseLite> noise;
-	noise.instantiate();
-
 	fast_noise_lite::FastNoiseLite fn;
 	fn.SetFractalType(fast_noise_lite::FastNoiseLite::FractalType_None);
 	fn.SetFrequency(1.f);
-
-	osn_context osn_ctx;
-	open_simplex_noise(131183, &osn_ctx);
 
 	// According to OpenSimplex2 author, the 3D version is supposed to have a max derivative around 4.23718
 	// https://www.wolframalpha.com/input/?i=max+d%2Fdx+32.69428253173828125+*+x+*+%28%280.6-x%5E2%29%5E4%29+from+-0.6+to+0.6
@@ -309,11 +302,6 @@ void test_noises() {
 			}
 		}
 	}
-
-	test_noise(
-			"OpenSimplex1", TEST_MIN_MAX | TEST_DERIVATIVES,
-			[&osn_ctx](double x, double y) { return open_simplex_noise2(&osn_ctx, x, y); },
-			[&osn_ctx](double x, double y, double z) { return open_simplex_noise3(&osn_ctx, x, y, z); });
 
 	// Spreadsheet helper:
 	print_line("Steps:");

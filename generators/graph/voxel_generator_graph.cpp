@@ -889,7 +889,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 				if (r->sdf_output_buffer_index != -1) {
 					VoxelGraphRuntime::CompilationResult error;
 					error.success = false;
-					error.message = TTR("Multiple SDF outputs are not supported");
+					error.message = ZN_TTR("Multiple SDF outputs are not supported");
 					error.node_id = output.node_id;
 					return error;
 				} else {
@@ -902,7 +902,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 				if (r->weight_outputs_count >= r->weight_outputs.size()) {
 					VoxelGraphRuntime::CompilationResult error;
 					error.success = false;
-					error.message = String(TTR("Cannot use more than {0} weight outputs"))
+					error.message = String(ZN_TTR("Cannot use more than {0} weight outputs"))
 											.format(varray(r->weight_outputs.size()));
 					error.node_id = output.node_id;
 					return error;
@@ -913,7 +913,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 					// Should not be allowed by the UI, but who knows
 					VoxelGraphRuntime::CompilationResult error;
 					error.success = false;
-					error.message = String(TTR("Cannot use negative layer index in weight output"));
+					error.message = String(ZN_TTR("Cannot use negative layer index in weight output"));
 					error.node_id = output.node_id;
 					return error;
 				}
@@ -921,7 +921,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 					VoxelGraphRuntime::CompilationResult error;
 					error.success = false;
 					error.message =
-							String(TTR("Weight layers cannot exceed {}")).format(varray(r->weight_outputs.size()));
+							String(ZN_TTR("Weight layers cannot exceed {0}")).format(varray(r->weight_outputs.size()));
 					error.node_id = output.node_id;
 					return error;
 				}
@@ -931,7 +931,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 						VoxelGraphRuntime::CompilationResult error;
 						error.success = false;
 						error.message =
-								String(TTR("Only one weight output node can use layer index {0}, found duplicate"))
+								String(ZN_TTR("Only one weight output node can use layer index {0}, found duplicate"))
 										.format(varray(layer_index));
 						error.node_id = output.node_id;
 						return error;
@@ -948,7 +948,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 				if (r->type_output_buffer_index != -1) {
 					VoxelGraphRuntime::CompilationResult error;
 					error.success = false;
-					error.message = TTR("Multiple TYPE outputs are not supported");
+					error.message = ZN_TTR("Multiple TYPE outputs are not supported");
 					error.node_id = output.node_id;
 					return error;
 				} else {
@@ -961,14 +961,15 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 				if (r->single_texture_output_buffer_index != -1) {
 					VoxelGraphRuntime::CompilationResult error;
 					error.success = false;
-					error.message = TTR("Multiple TYPE outputs are not supported");
+					error.message = ZN_TTR("Multiple TYPE outputs are not supported");
 					error.node_id = output.node_id;
 					return error;
 				}
 				if (has_output_type(runtime, _graph, VoxelGeneratorGraph::NODE_OUTPUT_WEIGHT)) {
 					VoxelGraphRuntime::CompilationResult error;
 					error.success = false;
-					error.message = TTR("Using both OutputWeight nodes and an OutputSingleTexture node is not allowed");
+					error.message =
+							ZN_TTR("Using both OutputWeight nodes and an OutputSingleTexture node is not allowed");
 					error.node_id = output.node_id;
 					return error;
 				}
@@ -984,7 +985,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 	if (r->sdf_output_buffer_index == -1 && r->type_output_buffer_index == -1) {
 		VoxelGraphRuntime::CompilationResult error;
 		error.success = false;
-		error.message = String(TTR("An SDF or TYPE output is required for the graph to be valid."));
+		error.message = String(ZN_TTR("An SDF or TYPE output is required for the graph to be valid."));
 		return error;
 	}
 
