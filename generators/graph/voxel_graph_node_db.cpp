@@ -1804,7 +1804,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_MATH;
 		t.params.push_back(Param("expression", Variant::STRING, "0"));
 		t.outputs.push_back(Port("out"));
-		t.compile_func = [](CompileContext &ctx) { ctx.make_error("Internal error, expression wasn't expanded"); };
+		t.compile_func = [](CompileContext &ctx) {
+			ctx.make_error(ZN_TTR("Internal error, expression wasn't expanded"));
+		};
 		t.is_pseudo_node = true;
 	}
 	{
@@ -1822,7 +1824,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.compile_func = [](CompileContext &ctx) {
 			const int power = ctx.get_param(0).operator int();
 			if (power < 0) {
-				ctx.make_error("Power cannot be negative");
+				ctx.make_error(ZN_TTR("Power cannot be negative"));
 			} else {
 				Params p;
 				p.power = power;
