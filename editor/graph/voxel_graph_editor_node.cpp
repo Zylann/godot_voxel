@@ -20,7 +20,9 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGeneratorGraph &gr
 	node_view->update_title(node_name, node_type.name);
 
 	node_view->_node_id = node_id;
-	//node_view.resizable = true
+	// Some nodes can have variable size title and layout. The node can get larger automatically, but doesn't shrink.
+	// So for now we make them resizable so users can adjust them.
+	node_view->set_resizable(node_type_id == VoxelGeneratorGraph::NODE_EXPRESSION);
 	//node_view.rect_size = Vector2(200, 100)
 
 	node_view->update_layout(graph);
@@ -30,7 +32,15 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGeneratorGraph &gr
 		node_view->add_child(node_view->_preview);
 	}
 
+	if (node_view->is_resizable()) {
+		node_view->connect("resize_request", callable_mp(node_view, &VoxelGraphEditorNode::_on_resize_request));
+	}
+
 	return node_view;
+}
+
+void VoxelGraphEditorNode::_on_resize_request(Vector2 new_size) {
+	set_size(new_size);
 }
 
 void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
@@ -87,16 +97,16 @@ void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
 	_input_hints.clear();
 
 	// Add inputs and outputs
-	for (unsigned int i = 0; i < row_count; ++i) {
-		const bool has_left = i < inputs.size();
-		const bool has_right = (i < outputs.size()) && !hide_outputs;
+	for (unsigned int slot_index = 0; slot_index < row_count; ++slot_index) {
+		const bool has_left = slot_index < inputs.size();
+		const bool has_right = (slot_index < outputs.size()) && !hide_outputs;
 
 		HBoxContainer *property_control = memnew(HBoxContainer);
 		property_control->set_custom_minimum_size(Vector2(0, 24 * EDSCALE));
 
 		if (has_left) {
 			Label *label = memnew(Label);
-			label->set_text(inputs[i].name);
+			label->set_text(inputs[slot_index].name);
 			property_control->add_child(label);
 
 			Label *hint_label = memnew(Label);
@@ -119,7 +129,7 @@ void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
 			}
 
 			Label *label = memnew(Label);
-			label->set_text(outputs[i].name);
+			label->set_text(outputs[slot_index].name);
 			// Pass filter is required to allow tooltips to work
 			label->set_mouse_filter(Control::MOUSE_FILTER_PASS);
 			property_control->add_child(label);
@@ -128,7 +138,7 @@ void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
 		}
 
 		add_child(property_control);
-		set_slot(i, has_left, Variant::FLOAT, port_color, has_right, Variant::FLOAT, port_color);
+		set_slot(slot_index, has_left, Variant::FLOAT, port_color, has_right, Variant::FLOAT, port_color);
 		_rows.push_back(property_control);
 	}
 
@@ -146,6 +156,13 @@ void VoxelGraphEditorNode::update_title(StringName node_name, String node_type_n
 	}
 }
 
+void VoxelGraphEditorNode::poll(const VoxelGeneratorGraph &graph) {
+	poll_default_inputs(graph);
+	poll_params(graph);
+}
+
+// When an input is left unconnected, it picks a default value. Input hints show this value.
+// It is otherwise shown in the inspector when the node is selected, but seeing them at a glance helps.
 void VoxelGraphEditorNode::poll_default_inputs(const VoxelGeneratorGraph &graph) {
 	ProgramGraph::PortLocation src_loc_unused;
 	const String prefix = ": ";
@@ -170,6 +187,13 @@ void VoxelGraphEditorNode::poll_default_inputs(const VoxelGeneratorGraph &graph)
 				input_hint.last_value = current_value;
 			}
 		}
+	}
+}
+
+void VoxelGraphEditorNode::poll_params(const VoxelGeneratorGraph &graph) {
+	if (graph.get_node_type_id(_node_id) == VoxelGeneratorGraph::NODE_EXPRESSION) {
+		const String code = graph.get_node_param(_node_id, 0);
+		set_title(code);
 	}
 }
 

@@ -18,7 +18,7 @@ public:
 	static VoxelGraphEditorNode *create(const VoxelGeneratorGraph &graph, uint32_t node_id);
 
 	void update_title(StringName node_name, String node_type_name);
-	void poll_default_inputs(const VoxelGeneratorGraph &graph);
+	void poll(const VoxelGeneratorGraph &graph);
 
 	void update_range_analysis_tooltips(const VoxelGeneratorGraph &graph, const VoxelGraphRuntime::State &state);
 	void clear_range_analysis_tooltips();
@@ -33,11 +33,15 @@ public:
 		return _node_id;
 	}
 
-	inline VoxelGraphEditorNodePreview *get_preview() {
+	inline VoxelGraphEditorNodePreview *get_preview() const {
 		return _preview;
 	}
 
 private:
+	void poll_default_inputs(const VoxelGeneratorGraph &graph);
+	void poll_params(const VoxelGeneratorGraph &graph);
+	void _on_resize_request(Vector2 new_size);
+
 	uint32_t _node_id = 0;
 	VoxelGraphEditorNodePreview *_preview = nullptr;
 	std::vector<Control *> _output_labels;
