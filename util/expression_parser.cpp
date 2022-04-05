@@ -363,7 +363,8 @@ const Function *find_function_by_name(std::string_view name, Span<const Function
 	return nullptr;
 }
 
-Result parse_expression(Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions);
+Result parse_expression(Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions,
+		bool *ends_with_closing_parenthesis);
 
 Result parse_function(Tokenizer &tokenizer, std::vector<Node *> &operand_stack, Span<const Function> functions) {
 	std::string_view fname;
@@ -387,13 +388,22 @@ Result parse_function(Tokenizer &tokenizer, std::vector<Node *> &operand_stack, 
 	FunctionNode *fnode = memnew(FunctionNode);
 	fnode->function_id = fn->id;
 	CRASH_COND(fn->argument_count >= fnode->args.size());
+	bool ends_with_closing_parenthesis = false;
 	for (unsigned int arg_index = 0; arg_index < fn->argument_count; ++arg_index) {
-		Result arg_result = parse_expression(tokenizer, true, functions);
+		Result arg_result = parse_expression(tokenizer, true, functions, &ends_with_closing_parenthesis);
 		if (arg_result.error.id != ERROR_NONE) {
 			memdelete(fnode);
 			return arg_result;
 		}
 		fnode->args[arg_index] = arg_result.root;
+	}
+	if (!ends_with_closing_parenthesis) {
+		Result result;
+		result.error.id = ERROR_TOO_MANY_ARGUMENTS;
+		result.error.position = tokenizer.get_position();
+		result.error.symbol = fname;
+		memdelete(fnode);
+		return result;
 	}
 	Result result;
 	result.root = fnode;
@@ -410,7 +420,8 @@ void free_nodes(std::vector<OpEntry> &operations_stack, std::vector<Node *> oper
 	}
 }
 
-Result parse_expression(Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions) {
+Result parse_expression(Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions,
+		bool *ends_with_closing_parenthesis) {
 	Token token;
 
 	std::vector<OpEntry> operations_stack;
@@ -507,6 +518,10 @@ Result parse_expression(Tokenizer &tokenizer, bool in_argument_list, Span<const 
 		result.error.id = ERROR_UNCLOSED_PARENTHESIS;
 		result.error.position = tokenizer.get_position();
 		return result;
+	}
+
+	if (ends_with_closing_parenthesis != nullptr) {
+		*ends_with_closing_parenthesis = token.type == Token::PARENTHESIS_CLOSE;
 	}
 
 	// All remaining operations should end up with ascending precedence,
@@ -655,7 +670,7 @@ Result parse(std::string_view text, Span<const Function> functions) {
 		CRASH_COND(f.func == nullptr);
 	}
 	Tokenizer tokenizer(text);
-	Result result = parse_expression(tokenizer, false, functions);
+	Result result = parse_expression(tokenizer, false, functions, nullptr);
 	if (result.error.id != ERROR_NONE) {
 		return result;
 	}
@@ -814,6 +829,8 @@ std::string to_string(const Error error) {
 			s += '\'';
 			return s;
 		}
+		case ERROR_TOO_MANY_ARGUMENTS:
+			return "Too many arguments";
 		case ERROR_UNCLOSED_PARENTHESIS:
 			return "Non-closed parenthesis";
 		case ERROR_MISSING_OPERAND_ARGUMENTS:
