@@ -1836,12 +1836,26 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const unsigned int power = ctx.get_params<Params>().power;
-			for (unsigned int i = 0; i < out.size; ++i) {
-				float v = x.data[i];
-				for (unsigned int p = 0; p < power; ++p) {
-					v *= v;
-				}
-				out.data[i] = v;
+			switch (power) {
+				case 0:
+					for (unsigned int i = 0; i < out.size; ++i) {
+						out.data[i] = 1.f;
+					}
+					break;
+				case 1:
+					for (unsigned int i = 0; i < out.size; ++i) {
+						out.data[i] = x.data[i];
+					}
+					break;
+				default:
+					for (unsigned int i = 0; i < out.size; ++i) {
+						float v = x.data[i];
+						for (unsigned int p = 1; p < power; ++p) {
+							v *= v;
+						}
+						out.data[i] = v;
+					}
+					break;
 			}
 		};
 
