@@ -1667,7 +1667,7 @@ const VoxelLodTerrain::Stats &VoxelLodTerrain::get_stats() const {
 Dictionary VoxelLodTerrain::_b_get_statistics() const {
 	Dictionary d;
 
-	const unsigned int lod_count = _update_data->settings.lod_count;
+	// const unsigned int lod_count = _update_data->settings.lod_count;
 
 	// int deferred_collision_updates = 0;
 	// for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
