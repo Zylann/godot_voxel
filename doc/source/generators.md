@@ -362,7 +362,7 @@ Clamp                 | If `x` is lower than `min`, returns `min`. If `x` is hig
 Distance2D            | Returns the distance between two 2D points `(x0, y0)` and `(x1, y1)`.
 Distance3D            | Returns the distance between two 3D points `(x0, y0, z0)` and `(x1, y1, z1)`.
 Divide                | Returns the result of `a / b`
-Expression            | Evaluates a math expression. Variable names can be written as inputs of the node.
+Expression            | Evaluates a math expression. Variable names can be written as inputs of the node. Some functions can be used, but they must be supported by the graph in the first place. Available functions: `sin(x)`, `floor(x)`, `abs(x)`, `sqrt(x)`, `fract(x)`, `stepify(x,step)`, `wrap(x,length)`, `min(a,b)`, `max(a,b)`, `clamp(x,min,max)`, `lerp(a,b,ratio)`
 Floor                 | Returns the result of `floor(x)`, the nearest integer that is equal or lower to `x`.
 Fract                 | Returns the decimal part of `x`. The result is always positive regardless of sign.
 Max                   | Returns the highest value between `a` and `b`.

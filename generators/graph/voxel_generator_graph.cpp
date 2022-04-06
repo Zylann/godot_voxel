@@ -181,8 +181,8 @@ void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index,
 }
 
 bool VoxelGeneratorGraph::get_expression_variables(std::string_view code, std::vector<std::string_view> &vars) {
-	// TODO Support functions
-	Span<const ExpressionParser::Function> functions;
+	Span<const ExpressionParser::Function> functions =
+			VoxelGraphNodeDB::get_singleton()->get_expression_parser_functions();
 	ExpressionParser::Result result = ExpressionParser::parse(code, functions);
 	if (result.error.id == ExpressionParser::ERROR_NONE) {
 		if (result.root != nullptr) {

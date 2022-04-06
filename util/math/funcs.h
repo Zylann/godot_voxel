@@ -275,6 +275,14 @@ inline bool is_point_in_triangle(const Vector2f &s, const Vector2f &a, const Vec
 	return (cn.cross(an) > 0) == orientation;
 }
 
+// Float equivalent of Math::snapped, which only comes in `double` variant in Godot.
+inline float snappedf(float p_value, float p_step) {
+	if (p_step != 0) {
+		p_value = Math::floor(p_value / p_step + 0.5f) * p_step;
+	}
+	return p_value;
+}
+
 } // namespace zylann::math
 
 #endif // VOXEL_MATH_FUNCS_H

@@ -32,11 +32,12 @@ struct ToConnect {
 };
 
 static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node, const VoxelGraphNodeDB &db,
-		std::vector<ToConnect> &to_connect, std::vector<uint32_t> &expanded_node_ids);
+		std::vector<ToConnect> &to_connect, std::vector<uint32_t> &expanded_node_ids,
+		Span<const ExpressionParser::Function> functions);
 
 static bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg, ProgramGraph::Node &pg_node,
 		uint32_t pg_node_input_index, const VoxelGraphNodeDB &db, std::vector<ToConnect> &to_connect,
-		std::vector<uint32_t> &expanded_node_ids) {
+		std::vector<uint32_t> &expanded_node_ids, Span<const ExpressionParser::Function> functions) {
 	switch (arg.type) {
 		case ExpressionParser::Node::NUMBER: {
 			const ExpressionParser::NumberNode &arg_nn = reinterpret_cast<const ExpressionParser::NumberNode &>(arg);
@@ -51,7 +52,8 @@ static bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg,
 
 		case ExpressionParser::Node::OPERATOR:
 		case ExpressionParser::Node::FUNCTION: {
-			const uint32_t dependency_pg_node_id = expand_node(graph, arg, db, to_connect, expanded_node_ids);
+			const uint32_t dependency_pg_node_id =
+					expand_node(graph, arg, db, to_connect, expanded_node_ids, functions);
 			ERR_FAIL_COND_V(dependency_pg_node_id == ProgramGraph::NULL_ID, false);
 			graph.connect({ dependency_pg_node_id, 0 }, { pg_node.id, pg_node_input_index });
 		} break;
@@ -70,7 +72,8 @@ static ProgramGraph::Node &create_node(
 }
 
 static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node, const VoxelGraphNodeDB &db,
-		std::vector<ToConnect> &to_connect, std::vector<uint32_t> &expanded_node_ids) {
+		std::vector<ToConnect> &to_connect, std::vector<uint32_t> &expanded_node_ids,
+		Span<const ExpressionParser::Function> functions) {
 	switch (ep_node.type) {
 		case ExpressionParser::Node::NUMBER: {
 			// Note, this code should only run if the whole expression is only a number.
@@ -128,30 +131,35 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			expanded_node_ids.push_back(pg_node.id);
 
 			CRASH_COND(on.n0 == nullptr);
-			ERR_FAIL_COND_V(
-					!expand_input(graph, *on.n0, pg_node, 0, db, to_connect, expanded_node_ids), ProgramGraph::NULL_ID);
+			ERR_FAIL_COND_V(!expand_input(graph, *on.n0, pg_node, 0, db, to_connect, expanded_node_ids, functions),
+					ProgramGraph::NULL_ID);
 
 			CRASH_COND(on.n1 == nullptr);
-			ERR_FAIL_COND_V(
-					!expand_input(graph, *on.n1, pg_node, 1, db, to_connect, expanded_node_ids), ProgramGraph::NULL_ID);
+			ERR_FAIL_COND_V(!expand_input(graph, *on.n1, pg_node, 1, db, to_connect, expanded_node_ids, functions),
+					ProgramGraph::NULL_ID);
 
 			return pg_node.id;
 		}
 
 		case ExpressionParser::Node::FUNCTION: {
-			// TODO Functions support
+			const ExpressionParser::FunctionNode &fn =
+					reinterpret_cast<const ExpressionParser::FunctionNode &>(ep_node);
+			const ExpressionParser::Function *f = ExpressionParser::find_function_by_id(fn.function_id, functions);
+			CRASH_COND(f == nullptr);
+			const unsigned int arg_count = f->argument_count;
 
-			// const ExpressionParser::FunctionNode &fn =
-			// 		reinterpret_cast<const ExpressionParser::FunctionNode &>(ep_node);
-			// const ExpressionParser::Function *f = ExpressionParser::find_function_by_id(fn.function_id, functions);
-			// CRASH_COND(f == nullptr);
-			// const unsigned int arg_count = f->argument_count;
+			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NodeTypeID(fn.function_id));
+			// TODO Optimization: per-function shortcuts
 
-			// for (unsigned int arg_index = 0; arg_index < arg_count; ++arg_index) {
-			// 	//...
-			// }
+			for (unsigned int arg_index = 0; arg_index < arg_count; ++arg_index) {
+				ExpressionParser::Node *arg = fn.args[arg_index];
+				CRASH_COND(arg == nullptr);
+				ERR_FAIL_COND_V(
+						!expand_input(graph, *arg, pg_node, arg_index, db, to_connect, expanded_node_ids, functions),
+						ProgramGraph::NULL_ID);
+			}
 
-			return ProgramGraph::NULL_ID;
+			return pg_node.id;
 		}
 
 		default:
@@ -167,8 +175,8 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 	const String code = original_node->params[0];
 	const CharString code_utf8 = code.utf8();
 
-	// TODO Have functions
-	Span<const ExpressionParser::Function> functions;
+	Span<const ExpressionParser::Function> functions =
+			VoxelGraphNodeDB::get_singleton()->get_expression_parser_functions();
 
 	// Extract the AST, so we can convert it into graph nodes,
 	// and benefit from all features of range analysis and buffer processing
@@ -196,8 +204,8 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 
 	std::vector<ToConnect> to_connect;
 
-	const uint32_t expanded_root_node_id =
-			expand_node(graph, *parse_result.root, *VoxelGraphNodeDB::get_singleton(), to_connect, expanded_nodes);
+	const uint32_t expanded_root_node_id = expand_node(
+			graph, *parse_result.root, *VoxelGraphNodeDB::get_singleton(), to_connect, expanded_nodes, functions);
 	if (expanded_root_node_id == ProgramGraph::NULL_ID) {
 		if (parse_result.root != nullptr) {
 			memdelete(parse_result.root);

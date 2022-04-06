@@ -103,11 +103,13 @@ struct Result {
 	Error error;
 };
 
+typedef float (*FunctionCallback)(Span<const float>);
+
 struct Function {
 	std::string_view name;
 	unsigned int argument_count = 0;
 	unsigned int id = 0;
-	float (*func)(Span<const float> args) = nullptr;
+	FunctionCallback func = nullptr;
 };
 
 // TODO `text` should be `const`
