@@ -137,6 +137,11 @@ static PackedStringArray to_godot(const std::vector<std::string> &sv) {
 	return psa;
 }
 
+template <typename T>
+Span<const T> to_span_const(const Vector<T> &a) {
+	return Span<const T>(a.ptr(), 0, a.size());
+}
+
 } // namespace zylann
 
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

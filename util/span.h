@@ -2,7 +2,6 @@
 #define SPAN_H
 
 #include "fixed_array.h"
-#include <core/templates/vector.h>
 #include <vector>
 
 namespace zylann {
@@ -151,11 +150,6 @@ Span<const T> to_span_const(const FixedArray<T, N> &a) {
 template <typename T>
 Span<const T> to_span_const(const Span<T> &a) {
 	return Span<const T>(a.data(), 0, a.size());
-}
-
-template <typename T>
-Span<const T> to_span_const(const Vector<T> &a) {
-	return Span<const T>(a.ptr(), 0, a.size());
 }
 
 } // namespace zylann

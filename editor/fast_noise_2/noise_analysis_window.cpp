@@ -1,4 +1,5 @@
 #include "noise_analysis_window.h"
+#include "../../util/godot/funcs.h"
 #include "chart_view.h"
 
 #include <editor/editor_scale.h>
