@@ -1084,7 +1084,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
 
-	PRINT_VERBOSE(String("Requesting save of instance block {0} lod {1}").format(varray(data_grid_pos, lod_index)));
+	ZN_PRINT_VERBOSE(String("Requesting save of instance block {0} lod {1}").format(varray(data_grid_pos, lod_index)));
 
 	const Lod &lod = _lods[lod_index];
 

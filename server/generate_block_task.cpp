@@ -48,7 +48,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		// TODO In some cases we dont want this to run all the time, do we?
 		// Like in full load mode, where non-edited blocks remain generated on the fly...
 		if (stream.is_valid() && stream->get_save_generator_output()) {
-			PRINT_VERBOSE(
+			ZN_PRINT_VERBOSE(
 					String("Requesting save of generator output for block {0} lod {1}").format(varray(position, lod)));
 
 			// TODO Optimization: `voxels` doesnt actually need to be shared
@@ -105,7 +105,7 @@ void GenerateBlockTask::apply_result() {
 
 	} else {
 		// This can happen if the user removes the volume while requests are still about to return
-		PRINT_VERBOSE("Gemerated data request response came back but volume wasn't found");
+		ZN_PRINT_VERBOSE("Gemerated data request response came back but volume wasn't found");
 	}
 
 	// TODO We could complete earlier inside run() if we had access to the data structure to write the block into.

@@ -658,9 +658,9 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 	_program.buffer_count = mem.next_address;
 
-	PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, buffers: {1}")
-						  .format(varray(SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(uint16_t)),
-								  SIZE_T_TO_VARIANT(_program.buffer_count))));
+	ZN_PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, buffers: {1}")
+							 .format(varray(ZN_SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(uint16_t)),
+									 ZN_SIZE_T_TO_VARIANT(_program.buffer_count))));
 
 	CompilationResult result;
 	result.success = true;

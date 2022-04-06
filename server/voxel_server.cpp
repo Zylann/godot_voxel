@@ -39,7 +39,7 @@ VoxelServer::VoxelServer() {
 	CRASH_COND(ProjectSettings::get_singleton() == nullptr);
 
 	const int hw_threads_hint = std::thread::hardware_concurrency();
-	PRINT_VERBOSE(String("Voxel: HW threads hint: {0}").format(varray(hw_threads_hint)));
+	ZN_PRINT_VERBOSE(String("Voxel: HW threads hint: {0}").format(varray(hw_threads_hint)));
 
 	// Compute thread count for general pool.
 	// Note that the I/O thread counts as one used thread and will always be present.
@@ -79,7 +79,7 @@ VoxelServer::VoxelServer() {
 	// `-1` is for the stream thread
 	const int thread_count_by_ratio = int(Math::round(float(threads_ratio) * hw_threads_hint)) - 1;
 	const int thread_count = math::clamp(thread_count_by_ratio, minimum_thread_count, maximum_thread_count);
-	PRINT_VERBOSE(String("Voxel: automatic thread count set to {0}").format(varray(thread_count)));
+	ZN_PRINT_VERBOSE(String("Voxel: automatic thread count set to {0}").format(varray(thread_count)));
 
 	if (thread_count > hw_threads_hint) {
 		WARN_PRINT("Configured thread count exceeds hardware thread count. Performance may not be optimal");
@@ -102,9 +102,9 @@ VoxelServer::VoxelServer() {
 	// Init world
 	_world.shared_priority_dependency = gd_make_shared<PriorityDependency::ViewersData>();
 
-	PRINT_VERBOSE(String("Size of LoadBlockDataTask: {0}").format(varray((int)sizeof(LoadBlockDataTask))));
-	PRINT_VERBOSE(String("Size of SaveBlockDataTask: {0}").format(varray((int)sizeof(SaveBlockDataTask))));
-	PRINT_VERBOSE(String("Size of MeshBlockTask: {0}").format(varray((int)sizeof(MeshBlockTask))));
+	ZN_PRINT_VERBOSE(String("Size of LoadBlockDataTask: {0}").format(varray((int)sizeof(LoadBlockDataTask))));
+	ZN_PRINT_VERBOSE(String("Size of SaveBlockDataTask: {0}").format(varray((int)sizeof(SaveBlockDataTask))));
+	ZN_PRINT_VERBOSE(String("Size of MeshBlockTask: {0}").format(varray((int)sizeof(MeshBlockTask))));
 }
 
 VoxelServer::~VoxelServer() {
@@ -340,7 +340,7 @@ void VoxelServer::request_block_generate(
 }
 
 void VoxelServer::request_all_stream_blocks(uint32_t volume_id) {
-	PRINT_VERBOSE(String("Request all blocks for volume {0}").format(varray(volume_id)));
+	ZN_PRINT_VERBOSE(String("Request all blocks for volume {0}").format(varray(volume_id)));
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
@@ -581,8 +581,8 @@ Dictionary VoxelServer::Stats::to_dict() {
 
 	// This part is additional for scripts because VoxelMemoryPool is not exposed
 	Dictionary mem;
-	mem["voxel_total"] = SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton()->debug_get_total_memory());
-	mem["voxel_used"] = SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton()->debug_get_used_memory());
+	mem["voxel_total"] = ZN_SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton()->debug_get_total_memory());
+	mem["voxel_used"] = ZN_SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton()->debug_get_used_memory());
 	mem["block_count"] = VoxelMemoryPool::get_singleton()->debug_get_used_blocks();
 
 	Dictionary d;

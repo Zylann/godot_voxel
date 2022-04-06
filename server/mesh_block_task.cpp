@@ -220,7 +220,7 @@ void MeshBlockTask::apply_result() {
 
 	} else {
 		// This can happen if the user removes the volume while requests are still about to return
-		PRINT_VERBOSE("Mesh request response came back but volume wasn't found");
+		ZN_PRINT_VERBOSE("Mesh request response came back but volume wasn't found");
 	}
 }
 

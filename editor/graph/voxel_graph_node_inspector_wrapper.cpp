@@ -22,7 +22,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 	if (!graph->has_node(_node_id)) {
 		// Maybe got erased by the user?
 #ifdef DEBUG_ENABLED
-		PRINT_VERBOSE("VoxelGeneratorGraph node was not found, from the graph inspector");
+		ZN_PRINT_VERBOSE("VoxelGeneratorGraph node was not found, from the graph inspector");
 #endif
 		return;
 	}

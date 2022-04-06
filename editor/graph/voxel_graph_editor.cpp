@@ -152,10 +152,10 @@ void VoxelGraphEditor::set_undo_redo(UndoRedo *undo_redo) {
 void VoxelGraphEditor::set_voxel_node(VoxelNode *node) {
 	_voxel_node = node;
 	if (_voxel_node == nullptr) {
-		PRINT_VERBOSE("Reference node for VoxelGraph gizmos: null");
+		ZN_PRINT_VERBOSE("Reference node for VoxelGraph gizmos: null");
 		_debug_renderer.set_world(nullptr);
 	} else {
-		PRINT_VERBOSE(String("Reference node for VoxelGraph gizmos: {0}").format(varray(node->get_path())));
+		ZN_PRINT_VERBOSE(String("Reference node for VoxelGraph gizmos: {0}").format(varray(node->get_path())));
 		_debug_renderer.set_world(_voxel_node->get_world_3d().ptr());
 	}
 }
@@ -383,7 +383,7 @@ void VoxelGraphEditor::_on_graph_edit_connection_request(
 	//print("Connection attempt from ", from, ":", from_slot, " to ", to, ":", to_slot)
 
 	if (!_graph->is_valid_connection(src_node_id, from_slot, dst_node_id, to_slot)) {
-		PRINT_VERBOSE("Connection is invalid");
+		ZN_PRINT_VERBOSE("Connection is invalid");
 		return;
 	}
 
@@ -473,7 +473,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 		const size_t param_count = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).params.size();
 		for (size_t j = 0; j < param_count; ++j) {
 			Variant param_value = _graph->get_node_param(node_id, j);
-			_undo_redo->add_undo_method(*_graph, "set_node_param", node_id, SIZE_T_TO_VARIANT(j), param_value);
+			_undo_redo->add_undo_method(*_graph, "set_node_param", node_id, ZN_SIZE_T_TO_VARIANT(j), param_value);
 		}
 
 		_undo_redo->add_undo_method(this, "create_node_gui", node_id);
@@ -619,11 +619,11 @@ void VoxelGraphEditor::update_previews() {
 	}
 
 	uint64_t time_taken = Time::get_singleton()->get_ticks_usec() - time_before;
-	PRINT_VERBOSE(String("Previews generated in {0} us").format(varray(time_taken)));
+	ZN_PRINT_VERBOSE(String("Previews generated in {0} us").format(varray(time_taken)));
 }
 
 void VoxelGraphEditor::update_range_analysis_previews() {
-	PRINT_VERBOSE("Updating range analysis previews");
+	ZN_PRINT_VERBOSE("Updating range analysis previews");
 	ERR_FAIL_COND(_graph.is_null());
 	ERR_FAIL_COND(!_graph->is_good());
 
@@ -681,7 +681,7 @@ void VoxelGraphEditor::update_range_analysis_gizmo() {
 
 void VoxelGraphEditor::update_slice_previews() {
 	// TODO Use a thread?
-	PRINT_VERBOSE("Updating slice previews");
+	ZN_PRINT_VERBOSE("Updating slice previews");
 	ERR_FAIL_COND(!_graph->is_good());
 
 	struct PreviewInfo {

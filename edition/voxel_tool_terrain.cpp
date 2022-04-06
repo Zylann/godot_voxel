@@ -170,7 +170,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 			Vector3iUtil::create(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
-		PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
 

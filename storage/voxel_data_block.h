@@ -51,7 +51,7 @@ public:
 	void set_modified(bool modified) {
 #ifdef TOOLS_ENABLED
 		if (_modified == false && modified) {
-			PRINT_VERBOSE(String("Marking block {0} as modified").format(varray(position)));
+			ZN_PRINT_VERBOSE(String("Marking block {0} as modified").format(varray(position)));
 		}
 #endif
 		_modified = modified;

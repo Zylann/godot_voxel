@@ -559,7 +559,7 @@ bool RegionFile::save_header(FileAccess *f) {
 }
 
 bool RegionFile::migrate_from_v2_to_v3(FileAccess *f, RegionFormat &format) {
-	PRINT_VERBOSE(String("Migrating region file {0} from v2 to v3").format(varray(_file_path)));
+	ZN_PRINT_VERBOSE(String("Migrating region file {0} from v2 to v3").format(varray(_file_path)));
 
 	// We can migrate if we know in advance what format the file should contain.
 	ERR_FAIL_COND_V_MSG(format.block_size_po2 == 0, false, "Cannot migrate without knowing the correct format");
@@ -664,7 +664,7 @@ void RegionFile::debug_check() {
 		const unsigned int block_begin = _blocks_begin_offset + sector_index * _header.format.sector_size;
 		if (block_begin >= file_len) {
 			print_line(String("ERROR: LUT {0} ({1}): offset {2} is larger than file size {3}")
-							   .format(varray(lut_index, position, block_begin, SIZE_T_TO_VARIANT(file_len))));
+							   .format(varray(lut_index, position, block_begin, ZN_SIZE_T_TO_VARIANT(file_len))));
 			continue;
 		}
 		f->seek(block_begin);
@@ -673,8 +673,8 @@ void RegionFile::debug_check() {
 		const size_t remaining_size = file_len - pos;
 		if (block_data_size > remaining_size) {
 			print_line(String("ERROR: LUT {0} ({1}): block size at offset {2} is larger than remaining size {3}")
-							   .format(varray(lut_index, position, SIZE_T_TO_VARIANT(block_data_size),
-									   SIZE_T_TO_VARIANT(remaining_size))));
+							   .format(varray(lut_index, position, ZN_SIZE_T_TO_VARIANT(block_data_size),
+									   ZN_SIZE_T_TO_VARIANT(remaining_size))));
 		}
 	}
 }

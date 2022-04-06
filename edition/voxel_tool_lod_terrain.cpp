@@ -228,7 +228,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 							  .clipped(_terrain->get_voxel_bounds());
 
 	if (!is_area_editable(box)) {
-		PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
 
@@ -300,7 +300,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 							  .clipped(_terrain->get_voxel_bounds());
 
 	if (!is_area_editable(box)) {
-		PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
 
