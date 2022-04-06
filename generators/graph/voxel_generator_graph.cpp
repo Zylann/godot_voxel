@@ -188,9 +188,6 @@ bool VoxelGeneratorGraph::get_expression_variables(std::string_view code, std::v
 		if (result.root != nullptr) {
 			ExpressionParser::find_variables(*result.root, vars);
 		}
-		if (result.root != nullptr) {
-			memdelete(result.root);
-		}
 		return true;
 	} else {
 		return false;
@@ -397,7 +394,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 			for (int rx = rmin.x; rx < rmax.x; ++rx) {
 				FixedArray<uint8_t, 4> weights;
 				FixedArray<uint8_t, 4> indices = spare_indices;
-				weights.fill(0);
+				fill(weights, uint8_t(0));
 				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
 					const float weight = buffers[oi][value_index];
 					// TODO Optimization: weight output nodes could already multiply by 255 and clamp afterward
@@ -450,7 +447,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				FixedArray<uint8_t, 4> weights;
 				FixedArray<uint8_t, 4> indices;
 				unsigned int skipped_outputs_count = 0;
-				indices.fill(0);
+				fill(indices, uint8_t(0));
 				weights[0] = 255;
 				weights[1] = 0;
 				weights[2] = 0;
@@ -1005,7 +1002,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 	{
 		FixedArray<bool, 16> used_indices_map;
 		FixedArray<uint8_t, 4> spare_indices;
-		used_indices_map.fill(false);
+		fill(used_indices_map, false);
 		for (unsigned int i = 0; i < r->weight_outputs.size(); ++i) {
 			used_indices_map[r->weight_outputs[i].layer_index] = true;
 		}

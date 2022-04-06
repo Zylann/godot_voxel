@@ -7,23 +7,6 @@
 namespace zylann {
 namespace ExpressionParser {
 
-OperatorNode::~OperatorNode() {
-	if (n0 != nullptr) {
-		memdelete(n0);
-	}
-	if (n1 != nullptr) {
-		memdelete(n1);
-	}
-}
-
-FunctionNode::~FunctionNode() {
-	for (unsigned int i = 0; i < args.size(); ++i) {
-		if (args[i] != nullptr) {
-			memdelete(args[i]);
-		}
-	}
-}
-
 struct StringView {
 	const char *ptr;
 	size_t size;
@@ -277,14 +260,13 @@ int get_operator_precedence(OperatorNode::Operation op) {
 
 struct OpEntry {
 	int precedence;
-	// TODO Use unique ptr
-	OperatorNode *node;
+	UniquePtr<OperatorNode> node;
 };
 
 template <typename T>
 inline T pop(std::vector<T> &stack) {
 	CRASH_COND(stack.size() == 0);
-	T t = stack.back();
+	T t = std::move(stack.back());
 	stack.pop_back();
 	return t;
 }
@@ -303,11 +285,11 @@ unsigned int get_operator_argument_count(OperatorNode::Operation op_type) {
 	}
 }
 
-ErrorID pop_expression_operator(std::vector<OpEntry> &operations_stack, std::vector<Node *> &operand_stack) {
+ErrorID pop_expression_operator(std::vector<OpEntry> &operations_stack, std::vector<UniquePtr<Node>> &operand_stack) {
 	OpEntry last_op = pop(operations_stack);
 	CRASH_COND(last_op.node == nullptr);
 	CRASH_COND(last_op.node->type != Node::OPERATOR);
-	OperatorNode *last_node = last_op.node;
+	UniquePtr<OperatorNode> last_node = std::move(last_op.node);
 
 	const unsigned int argc = get_operator_argument_count(last_node->op);
 	CRASH_COND(argc < 1 || argc > 2);
@@ -319,14 +301,14 @@ ErrorID pop_expression_operator(std::vector<OpEntry> &operations_stack, std::vec
 	if (argc == 1) {
 		last_node->n0 = pop(operand_stack);
 	} else {
-		Node *right = pop(operand_stack);
-		Node *left = pop(operand_stack);
-		last_node->n0 = left;
-		last_node->n1 = right;
+		UniquePtr<Node> right = pop(operand_stack);
+		UniquePtr<Node> left = pop(operand_stack);
+		last_node->n0 = std::move(left);
+		last_node->n1 = std::move(right);
 	}
 
 	// Push result back to stack
-	operand_stack.push_back(last_node);
+	operand_stack.push_back(std::move(last_node));
 
 	return ERROR_NONE;
 }
@@ -335,17 +317,13 @@ bool is_operand(const Token &token) {
 	return token.type == Token::NAME || token.type == Token::NUMBER;
 }
 
-Node *operand_to_node(const Token token) {
+UniquePtr<Node> operand_to_node(const Token token) {
 	switch (token.type) {
-		case Token::NUMBER: {
-			NumberNode *node = memnew(NumberNode(token.data.number));
-			return node;
-		}
+		case Token::NUMBER:
+			return make_unique_instance<NumberNode>(token.data.number);
 
-		case Token::NAME: {
-			VariableNode *node = memnew(VariableNode(unpack(token.data.str)));
-			return node;
-		}
+		case Token::NAME:
+			return make_unique_instance<VariableNode>(unpack(token.data.str));
 
 		default:
 			CRASH_NOW_MSG("Token not handled");
@@ -366,83 +344,80 @@ const Function *find_function_by_name(std::string_view name, Span<const Function
 Result parse_expression(
 		Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions, Token *out_last_token);
 
-Result parse_function(Tokenizer &tokenizer, std::vector<Node *> &operand_stack, Span<const Function> functions) {
+Error parse_function(
+		Tokenizer &tokenizer, std::vector<UniquePtr<Node>> &operand_stack, Span<const Function> functions) {
 	std::string_view fname;
 	{
 		// We'll replace the variable with a function call node
-		Node *top = operand_stack.back();
+		UniquePtr<Node> top = pop(operand_stack);
 		CRASH_COND(top->type != Node::VARIABLE);
-		VariableNode *node = reinterpret_cast<VariableNode *>(top);
+		const VariableNode *node = static_cast<VariableNode *>(top.get());
 		fname = node->name;
-		memdelete(node);
-		operand_stack.pop_back();
 	}
+
 	const Function *fn = find_function_by_name(fname, functions);
 	if (fn == nullptr) {
-		Result result;
-		result.error.id = ERROR_UNKNOWN_FUNCTION;
-		result.error.position = tokenizer.get_position();
-		result.error.symbol = fname;
-		return result;
+		Error error;
+		error.id = ERROR_UNKNOWN_FUNCTION;
+		error.position = tokenizer.get_position();
+		error.symbol = fname;
+		return error;
 	}
-	FunctionNode *fnode = memnew(FunctionNode);
+
+	UniquePtr<FunctionNode> fnode = make_unique_instance<FunctionNode>();
 	fnode->function_id = fn->id;
 	CRASH_COND(fn->argument_count >= fnode->args.size());
+
 	Token last_token;
+
 	for (unsigned int arg_index = 0; arg_index < fn->argument_count; ++arg_index) {
 		Result arg_result = parse_expression(tokenizer, true, functions, &last_token);
+
 		if (arg_result.error.id != ERROR_NONE) {
-			memdelete(fnode);
-			return arg_result;
+			return arg_result.error;
 		}
+
 		if (arg_result.root == nullptr) {
-			Result result;
-			result.error.id = ERROR_EXPECTED_ARGUMENT;
-			result.error.position = tokenizer.get_position();
-			result.error.symbol = fname;
-			memdelete(fnode);
-			return result;
+			Error error;
+			error.id = ERROR_EXPECTED_ARGUMENT;
+			error.position = tokenizer.get_position();
+			error.symbol = fname;
+			return error;
+
 		} else if (last_token.type == Token::PARENTHESIS_CLOSE && arg_index + 1 < fn->argument_count) {
-			Result result;
-			result.error.id = ERROR_TOO_FEW_ARGUMENTS;
-			result.error.position = tokenizer.get_position();
-			result.error.symbol = fname;
-			memdelete(arg_result.root);
-			memdelete(fnode);
-			return result;
+			Error error;
+			error.id = ERROR_TOO_FEW_ARGUMENTS;
+			error.position = tokenizer.get_position();
+			error.symbol = fname;
+			return error;
 		}
-		fnode->args[arg_index] = arg_result.root;
+
+		fnode->args[arg_index] = std::move(arg_result.root);
 	}
+
 	if (last_token.type != Token::PARENTHESIS_CLOSE) {
-		Result result;
-		result.error.id = ERROR_TOO_MANY_ARGUMENTS;
-		result.error.position = tokenizer.get_position();
-		result.error.symbol = fname;
-		memdelete(fnode);
-		return result;
+		Error error;
+		error.id = ERROR_TOO_MANY_ARGUMENTS;
+		error.position = tokenizer.get_position();
+		error.symbol = fname;
+		return error;
 	}
-	Result result;
-	result.root = fnode;
-	operand_stack.push_back(fnode);
-	return result;
+
+	operand_stack.push_back(std::move(fnode));
+	return Error();
 }
 
-void free_nodes(std::vector<OpEntry> &operations_stack, std::vector<Node *> operand_stack) {
-	for (unsigned int i = 0; i < operations_stack.size(); ++i) {
-		memdelete(operations_stack[i].node);
-	}
-	for (unsigned int i = 0; i < operand_stack.size(); ++i) {
-		memdelete(operand_stack[i]);
-	}
-}
+// void free_nodes(std::vector<OpEntry> &operations_stack, std::vector<UniquePtr<Node>> operand_stack) {
+// 	operand_stack.clear();
+// 	operations_stack.clear();
+// }
 
 Result parse_expression(
 		Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions, Token *out_last_token) {
 	Token token;
 
 	std::vector<OpEntry> operations_stack;
-	// TODO Use unique ptr
-	std::vector<Node *> operand_stack;
+	std::vector<UniquePtr<Node>> operand_stack;
 	int precedence_base = 0;
 	bool previous_was_operand = false;
 
@@ -458,15 +433,14 @@ Result parse_expression(
 			OpEntry op;
 			op.precedence = precedence_base + get_operator_precedence(op_type);
 			// Operands will be assigned when we pop operations from the stack
-			op.node = memnew(OperatorNode(op_type, nullptr, nullptr));
+			op.node = make_unique_instance<OperatorNode>(op_type, nullptr, nullptr);
 
 			while (operations_stack.size() > 0) {
-				const OpEntry last_op = operations_stack.back();
+				const OpEntry &last_op = operations_stack.back();
 				// While the current operator has lower precedence, pop last operand
 				if (op.precedence <= last_op.precedence) {
 					const ErrorID err = pop_expression_operator(operations_stack, operand_stack);
 					if (err != ERROR_NONE) {
-						free_nodes(operations_stack, operand_stack);
 						Result result;
 						result.error.id = err;
 						result.error.position = tokenizer.get_position();
@@ -477,11 +451,10 @@ Result parse_expression(
 				}
 			}
 
-			operations_stack.push_back(op);
+			operations_stack.push_back(std::move(op));
 
 		} else if (is_operand(token)) {
 			if (previous_was_operand) {
-				free_nodes(operations_stack, operand_stack);
 				Result result;
 				result.error.id = ERROR_MULTIPLE_OPERANDS;
 				result.error.position = tokenizer.get_position();
@@ -492,10 +465,11 @@ Result parse_expression(
 
 		} else if (token.type == Token::PARENTHESIS_OPEN) {
 			if (operand_stack.size() > 0 && operand_stack.back()->type == Node::VARIABLE) {
-				Result fn_result = parse_function(tokenizer, operand_stack, functions);
-				if (fn_result.error.id != ERROR_NONE) {
-					free_nodes(operations_stack, operand_stack);
-					return fn_result;
+				Error fn_error = parse_function(tokenizer, operand_stack, functions);
+				if (fn_error.id != ERROR_NONE) {
+					Result result;
+					result.error = fn_error;
+					return result;
 				}
 
 			} else {
@@ -508,7 +482,6 @@ Result parse_expression(
 				break;
 			}
 			if (precedence_base < MAX_PRECEDENCE) {
-				free_nodes(operations_stack, operand_stack);
 				Result result;
 				result.error.id = ERROR_UNEXPECTED_TOKEN;
 				result.error.position = tokenizer.get_position();
@@ -518,7 +491,6 @@ Result parse_expression(
 			CRASH_COND(precedence_base < 0);
 
 		} else {
-			free_nodes(operations_stack, operand_stack);
 			Result result;
 			result.error.id = ERROR_UNEXPECTED_TOKEN;
 			result.error.position = tokenizer.get_position();
@@ -531,13 +503,11 @@ Result parse_expression(
 	Result result;
 	result.error.id = tokenizer.get_error();
 	if (result.error.id != ERROR_NONE) {
-		free_nodes(operations_stack, operand_stack);
 		result.error.position = tokenizer.get_position();
 		return result;
 	}
 
 	if (precedence_base != 0) {
-		free_nodes(operations_stack, operand_stack);
 		result.error.id = ERROR_UNCLOSED_PARENTHESIS;
 		result.error.position = tokenizer.get_position();
 		return result;
@@ -553,7 +523,6 @@ Result parse_expression(
 	while (operations_stack.size() > 0) {
 		const ErrorID err = pop_expression_operator(operations_stack, operand_stack);
 		if (err != ERROR_NONE) {
-			free_nodes(operations_stack, operand_stack);
 			Result result;
 			result.error.id = err;
 			result.error.position = tokenizer.get_position();
@@ -564,7 +533,7 @@ Result parse_expression(
 	CRASH_COND(operand_stack.size() > 1);
 	// The stack can be empty if the expression was empty
 	if (operand_stack.size() > 0) {
-		result.root = operand_stack.back();
+		result.root = std::move(operand_stack.back());
 	}
 
 	return result;
@@ -609,11 +578,11 @@ void find_variables(const Node &node, std::vector<std::string_view> &variables) 
 
 // Returns true if the passed node is constant (or gets changed into a constant).
 // `out_number` is the value of the node if it is constant.
-bool precompute_constants(Node *&node, float &out_number, Span<const Function> functions) {
+bool precompute_constants(UniquePtr<Node> &node, float &out_number, Span<const Function> functions) {
 	CRASH_COND(node == nullptr);
 	switch (node->type) {
 		case Node::NUMBER: {
-			const NumberNode *nn = reinterpret_cast<NumberNode *>(node);
+			const NumberNode *nn = reinterpret_cast<NumberNode *>(node.get());
 			out_number = nn->value;
 			return true;
 		}
@@ -622,14 +591,14 @@ bool precompute_constants(Node *&node, float &out_number, Span<const Function> f
 			return false;
 
 		case Node::OPERATOR: {
-			OperatorNode *onode = reinterpret_cast<OperatorNode *>(node);
-			if (onode->n0 != nullptr && onode->n1 != nullptr) {
+			OperatorNode &onode = static_cast<OperatorNode &>(*node);
+			if (onode.n0 != nullptr && onode.n1 != nullptr) {
 				float n0;
 				float n1;
-				const bool constant0 = precompute_constants(onode->n0, n0, functions);
-				const bool constant1 = precompute_constants(onode->n1, n1, functions);
+				const bool constant0 = precompute_constants(onode.n0, n0, functions);
+				const bool constant1 = precompute_constants(onode.n1, n1, functions);
 				if (constant0 && constant1) {
-					switch (onode->op) {
+					switch (onode.op) {
 						case OperatorNode::ADD:
 							out_number = n0 + n1;
 							break;
@@ -649,8 +618,7 @@ bool precompute_constants(Node *&node, float &out_number, Span<const Function> f
 							CRASH_NOW();
 					}
 
-					memdelete(node);
-					node = memnew(NumberNode(out_number));
+					node = make_unique_instance<NumberNode>(out_number);
 					return true;
 				}
 				// TODO Unary operators
@@ -659,12 +627,12 @@ bool precompute_constants(Node *&node, float &out_number, Span<const Function> f
 		} break;
 
 		case Node::FUNCTION: {
-			FunctionNode *fnode = reinterpret_cast<FunctionNode *>(node);
+			FunctionNode &fnode = static_cast<FunctionNode &>(*node);
 			bool all_constant = true;
 			FixedArray<float, 4> constant_args;
-			const Function *f = find_function_by_id(fnode->function_id, functions);
+			const Function *f = find_function_by_id(fnode.function_id, functions);
 			for (unsigned int i = 0; i < f->argument_count; ++i) {
-				if (!precompute_constants(fnode->args[i], constant_args[i], functions)) {
+				if (!precompute_constants(fnode.args[i], constant_args[i], functions)) {
 					all_constant = false;
 				}
 			}
@@ -673,8 +641,7 @@ bool precompute_constants(Node *&node, float &out_number, Span<const Function> f
 				CRASH_COND(f->func == nullptr);
 				out_number = f->func(to_span_const(constant_args, f->argument_count));
 
-				memdelete(node);
-				node = memnew(NumberNode(out_number));
+				node = make_unique_instance<NumberNode>(out_number);
 				return true;
 			}
 			return false;
@@ -704,48 +671,48 @@ Result parse(std::string_view text, Span<const Function> functions) {
 	return result;
 }
 
-bool is_tree_equal(const Node *a, const Node *b, Span<const Function> functions) {
-	if (a->type != b->type) {
+bool is_tree_equal(const Node &a, const Node &b, Span<const Function> functions) {
+	if (a.type != b.type) {
 		return false;
 	}
-	switch (a->type) {
+	switch (a.type) {
 		case Node::NUMBER: {
-			const NumberNode *nn_a = reinterpret_cast<const NumberNode *>(a);
-			const NumberNode *nn_b = reinterpret_cast<const NumberNode *>(b);
-			return Math::is_equal_approx(nn_a->value, nn_b->value);
+			const NumberNode &nn_a = static_cast<const NumberNode &>(a);
+			const NumberNode &nn_b = static_cast<const NumberNode &>(b);
+			return Math::is_equal_approx(nn_a.value, nn_b.value);
 		}
 		case Node::VARIABLE: {
-			const VariableNode *va = reinterpret_cast<const VariableNode *>(a);
-			const VariableNode *vb = reinterpret_cast<const VariableNode *>(b);
-			return va->name == vb->name;
+			const VariableNode &va = static_cast<const VariableNode &>(a);
+			const VariableNode &vb = static_cast<const VariableNode &>(b);
+			return va.name == vb.name;
 		}
 		case Node::OPERATOR: {
-			const OperatorNode *oa = reinterpret_cast<const OperatorNode *>(a);
-			const OperatorNode *ob = reinterpret_cast<const OperatorNode *>(b);
-			if (oa->op != ob->op) {
+			const OperatorNode &oa = static_cast<const OperatorNode &>(a);
+			const OperatorNode &ob = static_cast<const OperatorNode &>(b);
+			if (oa.op != ob.op) {
 				return false;
 			}
-			CRASH_COND(oa->n0 == nullptr);
-			CRASH_COND(ob->n0 == nullptr);
-			if (oa->n1 == nullptr && ob->n1 == nullptr) {
-				return is_tree_equal(oa->n0, ob->n0, functions);
+			CRASH_COND(oa.n0 == nullptr);
+			CRASH_COND(ob.n0 == nullptr);
+			if (oa.n1 == nullptr && ob.n1 == nullptr) {
+				return is_tree_equal(*oa.n0, *ob.n0, functions);
 			}
-			CRASH_COND(oa->n1 == nullptr);
-			CRASH_COND(ob->n1 == nullptr);
-			return is_tree_equal(oa->n0, ob->n0, functions) && is_tree_equal(oa->n1, ob->n1, functions);
+			CRASH_COND(oa.n1 == nullptr);
+			CRASH_COND(ob.n1 == nullptr);
+			return is_tree_equal(*oa.n0, *ob.n0, functions) && is_tree_equal(*oa.n1, *ob.n1, functions);
 		}
 		case Node::FUNCTION: {
-			const FunctionNode *fa = reinterpret_cast<const FunctionNode *>(a);
-			const FunctionNode *fb = reinterpret_cast<const FunctionNode *>(b);
-			if (fa->function_id != fb->function_id) {
+			const FunctionNode &fa = static_cast<const FunctionNode &>(a);
+			const FunctionNode &fb = static_cast<const FunctionNode &>(b);
+			if (fa.function_id != fb.function_id) {
 				return false;
 			}
-			const Function *f = find_function_by_id(fa->function_id, functions);
+			const Function *f = find_function_by_id(fa.function_id, functions);
 			CRASH_COND(f == nullptr);
 			for (unsigned int i = 0; i < f->argument_count; ++i) {
-				CRASH_COND(fa->args[i] == nullptr);
-				CRASH_COND(fb->args[i] == nullptr);
-				if (!is_tree_equal(fa->args[i], fb->args[i], functions)) {
+				CRASH_COND(fa.args[i] == nullptr);
+				CRASH_COND(fb.args[i] == nullptr);
+				if (!is_tree_equal(*fa.args[i], *fb.args[i], functions)) {
 					return false;
 				}
 			}
@@ -755,10 +722,6 @@ bool is_tree_equal(const Node *a, const Node *b, Span<const Function> functions)
 			CRASH_NOW();
 			return false;
 	}
-}
-
-bool is_tree_equal(const Node &root_a, const Node &root_b, Span<const Function> functions) {
-	return is_tree_equal(&root_a, &root_b, functions);
 }
 
 const char *to_string(OperatorNode::Operation op) {
@@ -779,45 +742,45 @@ const char *to_string(OperatorNode::Operation op) {
 	}
 }
 
-void tree_to_string(const Node *node, int depth, std::stringstream &output, Span<const Function> functions) {
+void tree_to_string(const Node &node, int depth, std::stringstream &output, Span<const Function> functions) {
 	for (int i = 0; i < depth; ++i) {
 		output << "  ";
 	}
-	switch (node->type) {
+	switch (node.type) {
 		case Node::NUMBER: {
-			const NumberNode *nn = reinterpret_cast<const NumberNode *>(node);
-			output << nn->value;
+			const NumberNode &nn = static_cast<const NumberNode &>(node);
+			output << nn.value;
 		} break;
 
 		case Node::VARIABLE: {
-			const VariableNode *vn = reinterpret_cast<const VariableNode *>(node);
-			output << vn->name;
+			const VariableNode &vn = static_cast<const VariableNode &>(node);
+			output << vn.name;
 		} break;
 
 		case Node::OPERATOR: {
-			const OperatorNode *on = reinterpret_cast<const OperatorNode *>(node);
-			output << to_string(on->op);
+			const OperatorNode &on = static_cast<const OperatorNode &>(node);
+			output << to_string(on.op);
 			output << '\n';
-			CRASH_COND(on->n0 == nullptr);
-			if (on->n1 == nullptr) {
-				tree_to_string(on->n0, depth + 1, output, functions);
+			CRASH_COND(on.n0 == nullptr);
+			if (on.n1 == nullptr) {
+				tree_to_string(*on.n0, depth + 1, output, functions);
 			} else {
-				CRASH_COND(on->n1 == nullptr);
-				tree_to_string(on->n0, depth + 1, output, functions);
+				CRASH_COND(on.n1 == nullptr);
+				tree_to_string(*on.n0, depth + 1, output, functions);
 				output << '\n';
-				tree_to_string(on->n1, depth + 1, output, functions);
+				tree_to_string(*on.n1, depth + 1, output, functions);
 			}
 		} break;
 
 		case Node::FUNCTION: {
-			const FunctionNode *fn = reinterpret_cast<const FunctionNode *>(node);
-			const Function *f = find_function_by_id(fn->function_id, functions);
+			const FunctionNode &fn = static_cast<const FunctionNode &>(node);
+			const Function *f = find_function_by_id(fn.function_id, functions);
 			CRASH_COND(f == nullptr);
 			output << f->name << "()";
 			for (unsigned int i = 0; i < f->argument_count; ++i) {
-				CRASH_COND(fn->args[i] == nullptr);
+				CRASH_COND(fn.args[i] == nullptr);
 				output << '\n';
-				tree_to_string(fn->args[i], depth + 1, output, functions);
+				tree_to_string(*fn.args[i], depth + 1, output, functions);
 			}
 		} break;
 
@@ -828,7 +791,7 @@ void tree_to_string(const Node *node, int depth, std::stringstream &output, Span
 
 std::string tree_to_string(const Node &node, Span<const Function> functions) {
 	std::stringstream ss;
-	tree_to_string(&node, 0, ss, functions);
+	tree_to_string(node, 0, ss, functions);
 	return ss.str();
 }
 

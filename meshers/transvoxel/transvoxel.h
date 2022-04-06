@@ -72,7 +72,7 @@ public:
 			std::vector<ReuseCell> &deck = _cache[i];
 			deck.resize(deck_area);
 			for (size_t j = 0; j < deck.size(); ++j) {
-				deck[j].vertices.fill(-1);
+				fill(deck[j].vertices, -1);
 			}
 		}
 	}
@@ -82,7 +82,7 @@ public:
 			std::vector<ReuseTransitionCell> &row = _cache_2d[i];
 			row.resize(p_block_size.x);
 			for (size_t j = 0; j < row.size(); ++j) {
-				row[j].vertices.fill(-1);
+				fill(row[j].vertices, -1);
 			}
 		}
 	}

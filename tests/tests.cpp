@@ -1508,9 +1508,8 @@ void test_expression_parser() {
 		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
 		ZYLANN_TEST_ASSERT(result.root != nullptr);
 		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
-		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 42.f));
-		memdelete(result.root);
+		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 42.f));
 	}
 	{
 		Result result = parse("()", Span<const Function>());
@@ -1532,9 +1531,8 @@ void test_expression_parser() {
 		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
 		ZYLANN_TEST_ASSERT(result.root != nullptr);
 		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
-		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 42.f));
-		memdelete(result.root);
+		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 42.f));
 	}
 	{
 		Result result = parse("(", Span<const Function>());
@@ -1571,27 +1569,24 @@ void test_expression_parser() {
 		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
 		ZYLANN_TEST_ASSERT(result.root != nullptr);
 		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
-		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 0.6f));
-		memdelete(result.root);
+		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 0.6f));
 	}
 	{
 		Result result = parse("1*2-3/4+5", Span<const Function>());
 		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
 		ZYLANN_TEST_ASSERT(result.root != nullptr);
 		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
-		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 6.25f));
-		memdelete(result.root);
+		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 6.25f));
 	}
 	{
 		Result result = parse("(5 - 3)^2 + 2.5/(4 + 6)", Span<const Function>());
 		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
 		ZYLANN_TEST_ASSERT(result.root != nullptr);
 		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
-		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 4.25f));
-		memdelete(result.root);
+		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 4.25f));
 	}
 	{
 		/*
@@ -1607,17 +1602,22 @@ void test_expression_parser() {
 			   / \
 			  a   b
 		*/
-		VariableNode *node_a = memnew(VariableNode("a"));
-		VariableNode *node_b = memnew(VariableNode("b"));
-		OperatorNode *node_add = memnew(OperatorNode(OperatorNode::ADD, node_a, node_b));
-		NumberNode *node_two = memnew(NumberNode(2));
-		OperatorNode *node_power = memnew(OperatorNode(OperatorNode::POWER, node_add, node_two));
-		NumberNode *node_four = memnew(NumberNode(4));
-		OperatorNode *node_mul = memnew(OperatorNode(OperatorNode::MULTIPLY, node_four, node_power));
-		VariableNode *node_c = memnew(VariableNode("c"));
-		VariableNode *node_d = memnew(VariableNode("d"));
-		OperatorNode *node_sub = memnew(OperatorNode(OperatorNode::SUBTRACT, node_c, node_d));
-		OperatorNode *expected_root = memnew(OperatorNode(OperatorNode::SUBTRACT, node_mul, node_sub));
+		UniquePtr<VariableNode> node_a = make_unique_instance<VariableNode>("a");
+		UniquePtr<VariableNode> node_b = make_unique_instance<VariableNode>("b");
+		UniquePtr<OperatorNode> node_add =
+				make_unique_instance<OperatorNode>(OperatorNode::ADD, std::move(node_a), std::move(node_b));
+		UniquePtr<NumberNode> node_two = make_unique_instance<NumberNode>(2);
+		UniquePtr<OperatorNode> node_power =
+				make_unique_instance<OperatorNode>(OperatorNode::POWER, std::move(node_add), std::move(node_two));
+		UniquePtr<NumberNode> node_four = make_unique_instance<NumberNode>(4);
+		UniquePtr<OperatorNode> node_mul =
+				make_unique_instance<OperatorNode>(OperatorNode::MULTIPLY, std::move(node_four), std::move(node_power));
+		UniquePtr<VariableNode> node_c = make_unique_instance<VariableNode>("c");
+		UniquePtr<VariableNode> node_d = make_unique_instance<VariableNode>("d");
+		UniquePtr<OperatorNode> node_sub =
+				make_unique_instance<OperatorNode>(OperatorNode::SUBTRACT, std::move(node_c), std::move(node_d));
+		UniquePtr<OperatorNode> expected_root =
+				make_unique_instance<OperatorNode>(OperatorNode::SUBTRACT, std::move(node_mul), std::move(node_sub));
 
 		Result result = parse("4*(a+b)^2-(c-d)", Span<const Function>());
 		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
@@ -1630,8 +1630,6 @@ void test_expression_parser() {
 		// 	print_line(String(s2.c_str()));
 		// }
 		ZYLANN_TEST_ASSERT(is_tree_equal(*result.root, *expected_root, Span<const Function>()));
-		memdelete(result.root);
-		memdelete(expected_root);
 	}
 	{
 		FixedArray<Function, 2> functions;
@@ -1661,9 +1659,8 @@ void test_expression_parser() {
 		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
 		ZYLANN_TEST_ASSERT(result.root != nullptr);
 		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
-		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 4.f));
-		memdelete(result.root);
+		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
+		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 4.f));
 	}
 	{
 		FixedArray<Function, 2> functions;

@@ -2,6 +2,7 @@
 #define ZYLANN_EXPRESSION_PARSER_H
 
 #include "fixed_array.h"
+#include "memory.h"
 #include "span.h"
 #include <string_view>
 
@@ -50,28 +51,21 @@ struct OperatorNode : Node {
 	};
 
 	Operation op;
-	// TODO Use unique ptr
-	Node *n0 = nullptr;
-	Node *n1 = nullptr;
+	UniquePtr<Node> n0;
+	UniquePtr<Node> n1;
 
-	OperatorNode(Operation p_op, Node *a, Node *b) : op(p_op), n0(a), n1(b) {
+	OperatorNode(Operation p_op, UniquePtr<Node> a, UniquePtr<Node> b) : op(p_op), n0(std::move(a)), n1(std::move(b)) {
 		type = OPERATOR;
 	}
-
-	~OperatorNode();
 };
 
 struct FunctionNode : Node {
 	unsigned int function_id;
-	// TODO Use unique ptr
-	FixedArray<Node *, 4> args;
+	FixedArray<UniquePtr<Node>, 4> args;
 
 	FunctionNode() {
 		type = Node::FUNCTION;
-		args.fill(nullptr);
 	}
-
-	~FunctionNode();
 };
 
 enum ErrorID { //
@@ -98,8 +92,7 @@ struct Error {
 };
 
 struct Result {
-	// TODO Use unique ptr
-	Node *root = nullptr;
+	UniquePtr<Node> root;
 	Error error;
 };
 

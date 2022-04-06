@@ -114,7 +114,8 @@ static bool load_header(
 	ERR_FAIL_COND_V(f->get_position() != 0, false);
 	ERR_FAIL_COND_V(f->get_length() < MAGIC_AND_VERSION_SIZE, false);
 
-	FixedArray<char, 5> magic(0);
+	FixedArray<char, 5> magic;
+	fill(magic, '\0');
 	ERR_FAIL_COND_V(f->get_buffer(reinterpret_cast<uint8_t *>(magic.data()), 4) != 4, false);
 	ERR_FAIL_COND_V(strcmp(magic.data(), FORMAT_REGION_MAGIC) != 0, false);
 
@@ -173,7 +174,7 @@ RegionFile::RegionFile() {
 	// Defaults
 	_header.format.block_size_po2 = 4;
 	_header.format.region_size = Vector3i(16, 16, 16);
-	_header.format.channel_depths.fill(VoxelBufferInternal::DEPTH_8_BIT);
+	fill(_header.format.channel_depths, VoxelBufferInternal::DEPTH_8_BIT);
 	_header.format.sector_size = 512;
 }
 

@@ -152,7 +152,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			// TODO Optimization: per-function shortcuts
 
 			for (unsigned int arg_index = 0; arg_index < arg_count; ++arg_index) {
-				ExpressionParser::Node *arg = fn.args[arg_index];
+				const ExpressionParser::Node *arg = fn.args[arg_index].get();
 				CRASH_COND(arg == nullptr);
 				ERR_FAIL_COND_V(
 						!expand_input(graph, *arg, pg_node, arg_index, db, to_connect, expanded_node_ids, functions),
@@ -183,9 +183,6 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 	ExpressionParser::Result parse_result = ExpressionParser::parse(code_utf8.get_data(), functions);
 
 	if (parse_result.error.id != ExpressionParser::ERROR_NONE) {
-		if (parse_result.root != nullptr) {
-			memdelete(parse_result.root);
-		}
 		const std::string error_message_utf8 = ExpressionParser::to_string(parse_result.error);
 		VoxelGraphRuntime::CompilationResult result;
 		result.success = false;
@@ -207,9 +204,6 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 	const uint32_t expanded_root_node_id = expand_node(
 			graph, *parse_result.root, *VoxelGraphNodeDB::get_singleton(), to_connect, expanded_nodes, functions);
 	if (expanded_root_node_id == ProgramGraph::NULL_ID) {
-		if (parse_result.root != nullptr) {
-			memdelete(parse_result.root);
-		}
 		VoxelGraphRuntime::CompilationResult result;
 		result.success = false;
 		result.node_id = original_node_id;
@@ -224,9 +218,6 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 
 		unsigned int original_port_index;
 		if (!original_node->find_input_port_by_name(tc.var_name, original_port_index)) {
-			if (parse_result.root != nullptr) {
-				memdelete(parse_result.root);
-			}
 			VoxelGraphRuntime::CompilationResult result;
 			result.success = false;
 			result.node_id = original_node_id;
@@ -241,10 +232,6 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 	}
 
 	graph.remove_node(original_node_id);
-
-	if (parse_result.root != nullptr) {
-		memdelete(parse_result.root);
-	}
 
 	VoxelGraphRuntime::CompilationResult result;
 	result.success = true;
