@@ -1669,10 +1669,10 @@ Dictionary VoxelLodTerrain::_b_get_statistics() const {
 
 	const unsigned int lod_count = _update_data->settings.lod_count;
 
-	int deferred_collision_updates = 0;
-	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		deferred_collision_updates += _deferred_collision_updates_per_lod[lod_index].size();
-	}
+	// int deferred_collision_updates = 0;
+	// for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+	// 	deferred_collision_updates += _deferred_collision_updates_per_lod[lod_index].size();
+	// }
 
 	// Breakdown of information and time spent in _process and the update task.
 

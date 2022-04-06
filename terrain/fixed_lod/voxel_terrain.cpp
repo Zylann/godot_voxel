@@ -621,7 +621,7 @@ struct ScheduleSaveAction {
 void VoxelTerrain::unload_data_block(Vector3i bpos) {
 	const bool save = _stream.is_valid() && (!Engine::get_singleton()->is_editor_hint() || _run_stream_in_editor);
 
-	_data_map.remove_block(bpos, [this, bpos, save](VoxelDataBlock &block) {
+	_data_map.remove_block(bpos, [this, save](VoxelDataBlock &block) {
 		emit_data_block_unloaded(block);
 		if (save) {
 			// Note: no need to copy the block because it gets removed from the map anyways
@@ -1090,8 +1090,8 @@ void VoxelTerrain::process_viewers() {
 							VoxelServer::get_singleton()->is_viewer_requiring_data_block_notifications(viewer.id);
 
 					// Unview blocks that just fell out of range
-					prev_data_box.difference(new_data_box, [this, &viewer](Box3i out_of_range_box) {
-						out_of_range_box.for_each_cell([this, &viewer](Vector3i bpos) { //
+					prev_data_box.difference(new_data_box, [this](Box3i out_of_range_box) {
+						out_of_range_box.for_each_cell([this](Vector3i bpos) { //
 							unview_data_block(bpos);
 						});
 					});

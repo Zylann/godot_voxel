@@ -21,7 +21,7 @@ LoadBlockDataTask::LoadBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos,
 		_lod(p_lod),
 		_block_size(p_block_size),
 		_request_instances(p_request_instances),
-		_request_voxels(true),
+		//_request_voxels(true),
 		_stream_dependency(p_stream_dependency) {
 	//
 	++g_debug_load_block_tasks_count;

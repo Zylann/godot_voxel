@@ -250,14 +250,12 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 			VOXEL_PROFILE_SCOPE_NAMED("Unload data");
 			VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
 			RWLockWrite wlock(data_lod.map_lock);
-			prev_box.difference(
-					new_box, [&lod, &data_lod, lod_index, &blocks_to_save, can_save](Box3i out_of_range_box) {
-						out_of_range_box.for_each_cell(
-								[&lod, &data_lod, lod_index, &blocks_to_save, can_save](Vector3i pos) {
-									//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
-									unload_data_block_no_lock(lod, data_lod, pos, blocks_to_save, can_save);
-								});
-					});
+			prev_box.difference(new_box, [&lod, &data_lod, &blocks_to_save, can_save](Box3i out_of_range_box) {
+				out_of_range_box.for_each_cell([&lod, &data_lod, &blocks_to_save, can_save](Vector3i pos) {
+					//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
+					unload_data_block_no_lock(lod, data_lod, pos, blocks_to_save, can_save);
+				});
+			});
 		}
 
 		{
@@ -345,7 +343,7 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 		{
 			VOXEL_PROFILE_SCOPE_NAMED("Cancel updates");
 			// Cancel block updates that are not within the new region
-			unordered_remove_if(lod.blocks_pending_update, [&lod, new_box](Vector3i bpos) { //
+			unordered_remove_if(lod.blocks_pending_update, [new_box](Vector3i bpos) { //
 				return !new_box.contains(bpos);
 			});
 		}

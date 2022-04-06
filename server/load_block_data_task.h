@@ -33,7 +33,7 @@ private:
 	bool _has_run = false;
 	bool _too_far = false;
 	bool _request_instances = false;
-	bool _request_voxels = false;
+	//bool _request_voxels = false;
 	bool _max_lod_hint = false;
 	bool _fallback_on_generator = false;
 	std::shared_ptr<StreamingDependency> _stream_dependency;
