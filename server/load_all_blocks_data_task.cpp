@@ -14,7 +14,8 @@ void LoadAllBlocksDataTask::run(zylann::ThreadedTaskContext ctx) {
 
 	stream->load_all_blocks(_result);
 
-	PRINT_VERBOSE(String("Loaded {0} blocks for volume {1}").format(varray(_result.blocks.size(), volume_id)));
+	PRINT_VERBOSE(String("Loaded {0} blocks for volume {1}")
+						  .format(varray(SIZE_T_TO_VARIANT(_result.blocks.size()), volume_id)));
 }
 
 int LoadAllBlocksDataTask::get_priority() {
