@@ -45,7 +45,7 @@ struct Token {
 		INVALID
 	};
 
-	Type type;
+	Type type = INVALID;
 	union Data {
 		// Can't put a std::string_view inside a union, not sure why
 		StringView str;
@@ -363,8 +363,8 @@ const Function *find_function_by_name(std::string_view name, Span<const Function
 	return nullptr;
 }
 
-Result parse_expression(Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions,
-		bool *ends_with_closing_parenthesis);
+Result parse_expression(
+		Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions, Token *out_last_token);
 
 Result parse_function(Tokenizer &tokenizer, std::vector<Node *> &operand_stack, Span<const Function> functions) {
 	std::string_view fname;
@@ -388,16 +388,32 @@ Result parse_function(Tokenizer &tokenizer, std::vector<Node *> &operand_stack, 
 	FunctionNode *fnode = memnew(FunctionNode);
 	fnode->function_id = fn->id;
 	CRASH_COND(fn->argument_count >= fnode->args.size());
-	bool ends_with_closing_parenthesis = false;
+	Token last_token;
 	for (unsigned int arg_index = 0; arg_index < fn->argument_count; ++arg_index) {
-		Result arg_result = parse_expression(tokenizer, true, functions, &ends_with_closing_parenthesis);
+		Result arg_result = parse_expression(tokenizer, true, functions, &last_token);
 		if (arg_result.error.id != ERROR_NONE) {
 			memdelete(fnode);
 			return arg_result;
 		}
+		if (arg_result.root == nullptr) {
+			Result result;
+			result.error.id = ERROR_EXPECTED_ARGUMENT;
+			result.error.position = tokenizer.get_position();
+			result.error.symbol = fname;
+			memdelete(fnode);
+			return result;
+		} else if (last_token.type == Token::PARENTHESIS_CLOSE && arg_index + 1 < fn->argument_count) {
+			Result result;
+			result.error.id = ERROR_TOO_FEW_ARGUMENTS;
+			result.error.position = tokenizer.get_position();
+			result.error.symbol = fname;
+			memdelete(arg_result.root);
+			memdelete(fnode);
+			return result;
+		}
 		fnode->args[arg_index] = arg_result.root;
 	}
-	if (!ends_with_closing_parenthesis) {
+	if (last_token.type != Token::PARENTHESIS_CLOSE) {
 		Result result;
 		result.error.id = ERROR_TOO_MANY_ARGUMENTS;
 		result.error.position = tokenizer.get_position();
@@ -420,8 +436,8 @@ void free_nodes(std::vector<OpEntry> &operations_stack, std::vector<Node *> oper
 	}
 }
 
-Result parse_expression(Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions,
-		bool *ends_with_closing_parenthesis) {
+Result parse_expression(
+		Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions, Token *out_last_token) {
 	Token token;
 
 	std::vector<OpEntry> operations_stack;
@@ -491,6 +507,13 @@ Result parse_expression(Tokenizer &tokenizer, bool in_argument_list, Span<const 
 			if (in_argument_list && precedence_base < MAX_PRECEDENCE) {
 				break;
 			}
+			if (precedence_base < MAX_PRECEDENCE) {
+				free_nodes(operations_stack, operand_stack);
+				Result result;
+				result.error.id = ERROR_UNEXPECTED_TOKEN;
+				result.error.position = tokenizer.get_position();
+				return result;
+			}
 			precedence_base -= MAX_PRECEDENCE;
 			CRASH_COND(precedence_base < 0);
 
@@ -520,8 +543,8 @@ Result parse_expression(Tokenizer &tokenizer, bool in_argument_list, Span<const 
 		return result;
 	}
 
-	if (ends_with_closing_parenthesis != nullptr) {
-		*ends_with_closing_parenthesis = token.type == Token::PARENTHESIS_CLOSE;
+	if (out_last_token != nullptr) {
+		*out_last_token = token;
 	}
 
 	// All remaining operations should end up with ascending precedence,

@@ -1523,6 +1523,11 @@ void test_expression_parser() {
 		ZYLANN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
+		Result result = parse("42)", Span<const Function>());
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_UNEXPECTED_TOKEN);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
 		Result result = parse("(42)", Span<const Function>());
 		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
 		ZYLANN_TEST_ASSERT(result.root != nullptr);
@@ -1659,6 +1664,101 @@ void test_expression_parser() {
 		const NumberNode *nn = reinterpret_cast<NumberNode *>(result.root);
 		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn->value, 4.f));
 		memdelete(result.root);
+	}
+	{
+		FixedArray<Function, 2> functions;
+
+		const unsigned int F_SIN = 0;
+		const unsigned int F_CLAMP = 1;
+
+		{
+			Function f;
+			f.name = "sin";
+			f.id = F_SIN;
+			f.argument_count = 1;
+			f.func = [](Span<const float> args) { //
+				return Math::sin(args[0]);
+			};
+			functions[0] = f;
+		}
+		{
+			Function f;
+			f.name = "clamp";
+			f.id = F_CLAMP;
+			f.argument_count = 3;
+			f.func = [](Span<const float> args) { //
+				return math::clamp(args[0], args[1], args[2]);
+			};
+			functions[1] = f;
+		}
+
+		Result result = parse("x+sin(y, clamp(z, 0, 1))", to_span_const(functions));
+
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_TOO_MANY_ARGUMENTS);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		FixedArray<Function, 1> functions;
+
+		const unsigned int F_CLAMP = 1;
+
+		{
+			Function f;
+			f.name = "clamp";
+			f.id = F_CLAMP;
+			f.argument_count = 3;
+			f.func = [](Span<const float> args) { //
+				return math::clamp(args[0], args[1], args[2]);
+			};
+			functions[0] = f;
+		}
+
+		Result result = parse("clamp(z,", to_span_const(functions));
+
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_EXPECTED_ARGUMENT);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		FixedArray<Function, 1> functions;
+
+		const unsigned int F_CLAMP = 1;
+
+		{
+			Function f;
+			f.name = "clamp";
+			f.id = F_CLAMP;
+			f.argument_count = 3;
+			f.func = [](Span<const float> args) { //
+				return math::clamp(args[0], args[1], args[2]);
+			};
+			functions[0] = f;
+		}
+
+		Result result = parse("clamp(z)", to_span_const(functions));
+
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_TOO_FEW_ARGUMENTS);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
+	}
+	{
+		FixedArray<Function, 1> functions;
+
+		const unsigned int F_CLAMP = 1;
+
+		{
+			Function f;
+			f.name = "clamp";
+			f.id = F_CLAMP;
+			f.argument_count = 3;
+			f.func = [](Span<const float> args) { //
+				return math::clamp(args[0], args[1], args[2]);
+			};
+			functions[0] = f;
+		}
+
+		Result result = parse("clamp(z,)", to_span_const(functions));
+
+		ZYLANN_TEST_ASSERT(result.error.id == ERROR_EXPECTED_ARGUMENT);
+		ZYLANN_TEST_ASSERT(result.root == nullptr);
 	}
 }
 
