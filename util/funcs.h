@@ -2,14 +2,8 @@
 #define HEADER_VOXEL_UTILITY_H
 
 #include "span.h"
-#include <core/string/ustring.h>
-#include <core/templates/vector.h>
 #include <utility>
 #include <vector>
-
-#ifdef DEBUG_ENABLED
-#include <core/error/error_macros.h>
-#endif
 
 namespace zylann {
 
@@ -94,18 +88,6 @@ size_t find_duplicate(Span<const T> items) {
 		}
 	}
 	return items.size();
-}
-
-inline String ptr2s(const void *p) {
-	return String::num_uint64((uint64_t)p, 16);
-}
-
-template <typename T>
-void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
-	to.resize(from.size());
-	// resize can fail in case allocation was not possible
-	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));
-	memcpy(to.ptrw(), from.data(), from.size() * sizeof(T));
 }
 
 template <typename T>

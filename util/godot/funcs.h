@@ -99,6 +99,14 @@ struct RefHasher {
 void copy_to(Vector<Vector3> &dst, const std::vector<Vector3f> &src);
 void copy_to(Vector<Vector2> &dst, const std::vector<Vector2f> &src);
 
+template <typename T>
+void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
+	to.resize(from.size());
+	// resize can fail in case allocation was not possible
+	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));
+	memcpy(to.ptrw(), from.data(), from.size() * sizeof(T));
+}
+
 inline Vector2f to_vec2f(Vector2i v) {
 	return Vector2f(v.x, v.y);
 }
@@ -140,6 +148,10 @@ static PackedStringArray to_godot(const std::vector<std::string> &sv) {
 template <typename T>
 Span<const T> to_span_const(const Vector<T> &a) {
 	return Span<const T>(a.ptr(), 0, a.size());
+}
+
+inline String ptr2s(const void *p) {
+	return String::num_uint64((uint64_t)p, 16);
 }
 
 } // namespace zylann
