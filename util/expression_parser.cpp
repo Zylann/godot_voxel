@@ -498,14 +498,15 @@ Result parse_expression(
 		previous_was_operand = current_is_operand;
 	}
 
-	Result result;
-	result.error.id = tokenizer.get_error();
-	if (result.error.id != ERROR_NONE) {
+	if (tokenizer.get_error() != ERROR_NONE) {
+		Result result;
+		result.error.id = tokenizer.get_error();
 		result.error.position = tokenizer.get_position();
 		return result;
 	}
 
 	if (precedence_base != 0) {
+		Result result;
 		result.error.id = ERROR_UNCLOSED_PARENTHESIS;
 		result.error.position = tokenizer.get_position();
 		return result;
@@ -527,6 +528,8 @@ Result parse_expression(
 			return result;
 		}
 	}
+
+	Result result;
 
 	CRASH_COND(operand_stack.size() > 1);
 	// The stack can be empty if the expression was empty
