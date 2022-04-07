@@ -100,7 +100,7 @@ public:
 	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
 		const Box3i voxel_box = p_voxel_box.clipped(get_voxel_bounds());
 		if (is_full_load_mode_enabled() == false && !is_area_editable(voxel_box)) {
-			PRINT_VERBOSE("Area not editable");
+			ZN_PRINT_VERBOSE("Area not editable");
 			return;
 		}
 		Ref<VoxelGenerator> generator = _generator;
@@ -122,7 +122,7 @@ public:
 	void write_box_2(const Box3i &p_voxel_box, unsigned int channel1, unsigned int channel2, F action) {
 		const Box3i voxel_box = p_voxel_box.clipped(get_voxel_bounds());
 		if (is_full_load_mode_enabled() == false && !is_area_editable(voxel_box)) {
-			PRINT_VERBOSE("Area not editable");
+			ZN_PRINT_VERBOSE("Area not editable");
 			return;
 		}
 		Ref<VoxelGenerator> generator = _generator;

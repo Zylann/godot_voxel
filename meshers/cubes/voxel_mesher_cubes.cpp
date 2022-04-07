@@ -84,7 +84,8 @@ void build_voxel_mesh_as_simple_cubes(
 	neighbor_offset_d_lut[Vector3i::AXIS_Y] = 1;
 	neighbor_offset_d_lut[Vector3i::AXIS_Z] = block_size.x * block_size.y;
 
-	FixedArray<uint32_t, VoxelMesherCubes::MATERIAL_COUNT> index_offsets(0);
+	FixedArray<uint32_t, VoxelMesherCubes::MATERIAL_COUNT> index_offsets;
+	fill(index_offsets, uint32_t(0));
 
 	// For each axis
 	for (unsigned int za = 0; za < Vector3iUtil::AXIS_COUNT; ++za) {
@@ -228,7 +229,8 @@ void build_voxel_mesh_as_greedy_cubes(
 	neighbor_offset_d_lut[Vector3i::AXIS_Y] = 1;
 	neighbor_offset_d_lut[Vector3i::AXIS_Z] = block_size.x * block_size.y;
 
-	FixedArray<uint32_t, VoxelMesherCubes::MATERIAL_COUNT> index_offsets(0);
+	FixedArray<uint32_t, VoxelMesherCubes::MATERIAL_COUNT> index_offsets;
+	fill(index_offsets, uint32_t(0));
 
 	// For each axis
 	for (unsigned int za = 0; za < Vector3iUtil::AXIS_COUNT; ++za) {
@@ -419,7 +421,8 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 	neighbor_offset_d_lut[Vector3i::AXIS_Y] = 1;
 	neighbor_offset_d_lut[Vector3i::AXIS_Z] = block_size.x * block_size.y;
 
-	FixedArray<uint32_t, VoxelMesherCubes::MATERIAL_COUNT> index_offsets(0);
+	FixedArray<uint32_t, VoxelMesherCubes::MATERIAL_COUNT> index_offsets;
+	fill(index_offsets, uint32_t(0));
 
 	// For each axis
 	for (unsigned int za = 0; za < Vector3iUtil::AXIS_COUNT; ++za) {

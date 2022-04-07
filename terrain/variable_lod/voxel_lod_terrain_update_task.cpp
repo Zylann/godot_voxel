@@ -1135,7 +1135,7 @@ void VoxelLodTerrainUpdateTask::send_block_save_requests(uint32_t volume_id,
 		BufferedTaskScheduler &task_scheduler) {
 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
 		VoxelLodTerrainUpdateData::BlockToSave &b = blocks_to_save[i];
-		PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
+		ZN_PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
 		request_voxel_block_save(
 				volume_id, b.voxels, b.position, b.lod, stream_dependency, data_block_size, task_scheduler);
 	}
@@ -1262,7 +1262,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 			const Box3i voxel_box = voxel_boxes[box_index];
 			const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
 
-			// PRINT_VERBOSE(String("Preloading box {0} at lod {1}")
+			// ZN_PRINT_VERBOSE(String("Preloading box {0} at lod {1}")
 			// 						.format(varray(block_box.to_string(), lod_index)));
 
 			const VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
@@ -1278,7 +1278,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 		}
 	}
 
-	PRINT_VERBOSE(String("Preloading boxes with {1} tasks").format(varray(SIZE_T_TO_VARIANT(todo.size()))));
+	ZN_PRINT_VERBOSE(String("Preloading boxes with {1} tasks").format(varray(ZN_SIZE_T_TO_VARIANT(todo.size()))));
 
 	std::shared_ptr<AsyncDependencyTracker> tracker = nullptr;
 
@@ -1331,7 +1331,7 @@ static void process_async_edits(VoxelLodTerrainUpdateData::State &state,
 
 			// Not sure if worth doing, I dont think tasks can be aborted before even being scheduled
 			if (edit.task_tracker->is_aborted()) {
-				PRINT_VERBOSE("Aborted async edit");
+				ZN_PRINT_VERBOSE("Aborted async edit");
 				memdelete(edit.task);
 				continue;
 			}

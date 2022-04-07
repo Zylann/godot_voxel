@@ -10,7 +10,7 @@ namespace zylann::voxel {
 bool g_updater_created = false;
 
 VoxelServerUpdater::VoxelServerUpdater() {
-	PRINT_VERBOSE("Creating VoxelServerUpdater");
+	ZN_PRINT_VERBOSE("Creating VoxelServerUpdater");
 	set_process(true);
 	g_updater_created = true;
 }
@@ -46,7 +46,7 @@ void VoxelServerUpdater::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_PREDELETE:
-			PRINT_VERBOSE("Deleting VoxelServerUpdater");
+			ZN_PRINT_VERBOSE("Deleting VoxelServerUpdater");
 			break;
 
 		default:

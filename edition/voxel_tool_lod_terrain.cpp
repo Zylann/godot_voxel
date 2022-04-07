@@ -228,7 +228,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 							  .clipped(_terrain->get_voxel_bounds());
 
 	if (!is_area_editable(box)) {
-		PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
 
@@ -300,7 +300,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 							  .clipped(_terrain->get_voxel_bounds());
 
 	if (!is_area_editable(box)) {
-		PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
 
@@ -647,7 +647,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			// because we build these buffers from connected groups that had negative SDF.
 			ERR_CONTINUE(mesh.is_null());
 
-			if (is_mesh_empty(mesh)) {
+			if (is_mesh_empty(**mesh)) {
 				continue;
 			}
 

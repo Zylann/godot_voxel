@@ -110,7 +110,7 @@ void serialize_metadata(uint8_t *p_dst, const VoxelBufferInternal &buffer, const
 
 	CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) != metadata_size,
 			String("Written metadata doesn't match expected count (expected {0}, got {1})")
-					.format(varray(SIZE_T_TO_VARIANT(metadata_size), (int)(dst - p_dst))));
+					.format(varray(ZN_SIZE_T_TO_VARIANT(metadata_size), (int)(dst - p_dst))));
 }
 
 template <typename T>

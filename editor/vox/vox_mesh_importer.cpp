@@ -195,7 +195,7 @@ bool make_single_voxel_grid(
 	const size_t volume = Vector3iUtil::get_volume(bounding_box.size);
 	ERR_FAIL_COND_V_MSG(volume > limit, false,
 			String("Vox data is too big to be meshed as a single mesh ({0}: {0} bytes)")
-					.format(varray(bounding_box.size, SIZE_T_TO_VARIANT(volume))));
+					.format(varray(bounding_box.size, ZN_SIZE_T_TO_VARIANT(volume))));
 
 	out_voxels.create(bounding_box.size + Vector3iUtil::create(VoxelMesherCubes::PADDING * 2));
 	out_voxels.set_channel_depth(VoxelBufferInternal::CHANNEL_COLOR, VoxelBufferInternal::DEPTH_8_BIT);

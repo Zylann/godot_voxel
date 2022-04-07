@@ -32,7 +32,7 @@ VoxelTerrain::VoxelTerrain() {
 		void run(TimeSpreadTaskContext &ctx) override {
 			if (!VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
 				// The node can have been destroyed while this task was still pending
-				PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
+				ZN_PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
 				return;
 			}
 			self->apply_mesh_update(data);
@@ -70,7 +70,7 @@ VoxelTerrain::VoxelTerrain() {
 }
 
 VoxelTerrain::~VoxelTerrain() {
-	PRINT_VERBOSE("Destroying VoxelTerrain");
+	ZN_PRINT_VERBOSE("Destroying VoxelTerrain");
 	VoxelServer::get_singleton()->remove_volume(_volume_id);
 }
 
@@ -535,7 +535,7 @@ void VoxelTerrain::unview_data_block(Vector3i bpos) {
 		// The block isn't loaded
 		LoadingBlock *loading_block = _loading_blocks.getptr(bpos);
 		if (loading_block == nullptr) {
-			PRINT_VERBOSE("Request to unview a loading block that was never requested");
+			ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
 			// Not expected, but fine I guess
 			return;
 		}
@@ -893,15 +893,15 @@ void VoxelTerrain::send_block_data_requests() {
 	// Blocks to save
 	if (_stream.is_valid()) {
 		for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
-			PRINT_VERBOSE(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position)));
+			ZN_PRINT_VERBOSE(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position)));
 			const BlockToSave b = _blocks_to_save[i];
 			// TODO Batch request
 			VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, 0);
 		}
 	} else {
 		if (_blocks_to_save.size() > 0) {
-			PRINT_VERBOSE(String("Not saving {0} blocks because no stream is assigned")
-								  .format(varray(SIZE_T_TO_VARIANT(_blocks_to_save.size()))));
+			ZN_PRINT_VERBOSE(String("Not saving {0} blocks because no stream is assigned")
+									 .format(varray(ZN_SIZE_T_TO_VARIANT(_blocks_to_save.size()))));
 		}
 	}
 
@@ -980,7 +980,7 @@ void VoxelTerrain::process_viewers() {
 		for (size_t i = 0; i < _paired_viewers.size(); ++i) {
 			PairedViewer &p = _paired_viewers[i];
 			if (!VoxelServer::get_singleton()->viewer_exists(p.id)) {
-				PRINT_VERBOSE("Detected destroyed viewer in VoxelTerrain");
+				ZN_PRINT_VERBOSE("Detected destroyed viewer in VoxelTerrain");
 				// Interpret removal as nullified view distance so the same code handling loading of blocks
 				// will be used to unload those viewed by this viewer.
 				// We'll actually remove unpaired viewers in a second pass.
@@ -1171,7 +1171,7 @@ void VoxelTerrain::process_viewers() {
 
 	// We no longer need unpaired viewers.
 	for (size_t i = 0; i < unpaired_viewer_indexes.size(); ++i) {
-		PRINT_VERBOSE("Unpairing viewer from VoxelTerrain");
+		ZN_PRINT_VERBOSE("Unpairing viewer from VoxelTerrain");
 		// Iterating backward so indexes of paired viewers will not change because of the removal
 		const size_t vi = unpaired_viewer_indexes[unpaired_viewer_indexes.size() - i - 1];
 		_paired_viewers[vi] = _paired_viewers.back();
@@ -1206,9 +1206,9 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 	if (ob.dropped) {
 		// That block was cancelled by the server, but we are still expecting it.
 		// We'll have to request it again.
-		PRINT_VERBOSE(String("Received a block loading drop while we were still expecting it: "
-							 "lod{0} ({1}, {2}, {3}), re-requesting it")
-							  .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
+		ZN_PRINT_VERBOSE(String("Received a block loading drop while we were still expecting it: "
+								"lod{0} ({1}, {2}, {3}), re-requesting it")
+								 .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
 		++_stats.dropped_block_loads;
 
 		_blocks_pending_load.push_back(ob.position);
@@ -1417,7 +1417,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
 		// That block is loaded, but its meshing request was dropped.
 		// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
-		PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
+		ZN_PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
 		++_stats.dropped_block_meshs;
 		return;
 	}
@@ -1448,7 +1448,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 		++surface_index;
 	}
 
-	if (is_mesh_empty(mesh)) {
+	if (is_mesh_empty(**mesh)) {
 		mesh = Ref<Mesh>();
 		collidable_surfaces.clear();
 	}

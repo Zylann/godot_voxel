@@ -6,7 +6,6 @@
 #include "../span.h"
 
 #include <core/object/ref_counted.h>
-#include <core/variant/variant.h>
 
 #include <memory>
 
@@ -18,16 +17,7 @@ class Node;
 namespace zylann {
 
 bool is_surface_triangulated(Array surface);
-bool is_mesh_empty(Ref<Mesh> mesh_ref);
-
-bool try_call_script(
-		const Object *obj, StringName method_name, const Variant **args, unsigned int argc, Variant *out_ret);
-
-inline bool try_call_script(
-		const Object *obj, StringName method_name, Variant arg0, Variant arg1, Variant arg2, Variant *out_ret) {
-	const Variant *args[3] = { &arg0, &arg1, &arg2 };
-	return try_call_script(obj, method_name, args, 3, out_ret);
-}
+bool is_mesh_empty(const Mesh &mesh);
 
 Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces);
 
@@ -35,12 +25,12 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfac
 int get_visible_instance_count(const MultiMesh &mm);
 
 // Generates a wireframe-mesh that highlights edges of a triangle-mesh where vertices are not shared
-Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_index);
+Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_index);
 
 // `(ref1 = ref2).is_valid()` does not work because Ref<T> does not implement an `operator=` returning the value.
 // So instead we can write it as `try_get_as(ref2, ref1)`
 template <typename From_T, typename To_T>
-inline bool try_get_as(Ref<From_T> from, Ref<To_T> &to) {
+inline bool try_get_as(const Ref<From_T> &from, Ref<To_T> &to) {
 	to = from;
 	return to.is_valid();
 }
@@ -99,6 +89,14 @@ struct RefHasher {
 void copy_to(Vector<Vector3> &dst, const std::vector<Vector3f> &src);
 void copy_to(Vector<Vector2> &dst, const std::vector<Vector2f> &src);
 
+template <typename T>
+void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
+	to.resize(from.size());
+	// resize can fail in case allocation was not possible
+	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));
+	memcpy(to.ptrw(), from.data(), from.size() * sizeof(T));
+}
+
 inline Vector2f to_vec2f(Vector2i v) {
 	return Vector2f(v.x, v.y);
 }
@@ -113,6 +111,37 @@ inline Vector3f to_vec3f(Vector3i v) {
 
 inline Vector3f to_vec3f(Vector3 v) {
 	return Vector3f(v.x, v.y, v.z);
+}
+
+inline String to_godot(const std::string_view sv) {
+	return String::utf8(sv.data(), sv.size());
+}
+
+static PackedStringArray to_godot(const std::vector<std::string_view> &svv) {
+	PackedStringArray psa;
+	psa.resize(svv.size());
+	for (unsigned int i = 0; i < svv.size(); ++i) {
+		psa.write[i] = to_godot(svv[i]);
+	}
+	return psa;
+}
+
+static PackedStringArray to_godot(const std::vector<std::string> &sv) {
+	PackedStringArray psa;
+	psa.resize(sv.size());
+	for (unsigned int i = 0; i < sv.size(); ++i) {
+		psa.write[i] = to_godot(sv[i]);
+	}
+	return psa;
+}
+
+template <typename T>
+Span<const T> to_span_const(const Vector<T> &a) {
+	return Span<const T>(a.ptr(), 0, a.size());
+}
+
+inline String ptr2s(const void *p) {
+	return String::num_uint64((uint64_t)p, 16);
 }
 
 } // namespace zylann

@@ -1,14 +1,9 @@
 #ifndef HEADER_VOXEL_UTILITY_H
 #define HEADER_VOXEL_UTILITY_H
 
-#include <core/string/ustring.h>
-#include <core/templates/vector.h>
+#include "span.h"
 #include <utility>
 #include <vector>
-
-#ifdef DEBUG_ENABLED
-#include <core/error/error_macros.h>
-#endif
 
 namespace zylann {
 
@@ -66,32 +61,33 @@ inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
 
 // Removes all items satisfying the given predicate.
 // This can reduce the size of the container. Items are moved to preserve order.
-//template <typename T, typename F>
-//inline void remove_if(std::vector<T> &vec, F predicate) {
-//	unsigned int j = 0;
-//	for (unsigned int i = 0; i < vec.size(); ++i) {
-//		if (predicate(vec[i])) {
-//			continue;
-//		} else {
-//			if (i != j) {
-//				vec[j] = vec[i];
-//			}
-//			++j;
-//		}
-//	}
-//	vec.resize(j);
-//}
-
-inline String ptr2s(const void *p) {
-	return String::num_uint64((uint64_t)p, 16);
-}
+// template <typename T, typename F>
+// inline void remove_if(std::vector<T> &vec, F predicate) {
+// 	unsigned int j = 0;
+// 	for (unsigned int i = 0; i < vec.size(); ++i) {
+// 		if (predicate(vec[i])) {
+// 			continue;
+// 		} else {
+// 			if (i != j) {
+// 				vec[j] = vec[i];
+// 			}
+// 			++j;
+// 		}
+// 	}
+// 	vec.resize(j);
+// }
 
 template <typename T>
-void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
-	to.resize(from.size());
-	// resize can fail in case allocation was not possible
-	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));
-	memcpy(to.ptrw(), from.data(), from.size() * sizeof(T));
+size_t find_duplicate(Span<const T> items) {
+	for (unsigned int i = 0; i < items.size(); ++i) {
+		const T &a = items[i];
+		for (unsigned int j = i + 1; j < items.size(); ++j) {
+			if (items[j] == a) {
+				return j;
+			}
+		}
+	}
+	return items.size();
 }
 
 template <typename T>

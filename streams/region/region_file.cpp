@@ -114,7 +114,8 @@ static bool load_header(
 	ERR_FAIL_COND_V(f->get_position() != 0, false);
 	ERR_FAIL_COND_V(f->get_length() < MAGIC_AND_VERSION_SIZE, false);
 
-	FixedArray<char, 5> magic(0);
+	FixedArray<char, 5> magic;
+	fill(magic, '\0');
 	ERR_FAIL_COND_V(f->get_buffer(reinterpret_cast<uint8_t *>(magic.data()), 4) != 4, false);
 	ERR_FAIL_COND_V(strcmp(magic.data(), FORMAT_REGION_MAGIC) != 0, false);
 
@@ -173,7 +174,7 @@ RegionFile::RegionFile() {
 	// Defaults
 	_header.format.block_size_po2 = 4;
 	_header.format.region_size = Vector3i(16, 16, 16);
-	_header.format.channel_depths.fill(VoxelBufferInternal::DEPTH_8_BIT);
+	fill(_header.format.channel_depths, VoxelBufferInternal::DEPTH_8_BIT);
 	_header.format.sector_size = 512;
 }
 
@@ -558,7 +559,7 @@ bool RegionFile::save_header(FileAccess *f) {
 }
 
 bool RegionFile::migrate_from_v2_to_v3(FileAccess *f, RegionFormat &format) {
-	PRINT_VERBOSE(String("Migrating region file {0} from v2 to v3").format(varray(_file_path)));
+	ZN_PRINT_VERBOSE(String("Migrating region file {0} from v2 to v3").format(varray(_file_path)));
 
 	// We can migrate if we know in advance what format the file should contain.
 	ERR_FAIL_COND_V_MSG(format.block_size_po2 == 0, false, "Cannot migrate without knowing the correct format");
@@ -663,7 +664,7 @@ void RegionFile::debug_check() {
 		const unsigned int block_begin = _blocks_begin_offset + sector_index * _header.format.sector_size;
 		if (block_begin >= file_len) {
 			print_line(String("ERROR: LUT {0} ({1}): offset {2} is larger than file size {3}")
-							   .format(varray(lut_index, position, block_begin, SIZE_T_TO_VARIANT(file_len))));
+							   .format(varray(lut_index, position, block_begin, ZN_SIZE_T_TO_VARIANT(file_len))));
 			continue;
 		}
 		f->seek(block_begin);
@@ -672,8 +673,8 @@ void RegionFile::debug_check() {
 		const size_t remaining_size = file_len - pos;
 		if (block_data_size > remaining_size) {
 			print_line(String("ERROR: LUT {0} ({1}): block size at offset {2} is larger than remaining size {3}")
-							   .format(varray(lut_index, position, SIZE_T_TO_VARIANT(block_data_size),
-									   SIZE_T_TO_VARIANT(remaining_size))));
+							   .format(varray(lut_index, position, ZN_SIZE_T_TO_VARIANT(block_data_size),
+									   ZN_SIZE_T_TO_VARIANT(remaining_size))));
 		}
 	}
 }

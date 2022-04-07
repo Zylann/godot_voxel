@@ -76,8 +76,8 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 		// On the other hand, if we want to represent the fact that "everything was deleted here",
 		// this should not be null.
 
-		PRINT_VERBOSE(String("Saving instance block {0} lod {1} with data {2}")
-							  .format(varray(_position, _lod, ptr2s(_instances.get()))));
+		ZN_PRINT_VERBOSE(String("Saving instance block {0} lod {1} with data {2}")
+								 .format(varray(_position, _lod, ptr2s(_instances.get()))));
 
 		VoxelStream::InstancesQueryData instances_query{ std::move(_instances), _position, _lod };
 		stream->save_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
@@ -113,7 +113,7 @@ void SaveBlockDataTask::apply_result() {
 
 	} else {
 		// This can happen if the user removes the volume while requests are still about to return
-		PRINT_VERBOSE("Stream data request response came back but volume wasn't found");
+		ZN_PRINT_VERBOSE("Stream data request response came back but volume wasn't found");
 	}
 }
 

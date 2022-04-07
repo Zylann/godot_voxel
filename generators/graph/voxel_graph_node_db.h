@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_NODE_DB_H
 #define VOXEL_GRAPH_NODE_DB_H
 
+#include "../../util/expression_parser.h"
 #include "voxel_generator_graph.h"
 
 namespace zylann::voxel {
@@ -46,7 +47,10 @@ public:
 
 	struct NodeType {
 		String name;
+		// Debug-only nodes are ignored in non-debug compilation.
 		bool debug_only = false;
+		// Pseudo nodes are replaced during compilation with one or multiple real nodes, they have no logic on their own
+		bool is_pseudo_node = false;
 		Category category;
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
@@ -56,10 +60,13 @@ public:
 		VoxelGraphRuntime::CompileFunc compile_func = nullptr;
 		VoxelGraphRuntime::ProcessBufferFunc process_buffer_func = nullptr;
 		VoxelGraphRuntime::RangeAnalysisFunc range_analysis_func = nullptr;
+		const char *expression_func_name = nullptr;
+		ExpressionParser::FunctionCallback expression_func = nullptr;
 	};
 
 	VoxelGraphNodeDB();
 
+	// TODO Return a reference, it should never be null or should crash
 	static VoxelGraphNodeDB *get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
@@ -80,9 +87,14 @@ public:
 	bool try_get_param_index_from_name(uint32_t type_id, const String &name, uint32_t &out_param_index) const;
 	bool try_get_input_index_from_name(uint32_t type_id, const String &name, uint32_t &out_input_index) const;
 
+	Span<const ExpressionParser::Function> get_expression_parser_functions() const {
+		return to_span_const(_expression_functions);
+	}
+
 private:
 	FixedArray<NodeType, VoxelGeneratorGraph::NODE_TYPE_COUNT> _types;
 	HashMap<String, VoxelGeneratorGraph::NodeTypeID> _type_name_to_id;
+	std::vector<ExpressionParser::Function> _expression_functions;
 };
 
 } // namespace zylann::voxel

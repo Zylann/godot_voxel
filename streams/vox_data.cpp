@@ -146,7 +146,7 @@ static Basis parse_basis(uint8_t data) {
 
 	Vector3i magica_x, magica_y, magica_z;
 	transpose(x, y, z, magica_x, magica_y, magica_z);
-	// PRINT_VERBOSE(String("---\nX: {0}\nY: {1}\nZ: {2}")
+	// ZN_PRINT_VERBOSE(String("---\nX: {0}\nY: {1}\nZ: {2}")
 	// 					  .format(varray(magica_x.to_vec3(), magica_y.to_vec3(), magica_z.to_vec3())));
 	magica_x = magica_to_opengl(magica_x);
 	magica_y = magica_to_opengl(magica_y);
@@ -199,7 +199,7 @@ Error Data::_load_from_file(String fpath) {
 	// https://github.com/ephtracy/voxel-model/blob/master/MagicaVoxel-file-format-vox.txt
 	// https://github.com/ephtracy/voxel-model/blob/master/MagicaVoxel-file-format-vox-extension.txt
 
-	PRINT_VERBOSE(String("Loading ") + fpath);
+	ZN_PRINT_VERBOSE(String("Loading ") + fpath);
 
 	Error open_err;
 	FileAccessRef f_ref = FileAccess::open(fpath, FileAccess::READ, &open_err);
@@ -228,8 +228,8 @@ Error Data::_load_from_file(String fpath) {
 		const uint32_t chunk_size = f.get_32();
 		f.get_32(); // child_chunks_size
 
-		PRINT_VERBOSE(String("Reading chunk {0} at {1}, size={2}")
-							  .format(varray(chunk_id, SIZE_T_TO_VARIANT(f.get_position()), chunk_size)));
+		ZN_PRINT_VERBOSE(String("Reading chunk {0} at {1}, size={2}")
+								 .format(varray(chunk_id, ZN_SIZE_T_TO_VARIANT(f.get_position()), chunk_size)));
 
 		if (strcmp(chunk_id, "SIZE") == 0) {
 			Vector3i size;
@@ -315,7 +315,7 @@ Error Data::_load_from_file(String fpath) {
 				// It is 3 integers formatted as text
 				Vector<float> coords = t_it->second.split_floats(" ");
 				ERR_FAIL_COND_V(coords.size() < 3, ERR_PARSE_ERROR);
-				//PRINT_VERBOSE(String("Pos: {0}, {1}, {2}").format(varray(coords[0], coords[1], coords[2])));
+				//ZN_PRINT_VERBOSE(String("Pos: {0}, {1}, {2}").format(varray(coords[0], coords[1], coords[2])));
 				node.position = magica_to_opengl(Vector3i(coords[0], coords[1], coords[2]));
 			}
 
@@ -472,7 +472,7 @@ Error Data::_load_from_file(String fpath) {
 			_materials.insert(std::make_pair(material_id, std::move(material_ptr)));
 
 		} else {
-			PRINT_VERBOSE(String("Skipping chunk ") + chunk_id);
+			ZN_PRINT_VERBOSE(String("Skipping chunk ") + chunk_id);
 			// Ignore chunk
 			f.seek(f.get_position() + chunk_size);
 		}
@@ -552,7 +552,7 @@ Error Data::_load_from_file(String fpath) {
 		ERR_FAIL_COND_V_MSG(_root_node_id == -1, ERR_INVALID_DATA, "Root node not found");
 	}
 
-	PRINT_VERBOSE(String("Done loading ") + fpath);
+	ZN_PRINT_VERBOSE(String("Done loading ") + fpath);
 
 	return OK;
 }

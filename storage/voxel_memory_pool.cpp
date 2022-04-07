@@ -147,8 +147,8 @@ void VoxelMemoryPool::debug_print() {
 		Pool &pool = _pot_pools[pot];
 		MutexLock lock(pool.mutex);
 		print_line(String("Pool {0}: {1} blocks (capacity {2})")
-						   .format(varray(pot, SIZE_T_TO_VARIANT(pool.blocks.size()),
-								   SIZE_T_TO_VARIANT(pool.blocks.capacity()))));
+						   .format(varray(pot, ZN_SIZE_T_TO_VARIANT(pool.blocks.size()),
+								   ZN_SIZE_T_TO_VARIANT(pool.blocks.capacity()))));
 	}
 }
 

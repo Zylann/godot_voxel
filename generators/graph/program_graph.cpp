@@ -39,6 +39,17 @@ uint32_t ProgramGraph::Node::find_output_connection(uint32_t output_port_index, 
 	return ProgramGraph::NULL_INDEX;
 }
 
+bool ProgramGraph::Node::find_input_port_by_name(std::string_view name, unsigned int &out_i) const {
+	for (unsigned int i = 0; i < inputs.size(); ++i) {
+		const ProgramGraph::Port &port = inputs[i];
+		if (port.dynamic_name == name) {
+			out_i = i;
+			return true;
+		}
+	}
+	return false;
+}
+
 ProgramGraph::Node *ProgramGraph::create_node(uint32_t type_id, uint32_t id) {
 	if (id == NULL_ID) {
 		id = generate_node_id();

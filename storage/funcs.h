@@ -188,7 +188,7 @@ inline uint16_t encode_weights_to_packed_u16(uint8_t a, uint8_t b, uint8_t c, ui
 // Checks if there are no duplicate indices in any voxel
 inline void debug_check_texture_indices(FixedArray<uint8_t, 4> indices) {
 	FixedArray<bool, 16> checked;
-	checked.fill(false);
+	fill(checked, false);
 	for (unsigned int i = 0; i < indices.size(); ++i) {
 		unsigned int ti = indices[i];
 		CRASH_COND(checked[ti]);

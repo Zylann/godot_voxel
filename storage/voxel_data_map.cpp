@@ -190,8 +190,8 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(
 		block->set_voxels(buffer);
 	} else {
 		VOXEL_PROFILE_MESSAGE("Redundant data block");
-		PRINT_VERBOSE(String("Discarded block {0} lod {1}, there was already data and overwriting is not enabled")
-							  .format(varray(bpos, _lod_index)));
+		ZN_PRINT_VERBOSE(String("Discarded block {0} lod {1}, there was already data and overwriting is not enabled")
+								 .format(varray(bpos, _lod_index)));
 	}
 	return block;
 }
@@ -374,7 +374,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 	for (uint8_t lod_index = 0; lod_index < data.lod_count; ++lod_index) {
 		const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
 
-		PRINT_VERBOSE(
+		ZN_PRINT_VERBOSE(
 				String("Preloading box {0} at lod {1} synchronously").format(varray(block_box.to_string(), lod_index)));
 
 		VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];

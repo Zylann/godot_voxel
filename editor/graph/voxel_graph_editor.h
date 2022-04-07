@@ -34,6 +34,10 @@ public:
 	void set_undo_redo(UndoRedo *undo_redo);
 	void set_voxel_node(VoxelNode *node);
 
+	// To be called when the number of inputs in a node changes.
+	// Rebuilds the node's internal controls, and updates GUI connections going to it from the graph.
+	void update_node_layout(uint32_t node_id);
+
 private:
 	void _notification(int p_what);
 	void _process(float delta);

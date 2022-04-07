@@ -47,7 +47,7 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.region_size_po2 = 4;
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
 	_meta.lod_count = 1;
-	_meta.channel_depths.fill(VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH);
+	fill(_meta.channel_depths, VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH);
 	_meta.channel_depths[VoxelBufferInternal::CHANNEL_TYPE] = VoxelBufferInternal::DEFAULT_TYPE_CHANNEL_DEPTH;
 	_meta.channel_depths[VoxelBufferInternal::CHANNEL_SDF] = VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH;
 	_meta.channel_depths[VoxelBufferInternal::CHANNEL_INDICES] = VoxelBufferInternal::DEFAULT_INDICES_CHANNEL_DEPTH;
@@ -555,7 +555,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	// I wrote it because it would be too bad to loose large voxel worlds because of a setting change, so one day we may
 	// need it
 
-	PRINT_VERBOSE("Converting region files");
+	ZN_PRINT_VERBOSE("Converting region files");
 	// This can be a very long and slow operation. Better run this in a thread.
 
 	ERR_FAIL_COND(!_meta_saved);
@@ -592,7 +592,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 		}
 
 		old_stream->set_directory(old_dir);
-		PRINT_VERBOSE("Data backed up as " + old_dir);
+		ZN_PRINT_VERBOSE("Data backed up as " + old_dir);
 	}
 
 	struct PositionAndLod {
@@ -663,7 +663,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			continue;
 		}
 
-		PRINT_VERBOSE(String("Converting region lod{0}/{1}").format(varray(region_info.lod, region_info.position)));
+		ZN_PRINT_VERBOSE(String("Converting region lod{0}/{1}").format(varray(region_info.lod, region_info.position)));
 
 		const unsigned int blocks_count = old_region->region.get_header_block_count();
 		for (unsigned int j = 0; j < blocks_count; ++j) {
@@ -759,7 +759,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	close_all_regions();
 
-	PRINT_VERBOSE("Done converting region files");
+	ZN_PRINT_VERBOSE("Done converting region files");
 }
 
 Vector3i VoxelStreamRegionFiles::get_region_size() const {

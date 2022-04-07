@@ -191,7 +191,7 @@ CellTextureDatas<NVoxels> select_textures_4_per_voxel(const FixedArray<unsigned 
 		const FixedArray<uint8_t, 4> weights = weights_sampler.get_weights(data_index);
 
 		FixedArray<uint8_t, MAX_TEXTURES> &weights_temp = cell_texture_weights_temp[ci];
-		weights_temp.fill(0);
+		fill(weights_temp, uint8_t(0));
 
 		for (unsigned int j = 0; j < indices.size(); ++j) {
 			const unsigned int ti = indices[j];
@@ -451,7 +451,8 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 				const uint8_t triangle_count = regular_cell_data.geometryCounts & 0x0f;
 				const uint8_t vertex_count = (regular_cell_data.geometryCounts & 0xf0) >> 4;
 
-				FixedArray<int, 12> cell_vertex_indices(-1);
+				FixedArray<int, 12> cell_vertex_indices;
+				fill(cell_vertex_indices, -1);
 
 				const uint8_t cell_border_mask = get_border_mask(pos - min_pos, block_size - Vector3i(1, 1, 1));
 
@@ -958,7 +959,8 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 			const bool flip_triangles = ((cell_class & 128) != 0);
 
 			const unsigned int vertex_count = cell_data.GetVertexCount();
-			FixedArray<int, 12> cell_vertex_indices(-1);
+			FixedArray<int, 12> cell_vertex_indices;
+			fill(cell_vertex_indices, -1);
 			CRASH_COND(vertex_count > cell_vertex_indices.size());
 
 			const uint8_t direction_validity_mask = (fx > min_fpos_x ? 1 : 0) | ((fy > min_fpos_y ? 1 : 0) << 1);

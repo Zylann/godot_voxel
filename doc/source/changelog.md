@@ -23,6 +23,9 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: editor: allow to change the axes on preview nodes 3D slices
     - `VoxelGeneratorGraph`: editor: replace existing connection if dragging from/to an input port having one already
     - `VoxelGeneratorGraph`: added `OutputSingleTexture` node for outputting a single texture index per voxel, as an alternative to weights. This is specific to smooth voxels.
+    - `VoxelGeneratorGraph`: added math expression node
+    - `VoxelGeneratorGraph`: added Pow and Powi nodes
+    - `VoxelGeneratorGraph`: Clamp now accepts min and max as inputs. For the version with constant parameters, use ClampC (might be faster in the current state of things).
 
 - Smooth voxels
     - SDF data is now encoded with `inorm8` and `inorm16`, instead of an arbitrary version of `unorm8` and `unorm16`. Migration code is in place to load old save files, but *do a backup before running your project with the new version*.

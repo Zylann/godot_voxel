@@ -583,17 +583,17 @@ thread_local std::vector<uint8_t> VoxelStreamSQLite::_temp_compressed_block_data
 VoxelStreamSQLite::VoxelStreamSQLite() {}
 
 VoxelStreamSQLite::~VoxelStreamSQLite() {
-	PRINT_VERBOSE("~VoxelStreamSQLite");
+	ZN_PRINT_VERBOSE("~VoxelStreamSQLite");
 	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
-		PRINT_VERBOSE("~VoxelStreamSQLite flushy flushy");
+		ZN_PRINT_VERBOSE("~VoxelStreamSQLite flushy flushy");
 		flush_cache();
-		PRINT_VERBOSE("~VoxelStreamSQLite flushy done");
+		ZN_PRINT_VERBOSE("~VoxelStreamSQLite flushy done");
 	}
 	for (auto it = _connection_pool.begin(); it != _connection_pool.end(); ++it) {
 		delete *it;
 	}
 	_connection_pool.clear();
-	PRINT_VERBOSE("~VoxelStreamSQLite done");
+	ZN_PRINT_VERBOSE("~VoxelStreamSQLite done");
 }
 
 void VoxelStreamSQLite::set_database_path(String path) {
@@ -820,8 +820,8 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 			Context *ctx = reinterpret_cast<Context *>(callback_data);
 
 			if (voxel_data.size() == 0 && instances_data.size() == 0) {
-				PRINT_VERBOSE(String("Unexpected empty voxel data and instances data at {0} lod {1}")
-									  .format(varray(Vector3(location.x, location.y, location.z), location.lod)));
+				ZN_PRINT_VERBOSE(String("Unexpected empty voxel data and instances data at {0} lod {1}")
+										 .format(varray(Vector3(location.x, location.y, location.z), location.lod)));
 				return;
 			}
 
@@ -874,8 +874,8 @@ void VoxelStreamSQLite::flush_cache() {
 // This function does not lock any mutex for internal use.
 void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 	VOXEL_PROFILE_SCOPE();
-	PRINT_VERBOSE(String("VoxelStreamSQLite: Flushing cache ({0} elements)")
-						  .format(varray(_cache.get_indicative_block_count())));
+	ZN_PRINT_VERBOSE(String("VoxelStreamSQLite: Flushing cache ({0} elements)")
+							 .format(varray(_cache.get_indicative_block_count())));
 
 	ERR_FAIL_COND(con == nullptr);
 	ERR_FAIL_COND(con->begin_transaction() == false);

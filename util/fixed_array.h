@@ -10,18 +10,6 @@ namespace zylann {
 template <typename T, unsigned int N>
 class FixedArray {
 public:
-	inline FixedArray() {}
-
-	inline FixedArray(T defval) {
-		fill(defval);
-	}
-
-	inline void fill(T v) {
-		for (unsigned int i = 0; i < N; ++i) {
-			_data[i] = v;
-		}
-	}
-
 	// TODO Optimization: move semantics
 
 	inline T &operator[](unsigned int i) {
@@ -76,6 +64,15 @@ public:
 private:
 	T _data[N];
 };
+
+// Fills array with the same value.
+// Not a method because it would not compile with non-copyable types.
+template <typename T, unsigned int N>
+inline void fill(FixedArray<T, N> &dst, const T v) {
+	for (unsigned int i = 0; i < dst.size(); ++i) {
+		dst[i] = v;
+	}
+}
 
 } // namespace zylann
 

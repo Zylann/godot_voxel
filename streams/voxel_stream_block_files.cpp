@@ -21,7 +21,7 @@ VoxelStreamBlockFiles::VoxelStreamBlockFiles() {
 	_meta.block_size_po2 = 4;
 	_meta.lod_count = 1;
 	_meta.version = FORMAT_VERSION;
-	_meta.channel_depths.fill(VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH);
+	fill(_meta.channel_depths, VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH);
 }
 
 // TODO Have configurable block size

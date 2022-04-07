@@ -6,6 +6,8 @@
 
 namespace zylann::math {
 
+// TODO Optimization: make template, I don't always need `real_t`, sometimes it uses doubles unnecessarily
+
 // For interval arithmetic
 struct Interval {
 	// Both inclusive
@@ -339,7 +341,7 @@ inline Interval round(const Interval &i) {
 	return Interval(Math::floor(i.min + 0.5f), Math::floor(i.max + 0.5f));
 }
 
-inline Interval stepify(const Interval &p_value, const Interval &p_step) {
+inline Interval snapped(const Interval &p_value, const Interval &p_step) {
 	// TODO Division by zero returns 0, which is different from Godot's stepify. May have to change that
 	return floor(p_value / p_step + Interval::from_single_value(0.5f)) * p_step;
 }
@@ -428,6 +430,52 @@ inline Interval get_length(const Interval &x, const Interval &y) {
 
 inline Interval get_length(const Interval &x, const Interval &y, const Interval &z) {
 	return sqrt(squared(x) + squared(y) + squared(z));
+}
+
+inline Interval powi(Interval x, int pi) {
+	const real_t pf = pi;
+	if (pi >= 0) {
+		if (pi % 2 == 1) {
+			// Positive odd powers: ascending
+			return Interval{ Math::pow(x.min, pf), Math::pow(x.max, pf) };
+		} else {
+			// Positive even powers: parabola
+			if (x.min < 0.f && x.max > 0.f) {
+				// The interval includes 0
+				return Interval{ 0.f, max(Math::pow(x.min, pf), Math::pow(x.max, pf)) };
+			}
+			// The interval is only on one side of the parabola
+			if (x.max <= 0.f) {
+				// Negative side: monotonic descending
+				return Interval{ Math::pow(x.max, pf), Math::pow(x.min, pf) };
+			} else {
+				// Positive side: monotonic ascending
+				return Interval{ Math::pow(x.min, pf), Math::pow(x.max, pf) };
+			}
+		}
+	} else {
+		// TODO Negative integer powers
+		return Interval::from_infinity();
+	}
+}
+
+inline Interval pow(Interval x, float pf) {
+	const int pi = pf;
+	if (Math::is_equal_approx(pi, pf)) {
+		return powi(x, pi);
+	} else {
+		// TODO Decimal powers
+		return Interval::from_infinity();
+	}
+}
+
+inline Interval pow(Interval x, Interval p) {
+	if (p.is_single_value()) {
+		return pow(x, p.min);
+	} else {
+		// TODO Varying powers
+		return Interval::from_infinity();
+	}
 }
 
 } //namespace zylann::math

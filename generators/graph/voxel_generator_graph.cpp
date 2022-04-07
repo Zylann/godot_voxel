@@ -1,5 +1,6 @@
 #include "voxel_generator_graph.h"
 #include "../../storage/voxel_buffer_internal.h"
+#include "../../util/expression_parser.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
@@ -29,7 +30,7 @@ void VoxelGeneratorGraph::clear() {
 	}
 }
 
-static ProgramGraph::Node *create_node_internal(
+ProgramGraph::Node *create_node_internal(
 		ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position, uint32_t id) {
 	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(type_id);
 
@@ -176,6 +177,62 @@ void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index,
 		}
 
 		emit_changed();
+	}
+}
+
+bool VoxelGeneratorGraph::get_expression_variables(std::string_view code, std::vector<std::string_view> &vars) {
+	Span<const ExpressionParser::Function> functions =
+			VoxelGraphNodeDB::get_singleton()->get_expression_parser_functions();
+	ExpressionParser::Result result = ExpressionParser::parse(code, functions);
+	if (result.error.id == ExpressionParser::ERROR_NONE) {
+		if (result.root != nullptr) {
+			ExpressionParser::find_variables(*result.root, vars);
+		}
+		return true;
+	} else {
+		return false;
+	}
+}
+
+void VoxelGeneratorGraph::get_expression_node_inputs(uint32_t node_id, std::vector<std::string> &out_names) const {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND(node == nullptr);
+	ERR_FAIL_COND(node->type_id != NODE_EXPRESSION);
+	for (unsigned int i = 0; i < node->inputs.size(); ++i) {
+		const ProgramGraph::Port &port = node->inputs[i];
+		ERR_FAIL_COND(!port.is_dynamic());
+		out_names.push_back(port.dynamic_name);
+	}
+}
+
+inline bool has_duplicate(const PackedStringArray &sa) {
+	return find_duplicate(Span<const String>(sa.ptr(), sa.size())) != sa.size();
+}
+
+void VoxelGeneratorGraph::set_expression_node_inputs(uint32_t node_id, PackedStringArray names) {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+
+	// Validate
+	ERR_FAIL_COND(node == nullptr);
+	ERR_FAIL_COND(node->type_id != NODE_EXPRESSION);
+	for (int i = 0; i < names.size(); ++i) {
+		const String name = names[i];
+		ERR_FAIL_COND(!name.is_valid_identifier());
+	}
+	ERR_FAIL_COND(has_duplicate(names));
+	for (unsigned int i = 0; i < node->inputs.size(); ++i) {
+		const ProgramGraph::Port &port = node->inputs[i];
+		// Sounds annoying if you call this from a script, but this is supposed to be editor functionality for now
+		ERR_FAIL_COND_MSG(port.connections.size() > 0,
+				TTR("Cannot change input ports if connections exist, disconnect them first."));
+	}
+
+	node->inputs.resize(names.size());
+	node->default_inputs.resize(names.size());
+	for (int i = 0; i < names.size(); ++i) {
+		const String name = names[i];
+		const CharString name_utf8 = name.utf8();
+		node->inputs[i].dynamic_name = name_utf8.get_data();
 	}
 }
 
@@ -337,7 +394,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 			for (int rx = rmin.x; rx < rmax.x; ++rx) {
 				FixedArray<uint8_t, 4> weights;
 				FixedArray<uint8_t, 4> indices = spare_indices;
-				weights.fill(0);
+				fill(weights, uint8_t(0));
 				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
 					const float weight = buffers[oi][value_index];
 					// TODO Optimization: weight output nodes could already multiply by 255 and clamp afterward
@@ -390,7 +447,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				FixedArray<uint8_t, 4> weights;
 				FixedArray<uint8_t, 4> indices;
 				unsigned int skipped_outputs_count = 0;
-				indices.fill(0);
+				fill(indices, uint8_t(0));
 				weights[0] = 255;
 				weights[1] = 0;
 				weights[2] = 0;
@@ -945,7 +1002,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 	{
 		FixedArray<bool, 16> used_indices_map;
 		FixedArray<uint8_t, 4> spare_indices;
-		used_indices_map.fill(false);
+		fill(used_indices_map, false);
 		for (unsigned int i = 0; i < r->weight_outputs.size(); ++i) {
 			used_indices_map[r->weight_outputs[i].layer_index] = true;
 		}
@@ -966,7 +1023,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 	_runtime = r;
 
 	const int64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
-	PRINT_VERBOSE(String("Voxel graph compiled in {0} us").format(varray(time_spent)));
+	ZN_PRINT_VERBOSE(String("Voxel graph compiled in {0} us").format(varray(time_spent)));
 
 	return result;
 }
@@ -990,7 +1047,7 @@ const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current
 	return _cache.state;
 }
 
-Span<const int> VoxelGeneratorGraph::get_last_execution_map_debug_from_current_thread() {
+Span<const uint32_t> VoxelGeneratorGraph::get_last_execution_map_debug_from_current_thread() {
 	return to_span_const(_cache.optimized_execution_map.debug_nodes);
 }
 
@@ -1370,11 +1427,29 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 			node_data[param.name] = node->params[j];
 		}
 
+		// Static inputs
 		for (size_t j = 0; j < type.inputs.size(); ++j) {
 			if (node->inputs[j].connections.size() == 0) {
 				const VoxelGraphNodeDB::Port &port = type.inputs[j];
 				node_data[port.name] = node->default_inputs[j];
 			}
+		}
+
+		// Dynamic inputs. Order matters.
+		Array dynamic_inputs_data;
+		for (size_t j = 0; j < node->inputs.size(); ++j) {
+			const ProgramGraph::Port &port = node->inputs[j];
+			if (port.is_dynamic()) {
+				Array d;
+				d.resize(2);
+				d[0] = String(port.dynamic_name.c_str());
+				d[1] = node->default_inputs[j];
+				dynamic_inputs_data.append(d);
+			}
+		}
+
+		if (dynamic_inputs_data.size() > 0) {
+			node_data["dynamic_inputs"] = dynamic_inputs_data;
 		}
 
 		String key = String::num_uint64(node_id);
@@ -1443,6 +1518,26 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 				continue;
 			}
 			if (param_name == "gui_position") {
+				continue;
+			}
+			if (param_name == "dynamic_inputs") {
+				const Array dynamic_inputs_data = node_data[*param_key];
+
+				for (int dpi = 0; dpi < dynamic_inputs_data.size(); ++dpi) {
+					const Array d = dynamic_inputs_data[dpi];
+					ERR_FAIL_COND_V(d.size() != 2, false);
+
+					const String dynamic_param_name = d[0];
+					ProgramGraph::Port dport;
+					CharString dynamic_param_name_utf8 = dynamic_param_name.utf8();
+					dport.dynamic_name = dynamic_param_name_utf8.get_data();
+
+					const Variant defval = d[1];
+					node->default_inputs.push_back(defval);
+
+					node->inputs.push_back(dport);
+				}
+
 				continue;
 			}
 			uint32_t param_index;
@@ -1772,6 +1867,8 @@ void VoxelGeneratorGraph::_bind_methods() {
 			D_METHOD("set_node_gui_position", "node_id", "position"), &VoxelGeneratorGraph::set_node_gui_position);
 	ClassDB::bind_method(D_METHOD("get_node_name", "node_id"), &VoxelGeneratorGraph::get_node_name);
 	ClassDB::bind_method(D_METHOD("set_node_name", "node_id", "name"), &VoxelGeneratorGraph::set_node_name);
+	ClassDB::bind_method(D_METHOD("set_expression_node_inputs", "node_id", "names"),
+			&VoxelGeneratorGraph::set_expression_node_inputs);
 
 	ClassDB::bind_method(D_METHOD("set_sdf_clip_threshold", "threshold"), &VoxelGeneratorGraph::set_sdf_clip_threshold);
 	ClassDB::bind_method(D_METHOD("get_sdf_clip_threshold"), &VoxelGeneratorGraph::get_sdf_clip_threshold);
@@ -1883,6 +1980,9 @@ void VoxelGeneratorGraph::_bind_methods() {
 	BIND_ENUM_CONSTANT(NODE_FAST_NOISE_2_3D);
 #endif
 	BIND_ENUM_CONSTANT(NODE_OUTPUT_SINGLE_TEXTURE);
+	BIND_ENUM_CONSTANT(NODE_EXPRESSION);
+	BIND_ENUM_CONSTANT(NODE_POWI);
+	BIND_ENUM_CONSTANT(NODE_POW);
 	BIND_ENUM_CONSTANT(NODE_TYPE_COUNT);
 }
 

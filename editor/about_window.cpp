@@ -143,7 +143,7 @@ const ThirdParty g_third_parties[] = {
 			"The contents of this file are protected by copyright and may not be publicly\n"
 			"reproduced without permission.\n" }
 };
-const unsigned int VOXEL_THIRD_PARTY_COUNT = VOXEL_ARRAY_LENGTH(g_third_parties);
+const unsigned int VOXEL_THIRD_PARTY_COUNT = ZN_ARRAY_LENGTH(g_third_parties);
 } // namespace
 
 VoxelAboutWindow::VoxelAboutWindow() {

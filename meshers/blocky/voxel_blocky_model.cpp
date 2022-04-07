@@ -36,7 +36,7 @@ bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {
 
 	// TODO Eventualy these could be Rect2 for maximum flexibility?
 	if (name.begins_with("cube_tiles/")) {
-		String s = name.substr(VOXEL_ARRAY_LENGTH("cube_tiles/") - 1, name.length());
+		String s = name.substr(ZN_ARRAY_LENGTH("cube_tiles/") - 1, name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			Vector2 v = p_value;
@@ -52,7 +52,7 @@ bool VoxelBlockyModel::_get(const StringName &p_name, Variant &r_ret) const {
 	String name = p_name;
 
 	if (name.begins_with("cube_tiles/")) {
-		String s = name.substr(VOXEL_ARRAY_LENGTH("cube_tiles/") - 1, name.length());
+		String s = name.substr(ZN_ARRAY_LENGTH("cube_tiles/") - 1, name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			const Vector2f f = _cube_tiles[side];

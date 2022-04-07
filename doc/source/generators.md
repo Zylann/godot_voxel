@@ -362,6 +362,7 @@ Clamp                 | If `x` is lower than `min`, returns `min`. If `x` is hig
 Distance2D            | Returns the distance between two 2D points `(x0, y0)` and `(x1, y1)`.
 Distance3D            | Returns the distance between two 3D points `(x0, y0, z0)` and `(x1, y1, z1)`.
 Divide                | Returns the result of `a / b`
+Expression            | Evaluates a math expression. Variable names can be written as inputs of the node. Some functions can be used, but they must be supported by the graph in the first place. Available functions: `sin(x)`, `floor(x)`, `abs(x)`, `sqrt(x)`, `fract(x)`, `stepify(x,step)`, `wrap(x,length)`, `min(a,b)`, `max(a,b)`, `clamp(x,min,max)`, `lerp(a,b,ratio)`
 Floor                 | Returns the result of `floor(x)`, the nearest integer that is equal or lower to `x`.
 Fract                 | Returns the decimal part of `x`. The result is always positive regardless of sign.
 Max                   | Returns the highest value between `a` and `b`.
@@ -369,6 +370,8 @@ Min                   | Returns the lowest value between `a` and `b`.
 Mix                   | Interpolates between `a` and `b`, using parameter value `t`. If `t` is `0`, `a` will be returned. If `t` is `1`, `b` will be returned. If `t` is beyond the `[0..1]` range, the return value will be an extrapolation.
 Normalize3D           | Returns the normalized coordinates of the given `(x, y, z)` 3D vector, such that the length of the output vector is 1.
 Multiply              | Returns the result of `a * b`
+Pow                   | Returns the result of the power function (`x ^ power`). It can be quite slow.
+Powi                  | Returns the result of the power function (`x ^ power`), where the exponent is a constant positive integer. Faster than `Pow`.
 Remap                 | For an input value `x` in the range `[min0, max0]`, converts linearly into the `[min1, max1]` range. For example, if `x` is `min0`, then `min1` will be returned. If `x` is `max0`, then `max1` will be returned. If `x` is beyond the `[min0, max0]` range, the result will be an extrapolation.
 Select                | If `t` is lower than `threshold`, returns `a`. Otherwise, returns `b`. 
 Sin                   | Returns the result of `sin(x)`

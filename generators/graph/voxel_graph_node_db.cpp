@@ -439,6 +439,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, sin(a));
 		};
+		t.expression_func_name = "sin";
+		t.expression_func = [](Span<const float> args) { //
+			return Math::sin(args[0]);
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_FLOOR];
@@ -453,6 +457,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, floor(a));
 		};
+		t.expression_func_name = "floor";
+		t.expression_func = [](Span<const float> args) { //
+			return Math::floor(args[0]);
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_ABS];
@@ -465,6 +473,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, abs(a));
 		};
+		t.expression_func_name = "abs";
+		t.expression_func = [](Span<const float> args) { //
+			return Math::abs(args[0]);
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SQRT];
@@ -476,6 +488,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, sqrt(a));
+		};
+		t.expression_func_name = "sqrt";
+		t.expression_func = [](Span<const float> args) { //
+			return Math::sqrt(args[0]);
 		};
 	}
 	{
@@ -491,6 +507,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, a - floor(a));
 		};
+		t.expression_func_name = "fract";
+		t.expression_func = [](Span<const float> args) { //
+			return args[0] - Math::floor(args[0]);
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_STEPIFY];
@@ -500,12 +520,16 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("step"));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
-			do_binop(ctx, [](float a, float b) { return Math::snapped(a, b); });
+			do_binop(ctx, [](float a, float b) { return math::snappedf(a, b); });
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
-			ctx.set_output(0, stepify(a, b));
+			ctx.set_output(0, snapped(a, b));
+		};
+		t.expression_func_name = "stepify";
+		t.expression_func = [](Span<const float> args) { //
+			return math::snappedf(args[0], args[1]);
 		};
 	}
 	{
@@ -523,6 +547,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval b = ctx.get_input(1);
 			ctx.set_output(0, wrapf(a, b));
 		};
+		t.expression_func_name = "wrap";
+		t.expression_func = [](Span<const float> args) { //
+			return wrapf(args[0], args[1]);
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_MIN];
@@ -539,6 +567,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval b = ctx.get_input(1);
 			ctx.set_output(0, min_interval(a, b));
 		};
+		t.expression_func_name = "min";
+		t.expression_func = [](Span<const float> args) { //
+			return min(args[0], args[1]);
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_MAX];
@@ -554,6 +586,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
 			ctx.set_output(0, max_interval(a, b));
+		};
+		t.expression_func_name = "max";
+		t.expression_func = [](Span<const float> args) { //
+			return max(args[0], args[1]);
 		};
 	}
 	{
@@ -625,12 +661,40 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_CLAMP];
+		t.name = "Clamp";
+		t.category = CATEGORY_CONVERT;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("min", -1.f));
+		t.inputs.push_back(Port("max", 1.f));
+		t.outputs.push_back(Port("out"));
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
+			const VoxelGraphRuntime::Buffer &minv = ctx.get_input(1);
+			const VoxelGraphRuntime::Buffer &maxv = ctx.get_input(2);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			for (uint32_t i = 0; i < out.size; ++i) {
+				out.data[i] = clamp(a.data[i], minv.data[i], maxv.data[i]);
+			}
+		};
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval a = ctx.get_input(0);
+			const Interval minv = ctx.get_input(1);
+			const Interval maxv = ctx.get_input(2);
+			ctx.set_output(0, clamp(a, minv, maxv));
+		};
+		t.expression_func_name = "clamp";
+		t.expression_func = [](Span<const float> args) { //
+			return clamp(args[0], args[1], args[2]);
+		};
+	}
+	{
 		struct Params {
 			float min;
 			float max;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_CLAMP];
-		t.name = "Clamp";
+		NodeType &t = types[VoxelGeneratorGraph::NODE_CLAMP_C];
+		t.name = "ClampC";
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
@@ -736,6 +800,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				}
 			}
 			ctx.set_output(0, lerp(a, b, r));
+		};
+		t.expression_func_name = "lerp";
+		t.expression_func = [](Span<const float> args) { //
+			return Math::lerp(args[0], args[1], args[2]);
 		};
 	}
 	{
@@ -1298,6 +1366,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("min_value", Variant::FLOAT, -1.f));
 		t.params.push_back(Param("max_value", Variant::FLOAT, 1.f));
 		t.debug_only = true;
+		t.is_pseudo_node = true;
 	}
 	{
 		struct Params {
@@ -1797,6 +1866,98 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 #endif // VOXEL_ENABLE_FAST_NOISE_2
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_EXPRESSION];
+		t.name = "Expression";
+		t.category = CATEGORY_MATH;
+		t.params.push_back(Param("expression", Variant::STRING, "0"));
+		t.outputs.push_back(Port("out"));
+		t.compile_func = [](CompileContext &ctx) {
+			ctx.make_error(ZN_TTR("Internal error, expression wasn't expanded"));
+		};
+		t.is_pseudo_node = true;
+	}
+	{
+		struct Params {
+			unsigned int power;
+		};
+
+		NodeType &t = types[VoxelGeneratorGraph::NODE_POWI];
+		t.name = "Powi";
+		t.category = CATEGORY_MATH;
+		t.inputs.push_back(Port("x"));
+		t.params.push_back(Param("power", Variant::INT, 2));
+		t.outputs.push_back(Port("out"));
+
+		t.compile_func = [](CompileContext &ctx) {
+			const int power = ctx.get_param(0).operator int();
+			if (power < 0) {
+				ctx.make_error(ZN_TTR("Power cannot be negative"));
+			} else {
+				Params p;
+				p.power = power;
+				ctx.set_params(p);
+			}
+		};
+
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			const unsigned int power = ctx.get_params<Params>().power;
+			switch (power) {
+				case 0:
+					for (unsigned int i = 0; i < out.size; ++i) {
+						out.data[i] = 1.f;
+					}
+					break;
+				case 1:
+					for (unsigned int i = 0; i < out.size; ++i) {
+						out.data[i] = x.data[i];
+					}
+					break;
+				default:
+					for (unsigned int i = 0; i < out.size; ++i) {
+						float v = x.data[i];
+						for (unsigned int p = 1; p < power; ++p) {
+							v *= v;
+						}
+						out.data[i] = v;
+					}
+					break;
+			}
+		};
+
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval x = ctx.get_input(0);
+			const unsigned int power = ctx.get_params<Params>().power;
+			ctx.set_output(0, powi(x, power));
+		};
+	}
+	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_POW];
+		t.name = "Pow";
+		t.category = CATEGORY_MATH;
+		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("p", 2.f));
+		t.outputs.push_back(Port("out"));
+
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
+			const VoxelGraphRuntime::Buffer &p = ctx.get_input(1);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			for (unsigned int i = 0; i < out.size; ++i) {
+				out.data[i] = Math::pow(x.data[i], p.data[i]);
+			}
+		};
+
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval x = ctx.get_input(0);
+			const Interval y = ctx.get_input(1);
+			ctx.set_output(0, pow(x, y));
+		};
+	}
+
+	CRASH_COND(_expression_functions.size() > 0);
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];
@@ -1821,6 +1982,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 					break;
 
 				case Variant::OBJECT:
+				case Variant::STRING:
 					break;
 
 				default:
@@ -1832,6 +1994,16 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		for (size_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
 			const Port &p = t.inputs[input_index];
 			t.input_name_to_index.set(p.name, input_index);
+		}
+
+		if (t.expression_func != nullptr) {
+			CRASH_COND(t.expression_func_name == nullptr);
+			ExpressionParser::Function f;
+			f.argument_count = t.inputs.size();
+			f.name = t.expression_func_name;
+			f.func = t.expression_func;
+			f.id = i;
+			_expression_functions.push_back(f);
 		}
 	}
 }

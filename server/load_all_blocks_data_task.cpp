@@ -14,8 +14,8 @@ void LoadAllBlocksDataTask::run(zylann::ThreadedTaskContext ctx) {
 
 	stream->load_all_blocks(_result);
 
-	PRINT_VERBOSE(String("Loaded {0} blocks for volume {1}")
-						  .format(varray(SIZE_T_TO_VARIANT(_result.blocks.size()), volume_id)));
+	ZN_PRINT_VERBOSE(String("Loaded {0} blocks for volume {1}")
+							 .format(varray(ZN_SIZE_T_TO_VARIANT(_result.blocks.size()), volume_id)));
 }
 
 int LoadAllBlocksDataTask::get_priority() {
@@ -53,7 +53,7 @@ void LoadAllBlocksDataTask::apply_result() {
 
 	} else {
 		// This can happen if the user removes the volume while requests are still about to return
-		PRINT_VERBOSE("Stream data request response came back but volume wasn't found");
+		ZN_PRINT_VERBOSE("Stream data request response came back but volume wasn't found");
 	}
 }
 

@@ -66,7 +66,7 @@ Ref<ArrayMesh> build_mesh(
 		}
 	}*/
 
-	if (is_mesh_empty(mesh)) {
+	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
 		mesh = Ref<Mesh>();
 	}
 
@@ -122,7 +122,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	// Godot may create and destroy dozens of instances of all node types on startup,
 	// due to how ClassDB gets its default values.
 
-	PRINT_VERBOSE("Construct VoxelLodTerrain");
+	ZN_PRINT_VERBOSE("Construct VoxelLodTerrain");
 
 	_data = gd_make_shared<VoxelDataLodMap>();
 	_update_data = gd_make_shared<VoxelLodTerrainUpdateData>();
@@ -143,7 +143,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 		void run(TimeSpreadTaskContext &ctx) override {
 			if (!VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
 				// The node can have been destroyed while this task was still pending
-				PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
+				ZN_PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
 				return;
 			}
 			self->apply_mesh_update(data);
@@ -182,7 +182,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 }
 
 VoxelLodTerrain::~VoxelLodTerrain() {
-	PRINT_VERBOSE("Destroy VoxelLodTerrain");
+	ZN_PRINT_VERBOSE("Destroy VoxelLodTerrain");
 	abort_async_edits();
 	VoxelServer::get_singleton()->remove_volume(_volume_id);
 	// Instancer can take care of itself
@@ -1083,7 +1083,7 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 // void VoxelLodTerrain::send_block_save_requests(Span<BlockToSave> blocks_to_save) {
 // 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
 // 		BlockToSave &b = blocks_to_save[i];
-// 		PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
+// 		ZN_PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
 // 		VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
 // 	}
 // }
@@ -1214,7 +1214,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				// If the block was removed for a different reason then it is unexpected
 				ERR_CONTINUE(debug_removed_blocks.find(tu.block_position) == debug_removed_blocks.end());
 #endif
-				PRINT_VERBOSE(String("Skipping TransitionUpdate at {0} lod {1}, block not found")
+				ZN_PRINT_VERBOSE(String("Skipping TransitionUpdate at {0} lod {1}, block not found")
 									  .format(varray(tu.block_position, lod_index)));
 				*/
 				continue;
@@ -1283,8 +1283,8 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 	if (!ob.initial_load) {
 		if (!thread_safe_contains(lod.loading_blocks, ob.position, lod.loading_blocks_mutex)) {
 			// That block was not requested, or is no longer needed. drop it...
-			PRINT_VERBOSE(String("Ignoring block {0} lod {1}, it was not in loading blocks")
-								  .format(varray(ob.position, ob.lod)));
+			ZN_PRINT_VERBOSE(String("Ignoring block {0} lod {1}, it was not in loading blocks")
+									 .format(varray(ob.position, ob.lod)));
 			++_stats.dropped_block_loads;
 			return;
 		}
@@ -1363,7 +1363,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 		if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
 			// That block is loaded, but its meshing request was dropped.
 			// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
-			PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
+			ZN_PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
 			++_stats.dropped_block_meshs;
 			return;
 		}
