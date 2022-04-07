@@ -223,7 +223,7 @@ void VoxelGeneratorGraph::set_expression_node_inputs(uint32_t node_id, PackedStr
 		const ProgramGraph::Port &port = node->inputs[i];
 		// Sounds annoying if you call this from a script, but this is supposed to be editor functionality for now
 		ERR_FAIL_COND_MSG(port.connections.size() > 0,
-				TTR("Cannot change input ports if connections exist, disconnect them first."));
+				ZN_TTR("Cannot change input ports if connections exist, disconnect them first."));
 	}
 
 	node->inputs.resize(names.size());
