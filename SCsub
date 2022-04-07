@@ -39,6 +39,7 @@ voxel_files = [
 	"util/noise/gd_noise_range.cpp",
 
 	"util/tasks/*.cpp",
+	"util/tasks/godot/*.cpp",
 
 	"terrain/*.cpp",
 	"terrain/instancing/*.cpp",

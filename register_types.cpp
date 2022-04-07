@@ -38,6 +38,7 @@
 #include "util/macros.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
+#include "util/tasks/godot/threaded_task_gd.h"
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "util/noise/fast_noise_2.h"
@@ -131,6 +132,7 @@ void register_voxel_types() {
 	ClassDB::register_class<VoxelVoxLoader>();
 	ClassDB::register_class<ZN_FastNoiseLite>();
 	ClassDB::register_class<ZN_FastNoiseLiteGradient>();
+	ClassDB::register_class<ZN_ThreadedTask>();
 	// See SCsub
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	ClassDB::register_class<FastNoise2>();

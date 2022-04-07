@@ -4,6 +4,10 @@
 #include "core/object/class_db.h"
 #include <core/object/object.h>
 
+namespace zylann {
+class ZN_ThreadedTask;
+} // namespace zylann
+
 namespace zylann::voxel::gd {
 
 // Godot-facing singleton class.
@@ -12,6 +16,7 @@ class VoxelServer : public Object {
 	GDCLASS(VoxelServer, Object)
 public:
 	Dictionary get_stats() const;
+	void schedule_task(Ref<ZN_ThreadedTask> task);
 
 	VoxelServer();
 

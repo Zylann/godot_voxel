@@ -18,6 +18,7 @@ Godot 4 is required from this version.
     - Added `FastNoise2` for faster SIMD noise
     - Added experimental support functions to help setting up basic multiplayer with `VoxelTerrain` (might change in the future)
     - Improved support for 64-bit floats
+    - Added `ZN_ThreadedTask` to allow running custom tasks using the thread pool system
     - `VoxelGeneratorGraph`: added support for outputting to the TYPE channel, allowing use with `VoxelMesherBlocky`
     - `VoxelGeneratorGraph`: editor: unconnected inputs show their default value directly on the node
     - `VoxelGeneratorGraph`: editor: allow to change the axes on preview nodes 3D slices
