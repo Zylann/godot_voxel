@@ -205,7 +205,7 @@ void VoxelGeneratorGraph::get_expression_node_inputs(uint32_t node_id, std::vect
 }
 
 inline bool has_duplicate(const PackedStringArray &sa) {
-	return find_duplicate(Span<const String>(sa.ptr(), sa.size())) != sa.size();
+	return find_duplicate(Span<const String>(sa.ptr(), sa.size())) != size_t(sa.size());
 }
 
 void VoxelGeneratorGraph::set_expression_node_inputs(uint32_t node_id, PackedStringArray names) {
