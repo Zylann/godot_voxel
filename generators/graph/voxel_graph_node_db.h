@@ -66,8 +66,7 @@ public:
 
 	VoxelGraphNodeDB();
 
-	// TODO Return a reference, it should never be null or should crash
-	static VoxelGraphNodeDB *get_singleton();
+	static const VoxelGraphNodeDB &get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
 

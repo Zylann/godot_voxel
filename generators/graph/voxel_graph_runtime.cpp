@@ -198,7 +198,7 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 	const CharString code_utf8 = code.utf8();
 
 	Span<const ExpressionParser::Function> functions =
-			VoxelGraphNodeDB::get_singleton()->get_expression_parser_functions();
+			VoxelGraphNodeDB::get_singleton().get_expression_parser_functions();
 
 	// Extract the AST, so we can convert it into graph nodes,
 	// and benefit from all features of range analysis and buffer processing
@@ -224,7 +224,7 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 	std::vector<ToConnect> to_connect;
 
 	const uint32_t expanded_root_node_id = expand_node(
-			graph, *parse_result.root, *VoxelGraphNodeDB::get_singleton(), to_connect, expanded_nodes, functions);
+			graph, *parse_result.root, VoxelGraphNodeDB::get_singleton(), to_connect, expanded_nodes, functions);
 	if (expanded_root_node_id == ProgramGraph::NULL_ID) {
 		VoxelGraphRuntime::CompilationResult result;
 		result.success = false;
@@ -340,9 +340,11 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	std::vector<uint32_t> terminal_nodes;
 	std::unordered_map<uint32_t, uint32_t> node_id_to_dependency_graph;
 
+	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
+
 	// Not using the generic `get_terminal_nodes` function because our terminal nodes do have outputs
-	graph.for_each_node_const([&terminal_nodes](const ProgramGraph::Node &node) {
-		const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node.type_id);
+	graph.for_each_node_const([&terminal_nodes, &type_db](const ProgramGraph::Node &node) {
+		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
 		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
 			terminal_nodes.push_back(node.id);
 		}
@@ -350,9 +352,9 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 	if (!debug) {
 		// Exclude debug nodes
-		unordered_remove_if(terminal_nodes, [&graph](uint32_t node_id) {
+		unordered_remove_if(terminal_nodes, [&graph, &type_db](uint32_t node_id) {
 			const ProgramGraph::Node &node = graph.get_node(node_id);
-			const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node.type_id);
+			const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
 			return type.debug_only;
 		});
 	}
@@ -476,7 +478,6 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	_program.z_input_address = mem.add_binding();
 
 	std::vector<uint16_t> &operations = _program.operations;
-	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
 
 	// Run through each node in order, and turn them into program instructions
 	for (size_t order_index = 0; order_index < order.size(); ++order_index) {
@@ -690,7 +691,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 static Span<const uint16_t> get_outputs_from_op_address(Span<const uint16_t> operations, uint16_t op_address) {
 	const uint16_t opid = operations[op_address];
-	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
+	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(opid);
 
 	const uint32_t inputs_count = node_type.inputs.size();
 	const uint32_t outputs_count = node_type.outputs.size();
@@ -1087,7 +1088,7 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 		unsigned int pc = op_adresses[execution_map_index];
 
 		const uint16_t opid = operations[pc++];
-		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
+		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(opid);
 
 		const uint32_t inputs_count = node_type.inputs.size();
 		const uint32_t outputs_count = node_type.outputs.size();
@@ -1146,7 +1147,7 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 	uint32_t pc = 0;
 	while (pc < operations.size()) {
 		const uint16_t opid = operations[pc++];
-		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(opid);
+		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(opid);
 
 		const uint32_t inputs_count = node_type.inputs.size();
 		const uint32_t outputs_count = node_type.outputs.size();

@@ -32,7 +32,7 @@ void VoxelGeneratorGraph::clear() {
 
 ProgramGraph::Node *create_node_internal(
 		ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position, uint32_t id) {
-	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(type_id);
+	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton().get_type(type_id);
 
 	ProgramGraph::Node *node = graph.create_node(type_id, id);
 	ERR_FAIL_COND_V(node == nullptr, nullptr);
@@ -53,7 +53,7 @@ ProgramGraph::Node *create_node_internal(
 }
 
 uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
-	ERR_FAIL_COND_V(!VoxelGraphNodeDB::get_singleton()->is_valid_type_id(type_id), ProgramGraph::NULL_ID);
+	ERR_FAIL_COND_V(!VoxelGraphNodeDB::get_singleton().is_valid_type_id(type_id), ProgramGraph::NULL_ID);
 	const ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id);
 	ERR_FAIL_COND_V(node == nullptr, ProgramGraph::NULL_ID);
 	return node->id;
@@ -181,7 +181,7 @@ void VoxelGeneratorGraph::set_node_param(uint32_t node_id, uint32_t param_index,
 
 bool VoxelGeneratorGraph::get_expression_variables(std::string_view code, std::vector<std::string_view> &vars) {
 	Span<const ExpressionParser::Function> functions =
-			VoxelGraphNodeDB::get_singleton()->get_expression_parser_functions();
+			VoxelGraphNodeDB::get_singleton().get_expression_parser_functions();
 	ExpressionParser::Result result = ExpressionParser::parse(code, functions);
 	if (result.error.id == ExpressionParser::ERROR_NONE) {
 		if (result.root != nullptr) {
@@ -1410,7 +1410,7 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 
 		Dictionary node_data;
 
-		const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
+		const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton().get_type(node->type_id);
 		node_data["type"] = type.name;
 		node_data["gui_position"] = node->gui_position;
 
@@ -1489,7 +1489,7 @@ static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
 static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 	Dictionary nodes_data = data["nodes"];
 	Array connections_data = data["connections"];
-	const VoxelGraphNodeDB &type_db = *VoxelGraphNodeDB::get_singleton();
+	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 
 	const Variant *id_key = nullptr;
 	while ((id_key = nodes_data.next(id_key))) {
@@ -1770,12 +1770,12 @@ void VoxelGeneratorGraph::get_configuration_warnings(TypedArray<String> &out_war
 // Binding land
 
 int VoxelGeneratorGraph::_b_get_node_type_count() const {
-	return VoxelGraphNodeDB::get_singleton()->get_type_count();
+	return VoxelGraphNodeDB::get_singleton().get_type_count();
 }
 
 Dictionary VoxelGeneratorGraph::_b_get_node_type_info(int type_id) const {
-	ERR_FAIL_COND_V(!VoxelGraphNodeDB::get_singleton()->is_valid_type_id(type_id), Dictionary());
-	return VoxelGraphNodeDB::get_singleton()->get_type_info_dict(type_id);
+	ERR_FAIL_COND_V(!VoxelGraphNodeDB::get_singleton().is_valid_type_id(type_id), Dictionary());
+	return VoxelGraphNodeDB::get_singleton().get_type_info_dict(type_id);
 }
 
 Array VoxelGeneratorGraph::_b_get_connections() const {

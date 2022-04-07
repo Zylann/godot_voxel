@@ -97,8 +97,8 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_context_menu->add_submenu_item(name, name, i);
 		category_menus[i] = menu;
 	}
-	for (int i = 0; i < VoxelGraphNodeDB::get_singleton()->get_type_count(); ++i) {
-		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(i);
+	for (int i = 0; i < VoxelGraphNodeDB::get_singleton().get_type_count(); ++i) {
+		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(i);
 		PopupMenu *menu = category_menus[node_type.category];
 		menu->add_item(node_type.name, i);
 	}
@@ -470,7 +470,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
 				*_graph, "create_node", node_type_id, _graph->get_node_gui_position(node_id), node_id);
 
 		// Params undo
-		const size_t param_count = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).params.size();
+		const size_t param_count = VoxelGraphNodeDB::get_singleton().get_type(node_type_id).params.size();
 		for (size_t j = 0; j < param_count; ++j) {
 			Variant param_value = _graph->get_node_param(node_id, j);
 			_undo_redo->add_undo_method(*_graph, "set_node_param", node_id, ZN_SIZE_T_TO_VARIANT(j), param_value);
@@ -813,7 +813,7 @@ void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
 	StringName node_name = _graph->get_node_name(node_id);
 
 	const uint32_t node_type_id = _graph->get_node_type_id(node_id);
-	String node_type_name = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id).name;
+	String node_type_name = VoxelGraphNodeDB::get_singleton().get_type(node_type_id).name;
 
 	const String ui_node_name = node_to_gui_name(node_id);
 	VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(ui_node_name));

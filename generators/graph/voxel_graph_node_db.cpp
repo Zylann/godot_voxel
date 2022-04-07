@@ -214,9 +214,9 @@ inline Interval sdf_sphere_heightmap(Interval x, Interval y, Interval z, float r
 	return sd - m * h;
 }
 
-VoxelGraphNodeDB *VoxelGraphNodeDB::get_singleton() {
+const VoxelGraphNodeDB &VoxelGraphNodeDB::get_singleton() {
 	CRASH_COND(g_node_type_db == nullptr);
-	return g_node_type_db;
+	return *g_node_type_db;
 }
 
 void VoxelGraphNodeDB::create_singleton() {

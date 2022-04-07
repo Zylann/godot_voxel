@@ -14,7 +14,7 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGeneratorGraph &gr
 	node_view->set_position_offset(graph.get_node_gui_position(node_id) * EDSCALE);
 
 	const uint32_t node_type_id = graph.get_node_type_id(node_id);
-	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
+	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
 
 	const StringName node_name = graph.get_node_name(node_id);
 	node_view->update_title(node_name, node_type.name);
@@ -45,7 +45,7 @@ void VoxelGraphEditorNode::_on_resize_request(Vector2 new_size) {
 
 void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
 	const uint32_t node_type_id = graph.get_node_type_id(_node_id);
-	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton()->get_type(node_type_id);
+	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
 	// We artificially hide output ports if the node is an output.
 	// These nodes have an output for implementation reasons, some outputs can process the data like any other node.
 	const bool hide_outputs = node_type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT;
