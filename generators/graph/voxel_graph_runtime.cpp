@@ -104,6 +104,9 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			const ExpressionParser::OperatorNode &on =
 					reinterpret_cast<const ExpressionParser::OperatorNode &>(ep_node);
 
+			CRASH_COND(on.n0 == nullptr);
+			CRASH_COND(on.n1 == nullptr);
+
 			VoxelGeneratorGraph::NodeTypeID node_type_id;
 			switch (on.op) {
 				case ExpressionParser::OperatorNode::ADD:
@@ -119,7 +122,28 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 					node_type_id = VoxelGeneratorGraph::NODE_DIVIDE;
 					break;
 				case ExpressionParser::OperatorNode::POWER:
-					// TODO Optimize: if exponent is constant we can use POWI, SQRT, DIVIDE or MULTIPLY
+					if (on.n1->type == ExpressionParser::Node::NUMBER) {
+						// Attempt to use an optimized node if the power is constant
+						const ExpressionParser::NumberNode &arg1 =
+								static_cast<const ExpressionParser::NumberNode &>(*on.n1);
+
+						const int pi = int(arg1.value);
+						if (Math::is_equal_approx(arg1.value, pi) && pi >= 0) {
+							// Constant positive integer
+							ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NODE_POWI);
+							expanded_node_ids.push_back(pg_node.id);
+
+							CRASH_COND(pg_node.params.size() != 1);
+							pg_node.params[0] = pi;
+
+							ERR_FAIL_COND_V(!expand_input(graph, *on.n0, pg_node, 0, db, to_connect, expanded_node_ids,
+													functions),
+									ProgramGraph::NULL_ID);
+
+							return pg_node.id;
+						}
+					}
+					// Fallback on generic power function
 					node_type_id = VoxelGeneratorGraph::NODE_POW;
 					break;
 				default:
@@ -130,11 +154,9 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			ProgramGraph::Node &pg_node = create_node(graph, db, node_type_id);
 			expanded_node_ids.push_back(pg_node.id);
 
-			CRASH_COND(on.n0 == nullptr);
 			ERR_FAIL_COND_V(!expand_input(graph, *on.n0, pg_node, 0, db, to_connect, expanded_node_ids, functions),
 					ProgramGraph::NULL_ID);
 
-			CRASH_COND(on.n1 == nullptr);
 			ERR_FAIL_COND_V(!expand_input(graph, *on.n1, pg_node, 1, db, to_connect, expanded_node_ids, functions),
 					ProgramGraph::NULL_ID);
 
