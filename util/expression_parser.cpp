@@ -69,8 +69,6 @@ std::string_view get_name(const std::string_view text, unsigned int &pos) {
 }
 
 bool get_number_token(const std::string_view text, unsigned int &pos, Token &out_token, bool negative) {
-	const unsigned int begin_pos = pos;
-
 	// Integer part
 	int64_t n = 0;
 	char c;
