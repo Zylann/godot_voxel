@@ -1448,7 +1448,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 		++surface_index;
 	}
 
-	if (is_mesh_empty(mesh)) {
+	if (is_mesh_empty(**mesh)) {
 		mesh = Ref<Mesh>();
 		collidable_surfaces.clear();
 	}

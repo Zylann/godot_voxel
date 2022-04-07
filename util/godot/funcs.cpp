@@ -16,11 +16,7 @@ bool is_surface_triangulated(Array surface) {
 	return positions.size() >= 3 && indices.size() >= 3;
 }
 
-bool is_mesh_empty(Ref<Mesh> mesh_ref) {
-	if (mesh_ref.is_null()) {
-		return true;
-	}
-	const Mesh &mesh = **mesh_ref;
+bool is_mesh_empty(const Mesh &mesh) {
 	if (mesh.get_surface_count() == 0) {
 		return true;
 	}
@@ -28,36 +24,6 @@ bool is_mesh_empty(Ref<Mesh> mesh_ref) {
 		return true;
 	}
 	return false;
-}
-
-bool try_call_script(
-		const Object *obj, StringName method_name, const Variant **args, unsigned int argc, Variant *out_ret) {
-	ScriptInstance *script = obj->get_script_instance();
-	// TODO Is has_method() needed? I've seen `call()` being called anyways in ButtonBase
-	if (script == nullptr || !script->has_method(method_name)) {
-		return false;
-	}
-
-#ifdef TOOLS_ENABLED
-	if (Engine::get_singleton()->is_editor_hint() && !script->get_script()->is_tool()) {
-		// Can't call a method on a non-tool script in the editor
-		return false;
-	}
-#endif
-
-	Callable::CallError err;
-	Variant ret = script->callp(method_name, args, argc, err);
-
-	// TODO Why does Variant::get_call_error_text want a non-const Object pointer??? It only uses const methods
-	ERR_FAIL_COND_V_MSG(err.error != Callable::CallError::CALL_OK, false,
-			Variant::get_call_error_text(const_cast<Object *>(obj), method_name, nullptr, 0, err));
-	// This had to be explicitely logged due to the usual GD debugger not working with threads
-
-	if (out_ret != nullptr) {
-		*out_ret = ret;
-	}
-
-	return true;
 }
 
 // Faster version of Mesh::create_trimesh_shape()
@@ -141,11 +107,11 @@ int get_visible_instance_count(const MultiMesh &mm) {
 	return visible_count;
 }
 
-Array generate_debug_seams_wireframe_surface(Ref<Mesh> src_mesh, int surface_index) {
-	if (src_mesh->surface_get_primitive_type(surface_index) != Mesh::PRIMITIVE_TRIANGLES) {
+Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_index) {
+	if (src_mesh.surface_get_primitive_type(surface_index) != Mesh::PRIMITIVE_TRIANGLES) {
 		return Array();
 	}
-	Array src_surface = src_mesh->surface_get_arrays(surface_index);
+	Array src_surface = src_mesh.surface_get_arrays(surface_index);
 	if (src_surface.is_empty()) {
 		return Array();
 	}

@@ -66,7 +66,7 @@ Ref<ArrayMesh> build_mesh(
 		}
 	}*/
 
-	if (is_mesh_empty(mesh)) {
+	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
 		mesh = Ref<Mesh>();
 	}
 
