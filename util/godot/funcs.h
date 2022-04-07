@@ -117,23 +117,14 @@ inline String to_godot(const std::string_view sv) {
 	return String::utf8(sv.data(), sv.size());
 }
 
-static PackedStringArray to_godot(const std::vector<std::string_view> &svv) {
-	PackedStringArray psa;
-	psa.resize(svv.size());
-	for (unsigned int i = 0; i < svv.size(); ++i) {
-		psa.write[i] = to_godot(svv[i]);
-	}
-	return psa;
-}
+// Turns out these functions are only used in editor for now.
+// They are generic, but I have to wrap them, otherwise GCC throws warnings-as-errors for them being unused.
+#ifdef TOOLS_ENABLED
 
-static PackedStringArray to_godot(const std::vector<std::string> &sv) {
-	PackedStringArray psa;
-	psa.resize(sv.size());
-	for (unsigned int i = 0; i < sv.size(); ++i) {
-		psa.write[i] = to_godot(sv[i]);
-	}
-	return psa;
-}
+PackedStringArray to_godot(const std::vector<std::string_view> &svv);
+PackedStringArray to_godot(const std::vector<std::string> &sv);
+
+#endif
 
 template <typename T>
 Span<const T> to_span_const(const Vector<T> &a) {
