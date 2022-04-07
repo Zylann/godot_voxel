@@ -192,9 +192,9 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph &graph, uint32_t original_node_id,
 		ProgramGraph::PortLocation &expanded_output_port, std::vector<uint32_t> &expanded_nodes) {
 	VOXEL_PROFILE_SCOPE();
-	const ProgramGraph::Node *original_node = graph.get_node(original_node_id);
-	CRASH_COND(original_node->params.size() == 0);
-	const String code = original_node->params[0];
+	const ProgramGraph::Node &original_node = graph.get_node(original_node_id);
+	CRASH_COND(original_node.params.size() == 0);
+	const String code = original_node.params[0];
 	const CharString code_utf8 = code.utf8();
 
 	Span<const ExpressionParser::Function> functions =
@@ -239,14 +239,14 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 		const ToConnect tc = to_connect[i];
 
 		unsigned int original_port_index;
-		if (!original_node->find_input_port_by_name(tc.var_name, original_port_index)) {
+		if (!original_node.find_input_port_by_name(tc.var_name, original_port_index)) {
 			VoxelGraphRuntime::CompilationResult result;
 			result.success = false;
 			result.node_id = original_node_id;
 			result.message = "Could not resolve expression variable from input ports";
 			return result;
 		}
-		const ProgramGraph::Port &original_port = original_node->inputs[original_port_index];
+		const ProgramGraph::Port &original_port = original_node.inputs[original_port_index];
 		for (unsigned int j = 0; j < original_port.connections.size(); ++j) {
 			const ProgramGraph::PortLocation src = original_port.connections[j];
 			graph.connect(src, tc.dst);
@@ -351,8 +351,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	if (!debug) {
 		// Exclude debug nodes
 		unordered_remove_if(terminal_nodes, [&graph](uint32_t node_id) {
-			const ProgramGraph::Node *node = graph.get_node(node_id);
-			const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node->type_id);
+			const ProgramGraph::Node &node = graph.get_node(node_id);
+			const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton()->get_type(node.type_id);
 			return type.debug_only;
 		});
 	}
@@ -372,11 +372,11 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 		for (size_t i = 0; i < order.size(); ++i) {
 			const uint32_t node_id = order[i];
-			const ProgramGraph::Node *node = graph.get_node(node_id);
+			const ProgramGraph::Node &node = graph.get_node(node_id);
 
 			bool depends_on_y = false;
 
-			if (node->type_id == VoxelGeneratorGraph::NODE_INPUT_Y) {
+			if (node.type_id == VoxelGeneratorGraph::NODE_INPUT_Y) {
 				nodes_depending_on_y.insert(node_id);
 				depends_on_y = true;
 			}
@@ -481,12 +481,11 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 	// Run through each node in order, and turn them into program instructions
 	for (size_t order_index = 0; order_index < order.size(); ++order_index) {
 		const uint32_t node_id = order[order_index];
-		const ProgramGraph::Node *node = graph.get_node(node_id);
-		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node->type_id);
+		const ProgramGraph::Node &node = graph.get_node(node_id);
+		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
 
-		CRASH_COND(node == nullptr);
-		CRASH_COND(node->inputs.size() != type.inputs.size());
-		CRASH_COND(node->outputs.size() != type.outputs.size());
+		CRASH_COND(node.inputs.size() != type.inputs.size());
+		CRASH_COND(node.outputs.size() != type.outputs.size());
 
 		if (order_index == xzy_start_index) {
 			_program.xzy_start_op_address = operations.size();
@@ -503,11 +502,11 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		node_id_to_dependency_graph.insert(std::make_pair(node_id, dg_node_index));
 
 		// We still hardcode some of the nodes. Maybe we can abstract them too one day.
-		switch (node->type_id) {
+		switch (node.type_id) {
 			case VoxelGeneratorGraph::NODE_CONSTANT: {
 				CRASH_COND(type.outputs.size() != 1);
 				CRASH_COND(type.params.size() != 1);
-				const uint16_t a = mem.add_constant(node->params[0].operator float());
+				const uint16_t a = mem.add_constant(node.params[0].operator float());
 				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = a;
 				// Technically not an input or an output, but is a dependency regardless so treat it like an input
 				dg_node.is_input = true;
@@ -537,14 +536,14 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 		// Add actual operation
 
-		CRASH_COND(node->type_id > 0xff);
+		CRASH_COND(node.type_id > 0xff);
 
 		if (order_index == xzy_start_index) {
 			_program.default_execution_map.xzy_start_index = _program.default_execution_map.operation_adresses.size();
 		}
 		_program.default_execution_map.operation_adresses.push_back(operations.size());
 
-		operations.push_back(node->type_id);
+		operations.push_back(node.type_id);
 
 		// Inputs and outputs use a convention so we can have generic code for them.
 		// Parameters are more specific, and may be affected by alignment so better just do them by hand
@@ -553,14 +552,14 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		for (size_t j = 0; j < type.inputs.size(); ++j) {
 			uint16_t a;
 
-			if (node->inputs[j].connections.size() == 0) {
+			if (node.inputs[j].connections.size() == 0) {
 				// No input, default it
-				CRASH_COND(j >= node->default_inputs.size());
-				float defval = node->default_inputs[j];
+				CRASH_COND(j >= node.default_inputs.size());
+				float defval = node.default_inputs[j];
 				a = mem.add_constant(defval);
 
 			} else {
-				ProgramGraph::PortLocation src_port = node->inputs[j].connections[0];
+				ProgramGraph::PortLocation src_port = node.inputs[j].connections[0];
 				const uint16_t *aptr = _program.output_port_addresses.getptr(src_port);
 				// Previous node ports must have been registered
 				CRASH_COND(aptr == nullptr);
@@ -597,9 +596,9 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 		// Get params, copy resources when used, and hold a reference to them
 		std::vector<Variant> params_copy;
-		params_copy.resize(node->params.size());
-		for (size_t i = 0; i < node->params.size(); ++i) {
-			Variant v = node->params[i];
+		params_copy.resize(node.params.size());
+		for (size_t i = 0; i < node.params.size(); ++i) {
+			Variant v = node.params[i];
 
 			if (v.get_type() == Variant::OBJECT) {
 				Ref<Resource> res = v;
@@ -639,7 +638,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		}
 
 		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
-			CRASH_COND(node->outputs.size() != 1);
+			CRASH_COND(node.outputs.size() != 1);
 
 			if (_program.outputs_count == _program.outputs.size()) {
 				CompilationResult result;

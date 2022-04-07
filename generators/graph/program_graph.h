@@ -59,8 +59,7 @@ public:
 	};
 
 	Node *create_node(uint32_t type_id, uint32_t id = NULL_ID);
-	// TODO Return a reference, this function is not allowed to fail
-	Node *get_node(uint32_t id) const;
+	Node &get_node(uint32_t id) const;
 	Node *try_get_node(uint32_t id) const;
 	void remove_node(uint32_t id);
 	void clear();

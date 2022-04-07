@@ -116,10 +116,9 @@ void VoxelGeneratorGraph::get_connections(std::vector<ProgramGraph::Connection> 
 
 bool VoxelGeneratorGraph::try_get_connection_to(
 		ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const {
-	const ProgramGraph::Node *node = _graph.get_node(dst.node_id);
-	CRASH_COND(node == nullptr);
-	CRASH_COND(dst.port_index >= node->inputs.size());
-	const ProgramGraph::Port &port = node->inputs[dst.port_index];
+	const ProgramGraph::Node &node = _graph.get_node(dst.node_id);
+	CRASH_COND(dst.port_index >= node.inputs.size());
+	const ProgramGraph::Port &port = node.inputs[dst.port_index];
 	if (port.connections.size() == 0) {
 		return false;
 	}
@@ -850,9 +849,8 @@ static bool has_output_type(
 		const VoxelGraphRuntime &runtime, const ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID node_type_id) {
 	for (unsigned int other_output_index = 0; other_output_index < runtime.get_output_count(); ++other_output_index) {
 		const VoxelGraphRuntime::OutputInfo output = runtime.get_output_info(other_output_index);
-		const ProgramGraph::Node *node = graph.get_node(output.node_id);
-		ERR_CONTINUE(node == nullptr);
-		if (node->type_id == VoxelGeneratorGraph::NODE_OUTPUT_WEIGHT) {
+		const ProgramGraph::Node &node = graph.get_node(output.node_id);
+		if (node.type_id == VoxelGeneratorGraph::NODE_OUTPUT_WEIGHT) {
 			return true;
 		}
 	}
@@ -876,12 +874,10 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 	// Extra steps
 	for (unsigned int output_index = 0; output_index < runtime.get_output_count(); ++output_index) {
 		const VoxelGraphRuntime::OutputInfo output = runtime.get_output_info(output_index);
-		const ProgramGraph::Node *node = _graph.get_node(output.node_id);
-
-		ERR_FAIL_COND_V(node == nullptr, VoxelGraphRuntime::CompilationResult());
+		const ProgramGraph::Node &node = _graph.get_node(output.node_id);
 
 		// TODO Allow specifying max count in VoxelGraphNodeDB so we can make some of these checks more generic
-		switch (node->type_id) {
+		switch (node.type_id) {
 			case NODE_OUTPUT_SDF:
 				if (r->sdf_output_buffer_index != -1) {
 					VoxelGraphRuntime::CompilationResult error;
@@ -904,8 +900,8 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 					error.node_id = output.node_id;
 					return error;
 				}
-				CRASH_COND(node->params.size() == 0);
-				const int layer_index = node->params[0];
+				CRASH_COND(node.params.size() == 0);
+				const int layer_index = node.params[0];
 				if (layer_index < 0) {
 					// Should not be allowed by the UI, but who knows
 					VoxelGraphRuntime::CompilationResult error;
@@ -1409,7 +1405,7 @@ Ref<Resource> VoxelGeneratorGraph::duplicate(bool p_subresources) const {
 static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 	Dictionary nodes_data;
 	graph.for_each_node_id([&graph, &nodes_data](uint32_t node_id) {
-		const ProgramGraph::Node *node = graph.get_node(node_id);
+		const ProgramGraph::Node *node = graph.try_get_node(node_id);
 		ERR_FAIL_COND(node == nullptr);
 
 		Dictionary node_data;
@@ -1474,6 +1470,7 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 	Dictionary data;
 	data["nodes"] = nodes_data;
 	data["connections"] = connections_data;
+	data["version"] = 2;
 	return data;
 }
 
