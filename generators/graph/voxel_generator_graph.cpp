@@ -7,7 +7,9 @@
 #include "../../util/profiling_clock.h"
 #include "voxel_graph_node_db.h"
 
+#include <core/config/engine.h>
 #include <core/core_string_names.h>
+#include <core/io/image.h>
 
 namespace zylann::voxel {
 
