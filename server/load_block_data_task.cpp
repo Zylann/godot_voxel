@@ -73,7 +73,7 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 			task->stream_dependency = _stream_dependency;
 			task->priority_dependency = _priority_dependency;
 
-			VoxelServer::get_singleton()->push_async_task(task);
+			VoxelServer::get_singleton().push_async_task(task);
 			_fallback_on_generator = true;
 
 		} else {
@@ -117,7 +117,7 @@ bool LoadBlockDataTask::is_cancelled() {
 }
 
 void LoadBlockDataTask::apply_result() {
-	if (VoxelServer::get_singleton()->is_volume_valid(_volume_id)) {
+	if (VoxelServer::get_singleton().is_volume_valid(_volume_id)) {
 		// TODO Comparing pointer may not be guaranteed
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.
@@ -132,7 +132,7 @@ void LoadBlockDataTask::apply_result() {
 			o.initial_load = false;
 			o.type = VoxelServer::BlockDataOutput::TYPE_LOADED;
 
-			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton()->get_volume_callbacks(_volume_id);
+			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton().get_volume_callbacks(_volume_id);
 			CRASH_COND(callbacks.data_output_callback == nullptr);
 			callbacks.data_output_callback(callbacks.data, o);
 		}

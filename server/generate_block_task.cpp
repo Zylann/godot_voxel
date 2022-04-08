@@ -61,7 +61,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 			SaveBlockDataTask *save_task =
 					memnew(SaveBlockDataTask(volume_id, position, lod, block_size, voxels_copy, stream_dependency));
 
-			VoxelServer::get_singleton()->push_async_task(save_task);
+			VoxelServer::get_singleton().push_async_task(save_task);
 		}
 	}
 
@@ -82,7 +82,7 @@ bool GenerateBlockTask::is_cancelled() {
 void GenerateBlockTask::apply_result() {
 	bool aborted = true;
 
-	if (VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
+	if (VoxelServer::get_singleton().is_volume_valid(volume_id)) {
 		// TODO Comparing pointer may not be guaranteed
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.
@@ -96,7 +96,7 @@ void GenerateBlockTask::apply_result() {
 			o.max_lod_hint = max_lod_hint;
 			o.initial_load = false;
 
-			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton()->get_volume_callbacks(volume_id);
+			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.data_output_callback == nullptr);
 			callbacks.data_output_callback(callbacks.data, o);
 

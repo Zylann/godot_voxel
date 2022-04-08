@@ -95,7 +95,7 @@ bool SaveBlockDataTask::is_cancelled() {
 }
 
 void SaveBlockDataTask::apply_result() {
-	if (VoxelServer::get_singleton()->is_volume_valid(_volume_id)) {
+	if (VoxelServer::get_singleton().is_volume_valid(_volume_id)) {
 		if (_stream_dependency->valid) {
 			// TODO Perhaps separate save and load callbacks?
 			VoxelServer::BlockDataOutput o;
@@ -106,7 +106,7 @@ void SaveBlockDataTask::apply_result() {
 			o.initial_load = false; // Unused
 			o.type = VoxelServer::BlockDataOutput::TYPE_SAVED;
 
-			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton()->get_volume_callbacks(_volume_id);
+			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton().get_volume_callbacks(_volume_id);
 			CRASH_COND(callbacks.data_output_callback == nullptr);
 			callbacks.data_output_callback(callbacks.data, o);
 		}

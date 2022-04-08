@@ -1209,7 +1209,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	}
 
 	const int volume_id = _parent->get_volume_id();
-	VoxelServer::get_singleton()->request_instance_block_save(volume_id, std::move(data), data_grid_pos, lod_index);
+	VoxelServer::get_singleton().request_instance_block_save(volume_id, std::move(data), data_grid_pos, lod_index);
 }
 
 void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Transform3D &parent_transform,

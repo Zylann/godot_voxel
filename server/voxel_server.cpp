@@ -19,9 +19,9 @@ namespace zylann::voxel {
 
 VoxelServer *g_voxel_server = nullptr;
 
-VoxelServer *VoxelServer::get_singleton() {
+VoxelServer &VoxelServer::get_singleton() {
 	CRASH_COND_MSG(g_voxel_server == nullptr, "Accessing singleton while it's null");
-	return g_voxel_server;
+	return *g_voxel_server;
 }
 
 void VoxelServer::create_singleton() {

@@ -58,14 +58,14 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 void VoxelTerrainEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
-			_editor_viewer_id = VoxelServer::get_singleton()->add_viewer();
-			VoxelServer::get_singleton()->set_viewer_distance(_editor_viewer_id, 512);
+			_editor_viewer_id = VoxelServer::get_singleton().add_viewer();
+			VoxelServer::get_singleton().set_viewer_distance(_editor_viewer_id, 512);
 			// No collision needed in editor, also it updates faster without
-			VoxelServer::get_singleton()->set_viewer_requires_collisions(_editor_viewer_id, false);
+			VoxelServer::get_singleton().set_viewer_requires_collisions(_editor_viewer_id, false);
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
-			VoxelServer::get_singleton()->remove_viewer(_editor_viewer_id);
+			VoxelServer::get_singleton().remove_viewer(_editor_viewer_id);
 			break;
 
 		case NOTIFICATION_PROCESS:
@@ -168,11 +168,11 @@ void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 
 EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_spatial_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
-	VoxelServer::get_singleton()->set_viewer_distance(_editor_viewer_id, p_camera->get_far());
+	VoxelServer::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
 
 	if (_editor_viewer_follows_camera) {
-		VoxelServer::get_singleton()->set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+		VoxelServer::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
 	}
 
 	return EditorPlugin::AFTER_GUI_INPUT_PASS;
@@ -197,7 +197,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			_menu_button->get_popup()->set_item_checked(i, _editor_viewer_follows_camera);
 
 			if (_editor_viewer_follows_camera) {
-				VoxelServer::get_singleton()->set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+				VoxelServer::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
 			}
 		} break;
 

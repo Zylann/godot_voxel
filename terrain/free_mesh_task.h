@@ -22,7 +22,7 @@ public:
 	static void add(Ref<Mesh> mesh) {
 		CRASH_COND(mesh.is_null());
 		FreeMeshTask *task = memnew(FreeMeshTask(mesh));
-		VoxelServer::get_singleton()->push_main_thread_progressive_task(task);
+		VoxelServer::get_singleton().push_main_thread_progressive_task(task);
 	}
 
 	FreeMeshTask(Ref<Mesh> p_mesh) : mesh(p_mesh) {}

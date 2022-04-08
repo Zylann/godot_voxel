@@ -42,7 +42,7 @@ void VoxelServerUpdater::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_PROCESS:
 			// To workaround the absence of API to have a custom server processing in the main loop
-			zylann::voxel::VoxelServer::get_singleton()->process();
+			zylann::voxel::VoxelServer::get_singleton().process();
 			break;
 
 		case NOTIFICATION_PREDELETE:

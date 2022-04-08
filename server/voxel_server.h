@@ -97,7 +97,7 @@ public:
 		VOLUME_SPARSE_OCTREE
 	};
 
-	static VoxelServer *get_singleton();
+	static VoxelServer &get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
 
@@ -266,11 +266,11 @@ private:
 
 struct VoxelFileLockerRead {
 	VoxelFileLockerRead(String path) : _path(path) {
-		VoxelServer::get_singleton()->get_file_locker().lock_read(path);
+		VoxelServer::get_singleton().get_file_locker().lock_read(path);
 	}
 
 	~VoxelFileLockerRead() {
-		VoxelServer::get_singleton()->get_file_locker().unlock(_path);
+		VoxelServer::get_singleton().get_file_locker().unlock(_path);
 	}
 
 	String _path;
@@ -278,11 +278,11 @@ struct VoxelFileLockerRead {
 
 struct VoxelFileLockerWrite {
 	VoxelFileLockerWrite(String path) : _path(path) {
-		VoxelServer::get_singleton()->get_file_locker().lock_write(path);
+		VoxelServer::get_singleton().get_file_locker().lock_write(path);
 	}
 
 	~VoxelFileLockerWrite() {
-		VoxelServer::get_singleton()->get_file_locker().unlock(_path);
+		VoxelServer::get_singleton().get_file_locker().unlock(_path);
 	}
 
 	String _path;
@@ -301,8 +301,8 @@ public:
 	}
 
 	inline void flush() {
-		VoxelServer::get_singleton()->push_async_tasks(to_span(_main_tasks));
-		VoxelServer::get_singleton()->push_async_io_tasks(to_span(_io_tasks));
+		VoxelServer::get_singleton().push_async_tasks(to_span(_main_tasks));
+		VoxelServer::get_singleton().push_async_io_tasks(to_span(_io_tasks));
 		_main_tasks.clear();
 		_io_tasks.clear();
 	}

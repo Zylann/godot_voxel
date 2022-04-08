@@ -1294,7 +1294,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 		// This may first run the generation tasks, and then the edits
 		tracker =
 				gd_make_shared<AsyncDependencyTracker>(todo.size(), next_tasks, [](Span<IThreadedTask *> p_next_tasks) {
-					VoxelServer::get_singleton()->push_async_tasks(p_next_tasks);
+					VoxelServer::get_singleton().push_async_tasks(p_next_tasks);
 				});
 
 		for (unsigned int i = 0; i < todo.size(); ++i) {
@@ -1305,7 +1305,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 
 	} else if (next_tasks.size() > 0) {
 		// Nothing to preload, we may schedule `next_tasks` right now
-		VoxelServer::get_singleton()->push_async_tasks(next_tasks);
+		VoxelServer::get_singleton().push_async_tasks(next_tasks);
 	}
 
 	return tracker;

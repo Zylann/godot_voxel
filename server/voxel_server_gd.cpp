@@ -32,13 +32,13 @@ VoxelServer::VoxelServer() {
 }
 
 Dictionary VoxelServer::get_stats() const {
-	return zylann::voxel::VoxelServer::get_singleton()->get_stats().to_dict();
+	return zylann::voxel::VoxelServer::get_singleton().get_stats().to_dict();
 }
 
 void VoxelServer::schedule_task(Ref<ZN_ThreadedTask> task) {
 	ERR_FAIL_COND(task.is_null());
 	ERR_FAIL_COND_MSG(task->is_scheduled(), "Cannot schedule again a task that is already scheduled");
-	zylann::voxel::VoxelServer::get_singleton()->push_async_task(task->create_task());
+	zylann::voxel::VoxelServer::get_singleton().push_async_task(task->create_task());
 }
 
 void VoxelServer::_on_rendering_server_frame_post_draw() {

@@ -177,7 +177,7 @@ private:
 		ERR_FAIL_COND(block == nullptr);
 		FreeMeshBlockTask *task = memnew(FreeMeshBlockTask);
 		task->block = block;
-		VoxelServer::get_singleton()->push_main_thread_time_spread_task(task);
+		VoxelServer::get_singleton().push_main_thread_time_spread_task(task);
 	}
 
 private:

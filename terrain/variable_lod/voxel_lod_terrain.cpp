@@ -141,7 +141,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	struct ApplyMeshUpdateTask : public ITimeSpreadTask {
 		void run(TimeSpreadTaskContext &ctx) override {
-			if (!VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
+			if (!VoxelServer::get_singleton().is_volume_valid(volume_id)) {
 				// The node can have been destroyed while this task was still pending
 				ZN_PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
 				return;
@@ -164,15 +164,15 @@ VoxelLodTerrain::VoxelLodTerrain() {
 		task->volume_id = self->get_volume_id();
 		task->self = self;
 		task->data = ob;
-		VoxelServer::get_singleton()->push_main_thread_time_spread_task(task);
+		VoxelServer::get_singleton().push_main_thread_time_spread_task(task);
 	};
 	callbacks.data_output_callback = [](void *cb_data, VoxelServer::BlockDataOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		self->apply_data_block_response(ob);
 	};
 
-	_volume_id = VoxelServer::get_singleton()->add_volume(callbacks, VoxelServer::VOLUME_SPARSE_OCTREE);
-	VoxelServer::get_singleton()->set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+	_volume_id = VoxelServer::get_singleton().add_volume(callbacks, VoxelServer::VOLUME_SPARSE_OCTREE);
+	VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	// TODO Being able to set a LOD smaller than the stream is probably a bad idea,
 	// Because it prevents edits from propagating up to the last one, they will be left out of sync
@@ -184,7 +184,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 VoxelLodTerrain::~VoxelLodTerrain() {
 	ZN_PRINT_VERBOSE("Destroy VoxelLodTerrain");
 	abort_async_edits();
-	VoxelServer::get_singleton()->remove_volume(_volume_id);
+	VoxelServer::get_singleton().remove_volume(_volume_id);
 	// Instancer can take care of itself
 }
 
@@ -345,8 +345,8 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 		}
 	}
 
-	VoxelServer::get_singleton()->set_volume_data_block_size(_volume_id, get_data_block_size());
-	VoxelServer::get_singleton()->set_volume_render_block_size(_volume_id, get_mesh_block_size());
+	VoxelServer::get_singleton().set_volume_data_block_size(_volume_id, get_data_block_size());
+	VoxelServer::get_singleton().set_volume_render_block_size(_volume_id, get_mesh_block_size());
 
 	reset_maps();
 	// TODO Size other than 16 is not really supported though.
@@ -428,7 +428,7 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 		item.octree.create(lod_count, nda);
 	}
 
-	VoxelServer::get_singleton()->set_volume_render_block_size(_volume_id, mesh_block_size);
+	VoxelServer::get_singleton().set_volume_render_block_size(_volume_id, mesh_block_size);
 
 	// Update voxel bounds because block size change can affect octree size
 	set_voxel_bounds(_update_data->settings.bounds_in_voxels);
@@ -708,11 +708,11 @@ void VoxelLodTerrain::start_updater() {
 		}
 	}
 
-	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, _mesher);
+	VoxelServer::get_singleton().set_volume_mesher(_volume_id, _mesher);
 }
 
 void VoxelLodTerrain::stop_updater() {
-	VoxelServer::get_singleton()->set_volume_mesher(_volume_id, Ref<VoxelMesher>());
+	VoxelServer::get_singleton().set_volume_mesher(_volume_id, Ref<VoxelMesher>());
 
 	// TODO We can still receive a few mesh delayed mesh updates after this. Is it a problem?
 	//_reception_buffers.mesh_output.clear();
@@ -733,19 +733,19 @@ void VoxelLodTerrain::stop_updater() {
 }
 
 void VoxelLodTerrain::start_streamer() {
-	VoxelServer::get_singleton()->set_volume_stream(_volume_id, _stream);
-	VoxelServer::get_singleton()->set_volume_generator(_volume_id, _generator);
+	VoxelServer::get_singleton().set_volume_stream(_volume_id, _stream);
+	VoxelServer::get_singleton().set_volume_generator(_volume_id, _generator);
 
 	if (_update_data->settings.full_load_mode && _stream.is_valid()) {
 		// TODO May want to defer this to be sure it's not done multiple times.
 		// This would be a side-effect of setting properties one by one, either by scene loader or by script
-		VoxelServer::get_singleton()->request_all_stream_blocks(_volume_id);
+		VoxelServer::get_singleton().request_all_stream_blocks(_volume_id);
 	}
 }
 
 void VoxelLodTerrain::stop_streamer() {
-	VoxelServer::get_singleton()->set_volume_stream(_volume_id, Ref<VoxelStream>());
-	VoxelServer::get_singleton()->set_volume_generator(_volume_id, Ref<VoxelGenerator>());
+	VoxelServer::get_singleton().set_volume_stream(_volume_id, Ref<VoxelStream>());
+	VoxelServer::get_singleton().set_volume_generator(_volume_id, Ref<VoxelGenerator>());
 
 	_update_data->wait_for_end_of_task();
 
@@ -769,7 +769,7 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 	_update_data->settings.lod_distance =
 			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
 	_update_data->state.force_update_octrees_next_update = true;
-	VoxelServer::get_singleton()->set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+	VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 }
 
 float VoxelLodTerrain::get_lod_distance() const {
@@ -1037,7 +1037,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			VOXEL_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
 
 			const Transform3D transform = get_global_transform();
-			VoxelServer::get_singleton()->set_volume_transform(_volume_id, transform);
+			VoxelServer::get_singleton().set_volume_transform(_volume_id, transform);
 
 			if (!is_inside_tree()) {
 				// The transform and other properties can be set by the scene loader,
@@ -1065,7 +1065,7 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 	Vector3 pos = _update_data->state.lods[0].last_viewer_data_block_pos << get_data_block_size_pow2();
 
 	// TODO Support for multiple viewers, this is a placeholder implementation
-	VoxelServer::get_singleton()->for_each_viewer( //
+	VoxelServer::get_singleton().for_each_viewer( //
 			[&pos](const VoxelServer::Viewer &viewer, uint32_t viewer_id) { //
 				pos = viewer.world_position;
 			});
@@ -1084,7 +1084,7 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 // 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
 // 		BlockToSave &b = blocks_to_save[i];
 // 		ZN_PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
-// 		VoxelServer::get_singleton()->request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
+// 		VoxelServer::get_singleton().request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
 // 	}
 // }
 
@@ -1107,7 +1107,7 @@ void VoxelLodTerrain::_process(float delta) {
 	process_fading_blocks(delta);
 
 	// TODO This could go into time spread tasks too
-	process_deferred_collision_updates(VoxelServer::get_singleton()->get_main_thread_time_budget_usec());
+	process_deferred_collision_updates(VoxelServer::get_singleton().get_main_thread_time_budget_usec());
 
 #ifdef TOOLS_ENABLED
 	if (is_showing_gizmos() && is_visible_in_tree()) {
@@ -1125,7 +1125,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 		// TODO Optimization: pool tasks instead of allocating?
 		VoxelLodTerrainUpdateTask *task = memnew(VoxelLodTerrainUpdateTask(_data, _update_data, _streaming_dependency,
-				_meshing_dependency, VoxelServer::get_singleton()->get_shared_viewers_data_from_default_world(),
+				_meshing_dependency, VoxelServer::get_singleton().get_shared_viewers_data_from_default_world(),
 				viewer_pos, _instancer != nullptr, _volume_id, get_global_transform()));
 
 		_update_data->task_is_complete = false;
@@ -1133,7 +1133,7 @@ void VoxelLodTerrain::_process(float delta) {
 		if (_threaded_update_enabled) {
 			// Schedule task at the end, so it is less likely to have contention with other logic than if it was done at
 			// the beginnning of `_process`
-			VoxelServer::get_singleton()->push_async_task(task);
+			VoxelServer::get_singleton().push_async_task(task);
 
 		} else {
 			task->run(ThreadedTaskContext{ 0 });

@@ -27,12 +27,12 @@ bool LoadAllBlocksDataTask::is_cancelled() {
 }
 
 void LoadAllBlocksDataTask::apply_result() {
-	if (VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
+	if (VoxelServer::get_singleton().is_volume_valid(volume_id)) {
 		// TODO Comparing pointer may not be guaranteed
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.
 		if (stream_dependency->valid) {
-			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton()->get_volume_callbacks(volume_id);
+			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.data_output_callback == nullptr);
 
 			for (auto it = _result.blocks.begin(); it != _result.blocks.end(); ++it) {

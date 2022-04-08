@@ -11,7 +11,7 @@ VoxelViewer::VoxelViewer() {
 void VoxelViewer::set_view_distance(unsigned int distance) {
 	_view_distance = distance;
 	if (is_active()) {
-		VoxelServer::get_singleton()->set_viewer_distance(_viewer_id, distance);
+		VoxelServer::get_singleton().set_viewer_distance(_viewer_id, distance);
 	}
 }
 
@@ -22,7 +22,7 @@ unsigned int VoxelViewer::get_view_distance() const {
 void VoxelViewer::set_requires_visuals(bool enabled) {
 	_requires_visuals = enabled;
 	if (is_active()) {
-		VoxelServer::get_singleton()->set_viewer_requires_visuals(_viewer_id, enabled);
+		VoxelServer::get_singleton().set_viewer_requires_visuals(_viewer_id, enabled);
 	}
 }
 
@@ -33,7 +33,7 @@ bool VoxelViewer::is_requiring_visuals() const {
 void VoxelViewer::set_requires_collisions(bool enabled) {
 	_requires_collisions = enabled;
 	if (is_active()) {
-		VoxelServer::get_singleton()->set_viewer_requires_collisions(_viewer_id, enabled);
+		VoxelServer::get_singleton().set_viewer_requires_collisions(_viewer_id, enabled);
 	}
 }
 
@@ -44,7 +44,7 @@ bool VoxelViewer::is_requiring_collisions() const {
 void VoxelViewer::set_requires_data_block_notifications(bool enabled) {
 	_requires_data_block_notifications = enabled;
 	if (is_active()) {
-		VoxelServer::get_singleton()->set_viewer_requires_data_block_notifications(_viewer_id, enabled);
+		VoxelServer::get_singleton().set_viewer_requires_data_block_notifications(_viewer_id, enabled);
 	}
 }
 
@@ -55,7 +55,7 @@ bool VoxelViewer::is_requiring_data_block_notifications() const {
 void VoxelViewer::set_network_peer_id(int id) {
 	_network_peer_id = id;
 	if (is_active()) {
-		VoxelServer::get_singleton()->set_viewer_network_peer_id(_viewer_id, id);
+		VoxelServer::get_singleton().set_viewer_network_peer_id(_viewer_id, id);
 	}
 }
 
@@ -67,28 +67,28 @@ void VoxelViewer::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
 			if (!Engine::get_singleton()->is_editor_hint()) {
-				_viewer_id = VoxelServer::get_singleton()->add_viewer();
-				VoxelServer::get_singleton()->set_viewer_distance(_viewer_id, _view_distance);
-				VoxelServer::get_singleton()->set_viewer_requires_visuals(_viewer_id, _requires_visuals);
-				VoxelServer::get_singleton()->set_viewer_requires_collisions(_viewer_id, _requires_collisions);
-				VoxelServer::get_singleton()->set_viewer_requires_data_block_notifications(
+				_viewer_id = VoxelServer::get_singleton().add_viewer();
+				VoxelServer::get_singleton().set_viewer_distance(_viewer_id, _view_distance);
+				VoxelServer::get_singleton().set_viewer_requires_visuals(_viewer_id, _requires_visuals);
+				VoxelServer::get_singleton().set_viewer_requires_collisions(_viewer_id, _requires_collisions);
+				VoxelServer::get_singleton().set_viewer_requires_data_block_notifications(
 						_viewer_id, _requires_data_block_notifications);
-				VoxelServer::get_singleton()->set_viewer_network_peer_id(_viewer_id, _network_peer_id);
+				VoxelServer::get_singleton().set_viewer_network_peer_id(_viewer_id, _network_peer_id);
 				const Vector3 pos = get_global_transform().origin;
-				VoxelServer::get_singleton()->set_viewer_position(_viewer_id, pos);
+				VoxelServer::get_singleton().set_viewer_position(_viewer_id, pos);
 			}
 		} break;
 
 		case NOTIFICATION_EXIT_TREE:
 			if (!Engine::get_singleton()->is_editor_hint()) {
-				VoxelServer::get_singleton()->remove_viewer(_viewer_id);
+				VoxelServer::get_singleton().remove_viewer(_viewer_id);
 			}
 			break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED:
 			if (is_active()) {
 				const Vector3 pos = get_global_transform().origin;
-				VoxelServer::get_singleton()->set_viewer_position(_viewer_id, pos);
+				VoxelServer::get_singleton().set_viewer_position(_viewer_id, pos);
 			}
 			break;
 

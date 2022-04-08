@@ -194,7 +194,7 @@ bool MeshBlockTask::is_cancelled() {
 }
 
 void MeshBlockTask::apply_result() {
-	if (VoxelServer::get_singleton()->is_volume_valid(volume_id)) {
+	if (VoxelServer::get_singleton().is_volume_valid(volume_id)) {
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.
 		// It is assumed that if a dependency is changed, a new copy of it is made and the old one is marked invalid.
@@ -212,7 +212,7 @@ void MeshBlockTask::apply_result() {
 			o.lod = lod;
 			o.surfaces = std::move(_surfaces_output);
 
-			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton()->get_volume_callbacks(volume_id);
+			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.mesh_output_callback == nullptr);
 			ERR_FAIL_COND(callbacks.data == nullptr);
 			callbacks.mesh_output_callback(callbacks.data, o);
