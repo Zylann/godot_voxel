@@ -9,6 +9,8 @@
 
 namespace zylann::voxel {
 
+class VoxelTool;
+
 // Base class for voxel volumes
 class VoxelNode : public Node3D {
 	GDCLASS(VoxelNode, Node3D)
@@ -34,6 +36,10 @@ public:
 
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
+
+	virtual uint32_t get_volume_id() const;
+
+	virtual Ref<VoxelTool> get_voxel_tool();
 
 #ifdef TOOLS_ENABLED
 	virtual TypedArray<String> get_configuration_warnings() const override;

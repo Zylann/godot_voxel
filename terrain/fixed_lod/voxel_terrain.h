@@ -14,6 +14,7 @@
 namespace zylann::voxel {
 
 class VoxelTool;
+class VoxelInstancer;
 
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.
@@ -86,7 +87,7 @@ public:
 		return _data_map;
 	}
 
-	Ref<VoxelTool> get_voxel_tool();
+	Ref<VoxelTool> get_voxel_tool() override;
 
 	// Creates or overrides whatever block data there is at the given position.
 	// The use case is multiplayer, client-side.
@@ -128,6 +129,16 @@ public:
 		std::shared_ptr<VoxelBufferInternal> voxels;
 		Vector3i position;
 	};
+
+	// Internal
+
+	void set_instancer(VoxelInstancer *instancer);
+	void get_meshed_block_positions(std::vector<Vector3i> &out_positions) const;
+	Array get_mesh_block_surface(Vector3i block_pos) const;
+
+	uint32_t get_volume_id() const override {
+		return _volume_id;
+	}
 
 protected:
 	void _notification(int p_what);
@@ -271,6 +282,8 @@ private:
 	Ref<Material> _materials[VoxelMesherBlocky::MAX_MATERIALS];
 
 	GodotUniqueObjectPtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
+
+	VoxelInstancer *_instancer = nullptr;
 
 	Stats _stats;
 };

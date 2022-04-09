@@ -1,6 +1,7 @@
 #ifndef VOXEL_INSTANCER_H
 #define VOXEL_INSTANCER_H
 
+#include "../../constants/voxel_constants.h"
 #include "../../streams/instance_data.h"
 #include "../../util/fixed_array.h"
 #include "../../util/godot/direct_multimesh_instance.h"
@@ -24,7 +25,7 @@ class PhysicsBody3D;
 
 namespace zylann::voxel {
 
-class VoxelLodTerrain;
+class VoxelNode;
 class VoxelInstancerRigidBody;
 class VoxelInstanceComponent;
 class VoxelInstanceLibrarySceneItem;
@@ -72,6 +73,12 @@ public:
 	void on_scene_instance_removed(
 			Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index);
 	void on_scene_instance_modified(Vector3i data_block_position, unsigned int render_block_index);
+
+	// Internal properties
+
+	void set_mesh_block_size_po2(unsigned int p_mesh_block_size_po2);
+	void set_data_block_size_po2(unsigned int p_data_block_size_po2);
+	void set_mesh_lod_distance(float p_lod_distance);
 
 	// Debug
 
@@ -203,7 +210,10 @@ private:
 
 	std::vector<Transform3D> _transform_cache;
 
-	VoxelLodTerrain *_parent;
+	VoxelNode *_parent = nullptr;
+	unsigned int _parent_data_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
+	unsigned int _parent_mesh_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
+	float _mesh_lod_distance = 0.f;
 
 #ifdef TOOLS_ENABLED
 	DebugRenderer _debug_renderer;

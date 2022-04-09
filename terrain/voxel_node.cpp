@@ -1,4 +1,5 @@
 #include "voxel_node.h"
+#include "../edition/voxel_tool.h"
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
@@ -38,6 +39,16 @@ void VoxelNode::restart_stream() {
 
 void VoxelNode::remesh_all_blocks() {
 	// Not implemented
+}
+
+uint32_t VoxelNode::get_volume_id() const {
+	CRASH_NOW_MSG("Not implemented");
+	return 0;
+}
+
+Ref<VoxelTool> VoxelNode::get_voxel_tool() {
+	CRASH_NOW_MSG("Not implemented");
+	return Ref<VoxelTool>();
 }
 
 #ifdef TOOLS_ENABLED

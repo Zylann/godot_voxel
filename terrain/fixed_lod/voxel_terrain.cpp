@@ -9,6 +9,7 @@
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
+#include "../instancing/voxel_instancer.h"
 #include "../voxel_data_block_enter_info.h"
 
 #include <core/config/engine.h>
@@ -217,6 +218,13 @@ void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 
 	_mesh_block_size_po2 = po2;
 
+	if (_instancer != nullptr) {
+		VoxelInstancer &instancer = *_instancer;
+		_mesh_map.for_each_block([&instancer](VoxelMeshBlockVT &block) { //
+			instancer.on_mesh_block_exit(block.position, 0);
+		});
+	}
+
 	// Unload all mesh blocks regardless of refcount
 	_mesh_map.clear();
 
@@ -356,6 +364,10 @@ unsigned int VoxelTerrain::get_max_view_distance() const {
 void VoxelTerrain::set_max_view_distance(unsigned int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0);
 	_max_view_distance_voxels = distance_in_voxels;
+
+	if (_instancer != nullptr) {
+		_instancer->set_mesh_lod_distance(_max_view_distance_voxels);
+	}
 }
 
 void VoxelTerrain::set_block_enter_notification_enabled(bool enable) {
@@ -401,8 +413,9 @@ void VoxelTerrain::set_material(unsigned int id, Ref<Material> material) {
 		_mesh_map.for_each_block([material, old_material](VoxelMeshBlockVT &block) {
 			Ref<Mesh> mesh = block.get_mesh();
 			if (mesh.is_valid()) {
-				// We can't just assign by material index because some meshes don't use all materials of the terrain,
-				// therefore they don't have as many surfaces. So we have to find which surfaces use the old material.
+				// We can't just assign by material index because some meshes don't use all materials of the
+				// terrain, therefore they don't have as many surfaces. So we have to find which surfaces use the
+				// old material.
 				for (int surface_index = 0; surface_index < mesh->get_surface_count(); ++surface_index) {
 					if (mesh->surface_get_material(surface_index) == old_material) {
 						mesh->surface_set_material(surface_index, material);
@@ -640,22 +653,67 @@ void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 
 	_mesh_map.remove_block(bpos, [&blocks_pending_update](const VoxelMeshBlockVT &block) {
 		if (block.get_mesh_state() == VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT) {
-			// That block was in the list of blocks to update later in the process loop, we'll need to unregister it.
-			// We expect that block to be in that list. If it isn't, something wrong happened with its state.
+			// That block was in the list of blocks to update later in the process loop, we'll need to unregister
+			// it. We expect that block to be in that list. If it isn't, something wrong happened with its state.
 			ERR_FAIL_COND(!unordered_remove_value(blocks_pending_update, block.position));
 		}
 	});
+
+	if (_instancer != nullptr) {
+		_instancer->on_mesh_block_exit(bpos, 0);
+	}
 }
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
 	// That may cause a stutter, so should be used when the player won't notice
 	_data_map.for_each_block(ScheduleSaveAction{ _blocks_to_save, with_copy });
+
+	if (_stream.is_valid() && _instancer != nullptr && _stream->supports_instance_blocks()) {
+		_instancer->save_all_modified_blocks();
+	}
+
 	// And flush immediately
 	send_block_data_requests();
 }
 
 const VoxelTerrain::Stats &VoxelTerrain::get_stats() const {
 	return _stats;
+}
+
+void VoxelTerrain::set_instancer(VoxelInstancer *instancer) {
+	if (_instancer != nullptr && instancer != nullptr) {
+		ERR_FAIL_COND_MSG(_instancer != nullptr, "No more than one VoxelInstancer per terrain");
+	}
+	_instancer = instancer;
+}
+
+void VoxelTerrain::get_meshed_block_positions(std::vector<Vector3i> &out_positions) const {
+	_mesh_map.for_each_block([&out_positions](const VoxelMeshBlock &mesh_block) {
+		if (mesh_block.has_mesh()) {
+			out_positions.push_back(mesh_block.position);
+		}
+	});
+}
+
+// This function is primarily intented for editor use cases at the moment.
+// It will be slower than using the instancing generation events,
+// because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
+Array VoxelTerrain::get_mesh_block_surface(Vector3i block_pos) const {
+	ZN_PROFILE_SCOPE();
+
+	Ref<Mesh> mesh;
+	{
+		const VoxelMeshBlockVT *block = _mesh_map.get_block(block_pos);
+		if (block != nullptr) {
+			mesh = block->get_mesh();
+		}
+	}
+
+	if (mesh.is_valid()) {
+		return mesh->surface_get_arrays(0);
+	}
+
+	return Array();
 }
 
 Dictionary VoxelTerrain::_b_get_statistics() const {
@@ -811,6 +869,10 @@ void VoxelTerrain::post_edit_area(Box3i box_in_voxels) {
 	}
 
 	try_schedule_mesh_update_from_data(box_in_voxels);
+
+	if (_instancer != nullptr) {
+		_instancer->on_area_edited(box_in_voxels);
+	}
 }
 
 void VoxelTerrain::_notification(int p_what) {
@@ -887,7 +949,7 @@ void VoxelTerrain::send_block_data_requests() {
 	for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
 		const Vector3i block_pos = _blocks_pending_load[i];
 		// TODO Batch request
-		VoxelServer::get_singleton().request_block_load(_volume_id, block_pos, 0, false);
+		VoxelServer::get_singleton().request_block_load(_volume_id, block_pos, 0, _instancer != nullptr);
 	}
 
 	// Blocks to save
@@ -1275,11 +1337,15 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 	// if (stream_enabled) {
 	// 	send_block_data_requests();
 	// }
+
+	if (_instancer != nullptr && ob.instances != nullptr) {
+		_instancer->on_data_block_loaded(ob.position, ob.lod, std::move(ob.instances));
+	}
 }
 
 // Sets voxel data of a block, discarding existing data if any.
-// If the given block coordinates are not inside any viewer's area, this function won't do anything and return false.
-// If a block is already loading or generating at this position, it will be cancelled.
+// If the given block coordinates are not inside any viewer's area, this function won't do anything and return
+// false. If a block is already loading or generating at this position, it will be cancelled.
 bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBufferInternal> &voxel_data) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(voxel_data == nullptr, false);
@@ -1301,8 +1367,8 @@ bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBu
 
 	if (refcount.get() == 0) {
 		// Actually, this block is not even in range. So we may ignore it.
-		// If we don't want this behavior, we could introduce a fake viewer that adds a reference to all blocks in this
-		// volume as long as it is enabled?
+		// If we don't want this behavior, we could introduce a fake viewer that adds a reference to all blocks in
+		// this volume as long as it is enabled?
 		return false;
 	}
 
@@ -1423,7 +1489,6 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	}
 
 	Ref<ArrayMesh> mesh;
-	mesh.instantiate();
 
 	//need to put both blocky and smooth surfaces into one list
 	std::vector<Array> collidable_surfaces;
@@ -1442,15 +1507,31 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 
 		collidable_surfaces.push_back(surface);
 
+		if (mesh.is_null()) {
+			mesh.instantiate();
+		}
+
 		mesh->add_surface_from_arrays(
 				ob.surfaces.primitive_type, surface, Array(), Dictionary(), ob.surfaces.mesh_flags);
 		mesh->surface_set_material(surface_index, _materials[i]);
 		++surface_index;
 	}
 
-	if (is_mesh_empty(**mesh)) {
+	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
 		mesh = Ref<Mesh>();
 		collidable_surfaces.clear();
+	}
+
+	if (_instancer != nullptr) {
+		if (mesh.is_null() && block != nullptr) {
+			// No surface anymore in this block
+			_instancer->on_mesh_block_exit(ob.position, ob.lod);
+		}
+		if (ob.surfaces.surfaces.size() > 0 && mesh.is_valid() && !block->has_mesh()) {
+			// TODO The mesh could come from an edited region!
+			// We would have to know if specific voxels got edited, or different from the generator
+			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0]);
+		}
 	}
 
 	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;

@@ -420,6 +420,11 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 		lod.last_view_distance_mesh_blocks = 0;
 	}
 
+	// Doing this after because `on_mesh_block_exit` may use the old size
+	if (_instancer != nullptr) {
+		_instancer->set_mesh_block_size_po2(mesh_block_size);
+	}
+
 	// Reset LOD octrees
 	LodOctree::NoDestroyAction nda;
 	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = state.lod_octrees.front(); E;
@@ -766,10 +771,15 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 
 	// Distance must be greater than a threshold,
 	// otherwise lods will decimate too fast and it will look messy
-	_update_data->settings.lod_distance =
+	const float lod_distance =
 			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
+	_update_data->settings.lod_distance = lod_distance;
 	_update_data->state.force_update_octrees_next_update = true;
 	VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+
+	if (_instancer != nullptr) {
+		_instancer->set_mesh_lod_distance(lod_distance);
+	}
 }
 
 float VoxelLodTerrain::get_lod_distance() const {

@@ -232,7 +232,7 @@ public:
 	// Internal
 
 	void set_instancer(VoxelInstancer *instancer);
-	uint32_t get_volume_id() const {
+	uint32_t get_volume_id() const override {
 		return _volume_id;
 	}
 
