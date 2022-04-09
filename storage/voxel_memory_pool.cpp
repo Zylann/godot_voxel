@@ -24,9 +24,9 @@ void VoxelMemoryPool::destroy_singleton() {
 	memdelete(pool);
 }
 
-VoxelMemoryPool *VoxelMemoryPool::get_singleton() {
+VoxelMemoryPool &VoxelMemoryPool::get_singleton() {
 	CRASH_COND(g_memory_pool == nullptr);
-	return g_memory_pool;
+	return *g_memory_pool;
 }
 
 VoxelMemoryPool::VoxelMemoryPool() {}

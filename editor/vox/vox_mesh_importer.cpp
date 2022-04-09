@@ -287,7 +287,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 		// Deallocate large temporary memory to free space.
 		// This is a workaround because VoxelBuffer uses this by default, however it doesn't fit the present use case.
 		// Eventually we should avoid using this pool here.
-		VoxelMemoryPool::get_singleton()->clear_unused_blocks();
+		VoxelMemoryPool::get_singleton().clear_unused_blocks();
 	}
 
 	if (mesh.is_null()) {

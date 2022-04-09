@@ -53,8 +53,7 @@ private:
 public:
 	static void create_singleton();
 	static void destroy_singleton();
-	// TODO Return a reference, it must not be null when called
-	static VoxelMemoryPool *get_singleton();
+	static VoxelMemoryPool &get_singleton();
 
 	VoxelMemoryPool();
 	~VoxelMemoryPool();
