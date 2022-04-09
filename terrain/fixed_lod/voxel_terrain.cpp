@@ -881,7 +881,7 @@ void VoxelTerrain::_notification(int p_what) {
 }
 
 void VoxelTerrain::send_block_data_requests() {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// Blocks to load
 	for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
@@ -958,7 +958,7 @@ void VoxelTerrain::notify_data_block_enter(VoxelDataBlock &block, uint32_t viewe
 }
 
 void VoxelTerrain::_process() {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	process_viewers();
 	//process_received_data_blocks();
 	process_meshing();
@@ -1073,7 +1073,7 @@ void VoxelTerrain::process_viewers() {
 
 	// Find out which blocks need to appear and which need to be unloaded
 	{
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 
 		for (size_t i = 0; i < _paired_viewers.size(); ++i) {
 			const PairedViewer &viewer = _paired_viewers[i];
@@ -1083,7 +1083,7 @@ void VoxelTerrain::process_viewers() {
 				const Box3i &prev_data_box = viewer.prev_state.data_box;
 
 				if (prev_data_box != new_data_box) {
-					VOXEL_PROFILE_SCOPE();
+					ZN_PROFILE_SCOPE();
 
 					const bool require_notifications = _block_enter_notification_enabled &&
 							VoxelServer::get_singleton().is_viewer_requiring_data_block_notifications(viewer.id);
@@ -1113,7 +1113,7 @@ void VoxelTerrain::process_viewers() {
 				const Box3i &prev_mesh_box = viewer.prev_state.mesh_box;
 
 				if (prev_mesh_box != new_mesh_box) {
-					VOXEL_PROFILE_SCOPE();
+					ZN_PROFILE_SCOPE();
 
 					// Unview blocks that just fell out of range
 					prev_mesh_box.difference(new_mesh_box, [this, &viewer](Box3i out_of_range_box) {
@@ -1186,7 +1186,7 @@ void VoxelTerrain::process_viewers() {
 }
 
 void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 
@@ -1266,7 +1266,7 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 
 	// The block itself might not be suitable for meshing yet, but blocks surrounding it might be now
 	{
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 		try_schedule_mesh_update_from_data(
 				Box3i(_data_map.block_to_voxel(block_pos), Vector3iUtil::create(get_data_block_size())));
 	}
@@ -1281,7 +1281,7 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 // If the given block coordinates are not inside any viewer's area, this function won't do anything and return false.
 // If a block is already loading or generating at this position, it will be cancelled.
 bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBufferInternal> &voxel_data) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(voxel_data == nullptr, false);
 
 	const Vector3i expected_block_size = Vector3iUtil::create(_data_map.get_block_size());
@@ -1333,7 +1333,7 @@ void VoxelTerrain::process_meshing() {
 
 	// Send mesh updates
 	{
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 
 		//const int used_channels_mask = get_used_channels_mask();
 		const int mesh_to_data_factor = get_mesh_block_size() / get_data_block_size();
@@ -1403,7 +1403,7 @@ void VoxelTerrain::process_meshing() {
 }
 
 void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	//print_line(String("DDD receive {0}").format(varray(ob.position.to_vec3())));
 
 	VoxelMeshBlockVT *block = _mesh_map.get_block(ob.position);

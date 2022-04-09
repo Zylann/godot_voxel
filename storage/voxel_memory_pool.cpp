@@ -41,7 +41,7 @@ VoxelMemoryPool::~VoxelMemoryPool() {
 }
 
 uint8_t *VoxelMemoryPool::allocate(size_t size) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	CRASH_COND(size == 0);
 	uint8_t *block = nullptr;
 	// Not calculating `pot` immediately because the function we use to calculate it uses 32 bits,
@@ -64,7 +64,7 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 			pool.mutex.unlock();
 		} else {
 			pool.mutex.unlock();
-			VOXEL_PROFILE_SCOPE_NAMED("new alloc");
+			ZN_PROFILE_SCOPE_NAMED("new alloc");
 			// All allocations done in this pool have the same size,
 			// which must be greater or equal to `size`
 			const size_t capacity = get_size_from_pool_index(pot);

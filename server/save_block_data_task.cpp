@@ -49,7 +49,7 @@ int SaveBlockDataTask::debug_get_running_count() {
 }
 
 void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(_stream_dependency == nullptr);
 	Ref<VoxelStream> stream = _stream_dependency->stream;

@@ -73,7 +73,7 @@ static void remap_vertex_array(const std::vector<T> &src_data, std::vector<T> &d
 
 static void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArrays &dst_mesh, float p_target_ratio,
 		float p_error_threshold) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// Gather and check input
 
@@ -92,7 +92,7 @@ static void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArr
 
 	// Simplify
 	{
-		VOXEL_PROFILE_SCOPE_NAMED("meshopt_simplify");
+		ZN_PROFILE_SCOPE_NAMED("meshopt_simplify");
 
 		// TODO See build script about the `zylannmeshopt::` namespace
 		const unsigned int lod_index_count = zylannmeshopt::meshopt_simplify(&lod_indices[0],
@@ -161,7 +161,7 @@ struct DeepSampler : transvoxel::IDeepSDFSampler {
 };
 
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	static thread_local transvoxel::Cache s_cache;
 	static thread_local transvoxel::MeshArrays s_mesh_arrays;
@@ -221,7 +221,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	output.surfaces.push_back(regular_arrays);
 
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 		s_mesh_arrays.clear();
 
 		transvoxel::build_transition_mesh(voxels, sdf_channel, dir, input.lod,

@@ -503,10 +503,10 @@ void VoxelServer::push_async_io_tasks(Span<zylann::IThreadedTask *> tasks) {
 }
 
 void VoxelServer::process() {
-	VOXEL_PROFILE_SCOPE();
-	VOXEL_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));
-	VOXEL_PROFILE_PLOT("TimeSpread tasks", int64_t(_time_spread_task_runner.get_pending_count()));
-	VOXEL_PROFILE_PLOT("Progressive tasks", int64_t(_progressive_task_runner.get_pending_count()));
+	ZN_PROFILE_SCOPE();
+	ZN_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));
+	ZN_PROFILE_PLOT("TimeSpread tasks", int64_t(_time_spread_task_runner.get_pending_count()));
+	ZN_PROFILE_PLOT("Progressive tasks", int64_t(_progressive_task_runner.get_pending_count()));
 
 	// Receive data updates
 	_streaming_thread_pool.dequeue_completed_tasks([](zylann::IThreadedTask *task) {

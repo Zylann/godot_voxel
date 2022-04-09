@@ -23,7 +23,7 @@ void TimeSpreadTaskRunner::push(Span<ITimeSpreadTask *> tasks) {
 }
 
 void TimeSpreadTaskRunner::process(uint64_t time_budget_usec) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	const Time &time = *Time::get_singleton();
 
 	static thread_local std::vector<ITimeSpreadTask *> tls_postponed_tasks;

@@ -147,7 +147,7 @@ VoxelStreamSQLiteInternal::~VoxelStreamSQLiteInternal() {
 }
 
 bool VoxelStreamSQLiteInternal::open(const char *fpath) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	close();
 
 	int rc = sqlite3_open_v2(fpath, &_db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
@@ -290,7 +290,7 @@ bool VoxelStreamSQLiteInternal::end_transaction() {
 }
 
 bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, const std::vector<uint8_t> &block_data, BlockType type) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	sqlite3 *db = _db;
 
@@ -401,7 +401,7 @@ VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
 bool VoxelStreamSQLiteInternal::load_all_blocks(void *callback_data,
 		void (*process_block_func)(void *callback_data, BlockLocation location, Span<const uint8_t> voxel_data,
 				Span<const uint8_t> instances_data)) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	CRASH_COND(process_block_func == nullptr);
 
 	sqlite3 *db = _db;
@@ -419,7 +419,7 @@ bool VoxelStreamSQLiteInternal::load_all_blocks(void *callback_data,
 		rc = sqlite3_step(load_all_blocks_statement);
 
 		if (rc == SQLITE_ROW) {
-			VOXEL_PROFILE_SCOPE_NAMED("Row");
+			ZN_PROFILE_SCOPE_NAMED("Row");
 
 			const uint64_t eloc = sqlite3_column_int64(load_all_blocks_statement, 0);
 			const BlockLocation loc = BlockLocation::decode(eloc);
@@ -635,7 +635,7 @@ void VoxelStreamSQLite::save_voxel_block(VoxelStream::VoxelQueryData &q) {
 }
 
 void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// TODO Get block size from database
 	const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
@@ -720,7 +720,7 @@ bool VoxelStreamSQLite::supports_instance_blocks() const {
 }
 
 void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryData> out_blocks) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// TODO Get block size from database
 	//const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
@@ -801,7 +801,7 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryDat
 }
 
 void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	VoxelStreamSQLiteInternal *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
@@ -873,7 +873,7 @@ void VoxelStreamSQLite::flush_cache() {
 
 // This function does not lock any mutex for internal use.
 void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ZN_PRINT_VERBOSE(format("VoxelStreamSQLite: Flushing cache ({} elements)", _cache.get_indicative_block_count()));
 
 	ERR_FAIL_COND(con == nullptr);

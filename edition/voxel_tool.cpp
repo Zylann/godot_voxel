@@ -179,7 +179,7 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 } // namespace
 
 void VoxelTool::do_sphere(Vector3 center, float radius) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	const Box3i box(Vector3iUtil::from_floored(center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2));
@@ -211,7 +211,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 
 // Erases matter in every voxel where the provided buffer has matter.
 void VoxelTool::sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_MSG(
 			get_channel() != VoxelBufferInternal::CHANNEL_SDF, "This function only works when channel is set to SDF");
 
@@ -234,7 +234,7 @@ void VoxelTool::sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos) {
 }
 
 void VoxelTool::do_box(Vector3i begin, Vector3i end) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	Vector3iUtil::sort_min_max(begin, end);
 	Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1));
 

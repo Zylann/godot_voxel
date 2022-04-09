@@ -68,7 +68,7 @@ void VoxelStreamRegionFiles::save_voxel_block(VoxelStream::VoxelQueryData &query
 }
 
 void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// In order to minimize opening/closing files, requests are grouped according to their region.
 
@@ -100,7 +100,7 @@ void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelStream::VoxelQueryData>
 }
 
 void VoxelStreamRegionFiles::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
 	std::vector<unsigned int> sorted_block_indices;
@@ -122,7 +122,7 @@ int VoxelStreamRegionFiles::get_used_channels_mask() const {
 
 VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	MutexLock lock(_mutex);
 
@@ -175,7 +175,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 }
 
 void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	MutexLock lock(_mutex);
 
@@ -436,7 +436,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::get_region_from_ca
 
 VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 		const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(!_meta_loaded, nullptr);
 	ERR_FAIL_COND_V(lod < 0, nullptr);
 

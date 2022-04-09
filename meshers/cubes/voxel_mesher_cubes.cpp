@@ -390,7 +390,7 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 		VoxelMesherCubes::GreedyAtlasData &out_greedy_atlas_data, const Span<Voxel_T> voxel_buffer,
 		const Vector3i block_size, std::vector<uint8_t> &mask_memory_pool, Color_F color_func) {
 	//
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 			block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 			block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
@@ -618,13 +618,13 @@ Ref<Image> make_greedy_atlas(
 		const VoxelMesherCubes::GreedyAtlasData &atlas_data, Span<VoxelMesherCubes::Arrays> surfaces) {
 	//
 	ERR_FAIL_COND_V(atlas_data.images.size() == 0, Ref<Image>());
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// Pack rectangles
 	Vector<Vector2i> result_points;
 	Vector2i result_size;
 	{
-		VOXEL_PROFILE_SCOPE_NAMED("Packing");
+		ZN_PROFILE_SCOPE_NAMED("Packing");
 		Vector<Vector2i> sizes;
 		sizes.resize(atlas_data.images.size());
 		for (unsigned int i = 0; i < atlas_data.images.size(); ++i) {
@@ -709,7 +709,7 @@ VoxelMesherCubes::VoxelMesherCubes() {
 VoxelMesherCubes::~VoxelMesherCubes() {}
 
 void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	const int channel = VoxelBufferInternal::CHANNEL_COLOR;
 	Cache &cache = _cache;
 

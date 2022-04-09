@@ -375,7 +375,7 @@ bool VoxelGeneratorGraph::is_using_xz_caching() const {
 void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> weight_outputs,
 		const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
 		VoxelBufferInternal &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// TODO Optimization: exclude up-front outputs that are known to be zero?
 	// So we choose the cases below based on non-zero outputs instead of total output count
@@ -491,7 +491,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 void gather_indices_and_weights_from_single_texture(unsigned int output_buffer_index,
 		const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
 		VoxelBufferInternal &out_voxel_buffer) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(output_buffer_index);
 	Span<const float> buffer_data = Span<const float>(buffer.data, buffer.size);
@@ -531,7 +531,7 @@ void fill_zx_sdf_slice(Span<Data_T> channel_data, float sdf_scale, Vector3i rmin
 static void fill_zx_sdf_slice(const VoxelGraphRuntime::Buffer &sdf_buffer, VoxelBufferInternal &out_buffer,
 		unsigned int channel, VoxelBufferInternal::Depth channel_depth, float sdf_scale, Vector3i rmin, Vector3i rmax,
 		int ry) {
-	VOXEL_PROFILE_SCOPE_NAMED("Copy SDF to block");
+	ZN_PROFILE_SCOPE_NAMED("Copy SDF to block");
 
 	if (out_buffer.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
 		out_buffer.decompress_channel(channel);
@@ -585,7 +585,7 @@ void fill_zx_integer_slice(Span<Data_T> channel_data, Vector3i rmin, Vector3i rm
 
 static void fill_zx_integer_slice(const VoxelGraphRuntime::Buffer &src_buffer, VoxelBufferInternal &out_buffer,
 		unsigned int channel, VoxelBufferInternal::Depth channel_depth, Vector3i rmin, Vector3i rmax, int ry) {
-	VOXEL_PROFILE_SCOPE_NAMED("Copy integer data to block");
+	ZN_PROFILE_SCOPE_NAMED("Copy integer data to block");
 
 	if (out_buffer.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
 		out_buffer.decompress_channel(channel);
@@ -697,7 +697,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	for (int sz = 0; sz < bs.z; sz += section_size.z) {
 		for (int sy = 0; sy < bs.y; sy += section_size.y) {
 			for (int sx = 0; sx < bs.x; sx += section_size.x) {
-				VOXEL_PROFILE_SCOPE_NAMED("Section");
+				ZN_PROFILE_SCOPE_NAMED("Section");
 
 				const Vector3i rmin(sx, sy, sz);
 				const Vector3i rmax = rmin + Vector3i(section_size);
@@ -791,7 +791,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 				}
 
 				for (int ry = rmin.y, gy = gmin.y; ry < rmax.y; ++ry, gy += stride) {
-					VOXEL_PROFILE_SCOPE_NAMED("Full slice");
+					ZN_PROFILE_SCOPE_NAMED("Full slice");
 
 					y_cache.fill(gy);
 
@@ -1134,7 +1134,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 				sdf_max(p_sdf_max) {}
 
 		void operator()(int x0, int y0, int width, int height) {
-			VOXEL_PROFILE_SCOPE();
+			ZN_PROFILE_SCOPE();
 
 			const unsigned int area = width * height;
 			x_coords.resize(area);
@@ -1191,7 +1191,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 // then this function can be used to bake a map of the surface.
 // Such maps can be used by shaders to sharpen the details of the planet when seen from far away.
 void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(im.is_null());
 
 	std::shared_ptr<const Runtime> runtime_ptr;
@@ -1229,7 +1229,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 				ref_radius(p_ref_radius) {}
 
 		void operator()(int x0, int y0, int width, int height) {
-			VOXEL_PROFILE_SCOPE();
+			ZN_PROFILE_SCOPE();
 
 			const unsigned int area = width * height;
 			x_coords.resize(area);

@@ -28,7 +28,7 @@ bool decompress_lz4(MemoryReader &f, Span<const uint8_t> src, std::vector<uint8_
 }
 
 bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	MemoryReader f(src, ENDIANESS_LITTLE_ENDIAN);
 
@@ -81,7 +81,7 @@ bool compress_lz4(MemoryWriter &f, Span<const uint8_t> src, std::vector<uint8_t>
 }
 
 bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	switch (comp) {
 		case COMPRESSION_NONE: {

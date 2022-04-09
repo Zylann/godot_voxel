@@ -189,7 +189,7 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(
 	} else if (overwrite) {
 		block->set_voxels(buffer);
 	} else {
-		VOXEL_PROFILE_MESSAGE("Redundant data block");
+		ZN_PROFILE_MESSAGE("Redundant data block");
 		ZN_PRINT_VERBOSE(format(
 				"Discarded block {} lod {}, there was already data and overwriting is not enabled", bpos, _lod_index));
 	}
@@ -355,7 +355,7 @@ bool VoxelDataMap::is_area_fully_loaded(const Box3i voxels_box) const {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generator) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	//ERR_FAIL_COND_MSG(_full_load_mode == false, nullptr, "This function can only be used in full load mode");
 
 	struct Task {

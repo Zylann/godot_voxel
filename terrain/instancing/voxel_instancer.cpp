@@ -36,7 +36,7 @@ VoxelInstancer::~VoxelInstancer() {
 }
 
 void VoxelInstancer::clear_blocks() {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	// Destroy blocks, keep configured layers
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		Block *block = *it;
@@ -121,7 +121,7 @@ void VoxelInstancer::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
-			VOXEL_PROFILE_SCOPE_NAMED("VoxelInstancer::NOTIFICATION_TRANSFORM_CHANGED");
+			ZN_PROFILE_SCOPE_NAMED("VoxelInstancer::NOTIFICATION_TRANSFORM_CHANGED");
 
 			if (!is_inside_tree() || _parent == nullptr) {
 				// The transform and other properties can be set by the scene loader,
@@ -233,7 +233,7 @@ const VoxelInstancer::Layer *VoxelInstancer::get_layer_const(int id) const {
 }
 
 void VoxelInstancer::process_mesh_lods() {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
 
 	// Get viewer position
@@ -397,7 +397,7 @@ Ref<VoxelInstanceLibrary> VoxelInstancer::get_library() const {
 }
 
 void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_parent == nullptr);
 
 	Ref<World3D> world_ref = get_world_3d();
@@ -723,7 +723,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 		return;
 	}
 
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	Lod &lod = _lods[lod_index];
 
@@ -817,7 +817,7 @@ int VoxelInstancer::create_block(Layer *layer, uint16_t layer_id, Vector3i grid_
 void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Transform3D> transforms,
 		Vector3i grid_position, Layer *layer, const VoxelInstanceLibraryItem *item_base, uint16_t layer_id,
 		World3D *world, const Transform3D &block_transform) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(layer == nullptr);
 	CRASH_COND(item_base == nullptr);
@@ -876,7 +876,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 		Span<const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> collision_shapes =
 				item->get_collision_shapes();
 		if (collision_shapes.size() > 0) {
-			VOXEL_PROFILE_SCOPE_NAMED("Update multimesh bodies");
+			ZN_PROFILE_SCOPE_NAMED("Update multimesh bodies");
 
 			const int data_block_size_po2 = _parent->get_data_block_size_pow2();
 
@@ -927,7 +927,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 	// Update scene instances
 	const VoxelInstanceLibrarySceneItem *scene_item = Object::cast_to<VoxelInstanceLibrarySceneItem>(item_base);
 	if (scene_item != nullptr) {
-		VOXEL_PROFILE_SCOPE_NAMED("Update scene instances");
+		ZN_PROFILE_SCOPE_NAMED("Update scene instances");
 		ERR_FAIL_COND(scene_item->get_scene().is_null());
 
 		const int data_block_size_po2 = _parent->get_data_block_size_pow2();
@@ -978,7 +978,7 @@ static const InstanceBlockData::LayerData *find_layer_data(const InstanceBlockDa
 }
 
 void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod_index, Array surface_arrays) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
 
 	// TODO Query one or multiple data blocks if any
@@ -1060,7 +1060,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 				PackedVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
 				ERR_FAIL_COND(normals.size() == 0);
 
-				VOXEL_PROFILE_SCOPE();
+				ZN_PROFILE_SCOPE();
 
 				static thread_local std::vector<Transform3D> s_generated_transforms;
 				s_generated_transforms.clear();
@@ -1081,7 +1081,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 }
 
 void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
 
 	ZN_PRINT_VERBOSE(format("Requesting save of instance block {} lod {}", data_grid_pos, lod_index));
@@ -1148,7 +1148,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 			Ref<MultiMesh> multimesh = render_block->multimesh_instance.get_multimesh();
 			CRASH_COND(multimesh.is_null());
 
-			VOXEL_PROFILE_SCOPE();
+			ZN_PROFILE_SCOPE();
 
 			const int instance_count = get_visible_instance_count(**multimesh);
 
@@ -1178,7 +1178,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 		} else if (render_block->scene_instances.size() > 0) {
 			// Scenes
 
-			VOXEL_PROFILE_SCOPE();
+			ZN_PROFILE_SCOPE();
 			const unsigned int instance_count = render_block->scene_instances.size();
 
 			if (render_to_data_factor == 1) {
@@ -1361,7 +1361,7 @@ void VoxelInstancer::remove_floating_scene_instances(Block &block, const Transfo
 }
 
 void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_parent == nullptr);
 	const int render_block_size = _parent->get_mesh_block_size();
 	const int data_block_size = _parent->get_data_block_size();

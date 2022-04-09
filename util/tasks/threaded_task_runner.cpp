@@ -124,9 +124,9 @@ void ThreadedTaskRunner::thread_func_static(void *p_data) {
 	if (!data.name.is_empty()) {
 		Thread::set_name(data.name);
 
-#ifdef VOXEL_PROFILER_ENABLED
+#ifdef ZN_PROFILER_ENABLED
 		CharString thread_name = data.name.utf8();
-		VOXEL_PROFILE_SET_THREAD_NAME(thread_name.get_data());
+		ZN_PROFILE_SET_THREAD_NAME(thread_name.get_data());
 #endif
 	}
 
@@ -141,7 +141,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 
 	while (!data.stop) {
 		{
-			VOXEL_PROFILE_SCOPE_NAMED("Task pickup");
+			ZN_PROFILE_SCOPE_NAMED("Task pickup");
 
 			data.debug_state = STATE_PICKING;
 			const uint64_t now = Time::get_singleton()->get_ticks_msec();

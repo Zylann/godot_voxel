@@ -25,7 +25,7 @@ int GenerateBlockTask::debug_get_running_count() {
 }
 
 void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);
 	Ref<VoxelGenerator> generator = stream_dependency->generator;

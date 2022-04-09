@@ -112,7 +112,7 @@ void VoxelMeshBlock::set_parent_visible(bool parent_visible) {
 }
 
 void VoxelMeshBlock::set_parent_transform(const Transform3D &parent_transform) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	if (_mesh_instance.is_valid() || _static_body.is_valid()) {
 		const Transform3D local_transform(Basis(), _position_in_voxels);

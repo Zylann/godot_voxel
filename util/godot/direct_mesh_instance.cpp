@@ -44,7 +44,7 @@ void DirectMeshInstance::set_world(World3D *world) {
 }
 
 void DirectMeshInstance::set_transform(Transform3D world_transform) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(!_mesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	vs.instance_set_transform(_mesh_instance, world_transform);

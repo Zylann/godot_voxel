@@ -24,7 +24,7 @@ namespace {
 
 Ref<ArrayMesh> build_mesh(
 		Span<const Array> surfaces, Mesh::PrimitiveType primitive, int flags, Ref<Material> material) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
 
 	unsigned int surface_index = 0;
@@ -77,7 +77,7 @@ struct BeforeUnloadMeshAction {
 	std::vector<Ref<ShaderMaterial>> &shader_material_pool;
 
 	void operator()(VoxelMeshBlockVLT &block) {
-		VOXEL_PROFILE_SCOPE_NAMED("Recycle material");
+		ZN_PROFILE_SCOPE_NAMED("Recycle material");
 		// Recycle material
 		Ref<ShaderMaterial> sm = block.get_shader_material();
 		if (sm.is_valid()) {
@@ -622,7 +622,7 @@ void VoxelLodTerrain::copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_bu
 // Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.
 // The provided box must be at LOD0 coordinates.
 void VoxelLodTerrain::post_edit_area(Box3i p_box) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	// TODO Better decoupling is needed here.
 	// In the past this padding was necessary for mesh blocks because visuals depend on neighbor voxels.
 	// So when editing voxels at the boundary of two mesh blocks, both must update.
@@ -1034,7 +1034,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
-			VOXEL_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
+			ZN_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
 
 			const Transform3D transform = get_global_transform();
 			VoxelServer::get_singleton().set_volume_transform(_volume_id, transform);
@@ -1089,7 +1089,7 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 // }
 
 void VoxelLodTerrain::_process(float delta) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	_stats.dropped_block_loads = 0;
 	_stats.dropped_block_meshs = 0;
@@ -1116,7 +1116,7 @@ void VoxelLodTerrain::_process(float delta) {
 #endif
 
 	if (_update_data->task_is_complete) {
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 
 		apply_main_thread_update_tasks();
 
@@ -1144,7 +1144,7 @@ void VoxelLodTerrain::_process(float delta) {
 }
 
 void VoxelLodTerrain::apply_main_thread_update_tasks() {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	// Dequeue outputs of the threadable part of the update for actions taking place on the main thread
 
 	CRASH_COND(_update_data->task_is_complete == false);
@@ -1260,7 +1260,7 @@ bool thread_safe_contains(const std::unordered_set<T> &set, T v, BinaryMutex &mu
 }
 
 void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVED) {
 		// That's a save confirmation event.
@@ -1335,7 +1335,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
 	// This also proved to be very slow compared to the meshing process itself...
 	// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(!is_inside_tree());
 
@@ -1431,7 +1431,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 
 		Ref<ShaderMaterial> shader_material = _material;
 		if (shader_material.is_valid() && block->get_shader_material().is_null()) {
-			VOXEL_PROFILE_SCOPE_NAMED("Add ShaderMaterial");
+			ZN_PROFILE_SCOPE_NAMED("Add ShaderMaterial");
 
 			// Pooling shader materials is necessary for now, to avoid stuttering in the editor.
 			// Due to a signal used to keep the inspector up to date, even though these
@@ -1457,7 +1457,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
 	{
-		VOXEL_PROFILE_SCOPE_NAMED("Transition meshes");
+		ZN_PROFILE_SCOPE_NAMED("Transition meshes");
 		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
 			Ref<ArrayMesh> transition_mesh = build_mesh(to_span_const(mesh_data.transition_surfaces[dir]),
 					mesh_data.primitive_type, mesh_data.mesh_flags, _material);
@@ -1495,7 +1495,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 }
 
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	const unsigned int lod_count = _update_data->settings.lod_count;
 
@@ -1553,7 +1553,7 @@ void VoxelLodTerrain::abort_async_edits() {
 }
 
 void VoxelLodTerrain::process_fading_blocks(float delta) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	const float speed = _lod_fade_duration < 0.001f ? 99999.f : delta / _lod_fade_duration;
 
@@ -1592,7 +1592,7 @@ void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
 // It will be slower than using the instancing generation events,
 // because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
 Array VoxelLodTerrain::get_mesh_block_surface(Vector3i block_pos, int lod_index) const {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	const int lod_count = _update_data->settings.lod_count;
 	ERR_FAIL_COND_V(lod_index < 0 || lod_index >= lod_count, Array());
@@ -1628,7 +1628,7 @@ void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, std::vect
 }
 
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// This is often called before quitting the game or forcing a global save.
 	// This could be part of the update task if async, but here we want it to be immediate.
@@ -1986,7 +1986,7 @@ Array VoxelLodTerrain::debug_get_octrees_detailed() const {
 #ifdef TOOLS_ENABLED
 
 void VoxelLodTerrain::update_gizmos() {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// Hopefully this should not be skipped most of the time, because the task is started at the end of `_process`,
 	// and gizmos update before. So the task has about 16ms to complete. If it takes longer, it will skip.

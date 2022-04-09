@@ -260,7 +260,7 @@ You need to include `utility/profiling.h` to access the macros.
 To profile a whole function:
 ```cpp
 void some_function() {
-    VOXEL_PROFILE_SCOPE();
+    ZN_PROFILE_SCOPE();
     //...
 }
 ```
@@ -272,7 +272,7 @@ void some_function() {
 
     // Could be an `if`, `for`, `while`, or a simple block as here
     {
-        VOXEL_PROFILE_SCOPE();
+        ZN_PROFILE_SCOPE();
         // Profiled code...
     }
 
@@ -280,7 +280,7 @@ void some_function() {
 }
 ```
 
-By default scopes take the name of the function, or file and a line number, but you can give a name explicitely using `VOXEL_PROFILE_SCOPE_NAMED("Hello")`. Only compile-time strings are supported, don't use `String` or `std::string`.
+By default scopes take the name of the function, or file and a line number, but you can give a name explicitely using `ZN_PROFILE_SCOPE_NAMED("Hello")`. Only compile-time strings are supported, don't use `String` or `std::string`.
 
 It is also possible to plot numeric values so they are displayed in the timeline too:
 
@@ -288,7 +288,7 @@ It is also possible to plot numeric values so they are displayed in the timeline
 void process_every_frame() {
     // Some code...
 
-    VOXEL_PROFILE_PLOT("Bunnies", bunnies.size());
+    ZN_PROFILE_PLOT("Bunnies", bunnies.size());
 }
 ```
 

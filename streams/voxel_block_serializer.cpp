@@ -212,7 +212,7 @@ size_t get_size_in_bytes(const VoxelBufferInternal &buffer, size_t &metadata_siz
 
 SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
 	//
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	std::vector<uint8_t> &dst_data = tls_data;
 	std::vector<uint8_t> &metadata_tmp = tls_metadata_tmp;
@@ -388,7 +388,7 @@ bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 }
 
 bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	std::vector<uint8_t> &metadata_tmp = tls_metadata_tmp;
 
@@ -487,7 +487,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 }
 
 SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	std::vector<uint8_t> &compressed_data = tls_compressed_data;
 
@@ -503,7 +503,7 @@ SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer) 
 }
 
 bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	std::vector<uint8_t> &data = tls_data;
 
@@ -514,7 +514,7 @@ bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal 
 }
 
 bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(f == nullptr, false);
 
 #if defined(TOOLS_ENABLED) || defined(DEBUG_ENABLED)

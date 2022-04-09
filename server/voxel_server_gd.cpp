@@ -24,7 +24,7 @@ void VoxelServer::destroy_singleton() {
 }
 
 VoxelServer::VoxelServer() {
-#ifdef VOXEL_PROFILER_ENABLED
+#ifdef ZN_PROFILER_ENABLED
 	CRASH_COND(RenderingServer::get_singleton() == nullptr);
 	RenderingServer::get_singleton()->connect(
 			SNAME("frame_post_draw"), callable_mp(this, &VoxelServer::_on_rendering_server_frame_post_draw));
@@ -42,8 +42,8 @@ void VoxelServer::schedule_task(Ref<ZN_ThreadedTask> task) {
 }
 
 void VoxelServer::_on_rendering_server_frame_post_draw() {
-#ifdef VOXEL_PROFILER_ENABLED
-	VOXEL_PROFILE_MARK_FRAME();
+#ifdef ZN_PROFILER_ENABLED
+	ZN_PROFILE_MARK_FRAME();
 #endif
 }
 

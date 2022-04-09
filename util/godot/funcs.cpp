@@ -31,7 +31,7 @@ bool is_mesh_empty(const Mesh &mesh) {
 // See https://github.com/Zylann/godot_voxel/issues/54
 //
 Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	PackedVector3Array face_points;
 	int face_points_size = 0;
@@ -93,7 +93,7 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfac
 
 	Ref<ConcavePolygonShape3D> shape;
 	{
-		VOXEL_PROFILE_SCOPE_NAMED("Godot shape");
+		ZN_PROFILE_SCOPE_NAMED("Godot shape");
 		shape.instantiate();
 		shape->set_faces(face_points);
 	}

@@ -353,7 +353,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 
 	// Save mesh
 	{
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 		String mesh_save_path = String("{0}.mesh").format(varray(p_save_path));
 		const Error mesh_save_err = ResourceSaver::save(mesh_save_path, mesh);
 		ERR_FAIL_COND_V_MSG(

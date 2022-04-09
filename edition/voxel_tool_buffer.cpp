@@ -24,7 +24,7 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 		return;
 	}
 
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	Box3i box(Vector3iUtil::from_floored(center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2));

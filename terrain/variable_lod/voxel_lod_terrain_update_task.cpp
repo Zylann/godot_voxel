@@ -12,7 +12,7 @@ namespace zylann::voxel {
 
 void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
 		Ref<VoxelGenerator> generator, bool full_load_mode, const int mesh_block_size) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	// Propagates edits performed so far to other LODs.
 	// These LODs must be currently in memory, otherwise terrain data will miss it.
 	// This is currently ensured by the fact we load blocks in a "pyramidal" way,
@@ -100,7 +100,7 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 					std::shared_ptr<VoxelBufferInternal> voxels = gd_make_shared<VoxelBufferInternal>();
 					voxels->create(Vector3iUtil::create(data_block_size));
 					if (generator.is_valid()) {
-						VOXEL_PROFILE_SCOPE_NAMED("Generate");
+						ZN_PROFILE_SCOPE_NAMED("Generate");
 						VoxelGenerator::VoxelQueryData q{ //
 							*voxels, //
 							dst_bpos << (dst_lod_index + data_block_size_po2), //
@@ -145,7 +145,7 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 			// ugly.
 			// TODO Optimization: try to narrow to edited region instead of taking whole block
 			{
-				VOXEL_PROFILE_SCOPE_NAMED("Downscale");
+				ZN_PROFILE_SCOPE_NAMED("Downscale");
 				RWLockWrite lock(src_block->get_voxels().get_lock());
 				src_block->get_voxels().downscale_to(
 						dst_block->get_voxels(), Vector3i(), src_block->get_voxels_const().get_size(), rel * half_bs);
@@ -183,7 +183,7 @@ struct BeforeUnloadDataAction {
 
 static void unload_data_block_no_lock(VoxelLodTerrainUpdateData::Lod &lod, VoxelDataLodMap::Lod &data_lod,
 		Vector3i block_pos, std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save, bool can_save) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	data_lod.map.remove_block(block_pos, BeforeUnloadDataAction{ blocks_to_save, can_save });
 
@@ -203,7 +203,7 @@ static void unload_data_block_no_lock(VoxelLodTerrainUpdateData::Lod &lod, Voxel
 static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
 		Vector3 p_viewer_pos, std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save, bool can_save,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
-	VOXEL_PROFILE_SCOPE_NAMED("Sliding box data unload");
+	ZN_PROFILE_SCOPE_NAMED("Sliding box data unload");
 	// TODO Could it actually be enough to have a rolling update on all blocks?
 
 	// This should be the same distance relatively to each LOD
@@ -220,7 +220,7 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 	// Instead, those blocks are unloaded by the octree forest management.
 	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
 	for (int lod_index = lod_count - 2; lod_index >= 0; --lod_index) {
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
 		// Each LOD keeps a box of loaded blocks, and only some of the blocks will get polygonized.
@@ -247,7 +247,7 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 		// Eliminate pending blocks that aren't needed
 
 		if (prev_box != new_box) {
-			VOXEL_PROFILE_SCOPE_NAMED("Unload data");
+			ZN_PROFILE_SCOPE_NAMED("Unload data");
 			VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
 			RWLockWrite wlock(data_lod.map_lock);
 			prev_box.difference(new_box, [&lod, &data_lod, &blocks_to_save, can_save](Box3i out_of_range_box) {
@@ -259,7 +259,7 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 		}
 
 		{
-			VOXEL_PROFILE_SCOPE_NAMED("Cancel updates");
+			ZN_PROFILE_SCOPE_NAMED("Cancel updates");
 			// Cancel block updates that are not within the padded region
 			// (since neighbors are always required to remesh)
 
@@ -292,7 +292,7 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 
 static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector3 p_viewer_pos,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
-	VOXEL_PROFILE_SCOPE_NAMED("Sliding box mesh unload");
+	ZN_PROFILE_SCOPE_NAMED("Sliding box mesh unload");
 	// TODO Could it actually be enough to have a rolling update on all blocks?
 
 	// This should be the same distance relatively to each LOD
@@ -305,7 +305,7 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 	// Instead, those blocks are unloaded by the octree forest management.
 	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
 	for (int lod_index = settings.lod_count - 2; lod_index >= 0; --lod_index) {
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
 		unsigned int block_size_po2 = mesh_block_size_po2 + lod_index;
@@ -328,7 +328,7 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 		// Eliminate pending blocks that aren't needed
 
 		if (prev_box != new_box) {
-			VOXEL_PROFILE_SCOPE_NAMED("Unload meshes");
+			ZN_PROFILE_SCOPE_NAMED("Unload meshes");
 			RWLockWrite wlock(lod.mesh_map_state.map_lock);
 			prev_box.difference(new_box, [&lod](Box3i out_of_range_box) {
 				out_of_range_box.for_each_cell([&lod](Vector3i pos) {
@@ -341,7 +341,7 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 		}
 
 		{
-			VOXEL_PROFILE_SCOPE_NAMED("Cancel updates");
+			ZN_PROFILE_SCOPE_NAMED("Cancel updates");
 			// Cancel block updates that are not within the new region
 			unordered_remove_if(lod.blocks_pending_update, [new_box](Vector3i bpos) { //
 				return !new_box.contains(bpos);
@@ -355,7 +355,7 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 
 void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector3 p_viewer_pos,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
-	VOXEL_PROFILE_SCOPE_NAMED("Sliding box octrees");
+	ZN_PROFILE_SCOPE_NAMED("Sliding box octrees");
 	// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
 
 	const unsigned int mesh_block_size_po2 = settings.mesh_block_size_po2;
@@ -443,7 +443,7 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 		ExitAction exit_action{ state, settings.lod_count };
 		EnterAction enter_action{ state, settings.lod_count };
 		{
-			VOXEL_PROFILE_SCOPE_NAMED("Unload octrees");
+			ZN_PROFILE_SCOPE_NAMED("Unload octrees");
 
 			const unsigned int last_lod_index = settings.lod_count - 1;
 			VoxelLodTerrainUpdateData::Lod &last_lod = state.lods[last_lod_index];
@@ -454,7 +454,7 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 			});
 		}
 		{
-			VOXEL_PROFILE_SCOPE_NAMED("Load octrees");
+			ZN_PROFILE_SCOPE_NAMED("Load octrees");
 			new_box.difference(prev_box, [enter_action](Box3i box_to_load) { //
 				box_to_load.for_each_cell(enter_action);
 			});
@@ -542,7 +542,7 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, VoxelData
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, Vector3i mesh_block_pos, uint8_t lod_index,
 		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
-	//VOXEL_PROFILE_SCOPE();
+	//ZN_PROFILE_SCOPE();
 
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
@@ -791,7 +791,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, VoxelDataLodMap &data, Vector3 p_viewer_pos,
 		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load) {
 	//
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 	const int octree_leaf_node_size = mesh_block_size;
@@ -824,7 +824,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 	// TODO Maintain a vector to make iteration faster?
 	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = state.lod_octrees.front(); E;
 			E = E->next()) {
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 
 		struct OctreeActions {
 			VoxelLodTerrainUpdateData::State &state;
@@ -901,7 +901,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			}
 
 			bool can_split(Vector3i node_pos, int lod_index, LodOctree::NodeData &node_data) {
-				VOXEL_PROFILE_SCOPE();
+				ZN_PROFILE_SCOPE();
 				if (!LodOctree::is_below_split_distance(
 							node_pos, lod_index, viewer_pos_octree_space, lod_distance_octree_space)) {
 					return false;
@@ -937,7 +937,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			}
 
 			bool can_join(Vector3i node_pos, int parent_lod_index) {
-				VOXEL_PROFILE_SCOPE();
+				ZN_PROFILE_SCOPE();
 				if (LodOctree::is_below_split_distance(
 							node_pos, parent_lod_index, viewer_pos_octree_space, lod_distance_octree_space)) {
 					return false;
@@ -996,7 +996,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 		// In theory, blocks containing no surface have no reason to need a transition mask,
 		// but when we get a new mesh update into a block that previously had no surface, we still need it.
 
-		VOXEL_PROFILE_SCOPE_NAMED("Transition masks");
+		ZN_PROFILE_SCOPE_NAMED("Transition masks");
 		for (unsigned int lod_index = 0; lod_index < tls_blocks_pending_transition_update_per_lod.size(); ++lod_index) {
 			std::vector<Vector3i> &blocks_pending_transition_update =
 					tls_blocks_pending_transition_update_per_lod[lod_index];
@@ -1174,7 +1174,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {
 	//
-	VOXEL_PROFILE_SCOPE_NAMED("Send mesh requests");
+	ZN_PROFILE_SCOPE_NAMED("Send mesh requests");
 
 	CRASH_COND(data_ptr == nullptr);
 	const VoxelDataLodMap &data = *data_ptr;
@@ -1184,11 +1184,11 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 	const int render_to_data_factor = mesh_block_size / mesh_block_size;
 
 	for (unsigned int lod_index = 0; lod_index < settings.lod_count; ++lod_index) {
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
 		for (unsigned int bi = 0; bi < lod.blocks_pending_update.size(); ++bi) {
-			VOXEL_PROFILE_SCOPE();
+			ZN_PROFILE_SCOPE();
 			const Vector3i mesh_block_pos = lod.blocks_pending_update[bi];
 
 			auto mesh_block_it = lod.mesh_map_state.map.find(mesh_block_pos);
@@ -1241,7 +1241,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 		Span<IThreadedTask *> next_tasks, uint32_t volume_id, std::shared_ptr<StreamingDependency> &stream_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	ERR_FAIL_COND_V_MSG(settings.full_load_mode == false, nullptr, "This function can only be used in full load mode");
 
@@ -1256,7 +1256,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 
 	for (unsigned int lod_index = 0; lod_index < settings.lod_count; ++lod_index) {
 		for (unsigned int box_index = 0; box_index < voxel_boxes.size(); ++box_index) {
-			VOXEL_PROFILE_SCOPE_NAMED("Box");
+			ZN_PROFILE_SCOPE_NAMED("Box");
 
 			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 			const Box3i voxel_box = voxel_boxes[box_index];
@@ -1285,7 +1285,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 	// TODO `next_tasks` is executed in parallel. But since they can be edits, may we do them in sequence?
 
 	if (todo.size() > 0) {
-		VOXEL_PROFILE_SCOPE_NAMED("Posting requests");
+		ZN_PROFILE_SCOPE_NAMED("Posting requests");
 
 		// Only create the tracker if we actually are creating tasks. If we still create it,
 		// no task will take ownership of it, so if it is not stored after this function returns,
@@ -1316,7 +1316,7 @@ static void process_async_edits(VoxelLodTerrainUpdateData::State &state,
 		std::shared_ptr<StreamingDependency> &stream_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	if (state.running_async_edits.size() == 0) {
 		// Schedule all next edits when the previous ones are done
@@ -1354,7 +1354,7 @@ static void process_async_edits(VoxelLodTerrainUpdateData::State &state,
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	struct SetCompleteOnScopeExit {
 		std::atomic_bool &_complete;
@@ -1436,7 +1436,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 
 	profiling_clock.restart();
 	{
-		VOXEL_PROFILE_SCOPE_NAMED("IO requests");
+		ZN_PROFILE_SCOPE_NAMED("IO requests");
 		// It's possible the user didn't set a stream yet, or it is turned off
 		if (stream_enabled) {
 			const unsigned int data_block_size = data.lods[0].map.get_block_size();

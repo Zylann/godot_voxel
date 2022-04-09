@@ -6,7 +6,7 @@
 namespace zylann::voxel {
 
 void LoadAllBlocksDataTask::run(zylann::ThreadedTaskContext ctx) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);
 	Ref<VoxelStream> stream = stream_dependency->stream;

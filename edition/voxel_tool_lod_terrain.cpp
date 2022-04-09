@@ -177,7 +177,7 @@ struct DoSphere {
 	TextureParams texture_params;
 
 	void operator()() {
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 
 		switch (mode) {
 			case VoxelTool::MODE_ADD: {
@@ -220,7 +220,7 @@ struct DoSphere {
 } //namespace ops
 
 void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	const Box3i box = Box3i(Vector3iUtil::from_floored(center) - Vector3iUtil::create(Math::floor(radius)),
@@ -264,7 +264,7 @@ public:
 	}
 
 	void run(ThreadedTaskContext ctx) override {
-		VOXEL_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE();
 		CRASH_COND(_data == nullptr);
 		VoxelDataLodMap::Lod &data_lod = _data->lods[0];
 		{
@@ -391,7 +391,7 @@ void VoxelToolLodTerrain::set_raycast_binary_search_iterations(int iterations) {
 // so there are probably other approaches that could be explored in the future, if they have better performance
 Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *parent_node, Transform3D transform,
 		Ref<VoxelMesher> mesher, Array materials) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// Checks
 	ERR_FAIL_COND_V(mesher.is_null(), Array());
@@ -406,7 +406,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
 	Ref<gd::VoxelBuffer> source_copy_buffer_ref;
 	{
-		VOXEL_PROFILE_SCOPE_NAMED("Copy");
+		ZN_PROFILE_SCOPE_NAMED("Copy");
 		source_copy_buffer_ref.instantiate();
 		source_copy_buffer_ref->create(world_box.size.x, world_box.size.y, world_box.size.z);
 		voxel_tool.copy(world_box.pos, source_copy_buffer_ref, channels_mask);
@@ -422,7 +422,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 	{
 		// TODO Allow to run the algorithm at a different LOD, to trade precision for speed
-		VOXEL_PROFILE_SCOPE_NAMED("CCL scan");
+		ZN_PROFILE_SCOPE_NAMED("CCL scan");
 		IslandFinder island_finder;
 		island_finder.scan_3d(
 				Box3i(Vector3i(), world_box.size),
@@ -443,7 +443,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 	std::vector<Bounds> bounds_per_label;
 	{
-		VOXEL_PROFILE_SCOPE_NAMED("Bounds calculation");
+		ZN_PROFILE_SCOPE_NAMED("Bounds calculation");
 
 		// Adding 1 because label 0 is the index for "no label"
 		bounds_per_label.resize(label_count + 1);
@@ -522,7 +522,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	const int max_padding = 2; //mesher->get_maximum_padding();
 
 	{
-		VOXEL_PROFILE_SCOPE_NAMED("Extraction");
+		ZN_PROFILE_SCOPE_NAMED("Extraction");
 
 		for (unsigned int label = 1; label < bounds_per_label.size(); ++label) {
 			CRASH_COND(label >= bounds_per_label.size());
@@ -578,7 +578,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	// Must be done after we copied voxels from it.
 
 	{
-		VOXEL_PROFILE_SCOPE_NAMED("Erasing");
+		ZN_PROFILE_SCOPE_NAMED("Erasing");
 
 		voxel_tool.set_channel(main_channel);
 
@@ -596,7 +596,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	Array nodes;
 
 	{
-		VOXEL_PROFILE_SCOPE_NAMED("Remeshing and instancing");
+		ZN_PROFILE_SCOPE_NAMED("Remeshing and instancing");
 
 		for (unsigned int instance_index = 0; instance_index < instances_info.size(); ++instance_index) {
 			CRASH_COND(instance_index >= instances_info.size());

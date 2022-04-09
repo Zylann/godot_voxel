@@ -184,7 +184,7 @@ CellTextureDatas<NVoxels> select_textures_4_per_voxel(const FixedArray<unsigned 
 		indexed_weight_sums[i] = IndexAndWeight{ i, 0 };
 	}
 	for (unsigned int ci = 0; ci < voxel_indices.size(); ++ci) {
-		//VOXEL_PROFILE_SCOPE();
+		//ZN_PROFILE_SCOPE();
 
 		const unsigned int data_index = voxel_indices[ci];
 		const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(indices_data[data_index]);
@@ -223,7 +223,7 @@ CellTextureDatas<NVoxels> select_textures_4_per_voxel(const FixedArray<unsigned 
 
 	// Remap weights to follow the indices we selected
 	for (unsigned int ci = 0; ci < cell_texture_weights_temp.size(); ++ci) {
-		//VOXEL_PROFILE_SCOPE();
+		//ZN_PROFILE_SCOPE();
 		const FixedArray<uint8_t, MAX_TEXTURES> &src_weights = cell_texture_weights_temp[ci];
 		FixedArray<uint8_t, 4> &dst_weights = cell_textures.weights[ci];
 
@@ -305,7 +305,7 @@ template <typename Sdf_T, typename WeightSampler_T>
 void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_indices_data,
 		const WeightSampler_T &weights_sampler, const Vector3i block_size_with_padding, uint32_t lod_index,
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output, const IDeepSDFSampler *deep_sdf_sampler) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// This function has some comments as quotes from the Transvoxel paper.
 
@@ -365,7 +365,7 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 					}
 				}
 
-				//VOXEL_PROFILE_SCOPE();
+				//ZN_PROFILE_SCOPE();
 
 				//    6-------7
 				//   /|      /|
@@ -1247,7 +1247,7 @@ thread_local std::vector<uint16_t> s_weights_backing_buffer_u16;
 //
 /*template <typename Sdf_T>
 Span<const Sdf_T> apply_zero_sdf_fix(Span<const Sdf_T> p_sdf_data) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	static thread_local std::vector<Sdf_T> s_sdf_backing_buffer;
 	std::vector<Sdf_T> &sdf_data = s_sdf_backing_buffer;
@@ -1267,7 +1267,7 @@ Span<const Sdf_T> apply_zero_sdf_fix(Span<const Sdf_T> p_sdf_data) {
 DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel,
 		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		const IDeepSDFSampler *deep_sdf_sampler) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
 	Span<uint8_t> sdf_data_raw;
@@ -1348,7 +1348,7 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int direction,
 		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
 	Span<uint8_t> sdf_data_raw;

@@ -11,7 +11,7 @@ namespace zylann::voxel {
 static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
 		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator, int data_block_size,
 		uint8_t lod_index, Vector3i mesh_block_pos) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// Extract wanted channels in a list
 	unsigned int channels_count = 0;
@@ -100,7 +100,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 					// Subtract edited box from the area to generate
 					// TODO This approach allows to batch boxes if necessary,
 					// but is it just better to do it anyways for every clipped box?
-					VOXEL_PROFILE_SCOPE_NAMED("Box subtract");
+					ZN_PROFILE_SCOPE_NAMED("Box subtract");
 					const unsigned int count = boxes_to_generate.size();
 					const Box3i block_box = Box3i(offset, Vector3iUtil::create(data_block_size)).clipped(mesh_data_box);
 
@@ -120,7 +120,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 
 	if (generator.is_valid()) {
 		// Complete data with generated voxels
-		VOXEL_PROFILE_SCOPE_NAMED("Generate");
+		ZN_PROFILE_SCOPE_NAMED("Generate");
 		VoxelBufferInternal generated_voxels;
 
 		const Vector3i origin_in_voxels = mesh_block_pos * (mesh_block_size_factor * data_block_size << lod_index);
@@ -161,7 +161,7 @@ int MeshBlockTask::debug_get_running_count() {
 }
 
 void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	CRASH_COND(meshing_dependency == nullptr);
 
 	Ref<VoxelMesher> mesher = meshing_dependency->mesher;

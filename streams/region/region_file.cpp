@@ -268,7 +268,7 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 }
 
 Error RegionFile::close() {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	Error err = OK;
 	if (_file_access != nullptr) {
 		if (_header_modified) {
@@ -476,7 +476,7 @@ void RegionFile::pad_to_sector_size(FileAccess *f) {
 }
 
 void RegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int p_sector_count) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// Removes sectors from a block, starting from the last ones.
 	// So if a block has 5 sectors and we remove 2, the first 3 will be preserved.

@@ -192,7 +192,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 
 static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph &graph, uint32_t original_node_id,
 		ProgramGraph::PortLocation &expanded_output_port, std::vector<uint32_t> &expanded_nodes) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	const ProgramGraph::Node &original_node = graph.get_node(original_node_id);
 	CRASH_COND(original_node.params.size() == 0);
 	const String code = original_node.params[0];
@@ -273,7 +273,7 @@ struct ExpandedNodeRemap {
 
 static VoxelGraphRuntime::CompilationResult expand_expression_nodes(ProgramGraph &graph,
 		std::vector<PortRemap> &user_to_expanded_ports, std::vector<ExpandedNodeRemap> &expanded_to_user_node_ids) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	// Gather expression node IDs first, as expansion could invalidate the iterator
 	std::vector<uint32_t> expression_node_ids;
 	graph.for_each_node([&expression_node_ids](ProgramGraph::Node &node) {
@@ -305,7 +305,7 @@ static VoxelGraphRuntime::CompilationResult expand_expression_nodes(ProgramGraph
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGraph &p_graph, bool debug) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	ProgramGraph graph;
 	graph.copy_from(p_graph, false);
@@ -334,7 +334,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGra
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGraph &graph, bool debug) {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 	clear();
 
 	std::vector<uint32_t> order;
@@ -732,7 +732,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 // It can be useful for biomes, where some branches become constant when not used in the final blending.
 void VoxelGraphRuntime::generate_optimized_execution_map(
 		const State &state, ExecutionMap &execution_map, Span<const unsigned int> required_outputs, bool debug) const {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 	// Range analysis results must have been computed
 	ERR_FAIL_COND(state.ranges.size() == 0);
@@ -1033,7 +1033,7 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 		}
 	};
 
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 #ifdef DEBUG_ENABLED
 	// Each array must have the same size
@@ -1120,7 +1120,7 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 
 // TODO Accept float bounds
 void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i max_pos) const {
-	VOXEL_PROFILE_SCOPE();
+	ZN_PROFILE_SCOPE();
 
 #ifdef TOOLS_ENABLED
 	ERR_FAIL_COND(state.ranges.size() != _program.buffer_count);
