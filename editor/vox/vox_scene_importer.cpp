@@ -54,10 +54,10 @@ float VoxelVoxSceneImporter::get_priority() const {
 
 void VoxelVoxSceneImporter::get_import_options(
 		const String &p_path, List<ImportOption> *r_options, int p_preset) const {
-	VoxelStringNames *sn = VoxelStringNames::get_singleton();
-	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->store_colors_in_texture), false));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, sn->scale), 1.f));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->enable_baked_lighting), true));
+	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn.store_colors_in_texture), false));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, sn.scale), 1.f));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn.enable_baked_lighting), true));
 }
 
 bool VoxelVoxSceneImporter::get_option_visibility(
@@ -241,9 +241,9 @@ Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p
 		Variant *r_metadata) {
 	VOXEL_PROFILE_SCOPE();
 
-	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton()->store_colors_in_texture];
-	const float p_scale = p_options[VoxelStringNames::get_singleton()->scale];
-	const bool p_enable_baked_lighting = p_options[VoxelStringNames::get_singleton()->enable_baked_lighting];
+	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton().store_colors_in_texture];
+	const float p_scale = p_options[VoxelStringNames::get_singleton().scale];
+	const bool p_enable_baked_lighting = p_options[VoxelStringNames::get_singleton().enable_baked_lighting];
 
 	magica::Data data;
 	const Error load_err = data.load_from_file(p_source_file);

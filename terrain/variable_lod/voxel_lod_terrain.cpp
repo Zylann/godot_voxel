@@ -1441,7 +1441,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 			if (_shader_material_pool.size() > 0) {
 				sm = _shader_material_pool.back();
 				// The joys of pooling materials
-				sm->set_shader_param(VoxelStringNames::get_singleton()->u_transition_mask, 0);
+				sm->set_shader_param(VoxelStringNames::get_singleton().u_transition_mask, 0);
 				_shader_material_pool.pop_back();
 			} else {
 				sm = shader_material->duplicate(false);

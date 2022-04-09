@@ -15,6 +15,11 @@ void VoxelStringNames::destroy_singleton() {
 	g_singleton = nullptr;
 }
 
+const VoxelStringNames &VoxelStringNames::get_singleton() {
+	CRASH_COND(g_singleton == nullptr);
+	return *g_singleton;
+}
+
 VoxelStringNames::VoxelStringNames() {
 	_emerge_block = StaticCString::create("_emerge_block");
 	_immerge_block = StaticCString::create("_immerge_block");

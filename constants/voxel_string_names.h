@@ -10,10 +10,7 @@ private:
 	static VoxelStringNames *g_singleton;
 
 public:
-	inline static VoxelStringNames *get_singleton() {
-		return g_singleton;
-	}
-
+	static const VoxelStringNames &get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
 

@@ -47,11 +47,11 @@ float VoxelVoxMeshImporter::get_priority() const {
 // }
 
 void VoxelVoxMeshImporter::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
-	VoxelStringNames *sn = VoxelStringNames::get_singleton();
-	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn->store_colors_in_texture), false));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, sn->scale), 1.f));
+	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn.store_colors_in_texture), false));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, sn.scale), 1.f));
 	r_options->push_back(ImportOption(
-			PropertyInfo(Variant::INT, sn->pivot_mode, PROPERTY_HINT_ENUM, "LowerCorner,SceneOrigin,Center"), 1));
+			PropertyInfo(Variant::INT, sn.pivot_mode, PROPERTY_HINT_ENUM, "LowerCorner,SceneOrigin,Center"), 1));
 }
 
 bool VoxelVoxMeshImporter::get_option_visibility(
@@ -217,9 +217,9 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 		const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
 		Variant *r_metadata) {
 	//
-	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton()->store_colors_in_texture];
-	const float p_scale = p_options[VoxelStringNames::get_singleton()->scale];
-	const int p_pivot_mode = p_options[VoxelStringNames::get_singleton()->pivot_mode];
+	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton().store_colors_in_texture];
+	const float p_scale = p_options[VoxelStringNames::get_singleton().scale];
+	const int p_pivot_mode = p_options[VoxelStringNames::get_singleton().pivot_mode];
 
 	ERR_FAIL_INDEX_V(p_pivot_mode, PIVOT_MODES_COUNT, ERR_INVALID_PARAMETER);
 

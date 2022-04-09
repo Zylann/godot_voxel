@@ -919,13 +919,13 @@ void VoxelTerrain::emit_data_block_loaded(const VoxelDataBlock &block) {
 	// absolutely necessary, buffers aren't exposed. Workaround: use VoxelTool
 	//const Variant vbuffer = block->voxels;
 	//const Variant *args[2] = { &vpos, &vbuffer };
-	emit_signal(VoxelStringNames::get_singleton()->block_loaded, block.position);
+	emit_signal(VoxelStringNames::get_singleton().block_loaded, block.position);
 }
 
 void VoxelTerrain::emit_data_block_unloaded(const VoxelDataBlock &block) {
 	// const Variant vbuffer = block->voxels;
 	// const Variant *args[2] = { &vpos, &vbuffer };
-	emit_signal(VoxelStringNames::get_singleton()->block_unloaded, block.position);
+	emit_signal(VoxelStringNames::get_singleton().block_unloaded, block.position);
 }
 
 bool VoxelTerrain::try_get_paired_viewer_index(uint32_t id, size_t &out_i) const {
@@ -1566,7 +1566,7 @@ bool VoxelTerrain::_b_try_set_block_data(Vector3i position, Ref<gd::VoxelBuffer>
 	std::shared_ptr<VoxelBufferInternal> buffer = voxel_data->get_buffer_shared();
 
 #ifdef DEBUG_ENABLED
-	const StringName &key = VoxelStringNames::get_singleton()->_voxel_debug_vt_position;
+	const StringName &key = VoxelStringNames::get_singleton()._voxel_debug_vt_position;
 	if (voxel_data->has_meta(key)) {
 		const Vector3i meta_pos = voxel_data->get_meta(key);
 		ERR_FAIL_COND_V_MSG(meta_pos != position, false,
@@ -1695,9 +1695,9 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
 
 	// TODO Add back access to block, but with an API securing multithreaded access
-	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton()->block_loaded, PropertyInfo(Variant::VECTOR3, "position")));
+	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton().block_loaded, PropertyInfo(Variant::VECTOR3, "position")));
 	ADD_SIGNAL(
-			MethodInfo(VoxelStringNames::get_singleton()->block_unloaded, PropertyInfo(Variant::VECTOR3, "position")));
+			MethodInfo(VoxelStringNames::get_singleton().block_unloaded, PropertyInfo(Variant::VECTOR3, "position")));
 }
 
 } // namespace zylann::voxel
