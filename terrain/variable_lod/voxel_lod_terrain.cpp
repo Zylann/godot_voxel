@@ -6,7 +6,7 @@
 #include "../../server/voxel_server_updater.h"
 #include "../../util/funcs.h"
 #include "../../util/godot/funcs.h"
-#include "../../util/macros.h"
+#include "../../util/log.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "../../util/tasks/async_dependency_tracker.h"
@@ -1283,8 +1283,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 	if (!ob.initial_load) {
 		if (!thread_safe_contains(lod.loading_blocks, ob.position, lod.loading_blocks_mutex)) {
 			// That block was not requested, or is no longer needed. drop it...
-			ZN_PRINT_VERBOSE(String("Ignoring block {0} lod {1}, it was not in loading blocks")
-									 .format(varray(ob.position, ob.lod)));
+			ZN_PRINT_VERBOSE(format("Ignoring block {} lod {}, it was not in loading blocks", ob.position, ob.lod));
 			++_stats.dropped_block_loads;
 			return;
 		}

@@ -1,7 +1,7 @@
 #include "voxel_stream_sqlite.h"
 #include "../../thirdparty/sqlite/sqlite3.h"
 #include "../../util/godot/funcs.h"
-#include "../../util/macros.h"
+#include "../../util/log.h"
 #include "../../util/profiling.h"
 #include "../compressed_data.h"
 
@@ -820,8 +820,8 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 			Context *ctx = reinterpret_cast<Context *>(callback_data);
 
 			if (voxel_data.size() == 0 && instances_data.size() == 0) {
-				ZN_PRINT_VERBOSE(String("Unexpected empty voxel data and instances data at {0} lod {1}")
-										 .format(varray(Vector3(location.x, location.y, location.z), location.lod)));
+				ZN_PRINT_VERBOSE(format("Unexpected empty voxel data and instances data at {} lod {}",
+						Vector3i(location.x, location.y, location.z), location.lod));
 				return;
 			}
 
@@ -874,8 +874,7 @@ void VoxelStreamSQLite::flush_cache() {
 // This function does not lock any mutex for internal use.
 void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 	VOXEL_PROFILE_SCOPE();
-	ZN_PRINT_VERBOSE(String("VoxelStreamSQLite: Flushing cache ({0} elements)")
-							 .format(varray(_cache.get_indicative_block_count())));
+	ZN_PRINT_VERBOSE(format("VoxelStreamSQLite: Flushing cache ({} elements)", _cache.get_indicative_block_count()));
 
 	ERR_FAIL_COND(con == nullptr);
 	ERR_FAIL_COND(con->begin_transaction() == false);

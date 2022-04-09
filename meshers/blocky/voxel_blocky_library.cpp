@@ -1,5 +1,5 @@
 #include "voxel_blocky_library.h"
-#include "../../util/macros.h"
+#include "../../util/log.h"
 
 #include <core/math/geometry_2d.h>
 #include <core/os/time.h>
@@ -182,7 +182,7 @@ void VoxelBlockyLibrary::bake() {
 	generate_side_culling_matrix();
 
 	uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
-	ZN_PRINT_VERBOSE(String("Took {0} us to bake VoxelLibrary").format(varray(time_spent)));
+	ZN_PRINT_VERBOSE(format("Took {} us to bake VoxelLibrary", time_spent));
 }
 
 void VoxelBlockyLibrary::generate_side_culling_matrix() {

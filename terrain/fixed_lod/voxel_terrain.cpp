@@ -893,15 +893,14 @@ void VoxelTerrain::send_block_data_requests() {
 	// Blocks to save
 	if (_stream.is_valid()) {
 		for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
-			ZN_PRINT_VERBOSE(String("Requesting save of block {0}").format(varray(_blocks_to_save[i].position)));
+			ZN_PRINT_VERBOSE(format("Requesting save of block {}", _blocks_to_save[i].position));
 			const BlockToSave b = _blocks_to_save[i];
 			// TODO Batch request
 			VoxelServer::get_singleton().request_voxel_block_save(_volume_id, b.voxels, b.position, 0);
 		}
 	} else {
 		if (_blocks_to_save.size() > 0) {
-			ZN_PRINT_VERBOSE(String("Not saving {0} blocks because no stream is assigned")
-									 .format(varray(ZN_SIZE_T_TO_VARIANT(_blocks_to_save.size()))));
+			ZN_PRINT_VERBOSE(format("Not saving {} blocks because no stream is assigned", _blocks_to_save.size()));
 		}
 	}
 
@@ -1206,9 +1205,10 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 	if (ob.dropped) {
 		// That block was cancelled by the server, but we are still expecting it.
 		// We'll have to request it again.
-		ZN_PRINT_VERBOSE(String("Received a block loading drop while we were still expecting it: "
-								"lod{0} ({1}, {2}, {3}), re-requesting it")
-								 .format(varray(ob.lod, ob.position.x, ob.position.y, ob.position.z)));
+		ZN_PRINT_VERBOSE(format("Received a block loading drop while we were still expecting it: "
+								"lod{} ({}, {}, {}), re-requesting it",
+				ob.lod, ob.position.x, ob.position.y, ob.position.z));
+
 		++_stats.dropped_block_loads;
 
 		_blocks_pending_load.push_back(ob.position);

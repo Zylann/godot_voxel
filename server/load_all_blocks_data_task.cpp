@@ -1,5 +1,5 @@
 #include "load_all_blocks_data_task.h"
-#include "../util/macros.h"
+#include "../util/log.h"
 #include "../util/profiling.h"
 #include "voxel_server.h"
 
@@ -14,8 +14,7 @@ void LoadAllBlocksDataTask::run(zylann::ThreadedTaskContext ctx) {
 
 	stream->load_all_blocks(_result);
 
-	ZN_PRINT_VERBOSE(String("Loaded {0} blocks for volume {1}")
-							 .format(varray(ZN_SIZE_T_TO_VARIANT(_result.blocks.size()), volume_id)));
+	ZN_PRINT_VERBOSE(format("Loaded {} blocks for volume {}", _result.blocks.size(), volume_id));
 }
 
 int LoadAllBlocksDataTask::get_priority() {

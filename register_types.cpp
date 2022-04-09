@@ -149,18 +149,18 @@ void register_voxel_types() {
 	// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
 
 	// Reminders
-	ZN_PRINT_VERBOSE(String("Size of Variant: {0}").format(varray((int)sizeof(Variant))));
-	ZN_PRINT_VERBOSE(String("Size of Object: {0}").format(varray((int)sizeof(Object))));
-	ZN_PRINT_VERBOSE(String("Size of RefCounted: {0}").format(varray((int)sizeof(RefCounted))));
-	ZN_PRINT_VERBOSE(String("Size of Node: {0}").format(varray((int)sizeof(Node))));
-	ZN_PRINT_VERBOSE(String("Size of Node3D: {0}").format(varray((int)sizeof(Node3D))));
-	ZN_PRINT_VERBOSE(String("Size of gd::VoxelBuffer: {0}").format(varray((int)sizeof(gd::VoxelBuffer))));
-	ZN_PRINT_VERBOSE(String("Size of VoxelBufferInternal: {0}").format(varray((int)sizeof(VoxelBufferInternal))));
-	ZN_PRINT_VERBOSE(String("Size of VoxelMeshBlock: {0}").format(varray((int)sizeof(VoxelMeshBlock))));
-	ZN_PRINT_VERBOSE(String("Size of VoxelTerrain: {0}").format(varray((int)sizeof(VoxelTerrain))));
-	ZN_PRINT_VERBOSE(String("Size of VoxelLodTerrain: {0}").format(varray((int)sizeof(VoxelLodTerrain))));
-	ZN_PRINT_VERBOSE(String("Size of VoxelInstancer: {0}").format(varray((int)sizeof(VoxelInstancer))));
-	ZN_PRINT_VERBOSE(String("Size of VoxelDataMap: {0}").format(varray((int)sizeof(VoxelDataMap))));
+	ZN_PRINT_VERBOSE(format("Size of Variant: {}", sizeof(Variant)));
+	ZN_PRINT_VERBOSE(format("Size of Object: {}", sizeof(Object)));
+	ZN_PRINT_VERBOSE(format("Size of RefCounted: {}", sizeof(RefCounted)));
+	ZN_PRINT_VERBOSE(format("Size of Node: {}", sizeof(Node)));
+	ZN_PRINT_VERBOSE(format("Size of Node3D: {}", sizeof(Node3D)));
+	ZN_PRINT_VERBOSE(format("Size of gd::VoxelBuffer: {}", sizeof(gd::VoxelBuffer)));
+	ZN_PRINT_VERBOSE(format("Size of VoxelBufferInternal: {}", sizeof(VoxelBufferInternal)));
+	ZN_PRINT_VERBOSE(format("Size of VoxelMeshBlock: {}", sizeof(VoxelMeshBlock)));
+	ZN_PRINT_VERBOSE(format("Size of VoxelTerrain: {}", sizeof(VoxelTerrain)));
+	ZN_PRINT_VERBOSE(format("Size of VoxelLodTerrain: {}", sizeof(VoxelLodTerrain)));
+	ZN_PRINT_VERBOSE(format("Size of VoxelInstancer: {}", sizeof(VoxelInstancer)));
+	ZN_PRINT_VERBOSE(format("Size of VoxelDataMap: {}", sizeof(VoxelDataMap)));
 
 #ifdef TOOLS_ENABLED
 	EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();

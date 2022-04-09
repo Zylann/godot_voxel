@@ -7,6 +7,7 @@
 #include <scene/resources/concave_polygon_shape_3d.h>
 #include <scene/resources/mesh.h>
 #include <scene/resources/multimesh.h>
+#include <sstream>
 
 namespace zylann {
 
@@ -282,3 +283,10 @@ PackedStringArray to_godot(const std::vector<std::string> &sv) {
 }
 
 } // namespace zylann
+
+std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s) {
+	const CharString cs = s.s.utf8();
+	// String has non-explicit constructors from various types making this ambiguous
+	ss.std::stringstream::operator<<(cs.get_data());
+	return ss;
+}

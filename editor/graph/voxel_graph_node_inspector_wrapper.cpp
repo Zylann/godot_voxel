@@ -1,7 +1,7 @@
 #include "voxel_graph_node_inspector_wrapper.h"
 #include "../../generators/graph/voxel_graph_node_db.h"
 #include "../../util/godot/funcs.h"
-#include "../../util/macros.h"
+#include "../../util/log.h"
 #include "voxel_graph_editor.h"
 #include <core/object/undo_redo.h>
 

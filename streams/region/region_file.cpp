@@ -1,5 +1,7 @@
 #include "region_file.h"
 #include "../../streams/voxel_block_serializer.h"
+#include "../../util/godot/funcs.h"
+#include "../../util/log.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../file_utils.h"
@@ -559,7 +561,7 @@ bool RegionFile::save_header(FileAccess *f) {
 }
 
 bool RegionFile::migrate_from_v2_to_v3(FileAccess *f, RegionFormat &format) {
-	ZN_PRINT_VERBOSE(String("Migrating region file {0} from v2 to v3").format(varray(_file_path)));
+	ZN_PRINT_VERBOSE(zylann::format("Migrating region file {} from v2 to v3", _file_path));
 
 	// We can migrate if we know in advance what format the file should contain.
 	ERR_FAIL_COND_V_MSG(format.block_size_po2 == 0, false, "Cannot migrate without knowing the correct format");

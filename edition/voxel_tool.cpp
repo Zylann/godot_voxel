@@ -1,6 +1,6 @@
 #include "voxel_tool.h"
 #include "../storage/voxel_buffer_gd.h"
-#include "../util/macros.h"
+#include "../util/log.h"
 #include "../util/profiling.h"
 
 namespace zylann::voxel {

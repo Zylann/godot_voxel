@@ -2,6 +2,8 @@
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../generators/graph/voxel_graph_node_db.h"
 #include "../../terrain/voxel_node.h"
+#include "../../util/godot/funcs.h"
+#include "../../util/log.h"
 #include "../../util/macros.h"
 #include "voxel_graph_editor_node.h"
 #include "voxel_graph_editor_node_preview.h"
@@ -155,7 +157,7 @@ void VoxelGraphEditor::set_voxel_node(VoxelNode *node) {
 		ZN_PRINT_VERBOSE("Reference node for VoxelGraph gizmos: null");
 		_debug_renderer.set_world(nullptr);
 	} else {
-		ZN_PRINT_VERBOSE(String("Reference node for VoxelGraph gizmos: {0}").format(varray(node->get_path())));
+		ZN_PRINT_VERBOSE(format("Reference node for VoxelGraph gizmos: {}", String(node->get_path())));
 		_debug_renderer.set_world(_voxel_node->get_world_3d().ptr());
 	}
 }
@@ -619,7 +621,7 @@ void VoxelGraphEditor::update_previews() {
 	}
 
 	uint64_t time_taken = Time::get_singleton()->get_ticks_usec() - time_before;
-	ZN_PRINT_VERBOSE(String("Previews generated in {0} us").format(varray(time_taken)));
+	ZN_PRINT_VERBOSE(format("Previews generated in {} us", time_taken));
 }
 
 void VoxelGraphEditor::update_range_analysis_previews() {

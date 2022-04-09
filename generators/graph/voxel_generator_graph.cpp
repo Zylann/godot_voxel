@@ -2,6 +2,7 @@
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/expression_parser.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/log.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
@@ -1021,7 +1022,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
 	_runtime = r;
 
 	const int64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
-	ZN_PRINT_VERBOSE(String("Voxel graph compiled in {0} us").format(varray(time_spent)));
+	ZN_PRINT_VERBOSE(format("Voxel graph compiled in {} us", time_spent));
 
 	return result;
 }

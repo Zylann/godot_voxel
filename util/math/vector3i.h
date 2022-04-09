@@ -5,7 +5,7 @@
 #include "funcs.h"
 #include <core/math/vector3.h>
 #include <core/templates/hashfuncs.h>
-#include <functional>
+#include <iosfwd>
 
 #if VOXEL_CUSTOM_VECTOR3I
 struct Vector3i {
@@ -365,6 +365,8 @@ inline Vector3i operator&(const Vector3i &a, uint32_t b) {
 }
 
 #endif // VOXEL_CUSTOM_VECTOR3I
+
+std::stringstream &operator<<(std::stringstream &ss, const Vector3i &v);
 
 // For Godot
 struct Vector3iHasher {

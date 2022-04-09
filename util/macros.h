@@ -1,14 +1,9 @@
 #ifndef VOXEL_MACROS_H
 #define VOXEL_MACROS_H
 
-#include <core/string/print_string.h>
+#include <core/string/ustring.h>
 
-// print_verbose() is used everywhere in the engine, but its drawback is that even if you turn it off, strings
-// you print are still allocated and formatted, to not be used. This macro avoids the string.
-#define ZN_PRINT_VERBOSE(msg)                                                                                          \
-	if (is_verbose_output_enabled()) {                                                                                 \
-		print_line(msg);                                                                                               \
-	}
+// Macros I couldn't put anywhere specific
 
 // TODO Waiting for a fix, Variant() can't be constructed from `size_t` on JavaScript and OSX builds.
 // See https://github.com/godotengine/godot/issues/36690
@@ -23,11 +18,5 @@
 #else
 #define ZN_TTR(msg) msg
 #endif
-
-namespace zylann {
-
-bool is_verbose_output_enabled();
-
-} // namespace zylann
 
 #endif // VOXEL_MACROS_H

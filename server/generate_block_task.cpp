@@ -1,7 +1,7 @@
 #include "generate_block_task.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/godot/funcs.h"
-#include "../util/macros.h"
+#include "../util/log.h"
 #include "../util/profiling.h"
 #include "save_block_data_task.h"
 #include "voxel_server.h"
@@ -48,8 +48,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		// TODO In some cases we dont want this to run all the time, do we?
 		// Like in full load mode, where non-edited blocks remain generated on the fly...
 		if (stream.is_valid() && stream->get_save_generator_output()) {
-			ZN_PRINT_VERBOSE(
-					String("Requesting save of generator output for block {0} lod {1}").format(varray(position, lod)));
+			ZN_PRINT_VERBOSE(format("Requesting save of generator output for block {} lod {}", position, lod));
 
 			// TODO Optimization: `voxels` doesnt actually need to be shared
 			std::shared_ptr<VoxelBufferInternal> voxels_copy = gd_make_shared<VoxelBufferInternal>();

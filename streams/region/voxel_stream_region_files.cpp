@@ -1,6 +1,7 @@
 #include "voxel_stream_region_files.h"
 #include "../../server/voxel_server.h"
-#include "../../util/macros.h"
+#include "../../util/godot/funcs.h"
+#include "../../util/log.h"
 #include "../../util/math/box3i.h"
 #include "../../util/profiling.h"
 
@@ -592,7 +593,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 		}
 
 		old_stream->set_directory(old_dir);
-		ZN_PRINT_VERBOSE("Data backed up as " + old_dir);
+		ZN_PRINT_VERBOSE(format("Data backed up as {}", old_dir));
 	}
 
 	struct PositionAndLod {
@@ -663,7 +664,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			continue;
 		}
 
-		ZN_PRINT_VERBOSE(String("Converting region lod{0}/{1}").format(varray(region_info.lod, region_info.position)));
+		ZN_PRINT_VERBOSE(format("Converting region lod{}/{}", region_info.lod, region_info.position));
 
 		const unsigned int blocks_count = old_region->region.get_header_block_count();
 		for (unsigned int j = 0; j < blocks_count; ++j) {

@@ -1,5 +1,6 @@
 #include "vox_data.h"
-#include "../util/macros.h"
+#include "../util/godot/funcs.h"
+#include "../util/log.h"
 #include "../util/profiling.h"
 
 #include <core/io/file_access.h>
@@ -199,7 +200,7 @@ Error Data::_load_from_file(String fpath) {
 	// https://github.com/ephtracy/voxel-model/blob/master/MagicaVoxel-file-format-vox.txt
 	// https://github.com/ephtracy/voxel-model/blob/master/MagicaVoxel-file-format-vox-extension.txt
 
-	ZN_PRINT_VERBOSE(String("Loading ") + fpath);
+	ZN_PRINT_VERBOSE(format("Loading {}", fpath));
 
 	Error open_err;
 	FileAccessRef f_ref = FileAccess::open(fpath, FileAccess::READ, &open_err);
@@ -228,8 +229,7 @@ Error Data::_load_from_file(String fpath) {
 		const uint32_t chunk_size = f.get_32();
 		f.get_32(); // child_chunks_size
 
-		ZN_PRINT_VERBOSE(String("Reading chunk {0} at {1}, size={2}")
-								 .format(varray(chunk_id, ZN_SIZE_T_TO_VARIANT(f.get_position()), chunk_size)));
+		ZN_PRINT_VERBOSE(format("Reading chunk {} at {}, size={}", chunk_id, f.get_position(), chunk_size));
 
 		if (strcmp(chunk_id, "SIZE") == 0) {
 			Vector3i size;
@@ -472,7 +472,7 @@ Error Data::_load_from_file(String fpath) {
 			_materials.insert(std::make_pair(material_id, std::move(material_ptr)));
 
 		} else {
-			ZN_PRINT_VERBOSE(String("Skipping chunk ") + chunk_id);
+			ZN_PRINT_VERBOSE(format("Skipping chunk {}", chunk_id));
 			// Ignore chunk
 			f.seek(f.get_position() + chunk_size);
 		}
@@ -552,7 +552,7 @@ Error Data::_load_from_file(String fpath) {
 		ERR_FAIL_COND_V_MSG(_root_node_id == -1, ERR_INVALID_DATA, "Root node not found");
 	}
 
-	ZN_PRINT_VERBOSE(String("Done loading ") + fpath);
+	ZN_PRINT_VERBOSE(format("Done loading {}", fpath));
 
 	return OK;
 }

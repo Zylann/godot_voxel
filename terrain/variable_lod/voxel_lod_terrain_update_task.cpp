@@ -1135,7 +1135,7 @@ void VoxelLodTerrainUpdateTask::send_block_save_requests(uint32_t volume_id,
 		BufferedTaskScheduler &task_scheduler) {
 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
 		VoxelLodTerrainUpdateData::BlockToSave &b = blocks_to_save[i];
-		ZN_PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
+		ZN_PRINT_VERBOSE(format("Requesting save of block {} lod {}", b.position, b.lod));
 		request_voxel_block_save(
 				volume_id, b.voxels, b.position, b.lod, stream_dependency, data_block_size, task_scheduler);
 	}
@@ -1278,7 +1278,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 		}
 	}
 
-	ZN_PRINT_VERBOSE(String("Preloading boxes with {1} tasks").format(varray(ZN_SIZE_T_TO_VARIANT(todo.size()))));
+	ZN_PRINT_VERBOSE(format("Preloading boxes with {} tasks", todo.size()));
 
 	std::shared_ptr<AsyncDependencyTracker> tracker = nullptr;
 

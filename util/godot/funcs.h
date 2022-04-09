@@ -7,6 +7,7 @@
 
 #include <core/object/ref_counted.h>
 
+#include <iosfwd>
 #include <memory>
 
 class Mesh;
@@ -136,5 +137,14 @@ inline String ptr2s(const void *p) {
 }
 
 } // namespace zylann
+
+// I gave up trying to nicely convert Godot's String here... it has non-explicit `const char*` constructor, that makes
+// other overloads ambiguous...
+//std::stringstream &operator<<(std::stringstream &ss, const String &s);
+struct GodotStringWrapper {
+	GodotStringWrapper(const String &p_s) : s(p_s) {}
+	const String &s;
+};
+std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s);
 
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

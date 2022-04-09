@@ -2,7 +2,7 @@
 #define VOXEL_DATA_BLOCK_H
 
 #include "../storage/voxel_buffer_internal.h"
-#include "../util/macros.h"
+#include "../util/log.h"
 #include "../util/ref_count.h"
 #include <memory>
 
@@ -51,7 +51,7 @@ public:
 	void set_modified(bool modified) {
 #ifdef TOOLS_ENABLED
 		if (_modified == false && modified) {
-			ZN_PRINT_VERBOSE(String("Marking block {0} as modified").format(varray(position)));
+			ZN_PRINT_VERBOSE(format("Marking block {} as modified", position));
 		}
 #endif
 		_modified = modified;

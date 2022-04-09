@@ -1,5 +1,5 @@
 #include "mesh_block_task.h"
-#include "../util/macros.h"
+#include "../util/log.h"
 #include "../util/profiling.h"
 #include "voxel_server.h"
 

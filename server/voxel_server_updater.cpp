@@ -1,5 +1,5 @@
 #include "voxel_server_updater.h"
-#include "../util/macros.h"
+#include "../util/log.h"
 #include "voxel_server.h"
 
 // Needed for doing `Node *root = SceneTree::get_root()`, Window* is forward-declared

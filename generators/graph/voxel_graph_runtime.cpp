@@ -1,6 +1,7 @@
 #include "voxel_graph_runtime.h"
 #include "../../util/expression_parser.h"
 #include "../../util/funcs.h"
+#include "../../util/log.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "voxel_generator_graph.h"
@@ -680,9 +681,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 
 	_program.buffer_count = mem.next_address;
 
-	ZN_PRINT_VERBOSE(String("Compiled voxel graph. Program size: {0}b, buffers: {1}")
-							 .format(varray(ZN_SIZE_T_TO_VARIANT(_program.operations.size() * sizeof(uint16_t)),
-									 ZN_SIZE_T_TO_VARIANT(_program.buffer_count))));
+	ZN_PRINT_VERBOSE(format("Compiled voxel graph. Program size: {}b, buffers: {}",
+			_program.operations.size() * sizeof(uint16_t), _program.buffer_count));
 
 	CompilationResult result;
 	result.success = true;

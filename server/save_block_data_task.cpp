@@ -1,7 +1,7 @@
 #include "save_block_data_task.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/godot/funcs.h"
-#include "../util/macros.h"
+#include "../util/log.h"
 #include "../util/profiling.h"
 #include "generate_block_task.h"
 #include "voxel_server.h"
@@ -76,8 +76,7 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 		// On the other hand, if we want to represent the fact that "everything was deleted here",
 		// this should not be null.
 
-		ZN_PRINT_VERBOSE(String("Saving instance block {0} lod {1} with data {2}")
-								 .format(varray(_position, _lod, ptr2s(_instances.get()))));
+		ZN_PRINT_VERBOSE(format("Saving instance block {} lod {} with data {}", _position, _lod, _instances.get()));
 
 		VoxelStream::InstancesQueryData instances_query{ std::move(_instances), _position, _lod };
 		stream->save_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));

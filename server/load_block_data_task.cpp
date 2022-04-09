@@ -1,7 +1,7 @@
 #include "load_block_data_task.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/godot/funcs.h"
-#include "../util/macros.h"
+#include "../util/log.h"
 #include "../util/profiling.h"
 #include "generate_block_task.h"
 #include "voxel_server.h"

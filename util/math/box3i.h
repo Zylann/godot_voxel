@@ -1,8 +1,8 @@
-#ifndef BOX3I_H
-#define BOX3I_H
+#ifndef ZYLANN_BOX3I_H
+#define ZYLANN_BOX3I_H
 
 #include "vector3i.h"
-#include <core/variant/variant.h>
+#include <iosfwd>
 
 namespace zylann {
 
@@ -68,10 +68,6 @@ public:
 				other_end.x <= end.x && //
 				other_end.y <= end.y && //
 				other_end.z <= end.z;
-	}
-
-	String to_string() const {
-		return String("(o:{0}, s:{1})").format(varray(pos, size));
 	}
 
 	bool intersects(const Box3i &other) const {
@@ -358,6 +354,8 @@ inline bool operator==(const Box3i &a, const Box3i &b) {
 	return a.pos == b.pos && a.size == b.size;
 }
 
+std::stringstream &operator<<(std::stringstream &ss, const Box3i &box);
+
 } // namespace zylann
 
-#endif // BOX3I_H
+#endif // ZYLANN_BOX3I_H
