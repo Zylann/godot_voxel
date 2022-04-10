@@ -6,6 +6,8 @@
 
 #include "../../generators/graph/voxel_graph_runtime.h"
 
+class ColorRect;
+
 namespace zylann::voxel {
 
 class VoxelGraphEditorNodePreview;
@@ -37,10 +39,15 @@ public:
 		return _preview;
 	}
 
+	void set_profiling_ratio_visible(bool visible);
+	void set_profiling_ratio(float ratio);
+
 private:
 	void poll_default_inputs(const VoxelGeneratorGraph &graph);
 	void poll_params(const VoxelGeneratorGraph &graph);
 	void _on_resize_request(Vector2 new_size);
+
+	void _notification(int p_what);
 
 	uint32_t _node_id = 0;
 	VoxelGraphEditorNodePreview *_preview = nullptr;
@@ -53,6 +60,9 @@ private:
 
 	std::vector<InputHint> _input_hints;
 	std::vector<Node *> _rows;
+
+	float _profiling_ratio = 0.f;
+	bool _profiling_ratio_enabled = false;
 };
 
 } // namespace zylann::voxel

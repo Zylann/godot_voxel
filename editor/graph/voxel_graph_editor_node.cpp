@@ -220,4 +220,43 @@ void VoxelGraphEditorNode::clear_range_analysis_tooltips() {
 	}
 }
 
+void VoxelGraphEditorNode::set_profiling_ratio_visible(bool visible) {
+	if (_profiling_ratio_enabled == visible) {
+		return;
+	}
+	_profiling_ratio_enabled = visible;
+	update();
+}
+
+void VoxelGraphEditorNode::set_profiling_ratio(float ratio) {
+	if (_profiling_ratio == ratio) {
+		return;
+	}
+	_profiling_ratio = ratio;
+	update();
+}
+
+// Color has no lerp??
+inline Color lerp(Color a, Color b, float t) {
+	return Color( //
+			Math::lerp(a.r, b.r, t), //
+			Math::lerp(a.g, b.g, t), //
+			Math::lerp(a.b, b.b, t), //
+			Math::lerp(a.a, b.a, t));
+}
+
+void VoxelGraphEditorNode::_notification(int p_what) {
+	if (p_what == NOTIFICATION_DRAW) {
+		if (_profiling_ratio_enabled) {
+			const float bgh = EDSCALE * 4.f;
+			const Vector2 control_size = get_size();
+			const float bgw = control_size.x;
+			const Color bg_color(0.1, 0.1, 0.1);
+			const Color fg_color = lerp(Color(0.8, 0.8, 0.0), Color(1.0, 0.2, 0.0), _profiling_ratio);
+			draw_rect(Rect2(0, control_size.y - bgh, bgw, bgh), bg_color);
+			draw_rect(Rect2(0, control_size.y - bgh, bgw * _profiling_ratio, bgh), fg_color);
+		}
+	}
+}
+
 } // namespace zylann::voxel

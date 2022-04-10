@@ -50,7 +50,9 @@ public:
 	struct ExecutionMap {
 		// TODO Typo?
 		std::vector<uint16_t> operation_adresses;
-		// Stores node IDs referring to the user-facing graph
+		// Stores node IDs referring to the user-facing graph.
+		// Each index corresponds to operation indices.
+		// The same node can appear twice, because sometimes a user-facing node compiles as multiple nodes.
 		std::vector<uint32_t> debug_nodes;
 		// From which index in the adress list operations will start depending on Y
 		unsigned int xzy_start_index = 0;
@@ -93,6 +95,21 @@ public:
 			}
 			buffers.clear();
 			ranges.clear();
+			debug_profiler_times.clear();
+		}
+
+		inline void add_execution_time(uint32_t execution_map_index, uint32_t time) {
+#if DEBUG_ENABLED
+			CRASH_COND(execution_map_index >= debug_profiler_times.size());
+#endif
+			debug_profiler_times[execution_map_index] += time;
+		}
+
+		inline uint32_t get_execution_time(uint32_t execution_map_index) const {
+#if DEBUG_ENABLED
+			CRASH_COND(execution_map_index >= debug_profiler_times.size());
+#endif
+			return debug_profiler_times[execution_map_index];
 		}
 
 	private:
@@ -100,6 +117,8 @@ public:
 
 		std::vector<math::Interval> ranges;
 		std::vector<Buffer> buffers;
+		// [execution_map_index] => microseconds
+		std::vector<uint32_t> debug_profiler_times;
 
 		unsigned int buffer_size = 0;
 		unsigned int buffer_capacity = 0;
@@ -121,7 +140,7 @@ public:
 	// Call this before you use a state with generation functions.
 	// You need to call it once, until you want to use a different graph, buffer size or buffer count.
 	// If none of these change, you can keep re-using it.
-	void prepare_state(State &state, unsigned int buffer_size) const;
+	void prepare_state(State &state, unsigned int buffer_size, bool with_profiling) const;
 
 	// Convenience for set generation with only one value
 	// TODO Evaluate needs for double-precision in VoxelGraphRuntime
@@ -151,6 +170,8 @@ public:
 
 	// Convenience function to require all outputs
 	void generate_optimized_execution_map(const State &state, ExecutionMap &execution_map, bool debug) const;
+
+	const ExecutionMap &get_default_execution_map() const;
 
 	// Gets the buffer address of a specific output port
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint16_t &out_address) const;

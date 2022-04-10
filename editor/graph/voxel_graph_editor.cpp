@@ -145,6 +145,8 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
 	_debug_renderer.clear();
 
 	build_gui_from_graph();
+
+	schedule_preview_update();
 }
 
 void VoxelGraphEditor::set_undo_redo(UndoRedo *undo_redo) {
@@ -583,6 +585,7 @@ void VoxelGraphEditor::update_previews() {
 	}
 
 	clear_range_analysis_tooltips();
+	hide_profiling_ratios();
 	reset_modulates(*_graph_edit);
 
 	uint64_t time_before = Time::get_singleton()->get_ticks_usec();
@@ -654,7 +657,8 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 		node_view->update_range_analysis_tooltips(**_graph, state);
 	}
 
-	// Highlight only nodes that will actually run
+	// Highlight only nodes that will actually run.
+	// Note, some nodes can appear twice in this map due to internal expansion.
 	Span<const uint32_t> execution_map = VoxelGeneratorGraph::get_last_execution_map_debug_from_current_thread();
 	for (unsigned int i = 0; i < execution_map.size(); ++i) {
 		const String node_view_path = node_to_gui_name(execution_map[i]);
@@ -831,11 +835,65 @@ void VoxelGraphEditor::_on_update_previews_button_pressed() {
 }
 
 void VoxelGraphEditor::_on_profile_button_pressed() {
-	if (_graph.is_null()) {
+	if (_graph.is_null() || !_graph->is_good()) {
 		return;
 	}
-	const float us = _graph->debug_measure_microseconds_per_voxel(false);
+
+	std::vector<VoxelGeneratorGraph::NodeProfilingInfo> nodes_profiling_info;
+	const float us = _graph->debug_measure_microseconds_per_voxel(false, &nodes_profiling_info);
 	_profile_label->set_text(String("{0} microseconds per voxel").format(varray(us)));
+
+	struct NodeRatio {
+		uint32_t node_id;
+		float ratio;
+	};
+
+	std::vector<NodeRatio> node_ratios;
+
+	// Deduplicate entries and get maximum
+	float max_individual_time = 0.f;
+	for (const VoxelGeneratorGraph::NodeProfilingInfo &info : nodes_profiling_info) {
+		unsigned int i = 0;
+		for (; i < node_ratios.size(); ++i) {
+			if (node_ratios[i].node_id == info.node_id) {
+				break;
+			}
+		}
+		if (i == node_ratios.size()) {
+			node_ratios.push_back(NodeRatio{ info.node_id, float(info.microseconds) });
+		} else {
+			node_ratios[i].ratio += info.microseconds;
+		}
+		max_individual_time = math::max(max_individual_time, float(info.microseconds));
+	}
+
+	if (max_individual_time > 0.f) {
+		for (NodeRatio &nr : node_ratios) {
+			nr.ratio = math::clamp(nr.ratio / max_individual_time, 0.f, 1.f);
+		}
+	} else {
+		for (NodeRatio &nr : node_ratios) {
+			nr.ratio = 1.f;
+		}
+	}
+
+	for (const NodeRatio &nr : node_ratios) {
+		const String ui_node_name = node_to_gui_name(nr.node_id);
+		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(ui_node_name));
+		ERR_CONTINUE(node_view == nullptr);
+		node_view->set_profiling_ratio_visible(true);
+		node_view->set_profiling_ratio(nr.ratio);
+	}
+}
+
+void VoxelGraphEditor::hide_profiling_ratios() {
+	for (int child_index = 0; child_index < _graph_edit->get_child_count(); ++child_index) {
+		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(child_index));
+		if (node_view == nullptr) {
+			continue;
+		}
+		node_view->set_profiling_ratio_visible(false);
+	}
 }
 
 void VoxelGraphEditor::_on_analyze_range_button_pressed() {

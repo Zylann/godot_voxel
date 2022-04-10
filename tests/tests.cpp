@@ -15,6 +15,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/island_finder.h"
 #include "../util/math/box3i.h"
+#include "../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "test_octree.h"
 #include "testing.h"
 
@@ -25,6 +26,7 @@
 #include <core/io/dir_access.h>
 #include <core/string/print_string.h>
 #include <core/templates/hash_map.h>
+#include <modules/noise/fastnoise_lite.h>
 
 namespace zylann::voxel::tests {
 
@@ -351,30 +353,95 @@ void test_voxel_graph_generator_default_graph_compilation() {
 }
 
 void test_voxel_graph_generator_expressions() {
-	Ref<VoxelGeneratorGraph> generator;
-	generator.instantiate();
+	{
+		Ref<VoxelGeneratorGraph> generator;
+		generator.instantiate();
 
-	const uint32_t in_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
-	const uint32_t in_y = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
-	const uint32_t in_z = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
-	const uint32_t out_sdf = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
-	const uint32_t n_expression = generator->create_node(VoxelGeneratorGraph::NODE_EXPRESSION, Vector2());
+		const uint32_t in_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
+		const uint32_t in_y = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
+		const uint32_t in_z = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
+		const uint32_t out_sdf = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
+		const uint32_t n_expression = generator->create_node(VoxelGeneratorGraph::NODE_EXPRESSION, Vector2());
 
-	generator->set_node_param(n_expression, 0, "0.1 * x + 0.2 * z + min(y, 0.5)");
-	PackedStringArray var_names;
-	var_names.push_back("x");
-	var_names.push_back("y");
-	var_names.push_back("z");
-	generator->set_expression_node_inputs(n_expression, var_names);
+		generator->set_node_param(n_expression, 0, "0.1 * x + 0.2 * z + min(y, 0.5)");
+		PackedStringArray var_names;
+		var_names.push_back("x");
+		var_names.push_back("y");
+		var_names.push_back("z");
+		generator->set_expression_node_inputs(n_expression, var_names);
 
-	generator->add_connection(in_x, 0, n_expression, 0);
-	generator->add_connection(in_y, 0, n_expression, 1);
-	generator->add_connection(in_z, 0, n_expression, 2);
-	generator->add_connection(n_expression, 0, out_sdf, 0);
+		generator->add_connection(in_x, 0, n_expression, 0);
+		generator->add_connection(in_y, 0, n_expression, 1);
+		generator->add_connection(in_z, 0, n_expression, 2);
+		generator->add_connection(n_expression, 0, out_sdf, 0);
 
-	VoxelGraphRuntime::CompilationResult result = generator->compile();
-	ZYLANN_TEST_ASSERT_MSG(
-			result.success, String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+		VoxelGraphRuntime::CompilationResult result = generator->compile();
+		ZYLANN_TEST_ASSERT_MSG(result.success,
+				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+	}
+	{
+		Ref<VoxelGeneratorGraph> generator;
+		generator.instantiate();
+
+		/*                       SdfPreview
+								/
+			  X --- FastNoise2D
+				\/              \
+				/\               \
+			  Z --- Noise2D ----- a+b+c --- OutputSDF
+								 /
+			  Y --- SdfPlane ----
+		*/
+
+		const uint32_t in_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
+		const uint32_t in_y = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
+		const uint32_t in_z = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
+		const uint32_t out_sdf = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
+		const uint32_t n_fn2d = generator->create_node(VoxelGeneratorGraph::NODE_FAST_NOISE_2D, Vector2());
+		const uint32_t n_n2d = generator->create_node(VoxelGeneratorGraph::NODE_NOISE_2D, Vector2());
+		const uint32_t n_plane = generator->create_node(VoxelGeneratorGraph::NODE_SDF_PLANE, Vector2());
+		const uint32_t n_expr = generator->create_node(VoxelGeneratorGraph::NODE_EXPRESSION, Vector2());
+		const uint32_t n_preview = generator->create_node(VoxelGeneratorGraph::NODE_SDF_PREVIEW, Vector2());
+
+		generator->set_node_param(n_expr, 0, "a+b+c");
+		PackedStringArray var_names;
+		var_names.push_back("a");
+		var_names.push_back("b");
+		var_names.push_back("c");
+		generator->set_expression_node_inputs(n_expr, var_names);
+
+		Ref<ZN_FastNoiseLite> zfnl;
+		zfnl.instantiate();
+		generator->set_node_param(n_fn2d, 0, zfnl);
+
+		Ref<FastNoiseLite> fnl;
+		fnl.instantiate();
+		generator->set_node_param(n_n2d, 0, fnl);
+
+		generator->add_connection(in_x, 0, n_fn2d, 0);
+		generator->add_connection(in_x, 0, n_n2d, 0);
+		generator->add_connection(in_z, 0, n_fn2d, 1);
+		generator->add_connection(in_z, 0, n_n2d, 1);
+		generator->add_connection(in_y, 0, n_plane, 0);
+		generator->add_connection(n_fn2d, 0, n_expr, 0);
+		generator->add_connection(n_fn2d, 0, n_preview, 0);
+		generator->add_connection(n_n2d, 0, n_expr, 1);
+		generator->add_connection(n_plane, 0, n_expr, 2);
+		generator->add_connection(n_expr, 0, out_sdf, 0);
+
+		VoxelGraphRuntime::CompilationResult result = generator->compile();
+		ZYLANN_TEST_ASSERT_MSG(result.success,
+				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+
+		generator->generate_single(Vector3i(1, 2, 3), VoxelBufferInternal::CHANNEL_SDF);
+
+		std::vector<VoxelGeneratorGraph::NodeProfilingInfo> profiling_info;
+		generator->debug_measure_microseconds_per_voxel(false, &profiling_info);
+		ZYLANN_TEST_ASSERT(profiling_info.size() >= 4);
+		for (const VoxelGeneratorGraph::NodeProfilingInfo &info : profiling_info) {
+			ZYLANN_TEST_ASSERT(generator->has_node(info.node_id));
+		}
+	}
 }
 
 void test_voxel_graph_generator_texturing() {

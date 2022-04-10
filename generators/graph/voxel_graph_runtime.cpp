@@ -4,6 +4,9 @@
 #include "../../util/log.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
+#ifdef TOOLS_ENABLED
+#include "../../util/profiling_clock.h"
+#endif
 #include "voxel_generator_graph.h"
 #include "voxel_graph_node_db.h"
 
@@ -319,18 +322,25 @@ static VoxelGraphRuntime::CompilationResult expand_expression_nodes(ProgramGraph
 VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGraph &p_graph, bool debug) {
 	ZN_PROFILE_SCOPE();
 
-	ProgramGraph graph;
-	graph.copy_from(p_graph, false);
+	ProgramGraph expanded_graph;
+	expanded_graph.copy_from(p_graph, false);
 	// TODO Store a remapping to allow debugging with the expanded graph
 	std::vector<PortRemap> user_to_expanded_ports;
 	std::vector<ExpandedNodeRemap> expanded_to_user_node_ids;
-	VoxelGraphRuntime::CompilationResult expand_result =
-			expand_expression_nodes(graph, user_to_expanded_ports, expanded_to_user_node_ids);
+	const VoxelGraphRuntime::CompilationResult expand_result =
+			expand_expression_nodes(expanded_graph, user_to_expanded_ports, expanded_to_user_node_ids);
 	if (!expand_result.success) {
 		return expand_result;
 	}
+	struct L {
+		static CompilationResult make_error(String msg) {
+			return { false, -1, msg };
+		}
+	};
+	// Expanding a graph may produce more nodes, not remove any
+	ERR_FAIL_COND_V(expanded_graph.get_nodes_count() < p_graph.get_nodes_count(), L::make_error("Internal error"));
 
-	VoxelGraphRuntime::CompilationResult result = _compile(graph, debug);
+	const VoxelGraphRuntime::CompilationResult result = _compile(expanded_graph, debug);
 	if (!result.success) {
 		clear();
 	}
@@ -340,6 +350,13 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGra
 	}
 	for (ExpandedNodeRemap r : expanded_to_user_node_ids) {
 		_program.expanded_node_id_to_user_node_id.insert({ r.expanded_node_id, r.original_node_id });
+	}
+	// Remap debug nodes from the execution map to user-facing ones
+	for (uint32_t &debug_node_id : _program.default_execution_map.debug_nodes) {
+		auto it = _program.expanded_node_id_to_user_node_id.find(debug_node_id);
+		if (it != _program.expanded_node_id_to_user_node_id.end()) {
+			debug_node_id = it->second;
+		}
 	}
 
 	return result;
@@ -556,6 +573,10 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 			_program.default_execution_map.xzy_start_index = _program.default_execution_map.operation_adresses.size();
 		}
 		_program.default_execution_map.operation_adresses.push_back(operations.size());
+		if (debug) {
+			// Will be remapped later if the node is an expanded one
+			_program.default_execution_map.debug_nodes.push_back(node_id);
+		}
 
 		operations.push_back(node.type_id);
 
@@ -737,6 +758,10 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 	generate_optimized_execution_map(state, execution_map, to_span_const(all_outputs, _program.outputs_count), debug);
 }
 
+const VoxelGraphRuntime::ExecutionMap &VoxelGraphRuntime::get_default_execution_map() const {
+	return _program.default_execution_map;
+}
+
 // Generates a list of adresses for the operations to execute,
 // skipping those that are deemed constant by the last range analysis.
 // If a non-constant operation only contributes to a constant one, it will also be skipped.
@@ -811,6 +836,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 
 	if (debug) {
 		std::vector<uint32_t> &debug_nodes = execution_map.debug_nodes;
+		CRASH_COND(debug_nodes.size() > 0);
 
 		for (unsigned int node_index = 0; node_index < graph.nodes.size(); ++node_index) {
 			const ProcessResult res = results[node_index];
@@ -822,13 +848,13 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 
 				if (it != _program.expanded_node_id_to_user_node_id.end()) {
 					debug_node_id = it->second;
-					if (std::find(debug_nodes.begin(), debug_nodes.end(), debug_node_id) != debug_nodes.end()) {
-						// Ignore duplicates. Some nodes can have been expanded into multiple ones.
-						continue;
-					}
+					// if (std::find(debug_nodes.begin(), debug_nodes.end(), debug_node_id) != debug_nodes.end()) {
+					// 	// Ignore duplicates. Some nodes can have been expanded into multiple ones.
+					// 	continue;
+					// }
 				}
 
-				debug_nodes.push_back(node.debug_node_id);
+				debug_nodes.push_back(debug_node_id);
 			}
 		}
 	}
@@ -900,7 +926,7 @@ void VoxelGraphRuntime::generate_single(State &state, Vector3f position_f, const
 			false, execution_map);
 }
 
-void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) const {
+void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bool with_profiling) const {
 	const unsigned int old_buffer_count = state.buffers.size();
 	if (_program.buffer_count > state.buffers.size()) {
 		state.buffers.resize(_program.buffer_count);
@@ -1011,6 +1037,12 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size) co
 			buffer.constant_value = ra_min;
 		}
 	}*/
+
+	state.debug_profiler_times.clear();
+	if (with_profiling) {
+		// Give maximum size
+		state.debug_profiler_times.resize(_program.dependency_graph.nodes.size());
+	}
 }
 
 static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, unsigned int &pc) {
@@ -1096,6 +1128,11 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 		op_adresses = op_adresses.sub(offset);
 	}
 
+#ifdef TOOLS_ENABLED
+	ProfilingClock profiling_clock;
+	const bool profile = state.debug_profiler_times.size() > 0;
+#endif
+
 	for (unsigned int execution_map_index = 0; execution_map_index < op_adresses.size(); ++execution_map_index) {
 		unsigned int pc = op_adresses[execution_map_index];
 
@@ -1116,6 +1153,14 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 		ERR_FAIL_COND(node_type.process_buffer_func == nullptr);
 		ProcessBufferContext ctx(inputs, outputs, params, buffers, execution_map != nullptr);
 		node_type.process_buffer_func(ctx);
+
+#ifdef TOOLS_ENABLED
+		if (profile) {
+			const uint32_t elapsed_microseconds = profiling_clock.get_elapsed_microseconds();
+			state.add_execution_time(execution_map_index, elapsed_microseconds);
+			profiling_clock.restart();
+		}
+#endif
 	}
 
 	// Unbind buffers

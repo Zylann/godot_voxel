@@ -190,7 +190,14 @@ public:
 	// Debug
 
 	math::Interval debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map) const;
-	float debug_measure_microseconds_per_voxel(bool singular);
+
+	struct NodeProfilingInfo {
+		uint32_t node_id;
+		uint32_t microseconds;
+	};
+
+	float debug_measure_microseconds_per_voxel(bool singular, std::vector<NodeProfilingInfo> *node_profiling_info);
+
 	void debug_load_waves_preset();
 
 	// Editor
@@ -218,6 +225,7 @@ private:
 	float _b_generate_single(Vector3 pos);
 	Vector2 _b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const;
 	Dictionary _b_compile();
+	float _b_debug_measure_microseconds_per_voxel(bool singular);
 
 	struct WeightOutput {
 		unsigned int layer_index;

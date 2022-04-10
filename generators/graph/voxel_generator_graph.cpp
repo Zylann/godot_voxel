@@ -670,7 +670,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	// Slice is on the Y axis
 	const unsigned int slice_buffer_size = section_size.x * section_size.z;
 	VoxelGraphRuntime &runtime = runtime_ptr->runtime;
-	runtime.prepare_state(cache.state, slice_buffer_size);
+	runtime.prepare_state(cache.state, slice_buffer_size, false);
 
 	cache.x_cache.resize(slice_buffer_size);
 	cache.y_cache.resize(slice_buffer_size);
@@ -1038,7 +1038,7 @@ void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<
 	ERR_FAIL_COND(_runtime == nullptr);
 	Cache &cache = _cache;
 	VoxelGraphRuntime &runtime = _runtime->runtime;
-	runtime.prepare_state(cache.state, in_x.size());
+	runtime.prepare_state(cache.state, in_x.size(), false);
 	runtime.generate_set(cache.state, in_x, in_y, in_z, false, nullptr);
 }
 
@@ -1140,7 +1140,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 			x_coords.resize(area);
 			y_coords.resize(area);
 			z_coords.resize(area);
-			runtime.prepare_state(state, area);
+			runtime.prepare_state(state, area, false);
 
 			const Vector2 suv =
 					Vector2(1.f / static_cast<float>(im->get_width()), 1.f / static_cast<float>(im->get_height()));
@@ -1238,7 +1238,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 			sdf_values_p.resize(area);
 			sdf_values_px.resize(area);
 			sdf_values_py.resize(area);
-			runtime.prepare_state(state, area);
+			runtime.prepare_state(state, area, false);
 
 			const float ns = 2.f / strength;
 
@@ -1360,7 +1360,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 	}
 	Cache &cache = _cache;
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
-	runtime.prepare_state(cache.state, 1);
+	runtime.prepare_state(cache.state, 1, false);
 	runtime.generate_single(cache.state, to_vec3f(position), nullptr);
 	const VoxelGraphRuntime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
 	ERR_FAIL_COND_V(buffer.size == 0, v);
@@ -1382,7 +1382,7 @@ math::Interval VoxelGeneratorGraph::debug_analyze_range(
 	Cache &cache = _cache;
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	// Note, buffer size is irrelevant here, because range analysis doesn't use buffers
-	runtime.prepare_state(cache.state, 1);
+	runtime.prepare_state(cache.state, 1, false);
 	runtime.analyze_range(cache.state, min_pos, max_pos);
 	if (optimize_execution_map) {
 		runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map, true);
@@ -1619,13 +1619,14 @@ void VoxelGeneratorGraph::unregister_subresources() {
 
 // Debug land
 
-float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
+float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
+		bool singular, std::vector<NodeProfilingInfo> *node_profiling_info) {
 	std::shared_ptr<const Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);
 		runtime_ptr = _runtime;
 	}
-	ERR_FAIL_COND_V(runtime_ptr == nullptr, 0.f);
+	ERR_FAIL_COND_V_MSG(runtime_ptr == nullptr, 0.f, "The graph hasn't been compiled yet");
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 
 	const uint32_t cube_size = 16;
@@ -1634,12 +1635,12 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 	// const uint32_t cube_count = 1;
 	const uint32_t voxel_count = cube_size * cube_size * cube_size * cube_count;
 	ProfilingClock profiling_clock;
-	uint64_t elapsed_us = 0;
+	uint64_t total_elapsed_us = 0;
 
 	Cache &cache = _cache;
 
 	if (singular) {
-		runtime.prepare_state(cache.state, 1);
+		runtime.prepare_state(cache.state, 1, false);
 
 		for (uint32_t i = 0; i < cube_count; ++i) {
 			profiling_clock.restart();
@@ -1652,7 +1653,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 				}
 			}
 
-			elapsed_us += profiling_clock.restart();
+			total_elapsed_us += profiling_clock.restart();
 		}
 
 	} else {
@@ -1667,7 +1668,8 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 		Span<float> sy(src_y, 0, src_y.size());
 		Span<float> sz(src_z, 0, src_z.size());
 
-		runtime.prepare_state(cache.state, sx.size());
+		const bool per_node_profiling = node_profiling_info != nullptr;
+		runtime.prepare_state(cache.state, sx.size(), per_node_profiling);
 
 		for (uint32_t i = 0; i < cube_count; ++i) {
 			profiling_clock.restart();
@@ -1676,11 +1678,21 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(bool singular) {
 				runtime.generate_set(cache.state, sx, sy, sz, false, nullptr);
 			}
 
-			elapsed_us += profiling_clock.restart();
+			total_elapsed_us += profiling_clock.restart();
+		}
+
+		if (per_node_profiling) {
+			const VoxelGraphRuntime::ExecutionMap &execution_map = runtime.get_default_execution_map();
+			node_profiling_info->resize(execution_map.debug_nodes.size());
+			for (unsigned int i = 0; i < node_profiling_info->size(); ++i) {
+				NodeProfilingInfo &info = (*node_profiling_info)[i];
+				info.node_id = execution_map.debug_nodes[i];
+				info.microseconds = cache.state.get_execution_time(i);
+			}
 		}
 	}
 
-	float us = static_cast<double>(elapsed_us) / voxel_count;
+	const float us = static_cast<double>(total_elapsed_us) / voxel_count;
 	return us;
 }
 
@@ -1832,6 +1844,10 @@ Dictionary VoxelGeneratorGraph::_b_compile() {
 	return d;
 }
 
+float VoxelGeneratorGraph::_b_debug_measure_microseconds_per_voxel(bool singular) {
+	return debug_measure_microseconds_per_voxel(singular, nullptr);
+}
+
 void VoxelGeneratorGraph::_on_subresource_changed() {
 	emit_changed();
 }
@@ -1907,7 +1923,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &VoxelGeneratorGraph::debug_load_waves_preset);
 	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel", "use_singular_queries"),
-			&VoxelGeneratorGraph::debug_measure_microseconds_per_voxel);
+			&VoxelGeneratorGraph::_b_debug_measure_microseconds_per_voxel);
 
 	ClassDB::bind_method(D_METHOD("_set_graph_data", "data"), &VoxelGeneratorGraph::load_graph_from_variant_data);
 	ClassDB::bind_method(D_METHOD("_get_graph_data"), &VoxelGeneratorGraph::get_graph_as_variant_data);

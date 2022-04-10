@@ -54,6 +54,7 @@ private:
 	void update_range_analysis_previews();
 	void update_range_analysis_gizmo();
 	void clear_range_analysis_tooltips();
+	void hide_profiling_ratios();
 
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);

@@ -12,7 +12,11 @@ struct ProfilingClock {
 		restart();
 	}
 
-	uint64_t restart() {
+	inline uint64_t get_elapsed_microseconds() const {
+		return Time::get_singleton()->get_ticks_usec() - time_before;
+	}
+
+	inline uint64_t restart() {
 		const uint64_t now = Time::get_singleton()->get_ticks_usec();
 		const uint64_t time_spent = now - time_before;
 		time_before = Time::get_singleton()->get_ticks_usec();
