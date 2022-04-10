@@ -69,9 +69,9 @@ In practice, it means before storing SDF in a `VoxelBuffer`, we scale it by `0.1
 
 For more information about SDF and other domains where they are used, you can check out some of these videos:
 
-- https://www.youtube.com/watch?v=1b5hIMqz_wM: Glyphs, shapes, fonts, signed distance fields. (Martin Donald)
-- https://www.youtube.com/watch?v=M3iI2l0ltbE: Coding Adventure: Marching Cubes (Sebastian Lague)
-- https://www.youtube.com/watch?v=8--5LwHRhjk: Painting a Cartoon Girl using Mathematics (Inigo Quilez)
+- [Glyphs, shapes, fonts, signed distance fields. (Martin Donald)](https://www.youtube.com/watch?v=1b5hIMqz_wM)
+- [Coding Adventure: Marching Cubes (Sebastian Lague)](https://www.youtube.com/watch?v=M3iI2l0ltbE)
+- [Painting a Cartoon Girl using Mathematics (Inigo Quilez)](https://www.youtube.com/watch?v=8--5LwHRhjk)
 
 
 Transvoxel
