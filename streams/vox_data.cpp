@@ -162,8 +162,7 @@ static Basis parse_basis(uint8_t data) {
 	return b;
 }
 
-Error parse_node_common_header(
-		Node &node, FileAccess &f, const std::unordered_map<int, std::unique_ptr<Node>> &scene_graph) {
+Error parse_node_common_header(Node &node, FileAccess &f, const std::unordered_map<int, UniquePtr<Node>> &scene_graph) {
 	//
 	const int node_id = f.get_32();
 	ERR_FAIL_COND_V_MSG(scene_graph.find(node_id) != scene_graph.end(), ERR_INVALID_DATA,
@@ -242,7 +241,7 @@ Error Data::_load_from_file(String fpath) {
 			last_size = magica_to_opengl(size);
 
 		} else if (strcmp(chunk_id, "XYZI") == 0) {
-			std::unique_ptr<Model> model = std::make_unique<Model>();
+			UniquePtr<Model> model = make_unique_instance<Model>();
 			model->color_indexes.resize(last_size.x * last_size.y * last_size.z, 0);
 			model->size = last_size;
 
@@ -276,7 +275,7 @@ Error Data::_load_from_file(String fpath) {
 			f.get_32();
 
 		} else if (strcmp(chunk_id, "nTRN") == 0) {
-			std::unique_ptr<TransformNode> node_ptr = std::make_unique<TransformNode>();
+			UniquePtr<TransformNode> node_ptr = make_unique_instance<TransformNode>();
 			TransformNode &node = *node_ptr;
 
 			Error header_err = parse_node_common_header(node, f, _scene_graph);
@@ -333,7 +332,7 @@ Error Data::_load_from_file(String fpath) {
 			_scene_graph[node.id] = std::move(node_ptr);
 
 		} else if (strcmp(chunk_id, "nGRP") == 0) {
-			std::unique_ptr<GroupNode> node_ptr = std::make_unique<GroupNode>();
+			UniquePtr<GroupNode> node_ptr = make_unique_instance<GroupNode>();
 			GroupNode &node = *node_ptr;
 
 			Error header_err = parse_node_common_header(node, f, _scene_graph);
@@ -351,7 +350,7 @@ Error Data::_load_from_file(String fpath) {
 			_scene_graph[node.id] = std::move(node_ptr);
 
 		} else if (strcmp(chunk_id, "nSHP") == 0) {
-			std::unique_ptr<ShapeNode> node_ptr = std::make_unique<ShapeNode>();
+			UniquePtr<ShapeNode> node_ptr = make_unique_instance<ShapeNode>();
 			ShapeNode &node = *node_ptr;
 
 			Error header_err = parse_node_common_header(node, f, _scene_graph);
@@ -374,7 +373,7 @@ Error Data::_load_from_file(String fpath) {
 			_scene_graph[node.id] = std::move(node_ptr);
 
 		} else if (strcmp(chunk_id, "LAYR") == 0) {
-			std::unique_ptr<Layer> layer_ptr = std::make_unique<Layer>();
+			UniquePtr<Layer> layer_ptr = make_unique_instance<Layer>();
 			Layer &layer = *layer_ptr;
 
 			const int layer_id = f.get_32();
@@ -407,7 +406,7 @@ Error Data::_load_from_file(String fpath) {
 			_layers.push_back(std::move(layer_ptr));
 
 		} else if (strcmp(chunk_id, "MATL") == 0) {
-			std::unique_ptr<Material> material_ptr = std::make_unique<Material>();
+			UniquePtr<Material> material_ptr = make_unique_instance<Material>();
 			Material &material = *material_ptr;
 
 			const int material_id = f.get_32();

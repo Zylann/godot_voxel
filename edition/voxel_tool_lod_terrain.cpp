@@ -260,7 +260,7 @@ template <typename Op_T>
 class VoxelToolAsyncEdit : public IThreadedTask {
 public:
 	VoxelToolAsyncEdit(Op_T op, std::shared_ptr<VoxelDataLodMap> data) : _op(op), _data(data) {
-		_tracker = gd_make_shared<AsyncDependencyTracker>(1);
+		_tracker = make_shared_instance<AsyncDependencyTracker>(1);
 	}
 
 	void run(ThreadedTaskContext ctx) override {

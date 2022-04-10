@@ -618,7 +618,7 @@ struct ScheduleSaveAction {
 			VoxelTerrain::BlockToSave b;
 			if (with_copy) {
 				RWLockRead lock(block.get_voxels().get_lock());
-				b.voxels = gd_make_shared<VoxelBufferInternal>();
+				b.voxels = make_shared_instance<VoxelBufferInternal>();
 				block.get_voxels_const().duplicate_to(*b.voxels, true);
 			} else {
 				b.voxels = block.get_voxels_shared();

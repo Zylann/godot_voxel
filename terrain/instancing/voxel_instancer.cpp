@@ -742,7 +742,7 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 }
 
 void VoxelInstancer::on_data_block_loaded(
-		Vector3i grid_position, unsigned int lod_index, std::unique_ptr<InstanceBlockData> instances) {
+		Vector3i grid_position, unsigned int lod_index, UniquePtr<InstanceBlockData> instances) {
 	ERR_FAIL_COND(lod_index >= _lods.size());
 	Lod &lod = _lods[lod_index];
 	lod.loaded_instances_data.insert(std::make_pair(grid_position, std::move(instances)));
@@ -1128,7 +1128,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 
 	const Lod &lod = _lods[lod_index];
 
-	std::unique_ptr<InstanceBlockData> data = std::make_unique<InstanceBlockData>();
+	UniquePtr<InstanceBlockData> data = make_unique_instance<InstanceBlockData>();
 	const int data_block_size = (1 << _parent_data_block_size_po2) << lod_index;
 	data->position_range = data_block_size;
 

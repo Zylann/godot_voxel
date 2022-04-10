@@ -5,6 +5,7 @@
 #include "../../storage/voxel_memory_pool.h"
 #include "../../streams/vox_data.h"
 #include "../../util/macros.h"
+#include "../../util/memory.h"
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
 
@@ -128,7 +129,7 @@ void for_each_model_instance(const Data &vox_data, F f) {
 
 struct ModelInstance {
 	// Model with baked rotation
-	std::unique_ptr<VoxelBufferInternal> voxels;
+	UniquePtr<VoxelBufferInternal> voxels;
 	// Lowest corner position
 	Vector3i position;
 };
@@ -162,7 +163,7 @@ void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &o
 		// TODO Optimization: implement transformation for VoxelBuffers so we can avoid using a temporary copy.
 		// Didn't do it yet because VoxelBuffers also have metadata and the `transform_3d_array_zxy` function only works
 		// on arrays.
-		std::unique_ptr<VoxelBufferInternal> voxels = std::make_unique<VoxelBufferInternal>();
+		UniquePtr<VoxelBufferInternal> voxels = make_unique_instance<VoxelBufferInternal>();
 		voxels->create(dst_size);
 		voxels->decompress_channel(VoxelBufferInternal::CHANNEL_COLOR);
 

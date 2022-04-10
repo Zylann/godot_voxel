@@ -1,7 +1,7 @@
 #ifndef OBJECT_POOL_H
 #define OBJECT_POOL_H
 
-#include "core/os/memory.h"
+#include "memory.h"
 #include <vector>
 
 namespace zylann {
@@ -11,7 +11,7 @@ class ObjectPool {
 public:
 	T *create() {
 		if (_objects.empty()) {
-			return memnew(T);
+			return ZN_NEW(T);
 		} else {
 			T *obj = _objects.back();
 			_objects.pop_back();
@@ -25,8 +25,8 @@ public:
 	}
 
 	~ObjectPool() {
-		for (auto it = _objects.begin(); it != _objects.end(); ++it) {
-			memdelete(*it);
+		for (T *obj : _objects) {
+			ZN_DELETE(obj);
 		}
 	}
 

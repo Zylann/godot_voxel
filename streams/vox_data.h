@@ -4,10 +4,10 @@
 #include "../util/fixed_array.h"
 #include "../util/math/color8.h"
 #include "../util/math/vector3i.h"
+#include "../util/memory.h"
 
 #include <core/math/basis.h>
 #include <core/string/ustring.h>
-#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -128,11 +128,11 @@ public:
 private:
 	Error _load_from_file(String fpath);
 
-	std::vector<std::unique_ptr<Model>> _models;
-	std::vector<std::unique_ptr<Layer>> _layers;
-	std::unordered_map<int, std::unique_ptr<Node>> _scene_graph;
+	std::vector<UniquePtr<Model>> _models;
+	std::vector<UniquePtr<Layer>> _layers;
+	std::unordered_map<int, UniquePtr<Node>> _scene_graph;
 	// Material IDs are supposedly tied to palette indices
-	std::unordered_map<int, std::unique_ptr<Material>> _materials;
+	std::unordered_map<int, UniquePtr<Material>> _materials;
 	int _root_node_id = -1;
 	FixedArray<Color8, 256> _palette;
 };

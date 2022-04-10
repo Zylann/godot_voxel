@@ -6,6 +6,7 @@
 #include "../../util/fixed_array.h"
 #include "../../util/godot/direct_multimesh_instance.h"
 #include "../../util/math/box3i.h"
+#include "../../util/memory.h"
 #include "voxel_instance_generator.h"
 #include "voxel_instance_library.h"
 #include "voxel_instance_library_multimesh_item.h"
@@ -17,7 +18,6 @@
 #include <scene/3d/node_3d.h>
 //#include <scene/resources/material.h> // Included by node.h lol
 #include <limits>
-#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -64,8 +64,7 @@ public:
 
 	// Event handlers
 
-	void on_data_block_loaded(
-			Vector3i grid_position, unsigned int lod_index, std::unique_ptr<InstanceBlockData> instances);
+	void on_data_block_loaded(Vector3i grid_position, unsigned int lod_index, UniquePtr<InstanceBlockData> instances);
 	void on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays);
 	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
 	void on_area_edited(Box3i p_voxel_box);
@@ -196,7 +195,7 @@ private:
 		// it will get generated instances.
 		// Keys follows the data block coordinate system.
 		// Can't use `HashMap` because it lacks move semantics.
-		std::unordered_map<Vector3i, std::unique_ptr<InstanceBlockData>> loaded_instances_data;
+		std::unordered_map<Vector3i, UniquePtr<InstanceBlockData>> loaded_instances_data;
 
 		FixedArray<MeshLodDistances, VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS> mesh_lod_distances;
 	};

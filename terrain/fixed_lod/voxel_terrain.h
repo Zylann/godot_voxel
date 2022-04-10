@@ -281,7 +281,7 @@ private:
 
 	Ref<Material> _materials[VoxelMesherBlocky::MAX_MATERIALS];
 
-	GodotUniqueObjectPtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
+	GodotObjectUniquePtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
 
 	VoxelInstancer *_instancer = nullptr;
 

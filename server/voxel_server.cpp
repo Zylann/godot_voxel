@@ -101,7 +101,7 @@ VoxelServer::VoxelServer() {
 	_general_thread_pool.set_batch_count(1);
 
 	// Init world
-	_world.shared_priority_dependency = gd_make_shared<PriorityDependency::ViewersData>();
+	_world.shared_priority_dependency = make_shared_instance<PriorityDependency::ViewersData>();
 
 	ZN_PRINT_VERBOSE(format("Size of LoadBlockDataTask: {}", sizeof(LoadBlockDataTask)));
 	ZN_PRINT_VERBOSE(format("Size of SaveBlockDataTask: {}", sizeof(SaveBlockDataTask)));
@@ -146,7 +146,7 @@ uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks, VolumeType type) {
 	Volume volume;
 	volume.type = type;
 	volume.callbacks = callbacks;
-	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
+	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
 	return _world.volumes.create(volume);
 }
 
@@ -174,7 +174,7 @@ void VoxelServer::set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream)
 		volume.stream_dependency->valid = false;
 	}
 
-	volume.stream_dependency = gd_make_shared<StreamingDependency>();
+	volume.stream_dependency = make_shared_instance<StreamingDependency>();
 	volume.stream_dependency->generator = volume.generator;
 	volume.stream_dependency->stream = volume.stream;
 }
@@ -188,7 +188,7 @@ void VoxelServer::set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> g
 		volume.stream_dependency->valid = false;
 	}
 
-	volume.stream_dependency = gd_make_shared<StreamingDependency>();
+	volume.stream_dependency = make_shared_instance<StreamingDependency>();
 	volume.stream_dependency->generator = volume.generator;
 	volume.stream_dependency->stream = volume.stream;
 
@@ -196,7 +196,7 @@ void VoxelServer::set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> g
 		volume.meshing_dependency->valid = false;
 	}
 
-	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
+	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -209,7 +209,7 @@ void VoxelServer::set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher)
 		volume.meshing_dependency->valid = false;
 	}
 
-	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
+	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -222,7 +222,7 @@ void VoxelServer::set_volume_octree_lod_distance(uint32_t volume_id, float lod_d
 void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
 	Volume &volume = _world.volumes.get(volume_id);
 	volume.meshing_dependency->valid = false;
-	volume.meshing_dependency = gd_make_shared<MeshingDependency>();
+	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
 	volume.meshing_dependency->mesher = volume.mesher;
 	volume.meshing_dependency->generator = volume.generator;
 }
@@ -369,7 +369,7 @@ void VoxelServer::request_voxel_block_save(
 }
 
 void VoxelServer::request_instance_block_save(
-		uint32_t volume_id, std::unique_ptr<InstanceBlockData> instances, Vector3i block_pos, int lod) {
+		uint32_t volume_id, UniquePtr<InstanceBlockData> instances, Vector3i block_pos, int lod) {
 	const Volume &volume = _world.volumes.get(volume_id);
 	ERR_FAIL_COND(volume.stream.is_null());
 	CRASH_COND(volume.stream_dependency == nullptr);
@@ -531,7 +531,7 @@ void VoxelServer::process() {
 		const size_t viewer_count = _world.viewers.count();
 		if (_world.shared_priority_dependency->viewers.size() != viewer_count) {
 			// TODO We can avoid the invalidation by using an atomic size or memory barrier?
-			_world.shared_priority_dependency = gd_make_shared<PriorityDependency::ViewersData>();
+			_world.shared_priority_dependency = make_shared_instance<PriorityDependency::ViewersData>();
 			_world.shared_priority_dependency->viewers.resize(viewer_count);
 		}
 		size_t i = 0;

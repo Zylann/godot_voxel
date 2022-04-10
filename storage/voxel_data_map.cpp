@@ -1,8 +1,8 @@
 #include "voxel_data_map.h"
 #include "../constants/cube_tables.h"
 #include "../generators/voxel_generator.h"
-#include "../util/godot/funcs.h"
 #include "../util/macros.h"
+#include "../util/memory.h"
 
 #include <limits>
 
@@ -61,7 +61,7 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 }
 
 VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
-	std::shared_ptr<VoxelBufferInternal> buffer = gd_make_shared<VoxelBufferInternal>();
+	std::shared_ptr<VoxelBufferInternal> buffer = make_shared_instance<VoxelBufferInternal>();
 	buffer->create(_block_size, _block_size, _block_size);
 	buffer->set_default_values(_default_voxel);
 	VoxelDataBlock *block = VoxelDataBlock::create(bpos, buffer, _block_size, _lod_index);
@@ -397,7 +397,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 	// Generate
 	for (unsigned int i = 0; i < todo.size(); ++i) {
 		Task &task = todo[i];
-		task.voxels = gd_make_shared<VoxelBufferInternal>();
+		task.voxels = make_shared_instance<VoxelBufferInternal>();
 		task.voxels->create(block_size);
 		// TODO Format?
 		if (generator != nullptr) {

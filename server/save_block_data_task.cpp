@@ -27,7 +27,7 @@ SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos,
 }
 
 SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
-		std::unique_ptr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency) :
+		UniquePtr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency) :
 		_instances(std::move(p_instances)),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),

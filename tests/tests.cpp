@@ -1397,7 +1397,7 @@ void test_run_blocky_random_tick() {
 
 		const Box3i world_blocks_box(-4, -4, -4, 8, 8, 8);
 		world_blocks_box.for_each_cell_zxy([&map, &model_buffer](Vector3i block_pos) {
-			std::shared_ptr<VoxelBufferInternal> buffer = gd_make_shared<VoxelBufferInternal>();
+			std::shared_ptr<VoxelBufferInternal> buffer = make_shared_instance<VoxelBufferInternal>();
 			buffer->create(model_buffer.get_size());
 			buffer->copy_from(model_buffer);
 			map.set_block_buffer(block_pos, buffer, false);

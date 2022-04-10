@@ -1,6 +1,6 @@
 #include "voxel_buffer_gd.h"
 #include "../edition/voxel_tool_buffer.h"
-#include "../util/godot/funcs.h"
+#include "../util/memory.h"
 
 #include <core/io/image.h>
 
@@ -11,7 +11,7 @@ static thread_local bool s_create_shared = false;
 
 VoxelBuffer::VoxelBuffer() {
 	if (!s_create_shared) {
-		_buffer = gd_make_shared<VoxelBufferInternal>();
+		_buffer = make_shared_instance<VoxelBufferInternal>();
 	}
 }
 

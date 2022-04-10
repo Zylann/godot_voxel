@@ -34,7 +34,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	const Vector3i origin_in_voxels = (position << lod) * block_size;
 
 	if (voxels == nullptr) {
-		voxels = gd_make_shared<VoxelBufferInternal>();
+		voxels = make_shared_instance<VoxelBufferInternal>();
 		voxels->create(block_size, block_size, block_size);
 	}
 
@@ -51,7 +51,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 			ZN_PRINT_VERBOSE(format("Requesting save of generator output for block {} lod {}", position, lod));
 
 			// TODO Optimization: `voxels` doesnt actually need to be shared
-			std::shared_ptr<VoxelBufferInternal> voxels_copy = gd_make_shared<VoxelBufferInternal>();
+			std::shared_ptr<VoxelBufferInternal> voxels_copy = make_shared_instance<VoxelBufferInternal>();
 			voxels->duplicate_to(*voxels_copy, true);
 
 			// No instances, generators are not designed to produce them at this stage yet.

@@ -36,26 +36,11 @@ inline bool try_get_as(const Ref<From_T> &from, Ref<To_T> &to) {
 	return to.is_valid();
 }
 
-// Creates a shared_ptr which will use Godot's allocation functions
+// Creates a shared_ptr which will always use Godot's allocation functions
 template <typename T>
 inline std::shared_ptr<T> gd_make_shared() {
 	// std::make_shared() apparently wont allow us to specify custom new and delete
 	return std::shared_ptr<T>(memnew(T), memdelete<T>);
-}
-
-template <typename T, typename Arg_T>
-inline std::shared_ptr<T> gd_make_shared(Arg_T arg) {
-	return std::shared_ptr<T>(memnew(T(arg)), memdelete<T>);
-}
-
-template <typename T, typename Arg0_T, typename Arg1_T>
-inline std::shared_ptr<T> gd_make_shared(Arg0_T arg0, Arg1_T arg1) {
-	return std::shared_ptr<T>(memnew(T(arg0, arg1)), memdelete<T>);
-}
-
-template <typename T, typename Arg0_T, typename Arg1_T, typename Arg2_T>
-inline std::shared_ptr<T> gd_make_shared(Arg0_T arg0, Arg1_T arg1, Arg2_T arg2) {
-	return std::shared_ptr<T>(memnew(T(arg0, arg1, arg2)), memdelete<T>);
 }
 
 // For use with smart pointers such as std::unique_ptr
@@ -66,14 +51,14 @@ struct GodotObjectDeleter {
 	}
 };
 
-// Specialization of `std::unique_ptr which uses `memdelete()` as deleter.
+// Specialization of `std::unique_ptr which always uses Godot's `memdelete()` as deleter.
 template <typename T>
-using GodotUniqueObjectPtr = std::unique_ptr<T, GodotObjectDeleter<T>>;
+using GodotObjectUniquePtr = std::unique_ptr<T, GodotObjectDeleter<T>>;
 
-// Creates a `GodotUniqueObjectPtr<T>` with an object constructed with `memnew()` inside.
+// Creates a `GodotObjectUniquePtr<T>` with an object constructed with `memnew()` inside.
 template <typename T>
-GodotUniqueObjectPtr<T> gd_make_unique() {
-	return GodotUniqueObjectPtr<T>(memnew(T));
+GodotObjectUniquePtr<T> gd_make_unique() {
+	return GodotObjectUniquePtr<T>(memnew(T));
 }
 
 void set_nodes_owner(Node *root, Node *owner);

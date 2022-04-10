@@ -97,7 +97,7 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 				if (full_load_mode) {
 					// TODO Doing this on the main thread can be very demanding and cause a stall.
 					// We should find a way to make it asynchronous, not need mips, or not edit outside viewers area.
-					std::shared_ptr<VoxelBufferInternal> voxels = gd_make_shared<VoxelBufferInternal>();
+					std::shared_ptr<VoxelBufferInternal> voxels = make_shared_instance<VoxelBufferInternal>();
 					voxels->create(Vector3iUtil::create(data_block_size));
 					if (generator.is_valid()) {
 						ZN_PROFILE_SCOPE_NAMED("Generate");
@@ -1292,8 +1292,8 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 		// it would destroy `next_tasks`.
 
 		// This may first run the generation tasks, and then the edits
-		tracker =
-				gd_make_shared<AsyncDependencyTracker>(todo.size(), next_tasks, [](Span<IThreadedTask *> p_next_tasks) {
+		tracker = make_shared_instance<AsyncDependencyTracker>(
+				todo.size(), next_tasks, [](Span<IThreadedTask *> p_next_tasks) {
 					VoxelServer::get_singleton().push_async_tasks(p_next_tasks);
 				});
 

@@ -97,7 +97,7 @@ struct ScheduleSaveAction {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelLodTerrainUpdateData::BlockToSave b;
 
-			b.voxels = gd_make_shared<VoxelBufferInternal>();
+			b.voxels = make_shared_instance<VoxelBufferInternal>();
 			{
 				RWLockRead lock(block.get_voxels().get_lock());
 				block.get_voxels_const().duplicate_to(*b.voxels, true);
@@ -124,11 +124,11 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	ZN_PRINT_VERBOSE("Construct VoxelLodTerrain");
 
-	_data = gd_make_shared<VoxelDataLodMap>();
-	_update_data = gd_make_shared<VoxelLodTerrainUpdateData>();
+	_data = make_shared_instance<VoxelDataLodMap>();
+	_update_data = make_shared_instance<VoxelLodTerrainUpdateData>();
 	_update_data->task_is_complete = true;
-	_streaming_dependency = gd_make_shared<StreamingDependency>();
-	_meshing_dependency = gd_make_shared<MeshingDependency>();
+	_streaming_dependency = make_shared_instance<StreamingDependency>();
+	_meshing_dependency = make_shared_instance<MeshingDependency>();
 
 	set_notify_transform(true);
 
@@ -221,7 +221,7 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 	_stream = p_stream;
 
 	_streaming_dependency->valid = false;
-	_streaming_dependency = gd_make_shared<StreamingDependency>();
+	_streaming_dependency = make_shared_instance<StreamingDependency>();
 	_streaming_dependency->stream = _stream;
 	_streaming_dependency->generator = _generator;
 	_streaming_dependency->valid = true;
@@ -255,13 +255,13 @@ void VoxelLodTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
 	_generator = p_generator;
 
 	_meshing_dependency->valid = false;
-	_meshing_dependency = gd_make_shared<MeshingDependency>();
+	_meshing_dependency = make_shared_instance<MeshingDependency>();
 	_meshing_dependency->mesher = _mesher;
 	_meshing_dependency->generator = p_generator;
 	_meshing_dependency->valid = true;
 
 	_streaming_dependency->valid = false;
-	_streaming_dependency = gd_make_shared<StreamingDependency>();
+	_streaming_dependency = make_shared_instance<StreamingDependency>();
 	_streaming_dependency->stream = _stream;
 	_streaming_dependency->generator = p_generator;
 	_streaming_dependency->valid = true;
@@ -306,7 +306,7 @@ void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
 	_mesher = p_mesher;
 
 	_meshing_dependency->valid = false;
-	_meshing_dependency = gd_make_shared<MeshingDependency>();
+	_meshing_dependency = make_shared_instance<MeshingDependency>();
 	_meshing_dependency->mesher = _mesher;
 	_meshing_dependency->generator = _generator;
 	_meshing_dependency->valid = true;
@@ -590,7 +590,7 @@ bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int ch
 			return false;
 		}
 		if (_generator.is_valid()) {
-			voxels = gd_make_shared<VoxelBufferInternal>();
+			voxels = make_shared_instance<VoxelBufferInternal>();
 			voxels->create(Vector3iUtil::create(get_data_block_size()));
 			VoxelGenerator::VoxelQueryData q{ *voxels, pos, 0 };
 			_generator->generate_block(q);
@@ -828,7 +828,7 @@ void VoxelLodTerrain::reset_maps() {
 	VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
 	// Make a new one, so if threads still reference the old one it will be a different copy
-	_data = gd_make_shared<VoxelDataLodMap>();
+	_data = make_shared_instance<VoxelDataLodMap>();
 	_data->lod_count = lod_count;
 
 	for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {

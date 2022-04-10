@@ -45,7 +45,7 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 	const Vector3i origin_in_voxels = (_position << _lod) * _block_size;
 
 	ERR_FAIL_COND(_voxels != nullptr);
-	_voxels = gd_make_shared<VoxelBufferInternal>();
+	_voxels = make_shared_instance<VoxelBufferInternal>();
 	_voxels->create(_block_size, _block_size, _block_size);
 
 	// TODO We should consider batching this again, but it needs to be done carefully.

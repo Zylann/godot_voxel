@@ -1,4 +1,5 @@
 #include "async_dependency_tracker.h"
+#include "../memory.h"
 #include "threaded_task_runner.h"
 
 namespace zylann {
@@ -28,7 +29,8 @@ AsyncDependencyTracker::AsyncDependencyTracker(
 AsyncDependencyTracker::~AsyncDependencyTracker() {
 	for (auto it = _next_tasks.begin(); it != _next_tasks.end(); ++it) {
 		IThreadedTask *task = *it;
-		memdelete(task);
+		// TODO Might want to allow customizing that, maybe calling a `->dispose()` function instead?
+		ZN_DELETE(task);
 	}
 }
 
