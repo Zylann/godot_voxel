@@ -3,7 +3,9 @@
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
 #include "voxel_graph_editor.h"
+
 #include <core/object/undo_redo.h>
+#include <algorithm>
 
 namespace zylann::voxel {
 
