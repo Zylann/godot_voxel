@@ -4,6 +4,7 @@
 #include <scene/3d/collision_shape_3d.h>
 #include <scene/3d/mesh_instance_3d.h>
 #include <scene/3d/physics_body_3d.h>
+#include <algorithm>
 
 namespace zylann::voxel {
 

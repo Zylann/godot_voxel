@@ -2,6 +2,7 @@
 #include "voxel_instancer.h"
 
 #include <core/core_string_names.h>
+#include <algorithm>
 
 namespace zylann::voxel {
 
