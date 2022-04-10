@@ -47,8 +47,8 @@
 // VERSION: 1.0.1
 // https://github.com/Auburn/FastNoise
 
-#ifndef FASTNOISELITE_H
-#define FASTNOISELITE_H
+#ifndef ZN_FASTNOISELITE_H
+#define ZN_FASTNOISELITE_H
 
 #include <cmath>
 
