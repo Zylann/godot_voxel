@@ -9,11 +9,69 @@ Signed distance fields
 
 ### Concept
 
-TODO 
+In order to represent smooth terrain, using a grid with points being either 0 or 1 is not enough. Such a grid is good for polygonizing blocky surfaces, but not curves. It could be averaged or blurred somehow, but this would be expensive.
 
-### Scaled values
+For any point in space, a signed distance field (SDF) is a distance to the closest surface. It is "signed" because if the point is below a surface ("inside of something"), that distance becomes negative. That means the surface is defined by all the points for which the SDF is 0. That `0` is usually called the `isolevel`.
 
-TODO 
+SDF is commonly used in raymarching shaders as a way to define volumes. It is also used in the Transvoxel algorithm (a variant of Marching Cubes), which is implemented by this engine. So instead of discrete values, voxels store a sort of smooth "gradient" of distances.
+
+
+### Technical explanation
+
+Voxels use SDF in 3D, but to help visualizing it, so we'll have a look at 2D examples.
+If we were to represent a sphere with blocky voxels, we would apply the following pseudo-code to every voxel:
+
+```
+if distance(center, position) < radius:
+	voxel = 1
+else:
+	voxel = 0
+```
+
+Which gives the following:
+
+![Blocky SDF](images/sdf_example_blocky.png)
+
+Each voxel has binary values, either 1 or 0. But that gives no information about how the transition occurs between "matter" and "air", so if we were to render this using Transvoxel, the result would be:
+
+![SDF sphere blocky](images/sdf_sphere_blocky.png)
+
+It is kinda blocky. Now, we might indeed want this result (see section about shaders). But if we dont, we will need to change the code. In fact, if we walk back one step, the answer is already there:
+
+```
+voxel = distance(origin, position) - radius
+```
+
+This is the signed distance of a sphere. Here shown normalized, so voxels close to `0` are grey:
+
+![True SDF](images/sdf_example_true.png)
+
+Every voxel now contains a slowly changing gradient, so when Transvoxel marches through all cells to find the surface, it will see much more precise variations than just `0` or `1`, which allows it to produce smooth polygons.
+
+![SDF sphere blocky](images/sdf_sphere_smooth.png)
+
+
+### Scaling and clamping
+
+This engine allows to edit voxels and save them. Storing true SDF can be expensive for games. For example, because it is a *distance*, if a player builds a small tower on the ground, we would have to keep voxels up to date far away in the sky, just because the tower made the ground slightly closer to them. So in practice, it is not required to deal with exact SDF. We only need something that's good enough, so the gradients can vary at different speeds and modifications can stay "local".
+
+Voxels far away in the sky are actually not interesting for us. The surface is what we really need. So we can clamp distances, such that voxels far enough from the surface will have the same value. And if a whole chunk has the same value, it can be optimized out as "uniform".
+
+So the sphere SDF we've seen earlier would actually look like this in the data:
+
+![Clamped SDF](images/sdf_example_clamped.png)
+
+Over multiple chunks, all regions without a gradient will take very little space in memory.
+
+To save further memory, this engine does not store SDF using 32-bit `float` numbers (not by default). Instead, it uses either 8-bit or 16-bit integers, which are interpreted as fixed-point decimal numbers between -1 and 1. Anything lower or higher is clamped. That means the distance we want to store has to be scaled to best exploit this interval.
+
+In practice, it means before storing SDF in a `VoxelBuffer`, we scale it by `0.1`, or lower when using 16-bit. The lower the scale, the longer the gradient will span before it gets clamped, but the more memory will be used to store that variation. It should not be too low either, because 16-bit cannot represent variations that are too small. This scale may need to be tweaked if you use a lot of LOD levels, because if voxels are seen from very far away, the gradient will need to extend for long enough to remain smooth.
+
+For more information about SDF and other domains where they are used, you can check out some of these videos:
+
+- https://www.youtube.com/watch?v=1b5hIMqz_wM: Glyphs, shapes, fonts, signed distance fields. (Martin Donald)
+- https://www.youtube.com/watch?v=M3iI2l0ltbE: Coding Adventure: Marching Cubes (Sebastian Lague)
+- https://www.youtube.com/watch?v=8--5LwHRhjk: Painting a Cartoon Girl using Mathematics (Inigo Quilez)
 
 
 Transvoxel
