@@ -206,6 +206,7 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 	ExpressionParser::Result parse_result = ExpressionParser::parse(code_utf8.get_data(), functions);
 
 	if (parse_result.error.id != ExpressionParser::ERROR_NONE) {
+		// Error in expression
 		const std::string error_message_utf8 = ExpressionParser::to_string(parse_result.error);
 		VoxelGraphRuntime::CompilationResult result;
 		result.success = false;
@@ -215,6 +216,7 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 	}
 
 	if (parse_result.root == nullptr) {
+		// Expression is empty
 		VoxelGraphRuntime::CompilationResult result;
 		result.success = false;
 		result.node_id = original_node_id;
@@ -224,6 +226,7 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 
 	std::vector<ToConnect> to_connect;
 
+	// Create nodes from the expression's AST and connect them together
 	const uint32_t expanded_root_node_id = expand_node(
 			graph, *parse_result.root, VoxelGraphNodeDB::get_singleton(), to_connect, expanded_nodes, functions);
 	if (expanded_root_node_id == ProgramGraph::NULL_ID) {
@@ -236,9 +239,8 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 
 	expanded_output_port = { expanded_root_node_id, 0 };
 
-	for (unsigned int i = 0; i < to_connect.size(); ++i) {
-		const ToConnect tc = to_connect[i];
-
+	// Add connections from outside the expression to entry nodes of the expression
+	for (const ToConnect tc : to_connect) {
 		unsigned int original_port_index;
 		if (!original_node.find_input_port_by_name(tc.var_name, original_port_index)) {
 			VoxelGraphRuntime::CompilationResult result;
@@ -254,7 +256,18 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 		}
 	}
 
+	// Copy first because we'll remove the original node
+	CRASH_COND(original_node.outputs.size() == 0);
+	const ProgramGraph::Port original_output_port_copy = original_node.outputs[0];
+
+	// Remove the original expression node
 	graph.remove_node(original_node_id);
+
+	// Add connections from the expression's final node.
+	// Must be done at the end because adding two connections to the same input (old and new) is not allowed.
+	for (const ProgramGraph::PortLocation dst : original_output_port_copy.connections) {
+		graph.connect(expanded_output_port, dst);
+	}
 
 	VoxelGraphRuntime::CompilationResult result;
 	result.success = true;
@@ -284,18 +297,17 @@ static VoxelGraphRuntime::CompilationResult expand_expression_nodes(ProgramGraph
 
 	std::vector<uint32_t> expanded_node_ids;
 
-	for (auto it = expression_node_ids.begin(); it != expression_node_ids.end(); ++it) {
-		const uint32_t node_id = *it;
+	for (const uint32_t node_id : expression_node_ids) {
 		ProgramGraph::PortLocation expanded_output_port;
 		expanded_node_ids.clear();
-		VoxelGraphRuntime::CompilationResult result =
+		const VoxelGraphRuntime::CompilationResult result =
 				expand_expression_node(graph, node_id, expanded_output_port, expanded_node_ids);
 		if (!result.success) {
 			return result;
 		}
 		user_to_expanded_ports.push_back({ { node_id, 0 }, expanded_output_port });
-		for (auto it2 = expanded_node_ids.begin(); it2 != expanded_node_ids.end(); ++it2) {
-			expanded_to_user_node_ids.push_back({ *it2, node_id });
+		for (const uint32_t expanded_node_id : expanded_node_ids) {
+			expanded_to_user_node_ids.push_back({ expanded_node_id, node_id });
 		}
 	}
 
