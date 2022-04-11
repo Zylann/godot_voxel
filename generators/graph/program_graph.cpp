@@ -17,6 +17,10 @@ inline bool range_contains(const std::vector<T> &vec, const T &v, uint32_t begin
 	return false;
 }
 
+ProgramGraph::~ProgramGraph() {
+	clear();
+}
+
 uint32_t ProgramGraph::Node::find_input_connection(PortLocation src, uint32_t input_port_index) const {
 	CRASH_COND(input_port_index >= inputs.size());
 	const Port &p = inputs[input_port_index];

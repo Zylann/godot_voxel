@@ -58,6 +58,8 @@ public:
 		bool find_input_port_by_name(std::string_view name, unsigned int &out_i) const;
 	};
 
+	~ProgramGraph();
+
 	Node *create_node(uint32_t type_id, uint32_t id = NULL_ID);
 	Node &get_node(uint32_t id) const;
 	Node *try_get_node(uint32_t id) const;

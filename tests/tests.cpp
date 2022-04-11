@@ -379,6 +379,7 @@ void test_voxel_graph_generator_expressions() {
 		ZYLANN_TEST_ASSERT_MSG(result.success,
 				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 	}
+	Ref<ZN_FastNoiseLite> zfnl;
 	{
 		Ref<VoxelGeneratorGraph> generator;
 		generator.instantiate();
@@ -410,7 +411,6 @@ void test_voxel_graph_generator_expressions() {
 		var_names.push_back("c");
 		generator->set_expression_node_inputs(n_expr, var_names);
 
-		Ref<ZN_FastNoiseLite> zfnl;
 		zfnl.instantiate();
 		generator->set_node_param(n_fn2d, 0, zfnl);
 
@@ -442,6 +442,8 @@ void test_voxel_graph_generator_expressions() {
 			ZYLANN_TEST_ASSERT(generator->has_node(info.node_id));
 		}
 	}
+	ZYLANN_TEST_ASSERT(zfnl.is_valid());
+	ZYLANN_TEST_ASSERT(zfnl->reference_get_count() == 1);
 }
 
 void test_voxel_graph_generator_texturing() {
