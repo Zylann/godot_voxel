@@ -48,6 +48,8 @@ public:
 		uint32_t find_output_connection(uint32_t output_port_index, PortLocation dst) const;
 	};
 
+	~ProgramGraph();
+
 	Node *create_node(uint32_t type_id, uint32_t id = NULL_ID);
 	Node *get_node(uint32_t id) const;
 	Node *try_get_node(uint32_t id) const;

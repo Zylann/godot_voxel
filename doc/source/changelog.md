@@ -23,6 +23,7 @@ This branch is the last supporting Godot 3.
     - `Voxel`: properties were not refreshed when changing `geometry_type`
     - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
     - `VoxelGeneratorGraph`: editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
+    - `VoxelGeneratorGraph`: fixed memory leaks when the graph contains resources
     - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
     - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
