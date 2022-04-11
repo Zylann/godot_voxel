@@ -546,7 +546,7 @@ void find_variables(const Node &node, std::vector<std::string_view> &variables) 
 			break;
 
 		case Node::VARIABLE: {
-			const VariableNode &vnode = reinterpret_cast<const VariableNode &>(node);
+			const VariableNode &vnode = static_cast<const VariableNode &>(node);
 			// A variable can appear multiple times, only get it once
 			if (std::find(variables.begin(), variables.end(), vnode.name) == variables.end()) {
 				variables.push_back(vnode.name);
@@ -554,7 +554,7 @@ void find_variables(const Node &node, std::vector<std::string_view> &variables) 
 		} break;
 
 		case Node::OPERATOR: {
-			const OperatorNode &onode = reinterpret_cast<const OperatorNode &>(node);
+			const OperatorNode &onode = static_cast<const OperatorNode &>(node);
 			if (onode.n0 != nullptr) {
 				find_variables(*onode.n0, variables);
 			}
@@ -564,7 +564,7 @@ void find_variables(const Node &node, std::vector<std::string_view> &variables) 
 		} break;
 
 		case Node::FUNCTION: {
-			const FunctionNode &fnode = reinterpret_cast<const FunctionNode &>(node);
+			const FunctionNode &fnode = static_cast<const FunctionNode &>(node);
 			for (unsigned int i = 0; i < fnode.args.size(); ++i) {
 				if (fnode.args[i] != nullptr) {
 					find_variables(*fnode.args[i], variables);
@@ -583,7 +583,7 @@ bool precompute_constants(UniquePtr<Node> &node, float &out_number, Span<const F
 	ZN_ASSERT(node != nullptr);
 	switch (node->type) {
 		case Node::NUMBER: {
-			const NumberNode *nn = reinterpret_cast<NumberNode *>(node.get());
+			const NumberNode *nn = static_cast<NumberNode *>(node.get());
 			out_number = nn->value;
 			return true;
 		}
