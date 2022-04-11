@@ -1,5 +1,5 @@
-#ifndef INTERVAL_H
-#define INTERVAL_H
+#ifndef ZN_INTERVAL_H
+#define ZN_INTERVAL_H
 
 #include "funcs.h"
 #include <limits>
@@ -18,7 +18,7 @@ struct Interval {
 
 	inline Interval(real_t p_min, real_t p_max) : min(p_min), max(p_max) {
 #if DEBUG_ENABLED
-		CRASH_COND(p_min > p_max);
+		ZN_ASSERT(p_min <= p_max);
 #endif
 	}
 
@@ -265,10 +265,10 @@ inline Interval atan2(const Interval &y, const Interval &x, OptionalInterval *se
 	//          |
 	//      2   |    3
 
-	bool in_nx = x.min <= 0.f;
-	bool in_px = x.max >= 0.f;
-	bool in_ny = y.min <= 0.f;
-	bool in_py = y.max >= 0.f;
+	const bool in_nx = x.min <= 0.f;
+	const bool in_px = x.max >= 0.f;
+	const bool in_ny = y.min <= 0.f;
+	const bool in_py = y.max >= 0.f;
 
 	if (secondary_output != nullptr) {
 		secondary_output->valid = false;
@@ -279,10 +279,10 @@ inline Interval atan2(const Interval &y, const Interval &x, OptionalInterval *se
 		return Interval{ -Math_PI, Math_PI };
 	}
 
-	bool in_q0 = in_px && in_py;
-	bool in_q1 = in_nx && in_py;
-	bool in_q2 = in_nx && in_ny;
-	bool in_q3 = in_px && in_ny;
+	const bool in_q0 = in_px && in_py;
+	const bool in_q1 = in_nx && in_py;
+	const bool in_q2 = in_nx && in_ny;
+	const bool in_q3 = in_px && in_ny;
 
 	// Double-quadrants
 
@@ -480,4 +480,4 @@ inline Interval pow(Interval x, Interval p) {
 
 } //namespace zylann::math
 
-#endif // INTERVAL_H
+#endif // ZN_INTERVAL_H

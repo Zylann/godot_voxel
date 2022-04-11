@@ -4,6 +4,7 @@
 #include "../../util/log.h"
 #include "../../util/math/box3i.h"
 #include "../../util/profiling.h"
+#include "../../util/string_funcs.h"
 
 #include <core/io/json.h>
 #include <core/os/time.h>

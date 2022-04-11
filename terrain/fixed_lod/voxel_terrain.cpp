@@ -9,6 +9,7 @@
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
+#include "../../util/string_funcs.h"
 #include "../instancing/voxel_instancer.h"
 #include "../voxel_data_block_enter_info.h"
 

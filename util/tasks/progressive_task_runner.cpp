@@ -1,14 +1,18 @@
 #include "progressive_task_runner.h"
+#include "../errors.h"
+#include "../math/funcs.h"
+
+#include <core/os/time.h>
 
 namespace zylann {
 
 ProgressiveTaskRunner::~ProgressiveTaskRunner() {
 	flush();
-	ERR_FAIL_COND_MSG(_tasks.size() > 0, "Tasks got created in destructors?");
+	ZN_ASSERT_RETURN_MSG(_tasks.size() == 0, "Tasks got created in destructors?");
 }
 
 void ProgressiveTaskRunner::push(IProgressiveTask *task) {
-	ERR_FAIL_COND(task == nullptr);
+	ZN_ASSERT_RETURN(task != nullptr);
 	_tasks.push(task);
 }
 
@@ -16,7 +20,7 @@ void ProgressiveTaskRunner::process() {
 	const int64_t now_msec = Time::get_singleton()->get_ticks_msec();
 	const int64_t delta_msec = now_msec - _last_process_time_msec;
 	_last_process_time_msec = now_msec;
-	ERR_FAIL_COND(delta_msec < 0);
+	ZN_ASSERT_RETURN(delta_msec >= 0);
 
 	// The goal is to dequeue everything in S seconds.
 	// So if we have N tasks and `process` is called F times per second, we must dequeue N / (S * F) tasks.

@@ -10,7 +10,7 @@ AsyncDependencyTracker::AsyncDependencyTracker(
 		int initial_count, Span<IThreadedTask *> next_tasks, ScheduleNextTasksCallback scheduler_cb) :
 		_count(initial_count), _aborted(false), _next_tasks_schedule_callback(scheduler_cb) {
 	//
-	CRASH_COND(scheduler_cb == nullptr);
+	ZN_ASSERT(scheduler_cb != nullptr);
 
 	_next_tasks.resize(next_tasks.size());
 
@@ -19,7 +19,7 @@ AsyncDependencyTracker::AsyncDependencyTracker(
 #ifdef DEBUG_ENABLED
 		for (unsigned int j = i + 1; j < next_tasks.size(); ++j) {
 			// Cannot add twice the same task
-			CRASH_COND(next_tasks[j] == task);
+			ZN_ASSERT(next_tasks[j] != task);
 		}
 #endif
 		_next_tasks[i] = task;
@@ -35,8 +35,8 @@ AsyncDependencyTracker::~AsyncDependencyTracker() {
 }
 
 void AsyncDependencyTracker::post_complete() {
-	ERR_FAIL_COND_MSG(_count <= 0, "post_complete() called more times than expected");
-	ERR_FAIL_COND_MSG(_aborted == true, "post_complete() called after abortion");
+	ZN_ASSERT_RETURN_MSG(_count > 0, "post_complete() called more times than expected");
+	ZN_ASSERT_RETURN_MSG(_aborted == false, "post_complete() called after abortion");
 	--_count;
 	// Note, this class only allows decrementing this counter up to zero
 	if (_count == 0) {

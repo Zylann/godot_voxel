@@ -80,7 +80,7 @@ struct ByteSpanWithPosition {
 
 	inline void push_back(uint8_t v) {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(pos == data.size());
+		ZN_ASSERT(pos != data.size());
 #endif
 		data[pos++] = v;
 	}

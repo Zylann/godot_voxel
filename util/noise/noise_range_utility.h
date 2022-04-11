@@ -1,5 +1,5 @@
-#ifndef NOISE_RANGE_UTILITY_H
-#define NOISE_RANGE_UTILITY_H
+#ifndef ZN_NOISE_RANGE_UTILITY_H
+#define ZN_NOISE_RANGE_UTILITY_H
 
 #include "../math/interval.h"
 
@@ -48,4 +48,4 @@ inline math::Interval get_noise_range_3d(Noise_F noise_func, const math::Interva
 
 } // namespace zylann
 
-#endif // NOISE_RANGE_UTILITY_H
+#endif // ZN_NOISE_RANGE_UTILITY_H

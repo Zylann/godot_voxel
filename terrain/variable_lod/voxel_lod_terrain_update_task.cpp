@@ -7,6 +7,7 @@
 #include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
+#include "../../util/string_funcs.h"
 
 namespace zylann::voxel {
 

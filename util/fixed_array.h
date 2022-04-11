@@ -1,7 +1,7 @@
-#ifndef FIXED_ARRAY_H
-#define FIXED_ARRAY_H
+#ifndef ZN_FIXED_ARRAY_H
+#define ZN_FIXED_ARRAY_H
 
-#include <core/error/error_macros.h>
+#include "errors.h"
 
 namespace zylann {
 
@@ -14,14 +14,14 @@ public:
 
 	inline T &operator[](unsigned int i) {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(i >= N);
+		ZN_ASSERT(i < N);
 #endif
 		return _data[i];
 	}
 
 	inline const T &operator[](unsigned int i) const {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(i >= N);
+		ZN_ASSERT(i < N);
 #endif
 		return _data[i];
 	}
@@ -76,4 +76,4 @@ inline void fill(FixedArray<T, N> &dst, const T v) {
 
 } // namespace zylann
 
-#endif // FIXED_ARRAY_H
+#endif // ZN_FIXED_ARRAY_H

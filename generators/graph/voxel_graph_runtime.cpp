@@ -4,6 +4,7 @@
 #include "../../util/log.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
+#include "../../util/string_funcs.h"
 #ifdef TOOLS_ENABLED
 #include "../../util/profiling_clock.h"
 #endif

@@ -48,14 +48,7 @@ public:
 		_voxels = buffer;
 	}
 
-	void set_modified(bool modified) {
-#ifdef TOOLS_ENABLED
-		if (_modified == false && modified) {
-			ZN_PRINT_VERBOSE(format("Marking block {} as modified", position));
-		}
-#endif
-		_modified = modified;
-	}
+	void set_modified(bool modified);
 
 	inline bool is_modified() const {
 		return _modified;

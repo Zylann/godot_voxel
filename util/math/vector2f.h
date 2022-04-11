@@ -1,7 +1,7 @@
 #ifndef ZYLANN_VECTOR2F_H
 #define ZYLANN_VECTOR2F_H
 
-#include <core/error/error_macros.h>
+#include "../errors.h"
 
 namespace zylann {
 
@@ -30,14 +30,14 @@ struct Vector2f {
 
 	inline const float &operator[](const unsigned int p_axis) const {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(p_axis >= AXIS_COUNT);
+		ZN_ASSERT(p_axis < AXIS_COUNT);
 #endif
 		return coords[p_axis];
 	}
 
 	inline float &operator[](const unsigned int p_axis) {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(p_axis >= AXIS_COUNT);
+		ZN_ASSERT(p_axis < AXIS_COUNT);
 #endif
 		return coords[p_axis];
 	}

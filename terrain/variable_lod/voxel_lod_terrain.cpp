@@ -9,6 +9,7 @@
 #include "../../util/log.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
+#include "../../util/string_funcs.h"
 #include "../../util/tasks/async_dependency_tracker.h"
 #include "../instancing/voxel_instancer.h"
 #include "voxel_lod_terrain_update_task.h"

@@ -1,7 +1,7 @@
-#ifndef VOXEL_STRUCT_DB_H
-#define VOXEL_STRUCT_DB_H
+#ifndef ZN_STRUCT_DB_H
+#define ZN_STRUCT_DB_H
 
-#include <core/error/error_macros.h>
+#include "errors.h"
 #include <vector>
 
 namespace zylann {
@@ -36,21 +36,21 @@ public:
 
 	inline T &get(uint32_t id) {
 		const uint16_t i = get_index(id);
-		CRASH_COND(i >= _slots.size());
+		ZN_ASSERT(i < _slots.size());
 		const uint16_t v = get_version(id);
 		Slot &s = _slots[i];
-		CRASH_COND(s.version != v);
-		CRASH_COND(s.valid == false);
+		ZN_ASSERT(s.version == v);
+		ZN_ASSERT(s.valid);
 		return s.data;
 	}
 
 	inline const T &get(uint32_t id) const {
 		const uint16_t i = get_index(id);
-		CRASH_COND(i >= _slots.size());
+		ZN_ASSERT(i < _slots.size());
 		const uint16_t v = get_version(id);
 		const Slot &s = _slots[i];
-		CRASH_COND(s.version != v);
-		CRASH_COND(s.valid == false);
+		ZN_ASSERT(s.version == v);
+		ZN_ASSERT(s.valid);
 		return s.data;
 	}
 
@@ -84,7 +84,7 @@ public:
 		uint16_t i = find_free_index();
 		uint16_t v;
 		if (i == _slots.size()) {
-			CRASH_COND(i == MAX_INDEX);
+			ZN_ASSERT(i != MAX_INDEX);
 			v = 0;
 			Slot s;
 			s.data = data;
@@ -93,7 +93,7 @@ public:
 			_slots.push_back(s);
 		} else {
 			Slot &s = _slots[i];
-			CRASH_COND(s.version == MAX_VERSION);
+			ZN_ASSERT(s.version != MAX_VERSION);
 			s.data = data;
 			s.valid = true;
 			v = s.version + 1;
@@ -104,9 +104,9 @@ public:
 
 	inline void destroy(uint32_t id) {
 		const uint16_t i = get_index(id);
-		CRASH_COND(i >= _slots.size());
+		ZN_ASSERT(i < _slots.size());
 		Slot &s = _slots[i];
-		CRASH_COND(s.valid == false);
+		ZN_ASSERT(s.valid);
 		s.data = T();
 		s.valid = false;
 	}
@@ -190,4 +190,4 @@ private:
 
 } // namespace zylann
 
-#endif // VOXEL_STRUCT_DB_H
+#endif // ZN_STRUCT_DB_H

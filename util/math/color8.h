@@ -1,5 +1,5 @@
-#ifndef COLOR8_H
-#define COLOR8_H
+#ifndef ZYLANN_COLOR8_H
+#define ZYLANN_COLOR8_H
 
 #include <core/math/color.h>
 
@@ -69,4 +69,4 @@ struct Color8 {
 
 } // namespace zylann
 
-#endif // COLOR8_H
+#endif // ZYLANN_COLOR8_H

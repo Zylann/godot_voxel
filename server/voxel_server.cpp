@@ -6,6 +6,7 @@
 #include "../util/log.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
+#include "../util/string_funcs.h"
 #include "generate_block_task.h"
 #include "load_all_blocks_data_task.h"
 #include "load_block_data_task.h"

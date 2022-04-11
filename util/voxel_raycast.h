@@ -1,5 +1,6 @@
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
+#include "errors.h"
 #include <core/math/vector3.h>
 
 namespace zylann {
@@ -10,9 +11,9 @@ bool voxel_raycast(Vector3 ray_origin, Vector3 ray_direction, Predicate_F predic
 		float &out_distance_along_ray_prev) {
 	ZN_PROFILE_SCOPE();
 
-	ERR_FAIL_COND_V(math::has_nan(ray_origin), false);
-	ERR_FAIL_COND_V(math::has_nan(ray_direction), false);
-	ERR_FAIL_COND_V(Math::is_nan(max_distance), false);
+	ZN_ASSERT_RETURN_V(!math::has_nan(ray_origin), false);
+	ZN_ASSERT_RETURN_V(!math::has_nan(ray_direction), false);
+	ZN_ASSERT_RETURN_V(!Math::is_nan(max_distance), false);
 
 	const float g_infinite = 9999999;
 
@@ -26,7 +27,7 @@ bool voxel_raycast(Vector3 ray_origin, Vector3 ray_direction, Predicate_F predic
 
 	// Note : the grid is assumed to have 1-unit square cells.
 
-	ERR_FAIL_COND_V(ray_direction.is_normalized() == false, false); // Must be normalized
+	ZN_ASSERT_RETURN_V(ray_direction.is_normalized(), false); // Must be normalized
 
 	/* Initialisation */
 

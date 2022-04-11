@@ -1,7 +1,7 @@
-#ifndef DYNAMIC_BITSET_H
-#define DYNAMIC_BITSET_H
+#ifndef ZN_DYNAMIC_BITSET_H
+#define ZN_DYNAMIC_BITSET_H
 
-#include <core/error/error_macros.h>
+#include "errors.h"
 #include <vector>
 
 namespace zylann {
@@ -29,21 +29,21 @@ public:
 
 	inline bool get(uint64_t i) const {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(i >= _size);
+		ZN_ASSERT(i < _size);
 #endif
 		return _bits[i >> 6] & (uint64_t(1) << (i & uint64_t(63)));
 	}
 
 	inline void set(uint64_t i) {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(i >= _size);
+		ZN_ASSERT(i < _size);
 #endif
 		_bits[i >> 6] |= uint64_t(1) << (i & uint64_t(63));
 	}
 
 	inline void unset(uint64_t i) {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(i >= _size);
+		ZN_ASSERT(i < _size);
 #endif
 		_bits[i >> 6] &= ~(uint64_t(1) << (i & uint64_t(63)));
 	}
@@ -63,4 +63,4 @@ private:
 
 } // namespace zylann
 
-#endif // DYNAMIC_BITSET_H
+#endif // ZN_DYNAMIC_BITSET_H

@@ -1,6 +1,7 @@
 #include "load_all_blocks_data_task.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
+#include "../util/string_funcs.h"
 #include "voxel_server.h"
 
 namespace zylann::voxel {

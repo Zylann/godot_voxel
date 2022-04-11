@@ -1,8 +1,9 @@
-#ifndef VOXEL_VECTOR3I_H
-#define VOXEL_VECTOR3I_H
+#ifndef ZYLANN_VECTOR3I_H
+#define ZYLANN_VECTOR3I_H
 
 #include "../funcs.h"
 #include "funcs.h"
+
 #include <core/math/vector3.h>
 #include <core/templates/hashfuncs.h>
 #include <iosfwd>
@@ -302,7 +303,7 @@ inline void sort_min_max(Vector3i &a, Vector3i &b) {
 // even though dense volumes of that size will rarely be encountered in this module
 inline int64_t get_volume(const Vector3i &v) {
 #ifdef DEBUG_ENABLED
-	ERR_FAIL_COND_V(v.x < 0 || v.y < 0 || v.z < 0, 0);
+	ZN_ASSERT_RETURN_V(v.x >= 0 && v.y >= 0 && v.z > 0, 0);
 #endif
 	return v.x * v.y * v.z;
 }
@@ -348,14 +349,14 @@ inline bool is_unit_vector(const Vector3i v) {
 
 inline Vector3i operator<<(const Vector3i &a, int b) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(b < 0);
+	ZN_ASSERT(b >= 0);
 #endif
 	return Vector3i(a.x << b, a.y << b, a.z << b);
 }
 
 inline Vector3i operator>>(const Vector3i &a, int b) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(b < 0);
+	ZN_ASSERT(b >= 0);
 #endif
 	return Vector3i(a.x >> b, a.y >> b, a.z >> b);
 }
@@ -370,7 +371,7 @@ std::stringstream &operator<<(std::stringstream &ss, const Vector3i &v);
 
 // For Godot
 struct Vector3iHasher {
-	static _FORCE_INLINE_ uint32_t hash(const Vector3i &v) {
+	static inline uint32_t hash(const Vector3i &v) {
 		uint32_t hash = hash_djb2_one_32(v.x);
 		hash = hash_djb2_one_32(v.y, hash);
 		return hash_djb2_one_32(v.z, hash);
@@ -387,4 +388,4 @@ struct hash<Vector3i> {
 };
 } // namespace std
 
-#endif // VOXEL_VECTOR3I_H
+#endif // ZYLANN_VECTOR3I_H

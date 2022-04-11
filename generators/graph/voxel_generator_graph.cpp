@@ -6,6 +6,7 @@
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
+#include "../../util/string_funcs.h"
 #include "voxel_graph_node_db.h"
 
 #include <core/config/engine.h>

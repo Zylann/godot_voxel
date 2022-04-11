@@ -2,8 +2,8 @@
 #include "../../streams/voxel_block_serializer.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
-#include "../../util/macros.h"
 #include "../../util/profiling.h"
+#include "../../util/string_funcs.h"
 #include "../file_utils.h"
 #include <core/io/file_access.h>
 #include <algorithm>
@@ -665,8 +665,8 @@ void RegionFile::debug_check() {
 		const unsigned int sector_index = block_info.get_sector_index();
 		const unsigned int block_begin = _blocks_begin_offset + sector_index * _header.format.sector_size;
 		if (block_begin >= file_len) {
-			print_line(String("ERROR: LUT {0} ({1}): offset {2} is larger than file size {3}")
-							   .format(varray(lut_index, position, block_begin, ZN_SIZE_T_TO_VARIANT(file_len))));
+			println(format("ERROR: LUT {} ({}): offset {} is larger than file size {}", lut_index, position,
+					block_begin, file_len));
 			continue;
 		}
 		f->seek(block_begin);
@@ -674,9 +674,8 @@ void RegionFile::debug_check() {
 		const size_t pos = f->get_position();
 		const size_t remaining_size = file_len - pos;
 		if (block_data_size > remaining_size) {
-			print_line(String("ERROR: LUT {0} ({1}): block size at offset {2} is larger than remaining size {3}")
-							   .format(varray(lut_index, position, ZN_SIZE_T_TO_VARIANT(block_data_size),
-									   ZN_SIZE_T_TO_VARIANT(remaining_size))));
+			println(format("ERROR: LUT {} ({}): block size at offset {} is larger than remaining size {}", lut_index,
+					position, block_data_size, remaining_size));
 		}
 	}
 }

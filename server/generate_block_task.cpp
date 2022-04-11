@@ -3,6 +3,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
+#include "../util/string_funcs.h"
 #include "save_block_data_task.h"
 #include "voxel_server.h"
 

@@ -1,8 +1,10 @@
 #ifndef VOXEL_MATH_FUNCS_H
 #define VOXEL_MATH_FUNCS_H
 
+#include "../errors.h"
 #include "vector2f.h"
 #include "vector3f.h"
+
 #include <core/math/vector3.h>
 #include <core/math/vector3i.h>
 
@@ -232,7 +234,7 @@ inline unsigned int get_next_power_of_two_32(unsigned int x) {
 // Assuming `pot == (1 << i)`, returns `i`.
 inline unsigned int get_shift_from_power_of_two_32(unsigned int pot) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(!is_power_of_two(pot));
+	ZN_ASSERT(is_power_of_two(pot));
 #endif
 	for (unsigned int i = 0; i < 32; ++i) {
 		if (pot == (1u << i)) {
@@ -247,7 +249,7 @@ inline unsigned int get_shift_from_power_of_two_32(unsigned int pot) {
 // returns the next aligned address. `align` must be a power of two.
 inline size_t alignup(size_t a, size_t align) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(!is_power_of_two(align));
+	ZN_ASSERT(is_power_of_two(align));
 #endif
 	return (a + align - 1) & ~(align - 1);
 }

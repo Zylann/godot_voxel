@@ -1,7 +1,7 @@
 #include "time_spread_task_runner.h"
+#include "../memory.h"
 #include "../profiling.h"
 
-#include <core/os/memory.h>
 #include <core/os/time.h>
 
 namespace zylann {
@@ -27,7 +27,7 @@ void TimeSpreadTaskRunner::process(uint64_t time_budget_usec) {
 	const Time &time = *Time::get_singleton();
 
 	static thread_local std::vector<ITimeSpreadTask *> tls_postponed_tasks;
-	CRASH_COND(tls_postponed_tasks.size() > 0);
+	ZN_ASSERT(tls_postponed_tasks.size() == 0);
 
 	const uint64_t time_before = time.get_ticks_usec();
 
@@ -50,7 +50,7 @@ void TimeSpreadTaskRunner::process(uint64_t time_budget_usec) {
 			tls_postponed_tasks.push_back(task);
 		} else {
 			// TODO Call recycling function instead?
-			memdelete(task);
+			ZN_DELETE(task);
 		}
 
 	} while (time.get_ticks_usec() - time_before < time_budget_usec);

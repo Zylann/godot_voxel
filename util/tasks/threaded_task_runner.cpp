@@ -23,7 +23,7 @@ ThreadedTaskRunner::~ThreadedTaskRunner() {
 
 	if (_completed_tasks.size() != 0) {
 		// We don't have ownership over tasks, so it's an error to destroy the pool without handling them
-		ERR_PRINT("There are unhandled completed tasks remaining!");
+		ZN_PRINT_ERROR("There are unhandled completed tasks remaining!");
 	}
 }
 
@@ -82,7 +82,7 @@ void ThreadedTaskRunner::set_priority_update_period(uint32_t milliseconds) {
 }
 
 void ThreadedTaskRunner::enqueue(IThreadedTask *task) {
-	CRASH_COND(task == nullptr);
+	ZN_ASSERT(task != nullptr);
 	{
 		MutexLock lock(_tasks_mutex);
 		TaskItem t;
@@ -97,7 +97,7 @@ void ThreadedTaskRunner::enqueue(IThreadedTask *task) {
 void ThreadedTaskRunner::enqueue(Span<IThreadedTask *> new_tasks) {
 #ifdef DEBUG_ENABLED
 	for (size_t i = 0; i < new_tasks.size(); ++i) {
-		CRASH_COND(new_tasks[i] == nullptr);
+		ZN_ASSERT(new_tasks[i] != nullptr);
 	}
 #endif
 	{
@@ -156,7 +156,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 				// TODO This takes a lot of time when there are many queued tasks. Use a better container?
 				for (size_t i = 0; i < _tasks.size(); ++i) {
 					TaskItem &item = _tasks[i];
-					CRASH_COND(item.task == nullptr);
+					ZN_ASSERT(item.task != nullptr);
 
 					if (now - item.last_priority_update_time_ms > _priority_update_period) {
 						// Calling `get_priority()` first since it can update cancellation
@@ -183,7 +183,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 				// If not all tasks were cancelled
 				if (_tasks.size() != 0) {
 					tasks.push_back(_tasks[best_index]);
-					CRASH_COND(best_index >= _tasks.size());
+					ZN_ASSERT(best_index < _tasks.size());
 					_tasks[best_index] = _tasks.back();
 					_tasks.pop_back();
 				}
@@ -254,7 +254,7 @@ void ThreadedTaskRunner::wait_for_all_tasks() {
 		OS::get_singleton()->delay_usec(2000);
 
 		if (!error1_reported && Time::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
-			WARN_PRINT("Waiting for all tasks to be picked is taking a long time");
+			ZN_PRINT_WARNING("Waiting for all tasks to be picked is taking a long time");
 			error1_reported = true;
 		}
 	}
@@ -277,7 +277,7 @@ void ThreadedTaskRunner::wait_for_all_tasks() {
 		OS::get_singleton()->delay_usec(2000);
 
 		if (!error2_reported && Time::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
-			WARN_PRINT("Waiting for all tasks to be completed is taking a long time");
+			ZN_PRINT_WARNING("Waiting for all tasks to be completed is taking a long time");
 			error2_reported = true;
 		}
 	}

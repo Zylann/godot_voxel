@@ -1,5 +1,7 @@
-#ifndef VOXEL_FILE_LOCKER_H
-#define VOXEL_FILE_LOCKER_H
+#ifndef ZN_FILE_LOCKER_H
+#define ZN_FILE_LOCKER_H
+
+#include "errors.h"
 
 #include <core/io/file_access.h>
 #include <core/os/mutex.h>
@@ -74,7 +76,7 @@ private:
 				fp = *fpp;
 			}
 		}
-		ERR_FAIL_COND(fp == nullptr);
+		ZN_ASSERT_RETURN(fp != nullptr);
 		// TODO FileAccess::reopen can have been called, nullifying my efforts to enforce thread sync :|
 		// So for now please don't do that
 
@@ -93,4 +95,4 @@ private:
 
 } // namespace zylann
 
-#endif // VOXEL_FILE_LOCKER_H
+#endif // ZN_FILE_LOCKER_H

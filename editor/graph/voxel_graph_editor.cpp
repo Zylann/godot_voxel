@@ -5,6 +5,7 @@
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
 #include "../../util/macros.h"
+#include "../../util/string_funcs.h"
 #include "voxel_graph_editor_node.h"
 #include "voxel_graph_editor_node_preview.h"
 #include "voxel_range_analysis_dialog.h"
