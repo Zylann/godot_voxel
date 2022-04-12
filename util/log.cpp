@@ -12,7 +12,7 @@ void println(const char *cstr) {
 	print_line(cstr);
 }
 
-void println(const FwdStdString &s) {
+void println(const FwdConstStdString &s) {
 	print_line(s.s.c_str());
 }
 
@@ -28,7 +28,7 @@ void print_error(const char *error, const char *msg, const char *func, const cha
 	_err_print_error(func, file, line, error, msg);
 }
 
-void print_error(const char *error, const FwdStdString &msg, const char *func, const char *file, int line) {
+void print_error(const char *error, const FwdConstStdString &msg, const char *func, const char *file, int line) {
 	_err_print_error(func, file, line, error, msg.s.c_str());
 }
 

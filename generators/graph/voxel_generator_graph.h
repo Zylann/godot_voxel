@@ -171,6 +171,7 @@ public:
 
 	void bake_sphere_bumpmap(Ref<Image> im, float ref_radius, float min_height, float max_height);
 	void bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength);
+	String generate_shader();
 
 	// Internal
 

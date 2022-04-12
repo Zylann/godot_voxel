@@ -4,6 +4,7 @@
 #include "../../util/math/interval.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/span.h"
+#include "code_gen_helper.h"
 #include "program_graph.h"
 
 #include <core/object/ref_counted.h>
@@ -175,6 +176,8 @@ public:
 
 	// Gets the buffer address of a specific output port
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint16_t &out_address) const;
+
+	static CompilationResult generate_shader(const ProgramGraph &p_graph, FwdMutableStdString output);
 
 	struct HeapResource {
 		void *ptr;
@@ -365,9 +368,59 @@ public:
 		Span<Buffer> _buffers;
 	};
 
+	class ShaderGenContext {
+	public:
+		ShaderGenContext(const std::vector<Variant> &params, Span<const char *> input_names,
+				Span<const char *> output_names, CodeGenHelper &code_gen) :
+				_params(params), _input_names(input_names), _output_names(output_names), _code_gen(code_gen) {}
+
+		Variant get_param(size_t i) const {
+			CRASH_COND(i > _params.size());
+			return _params[i];
+		}
+
+		const char *get_input_name(unsigned int i) const {
+			return _input_names[i];
+		}
+
+		const char *get_output_name(unsigned int i) const {
+			return _output_names[i];
+		}
+
+		void make_error(String message) {
+			_error_message = message;
+			_has_error = true;
+		}
+
+		bool has_error() const {
+			return _has_error;
+		}
+
+		const String &get_error_message() const {
+			return _error_message;
+		}
+
+		template <typename... TN>
+		void add_format(const char *fmt, const TN &...an) {
+			_code_gen.add_format(fmt, an...);
+		}
+
+		void require_lib_code(const char *lib_name, const char *code);
+		void require_lib_code(const char *lib_name, const char **code);
+
+	private:
+		const std::vector<Variant> &_params;
+		Span<const char *> _input_names;
+		Span<const char *> _output_names;
+		CodeGenHelper &_code_gen;
+		String _error_message;
+		bool _has_error;
+	};
+
 	typedef void (*CompileFunc)(CompileContext &);
 	typedef void (*ProcessBufferFunc)(ProcessBufferContext &);
 	typedef void (*RangeAnalysisFunc)(RangeAnalysisContext &);
+	typedef void (*ShaderGenFunc)(ShaderGenContext &);
 
 private:
 	CompilationResult _compile(const ProgramGraph &graph, bool debug);

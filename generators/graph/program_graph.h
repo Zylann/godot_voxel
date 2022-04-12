@@ -1,5 +1,5 @@
-#ifndef PROGRAM_GRAPH_H
-#define PROGRAM_GRAPH_H
+#ifndef ZN_PROGRAM_GRAPH_H
+#define ZN_PROGRAM_GRAPH_H
 
 #include "../../util/non_copyable.h"
 #include <core/math/vector2.h>
@@ -152,4 +152,4 @@ struct hash<zylann::ProgramGraph::PortLocation> {
 };
 } // namespace std
 
-#endif // PROGRAM_GRAPH_H
+#endif // ZN_PROGRAM_GRAPH_H

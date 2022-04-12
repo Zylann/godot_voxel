@@ -4,10 +4,17 @@
 
 namespace zylann {
 
-struct FwdStdString {
+struct FwdConstStdString {
 	const std::string &s;
-	FwdStdString(const std::string &p_s) : s(p_s) {}
+	FwdConstStdString(const std::string &p_s) : s(p_s) {}
 };
+
+struct FwdMutableStdString {
+	std::string &s;
+	FwdMutableStdString(std::string &p_s) : s(p_s) {}
+};
+
+namespace strfuncs_detail {
 
 // Not a big implementation, only what I need.
 template <typename T>
@@ -23,40 +30,23 @@ std::string_view consume_next_format_placeholder(std::string_view fmt, std::stri
 	return fmt.substr(pi + 2);
 }
 
-template <typename T>
-std::string format(std::string_view fmt, T a) {
-	std::stringstream ss;
-	fmt = consume_next_format_placeholder(fmt, ss, a);
-	ss << fmt;
-	return ss.str();
+template <typename T0>
+std::string_view consume_placeholders(std::string_view fmt, std::stringstream &ss, const T0 &a0) {
+	return consume_next_format_placeholder(fmt, ss, a0);
 }
 
-template <typename T0, typename T1>
-std::string format(std::string_view fmt, T0 a0, T1 a1) {
-	std::stringstream ss;
+template <typename T0, typename... TN>
+std::string_view consume_placeholders(std::string_view fmt, std::stringstream &ss, const T0 &a0, const TN &...an) {
 	fmt = consume_next_format_placeholder(fmt, ss, a0);
-	fmt = consume_next_format_placeholder(fmt, ss, a1);
-	ss << fmt;
-	return ss.str();
+	return consume_placeholders(fmt, ss, an...);
 }
 
-template <typename T0, typename T1, typename T2>
-std::string format(std::string_view fmt, T0 a0, T1 a1, T2 a2) {
-	std::stringstream ss;
-	fmt = consume_next_format_placeholder(fmt, ss, a0);
-	fmt = consume_next_format_placeholder(fmt, ss, a1);
-	fmt = consume_next_format_placeholder(fmt, ss, a2);
-	ss << fmt;
-	return ss.str();
-}
+} // namespace strfuncs_detail
 
-template <typename T0, typename T1, typename T2, typename T3>
-std::string format(std::string_view fmt, T0 a0, T1 a1, T2 a2, T3 a3) {
+template <typename... TN>
+std::string format(std::string_view fmt, const TN &...an) {
 	std::stringstream ss;
-	fmt = consume_next_format_placeholder(fmt, ss, a0);
-	fmt = consume_next_format_placeholder(fmt, ss, a1);
-	fmt = consume_next_format_placeholder(fmt, ss, a2);
-	fmt = consume_next_format_placeholder(fmt, ss, a3);
+	fmt = strfuncs_detail::consume_placeholders(fmt, ss, an...);
 	ss << fmt;
 	return ss.str();
 }

@@ -6,6 +6,8 @@
 #include "../../util/noise/fast_noise_lite/fast_noise_lite_range.h"
 #include "../../util/noise/gd_noise_range.h"
 #include "../../util/profiling.h"
+#include "../../util/string_funcs.h"
+#include "fast_noise_lite_gdshader.h"
 #include "image_range_grid.h"
 #include "range_utility.h"
 
@@ -256,6 +258,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	typedef VoxelGraphRuntime::CompileContext CompileContext;
 	typedef VoxelGraphRuntime::ProcessBufferContext ProcessBufferContext;
 	typedef VoxelGraphRuntime::RangeAnalysisContext RangeAnalysisContext;
+	typedef VoxelGraphRuntime::ShaderGenContext ShaderGenContext;
 
 	FixedArray<NodeType, VoxelGeneratorGraph::NODE_TYPE_COUNT> &types = _types;
 
@@ -376,6 +379,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval b = ctx.get_input(1);
 			ctx.set_output(0, a + b);
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = {} + {};\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SUBTRACT];
@@ -391,6 +397,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
 			ctx.set_output(0, a - b);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = {} - {};\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
 		};
 	}
 	{
@@ -413,6 +422,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				ctx.set_output(0, a * b);
 			}
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = {} * {};\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_DIVIDE];
@@ -426,6 +438,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			const Interval b = ctx.get_input(1);
 			ctx.set_output(0, a / b);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = {} / {};\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
 		};
 	}
 	{
@@ -442,6 +457,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func_name = "sin";
 		t.expression_func = [](Span<const float> args) { //
 			return Math::sin(args[0]);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = sin({});\n", ctx.get_output_name(0), ctx.get_input_name(0));
 		};
 	}
 	{
@@ -461,6 +479,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func = [](Span<const float> args) { //
 			return Math::floor(args[0]);
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = floor({});\n", ctx.get_output_name(0), ctx.get_input_name(0));
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_ABS];
@@ -477,6 +498,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func = [](Span<const float> args) { //
 			return Math::abs(args[0]);
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = abs({});\n", ctx.get_output_name(0), ctx.get_input_name(0));
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SQRT];
@@ -492,6 +516,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func_name = "sqrt";
 		t.expression_func = [](Span<const float> args) { //
 			return Math::sqrt(args[0]);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = sqrt({});\n", ctx.get_output_name(0), ctx.get_input_name(0));
 		};
 	}
 	{
@@ -510,6 +537,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func_name = "fract";
 		t.expression_func = [](Span<const float> args) { //
 			return args[0] - Math::floor(args[0]);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = fract({});\n", ctx.get_output_name(0), ctx.get_input_name(0));
 		};
 	}
 	{
@@ -531,6 +561,14 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func = [](Span<const float> args) { //
 			return math::snappedf(args[0], args[1]);
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.require_lib_code("stepify",
+					"float vg_stepify(float value, float step) {\n"
+					"	return floor(p_value / step + 0.5f) * step;\n"
+					"}\n");
+			ctx.add_format(
+					"{} = vg_stepify({}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_WRAP];
@@ -550,6 +588,14 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func_name = "wrap";
 		t.expression_func = [](Span<const float> args) { //
 			return wrapf(args[0], args[1]);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.require_lib_code("wrap",
+					"float vg_wrap(float x, float d) {\n"
+					"	return x - (d * floor(x / d));\n"
+					"}\n");
+			ctx.add_format(
+					"{} = vg_wrap({}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
 		};
 	}
 	{
@@ -571,6 +617,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func = [](Span<const float> args) { //
 			return min(args[0], args[1]);
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = min({}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_MAX];
@@ -590,6 +639,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func_name = "max";
 		t.expression_func = [](Span<const float> args) { //
 			return max(args[0], args[1]);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = max({}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
 		};
 	}
 	{
@@ -620,6 +672,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval dy = y1 - y0;
 			const Interval r = sqrt(squared(dx) + squared(dy));
 			ctx.set_output(0, r);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = distance(vec2({}, {}), vec2({}, {}));\n", ctx.get_output_name(0),
+					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_input_name(3));
 		};
 	}
 	{
@@ -659,6 +715,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			Interval r = get_length(dx, dy, dz);
 			ctx.set_output(0, r);
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = distance(vec3({}, {}, {}), vec2({}, {}, {}));\n", ctx.get_output_name(0),
+					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_input_name(3),
+					ctx.get_input_name(4), ctx.get_input_name(5));
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_CLAMP];
@@ -686,6 +747,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func_name = "clamp";
 		t.expression_func = [](Span<const float> args) { //
 			return clamp(args[0], args[1], args[2]);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = clamp({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
+					ctx.get_input_name(1), ctx.get_input_name(2));
 		};
 	}
 	{
@@ -720,6 +785,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval cmin = Interval::from_single_value(p.min);
 			const Interval cmax = Interval::from_single_value(p.max);
 			ctx.set_output(0, clamp(a, cmin, cmax));
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = clamp({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
+					float(ctx.get_param(0)), float(ctx.get_param(1)));
 		};
 	}
 	{
@@ -805,6 +874,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.expression_func = [](Span<const float> args) { //
 			return Math::lerp(args[0], args[1], args[2]);
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = mix({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
+					ctx.get_input_name(1), ctx.get_input_name(2));
+		};
 	}
 	{
 		struct Params {
@@ -812,6 +885,22 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			// a * x + b
 			float a;
 			float b;
+
+			static Params from_intervals(float min0, float max0, float min1, float max1) {
+				// min1 + (max1 - min1) * (x - min0) / (max0 - min0)
+				// min1 + (max1 - min1) * (x - min0) * (1/(max0 - min0))
+				// min1 +       A       * (x - min0) *        B
+				// min1 + A * B * (x - min0)
+				// min1 + A * B * x - A * B * min0
+				// min1 +   C   * x -   C   * min0
+				// min1 - C * min0 + C * x
+				// (min1 - C * min0) + C * x
+				//         b         + a * x
+				// a * x + b
+				const float a = (max1 - min1) * (Math::is_equal_approx(max0, min0) ? 999999.f : 1.f / (max0 - min0));
+				const float b = min1 - a * min0;
+				return { a, b };
+			}
 		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_REMAP];
 		t.name = "Remap";
@@ -823,24 +912,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.params.push_back(Param("min1", Variant::FLOAT, -1.f));
 		t.params.push_back(Param("max1", Variant::FLOAT, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
-			Params p;
 			const float min0 = ctx.get_param(0).operator float();
 			const float max0 = ctx.get_param(1).operator float();
 			const float min1 = ctx.get_param(2).operator float();
 			const float max1 = ctx.get_param(3).operator float();
-			// min1 + (max1 - min1) * (x - min0) / (max0 - min0)
-			// min1 + (max1 - min1) * (x - min0) * (1/(max0 - min0))
-			// min1 +       A       * (x - min0) *        B
-			// min1 + A * B * (x - min0)
-			// min1 + A * B * x - A * B * min0
-			// min1 +   C   * x -   C   * min0
-			// min1 - C * min0 + C * x
-			// (min1 - C * min0) + C * x
-			//         b         + a * x
-			// a * x + b
-			p.a = (max1 - min1) * (Math::is_equal_approx(max0, min0) ? 999999.f : 1.f / (max0 - min0));
-			p.b = min1 - p.a * min0;
-			ctx.set_params(p);
+			ctx.set_params(Params::from_intervals(min0, max0, min1, max1));
 		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
@@ -854,6 +930,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval x = ctx.get_input(0);
 			const Params p = ctx.get_params<Params>();
 			ctx.set_output(0, p.a * x + p.b);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			const Params p = Params::from_intervals(
+					float(ctx.get_param(0)), float(ctx.get_param(1)), float(ctx.get_param(2)), float(ctx.get_param(3)));
+			ctx.add_format("{} = {} * {} + {};\n", ctx.get_output_name(0), p.a, p.b);
 		};
 	}
 	{
@@ -886,6 +967,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval a = ctx.get_input(0);
 			const Params p = ctx.get_params<Params>();
 			ctx.set_output(0, smoothstep(p.edge0, p.edge1, a));
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = smoothstep({}, {}, {});\n", ctx.get_output_name(0), float(ctx.get_param(0)),
+					float(ctx.get_param(1)), ctx.get_input_name(0));
 		};
 	}
 	{
@@ -1096,6 +1181,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval b = ctx.get_input(1);
 			ctx.set_output(0, a - b);
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = {} - {};\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_BOX];
@@ -1130,6 +1218,16 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval sz = ctx.get_input(5);
 			ctx.set_output(0, math::sdf_box(x, y, z, sx, sy, sz));
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.require_lib_code("sdf_box",
+					"float vg_sdf_box(vec3 p, vec3 b) {\n"
+					"	vec3 q = abs(p) - b;\n"
+					"	return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);\n"
+					"}\n");
+			ctx.add_format("{} = vg_sdf_box(vec3({}, {}, {}), vec3({}, {}, {}));\n", ctx.get_output_name(0),
+					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_input_name(3),
+					ctx.get_input_name(4), ctx.get_input_name(5));
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SPHERE];
@@ -1156,6 +1254,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval z = ctx.get_input(2);
 			const Interval r = ctx.get_input(3);
 			ctx.set_output(0, get_length(x, y, z) - r);
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = length(vec3({}, {}, {})) - {};\n", ctx.get_output_name(0), ctx.get_input_name(0),
+					ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_input_name(3));
 		};
 	}
 	{
@@ -1186,6 +1288,16 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval r0 = ctx.get_input(3);
 			const Interval r1 = ctx.get_input(4);
 			ctx.set_output(0, math::sdf_torus(x, y, z, r0, r1));
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.require_lib_code("sdf_torus",
+					"float vg_sdf_torus(vec3 p, vec2 t) {\n"
+					"	vec2 q = vec2(length(p.xz) - t.x, p.y);\n"
+					"	return length(q) - t.y;\n"
+					"}\n");
+			ctx.add_format("{} = vg_sdf_torus(vec3({}, {}, {}), vec2({}, {}));\n", ctx.get_output_name(0),
+					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_input_name(3),
+					ctx.get_input_name(4));
 		};
 	}
 	{
@@ -1272,6 +1384,15 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				ctx.set_output(0, math::sdf_union(a, b));
 			}
 		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.require_lib_code("sdf_smooth_union",
+					"float vg_sdf_smooth_union(float a, float b, float s) {\n"
+					"	float h = clamp(0.5 + 0.5 * (b - a) / s, 0.0, 1.0);\n"
+					"	return mix(b, a, h) - s * h * (1.0 - h);\n"
+					"}\n");
+			ctx.add_format("{} = vg_sdf_smooth_union({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
+					ctx.get_input_name(1), float(ctx.get_param(0)));
+		};
 	}
 	{
 		struct Params {
@@ -1356,6 +1477,15 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				}
 				ctx.set_output(0, math::sdf_subtract(a, b));
 			}
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.require_lib_code("sdf_smooth_subtract",
+					"float vg_sdf_smooth_subtract(float b, float a, float s) {\n"
+					"	float h = clamp(0.5 - 0.5 * (b + a) / s, 0.0, 1.0);\n"
+					"	return mix(b, -a, h) + s * h * (1.0 - h);\n"
+					"}\n");
+			ctx.add_format("{} = vg_sdf_smooth_subtract({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
+					ctx.get_input_name(1), float(ctx.get_param(0)));
 		};
 	}
 	{
@@ -1563,6 +1693,19 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ctx.set_output(2, nz);
 			ctx.set_output(3, len);
 		};
+
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.require_lib_code("vg_normalize",
+					"void vg_normalize(vec3 v, out float x, out float y, out float z) {\n"
+					"	v = normalize(v);\n"
+					"	x = v.x;\n"
+					"	y = v.y;\n"
+					"	z = v.z;\n"
+					"}\n");
+			ctx.add_format("vg_normalize(vec3({}, {}, {}), {}, {}, {});\n", ctx.get_input_name(0),
+					ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_output_name(0), ctx.get_output_name(2),
+					ctx.get_output_name(2));
+		};
 	}
 	{
 		struct Params {
@@ -1606,6 +1749,28 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Params p = ctx.get_params<Params>();
 			// Shouldn't be null, it is checked when the graph is compiled
 			ctx.set_output(0, get_fnl_range_2d(*p.noise, x, y));
+		};
+
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
+			if (noise.is_null()) {
+				ctx.make_error(
+						String(ZN_TTR("{0} instance is null")).format(varray(ZN_FastNoiseLite::get_class_static())));
+				return;
+			}
+			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
+			// TODO Add missing options
+			ctx.add_format("fnl_state state = fnlCreateState({});\n"
+						   "state.noise_type = {};\n"
+						   "state.fractal_type = {};\n"
+						   "state.octaves = {};\n"
+						   "state.gain = {};\n"
+						   "state.frequency = {};\n"
+						   "state.lacunarity = {};\n"
+						   "{} = fnlGetNoise2D(state, {}, {});\n",
+					noise->get_seed(), noise->get_noise_type(), noise->get_fractal_type(), noise->get_fractal_octaves(),
+					noise->get_fractal_gain(), 1.0 / noise->get_period(), noise->get_fractal_lacunarity(),
+					ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
 		};
 	}
 	{
@@ -1653,6 +1818,28 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Params p = ctx.get_params<Params>();
 			// Shouldn't be null, it is checked when the graph is compiled
 			ctx.set_output(0, get_fnl_range_3d(*p.noise, x, y, z));
+		};
+
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
+			if (noise.is_null()) {
+				ctx.make_error(
+						String(ZN_TTR("{0} instance is null")).format(varray(ZN_FastNoiseLite::get_class_static())));
+				return;
+			}
+			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
+			// TODO Add missing options
+			ctx.add_format("fnl_state state = fnlCreateState({});\n"
+						   "state.noise_type = {};\n"
+						   "state.fractal_type = {};\n"
+						   "state.octaves = {};\n"
+						   "state.gain = {};\n"
+						   "state.frequency = {};\n"
+						   "state.lacunarity = {};\n"
+						   "{} = fnlGetNoise3D(state, {}, {}, {});\n",
+					noise->get_seed(), noise->get_noise_type(), noise->get_fractal_type(), noise->get_fractal_octaves(),
+					noise->get_fractal_gain(), 1.0 / noise->get_period(), noise->get_fractal_lacunarity(),
+					ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2));
 		};
 	}
 	{
@@ -1932,6 +2119,17 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const unsigned int power = ctx.get_params<Params>().power;
 			ctx.set_output(0, powi(x, power));
 		};
+
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			const int power = ctx.get_param(0).operator int();
+			if (power < 0) {
+				ctx.make_error(ZN_TTR("Power cannot be negative"));
+			}
+			ctx.add_format("{} = 1.0;\n", ctx.get_output_name(0));
+			for (int i = 0; i < power; ++i) {
+				ctx.add_format("{} *= {};\n", ctx.get_output_name(0), ctx.get_input_name(0));
+			}
+		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_POW];
@@ -1954,6 +2152,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			ctx.set_output(0, pow(x, y));
+		};
+
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			ctx.add_format("{} = pow({}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
 		};
 	}
 

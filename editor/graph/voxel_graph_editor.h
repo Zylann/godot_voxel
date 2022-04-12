@@ -15,6 +15,7 @@ namespace zylann::voxel {
 class VoxelGeneratorGraph;
 class VoxelRangeAnalysisDialog;
 class VoxelNode;
+class VoxelGraphEditorShaderDialog;
 
 // Main GUI of the graph editor
 class VoxelGraphEditor : public Control {
@@ -72,6 +73,7 @@ private:
 	void _on_range_analysis_toggled(bool enabled);
 	void _on_range_analysis_area_changed();
 	void _on_preview_axes_menu_id_pressed(int id);
+	void _on_generate_shader_button_pressed();
 
 	void _check_nothing_selected();
 
@@ -90,6 +92,7 @@ private:
 	float _time_before_preview_update = 0.f;
 	Node3D *_voxel_node = nullptr;
 	DebugRenderer _debug_renderer;
+	VoxelGraphEditorShaderDialog *_shader_dialog = nullptr;
 
 	enum PreviewAxes { //
 		PREVIEW_XY = 0,

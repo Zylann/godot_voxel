@@ -8,12 +8,14 @@
 #include "../../util/string_funcs.h"
 #include "voxel_graph_editor_node.h"
 #include "voxel_graph_editor_node_preview.h"
+#include "voxel_graph_editor_shader_dialog.h"
 #include "voxel_range_analysis_dialog.h"
 
 #include <core/core_string_names.h>
 #include <core/object/undo_redo.h>
 #include <core/os/time.h>
 #include <editor/editor_scale.h>
+#include <scene/gui/code_edit.h>
 #include <scene/gui/graph_edit.h>
 #include <scene/gui/label.h>
 #include <scene/gui/option_button.h>
@@ -70,6 +72,12 @@ VoxelGraphEditor::VoxelGraphEditor() {
 				"id_pressed", callable_mp(this, &VoxelGraphEditor::_on_preview_axes_menu_id_pressed));
 		toolbar->add_child(preview_axes_menu);
 
+		Button *generate_shader_button = memnew(Button);
+		generate_shader_button->set_text(TTR("Generate shader"));
+		generate_shader_button->connect(
+				"pressed", callable_mp(this, &VoxelGraphEditor::_on_generate_shader_button_pressed));
+		toolbar->add_child(generate_shader_button);
+
 		vbox_container->add_child(toolbar);
 	}
 
@@ -114,6 +122,9 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	_range_analysis_dialog->connect(
 			"area_changed", callable_mp(this, &VoxelGraphEditor::_on_range_analysis_area_changed));
 	add_child(_range_analysis_dialog);
+
+	_shader_dialog = memnew(VoxelGraphEditorShaderDialog);
+	add_child(_shader_dialog);
 }
 
 void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
@@ -915,6 +926,16 @@ void VoxelGraphEditor::_on_preview_axes_menu_id_pressed(int id) {
 	ERR_FAIL_COND(id < 0 || id >= PREVIEW_AXES_OPTIONS_COUNT);
 	_preview_axes = PreviewAxes(id);
 	schedule_preview_update();
+}
+
+void VoxelGraphEditor::_on_generate_shader_button_pressed() {
+	ERR_FAIL_COND(_graph.is_null());
+	const String code = _graph->generate_shader();
+	if (code == "") {
+		return;
+	}
+	_shader_dialog->set_shader_code(code);
+	_shader_dialog->popup_centered();
 }
 
 void VoxelGraphEditor::_bind_methods() {

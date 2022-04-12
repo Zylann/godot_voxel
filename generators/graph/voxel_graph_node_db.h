@@ -62,6 +62,7 @@ public:
 		VoxelGraphRuntime::RangeAnalysisFunc range_analysis_func = nullptr;
 		const char *expression_func_name = nullptr;
 		ExpressionParser::FunctionCallback expression_func = nullptr;
+		VoxelGraphRuntime::ShaderGenFunc shader_gen_func = nullptr;
 	};
 
 	VoxelGraphNodeDB();

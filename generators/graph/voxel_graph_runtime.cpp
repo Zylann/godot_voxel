@@ -288,8 +288,13 @@ struct ExpandedNodeRemap {
 	uint32_t original_node_id;
 };
 
-static VoxelGraphRuntime::CompilationResult expand_expression_nodes(ProgramGraph &graph,
-		std::vector<PortRemap> &user_to_expanded_ports, std::vector<ExpandedNodeRemap> &expanded_to_user_node_ids) {
+struct GraphRemappingInfo {
+	std::vector<PortRemap> user_to_expanded_ports;
+	std::vector<ExpandedNodeRemap> expanded_to_user_node_ids;
+};
+
+static VoxelGraphRuntime::CompilationResult expand_expression_nodes(
+		ProgramGraph &graph, GraphRemappingInfo *remap_info) {
 	ZN_PROFILE_SCOPE();
 	// Gather expression node IDs first, as expansion could invalidate the iterator
 	std::vector<uint32_t> expression_node_ids;
@@ -309,9 +314,11 @@ static VoxelGraphRuntime::CompilationResult expand_expression_nodes(ProgramGraph
 		if (!result.success) {
 			return result;
 		}
-		user_to_expanded_ports.push_back({ { node_id, 0 }, expanded_output_port });
-		for (const uint32_t expanded_node_id : expanded_node_ids) {
-			expanded_to_user_node_ids.push_back({ expanded_node_id, node_id });
+		if (remap_info != nullptr) {
+			remap_info->user_to_expanded_ports.push_back({ { node_id, 0 }, expanded_output_port });
+			for (const uint32_t expanded_node_id : expanded_node_ids) {
+				remap_info->expanded_to_user_node_ids.push_back({ expanded_node_id, node_id });
+			}
 		}
 	}
 
@@ -320,36 +327,37 @@ static VoxelGraphRuntime::CompilationResult expand_expression_nodes(ProgramGraph
 	return result;
 }
 
+static VoxelGraphRuntime::CompilationResult make_error(const char *p_message, int p_node_id = -1) {
+	VoxelGraphRuntime::CompilationResult res;
+	res.success = false;
+	res.node_id = p_node_id;
+	res.message = p_message;
+	return res;
+}
+
 VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGraph &p_graph, bool debug) {
 	ZN_PROFILE_SCOPE();
 
 	ProgramGraph expanded_graph;
 	expanded_graph.copy_from(p_graph, false);
 	// TODO Store a remapping to allow debugging with the expanded graph
-	std::vector<PortRemap> user_to_expanded_ports;
-	std::vector<ExpandedNodeRemap> expanded_to_user_node_ids;
-	const VoxelGraphRuntime::CompilationResult expand_result =
-			expand_expression_nodes(expanded_graph, user_to_expanded_ports, expanded_to_user_node_ids);
+	GraphRemappingInfo remap_info;
+	const VoxelGraphRuntime::CompilationResult expand_result = expand_expression_nodes(expanded_graph, &remap_info);
 	if (!expand_result.success) {
 		return expand_result;
 	}
-	struct L {
-		static CompilationResult make_error(String msg) {
-			return { false, -1, msg };
-		}
-	};
 	// Expanding a graph may produce more nodes, not remove any
-	ERR_FAIL_COND_V(expanded_graph.get_nodes_count() < p_graph.get_nodes_count(), L::make_error("Internal error"));
+	ERR_FAIL_COND_V(expanded_graph.get_nodes_count() < p_graph.get_nodes_count(), make_error("Internal error"));
 
 	const VoxelGraphRuntime::CompilationResult result = _compile(expanded_graph, debug);
 	if (!result.success) {
 		clear();
 	}
 
-	for (PortRemap r : user_to_expanded_ports) {
+	for (PortRemap r : remap_info.user_to_expanded_ports) {
 		_program.user_port_to_expanded_port.insert({ r.original, r.expanded });
 	}
-	for (ExpandedNodeRemap r : expanded_to_user_node_ids) {
+	for (ExpandedNodeRemap r : remap_info.expanded_to_user_node_ids) {
 		_program.expanded_node_id_to_user_node_id.insert({ r.expanded_node_id, r.original_node_id });
 	}
 	// Remap debug nodes from the execution map to user-facing ones
@@ -1240,6 +1248,178 @@ bool VoxelGraphRuntime::try_get_output_port_address(ProgramGraph::PortLocation p
 	}
 	out_address = *aptr;
 	return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void VoxelGraphRuntime::ShaderGenContext::require_lib_code(const char *lib_name, const char *code) {
+	_code_gen.require_lib_code(lib_name, code);
+}
+
+void VoxelGraphRuntime::ShaderGenContext::require_lib_code(const char *lib_name, const char **code) {
+	_code_gen.require_lib_code(lib_name, code);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::generate_shader(
+		const ProgramGraph &p_graph, FwdMutableStdString output) {
+	ZN_PROFILE_SCOPE();
+
+	ProgramGraph expanded_graph;
+	expanded_graph.copy_from(p_graph, false);
+	const VoxelGraphRuntime::CompilationResult expand_result = expand_expression_nodes(expanded_graph, nullptr);
+	if (!expand_result.success) {
+		return expand_result;
+	}
+	// Expanding a graph may produce more nodes, not remove any
+	ZN_ASSERT_RETURN_V(expanded_graph.get_nodes_count() >= p_graph.get_nodes_count(), make_error("Internal error"));
+
+	std::vector<uint32_t> order;
+	std::vector<uint32_t> terminal_nodes;
+
+	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
+
+	// Only getting SDF for now, as this is the first use case I want to test this feature with
+	expanded_graph.for_each_node_const([&terminal_nodes, &type_db](const ProgramGraph::Node &node) {
+		if (node.type_id == VoxelGeneratorGraph::NODE_OUTPUT_SDF) {
+			terminal_nodes.push_back(node.id);
+		}
+	});
+
+	if (terminal_nodes.size() == 0) {
+		return make_error("The graph must contain an SDF output.");
+	}
+
+	// Exclude debug nodes
+	// unordered_remove_if(terminal_nodes, [&expanded_graph, &type_db](uint32_t node_id) {
+	// 	const ProgramGraph::Node &node = expanded_graph.get_node(node_id);
+	// 	const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
+	// 	return type.debug_only;
+	// });
+
+	expanded_graph.find_dependencies(terminal_nodes, order);
+
+	std::stringstream main_ss;
+	std::stringstream lib_ss;
+	CodeGenHelper codegen(main_ss, lib_ss);
+
+	codegen.add("float get_sdf(vec3 pos) {\n");
+	codegen.indent();
+
+	std::unordered_map<ProgramGraph::PortLocation, std::string> port_to_var;
+	FixedArray<const char *, 8> input_names;
+	FixedArray<const char *, 8> output_names;
+
+	for (const uint32_t node_id : order) {
+		const ProgramGraph::Node &node = expanded_graph.get_node(node_id);
+		const VoxelGraphNodeDB::NodeType node_type = type_db.get_type(node.type_id);
+
+		switch (node.type_id) {
+			case VoxelGeneratorGraph::NODE_INPUT_X: {
+				ZN_ASSERT(node.outputs.size() == 1);
+				const ProgramGraph::PortLocation output_port{ node_id, 0 };
+				port_to_var.insert({ output_port, "pos.x" });
+				continue;
+			}
+			case VoxelGeneratorGraph::NODE_INPUT_Y: {
+				ZN_ASSERT(node.outputs.size() == 1);
+				const ProgramGraph::PortLocation output_port{ node_id, 0 };
+				port_to_var.insert({ output_port, "pos.y" });
+				continue;
+			}
+			case VoxelGeneratorGraph::NODE_INPUT_Z: {
+				ZN_ASSERT(node.outputs.size() == 1);
+				const ProgramGraph::PortLocation output_port{ node_id, 0 };
+				port_to_var.insert({ output_port, "pos.z" });
+				continue;
+			}
+			case VoxelGeneratorGraph::NODE_CONSTANT: {
+				ZN_ASSERT(node.outputs.size() == 1);
+				const ProgramGraph::PortLocation output_port{ node_id, 0 };
+				std::string name;
+				codegen.generate_var_name(name);
+				port_to_var.insert({ output_port, name });
+				ZN_ASSERT(node.params.size() == 1);
+				codegen.add_format("float {} = {};\n", name, float(node.params[0]));
+				continue;
+			}
+			case VoxelGeneratorGraph::NODE_OUTPUT_SDF: {
+				ZN_ASSERT(node.outputs.size() == 1);
+				const ProgramGraph::Port &input_port = node.inputs[0];
+				if (input_port.connections.size() > 0) {
+					ZN_ASSERT(input_port.connections.size() == 1);
+					auto it = port_to_var.find(input_port.connections[0]);
+					ZN_ASSERT(it != port_to_var.end());
+					codegen.add_format("return {};\n", it->second);
+				} else {
+					codegen.add("return 0.0;\n");
+				}
+				continue;
+			}
+			default:
+				break;
+		}
+
+		if (node_type.shader_gen_func == nullptr) {
+			return make_error("A node does not support conversion to shader.", node_id);
+		}
+
+		for (unsigned int port_index = 0; port_index < node.inputs.size(); ++port_index) {
+			const ProgramGraph::Port &input_port = node.inputs[port_index];
+			if (input_port.connections.size() > 0) {
+				ZN_ASSERT(input_port.connections.size() == 1);
+				auto it = port_to_var.find(input_port.connections[0]);
+				ZN_ASSERT(it != port_to_var.end());
+				input_names[port_index] = it->second.c_str();
+			} else {
+				std::string var_name;
+				codegen.generate_var_name(var_name);
+				auto p = port_to_var.insert({ { node_id, port_index }, var_name });
+				ZN_ASSERT(p.second);
+				const std::string &name = p.first->second;
+				input_names[port_index] = name.c_str();
+				codegen.add_format("float {} = {};\n", name, float(node.default_inputs[port_index]));
+			}
+		}
+
+		for (unsigned int port_index = 0; port_index < node.outputs.size(); ++port_index) {
+			const ProgramGraph::Port &output_port = node.outputs[port_index];
+			std::string var_name;
+			codegen.generate_var_name(var_name);
+			auto p = port_to_var.insert({ { node_id, port_index }, var_name });
+			ZN_ASSERT(p.second);
+			output_names[port_index] = p.first->second.c_str();
+			codegen.add_format("float {};\n", var_name.c_str());
+		}
+
+		codegen.add("{\n");
+		codegen.indent();
+
+		ShaderGenContext ctx(node.params, to_span(input_names, node.inputs.size()),
+				to_span(output_names, node.outputs.size()), codegen);
+		node_type.shader_gen_func(ctx);
+
+		if (ctx.has_error()) {
+			CompilationResult result;
+			result.success = false;
+			result.message = ctx.get_error_message();
+			result.node_id = node_id;
+			return result;
+		}
+
+		codegen.dedent();
+		codegen.add("}\n");
+	}
+
+	codegen.dedent();
+	codegen.add("}\n");
+
+	codegen.print(output);
+
+	CompilationResult result;
+	result.success = true;
+	return result;
 }
 
 } // namespace zylann::voxel

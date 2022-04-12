@@ -1342,6 +1342,27 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
+String VoxelGeneratorGraph::generate_shader() {
+	ZN_PROFILE_SCOPE();
+
+	std::shared_ptr<const Runtime> runtime_ptr;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime_ptr = _runtime;
+	}
+
+	ZN_ASSERT_RETURN_V(runtime_ptr != nullptr, "");
+	ZN_ASSERT_RETURN_V_MSG(
+			runtime_ptr->sdf_output_buffer_index != -1, "", "This function only works with an SDF output.");
+
+	std::string code_utf8;
+	VoxelGraphRuntime::CompilationResult result = runtime_ptr->runtime.generate_shader(_graph, code_utf8);
+
+	ERR_FAIL_COND_V_MSG(!result.success, "", result.message);
+
+	return String(code_utf8.c_str());
+}
+
 VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigned int channel) {
 	// TODO Support other channels
 	VoxelSingleValue v;
@@ -1921,6 +1942,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 			&VoxelGeneratorGraph::bake_sphere_bumpmap);
 	ClassDB::bind_method(D_METHOD("bake_sphere_normalmap", "im", "ref_radius", "strength"),
 			&VoxelGeneratorGraph::bake_sphere_normalmap);
+	ClassDB::bind_method(D_METHOD("generate_shader"), &VoxelGeneratorGraph::generate_shader);
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &VoxelGeneratorGraph::debug_load_waves_preset);
 	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel", "use_singular_queries"),
