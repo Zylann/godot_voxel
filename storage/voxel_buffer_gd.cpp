@@ -111,12 +111,45 @@ void VoxelBuffer::set_block_metadata(Variant meta) {
 
 void VoxelBuffer::for_each_voxel_metadata(const Callable &callback) const {
 	ERR_FAIL_COND(callback.is_null());
-	_buffer->for_each_voxel_metadata(callback);
+	//_buffer->for_each_voxel_metadata(callback);
+
+	const FlatMap<Vector3i, Variant> &metadata = _buffer->get_voxel_metadata();
+
+	for (auto it = metadata.begin(); it != metadata.end(); ++it) {
+		const Variant key = it->key;
+		const Variant *args[2] = { &key, &it->value };
+		Callable::CallError err;
+		Variant retval; // We don't care about the return value, Callable API requires it
+		callback.call(args, 2, retval, err);
+
+		ERR_FAIL_COND_MSG(
+				err.error != Callable::CallError::CALL_OK, String("Callable failed at {0}").format(varray(key)));
+
+		// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
+		// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
+		// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
+	}
 }
 
 void VoxelBuffer::for_each_voxel_metadata_in_area(const Callable &callback, Vector3i min_pos, Vector3i max_pos) {
 	ERR_FAIL_COND(callback.is_null());
-	_buffer->for_each_voxel_metadata_in_area(callback, Box3i::from_min_max(min_pos, max_pos));
+
+	const Box3i box = Box3i::from_min_max(min_pos, max_pos);
+
+	_buffer->for_each_voxel_metadata_in_area(box, [&callback](Vector3i rel_pos, Variant meta) {
+		const Variant key = rel_pos;
+		const Variant *args[2] = { &key, &meta };
+		Callable::CallError err;
+		Variant retval; // We don't care about the return value, Callable API requires it
+		callback.call(args, 2, retval, err);
+
+		ERR_FAIL_COND_MSG(
+				err.error != Callable::CallError::CALL_OK, String("Callable failed at {0}").format(varray(key)));
+
+		// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
+		// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
+		// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
+	});
 }
 
 void VoxelBuffer::copy_voxel_metadata_in_area(

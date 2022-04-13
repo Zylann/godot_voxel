@@ -146,14 +146,14 @@ public:
 
 		inline const Pair &operator*() {
 #ifdef DEBUG_ENABLED
-			CRASH_COND(_current == nullptr);
+			ZN_ASSERT(_current != nullptr);
 #endif
 			return *_current;
 		}
 
 		inline const Pair *operator->() {
 #ifdef DEBUG_ENABLED
-			CRASH_COND(_current == nullptr);
+			ZN_ASSERT(_current != nullptr);
 #endif
 			return _current;
 		}

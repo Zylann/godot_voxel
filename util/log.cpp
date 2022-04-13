@@ -20,6 +20,10 @@ void print_warning(const char *warning, const char *func, const char *file, int 
 	_err_print_error(func, file, line, warning, false, ERR_HANDLER_WARNING);
 }
 
+void print_warning(const FwdConstStdString &warning, const char *func, const char *file, int line) {
+	print_warning(warning.s.c_str(), func, file, line);
+}
+
 void print_error(const char *error, const char *func, const char *file, int line) {
 	_err_print_error(func, file, line, error);
 }
