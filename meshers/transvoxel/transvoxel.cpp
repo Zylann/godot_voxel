@@ -411,7 +411,7 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 				ReuseCell &current_reuse_cell = cache.get_reuse_cell(pos);
 
 #if DEBUG_ENABLED
-				CRASH_COND(case_code > 255);
+				ZN_ASSERT(case_code <= 255);
 #endif
 
 				FixedArray<Vector3i, 8> padded_corner_positions;
@@ -470,7 +470,7 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 					const uint8_t v1 = edge_code_low & 0xf;
 
 #ifdef DEBUG_ENABLED
-					ERR_FAIL_COND(v1 <= v0);
+					ZN_ASSERT_RETURN(v1 > v0);
 #endif
 
 					// Get voxel values at the corners
@@ -479,8 +479,8 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 
 #ifdef DEBUG_ENABLED
 					// TODO Zero-division is not mentionned in the paper?? (never happens tho)
-					ERR_FAIL_COND(sample1 == sample0);
-					ERR_FAIL_COND(sample1 == 0 && sample0 == 0);
+					ZN_ASSERT_RETURN(sample1 != sample0);
+					ZN_ASSERT_RETURN(sample1 != 0 || sample0 != 0);
 #endif
 
 					// Get interpolation position
@@ -741,7 +741,7 @@ inline void get_face_axes(int &ax, int &ay, int dir) {
 			break;
 
 		default:
-			CRASH_COND(true);
+			ZN_CRASH();
 	}
 }
 
@@ -756,9 +756,9 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 			block_size_with_padding - Vector3iUtil::create(MIN_PADDING + MAX_PADDING);
 	const Vector3i block_size_scaled = block_size_without_padding << lod_index;
 
-	ERR_FAIL_COND(block_size_with_padding.x < 3);
-	ERR_FAIL_COND(block_size_with_padding.y < 3);
-	ERR_FAIL_COND(block_size_with_padding.z < 3);
+	ZN_ASSERT_RETURN(block_size_with_padding.x >= 3);
+	ZN_ASSERT_RETURN(block_size_with_padding.y >= 3);
+	ZN_ASSERT_RETURN(block_size_with_padding.z >= 3);
 
 	cache.reset_reuse_cells_2d(block_size_with_padding);
 
@@ -913,7 +913,7 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 				current_reuse_cell.packed_texture_indices = cell_textures.packed_indices;
 			}
 
-			CRASH_COND(case_code > 511);
+			ZN_ASSERT(case_code <= 511);
 
 			// TODO We may not need all of them!
 			FixedArray<Vector3f, 13> cell_gradients;
@@ -975,8 +975,8 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 				const float sample_a = cell_samples[index_vertex_a]; // d0 and d1 in the paper
 				const float sample_b = cell_samples[index_vertex_b];
 				// TODO Zero-division is not mentionned in the paper??
-				ERR_FAIL_COND(sample_a == sample_b);
-				ERR_FAIL_COND(sample_a == 0 && sample_b == 0);
+				ZN_ASSERT_RETURN(sample_a != sample_b);
+				ZN_ASSERT_RETURN(sample_a != 0 || sample_b != 0);
 
 				// Get interpolation position
 				// We use an 8-bit fraction, allowing the new vertex to be located at one of 257 possible
@@ -1151,8 +1151,8 @@ template <typename T>
 Span<const T> get_or_decompress_channel(
 		const VoxelBufferInternal &voxels, std::vector<T> &backing_buffer, unsigned int channel) {
 	//
-	ERR_FAIL_COND_V(
-			voxels.get_channel_depth(channel) != VoxelBufferInternal::get_depth_from_size(sizeof(T)), Span<const T>());
+	ZN_ASSERT_RETURN_V(
+			voxels.get_channel_depth(channel) == VoxelBufferInternal::get_depth_from_size(sizeof(T)), Span<const T>());
 
 	if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
 		backing_buffer.resize(Vector3iUtil::get_volume(voxels.get_size()));
@@ -1165,14 +1165,14 @@ Span<const T> get_or_decompress_channel(
 
 	} else {
 		Span<uint8_t> data_bytes;
-		CRASH_COND(voxels.get_channel_raw(channel, data_bytes) == false);
+		ZN_ASSERT(voxels.get_channel_raw(channel, data_bytes) == true);
 		return data_bytes.reinterpret_cast_to<const T>();
 	}
 }
 
 TextureIndicesData get_texture_indices_data(const VoxelBufferInternal &voxels, unsigned int channel,
 		DefaultTextureIndicesData &out_default_texture_indices_data) {
-	ERR_FAIL_COND_V(voxels.get_channel_depth(channel) != VoxelBufferInternal::DEPTH_16_BIT, TextureIndicesData());
+	ZN_ASSERT_RETURN_V(voxels.get_channel_depth(channel) == VoxelBufferInternal::DEPTH_16_BIT, TextureIndicesData());
 
 	TextureIndicesData data;
 
@@ -1187,7 +1187,7 @@ TextureIndicesData get_texture_indices_data(const VoxelBufferInternal &voxels, u
 
 	} else {
 		Span<uint8_t> data_bytes;
-		CRASH_COND(voxels.get_channel_raw(channel, data_bytes) == false);
+		ZN_ASSERT(voxels.get_channel_raw(channel, data_bytes) == true);
 		data.buffer = data_bytes.reinterpret_cast_to<const uint16_t>();
 
 		out_default_texture_indices_data.use = false;
@@ -1271,7 +1271,7 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
 	Span<uint8_t> sdf_data_raw;
-	CRASH_COND(voxels.get_channel_raw(sdf_channel, sdf_data_raw) == false);
+	ZN_ASSERT(voxels.get_channel_raw(sdf_channel, sdf_data_raw) == true);
 
 	const unsigned int voxels_count = Vector3iUtil::get_volume(voxels.get_size());
 
@@ -1304,7 +1304,7 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 				get_texture_indices_data(voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
 		weights_data.u16_data =
 				get_or_decompress_channel(voxels, s_weights_backing_buffer_u16, VoxelBufferInternal::CHANNEL_WEIGHTS);
-		ERR_FAIL_COND_V(weights_data.u16_data.size() != voxels_count, default_texture_indices_data);
+		ZN_ASSERT_RETURN_V(weights_data.u16_data.size() == voxels_count, default_texture_indices_data);
 	}
 #endif
 
@@ -1333,12 +1333,12 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 		} break;
 
 		case VoxelBufferInternal::DEPTH_64_BIT:
-			ERR_PRINT("Double-precision SDF channel is not supported");
+			ZN_PRINT_ERROR("Double-precision SDF channel is not supported");
 			// Not worth growing executable size for relatively pointless double-precision sdf
 			break;
 
 		default:
-			ERR_PRINT("Invalid channel");
+			ZN_PRINT_ERROR("Invalid channel");
 			break;
 	}
 
@@ -1352,7 +1352,7 @@ void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_c
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
 	Span<uint8_t> sdf_data_raw;
-	CRASH_COND(voxels.get_channel_raw(sdf_channel, sdf_data_raw) == false);
+	ZN_ASSERT(voxels.get_channel_raw(sdf_channel, sdf_data_raw) == true);
 
 	const unsigned int voxels_count = Vector3iUtil::get_volume(voxels.get_size());
 
@@ -1396,7 +1396,7 @@ void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_c
 		}
 		weights_data.u16_data =
 				get_or_decompress_channel(voxels, s_weights_backing_buffer_u16, VoxelBufferInternal::CHANNEL_WEIGHTS);
-		ERR_FAIL_COND(weights_data.u16_data.size() != voxels_count);
+		ZN_ASSERT_RETURN(weights_data.u16_data.size() == voxels_count);
 	}
 #endif
 
@@ -1420,12 +1420,12 @@ void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_c
 		} break;
 
 		case VoxelBufferInternal::DEPTH_64_BIT:
-			ERR_FAIL_MSG("Double-precision SDF channel is not supported");
+			ZN_PRINT_ERROR("Double-precision SDF channel is not supported");
 			// Not worth growing executable size for relatively pointless double-precision sdf
 			break;
 
 		default:
-			ERR_PRINT("Invalid channel");
+			ZN_PRINT_ERROR("Invalid channel");
 			break;
 	}
 }

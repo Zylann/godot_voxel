@@ -56,7 +56,7 @@ inline void normalize_weights_preserving(FixedArray<float, 4> &weights, unsigned
 inline void blend_texture_packed_u16(
 		int texture_index, float target_weight, uint16_t &encoded_indices, uint16_t &encoded_weights) {
 #ifdef DEBUG_ENABLED
-	ERR_FAIL_COND(target_weight < 0.f || target_weight > 1.f);
+	ZN_ASSERT_RETURN(target_weight >= 0.f && target_weight <= 1.f);
 #endif
 
 	FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(encoded_indices);

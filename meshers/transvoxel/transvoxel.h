@@ -90,14 +90,14 @@ public:
 	ReuseCell &get_reuse_cell(Vector3i pos) {
 		unsigned int j = pos.z & 1;
 		unsigned int i = pos.y * _block_size.x + pos.x;
-		CRASH_COND(i >= _cache[j].size());
+		ZN_ASSERT(i < _cache[j].size());
 		return _cache[j][i];
 	}
 
 	ReuseTransitionCell &get_reuse_cell_2d(int x, int y) {
 		unsigned int j = y & 1;
 		unsigned int i = x;
-		CRASH_COND(i >= _cache_2d[j].size());
+		ZN_ASSERT(i < _cache_2d[j].size());
 		return _cache_2d[j][i];
 	}
 
