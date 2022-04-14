@@ -24,6 +24,7 @@ def get_icons_path():
 def get_doc_classes():
     return [
         "VoxelServer",
+        "ZN_ThreadedTask",
 
         "Voxel",
         "VoxelLibrary",
@@ -69,8 +70,9 @@ def get_doc_classes():
         "VoxelVoxLoader",
         "VoxelDataBlockEnterInfo",
 
-        "FastNoiseLite",
-        "FastNoiseLiteGradient",
+        "ZN_FastNoiseLite",
+        "ZN_FastNoiseLiteGradient",
+        "FastNoise2",
 
         "VoxelMesher",
         "VoxelMesherBlocky",
