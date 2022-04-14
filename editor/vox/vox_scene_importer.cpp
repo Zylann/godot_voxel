@@ -154,7 +154,7 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 		bool p_mipmaps, int p_texture_flags, bool p_streamable,
 		bool p_detect_3d, bool p_detect_srgb) {
 	//
-	FileAccess *f = FileAccess::open(p_to_path, FileAccess::WRITE);
+	Ref<FileAccess> f = FileAccess::open(p_to_path, FileAccess::WRITE);
 	ERR_FAIL_NULL_V(f, ERR_CANT_OPEN);
 	f->store_8('G');
 	f->store_8('D');
@@ -223,7 +223,6 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 		f->store_buffer(r.ptr(), data_len);
 	}
 
-	memdelete(f);
 	return OK;
 }*/
 

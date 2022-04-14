@@ -659,12 +659,10 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			// 	peer.instance();
 			// 	serializer->serialize(peer, info.voxels, false);
 			// 	String fpath = String("debug_data/split_dump_{0}.bin").format(varray(instance_index));
-			// 	FileAccess *f = FileAccess::open(fpath, FileAccess::WRITE);
+			// 	Ref<FileAccess> f = FileAccess::open(fpath, FileAccess::WRITE);
 			// 	PoolByteArray bytes = peer->get_data_array();
 			// 	PoolByteArray::Read bytes_read = bytes.read();
 			// 	f->store_buffer(bytes_read.ptr(), bytes.size());
-			// 	f->close();
-			// 	memdelete(f);
 			// }
 
 			// TODO Option to make multiple convex shapes

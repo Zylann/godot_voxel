@@ -513,9 +513,9 @@ bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal 
 	return deserialize(to_span_const(data), out_voxel_buffer);
 }
 
-bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
+bool decompress_and_deserialize(Ref<FileAccess> f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
 	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND_V(f == nullptr, false);
+	ERR_FAIL_COND_V(f.is_null(), false);
 
 #if defined(TOOLS_ENABLED) || defined(DEBUG_ENABLED)
 	const size_t fpos = f->get_position();

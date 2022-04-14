@@ -26,7 +26,7 @@ const char *to_string(FileResult res) {
 }
 
 FileResult check_magic_and_version(
-		FileAccess *f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version) {
+		Ref<FileAccess> f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version) {
 	uint8_t magic[5] = { '\0' };
 	int count = f->get_buffer(magic, 4);
 	if (count != 4) {
@@ -47,9 +47,9 @@ FileResult check_magic_and_version(
 }
 
 Error check_directory_created(const String &directory_path) {
-	DirAccess *d = DirAccess::create_for_path(directory_path);
+	Ref<DirAccess> d = DirAccess::create_for_path(directory_path);
 
-	if (d == nullptr) {
+	if (d.is_null()) {
 		ERR_PRINT("Could not access to filesystem");
 		return ERR_FILE_CANT_OPEN;
 	}
@@ -59,12 +59,10 @@ Error check_directory_created(const String &directory_path) {
 		Error err = d->make_dir_recursive(directory_path);
 		if (err != OK) {
 			ERR_PRINT("Could not create directory");
-			memdelete(d);
 			return err;
 		}
 	}
 
-	memdelete(d);
 	return OK;
 }
 
@@ -80,7 +78,7 @@ Error check_directory_created_using_file_locker(const String &directory_path) {
 // Makes the file bigger to move the half from the current position further,
 // so that it makes room for the specified amount of bytes.
 // The new allocated "free" bytes have undefined values, which may be later overwritten by the caller anyways.
-void insert_bytes(FileAccess *f, size_t count, size_t temp_chunk_size) {
+void insert_bytes(Ref<FileAccess> f, size_t count, size_t temp_chunk_size) {
 	CRASH_COND(f == nullptr);
 	CRASH_COND(temp_chunk_size == 0);
 
