@@ -1,5 +1,5 @@
-#ifndef HEADER_VOXEL_UTILITY_H
-#define HEADER_VOXEL_UTILITY_H
+#ifndef ZN_CONTAINER_FUNCS_H
+#define ZN_CONTAINER_FUNCS_H
 
 #include "span.h"
 #include <vector>
@@ -146,4 +146,4 @@ inline bool is_uniform(const Item_T *p_data, size_t item_count) {
 
 } // namespace zylann
 
-#endif // HEADER_VOXEL_UTILITY_H
+#endif // ZN_CONTAINER_FUNCS_H

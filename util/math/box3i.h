@@ -3,6 +3,7 @@
 
 #include "vector3i.h"
 #include <iosfwd>
+#include <vector>
 
 namespace zylann {
 

@@ -4,7 +4,7 @@
 #include "voxel_memory_pool.h"
 #endif
 
-#include "../util/funcs.h"
+#include "../util/container_funcs.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 #include "voxel_buffer_internal.h"

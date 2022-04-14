@@ -5,7 +5,7 @@
 #include "../../server/voxel_server.h"
 #include "../../server/voxel_server_updater.h"
 #include "../../storage/voxel_buffer_gd.h"
-#include "../../util/funcs.h"
+#include "../../util/container_funcs.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"

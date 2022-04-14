@@ -10,6 +10,7 @@
 #include "../streams/region/voxel_stream_region_files.h"
 #include "../streams/voxel_block_serializer.h"
 #include "../streams/voxel_block_serializer_gd.h"
+#include "../util/container_funcs.h"
 #include "../util/expression_parser.h"
 #include "../util/flat_map.h"
 #include "../util/godot/funcs.h"

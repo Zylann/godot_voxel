@@ -1,5 +1,4 @@
 #include "funcs.h"
-#include "../funcs.h"
 #include "../profiling.h"
 
 #include <core/config/engine.h>

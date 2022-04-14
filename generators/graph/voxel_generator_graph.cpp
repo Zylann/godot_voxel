@@ -1,5 +1,6 @@
 #include "voxel_generator_graph.h"
 #include "../../storage/voxel_buffer_internal.h"
+#include "../../util/container_funcs.h"
 #include "../../util/expression_parser.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"

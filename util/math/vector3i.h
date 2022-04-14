@@ -1,7 +1,6 @@
 #ifndef ZYLANN_VECTOR3I_H
 #define ZYLANN_VECTOR3I_H
 
-#include "../funcs.h"
 #include "funcs.h"
 
 #include <core/math/vector3.h>

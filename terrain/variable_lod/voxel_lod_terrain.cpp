@@ -4,7 +4,7 @@
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../server/voxel_server_gd.h"
 #include "../../server/voxel_server_updater.h"
-#include "../../util/funcs.h"
+#include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
 #include "../../util/profiling.h"

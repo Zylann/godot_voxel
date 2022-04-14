@@ -1,8 +1,6 @@
 #include "voxel_server.h"
 #include "../constants/voxel_constants.h"
 #include "../storage/voxel_memory_pool.h"
-#include "../util/funcs.h"
-#include "../util/godot/funcs.h"
 #include "../util/log.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"

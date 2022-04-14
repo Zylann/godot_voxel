@@ -1,5 +1,5 @@
 #include "voxel_instance_generator.h"
-#include "../../util/funcs.h"
+#include "../../util/container_funcs.h"
 #include "../../util/profiling.h"
 
 #include <core/core_string_names.h>

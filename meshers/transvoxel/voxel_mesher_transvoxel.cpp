@@ -3,7 +3,6 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../storage/voxel_data_map.h"
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
-#include "../../util/funcs.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
