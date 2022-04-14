@@ -208,7 +208,9 @@ private:
 	UpMode _up_mode = UP_MODE_POSITIVE_Y;
 
 	FixedArray<Lod, MAX_LOD> _lods;
-	std::vector<Block *> _blocks; // Does not have nulls
+
+	// Does not have nulls
+	std::vector<UniquePtr<Block>> _blocks;
 
 	// Each layer corresponds to a library item. Addresses of values in the map are expected to be stable.
 	std::unordered_map<int, Layer> _layers;
