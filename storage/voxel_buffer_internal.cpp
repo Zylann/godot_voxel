@@ -407,7 +407,7 @@ void VoxelBufferInternal::fill_area_f(float fvalue, Vector3i min, Vector3i max, 
 }
 
 void VoxelBufferInternal::fill_f(real_t value, unsigned int channel) {
-	ZN_ASSERT_RETURN(channel, MAX_CHANNELS);
+	ZN_ASSERT_RETURN(channel < MAX_CHANNELS);
 	fill(real_to_raw_voxel(value, _channels[channel].depth), channel);
 }
 
@@ -750,7 +750,7 @@ bool VoxelBufferInternal::equals(const VoxelBufferInternal &p_other) const {
 
 void VoxelBufferInternal::set_channel_depth(unsigned int channel_index, Depth new_depth) {
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
-	ZN_ASSERT_RETURN(new_depth, DEPTH_COUNT);
+	ZN_ASSERT_RETURN(new_depth >= 0 && new_depth < DEPTH_COUNT);
 	Channel &channel = _channels[channel_index];
 	if (channel.depth == new_depth) {
 		return;
@@ -793,7 +793,7 @@ Variant VoxelBufferInternal::get_voxel_metadata(Vector3i pos) const {
 }
 
 void VoxelBufferInternal::set_voxel_metadata(Vector3i pos, Variant meta) {
-	ZN_ASSERT_RETURN_V(is_position_valid(pos));
+	ZN_ASSERT_RETURN(is_position_valid(pos));
 	if (meta.get_type() == Variant::NIL) {
 		_voxel_metadata.erase(pos);
 	} else {
