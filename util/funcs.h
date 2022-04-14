@@ -2,7 +2,6 @@
 #define HEADER_VOXEL_UTILITY_H
 
 #include "span.h"
-#include <utility>
 #include <vector>
 
 namespace zylann {
@@ -88,22 +87,6 @@ size_t find_duplicate(Span<const T> items) {
 		}
 	}
 	return items.size();
-}
-
-template <typename T>
-inline void sort(T &a, T &b) {
-	if (a > b) {
-		std::swap(a, b);
-	}
-}
-
-template <typename T>
-inline void sort(T &a, T &b, T &c, T &d) {
-	sort(a, b);
-	sort(c, d);
-	sort(a, c);
-	sort(b, d);
-	sort(b, c);
 }
 
 // Tests if POD items in an array are all the same.

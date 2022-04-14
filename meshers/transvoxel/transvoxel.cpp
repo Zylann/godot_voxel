@@ -217,7 +217,7 @@ CellTextureDatas<NVoxels> select_textures_4_per_voxel(const FixedArray<unsigned 
 	// Sort indices to avoid cases that are ambiguous for blending, like 1,2,3,4 and 2,1,3,4
 	// TODO maybe we could require this sorting to be done up front?
 	// Or maybe could be done after meshing so we do it less times?
-	sort(cell_textures.indices[0], cell_textures.indices[1], cell_textures.indices[2], cell_textures.indices[3]);
+	math::sort(cell_textures.indices[0], cell_textures.indices[1], cell_textures.indices[2], cell_textures.indices[3]);
 
 	cell_textures.packed_indices = pack_bytes(cell_textures.indices);
 

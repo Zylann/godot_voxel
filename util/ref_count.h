@@ -1,7 +1,7 @@
 #ifndef VOXEL_VIEWER_REF_COUNT_H
 #define VOXEL_VIEWER_REF_COUNT_H
 
-#include <core/error/error_macros.h>
+#include "errors.h"
 
 namespace zylann {
 
@@ -14,7 +14,7 @@ public:
 	}
 
 	inline void remove() {
-		ERR_FAIL_COND_MSG(_count == 0, "Trying to decrease refcount when it's already zero");
+		ZN_ASSERT_RETURN_MSG(_count != 0, "Trying to decrease refcount when it's already zero");
 		--_count;
 	}
 

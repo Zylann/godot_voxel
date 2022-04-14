@@ -27,7 +27,7 @@ private:
 			MutexLock lock(mutex);
 			auto it = blocks.find(block);
 			// Must not add twice
-			CRASH_COND(it != blocks.end());
+			ZN_ASSERT(it == blocks.end());
 			blocks.insert(block);
 		}
 
@@ -35,7 +35,7 @@ private:
 			MutexLock lock(mutex);
 			auto it = blocks.find(block);
 			// Must exist
-			CRASH_COND(it == blocks.end());
+			ZN_ASSERT(it != blocks.end());
 			blocks.erase(it);
 		}
 	};
@@ -78,7 +78,7 @@ private:
 	inline unsigned int get_pool_index_from_size(size_t size) const {
 #ifdef DEBUG_ENABLED
 		// `get_next_power_of_two_32` takes unsigned int
-		CRASH_COND(size > std::numeric_limits<unsigned int>::max());
+		ZN_ASSERT(size <= std::numeric_limits<unsigned int>::max());
 #endif
 		return math::get_shift_from_power_of_two_32(math::get_next_power_of_two_32(size));
 	}

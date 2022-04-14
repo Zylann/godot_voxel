@@ -2,43 +2,9 @@
 #define VOXEL_MATH_FUNCS_H
 
 #include "../errors.h"
-#include "vector2f.h"
-#include "vector3f.h"
-
-#include <core/math/vector3.h>
-#include <core/math/vector3i.h>
+#include <core/math/math_funcs.h>
 
 namespace zylann::math {
-
-// Trilinear interpolation between corner values of a cube.
-//
-//      6---------------7
-//     /|              /|
-//    / |             / |
-//   5---------------4  |
-//   |  |            |  |
-//   |  |            |  |
-//   |  |            |  |
-//   |  2------------|--3        Y
-//   | /             | /         | Z
-//   |/              |/          |/
-//   1---------------0      X----o
-//
-template <typename T>
-inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4, const T v5, const T v6, const T v7,
-		Vector3f position) {
-	const float one_min_x = 1.f - position.x;
-	const float one_min_y = 1.f - position.y;
-	const float one_min_z = 1.f - position.z;
-	const float one_min_x_one_min_y = one_min_x * one_min_y;
-	const float x_one_min_y = position.x * one_min_y;
-
-	T res = one_min_z * (v0 * one_min_x_one_min_y + v1 * x_one_min_y + v4 * one_min_x * position.y);
-	res += position.z * (v3 * one_min_x_one_min_y + v2 * x_one_min_y + v7 * one_min_x * position.y);
-	res += position.x * position.y * (v5 * one_min_z + v6 * position.z);
-
-	return res;
-}
 
 template <typename T>
 inline T min(const T a, const T b) {
@@ -146,7 +112,7 @@ inline T squared(const T x) {
 //    6   | 2   | 2
 inline int floordiv(int x, int d) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(d <= 0);
+	ZN_ASSERT(d > 0);
 #endif
 	if (x < 0) {
 		return (x - d + 1) / d;
@@ -200,18 +166,6 @@ inline double fract(double x) {
 	return x - Math::floor(x);
 }
 
-inline Vector3 fract(const Vector3 &p) {
-	return Vector3(fract(p.x), fract(p.y), fract(p.z));
-}
-
-inline bool is_valid_size(const Vector3 &s) {
-	return s.x >= 0 && s.y >= 0 && s.z >= 0;
-}
-
-inline bool is_valid_size(const Vector3i &s) {
-	return s.x >= 0 && s.y >= 0 && s.z >= 0;
-}
-
 inline bool is_power_of_two(size_t x) {
 	return x != 0 && (x & (x - 1)) == 0;
 }
@@ -241,7 +195,7 @@ inline unsigned int get_shift_from_power_of_two_32(unsigned int pot) {
 			return i;
 		}
 	}
-	CRASH_NOW_MSG("Input was not a valid power of two");
+	ZN_CRASH_MSG("Input was not a valid power of two");
 	return 0;
 }
 
@@ -254,28 +208,9 @@ inline size_t alignup(size_t a, size_t align) {
 	return (a + align - 1) & ~(align - 1);
 }
 
-inline bool has_nan(const Vector3 &v) {
-	return Math::is_nan(v.x) || Math::is_nan(v.y) || Math::is_nan(v.z);
-}
-
 // inline bool is_power_of_two(int i) {
 // 	return i & (i - 1);
 // }
-
-// Float version of Geometry::is_point_in_triangle()
-inline bool is_point_in_triangle(const Vector2f &s, const Vector2f &a, const Vector2f &b, const Vector2f &c) {
-	const Vector2f an = a - s;
-	const Vector2f bn = b - s;
-	const Vector2f cn = c - s;
-
-	const bool orientation = an.cross(bn) > 0;
-
-	if ((bn.cross(cn) > 0) != orientation) {
-		return false;
-	}
-
-	return (cn.cross(an) > 0) == orientation;
-}
 
 // Float equivalent of Math::snapped, which only comes in `double` variant in Godot.
 inline float snappedf(float p_value, float p_step) {
@@ -283,6 +218,22 @@ inline float snappedf(float p_value, float p_step) {
 		p_value = Math::floor(p_value / p_step + 0.5f) * p_step;
 	}
 	return p_value;
+}
+
+template <typename T>
+inline void sort(T &a, T &b) {
+	if (a > b) {
+		std::swap(a, b);
+	}
+}
+
+template <typename T>
+inline void sort(T &a, T &b, T &c, T &d) {
+	sort(a, b);
+	sort(c, d);
+	sort(a, c);
+	sort(b, d);
+	sort(b, c);
 }
 
 } // namespace zylann::math

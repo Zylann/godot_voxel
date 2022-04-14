@@ -5,6 +5,7 @@
 #include "funcs.h"
 
 #include <core/math/vector3.h>
+#include <core/math/vector3i.h>
 #include <core/templates/hashfuncs.h>
 #include <iosfwd>
 
@@ -294,9 +295,9 @@ inline Vector3i from_cast(const Vector3 &f) {
 }
 
 inline void sort_min_max(Vector3i &a, Vector3i &b) {
-	zylann::sort(a.x, b.x);
-	zylann::sort(a.y, b.y);
-	zylann::sort(a.z, b.z);
+	math::sort(a.x, b.x);
+	math::sort(a.y, b.y);
+	math::sort(a.z, b.z);
 }
 
 // Returning a 64-bit integer because volumes can quickly overflow INT_MAX (like 1300^3),
@@ -343,6 +344,10 @@ inline bool all_members_equal(const Vector3i v) {
 
 inline bool is_unit_vector(const Vector3i v) {
 	return Math::abs(v.x) + Math::abs(v.y) + Math::abs(v.z) == 1;
+}
+
+inline bool is_valid_size(const Vector3i &s) {
+	return s.x >= 0 && s.y >= 0 && s.z >= 0;
 }
 
 } // namespace zylann::Vector3iUtil

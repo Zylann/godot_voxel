@@ -1,5 +1,6 @@
 #include "fast_noise_2.h"
 #include "../math/funcs.h"
+#include "../math/vector3.h"
 #include <core/io/image.h>
 
 namespace zylann {

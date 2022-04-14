@@ -2,6 +2,7 @@
 #define VOXEL_MATH_SDF_H
 
 #include "interval.h"
+#include "vector3.h"
 #include <core/math/vector2.h>
 
 namespace zylann::math {
