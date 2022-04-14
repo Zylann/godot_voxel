@@ -19,6 +19,7 @@
 //#include <scene/resources/material.h> // Included by node.h lol
 #include <limits>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class PhysicsBody3D;
@@ -103,7 +104,7 @@ private:
 
 	void add_layer(int layer_id, int lod_index);
 	void remove_layer(int layer_id);
-	int create_block(Layer *layer, uint16_t layer_id, Vector3i grid_position);
+	int create_block(Layer &layer, uint16_t layer_id, Vector3i grid_position);
 	void remove_block(unsigned int block_index);
 	void set_world(World3D *world);
 	void clear_blocks();
@@ -111,8 +112,11 @@ private:
 	void clear_layers();
 	void update_visibility();
 	void save_block(Vector3i data_grid_pos, int lod_index) const;
-	Layer *get_layer(int id);
-	const Layer *get_layer_const(int id) const;
+
+	// Get a layer assuming it exists
+	Layer &get_layer(int id);
+	const Layer &get_layer_const(int id) const;
+
 	void regenerate_layer(uint16_t layer_id, bool regenerate_blocks);
 	void update_layer_meshes(int layer_id);
 	void update_layer_scenes(int layer_id);
@@ -123,6 +127,7 @@ private:
 #endif
 
 	struct SceneInstance {
+		// Owned by the scene tree.
 		VoxelInstanceComponent *component = nullptr;
 		Node3D *root = nullptr;
 	};
@@ -131,7 +136,7 @@ private:
 			unsigned int block_index, Transform3D transform, int data_block_size_po2);
 
 	void update_block_from_transforms(int block_index, Span<const Transform3D> transforms, Vector3i grid_position,
-			Layer *layer, const VoxelInstanceLibraryItem *item_base, uint16_t layer_id, World3D *world,
+			Layer &layer, const VoxelInstanceLibraryItem &item_base, uint16_t layer_id, World3D &world,
 			const Transform3D &block_transform);
 
 	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
@@ -166,7 +171,7 @@ private:
 		unsigned int lod_index;
 		// Blocks indexed by grid position.
 		// Keys follow the mesh block coordinate system.
-		HashMap<Vector3i, unsigned int, Vector3iHasher> blocks;
+		std::unordered_map<Vector3i, unsigned int> blocks;
 	};
 
 	struct MeshLodDistances {
@@ -188,7 +193,7 @@ private:
 
 		// Blocks that have have unsaved changes.
 		// Keys follows the data block coordinate system.
-		HashMap<Vector3i, bool, Vector3iHasher> modified_blocks;
+		std::unordered_set<Vector3i> modified_blocks;
 
 		// This is a temporary place to store loaded instances data while it's not visible yet.
 		// These instances are user-authored ones. If a block does not have an entry there,
@@ -204,7 +209,10 @@ private:
 
 	FixedArray<Lod, MAX_LOD> _lods;
 	std::vector<Block *> _blocks; // Does not have nulls
-	HashMap<int, Layer> _layers; // Each layer corresponds to a library item
+
+	// Each layer corresponds to a library item. Addresses of values in the map are expected to be stable.
+	std::unordered_map<int, Layer> _layers;
+
 	Ref<VoxelInstanceLibrary> _library;
 
 	std::vector<Transform3D> _transform_cache;
