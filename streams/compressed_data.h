@@ -2,6 +2,7 @@
 #define VOXEL_COMPRESSED_DATA_H
 
 #include "../util/span.h"
+#include <cstdint>
 
 namespace zylann::voxel::CompressedData {
 
