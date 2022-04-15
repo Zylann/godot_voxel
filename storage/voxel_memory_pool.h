@@ -5,6 +5,7 @@
 #include "../util/math/funcs.h"
 #include "core/os/mutex.h"
 
+#include <atomic>
 #include <limits>
 #include <unordered_set>
 #include <vector>
