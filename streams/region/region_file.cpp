@@ -274,7 +274,7 @@ Error RegionFile::close() {
 				err = ERR_FILE_CANT_WRITE;
 			}
 		}
-		_file_access = nullptr;
+		_file_access.unref();
 	}
 	_sectors.clear();
 	return err;
