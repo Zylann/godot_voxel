@@ -5,12 +5,13 @@
 #include "../../util/math/vector3f.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/span.h"
-#include "code_gen_helper.h"
 #include "program_graph.h"
 
 #include <core/object/ref_counted.h>
 
 namespace zylann::voxel {
+
+class VoxelGraphNodeDB;
 
 // CPU VM to execute a voxel graph generator.
 // This is a more generic class implementing the core of a 3D expression processing system.
@@ -23,6 +24,14 @@ public:
 		bool success = false;
 		int node_id = -1;
 		String message;
+
+		static CompilationResult make_error(const char *p_message, int p_node_id = -1) {
+			VoxelGraphRuntime::CompilationResult res;
+			res.success = false;
+			res.node_id = p_node_id;
+			res.message = p_message;
+			return res;
+		}
 	};
 
 	// Contains values of a node output
@@ -178,97 +187,9 @@ public:
 	// Gets the buffer address of a specific output port
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint16_t &out_address) const;
 
-	static CompilationResult generate_shader(const ProgramGraph &p_graph, FwdMutableStdString output);
-
 	struct HeapResource {
 		void *ptr;
 		void (*deleter)(void *p);
-	};
-
-	// Functions usable by node implementations during the compilation stage
-	class CompileContext {
-	public:
-		CompileContext(/*const ProgramGraph::Node &node,*/ std::vector<uint16_t> &program,
-				std::vector<HeapResource> &heap_resources, std::vector<Variant> &params) :
-				/*_node(node),*/ _program(program), _heap_resources(heap_resources), _params(params) {}
-
-		Variant get_param(size_t i) const {
-			CRASH_COND(i > _params.size());
-			return _params[i];
-		}
-
-		// Typical use is to pass a struct containing all compile-time arguments the operation will need
-		template <typename T>
-		void set_params(T params) {
-			// Can be called only once per node
-			CRASH_COND(_params_added);
-			// We will need to align memory, so the struct will not be immediately stored here.
-			// Instead we put a header that tells how much to advance in order to reach the beginning of the struct,
-			// which will be at an aligned position.
-			// We align to the maximum alignment between the struct,
-			// and the type of word we store inside the program buffer, which is uint16.
-			const size_t params_alignment = math::max(alignof(T), alignof(uint16_t));
-			const size_t params_offset_index = _program.size();
-			// Prepare space to store the offset (at least 1 since that header is one word)
-			_program.push_back(1);
-			// Align memory for the struct.
-			// Note, we index with words, not bytes.
-			const size_t struct_offset =
-					math::alignup(_program.size() * sizeof(uint16_t), params_alignment) / sizeof(uint16_t);
-			if (struct_offset > _program.size()) {
-				_program.resize(struct_offset);
-			}
-			// Write offset in header
-			_program[params_offset_index] = struct_offset - params_offset_index;
-			// Allocate space for the struct. It is measured in words, so it can be up to 1 byte larger.
-			_params_size_in_words = (sizeof(T) + sizeof(uint16_t) - 1) / sizeof(uint16_t);
-			_program.resize(_program.size() + _params_size_in_words);
-			// Write struct
-			T &p = *reinterpret_cast<T *>(&_program[struct_offset]);
-			p = params;
-
-			_params_added = true;
-		}
-
-		// In case the compilation step produces a resource to be deleted
-		template <typename T>
-		void add_memdelete_cleanup(T *ptr) {
-			HeapResource hr;
-			hr.ptr = ptr;
-			hr.deleter = [](void *p) {
-				// TODO We have no guarantee it was allocated with memnew :|
-				T *tp = reinterpret_cast<T *>(p);
-				memdelete(tp);
-			};
-			_heap_resources.push_back(hr);
-		}
-
-		void make_error(String message) {
-			_error_message = message;
-			_has_error = true;
-		}
-
-		bool has_error() const {
-			return _has_error;
-		}
-
-		const String &get_error_message() const {
-			return _error_message;
-		}
-
-		size_t get_params_size_in_words() const {
-			return _params_size_in_words;
-		}
-
-	private:
-		//const ProgramGraph::Node &_node;
-		std::vector<uint16_t> &_program;
-		std::vector<HeapResource> &_heap_resources;
-		std::vector<Variant> &_params;
-		String _error_message;
-		size_t _params_size_in_words = 0;
-		bool _has_error = false;
-		bool _params_added = false;
 	};
 
 	class _ProcessContext {
@@ -369,62 +290,11 @@ public:
 		Span<Buffer> _buffers;
 	};
 
-	class ShaderGenContext {
-	public:
-		ShaderGenContext(const std::vector<Variant> &params, Span<const char *> input_names,
-				Span<const char *> output_names, CodeGenHelper &code_gen) :
-				_params(params), _input_names(input_names), _output_names(output_names), _code_gen(code_gen) {}
-
-		Variant get_param(size_t i) const {
-			CRASH_COND(i > _params.size());
-			return _params[i];
-		}
-
-		const char *get_input_name(unsigned int i) const {
-			return _input_names[i];
-		}
-
-		const char *get_output_name(unsigned int i) const {
-			return _output_names[i];
-		}
-
-		void make_error(String message) {
-			_error_message = message;
-			_has_error = true;
-		}
-
-		bool has_error() const {
-			return _has_error;
-		}
-
-		const String &get_error_message() const {
-			return _error_message;
-		}
-
-		template <typename... TN>
-		void add_format(const char *fmt, const TN &...an) {
-			_code_gen.add_format(fmt, an...);
-		}
-
-		void require_lib_code(const char *lib_name, const char *code);
-		void require_lib_code(const char *lib_name, const char **code);
-
-	private:
-		const std::vector<Variant> &_params;
-		Span<const char *> _input_names;
-		Span<const char *> _output_names;
-		CodeGenHelper &_code_gen;
-		String _error_message;
-		bool _has_error;
-	};
-
-	typedef void (*CompileFunc)(CompileContext &);
 	typedef void (*ProcessBufferFunc)(ProcessBufferContext &);
 	typedef void (*RangeAnalysisFunc)(RangeAnalysisContext &);
-	typedef void (*ShaderGenFunc)(ShaderGenContext &);
 
 private:
-	CompilationResult _compile(const ProgramGraph &graph, bool debug);
+	CompilationResult _compile(const ProgramGraph &graph, bool debug, const VoxelGraphNodeDB &type_db);
 
 	bool is_operation_constant(const State &state, uint16_t op_address) const;
 
@@ -441,6 +311,7 @@ private:
 		bool is_binding;
 	};
 
+	// Pre-processed, read-only graph used for runtime optimizations.
 	struct DependencyGraph {
 		struct Node {
 			uint16_t first_dependency;

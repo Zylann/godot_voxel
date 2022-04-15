@@ -1346,18 +1346,8 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 String VoxelGeneratorGraph::generate_shader() {
 	ZN_PROFILE_SCOPE();
 
-	std::shared_ptr<const Runtime> runtime_ptr;
-	{
-		RWLockRead rlock(_runtime_lock);
-		runtime_ptr = _runtime;
-	}
-
-	ZN_ASSERT_RETURN_V(runtime_ptr != nullptr, "");
-	ZN_ASSERT_RETURN_V_MSG(
-			runtime_ptr->sdf_output_buffer_index != -1, "", "This function only works with an SDF output.");
-
 	std::string code_utf8;
-	VoxelGraphRuntime::CompilationResult result = runtime_ptr->runtime.generate_shader(_graph, code_utf8);
+	VoxelGraphRuntime::CompilationResult result = zylann::voxel::generate_shader(_graph, code_utf8);
 
 	ERR_FAIL_COND_V_MSG(!result.success, "", result.message);
 
