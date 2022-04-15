@@ -112,23 +112,24 @@ For the most part, use `clang-format` and follow Godot conventions.
 
 ### C++ features
 
-- Don't use `auto` unless the type is impossible to express or a horrible template (like STL ones). IDEs aren't granted (Github reviews and diffs)
+- Don't use `auto` unless the type is impossible to express or a long template (like STL ones). IDEs aren't granted (Github reviews and diffs)
 - Moderate use of lambdas and functors are fine. Not `std::function`.
-- Lambda captures should be defined explicitely (try to reduce usage of `=` or `&`)
+- Lambda captures should be defined explicitely (try to reduce usage of `[=]` or `[&]`)
 - STL is ok if it measurably performs better than Godot alternatives.
 - Initialize variables next to declaration
 - Avoid using macros to define logic or constants. Prefer `static const`, `constexpr` and `inline` functions.
 - Prefer adding `const` to variables that won't change after being initialized (function arguments are spared for now as it would make signatures very long)
-- Don't exploit booleanization when an explicit alternative exists. Example: use `if (a == nullptr)` instead of `if (a)`
+- Don't exploit booleanization when an explicit alternative exists. Example: use `if (a == nullptr)` instead of `if (!a)`
 - If possible, avoid plain arrays like `int a[42]`. Debuggers don't catch overruns on them. Prefer using wrappers such as `FixedArray` and `Span` (or `std::array` and `std::span` once [this](https://github.com/godotengine/godot/issues/31608) is fixed)
 - Use `uint32_t`, `uint16_t`, `uint8_t` in case integer size matters.
 - If possible, use forward declarations in headers instead of including files
 
 ### Error handling
 
-- No exceptions
-- Check invariants, fail early. Use `CRASH_COND` in debug mode to make sure states are as expected even if they don't cause immediate harm.
-- Crashes aren't nice to users, so in user-facing code (scripting) use `ERR_FAIL_COND` macros for code that can recover from error, or to prevent hitting internal assertions
+- Exceptions are not used.
+- Check invariants, fail early. Use `CRASH_COND` or `ZN_ASSERT` in debug mode to make sure states are as expected even if they don't cause immediate harm.
+- Crashes aren't nice to users, so in user-facing code (scripting) use `ERR_FAIL_COND` or `ZN_ASSERT_RETURN` macros for code that can recover from error, or to prevent hitting internal assertions
+- Macros prefixed with `ZN_` are Godot-agnostic and may be used for portability in areas that don't depend on Godot too much.
 
 ### Performance
 
@@ -150,12 +151,13 @@ In performance-critical areas which run a lot:
 - When possible, use `memnew`, `memdelete`, `memalloc` and `memfree` so memory usage is counted within Godot monitors
 - Don't leave random prints. For verbose mode you may also use `ZN_PRINT_VERBOSE()` instead of `print_verbose()`.
 - Use `int` as argument for functions exposed to scripts if they don't need to exceed 2^31, even if they are never negative, so errors are clearer if the user makes a mistake
+- If possible, keep Godot usage to a minimum, to make the code more portable, and sometimes faster for future GDExtension. Some areas use custom equivalents defined in `util/`.
 
 ### Namespaces
 
 The intented namespaces are `zylann::` as main, and `zylann::voxel::` for voxel-related stuff. There may be others for different parts of the module.
 
-Registered classes are also namespaced, but are still largely prefixed with `Voxel`. Classes registered to the engine must have a unique name regardless of namespaces.
+Registered classes are also namespaced to prevent conflicts. These do not appear in Godot's ClassDB, so voxel-related classes are also prefixed `Voxel`. Other more generic classes are prefixed `ZN_`.
 
 If a registered class needs the same name as an internal one, it can be placed into a `::gd` sub-namespace. On the other hand, internal classes can also be suffixed `Internal`.
 
