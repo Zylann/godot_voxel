@@ -2,6 +2,7 @@
 #define ZN_DYNAMIC_BITSET_H
 
 #include "errors.h"
+#include <cstdint>
 #include <vector>
 
 namespace zylann {
