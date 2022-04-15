@@ -3,6 +3,7 @@
 
 #include "../util/span.h"
 
+#include <cstdint>
 #include <vector>
 
 class StreamPeer;
