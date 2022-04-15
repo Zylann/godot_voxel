@@ -344,7 +344,7 @@ void ProgramGraph::debug_print_dot_file(String file_path) const {
 	// https://www.graphviz.org/pdf/dotguide.pdf
 
 	Error err;
-	FileAccess *f = FileAccess::open(file_path, FileAccess::WRITE, &err);
+	Ref<FileAccess> f = FileAccess::open(file_path, FileAccess::WRITE, &err);
 	if (f == nullptr) {
 		ERR_PRINT(String("Could not write ProgramGraph debug file as {0}: error {1}").format(varray(file_path, err)));
 		return;
@@ -367,9 +367,6 @@ void ProgramGraph::debug_print_dot_file(String file_path) const {
 	}
 
 	f->store_line("}");
-
-	f->close();
-	memdelete(f);
 }
 
 void ProgramGraph::copy_from(const ProgramGraph &other, bool copy_subresources) {

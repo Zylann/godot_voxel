@@ -6,6 +6,7 @@
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 
+#include <core/io/dir_access.h>
 #include <core/io/json.h>
 #include <core/os/time.h>
 #include <algorithm>
@@ -293,8 +294,8 @@ FileResult VoxelStreamRegionFiles::save_meta() {
 
 	Error err;
 	VoxelFileLockerWrite file_wlock(meta_path);
-	FileAccessRef f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
-	if (!f) {
+	Ref<FileAccess> f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
+	if (f.is_null()) {
 		ERR_PRINT(String("Could not save {0}").format(varray(meta_path)));
 		return FILE_CANT_OPEN;
 	}
@@ -340,8 +341,8 @@ FileResult VoxelStreamRegionFiles::load_meta() {
 	{
 		Error err;
 		VoxelFileLockerRead file_rlock(meta_path);
-		FileAccessRef f = FileAccess::open(meta_path, FileAccess::READ, &err);
-		if (!f) {
+		Ref<FileAccess> f = FileAccess::open(meta_path, FileAccess::READ, &err);
+		if (f.is_null()) {
 			return FILE_CANT_OPEN;
 		}
 		json_string = f->get_as_utf8_string();
@@ -572,8 +573,8 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	// Backup current folder by renaming it, leaving the current name vacant
 	{
-		DirAccessRef da = DirAccess::create_for_path(_directory_path);
-		ERR_FAIL_COND(!da);
+		Ref<DirAccess> da = DirAccess::create_for_path(_directory_path);
+		ERR_FAIL_COND(da.is_null());
 		int i = 0;
 		String old_dir;
 		while (true) {
@@ -614,8 +615,8 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					old_stream->_directory_path.plus_file("regions").plus_file("lod") + String::num_int64(lod);
 			const String ext = String(".") + RegionFormat::FILE_EXTENSION;
 
-			DirAccessRef da = DirAccess::open(lod_folder);
-			if (!da) {
+			Ref<DirAccess> da = DirAccess::open(lod_folder);
+			if (da.is_null()) {
 				continue;
 			}
 

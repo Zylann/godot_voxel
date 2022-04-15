@@ -9,10 +9,9 @@ constexpr char *DEFAULT_TEST_DATA_DIRECTORY = "zylann_testing_dir";
 
 bool create_empty_file(String fpath) {
 	if (!FileAccess::exists(fpath)) {
-		FileAccessRef f = FileAccess::open(fpath, FileAccess::WRITE);
-		if (f) {
+		Ref<FileAccess> f = FileAccess::open(fpath, FileAccess::WRITE);
+		if (f.is_valid()) {
 			f->store_line("");
-			f->close();
 		} else {
 			ERR_PRINT("Failed to create file " + fpath);
 			return false;
@@ -27,8 +26,8 @@ bool remove_dir_if_exists(const char *p_dirpath) {
 	ERR_FAIL_COND_V(dirpath.is_empty(), false);
 
 	if (DirAccess::exists(dirpath)) {
-		DirAccessRef da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
-		ERR_FAIL_COND_V(da.f == nullptr, false);
+		Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
+		ERR_FAIL_COND_V(da.is_null(), false);
 
 		String prev_dir = da->get_current_dir();
 
@@ -54,8 +53,8 @@ bool remove_dir_if_exists(const char *p_dirpath) {
 
 bool create_clean_dir(const char *dirpath) {
 	ERR_FAIL_COND_V(dirpath == nullptr, false);
-	DirAccessRef da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
-	ERR_FAIL_COND_V(da.f == nullptr, false);
+	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
+	ERR_FAIL_COND_V(da.is_null(), false);
 
 	ERR_FAIL_COND_V(!remove_dir_if_exists(dirpath), false);
 

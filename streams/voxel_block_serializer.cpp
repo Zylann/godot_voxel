@@ -10,7 +10,7 @@
 #include <core/io/marshalls.h>
 #include <core/io/stream_peer.h>
 //#include <core/map.h>
-#include <core/io/file_access.h>
+#include <core/io/file_access_memory.h>
 #include <limits>
 
 namespace zylann::voxel {
@@ -224,8 +224,9 @@ SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
 	const size_t data_size = get_size_in_bytes(voxel_buffer, metadata_size);
 	dst_data.resize(data_size);
 
-	FileAccessMemory file_access_memory;
-	FileAccessMemory *f = &file_access_memory;
+	// TODO Move away from `FileAccessMemory`, use MemoryWriter directly
+	Ref<FileAccessMemory> f;
+	f.instantiate();
 	ERR_FAIL_COND_V(f->open_custom(dst_data.data(), dst_data.size()) != OK, SerializeResult(dst_data, false));
 
 	f->store_8(BLOCK_FORMAT_VERSION);
@@ -396,8 +397,9 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 	const uint32_t magic = *reinterpret_cast<const uint32_t *>(&p_data[p_data.size() - sizeof(uint32_t)]);
 	ERR_FAIL_COND_V(magic != BLOCK_TRAILING_MAGIC, false);
 
-	FileAccessMemory file_access_memory;
-	FileAccessMemory *f = &file_access_memory;
+	// TODO Move away from `FileAccessMemory`, use MemoryReader directly
+	Ref<FileAccessMemory> f;
+	f.instantiate();
 	ERR_FAIL_COND_V(f->open_custom(p_data.data(), p_data.size()) != OK, false);
 
 	const uint8_t format_version = f->get_8();
@@ -513,20 +515,19 @@ bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal 
 	return deserialize(to_span_const(data), out_voxel_buffer);
 }
 
-bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
+bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
 	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND_V(f == nullptr, false);
 
 #if defined(TOOLS_ENABLED) || defined(DEBUG_ENABLED)
-	const size_t fpos = f->get_position();
-	const size_t remaining_file_size = f->get_length() - fpos;
+	const size_t fpos = f.get_position();
+	const size_t remaining_file_size = f.get_length() - fpos;
 	ERR_FAIL_COND_V(size_to_read > remaining_file_size, false);
 #endif
 
 	std::vector<uint8_t> &compressed_data = tls_compressed_data;
 
 	compressed_data.resize(size_to_read);
-	const unsigned int read_size = f->get_buffer(compressed_data.data(), size_to_read);
+	const unsigned int read_size = f.get_buffer(compressed_data.data(), size_to_read);
 	ERR_FAIL_COND_V(read_size != size_to_read, false);
 
 	return decompress_and_deserialize(to_span_const(compressed_data), out_voxel_buffer);

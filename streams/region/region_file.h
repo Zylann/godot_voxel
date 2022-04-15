@@ -97,17 +97,17 @@ public:
 	bool is_valid_block_position(const Vector3 position) const;
 
 private:
-	bool save_header(FileAccess *f);
-	Error load_header(FileAccess *f);
+	bool save_header(FileAccess &f);
+	Error load_header(FileAccess &f);
 
 	unsigned int get_block_index_in_header(const Vector3i &rpos) const;
 	uint32_t get_sector_count_from_bytes(uint32_t size_in_bytes) const;
 
-	void pad_to_sector_size(FileAccess *f);
+	void pad_to_sector_size(FileAccess &f);
 	void remove_sectors_from_block(Vector3i block_pos, unsigned int p_sector_count);
 
-	bool migrate_to_latest(FileAccess *f);
-	bool migrate_from_v2_to_v3(FileAccess *f, RegionFormat &format);
+	bool migrate_to_latest(FileAccess &f);
+	bool migrate_from_v2_to_v3(FileAccess &f, RegionFormat &format);
 
 	struct Header {
 		uint8_t version = -1;
@@ -118,7 +118,7 @@ private:
 		std::vector<RegionBlockInfo> blocks;
 	};
 
-	FileAccess *_file_access = nullptr;
+	Ref<FileAccess> _file_access;
 	bool _header_modified = false;
 
 	Header _header;

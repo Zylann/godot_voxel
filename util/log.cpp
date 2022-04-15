@@ -24,6 +24,10 @@ void print_warning(const FwdConstStdString &warning, const char *func, const cha
 	print_warning(warning.s.c_str(), func, file, line);
 }
 
+void print_error(FwdConstStdString error, const char *func, const char *file, int line) {
+	print_error(error.s.c_str(), func, file, line);
+}
+
 void print_error(const char *error, const char *func, const char *file, int line) {
 	_err_print_error(func, file, line, error);
 }

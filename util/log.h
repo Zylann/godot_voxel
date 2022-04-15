@@ -24,6 +24,7 @@ void println(const FwdConstStdString &s);
 void print_warning(const char *warning, const char *func, const char *file, int line);
 void print_warning(const FwdConstStdString &warning, const char *func, const char *file, int line);
 
+void print_error(FwdConstStdString error, const char *func, const char *file, int line);
 void print_error(const char *error, const char *func, const char *file, int line);
 void print_error(const char *error, const char *msg, const char *func, const char *file, int line);
 void print_error(const char *error, const FwdConstStdString &msg, const char *func, const char *file, int line);

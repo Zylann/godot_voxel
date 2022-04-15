@@ -3,10 +3,10 @@
 
 #include "../util/span.h"
 
-#include <core/io/file_access_memory.h>
 #include <vector>
 
 class StreamPeer;
+class FileAccess;
 
 namespace zylann::voxel {
 
@@ -28,7 +28,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 
 SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer);
 bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
-bool decompress_and_deserialize(FileAccess *f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
+bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
 
 int serialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, bool compress);
 void deserialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress);

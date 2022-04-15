@@ -203,11 +203,11 @@ Error Data::_load_from_file(String fpath) {
 	ZN_PRINT_VERBOSE(format("Loading {}", fpath));
 
 	Error open_err;
-	FileAccessRef f_ref = FileAccess::open(fpath, FileAccess::READ, &open_err);
+	Ref<FileAccess> f_ref = FileAccess::open(fpath, FileAccess::READ, &open_err);
 	if (f_ref == nullptr) {
 		return open_err;
 	}
-	FileAccess &f = *f_ref;
+	FileAccess &f = **f_ref;
 
 	char magic[5] = { 0 };
 	ERR_FAIL_COND_V(f.get_buffer((uint8_t *)magic, 4) != 4, ERR_PARSE_ERROR);

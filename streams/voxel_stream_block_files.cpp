@@ -51,7 +51,7 @@ void VoxelStreamBlockFiles::load_voxel_block(VoxelStream::VoxelQueryData &q) {
 	Vector3i block_pos = get_block_position(q.origin_in_voxels) >> q.lod;
 	String file_path = get_block_file_path(block_pos, q.lod);
 
-	FileAccess *f = nullptr;
+	Ref<FileAccess> f;
 	VoxelFileLockerRead file_rlock(file_path);
 	{
 		Error err;
@@ -68,9 +68,8 @@ void VoxelStreamBlockFiles::load_voxel_block(VoxelStream::VoxelQueryData &q) {
 	{
 		{
 			uint8_t version;
-			const FileResult err = check_magic_and_version(f, FORMAT_VERSION, FORMAT_BLOCK_MAGIC, version);
+			const FileResult err = check_magic_and_version(**f, FORMAT_VERSION, FORMAT_BLOCK_MAGIC, version);
 			if (err != FILE_OK) {
-				memdelete(f);
 				ERR_PRINT(String("Invalid file header: ") + ::to_string(err));
 				return;
 			}
@@ -83,13 +82,10 @@ void VoxelStreamBlockFiles::load_voxel_block(VoxelStream::VoxelQueryData &q) {
 		}
 
 		uint32_t size_to_read = f->get_32();
-		if (!BlockSerializer::decompress_and_deserialize(f, size_to_read, q.voxel_buffer)) {
+		if (!BlockSerializer::decompress_and_deserialize(**f, size_to_read, q.voxel_buffer)) {
 			ERR_PRINT("Failed to decompress and deserialize");
 		}
 	}
-
-	f->close();
-	memdelete(f);
 
 	q.result = RESULT_BLOCK_FOUND;
 }
@@ -134,7 +130,7 @@ void VoxelStreamBlockFiles::save_voxel_block(VoxelStream::VoxelQueryData &q) {
 	}
 
 	{
-		FileAccess *f = nullptr;
+		Ref<FileAccess> f;
 		VoxelFileLockerWrite file_wlock(file_path);
 		{
 			Error err;
@@ -148,15 +144,11 @@ void VoxelStreamBlockFiles::save_voxel_block(VoxelStream::VoxelQueryData &q) {
 
 		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(q.voxel_buffer);
 		if (!res.success) {
-			memdelete(f);
 			ERR_PRINT("Failed to save block");
 			return;
 		}
 		f->store_32(res.data.size());
 		f->store_buffer(res.data.data(), res.data.size());
-
-		f->close();
-		memdelete(f);
 	}
 }
 
@@ -197,7 +189,7 @@ FileResult VoxelStreamBlockFiles::save_meta() {
 	{
 		Error err;
 		VoxelFileLockerWrite file_wlock(meta_path);
-		FileAccess *f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
+		Ref<FileAccess> f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
 		ERR_FAIL_COND_V(f == nullptr, FILE_CANT_OPEN);
 
 		f->store_buffer((uint8_t *)FORMAT_META_MAGIC, 4);
@@ -209,8 +201,6 @@ FileResult VoxelStreamBlockFiles::save_meta() {
 		for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
 			f->store_8(_meta.channel_depths[i]);
 		}
-
-		memdelete(f);
 	}
 
 	_meta_loaded = true;
@@ -237,15 +227,15 @@ FileResult VoxelStreamBlockFiles::load_meta() {
 	{
 		Error open_result;
 		VoxelFileLockerRead file_rlock(meta_path);
-		FileAccessRef f = FileAccess::open(meta_path, FileAccess::READ, &open_result);
+		Ref<FileAccess> f = FileAccess::open(meta_path, FileAccess::READ, &open_result);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
 		if (!_meta_saved && (open_result == ERR_FILE_NOT_FOUND || open_result == ERR_FILE_CANT_OPEN)) {
 			// This is a new terrain, save the meta we have and consider it current
 			return FILE_DOES_NOT_EXIST;
 		}
-		ERR_FAIL_COND_V(!f, FILE_CANT_OPEN);
+		ERR_FAIL_COND_V(f.is_null(), FILE_CANT_OPEN);
 
-		FileResult check_result = check_magic_and_version(f.f, FORMAT_VERSION, FORMAT_META_MAGIC, meta.version);
+		FileResult check_result = check_magic_and_version(**f, FORMAT_VERSION, FORMAT_META_MAGIC, meta.version);
 		if (check_result != FILE_OK) {
 			return check_result;
 		}
