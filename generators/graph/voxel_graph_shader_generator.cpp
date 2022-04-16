@@ -140,7 +140,6 @@ VoxelGraphRuntime::CompilationResult generate_shader(const ProgramGraph &p_graph
 		}
 
 		for (unsigned int port_index = 0; port_index < node.outputs.size(); ++port_index) {
-			const ProgramGraph::Port &output_port = node.outputs[port_index];
 			std::string var_name;
 			codegen.generate_var_name(var_name);
 			auto p = port_to_var.insert({ { node_id, port_index }, var_name });
