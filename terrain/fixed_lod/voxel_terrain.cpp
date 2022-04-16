@@ -1652,7 +1652,7 @@ bool VoxelTerrain::_b_try_set_block_data(Vector3i position, Ref<gd::VoxelBuffer>
 	if (voxel_data->has_meta(key)) {
 		const Vector3i meta_pos = voxel_data->get_meta(key);
 		ERR_FAIL_COND_V_MSG(meta_pos != position, false,
-				String(TTR("Setting the same {0} at different positions is not supported"))
+				String("Setting the same {0} at different positions is not supported")
 						.format(varray(gd::VoxelBuffer::get_class_static())));
 	} else {
 		voxel_data->set_meta(key, position);
