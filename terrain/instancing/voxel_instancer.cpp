@@ -52,7 +52,6 @@ void VoxelInstancer::clear_blocks() {
 		}
 	}
 	_blocks.clear();
-	const int *key = nullptr;
 	for (auto it = _layers.begin(); it != _layers.end(); ++it) {
 		Layer &layer = it->second;
 		layer.blocks.clear();
@@ -373,7 +372,6 @@ void VoxelInstancer::set_up_mode(UpMode mode) {
 		return;
 	}
 	_up_mode = mode;
-	const int *key = nullptr;
 	for (auto it = _layers.begin(); it != _layers.end(); ++it) {
 		regenerate_layer(it->first, false);
 	}
@@ -791,7 +789,6 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 void VoxelInstancer::save_all_modified_blocks() {
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
-		const Vector3i *key = nullptr;
 		for (auto it = lod.modified_blocks.begin(); it != lod.modified_blocks.end(); ++it) {
 			save_block(*it, lod_index);
 		}
