@@ -23,7 +23,7 @@ void CodeGenHelper::add(const char *s, unsigned int len) {
 	for (unsigned int i = 0; i < len; ++i) {
 		const char c = s[i];
 		if (_newline) {
-			for (int i = 0; i < _indent_level; ++i) {
+			for (unsigned int j = 0; j < _indent_level; ++j) {
 				_main_ss << "    ";
 			}
 			_newline = false;
