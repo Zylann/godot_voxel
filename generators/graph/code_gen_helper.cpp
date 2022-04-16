@@ -3,6 +3,7 @@
 #include "../../util/fixed_array.h"
 #include "../../util/string_funcs.h"
 
+#include <cstring>
 #include <sstream>
 
 namespace zylann {
