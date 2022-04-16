@@ -7,10 +7,8 @@
 #include "../util/serialization.h"
 #include "compressed_data.h"
 
-#include <core/io/marshalls.h>
+#include <core/io/marshalls.h> // For `encode_variant`
 #include <core/io/stream_peer.h>
-//#include <core/map.h>
-#include <core/io/file_access_memory.h>
 #include <limits>
 
 namespace zylann::voxel {
@@ -77,8 +75,8 @@ inline T read(uint8_t *&src) {
 }
 
 // The target buffer MUST have correct size. Recoverable errors must have been checked before.
-void serialize_metadata(uint8_t *p_dst, const VoxelBufferInternal &buffer, const size_t metadata_size) {
-	uint8_t *dst = p_dst;
+void serialize_metadata(Span<uint8_t> p_dst, const VoxelBufferInternal &buffer) {
+	uint8_t *dst = p_dst.data();
 
 	{
 		int written_length;
@@ -87,7 +85,8 @@ void serialize_metadata(uint8_t *p_dst, const VoxelBufferInternal &buffer, const
 
 		// I chose to cast this way to fix a GCC warning.
 		// If dst - p_dst is negative (which is wrong), it will wrap and cause a justified assertion failure
-		CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) > metadata_size, "Wrote block metadata out of expected bounds");
+		CRASH_COND_MSG(
+				static_cast<size_t>(dst - p_dst.data()) > p_dst.size(), "Wrote block metadata out of expected bounds");
 	}
 
 	const FlatMap<Vector3i, Variant> &voxel_metadata = buffer.get_voxel_metadata();
@@ -105,12 +104,13 @@ void serialize_metadata(uint8_t *p_dst, const VoxelBufferInternal &buffer, const
 		CRASH_COND_MSG(err != OK, "Error when trying to encode voxel metadata.");
 		dst += written_length;
 
-		CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) > metadata_size, "Wrote voxel metadata out of expected bounds");
+		CRASH_COND_MSG(
+				static_cast<size_t>(dst - p_dst.data()) > p_dst.size(), "Wrote voxel metadata out of expected bounds");
 	}
 
-	CRASH_COND_MSG(static_cast<size_t>(dst - p_dst) != metadata_size,
+	CRASH_COND_MSG(static_cast<size_t>(dst - p_dst.data()) != p_dst.size(),
 			String("Written metadata doesn't match expected count (expected {0}, got {1})")
-					.format(varray(ZN_SIZE_T_TO_VARIANT(metadata_size), (int)(dst - p_dst))));
+					.format(varray(ZN_SIZE_T_TO_VARIANT(p_dst.size()), (int)(dst - p_dst.data()))));
 }
 
 template <typename T>
@@ -216,32 +216,31 @@ SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
 
 	std::vector<uint8_t> &dst_data = tls_data;
 	std::vector<uint8_t> &metadata_tmp = tls_metadata_tmp;
+	dst_data.clear();
+	metadata_tmp.clear();
 
 	// Cannot serialize an empty block
 	ERR_FAIL_COND_V(Vector3iUtil::get_volume(voxel_buffer.get_size()) == 0, SerializeResult(dst_data, false));
 
-	size_t metadata_size = 0;
-	const size_t data_size = get_size_in_bytes(voxel_buffer, metadata_size);
-	dst_data.resize(data_size);
+	size_t expected_metadata_size = 0;
+	const size_t expected_data_size = get_size_in_bytes(voxel_buffer, expected_metadata_size);
+	dst_data.reserve(expected_data_size);
 
-	// TODO Move away from `FileAccessMemory`, use MemoryWriter directly
-	Ref<FileAccessMemory> f;
-	f.instantiate();
-	ERR_FAIL_COND_V(f->open_custom(dst_data.data(), dst_data.size()) != OK, SerializeResult(dst_data, false));
+	MemoryWriter f(dst_data, ENDIANESS_LITTLE_ENDIAN);
 
-	f->store_8(BLOCK_FORMAT_VERSION);
+	f.store_8(BLOCK_FORMAT_VERSION);
 
 	ERR_FAIL_COND_V(
 			voxel_buffer.get_size().x > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false));
-	f->store_16(voxel_buffer.get_size().x);
+	f.store_16(voxel_buffer.get_size().x);
 
 	ERR_FAIL_COND_V(
 			voxel_buffer.get_size().y > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false));
-	f->store_16(voxel_buffer.get_size().y);
+	f.store_16(voxel_buffer.get_size().y);
 
 	ERR_FAIL_COND_V(
 			voxel_buffer.get_size().z > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false));
-	f->store_16(voxel_buffer.get_size().z);
+	f.store_16(voxel_buffer.get_size().z);
 
 	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
 		const VoxelBufferInternal::Compression compression = voxel_buffer.get_channel_compression(channel_index);
@@ -249,29 +248,29 @@ SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
 		// Low nibble: compression (up to 16 values allowed)
 		// High nibble: depth (up to 16 values allowed)
 		const uint8_t fmt = static_cast<uint8_t>(compression) | (static_cast<uint8_t>(depth) << 4);
-		f->store_8(fmt);
+		f.store_8(fmt);
 
 		switch (compression) {
 			case VoxelBufferInternal::COMPRESSION_NONE: {
 				Span<uint8_t> data;
 				ERR_FAIL_COND_V(!voxel_buffer.get_channel_raw(channel_index, data), SerializeResult(dst_data, false));
-				f->store_buffer(data.data(), data.size());
+				f.store_buffer(data);
 			} break;
 
 			case VoxelBufferInternal::COMPRESSION_UNIFORM: {
 				const uint64_t v = voxel_buffer.get_voxel(Vector3i(), channel_index);
 				switch (depth) {
 					case VoxelBufferInternal::DEPTH_8_BIT:
-						f->store_8(v);
+						f.store_8(v);
 						break;
 					case VoxelBufferInternal::DEPTH_16_BIT:
-						f->store_16(v);
+						f.store_16(v);
 						break;
 					case VoxelBufferInternal::DEPTH_32_BIT:
-						f->store_32(v);
+						f.store_32(v);
 						break;
 					case VoxelBufferInternal::DEPTH_64_BIT:
-						f->store_64(v);
+						f.store_64(v);
 						break;
 					default:
 						CRASH_NOW();
@@ -285,18 +284,18 @@ SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
 
 	// Metadata has more reasons to fail. If a recoverable error occurs prior to serializing,
 	// we just discard all metadata as if it was empty.
-	if (metadata_size > 0) {
-		f->store_32(metadata_size);
-		metadata_tmp.resize(metadata_size);
+	if (expected_metadata_size > 0) {
+		f.store_32(expected_metadata_size);
+		metadata_tmp.resize(expected_metadata_size);
 		// This function brings me joy. </irony>
-		serialize_metadata(metadata_tmp.data(), voxel_buffer, metadata_size);
-		f->store_buffer(metadata_tmp.data(), metadata_tmp.size());
+		serialize_metadata(to_span(metadata_tmp), voxel_buffer);
+		f.store_buffer(to_span(metadata_tmp));
 	}
 
-	f->store_32(BLOCK_TRAILING_MAGIC);
+	f.store_32(BLOCK_TRAILING_MAGIC);
 
 	// Check out of bounds writing
-	CRASH_COND(f->get_position() > dst_data.size());
+	CRASH_COND(dst_data.size() != expected_data_size);
 
 	return SerializeResult(dst_data, true);
 }
@@ -397,12 +396,9 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 	const uint32_t magic = *reinterpret_cast<const uint32_t *>(&p_data[p_data.size() - sizeof(uint32_t)]);
 	ERR_FAIL_COND_V(magic != BLOCK_TRAILING_MAGIC, false);
 
-	// TODO Move away from `FileAccessMemory`, use MemoryReader directly
-	Ref<FileAccessMemory> f;
-	f.instantiate();
-	ERR_FAIL_COND_V(f->open_custom(p_data.data(), p_data.size()) != OK, false);
+	MemoryReader f(p_data, ENDIANESS_LITTLE_ENDIAN);
 
-	const uint8_t format_version = f->get_8();
+	const uint8_t format_version = f.get_8();
 
 	if (format_version == 2) {
 		std::vector<uint8_t> migrated_data;
@@ -413,20 +409,20 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 		ERR_FAIL_COND_V(format_version != BLOCK_FORMAT_VERSION, false);
 	}
 
-	const unsigned int size_x = f->get_16();
-	const unsigned int size_y = f->get_16();
-	const unsigned int size_z = f->get_16();
+	const unsigned int size_x = f.get_16();
+	const unsigned int size_y = f.get_16();
+	const unsigned int size_z = f.get_16();
 
 	out_voxel_buffer.create(Vector3i(size_x, size_y, size_z));
 
 	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
-		const uint8_t fmt = f->get_8();
+		const uint8_t fmt = f.get_8();
 		const uint8_t compression_value = fmt & 0xf;
 		const uint8_t depth_value = (fmt >> 4) & 0xf;
 		ERR_FAIL_COND_V_MSG(compression_value >= VoxelBufferInternal::COMPRESSION_COUNT, false,
-				"At offset 0x" + String::num_int64(f->get_position() - 1, 16));
+				"At offset 0x" + String::num_int64(f.get_position() - 1, 16));
 		ERR_FAIL_COND_V_MSG(depth_value >= VoxelBufferInternal::DEPTH_COUNT, false,
-				"At offset 0x" + String::num_int64(f->get_position() - 1, 16));
+				"At offset 0x" + String::num_int64(f.get_position() - 1, 16));
 		VoxelBufferInternal::Compression compression = (VoxelBufferInternal::Compression)compression_value;
 		VoxelBufferInternal::Depth depth = (VoxelBufferInternal::Depth)depth_value;
 
@@ -439,7 +435,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 				Span<uint8_t> buffer;
 				CRASH_COND(!out_voxel_buffer.get_channel_raw(channel_index, buffer));
 
-				const uint32_t read_len = f->get_buffer(buffer.data(), buffer.size());
+				const size_t read_len = f.get_buffer(buffer);
 				if (read_len != buffer.size()) {
 					ERR_PRINT("Unexpected end of file");
 					return false;
@@ -451,16 +447,16 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 				uint64_t v;
 				switch (out_voxel_buffer.get_channel_depth(channel_index)) {
 					case VoxelBufferInternal::DEPTH_8_BIT:
-						v = f->get_8();
+						v = f.get_8();
 						break;
 					case VoxelBufferInternal::DEPTH_16_BIT:
-						v = f->get_16();
+						v = f.get_16();
 						break;
 					case VoxelBufferInternal::DEPTH_32_BIT:
-						v = f->get_32();
+						v = f.get_32();
 						break;
 					case VoxelBufferInternal::DEPTH_64_BIT:
-						v = f->get_64();
+						v = f.get_64();
 						break;
 					default:
 						CRASH_NOW();
@@ -474,17 +470,17 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 		}
 	}
 
-	if (p_data.size() - f->get_position() > BLOCK_TRAILING_MAGIC_SIZE) {
-		const size_t metadata_size = f->get_32();
-		ERR_FAIL_COND_V(f->get_position() + metadata_size > p_data.size(), false);
+	if (p_data.size() - f.get_position() > BLOCK_TRAILING_MAGIC_SIZE) {
+		const size_t metadata_size = f.get_32();
+		ERR_FAIL_COND_V(f.get_position() + metadata_size > p_data.size(), false);
 		metadata_tmp.resize(metadata_size);
-		f->get_buffer(metadata_tmp.data(), metadata_tmp.size());
+		f.get_buffer(to_span(metadata_tmp));
 		deserialize_metadata(metadata_tmp.data(), out_voxel_buffer, metadata_tmp.size());
 	}
 
 	// Failure at this indicates file corruption
 	ERR_FAIL_COND_V_MSG(
-			f->get_32() != BLOCK_TRAILING_MAGIC, false, "At offset 0x" + String::num_int64(f->get_position() - 4, 16));
+			f.get_32() != BLOCK_TRAILING_MAGIC, false, "At offset 0x" + String::num_int64(f.get_position() - 4, 16));
 	return true;
 }
 

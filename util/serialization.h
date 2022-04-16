@@ -2,6 +2,7 @@
 #define VOXEL_UTIL_SERIALIZATION_H
 
 #include "span.h"
+#include <cstring>
 
 namespace zylann {
 
@@ -59,6 +60,28 @@ struct MemoryWriterTemplate {
 		}
 	}
 
+	inline void store_64(uint64_t v) {
+		if (endianess == ENDIANESS_BIG_ENDIAN) {
+			data.push_back(v >> 56);
+			data.push_back(v >> 48);
+			data.push_back(v >> 40);
+			data.push_back(v >> 32);
+			data.push_back(v >> 24);
+			data.push_back(v >> 16);
+			data.push_back(v >> 8);
+			data.push_back(v & 0xff);
+		} else {
+			data.push_back(v & 0xff);
+			data.push_back(v >> 8);
+			data.push_back(v >> 16);
+			data.push_back(v >> 24);
+			data.push_back(v >> 32);
+			data.push_back(v >> 40);
+			data.push_back(v >> 48);
+			data.push_back(v >> 56);
+		}
+	}
+
 	inline void store_float(float v) {
 		union M {
 			uint32_t i;
@@ -66,6 +89,12 @@ struct MemoryWriterTemplate {
 		} m;
 		m.f = v;
 		store_32(m.i);
+	}
+
+	inline void store_buffer(Span<const uint8_t> p_data) {
+		const size_t begin = data.size();
+		data.resize(data.size() + p_data.size());
+		memcpy(&data[begin], p_data.data(), p_data.size());
 	}
 };
 
@@ -131,6 +160,34 @@ struct MemoryReader {
 		return v;
 	}
 
+	inline uint64_t get_64() {
+		//ERR_FAIL_COND_V(pos + 3 >= data.size(), 0);
+		uint64_t v;
+		if (endianess == ENDIANESS_BIG_ENDIAN) {
+			v = //
+					(static_cast<uint64_t>(data[pos]) << 56) | //
+					(static_cast<uint64_t>(data[pos + 1]) << 48) | //
+					(static_cast<uint64_t>(data[pos + 2]) << 40) | //
+					(static_cast<uint64_t>(data[pos + 3]) << 32) | //
+					(static_cast<uint64_t>(data[pos + 4]) << 24) | //
+					(static_cast<uint64_t>(data[pos + 5]) << 16) | //
+					(static_cast<uint64_t>(data[pos + 6]) << 8) | //
+					data[pos + 7];
+		} else {
+			v = //
+					static_cast<uint64_t>(data[pos]) | //
+					(static_cast<uint64_t>(data[pos + 1]) << 8) | //
+					(static_cast<uint64_t>(data[pos + 2]) << 16) | //
+					(static_cast<uint64_t>(data[pos + 3]) << 24) | //
+					(static_cast<uint64_t>(data[pos + 4]) << 32) | //
+					(static_cast<uint64_t>(data[pos + 5]) << 40) | //
+					(static_cast<uint64_t>(data[pos + 6]) << 48) | //
+					(static_cast<uint64_t>(data[pos + 7]) << 56);
+		}
+		pos += sizeof(uint64_t);
+		return v;
+	}
+
 	inline float get_float() {
 		union M {
 			uint32_t i;
@@ -138,6 +195,25 @@ struct MemoryReader {
 		} m;
 		m.i = get_32();
 		return m.f;
+	}
+
+	inline size_t get_buffer(Span<uint8_t> p_dst) {
+#ifdef DEBUG_ENABLED
+		ZN_ASSERT(pos <= data.size());
+#endif
+		size_t end = pos + p_dst.size();
+		if (end > data.size()) {
+			end = data.size();
+		}
+		const size_t len = end - pos;
+		memcpy(p_dst.data(), &data[pos], len);
+		pos += len;
+		return len;
+	}
+
+	// For API compatibility
+	inline size_t get_position() const {
+		return pos;
 	}
 };
 

@@ -29,6 +29,13 @@ public:
 		_size = p_end - p_begin;
 	}
 
+	// Initially added to support `Span<const T> = Span<T>`, or `Span<Base> = Span<Derived>`
+	template <typename U>
+	inline Span(Span<U> p_other) {
+		_ptr = p_other.data();
+		_size = p_other.size();
+	}
+
 	// TODO Remove this one, prefer to_span() specializations
 	inline Span(std::vector<T> &vec, size_t p_begin, size_t p_end) {
 		ZN_ASSERT(p_end >= p_begin);
