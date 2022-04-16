@@ -1,6 +1,7 @@
 #include "expression_parser.h"
 
 #include <algorithm>
+#include <cmath>
 #include <sstream>
 #include <vector>
 
