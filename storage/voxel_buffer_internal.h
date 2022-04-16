@@ -7,11 +7,9 @@
 #include "../util/math/box3i.h"
 #include "funcs.h"
 
-#include <core/object/ref_counted.h>
-
+#include <core/os/rw_lock.h>
+#include <core/variant/variant.h>
 #include <limits>
-
-class Image;
 
 namespace zylann::voxel {
 
@@ -464,10 +462,6 @@ public:
 	inline RWLock &get_lock() {
 		return _rw_lock;
 	}
-
-	// Debugging
-
-	Ref<Image> debug_print_sdf_to_image_top_down();
 
 private:
 	bool create_channel_noinit(int i, Vector3i size);

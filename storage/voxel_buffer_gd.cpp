@@ -168,7 +168,29 @@ void VoxelBuffer::clear_voxel_metadata() {
 }
 
 Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
-	return _buffer->debug_print_sdf_to_image_top_down();
+	return debug_print_sdf_to_image_top_down(*_buffer);
+}
+
+Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down(const VoxelBufferInternal &vb) {
+	Ref<Image> im;
+	im.instantiate();
+	const Vector3i size = vb.get_size();
+	im->create(size.x, size.z, false, Image::FORMAT_RGB8);
+	Vector3i pos;
+	for (pos.z = 0; pos.z < size.z; ++pos.z) {
+		for (pos.x = 0; pos.x < size.x; ++pos.x) {
+			for (pos.y = size.y - 1; pos.y >= 0; --pos.y) {
+				float v = vb.get_voxel_f(pos.x, pos.y, pos.z, VoxelBufferInternal::CHANNEL_SDF);
+				if (v < 0.0) {
+					break;
+				}
+			}
+			float h = pos.y;
+			float c = h / size.y;
+			im->set_pixel(pos.x, pos.z, Color(c, c, c));
+		}
+	}
+	return im;
 }
 
 void VoxelBuffer::_b_deprecated_optimize() {

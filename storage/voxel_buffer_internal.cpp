@@ -9,7 +9,6 @@
 #include "../util/string_funcs.h"
 #include "voxel_buffer_internal.h"
 
-#include <core/io/image.h>
 #include <core/io/marshalls.h>
 #include <core/math/math_funcs.h>
 
@@ -885,27 +884,6 @@ void VoxelBufferInternal::copy_voxel_metadata(const VoxelBufferInternal &src_buf
 	}
 
 	_block_metadata.user_data = src_buffer._block_metadata.user_data.duplicate();
-}
-
-Ref<Image> VoxelBufferInternal::debug_print_sdf_to_image_top_down() {
-	Ref<Image> im;
-	im.instantiate();
-	im->create(_size.x, _size.z, false, Image::FORMAT_RGB8);
-	Vector3i pos;
-	for (pos.z = 0; pos.z < _size.z; ++pos.z) {
-		for (pos.x = 0; pos.x < _size.x; ++pos.x) {
-			for (pos.y = _size.y - 1; pos.y >= 0; --pos.y) {
-				float v = get_voxel_f(pos.x, pos.y, pos.z, CHANNEL_SDF);
-				if (v < 0.0) {
-					break;
-				}
-			}
-			float h = pos.y;
-			float c = h / _size.y;
-			im->set_pixel(pos.x, pos.z, Color(c, c, c));
-		}
-	}
-	return im;
 }
 
 } // namespace zylann::voxel

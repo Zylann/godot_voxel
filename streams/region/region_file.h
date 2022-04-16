@@ -5,9 +5,9 @@
 #include "../../util/fixed_array.h"
 #include "../../util/math/color8.h"
 #include "../../util/math/vector3i.h"
-#include <vector>
 
-class FileAccess;
+#include <core/io/file_access.h>
+#include <vector>
 
 namespace zylann::voxel {
 

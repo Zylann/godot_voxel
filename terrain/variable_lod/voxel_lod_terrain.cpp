@@ -4,6 +4,7 @@
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../server/voxel_server_gd.h"
 #include "../../server/voxel_server_updater.h"
+#include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
@@ -2128,7 +2129,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 			buffer.set_voxel_f(v, rpos.x, rpos.y, rpos.z, VoxelBufferInternal::CHANNEL_SDF);
 		});
 
-		Ref<Image> image = buffer.debug_print_sdf_to_image_top_down();
+		Ref<Image> image = gd::VoxelBuffer::debug_print_sdf_to_image_top_down(buffer);
 		image_array.append(image);
 	}
 

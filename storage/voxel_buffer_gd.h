@@ -2,6 +2,7 @@
 #define VOXEL_BUFFER_GD_H
 
 #include "voxel_buffer_internal.h"
+#include <core/object/ref_counted.h>
 #include <memory>
 
 class Image;
@@ -170,6 +171,7 @@ public:
 	// Debugging
 
 	Ref<Image> debug_print_sdf_to_image_top_down();
+	static Ref<Image> debug_print_sdf_to_image_top_down(const VoxelBufferInternal &vb);
 
 private:
 	void _b_deprecated_optimize();
