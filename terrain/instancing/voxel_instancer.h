@@ -104,7 +104,7 @@ private:
 
 	void add_layer(int layer_id, int lod_index);
 	void remove_layer(int layer_id);
-	int create_block(Layer &layer, uint16_t layer_id, Vector3i grid_position);
+	unsigned int create_block(Layer &layer, uint16_t layer_id, Vector3i grid_position);
 	void remove_block(unsigned int block_index);
 	void set_world(World3D *world);
 	void clear_blocks();

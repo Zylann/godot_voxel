@@ -824,13 +824,13 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(const VoxelI
 	return instance;
 }
 
-int VoxelInstancer::create_block(Layer &layer, uint16_t layer_id, Vector3i grid_position) {
+unsigned int VoxelInstancer::create_block(Layer &layer, uint16_t layer_id, Vector3i grid_position) {
 	UniquePtr<Block> block = make_unique_instance<Block>();
 	block->layer_id = layer_id;
 	block->current_mesh_lod = 0;
 	block->lod_index = layer.lod_index;
 	block->grid_position = grid_position;
-	int block_index = _blocks.size();
+	const unsigned int block_index = _blocks.size();
 	_blocks.push_back(std::move(block));
 #ifdef DEBUG_ENABLED
 	CRASH_COND(layer.blocks.find(grid_position) != layer.blocks.end());
@@ -849,7 +849,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 		block_index = create_block(layer, layer_id, grid_position);
 	}
 #ifdef DEBUG_ENABLED
-	CRASH_COND(block_index < 0 || block_index >= _blocks.size());
+	CRASH_COND(block_index < 0 || block_index >= int(_blocks.size()));
+	CRASH_COND(_blocks[block_index] == nullptr);
 #endif
 	Block &block = *_blocks[block_index];
 
