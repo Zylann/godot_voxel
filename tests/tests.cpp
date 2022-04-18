@@ -26,6 +26,7 @@
 #endif
 
 #include <core/io/dir_access.h>
+#include <core/io/stream_peer.h>
 #include <core/string/print_string.h>
 #include <core/templates/hash_map.h>
 #include <modules/noise/fastnoise_lite.h>

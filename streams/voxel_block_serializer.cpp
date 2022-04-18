@@ -13,7 +13,7 @@
 #include <core/io/marshalls.h> // For `encode_variant`
 #endif
 
-#include <core/io/stream_peer.h>
+#include <core/io/file_access.h>
 #include <limits>
 
 namespace zylann::voxel {
@@ -28,6 +28,14 @@ const unsigned int BLOCK_METADATA_HEADER_SIZE = sizeof(uint32_t);
 thread_local std::vector<uint8_t> tls_data;
 thread_local std::vector<uint8_t> tls_compressed_data;
 thread_local std::vector<uint8_t> tls_metadata_tmp;
+
+std::vector<uint8_t> &get_tls_data() {
+	return tls_data;
+}
+
+std::vector<uint8_t> &get_tls_compressed_data() {
+	return tls_compressed_data;
+}
 
 size_t get_metadata_size_in_bytes(const VoxelMetadata &meta) {
 	size_t size = 1; // Type
@@ -687,40 +695,7 @@ bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelB
 	const unsigned int read_size = f.get_buffer(compressed_data.data(), size_to_read);
 	ERR_FAIL_COND_V(read_size != size_to_read, false);
 
-	return decompress_and_deserialize(to_span_const(compressed_data), out_voxel_buffer);
-}
-
-int serialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, bool compress) {
-	if (compress) {
-		SerializeResult res = serialize_and_compress(voxel_buffer);
-		ERR_FAIL_COND_V(!res.success, -1);
-		peer.put_data(res.data.data(), res.data.size());
-		return res.data.size();
-
-	} else {
-		SerializeResult res = serialize(voxel_buffer);
-		ERR_FAIL_COND_V(!res.success, -1);
-		peer.put_data(res.data.data(), res.data.size());
-		return res.data.size();
-	}
-}
-
-void deserialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress) {
-	if (decompress) {
-		std::vector<uint8_t> &compressed_data = tls_compressed_data;
-		compressed_data.resize(size);
-		const Error err = peer.get_data(compressed_data.data(), compressed_data.size());
-		ERR_FAIL_COND(err != OK);
-		bool success = decompress_and_deserialize(to_span_const(compressed_data), voxel_buffer);
-		ERR_FAIL_COND(!success);
-
-	} else {
-		std::vector<uint8_t> &data = tls_data;
-		data.resize(size);
-		const Error err = peer.get_data(data.data(), data.size());
-		ERR_FAIL_COND(err != OK);
-		deserialize(to_span_const(data), voxel_buffer);
-	}
+	return decompress_and_deserialize(to_span(compressed_data), out_voxel_buffer);
 }
 
 } // namespace BlockSerializer

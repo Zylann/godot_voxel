@@ -31,8 +31,9 @@ SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer);
 bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
 bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
 
-int serialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, bool compress);
-void deserialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress);
+// Temporary thread-local buffers for internal use
+std::vector<uint8_t> &get_tls_data();
+std::vector<uint8_t> &get_tls_compressed_data();
 
 } // namespace BlockSerializer
 } // namespace zylann::voxel
