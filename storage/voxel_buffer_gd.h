@@ -149,17 +149,12 @@ public:
 
 	// Metadata
 
-	Variant get_block_metadata() const {
-		return _buffer->get_block_metadata();
-	}
+	Variant get_block_metadata() const;
 	void set_block_metadata(Variant meta);
 
-	Variant get_voxel_metadata(Vector3i pos) const {
-		return _buffer->get_voxel_metadata(pos);
-	}
-	void set_voxel_metadata(Vector3i pos, Variant meta) {
-		_buffer->set_voxel_metadata(pos, meta);
-	}
+	Variant get_voxel_metadata(Vector3i pos) const;
+	void set_voxel_metadata(Vector3i pos, Variant meta);
+
 	void for_each_voxel_metadata(const Callable &callback) const;
 	void for_each_voxel_metadata_in_area(const Callable &callback, Vector3i min_pos, Vector3i max_pos);
 	void copy_voxel_metadata_in_area(

@@ -1,18 +1,13 @@
 Voxel block format
 ====================
 
-!!! warn
-    This document is about an old version of the format. You may check the most recent version.
-
-Version: 3
+Version: 4
 
 This page describes the binary format used by default in this module to serialize voxel blocks to files, network or databases.
 
-### Changes from version 2
+### Changes from version 3
 
-- The second channel (at index 1) was used for SDF data but the format didn't dictate anything particular about it. It is now expected to be for SDF. It used to have an arbitrary format for fixed-point encoding. It is now using inorm16.
-- Compression format `1` is deprecated.
-- Moved compression wrapper to its own specification.
+- Metadata uses a new format which no longer depends on Godot Engine.
 
 
 Specification
@@ -30,7 +25,7 @@ See [Compressed container format](#compressed-container) for specification.
 
 ### Block format
 
-It starts with version number `3` in one byte, then some metadata and the actual voxels.
+It starts with version number `4` in one byte, then some info and the actual voxels. Optionally, it is followed by custom metadata.
 
 !!! note
     The size and formats are present to make the format standalone. When used within a chunked container like region files, it is recommended to check if they match the format expected for the volume as a whole.
@@ -84,25 +79,35 @@ After all channels information, block data can contain metadata information. Blo
 ```
 Metadata
 - metadata_size: uint32_t
-- block_metadata
-- voxel_metadata[*]
-```
+- block_metadata: MetadataItem
+- voxel_metadata: VoxelMetadataItem[*]
 
-It starts with one 32-bit unsigned integer representing the total size of all metadata there is to read. That data comes in two groups: one for the whole block, and one per voxel.
-
-Block metadata is one Godot `Variant`, encoded using the `encode_variant` method of the engine.
-
-Voxel metadata immediately follows. It is a sequence of the following data structures, which must be read until a total of `metadata_size` bytes have been read from the beginning:
-
-```
-VoxelMetadata
+VoxelMetadataItem
 - x: uint16_t
 - y: uint16_t
 - z: uint16_t
+- metadata: MetadataItem
+```
+
+It starts with one 32-bit unsigned integer representing the total size of all metadata there is to read. That data comes in two groups: one for the whole block, and a list that associates one per voxel (not all voxels have metadata).
+
+Each metadata item uses the following format:
+
+```
+MetadataItem
+- type: uint8_t
 - data
 ```
 
-`x`, `y` and `z` indicate which voxel the data corresponds. `data` is also a `Variant` encoded the same way as described earlier. This results in an associative collection between voxel positions relative to the block and their corresponding metadata.
+It starts with a `type` header, followed by data depending on that type.
+
+- If `type` is `0`, the item is empty and there is no `data` to read.
+- If `type` is `1`, it is followed by 8 bytes (`uint64_t`).
+- If `type` is `32`, it is followed by a Godot Engine `Variant`, encoded using the `encode_variant` function. This is only available when using Godot Engine.
+- If `type` is greater than `32`, the following data is application-defined. The application usually knows which data corresponds to that type and defines how to serialize and deserialize it.
+
+The meaning of metadata is application-defined. Two games using different metadata are not expected to be compatible.
+
 
 ### Epilogue
 

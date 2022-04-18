@@ -5,6 +5,7 @@
 #include "../meshers/blocky/voxel_blocky_library.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data_map.h"
+#include "../storage/voxel_metadata_variant.h"
 #include "../streams/instance_data.h"
 #include "../streams/region/region_file.h"
 #include "../streams/region/voxel_stream_region_files.h"
@@ -1485,10 +1486,11 @@ void test_flat_map() {
 			ZYLANN_TEST_ASSERT_V(sorted_pairs.size() == map.size(), false);
 			for (size_t i = 0; i < sorted_pairs.size(); ++i) {
 				const Pair expected_pair = sorted_pairs[i];
-				Value value;
 				ZYLANN_TEST_ASSERT_V(map.has(expected_pair.key), false);
-				ZYLANN_TEST_ASSERT_V(map.find(expected_pair.key, value), false);
-				ZYLANN_TEST_ASSERT_V(value == expected_pair.value, false);
+				ZYLANN_TEST_ASSERT_V(map.find(expected_pair.key) != nullptr, false);
+				const Value *value = map.find(expected_pair.key);
+				ZYLANN_TEST_ASSERT_V(value != nullptr, false);
+				ZYLANN_TEST_ASSERT_V(*value == expected_pair.value, false);
 			}
 			return true;
 		}
@@ -1829,6 +1831,205 @@ void test_expression_parser() {
 	}
 }
 
+class CustomMetadataTest : public ICustomVoxelMetadata {
+public:
+	static const uint8_t ID = VoxelMetadata::TYPE_CUSTOM_BEGIN + 10;
+
+	uint8_t a;
+	uint8_t b;
+	uint8_t c;
+
+	size_t get_serialized_size() const override {
+		// Note, `sizeof(CustomMetadataTest)` gives 16 here. Probably because of vtable
+		return 3;
+	}
+
+	size_t serialize(Span<uint8_t> dst) const override {
+		dst[0] = a;
+		dst[1] = b;
+		dst[2] = c;
+		return get_serialized_size();
+	}
+
+	bool deserialize(Span<const uint8_t> src, uint64_t &out_read_size) override {
+		a = src[0];
+		b = src[1];
+		c = src[2];
+		out_read_size = get_serialized_size();
+		return true;
+	}
+
+	virtual ICustomVoxelMetadata *duplicate() {
+		CustomMetadataTest *d = ZN_NEW(CustomMetadataTest);
+		*d = *this;
+		return d;
+	}
+
+	bool operator==(const CustomMetadataTest &other) const {
+		return a == other.a && b == other.b && c == other.c;
+	}
+};
+
+void test_voxel_buffer_metadata() {
+	// Basic get and set
+	{
+		VoxelBufferInternal vb;
+		vb.create(10, 10, 10);
+
+		VoxelMetadata *meta = vb.get_or_create_voxel_metadata(Vector3i(1, 2, 3));
+		ZYLANN_TEST_ASSERT(meta != nullptr);
+		meta->set_u64(1234567890);
+
+		const VoxelMetadata *meta2 = vb.get_voxel_metadata(Vector3i(1, 2, 3));
+		ZYLANN_TEST_ASSERT(meta2 != nullptr);
+		ZYLANN_TEST_ASSERT(meta2->get_type() == meta->get_type());
+		ZYLANN_TEST_ASSERT(meta2->get_u64() == meta->get_u64());
+	}
+	// Serialization
+	{
+		VoxelBufferInternal vb;
+		vb.create(10, 10, 10);
+
+		{
+			VoxelMetadata *meta0 = vb.get_or_create_voxel_metadata(Vector3i(1, 2, 3));
+			ZYLANN_TEST_ASSERT(meta0 != nullptr);
+			meta0->set_u64(1234567890);
+		}
+
+		{
+			VoxelMetadata *meta1 = vb.get_or_create_voxel_metadata(Vector3i(4, 5, 6));
+			ZYLANN_TEST_ASSERT(meta1 != nullptr);
+			meta1->clear();
+		}
+
+		struct RemoveTypeOnExit {
+			~RemoveTypeOnExit() {
+				VoxelMetadataFactory::get_singleton().remove_constructor(CustomMetadataTest::ID);
+			}
+		};
+		RemoveTypeOnExit rmtype;
+		VoxelMetadataFactory::get_singleton().add_constructor_by_type<CustomMetadataTest>(CustomMetadataTest::ID);
+		{
+			VoxelMetadata *meta2 = vb.get_or_create_voxel_metadata(Vector3i(7, 8, 9));
+			ZYLANN_TEST_ASSERT(meta2 != nullptr);
+			CustomMetadataTest *custom = ZN_NEW(CustomMetadataTest);
+			custom->a = 10;
+			custom->b = 20;
+			custom->c = 30;
+			meta2->set_custom(CustomMetadataTest::ID, custom);
+		}
+
+		BlockSerializer::SerializeResult sresult = BlockSerializer::serialize(vb);
+		ZYLANN_TEST_ASSERT(sresult.success);
+		std::vector<uint8_t> bytes = sresult.data;
+
+		VoxelBufferInternal rvb;
+		ZYLANN_TEST_ASSERT(BlockSerializer::deserialize(to_span(bytes), rvb));
+
+		const FlatMapMoveOnly<Vector3i, VoxelMetadata> &vb_meta_map = vb.get_voxel_metadata();
+		const FlatMapMoveOnly<Vector3i, VoxelMetadata> &rvb_meta_map = rvb.get_voxel_metadata();
+
+		ZYLANN_TEST_ASSERT(vb_meta_map.size() == rvb_meta_map.size());
+
+		for (auto it = vb_meta_map.begin(); it != vb_meta_map.end(); ++it) {
+			const VoxelMetadata &meta = it->value;
+			const VoxelMetadata *rmeta = rvb_meta_map.find(it->key);
+
+			ZYLANN_TEST_ASSERT(rmeta != nullptr);
+			ZYLANN_TEST_ASSERT(rmeta->get_type() == meta.get_type());
+
+			switch (meta.get_type()) {
+				case VoxelMetadata::TYPE_EMPTY:
+					break;
+				case VoxelMetadata::TYPE_U64:
+					ZYLANN_TEST_ASSERT(meta.get_u64() == rmeta->get_u64());
+					break;
+				case CustomMetadataTest::ID: {
+					const CustomMetadataTest &custom = static_cast<const CustomMetadataTest &>(meta.get_custom());
+					const CustomMetadataTest &rcustom = static_cast<const CustomMetadataTest &>(rmeta->get_custom());
+					ZYLANN_TEST_ASSERT(custom == rcustom);
+				} break;
+				default:
+					ZYLANN_TEST_ASSERT(false);
+					break;
+			}
+		}
+	}
+}
+
+void test_voxel_buffer_metadata_gd() {
+	// Basic get and set (Godot)
+	{
+		Ref<gd::VoxelBuffer> vb;
+		vb.instantiate();
+		vb->create(10, 10, 10);
+
+		Array meta;
+		meta.push_back("Hello");
+		meta.push_back("World");
+		meta.push_back(42);
+
+		vb->set_voxel_metadata(Vector3i(1, 2, 3), meta);
+
+		Array read_meta = vb->get_voxel_metadata(Vector3i(1, 2, 3));
+		ZYLANN_TEST_ASSERT(read_meta.size() == meta.size());
+		ZYLANN_TEST_ASSERT(read_meta == meta);
+	}
+	// Serialization (Godot)
+	{
+		Ref<gd::VoxelBuffer> vb;
+		vb.instantiate();
+		vb->create(10, 10, 10);
+
+		{
+			Array meta0;
+			meta0.push_back("Hello");
+			meta0.push_back("World");
+			meta0.push_back(42);
+			vb->set_voxel_metadata(Vector3i(1, 2, 3), meta0);
+		}
+		{
+			Dictionary meta1;
+			meta1["One"] = 1;
+			meta1["Two"] = 2.5;
+			meta1["Three"] = Basis();
+			vb->set_voxel_metadata(Vector3i(4, 5, 6), meta1);
+		}
+
+		BlockSerializer::SerializeResult sresult = BlockSerializer::serialize(vb->get_buffer());
+		ZYLANN_TEST_ASSERT(sresult.success);
+		std::vector<uint8_t> bytes = sresult.data;
+
+		Ref<gd::VoxelBuffer> vb2;
+		vb2.instantiate();
+
+		ZYLANN_TEST_ASSERT(BlockSerializer::deserialize(to_span(bytes), vb2->get_buffer()));
+
+		ZYLANN_TEST_ASSERT(vb2->get_buffer().equals(vb->get_buffer()));
+
+		// `equals` does not compare metadata at the moment, mainly because it's not trivial and there is no use case
+		// for it apart from this test, so do it manually
+
+		const FlatMapMoveOnly<Vector3i, VoxelMetadata> &vb_meta_map = vb->get_buffer().get_voxel_metadata();
+		const FlatMapMoveOnly<Vector3i, VoxelMetadata> &vb2_meta_map = vb2->get_buffer().get_voxel_metadata();
+
+		ZYLANN_TEST_ASSERT(vb_meta_map.size() == vb2_meta_map.size());
+
+		for (auto it = vb_meta_map.begin(); it != vb_meta_map.end(); ++it) {
+			const VoxelMetadata &meta = it->value;
+			ZYLANN_TEST_ASSERT(meta.get_type() == gd::METADATA_TYPE_VARIANT);
+
+			const VoxelMetadata *meta2 = vb2_meta_map.find(it->key);
+			ZYLANN_TEST_ASSERT(meta2 != nullptr);
+			ZYLANN_TEST_ASSERT(meta2->get_type() == meta.get_type());
+
+			const gd::VoxelMetadataVariant &metav = static_cast<const gd::VoxelMetadataVariant &>(meta.get_custom());
+			const gd::VoxelMetadataVariant &meta2v = static_cast<const gd::VoxelMetadataVariant &>(meta2->get_custom());
+			ZYLANN_TEST_ASSERT(metav.data == meta2v.data);
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
@@ -1866,6 +2067,8 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_run_blocky_random_tick);
 	VOXEL_TEST(test_flat_map);
 	VOXEL_TEST(test_expression_parser);
+	VOXEL_TEST(test_voxel_buffer_metadata);
+	VOXEL_TEST(test_voxel_buffer_metadata_gd);
 
 	print_line("------------ Voxel tests end -------------");
 }

@@ -5,9 +5,14 @@
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
 #include "../util/serialization.h"
+#include "../util/string_funcs.h"
 #include "compressed_data.h"
 
+#ifdef ZN_GODOT
+#include "../storage/voxel_metadata_variant.h"
 #include <core/io/marshalls.h> // For `encode_variant`
+#endif
+
 #include <core/io/stream_peer.h>
 #include <limits>
 
@@ -24,11 +29,32 @@ thread_local std::vector<uint8_t> tls_data;
 thread_local std::vector<uint8_t> tls_compressed_data;
 thread_local std::vector<uint8_t> tls_metadata_tmp;
 
+size_t get_metadata_size_in_bytes(const VoxelMetadata &meta) {
+	size_t size = 1; // Type
+	switch (meta.get_type()) {
+		case VoxelMetadata::TYPE_EMPTY:
+			break;
+		case VoxelMetadata::TYPE_U64:
+			size += sizeof(uint64_t);
+			break;
+		default:
+			if (meta.get_type() >= VoxelMetadata::TYPE_CUSTOM_BEGIN) {
+				const ICustomVoxelMetadata &custom = meta.get_custom();
+				size += custom.get_serialized_size();
+			} else {
+				ZN_PRINT_ERROR("Unknown metadata type");
+				return 0;
+			}
+	}
+	return size;
+}
+
 size_t get_metadata_size_in_bytes(const VoxelBufferInternal &buffer) {
 	size_t size = 0;
 
-	const FlatMap<Vector3i, Variant> &voxel_metadata = buffer.get_voxel_metadata();
-	for (FlatMap<Vector3i, Variant>::ConstIterator it = voxel_metadata.begin(); it != voxel_metadata.end(); ++it) {
+	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &voxel_metadata = buffer.get_voxel_metadata();
+	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator it = voxel_metadata.begin();
+			it != voxel_metadata.end(); ++it) {
 		const Vector3i pos = it->key;
 
 		ERR_FAIL_COND_V_MSG(pos.x < 0 || static_cast<uint32_t>(pos.x) >= VoxelBufferInternal::MAX_SIZE, 0,
@@ -39,23 +65,17 @@ size_t get_metadata_size_in_bytes(const VoxelBufferInternal &buffer) {
 				"Invalid voxel metadata Z position");
 
 		size += 3 * sizeof(uint16_t); // Positions are stored as 3 unsigned shorts
-
-		int len;
-		const Error err = encode_variant(it->value, nullptr, len, false);
-		ERR_FAIL_COND_V_MSG(err != OK, 0, "Error when trying to encode voxel metadata.");
-		size += len;
+		size += get_metadata_size_in_bytes(it->value);
 	}
 
 	// If no metadata is found at all, nothing is serialized, not even null.
 	// It spares 24 bytes (40 if real_t == double),
 	// and is backward compatible with saves made before introduction of metadata.
 
-	if (size != 0 || buffer.get_block_metadata() != Variant()) {
-		int len;
-		// Get size first by invoking the function is "length mode"
-		const Error err = encode_variant(buffer.get_block_metadata(), nullptr, len, false);
-		ERR_FAIL_COND_V_MSG(err != OK, 0, "Error when trying to encode block metadata.");
-		size += len;
+	const VoxelMetadata &block_meta = buffer.get_block_metadata();
+
+	if (size != 0 || block_meta.get_type() != VoxelMetadata::TYPE_EMPTY) {
+		size += get_metadata_size_in_bytes(block_meta);
 	}
 
 	return size;
@@ -74,43 +94,51 @@ inline T read(uint8_t *&src) {
 	return d;
 }
 
+static void serialize_metadata(const VoxelMetadata &meta, MemoryWriterExistingBuffer &mw) {
+	const uint8_t type = meta.get_type();
+	switch (type) {
+		case VoxelMetadata::TYPE_EMPTY:
+			mw.store_8(type);
+			break;
+		case VoxelMetadata::TYPE_U64:
+			mw.store_8(type);
+			mw.store_64(meta.get_u64());
+			break;
+		default:
+			if (type >= VoxelMetadata::TYPE_CUSTOM_BEGIN) {
+				mw.store_8(type);
+				const size_t written_size = meta.get_custom().serialize(mw.data.data.sub(mw.data.pos));
+				ZN_ASSERT(mw.data.pos + written_size <= mw.data.data.size());
+				mw.data.pos += written_size;
+			} else {
+				ZN_PRINT_ERROR("Unknown metadata type");
+				mw.store_8(VoxelMetadata::TYPE_EMPTY);
+			}
+			break;
+	}
+}
+
 // The target buffer MUST have correct size. Recoverable errors must have been checked before.
 void serialize_metadata(Span<uint8_t> p_dst, const VoxelBufferInternal &buffer) {
-	uint8_t *dst = p_dst.data();
+	ByteSpanWithPosition bs(p_dst, 0);
+	MemoryWriterExistingBuffer mw(bs, ENDIANESS_LITTLE_ENDIAN);
 
-	{
-		int written_length;
-		encode_variant(buffer.get_block_metadata(), dst, written_length, false);
-		dst += written_length;
+	const VoxelMetadata &block_meta = buffer.get_block_metadata();
+	serialize_metadata(block_meta, mw);
 
-		// I chose to cast this way to fix a GCC warning.
-		// If dst - p_dst is negative (which is wrong), it will wrap and cause a justified assertion failure
-		CRASH_COND_MSG(
-				static_cast<size_t>(dst - p_dst.data()) > p_dst.size(), "Wrote block metadata out of expected bounds");
-	}
-
-	const FlatMap<Vector3i, Variant> &voxel_metadata = buffer.get_voxel_metadata();
-	for (FlatMap<Vector3i, Variant>::ConstIterator it = voxel_metadata.begin(); it != voxel_metadata.end(); ++it) {
+	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &voxel_metadata = buffer.get_voxel_metadata();
+	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator it = voxel_metadata.begin();
+			it != voxel_metadata.end(); ++it) {
 		// Serializing key as ushort because it's more than enough for a 3D dense array
 		static_assert(VoxelBufferInternal::MAX_SIZE <= std::numeric_limits<uint16_t>::max(),
 				"Maximum size exceeds serialization support");
 		const Vector3i pos = it->key;
-		write<uint16_t>(dst, pos.x);
-		write<uint16_t>(dst, pos.y);
-		write<uint16_t>(dst, pos.z);
+		mw.store_16(pos.x);
+		mw.store_16(pos.y);
+		mw.store_16(pos.z);
 
-		int written_length;
-		const Error err = encode_variant(it->value, dst, written_length, false);
-		CRASH_COND_MSG(err != OK, "Error when trying to encode voxel metadata.");
-		dst += written_length;
-
-		CRASH_COND_MSG(
-				static_cast<size_t>(dst - p_dst.data()) > p_dst.size(), "Wrote voxel metadata out of expected bounds");
+		serialize_metadata(it->value, mw);
 	}
-
-	CRASH_COND_MSG(static_cast<size_t>(dst - p_dst.data()) != p_dst.size(),
-			String("Written metadata doesn't match expected count (expected {0}, got {1})")
-					.format(varray(ZN_SIZE_T_TO_VARIANT(p_dst.size()), (int)(dst - p_dst.data()))));
 }
 
 template <typename T>
@@ -123,52 +151,73 @@ struct ClearOnExit {
 
 //#define CLEAR_ON_EXIT(container) ClearOnExit<decltype(container)> clear_on_exit_##__LINE__;
 
-bool deserialize_metadata(uint8_t *p_src, VoxelBufferInternal &buffer, const size_t metadata_size) {
-	uint8_t *src = p_src;
-	size_t remaining_length = metadata_size;
+static bool deserialize_metadata(VoxelMetadata &meta, MemoryReader &mr) {
+	const uint8_t type = mr.get_8();
+	switch (type) {
+		case VoxelMetadata::TYPE_EMPTY:
+			meta.clear();
+			return true;
 
-	{
-		Variant block_metadata;
-		int read_length;
-		const Error err = decode_variant(block_metadata, src, remaining_length, &read_length, false);
-		ERR_FAIL_COND_V_MSG(err != OK, false, "Failed to deserialize block metadata");
-		remaining_length -= read_length;
-		src += read_length;
-		CRASH_COND_MSG(remaining_length > metadata_size, "Block metadata size underflow");
-		buffer.set_block_metadata(block_metadata);
+		case VoxelMetadata::TYPE_U64:
+			meta.set_u64(mr.get_64());
+			return true;
+
+		default:
+			if (type >= VoxelMetadata::TYPE_CUSTOM_BEGIN) {
+				ICustomVoxelMetadata *custom = VoxelMetadataFactory::get_singleton().try_construct(type);
+				ZN_ASSERT_RETURN_V_MSG(
+						custom != nullptr, false, format("Could not deserialize custom metadata with type {}", type));
+
+				// Store in a temporary container so it auto-deletes in case of error
+				VoxelMetadata temp;
+				temp.set_custom(type, custom);
+
+				size_t read_size = 0;
+				ZN_ASSERT_RETURN_V(custom->deserialize(mr.data.sub(mr.pos), read_size), false);
+				ZN_ASSERT_RETURN_V(mr.pos + read_size <= mr.data.size(), false);
+				mr.pos += read_size;
+
+				meta = std::move(temp);
+				return true;
+
+			} else {
+				ZN_PRINT_ERROR("Unknown metadata type");
+				return false;
+			}
 	}
+	return false;
+}
 
-	typedef FlatMap<Vector3i, Variant>::Pair Pair;
+bool deserialize_metadata(Span<const uint8_t> p_src, VoxelBufferInternal &buffer) {
+	MemoryReader mr(p_src, ENDIANESS_LITTLE_ENDIAN);
+
+	ZN_ASSERT_RETURN_V(deserialize_metadata(buffer.get_block_metadata(), mr), false);
+
+	typedef FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair Pair;
 	static thread_local std::vector<Pair> tls_pairs;
 	// Clear when exiting scope (including cases of error) so we don't store dangling Variants
 	ClearOnExit<std::vector<Pair>> clear_tls_pairs{ tls_pairs };
 
-	while (remaining_length > 0) {
+	while (mr.pos < mr.data.size()) {
 		Vector3i pos;
-		pos.x = read<uint16_t>(src);
-		pos.y = read<uint16_t>(src);
-		pos.z = read<uint16_t>(src);
-		remaining_length -= 3 * sizeof(uint16_t);
+		pos.x = mr.get_16();
+		pos.y = mr.get_16();
+		pos.z = mr.get_16();
 
-		ERR_CONTINUE_MSG(!buffer.is_position_valid(pos),
-				String("Invalid voxel metadata position {0} for buffer of size {1}")
-						.format(varray(pos, buffer.get_size())));
+		ZN_ASSERT_CONTINUE_MSG(buffer.is_position_valid(pos),
+				format("Invalid voxel metadata position {} for buffer of size {}", pos, buffer.get_size()));
 
-		Variant metadata;
-		int read_length;
-		const Error err = decode_variant(metadata, src, remaining_length, &read_length, false);
-		ERR_FAIL_COND_V_MSG(err != OK, false, "Failed to deserialize block metadata");
-		remaining_length -= read_length;
-		src += read_length;
-		CRASH_COND_MSG(remaining_length > metadata_size, "Block metadata size underflow");
-
-		tls_pairs.push_back(Pair{ pos, metadata });
+		//VoxelMetadata &vmeta = buffer.get_or_create_voxel_metadata(pos);
+		tls_pairs.resize(tls_pairs.size() + 1);
+		Pair &p = tls_pairs.back();
+		p.key = pos;
+		ZN_ASSERT_RETURN_V_MSG(
+				deserialize_metadata(p.value, mr), false, format("Failed to deserialize voxel metadata {}", pos));
 	}
 
 	// Set all metadata at once, FlatMap is faster to initialize this way
 	buffer.clear_and_set_voxel_metadata(to_span(tls_pairs));
 
-	CRASH_COND_MSG(remaining_length != 0, "Did not read expected size");
 	return true;
 }
 
@@ -300,6 +349,108 @@ SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
 	return SerializeResult(dst_data, true);
 }
 
+namespace legacy {
+
+bool migrate_v3_to_v4(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
+	// In v3, metadata was always a Godot Variant. In v4, metadata uses an independent format.
+
+#ifndef ZN_GODOT
+	ZN_PRINT_ERROR("Cannot migrate block from v3 to v4, Godot Engine is required");
+	return false;
+#else
+
+	// Constants used at the time of this version
+	const unsigned int channel_count = 8;
+	const unsigned int no_compression = 0;
+	const unsigned int uniform_compression = 1;
+
+	MemoryReader mr(p_data, ENDIANESS_LITTLE_ENDIAN);
+
+	const uint8_t rv = mr.get_8(); // version
+	ZN_ASSERT(rv == 3);
+
+	const uint16_t size_x = mr.get_16(); // size_x
+	const uint16_t size_y = mr.get_16(); // size_y
+	const uint16_t size_z = mr.get_16(); // size_z
+	const unsigned int volume = size_x * size_y * size_z;
+
+	for (unsigned int channel_index = 0; channel_index < channel_count; ++channel_index) {
+		const uint8_t fmt = mr.get_8();
+
+		const uint8_t compression_value = fmt & 0xf;
+		const uint8_t depth_value = (fmt >> 4) & 0xf;
+
+		ZN_ASSERT_RETURN_V(compression_value < 2, false);
+		ZN_ASSERT_RETURN_V(depth_value < 4, false);
+
+		if (compression_value == no_compression) {
+			mr.pos += volume << depth_value;
+
+		} else if (compression_value == uniform_compression) {
+			mr.pos += size_t(1) << depth_value;
+		}
+	}
+
+	ZN_ASSERT(mr.pos <= mr.data.size());
+
+	// Copy everything up to beginning of metadata
+	dst.resize(mr.pos);
+	memcpy(dst.data(), p_data.data(), mr.pos);
+	// Set version
+	dst[0] = 4;
+
+	// Convert metadata
+
+	const size_t total_metadata_size = mr.data.size() - mr.pos;
+
+	if (total_metadata_size > 0) {
+		MemoryWriter mw(dst, ENDIANESS_LITTLE_ENDIAN);
+
+		struct L {
+			static bool convert_metadata_item(MemoryReader &mr, MemoryWriter &mw) {
+				// Read Variant
+				Variant src_meta;
+				int read_length;
+				const Error err =
+						decode_variant(src_meta, &mr.data[mr.pos], mr.data.size() - mr.pos, &read_length, false);
+				ZN_ASSERT_RETURN_V_MSG(err == OK, false, "Failed to deserialize v3 Variant metadata");
+				mr.pos += read_length;
+				ZN_ASSERT(mr.pos <= mr.data.size());
+
+				// Write v4 equivalent
+				VoxelMetadata dst_meta;
+				gd::VoxelMetadataVariant *custom = ZN_NEW(gd::VoxelMetadataVariant);
+				custom->data = src_meta;
+				dst_meta.set_custom(gd::METADATA_TYPE_VARIANT, custom);
+				mw.store_8(dst_meta.get_type());
+				const size_t ss = custom->get_serialized_size();
+				const size_t prev_size = mw.data.size();
+				mw.data.resize(mw.data.size() + ss);
+				const size_t written_size = custom->serialize(Span<uint8_t>(mw.data.data() + prev_size, ss));
+				mw.data.resize(prev_size + written_size);
+
+				return true;
+			}
+		};
+
+		ZN_ASSERT_RETURN_V(L::convert_metadata_item(mr, mw), false);
+
+		while (mr.pos < mr.data.size()) {
+			const uint16_t pos_x = mr.get_16();
+			const uint16_t pos_y = mr.get_16();
+			const uint16_t pos_z = mr.get_16();
+
+			mw.store_16(pos_x);
+			mw.store_16(pos_y);
+			mw.store_16(pos_z);
+
+			ZN_ASSERT_RETURN_V(L::convert_metadata_item(mr, mw), false);
+		}
+	}
+#endif
+	return true;
+}
+
 bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 	// In v2, SDF data was using a legacy arbitrary formula to encode fixed-point numbers.
 	// In v3, it now uses inorm8 and inorm16.
@@ -317,7 +468,7 @@ bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 	MemoryReader mr(p_data, ENDIANESS_LITTLE_ENDIAN);
 
 	const uint8_t rv = mr.get_8(); // version
-	CRASH_COND(rv != 2);
+	ZN_ASSERT(rv == 2);
 
 	dst[0] = 3;
 
@@ -344,12 +495,12 @@ bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 				switch (depth_value) {
 					case 0:
 						for (unsigned int i = 0; i < volume; ++i) {
-							mw.store_8(snorm_to_s8(legacy::u8_to_snorm(mr.get_8())));
+							mw.store_8(snorm_to_s8(voxel::legacy::u8_to_snorm(mr.get_8())));
 						}
 						break;
 					case 1:
 						for (unsigned int i = 0; i < volume; ++i) {
-							mw.store_16(snorm_to_s16(legacy::u16_to_snorm(mr.get_16())));
+							mw.store_16(snorm_to_s16(voxel::legacy::u16_to_snorm(mr.get_16())));
 						}
 						break;
 					case 2:
@@ -361,10 +512,10 @@ bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 			} else if (compression_value == uniform_compression) {
 				switch (depth_value) {
 					case 0:
-						mw.store_8(snorm_to_s8(legacy::u8_to_snorm(mr.get_8())));
+						mw.store_8(snorm_to_s8(voxel::legacy::u8_to_snorm(mr.get_8())));
 						break;
 					case 1:
-						mw.store_16(snorm_to_s16(legacy::u16_to_snorm(mr.get_16())));
+						mw.store_16(snorm_to_s16(voxel::legacy::u16_to_snorm(mr.get_16())));
 						break;
 					case 2:
 					case 3:
@@ -387,6 +538,8 @@ bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 	return true;
 }
 
+} // namespace legacy
+
 bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	ZN_PROFILE_SCOPE();
 
@@ -400,13 +553,21 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 
 	const uint8_t format_version = f.get_8();
 
-	if (format_version == 2) {
-		std::vector<uint8_t> migrated_data;
-		ERR_FAIL_COND_V(!migrate_v2_to_v3(p_data, migrated_data), false);
-		return deserialize(to_span_const(migrated_data), out_voxel_buffer);
+	switch (format_version) {
+		case 2: {
+			std::vector<uint8_t> migrated_data;
+			ERR_FAIL_COND_V(!legacy::migrate_v2_to_v3(p_data, migrated_data), false);
+			return deserialize(to_span(migrated_data), out_voxel_buffer);
+		} break;
 
-	} else {
-		ERR_FAIL_COND_V(format_version != BLOCK_FORMAT_VERSION, false);
+		case 3: {
+			std::vector<uint8_t> migrated_data;
+			ERR_FAIL_COND_V(!legacy::migrate_v3_to_v4(p_data, migrated_data), false);
+			return deserialize(to_span(migrated_data), out_voxel_buffer);
+		} break;
+
+		default:
+			ERR_FAIL_COND_V(format_version != BLOCK_FORMAT_VERSION, false);
 	}
 
 	const unsigned int size_x = f.get_16();
@@ -475,7 +636,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 		ERR_FAIL_COND_V(f.get_position() + metadata_size > p_data.size(), false);
 		metadata_tmp.resize(metadata_size);
 		f.get_buffer(to_span(metadata_tmp));
-		deserialize_metadata(metadata_tmp.data(), out_voxel_buffer, metadata_tmp.size());
+		deserialize_metadata(to_span(metadata_tmp), out_voxel_buffer);
 	}
 
 	// Failure at this indicates file corruption

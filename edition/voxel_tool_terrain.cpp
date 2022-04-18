@@ -2,6 +2,7 @@
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../storage/voxel_metadata_variant.h"
 #include "../terrain/fixed_lod/voxel_terrain.h"
 #include "../util/godot/funcs.h"
 #include "../util/voxel_raycast.h"
@@ -211,7 +212,9 @@ void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
 	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
 	ERR_FAIL_COND_MSG(block == nullptr, "Area not editable");
 	RWLockWrite lock(block->get_voxels().get_lock());
-	block->get_voxels().set_voxel_metadata(map.to_local(pos), meta);
+	VoxelMetadata *meta_storage = block->get_voxels().get_or_create_voxel_metadata(map.to_local(pos));
+	ERR_FAIL_COND(meta_storage == nullptr);
+	gd::set_as_variant(*meta_storage, meta);
 }
 
 Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
@@ -220,7 +223,11 @@ Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
 	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
 	ERR_FAIL_COND_V_MSG(block == nullptr, Variant(), "Area not editable");
 	RWLockRead lock(block->get_voxels().get_lock());
-	return block->get_voxels_const().get_voxel_metadata(map.to_local(pos));
+	const VoxelMetadata *meta = block->get_voxels_const().get_voxel_metadata(map.to_local(pos));
+	if (meta == nullptr) {
+		return Variant();
+	}
+	return gd::get_as_variant(*meta);
 }
 
 void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i voxel_box, const VoxelBlockyLibrary &lib,
@@ -389,9 +396,10 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 		// TODO Worth it locking blocks for metadata?
 
 		block->get_voxels().for_each_voxel_metadata_in_area(
-				rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, Variant meta) {
+				rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
+					Variant v = gd::get_as_variant(meta);
 					const Variant key = rel_pos + block_origin;
-					const Variant *args[2] = { &key, &meta };
+					const Variant *args[2] = { &key, &v };
 					Callable::CallError err;
 					Variant retval; // We don't care about the return value, Callable API requires it
 					callback.call(args, 2, retval, err);

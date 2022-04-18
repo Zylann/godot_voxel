@@ -1,6 +1,7 @@
 #include "voxel_buffer_gd.h"
 #include "../edition/voxel_tool_buffer.h"
 #include "../util/memory.h"
+#include "voxel_metadata_variant.h"
 
 #include <core/io/image.h>
 
@@ -105,19 +106,42 @@ VoxelBuffer::Depth VoxelBuffer::get_channel_depth(unsigned int channel_index) co
 	return VoxelBuffer::Depth(_buffer->get_channel_depth(channel_index));
 }
 
+Variant VoxelBuffer::get_block_metadata() const {
+	return get_as_variant(_buffer->get_block_metadata());
+}
+
 void VoxelBuffer::set_block_metadata(Variant meta) {
-	_buffer->set_block_metadata(meta);
+	set_as_variant(_buffer->get_block_metadata(), meta);
+}
+
+Variant VoxelBuffer::get_voxel_metadata(Vector3i pos) const {
+	VoxelMetadata *meta = _buffer->get_voxel_metadata(pos);
+	if (meta == nullptr) {
+		return Variant();
+	}
+	return get_as_variant(*meta);
+}
+
+void VoxelBuffer::set_voxel_metadata(Vector3i pos, Variant meta) {
+	if (meta.get_type() == Variant::NIL) {
+		_buffer->erase_voxel_metadata(pos);
+	} else {
+		VoxelMetadata *mv = _buffer->get_or_create_voxel_metadata(pos);
+		ZN_ASSERT_RETURN(mv != nullptr);
+		set_as_variant(*mv, meta);
+	}
 }
 
 void VoxelBuffer::for_each_voxel_metadata(const Callable &callback) const {
 	ERR_FAIL_COND(callback.is_null());
 	//_buffer->for_each_voxel_metadata(callback);
 
-	const FlatMap<Vector3i, Variant> &metadata = _buffer->get_voxel_metadata();
+	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &metadata = _buffer->get_voxel_metadata();
 
 	for (auto it = metadata.begin(); it != metadata.end(); ++it) {
+		Variant v = get_as_variant(it->value);
 		const Variant key = it->key;
-		const Variant *args[2] = { &key, &it->value };
+		const Variant *args[2] = { &key, &v };
 		Callable::CallError err;
 		Variant retval; // We don't care about the return value, Callable API requires it
 		callback.call(args, 2, retval, err);
@@ -136,9 +160,10 @@ void VoxelBuffer::for_each_voxel_metadata_in_area(const Callable &callback, Vect
 
 	const Box3i box = Box3i::from_min_max(min_pos, max_pos);
 
-	_buffer->for_each_voxel_metadata_in_area(box, [&callback](Vector3i rel_pos, Variant meta) {
+	_buffer->for_each_voxel_metadata_in_area(box, [&callback](Vector3i rel_pos, const VoxelMetadata &meta) {
+		Variant v = get_as_variant(meta);
 		const Variant key = rel_pos;
-		const Variant *args[2] = { &key, &meta };
+		const Variant *args[2] = { &key, &v };
 		Callable::CallError err;
 		Variant retval; // We don't care about the return value, Callable API requires it
 		callback.call(args, 2, retval, err);

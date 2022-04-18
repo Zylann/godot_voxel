@@ -597,13 +597,8 @@ void VoxelBufferInternal::move_to(VoxelBufferInternal &dst) {
 	dst._channels = _channels;
 	dst._size = _size;
 
-	// TODO Optimization: Godot needs move semantics
-	dst._block_metadata = _block_metadata;
-	_block_metadata = BlockMetadata();
-
-	// TODO Optimization: Godot needs move semantics
-	dst._voxel_metadata = _voxel_metadata;
-	_voxel_metadata.clear();
+	dst._block_metadata = std::move(_block_metadata);
+	dst._voxel_metadata = std::move(_voxel_metadata);
 
 	for (unsigned int i = 0; i < _channels.size(); ++i) {
 		Channel &channel = _channels[i];
@@ -780,27 +775,33 @@ float VoxelBufferInternal::get_sdf_quantization_scale(Depth d) {
 	}
 }
 
-void VoxelBufferInternal::set_block_metadata(Variant meta) {
-	_block_metadata.user_data = meta;
+const VoxelMetadata *VoxelBufferInternal::get_voxel_metadata(Vector3i pos) const {
+	ZN_ASSERT_RETURN_V(is_position_valid(pos), nullptr);
+	return _voxel_metadata.find(pos);
 }
 
-Variant VoxelBufferInternal::get_voxel_metadata(Vector3i pos) const {
-	ZN_ASSERT_RETURN_V(is_position_valid(pos), Variant());
-	Variant metadata;
-	_voxel_metadata.find(pos, metadata);
-	return metadata;
+VoxelMetadata *VoxelBufferInternal::get_voxel_metadata(Vector3i pos) {
+	ZN_ASSERT_RETURN_V(is_position_valid(pos), nullptr);
+	return _voxel_metadata.find(pos);
 }
 
-void VoxelBufferInternal::set_voxel_metadata(Vector3i pos, Variant meta) {
-	ZN_ASSERT_RETURN(is_position_valid(pos));
-	if (meta.get_type() == Variant::NIL) {
-		_voxel_metadata.erase(pos);
-	} else {
-		_voxel_metadata.insert_or_assign(pos, meta);
+VoxelMetadata *VoxelBufferInternal::get_or_create_voxel_metadata(Vector3i pos) {
+	ZN_ASSERT_RETURN_V(is_position_valid(pos), nullptr);
+	VoxelMetadata *d = _voxel_metadata.find(pos);
+	if (d != nullptr) {
+		return d;
 	}
+	// TODO Optimize: we know the key should not exist
+	VoxelMetadata &meta = _voxel_metadata.insert_or_assign(pos, VoxelMetadata());
+	return &meta;
 }
 
-void VoxelBufferInternal::clear_and_set_voxel_metadata(Span<FlatMap<Vector3i, Variant>::Pair> pairs) {
+void VoxelBufferInternal::erase_voxel_metadata(Vector3i pos) {
+	ZN_ASSERT_RETURN(is_position_valid(pos));
+	_voxel_metadata.erase(pos);
+}
+
+void VoxelBufferInternal::clear_and_set_voxel_metadata(Span<FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair> pairs) {
 #ifdef DEBUG_ENABLED
 	for (size_t i = 0; i < pairs.size(); ++i) {
 		ZN_ASSERT_CONTINUE(is_position_valid(pairs[i].key));
@@ -853,7 +854,7 @@ void VoxelBufferInternal::clear_voxel_metadata() {
 }
 
 void VoxelBufferInternal::clear_voxel_metadata_in_area(Box3i box) {
-	_voxel_metadata.remove_if([&box](const FlatMap<Vector3i, Variant>::Pair &p) { //
+	_voxel_metadata.remove_if([&box](const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p) { //
 		return box.contains(p.key);
 	});
 }
@@ -865,12 +866,14 @@ void VoxelBufferInternal::copy_voxel_metadata_in_area(
 	const Box3i clipped_src_box = src_box.clipped(Box3i(src_box.pos - dst_origin, _size));
 	const Vector3i clipped_dst_offset = dst_origin + clipped_src_box.pos - src_box.pos;
 
-	for (FlatMap<Vector3i, Variant>::ConstIterator src_it = src_buffer._voxel_metadata.begin();
+	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator src_it = src_buffer._voxel_metadata.begin();
 			src_it != src_buffer._voxel_metadata.end(); ++src_it) {
 		if (src_box.contains(src_it->key)) {
 			const Vector3i dst_pos = src_it->key + clipped_dst_offset;
 			ZN_ASSERT(is_position_valid(dst_pos));
-			_voxel_metadata.insert_or_assign(dst_pos, src_it->value.duplicate());
+
+			VoxelMetadata &meta = _voxel_metadata.insert_or_assign(dst_pos, VoxelMetadata());
+			meta.copy_from(src_it->value);
 		}
 	}
 }
@@ -878,12 +881,13 @@ void VoxelBufferInternal::copy_voxel_metadata_in_area(
 void VoxelBufferInternal::copy_voxel_metadata(const VoxelBufferInternal &src_buffer) {
 	ZN_ASSERT_RETURN(src_buffer.get_size() == _size);
 
-	for (FlatMap<Vector3i, Variant>::ConstIterator src_it = src_buffer._voxel_metadata.begin();
+	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator src_it = src_buffer._voxel_metadata.begin();
 			src_it != src_buffer._voxel_metadata.end(); ++src_it) {
-		_voxel_metadata.insert_or_assign(src_it->key, src_it->value.duplicate());
+		VoxelMetadata &meta = _voxel_metadata.insert_or_assign(src_it->key, VoxelMetadata());
+		meta.copy_from(src_it->value);
 	}
 
-	_block_metadata.user_data = src_buffer._block_metadata.user_data.duplicate();
+	_block_metadata.copy_from(src_buffer._block_metadata);
 }
 
 } // namespace zylann::voxel

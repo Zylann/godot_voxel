@@ -64,12 +64,12 @@ void VoxelToolBuffer::_post_edit(const Box3i &box) {
 
 void VoxelToolBuffer::set_voxel_metadata(Vector3i pos, Variant meta) {
 	ERR_FAIL_COND(_buffer.is_null());
-	_buffer->get_buffer().set_voxel_metadata(pos, meta);
+	_buffer->set_voxel_metadata(pos, meta);
 }
 
 Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) const {
 	ERR_FAIL_COND_V(_buffer.is_null(), Variant());
-	return _buffer->get_buffer().get_voxel_metadata(pos);
+	return _buffer->get_voxel_metadata(pos);
 }
 
 void VoxelToolBuffer::paste(
@@ -116,7 +116,7 @@ void VoxelToolBuffer::paste(
 						dst.set_voxel(v, x, y, z, channel_index);
 
 						// Overwrite previous metadata
-						dst.set_voxel_metadata(Vector3i(x, y, z), Variant());
+						dst.erase_voxel_metadata(Vector3i(x, y, z));
 					}
 				}
 			}

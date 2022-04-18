@@ -1,5 +1,5 @@
-#ifndef EDITION_FUNCS_H
-#define EDITION_FUNCS_H
+#ifndef VOXEL_EDITION_FUNCS_H
+#define VOXEL_EDITION_FUNCS_H
 
 #include "../storage/funcs.h"
 #include "../util/fixed_array.h"
@@ -110,4 +110,4 @@ inline void blend_texture_packed_u16(
 
 } // namespace zylann::voxel
 
-#endif // EDITION_FUNCS_H
+#endif // VOXEL_EDITION_FUNCS_H

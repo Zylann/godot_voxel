@@ -6,9 +6,9 @@
 #include "../util/flat_map.h"
 #include "../util/math/box3i.h"
 #include "funcs.h"
+#include "voxel_metadata.h"
 
 #include <core/os/rw_lock.h>
-#include <core/variant/variant.h>
 #include <limits>
 
 namespace zylann::voxel {
@@ -416,20 +416,26 @@ public:
 
 	// Metadata
 
-	Variant get_block_metadata() const {
-		return _block_metadata.user_data;
+	VoxelMetadata &get_block_metadata() {
+		return _block_metadata;
 	}
-	void set_block_metadata(Variant meta);
+	const VoxelMetadata &get_block_metadata() const {
+		return _block_metadata;
+	}
 
-	Variant get_voxel_metadata(Vector3i pos) const;
-	void set_voxel_metadata(Vector3i pos, Variant meta);
+	const VoxelMetadata *get_voxel_metadata(Vector3i pos) const;
+	VoxelMetadata *get_voxel_metadata(Vector3i pos);
+	VoxelMetadata *get_or_create_voxel_metadata(Vector3i pos);
+	void erase_voxel_metadata(Vector3i pos);
 
-	void clear_and_set_voxel_metadata(Span<FlatMap<Vector3i, Variant>::Pair> pairs);
+	void clear_and_set_voxel_metadata(Span<FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair> pairs);
 
 	template <typename F>
 	void for_each_voxel_metadata_in_area(Box3i box, F callback) const {
-		for (FlatMap<Vector3i, Variant>::ConstIterator it = _voxel_metadata.begin(); it != _voxel_metadata.end();
-				++it) {
+		// TODO For `find`s and this kind of iteration, we may want to separate keys and values in FlatMap's internal
+		// storage, to reduce cache misses
+		for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator it = _voxel_metadata.begin();
+				it != _voxel_metadata.end(); ++it) {
 			if (box.contains(it->key)) {
 				callback(it->key, it->value);
 			}
@@ -447,7 +453,7 @@ public:
 	void copy_voxel_metadata_in_area(const VoxelBufferInternal &src_buffer, Box3i src_box, Vector3i dst_origin);
 	void copy_voxel_metadata(const VoxelBufferInternal &src_buffer);
 
-	const FlatMap<Vector3i, Variant> &get_voxel_metadata() const {
+	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &get_voxel_metadata() const {
 		return _voxel_metadata;
 	}
 
@@ -480,15 +486,10 @@ private:
 	// How many voxels are there in the three directions. All populated channels have the same size.
 	Vector3i _size;
 
-	struct BlockMetadata {
-		// User-defined data, not used by the engine
-		Variant user_data;
-	};
-
 	// TODO Could we separate metadata from VoxelBufferInternal?
-	BlockMetadata _block_metadata;
+	VoxelMetadata _block_metadata;
 	// This metadata is expected to be sparse, with low amount of items.
-	FlatMap<Vector3i, Variant> _voxel_metadata;
+	FlatMapMoveOnly<Vector3i, VoxelMetadata> _voxel_metadata;
 
 	// TODO It may be preferable to actually move away from storing an RWLock in every buffer in the future.
 	// We should be able to find a solution because very few of these locks are actually used at a given time.

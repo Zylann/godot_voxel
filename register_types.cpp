@@ -21,6 +21,7 @@
 #include "server/voxel_server_gd.h"
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
+#include "storage/voxel_metadata_variant.h"
 #include "streams/region/voxel_stream_region_files.h"
 #include "streams/sqlite/voxel_stream_sqlite.h"
 #include "streams/vox_loader.h"
@@ -76,6 +77,8 @@ void register_voxel_types() {
 	gd::VoxelServer::create_singleton();
 
 	Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelServer", gd::VoxelServer::get_singleton()));
+
+	VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(gd::METADATA_TYPE_VARIANT);
 
 	// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not abstract?
 	ClassDB::register_class<gd::VoxelServer>();
