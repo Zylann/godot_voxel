@@ -5,10 +5,10 @@
 #include "../util/fixed_array.h"
 #include "../util/flat_map.h"
 #include "../util/math/box3i.h"
+#include "../util/thread/rw_lock.h"
 #include "funcs.h"
 #include "voxel_metadata.h"
 
-#include <core/os/rw_lock.h>
 #include <limits>
 
 namespace zylann::voxel {

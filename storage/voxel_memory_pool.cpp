@@ -1,10 +1,7 @@
 #include "voxel_memory_pool.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
-
-#include <core/os/os.h>
-#include <core/string/print_string.h>
-#include <core/variant/variant.h>
+#include "../util/string_funcs.h"
 
 namespace zylann::voxel {
 
@@ -33,7 +30,7 @@ VoxelMemoryPool::VoxelMemoryPool() {}
 
 VoxelMemoryPool::~VoxelMemoryPool() {
 #ifdef TOOLS_ENABLED
-	if (OS::get_singleton()->is_stdout_verbose()) {
+	if (is_verbose_output_enabled()) {
 		debug_print();
 	}
 #endif
@@ -142,28 +139,23 @@ void VoxelMemoryPool::clear() {
 }
 
 void VoxelMemoryPool::debug_print() {
-	print_line("-------- VoxelMemoryPool ----------");
+	println("-------- VoxelMemoryPool ----------");
 	for (unsigned int pot = 0; pot < _pot_pools.size(); ++pot) {
 		Pool &pool = _pot_pools[pot];
 		MutexLock lock(pool.mutex);
-		print_line(String("Pool {0}: {1} blocks (capacity {2})")
-						   .format(varray(pot, ZN_SIZE_T_TO_VARIANT(pool.blocks.size()),
-								   ZN_SIZE_T_TO_VARIANT(pool.blocks.capacity()))));
+		println(format("Pool {}: {} blocks (capacity {})", pot, pool.blocks.size(), pool.blocks.capacity()));
 	}
 }
 
 unsigned int VoxelMemoryPool::debug_get_used_blocks() const {
-	//MutexLock lock(_mutex);
 	return _used_blocks;
 }
 
 size_t VoxelMemoryPool::debug_get_used_memory() const {
-	//MutexLock lock(_mutex);
 	return _used_memory;
 }
 
 size_t VoxelMemoryPool::debug_get_total_memory() const {
-	//MutexLock lock(_mutex);
 	return _total_memory;
 }
 

@@ -2,6 +2,7 @@
 #define VOXEL_STREAM_REGION_H
 
 #include "../../util/fixed_array.h"
+#include "../../util/thread/mutex.h"
 #include "../file_utils.h"
 #include "../voxel_stream.h"
 #include "region_file.h"

@@ -1,9 +1,11 @@
 #ifndef VOXEL_GENERATOR_GRAPH_H
 #define VOXEL_GENERATOR_GRAPH_H
 
+#include "../../util/thread/rw_lock.h"
 #include "../voxel_generator.h"
 #include "program_graph.h"
 #include "voxel_graph_runtime.h"
+
 #include <memory>
 
 class Image;

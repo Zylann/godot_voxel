@@ -288,6 +288,7 @@ struct VoxelFileLockerWrite {
 	String _path;
 };
 
+// Helper class to store tasks and schedule them in a single batch
 class BufferedTaskScheduler {
 public:
 	static BufferedTaskScheduler &get_for_current_thread();

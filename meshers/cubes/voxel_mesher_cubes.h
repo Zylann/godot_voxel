@@ -3,6 +3,7 @@
 
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
+#include "../../util/thread/rw_lock.h"
 #include "../voxel_mesher.h"
 #include "voxel_color_palette.h"
 

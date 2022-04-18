@@ -1,8 +1,10 @@
 #ifndef VOXEL_MESHER_BLOCKY_H
 #define VOXEL_MESHER_BLOCKY_H
 
+#include "../../util/thread/rw_lock.h"
 #include "../voxel_mesher.h"
 #include "voxel_blocky_library.h"
+
 #include <core/object/ref_counted.h>
 #include <scene/resources/mesh.h>
 #include <vector>

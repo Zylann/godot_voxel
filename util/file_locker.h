@@ -2,10 +2,9 @@
 #define ZN_FILE_LOCKER_H
 
 #include "errors.h"
+#include "thread/mutex.h"
+#include "thread/rw_lock.h"
 
-#include <core/io/file_access.h>
-#include <core/os/mutex.h>
-#include <core/os/rw_lock.h>
 #include <core/templates/hash_map.h>
 
 namespace zylann {

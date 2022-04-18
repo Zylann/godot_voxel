@@ -1,10 +1,10 @@
 #ifndef VOXEL_STREAM_SQLITE_H
 #define VOXEL_STREAM_SQLITE_H
 
+#include "../../util/thread/mutex.h"
 #include "../voxel_block_serializer.h"
 #include "../voxel_stream.h"
 #include "../voxel_stream_cache.h"
-#include <core/os/mutex.h>
 #include <vector>
 
 namespace zylann::voxel {

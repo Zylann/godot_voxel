@@ -3,16 +3,13 @@
 
 #include "../fixed_array.h"
 #include "../span.h"
+#include "../thread/mutex.h"
+#include "../thread/semaphore.h"
+#include "../thread/thread.h"
 #include "threaded_task.h"
 
-#include <core/os/mutex.h>
-#include <core/os/semaphore.h>
-#include <core/os/thread.h>
-#include <core/string/ustring.h>
-
 #include <queue>
-
-class Thread;
+#include <string>
 
 namespace zylann {
 
@@ -33,7 +30,7 @@ public:
 
 	// Set name prefix to recognize threads of this pool in debug tools.
 	// Must be called before configuring thread count.
-	void set_name(String name);
+	void set_name(const char *name);
 
 	// TODO Add ability to change it while running without skipping tasks
 	// Can't be changed after tasks have been queued
@@ -92,7 +89,7 @@ private:
 		bool stop = false;
 		bool waiting = false;
 		State debug_state = STATE_STOPPED;
-		String name;
+		std::string name;
 
 		void wait_to_finish_and_reset() {
 			thread.wait_to_finish();
@@ -125,7 +122,7 @@ private:
 	uint32_t _batch_count = 1;
 	uint32_t _priority_update_period = 32;
 
-	String _name;
+	std::string _name;
 
 	unsigned int _debug_received_tasks = 0;
 	unsigned int _debug_completed_tasks = 0;

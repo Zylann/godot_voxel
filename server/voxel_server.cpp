@@ -12,8 +12,6 @@
 #include "save_block_data_task.h"
 
 #include <core/config/project_settings.h>
-#include <core/os/memory.h>
-#include <thread>
 
 namespace zylann::voxel {
 
@@ -38,7 +36,7 @@ void VoxelServer::destroy_singleton() {
 VoxelServer::VoxelServer() {
 	CRASH_COND(ProjectSettings::get_singleton() == nullptr);
 
-	const int hw_threads_hint = std::thread::hardware_concurrency();
+	const int hw_threads_hint = Thread::get_hardware_concurrency();
 	ZN_PRINT_VERBOSE(format("Voxel: HW threads hint: {}", hw_threads_hint));
 
 	// Compute thread count for general pool.

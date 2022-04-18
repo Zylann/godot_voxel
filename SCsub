@@ -38,6 +38,8 @@ voxel_files = [
 	"util/noise/fast_noise_lite/*.cpp",
 	"util/noise/gd_noise_range.cpp",
 
+	"util/thread/*.cpp",
+
 	"util/tasks/*.cpp",
 	"util/tasks/godot/*.cpp",
 

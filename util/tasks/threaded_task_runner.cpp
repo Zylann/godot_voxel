@@ -1,7 +1,7 @@
 #include "threaded_task_runner.h"
 #include "../profiling.h"
+#include "../string_funcs.h"
 
-#include <core/os/os.h>
 #include <core/os/time.h>
 
 namespace zylann {
@@ -32,8 +32,8 @@ void ThreadedTaskRunner::create_thread(ThreadData &d, uint32_t i) {
 	d.stop = false;
 	d.waiting = false;
 	d.index = i;
-	if (!_name.is_empty()) {
-		d.name = String("{0} {1}").format(varray(_name, i));
+	if (!_name.empty()) {
+		d.name = format("{} {}", _name, i);
 	}
 	d.thread.start(thread_func_static, &d);
 }
@@ -57,7 +57,7 @@ void ThreadedTaskRunner::destroy_all_threads() {
 	}
 }
 
-void ThreadedTaskRunner::set_name(String name) {
+void ThreadedTaskRunner::set_name(const char *name) {
 	_name = name;
 }
 
@@ -121,12 +121,11 @@ void ThreadedTaskRunner::thread_func_static(void *p_data) {
 	ThreadData &data = *static_cast<ThreadData *>(p_data);
 	ThreadedTaskRunner &pool = *data.pool;
 
-	if (!data.name.is_empty()) {
-		Thread::set_name(data.name);
+	if (!data.name.empty()) {
+		Thread::set_name(data.name.c_str());
 
 #ifdef ZN_PROFILER_ENABLED
-		CharString thread_name = data.name.utf8();
-		ZN_PROFILE_SET_THREAD_NAME(thread_name.get_data());
+		ZN_PROFILE_SET_THREAD_NAME(data.name.c_str());
 #endif
 	}
 
@@ -251,7 +250,7 @@ void ThreadedTaskRunner::wait_for_all_tasks() {
 			}
 		}
 
-		OS::get_singleton()->delay_usec(2000);
+		Thread::sleep_usec(2000);
 
 		if (!error1_reported && Time::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
 			ZN_PRINT_WARNING("Waiting for all tasks to be picked is taking a long time");
@@ -274,7 +273,7 @@ void ThreadedTaskRunner::wait_for_all_tasks() {
 			}
 		}
 
-		OS::get_singleton()->delay_usec(2000);
+		Thread::sleep_usec(2000);
 
 		if (!error2_reported && Time::get_singleton()->get_ticks_msec() - before > suspicious_delay_msec) {
 			ZN_PRINT_WARNING("Waiting for all tasks to be completed is taking a long time");

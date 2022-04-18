@@ -12,6 +12,8 @@
 #include "../../util/profiling_clock.h"
 #include "../../util/string_funcs.h"
 #include "../../util/tasks/async_dependency_tracker.h"
+#include "../../util/thread/mutex.h"
+#include "../../util/thread/rw_lock.h"
 #include "../instancing/voxel_instancer.h"
 #include "voxel_lod_terrain_update_task.h"
 

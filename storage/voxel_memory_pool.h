@@ -3,7 +3,7 @@
 
 #include "../util/fixed_array.h"
 #include "../util/math/funcs.h"
-#include "core/os/mutex.h"
+#include "../util/thread/mutex.h"
 
 #include <atomic>
 #include <limits>

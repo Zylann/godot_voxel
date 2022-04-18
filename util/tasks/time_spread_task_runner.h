@@ -2,7 +2,7 @@
 #define ZYLANN_TIME_SPREAD_TASK_RUNNER_H
 
 #include "../span.h"
-#include <core/os/mutex.h>
+#include "../thread/mutex.h"
 #include <cstdint>
 #include <queue>
 
