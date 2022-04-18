@@ -47,7 +47,9 @@ FileResult check_magic_and_version(
 	return FILE_OK;
 }
 
-Error check_directory_created(const String &directory_path) {
+Error check_directory_created(const std::string &p_directory_path) {
+	const String directory_path(p_directory_path.c_str());
+
 	Ref<DirAccess> d = DirAccess::create_for_path(directory_path);
 
 	if (d == nullptr) {
@@ -68,7 +70,7 @@ Error check_directory_created(const String &directory_path) {
 }
 
 namespace voxel {
-Error check_directory_created_using_file_locker(const String &directory_path) {
+Error check_directory_created_using_file_locker(const std::string &directory_path) {
 	VoxelFileLockerWrite file_wlock(directory_path);
 	return check_directory_created(directory_path);
 }

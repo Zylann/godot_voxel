@@ -279,21 +279,23 @@ FileResult VoxelStreamRegionFiles::save_meta() {
 	d["channel_depths"] = channel_depths;
 
 	JSON json;
-	String json_string = json.stringify(d, "\t", true);
+	const String json_string = json.stringify(d, "\t", true);
 
 	// Make sure the directory exists
 	{
-		Error err = check_directory_created_using_file_locker(_directory_path);
+		const CharString directory_path_utf8 = _directory_path.utf8();
+		Error err = check_directory_created_using_file_locker(directory_path_utf8.get_data());
 		if (err != OK) {
 			ERR_PRINT("Could not save meta");
 			return FILE_CANT_OPEN;
 		}
 	}
 
-	String meta_path = _directory_path.plus_file(META_FILE_NAME);
+	const String meta_path = _directory_path.plus_file(META_FILE_NAME);
+	const CharString meta_path_utf8 = meta_path.utf8();
 
 	Error err;
-	VoxelFileLockerWrite file_wlock(meta_path);
+	VoxelFileLockerWrite file_wlock(meta_path_utf8.get_data());
 	Ref<FileAccess> f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
 	if (f.is_null()) {
 		ERR_PRINT(String("Could not save {0}").format(varray(meta_path)));
@@ -335,12 +337,13 @@ FileResult VoxelStreamRegionFiles::load_meta() {
 	// Ensure you cleanup previous world before loading another
 	CRASH_COND(_region_cache.size() > 0);
 
-	String meta_path = _directory_path.plus_file(META_FILE_NAME);
+	const String meta_path = _directory_path.plus_file(META_FILE_NAME);
 	String json_string;
 
 	{
 		Error err;
-		VoxelFileLockerRead file_rlock(meta_path);
+		const CharString meta_path_utf8 = meta_path.utf8();
+		VoxelFileLockerRead file_rlock(meta_path_utf8.get_data());
 		Ref<FileAccess> f = FileAccess::open(meta_path, FileAccess::READ, &err);
 		if (f.is_null()) {
 			return FILE_CANT_OPEN;
@@ -357,8 +360,7 @@ FileResult VoxelStreamRegionFiles::load_meta() {
 	const String json_err_msg = json.get_error_message();
 	const int json_err_line = json.get_error_line();
 	if (json_err != OK) {
-		ERR_PRINT(
-				String("Error when parsing {0}: line {1}: {2}").format(varray(meta_path, json_err_line, json_err_msg)));
+		ZN_PRINT_ERROR(format("Error when parsing {}: line {}: {}", meta_path, json_err_line, json_err_msg));
 		return FILE_INVALID_DATA;
 	}
 

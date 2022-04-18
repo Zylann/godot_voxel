@@ -5,7 +5,8 @@
 #include "thread/mutex.h"
 #include "thread/rw_lock.h"
 
-#include <core/templates/hash_map.h>
+#include <string>
+#include <unordered_map>
 
 namespace zylann {
 
@@ -13,23 +14,15 @@ namespace zylann {
 // so that multiple threads (controlled by this module) wanting to access the same file will lock a shared mutex.
 class FileLocker {
 public:
-	~FileLocker() {
-		const String *key = nullptr;
-		while ((key = _files.next(key))) {
-			File *f = _files[*key];
-			memdelete(f);
-		}
-	}
-
-	void lock_read(String fpath) {
+	void lock_read(const std::string &fpath) {
 		lock(fpath, true);
 	}
 
-	void lock_write(String fpath) {
+	void lock_write(const std::string &fpath) {
 		lock(fpath, false);
 	}
 
-	void unlock(String fpath) {
+	void unlock(const std::string &fpath) {
 		unlock_internal(fpath);
 	}
 
@@ -39,18 +32,13 @@ private:
 		bool read_only;
 	};
 
-	void lock(String fpath, bool read_only) {
+	void lock(const std::string &fpath, bool read_only) {
 		File *fp = nullptr;
 		{
 			MutexLock lock(_files_mutex);
-			File **fpp = _files.getptr(fpath);
-
-			if (fpp == nullptr) {
-				fp = memnew(File);
-				_files.set(fpath, fp);
-			} else {
-				fp = *fpp;
-			}
+			// Get or create.
+			// Note, we never remove entries from the map
+			fp = &_files[fpath];
 		}
 
 		if (read_only) {
@@ -65,14 +53,13 @@ private:
 		}
 	}
 
-	void unlock_internal(String fpath) {
+	void unlock_internal(const std::string &fpath) {
 		File *fp = nullptr;
-		// I assume `get_path` returns the same string that was used to open it
 		{
 			MutexLock lock(_files_mutex);
-			File **fpp = _files.getptr(fpath);
-			if (fpp != nullptr) {
-				fp = *fpp;
+			auto it = _files.find(fpath);
+			if (it != _files.end()) {
+				fp = &it->second;
 			}
 		}
 		ZN_ASSERT_RETURN(fp != nullptr);
@@ -88,8 +75,7 @@ private:
 
 private:
 	Mutex _files_mutex;
-	// Had to use dynamic allocs because HashMap does not implement move semantics
-	HashMap<String, File *> _files;
+	std::unordered_map<std::string, File> _files;
 };
 
 } // namespace zylann

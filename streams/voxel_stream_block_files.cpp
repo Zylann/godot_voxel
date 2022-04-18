@@ -48,11 +48,12 @@ void VoxelStreamBlockFiles::load_voxel_block(VoxelStream::VoxelQueryData &q) {
 	ERR_FAIL_COND(q.lod >= _meta.lod_count);
 	ERR_FAIL_COND(block_size != q.voxel_buffer.get_size());
 
-	Vector3i block_pos = get_block_position(q.origin_in_voxels) >> q.lod;
-	String file_path = get_block_file_path(block_pos, q.lod);
+	const Vector3i block_pos = get_block_position(q.origin_in_voxels) >> q.lod;
+	const String file_path = get_block_file_path(block_pos, q.lod);
+	const CharString file_path_utf8 = file_path.utf8();
 
 	Ref<FileAccess> f;
-	VoxelFileLockerRead file_rlock(file_path);
+	VoxelFileLockerRead file_rlock(file_path_utf8.get_data());
 	{
 		Error err;
 		f = FileAccess::open(file_path, FileAccess::READ, &err);
@@ -125,13 +126,15 @@ void VoxelStreamBlockFiles::save_voxel_block(VoxelStream::VoxelQueryData &q) {
 	const String file_path = get_block_file_path(block_pos, q.lod);
 
 	{
-		const Error err = check_directory_created_using_file_locker(file_path.get_base_dir());
+		const CharString file_path_base_dir = file_path.get_base_dir().utf8();
+		const Error err = check_directory_created_using_file_locker(file_path_base_dir.get_data());
 		ERR_FAIL_COND(err != OK);
 	}
 
 	{
 		Ref<FileAccess> f;
-		VoxelFileLockerWrite file_wlock(file_path);
+		const CharString file_path_utf8 = file_path.utf8();
+		VoxelFileLockerWrite file_wlock(file_path_utf8.get_data());
 		{
 			Error err;
 			// Create file if not exists, always truncate
@@ -177,18 +180,20 @@ FileResult VoxelStreamBlockFiles::save_meta() {
 
 	// Make sure the directory exists
 	{
-		Error err = check_directory_created_using_file_locker(_directory_path);
+		const CharString directory_path_utf8 = _directory_path.utf8();
+		const Error err = check_directory_created_using_file_locker(directory_path_utf8.get_data());
 		if (err != OK) {
 			ERR_PRINT("Could not save meta");
 			return FILE_CANT_OPEN;
 		}
 	}
 
-	String meta_path = _directory_path.plus_file(META_FILE_NAME);
+	const String meta_path = _directory_path.plus_file(META_FILE_NAME);
 
 	{
 		Error err;
-		VoxelFileLockerWrite file_wlock(meta_path);
+		const CharString meta_path_utf8 = meta_path.utf8();
+		VoxelFileLockerWrite file_wlock(meta_path_utf8.get_data());
 		Ref<FileAccess> f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
 		ERR_FAIL_COND_V(f == nullptr, FILE_CANT_OPEN);
 
@@ -221,12 +226,13 @@ FileResult VoxelStreamBlockFiles::load_or_create_meta() {
 FileResult VoxelStreamBlockFiles::load_meta() {
 	CRASH_COND(_directory_path.is_empty());
 
-	String meta_path = _directory_path.plus_file(META_FILE_NAME);
+	const String meta_path = _directory_path.plus_file(META_FILE_NAME);
 
 	Meta meta;
 	{
 		Error open_result;
-		VoxelFileLockerRead file_rlock(meta_path);
+		const CharString meta_path_utf8 = meta_path.utf8();
+		VoxelFileLockerRead file_rlock(meta_path_utf8.get_data());
 		Ref<FileAccess> f = FileAccess::open(meta_path, FileAccess::READ, &open_result);
 		// Had to add ERR_FILE_CANT_OPEN because that's what Godot actually returns when the file doesn't exist...
 		if (!_meta_saved && (open_result == ERR_FILE_NOT_FOUND || open_result == ERR_FILE_CANT_OPEN)) {

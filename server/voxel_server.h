@@ -265,7 +265,7 @@ private:
 };
 
 struct VoxelFileLockerRead {
-	VoxelFileLockerRead(String path) : _path(path) {
+	VoxelFileLockerRead(const std::string &path) : _path(path) {
 		VoxelServer::get_singleton().get_file_locker().lock_read(path);
 	}
 
@@ -273,11 +273,11 @@ struct VoxelFileLockerRead {
 		VoxelServer::get_singleton().get_file_locker().unlock(_path);
 	}
 
-	String _path;
+	std::string _path;
 };
 
 struct VoxelFileLockerWrite {
-	VoxelFileLockerWrite(String path) : _path(path) {
+	VoxelFileLockerWrite(const std::string &path) : _path(path) {
 		VoxelServer::get_singleton().get_file_locker().lock_write(path);
 	}
 
@@ -285,7 +285,7 @@ struct VoxelFileLockerWrite {
 		VoxelServer::get_singleton().get_file_locker().unlock(_path);
 	}
 
-	String _path;
+	std::string _path;
 };
 
 // Helper class to store tasks and schedule them in a single batch

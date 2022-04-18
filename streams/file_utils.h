@@ -50,7 +50,7 @@ FileResult check_magic_and_version(
 
 namespace voxel {
 // Specific to voxel because it uses a global lock found only in VoxelServer
-Error check_directory_created_using_file_locker(const String &directory_path);
+Error check_directory_created_using_file_locker(const std::string &directory_path);
 } // namespace voxel
 
 void insert_bytes(FileAccess &f, size_t count, size_t temp_chunk_size = 512);
