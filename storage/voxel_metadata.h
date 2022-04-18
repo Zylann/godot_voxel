@@ -38,10 +38,14 @@ public:
 	enum Type : uint8_t { //
 		TYPE_EMPTY = 0,
 		TYPE_U64 = 1,
-		// Reserved types.
+		// Reserved predefined types.
 
-		TYPE_CUSTOM_BEGIN = 32
+		TYPE_CUSTOM_BEGIN = 32,
 		// Types equal or greater will implement `ICustomVoxelMetadata`.
+
+		TYPE_APP_SPECIFIC_BEGIN = 40
+		// Nothing prevents registering custom types lower than this index, but for convenience, it should be used for
+		// application-specific types (aka game-specific). Lower indices can be used for engine-specific integrations.
 	};
 
 	static const unsigned int CUSTOM_TYPES_MAX_COUNT = 256 - TYPE_CUSTOM_BEGIN;
