@@ -16,17 +16,17 @@ void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, 
 
 #ifdef DEBUG_ENABLED
 	if (src.data() == dst.data()) {
-		ERR_FAIL_COND_MSG(
-				Box3i::from_min_max(src_min, src_max).intersects(Box3i::from_min_max(dst_min, dst_min + area_size)),
+		ZN_ASSERT_RETURN_MSG(
+				!Box3i::from_min_max(src_min, src_max).intersects(Box3i::from_min_max(dst_min, dst_min + area_size)),
 				"Copy across the same buffer to an overlapping area is not supported");
 	}
-	ERR_FAIL_COND(Vector3iUtil::get_volume(area_size) * item_size > dst.size());
-	ERR_FAIL_COND(Vector3iUtil::get_volume(area_size) * item_size > src.size());
+	ZN_ASSERT_RETURN(Vector3iUtil::get_volume(area_size) * item_size <= dst.size());
+	ZN_ASSERT_RETURN(Vector3iUtil::get_volume(area_size) * item_size <= src.size());
 #endif
 
 	if (area_size == src_size && area_size == dst_size) {
 		// Copy everything
-		ERR_FAIL_COND(dst.size() != src.size());
+		ZN_ASSERT_RETURN(dst.size() == src.size());
 		memcpy(dst.data(), src.data(), dst.size());
 
 	} else {
@@ -42,8 +42,8 @@ void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, 
 			unsigned int dst_ri = Vector3iUtil::get_zxy_index(Vector3i(dst_min + pos), dst_size) * item_size;
 			for (; pos.x < area_size.x; ++pos.x) {
 #ifdef DEBUG_ENABLED
-				ERR_FAIL_COND(dst_ri >= dst.size());
-				ERR_FAIL_COND(dst.size() - dst_ri < area_size.y * item_size);
+				ZN_ASSERT_RETURN(dst_ri < dst.size());
+				ZN_ASSERT_RETURN(dst.size() - dst_ri >= area_size.y * item_size);
 #endif
 				// TODO Cast src and dst to `restrict` so the optimizer can assume adresses don't overlap,
 				//      which might allow to write as a for loop (which may compile as a `memcpy`)?
