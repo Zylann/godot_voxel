@@ -16,7 +16,7 @@ public:
 
 	inline void wait() const {
 		std::unique_lock<decltype(_mutex)> lock(_mutex);
-		while (_count != 0) { // Handle spurious wake-ups.
+		while (_count == 0) { // Handle spurious wake-ups.
 			_condition.wait(lock);
 		}
 		--_count;
