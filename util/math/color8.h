@@ -29,12 +29,27 @@ struct Color8 {
 
 	static inline Color8 from_u8(uint8_t v) {
 		// rrggbbaa
-		return Color8(v >> 6, ((v >> 4) & 3), ((v >> 2) & 3), v & 3);
+		// Each color component is in 0..3, bring back to 0..255
+		// 0, 85, 170, 255
+		return Color8( //
+				(v >> 6) * 85, //
+				((v >> 4) & 3) * 85, //
+				((v >> 2) & 3) * 85, //
+				(v & 3) * 85);
 	}
 
 	static inline Color8 from_u16(uint16_t v) {
 		// rrrrgggg bbbbaaaa 🐐
-		return Color8(v >> 12, ((v >> 8) & 0xf), ((v >> 4) & 0xf), v & 0xf);
+		// Each color component is in 0..15, bring back to 0..255
+		//   0,  17,  34,  51,
+		//  68, 85,  102, 119,
+		// 136, 153, 170, 187,
+		// 204, 221, 238, 255
+		return Color8( //
+				(v >> 12) * 17, //
+				((v >> 8) & 0xf) * 17, //
+				((v >> 4) & 0xf) * 17, //
+				(v & 0xf) * 17);
 	}
 
 	static inline Color8 from_u32(uint32_t c) {
