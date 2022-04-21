@@ -1,6 +1,7 @@
 #include "voxel_tool.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/log.h"
+#include "../util/math/color8.h"
 #include "../util/profiling.h"
 
 namespace zylann::voxel {
@@ -293,6 +294,10 @@ void VoxelTool::_b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels
 	paste(pos, voxels, channels_mask, mask_value > 0xffffffff, mask_value);
 }
 
+static int _b_color_to_u16(Color col) {
+	return Color8(col).to_u16();
+}
+
 void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_value", "v"), &VoxelTool::set_value);
 	ClassDB::bind_method(D_METHOD("get_value"), &VoxelTool::get_value);
@@ -337,6 +342,8 @@ void VoxelTool::_bind_methods() {
 			&VoxelTool::_b_raycast, DEFVAL(10.0), DEFVAL(0xffffffff));
 
 	ClassDB::bind_method(D_METHOD("is_area_editable", "box"), &VoxelTool::_b_is_area_editable);
+
+	ClassDB::bind_static_method(VoxelTool::get_class_static(), D_METHOD("color_to_u16", "color"), &_b_color_to_u16);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "value"), "set_value", "get_value");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, gd::VoxelBuffer::CHANNEL_ID_HINT_STRING),
