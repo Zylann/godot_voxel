@@ -602,7 +602,7 @@ void VoxelGraphEditor::update_previews() {
 
 	uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
-	const VoxelGraphRuntime::CompilationResult result = _graph->compile();
+	const VoxelGraphRuntime::CompilationResult result = _graph->compile(true);
 	if (!result.success) {
 		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
 

@@ -350,7 +350,7 @@ void test_voxel_graph_generator_default_graph_compilation() {
 	Ref<VoxelGeneratorGraph> generator;
 	generator.instantiate();
 	generator->load_plane_preset();
-	VoxelGraphRuntime::CompilationResult result = generator->compile();
+	VoxelGraphRuntime::CompilationResult result = generator->compile(false);
 	ZYLANN_TEST_ASSERT_MSG(
 			result.success, String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 }
@@ -378,7 +378,7 @@ void test_voxel_graph_generator_expressions() {
 		generator->add_connection(in_z, 0, n_expression, 2);
 		generator->add_connection(n_expression, 0, out_sdf, 0);
 
-		VoxelGraphRuntime::CompilationResult result = generator->compile();
+		VoxelGraphRuntime::CompilationResult result = generator->compile(false);
 		ZYLANN_TEST_ASSERT_MSG(result.success,
 				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 	}
@@ -432,7 +432,7 @@ void test_voxel_graph_generator_expressions() {
 		generator->add_connection(n_plane, 0, n_expr, 2);
 		generator->add_connection(n_expr, 0, out_sdf, 0);
 
-		VoxelGraphRuntime::CompilationResult result = generator->compile();
+		VoxelGraphRuntime::CompilationResult result = generator->compile(true);
 		ZYLANN_TEST_ASSERT_MSG(result.success,
 				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 
@@ -491,7 +491,7 @@ void test_voxel_graph_generator_texturing() {
 	generator->add_connection(n_sub1, 0, out_weight0, 0);
 	generator->add_connection(n_clamp, 0, out_weight1, 0);
 
-	VoxelGraphRuntime::CompilationResult compilation_result = generator->compile();
+	VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
 	ZYLANN_TEST_ASSERT_MSG(compilation_result.success,
 			String("Failed to compile graph: {0}: {1}")
 					.format(varray(compilation_result.node_id, compilation_result.message)));

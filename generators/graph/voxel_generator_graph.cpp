@@ -862,15 +862,14 @@ static bool has_output_type(
 	return false;
 }
 
-VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile() {
+VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 	const int64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	std::shared_ptr<Runtime> r = make_shared_instance<Runtime>();
 	VoxelGraphRuntime &runtime = r->runtime;
 
 	// Core compilation
-	const VoxelGraphRuntime::CompilationResult result =
-			runtime.compile(_graph, Engine::get_singleton()->is_editor_hint());
+	const VoxelGraphRuntime::CompilationResult result = runtime.compile(_graph, debug);
 
 	if (!result.success) {
 		return result;
@@ -1589,7 +1588,7 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 		register_subresources();
 		// It's possible to auto-compile on load because `graph_data` is the only property set by the loader,
 		// which is enough to have all information we need
-		compile();
+		compile(Engine::get_singleton()->is_editor_hint());
 
 	} else {
 		_graph.clear();
@@ -1847,7 +1846,7 @@ Vector2 VoxelGeneratorGraph::_b_debug_analyze_range(Vector3 min_pos, Vector3 max
 }
 
 Dictionary VoxelGeneratorGraph::_b_compile() {
-	VoxelGraphRuntime::CompilationResult res = compile();
+	VoxelGraphRuntime::CompilationResult res = compile(false);
 	Dictionary d;
 	d["success"] = res.success;
 	if (!res.success) {

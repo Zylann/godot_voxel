@@ -177,7 +177,7 @@ public:
 
 	// Internal
 
-	VoxelGraphRuntime::CompilationResult compile();
+	VoxelGraphRuntime::CompilationResult compile(bool debug);
 	bool is_good() const;
 
 	void generate_set(Span<float> in_x, Span<float> in_y, Span<float> in_z);
