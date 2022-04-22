@@ -15,6 +15,9 @@ class VoxelBufferInternal;
 
 namespace BlockSerializer {
 
+// Latest version, used when serializing
+static const uint8_t BLOCK_FORMAT_VERSION = 4;
+
 struct SerializeResult {
 	// The lifetime of the pointed object is only valid in the calling thread,
 	// until another serialization or deserialization call is made

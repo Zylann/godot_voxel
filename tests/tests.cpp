@@ -1138,17 +1138,37 @@ void test_block_serializer() {
 	voxel_buffer.fill_area(43, Vector3i(2, 3, 4), Vector3i(6, 6, 6), 0);
 	voxel_buffer.fill_area(44, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 1);
 
-	// Serialize
-	BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(voxel_buffer);
-	ZYLANN_TEST_ASSERT(result.success);
-	std::vector<uint8_t> data = result.data;
+	{
+		// Serialize without compression wrapper
+		BlockSerializer::SerializeResult result = BlockSerializer::serialize(voxel_buffer);
+		ZYLANN_TEST_ASSERT(result.success);
+		std::vector<uint8_t> data = result.data;
 
-	// Deserialize
-	VoxelBufferInternal deserialized_voxel_buffer;
-	ZYLANN_TEST_ASSERT(BlockSerializer::decompress_and_deserialize(to_span_const(data), deserialized_voxel_buffer));
+		ZYLANN_TEST_ASSERT(data.size() > 0);
+		ZYLANN_TEST_ASSERT(data[0] == BlockSerializer::BLOCK_FORMAT_VERSION);
 
-	// Must be equal
-	ZYLANN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
+		// Deserialize
+		VoxelBufferInternal deserialized_voxel_buffer;
+		ZYLANN_TEST_ASSERT(BlockSerializer::deserialize(to_span_const(data), deserialized_voxel_buffer));
+
+		// Must be equal
+		ZYLANN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
+	}
+	{
+		// Serialize
+		BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(voxel_buffer);
+		ZYLANN_TEST_ASSERT(result.success);
+		std::vector<uint8_t> data = result.data;
+
+		ZYLANN_TEST_ASSERT(data.size() > 0);
+
+		// Deserialize
+		VoxelBufferInternal deserialized_voxel_buffer;
+		ZYLANN_TEST_ASSERT(BlockSerializer::decompress_and_deserialize(to_span_const(data), deserialized_voxel_buffer));
+
+		// Must be equal
+		ZYLANN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
+	}
 }
 
 void test_block_serializer_stream_peer() {

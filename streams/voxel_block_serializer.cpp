@@ -19,7 +19,6 @@
 namespace zylann::voxel {
 namespace BlockSerializer {
 
-const uint8_t BLOCK_FORMAT_VERSION = 3;
 const unsigned int BLOCK_TRAILING_MAGIC = 0x900df00d;
 const unsigned int BLOCK_TRAILING_MAGIC_SIZE = 4;
 const unsigned int BLOCK_METADATA_HEADER_SIZE = sizeof(uint32_t);
