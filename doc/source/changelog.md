@@ -50,6 +50,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: fixed memory leaks when the graph contains resources
     - `VoxelMesherCubes`: editor: color mode is now a proper dropdown
     - `VoxelMesherCubes`: fixed raw color mode not working properly
+    - `VoxelMesherCubes`: wrong alpha check between transparent and solid cubes
     - `VoxelMesherTransvoxel`: fixed surface not appearing if it lines up exactly at integer coordinates
     - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
     - `VoxelTerrain`: changing a material now updates existing meshes instead of only new ones

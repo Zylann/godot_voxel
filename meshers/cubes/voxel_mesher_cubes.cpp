@@ -60,7 +60,7 @@ enum FaceSide {
 // 1 if alpha is neither zero neither max,
 // 2 if alpha is max
 inline uint8_t get_alpha_index(Color8 c) {
-	return (c.a == 0xf) + (c.a > 0);
+	return (c.a == 0xff) + (c.a > 0);
 }
 
 template <typename Voxel_T, typename Color_F>
