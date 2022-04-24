@@ -12,11 +12,17 @@
 // In modules, memnew and memdelete work for anything. However in GDExtension it might not be the case...
 #define ZN_NEW(t) memnew(t)
 #define ZN_DELETE(t) memdelete(t)
+#define ZN_ALLOC(size) memalloc(size)
+#define ZN_REALLOC(p, size) memrealloc(p, size)
+#define ZN_FREE(p) memfree(p)
 
 #else
 
 #define ZN_NEW(t) new t
 #define ZN_DELETE(t) delete t
+#define ZN_ALLOC(size) malloc(size)
+#define ZN_REALLOC(p, size) realloc(p, size)
+#define ZN_FREE(p) free(p)
 
 #endif
 
