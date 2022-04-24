@@ -55,7 +55,7 @@ void set_as_variant(VoxelMetadata &meta, Variant v) {
 	if (v.get_type() == Variant::NIL) {
 		meta.clear();
 	} else {
-		if (meta.get_type() == METADATA_TYPE_VARIANT) {
+		if (int(meta.get_type()) == METADATA_TYPE_VARIANT) {
 			VoxelMetadataVariant &mv = static_cast<VoxelMetadataVariant &>(meta.get_custom());
 			mv.data = v;
 			return;
