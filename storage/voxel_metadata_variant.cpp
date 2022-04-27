@@ -17,7 +17,7 @@ size_t VoxelMetadataVariant::serialize(Span<uint8_t> dst) const {
 	return written_length;
 }
 
-bool VoxelMetadataVariant::deserialize(Span<const uint8_t> src, size_t &out_read_size) {
+bool VoxelMetadataVariant::deserialize(Span<const uint8_t> src, uint64_t &out_read_size) {
 	int read_length;
 	const Error err = decode_variant(data, src.data(), src.size(), &read_length, false);
 	ERR_FAIL_COND_V_MSG(err != OK, false, "Failed to deserialize block metadata");
