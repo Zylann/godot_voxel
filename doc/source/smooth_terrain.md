@@ -305,7 +305,7 @@ By default smooth voxels also produce smooth meshes by sharing vertices. This al
 It is currently not possible to make the mesher produce vertices with split flat triangles, but you can use this in your fragment shader:
 
 ```glsl
-NORMAL = normalize(cross(dFdx(VERTEX), dFdy(VERTEX)));
+NORMAL = normalize(cross(dFdy(VERTEX), dFdx(VERTEX)));
 ```
 
 ![Flat shading](images/flat_shading.png)
