@@ -1,3 +1,6 @@
+#ifndef ZN_VECTOR3_H
+#define ZN_VECTOR3_H
+
 #include "funcs.h"
 #include <core/math/vector3.h>
 
@@ -16,3 +19,5 @@ inline bool has_nan(const Vector3 &v) {
 }
 
 } // namespace zylann::math
+
+#endif // ZN_VECTOR3_H
