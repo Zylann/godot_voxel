@@ -112,9 +112,21 @@ PackedStringArray to_godot(const std::vector<std::string> &sv);
 
 #endif
 
-template <typename T>
-Span<const T> to_span_const(const Vector<T> &a) {
-	return Span<const T>(a.ptr(), 0, a.size());
+// template <typename T>
+// Span<const T> to_span_const(const Vector<T> &a) {
+// 	return Span<const T>(a.ptr(), 0, a.size());
+// }
+
+inline Span<const Vector2> to_span(const PackedVector2Array &a) {
+	return Span<const Vector2>(a.ptr(), a.size());
+}
+
+inline Span<const Vector3> to_span(const PackedVector3Array &a) {
+	return Span<const Vector3>(a.ptr(), a.size());
+}
+
+inline Span<const int> to_span(const PackedInt32Array &a) {
+	return Span<const int>(a.ptr(), a.size());
 }
 
 inline String ptr2s(const void *p) {

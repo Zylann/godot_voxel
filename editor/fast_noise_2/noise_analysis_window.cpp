@@ -326,7 +326,7 @@ void NoiseAnalysisWindow::_process() {
 	if (_current_step >= _analysis_params.step_count) {
 		set_process(false);
 
-		_chart_view->set_points(to_span_const(_results.maximum_derivative_per_step_length));
+		_chart_view->set_points(to_span(_results.maximum_derivative_per_step_length));
 		_chart_view->auto_fit_view(Vector2(0.1, 0.1));
 
 		_minimum_value_line_edit->set_text(String::num_real(_results.minimum_value));
