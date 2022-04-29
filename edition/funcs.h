@@ -3,6 +3,7 @@
 
 #include "../storage/funcs.h"
 #include "../util/fixed_array.h"
+#include "../util/math/vector3.h"
 
 namespace zylann::voxel {
 
@@ -109,5 +110,76 @@ inline void blend_texture_packed_u16(
 }
 
 } // namespace zylann::voxel
+
+namespace zylann::voxel::ops {
+
+template <typename Op, typename Shape>
+struct SdfOperation16bit {
+	Op op;
+	Shape shape;
+	inline int16_t operator()(Vector3i pos, int16_t sdf) const {
+		return snorm_to_s16(op(s16_to_snorm(sdf), shape(Vector3(pos))));
+	}
+};
+
+struct SdfUnion {
+	inline real_t operator()(real_t a, real_t b) const {
+		return zylann::math::sdf_union(a, b);
+	}
+};
+
+struct SdfSubtract {
+	inline real_t operator()(real_t a, real_t b) const {
+		return zylann::math::sdf_subtract(a, b);
+	}
+};
+
+struct SdfSet {
+	inline real_t operator()(real_t a, real_t b) const {
+		return b;
+	}
+};
+
+struct SdfSphere {
+	Vector3 center;
+	real_t radius;
+	real_t scale;
+
+	inline real_t operator()(Vector3 pos) const {
+		return scale * zylann::math::sdf_sphere(pos, center, radius);
+	}
+};
+
+struct TextureParams {
+	float opacity = 1.f;
+	float sharpness = 2.f;
+	unsigned int index = 0;
+};
+
+struct TextureBlendSphereOp {
+	Vector3 center;
+	float radius;
+	float radius_squared;
+	TextureParams tp;
+
+	TextureBlendSphereOp(Vector3 p_center, float p_radius, TextureParams p_tp) {
+		center = p_center;
+		radius = p_radius;
+		radius_squared = p_radius * p_radius;
+		tp = p_tp;
+	}
+
+	inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
+		const float distance_squared = Vector3(pos).distance_squared_to(center);
+		if (distance_squared < radius_squared) {
+			const float distance_from_radius = radius - Math::sqrt(distance_squared);
+			const float target_weight =
+					tp.opacity * math::clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
+			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
+		}
+	}
+};
+
+}; // namespace zylann::voxel::ops
 
 #endif // VOXEL_EDITION_FUNCS_H
