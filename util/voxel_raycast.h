@@ -32,7 +32,7 @@ bool voxel_raycast(Vector3 ray_origin, Vector3 ray_direction, Predicate_F predic
 	/* Initialisation */
 
 	// Voxel position
-	Vector3i hit_pos = Vector3iUtil::from_floored(ray_origin);
+	Vector3i hit_pos = math::floor(ray_origin);
 	Vector3i hit_prev_pos = hit_pos;
 
 	// Voxel step

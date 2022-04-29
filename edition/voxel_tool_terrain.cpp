@@ -167,7 +167,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 
 	ZN_PROFILE_SCOPE();
 
-	const Box3i box(Vector3iUtil::from_floored(center) - Vector3iUtil::create(Math::floor(radius)),
+	const Box3i box(math::floor(center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {
@@ -350,7 +350,7 @@ void VoxelToolTerrain::run_blocky_random_tick(
 
 	const VoxelBlockyLibrary &lib = **_terrain->get_voxel_library();
 	VoxelDataMap &map = _terrain->get_storage();
-	const Box3i voxel_box(Vector3iUtil::from_floored(voxel_area.position), Vector3iUtil::from_floored(voxel_area.size));
+	const Box3i voxel_box(math::floor(voxel_area.position), math::floor(voxel_area.size));
 
 	run_blocky_random_tick_static(
 			map, voxel_box, lib, voxel_count, batch_count, &cb_self, [](void *self, Vector3i pos, int64_t val) {
@@ -376,8 +376,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 	ERR_FAIL_COND(callback.is_null());
 	ERR_FAIL_COND(!math::is_valid_size(voxel_area.size));
 
-	const Box3i voxel_box =
-			Box3i(Vector3iUtil::from_floored(voxel_area.position), Vector3iUtil::from_floored(voxel_area.size));
+	const Box3i voxel_box = Box3i(math::floor(voxel_area.position), math::floor(voxel_area.size));
 	ERR_FAIL_COND(!is_area_editable(voxel_box));
 
 	const Box3i data_block_box = voxel_box.downscaled(_terrain->get_data_block_size());

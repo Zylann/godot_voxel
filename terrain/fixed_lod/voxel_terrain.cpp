@@ -1086,7 +1086,7 @@ void VoxelTerrain::process_viewers() {
 				const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
 
 				state.view_distance_voxels = math::min(view_distance_voxels, self._max_view_distance_voxels);
-				state.local_position_voxels = Vector3iUtil::from_floored(local_position);
+				state.local_position_voxels = math::floor(local_position);
 				state.requires_collisions = VoxelServer::get_singleton().is_viewer_requiring_collisions(viewer_id);
 				state.requires_meshes = VoxelServer::get_singleton().is_viewer_requiring_visuals(viewer_id);
 
@@ -1101,8 +1101,7 @@ void VoxelTerrain::process_viewers() {
 				if (state.requires_meshes || state.requires_collisions) {
 					const int view_distance_mesh_blocks = math::ceildiv(state.view_distance_voxels, mesh_block_size);
 					const int render_to_data_factor = (mesh_block_size / data_block_size);
-					const Vector3i mesh_block_pos =
-							Vector3iUtil::floordiv(state.local_position_voxels, mesh_block_size);
+					const Vector3i mesh_block_pos = math::floordiv(state.local_position_voxels, mesh_block_size);
 
 					// Adding one block of padding because meshing requires neighbors
 					view_distance_data_blocks = view_distance_mesh_blocks * render_to_data_factor + 1;
@@ -1115,7 +1114,7 @@ void VoxelTerrain::process_viewers() {
 				} else {
 					view_distance_data_blocks = math::ceildiv(state.view_distance_voxels, data_block_size);
 
-					data_block_pos = Vector3iUtil::floordiv(state.local_position_voxels, data_block_size);
+					data_block_pos = math::floordiv(state.local_position_voxels, data_block_size);
 					state.mesh_box = Box3i();
 				}
 
@@ -1608,7 +1607,7 @@ Box3i VoxelTerrain::get_bounds() const {
 }
 
 Vector3i VoxelTerrain::_b_voxel_to_data_block(Vector3 pos) const {
-	return _data_map.voxel_to_block(Vector3iUtil::from_floored(pos));
+	return _data_map.voxel_to_block(math::floor(pos));
 }
 
 Vector3i VoxelTerrain::_b_data_block_to_voxel(Vector3i pos) const {
@@ -1621,7 +1620,7 @@ void VoxelTerrain::_b_save_modified_blocks() {
 
 // Explicitely ask to save a block if it was modified
 void VoxelTerrain::_b_save_block(Vector3i p_block_pos) {
-	const Vector3i block_pos(Vector3iUtil::from_floored(p_block_pos));
+	const Vector3i block_pos(math::floor(p_block_pos));
 
 	VoxelDataBlock *block = _data_map.get_block(block_pos);
 	ERR_FAIL_COND(block == nullptr);
@@ -1635,7 +1634,7 @@ void VoxelTerrain::_b_save_block(Vector3i p_block_pos) {
 
 void VoxelTerrain::_b_set_bounds(AABB aabb) {
 	ERR_FAIL_COND(!math::is_valid_size(aabb.size));
-	set_bounds(Box3i(Vector3iUtil::from_rounded(aabb.position), Vector3iUtil::from_rounded(aabb.size)));
+	set_bounds(Box3i(math::round(aabb.position), math::round(aabb.size)));
 }
 
 AABB VoxelTerrain::_b_get_bounds() const {

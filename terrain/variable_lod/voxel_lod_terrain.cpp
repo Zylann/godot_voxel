@@ -953,7 +953,7 @@ Vector3i VoxelLodTerrain::voxel_to_data_block_position(Vector3 vpos, int lod_ind
 	ERR_FAIL_COND_V(lod_index < 0, Vector3i());
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3i());
 	const VoxelDataLodMap::Lod &lod = _data->lods[lod_index];
-	const Vector3i bpos = lod.map.voxel_to_block(Vector3iUtil::from_floored(vpos)) >> lod_index;
+	const Vector3i bpos = lod.map.voxel_to_block(math::floor(vpos)) >> lod_index;
 	return bpos;
 }
 
@@ -961,7 +961,7 @@ Vector3i VoxelLodTerrain::voxel_to_mesh_block_position(Vector3 vpos, int lod_ind
 	ERR_FAIL_COND_V(lod_index < 0, Vector3i());
 	ERR_FAIL_COND_V(lod_index >= get_lod_count(), Vector3i());
 	const unsigned int mesh_block_size_po2 = _update_data->settings.mesh_block_size_po2;
-	const Vector3i bpos = (Vector3iUtil::from_floored(vpos) >> mesh_block_size_po2) >> lod_index;
+	const Vector3i bpos = (math::floor(vpos) >> mesh_block_size_po2) >> lod_index;
 	return bpos;
 }
 
@@ -1795,7 +1795,7 @@ void VoxelLodTerrain::_b_save_modified_blocks() {
 
 void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {
 	ERR_FAIL_COND(!math::is_valid_size(aabb.size));
-	set_voxel_bounds(Box3i(Vector3iUtil::from_rounded(aabb.position), Vector3iUtil::from_rounded(aabb.size)));
+	set_voxel_bounds(Box3i(math::round(aabb.position), math::round(aabb.size)));
 }
 
 AABB VoxelLodTerrain::_b_get_voxel_bounds() const {
@@ -1817,7 +1817,7 @@ Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 wo
 
 	Array hits;
 	while (distance < max_distance && hits.size() == 0) {
-		const Vector3i posi = Vector3iUtil::from_floored(pos);
+		const Vector3i posi = math::floor(pos);
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 			const Vector3i bpos = (posi << mesh_block_size_po2) >> lod_index;
@@ -1844,7 +1844,7 @@ Dictionary VoxelLodTerrain::debug_get_data_block_info(Vector3 fbpos, int lod_ind
 	const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
 
 	const VoxelDataLodMap::Lod &data_lod = _data->lods[lod_index];
-	Vector3i bpos = Vector3iUtil::from_floored(fbpos);
+	Vector3i bpos = math::floor(fbpos);
 
 	int loading_state = 0;
 
@@ -1872,7 +1872,7 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 	const int lod_count = get_lod_count();
 	ERR_FAIL_COND_V(lod_index >= lod_count, d);
 
-	const Vector3i bpos = Vector3iUtil::from_floored(fbpos);
+	const Vector3i bpos = math::floor(fbpos);
 
 	bool loaded = false;
 	bool meshed = false;

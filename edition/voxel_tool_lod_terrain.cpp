@@ -29,7 +29,7 @@ bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 
 template <typename Volume_F>
 float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
-	const Vector3i c = Vector3iUtil::from_floored(pos);
+	const Vector3i c = math::floor(pos);
 
 	const float s000 = f(Vector3i(c.x, c.y, c.z));
 	const float s100 = f(Vector3i(c.x + 1, c.y, c.z));
@@ -222,7 +222,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	const Box3i box = Box3i(Vector3iUtil::from_floored(center) - Vector3iUtil::create(Math::floor(radius)),
+	const Box3i box = Box3i(math::floor(center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2))
 							  .clipped(_terrain->get_voxel_bounds());
 
@@ -294,7 +294,7 @@ private:
 void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	const Box3i box = Box3i(Vector3iUtil::from_floored(center) - Vector3iUtil::create(Math::floor(radius)),
+	const Box3i box = Box3i(math::floor(center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2))
 							  .clipped(_terrain->get_voxel_bounds());
 
@@ -716,8 +716,7 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Node *parent
 	Ref<VoxelMesher> mesher = _terrain->get_mesher();
 	Array materials;
 	materials.append(_terrain->get_material());
-	const Box3i int_world_box(
-			Vector3iUtil::from_floored(world_box.position), Vector3iUtil::from_ceiled(world_box.size));
+	const Box3i int_world_box(math::floor(world_box.position), math::ceil(world_box.size));
 	return zylann::voxel::separate_floating_chunks(
 			*this, int_world_box, parent_node, _terrain->get_global_transform(), mesher, materials);
 }

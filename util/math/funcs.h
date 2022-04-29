@@ -68,6 +68,7 @@ inline double maxf(double a, double b) {
 template <typename T>
 inline T clamp(const T x, const T min_value, const T max_value) {
 	// TODO Optimization: clang can optimize a min/max implementation. Worth changing to that?
+	// TODO Enforce T as being numeric
 	if (x < min_value) {
 		return min_value;
 	}

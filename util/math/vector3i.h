@@ -269,24 +269,13 @@ _FORCE_INLINE_ int64_t Vector3i::distance_sq(const Vector3i &other) const {
 
 #else
 
-namespace zylann::Vector3iUtil {
+namespace zylann {
+namespace Vector3iUtil {
 
 constexpr int AXIS_COUNT = 3;
 
 inline Vector3i create(int xyz) {
 	return Vector3i(xyz, xyz, xyz);
-}
-
-inline Vector3i from_floored(const Vector3 &f) {
-	return Vector3i(Math::floor(f.x), Math::floor(f.y), Math::floor(f.z));
-}
-
-inline Vector3i from_rounded(const Vector3 &f) {
-	return Vector3i(Math::round(f.x), Math::round(f.y), Math::round(f.z));
-}
-
-inline Vector3i from_ceiled(const Vector3 &f) {
-	return Vector3i(Math::ceil(f.x), Math::ceil(f.y), Math::ceil(f.z));
 }
 
 inline Vector3i from_cast(const Vector3 &f) {
@@ -320,6 +309,34 @@ inline Vector3i from_zxy_index(unsigned int i, const Vector3i area_size) {
 	return pos;
 }
 
+inline bool all_members_equal(const Vector3i v) {
+	return v.x == v.y && v.y == v.z;
+}
+
+inline bool is_unit_vector(const Vector3i v) {
+	return Math::abs(v.x) + Math::abs(v.y) + Math::abs(v.z) == 1;
+}
+
+inline bool is_valid_size(const Vector3i &s) {
+	return s.x >= 0 && s.y >= 0 && s.z >= 0;
+}
+
+} // namespace Vector3iUtil
+
+namespace math {
+
+inline Vector3i floor(const Vector3 &f) {
+	return Vector3i(Math::floor(f.x), Math::floor(f.y), Math::floor(f.z));
+}
+
+inline Vector3i round(const Vector3 &f) {
+	return Vector3i(Math::round(f.x), Math::round(f.y), Math::round(f.z));
+}
+
+inline Vector3i ceil(const Vector3 &f) {
+	return Vector3i(Math::ceil(f.x), Math::ceil(f.y), Math::ceil(f.z));
+}
+
 inline Vector3i floordiv(const Vector3i v, const Vector3i d) {
 	return Vector3i(
 			zylann::math::floordiv(v.x, d.x), zylann::math::floordiv(v.y, d.y), zylann::math::floordiv(v.z, d.z));
@@ -333,23 +350,21 @@ inline Vector3i ceildiv(const Vector3i v, const int d) {
 	return Vector3i(zylann::math::ceildiv(v.x, d), zylann::math::ceildiv(v.y, d), zylann::math::ceildiv(v.z, d));
 }
 
+inline Vector3i ceildiv(const Vector3i v, const Vector3i d) {
+	return Vector3i(zylann::math::ceildiv(v.x, d.x), zylann::math::ceildiv(v.y, d.y), zylann::math::ceildiv(v.z, d.z));
+}
+
 inline Vector3i wrap(const Vector3i v, const Vector3i d) {
 	return Vector3i(zylann::math::wrap(v.x, d.x), zylann::math::wrap(v.y, d.y), zylann::math::wrap(v.z, d.z));
 }
 
-inline bool all_members_equal(const Vector3i v) {
-	return v.x == v.y && v.y == v.z;
+inline Vector3i clamp(const Vector3i a, const Vector3i minv, const Vector3i maxv) {
+	return Vector3i(
+			math::clamp(a.x, minv.x, maxv.x), math::clamp(a.y, minv.y, maxv.y), math::clamp(a.z, minv.z, maxv.z));
 }
 
-inline bool is_unit_vector(const Vector3i v) {
-	return Math::abs(v.x) + Math::abs(v.y) + Math::abs(v.z) == 1;
-}
-
-inline bool is_valid_size(const Vector3i &s) {
-	return s.x >= 0 && s.y >= 0 && s.z >= 0;
-}
-
-} // namespace zylann::Vector3iUtil
+} // namespace math
+} // namespace zylann
 
 inline Vector3i operator<<(const Vector3i &a, int b) {
 #ifdef DEBUG_ENABLED

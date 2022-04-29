@@ -274,9 +274,9 @@ public:
 	// rounding outwards of the area covered by the original rectangle if divided coordinates have remainders.
 	inline Box3i downscaled(int step_size) const {
 		Box3i o;
-		o.pos = Vector3iUtil::floordiv(pos, step_size);
+		o.pos = math::floordiv(pos, step_size);
 		// TODO Is that ceildiv?
-		Vector3i max_pos = Vector3iUtil::floordiv(pos + size - Vector3i(1, 1, 1), step_size);
+		Vector3i max_pos = math::floordiv(pos + size - Vector3i(1, 1, 1), step_size);
 		o.size = max_pos - o.pos + Vector3i(1, 1, 1);
 		return o;
 	}
@@ -286,8 +286,7 @@ public:
 	// This is such that the result is included in the original rectangle (assuming a common coordinate system).
 	// The result can be an empty rectangle.
 	inline Box3i downscaled_inner(int step_size) const {
-		return Box3i::from_min_max(
-				Vector3iUtil::ceildiv(pos, step_size), Vector3iUtil::floordiv(pos + size, step_size));
+		return Box3i::from_min_max(math::ceildiv(pos, step_size), math::floordiv(pos + size, step_size));
 	}
 
 	static inline void clip_range(int &pos, int &size, int lim_pos, int lim_size) {

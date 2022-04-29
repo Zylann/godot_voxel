@@ -814,7 +814,7 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(const VoxelI
 	instance.component->attach(this);
 	instance.component->set_instance_index(instance_index);
 	instance.component->set_render_block_index(block_index);
-	instance.component->set_data_block_position(Vector3iUtil::from_floored(transform.origin) >> data_block_size_po2);
+	instance.component->set_data_block_position(math::floor(transform.origin) >> data_block_size_po2);
 
 	instance.root->set_transform(transform);
 
@@ -918,8 +918,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 					body->attach(this);
 					body->set_instance_index(instance_index);
 					body->set_render_block_index(block_index);
-					body->set_data_block_position(
-							Vector3iUtil::from_floored(body_transform.origin) >> data_block_size_po2);
+					body->set_data_block_position(math::floor(body_transform.origin) >> data_block_size_po2);
 
 					for (unsigned int i = 0; i < collision_shapes.size(); ++i) {
 						const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &shape_info = collision_shapes[i];
@@ -1119,7 +1118,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	ERR_FAIL_COND_MSG(render_to_data_factor < 1 || render_to_data_factor > 2, "Unsupported block size");
 
 	const int half_render_block_size = (1 << _parent_mesh_block_size_po2) / 2;
-	const Vector3i render_block_pos = Vector3iUtil::floordiv(data_grid_pos, render_to_data_factor);
+	const Vector3i render_block_pos = math::floordiv(data_grid_pos, render_to_data_factor);
 
 	const int octant_index = (data_grid_pos.x & 1) | ((data_grid_pos.y & 1) << 1) | ((data_grid_pos.z & 1) << 1);
 
@@ -1255,7 +1254,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Tra
 	for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
 		// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
 		const Transform3D mm_transform = multimesh->get_instance_transform(instance_index);
-		const Vector3i voxel_pos(Vector3iUtil::from_floored(mm_transform.origin + block_global_transform.origin));
+		const Vector3i voxel_pos(math::floor(mm_transform.origin + block_global_transform.origin));
 
 		if (!p_voxel_box.contains(voxel_pos)) {
 			continue;
@@ -1336,7 +1335,7 @@ void VoxelInstancer::remove_floating_scene_instances(Block &block, const Transfo
 		SceneInstance instance = block.scene_instances[instance_index];
 		ERR_CONTINUE(instance.root == nullptr);
 		const Transform3D scene_transform = instance.root->get_transform();
-		const Vector3i voxel_pos(Vector3iUtil::from_floored(scene_transform.origin + block_global_transform.origin));
+		const Vector3i voxel_pos(math::floor(scene_transform.origin + block_global_transform.origin));
 
 		if (!p_voxel_box.contains(voxel_pos)) {
 			continue;

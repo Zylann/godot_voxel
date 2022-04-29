@@ -161,7 +161,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 		return EMERGE_OK_FALLBACK;
 	}
 
-	const Vector3i block_rpos = Vector3iUtil::wrap(block_pos, region_size);
+	const Vector3i block_rpos = math::wrap(block_pos, region_size);
 
 	const Error err = cache->region.load_block(block_rpos, out_buffer);
 	switch (err) {
@@ -214,7 +214,7 @@ void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vect
 	const Vector3i region_size = Vector3iUtil::create(1 << _meta.region_size_po2);
 	Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
 	Vector3i region_pos = get_region_position_from_blocks(block_pos);
-	Vector3i block_rpos = Vector3iUtil::wrap(block_pos, region_size);
+	Vector3i block_rpos = math::wrap(block_pos, region_size);
 
 	CachedRegion *cache = open_region(region_pos, lod, true);
 	ERR_FAIL_COND_MSG(cache == nullptr, "Could not save region file data");

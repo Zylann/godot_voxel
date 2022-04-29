@@ -645,8 +645,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	ERR_FAIL_COND(!_graph->is_good());
 
 	const AABB aabb = _range_analysis_dialog->get_aabb();
-	_graph->debug_analyze_range(
-			Vector3iUtil::from_floored(aabb.position), Vector3iUtil::from_floored(aabb.position + aabb.size), true);
+	_graph->debug_analyze_range(math::floor(aabb.position), math::floor(aabb.position + aabb.size), true);
 
 	const VoxelGraphRuntime::State &state = _graph->get_last_state_from_current_thread();
 
