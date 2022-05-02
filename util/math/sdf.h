@@ -11,15 +11,15 @@ namespace zylann::math {
 // For more, see https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
 
 inline real_t sdf_box(const Vector3 pos, const Vector3 extents) {
-	Vector3 d = pos.abs() - extents;
+	const Vector3 d = pos.abs() - extents;
 	return minf(maxf(d.x, maxf(d.y, d.z)), 0) + Vector3(maxf(d.x, 0), maxf(d.y, 0), maxf(d.z, 0)).length();
 }
 
 inline Interval sdf_box(const Interval &x, const Interval &y, const Interval &z, const Interval &sx, const Interval &sy,
 		const Interval &sz) {
-	Interval dx = abs(x) - sx;
-	Interval dy = abs(y) - sy;
-	Interval dz = abs(z) - sz;
+	const Interval dx = abs(x) - sx;
+	const Interval dy = abs(y) - sy;
+	const Interval dz = abs(z) - sz;
 	return min_interval(max_interval(dx, max_interval(dy, dz)), 0) +
 			get_length(max_interval(dx, 0), max_interval(dy, 0), max_interval(dz, 0));
 }
@@ -29,13 +29,13 @@ inline real_t sdf_sphere(Vector3 pos, Vector3 center, real_t radius) {
 }
 
 inline real_t sdf_torus(real_t x, real_t y, real_t z, real_t r0, real_t r1) {
-	Vector2 q = Vector2(Vector2(x, z).length() - r0, y);
+	const Vector2 q = Vector2(Vector2(x, z).length() - r0, y);
 	return q.length() - r1;
 }
 
 inline Interval sdf_torus(
 		const Interval &x, const Interval &y, const Interval &z, const Interval r0, const Interval r1) {
-	Interval qx = get_length(x, z) - r0;
+	const Interval qx = get_length(x, z) - r0;
 	return get_length(qx, y) - r1;
 }
 
