@@ -119,9 +119,9 @@ void VoxelMeshSDF::bake(Ref<Mesh> mesh) {
 		case BAKE_MODE_APPROX_INTERP:
 			generate_mesh_sdf_approx_interp(sdf_grid, res, to_span(triangles), box_min_pos, box_max_pos);
 			break;
-		case BAKE_MODE_APPROX_SWEEP:
-			generate_mesh_sdf_approx_sweep(sdf_grid, res, to_span(triangles), box_min_pos, box_max_pos);
-			break;
+		// case BAKE_MODE_APPROX_SWEEP:
+		// 	generate_mesh_sdf_approx_sweep(sdf_grid, res, to_span(triangles), box_min_pos, box_max_pos);
+		// 	break;
 		default:
 			ZN_CRASH();
 	}
@@ -232,8 +232,8 @@ void VoxelMeshSDF::bake_async(Ref<Mesh> mesh, SceneTree *scene_tree) {
 					}
 				} break;
 
-				case BAKE_MODE_APPROX_INTERP:
-				case BAKE_MODE_APPROX_SWEEP: {
+				//case BAKE_MODE_APPROX_SWEEP:
+				case BAKE_MODE_APPROX_INTERP: {
 					VoxelBufferInternal &buffer = shared_data->buffer;
 					const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 					Span<float> sdf_grid;
@@ -376,7 +376,7 @@ void VoxelMeshSDF::_bind_methods() {
 	BIND_ENUM_CONSTANT(BAKE_MODE_ACCURATE_NAIVE);
 	BIND_ENUM_CONSTANT(BAKE_MODE_ACCURATE_PARTITIONED);
 	BIND_ENUM_CONSTANT(BAKE_MODE_APPROX_INTERP);
-	BIND_ENUM_CONSTANT(BAKE_MODE_APPROX_SWEEP);
+	//BIND_ENUM_CONSTANT(BAKE_MODE_APPROX_SWEEP);
 	BIND_ENUM_CONSTANT(BAKE_MODE_COUNT);
 }
 
