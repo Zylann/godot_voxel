@@ -325,15 +325,15 @@ inline bool is_valid_size(const Vector3i &s) {
 
 namespace math {
 
-inline Vector3i floor(const Vector3 &f) {
+inline Vector3i floor_to_int(const Vector3 &f) {
 	return Vector3i(Math::floor(f.x), Math::floor(f.y), Math::floor(f.z));
 }
 
-inline Vector3i round(const Vector3 &f) {
+inline Vector3i round_to_int(const Vector3 &f) {
 	return Vector3i(Math::round(f.x), Math::round(f.y), Math::round(f.z));
 }
 
-inline Vector3i ceil(const Vector3 &f) {
+inline Vector3i ceil_to_int(const Vector3 &f) {
 	return Vector3i(Math::ceil(f.x), Math::ceil(f.y), Math::ceil(f.z));
 }
 

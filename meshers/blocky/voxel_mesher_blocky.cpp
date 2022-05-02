@@ -2,6 +2,7 @@
 #include "../../constants/cube_tables.h"
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/math/conv.h"
 #include "../../util/span.h"
 #include <core/os/os.h>
 

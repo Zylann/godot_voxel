@@ -5,6 +5,7 @@
 
 namespace zylann {
 
+// Runs the DDA algorithms in 3D.
 template <typename Predicate_F> // f(Vector3i position) -> bool
 bool voxel_raycast(Vector3 ray_origin, Vector3 ray_direction, Predicate_F predicate, real_t max_distance,
 		Vector3i &out_hit_pos, Vector3i &out_prev_pos, float &out_distance_along_ray,
@@ -32,7 +33,7 @@ bool voxel_raycast(Vector3 ray_origin, Vector3 ray_direction, Predicate_F predic
 	/* Initialisation */
 
 	// Voxel position
-	Vector3i hit_pos = math::floor(ray_origin);
+	Vector3i hit_pos = math::floor_to_int(ray_origin);
 	Vector3i hit_prev_pos = hit_pos;
 
 	// Voxel step

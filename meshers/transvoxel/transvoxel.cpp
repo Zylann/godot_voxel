@@ -1,6 +1,6 @@
 #include "transvoxel.h"
 #include "../../constants/cube_tables.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 

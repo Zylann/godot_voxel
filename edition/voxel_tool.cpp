@@ -182,7 +182,7 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 void VoxelTool::do_sphere(Vector3 center, float radius) {
 	ZN_PROFILE_SCOPE();
 
-	const Box3i box(math::floor(center) - Vector3iUtil::create(Math::floor(radius)),
+	const Box3i box(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2));
 
 	if (!is_area_editable(box)) {

@@ -1086,7 +1086,7 @@ void VoxelTerrain::process_viewers() {
 				const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
 
 				state.view_distance_voxels = math::min(view_distance_voxels, self._max_view_distance_voxels);
-				state.local_position_voxels = math::floor(local_position);
+				state.local_position_voxels = math::floor_to_int(local_position);
 				state.requires_collisions = VoxelServer::get_singleton().is_viewer_requiring_collisions(viewer_id);
 				state.requires_meshes = VoxelServer::get_singleton().is_viewer_requiring_visuals(viewer_id);
 
@@ -1607,7 +1607,7 @@ Box3i VoxelTerrain::get_bounds() const {
 }
 
 Vector3i VoxelTerrain::_b_voxel_to_data_block(Vector3 pos) const {
-	return _data_map.voxel_to_block(math::floor(pos));
+	return _data_map.voxel_to_block(math::floor_to_int(pos));
 }
 
 Vector3i VoxelTerrain::_b_data_block_to_voxel(Vector3i pos) const {
@@ -1620,9 +1620,7 @@ void VoxelTerrain::_b_save_modified_blocks() {
 
 // Explicitely ask to save a block if it was modified
 void VoxelTerrain::_b_save_block(Vector3i p_block_pos) {
-	const Vector3i block_pos(math::floor(p_block_pos));
-
-	VoxelDataBlock *block = _data_map.get_block(block_pos);
+	VoxelDataBlock *block = _data_map.get_block(p_block_pos);
 	ERR_FAIL_COND(block == nullptr);
 
 	if (!block->is_modified()) {
@@ -1634,7 +1632,7 @@ void VoxelTerrain::_b_save_block(Vector3i p_block_pos) {
 
 void VoxelTerrain::_b_set_bounds(AABB aabb) {
 	ERR_FAIL_COND(!math::is_valid_size(aabb.size));
-	set_bounds(Box3i(math::round(aabb.position), math::round(aabb.size)));
+	set_bounds(Box3i(math::round_to_int(aabb.position), math::round_to_int(aabb.size)));
 }
 
 AABB VoxelTerrain::_b_get_bounds() const {

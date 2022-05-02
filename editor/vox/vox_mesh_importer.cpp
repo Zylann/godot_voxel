@@ -94,7 +94,7 @@ Error for_each_model_instance_in_scene_graph(const Data &data, int node_id, Tran
 			const ShapeNode *vox_shape_node = reinterpret_cast<const ShapeNode *>(vox_node);
 			ForEachModelInstanceArgs args;
 			args.model = &data.get_model(vox_shape_node->model_id);
-			args.position = math::round(transform.origin);
+			args.position = math::round_to_int(transform.origin);
 			args.basis = transform.basis;
 			f(args);
 		} break;

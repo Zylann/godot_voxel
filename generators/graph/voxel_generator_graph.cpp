@@ -2,9 +2,9 @@
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/container_funcs.h"
 #include "../../util/expression_parser.h"
-#include "../../util/godot/funcs.h"
 #include "../../util/log.h"
 #include "../../util/macros.h"
+#include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "../../util/string_funcs.h"
@@ -1833,14 +1833,14 @@ void VoxelGeneratorGraph::_b_set_node_name(int node_id, String name) {
 }
 
 float VoxelGeneratorGraph::_b_generate_single(Vector3 pos) {
-	return generate_single(math::floor(pos), VoxelBufferInternal::CHANNEL_SDF).f;
+	return generate_single(math::floor_to_int(pos), VoxelBufferInternal::CHANNEL_SDF).f;
 }
 
 Vector2 VoxelGeneratorGraph::_b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const {
 	ERR_FAIL_COND_V(min_pos.x > max_pos.x, Vector2());
 	ERR_FAIL_COND_V(min_pos.y > max_pos.y, Vector2());
 	ERR_FAIL_COND_V(min_pos.z > max_pos.z, Vector2());
-	const math::Interval r = debug_analyze_range(math::floor(min_pos), math::floor(max_pos), false);
+	const math::Interval r = debug_analyze_range(math::floor_to_int(min_pos), math::floor_to_int(max_pos), false);
 	return Vector2(r.min, r.max);
 }
 

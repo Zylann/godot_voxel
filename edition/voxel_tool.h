@@ -117,10 +117,10 @@ private:
 		do_point(pos);
 	}
 	void _b_do_line(Vector3 begin, Vector3 end) {
-		do_line(math::floor(begin), math::floor(end));
+		do_line(math::floor_to_int(begin), math::floor_to_int(end));
 	}
 	void _b_do_circle(Vector3 pos, float radius, Vector3 direction) {
-		do_circle(math::floor(pos), radius, math::floor(direction));
+		do_circle(math::floor_to_int(pos), radius, math::floor_to_int(direction));
 	}
 	void _b_do_sphere(Vector3 pos, float radius) {
 		do_sphere(pos, radius);
@@ -139,7 +139,7 @@ private:
 	}
 
 	bool _b_is_area_editable(AABB box) const {
-		return is_area_editable(Box3i(math::floor(box.position), math::floor(box.size)));
+		return is_area_editable(Box3i(math::floor_to_int(box.position), math::floor_to_int(box.size)));
 	}
 
 protected:

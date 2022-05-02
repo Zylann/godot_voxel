@@ -1,6 +1,6 @@
 #include "voxel_mesher_dmc.h"
 #include "../../constants/cube_tables.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/math/conv.h"
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
 #include "octree_tables.h"

@@ -1,6 +1,7 @@
 #include "voxel_blocky_model.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
+#include "../../util/math/conv.h"
 #include "voxel_blocky_library.h"
 #include "voxel_mesher_blocky.h" // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
 

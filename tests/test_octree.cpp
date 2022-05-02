@@ -23,7 +23,7 @@ void test_octree_update() {
 	// Testing as an octree forest, as it is the way they are used in VoxelLodTerrain
 	Map<Vector3i, LodOctree> octrees;
 	const Box3i viewer_box_voxels =
-			Box3i::from_center_extents(math::floor(viewer_pos), Vector3iUtil::create(view_distance));
+			Box3i::from_center_extents(math::floor_to_int(viewer_pos), Vector3iUtil::create(view_distance));
 	const Box3i viewer_box_octrees = viewer_box_voxels.downscaled(octree_size);
 	viewer_box_octrees.for_each_cell([&octrees](Vector3i pos) {
 		Map<Vector3i, LodOctree>::Element *e = octrees.insert(pos, LodOctree());

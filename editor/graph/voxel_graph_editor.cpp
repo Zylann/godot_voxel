@@ -5,6 +5,7 @@
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
 #include "../../util/macros.h"
+#include "../../util/math/conv.h"
 #include "../../util/string_funcs.h"
 #include "voxel_graph_editor_node.h"
 #include "voxel_graph_editor_node_preview.h"
@@ -645,7 +646,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	ERR_FAIL_COND(!_graph->is_good());
 
 	const AABB aabb = _range_analysis_dialog->get_aabb();
-	_graph->debug_analyze_range(math::floor(aabb.position), math::floor(aabb.position + aabb.size), true);
+	_graph->debug_analyze_range(math::floor_to_int(aabb.position), math::floor_to_int(aabb.position + aabb.size), true);
 
 	const VoxelGraphRuntime::State &state = _graph->get_last_state_from_current_thread();
 

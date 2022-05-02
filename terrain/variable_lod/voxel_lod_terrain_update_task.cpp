@@ -229,7 +229,7 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 
 		const unsigned int block_size_po2 = data_block_size_po2 + lod_index;
 		const Vector3i viewer_block_pos_within_lod =
-				VoxelDataMap::voxel_to_block_b(math::floor(p_viewer_pos), block_size_po2);
+				VoxelDataMap::voxel_to_block_b(math::floor_to_int(p_viewer_pos), block_size_po2);
 
 		const Box3i bounds_in_blocks = Box3i( //
 				settings.bounds_in_voxels.pos >> block_size_po2, //
@@ -310,7 +310,7 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
 		unsigned int block_size_po2 = mesh_block_size_po2 + lod_index;
-		const Vector3i viewer_block_pos_within_lod = math::floor(p_viewer_pos) >> block_size_po2;
+		const Vector3i viewer_block_pos_within_lod = math::floor_to_int(p_viewer_pos) >> block_size_po2;
 
 		const Box3i bounds_in_blocks = Box3i( //
 				settings.bounds_in_voxels.pos >> block_size_po2, //
@@ -365,7 +365,7 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 	const unsigned int octree_region_extent = 1 + settings.view_distance_voxels / (1 << octree_size_po2);
 
 	const Vector3i viewer_octree_pos =
-			(math::floor(p_viewer_pos) + Vector3iUtil::create(octree_size / 2)) >> octree_size_po2;
+			(math::floor_to_int(p_viewer_pos) + Vector3iUtil::create(octree_size / 2)) >> octree_size_po2;
 
 	const Box3i bounds_in_octrees = settings.bounds_in_voxels.downscaled(octree_size);
 
