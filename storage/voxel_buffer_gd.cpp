@@ -1,5 +1,6 @@
 #include "voxel_buffer_gd.h"
 #include "../edition/voxel_tool_buffer.h"
+#include "../util/math/color.h"
 #include "../util/memory.h"
 #include "voxel_metadata_variant.h"
 
@@ -218,6 +219,39 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down(const VoxelBufferInter
 	return im;
 }
 
+Array VoxelBuffer::debug_print_sdf_y_slices(float scale) const {
+	Array images;
+
+	const VoxelBufferInternal &buffer = *_buffer;
+	const Vector3i res = buffer.get_size();
+
+	for (int y = 0; y < res.y; ++y) {
+		Ref<Image> im;
+		im.instantiate();
+		im->create(res.x, res.z, false, Image::FORMAT_RGB8);
+
+		const Color nega_col(0.5f, 0.5f, 1.0f);
+		const Color posi_col(1.0f, 0.6f, 0.1f);
+		const Color black(0.f, 0.f, 0.f);
+
+		for (int z = 0; z < res.z; ++z) {
+			for (int x = 0; x < res.x; ++x) {
+				const float sd = scale * buffer.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
+
+				const float nega = math::clamp(-sd, 0.0f, 1.0f);
+				const float posi = math::clamp(sd, 0.0f, 1.0f);
+				const Color col = math::lerp(black, nega_col, nega) + math::lerp(black, posi_col, posi);
+
+				im->set_pixel(x, z, col);
+			}
+		}
+
+		images.append(im);
+	}
+
+	return images;
+}
+
 void VoxelBuffer::_b_deprecated_optimize() {
 	ERR_PRINT_ONCE("VoxelBuffer.optimize() is deprecated. Use compress_uniform_channels() instead.");
 	compress_uniform_channels();
@@ -269,6 +303,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("copy_voxel_metadata_in_area", "src_buffer", "src_min_pos", "src_max_pos", "dst_min_pos"),
 			&VoxelBuffer::copy_voxel_metadata_in_area);
+	ClassDB::bind_method(D_METHOD("debug_print_sdf_y_slices", "scale"), &VoxelBuffer::debug_print_sdf_y_slices);
 
 	BIND_ENUM_CONSTANT(CHANNEL_TYPE);
 	BIND_ENUM_CONSTANT(CHANNEL_SDF);
