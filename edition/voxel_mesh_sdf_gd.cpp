@@ -363,6 +363,10 @@ void VoxelMeshSDF::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_partition_subdiv"), &VoxelMeshSDF::get_partition_subdiv);
 	ClassDB::bind_method(D_METHOD("set_partition_subdiv", "subdiv"), &VoxelMeshSDF::set_partition_subdiv);
 
+	ClassDB::bind_method(D_METHOD("is_boundary_sign_fix_enabled"), &VoxelMeshSDF::is_boundary_sign_fix_enabled);
+	ClassDB::bind_method(
+			D_METHOD("set_boundary_sign_fix_enabled", "enable"), &VoxelMeshSDF::set_boundary_sign_fix_enabled);
+
 	ClassDB::bind_method(D_METHOD("get_voxel_buffer"), &VoxelMeshSDF::get_voxel_buffer);
 	ClassDB::bind_method(D_METHOD("get_aabb"), &VoxelMeshSDF::get_aabb);
 	ClassDB::bind_method(D_METHOD("debug_check_sdf", "mesh"), &VoxelMeshSDF::debug_check_sdf);
