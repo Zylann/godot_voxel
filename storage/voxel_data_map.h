@@ -5,7 +5,6 @@
 #include "../util/profiling.h"
 #include "voxel_data_block.h"
 
-#include <scene/main/node.h>
 #include <unordered_map>
 
 namespace zylann::voxel {
@@ -19,20 +18,20 @@ class VoxelDataMap {
 public:
 	// Converts voxel coodinates into block coordinates.
 	// Don't use division because it introduces an offset in negative coordinates.
-	static _FORCE_INLINE_ Vector3i voxel_to_block_b(Vector3i pos, int block_size_pow2) {
+	static inline Vector3i voxel_to_block_b(Vector3i pos, int block_size_pow2) {
 		return pos >> block_size_pow2;
 	}
 
-	_FORCE_INLINE_ Vector3i voxel_to_block(Vector3i pos) const {
+	inline Vector3i voxel_to_block(Vector3i pos) const {
 		return voxel_to_block_b(pos, _block_size_pow2);
 	}
 
-	_FORCE_INLINE_ Vector3i to_local(Vector3i pos) const {
+	inline Vector3i to_local(Vector3i pos) const {
 		return Vector3i(pos.x & _block_size_mask, pos.y & _block_size_mask, pos.z & _block_size_mask);
 	}
 
 	// Converts block coodinates into voxel coordinates
-	_FORCE_INLINE_ Vector3i block_to_voxel(Vector3i bpos) const {
+	inline Vector3i block_to_voxel(Vector3i bpos) const {
 		return bpos * _block_size;
 	}
 
@@ -41,13 +40,13 @@ public:
 
 	void create(unsigned int block_size_po2, int lod_index);
 
-	_FORCE_INLINE_ unsigned int get_block_size() const {
+	inline unsigned int get_block_size() const {
 		return _block_size;
 	}
-	_FORCE_INLINE_ unsigned int get_block_size_pow2() const {
+	inline unsigned int get_block_size_pow2() const {
 		return _block_size_pow2;
 	}
-	_FORCE_INLINE_ unsigned int get_block_size_mask() const {
+	inline unsigned int get_block_size_mask() const {
 		return _block_size_mask;
 	}
 
