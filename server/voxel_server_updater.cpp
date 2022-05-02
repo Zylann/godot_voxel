@@ -35,6 +35,8 @@ void VoxelServerUpdater::ensure_existence(SceneTree *st) {
 	}
 	VoxelServerUpdater *u = memnew(VoxelServerUpdater);
 	u->set_name("VoxelServerUpdater_dont_touch_this");
+	// TODO This can fail (for example if `Node::data.blocked > 0` while in `_ready()`) but Godot offers no API to check
+	// anything. So if this fail, the node will leak.
 	root->add_child(u);
 }
 

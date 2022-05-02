@@ -127,6 +127,7 @@ Span<const T> const_span_from_position_and_size(const std::vector<T> &vec, unsig
 	return Span<const T>(vec.data(), pos, pos + vec.size());
 }
 
+// TODO Deprecate, now Span has a conversion constructor that can allow doing that
 template <typename T>
 Span<const T> to_span_const(const std::vector<T> &vec) {
 	return Span<const T>(vec.data(), 0, vec.size());
@@ -143,17 +144,20 @@ Span<T> to_span(FixedArray<T, N> &a, unsigned int count) {
 	return Span<T>(a.data(), count);
 }
 
+// TODO Deprecate, now Span has a conversion constructor that can allow doing that
 template <typename T, unsigned int N>
 Span<const T> to_span_const(const FixedArray<T, N> &a, unsigned int count) {
 	ZN_ASSERT(count <= a.size());
 	return Span<const T>(a.data(), count);
 }
 
+// TODO Deprecate, now Span has a conversion constructor that can allow doing that
 template <typename T, unsigned int N>
 Span<const T> to_span_const(const FixedArray<T, N> &a) {
 	return Span<const T>(a.data(), 0, a.size());
 }
 
+// TODO Deprecate, now Span has a conversion constructor that can allow doing that
 template <typename T>
 Span<const T> to_span_const(const Span<T> &a) {
 	return Span<const T>(a.data(), 0, a.size());
