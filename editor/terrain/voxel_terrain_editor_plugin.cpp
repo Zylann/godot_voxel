@@ -193,12 +193,12 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		case MENU_STREAM_FOLLOW_CAMERA: {
 			_editor_viewer_follows_camera = !_editor_viewer_follows_camera;
 
-			const int i = _menu_button->get_popup()->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
-			_menu_button->get_popup()->set_item_checked(i, _editor_viewer_follows_camera);
-
 			if (_editor_viewer_follows_camera) {
 				VoxelServer::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
 			}
+
+			const int i = _menu_button->get_popup()->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
+			_menu_button->get_popup()->set_item_checked(i, _editor_viewer_follows_camera);
 		} break;
 
 		case MENU_SHOW_OCTREE_NODES: {
@@ -206,6 +206,9 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_octree_nodes = !_show_octree_nodes;
 			lod_terrain->set_show_octree_gizmos(_show_octree_nodes);
+
+			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_OCTREE_NODES);
+			_menu_button->get_popup()->set_item_checked(i, _show_octree_nodes);
 		} break;
 
 		case MENU_ABOUT:
