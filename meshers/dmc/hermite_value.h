@@ -67,9 +67,9 @@ inline HermiteValue get_interpolated_hermite_value(const VoxelBufferInternal &vo
 	Vector3f rpos = pos - Vector3f(x0, y0, z0);
 
 	HermiteValue v;
-	v.sdf = math::interpolate(v0.sdf, v1.sdf, v2.sdf, v3.sdf, v4.sdf, v5.sdf, v6.sdf, v7.sdf, rpos);
-	v.gradient = math::interpolate(v0.gradient, v1.gradient, v2.gradient, v3.gradient, v4.gradient, v5.gradient,
-			v6.gradient, v7.gradient, rpos);
+	v.sdf = math::interpolate_trilinear(v0.sdf, v1.sdf, v2.sdf, v3.sdf, v4.sdf, v5.sdf, v6.sdf, v7.sdf, rpos);
+	v.gradient = math::interpolate_trilinear(v0.gradient, v1.gradient, v2.gradient, v3.gradient, v4.gradient,
+			v5.gradient, v6.gradient, v7.gradient, rpos);
 
 	return v;
 }

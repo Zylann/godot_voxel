@@ -41,7 +41,7 @@ float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
 	const float s011 = f(Vector3i(c.x, c.y + 1, c.z + 1));
 	const float s111 = f(Vector3i(c.x + 1, c.y + 1, c.z + 1));
 
-	return math::interpolate(s000, s100, s101, s001, s010, s110, s111, s011, to_vec3f(math::fract(pos)));
+	return math::interpolate_trilinear(s000, s100, s101, s001, s010, s110, s111, s011, to_vec3f(math::fract(pos)));
 }
 
 // Binary search can be more accurate than linear regression because the SDF can be inaccurate in the first place.

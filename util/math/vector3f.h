@@ -179,7 +179,9 @@ inline Vector3f operator*(float p_scalar, const Vector3f &v) {
 
 namespace math {
 
-// Trilinear interpolation between corner values of a cube.
+// Trilinear interpolation between corner values of a unit-sized cube.
+// `v***` arguments are corner values named as `vXYZ`, where a coordinate is 0 or 1 on the cube.
+// Coordinates of `p` are in 0..1, but are not clamped so extrapolation is possible.
 //
 //      6---------------7
 //     /|              /|
@@ -193,20 +195,23 @@ namespace math {
 //   |/              |/          |/
 //   1---------------0      X----o
 //
+// p000, p100, p101, p001, p010, p110, p111, p011
 template <typename T>
-inline T interpolate(const T v0, const T v1, const T v2, const T v3, const T v4, const T v5, const T v6, const T v7,
-		Vector3f position) {
-	const float one_min_x = 1.f - position.x;
-	const float one_min_y = 1.f - position.y;
-	const float one_min_z = 1.f - position.z;
-	const float one_min_x_one_min_y = one_min_x * one_min_y;
-	const float x_one_min_y = position.x * one_min_y;
+inline T interpolate_trilinear(const T v000, const T v100, const T v101, const T v001, const T v010, const T v110,
+		const T v111, const T v011, Vector3f p) {
+	//
+	const T v00 = v000 + p.x * (v100 - v000);
+	const T v10 = v010 + p.x * (v110 - v010);
+	const T v01 = v001 + p.x * (v101 - v001);
+	const T v11 = v011 + p.x * (v111 - v011);
 
-	T res = one_min_z * (v0 * one_min_x_one_min_y + v1 * x_one_min_y + v4 * one_min_x * position.y);
-	res += position.z * (v3 * one_min_x_one_min_y + v2 * x_one_min_y + v7 * one_min_x * position.y);
-	res += position.x * position.y * (v5 * one_min_z + v6 * position.z);
+	const T v0 = v00 + p.y * (v10 - v00);
+	const T v1 = v01 + p.y * (v11 - v01);
 
-	return res;
+	const T v = v0 + p.z * (v1 - v0);
+
+	return v;
+}
 }
 
 } // namespace math
