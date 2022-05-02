@@ -147,7 +147,7 @@ void VoxelMeshSDF::bake_async(Ref<Mesh> mesh, SceneTree *scene_tree) {
 			vbgd.instantiate();
 			shared_data.buffer.move_to(vbgd->get_buffer());
 			obj.call_deferred(
-					"_on_generate_async_completed", vbgd, to_godot(shared_data.min_pos), to_godot(shared_data.max_pos));
+					"_on_bake_async_completed", vbgd, to_godot(shared_data.min_pos), to_godot(shared_data.max_pos));
 		}
 	};
 
@@ -264,7 +264,7 @@ void VoxelMeshSDF::bake_async(Ref<Mesh> mesh, SceneTree *scene_tree) {
 
 	private:
 		void report_error() {
-			obj_to_notify->call_deferred("_on_generate_async_completed", Ref<gd::VoxelBuffer>(), Vector3(), Vector3());
+			obj_to_notify->call_deferred("_on_bake_async_completed", Ref<gd::VoxelBuffer>(), Vector3(), Vector3());
 		}
 	};
 
