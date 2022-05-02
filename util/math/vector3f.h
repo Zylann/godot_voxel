@@ -2,7 +2,7 @@
 #define ZYLANN_VECTOR3F_H
 
 #include "../errors.h"
-#include <core/math/math_funcs.h>
+#include "funcs.h"
 
 namespace zylann {
 
@@ -26,6 +26,7 @@ struct Vector3f {
 	};
 
 	Vector3f() : x(0), y(0), z(0) {}
+	explicit Vector3f(float p_v) : x(p_v), y(p_v), z(p_v) {}
 	Vector3f(float p_x, float p_y, float p_z) : x(p_x), y(p_y), z(p_z) {}
 
 	inline float length_squared() const {
@@ -212,6 +213,25 @@ inline T interpolate_trilinear(const T v000, const T v100, const T v101, const T
 
 	return v;
 }
+
+inline Vector3f min(const Vector3f a, const Vector3f b) {
+	return Vector3f(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z));
+}
+
+inline Vector3f max(const Vector3f a, const Vector3f b) {
+	return Vector3f(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
+}
+
+inline Vector3f floor(const Vector3f a) {
+	return Vector3f(Math::floor(a.x), Math::floor(a.y), Math::floor(a.z));
+}
+
+inline Vector3f ceil(const Vector3f a) {
+	return Vector3f(Math::ceil(a.x), Math::ceil(a.y), Math::ceil(a.z));
+}
+
+inline Vector3f lerp(const Vector3f a, const Vector3f b, const float t) {
+	return Vector3f(Math::lerp(a.x, b.x, t), Math::lerp(a.y, b.y, t), Math::lerp(a.z, b.z, t));
 }
 
 } // namespace math

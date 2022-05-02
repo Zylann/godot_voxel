@@ -589,6 +589,7 @@ void VoxelBufferInternal::duplicate_to(VoxelBufferInternal &dst, bool include_me
 
 void VoxelBufferInternal::move_to(VoxelBufferInternal &dst) {
 	if (this == &dst) {
+		ZN_PRINT_VERBOSE("Moving VoxelBufferInternal to itself?");
 		return;
 	}
 

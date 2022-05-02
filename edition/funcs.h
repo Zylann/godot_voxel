@@ -3,7 +3,9 @@
 
 #include "../storage/funcs.h"
 #include "../util/fixed_array.h"
+#include "../util/math/sdf.h"
 #include "../util/math/vector3.h"
+#include "../util/math/vector3f.h"
 
 namespace zylann::voxel {
 
@@ -107,6 +109,32 @@ inline void blend_texture_packed_u16(
 		encoded_indices = encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
 		encoded_weights = encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
 	}
+}
+
+// Interpolates values from a 3D grid at a given position, using trilinear interpolation.
+// If the position is outside the grid, values are clamped.
+inline float interpolate_trilinear(Span<const float> grid, const Vector3i res, const Vector3f pos) {
+	const Vector3f pfi = math::floor(pos - Vector3f(0.5f));
+	// TODO Clamp pf too somehow?
+	const Vector3f pf = pos - pfi;
+	const Vector3i max_pos = math::max(res - Vector3i(2, 2, 2), Vector3i());
+	const Vector3i pi = math::clamp(Vector3i(pfi.x, pfi.y, pfi.z), Vector3i(), max_pos);
+
+	const unsigned int n010 = 1;
+	const unsigned int n100 = res.y;
+	const unsigned int n001 = res.y * res.x;
+
+	const unsigned int i000 = pi.x * n100 + pi.y * n010 + pi.z * n001;
+	const unsigned int i010 = i000 + n010;
+	const unsigned int i100 = i000 + n100;
+	const unsigned int i001 = i000 + n001;
+	const unsigned int i110 = i010 + n100;
+	const unsigned int i011 = i010 + n001;
+	const unsigned int i101 = i100 + n001;
+	const unsigned int i111 = i110 + n001;
+
+	return math::interpolate_trilinear(
+			grid[i000], grid[i100], grid[i101], grid[i001], grid[i010], grid[i110], grid[i111], grid[i011], pf);
 }
 
 } // namespace zylann::voxel

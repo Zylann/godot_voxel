@@ -9,6 +9,7 @@
 #include "../util/tasks/async_dependency_tracker.h"
 #include "../util/voxel_raycast.h"
 #include "funcs.h"
+#include "voxel_mesh_sdf_gd.h"
 
 #include <scene/3d/collision_shape_3d.h>
 #include <scene/3d/mesh_instance_3d.h>
@@ -722,6 +723,100 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Node *parent
 			*this, int_world_box, parent_node, _terrain->get_global_transform(), mesher, materials);
 }
 
+// Combines a precalculated SDF with the terrain at a specific position, rotation and scale.
+//
+// `transform` is where the buffer should be applied on the terrain.
+//
+// `isolevel` alters the shape of the SDF: positive "puffs" it, negative "erodes" it. This is a applied after
+// `sdf_scale`.
+//
+// `sdf_scale` scales SDF values (it doesnt make the shape bigger or smaller). Usually defaults to 1 but may be lower if
+// artifacts show up due to scaling used in terrain SDF.
+//
+void VoxelToolLodTerrain::stamp_sdf(
+		Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel, float sdf_scale) {
+	// TODO Asynchronous version
+	ZN_PROFILE_SCOPE();
+
+	ERR_FAIL_COND(_terrain == nullptr);
+	ERR_FAIL_COND(mesh_sdf.is_null());
+	ERR_FAIL_COND(mesh_sdf->is_baked());
+	Ref<gd::VoxelBuffer> buffer_ref = mesh_sdf->get_voxel_buffer();
+	ERR_FAIL_COND(buffer_ref.is_null());
+	const VoxelBufferInternal &buffer = buffer_ref->get_buffer();
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	ERR_FAIL_COND(buffer.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM);
+	ERR_FAIL_COND(buffer.get_channel_depth(channel) != VoxelBufferInternal::DEPTH_32_BIT);
+
+	const Transform3D &box_to_world = transform;
+	const AABB local_aabb = mesh_sdf->get_aabb();
+
+	// Note, transform is local to the terrain
+	const AABB aabb = box_to_world.xform(aabb);
+	const Box3i voxel_box = Box3i::from_min_max(aabb.position.floor(), (aabb.position + aabb.size).ceil());
+
+	// TODO Sometimes it will fail near unloaded blocks, even though the transformed box does not intersect them.
+	// This could be avoided with a box/transformed-box intersection algorithm. Might investigate if the use case
+	// occurs. It won't happen with full load mode. This also affects other shapes.
+	if (!is_area_editable(voxel_box)) {
+		ZN_PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
+	ERR_FAIL_COND(data == nullptr);
+	VoxelDataLodMap::Lod &data_lod = data->lods[0];
+
+	if (_terrain->is_full_load_mode_enabled()) {
+		preload_box(*data, voxel_box, _terrain->get_generator().ptr());
+	}
+
+	// TODO Maybe more efficient to "rasterize" the box? We're going to iterate voxels the box doesnt intersect
+	// TODO Maybe we should scale SDF values based on the scale of the transform too
+
+	struct SdfBufferShape {
+		Span<const float> buffer;
+		Vector3i buffer_size;
+		Transform3D world_to_buffer;
+		float isolevel;
+		float sdf_scale;
+
+		inline real_t operator()(const Vector3 &wpos) const {
+			// Transform terrain-space position to buffer-space
+			const Vector3f lpos = to_vec3f(world_to_buffer.xform(wpos));
+			if (lpos.x < 0 || lpos.y < 0 || lpos.z < 0 || lpos.x >= buffer_size.x || lpos.y >= buffer_size.y ||
+					lpos.z >= buffer_size.z) {
+				// Outside the buffer
+				return 100;
+			}
+			return interpolate_trilinear(buffer, buffer_size, lpos) * sdf_scale - isolevel;
+		}
+	};
+
+	const Transform3D buffer_to_box =
+			Transform3D(Basis().scaled(Vector3(local_aabb.size / buffer.get_size())), local_aabb.position);
+	const Transform3D buffer_to_world = box_to_world * buffer_to_box;
+
+	// TODO Support other depths, format should be accessible from the volume
+	ops::SdfOperation16bit<ops::SdfUnion, SdfBufferShape> op;
+	op.shape.world_to_buffer = buffer_to_world.affine_inverse();
+	op.shape.buffer_size = buffer.get_size();
+	op.shape.isolevel = isolevel;
+	op.shape.sdf_scale = sdf_scale;
+	// Note, the passed buffer must not be shared with another thread.
+	//buffer.decompress_channel(channel);
+	ZN_ASSERT_RETURN(buffer.get_channel_data(channel, op.shape.buffer));
+
+	VoxelDataGrid grid;
+	{
+		RWLockRead rlock(data_lod.map_lock);
+		grid.reference_area(data_lod.map, voxel_box);
+		grid.write_box(voxel_box, VoxelBufferInternal::CHANNEL_SDF, op);
+	}
+
+	_post_edit(voxel_box);
+}
+
 void VoxelToolLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_raycast_binary_search_iterations", "iterations"),
 			&VoxelToolLodTerrain::set_raycast_binary_search_iterations);
@@ -732,6 +827,8 @@ void VoxelToolLodTerrain::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("separate_floating_chunks", "box", "parent_node"), &VoxelToolLodTerrain::separate_floating_chunks);
 	ClassDB::bind_method(D_METHOD("do_sphere_async", "center", "radius"), &VoxelToolLodTerrain::do_sphere_async);
+	ClassDB::bind_method(
+			D_METHOD("stamp_sdf", "mesh_sdf", "transform", "isolevel", "sdf_scale"), &VoxelToolLodTerrain::stamp_sdf);
 }
 
 } // namespace zylann::voxel

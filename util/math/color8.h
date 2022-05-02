@@ -5,6 +5,7 @@
 
 namespace zylann {
 
+// Color with 8-bit components. Lighter to store than its floating-point counterpart.
 struct Color8 {
 	union {
 		struct {

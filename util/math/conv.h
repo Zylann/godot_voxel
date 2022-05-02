@@ -8,6 +8,8 @@
 
 namespace zylann {
 
+// Explicit conversion methods. Not in respective files because it would cause circular dependencies.
+
 inline Vector3i to_vec3i(Vector3f v) {
 	return Vector3i(v.x, v.y, v.z);
 }

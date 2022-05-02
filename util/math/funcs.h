@@ -237,6 +237,10 @@ inline void sort(T &a, T &b, T &c, T &d) {
 	sort(b, c);
 }
 
+inline float sign(float x) {
+	return x < 0.f ? -1.f : 1.f;
+}
+
 } // namespace zylann::math
 
 #endif // VOXEL_MATH_FUNCS_H

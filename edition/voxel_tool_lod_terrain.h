@@ -9,6 +9,7 @@ namespace zylann::voxel {
 
 class VoxelLodTerrain;
 class VoxelDataMap;
+class VoxelMeshSDF;
 
 class VoxelToolLodTerrain : public VoxelTool {
 	GDCLASS(VoxelToolLodTerrain, VoxelTool)
@@ -31,6 +32,7 @@ public:
 
 	float get_voxel_f_interpolated(Vector3 position) const;
 	Array separate_floating_chunks(AABB world_box, Node *parent_node);
+	void stamp_sdf(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel, float sdf_scale);
 
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;

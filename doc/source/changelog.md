@@ -19,6 +19,7 @@ Godot 4 is required from this version.
     - Added experimental support functions to help setting up basic multiplayer with `VoxelTerrain` (might change in the future)
     - Improved support for 64-bit floats
     - Added `ZN_ThreadedTask` to allow running custom tasks using the thread pool system
+    - Added `VoxelMeshSDF` to bake SDF from meshes, which can be used in voxel sculpting.
     - `VoxelGeneratorGraph`: added support for outputting to the TYPE channel, allowing use with `VoxelMesherBlocky`
     - `VoxelGeneratorGraph`: editor: unconnected inputs show their default value directly on the node
     - `VoxelGeneratorGraph`: editor: allow to change the axes on preview nodes 3D slices
@@ -36,6 +37,7 @@ Godot 4 is required from this version.
     - `VoxelLodTerrain`: Editor: added option to show octree nodes in editor
     - `VoxelLodTerrain`: Added option to run a major part of the process logic into another thread
     - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
+    - `VoxelToolLodTerrain`: added `stamp_sdf` function to place a baked mesh SDF on the terrain
     - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
     - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
     - `VoxelInstanceLibraryMultiMeshItem`: Support setting up mesh LODs from a scene with name `LODx` suffixes

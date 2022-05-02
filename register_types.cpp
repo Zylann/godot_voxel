@@ -1,5 +1,6 @@
 #include "register_types.h"
 #include "constants/voxel_string_names.h"
+#include "edition/voxel_mesh_sdf_gd.h"
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_buffer.h"
 #include "edition/voxel_tool_lod_terrain.h"
@@ -141,6 +142,7 @@ void register_voxel_types() {
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	ClassDB::register_class<FastNoise2>();
 #endif
+	ClassDB::register_class<VoxelMeshSDF>();
 
 	// Meshers
 	ClassDB::register_abstract_class<VoxelMesher>();
