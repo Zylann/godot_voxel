@@ -86,7 +86,7 @@ void partition_triangles(
 // A naive method to get a sampled SDF from a mesh, by checking every triangle at every cell. It's accurate, but much
 // slower than other techniques, but could be used as a CPU-based alternative, for less
 // realtime-intensive tasks. The mesh must be closed, otherwise the SDF will contain errors.
-void generate_mesh_sdf_full(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
+void generate_mesh_sdf_naive(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
 		const Vector3f min_pos, const Vector3f max_pos);
 
 // Compute the SDF faster by partitionning triangles, while retaining the same accuracy as if all triangles
@@ -101,12 +101,6 @@ void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, Spa
 // Tests with Suzanne show it is 2 to 3 times faster than the basic naive method, with only minor quality decrease.
 // It's still quite slow though.
 void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
-		const Vector3f min_pos, const Vector3f max_pos);
-
-// TODO Untested
-// Generates an approximation.
-// Calculates a thin hull of accurate SDF values, then propagates it across each axis using manhattan distance.
-void generate_mesh_sdf_approx_sweep(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
 		const Vector3f min_pos, const Vector3f max_pos);
 
 Vector3i auto_compute_grid_resolution(const Vector3f box_size, int cell_count);

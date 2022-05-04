@@ -22,8 +22,16 @@ float get_max_sdf_variation(Vector3f min_pos, Vector3f max_pos, Vector3i res) {
 	return math::max(max_variation_v.x, math::max(max_variation_v.y, max_variation_v.z));
 }
 
-void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Vector3i res, Vector3f min_pos, Vector3f max_pos) {
+enum Flag { //
+	FLAG_NOT_VISITED,
+	FLAG_VISITED
+	//FLAG_FROZEN
+};
+
+void fix_sdf_sign_from_boundary(
+		Span<float> sdf_grid, Span<uint8_t> flag_grid, Vector3i res, Vector3f min_pos, Vector3f max_pos) {
 	ZN_PROFILE_SCOPE();
+	ZN_ASSERT(sdf_grid.size() == flag_grid.size());
 
 	if (res.x == 0 || res.y == 0 || res.z == 0) {
 		return;
@@ -39,14 +47,12 @@ void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Vector3i res, Vector3f min
 	dirs[4] = Vector3i(0, 0, -1);
 	dirs[5] = Vector3i(0, 0, 1);
 
-	std::vector<uint8_t> visited;
-	visited.resize(sdf_grid.size(), 0);
-
 	const float tolerance = 1.1f;
 	const float max_variation = tolerance * get_max_sdf_variation(min_pos, max_pos, res);
+	const float min_sd = max_variation * 2.f;
 
 	seeds.push_back(Vector3i());
-	visited[0] = 1;
+	flag_grid[0] = FLAG_VISITED;
 
 	// Spread positive sign from boundary.
 	// Has a bit of room for optimization, but profiling shows it accounts for a very small portion of time compared to
@@ -66,17 +72,22 @@ void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Vector3i res, Vector3f min
 
 			const unsigned int nloc = Vector3iUtil::get_zxy_index(npos, res);
 
-			ZN_ASSERT(nloc < visited.size());
-			if (visited[nloc] == 1) {
+			ZN_ASSERT(nloc < flag_grid.size());
+			const uint8_t flag = flag_grid[nloc];
+			if (flag == FLAG_VISITED) {
 				continue;
 			}
 
-			visited[nloc] = 1;
+			flag_grid[nloc] = FLAG_VISITED;
 
-			ZN_ASSERT(nloc < sdf_grid.size());
+			//ZN_ASSERT(nloc < sdf_grid.size());
 			const float nv = sdf_grid[nloc];
 
-			if ((nv > 0.f) != (v > 0.f) && Math::abs(nv - v) < max_variation) {
+			if ((nv > 0.f && nv < min_sd) || ((nv > 0.f) != (v > 0.f) && Math::abs(nv - v) < max_variation)) {
+				// Too close to outer surface, or legit sign change occurs.
+				// If we keep floodfilling close to surface or where the sign flips at low distances,
+				// we would risk inverting the sign of the inside of the shape, removing all signedness.
+				// However, if sign flips with a high distance variation, we definitely want to correct that.
 				continue;
 			}
 
@@ -86,6 +97,12 @@ void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Vector3i res, Vector3f min
 			seeds.push_back(npos);
 		}
 	}
+}
+
+void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Vector3i res, Vector3f min_pos, Vector3f max_pos) {
+	std::vector<uint8_t> flag_grid;
+	flag_grid.resize(sdf_grid.size(), FLAG_NOT_VISITED);
+	fix_sdf_sign_from_boundary(sdf_grid, to_span(flag_grid), res, min_pos, max_pos);
 }
 
 void partition_triangles(
@@ -422,23 +439,79 @@ float get_mesh_signed_distance_at(const Vector3f pos, const ChunkGrid &chunk_gri
 	return -d;
 }
 
-struct Evaluator {
-	Span<const Triangle> triangles;
+struct GridToSpaceConverter {
 	const Vector3i res;
 	const Vector3f min_pos;
 	const Vector3f mesh_size;
-	const Vector3f hcs;
+	const Vector3f half_cell_size;
 
-	inline Vector3f get_pos(const Vector3i grid_pos) const {
-		const Vector3f pf(float(grid_pos.x) / res.x, float(grid_pos.y) / res.y, float(grid_pos.z) / res.z);
-		const Vector3f pos = min_pos + mesh_size * pf + hcs;
-		return pos;
-	}
+	// Grid to space transform
+	const Vector3f translation;
+	const Vector3f scale;
 
-	inline float operator()(const Vector3i grid_pos) const {
-		return get_mesh_signed_distance_at(get_pos(grid_pos), triangles);
+	GridToSpaceConverter(Vector3i p_resolution, Vector3f p_min_pos, Vector3f p_mesh_size, Vector3f p_half_cell_size) :
+			res(p_resolution),
+			min_pos(p_min_pos),
+			mesh_size(p_mesh_size),
+			half_cell_size(p_half_cell_size),
+			translation(min_pos + half_cell_size),
+			scale(mesh_size / to_vec3f(res)) {}
+
+	inline Vector3f operator()(const Vector3i grid_pos) const {
+		return translation + scale * to_vec3f(grid_pos);
 	}
 };
+
+struct Evaluator {
+	Span<const Triangle> triangles;
+	const GridToSpaceConverter grid_to_space;
+
+	inline float operator()(const Vector3i grid_pos) const {
+		return get_mesh_signed_distance_at(grid_to_space(grid_pos), triangles);
+	}
+};
+
+struct EvaluatorCG {
+	const ChunkGrid &chunk_grid;
+	const GridToSpaceConverter grid_to_space;
+
+	inline float operator()(const Vector3i grid_pos) const {
+		return get_mesh_signed_distance_at(grid_to_space(grid_pos), chunk_grid);
+	}
+};
+
+void mark_triangle_hull(Span<uint8_t> flag_grid, const Vector3i res, Span<const Triangle> triangles, Vector3f min_pos,
+		Vector3f max_pos, uint8_t flag_value, int aabb_padding) {
+	ZN_PROFILE_SCOPE();
+
+	const Vector3f mesh_size = max_pos - min_pos;
+	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
+	const Evaluator eval{ triangles, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
+
+	const Vector3f inv_gts_scale = Vector3f(1.f) / eval.grid_to_space.scale;
+
+	const Box3i grid_box(Vector3i(), res);
+
+	for (unsigned int i = 0; i < triangles.size(); ++i) {
+		const Triangle &t = triangles[i];
+
+		const Vector3f aabb_min = math::min(t.v1, math::min(t.v2, t.v3));
+		const Vector3f aabb_max = math::max(t.v1, math::max(t.v2, t.v3));
+
+		// Space to grid
+		const Vector3f aabb_min_g = inv_gts_scale * (aabb_min - eval.grid_to_space.translation);
+		const Vector3f aabb_max_g = inv_gts_scale * (aabb_min - eval.grid_to_space.translation);
+
+		const Box3i tbox = Box3i::from_min_max(to_vec3i(math::floor(aabb_min_g)), to_vec3i(math::ceil(aabb_max_g)))
+								   .padded(aabb_padding)
+								   .clipped(grid_box);
+
+		tbox.for_each_cell_zxy([&flag_grid, eval, res, flag_value](const Vector3i &grid_pos) {
+			const size_t i = Vector3iUtil::get_zxy_index(grid_pos, res);
+			flag_grid[i] = flag_value;
+		});
+	}
+}
 
 void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
 		const Vector3f min_pos, const Vector3f max_pos) {
@@ -448,8 +521,7 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 
 	const Vector3f mesh_size = max_pos - min_pos;
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
-	const Vector3f hcs(cell_size * 0.5f);
-	const Evaluator eval{ triangles, res, min_pos, mesh_size, hcs };
+	const Evaluator eval{ triangles, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
 
 	const unsigned int node_size_po2 = 2;
 	const unsigned int node_size_cells = 1 << node_size_po2;
@@ -530,8 +602,8 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 				// subdivide the node.
 				if (ud < node_subdiv_threshold) {
 					// Full-res SDF
-					cell_box.for_each_cell_zxy([&sdf_grid, eval](const Vector3i grid_pos) {
-						const size_t i = Vector3iUtil::get_zxy_index(grid_pos, eval.res);
+					cell_box.for_each_cell_zxy([&sdf_grid, eval, res](const Vector3i grid_pos) {
+						const size_t i = Vector3iUtil::get_zxy_index(grid_pos, res);
 						if (sdf_grid[i] != FAR_SD) {
 							// Already computed
 							return;
@@ -546,7 +618,7 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 					for (grid_pos.z = cell_box.pos.z; grid_pos.z < cell_box_end.z; ++grid_pos.z) {
 						for (grid_pos.x = cell_box.pos.x; grid_pos.x < cell_box_end.x; ++grid_pos.x) {
 							for (grid_pos.y = cell_box.pos.y; grid_pos.y < cell_box_end.y; ++grid_pos.y) {
-								const size_t i = Vector3iUtil::get_zxy_index(grid_pos, eval.res);
+								const size_t i = Vector3iUtil::get_zxy_index(grid_pos, res);
 								if (sdf_grid[i] != FAR_SD) {
 									// Already computed
 									continue;
@@ -565,19 +637,17 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 	}
 }
 
-void generate_mesh_sdf(Span<float> sdf_grid, const Vector3i res, const Box3i sub_box, Span<const Triangle> triangles,
-		const Vector3f min_pos, const Vector3f max_pos) {
+void generate_mesh_sdf_naive(Span<float> sdf_grid, const Vector3i res, const Box3i sub_box,
+		Span<const Triangle> triangles, const Vector3f min_pos, const Vector3f max_pos) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Box3i(Vector3i(), res).contains(sub_box));
 	ZN_ASSERT(sdf_grid.size() == Vector3iUtil::get_volume(res));
 
 	const Vector3f mesh_size = max_pos - min_pos;
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
-
-	// ProfilingClock profiling_clock;
+	const Evaluator eval{ triangles, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
 
 	Vector3i grid_pos;
-	const Vector3f hcs(cell_size * 0.5f);
 
 	const Vector3i sub_box_end = sub_box.pos + sub_box.size;
 
@@ -587,10 +657,7 @@ void generate_mesh_sdf(Span<float> sdf_grid, const Vector3i res, const Box3i sub
 			size_t grid_index = Vector3iUtil::get_zxy_index(grid_pos, res);
 
 			for (; grid_pos.y < sub_box_end.y; ++grid_pos.y) {
-				const Vector3f pf(float(grid_pos.x) / res.x, float(grid_pos.y) / res.y, float(grid_pos.z) / res.z);
-				const Vector3f pos = min_pos + mesh_size * pf + hcs;
-
-				const float sd = get_mesh_signed_distance_at(pos, triangles);
+				const float sd = eval(grid_pos);
 
 				ZN_ASSERT(grid_index < sdf_grid.size());
 				sdf_grid[grid_index] = sd;
@@ -612,8 +679,7 @@ void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, con
 
 	const Vector3f mesh_size = max_pos - min_pos;
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
-
-	// ProfilingClock profiling_clock;
+	const EvaluatorCG eval{ chunk_grid, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
 
 	Vector3i grid_pos;
 	const Vector3f hcs(cell_size * 0.5f);
@@ -626,10 +692,7 @@ void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, con
 			size_t grid_index = Vector3iUtil::get_zxy_index(grid_pos, res);
 
 			for (; grid_pos.y < sub_box_end.y; ++grid_pos.y) {
-				const Vector3f pf(float(grid_pos.x) / res.x, float(grid_pos.y) / res.y, float(grid_pos.z) / res.z);
-				const Vector3f pos = min_pos + mesh_size * pf + hcs;
-
-				const float sd = get_mesh_signed_distance_at(pos, chunk_grid);
+				const float sd = eval(grid_pos);
 
 				ZN_ASSERT(grid_index < sdf_grid.size());
 				sdf_grid[grid_index] = sd;
@@ -674,8 +737,7 @@ CheckResult check_sdf(
 
 	const Vector3f mesh_size = max_pos - min_pos;
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
-	const Vector3f hcs(cell_size * 0.5f);
-	const Evaluator eval{ triangles, res, min_pos, mesh_size, hcs };
+	const Evaluator eval{ triangles, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
 
 	Vector3i pos;
 	for (pos.z = 0; pos.z < res.z; ++pos.z) {
@@ -702,8 +764,8 @@ CheckResult check_sdf(
 						ZN_PRINT_VERBOSE(format("Found variation of {} > {}, {} and {}, at cell {} and {}", variation,
 								max_variation, v, nv, pos, npos));
 
-						const Vector3f posf0 = eval.get_pos(pos);
-						const Vector3f posf1 = eval.get_pos(npos);
+						const Vector3f posf0 = eval.grid_to_space(pos);
+						const Vector3f posf1 = eval.grid_to_space(npos);
 
 						result.ok = false;
 
@@ -726,194 +788,9 @@ CheckResult check_sdf(
 	return result;
 }
 
-static const float FAR_SD = 9999999.f;
-
-// Generates accurate SDF only very close to each triangle of the mesh, forming a "shell", and sets every other cells to
-// `FAR_SD`.
-void generate_mesh_sdf_seeds(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
+void generate_mesh_sdf_naive(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
 		const Vector3f min_pos, const Vector3f max_pos) {
-	ZN_PROFILE_SCOPE();
-
-	// Fill SDF grid with far distances as "infinity", we'll use that to check if we computed it already
-	sdf_grid.fill(FAR_SD);
-
-	const Vector3f mesh_size = max_pos - min_pos;
-	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
-	const Vector3f hcs(cell_size * 0.5f);
-
-	const Evaluator eval{ triangles, res, min_pos, mesh_size, hcs };
-
-	for (unsigned int i = 0; i < triangles.size(); ++i) {
-		const Triangle &t = triangles[i];
-
-		const Vector3f aabb_min = math::min(t.v1, math::min(t.v2, t.v3));
-		const Vector3f aabb_max = math::max(t.v1, math::max(t.v2, t.v3));
-
-		const Box3i tbox =
-				Box3i::from_min_max(to_vec3i(math::floor(aabb_min)), to_vec3i(math::ceil(aabb_max))).padded(1);
-
-		// TODO: we could restrict the evaluation to use only the triangle and not all of them?
-
-		tbox.for_each_cell_zxy([&sdf_grid, eval](const Vector3i &grid_pos) {
-			const size_t i = Vector3iUtil::get_zxy_index(grid_pos, eval.res);
-			if (sdf_grid[i] != FAR_SD) {
-				// Already computed
-				return;
-			}
-			ZN_ASSERT(i < sdf_grid.size());
-			sdf_grid[i] = eval(grid_pos);
-		});
-	}
-}
-
-// Propagates SDF from a grid that contains a "shell" of accurate SDF values and `FAR_SD` everywhere else.
-// The shell must be closed, and must contain all transitions from negative to positive.
-void propagate_sdf_across_axis(Span<float> sdf_grid, const Vector3i res, uint8_t axis, bool negative_axis) {
-	ZN_PROFILE_SCOPE();
-
-	struct L {
-		static inline void propagate(Span<float> sdf_grid, unsigned int i, float &prev) {
-			const float v = sdf_grid[i];
-			if (prev != FAR_SD && (v == FAR_SD || ((v < 0.f) == (prev < 0.f)))) {
-				if (prev < 0.f) {
-					const float v2 = prev - 1.f;
-					if (v2 > v) {
-						// TODO we could affine distances by propagating to neighbor cells as well?
-						sdf_grid[i] = v;
-					}
-				} else {
-					const float v2 = prev + 1.f;
-					if (v2 < v) {
-						sdf_grid[i] = v;
-					}
-				}
-			}
-			prev = v;
-		}
-	};
-
-	Vector3i pos;
-	// TODO Each sweep could start from the boundaries of the mesh instead of boundaries of the grid?
-	// const Vector3i start_min = Vector3i();
-	// const Vector3i start_max = res;
-
-	const int z_increment = res.x * res.y;
-	const int x_increment = res.x;
-	const int y_increment = 1;
-
-	switch (axis) {
-		case Vector3i::AXIS_Y:
-			if (negative_axis) {
-				// -Y
-				for (pos.z = res.z - 1; pos.z >= 0; --pos.z) {
-					for (pos.x = res.x - 1; pos.x >= 0; --pos.x) {
-						unsigned int i = Vector3iUtil::get_zxy_index(pos, res);
-						float prev = sdf_grid[i];
-						i -= y_increment;
-
-						for (pos.y = res.y - 2; pos.y >= 0; --pos.y, i -= y_increment) {
-							L::propagate(sdf_grid, i, prev);
-						}
-					}
-				}
-			} else {
-				// +Y
-				for (pos.z = 0; pos.z < res.z; ++pos.z) {
-					for (pos.x = 0; pos.x < res.x; ++pos.x) {
-						unsigned int i = Vector3iUtil::get_zxy_index(pos, res);
-						float prev = sdf_grid[i];
-						i += y_increment;
-
-						for (pos.y = 1; pos.y < res.y; ++pos.y, i += y_increment) {
-							L::propagate(sdf_grid, i, prev);
-						}
-					}
-				}
-			}
-			break;
-
-		case Vector3i::AXIS_X:
-			if (negative_axis) {
-				// -X
-				for (pos.z = res.z - 1; pos.z >= 0; --pos.z) {
-					for (pos.y = res.y - 1; pos.y >= 0; --pos.y) {
-						unsigned int i = Vector3iUtil::get_zxy_index(pos, res);
-						float prev = sdf_grid[i];
-						i -= x_increment;
-
-						for (pos.x = res.x - 2; pos.x >= 0; --pos.x, i -= x_increment) {
-							L::propagate(sdf_grid, i, prev);
-						}
-					}
-				}
-			} else {
-				// +X
-				for (pos.z = 0; pos.z < res.z; ++pos.z) {
-					for (pos.y = 0; pos.y < res.y; ++pos.y) {
-						unsigned int i = Vector3iUtil::get_zxy_index(pos, res);
-						float prev = sdf_grid[i];
-						i += x_increment;
-
-						for (pos.x = 1; pos.x < res.x; ++pos.x, i += x_increment) {
-							L::propagate(sdf_grid, i, prev);
-						}
-					}
-				}
-			}
-			break;
-
-		case Vector3i::AXIS_Z:
-			if (negative_axis) {
-				// -Z
-				for (pos.x = res.x - 1; pos.x >= 0; --pos.x) {
-					for (pos.y = res.y - 1; pos.y >= 0; --pos.y) {
-						unsigned int i = Vector3iUtil::get_zxy_index(pos, res);
-						float prev = sdf_grid[i];
-						i -= z_increment;
-
-						for (pos.z = res.z - 2; pos.z >= 0; --pos.z, i -= z_increment) {
-							L::propagate(sdf_grid, i, prev);
-						}
-					}
-				}
-			} else {
-				// +Z
-				for (pos.x = 0; pos.x < res.x; ++pos.x) {
-					for (pos.y = 0; pos.y < res.y; ++pos.y) {
-						unsigned int i = Vector3iUtil::get_zxy_index(pos, res);
-						float prev = sdf_grid[i];
-						i += z_increment;
-
-						for (pos.z = 1; pos.z < res.z; ++pos.z, i += z_increment) {
-							L::propagate(sdf_grid, i, prev);
-						}
-					}
-				}
-			}
-			break;
-		default:
-			ZN_CRASH();
-	}
-}
-
-void generate_mesh_sdf_approx_sweep(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
-		const Vector3f min_pos, const Vector3f max_pos) {
-	ZN_PROFILE_SCOPE();
-
-	generate_mesh_sdf_seeds(sdf_grid, res, triangles, min_pos, max_pos);
-
-	propagate_sdf_across_axis(sdf_grid, res, Vector3i::AXIS_X, false);
-	propagate_sdf_across_axis(sdf_grid, res, Vector3i::AXIS_Y, false);
-	propagate_sdf_across_axis(sdf_grid, res, Vector3i::AXIS_Z, false);
-
-	propagate_sdf_across_axis(sdf_grid, res, Vector3i::AXIS_X, true);
-	propagate_sdf_across_axis(sdf_grid, res, Vector3i::AXIS_Y, true);
-	propagate_sdf_across_axis(sdf_grid, res, Vector3i::AXIS_Z, true);
-}
-
-void generate_mesh_sdf_full(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
-		const Vector3f min_pos, const Vector3f max_pos) {
-	generate_mesh_sdf(sdf_grid, res, Box3i(Vector3i(), res), triangles, min_pos, max_pos);
+	generate_mesh_sdf_naive(sdf_grid, res, Box3i(Vector3i(), res), triangles, min_pos, max_pos);
 }
 
 bool prepare_triangles(Span<const Vector3> vertices, Span<const int> indices, std::vector<Triangle> &triangles,
@@ -985,7 +862,7 @@ void GenMeshSDFSubBoxTask::run(ThreadedTaskContext ctx) {
 		generate_mesh_sdf_partitioned(
 				sdf_grid, buffer.get_size(), box, shared_data->min_pos, shared_data->max_pos, shared_data->chunk_grid);
 	} else {
-		generate_mesh_sdf(sdf_grid, buffer.get_size(), box, to_span(shared_data->triangles), shared_data->min_pos,
+		generate_mesh_sdf_naive(sdf_grid, buffer.get_size(), box, to_span(shared_data->triangles), shared_data->min_pos,
 				shared_data->max_pos);
 	}
 
