@@ -66,6 +66,7 @@ if env["tools"]:
 		"editor/instancer/*.cpp",
 		"editor/instance_library/*.cpp",
 		"editor/vox/*.cpp",
+		"editor/mesh_sdf/*.cpp",
 	]
 	voxel_files += voxel_editor_files
 

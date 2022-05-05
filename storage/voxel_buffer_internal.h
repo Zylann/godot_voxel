@@ -421,6 +421,8 @@ public:
 	// This returns that scale for a given depth configuration.
 	static float get_sdf_quantization_scale(Depth d);
 
+	void get_range_f(float &out_min, float &out_max, ChannelId channel_index) const;
+
 	// Metadata
 
 	VoxelMetadata &get_block_metadata() {
