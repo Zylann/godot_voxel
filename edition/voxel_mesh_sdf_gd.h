@@ -4,7 +4,7 @@
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/math/vector3f.h"
 
-#include <core/object/ref_counted.h>
+#include <core/io/resource.h>
 
 class Mesh;
 class SceneTree;
@@ -13,8 +13,8 @@ namespace zylann::voxel {
 
 // Contains the baked signed distance field of a mesh, which can be used to sculpt terrain.
 // TODO Make it a resource so we can pre-build, save and load the baked data more easily
-class VoxelMeshSDF : public RefCounted {
-	GDCLASS(VoxelMeshSDF, RefCounted)
+class VoxelMeshSDF : public Resource {
+	GDCLASS(VoxelMeshSDF, Resource)
 public:
 	enum BakeMode { //
 		BAKE_MODE_ACCURATE_NAIVE,
@@ -22,6 +22,15 @@ public:
 		BAKE_MODE_APPROX_INTERP,
 		BAKE_MODE_COUNT
 	};
+
+	static const int MIN_CELL_COUNT = 2;
+	static const int MAX_CELL_COUNT = 256;
+
+	static constexpr float MIN_MARGIN_RATIO = 0.f;
+	static constexpr float MAX_MARGIN_RATIO = 1.f;
+
+	static const int MIN_PARTITION_SUBDIV = 2;
+	static const int MAX_PARTITION_SUBDIV = 255;
 
 	// The data cannot be used until baked
 	bool is_baked() const;
@@ -42,16 +51,15 @@ public:
 	void set_boundary_sign_fix_enabled(bool enable);
 	bool is_boundary_sign_fix_enabled() const;
 
-	// Note, the mesh is not referenced because we don't want it to be a dependency.
-	// An SDF should be usable even without the original mesh.
-	// The mesh is only necessary when baking.
+	void set_mesh(Ref<Mesh> mesh);
+	Ref<Mesh> get_mesh() const;
 
-	void bake(Ref<Mesh> mesh);
+	void bake();
 
 	// Bakes the SDF asynchronously using threads of the job system.
 	// TODO A reference to the SceneTree should not be necessary!
 	// It is currently needed to ensure `VoxelServerUpdater` gets created so it can tick the task system...
-	void bake_async(Ref<Mesh> mesh, SceneTree *scene_tree);
+	void bake_async(SceneTree *scene_tree);
 
 	Ref<gd::VoxelBuffer> get_voxel_buffer() const;
 	AABB get_aabb() const;
@@ -60,6 +68,9 @@ public:
 
 private:
 	void _on_bake_async_completed(Ref<gd::VoxelBuffer> buffer, Vector3 min_pos, Vector3 max_pos);
+
+	Dictionary _b_get_data() const;
+	void _b_set_data(Dictionary d);
 
 	static void _bind_methods();
 
@@ -77,6 +88,10 @@ private:
 	BakeMode _bake_mode = BAKE_MODE_ACCURATE_PARTITIONED;
 	uint8_t _partition_subdiv = 32;
 	bool _boundary_sign_fix = true;
+	// Note, the mesh is referenced here only for convenience. Setting it to null will not clear the SDF.
+	// An SDF should be usable without loading the original mesh onto the graphics card.
+	// The mesh is only used for baking.
+	Ref<Mesh> _mesh;
 };
 
 } // namespace zylann::voxel
