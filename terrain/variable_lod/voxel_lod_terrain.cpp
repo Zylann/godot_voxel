@@ -8,6 +8,7 @@
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
+#include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "../../util/string_funcs.h"

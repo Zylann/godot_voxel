@@ -5,6 +5,7 @@
 #include "../../storage/voxel_memory_pool.h"
 #include "../../streams/vox_data.h"
 #include "../../util/macros.h"
+#include "../../util/math/conv.h"
 #include "../../util/memory.h"
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
@@ -151,9 +152,9 @@ void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &o
 			src_color_indices = to_span_const(model.color_indexes);
 		} else {
 			IntBasis basis;
-			basis.x = Vector3iUtil::from_cast(args.basis.get_axis(Vector3::AXIS_X));
-			basis.y = Vector3iUtil::from_cast(args.basis.get_axis(Vector3::AXIS_Y));
-			basis.z = Vector3iUtil::from_cast(args.basis.get_axis(Vector3::AXIS_Z));
+			basis.x = to_vec3i(args.basis.get_axis(Vector3::AXIS_X));
+			basis.y = to_vec3i(args.basis.get_axis(Vector3::AXIS_Y));
+			basis.z = to_vec3i(args.basis.get_axis(Vector3::AXIS_Z));
 			temp_voxels.resize(model.color_indexes.size());
 			dst_size =
 					transform_3d_array_zxy(to_span_const(model.color_indexes), to_span(temp_voxels), model.size, basis);

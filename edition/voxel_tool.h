@@ -98,49 +98,21 @@ private:
 	// Bindings to convert to more specialized C++ types and handle virtuality,
 	// cuz I don't know if it works by binding straight
 
-	uint64_t _b_get_voxel(Vector3i pos) {
-		return get_voxel(pos);
-	}
-	float _b_get_voxel_f(Vector3i pos) {
-		return get_voxel_f(pos);
-	}
-	void _b_set_voxel(Vector3i pos, uint64_t v) {
-		set_voxel(pos, v);
-	}
-	void _b_set_voxel_f(Vector3i pos, float v) {
-		set_voxel_f(pos, v);
-	}
-	Ref<VoxelRaycastResult> _b_raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
-		return raycast(pos, dir, max_distance, collision_mask);
-	}
-	void _b_do_point(Vector3i pos) {
-		do_point(pos);
-	}
-	void _b_do_line(Vector3 begin, Vector3 end) {
-		do_line(math::floor_to_int(begin), math::floor_to_int(end));
-	}
-	void _b_do_circle(Vector3 pos, float radius, Vector3 direction) {
-		do_circle(math::floor_to_int(pos), radius, math::floor_to_int(direction));
-	}
-	void _b_do_sphere(Vector3 pos, float radius) {
-		do_sphere(pos, radius);
-	}
-	void _b_do_box(Vector3i begin, Vector3i end) {
-		do_box(begin, end);
-	}
+	uint64_t _b_get_voxel(Vector3i pos);
+	float _b_get_voxel_f(Vector3i pos);
+	void _b_set_voxel(Vector3i pos, uint64_t v);
+	void _b_set_voxel_f(Vector3i pos, float v);
+	Ref<VoxelRaycastResult> _b_raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
+	void _b_do_point(Vector3i pos);
+	void _b_do_line(Vector3 begin, Vector3 end);
+	void _b_do_circle(Vector3 pos, float radius, Vector3 direction);
+	void _b_do_sphere(Vector3 pos, float radius);
+	void _b_do_box(Vector3i begin, Vector3i end);
 	void _b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask);
 	void _b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask, int64_t mask_value);
-
-	Variant _b_get_voxel_metadata(Vector3i pos) const {
-		return get_voxel_metadata(pos);
-	}
-	void _b_set_voxel_metadata(Vector3i pos, Variant meta) {
-		return set_voxel_metadata(pos, meta);
-	}
-
-	bool _b_is_area_editable(AABB box) const {
-		return is_area_editable(Box3i(math::floor_to_int(box.position), math::floor_to_int(box.size)));
-	}
+	Variant _b_get_voxel_metadata(Vector3i pos) const;
+	void _b_set_voxel_metadata(Vector3i pos, Variant meta);
+	bool _b_is_area_editable(AABB box) const;
 
 protected:
 	uint64_t _value = 0;

@@ -26,7 +26,11 @@ struct Vector3f {
 	};
 
 	Vector3f() : x(0), y(0), z(0) {}
+
+	// It is recommended to use `explicit` because otherwise it would open the door to plenty of implicit conversions
+	// which would make many cases ambiguous.
 	explicit Vector3f(float p_v) : x(p_v), y(p_v), z(p_v) {}
+
 	Vector3f(float p_x, float p_y, float p_z) : x(p_x), y(p_y), z(p_z) {}
 
 	inline float length_squared() const {

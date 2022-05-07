@@ -1,5 +1,6 @@
 #include "voxel_tool_buffer.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include "funcs.h"
 

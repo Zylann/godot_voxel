@@ -1,6 +1,7 @@
 #include "../../edition/voxel_tool.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "../fixed_lod/voxel_terrain.h"

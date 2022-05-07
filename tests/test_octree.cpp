@@ -1,6 +1,7 @@
 #include "test_octree.h"
 #include "../constants/cube_tables.h"
 #include "../terrain/variable_lod/lod_octree.h"
+#include "../util/math/conv.h"
 #include "../util/profiling_clock.h"
 #include "testing.h"
 

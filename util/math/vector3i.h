@@ -278,10 +278,6 @@ inline Vector3i create(int xyz) {
 	return Vector3i(xyz, xyz, xyz);
 }
 
-inline Vector3i from_cast(const Vector3 &f) {
-	return Vector3i(f.x, f.y, f.z);
-}
-
 inline void sort_min_max(Vector3i &a, Vector3i &b) {
 	math::sort(a.x, b.x);
 	math::sort(a.y, b.y);
@@ -325,37 +321,24 @@ inline bool is_valid_size(const Vector3i &s) {
 
 namespace math {
 
-inline Vector3i floor_to_int(const Vector3 &f) {
-	return Vector3i(Math::floor(f.x), Math::floor(f.y), Math::floor(f.z));
-}
-
-inline Vector3i round_to_int(const Vector3 &f) {
-	return Vector3i(Math::round(f.x), Math::round(f.y), Math::round(f.z));
-}
-
-inline Vector3i ceil_to_int(const Vector3 &f) {
-	return Vector3i(Math::ceil(f.x), Math::ceil(f.y), Math::ceil(f.z));
-}
-
 inline Vector3i floordiv(const Vector3i v, const Vector3i d) {
-	return Vector3i(
-			zylann::math::floordiv(v.x, d.x), zylann::math::floordiv(v.y, d.y), zylann::math::floordiv(v.z, d.z));
+	return Vector3i(math::floordiv(v.x, d.x), math::floordiv(v.y, d.y), math::floordiv(v.z, d.z));
 }
 
 inline Vector3i floordiv(const Vector3i v, const int d) {
-	return Vector3i(zylann::math::floordiv(v.x, d), zylann::math::floordiv(v.y, d), zylann::math::floordiv(v.z, d));
+	return Vector3i(math::floordiv(v.x, d), math::floordiv(v.y, d), math::floordiv(v.z, d));
 }
 
 inline Vector3i ceildiv(const Vector3i v, const int d) {
-	return Vector3i(zylann::math::ceildiv(v.x, d), zylann::math::ceildiv(v.y, d), zylann::math::ceildiv(v.z, d));
+	return Vector3i(math::ceildiv(v.x, d), math::ceildiv(v.y, d), math::ceildiv(v.z, d));
 }
 
 inline Vector3i ceildiv(const Vector3i v, const Vector3i d) {
-	return Vector3i(zylann::math::ceildiv(v.x, d.x), zylann::math::ceildiv(v.y, d.y), zylann::math::ceildiv(v.z, d.z));
+	return Vector3i(math::ceildiv(v.x, d.x), math::ceildiv(v.y, d.y), math::ceildiv(v.z, d.z));
 }
 
 inline Vector3i wrap(const Vector3i v, const Vector3i d) {
-	return Vector3i(zylann::math::wrap(v.x, d.x), zylann::math::wrap(v.y, d.y), zylann::math::wrap(v.z, d.z));
+	return Vector3i(math::wrap(v.x, d.x), math::wrap(v.y, d.y), math::wrap(v.z, d.z));
 }
 
 inline Vector3i clamp(const Vector3i a, const Vector3i minv, const Vector3i maxv) {
