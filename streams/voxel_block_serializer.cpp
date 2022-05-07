@@ -179,7 +179,7 @@ static bool deserialize_metadata(VoxelMetadata &meta, MemoryReader &mr) {
 				VoxelMetadata temp;
 				temp.set_custom(type, custom);
 
-				size_t read_size = 0;
+				uint64_t read_size = 0;
 				ZN_ASSERT_RETURN_V(custom->deserialize(mr.data.sub(mr.pos), read_size), false);
 				ZN_ASSERT_RETURN_V(mr.pos + read_size <= mr.data.size(), false);
 				mr.pos += read_size;
