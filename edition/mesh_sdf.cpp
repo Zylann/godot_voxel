@@ -492,8 +492,8 @@ void mark_triangle_hull(Span<uint8_t> flag_grid, const Vector3i res, Span<const 
 
 	const Box3i grid_box(Vector3i(), res);
 
-	for (unsigned int i = 0; i < triangles.size(); ++i) {
-		const Triangle &t = triangles[i];
+	for (unsigned int tri_index = 0; tri_index < triangles.size(); ++tri_index) {
+		const Triangle &t = triangles[tri_index];
 
 		const Vector3f aabb_min = math::min(t.v1, math::min(t.v2, t.v3));
 		const Vector3f aabb_max = math::max(t.v1, math::max(t.v2, t.v3));

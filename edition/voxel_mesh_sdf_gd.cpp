@@ -239,7 +239,6 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 
 				case BAKE_MODE_APPROX_INTERP: {
 					VoxelBufferInternal &buffer = shared_data->buffer;
-					const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 					Span<float> sdf_grid;
 					ZN_ASSERT(buffer.get_channel_data(channel, sdf_grid));
 					generate_mesh_sdf_approx_interp(
