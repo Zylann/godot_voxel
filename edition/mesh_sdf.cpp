@@ -558,7 +558,6 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 	}
 
 	// Precompute flat-grid neighbor offsets
-	const unsigned int ni000 = 0;
 	const unsigned int ni100 = Vector3iUtil::get_zxy_index(Vector3i(1, 0, 0), node_grid_size);
 	const unsigned int ni010 = Vector3iUtil::get_zxy_index(Vector3i(0, 1, 0), node_grid_size);
 	const unsigned int ni110 = Vector3iUtil::get_zxy_index(Vector3i(1, 1, 0), node_grid_size);

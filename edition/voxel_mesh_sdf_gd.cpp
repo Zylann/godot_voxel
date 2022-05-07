@@ -106,7 +106,6 @@ void VoxelMeshSDF::bake() {
 	const Vector3f box_size = box_max_pos - box_min_pos;
 
 	const Vector3i res = mesh_sdf::auto_compute_grid_resolution(box_size, _cell_count);
-	const uint64_t volume = Vector3iUtil::get_volume(res);
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 	Ref<gd::VoxelBuffer> vbgd;
 	vbgd.instantiate();
