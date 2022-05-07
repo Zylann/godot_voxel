@@ -640,7 +640,7 @@ void generate_mesh_sdf_naive(Span<float> sdf_grid, const Vector3i res, const Box
 		Span<const Triangle> triangles, const Vector3f min_pos, const Vector3f max_pos) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Box3i(Vector3i(), res).contains(sub_box));
-	ZN_ASSERT(sdf_grid.size() == Vector3iUtil::get_volume(res));
+	ZN_ASSERT(int64_t(sdf_grid.size()) == Vector3iUtil::get_volume(res));
 
 	const Vector3f mesh_size = max_pos - min_pos;
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
@@ -674,7 +674,7 @@ void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, con
 		const Vector3f min_pos, const Vector3f max_pos, const ChunkGrid &chunk_grid) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Box3i(Vector3i(), res).contains(sub_box));
-	ZN_ASSERT(sdf_grid.size() == Vector3iUtil::get_volume(res));
+	ZN_ASSERT(int64_t(sdf_grid.size()) == Vector3iUtil::get_volume(res));
 
 	const Vector3f mesh_size = max_pos - min_pos;
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
@@ -827,7 +827,7 @@ bool prepare_triangles(Span<const Vector3> vertices, Span<const int> indices, st
 	Vector3f min_pos = to_vec3f(vertices[0]);
 	Vector3f max_pos = min_pos;
 
-	for (int i = 0; i < vertices.size(); ++i) {
+	for (size_t i = 0; i < vertices.size(); ++i) {
 		const Vector3f p = to_vec3f(vertices[i]);
 		min_pos = math::min(p, min_pos);
 		max_pos = math::max(p, max_pos);
