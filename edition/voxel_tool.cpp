@@ -335,6 +335,18 @@ void VoxelTool::_b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels
 	paste(pos, voxels, channels_mask, mask_value > 0xffffffff, mask_value);
 }
 
+Variant VoxelTool::_b_get_voxel_metadata(Vector3i pos) const {
+	return get_voxel_metadata(pos);
+}
+
+void VoxelTool::_b_set_voxel_metadata(Vector3i pos, Variant meta) {
+	return set_voxel_metadata(pos, meta);
+}
+
+bool VoxelTool::_b_is_area_editable(AABB box) const {
+	return is_area_editable(Box3i(math::floor_to_int(box.position), math::floor_to_int(box.size)));
+}
+
 static int _b_color_to_u16(Color col) {
 	return Color8(col).to_u16();
 }
