@@ -68,161 +68,171 @@
 #include "tests/tests.h"
 #endif
 
-void register_voxel_types() {
+void initialize_voxel_module(ModuleInitializationLevel p_level) {
 	using namespace zylann;
 	using namespace voxel;
 
-	VoxelMemoryPool::create_singleton();
-	VoxelStringNames::create_singleton();
-	VoxelGraphNodeDB::create_singleton();
-	VoxelServer::create_singleton();
-	gd::VoxelServer::create_singleton();
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		VoxelMemoryPool::create_singleton();
+		VoxelStringNames::create_singleton();
+		VoxelGraphNodeDB::create_singleton();
+		VoxelServer::create_singleton();
+		gd::VoxelServer::create_singleton();
 
-	Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelServer", gd::VoxelServer::get_singleton()));
+		Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelServer", gd::VoxelServer::get_singleton()));
 
-	VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(gd::METADATA_TYPE_VARIANT);
+		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
+				gd::METADATA_TYPE_VARIANT);
 
-	// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not abstract?
-	ClassDB::register_class<gd::VoxelServer>();
+		// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not
+		// abstract?
+		ClassDB::register_class<gd::VoxelServer>();
 
-	// Misc
-	ClassDB::register_class<VoxelBlockyModel>();
-	ClassDB::register_class<VoxelBlockyLibrary>();
-	ClassDB::register_class<VoxelColorPalette>();
-	ClassDB::register_class<VoxelInstanceLibrary>();
-	ClassDB::register_abstract_class<VoxelInstanceLibraryItem>();
-	ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
-	ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
-	ClassDB::register_class<VoxelDataBlockEnterInfo>();
+		// Misc
+		ClassDB::register_class<VoxelBlockyModel>();
+		ClassDB::register_class<VoxelBlockyLibrary>();
+		ClassDB::register_class<VoxelColorPalette>();
+		ClassDB::register_class<VoxelInstanceLibrary>();
+		ClassDB::register_abstract_class<VoxelInstanceLibraryItem>();
+		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
+		ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
+		ClassDB::register_class<VoxelDataBlockEnterInfo>();
 
-	// Storage
-	ClassDB::register_class<gd::VoxelBuffer>();
+		// Storage
+		ClassDB::register_class<gd::VoxelBuffer>();
 
-	// Nodes
-	ClassDB::register_abstract_class<VoxelNode>();
-	ClassDB::register_class<VoxelTerrain>();
-	ClassDB::register_class<VoxelLodTerrain>();
-	ClassDB::register_class<VoxelViewer>();
-	ClassDB::register_class<VoxelInstanceGenerator>();
-	ClassDB::register_class<VoxelInstancer>();
-	ClassDB::register_class<VoxelInstanceComponent>();
+		// Nodes
+		ClassDB::register_abstract_class<VoxelNode>();
+		ClassDB::register_class<VoxelTerrain>();
+		ClassDB::register_class<VoxelLodTerrain>();
+		ClassDB::register_class<VoxelViewer>();
+		ClassDB::register_class<VoxelInstanceGenerator>();
+		ClassDB::register_class<VoxelInstancer>();
+		ClassDB::register_class<VoxelInstanceComponent>();
 
-	// Streams
-	ClassDB::register_abstract_class<VoxelStream>();
-	ClassDB::register_class<VoxelStreamBlockFiles>();
-	ClassDB::register_class<VoxelStreamRegionFiles>();
-	ClassDB::register_class<VoxelStreamScript>();
-	ClassDB::register_class<VoxelStreamSQLite>();
+		// Streams
+		ClassDB::register_abstract_class<VoxelStream>();
+		ClassDB::register_class<VoxelStreamBlockFiles>();
+		ClassDB::register_class<VoxelStreamRegionFiles>();
+		ClassDB::register_class<VoxelStreamScript>();
+		ClassDB::register_class<VoxelStreamSQLite>();
 
-	// Generators
-	ClassDB::register_abstract_class<VoxelGenerator>();
-	ClassDB::register_class<VoxelGeneratorFlat>();
-	ClassDB::register_class<VoxelGeneratorWaves>();
-	ClassDB::register_abstract_class<VoxelGeneratorHeightmap>();
-	ClassDB::register_class<VoxelGeneratorImage>();
-	ClassDB::register_class<VoxelGeneratorNoise2D>();
-	ClassDB::register_class<VoxelGeneratorNoise>();
-	ClassDB::register_class<VoxelGeneratorGraph>();
-	ClassDB::register_class<VoxelGeneratorScript>();
+		// Generators
+		ClassDB::register_abstract_class<VoxelGenerator>();
+		ClassDB::register_class<VoxelGeneratorFlat>();
+		ClassDB::register_class<VoxelGeneratorWaves>();
+		ClassDB::register_abstract_class<VoxelGeneratorHeightmap>();
+		ClassDB::register_class<VoxelGeneratorImage>();
+		ClassDB::register_class<VoxelGeneratorNoise2D>();
+		ClassDB::register_class<VoxelGeneratorNoise>();
+		ClassDB::register_class<VoxelGeneratorGraph>();
+		ClassDB::register_class<VoxelGeneratorScript>();
 
-	// Utilities
-	ClassDB::register_class<VoxelBoxMover>();
-	ClassDB::register_class<VoxelRaycastResult>();
-	ClassDB::register_abstract_class<VoxelTool>();
-	ClassDB::register_abstract_class<VoxelToolTerrain>();
-	ClassDB::register_abstract_class<VoxelToolLodTerrain>();
-	// I had to bind this one despite it being useless as-is because otherwise Godot lazily initializes its class.
-	// And this can happen in a thread, causing crashes due to the concurrent access
-	ClassDB::register_abstract_class<VoxelToolBuffer>();
-	ClassDB::register_class<gd::VoxelBlockSerializer>();
-	ClassDB::register_class<VoxelVoxLoader>();
-	ClassDB::register_class<ZN_FastNoiseLite>();
-	ClassDB::register_class<ZN_FastNoiseLiteGradient>();
-	ClassDB::register_class<ZN_ThreadedTask>();
-	// See SCsub
+		// Utilities
+		ClassDB::register_class<VoxelBoxMover>();
+		ClassDB::register_class<VoxelRaycastResult>();
+		ClassDB::register_abstract_class<VoxelTool>();
+		ClassDB::register_abstract_class<VoxelToolTerrain>();
+		ClassDB::register_abstract_class<VoxelToolLodTerrain>();
+		// I had to bind this one despite it being useless as-is because otherwise Godot lazily initializes its class.
+		// And this can happen in a thread, causing crashes due to the concurrent access
+		ClassDB::register_abstract_class<VoxelToolBuffer>();
+		ClassDB::register_class<gd::VoxelBlockSerializer>();
+		ClassDB::register_class<VoxelVoxLoader>();
+		ClassDB::register_class<ZN_FastNoiseLite>();
+		ClassDB::register_class<ZN_FastNoiseLiteGradient>();
+		ClassDB::register_class<ZN_ThreadedTask>();
+		// See SCsub
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
-	ClassDB::register_class<FastNoise2>();
+		ClassDB::register_class<FastNoise2>();
 #endif
-	ClassDB::register_class<VoxelMeshSDF>();
+		ClassDB::register_class<VoxelMeshSDF>();
 
-	// Meshers
-	ClassDB::register_abstract_class<VoxelMesher>();
-	ClassDB::register_class<VoxelMesherBlocky>();
-	ClassDB::register_class<VoxelMesherTransvoxel>();
-	ClassDB::register_class<VoxelMesherDMC>();
-	ClassDB::register_class<VoxelMesherCubes>();
+		// Meshers
+		ClassDB::register_abstract_class<VoxelMesher>();
+		ClassDB::register_class<VoxelMesherBlocky>();
+		ClassDB::register_class<VoxelMesherTransvoxel>();
+		ClassDB::register_class<VoxelMesherDMC>();
+		ClassDB::register_class<VoxelMesherCubes>();
 
-	// Reminder: how to create a singleton accessible from scripts:
-	// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
+		// Reminder: how to create a singleton accessible from scripts:
+		// Engine::get_singleton()->add_singleton(Engine::Singleton("SingletonName",singleton_instance));
 
-	// Reminders
-	ZN_PRINT_VERBOSE(format("Size of Variant: {}", sizeof(Variant)));
-	ZN_PRINT_VERBOSE(format("Size of Object: {}", sizeof(Object)));
-	ZN_PRINT_VERBOSE(format("Size of RefCounted: {}", sizeof(RefCounted)));
-	ZN_PRINT_VERBOSE(format("Size of Node: {}", sizeof(Node)));
-	ZN_PRINT_VERBOSE(format("Size of Node3D: {}", sizeof(Node3D)));
-	ZN_PRINT_VERBOSE(format("Size of gd::VoxelBuffer: {}", sizeof(gd::VoxelBuffer)));
-	ZN_PRINT_VERBOSE(format("Size of VoxelBufferInternal: {}", sizeof(VoxelBufferInternal)));
-	ZN_PRINT_VERBOSE(format("Size of VoxelMeshBlock: {}", sizeof(VoxelMeshBlock)));
-	ZN_PRINT_VERBOSE(format("Size of VoxelTerrain: {}", sizeof(VoxelTerrain)));
-	ZN_PRINT_VERBOSE(format("Size of VoxelLodTerrain: {}", sizeof(VoxelLodTerrain)));
-	ZN_PRINT_VERBOSE(format("Size of VoxelInstancer: {}", sizeof(VoxelInstancer)));
-	ZN_PRINT_VERBOSE(format("Size of VoxelDataMap: {}", sizeof(VoxelDataMap)));
-
-#ifdef TOOLS_ENABLED
-	EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
-	EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
-	EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
-	EditorPlugins::add_by_type<ZN_FastNoiseLiteEditorPlugin>();
-	EditorPlugins::add_by_type<magica::VoxEditorPlugin>();
-	EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
-	EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
-#ifdef VOXEL_ENABLE_FAST_NOISE_2
-	EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
-#endif
-#endif // TOOLS_ENABLED
+		// Reminders
+		ZN_PRINT_VERBOSE(format("Size of Variant: {}", sizeof(Variant)));
+		ZN_PRINT_VERBOSE(format("Size of Object: {}", sizeof(Object)));
+		ZN_PRINT_VERBOSE(format("Size of RefCounted: {}", sizeof(RefCounted)));
+		ZN_PRINT_VERBOSE(format("Size of Node: {}", sizeof(Node)));
+		ZN_PRINT_VERBOSE(format("Size of Node3D: {}", sizeof(Node3D)));
+		ZN_PRINT_VERBOSE(format("Size of gd::VoxelBuffer: {}", sizeof(gd::VoxelBuffer)));
+		ZN_PRINT_VERBOSE(format("Size of VoxelBufferInternal: {}", sizeof(VoxelBufferInternal)));
+		ZN_PRINT_VERBOSE(format("Size of VoxelMeshBlock: {}", sizeof(VoxelMeshBlock)));
+		ZN_PRINT_VERBOSE(format("Size of VoxelTerrain: {}", sizeof(VoxelTerrain)));
+		ZN_PRINT_VERBOSE(format("Size of VoxelLodTerrain: {}", sizeof(VoxelLodTerrain)));
+		ZN_PRINT_VERBOSE(format("Size of VoxelInstancer: {}", sizeof(VoxelInstancer)));
+		ZN_PRINT_VERBOSE(format("Size of VoxelDataMap: {}", sizeof(VoxelDataMap)));
 
 #ifdef VOXEL_RUN_TESTS
-	zylann::voxel::tests::run_voxel_tests();
+		zylann::voxel::tests::run_voxel_tests();
 #endif
 
-	// Compatibility with older version
-	ClassDB::add_compatibility_class("VoxelLibrary", "VoxelBlockyLibrary");
-	ClassDB::add_compatibility_class("Voxel", "VoxelBlockyModel");
-	ClassDB::add_compatibility_class("VoxelInstanceLibraryItem", "VoxelInstanceLibraryMultiMeshItem");
-	// Not possible to add a compat class for this one because the new name is indistinguishable from an old one.
-	// However this is an abstract class so it should not be found in resources hopefully
-	//ClassDB::add_compatibility_class("VoxelInstanceLibraryItemBase", "VoxelInstanceLibraryItem");
+		// Compatibility with older version
+		ClassDB::add_compatibility_class("VoxelLibrary", "VoxelBlockyLibrary");
+		ClassDB::add_compatibility_class("Voxel", "VoxelBlockyModel");
+		ClassDB::add_compatibility_class("VoxelInstanceLibraryItem", "VoxelInstanceLibraryMultiMeshItem");
+		// Not possible to add a compat class for this one because the new name is indistinguishable from an old one.
+		// However this is an abstract class so it should not be found in resources hopefully
+		//ClassDB::add_compatibility_class("VoxelInstanceLibraryItemBase", "VoxelInstanceLibraryItem");
+	}
+
+#ifdef TOOLS_ENABLED
+	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
+		EditorPlugins::add_by_type<ZN_FastNoiseLiteEditorPlugin>();
+		EditorPlugins::add_by_type<magica::VoxEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
+#endif
+	}
+#endif // TOOLS_ENABLED
 }
 
-void unregister_voxel_types() {
+void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 	using namespace zylann;
 	using namespace voxel;
 
-	// At this point, the GDScript module has nullified GDScriptLanguage::singleton!!
-	// That means it's impossible to free scripts still referenced by VoxelServer. And that can happen, because
-	// users can write custom generators, which run inside threads, and these threads are hosted in the server...
-	// See https://github.com/Zylann/godot_voxel/issues/189
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		// At this point, the GDScript module has nullified GDScriptLanguage::singleton!!
+		// That means it's impossible to free scripts still referenced by VoxelServer. And that can happen, because
+		// users can write custom generators, which run inside threads, and these threads are hosted in the server...
+		// See https://github.com/Zylann/godot_voxel/issues/189
 
-	VoxelStringNames::destroy_singleton();
-	VoxelGraphNodeDB::destroy_singleton();
-	gd::VoxelServer::destroy_singleton();
-	VoxelServer::destroy_singleton();
+		VoxelStringNames::destroy_singleton();
+		VoxelGraphNodeDB::destroy_singleton();
+		gd::VoxelServer::destroy_singleton();
+		VoxelServer::destroy_singleton();
 
-	// Do this last as VoxelServer might still be holding some refs to voxel blocks
-	const unsigned int used_blocks = VoxelMemoryPool::get_singleton().debug_get_used_blocks();
-	if (used_blocks > 0) {
-		ERR_PRINT(String("VoxelMemoryPool: "
-						 "{0} memory blocks are still used when unregistering the module. Recycling leak?")
-						  .format(varray(used_blocks)));
+		// Do this last as VoxelServer might still be holding some refs to voxel blocks
+		const unsigned int used_blocks = VoxelMemoryPool::get_singleton().debug_get_used_blocks();
+		if (used_blocks > 0) {
+			ERR_PRINT(String("VoxelMemoryPool: "
+							 "{0} memory blocks are still used when unregistering the module. Recycling leak?")
+							  .format(varray(used_blocks)));
+		}
+		VoxelMemoryPool::destroy_singleton();
+		// TODO No remove?
 	}
-	VoxelMemoryPool::destroy_singleton();
-	// TODO No remove?
 
 #ifdef TOOLS_ENABLED
-	zylann::free_debug_resources();
+	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		zylann::free_debug_resources();
 
-	// TODO Seriously, no remove?
-	//EditorPlugins::remove_by_type<VoxelGraphEditorPlugin>();
-#endif
+		// TODO Seriously, no remove?
+		//EditorPlugins::remove_by_type<VoxelGraphEditorPlugin>();
+	}
+#endif // TOOLS_ENABLED
 }
