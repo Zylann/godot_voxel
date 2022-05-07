@@ -500,7 +500,7 @@ void mark_triangle_hull(Span<uint8_t> flag_grid, const Vector3i res, Span<const 
 
 		// Space to grid
 		const Vector3f aabb_min_g = inv_gts_scale * (aabb_min - eval.grid_to_space.translation);
-		const Vector3f aabb_max_g = inv_gts_scale * (aabb_min - eval.grid_to_space.translation);
+		const Vector3f aabb_max_g = inv_gts_scale * (aabb_max - eval.grid_to_space.translation);
 
 		const Box3i tbox = Box3i::from_min_max(to_vec3i(math::floor(aabb_min_g)), to_vec3i(math::ceil(aabb_max_g)))
 								   .padded(aabb_padding)
