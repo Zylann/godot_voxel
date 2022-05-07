@@ -91,7 +91,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	const Transform3D to_local = to_world.affine_inverse();
 	const Vector3 local_pos = to_local.xform(p_pos);
 	const Vector3 local_dir = to_local.basis.xform(p_dir).normalized();
-	const float to_world_scale = to_world.basis.get_axis(0).length();
+	const float to_world_scale = to_world.basis.get_column(Vector3::AXIS_X).length();
 	const float max_distance = p_max_distance / to_world_scale;
 
 	if (try_get_as(_terrain->get_mesher(), mesher_blocky)) {

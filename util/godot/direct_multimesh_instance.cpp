@@ -88,19 +88,19 @@ void DirectMultiMeshInstance::set_cast_shadows_setting(RenderingServer::ShadowCa
 }
 
 inline void write_bulk_array_transform(float *dst, const Transform3D &t) {
-	dst[0] = t.basis.elements[0].x;
-	dst[1] = t.basis.elements[0].y;
-	dst[2] = t.basis.elements[0].z;
+	dst[0] = t.basis.rows[0].x;
+	dst[1] = t.basis.rows[0].y;
+	dst[2] = t.basis.rows[0].z;
 	dst[3] = t.origin.x;
 
-	dst[4] = t.basis.elements[1].x;
-	dst[5] = t.basis.elements[1].y;
-	dst[6] = t.basis.elements[1].z;
+	dst[4] = t.basis.rows[1].x;
+	dst[5] = t.basis.rows[1].y;
+	dst[6] = t.basis.rows[1].z;
 	dst[7] = t.origin.y;
 
-	dst[8] = t.basis.elements[2].x;
-	dst[9] = t.basis.elements[2].y;
-	dst[10] = t.basis.elements[2].z;
+	dst[8] = t.basis.rows[2].x;
+	dst[9] = t.basis.rows[2].y;
+	dst[10] = t.basis.rows[2].z;
 	dst[11] = t.origin.z;
 }
 
