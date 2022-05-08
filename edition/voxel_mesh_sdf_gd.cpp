@@ -127,11 +127,17 @@ void VoxelMeshSDF::bake() {
 		case BAKE_MODE_APPROX_INTERP:
 			mesh_sdf::generate_mesh_sdf_approx_interp(sdf_grid, res, to_span(triangles), box_min_pos, box_max_pos);
 			break;
+		case BAKE_MODE_APPROX_FLOODFILL: {
+			mesh_sdf::ChunkGrid chunk_grid;
+			mesh_sdf::partition_triangles(_partition_subdiv, to_span(triangles), box_min_pos, box_max_pos, chunk_grid);
+			mesh_sdf::generate_mesh_sdf_approx_floodfill(
+					sdf_grid, res, to_span(triangles), chunk_grid, box_min_pos, box_max_pos, _boundary_sign_fix);
+		} break;
 		default:
 			ZN_CRASH();
 	}
 
-	if (_boundary_sign_fix) {
+	if (_boundary_sign_fix && _bake_mode != BAKE_MODE_APPROX_FLOODFILL) {
 		mesh_sdf::fix_sdf_sign_from_boundary(sdf_grid, res, min_pos, max_pos);
 	}
 
@@ -241,11 +247,28 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 					VoxelBufferInternal &buffer = shared_data->buffer;
 					Span<float> sdf_grid;
 					ZN_ASSERT(buffer.get_channel_data(channel, sdf_grid));
-					generate_mesh_sdf_approx_interp(
+
+					mesh_sdf::generate_mesh_sdf_approx_interp(
 							sdf_grid, res, to_span(shared_data->triangles), box_min_pos, box_max_pos);
+
 					if (boundary_sign_fix) {
 						mesh_sdf::fix_sdf_sign_from_boundary(sdf_grid, res, box_min_pos, box_max_pos);
 					}
+
+					L::notify_on_complete(**obj_to_notify, *shared_data);
+				} break;
+
+				case BAKE_MODE_APPROX_FLOODFILL: {
+					VoxelBufferInternal &buffer = shared_data->buffer;
+					Span<float> sdf_grid;
+					ZN_ASSERT(buffer.get_channel_data(channel, sdf_grid));
+
+					mesh_sdf::partition_triangles(partition_subdiv, to_span(shared_data->triangles),
+							shared_data->min_pos, shared_data->max_pos, shared_data->chunk_grid);
+
+					mesh_sdf::generate_mesh_sdf_approx_floodfill(sdf_grid, res, to_span(shared_data->triangles),
+							shared_data->chunk_grid, box_min_pos, box_max_pos, boundary_sign_fix);
+
 					L::notify_on_complete(**obj_to_notify, *shared_data);
 				} break;
 
@@ -455,6 +478,7 @@ void VoxelMeshSDF::_bind_methods() {
 	BIND_ENUM_CONSTANT(BAKE_MODE_ACCURATE_NAIVE);
 	BIND_ENUM_CONSTANT(BAKE_MODE_ACCURATE_PARTITIONED);
 	BIND_ENUM_CONSTANT(BAKE_MODE_APPROX_INTERP);
+	BIND_ENUM_CONSTANT(BAKE_MODE_APPROX_FLOODFILL);
 	BIND_ENUM_CONSTANT(BAKE_MODE_COUNT);
 }
 

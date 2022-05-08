@@ -131,6 +131,9 @@ CheckResult check_sdf(
 // accurately tell when when the sign is supposed to flip (i.e when we cross the surface).
 void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Vector3i res, Vector3f min_pos, Vector3f max_pos);
 
+void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
+		const ChunkGrid &chunk_grid, const Vector3f min_pos, const Vector3f max_pos, bool boundary_sign_fix);
+
 } // namespace zylann::voxel::mesh_sdf
 
 #endif // VOXEL_MESH_SDF_H

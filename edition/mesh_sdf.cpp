@@ -5,6 +5,10 @@
 #include "../util/profiling.h"
 #include "../util/string_funcs.h" // Debug
 
+// Debug
+// #include "../util/math/color.h"
+// #include <core/io/image.h>
+
 namespace zylann::voxel::mesh_sdf {
 
 // Some papers for eventual improvements
@@ -24,8 +28,8 @@ float get_max_sdf_variation(Vector3f min_pos, Vector3f max_pos, Vector3i res) {
 
 enum Flag { //
 	FLAG_NOT_VISITED,
-	FLAG_VISITED
-	//FLAG_FROZEN
+	FLAG_VISITED,
+	FLAG_FROZEN
 };
 
 void fix_sdf_sign_from_boundary(
@@ -109,6 +113,8 @@ void partition_triangles(
 		int subdiv, Span<const Triangle> triangles, Vector3f min_pos, Vector3f max_pos, ChunkGrid &chunk_grid) {
 	ZN_PROFILE_SCOPE();
 
+	// TODO This rarely causes SDF errors, but not sure yet what it is yet
+
 	const Vector3f mesh_size = max_pos - min_pos;
 	const float cs = math::max(mesh_size.x, math::max(mesh_size.y, mesh_size.z)) / subdiv;
 	const Vector3i grid_min = to_vec3i(math::floor(min_pos / cs));
@@ -148,16 +154,16 @@ void partition_triangles(
 			const Vector3f tri_min_pos = math::min(t.v1, math::min(t.v2, t.v3));
 			const Vector3f tri_max_pos = math::max(t.v1, math::max(t.v2, t.v3));
 
-			const Vector3i tri_min_pos_i = to_vec3i(math::floor(tri_min_pos / cs)) - grid_min;
-			const Vector3i tri_max_pos_i = to_vec3i(math::floor(tri_max_pos / cs)) - grid_min;
+			const Vector3i tri_min_pos_grid = to_vec3i(math::floor(tri_min_pos / cs)) - grid_min;
+			const Vector3i tri_max_pos_grid = to_vec3i(math::floor(tri_max_pos / cs)) - grid_min;
 
 			Vector3i cpos;
-			for (cpos.z = tri_min_pos_i.z; cpos.z <= tri_max_pos_i.z; ++cpos.z) {
-				for (cpos.x = tri_min_pos_i.x; cpos.x <= tri_max_pos_i.x; ++cpos.x) {
-					cpos.y = tri_min_pos_i.y;
+			for (cpos.z = tri_min_pos_grid.z; cpos.z <= tri_max_pos_grid.z; ++cpos.z) {
+				for (cpos.x = tri_min_pos_grid.x; cpos.x <= tri_max_pos_grid.x; ++cpos.x) {
+					cpos.y = tri_min_pos_grid.y;
 					unsigned int ci = Vector3iUtil::get_zxy_index(cpos, chunk_grid.size);
 
-					for (; cpos.y <= tri_max_pos_i.y; ++cpos.y) {
+					for (; cpos.y <= tri_max_pos_grid.y; ++cpos.y) {
 						ZN_ASSERT(ci < chunk_grid.chunks.size());
 						Chunk &chunk = chunk_grid.chunks[ci];
 						chunk.triangles.push_back(&t);
@@ -480,39 +486,6 @@ struct EvaluatorCG {
 	}
 };
 
-void mark_triangle_hull(Span<uint8_t> flag_grid, const Vector3i res, Span<const Triangle> triangles, Vector3f min_pos,
-		Vector3f max_pos, uint8_t flag_value, int aabb_padding) {
-	ZN_PROFILE_SCOPE();
-
-	const Vector3f mesh_size = max_pos - min_pos;
-	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
-	const Evaluator eval{ triangles, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
-
-	const Vector3f inv_gts_scale = Vector3f(1.f) / eval.grid_to_space.scale;
-
-	const Box3i grid_box(Vector3i(), res);
-
-	for (unsigned int tri_index = 0; tri_index < triangles.size(); ++tri_index) {
-		const Triangle &t = triangles[tri_index];
-
-		const Vector3f aabb_min = math::min(t.v1, math::min(t.v2, t.v3));
-		const Vector3f aabb_max = math::max(t.v1, math::max(t.v2, t.v3));
-
-		// Space to grid
-		const Vector3f aabb_min_g = inv_gts_scale * (aabb_min - eval.grid_to_space.translation);
-		const Vector3f aabb_max_g = inv_gts_scale * (aabb_max - eval.grid_to_space.translation);
-
-		const Box3i tbox = Box3i::from_min_max(to_vec3i(math::floor(aabb_min_g)), to_vec3i(math::ceil(aabb_max_g)))
-								   .padded(aabb_padding)
-								   .clipped(grid_box);
-
-		tbox.for_each_cell_zxy([&flag_grid, eval, res, flag_value](const Vector3i &grid_pos) {
-			const size_t i = Vector3iUtil::get_zxy_index(grid_pos, res);
-			flag_grid[i] = flag_value;
-		});
-	}
-}
-
 void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
 		const Vector3f min_pos, const Vector3f max_pos) {
 	ZN_PROFILE_SCOPE();
@@ -680,11 +653,9 @@ void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, con
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
 	const EvaluatorCG eval{ chunk_grid, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
 
-	Vector3i grid_pos;
-	const Vector3f hcs(cell_size * 0.5f);
-
 	const Vector3i sub_box_end = sub_box.pos + sub_box.size;
 
+	Vector3i grid_pos;
 	for (grid_pos.z = sub_box.pos.z; grid_pos.z < sub_box_end.z; ++grid_pos.z) {
 		for (grid_pos.x = sub_box.pos.x; grid_pos.x < sub_box_end.x; ++grid_pos.x) {
 			grid_pos.y = sub_box.pos.y;
@@ -871,6 +842,260 @@ void GenMeshSDFSubBoxTask::run(ThreadedTaskContext ctx) {
 		}
 		// That was the last job
 		on_complete();
+	}
+}
+
+static const float FAR_SD = 9999999.f;
+
+void generate_mesh_sdf_hull(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
+		const Vector3f min_pos, const Vector3f max_pos, const ChunkGrid &chunk_grid, Span<uint8_t> flag_grid,
+		uint8_t flag_value) {
+	ZN_PROFILE_SCOPE();
+
+	// Fill SDF grid with far distances as "infinity", we'll use that to check if we computed it already
+	sdf_grid.fill(FAR_SD);
+
+	const Vector3f mesh_size = max_pos - min_pos;
+	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
+	const EvaluatorCG eval{ chunk_grid, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
+	//const Evaluator eval{ triangles, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
+
+	const Vector3f inv_gts_scale = Vector3f(1.f) / eval.grid_to_space.scale;
+
+	const Box3i grid_box(Vector3i(), res);
+
+	for (unsigned int i = 0; i < triangles.size(); ++i) {
+		const Triangle &t = triangles[i];
+
+		const Vector3f aabb_min = math::min(t.v1, math::min(t.v2, t.v3));
+		const Vector3f aabb_max = math::max(t.v1, math::max(t.v2, t.v3));
+
+		// Space to grid
+		const Vector3f aabb_min_g = inv_gts_scale * (aabb_min - eval.grid_to_space.translation);
+		const Vector3f aabb_max_g = inv_gts_scale * (aabb_max - eval.grid_to_space.translation);
+
+		const Box3i tbox = Box3i::from_min_max(to_vec3i(math::floor(aabb_min_g)), to_vec3i(math::ceil(aabb_max_g)))
+								   .padded(1)
+								   .clipped(grid_box);
+
+		// TODO we could restrict the evaluation to use only the triangle and not all of them?
+
+		tbox.for_each_cell_zxy([&sdf_grid, &flag_grid, eval, res, flag_value](const Vector3i &grid_pos) {
+			const size_t i = Vector3iUtil::get_zxy_index(grid_pos, res);
+			if (sdf_grid[i] != FAR_SD) {
+				// Already computed
+				return;
+			}
+			ZN_ASSERT(i < sdf_grid.size());
+			sdf_grid[i] = eval(grid_pos);
+			flag_grid[i] = flag_value;
+		});
+	}
+}
+
+void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
+		const ChunkGrid &chunk_grid, const Vector3f min_pos, const Vector3f max_pos, bool boundary_sign_fix) {
+	ZN_PROFILE_SCOPE();
+
+	std::vector<uint8_t> flag_grid;
+	flag_grid.resize(Vector3iUtil::get_volume(res));
+	memset(flag_grid.data(), FLAG_NOT_VISITED, sizeof(uint8_t) * flag_grid.size());
+
+	generate_mesh_sdf_hull(sdf_grid, res, triangles, min_pos, max_pos, chunk_grid, to_span(flag_grid), FLAG_FROZEN);
+
+	if (boundary_sign_fix) {
+		fix_sdf_sign_from_boundary(sdf_grid, res, min_pos, max_pos);
+	}
+
+	struct Seed {
+		Vector3i pos;
+	};
+
+	std::vector<Seed> seeds0;
+
+	{
+		ZN_PROFILE_SCOPE_NAMED("Place seeds");
+
+		FixedArray<Vector3i, 6> dirs6;
+		dirs6[0] = Vector3i(-1, 0, 0);
+		dirs6[1] = Vector3i(1, 0, 0);
+		dirs6[2] = Vector3i(0, -1, 0);
+		dirs6[3] = Vector3i(0, 1, 0);
+		dirs6[4] = Vector3i(0, 0, -1);
+		dirs6[5] = Vector3i(0, 0, 1);
+
+		Vector3i pos;
+		for (pos.z = 0; pos.z < res.z; ++pos.z) {
+			for (pos.x = 0; pos.x < res.x; ++pos.x) {
+				pos.y = 0;
+				unsigned int loc = Vector3iUtil::get_zxy_index(pos, res);
+
+				for (; pos.y < res.y; ++pos.y, ++loc) {
+					if (flag_grid[loc] != FLAG_FROZEN) {
+						continue;
+					}
+
+					for (unsigned int dir = 0; dir < dirs6.size(); ++dir) {
+						const Vector3i npos = pos + dirs6[dir];
+						if (npos.x < 0 || npos.y < 0 || npos.z < 0 || npos.x >= res.x || npos.y >= res.y ||
+								npos.z >= res.z) {
+							continue;
+						}
+
+						const unsigned int nloc = Vector3iUtil::get_zxy_index(npos, res);
+						if (flag_grid[nloc] != FLAG_FROZEN) {
+							const float sd = sdf_grid[loc];
+							ZN_ASSERT(sd != FAR_SD);
+							seeds0.push_back({ pos });
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	const Vector3f mesh_size = max_pos - min_pos;
+	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
+
+	FixedArray<float, 8> dds;
+	dds[0b000] = 0;
+	dds[0b100] = cell_size.x;
+	dds[0b010] = cell_size.y;
+	dds[0b110] = Math::sqrt(math::squared(cell_size.x) + math::squared(cell_size.y));
+	dds[0b001] = cell_size.z;
+	dds[0b101] = Math::sqrt(math::squared(cell_size.x) + math::squared(cell_size.z));
+	dds[0b011] = Math::sqrt(math::squared(cell_size.y) + math::squared(cell_size.z));
+	dds[0b111] = cell_size.length();
+
+	std::vector<Seed> seeds1;
+
+	std::vector<Seed> *current_seeds = &seeds0;
+	std::vector<Seed> *next_seeds = &seeds1;
+
+	const Vector3i res_minus_one = res - Vector3i(1, 1, 1);
+	//unsigned int iteration = 0;
+
+	while (current_seeds->size() > 0) {
+		ZN_PROFILE_SCOPE_NAMED("Iteration");
+
+		// DEBUG
+		/*{
+			Ref<Image> im;
+			im.instantiate();
+			im->create(res.x, res.z, false, Image::FORMAT_RGB8);
+
+			const int y = 23;
+			const Color nega_col(0.5f, 0.5f, 1.0f);
+			const Color posi_col(1.0f, 0.6f, 0.1f);
+			const Color black(0.f, 0.f, 0.f);
+
+			for (int z = 0; z < res.z; ++z) {
+				for (int x = 0; x < res.x; ++x) {
+					const unsigned int loc = Vector3iUtil::get_zxy_index(Vector3i(x, y, z), res);
+					const float sd = sdf_grid[loc];
+
+					const float nega = math::clamp(-sd, 0.0f, 1.0f);
+					const float posi = math::clamp(sd, 0.0f, 1.0f);
+					const Color col = math::lerp(black, nega_col, nega) + math::lerp(black, posi_col, posi);
+
+					im->set_pixel(x, z, col);
+				}
+			}
+
+			const int scale = 8;
+
+			Ref<Image> im2 = im->duplicate();
+			im2->resize(im->get_width() * scale, im->get_height() * scale, Image::INTERPOLATE_NEAREST);
+			im2->save_png(String("debug_voxel_mesh_sdf_slice{0}_iteration{1}.png").format(varray(y, iteration)));
+
+			for (auto it = current_seeds->begin(); it != current_seeds->end(); ++it) {
+				const Seed seed = *it;
+				const Vector3i pos = seed.pos;
+				if (pos.y == y) {
+					im->set_pixel(pos.x, pos.z, Color(0, 1, 0));
+				}
+			}
+
+			im2 = im->duplicate();
+			im2->resize(im->get_width() * scale, im->get_height() * scale, Image::INTERPOLATE_NEAREST);
+			im2->save_png(String("debug_voxel_mesh_sdf_slice{0}_iteration{1}_s.png").format(varray(y, iteration)));
+
+			++iteration;
+		}*/
+
+		// Breadth-first, don't iterate seeds we create during this iteration
+		for (auto it = current_seeds->begin(); it != current_seeds->end(); ++it) {
+			const Seed seed = *it;
+			const Vector3i pos = seed.pos;
+
+			const unsigned int loc = Vector3iUtil::get_zxy_index(pos, res);
+
+			const float src_sd = sdf_grid[loc];
+			ZN_ASSERT(src_sd != FAR_SD);
+
+			const int min_dz = pos.z == 0 ? 0 : -1;
+			const int min_dy = pos.y == 0 ? 0 : -1;
+			const int min_dx = pos.x == 0 ? 0 : -1;
+
+			const int max_dz = pos.z == res_minus_one.z ? 1 : 2;
+			const int max_dy = pos.y == res_minus_one.y ? 1 : 2;
+			const int max_dx = pos.x == res_minus_one.x ? 1 : 2;
+
+			for (int dz = min_dz; dz < max_dz; ++dz) {
+				for (int dy = min_dy; dy < max_dy; ++dy) {
+					for (int dx = min_dx; dx < max_dx; ++dx) {
+						if (dx == 0 && dy == 0 && dz == 0) {
+							continue;
+						}
+
+						const Vector3i npos(pos.x + dx, pos.y + dy, pos.z + dz);
+						const unsigned int nloc = Vector3iUtil::get_zxy_index(npos, res);
+
+						const uint8_t nflag = flag_grid[nloc];
+						if (nflag == FLAG_FROZEN) {
+							continue;
+						}
+
+						const unsigned int ddi = (Math::abs(dx) << 2) | (Math::abs(dy) << 1) | Math::abs(dz);
+						const float dd = dds[ddi];
+
+						if (nflag == FLAG_NOT_VISITED) {
+							// First visit
+							float sd;
+							if (src_sd < 0.f) {
+								sd = src_sd - dd;
+							} else {
+								sd = src_sd + dd;
+							}
+
+							sdf_grid[nloc] = sd;
+
+							next_seeds->push_back({ npos });
+							flag_grid[nloc] = FLAG_VISITED;
+
+						} else { // FLAG_VISITED
+							const float dst_sd = sdf_grid[nloc];
+
+							float sd;
+							if (src_sd < 0.f) {
+								sd = math::max(dst_sd, src_sd - dd);
+							} else {
+								sd = math::min(dst_sd, src_sd + dd);
+							}
+
+							sdf_grid[nloc] = sd;
+						}
+					}
+				}
+			}
+		}
+
+		current_seeds->clear();
+
+		std::vector<Seed> *temp = current_seeds;
+		current_seeds = next_seeds;
+		next_seeds = temp;
 	}
 }
 
