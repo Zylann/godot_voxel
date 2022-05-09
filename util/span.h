@@ -3,6 +3,7 @@
 
 #include "fixed_array.h"
 #include <vector>
+#include <cstddef>
 
 namespace zylann {
 
