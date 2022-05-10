@@ -31,8 +31,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	struct RaycastPredicateColor {
 		const VoxelDataMap &map;
 
-		bool operator()(const Vector3i pos) const {
-			const uint64_t v = map.get_voxel(pos, VoxelBufferInternal::CHANNEL_COLOR);
+		bool operator()(const VoxelRaycastState &rs) const {
+			const uint64_t v = map.get_voxel(rs.hit_position, VoxelBufferInternal::CHANNEL_COLOR);
 			return v != 0;
 		}
 	};
@@ -40,8 +40,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	struct RaycastPredicateSDF {
 		const VoxelDataMap &map;
 
-		bool operator()(const Vector3i pos) const {
-			const float v = map.get_voxel_f(pos, VoxelBufferInternal::CHANNEL_SDF);
+		bool operator()(const VoxelRaycastState &rs) const {
+			const float v = map.get_voxel_f(rs.hit_position, VoxelBufferInternal::CHANNEL_SDF);
 			return v < 0;
 		}
 	};
@@ -51,8 +51,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		const VoxelBlockyLibrary &library;
 		const uint32_t collision_mask;
 
-		bool operator()(const Vector3i pos) const {
-			const int v = map.get_voxel(pos, VoxelBufferInternal::CHANNEL_TYPE);
+		bool operator()(const VoxelRaycastState &rs) const {
+			const int v = map.get_voxel(rs.hit_position, VoxelBufferInternal::CHANNEL_TYPE);
 
 			if (library.has_voxel(v) == false) {
 				return false;

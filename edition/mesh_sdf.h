@@ -43,9 +43,9 @@ struct Chunk {
 
 struct ChunkGrid {
 	std::vector<Chunk> chunks;
-	Vector3i size;
-	Vector3f min_pos;
-	float chunk_size;
+	Vector3i size; // Size of the grid in cells
+	Vector3f min_pos; // Position of the lower corner of the grid in space units
+	float chunk_size; // Size of a cubic cell in space units
 };
 
 class GenMeshSDFSubBoxTask : public IThreadedTask {
@@ -77,11 +77,14 @@ bool prepare_triangles(Span<const Vector3> vertices, Span<const int> indices, st
 		Vector3f &out_min_pos, Vector3f &out_max_pos);
 
 // Partitions triangles of the mesh such that we can reduce the number of triangles to check when evaluating the SDF.
-// Space is subdivided in a grid of chunks. Triangles overlapping chunks are listed, then each chunk finds which other
-// non-empty chunks are close to it. The amount of subvidisions should be carefully chosen: too low will cause less
-// triangles to be skipped, too high will make partitionning slower.
+// Space is subdivided in a grid of chunks. Triangles overlapping chunks are listed.
 void partition_triangles(
 		int subdiv, Span<const Triangle> triangles, Vector3f min_pos, Vector3f max_pos, ChunkGrid &chunk_grid);
+
+// For each chunk, finds which other non-empty chunks are close to it. The amount of subvidisions should be carefully
+// chosen: too low will cause less triangles to be skipped, too high will make partitionning slower.
+// This is necessary for functions using ChunkGrid.
+void compute_near_chunks(ChunkGrid &chunk_grid);
 
 // A naive method to get a sampled SDF from a mesh, by checking every triangle at every cell. It's accurate, but much
 // slower than other techniques, but could be used as a CPU-based alternative, for less
@@ -131,6 +134,8 @@ CheckResult check_sdf(
 // accurately tell when when the sign is supposed to flip (i.e when we cross the surface).
 void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Vector3i res, Vector3f min_pos, Vector3f max_pos);
 
+// Generates an approximation.
+// Calculates a thin hull of accurate SDF values, then propagates it with a 26-way floodfill.
 void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
 		const ChunkGrid &chunk_grid, const Vector3f min_pos, const Vector3f max_pos, bool boundary_sign_fix);
 

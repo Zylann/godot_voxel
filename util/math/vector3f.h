@@ -3,6 +3,7 @@
 
 #include "../errors.h"
 #include "funcs.h"
+#include <iosfwd>
 
 namespace zylann {
 
@@ -73,6 +74,11 @@ struct Vector3f {
 		Vector3f v = *this;
 		v.normalize();
 		return v;
+	}
+
+	bool is_normalized() const {
+		// use length_squared() instead of length() to avoid sqrt(), makes it more stringent.
+		return Math::is_equal_approx(length_squared(), 1, float(UNIT_EPSILON));
 	}
 
 	inline const float &operator[](const unsigned int p_axis) const {
@@ -238,7 +244,18 @@ inline Vector3f lerp(const Vector3f a, const Vector3f b, const float t) {
 	return Vector3f(Math::lerp(a.x, b.x, t), Math::lerp(a.y, b.y, t), Math::lerp(a.z, b.z, t));
 }
 
+inline bool has_nan(const Vector3f &v) {
+	return Math::is_nan(v.x) || Math::is_nan(v.y) || Math::is_nan(v.z);
+}
+
+inline float distance(const Vector3f &a, const Vector3f &b) {
+	return Math::sqrt(a.distance_squared_to(b));
+}
+
 } // namespace math
+
+std::stringstream &operator<<(std::stringstream &ss, const Vector3f &v);
+
 } // namespace zylann
 
 #endif // ZYLANN_VECTOR3F_H

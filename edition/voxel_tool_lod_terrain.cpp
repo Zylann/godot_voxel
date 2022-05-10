@@ -100,11 +100,11 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	struct RaycastPredicate {
 		VoxelLodTerrain *terrain;
 
-		bool operator()(Vector3i pos) {
+		bool operator()(const VoxelRaycastState &rs) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
 			VoxelSingleValue defval;
 			defval.f = 1.f;
-			const VoxelSingleValue v = terrain->get_voxel(pos, VoxelBufferInternal::CHANNEL_SDF, defval);
+			const VoxelSingleValue v = terrain->get_voxel(rs.hit_position, VoxelBufferInternal::CHANNEL_SDF, defval);
 			return v.f < 0;
 		}
 	};

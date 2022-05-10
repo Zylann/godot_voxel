@@ -3,6 +3,7 @@
 
 #include "vector2f.h"
 #include "vector3.h"
+#include "vector3d.h"
 #include "vector3f.h"
 #include "vector3i.h"
 
@@ -31,9 +32,17 @@ inline Vector3 to_vec3(const Vector3f v) {
 	return Vector3(v.x, v.y, v.z);
 }
 
+inline Vector3d to_vec3d(const Vector3f v) {
+	return Vector3d(v.x, v.y, v.z);
+}
+
 namespace math {
 
 inline Vector3i floor_to_int(const Vector3 &f) {
+	return Vector3i(Math::floor(f.x), Math::floor(f.y), Math::floor(f.z));
+}
+
+inline Vector3i floor_to_int(const Vector3f &f) {
 	return Vector3i(Math::floor(f.x), Math::floor(f.y), Math::floor(f.z));
 }
 

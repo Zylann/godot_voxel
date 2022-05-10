@@ -17,6 +17,9 @@ static bool prepare_triangles(
 		Mesh &mesh, std::vector<mesh_sdf::Triangle> &triangles, Vector3f &out_min_pos, Vector3f &out_max_pos) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(mesh.get_surface_count() == 0, false);
+	if (mesh.get_surface_count() > 1) {
+		WARN_PRINT("The given mesh has more than one surface. Only the first will be used.");
+	}
 	Array surface;
 	{
 		ZN_PROFILE_SCOPE_NAMED("Get surface from Godot")
@@ -130,6 +133,7 @@ void VoxelMeshSDF::bake() {
 		case BAKE_MODE_APPROX_FLOODFILL: {
 			mesh_sdf::ChunkGrid chunk_grid;
 			mesh_sdf::partition_triangles(_partition_subdiv, to_span(triangles), box_min_pos, box_max_pos, chunk_grid);
+			//mesh_sdf::compute_near_chunks(chunk_grid);
 			mesh_sdf::generate_mesh_sdf_approx_floodfill(
 					sdf_grid, res, to_span(triangles), chunk_grid, box_min_pos, box_max_pos, _boundary_sign_fix);
 		} break;
@@ -224,6 +228,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 					if (partitioned) {
 						mesh_sdf::partition_triangles(partition_subdiv, to_span(shared_data->triangles),
 								shared_data->min_pos, shared_data->max_pos, shared_data->chunk_grid);
+						mesh_sdf::compute_near_chunks(shared_data->chunk_grid);
 					}
 					shared_data->use_chunk_grid = partitioned;
 
@@ -265,6 +270,8 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 
 					mesh_sdf::partition_triangles(partition_subdiv, to_span(shared_data->triangles),
 							shared_data->min_pos, shared_data->max_pos, shared_data->chunk_grid);
+
+					//mesh_sdf::compute_near_chunks(shared_data->chunk_grid);
 
 					mesh_sdf::generate_mesh_sdf_approx_floodfill(sdf_grid, res, to_span(shared_data->triangles),
 							shared_data->chunk_grid, box_min_pos, box_max_pos, boundary_sign_fix);
@@ -459,7 +466,7 @@ void VoxelMeshSDF::_bind_methods() {
 			"set_margin_ratio", "get_margin_ratio");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "bake_mode", PROPERTY_HINT_ENUM,
-						 "AccurateNaive,AccuratePartitioned,ApproxInterp"),
+						 "AccurateNaive,AccuratePartitioned,ApproxInterp,FloodFill"),
 			"set_bake_mode", "get_bake_mode");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "partition_subdiv", PROPERTY_HINT_RANGE,
