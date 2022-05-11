@@ -700,14 +700,21 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(block_index >= _blocks.size());
 #endif
+	// We will move the last block to the index previously occupied by the removed block.
+	// It is cheaper than offsetting every block in the array.
+	// Get this reference first, because if we are removing the last block, its address will become null due to move
+	// semantics
+	const Block &moved_block = *_blocks.back();
+
 	UniquePtr<Block> block = std::move(_blocks[block_index]);
 	{
 		Layer &layer = get_layer(block->layer_id);
 		layer.blocks.erase(block->grid_position);
 	}
-	Block &moved_block = *_blocks.back();
 	_blocks[block_index] = std::move(_blocks.back());
 	_blocks.pop_back();
+
+	// Destroy objects linked to the block
 
 	for (unsigned int i = 0; i < block->bodies.size(); ++i) {
 		VoxelInstancerRigidBody *body = block->bodies[i];
@@ -722,7 +729,9 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 		instance.root->queue_delete();
 	}
 
+	// If the block we removed was also the last one, we don't enter here
 	if (block.get() != &moved_block) {
+		// Update the index of the moved block referenced in its layer
 		Layer &layer = get_layer(moved_block.layer_id);
 		auto it = layer.blocks.find(moved_block.grid_position);
 		CRASH_COND(it == layer.blocks.end());
