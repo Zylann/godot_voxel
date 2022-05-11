@@ -84,7 +84,7 @@ private:
 	bool _is_baking = false;
 
 	// Baking options
-	int _cell_count = 32;
+	int _cell_count = 64;
 	float _margin_ratio = 0.25;
 	BakeMode _bake_mode = BAKE_MODE_ACCURATE_PARTITIONED;
 	uint8_t _partition_subdiv = 32;
