@@ -1237,8 +1237,8 @@ void generate_mesh_sdf_hull(Span<float> sdf_grid, const Vector3i res, Span<const
 	{
 		ZN_PROFILE_SCOPE_NAMED("Tri squared distances");
 
-		for (unsigned int i = 0; i < triangles.size(); ++i) {
-			const Triangle &t = triangles[i];
+		for (unsigned int tri_index = 0; tri_index < triangles.size(); ++tri_index) {
+			const Triangle &t = triangles[tri_index];
 
 			const Vector3f aabb_min = math::min(t.v1, math::min(t.v2, t.v3));
 			const Vector3f aabb_max = math::max(t.v1, math::max(t.v2, t.v3));
