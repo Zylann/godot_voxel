@@ -1611,7 +1611,7 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 				Ref<Mesh> mesh_copy;
 				if (mesh_copy_ptr == nullptr) {
 					mesh_copy = src_mesh->duplicate();
-					mesh_copies.set(src_mesh, mesh_copy);
+					mesh_copies.insert(src_mesh, mesh_copy);
 				} else {
 					mesh_copy = *mesh_copy_ptr;
 				}

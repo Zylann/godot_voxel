@@ -2163,11 +2163,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];
-		_type_name_to_id.set(t.name, (VoxelGeneratorGraph::NodeTypeID)i);
+		_type_name_to_id.insert(t.name, (VoxelGeneratorGraph::NodeTypeID)i);
 
 		for (size_t param_index = 0; param_index < t.params.size(); ++param_index) {
 			Param &p = t.params[param_index];
-			t.param_name_to_index.set(p.name, param_index);
+			t.param_name_to_index.insert(p.name, param_index);
 			p.index = param_index;
 
 			switch (p.type) {
@@ -2195,7 +2195,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 
 		for (size_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
 			const Port &p = t.inputs[input_index];
-			t.input_name_to_index.set(p.name, input_index);
+			t.input_name_to_index.insert(p.name, input_index);
 		}
 
 		if (t.expression_func != nullptr) {
