@@ -376,10 +376,8 @@ void VoxelTerrain::set_block_enter_notification_enabled(bool enable) {
 	_block_enter_notification_enabled = enable;
 
 	if (enable == false) {
-		const Vector3i *key = nullptr;
-		
 		for (auto elm = _loading_blocks.begin(); elm < _loading_blocks.end(); ++elm) {
-			LoadingBlock *lb = _loading_blocks.getptr(elm->key);
+			LoadingBlock *lb = &elm->value;
 			CRASH_COND(lb == nullptr);
 			lb->viewers_to_notify.clear();
 		}
