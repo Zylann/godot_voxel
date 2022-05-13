@@ -377,9 +377,10 @@ void VoxelTerrain::set_block_enter_notification_enabled(bool enable) {
 
 	if (enable == false) {
 		const Vector3i *key = nullptr;
-		while ((key = _loading_blocks.next(key))) {
-			LoadingBlock *lb = _loading_blocks.getptr(*key);
-			CRASH_COND(lb == nullptr);
+		
+		for (auto elm = _loading_blocks.begin(); elm < _loading_blocks.end(); ++elm) {
+			LoadingBlock *lb = _loading_blocks.getptr(elm->key);
+			CRASH_COND(elm == nullptr);
 			lb->viewers_to_notify.clear();
 		}
 	}
@@ -486,7 +487,7 @@ void VoxelTerrain::view_data_block(Vector3i bpos, uint32_t viewer_id, bool requi
 			}
 
 			// Schedule a loading request
-			_loading_blocks.set(bpos, new_loading_block);
+			_loading_blocks.insert(bpos, new_loading_block);
 			_blocks_pending_load.push_back(bpos);
 
 		} else {
@@ -800,7 +801,7 @@ void VoxelTerrain::generate_block_async(Vector3i block_position) {
 
 	// Schedule a loading request
 	// TODO This could also end up loading from stream
-	_loading_blocks.set(block_position, new_loading_block);
+	_loading_blocks.insert(block_position, new_loading_block);
 	_blocks_pending_load.push_back(block_position);
 }
 

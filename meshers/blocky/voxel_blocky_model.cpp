@@ -393,7 +393,7 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 							}
 						}
 
-						added_side_indices[side].set(src_index, next_side_index);
+						added_side_indices[side].insert(src_index, next_side_index);
 						++next_side_index;
 
 					} else {
@@ -435,7 +435,7 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 							}
 						}
 
-						added_regular_indices.set(src_index, next_regular_index);
+						added_regular_indices.insert(src_index, next_regular_index);
 						++next_regular_index;
 
 					} else {
