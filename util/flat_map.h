@@ -82,7 +82,7 @@ public:
 	}
 
 	T *find(K key) {
-		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			return &it->value;
 		}
