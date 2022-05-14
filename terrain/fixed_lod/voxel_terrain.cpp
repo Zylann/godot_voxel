@@ -377,9 +377,8 @@ void VoxelTerrain::set_block_enter_notification_enabled(bool enable) {
 
 	if (enable == false) {
 		for (auto elm = _loading_blocks.begin(); elm < _loading_blocks.end(); ++elm) {
-			LoadingBlock *lb = &elm->value;
-			CRASH_COND(lb == nullptr);
-			lb->viewers_to_notify.clear();
+			LoadingBlock &lb = elm->value;
+			lb.viewers_to_notify.clear();
 		}
 	}
 }
